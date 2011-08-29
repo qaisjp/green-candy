@@ -778,6 +778,12 @@
     <ClInclude Include="..\..\..\Shared\animation\CPositionRotationAnimation.h" />
     <ClInclude Include="..\..\..\Shared\animation\TInterpolation.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="_Deathmatch 2010.vcxproj">
+      <Project>{f661ca1a-a296-4505-9583-3bec58fb79c5}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
