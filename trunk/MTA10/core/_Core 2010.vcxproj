@@ -572,6 +572,12 @@
     <ClInclude Include="..\..\Shared\sdk\SString.hpp" />
     <ClInclude Include="..\..\Shared\sdk\UTF8.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="_Core 2010.vcxproj">
+      <Project>{4c71249e-ea08-4a3d-9aef-28707acc6531}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
