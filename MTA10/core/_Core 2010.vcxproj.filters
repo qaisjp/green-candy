@@ -1,0 +1,1031 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{c97a7a6a-a20d-4886-b27d-fc2822f19656}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Source Files\d3d">
+      <UniqueIdentifier>{6ef558ba-f2ef-4060-83d9-a02312f8eab2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\tracking">
+      <UniqueIdentifier>{5873d176-ea28-4df4-9c4d-adaf71413e62}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{2bff2d90-b75c-4840-8faf-e163bc4d6cc2}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+    <Filter Include="Header Files\tracking">
+      <UniqueIdentifier>{ac7569ea-7259-4128-ab26-ddcc98318f7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\client">
+      <UniqueIdentifier>{5187d63b-1d3c-4cd2-9cad-c7abd8f464f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sdk">
+      <UniqueIdentifier>{35755f59-0cda-4601-bf2f-9362d7ce4448}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sdk\core">
+      <UniqueIdentifier>{71e008d2-e01b-48cd-bd0b-d5585d4519f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sdk\net">
+      <UniqueIdentifier>{839faaab-ff11-427c-81ed-52417112b07e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sdk\game">
+      <UniqueIdentifier>{5653326c-1899-433a-8df5-4140ec6ddd0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sdk\multiplayer">
+      <UniqueIdentifier>{dfd0c6dd-dcf5-4834-9be8-d891d1885da2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\shared">
+      <UniqueIdentifier>{47febc28-466d-4495-8caa-b2ad9ceabac7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CAdditionalVertexStreamManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CChat.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CClientTime.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CClientVariables.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CCommandFuncs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CCommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CCommunity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CCommunityLogin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CCommunityRegistration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CConnectManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CConsole.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CConsoleHistory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CCore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CCredits.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CDebugView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CDirect3DData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CDirect3DEvents9.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CDirect3DHook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CDirect3DHook9.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CDirect3DHookManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CDirectInputEvents8.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CDirectInputHook8.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CDirectInputHookManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CExceptionInformation_Impl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CFavouritesAddByIP.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CFilePathTranslator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CFileSystemHook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CFileSystemMemoryHandle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CFileSystemMemoryHandleManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CGraphics.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CGUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CJoystickManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CKeyBinds.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CLanguageLocale.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CLogger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CMainMenu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CMainMenuScene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CMessageLoopHook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CModManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CModuleLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CNewsBrowser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Core.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CPEHookUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CProxyDirect3D8.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CProxyDirect3D9.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CProxyDirect3DDevice9.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CProxyDirect3DVertexBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CProxyDirectInput8.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CProxyDirectInputDevice8.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CQuestionBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CQuickConnect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CrashHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRenderItem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRenderItem.DxFont.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRenderItem.EffectWrap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRenderItem.FileTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRenderItem.GuiFont.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRenderItem.RenderTarget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRenderItem.ScreenSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRenderItem.Shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRenderItem.ShaderInstance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRenderItemManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CScreenShot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CServerBrowser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CServerBrowser.MasterServerManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CServerBrowser.RemoteMasterServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CServerCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CServerInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CServerList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CSetCursorPosHook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CTileBatcher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CVersionUpdater.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CVideoModeManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CXfireQuery.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StdInc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xfire.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="d3d\CD3DMGE_D3D9.cpp">
+      <Filter>Source Files\d3d</Filter>
+    </ClCompile>
+    <ClCompile Include="tracking\CHTTPClient.cpp">
+      <Filter>Source Files\tracking</Filter>
+    </ClCompile>
+    <ClCompile Include="tracking\CHTTPResponse.cpp">
+      <Filter>Source Files\tracking</Filter>
+    </ClCompile>
+    <ClCompile Include="tracking\CTCPClientSocketImpl.cpp">
+      <Filter>Source Files\tracking</Filter>
+    </ClCompile>
+    <ClCompile Include="tracking\CTCPManager.cpp">
+      <Filter>Source Files\tracking</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CAdditionalVertexStreamManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CChat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CClientTime.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CClientVariables.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CCommandFuncs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CCommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CCommunity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CCommunityLogin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CCommunityRegistration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CConnectManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CConsole.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CConsoleHistory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CCredits.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDebugView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDirect3DData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDirect3DEvents9.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDirect3DHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDirect3DHook9.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDirect3DHookManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDirectInputEvents8.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDirectInputHook8.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDirectInputHookManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDirectXHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="client\CExceptionInformation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CFavouritesAddByIP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CFilePathTranslator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CFileSystemHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CFileSystemMemoryHandle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CFileSystemMemoryHandleManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CGraphics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CGUI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CJoystickManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CKeyBinds.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CLanguageLocale.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CLogger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CMainConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CMainMenu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CMainMenuScene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CMessageBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CMessageLoopHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CModManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CModuleLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CNewsBrowser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Core.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CPEHookUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CProxyDirect3D9.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CProxyDirect3DDevice8.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CProxyDirect3DDevice9.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CProxyDirect3DVertexBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CProxyDirectInput8.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CProxyDirectInputDevice8.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CQuestionBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CQuickConnect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CRenderItemManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CScreenShot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CServerBrowser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CServerBrowser.MasterServerManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CServerBrowser.RemoteMasterServer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CServerCache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CServerInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CServerList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CSetCursorPosHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CTileBatcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CVersionUpdater.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CVersionUpdater.Util.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CVideoModeManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CXfireQuery.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StdInc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UtilityMacros.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="xfire.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tracking\CHTTPClient.h">
+      <Filter>Header Files\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="tracking\CHTTPResponse.h">
+      <Filter>Header Files\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="tracking\CTCPClientSocket.h">
+      <Filter>Header Files\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="tracking\CTCPClientSocketImpl.h">
+      <Filter>Header Files\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="tracking\CTCPManager.h">
+      <Filter>Header Files\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="tracking\CTCPServerSocket.h">
+      <Filter>Header Files\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="tracking\CTCPServerSocketImpl.h">
+      <Filter>Header Files\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="tracking\CTCPSocket.h">
+      <Filter>Header Files\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="CExceptionInformation_Impl.h">
+      <Filter>Header Files\client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CClientBase.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CCommandsInterface.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CCommunityInterface.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CConsoleInterface.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CCoreInterface.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CCVarsInterface.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CExceptionInformation.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CGraphicsInterface.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CKeyBindsInterface.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CModManagerInterface.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CRenderItemManagerInterface.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\core\CSetCursorPosHookInterface.h">
+      <Filter>Header Files\sdk\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\net\bitstream.h">
+      <Filter>Header Files\sdk\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\net\CNet.h">
+      <Filter>Header Files\sdk\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\net\CNetHTTPDownloadManagerInterface.h">
+      <Filter>Header Files\sdk\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\net\net_common.h">
+      <Filter>Header Files\sdk\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\net\packetenums.h">
+      <Filter>Header Files\sdk\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\C3DMarker.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\C3DMarkers.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CAERadioTrackManager.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CAnimBlendAssocGroup.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CAnimBlendAssociation.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CAnimBlendHierarchy.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CAnimBlendSequence.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CAnimBlendStaticAssociation.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CAnimBlock.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CAnimManager.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CAudio.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CAutomobile.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CBike.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CBmx.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CBoat.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CBuilding.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CCam.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CCamera.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CCarEnterExit.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CCarGenerator.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CCheckpoint.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CCheckpoints.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CCivilianPed.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CClock.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CColModel.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CColPoint.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CControllerConfigManager.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CCoronas.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CDamageManager.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CDoor.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CEntity.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CEvent.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CEventDamage.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CEventList.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CExplosion.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CExplosionManager.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CFire.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CFireManager.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CFont.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CFx.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CGame.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CGarage.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CGarages.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CHandlingEntry.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CHandlingManager.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CHud.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CKeyGen.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CMarker.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CMenuManager.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CModelInfo.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CMonsterTruck.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CObject.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\Common.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPad.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CParticle.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CParticleObject.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CParticleSystemManager.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPathFind.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPed.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPedIK.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPedIntelligence.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPedModelInfo.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPhysical.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPickup.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPickups.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPlane.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPlayerInfo.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPlayerPed.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPools.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CPopulation.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CProjectile.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CProjectileInfo.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CQuadBike.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CRadar.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CRegisteredCorona.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CRemote.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CRenderWare.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CRestart.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CRopes.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CSettings.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CStats.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CStreaming.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CTaskManagementSystem.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CTaskManager.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CTasks.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CText.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CTheCarGenerators.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CTrailer.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CVehicle.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CVehicleScanner.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CVisibilityPlugins.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CWanted.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CWater.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CWaterManager.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CWeapon.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CWeaponInfo.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CWeather.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\CWorld.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\RenderWare.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\Task.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\TaskAttack.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\TaskBasic.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\TaskCar.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\TaskCarAccessories.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\TaskGoTo.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\TaskIK.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\TaskJumpFall.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\TaskPhysicalResponse.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\TaskSecondary.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\game\TaskTypes.h">
+      <Filter>Header Files\sdk\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\multiplayer\CMultiplayer.h">
+      <Filter>Header Files\sdk\multiplayer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sdk\multiplayer\CPopulationMP.h">
+      <Filter>Header Files\sdk\multiplayer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\CBox.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\CChecksum.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\CMatrix.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\CMatrix4.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\CMatrix_Pad.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\Common.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\CQuat.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\CRect2D.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\CScriptArgReader.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\CSphere.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\CVector.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\CVector2D.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\RTree.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.AllocTracking.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.AllocTracking.hpp">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.Buffer.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.ClassIdent.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.Defines.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.File.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.File.hpp">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.Game.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.Game.hpp">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.Hash.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.Hash.hpp">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.hpp">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.Misc.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.Misc.hpp">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.SysInfo.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.SysInfo.hpp">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.Tests.hpp">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.Time.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SharedUtil.Time.hpp">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SString.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\SString.hpp">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\sdk\UTF8.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
