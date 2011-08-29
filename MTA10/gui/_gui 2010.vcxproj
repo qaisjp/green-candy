@@ -265,6 +265,12 @@
     <ClInclude Include="..\sdk\gui\CGUITypes.h" />
     <ClInclude Include="..\sdk\gui\CGUIWindow.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="_gui 2010.vcxproj">
+      <Project>{485149e1-799c-4925-aa17-0fea77c85418}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
