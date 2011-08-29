@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{6d169439-ae38-4c0f-90a4-3fd69de2a934}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{b194708e-37b2-40d3-b2f9-88695d373e19}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CLimitsSA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CMultiplayerSA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="COffsets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CPopulationSA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRemoteDataSA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="multiplayer_hooksystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="multiplayer_keysync.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="multiplayer_shotsync.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="multiplayersa_init.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StdInc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CLimitsSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CMultiplayerSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="COffsets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CPopulationSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CRemoteDataSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="multiplayer_hooksystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="multiplayer_keysync.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="multiplayer_shotsync.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="multiplayerSA_init.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StdInc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
