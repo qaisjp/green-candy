@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual C++ Express 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client - Game SA", "_game_sa 2008.vcxproj", "{E13D1441-438B-4A03-AB79-5E8EF08EE414}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client - Game SA", "_game_sa 2010.vcxproj", "{E13D1441-438B-4A03-AB79-5E8EF08EE414}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
