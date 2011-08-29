@@ -759,6 +759,32 @@
     <None Include="..\..\output\NOTICE" />
     <None Include="..\..\output\README" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\vendor\ehs\vs2010\_ehs 2010.vcxproj">
+      <Project>{ecc4ba90-6aa5-4630-aea9-f923fb633c7d}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\vendor\json-c\_json 2010.vcxproj">
+      <Project>{38d753e1-5341-42e1-94ad-b2c503f1fc37}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\vendor\lua\mak.vs2010\_lua5.1_dll 2010.vcxproj">
+      <Project>{8eeecee6-a6ec-bc48-8e76-22b87825444b}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\vendor\pcre\_pcre 2010.vcxproj">
+      <Project>{39452acc-ff12-488d-94b6-301b4efbb606}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\vendor\pme\vs2010\_pme 2010.vcxproj">
+      <Project>{35dc1c50-0cdf-4f3a-b847-2d76de134053}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\vendor\zlib\_zlib 2010.vcxproj">
+      <Project>{ccabbc2e-172d-46fd-bc43-5a9fcd295112}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
