@@ -602,22 +602,17 @@ inline bool CPoolsSA::AddPedToPool ( CPedSA* pPed )
     CPedSAInterface* pInterface = pPed->GetPedInterface ();
 
     if ( ! pInterface )
-    {
         return false;
-    }
-    else
-    {
-        // Add it to the pool array
-        m_pedPool.array [ ulNewPos ] = pPed;
-        pPed->SetArrayID ( ulNewPos );
 
-        // Add it to the pool map
-        m_pedPool.map.insert ( pedPool_t::mapType::value_type ( pInterface, pPed ) );
+	// Add it to the pool array
+	m_pedPool.array [ ulNewPos ] = pPed;
+	pPed->SetArrayID ( ulNewPos );
 
-        // Increase the count of peds
-        ++m_pedPool.ulCount;
-    }
+	// Add it to the pool map
+	m_pedPool.map.insert ( pedPool_t::mapType::value_type ( pInterface, pPed ) );
 
+	// Increase the count of peds
+	++m_pedPool.ulCount;
     return true;
 }
 
@@ -927,11 +922,11 @@ CEntity * CPoolsSA::GetEntity ( DWORD* pGameInterface )
 CBuilding * CPoolsSA::AddBuilding ( DWORD dwModelID )
 {
     DEBUG_TRACE("CBuilding * CPoolsSA::AddBuilding ( DWORD dwModelID )");
-    if(m_ulBuildingCount <= MAX_BUILDINGS)
+    if (m_ulBuildingCount <= MAX_BUILDINGS)
     {
-        for(int i = 0;i<MAX_BUILDINGS;i++)
+        for (int i = 0;i<MAX_BUILDINGS;i++)
         {
-            if(Buildings[i] == 0)
+            if (Buildings[i] == 0)
             {
                 CBuildingSA * pBuilding = new CBuildingSA(dwModelID);
                 Buildings[i] = pBuilding;
