@@ -1,0 +1,1364 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\logic">
+      <UniqueIdentifier>{62ba85da-8b7a-48ac-9fd9-72c5f1dfb3f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\logic\rpc">
+      <UniqueIdentifier>{98d0df81-21dd-4d0c-b78b-77fba94d137f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\shared_logic">
+      <UniqueIdentifier>{a61bd484-b612-4c24-b3e8-7fe0569c0522}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\shared_logic\lua">
+      <UniqueIdentifier>{4dc88040-bcdf-440d-9562-95ecf8979c8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\shared_logic\utils">
+      <UniqueIdentifier>{041fc1b9-c71f-4d1c-b8b5-9b9aa783cf7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\shared_logic\luadefs">
+      <UniqueIdentifier>{77b78536-d712-4462-9780-066531361ae8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\utils">
+      <UniqueIdentifier>{bd431f14-5f90-4d4b-b271-1d98eea7f6df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\utils\portaudio">
+      <UniqueIdentifier>{f23c51a4-1c64-47b2-aa2a-62bf550b2b5b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\shared">
+      <UniqueIdentifier>{2e4d89a0-ca7e-4e0e-b151-1be4fe527405}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\logic">
+      <UniqueIdentifier>{3f8ccfe7-4b3d-44ec-8f7b-3da7a597cbf7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\logic\rpc">
+      <UniqueIdentifier>{e2c33220-795a-4303-877c-cf094278f02b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\utils">
+      <UniqueIdentifier>{0ef93cbe-a05b-467c-92ac-caf4715d57b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\utils\portaudio">
+      <UniqueIdentifier>{2ff4223f-d81c-4879-8087-e15b3714f791}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\shared_logic">
+      <UniqueIdentifier>{f89e7d85-46b8-4b22-875f-9fec445972d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\shared_logic\lua">
+      <UniqueIdentifier>{64bcbd0b-c9db-45c0-9990-4ffaea47c4e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\shared_logic\utils">
+      <UniqueIdentifier>{578b67f9-dac7-405f-bfe1-b6b1504eaca9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\shared_logic\luadefs">
+      <UniqueIdentifier>{046b829c-2266-49a4-ae17-83f35c5e7133}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\shared">
+      <UniqueIdentifier>{566a74ec-7c29-4fab-88fd-f10580b59301}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Client.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientCommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CVoiceRecorder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HeapTrace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StdInc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CBlendedWeather.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CClientEntityRefManager.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CClientGame.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CClientPerfStat.LibMemory.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CClientPerfStat.LuaMemory.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CClientPerfStat.LuaTiming.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CClientPerfStat.PacketUsage.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CClientPerfStatManager.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CDeathmatchObject.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CDeathmatchVehicle.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CDownloadableResource.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CDynamicLibrary.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CElementDeleter.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CElementGroup.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CFoo.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CLocalServer.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CMovingObjectsManager.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CNametags.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CNetAPI.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CNetworkStats.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CObjectSync.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CPacketHandler.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CPedSync.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CRadarMap.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CResource.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CResourceConfigItem.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CResourceManager.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CScriptKeyBinds.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CServer.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CServerIdManager.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CStaticFunctionDefinitions.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CSyncDebug.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CTransferBox.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\CUnoccupiedVehicleSync.cpp">
+      <Filter>Source Files\logic</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CAudioRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CBlipRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CCameraRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CElementRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CHandlingRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CInputRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CMarkerRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CObjectRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\COutputRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CPedRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CPickupRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CPlayerRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CRadarRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CRPCFunctions.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CTeamRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CVehicleRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CWaterRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CWeaponRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="logic\rpc\CWorldRPCs.cpp">
+      <Filter>Source Files\logic\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CAntiCheat.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CAntiCheatModule.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CBassAudio.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClient3DMarker.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientCamera.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientCheckpoint.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientCivilian.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientCivilianManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientColCircle.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientColCuboid.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientColManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientColModel.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientColModelManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientColPolygon.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientColRectangle.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientColShape.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientColSphere.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientColTube.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientCorona.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientDFF.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientDFFManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientDisplay.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientDisplayManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientDummy.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientDxFont.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientEntity.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientExplosionManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientGroups.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientGUIElement.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientGuiFont.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientGUIManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientMarker.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientMarkerCommon.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientMarkerManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientMaterial.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientModelRequestManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientObject.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientObjectManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPacketRecorder.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPad.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPathManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPathNode.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPed.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPedManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPickup.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPickupManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPlayer.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPlayerClothes.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPlayerManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientPlayerVoice.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientProjectile.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientProjectileManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientRadarArea.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientRadarAreaManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientRadarMarker.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientRadarMarkerManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientRenderElement.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientRenderElementManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientShader.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientSound.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientSoundManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientSpatialDatabase.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientStreamElement.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientStreamer.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientStreamSector.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientStreamSectorRow.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientTask.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientTeam.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientTeamManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientTextDisplay.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientTexture.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientTime.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientTXD.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientVehicle.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientVehicleManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientWater.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CClientWaterManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CConfig.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CCustomData.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CDOMConfig.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CElementArray.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CEvents.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CLogger.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CMapEvent.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CMapEventManager.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CModelNames.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CRegisteredCommands.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CScriptDebugging.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CScriptFile.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CVariableBuffer.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CVehicleNames.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CVehicleUpgrades.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CWeaponNames.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\CZoneNames.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\Utils.cpp">
+      <Filter>Source Files\shared_logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaArgument.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaArguments.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaCFunctions.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Audio.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Blip.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.BodyClothes.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Camera.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Commands.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Drawing.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Element.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Engine.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Event.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.GUI.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Input.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Marker.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Object.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Output.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Ped.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Pickup.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Player.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Projectile.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Radar.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Resource.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Shape.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Team.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Util.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Vehicle.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.Weapon.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.World.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionDefs.XML.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionParseHelpers.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaFunctionRef.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaMain.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaManager.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaTimer.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\CLuaTimerManager.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\lua\LuaCommon.cpp">
+      <Filter>Source Files\shared_logic\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\bochs\bochs_internal\crc32.cpp">
+      <Filter>Source Files\shared_logic\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\luadefs\CLuaDefs.cpp">
+      <Filter>Source Files\shared_logic\luadefs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\luadefs\CLuaFileDefs.cpp">
+      <Filter>Source Files\shared_logic\luadefs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\luadefs\CLuaFxDefs.cpp">
+      <Filter>Source Files\shared_logic\luadefs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_logic\luadefs\CLuaTaskDefs.cpp">
+      <Filter>Source Files\shared_logic\luadefs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_allocation.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_converters.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_cpuload.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_debugprint.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_dither.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_front.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_process.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_ringbuffer.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_stream.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_trace.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_win_ds.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_win_ds_dynlink.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_win_hostapis.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_win_util.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_win_waveformat.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_win_wdmks_utils.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\vendor\portaudio\pa_x86_plain_converters.c">
+      <Filter>Source Files\utils\portaudio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\animation\CEasingCurve.cpp">
+      <Filter>Source Files\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\animation\CPositionRotationAnimation.cpp">
+      <Filter>Source Files\shared</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientCommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CVoiceRecorder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HeapTrace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StdInc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CBitStream.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CBlendedWeather.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CClientEntityRefManager.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CClientGame.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CClientPerfStatManager.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CClientPerfStatModule.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CDeathmatchObject.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CDeathmatchVehicle.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CDownloadableResource.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CDynamicLibrary.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CElementDeleter.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CElementGroup.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CFoo.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CInterpolator.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CLocalServer.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CMovingObjectsManager.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CNametags.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CNetAPI.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CNetworkStats.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CObjectSync.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\Config.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CPacketHandler.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CPedSync.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CRadarMap.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CResource.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CResourceConfigItem.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CResourceFile.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CResourceManager.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CScriptKeyBinds.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CServer.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CServerIdManager.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CStaticFunctionDefinitions.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CSyncDebug.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CTransferBox.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\CUnoccupiedVehicleSync.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\sdk\net\Packets.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\sdk\net\SyncStructures.h">
+      <Filter>Header Files\logic</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CAudioRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CBlipRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CCameraRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CElementRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CHandlingRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CInputRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CMarkerRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CObjectRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\COutputRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CPedRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CPickupRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CPlayerRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CRadarRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CRPCFunctions.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CTeamRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CVehicleRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CWaterRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CWeaponRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="logic\rpc\CWorldRPCs.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\sdk\net\rpc_enums.h">
+      <Filter>Header Files\logic\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\sdk\ieee754.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\sdk\utils\XFont.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_allocation.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_asio.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_converters.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_cpuload.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_debugprint.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_dither.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_endianness.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_hostapi.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_jack.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_linux_alsa.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_mac_core.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_memorybarrier.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_process.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_ringbuffer.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_stream.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_trace.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_types.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_util.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_win_ds.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_win_ds_dynlink.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_win_wasapi.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_win_waveformat.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_win_wdmks_utils.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_win_wmme.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\pa_x86_plain_converters.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\portaudio\portaudio.h">
+      <Filter>Header Files\utils\portaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CAntiCheat.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CAntiCheatModule.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CBassAudio.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CCallback.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClient3DMarker.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientCamera.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientCheckpoint.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientCivilian.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientCivilianManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientColCallback.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientColCircle.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientColCuboid.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientColManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientColModel.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientColModelManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientColPolygon.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientColRectangle.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientColShape.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientColSphere.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientColTube.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientCommon.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientCorona.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientDFF.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientDFFManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientDisplay.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientDisplayManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientDummy.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientDxFont.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientEntity.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientExplosionManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientGroups.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientGUIElement.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientGuiFont.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientGUIManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientMarker.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientMarkerCommon.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientMarkerManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientMaterial.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientModelRequestManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientObject.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientObjectManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPacketRecorder.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPad.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPathManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPathNode.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPed.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPedManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPickup.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPickupManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPlayer.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPlayerClothes.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPlayerManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPlayerModule.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientPlayerVoice.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientProjectile.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientProjectileManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientRadarArea.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientRadarAreaManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientRadarMarker.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientRadarMarkerManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientRenderElement.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientRenderElementManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientShader.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientSound.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientSoundManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientSpatialDatabase.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientStreamElement.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientStreamer.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientStreamSector.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientStreamSectorRow.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientTask.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientTeam.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientTeamManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientTextDisplay.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientTexture.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientTime.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientTXD.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientVehicle.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientVehicleManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientWater.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CClientWaterManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CConfig.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CCustomData.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CDOMConfig.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CElementArray.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CEvents.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CLogger.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CMapEvent.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CMapEventManager.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CModelNames.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CRegisteredCommands.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CScriptDebugging.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CScriptFile.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CSimulatedPlayPosition.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CVariableBuffer.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CVehicleNames.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CVehicleUpgrades.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CWeaponNames.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\CZoneNames.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\Element.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\Utils.h">
+      <Filter>Header Files\shared_logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\CLuaArgument.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\CLuaArguments.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\CLuaCFunctions.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\CLuaFunctionDefs.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\CLuaFunctionParseHelpers.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\CLuaFunctionRef.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\CLuaMain.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\CLuaManager.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\CLuaModuleManager.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\CLuaTimer.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\CLuaTimerManager.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\lua\LuaCommon.h">
+      <Filter>Header Files\shared_logic\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\bochs\bochs_internal\crc32.h">
+      <Filter>Header Files\shared_logic\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\luadefs\CLuaDefs.h">
+      <Filter>Header Files\shared_logic\luadefs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\luadefs\CLuaFileDefs.h">
+      <Filter>Header Files\shared_logic\luadefs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\luadefs\CLuaFxDefs.h">
+      <Filter>Header Files\shared_logic\luadefs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_logic\luadefs\CLuaTaskDefs.h">
+      <Filter>Header Files\shared_logic\luadefs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\animation\CEasingCurve.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\animation\CPositionRotationAnimation.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\animation\TInterpolation.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
