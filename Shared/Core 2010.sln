@@ -19,15 +19,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client - Deathmatch", "..\MTA10\mods\deathmatch\_Deathmatch 2010.vcxproj", "{F661CA1A-A296-4505-9583-3BEC58FB79C5}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Server - Deathmatch", "..\MTA10_Server\mods\deathmatch\_ServerDeathmatch 2010.vcxproj", "{DC99F9D4-7C17-4A36-9F21-CEE075E42292}"
-	ProjectSection(ProjectDependencies) = postProject
-		{CCABBC2E-172D-46FD-BC43-5A9FCD295112} = {CCABBC2E-172D-46FD-BC43-5A9FCD295112}
-		{71C9B848-4138-4D4A-B131-1A42E7AC66B6} = {71C9B848-4138-4D4A-B131-1A42E7AC66B6}
-		{35DC1C50-0CDF-4F3A-B847-2D76DE134053} = {35DC1C50-0CDF-4F3A-B847-2D76DE134053}
-		{ECC4BA90-6AA5-4630-AEA9-F923FB633C7D} = {ECC4BA90-6AA5-4630-AEA9-F923FB633C7D}
-		{39452ACC-FF12-488D-94B6-301B4EFBB606} = {39452ACC-FF12-488D-94B6-301B4EFBB606}
-		{38D753E1-5341-42E1-94AD-B2C503F1FC37} = {38D753E1-5341-42E1-94AD-B2C503F1FC37}
-		{8EEECEE6-A6EC-BC48-8E76-22B87825444B} = {8EEECEE6-A6EC-BC48-8E76-22B87825444B}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Server - Launcher", "..\MTA10_Server\launcher\_launcher 2010.vcxproj", "{0EAA9107-413A-47C4-B6E7-41B10208FBA1}"
 EndProject
@@ -36,14 +27,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CEGUI - Base", "..\vendor\cegui-0.4.0-custom\makefiles\win32\VC++7.1\BaseSystem\_BaseSystem 2010.vcxproj", "{232B1F48-87C1-4EF9-98A2-CF675BAC7A54}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CEGUI - DirectX9GUIRenderer", "..\vendor\cegui-0.4.0-custom\makefiles\win32\VC++7.1\Renderers\DirectX9Renderer\_DirectX9GUIRenderer 2010.vcxproj", "{7582B608-D92F-4FCB-B682-2214B48D1596}"
-	ProjectSection(ProjectDependencies) = postProject
-		{232B1F48-87C1-4EF9-98A2-CF675BAC7A54} = {232B1F48-87C1-4EF9-98A2-CF675BAC7A54}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CEGUI - FalagardBase", "..\vendor\cegui-0.4.0-custom\makefiles\win32\VC++7.1\WidgetSets\Falagard\_Falagard 2010.vcxproj", "{04E4A944-225A-4BFB-B7B5-F23AEE884989}"
-	ProjectSection(ProjectDependencies) = postProject
-		{232B1F48-87C1-4EF9-98A2-CF675BAC7A54} = {232B1F48-87C1-4EF9-98A2-CF675BAC7A54}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "..\vendor\zlib\_zlib 2010.vcxproj", "{CCABBC2E-172D-46FD-BC43-5A9FCD295112}"
 EndProject
@@ -51,17 +36,17 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pcre", "..\vendor\pcre\_pcr
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcurl", "..\vendor\curl\lib\_libcurl 2010.vcxproj", "{2B98A079-89D3-4970-B0C2-39996636BAE6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ehs", "..\vendor\ehs\vs2008\_ehs 2010.vcxproj", "{ECC4BA90-6AA5-4630-AEA9-F923FB633C7D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ehs", "..\vendor\ehs\vs2010\_ehs 2010.vcxproj", "{ECC4BA90-6AA5-4630-AEA9-F923FB633C7D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "json", "..\vendor\json-c\_json 2010.vcx3proj", "{38D753E1-5341-42E1-94AD-B2C503F1FC37}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "json", "..\vendor\json-c\_json 2010.vcxproj", "{38D753E1-5341-42E1-94AD-B2C503F1FC37}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpng", "..\vendor\libpng\projects\vs2008\_libpng 2010.vcxproj", "{0008960E-E0DD-41A6-8265-00B31DDB4C21}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpng", "..\vendor\libpng\projects\vs2010\_libpng 2010.vcxproj", "{0008960E-E0DD-41A6-8265-00B31DDB4C21}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua5.1_dll", "..\vendor\lua\mak.vs2008\_lua5.1_dll 2010.vcxproj", "{8EEECEE6-A6EC-BC48-8E76-22B87825444B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua5.1_dll", "..\vendor\lua\mak.vs2010\_lua5.1_dll 2010.vcxproj", "{8EEECEE6-A6EC-BC48-8E76-22B87825444B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pme", "..\vendor\pme\vs2008\_pme 2010.vcxproj", "{35DC1C50-0CDF-4F3A-B847-2D76DE134053}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pme", "..\vendor\pme\vs2010\_pme 2010.vcxproj", "{35DC1C50-0CDF-4F3A-B847-2D76DE134053}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sqlite", "..\vendor\sqlite\sqlite.vcxproj", "{71C9B848-4138-4D4A-B131-1A42E7AC66B6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sqlite", "..\vendor\sqlite\_sqlite 2010.vcxproj", "{71C9B848-4138-4D4A-B131-1A42E7AC66B6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client - Launch", "..\MTA10\launch\_Launch 2010.vcxproj", "{C9188AB9-F099-4370-85DC-876B3904B939}"
 EndProject
