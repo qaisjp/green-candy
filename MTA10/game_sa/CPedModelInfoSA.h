@@ -40,33 +40,48 @@ typedef long AssocGroupID;
 // +64 = Last voice
 // +66 = Next voice (short)
 
-class CPedModelInfoSAInterface : public CBaseModelInfoSAInterface
+class CPedModelInfoSAInterface : public CClumpModelInfoSAInterface
 {
 public:
-                        CPedModelInfoSAInterface        ( void );
+                                    CPedModelInfoSAInterface();
+                                    ~CPedModelInfoSAInterface();
 
-    BYTE                pad [ 4 ];              // 32   
-    AssocGroupID        motionAnimGroup;        // 36   Motion anim group (AssocGroupID, long)
-    DWORD               pedType;                // 40   Default ped type (long)
-    ePedStats *         pedStats;               // 44   Default ped stats (ePedStats)
-    BYTE                bCanDriveCars;          // 48   Can drive cars (byte)
-    BYTE                pad2 [ 1 ];             // 49   
-    short               pedFlags;               // 50   Ped flags (short)
-    CColModel *         pHitColModel;           // 52   Hit col model (CColModel*)
-    BYTE                bFirstRadioStation;     // 56   First radio station
-    BYTE                bSecondRadioStation;    // 57   Second radio station
-    BYTE                bIsInRace;              // 58   Race (byte)
-    BYTE                pad3 [ 1 ];             // 59   
-    short               sVoiceType;             // 60   Voice type
-    short               sFirstVoice;            // 62   First voice
-    short               sLastVoice;             // 64   Last voice
-    short               sNextVoice;             // 66   Next voice
+    CAtomicModelInfoSA*             GetAtomicModelInfo();
+    CDamageAtomicModelInfoSA*       GetDamageAtomicModelInfo();
+    CLODAtomicModelInfoSA*          GetLODAtomicModelInfo();
+    void                            Init();
+    void                            Shutdown();
+    eModelType                      GetModelType();
+    unsigned int                    GetTimeInfo();
+    void                            DeleteRwObject();
+    bool                            SetAnimFile( const char *name );
+    void                            ConvertAnimFileIndex();
+    int                             GetAnimFileIndex();
+
+    unsigned int        m_flags;                  // 32  
+    AssocGroupID        m_motionAnimGroup;        // 36   Motion anim group (AssocGroupID, long)
+    DWORD               m_pedType;                // 40   Default ped type (long)
+    ePedStats *         m_pedStats;               // 44   Default ped stats (ePedStats)
+    BYTE                m_bCanDriveCars;          // 48   Can drive cars (byte)
+    BYTE                m_pad2 [ 1 ];             // 49   
+    short               m_pedFlags;               // 50   Ped flags (short)
+    CColModel *         m_pHitColModel;           // 52   Hit col model (CColModel*)
+    BYTE                m_bFirstRadioStation;     // 56   First radio station
+    BYTE                m_bSecondRadioStation;    // 57   Second radio station
+    BYTE                m_bIsInRace;              // 58   Race (byte)
+    BYTE                m_pad3 [ 1 ];             // 59   
+    short               m_sVoiceType;             // 60   Voice type
+    short               m_sFirstVoice;            // 62   First voice
+    short               m_sLastVoice;             // 64   Last voice
+    short               m_sNextVoice;             // 66   Next voice
 };
 
 class CPedModelInfoSA : public CModelInfoSA, public CPedModelInfo
 {
 public:
                                     CPedModelInfoSA             ( void );
+                                    ~CPedModelInfoSA            ( void );
+
     CPedModelInfoSAInterface *      GetPedModelInfoInterface    ( void )        { return m_pPedModelInterface; }
     void                            SetMotionAnimGroup          ( AssocGroupId animGroup );
 

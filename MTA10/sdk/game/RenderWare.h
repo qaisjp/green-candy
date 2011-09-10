@@ -29,7 +29,7 @@ typedef struct RwPlane RwPlane;
 typedef struct RwBBox RwBBox;
 typedef struct RpGeometry RpGeometry;
 typedef void   RpWorld;
-typedef struct RpClump RpClump;
+typedef class RpClump RpClump;
 typedef struct RwRaster RwRaster;
 typedef struct RpMaterialLighting RpMaterialLighting;
 typedef struct RpMaterialList RpMaterialList;
@@ -142,9 +142,17 @@ enum RpLightFlags
     LIGHT_FLAGS_LAST = RW_STRUCT_ALIGN
 };
 
-// RenderWare/plugin base types
-struct RwObject
+enum eRwType
 {
+    RW_NULL,
+    RW_ATOMIC,
+    RW_CLUMP
+};
+
+// RenderWare/plugin base types
+class RwObject
+{
+public:
     unsigned char type;
     unsigned char subtype;
     unsigned char flags;
@@ -297,9 +305,9 @@ struct RpLight
     unsigned short  frame;
     unsigned short  unknown2;
 };
-struct RpClump
+class RpClump : public RwObject
 {   // RenderWare (plugin) Clump (used by GTA)
-    RwObject        object;
+public:
     RwList          atomics;
     RwList          lights;
     RwList          cameras;

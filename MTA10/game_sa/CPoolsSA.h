@@ -17,11 +17,6 @@
 #define __CGAMESA_POOLS
 
 #include <game/CPools.h>
-#include "CPedSA.h"
-#include "CVehicleSA.h"
-#include "CObjectSA.h"
-#include "CBuildingSA.h"
-
 #include <google/dense_hash_map>
 
 class CEntryInfoNodePoolSA : public CEntryInfoNodePool
@@ -41,6 +36,62 @@ class CPointerNodeSingleLinkPoolSA : public CPointerNodeSingleLinkPool
 public:
     int             GetNumberOfUsedSpaces       ( );
 };
+
+template < class type, int max >
+class CPool
+{
+public:
+    CPool()
+    {
+        m_pool = (type*)malloc( sizeof(type) * max );
+        m_flags = (unsigned char*)malloc( max );
+
+        m_poolActive = true;
+
+        // Reset all flags
+        memset(m_flags, 0x80, max);
+
+        m_max = max;
+        m_active = 0;
+    }
+
+    ~CPool()
+    {
+        free(m_pool);
+        free(m_flags);
+    }
+
+    type*   Allocate()
+    {
+        unsigned int n;
+
+        if ( m_numActive == m_max )
+            return NULL;
+
+        for (n=0; n<m_max; n++)
+        {
+            if ( !(m_flags[n] & 0x80) )
+                continue;
+
+            m_flags[n] &= ~0x80;
+
+            m_active++;
+            return &m_pool[n];
+        }
+    }
+
+    type*           m_pool;
+    unsigned char*  m_flags;
+    unsigned int    m_max;
+    unsigned int    m_numActive;
+    bool            m_poolActive;
+};
+
+typedef CPool <CVehicleModelInfoSAInterface> CVehicleModelPool;
+
+typedef CPool <CVehicleSAInterface> CVehiclePool;
+typedef CPool <CPedSAInterface> CPedPool;
+typedef CPool <C
 
 class CPoolsSA : public CPools
 {
@@ -67,7 +118,6 @@ public:
 
     // Objects pool
     CObject*                AddObject           ( DWORD dwModelID );
-    CObject*                AddObject           ( DWORD* pGameInterface );
 private:
     bool                    AddObjectToPool     ( CObjectSA* pObject );
 public:
@@ -122,7 +172,7 @@ public:
 private:
     // Generic container for pools
     template < class T, class I, unsigned long MAX >
-    struct SPoolData
+    class CPool
     {
         typedef         google::dense_hash_map < I*, T* >  mapType;
         mapType         map;
@@ -132,14 +182,7 @@ private:
     private:
         friend class CPoolsSA;
 
-        SPoolData ( )
-            : map ( MAX ), ulCount ( 0UL )
-        {
-            for ( unsigned int i = 0; i < MAX; ++i )
-            {
-                array [ i ] = NULL;
-            }
-        }
+        CPool
     };
 
     // Pools
@@ -172,6 +215,8 @@ private:
 #define FUNC_GetObject                      0x550050
 #define FUNC_GetObjectRef                   0x550020
 //#define FUNC_GetObjectCount                   0x4A74D0
+
+#define CLASS_CPool_VehicleModels           0xB4E680
 
 #define CLASS_CPool_Vehicle                 0xB74494
 #define CLASS_CPool_Ped                     0xB74490

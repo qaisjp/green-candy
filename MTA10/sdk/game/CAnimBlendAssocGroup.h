@@ -15,7 +15,7 @@
 typedef unsigned char BYTE;
 typedef unsigned long AssocGroupId;
 class CAnimBlendStaticAssociation;
-struct RpClump;
+class RpClump;
 class CAnimBlock;
 
 class CAnimBlendAssocGroup

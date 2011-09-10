@@ -16,7 +16,7 @@
 #include "SharedUtil.h"
 
 class CVector;
-struct RpClump;
+class RpClump;
 class CMatrix;
 
 /**

@@ -12,7 +12,7 @@
 #ifndef __CVisibilityPlugins_H
 #define __CVisibilityPlugins_H
 
-struct RpClump;
+class RpClump;
 
 class CVisibilityPlugins
 {

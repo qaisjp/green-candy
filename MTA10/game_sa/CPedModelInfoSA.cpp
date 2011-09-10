@@ -13,18 +13,93 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+#include "gamesa_renderware.h"
 
 CPedModelInfoSAInterface::CPedModelInfoSAInterface ( void )
 {
-    MemSetFast ( this, 0, sizeof ( CPedModelInfoSAInterface ) );
-    VFTBL = ( CBaseModelInfo_SA_VTBL * ) VAR_CPedModelInfo_VTBL;
-    pColModel = ( CColModelSAInterface * ) VAR_CTempColModels_ModelPed1;
-    MemPutFast < DWORD > ( &pad, 0xFFFFFFFF );
+    *(DWORD*)this = VAR_CPedModelInfo_VTBL;
+    m_pColModel = ( CColModelSAInterface * ) VAR_CTempColModels_ModelPed1;
+
+    Init();
+}
+
+CPedModelInfoSAInterface::~CPedModelInfoSAInterface()
+{
+
+}
+
+CAtomicModelInfoSA* CPedModelInfoSAInterface::GetAtomicModelInfo()
+{
+    return NULL;
+}
+
+CDamageAtomicModelInfoSA* CPedModelInfoSAInterface::GetDamageAtomicModelInfo()
+{
+    return NULL;
+}
+
+CLODAtomicModelInfoSA* CPedModelInfoSAInterface::GetLODAtomicModelInfo()
+{
+    return NULL;
+}
+
+eModelType CPedModelInfoSAInterface::GetModelType()
+{
+    return MODEL_PED;
+}
+
+unsigned int CPedModelInfoSAInterface::GetTimeInfo()
+{
+    return 0;
+}
+
+void CPedModelInfoSAInterface::Init()
+{
+    CClumpModelInfoSAInterface::Init();
+
+    m_flags = 0xFFFFFFFF;
+}
+
+void CPedModelInfoSAInterface::Shutdown()
+{
+    CClumpModelInfoSAInterface::Shutdown();
+}
+
+void CPedModelInfoSAInterface::DeleteRwObject()
+{
+    CClumpModelInfoSAInterface::DeleteRwObject();
+
+    if (m_pColModel)
+    {
+        delete m_pColModel;
+
+        m_pColModel = NULL;
+    }
+}
+
+bool CPedModelInfoSAInterface::SetAnimFile( const char *name )
+{
+    return false;
+}
+
+void CPedModelInfoSAInterface::ConvertAnimFileIndex()
+{
+
+}
+
+int CPedModelInfoSAInterface::GetAnimFileIndex()
+{
+    return -1;
 }
 
 CPedModelInfoSA::CPedModelInfoSA ( void ) : CModelInfoSA ()
 {
     m_pPedModelInterface = new CPedModelInfoSAInterface;
+}
+
+CPedModelInfoSA::~CPedModelInfoSA()
+{
+
 }
 
 void CPedModelInfoSA::SetMotionAnimGroup ( AssocGroupId animGroup )

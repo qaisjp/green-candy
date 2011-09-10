@@ -16,9 +16,19 @@
 
 #include "StdInc.h"
 
+#define FUNC_InitGamePools      
+
+CVehiclePool*   m_vehiclePool;
+CPedPool*       m_pedPool;
+CObjectPool*    m_objectPool;
+
+
 CPoolsSA::CPoolsSA()
 {
     DEBUG_TRACE("CPoolsSA::CPoolsSA()");
+
+    // We hook the creation of pools
+    HookInstall(FUNC_InitGamePools, Hook_InitGamePools, 5);
     
     m_bGetVehicleEnabled = true;
     m_ulBuildingCount= 0;
@@ -381,39 +391,6 @@ CObject* CPoolsSA::AddObject ( DWORD dwModelID )
     return pObject;
 }
 
-CObject* CPoolsSA::AddObject ( DWORD* pGameInterface )
-{
-    DEBUG_TRACE("CObject* CPoolsSA::AddObject ( DWORD* pGameInterface )");
-
-    CObjectSA* pObject = NULL;
-
-    if ( m_objectPool.ulCount < MAX_OBJECTS )
-    {
-        CObjectSAInterface* pInterface = reinterpret_cast < CObjectSAInterface* > ( pGameInterface );
-        if ( pInterface )
-        {
-            // Make sure that it's not already in the objects pool
-            objectPool_t::mapType::iterator iter = m_objectPool.map.find ( pInterface );
-            if ( iter != m_objectPool.map.end () )
-            {
-                pObject = (*iter).second;
-            }
-            else
-            {
-                // Create it
-                pObject = new CObjectSA ( pInterface );
-                if ( ! AddObjectToPool ( pObject ) )
-                {
-                    delete pObject;
-                    pObject = NULL;
-                }
-            }
-        }
-    }
-
-    return pObject;
-}
-
 void CPoolsSA::RemoveObject ( unsigned long ulID, bool )
 {
     DEBUG_TRACE("void CPoolsSA::RemoveObject ( unsigned long ulID, bool )");
@@ -602,17 +579,22 @@ inline bool CPoolsSA::AddPedToPool ( CPedSA* pPed )
     CPedSAInterface* pInterface = pPed->GetPedInterface ();
 
     if ( ! pInterface )
+    {
         return false;
+    }
+    else
+    {
+        // Add it to the pool array
+        m_pedPool.array [ ulNewPos ] = pPed;
+        pPed->SetArrayID ( ulNewPos );
 
-	// Add it to the pool array
-	m_pedPool.array [ ulNewPos ] = pPed;
-	pPed->SetArrayID ( ulNewPos );
+        // Add it to the pool map
+        m_pedPool.map.insert ( pedPool_t::mapType::value_type ( pInterface, pPed ) );
 
-	// Add it to the pool map
-	m_pedPool.map.insert ( pedPool_t::mapType::value_type ( pInterface, pPed ) );
+        // Increase the count of peds
+        ++m_pedPool.ulCount;
+    }
 
-	// Increase the count of peds
-	++m_pedPool.ulCount;
     return true;
 }
 
@@ -732,36 +714,10 @@ void CPoolsSA::RemovePed ( unsigned long ulID, bool bDelete )
             m_pedPool.map.erase ( iter );
         }
 
-
         // Delete the element from memory
-        switch ( pPedSA->GetType () )
-        {
-            case PLAYER_PED:
-            {
-                CPlayerPedSA* pPlayerPed = dynamic_cast < CPlayerPedSA* > ( pPedSA );
-                if ( pPlayerPed )
-                {
-                    if ( ! bDelete )
-                        pPlayerPed->SetDoNotRemoveFromGameWhenDeleted ( true );
-                }
+        pPedSA->SetDoNotRemoveFromGameWhenDeleted ( true );
 
-                delete pPlayerPed;
-
-                break;
-            }
-
-            default:
-            {
-                CCivilianPedSA* pCivPed = dynamic_cast < CCivilianPedSA* > ( pPedSA );
-                if ( pCivPed )
-                {
-                    if ( ! bDelete )
-                        pCivPed->SetDoNotRemoveFromGameWhenDeleted ( true );
-                }
-
-                delete pCivPed;
-            }
-        }
+        delete pPlayerPed;
 
         // Decrease the count of elements in the pool
         --m_pedPool.ulCount;
@@ -922,11 +878,11 @@ CEntity * CPoolsSA::GetEntity ( DWORD* pGameInterface )
 CBuilding * CPoolsSA::AddBuilding ( DWORD dwModelID )
 {
     DEBUG_TRACE("CBuilding * CPoolsSA::AddBuilding ( DWORD dwModelID )");
-    if (m_ulBuildingCount <= MAX_BUILDINGS)
+    if(m_ulBuildingCount <= MAX_BUILDINGS)
     {
-        for (int i = 0;i<MAX_BUILDINGS;i++)
+        for(int i = 0;i<MAX_BUILDINGS;i++)
         {
-            if (Buildings[i] == 0)
+            if(Buildings[i] == 0)
             {
                 CBuildingSA * pBuilding = new CBuildingSA(dwModelID);
                 Buildings[i] = pBuilding;

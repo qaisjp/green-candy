@@ -20,6 +20,18 @@ extern CGameSA * pGame;
 
 unsigned long CEntitySA::FUNC_CClumpModelInfo__GetFrameFromId;
 unsigned long CEntitySA::FUNC_RwFrameGetLTM;
+
+CEntitySA::CEntitySA ( void )
+{
+    // Set these variables to a constant state
+    m_pInterface = NULL;
+    internalID = 0;
+    BeingDeleted = false;
+    DoNotRemoveFromGame = false;
+    m_pStoredPointer = NULL;
+    m_ulArrayID = 0;
+}
+
 /*VOID CEntitySA::SetModelAlpha ( int iAlpha )
 {
     this->internalInterface->ModelClump->SetAlpha(iAlpha);
@@ -61,58 +73,25 @@ VOID CEntitySA::SetPosition(float fX, float fY, float fZ)
 VOID CEntitySA::Teleport ( float fX, float fY, float fZ )
 {
     DEBUG_TRACE("VOID CEntitySA::Teleport ( float fX, float fY, float fZ )");
+
+    SetPosition ( fX, fY, fZ );
+
     if ( m_pInterface->Placeable.matrix )
-    {
-        SetPosition ( fX, fY, fZ );
-
-        DWORD dwFunc = m_pInterface->vtbl->Teleport;
-        DWORD dwThis = (DWORD) m_pInterface;
-        _asm
-        {
-            mov     ecx, dwThis
-            push    1
-            push    fZ
-            push    fY
-            push    fX
-            call    dwFunc
-        }
-    }
-    else
-    {
-        SetPosition ( fX, fY, fZ );
-    }
-
-
+        m_pInterface->Teleport(fX, fY, fZ, true);
 }
 
 VOID CEntitySA::ProcessControl ( void )
 {
     DEBUG_TRACE("VOID CEntitySA::ProcessControl ( void )");
-    DWORD dwFunc = m_pInterface->vtbl->ProcessControl;
-    DWORD dwThis = (DWORD) m_pInterface;
-    if ( dwFunc )
-    {
-        _asm
-        {
-            mov     ecx, dwThis
-            call    dwFunc
-        }
-    }
+    
+    m_pInterface->ProcessControl();
 }
 
 VOID CEntitySA::SetupLighting ( )
 {
     DEBUG_TRACE("VOID CEntitySA::SetupLighting ( )");
-    DWORD dwFunc = m_pInterface->vtbl->SetupLighting;
-    DWORD dwThis = (DWORD) m_pInterface;
-    if ( dwFunc )
-    {
-        _asm
-        {
-            mov     ecx, dwThis
-            call    dwFunc
-        }
-    }
+    
+    m_pInterface->SetupLighting();
 }
 
 VOID CEntitySA::Render ( )
@@ -144,6 +123,7 @@ VOID CEntitySA::SetOrientation ( float fX, float fY, float fZ )
 {
     DEBUG_TRACE("VOID CEntitySA::SetOrientation ( float fX, float fY, float fZ )");
     pGame->GetWorld()->Remove ( this );
+
     DWORD dwThis = (DWORD) m_pInterface;
     DWORD dwFunc = FUNC_SetOrientation;
     _asm
