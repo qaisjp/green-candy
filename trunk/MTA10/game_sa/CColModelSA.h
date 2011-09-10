@@ -40,6 +40,8 @@ typedef struct
 class CColModelSAInterface
 {
 public:
+                            ~CColModelSAInterface();
+
     BYTE                            pad [ 44 ];
     CColDataSA*                     pColData;
 };

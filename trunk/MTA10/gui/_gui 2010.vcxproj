@@ -65,6 +65,9 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">..\..\obj\client\gui\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">..\..\obj\client\gui\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">false</LinkIncremental>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cgui_d</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">cgui</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cgui</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

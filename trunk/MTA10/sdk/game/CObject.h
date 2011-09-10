@@ -30,7 +30,7 @@ public:
     virtual void                    SetScale            ( float fScale ) = 0;
     virtual void                    SetHealth           ( float fHealth ) = 0;
     virtual float                   GetHealth           ( void ) = 0;
-    virtual void                    SetModelIndex       ( unsigned long ulModel ) = 0;
+    virtual void                    SetModelIndex       ( unsigned short ulModel ) = 0;
 
     virtual void                    SetAlpha            ( unsigned char ucAlpha ) = 0;
     virtual unsigned char           GetAlpha            ( ) = 0;

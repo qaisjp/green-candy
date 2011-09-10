@@ -68,6 +68,9 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">..\..\obj\client\loader\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">..\..\obj\client\loader\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">false</LinkIncremental>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">loader_d</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">loader</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">loader</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>

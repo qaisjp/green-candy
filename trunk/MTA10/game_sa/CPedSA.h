@@ -21,6 +21,8 @@ class CPedSA;
 #include <game/CPed.h>
 #include <game/CWeapon.h>
 
+#include "CPedModelInfoSA.h"
+
 #include "CEntitySA.h"
 #include "CFireSA.h"
 #include "CPedIKSA.h"

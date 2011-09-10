@@ -13,6 +13,17 @@
 
 #include "StdInc.h"
 
+CColModelSAInterface::~CColModelSAInterface()
+{
+    DWORD dwFunc = FUNC_CColModel_Destructor;
+
+    _asm
+    {
+        mov     ecx, this
+        call    dwFunc
+    }
+}
+
 CColModelSA::CColModelSA ( void )
 {
     m_pInterface = new CColModelSAInterface;
@@ -38,13 +49,6 @@ CColModelSA::~CColModelSA ( void )
 {
     if ( m_bDestroyInterface )
     {
-        DWORD dwThis = ( DWORD ) m_pInterface;
-        DWORD dwFunc = FUNC_CColModel_Destructor;
-        _asm
-        {
-            mov     ecx, dwThis
-            call    dwFunc
-        }
         delete m_pInterface;
     }
 }

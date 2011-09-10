@@ -24,7 +24,7 @@ class CAnimBlendAssocGroup;
 class CAnimBlendHierarchy;
 class CAnimBlock;
 class CAnimBlendAssociation;
-struct RpClump;
+class RpClump;
 struct RwStream;
 struct AnimAssocDefinition;
 struct AnimDescriptor;

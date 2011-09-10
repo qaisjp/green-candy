@@ -71,7 +71,9 @@ public:
 
     void                    Unlink                  ( void ) {};
 
-    bool                    IsSoundStopped          ( void )                            { return m_pAudio == NULL; }                                          
+    bool                    IsSoundStopped          ( void )                            { return m_pAudio == NULL; }
+
+    bool                    IsSound3D               ( void )                            { return m_b3D; }
 
 protected:
     void                    Process3D               ( const CVector& vecPlayerPosition, const CVector& vecCameraPosition, const CVector& vecLookAt );
@@ -97,8 +99,6 @@ private:
     // Info
     bool        m_bDoneCreate;
     double      m_dLength;
-    SString     m_strStreamName;
-    SString     m_strStreamTitle;
     std::map < SString, SString >  m_SavedTags;
 
     // Saved state

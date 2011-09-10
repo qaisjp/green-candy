@@ -100,11 +100,10 @@ void CPedSA::SetModelIndex ( DWORD dwModelIndex )
     }
 
     // Also set the voice gender
-    CPedModelInfoSAInterface* pModelInfo = (CPedModelInfoSAInterface *)pGame->GetModelInfo (
-        dwModelIndex )->GetInterface ();
+    CPedModelInfoSAInterface* pModelInfo = (CPedModelInfoSAInterface *)pGame->GetModelInfo (dwModelIndex )->GetInterface ();
     if ( pModelInfo )
     {
-        DWORD dwType = pModelInfo->pedType;
+        DWORD dwType = pModelInfo->m_pedType;
         GetPedInterface ()->pedSound.m_bIsFemale = ( dwType == 5 || dwType == 22 );
     }
 }

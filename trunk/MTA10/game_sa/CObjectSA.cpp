@@ -144,7 +144,6 @@ CObjectSA::CObjectSA( DWORD dwModel )
         this->DoNotRemoveFromGame = FALSE;
         MemPutFast < BYTE > ( dwObjectPtr + 316, 6 );
         m_pInterface->bStreamingDontDelete = true;
-        m_pInterface->bDontStream = true;
     }
     else
     {
@@ -170,19 +169,13 @@ CObjectSA::~CObjectSA( )
         DWORD dwInterface = (DWORD)this->GetInterface();
         if ( dwInterface )
         {       
-            if ( (DWORD)this->GetInterface()->vtbl != VTBL_CPlaceable )
+            if ( *(DWORD*)m_pInterface != VTBL_CPlaceable )
             {
                 CWorldSA * world = (CWorldSA *)pGame->GetWorld();
                 world->Remove(this->GetInterface());
                 world->RemoveReferencesToDeletedObject(this->GetInterface());
             
-                DWORD dwFunc = this->GetInterface()->vtbl->SCALAR_DELETING_DESTRUCTOR; // we use the vtbl so we can be type independent
-                _asm    
-                {
-                    mov     ecx, dwInterface
-                    push    1           //delete too
-                    call    dwFunc
-                }
+                delete m_pInterface;
         
 #ifdef MTA_USE_BUILDINGS_AS_OBJECTS
                 DWORD dwModelID = this->internalInterface->m_nModelIndex;
@@ -200,8 +193,6 @@ CObjectSA::~CObjectSA( )
                 }
 #endif
             }
-            else
-                OutputDebugString("CRASH!!!!");
         }
 
         this->BeingDeleted = true;
@@ -260,17 +251,9 @@ float CObjectSA::GetHealth ( void )
     return *(float *)( (DWORD)this->GetInterface () + 340 );
 }
 
-void CObjectSA::SetModelIndex ( unsigned long ulModel )
+void CObjectSA::SetModelIndex ( unsigned short ulModel )
 {
-    // Jax: I'm not sure if using the vtbl is right (as ped and vehicle dont), but it works
-    DWORD dwFunc = this->GetInterface()->vtbl->SetModelIndex;
-    DWORD dwThis = (DWORD)this->GetInterface();
-    _asm    
-    {
-        mov     ecx, dwThis
-        push    ulModel
-        call    dwFunc
-    }
+    m_pInterface->SetModelIndex( ulModel );
 
     CheckForGangTag ();
 }

@@ -37,39 +37,11 @@
 #define FUNC_IsVisible                                      0x536BC0
 
 
-
 // not in CEntity really
 #define FUNC_RpAnimBlendClumpGetAssociation                 0x4D6870
 
 // replace with enum from R*
 #define STATUS_ABANDONED                    4
-
-class CEntitySAInterfaceVTBL
-{   
-public:
-    DWORD SCALAR_DELETING_DESTRUCTOR;       // +0h
-    DWORD Add_CRect;                        // +4h
-    DWORD Add;                              // +8h
-    DWORD Remove;                           // +Ch
-    DWORD SetIsStatic;                      // +10h
-    DWORD SetModelIndex;                    // +14h
-    DWORD SetModelIndexNoCreate;            // +18h
-    DWORD CreateRwObject;                   // +1Ch
-    DWORD DeleteRwObject;                   // +20h
-    DWORD GetBoundRect;                     // +24h
-    DWORD ProcessControl;                   // +28h
-    DWORD ProcessCollision;                 // +2Ch
-    DWORD ProcessShift;                     // +30h
-    DWORD TestCollision;                    // +34h
-    DWORD Teleport;                         // +38h
-    DWORD SpecialEntityPreCollisionStuff;   // +3Ch
-    DWORD SpecialEntityCalcCollisionSteps;  // +40h
-    DWORD PreRender;                        // +44h
-    DWORD Render;                           // +48h
-    DWORD SetupLighting;                    // +4Ch
-    DWORD RemoveLighting;                   // +50h
-    DWORD FlagToDestroyWhenNextProcessed;   // +54h
-};
 
 
 /** 
@@ -94,13 +66,38 @@ public:
     CMatrix_Padded                  * matrix;
 };
 
-class CEntitySAInterface;
+struct CRect {
+    float fX1, fY1, fX2, fY2;
+};
 
 class CEntitySAInterface
 {
 public:
-    CEntitySAInterfaceVTBL      * vtbl; // the virtual table
-    
+    // Why not make it into a virtual table?
+    virtual                         ~CEntitySAInterface() = 0;
+
+    virtual void __thiscall         AddRect( CRect rect ) = 0;
+    virtual bool __thiscall         AddToWorld() = 0;
+    virtual void __thiscall         RemoveFromWorld() = 0;
+    virtual void __thiscall         SetStatic( bool enabled ) = 0;
+    virtual bool __thiscall         SetModelIndex( unsigned short id ) = 0;
+    virtual bool __thiscall         SetModelIndexNoCreate( unsigned short id ) = 0;
+    virtual RpClump __thiscall      CreateRwObject() = 0;
+    virtual void __thiscall         DeleteRwObject() = 0;
+    virtual void __thiscall         GetBoundingBox( CBoundingBox box ) = 0;
+    virtual void __thiscall         ProcessControl() = 0;
+    virtual void __thiscall         ProcessCollision() = 0;
+    virtual void __thiscall         ProcessShift() = 0;
+    virtual bool __thiscall         TestCollision() = 0;
+    virtual void __thiscall         Teleport( float x, float y, float z, int unk ) = 0;
+    virtual void __thiscall         PreFrame() = 0;
+    virtual void __thiscall         Frame() = 0;
+    virtual void __thiscall         PreRender() = 0;
+    virtual void __thiscall         Render() = 0;
+    virtual void __thiscall         SetupLighting() = 0;
+    virtual void __thiscall         RemoveLighting() = 0;
+    virtual void __thiscall         SafeDestroy() = 0;
+
     CPlaceableSAInterface   Placeable; // 4
 
     RpClump     * m_pRwObject; // 24
@@ -176,7 +173,7 @@ class CEntitySA : public virtual CEntity
 {
     friend class COffsets;
 public:
-                                CEntitySA           ( void ) { m_pStoredPointer = NULL; m_ulArrayID = 0; };
+                                CEntitySA           ( void );
 
     CEntitySAInterface*         m_pInterface;
 

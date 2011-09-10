@@ -170,55 +170,6 @@ typedef struct
     WORD  padding;
 } SRailNodeSA;
 
-class CVehicleSAInterfaceVTBL : public CEntitySAInterfaceVTBL
-{
-public:
-    DWORD ProcessEntityCollision;           // +58h
-    DWORD ProcessControlCollisionCheck;     // +5Ch
-    DWORD ProcessControlInputs;             // +60h
-    DWORD GetComponentWorldPosition;        // +64h
-    DWORD IsComponentPresent;               // +68h
-    DWORD OpenDoor;                         // +6Ch
-    DWORD ProcessOpenDoor;                  // +70h
-    DWORD GetDoorAngleOpenRatio;            // +74h
-    DWORD GetDoorAngleOpenRatio_;           // +78h
-    DWORD IsDoorReady;                      // +7Ch
-    DWORD IsDoorReady_;                     // +80h
-    DWORD IsDoorFullyOpen;                  // +84h
-    DWORD IsDoorFullyOpen_;                 // +88h
-    DWORD IsDoorClosed;                     // +8Ch
-    DWORD IsDoorClosed_;                    // +90h
-    DWORD IsDoorMissing;                    // +94h
-    DWORD IsDoorMissing_;                   // +98h
-    DWORD IsOpenTopCar;                     // +9Ch
-    DWORD RemoveRefsToVehicle;              // +A0h
-    DWORD BlowUpCar;                        // +A4h
-    DWORD BlowUpCarCutSceneNoExtras;        // +A8h
-    DWORD SetUpWheelColModel;               // +ACh
-    DWORD BurstTyre;                        // +B0h
-    DWORD IsRoomForPedToLeaveCar;           // +B4h
-    DWORD ProcessDrivingAnims;              // +B8h
-    DWORD GetRideAnimData;                  // +BCh
-    DWORD SetupSuspensionLines;             // +C0h
-    DWORD AddMovingCollisionSpeed;          // +C4h
-    DWORD Fix;                              // +C8h
-    DWORD SetupDamageAfterLoad;             // +CCh
-    DWORD DoBurstAndSoftGroundRatios;       // +D0h
-    DWORD GetHeightAboveRoad;               // +D4h
-    DWORD PlayCarHorn;                      // +D8h
-    DWORD GetNumContactWheels;              // +DCh
-    DWORD VehicleDamage;                    // +E0h
-    DWORD CanPedStepOutCar;                 // +E4h
-    DWORD CanPedJumpOutCar;                 // +E8h
-    DWORD GetTowHitchPos;                   // +ECh
-    DWORD GetTowbarPos;                     // +F0h
-    DWORD SetTowLink;                       // +F4h
-    DWORD BreakTowLink;                     // +F8h
-    DWORD FindWheelWidth;                   // +FCh
-    DWORD Save;                             // +100h
-    DWORD Load;                             // +104h
-};
-
 struct CVehicleFlags
 {
     unsigned char bIsLawEnforcer: 1; // Is this guy chasing the player at the moment
@@ -353,6 +304,51 @@ class CAutoPilot
 class CVehicleSAInterface : public CPhysicalSAInterface
 {
 public:
+    virtual void __thiscall         ProcessEntityCollisions() = 0;
+    virtual void __thiscall         ProcessControlCollisionCheck() = 0;
+    virtual void __thiscall         ProcessControlInputs() = 0;
+    virtual void __thiscall         GetComponentWorldPosition() = 0;
+    virtual bool __thiscall         IsComponentPresent() = 0;
+    virtual void __thiscall         OpenDoor(bool closed, unsigned int node, unsigned int door, float ratio, bool makeNoise) = 0;
+    virtual void __thiscall         ProcessDoorOpen() = 0;
+    virtual float __thiscall        GetDoorAngleOpenRatio() = 0;
+    virtual float __thiscall        GetDoorAngleOpenRatioInternal() = 0;
+    virtual bool __thiscall         IsDoorReady() = 0;
+    virtual bool __thiscall         IsDoorReadyInternal() = 0;
+    virtual bool __thiscall         IsDoorFullyOpen() = 0;
+    virtual bool __thiscall         IsDoorFullyOpenInternal() = 0;
+    virtual bool __thiscall         IsDoorClosed() = 0;
+    virtual bool __thiscall         IsDoorClosedInternal() = 0;
+    virtual bool __thiscall         IsDoorMissing() = 0;
+    virtual bool __thiscall         IsDoorMissingInternal() = 0;
+    virtual bool __thiscall         IsOpenTopCar() = 0;
+    virtual void __thiscall         RemoveVehicleReferences() = 0;
+    virtual void __thiscall         Blow( CEntity *cause, unsigned long unk ) = 0;
+    virtual void __thiscall         BlowWithCutscene( unsigned long unk, unsigned long unk2, unsigned long unk3, unsigned long unk4 ) = 0;
+    virtual void __thiscall         InitWheels() = 0;
+    virtual void __thiscall         BurstTyre( unsigned char tyre, unsigned int unk ) = 0;
+    virtual bool __thiscall         CanPedLeaveCar() = 0;
+    virtual void __thiscall         ProcessDrivingAnims() = 0;
+    virtual void __thiscall         GetRideAnimData() = 0;
+    virtual void __thiscall         SetupSuspension() = 0;
+    virtual void __thiscall         AddMovingCollisionSpeed() = 0;
+    virtual void __thiscall         Fix() = 0;
+    virtual void __thiscall         SetupDamageAfterLoad() = 0;
+    virtual void __thiscall         DoBurstAndSoftGroundRatios() = 0;
+    virtual float __thiscall        GetModelOffset() = 0;
+    virtual void __thiscall         PlayHorn() = 0;
+    virtual unsigned int __thiscall GetNumContactWheels() = 0;
+    virtual void __thiscall         DamageVehicle() = 0;
+    virtual bool __thiscall         CanPedStepOutCar() = 0;
+    virtual bool __thiscall         CanPedJumpOutCar() = 0;
+    virtual bool __thiscall         GetTowHitchPosition( CVector *pos, unsigned int unk, unsigned int unk2 ) = 0;
+    virtual bool __thiscall         GetTowbarPosition( CVector *pos, unsigned int unk, unsigned int unk2 ) = 0;
+    virtual bool __thiscall         SetTowLink( CVehicleSAInterface *towVehicle, unsigned int unk ) = 0;
+    virtual bool __thiscall         BreakTowLink() = 0;
+    virtual float __thiscall        GetWheelWidth() = 0;
+    virtual void __thiscall         Save() = 0;
+    virtual void __thiscall         Load() = 0;
+
     //char        pad [1158];     /* IMPORTANT: KEEP THIS UP-TO-DATE */
     //FLOAT       fDamage;
     CAEVehicleAudioEntity m_VehicleAudioEntity; // 312

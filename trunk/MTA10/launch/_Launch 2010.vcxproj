@@ -68,6 +68,9 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">..\..\obj\client\launch\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">..\..\obj\client\launch\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">false</LinkIncremental>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Multi Theft Auto Debug</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">Multi Theft Auto</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Multi Theft Auto</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>

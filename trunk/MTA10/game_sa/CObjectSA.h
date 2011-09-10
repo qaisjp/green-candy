@@ -48,7 +48,7 @@ public:
     void                        SetScale            ( float fScale );
     void                        SetHealth           ( float fHealth );
     float                       GetHealth           ( void );
-    void                        SetModelIndex       ( unsigned long ulModel );
+    void                        SetModelIndex       ( unsigned short ulModel );
 
     inline void                 SetAlpha            ( unsigned char ucAlpha ) { m_ucAlpha = ucAlpha; }
     inline unsigned char        GetAlpha            ( ) { return m_ucAlpha; }

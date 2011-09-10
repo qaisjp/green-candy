@@ -110,6 +110,7 @@ CPlayerPedSA::CPlayerPedSA ( CPlayerPedSAInterface * pPlayer )
     this->SetType ( PLAYER_PED );
 
     m_bIsLocal = true;
+    DoNotRemoveFromGame = true;
     m_pData = GetPlayerPedInterface ()->pPlayerData;
     m_pWanted = NULL;
 
@@ -135,22 +136,13 @@ CPlayerPedSA::~CPlayerPedSA ( void )
     DEBUG_TRACE("CPlayerPedSA::~CPlayerPedSA( )");
     if(!this->BeingDeleted && DoNotRemoveFromGame == false)
     {
-        DWORD dwInterface = (DWORD) m_pInterface;
-        
-        if ( (DWORD)this->GetInterface()->vtbl != VTBL_CPlaceable )
+        if ( *(DWORD*)m_pInterface != VTBL_CPlaceable )
         {
             CWorldSA * world = (CWorldSA *)pGame->GetWorld();
             world->Remove ( m_pInterface );
             world->RemoveReferencesToDeletedObject ( m_pInterface );
         
-            DWORD dwThis = (DWORD) m_pInterface;
-            DWORD dwFunc = m_pInterface->vtbl->SCALAR_DELETING_DESTRUCTOR; // we use the vtbl so we can be type independent
-            _asm    
-            {
-                mov     ecx, dwThis
-                push    1           //delete too
-                call    dwFunc
-            }
+            delete m_pInterface;
         }
         this->BeingDeleted = true;
         ((CPoolsSA *)pGame->GetPools())->RemovePed((CPed *)(CPedSA *)this, false);

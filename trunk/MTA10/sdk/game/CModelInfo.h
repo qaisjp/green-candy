@@ -55,19 +55,19 @@ class CModelInfo
 public:
     virtual class CBaseModelInfoSAInterface *     GetInterface            ( void ) = 0;
 
-    virtual DWORD           GetModel                () = 0;
-    virtual BOOL            IsBoat                  () = 0;
-    virtual BOOL            IsCar                   () = 0;
-    virtual BOOL            IsTrain                 () = 0;
-    virtual BOOL            IsHeli                  () = 0;
-    virtual BOOL            IsPlane                 () = 0;
-    virtual BOOL            IsBike                  () = 0;
-    virtual BOOL            IsFakePlane             () = 0;
-    virtual BOOL            IsMonsterTruck          () = 0;
-    virtual BOOL            IsQuadBike              () = 0;
-    virtual BOOL            IsBmx                   () = 0;
-    virtual BOOL            IsTrailer               () = 0;
-    virtual BOOL            IsVehicle               () = 0;
+    virtual unsigned short  GetModel                () = 0;
+    virtual bool            IsBoat                  () = 0;
+    virtual bool            IsCar                   () = 0;
+    virtual bool            IsTrain                 () = 0;
+    virtual bool            IsHeli                  () = 0;
+    virtual bool            IsPlane                 () = 0;
+    virtual bool            IsBike                  () = 0;
+    virtual bool            IsFakePlane             () = 0;
+    virtual bool            IsMonsterTruck          () = 0;
+    virtual bool            IsQuadBike              () = 0;
+    virtual bool            IsBmx                   () = 0;
+    virtual bool            IsTrailer               () = 0;
+    virtual bool            IsVehicle               () = 0;
 
     virtual char*           GetNameIfVehicle        () = 0;
 
@@ -114,7 +114,6 @@ public:
 
     // Call this to make sure the custom vehicle models are being used after a load.
     virtual void            MakeCustomModel         ( void ) = 0;
-    virtual RwObject*       GetRwObject             ( void ) = 0;
 };
 
 #endif
