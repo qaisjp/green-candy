@@ -59,6 +59,9 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\Debug\</IntDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">../../\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">..\..\..\obj\vendor\pme\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">pme_d</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">pme</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">pme</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

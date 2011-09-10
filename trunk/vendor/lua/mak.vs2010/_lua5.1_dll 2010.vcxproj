@@ -60,6 +60,9 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">../../\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">..\..\..\obj\vendor\lua51_dll\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">false</LinkIncremental>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">lua5.1d</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">lua5.1</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">lua5.1</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

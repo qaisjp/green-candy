@@ -56,6 +56,9 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\Win32_LIB_Debug\</IntDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">../\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\Win32_LIB_Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">zlib_d</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">zlib</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">zlib</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">
     <ClCompile>
