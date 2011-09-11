@@ -80,10 +80,34 @@ public:
         }
     }
 
+    type*   Get( unsigned int id )
+    {
+        return (id >= m_max) && !(m_flags[id] & 0x80) ? &m_pool[id] ? NULL;
+    }
+
+    unsigned int    GetIndex( type *entity )
+    {
+        return (unsigned int)(entity - m_pool) / sizeof(type);
+    }
+
+    void    Free( unsigned int id )
+    {
+        if ( id >= m_max )
+            return;
+
+        m_flags[id] |= 0x80;
+        m_numActive--;
+    }
+
+    void    Free( type *entity )
+    {
+        Free(GetIndex(entity));
+    }
+
     type*           m_pool;
     unsigned char*  m_flags;
     unsigned int    m_max;
-    unsigned int    m_numActive;
+    unsigned int    m_active;
     bool            m_poolActive;
 };
 

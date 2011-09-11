@@ -13,6 +13,31 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
+#define FUNC_InitVehicleData                0x005B8F00
+#define FUNC_LoadVehicleColors              0x005B6890
+#define FUNC_LoadCarMods                    0x005B65A0
+#define FUNC_LoadVehicleParticles           0x004C8780
+
+void    Hook_InitVehicleData()
+{
+    DWORD dwFunc;
+
+    __asm
+    {
+        mov dwFunc,FUNC_LoadVehicleColors
+        call dwFunc
+        mov dwFunc,FUNC_LoadCarMods
+        call dwFunc
+        mov dwFunc,FUNC_LoadVehicleParticles
+        call dwFunc
+    }
+}
+
+void    VehicleModels_Init()
+{
+    HookInstall(FUNC_InitVehicleData, HOOK_InitVehicleData, 5);
+}
+
 CVehicleModelInfoSAInterface::CVehicleModelInfoSAInterface()
 {
 

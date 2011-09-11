@@ -692,6 +692,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CTextureManagerSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CTheCarGeneratorsSA.cpp"
 				>
 			</File>
@@ -1194,6 +1198,10 @@
 			</File>
 			<File
 				RelativePath=".\CTextSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CTextureManagerSA.h"
 				>
 			</File>
 			<File

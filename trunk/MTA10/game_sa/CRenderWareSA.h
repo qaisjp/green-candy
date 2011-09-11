@@ -5,6 +5,7 @@
 *  FILE:        game_sa/CRenderWareSA.h
 *  PURPOSE:     Header file for RenderWare game engine class
 *  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -64,27 +65,12 @@ class CRenderWareSA : public CRenderWare
                         CRenderWareSA               ( enum eGameVersion version );
                         ~CRenderWareSA              ( void ) {};
 
-    // Adds textures into the TXD of a model, eventually making a copy of each texture first
-    void                ModelInfoTXDAddTextures     ( std::list < RwTexture* >& textures, unsigned short usModelID, bool bMakeCopy = true, std::list < RwTexture* >* pReplacedTextures = NULL, std::list < RwTexture* >* pAddedTextures = NULL, bool bAddRef = true );
-
-    // Removes texture from the TXD of a model, eventually destroying each texture
-    void                ModelInfoTXDRemoveTextures  ( std::list < RwTexture* >& textures, unsigned short usModelID, bool bDestroy = true, bool bKeepRaster = false, bool bRemoveRef = true );
-
-    // Reads and parses a TXD file specified by a path (szTXD)
-    RwTexDictionary *   ReadTXD                     ( const char *szTXD );
-
     // Reads and parses a DFF file specified by a path (szDFF) into a CModelInfo identified by the object id (usModelID)
     // uiModelID == 0 means no collisions will be loaded (be careful! seems crashy!)
     RpClump *           ReadDFF                     ( const char * szDFF, unsigned short usModelID );
 
     // Destroys a DFF instance
     void                DestroyDFF                  ( RpClump * pClump );
-
-    // Destroys a TXD instance
-    void                DestroyTXD                  ( RwTexDictionary * pTXD );
-
-    // Destroys a texture
-    void                DestroyTexture              ( RwTexture* pTex );
 
     // Reads and parses a COL3 file with an optional collision key name
     CColModel *         ReadCOL                     ( const char * szCOLFile );
@@ -120,42 +106,6 @@ class CRenderWareSA : public CRenderWare
     // Replaces dynamic parts of the vehicle (models that have two different versions: 'ok' and 'dam'), such as doors
     // szName should be without the part suffix (e.g. 'door_lf' or 'door_rf', and not 'door_lf_dummy')
     bool                ReplacePartModels           ( RpClump * pClump, RpAtomicContainer * pAtomics, unsigned int uiAtomics, const char * szName );
-
-    ushort              GetTXDIDForModelID          ( ushort usModelID );
-    void                InitWorldTextureWatch       ( PFN_WATCH_CALLBACK pfnWatchCallback );
-    bool                AddWorldTextureWatch        ( CSHADERDUMMY* pShaderData, const char* szMatch, float fOrderPriority );
-    void                RemoveWorldTextureWatch     ( CSHADERDUMMY* pShaderData, const char* szMatch );
-    void                RemoveWorldTextureWatchByContext ( CSHADERDUMMY* pShaderData );
-    void                PulseWorldTextureWatch      ( void );
-    void                GetModelTextureNames        ( std::vector < SString >& outNameList, ushort usModelID );
-    void                GetTxdTextures              ( std::vector < RwTexture* >& outTextureList, ushort usTxdId );
-    const SString&      GetTextureName              ( CD3DDUMMY* pD3DData );
-
-private:
-    static void         RwTexDictionaryRemoveTexture( RwTexDictionary* pTXD, RwTexture* pTex );
-    static short        CTxdStore_GetTxdRefcount    ( unsigned short usTxdID );
-    static bool         ListContainsNamedTexture    ( std::list < RwTexture* >& list, const char* szTexName );
-    static bool         StaticGetTextureCB          ( RwTexture* texture, std::vector < RwTexture* >* pTextureList );
-    void                AddActiveTexture            ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData );
-    void                RemoveTxdActiveTextures     ( ushort usTxdId );
-    void                FindNewAssociationForTexInfo( STexInfo* pTexInfo );
-    STexInfo*           CreateTexInfo               ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData );
-    void                OnDestroyTexInfo            ( STexInfo* pTexInfo );
-    SShadInfo*          CreateShadInfo              ( CSHADERDUMMY* pShaderData, const SString& strTextureName, float fOrderPriority );
-    void                OnDestroyShadInfo           ( SShadInfo* pShadInfo );
-    void                MakeAssociation             ( SShadInfo* pShadInfo, STexInfo* pTexInfo );
-    void                BreakAssociation            ( SShadInfo* pShadInfo, STexInfo* pTexInfo );
-
-    // Watched world textures
-    std::list < SShadInfo >                 m_ShadInfoList;
-    std::list < STexInfo >                  m_TexInfoList;
-
-    std::map < SString, STexInfo* >         m_UniqueTexInfoMap;
-    std::map < CD3DDUMMY*, STexInfo* >      m_D3DDataTexInfoMap;
-    std::map < SString, SShadInfo* >        m_UniqueShadInfoMap;
-    std::multimap < float, SShadInfo* >     m_orderMap;
-
-    PFN_WATCH_CALLBACK                      m_pfnWatchCallback;
 };
 
 #endif
