@@ -66,6 +66,9 @@ typedef RwMatrix *              (__cdecl *RwMatrixTranslate_t)                  
 typedef RwMatrix *              (__cdecl *RwMatrixScale_t)                      (RwMatrix * matrix, const RwV3d * translation, RwTransformOrder order);
 typedef RpMaterial *            (__cdecl *RpMaterialCreate_t)                   (void);
 typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial * mat);
+typedef RwTexDictionary *       (__cdecl *RwTexDictionaryFind_t)                (const char *name);
+typedef RwTexDictionary *       (__cdecl *RwTexDictionaryCreate_t)              (const char *name);
+typedef void                    (__cdecl *RwTexDictionaryRead_t)                (
 typedef RwTexDictionary *       (__cdecl *RwTexDictionarySetCurrent_t)          (RwTexDictionary * dict);
 typedef const RwTexDictionary * (__cdecl *RwTexDictionaryForAllTextures_t)      (const RwTexDictionary * dict, void * callback, void * data);
 typedef RwTexture *             (__cdecl *RwTexDictionaryAddTexture_t)          (RwTexDictionary * dict, RwTexture * texture);
