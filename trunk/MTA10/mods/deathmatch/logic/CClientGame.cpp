@@ -2659,68 +2659,67 @@ void CClientGame::DrawTasks ( CClientPlayer* pPlayer )
 {
     CTask* pTask = NULL;
     CTask* pSubTask = NULL;
+    CTaskManager *man;
 
     // Got a local player model
-    if ( pPlayer )
-    {
-        CTaskManager *man = pPlayer->GetTaskManager ();
-        if(man == NULL) return;
-        if((unsigned long)man == 0xDDDDDDDD) {
-            m_pDisplayManager->DrawText2D ( "HELP! MANAGER FUCKED", CVector ( 0.05f, 0.5f,0 ), 1.0f );
-            return;
-        }
+    if ( !pPlayer )
+        return;
 
-        // Grab the current task
-        SString strOutput;
-        SString strSubOutput;
+    man = pPlayer->GetTaskManager ();
 
-        pTask = man->GetTask ( TASK_PRIORITY_PHYSICAL_RESPONSE );
-        strOutput += SString ( "Physical Response: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
-        strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+    if ( !man )
+        return;
 
-        pTask = man->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_TEMP );
-        strOutput += SString ( "Event Response Temp: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
-        strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+    // Grab the current task
+    SString strOutput;
+    SString strSubOutput;
 
-        pTask = man->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
-        strOutput += SString ( "Event Response Non-temp: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
-        strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+    pTask = man->GetTask ( TASK_PRIORITY_PHYSICAL_RESPONSE );
+    strOutput += SString ( "Physical Response: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
+    strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
 
-        pTask = man->GetTask ( TASK_PRIORITY_PRIMARY );
-        strOutput += SString ( "Primary: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
-        strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+    pTask = man->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_TEMP );
+    strOutput += SString ( "Event Response Temp: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
+    strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
 
-        pTask = man->GetTask ( TASK_PRIORITY_DEFAULT );
-        strOutput += SString ( "Default: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
-        strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+    pTask = man->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
+    strOutput += SString ( "Event Response Non-temp: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
+    strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
 
-        pTask = man->GetTaskSecondary ( TASK_SECONDARY_ATTACK );
-        strOutput += SString ( "Secondary Attack: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
-        strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+    pTask = man->GetTask ( TASK_PRIORITY_PRIMARY );
+    strOutput += SString ( "Primary: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
+    strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
 
-        pTask = man->GetTaskSecondary ( TASK_SECONDARY_DUCK );
-        strOutput += SString ( "Secondary Duck: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
-        strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+    pTask = man->GetTask ( TASK_PRIORITY_DEFAULT );
+    strOutput += SString ( "Default: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
+    strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
 
-        pTask = man->GetTaskSecondary ( TASK_SECONDARY_SAY );
-        strOutput += SString ( "Secondary Say: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
-        strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+    pTask = man->GetTaskSecondary ( TASK_SECONDARY_ATTACK );
+    strOutput += SString ( "Secondary Attack: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
+    strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
 
-        pTask = man->GetTaskSecondary ( TASK_SECONDARY_FACIAL_COMPLEX );
-        strOutput += SString ( "Secondary Facial Complex: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
-        strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+    pTask = man->GetTaskSecondary ( TASK_SECONDARY_DUCK );
+    strOutput += SString ( "Secondary Duck: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
+    strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
 
-        pTask = man->GetTaskSecondary ( TASK_SECONDARY_PARTIAL_ANIM );
-        strOutput += SString ( "Secondary Partial Anim: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
-        strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+    pTask = man->GetTaskSecondary ( TASK_SECONDARY_SAY );
+    strOutput += SString ( "Secondary Say: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
+    strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
 
-        pTask = man->GetTaskSecondary ( TASK_SECONDARY_IK );
-        strOutput += SString ( "Secondary IK: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
-        strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+    pTask = man->GetTaskSecondary ( TASK_SECONDARY_FACIAL_COMPLEX );
+    strOutput += SString ( "Secondary Facial Complex: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
+    strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
 
-        m_pDisplayManager->DrawText2D ( strOutput, CVector ( 0.05f, 0.5f,0 ), 1.0f );
-        m_pDisplayManager->DrawText2D ( strSubOutput, CVector ( 0.5f, 0.5f,0 ), 1.0f );
-    }
+    pTask = man->GetTaskSecondary ( TASK_SECONDARY_PARTIAL_ANIM );
+    strOutput += SString ( "Secondary Partial Anim: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
+    strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+
+    pTask = man->GetTaskSecondary ( TASK_SECONDARY_IK );
+    strOutput += SString ( "Secondary IK: %s\n", pTask ? ( pTask->GetTaskName () ) : ( "N/A" ) );
+    strSubOutput += SString ( "%s\n", pTask && pTask->GetSubTask () ? ( pTask->GetSubTask ()->GetTaskName () ) : ( "N/A" ) );
+
+    m_pDisplayManager->DrawText2D ( strOutput, CVector ( 0.05f, 0.5f,0 ), 1.0f );
+    m_pDisplayManager->DrawText2D ( strSubOutput, CVector ( 0.5f, 0.5f,0 ), 1.0f );
 }
 
 int iPlayerTask = 0;
