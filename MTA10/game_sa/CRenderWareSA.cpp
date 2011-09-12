@@ -202,6 +202,8 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
             RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B470;
             RwErrorGet                          = (RwErrorGet_t)                            0x008088C0;
             RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECF30;
+            RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007ECA10;
+            RwStreamReadTexture                 = (RwStreamReadTexture_t)                   0x00730E60;
             RwStreamClose                       = (RwStreamClose_t)                         0x007ECE60;
             RpClumpDestroy                      = (RpClumpDestroy_t)                        0x0074A360;
             RpClumpGetNumAtomics                = (RpClumpGetNumAtomics_t)                  0x00749930;
@@ -211,6 +213,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
             RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B40;
             RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A4E0;
             RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
+            RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
             RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70; 
             RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3AD0;
             RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3AB0;
@@ -290,7 +293,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
             RpClumpDestroy                      = (RpClumpDestroy_t)                        0x0074A310;
             RpClumpGetNumAtomics                = (RpClumpGetNumAtomics_t)                  0x007498E0;
             RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E30;
-            RpClumpForAllAtomicsPointer                = (RpClumpForAllAtomicsPointer_t)                  0x00749B70;
+            RpClumpForAllAtomicsPointer         = (RpClumpForAllAtomicsPointer_t)           0x00749B70;
             RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B00;
             RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A490;
             RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF20;
@@ -483,32 +486,6 @@ void CRenderWareSA::ModelInfoTXDRemoveTextures ( std::list < RwTexture* >& textu
     // Delete the reference we made in ModelInfoTXDAddTextures
     if ( bRemoveRef )
         CTxdStore_RemoveRef ( usTxdId );
-}
-
-
-// Reads and parses a TXD file specified by a path (szTXD)
-RwTexDictionary * CRenderWareSA::ReadTXD ( const char *szTXD )
-{
-    // open the stream
-    RwStream * streamTexture = RwStreamOpen ( STREAM_TYPE_FILENAME, STREAM_MODE_READ, szTXD );
-
-    // check for errors
-    if ( streamTexture == NULL )
-        return NULL;
-
-    // TXD header id: 0x16
-    // find our txd chunk (dff loads textures, so correct loading order is: txd, dff)
-    if ( RwStreamFindChunk ( streamTexture, 0x16, NULL, NULL ) == false )
-        return NULL;
-
-    // read the texture dictionary from our model (txd)
-    RwTexDictionary *pTex = RwTexDictionaryStreamRead ( streamTexture );
-
-    // close the stream
-    RwStreamClose ( streamTexture, NULL );
-
-    //return pTex;
-    return pTex;
 }
 
 // Reads and parses a DFF file specified by a path (szDFF) into a CModelInfo identified by the object id (usModelID)

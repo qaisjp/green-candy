@@ -15,15 +15,11 @@
 #ifndef __CGAMESA_WEAPON
 #define __CGAMESA_WEAPON
 
-
-#include "CGameSA.h"
 #include <game/CWeapon.h>
 #include <game/CPed.h>
 
 #define FUNC_Shutdown                                   0x73A380
 #define FUNC_CWeapon_CheckForShootingVehicleOccupant    0x73f480
-
-extern CGameSA * pGame;
 
 class CWeaponSAInterface
 {
@@ -58,7 +54,7 @@ public:
     eWeaponSlot     GetSlot();
 
     VOID            SetAsCurrentWeapon();
-    CWeaponInfo     * GetInfo() { return pGame->GetWeaponInfo(internalInterface->m_eWeaponType); };
+    CWeaponInfo*    GetInfo();
 
     void            Remove ();
 };

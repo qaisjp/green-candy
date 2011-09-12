@@ -292,5 +292,7 @@ private:
     std::map < std::string, SCheatSA* > m_Cheats;
 };
 
+extern CGameSA *pGame;
+
 #endif
 

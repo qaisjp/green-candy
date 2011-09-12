@@ -10,12 +10,8 @@
 *
 *****************************************************************************/
 
-#include "CGameSA.h"
-
 #ifndef __CGAMESA_INIT
 #define __CGAMESA_INIT
-
-extern CGameSA * pGame;
 
 //
 // Use MemSet/Cpy/Put/Add for the following memory regions:

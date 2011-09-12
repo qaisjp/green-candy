@@ -146,7 +146,8 @@ enum eRwType
 {
     RW_NULL,
     RW_ATOMIC,
-    RW_CLUMP
+    RW_CLUMP,
+    RW_TXD = 6
 };
 
 // RenderWare/plugin base types

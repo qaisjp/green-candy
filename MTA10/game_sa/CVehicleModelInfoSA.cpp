@@ -21,6 +21,7 @@
 void    Hook_InitVehicleData()
 {
     DWORD dwFunc;
+    CTxdInstanceSA *txdEntry;
 
     __asm
     {
@@ -30,6 +31,28 @@ void    Hook_InitVehicleData()
         call dwFunc
         mov dwFunc,FUNC_LoadVehicleParticles
         call dwFunc
+    }
+
+    // Load the generic vehicle textures
+    txdEntry = pGame->GetTextureManager()->FindTxdEntry( "vehicle" );
+
+    if ( txdEntry )
+        txdEntry->LoadTXD( "MODELS\\GENERIC\\VEHICLE.TXD" );
+    else
+        txdEntry = pTxdPool->Get(pGame->GetTextureManager()->LoadDictionaryEx( "vehicle", "MODELS\\GENERIC\\VEHICLE.TXD" ));
+
+    // Reference it
+    txdEntry->Reference();
+
+    *(RwTexture*)0x00B4E68C = RwTexDictionaryFindNamedTexture( txdEntry->m_txd, "vehiclelights128" );
+    *(RwTexture*)0x00B4E690 = RwTexDictionaryFindNamedTexture( txdEntry->m_txd, "vehiclelightson128" );
+
+    m_pVehicleModelPool = new CVehicleModelPool;
+
+    __asm
+    {
+        mov ecx,0x005D5BC0
+        call ecx
     }
 }
 

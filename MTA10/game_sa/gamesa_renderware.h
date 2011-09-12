@@ -66,14 +66,13 @@ typedef RwMatrix *              (__cdecl *RwMatrixTranslate_t)                  
 typedef RwMatrix *              (__cdecl *RwMatrixScale_t)                      (RwMatrix * matrix, const RwV3d * translation, RwTransformOrder order);
 typedef RpMaterial *            (__cdecl *RpMaterialCreate_t)                   (void);
 typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial * mat);
-typedef RwTexDictionary *       (__cdecl *RwTexDictionaryFind_t)                (const char *name);
-typedef RwTexDictionary *       (__cdecl *RwTexDictionaryCreate_t)              (const char *name);
-typedef void                    (__cdecl *RwTexDictionaryRead_t)                (
+typedef RwTexDictionary*        (__cdecl *RwTexDictionaryCreate_t)              ();
 typedef RwTexDictionary *       (__cdecl *RwTexDictionarySetCurrent_t)          (RwTexDictionary * dict);
-typedef const RwTexDictionary * (__cdecl *RwTexDictionaryForAllTextures_t)      (const RwTexDictionary * dict, void * callback, void * data);
+typedef const RwTexDictionary * (__cdecl *RwTexDictionaryForAllTextures_t)      (const RwTexDictionary * dict, int (*callback)( RwTexture *texture, void *data ), void * data);
 typedef RwTexture *             (__cdecl *RwTexDictionaryAddTexture_t)          (RwTexDictionary * dict, RwTexture * texture);
 typedef RwTexDictionary *       (__cdecl *RwTexDictionaryGetCurrent_t)          (void);
 typedef RwTexture *             (__cdecl *RwTexDictionaryFindNamedTexture_t)    (RwTexDictionary * dict, const char* name);
+typedef int                     (__cdecl *RwTexDictionaryDestroy_t)             (RwTexDictionary *txd);
 typedef void                    (__cdecl *RpPrtStdGlobalDataSetStreamEmbedded_t)(void * value);
 typedef RpWorld *               (__cdecl *RpWorldAddAtomic_t)                   (RpWorld * world, RpAtomic * atomic);
 typedef RpWorld *               (__cdecl *RpWorldAddClump_t)                    (RpWorld * world, RpClump * clump);
@@ -83,16 +82,17 @@ typedef RwV3d *                 (__cdecl *RwV3dTransformVector_t)               
 typedef void                    (__cdecl *_rwObjectHasFrameSetFrame_t)          (void *object, RwFrame *frame);
 typedef RwCamera *              (__cdecl *RwCameraClone_t)                      (RwCamera *camera);
 typedef RpClump *               (__cdecl *RpClumpClone_t)                       (RpClump *clone);
-typedef int                     (__cdecl *RwTexDictionaryDestroy_t)             (RwTexDictionary *txd);
 typedef int                     (__cdecl *RwTextureDestroy_t)                   (RwTexture *texture);
-typedef int                     (__cdecl *RwStreamFindChunk_t)                  (RwStream *stream, unsigned int type, unsigned int *lengthOut, unsigned int *versionOut);
 typedef RpClump*                (__cdecl *RpClumpStreamRead_t)                  (RwStream *stream);
 typedef RwError*                (__cdecl *RwErrorGet_t)                         (RwError *code);
 typedef RwStream*               (__cdecl *RwStreamOpen_t)                       (RwStreamType type, RwStreamMode mode, const void *pData);
+typedef int                     (__cdecl *RwStreamFindChunk_t)                  (RwStream *stream, unsigned int type, unsigned int *lengthOut, unsigned int *versionOut);
+typedef unsigned int            (__cdecl *RwStreamReadBlocks_t)                 (RwStream *stream, unsigned int *numBlocks, unsigned int size);
+typedef RwTexture*              (__cdecl *RwStreamReadTexture_t)                (RwStream *stream);
 typedef int                     (__cdecl *RwStreamClose_t)                      (RwStream *stream, void *pData);
 typedef int                     (__cdecl *RpClumpDestroy_t)                     (RpClump *clump);
 typedef RpAtomic*               (__cdecl *RpClumpGetLastAtomic_t)               (RpClump *clump);
-typedef RpClump*                (__cdecl *RpClumpForAllAtomicsPointer_t)        (RpClump *clump, void* callback, void* pData);
+typedef RpClump*                (__cdecl *RpClumpForAllAtomicsPointer_t)        (RpClump *clump, void *callback, void* pData);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryStreamRead_t)          (RwStream *stream);
 typedef RwRaster*               (__cdecl *RwRasterUnlock_t)                     (RwRaster *raster);
 typedef RwRaster*               (__cdecl *RwRasterLock_t)                       (RwRaster *raster, unsigned char level, int lockmode);
@@ -108,6 +108,8 @@ RwStreamFindChunk_t                     RwStreamFindChunk                       
 RpClumpStreamRead_t                     RpClumpStreamRead                       = (RpClumpStreamRead_t)                     0xDEAD;
 RwErrorGet_t                            RwErrorGet                              = (RwErrorGet_t)                            0xDEAD;
 RwStreamOpen_t                          RwStreamOpen                            = (RwStreamOpen_t)                          0xDEAD;
+RwStreamReadBlocks_t                    RwStreamReadBlocks                      = (RwStreamReadBlocks_t)                    0xDEAD;
+RwStreamReadTexture_t                   RwStreamReadTexture                     = (RwStreamReadTexture_t)                   0xDEAD;
 RwStreamClose_t                         RwStreamClose                           = (RwStreamClose_t)                         0xDEAD;
 RpClumpDestroy_t                        RpClumpDestroy                          = (RpClumpDestroy_t)                        0xDEAD;
 RpClumpGetNumAtomics_t                  RpClumpGetNumAtomics                    = (RpClumpGetNumAtomics_t)                  0xDEAD;
@@ -117,6 +119,7 @@ RpClumpForAllAtomicsPointer_t           RpClumpForAllAtomicsPointer             
 RwFrameAddChild_t                       RwFrameAddChild                         = (RwFrameAddChild_t)                       0xDEAD;
 RpClumpAddAtomic_t                      RpClumpAddAtomic                        = (RpClumpAddAtomic_t)                      0xDEAD;
 RpAtomicSetFrame_t                      RpAtomicSetFrame                        = (RpAtomicSetFrame_t)                      0xDEAD;
+RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 0xDEAD;
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             0xDEAD;
 RwTexDictionaryGetCurrent_t             RwTexDictionaryGetCurrent               = (RwTexDictionaryGetCurrent_t)             0xDEAD;
 RwTexDictionarySetCurrent_t             RwTexDictionarySetCurrent               = (RwTexDictionarySetCurrent_t)             0xDEAD;
