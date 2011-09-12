@@ -46,13 +46,9 @@ public:
                                     CPedModelInfoSAInterface();
                                     ~CPedModelInfoSAInterface();
 
-    CAtomicModelInfoSA*             GetAtomicModelInfo();
-    CDamageAtomicModelInfoSA*       GetDamageAtomicModelInfo();
-    CLODAtomicModelInfoSA*          GetLODAtomicModelInfo();
     void                            Init();
     void                            Shutdown();
     eModelType                      GetModelType();
-    unsigned int                    GetTimeInfo();
     void                            DeleteRwObject();
     bool                            SetAnimFile( const char *name );
     void                            ConvertAnimFileIndex();

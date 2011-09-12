@@ -23,25 +23,8 @@
 #define RW_TEXTURE_NAME_LENGTH    32
 #define RW_MAX_TEXTURE_COORDS     8
 
-typedef struct RwV2d RwV2d;
-typedef struct RwV3d RwV3d;
-typedef struct RwPlane RwPlane;
-typedef struct RwBBox RwBBox;
-typedef struct RpGeometry RpGeometry;
+// Yet to analyze
 typedef void   RpWorld;
-typedef class RpClump RpClump;
-typedef struct RwRaster RwRaster;
-typedef struct RpMaterialLighting RpMaterialLighting;
-typedef struct RpMaterialList RpMaterialList;
-typedef struct RpMaterial RpMaterial;
-typedef struct RpTriangle RpTriangle;
-typedef struct RwTextureCoordinates RwTextureCoordinates;
-typedef struct RwColor      RwColor;
-typedef struct RwColorFloat RwColorFloat;
-typedef struct RwObjectFrame RwObjectFrame;
-typedef struct RpAtomic RpAtomic;
-typedef struct RwCamera RwCamera;
-typedef struct RpLight RpLight;
 
 typedef RwCamera *(*RwCameraPreCallback) (RwCamera * camera);
 typedef RwCamera *(*RwCameraPostCallback) (RwCamera * camera);
@@ -50,11 +33,11 @@ typedef RpClump  *(*RpClumpCallback) (RpClump * clump, void *data);
 
 // RenderWare primitive types
 struct RwV2d
-{   // 8-byte
+{
     float x,y;
 };
 struct RwV3d
-{   // 12-byte
+{
     float x,y,z;
 };
 struct RwPlane
@@ -141,7 +124,6 @@ enum RpLightFlags
     LIGHT_ILLUMINATES_GEOMETRY = 2,
     LIGHT_FLAGS_LAST = RW_STRUCT_ALIGN
 };
-
 enum eRwType
 {
     RW_NULL,
@@ -175,9 +157,9 @@ struct RwList
 {
     RwListEntry root;
 };
-struct RwFrame
+class RwFrame : public RwObject
 {
-    RwObject         object;            // 0
+public:
     void             *pad1,*pad2;       // 8
     RwMatrix         modelling;         // 16
     RwMatrix         ltm;               // 32
@@ -190,9 +172,9 @@ struct RwFrame
     unsigned char    pluginData[8];     // padding
     char             szName[16];        // name (as stored in the frame extension)
 };
-struct RwTexDictionary
+class RwTexDictionary : public RwObject
 {
-    RwObject     object;
+public:
     RwList       textures;
     RwListEntry  globalTXDs;
 };
@@ -234,9 +216,9 @@ struct RwColor
 {
     unsigned char r,g,b,a;
 };
-struct RwObjectFrame
+class RwObjectFrame : public RwObject
 {
-    RwObject     object;
+public:
     RwListEntry  lFrame;
     void         *callback;
 };
@@ -246,9 +228,9 @@ struct RwCameraFrustum
     unsigned char x,y,z;
     unsigned char unknown1;
 };
-struct RwCamera
+class RwCamera : public RwObjectFrame
 {
-    RwObjectFrame        object;
+public:
     RwCameraType         type;
     RwCameraPreCallback  preCallback;
     RwCameraPostCallback postCallback;
@@ -275,9 +257,9 @@ struct RpInterpolation
     float            unknown4;
     float            unknown5;
 };
-struct RpAtomic
+class RpAtomic : public RwObjectFrame
 {
-    RwObjectFrame    object;
+public:
     void             *info;
     RpGeometry       *geometry;
     RwSphere         bsphereLocal;
@@ -291,13 +273,14 @@ struct RpAtomic
     RwList           sectors;
     void             *render;
 };
-struct RpAtomicContainer {
+struct RpAtomicContainer
+{
     RpAtomic    *atomic;
     char        szName[17];
 };
-struct RpLight
+class RpLight : public RwObjectFrame
 {
-    RwObjectFrame   object;
+public:
     float           radius;
     RwColorFloat    color;
     float           unknown1;
@@ -339,9 +322,9 @@ struct RpTriangle
     unsigned short v1, v2, v3;
     unsigned short materialId;
 };
-struct RpGeometry
+class RpGeometry : public RwObject
 {
-    RwObject             object;
+public:
     unsigned int         flags;
     unsigned short       unknown1;
     short                refs;

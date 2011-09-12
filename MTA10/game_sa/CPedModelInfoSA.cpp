@@ -28,29 +28,9 @@ CPedModelInfoSAInterface::~CPedModelInfoSAInterface()
 
 }
 
-CAtomicModelInfoSA* CPedModelInfoSAInterface::GetAtomicModelInfo()
-{
-    return NULL;
-}
-
-CDamageAtomicModelInfoSA* CPedModelInfoSAInterface::GetDamageAtomicModelInfo()
-{
-    return NULL;
-}
-
-CLODAtomicModelInfoSA* CPedModelInfoSAInterface::GetLODAtomicModelInfo()
-{
-    return NULL;
-}
-
 eModelType CPedModelInfoSAInterface::GetModelType()
 {
     return MODEL_PED;
-}
-
-unsigned int CPedModelInfoSAInterface::GetTimeInfo()
-{
-    return 0;
 }
 
 void CPedModelInfoSAInterface::Init()
