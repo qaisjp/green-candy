@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CPedSA.cpp
 *  PURPOSE:     Ped entity
@@ -46,8 +46,11 @@ VOID CPedSA::SetInterface( CEntitySAInterface * intInterface )
 
 CPedSA::~CPedSA ( void )
 {
-    if ( m_pPedIntelligence ) delete m_pPedIntelligence;
-    if ( m_pPedSound ) delete m_pPedSound;
+    if ( m_pPedIntelligence )
+        delete m_pPedIntelligence;
+
+    if ( m_pPedSound )
+        delete m_pPedSound;
 
     for ( int i = 0; i < WEAPONSLOT_MAX; i++ )
     {
@@ -76,7 +79,7 @@ void CPedSA::Init()
         call    dwFunc
         mov     dwPedIntelligence, eax
     }
-    CPedIntelligenceSAInterface * m_pPedIntelligenceInterface = (CPedIntelligenceSAInterface *)(dwPedIntelligence);
+    CPedIntelligenceSAInterface * m_pPedIntelligenceInterface = (CPedIntelligenceSAInterface *)dwPedIntelligence;
     this->m_pPedIntelligence = new CPedIntelligenceSA(m_pPedIntelligenceInterface, this);
     this->m_pPedSound = new CPedSoundSA ( &pedInterface->pedSound );
 
@@ -86,32 +89,27 @@ void CPedSA::Init()
     //this->m_pPedIK = new Cm_pPedIKSA(&(pedInterface->m_pPedIK));
 }
 
-
-void CPedSA::SetModelIndex ( DWORD dwModelIndex )
+void CPedSA::SetModelIndex ( unsigned short id )
 {
     DEBUG_TRACE("void CPedSA::SetModelIndex ( DWORD dwModelIndex )");
-    DWORD dwFunction = FUNC_SetModelIndex;
-    DWORD dwThis = (DWORD)this->GetInterface();
-    _asm
-    {
-        mov     ecx, dwThis
-        push    dwModelIndex
-        call    dwFunction
-    }
+    
+    m_pInterface->SetModelIndex( dwModelIndex );
 
     // Also set the voice gender
-    CPedModelInfoSAInterface* pModelInfo = (CPedModelInfoSAInterface *)pGame->GetModelInfo (dwModelIndex )->GetInterface ();
-    if ( pModelInfo )
-    {
-        DWORD dwType = pModelInfo->m_pedType;
-        GetPedInterface ()->pedSound.m_bIsFemale = ( dwType == 5 || dwType == 22 );
-    }
+    CPedModelInfoSAInterface* info = pPedModelPool->Get( id );
+
+    if ( !pModelInfo )
+        return;
+
+    GetPedInterface ()->pedSound.m_bIsFemale = ( info->m_pedType == 5 || info->m_pedType == 22 );
 }
 
 bool CPedSA::IsInWater ( void )
 {
     DEBUG_TRACE("bool CPedSA::IsInWater ()");
+
     CTask *pTask = this->m_pPedIntelligence->GetTaskManager ()->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
+
     return ( pTask && ( pTask->GetTaskType () == TASK_COMPLEX_IN_WATER ) );
 }
 
@@ -120,7 +118,8 @@ void CPedSA::AttachPedToBike(CEntity * entity, CVector * vector, unsigned short 
     DEBUG_TRACE("void CPedSA::AttachPedToBike(CEntity * entity, CVector * vector, unsigned short sUnk, FLOAT fUnk, FLOAT fUnk2, eWeaponType weaponType)");
 
     CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( entity );
-    if ( !pEntitySA ) return;
+    if ( !pEntitySA )
+        return;
 
     DWORD dwEntityInterface = (DWORD)pEntitySA->GetInterface();
     DWORD dwFunc = FUNC_AttachPedToBike;
@@ -229,7 +228,7 @@ CVehicle * CPedSA::GetVehicle()
     if ( ((CPedSAInterface *)this->GetInterface())->pedFlags.bInVehicle )
     {
         CVehicleSAInterface * vehicle = (CVehicleSAInterface *)(((CPedSAInterface *)this->GetInterface())->CurrentObjective);
-        if(vehicle)
+        if (vehicle)
             return ((CPoolsSA *)pGame->GetPools())->GetVehicle((DWORD *)vehicle);
     }
     return NULL;
@@ -287,7 +286,6 @@ void CPedSA::Respawn(CVector * position, bool bCameraCut)
         // RE-ENABLE call to CCamera__RestoreWithJumpCut when respawning
         MemCpy ( (void*)0x4422EA, szCode, 20 );
     }
-    //OutputDebugString ( "Respawn!!!!" );
 }
 
 FLOAT CPedSA::GetHealth()
@@ -329,7 +327,7 @@ DWORD CPedSA::GetType ( void )
 
 void CPedSA::SetType ( DWORD m_dwType )
 {
-    this->m_dwType = m_dwType;
+    >m_dwType = m_dwType;
 }
 
 DWORD * CPedSA::GetMemoryValue ( DWORD dwOffset )
@@ -343,7 +341,7 @@ DWORD * CPedSA::GetMemoryValue ( DWORD dwOffset )
 void CPedSA::RemoveWeaponModel ( int iModel )
 {
     DWORD dwFunc = FUNC_RemoveWeaponModel;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     _asm
     {
         mov     ecx, dwThis
@@ -355,7 +353,7 @@ void CPedSA::RemoveWeaponModel ( int iModel )
 void CPedSA::ClearWeapon ( eWeaponType weaponType )
 {
     DWORD dwFunc = FUNC_ClearWeapon;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     _asm
     {
         mov     ecx, dwThis
@@ -413,6 +411,7 @@ CWeapon * CPedSA::GiveWeapon ( eWeaponType weaponType, unsigned int uiAmmo )
 
     // ryden: Hack to increase the sniper range
     CWeapon* pWeapon = GetWeapon ( (eWeaponSlot)dwReturn );
+
     if ( weaponType == WEAPONTYPE_SNIPERRIFLE )
     {
         pWeapon->GetInfo ()->SetWeaponRange ( 300.0f );
@@ -666,12 +665,10 @@ void CPedSA::RebuildPlayer ( void )
     }
 }
 
-
 eFightingStyle CPedSA::GetFightingStyle ( void )
 {
     return ( eFightingStyle ) ((CPedSAInterface *)this->GetInterface())->bFightingStyle;
 }
-
 
 void CPedSA::SetFightingStyle ( eFightingStyle style, BYTE bStyleExtra )
 {
@@ -687,23 +684,21 @@ void CPedSA::SetFightingStyle ( eFightingStyle style, BYTE bStyleExtra )
             BYTE bTemp = *pFightingStyleExtra;
             switch ( bStyleExtra )
             {
-                case 0:
-                    break;
-                case 1:
-                    bTemp |= 1;
-                    break;
-                case 2:
-                    bTemp |= 2;
-                    break;
-                case 3:
-                    bTemp |= 4;
-                    break;
-                case 4:
-                    bTemp |= 8;
-                    break;
-                case 5:
-                    bTemp |= 16;
-                    break;
+            case 1:
+                bTemp |= 1;
+                break;
+            case 2:
+                bTemp |= 2;
+                break;
+            case 3:
+                bTemp |= 4;
+                break;
+            case 4:
+                bTemp |= 8;
+                break;
+            case 5:
+                bTemp |= 16;
+                break;
             }
             *pFightingStyleExtra = bTemp;
         }
@@ -714,58 +709,44 @@ void CPedSA::SetFightingStyle ( eFightingStyle style, BYTE bStyleExtra )
 CEntity* CPedSA::GetContactEntity ( void )
 {
     CEntitySAInterface* pInterface = ((CPedSAInterface *)this->GetInterface())->pContactEntity;
-    CPoolsSA * pPools = ((CPoolsSA *)pGame->GetPools());
-    CEntity * pReturn = NULL;
+    CPoolsSA * pPools = pGame->GetPools();
 
-    if ( pPools && pInterface )
+    switch ( pInterface->nType )
     {
-        switch ( pInterface->nType )
-        {
-            case ENTITY_TYPE_VEHICLE:
-                pReturn = (CEntity*)(pPools->GetVehicle((DWORD *)pInterface));
-                break;
-            case ENTITY_TYPE_OBJECT:
-                pReturn = (CEntity*)(pPools->GetObject ((DWORD *)pInterface));
-                break;
-            default:
-                break;
-        }
+    case ENTITY_TYPE_VEHICLE:
+        return (CEntity*)(pPools->GetVehicle((DWORD *)pInterface));
+    case ENTITY_TYPE_OBJECT:
+        return (CEntity*)(pPools->GetObject ((DWORD *)pInterface));
     }
-    return pReturn;
+
+    return NULL;
 }
 
 unsigned char CPedSA::GetRunState ( void )
 {
-    return * ( unsigned char * ) ( ( (DWORD)(this->GetInterface()) + 1332 ) );
+    return *(unsigned char*) (((DWORD)m_pInterface + 1332));
 }
-
 
 CEntity* CPedSA::GetTargetedEntity ( void )
 {
     CEntitySAInterface* pInterface = ((CPedSAInterface *)this->GetInterface())->pTargetedEntity;
-    CPoolsSA * pPools = ((CPoolsSA *)pGame->GetPools());
-    CEntity * pReturn = NULL;
+    CPoolsSA * pPools = pGame->GetPools();
 
-    if ( pPools && pInterface )
+    switch ( pInterface->nType )
     {
-        switch ( pInterface->nType )
-        {
-            case ENTITY_TYPE_PED:
-                pReturn = (CEntity*)(pPools->GetPed((DWORD *)pInterface));
-                break;
-            case ENTITY_TYPE_VEHICLE:
-                pReturn = (CEntity*)(pPools->GetVehicle((DWORD *)pInterface));
-                break;
-            case ENTITY_TYPE_OBJECT:
-                pReturn = (CEntity*)(pPools->GetObject ((DWORD *)pInterface));
-                break;
-            default:
-                break;
-        }
+    case ENTITY_TYPE_PED:
+        pReturn = (CEntity*)(pPools->GetPed((DWORD *)pInterface));
+        break;
+    case ENTITY_TYPE_VEHICLE:
+        pReturn = (CEntity*)(pPools->GetVehicle((DWORD *)pInterface));
+        break;
+    case ENTITY_TYPE_OBJECT:
+        pReturn = (CEntity*)(pPools->GetObject ((DWORD *)pInterface));
+        break;
     }
-    return pReturn;
-}
 
+    return NULL;
+}
 
 void CPedSA::SetTargetedEntity ( CEntity* pEntity )
 {
@@ -773,6 +754,7 @@ void CPedSA::SetTargetedEntity ( CEntity* pEntity )
     if ( pEntity )
     {
         CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
+
         if ( pEntitySA )
             pInterface = pEntitySA->GetInterface ();
     }
@@ -821,67 +803,40 @@ void CPedSA::RemoveBodyPart ( int i, char c )
 void CPedSA::SetFootBlood ( unsigned int uiFootBlood )
 {
     DWORD dwThis = (DWORD)this->GetInterface();
+
     // Check if the ped is to have foot blood
-    if (uiFootBlood > 0)
-    {
-        // Make sure the foot blood flag is activated
-        MemOrFast < unsigned short > ( dwThis + 0x46F, 16 );
-    }
-    else if (*(unsigned short*)(dwThis + 0x46F) & 16)
-    {
-        // If the foot blood flag is activated, deactivate it
-        MemSubFast < unsigned short > ( dwThis + 0x46F, 16 );
-    }
+    if ( uiFootBlood > 0 )
+        *(unsigned short*)(dwThis + 0x46F) |= 0x10;
+    else
+        *(unsigned short*)(dwThis + 0x46F) &= ~0x10;
+
     // Set the amount of foot blood
-    MemPutFast < unsigned int > ( dwThis + 0x750, uiFootBlood );
+    *(unsigned int*)(dwThis + 0x750) = uiFootBlood;
 }
 
 unsigned int CPedSA::GetFootBlood ( void )
 {
     DWORD dwThis = (DWORD)this->GetInterface();
+
     // Check if the ped has the foot blood flag
-    if (*(unsigned short*)(dwThis + 0x46F) & 16)
-    {
-        // If the foot blood flag is activated, return the amount of foot blood
+    if ( *(unsigned short*)(dwThis + 0x46F) & 0x10 )
         return *(unsigned int*)(dwThis + 0x750);
-    }
+
     // Otherwise, return zero as there is no foot blood
     return 0;
 }
 
 bool CPedSA::IsOnFire ( void )
 {
-    if ( GetPedInterface()->pFireOnPed != NULL )
-        return true;
-    return false;
+    return GetPedInterface()->pFireOnPed != NULL;
 }
 
 void CPedSA::SetOnFire ( bool bOnFire )
 {
     CPedSAInterface* pInterface = GetPedInterface();
+    CFireSA *pFire;
 
-    if ( bOnFire )
-    {
-        // If we are already on fire, don't apply a new fire
-        if ( pInterface->pFireOnPed == NULL )
-        {
-            CFireManagerSA* pFireManager = static_cast < CFireManagerSA * > ( pGame->GetFireManager() );
-            CFire* pFire = pFireManager->StartFire ( this, NULL, (float)DEFAULT_FIRE_PARTICLE_SIZE );
-
-            if ( pFire )
-            {
-                // Start the fire
-                pFire->SetTarget( this );
-                pFire->Ignite();
-                pFire->SetStrength( 1.0f );
-                // Attach the fire only to the player, do not let it
-                // create child fires when moving.
-                pFire->SetNumGenerationsAllowed( 0 );
-                pInterface->pFireOnPed = pFire->GetInterface();
-            }
-        }
-    }
-    else
+    if ( !bOnFire )
     {
         // Make sure that we have some attached fire
         if ( pInterface->pFireOnPed != NULL )
@@ -894,7 +849,27 @@ void CPedSA::SetOnFire ( bool bOnFire )
                 pFire->Extinguish();
             }
         }
+        return;
     }
+
+    // If we are already on fire, don't apply a new fire
+    if ( pInterface->pFireOnPed )
+        return;
+
+    pFire = pGame->GetFireManager()->StartFire ( this, NULL, (float)DEFAULT_FIRE_PARTICLE_SIZE );
+
+    if ( !pFire )
+        return;
+
+    // Start the fire
+    pFire->SetTarget( this );
+    pFire->Ignite();
+    pFire->SetStrength( 1.0f );
+
+    // Attach the fire only to the player, do not let it
+    // create child fires when moving.
+    pFire->SetNumGenerationsAllowed( 0 );
+    pInterface->pFireOnPed = pFire->GetInterface();
 }
 
 
@@ -907,6 +882,7 @@ void CPedSA::GetVoice ( short* psVoiceType, short* psVoiceID )
 {
     if ( psVoiceType )
         *psVoiceType = m_pPedSound->GetVoiceTypeID ();
+
     if ( psVoiceID )
         *psVoiceID = m_pPedSound->GetVoiceID ();
 }
@@ -915,8 +891,10 @@ void CPedSA::GetVoice ( const char** pszVoiceType, const char** pszVoice )
 {
     short sVoiceType, sVoiceID;
     GetVoice ( &sVoiceType, &sVoiceID );
+
     if ( pszVoiceType )
         *pszVoiceType = CPedSoundSA::GetVoiceTypeNameFromID ( sVoiceType );
+
     if ( pszVoice )
         *pszVoice = CPedSoundSA::GetVoiceNameFromID ( sVoiceType, sVoiceID );
 }
@@ -930,11 +908,11 @@ void CPedSA::SetVoice ( short sVoiceType, short sVoiceID )
 void CPedSA::SetVoice ( const char* szVoiceType, const char* szVoice )
 {
     short sVoiceType = CPedSoundSA::GetVoiceTypeIDFromName ( szVoiceType );
-    if ( sVoiceType < 0 )
-        return;
     short sVoiceID = CPedSoundSA::GetVoiceIDFromName ( sVoiceType, szVoice );
-    if ( sVoiceID < 0 )
+
+    if ( sVoiceType == -1 || sVoiceID == -1 )
         return;
+
     SetVoice ( sVoiceType, sVoiceID );
 }
 

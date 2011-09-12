@@ -13,30 +13,28 @@
 
 #include "StdInc.h"
 
-CPedIntelligenceSA::CPedIntelligenceSA ( CPedIntelligenceSAInterface * pedIntelligenceSAInterface, CPed * ped )
+CPedIntelligenceSA::CPedIntelligenceSA ( CPedIntelligenceSAInterface *intelligence, CPed *ped )
 {
-    this->internalInterface = pedIntelligenceSAInterface;
-    this->ped = ped;
-    CTaskManagerSAInterface * pTaskManagerInterface = (CTaskManagerSAInterface * )&(pedIntelligenceSAInterface->taskManager);
-    this->TaskManager = new CTaskManagerSA(pTaskManagerInterface, this->ped );
-    CVehicleScannerSAInterface * pVehicleScannerInterface = (CVehicleScannerSAInterface *)&(pedIntelligenceSAInterface->vehicleScanner);
-    this->VehicleScanner = new CVehicleScannerSA(pVehicleScannerInterface);
+    m_interface = intelligence;
+    m_ped = ped;
+    m_taskManager = new CTaskManagerSA( intelligence->m_taskManager, ped );
+    m_vehicleScanner = new CVehicleScannerSA( intelligence->m_vehicleScanner );
 }
 
 CPedIntelligenceSA::~CPedIntelligenceSA ()
 {
-    delete this->TaskManager;
+    delete m_taskManager;
 }
 
 CTaskManager * CPedIntelligenceSA::GetTaskManager( void )
 {
     DEBUG_TRACE("CTaskManager * CPedSA::GetTaskManager( void )");
-    return this->TaskManager;
+    return m_taskManager;
 }
 
 CVehicleScanner * CPedIntelligenceSA::GetVehicleScanner( void )
 {
-    return this->VehicleScanner;
+    return m_vehicleScanner;
 }
 
 bool CPedIntelligenceSA::IsRespondingToEvent ( void )
@@ -51,7 +49,8 @@ int CPedIntelligenceSA::GetCurrentEventType ( void )
 {
     DWORD dwFunc = FUNC_GetCurrentEventType;
     DWORD dwRet = 0;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)m_pInterface;
+
     _asm
     {
         mov     ecx, dwThis
@@ -66,13 +65,13 @@ CEvent * CPedIntelligenceSA::GetCurrentEvent ( void )
     return NULL;
 }
 
-
 bool CPedIntelligenceSA::TestForStealthKill ( CPed * pPed, bool bUnk )
 {
     bool bReturn;
-    DWORD dwThis = ( DWORD ) internalInterface;
-    DWORD dwPed = ( DWORD ) pPed->GetInterface ();
+    DWORD dwThis = (DWORD)m_pInterface;
+    DWORD dwPed = (DWORD)pPed->GetInterface();
     DWORD dwFunc = FUNC_CPedIntelligence_TestForStealthKill;
+
     _asm
     {
         mov     ecx, dwThis
