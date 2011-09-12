@@ -33,6 +33,26 @@ CBaseModelInfoSAInterface::~CBaseModelInfoSAInterface()
 
 }
 
+CAtomicModelInfoSA* CBaseModelInfoSAInterface::GetAtomicModelInfo()
+{
+    return NULL;
+}
+
+CDamageAtomicModelInfoSA* CBaseModelInfoSAInterface::GetDamageAtomicModelInfo()
+{
+    return NULL;
+}
+
+CLODAtomicModelInfoSA* CBaseModelInfoSAInterface::GetLODAtomicModelInfo()
+{
+    return NULL;
+}
+
+unsigned int CBaseModelInfoSAInterface::GetTimeInfo()
+{
+    return 0;
+}
+
 void CClumpModelInfoSAInterface::Init()
 {
     m_numberOfRefs = 0;

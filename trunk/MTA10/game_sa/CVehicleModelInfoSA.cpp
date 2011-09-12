@@ -18,10 +18,13 @@
 #define FUNC_LoadCarMods                    0x005B65A0
 #define FUNC_LoadVehicleParticles           0x004C8780
 
-void    Hook_InitVehicleData()
+void    VehicleModels_Init()
 {
     DWORD dwFunc;
     CTxdInstanceSA *txdEntry;
+
+    // Do not execute it
+    *(unsigned char*)FUNC_InitVehicleModels = 0xC3;
 
     __asm
     {
@@ -56,11 +59,6 @@ void    Hook_InitVehicleData()
     }
 }
 
-void    VehicleModels_Init()
-{
-    HookInstall(FUNC_InitVehicleData, HOOK_InitVehicleData, 5);
-}
-
 CVehicleModelInfoSAInterface::CVehicleModelInfoSAInterface()
 {
 
@@ -71,29 +69,9 @@ CVehicleModelInfoSAInterface::~CVehicleModelInfoSAInterface()
 
 }
 
-CAtomicModelInfoSA* CVehicleModelInfoSAInterface::GetAtomicModelInfo()
-{
-    return NULL;
-}
-
-CDamageAtomicModelInfoSA* CVehicleModelInfoSAInterface::GetDamageAtomicModelInfo()
-{
-    return NULL;
-}
-
-CLODAtomicModelInfoSA* CVehicleModelInfoSAInterface::GetLODAtomicModelInfo()
-{
-    return NULL;
-}
-
 eModelType CVehicleModelInfoSAInterface::GetModelType()
 {
     return MODEL_VEHICLE;
-}
-
-unsigned int CVehicleModelInfoSAInterface::GetTimeInfo()
-{
-    return 0;
 }
 
 bool CVehicleModelInfoSAInterface::SetAnimFile( const char *name )

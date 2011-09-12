@@ -61,11 +61,7 @@ public:
                                     CVehicleModelInfoSAInterface();
                                     ~CVehicleModelInfoSAInterface();
 
-    CAtomicModelInfoSA*             GetAtomicModelInfo();
-    CDamageAtomicModelInfoSA*       GetDamageAtomicModelInfo();
-    CLODAtomicModelInfoSA*          GetLODAtomicModelInfo();
     eModelType                      GetModelType();
-    unsigned int                    GetTimeInfo();
     bool                            SetAnimFile( const char *name );
     void                            ConvertAnimFileIndex();
     int                             GetAnimFileIndex();
