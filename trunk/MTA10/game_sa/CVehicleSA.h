@@ -24,7 +24,6 @@ class CVehicleSA;
 #include "Common.h"
 #include "CPedSA.h"
 #include "CPhysicalSA.h"
-#include "CPoolsSA.h"
 #include "CHandlingManagerSA.h"
 #include "CDamageManagerSA.h"
 #include "CDoorSA.h"

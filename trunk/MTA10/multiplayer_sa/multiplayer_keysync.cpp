@@ -507,12 +507,13 @@ void SwitchContext ( CVehicle* pVehicle )
 void SwitchContext ( CVehicleSAInterface* pVehicleInterface )
 {   
     // Grab the CVehicle for the given vehicle interface
-    CPoolsSA* pool = (CPoolsSA*) pGameInterface->GetPools ();
+    CPools* pool = pGameInterface->GetPools ();
     CVehicle* pVehicle = pool->GetVehicle ( (DWORD *)pVehicleInterface );
-    if ( pVehicle )
-    {
-        SwitchContext ( pVehicle );
-    }
+
+    if ( !pVehicle )
+        return;
+
+    SwitchContext ( pVehicle );
 }
 
 /************************** ACTUAL HOOK FUNCTIONS BELOW THIS LINE *******************************/

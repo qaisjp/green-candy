@@ -32,8 +32,8 @@ CVehicleSA::CVehicleSA( eVehicleTypes dwModelID )
     : m_ucAlpha ( 255 ), m_bIsDerailable ( true ), m_vecGravity ( 0.0f, 0.0f, -1.0f ), m_HeadLightColor ( SColorRGBA ( 255, 255, 255, 255 ) )
 {
     DEBUG_TRACE("CVehicleSA::CVehicleSA( eVehicleTypes dwModelID )");
-    // for SA, we can just call the following function and it should just work:
-    // CCarCtrl::CreateCarForScript(int,class CVector,unsigned char)
+    // for SA, we can just call the following function and it should work:
+    // SCM_CreateCarForScript(int,class CVector,unsigned char)
     //                              ModelID, Position, IsMissionVehicle
 
     m_pHandlingData = NULL;
@@ -41,7 +41,6 @@ CVehicleSA::CVehicleSA( eVehicleTypes dwModelID )
 
     DWORD dwReturn = 0;
 
-    // Is it a train?
     DWORD dwFunc = FUNC_CCarCtrlCreateCarForScript;
     _asm
     {

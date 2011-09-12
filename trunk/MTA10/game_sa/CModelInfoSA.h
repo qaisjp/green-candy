@@ -99,7 +99,7 @@ class CLODAtomicModelInfoSA;
 enum eModelType
 {
     MODEL_VEHICLE = 6,
-    MODEL_PED = 7
+    MODEL_PED
 };
 
 class CBaseModelInfoSA
@@ -199,6 +199,7 @@ public:
 class CClumpModelInfoSAInterface : public CBaseModelInfoSAInterface
 {
 public:
+    virtual CColModelSAInterface*       GetCollision() = 0;
     virtual void __thiscall             SetClump( RpClump *clump );
 
     void                Init();

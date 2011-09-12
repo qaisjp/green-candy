@@ -57,6 +57,16 @@ public:
 
     ~CPool()
     {
+        unsigned int n;
+
+        for (n=0; n<m_max; n++)
+        {
+            if ( !(m_flags[n] & 0x80) )
+                continue;
+
+            m_pool[n].~type();
+        }
+
         free(m_pool);
         free(m_flags);
     }
@@ -111,11 +121,34 @@ public:
     bool            m_poolActive;
 };
 
-typedef CPool <CVehicleModelInfoSAInterface> CVehicleModelPool;
+typedef CPool <CPedModelInfoSAInterface, 300> CPedModelPool;
+typedef CPool <CVehicleModelInfoSAInterface, 500> CVehicleModelPool;
 
-typedef CPool <CVehicleSAInterface> CVehiclePool;
-typedef CPool <CPedSAInterface> CPedPool;
-typedef CPool <C
+typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
+
+typedef CPool <CVehicleSAInterface, MAX_VEHICLES> CVehiclePool;
+typedef CPool <CPedSAInterface, MAX_PEDS> CPedPool;
+typedef CPool <CObjectSAInterface, MAX_OBJECTS> CObjectPool;
+
+// They have to be defined somewhere!
+extern CPedModelPool** ppPedModelPool;
+extern CVehicleModelPool** ppVehicleModelPool;
+
+extern CTxdPool** ppTxdPool;
+
+extern CVehiclePool** ppVehiclePool;
+extern CPedPool** ppPedPool;
+extern CObjectPool** ppObjectPool;
+
+// Helpful makros
+#define pPedModelPool (*ppPedModelPool)
+#define pVehicleModelPool (*ppVehicleModelPool)
+
+#define pTxdPool  (*ppTxdPool)
+
+#define pVehiclePool (*ppVehiclePool)
+#define pPedPool (*ppPedPool)
+#define pObjectPool (*ppObjectPool)
 
 class CPoolsSA : public CPools
 {
@@ -137,7 +170,7 @@ public:
     DWORD                   GetVehicleRef       ( CVehicle* pVehicle );
     DWORD                   GetVehicleRef       ( DWORD* pGameInterface );
     CVehicle*               GetVehicleFromRef   ( DWORD dwGameRef );
-    inline unsigned long    GetVehicleCount     ( ) { return m_vehiclePool.ulCount;; }
+    inline unsigned long    GetVehicleCount     ( ) { return m_vehiclePool.ulCount; }
     void                    DeleteAllVehicles   ( );
 
     // Objects pool
@@ -194,29 +227,7 @@ public:
 
 
 private:
-    // Generic container for pools
-    template < class T, class I, unsigned long MAX >
-    class CPool
-    {
-        typedef         google::dense_hash_map < I*, T* >  mapType;
-        mapType         map;
-        T*              array [ MAX ];
-        unsigned long   ulCount;
-
-    private:
-        friend class CPoolsSA;
-
-        CPool
-    };
-
     // Pools
-    typedef SPoolData < CVehicleSA, CVehicleSAInterface, MAX_VEHICLES > vehiclePool_t;
-    typedef SPoolData < CPedSA, CPedSAInterface, MAX_PEDS > pedPool_t;
-    typedef SPoolData < CObjectSA, CObjectSAInterface, MAX_OBJECTS > objectPool_t;
-    vehiclePool_t   m_vehiclePool;
-    pedPool_t       m_pedPool;
-    objectPool_t    m_objectPool;
-
     CBuildingSA*    Buildings [ MAX_BUILDINGS ];
     unsigned long   m_ulBuildingCount;
 

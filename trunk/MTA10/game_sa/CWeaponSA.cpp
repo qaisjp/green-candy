@@ -112,3 +112,8 @@ void CWeaponSA::Remove ()
         owner->SetCurrentWeaponSlot ( WEAPONSLOT_TYPE_UNARMED );
     }
 }
+
+CWeaponInfoSA*  CWeaponSA::GetInfo()
+{
+    return pGame->GetWeaponInfo( internalInterface->m_eWeaponType );
+}

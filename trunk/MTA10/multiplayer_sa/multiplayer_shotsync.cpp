@@ -667,7 +667,7 @@ bool ProcessDamageEvent ( CEventDamageSAInterface * event, CPedSAInterface * aff
 {
     if ( m_pDamageHandler && event )
     {
-        CPoolsSA * pPools = (CPoolsSA*)pGameInterface->GetPools();
+        CPools * pPools = pGameInterface->GetPools();
         CPed * pPed = pPools->GetPed ( (DWORD *)affectsPed );
         CEntity * pInflictor = NULL;
 
@@ -878,22 +878,23 @@ void ProcessProjectile ( )
 {
     if ( m_pProjectileHandler != NULL )
     {
-        CPoolsSA * pPools = (CPoolsSA*)pGameInterface->GetPools();
+        CPools * pPools = pGameInterface->GetPools();
         CEntity * pOwner = NULL;
+
         if ( pProjectileOwner )
         {
             switch ( pProjectileOwner->nType )
             {
-                case ENTITY_TYPE_VEHICLE:
-                    pOwner = pPools->GetVehicle ( (DWORD *)pProjectileOwner );
-                    break;
-                case ENTITY_TYPE_PED:
-                    pOwner = pPools->GetPed ( (DWORD *)pProjectileOwner );
-                    break;
-                case ENTITY_TYPE_OBJECT:
-                    //pPools->GetObject ( (DWORD *)event->inflictor );
-                default:
-                    pOwner = NULL;
+            case ENTITY_TYPE_VEHICLE:
+                pOwner = pPools->GetVehicle ( (DWORD *)pProjectileOwner );
+                break;
+            case ENTITY_TYPE_PED:
+                pOwner = pPools->GetPed ( (DWORD *)pProjectileOwner );
+                break;
+            case ENTITY_TYPE_OBJECT:
+                //pPools->GetObject ( (DWORD *)event->inflictor );
+            default:
+                pOwner = NULL;
             }
         }
 
