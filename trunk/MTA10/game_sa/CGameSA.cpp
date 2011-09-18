@@ -95,6 +95,7 @@ CGameSA::CGameSA()
     m_pControllerConfigManager  = new CControllerConfigManagerSA();
     m_pProjectileInfo           = new CProjectileInfoSA();
     m_pRenderWare               = new CRenderWareSA( version );
+    m_pExtensionManager         = new CRwExtensionManagerSA();
     m_pTextureManager           = new CTextureManagerSA();
     m_pHandlingManager          = new CHandlingManagerSA ();
     m_pEventList                = new CEventListSA();

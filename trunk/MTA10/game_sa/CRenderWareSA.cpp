@@ -19,6 +19,8 @@
 extern CGameSA * pGame;
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
+RwInterface **ppRwInterface = (RwInterface**)0x00C97B24;
+
 //
 // STxdAction stores the current frame txd create and destroy events
 //

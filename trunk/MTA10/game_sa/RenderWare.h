@@ -315,7 +315,7 @@ struct RpTriangle
     unsigned short v1, v2, v3;
     unsigned short materialId;
 };
-class RpAnimation : public RwObject
+class RpAnimation
 {
 public:
 
@@ -346,18 +346,65 @@ class RwExtensionInterface
 {
 public:
     unsigned int            m_id;           
-    unsigned int            m_unknown;      // 4
-    unsigned int            m_structSize;   // 8
-    void*                   m_callback;     // 12
-    void*                   m_callback2;    // 16
-    void*                   m_callback3;    // 20
-    void*                   m_callback4;    // 24
-    void*                   m_callback5;    // 28
-    void*                   m_callback6;    // 32
-    void*                   m_callback7;    // 36
-    void*                   m_callback8;    // 40
-    unsigned int            m_unknown2;     // 44
+    unsigned int            m_unknown;          // 4
+    unsigned int            m_structSize;       // 8
+    void*                   m_callback;         // 12
+    void*                   m_callback2;        // 16
+    void*                   m_callback3;        // 20
+    void*                   m_callback4;        // 24
+    void*                   m_callback5;        // 28
+    void*                   m_callback6;        // 32
+    void*                   m_callback7;        // 36
+    void*                   m_callback8;        // 40
+    size_t                  m_internalSize;     // 44
 };
+class RwExtension
+{
+public:
+    RwExtensionInterface*   m_extension;
+    unsigned int            m_count;
+    size_t                  m_size;
+    unsigned int            m_unknown2;
+
+    void*                   m_data;
+    void*                   m_internal;
+};
+class RwInterface   // size: 1456
+{
+public:
+    BYTE                    m_pad[304];
+
+    void*                   (*m_malloc)( size_t size );                     // 304
+    void                    (*m_free)( void *data );                        // 308
+    void*                   (*m_realloc)( void *data, size_t size );        // 312
+    void*                   (*m_calloc)( unsigned int count, size_t size ); // 316
+    void*                   m_callback;                                     // 320
+    void*                   m_callback2;                                    // 324
+
+    BYTE                    m_pad2[28];                                     // 328
+
+    void*                   m_callback3;                                    // 356
+    void*                   m_callback4;                                    // 360
+    void*                   m_callback5;                                    // 364
+    void*                   m_callback6;                                    // 368
+
+    void*                   m_unknown;                                      // 372
+    void*                   m_unknown2;                                     // 376
+
+    void*                   m_callback7;                                    // 380
+
+    BYTE                    m_pad3[36];                                     // 384
+
+    char                    m_charTable[256];                               // 420
+    char                    m_charTable2[256];                              // 676
+
+    float                   m_unknown3;                                     // 680
+
+    BYTE                    m_pad4[520];                                    // 936
+};
+
+extern RwInterface **ppRwInterface;
+#define pRwInterface (*ppRwInterface)
 
 /*****************************************************************************/
 /** RenderWare I/O                                                          **/

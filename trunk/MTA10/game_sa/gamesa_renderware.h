@@ -27,7 +27,7 @@ class CColModelSAInterface;
 /*****************************************************************************/
 
 /* RenderWare function defines */
-typedef RwObject*               (__cdecl *RwCreateExtension_t)                  (unsigned int id, int unk, int unk2, int unk3);
+typedef RwExtension*            (__cdecl *RwCreateExtension_t)                  (unsigned int id, unsigned int count, size_t size, int unk3);
 typedef RpAtomic *              (__cdecl *RpAtomicCreate_t)                     (void);
 typedef RpAtomic *              (__cdecl *RpAtomicClone_t)                      (RpAtomic * atomic);
 typedef int                     (__cdecl *RpAtomicDestroy_t)                    (RpAtomic * atomic);

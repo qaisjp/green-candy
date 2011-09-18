@@ -13,5 +13,20 @@
 #ifndef _CRenderWareExtensionSA_H_
 #define _CRenderWareExtensionSA_H_
 
+#define MAX_RW_EXTENSIONS           16
+
+class CRwExtensionManagerSA
+{
+public:
+                        CRwExtensionManagerSA();
+                        ~CRwExtensionManagerSA();
+
+    // todo: Possibility to register extensions
+
+    RwExtension*        Allocate( unsigned int extId, unsigned int count, size_t size, unsigned int unk );
+    void*               Free( RwExtension *ext );
+
+    unsigned int        GetNumExtensions();
+};
 
 #endif
