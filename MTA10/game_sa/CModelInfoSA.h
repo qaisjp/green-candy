@@ -134,7 +134,7 @@ public:
 #define RENDER_LAST                 0x0040
 #define RENDER_PRERENDERED          0x0080
 
-#define COLL_UNK1                   0x0001
+#define COLL_STATIC                 0x0001
 #define COLL_NOANIM                 0x0002
 #define COLL_UNK3                   0x0004
 #define COLL_SWAYINWIND             0x0008
