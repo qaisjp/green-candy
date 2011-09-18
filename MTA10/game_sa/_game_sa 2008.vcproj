@@ -652,7 +652,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CRenderWareExtension.cpp"
+				RelativePath=".\CRenderWareExtensionSA.cpp"
 				>
 			</File>
 			<File

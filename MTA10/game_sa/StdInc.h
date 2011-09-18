@@ -38,6 +38,7 @@
 #include "CCheckpointsSA.h"
 #include "RenderWare.h"
 #include "CRenderWareSA.h"
+#include "CRenderWareExtensionSA.h"
 #include "CTextureSA.h"
 #include "CTexDictionarySA.h"
 #include "CTextureManagerSA.h"
