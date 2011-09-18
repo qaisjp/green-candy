@@ -37,6 +37,7 @@ typedef RpClump *               (__cdecl *RpClumpAddAtomic_t)                   
 typedef RpClump *               (__cdecl *RpClumpAddLight_t)                    (RpClump * clump, RpLight * light);
 typedef int                     (__cdecl *RpClumpGetNumAtomics_t)               (RpClump * clump);
 typedef RpClump *               (__cdecl *RpClumpRemoveAtomic_t)                (RpClump * clump, RpAtomic * atomic);
+typedef bool                    (__cdecl *RpAnimationInit_t)                    (void* unk, RpAnimHierarchy *animInfo);
 typedef RwFrame *               (__cdecl *RwFrameAddChild_t)                    (RwFrame * parent, RwFrame * child);
 typedef RwFrame *               (__cdecl *RwFrameRemoveChild_t)                 (RwFrame * child);
 typedef RwFrame *               (__cdecl *RwFrameForAllObjects_t)               (RwFrame * frame, void * callback, void * data);
@@ -118,6 +119,7 @@ RpClumpGetLastAtomic_t                  RpClumpGetLastAtomic                    
 RpClumpForAllAtomicsPointer_t           RpClumpForAllAtomicsPointer             = (RpClumpForAllAtomicsPointer_t)           0xDEAD;
 RwFrameAddChild_t                       RwFrameAddChild                         = (RwFrameAddChild_t)                       0xDEAD;
 RpClumpAddAtomic_t                      RpClumpAddAtomic                        = (RpClumpAddAtomic_t)                      0xDEAD;
+RpAnimationInit_t                       RpAnimationInit                         = (RpAnimationInit_t)                       0xDEAD;
 RpAtomicSetFrame_t                      RpAtomicSetFrame                        = (RpAtomicSetFrame_t)                      0xDEAD;
 RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 0xDEAD;
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             0xDEAD;

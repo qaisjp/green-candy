@@ -217,6 +217,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
             RpClumpForAllAtomicsPointer         = (RpClumpForAllAtomicsPointer_t)           0x00749BC0;
             RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B40;
             RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A4E0;
+            RpAnimationInit                     = (RpAnimationInit_t)                       0x007CD5E0;
             RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
             RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
             RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70; 
@@ -1396,6 +1397,20 @@ RpAnimHierarchy* RpClump::GetAnimHierarchy()
     return m_parent->GetAnimHierarchy();
 }
 
+bool RwGetAtomic( RpAtomic *child, RpAtomic **atomic )
+[
+    *atomic = child;
+    return false;
+}
+
+RpAtomic* RpClump::GetFirstAtomic()
+{
+    RpAtomic *atomic = NULL;
+
+    ForAllAtomics( RwGetAtomic, &atomic );
+    return atomic;
+}
+
 RpClump* RpClump::ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data )
 {
     RpAtomic *child = m_lFrame.next;
@@ -1408,3 +1423,4 @@ RpClump* RpClump::ForAllAtomics( bool (*callback)( RpAtomic *child, void *data )
 
     return this;
 }
+

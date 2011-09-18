@@ -136,7 +136,7 @@ public:
     void*                   m_unknown5;     // 20
     RpAnimHierarchy*        m_this;         // 24
     unsigned int            m_unknown6;     // 28
-    RpAnimation*            m_unknown7;     // 32
+    RpAnimation*            m_animData;     // 32
 };
 class RwFrame : public RwObject
 {
@@ -242,24 +242,24 @@ struct RpInterpolation
 class RpAtomic : public RwObjectFrame
 {
 public:
-    void*               info;               // 12
+    void*               info;               // 20
 
-    RpGeometry*         geometry;           // 16
-    RwSphere            bsphereLocal;       // 20
-    RwSphere            bsphereWorld;       // 36
+    RpGeometry*         geometry;           // 24
+    RwSphere            bsphereLocal;       // 28
+    RwSphere            bsphereWorld;       // 44
 
-    RpClump*            clump;              // 52
-    RwListEntry         globalClumps;       // 56
+    RpClump*            clump;              // 60
+    RwListEntry         globalClumps;       // 64
 
-    RpAtomicCallback    renderCallback;     // 64
-    RpInterpolation     interpolation;      // 68
+    RpAtomicCallback    renderCallback;     // 72
+    RpInterpolation     interpolation;      // 76
 
-    unsigned short      frame;              // 88
-    unsigned short      unknown7;           // 90
-    RwList              sectors;            // 92
-    void*               render;             // 100
+    unsigned short      frame;              // 96
+    unsigned short      unknown7;           // 98
+    RwList              sectors;            // 100
+    void*               render;             // 108
 
-    BYTE                m_pad[16];          // 104
+    BYTE                m_pad[8];           // 112
     RpAnimHierarchy*    m_anim;             // 120
 };
 struct RpAtomicContainer
@@ -288,6 +288,7 @@ public:
     RpClumpCallback     callback;
 
     RpAnimHierarchy*    GetAnimHierarchy();
+    RpAtomic*           GetFirstAtomic();
 
     RpClump*            ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data );
 };
@@ -318,24 +319,24 @@ struct RpTriangle
 class RpGeometry : public RwObject
 {
 public:
-    unsigned int            flags;
-    unsigned short          m_unknown1;
-    short                   refs;
+    unsigned int            flags;                              // 8
+    unsigned short          m_unknown1;                         // 12
+    short                   refs;                               // 14
 
-    unsigned int            triangles_size;
-    unsigned int            vertices_size;
-    unsigned int            normal_size;
-    unsigned int            texcoords_size;
+    unsigned int            triangles_size;                     // 16
+    unsigned int            vertices_size;                      // 20
+    unsigned int            normal_size;                        // 24
+    unsigned int            texcoords_size;                     // 28
 
-    RpMaterials             materials;
-    RpTriangle*             triangles;
-    RwColor*                colors;
-    RwTextureCoordinates*   texcoords[RW_MAX_TEXTURE_COORDS];
-    void*                   normals;
-    void*                   info;
-    void*                   m_unknown3;
-    void*                   m_unknown4;
-    RpAnimation*            m_animation;
+    RpMaterials             materials;                          // 32
+    RpTriangle*             triangles;                          // 44
+    RwColor*                colors;                             // 48
+    RwTextureCoordinates*   texcoords[RW_MAX_TEXTURE_COORDS];   // 52
+    void*                   normals;                            // 84
+    void*                   info;                               // 88
+    void*                   m_unknown3;                         // 92
+    void*                   m_unknown4;                         // 96
+    RpAnimation*            m_animation;                        // 100
 };
 class RwExtensionInterface
 {
@@ -343,9 +344,9 @@ public:
     unsigned int            m_id;           
     unsigned int            m_unknown;          // 4
     unsigned int            m_structSize;       // 8
-    void*                   m_callback;         // 12
+    void*                   m_apply;            // 12
     void*                   m_callback2;        // 16
-    void*                   m_callback3;        // 20
+    void*                   m_interpolate;      // 20
     void*                   m_callback4;        // 24
     void*                   m_callback5;        // 28
     void*                   m_callback6;        // 32

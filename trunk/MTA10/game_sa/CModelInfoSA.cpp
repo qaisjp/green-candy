@@ -182,7 +182,7 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObject()
 
             clump->ForAllAtomics( RpSetAtomicAnimation, anim );
 
-
+            RpAnimationInit( anim->m_animData, anim );
 
             anim->m_flags = 0x3000;
         }
