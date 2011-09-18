@@ -232,8 +232,6 @@ CClientGame::CClientGame ( bool bLocalPlay )
     g_pMultiplayer->SetPreWorldProcessHandler ( CClientGame::StaticPreWorldProcessHandler );
     g_pMultiplayer->SetPostWorldProcessHandler ( CClientGame::StaticPostWorldProcessHandler );
     g_pMultiplayer->SetIdleHandler ( CClientGame::StaticIdleHandler );
-    g_pMultiplayer->SetAddAnimationHandler ( CClientGame::StaticAddAnimationHandler );
-    g_pMultiplayer->SetBlendAnimationHandler ( CClientGame::StaticBlendAnimationHandler );
     g_pMultiplayer->SetProcessCollisionHandler ( CClientGame::StaticProcessCollisionHandler );
     m_pProjectileManager->SetInitiateHandler ( CClientGame::StaticProjectileInitiateHandler );
     g_pCore->SetMessageProcessor ( CClientGame::StaticProcessMessage );
@@ -3528,17 +3526,6 @@ bool CClientGame::ChokingHandler ( unsigned char ucWeaponType )
     CLuaArguments Arguments;
     Arguments.PushNumber ( ucWeaponType );
     return m_pLocalPlayer->CallEvent ( "onClientPlayerChoke", Arguments, true );
-}
-
-
-void CClientGame::AddAnimationHandler ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID )
-{
-    //CClientPed * pPed = m_pPedManager->Get ( pClump, true );
-}
-
-void CClientGame::BlendAnimationHandler ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID, float fBlendDelta )
-{   
-    //CClientPed * pPed = m_pPedManager->Get ( pClump, true );
 }
 
 bool CClientGame::ProcessCollisionHandler ( CEntitySAInterface* pThisInterface, CEntitySAInterface* pOtherInterface )

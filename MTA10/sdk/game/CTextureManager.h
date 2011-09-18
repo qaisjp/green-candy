@@ -14,6 +14,6 @@
 #ifndef _CTextureManager_H_
 #define _CTextureManager_H_
 
-#define MAX_TXD     20000
+#define MAX_TXD     2000
 
 #endif

@@ -217,7 +217,7 @@ void CStreamingSA::FreeModel( unsigned short id )
     else if ( id < 25000 )
     {
         // Remove texture reference?
-        CTxdStore_RemoveTxd( id - 20000 );
+        CTxdStore_RemoveTxd( id - DATA_TEXTURE_BLOCK );
     }
     else if ( id < 25255 )
     {

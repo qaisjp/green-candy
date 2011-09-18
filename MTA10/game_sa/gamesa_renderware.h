@@ -16,7 +16,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-#include <game/RenderWare.h>
+#include <RenderWare.h>
 #include <windows.h>
 #include <stdio.h>
 
@@ -26,11 +26,8 @@ class CColModelSAInterface;
 /** Renderware functions                                                    **/
 /*****************************************************************************/
 
-/* RenderWare macros */
-#define RpGetFrame(__c)            ((RwFrame*)(((RwObject *)(__c))->parent))
-#define RpSetFrame(__c,__f)        ((((RwObject *)(__c))->parent) = (void *)(__f))
-
 /* RenderWare function defines */
+typedef RwObject*               (__cdecl *RwCreateExtension_t)                  (unsigned int id, int unk, int unk2, int unk3);
 typedef RpAtomic *              (__cdecl *RpAtomicCreate_t)                     (void);
 typedef RpAtomic *              (__cdecl *RpAtomicClone_t)                      (RpAtomic * atomic);
 typedef int                     (__cdecl *RpAtomicDestroy_t)                    (RpAtomic * atomic);
@@ -43,11 +40,13 @@ typedef RpClump *               (__cdecl *RpClumpRemoveAtomic_t)                
 typedef RwFrame *               (__cdecl *RwFrameAddChild_t)                    (RwFrame * parent, RwFrame * child);
 typedef RwFrame *               (__cdecl *RwFrameRemoveChild_t)                 (RwFrame * child);
 typedef RwFrame *               (__cdecl *RwFrameForAllObjects_t)               (RwFrame * frame, void * callback, void * data);
+typedef RwFrame*                (__cdecl *RwFrameForAllChildren_t)              (RwFrame *frame, int (*callback)( RwFrame *frame, void *data), void *data);
 typedef RwFrame *               (__cdecl *RwFrameTranslate_t)                   (RwFrame * frame, const RwV3d * v, RwTransformOrder order);
 typedef RwFrame *               (__cdecl *RwFrameScale_t)                       (RwFrame * frame, const RwV3d * v, RwTransformOrder order);
 typedef RwFrame *               (__cdecl *RwFrameCreate_t)                      (void);
 typedef RwFrame *               (__cdecl *RwFrameSetIdentity_t)                 (RwFrame * frame);
 typedef RpGeometry *            (__cdecl *RpGeometryCreate_t)                   (int numverts, int numtriangles, unsigned int format);
+typedef RpAnimation*            (__cdecl *RpGeometryGetAnimation_t)             (RpGeometry *geom);
 typedef const RpGeometry *      (__cdecl *RpGeometryTriangleSetVertexIndices_t) (const RpGeometry * geo, RpTriangle * tri, unsigned short v1, unsigned short v2, unsigned short v3);
 typedef RpGeometry *            (__cdecl *RpGeometryUnlock_t)                   (RpGeometry * geo);
 typedef RpGeometry *            (__cdecl *RpGeometryLock_t)                     (RpGeometry * geo, int lockmode);
@@ -104,6 +103,7 @@ typedef RwTexture*              (__cdecl *RwTextureCreate_t)                    
 /*****************************************************************************/
 
 // US Versions
+RwCreateExtension_t                     RwCreateExtension                       = (RwCreateExtension_t)                     0xDEAD;
 RwStreamFindChunk_t                     RwStreamFindChunk                       = (RwStreamFindChunk_t)                     0xDEAD;
 RpClumpStreamRead_t                     RpClumpStreamRead                       = (RpClumpStreamRead_t)                     0xDEAD;
 RwErrorGet_t                            RwErrorGet                              = (RwErrorGet_t)                            0xDEAD;
@@ -135,6 +135,7 @@ RpAtomicDestroy_t                       RpAtomicDestroy                         
 RpAtomicSetGeometry_t                   RpAtomicSetGeometry                     = (RpAtomicSetGeometry_t)                   0xDEAD;
 RpWorldAddAtomic_t                      RpWorldAddAtomic                        = (RpWorldAddAtomic_t)                      0xDEAD;
 RpGeometryCreate_t                      RpGeometryCreate                        = (RpGeometryCreate_t)                      0xDEAD;
+RpGeometryGetAnimation_t                RpGeometryGetAnimation                  = (RpGeometryGetAnimation_t)                0xDEAD;
 RpGeometryTriangleSetVertexIndices_t    RpGeometryTriangleSetVertexIndices      = (RpGeometryTriangleSetVertexIndices_t)    0xDEAD;
 RpGeometryUnlock_t                      RpGeometryUnlock                        = (RpGeometryUnlock_t)                      0xDEAD;
 RpGeometryLock_t                        RpGeometryLock                          = (RpGeometryLock_t)                        0xDEAD;

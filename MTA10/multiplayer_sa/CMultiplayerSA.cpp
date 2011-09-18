@@ -1968,7 +1968,7 @@ void _declspec(naked) HOOK_FindPlayerCoors()
         test    al, al
         jz      dontset
 
-        // Move our center of world into gta's senter of world when it requests so
+        // Move our center of world into gta's center of world when it requests so
         pop     eax
         lea     esi, vecCenterOfWorld
         mov     edi, [esp+4]
@@ -1979,7 +1979,7 @@ void _declspec(naked) HOOK_FindPlayerCoors()
         retn    
 
         // Continue. Don't replace the world center.
-        dontset:
+dontset:
         pop     eax
         mov     eax, [esp+8]
         xor     edx, edx
@@ -3013,22 +3013,22 @@ static void RestoreAlphaValues ()
  **/
 static RpAtomic* CVehicle_EAEG ( RpAtomic* pAtomic, void* )
 {
-    RwFrame* pFrame = ((RwFrame*)(((RwObject *)(pAtomic))->parent));
+    RwFrame* pFrame = pAtomic->parent;
     if ( pFrame )
     {
         switch ( pFrame->szName[0] )
         {
-            case '\0': case 'h': break;
-            default:
-                DWORD dwFunc = (DWORD)0x533290;
-                DWORD dwAtomic = (DWORD)pAtomic;
-                _asm
-                {
-                    push    0
-                    push    dwAtomic
-                    call    dwFunc
-                    add     esp, 0x8
-                }
+        case '\0': case 'h': break;
+        default:
+            DWORD dwFunc = (DWORD)0x533290;
+            DWORD dwAtomic = (DWORD)pAtomic;
+            _asm
+            {
+                push    0
+                push    dwAtomic
+                call    dwFunc
+                add     esp, 0x8
+            }
         }
     }
 
@@ -3042,15 +3042,6 @@ static void SetVehicleAlpha ( )
 
     if ( ucAlpha < 255 )
         GetAlphaAndSetNewValues ( ucAlpha );
-    else if ( dwEAEG && pInterface->m_pVehicle->GetModelIndex() == 0x20A )
-    {
-        bEntityHasAlpha = true;
-        pCurAlpha = ucCurrentAlpha;
-        SetEntityAlphaHooked ( dwAlphaEntity, (DWORD)HOOK_GetAlphaValues, 0 );
-        MemPutFast < DWORD > ( 0x5332D6, (DWORD)CVehicle_EAEG );
-        SetEntityAlphaHooked ( dwAlphaEntity, (DWORD)HOOK_SetAlphaValues, 0 );
-        MemPutFast < DWORD > ( 0x5332D6, 0x533290 );
-    }
     else
         bEntityHasAlpha = false;
 }

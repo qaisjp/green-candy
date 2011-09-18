@@ -26,9 +26,9 @@
 #include <ijsify.h>
 
 // Game includes
-#include "CEntitySA.h"
 #include "gamesa_init.h"
 #include "Common.h"
+#include "CEntitySA.h"
 #include "CWorldSA.h"
 #include "CClockSA.h"
 #include "CFontSA.h"
@@ -36,7 +36,10 @@
 #include "CMenuManagerSA.h"
 #include "CCameraSA.h"
 #include "CCheckpointsSA.h"
+#include "RenderWare.h"
 #include "CRenderWareSA.h"
+#include "CTextureSA.h"
+#include "CTexDictionarySA.h"
 #include "CTextureManagerSA.h"
 #include "CModelInfoSA.h"
 #include "CPedModelInfoSA.h"
