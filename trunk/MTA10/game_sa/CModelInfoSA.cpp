@@ -181,6 +181,10 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObject()
             RpAnimHierarchy *anim = clump->GetAnimHierarchy();
 
             clump->ForAllAtomics( RpSetAtomicAnimation, anim );
+
+
+
+            anim->m_flags = 0x3000;
         }
     }
 }

@@ -60,10 +60,13 @@ RpAnimation* CAnimManagerSA::CreateAnimation ( RpAnimHierarchy *animInfo )
     if ( !animInfo )
         return;
 
-    anim = RwCreateExtension( RW_EXTENSION_HANIM, 0, 0, 0 );
+    anim = pGame->GetRwExtensionManager()->Allocate( RW_EXT_HANIM, 0, 0, 0 );
 
     if ( !anim )
         return;
+
+    anim->m_count = animInfo->m_count * 2;
+    return anim;
 }
 
 int CAnimManagerSA::GetNumAnimations ( void )
