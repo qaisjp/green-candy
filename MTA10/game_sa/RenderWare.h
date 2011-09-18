@@ -129,14 +129,14 @@ class RpAnimHierarchy
 {
 public:
     unsigned int            m_flags;
-    unsigned int            m_unknown;      // 4
+    unsigned int            m_count;        // 4
     void*                   m_unknown2;     // 8
     void*                   m_unknown3;     // 12
     unsigned char*          m_unknown4;     // 16
     void*                   m_unknown5;     // 20
     RpAnimHierarchy*        m_this;         // 24
     unsigned int            m_unknown6;     // 28
-    void*                   m_unknown7;     // 32
+    RpAnimation*            m_unknown7;     // 32
 };
 class RwFrame : public RwObject
 {
@@ -315,11 +315,6 @@ struct RpTriangle
     unsigned short v1, v2, v3;
     unsigned short materialId;
 };
-class RpAnimation
-{
-public:
-
-};
 class RpGeometry : public RwObject
 {
 public:
@@ -364,10 +359,15 @@ public:
     RwExtensionInterface*   m_extension;
     unsigned int            m_count;
     size_t                  m_size;
-    unsigned int            m_unknown2;
+    unsigned int            m_unknown;
 
     void*                   m_data;
     void*                   m_internal;
+};
+class RpAnimation : public RwExtension
+{
+public:
+
 };
 class RwInterface   // size: 1456
 {

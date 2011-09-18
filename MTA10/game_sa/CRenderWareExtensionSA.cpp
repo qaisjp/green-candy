@@ -51,6 +51,7 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
 
     inst->m_size = size;
     inst->m_count = count;
+    inst->m_unknown = unk;
 
     inst->m_extension = ext;
 
@@ -62,7 +63,7 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
         return inst;
     }
 
-    inst->m_internal = (void*)((unsigned int)(inst->m_data + 1) + ext->m_structSize * count);
+    inst->m_internal = (void*)((unsigned int)inst->m_data + ext->m_structSize * count);
     return inst;
 }
 
