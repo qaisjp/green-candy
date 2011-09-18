@@ -410,8 +410,6 @@ private:
     static void                         StaticPreWorldProcessHandler    ( void );
     static void                         StaticPostWorldProcessHandler   ( void );
     static void                         StaticIdleHandler               ( void );
-    static void                         StaticAddAnimationHandler       ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID );
-    static void                         StaticBlendAnimationHandler     ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID, float fBlendDelta );
     static bool                         StaticProcessCollisionHandler   ( CEntitySAInterface* pThisInterface, CEntitySAInterface* pOtherInterface );
  
     bool                                DamageHandler                   ( CPed* pDamagePed, CEventDamage * pEvent );
@@ -593,8 +591,6 @@ private:
 public:
     std::map < CClientEntity *, bool >                m_AllDisabledCollisions;
 private:
-    std::map < CEntitySAInterface*, CClientEntity* >  m_CachedCollisionMap;
-    bool                                              m_BuiltCollisionMapThisFrame;
 
     #if defined (MTA_DEBUG) || defined (MTA_BETA)
     bool                                m_bShowSyncingInfo;

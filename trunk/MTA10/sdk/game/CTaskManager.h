@@ -105,7 +105,7 @@ public:
     virtual CTask*      GetSimplestTask( eTaskPriority priority ) = 0;
 
     virtual CTask*      FindActiveTaskByType( int iTaskType ) = 0;
-    virtual CTask*      FindTaskByType( eTaskPriorty priority, int iTaskType ) = 0;
+    virtual CTask*      FindTaskByType( eTaskPriority priority, int iTaskType ) = 0;
 
     virtual void        RemoveTaskSecondary( eTaskPriority priority ) = 0;
 //  virtual void        SetTaskSecondary( CTask* pTaskSecondary, int iType ) = 0;
@@ -113,7 +113,7 @@ public:
     virtual bool        HasTaskSecondary( const CTask* pTaskSecondary ) = 0;
 
     virtual void        ClearTaskEventResponse() = 0;
-    virtual void        Flush( eTaskPriortiy priority ) = 0;
+    virtual void        Flush( eTaskPriority priority ) = 0;
 };
 
 #endif

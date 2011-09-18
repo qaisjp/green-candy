@@ -11,6 +11,7 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+#include "gamesa_renderware.h"
 
 using std::list;
 
@@ -52,6 +53,18 @@ void CAnimManagerSA::Shutdown ( void )
     }
 }
 
+RpAnimation* CAnimManagerSA::CreateAnimation ( RpAnimHierarchy *animInfo )
+{
+    RpAnimation *anim;
+
+    if ( !animInfo )
+        return;
+
+    anim = RwCreateExtension( RW_EXTENSION_HANIM, 0, 0, 0 );
+
+    if ( !anim )
+        return;
+}
 
 int CAnimManagerSA::GetNumAnimations ( void )
 {

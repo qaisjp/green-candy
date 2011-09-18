@@ -52,7 +52,7 @@ void CTaskManagerSA::SetTask( CTaskSA* pTaskPrimary, eTaskPriority priority, boo
     }    
 }
 
-CTask* CTaskManagerSA::GetTask( eTaskPriority priority )
+CTaskSA* CTaskManagerSA::GetTask( eTaskPriority priority )
 {
     DEBUG_TRACE("CTask* CTaskManagerSA::GetTask(const int iTaskPriority)");
 
@@ -95,7 +95,7 @@ CTaskSA* CTaskManagerSA::GetSimplestActiveTask()
     return task ? m_pTaskManagementSystem->GetTask ( task ) : NULL;
 }
 
-CTask* CTaskManagerSA::GetSimplestTask( eTaskPriority priority )
+CTaskSA* CTaskManagerSA::GetSimplestTask( eTaskPriority priority )
 {
     DEBUG_TRACE("CTask* CTaskManagerSA::GetSimplestTask(const int iPriority)");
 
@@ -133,7 +133,7 @@ CTaskSA* CTaskManagerSA::FindActiveTaskByType( int iTaskType )
     return task ? m_pTaskManagementSystem->GetTask ( task ) : NULL;
 }
 
-CTask* CTaskManagerSA::FindTaskByType( eTaskPriority priority, int iTaskType )
+CTaskSA* CTaskManagerSA::FindTaskByType( eTaskPriority priority, int iTaskType )
 {
     DEBUG_TRACE("CTask* CTaskManagerSA::FindTaskByType(const int iPriority, const int iTaskType)");
 

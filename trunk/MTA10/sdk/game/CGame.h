@@ -19,6 +19,7 @@ typedef void ( InRenderer ) ( void );
 
 #include "Common.h"
 
+#include "CRenderWare.h"
 #include "C3DMarkers.h"
 #include "CAERadioTrackManager.h"
 #include "CAnimBlendAssociation.h"
@@ -56,7 +57,6 @@ typedef void ( InRenderer ) ( void );
 #include "CProjectile.h"
 #include "CProjectileInfo.h"
 #include "CRadar.h"
-#include "CRenderWare.h"
 #include "CRestart.h"
 #include "CRopes.h"
 #include "CSettings.h"
@@ -119,7 +119,7 @@ public:
     virtual CGameSettings       * GetSettings()=0;
     virtual CCarEnterExit       * GetCarEnterExit()=0;
     virtual CControllerConfigManager * GetControllerConfigManager() = 0;
-    virtual CRenderWare         * GetRenderWare()=0;
+    virtual CRenderWare         * GetRenderWare() = 0;
     virtual CHandlingManager    * GetHandlingManager () = 0;
     virtual CAnimManager        * GetAnimManager () = 0;
     virtual CStreaming          * GetStreaming () = 0;

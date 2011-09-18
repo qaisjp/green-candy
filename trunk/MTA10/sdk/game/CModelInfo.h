@@ -13,7 +13,6 @@
 #define __CGAME_MODELINFO
 
 #include "Common.h"
-#include "RenderWare.h"
 #include <CVector.h>
 
 #include <windows.h>

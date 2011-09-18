@@ -154,6 +154,12 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObjectEx( int rwTag )
     return CreateRwObject();
 }
 
+bool RpSetAtomicAnimation( RpAtomic *child, RpAnimHierarchy *anim )
+{
+    child->m_anim = anim;
+    return false;
+}
+
 RpClump* CClumpModelInfoSAInterface::CreateRwObject()
 {
     RpClump *clump;
@@ -168,9 +174,14 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObject()
 
     atomic = RpClumpGetLastAtomic( clump );
 
-    if ( atomic )
+    if ( atomic && !( m_collFlags & COLL_NOANIM ) )
     {
+        if ( atomic->geometry->m_animation )
+        {
+            RpAnimHierarchy *anim = clump->GetAnimHierarchy();
 
+            clump->ForAllAtomics( RpSetAtomicAnimation, anim );
+        }
     }
 }
 

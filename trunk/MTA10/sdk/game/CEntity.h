@@ -15,7 +15,6 @@
 #include "Common.h"
 #include <CMatrix.h>
 #include <CVector.h>
-#include "RenderWare.h"
 
 #include <windows.h>
 
@@ -74,10 +73,6 @@ public:
     virtual bool                        IsOnScreen ()=0;
     virtual void                        SetUnderwater ( bool bUnderwater )=0;
     virtual bool                        GetUnderwater ( void )=0;
-    virtual RwFrame *                   GetFrameFromId ( int id )=0;
-    virtual RwMatrix *                  GetLTMFromId ( int id )=0;
-
-    virtual RpClump *                   GetRpClump () = 0;
 
     virtual bool                        IsVisible ( void ) = 0;
     virtual void                        SetVisible ( bool bVisible ) = 0;

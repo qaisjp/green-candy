@@ -130,7 +130,6 @@ public:
     virtual void                        Fade ( float fFadeOutTime, int iOutOrIn )=0;
     virtual void                        SetFadeColor ( unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue )=0;
     virtual float                       GetCameraRotation ( void )=0;
-    virtual RwMatrix *                  GetLTM ( void )=0;
     virtual CEntity *                   GetTargetEntity ( void )=0;
     virtual void                        SetCameraClip ( bool bObjects, bool bVehicles )=0;
     virtual VOID                        SetCameraViewMode ( BYTE dwCamMode )=0;

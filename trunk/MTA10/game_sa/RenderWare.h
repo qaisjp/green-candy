@@ -2,9 +2,8 @@
 *
 *  PROJECT:     Multi Theft Auto v1.0
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        sdk/game/RenderWare.h
-*  PURPOSE:     RenderWare-compatible definitions for
-*               Grand Theft Auto: San Andreas
+*  FILE:        game_sa/RenderWare.h
+*  PURPOSE:     RenderWare definitions
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *  RenderWare is © Criterion Software
@@ -13,6 +12,8 @@
 
 #ifndef __RENDERWARE_COMPAT
 #define __RENDERWARE_COMPAT
+
+#include <../sdk/game/RenderWare_shared.h>
 
 /*****************************************************************************/
 /** RenderWare rendering types                                              **/
@@ -33,42 +34,6 @@ typedef RwCamera *(*RwCameraPreCallback) (RwCamera * camera);
 typedef RwCamera *(*RwCameraPostCallback) (RwCamera * camera);
 typedef RpAtomic *(*RpAtomicCallback) (RpAtomic * atomic);
 typedef RpClump  *(*RpClumpCallback) (RpClump * clump, void *data);
-
-// RenderWare primitive types
-struct RwV2d
-{
-    float x,y;
-};
-struct RwV3d
-{
-    float x,y,z;
-};
-struct RwPlane
-{
-    RwV3d normal;
-    float length;
-};
-struct RwBBox
-{
-    RwV3d max;
-    RwV3d min;
-};
-struct RwSphere
-{
-    RwV3d position;
-    float radius;
-};
-struct RwMatrix
-{   // 16-byte padded
-    RwV3d          right;  // 0
-    unsigned int   flags;  // 12
-    RwV3d          up;     // 16
-    unsigned int   pad1;   // 28
-    RwV3d          at;     // 32
-    unsigned int   pad2;   // 44
-    RwV3d          pos;    // 48
-    unsigned int   pad3;   // 60
-};
 
 // RenderWare enumerations
 enum RwPrimitiveType
@@ -139,11 +104,11 @@ enum eRwType
 class RwObject
 {
 public:
-    unsigned char type;
-    unsigned char subtype;
-    unsigned char flags;
-    unsigned char privateFlags;
-    void *parent;                // should be RwFrame with RpClump
+    unsigned char   type;
+    unsigned char   subtype;
+    unsigned char   flags;
+    unsigned char   privateFlags;
+    class RwFrame*  m_parent;                // should be RwFrame with RpClump
 };
 struct RwVertex
 {
@@ -159,6 +124,19 @@ struct RwListEntry
 struct RwList
 {
     RwListEntry root;
+};
+class RpAnimHierarchy
+{
+public:
+    unsigned int            m_flags;
+    unsigned int            m_unknown;      // 4
+    void*                   m_unknown2;     // 8
+    void*                   m_unknown3;     // 12
+    unsigned char*          m_unknown4;     // 16
+    void*                   m_unknown5;     // 20
+    RpAnimHierarchy*        m_this;         // 24
+    unsigned int            m_unknown6;     // 28
+    void*                   m_unknown7;     // 32
 };
 class RwFrame : public RwObject
 {
@@ -176,8 +154,13 @@ public:
     unsigned char       pluginData[8];  // padding
     char                szName[16];     // name (as stored in the frame extension)
 
-    BYTE                m_pad2[60];     // 92
-    RwList              m_children;     // 152
+    BYTE                m_pad3[60];     // 92
+    RwListEntry         m_children;     // 152
+    void*               m_pad4;         // 160
+    RpAnimHierarchy*    m_anim;         // 164
+
+    bool                ForAllChildren( bool (*callback)( RwFrame *frame, void *data ), void *data );
+    RpAnimHierarchy*    GetAnimHierarchy();
 };
 class RwTexDictionary : public RwObject
 {
@@ -185,15 +168,15 @@ public:
     RwList       textures;
     RwListEntry  globalTXDs;
 };
-struct RwTexture
+class RwTexture
 {
-    RwRaster           *raster;
-    RwTexDictionary    *txd;
-    RwListEntry        TXDList;
-    char               name[RW_TEXTURE_NAME_LENGTH];
-    char               mask[RW_TEXTURE_NAME_LENGTH];
-    unsigned int       flags;
-    int                refs;
+    RwRaster*           raster;
+    RwTexDictionary*    txd;
+    RwListEntry         TXDList;
+    char                name[RW_TEXTURE_NAME_LENGTH];
+    char                mask[RW_TEXTURE_NAME_LENGTH];
+    unsigned int        flags;
+    unsigned int        refs;
 };
 struct RwTextureCoordinates
 {
@@ -215,19 +198,11 @@ struct RwRaster
     int             origWidth, origHeight, origDepth;
     void*           renderResource;
 };
-struct RwColorFloat
-{
-    float r,g,b,a;
-};
-struct RwColor
-{
-    unsigned char r,g,b,a;
-};
 class RwObjectFrame : public RwObject
 {
 public:
-    RwListEntry  lFrame;
-    void         *callback;
+    RwListEntry     m_lFrame;
+    void*           m_callback;
 };
 struct RwCameraFrustum
 {
@@ -267,18 +242,25 @@ struct RpInterpolation
 class RpAtomic : public RwObjectFrame
 {
 public:
-    void             *info;
-    RpGeometry       *geometry;
-    RwSphere         bsphereLocal;
-    RwSphere         bsphereWorld;
-    RpClump          *clump;
-    RwListEntry      globalClumps;
-    RpAtomicCallback renderCallback;
-    RpInterpolation  interpolation;
-    unsigned short   frame;
-    unsigned short   unknown7;
-    RwList           sectors;
-    void             *render;
+    void*               info;               // 12
+
+    RpGeometry*         geometry;           // 16
+    RwSphere            bsphereLocal;       // 20
+    RwSphere            bsphereWorld;       // 36
+
+    RpClump*            clump;              // 52
+    RwListEntry         globalClumps;       // 56
+
+    RpAtomicCallback    renderCallback;     // 64
+    RpInterpolation     interpolation;      // 68
+
+    unsigned short      frame;              // 88
+    unsigned short      unknown7;           // 90
+    RwList              sectors;            // 92
+    void*               render;             // 100
+
+    BYTE                m_pad[16];          // 104
+    RpAnimHierarchy*    m_anim;             // 120
 };
 struct RpAtomicContainer
 {
@@ -299,11 +281,15 @@ public:
 class RpClump : public RwObject
 {   // RenderWare (plugin) Clump (used by GTA)
 public:
-    RwList          atomics;
-    RwList          lights;
-    RwList          cameras;
-    RwListEntry     globalClumps;
-    RpClumpCallback callback;
+    RwList              atomics;
+    RwList              lights;
+    RwList              cameras;
+    RwListEntry         globalClumps;
+    RpClumpCallback     callback;
+
+    RpAnimHierarchy*    GetAnimHierarchy();
+
+    RpClump*            ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data );
 };
 struct RpMaterialLighting
 {
@@ -356,18 +342,21 @@ public:
     void*                   m_unknown4;
     RpAnimation*            m_animation;
 };
-class RpAnimHierarchy
+class RwExtensionInterface
 {
 public:
-    unsigned int            m_flags;
-    unsigned int            m_unknown;
-    void*                   m_unknown2;
-    void*                   m_unknown3;
-    unsigned char*          m_unknown4;
-    void*                   m_unknown5;
-    RpAnimHierarchy*        m_this;
-    unsigned int            m_unknown6;
-    void*                   m_unknown7;
+    unsigned int            m_id;           
+    unsigned int            m_unknown;      // 4
+    unsigned int            m_structSize;   // 8
+    void*                   m_callback;     // 12
+    void*                   m_callback2;    // 16
+    void*                   m_callback3;    // 20
+    void*                   m_callback4;    // 24
+    void*                   m_callback5;    // 28
+    void*                   m_callback6;    // 32
+    void*                   m_callback7;    // 36
+    void*                   m_callback8;    // 40
+    unsigned int            m_unknown2;     // 44
 };
 
 /*****************************************************************************/

@@ -82,7 +82,7 @@ static RwObject* ReplacePartsCB ( RwObject * object, SReplaceParts * data )
 // RpClumpForAllAtomicsPointer callback used to add atomics to a vehicle
 static RpAtomic* AddAllAtomicsCB (RpAtomic * atomic, RpClump * data)
 {
-    RwFrame * pFrame = RpGetFrame ( data );
+    RwFrame * pFrame = data->m_parent;
 
     // add the atomic to the frame
     RpAtomicSetFrame ( atomic, pFrame );
@@ -101,7 +101,7 @@ struct SReplaceWheels
 };
 static RpAtomic* ReplaceWheelsCB (RpAtomic * atomic, SReplaceWheels * data)
 {
-    RwFrame * Frame = RpGetFrame ( atomic );
+    RwFrame * Frame = atomic->m_parent;
 
     // find our wheel atomics
     if ( strncmp ( &Frame->szName[0], "wheel_lf_dummy", 16 ) == 0 || strncmp ( &Frame->szName[0], "wheel_rf_dummy", 16 ) == 0 || 
@@ -137,15 +137,17 @@ struct SReplaceAll
 };
 static RpAtomic* ReplaceAllCB (RpAtomic * atomic, SReplaceAll * data)
 {
-    RwFrame * Frame = RpGetFrame ( atomic );
-    if ( Frame == NULL ) return atomic;
+    RwFrame *frame = atomic->m_parent;
+
+    if ( frame == NULL )
+        return atomic;
 
     // find a replacement atomic
     for ( unsigned int i = 0; i < data->uiReplacements; i++ ) {
         // see if we can find an atomic with the same name
         if ( strncmp ( &data->pReplacements[i].szName[0], &Frame->szName[0], 16 ) == 0 ) {
             // copy the matrices
-            RwFrameCopyMatrix ( RpGetFrame ( atomic ), RpGetFrame ( data->pReplacements[i].atomic ) );
+            RwFrameCopyMatrix ( frame, RpGetFrame ( data->pReplacements[i].atomic ) );
 
             // set the new atomic's frame to the current one
             RpAtomicSetFrame ( data->pReplacements[i].atomic, Frame );
@@ -176,7 +178,7 @@ struct SLoadAtomics
 };
 static RpAtomic* LoadAtomicsCB (RpAtomic * atomic, SLoadAtomics * data)
 {
-    RwFrame * Frame = RpGetFrame(atomic);
+    RwFrame * Frame = atomic->m_parent;
 
     // add the atomic to the container
     data->pReplacements [ data->uiReplacements ].atomic = atomic;
@@ -198,6 +200,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         // VERSION 1.0 EU ADDRESSES
         case VERSION_EU_10:
         {
+            RwCreateExtension                   = (RwCreateExtension_t)                     0x007CCE80;
             RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED310;
             RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B470;
             RwErrorGet                          = (RwErrorGet_t)                            0x008088C0;
@@ -229,6 +232,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
             RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D90;
             RpWorldAddAtomic                    = (RpWorldAddAtomic_t)                      0x00750FE0;
             RpGeometryCreate                    = (RpGeometryCreate_t)                      0x0074CAE0;
+            RpGeometryGetAnimation              = (RpGeometryGetAnimation_t)                0x007C7590;
             RpGeometryTriangleSetVertexIndices  = (RpGeometryTriangleSetVertexIndices_t)    0x0074C6E0;
             RpGeometryUnlock                    = (RpGeometryUnlock_t)                      0x0074C850;
             RpGeometryLock                      = (RpGeometryLock_t)                        0x0074C820;
@@ -375,8 +379,8 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
 
 
 
-// Adds texture into the TXD of a model, eventually making a copy of each texture first 
-void CRenderWareSA::ModelInfoTXDAddTextures ( std::list < RwTexture* >& textures, unsigned short usModelID, bool bMakeCopy, std::list < RwTexture* >* pReplacedTextures, std::list < RwTexture* >* pAddedTextures, bool bAddRef )
+// Adds texture into the TXD of a model
+void CRenderWareSA::ModelInfoTXDAddTextures ( std::list < RwTexture* >& textures, unsigned short usModelID, std::list < RwTexture* >* pReplacedTextures, std::list < RwTexture* >* pAddedTextures, bool bAddRef )
 {
     // Get the CModelInfo's TXD ID
     unsigned short usTxdId = ppModelInfo[usModelID]->m_textureDictionary;
@@ -429,19 +433,6 @@ void CRenderWareSA::ModelInfoTXDAddTextures ( std::list < RwTexture* >& textures
             }
 
             RwTexture* pTex = *it;
-
-            if ( bMakeCopy )
-            {
-                // Reuse the given texture's raster
-                RwTexture* pNewTex = RwTextureCreate ( pTex->raster );
-
-                // Copy over additional properties
-                MemCpyFast ( &pNewTex->name, &pTex->name, RW_TEXTURE_NAME_LENGTH );
-                MemCpyFast ( &pNewTex->mask, &pTex->mask, RW_TEXTURE_NAME_LENGTH );
-                pNewTex->flags = pTex->flags;
-                
-                pTex = pNewTex;
-            }
 
             // Add the texture
             RwTexDictionaryAddTexture ( pTXD, pTex );
@@ -627,7 +618,7 @@ bool CRenderWareSA::PositionFrontSeat ( RpClump *pClump, unsigned short usModelI
     DWORD *pVehicleDummies = (DWORD*)((CVehicleModelInfoSAInterface*)ppModelInfo[usModelID])->m_seatPlacement;
 
     // read out the 'ped_frontseat' frame
-    RwFrame * pPedFrontSeat = RwFrameFindFrame ( RpGetFrame ( pClump ), "ped_frontseat" );
+    RwFrame * pPedFrontSeat = RwFrameFindFrame ( pClump->m_parent, "ped_frontseat" );
 
     if ( pPedFrontSeat == NULL )
         return false;
@@ -699,7 +690,7 @@ void CRenderWareSA::ReplaceAllAtomicsInClump ( RpClump * pDst, RpAtomicContainer
 void CRenderWareSA::ReplaceWheels ( RpClump * pClump, RpAtomicContainer * pAtomics, unsigned int uiAtomics, const char * szWheel )
 {
     // get the clump's frame
-    RwFrame * pFrame = RpGetFrame ( pClump );
+    RwFrame * pFrame = pClump->m_parent;
 
     SReplaceWheels data;
     data.pClump = pClump;
@@ -712,9 +703,7 @@ void CRenderWareSA::ReplaceWheels ( RpClump * pClump, RpAtomicContainer * pAtomi
 // Repositions an atomic
 void CRenderWareSA::RepositionAtomic ( RpClump * pDst, RpClump * pSrc, const char * szName )
 {
-    RwFrame * pDstFrame = RpGetFrame ( pDst );
-    RwFrame * pSrcFrame = RpGetFrame ( pSrc );
-    RwFrameCopyMatrix ( RwFrameFindFrame ( pDstFrame, szName ), RwFrameFindFrame ( pSrcFrame, szName ) );
+    RwFrameCopyMatrix ( RwFrameFindFrame ( pDst->m_parent, szName ), RwFrameFindFrame ( pSrc->m_parent, szName ) );
 }
 
 // Adds the atomics from a source clump (pSrc) to a destination clump (pDst)
@@ -731,11 +720,8 @@ bool CRenderWareSA::ReplacePartModels ( RpClump * pClump, RpAtomicContainer * pA
     char szDummyName[16] = {0};
     snprintf ( &szDummyName[0], 16, "%s_dummy", szName );
 
-    // get the clump's frame
-    RwFrame * pFrame = RpGetFrame ( pClump );
-
     // get the part's dummy frame
-    RwFrame * pPart = RwFrameFindFrame ( pFrame, &szDummyName[0] );
+    RwFrame * pPart = RwFrameFindFrame ( pClump->m_parent, &szDummyName[0] );
     if ( pPart == NULL )
         return false;
 
@@ -1364,4 +1350,59 @@ void _declspec(naked) HOOK_CTxdStore_RemoveTxd ()
         mov     ecx, ds:00C8800Ch
         jmp     RETURN_CTxdStore_RemoveTxd      // 731E96
     }
+}
+
+RwFrame* RwFrame::ForAllChildren( bool (*callback)( RwFrame* child, void *data ), void *data )
+{
+    RwFrame *child;
+
+    for ( child = m_children.next; child; child = child->m_children.prev )
+    {
+        if ( !callback( child, data ) )
+            return NULL;
+    }
+
+    return this;
+}
+
+bool RwFrameGetAnimHierarchy( RwFrame *frame, RpAnimHierarchy **anim )
+{
+    if ( frame->m_anim )
+    {
+        *anim = frame->m_anim;
+        return false;
+    }
+
+    return frame->ForAllChildren( RwFrameGetAnimHierarchy, anim );
+}
+
+RpAnimHierarchy* RwFrame::GetAnimHierarchy()
+{
+    RpAnimHierarchy *anim;
+
+    if ( m_anim )
+        return m_anim;
+
+    if ( ForAllChildren( RwFrameGetAnimHierarchy, &anim ) )
+        return NULL;
+
+    return anim;
+}
+
+RpAnimHierarchy* RpClump::GetAnimHierarchy()
+{
+    return m_parent->GetAnimHierarchy();
+}
+
+RpClump* RpClump::ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data )
+{
+    RpAtomic *child = m_lFrame.next;
+
+    while ( child != (RpAtomic*)&m_lFrame )
+    {
+        if ( !callback( child, data ) )
+            return NULL;
+    }
+
+    return this;
 }
