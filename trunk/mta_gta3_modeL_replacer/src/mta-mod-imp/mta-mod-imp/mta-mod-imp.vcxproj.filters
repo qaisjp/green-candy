@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{cd00ad52-25c1-4e16-9bb1-371a35a74d67}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="csv.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="main.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="ide.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="ipl.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="csv.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="ipl.cpp" />
+    <ClCompile Include="ide.cpp" />
+  </ItemGroup>
+</Project>
