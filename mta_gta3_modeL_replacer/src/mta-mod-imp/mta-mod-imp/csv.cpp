@@ -146,5 +146,6 @@ void	CCSV::FreeRow()
 
 	free(m_row);
 
+	m_numItems = 0;
 	m_row = NULL;
 }

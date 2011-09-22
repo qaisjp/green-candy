@@ -483,7 +483,7 @@ int		main (int argc, char *argv[])
 				if (strcmp(txdNames[k], txdName) == 0)
 					break;
 
-			// Litle hack
+			// Little hack
 			if (k == usTxdNames)
 			{
 				// Copy over resources
