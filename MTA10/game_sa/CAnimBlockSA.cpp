@@ -14,5 +14,5 @@
 
 int CAnimBlockSAInterface::GetIndex ( void )
 {
-    return ( ( ( DWORD ) this - ARRAY_CAnimManager_AnimBlocks ) / 32 );
+    return (((long)this - ARRAY_CAnimManager_AnimBlocks) / sizeof(this));
 }

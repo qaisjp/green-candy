@@ -13,9 +13,9 @@
 #define __CAnimManager_H
 
 // Get correct values
-#define MAX_ANIM_GROUPS 200
-#define MAX_ANIMATIONS 500
-#define MAX_ANIM_BLOCKS 200
+#define MAX_ANIM_GROUPS     200
+#define MAX_ANIMATIONS      500
+#define MAX_ANIM_BLOCKS     294
 
 typedef unsigned long AssocGroupId;
 typedef unsigned long AnimationId;
@@ -95,7 +95,6 @@ public:
     virtual CAnimBlendAssociation *     RpAnimBlendGetNextAssociation           ( CAnimBlendAssociation * pAssociation ) = 0;
     virtual int                         RpAnimBlendClumpGetNumAssociations      ( RpClump * pClump ) = 0;
     virtual void                        RpAnimBlendClumpUpdateAnimations        ( RpClump * pClump, float f1, bool b1 ) = 0;
-
 
     // MTA members
     virtual CAnimBlendAssociation *     GetAnimBlendAssociation                 ( CAnimBlendAssociationSAInterface * pInterface ) = 0;

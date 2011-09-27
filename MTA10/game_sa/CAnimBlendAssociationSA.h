@@ -24,7 +24,11 @@ class CAnimBlendHierarchySAInterface;
 class CAnimBlendAssociationSAInterface
 {
 public:
-    BYTE                                pad [ 14 ];                                         // 0
+    virtual                             ~CAnimBlendAssoctiationSAInterface() = 0;
+
+    void*                               m_unknown;                                          // 4
+    void*                               m_parent;                                           // 8
+    unsigned short                      m_unknown2;                                         // 12
     short                               sAnimGroup;                                         // 14
     DWORD *                             pAnimBlendNodeArray; // CAnimBlendNode pp?          // 16
     CAnimBlendHierarchySAInterface *    pAnimHierarchy;                                     // 20

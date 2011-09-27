@@ -37,7 +37,8 @@ typedef RpClump *               (__cdecl *RpClumpAddAtomic_t)                   
 typedef RpClump *               (__cdecl *RpClumpAddLight_t)                    (RpClump * clump, RpLight * light);
 typedef int                     (__cdecl *RpClumpGetNumAtomics_t)               (RpClump * clump);
 typedef RpClump *               (__cdecl *RpClumpRemoveAtomic_t)                (RpClump * clump, RpAtomic * atomic);
-typedef bool                    (__cdecl *RpAnimationInit_t)                    (void* unk, RpAnimHierarchy *animInfo);
+typedef bool                    (__cdecl *RwSkeletonInit_t)                     (RpSkeletonEx *ext, RpSkeleton *skel);
+typedef bool                    (__cdecl *RwSkeletonUpdate_t)                   (RpSkeleton *skel);
 typedef RwFrame *               (__cdecl *RwFrameAddChild_t)                    (RwFrame * parent, RwFrame * child);
 typedef RwFrame *               (__cdecl *RwFrameRemoveChild_t)                 (RwFrame * child);
 typedef RwFrame *               (__cdecl *RwFrameForAllObjects_t)               (RwFrame * frame, void * callback, void * data);
@@ -47,7 +48,7 @@ typedef RwFrame *               (__cdecl *RwFrameScale_t)                       
 typedef RwFrame *               (__cdecl *RwFrameCreate_t)                      (void);
 typedef RwFrame *               (__cdecl *RwFrameSetIdentity_t)                 (RwFrame * frame);
 typedef RpGeometry *            (__cdecl *RpGeometryCreate_t)                   (int numverts, int numtriangles, unsigned int format);
-typedef RpAnimation*            (__cdecl *RpGeometryGetAnimation_t)             (RpGeometry *geom);
+typedef RpAnimHierarchy*        (__cdecl *RpGeometryGetAnimation_t)             (RpGeometry *geom);
 typedef const RpGeometry *      (__cdecl *RpGeometryTriangleSetVertexIndices_t) (const RpGeometry * geo, RpTriangle * tri, unsigned short v1, unsigned short v2, unsigned short v3);
 typedef RpGeometry *            (__cdecl *RpGeometryUnlock_t)                   (RpGeometry * geo);
 typedef RpGeometry *            (__cdecl *RpGeometryLock_t)                     (RpGeometry * geo, int lockmode);
@@ -119,7 +120,8 @@ RpClumpGetLastAtomic_t                  RpClumpGetLastAtomic                    
 RpClumpForAllAtomicsPointer_t           RpClumpForAllAtomicsPointer             = (RpClumpForAllAtomicsPointer_t)           0xDEAD;
 RwFrameAddChild_t                       RwFrameAddChild                         = (RwFrameAddChild_t)                       0xDEAD;
 RpClumpAddAtomic_t                      RpClumpAddAtomic                        = (RpClumpAddAtomic_t)                      0xDEAD;
-RpAnimationInit_t                       RpAnimationInit                         = (RpAnimationInit_t)                       0xDEAD;
+RwSkeletonInit_t                        RwSkeletonInit                          = (RwSkeletonInit_t)                        0xDEAD;
+RwSkeletonUpdate_t                      RwSkeletonUpdate                        = (RwSkeletonUpdate_t)                      0xDEAD;
 RpAtomicSetFrame_t                      RpAtomicSetFrame                        = (RpAtomicSetFrame_t)                      0xDEAD;
 RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 0xDEAD;
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             0xDEAD;

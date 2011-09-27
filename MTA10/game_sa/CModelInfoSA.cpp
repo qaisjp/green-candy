@@ -154,9 +154,9 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObjectEx( int rwTag )
     return CreateRwObject();
 }
 
-bool RpSetAtomicAnimation( RpAtomic *child, RpAnimHierarchy *anim )
+bool RpSetAtomicSkeleton( RpAtomic *child, RpSkeleton *skeleton )
 {
-    child->m_anim = anim;
+    child->m_skeleton = skeleton;
     return false;
 }
 
@@ -174,19 +174,26 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObject()
 
     atomic = RpClumpGetLastAtomic( clump );
 
-    if ( atomic && !( m_collFlags & COLL_NOANIM ) )
+    if ( atomic && !( m_collFlags & COLL_NOSKELETON ) )
     {
         if ( atomic->geometry->m_animation )
         {
-            RpAnimHierarchy *anim = clump->GetAnimHierarchy();
+            RpSkeleton *skel = clump->GetSkeleton();
 
-            clump->ForAllAtomics( RpSetAtomicAnimation, anim );
+            clump->ForAllAtomics( RpSetAtomicSkeleton, skel );
 
-            RpAnimationInit( anim->m_animData, anim );
+            RwSkeletonInit( skel->m_data, skel );
 
-            anim->m_flags = 0x3000;
+            skel->m_splitCount = 0x3000;
         }
     }
+
+    if ( m_collFlags & COLL_STATIC )
+    {
+        
+    }
+
+    Dereference();
 }
 
 CModelInfoSA::CModelInfoSA ( void )

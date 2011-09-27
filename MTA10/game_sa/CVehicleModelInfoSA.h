@@ -66,7 +66,6 @@ public:
     void                            ConvertAnimFileIndex();
     int                             GetAnimFileIndex();
 
-    BYTE                            m_pad7[4];              // 32
     RpMaterial*                     m_plateMaterial;        // 36
     BYTE                            m_pad2[9];              // 40
     unsigned char                   m_plateDesign;          // 49

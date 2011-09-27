@@ -217,7 +217,8 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
             RpClumpForAllAtomicsPointer         = (RpClumpForAllAtomicsPointer_t)           0x00749BC0;
             RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B40;
             RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A4E0;
-            RpAnimationInit                     = (RpAnimationInit_t)                       0x007CD5E0;
+            RwSkeletonInit                      = (RwSkeletonInit_t)                        0x007CD5E0;
+            RwSkeletonUpdate                    = (RwSkeletonUpdate_t)                      0x007C5210;
             RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
             RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
             RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70; 
@@ -1355,11 +1356,27 @@ void _declspec(naked) HOOK_CTxdStore_RemoveTxd ()
     }
 }
 
+bool RwFrameGetChildCount( RwFrame *child, unsigned int *count )
+{
+    child->ForAllChildren( RwFrameGetChildCount, count );
+
+    (*count)++;
+    return true;
+}
+
+unsigned int RwFrame::CountChildren()
+{
+    unsigned int count;
+
+    ForAllChildren( RwFrameGetChildCount, &count );
+    return count;
+}
+
 RwFrame* RwFrame::ForAllChildren( bool (*callback)( RwFrame* child, void *data ), void *data )
 {
     RwFrame *child;
 
-    for ( child = m_children.next; child; child = child->m_children.prev )
+    for ( child = m_child; child; child = child->m_next )
     {
         if ( !callback( child, data ) )
             return NULL;
@@ -1368,33 +1385,58 @@ RwFrame* RwFrame::ForAllChildren( bool (*callback)( RwFrame* child, void *data )
     return this;
 }
 
-bool RwFrameGetAnimHierarchy( RwFrame *frame, RpAnimHierarchy **anim )
+bool RwFrameGetSkeleton( RwFrame *frame, RpSkeleton **anim )
 {
-    if ( frame->m_anim )
+    if ( frame->m_skeleton )
     {
-        *anim = frame->m_anim;
+        *anim = frame->m_skeleton;
         return false;
     }
 
-    return frame->ForAllChildren( RwFrameGetAnimHierarchy, anim );
+    return frame->ForAllChildren( RwFrameGetSkeleton, anim );
 }
 
-RpAnimHierarchy* RwFrame::GetAnimHierarchy()
+RpSkeleton* RwFrame::GetSkeleton()
 {
-    RpAnimHierarchy *anim;
+    RpSkeleton *skel;
 
-    if ( m_anim )
-        return m_anim;
+    if ( m_skeleton )
+        return m_skeleton;
 
-    if ( ForAllChildren( RwFrameGetAnimHierarchy, &anim ) )
+    if ( ForAllChildren( RwFrameGetSkeleton, &skel ) )
         return NULL;
 
-    return anim;
+    return skel;
 }
 
-RpAnimHierarchy* RpClump::GetAnimHierarchy()
+void RpClump::InitStaticSkeleton()
 {
-    return m_parent->GetAnimHierarchy();
+    RpAtomic *atomic = GetFirstAtomic();
+
+    if ( !atomic || !atomic->m_skeleton )
+    {
+        unsigned int count = m_parent->CountChildren();
+
+        // Initialize a non animated mesh
+        return;
+    }
+
+    
+}
+
+RpSkeleton* RpClump::GetAtomicSkeleton()
+{
+    RpAtomic *atomic = GetFirstAtomic();
+
+    if (!atomic)
+        return NULL;
+    
+    return atomic->m_skeleton;
+}
+
+RpSkeleton* RpClump::GetSkeleton()
+{
+    return m_parent->GetSkeleton();
 }
 
 bool RwGetAtomic( RpAtomic *child, RpAtomic **atomic )
@@ -1413,12 +1455,14 @@ RpAtomic* RpClump::GetFirstAtomic()
 
 RpClump* RpClump::ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data )
 {
-    RpAtomic *child = m_lFrame.next;
+    RpAtomic *child = m_atomics.root.next;
 
-    while ( child != (RpAtomic*)&m_lFrame )
+    while ( &child->m_atomics != &m_atomics.root )
     {
         if ( !callback( child, data ) )
             return NULL;
+
+        child = (RpAtomic*)( (unsigned int)child->m_atomics.next - offsetof(RpAtomic, m_atomics));
     }
 
     return this;

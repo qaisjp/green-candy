@@ -54,7 +54,6 @@ public:
     void                            ConvertAnimFileIndex();
     int                             GetAnimFileIndex();
 
-    unsigned int        m_flags;                  // 32  
     AssocGroupID        m_motionAnimGroup;        // 36   Motion anim group (AssocGroupID, long)
     DWORD               m_pedType;                // 40   Default ped type (long)
     ePedStats *         m_pedStats;               // 44   Default ped stats (ePedStats)

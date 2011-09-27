@@ -41,10 +41,8 @@
 
 #define NUM_CHARS_IN_NAME                           34
 
-/**
- * \todo Confirm that AssocGroupId is a DWORD
- */
-typedef DWORD AssocGroupId ;
+
+typedef unsigned short AssocGroupId;
 
 class CPedClothesDesc;
 
