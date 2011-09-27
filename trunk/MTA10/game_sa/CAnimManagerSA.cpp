@@ -583,7 +583,7 @@ bool CAnimManagerSA::HasAnimGroupLoaded ( AssocGroupId groupID )
     return bReturn;
 }
 
-
+#define ANTIHACK_BLA    0x00B5F878
 
 CAnimBlendAssociation * CAnimManagerSA::RpAnimBlendClumpGetFirstAssociation ( RpClump * pClump )
 {
@@ -598,7 +598,6 @@ CAnimBlendAssociation * CAnimManagerSA::RpAnimBlendClumpGetFirstAssociation ( Rp
     }
     return GetAnimBlendAssociation ( pInterface );
 }
-
 
 CAnimBlendAssociation * CAnimManagerSA::RpAnimBlendClumpGetAssociation ( RpClump * pClump, const char * szAnimName )
 {
@@ -615,7 +614,6 @@ CAnimBlendAssociation * CAnimManagerSA::RpAnimBlendClumpGetAssociation ( RpClump
     return GetAnimBlendAssociation ( pInterface );
 }
 
-
 CAnimBlendAssociation * CAnimManagerSA::RpAnimBlendClumpGetAssociation ( RpClump * pClump, AnimationId animID )
 {
     CAnimBlendAssociationSAInterface * pInterface;    
@@ -630,7 +628,6 @@ CAnimBlendAssociation * CAnimManagerSA::RpAnimBlendClumpGetAssociation ( RpClump
     }
     return GetAnimBlendAssociation ( pInterface );
 }
-
 
 CAnimBlendAssociation * CAnimManagerSA::RpAnimBlendGetNextAssociation ( CAnimBlendAssociation * pAssociation )
 {

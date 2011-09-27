@@ -18,16 +18,18 @@
 
 class CAnimBlendAssocGroupSA;
 
+#define ARRAY_AnimBlock             0x00B5D4C0
+
 class CAnimBlockSAInterface // 32 bytes
 {
 public:
-    int     GetIndex ( void );  // hacky, i know
+    int                 GetIndex ( void );
 
-    char                szName [ 16 ];
-    bool                bLoaded;    // ?
-    BYTE                pad [ 1 ];
-    unsigned short      usRefs;
-    BYTE                pad2 [ 12 ];
+    char                m_name[16];
+    bool                m_loaded;
+    BYTE                m_pad[1];
+    unsigned short      m_references;
+    BYTE                m_pad2[12];
 };
 
 class CAnimBlockSA : public CAnimBlock

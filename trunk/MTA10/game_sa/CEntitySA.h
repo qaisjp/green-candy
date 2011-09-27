@@ -127,7 +127,7 @@ public:
     unsigned long bUnderwater : 1;              // this object is underwater change drawing order
     unsigned long bHasPreRenderEffects : 1; // Object has a prerender effects attached to it
     unsigned long bIsTempBuilding : 1;          // whether or not the building is temporary (i.e. can be created and deleted more than once)
-    unsigned long bDontUpdateHierarchy : 1; // Don't update the aniamtion hierarchy this frame
+    unsigned long bDontUpdateSkeleton : 1; // Don't update the aniamtion hierarchy this frame
     
     unsigned long bHasRoadsignText : 1;     // entity is roadsign and has some 2deffect text stuff to be rendered
     unsigned long bDisplayedSuperLowLOD : 1;
