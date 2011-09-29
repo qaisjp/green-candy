@@ -219,6 +219,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
             RpClumpForAllAtomicsPointer         = (RpClumpForAllAtomicsPointer_t)           0x00749BC0;
             RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B40;
             RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A4E0;
+            RpClumpTransform                    = (RpClumpTransform_t)                      0x00735360;
             RwSkeletonInit                      = (RwSkeletonInit_t)                        0x007CD5E0;
             RwSkeletonUpdate                    = (RwSkeletonUpdate_t)                      0x007C5210;
             RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
@@ -1417,28 +1418,64 @@ RwStaticGeometry::RwStaticGeometry()
     m_link = NULL;
 }
 
-void RwStaticGeometry::AllocateMatrices( unsigned int count )
+RwRenderLink* RwStaticGeometry::AllocateLink( unsigned int count )
 {
-    if ( m_matrices )
-        RwFreeAligned( m_matrices );
+    if ( m_link )
+        RwFreeAligned( m_link );
 
     m_count = count;
-    m_link = RwAllocAligned( ((count * sizeof(RwStaticFrameLink) - 1) >> 6 + 1) << 6, 0x40 );
+    return m_link = RwAllocAligned( ((count * sizeof(RwRenderLink) - 1) >> 6 + 1) << 6, 0x40 );
+}
+
+void RwStaticGeometry::ForAllLinks( void (*callback)( RwRenderLink *link, void *data ), void *data )
+{
+    RwRenderLink *link = m_link;
+    unsigned int n;
+
+    for (n=0; n<m_count; link++)
+        callback( link, data );
+}
+
+bool RwAssignRenderLink( RwFrame *child, RwRenderLink **link )
+{
+    (*link)->m_frame = child;
+    (*link)++;
+
+    child->ForAllChildren( RwAssignRenderLink, link );
+    return true;
+}
+
+void RwRenderLinkInit( RwRenderLink *link, void *data )
+{
+    RwFrame *frame = link->m_frame;
+
+    new (link->m_position) CVector( frame->m_modelling.pos[0], frame->m_modelling.pos[1], frame->m_modelling.pos[3] );
+
+    link->m_id = -1;
 }
 
 void RpClump::InitStaticSkeleton()
 {
     RpAtomic *atomic = GetFirstAtomic();
+    RwStaticGeometry *geom = CreateStaticGeometry();
+    RwRenderLink *link;
 
     if ( !atomic || !atomic->m_skeleton )
     {
-        unsigned int count = m_parent->CountChildren();
-
         // Initialize a non animated mesh
+        link = geom->AllocateLink( m_parent->CountChildren() );
+
+        // Assign all frames
+        m_parent->ForAllChildren( RwAssignRenderLink, &link );
+
+        // Init them
+        geom->ForAllLinks( RwRenderLinkInit, 0 );
+
+        geom->m_flags |= GEOM_STATIC;
         return;
     }
 
-    
+    link = geom->AllocateLink( atomic->geometry->m_skeleton->m_splitCount );
 }
 
 RwStaticGeometry* RpClump::CreateStaticGeometry()
