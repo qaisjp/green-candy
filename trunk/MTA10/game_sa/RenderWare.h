@@ -154,25 +154,30 @@ public:
     void*                   m_data;
     void*                   m_internal;
 };
-class RwStaticFrameLink
+class RwRenderLink
 {
 public:
-    BYTE                    m_pad[16];
+    unsigned int            m_unknown2;
+    CVector                 m_position;
     RwFrame*                m_frame;
-    void*                   m_unknown;
+    int                     m_id;
 };
+
+#define GEOM_STATIC         0x00000008
+
 class RwStaticGeometry
 {
 public:
     RwStaticGeometry();
 
-    unsigned int            m_flags;
-    unsigned int            m_unknown;
-    unsigned int            m_count;
-    unsigned int            m_unknown3;
-    RwStaticFrameLink*      m_link;
+    unsigned int            m_flags;        // 0
+    unsigned int            m_unknown;      // 4
+    unsigned int            m_count;        // 8
+    unsigned int            m_unknown3;     // 12
+    RwRenderLink*           m_link;         // 16
 
-    void                    AllocateMatrices( unsigned int count );
+    RwRenderLink*           AllocateLink( unsigned int count );
+    void                    ForAllLinks( void (*callback)( RwRenderLink *link, void *data ), void *data );
 };
 class RpSkeletonEx : public RwExtension
 {
@@ -197,22 +202,17 @@ class RwFrame : public RwObject
 public:
     void*                   m_pad1;         // 8
     void*                   m_pad2;         // 12
-    RwMatrix                modelling;      // 16
-    RwMatrix                ltm;            // 32
-    RwList <RwObject>       objects;        // 48
-    RwFrame*                child;          // 56
-    RwFrame*                next;           // 60
-    RwFrame*                root;           // 64
-
-    // Rockstar Frame extension (0x253F2FE) (24 bytes)
-    unsigned char           pluginData[8];  // padding
-    char                    szName[16];     // name (as stored in the frame extension)
-
-    BYTE                    m_pad3[60];     // 92
+    RwMatrix                m_modelling;    // 16
+    RwMatrix                m_ltm;          // 80
+    RwList <RwObject>       m_objects;      // 144
     RwFrame*                m_child;        // 152
     RwFrame*                m_next;         // 156
-    void*                   m_pad4;         // 160
+    RwFrame*                m_root;         // 160
+
+    // Rockstar Frame extension (0x253F2FE) (24 bytes)
     RpSkeleton*             m_skeleton;     // 164
+    unsigned char           pluginData[4];  // padding
+    char                    szName[16];     // name (as stored in the frame extension)
 
     unsigned int            CountChildren();
     bool                    ForAllChildren( bool (*callback)( RwFrame *frame, void *data ), void *data );
