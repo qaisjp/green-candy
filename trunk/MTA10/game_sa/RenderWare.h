@@ -154,6 +154,26 @@ public:
     void*                   m_data;
     void*                   m_internal;
 };
+class RwStaticFrameLink
+{
+public:
+    BYTE                    m_pad[16];
+    RwFrame*                m_frame;
+    void*                   m_unknown;
+};
+class RwStaticGeometry
+{
+public:
+    RwStaticGeometry();
+
+    unsigned int            m_flags;
+    unsigned int            m_unknown;
+    unsigned int            m_count;
+    unsigned int            m_unknown3;
+    RwStaticFrameLink*      m_link;
+
+    void                    AllocateMatrices( unsigned int count );
+};
 class RpSkeletonEx : public RwExtension
 {
 public:
@@ -171,7 +191,7 @@ public:
     RpSkeleton*             m_this;         // 24
     unsigned int            m_unknown6;     // 28
     RpSkeletonEx*           m_data;         // 32
-}; 
+};
 class RwFrame : public RwObject
 {
 public:
@@ -292,7 +312,7 @@ public:
 
     unsigned short          frame;              // 96
     unsigned short          unknown7;           // 98
-    RwList <void>          sectors;            // 100
+    RwList <void>           sectors;            // 100
     void*                   render;             // 108
 
     BYTE                    m_pad[8];           // 112
@@ -314,7 +334,6 @@ public:
     unsigned short          frame;
     unsigned short          unknown2;
 };
-class
 class RpClump : public RwObject
 {   // RenderWare (plugin) Clump (used by GTA)
 public:
@@ -326,7 +345,10 @@ public:
 
     BYTE                    m_pad[16];          // 44
 
+    RwStaticGeometry*       m_static;           // 60
+
     void                    InitStaticSkeleton();
+    RwStaticGeometry*       CreateStaticGeometry();
 
     RpSkeleton*             GetAtomicSkeleton();
     RpSkeleton*             GetSkeleton();
