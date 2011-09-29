@@ -202,6 +202,8 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         // VERSION 1.0 EU ADDRESSES
         case VERSION_EU_10:
         {
+            RwAllocAligned                      = (RwAllocAligned_t)                        0x0072F4C0;
+            RwFreeAligned                       = (RwFreeAligned_t)                         0x0072F4F0;
             RwCreateExtension                   = (RwCreateExtension_t)                     0x007CCE80;
             RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED310;
             RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B470;
@@ -1409,6 +1411,21 @@ RpSkeleton* RwFrame::GetSkeleton()
     return skel;
 }
 
+RwStaticGeometry::RwStaticGeometry()
+{
+    m_count = 0;
+    m_link = NULL;
+}
+
+void RwStaticGeometry::AllocateMatrices( unsigned int count )
+{
+    if ( m_matrices )
+        RwFreeAligned( m_matrices );
+
+    m_count = count;
+    m_link = RwAllocAligned( ((count * sizeof(RwStaticFrameLink) - 1) >> 6 + 1) << 6, 0x40 );
+}
+
 void RpClump::InitStaticSkeleton()
 {
     RpAtomic *atomic = GetFirstAtomic();
@@ -1422,6 +1439,11 @@ void RpClump::InitStaticSkeleton()
     }
 
     
+}
+
+RwStaticGeometry* RpClump::CreateStaticGeometry()
+{
+    return m_static = new RwStaticGeometry();
 }
 
 RpSkeleton* RpClump::GetAtomicSkeleton()

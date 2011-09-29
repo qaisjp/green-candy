@@ -27,6 +27,8 @@ class CColModelSAInterface;
 /*****************************************************************************/
 
 /* RenderWare function defines */
+typedef void*                   (__cdecl *RwAllocAligned_t)                     (size_t size, unsigned int align);
+typedef void                    (__cdecl *RwFreeAligned_t)                      (void *ptr);
 typedef RwExtension*            (__cdecl *RwCreateExtension_t)                  (unsigned int id, unsigned int count, size_t size, int unk3);
 typedef RpAtomic *              (__cdecl *RpAtomicCreate_t)                     (void);
 typedef RpAtomic *              (__cdecl *RpAtomicClone_t)                      (RpAtomic * atomic);
@@ -105,6 +107,8 @@ typedef RwTexture*              (__cdecl *RwTextureCreate_t)                    
 /*****************************************************************************/
 
 // US Versions
+RwAllocAligned_t                        RwAllocAligned                          = (RwAllocAligned_t)                        0xDEAD;
+RwFreeAligned_t                         RwFreeAligned                           = (RwFreeAligned_t)                         0xDEAD;
 RwCreateExtension_t                     RwCreateExtension                       = (RwCreateExtension_t)                     0xDEAD;
 RwStreamFindChunk_t                     RwStreamFindChunk                       = (RwStreamFindChunk_t)                     0xDEAD;
 RpClumpStreamRead_t                     RpClumpStreamRead                       = (RpClumpStreamRead_t)                     0xDEAD;
