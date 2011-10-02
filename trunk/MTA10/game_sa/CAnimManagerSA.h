@@ -85,6 +85,8 @@ public:
     void                        Initialize                              ( void );
     void                        Shutdown                                ( void );
 
+    RwExtension*                CreateAnimation                         ( RpAnimHierarchy *animInfo );
+
     int                         GetNumAnimations                        ( void );
     int                         GetNumAnimBlocks                        ( void );
     int                         GetNumAnimAssocDefinitions              ( void );
@@ -118,7 +120,7 @@ public:
     void                        RemoveAnimBlockRefWithoutDelete         ( int ID );
     int                         GetNumRefsToAnimBlock                   ( int ID );
     void                        RemoveAnimBlock                         ( int ID );
-    CAnimBlockSAInterface*      GetAnimBlock                            ( unsigned int id );
+    CAnimBlockSAInterface*      GetAnimBlock                            ( unsigned short id );
     
     AnimAssocDefinition*        AddAnimAssocDefinition                  ( const char * szBlockName, const char * szAnimName, AssocGroupId animGroup, AnimationId animID, AnimDescriptor * pDescriptor );
     void                        ReadAnimAssociationDefinitions          ( void );

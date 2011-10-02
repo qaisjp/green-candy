@@ -146,31 +146,32 @@ public:
 class RwExtension
 {
 public:
-    RwExtensionInterface*   m_extension;
-    unsigned int            m_count;
-    size_t                  m_size;
-    unsigned int            m_unknown;
+    RwExtensionInterface*   m_extension;    // 0
+    unsigned int            m_count;        // 4
+    size_t                  m_size;         // 8
+    unsigned int            m_unknown;      // 12
 
-    void*                   m_data;
-    void*                   m_internal;
+    void*                   m_data;         // 16
+    void*                   m_internal;     // 20
 };
 class RwRenderLink
 {
 public:
-    unsigned int            m_unknown2;
-    CVector                 m_position;
-    RwFrame*                m_frame;
-    int                     m_id;
+    unsigned char           m_flags;        
+    BYTE                    m_pad[3];       // 1
+    CVector                 m_position;     // 4
+    void*                   m_context;      // 16
+    int                     m_id;           // 20
 };
 
-#define GEOM_STATIC         0x00000008
+#define BONE_ROOT           0x08
 
 class RwStaticGeometry
 {
 public:
     RwStaticGeometry();
 
-    unsigned int            m_flags;        // 0
+    unsigned int            m_unknown2;     // 0
     unsigned int            m_unknown;      // 4
     unsigned int            m_count;        // 8
     unsigned int            m_unknown3;     // 12
@@ -179,23 +180,59 @@ public:
     RwRenderLink*           AllocateLink( unsigned int count );
     void                    ForAllLinks( void (*callback)( RwRenderLink *link, void *data ), void *data );
 };
-class RpSkeletonEx : public RwExtension
+class RwBoneInfo
 {
 public:
-
+    unsigned int            m_index;
+    BYTE                    m_pad[4];
+    unsigned int            m_flags;
+    DWORD                   m_pad2;
 };
 class RpSkeleton
 {
 public:
-    unsigned int            m_splitCount;
-    unsigned int            m_count;        // 4
+    unsigned int            m_boneCount;
+    unsigned int            m_unknown;      // 4
     void*                   m_unknown2;     // 8
     RwMatrix*               m_boneMatrices; // 12
-    unsigned char*          m_unknown4;     // 16
+    unsigned int            m_unknown3;     // 16
     void*                   m_unknown5;     // 20
-    RpSkeleton*             m_this;         // 24
+    unsigned char*          m_boneParent;   // 24
     unsigned int            m_unknown6;     // 28
     RpSkeletonEx*           m_data;         // 32
+    BYTE                    m_pad[28];      // 36
+    unsigned char*          m_boneParent2;  // 64
+};
+class RwAnimInfo    // dynamic
+{
+    void*                   m_unknown;      // 0
+    CVector                 m_offset;       // 4
+    BYTE                    m_pad[12];      // 16
+};
+class RpAnimation
+{
+public:
+    RwExtension*            m_ext;
+    BYTE                    m_pad[32];      // 4
+    size_t                  m_infoSize;     // 36
+    BYTE                    m_pad2[36];     // 40
+
+    // Dynamically extended data
+    RwAnimInfo              m_info[32];
+};
+class RpAnimHierarchy
+{
+public:
+    unsigned int            m_flags;        // 0
+    unsigned int            m_boneCount;    // 4
+    BYTE                    m_pad[8];       // 8
+    RpBoneInfo*             m_boneInfo;     // 16
+    unsigned int            m_unknown4;     // 20
+    RpAnimHierarchy*        m_this;         // 24
+    unsigned char           m_unknown;      // 28
+    unsigned char           m_unknown2;     // 29
+    unsigned short          m_unknown3;     // 30
+    RpAnimation*            m_anim;         // 32
 };
 class RwFrame : public RwObject
 {
@@ -210,13 +247,13 @@ public:
     RwFrame*                m_root;         // 160
 
     // Rockstar Frame extension (0x253F2FE) (24 bytes)
-    RpSkeleton*             m_skeleton;     // 164
-    unsigned char           pluginData[4];  // padding
-    char                    szName[16];     // name (as stored in the frame extension)
+    RpAnimHierarchy*        m_anim;             // 164
+    BYTE                    m_pluginData[4];    // padding
+    char                    szName[16];         // name (as stored in the frame extension)
 
     unsigned int            CountChildren();
     bool                    ForAllChildren( bool (*callback)( RwFrame *frame, void *data ), void *data );
-    RpSkeleton*             GetSkeleton();
+    RpAnimHierarchy*        GetAnimHierarchy();
 };
 class RwTexDictionary : public RwObject
 {
@@ -298,13 +335,13 @@ struct RpInterpolation
 class RpAtomic : public RwObjectFrame
 {
 public:
-    void*                   info;               // 20
+    void*                   m_info;             // 20
 
-    RpGeometry*             geometry;           // 24
+    RpGeometry*             m_geometry;         // 24
     RwSphere                bsphereLocal;       // 28
     RwSphere                bsphereWorld;       // 44
 
-    RpClump*                clump;              // 60
+    RpClump*                m_clump;            // 60
     RwListEntry <RpAtomic>  m_atomics;          // 64
 
     RpAtomicCallback        renderCallback;     // 72
@@ -316,7 +353,7 @@ public:
     void*                   render;             // 108
 
     BYTE                    m_pad[8];           // 112
-    RpSkeleton*             m_skeleton;         // 120
+    RpAnimHierarchy*        m_anim;             // 120
 };
 struct RpAtomicContainer
 {
@@ -329,7 +366,7 @@ public:
     float                   radius;
     RwColorFloat            color;
     float                   unknown1;
-    RwList <void>          sectors;
+    RwList <void>           sectors;
     RwListEntry <RpLight>   globalLights;
     unsigned short          frame;
     unsigned short          unknown2;
@@ -351,10 +388,12 @@ public:
     RwStaticGeometry*       CreateStaticGeometry();
 
     RpSkeleton*             GetAtomicSkeleton();
-    RpSkeleton*             GetSkeleton();
+    RpSkeleton*             GetAnimHierarchy();
     RpAtomic*               GetFirstAtomic();
 
     RpClump*                ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data );
+
+    void                    GetBoneTransform( CVector *offset );
 };
 struct RpMaterialLighting
 {
@@ -418,7 +457,7 @@ public:
 
     void*                   m_callback3;                                    // 356
     void*                   m_callback4;                                    // 360
-    void                    (*m_matrixTransform3)( CVector *dst, CVector *point, unsigned int count, RwMatrix *matrices );  // 364
+    void                    (*m_matrixTransform3)( CVector *dst, const CVector *point, unsigned int count, const RwMatrix *matrices );  // 364
     void*                   m_callback6;                                    // 368
 
     void*                   m_unknown;                                      // 372

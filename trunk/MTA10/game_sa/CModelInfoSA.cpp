@@ -104,7 +104,8 @@ void CBaseModelInfoSAInterface::DeleteTextures()
     if ( GetAnimFileIndex() != -1 )
         pGame->GetAnimManager()->RemoveAnimBlockRef( GetAnimFileIndex() );
 
-    pGame->GetAnimManager()->RemoveAnimBlockRef( GetAnimFileIndex() );
+    // What is this about?
+    //pGame->GetAnimManager()->RemoveAnimBlockRef( GetAnimFileIndex() );
 }
 
 void CBaseModelInfoSAInterface::Reference()
@@ -128,7 +129,7 @@ void CClumpModelInfoSAInterface::DeleteRwObject()
     if ( !m_rwClump )
         return;
 
-    atomic = RpClumpGetLastAtomic( m_rwClump );
+    atomic = m_rwClump->GetFirstAtomic();
 
     if ( atomic )
     {
@@ -176,24 +177,46 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObject()
 
     if ( atomic && !( m_collFlags & COLL_NOSKELETON ) )
     {
-        if ( atomic->geometry->m_animation )
+        if ( atomic->m_geometry->m_skeleton )
         {
-            RpSkeleton *skel = clump->GetSkeleton();
+            RpAnimHierarchy *anim = clump->GetAnimHierarchy();
 
-            clump->ForAllAtomics( RpSetAtomicSkeleton, skel );
+            clump->ForAllAtomics( RpSetAtomicAnimHierarchy, anim );
 
-            RwSkeletonInit( skel->m_data, skel );
+            // Set up the animation
+            RwAnimationInit( anim->m_anim, pGame->GetAnimManager()->CreateAnimation( anim ) );
 
-            skel->m_splitCount = 0x3000;
+            anim->m_flags = 0x0300;
         }
     }
 
     if ( m_collFlags & COLL_STATIC )
     {
-        
+        CAnimBlendHierarchySAInterface *anim;
+
+        // Cache the animation and skeleton
+        clump->InitStaticSkeleton();
+
+        // Set idle animation
+        if ( anim = pGame->GetAnimManager()->GetAnimBlock( m_animBlock )->GetAnimation( m_hash ) )
+            pGame->GetAnimManager()->BlendAnimation( m_rwClump, anim, 2, 1.0 );
     }
 
     Dereference();
+}
+
+void CClumpModelInfoSAInterface::SetAnimFile( const char *name )
+{
+    if ( strcmp(name, "null") == 0 )
+        return;
+
+    /*
+        We would be copying a malloced string into m_animBlock
+        That would crash the application!
+
+        No wonder this function is not being used...
+        Poor GTA:SA coding?
+    */
 }
 
 CModelInfoSA::CModelInfoSA ( void )
@@ -206,9 +229,8 @@ CModelInfoSA::CModelInfoSA ( void )
     m_pCustomColModel = NULL;
 }
 
-
 CModelInfoSA::CModelInfoSA ( unsigned short id )
-{    
+{
     m_modelID = id;
     m_pInterface = ppModelInfo [ id ];
     m_dwReferences = 0;
@@ -217,12 +239,10 @@ CModelInfoSA::CModelInfoSA ( unsigned short id )
     m_pCustomColModel = NULL;
 }
 
-
 CBaseModelInfoSAInterface * CModelInfoSA::GetInterface ( void )
 {
-    return m_pInterface = ppModelInfo [ m_modelID ];
+    return m_pInterface;
 }
-
 
 bool CModelInfoSA::IsBoat ( )
 {

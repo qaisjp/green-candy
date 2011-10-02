@@ -53,14 +53,14 @@ void CAnimManagerSA::Shutdown ( void )
     }
 }
 
-RpAnimation* CAnimManagerSA::CreateAnimation ( RpAnimHierarchy *animInfo )
+RwExtension* CAnimManagerSA::CreateAnimation ( RpAnimHierarchy *animInfo )
 {
-    RpAnimation *anim;
+    RwExtension *anim;
 
     if ( !animInfo )
         return;
 
-    anim = pGame->GetRwExtensionManager()->Allocate( RW_EXT_HANIM, 0, 0, 0 );
+    anim = pGame->GetRwExtensionManager()->Allocate( RW_EXTENSION_HANIM, 0, 0, 0 );
 
     if ( !anim )
         return;
@@ -457,6 +457,13 @@ void CAnimManagerSA::RemoveAnimBlock ( int ID )
     }
 }
 
+CAnimBlockSAInterface* CAnimManagerSA::GetAnimBlock( unsigned short id )
+{
+    if ( id > MAX_ANIM_BLOCKS-2 || id == 0 )
+        return NULL;
+
+    return (CAnimBlockSAInterface*)ARRAY_AnimBlock + (id - 1);
+}
 
 AnimAssocDefinition * CAnimManagerSA::AddAnimAssocDefinition ( const char * szBlockName, const char * szAnimName, AssocGroupId animGroup, AnimationId animID, AnimDescriptor * pDescriptor )
 {

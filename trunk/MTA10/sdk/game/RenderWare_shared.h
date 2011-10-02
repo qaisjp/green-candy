@@ -47,9 +47,9 @@ struct RwColor
 {
     unsigned char r,g,b,a;
 };
-struct RwMatrix
+class RwMatrix
 {   // 16-byte padded
-    RwV3d          right;  // 0
+    RwV3d          right;
     unsigned int   flags;  // 12
     RwV3d          up;     // 16
     unsigned int   pad1;   // 28

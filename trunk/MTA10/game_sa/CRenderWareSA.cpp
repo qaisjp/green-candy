@@ -199,186 +199,181 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
     // Version dependant addresses
     switch ( version )
     {
-        // VERSION 1.0 EU ADDRESSES
-        case VERSION_EU_10:
-        {
-            RwAllocAligned                      = (RwAllocAligned_t)                        0x0072F4C0;
-            RwFreeAligned                       = (RwFreeAligned_t)                         0x0072F4F0;
-            RwCreateExtension                   = (RwCreateExtension_t)                     0x007CCE80;
-            RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED310;
-            RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B470;
-            RwErrorGet                          = (RwErrorGet_t)                            0x008088C0;
-            RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECF30;
-            RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007ECA10;
-            RwStreamReadTexture                 = (RwStreamReadTexture_t)                   0x00730E60;
-            RwStreamClose                       = (RwStreamClose_t)                         0x007ECE60;
-            RpClumpDestroy                      = (RpClumpDestroy_t)                        0x0074A360;
-            RpClumpGetNumAtomics                = (RpClumpGetNumAtomics_t)                  0x00749930;
-            RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E70;
-            RpClumpGetLastAtomic                = (RpClumpGetLastAtomic_t)                  0x00734820;
-            RpClumpForAllAtomicsPointer         = (RpClumpForAllAtomicsPointer_t)           0x00749BC0;
-            RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B40;
-            RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A4E0;
-            RpClumpTransform                    = (RpClumpTransform_t)                      0x00735360;
-            RwSkeletonInit                      = (RwSkeletonInit_t)                        0x007CD5E0;
-            RwSkeletonUpdate                    = (RwSkeletonUpdate_t)                      0x007C5210;
-            RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
-            RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
-            RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70; 
-            RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3AD0;
-            RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3AB0;
-            RwTexDictionaryForAllTextures       = (RwTexDictionaryForAllTextures_t)         0x007F3770;
-            RwTexDictionaryAddTexture           = (RwTexDictionaryAddTexture_t)             0x007F39C0;
-            RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
-            RpClumpRemoveAtomic                 = (RpClumpRemoveAtomic_t)                   0x0074A510;
-            RpAtomicClone                       = (RpAtomicClone_t)                         0x00749EB0; 
-            RwTexDictionaryFindNamedTexture     = (RwTexDictionaryFindNamedTexture_t)       0x007F3A30;
-            RwFrameRemoveChild                  = (RwFrameRemoveChild_t)                    0x007F0D10; 
-            RwFrameForAllObjects                = (RwFrameForAllObjects_t)                  0x007F1240; 
-            RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749E10; 
-            RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D90;
-            RpWorldAddAtomic                    = (RpWorldAddAtomic_t)                      0x00750FE0;
-            RpGeometryCreate                    = (RpGeometryCreate_t)                      0x0074CAE0;
-            RpGeometryGetAnimation              = (RpGeometryGetAnimation_t)                0x007C7590;
-            RpGeometryTriangleSetVertexIndices  = (RpGeometryTriangleSetVertexIndices_t)    0x0074C6E0;
-            RpGeometryUnlock                    = (RpGeometryUnlock_t)                      0x0074C850;
-            RpGeometryLock                      = (RpGeometryLock_t)                        0x0074C820;
-            RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749CA0;
-            RwFrameCreate                       = (RwFrameCreate_t)                         0x007F0450;
-            RpGeometryTransform                 = (RpGeometryTransform_t)                   0x0074C030;
-            RwFrameSetIdentity                  = (RwFrameSetIdentity_t)                    0x007F10F0;
-            RwMatrixCreate                      = (RwMatrixCreate_t)                        0x007F2A90; 
-            RwMatrixTranslate                   = (RwMatrixTranslate_t)                     0x007F2490;
-            RwMatrixScale                       = (RwMatrixScale_t)                         0x007F2300;
-            RpGeometryTriangleSetMaterial       = (RpGeometryTriangleSetMaterial_t)         0x0074C710;
-            RpMaterialCreate                    = (RpMaterialCreate_t)                      0x0074D9E0;
-            RpGeometryDestroy                   = (RpGeometryDestroy_t)                     0x0074CD10;
-            RpMaterialDestroy                   = (RpMaterialDestroy_t)                     0x0074DA70;
-            RwV3dNormalize                      = (RwV3dNormalize_t)                        0x007ED9F0;
-            RwIm3DTransform                     = (RwIm3DTransform_t)                       0x007EF490; 
-            RwIm3DRenderIndexedPrimitive        = (RwIm3DRenderIndexedPrimitive_t)          0x007EF590;
-            RwIm3DEnd                           = (RwIm3DEnd_t)                             0x007EF560;
-            RwMatrixInvert                      = (RwMatrixInvert_t)                        0x007F20B0;
-            RpWorldAddClump                     = (RpWorldAddClump_t)                       0x00751350;
-            RwFrameScale                        = (RwFrameScale_t)                          0x007F0F10;
-            RwV3dTransformVector                = (RwV3dTransformVector_t)                  0x007EDE00;
-            RpLightCreate                       = (RpLightCreate_t)                         0x00752160;
-            RpClumpAddLight                     = (RpClumpAddLight_t)                       0x0074A540;
-            _rwObjectHasFrameSetFrame           = (_rwObjectHasFrameSetFrame_t)             0x00804F30;
-            RpLightSetRadius                    = (RpLightSetRadius_t)                      0x00751AC0;
-            RpWorldAddLight                     = (RpWorldAddLight_t)                       0x00751960;
-            RpLightSetColor                     = (RpLightSetColor_t)                       0x00751AE0;
-            RwCameraClone                       = (RwCameraClone_t)                         0x007EF3F0;
-            RpClumpClone                        = (RpClumpClone_t)                          0x00749FC0;
-            RwTexDictionaryDestroy              = (RwTexDictionaryDestroy_t)                0x007F36E0;
-            RwTextureDestroy                    = (RwTextureDestroy_t)                      0x007F3860;
-            RwRasterUnlock                      = (RwRasterUnlock_t)                        0x007FAF00;
-            RwRasterLock                        = (RwRasterLock_t)                          0x007FB310; 
-            RwRasterCreate                      = (RwRasterCreate_t)                        0x007FB270;
-            RwTextureCreate                     = (RwTextureCreate_t)                       0x007F3800;
+    // VERSION 1.0 EU ADDRESSES
+    case VERSION_EU_10:
+        RwAllocAligned                      = (RwAllocAligned_t)                        0x0072F4C0;
+        RwFreeAligned                       = (RwFreeAligned_t)                         0x0072F4F0;
+        RwCreateExtension                   = (RwCreateExtension_t)                     0x007CCE80;
+        RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED310;
+        RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B470;
+        RwErrorGet                          = (RwErrorGet_t)                            0x008088C0;
+        RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECF30;
+        RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007ECA10;
+        RwStreamReadTexture                 = (RwStreamReadTexture_t)                   0x00730E60;
+        RwStreamClose                       = (RwStreamClose_t)                         0x007ECE60;
+        RpClumpDestroy                      = (RpClumpDestroy_t)                        0x0074A360;
+        RpClumpGetNumAtomics                = (RpClumpGetNumAtomics_t)                  0x00749930;
+        RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E70;
+        RpClumpGetLastAtomic                = (RpClumpGetLastAtomic_t)                  0x00734820;
+        RpClumpForAllAtomicsPointer         = (RpClumpForAllAtomicsPointer_t)           0x00749BC0;
+        RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B40;
+        RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A4E0;
+        RpClumpGetBoneTransform             = (RpClumpGetBoneTransform_t)               0x00735360;
+        RwAnimationInit                     = (RwAnimationInit_t)                       0x007CD5E0;
+        RwSkeletonUpdate                    = (RwSkeletonUpdate_t)                      0x007C5210;
+        RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
+        RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
+        RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70;
+        RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3AD0;
+        RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3AB0;
+        RwTexDictionaryForAllTextures       = (RwTexDictionaryForAllTextures_t)         0x007F3770;
+        RwTexDictionaryAddTexture           = (RwTexDictionaryAddTexture_t)             0x007F39C0;
+        RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
+        RpClumpRemoveAtomic                 = (RpClumpRemoveAtomic_t)                   0x0074A510;
+        RpAtomicClone                       = (RpAtomicClone_t)                         0x00749EB0;
+        RwTexDictionaryFindNamedTexture     = (RwTexDictionaryFindNamedTexture_t)       0x007F3A30;
+        RwFrameRemoveChild                  = (RwFrameRemoveChild_t)                    0x007F0D10;
+        RwFrameForAllObjects                = (RwFrameForAllObjects_t)                  0x007F1240;
+        RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749E10;
+        RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D90;
+        RpWorldAddAtomic                    = (RpWorldAddAtomic_t)                      0x00750FE0;
+        RpGeometryCreate                    = (RpGeometryCreate_t)                      0x0074CAE0;
+        RpGeometryGetAnimation              = (RpGeometryGetAnimation_t)                0x007C7590;
+        RpGeometryTriangleSetVertexIndices  = (RpGeometryTriangleSetVertexIndices_t)    0x0074C6E0;
+        RpGeometryUnlock                    = (RpGeometryUnlock_t)                      0x0074C850;
+        RpGeometryLock                      = (RpGeometryLock_t)                        0x0074C820;
+        RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749CA0;
+        RwFrameCreate                       = (RwFrameCreate_t)                         0x007F0450;
+        RpGeometryTransform                 = (RpGeometryTransform_t)                   0x0074C030;
+        RwFrameSetIdentity                  = (RwFrameSetIdentity_t)                    0x007F10F0;
+        RwMatrixCreate                      = (RwMatrixCreate_t)                        0x007F2A90;
+        RwMatrixTranslate                   = (RwMatrixTranslate_t)                     0x007F2490;
+        RwMatrixScale                       = (RwMatrixScale_t)                         0x007F2300;
+        RpGeometryTriangleSetMaterial       = (RpGeometryTriangleSetMaterial_t)         0x0074C710;
+        RpMaterialCreate                    = (RpMaterialCreate_t)                      0x0074D9E0;
+        RpGeometryDestroy                   = (RpGeometryDestroy_t)                     0x0074CD10;
+        RpMaterialDestroy                   = (RpMaterialDestroy_t)                     0x0074DA70;
+        RwV3dNormalize                      = (RwV3dNormalize_t)                        0x007ED9F0;
+        RwIm3DTransform                     = (RwIm3DTransform_t)                       0x007EF490; 
+        RwIm3DRenderIndexedPrimitive        = (RwIm3DRenderIndexedPrimitive_t)          0x007EF590;
+        RwIm3DEnd                           = (RwIm3DEnd_t)                             0x007EF560;
+        RwMatrixInvert                      = (RwMatrixInvert_t)                        0x007F20B0;
+        RpWorldAddClump                     = (RpWorldAddClump_t)                       0x00751350;
+        RwFrameScale                        = (RwFrameScale_t)                          0x007F0F10;
+        RwV3dTransformVector                = (RwV3dTransformVector_t)                  0x007EDE00;
+        RpLightCreate                       = (RpLightCreate_t)                         0x00752160;
+        RpClumpAddLight                     = (RpClumpAddLight_t)                       0x0074A540;
+        _rwObjectHasFrameSetFrame           = (_rwObjectHasFrameSetFrame_t)             0x00804F30;
+        RpLightSetRadius                    = (RpLightSetRadius_t)                      0x00751AC0;
+        RpWorldAddLight                     = (RpWorldAddLight_t)                       0x00751960;
+        RpLightSetColor                     = (RpLightSetColor_t)                       0x00751AE0;
+        RwCameraClone                       = (RwCameraClone_t)                         0x007EF3F0;
+        RpClumpClone                        = (RpClumpClone_t)                          0x00749FC0;
+        RwTexDictionaryDestroy              = (RwTexDictionaryDestroy_t)                0x007F36E0;
+        RwTextureDestroy                    = (RwTextureDestroy_t)                      0x007F3860;
+        RwRasterUnlock                      = (RwRasterUnlock_t)                        0x007FAF00;
+        RwRasterLock                        = (RwRasterLock_t)                          0x007FB310; 
+        RwRasterCreate                      = (RwRasterCreate_t)                        0x007FB270;
+        RwTextureCreate                     = (RwTextureCreate_t)                       0x007F3800;
 
-            SetTextureDict                      = (SetTextureDict_t)                        0x007319C0;
-            LoadClumpFile                       = (LoadClumpFile_t)                         0x005371F0;
-            LoadModel                           = (LoadModel_t)                             0x0040C6B0;
-            LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
-            LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
-            LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
-            CTxdStore_LoadTxd                   = (CTxdStore_LoadTxd_t)                     0x00731DD0;
-            CTxdStore_GetTxd                    = (CTxdStore_GetTxd_t)                      0x00408340;
-            CTxdStore_RemoveTxd                 = (CTxdStore_RemoveTxd_t)                   0x00731E90;
-            CTxdStore_RemoveRef                 = (CTxdStore_RemoveRef_t)                   0x00731A30;
-            CTxdStore_AddRef                    = (CTxdStore_AddRef_t)                      0x00731A00; 
-            CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
+        SetTextureDict                      = (SetTextureDict_t)                        0x007319C0;
+        LoadClumpFile                       = (LoadClumpFile_t)                         0x005371F0;
+        LoadModel                           = (LoadModel_t)                             0x0040C6B0;
+        LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
+        LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
+        LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
+        CTxdStore_LoadTxd                   = (CTxdStore_LoadTxd_t)                     0x00731DD0;
+        CTxdStore_GetTxd                    = (CTxdStore_GetTxd_t)                      0x00408340;
+        CTxdStore_RemoveTxd                 = (CTxdStore_RemoveTxd_t)                   0x00731E90;
+        CTxdStore_RemoveRef                 = (CTxdStore_RemoveRef_t)                   0x00731A30;
+        CTxdStore_AddRef                    = (CTxdStore_AddRef_t)                      0x00731A00; 
+        CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
 
-            break;
-        }    
+        // Those hooks are for EU 1.0 really
+        HookInstall ( HOOKPOS_CTxdStore_SetupTxdParent, (DWORD)HOOK_CTxdStore_SetupTxdParent, 6 );
+        HookInstall ( HOOKPOS_CTxdStore_RemoveTxd, (DWORD)HOOK_CTxdStore_RemoveTxd, 6 );
+        break; 
 
-        // VERSION 1.0 US ADDRESSES
-        case VERSION_US_10:
-        {
-            RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED2D0;
-            RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B420;
-            RwErrorGet                          = (RwErrorGet_t)                            0x00808880;
-            RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECEF0;
-            RwStreamClose                       = (RwStreamClose_t)                         0x007ECE20;
-            RpClumpDestroy                      = (RpClumpDestroy_t)                        0x0074A310;
-            RpClumpGetNumAtomics                = (RpClumpGetNumAtomics_t)                  0x007498E0;
-            RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E30;
-            RpClumpForAllAtomicsPointer         = (RpClumpForAllAtomicsPointer_t)           0x00749B70;
-            RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B00;
-            RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A490;
-            RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF20;
-            RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C30;
-            RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3A90;
-            RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3A70;
-            RwTexDictionaryForAllTextures       = (RwTexDictionaryForAllTextures_t)         0x007F3730;
-            RwTexDictionaryAddTexture           = (RwTexDictionaryAddTexture_t)             0x007F3980;
-            RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
-            RpClumpRemoveAtomic                 = (RpClumpRemoveAtomic_t)                   0x0074A4C0;
-            RpAtomicClone                       = (RpAtomicClone_t)                         0x00749E60;
-            RwTexDictionaryFindNamedTexture     = (RwTexDictionaryFindNamedTexture_t)       0x007F39F0;
-            RwFrameRemoveChild                  = (RwFrameRemoveChild_t)                    0x007F0CD0;
-            RwFrameForAllObjects                = (RwFrameForAllObjects_t)                  0x007F1200;
-            RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749DC0;
-            RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D40;
-            RpWorldAddAtomic                    = (RpWorldAddAtomic_t)                      0x00750F90;
-            RpGeometryCreate                    = (RpGeometryCreate_t)                      0x0074CA90;
-            RpGeometryTriangleSetVertexIndices  = (RpGeometryTriangleSetVertexIndices_t)    0x0074C690;
-            RpGeometryUnlock                    = (RpGeometryUnlock_t)                      0x0074C800;
-            RpGeometryLock                      = (RpGeometryLock_t)                        0x0074C7D0;
-            RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749C50;
-            RwFrameCreate                       = (RwFrameCreate_t)                         0x007F0410;
-            RpGeometryTransform                 = (RpGeometryTransform_t)                   0x0074BFE0;
-            RwFrameSetIdentity                  = (RwFrameSetIdentity_t)                    0x007F10B0;
-            RwMatrixCreate                      = (RwMatrixCreate_t)                        0x007F2A50;
-            RwMatrixTranslate                   = (RwMatrixTranslate_t)                     0x007F2450;
-            RwMatrixScale                       = (RwMatrixScale_t)                         0x007F22C0;
-            RpGeometryTriangleSetMaterial       = (RpGeometryTriangleSetMaterial_t)         0x0074C6C0;
-            RpMaterialCreate                    = (RpMaterialCreate_t)                      0x0074D990;
-            RpGeometryDestroy                   = (RpGeometryDestroy_t)                     0x0074CCC0;
-            RpMaterialDestroy                   = (RpMaterialDestroy_t)                     0x0074DA20;
-            RwV3dNormalize                      = (RwV3dNormalize_t)                        0x007ED9B0;
-            RwIm3DTransform                     = (RwIm3DTransform_t)                       0x007EF450;
-            RwIm3DRenderIndexedPrimitive        = (RwIm3DRenderIndexedPrimitive_t)          0x007EF550;
-            RwIm3DEnd                           = (RwIm3DEnd_t)                             0x007EF520;
-            RwMatrixInvert                      = (RwMatrixInvert_t)                        0x007F2070;
-            RpWorldAddClump                     = (RpWorldAddClump_t)                       0x00751300;
-            RwFrameScale                        = (RwFrameScale_t)                          0x007F0ED0;
-            RwV3dTransformVector                = (RwV3dTransformVector_t)                  0x007EDDC0;
-            RpLightCreate                       = (RpLightCreate_t)                         0x00752110;
-            RpClumpAddLight                     = (RpClumpAddLight_t)                       0x0074A4F0;
-            _rwObjectHasFrameSetFrame           = (_rwObjectHasFrameSetFrame_t)             0x00804EF0;
-            RpLightSetRadius                    = (RpLightSetRadius_t)                      0x00751A70;
-            RpWorldAddLight                     = (RpWorldAddLight_t)                       0x00751910;
-            RpLightSetColor                     = (RpLightSetColor_t)                       0x00751A90;
-            RwCameraClone                       = (RwCameraClone_t)                         0x007EF3B0;
-            RpClumpClone                        = (RpClumpClone_t)                          0x00749F70;
-            RwTexDictionaryDestroy              = (RwTexDictionaryDestroy_t)                0x007F36A0;
-            RwTextureDestroy                    = (RwTextureDestroy_t)                      0x007F3820;
-            RwRasterUnlock                      = (RwRasterUnlock_t)                        0x007FAEC0;
-            RwRasterLock                        = (RwRasterLock_t)                          0x007FB2D0;
-            RwRasterCreate                      = (RwRasterCreate_t)                        0x007FB230;
-            RwTextureCreate                     = (RwTextureCreate_t)                       0x007F37C0;
+    // VERSION 1.0 US ADDRESSES
+    case VERSION_US_10:
+        RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED2D0;
+        RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B420;
+        RwErrorGet                          = (RwErrorGet_t)                            0x00808880;
+        RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECEF0;
+        RwStreamClose                       = (RwStreamClose_t)                         0x007ECE20;
+        RpClumpDestroy                      = (RpClumpDestroy_t)                        0x0074A310;
+        RpClumpGetNumAtomics                = (RpClumpGetNumAtomics_t)                  0x007498E0;
+        RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E30;
+        RpClumpForAllAtomicsPointer         = (RpClumpForAllAtomicsPointer_t)           0x00749B70;
+        RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B00;
+        RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A490;
+        RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF20;
+        RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C30;
+        RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3A90;
+        RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3A70;
+        RwTexDictionaryForAllTextures       = (RwTexDictionaryForAllTextures_t)         0x007F3730;
+        RwTexDictionaryAddTexture           = (RwTexDictionaryAddTexture_t)             0x007F3980;
+        RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
+        RpClumpRemoveAtomic                 = (RpClumpRemoveAtomic_t)                   0x0074A4C0;
+        RpAtomicClone                       = (RpAtomicClone_t)                         0x00749E60;
+        RwTexDictionaryFindNamedTexture     = (RwTexDictionaryFindNamedTexture_t)       0x007F39F0;
+        RwFrameRemoveChild                  = (RwFrameRemoveChild_t)                    0x007F0CD0;
+        RwFrameForAllObjects                = (RwFrameForAllObjects_t)                  0x007F1200;
+        RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749DC0;
+        RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D40;
+        RpWorldAddAtomic                    = (RpWorldAddAtomic_t)                      0x00750F90;
+        RpGeometryCreate                    = (RpGeometryCreate_t)                      0x0074CA90;
+        RpGeometryTriangleSetVertexIndices  = (RpGeometryTriangleSetVertexIndices_t)    0x0074C690;
+        RpGeometryUnlock                    = (RpGeometryUnlock_t)                      0x0074C800;
+        RpGeometryLock                      = (RpGeometryLock_t)                        0x0074C7D0;
+        RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749C50;
+        RwFrameCreate                       = (RwFrameCreate_t)                         0x007F0410;
+        RpGeometryTransform                 = (RpGeometryTransform_t)                   0x0074BFE0;
+        RwFrameSetIdentity                  = (RwFrameSetIdentity_t)                    0x007F10B0;
+        RwMatrixCreate                      = (RwMatrixCreate_t)                        0x007F2A50;
+        RwMatrixTranslate                   = (RwMatrixTranslate_t)                     0x007F2450;
+        RwMatrixScale                       = (RwMatrixScale_t)                         0x007F22C0;
+        RpGeometryTriangleSetMaterial       = (RpGeometryTriangleSetMaterial_t)         0x0074C6C0;
+        RpMaterialCreate                    = (RpMaterialCreate_t)                      0x0074D990;
+        RpGeometryDestroy                   = (RpGeometryDestroy_t)                     0x0074CCC0;
+        RpMaterialDestroy                   = (RpMaterialDestroy_t)                     0x0074DA20;
+        RwV3dNormalize                      = (RwV3dNormalize_t)                        0x007ED9B0;
+        RwIm3DTransform                     = (RwIm3DTransform_t)                       0x007EF450;
+        RwIm3DRenderIndexedPrimitive        = (RwIm3DRenderIndexedPrimitive_t)          0x007EF550;
+        RwIm3DEnd                           = (RwIm3DEnd_t)                             0x007EF520;
+        RwMatrixInvert                      = (RwMatrixInvert_t)                        0x007F2070;
+        RpWorldAddClump                     = (RpWorldAddClump_t)                       0x00751300;
+        RwFrameScale                        = (RwFrameScale_t)                          0x007F0ED0;
+        RwV3dTransformVector                = (RwV3dTransformVector_t)                  0x007EDDC0;
+        RpLightCreate                       = (RpLightCreate_t)                         0x00752110;
+        RpClumpAddLight                     = (RpClumpAddLight_t)                       0x0074A4F0;
+        _rwObjectHasFrameSetFrame           = (_rwObjectHasFrameSetFrame_t)             0x00804EF0;
+        RpLightSetRadius                    = (RpLightSetRadius_t)                      0x00751A70;
+        RpWorldAddLight                     = (RpWorldAddLight_t)                       0x00751910;
+        RpLightSetColor                     = (RpLightSetColor_t)                       0x00751A90;
+        RwCameraClone                       = (RwCameraClone_t)                         0x007EF3B0;
+        RpClumpClone                        = (RpClumpClone_t)                          0x00749F70;
+        RwTexDictionaryDestroy              = (RwTexDictionaryDestroy_t)                0x007F36A0;
+        RwTextureDestroy                    = (RwTextureDestroy_t)                      0x007F3820;
+        RwRasterUnlock                      = (RwRasterUnlock_t)                        0x007FAEC0;
+        RwRasterLock                        = (RwRasterLock_t)                          0x007FB2D0;
+        RwRasterCreate                      = (RwRasterCreate_t)                        0x007FB230;
+        RwTextureCreate                     = (RwTextureCreate_t)                       0x007F37C0;
 
-            SetTextureDict                      = (SetTextureDict_t)                        0x007319C0;
-            LoadClumpFile                       = (LoadClumpFile_t)                         0x005371F0;
-            LoadModel                           = (LoadModel_t)                             0x0040C6B0;
-            LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
-            LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
-            LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
-            CTxdStore_LoadTxd                   = (CTxdStore_LoadTxd_t)                     0x00731DD0;
-            CTxdStore_GetTxd                    = (CTxdStore_GetTxd_t)                      0x00408340;
-            CTxdStore_RemoveTxd                 = (CTxdStore_RemoveTxd_t)                   0x00731E90;
-            CTxdStore_RemoveRef                 = (CTxdStore_RemoveRef_t)                   0x00731A30;
-            CTxdStore_AddRef                    = (CTxdStore_AddRef_t)                      0x00731A00;
-            CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
-
-            break;
-        }
+        SetTextureDict                      = (SetTextureDict_t)                        0x007319C0;
+        LoadClumpFile                       = (LoadClumpFile_t)                         0x005371F0;
+        LoadModel                           = (LoadModel_t)                             0x0040C6B0;
+        LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
+        LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
+        LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
+        CTxdStore_LoadTxd                   = (CTxdStore_LoadTxd_t)                     0x00731DD0;
+        CTxdStore_GetTxd                    = (CTxdStore_GetTxd_t)                      0x00408340;
+        CTxdStore_RemoveTxd                 = (CTxdStore_RemoveTxd_t)                   0x00731E90;
+        CTxdStore_RemoveRef                 = (CTxdStore_RemoveRef_t)                   0x00731A30;
+        CTxdStore_AddRef                    = (CTxdStore_AddRef_t)                      0x00731A00;
+        CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
+        break;
     }
-
-    HookInstall ( HOOKPOS_CTxdStore_SetupTxdParent, (DWORD)HOOK_CTxdStore_SetupTxdParent, 6 );
-    HookInstall ( HOOKPOS_CTxdStore_RemoveTxd, (DWORD)HOOK_CTxdStore_RemoveTxd, 6 );
 }
 
 
@@ -1375,41 +1370,42 @@ unsigned int RwFrame::CountChildren()
     return count;
 }
 
-RwFrame* RwFrame::ForAllChildren( bool (*callback)( RwFrame* child, void *data ), void *data )
+bool RwFrame::ForAllChildren( bool (*callback)( RwFrame* child, void *data ), void *data )
 {
     RwFrame *child;
 
     for ( child = m_child; child; child = child->m_next )
     {
         if ( !callback( child, data ) )
-            return NULL;
+            return false;
     }
 
-    return this;
+    return true;
 }
 
-bool RwFrameGetSkeleton( RwFrame *frame, RpSkeleton **anim )
+bool RwFrameGetAnimHierarchy( RwFrame *frame, RpAnimHierarchy **anim )
 {
-    if ( frame->m_skeleton )
+    if ( frame->m_anim )
     {
-        *anim = frame->m_skeleton;
+        *anim = frame->m_anim;
         return false;
     }
 
-    return frame->ForAllChildren( RwFrameGetSkeleton, anim );
+    return frame->ForAllChildren( RwFrameGetAnimHierarchy, anim );
 }
 
-RpSkeleton* RwFrame::GetSkeleton()
+RpAnimHierarchy* RwFrame::GetAnimHierarchy()
 {
-    RpSkeleton *skel;
+    RpAnimHierarchy *anim;
 
-    if ( m_skeleton )
-        return m_skeleton;
+    if ( m_anim )
+        return m_anim;
 
-    if ( ForAllChildren( RwFrameGetSkeleton, &skel ) )
+    // We want false, since it has to interrupt == found
+    if ( ForAllChildren( RwFrameGetAnimHierarchy, &anim ) )
         return NULL;
 
-    return skel;
+    return anim;
 }
 
 RwStaticGeometry::RwStaticGeometry()
@@ -1438,7 +1434,7 @@ void RwStaticGeometry::ForAllLinks( void (*callback)( RwRenderLink *link, void *
 
 bool RwAssignRenderLink( RwFrame *child, RwRenderLink **link )
 {
-    (*link)->m_frame = child;
+    (*link)->m_context = child;
     (*link)++;
 
     child->ForAllChildren( RwAssignRenderLink, link );
@@ -1447,11 +1443,18 @@ bool RwAssignRenderLink( RwFrame *child, RwRenderLink **link )
 
 void RwRenderLinkInit( RwRenderLink *link, void *data )
 {
-    RwFrame *frame = link->m_frame;
+    RwFrame *frame = (RwFrame*)link->m_context;
 
-    new (link->m_position) CVector( frame->m_modelling.pos[0], frame->m_modelling.pos[1], frame->m_modelling.pos[3] );
+    link->m_flags = 0;
+
+    new (link->m_position) CVector( frame->m_modelling.pos[0], frame->m_modelling.pos[1], frame->m_modelling.pos[2] );
 
     link->m_id = -1;
+}
+
+void RwAnimatedRenderLinkInit( RwRenderLink *link, void *data )
+{
+    link->m_flags = 0;
 }
 
 void RpClump::InitStaticSkeleton()
@@ -1459,6 +1462,8 @@ void RpClump::InitStaticSkeleton()
     RpAtomic *atomic = GetFirstAtomic();
     RwStaticGeometry *geom = CreateStaticGeometry();
     RwRenderLink *link;
+    CVector boneOffsets[MAX_BONES];
+    unsigned int boneCount;
 
     if ( !atomic || !atomic->m_skeleton )
     {
@@ -1471,11 +1476,48 @@ void RpClump::InitStaticSkeleton()
         // Init them
         geom->ForAllLinks( RwRenderLinkInit, 0 );
 
-        geom->m_flags |= GEOM_STATIC;
+        geom->m_link->m_flags |= BONE_ROOT;
         return;
     }
 
-    link = geom->AllocateLink( atomic->geometry->m_skeleton->m_splitCount );
+    // Grab the number of bones
+    boneCount = atomic->m_geometry->m_skeleton->m_boneCount;
+
+    link = geom->AllocateLink( boneCount );
+
+    if ( boneCount != 0 )
+    {
+        CVector *offset = boneOffsets;
+        RpAnimHierarchy *anim = atomic->m_anim;  
+        RwBoneInfo *bone = anim->m_boneInfo;
+        RwAnimInfo *info = anim->m_anim->m_info;
+        unsigned int n;
+
+        // Get the real bone positions
+        GetBoneTransform( boneOffsets );
+
+        // I guess its always one bone ahead...?
+        link++;
+
+        for (n=0; n<boneCount; n++)
+        {
+            link->m_context = info;
+            link->m_id = bone->m_index;
+
+            // Update the bone offset in the animation
+            info->m_offset = offset;
+            
+            info++;
+            offset++;
+            link++;
+            bone++;
+        }
+    }
+
+    geom->ForAllLinks( RwAnimatedRenderLinkInit, 0 );
+
+    // Flag the first render link, root bone?
+    geom->m_link->m_flags |= BONE_ROOT;
 }
 
 RwStaticGeometry* RpClump::CreateStaticGeometry()
@@ -1493,9 +1535,9 @@ RpSkeleton* RpClump::GetAtomicSkeleton()
     return atomic->m_skeleton;
 }
 
-RpSkeleton* RpClump::GetSkeleton()
+RpAnimHierarchy* RpClump::GetAnimHierarchy()
 {
-    return m_parent->GetSkeleton();
+    return m_parent->GetAnimHierarchy();
 }
 
 bool RwGetAtomic( RpAtomic *child, RpAtomic **atomic )
@@ -1527,3 +1569,60 @@ RpClump* RpClump::ForAllAtomics( bool (*callback)( RpAtomic *child, void *data )
     return this;
 }
 
+void RpClump::GetBoneTransform( CVector *offset )
+{
+    RpAtomic *atomic;
+    RpSkeleton *skel;
+    RpAnimHierarchy* anim;
+    RwBoneInfo *bone;
+    RwMatrix *skelMat;
+    unsigned int n;
+    unsigned int matId = 0;
+    unsigned int boneIndexes[20];
+    unsigned int *idxPtr = boneIndexes;
+
+    if ( !offset )
+        return;
+
+    atomic = GetFirstAtomic();
+    skel = atomic->m_geometry->m_skeleton;
+
+    anim = atomic->m_anim;
+
+    // Reset the matrix
+    offset->fX = 0;
+    offset->fY = 0;
+    offset->fZ = 0;
+
+    offset++;
+
+    // Do nothing if the split count is smaller than 2
+    if ( skel->m_boneCount < 2 )
+        return;
+
+    skelMat = skel->m_boneMatrices + 1;
+    bone = anim->m_boneInfo + 1;
+
+    // We apparrently have the first one initialized already?
+    for (n=1; n<skel->m_boneCount; n++)
+    {
+        RwMatrix mat;
+
+        RwMatrixInvert( &mat, skelMat );
+
+        pRwInterface->m_matrixTransform3( offset, mat.up, 1, skel->m_boneMatrices + matId );
+
+        // Some sort of stacking mechanism, maximum 20
+        if ( bone->m_flags & 0x02 )
+            *(++idxPtr) = matId;
+
+        if ( bone->m_flags & 0x01 )
+            matId = *(idxPtr--);
+        else
+            matId = n;
+
+        skelMat++;
+        offset++;
+        bone++;
+    }
+}
