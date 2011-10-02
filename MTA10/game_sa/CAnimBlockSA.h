@@ -23,13 +23,17 @@ class CAnimBlendAssocGroupSA;
 class CAnimBlockSAInterface // 32 bytes
 {
 public:
-    int                 GetIndex ( void );
+    char                m_name[16];         // 0
+    bool                m_loaded;           // 16
+    BYTE                m_pad[1];           // 17
+    unsigned short      m_references;       // 18
+    unsigned int        m_animationIndex;   // 20
+    unsigned int        m_count;            // 24
+    BYTE                m_pad2[4];          // 28
 
-    char                m_name[16];
-    bool                m_loaded;
-    BYTE                m_pad[1];
-    unsigned short      m_references;
-    BYTE                m_pad2[12];
+    int                                 GetIndex();
+
+    CAnimBlendHierarchySAInterface*     GetAnimation( unsigned int hash );
 };
 
 class CAnimBlockSA : public CAnimBlock

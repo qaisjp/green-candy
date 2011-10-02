@@ -28,7 +28,7 @@ class CAnimBlendHierarchySAInterface
 public:
     int                                             GetIndex ( void );
 
-    int                                             iHashKey;
+    unsigned int                                    m_hash;
     CAnimBlendSequence *                            pSequences;
     unsigned short                                  usNumSequences;
     BYTE                                            pad;

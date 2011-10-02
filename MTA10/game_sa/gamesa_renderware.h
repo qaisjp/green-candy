@@ -39,8 +39,8 @@ typedef RpClump *               (__cdecl *RpClumpAddAtomic_t)                   
 typedef RpClump *               (__cdecl *RpClumpAddLight_t)                    (RpClump * clump, RpLight * light);
 typedef int                     (__cdecl *RpClumpGetNumAtomics_t)               (RpClump * clump);
 typedef RpClump *               (__cdecl *RpClumpRemoveAtomic_t)                (RpClump * clump, RpAtomic * atomic);
-typedef void                    (__cdecl *RpClumpTransform_t)                   (RpClump *clump, RwMatrix *mat);
-typedef bool                    (__cdecl *RwSkeletonInit_t)                     (RpSkeletonEx *ext, RpSkeleton *skel);
+typedef void                    (__cdecl *RpClumpGetBoneTransform_t)            (RpClump *clump, CVector *offsets);
+typedef bool                    (__cdecl *RwAnimationInit_t)                    (RpAnimation *anim, RwExtension *ext);
 typedef bool                    (__cdecl *RwSkeletonUpdate_t)                   (RpSkeleton *skel);
 typedef RwFrame *               (__cdecl *RwFrameAddChild_t)                    (RwFrame * parent, RwFrame * child);
 typedef RwFrame *               (__cdecl *RwFrameRemoveChild_t)                 (RwFrame * child);
@@ -122,11 +122,11 @@ RpClumpDestroy_t                        RpClumpDestroy                          
 RpClumpGetNumAtomics_t                  RpClumpGetNumAtomics                    = (RpClumpGetNumAtomics_t)                  0xDEAD;
 RwFrameTranslate_t                      RwFrameTranslate                        = (RwFrameTranslate_t)                      0xDEAD;
 RpClumpGetLastAtomic_t                  RpClumpGetLastAtomic                    = (RpClumpGetLastAtomic_t)                  0xDEAD;
-RpClumpTransform_t                      RpClumpTransform                        = (RpClumpTransform_t)                      0xDEAD;
+RpClumpGetBoneTransform_t               RpClumpGetBoneTransform                 = (RpClumpGetBoneTransform_t)               0xDEAD;
 RpClumpForAllAtomicsPointer_t           RpClumpForAllAtomicsPointer             = (RpClumpForAllAtomicsPointer_t)           0xDEAD;
 RwFrameAddChild_t                       RwFrameAddChild                         = (RwFrameAddChild_t)                       0xDEAD;
 RpClumpAddAtomic_t                      RpClumpAddAtomic                        = (RpClumpAddAtomic_t)                      0xDEAD;
-RwSkeletonInit_t                        RwSkeletonInit                          = (RwSkeletonInit_t)                        0xDEAD;
+RwAnimationInit_t                       RwAnimationInit                         = (RwAnimationInit_t)                       0xDEAD;
 RwSkeletonUpdate_t                      RwSkeletonUpdate                        = (RwSkeletonUpdate_t)                      0xDEAD;
 RpAtomicSetFrame_t                      RpAtomicSetFrame                        = (RpAtomicSetFrame_t)                      0xDEAD;
 RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 0xDEAD;
