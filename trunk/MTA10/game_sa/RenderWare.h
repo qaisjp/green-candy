@@ -389,7 +389,9 @@ public:
 
     RpSkeleton*             GetAtomicSkeleton();
     RpSkeleton*             GetAnimHierarchy();
+
     RpAtomic*               GetFirstAtomic();
+    RpAtomic*               Find2dfx();
 
     RpClump*                ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data );
 
@@ -419,6 +421,11 @@ struct RpTriangle
     unsigned short v1, v2, v3;
     unsigned short materialId;
 };
+class Rw2dfx
+{
+public:
+    unsigned int            m_count;
+};
 class RpGeometry : public RwObject
 {
 public:
@@ -440,6 +447,8 @@ public:
     void*                   m_unknown3;                         // 92
     void*                   m_unknown4;                         // 96
     RpSkeleton*             m_skeleton;                         // 100
+    BYTE                    m_pad[16];                          // 104
+    Rw2dfx                  m_2dfx;                             // 120
 };
 class RwInterface   // size: 1456
 {

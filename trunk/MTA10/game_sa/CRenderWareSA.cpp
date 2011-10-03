@@ -1554,6 +1554,29 @@ RpAtomic* RpClump::GetFirstAtomic()
     return atomic;
 }
 
+bool RwAtomicGet2dfx( RpAtomic *child, RpAtomic **atomic )
+{
+    // Crashfix, invalid geometry
+    if ( !child->m_geometry )
+        return true;
+
+    if ( !child->m_geometry->m_2dfx || child->m_geometry->m_2dfx->m_count == 0 )
+        return true;
+
+    *atomic = child;
+    return false;
+}
+
+RpAtomic* RpClump::Find2dfx()
+{
+    RpAtomic *atomic;
+
+    if ( ForAllAtomics( RwAtomicGet2dfx, &atomic ) )
+        return NULL;
+
+    return atomic;
+}
+
 RpClump* RpClump::ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data )
 {
     RpAtomic *child = m_atomics.root.next;

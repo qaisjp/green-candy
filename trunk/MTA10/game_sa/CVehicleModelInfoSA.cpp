@@ -50,7 +50,7 @@ void    VehicleModels_Init()
     *(RwTexture*)0x00B4E68C = RwTexDictionaryFindNamedTexture( txdEntry->m_txd, "vehiclelights128" );
     *(RwTexture*)0x00B4E690 = RwTexDictionaryFindNamedTexture( txdEntry->m_txd, "vehiclelightson128" );
 
-    m_pVehicleModelPool = new CVehicleModelPool;
+    pVehicleModelPool = new CVehicleModelPool;
 
     __asm
     {

@@ -207,16 +207,47 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObject()
 
 void CClumpModelInfoSAInterface::SetAnimFile( const char *name )
 {
+    char *anim;
+
     if ( strcmp(name, "null") == 0 )
         return;
 
-    /*
-        We would be copying a malloced string into m_animBlock
-        That would crash the application!
+    anim = malloc( strlen( name ) + 1 );
 
-        No wonder this function is not being used...
-        Poor GTA:SA coding?
-    */
+    strcpy(anim, name);
+
+    // this is one nasty hack
+    m_animBlock = (int)anim;
+}
+
+void CClumpModelInfoSAInterface::ConvertAnimFileIndex()
+{
+    int animBlock;
+
+    if ( m_animBlock == -1 )
+        return;
+
+    animBlock = pGame->GetAnimManager()->GetAnimBlockIndex( (const char*)m_animBlock );
+
+    free( (void*)m_animBlock );
+
+    // Yeah, weird
+    m_animBlock = animBlock;
+}
+
+int CClumpModelInfoSAInterface::GetAnimFileIndex()
+{
+    return m_animBlock;
+}
+
+CColModelSAInterface* CClumpModelInfoSAInterface::GetCollision()
+{
+    return m_pColModel;
+}
+
+void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
+{
+
 }
 
 CModelInfoSA::CModelInfoSA ( void )

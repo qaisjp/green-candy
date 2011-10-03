@@ -215,6 +215,10 @@ public:
     RpClump*                CreateRwObjectEx( int rwTag );
     RpClump*                CreateRwObject();
     void                    SetAnimFile( const char *name );
+    void                    ConvertAnimFileIndex();
+    int                     GetAnimFileIndex();
+    CColModelSAInterface*   GetCollision();
+    void                    SetClump( RpClump *clump );
 
     RpClump*                m_rwClump;                      // 28
     int                     m_animBlock;                    // 32
