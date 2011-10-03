@@ -50,7 +50,8 @@ void    VehicleModels_Init()
     *(RwTexture*)0x00B4E68C = RwTexDictionaryFindNamedTexture( txdEntry->m_txd, "vehiclelights128" );
     *(RwTexture*)0x00B4E690 = RwTexDictionaryFindNamedTexture( txdEntry->m_txd, "vehiclelightson128" );
 
-    pVehicleModelPool = new CVehicleModelPool;
+    // Allocate the seat placement pool
+    pVehicleSeatPlacementPool = new CVehicleSeatPlacementPool;
 
     __asm
     {
@@ -74,17 +75,66 @@ eModelType CVehicleModelInfoSAInterface::GetModelType()
     return MODEL_VEHICLE;
 }
 
-bool CVehicleModelInfoSAInterface::SetAnimFile( const char *name )
+void CVehicleModelInfoSAInterface::SetAnimFile( const char *name )
 {
-    return false;
+    char *anim;
+
+    if ( strcmp(name, "null") == 0 )
+        return;
+
+    anim = malloc( strlen( name ) + 1 );
+
+    strcpy(anim, name);
+
+    // this is one nasty hack
+    m_animFileIndex = (int)anim;
 }
 
 void CVehicleModelInfoSAInterface::ConvertAnimFileIndex()
 {
+    int animBlock;
 
+    if ( m_animFileIndex == -1 )
+        return;
+
+    animBlock = pGame->GetAnimManager()->GetAnimBlockIndex( (const char*)m_animBlock );
+
+    free( (void*)m_animFileIndex );
+
+    // Yeah, weird
+    m_animFileIndex = animBlock;
 }
 
 int CVehicleModelInfoSAInterface::GetAnimFileIndex()
 {
-    return -1;
+    return m_animFileIndex;
+}
+
+void CVehicleModelInfoSAInterface::SetClump( RpClump *clump )
+{
+    m_seatPlacement = new (pVehicleSeatPlacementPool->Allocate()) CVehicleSeatPlacementSAInterface();
+
+    CClumpModelInfoSAInterface::SetClump( clump );
+}
+
+CVehicleSeatPlacementSAInterface::CVehicleSeatPlacementSAInterface()
+{
+    unsigned int n;
+
+    for (n=0; n<MAX_SEATS; n++)
+    {
+        m_seatOffset[n].fX = 0;
+        m_seatOffset[n].fY = 0;
+        m_seatOffset[n].fZ = 0;
+    }
+
+    for (n=0; n<18; n++)
+    {
+        m_info[n].m_id = -1;
+    }
+
+    memset(&m_unknown, 0, sizeof(m_unknown));
+
+    m_unknown2 = 0;
+    m_unknown3 = 0;
 }

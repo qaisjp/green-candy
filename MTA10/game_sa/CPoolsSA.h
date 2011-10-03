@@ -121,8 +121,7 @@ public:
     bool            m_poolActive;
 };
 
-typedef CPool <CPedModelInfoSAInterface, 300> CPedModelPool;
-typedef CPool <CVehicleModelInfoSAInterface, 500> CVehicleModelPool;
+typedef CPool <CVehicleSeatPlacementSAInterface, 500> CVehicleSeatPlacementPool;
 
 typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
 
@@ -131,8 +130,7 @@ typedef CPool <CPedSAInterface, MAX_PEDS> CPedPool;
 typedef CPool <CObjectSAInterface, MAX_OBJECTS> CObjectPool;
 
 // They have to be defined somewhere!
-extern CPedModelPool** ppPedModelPool;
-extern CVehicleModelPool** ppVehicleModelPool;
+extern CVehicleSeatPlacementPool** ppVehicleSeatPlacementPool;
 
 extern CTxdPool** ppTxdPool;
 
@@ -141,8 +139,7 @@ extern CPedPool** ppPedPool;
 extern CObjectPool** ppObjectPool;
 
 // Helpful makros
-#define pPedModelPool (*ppPedModelPool)
-#define pVehicleModelPool (*ppVehicleModelPool)
+#define pVehicleSeatPlacementPool (*ppVehicleSeatPlacementPool)
 
 #define pTxdPool  (*ppTxdPool)
 
