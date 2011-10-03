@@ -69,23 +69,20 @@ RwExtension* CAnimManagerSA::CreateAnimation ( RpAnimHierarchy *animInfo )
     return anim;
 }
 
-int CAnimManagerSA::GetNumAnimations ( void )
+unsigned int CAnimManagerSA::GetNumAnimations ( void )
 {
-    return * ( int * ) ( VAR_CAnimManager_NumAnimations );
+    return *(unsigned int*)VAR_CAnimManager_NumAnimations;
 }
 
-
-int CAnimManagerSA::GetNumAnimBlocks ( void )
+unsigned int CAnimManagerSA::GetNumAnimBlocks ( void )
 {
-    return * ( int * ) ( VAR_CAnimManager_NumAnimBlocks );
+    return *(unsigned int*)VAR_CAnimManager_NumAnimBlocks;
 }
 
-
-int CAnimManagerSA::GetNumAnimAssocDefinitions ( void )
+unsigned int CAnimManagerSA::GetNumAnimAssocDefinitions ( void )
 {
-    return * ( int * ) ( VAR_CAnimManager_NumAnimAssocDefinitions );
+    return *(unsigned int*)VAR_CAnimManager_NumAnimAssocDefinitions;
 }
-
 
 CAnimBlendHierarchy * CAnimManagerSA::GetAnimation ( int ID )
 {
@@ -463,6 +460,31 @@ CAnimBlockSAInterface* CAnimManagerSA::GetAnimBlock( unsigned short id )
         return NULL;
 
     return (CAnimBlockSAInterface*)ARRAY_AnimBlock + (id - 1);
+}
+
+CAnimBlockSAInterface* CAnimManagerSA::GetAnimBlockByName( const char *name )
+{
+    unsigned int n;
+    
+    for (n=0; n<GetNumAnimBlocks(); n++)
+    {
+        CAnimBlockSAInterface *anim = (CAnimBlockSAInterface*)ARRAY_AnimBlock + n;
+
+        if ( strcmp( anim->m_name, name ) == 0 )
+            return anim;
+    }
+
+    return NULL;
+}
+
+int CAnimManagerSA::GetAnimBlockIndex( const char *name )
+{
+    CAnimBlockSAInterface *anim = GetAnimBlockByName( name );
+
+    if ( !anim )
+        return -1;
+
+    return ((int)anim - ARRAY_AnimBlock) / sizeof(anim) + 1;
 }
 
 AnimAssocDefinition * CAnimManagerSA::AddAnimAssocDefinition ( const char * szBlockName, const char * szAnimName, AssocGroupId animGroup, AnimationId animID, AnimDescriptor * pDescriptor )
