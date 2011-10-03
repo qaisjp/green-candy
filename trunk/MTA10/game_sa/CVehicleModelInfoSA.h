@@ -31,29 +31,26 @@ enum eVehicleType
     FORCE_DWORD = 0xFFFFFFFF
 };
 
-// CVehicleModelInfo:
-// +36 = Custom plate material (RpMaterial*)
-// +49 = Custom plate design (byte)
-// +50 = Pointer to game name (const char*)
-// +60 = Vehicle type (enum, int)
-// +64 = Wheel scale (float). Front/rear?
-// +68 = Wheel scale (float). Front/rear?
-// +72 = Wheel model id
-// +74 = Vehicle handling ID (word)
-// +76 = Number of doors (byte)
-// +77 = Vehicle list (byte)
-// +78 = Vehicle flags (byte)
-// +79 = Wheel upgrade class (byte)
-// +80 = Number of times used (byte)
-// +82 = Vehicle freq (short)
-// +84 = Component rules mask (long)
-// +88 = Steer angle
-// +92 = Pointer to some class containing back seat position @ +60
-// +180 = Vehicle upgrade position descriptors array (32 bytes each)
-// +720 = Number of possible colors
-// +726 = Word array as referenced in CVehicleModelInfo::GetVehicleUpgrade(int)
-// +762 = Array of WORD containing something relative to paintjobs
-// +772 = Anim file index
+#define MAX_SEATS           15
+
+class CVehicleSeatInfoSA
+{
+public:
+    BYTE                            m_pad[28];
+    int                             m_id;           // 28
+};
+
+class CVehicleSeatPlacementSAInterface
+{
+public:
+    CVehicleSeatPlacementSAInterface();
+
+    CVector                         m_seatOffset[MAX_SEATS];
+    CVehicleSeatInfoSA              m_info[18];                 // 180
+    int                             m_unknown[6];               // 756
+    unsigned int                    m_unknown2;                 // 780
+    unsigned int                    m_unknown3;                 // 784
+};
 
 class CVehicleModelInfoSAInterface : public CClumpModelInfoSAInterface
 {
@@ -62,9 +59,13 @@ public:
                                     ~CVehicleModelInfoSAInterface();
 
     eModelType                      GetModelType();
-    bool                            SetAnimFile( const char *name );
+    void                            Init();
+    void                            DeleteRwObject();
+    RpClump*                        CreateRwObject();
+    void                            SetAnimFile( const char *name );
     void                            ConvertAnimFileIndex();
     int                             GetAnimFileIndex();
+    void                            SetClump( RpClump *clump );
 
     RpMaterial*                     m_plateMaterial;        // 36
     BYTE                            m_pad2[9];              // 40
@@ -84,7 +85,7 @@ public:
     unsigned short                  m_frequency;            // 82
     unsigned int                    m_componentFlags;       // 84
     float                           m_steerAngle;           // 88
-    DWORD                           m_seatPlacement;        // 92
+    CVehicleSeatPlacementSAInterface*   m_seatPlacement;    // 92
     BYTE                            m_pad4[84];             // 96
     BYTE                            m_padUpgrade[540];      // 180
     unsigned int                    m_numberOfColors;       // 720
@@ -92,7 +93,6 @@ public:
     unsigned short                  m_upgradeTypes[18];     // 726
     unsigned short                  m_paintjobTypes[5];     // 762
     int                             m_animFileIndex;        // 772
-    BYTE                            m_pad6[12];             // 776
 };
 
 #endif

@@ -168,7 +168,6 @@ public:
     short                       m_dynamicIndex;
 
     unsigned char               m_renderFlags;
-
     unsigned char               m_collFlags;
 
     CColModelSAInterface*       m_pColModel;                // +20      CColModel: public CBoundingBox
@@ -182,21 +181,6 @@ public:
 
     // CWeaponModelInfo:
     // +36 = Weapon info as int
-
-    // CPedModelInfo:
-    // +36 = Motion anim group (AssocGroupID, long)
-    // +40 = Default ped type (long)
-    // +44 = Default ped stats (ePedStats)
-    // +48 = Can drive cars (byte)
-    // +50 = Ped flags (short)
-    // +52 = Hit col model (CColModel*)
-    // +56 = First radio station
-    // +57 = Second radio station
-    // +58 = Race (byte)
-    // +60 = Audio ped type (short)
-    // +62 = First voice
-    // +64 = Last voice
-    // +66 = Next voice (short)
 };
 
 #define MAX_BONES   64
