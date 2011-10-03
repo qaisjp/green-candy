@@ -59,7 +59,7 @@ void CClumpModelInfoSAInterface::Init()
     m_textureDictionary = -1;
     m_pColModel = NULL;
     m_effectID = -1;
-    m_numberOf2DEffects = 0;
+    m_num2dfx = 0;
     m_dynamicIndex = -1;
     m_lodDistance = 2000;
     m_rwClump = NULL;
@@ -76,7 +76,7 @@ void CClumpModelInfoSAInterface::Shutdown()
     m_renderFlags |= RENDER_COLMODEL;
 
     m_effectID = -1;
-    m_numberOf2DEffects = 0;
+    m_num2dfx = 0;
 
     m_dynamicIndex = -1;
     m_textureDictionary = -1;
@@ -155,9 +155,9 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObjectEx( int rwTag )
     return CreateRwObject();
 }
 
-bool RpSetAtomicSkeleton( RpAtomic *child, RpSkeleton *skeleton )
+bool RpSetAtomicAnimHierarchy( RpAtomic *child, RpAnimHierarchy *anim )
 {
-    child->m_skeleton = skeleton;
+    child->m_anim = anim;
     return false;
 }
 
@@ -203,6 +203,7 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObject()
     }
 
     Dereference();
+    return clump;
 }
 
 void CClumpModelInfoSAInterface::SetAnimFile( const char *name )
@@ -245,9 +246,80 @@ CColModelSAInterface* CClumpModelInfoSAInterface::GetCollision()
     return m_pColModel;
 }
 
+bool RwAtomicSetupAnimHierarchy( RpAtomic *child, void *data )
+{
+    child->m_anim = child->m_parent->GetAnimHierarchy();
+    return true;
+}
+
 void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
 {
+    RpAtomic *effAtomic = m_rwClump->Find2dfx();
+    RpAtomic *atomic = clump->GetFirstAtomic();
+    RpAnimHierarchy *hier;
+    RpSkeleton *skel;
+    unsigned short anim;
+    unsigned int n;
 
+    // Decrease effect count
+    if ( effAtomic )
+        m_num2dfx -= effAtomic->m_2dfx->m_count;
+
+    m_rwClump = clump;
+
+    if ( clump )
+    {
+        effAtomic = clump->Find2dfx();
+
+        if ( effAtomic )
+            m_num2dfx += effAtomic->m_2dfx->m_count;
+    }
+
+    // Set some callbacks
+    RpClumpSetupFrameCallback( clump, this );
+
+    CTxdStore_AddRef( m_textureDictionary );
+
+    anim = GetAnimFileIndex();
+
+    if ( anim )
+        pGame->GetAnimManager()->AddAnimBlockRef( anim );
+
+    clump->SetupAtomicRender();
+
+    if ( !atomic || !atomic->m_geometry )
+        return;
+
+    if ( m_collFlags & COLL_NOSKELETON )
+    {
+        clump->ForAllAtomics( RwAtomicSetupAnimHierarchy, 0 );
+        return;
+    }
+
+    atomic->m_geometry->m_dimension->m_scale *= 1.2;
+
+    // Get the animation
+    hier = clump->GetAnimHierarchy();
+
+    clump->ForAllAtomics( RpSetAtomicAnimHierarchy, hier );
+
+    skel = atomic->m_geometry->m_skeleton;
+
+    for (n=0; n<atomic->m_geometry->m_verticeSize; n++)
+    {
+        RwV4d *info = skel->m_vertexInfo[n];
+        float sum = (*info)[0] + (*info)[1] + (*info)[2] + (*info)[3];
+
+        //sum /= 1.0;
+
+        (*info)[0] *= sum;
+        (*info)[1] *= sum;
+        (*info)[2] *= sum;
+        (*info)[3] *= sum;
+    }
+
+    // Set flag
+    hier->m_flags = 0x0300;
 }
 
 CModelInfoSA::CModelInfoSA ( void )

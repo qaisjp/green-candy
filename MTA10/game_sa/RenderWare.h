@@ -197,7 +197,7 @@ public:
     RwMatrix*               m_boneMatrices; // 12
     unsigned int            m_unknown3;     // 16
     void*                   m_unknown5;     // 20
-    unsigned char*          m_boneParent;   // 24
+    RwV4d                   m_vertexInfo;   // 24
     unsigned int            m_unknown6;     // 28
     RpSkeletonEx*           m_data;         // 32
     BYTE                    m_pad[28];      // 36
@@ -250,6 +250,9 @@ public:
     RpAnimHierarchy*        m_anim;             // 164
     BYTE                    m_pluginData[4];    // padding
     char                    szName[16];         // name (as stored in the frame extension)
+
+    BYTE                    m_pad3[8];      // 188
+    CClumpModelInfoSAInterface* m_modelInfo;    // 196
 
     unsigned int            CountChildren();
     bool                    ForAllChildren( bool (*callback)( RwFrame *frame, void *data ), void *data );
@@ -332,6 +335,11 @@ struct RpInterpolation
     float            unknown4;
     float            unknown5;
 };
+
+#define RW_ATOMIC_RENDER_REFLECTIVE         0x53F20098
+#define RW_ATOMIC_RENDER_VEHICLE            0x53F2009A
+#define RW_ATOMIC_RENDER_NIGHT              0x53F2009C
+
 class RpAtomic : public RwObjectFrame
 {
 public:
@@ -354,6 +362,11 @@ public:
 
     BYTE                    m_pad[8];           // 112
     RpAnimHierarchy*        m_anim;             // 120
+
+    BYTE                    m_pad2[12];         // 124
+    unsigned int            m_pipeline;         // 136
+
+    bool                    IsNight();
 };
 struct RpAtomicContainer
 {
@@ -387,11 +400,13 @@ public:
     void                    InitStaticSkeleton();
     RwStaticGeometry*       CreateStaticGeometry();
 
-    RpSkeleton*             GetAtomicSkeleton();
-    RpSkeleton*             GetAnimHierarchy();
+    RpAnimHierarchy*        GetAtomicAnimHierarchy();
+    RpAnimHierarchy*        GetAnimHierarchy();
 
     RpAtomic*               GetFirstAtomic();
     RpAtomic*               Find2dfx();
+
+    void                    SetupAtomicRender();
 
     RpClump*                ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data );
 
@@ -401,20 +416,23 @@ struct RpMaterialLighting
 {
     float ambient, specular, diffuse;
 };
-struct RpMaterial
+class RpMaterial
 {
-    RwTexture*          texture;
-    RwColor             color;
-    void                *render;
-    RpMaterialLighting  lighting;
-    short               refs;
-    short               id;
+public:
+    RwTexture*          m_texture;
+    RwColor             m_color;
+    void*               m_render;
+    RpMaterialLighting  m_lighting;
+    unsigned short      m_refs;
+    short               m_id;
+    void*               m_unknown;
 };
-struct RpMaterials
+class RpMaterials
 {
-    RpMaterial **materials;
-    int        entries;
-    int        unknown;
+public:
+    RpMaterial**    m_data;
+    unsigned int    m_entries;
+    unsigned int    m_unknown;
 };
 struct RpTriangle
 {
@@ -426,29 +444,38 @@ class Rw2dfx
 public:
     unsigned int            m_count;
 };
+class RwGeomDimension
+{
+public:
+    BYTE                    m_pad[16];
+    float                   m_scale;                            // 16
+};
 class RpGeometry : public RwObject
 {
 public:
     unsigned int            flags;                              // 8
     unsigned short          m_unknown1;                         // 12
-    short                   refs;                               // 14
+    unsigned short          m_refs;                             // 14
 
-    unsigned int            triangles_size;                     // 16
-    unsigned int            vertices_size;                      // 20
-    unsigned int            normal_size;                        // 24
-    unsigned int            texcoords_size;                     // 28
+    unsigned int            m_triangleSize;                     // 16
+    unsigned int            m_verticeSize;                      // 20
+    unsigned int            m_normalSize;                       // 24
+    unsigned int            m_texcoordSize;                     // 28
 
-    RpMaterials             materials;                          // 32
-    RpTriangle*             triangles;                          // 44
-    RwColor*                colors;                             // 48
-    RwTextureCoordinates*   texcoords[RW_MAX_TEXTURE_COORDS];   // 52
+    RpMaterials             m_materials;                        // 32
+    RpTriangle*             m_triangles;                        // 44
+    RwColor*                m_colors;                           // 48
+    RwTextureCoordinates*   m_texcoords[RW_MAX_TEXTURE_COORDS]; // 52
     void*                   normals;                            // 84
     void*                   info;                               // 88
-    void*                   m_unknown3;                         // 92
+    RwGeomDimension*        m_dimension;                        // 92
     void*                   m_unknown4;                         // 96
     RpSkeleton*             m_skeleton;                         // 100
-    BYTE                    m_pad[16];                          // 104
+    RwColor                 m_nightColor;                       // 104
+    BYTE                    m_pad[12];                          // 108
     Rw2dfx                  m_2dfx;                             // 120
+
+    bool                    ForAllMateria( bool (*callback)( RwMaterial *mat, void *data ), void *data );
 };
 class RwInterface   // size: 1456
 {

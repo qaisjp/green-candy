@@ -162,7 +162,7 @@ public:
     short                       m_textureDictionary;        // +10
     unsigned char               m_alpha;                    // +12
 
-    unsigned char               m_numberOf2DEffects: 8;     // +13
+    unsigned char               m_num2dfx;                  // +13
     short                       m_effectID: 16;             // +14      Something with 2d effects
 
     short                       m_dynamicIndex;
