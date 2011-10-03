@@ -216,12 +216,15 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E70;
         RpClumpGetLastAtomic                = (RpClumpGetLastAtomic_t)                  0x00734820;
         RpClumpForAllAtomicsPointer         = (RpClumpForAllAtomicsPointer_t)           0x00749BC0;
+        RpClumpSetupFrameCallback           = (RpClumpSetupFrameCallback_t)             0x00733750;
         RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B40;
         RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A4E0;
         RpClumpGetBoneTransform             = (RpClumpGetBoneTransform_t)               0x00735360;
         RwAnimationInit                     = (RwAnimationInit_t)                       0x007CD5E0;
         RwSkeletonUpdate                    = (RwSkeletonUpdate_t)                      0x007C5210;
         RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
+        RpAtomicSetupObjectPipeline         = (RpAtomicSetupObjectPipeline_t)           0x005D7F00;
+        RpAtomicSetupVehiclePipeline        = (RpAtomicSetupVehiclePipeline_t)          0x005D5B20;
         RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70;
         RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3AD0;
@@ -1432,6 +1435,17 @@ void RwStaticGeometry::ForAllLinks( void (*callback)( RwRenderLink *link, void *
         callback( link, data );
 }
 
+bool RpAtomic::IsNight()
+{
+    if ( m_pipeline == RW_ATOMIC_RENDER_NIGHT )
+        return true;
+
+    if ( m_pipeline == RW_ATOMIC_RENDER_REFLECTIVE )
+        return false;
+
+    return m_geometry->m_nightColor && m_geometry->m_color;
+}
+
 bool RwAssignRenderLink( RwFrame *child, RwRenderLink **link )
 {
     (*link)->m_context = child;
@@ -1525,14 +1539,14 @@ RwStaticGeometry* RpClump::CreateStaticGeometry()
     return m_static = new RwStaticGeometry();
 }
 
-RpSkeleton* RpClump::GetAtomicSkeleton()
+RpAnimHierarchy* RpClump::GetAtomicAnimHierarchy()
 {
     RpAtomic *atomic = GetFirstAtomic();
 
     if (!atomic)
         return NULL;
     
-    return atomic->m_skeleton;
+    return atomic->m_animHierarchy;
 }
 
 RpAnimHierarchy* RpClump::GetAnimHierarchy()
@@ -1575,6 +1589,21 @@ RpAtomic* RpClump::Find2dfx()
         return NULL;
 
     return atomic;
+}
+
+bool RwAtomicSetupPipeline( RpAtomic *child, void *data )
+{
+    if ( child->IsNight() )
+        RpAtomicSetupObjectPipeline( child );
+    else if ( child->m_pipeline == RW_ATOMIC_RENDER_VEHICLE )
+        RpAtomicSetupVehiclePipeline( child );
+
+    return true;
+}
+
+void RpClump::SetupAtomicRender()
+{
+    ForAllAtomics( RwAtomicSetupPipeline, 0 );
 }
 
 RpClump* RpClump::ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data )
@@ -1648,4 +1677,17 @@ void RpClump::GetBoneTransform( CVector *offset )
         offset++;
         bone++;
     }
+}
+
+bool RpGeometry::ForAllMateria( bool (*callback)( RpMaterial *mat, void *data ), void *data )
+{
+    unsigned int n;
+
+    for (n=0; n<m_materials.m_entries; n++)
+    {
+        if ( !callback( m_materials.m_data[n], data ) )
+            return false;
+    }
+
+    return true;
 }

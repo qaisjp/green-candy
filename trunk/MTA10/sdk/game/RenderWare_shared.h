@@ -24,6 +24,7 @@ struct RwV3d
 {
     float x,y,z;
 };
+typedef float RwV4d[4];
 struct RwPlane
 {
     RwV3d normal;

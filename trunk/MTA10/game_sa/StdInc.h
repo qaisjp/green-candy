@@ -22,6 +22,7 @@
 #include <net/CNet.h>
 #include <game/CGame.h>
 #include <game/CWanted.h>
+#include <CQuat.h>
 #include <../version.h>
 #include <ijsify.h>
 
