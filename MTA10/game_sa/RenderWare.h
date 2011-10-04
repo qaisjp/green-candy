@@ -248,14 +248,16 @@ public:
 
     // Rockstar Frame extension (0x253F2FE) (24 bytes)
     RpAnimHierarchy*        m_anim;             // 164
-    BYTE                    m_pluginData[4];    // padding
-    char                    szName[16];         // name (as stored in the frame extension)
+    BYTE                    m_pluginData[4];    // 168
+    char                    m_nodeName[16];     // 172
 
     BYTE                    m_pad3[8];      // 188
-    CClumpModelInfoSAInterface* m_modelInfo;    // 196
+    unsigned int            m_hierarchyId;  // 196
 
     unsigned int            CountChildren();
     bool                    ForAllChildren( bool (*callback)( RwFrame *frame, void *data ), void *data );
+    RwFrame*                FindFreeChildByName( const char *name );
+
     RpAnimHierarchy*        GetAnimHierarchy();
 };
 class RwTexDictionary : public RwObject
