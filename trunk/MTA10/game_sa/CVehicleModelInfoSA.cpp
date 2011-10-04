@@ -115,6 +115,11 @@ void CVehicleModelInfoSAInterface::SetClump( RpClump *clump )
     m_seatPlacement = new (pVehicleSeatPlacementPool->Allocate()) CVehicleSeatPlacementSAInterface();
 
     CClumpModelInfoSAInterface::SetClump( clump );
+
+    // callbacks
+
+    // Correctly assign vehicle atomics
+    AssignAtomics( ((CAtomicHierarchySAInterface**)0x008A7740)[m_vehicleType] );
 }
 
 CVehicleSeatPlacementSAInterface::CVehicleSeatPlacementSAInterface()

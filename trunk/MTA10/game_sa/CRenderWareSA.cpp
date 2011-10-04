@@ -1386,6 +1386,33 @@ bool RwFrame::ForAllChildren( bool (*callback)( RwFrame* child, void *data ), vo
     return true;
 }
 
+struct _rwFrameFindName
+{
+    const char *name;
+    RwFrame *result;
+}
+
+bool RwFrameGetByName( RwFrame *child, _rwFrameFindName *info )
+{
+    if ( child->m_hierarchyId || strcmp(child->m_nodeName, info->name) != 0 )
+        return child->ForAllChildren( RwFrameGetByName, info );
+
+    info->result = child;
+    return false;
+}
+
+RwFrame* RwFrame::FindFreeChildByName( const char *name )
+{
+    _rwFrameFindName info;
+
+    info.name = name;
+
+    if ( ForAllChildren( RwFrameGetByName, &_rwFrameFindName ) )
+        return NULL;
+
+    return info.result;
+}
+
 bool RwFrameGetAnimHierarchy( RwFrame *frame, RpAnimHierarchy **anim )
 {
     if ( frame->m_anim )

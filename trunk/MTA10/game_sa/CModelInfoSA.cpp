@@ -322,6 +322,24 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
     hier->m_flags = 0x0300;
 }
 
+void CClumpModelInfoSAInterface::AssignAtomics( CAtomicInfoSAInterface *atomics )
+{
+    for (atomics; atomics->m_name; atomics++)
+    {
+        RwFrame *component;
+
+        if ( !atomics->m_active )
+            continue;
+
+        component = m_rwClump->m_parent->FindFreeChildByName( atomics->m_name );
+
+        if ( !component )
+            continue;
+
+        component->m_hierarchyId = atomics->m_frameHierarchy;
+    }
+}
+
 CModelInfoSA::CModelInfoSA ( void )
 {
     m_pInterface = NULL;

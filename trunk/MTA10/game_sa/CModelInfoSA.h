@@ -185,6 +185,15 @@ public:
 
 #define MAX_BONES   64
 
+class CAtomicHierarchySAInterface
+{
+public:
+    const char*                     m_name;
+    unsigned int                    m_frameHierarchy;
+    bool                            m_active;
+    BYTE                            m_pad[3];
+};
+
 class CClumpModelInfoSAInterface : public CBaseModelInfoSAInterface
 {
 public:
@@ -203,6 +212,8 @@ public:
     int                     GetAnimFileIndex();
     CColModelSAInterface*   GetCollision();
     void                    SetClump( RpClump *clump );
+
+    void                    AssignAtomics( CAtomicHierarchySAInterface *atomics );
 
     RpClump*                m_rwClump;                      // 28
     int                     m_animBlock;                    // 32

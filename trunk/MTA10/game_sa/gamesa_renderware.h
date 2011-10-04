@@ -42,7 +42,7 @@ typedef RpClump *               (__cdecl *RpClumpAddLight_t)                    
 typedef int                     (__cdecl *RpClumpGetNumAtomics_t)               (RpClump * clump);
 typedef RpClump *               (__cdecl *RpClumpRemoveAtomic_t)                (RpClump * clump, RpAtomic * atomic);
 typedef void                    (__cdecl *RpClumpGetBoneTransform_t)            (RpClump *clump, CVector *offsets);
-typedef void                    (__cdecl *RpClumpSetupFrameCallback_t)          (RpClump *clump, CBaseModelInfoSAInterface *info);
+typedef void                    (__cdecl *RpClumpSetupFrameCallback_t)          (RpClump *clump, unsigned int historyId);
 typedef bool                    (__cdecl *RwAnimationInit_t)                    (RpAnimation *anim, RwExtension *ext);
 typedef bool                    (__cdecl *RwSkeletonUpdate_t)                   (RpSkeleton *skel);
 typedef RwFrame *               (__cdecl *RwFrameAddChild_t)                    (RwFrame * parent, RwFrame * child);
