@@ -5,6 +5,7 @@
 *  FILE:        game_sa/gamesa_renderware.h
 *  PURPOSE:     RenderWare interface mappings to Grand Theft Auto: San Andreas
 *  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *  RenderWare is © Criterion Software
@@ -37,12 +38,13 @@ typedef RpAtomic *              (__cdecl *RpAtomicSetGeometry_t)                
 typedef RpAtomic *              (__cdecl *RpAtomicSetFrame_t)                   (RpAtomic * atomic, RwFrame * frame);
 typedef void                    (__cdecl *RpAtomicSetupObjectPipeline_t)        (RpAtomic *atomic);
 typedef void                    (__cdecl *RpAtomicSetupVehiclePipeline_t)       (RpAtomic *atomic);
+typedef RpAtomic*               (__cdecl *RpAtomicRender_t)                     (RpAtomic *atomic);
 typedef RpClump *               (__cdecl *RpClumpAddAtomic_t)                   (RpClump * clump, RpAtomic * atomic);
 typedef RpClump *               (__cdecl *RpClumpAddLight_t)                    (RpClump * clump, RpLight * light);
 typedef int                     (__cdecl *RpClumpGetNumAtomics_t)               (RpClump * clump);
 typedef RpClump *               (__cdecl *RpClumpRemoveAtomic_t)                (RpClump * clump, RpAtomic * atomic);
 typedef void                    (__cdecl *RpClumpGetBoneTransform_t)            (RpClump *clump, CVector *offsets);
-typedef void                    (__cdecl *RpClumpSetupFrameCallback_t)          (RpClump *clump, unsigned int historyId);
+typedef void                    (__cdecl *RpClumpSetupFrameCallback_t)          (RpClump *clump, unsigned int hierarchyId);
 typedef bool                    (__cdecl *RwAnimationInit_t)                    (RpAnimation *anim, RwExtension *ext);
 typedef bool                    (__cdecl *RwSkeletonUpdate_t)                   (RpSkeleton *skel);
 typedef RwFrame *               (__cdecl *RwFrameAddChild_t)                    (RwFrame * parent, RwFrame * child);
@@ -53,6 +55,7 @@ typedef RwFrame *               (__cdecl *RwFrameTranslate_t)                   
 typedef RwFrame *               (__cdecl *RwFrameScale_t)                       (RwFrame * frame, const RwV3d * v, RwTransformOrder order);
 typedef RwFrame *               (__cdecl *RwFrameCreate_t)                      (void);
 typedef RwFrame *               (__cdecl *RwFrameSetIdentity_t)                 (RwFrame * frame);
+typedef void                    (__cdecl *RwObjectFrameRender_t)                (RwRender *data, RwObjectFrame *frame, unsigned int unk);
 typedef RpGeometry *            (__cdecl *RpGeometryCreate_t)                   (int numverts, int numtriangles, unsigned int format);
 typedef RpAnimHierarchy*        (__cdecl *RpGeometryGetAnimation_t)             (RpGeometry *geom);
 typedef const RpGeometry *      (__cdecl *RpGeometryTriangleSetVertexIndices_t) (const RpGeometry * geo, RpTriangle * tri, unsigned short v1, unsigned short v2, unsigned short v3);
@@ -135,6 +138,8 @@ RwSkeletonUpdate_t                      RwSkeletonUpdate                        
 RpAtomicSetFrame_t                      RpAtomicSetFrame                        = (RpAtomicSetFrame_t)                      0xDEAD;
 RpAtomicSetupObjectPipeline_t           RpAtomicSetupObjectPipeline             = (RpAtomicSetupObjectPipeline_t)           0xDEAD;
 RpAtomicSetupVehiclePipeline_t          RpAtomicSetupVehiclePipeline            = (RpAtomicSetupVehiclePipeline_t)          0xDEAD;
+RpAtomicRender_t                        RpAtomicRender                          = (RpAtomicRender_t)                        0xDEAD;
+RwObjectFrameRender_t                   RwObjectFrameRender                     = (RwObjectFrameRender_t)                   0xDEAD;
 RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 0xDEAD;
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             0xDEAD;
 RwTexDictionaryGetCurrent_t             RwTexDictionaryGetCurrent               = (RwTexDictionaryGetCurrent_t)             0xDEAD;
@@ -224,30 +229,10 @@ CClothesBuilder_CopyTexture_t   CClothesBuilder_CopyTexture     = (CClothesBuild
 /*****************************************************************************/
 
 // Matrix copying
-void RwFrameCopyMatrix ( RwFrame * dst, RwFrame * src ) {
-    if ( dst == NULL || src == NULL ) return;
-    MemCpyFast (&dst->modelling,&src->modelling,sizeof(RwMatrix));
-    MemCpyFast (&dst->ltm,&src->ltm,sizeof(RwMatrix));
-}
-
-// Recursive RwFrame children searching function
-RwFrame * RwFrameFindFrame ( RwFrame * parent, const char * name ) {
-    RwFrame * ret = parent->child, * buf;
-    while ( ret != NULL ) {
-        // recurse into the child
-        if ( ret->child != NULL ) {         
-            buf = RwFrameFindFrame ( ret, name );
-            if ( buf != NULL ) return buf;
-        }
-
-        // search through the children frames
-        if ( strncmp ( &ret->szName[0], name, 16 ) == 0 ) {
-            // found it
-            return ret;
-        }
-        ret = ret->next;
-    }
-    return NULL;
+void RwFrameCopyMatrix ( RwFrame * dst, RwFrame * src )
+{
+    MemCpyFast (&dst->m_modelling, &src->m_modelling, sizeof(RwMatrix));
+    MemCpyFast (&dst->m_ltm, &src->m_ltm, sizeof(RwMatrix));
 }
 
 #endif

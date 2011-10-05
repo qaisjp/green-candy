@@ -24,7 +24,8 @@ enum eVehicleType
     VEHICLE_PLANE,
     VEHICLE_BOAT,
     VEHICLE_TRAIN,
-    VEHICLE_FAKEPLANE = 8,
+    VEHICLE_UNKNOWN,    // what is this?
+    VEHICLE_FAKEPLANE,
     VEHICLE_BIKE,
     VEHICLE_BMX,
     VEHICLE_TRAILER,
@@ -66,6 +67,8 @@ public:
     void                            ConvertAnimFileIndex();
     int                             GetAnimFileIndex();
     void                            SetClump( RpClump *clump );
+
+    void                            RegisterRenderCallbacks();
 
     RpMaterial*                     m_plateMaterial;        // 36
     BYTE                            m_pad2[9];              // 40

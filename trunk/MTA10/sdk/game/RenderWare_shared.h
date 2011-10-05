@@ -46,7 +46,7 @@ struct RwColorFloat
 };
 struct RwColor
 {
-    unsigned char r,g,b,a;
+    unsigned char r, g, b, a;
 };
 class RwMatrix
 {   // 16-byte padded
