@@ -58,7 +58,8 @@ static RwObject* ReplacePartsCB ( RwObject * object, SReplaceParts * data )
     char szAtomicName[16] = {0};
 
     // iterate through our loaded atomics
-    for ( unsigned int i = 0; i < data->uiReplacements; i++ ) {
+    for ( unsigned int i = 0; i < data->uiReplacements; i++ )
+    {
         // get the correct atomic name based on the object # in our parent frame
         if ( data->ucIndex == 0 )
             snprintf ( &szAtomicName[0], 16, "%s_ok", data->szName );
@@ -66,12 +67,13 @@ static RwObject* ReplacePartsCB ( RwObject * object, SReplaceParts * data )
             snprintf ( &szAtomicName[0], 16, "%s_dam", data->szName );
 
         // see if we have such an atomic in our replacement atomics array
-        if ( strncmp ( &data->pReplacements[i].szName[0], &szAtomicName[0], 16 ) == 0 ) {
+        if ( strncmp ( &data->pReplacements[i].szName[0], &szAtomicName[0], 16 ) == 0 )
+        {
             // if so, override the geometry
             RpAtomicSetGeometry ( Atomic, data->pReplacements[i].atomic->geometry, 0 );
 
             // and copy the matrices
-            RwFrameCopyMatrix ( RpGetFrame ( Atomic ), RpGetFrame ( data->pReplacements[i].atomic ) );
+            RwFrameCopyMatrix ( Atomic->m_parent, data->pReplacements[i].atomic->m_parent );
 
             object = (RwObject*) data->pReplacements[i].atomic;
             data->ucIndex++;
@@ -225,6 +227,8 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
         RpAtomicSetupObjectPipeline         = (RpAtomicSetupObjectPipeline_t)           0x005D7F00;
         RpAtomicSetupVehiclePipeline        = (RpAtomicSetupVehiclePipeline_t)          0x005D5B20;
+        RpAtomicRender                      = (RpAtomicRender_t)                        0x00749210;
+        RwObjectFrameRender                 = (RwObjectFrameRender_t)                   0x00805750;
         RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70;
         RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3AD0;
@@ -623,7 +627,7 @@ bool CRenderWareSA::PositionFrontSeat ( RpClump *pClump, unsigned short usModelI
     DWORD *pVehicleDummies = (DWORD*)((CVehicleModelInfoSAInterface*)ppModelInfo[usModelID])->m_seatPlacement;
 
     // read out the 'ped_frontseat' frame
-    RwFrame * pPedFrontSeat = RwFrameFindFrame ( pClump->m_parent, "ped_frontseat" );
+    RwFrame * pPedFrontSeat = pClump->m_parent->FindChildByName( "ped_frontseat" );
 
     if ( pPedFrontSeat == NULL )
         return false;
@@ -708,7 +712,7 @@ void CRenderWareSA::ReplaceWheels ( RpClump * pClump, RpAtomicContainer * pAtomi
 // Repositions an atomic
 void CRenderWareSA::RepositionAtomic ( RpClump * pDst, RpClump * pSrc, const char * szName )
 {
-    RwFrameCopyMatrix ( RwFrameFindFrame ( pDst->m_parent, szName ), RwFrameFindFrame ( pSrc->m_parent, szName ) );
+    RwFrameCopyMatrix ( pDst->m_parent->FindChildByName( szName ), pSrc->m_parent->FindChildByName( szName ) );
 }
 
 // Adds the atomics from a source clump (pSrc) to a destination clump (pDst)
@@ -726,7 +730,8 @@ bool CRenderWareSA::ReplacePartModels ( RpClump * pClump, RpAtomicContainer * pA
     snprintf ( &szDummyName[0], 16, "%s_dummy", szName );
 
     // get the part's dummy frame
-    RwFrame * pPart = RwFrameFindFrame ( pClump->m_parent, &szDummyName[0] );
+    RwFrame * pPart = pClump->m_parent->FindChildByName( szDummyName );
+
     if ( pPart == NULL )
         return false;
 
@@ -1357,7 +1362,7 @@ void _declspec(naked) HOOK_CTxdStore_RemoveTxd ()
     }
 }
 
-bool RwFrameGetChildCount( RwFrame *child, unsigned int *count )
+static bool RwFrameGetChildCount( RwFrame *child, unsigned int *count )
 {
     child->ForAllChildren( RwFrameGetChildCount, count );
 
@@ -1367,7 +1372,7 @@ bool RwFrameGetChildCount( RwFrame *child, unsigned int *count )
 
 unsigned int RwFrame::CountChildren()
 {
-    unsigned int count;
+    unsigned int count = 0;
 
     ForAllChildren( RwFrameGetChildCount, &count );
     return count;
@@ -1392,10 +1397,10 @@ struct _rwFrameFindName
     RwFrame *result;
 }
 
-bool RwFrameGetByName( RwFrame *child, _rwFrameFindName *info )
+static bool RwFrameGetFreeByName( RwFrame *child, _rwFrameFindName *info )
 {
     if ( child->m_hierarchyId || strcmp(child->m_nodeName, info->name) != 0 )
-        return child->ForAllChildren( RwFrameGetByName, info );
+        return child->ForAllChildren( RwFrameGetFreeByName, info );
 
     info->result = child;
     return false;
@@ -1407,13 +1412,34 @@ RwFrame* RwFrame::FindFreeChildByName( const char *name )
 
     info.name = name;
 
-    if ( ForAllChildren( RwFrameGetByName, &_rwFrameFindName ) )
+    if ( ForAllChildren( RwFrameGetFreeByName, &_rwFrameFindName ) )
         return NULL;
 
     return info.result;
 }
 
-bool RwFrameGetAnimHierarchy( RwFrame *frame, RpAnimHierarchy **anim )
+static bool RwFrameGetByName( RwFrame *child, _rwFrameFindName *info )
+{
+    if ( strcmp(child->m_nodeName, info->name) != 0 )
+        return child->ForAllChildren( RwFrameGetByName, info );
+
+    info->result = child;
+    return false;
+}
+
+RwFrame* RwFrame::FindChildByName( const char *name )
+{
+    _rwFrameFindName info;
+
+    info.name = name;
+
+    if ( ForAllChildren( RwFrameGetByName, &info ) )
+        return NULL;
+
+    return info.result;
+}
+
+static bool RwFrameGetAnimHierarchy( RwFrame *frame, RpAnimHierarchy **anim )
 {
     if ( frame->m_anim )
     {
@@ -1473,7 +1499,18 @@ bool RpAtomic::IsNight()
     return m_geometry->m_nightColor && m_geometry->m_color;
 }
 
-bool RwAssignRenderLink( RwFrame *child, RwRenderLink **link )
+void RpAtomic::SetRenderCallback( RpAtomicCallback callback )
+{
+    if ( !callback )
+    {
+        m_renderCallback = (RpAtomicCallback)RpAtomicRender;
+        return;
+    }
+
+    m_renderCallback = callback;
+}
+
+static bool RwAssignRenderLink( RwFrame *child, RwRenderLink **link )
 {
     (*link)->m_context = child;
     (*link)++;
@@ -1482,7 +1519,7 @@ bool RwAssignRenderLink( RwFrame *child, RwRenderLink **link )
     return true;
 }
 
-void RwRenderLinkInit( RwRenderLink *link, void *data )
+static void RwRenderLinkInit( RwRenderLink *link, void *data )
 {
     RwFrame *frame = (RwFrame*)link->m_context;
 
@@ -1493,7 +1530,7 @@ void RwRenderLinkInit( RwRenderLink *link, void *data )
     link->m_id = -1;
 }
 
-void RwAnimatedRenderLinkInit( RwRenderLink *link, void *data )
+static void RwAnimatedRenderLinkInit( RwRenderLink *link, void *data )
 {
     link->m_flags = 0;
 }
@@ -1581,7 +1618,7 @@ RpAnimHierarchy* RpClump::GetAnimHierarchy()
     return m_parent->GetAnimHierarchy();
 }
 
-bool RwGetAtomic( RpAtomic *child, RpAtomic **atomic )
+static bool RwGetAtomic( RpAtomic *child, RpAtomic **atomic )
 [
     *atomic = child;
     return false;
@@ -1595,7 +1632,7 @@ RpAtomic* RpClump::GetFirstAtomic()
     return atomic;
 }
 
-bool RwAtomicGet2dfx( RpAtomic *child, RpAtomic **atomic )
+static bool RwAtomicGet2dfx( RpAtomic *child, RpAtomic **atomic )
 {
     // Crashfix, invalid geometry
     if ( !child->m_geometry )
@@ -1618,7 +1655,7 @@ RpAtomic* RpClump::Find2dfx()
     return atomic;
 }
 
-bool RwAtomicSetupPipeline( RpAtomic *child, void *data )
+static bool RwAtomicSetupPipeline( RpAtomic *child, void *data )
 {
     if ( child->IsNight() )
         RpAtomicSetupObjectPipeline( child );
@@ -1717,4 +1754,14 @@ bool RpGeometry::ForAllMateria( bool (*callback)( RpMaterial *mat, void *data ),
     }
 
     return true;
+}
+
+bool RwMaterialAlphaCheck( RpMaterial *mat, void *data )
+{
+    return mat->m_color.a != 0xFF;
+}
+
+bool RpGeometry::IsAlpha()
+{
+    return !ForAllMateria( RwMaterialAlphaCheck, 0 );
 }

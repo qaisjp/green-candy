@@ -257,6 +257,7 @@ public:
     unsigned int            CountChildren();
     bool                    ForAllChildren( bool (*callback)( RwFrame *frame, void *data ), void *data );
     RwFrame*                FindFreeChildByName( const char *name );
+    RwFrame*                FindChildByName( const char *name );
 
     RpAnimHierarchy*        GetAnimHierarchy();
 };
@@ -282,17 +283,17 @@ struct RwTextureCoordinates
 };
 struct RwRaster
 {
-    RwRaster        *parent;               // 0
-    unsigned char   *pixels;               // 4
-    unsigned char   *palette;              // 8
-    int             width, height, depth;  // 12, 16 / 0x10, 20
-    int             stride;                // 24 / 0x18
+    RwRaster*       parent;                 // 0
+    unsigned char*  pixels;                 // 4
+    unsigned char*  palette;                // 8
+    int             width, height, depth;   // 12, 16 / 0x10, 20
+    int             stride;                 // 24 / 0x18
     short           u, v;
     unsigned char   type;
     unsigned char   flags;
     unsigned char   privateFlags;
     unsigned char   format;
-    unsigned char   *origPixels;
+    unsigned char*  origPixels;
     int             origWidth, origHeight, origDepth;
     void*           renderResource;
 };
@@ -311,23 +312,28 @@ struct RwCameraFrustum
 class RwCamera : public RwObjectFrame
 {
 public:
-    RwCameraType         type;
-    RwCameraPreCallback  preCallback;
-    RwCameraPostCallback postCallback;
-    RwMatrix             matrix;
-    RwRaster             *bufferColor;
-    RwRaster             *bufferDepth;
-    RwV2d                screen;
-    RwV2d                screenInverse;
-    RwV2d                screenOffset;
-    float                nearplane;
-    float                farplane;
-    float                fog;
-    float                unknown1;
-    float                unknown2;
-    RwCameraFrustum      frustum4D[6];
-    RwBBox               viewBBox;
-    RwV3d                frustum3D[8];
+    RwCameraType            type;
+    RwCameraPreCallback     preCallback;
+    RwCameraPostCallback    postCallback;
+    RwMatrix                matrix;
+    RwRaster*               bufferColor;
+    RwRaster*               bufferDepth;
+    RwV2d                   screen;
+    RwV2d                   screenInverse;
+    RwV2d                   screenOffset;
+    float                   nearplane;
+    float                   farplane;
+    float                   fog;
+    float                   unknown1;
+    float                   unknown2;
+    RwCameraFrustum         frustum4D[6];
+    RwBBox                  viewBBox;
+    RwV3d                   frustum3D[8];
+};
+class RwRender
+{
+public:
+    unsigned int            m_unknown;
 };
 struct RpInterpolation
 {
@@ -354,7 +360,7 @@ public:
     RpClump*                m_clump;            // 60
     RwListEntry <RpAtomic>  m_atomics;          // 64
 
-    RpAtomicCallback        renderCallback;     // 72
+    RpAtomicCallback        m_renderCallback;   // 72
     RpInterpolation         interpolation;      // 76
 
     unsigned short          frame;              // 96
@@ -369,6 +375,8 @@ public:
     unsigned int            m_pipeline;         // 136
 
     bool                    IsNight();
+
+    void                    SetRenderCallback( RpAtomicCallback callback );
 };
 struct RpAtomicContainer
 {
@@ -478,6 +486,7 @@ public:
     Rw2dfx                  m_2dfx;                             // 120
 
     bool                    ForAllMateria( bool (*callback)( RwMaterial *mat, void *data ), void *data );
+    bool                    IsAlpha();
 };
 class RwInterface   // size: 1456
 {
@@ -509,8 +518,11 @@ public:
     char                    m_charTable2[256];                              // 676
 
     float                   m_unknown3;                                     // 680
+    
+    BYTE                    m_pad[172];                                     // 936
 
-    BYTE                    m_pad4[520];                                    // 936
+    RwRender*               m_renderData;                                   // 1108
+    BYTE                    m_pad4[344];                                    // 1112
 };
 
 extern RwInterface **ppRwInterface;

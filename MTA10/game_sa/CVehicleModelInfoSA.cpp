@@ -116,10 +116,40 @@ void CVehicleModelInfoSAInterface::SetClump( RpClump *clump )
 
     CClumpModelInfoSAInterface::SetClump( clump );
 
-    // callbacks
+    RegisterRenderCallbacks();
 
     // Correctly assign vehicle atomics
     AssignAtomics( ((CAtomicHierarchySAInterface**)0x008A7740)[m_vehicleType] );
+}
+
+bool RwAtomicRegisterTrain( RpAtomic *child, void *data )
+{
+    if ( strcmp(child->m_parent->m_nodeName, "_vlo") == 0 )
+    {
+
+        return true;
+    }
+    return true;
+}
+
+void CVehicleModelInfoSAInterface::RegisterRenderCallbacks()
+{
+    switch (m_vehicleType)
+    {
+    case VEHICLE_TRAIN:
+        
+        break;
+    case VEHICLE_PLANE:
+    case VEHICLE_FAKEPLANE:
+
+        break;
+    case VEHICLE_BOAT:
+
+        break;
+    default:
+
+        break;
+    }
 }
 
 CVehicleSeatPlacementSAInterface::CVehicleSeatPlacementSAInterface()
