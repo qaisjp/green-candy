@@ -74,6 +74,7 @@ typedef RwMatrix *              (__cdecl *RwMatrixCreate_t)                     
 typedef RwMatrix *              (__cdecl *RwMatrixInvert_t)                     (RwMatrix *dst, const RwMatrix *src);
 typedef RwMatrix *              (__cdecl *RwMatrixTranslate_t)                  (RwMatrix * matrix, const RwV3d * translation, RwTransformOrder order);
 typedef RwMatrix *              (__cdecl *RwMatrixScale_t)                      (RwMatrix * matrix, const RwV3d * translation, RwTransformOrder order);
+typedef float                   (__cdecl *RwMatrixUnknown_t)                    (const RwMatrix *matrix, const RwMatrix *matrix2, unsigned char flags);
 typedef RpMaterial *            (__cdecl *RpMaterialCreate_t)                   (void);
 typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial * mat);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryCreate_t)              ();
@@ -167,6 +168,7 @@ RwFrameSetIdentity_t                    RwFrameSetIdentity                      
 RwMatrixCreate_t                        RwMatrixCreate                          = (RwMatrixCreate_t)                        0xDEAD;
 RwMatrixTranslate_t                     RwMatrixTranslate                       = (RwMatrixTranslate_t)                     0xDEAD;
 RwMatrixScale_t                         RwMatrixScale                           = (RwMatrixScale_t)                         0xDEAD;
+RwMatrixUnknown_t                       RwMatrixUnknown                         = (RwMatrixUnknown_t)                       0xDEAD;
 RpGeometryTriangleSetMaterial_t         RpGeometryTriangleSetMaterial           = (RpGeometryTriangleSetMaterial_t)         0xDEAD;
 RpMaterialCreate_t                      RpMaterialCreate                        = (RpMaterialCreate_t)                      0xDEAD;
 RpGeometryDestroy_t                     RpGeometryDestroy                       = (RpGeometryDestroy_t)                     0xDEAD;

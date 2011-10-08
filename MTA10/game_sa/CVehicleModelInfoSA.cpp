@@ -18,6 +18,9 @@
 #define FUNC_LoadCarMods                    0x005B65A0
 #define FUNC_LoadVehicleParticles           0x004C8780
 
+static float trainLODDistance = 209 * RW_RENDER_UNIT;
+static float highDetailDistance = 18 * RW_RENDER_UNIT;
+
 void    VehicleModels_Init()
 {
     DWORD dwFunc;
@@ -122,13 +125,81 @@ void CVehicleModelInfoSAInterface::SetClump( RpClump *clump )
     AssignAtomics( ((CAtomicHierarchySAInterface**)0x008A7740)[m_vehicleType] );
 }
 
-bool RwAtomicRegisterTrain( RpAtomic *child, void *data )
+static bool RwAtomicRenderTrainLOD( RpAtomic *atomic )
 {
-    if ( strcmp(child->m_parent->m_nodeName, "_vlo") == 0 )
+    if (*(float*)VAR_ATOMIC_RENDER_OFFSET > fTrainLODDistance)
+        return true;
+
+    RpAtomicRender( atomic );
+    return true;
+}
+
+static bool RwAtomicRenderTranslucentTrain( RpAtomic *atomic )
+{
+    float calc;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= trainLODDistance )
+        return true;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
+        atomic->m_renderFlags &= ~0x20;
+    else
+        atomic->m_renderFlags |= 0x20;
+
+    calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags );
+
+    // Lol, serious checking going on here!
+    if ( *(float*)0x00C88024 < *(float*)VAR_ATOMIC_RENDER_OFFSET && !(atomic->m_matrixFlags & 0x04)
+        && *(float*)0x00C88020 > 0.2f
+        && calc < 0.0f
+        && !(atomic->m_matrixFlags & 0x80)
+        && *(float*)VAR_ATOMIC_RENDER_OFFSET < 0.1f )
+        return true;
+
+    if ( atomic->m_matrixFlags & 0x40 )
     {
 
+    }
+    else
+    {
+
+    }
+}
+
+static bool RwAtomicRenderTrain( RpAtomic *atomic )
+{
+
+}
+
+static bool RwAtomicSetupVehicleDamaged( RpAtomic *child )
+{
+    if ( strstr(child->m_parent->m_nodeName, "_dam") )
+    {
+        child->m_flags = 0;
+
+        child->m_visibility = 2;
         return true;
     }
+
+    if ( strstr(child->m_parent->m_nodeName, "_ok") )
+        child->m_visibility = 1;
+
+    return true;
+}
+
+static bool RwAtomicRegisterTrain( RpAtomic *child, void *data )
+{
+    if ( strstr(child->m_parent->m_nodeName, "_vlo") )
+    {
+        child->SetRenderCallback( child );
+        return true;
+    }
+    else if ( child->m_geometry->IsAlpha() )
+    {
+
+    }
+
+    RwAtomicSetupVehicleDamaged( child );
     return true;
 }
 

@@ -20,9 +20,12 @@
 /*****************************************************************************/
 
 // RenderWare definitions
-#define RW_STRUCT_ALIGN           ((int)((~((unsigned int)0))>>1))
-#define RW_TEXTURE_NAME_LENGTH    32
-#define RW_MAX_TEXTURE_COORDS     8
+#define RW_STRUCT_ALIGN             ((int)((~((unsigned int)0))>>1))
+#define RW_TEXTURE_NAME_LENGTH      32
+#define RW_MAX_TEXTURE_COORDS       8
+#define RW_RENDER_UNIT              215
+
+#define VAR_ATOMIC_RENDER_OFFSET    0x00C88024
 
 // RenderWare extensions
 #define RW_EXTENSION_HANIM  0x253F2FB
@@ -30,10 +33,10 @@
 // Yet to analyze
 typedef void   RpWorld;
 
-typedef RwCamera *(*RwCameraPreCallback) (RwCamera * camera);
-typedef RwCamera *(*RwCameraPostCallback) (RwCamera * camera);
-typedef RpAtomic *(*RpAtomicCallback) (RpAtomic * atomic);
-typedef RpClump  *(*RpClumpCallback) (RpClump * clump, void *data);
+typedef RwCamera*   (*RwCameraPreCallback) (RwCamera * camera);
+typedef RwCamera*   (*RwCameraPostCallback) (RwCamera * camera);
+typedef bool        (*RpAtomicCallback) (RpAtomic * atomic);
+typedef RpClump*    (*RpClumpCallback) (RpClump * clump, void *data);
 
 // RenderWare enumerations
 enum RwPrimitiveType
@@ -104,10 +107,10 @@ enum eRwType
 class RwObject
 {
 public:
-    unsigned char   type;
-    unsigned char   subtype;
-    unsigned char   flags;
-    unsigned char   privateFlags;
+    unsigned char   m_type;
+    unsigned char   m_subtype;
+    unsigned char   m_flags;
+    unsigned char   m_privateFlags;
     class RwFrame*  m_parent;                // should be RwFrame with RpClump
 };
 struct RwVertex
@@ -225,7 +228,8 @@ class RpAnimHierarchy
 public:
     unsigned int            m_flags;        // 0
     unsigned int            m_boneCount;    // 4
-    BYTE                    m_pad[8];       // 8
+    char*                   m_data;         // 8
+    void*                   m_unknown4;     // 12
     RpBoneInfo*             m_boneInfo;     // 16
     unsigned int            m_unknown4;     // 20
     RpAnimHierarchy*        m_this;         // 24
@@ -371,12 +375,31 @@ public:
     BYTE                    m_pad[8];           // 112
     RpAnimHierarchy*        m_anim;             // 120
 
-    BYTE                    m_pad2[12];         // 124
+    unsigned char           m_visibility;       // 124
+    BYTE                    m_pad2;             // 125
+    unsigned char           m_matrixFlags;      // 126
+    unsigned char           m_renderFlags;      // 127
+    BYTE                    m_pad3[8];          // 128
     unsigned int            m_pipeline;         // 136
 
     bool                    IsNight();
 
     void                    SetRenderCallback( RpAtomicCallback callback );
+};
+class RwRenderDetailLevel
+{
+public:
+
+};
+class RwAtomicRenderChain
+{
+public:
+    BYTE                    m_pad[8];
+    unsigned int            m_unknown;
+    float                   m_cameraOffset;
+    RwAtomicRenderChain*    m_next;
+
+    bool                    Apply( RwRenderDetailLevel *level );
 };
 struct RpAtomicContainer
 {
@@ -429,13 +452,13 @@ struct RpMaterialLighting
 class RpMaterial
 {
 public:
-    RwTexture*          m_texture;
-    RwColor             m_color;
-    void*               m_render;
-    RpMaterialLighting  m_lighting;
-    unsigned short      m_refs;
-    short               m_id;
-    void*               m_unknown;
+    RwTexture*          m_texture;      // 0
+    RwColor             m_color;        // 4
+    void*               m_render;       // 8
+    RpMaterialLighting  m_lighting;     // 12
+    unsigned short      m_refs;         // 24
+    short               m_id;           // 26
+    void*               m_unknown;      // 28
 };
 class RpMaterials
 {
@@ -479,7 +502,7 @@ public:
     void*                   normals;                            // 84
     void*                   info;                               // 88
     RwGeomDimension*        m_dimension;                        // 92
-    void*                   m_unknown4;                         // 96
+    unsigned int            m_usageFlag;                        // 96
     RpSkeleton*             m_skeleton;                         // 100
     RwColor                 m_nightColor;                       // 104
     BYTE                    m_pad[12];                          // 108
