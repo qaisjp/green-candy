@@ -256,6 +256,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwMatrixCreate                      = (RwMatrixCreate_t)                        0x007F2A90;
         RwMatrixTranslate                   = (RwMatrixTranslate_t)                     0x007F2490;
         RwMatrixScale                       = (RwMatrixScale_t)                         0x007F2300;
+        RwMatrixUnknown                     = (RwMatrixUnknown_t)                       0x007326D0;
         RpGeometryTriangleSetMaterial       = (RpGeometryTriangleSetMaterial_t)         0x0074C710;
         RpMaterialCreate                    = (RpMaterialCreate_t)                      0x0074D9E0;
         RpGeometryDestroy                   = (RpGeometryDestroy_t)                     0x0074CD10;
