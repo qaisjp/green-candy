@@ -18,8 +18,13 @@
 #define FUNC_LoadCarMods                    0x005B65A0
 #define FUNC_LoadVehicleParticles           0x004C8780
 
-static float trainLODDistance = 209 * RW_RENDER_UNIT;
-static float highDetailDistance = 18 * RW_RENDER_UNIT;
+static float trainLODDistance = 45000;      // In RenderWare render units
+static float boatLODDistance = 9800;
+static float heliLODDistance = 9800;        // same as boat
+static float heliRotorRenderDistance = 45000;   // same as train
+static float planeLODDistance = 45000;      // same as train
+static float vehicleLODDistance = 9800;     // same as boat
+static float highDetailDistance = 4050;
 
 void    VehicleModels_Init()
 {
@@ -127,7 +132,7 @@ void CVehicleModelInfoSAInterface::SetClump( RpClump *clump )
 
 static bool RwAtomicRenderTrainLOD( RpAtomic *atomic )
 {
-    if (*(float*)VAR_ATOMIC_RENDER_OFFSET > fTrainLODDistance)
+    if (*(float*)VAR_ATOMIC_RENDER_OFFSET <= trainLODDistance)
         return true;
 
     RpAtomicRender( atomic );
@@ -136,6 +141,7 @@ static bool RwAtomicRenderTrainLOD( RpAtomic *atomic )
 
 static bool RwAtomicRenderTranslucentTrain( RpAtomic *atomic )
 {
+    RwAtomicZBufferEntry level;
     float calc;
 
     if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= trainLODDistance )
@@ -149,26 +155,347 @@ static bool RwAtomicRenderTranslucentTrain( RpAtomic *atomic )
     calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags );
 
     // Lol, serious checking going on here!
-    if ( *(float*)0x00C88024 < *(float*)VAR_ATOMIC_RENDER_OFFSET && !(atomic->m_matrixFlags & 0x04)
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
         && *(float*)0x00C88020 > 0.2f
         && calc < 0.0f
         && !(atomic->m_matrixFlags & 0x80)
         && *(float*)VAR_ATOMIC_RENDER_OFFSET < 0.1f )
         return true;
 
-    if ( atomic->m_matrixFlags & 0x40 )
-    {
+    // Set up rendering
+    level.m_render = RpAtomicRender;
+    level.m_atomic = atomic;
+    level.m_distance = *(float*)VAR_ATOMIC_RENDR_OFFSET;
 
-    }
-    else
-    {
+    if ( !(atomic->m_matrixFlags & 0x40) )
+        level.m_lod += calc;
 
-    }
+    if ( !rwRenderChains->PushRender( &level ) )
+        RpAtomicRender( atomic );
+
+    return true;
 }
 
 static bool RwAtomicRenderTrain( RpAtomic *atomic )
 {
+    float calc;
 
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= trainLODDistance )
+        return true;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
+        atomic->m_renderFlags &= ~0x20;
+    else
+        atomic->m_renderFlags |= 0x20;
+
+    // Lol, serious checking going on here!
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
+        && *(float*)0x00C88020 > 0.2f
+        && (calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags )) < 0.0f
+        && !(atomic->m_matrixFlags & 0x80)
+        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
+        return true;
+
+    RpAtomicRender( atomic );
+    return true;
+}
+
+static bool RwAtomicRenderBoatLOD( RpAtomic *atomic )
+{
+    if (*(float*)VAR_ATOMIC_RENDER_OFFSET <= boatLODDistance)
+        return true;
+
+    atomic->m_renderFlags |= 0x20;
+
+    if ( atomic->m_clump->m_renderFlags & 0xFF )
+    {
+        RpAtomicRenderEx( atomic, atomic->m_clump->m_renderFlags );
+        return true;
+    }
+
+    RpAtomicRender( atomic );
+    return true;
+}
+
+static bool RwAtomicRenderBoat( RpAtomic *atomic )
+{
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= boatLODDistance )
+        return true;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
+        atomic->m_renderFlags &= ~0x20;
+    else
+        atomic->m_renderFlags |= 0x20;
+
+    RpAtomicRender( atomic );
+    return true;
+}
+
+static bool RwAtomicRenderTranslucentBoat( RpAtomic *atomic )
+{
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= boatLODDistance )
+        return true;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
+        atomic->m_renderFlags &= ~0x20;
+    else
+        atomic->m_renderFlags |= 0x20;
+
+    if ( atomic->m_matrixFlags & 0x40 )
+    {
+        RwAtomicRenderDetailLevel level;
+
+        level.m_atomic = atomic;
+        level.m_render = RpAtomicRender;
+        level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET;
+
+        if ( rwRenderChains->PushRender( &level ) )
+            return true;
+    }
+    
+    RpAtomicRender( atomic );
+    return true;
+}
+
+static bool RwAtomicRenderHeliLOD( RpAtomic *atomic )
+{
+    if (*(float*)VAR_ATOMIC_RENDER_OFFSET <= heliLODDistance)
+        return true;
+
+    atomic->m_renderFlags |= 0x20;
+
+    if ( atomic->m_clump->m_renderFlags & 0xFF )
+    {
+        RpAtomicRenderEx( atomic, atomic->m_clump->m_renderFlags );
+        return true;
+    }
+
+    RpAtomicRender( atomic );
+    return true;
+}
+
+static bool RwAtomicRenderHeli( RpAtomic *atomic )
+{
+    float calc;
+    
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliLODDistance )
+        return true;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
+        atomic->m_renderFlags &= ~0x20;
+    else
+        atomic->m_renderFlags |= 0x20;
+
+    // Lol, serious checking going on here!
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
+        && *(float*)0x00C88020 > 0.2f
+        && (calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags )) < 0.0f
+        && !(atomic->m_matrixFlags & 0x80)
+        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
+        return true;
+
+    RpAtomicRender( atomic );
+    return true;
+}
+
+static bool RwAtomicRenderTranslucentHeli( RpAtomic *atomic )
+{
+    float calc;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliLODDistance )
+        return true;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
+        atomic->m_renderFlags &= ~0x20;
+    else
+        atomic->m_renderFlags |= 0x20;
+
+    calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags );
+
+    // Lol, serious checking going on here!
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
+        && *(float*)0x00C88020 > 0.2f
+        && calc < 0.0f
+        && !(atomic->m_matrixFlags & 0x80)
+        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
+        return true;
+
+    // Set up rendering
+    level.m_render = RpAtomicRender;
+    level.m_atomic = atomic;
+    level.m_distance = *(float*)VAR_ATOMIC_RENDR_OFFSET;
+
+    if ( atomic->m_matrixFlags & 0x40 )
+        level.m_distance -= 0.00009999997;
+    else
+        level.m_distance += calc;
+
+    if ( !rwRenderChains->PushRender( &level ) )
+        RpAtomicRender( atomic );
+    
+    return true;
+}
+
+static bool RwAtomicRenderHeliMovingRotor( RpAtomic *atomic )
+{
+    CVector *vecRotor;
+    RwAtomicZBufferEntry level;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliRotorRenderDistance )
+        return true;
+
+    vecRotor = (CVector*)&atomic->m_parent->m_ltm.pos - (CVector*)0x00C88050;
+
+    // Fun Fact: The top rotor has a 20 unit radius!
+    level.m_distance = vecRotor->DotProduct( (CVector*)&atomic->m_geometry->m_parent->m_ltm.at ) * 20 + *(float*)VAR_ATOMIC_RENDER_OFFSET;
+    level.m_render = RpAtomicRender;
+    level.m_atomic = atomic;
+
+    if ( !rwRenderChains->PushRender( &level ) )
+        RpAtomicRender( atomic );
+
+    return true;
+}
+
+static bool RwAtomicRenderHeliMovingRotor2( RpAtomic *atomic )
+{
+    CVector *vecRotor;
+    RwAtomicZBufferEntry level;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliRotorRenderDistance )
+        return true;
+
+    vecRotor = (CVector*)&atomic->m_parent->m_ltm.pos - (CVector*)0x00C88050;
+
+    // Lulz, heavy math, much assembly, small C++ code
+    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET - vecRotor->DotProduct( (CVector*)&atomic->m_geometry->m_parent->m_ltm.right ) - vecRotor->DotProduct( (CVector*)&atomic->m_geometry->m_parent->m_ltm.up );
+    level.m_render = RpAtomicRender;
+    level.m_atomic = atomic;
+
+    if ( !rwRenderChains->PushRender( &level ) )
+        RpAtomicRender( atomic );
+
+    return true;
+}
+
+static bool RwAtomicRenderPlane( RpAtomic *atomic )
+{
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= planeLODDistance )
+        return true;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
+        atomic->m_renderFlags &= ~0x20;
+    else
+        atomic->m_renderFlags |= 0x20;
+
+    // Lol, serious checking going on here!
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C88028 && !(atomic->m_matrixFlags & 0x04)
+        && *(float*)0x00C88020 > 0.2f
+        && RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags ) >= 0.0f
+        return true;
+
+    RpAtomicRender( atomic );
+    return true;
+}
+
+static bool RwAtomicRenderTranslucentPlane( RpAtomic *atomic )
+{
+    float calc;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliLODDistance )
+        return true;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
+        atomic->m_renderFlags &= ~0x20;
+    else
+        atomic->m_renderFlags |= 0x20;
+
+    calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags );
+
+    // Lol, serious checking going on here!
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C88028 && !(atomic->m_matrixFlags & 0x04)
+        && *(float*)0x00C88020 > 0.2f
+        && calc < 0.0f
+        && !(atomic->m_matrixFlags & 0x80)
+        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
+        return true;
+
+    // Set up rendering
+    level.m_render = RpAtomicRender;
+    level.m_atomic = atomic;
+    level.m_distance = *(float*)VAR_ATOMIC_RENDR_OFFSET;
+
+    if ( atomic->m_matrixFlags & 0x40 )
+        level.m_distance -= 0.00009999997;
+    else
+        level.m_distance += calc;
+
+    if ( !rwRenderChains->PushRender( &level ) )
+        RpAtomicRender( atomic );
+    
+    return true;
+}
+
+static bool RwAtomicRenderTranslucentDefaultVehicle( RpAtomic *atomic ) // actually equals heli render
+{
+    float calc;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= vehicleLODDistance )
+        return true;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
+        atomic->m_renderFlags &= ~0x20;
+    else
+        atomic->m_renderFlags |= 0x20;
+
+    calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags );
+
+    // Lol, serious checking going on here!
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
+        && *(float*)0x00C88020 > 0.2f
+        && calc < 0.0f
+        && !(atomic->m_matrixFlags & 0x80)
+        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
+        return true;
+
+    // Set up rendering
+    level.m_render = RpAtomicRender;
+    level.m_atomic = atomic;
+    level.m_distance = *(float*)VAR_ATOMIC_RENDR_OFFSET;
+
+    if ( atomic->m_matrixFlags & 0x40 )
+        level.m_distance -= 0.00009999997;
+    else
+        level.m_distance += calc;
+
+    if ( !rwRenderChains->PushRender( &level ) )
+        RpAtomicRender( atomic );
+    
+    return true;
+}
+
+static bool RwAtomicRenderDefaultVehicle( RpAtomic *atomic )    // actually equals heli render
+{
+    float calc;
+    
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= vehicleLODDistance )
+        return true;
+
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
+        atomic->m_renderFlags &= ~0x20;
+    else
+        atomic->m_renderFlags |= 0x20;
+
+    // Lol, serious checking going on here!
+    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
+        && *(float*)0x00C88020 > 0.2f
+        && (calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags )) < 0.0f
+        && !(atomic->m_matrixFlags & 0x80)
+        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
+        return true;
+
+    RpAtomicRender( atomic );
+    return true;
 }
 
 static bool RwAtomicSetupVehicleDamaged( RpAtomic *child )
@@ -195,9 +522,70 @@ static bool RwAtomicRegisterTrain( RpAtomic *child, void *data )
         return true;
     }
     else if ( child->m_geometry->IsAlpha() )
-    {
+        child->SetRenderCallback( RwAtomicRenderTranslucentTrain ); // translucent polys need second render pass
+    else
+        child->SetRenderCallback( RwAtomicRenderTrain );
 
+    RwAtomicSetupVehicleDamaged( child );
+    return true;
+}
+
+static bool RwAtomicRegisterBoat( RpAtomic *child, void *data )
+{
+    if ( strcmp( child->m_parent->m_nodeName, "boat_hi" ) )
+        child->SetRenderCallback( RwAtomicRenderBoat );         // boat_hi does not support alpha?
+    else if ( strstr( child->m_parent->m_nodeName, "_vlo" ) )
+        child->SetRenderCallback( RwAtomicRenderBoatLOD );
+    else if ( child->m_geometry->IsAlpha() )
+        child->SetRenderCallback( RwAtomicRenderTranslucentBoat );
+    else
+        child->SetRenderCallback( RwAtomicRenderBoat );
+
+    RwAtomicSetupVehicleDamaged( child );
+    return true;
+}
+
+static bool RwAtomicRegisterHeli( RpAtomic *child, void *data )
+{
+    if ( strcmp( child->m_parent->m_nodeName, "moving_rotor" ) == 0 )
+        child->SetRenderCallback( RwAtomicRenderHeliMovingRotor );
+    else if ( strcmp( child->m_parent->m_nodeName, "moving_rotoz2" ) == 0 )
+        child->SetRenderCallback( RwAtomicRenderHeliMovingRotor2 );
+    else if ( strstr( child->m_parent->m_nodeName, "_vlo" ) == 0 )
+        child->SetRenderCallback( RwAtomicRenderHeliLOD );
+    else if ( child->m_geometry->IsAlpha() || strncmp( child->m_parent->m_nodeName, "windscreen", 10) == 0 )
+        child->SetRenderCallback( RwAtomicRenderTranslucentHeli );
+    else
+        child->SetRenderCallback( RwAtomicRenderHeli );
+
+    RwAtomicSetupVehicleDamaged( child );
+    return true;
+}
+
+static bool RwAtomicRegisterPlane( RpAtomic *child, void *data )
+{
+    if ( strstr(child->m_parent->m_nodeName, "_vlo") )
+    {
+        child->SetRenderCallback( child );
+        return true;
     }
+    else if ( child->m_geometry->IsAlpha() )
+        child->SetRenderCallback( RwAtomicRenderTranslucentPlane );
+    else
+        child->SetRenderCallback( RwAtomicRenderPlane );
+
+    RwAtomicSetupVehicleDamaged( child );
+    return true;
+}
+
+static bool RwAtomicRegisterDefaultVehicle( RpAtomic *child, void *data )
+{
+    if ( strstr( child->m_parent->m_nodeName, "_vlo" ) == 0 )
+        child->SetRenderCallback( RwAtomicRenderHeliLOD );
+    else if ( child->m_geometry->IsAlpha() || strncmp( child->m_parent->m_nodeName, "windscreen", 10) == 0 )
+        child->SetRenderCallback( RwAtomicRenderTranslucentDefaultVehicle );
+    else
+        child->SetRenderCallback( RwAtomicRenderDefaultVehicle );
 
     RwAtomicSetupVehicleDamaged( child );
     return true;
@@ -208,19 +596,21 @@ void CVehicleModelInfoSAInterface::RegisterRenderCallbacks()
     switch (m_vehicleType)
     {
     case VEHICLE_TRAIN:
-        
-        break;
+        m_rwClump->ForAllAtomics( RwAtomicRegisterTrain, 0 );
+        return;
     case VEHICLE_PLANE:
     case VEHICLE_FAKEPLANE:
-
-        break;
+        m_rwClump->ForAllAtomics( RwAtomicRegisterPlane, 0 );
+        return;
     case VEHICLE_BOAT:
-
-        break;
-    default:
-
-        break;
+        m_rwClump->ForAllAtomics( RwAtomicRegisterBoat, 0 );
+        return;
+    case VEHICLE_HELI:
+        m_rwClump->ForAllAtomics( RwAtomicRegisterHeli, 0 );
+        return;
     }
+
+    m_rwClump->ForAllAtomics( RwAtomicRegisterDefaultVehicle, 0 );
 }
 
 CVehicleSeatPlacementSAInterface::CVehicleSeatPlacementSAInterface()
@@ -243,4 +633,63 @@ CVehicleSeatPlacementSAInterface::CVehicleSeatPlacementSAInterface()
 
     m_unknown2 = 0;
     m_unknown3 = 0;
+}
+
+void CVehicleModelInfoSAInterface::Setup()
+{
+    tHandlingDataSA *handling = &m_OriginalHandlingData[ m_handlingID ];
+    CAtomicHierarchySAInterface *info = ((CAtomicHierarchySAInterface**)0x008A7740)[ m_vehicleType ];
+    RwObject *obj1 = NULL;
+    RwObject *obj2 = NULL;
+
+    for (info; info->m_name; info++)
+    {
+        RwFrame *hier;
+
+        if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_UNKNOWN2 | ATOMIC_HIER_UNKNOWN3) && hier = m_rwClump->m_parent->FindFreeChildByName( info->m_name ) )
+        {
+            if ( info->m_flags & ATOMIC_HIER_FRONTSEAT )
+            {
+                RwFrame *parent = hier;
+
+                // Position the seats
+                m_seatPlacement->m_seatOffset = (CVector)hier->m_parent->m_ltm.pos;
+
+                while ( parent = parent->m_parent && parent->m_parent )
+                    pRwInterface->m_matrixTransform3( m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], 1, parent->m_parent->m_modelling );
+
+                RwFrameCloneHierarchy( hier );
+            }
+            else if ( info->m_flags & ATOMIC_HIER_UNKNOWN2 )
+            {
+                
+            }
+            else
+            {
+                RpClumpRemoveAtomic( m_rwClump, (RpAtomic*)hier->GetFirstObject() );
+
+                RwFrameRemoveChild( hier );
+
+
+            }
+        }
+
+        if ( info->m_flags & (ATOMIC_HIER_UNKNOWN4 | ATOMIC_HIER_UNKNOWN5) && hier = m_rwClump->m_parent->FindChildByHierarchy( info->m_frameHierarchy ) )
+        {
+            for ( hier; hier; hier = hier->GetFirstChild() )
+            {
+                RwObject *obj = hier->GetFirstObject();
+
+                if ( !obj )
+                    continue;
+
+                if ( hier->m_flags & ATOMIC_HIER_UNKNOWN4 )
+                    obj1 = obj;
+                else
+                    obj2 = obj;
+
+                break;
+            }
+        }
+    }
 }

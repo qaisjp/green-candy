@@ -23,7 +23,7 @@
 #define RW_STRUCT_ALIGN             ((int)((~((unsigned int)0))>>1))
 #define RW_TEXTURE_NAME_LENGTH      32
 #define RW_MAX_TEXTURE_COORDS       8
-#define RW_RENDER_UNIT              215
+#define RW_RENDER_UNIT              215.25f
 
 #define VAR_ATOMIC_RENDER_OFFSET    0x00C88024
 
@@ -120,10 +120,16 @@ struct RwVertex
     unsigned int color;
     float        u,v;
 };
+
+// Macros used by RW, taken from SGU :)
+#define LIST_APPEND(link, item) ( (item)->list->next = (link), (item)->list->prev = (link)->list->prev, (item)->list->prev->next = (item), (item)->list->next->prev = (item) )
+#define LIST_INSERT(link, item) ( (item)->list->next = (link)->list->next, (item)->list->prev = (link), (item)->list->prev->next = (item), (item)->list->next->prev = (item) )
+#define LIST_REMOVE(link) ( (link)->list->prev->next = (link)->list->next, (link)->list->next->prev = (link)->list->prev )
+
 template < class type >
 struct RwListEntry
 {
-    type *next,*prev;
+    type *next, *prev;
 };
 template < class type >
 struct RwList
@@ -245,7 +251,7 @@ public:
     void*                   m_pad2;         // 12
     RwMatrix                m_modelling;    // 16
     RwMatrix                m_ltm;          // 80
-    RwList <RwObject>       m_objects;      // 144
+    RwList <RwObjectFrame>  m_objects;      // 144
     RwFrame*                m_child;        // 152
     RwFrame*                m_next;         // 156
     RwFrame*                m_root;         // 160
@@ -260,8 +266,13 @@ public:
 
     unsigned int            CountChildren();
     bool                    ForAllChildren( bool (*callback)( RwFrame *frame, void *data ), void *data );
+    RwFrame*                GetFirstChild();
     RwFrame*                FindFreeChildByName( const char *name );
     RwFrame*                FindChildByName( const char *name );
+    RwFrame*                FindChildByHierarchy( unsigned int id );
+
+    bool                    ForAllObjects( bool (*callback)( RwObject *object, void *data ), void *data );
+    RwObject*               GetFirstObject();
 
     RpAnimHierarchy*        GetAnimHierarchy();
 };
@@ -386,24 +397,35 @@ public:
 
     void                    SetRenderCallback( RpAtomicCallback callback );
 };
-class RwRenderDetailLevel
+class RwAtomicZBufferEntry
 {
 public:
-
+    RwAtomic*               m_atomic;
+    RpAtomicCallback        m_render;
+    float                   m_distance;
 };
 class RwAtomicRenderChain
 {
 public:
-    BYTE                    m_pad[8];
-    unsigned int            m_unknown;
-    float                   m_cameraOffset;
-    RwAtomicRenderChain*    m_next;
-
-    bool                    Apply( RwRenderDetailLevel *level );
+    RwAtomicZBufferEntry                m_entry;
+    RwListEntry <RwAtomicRenderChain>   list;
 };
+class RwAtomicRenderChainInterface
+{
+public:
+    RwAtomicRenderChain     m_root;
+    RwAtomicRenderChain     m_rootLast;
+    RwAtomicRenderChain     m_renderStack;
+    RwAtomicRenderChain     m_renderLast;
+
+    bool                    PushRender( RwAtomicZBufferEntry *level );
+};
+
+extern RwAtomicRenderChainInterface *rwRenderChains;
+
 struct RpAtomicContainer
 {
-    RpAtomic    *atomic;
+    RpAtomic*   atomic;
     char        szName[17];
 };
 class RpLight : public RwObjectFrame
@@ -426,7 +448,9 @@ public:
     RwListEntry <RpClump>   m_globalClumps;     // 32
     RpClumpCallback         m_callback;         // 40
 
-    BYTE                    m_pad[16];          // 44
+    BYTE                    m_pad[8];           // 44
+    unsigned int            m_renderFlags;      // 52
+    BYTE                    m_pad2[4];          // 56
 
     RwStaticGeometry*       m_static;           // 60
 

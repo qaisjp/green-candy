@@ -185,13 +185,19 @@ public:
 
 #define MAX_BONES   64
 
+#define ATOMIC_HIER_ACTIVE          0x00000001
+#define ATOMIC_HIER_FRONTSEAT       0x00000008
+#define ATOMIC_HIER_UNKNOWN2        0x00000200
+#define ATOMIC_HIER_UNKNOWN4        0x00010000
+#define ATOMIC_HIER_UNKNOWN3        0x00020000
+#define ATOMIC_HIER_UNKNOWN5        0x00100000
+
 class CAtomicHierarchySAInterface
 {
 public:
     const char*                     m_name;
     unsigned int                    m_frameHierarchy;
-    bool                            m_active;
-    BYTE                            m_pad[3];
+    unsigned int                    m_flags;
 };
 
 class CClumpModelInfoSAInterface : public CBaseModelInfoSAInterface

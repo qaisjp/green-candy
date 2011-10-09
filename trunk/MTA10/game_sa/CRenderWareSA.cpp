@@ -216,6 +216,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RpClumpDestroy                      = (RpClumpDestroy_t)                        0x0074A360;
         RpClumpGetNumAtomics                = (RpClumpGetNumAtomics_t)                  0x00749930;
         RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E70;
+        RwFrameCloneHierarchy               = (RwFrameCloneHierarchy_t)                 0x007F05E0;
         RpClumpGetLastAtomic                = (RpClumpGetLastAtomic_t)                  0x00734820;
         RpClumpForAllAtomicsPointer         = (RpClumpForAllAtomicsPointer_t)           0x00749BC0;
         RpClumpSetupFrameCallback           = (RpClumpSetupFrameCallback_t)             0x00733750;
@@ -228,6 +229,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RpAtomicSetupObjectPipeline         = (RpAtomicSetupObjectPipeline_t)           0x005D7F00;
         RpAtomicSetupVehiclePipeline        = (RpAtomicSetupVehiclePipeline_t)          0x005D5B20;
         RpAtomicRender                      = (RpAtomicRender_t)                        0x00749210;
+        RpAtomicRenderEx                    = (RpAtomicRenderEx_t)                      0x00732480;
         RwObjectFrameRender                 = (RwObjectFrameRender_t)                   0x00805750;
         RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70;
@@ -1363,6 +1365,17 @@ void _declspec(naked) HOOK_CTxdStore_RemoveTxd ()
     }
 }
 
+/////////////////////////////////////////
+
+/*****************************************************************************
+*
+*   RenderWare Functions
+*
+*****************************************************************************/
+
+RwAtomicRenderChainInterface *rwRenderChains = (RwAtomicRenderChainInterface*)0x00C88070;
+
+
 static bool RwFrameGetChildCount( RwFrame *child, unsigned int *count )
 {
     child->ForAllChildren( RwFrameGetChildCount, count );
@@ -1390,6 +1403,22 @@ bool RwFrame::ForAllChildren( bool (*callback)( RwFrame* child, void *data ), vo
     }
 
     return true;
+}
+
+static bool RwFrameGetChild( RwFrame *child, RwFrame **dst )
+{
+    *dst = child;
+    return false;
+}
+
+RwFrame* RwFrame::GetFirstChild()
+{
+    RwFrame *child;
+
+    if ( ForAllChildren( RwFrameGetChild, &child ) )
+        return NULL;
+
+    return child;
 }
 
 struct _rwFrameFindName
@@ -1440,6 +1469,33 @@ RwFrame* RwFrame::FindChildByName( const char *name )
     return info.result;
 }
 
+struct _rwFrameFindHierarchy
+{
+    unsigned int    hierarchy;
+    RwFrame*        result;
+}
+
+static bool RwFrameGetByHierarchy( RwFrame *child, _rwFrameFindHierarchy *info )
+{
+    if ( child->m_hierarchyId != info->hierarchy )
+        return child->ForAllChildren( RwFrameGetByHierarchy, info );
+
+    info->result = child;
+    return false;
+}
+
+RwFrame* RwFrame::FindChildByHierarchy( unsigned int id )
+{
+    _rwFrameFindHierarchy info;
+
+    info.hierarchy = id;
+
+    if ( ForAllChildren( RwFrameGetByHierarchy, &info ) )
+        return NULL;
+
+    return info.result;
+}
+
 static bool RwFrameGetAnimHierarchy( RwFrame *frame, RpAnimHierarchy **anim )
 {
     if ( frame->m_anim )
@@ -1449,6 +1505,35 @@ static bool RwFrameGetAnimHierarchy( RwFrame *frame, RpAnimHierarchy **anim )
     }
 
     return frame->ForAllChildren( RwFrameGetAnimHierarchy, anim );
+}
+
+bool RwFrame::ForAllObjects( bool (*callback)( RwObject *object, void *data ), void *data )
+{
+    RwObjectFrame *child;
+
+    for ( child = m_objects.root.next; &child->m_lFrame != &m_objects.root; child = child->m_lFrame.next )
+    {
+        if ( !callback( child, data ) )
+            return false;
+    }
+
+    return true;
+}
+
+static bool RwObjectGet( RwObject *child, RwObject **dst )
+{
+    *dst = child;
+    return false;
+}
+
+RwObject* RwFrame::GetFirstObject()
+{
+    RwObject *obj;
+
+    if ( ForAllObjects( RwObjectGet, &obj ) )
+        return NULL;
+
+    return obj;
 }
 
 RpAnimHierarchy* RwFrame::GetAnimHierarchy()
@@ -1765,4 +1850,22 @@ bool RwMaterialAlphaCheck( RpMaterial *mat, void *data )
 bool RpGeometry::IsAlpha()
 {
     return !ForAllMateria( RwMaterialAlphaCheck, 0 );
+}
+
+bool RwAtomicRenderChainInterface::PushRender( RwAtomicZBufferEntry *level )
+{
+    RwAtomicRenderChain *iter = &m_root;
+    RwAtomicRenderChain *progr;
+
+    while ( ( (iter = iter->m_list.prev) != &m_rootLast ) && m_lod < level->m_lod );
+
+    if ( ( progr = m_renderStack.list.prev ) == &m_renderLast )
+        return false;
+
+    // Update render details
+    progr->m_entry = *level;
+
+    LIST_REMOVE( progr );
+    LIST_INSERT( iter, progr );
+    return true;
 }
