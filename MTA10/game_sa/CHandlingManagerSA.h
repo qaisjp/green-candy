@@ -36,10 +36,12 @@ private:
     static DWORD                m_dwStore_LoadHandlingCfg;
 
     // Original handling data unaffected by handling.cfg changes
-    static tHandlingDataSA      m_OriginalHandlingData [HT_MAX];
     static CHandlingEntrySA*    m_pOriginalEntries [HT_MAX];
 
     std::map < std::string, eHandlingProperty > m_HandlingNames;
 };
+
+// We require this data globally
+extern tHandlingDataSA          m_OriginalHandlingData [HT_MAX];
 
 #endif

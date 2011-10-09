@@ -69,6 +69,7 @@ public:
     void                            SetClump( RpClump *clump );
 
     void                            RegisterRenderCallbacks();
+    void                            Setup();
 
     RpMaterial*                     m_plateMaterial;        // 36
     BYTE                            m_pad2[9];              // 40

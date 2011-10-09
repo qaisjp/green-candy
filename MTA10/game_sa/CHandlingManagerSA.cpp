@@ -5,6 +5,7 @@
 *  FILE:        game_sa/CHandlingManagerSA.cpp
 *  PURPOSE:     Vehicle handling manager
 *  DEVELOPERS:  Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -20,8 +21,8 @@
 
 DWORD CHandlingManagerSA::m_dwStore_LoadHandlingCfg = 0;
 
-tHandlingDataSA CHandlingManagerSA::m_OriginalHandlingData [HT_MAX];
-CHandlingEntrySA* CHandlingManagerSA::m_pOriginalEntries [HT_MAX];  
+tHandlingDataSA     m_OriginalHandlingData [HT_MAX];
+CHandlingEntrySA*   CHandlingManagerSA::m_pOriginalEntries [HT_MAX];  
 
 // Use the following code to dump handling data unrecalculated on GTA load.
 // NB: You need to disable the other hook in the constructor of the manager and uncomment the other

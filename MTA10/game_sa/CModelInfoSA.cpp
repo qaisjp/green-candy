@@ -328,7 +328,7 @@ void CClumpModelInfoSAInterface::AssignAtomics( CAtomicInfoSAInterface *atomics 
     {
         RwFrame *component;
 
-        if ( !atomics->m_active )
+        if ( !(atomics->m_flags & ATOMIC_HIER_ACTIVE) )
             continue;
 
         component = m_rwClump->m_parent->FindFreeChildByName( atomics->m_name );

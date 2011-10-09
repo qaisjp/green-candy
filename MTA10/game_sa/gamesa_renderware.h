@@ -38,7 +38,8 @@ typedef RpAtomic *              (__cdecl *RpAtomicSetGeometry_t)                
 typedef RpAtomic *              (__cdecl *RpAtomicSetFrame_t)                   (RpAtomic * atomic, RwFrame * frame);
 typedef void                    (__cdecl *RpAtomicSetupObjectPipeline_t)        (RpAtomic *atomic);
 typedef void                    (__cdecl *RpAtomicSetupVehiclePipeline_t)       (RpAtomic *atomic);
-typedef RpAtomic*               (__cdecl *RpAtomicRender_t)                     (RpAtomic *atomic);
+typedef bool                    (__cdecl *RpAtomicRender_t)                     (RpAtomic *atomic);
+typedef bool                    (__cdecl *RpAtomicRenderEx_t)                   (RpAtomic *atomic, unsigned int flags);
 typedef RpClump *               (__cdecl *RpClumpAddAtomic_t)                   (RpClump * clump, RpAtomic * atomic);
 typedef RpClump *               (__cdecl *RpClumpAddLight_t)                    (RpClump * clump, RpLight * light);
 typedef int                     (__cdecl *RpClumpGetNumAtomics_t)               (RpClump * clump);
@@ -55,6 +56,7 @@ typedef RwFrame *               (__cdecl *RwFrameTranslate_t)                   
 typedef RwFrame *               (__cdecl *RwFrameScale_t)                       (RwFrame * frame, const RwV3d * v, RwTransformOrder order);
 typedef RwFrame *               (__cdecl *RwFrameCreate_t)                      (void);
 typedef RwFrame *               (__cdecl *RwFrameSetIdentity_t)                 (RwFrame * frame);
+typedef void                    (__cdecl *RwFrameCloneHierarchy_t)              (RwFrame *frame);
 typedef void                    (__cdecl *RwObjectFrameRender_t)                (RwRender *data, RwObjectFrame *frame, unsigned int unk);
 typedef RpGeometry *            (__cdecl *RpGeometryCreate_t)                   (int numverts, int numtriangles, unsigned int format);
 typedef RpAnimHierarchy*        (__cdecl *RpGeometryGetAnimation_t)             (RpGeometry *geom);
@@ -128,6 +130,7 @@ RwStreamClose_t                         RwStreamClose                           
 RpClumpDestroy_t                        RpClumpDestroy                          = (RpClumpDestroy_t)                        0xDEAD;
 RpClumpGetNumAtomics_t                  RpClumpGetNumAtomics                    = (RpClumpGetNumAtomics_t)                  0xDEAD;
 RwFrameTranslate_t                      RwFrameTranslate                        = (RwFrameTranslate_t)                      0xDEAD;
+RwFrameCloneHierarchy_t                 RwFrameCloneHierarchy                   = (RwFrameCloneHierarchy_t)                 0xDEAD;
 RpClumpGetLastAtomic_t                  RpClumpGetLastAtomic                    = (RpClumpGetLastAtomic_t)                  0xDEAD;
 RpClumpGetBoneTransform_t               RpClumpGetBoneTransform                 = (RpClumpGetBoneTransform_t)               0xDEAD;
 RpClumpForAllAtomicsPointer_t           RpClumpForAllAtomicsPointer             = (RpClumpForAllAtomicsPointer_t)           0xDEAD;
@@ -140,6 +143,7 @@ RpAtomicSetFrame_t                      RpAtomicSetFrame                        
 RpAtomicSetupObjectPipeline_t           RpAtomicSetupObjectPipeline             = (RpAtomicSetupObjectPipeline_t)           0xDEAD;
 RpAtomicSetupVehiclePipeline_t          RpAtomicSetupVehiclePipeline            = (RpAtomicSetupVehiclePipeline_t)          0xDEAD;
 RpAtomicRender_t                        RpAtomicRender                          = (RpAtomicRender_t)                        0xDEAD;
+RpAtomicRenderEx_t                      RpAtomicRenderEx                        = (RpAtomicRenderEx_t)                      0xDEAD;
 RwObjectFrameRender_t                   RwObjectFrameRender                     = (RwObjectFrameRender_t)                   0xDEAD;
 RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 0xDEAD;
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             0xDEAD;
