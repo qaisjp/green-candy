@@ -365,7 +365,7 @@ static bool RwAtomicRenderHeliMovingRotor2( RpAtomic *atomic )
     if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliRotorRenderDistance )
         return true;
 
-    vecRotor = (CVector*)&atomic->m_parent->m_ltm.pos - (CVector*)0x00C88050;
+    vecRotor = (CVector)&atomic->m_parent->m_ltm.pos - (CVector)0x00C88050;
 
     // Lulz, heavy math, much assembly, small C++ code
     level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET - vecRotor->DotProduct( (CVector*)&atomic->m_geometry->m_parent->m_ltm.right ) - vecRotor->DotProduct( (CVector*)&atomic->m_geometry->m_parent->m_ltm.up );
@@ -629,24 +629,34 @@ CVehicleSeatPlacementSAInterface::CVehicleSeatPlacementSAInterface()
         m_info[n].m_id = -1;
     }
 
-    memset(&m_unknown, 0, sizeof(m_unknown));
+    // We have no atomics in the beginning
+    memset(&m_atomics, 0, sizeof(m_atomics));
 
-    m_unknown2 = 0;
+    m_atomicCount = 0;
+
+    m_unknown4 = 0;
     m_unknown3 = 0;
+}
+
+void CVehicleSeatPlacementSAInterface::AddAtomic( RpAtomic *atomic )
+{
+    if ( m_atomicCount == 6 )
+        return;
+
+    m_atomics[ m_atomicCount++ ] = atomic;
 }
 
 void CVehicleModelInfoSAInterface::Setup()
 {
     tHandlingDataSA *handling = &m_OriginalHandlingData[ m_handlingID ];
     CAtomicHierarchySAInterface *info = ((CAtomicHierarchySAInterface**)0x008A7740)[ m_vehicleType ];
-    RwObject *obj1 = NULL;
-    RwObject *obj2 = NULL;
+    RpAtomic *obj1 = NULL;
+    RpAtomic *obj2 = NULL;
+    RwFrame *hier;
 
     for (info; info->m_name; info++)
     {
-        RwFrame *hier;
-
-        if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_UNKNOWN2 | ATOMIC_HIER_UNKNOWN3) && hier = m_rwClump->m_parent->FindFreeChildByName( info->m_name ) )
+        if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_SEAT | ATOMIC_HIER_UNKNOWN3) && hier = m_rwClump->m_parent->FindFreeChildByName( info->m_name ) )
         {
             if ( info->m_flags & ATOMIC_HIER_FRONTSEAT )
             {
@@ -660,17 +670,30 @@ void CVehicleModelInfoSAInterface::Setup()
 
                 RwFrameCloneHierarchy( hier );
             }
-            else if ( info->m_flags & ATOMIC_HIER_UNKNOWN2 )
+            else if ( info->m_flags & ATOMIC_HIER_UNKNOWN3 )
             {
-                
+                 CVehicleSeatInfoSA *seat = &m_seatPlacement->m_info[ info->m_frameHierarchy ];
+
+                 seat->m_offset = (CVector)hier->m_modelling.pos;
+
+                 // Calculate the quat for rotation
+                 new (&seat->m_quat) CQuat((CMatrix*)&hier->m_modelling);
+
+                 seat->m_id = hier->m_hierarchyId;
             }
             else
             {
-                RpClumpRemoveAtomic( m_rwClump, (RpAtomic*)hier->GetFirstObject() );
+                RpAtomic *atomic = hier->GetFirstAtomic();
+
+                RpClumpRemoveAtomic( m_rwClump, atomic );
 
                 RwFrameRemoveChild( hier );
 
+                // Apply the seat flags
+                SetComponentFlags( hier, info->m_flags );
 
+                // Append the atomic onto the seat interface
+                m_seatPlacement->AddAtomic( atomic );
             }
         }
 
@@ -678,7 +701,7 @@ void CVehicleModelInfoSAInterface::Setup()
         {
             for ( hier; hier; hier = hier->GetFirstChild() )
             {
-                RwObject *obj = hier->GetFirstObject();
+                RpAtomic *obj = hier->GetFirstAtomic();
 
                 if ( !obj )
                     continue;
@@ -692,4 +715,130 @@ void CVehicleModelInfoSAInterface::Setup()
             }
         }
     }
+
+    info = ((CAtomicHierarchySAInterface**)0x008A7740)[ m_vehicleType ];
+
+    for (info; info->m_name; info++)
+    {
+        if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_SEAT | ATOMIC_HIER_UNKNOWN3) )
+            continue;
+
+        hier = m_rwClump->m_parent->FindChildByHierarchy( info->m_frameHierarchy );
+
+        if ( !hier )
+            continue;
+
+        if ( info->m_flags & ATOMIC_HIER_DOOR )
+            m_numberOfDoors++;
+
+        if ( info->m_flags & 0x02 )
+        {
+            RpAtomic *primary = NULL;
+            RpAtomic *secondary = NULL;
+
+            hier->BaseAtomicHierarchy();
+
+            hier->RegisterRoot();
+
+            hier->FindVisibilityAtomics( &primary, &secondary );
+
+            if ( primary && secondary )
+                secondary->SetRenderCallback( primary->m_renderCallback );
+
+            m_seatPlacement->m_usageFlags |= 1 << info->m_frameHierarchy;
+        }
+
+        SetComponentFlags( hier, info->m_flags );
+
+        if ( info->m_flags & (ATOMIC_HIER_UNKNOWN4 | 0x04) )
+        {
+            RpAtomic *clone;
+            RwFrame *frame;
+
+            if ( !obj1 )
+                continue;
+
+            if ( info->m_flags & ATOMIC_HIER_UNKNOWN4 )
+            {
+                clone = RpAtomicClone( obj1 )
+
+                RpAtomicSetFrame( clone, hier );
+                RpClumpAddAtomic( m_rwClump, clone );
+
+                // Default the render callback
+                clone->SetRenderCallback( NULL );
+
+                if ( info->m_frameHierarchy == 2 || info->m_frameHierarchy == 5 || !( handling->uiModelFlags & 0x20000000 ) )
+                    continue;
+
+                clone = RpAtomicClone( obj1 );
+
+                // Create a new rotation frame
+                frame = RwFrameCreate();
+                RpAtomicSetFrame( clone, frame );
+
+                RwFrameAddChild( hier, frame );
+
+                new (&frame->m_modelling) RwMatrix();
+
+                RpClumpAddAtomic( m_rwClump, clone );
+
+                clone->SetRenderCallback( NULL );
+                continue;
+            }
+
+            hier->BaseAtomicHierarchy();
+
+            hier->RegisterRoot();
+
+            obj1->SetRenderCallback( NULL );
+        }
+        else if ( info->m_flags & ATOMIC_HIER_UNKNOWN6 )
+        {
+            if ( !obj2 )
+                continue;
+
+            clone = RpAtomicClone( obj2 );
+
+            RpAtomicSetFrame( hier, clone );
+
+            RpClumpAddAtomic( m_rwClump, clone );
+
+            clone->SetRenderCallback( NULL );
+        }
+    }
+}
+
+void CVehicleModelInfoSAInterface::SetComponentFlags( RwFrame *frame, unsigned int flags )
+{
+    tHandlingDataSA *handling = &m_OriginalHandlingData[ m_handlingID ];
+
+    if ( flags & 0x1000 )
+        frame->SetAtomicVisibility( 0x80 );
+
+    if ( flags & 0x400000 )
+        frame->SetAtomicVisibility( 0x400 );
+
+    if ( flags & 0x40000 )
+        frame->SetAtomicVisibility( 0x2000 );
+
+    if ( flags & 0x80 )
+        frame->SetAtomicVisibility( 0x10 );
+    else if ( flags & 0x0100 && ( handling->uiModelFlags & 0x01 || !( flags & (0x20 | 0x40) ) ) )
+        frame->SetAtomicVisibility( 0x20 );
+    else if ( flags & 0x20 )
+        frame->SetAtomicVisibility( 0x04 );
+    else if ( flags & 0x40 )
+        frame->SetAtomicVisibility( 0x08 );
+
+    if ( flags & 0x8000 && ( handling->uiModelFlags & 0x80000000 || flags & (0x20 | 0x40) ) )
+        frame->SetAtomicVisibility( 0x8000 );
+
+    if ( flags & 0x2000 )
+        frame->SetAtomicVisibility( 0x100 );
+    else if ( flags & 0x4000 )
+        frame->SetAtomicVisibility( 0x200 );
+
+    if ( flags & 0x0400 )
+        frame->SetAtomicVisibility( 0x40 );
 }

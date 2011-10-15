@@ -1509,11 +1509,11 @@ static bool RwFrameGetAnimHierarchy( RwFrame *frame, RpAnimHierarchy **anim )
 
 bool RwFrame::ForAllObjects( bool (*callback)( RwObject *object, void *data ), void *data )
 {
-    RwObjectFrame *child;
+    RwListEntry <RwObjectFrame> *child;
 
     for ( child = m_objects.root.next; &child->m_lFrame != &m_objects.root; child = child->m_lFrame.next )
     {
-        if ( !callback( child, data ) )
+        if ( !callback( (RpObject*)( (unsigned int)child - offsetof(RwObjectFrame, m_lFrame) ), data ) )
             return false;
     }
 
@@ -1536,6 +1536,111 @@ RwObject* RwFrame::GetFirstObject()
     return obj;
 }
 
+struct _rwObjectGetAtomic
+{
+    bool                (*routine)( RpAtomic *atomic, void *data );
+    void*               data;
+}
+
+static bool RwObjectDoAtomic( RwObjectFrame *child, _rwObjectGetAtomic *info )
+{
+    // Check whether the object is a atomic
+    if ( child->m_type != 0x14 )
+        return true;
+
+    return info->routine( (RpAtomic*)child, info->data );
+}
+
+bool RwFrame::ForAllAtomics( bool (*callback)( RpAtomic *atomic, void *data ), void *data )
+{
+    _rwObjectGetAtomic info;
+
+    info.routine = callback;
+    info.data = data;
+
+    return ForAllObjects( RwObjectDoAtomic, &info );
+}
+
+static bool RwObjectGetAtomic( RpAtomic *atomic, RpAtomic **dst )
+{
+    *dst = atomic;
+    return false;
+}
+
+RpAtomic* RwFrame::GetFirstAtomic()
+{
+    RpAtomic *atomic;
+
+    if ( ForAllAtomics( RwObjectGetAtomic, &atomic ) )
+        return NULL;
+
+    return atomic;
+}
+
+static bool RwObjectAtomicSetVisibilityFlags( RpAtomic *atomic, unsigned short flags )
+{
+    atomic->ApplyVisibilityFlags( unsigned short flags );
+    return true;
+}
+
+bool RwFrame::SetAtomicVisibility( unsigned short flags )
+{
+    ForAllAtomics( RwObjectAtomicSetVisibilityFlags, (void*)flags );
+    return true;
+}
+
+static bool RwFrameAtomicBaseRoot( RpAtomic *atomic, RwFrame *root )
+{
+    RpAtomicSetFrame( atomic, root );
+    return true;
+}
+
+static bool RwFrameBaseAtomicHierarchy( RwFrame *child, RwFrame *root )
+{
+    child->ForAllChildren( RwFrameBaseAtomicHierarchy, root );
+
+    // Set all atomics to root
+    child->ForAllAtomics( RwFrameAtomicBaseRoot, root );
+
+    RwFrameCloneHierarchy( child );
+    return true;
+}
+
+void RwFrame::BaseAtomicHierarchy()
+{
+    ForAllChildren( RwFrameBaseAtomicHierarchy, this );
+}
+
+struct _rwFrameVisibilityAtomics
+{
+    RpAtomic **primary;
+    RpAtomic **secondary;
+}
+
+static bool RwFrameAtomicFindVisibility( RpAtomic *atomic, _rwFrameVisibilityAtomics *info )
+{
+    if ( atomic->GetVisibilityFlags() & 0x01 )
+    {
+        *info->primary = atomic;
+        return true;
+    }
+
+    if ( atomic->GetVisibilityFlags() & 0x02 )
+        *info->secondary = atomic;
+
+    return true;
+}
+
+void RwFrame::FindVisibilityAtomics( RpAtomic **primary, RpAtomic **secondary )
+{
+    _rwFrameVisibilityAtomics info;
+
+    info.primary = primary;
+    info.secondary = secondary;
+
+    ForAllAtomics( RwFrameAtomicFindVisibility, &info );
+}
+
 RpAnimHierarchy* RwFrame::GetAnimHierarchy()
 {
     RpAnimHierarchy *anim;
@@ -1548,6 +1653,19 @@ RpAnimHierarchy* RwFrame::GetAnimHierarchy()
         return NULL;
 
     return anim;
+}
+
+void RwFrame::RegisterRoot()
+{
+    if ( !(m_root->m_privateFlags & ( RW_OBJ_REGISTERED | 0x01 ) ) )
+    {
+        // Add it to the internal list
+        LIST_INSERT( pRwInterface->m_nodeRoot.root, m_nodeRoot );
+
+        m_root->m_privateFlags |= RW_OBJ_REGISTERED | 0x01;
+    }
+
+    m_privateFlags |= RW_OBJ_REGISTERED | RW_OBJ_HIERARCHY_CACHED;
 }
 
 RwStaticGeometry::RwStaticGeometry()
@@ -1594,6 +1712,16 @@ void RpAtomic::SetRenderCallback( RpAtomicCallback callback )
     }
 
     m_renderCallback = callback;
+}
+
+void RpAtomic::ApplyVisibilityFlags( unsigned short flags )
+{
+    *(unsigned short*)&m_matrixFlags |= flags;
+}
+
+unsigned short RpAtomic::GetVisibilityFlags()
+{
+    return *(unsigned short*)&m_matrixFlags;
 }
 
 static bool RwAssignRenderLink( RwFrame *child, RwRenderLink **link )
@@ -1865,7 +1993,7 @@ bool RwAtomicRenderChainInterface::PushRender( RwAtomicZBufferEntry *level )
     // Update render details
     progr->m_entry = *level;
 
-    LIST_REMOVE( progr );
-    LIST_INSERT( iter, progr );
+    LIST_REMOVE( progr->list );
+    LIST_INSERT( iter->list, progr->list );
     return true;
 }

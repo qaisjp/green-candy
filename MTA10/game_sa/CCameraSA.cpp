@@ -19,7 +19,6 @@
  * \todo Need to add other TakeControl functions
  */
 
-unsigned long CCameraSA::FUNC_RwFrameGetLTM;
 static bool bCameraClipObjects;
 static bool bCameraClipVehicles;
 
@@ -470,18 +469,9 @@ float CCameraSA::GetCameraRotation ( void )
     return *(float *)VAR_CameraRotation;
 }
 
-RwMatrix * CCameraSA::GetLTM ( void )
+RwMatrix* CCameraSA::GetLTM ( void )
 {
-    DWORD frame = *(DWORD *)(((DWORD)this->GetInterface()->m_pRwCamera) + 4);
-    DWORD dwReturn;
-    _asm
-    {
-        push    frame
-        call    FUNC_RwFrameGetLTM
-        add     esp, 4
-        mov     dwReturn, eax
-    }
-    return (RwMatrix *)dwReturn;
+    return internalInterface->m_pRwCamera->m_parent->m_ltm;
 }
 
 CEntity * CCameraSA::GetTargetEntity ( void )

@@ -103,6 +103,9 @@ enum eRwType
     RW_TXD = 6
 };
 
+#define RW_OBJ_REGISTERED           0x02
+#define RW_OBJ_HIERARCHY_CACHED     0x10
+
 // RenderWare/plugin base types
 class RwObject
 {
@@ -122,14 +125,14 @@ struct RwVertex
 };
 
 // Macros used by RW, taken from SGU :)
-#define LIST_APPEND(link, item) ( (item)->list->next = (link), (item)->list->prev = (link)->list->prev, (item)->list->prev->next = (item), (item)->list->next->prev = (item) )
-#define LIST_INSERT(link, item) ( (item)->list->next = (link)->list->next, (item)->list->prev = (link), (item)->list->prev->next = (item), (item)->list->next->prev = (item) )
-#define LIST_REMOVE(link) ( (link)->list->prev->next = (link)->list->next, (link)->list->next->prev = (link)->list->prev )
+#define LIST_APPEND(link, item) ( (item).next = (link), (item).prev = (link).prev, (item).prev->next = (item), (item).next->prev = (item) )
+#define LIST_INSERT(link, item) ( (item).next = (link).next, (item).prev = (link), (item).prev->next = (item), (item).next->prev = (item) )
+#define LIST_REMOVE(link) ( (link).prev->next = (link).next, (link).next->prev = (link).prev )
 
 template < class type >
 struct RwListEntry
 {
-    type *next, *prev;
+    RwListEntry <type> *next, *prev;
 };
 template < class type >
 struct RwList
@@ -247,8 +250,7 @@ public:
 class RwFrame : public RwObject
 {
 public:
-    void*                   m_pad1;         // 8
-    void*                   m_pad2;         // 12
+    RwListEntry <RwFrame>   m_nodeRoot;     // 8
     RwMatrix                m_modelling;    // 16
     RwMatrix                m_ltm;          // 80
     RwList <RwObjectFrame>  m_objects;      // 144
@@ -273,8 +275,14 @@ public:
 
     bool                    ForAllObjects( bool (*callback)( RwObject *object, void *data ), void *data );
     RwObject*               GetFirstObject();
+    bool                    ForAllAtomics( bool (*callback)( RpAtomic *atomic, void *data ), void *data );
+    RpAtomic*               GetFirstAtomic();
+    void                    SetAtomicVisibility( unsigned short flags );
+    void                    BaseAtomicHierarchy();
+    void                    FindVisibilityAtomics( RpAtomic **primary, RpAtomic **secondary );
 
     RpAnimHierarchy*        GetAnimHierarchy();
+    void                    RegisterRoot();
 };
 class RwTexDictionary : public RwObject
 {
@@ -396,6 +404,8 @@ public:
     bool                    IsNight();
 
     void                    SetRenderCallback( RpAtomicCallback callback );
+    void                    ApplyVisibilityFlags( unsigned short flags );
+    unsigned short          GetVisibilityFlags();
 };
 class RwAtomicZBufferEntry
 {
@@ -538,7 +548,11 @@ public:
 class RwInterface   // size: 1456
 {
 public:
-    BYTE                    m_pad[304];
+    BYTE                    m_pad[188];
+
+    RwList <RwFrame>        m_nodeRoot;                                     // 188
+
+    BYTE                    m_pad6[108];                                    // 196
 
     void*                   (*m_malloc)( size_t size );                     // 304
     void                    (*m_free)( void *data );                        // 308
@@ -566,7 +580,7 @@ public:
 
     float                   m_unknown3;                                     // 680
     
-    BYTE                    m_pad[172];                                     // 936
+    BYTE                    m_pad5[172];                                    // 936
 
     RwRender*               m_renderData;                                   // 1108
     BYTE                    m_pad4[344];                                    // 1112

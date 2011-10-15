@@ -18,9 +18,6 @@
 
 extern CGameSA * pGame;
 
-unsigned long CEntitySA::FUNC_CClumpModelInfo__GetFrameFromId;
-unsigned long CEntitySA::FUNC_RwFrameGetLTM;
-
 CEntitySA::CEntitySA ( void )
 {
     // Set these variables to a constant state
@@ -327,23 +324,14 @@ RwFrame * CEntitySA::GetFrameFromId ( int id )
     return (RwFrame *)dwReturn;
 }
 
-RpClump * CEntitySA::GetRpClump ()
+RpClump* CEntitySA::GetRpClump ()
 {
     return m_pInterface->m_pRwObject;
 }
 
-RwMatrix * CEntitySA::GetLTMFromId ( int id )
+RwMatrix* CEntitySA::GetLTMFromId ( int id )
 {
-    DWORD dwReturn;
-    RwFrame * frame = GetFrameFromId(id);
-    _asm
-    {
-        push    frame
-        call    FUNC_RwFrameGetLTM
-        add     esp, 4
-        mov     dwReturn, eax
-    }
-    return (RwMatrix *)dwReturn;
+    return GetFrameFromId(id)->m_ltm;
 }
 
 VOID CEntitySA::SetAlpha(DWORD dwAlpha)

@@ -22,11 +22,7 @@ void COffsets::Initialize10EU ( void )
     CSettingsSA::FUNC_GetNumVideoModes = 0x7F2D00;
     CSettingsSA::FUNC_GetVideoModeInfo = 0x7F2D30;
     CSettingsSA::FUNC_SetDrawDistance = 0x572ea0;
-
-    CEntitySA::FUNC_RwFrameGetLTM = 0x7F09D0;
-    CCameraSA::FUNC_RwFrameGetLTM = 0x7F09D0;
 }
-
 
 void COffsets::Initialize10US ( void )
 {
@@ -36,11 +32,7 @@ void COffsets::Initialize10US ( void )
     CSettingsSA::FUNC_GetNumVideoModes = 0x7F2CC0;
     CSettingsSA::FUNC_GetVideoModeInfo = 0x7F2CF0;
     CSettingsSA::FUNC_SetDrawDistance = 0x572ea0;
-
-    CEntitySA::FUNC_RwFrameGetLTM = 0x7F0990;
-    CCameraSA::FUNC_RwFrameGetLTM = 0x7F0990;
 }
-
 
 void COffsets::Initialize11 ( void )
 {
@@ -65,12 +57,10 @@ void COffsets::Initialize11 ( void )
     CWeatherSA::FUNC_IsRaining =                                0x4ABF50;
 }
 
-
 void COffsets::Initialize20 ( void )
 {
     // TODO
 }
-
 
 void COffsets::InitializeCommon10 ( void )
 {

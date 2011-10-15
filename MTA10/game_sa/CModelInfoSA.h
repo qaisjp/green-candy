@@ -187,10 +187,12 @@ public:
 
 #define ATOMIC_HIER_ACTIVE          0x00000001
 #define ATOMIC_HIER_FRONTSEAT       0x00000008
-#define ATOMIC_HIER_UNKNOWN2        0x00000200
+#define ATOMIC_HIER_DOOR            0x00000010
+#define ATOMIC_HIER_SEAT            0x00000200
 #define ATOMIC_HIER_UNKNOWN4        0x00010000
 #define ATOMIC_HIER_UNKNOWN3        0x00020000
 #define ATOMIC_HIER_UNKNOWN5        0x00100000
+#define ATOMIC_HIER_UNKNOWN6
 
 class CAtomicHierarchySAInterface
 {
