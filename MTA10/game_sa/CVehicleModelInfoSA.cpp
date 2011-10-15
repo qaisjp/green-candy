@@ -128,6 +128,10 @@ void CVehicleModelInfoSAInterface::SetClump( RpClump *clump )
 
     // Correctly assign vehicle atomics
     AssignAtomics( ((CAtomicHierarchySAInterface**)0x008A7740)[m_vehicleType] );
+
+    
+
+    Setup();
 }
 
 static bool RwAtomicRenderTrainLOD( RpAtomic *atomic )
