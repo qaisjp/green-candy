@@ -82,7 +82,7 @@ public:
     virtual void __thiscall         SetStatic( bool enabled ) = 0;
     virtual bool __thiscall         SetModelIndex( unsigned short id ) = 0;
     virtual bool __thiscall         SetModelIndexNoCreate( unsigned short id ) = 0;
-    virtual RpClump __thiscall      CreateRwObject() = 0;
+    virtual RpClump* __thiscall     CreateRwObject() = 0;
     virtual void __thiscall         DeleteRwObject() = 0;
     virtual void __thiscall         GetBoundingBox( CBoundingBox box ) = 0;
     virtual void __thiscall         ProcessControl() = 0;
@@ -154,11 +154,11 @@ public:
     // num child higher level LODs
     BYTE numLodChildren; // 52
     // num child higher level LODs that have been rendered
-    signed char numLodChildrenRendered; // 53
+    char numLodChildrenRendered; // 53
 
     //********* BEGIN CEntityInfo **********//
     BYTE nType : 3; // what type is the entity              // 54 (2 == Vehicle)
-    BYTE nStatus : 5;               // control status       // 54
+    BYTE nStatus : 5;               // control status       // 55
     //********* END CEntityInfo **********//
 
     //58-66 padded
@@ -250,7 +250,6 @@ public:
 
 private:
     static unsigned long        FUNC_CClumpModelInfo__GetFrameFromId;
-    static unsigned long        FUNC_RwFrameGetLTM;
 
     unsigned long               m_ulArrayID;
 

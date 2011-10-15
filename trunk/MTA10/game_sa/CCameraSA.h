@@ -325,7 +325,7 @@ public:
     FLOAT m_fAttachedCamAngle; // for giving the attached camera a tilt.
 
     // RenderWare camera pointer
-    DWORD * m_pRwCamera; // was RwCamera *
+    RwCamera* m_pRwCamera;
     ///stuff for cut scenes
     CEntitySAInterface *pTargetEntity;
     CEntitySAInterface *pAttachedEntity;
@@ -432,9 +432,6 @@ public:
     void                        SetCameraClip ( bool bObjects, bool bVehicles );
     BYTE                        GetCameraViewMode ( void );
     VOID                        SetCameraViewMode ( BYTE dwCamMode );
-
-private:
-    static unsigned long        FUNC_RwFrameGetLTM;
 };
 
 #endif

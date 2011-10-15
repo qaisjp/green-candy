@@ -37,7 +37,8 @@ enum eVehicleType
 class CVehicleSeatInfoSA
 {
 public:
-    BYTE                            m_pad[28];
+    CVector                         m_offset;
+    CQuat                           m_quat;         // 12
     int                             m_id;           // 28
 };
 
@@ -46,11 +47,14 @@ class CVehicleSeatPlacementSAInterface
 public:
     CVehicleSeatPlacementSAInterface();
 
+    void                            AddAtomic( RpAtomic *atomic );
+
     CVector                         m_seatOffset[MAX_SEATS];
     CVehicleSeatInfoSA              m_info[18];                 // 180
-    int                             m_unknown[6];               // 756
-    unsigned int                    m_unknown2;                 // 780
-    unsigned int                    m_unknown3;                 // 784
+    RpAtomic*                       m_atomics[6];               // 756
+    unsigned short                  m_atomicCount;              // 780
+    unsigned short                  m_unknown4;                 // 782
+    unsigned int                    m_usageFlags;               // 784
 };
 
 class CVehicleModelInfoSAInterface : public CClumpModelInfoSAInterface
@@ -70,6 +74,7 @@ public:
 
     void                            RegisterRenderCallbacks();
     void                            Setup();
+    void                            SetComponentFlags( RwFrame *frame, unsigned int flags );
 
     RpMaterial*                     m_plateMaterial;        // 36
     BYTE                            m_pad2[9];              // 40

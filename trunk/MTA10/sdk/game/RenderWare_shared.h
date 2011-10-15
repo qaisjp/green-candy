@@ -50,14 +50,31 @@ struct RwColor
 };
 class RwMatrix
 {   // 16-byte padded
-    RwV3d          right;
-    unsigned int   flags;  // 12
-    RwV3d          up;     // 16
-    unsigned int   pad1;   // 28
-    RwV3d          at;     // 32
-    unsigned int   pad2;   // 44
-    RwV3d          pos;    // 48
-    unsigned int   pad3;   // 60
+public:
+    RwMatrix()
+    {
+        Identity();
+    }
+
+    inline void Identity()
+    {
+        right.x = 1; right.y = 0; right.z = 0;
+        up.x = 0; up.y = 1; up.z = 0;
+        at.x = 0; at.y = 0; at.z = 1;
+
+        pos.x = 1.15 * -0.25;
+        pos.y = 0;
+        pos.z = 0;
+    }
+
+    CVector         right;
+    unsigned int    a;
+    CVector         up;
+    unsigned int    b;
+    CVector         at;
+    unsigned int    c;
+    CVector         pos;
+    unsigned int    d;
 };
 
 #endif

@@ -75,7 +75,7 @@ public:
     {
         unsigned int n;
 
-        if ( m_numActive == m_max )
+        if ( m_active == m_max )
             return NULL;
 
         for (n=0; n<m_max; n++)
@@ -105,8 +105,11 @@ public:
         if ( id >= m_max )
             return;
 
+        if ( m_flags[id] & 0x80 )
+            return;
+
         m_flags[id] |= 0x80;
-        m_numActive--;
+        m_active--;
     }
 
     void    Free( type *entity )
@@ -138,7 +141,7 @@ extern CVehiclePool** ppVehiclePool;
 extern CPedPool** ppPedPool;
 extern CObjectPool** ppObjectPool;
 
-// Helpful makros
+// Helpful macros
 #define pVehicleSeatPlacementPool (*ppVehicleSeatPlacementPool)
 
 #define pTxdPool  (*ppTxdPool)
