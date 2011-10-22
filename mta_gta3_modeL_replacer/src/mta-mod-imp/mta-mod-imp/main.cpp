@@ -227,11 +227,13 @@ CObject*	GetObjectByModel(const char *model)
 // Process data
 void	LoadTargetIPL(const char *filename)
 {
-	char buffer[1024];
 	unsigned int numInst = -1;
+#ifdef _SAME_NAME_METHOD
+	char buffer[1024];
 	CIDE *ide;
-	CIPL *ipl;
 	objectList_t::iterator iter;
+#endif
+	CIPL *ipl;
 	instanceList_t::iterator i_iter;
 
 	ipl = LoadIPL(filename);
@@ -248,6 +250,7 @@ void	LoadTargetIPL(const char *filename)
 
 	ipls[numIPL++] = ipl;
 
+#ifdef _SAME_NAME_METHOD
 	strncpy(buffer, filename, strlen(filename) - 3);
 	buffer[strlen(filename) - 3] = 0;
 	strcat(buffer, "ide");
@@ -262,8 +265,27 @@ void	LoadTargetIPL(const char *filename)
 
 	for (iter = ide->m_objects.begin(); iter != ide->m_objects.end(); iter++)
 		objects.push_back(*iter);
-
+#endif
 }
+
+#ifndef _SAME_NAME_METHOD
+void	LoadTargetIDE(const char *name)
+{
+	CIDE *ide = LoadIDE(name);
+	objectList_t::iterator iter;
+
+	if (!ide)
+	{
+		printf("could not load '%s' file!", name);
+		getchar();
+
+		exit(EXIT_FAILURE);
+	}
+
+	for (iter = ide->m_objects.begin(); iter != ide->m_objects.end(); iter++)
+		objects.push_back(*iter);
+}
+#endif
 
 void	LoadReplaceIDE(const char *filename)
 {
@@ -324,6 +346,19 @@ int		main (int argc, char *argv[])
 		LoadTargetIPL(findData.cFileName);
 
 	FindClose(find);
+
+#ifndef _SAME_NAME_METHOD
+	// Now proceed through all .ide files
+	if ((find = FindFirstFile("*.ide", &findData)) == INVALID_HANDLE_VALUE)
+		return EXIT_FAILURE;
+
+	LoadTargetIDE(findData.cFileName);
+
+	while (FindNextFile(find, &findData))
+		LoadTargetIDE(findData.cFileName);
+
+	FindClose(find);
+#endif
 
 	// We must get all replacable IDE model ids
 	SetCurrentDirectory("..\\rplide");
