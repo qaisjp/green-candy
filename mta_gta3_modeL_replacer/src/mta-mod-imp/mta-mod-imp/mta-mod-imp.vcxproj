@@ -80,14 +80,18 @@
   <ItemGroup>
     <ClInclude Include="csv.h" />
     <ClInclude Include="ide.h" />
+    <ClInclude Include="ini.h" />
     <ClInclude Include="ipl.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="syntax.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="csv.cpp" />
     <ClCompile Include="ide.cpp" />
+    <ClCompile Include="ini.cpp" />
     <ClCompile Include="ipl.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="syntax.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

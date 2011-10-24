@@ -325,6 +325,16 @@ int		main (int argc, char *argv[])
 	instanceList_t::iterator iter;
 	char buffer[1024];
 	char copyBuffer[1024];
+	CINI *config = LoadINI("config.ini");
+	CINI::Entry *mainEntry;
+
+	if (config && (mainEntry = config->GetEntry("Main")))
+	{
+		// Apply configuration
+		usXoffset = mainEntry->GetInt("xOffset");
+		usYoffset = mainEntry->GetInt("yOffset");
+		usZoffset = mainEntry->GetInt("zOffset");
+	}
 	
 	// Reset the IDs
 	for (n=0; n < 65536; n++)
