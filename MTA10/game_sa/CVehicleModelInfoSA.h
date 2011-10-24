@@ -75,6 +75,8 @@ public:
     void                            RegisterRenderCallbacks();
     void                            Setup();
     void                            SetComponentFlags( RwFrame *frame, unsigned int flags );
+    void                            RegisterRoot();
+    void                            SetupMateria();
 
     RpMaterial*                     m_plateMaterial;        // 36
     BYTE                            m_pad2[9];              // 40

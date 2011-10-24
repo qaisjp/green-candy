@@ -404,8 +404,12 @@ public:
     bool                    IsNight();
 
     void                    SetRenderCallback( RpAtomicCallback callback );
+
     void                    ApplyVisibilityFlags( unsigned short flags );
+    void                    RemoveVisibilityFlags( unsigned short flags );
     unsigned short          GetVisibilityFlags();
+
+    void                    FetchMateria( RpMaterials *mats );
 };
 class RwAtomicZBufferEntry
 {
@@ -474,6 +478,8 @@ public:
     RpAtomic*               Find2dfx();
 
     void                    SetupAtomicRender();
+    void                    RemoveAtomicVisibilityFlags( unsigned short flags );
+    void                    FetchMateria( RpMaterials *mats );
 
     RpClump*                ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data );
 
@@ -497,9 +503,14 @@ public:
 class RpMaterials
 {
 public:
+                    RpMaterials( unsigned int count );
+                    ~RpMaterials();
+
+    bool            Add( RpMaterial *mat );
+
     RpMaterial**    m_data;
     unsigned int    m_entries;
-    unsigned int    m_unknown;
+    unsigned int    m_max;
 };
 struct RpTriangle
 {
@@ -517,6 +528,27 @@ public:
     BYTE                    m_pad[16];
     float                   m_scale;                            // 16
 };
+class RwLinkedMaterial
+{
+    // Appended to RwLinkedMateria per m_count
+
+public:
+    void*                   m_unknown;
+    unsigned int            m_pad;
+    RpMaterial*             m_material;
+};
+class RwLinkedMateria
+{
+public:
+    unsigned int            m_unknown;
+    unsigned short          m_count;
+    void*                   m_unknown2;
+    BYTE                    m_pad[6];
+
+    RwLinkedMaterial*       Get( unsigned int index );
+
+    // dynamic class
+};
 class RpGeometry : public RwObject
 {
 public:
@@ -533,7 +565,7 @@ public:
     RpTriangle*             m_triangles;                        // 44
     RwColor*                m_colors;                           // 48
     RwTextureCoordinates*   m_texcoords[RW_MAX_TEXTURE_COORDS]; // 52
-    void*                   normals;                            // 84
+    RwLinkedMateria*        m_linkedMateria;                    // 84
     void*                   info;                               // 88
     RwGeomDimension*        m_dimension;                        // 92
     unsigned int            m_usageFlag;                        // 96
@@ -552,16 +584,16 @@ public:
 
     RwList <RwFrame>        m_nodeRoot;                                     // 188
 
-    BYTE                    m_pad6[108];                                    // 196
+    BYTE                    m_pad6[112];                                    // 196
 
-    void*                   (*m_malloc)( size_t size );                     // 304
-    void                    (*m_free)( void *data );                        // 308
-    void*                   (*m_realloc)( void *data, size_t size );        // 312
-    void*                   (*m_calloc)( unsigned int count, size_t size ); // 316
-    void*                   m_callback;                                     // 320
-    void*                   m_callback2;                                    // 324
+    void*                   (*m_malloc)( size_t size );                     // 308
+    void                    (*m_free)( void *data );                        // 312
+    void*                   (*m_realloc)( void *data, size_t size );        // 316
+    void*                   (*m_calloc)( unsigned int count, size_t size ); // 320
+    void*                   m_callback;                                     // 324
+    void*                   m_callback2;                                    // 328
 
-    BYTE                    m_pad2[28];                                     // 328
+    BYTE                    m_pad2[24];                                     // 332
 
     void*                   m_callback3;                                    // 356
     void*                   m_callback4;                                    // 360

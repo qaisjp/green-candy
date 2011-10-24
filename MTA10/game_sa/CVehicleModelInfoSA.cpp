@@ -129,9 +129,11 @@ void CVehicleModelInfoSAInterface::SetClump( RpClump *clump )
     // Correctly assign vehicle atomics
     AssignAtomics( ((CAtomicHierarchySAInterface**)0x008A7740)[m_vehicleType] );
 
-    
+    RegisterRoot();
 
     Setup();
+
+    SetupSeats();
 }
 
 static bool RwAtomicRenderTrainLOD( RpAtomic *atomic )
@@ -845,4 +847,53 @@ void CVehicleModelInfoSAInterface::SetComponentFlags( RwFrame *frame, unsigned i
 
     if ( flags & 0x0400 )
         frame->SetAtomicVisibility( 0x40 );
+}
+
+static bool RwClumpAtomicSetupVehiclePipeline( RpAtomic *child, void *data )
+{
+    RpAtomicSetupVehiclePipeline( child );
+    return true;
+}
+
+void CVehicleModelInfoSAInterface::RegisterRoot()
+{
+    RwFrame *frame;
+    CVector normal = { 1.0f, 0, 0 };
+
+    // Make sure we render using the vehicle pipeline
+    m_rwClump->ForAllAtomics( RwClumpAtomicSetupVehiclePipeline, 0 );
+
+    // Do not do stuff if we have a root already
+    if ( *(RwFrame*)0x00B4E6B8 )
+        return;
+
+    frame = RwFrameCreate();
+
+    *(RwFrame*)0x00B4E6B8 = frame;
+
+    RwFrameOrient( frame, 60, 0, normal );
+
+    frame->RegisterRoot();
+
+    // Cache the matrix
+    RwFrameGetLTM( frame );
+}
+
+void CVehicleModelInfoSAInterface::SetupMateria()
+{
+    RpMaterials mats;
+    unsigned int n;
+
+    RwPrefetch();
+
+    new (&mats) RpMaterials( 20 );
+
+    m_rwClump->FetchMateria( &mats );
+
+    for (n=0; n<m_seatPlacement->m_atomicCount; n++)
+        m_seatPlacement->m_atomics[n]->FetchMateria( &mats );
+
+    delete &mats;
+
+    m_rwClump->RemoveAtomicVisibilityFlags( 0x2000 );
 }

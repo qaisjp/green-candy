@@ -276,7 +276,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
     }
 
     // Set some callbacks
-    RpClumpSetupFrameCallback( clump, this );
+    RpClumpSetupFrameCallback( clump, (int)this );
 
     CTxdStore_AddRef( m_textureDictionary );
 
@@ -322,7 +322,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
     hier->m_flags = 0x0300;
 }
 
-void CClumpModelInfoSAInterface::AssignAtomics( CAtomicInfoSAInterface *atomics )
+void CClumpModelInfoSAInterface::AssignAtomics( CAtomicHierarchySAInterface *atomics )
 {
     for (atomics; atomics->m_name; atomics++)
     {
