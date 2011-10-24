@@ -15,6 +15,7 @@ using namespace std;
 #include "csv.h"
 #include "ipl.h"
 #include "ide.h"
+#include "ini.h"
 #pragma warning(disable: 4996)
 
 // IPL inst entry
