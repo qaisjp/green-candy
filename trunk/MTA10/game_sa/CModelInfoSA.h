@@ -192,7 +192,7 @@ public:
 #define ATOMIC_HIER_UNKNOWN4        0x00010000
 #define ATOMIC_HIER_UNKNOWN3        0x00020000
 #define ATOMIC_HIER_UNKNOWN5        0x00100000
-#define ATOMIC_HIER_UNKNOWN6
+#define ATOMIC_HIER_UNKNOWN6        0x00200000
 
 class CAtomicHierarchySAInterface
 {
