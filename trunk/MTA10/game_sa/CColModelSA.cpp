@@ -22,6 +22,8 @@ CColModelSAInterface::~CColModelSAInterface()
         mov     ecx, this
         call    dwFunc
     }
+
+    (*ppColModelPool)->Free( this );
 }
 
 CColModelSA::CColModelSA ( void )

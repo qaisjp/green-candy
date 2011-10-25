@@ -17,8 +17,7 @@
 
 CPedModelInfoSAInterface::CPedModelInfoSAInterface ( void )
 {
-    *(DWORD*)this = VAR_CPedModelInfo_VTBL;
-    m_pColModel = ( CColModelSAInterface * ) VAR_CTempColModels_ModelPed1;
+    m_pColModel = (CColModelSAInterface*)VAR_CTempColModels_ModelPed1;
 
     Init();
 }
@@ -31,18 +30,6 @@ CPedModelInfoSAInterface::~CPedModelInfoSAInterface()
 eModelType CPedModelInfoSAInterface::GetModelType()
 {
     return MODEL_PED;
-}
-
-void CPedModelInfoSAInterface::Init()
-{
-    CClumpModelInfoSAInterface::Init();
-
-    m_flags = 0xFFFFFFFF;
-}
-
-void CPedModelInfoSAInterface::Shutdown()
-{
-    CClumpModelInfoSAInterface::Shutdown();
 }
 
 void CPedModelInfoSAInterface::DeleteRwObject()

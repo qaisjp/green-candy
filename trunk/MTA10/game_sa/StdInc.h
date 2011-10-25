@@ -77,6 +77,7 @@
 #include "COffsets.h"
 #include "CControllerConfigManagerSA.h"
 #include "CProjectileInfoSA.h"
+#include "CEventSA.h"
 #include "CEventListSA.h"
 #include "CGaragesSA.h"
 #include "CTasksSA.h"

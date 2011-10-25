@@ -46,8 +46,6 @@ public:
                                     CPedModelInfoSAInterface();
                                     ~CPedModelInfoSAInterface();
 
-    void                            Init();
-    void                            Shutdown();
     eModelType                      GetModelType();
     void                            DeleteRwObject();
     bool                            SetAnimFile( const char *name );

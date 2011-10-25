@@ -14,7 +14,6 @@
 #define __CGAMESA_EVENTLIST
 
 #include <game/CEventList.h>
-#include "CEventSA.h"
 
 #define FUNC_ClearEvent                     0x489F50
 #define FUNC_FindClosestEvent               0x489E70

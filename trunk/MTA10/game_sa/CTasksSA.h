@@ -32,6 +32,8 @@ class CVehicle;
 #include "TaskIKSA.h"
 #include "TaskAttackSA.h"
 
+clas
+
 class CTasksSA : public CTasks
 {
 private:

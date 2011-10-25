@@ -48,12 +48,7 @@ CLODAtomicModelInfoSA* CBaseModelInfoSAInterface::GetLODAtomicModelInfo()
     return NULL;
 }
 
-unsigned int CBaseModelInfoSAInterface::GetTimeInfo()
-{
-    return 0;
-}
-
-void CClumpModelInfoSAInterface::Init()
+void CBaseModelInfoSAInterface::Init()
 {
     m_numberOfRefs = 0;
     m_textureDictionary = -1;
@@ -62,18 +57,17 @@ void CClumpModelInfoSAInterface::Init()
     m_num2dfx = 0;
     m_dynamicIndex = -1;
     m_lodDistance = 2000;
-    m_rwClump = NULL;
 
     m_renderFlags = RENDER_COLMODEL | RENDER_BACKFACECULL;
 }
 
-void CClumpModelInfoSAInterface::Shutdown()
+void CBaseModelInfoSAInterface::Shutdown()
 {
     DeleteRwObject();
 
     DeleteCollision();
 
-    m_renderFlags |= RENDER_COLMODEL;
+    m_renderFlags |= RENDER_PRERENDERED;
 
     m_effectID = -1;
     m_num2dfx = 0;
@@ -82,9 +76,14 @@ void CClumpModelInfoSAInterface::Shutdown()
     m_textureDictionary = -1;
 }
 
-void CClumpModelInfoSAInterface::DeleteCollision()
+unsigned int CBaseModelInfoSAInterface::GetTimeInfo()
 {
-    if (m_pColModel && ( m_renderFlags & RENDER_COLMODEL ))
+    return 0;
+}
+
+void CBaseModelInfoSAInterface::DeleteCollision()
+{
+    if ( m_pColModel && ( m_renderFlags & RENDER_COLMODEL ) )
     {
         delete m_pColModel;
 
@@ -120,6 +119,13 @@ void CBaseModelInfoSAInterface::Dereference()
     m_numberOfRefs--;
 
     CTxdStore_RemoveRef( m_textureDictionary );
+}
+
+void CClumpModelInfoSAInterface::Init()
+{
+    m_rwClump = NULL;
+
+    m_animBlock = -1;
 }
 
 void CClumpModelInfoSAInterface::DeleteRwObject()
