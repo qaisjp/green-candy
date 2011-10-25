@@ -77,12 +77,12 @@ public:
     void                            SetComponentFlags( RwFrame *frame, unsigned int flags );
     void                            RegisterRoot();
     void                            SetupMateria();
+    void                            InitNameplate();
 
     RpMaterial*                     m_plateMaterial;        // 36
     BYTE                            m_pad2[9];              // 40
     unsigned char                   m_plateDesign;          // 49
-    const char*                     m_name;                 // 50
-    BYTE                            m_pad3[6];              // 54
+    char                            m_name[10];             // 50
     eVehicleType                    m_vehicleType;          // 60
     float                           m_frontWheelScale;      // 64
     float                           m_rearWheelScale;       // 68

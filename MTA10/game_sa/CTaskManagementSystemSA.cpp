@@ -143,100 +143,100 @@ CTask * CTaskManagementSystemSA::CreateAppropriateTask ( CTaskSAInterface * pTas
 
     switch ( iTaskType )
     {
-        // Attack
-        case TASK_SIMPLE_GANG_DRIVEBY:
-            pTaskSA = new CTaskSimpleGangDriveBySA;
-            break;
-        case TASK_SIMPLE_USE_GUN:
-            pTaskSA = new CTaskSimpleUseGunSA;
-            break;
-        case TASK_SIMPLE_FIGHT:
-            pTaskSA = new CTaskSimpleFightSA;
-            break;
-        
-        // Basic
-        case TASK_COMPLEX_USE_MOBILE_PHONE:
-            pTaskSA = new CTaskComplexUseMobilePhoneSA;
-            break;
-        case TASK_SIMPLE_ANIM:
-            pTaskSA = new CTaskSimpleRunAnimSA;
-            break;
-        case TASK_SIMPLE_NAMED_ANIM:
-            pTaskSA = new CTaskSimpleRunNamedAnimSA;
-            break;
-        case TASK_COMPLEX_DIE:
-            pTaskSA = new CTaskComplexDieSA;
-            break;
-        case TASK_SIMPLE_STEALTH_KILL:
-            pTaskSA = new CTaskSimpleStealthKillSA;
-            break;
-        case TASK_COMPLEX_SUNBATHE:
-            pTaskSA = new CTaskComplexSunbatheSA;
-            break;
+    // Attack
+    case TASK_SIMPLE_GANG_DRIVEBY:
+        pTaskSA = new CTaskSimpleGangDriveBySA;
+        break;
+    case TASK_SIMPLE_USE_GUN:
+        pTaskSA = new CTaskSimpleUseGunSA;
+        break;
+    case TASK_SIMPLE_FIGHT:
+        pTaskSA = new CTaskSimpleFightSA;
+        break;
     
-        // Car accessories
-        case TASK_SIMPLE_CAR_SET_PED_IN_AS_PASSENGER:
-            pTaskSA = new CTaskSimpleCarSetPedInAsPassengerSA;
-            break;
-        case TASK_SIMPLE_CAR_SET_PED_IN_AS_DRIVER:
-            pTaskSA = new CTaskSimpleCarSetPedInAsDriverSA;
-            break;
-        case TASK_SIMPLE_CAR_SET_PED_OUT:
-            pTaskSA = new CTaskSimpleCarSetPedOutSA;
-            break;
+    // Basic
+    case TASK_COMPLEX_USE_MOBILE_PHONE:
+        pTaskSA = new CTaskComplexUseMobilePhoneSA;
+        break;
+    case TASK_SIMPLE_ANIM:
+        pTaskSA = new CTaskSimpleRunAnimSA;
+        break;
+    case TASK_SIMPLE_NAMED_ANIM:
+        pTaskSA = new CTaskSimpleRunNamedAnimSA;
+        break;
+    case TASK_COMPLEX_DIE:
+        pTaskSA = new CTaskComplexDieSA;
+        break;
+    case TASK_SIMPLE_STEALTH_KILL:
+        pTaskSA = new CTaskSimpleStealthKillSA;
+        break;
+    case TASK_COMPLEX_SUNBATHE:
+        pTaskSA = new CTaskComplexSunbatheSA;
+        break;
 
-        // Car
-        case TASK_COMPLEX_ENTER_CAR_AS_DRIVER:
-            pTaskSA = new CTaskComplexEnterCarAsDriverSA;
-            break;
-        case TASK_COMPLEX_ENTER_CAR_AS_PASSENGER:
-            pTaskSA = new CTaskComplexEnterCarAsPassengerSA;
-            break;
-        case TASK_COMPLEX_ENTER_BOAT_AS_DRIVER:
-            pTaskSA = new CTaskComplexEnterBoatAsDriverSA;
-            break;
-        case TASK_COMPLEX_LEAVE_CAR:
-            pTaskSA = new CTaskComplexLeaveCarSA;
-            break;
+    // Car accessories
+    case TASK_SIMPLE_CAR_SET_PED_IN_AS_PASSENGER:
+        pTaskSA = new CTaskSimpleCarSetPedInAsPassengerSA;
+        break;
+    case TASK_SIMPLE_CAR_SET_PED_IN_AS_DRIVER:
+        pTaskSA = new CTaskSimpleCarSetPedInAsDriverSA;
+        break;
+    case TASK_SIMPLE_CAR_SET_PED_OUT:
+        pTaskSA = new CTaskSimpleCarSetPedOutSA;
+        break;
 
-        // GoTo
-        case TASK_COMPLEX_WANDER:
-            pTaskSA = new CTaskComplexWanderStandardSA;
-            break;
+    // Car
+    case TASK_COMPLEX_ENTER_CAR_AS_DRIVER:
+        pTaskSA = new CTaskComplexEnterCarAsDriverSA;
+        break;
+    case TASK_COMPLEX_ENTER_CAR_AS_PASSENGER:
+        pTaskSA = new CTaskComplexEnterCarAsPassengerSA;
+        break;
+    case TASK_COMPLEX_ENTER_BOAT_AS_DRIVER:
+        pTaskSA = new CTaskComplexEnterBoatAsDriverSA;
+        break;
+    case TASK_COMPLEX_LEAVE_CAR:
+        pTaskSA = new CTaskComplexLeaveCarSA;
+        break;
 
-        // IK
-        case TASK_SIMPLE_IK_CHAIN:
-            pTaskSA = new CTaskSimpleIKChainSA;
-            break;
-        case TASK_SIMPLE_IK_LOOK_AT:
-            pTaskSA = new CTaskSimpleIKLookAtSA;
-            break;
-        case TASK_SIMPLE_IK_MANAGER:
-            pTaskSA = new CTaskSimpleIKManagerSA;
-            break;
+    // GoTo
+    case TASK_COMPLEX_WANDER:
+        pTaskSA = new CTaskComplexWanderStandardSA;
+        break;
 
-        // JumpFall
-        case TASK_SIMPLE_CLIMB:
-            pTaskSA = new CTaskSimpleClimbSA;
-            break;
-        case TASK_SIMPLE_JETPACK:
-            pTaskSA = new CTaskSimpleJetPackSA;  
-            break;
+    // IK
+    case TASK_SIMPLE_IK_CHAIN:
+        pTaskSA = new CTaskSimpleIKChainSA;
+        break;
+    case TASK_SIMPLE_IK_LOOK_AT:
+        pTaskSA = new CTaskSimpleIKLookAtSA;
+        break;
+    case TASK_SIMPLE_IK_MANAGER:
+        pTaskSA = new CTaskSimpleIKManagerSA;
+        break;
 
-        // Physical response
-        case TASK_SIMPLE_CHOKING:
-            pTaskSA = new CTaskSimpleChokingSA;
-            break;
+    // JumpFall
+    case TASK_SIMPLE_CLIMB:
+        pTaskSA = new CTaskSimpleClimbSA;
+        break;
+    case TASK_SIMPLE_JETPACK:
+        pTaskSA = new CTaskSimpleJetPackSA;  
+        break;
 
-        // Secondary
-        case TASK_SIMPLE_DUCK:
-            pTaskSA = new CTaskSimpleDuckSA;
-            break;    
+    // Physical response
+    case TASK_SIMPLE_CHOKING:
+        pTaskSA = new CTaskSimpleChokingSA;
+        break;
 
-        // Just create the baseclass
-        default:
-            pTaskSA = new CTaskSA;
-            break;
+    // Secondary
+    case TASK_SIMPLE_DUCK:
+        pTaskSA = new CTaskSimpleDuckSA;
+        break;    
+
+    // Just create the baseclass
+    default:
+        pTaskSA = new CTaskSA;
+        break;
     }
 
     assert ( pTaskSA && !pTaskSA->GetInterface () );

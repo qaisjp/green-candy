@@ -13,6 +13,19 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
+struct _licensePlate
+{
+    char text[8];
+    unsigned int style;
+    RpMaterial *plate;  // ext
+};
+
+typedef RpMaterial*     (*HandleVehicleFrontNameplate_t)    ( RpMaterial *mat, _licensePlate *info, unsigned char design );
+typedef RpMaterial*     (*HandleVehicleBackNameplate_t)     ( RpMaterial *mat, unsigned char design );
+
+HandleVehicleFrontNameplate_t   HandleVehicleFrontNameplate         = ( HandleVehicleFrontNameplate_t )         0x006FE020;
+HandleVehicleBackNameplate_t    HandleVehicleBackNameplate          = ( HandleVehicleBackNameplate_t )          0x006FDE50;
+
 #define FUNC_InitVehicleData                0x005B8F00
 #define FUNC_LoadVehicleColors              0x005B6890
 #define FUNC_LoadCarMods                    0x005B65A0
@@ -70,7 +83,7 @@ void    VehicleModels_Init()
 
 CVehicleModelInfoSAInterface::CVehicleModelInfoSAInterface()
 {
-
+    Init();
 }
 
 CVehicleModelInfoSAInterface::~CVehicleModelInfoSAInterface()
@@ -133,7 +146,9 @@ void CVehicleModelInfoSAInterface::SetClump( RpClump *clump )
 
     Setup();
 
-    SetupSeats();
+    SetupMateria();
+
+    InitNameplate();
 }
 
 static bool RwAtomicRenderTrainLOD( RpAtomic *atomic )
@@ -896,4 +911,71 @@ void CVehicleModelInfoSAInterface::SetupMateria()
     delete &mats;
 
     m_rwClump->RemoveAtomicVisibilityFlags( 0x2000 );
+}
+
+#define RAND        (double)(rand() & 0xFFFF) / 0x7FFF
+#define RANDCHAR    RAND * 0.23
+#define RANDNUM     RAND * -9
+
+bool GetRandomNameplateText( char *buffer, size_t max )
+{
+    unsigned int n;
+
+    if ( max < 4 )
+        return false;
+
+    buffer[0] = 'A' - RANDCHAR;
+    buffer[1] = 'A' - RANDCHAR;
+    buffer[2] = '0' - RANDNUM;
+    buffer[3] = '0' - RANDNUM;
+
+    for (n=4; n<max; )
+    {
+        buffer[n++] = '0' - RANDNUM;
+        buffer[n++] = 'A' - RANDCHAR;
+        buffer[n++] = 'A' - RANDCHAR;
+    }
+
+    return true;
+}
+
+static bool RwMaterialSetLicensePlate( RpMaterial *mat, _licensePlate *plate )
+{
+    if ( !mat->m_texture )
+        return true;
+
+    if ( strcmp( mat->m_texture->name, "carplate" ) == 0 )
+    {
+        plate->plate = mat;
+
+        HandleVehicleFrontNameplate( mat, plate, *(unsigned char*)0x00C3EF80 );
+        return true;
+    }
+
+    if ( strcmp( mat->m_texture->name, "carpback" ) == 0 )
+        HandleVehicleBackNameplate( mat, *(unsigned char*)0x00C3EF80 );
+
+    return true;
+}
+
+static bool RwAtomicSetLicensePlate( RpAtomic *child, _licensePlate *plate )
+{
+    child->m_geometry->ForAllMateria( RwMaterialSetLicensePlate, plate );
+    return true;
+}
+
+void CVehicleModelInfoSAInterface::InitNameplate()
+{
+    _licensePlate plate;
+
+    // Get some random stuff into nameplate
+    GetRandomNameplateText( plate.text, 8 );
+
+    plate.style = m_plateDesign;
+    plate.plate = NULL;
+
+    m_rwClump->ForAllAtomics( RwAtomicSetLicensePlate, &plate );
+
+    if ( plate.plate )
+        m_plateMaterial = plate.plate;
 }

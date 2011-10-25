@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/TaskSA.h
 *  PURPOSE:     Base game task
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -18,60 +19,55 @@
 #include <game/Task.h>
 #include "TaskNamesSA.h"
 
-#define FUNC_CTask__Operator_New            0x61A5A0
-#define FUNC_CTask__Operator_Delete         0x61A5B0
-
 class CTaskTimer
 {
 public:
-    DWORD dwTimeStart; // ?
-    DWORD dwTimeEnd; // ?
-    bool bSet;
-    bool bStopped;
+    DWORD                           dwTimeStart; // ?
+    DWORD                           dwTimeEnd; // ?
+    bool                            bSet;
+    bool                            bStopped;
 };
 
-class TaskVTBL
+// I see what you did there, R*
+class __declspec(align(128)) CTaskSAInterface
 {
 public:
-    DWORD DeletingDestructor;
-    DWORD Clone;
-    DWORD GetSubTask;
-    DWORD IsSimpleTask;
-    DWORD GetTaskType;
-    DWORD StopTimer;
-    DWORD MakeAbortable;
+    virtual                                     ~CTaskSAInterface() {}
+
+    virtual __thiscall CTaskSAInterface*        Clone() = 0;
+    virtual __thiscall CTaskSAInterface*        GetSubTask() = 0;
+    virtual __thiscall bool                     IsSimpleTask() = 0;
+    virtual __thiscall int                      GetTaskType() = 0;
+    virtual __thiscall void                     StopTimer( CEventSAInterface *evt ) = 0;
+    virtual __thiscall void                     MakeAbortable() = 0;
+
+    CTaskSAInterface*           m_pParent;
 };
 
-class TaskSimpleVTBL : public TaskVTBL
+class CTaskSimpleSAInterface : public CTaskSAInterface
 {
 public:
-    DWORD ProcessPed;
-    DWORD SetPedPosition;
+    virtual __thiscall bool                     ProcessPed( CPedSAInterface *ped ) = 0;
+    virtual __thiscall bool                     SetPedRotation( CPedSAInterface *ped ) = 0;
 };
 
-class TaskComplexVTBL : public TaskVTBL
+class CTaskComplexSAInterface : public CTaskSAInterface
 {
 public:
-    DWORD SetSubTask; 
-    DWORD CreateNextSubTask;
-    DWORD CreateFirstSubTask;
-    DWORD ControlSubTask;
-};
+    virtual __thiscall void                     SetSubTask( CTaskSAInterface *task ) = 0;
+    virtual __thiscall CTaskSAInterface*        CreateNextSubTask( CPedSAInterface *ped ) = 0;
+    virtual __thiscall CTaskSAInterface*        CreateFirstSubTask( CPedSAInterface *ped ) = 0;
+    virtual __thiscall CTaskSAInterface*        ControlSubTask( CPedSAInterface *ped ) = 0;
 
-class CTaskSAInterface
-{
-public:
-    TaskVTBL * VTBL; // cast to either TaskSimpleVTBL or TaskComplexVTBL
-    CTaskSAInterface * m_pParent;
+    CTask*                      m_pSubTask;
 };
 
 class CTaskSA : public virtual CTask
 {
 private:
-    // our variable(s)
-    CTaskSAInterface * TaskInterface;
-    CTaskSA * Parent; // if the task was setup through an external source, this isn't going to be correct
-    bool m_bBeingDestroyed;
+    CTaskSAInterface*           m_interface;
+    CTaskSA*                    m_parent;
+    bool                        m_beingDestroyed;
 
 public:
                         CTaskSA                 ( void );
@@ -83,7 +79,7 @@ public:
     CTask*              GetSubTask              ( void );
     bool                IsSimpleTask            ( void );
     int                 GetTaskType             ( void );
-    void                StopTimer               ( const CEvent* pEvent );
+    void                StopTimer               ( CEventSAInterface* pEvent );
     bool                MakeAbortable           ( CPed* pPed, const int iPriority, const CEvent* pEvent );
     char*               GetTaskName             ( void );
 
@@ -100,17 +96,6 @@ public:
     void                DestroyJustThis         ( void );
 };
 
-union UCTask 
-{
-    CTask * pTask;
-    CTaskSA * pTaskSA;
-};
-
-class CTaskSimpleSAInterface : public CTaskSAInterface
-{
-    public:
-};
-
 class CTaskSimpleSA : public virtual CTaskSA, public virtual CTaskSimple
 {
 public:
@@ -118,12 +103,6 @@ public:
 
     bool ProcessPed(CPed* pPed);
     bool SetPedPosition(CPed *pPed);
-};
-
-class CTaskComplexSAInterface : public CTaskSAInterface
-{
-public:
-    CTask* m_pSubTask;
 };
 
 class CTaskComplexSA : public virtual CTaskSA, public virtual CTaskComplex
@@ -136,85 +115,5 @@ public:
     CTask* CreateFirstSubTask(CPed* pPed);
     CTask* ControlSubTask(CPed* pPed);
 };
-
-
-//
-// 'Safe' task news
-// Will return NULL if the created task is not valid
-//
-template < class T >
-static T* ValidNewTask ( T* pTask )
-{
-   if ( pTask->IsValid () )
-        return pTask;
-    delete pTask;
-    return NULL;
-}
-
-template < class T >
-static T* NewTask ( void )
-{
-    return ValidNewTask ( new T () );
-}
-
-template < class T, class A >
-static T* NewTask ( const A& a )
-{
-    return ValidNewTask ( new T ( a ) );
-}
-
-template < class T, class A, class B >
-static T* NewTask ( const A& a, const B& b )
-{
-    return ValidNewTask ( new T ( a, b ) );
-}
-
-template < class T, class A, class B, class C >
-static T* NewTask ( const A& a, const B& b, const C& c )
-{
-    return ValidNewTask ( new T ( a, b, c ) );
-}
-
-template < class T, class A, class B, class C, class D >
-static T* NewTask ( const A& a, const B& b, const C& c, const D& d )
-{
-    return ValidNewTask ( new T ( a, b, c, d ) );
-}
-
-template < class T, class A, class B, class C, class D, class E >
-static T* NewTask ( const A& a, const B& b, const C& c, const D& d, const E& e )
-{
-    return ValidNewTask ( new T ( a, b, c, d, e ) );
-}
-
-template < class T, class A, class B, class C, class D, class E, class F >
-static T* NewTask ( const A& a, const B& b, const C& c, const D& d, const E& e, const F& f )
-{
-    return ValidNewTask ( new T ( a, b, c, d, e, f ) );
-}
-
-template < class T, class A, class B, class C, class D, class E, class F, class G >
-static T* NewTask ( const A& a, const B& b, const C& c, const D& d, const E& e, const F& f, const G& g )
-{
-    return ValidNewTask ( new T ( a, b, c, d, e, f, g ) );
-}
-
-template < class T, class A, class B, class C, class D, class E, class F, class G, class H >
-static T* NewTask ( const A& a, const B& b, const C& c, const D& d, const E& e, const F& f, const G& g, const H& h )
-{
-    return ValidNewTask ( new T ( a, b, c, d, e, f, g, h ) );
-}
-
-template < class T, class A, class B, class C, class D, class E, class F, class G, class H, class I >
-static T* NewTask ( const A& a, const B& b, const C& c, const D& d, const E& e, const F& f, const G& g, const H& h, const I& i )
-{
-    return ValidNewTask ( new T ( a, b, c, d, e, f, g, h, i ) );
-}
-
-template < class T, class A, class B, class C, class D, class E, class F, class G, class H, class I, class J >
-static T* NewTask ( const A& a, const B& b, const C& c, const D& d, const E& e, const F& f, const G& g, const H& h, const I& i, const J& j )
-{
-    return ValidNewTask ( new T ( a, b, c, d, e, f, g, h, i, j ) );
-}
 
 #endif

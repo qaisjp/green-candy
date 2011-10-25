@@ -44,11 +44,13 @@ class CPedIntelligenceSAInterface
 public:
 // CEventHandlerHistory @ + 56
     CPedSAInterface*                m_ped;
-    CTaskManagerSAInterface*        m_taskManager;
-    BYTE                            m_pad[16];
-    CFightManagerSAInterface*       m_fightInterface;     // +24
-    BYTE                            m_pad2[184];
-    CVehicleScannerSAInterface*     m_vehicleScanner;
+    CTaskManagerSAInterface*        m_taskManager;          // 4
+    BYTE                            m_pad[16];              // 8
+    CFightManagerSAInterface*       m_fightInterface;       // 24
+    BYTE                            m_pad2[184];            // 28
+    CVehicleScannerSAInterface*     m_vehicleScanner;       // 212
+
+    BYTE                            m_pad3[444];            // 216
 };
 
 class CPedIntelligenceSA : public CPedIntelligence

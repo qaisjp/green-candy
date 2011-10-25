@@ -292,13 +292,13 @@ public:
 };
 class RwTexture
 {
-    RwRaster*                   raster;
-    RwTexDictionary*            txd;
-    RwListEntry <RwTexture>     TXDList;
-    char                        name[RW_TEXTURE_NAME_LENGTH];
-    char                        mask[RW_TEXTURE_NAME_LENGTH];
-    unsigned int                flags;
-    unsigned int                refs;
+    RwRaster*                   raster;                         // 0
+    RwTexDictionary*            txd;                            // 4
+    RwListEntry <RwTexture>     TXDList;                        // 8
+    char                        name[RW_TEXTURE_NAME_LENGTH];   // 16
+    char                        mask[RW_TEXTURE_NAME_LENGTH];   // 48
+    unsigned int                flags;                          // 80
+    unsigned int                refs;                           // 84
 };
 struct RwTextureCoordinates
 {

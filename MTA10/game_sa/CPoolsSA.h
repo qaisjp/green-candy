@@ -17,25 +17,6 @@
 #define __CGAMESA_POOLS
 
 #include <game/CPools.h>
-#include <google/dense_hash_map>
-
-class CEntryInfoNodePoolSA : public CEntryInfoNodePool
-{
-public:
-    int             GetNumberOfUsedSpaces       ( );
-};
-
-class CPointerNodeDoubleLinkPoolSA : public CPointerNodeDoubleLinkPool
-{
-public:
-    int             GetNumberOfUsedSpaces       ( );
-};
-
-class CPointerNodeSingleLinkPoolSA : public CPointerNodeSingleLinkPool
-{
-public:
-    int             GetNumberOfUsedSpaces       ( );
-};
 
 template < class type, int max >
 class CPool
@@ -124,7 +105,55 @@ public:
     bool            m_poolActive;
 };
 
+class CPtrNodeSingleSA
+{
+public:
+    BYTE            m_pad[8];
+};
+
+class CPtrNodeDoubleSA
+{
+public:
+    BYTE            m_pad[12];
+};
+
+class CEntryInfoSA
+{
+public:
+    BYTE            m_pad[20];
+};
+
+class CPointRouteSA
+{
+public:
+    BYTE            m_pad[100];
+};
+
+class CPatrolRouteSA
+{
+public:
+    BYTE            m_pad[420];
+};
+
+class CNodeRouteSA
+{
+public:
+    BYTE            m_pad[36];
+};
+
+class CTaskAllocatorSA
+{
+public:
+    BYTE            m_pad[32];
+};
+
+class CPedAttractorSA
+{
+public:
+};
+
 typedef CPool <CVehicleSeatPlacementSAInterface, 500> CVehicleSeatPlacementPool;
+typedef CPool <CColModelSAInterface, 20000> CColModelPool;
 
 typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
 
@@ -132,8 +161,21 @@ typedef CPool <CVehicleSAInterface, MAX_VEHICLES> CVehiclePool;
 typedef CPool <CPedSAInterface, MAX_PEDS> CPedPool;
 typedef CPool <CObjectSAInterface, MAX_OBJECTS> CObjectPool;
 
+typedef CPool <CSceneSAInterface, MAX_BUILDINGS> CBuildingPool;
+typedef CPool <CSceneSAInterface, 4000> CDummyPool;
+
+typedef CPool <CTaskSAInterface, 9001> CTaskPool;
+typedef CPool <CEventSAInterface, 1337> CEventPool;
+typedef CPool <CPointRouteSA, 64> CPointRoutePool;
+typedef CPool <CPatrolRouteSA, 32> CPatrolRoutePool;
+typedef CPool <CNodeRouteSA, 64> CNodeRoutePool;
+typedef CPool <CTaskAllocatorSA, 16> CTaskAllocatorPool;
+
+typedef CPool <CPedIntelligenceSAInterface, MAX_PEDS> CPedIntelligencePool;
+
 // They have to be defined somewhere!
 extern CVehicleSeatPlacementPool** ppVehicleSeatPlacementPool;
+extern CColModelSAInterface** ppColModelPool;
 
 extern CTxdPool** ppTxdPool;
 
@@ -141,14 +183,17 @@ extern CVehiclePool** ppVehiclePool;
 extern CPedPool** ppPedPool;
 extern CObjectPool** ppObjectPool;
 
-// Helpful macros
-#define pVehicleSeatPlacementPool (*ppVehicleSeatPlacementPool)
+extern CBuildingPool** ppBuildingPool;
+extern CDummyPool** ppDummyPool;
 
-#define pTxdPool  (*ppTxdPool)
+extern CTaskPool** ppTaskPool;
+extern CEventPool** ppEventPool;
+extern CPointRoutePool** ppPointRoutePool;
+extern CPatrolRoutePool** ppPatrolRoutePool;
+extern CNodeRoutePool** ppNodeRoutePool;
+extern CTaskAllocatorPool** ppTaskAllocatorPool;
 
-#define pVehiclePool (*ppVehiclePool)
-#define pPedPool (*ppPedPool)
-#define pObjectPool (*ppObjectPool)
+extern CPedIntelligencePool** ppPedIntelligencePool;
 
 class CPoolsSA : public CPools
 {
@@ -224,21 +269,7 @@ public:
     CEntryInfoNodePool*             GetEntryInfoNodePool            ( );
     CPointerNodeSingleLinkPool*     GetPointerNodeSingleLinkPool    ( );
     CPointerNodeDoubleLinkPool*     GetPointerNodeDoubleLinkPool    ( );
-
-
-private:
-    // Pools
-    CBuildingSA*    Buildings [ MAX_BUILDINGS ];
-    unsigned long   m_ulBuildingCount;
-
-    bool            m_bGetVehicleEnabled;
-
-    CEntryInfoNodePool*             EntryInfoNodePool;
-    CPointerNodeDoubleLinkPool*     PointerNodeDoubleLinkPool;
-    CPointerNodeSingleLinkPool*     PointerNodeSingleLinkPool;
 };
-
-
 
 
 #define FUNC_GetVehicle                     0x54fff0

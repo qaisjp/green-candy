@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/TaskSA.cpp
 *  PURPOSE:     Base game task
@@ -8,6 +8,7 @@
 *               Christian Myhre Lundheim <>
 *               Jax <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -35,122 +36,57 @@ CTaskSA::~CTaskSA()
 }
 
 
-// alocate memory for the task (ammount nSize)
+// allocate memory for the task (ammount nSize)
 void CTaskSA::CreateTaskInterface(size_t nSize)
 {
     DEBUG_TRACE("void CTaskSA::CreateTaskInterface(size_t nSize)");
 
-    // Safety margin. I see GTA allocate more than we do for some tasks. We could create
-    // crashes by not allocating enough. Better to potentially waste 12 bytes.
-    nSize = nSize + 12;
-
-    DWORD dwFunc = FUNC_CTask__Operator_New;
-    DWORD dwReturn = 0;
-    _asm
-    {
-        push    nSize
-        call    dwFunc
-        add     esp, 4
-        mov     dwReturn, eax
-    }
-
-    TaskInterface = (CTaskSAInterface*)dwReturn;
+    TaskInterface = new ((*ppTaskPool)->Allocate()) CTaskSAInterface(); // :3
     Parent = 0;
 }
 
 
 CTask * CTaskSA::Clone() 
 {
-    DEBUG_TRACE("CTask * CTaskSA::Clone() ");
-    DWORD dwThisInterface = (DWORD)this->GetInterface();
-    DWORD dwFunc = this->GetInterface()->VTBL->Clone;
-    DWORD dwReturn = 0;
-    _asm
-    {
-        mov     ecx, dwThisInterface
-        call    dwFunc
-        mov     dwReturn, eax
-    }
-    return (CTask *)dwReturn;
+    // This will crash!
+    return (CTask *)m_interface->Clone();
 }
 
 void CTaskSA::SetParent(CTask* pParent) 
 {
-    UCTask unionTask;
-    unionTask.pTask = pParent;
-    this->GetInterface()->m_pParent = unionTask.pTaskSA->GetInterface(); 
-    this->Parent = unionTask.pTaskSA; 
+    m_interface->m_pParent = ((CTaskSA*)pParent)->m_interface;
+    m_parent = (CTaskSA*)pParent;
 }
 
 CTask * CTaskSA::GetSubTask() 
 {
-    static CTaskManagementSystemSA * s_pTaskManagementSystem = (CTaskManagementSystemSA *)pGame->GetTaskManagementSystem();
-
     DEBUG_TRACE("CTask * CTaskSA::GetSubTask()");
-    DWORD dwThisInterface = (DWORD)this->GetInterface();
-    DWORD dwFunc = this->GetInterface()->VTBL->GetSubTask;
-    DWORD dwReturn = 0;
-    _asm
-    {
-        mov     ecx, dwThisInterface
-        call    dwFunc
-        mov     dwReturn, eax
-    }
-    return s_pTaskManagementSystem->GetTask ( (CTaskSAInterface *)dwReturn );
+
+    return pGame->GetTaskManagementSystem()->GetTask ( m_interface->GetSubTask() );
 }
 
 bool CTaskSA::IsSimpleTask()
 {
     DEBUG_TRACE("bool CTaskSA::IsSimpleTask()");
-    DWORD dwThisInterface = (DWORD)this->GetInterface();
-    DWORD dwFunc = this->GetInterface()->VTBL->IsSimpleTask;
-    bool bReturn = 0;
-    _asm
-    {
-        mov     ecx, dwThisInterface
-        call    dwFunc
-        mov     bReturn, al
-    }
-    return bReturn;
+ 
+    return m_interface->IsSimpleTask();
 }
 
 int CTaskSA::GetTaskType() 
 {
     DEBUG_TRACE("int CTaskSA::GetTaskType()");
-    CTaskSAInterface * pTaskInterface = this->GetInterface();
-   
-    DWORD dwFunc = pTaskInterface->VTBL->GetTaskType;
-    int iReturn = 9999;
 
-    if ( dwFunc && dwFunc != 0x82263A ) // some functions have no task type 0x82263A is purecal (assert?)
-    {
-        _asm
-        {
-            mov     ecx, pTaskInterface
-            call    dwFunc
-            mov     iReturn, eax
-        }
-    }
-    return iReturn;
+    return m_interface->GetTaskType();
 }
 
 /**
  * \todo Handle pEvent correctly to convert it
  */
-void CTaskSA::StopTimer(const CEvent* pEvent) 
+void CTaskSA::StopTimer(CEventSAInterface* pEvent) 
 {
     DEBUG_TRACE("void CTaskSA::StopTimer(const CEvent* pEvent)");
-    DWORD dwThisInterface = (DWORD)this->GetInterface();
-    DWORD dwFunc = this->GetInterface()->VTBL->StopTimer;
-    if ( dwFunc != 0x82263A  && dwFunc )
-    {
-        _asm
-        {
-            mov     ecx, dwThisInterface
-            push    pEvent
-            call    dwFunc
-        }
-    }
+    
+    m_interface->StopTimer( pEvent );
 }
 
 /**

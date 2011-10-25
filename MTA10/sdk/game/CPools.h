@@ -48,24 +48,6 @@ enum ePools {
     MAX_POOLS
 };
 
-class CEntryInfoNodePool
-{
-public:
-    virtual int             GetNumberOfUsedSpaces   ( ) = 0;
-};
-
-class CPointerNodeSingleLinkPool
-{
-public:
-    virtual int             GetNumberOfUsedSpaces   ( ) = 0;
-};
-
-class CPointerNodeDoubleLinkPool
-{
-public:
-    virtual int             GetNumberOfUsedSpaces   ( ) = 0;
-};
-
 class CPools
 {
 public:

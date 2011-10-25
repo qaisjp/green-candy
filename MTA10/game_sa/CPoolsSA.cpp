@@ -9,6 +9,7 @@
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -16,12 +17,13 @@
 
 #include "StdInc.h"
 
-#define FUNC_InitGamePools      
+#define FUNC_InitGamePools
 
-CVehiclePool*   m_vehiclePool;
-CPedPool*       m_pedPool;
-CObjectPool*    m_objectPool;
+CColModelPool       **ppColModelPool = (CColModelPool**)CLASS_CColModelPool;
 
+CVehiclePool        **ppVehiclePool = (CVehiclePool**)CLASS_CVehiclePool;
+CPedPool            **ppPedPool = (CPedPool**)CLASS_CPedPool;
+CObjectPool         **ppObjectPool = (CObjectPool**)CLASS_CObjectPool;
 
 CPoolsSA::CPoolsSA()
 {
@@ -29,22 +31,11 @@ CPoolsSA::CPoolsSA()
 
     // We hook the creation of pools
     HookInstall(FUNC_InitGamePools, Hook_InitGamePools, 5);
-    
-    m_bGetVehicleEnabled = true;
-    m_ulBuildingCount= 0;
 
-    MemSetFast (&Buildings,0,sizeof(CBuilding *) * MAX_BUILDINGS);
+    *ppColModelPool = new CColModelPool();
 
-    EntryInfoNodePool = new CEntryInfoNodePoolSA();
-    PointerNodeDoubleLinkPool = new CPointerNodeDoubleLinkPoolSA();
-    PointerNodeSingleLinkPool = new CPointerNodeSingleLinkPoolSA();
-
-    m_vehiclePool.map.set_deleted_key ( (CVehicleSAInterface *)0x9001 );
-    m_objectPool.map.set_deleted_key ( (CObjectSAInterface *)0x9001 );
-    m_pedPool.map.set_deleted_key ( (CPedSAInterface *)0x9001 );
-    m_vehiclePool.map.set_empty_key ( (CVehicleSAInterface *)NULL );
-    m_objectPool.map.set_empty_key ( (CObjectSAInterface *)NULL );
-    m_pedPool.map.set_empty_key ( (CPedSAInterface *)NULL );
+    *ppVehiclePool = new CVehiclePool();
+    *ppPedPool = new CObjectPool();
 }
 
 CPoolsSA::~CPoolsSA ( void )
@@ -78,7 +69,6 @@ void CPoolsSA::DeleteAllBuildings ( void )
     */
 }
 
-
 //////////////////////////////////////////////////////////////////////////////////////////
 //                                    VEHICLES POOL                                     //
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -94,23 +84,18 @@ inline bool CPoolsSA::AddVehicleToPool ( CVehicleSA* pVehicle )
     // Grab the interface
     CVehicleSAInterface* pInterface = pVehicle->GetVehicleInterface ();
 
-    if ( ! pInterface )
-    {
+    if ( !pInterface )
         return false;
-    }
-    else
-    {
-        // Add it to the pool array
-        m_vehiclePool.array [ ulNewPos ] = pVehicle;
-        pVehicle->SetArrayID ( ulNewPos );
 
-        // Add it to the pool map
-        m_vehiclePool.map.insert ( vehiclePool_t::mapType::value_type ( pInterface, pVehicle ) );
+    // Add it to the pool array
+    m_vehiclePool.array [ ulNewPos ] = pVehicle;
+    pVehicle->SetArrayID ( ulNewPos );
 
-        // Increase the count of vehicles
-        ++m_vehiclePool.ulCount;
-    }
+    // Add it to the pool map
+    m_vehiclePool.map.insert ( vehiclePool_t::mapType::value_type ( pInterface, pVehicle ) );
 
+    // Increase the count of vehicles
+    m_vehiclePool.ulCount++;
     return true;
 }
 
@@ -122,9 +107,11 @@ CVehicle* CPoolsSA::AddVehicle ( eVehicleTypes eVehicleType )
     if ( m_vehiclePool.ulCount < MAX_VEHICLES )
     {
         pVehicle = new CVehicleSA ( eVehicleType );
-        if ( ! AddVehicleToPool ( pVehicle ) )
+
+        if ( !AddVehicleToPool( pVehicle ) )
         {
             delete pVehicle;
+
             pVehicle = NULL;
         }
     }
@@ -327,14 +314,6 @@ void CPoolsSA::DeleteAllVehicles ( )
         RemoveVehicle ( m_vehiclePool.ulCount - 1 );
     m_vehiclePool.map.clear ();
 }
-
-
-
-
-
-
-
-
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //                                     OBJECTS POOL                                     //

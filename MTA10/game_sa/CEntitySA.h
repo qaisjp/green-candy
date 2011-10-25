@@ -70,11 +70,11 @@ struct CRect {
     float fX1, fY1, fX2, fY2;
 };
 
-class CEntitySAInterface
+class CSceneSAInterface
 {
 public:
     // Why not make it into a virtual table?
-    virtual                         ~CEntitySAInterface() = 0;
+    virtual                         ~CSceneSAInterface() = 0;
 
     virtual void __thiscall         AddRect( CRect rect ) = 0;
     virtual bool __thiscall         AddToWorld() = 0;
@@ -158,15 +158,20 @@ public:
 
     //********* BEGIN CEntityInfo **********//
     BYTE nType : 3; // what type is the entity              // 54 (2 == Vehicle)
-    BYTE nStatus : 5;               // control status       // 55
+    BYTE nStatus : 5;                                       // control status       
     //********* END CEntityInfo **********//
 
-    //58-66 padded
-    BYTE pad[8];
-    BYTE nImmunities;
-    BYTE pad2 [ 1 ];
+    unsigned char               m_pad;                      // 55
 
     /* IMPORTANT: KEEP "pad" in CVehicle UP-TO-DATE if you add something here (or eventually pad someplace else) */
+};
+
+class CEntitySAInterface : public CSceneSAInterface
+{
+public:
+    BYTE                        m_pad2[7];                  // 56
+    unsigned char               m_numImmunities;            // 63
+    BYTE                        m_pad3;                     // 64
 };
 
 class CEntitySA : public virtual CEntity

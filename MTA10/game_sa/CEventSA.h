@@ -18,14 +18,15 @@
 class CEventSAInterface
 {
 public:
-    eEventEntityType    m_eEventType;           // What type of event is it?
-    eEventEntity        m_eEventEntity;         // What type of entity does the event relate to?
-    DWORD               m_nEventEntityRef;      // Unique reference to the event entity. Can be used to
-                                                // get a pointer to the event entity.
-    CEntity             * m_pCommitedBy;        // for crimes, keeps track of who commited the crime
-    CVector             m_vecEventPosition;     // Position of an event. Can register an event using just
-    DWORD               m_nEventExpiryTime;     // a type and position rather than a type and an entity
-    DWORD               m_nEventRemoveFrame;    // Time when this event will be removed from the event list
+    eEventEntityType    m_eEventType;           // 0
+    eEventEntity        m_eEventEntity;         // 4
+    DWORD               m_nEventEntityRef;      // 8
+    CEntity*            m_pCommitedBy;          // 12
+    CVector             m_vecEventPosition;     // 16
+    DWORD               m_nEventExpiryTime;     // 28
+    DWORD               m_nEventRemoveFrame;    // 32
+
+    BYTE                m_pad[32];              // 36
 };
 
 class CEventSA : public CEvent
