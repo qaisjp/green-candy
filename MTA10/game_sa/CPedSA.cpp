@@ -923,5 +923,5 @@ void* CPedSAInterface::operator new( size_t )
 
 void CPedSAInterface::operator delete( void *ptr )
 {
-    return (*ppPedPool)->Free( (CPedSAInterface*)ptr );
+    (*ppPedPool)->Free( (CPedSAInterface*)ptr );
 }

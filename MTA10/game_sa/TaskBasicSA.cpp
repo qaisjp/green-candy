@@ -18,7 +18,8 @@ CTaskComplexUseMobilePhoneSA::CTaskComplexUseMobilePhoneSA ( const int iDuration
 {
     DEBUG_TRACE("CTaskComplexUseMobilePhoneSA::CTaskComplexUseMobilePhoneSA(const int iDuration)");
 
-    this->CreateTaskInterface ( sizeof(CTaskComplexUseMobilePhoneSAInterface ) );
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwFunc = FUNC_CTaskComplexUseMobilePhone__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface ();
@@ -41,8 +42,8 @@ CTaskSimpleRunAnimSA::CTaskSimpleRunAnimSA (    const AssocGroupId animGroup,
 {
     DEBUG_TRACE("CTaskSimpleRunAnim::CTaskSimpleRunAnim (  const AssocGroupId animGroup, const AnimationId animID, const float fBlendDelta, const int iTaskType, const char* pTaskName, const bool bHoldLastFrame );");
 
-    // TODO: Find out the real size
-    this->CreateTaskInterface ( 1024 );
+    CreateTaskInterface ();
+
     if ( !IsValid () ) return;
     DWORD dwFunc = FUNC_CTaskSimpleRunAnim__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface ();
@@ -74,7 +75,8 @@ CTaskSimpleRunNamedAnimSA::CTaskSimpleRunNamedAnimSA (  const char* pAnimName,
     DEBUG_TRACE("CTaskSimpleRunNamedAnimSA::CTaskSimpleRunNamedAnimSA (  const char* pAnimName, const char* pAnimGroupName, const int flags, const float fBlendDelta, const int iTime = -1, const bool bDontInterrupt = false, const bool bRunInSequence = false, const bool bOffsetPed = false, const bool bHoldLastFrame = false )");
 
     // TODO: Find out the real size
-    this->CreateTaskInterface ( sizeof ( CTaskSimpleRunNamedAnimSAInterface ) );
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwFunc = FUNC_CTaskSimpleRunNamedAnim__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface ();
@@ -109,7 +111,8 @@ CTaskComplexDieSA::CTaskComplexDieSA ( const eWeaponType eMeansOfDeath,
     DEBUG_TRACE("CTaskComplexDieSA::CTaskComplexDieSA ( const eWeaponType eMeansOfDeath, const AssocGroupId animGroup, const AnimationId anim, const float fBlendDelta, const float fAnimSpeed, const bool bBeingKilledByStealth, const bool bFallingToDeath, const int iFallToDeathDir, const bool bFallToDeathOverRailing )");
 
     // TODO: Find out the real size
-    this->CreateTaskInterface ( 1024 );
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwFunc = FUNC_CTaskComplexDie__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface ();
@@ -137,7 +140,8 @@ CTaskSimpleStealthKillSA::CTaskSimpleStealthKillSA ( bool bKiller, CPed * pPed, 
     DEBUG_TRACE("CTaskSimpleStealthKillSA::CTaskSimpleStealthKillSA ( bool bKiller, class CPed * pPed, const AssocGroupId animGroup )");
 
     // TODO: Find out the real size
-    this->CreateTaskInterface ( 1024 );
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwFunc = FUNC_CTaskSimpleStealthKill__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface ();
@@ -157,7 +161,8 @@ CTaskSimpleDeadSA::CTaskSimpleDeadSA ( unsigned int uiDeathTimeMS, bool bUnk2 )
 {
     DEBUG_TRACE("CTaskSimpleDeadSA::CTaskSimpleDeadSA ( int iUnk1, bool bUnk2 )");
 
-    this->CreateTaskInterface ( sizeof(CTaskSimpleDeadSAInterface) );
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwFunc = FUNC_CTaskSimpleDead__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface ();
@@ -177,7 +182,8 @@ CTaskComplexSunbatheSA::CTaskComplexSunbatheSA ( CObject* pTowel, const bool bSt
     DEBUG_TRACE("CTaskComplexSunbatheSA::CTaskComplexSunbatheSA ( CObject* pTowel, const bool bStartStanding )");
 
     // TODO: Find out the real size
-    this->CreateTaskInterface ( 1024 );
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwFunc = FUNC_CTaskComplexSunbathe__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface ();
@@ -207,7 +213,9 @@ void CTaskComplexSunbatheSA::SetEndTime ( DWORD dwTime )
 CTaskSimplePlayerOnFootSA::CTaskSimplePlayerOnFootSA()
 {
     DEBUG_TRACE("CTaskSimplePlayerOnFootSA::CTaskSimplePlayerOnFootSA");
-    this->CreateTaskInterface(sizeof(CTaskSimplePlayerOnFootSAInterface));
+
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwFunc = (DWORD)FUNC_CTASKSimplePlayerOnFoot__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface();
@@ -225,7 +233,9 @@ CTaskSimplePlayerOnFootSA::CTaskSimplePlayerOnFootSA()
 CTaskComplexFacialSA::CTaskComplexFacialSA()
 {
     DEBUG_TRACE("CTaskComplexFacialSA::CTaskComplexFacialSA");
-    this->CreateTaskInterface(sizeof(CTaskComplexFacialSAInterface));
+
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwFunc = (DWORD)FUNC_CTASKComplexFacial__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface();

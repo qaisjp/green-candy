@@ -17,8 +17,10 @@ extern CGameSA* pGame;
 CTaskSimpleIKChainSA::CTaskSimpleIKChainSA ( char* idString, int effectorBoneTag, CVector effectorVec, int pivotBoneTag, CEntity* pEntity, int offsetBoneTag, CVector offsetPos, float speed, int time, int blendTime )
 {
     DWORD dwFunc = FUNC_CTaskSimpleIKChain__Constructor;
+
     // TODO: Find out the real size
-    this->CreateTaskInterface ( 1024 );
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwThisInterface = (DWORD)this->GetInterface();
     DWORD dwEntityInterface = 0;
@@ -49,8 +51,10 @@ CTaskSimpleIKChainSA::CTaskSimpleIKChainSA ( char* idString, int effectorBoneTag
 CTaskSimpleIKLookAtSA::CTaskSimpleIKLookAtSA ( char* idString, CEntity* pEntity, int time, int offsetBoneTag, CVector offsetPos, unsigned char useTorso, float speed, int blendTime, int m_priority )
 {
     DWORD dwFunc = FUNC_CTaskSimpleIKLookAt__Constructor;
+
     // TODO: Find out the real size
-    this->CreateTaskInterface ( 1024 );
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwThisInterface = (DWORD)this->GetInterface();
     DWORD dwEntityInterface = 0;
@@ -145,8 +149,10 @@ CTaskSimpleIKChain * CTaskSimpleIKManagerSA::GetTaskAtSlot ( int slotID )
 CTaskSimpleTriggerLookAtSA::CTaskSimpleTriggerLookAtSA ( CEntity* pEntity, int time, int offsetBoneTag, CVector offsetPos, unsigned char useTorso, float speed, int blendTime, int priority )
 {
     DWORD dwFunc = FUNC_CTaskSimpleTriggerLookAt__Constructor;
+
     // TODO: Find out the real size
-    this->CreateTaskInterface ( 1024 );
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwThisInterface = (DWORD)this->GetInterface();
     DWORD dwEntityInterface = 0;

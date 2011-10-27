@@ -50,56 +50,53 @@ enum eEntityStatus
 class CEntity
 {
 public:
-    virtual                             ~CEntity ( void ) {};
+    virtual                             ~CEntity () {};
 
-    //  virtual VOID                        SetModelAlpha ( int iAlpha )=0;
-    virtual class CEntitySAInterface *  GetInterface()=0;
-    virtual VOID                        SetPosition(float fX, float fY, float fZ)=0;
-    virtual VOID                        SetPosition ( CVector * vecPosition )=0;
-    virtual VOID                        Teleport ( float fX, float fY, float fZ )=0;
-    virtual VOID                        ProcessControl ( void )=0;
-    virtual VOID                        SetupLighting ( )=0;
-    virtual VOID                        Render ( )=0;
-    virtual VOID                        SetOrientation ( float fX, float fY, float fZ )=0;
-    virtual VOID                        FixBoatOrientation ( void ) = 0;
-    virtual CVector                     * GetPosition (  )=0;
-    virtual CMatrix                     * GetMatrix ( CMatrix * matrix ) const=0;
-    virtual VOID                        SetMatrix ( CMatrix * matrix )=0;
-    virtual WORD                        GetModelIndex ()=0;
-    virtual eEntityType                 GetEntityType ()=0;
-    virtual FLOAT                       GetDistanceFromCentreOfMassToBaseOfModel()=0;
-    virtual VOID                        SetEntityStatus( eEntityStatus bStatus )=0;
-    virtual eEntityStatus               GetEntityStatus( )=0;
-    virtual bool                        IsOnScreen ()=0;
-    virtual void                        SetUnderwater ( bool bUnderwater )=0;
-    virtual bool                        GetUnderwater ( void )=0;
+    virtual void                        SetPosition( float fX, float fY, float fZ ) = 0;
+    virtual void                        SetPosition ( CVector * vecPosition ) = 0;
+    virtual void                        Teleport ( float fX, float fY, float fZ ) = 0;
+    virtual void                        ProcessControl () = 0;
+    virtual void                        SetupLighting () = 0;
+    virtual void                        Render () = 0;
+    virtual void                        SetOrientation ( float fX, float fY, float fZ )=0;
+    virtual void                        FixBoatOrientation () = 0;
+    virtual void                        GetPosition ( CVector pos ) = 0;
+    virtual void                        GetMatrix ( CMatrix matrix ) const = 0;
+    virtual void                        SetMatrix ( CMatrix matrix ) = 0;
+    virtual unsigned short              GetModelIndex () = 0;
+    virtual eEntityType                 GetEntityType () = 0;
+    virtual float                       GetBasingDistance() = 0;
+    virtual void                        SetEntityStatus( eEntityStatus bStatus ) = 0;
+    virtual eEntityStatus               GetEntityStatus( ) = 0;
+    virtual bool                        IsOnScreen () = 0;
+    virtual void                        SetUnderwater ( bool bUnderwater ) = 0;
+    virtual bool                        GetUnderwater () = 0;
 
-    virtual bool                        IsVisible ( void ) = 0;
+    virtual bool                        IsVisible () = 0;
     virtual void                        SetVisible ( bool bVisible ) = 0;
 
-    virtual VOID                        SetDoNotRemoveFromGameWhenDeleted ( bool bDoNotRemoveFromGame )=0;
-    virtual VOID                        SetUsesCollision(BOOL bUsesCollision)=0;
-    virtual BOOL                        IsBackfaceCulled(VOID)=0;
-    virtual VOID                        SetBackfaceCulled(BOOL bBackfaceCulled)=0;
-    virtual BOOL                        IsStatic(VOID)=0;
-    virtual VOID                        SetStatic(BOOL bStatic)=0;
-    virtual VOID                        SetAlpha(DWORD dwAlpha)=0;
+    virtual void                        SetDoNotRemoveFromGameWhenDeleted ( bool bDoNotRemoveFromGame ) = 0;
+    virtual void                        SetUsesCollision( bool enabled ) = 0;
+    virtual bool                        IsBackfaceCulled() = 0;
+    virtual void                        SetBackfaceCulled( bool enabled ) = 0;
+    virtual bool                        IsStatic() = 0;
+    virtual void                        SetStatic( bool enabled ) = 0;
+    virtual void                        SetAlpha( unsigned char alpha ) = 0;
 
-    virtual VOID                        MatrixConvertFromEulerAngles ( float fX, float fY, float fZ, int iUnknown )=0;
-    virtual VOID                        MatrixConvertToEulerAngles ( float * fX, float * fY, float * fZ, int iUnknown )=0;
-    virtual bool                        IsPlayingAnimation ( char * szAnimName )=0;
+    virtual void                        MatrixConvertFromEulerAngles ( float fX, float fY, float fZ, int iUnknown ) = 0;
+    virtual void                        MatrixConvertToEulerAngles ( float *fX, float *fY, float *fZ, int iUnknown ) = 0;
+    virtual bool                        IsPlayingAnimation ( char * szAnimName ) = 0;
 
-    virtual void*                       GetStoredPointer    ( void ) = 0;
-    virtual void                        SetStoredPointer    ( void* pPointer ) = 0;
+    virtual void*                       GetStoredPointer () = 0;
+    virtual void                        SetStoredPointer ( void *pointer ) = 0;
 
-    virtual BYTE                        GetAreaCode ( void ) = 0;
-    virtual void                        SetAreaCode ( BYTE areaCode ) = 0;
+    virtual unsigned char               GetAreaCode () = 0;
+    virtual void                        SetAreaCode ( unsigned char areaCode ) = 0;
 
-    virtual bool                        IsStaticWaitingForCollision ( void ) = 0;
+    virtual bool                        IsStaticWaitingForCollision () = 0;
     virtual void                        SetStaticWaitingForCollision ( bool bStatic ) = 0;
 
-    virtual void                        GetImmunities ( bool & bNoClip, bool & bFrozen, bool & bBulletProof, bool & bFlameProof, bool & bUnk, bool & bUnk2, bool & bCollisionProof, bool & bExplosionProof ) = 0;
-    virtual unsigned long               GetArrayID ( void ) = 0;
+    virtual void                        GetImmunities ( bool& bNoClip, bool& bFrozen, bool& bBulletProof, bool& bFlameProof, bool& bUnk, bool& bUnk2, bool& bCollisionProof, bool& bExplosionProof ) = 0;
 };
 
 #endif

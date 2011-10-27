@@ -47,11 +47,11 @@ CTaskSA::~CTaskSA()
 
 
 // allocate memory for the task (ammount nSize)
-void CTaskSA::CreateTaskInterface(size_t nSize)
+void CTaskSA::CreateTaskInterface()
 {
     DEBUG_TRACE("void CTaskSA::CreateTaskInterface(size_t nSize)");
 
-    TaskInterface = new ((*ppTaskPool)->Allocate()) CTaskSAInterface(); // :3
+    TaskInterface = new CTaskSAInterface(); // :3
     Parent = 0;
 }
 
@@ -128,8 +128,8 @@ void CTaskSA::DestroyJustThis()
 
     if ( m_bBeingDestroyed ) // we want to make sure we don't delete this twice or we get crashes :)
         return;              // our hook in CTaskManagementSystem will try to delete this otherwise
-    m_bBeingDestroyed = true;
 
+    m_bBeingDestroyed = true;
     delete this;
 }
 
@@ -198,17 +198,6 @@ bool CTaskSimpleSA::SetPedPosition ( CPed* pPed )
 // ####################################################################
 // ## CTaskComplex Functions
 // ####################################################################
-/**
- * \todo Implement subtask related stuff without adding variables (so sizeof(CTask) == sizeof(CTaskComplex))
- */
-/*
-CTaskComplexSA::CTaskComplexSA()
-{
-    DEBUG_TRACE("CTaskComplexSA::CTaskComplexSA()");
-//  this->m_pSubTask = 0;
-}
-*/
-
 
 void CTaskComplexSA::SetSubTask(CTask* pSubTask)
 {
@@ -236,71 +225,20 @@ CTask * CTaskComplexSA::CreateNextSubTask ( CPed* pPed )
 {
     DEBUG_TRACE("CTask * CTaskComplexSA::CreateNextSubTask(CPed* pPed)");
 
-    CPedSA* pPedSA = dynamic_cast < CPedSA* > ( pPed );
-    if ( !pPedSA ) return NULL;
-
-    DWORD dwPedInterface = (DWORD)pPedSA->GetInterface ();
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
-    DWORD dwFunc = ((TaskComplexVTBL *)this->GetInterface ()->VTBL)->CreateNextSubTask;
-    DWORD dwReturn = 0;
-    if ( dwFunc != 0x82263A && dwFunc )
-    {
-        _asm
-        {
-            mov     ecx, dwThisInterface
-            push    dwPedInterface
-            call    dwFunc
-            mov     dwReturn, eax
-        }
-    }
-    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask ( ( CTaskSAInterface * ) dwReturn );
+    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask ( GetInterface()->CreateNextSubTask( (CPed );
 }
 
 CTask * CTaskComplexSA::CreateFirstSubTask ( CPed* pPed )
 {
     DEBUG_TRACE("CTask * CTaskComplexSA::CreateFirstSubTask(CPed* pPed)");
 
-    CPedSA* pPedSA = dynamic_cast < CPedSA* > ( pPed );
-    if ( !pPedSA ) return NULL;
-
-    DWORD dwPedInterface = (DWORD)pPedSA->GetInterface ();
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
-    DWORD dwFunc = ((TaskComplexVTBL *)this->GetInterface ()->VTBL)->CreateFirstSubTask;
-    DWORD dwReturn = 0;
-    if ( dwFunc != 0x82263A && dwFunc )
-    {
-        _asm
-        {
-            mov     ecx, dwThisInterface
-            push    dwPedInterface
-            call    dwFunc
-            mov     dwReturn, eax
-        }
-    }
-    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask ( ( CTaskSAInterface * ) dwReturn );
+    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask ( GetInterface()->CreateFirstSubTask( ((CPedSA*)pPed)->GetPedInterface() );
 }
 
 CTask * CTaskComplexSA::ControlSubTask ( CPed* pPed )
 {
     DEBUG_TRACE("CTask * CTaskComplexSA::ControlSubTask(CPed* pPed)");
 
-    CPedSA* pPedSA = dynamic_cast < CPedSA* > ( pPed );
-    if ( !pPedSA ) return NULL;
-
-    DWORD dwPedInterface = (DWORD)pPedSA->GetInterface ();
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
-    DWORD dwFunc = ((TaskComplexVTBL *)this->GetInterface ()->VTBL)->ControlSubTask;
-    DWORD dwReturn = 0;
-    if ( dwFunc != 0x82263A && dwFunc )
-    {
-        _asm
-        {
-            mov     ecx, dwThisInterface
-            push    dwPedInterface
-            call    dwFunc
-            mov     dwReturn, eax
-        }
-    }
-    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask ( ( CTaskSAInterface * ) dwReturn );
+    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask( GetInterface()->ControlSubTask( ((CPedSA*)pPed)->GetPedInterface() );
 }
 

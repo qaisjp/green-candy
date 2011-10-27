@@ -17,7 +17,8 @@ CTaskSimpleClimbSA::CTaskSimpleClimbSA ( CEntity *pClimbEnt, const CVector &vecT
 {
     DEBUG_TRACE("CTaskSimpleClimbSA::CTaskSimpleClimbSA ( CEntity *pClimbEnt, const CVector &vecTarget, float fHeading, unsigned char nSurfaceType, char nHeight, const bool bForceClimb )");
 
-    this->CreateTaskInterface ( sizeof ( CTaskSimpleClimbSAInterface ) );
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwFunc = FUNC_CTaskSimpleClimb__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface();
@@ -44,7 +45,9 @@ CTaskSimpleClimbSA::CTaskSimpleClimbSA ( CEntity *pClimbEnt, const CVector &vecT
 CTaskSimpleJetPackSA::CTaskSimpleJetPackSA(const CVector *pVecTargetPos, float fCruiseHeight, int nHoverTime)
 {
     DEBUG_TRACE("CTaskSimpleJetPackSA::CTaskSimpleJetPackSA(const CVector *pVecTargetPos = NULL, float fCruiseHeight = 10.0f, int nHoverTime = 0)");
-    this->CreateTaskInterface(sizeof(CTaskSimpleJetPackSAInterface));
+
+    CreateTaskInterface();
+
     if ( !IsValid () ) return;
     DWORD dwFunc = FUNC_CTaskSimpleJetPack__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface();

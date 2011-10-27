@@ -279,5 +279,5 @@ void* CObjectSAInterface::operator new( size_t )
 
 void CObjectSAInterface::operator delete( void *ptr )
 {
-    return (*ppObjectPool)->Free( (CObjectSAInterface*)ptr );
+    (*ppObjectPool)->Free( (CObjectSAInterface*)ptr );
 }

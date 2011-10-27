@@ -91,7 +91,7 @@ public:
     CTaskSAInterface*   GetInterface            ( void )                         {return this->TaskInterface;}
     bool                IsValid                 ( void )                         { return this->GetInterface() != NULL; }
 
-    void                CreateTaskInterface     ( size_t nSize );
+    void                CreateTaskInterface     ();
 
     void                SetAsPedTask            ( CPed * pPed, const int iTaskPriority, const bool bForceNewTask = false );
     void                SetAsSecondaryPedTask   ( CPed * pPed, const int iType );
@@ -104,8 +104,10 @@ class CTaskSimpleSA : public virtual CTaskSA, public virtual CTaskSimple
 public:
     CTaskSimpleSA ( ) {};
 
-    bool ProcessPed(CPed* pPed);
-    bool SetPedPosition(CPed *pPed);
+    bool                        ProcessPed(CPed* pPed);
+    bool                        SetPedPosition(CPed *pPed);
+
+    CTaskSimpleSAInterface*     GetInterface() { return (CTaskSimpleSAInterface*)m_interface; }
 };
 
 class CTaskComplexSA : public virtual CTaskSA, public virtual CTaskComplex
@@ -113,10 +115,12 @@ class CTaskComplexSA : public virtual CTaskSA, public virtual CTaskComplex
 public:
     CTaskComplexSA() {};
 
-    void SetSubTask(CTask* pSubTask);
-    CTask* CreateNextSubTask(CPed* pPed);
-    CTask* CreateFirstSubTask(CPed* pPed);
-    CTask* ControlSubTask(CPed* pPed);
+    void                        SetSubTask(CTask* pSubTask);
+    CTask*                      CreateNextSubTask(CPed* pPed);
+    CTask*                      CreateFirstSubTask(CPed* pPed);
+    CTask*                      ControlSubTask(CPed* pPed);
+
+    CTaskComplexSAInterface*    GetInterface() { return (CTaskComplexSAInterface*)m_interface; }
 };
 
 #endif
