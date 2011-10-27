@@ -212,8 +212,8 @@ struct CVehicleFlags
 
     unsigned char bCreatedAsPoliceVehicle : 1;// True if this guy was created as a police vehicle (enforcer, policecar, miamivice car etc)
     unsigned char bRestingOnPhysical: 1; // Dont go static cause car is sitting on a physical object that might get removed
-        unsigned char      bParking                    : 1;
-        unsigned char      bCanPark                    : 1;
+    unsigned char bParking : 1;
+    unsigned char bCanPark : 1;
     unsigned char bFireGun: 1; // Does the ai of this vehicle want to fire it's gun?
     unsigned char bDriverLastFrame: 1; // Was there a driver present last frame ?
     unsigned char bNeverUseSmallerRemovalRange: 1;// Some vehicles (like planes) we don't want to remove just behind the camera.
@@ -300,7 +300,7 @@ class CAutoPilot
 /**
  * \todo GAME RELEASE: Update CVehicleSAInterface
  */
-class CVehicleSAInterface : public CPhysicalSAInterface
+class __declspec(align(2584)) CVehicleSAInterface : public CPhysicalSAInterface
 {
 public:
     virtual void __thiscall         ProcessEntityCollisions() = 0;
@@ -351,149 +351,118 @@ public:
     void*   operator new( size_t );
     void    operator delete( void *ptr );
 
-    //char        pad [1158];     /* IMPORTANT: KEEP THIS UP-TO-DATE */
-    //FLOAT       fDamage;
-    CAEVehicleAudioEntity m_VehicleAudioEntity; // 312
+    CAEVehicleAudioEntity       m_vehicleAudioEntity;                   // 312
 
-    int padaudio[108];
+    BYTE                        m_pad0[432];                            // 468
 
-    tHandlingDataSA* pHandlingData;                             // +900
-    BYTE padyo[4];
-    DWORD dwHandlingFlags;
-    int pad52321 [21];
+    tHandlingDataSA*            m_handling;                             // 900
+    BYTE                        m_pad[4];                               // 904
+    unsigned int                m_handlingFlags;                        // 908
+    DWORD                       m_pad2[21];                             // 912
 
-    DWORD dwUnknown1201;                                        // +996
-    DWORD dwUnknown1202;                                        // +1000
-    unsigned int hFlagsLocal;                                         // +1004
+    DWORD                       m_pad3[2];                              // 996
+    unsigned int                m_handlingFlagsLocal;                   // 1004
 
-    CAutoPilot AutoPilot; // +1008
-    CVehicleFlags m_nVehicleFlags; // +1064?
-    unsigned int m_TimeOfCreation; // GetTimeInMilliseconds when this vehicle was created.
+    CAutoPilot                  m_autoPilot;                            // 1008
+    CVehicleFlags               m_vehicleFlags;                         // 1064
+    unsigned int                m_timeOfCreation;                       // 1072, GetTimeInMilliseconds when this vehicle was created.
 
-    unsigned char m_colour1, m_colour2, m_colour3, m_colour4;
-    char m_comp1, m_comp2;
-    short m_upgrades[MAX_UPGRADES_ATTACHED]; // 1082
-    float m_wheelScale;//1112
+    unsigned char               m_color1, m_color2, m_color3, m_color4; // 1076
+    char                        m_comp1, m_comp2;                       // 1080
+    short                       m_upgrades[MAX_UPGRADES_ATTACHED];      // 1082
+    float                       m_wheelScale;                           // 1112
 
-    unsigned short CarAlarmState; //1116
-    unsigned short ForcedRandomSeed; // if this is non-zero the random wander gets deterministic
+    unsigned short              m_carAlarmState;                        // 1116
+    unsigned short              m_forcedRandomSeed;                     // 1118, if this is non-zero the random wander gets deterministic
     
-    CPedSAInterface *pDriver;
-    CPedSAInterface *pPassengers[MAX_PASSENGERS];
-    unsigned char m_nNumPassengers;
-    unsigned char m_nNumGettingIn;
-    unsigned char m_nGettingInFlags;
-    unsigned char m_nGettingOutFlags;
-    unsigned char m_nMaxPassengers;
-    unsigned char m_windowsOpenFlags;
-    char m_nNitroBoosts;
+    CPedSAInterface*            m_driver;                               // 1120
+    CPedSAInterface*            m_passengers[MAX_PASSENGERS];           // 1124
+    unsigned char               m_numPassengers;                        // 1156
+    unsigned char               m_numGettingIn;                         // 1157
+    unsigned char               m_gettingInFlags;                       // 1158
+    unsigned char               m_gettingOutFlags;                      // 1159
+    unsigned char               m_maxPassengers;                        // 1160
+    unsigned char               m_windowsOpenFlags;                     // 1161
+    unsigned char               m_nitroBoosts;                          // 1162
 
-    unsigned char m_nSpecialColModel;
-    CEntity *pEntityWeAreOnForVisibilityCheck;
-    CFire *m_pFire;
+    unsigned char               m_specialColModel;                      // 1163
+    CEntitySAInterface*         m_entityVisibilityCheck;                // 1164
+    CFire*                      m_fire;                                 // 1168
 
-    float m_fSteerAngle; // +1172
-    float m_f2ndSteerAngle; // used for steering 2nd set of wheels or elevators etc..
-    float m_fGasPedal; // 0...1  // +1180
-    float m_fBrakePedal; // 0...1
+    float                       m_steerAngle;                           // 1172
+    float                       m_secondarySteerAngle;                  // 1176, used for steering 2nd set of wheels or elevators etc..
+    float                       m_gasPedal;                             // 1180, 0...1
+    float                       m_brakePedal;                           // 1184, 0...1
 
-    unsigned char VehicleCreatedBy; // Contains information on whether this vehicle can be deleted 
-                            // or not. Probably only need this or IsLocked.
-    short ExtendedRemovalRange;
+    unsigned char               m_createdBy;                            // 1188, Contains information on whether this vehicle can be deleted 
+    unsigned short              m_extendedRemovalRange;                 // 1189
 
-    unsigned char BombOnBoard : 3; // 0 = None. 1 = Timed. 2 = On ignition, 3 = remotely set ? 4 = Timed Bomb has been activated. 5 = On ignition has been activated.
-    unsigned char OverrideLights  : 2; // uses enum NO_CAR_LIGHT_OVERRIDE, FORCE_CAR_LIGHTS_OFF, FORCE_CAR_LIGHTS_ON
-    unsigned char WinchType: 2; // Does this vehicle use a winch?
-    unsigned char m_GunsCycleIndex : 2;// Cycle through alternate gun hardpoints on planes/helis
-    unsigned char m_OrdnanceCycleIndex : 2; // Cycle through alternate ordnance hardpoints on planes/helis
+    unsigned char               m_bombOnBoard : 3;                      // 1190, 0 = None. 1 = Timed. 2 = On ignition, 3 = remotely set ? 4 = Timed Bomb has been activated. 5 = On ignition has been activated.
+    unsigned char               m_overrideLights  : 2;                  // uses enum NO_CAR_LIGHT_OVERRIDE, FORCE_CAR_LIGHTS_OFF, FORCE_CAR_LIGHTS_ON
+    unsigned char               m_winchType: 3;                         // Does this vehicle use a winch?
 
-    unsigned char nUsedForCover;// Has n number of cops hiding/attempting to hid behind it
-    unsigned char AmmoInClip;// Used to make the guns on boat do a reload.
-    unsigned char PacMansCollected;
-    unsigned char PedsPositionForRoadBlock;
-    unsigned char NumPedsForRoadBlock;
+    unsigned char               m_gunsCycleIndex : 2;                   // 1191, Cycle through alternate gun hardpoints on planes/helis
+    unsigned char               m_ordnanceCycleIndex : 6;               // Cycle through alternate ordnance hardpoints on planes/helis
 
-    //1200
-    float nBodyDirtLevel; // Dirt level of vehicle body texture: 0.0f=fully clean, 15.0f=maximum dirt visible, it may be altered at any time while vehicle's cycle of lige
+    unsigned char               m_usedForCover;                         // 1192, Has n number of cops hiding/attempting to hid behind it
+    unsigned char               m_ammoInClip;                           // 1193, Used to make the guns on boat do a reload.
+    unsigned char               m_pacMansCollected;                     // 1194
+    unsigned char               m_pedsPositionForRoadBlock;             // 1195
+    unsigned char               m_numPedsForRoadBlock;                  // 1196
 
-    // values used by transmission
-    unsigned char m_nCurrentGear;
-    BYTE bla[3];
-    float m_fGearChangeCount;
+    BYTE                        m_pad4[3];                              // 1197
+    float                       m_bodyDirtLevel;                        // 1200, Dirt level of vehicle body texture: 0.0f=fully clean, 15.0f=maximum dirt visible, it may be altered at any time while vehicle's cycle of lige
 
-    float m_fWheelSpinForAudio;
+    unsigned char               m_currentGear;                          // 1204, values used by transmission
+    BYTE                        m_pad4[3];                              // 1205
+    float                       m_gearChangeCount;                      // 1208
+    float                       m_wheelSpinForAudio;                    // 1212
 
-    //1216
-    float m_nHealth; // 1000.0f = full health. 0 -> explode
+    float                       m_health;                               // 1216, 1000 = full health. 0 -> explode
 
     /*** BEGIN SECTION that was added by us ***/
-    BYTE Padding200[45]; //1220
-    CVehicle* m_pVehicle; //1268
+    BYTE                        m_pad5[48];                             // 1220
+    CVehicle*                   m_vehicle;                              // 1268
     /*** END SECTION that was added by us ***/
 
-    //1272
-    unsigned long ul_doorstate;
+    unsigned int                m_doorState;                            // 1272
+    BYTE                        m_pad6[24];                             // 1276
+    unsigned int                m_hornActive;                           // 1300
+    BYTE                        m_pad7[136];                            // 1304
 
-    //1276
-    BYTE Padding210[24];
+    unsigned char               m_trackNodeID;                          // 1440, Current node on train tracks
+    BYTE                        m_pad8[3];                              // 1441
+    float                       m_trainSpeed;                           // 1444, Speed along rails
+    float                       m_trainRailDistance;                    // 1448, Distance along rail starting from first rail node
+    float                       m_distanceNextCarriage;                 // 1452
+    DWORD                       m_pad9[2];                              // 1456
+    CTrainFlags                 m_trainFlags;                           // 1464
+    DWORD                       m_pad10;                                // 1468
+    unsigned char               m_railTrackID;                          // 1472
+    BYTE                        m_pad11[15];                            // 1473
+    CVehicleSAInterface*        m_prevCarriage;                         // 1488
+    CVehicleSAInterface*        m_nextCarriage;                         // 1492
 
-    //1300
-    unsigned int m_isUsingHornOrSecondarySiren;
+    BYTE                        m_pad12[116];                           // 1496
 
-    //1304
-    BYTE Padding220[136];
+    RwFrame*                    m_chasis;                               // 1612
+    RwFrame*                    m_wheelFR;                              // 1616
+    BYTE                        m_pad13[4];                             // 1620
+    RwFrame*                    m_wheelRR;                              // 1624
+    RwFrame*                    m_wheelFL;                              // 1628 
+    BYTE                        m_pad14[4];                             // 1632
+    RwFrame*                    m_wheelRL;                              // 1636
+    RwFrame*                    m_doors[4];                             // 1640
+    RwFrame*                    m_bumpers[2];                           // 1656
+    BYTE                        m_pad15[8];                             // 1664
+    RwFrame*                    m_bonet;                                // 1672
+    RwFrame*                    m_boot;                                 // 1676
+    RwFrame*                    m_windscreen;                           // 1680
+    RwFrame*                    m_exhaust;                              // 1684
 
-    //1440
-    unsigned char m_ucTrackNodeID;  // Current node on train tracks
-    BYTE Padding230[3];
+    BYTE                        m_pad16[588];                           // 1688
 
-    //1444
-    float m_fTrainSpeed;           // Speed along rails
-    //1448
-    float m_fTrainRailDistance;    // Distance along rail starting from first rail node (determines train position when on rails)
-    
-    //1452
-    float m_fDistanceToNextCarriage;
-    DWORD padding240[2];
-
-    //1464
-    CTrainFlags trainFlags;
-
-    //1468
-    DWORD padding250[1];
-
-    //1472
-    BYTE m_ucRailTrackID;
-
-    //1473
-    BYTE padding260[15];
-
-    //1488
-    CVehicleSAInterface* m_prevCarriage;
-    CVehicleSAInterface* m_nextCarriage;
-
-    //1496
-    BYTE padding270[116];
-
-    // 1612
-    RwFrame * pChassis;
-    RwFrame * pWheelFrontRight;
-    BYTE padding271[4];
-    RwFrame * pWheelRearRight;
-    RwFrame * pWheelFrontLeft;
-    BYTE padding272[4];
-    RwFrame * pWheelRearLeft;
-    RwFrame * pDoors [ 4 ];
-    RwFrame * pBumpers [ 2 ];
-    BYTE padding273[8];
-    RwFrame * pBonet;
-    RwFrame * pBoot;
-    RwFrame * pWindscreen;
-    RwFrame * pExhaust;
-
-    BYTE padding280[576];
-    // 2276
-    float m_fBurningTime;
+    float                       m_burningTime;                          // 2276
 };
 
 

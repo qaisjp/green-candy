@@ -1882,5 +1882,5 @@ void* CVehicleSAInterface::operator new( size_t )
 
 void CVehicleSAInterface::operator delete( void *ptr )
 {
-    return (*ppVehiclePool)->Free( (CVehicleSAInterface*)ptr );
+    (*ppVehiclePool)->Free( (CVehicleSAInterface*)ptr );
 }

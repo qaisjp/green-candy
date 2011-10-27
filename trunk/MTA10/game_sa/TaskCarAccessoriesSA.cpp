@@ -27,7 +27,8 @@ CTaskSimpleCarSetPedInAsDriverSA::CTaskSimpleCarSetPedInAsDriverSA(CVehicle* pTa
 
     if ( pTargetVehicleSA )
     {
-        this->CreateTaskInterface(sizeof(CTaskSimpleCarSetPedInAsDriverSAInterface));
+        CreateTaskInterface();
+
         if ( !IsValid () ) return;
         DWORD dwFunc = FUNC_CTaskSimpleCarSetPedInAsDriver__Constructor;
         DWORD dwVehiclePtr = (DWORD)pTargetVehicleSA->GetInterface();
@@ -77,7 +78,8 @@ CTaskSimpleCarSetPedInAsPassengerSA::CTaskSimpleCarSetPedInAsPassengerSA(CVehicl
 
     if ( pTargetVehicleSA )
     {
-        this->CreateTaskInterface(sizeof(CTaskSimpleCarSetPedInAsPassengerSAInterface));
+        CreateTaskInterface();
+
         if ( !IsValid () ) return;
         DWORD dwFunc = FUNC_CTaskSimpleCarSetPedInAsPassenger__Constructor;
         DWORD dwVehiclePtr = (DWORD)pTargetVehicleSA->GetInterface();
@@ -127,7 +129,8 @@ CTaskSimpleCarSetPedOutSA::CTaskSimpleCarSetPedOutSA(CVehicle* pTargetVehicle, i
 
     if ( pTargetVehicleSA )
     {
-        this->CreateTaskInterface(sizeof(CTaskSimpleCarSetPedOutSAInterface));
+        CreateTaskInterface();
+
         if ( !IsValid () ) return;
         DWORD dwFunc = FUNC_CTaskSimpleCarSetPedOut__Constructor;
         DWORD dwVehiclePtr = (DWORD)pTargetVehicleSA->GetInterface();
