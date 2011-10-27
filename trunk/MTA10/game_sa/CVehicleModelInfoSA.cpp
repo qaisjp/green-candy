@@ -63,7 +63,7 @@ void    VehicleModels_Init()
     if ( txdEntry )
         txdEntry->LoadTXD( "MODELS\\GENERIC\\VEHICLE.TXD" );
     else
-        txdEntry = pTxdPool->Get(pGame->GetTextureManager()->LoadDictionaryEx( "vehicle", "MODELS\\GENERIC\\VEHICLE.TXD" ));
+        txdEntry = (*ppTxdPool)->Get( pGame->GetTextureManager()->LoadDictionaryEx( "vehicle", "MODELS\\GENERIC\\VEHICLE.TXD" ) );
 
     // Reference it
     txdEntry->Reference();
@@ -657,6 +657,16 @@ CVehicleSeatPlacementSAInterface::CVehicleSeatPlacementSAInterface()
 
     m_unknown4 = 0;
     m_unknown3 = 0;
+}
+
+void* CVehicleSeatPlacementSAInterface::operator new( size_t )
+{
+    return (*ppVehicleSeatPlacementPool)->Allocate();
+}
+
+void CVehicleSeatPlacementSAInterface::operator delete( void *ptr )
+{
+    (*ppVehicleSeatPlacementPool)->Free( (CVehicleSeatPlacementSAInterface*)ptr );
 }
 
 void CVehicleSeatPlacementSAInterface::AddAtomic( RpAtomic *atomic )

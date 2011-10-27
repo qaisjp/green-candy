@@ -23,6 +23,9 @@ public:
                     CTxdInstanceSA( const char *name );
                     ~CTxdInstanceSA();
 
+    void*   operator new( size_t );
+    void    operator delete( void *ptr );
+
     bool            LoadTXD( const char *filename );
     unsigned short  InitParent();
     void            Reference();

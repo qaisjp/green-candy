@@ -452,7 +452,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CDummySA.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CEntitySA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CEntryInfoSA.cpp"
 				>
 			</File>
 			<File
@@ -636,6 +644,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CPtrNodeSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CQuadBikeSA.cpp"
 				>
 			</File>
@@ -668,6 +680,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CRouteSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CSettingsSA.cpp"
 				>
 			</File>
@@ -677,6 +693,10 @@
 			</File>
 			<File
 				RelativePath=".\CStreamingSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CTaskAllocatorSA.cpp"
 				>
 			</File>
 			<File
@@ -965,7 +985,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CDummySA.h"
+				>
+			</File>
+			<File
 				RelativePath="CEntitySA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CEntryInfoSA.h"
 				>
 			</File>
 			<File
@@ -1153,6 +1181,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CPtrNodeSA.h"
+				>
+			</File>
+			<File
 				RelativePath="CQuadBikeSA.h"
 				>
 			</File>
@@ -1185,6 +1217,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CRouteSA.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CSettingsSA.h"
 				>
 			</File>
@@ -1194,6 +1230,10 @@
 			</File>
 			<File
 				RelativePath=".\CStreamingSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CTaskAllocatorSA.h"
 				>
 			</File>
 			<File

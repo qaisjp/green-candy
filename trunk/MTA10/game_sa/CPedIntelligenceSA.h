@@ -6,6 +6,7 @@
 *  PURPOSE:     Header file for ped entity AI class
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -42,6 +43,9 @@ public:
 class CPedIntelligenceSAInterface 
 {
 public:
+    void*   operator new( size_t );
+    void    operator delete( void *ptr );
+
 // CEventHandlerHistory @ + 56
     CPedSAInterface*                m_ped;
     CTaskManagerSAInterface*        m_taskManager;          // 4

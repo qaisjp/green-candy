@@ -262,12 +262,22 @@ void CObjectSA::CheckForGangTag ( )
 {
     switch ( GetModelIndex () )
     {
-        case 1524: case 1525: case 1526: case 1527:
-        case 1528: case 1529: case 1530: case 1531:
-            m_bIsAGangTag = true;
-            break;
-        default:
-            m_bIsAGangTag = false; 
-            break;
+    case 1524: case 1525: case 1526: case 1527:
+    case 1528: case 1529: case 1530: case 1531:
+        m_bIsAGangTag = true;
+        break;
+    default:
+        m_bIsAGangTag = false; 
+        break;
     }
+}
+
+void* CObjectSAInterface::operator new( size_t )
+{
+    return (*ppObjectPool)->Allocate();
+}
+
+void CObjectSAInterface::operator delete( void *ptr )
+{
+    return (*ppObjectPool)->Free( (CObjectSAInterface*)ptr );
 }

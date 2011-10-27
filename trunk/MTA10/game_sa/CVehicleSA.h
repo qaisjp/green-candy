@@ -348,6 +348,9 @@ public:
     virtual void __thiscall         Save() = 0;
     virtual void __thiscall         Load() = 0;
 
+    void*   operator new( size_t );
+    void    operator delete( void *ptr );
+
     //char        pad [1158];     /* IMPORTANT: KEEP THIS UP-TO-DATE */
     //FLOAT       fDamage;
     CAEVehicleAudioEntity m_VehicleAudioEntity; // 312

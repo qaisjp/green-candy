@@ -384,7 +384,7 @@ void CEntitySA::SetVisible ( bool bVisible )
 
 VOID CEntitySA::MatrixConvertFromEulerAngles ( float fX, float fY, float fZ, int iUnknown )
 {
-    CMatrix_Padded * matrixPadded = m_pInterface->Placeable.matrix;
+    RwMatrix * matrixPadded = m_pInterface->Placeable.matrix;
     if ( matrixPadded )
     {
         DWORD dwFunc = FUNC_CMatrix__ConvertFromEulerAngles;
@@ -402,7 +402,7 @@ VOID CEntitySA::MatrixConvertFromEulerAngles ( float fX, float fY, float fZ, int
 
 VOID CEntitySA::MatrixConvertToEulerAngles ( float * fX, float * fY, float * fZ, int iUnknown )
 {
-    CMatrix_Padded * matrixPadded = m_pInterface->Placeable.matrix;
+    RwMatrix * matrixPadded = m_pInterface->Placeable.matrix;
     if ( matrixPadded )
     {
         DWORD dwFunc = FUNC_CMatrix__ConvertToEulerAngles;

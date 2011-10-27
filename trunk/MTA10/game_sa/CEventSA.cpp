@@ -13,6 +13,16 @@
 
 #include "StdInc.h"
 
+void* CEventSAInterface::operator new( size_t )
+{
+    return (*ppTaskPool)->Allocate();
+}
+
+void CEventSAInterface::operator delete( void *ptr )
+{
+    (*ppTaskPool)->Free( (CEventSAInterface*)ptr );
+}
+
 eEventEntityType CEventSA::GetType (  )
 {
     DEBUG_TRACE("eEventEntityType CEventSA::GetType (  )");

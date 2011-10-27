@@ -29,7 +29,12 @@
 // Game includes
 #include "gamesa_init.h"
 #include "Common.h"
+#include "CPtrNodeSA.h"
 #include "CEntitySA.h"
+#include "CDummySA.h"
+#include "CRouteSA.h"
+#include "CEntryInfoSA.h"
+#include "CTaskAllocatorSA.h"
 #include "CWorldSA.h"
 #include "CClockSA.h"
 #include "CFontSA.h"

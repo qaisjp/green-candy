@@ -33,7 +33,6 @@
 #include <net/packetenums.h>
 #include <game/CGame.h>
 #include <CVector.h>
-#include <CMatrix4.h>
 #include <CQuat.h>
 #include <CSphere.h>
 #include <CBox.h>

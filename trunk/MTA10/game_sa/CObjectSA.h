@@ -27,7 +27,11 @@
 
 class CObjectSAInterface : public CPhysicalSAInterface // + 372 = burn time stop , +348 = scale // +340 = health
 {
-    DWORD Padding[29];
+public:
+    void*   operator new( size_t );
+    void    operator delete( void *ptr );
+
+    BYTE                        m_pad[100];
 };
 
 class CObjectSA : public virtual CObject, public virtual CPhysicalSA

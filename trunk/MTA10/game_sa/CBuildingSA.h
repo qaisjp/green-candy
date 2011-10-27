@@ -21,9 +21,11 @@
 
 #define SIZEOF_CBuilding                56
 
-class CBuildingSAInterface : public CEntitySAInterface
+class CBuildingSAInterface : public CSceneSAInterface
 {
-
+public:
+    void*   operator new( size_t );
+    void    operator delete( void *ptr );
 };
 
 class CBuildingSA : public virtual CBuilding, public virtual CEntitySA

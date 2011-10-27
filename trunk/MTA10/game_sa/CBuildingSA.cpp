@@ -12,6 +12,16 @@
 
 #include "StdInc.h"
 
+void* CBuildingSAInterface::operator new( size_t )
+{
+    return (*ppBuildingPool)->Allocate();
+}
+
+void CBuildingSAInterface::operator delete( void *ptr )
+{
+    (*ppBuildingPool)->Free( (CBuildingSAInterface*)ptr );
+}
+
 CBuildingSA::CBuildingSA(CBuildingSAInterface * objectInterface)
 {
     DEBUG_TRACE("CBuildingSA::CBuildingSA(CBuildingSAInterface * objectInterface)");
