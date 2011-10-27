@@ -203,7 +203,7 @@ CMatrix * CCameraSA::GetMatrix ( CMatrix * matrix )
     DEBUG_TRACE("CMatrix * CCameraSA::GetMatrix ( CMatrix * matrix )");
     //_asm int 3
     //CCameraSAInterface * pCamInterface = this->GetInterface();
-    CMatrix_Padded * pCamMatrix = &this->GetInterface()->m_cameraMatrix; // ->Placeable.matrix;
+    RwMatrix * pCamMatrix = &this->GetInterface()->m_cameraMatrix; // ->Placeable.matrix;
     if ( pCamMatrix )
     {
         MemCpyFast (&matrix->vFront,     &pCamMatrix->vFront,    sizeof(CVector));
@@ -212,16 +212,15 @@ CMatrix * CCameraSA::GetMatrix ( CMatrix * matrix )
         MemCpyFast (&matrix->vRight,         &pCamMatrix->vRight,            sizeof(CVector));   
     }
     else
-    {
         MemSetFast (matrix, 0, sizeof(CMatrix));
-    }
+
     return matrix;
 }
 
 VOID CCameraSA::SetMatrix ( CMatrix * matrix )
 {
     DEBUG_TRACE("VOID CCameraSA::SetMatrix ( CMatrix * matrix )");
-    CMatrix_Padded * pCamMatrix = this->GetInterface()->Placeable.matrix;
+    RwMatrix * pCamMatrix = this->GetInterface()->Placeable.matrix;
     if ( pCamMatrix )
     {
         MemCpyFast (&pCamMatrix->vFront,     &matrix->vFront,    sizeof(CVector));

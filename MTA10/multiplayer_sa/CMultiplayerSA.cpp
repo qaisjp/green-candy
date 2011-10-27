@@ -3449,8 +3449,8 @@ void CMultiplayerSA::Reset ( void )
 
 void CMultiplayerSA::ConvertEulerAnglesToMatrix ( CMatrix& Matrix, float fX, float fY, float fZ )
 {
-    CMatrix_Padded matrixPadded ( Matrix );
-    CMatrix_Padded* pMatrixPadded = &matrixPadded;
+    RwMatrix matrix ( Matrix );
+    RwMatrix* pMatrix = &matrixPadded;
     DWORD dwFunc = FUNC_CMatrix__ConvertFromEulerAngles;
     int iUnknown = 21;
     _asm
@@ -3459,7 +3459,7 @@ void CMultiplayerSA::ConvertEulerAnglesToMatrix ( CMatrix& Matrix, float fX, flo
         push    fZ
         push    fY
         push    fX
-        mov     ecx, pMatrixPadded
+        mov     ecx, pMatrix
         call    dwFunc
     }
 
@@ -3471,10 +3471,10 @@ void CMultiplayerSA::ConvertEulerAnglesToMatrix ( CMatrix& Matrix, float fX, flo
 void CMultiplayerSA::ConvertMatrixToEulerAngles ( const CMatrix& Matrix, float& fX, float& fY, float& fZ )
 {
     // Convert the given matrix to a padded matrix
-    CMatrix_Padded matrixPadded ( Matrix );
+    RwMatrix matrix ( Matrix );
 
     // Grab its pointer and call gta's func
-    CMatrix_Padded* pMatrixPadded = &matrixPadded;
+    RwMatrix* pMatrix = &matrix;
     DWORD dwFunc = FUNC_CMatrix__ConvertToEulerAngles;
 
     float* pfX = &fX;
@@ -3487,7 +3487,7 @@ void CMultiplayerSA::ConvertMatrixToEulerAngles ( const CMatrix& Matrix, float& 
         push    pfZ
         push    pfY
         push    pfX
-        mov     ecx, pMatrixPadded
+        mov     ecx, pMatrix
         call    dwFunc
     }
 }

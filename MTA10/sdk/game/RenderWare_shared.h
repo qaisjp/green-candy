@@ -56,6 +56,14 @@ public:
         Identity();
     }
 
+    RwMatrix( const CMatrix& from )
+    {
+        right = from.vRight;
+        up = from.vUp;
+        at = from.vFront;
+        pos = from.vPos;
+    }
+
     inline void Identity()
     {
         right.x = 1; right.y = 0; right.z = 0;
@@ -65,6 +73,142 @@ public:
         pos.x = 1.15 * -0.25;
         pos.y = 0;
         pos.z = 0;
+    }
+
+    inline void rotX( float radians )
+    {
+        float c = cos( radians );
+        float s = sin( radians );
+
+        right.fX = 1;
+        right.fY = 0;
+        right.fZ = 0;
+
+        up.fX = 0;
+        up.fY = c;
+        up.fZ = -s;
+
+        at.fX = 0;
+        at.fY = s;
+        at.fZ = c;
+    }
+
+    inline void rotY( float radians )
+    {
+        float c = cos( radians );
+        float s = sin( radians );
+
+        right.fX = c;
+        right.fY = 0;
+        right.fZ = s;
+
+        up.fX = 0;
+        up.fY = 1;
+        up.fZ = 0;
+
+        at.fX = -s;
+        at.fY = 0;
+        at.fZ = c;
+    }
+
+    inline void rotZ( float radians )
+    {
+        float c = cos( radians );
+        float s = sin( radians );
+
+        right.fX = c;
+        right.fY = -s;
+        right.fZ = 0;
+
+        up.fX = s;
+        up.fY = c;
+        up.fZ = 0;
+
+        at.fX = 0;
+        at.fY = 0;
+        at.fZ = 1;
+    }
+
+    // I hope this works :3
+    inline void Multiply( const RwMatrix mat, RwMatrix dst )
+    {
+	    __asm
+	    {
+		    mov eax,this
+		    mov edx,[mat]
+		    mov esi,[dst]
+
+		    movups xmm4,[edx]
+		    movups xmm5,[edx+0x10]
+		    movups xmm6,[edx+0x20]
+    		
+		    movss xmm3,[eax+0x10]
+		    movss xmm7,[eax+0x20]
+
+		    // X
+		    movss xmm0,[eax]
+		    movss xmm1,[eax+4]
+		    movss xmm2,[eax+8]
+
+		    shufps xmm0,xmm0,0x40
+		    shufps xmm1,xmm1,0x40
+		    shufps xmm2,xmm2,0x40
+    		
+		    // Do cache vars
+		    shufps xmm3,xmm3,0x40
+		    shufps xmm7,xmm7,0x40
+
+		    mulps xmm0,xmm4
+		    mulps xmm1,xmm5
+		    mulps xmm2,xmm6
+
+		    addps xmm0,xmm1
+		    addps xmm0,xmm2
+
+		    movups [esi],xmm0
+
+		    // Y
+		    movss xmm1,[eax+0x14]
+		    movss xmm2,[eax+0x18]
+
+		    shufps xmm1,xmm1,0x40
+		    shufps xmm2,xmm2,0x40
+
+		    mulps xmm3,xmm4
+		    mulps xmm1,xmm5
+		    mulps xmm2,xmm6
+
+		    addps xmm3,xmm1
+		    addps xmm3,xmm2
+
+		    movups [esi+0x10],xmm3
+
+		    // Z
+		    movss xmm1,[eax+0x24]
+		    movss xmm2,[eax+0x28]
+
+		    shufps xmm1,xmm1,0x40
+		    shufps xmm2,xmm2,0x40
+
+		    mulps xmm7,xmm4
+		    mulps xmm1,xmm5
+		    mulps xmm2,xmm6
+
+		    addps xmm7,xmm1
+		    addps xmm7,xmm2
+
+		    movups [esi+0x20],xmm7
+	    }
+    }
+
+    float & operator [] ( unsigned int i )
+    {
+        return (float*)(this)[i];
+    }
+
+    float operator [] ( unsigned int i ) const
+    {
+        return (float*)(this)[i];
     }
 
     CVector         right;

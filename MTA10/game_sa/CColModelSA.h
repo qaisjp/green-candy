@@ -42,6 +42,9 @@ class CColModelSAInterface
 public:
                             ~CColModelSAInterface();
 
+    void*   operator new( size_t );
+    void    operator delete( void *ptr );
+
     BYTE                            pad [ 44 ];
     CColDataSA*                     pColData;
 };

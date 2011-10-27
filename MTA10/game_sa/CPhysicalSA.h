@@ -8,6 +8,7 @@
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -31,46 +32,42 @@
 class CPhysicalSAInterface : public CEntitySAInterface // begin +68 (244 bytes total?)
 {
 public:
-/* IMPORTANT: KEEP "pad" in CVehicle UP-TO-DATE if you add something here (or eventually pad someplace else) */
-    CVector * vecVelocity;
-    CVector * vecSpin;
-    CVector * vecUnk3;
-    CVector * vecUnk4;
-    CVector * vecUnk5;
-    CVector * vecUnk6;
-    float pad [12];
-    float fMass;
-    float fTurnMass;
+/* IMPORTANT: KEEP the padding in CVehicle UP-TO-DATE if you add something here (or eventually pad someplace else) */
+    CVector                 m_velocity;                 // 68
+    CVector                 m_spin;                     // 80
+    float                   m_pad[12];                  // 92
+    float                   m_mass;                     // 140
+    float                   m_turnMass;                 // 144
 
-    DWORD dwUnk; // 148
-    DWORD dwPhysUnk1; // 152
+    DWORD                   m_unk;                      // 148
+    DWORD                   m_physUnk;                  // 152
 
-    float fElasticity; // 156
-    float fBuoyancyConstant; // 160
-    CVector * vecCenterOfMass; // 164
+    float                   m_elasticity;               // 156
+    float                   m_buoyancyConstant;         // 160
+    CVector                 m_centerOfMass;             // 164
 
-    DWORD dwUnk2; // 176
-    DWORD * unkCPtrNodeDoubleLink; // 180
+    DWORD                   m_unk2;                     // 176
+    CPtrNodeDoubleSA*       m_link;                     // 180
 
-    BYTE byUnk: 8; 
-    BYTE byCollisionRecords: 8; // 185
-    BYTE byUnk2: 8;
-    BYTE byUnk3: 8;
+    BYTE                    m_unk3;                     // 184
+    BYTE                    m_collRecords;              // 185
+    BYTE                    m_unk4;                     // 186
+    BYTE                    m_unk5;                     // 187
 
-    float pad4 [8];
+    float                   m_pad2[6];                  // 188
 
-    float fDistanceTravelled; // 212
-    float fDamageImpulseMagnitude; //216
-    CEntitySAInterface * damageEntity; // 220
+    float                   m_distanceTravelled;        // 212
+    float                   m_damageImpulseMagnitude;   // 216
+    CEntitySAInterface*     m_damageEntity;             // 220
 
-    BYTE pad2[28];
-    CEntitySAInterface * pAttachedEntity;   // 252
-    CVector vecAttachedPosition;    // 256
-    CVector vecAttachedRotation;    // 268
-    BYTE pad3[20];  // 280
-    float fLighting;        // col lighting? CPhysical::GetLightingFromCol
-    float fLighting_2;      // added to col lighting in CPhysical::GetTotalLighting
-    BYTE pad3a[4];
+    BYTE                    m_pad3[28];                 // 224
+    CEntitySAInterface*     m_attachedTo;               // 252
+    CVector                 m_attachOffset;             // 256
+    CVector                 m_attachRotation;           // 268
+    BYTE                    m_pad4[20];                 // 280
+    float                   m_lighting;                 // 300, col lighting? CPhysical::GetLightingFromCol
+    float                   m_lighting2;                // 304, added to col lighting in CPhysical::GetTotalLighting
+    BYTE                    m_pad5[4];                  // 308
 };
 
 class CPhysicalSA : public virtual CPhysical, public virtual CEntitySA

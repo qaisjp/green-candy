@@ -13,6 +13,16 @@
 
 #include "StdInc.h"
 
+void* CPedIntelligenceSAInterface::operator new( size_t )
+{
+    return (*ppPedIntelligencePool)->Allocate();
+}
+
+void CPedIntelligenceSAInterface::operator delete( void *ptr )
+{
+    (*ppPedIntelligencePool)->Free( (CPedIntelligenceSAInterface*)ptr );
+}
+
 CPedIntelligenceSA::CPedIntelligenceSA ( CPedIntelligenceSAInterface *intelligence, CPed *ped )
 {
     m_interface = intelligence;

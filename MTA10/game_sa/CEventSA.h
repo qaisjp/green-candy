@@ -18,6 +18,9 @@
 class CEventSAInterface
 {
 public:
+    void*   operator new( size_t );
+    void    operator delete( void *ptr );
+
     eEventEntityType    m_eEventType;           // 0
     eEventEntity        m_eEventEntity;         // 4
     DWORD               m_nEventEntityRef;      // 8

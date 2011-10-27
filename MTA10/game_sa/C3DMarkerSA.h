@@ -16,7 +16,6 @@
 #define __CGAMESA_3DMARKER
 
 #include <game/C3DMarker.h>
-#include <CMatrix_Pad.h>
 #include "Common.h"
 
 #define FUNC_DeleteMarkerObject         0x722390
@@ -24,7 +23,7 @@
 class C3DMarkerSAInterface
 {
 public:
-    CMatrix_Padded  m_mat;  // local space to world space transform // 0
+    RwMatrix        m_mat;  // local space to world space transform // 0
     DWORD           dwPad,dwPad2;   // not sure why we need these, it appears to be this way though (eAi)  // 64/68
     RpClump         *m_pRwObject; // 72
     DWORD           *m_pMaterial; // 76

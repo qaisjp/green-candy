@@ -17,7 +17,22 @@
 
 using namespace std;
 
-VOID HOOK_CTask_Operator_Delete();
+VOID HOOK_CTask_Operator_Delete( CTaskSAInterface *task )
+{
+    ((CTaskManagementSystemSA *)(pGame->GetTaskManagementSystem()))->RemoveTask ( task );
+
+    // Continue on our merry way....
+    _asm
+    {
+        popad
+
+        mov     eax, 0xB744A8
+        mov     ecx, dword ptr [eax]
+        mov     eax, FUNC_CTask_Operator_Delete
+        add     eax, 6
+        jmp     eax
+    }
+}
 
 CTaskSAInterface * pTempTaskInterface = 0;
 
@@ -244,31 +259,4 @@ CTask * CTaskManagementSystemSA::CreateAppropriateTask ( CTaskSAInterface * pTas
     // Set the internal interface
     pTaskSA->SetInterface ( pTaskInterface );
     return pTaskSA;
-}
-
-// HOOKS
-
-VOID _declspec(naked) HOOK_CTask_Operator_Delete()
-{
-    _asm 
-    {
-        mov     eax, [esp+4]
-        mov     pTempTaskInterface, eax
-
-        pushad
-    }
-
-    ((CTaskManagementSystemSA *)(pGame->GetTaskManagementSystem()))->RemoveTask ( pTempTaskInterface );
-
-    // Continue on our merry way....
-    _asm
-    {
-        popad
-
-        mov     eax, 0xB744A8
-        mov     ecx, dword ptr [eax]
-        mov     eax, FUNC_CTask_Operator_Delete
-        add     eax, 6
-        jmp     eax
-    }
 }

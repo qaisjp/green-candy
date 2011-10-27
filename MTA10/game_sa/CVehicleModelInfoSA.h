@@ -47,6 +47,9 @@ class CVehicleSeatPlacementSAInterface
 public:
     CVehicleSeatPlacementSAInterface();
 
+    void*   operator new( size_t );
+    void    operator delete( void *ptr );
+
     void                            AddAtomic( RpAtomic *atomic );
 
     CVector                         m_seatOffset[MAX_SEATS];

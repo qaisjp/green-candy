@@ -55,12 +55,12 @@ typedef struct
 class CPedSoundSAInterface
 {
 public:
-    BYTE ucPad1[0x92];
-    short m_sVoiceType;
-    short m_sVoiceID;
-    short m_bIsFemale;
-    BYTE ucPad2[1];
-    bool m_bDisabled;
+    BYTE    m_pad[146];
+    short   m_sVoiceType;
+    short   m_sVoiceID;
+    short   m_bIsFemale;
+    BYTE    m_pad2[1];
+    bool    m_bDisabled;
 };
 
 class CPedSoundSA : public CPedSound

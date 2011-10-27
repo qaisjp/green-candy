@@ -36,8 +36,16 @@ CTxdInstanceSA::~CTxdInstanceSA()
 {
     RwTexDictionaryForAllTextures( m_txd, Txd_DeleteAll, NULL );
     RwTexDictionaryDestroy( m_txd );
+}
 
-    m_pTxdPool->Free( this );
+void* CTxdInstanceSA::operator new( size_t )
+{
+    return (*ppTxdPool)->Allocate();
+}
+
+void CTxdInstanceSA::operator delete( void *ptr )
+{
+    (*ppTxdPool)->Free( (CTxdInstanceSA*)ptr );
 }
 
 bool CTxdInstanceSA::LoadTXD( const char *filename )
@@ -77,7 +85,7 @@ bool CTxdInstanceSA::LoadTXD( const char *filename )
 
 unsigned short CTxdInstanceSA::InitParent()
 {
-    CTxdInstanceSA *parent = pTxdPool->Get( m_parentID );
+    CTxdInstanceSA *parent = (*ppTxdPool)->Get( m_parentTxd );
     CTxdInstanceSA *affectTxd;
 
     if ( !parent )
@@ -87,7 +95,7 @@ unsigned short CTxdInstanceSA::InitParent()
     affectTxd->m_txd = m_txd;
 
     parent->Reference();
-    return pTxdPool->GetIndex( parent );
+    return m_parentTxd;
 }
 
 void CTxdInstanceSA::Reference()
@@ -129,7 +137,7 @@ CTextureManagerSA::CTextureManagerSA()
 
 CTextureManagerSA::~CTextureManagerSA()
 {
-    delete m_pTxdPool;
+    delete (*ppTxdPool);
 }
 
 int CTextureManagerSA::FindTxdEntry( const char *name )
@@ -139,7 +147,7 @@ int CTextureManagerSA::FindTxdEntry( const char *name )
 
     for (n=0; n<MAX_TXD; n++)
     {
-        CTxdInstanceSA *txd = pTxdPool->Get(n);
+        CTxdInstanceSA *txd = (*ppTxdPool)->Get(n);
 
         if (!txd || txd->m_hash != hash)
             continue;
@@ -152,13 +160,13 @@ int CTextureManagerSA::FindTxdEntry( const char *name )
 
 int CTextureManagerSA::CreateTxdEntry( const char *name )
 {
-    CTxdInstanceSA *inst = new (pTxdPool->Allocate()) CTxdInstanceSA(name);
+    CTxdInstanceSA *inst = new CTxdInstanceSA(name);
 
     // Check for crashes here
     if (!inst)
         return -1;
 
-    return m_pTxdPool->GetIndex(inst);
+    return (*ppTxdPool)->GetIndex(inst);
 }
 
 unsigned short CTextureManagerSA::LoadDictionary( const char *filename )
@@ -182,5 +190,5 @@ unsigned short CTextureManagerSA::LoadDictionaryEx( const char *name, const char
 
     txd->InitParent();
 
-    return pTxdPool->GetIndex( txd );
+    return (*ppTxdPool)->GetIndex( txd );
 }

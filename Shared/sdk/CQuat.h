@@ -14,8 +14,6 @@ class CQuat;
 #ifndef __CQUAT_H
 #define __CQUAT_H
 
-#include "CMatrix4.h"
-
 #include <math.h>
 #include <float.h>
 #include "SharedUtil.h"

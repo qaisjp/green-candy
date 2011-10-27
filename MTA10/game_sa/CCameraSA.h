@@ -23,8 +23,6 @@
 #include "CEntitySA.h"
 #include "COffsets.h"
 
-#include <CMatrix_Pad.h>
-
 #define FUNC_TakeControl                    0x50C7C0 // ##SA##
 #define FUNC_TakeControlNoEntity            0x50C8B0
 #define FUNC_TakeControlAttachToEntity      0x50C910
@@ -338,12 +336,12 @@ public:
     bool m_bResetOldMatrix;
 
 //  protected:
-    CMatrix_Padded m_cameraMatrix;
-    CMatrix_Padded m_cameraMatrixOld;
-    CMatrix_Padded m_viewMatrix;
-    CMatrix_Padded m_matInverse;
-    CMatrix_Padded m_matMirrorInverse;
-    CMatrix_Padded m_matMirror;
+    RwMatrix m_cameraMatrix;
+    RwMatrix m_cameraMatrixOld;
+    RwMatrix m_viewMatrix;
+    RwMatrix m_matInverse;
+    RwMatrix m_matMirrorInverse;
+    RwMatrix m_matMirror;
 
     CVector m_vecFrustumNormals[4];
     CVector m_vecFrustumWorldNormals[4];

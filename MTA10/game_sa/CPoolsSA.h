@@ -17,6 +17,7 @@
 #define __CGAMESA_POOLS
 
 #include <game/CPools.h>
+#include <google/dense_hash_map>
 
 template < class type, int max >
 class CPool
@@ -36,7 +37,7 @@ public:
         m_active = 0;
     }
 
-    ~CPool()
+    void    Clear()
     {
         unsigned int n;
 
@@ -45,8 +46,13 @@ public:
             if ( !(m_flags[n] & 0x80) )
                 continue;
 
-            m_pool[n].~type();
+            delete &m_pool[n];
         }
+    }
+
+    ~CPool()
+    {
+        Clear();
 
         free(m_pool);
         free(m_flags);
@@ -98,6 +104,16 @@ public:
         Free(GetIndex(entity));
     }
 
+    bool    Full()
+    {
+        return m_active == m_max;
+    }
+
+    unsigned int    GetCount()
+    {
+        return m_active;
+    }
+
     type*           m_pool;
     unsigned char*  m_flags;
     unsigned int    m_max;
@@ -105,55 +121,18 @@ public:
     bool            m_poolActive;
 };
 
-class CPtrNodeSingleSA
-{
-public:
-    BYTE            m_pad[8];
-};
-
-class CPtrNodeDoubleSA
-{
-public:
-    BYTE            m_pad[12];
-};
-
-class CEntryInfoSA
-{
-public:
-    BYTE            m_pad[20];
-};
-
-class CPointRouteSA
-{
-public:
-    BYTE            m_pad[100];
-};
-
-class CPatrolRouteSA
-{
-public:
-    BYTE            m_pad[420];
-};
-
-class CNodeRouteSA
-{
-public:
-    BYTE            m_pad[36];
-};
-
-class CTaskAllocatorSA
-{
-public:
-    BYTE            m_pad[32];
-};
-
 class CPedAttractorSA
 {
 public:
+    BYTE            m_pad[196];
 };
 
 typedef CPool <CVehicleSeatPlacementSAInterface, 500> CVehicleSeatPlacementPool;
 typedef CPool <CColModelSAInterface, 20000> CColModelPool;
+
+typedef CPool <CPtrNodeSingleSA, 100000> CPtrNodeSinglePool;
+typedef CPool <CPtrNodeDoubleSA, 5000> CPtrNodeDoublePool;
+typedef CPool <CEntryInfoSA, 500> CEntryInfoPool;
 
 typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
 
@@ -161,8 +140,8 @@ typedef CPool <CVehicleSAInterface, MAX_VEHICLES> CVehiclePool;
 typedef CPool <CPedSAInterface, MAX_PEDS> CPedPool;
 typedef CPool <CObjectSAInterface, MAX_OBJECTS> CObjectPool;
 
-typedef CPool <CSceneSAInterface, MAX_BUILDINGS> CBuildingPool;
-typedef CPool <CSceneSAInterface, 4000> CDummyPool;
+typedef CPool <CBuildingSAInterface, MAX_BUILDINGS> CBuildingPool;
+typedef CPool <CDummySAInterface, 4000> CDummyPool;
 
 typedef CPool <CTaskSAInterface, 9001> CTaskPool;
 typedef CPool <CEventSAInterface, 1337> CEventPool;
@@ -172,10 +151,15 @@ typedef CPool <CNodeRouteSA, 64> CNodeRoutePool;
 typedef CPool <CTaskAllocatorSA, 16> CTaskAllocatorPool;
 
 typedef CPool <CPedIntelligenceSAInterface, MAX_PEDS> CPedIntelligencePool;
+typedef CPool <CPedAttractorSA, 64> CPedAttractorPool;
 
 // They have to be defined somewhere!
 extern CVehicleSeatPlacementPool** ppVehicleSeatPlacementPool;
-extern CColModelSAInterface** ppColModelPool;
+extern CColModelPool** ppColModelPool;
+
+extern CPtrNodeSinglePool** ppPtrNodeSinglePool;
+extern CPtrNodeDoublePool** ppPtrNodeDoublePool;
+extern CEntryInfoPool** ppEntryInfoPool;
 
 extern CTxdPool** ppTxdPool;
 
@@ -194,6 +178,7 @@ extern CNodeRoutePool** ppNodeRoutePool;
 extern CTaskAllocatorPool** ppTaskAllocatorPool;
 
 extern CPedIntelligencePool** ppPedIntelligencePool;
+extern CPedAttractorPool** ppPedAttractorPool;
 
 class CPoolsSA : public CPools
 {
@@ -201,57 +186,29 @@ public:
                             CPoolsSA            ( );
                             ~CPoolsSA           ( );
 
-    
     // Vehicles pool
     CVehicle*               AddVehicle          ( eVehicleTypes eVehicleType );
-    CVehicle*               AddVehicle          ( DWORD* pGameInterface );
-private:
-    bool                    AddVehicleToPool    ( CVehicleSA* pVehicle );
-public:
-    void                    RemoveVehicle       ( CVehicle* pVehicle, bool bDelete = true );
-    void                    RemoveVehicle       ( unsigned long ulID, bool bDelete = true );
-    CVehicle*               GetVehicle          ( unsigned long ulID );
-    CVehicle*               GetVehicle          ( DWORD* pGameInterface );
-    DWORD                   GetVehicleRef       ( CVehicle* pVehicle );
-    DWORD                   GetVehicleRef       ( DWORD* pGameInterface );
-    CVehicle*               GetVehicleFromRef   ( DWORD dwGameRef );
-    inline unsigned long    GetVehicleCount     ( ) { return m_vehiclePool.ulCount; }
-    void                    DeleteAllVehicles   ( );
+    CVehicle*               GetVehicle          ( void *entity );
+    unsigned int            GetVehicleRef       ( CVehicle *veh );
+    CVehicle*               GetVehicleFromRef   ( unsigned int index );
+    void                    DeleteAllVehicles   ();
 
     // Objects pool
     CObject*                AddObject           ( DWORD dwModelID );
-private:
-    bool                    AddObjectToPool     ( CObjectSA* pObject );
-public:
-    void                    RemoveObject        ( CObject* pObject, bool bDelete = true );
-    void                    RemoveObject        ( unsigned long ulID, bool bDelete = true );
-    CObject*                GetObject           ( unsigned long ulID );
-    CObject*                GetObject           ( DWORD* pGameInterface );
-    DWORD                   GetObjectRef        ( CObject* pObject );
-    DWORD                   GetObjectRef        ( DWORD* pGameInterface );
-    CObject*                GetObjectFromRef    ( DWORD dwGameRef );
-    inline unsigned long    GetObjectCount      ( ) { return m_objectPool.ulCount; }
-    void                    DeleteAllObjects    ( );
+    CObject*                GetObject           ( void *entity );
+    unsigned int            GetObjectRef        ( CObject *obj );
+    CObject*                GetObjectFromRef    ( unsigned int index );
+    void                    DeleteAllObjects    ();
 
     // Peds pool
     CPed*                   AddPed              ( ePedModel ePedType );
-    CPed*                   AddPed              ( DWORD* pGameInterface );
     CPed*                   AddCivilianPed      ( DWORD* pGameInterface );
-private:
-    bool                    AddPedToPool        ( CPedSA* pPed );
-public:
-    void                    RemovePed           ( CPed* ped, bool bDelete = true );
-    void                    RemovePed           ( unsigned long ulID, bool bDelete = true);
-    CPed*                   GetPed              ( unsigned long ulID );
-    CPed*                   GetPed              ( DWORD* pGameInterface );
-    DWORD                   GetPedRef           ( CPed* pPed );
-    DWORD                   GetPedRef           ( DWORD* pGameInterface );
-    CPed*                   GetPedFromRef       ( DWORD dwGameRef );
-    CPedSAInterface*        GetPedInterface     ( DWORD dwGameRef ); // game_sa specific
-    inline unsigned long    GetPedCount         ( ) { return m_pedPool.ulCount; }
-    void                    DeleteAllPeds       ( );
+    CPed*                   GetPed              ( void *entity );
+    unsigned int            GetPedRef           ( CPed* pPed );
+    CPed*                   GetPedFromRef       ( unsigned int index );
+    void                    DeleteAllPeds       ();
 
-    CEntity*                GetEntity           ( DWORD* pGameInterface );
+    CEntity*                GetEntity           ( void *entity );
 
     // Others
     CBuilding*              AddBuilding         ( DWORD dwModelID );
@@ -261,14 +218,17 @@ public:
     int                     GetNumberOfUsedSpaces   ( ePools pools );
     void                    DumpPoolsStatus         ( );
 
-    int                     GetPoolDefaultCapacity  ( ePools pool );
-    int                     GetPoolCapacity         ( ePools pool );
-    void                    SetPoolCapacity         ( ePools pool, int iValue );
+    unsigned int            GetPoolDefaultCapacity  ( ePools pool );
+    unsigned int            GetPoolCapacity         ( ePools pool );
 
-    // stuff that really maybe should be elsewhere or not, perhaps
-    CEntryInfoNodePool*             GetEntryInfoNodePool            ( );
-    CPointerNodeSingleLinkPool*     GetPointerNodeSingleLinkPool    ( );
-    CPointerNodeDoubleLinkPool*     GetPointerNodeDoubleLinkPool    ( );
+private:
+    typedef google::dense_hash_map <CObjectSAInterface*, CObjectSA*> gObjectMap;
+    typedef google::dense_hash_map <CPedSAInterface*, CPedSA*> gPedMap;
+
+    gObjectMap              m_objectMap;
+    gPedMap                 m_pedMap;
+
+    bool                    m_getVehicleEnabled;
 };
 
 

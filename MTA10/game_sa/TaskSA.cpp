@@ -19,6 +19,16 @@
 DWORD dwTasksAlive = 0;
 DWORD dwTasksCreatedTotal = 0;
 
+void* CTaskSAInterface::operator new( size_t )
+{
+    return (*ppTaskPool)->Allocate();
+}
+
+void CTaskSAInterface::operator delete( void *ptr )
+{
+    (*ppTaskPool)->Free( (CTaskSAInterface*)ptr );
+}
+
 CTaskSA::CTaskSA()
 {
     DEBUG_TRACE("CTaskSA::CTaskSA()");
@@ -79,9 +89,6 @@ int CTaskSA::GetTaskType()
     return m_interface->GetTaskType();
 }
 
-/**
- * \todo Handle pEvent correctly to convert it
- */
 void CTaskSA::StopTimer(CEventSAInterface* pEvent) 
 {
     DEBUG_TRACE("void CTaskSA::StopTimer(const CEvent* pEvent)");
@@ -92,73 +99,25 @@ void CTaskSA::StopTimer(CEventSAInterface* pEvent)
 /**
  * \todo Handle pEvent correctly to convert it
  */
-bool CTaskSA::MakeAbortable(CPed* pPed, const int iPriority, const CEvent* pEvent) 
+bool CTaskSA::MakeAbortable(CPed* pPed, const int iPriority, CEventSAInterface* pEvent) 
 {
     DEBUG_TRACE("bool CTaskSA::MakeAbortable(CPed* pPed, const int iPriority, const CEvent* pEvent)");
 
-    CPedSA* pPedSA = dynamic_cast < CPedSA* > ( pPed );
-    if ( !pPedSA ) return false;
-
-    DWORD dwPedInterface = (DWORD) pPedSA->GetInterface ();
-    DWORD dwThisInterface = (DWORD) this->GetInterface ();
-    DWORD dwFunc = this->GetInterface ()->VTBL->MakeAbortable;
-    bool bReturn = 0;
-    if ( dwFunc != 0x82263A  && dwFunc ) // 82263A = purecall
-    {
-        _asm
-        {
-            mov     ecx, dwThisInterface
-            push    pEvent
-            push    iPriority
-            push    dwPedInterface
-            call    dwFunc
-            mov     bReturn, al
-        }
-    }
-    return bReturn;
+    return m_interface->MakeAbortable( pPed, iPriority, pEvent );
 }
 
 char * CTaskSA::GetTaskName()
 {
     DEBUG_TRACE("char * CTaskSA::GetTaskName()");
-    int iTaskType = GetTaskType();
-    if ( iTaskType != NO_TASK_TYPE )
-        return TaskNames[iTaskType].szName;
-    else
-        return reinterpret_cast < char* > ( &sNoTaskName );
+
+    return TaskNames[ m_interface->GetTaskType() ].szName;
 }
 
 void CTaskSA::Destroy()
 {
     DEBUG_TRACE("void CTaskSA::Destroy()");
 
-    if ( m_bBeingDestroyed ) // we want to make sure we don't delete this twice or we get crashes :)
-        return;              // our hook in CTaskManagementSystem will try to delete this otherwise
-    m_bBeingDestroyed = true;
-
-    DWORD dwThisInterface = (DWORD)this->GetInterface();
-    DWORD dwFunc = this->GetInterface()->VTBL->DeletingDestructor;
-    if ( dwFunc )
-    {
-        _asm
-        {
-            mov     ecx, dwThisInterface
-            push    1           // delete the task too
-            call    dwFunc
-        }
-    }
-
-    /*dwFunc = FUNC_CTask__Operator_Delete;
-    DWORD thisInterface = (DWORD)this->GetInterface();
-    if ( thisInterface )
-    {
-        _asm
-        {
-            push    thisInterface
-            call    dwFunc
-            add     esp, 4
-        }
-    }*/
+    delete m_interface;
 
     delete this;
 }

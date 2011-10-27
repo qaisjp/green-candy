@@ -1874,3 +1874,13 @@ void CVehicleSA::RecalculateSuspensionLines ( void )
 
     CopyGlobalSuspensionLinesToPrivate ();
 }
+
+void* CVehicleSAInterface::operator new( size_t )
+{
+    return (*ppVehiclePool)->Allocate();
+}
+
+void CVehicleSAInterface::operator delete( void *ptr )
+{
+    return (*ppVehiclePool)->Free( (CVehicleSAInterface*)ptr );
+}

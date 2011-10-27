@@ -22,8 +22,16 @@ CColModelSAInterface::~CColModelSAInterface()
         mov     ecx, this
         call    dwFunc
     }
+}
 
-    (*ppColModelPool)->Free( this );
+void* CColModelSAInterface::operator new( size_t )
+{
+    return (*ppColModelPool)->Allocate();
+}
+
+void CColModelSAInterface::operator delete( void *ptr )
+{
+    (*ppColModelPool)->Free( (CColModelSAInterface*)ptr );
 }
 
 CColModelSA::CColModelSA ( void )
@@ -50,7 +58,5 @@ CColModelSA::CColModelSA ( CColModelSAInterface * pInterface )
 CColModelSA::~CColModelSA ( void )
 {
     if ( m_bDestroyInterface )
-    {
         delete m_pInterface;
-    }
 }

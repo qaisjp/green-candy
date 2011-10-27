@@ -34,12 +34,15 @@ class __declspec(align(128)) CTaskSAInterface
 public:
     virtual                                     ~CTaskSAInterface() {}
 
-    virtual __thiscall CTaskSAInterface*        Clone() = 0;
-    virtual __thiscall CTaskSAInterface*        GetSubTask() = 0;
-    virtual __thiscall bool                     IsSimpleTask() = 0;
-    virtual __thiscall int                      GetTaskType() = 0;
-    virtual __thiscall void                     StopTimer( CEventSAInterface *evt ) = 0;
-    virtual __thiscall void                     MakeAbortable() = 0;
+    virtual CTaskSAInterface* __thiscall        Clone() = 0;
+    virtual CTaskSAInterface* __thiscall        GetSubTask() = 0;
+    virtual bool __thiscall                     IsSimpleTask() = 0;
+    virtual int __thiscall                      GetTaskType() = 0;
+    virtual void __thiscall                     StopTimer( CEventSAInterface *evt ) = 0;
+    virtual void __thiscall                     MakeAbortable( CPedSAInterface *ped, int priority, CEventSAInterface *evt ) = 0;
+
+    void*   operator new( size_t );
+    void    operator delete( void *ptr );
 
     CTaskSAInterface*           m_pParent;
 };
@@ -47,17 +50,17 @@ public:
 class CTaskSimpleSAInterface : public CTaskSAInterface
 {
 public:
-    virtual __thiscall bool                     ProcessPed( CPedSAInterface *ped ) = 0;
-    virtual __thiscall bool                     SetPedRotation( CPedSAInterface *ped ) = 0;
+    virtual bool __thiscall                     ProcessPed( CPedSAInterface *ped ) = 0;
+    virtual bool __thiscall                     SetPedRotation( CPedSAInterface *ped ) = 0;
 };
 
 class CTaskComplexSAInterface : public CTaskSAInterface
 {
 public:
-    virtual __thiscall void                     SetSubTask( CTaskSAInterface *task ) = 0;
-    virtual __thiscall CTaskSAInterface*        CreateNextSubTask( CPedSAInterface *ped ) = 0;
-    virtual __thiscall CTaskSAInterface*        CreateFirstSubTask( CPedSAInterface *ped ) = 0;
-    virtual __thiscall CTaskSAInterface*        ControlSubTask( CPedSAInterface *ped ) = 0;
+    virtual void __thiscall                     SetSubTask( CTaskSAInterface *task ) = 0;
+    virtual CTaskSAInterface* __thiscall        CreateNextSubTask( CPedSAInterface *ped ) = 0;
+    virtual CTaskSAInterface* __thiscall        CreateFirstSubTask( CPedSAInterface *ped ) = 0;
+    virtual CTaskSAInterface* __thiscall        ControlSubTask( CPedSAInterface *ped ) = 0;
 
     CTask*                      m_pSubTask;
 };
