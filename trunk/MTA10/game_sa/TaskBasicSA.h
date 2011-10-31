@@ -57,7 +57,6 @@ public:
 // temporary
 class CAnimBlendAssociation;
 class CAnimBlendHierarchy;
-typedef unsigned long AssocGroupId;
 typedef unsigned long AnimationId;
 
 
@@ -200,8 +199,8 @@ public:
     eSunbatherType      m_SunbatherType;
     CAnimBlock*         m_pBeachAnimBlock;
     CAnimBlock*         m_pSunbatheAnimBlock;
-    int               m_BeachAnimBlockIndex;
-    int               m_SunbatheAnimBlockIndex;
+    unsigned int        m_BeachAnimBlockIndex;
+    unsigned int        m_SunbatheAnimBlockIndex;
     CObject*            m_pTowel;
 };
 
@@ -211,7 +210,9 @@ public:
                         CTaskComplexSunbatheSA ( void ) {};
                         CTaskComplexSunbatheSA ( class CObject* pTowel, const bool bStartStanding );
 
-    void                SetEndTime ( DWORD dwTime );
+    void                SetEndTime ( unsigned int time );
+
+    CTaskComplexSunbatheSAInterface*    GetInterface() { return (CTaskComplexSunbatheSAInterface*)m_interface; }
 };
 
 

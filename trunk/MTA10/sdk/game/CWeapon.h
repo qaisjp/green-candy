@@ -22,19 +22,19 @@ class CColPoint;
 class CWeapon
 {
 public:
-    virtual eWeaponType     GetType(  )=0;
-    virtual VOID            SetType( eWeaponType type )=0;
-    virtual eWeaponState    GetState(  )=0;
-    virtual void            SetState ( eWeaponState state )=0;
-    virtual DWORD           GetAmmoInClip(  )=0;
-    virtual VOID            SetAmmoInClip( DWORD dwAmmoInClip )=0;
-    virtual DWORD           GetAmmoTotal(  )=0;
-    virtual VOID            SetAmmoTotal( DWORD dwAmmoTotal )=0;
-    virtual CPed            * GetPed()=0;
-    virtual eWeaponSlot     GetSlot()=0;
-    virtual VOID            SetAsCurrentWeapon()=0;
-    virtual CWeaponInfo     * GetInfo()=0;
-    virtual void            Remove ()=0;
+    virtual eWeaponType     GetType () = 0;
+    virtual void            SetType ( eWeaponType type ) = 0;
+    virtual eWeaponState    GetState () = 0;
+    virtual void            SetState ( eWeaponState state ) = 0;
+    virtual unsigned int    GetAmmoInClip () = 0;
+    virtual void            SetAmmoInClip ( unsigned int ammo ) = 0;
+    virtual unsigned int    GetAmmoTotal () = 0;
+    virtual void            SetAmmoTotal ( unsigned int ammo ) = 0;
+    virtual CPed*           GetPed () = 0;
+    virtual eWeaponSlot     GetSlot () = 0;
+    virtual void            SetAsCurrentWeapon () = 0;
+    virtual CWeaponInfo*    GetInfo () = 0;
+    virtual void            Remove () = 0;
 };
 
 #endif

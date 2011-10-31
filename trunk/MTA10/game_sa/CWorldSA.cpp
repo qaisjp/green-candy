@@ -54,16 +54,13 @@ void CWorldSA::Remove ( CEntity * pEntity )
 
     CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
 
-    if ( pEntitySA )
+    DWORD dwEntity = (DWORD)pEntitySA->GetInterface();
+    DWORD dwFunction = FUNC_Remove;
+    _asm
     {
-        DWORD dwEntity = (DWORD)pEntitySA->GetInterface();
-        DWORD dwFunction = FUNC_Remove;
-        _asm
-        {
-            push    dwEntity
-            call    dwFunction
-            add     esp, 4
-        }
+        push    dwEntity
+        call    dwFunction
+        add     esp, 4
     }
 }
 
@@ -96,7 +93,7 @@ void CWorldSA::RemoveReferencesToDeletedObject ( CEntitySAInterface * entity )
     }
 }
 
-bool CWorldSA::TestLineSphere(CVector * vecStart, CVector * vecEnd, CVector * vecSphereCenter, float fSphereRadius, CColPoint ** colCollision )
+bool CWorldSA::TestLineSphere( CVector * vecStart, CVector * vecEnd, CVector * vecSphereCenter, float fSphereRadius, CColPoint ** colCollision )
 {
     // THIS FUNCTION IS INCOMPLETE AND SHOULD NOT BE USED
     // Create a CColLine for us
@@ -148,7 +145,7 @@ void ConvertMatrixToEulerAngles ( const RwMatrix& matrix, float& fX, float& fY, 
 }
 
 
-bool CWorldSA::ProcessLineOfSight(const CVector * vecStart, const CVector * vecEnd, CColPoint ** colCollision, 
+bool CWorldSA::ProcessLineOfSight( const CVector * vecStart, const CVector * vecEnd, CColPoint ** colCollision, 
                                   CEntity ** CollisionEntity,
                                   const SLineOfSightFlags flags,
                                   SLineOfSightBuildingResult* pBuildingResult )
@@ -189,92 +186,49 @@ bool CWorldSA::ProcessLineOfSight(const CVector * vecStart, const CVector * vecE
         add     esp, 0x30
     }
 
-    // Building info needed?
-    if ( pBuildingResult )
+    if ( targetEntity )
     {
-        CPoolsSA * pPools = ((CPoolsSA *)pGame->GetPools());
-        if ( pPools )
+        // Building info needed?
+        if ( pBuildingResult && targetEntity->m_type == ENTITY_TYPE_BUILDING )
         {
-            if ( targetEntity && targetEntity->nType == ENTITY_TYPE_BUILDING )
+            CPoolsSA *pPools = pGame->GetPools();
+
+            pBuildingResult->bValid = true;
+            pBuildingResult->usModelID = targetEntity->m_model;
+            pBuildingResult->vecPosition = targetEntity->m_placeable.m_transform.m_translate;
+
+            if ( targetEntity->m_placeable.m_matrix )
             {
-                pBuildingResult->bValid = true;
-                pBuildingResult->usModelID = targetEntity->m_nModelIndex;
-                pBuildingResult->vecPosition = targetEntity->Placeable.m_transform.m_translate;
-                if ( targetEntity->Placeable.matrix )
-                {
-                    CVector& vecRotation = pBuildingResult->vecRotation;
-                    ConvertMatrixToEulerAngles ( *targetEntity->Placeable.matrix, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
-                    vecRotation = -vecRotation;
-                }
+                CVector& vecRotation = pBuildingResult->vecRotation;
+                ConvertMatrixToEulerAngles ( *targetEntity->m_placeable.m_matrix, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+                vecRotation = -vecRotation;
             }
         }
+
+        if ( CollisionEntity )
+            *CollisionEntity = pGame->GetPools()->GetEntity( targetEntity );
     }
 
-
-    if ( CollisionEntity )
-    {
-        CPoolsSA * pPools = ((CPoolsSA *)pGame->GetPools());
-        if(pPools)
-        {
-            if(targetEntity)
-            {
-                switch (targetEntity->nType)
-                {
-                    case ENTITY_TYPE_PED:
-                        *CollisionEntity = pPools->GetPed((DWORD *)targetEntity);
-                        break;
-                    case ENTITY_TYPE_OBJECT:
-                        *CollisionEntity = pPools->GetObject((DWORD *)targetEntity);
-                        break;
-                    case ENTITY_TYPE_VEHICLE:
-                        *CollisionEntity = pPools->GetVehicle((DWORD *)targetEntity);
-                        break;
-                }
-
-                /*CEntitySA * entity = new CEntitySA();
-                entity->SetInterface((CEntitySAInterface *)targetEntity);
-                eEntityType EntityType = entity->GetEntityType();
-                delete entity;
-                switch(EntityType)
-                {
-                case ENTITY_TYPE_PED:
-                case ENTITY_TYPE_OBJECT:
-                    *CollisionEntity = pPools->GetPed((DWORD *)targetEntity);
-                    if ( *CollisionEntity )
-                        break;
-                    *CollisionEntity = pPools->GetObject((CObjectSAInterface *)targetEntity);
-                    break;
-                case ENTITY_TYPE_VEHICLE:
-                    *CollisionEntity = pPools->GetVehicle((CVehicleSAInterface *)targetEntity);
-                    break;
-
-                }*/
-            }
-        }
-    }
-    if ( colCollision ) *colCollision = pColPointSA;
-    else pColPointSA->Destroy ();
+    if ( colCollision )
+        *colCollision = pColPointSA;
+    else
+        pColPointSA->Destroy ();
 
     return bReturn;
 }
 
-
-void CWorldSA::IgnoreEntity(CEntity * pEntity)
+void CWorldSA::IgnoreEntity( CEntity * pEntity )
 {
     DEBUG_TRACE("VOID CWorldSA::IgnoreEntity(CEntity * entity)");
 
-    CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
-
-    if ( pEntitySA )
-        MemPutFast < DWORD > ( VAR_IgnoredEntity, (DWORD) pEntitySA->GetInterface () );
-    else
-        MemPutFast < DWORD > ( VAR_IgnoredEntity, 0 );
+    *(CEntitySAInterface**)VAR_IgnoredEntity = dynamic_cast < CEntitySA* > ( pEntity )->GetInterface();
 }
 
 // technically this is in CTheZones
-BYTE CWorldSA::GetLevelFromPosition(CVector * vecPosition)
+BYTE CWorldSA::GetLevelFromPosition( CVector * vecPosition )
 {
     DEBUG_TRACE("BYTE CWorldSA::GetLevelFromPosition(CVector * vecPosition)");
+
     DWORD dwFunc = FUNC_GetLevelFromPosition;
     BYTE bReturn = 0;
     _asm
@@ -287,11 +241,13 @@ BYTE CWorldSA::GetLevelFromPosition(CVector * vecPosition)
     return bReturn;
 }
 
-float CWorldSA::FindGroundZForPosition(float fX, float fY)
+float CWorldSA::FindGroundZForPosition( float fX, float fY )
 {
     DEBUG_TRACE("FLOAT CWorldSA::FindGroundZForPosition(FLOAT fX, FLOAT fY)");
+
     DWORD dwFunc = FUNC_FindGroundZFor3DCoord;
-    FLOAT fReturn = 0;
+    float fReturn = 0;
+
     _asm
     {
         push    fY
@@ -303,14 +259,15 @@ float CWorldSA::FindGroundZForPosition(float fX, float fY)
     return fReturn;
 }
 
-float CWorldSA::FindGroundZFor3DPosition(CVector * vecPosition)
+float CWorldSA::FindGroundZFor3DPosition( CVector * vecPosition)
 {
     DEBUG_TRACE("FLOAT CWorldSA::FindGroundZFor3DPosition(CVector * vecPosition)");
     DWORD dwFunc = FUNC_FindGroundZFor3DCoord;
-    FLOAT fReturn = 0;
-    FLOAT fX = vecPosition->fX;
-    FLOAT fY = vecPosition->fY;
-    FLOAT fZ = vecPosition->fZ;
+    float fReturn = 0;
+    float fX = vecPosition->fX;
+    float fY = vecPosition->fY;
+    float fZ = vecPosition->fZ;
+
     _asm
     {
         push    0
@@ -344,7 +301,6 @@ void CWorldSA::LoadMapAroundPoint(CVector * vecPosition, FLOAT fRadius)
         add     esp, 12
     }
 
-
     dwFunc = FUNC_CStreaming_LoadScene;
     _asm
     {
@@ -358,17 +314,12 @@ void CWorldSA::LoadMapAroundPoint(CVector * vecPosition, FLOAT fRadius)
     {
         call    dwFunc
     }
-
 }
-
 
 bool CWorldSA::IsLineOfSightClear ( const CVector * vecStart, const CVector * vecEnd, const SLineOfSightFlags flags )
 {
     DWORD dwFunc = FUNC_IsLineOfSightClear;
     bool bReturn = false;
-    // bool bCheckBuildings = true, bool bCheckVehicles = true, bool bCheckPeds = true, 
-    // bool bCheckObjects = true, bool bCheckDummies = true, bool bSeeThroughStuff = false, 
-    // bool bIgnoreSomeObjectsForCamera = false
 
     _asm
     {
@@ -392,6 +343,7 @@ bool CWorldSA::HasCollisionBeenLoaded ( CVector * vecPosition )
 {
     DWORD dwFunc = FUNC_HasCollisionBeenLoaded;
     bool bRet = false;
+
     _asm
     {
         push    0
@@ -403,40 +355,40 @@ bool CWorldSA::HasCollisionBeenLoaded ( CVector * vecPosition )
     return bRet;
 }
 
-DWORD CWorldSA::GetCurrentArea ( void )
+unsigned int CWorldSA::GetCurrentArea ()
 {
-    return *(DWORD *)VAR_currArea;
+    return *(unsigned int*)VAR_currArea;
 }
 
-void CWorldSA::SetCurrentArea ( DWORD dwArea )
+void CWorldSA::SetCurrentArea ( unsigned int area )
 {
-    MemPutFast < DWORD > ( VAR_currArea, dwArea );
+    *(unsigned int*)VAR_currArea = area;
 
     DWORD dwFunc = FUNC_RemoveBuildingsNotInArea;
     _asm
     {
-        push    dwArea
+        push    area
         call    dwFunc
         add     esp, 4
     }
 }
 
-void CWorldSA::SetJetpackMaxHeight ( float fHeight )
+void CWorldSA::SetJetpackMaxHeight ( float height )
 {
-    MemPut < float > ( VAR_fJetpackMaxHeight, fHeight );
+    *(float*)VAR_fJetpackMaxHeight = height;
 }
 
-float CWorldSA::GetJetpackMaxHeight ( void )
+float CWorldSA::GetJetpackMaxHeight ()
 {
-    return *(float *)(VAR_fJetpackMaxHeight);
+    return *(float*)VAR_fJetpackMaxHeight;
 }
 
-void CWorldSA::SetAircraftMaxHeight ( float fHeight )
+void CWorldSA::SetAircraftMaxHeight ( float height )
 {
-    MemPut < float > ( VAR_fAircraftMaxHeight, fHeight );
+    *(float*)VAR_fAircraftMaxHeight = height;
 }
 
-float CWorldSA::GetAircraftMaxHeight ( void )
+float CWorldSA::GetAircraftMaxHeight ()
 {
-    return *(float *)( VAR_fAircraftMaxHeight );
+    return *(float*)VAR_fAircraftMaxHeight;
 }

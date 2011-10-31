@@ -64,12 +64,12 @@ public:
     virtual void        LoadMapAroundPoint          ( CVector * vecPosition, float fRadius ) = 0;
     virtual bool        IsLineOfSightClear          ( const CVector * vecStart, const CVector * vecEnd, const SLineOfSightFlags flags = SLineOfSightFlags() ) = 0;
     virtual bool        HasCollisionBeenLoaded      ( CVector * vecPosition ) = 0;
-    virtual DWORD       GetCurrentArea              ( void ) = 0;
-    virtual void        SetCurrentArea              ( DWORD dwArea ) = 0;
+    virtual unsigned int    GetCurrentArea          () = 0;
+    virtual void        SetCurrentArea              ( unsigned int area ) = 0;
     virtual void        SetJetpackMaxHeight         ( float fHeight ) = 0;
-    virtual float       GetJetpackMaxHeight         ( void ) = 0;
+    virtual float       GetJetpackMaxHeight         () = 0;
     virtual void        SetAircraftMaxHeight        ( float fHeight ) = 0;
-    virtual float       GetAircraftMaxHeight        ( void ) = 0;
+    virtual float       GetAircraftMaxHeight        () = 0;
 };
 
 #endif

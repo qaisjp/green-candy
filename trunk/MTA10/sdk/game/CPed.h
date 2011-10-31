@@ -139,7 +139,7 @@ enum eMoveAnim
 
 enum { PLAYER_PED, CIVILIAN_PED };
 
-class CPed : public virtual CPhysical
+class CPed : public CPhysical
 {
 public:
     virtual                 ~CPed ( void ) {};

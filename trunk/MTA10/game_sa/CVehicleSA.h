@@ -262,53 +262,85 @@ struct CTrainFlags
     unsigned char unknown7 : 8;
 };
 
-/*
-#ifndef CPEDSA_DEFINED
-#define CPedSA void
-#endif
-
-#ifndef CPEDSAINTERFACE_DEFINED
-#define CPedSAInterface void
-#endif
-
-#ifdef CVehicleSA
-#undef CVehicleSA
-#endif
-
-#ifdef CVehicleSAInterface
-#undef CVehicleSAInterface
-#endif
-*/
-
-// TODO: Size?
-class CAEVehicleAudioEntity
+class CVehicleAudioSAInterface
 {
-    BYTE pad1[154];
 public:
-    BYTE bCurrentRadioStation;
-private:
-    BYTE pad2;
+                            CVehicleAudioSAInterface();
+                            ~CVehicleAudioSAInterface();
+
+    void*                   m_vtbl;         // 0
+
+    void*                   m_unk2;         // 4
+    BYTE                    m_pad[12];      // 8
+
+    void*                   m_unk;          // 16
+
+    BYTE                    m_pad2[134];    // 20
+    unsigned char           m_station;      // 154
+
+    BYTE                    m_pad3[9];      // 155
+    unsigned char           m_unk3;         // 164
+
+    BYTE                    m_pad4[223];    // 165
+    void*                   m_unk5;         // 388
+
+    BYTE                    m_pad5[12];     // 392
+    void*                   m_unk4;         // 404
+
+    BYTE                    m_pad6[116];    // 408
+    unsigned short          m_unk6;         // 524
+
+    BYTE                    m_pad7[22];     // 526
+    void*                   m_unk7;         // 548
+    void*                   m_unk8;         // 552
 };
 
-class CAutoPilot
+class CVehicleControlSAInterface
 {
-    BYTE pad[56];
+public:
+                            CVehicleControlSAInterface();
+                            ~CVehicleControlSAInterface();
+
+    unsigned short          m_unk;              // 0
+    BYTE                    m_pad[2];           // 2
+    unsigned short          m_unk2;             // 4
+    BYTE                    m_pad2[2];          // 6
+    unsigned short          m_unk3;             // 8
+
+    BYTE                    m_pad3[10];         // 10
+    unsigned short          m_unk4;             // 20
+    unsigned short          m_unk5;             // 22
+    unsigned short          m_unk6;             // 24
+
+    BYTE                    m_pad6[11];         // 26
+    unsigned char           m_unk8;             // 37
+    unsigned char           m_unk9;             // 38
+
+    BYTE                    m_pad[66];          // 26
+    unsigned int            m_handlingFlags;    // 92
+
+    BYTE                    m_pad4[8];          // 96
+
+    void*                   m_unk7[8];          // 104
+    BYTE                    m_pad5[16];         // 136
 };
 
-#define MAX_UPGRADES_ATTACHED 15 // perhaps?
+#define MAX_UPGRADES_ATTACHED 15
 
 /**
  * \todo GAME RELEASE: Update CVehicleSAInterface
  */
-class __declspec(align(2584)) CVehicleSAInterface : public CPhysicalSAInterface
+class CVehicleSAInterface : public CPhysicalSAInterface
 {
 public:
-    virtual void __thiscall         ProcessEntityCollisions() = 0;
+                                    CVehicleSAInterface( unsigned char createdBy );
+                                    ~CVehicleSAInterface();
+
     virtual void __thiscall         ProcessControlCollisionCheck() = 0;
     virtual void __thiscall         ProcessControlInputs() = 0;
     virtual void __thiscall         GetComponentWorldPosition() = 0;
     virtual bool __thiscall         IsComponentPresent() = 0;
-    virtual void __thiscall         OpenDoor(bool closed, unsigned int node, unsigned int door, float ratio, bool makeNoise) = 0;
+    virtual void __thiscall         OpenDoor( bool closed, unsigned int node, unsigned int door, float ratio, bool makeNoise ) = 0;
     virtual void __thiscall         ProcessDoorOpen() = 0;
     virtual float __thiscall        GetDoorAngleOpenRatio() = 0;
     virtual float __thiscall        GetDoorAngleOpenRatioInternal() = 0;
@@ -324,13 +356,13 @@ public:
     virtual void __thiscall         RemoveVehicleReferences() = 0;
     virtual void __thiscall         Blow( CEntity *cause, unsigned long unk ) = 0;
     virtual void __thiscall         BlowWithCutscene( unsigned long unk, unsigned long unk2, unsigned long unk3, unsigned long unk4 ) = 0;
-    virtual void __thiscall         InitWheels() = 0;
-    virtual void __thiscall         BurstTyre( unsigned char tyre, unsigned int unk ) = 0;
+    virtual bool __thiscall         InitWheels() = 0;
+    virtual bool __thiscall         BurstTyre( unsigned char tyre, unsigned int unk ) = 0;
     virtual bool __thiscall         CanPedLeaveCar() = 0;
     virtual void __thiscall         ProcessDrivingAnims() = 0;
-    virtual void __thiscall         GetRideAnimData() = 0;
+    virtual void* __thiscall        GetRideAnimData() = 0;
     virtual void __thiscall         SetupSuspension() = 0;
-    virtual void __thiscall         AddMovingCollisionSpeed() = 0;
+    virtual void __thiscall         GetMovingCollisionSpeed( CVector *vec ) = 0;
     virtual void __thiscall         Fix() = 0;
     virtual void __thiscall         SetupDamageAfterLoad() = 0;
     virtual void __thiscall         DoBurstAndSoftGroundRatios() = 0;
@@ -338,8 +370,8 @@ public:
     virtual void __thiscall         PlayHorn() = 0;
     virtual unsigned int __thiscall GetNumContactWheels() = 0;
     virtual void __thiscall         DamageVehicle() = 0;
-    virtual bool __thiscall         CanPedStepOutCar() = 0;
-    virtual bool __thiscall         CanPedJumpOutCar() = 0;
+    virtual bool __thiscall         CanPedStepOutCar( bool unk ) = 0;
+    virtual bool __thiscall         CanPedJumpOutCar( CPedSAInterface *passenger ) = 0;
     virtual bool __thiscall         GetTowHitchPosition( CVector *pos, unsigned int unk, unsigned int unk2 ) = 0;
     virtual bool __thiscall         GetTowbarPosition( CVector *pos, unsigned int unk, unsigned int unk2 ) = 0;
     virtual bool __thiscall         SetTowLink( CVehicleSAInterface *towVehicle, unsigned int unk ) = 0;
@@ -351,19 +383,16 @@ public:
     void*   operator new( size_t );
     void    operator delete( void *ptr );
 
-    CAEVehicleAudioEntity       m_vehicleAudioEntity;                   // 312
+    CVehicleAudioSAInterface    m_vehicleAudio;                         // 312
 
-    BYTE                        m_pad0[432];                            // 468
+    BYTE                        m_pad0[32];                             // 868
 
     tHandlingDataSA*            m_handling;                             // 900
     BYTE                        m_pad[4];                               // 904
     unsigned int                m_handlingFlags;                        // 908
-    DWORD                       m_pad2[21];                             // 912
+    
+    CVehicleControlSAInterface  m_control;                              // 912
 
-    DWORD                       m_pad3[2];                              // 996
-    unsigned int                m_handlingFlagsLocal;                   // 1004
-
-    CAutoPilot                  m_autoPilot;                            // 1008
     CVehicleFlags               m_vehicleFlags;                         // 1064
     unsigned int                m_timeOfCreation;                       // 1072, GetTimeInMilliseconds when this vehicle was created.
 
@@ -414,7 +443,7 @@ public:
     float                       m_bodyDirtLevel;                        // 1200, Dirt level of vehicle body texture: 0.0f=fully clean, 15.0f=maximum dirt visible, it may be altered at any time while vehicle's cycle of lige
 
     unsigned char               m_currentGear;                          // 1204, values used by transmission
-    BYTE                        m_pad4[3];                              // 1205
+    BYTE                        m_pad4b[3];                             // 1205
     float                       m_gearChangeCount;                      // 1208
     float                       m_wheelSpinForAudio;                    // 1212
 
@@ -422,7 +451,7 @@ public:
 
     /*** BEGIN SECTION that was added by us ***/
     BYTE                        m_pad5[48];                             // 1220
-    CVehicle*                   m_vehicle;                              // 1268
+    class CVehicleSA*           m_vehicle;                              // 1268
     /*** END SECTION that was added by us ***/
 
     unsigned int                m_doorState;                            // 1272
@@ -463,10 +492,12 @@ public:
     BYTE                        m_pad16[588];                           // 1688
 
     float                       m_burningTime;                          // 2276
+
+    BYTE                        m_pad17[304];                           // 2280
 };
 
 
-class CVehicleSA : public virtual CVehicle, public virtual CPhysicalSA
+class CVehicleSA : public virtual CVehicle, public CPhysicalSA
 {
     friend class CPoolsSA;
 private:
@@ -484,22 +515,22 @@ private:
 
 public:
                                 CVehicleSA                      ();
-                                CVehicleSA                      ( CVehicleSAInterface * vehicleInterface );
+                                CVehicleSA                      ( CVehicleSAInterface *vehicleInterface );
                                 CVehicleSA                      ( eVehicleTypes dwModelID );
                                 ~CVehicleSA                     ();
-    void                        Init                            ( void );
+    void                        Init                            ();
 
     // Override of CPhysicalSA::SetMoveSpeed to take trains into account
-    VOID                        SetMoveSpeed                    ( CVector* vecMoveSpeed );
+    void                        SetMoveSpeed                    ( CVector *moveSpeed );
 
     bool                        AddProjectile                   ( eWeaponType eWeapon, CVector vecOrigin, float fForce, CVector * target, CEntity * targetEntity );
 
-    CVehicleSAInterface *       GetNextCarriageInTrain          ();
-    CVehicle *                  GetNextTrainCarriage            ();
-    void                        SetNextTrainCarriage            ( CVehicle * next );
-    CVehicleSAInterface *       GetPreviousCarriageInTrain      ();
-    CVehicle *                  GetPreviousTrainCarriage        ();
-    void                        SetPreviousTrainCarriage        ( CVehicle * pPrevious );
+    CVehicleSAInterface*        GetNextCarriageInTrain          ();
+    CVehicle*                   GetNextTrainCarriage            ();
+    void                        SetNextTrainCarriage            ( CVehicle *next );
+    CVehicleSAInterface*        GetPreviousCarriageInTrain      ();
+    CVehicle*                   GetPreviousTrainCarriage        ();
+    void                        SetPreviousTrainCarriage        ( CVehicle *pPrevious );
 
     bool                        IsDerailed                      ();
     void                        SetDerailed                     ( bool bDerailed );
@@ -509,8 +540,8 @@ public:
     void                        SetTrainSpeed                   ( float fSpeed );
     bool                        GetTrainDirection               ();
     void                        SetTrainDirection               ( bool bDirection );
-    BYTE                        GetRailTrack                    ();
-    void                        SetRailTrack                    ( BYTE ucTrackID );
+    unsigned char               GetRailTrack                    ();
+    void                        SetRailTrack                    ( unsigned char track );
 
     bool                        CanPedEnterCar                  ();
     bool                        CanPedJumpOutCar                ( CPed* pPed );
@@ -530,7 +561,7 @@ public:
 
     bool                        CarHasRoof                      ();
     void                        ExtinguishCarFire               ();
-    DWORD                       GetBaseVehicleType              ();
+    unsigned int                GetBaseVehicleType              ();
 
     void                        SetBodyDirtLevel                ( float fDirtLevel );
     float                       GetBodyDirtLevel                ();
@@ -553,10 +584,10 @@ public:
     CPed*                       GetPassenger                    ( unsigned char ucSlot );
     bool                        IsBeingDriven                   ();
     
-    bool                        IsEngineBroken                  () { return GetVehicleInterface ()->m_nVehicleFlags.bEngineBroken; };
-    void                        SetEngineBroken                 ( bool bEngineBroken ) { GetVehicleInterface ()->m_nVehicleFlags.bEngineBroken = bEngineBroken; }
-    bool                        IsScriptLocked                  () { return GetVehicleInterface ()->m_nVehicleFlags.bIsLocked; }
-    void                        SetScriptLocked                 ( bool bLocked ) { GetVehicleInterface ()->m_nVehicleFlags.bIsLocked = bLocked; }
+    bool                        IsEngineBroken                  () { return GetVehicleInterface ()->m_vehicleFlags.bEngineBroken; };
+    void                        SetEngineBroken                 ( bool bEngineBroken ) { GetVehicleInterface ()->m_vehicleFlags.bEngineBroken = bEngineBroken; }
+    bool                        IsScriptLocked                  () { return GetVehicleInterface ()->m_vehicleFlags.bIsLocked; }
+    void                        SetScriptLocked                 ( bool bLocked ) { GetVehicleInterface ()->m_vehicleFlags.bIsLocked = bLocked; }
 
     void                        PlaceBikeOnRoadProperly         ();
     void                        PlaceAutomobileOnRoadProperly   ();
@@ -572,17 +603,16 @@ public:
     void                        SetLandingGearPosition          ( float fPosition );
     bool                        IsLandingGearDown               ();
     void                        Fix                             ();
-    DWORD                       * GetMemoryValue                ( DWORD dwOffset );
 
     void                        BlowUp                          ( CEntity* pCreator, unsigned long ulUnknown );
     void                        BlowUpCutSceneNoExtras          ( unsigned long ulUnknown1, unsigned long ulUnknown2, unsigned long ulUnknown3, unsigned long ulUnknown4 );
 
-    CDamageManager              * GetDamageManager              ();
+    CDamageManager*             GetDamageManager                ();
 
     bool                        SetTowLink                      ( CVehicle* pVehicle );
     bool                        BreakTowLink                    ();
-    CVehicle *                  GetTowedVehicle                 ();
-    CVehicle *                  GetTowedByVehicle               ();
+    CVehicle*                   GetTowedVehicle                 ();
+    CVehicle*                   GetTowedByVehicle               ();
 
     // remove these, no longer used
     BYTE                        GetRadioStation                 ();
@@ -595,46 +625,46 @@ public:
     void                        PickupEntityWithWinch           ( CEntity* pEntity );
     void                        ReleasePickedUpEntityWithWinch  ();
     void                        SetRopeHeightForHeli            ( float fRopeHeight );
-    CPhysical *                 QueryPickedUpEntityWithWinch    ();
+    CPhysical*                  QueryPickedUpEntityWithWinch    ();
 
     void                        SetRemap                        ( int iRemap );
     int                         GetRemapIndex                   ();
     void                        SetRemapTexDictionary           ( int iRemapTextureDictionary );
 
-    bool                        IsDamaged                               () { return GetVehicleInterface ()->m_nVehicleFlags.bIsDamaged; };
-    bool                        IsDrowning                              () { return GetVehicleInterface ()->m_nVehicleFlags.bIsDrowning; };
-    bool                        IsEngineOn                              () { return GetVehicleInterface ()->m_nVehicleFlags.bEngineOn; };
-    bool                        IsHandbrakeOn                           () { return GetVehicleInterface ()->m_nVehicleFlags.bIsHandbrakeOn; };
-    bool                        IsRCVehicle                             () { return GetVehicleInterface ()->m_nVehicleFlags.bIsRCVehicle; };
-    bool                        GetAlwaysLeaveSkidMarks                 () { return GetVehicleInterface ()->m_nVehicleFlags.bAlwaysSkidMarks; };
-    bool                        GetCanBeDamaged                         () { return GetVehicleInterface ()->m_nVehicleFlags.bCanBeDamaged; };
-    bool                        GetCanBeTargettedByHeatSeekingMissiles  () { return GetVehicleInterface ()->m_nVehicleFlags.bVehicleCanBeTargettedByHS; };
-    bool                        GetCanShootPetrolTank                   () { return GetVehicleInterface ()->m_nVehicleFlags.bPetrolTankIsWeakPoint; };
-    bool                        GetChangeColourWhenRemapping            () { return GetVehicleInterface ()->m_nVehicleFlags.bDontSetColourWhenRemapping; };
-    bool                        GetComedyControls                       () { return GetVehicleInterface ()->m_nVehicleFlags.bComedyControls; };
-    bool                        GetGunSwitchedOff                       () { return GetVehicleInterface ()->m_nVehicleFlags.bGunSwitchedOff; };
-    bool                        GetLightsOn                             () { return GetVehicleInterface ()->m_nVehicleFlags.bLightsOn; };
-    unsigned int                GetOverrideLights                       () { return GetVehicleInterface ()->OverrideLights; }
-    bool                        GetTakeLessDamage                       () { return GetVehicleInterface ()->m_nVehicleFlags.bTakeLessDamage; };
-    bool                        GetTyresDontBurst                       () { return GetVehicleInterface ()->m_nVehicleFlags.bTyresDontBurst; };
+    bool                        IsDamaged                               () { return GetVehicleInterface ()->m_vehicleFlags.bIsDamaged; };
+    bool                        IsDrowning                              () { return GetVehicleInterface ()->m_vehicleFlags.bIsDrowning; };
+    bool                        IsEngineOn                              () { return GetVehicleInterface ()->m_vehicleFlags.bEngineOn; };
+    bool                        IsHandbrakeOn                           () { return GetVehicleInterface ()->m_vehicleFlags.bIsHandbrakeOn; };
+    bool                        IsRCVehicle                             () { return GetVehicleInterface ()->m_vehicleFlags.bIsRCVehicle; };
+    bool                        GetAlwaysLeaveSkidMarks                 () { return GetVehicleInterface ()->m_vehicleFlags.bAlwaysSkidMarks; };
+    bool                        GetCanBeDamaged                         () { return GetVehicleInterface ()->m_vehicleFlags.bCanBeDamaged; };
+    bool                        GetCanBeTargettedByHeatSeekingMissiles  () { return GetVehicleInterface ()->m_vehicleFlags.bVehicleCanBeTargettedByHS; };
+    bool                        GetCanShootPetrolTank                   () { return GetVehicleInterface ()->m_vehicleFlags.bPetrolTankIsWeakPoint; };
+    bool                        GetChangeColourWhenRemapping            () { return GetVehicleInterface ()->m_vehicleFlags.bDontSetColourWhenRemapping; };
+    bool                        GetComedyControls                       () { return GetVehicleInterface ()->m_vehicleFlags.bComedyControls; };
+    bool                        GetGunSwitchedOff                       () { return GetVehicleInterface ()->m_vehicleFlags.bGunSwitchedOff; };
+    bool                        GetLightsOn                             () { return GetVehicleInterface ()->m_vehicleFlags.bLightsOn; };
+    unsigned int                GetOverrideLights                       () { return GetVehicleInterface ()->m_overrideLights; }
+    bool                        GetTakeLessDamage                       () { return GetVehicleInterface ()->m_vehicleFlags.bTakeLessDamage; };
+    bool                        GetTyresDontBurst                       () { return GetVehicleInterface ()->m_vehicleFlags.bTyresDontBurst; };
     unsigned short              GetAdjustablePropertyValue              () { return *reinterpret_cast < unsigned short* > ( reinterpret_cast < unsigned long > ( m_pInterface ) + 2156 ); };
     float                       GetHeliRotorSpeed                       () { return *reinterpret_cast < float* > ( reinterpret_cast < unsigned int > ( m_pInterface ) + 2124 ); };
     unsigned long               GetExplodeTime                          () { return *reinterpret_cast < unsigned long* > ( reinterpret_cast < unsigned int > ( m_pInterface ) + 1240 ); };
     
-    void                        SetAlwaysLeaveSkidMarks                 ( bool bAlwaysLeaveSkidMarks )      { GetVehicleInterface ()->m_nVehicleFlags.bAlwaysSkidMarks = bAlwaysLeaveSkidMarks; };
-    void                        SetCanBeDamaged                         ( bool bCanBeDamaged )              { GetVehicleInterface ()->m_nVehicleFlags.bCanBeDamaged = bCanBeDamaged; };
-    void                        SetCanBeTargettedByHeatSeekingMissiles  ( bool bEnabled )                   { GetVehicleInterface ()->m_nVehicleFlags.bVehicleCanBeTargettedByHS = bEnabled; };
-    void                        SetCanShootPetrolTank                   ( bool bCanShoot )                  { GetVehicleInterface ()->m_nVehicleFlags.bPetrolTankIsWeakPoint = bCanShoot; };
-    void                        SetChangeColourWhenRemapping            ( bool bChangeColour )              { GetVehicleInterface ()->m_nVehicleFlags.bDontSetColourWhenRemapping; };
-    void                        SetComedyControls                       ( bool bComedyControls )            { GetVehicleInterface ()->m_nVehicleFlags.bComedyControls = bComedyControls; };
+    void                        SetAlwaysLeaveSkidMarks                 ( bool bAlwaysLeaveSkidMarks )      { GetVehicleInterface ()->m_vehicleFlags.bAlwaysSkidMarks = bAlwaysLeaveSkidMarks; };
+    void                        SetCanBeDamaged                         ( bool bCanBeDamaged )              { GetVehicleInterface ()->m_vehicleFlags.bCanBeDamaged = bCanBeDamaged; };
+    void                        SetCanBeTargettedByHeatSeekingMissiles  ( bool bEnabled )                   { GetVehicleInterface ()->m_vehicleFlags.bVehicleCanBeTargettedByHS = bEnabled; };
+    void                        SetCanShootPetrolTank                   ( bool bCanShoot )                  { GetVehicleInterface ()->m_vehicleFlags.bPetrolTankIsWeakPoint = bCanShoot; };
+    void                        SetChangeColourWhenRemapping            ( bool bChangeColour )              { GetVehicleInterface ()->m_vehicleFlags.bDontSetColourWhenRemapping; };
+    void                        SetComedyControls                       ( bool bComedyControls )            { GetVehicleInterface ()->m_vehicleFlags.bComedyControls = bComedyControls; };
     void                        SetEngineOn                             ( bool bEngineOn );
-    void                        SetGunSwitchedOff                       ( bool bGunsOff )                   { GetVehicleInterface ()->m_nVehicleFlags.bGunSwitchedOff = bGunsOff; };
-    void                        SetHandbrakeOn                          ( bool bHandbrakeOn )               { GetVehicleInterface ()->m_nVehicleFlags.bIsHandbrakeOn = bHandbrakeOn; };
-    void                        SetLightsOn                             ( bool bLightsOn )                  { GetVehicleInterface ()->m_nVehicleFlags.bLightsOn = bLightsOn; };
-    void                        SetOverrideLights                       ( unsigned int uiOverrideLights )   { GetVehicleInterface ()->OverrideLights = uiOverrideLights; }
+    void                        SetGunSwitchedOff                       ( bool bGunsOff )                   { GetVehicleInterface ()->m_vehicleFlags.bGunSwitchedOff = bGunsOff; };
+    void                        SetHandbrakeOn                          ( bool bHandbrakeOn )               { GetVehicleInterface ()->m_vehicleFlags.bIsHandbrakeOn = bHandbrakeOn; };
+    void                        SetLightsOn                             ( bool bLightsOn )                  { GetVehicleInterface ()->m_vehicleFlags.bLightsOn = bLightsOn; };
+    void                        SetOverrideLights                       ( unsigned int uiOverrideLights )   { GetVehicleInterface ()->m_overrideLights = uiOverrideLights; }
     void                        SetTaxiLightOn                          ( bool bLightOn );
-    void                        SetTakeLessDamage                       ( bool bTakeLessDamage )            { GetVehicleInterface ()->m_nVehicleFlags.bTakeLessDamage = bTakeLessDamage; };
-    void                        SetTyresDontBurst                       ( bool bTyresDontBurst )            { GetVehicleInterface ()->m_nVehicleFlags.bTyresDontBurst = bTyresDontBurst; };
+    void                        SetTakeLessDamage                       ( bool bTakeLessDamage )            { GetVehicleInterface ()->m_vehicleFlags.bTakeLessDamage = bTakeLessDamage; };
+    void                        SetTyresDontBurst                       ( bool bTyresDontBurst )            { GetVehicleInterface ()->m_vehicleFlags.bTyresDontBurst = bTyresDontBurst; };
     void                        SetAdjustablePropertyValue              ( unsigned short usAdjustableProperty ) { *reinterpret_cast < unsigned short* > ( reinterpret_cast < unsigned int > ( m_pInterface ) + 2156 ) = usAdjustableProperty; };
     void                        SetHeliRotorSpeed                       ( float fSpeed )                        { *reinterpret_cast < float* > ( reinterpret_cast < unsigned int > ( m_pInterface ) + 2124 ) = fSpeed; };
     void                        SetExplodeTime                          ( unsigned long ulTime )                { *reinterpret_cast < unsigned long* > ( reinterpret_cast < unsigned int > ( m_pInterface ) + 1240 ) = ulTime; };
@@ -655,18 +685,18 @@ public:
     CHandlingEntry*             GetHandlingData                 ();
     void                        SetHandlingData                 ( CHandlingEntry* pHandling );
 
-    void                        BurstTyre                       ( BYTE bTyre );
+    void                        BurstTyre                       ( unsigned char tyre );
 
-    BYTE                        GetBikeWheelStatus              ( BYTE bWheel );
-    void                        SetBikeWheelStatus              ( BYTE bWheel, BYTE bStatus );
+    unsigned char               GetBikeWheelStatus              ( unsigned char wheel );
+    void                        SetBikeWheelStatus              ( unsigned char wheel, unsigned char status );
 
     void                        GetGravity                      ( CVector* pvecGravity ) const  { *pvecGravity = m_vecGravity; }
     void                        SetGravity                      ( const CVector* pvecGravity );
 
-    inline SColor               GetHeadLightColor               ( void )        { return m_HeadLightColor; }
+    inline SColor               GetHeadLightColor               ()        { return m_HeadLightColor; }
     inline void                 SetHeadLightColor               ( const SColor color )  { m_HeadLightColor = color; }
 
-    CObject *                   SpawnFlyingComponent            ( int i_1, unsigned int ui_2 );
+    CObject*                    SpawnFlyingComponent            ( int i_1, unsigned int ui_2 );
     void                        SetWheelVisibility              ( eWheels wheel, bool bVisible );
 
     bool                        IsHeliSearchLightVisible        ( void );
@@ -679,7 +709,8 @@ public:
 
     void*                       GetPrivateSuspensionLines       ( void );
 
-    CVehicleSAInterface*        GetVehicleInterface             ()  { return (CVehicleSAInterface*) m_pInterface; }
+    CVehicleSAInterface*        GetVehicleInterface             ()  { return (CVehicleSAInterface*)m_pInterface; }
+    inline CVehicleSAInterface* GetInterface                    ()  { return (CVehicleSAInterface*)m_pInterface; }
 
 private:
     void                        RecalculateSuspensionLines          ( void );

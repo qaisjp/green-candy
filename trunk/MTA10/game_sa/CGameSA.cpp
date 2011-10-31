@@ -99,7 +99,7 @@ CGameSA::CGameSA()
     m_pTextureManager           = new CTextureManagerSA();
     m_pHandlingManager          = new CHandlingManagerSA ();
     m_pEventList                = new CEventListSA();
-    m_pGarages                  = new CGaragesSA ( (CGaragesSAInterface *)CLASS_CGarages);
+    m_pGarages                  = new CGaragesSA ( (CGaragesSAInterface *)CLASS_CGarages );
     m_pTasks                    = new CTasksSA ( (CTaskManagementSystemSA*)m_pTaskManagementSystem );
     m_pAnimManager              = new CAnimManagerSA;
     m_pStreaming                = new CStreamingSA;
@@ -108,6 +108,9 @@ CGameSA::CGameSA()
     m_pRopes                    = new CRopesSA;
     m_pFx                       = new CFxSA ( (CFxSAInterface *)CLASS_CFx );
     m_pWaterManager             = new CWaterManagerSA ();
+
+    // :D
+    Transformation_Init();
 
     // Normal weapon types (WEAPONSKILL_STD)
     for ( int i = 0; i < NUM_WeaponInfosStdSkill; i++)
@@ -201,7 +204,7 @@ CGameSA::~CGameSA ( void )
     delete m_pAudio;  
 }
 
-CWeaponInfo * CGameSA::GetWeaponInfo(eWeaponType weapon, eWeaponSkill skill)
+CWeaponInfoSA* CGameSA::GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill )
 { 
     DEBUG_TRACE("CWeaponInfo * CGameSA::GetWeaponInfo(eWeaponType weapon)");
     

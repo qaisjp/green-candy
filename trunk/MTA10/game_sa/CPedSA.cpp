@@ -157,9 +157,11 @@ void CPedSA::DetachPedFromEntity ( void )
         mov     ecx, dwThis
         call    dwFunc
     }
+
+    GetInterface()->
 }
 
-bool CPedSA::InternalAttachEntityToEntity(DWORD dwEntityInterface, const CVector * vecPosition, const CVector * vecRotation)
+bool CPedSA::InternalAttachToEntity(DWORD dwEntityInterface, const CVector * vecPosition, const CVector * vecRotation)
 {
     AttachPedToEntity ( dwEntityInterface, const_cast < CVector * > ( vecPosition ), 0, 0.0f, WEAPONTYPE_UNARMED, FALSE );
     return true;
@@ -171,9 +173,9 @@ void CPedSA::AttachPedToEntity(DWORD dwEntityInterface, CVector * vector, unsign
     DEBUG_TRACE("void CPedSA::AttachPedToEntity(CVehicle * entity, CVector * vector, unsigned short sUnk, FLOAT fUnk, eWeaponType weaponType)");
     DWORD dwFunc = FUNC_AttachPedToEntity;
     DWORD dwThis = (DWORD)this->GetInterface();
-    FLOAT fX = vector->fX;
-    FLOAT fY = vector->fY;
-    FLOAT fZ = vector->fZ;
+    float fX = vector->fX;
+    float fY = vector->fY;
+    float fZ = vector->fZ;
     BYTE bPedType = ((CPedSAInterface*)GetInterface())->bPedType;
 
     // Hack the CPed type(?) to non-player so the camera doesn't get changed

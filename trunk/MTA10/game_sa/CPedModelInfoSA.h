@@ -48,7 +48,7 @@ public:
 
     eModelType                      GetModelType();
     void                            DeleteRwObject();
-    bool                            SetAnimFile( const char *name );
+    void                            SetAnimFile( const char *name );
     void                            ConvertAnimFileIndex();
     int                             GetAnimFileIndex();
 

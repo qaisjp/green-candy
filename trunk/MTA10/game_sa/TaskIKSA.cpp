@@ -21,10 +21,17 @@ CTaskSimpleIKChainSA::CTaskSimpleIKChainSA ( char* idString, int effectorBoneTag
     // TODO: Find out the real size
     CreateTaskInterface();
 
-    if ( !IsValid () ) return;
-    DWORD dwThisInterface = (DWORD)this->GetInterface();
-    DWORD dwEntityInterface = 0;
-    if ( pEntity ) dwEntityInterface = ( DWORD ) pEntity->GetInterface ();
+    if ( !IsValid () )
+        return;
+
+    CEntitySA *entity = dynamic_cast <CEntitySA*> ( pEntity );
+
+    if ( !entity )
+        throw "invalid entity";
+
+    DWORD dwThisInterface = (DWORD)GetInterface();
+    DWORD dwEntityInterface = (DWORD)entity->GetInterface ();
+
     float fEffectorX = effectorVec.fX, fEffectorY = effectorVec.fY, fEffectorZ = effectorVec.fZ;
     float fX = offsetPos.fX, fY = offsetPos.fY, fZ = offsetPos.fZ;
     _asm
@@ -55,11 +62,18 @@ CTaskSimpleIKLookAtSA::CTaskSimpleIKLookAtSA ( char* idString, CEntity* pEntity,
     // TODO: Find out the real size
     CreateTaskInterface();
 
-    if ( !IsValid () ) return;
-    DWORD dwThisInterface = (DWORD)this->GetInterface();
-    DWORD dwEntityInterface = 0;
-    if ( pEntity ) dwEntityInterface = ( DWORD ) pEntity->GetInterface ();
+    if ( !IsValid () )
+        return;
+
+    CEntitySA *entity = dynamic_cast <CEntitySA*> ( pEntity );
+
+    if ( !entity )
+        throw "invalid entity";
+
+    DWORD dwThisInterface = (DWORD)m_interface;
+    DWORD dwEntityInterface = (DWORD)entity->GetInterface();
     float fX = offsetPos.fX, fY = offsetPos.fY, fZ = offsetPos.fZ;
+
     _asm
     {
         mov     ecx, dwThisInterface
@@ -88,16 +102,19 @@ CTaskSimpleIKManagerSA::CTaskSimpleIKManagerSA ( void )
 int CTaskSimpleIKManagerSA::AddIKChainTask ( CTaskSimpleIKChain * pIKChainTask, int slotID )
 {
     CTaskSimpleIKManagerSAInterface * pInterface = ( CTaskSimpleIKManagerSAInterface * ) this->GetInterface ();
+    CTaskSimpleIKChainSA *chainTask = dynamic_cast <CTaskSimpleIKChainSA*> ( pIKChainTask );
+
     if ( !pInterface->m_pIKChainTasks [ slotID ] )
     {
-        pInterface->m_pIKChainTasks [ slotID ] = ( CTaskSimpleIKChainSAInterface * ) ( pIKChainTask->GetInterface () );
+        pInterface->m_pIKChainTasks [ slotID ] = (CTaskSimpleIKChainSAInterface*)chainTask->GetInterface();
         return slotID;
     }
+
     for ( int i = 0 ; i < slotID ; i++ )
     {
         if ( !pInterface->m_pIKChainTasks [ i ] )
         {
-            pInterface->m_pIKChainTasks [ i ] = ( CTaskSimpleIKChainSAInterface * ) ( pIKChainTask->GetInterface () );
+            pInterface->m_pIKChainTasks [ i ] = (CTaskSimpleIKChainSAInterface*)chainTask->GetInterface();
             return i;
         }
     }
@@ -108,43 +125,43 @@ int CTaskSimpleIKManagerSA::AddIKChainTask ( CTaskSimpleIKChain * pIKChainTask, 
 void CTaskSimpleIKManagerSA::RemoveIKChainTask ( int slotID )
 {
     CTaskSimpleIKManagerSAInterface * pInterface = ( CTaskSimpleIKManagerSAInterface * ) this->GetInterface ();
-    if ( pInterface->m_pIKChainTasks [ slotID ] )
-    {
-        // Grab the task
-        CTask * pTask = m_pTaskManagementSystem->GetTask ( pInterface->m_pIKChainTasks [ slotID ] );        
-        assert ( pTask ); // Leave this here temporarily for debugging (shouldn't ever be null)
-        pTask->Destroy ();
-        pInterface->m_pIKChainTasks [ slotID ] = NULL;
-    }
-}
+    CTaskSA *task;
 
+    if ( !pInterface->m_pIKChainTasks[slotID] )
+        return;
+
+    task = m_pTaskManagementSystem->GetTask ( pInterface->m_pIKChainTasks[slotID] );
+    
+    assert( task ); //TODO: Debug
+
+    task->Destroy ();
+    pInterface->m_pIKChainTasks[slotID] = NULL;
+}
 
 void CTaskSimpleIKManagerSA::BlendOut ( int slotID, int blendOutTime )
 {
     // TODO: fill me
 }
 
-
 unsigned char CTaskSimpleIKManagerSA::IsSlotEmpty ( int slotID )
 {
-    CTaskSimpleIKManagerSAInterface * pInterface = ( CTaskSimpleIKManagerSAInterface * ) this->GetInterface ();
-    return ( !pInterface->m_pIKChainTasks [ slotID ] );
+    return ( !((CTaskSimpleIKManagerSAInterface*)m_interface)->m_pIKChainTasks[slotID] );
 }
 
-
-CTaskSimpleIKChain * CTaskSimpleIKManagerSA::GetTaskAtSlot ( int slotID )
+CTaskSimpleIKChain* CTaskSimpleIKManagerSA::GetTaskAtSlot ( int slotID )
 {
-    CTaskSimpleIKManagerSAInterface * pInterface = ( CTaskSimpleIKManagerSAInterface * ) this->GetInterface ();
-    if ( pInterface->m_pIKChainTasks [ slotID ] )
-    {
-        // Grab the task
-        CTask * pTask = m_pTaskManagementSystem->GetTask ( pInterface->m_pIKChainTasks [ slotID ] );        
-        assert ( pTask ); // Leave this here temporarily for debugging (shouldn't ever be null)
-        return dynamic_cast < CTaskSimpleIKChain * > ( pTask );
-    }
-    return NULL;
-}
+    CTaskSimpleIKManagerSAInterface* pInterface = (CTaskSimpleIKManagerSAInterface*)m_interface;
 
+    if ( !pInterface->m_pIKChainTasks[slotID] )
+        return NULL;
+
+    // Grab the task
+    CTask *pTask = m_pTaskManagementSystem->GetTask ( pInterface->m_pIKChainTasks[slotID] );   
+
+    assert ( pTask ); // Leave this here temporarily for debugging (shouldn't ever be null)
+
+    return dynamic_cast <CTaskSimpleIKChain*> ( pTask );
+}
 
 CTaskSimpleTriggerLookAtSA::CTaskSimpleTriggerLookAtSA ( CEntity* pEntity, int time, int offsetBoneTag, CVector offsetPos, unsigned char useTorso, float speed, int blendTime, int priority )
 {
@@ -153,11 +170,15 @@ CTaskSimpleTriggerLookAtSA::CTaskSimpleTriggerLookAtSA ( CEntity* pEntity, int t
     // TODO: Find out the real size
     CreateTaskInterface();
 
-    if ( !IsValid () ) return;
-    DWORD dwThisInterface = (DWORD)this->GetInterface();
-    DWORD dwEntityInterface = 0;
-    if ( pEntity ) dwEntityInterface = ( DWORD ) pEntity->GetInterface ();
+    if ( !IsValid () )
+        return;
+
+    CEntitySA *entity = dynamic_cast <CEntitySA*> ( pEntity );
+
+    DWORD dwThisInterface = (DWORD)m_interface;
+    DWORD dwEntityInterface = (DWORD)entity->GetInterface();
     float fX = offsetPos.fX, fY = offsetPos.fY, fZ = offsetPos.fZ;
+
     _asm
     {
         mov     ecx, dwThisInterface

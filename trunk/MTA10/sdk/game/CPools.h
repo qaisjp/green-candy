@@ -53,39 +53,21 @@ class CPools
 public:
     // Vehicles pool
     virtual CVehicle*       AddVehicle              ( eVehicleTypes eVehicleType ) = 0;
-    virtual CVehicle*       AddVehicle              ( DWORD* pGameInterface ) = 0;
-    virtual void            RemoveVehicle           ( CVehicle* pVehicle, bool bDelete = true ) = 0;
-    virtual void            RemoveVehicle           ( unsigned long ulID, bool bDelete = true ) = 0;
-    virtual CVehicle*       GetVehicle              ( unsigned long ulID ) = 0;
-    virtual CVehicle*       GetVehicle              ( DWORD* pGameInterface ) = 0;
-    virtual DWORD           GetVehicleRef           ( CVehicle* pVehicle ) = 0;
-    virtual DWORD           GetVehicleRef           ( DWORD* pGameInterface ) = 0;
-    virtual CVehicle*       GetVehicleFromRef       ( DWORD dwGameRef ) = 0;
-    virtual unsigned long   GetVehicleCount         ( ) = 0;
+    virtual unsigned int    GetVehicleRef           ( CVehicle* pVehicle ) = 0;
+    virtual CVehicle*       GetVehicleFromRef       ( unsigned int index ) = 0;
+    virtual unsigned int    GetVehicleCount         () = 0;
 
     // Objects pool
     virtual CObject*        AddObject               ( DWORD dwModelID ) = 0;
-    virtual void            RemoveObject            ( CObject* pObject, bool bDelete = true ) = 0;
-    virtual void            RemoveObject            ( unsigned long ulID, bool bDelete = true ) = 0;
-    virtual CObject*        GetObject               ( unsigned long ulID ) = 0;
-    virtual CObject*        GetObject               ( DWORD* pGameInterface ) = 0;
-    virtual DWORD           GetObjectRef            ( CObject* pObject ) = 0;
-    virtual DWORD           GetObjectRef            ( DWORD* pGameInterface ) = 0;
-    virtual CObject*        GetObjectFromRef        ( DWORD dwGameRef ) = 0;
-    virtual unsigned long   GetObjectCount          ( ) = 0;
+    virtual unsigned int    GetObjectRef            ( CObject* pObject ) = 0;
+    virtual CObject*        GetObjectFromRef        ( unsigned int index ) = 0;
+    virtual unsigned int    GetObjectCount          () = 0;
 
     // Peds pool
     virtual CPed*           AddPed                  ( ePedModel ePedType ) = 0;
-    virtual CPed*           AddPed                  ( DWORD* pGameInterface ) = 0;
-    virtual CPed*           AddCivilianPed          ( DWORD* pGameInterface ) = 0;
-    virtual void            RemovePed               ( CPed* pPed, bool bDelete = true ) = 0;
-    virtual void            RemovePed               ( unsigned long ulID, bool bDelete = true ) = 0;
-    virtual CPed*           GetPed                  ( unsigned long ulID ) = 0;
-    virtual CPed*           GetPed                  ( DWORD* pGameInterface ) = 0; // not sure we really want this here
-    virtual DWORD           GetPedRef               ( CPed* pPed ) = 0;
-    virtual DWORD           GetPedRef               ( DWORD* pGameInterface ) = 0;
-    virtual CPed*           GetPedFromRef           ( DWORD dwGameRef ) = 0;
-    virtual unsigned long   GetPedCount             ( ) = 0;
+    virtual unsigned int    GetPedRef               ( CPed* pPed ) = 0;
+    virtual CPed*           GetPedFromRef           ( unsigned int index ) = 0;
+    virtual unsigned int    GetPedCount             () = 0;
 
     // Others
     virtual CBuilding*      AddBuilding             ( DWORD dwModelID ) = 0;
@@ -93,15 +75,10 @@ public:
     virtual CEntity*        GetEntity               ( DWORD* pGameInterface ) = 0;
 
     virtual int             GetNumberOfUsedSpaces   ( ePools pool ) = 0;
-    virtual void            DumpPoolsStatus         ( ) = 0;
+    virtual void            DumpPoolsStatus         () = 0;
 
-    virtual int             GetPoolDefaultCapacity  ( ePools pool ) = 0;
-    virtual int             GetPoolCapacity         ( ePools pool ) = 0;
-    virtual void            SetPoolCapacity         ( ePools pool, int iValue ) = 0;
-
-    virtual CEntryInfoNodePool*             GetEntryInfoNodePool            ( ) = 0;
-    virtual CPointerNodeSingleLinkPool*     GetPointerNodeSingleLinkPool    ( ) = 0;
-    virtual CPointerNodeDoubleLinkPool*     GetPointerNodeDoubleLinkPool    ( ) = 0;
+    virtual unsigned int    GetPoolDefaultCapacity  ( ePools pool ) = 0;
+    virtual unsigned int    GetPoolCapacity         ( ePools pool ) = 0;
 };
 
 #endif

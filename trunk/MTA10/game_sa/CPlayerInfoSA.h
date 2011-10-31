@@ -41,9 +41,6 @@
 
 #define NUM_CHARS_IN_NAME                           34
 
-
-typedef unsigned short AssocGroupId;
-
 class CPedClothesDesc;
 
 class CPlayerCrossHairSAInterface

@@ -22,10 +22,10 @@
 class CTaskTimer
 {
 public:
-    DWORD                           dwTimeStart; // ?
-    DWORD                           dwTimeEnd; // ?
-    bool                            bSet;
-    bool                            bStopped;
+    unsigned int                    m_timeStart; // ?
+    unsigned int                    m_timeEnd; // ?
+    bool                            m_set;
+    bool                            m_stopped;
 };
 
 // I see what you did there, R*
@@ -34,12 +34,12 @@ class __declspec(align(128)) CTaskSAInterface
 public:
     virtual                                     ~CTaskSAInterface() {}
 
-    virtual CTaskSAInterface* __thiscall        Clone() = 0;
-    virtual CTaskSAInterface* __thiscall        GetSubTask() = 0;
-    virtual bool __thiscall                     IsSimpleTask() = 0;
-    virtual int __thiscall                      GetTaskType() = 0;
-    virtual void __thiscall                     StopTimer( CEventSAInterface *evt ) = 0;
-    virtual void __thiscall                     MakeAbortable( CPedSAInterface *ped, int priority, CEventSAInterface *evt ) = 0;
+    virtual CTaskSAInterface* __thiscall        Clone();
+    virtual CTaskSAInterface* __thiscall        GetSubTask();
+    virtual bool __thiscall                     IsSimpleTask();
+    virtual int __thiscall                      GetTaskType();
+    virtual void __thiscall                     StopTimer( CEventSAInterface *evt );
+    virtual bool __thiscall                     MakeAbortable( CPedSAInterface *ped, int priority, CEventSAInterface *evt );
 
     void*   operator new( size_t );
     void    operator delete( void *ptr );
@@ -51,7 +51,7 @@ class CTaskSimpleSAInterface : public CTaskSAInterface
 {
 public:
     virtual bool __thiscall                     ProcessPed( CPedSAInterface *ped ) = 0;
-    virtual bool __thiscall                     SetPedRotation( CPedSAInterface *ped ) = 0;
+    virtual bool __thiscall                     SetPedPosition( CPedSAInterface *ped ) = 0;
 };
 
 class CTaskComplexSAInterface : public CTaskSAInterface
@@ -67,58 +67,59 @@ public:
 
 class CTaskSA : public virtual CTask
 {
-private:
+protected:
     CTaskSAInterface*           m_interface;
     CTaskSA*                    m_parent;
     bool                        m_beingDestroyed;
 
 public:
-                        CTaskSA                 ( void );
-                        ~CTaskSA                ( void );
+                        CTaskSA                 ();
+                        ~CTaskSA                ();
 
-    CTask*              Clone                   ( void );
+    CTask*              Clone                   ();
     void                SetParent               ( CTask* pParent );
-    CTask*              GetParent               ( void )                        { return Parent; }
-    CTask*              GetSubTask              ( void );
-    bool                IsSimpleTask            ( void );
-    int                 GetTaskType             ( void );
+    CTask*              GetParent               ()                              { return m_parent; }
+    CTask*              GetSubTask              ();
+    bool                IsSimpleTask            ();
+    int                 GetTaskType             ();
     void                StopTimer               ( CEventSAInterface* pEvent );
-    bool                MakeAbortable           ( CPed* pPed, const int iPriority, const CEvent* pEvent );
-    char*               GetTaskName             ( void );
+    bool                MakeAbortable           ( CPed* pPed, int iPriority, CEventSAInterface *pEvent );
+    char*               GetTaskName             ();
 
-    // our function(s)
-    void                SetInterface            ( CTaskSAInterface* pInterface ) { TaskInterface = pInterface; };
-    CTaskSAInterface*   GetInterface            ( void )                         {return this->TaskInterface;}
-    bool                IsValid                 ( void )                         { return this->GetInterface() != NULL; }
+    CTaskSAInterface*   GetInterface            ()                              { return m_interface; }
+    bool                IsValid                 ()                              { return m_interface != NULL; }
 
     void                CreateTaskInterface     ();
 
     void                SetAsPedTask            ( CPed * pPed, const int iTaskPriority, const bool bForceNewTask = false );
     void                SetAsSecondaryPedTask   ( CPed * pPed, const int iType );
-    void                Destroy                 ( void );
-    void                DestroyJustThis         ( void );
+    void                Destroy                 ();
+    void                DestroyJustThis         ();
+
+private:
+    void                SetInterface            ( CTaskSAInterface* pInterface ) { m_interface = pInterface; };
 };
 
-class CTaskSimpleSA : public virtual CTaskSA, public virtual CTaskSimple
+class CTaskSimpleSA : public CTaskSA, public virtual CTaskSimple
 {
 public:
     CTaskSimpleSA ( ) {};
 
-    bool                        ProcessPed(CPed* pPed);
-    bool                        SetPedPosition(CPed *pPed);
+    bool                        ProcessPed ( CPed* pPed );
+    bool                        SetPedPosition ( CPed *pPed );
 
     CTaskSimpleSAInterface*     GetInterface() { return (CTaskSimpleSAInterface*)m_interface; }
 };
 
-class CTaskComplexSA : public virtual CTaskSA, public virtual CTaskComplex
+class CTaskComplexSA : public CTaskSA, public virtual CTaskComplex
 {
 public:
     CTaskComplexSA() {};
 
-    void                        SetSubTask(CTask* pSubTask);
-    CTask*                      CreateNextSubTask(CPed* pPed);
-    CTask*                      CreateFirstSubTask(CPed* pPed);
-    CTask*                      ControlSubTask(CPed* pPed);
+    void                        SetSubTask ( CTask* pSubTask );
+    CTask*                      CreateNextSubTask ( CPed* pPed );
+    CTask*                      CreateFirstSubTask ( CPed* pPed );
+    CTask*                      ControlSubTask ( CPed* pPed );
 
     CTaskComplexSAInterface*    GetInterface() { return (CTaskComplexSAInterface*)m_interface; }
 };

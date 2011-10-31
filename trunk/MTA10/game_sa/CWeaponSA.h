@@ -24,37 +24,40 @@
 class CWeaponSAInterface
 {
 public:
-    eWeaponType     m_eWeaponType;
-    eWeaponState    m_eState;
-    DWORD           m_nAmmoInClip;
-    DWORD           m_nAmmoTotal;
-    DWORD           m_nTimer;
-    DWORD           m_Unknown;
-    DWORD           m_Unknown_2;
+    eWeaponType             m_eWeaponType;
+    eWeaponState            m_eState;
+    unsigned int            m_nAmmoInClip;
+    unsigned int            m_nAmmoTotal;
+    unsigned long           m_nTimer;
+    unsigned int            m_Unknown;
+    unsigned int            m_Unknown_2;
 };
 
 class CWeaponSA : public CWeapon
 {
 private:
-    CWeaponSAInterface      * internalInterface;
-    CPed                    * owner;
+    CWeaponSAInterface*     m_interface;
+    CPedSA*                 m_owner;
     eWeaponSlot             m_weaponSlot;
-public:
-    CWeaponSA(CWeaponSAInterface * weaponInterface, CPed * ped, eWeaponSlot weaponSlot);
-    eWeaponType     GetType(  );
-    VOID            SetType( eWeaponType type );
-    eWeaponState    GetState(  );
-    void            SetState ( eWeaponState state );
-    DWORD           GetAmmoInClip(  );
-    VOID            SetAmmoInClip( DWORD dwAmmoInClip );
-    DWORD           GetAmmoTotal(  );
-    VOID            SetAmmoTotal( DWORD dwAmmoTotal );
-    
-    CPed            * GetPed();
-    eWeaponSlot     GetSlot();
 
-    VOID            SetAsCurrentWeapon();
-    CWeaponInfo*    GetInfo();
+public:
+    CWeaponSA ( CWeaponSAInterface * weaponInterface, CPedSA * ped, eWeaponSlot weaponSlot );
+
+    eWeaponType     GetType ();
+    void            SetType ( eWeaponType type );
+    eWeaponState    GetState ();
+    void            SetState ( eWeaponState state );
+    unsigned int    GetAmmoInClip ();
+    void            SetAmmoInClip ( unsigned int ammo );
+    unsigned int    GetAmmoTotal ();
+    void            SetAmmoTotal ( unsigned int ammo );
+    
+    CPed*           GetPed ();
+    CPedSA*         GetPedInternal ();
+    eWeaponSlot     GetSlot ();
+
+    void            SetAsCurrentWeapon ();
+    CWeaponInfo*    GetInfo ();
 
     void            Remove ();
 };

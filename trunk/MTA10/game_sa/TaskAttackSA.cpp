@@ -18,10 +18,15 @@ CTaskSimpleGangDriveBySA::CTaskSimpleGangDriveBySA ( CEntity *pTargetEntity, con
 
     CreateTaskInterface ();
 
-    if ( !IsValid () ) return;
+    if ( !IsValid () )
+        return;
+
+    CEntitySA *entity = dynamic_cast <CEntitySA*> ( pTargetEntity );
+
     DWORD dwFunc = FUNC_CTaskSimpleGangDriveBy__Constructor;
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
-    DWORD dwTargetEntity = ( pTargetEntity ) ? ( DWORD ) pTargetEntity->GetInterface () : 0;
+    DWORD dwThisInterface = (DWORD)m_interface;
+    DWORD dwTargetEntity = (DWORD)entity->GetInterface();
+
     _asm
     {
         mov     ecx, dwThisInterface
@@ -42,12 +47,17 @@ CTaskSimpleUseGunSA::CTaskSimpleUseGunSA ( CEntity *pTargetEntity, CVector vecTa
 
     CreateTaskInterface();
 
-    if ( !IsValid () ) return;
+    if ( !IsValid () )
+        return;
+
+    CEntitySA *entity = dynamic_cast <CEntitySA*> ( pTargetEntity );
+
     DWORD dwFunc = FUNC_CTaskSimpleUseGun__Constructor;
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
-    DWORD dwTargetEntity = ( pTargetEntity ) ? ( DWORD ) pTargetEntity->GetInterface () : 0;
+    DWORD dwThisInterface = (DWORD)m_interface;
+    DWORD dwTargetEntity = (DWORD)entity->GetInterface();
     float fTargetX = vecTarget.fX, fTargetY = vecTarget.fY, fTargetZ = vecTarget.fZ;
     DWORD dwBurstLength = nBurstLength;
+
     _asm
     {
         mov     ecx, dwThisInterface
@@ -67,9 +77,10 @@ bool CTaskSimpleUseGunSA::ControlGun ( CPed * pPed, CEntity * pTargetEntity, cha
 {
     bool bReturn;
     DWORD dwFunc = FUNC_CTaskSimpleUseGun_ControlGun;
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
-    DWORD dwPedInterface = ( DWORD ) pPed->GetInterface ();
-    DWORD dwTargetEntity = ( pTargetEntity ) ? ( DWORD ) pTargetEntity->GetInterface () : 0;
+    DWORD dwThisInterface = (DWORD)m_interface;
+    DWORD dwPedInterface = (DWORD)dynamic_cast <CPedSA*> ( pPed )->GetInterface();
+    DWORD dwTargetEntity = (DWORD)dynamic_cast <CEntitySA*> ( pTargetEntity )->GetInterface();
+
     _asm
     {
         mov     ecx, dwThisInterface
@@ -87,7 +98,7 @@ bool CTaskSimpleUseGunSA::ControlGunMove ( CVector2D * pMoveVec )
 {
     bool bReturn;
     DWORD dwFunc = FUNC_CTaskSimpleUseGun_ControlGunMove;
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
+    DWORD dwThisInterface = (DWORD)m_interface;
     _asm
     {
         mov     ecx, dwThisInterface
@@ -102,11 +113,12 @@ bool CTaskSimpleUseGunSA::ControlGunMove ( CVector2D * pMoveVec )
 void CTaskSimpleUseGunSA::Reset ( CPed *pPed, CEntity *pTargetEntity, CVector vecTarget, char nCommand, short nBurstLength )
 {
     DWORD dwFunc = FUNC_CTaskSimpleUseGun_Reset;
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
-    DWORD dwPedInterface = ( DWORD ) pPed->GetInterface ();
-    DWORD dwTargetEntity = ( pTargetEntity ) ? ( DWORD ) pTargetEntity->GetInterface () : 0;
+    DWORD dwThisInterface = (DWORD)m_interface;
+    DWORD dwPedInterface = (DWORD)dynamic_cast <CPedSA*> ( pPed )->GetInterface();
+    DWORD dwTargetEntity = (DWORD)dynamic_cast <CEntitySA*> ( pTargetEntity )->GetInterface();
     float fTargetX = vecTarget.fX, fTargetY = vecTarget.fY, fTargetZ = vecTarget.fZ;
-    DWORD dwBurstLength = nBurstLength;    
+    DWORD dwBurstLength = nBurstLength;
+
     _asm
     {
         mov     ecx, dwThisInterface
@@ -128,10 +140,13 @@ CTaskSimpleFightSA::CTaskSimpleFightSA ( CEntity *pTargetEntity, int nCommand, u
 
     CreateTaskInterface ();
 
-    if ( !IsValid () ) return;
+    if ( !IsValid () )
+        return;
+
     DWORD dwFunc = FUNC_CTaskSimpleFight__Constructor;
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
-    DWORD dwTargetEntity = ( pTargetEntity ) ? ( DWORD ) pTargetEntity->GetInterface () : 0;
+    DWORD dwThisInterface = (DWORD)m_interface;
+    DWORD dwTargetEntity = (DWORD)dynamic_cast <CEntitySA*> ( pTargetEntity )->GetInterface();
+
     _asm
     {
         mov     ecx, dwThisInterface

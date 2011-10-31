@@ -220,8 +220,6 @@ public:
     void                    SetAnimFile( const char *name );
     void                    ConvertAnimFileIndex();
     int                     GetAnimFileIndex();
-    CColModelSAInterface*   GetCollision();
-    void                    SetClump( RpClump *clump );
 
     void                    AssignAtomics( CAtomicHierarchySAInterface *atomics );
 

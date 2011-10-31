@@ -4,6 +4,7 @@
 	Version="9,00"
 	Name="Client - Game SA"
 	ProjectGUID="{E13D1441-438B-4A03-AB79-5E8EF08EE414}"
+	RootNamespace="Client - Game SA"
 	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
@@ -732,6 +733,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CTransformationSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CVehicleModelInfoSA.cpp"
 				>
 			</File>
@@ -1270,6 +1275,10 @@
 			</File>
 			<File
 				RelativePath="CTrailerSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CTransformationSA.h"
 				>
 			</File>
 			<File

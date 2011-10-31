@@ -30,51 +30,53 @@ public:
     
     CVector ()
     {
-        this->fX = 0;
-        this->fY = 0;
-        this->fZ = 0;
+        fX = 0;
+        fY = 0;
+        fZ = 0;
     };
     
-    CVector ( float fX, float fY, float fZ) 
+    CVector ( float x, float y, float z) 
     { 
-        this->fX = fX;
-        this->fY = fY;
-        this->fZ = fZ;
+        fX = x;
+        fY = y;
+        fZ = z;
     }
 
-    float Normalize ( void ) 
-    { 
-        double t = sqrt(fX*fX + fY*fY + fZ*fZ);
-        if ( t > FLOAT_EPSILON )
-        {
-            double fX2 = fX / t;
-            double fY2 = fY / t;
-            double fZ2 = fZ / t;
-            fX = (float)fX2;
-            fY = (float)fY2;
-            fZ = (float)fZ2;
-        }
-        else
-            t = 0;
-        return static_cast < float > ( t );
+    inline void Reset ()
+    {
+        fX = 0;
+        fY = 0;
+        fZ = 0;
     }
 
-    float Length ( void ) const
+    inline float Normalize () 
+    { 
+        double length = Length();
+
+        if ( t < FLOAT_EPSILON )
+            return 0;
+
+        this /= length;
+
+        return (float)length;
+    }
+
+    inline float Length () const
     {
         return sqrt ( (fX*fX) + (fY*fY) + (fZ*fZ) );
     }
 
-    float LengthSquared ( void ) const
+    inline float LengthSquared () const
     {
         return (fX*fX) + (fY*fY) + (fZ*fZ);
     }
 
-    float DotProduct ( const CVector * param ) const
+    inline float DotProduct ( const CVector *param ) const
     {
         return fX*param->fX + fY*param->fY + fZ*param->fZ;
     }
 
-    void CrossProduct ( const CVector * param ) 
+    inline void CrossProduct ( const CVector *param ) 
     { 
         float _fX = fX, _fY = fY, _fZ = fZ;
         fX = _fY * param->fZ - param->fY * _fZ;

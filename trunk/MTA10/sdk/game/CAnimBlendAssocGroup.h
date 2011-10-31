@@ -12,8 +12,6 @@
 #ifndef __CAnimBlendAssocGroup_H
 #define __CAnimBlendAssocGroup_H
 
-typedef unsigned char BYTE;
-typedef unsigned long AssocGroupId;
 class CAnimBlendStaticAssociation;
 class RpClump;
 class CAnimBlock;

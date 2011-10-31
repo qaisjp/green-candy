@@ -32,6 +32,11 @@
 
 // Yet to analyze
 typedef void   RpWorld;
+class RwCamera;
+class RpAtomic;
+class RpClump;
+class RwTexture;
+class RpGeometry;
 
 typedef RwCamera*   (*RwCameraPreCallback) (RwCamera * camera);
 typedef RwCamera*   (*RwCameraPostCallback) (RwCamera * camera);
@@ -125,9 +130,11 @@ struct RwVertex
 };
 
 // Macros used by RW, taken from SGU :)
-#define LIST_APPEND(link, item) ( (item).next = (link), (item).prev = (link).prev, (item).prev->next = (item), (item).next->prev = (item) )
-#define LIST_INSERT(link, item) ( (item).next = (link).next, (item).prev = (link), (item).prev->next = (item), (item).next->prev = (item) )
+#define LIST_APPEND(link, item) ( (item).next = &(link), (item).prev = (link).prev, (item).prev->next = &(item), (item).next->prev = &(item) )
+#define LIST_INSERT(link, item) ( (item).next = (link).next, (item).prev = &(link), (item).prev->next = (item), (item).next->prev = (item) )
 #define LIST_REMOVE(link) ( (link).prev->next = (link).next, (link).next->prev = (link).prev )
+#define LIST_CLEAR(link) ( (link).prev = &(link), (link).next = &(link) )
+#define LIST_EMPTY(link) ( (link).prev == &(link) && (link).next == &(link) )
 
 template < class type >
 struct RwListEntry
@@ -200,21 +207,6 @@ public:
     unsigned int            m_flags;
     DWORD                   m_pad2;
 };
-class RpSkeleton
-{
-public:
-    unsigned int            m_boneCount;
-    unsigned int            m_unknown;      // 4
-    void*                   m_unknown2;     // 8
-    RwMatrix*               m_boneMatrices; // 12
-    unsigned int            m_unknown3;     // 16
-    void*                   m_unknown5;     // 20
-    RwV4d                   m_vertexInfo;   // 24
-    unsigned int            m_unknown6;     // 28
-    RpSkeletonEx*           m_data;         // 32
-    BYTE                    m_pad[28];      // 36
-    unsigned char*          m_boneParent2;  // 64
-};
 class RwAnimInfo    // dynamic
 {
     void*                   m_unknown;      // 0
@@ -232,6 +224,21 @@ public:
     // Dynamically extended data
     RwAnimInfo              m_info[32];
 };
+class RpSkeleton
+{
+public:
+    unsigned int            m_boneCount;
+    unsigned int            m_unknown;      // 4
+    void*                   m_unknown2;     // 8
+    RwMatrix*               m_boneMatrices; // 12
+    unsigned int            m_unknown3;     // 16
+    void*                   m_unknown5;     // 20
+    RwV4d                   m_vertexInfo;   // 24
+    unsigned int            m_unknown6;     // 28
+    RpAnimation*            m_curAnim;      // 32, ???
+    BYTE                    m_pad[28];      // 36
+    unsigned char*          m_boneParent2;  // 64
+};
 class RpAnimHierarchy
 {
 public:
@@ -239,13 +246,19 @@ public:
     unsigned int            m_boneCount;    // 4
     char*                   m_data;         // 8
     void*                   m_unknown4;     // 12
-    RpBoneInfo*             m_boneInfo;     // 16
-    unsigned int            m_unknown4;     // 20
+    RwBoneInfo*             m_boneInfo;     // 16
+    unsigned int            m_unknown5;     // 20
     RpAnimHierarchy*        m_this;         // 24
     unsigned char           m_unknown;      // 28
     unsigned char           m_unknown2;     // 29
     unsigned short          m_unknown3;     // 30
     RpAnimation*            m_anim;         // 32
+};
+class RwObjectFrame : public RwObject
+{
+public:
+    RwListEntry <RwObjectFrame>     m_lFrame;
+    void*                           m_callback;
 };
 class RwFrame : public RwObject
 {
@@ -290,22 +303,9 @@ public:
     RwList <RwTexture>              textures;
     RwListEntry <RwTexDictionary>   globalTXDs;
 };
-class RwTexture
+class RwRaster
 {
-    RwRaster*                   raster;                         // 0
-    RwTexDictionary*            txd;                            // 4
-    RwListEntry <RwTexture>     TXDList;                        // 8
-    char                        name[RW_TEXTURE_NAME_LENGTH];   // 16
-    char                        mask[RW_TEXTURE_NAME_LENGTH];   // 48
-    unsigned int                flags;                          // 80
-    unsigned int                refs;                           // 84
-};
-struct RwTextureCoordinates
-{
-    float u,v;
-};
-struct RwRaster
-{
+public:
     RwRaster*       parent;                 // 0
     unsigned char*  pixels;                 // 4
     unsigned char*  palette;                // 8
@@ -320,11 +320,19 @@ struct RwRaster
     int             origWidth, origHeight, origDepth;
     void*           renderResource;
 };
-class RwObjectFrame : public RwObject
+class RwTexture
 {
-public:
-    RwListEntry <RwObjectFrame>     m_lFrame;
-    void*                           m_callback;
+    RwRaster*                   raster;                         // 0
+    RwTexDictionary*            txd;                            // 4
+    RwListEntry <RwTexture>     TXDList;                        // 8
+    char                        name[RW_TEXTURE_NAME_LENGTH];   // 16
+    char                        mask[RW_TEXTURE_NAME_LENGTH];   // 48
+    unsigned int                flags;                          // 80
+    unsigned int                refs;                           // 84
+};
+struct RwTextureCoordinates
+{
+    float u,v;
 };
 struct RwCameraFrustum
 {
@@ -357,6 +365,33 @@ class RwRender
 {
 public:
     unsigned int            m_unknown;
+};
+struct RpMaterialLighting
+{
+    float ambient, specular, diffuse;
+};
+class RpMaterial
+{
+public:
+    RwTexture*          m_texture;      // 0
+    RwColor             m_color;        // 4
+    void*               m_render;       // 8
+    RpMaterialLighting  m_lighting;     // 12
+    unsigned short      m_refs;         // 24
+    short               m_id;           // 26
+    void*               m_unknown;      // 28
+};
+class RpMaterials
+{
+public:
+                    RpMaterials( unsigned int count );
+                    ~RpMaterials();
+
+    bool            Add( RpMaterial *mat );
+
+    RpMaterial**    m_data;
+    unsigned int    m_entries;
+    unsigned int    m_max;
 };
 struct RpInterpolation
 {
@@ -414,7 +449,7 @@ public:
 class RwAtomicZBufferEntry
 {
 public:
-    RwAtomic*               m_atomic;
+    RpAtomic*               m_atomic;
     RpAtomicCallback        m_render;
     float                   m_distance;
 };
@@ -458,7 +493,7 @@ class RpClump : public RwObject
 public:
     RwList <RpAtomic>       m_atomics;          // 8
     RwList <RpLight>        m_lights;           // 16
-    RwList <RpCamera>       m_cameras;          // 24
+    RwList <RwCamera>       m_cameras;          // 24
     RwListEntry <RpClump>   m_globalClumps;     // 32
     RpClumpCallback         m_callback;         // 40
 
@@ -484,33 +519,6 @@ public:
     RpClump*                ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data );
 
     void                    GetBoneTransform( CVector *offset );
-};
-struct RpMaterialLighting
-{
-    float ambient, specular, diffuse;
-};
-class RpMaterial
-{
-public:
-    RwTexture*          m_texture;      // 0
-    RwColor             m_color;        // 4
-    void*               m_render;       // 8
-    RpMaterialLighting  m_lighting;     // 12
-    unsigned short      m_refs;         // 24
-    short               m_id;           // 26
-    void*               m_unknown;      // 28
-};
-class RpMaterials
-{
-public:
-                    RpMaterials( unsigned int count );
-                    ~RpMaterials();
-
-    bool            Add( RpMaterial *mat );
-
-    RpMaterial**    m_data;
-    unsigned int    m_entries;
-    unsigned int    m_max;
 };
 struct RpTriangle
 {
@@ -574,7 +582,7 @@ public:
     BYTE                    m_pad[12];                          // 108
     Rw2dfx                  m_2dfx;                             // 120
 
-    bool                    ForAllMateria( bool (*callback)( RwMaterial *mat, void *data ), void *data );
+    bool                    ForAllMateria( bool (*callback)( RpMaterial *mat, void *data ), void *data );
     bool                    IsAlpha();
 };
 class RwInterface   // size: 1456

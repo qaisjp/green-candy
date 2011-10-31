@@ -24,7 +24,7 @@ class CAnimBlendHierarchySAInterface;
 class CAnimBlendAssociationSAInterface
 {
 public:
-    virtual                             ~CAnimBlendAssoctiationSAInterface() = 0;
+    virtual                             ~CAnimBlendAssociationSAInterface() = 0;
 
     void*                               m_unknown;                                          // 4
     void*                               m_parent;                                           // 8

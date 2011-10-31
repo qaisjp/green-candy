@@ -32,10 +32,10 @@ public:
                                 CTaskManagementSystemSA             ( void );
                                 ~CTaskManagementSystemSA            ( void );
 
-    CTask *                     AddTask                             ( CTaskSA * pTask );
+    CTaskSA*                    AddTask                             ( CTaskSA * pTask );
     void                        RemoveTask                          ( CTaskSAInterface * pTaskInterface );
-    CTask *                     GetTask                             ( CTaskSAInterface * pTaskInterface );
-    CTask *                     CreateAppropriateTask               ( CTaskSAInterface * pTaskInterface, int iTaskType );
+    CTaskSA*                    GetTask                             ( CTaskSAInterface * pTaskInterface );
+    CTaskSA*                    CreateAppropriateTask               ( CTaskSAInterface * pTaskInterface, int iTaskType );
 
 private:
     struct STaskListItem

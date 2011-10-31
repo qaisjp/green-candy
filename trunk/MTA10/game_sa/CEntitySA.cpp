@@ -16,7 +16,77 @@
 
 #include "StdInc.h"
 
-extern CGameSA * pGame;
+extern CGameSA *pGame;
+
+CPlaceableSAInterface::CPlaceableSAInterface()
+{
+    m_position.fX = 0; m_position.fY = 0; m_position.fZ = 0;
+
+    m_heading = 0;
+    m_matrix = NULL;
+}
+
+void CPlaceableSAInterface::AllocateMatrix()
+{
+    CTransformSAInterface *trans;
+
+    if ( m_matrix )
+    {
+        // We already have a matrix, make sure its in the active list
+        LIST_REMOVE( m_matrix );
+        LIST_APPEND( pTransformation->m_activeList, m_matrix );
+        return;
+    }
+
+    // Extend the matrix list
+    if ( !pTransformation->IsFreeMatrixAvailable() && !pTransformation->FreeUnimportantMatrix() )
+        pTransformation->NewMatrix();
+
+    // Allocate it
+    trans = pTransformation->Allocate();
+
+    trans->m_entity = this;
+    m_matrix = trans;
+}
+
+void CPlaceableSAInterface::FreeMatrix()
+{
+    CTransformSAInterface *trans = m_matrix;
+
+    // Transform the entity
+    m_position = CVector ( m_matrix->pos.fX, m_matrix->pos.fY, m_matrix->pos.fZ );
+    m_heading = atan( m_matrix->up.fY ) / -m_matrix->up.fX;
+
+    // Free the matrix
+    m_matrix = NULL;
+    trans->m_entity = NULL;
+
+    LIST_REMOVE( m_matrix );
+    LIST_APPEND( pTransformation->m_freeList, trans );
+}
+
+CEntitySAInterface::CEntitySAInterface()
+{
+    m_status = 4;
+    m_entityFlags = ENTITY_VISIBLE | ENTITY_BACKFACECULL;
+
+    m_scanCode = 0;
+
+    m_model = 0xFFFF;
+    m_rwObject = NULL;
+
+    m_iplIndex = 0;
+    m_areaCode = 0;
+
+    m_randomSeek = rand();
+
+    m_references = NULL;
+    m_lastRenderedLink = NULL;
+    
+    m_numLOD = 0;
+    m_numRenderedLOD = 0;
+    m_lod = NULL;
+}
 
 CEntitySA::CEntitySA ( void )
 {

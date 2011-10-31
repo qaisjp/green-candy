@@ -14,40 +14,40 @@
 
 #include "CEntity.h"
 
-class CPhysical : public virtual CEntity
+class CPhysical : public CEntity
 {
 public:
-    virtual             ~CPhysical ( void ) {};
+    virtual             ~CPhysical () {};
 
     virtual void        GetMoveSpeed                ( CVector moveSpeed ) = 0;
     virtual void        GetTurnSpeed                ( CVector turnSpeed ) = 0;
     virtual void        SetMoveSpeed                ( CVector moveSpeed ) = 0;
     virtual void        SetTurnSpeed                ( CVector turnSpeed ) = 0;
 
-    virtual float       GetMass                     ( void ) = 0;
+    virtual float       GetMass                     () = 0;
     virtual void        SetMass                     ( float fMass ) = 0;
-    virtual float       GetTurnMass                 ( void ) = 0;
+    virtual float       GetTurnMass                 () = 0;
     virtual void        SetTurnMass                 ( float fTurnMass ) = 0;
-    virtual float       GetElasticity               ( void ) = 0;
+    virtual float       GetElasticity               () = 0;
     virtual void        SetElasticity               ( float fElasticity ) = 0;
-    virtual float       GetBuoyancyConstant         ( void ) = 0;
+    virtual float       GetBuoyancyConstant         () = 0;
     virtual void        SetBuoyancyConstant         ( float fBuoyancyConstant ) = 0;
 
     virtual void        ProcessCollision() = 0;
 
-    virtual float       GetDamageImpulseMagnitude   ( void ) = 0;
+    virtual float       GetDamageImpulseMagnitude   () = 0;
     virtual void        SetDamageImpulseMagnitude   ( float fMagnitude ) = 0;
-    virtual CEntity*    GetDamageEntity             ( void ) = 0;
-    virtual void        SetDamageEntity             ( CEntity* pEntity ) = 0;
-    virtual void        ResetLastDamage             ( void ) = 0;
+    virtual CEntity*    GetDamageEntity             () = 0;
+    virtual void        SetDamageEntity             ( CEntity *pEntity ) = 0;
+    virtual void        ResetLastDamage             () = 0;
 
-    virtual CEntity *   GetAttachedEntity           ( void ) = 0;
+    virtual CEntity*    GetAttachedEntity           () = 0;
     virtual void        AttachEntityToEntity        ( CPhysical& Entity, const CVector& vecPosition, const CVector& vecRotation ) = 0;
     virtual void        DetachEntityFromEntity      ( float fUnkX, float fUnkY, float fUnkZ, bool bUnk ) = 0;
     virtual void        GetAttachedOffsets          ( CVector & vecPosition, CVector & vecRotation ) = 0;
     virtual void        SetAttachedOffsets          ( CVector & vecPosition, CVector & vecRotation ) = 0;
 
-    virtual float       GetLighting                 ( void ) = 0;
+    virtual float       GetLighting                 () = 0;
     virtual void        SetLighting                 ( float fLighting ) = 0;
 };
 

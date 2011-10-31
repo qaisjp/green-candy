@@ -20,7 +20,7 @@
 class CGaragesSAInterface
 {
 public:
-    CGarageSAInterface      Garages [ MAX_GARAGES ];
+    CGarageSAInterface          Garages [ MAX_GARAGES ];
 };
 
 class CGaragesSA : public CGarages
