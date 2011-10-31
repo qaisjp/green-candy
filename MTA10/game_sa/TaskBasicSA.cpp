@@ -113,7 +113,9 @@ CTaskComplexDieSA::CTaskComplexDieSA ( const eWeaponType eMeansOfDeath,
     // TODO: Find out the real size
     CreateTaskInterface();
 
-    if ( !IsValid () ) return;
+    if ( !IsValid () )
+        return;
+
     DWORD dwFunc = FUNC_CTaskComplexDie__Constructor;
     DWORD dwThisInterface = (DWORD)this->GetInterface ();
 
@@ -142,10 +144,14 @@ CTaskSimpleStealthKillSA::CTaskSimpleStealthKillSA ( bool bKiller, CPed * pPed, 
     // TODO: Find out the real size
     CreateTaskInterface();
 
-    if ( !IsValid () ) return;
+    if ( !IsValid () )
+        return;
+
+    CPedSA *ped = dynamic_cast <CPedSA*> ( pPed );
+
     DWORD dwFunc = FUNC_CTaskSimpleStealthKill__Constructor;
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
-    DWORD dwPedInterface = (DWORD)pPed->GetPedInterface ();
+    DWORD dwThisInterface = (DWORD)m_interface;
+    DWORD dwPedInterface = (DWORD)ped->GetInterface();
 
     _asm
     {
@@ -163,9 +169,11 @@ CTaskSimpleDeadSA::CTaskSimpleDeadSA ( unsigned int uiDeathTimeMS, bool bUnk2 )
 
     CreateTaskInterface();
 
-    if ( !IsValid () ) return;
+    if ( !IsValid () )
+        return;
+
     DWORD dwFunc = FUNC_CTaskSimpleDead__Constructor;
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
+    DWORD dwThisInterface = (DWORD)m_interface;
     
     _asm
     {
@@ -177,18 +185,21 @@ CTaskSimpleDeadSA::CTaskSimpleDeadSA ( unsigned int uiDeathTimeMS, bool bUnk2 )
 }
 
 
-CTaskComplexSunbatheSA::CTaskComplexSunbatheSA ( CObject* pTowel, const bool bStartStanding )
+CTaskComplexSunbatheSA::CTaskComplexSunbatheSA ( CObject* pTowel, bool bStartStanding )
 {
     DEBUG_TRACE("CTaskComplexSunbatheSA::CTaskComplexSunbatheSA ( CObject* pTowel, const bool bStartStanding )");
 
     // TODO: Find out the real size
     CreateTaskInterface();
 
-    if ( !IsValid () ) return;
+    if ( !IsValid () )
+        return;
+
+    CObjectSA *obj = dynamic_cast <CObjectSA*> ( pTowel );
+
     DWORD dwFunc = FUNC_CTaskComplexSunbathe__Constructor;
-    DWORD dwThisInterface = (DWORD)this->GetInterface ();
-    DWORD dwObjectInterface = 0;
-    if ( pTowel ) dwObjectInterface = (DWORD)pTowel->GetObjectInterface ();
+    DWORD dwThisInterface = (DWORD)m_interface;
+    DWORD dwObjectInterface = (DWORD)obj->GetInterface();
 
     _asm
     {
@@ -199,13 +210,10 @@ CTaskComplexSunbatheSA::CTaskComplexSunbatheSA ( CObject* pTowel, const bool bSt
     }
 }
 
-
-void CTaskComplexSunbatheSA::SetEndTime ( DWORD dwTime )
+void CTaskComplexSunbatheSA::SetEndTime ( unsigned int time )
 {
-    CTaskComplexSunbatheSAInterface * thisInterface = (CTaskComplexSunbatheSAInterface*)this->GetInterface();
-    thisInterface->m_BathingTimer.dwTimeEnd = dwTime;
+    GetInterface()->m_BathingTimer.m_timeStart = time;
 }
-
 
 ////////////////////
 // Player on foot //
@@ -216,9 +224,11 @@ CTaskSimplePlayerOnFootSA::CTaskSimplePlayerOnFootSA()
 
     CreateTaskInterface();
 
-    if ( !IsValid () ) return;
+    if ( !IsValid () )
+        return;
+
     DWORD dwFunc = (DWORD)FUNC_CTASKSimplePlayerOnFoot__Constructor;
-    DWORD dwThisInterface = (DWORD)this->GetInterface();
+    DWORD dwThisInterface = (DWORD)m_interface;
 
     _asm
     {
@@ -236,9 +246,11 @@ CTaskComplexFacialSA::CTaskComplexFacialSA()
 
     CreateTaskInterface();
 
-    if ( !IsValid () ) return;
+    if ( !IsValid () )
+        return;
+
     DWORD dwFunc = (DWORD)FUNC_CTASKComplexFacial__Constructor;
-    DWORD dwThisInterface = (DWORD)this->GetInterface();
+    DWORD dwThisInterface = (DWORD)m_interface;
 
     _asm
     {

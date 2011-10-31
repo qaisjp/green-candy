@@ -24,19 +24,19 @@ class CGarageSAInterface : public CGarageInterface
 {
 public:
     CVector vecPosition;                //  0
-    FLOAT DirectionA_X, DirectionA_Y;   // 12
-    FLOAT DirectionB_X, DirectionB_Y;   // 20
-    FLOAT Height, Width, Depth;         // 28
-    FLOAT Left, Right, Front, Back;     // 40
-    FLOAT DoorPosition;                 // 56
+    float DirectionA_X, DirectionA_Y;   // 12
+    float DirectionB_X, DirectionB_Y;   // 20
+    float Height, Width, Depth;         // 28
+    float Left, Right, Front, Back;     // 40
+    float DoorPosition;                 // 56
     DWORD pad;                          // 60
     DWORD pad2;                         // 64
-    char Name[ 8 ];                     // 68
-    BYTE Type;                          // 76
-    BYTE DoorState;                     // 77
-    BYTE DoorFlags;                     // 78
-    BYTE OriginalType;                  // 79
-    BYTE pad3 [ 132 ];                  // 80
+    char Name[8];                       // 68
+    unsigned char Type;                 // 76
+    unsigned char DoorState;            // 77
+    unsigned char DoorFlags;            // 78
+    unsigned char OriginalType;         // 79
+    BYTE pad3[132];                     // 80
 };
 
 class CGarageSA : public CGarage

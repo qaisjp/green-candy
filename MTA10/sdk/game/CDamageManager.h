@@ -127,24 +127,29 @@ enum eLights
 class CDamageManager
 {
 public:
-    virtual BYTE            GetEngineStatus         ( void ) = 0;
-    virtual VOID            SetEngineStatus         ( BYTE bEngineState ) = 0;
-    virtual BYTE            GetDoorStatus           ( eDoors bDoor ) = 0;
-    virtual VOID            SetDoorStatus           ( eDoors bDoor, BYTE bDoorStatus ) = 0;
-    virtual BYTE            GetWheelStatus          ( eWheels bTire ) = 0;
-    virtual VOID            SetWheelStatus          ( eWheels bTire, BYTE bTireStatus ) = 0;
-    virtual BYTE            GetPanelStatus          ( BYTE bPanel ) = 0;
-    virtual unsigned long   GetPanelStatus          ( void ) = 0;
-    virtual VOID            SetPanelStatus          ( BYTE bPanel, BYTE bPanelStatus ) = 0;
-    virtual void            SetPanelStatus          ( unsigned long ulStatus ) = 0;
-    virtual BYTE            GetLightStatus          ( BYTE bLight ) = 0;
-    virtual unsigned char   GetLightStatus          ( void ) = 0;
-    virtual VOID            SetLightStatus          ( BYTE bLight, BYTE bLightStatus  ) = 0;
-    virtual void            SetLightStatus          ( unsigned char ucStatus ) = 0;
-    virtual BYTE            GetAeroplaneCompStatus  ( BYTE CompID ) = 0;
-    virtual VOID            SetAeroplaneCompStatus  ( BYTE CompID, BYTE Status) = 0; //component ids begin at 12 - probably
+    virtual unsigned char   GetEngineStatus         () = 0;
+    virtual void            SetEngineStatus         ( unsigned char status ) = 0;
 
-    virtual VOID            FuckCarCompletely       ( BOOL bKeepWheels ) = 0;
+    virtual unsigned char   GetDoorStatus           ( eDoors bDoor ) = 0;
+    virtual void            SetDoorStatus           ( eDoors bDoor, unsigned char status ) = 0;
+
+    virtual unsigned char   GetWheelStatus          ( eWheels bTire ) = 0;
+    virtual void            SetWheelStatus          ( eWheels bTire, unsigned char status ) = 0;
+
+    virtual unsigned char   GetPanelStatus          ( unsigned char panel ) = 0;
+    virtual unsigned long   GetPanelStatus          () = 0;
+    virtual void            SetPanelStatus          ( unsigned char panel, unsigned char status ) = 0;
+    virtual void            SetPanelStatus          ( unsigned long ulStatus ) = 0;
+
+    virtual unsigned char   GetLightStatus          ( unsigned char light ) = 0;
+    virtual unsigned char   GetLightStatus          () = 0;
+    virtual void            SetLightStatus          ( unsigned char light, unsigned char status ) = 0;
+    virtual void            SetLightStatus          ( unsigned char ucStatus ) = 0;
+
+    virtual unsigned char   GetAeroplaneCompStatus  ( unsigned char id ) = 0;
+    virtual void            SetAeroplaneCompStatus  ( unsigned char id, unsigned char status ) = 0; //component ids begin at 12 - probably
+
+    virtual void            FuckCarCompletely       ( bool keepWheels ) = 0;
 };
 
 #endif

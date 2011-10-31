@@ -14,6 +14,8 @@
 #ifndef _CTexDictionarySA_H_
 #define _CTexDictionarySA_H_
 
+class CTextureSA;
+
 class CTexDictionarySA
 {
     friend class CTextureManagerSA;
@@ -28,7 +30,7 @@ protected:
     bool                    Import( unsigned short id );
     bool                    Remove( unsigned short id );
 
-    typedef list <CTextureSA*> textureList_t;
+    typedef std::list <CTextureSA*> textureList_t;
 
     textureList_t           m_textures;
 };

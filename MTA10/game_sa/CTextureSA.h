@@ -25,18 +25,24 @@ public:
     const char*             GetName();
     unsigned int            GetHash();
 
+#if 0
     bool                    IsImported( unsigned short id );
+#endif
 
 protected:
+#if 0
     bool                    Import( unsigned short id );
     bool                    Remove( unsigned short id );
 
     typedef list <CBaseModelInfoSAInterface*> importList_t;
+#endif
 
     CTexDictionarySA*       m_dictionary;
     RwTexture*              m_texture;
     
+#if 0
     importList_t            m_imported;
+#endif
 };
 
 #endif

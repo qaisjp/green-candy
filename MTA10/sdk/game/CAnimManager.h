@@ -17,7 +17,6 @@
 #define MAX_ANIMATIONS      500
 #define MAX_ANIM_BLOCKS     294
 
-typedef unsigned long AssocGroupId;
 typedef unsigned long AnimationId;
 
 class CAnimBlendAssocGroup;
@@ -38,12 +37,12 @@ class CAnimManager
 {
     friend class CAnimBlendAssociation;
 public:
-    virtual void                        Initialize                              ( void ) = 0;
-    virtual void                        Shutdown                                ( void ) = 0;
+    virtual void                        Initialize                              () = 0;
+    virtual void                        Shutdown                                () = 0;
 
-    virtual int                         GetNumAnimations                        ( void ) = 0;
-    virtual int                         GetNumAnimBlocks                        ( void ) = 0;
-    virtual int                         GetNumAnimAssocDefinitions              ( void ) = 0;
+    virtual unsigned int                GetNumAnimations                        () = 0;
+    virtual unsigned int                GetNumAnimBlocks                        () = 0;
+    virtual unsigned int                GetNumAnimAssocDefinitions              () = 0;
 
     virtual CAnimBlendHierarchy *       GetAnimation                            ( int ID ) = 0;
     virtual CAnimBlendHierarchy *       GetAnimation                            ( const char * szName, CAnimBlock * pBlock ) = 0;
@@ -51,50 +50,35 @@ public:
     
     virtual CAnimBlock *                GetAnimationBlock                       ( int ID ) = 0;
     virtual CAnimBlock *                GetAnimationBlock                       ( const char * szName ) = 0;
-    virtual int                         GetAnimationBlockIndex                  ( const char * szName ) = 0;
-    virtual int                         RegisterAnimBlock                       ( const char * szName ) = 0;
+    virtual unsigned int                GetAnimationBlockIndex                  ( const char * szName ) = 0;
+    virtual unsigned int                RegisterAnimBlock                       ( const char * szName ) = 0;
         
     virtual CAnimBlendAssocGroup *      GetAnimBlendAssoc                       ( AssocGroupId groupID ) = 0;
     virtual AssocGroupId                GetFirstAssocGroup                      ( const char * szName ) = 0;
 
-    virtual const char *                GetAnimGroupName                        ( AssocGroupId groupID ) = 0;
-    virtual const char *                GetAnimBlockName                        ( AssocGroupId groupID ) = 0;
+    virtual const char*                 GetAnimGroupName                        ( AssocGroupId groupID ) = 0;
+    virtual const char*                 GetAnimBlockName                        ( AssocGroupId groupID ) = 0;
 
     virtual CAnimBlendAssociation *     CreateAnimAssociation                   ( AssocGroupId animGroup, AnimationId animID ) = 0;
     virtual CAnimBlendAssociation *     GetAnimAssociation                      ( AssocGroupId animGroup, AnimationId animID ) = 0;
     virtual CAnimBlendAssociation *     GetAnimAssociation                      ( AssocGroupId animGroup, const char * szAnimName ) = 0;
-    virtual CAnimBlendAssociation *     AddAnimation                            ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID ) = 0;
-    virtual CAnimBlendAssociation *     AddAnimation                            ( RpClump * pClump, CAnimBlendHierarchy *, int ID ) = 0;
-    virtual CAnimBlendAssociation *     AddAnimationAndSync                     ( RpClump * pClump, CAnimBlendAssociation * pAssociation, AssocGroupId animGroup, AnimationId animID ) = 0;
-    virtual CAnimBlendAssociation *     BlendAnimation                          ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID, float fBlendDelta ) = 0;
-    virtual CAnimBlendAssociation *     BlendAnimation                          ( RpClump * pClump, CAnimBlendHierarchy * pHierarchy, int ID, float fBlendDelta ) = 0;
     
     virtual void                        AddAnimBlockRef                         ( int ID ) = 0;
     virtual void                        RemoveAnimBlockRef                      ( int ID ) = 0;
     virtual void                        RemoveAnimBlockRefWithoutDelete         ( int ID ) = 0;
-    virtual int                         GetNumRefsToAnimBlock                   ( int ID ) = 0;
+    virtual unsigned int                GetNumRefsToAnimBlock                   ( int ID ) = 0;
     virtual void                        RemoveAnimBlock                         ( int ID ) = 0;
     
     virtual AnimAssocDefinition *       AddAnimAssocDefinition                  ( const char * szBlockName, const char * szAnimName, AssocGroupId animGroup, AnimationId animID, AnimDescriptor * pDescriptor ) = 0;
-    virtual void                        ReadAnimAssociationDefinitions          ( void ) = 0;
-    virtual void                        CreateAnimAssocGroups                   ( void ) = 0;
+    virtual void                        ReadAnimAssociationDefinitions          () = 0;
+    virtual void                        CreateAnimAssocGroups                   () = 0;
 
     virtual void                        UncompressAnimation                     ( CAnimBlendHierarchy * pHierarchy ) = 0;
     virtual void                        RemoveFromUncompressedCache             ( CAnimBlendHierarchy * pHierarchy ) = 0;
 
     virtual void                        LoadAnimFile                            ( const char * szFile ) = 0;
-    virtual void                        LoadAnimFile                            ( RwStream * pStream, bool b1, const char * sz1 ) = 0;
-    virtual void                        LoadAnimFiles                           ( void ) = 0;
-    virtual void                        RemoveLastAnimFile                      ( void ) = 0;
-
-    // Non members
-    virtual bool                        HasAnimGroupLoaded                      ( AssocGroupId groupID ) = 0;
-    virtual CAnimBlendAssociation *     RpAnimBlendClumpGetFirstAssociation     ( RpClump * pClump ) = 0;
-    virtual CAnimBlendAssociation *     RpAnimBlendClumpGetAssociation          ( RpClump * pClump, const char * szAnimName ) = 0;
-    virtual CAnimBlendAssociation *     RpAnimBlendClumpGetAssociation          ( RpClump * pClump, AnimationId animID ) = 0;
-    virtual CAnimBlendAssociation *     RpAnimBlendGetNextAssociation           ( CAnimBlendAssociation * pAssociation ) = 0;
-    virtual int                         RpAnimBlendClumpGetNumAssociations      ( RpClump * pClump ) = 0;
-    virtual void                        RpAnimBlendClumpUpdateAnimations        ( RpClump * pClump, float f1, bool b1 ) = 0;
+    virtual void                        LoadAnimFiles                           () = 0;
+    virtual void                        RemoveLastAnimFile                      () = 0;
 
     // MTA members
     virtual CAnimBlendAssociation *     GetAnimBlendAssociation                 ( CAnimBlendAssociationSAInterface * pInterface ) = 0;

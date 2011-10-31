@@ -27,20 +27,32 @@
 #define FUNC_AttachEntityToEntity               0x54D570
 #define FUNC_DetatchEntityFromEntity            0x5442F0
 
-#define PHYSICAL_MAXNOOFCOLLISIONRECORDS        6
+#define MAX_COLL_RECORDS                        6
 
-class CPhysicalSAInterface : public CEntitySAInterface // begin +68 (244 bytes total?)
+class CPhysicalSAInterface : public CEntitySAInterface // begin +56 (256 bytes total?)
 {
 public:
-/* IMPORTANT: KEEP the padding in CVehicle UP-TO-DATE if you add something here (or eventually pad someplace else) */
+                                    CPhysicalSAInterface();
+                                    ~CPhysicalSAInterface();
+
+    virtual void __thiscall         ProcessEntityCollisions() = 0;
+
+    float                   m_unk13;                    // 56
+
+    BYTE                    m_pad2[3];                  // 60
+    unsigned char           m_numImmunities;            // 63
+    unsigned int            m_nodeFlags;                // 64
+
     CVector                 m_velocity;                 // 68
     CVector                 m_spin;                     // 80
-    float                   m_pad[12];                  // 92
+    CVector                 m_vecUnk;                   // 92
+    CVector                 m_vecUnk2;                  // 104
+    CVector                 m_vecUnk3;                  // 116
+    CVector                 m_vecUnk4;                  // 128
     float                   m_mass;                     // 140
     float                   m_turnMass;                 // 144
-
-    DWORD                   m_unk;                      // 148
-    DWORD                   m_physUnk;                  // 152
+    float                   m_massUnk;                  // 148
+    float                   m_physUnk;                  // 152
 
     float                   m_elasticity;               // 156
     float                   m_buoyancyConstant;         // 160
@@ -49,83 +61,75 @@ public:
     DWORD                   m_unk2;                     // 176
     CPtrNodeDoubleSA*       m_link;                     // 180
 
-    BYTE                    m_unk3;                     // 184
-    BYTE                    m_collRecords;              // 185
-    BYTE                    m_unk4;                     // 186
-    BYTE                    m_unk5;                     // 187
+    unsigned char           m_unk3;                     // 184
+    unsigned char           m_numCollRecords;           // 185
+    unsigned char           m_unk4;                     // 186
+    unsigned char           m_unk5;                     // 187
 
-    float                   m_pad2[6];                  // 188
+    float                   m_collRecords[MAX_COLL_RECORDS];    // 188
 
     float                   m_distanceTravelled;        // 212
     float                   m_damageImpulseMagnitude;   // 216
     CEntitySAInterface*     m_damageEntity;             // 220
 
-    BYTE                    m_pad3[28];                 // 224
+    CVector                 m_vecUnk5;                  // 224
+    CVector                 m_vecUnk6;                  // 236
+
+    unsigned short          m_unk6;                     // 248
+    unsigned short          m_unk7;                     // 250
+
     CEntitySAInterface*     m_attachedTo;               // 252
     CVector                 m_attachOffset;             // 256
     CVector                 m_attachRotation;           // 268
-    BYTE                    m_pad4[20];                 // 280
+
+    unsigned int            m_unk10;                    // 280
+    unsigned int            m_unk11;                    // 284
+    unsigned int            m_unk12;                    // 288
+    unsigned int            m_unk9;                     // 292
+    unsigned int            m_unk8;                     // 296
+
     float                   m_lighting;                 // 300, col lighting? CPhysical::GetLightingFromCol
     float                   m_lighting2;                // 304, added to col lighting in CPhysical::GetTotalLighting
-    BYTE                    m_pad5[4];                  // 308
+    float                   m_lighting3;                // 308
 };
 
 class CPhysicalSA : public virtual CPhysical, public virtual CEntitySA
 {
 public:
-    CVector *   GetMoveSpeed                ( CVector * vecMoveSpeed );
-    CVector *   GetTurnSpeed                ( CVector * vecTurnSpeed );
-    VOID        SetMoveSpeed                ( CVector * vecMoveSpeed );
-    VOID        SetTurnSpeed                ( CVector * vecTurnSpeed );
+    CPhysicalSAInterface* GetInterface      ();
 
-    float       GetMass                     ( void );
+    void        GetMoveSpeed                ( CVector *vecMoveSpeed );
+    void        GetTurnSpeed                ( CVector *vecTurnSpeed );
+    void        SetMoveSpeed                ( CVector *vecMoveSpeed );
+    void        SetTurnSpeed                ( CVector *vecTurnSpeed );
+
+    float       GetMass                     ();
     void        SetMass                     ( float fMass );
-    float       GetTurnMass                 ( void );
+    float       GetTurnMass                 ();
     void        SetTurnMass                 ( float fTurnMass );
-    float       GetElasticity               ( void );
+    float       GetElasticity               ();
     void        SetElasticity               ( float fElasticity );
-    float       GetBuoyancyConstant         ( void );
+    float       GetBuoyancyConstant         ();
     void        SetBuoyancyConstant         ( float fBuoyancyConstant );
 
-    VOID        ProcessCollision            ( void );
+    void        ProcessCollision            ();
 
-    float       GetDamageImpulseMagnitude   ( void );
+    float       GetDamageImpulseMagnitude   ();
     void        SetDamageImpulseMagnitude   ( float fMagnitude );
-    CEntity*    GetDamageEntity             ( void );
+    CEntity*    GetDamageEntity             ();
     void        SetDamageEntity             ( CEntity* pEntity );
-    void        ResetLastDamage             ( void );
+    void        ResetLastDamage             ();
 
-    CEntity *   GetAttachedEntity           ( void );
-    void        AttachEntityToEntity        ( CPhysical& Entity, const CVector& vecPosition, const CVector& vecRotation );
-    void        DetachEntityFromEntity      ( float fUnkX, float fUnkY, float fUnkZ, bool bUnk );
+    CEntity*    GetAttachedEntity           ();
+    void        AttachTo                    ( CPhysical& Entity, const CVector& vecPosition, const CVector& vecRotation );
+    void        DetachFrom                  ( float fUnkX, float fUnkY, float fUnkZ, bool bUnk );
     void        GetAttachedOffsets          ( CVector & vecPosition, CVector & vecRotation );
     void        SetAttachedOffsets          ( CVector & vecPosition, CVector & vecRotation );
 
-    virtual bool InternalAttachEntityToEntity ( DWORD dwEntityInterface, const CVector * vecPosition, const CVector * vecRotation );
+    virtual bool InternalAttachTo           ( DWORD dwEntityInterface, const CVector * vecPosition, const CVector * vecRotation );
 
-    float       GetLighting                 ( void );
+    float       GetLighting                 ();
     void        SetLighting                 ( float fLighting );
-
-    /*
-    VOID        SetMassMultiplier(FLOAT fMassMultiplier);
-    FLOAT       GetMassMultiplier();
-    VOID        SetAirResistance(FLOAT fAirResistance);
-    FLOAT       GetAirResistance();
-    VOID        SetCenterOfMass(CVector * vecCenterOfMass);
-    CVector * GetCenterOfMass();
-
-    BOOL        GetExtraHeavy();
-    VOID        SetExtraHeavy(BOOL bExtraHeavy);
-    BOOL        GetDoGravity();
-    VOID        SetDoGravity(BOOL bDoGravity);
-    BOOL        GetInfiniteMass();
-    VOID        SetInfiniteMass(BOOL bInfiniteMass);
-    BOOL        GetPositionFrozen();
-    VOID        SetPositionFrozen(BOOL bPositionFrozen);
-    BYTE        GetLastMaterialToHaveBeenStandingOn();
-
-    BYTE        GetLevel();
-    VOID        SetLevel(BYTE LivesInThisLevel);*/
 
 };
 

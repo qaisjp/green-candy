@@ -48,7 +48,7 @@ public:
     unsigned char m_nCountDownFrames;
 };
 
-class CTaskSimpleDuckSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleDuck
+class CTaskSimpleDuckSA : public CTaskSimpleSA, public virtual CTaskSimpleDuck
 {
 public:
     CTaskSimpleDuckSA ( void ) {};

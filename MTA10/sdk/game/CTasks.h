@@ -16,7 +16,6 @@
 #include "CTaskManager.h"
 #include "CWeaponInfo.h"
 
-typedef unsigned long AssocGroupId;
 typedef unsigned long AnimationId;
 class CEntity;
 

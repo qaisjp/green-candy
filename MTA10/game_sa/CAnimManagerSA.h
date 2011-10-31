@@ -97,8 +97,8 @@ public:
     
     CAnimBlock*                 GetAnimationBlock                       ( int ID );
     CAnimBlock*                 GetAnimationBlock                       ( const char * szName );
-    int                         GetAnimationBlockIndex                  ( const char * szName );
-    int                         RegisterAnimBlock                       ( const char * szName );
+    unsigned int                GetAnimationBlockIndex                  ( const char * szName );
+    unsigned int                RegisterAnimBlock                       ( const char * szName );
         
     CAnimBlendAssocGroup*       GetAnimBlendAssoc                       ( AssocGroupId groupID );
     AssocGroupId                GetFirstAssocGroup                      ( const char * szName );
@@ -118,11 +118,11 @@ public:
     void                        AddAnimBlockRef                         ( int ID );
     void                        RemoveAnimBlockRef                      ( int ID );
     void                        RemoveAnimBlockRefWithoutDelete         ( int ID );
-    int                         GetNumRefsToAnimBlock                   ( int ID );
+    unsigned int                GetNumRefsToAnimBlock                   ( int ID );
     void                        RemoveAnimBlock                         ( int ID );
     CAnimBlockSAInterface*      GetAnimBlock                            ( unsigned short id );
     CAnimBlockSAInterface*      GetAnimBlockByName                      ( const char *name );
-    int                         GetAnimBlockIndex                       ( const char *name );
+    unsigned int                GetAnimBlockIndex                       ( const char *name );
     
     AnimAssocDefinition*        AddAnimAssocDefinition                  ( const char * szBlockName, const char * szAnimName, AssocGroupId animGroup, AnimationId animID, AnimDescriptor * pDescriptor );
     void                        ReadAnimAssociationDefinitions          ( void );
@@ -142,7 +142,7 @@ public:
     CAnimBlendAssociation*      RpAnimBlendClumpGetAssociation          ( RpClump * pClump, const char * szAnimName );
     CAnimBlendAssociation*      RpAnimBlendClumpGetAssociation          ( RpClump * pClump, AnimationId animID );
     CAnimBlendAssociation*      RpAnimBlendGetNextAssociation           ( CAnimBlendAssociation * pAssociation );
-    int                         RpAnimBlendClumpGetNumAssociations      ( RpClump * pClump );
+    unsigned int                         RpAnimBlendClumpGetNumAssociations      ( RpClump * pClump );
     void                        RpAnimBlendClumpUpdateAnimations        ( RpClump * pClump, float f1, bool b1 );
 
     // MTA members

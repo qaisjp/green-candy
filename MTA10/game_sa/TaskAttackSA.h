@@ -29,7 +29,6 @@
 // temporary
 class CAnimBlendAssociation;
 class CAnimBlendHierarchy;
-typedef unsigned long AssocGroupId;
 typedef unsigned long AnimationId;
 
 ///////////////////////

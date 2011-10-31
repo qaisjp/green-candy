@@ -27,7 +27,7 @@ enum eVehicleType
     VEHICLE_UNKNOWN,    // what is this?
     VEHICLE_FAKEPLANE,
     VEHICLE_BIKE,
-    VEHICLE_BMX,
+    VEHICLE_BICYCLE,
     VEHICLE_TRAILER,
     FORCE_DWORD = 0xFFFFFFFF
 };

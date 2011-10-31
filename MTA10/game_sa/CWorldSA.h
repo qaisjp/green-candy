@@ -65,12 +65,12 @@ public:
     void        LoadMapAroundPoint        ( CVector * vecPosition, float fRadius );
     bool        IsLineOfSightClear        ( const CVector * vecStart, const CVector * vecEnd, const SLineOfSightFlags flags );
     bool        HasCollisionBeenLoaded    ( CVector * vecPosition );
-    DWORD       GetCurrentArea            ( void );
-    void        SetCurrentArea            ( DWORD dwArea );
+    unsigned int    GetCurrentArea        ();
+    void        SetCurrentArea            ( unsigned int area );
     void        SetJetpackMaxHeight       ( float fHeight );
-    float       GetJetpackMaxHeight       ( void );
+    float       GetJetpackMaxHeight       ();
     void        SetAircraftMaxHeight      ( float fHeight );
-    float       GetAircraftMaxHeight      ( void );
+    float       GetAircraftMaxHeight      ();
 
     /**
      * \todo Add FindObjectsKindaColliding (see 0x430577)

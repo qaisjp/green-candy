@@ -66,13 +66,13 @@ public:
 
     inline void Identity()
     {
-        right.x = 1; right.y = 0; right.z = 0;
-        up.x = 0; up.y = 1; up.z = 0;
-        at.x = 0; at.y = 0; at.z = 1;
+        right.fX = 1; right.fY = 0; right.fZ = 0;
+        up.fX = 0; up.fY = 1; up.fZ = 0;
+        at.fX = 0; at.fY = 0; at.fZ = 1;
 
-        pos.x = 1.15 * -0.25;
-        pos.y = 0;
-        pos.z = 0;
+        pos.fX = (float)(1.15 * -0.25);
+        pos.fY = 0;
+        pos.fZ = 0;
     }
 
     inline void rotX( float radians )
@@ -203,12 +203,12 @@ public:
 
     float & operator [] ( unsigned int i )
     {
-        return (float*)(this)[i];
+        return ((float*)(this))[i];
     }
 
     float operator [] ( unsigned int i ) const
     {
-        return (float*)(this)[i];
+        return ((float*)(this))[i];
     }
 
     CVector         right;

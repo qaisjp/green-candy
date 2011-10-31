@@ -21,7 +21,7 @@
 
 #define SIZEOF_CBuilding                56
 
-class CBuildingSAInterface : public CSceneSAInterface
+class CBuildingSAInterface : public CEntitySAInterface
 {
 public:
     void*   operator new( size_t );

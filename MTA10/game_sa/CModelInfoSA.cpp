@@ -448,7 +448,7 @@ bool CModelInfoSA::IsBmx ( )
     if ( !IsVehicle() )
         return false;
 
-    return ((CVehicleModelInfoSAInterface*)m_pInterface)->m_vehicleType == VEHICLE_BMX;
+    return ((CVehicleModelInfoSAInterface*)m_pInterface)->m_vehicleType == VEHICLE_BICYCLE;
 }   
 
 bool CModelInfoSA::IsTrailer ( )

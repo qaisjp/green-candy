@@ -13,7 +13,7 @@
 #define __CAnimBlendAssociation_H
 
 class CAnimBlendAssociationSAInterface;
-typedef unsigned long AssocGroupId;
+typedef unsigned short AssocGroupId;
 typedef unsigned long AnimationId;
 class CAnimBlendHierarchy;
 

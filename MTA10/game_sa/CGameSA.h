@@ -11,6 +11,7 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -18,8 +19,6 @@
 
 #ifndef __CGAMESA
 #define __CGAMESA
-
-#include "CModelInfoSA.h"
 
 #define     MAX_MEMORY_OFFSET_1_0           0xCAF008
 
@@ -136,7 +135,7 @@ public:
     inline CPopulationSA*               GetPopulation()                 { return m_pPopulation; };
     inline CTaskManagementSystemSA*     GetTaskManagementSystem()       { return m_pTaskManagementSystem; };
     inline CTasksSA*                    GetTasks()                      { return m_pTasks; };
-    inline CGameSettingsSA*             GetSettings()                   { return m_pSettings; };
+    inline CSettingsSA*                 GetSettings()                   { return m_pSettings; };
     inline CCarEnterExitSA*             GetCarEnterExit()               { return m_pCarEnterExit; };
     inline CControllerConfigManagerSA*  GetControllerConfigManager()    { return m_pControllerConfigManager; };
     inline CRenderWareSA*               GetRenderWare()                 { return m_pRenderWare; };
@@ -151,73 +150,72 @@ public:
     inline CFxSA*                       GetFx()                         { return m_pFx; }
     inline CWaterManagerSA*             GetWaterManager()               { return m_pWaterManager; }
 
-    CWeaponInfo*            GetWeaponInfo(eWeaponType weapon,eWeaponSkill skill=WEAPONSKILL_STD);
-    CModelInfo*             GetModelInfo( DWORD dwModelID );
+    CWeaponInfoSA*          GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill = WEAPONSKILL_STD );
+    CModelInfoSA*           GetModelInfo( unsigned short id );
 
-    inline DWORD            GetSystemTime (  )      { return *VAR_SystemTime; };
-    inline BOOL             IsAtMenu (  )           { return *VAR_IsAtMenu; };
-    inline BOOL             IsGameLoaded (  )       { return *VAR_IsGameLoaded; };
-    VOID                    StartGame ( );
-    VOID                    SetSystemState ( eSystemState State );
-    eSystemState            GetSystemState ( );
-    inline bool             IsNastyGame (  )                    { return *VAR_IsNastyGame; };
+    inline unsigned long    GetSystemTime ()      { return *VAR_SystemTime; };
+    inline bool             IsAtMenu ()           { return *VAR_IsAtMenu; };
+    inline bool             IsGameLoaded ()       { return *VAR_IsGameLoaded; };
+    void                    StartGame ();
+    void                    SetSystemState ( eSystemState State );
+    eSystemState            GetSystemState ();
+    inline bool             IsNastyGame ()                    { return *VAR_IsNastyGame; };
     inline void             SetNastyGame ( bool IsNasty )       { *VAR_IsNastyGame = IsNasty; };
-    VOID                    Pause ( bool bPaused );
-    bool                    IsPaused ( );
-    bool                    IsInForeground ( );
-    VOID                    DisableRenderer( bool bDisabled );
-    VOID                    TakeScreenshot ( char * szFileName );
-    DWORD*                  GetMemoryValue ( DWORD dwOffset );
+    void                    Pause ( bool bPaused );
+    bool                    IsPaused ();
+    bool                    IsInForeground ();
+    void                    DisableRenderer( bool bDisabled );
+    void                    TakeScreenshot ( char * szFileName );
 
-    VOID                    SetRenderHook ( InRenderer* pInRenderer );
+    void                    SetRenderHook ( InRenderer* pInRenderer );
 
-    void                    Initialize  ( void );
-    void                    Reset                       ( void );
-    void                    Terminate ( void );
+    void                    Initialize  ();
+    void                    Reset ();
+    void                    Terminate ();
 
-    eGameVersion            GetGameVersion ( void );
-    eGameVersion            FindGameVersion ( void );
+    eGameVersion            GetGameVersion ();
+    eGameVersion            FindGameVersion ();
 
-    float                   GetFPS ( void );
-    float                   GetTimeStep ( void );
-    float                   GetOldTimeStep ( void );
-    float                   GetTimeScale ( void );
+    float                   GetFPS ();
+    float                   GetTimeStep ();
+    float                   GetOldTimeStep ();
+    float                   GetTimeScale ();
     void                    SetTimeScale ( float fTimeScale );
 
-    BOOL                    InitLocalPlayer(  );
+    bool                    InitLocalPlayer(  );
 
-    float                   GetGravity              ( void );
-    void                    SetGravity              ( float fGravity );
+    float                   GetGravity ();
+    void                    SetGravity ( float fGravity );
 
-    float                   GetGameSpeed            ( void );
-    void                    SetGameSpeed            ( float fSpeed );
+    float                   GetGameSpeed ();
+    void                    SetGameSpeed ( float fSpeed );
 
-    unsigned char           GetBlurLevel            ( void );
-    void                    SetBlurLevel            ( unsigned char ucLevel );
+    unsigned char           GetBlurLevel ();
+    void                    SetBlurLevel ( unsigned char ucLevel );
 
-    unsigned long           GetMinuteDuration       ( void );
-    void                    SetMinuteDuration       ( unsigned long ulTime );
+    unsigned long           GetMinuteDuration ();
+    void                    SetMinuteDuration ( unsigned long ulTime );
 
-    bool                    IsCheatEnabled          ( const char* szCheatName );
-    bool                    SetCheatEnabled         ( const char* szCheatName, bool bEnable );
-    void                    ResetCheats             ();
+    bool                    IsCheatEnabled ( const char* szCheatName );
+    bool                    SetCheatEnabled ( const char* szCheatName, bool bEnable );
+    void                    ResetCheats ();
 
-    bool                    VerifySADataFileNames   ();
-    bool                    PerformChecks           ();
-    int&                    GetCheckStatus          ( void )            { return m_iCheckStatus; }
+    bool                    VerifySADataFileNames ();
+    bool                    PerformChecks ();
+    int&                    GetCheckStatus () { return m_iCheckStatus; }
 
 
-    void                    SetAsyncLoadingFromSettings     ( bool bSettingsDontUse, bool bSettingsEnabled );
-    void                    SetAsyncLoadingFromScript       ( bool bScriptEnabled, bool bScriptForced );
-    void                    SuspendASyncLoading             ( bool bSuspend );
-    bool                    IsASyncLoadingEnabled           ( bool bIgnoreSuspend = false );
+    void                    SetAsyncLoadingFromSettings ( bool bSettingsDontUse, bool bSettingsEnabled );
+    void                    SetAsyncLoadingFromScript ( bool bScriptEnabled, bool bScriptForced );
+    void                    SuspendASyncLoading ( bool bSuspend );
+    bool                    IsASyncLoadingEnabled ( bool bIgnoreSuspend = false );
 
-    bool                    HasCreditScreenFadedOut         ( void );
+    bool                    HasCreditScreenFadedOut ();
 
-    void                    SetupSpecialCharacters  ( void );
+    void                    SetupSpecialCharacters ();
 
-    void                    FlushPendingRestreamIPL         ( void );
-    void                    DisableVSync                    ( void );
+    void                    FlushPendingRestreamIPL ();
+    void                    DisableVSync ();
 
 private:
     CPoolsSA*                   m_pPools;
@@ -265,7 +263,7 @@ private:
     CPopulationSA*              m_pPopulation;
     CTaskManagementSystemSA*    m_pTaskManagementSystem;
     CTasksSA*                   m_pTasks;
-    CGameSettingsSA*            m_pSettings;
+    CSettingsSA*                m_pSettings;
     CCarEnterExitSA*            m_pCarEnterExit;
     CControllerConfigManagerSA* m_pControllerConfigManager;
 

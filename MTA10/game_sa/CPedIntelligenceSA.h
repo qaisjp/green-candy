@@ -20,7 +20,6 @@
 class CTaskManagerSA;
 class CVehicleScannerSA;
 
-#include "CTaskManagerSA.h"
 #include "CVehicleScannerSA.h"
 
 #define FUNC_IsRespondingToEvent                    0x600DB0
@@ -61,21 +60,21 @@ class CPedIntelligenceSA : public CPedIntelligence
 {
 public:
                                     CPedIntelligenceSA ( CPedIntelligenceSAInterface *intelligence, CPed *ped );
-                                    ~CPedIntelligenceSA ( void );
+                                    ~CPedIntelligenceSA ();
 
-    CPedIntelligenceSAInterface*    GetInterface ( void ) { return m_interface; }
+    CPedIntelligenceSAInterface*    GetInterface () { return m_interface; }
 
-    bool                            IsRespondingToEvent ( void );
-    int                             GetCurrentEventType ( void );
-    CEvent*                         GetCurrentEvent ( void );
+    bool                            IsRespondingToEvent ();
+    int                             GetCurrentEventType ();
+    CEvent*                         GetCurrentEvent ();
 
-    CTaskManager*                   GetTaskManager( void );
-    CVehicleScanner*                GetVehicleScanner( void );
+    CTaskManager*                   GetTaskManager ();
+    CVehicleScanner*                GetVehicleScanner ();
 
     bool                            TestForStealthKill ( CPed * pPed, bool bUnk );
 
 private:
-    CPedIntelligenceSAInterface*    m_internalInterface;
+    CPedIntelligenceSAInterface*    m_interface;
     CPedSA*                         m_ped;
     CTaskManagerSA*                 m_taskManager;
     CVehicleScannerSA*              m_vehicleScanner;

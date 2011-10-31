@@ -22,7 +22,7 @@
 
 #define DEFAULT_WAVES -1.0f
 
-typedef unsigned long AssocGroupId;
+typedef unsigned short AssocGroupId;
 typedef unsigned long AnimationId;
 
 typedef bool ( ExplosionHandler ) ( class CEntity* pExplodingEntity, class CEntity* pCreator, const CVector& vecPosition, enum eExplosionType ExplosionType );

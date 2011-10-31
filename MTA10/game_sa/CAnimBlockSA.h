@@ -1,10 +1,11 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CAnimBlockSA.h
 *  PURPOSE:     Header file for animation block class
 *  DEVELOPERS:  Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -42,12 +43,12 @@ class CAnimBlockSA : public CAnimBlock
 public:
                                         CAnimBlockSA            ( CAnimBlockSAInterface * pInterface )     { m_pInterface = pInterface; }
 
-    CAnimBlockSAInterface *             GetInterface            ( void )    { return m_pInterface; }
-    char *                              GetName                 ( void )    { return m_pInterface->szName; }
-    int                                 GetIndex                ( void )    { return m_pInterface->GetIndex (); }
-    void                                AddRef                  ( void )    { m_pInterface->usRefs++; }
-    unsigned short                      GetRefs                 ( void )    { return m_pInterface->usRefs; }
-    bool                                IsLoaded                ( void )    { return m_pInterface->bLoaded; }
+    CAnimBlockSAInterface*              GetInterface            ()    { return m_pInterface; }
+    char*                               GetName                 ()    { return m_pInterface->m_name; }
+    int                                 GetIndex                ()    { return m_pInterface->GetIndex (); }
+    void                                AddRef                  ()    { m_pInterface->m_references++; }
+    unsigned short                      GetRefs                 ()    { return m_pInterface->m_references; }
+    bool                                IsLoaded                ()    { return m_pInterface->m_loaded; }
 
 protected:
     CAnimBlockSAInterface *             m_pInterface;

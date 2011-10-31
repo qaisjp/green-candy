@@ -16,7 +16,6 @@
 enum eWeaponType;
 enum ePedPieceTypes;
 class CEntity;
-typedef unsigned long AssocGroupId;
 typedef unsigned long AnimationId;
 class CEventDamageSAInterface;
 class CPed;

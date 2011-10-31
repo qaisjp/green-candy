@@ -31,15 +31,6 @@ typedef DWORD CTaskUtilityLineUpPedWithCar;
 
 #define FUNC_CTaskSimpleCarSetPedOut__PositionPedOutOfCollision     0x6479B0
 
-class TaskComplexWanderVTBL : public TaskComplexVTBL
-{
-public:
-    DWORD GetWanderType; 
-    DWORD ScanForStuff;
-    DWORD UpdateDir;
-    DWORD UpdatePathNodes;
-};
-
 // ##############################################################################
 // ## Name:    CTaskComplexWander                                    
 // ## Purpose: Generic task that makes peds wander around. Can't be used 
@@ -49,6 +40,11 @@ public:
 class CTaskComplexWanderSAInterface : public CTaskComplexSAInterface
 {
 public:
+    virtual int __thiscall              GetWanderType() = 0;
+    virtual void __thiscall             Scan() = 0;
+    virtual void __thiscall             UpdateDirection() = 0;
+    virtual void __thiscall             UpdatePathNodes() = 0;
+
 // protected
     int m_iMoveState;
     unsigned char m_iDir;
@@ -75,6 +71,8 @@ public:
     CNodeAddress *      GetLastNode();
 
     int                 GetWanderType();
+
+    CTaskComplexWanderSAInterface*  GetInterface() { return (CTaskComplexWanderSAInterface*)m_interface; }
 };
 
 // ##############################################################################

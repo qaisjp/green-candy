@@ -15,6 +15,9 @@
 #include <string>
 #include <vector>
 
+#include <CMatrix.h>
+#include <CQuat.h>
+
 // SDK includes
 #define MTA_CLIENT
 #include "SharedUtil.h"
@@ -22,14 +25,15 @@
 #include <net/CNet.h>
 #include <game/CGame.h>
 #include <game/CWanted.h>
-#include <CQuat.h>
 #include <../version.h>
 #include <ijsify.h>
 
 // Game includes
 #include "gamesa_init.h"
+#include "RenderWare.h"
 #include "Common.h"
 #include "CPtrNodeSA.h"
+#include "CTransformationSA.h"
 #include "CEntitySA.h"
 #include "CDummySA.h"
 #include "CRouteSA.h"
@@ -48,7 +52,6 @@
 #include "CAnimBlendSequenceSA.h"
 #include "CAnimBlendStaticAssociationSA.h"
 #include "CAnimBlockSA.h"
-#include "RenderWare.h"
 #include "CRenderWareSA.h"
 #include "CRenderWareExtensionSA.h"
 #include "CTextureSA.h"
@@ -85,7 +88,6 @@
 #include "CEventSA.h"
 #include "CEventListSA.h"
 #include "CGaragesSA.h"
-#include "CTasksSA.h"
 #include "CEventDamageSA.h"
 #include "CEventGunShotSA.h"
 #include "CAnimManagerSA.h"
@@ -113,5 +115,8 @@
 #include "CWaterManagerSA.h"
 #include "CPedDamageResponseSA.h"
 #include "CPedDamageResponseCalculatorSA.h"
+#include "CTaskManagerSA.h"
+#include "CTasksSA.h"
+#include "CPedIntelligenceSA.h"
 #include "CPoolsSA.h"
 #include "CGameSA.h"

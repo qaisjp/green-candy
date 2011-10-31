@@ -106,7 +106,7 @@ void CTaskManagementSystemSA::RemoveTask ( CTaskSAInterface * pTaskInterface )
 }
 
 
-CTask * CTaskManagementSystemSA::GetTask ( CTaskSAInterface * pTaskInterface )
+CTaskSA * CTaskManagementSystemSA::GetTask ( CTaskSAInterface * pTaskInterface )
 {
     // Return NULL if we got passed NULL
     if ( pTaskInterface == 0 ) return NULL;

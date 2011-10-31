@@ -52,7 +52,7 @@ class CEntity
 public:
     virtual                             ~CEntity () {};
 
-    virtual void                        SetPosition( float fX, float fY, float fZ ) = 0;
+    virtual void                        SetPosition ( float fX, float fY, float fZ ) = 0;
     virtual void                        SetPosition ( CVector * vecPosition ) = 0;
     virtual void                        Teleport ( float fX, float fY, float fZ ) = 0;
     virtual void                        ProcessControl () = 0;
@@ -65,7 +65,7 @@ public:
     virtual void                        SetMatrix ( CMatrix matrix ) = 0;
     virtual unsigned short              GetModelIndex () = 0;
     virtual eEntityType                 GetEntityType () = 0;
-    virtual float                       GetBasingDistance() = 0;
+    virtual float                       GetBasingDistance () = 0;
     virtual void                        SetEntityStatus( eEntityStatus bStatus ) = 0;
     virtual eEntityStatus               GetEntityStatus( ) = 0;
     virtual bool                        IsOnScreen () = 0;
@@ -76,12 +76,12 @@ public:
     virtual void                        SetVisible ( bool bVisible ) = 0;
 
     virtual void                        SetDoNotRemoveFromGameWhenDeleted ( bool bDoNotRemoveFromGame ) = 0;
-    virtual void                        SetUsesCollision( bool enabled ) = 0;
-    virtual bool                        IsBackfaceCulled() = 0;
-    virtual void                        SetBackfaceCulled( bool enabled ) = 0;
-    virtual bool                        IsStatic() = 0;
-    virtual void                        SetStatic( bool enabled ) = 0;
-    virtual void                        SetAlpha( unsigned char alpha ) = 0;
+    virtual void                        SetUsesCollision ( bool enabled ) = 0;
+    virtual bool                        IsBackfaceCulled () = 0;
+    virtual void                        SetBackfaceCulled ( bool enabled ) = 0;
+    virtual bool                        IsStatic () = 0;
+    virtual void                        SetStatic ( bool enabled ) = 0;
+    virtual void                        SetAlpha ( unsigned char alpha ) = 0;
 
     virtual void                        MatrixConvertFromEulerAngles ( float fX, float fY, float fZ, int iUnknown ) = 0;
     virtual void                        MatrixConvertToEulerAngles ( float *fX, float *fY, float *fZ, int iUnknown ) = 0;

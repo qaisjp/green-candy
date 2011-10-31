@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CDamageManagerSA.h
 *  PURPOSE:     Header file for vehicle damage manager class
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -40,40 +41,50 @@
 class CDamageManagerSAInterface // 28 bytes due to the way its packed (24 containing actual data)
 {
 public:
-    FLOAT           fWheelDamageEffect;
-    BYTE            bEngineStatus;      // old - wont be used
-    BYTE            Wheel[MAX_WHEELS];
-    BYTE            Door[MAX_DOORS];
-    DWORD           Lights;             // 2 bits per light
-    DWORD           Panels;             // 4 bits per panel
+    float           m_wheelDamage;
+    unsigned char   m_engineStatus;      // old - wont be used
+    unsigned char   m_wheels[MAX_WHEELS];
+    unsigned char   m_doors[MAX_DOORS];
+    unsigned int    m_lights;             // 2 bits per light
+    unsigned long   m_panels;             // 4 bits per panel
 };
 
 class CDamageManagerSA : public CDamageManager
 {
 private:
-    CDamageManagerSAInterface           * internalInterface;
-    class CEntitySAInterface*           internalEntityInterface;
+    CDamageManagerSAInterface*          m_interface;;
+    class CVehicleSAInterface*          m_vehicle;
+
 public: 
-    BYTE            GetEngineStatus         (  );
-    VOID            SetEngineStatus         ( BYTE bEngineState );
-    BYTE            GetDoorStatus           ( eDoors bDoor );
-    VOID            SetDoorStatus           ( eDoors bDoor, BYTE bDoorStatus );
-    BYTE            GetWheelStatus          ( eWheels bWheel );
-    VOID            SetWheelStatus          ( eWheels bWheel, BYTE bTireStatus );
-    BYTE            GetPanelStatus          ( BYTE bPanel );
-    unsigned long   GetPanelStatus          ( void );
-    VOID            SetPanelStatus          ( BYTE bPanel, BYTE bPanelStatus );
+    CDamageManagerSA ( class CVehicleSAInterface *vehicle, CDamageManagerSAInterface *dmg )
+    {
+        m_interface = dmg;
+        m_vehicle = vehicle;
+    }
+
+    unsigned char   GetEngineStatus         ();
+    void            SetEngineStatus         ( unsigned char status );
+
+    unsigned char   GetDoorStatus           ( eDoors bDoor );
+    void            SetDoorStatus           ( eDoors bDoor, unsigned char status );
+
+    unsigned char   GetWheelStatus          ( eWheels bWheel );
+    void            SetWheelStatus          ( eWheels bWheel, unsigned char status );
+
+    unsigned char   GetPanelStatus          ( unsigned char panel );
+    unsigned long   GetPanelStatus          ();
+    void            SetPanelStatus          ( unsigned char panel, unsigned char status );
     void            SetPanelStatus          ( unsigned long ulStatus );
-    BYTE            GetLightStatus          ( BYTE bLight );
-    unsigned char   GetLightStatus          ( void );
-    VOID            SetLightStatus          ( BYTE bLight, BYTE bLightStatus );
+
+    unsigned char   GetLightStatus          ( unsigned char light );
+    unsigned char   GetLightStatus          ();
+    void            SetLightStatus          ( unsigned char light, unsigned char status );
     void            SetLightStatus          ( unsigned char ucStatus );
-    BYTE            GetAeroplaneCompStatus  ( BYTE CompID );
-    VOID            SetAeroplaneCompStatus  ( BYTE CompID, BYTE Status);
 
-    VOID            FuckCarCompletely       ( BOOL bKeepWheels );
+    unsigned char   GetAeroplaneCompStatus  ( unsigned char id );
+    void            SetAeroplaneCompStatus  ( unsigned char id, unsigned char status );
 
-    CDamageManagerSA ( class CEntitySAInterface* intEntityInterface, CDamageManagerSAInterface * intInterface) { internalEntityInterface = intEntityInterface; internalInterface = intInterface; };
+    void            FuckCarCompletely       ( bool keepWheels );
 };
 
 #endif

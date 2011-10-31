@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/TaskCarAccessoriesSA.h
 *  PURPOSE:     Car accessories game tasks
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -14,8 +15,6 @@
 #ifndef __CGAMESA_TASKCARACCESSORIES
 #define __CGAMESA_TASKCARACCESSORIES
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <game/TaskCarAccessories.h>
 
 #include "CVehicleSA.h"
@@ -40,24 +39,26 @@ typedef DWORD CTaskUtilityLineUpPedWithCar;
 class CTaskSimpleCarSetPedInAsDriverSAInterface : public CTaskSimpleSAInterface
 {
 public:
-    bool m_bIsFinished;
-    CAnimBlendAssociation* m_pAnim;
-    CVehicleSAInterface * m_pTargetVehicle;
-    CTaskUtilityLineUpPedWithCar* m_pUtility; 
-    bool m_bWarpingInToCar;
-    unsigned char m_nDoorFlagsToClear;
-    unsigned char m_nNumGettingInToClear;
+    bool                                m_isFinished;
+    CAnimBlendAssociation*              m_anim;
+    CVehicleSAInterface*                m_targetVehicle;
+    CTaskUtilityLineUpPedWithCar*       m_utility;
+    bool                                m_warpingIn;
+    unsigned char                       m_doorFlagsClear;
+    unsigned char                       m_numGettingInClear;
 };
 
 class CTaskSimpleCarSetPedInAsDriverSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleCarSetPedInAsDriver
 {
 public:
-    CTaskSimpleCarSetPedInAsDriverSA ( void ) {};
+    CTaskSimpleCarSetPedInAsDriverSA () {};
     CTaskSimpleCarSetPedInAsDriverSA ( CVehicle* pTargetVehicle, CTaskUtilityLineUpPedWithCar* pUtility );
 
     void SetIsWarpingPedIntoCar();
-    void SetDoorFlagsToClear(const unsigned char nDoorFlagsToClear);
-    void SetNumGettingInToClear(const unsigned char nNumGettingInToClear);
+    void SetDoorFlagsToClear ( unsigned char nDoorFlagsToClear );
+    void SetNumGettingInToClear ( unsigned char nNumGettingInToClear );
+
+    CTaskSimpleCarSetPedInAsDriverSAInterface*  GetInterface() { return (CTaskSimpleCarSetPedInAsDriverSAInterface*)m_interface; }
 };
 
 // ##############################################################################
@@ -68,25 +69,27 @@ public:
 class CTaskSimpleCarSetPedInAsPassengerSAInterface : public CTaskSimpleSAInterface
 {
 public:
-    bool m_bIsFinished;
-    CAnimBlendAssociation* m_pAnim;
-    CVehicleSAInterface* m_pTargetVehicle;
-    int m_iTargetDoor;
-    CTaskUtilityLineUpPedWithCar* m_pUtility; 
-    bool m_bWarpingInToCar;
-    unsigned char m_nDoorFlagsToClear;
-    unsigned char m_nNumGettingInToClear;
+    bool                                m_isFinished;
+    CAnimBlendAssociation*              m_anim;
+    CVehicleSAInterface*                m_targetVehicle;
+    unsigned int                        m_targetDoor;
+    CTaskUtilityLineUpPedWithCar*       m_utility; 
+    bool                                m_warpingIn;
+    unsigned char                       m_doorFlagsClear;
+    unsigned char                       m_numGettingInClear;
 };
 
 class CTaskSimpleCarSetPedInAsPassengerSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleCarSetPedInAsPassenger
 {
 public:
-    CTaskSimpleCarSetPedInAsPassengerSA ( void ) {};
-    CTaskSimpleCarSetPedInAsPassengerSA(CVehicle* pTargetVehicle, int iTargetDoor, CTaskUtilityLineUpPedWithCar* pUtility);
+    CTaskSimpleCarSetPedInAsPassengerSA () {};
+    CTaskSimpleCarSetPedInAsPassengerSA ( CVehicle* pTargetVehicle, int iTargetDoor, CTaskUtilityLineUpPedWithCar* pUtility );
 
     void SetIsWarpingPedIntoCar();
-    void SetDoorFlagsToClear(const unsigned char nDoorFlagsToClear);
-    void SetNumGettingInToClear(const unsigned char nNumGettingInToClear);
+    void SetDoorFlagsToClear( unsigned char nDoorFlagsToClear );
+    void SetNumGettingInToClear( unsigned char nNumGettingInToClear );
+
+    CTaskSimpleCarSetPedInAsPassengerSAInterface*   GetInterface() { return (CTaskSimpleCarSetPedInAsPassengerSAInterface*)m_interface; }
 };
 
 // ##############################################################################
@@ -97,27 +100,29 @@ public:
 class CTaskSimpleCarSetPedOutSAInterface : public CTaskSimpleSAInterface
 {
 public:
-    CVehicleSAInterface* m_pTargetVehicle; // 8
-    int m_iTargetDoor; // 12
-    bool m_bSwitchOffEngine; // 16
-    bool m_bWarpingOutOfCar;
-    bool m_bFallingOutOfCar;    // jumping or falling off car or bike
-    bool m_bKnockedOffBike;
-    unsigned char m_nDoorFlagsToClear;
-    unsigned char m_nNumGettingInToClear;
+    CVehicleSAInterface*                m_targetVehicle; // 8
+    unsigned int                        m_targetDoor;
+    bool                                m_switchOffEngine; // 16
+    bool                                m_warpingOut;
+    bool                                m_fallingOut;    // jumping or falling off car or bike
+    bool                                m_knockedOff;
+    unsigned char                       m_doorFlagsClear;
+    unsigned char                       m_numGettingInClear;
 };
 
 class CTaskSimpleCarSetPedOutSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleCarSetPedOut
 {
 public:
-    CTaskSimpleCarSetPedOutSA ( void ) {};
-    CTaskSimpleCarSetPedOutSA ( CVehicle* pTargetVehicle, int iTargetDoor, bool bSwitchOffEngine=false );
+    CTaskSimpleCarSetPedOutSA () {};
+    CTaskSimpleCarSetPedOutSA ( CVehicle* pTargetVehicle, int iTargetDoor, bool bSwitchOffEngine = false );
 
-    void SetIsWarpingPedOutOfCar();
-    void SetKnockedOffBike();
-    void SetDoorFlagsToClear(const unsigned char nDoorFlagsToClear);
-    void SetNumGettingInToClear(const unsigned char nNumGettingInToClear);
-    void PositionPedOutOfCollision(CPed * ped, CVehicle * vehicle, int nDoor);
+    void SetIsWarpingPedOutOfCar ();
+    void SetKnockedOffBike ();
+    void SetDoorFlagsToClear ( unsigned char nDoorFlagsToClear );
+    void SetNumGettingInToClear ( unsigned char nNumGettingInToClear );
+    void PositionPedOutOfCollision ( CPed *ped, CVehicle *vehicle, unsigned char door );
+
+    CTaskSimpleCarSetPedOutSAInterface* GetInterface() { return (CTaskSimpleCarSetPedOutSAInterface*)m_interface; }
 };
 
 

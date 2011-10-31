@@ -22,25 +22,25 @@
 class CTaskSimpleChokingSAInterface : public CTaskSimpleSAInterface
 {
 public:
-    class CPedSAInterface*      m_pAttacker;
+    CPedSAInterface*            m_pAttacker;
     DWORD*                      m_pAnim;
-    unsigned int                      m_nTimeRemaining;
-    unsigned int                      m_nTimeStarted;
-    unsigned char                       m_bIsTeargas;
+    unsigned int                m_nTimeRemaining;
+    unsigned int                m_nTimeStarted;
+    unsigned char               m_bIsTeargas;
     bool                        m_bIsFinished;
 };
 
 class CTaskSimpleChokingSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleChoking
 {
 public:
-                        CTaskSimpleChokingSA    ( void ) {};
+                        CTaskSimpleChokingSA    () {};
                         CTaskSimpleChokingSA    ( CPed* pAttacker, bool bIsTearGas );
 
-    CPed*               GetAttacker             ( void );
-    unsigned int        GetTimeRemaining        ( void );
-    unsigned int        GetTimeStarted          ( void );
-    bool                IsTeargas               ( void );
-    bool                IsFinished              ( void );
+    CPed*               GetAttacker             ();
+    unsigned int        GetTimeRemaining        ();
+    unsigned int        GetTimeStarted          ();
+    bool                IsTeargas               ();
+    bool                IsFinished              ();
 
     void                UpdateChoke             ( CPed* pPed, CPed* pAttacker, bool bIsTearGas );
 };

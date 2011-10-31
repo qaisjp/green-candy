@@ -75,6 +75,8 @@ public:
             m_active++;
             return &m_pool[n];
         }
+
+        return NULL;
     }
 
     type*   Get( unsigned int id )
