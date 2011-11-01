@@ -32,7 +32,9 @@ enum eVehicleType
     FORCE_DWORD = 0xFFFFFFFF
 };
 
-#define MAX_SEATS           15
+#define MAX_SEATS               15
+#define MAX_PASSENGERS          8
+#define MAX_DOORS               6
 
 class CVehicleSeatInfoSA
 {
@@ -54,7 +56,7 @@ public:
 
     CVector                         m_seatOffset[MAX_SEATS];
     CVehicleSeatInfoSA              m_info[18];                 // 180
-    RpAtomic*                       m_atomics[6];               // 756
+    RpAtomic*                       m_atomics[MAX_DOORS];       // 756
     unsigned short                  m_atomicCount;              // 780
     unsigned short                  m_unknown4;                 // 782
     unsigned int                    m_usageFlags;               // 784

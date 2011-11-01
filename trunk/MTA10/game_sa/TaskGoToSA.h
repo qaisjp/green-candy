@@ -18,7 +18,6 @@
 #include <game/TaskGoTo.h>
 #include <game/CPathFind.h>
 
-#include "CVehicleSA.h"
 #include "TaskSA.h"
 
 // temporary

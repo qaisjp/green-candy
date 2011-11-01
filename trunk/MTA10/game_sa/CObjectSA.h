@@ -12,7 +12,6 @@
 *
 *****************************************************************************/
 
-#include "CVehicleSA.h"
 #include "CPedSA.h"
 
 #ifndef __CGAMESA_OBJECT

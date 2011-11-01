@@ -9,7 +9,7 @@
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
-*               The_GTA <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -18,6 +18,72 @@
 #include "StdInc.h"
 
 extern CGameSA* pGame;
+
+CVehicleControlSAInterface::CVehicleControlSAInterface()
+{
+    unsigned int n;
+
+    m_unk = -1;
+    m_unk2 = -1;
+    m_unk3 = -1;
+
+    m_unk4 = -1;
+    m_unk5 = -1;
+    m_unk6 = -1;
+
+    for (n=0; n<8; n++)
+        m_unk7[n] = 0xFFFF;
+
+    m_unk9 = true;
+    m_unk8 = true;
+
+    m_flags &= ~0x04 & 10;
+
+    m_unk10 = NULL;
+    m_unk11 = 1000;
+
+    m_unk12 = 0;
+    m_unk39 = 0;
+    m_unk13 = 0;
+    m_unk14 = 0;
+    m_unk15 = 0;
+
+    m_unk17 = 10;
+
+    m_unk16 = 10;
+
+    m_unk18 = 0;
+    m_unk19 = NULL;
+
+    m_flags2 &= ~0x04 & 10;
+
+    m_creationTime = m_time = pGame->GetSystemTime();
+
+    m_unk23 = 0;
+    m_unk24 = 1;
+
+    m_unk26 = 0xFF;
+
+    m_unk28 = 0;
+
+    m_unk34 = 20;
+
+    m_unk29 = NULL;
+    m_unk30 = 0;
+
+    m_unk32 = 0;
+    m_unk33 = 0;
+
+    m_unk35 = 10;
+    m_unk36 = 10;
+
+    m_unk27 = 0;
+
+    m_unk37 = rand() & 7 + 2;
+
+    m_unk25 = NULL;
+    m_unk38 = NULL;
+}
 
 CVehicleAudioSAInterface::CVehicleAudioSAInterface()
 {
@@ -44,12 +110,206 @@ CVehicleAudioSAInterface::~CVehicleAudioSAInterface()
 
 CVehicleSAInterface::CVehicleSAInterface( unsigned char createdBy )
 {
-    new (&m_vehicleAudio) CVehicleAudioSAInterface();
+    unsigned int n;
+
+    new (&m_audio) CVehicleAudioSAInterface();
+    new (&m_control) CVehicleControlSAInterface();
+
+    m_type = ENTITY_TYPE_VEHICLE;
+
+    m_entityFlags |= ENTITY_PRERENDERED;
+
+    m_unk = 0;
+    m_steerAngle = 0;
+    m_secondarySteerAngle = 0;
+
+    // We always start off at gear 1
+    m_currentGear = 1;
+
+    m_gearChangeCount = 0;
+    m_wheelSpinAudio = 0;
+
+    // Set the creation flags
+    m_createdBy = createdBy;
+
+    m_forcedRandomSeed = 0;
+
+    m_vehicleFlags = VEHICLE_ENGINESTATUS | VEHICLE_FREEBIES | VEHICLE_PLAYERPOSSESION;
+
+    // Make the vehicle locked by random
+    if ( (float)rand() / 0x7FFF <= 0 )
+        m_vehicleFlags |= VEHICLE_LOCKED;
+
+    m_genericFlags &= ~( VEHGENERIC_POLICETYPE | VEHGENERIC_NOSTATIC | VEHGENERIC_PARKING | VEHGENERIC_GANGLEANON | VEHGENERIC_GANGROADBLOCK | VEHGENERIC_ISGOODCOVER | VEHGENERIC_MADDRIVER );
+    m_genericFlags |= VEHGENERIC_IMPOUNDED | VEHGENERIC_ALARM | VEHGENERIC_ISGOODCOVER | VEHGENERIC_PETROLTANK | VEHGENERIC_NOPARTICLES;
+
+    // Do the population count
+    HandlePopulation( true );
+
+    m_bombOnBoard = 0;
+    m_overrideLights = 0;
+    m_winchType = 0;
+    
+    m_gunsCycleIndex = 0;
+    m_ordnanceCycleIndex = 0;
+
+    m_health = 1000;
+
+    m_driver = NULL;
+    m_numPassengers = 0;
+    m_numGettingIn = 0;
+    m_gettingInFlags = 0;
+    m_gettingOutFlags = 0;
+
+    m_maxPassengers = MAX_PASSENGERS;
+
+    for (n=0; n<MAX_PASSENGERS; n++)
+        m_passengers[n] = NULL;
+
+    m_ammoInClip &= ~0x10;
+
+    m_usedForCover &= ~0x20;
+
+    m_unk2 = -1;
+    m_specialColModel = -1;
+
+    m_nodeFlags |= 0x10000000;
+
+    m_unk2 = 0;
+    m_unk3 = NULL;
+
+    m_numPedsForRoadBlock = 0;
+
+    m_unk5 = NULL;
+    m_fire = NULL;
+
+    m_unk6 = 0;
+    m_pacMansCollected = 0;
+
+    m_hornActive = 0;
+    m_unk8 = 0;
+    m_unk9 = 0;
+
+    m_unk11 = NULL;
+    m_unk12 = NULL;
+    m_unk13 = NULL;
+    m_unk14 = NULL;
+
+    m_alarmState = 0;
+    m_doorState = 1;
+
+    m_unk15 = 0;
+    m_unk16 = 0;
+    m_unk17 = 0;
+
+    m_unk18 = 0;
+
+    m_unk20 = NULL;
+    m_unk21 = NULL;
+    
+    m_entityVisibilityCheck = NULL;
+
+    m_unk22 = 0;
+    m_unk23 = 0;
+
+    m_unk25 = 0;
+    m_unk26 = 0;
+    m_unk27 = 0;
+
+    m_handling = NULL;
+    m_handlingFlags = 0;
+
+    m_control.m_unk14 = 0;
+    m_control.m_unk15 = 0;
+    m_control.m_creationTime = pGame->GetSystemTime();
+    m_control.m_flags &= ~0x04;
+
+    m_unk29 = -1;
+    m_unk28 = -1;
+    m_unk30 = 0;
+
+    m_unk31 = 0;
+    m_unk32 = 0;
+    m_unk33 = 0;
+    m_unk35 = 0;
+
+    for (n=0; n<MAX_UPGRADES_ATTACHED; n++)
+        m_upgrades[n] = -1;
+
+    m_usedForCover &= ~0x60;
+
+    m_wheelScale = 1;
+
+    m_windowsOpenFlags = 0;
+    m_nitroBoosts = 0;
+
+    m_unk36 = 0;
+
+    m_unk24 = 0;
+
+    m_bodyDirtLevel = rand() % 15;
+    
+    m_timeOfCreation = pGame->GetSystemTime();
+
+    m_unk37 = 205089.12;
 }
 
 CVehicleSAInterface::~CVehicleSAInterface()
 {
+    HandlePopulation( false );
+}
 
+void CVehicleSAInterface::HandlePopulation( bool create )
+{
+    if ( create )
+    {
+        switch( m_createdBy - 1 )
+        {
+        case 0:
+            if ( m_vehicleType & VEHICLE_POLICE )
+                *((unsigned int*)VAR_PoliceVehicleCount)++;
+
+            *((unsigned int*)VAR_VehicleCount)++;
+            return;
+        case 1:
+            if ( m_vehicleType & VEHICLE_POLICE )
+            {
+                *((unsigned int*)VAR_PoliceVehicleCount)--;
+
+                m_vehicleType &= ~VEHICLE_POLICE;
+            }
+
+            *((unsigned int*)0x0096909C)++;
+            return;
+        case 2:
+            *((unsigned int*)0x009690A0)++;
+            return;
+        case 3:
+            *((unsigned int*)0x009690A4)++;
+            return;
+        }
+
+        return;
+    }
+
+    switch( m_createdBy - 1 )
+    {
+    case 0:
+        if ( m_vehicleType & VEHICLE_POLICE )
+            *((unsigned int*)VAR_PoliceVehicleCount)--;
+
+        *((unsigned int*)VAR_VehicleCount)--;
+        return;
+    case 1:
+        *((unsigned int*)0x0096909C)--;
+        return;
+    case 2:
+        *((unsigned int*)0x009690A0)--;
+        return;
+    case 3:
+        *((unsigned int*)0x009690A4)--;
+        return;
+    }
 }
 
 CVehicleSA::CVehicleSA ()

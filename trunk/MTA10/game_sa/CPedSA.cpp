@@ -157,8 +157,6 @@ void CPedSA::DetachPedFromEntity ( void )
         mov     ecx, dwThis
         call    dwFunc
     }
-
-    GetInterface()->
 }
 
 bool CPedSA::InternalAttachToEntity(DWORD dwEntityInterface, const CVector * vecPosition, const CVector * vecRotation)
