@@ -19,7 +19,6 @@
 #include <windows.h>
 #include <game/TaskCar.h>
 
-#include "CVehicleSA.h"
 #include "TaskSA.h"
 
 // temporary

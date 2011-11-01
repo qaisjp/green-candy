@@ -29,7 +29,6 @@ class CPedSA;
 #include "CPhysicalSA.h"
 
 #include "CPedSoundSA.h"
-#include "CVehicleSA.h"
 #include "CWeaponSA.h"
 
 class CPedIntelligenceSA;

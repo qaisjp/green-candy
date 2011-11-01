@@ -733,6 +733,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CTrainSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CTransformationSA.cpp"
 				>
 			</File>
@@ -1275,6 +1279,10 @@
 			</File>
 			<File
 				RelativePath="CTrailerSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CTrainSA.h"
 				>
 			</File>
 			<File

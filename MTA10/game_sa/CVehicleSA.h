@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CVehicleSA.h
 *  PURPOSE:     Header file for vehicle base entity class
@@ -9,6 +9,7 @@
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -143,6 +144,9 @@ class CVehicleSA;
 
 #define VARS_CarCounts                          0x969094 // 5 values for each vehicle type
 
+#define VAR_VehicleCount                        0x969094
+#define VAR_PoliceVehicleCount                  0x969098
+
 // Used when deleting vehicles
 #define VTBL_CPlaceable                         0x863C40
 
@@ -168,80 +172,6 @@ typedef struct
     WORD  sRailDistance;    // on-rail distance times 3
     WORD  padding;
 } SRailNodeSA;
-
-struct CVehicleFlags
-{
-    unsigned char bIsLawEnforcer: 1; // Is this guy chasing the player at the moment
-    unsigned char bIsAmbulanceOnDuty: 1; // Ambulance trying to get to an accident
-    unsigned char bIsFireTruckOnDuty: 1; // Firetruck trying to get to a fire
-    unsigned char bIsLocked: 1; // Is this guy locked by the script (cannot be removed)
-    unsigned char bEngineOn: 1; // For sound purposes. Parked cars have their engines switched off (so do destroyed cars)
-    unsigned char bIsHandbrakeOn: 1; // How's the handbrake doing ?
-    unsigned char bLightsOn: 1; // Are the lights switched on ?
-    unsigned char bFreebies: 1; // Any freebies left in this vehicle ?
-
-    unsigned char bIsVan: 1; // Is this vehicle a van (doors at back of vehicle)
-    unsigned char bIsBus: 1; // Is this vehicle a bus
-    unsigned char bIsBig: 1; // Is this vehicle a bus
-    unsigned char bLowVehicle: 1; // Need this for sporty type cars to use low getting-in/out anims
-    unsigned char bComedyControls: 1; // Will make the car hard to control (hopefully in a funny way)
-    unsigned char bWarnedPeds: 1; // Has scan and warn peds of danger been processed?
-    unsigned char bCraneMessageDone: 1; // A crane message has been printed for this car allready
-    // unsigned char bExtendedRange: 1; // This vehicle needs to be a bit further away to get deleted
-    unsigned char bTakeLessDamage: 1; // This vehicle is stronger (takes about 1/4 of damage)
-
-    unsigned char bIsDamaged: 1; // This vehicle has been damaged and is displaying all its components
-    unsigned char bHasBeenOwnedByPlayer : 1;// To work out whether stealing it is a crime
-    unsigned char bFadeOut: 1; // Fade vehicle out
-    unsigned char bIsBeingCarJacked: 1; // Fade vehicle out
-    unsigned char bCreateRoadBlockPeds : 1;// If this vehicle gets close enough we will create peds (coppers or gang members) round it
-    unsigned char bCanBeDamaged: 1; // Set to FALSE during cut scenes to avoid explosions
-    // unsigned char bUsingSpecialColModel : 1;
-    // Is player vehicle using special collision model, stored in player strucure
-    unsigned char bOccupantsHaveBeenGenerated : 1; // Is true if the occupants have already been generated. (Shouldn't happen again)
-    unsigned char bGunSwitchedOff: 1; // Level designers can use this to switch off guns on boats
-    
-    unsigned char bVehicleColProcessed : 1;// Has ProcessEntityCollision been processed for this car?
-    unsigned char bIsCarParkVehicle: 1; // Car has been created using the special CAR_PARK script command
-    unsigned char bHasAlreadyBeenRecorded : 1; // Used for replays
-    unsigned char bPartOfConvoy: 1;
-    unsigned char bHeliMinimumTilt: 1; // This heli should have almost no tilt really
-    unsigned char bAudioChangingGear: 1; // sounds like vehicle is changing gear
-    unsigned char bIsDrowning: 1; // is vehicle occupants taking damage in water (i.e. vehicle is dead in water)
-    unsigned char bTyresDontBurst: 1; // If this is set the tyres are invincible
-
-    unsigned char bCreatedAsPoliceVehicle : 1;// True if this guy was created as a police vehicle (enforcer, policecar, miamivice car etc)
-    unsigned char bRestingOnPhysical: 1; // Dont go static cause car is sitting on a physical object that might get removed
-    unsigned char bParking : 1;
-    unsigned char bCanPark : 1;
-    unsigned char bFireGun: 1; // Does the ai of this vehicle want to fire it's gun?
-    unsigned char bDriverLastFrame: 1; // Was there a driver present last frame ?
-    unsigned char bNeverUseSmallerRemovalRange: 1;// Some vehicles (like planes) we don't want to remove just behind the camera.
-    unsigned char bIsRCVehicle: 1; // Is this a remote controlled (small) vehicle. True whether the player or AI controls it.
-
-    unsigned char bAlwaysSkidMarks: 1; // This vehicle leaves skidmarks regardless of the wheels' states.
-    unsigned char bEngineBroken: 1; // Engine doesn't work. Player can get in but the vehicle won't drive
-    unsigned char bVehicleCanBeTargetted : 1;// The ped driving this vehicle can be targetted, (for Torenos plane mission)
-    unsigned char bPartOfAttackWave: 1; // This car is used in an attack during a gang war
-    unsigned char bWinchCanPickMeUp: 1; // This car cannot be picked up by any ropes.
-    unsigned char bImpounded: 1; // Has this vehicle been in a police impounding garage
-    unsigned char bVehicleCanBeTargettedByHS  : 1;// Heat seeking missiles will not target this vehicle.
-    unsigned char bSirenOrAlarm: 1; // Set to TRUE if siren or alarm active, else FALSE
-
-    unsigned char bHasGangLeaningOn: 1;
-    unsigned char bGangMembersForRoadBlock : 1;// Will generate gang members if NumPedsForRoadBlock > 0
-    unsigned char bDoesProvideCover: 1; // If this is false this particular vehicle can not be used to take cover behind.
-    unsigned char bMadDriver: 1; // This vehicle is driving like a lunatic
-    unsigned char bUpgradedStereo: 1; // This vehicle has an upgraded stereo
-    unsigned char bConsideredByPlayer: 1; // This vehicle is considered by the player to enter
-    unsigned char bPetrolTankIsWeakPoint : 1;// If false shootong the petrol tank will NOT Blow up the car
-    unsigned char bDisableParticles: 1; // Disable particles from this car. Used in garage.
-
-    unsigned char bHasBeenResprayed: 1; // Has been resprayed in a respray garage. Reset after it has been checked.
-    unsigned char bUseCarCheats: 1; // If this is true will set the car cheat stuff up in ProcessControl()
-    unsigned char bDontSetColourWhenRemapping : 1;// If the texture gets remapped we don't want to change the colour with it.
-    unsigned char bUsedForReplay: 1; // This car is controlled by replay and should be removed when replay is done.
-};
 
 struct CTrainFlags
 {
@@ -301,40 +231,160 @@ public:
                             CVehicleControlSAInterface();
                             ~CVehicleControlSAInterface();
 
-    unsigned short          m_unk;              // 0
+    short                   m_unk;              // 0
     BYTE                    m_pad[2];           // 2
-    unsigned short          m_unk2;             // 4
+    short                   m_unk2;             // 4
     BYTE                    m_pad2[2];          // 6
-    unsigned short          m_unk3;             // 8
+    short                   m_unk3;             // 8
 
-    BYTE                    m_pad3[10];         // 10
-    unsigned short          m_unk4;             // 20
-    unsigned short          m_unk5;             // 22
-    unsigned short          m_unk6;             // 24
+    BYTE                    m_pad3[2];          // 10
+    void*                   m_unk10;            // 12
+    unsigned int            m_unk11;            // 16
 
-    BYTE                    m_pad6[11];         // 26
-    unsigned char           m_unk8;             // 37
-    unsigned char           m_unk9;             // 38
+    short                   m_unk4;             // 20
+    short                   m_unk5;             // 22
+    short                   m_unk6;             // 24
 
-    BYTE                    m_pad[66];          // 26
+    BYTE                    m_pad6[2];          // 26
+    unsigned int            m_creationTime;     // 28
+    unsigned int            m_time;             // 32
+
+    unsigned char           m_unk22;            // 36
+
+    bool                    m_unk8;             // 37
+    bool                    m_unk9;             // 38
+
+    unsigned char           m_unk39;            // 39
+    unsigned char           m_unk12;            // 40
+    unsigned char           m_unk13;            // 41
+    unsigned char           m_unk14;            // 42
+    unsigned char           m_unk15;            // 43
+
+    BYTE                    m_pad13[4];         // 44
+    void*                   m_unk29;            // 48
+    unsigned char           m_unk30;            // 52
+
+    unsigned char           m_unk28;            // 53
+    
+    BYTE                    m_pad8[2];          // 54
+    float                   m_unk16;            // 56
+
+    void*                   m_unk38;            // 60
+
+    unsigned char           m_unk17;            // 64
+
+    unsigned char           m_unk23;            // 65
+    BYTE                    m_pad11[2];         // 66
+
+    float                   m_unk24;            // 68
+
+    unsigned char           m_unk31;            // 72
+    
+    unsigned char           m_unk32;            // 73
+    unsigned char           m_unk33;            // 74
+
+    unsigned char           m_flags;            // 75
+    unsigned char           m_flags2;           // 76
+
+    unsigned char           m_unk34;            // 77
+    
+    unsigned char           m_unk35;            // 78
+    unsigned char           m_unk36;            // 79
+    unsigned char           m_unk37;            // 80
+
+    BYTE                    m_pad[12];          // 80
     unsigned int            m_handlingFlags;    // 92
 
     BYTE                    m_pad4[8];          // 96
+    unsigned int            m_unk7[8];          // 104
 
-    void*                   m_unk7[8];          // 104
-    BYTE                    m_pad5[16];         // 136
+    unsigned short          m_unk18;            // 136
+    BYTE                    m_pad10[2];         // 138
+    void*                   m_unk19;            // 140
+
+    void*                   m_unk25;            // 144
+    
+    unsigned char           m_unk26;            // 148
+    unsigned char           m_unk27;            // 149
 };
 
-#define MAX_UPGRADES_ATTACHED 15
+#define MAX_UPGRADES_ATTACHED       14
 
-/**
- * \todo GAME RELEASE: Update CVehicleSAInterface
- */
+#define VEHICLE_POLICE              0x00000001
+#define VEHICLE_AMBULANCE           0x00000002
+#define VEHICLE_FIRETRUCK           0x00000004
+#define VEHICLE_LOCKED              0x00000008
+#define VEHICLE_ENGINESTATUS        0x00000010
+#define VEHICLE_HANDBRAKE           0x00000020
+#define VEHICLE_LIGHTSTATUS         0x00000040
+#define VEHICLE_FREEBIES            0x00000080
+
+#define VEHICLE_VAN                 0x00000100
+#define VEHICLE_BUS                 0x00000200
+#define VEHICLE_BIG                 0x00000400
+#define VEHICLE_LOW                 0x00000800
+#define VEHICLE_COMEDYCONTROLS      0x00001000
+#define VEHICLE_WARNPEDS            0x00002000
+#define VEHICLE_CRANEPROCESSED      0x00004000
+#define VEHICLE_ARMORED             0x00008000
+
+#define VEHICLE_DAMAGED             0x00010000
+#define VEHICLE_PLAYERPOSSESION     0x00020000
+#define VEHICLE_FADEOUT             0x00040000
+#define VEHICLE_CARJACK             0x00080000
+#define VEHICLE_ROADBLOCK           0x00100000
+#define VEHICLE_DAMAGEABLE          0x00200000
+#define VEHICLE_PROCESSEDPEDS       0x00400000
+#define VEHICLE_WEAPONS             0x00800000
+    
+#define VEHICLE_COLLPROCESSED       0x01000000
+#define VEHICLE_PARKED              0x02000000
+#define VEHICLE_RECORDED            0x04000000
+#define VEHICLE_CONVOY              0x08000000
+#define VEHICLE_LOWTILT             0x10000000
+#define VEHICLE_CHANGEGEAR          0x20000000
+#define VEHICLE_DROWNING            0x40000000
+#define VEHICLE_NOTYREBURST         0x80000000
+
+#define VEHGENERIC_POLICETYPE       0x00000001
+#define VEHGENERIC_NOSTATIC         0x00000002
+#define VEHGENERIC_PARKING          0x00000004
+#define VEHGENERIC_CANPARK          0x00000008
+#define VEHGENERIC_FIREGUN          0x00000010
+#define VEHGENERIC_DRIVER           0x00000020
+#define VEHGENERIC_COMPLEX          0x00000040
+#define VEHGENERIC_REMOTECONTROL    0x00000080
+
+#define VEHGENERIC_SKIDMARKS        0x00000100
+#define VEHGENERIC_ENGINEBROKEN     0x00000200
+#define VEHGENERIC_TARGETABLE       0x00000400
+#define VEHGENERIC_GANGWAR          0x00000800
+#define VEHGENERIC_PICKUP           0x00001000
+#define VEHGENERIC_IMPOUNDED        0x00002000
+#define VEHGENERIC_HEATSEEK         0x00004000
+#define VEHGENERIC_ALARM            0x00008000
+
+#define VEHGENERIC_GANGLEANON       0x00010000
+#define VEHGENERIC_GANGROADBLOCK    0x00020000
+#define VEHGENERIC_ISGOODCOVER      0x00040000
+#define VEHGENERIC_MADDRIVER        0x00080000
+#define VEHGENERIC_UPGRADEDSTEREO   0x00100000
+#define VEHGENERIC_PEDENTERING      0x00200000
+#define VEHGENERIC_PETROLTANK       0x00400000
+#define VEHGENERIC_NOPARTICLES      0x00800000
+
+#define VEHGENERIC_RESPRAYED        0x01000000
+#define VEHGENERIC_CHEATS           0x02000000
+#define VEHGENERIC_NOCOLORREMAP     0x04000000
+#define VEHGENERIC_REPLAY           0x08000000
+
 class CVehicleSAInterface : public CPhysicalSAInterface
 {
 public:
                                     CVehicleSAInterface( unsigned char createdBy );
                                     ~CVehicleSAInterface();
+
+    void                            HandlePopulation( unsigned char createdBy );
 
     virtual void __thiscall         ProcessControlCollisionCheck() = 0;
     virtual void __thiscall         ProcessControlInputs() = 0;
@@ -383,7 +433,7 @@ public:
     void*   operator new( size_t );
     void    operator delete( void *ptr );
 
-    CVehicleAudioSAInterface    m_vehicleAudio;                         // 312
+    CVehicleAudioSAInterface    m_audio;                                // 312
 
     BYTE                        m_pad0[32];                             // 868
 
@@ -393,15 +443,18 @@ public:
     
     CVehicleControlSAInterface  m_control;                              // 912
 
-    CVehicleFlags               m_vehicleFlags;                         // 1064
+    unsigned int                m_vehicleFlags;                         // 1064
+    unsigned int                m_genericFlags;                         // 1068
+
     unsigned int                m_timeOfCreation;                       // 1072, GetTimeInMilliseconds when this vehicle was created.
 
     unsigned char               m_color1, m_color2, m_color3, m_color4; // 1076
     char                        m_comp1, m_comp2;                       // 1080
     short                       m_upgrades[MAX_UPGRADES_ATTACHED];      // 1082
+    unsigned short              m_numUpgrades;                          // 1110, No idea whether this is true
     float                       m_wheelScale;                           // 1112
 
-    unsigned short              m_carAlarmState;                        // 1116
+    unsigned short              m_alarmState;                           // 1116
     unsigned short              m_forcedRandomSeed;                     // 1118, if this is non-zero the random wander gets deterministic
     
     CPedSAInterface*            m_driver;                               // 1120
@@ -414,7 +467,7 @@ public:
     unsigned char               m_windowsOpenFlags;                     // 1161
     unsigned char               m_nitroBoosts;                          // 1162
 
-    unsigned char               m_specialColModel;                      // 1163
+    char                        m_specialColModel;                      // 1163
     CEntitySAInterface*         m_entityVisibilityCheck;                // 1164
     CFire*                      m_fire;                                 // 1168
 
@@ -445,55 +498,81 @@ public:
     unsigned char               m_currentGear;                          // 1204, values used by transmission
     BYTE                        m_pad4b[3];                             // 1205
     float                       m_gearChangeCount;                      // 1208
-    float                       m_wheelSpinForAudio;                    // 1212
+    float                       m_wheelSpinAudio;                       // 1212
 
     float                       m_health;                               // 1216, 1000 = full health. 0 -> explode
 
+    void*                       m_unk11;                                // 1220
+    void*                       m_unk12;                                // 1224
+    void*                       m_unk13;                                // 1228
+    void*                       m_unk14;                                // 1232
+
+    void*                       m_unk7;                                 // 1236
+
+    void*                       m_unk5;                                 // 1240
+    unsigned short              m_unk6;                                 // 1244
+
+    unsigned short              m_unk3;                                 // 1246
+    void*                       m_unk4;                                 // 1248
+
+    void*                       m_unk21;                                // 1252
+    void*                       m_unk20;                                // 1256
+
+    unsigned char               m_unk10;                                // 1260
+
+    BYTE                        m_pad5c[7];                             // 1261
+
     /*** BEGIN SECTION that was added by us ***/
-    BYTE                        m_pad5[48];                             // 1220
     class CVehicleSA*           m_vehicle;                              // 1268
     /*** END SECTION that was added by us ***/
 
     unsigned int                m_doorState;                            // 1272
-    BYTE                        m_pad6[24];                             // 1276
+
+    unsigned int                m_unk15;                                // 1276
+    unsigned int                m_unk16;                                // 1280
+    unsigned int                m_unk17;                                // 1284
+
+    char                        m_unk2;                                 // 1288
+    BYTE                        m_pad6[3];                              // 1289
+
+    unsigned int                m_unk18;                                // 1292
+
+    unsigned char               m_unk19;                                // 1296
+    unsigned char               m_unk22;                                // 1297
+    unsigned char               m_unk23;                                // 1298
+    unsigned char               m_unk24;                                // 1299
+
     unsigned int                m_hornActive;                           // 1300
-    BYTE                        m_pad7[136];                            // 1304
+    unsigned char               m_unk8;                                 // 1304
+    unsigned char               m_unk9;                                 // 1305
 
-    unsigned char               m_trackNodeID;                          // 1440, Current node on train tracks
-    BYTE                        m_pad8[3];                              // 1441
-    float                       m_trainSpeed;                           // 1444, Speed along rails
-    float                       m_trainRailDistance;                    // 1448, Distance along rail starting from first rail node
-    float                       m_distanceNextCarriage;                 // 1452
-    DWORD                       m_pad9[2];                              // 1456
-    CTrainFlags                 m_trainFlags;                           // 1464
-    DWORD                       m_pad10;                                // 1468
-    unsigned char               m_railTrackID;                          // 1472
-    BYTE                        m_pad11[15];                            // 1473
-    CVehicleSAInterface*        m_prevCarriage;                         // 1488
-    CVehicleSAInterface*        m_nextCarriage;                         // 1492
+    unsigned char               m_unk25;                                // 1306
 
-    BYTE                        m_pad12[116];                           // 1496
+    unsigned char               m_unk36;                                // 1307
 
-    RwFrame*                    m_chasis;                               // 1612
-    RwFrame*                    m_wheelFR;                              // 1616
-    BYTE                        m_pad13[4];                             // 1620
-    RwFrame*                    m_wheelRR;                              // 1624
-    RwFrame*                    m_wheelFL;                              // 1628 
-    BYTE                        m_pad14[4];                             // 1632
-    RwFrame*                    m_wheelRL;                              // 1636
-    RwFrame*                    m_doors[4];                             // 1640
-    RwFrame*                    m_bumpers[2];                           // 1656
-    BYTE                        m_pad15[8];                             // 1664
-    RwFrame*                    m_bonet;                                // 1672
-    RwFrame*                    m_boot;                                 // 1676
-    RwFrame*                    m_windscreen;                           // 1680
-    RwFrame*                    m_exhaust;                              // 1684
+    BYTE                        m_pad19[36];                            // 1308
+    unsigned char               m_unk26;                                // 1344
 
-    BYTE                        m_pad16[588];                           // 1688
+    BYTE                        m_pad20[43];                            // 1345
+    unsigned char               m_unk27;                                // 1388
+    
+    BYTE                        m_pad18[7];                             // 1389
+    float                       m_unk37;                                // 1396    
 
-    float                       m_burningTime;                          // 2276
+    float                       m_unk31;                                // 1400
+    float                       m_unk32;                                // 1404
+    float                       m_unk33;                                // 1408
 
-    BYTE                        m_pad17[304];                           // 2280
+    unsigned int                m_unk34;                                // 1412
+
+    float                       m_unk35;                                // 1416
+
+    float                       m_unk;                                  // 1420
+
+    BYTE                        m_pad7[8];                              // 1424
+    short                       m_unk28;                                // 1432
+    short                       m_unk29;                                // 1434
+    unsigned int                m_unk30;                                // 1436
 };
 
 

@@ -14,7 +14,6 @@
 #define __CGAMESA_BIKE
 
 #include <game/CBike.h>
-#include "CVehicleSA.h"
 
 #define FUNC_CBike_PlaceOnRoadProperly              0x6BEEB0
 

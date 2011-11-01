@@ -14,7 +14,6 @@
 #define __CGAMESA_BOAT
 
 #include <game/CBoat.h>
-#include "CVehicleSA.h"
 
 class CBoatSAInterface : public CVehicleSAInterface
 {
