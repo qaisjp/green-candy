@@ -381,11 +381,11 @@
 				>
 			</File>
 			<File
-				RelativePath="CBikeSA.cpp"
+				RelativePath=".\CBicycleSA.cpp"
 				>
 			</File>
 			<File
-				RelativePath="CBmxSA.cpp"
+				RelativePath="CBikeSA.cpp"
 				>
 			</File>
 			<File
@@ -845,6 +845,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\TaskGoToSA.h"
+				>
+			</File>
+			<File
 				RelativePath=".\TaskIKSA.cpp"
 				>
 			</File>
@@ -922,11 +926,11 @@
 				>
 			</File>
 			<File
-				RelativePath="CBikeSA.h"
+				RelativePath=".\CBicycleSA.h"
 				>
 			</File>
 			<File
-				RelativePath="CBmxSA.h"
+				RelativePath="CBikeSA.h"
 				>
 			</File>
 			<File
@@ -1371,10 +1375,6 @@
 			</File>
 			<File
 				RelativePath=".\TaskCarSA.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TaskGoToSA.h"
 				>
 			</File>
 			<File

@@ -14,10 +14,10 @@
 
 #include "CVehicle.h"
 
-class CBmx : public virtual CVehicle
+class CBicycle : public virtual CAutomobile
 {
 public:
-    virtual                         ~CBmx ( void ) {};
+    virtual                         ~CBicycle ( void ) {};
 };
 
 #endif

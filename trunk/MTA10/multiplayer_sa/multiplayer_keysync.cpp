@@ -171,23 +171,6 @@ void PostContextSwitch ( void )
         bRadioHackInstalled = FALSE;
     }
 
-    /*
-    // ChrML: Force as high stats as we can go before screwing up. Players can't have different
-    // stats or guns don't work. We can't have dual guns either due to some screwups.
-    // Dual gun screwup: Sync code needs update and the gun pointing up needs to.
-    localStatsData.StatTypesFloat [ 69 ] = 500.0f;
-    localStatsData.StatTypesFloat [ 70 ] = 999.0f;
-    localStatsData.StatTypesFloat [ 71 ] = 999.0f;
-    localStatsData.StatTypesFloat [ 72 ] = 999.0f;
-    localStatsData.StatTypesFloat [ 73 ] = 500.0f;
-    localStatsData.StatTypesFloat [ 74 ] = 999.0f;
-    localStatsData.StatTypesFloat [ 75 ] = 500.0f;
-    localStatsData.StatTypesFloat [ 76 ] = 999.0f;
-    localStatsData.StatTypesFloat [ 77 ] = 999.0f;
-    localStatsData.StatTypesFloat [ 78 ] = 999.0f;
-    localStatsData.StatTypesFloat [ 79 ] = 999.0f;
-    */
-
     // ChrML: This causes the aiming issues
     // Restore the local player stats    
     MemCpyFast ( (void *)0xb79380, &localStatsData.StatTypesFloat, sizeof(float) * MAX_FLOAT_STATS );

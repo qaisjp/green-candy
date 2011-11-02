@@ -40,7 +40,7 @@
 #include "CAutomobileSA.h"
 #include "CBikeSA.h"
 #include "CBoatSA.h"
-#include "CBmxSA.h"
+#include "CBicycleSA.h"
 #include "CQuadBikeSA.h"
 #include "CMonsterTruckSA.h"
 #include "CPlaneSA.h"
