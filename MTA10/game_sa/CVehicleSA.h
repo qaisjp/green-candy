@@ -419,7 +419,7 @@ public:
     virtual float __thiscall        GetModelOffset() = 0;
     virtual void __thiscall         PlayHorn() = 0;
     virtual unsigned int __thiscall GetNumContactWheels() = 0;
-    virtual void __thiscall         DamageVehicle() = 0;
+    virtual void __thiscall         Damage() = 0;
     virtual bool __thiscall         CanPedStepOutCar( bool unk ) = 0;
     virtual bool __thiscall         CanPedJumpOutCar( CPedSAInterface *passenger ) = 0;
     virtual bool __thiscall         GetTowHitchPosition( CVector *pos, unsigned int unk, unsigned int unk2 ) = 0;

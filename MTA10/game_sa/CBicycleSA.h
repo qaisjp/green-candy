@@ -1,10 +1,11 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        game_sa/CBmxSA.h
+*  FILE:        game_sa/CBicycleSA.h
 *  PURPOSE:     Header file for bmx bike vehicle entity class
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -14,21 +15,21 @@
 #define __CGAMESA_BMX
 
 #include <game/CBmx.h>
-#include "CBikeSA.h"
 
-class CBmxSAInterface : public CBikeSAInterface
+class CBicycleSAInterface : public CAutomobileSAInterface
 {
+public:
     // fill this
 };
 
-class CBmxSA : public virtual CBmx, public virtual CBikeSA
+class CBicycleSA : public virtual CBicycle, public virtual CAutomobileSA
 {
 private:
 public:
-                                CBmxSA( CBmxSAInterface * bmx );
-                                CBmxSA( eVehicleTypes dwModelID );
+                                CBicycleSA( CBicycleSAInterface *bike );
+                                CBicycleSA( unsigned short mode );
 
-    virtual                     ~CBmxSA ( void ) {};
+    virtual                     ~CBicycleSA ( void ) {};
 };
 
 #endif
