@@ -38,15 +38,21 @@
 #define MAX_DOORS                   6   // also in CAutomobile
 #define MAX_WHEELS                  4
 
-class CDamageManagerSAInterface // 28 bytes due to the way its packed (24 containing actual data)
+class CDamageManagerSAInterface // 24 bytes
 {
 public:
-    float           m_wheelDamage;
-    unsigned char   m_engineStatus;      // old - wont be used
-    unsigned char   m_wheels[MAX_WHEELS];
-    unsigned char   m_doors[MAX_DOORS];
-    unsigned int    m_lights;             // 2 bits per light
-    unsigned long   m_panels;             // 4 bits per panel
+                        CDamageManagerSAInterface();
+                        ~CDamageManagerSAInterface();
+
+    float               m_wheelDamage;          // 0
+    unsigned char       m_engineStatus;         // 4, old - wont be used
+    unsigned char       m_wheels[MAX_WHEELS];   // 5
+    unsigned char       m_doors[MAX_DOORS];     // 9
+
+    BYTE                m_pad;                  // 15
+
+    unsigned int        m_lights;               // 16, 2 bits per light
+    unsigned int        m_panels;               // 20, 4 bits per panel
 };
 
 class CDamageManagerSA : public CDamageManager
