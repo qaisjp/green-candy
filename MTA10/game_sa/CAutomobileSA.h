@@ -56,18 +56,12 @@
 #define FUNC_CAutomobile_SetTotalDamage             0x6A27F0
 #define FUNC_CAutomobile_SpawnFlyingComponent       0x6A8580
 
-// this is collision data (confirmed)
-// Now, how to implement this? Does it exist in GTA:SA?
-class CAutomobileSAUnknownInterface // 40 bytes
+class CVehicleUnknown
 {
-    CVector     m_offset;
-    FLOAT       Unknown187; // 1008
-    FLOAT       Unknown188; // 1012
-    FLOAT       Unknown189; // 1016
-    FLOAT       Unknown190; // 1020
-    FLOAT       Unknown191; // 1024
-    DWORD       Unknown192; // 1028
-    FLOAT       Unknown193; // 1032
+public:
+    short                       m_unk;                                  // 0
+
+    BYTE                        m_pad[30];                              // 2
 };
 
 class CAutomobileSAInterface : public CVehicleSAInterface
@@ -78,8 +72,9 @@ public:
 
     CDamageManagerSAInterface   m_damage;                               // 1440
 
-    BYTE                        m_pad[144];                             // 1468
+    unsigned int                m_unk[36];                              // 1464
 
+    RwFrame*                    m_root;                                 // 1608, ?
     RwFrame*                    m_chasis;                               // 1612
     RwFrame*                    m_wheelFR;                              // 1616
     BYTE                        m_pad2[4];                              // 1620
@@ -95,7 +90,13 @@ public:
     RwFrame*                    m_windscreen;                           // 1680
     RwFrame*                    m_exhaust;                              // 1684
 
-    BYTE                        m_pad5[588];                            // 1688
+    BYTE                        m_pad5[20];                             // 1688
+
+    CVehicleUnknown             m_unk2[3];                              // 1708
+
+    unsigned int                m_unk3[6];                              // 1804
+
+    BYTE                        m_pad6[448];                            // 1828
 
     float                       m_burningTime;                          // 2276
 };

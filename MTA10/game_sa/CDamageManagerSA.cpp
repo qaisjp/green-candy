@@ -14,6 +14,22 @@
 
 #include "StdInc.h"
 
+CDamageManagerSAInterface::CDamageManagerSAInterface()
+{
+    m_engineStatus = 0;
+
+    memset( m_wheels, 0, sizeof(m_wheels) );
+    memset( m_doors, 0, sizeof(m_doors) );
+
+    m_lights = 0;
+    m_panels = 0;
+}
+
+CDamageManagerSAInterface::~CDamageManagerSAInterface()
+{
+
+}
+
 unsigned char CDamageManagerSA::GetEngineStatus()
 {
     DEBUG_TRACE("BYTE CDamageManagerSA::GetEngineStatus()");
