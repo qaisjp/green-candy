@@ -15,8 +15,6 @@
 *
 *****************************************************************************/
 
-class CVehicleSA;
-
 #ifndef __CGAMESA_VEHICLE
 #define __CGAMESA_VEHICLE
 
@@ -28,6 +26,8 @@ class CVehicleSA;
 #include "CHandlingManagerSA.h"
 #include "CDamageManagerSA.h"
 #include "CDoorSA.h"
+
+class CVehicleSA;
 
 #define SIZEOF_CHELI                            2584
 
@@ -147,9 +147,6 @@ class CVehicleSA;
 #define VAR_VehicleCount                        0x969094
 #define VAR_PoliceVehicleCount                  0x969098
 
-// Used when deleting vehicles
-#define VTBL_CPlaceable                         0x863C40
-
 #define MAX_PASSENGERS                          8
 
 #define NUM_RAILTRACKS                          4
@@ -198,6 +195,9 @@ public:
                             CVehicleAudioSAInterface();
                             ~CVehicleAudioSAInterface();
 
+    void                    AddUpgrade( unsigned short model );
+    bool                    UpdateComponentStatus( unsigned short model, unsigned char collFlags, unsigned short *complex );
+
     void*                   m_vtbl;         // 0
 
     void*                   m_unk2;         // 4
@@ -205,10 +205,14 @@ public:
 
     void*                   m_unk;          // 16
 
-    BYTE                    m_pad2[134];    // 20
-    unsigned char           m_station;      // 154
+    BYTE                    m_pad2[114];    // 20
+    unsigned char           m_soundType;    // 134
 
-    BYTE                    m_pad3[9];      // 155
+    BYTE                    m_pad2b[19];    // 135
+    unsigned char           m_station;      // 154
+    bool                    m_improved;     // 155
+
+    BYTE                    m_pad3[8];      // 156
     unsigned char           m_unk3;         // 164
 
     BYTE                    m_pad4[223];    // 165
@@ -433,6 +437,8 @@ public:
     void*   operator new( size_t );
     void    operator delete( void *ptr );
 
+    RpClump*                        GetRwObject() { return (RpClump*)m_rwObject; }
+
     CVehicleAudioSAInterface    m_audio;                                // 312
 
     BYTE                        m_pad0[32];                             // 868
@@ -569,7 +575,9 @@ public:
 
     float                       m_unk;                                  // 1420
 
-    BYTE                        m_pad7[8];                              // 1424
+    void*                       m_unk38;                                // 1424, both used in inheriting classes
+    void*                       m_unk39;                                // 1428
+
     short                       m_unk28;                                // 1432
     short                       m_unk29;                                // 1434
     unsigned int                m_unk30;                                // 1436

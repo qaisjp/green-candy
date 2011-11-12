@@ -61,7 +61,7 @@ public:
     DWORD                   m_unk2;                     // 176
     CPtrNodeDoubleSA*       m_link;                     // 180
 
-    unsigned char           m_unk3;                     // 184
+    unsigned char           m_complexStatus;            // 184, used for hydraulics
     unsigned char           m_numCollRecords;           // 185
     unsigned char           m_unk4;                     // 186
     unsigned char           m_unk5;                     // 187

@@ -118,8 +118,8 @@ public:
     virtual bool __thiscall         AddToWorld ();
     virtual void __thiscall         RemoveFromWorld ();
     virtual void __thiscall         SetStatic ( bool enabled );
-    virtual bool __thiscall         SetModelIndex ( unsigned short id );
-    virtual bool __thiscall         SetModelIndexNoCreate ( unsigned short id );
+    virtual void __thiscall         SetModelIndex ( unsigned short id );
+    virtual void __thiscall         SetModelIndexNoCreate ( unsigned short id );
     virtual RwObject* __thiscall    CreateRwObject ();
     virtual void __thiscall         DeleteRwObject ();
     virtual void __thiscall         GetBoundingBox ( CBoundingBox box );

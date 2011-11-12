@@ -1886,6 +1886,30 @@ RpAnimHierarchy* RpClump::GetAnimHierarchy()
     return m_parent->GetAnimHierarchy();
 }
 
+struct _rwFrameScanHierarchy
+{
+    RwFrame **output;
+    size_t max;
+};
+
+static bool RwFrameGetAssignedHierarchy( RwFrame *child, _rwFrameScanHierarchy *info )
+{
+    if ( child->m_hierarchyId && child->m_hierarchyId < info->max )
+        info->output[child->m_hierarchyId] = child;
+
+    return child->ForAllChildren( RwFrameGetAssignedHierarchy, info );
+}
+
+void RpClump::ScanAtomicHierarchy( RwFrame **atomics, size_t max )
+{
+    _rwFrameScanHierarchy info;
+
+    info.output = atomics;
+    info.max = max;
+
+    m_parent->ForAllChildren( RwFrameGetAssignedHierarchy, &info );
+}
+
 static bool RwGetAtomic( RpAtomic *child, RpAtomic **atomic )
 [
     *atomic = child;

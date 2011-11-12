@@ -373,6 +373,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CAtomicModelInfoSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CAudioSA.cpp"
 				>
 			</File>
@@ -426,6 +430,10 @@
 			</File>
 			<File
 				RelativePath="CClockSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CClumpModelInfoSA.cpp"
 				>
 			</File>
 			<File
@@ -918,6 +926,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CAtomicModelInfoSA.h"
+				>
+			</File>
+			<File
 				RelativePath="CAudioSA.h"
 				>
 			</File>
@@ -971,6 +983,10 @@
 			</File>
 			<File
 				RelativePath="CClockSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CClumpModelInfoSA.h"
 				>
 			</File>
 			<File

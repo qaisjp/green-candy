@@ -64,39 +64,55 @@ public:
     BYTE                        m_pad[30];                              // 2
 };
 
+enum eVehicleComponent
+{
+    VEHICLE_COMP_NULL,
+    VEHICLE_COMP_CHASIS,
+
+    VEHICLE_COMP_WHEEL_FR,
+    VEHICLE_COMP_WHEEL_RR = 4,
+    VEHICLE_COMP_WHEEL_FL,
+    VEHICLE_COMP_WHEEL_RL = 7,
+
+    VEHICLE_COMP_DOOR_DRIVER,
+    VEHICLE_COMP_DOOR_2,
+    VEHICLE_COMP_DOOR_3,
+    VEHICLE_COMP_DOOR_4,
+
+    VEHICLE_COMP_BUMPER_FRONT,
+    VEHICLE_COMP_BUMPER_REAR,
+
+    VEHICLE_COMP_BONNET = 16,
+    VEHICLE_COMP_BOOT,
+    VEHICLE_COMP_WINDSCREEN,
+    VEHICLE_COMP_EXHAUST,
+
+    NUM_VEHICLE_COMPONENTS = 25
+};
+
 class CAutomobileSAInterface : public CVehicleSAInterface
 {
 public:
                                 CAutomobileSAInterface();
                                 ~CAutomobileSAInterface();
 
+    void                        SetModelIndex( unsigned short id );
+
     CDamageManagerSAInterface   m_damage;                               // 1440
 
     unsigned int                m_unk[36];                              // 1464
 
-    RwFrame*                    m_root;                                 // 1608, ?
-    RwFrame*                    m_chasis;                               // 1612
-    RwFrame*                    m_wheelFR;                              // 1616
-    BYTE                        m_pad2[4];                              // 1620
-    RwFrame*                    m_wheelRR;                              // 1624
-    RwFrame*                    m_wheelFL;                              // 1628 
-    BYTE                        m_pad3[4];                              // 1632
-    RwFrame*                    m_wheelRL;                              // 1636
-    RwFrame*                    m_doors[4];                             // 1640
-    RwFrame*                    m_bumpers[2];                           // 1656
-    BYTE                        m_pad4[8];                              // 1664
-    RwFrame*                    m_bonet;                                // 1672
-    RwFrame*                    m_boot;                                 // 1676
-    RwFrame*                    m_windscreen;                           // 1680
-    RwFrame*                    m_exhaust;                              // 1684
-
-    BYTE                        m_pad5[20];                             // 1688
+    RwFrame*                    m_components[NUM_VEHICLE_COMPONENTS];   // 1608
 
     CVehicleUnknown             m_unk2[3];                              // 1708
 
     unsigned int                m_unk3[6];                              // 1804
 
-    BYTE                        m_pad6[448];                            // 1828
+    BYTE                        m_pad6[324];                            // 1828
+    unsigned short              m_unk4;                                 // 2152
+    unsigned short              m_unk5;                                 // 2154
+
+    BYTE                        m_pad7[120];                            // 2156
 
     float                       m_burningTime;                          // 2276
 };
@@ -106,10 +122,11 @@ class CAutomobileSA : public virtual CAutomobile, public virtual CVehicleSA
 private:
 //  CAutomobileSAInterface      * internalInterface;
 
-    CDoorSA                 * door[MAX_DOORS];
+    CDoorSA*                m_door[MAX_DOORS];
+
 public:
-                            CAutomobileSA( eVehicleTypes dwModelID );
-                            CAutomobileSA( CAutomobileSAInterface * automobile );
+                            CAutomobileSA ( eVehicleTypes dwModelID );
+                            CAutomobileSA ( CAutomobileSAInterface * automobile );
                             ~CAutomobileSA ( void );
 
     bool                    BurstTyre ( DWORD dwTyreID );
@@ -148,7 +165,7 @@ public:
     void                    SetTotalDamage ( bool bUnknown );
     CPhysical*              SpawnFlyingComponent ( int iCarNodeIndex, int iUnknown );
 
-    CDoor                   * GetDoor(eDoors doorID);
+    CDoor*                  GetDoor(eDoors doorID);
 };
 
 #endif
