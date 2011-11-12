@@ -509,6 +509,8 @@ public:
     RpAnimHierarchy*        GetAtomicAnimHierarchy();
     RpAnimHierarchy*        GetAnimHierarchy();
 
+    void                    ScanAtomicHierarchy( RwFrame *atomics, size_t max );
+
     RpAtomic*               GetFirstAtomic();
     RpAtomic*               Find2dfx();
 

@@ -32,8 +32,41 @@ CAutomobileSAInterface::CAutomobileSAInterface( bool unk, unsigned short model, 
         m_unk3[n] = 0;
 
     handling = ((CVehicleModelInfoSAInterface*)ppModelInfo[model])->m_handlingID;
+
+    m_unk39 = NULL;
+    m_unk38 = NULL;
+
+    m_burningTime = 0;
+
+    if ( *(bool*)0x00C1BFD0 )
+        m_unk4 |= 0x0001;
+
+    m_unk4 |= 0x0030;
+
+    SetModelIndex( model );
+
+    m_handling = &m_OriginalHandlingData[ handling ];
+    m_handlingFlags = m_handling->uiHandlingFlags;
+
+    if ( m_handlingFlags & 0x10000 && (rand() & 3) )
+    {
+
+    }
 }
 
 CAutomobileSAInterface::~CAutomobileSAInterface()
 {
+}
+
+void CAutomobileSAInterface::SetModelIndex( unsigned short index )
+{
+    unsigned int n;
+
+    CVehicleSAInterface::SetModelIndex( index );
+
+    for (n=0; n<NUM_VEHICLE_COMPONENTS; n++)
+        m_components[n] = NULL;
+
+    // Crashfix: Made sure models cannot assign atomics above maximum
+    GetRwObject()->ScanAtomicHierarchy( &m_components, (unsigned int)NUM_VEHICLE_COMPONENTS );
 }

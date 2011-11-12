@@ -55,7 +55,7 @@ public:
     void                            AddAtomic( RpAtomic *atomic );
 
     CVector                         m_seatOffset[MAX_SEATS];
-    CVehicleSeatInfoSA              m_info[18];                 // 180
+    CVehicleSeatInfoSA              m_info[MAX_SEATS + 3];      // 180
     RpAtomic*                       m_atomics[MAX_DOORS];       // 756
     unsigned short                  m_atomicCount;              // 780
     unsigned short                  m_unknown4;                 // 782

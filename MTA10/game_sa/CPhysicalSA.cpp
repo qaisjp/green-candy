@@ -36,8 +36,8 @@ CPhysicalSAInterface::CPhysicalSAInterface()
     m_physUnk = 0.1;
 
     m_link = NULL;
-    m_unk3 = 0;
 
+    m_complexStatus = 0;
     m_numCollRecords = 0;
     
     memset( m_collRecords, 0, sizeof( m_collRecords ) );
