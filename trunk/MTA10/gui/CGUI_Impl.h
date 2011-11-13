@@ -18,8 +18,6 @@ class CGUI_Impl;
 #define __CGUI_IMPL_H
 
 #include <gui/CGUI.h>
-#include <list>
-#include <windows.h>
 
 #define CGUI_CHAR_SIZE 6
 

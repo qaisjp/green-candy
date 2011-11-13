@@ -12,7 +12,6 @@
 #ifndef __CGAME_AUDIO
 #define __CGAME_AUDIO
 
-#include <windows.h>
 #include "CVehicle.h"
 
 enum eAmbientSoundType

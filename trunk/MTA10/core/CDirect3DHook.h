@@ -13,8 +13,6 @@
 #ifndef __CDIRECT3DHOOK_H
 #define __CDIRECT3DHOOK_H
 
-#include <windows.h>
-
 typedef IUnknown * ( __stdcall * pDirect3DCreate ) ( int SDKVersion );
 
 class CDirect3DHook 

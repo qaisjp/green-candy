@@ -19,6 +19,23 @@
 
 extern CGameSA* pGame;
 
+bool CPedSAInterface::IsPlayer()
+{
+#ifndef _SINGLEPLAYER
+    return true;
+#else
+    return m_pedType == PLAYER_LOCAL || m_pedType == PLAYER_REMOTE;
+#endif
+}
+
+CPadSAInterface* CPedSAInterface::GetJoypad()
+{
+    if ( !IsPlayer() )
+        return NULL;
+
+    return pGame->GetPadManager()->GetJoypad( 0 );
+}
+
 CPedSA::CPedSA (  ) :
     m_pPedIntelligence ( NULL ),
     m_pPedInterface ( NULL ),

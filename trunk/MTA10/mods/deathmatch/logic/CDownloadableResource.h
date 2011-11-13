@@ -14,13 +14,6 @@
 #ifndef CDOWNLOADABLERESOURCE_H
 #define CDOWNLOADABLERESOURCE_H
 
-#ifndef _WINDOWS_
-
-#define WIN32_LEAN_AND_MEAN     // Exclude all uncommon functions from windows.h to reduce build time by 100ms
-
-#include <windows.h>
-#endif
-
 #include <bochs_internal/crc32.h>
 #include "CChecksum.h"
 

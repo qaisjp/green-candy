@@ -12,7 +12,6 @@
 #ifndef __CGAME_PEDIK
 #define __CGAME_PEDIK
 
-#include <windows.h>
 #include <CVector.h>
 
 class CPedIK

@@ -15,7 +15,6 @@ class CTCPManager;
 #ifndef __CTCPMANAGER_H
 #define __CTCPMANAGER_H
 
-#include <windows.h>
 #include "CTCPClientSocketImpl.h"
 #include "CTCPServerSocketImpl.h"
 #include "CSingleton.h"

@@ -195,9 +195,6 @@ public:
                             CVehicleAudioSAInterface();
                             ~CVehicleAudioSAInterface();
 
-    void                    AddUpgrade( unsigned short model );
-    bool                    UpdateComponentStatus( unsigned short model, unsigned char collFlags, unsigned short *complex );
-
     void*                   m_vtbl;         // 0
 
     void*                   m_unk2;         // 4

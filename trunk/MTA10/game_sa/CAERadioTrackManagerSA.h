@@ -30,13 +30,13 @@
 class CAERadioTrackManagerSA : public CAERadioTrackManager
 {
 public:
-    BYTE    GetCurrentRadioStationID();
-    BYTE    IsVehicleRadioActive();
-    char    * GetRadioStationName(BYTE bStationID);
-    BOOL    IsRadioOn();
-    VOID    SetBassSetting(DWORD dwBass);
-    VOID    Reset();
-    VOID    StartRadio(BYTE bStationID, BYTE bUnknown);
+    unsigned char   GetCurrentRadioStationID();
+    bool            IsVehicleRadioActive();
+    char*           GetRadioStationName( unsigned char id );
+    bool            IsRadioOn();
+    void            SetBassSetting( float bass );
+    void            Reset();
+    void            StartRadio( unsigned char station, unsigned char unk );
 };
 
 #endif

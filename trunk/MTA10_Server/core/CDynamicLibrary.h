@@ -14,10 +14,6 @@
 #ifndef __CDYNAMICLIBRARY_H
 #define __CDYNAMICLIBRARY_H
 
-#ifdef WIN32
-#include <windows.h>
-#endif
-
 typedef void (*FuncPtr_t)();
 
 class CDynamicLibrary

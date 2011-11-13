@@ -312,44 +312,6 @@ void CVehicleSAInterface::HandlePopulation( bool create )
     }
 }
 
-void CVehicleSAInterface::AddUpgrade( unsigned short model )
-{
-    CBaseModelInfoSAInterface *
-}
-
-bool CVehicleSAInterface::UpdateComponentStatus( unsigned short model, unsigned char collFlags, unsigned short *complex )
-{
-    if ( collFlags & COLL_COMPLEX )
-    {
-        if ( m_handlingFlags & HANDLING_HYDRAULICS )
-            *complex = model;
-
-        m_handlingFlags |= HANDLING_HYDRAULICS;
-        m_complexStatus = 0;
-
-#ifdef _ROCKSTAR_OPT
-        m_velocity.fZ = 0;
-#endif
-        return true;
-    }
-
-    if ( collFlags & COLL_AUDIO )
-    {
-        if ( m_audio.m_improved || m_genericFlags & VEHGENERIC_UPGRADEDSTEREO )
-        {
-            *complex = model;
-            return true;
-        }
-
-        if ( m_audio.m_soundType == 0 )
-            m_audio.m_soundType = 1;
-        else if ( m_sound.m_soundType == 2 )
-            m_audio.m_soundType = 0;
-    }
-
-    return false;
-}
-
 CVehicleSA::CVehicleSA ()
     : m_ucAlpha ( 255 ), m_bIsDerailable ( true ), m_vecGravity ( 0.0f, 0.0f, -1.0f ), m_HeadLightColor ( SColorRGBA ( 255, 255, 255, 255 ) )
 {

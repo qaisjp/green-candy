@@ -15,11 +15,6 @@
 
 #include "CCrashHandlerAPI.h"
 
-#ifdef WIN32
-
-#include <windows.h>
-#endif
-
 class CCrashHandler
 {
 public:

@@ -13,8 +13,6 @@
 #ifndef __CGAMESA_TASKGOTO
 #define __CGAMESA_TASKGOTO
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <game/TaskGoTo.h>
 #include <game/CPathFind.h>
 

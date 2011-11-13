@@ -14,8 +14,6 @@
 #define __CGAMESA_MENUMANAGER
 
 #include <game/CMenuManager.h>
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 
 #define CLASS_CMenuManager          0xBA6748
 

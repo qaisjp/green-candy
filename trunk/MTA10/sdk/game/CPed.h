@@ -22,8 +22,6 @@ class CTaskManager;
 
 #include <CVector2D.h>
 
-#include <windows.h>
-
 // forward declaration, avoid compile error
 class CVehicle;
 class CObject;

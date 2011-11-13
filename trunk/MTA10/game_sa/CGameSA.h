@@ -124,6 +124,7 @@ public:
     inline CPickupsSA*                  GetPickups()                    { return m_pPickups; };
     inline C3DMarkersSA*                Get3DMarkers()                  { return m_p3DMarkers; };
     inline CPadSA*                      GetPad()                        { return m_pPad; };
+    inline CPadManagerSA*               GetPadManager()                 { return m_pPadManager; };
     inline CTheCarGeneratorsSA*         GetTheCarGenerators()           { return m_pTheCarGenerators; };
     inline CAERadioTrackManagerSA*      GetAERadioTrackManager()        { return m_pCAERadioTrackManager; };
     inline CAudioSA*                    GetAudio()                      { return m_pAudio; };
@@ -252,6 +253,7 @@ private:
     CWaterManagerSA*            m_pWaterManager;
 
     CPadSA*                     m_pPad;
+    CPadManagerSA*              m_pPadManager;
     CTheCarGeneratorsSA*        m_pTheCarGenerators;
     CAERadioTrackManagerSA*     m_pCAERadioTrackManager;
     CAudioSA*                   m_pAudio;

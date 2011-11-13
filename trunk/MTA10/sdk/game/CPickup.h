@@ -12,9 +12,7 @@
 #ifndef __CGAME_PICKCUP
 #define __CGAME_PICKCUP
 
-#include <windows.h>
 #include <CVector.h>
-#include "Common.h"
 
 class CObject;
 

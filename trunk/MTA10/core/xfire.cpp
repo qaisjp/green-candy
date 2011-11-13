@@ -1,6 +1,5 @@
 #include "StdInc.h"
 
-#include <windows.h>
 #include <tlhelp32.h>
 
 static HMODULE g_toucan_dll = NULL;

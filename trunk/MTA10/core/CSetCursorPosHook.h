@@ -14,7 +14,6 @@
 #ifndef __CSETCURSORPOSHOOK_H
 #define __CSETCURSORPOSHOOK_H
 
-#include <windows.h>
 #include "CSingleton.h"
 #include <core/CSetCursorPosHookInterface.h>
 

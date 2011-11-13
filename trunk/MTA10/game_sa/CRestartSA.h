@@ -15,9 +15,6 @@
 
 #include <game/CRestart.h>
 #include <CVector.h>
-#include "Common.h"
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 
 #define FUNC_CancelOverrideRestart                  0x460800    // not used
 #define FUNC_OverrideNextRestart                    0x4607d0    // not used

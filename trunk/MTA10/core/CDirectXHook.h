@@ -13,8 +13,6 @@
 #ifndef __CDIRECTXHOOK_H
 #define __CDIRECTXHOOK_H
 
-#include <windows.h>
-
 enum D3DHOOKTYPE
 {
     D3DHOOK_D3D9,

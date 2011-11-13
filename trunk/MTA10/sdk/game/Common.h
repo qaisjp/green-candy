@@ -12,8 +12,6 @@
 #ifndef __GAME_COMMON
 #define __GAME_COMMON
 
-#include <windows.h>
-
 /**
  * Flags used to define weapon characteristics
  */ 

@@ -13,7 +13,6 @@
 #ifndef __CGAMESA_COLMODELSA
 #define __CGAMESA_COLMODELSA
 
-#include <windows.h>
 #include <game/CColModel.h>
 
 #define FUNC_CColModel_Constructor      0x40FB60

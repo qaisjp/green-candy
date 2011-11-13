@@ -17,7 +17,6 @@
 #include "CTCPClientSocket.h"
 
 //#define NOGDI
-#include <windows.h>
 #include <winsock.h>
 
 //typedef void (*PFNEVENT) ( CTCPSocket * );

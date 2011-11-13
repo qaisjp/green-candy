@@ -12,11 +12,8 @@
 #ifndef __CGAME_PICKCUPS
 #define __CGAME_PICKCUPS
 
-#include "Common.h"
 #include "CPickup.h"
 #include <CVector.h>
-
-#include <windows.h>
 
 class CPickups
 {

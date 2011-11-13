@@ -12,7 +12,6 @@
 #ifndef __CGAME_HUD
 #define __CGAME_HUD
 
-#include <windows.h>
 #include <CVector.h>
 
 class CHud

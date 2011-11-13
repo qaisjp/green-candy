@@ -12,8 +12,6 @@
 #ifndef __CGAME_CLOCK
 #define __CGAME_CLOCK
 
-#include <windows.h>
-
 class CClock
 {
 public:

@@ -565,6 +565,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CPadManagerSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CPadSA.cpp"
 				>
 			</File>
@@ -1119,6 +1123,10 @@
 			</File>
 			<File
 				RelativePath="Common.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CPadManagerSA.h"
 				>
 			</File>
 			<File

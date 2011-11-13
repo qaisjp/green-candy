@@ -97,6 +97,9 @@ public:
                                 ~CAutomobileSAInterface();
 
     void                        SetModelIndex( unsigned short id );
+    void                        AddUpgrade( unsigned short model );
+    bool                        UpdateComponentStatus( unsigned short model, unsigned char collFlags, unsigned short *complex );
+    void                        UpdateNitrous( unsigned char rounds );
 
     CDamageManagerSAInterface   m_damage;                               // 1440
 
@@ -112,8 +115,10 @@ public:
     unsigned short              m_unk4;                                 // 2152
     unsigned short              m_unk5;                                 // 2154
 
-    BYTE                        m_pad7[120];                            // 2156
+    BYTE                        m_pad7[56];                             // 2156
+    float                       m_nitrousFuel;                          // 2212
 
+    BYTE                        m_pad8[60];                             // 2216
     float                       m_burningTime;                          // 2276
 };
 

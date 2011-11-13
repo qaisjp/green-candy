@@ -12,9 +12,6 @@
 
 #include <StdInc.h>
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 CClientCivilian::CClientCivilian ( CClientManager* pManager, ElementID ID, int iModel ) : ClassInit ( this ), CClientEntity ( ID )
 {
     // Initialize members

@@ -18,8 +18,6 @@ class CMasterServerManagerInterface;
 #ifndef __CSERVERLIST_H
 #define __CSERVERLIST_H
 
-#include <windows.h>
-#include <string>
 #include <sstream>
 #include <vector>
 #include "CSingleton.h"

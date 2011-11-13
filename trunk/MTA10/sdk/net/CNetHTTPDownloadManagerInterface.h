@@ -12,8 +12,6 @@
 #ifndef __CNETHTTPDOWNLOADMANAGERINTERFACE_H
 #define __CNETHTTPDOWNLOADMANAGERINTERFACE_H
 
-#include <windows.h>
-
 typedef void (*PDOWNLOADPROGRESSCALLBACK) ( double, double, char*, size_t, void*, bool, int );
 
 class CNetHTTPDownloadManagerInterface

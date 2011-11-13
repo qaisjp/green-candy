@@ -14,8 +14,6 @@
 #ifndef __CTCPSOCKET_H
 #define __CTCPSOCKET_H
 
-#include <windows.h>
-
 // Custom async-related window message define
 #define WM_ASYNCTRAP    WM_USER
 

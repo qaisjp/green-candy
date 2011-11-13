@@ -12,7 +12,6 @@
 #ifndef __CGAME_POPULATION
 #define __CGAME_POPULATION
 
-#include <windows.h>
 #include "CPed.h"
 
 class CPopulation

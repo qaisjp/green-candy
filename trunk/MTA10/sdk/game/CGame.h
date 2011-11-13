@@ -17,6 +17,7 @@
 
 typedef void ( InRenderer ) ( void );
 
+#include <windows.h>
 #include "Common.h"
 
 #include "CRenderWare.h"
@@ -72,8 +73,6 @@ typedef void ( InRenderer ) ( void );
 #include "CWeaponInfo.h"
 #include "CWorld.h"
 #include "TaskCarAccessories.h"
-
-#include <windows.h>
 
 enum eGameVersion 
 {

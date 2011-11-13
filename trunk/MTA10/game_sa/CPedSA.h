@@ -261,11 +261,22 @@ public:
 //#endif
 };
 
+enum ePedType
+{
+    PLAYER_LOCAL,
+    PLAYER_REMOTE,
+    
+    FORCE_DWORD = 0xFFFFFFF
+};
+
 class CPedSAInterface : public CPhysicalSAInterface // +1420  = current vehicle   312 first byte
 {
 public:
     void*   operator new( size_t );
     void    operator delete( void *ptr );
+
+    bool                            IsPlayer();
+    CPadSAInterface*                GetJoypad();
 
     // current weapon slot 1184 ( and +1816?)
     //CPedIKSAInterface     pedIK; // 528
@@ -295,8 +306,10 @@ public:
     BYTE                            m_pad10[32];                // 1388
     CEntitySAInterface*             m_objective;                // 1420
     BYTE                            m_pad11[8];                 // 1424
-    BYTE                            m_pedType;                  // 1432     // 0 = player
-    BYTE                            m_pad12[7];                 // 1433
+
+    ePedType                        m_pedType;                  // 1432
+
+    BYTE                            m_pad12[4];                 // 1436
     CWeaponSAInterface              m_weapons[WEAPONSLOT_MAX];  // 1440 
 
     BYTE                            m_pad13[12];                // 1804

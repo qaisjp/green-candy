@@ -10,13 +10,8 @@
 *
 *****************************************************************************/
 
-
-
 #ifndef __CMULTIPLAYERCOMMONSA
 #define __CMULTIPLAYERCOMMONSA
-
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 
 typedef struct eControlSet
 {

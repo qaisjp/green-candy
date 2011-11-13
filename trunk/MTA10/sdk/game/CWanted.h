@@ -12,8 +12,6 @@
 #ifndef __CGAME_WANTED
 #define __CGAME_WANTED
 
-#include <windows.h>
-
 class CWanted
 {
 public:

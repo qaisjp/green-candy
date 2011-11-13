@@ -14,8 +14,6 @@
 #ifndef __CFILESYSTEMHOOK_H
 #define __CFILESYSTEMHOOK_H
 
-#include <windows.h>
-#include <string>
 #include "CSingleton.h"
 #include "CLinkedList.h"
 #include "CFileSystemMemoryHandleManager.h"

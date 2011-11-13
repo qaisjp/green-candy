@@ -15,8 +15,6 @@
 #ifndef __CGAMESA_TASKBASIC
 #define __CGAMESA_TASKBASIC
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <game/TaskBasic.h>
 
 #include "TaskSA.h"
