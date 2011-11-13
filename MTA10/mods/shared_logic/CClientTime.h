@@ -15,8 +15,6 @@ class CClientTime;
 #ifndef __CCLIENTTIME_H
 #define __CCLIENTTIME_H
 
-#include <windows.h>
-
 class CClientTime
 {
     friend class CClientManager;

@@ -16,7 +16,6 @@
 #include <core/CModManagerInterface.h>
 #include <core/CClientBase.h>
 #include "CSingleton.h"
-#include <windows.h>
 
 #ifdef MTA_DEBUG
     #define CMODMANAGER_CLIENTDLL "client_d.dll"

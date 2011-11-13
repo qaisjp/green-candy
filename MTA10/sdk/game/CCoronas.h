@@ -15,8 +15,6 @@
 #include "Common.h"
 #include "CRegisteredCorona.h"
 
-#include <windows.h>
-
 // these are the IDs that are used internally for coronas
 #define CORONA_SUN                  1
 #define CORONA_MOON                 2

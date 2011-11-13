@@ -15,8 +15,6 @@
 #ifndef __CGAMESA_TASKCAR
 #define __CGAMESA_TASKCAR
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <game/TaskCar.h>
 
 #include "TaskSA.h"

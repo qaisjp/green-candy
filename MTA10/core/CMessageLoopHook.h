@@ -15,7 +15,6 @@
 #ifndef __CMESSAGELOOPHOOK_H
 #define __CMESSAGELOOPHOOK_H
 
-#include <windows.h>
 #include "CSingleton.h"
 
 #define URI_CONNECT 1

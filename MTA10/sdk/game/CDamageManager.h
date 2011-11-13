@@ -12,8 +12,6 @@
 #ifndef __CGAME_DAMAGEMANAGER
 #define __CGAME_DAMAGEMANAGER
 
-#include <windows.h>
-
 // Not sure if R* used these
 #define DT_ENGINE_OK                    (0)
 #define DT_ENGINE_RADIATOR_BURST        (100)

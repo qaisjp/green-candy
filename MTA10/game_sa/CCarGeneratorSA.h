@@ -18,8 +18,6 @@
 #include <game/CCarGenerator.h>
 #include <CVector.h>
 
-#include <windows.h>
-
 class CCarGeneratorSAInterface
 {
     short VisibleModel;

@@ -13,9 +13,7 @@
 #ifndef __CEventDamageSA_H
 #define __CEventDamageSA_H
 
-#include <windows.h>
 #include <game/CEventDamage.h>
-#include "CEntitySA.h"
 #include "CPedDamageResponseSA.h"
 
 #define FUNC_CEventDamage_Constructor           0x4ad830

@@ -12,18 +12,16 @@
 #ifndef __CGAME_CAERADIOTRACKMANAGER
 #define __CGAME_CAERADIOTRACKMANAGER
 
-#include <windows.h>
-
 class CAERadioTrackManager
 {
 public:
-    virtual BYTE        GetCurrentRadioStationID        ( void ) = 0;
-    virtual BYTE        IsVehicleRadioActive            ( void ) = 0;
-    virtual char *      GetRadioStationName             ( BYTE bStationID ) = 0;
-    virtual BOOL        IsRadioOn                       ( void ) = 0;
-    virtual VOID        SetBassSetting                  ( DWORD dwBass ) = 0;
-    virtual VOID        Reset                           ( void ) = 0;
-    virtual VOID        StartRadio                      ( BYTE bStationID, BYTE bUnknown ) = 0;
+    virtual unsigned char   GetCurrentRadioStationID        () = 0;
+    virtual bool            IsVehicleRadioActive            () = 0;
+    virtual char*           GetRadioStationName             ( unsigned char id ) = 0;
+    virtual bool            IsRadioOn                       () = 0;
+    virtual void            SetBassSetting                  ( float bass ) = 0;
+    virtual void            Reset                           () = 0;
+    virtual void            StartRadio                      ( unsigned char station, unsigned char unk ) = 0;
 };
 
 #endif

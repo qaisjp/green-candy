@@ -14,9 +14,6 @@
 #ifndef __CMODULELOADER_H
 #define __CMODULELOADER_H
 
-#include <windows.h>
-#include <string>
-
 class CModuleLoader
 {
 public:

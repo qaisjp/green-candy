@@ -12,10 +12,7 @@
 #ifndef __CGAME_REGISTEREDCORONA
 #define __CGAME_REGISTEREDCORONA
 
-#include "Common.h"
 #include <CVector.h>
-
-#include <windows.h>
 
 class CRegisteredCorona
 {

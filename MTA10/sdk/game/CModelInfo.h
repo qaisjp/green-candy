@@ -12,10 +12,8 @@
 #ifndef __CGAME_MODELINFO
 #define __CGAME_MODELINFO
 
-#include "Common.h"
 #include <CVector.h>
 
-#include <windows.h>
 #include "CColModel.h"
 class CPedModelInfo;
 

@@ -78,8 +78,10 @@ VOID CPadSA::Clear ( void )
 VOID CPadSA::SetHornHistoryValue( bool value )
 {
     internalInterface->iCurrHornHistory++;
+
     if ( internalInterface->iCurrHornHistory >= MAX_HORN_HISTORY )
         internalInterface->iCurrHornHistory = 0;
+
     internalInterface->bHornHistory[internalInterface->iCurrHornHistory] = value;
 }
 

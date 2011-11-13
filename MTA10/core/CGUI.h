@@ -43,8 +43,6 @@ class CLocalGUI;
 #include "CVersionUpdater.h"
 #include "CNewsBrowser.h"
 
-#include <windows.h>
-
 class CChat;
 class CDebugView;
 

@@ -13,8 +13,6 @@
 #ifndef __CGAMESA_TASKATTACK
 #define __CGAMESA_TASKATTACK
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <game/TaskAttack.h>
 
 #include "TaskSA.h"

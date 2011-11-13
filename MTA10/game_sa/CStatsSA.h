@@ -14,8 +14,6 @@
 #define __CGAMESA_STATS
 
 #include <game/CStats.h>
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 
 #define FUNC_GetStatValue                   0x558E40
 #define FUNC_ModifyStat                     0x55D090

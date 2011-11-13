@@ -13,8 +13,6 @@
 #ifndef __CFILESYSTEMMEMORYHANDLE_H
 #define __CFILESYSTEMMEMORYHANDLE_H
 
-#include <windows.h>
-
 class CFileSystemMemoryHandle
 {
 public:

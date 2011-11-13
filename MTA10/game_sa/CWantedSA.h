@@ -14,9 +14,6 @@
 #ifndef __CGAMESA_WANTED
 #define __CGAMESA_WANTED
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include "Common.h"
 #include <game/CWanted.h>
 #include <CVector.h>
 

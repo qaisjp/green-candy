@@ -12,14 +12,10 @@
 #ifndef __CGAME_RADAR
 #define __CGAME_RADAR
 
-#include "Common.h"
-
 #include "CMarker.h"
 #include "CObject.h"
 #include "CPed.h"
 #include "CVehicle.h"
-
-#include <windows.h>
 
 class CRadar
 {

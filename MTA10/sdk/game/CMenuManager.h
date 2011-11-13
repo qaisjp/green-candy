@@ -12,8 +12,6 @@
 #ifndef __CGAME_MENUMANAGER
 #define __CGAME_MENUMANAGER
 
-#include <windows.h>
-
 class CMenuManager
 {
 public:

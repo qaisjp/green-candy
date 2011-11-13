@@ -15,9 +15,6 @@
 
 #include <game/CDoor.h>
 #include <CVector.h>
-#include "Common.h"
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 
 //006f47e0      public: FLOAT __thiscall CDoor::GetAngleOpenRatio(void)const 
 #define FUNC_GetAngleOpenRatio      0x6f47e0

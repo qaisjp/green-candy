@@ -12,7 +12,6 @@
 #ifndef __CGAME_VEHICLE
 #define __CGAME_VEHICLE
 
-#include "Common.h"
 #include "CColPoint.h"
 #include "CPhysical.h"
 #include "CDamageManager.h"
@@ -21,8 +20,6 @@
 #include "CWeaponInfo.h"
 
 #include <CVector.h>
-
-#include <windows.h>
 
 enum eWinchType 
 {

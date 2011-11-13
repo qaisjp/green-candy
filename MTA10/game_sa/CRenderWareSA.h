@@ -20,9 +20,6 @@
 
 #include "CModelInfoSA.h"
 #include "CColModelSA.h"
-#include "Common.h"
-#include <windows.h>
-#include <stdio.h>
 
 
 //

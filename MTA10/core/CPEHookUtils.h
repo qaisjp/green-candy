@@ -13,9 +13,6 @@
 #ifndef __CPEHOOKUTILS_H
 #define __CPEHOOKUTILS_H
 
-#include <windows.h>
-#include <string>
-
 typedef struct _section_info_t {
     DWORD Address;
     DWORD  Size;

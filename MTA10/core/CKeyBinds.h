@@ -16,10 +16,6 @@ class CKeyBinds;
 #ifndef __CKEYBINDS_H
 #define __CKEYBINDS_H
 
-#include <windows.h>
-#include <string.h>
-#include <list>
-
 #include <core/CCoreInterface.h>
 #include <core/CCommandsInterface.h>
 

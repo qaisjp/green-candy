@@ -16,8 +16,6 @@
 #include <CMatrix.h>
 #include <CVector.h>
 
-#include <windows.h>
-
 enum eEntityType
 {
     ENTITY_TYPE_NOTHING,

@@ -12,9 +12,7 @@
 #ifndef __CGAME_FIRE
 #define __CGAME_FIRE
 
-#include <windows.h>
 #include <CVector.h>
-#include "CEntity.h"
 
 class CFireInterface
 {

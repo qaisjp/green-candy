@@ -70,3 +70,81 @@ void CAutomobileSAInterface::SetModelIndex( unsigned short index )
     // Crashfix: Made sure models cannot assign atomics above maximum
     GetRwObject()->ScanAtomicHierarchy( &m_components, (unsigned int)NUM_VEHICLE_COMPONENTS );
 }
+
+void CAutomobileSAInterface::AddUpgrade( unsigned short model )
+{
+
+}
+
+bool CAutomobileSAInterface::UpdateComponentStatus( unsigned short model, unsigned char collFlags, unsigned short *complex )
+{
+    if ( collFlags & COLL_COMPLEX )
+    {
+        if ( m_handlingFlags & HANDLING_HYDRAULICS )
+            *complex = model;
+
+        m_handlingFlags |= HANDLING_HYDRAULICS;
+        m_complexStatus = 0;
+
+#ifdef _ROCKSTAR_OPT
+        m_velocity.fZ = 0;
+#endif
+        return true;
+    }
+
+    if ( collFlags & COLL_AUDIO )
+    {
+        if ( m_audio.m_improved || m_genericFlags & VEHGENERIC_UPGRADEDSTEREO )
+        {
+            *complex = model;
+            return true;
+        }
+
+        if ( m_audio.m_soundType == 0 )
+            m_audio.m_soundType = 1;
+        else if ( m_sound.m_soundType == 2 )
+            m_audio.m_soundType = 0;
+
+        // Reset the bass
+        pGame->GetAERadioTrackManager()->SetBassSetting( 0 );
+
+        m_genericFlags |= VEHGENERIC_UPGRADEDSTEREO;
+        return true;
+    }
+
+    if ( !m_unk38 )
+    {
+        // Nitrous oxide!
+        switch( model )
+        {
+        case 1008:
+            break;
+        case 1009:
+            break;
+        case 1010:
+            break;
+        }
+    }
+
+    return false;
+}
+
+void CAutomobileSAInterface::UpdateNitrous( unsigned char rounds )
+{
+    CPadSAInterface *pad;
+
+    if ( !m_status && m_driver->IsPlayer() )
+        pad = m_driver->GetJoypad();
+
+    if ( !rounds )
+    {
+
+    }
+    else
+    {
+        m_handlingFlags |= HANDLING_NOS;
+        m_nitrousFuel = 1;  // Reset the fuel counter
+    }
+
+    m_nitroBoosts = rounds;
+}

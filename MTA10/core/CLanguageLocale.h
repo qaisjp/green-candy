@@ -13,8 +13,6 @@
 #ifndef __CLANGUAGELOCALE_H
 #define __CLANGUAGELOCALE_H
 
-#include <windows.h>
-#include <string>
 #include "CSingleton.h"
 
 enum LANGUAGETYPE

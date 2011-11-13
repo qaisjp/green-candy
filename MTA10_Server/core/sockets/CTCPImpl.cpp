@@ -14,14 +14,6 @@
 #include "StdInc.h"
 #include "CTCPImpl.h"
 
-#ifdef WIN32
-    #include <windows.h>
-    #include <winsock.h>
-#endif
-
-#include <stdio.h>
-#include <string.h>
-
 CTCPImpl::CTCPImpl ( void )
 {
     // Init

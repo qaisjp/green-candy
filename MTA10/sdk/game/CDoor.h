@@ -12,8 +12,6 @@
 #ifndef __CGAME_DOOR
 #define __CGAME_DOOR
 
-#include <windows.h>
-
 #include "Common.h"
 
 class CDoor
