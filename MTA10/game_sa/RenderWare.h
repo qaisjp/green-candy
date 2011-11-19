@@ -587,6 +587,11 @@ public:
     bool                    ForAllMateria( bool (*callback)( RpMaterial *mat, void *data ), void *data );
     bool                    IsAlpha();
 };
+class RwStructInfo
+{
+public:
+    size_t                  m_size;
+};
 class RwInterface   // size: 1456
 {
 public:
@@ -600,7 +605,7 @@ public:
     void                    (*m_free)( void *data );                        // 312
     void*                   (*m_realloc)( void *data, size_t size );        // 316
     void*                   (*m_calloc)( unsigned int count, size_t size ); // 320
-    void*                   m_callback;                                     // 324
+    void*                   (*m_allocStruct)( RwStructInfo *info, unsigned int flags ); // 324
     void*                   m_callback2;                                    // 328
 
     BYTE                    m_pad2[24];                                     // 332
@@ -611,7 +616,7 @@ public:
     void*                   m_callback6;                                    // 368
 
     void*                   m_unknown;                                      // 372
-    void*                   m_unknown2;                                     // 376
+    RwStructInfo*           m_matrixInfo;                                   // 376
 
     void*                   m_callback7;                                    // 380
 
