@@ -51,6 +51,17 @@ struct RwColor
 class RwMatrix
 {   // 16-byte padded
 public:
+    inline void Identity()
+    {
+        right.fX = 1; right.fY = 0; right.fZ = 0;
+        up.fX = 0; up.fY = 1; up.fZ = 0;
+        at.fX = 0; at.fY = 0; at.fZ = 1;
+
+        pos.fX = (float)(1.15 * -0.25);
+        pos.fY = 0;
+        pos.fZ = 0;
+    }
+
     RwMatrix()
     {
         Identity();
@@ -62,17 +73,6 @@ public:
         up = from.vUp;
         at = from.vFront;
         pos = from.vPos;
-    }
-
-    inline void Identity()
-    {
-        right.fX = 1; right.fY = 0; right.fZ = 0;
-        up.fX = 0; up.fY = 1; up.fZ = 0;
-        at.fX = 0; at.fY = 0; at.fZ = 1;
-
-        pos.fX = (float)(1.15 * -0.25);
-        pos.fY = 0;
-        pos.fZ = 0;
     }
 
     inline void rotX( float radians )

@@ -62,6 +62,8 @@ class CRenderWareSA : public CRenderWare
                         CRenderWareSA               ( enum eGameVersion version );
                         ~CRenderWareSA              ( void ) {};
 
+    RwMatrix*           AllocateMatrix              ();
+
     // uiModelID == 0 means no collisions will be loaded (be careful! seems crashy!)
     RpClump *           ReadDFF                     ( const char * szDFF, unsigned short usModelID );
     void                DestroyDFF                  ( RpClump * pClump );

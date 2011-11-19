@@ -106,6 +106,7 @@ CGameSA::CGameSA()
     m_pVisibilityPlugins        = new CVisibilityPluginsSA;
     m_pKeyGen                   = new CKeyGenSA;
     m_pRopes                    = new CRopesSA;
+    m_pParticleSystem           = new CParticleSystemSA();
     m_pFx                       = new CFxSA ( (CFxSAInterface *)CLASS_CFx );
     m_pWaterManager             = new CWaterManagerSA ();
 
@@ -169,6 +170,7 @@ CGameSA::~CGameSA ( void )
     }
 
     delete m_pFx;
+    delete m_pParticleSystem;
     delete m_pRopes;
     delete m_pKeyGen;
     delete m_pVisibilityPlugins;
@@ -678,4 +680,14 @@ void CGameSA::FlushPendingRestreamIPL ( void )
 void CGameSA::DisableVSync ( void )
 {
     MemPutFast < BYTE > ( 0xBAB318, 0 );
+}
+
+void ForEachBlock( void *ptr, unsigned int count, size_t blockSize, void (*callback)( void *block ) )
+{
+    while ( count-- )
+    {
+        callback( ptr );
+
+        (unsigned char*)ptr += blockSize;
+    }
 }

@@ -585,6 +585,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CParticleSystemSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CPathFindSA.cpp"
 				>
 			</File>
@@ -1146,6 +1150,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CParticleSystemSA.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CPathFindSA.h"
 				>
 			</File>
@@ -1379,6 +1387,10 @@
 			</File>
 			<File
 				RelativePath=".\HookSystem.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare.h"
 				>
 			</File>
 			<File

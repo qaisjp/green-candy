@@ -148,6 +148,7 @@ public:
     inline CVisibilityPluginsSA*        GetVisibilityPlugins()          { return m_pVisibilityPlugins; }
     inline CKeyGenSA*                   GetKeyGen()                     { return m_pKeyGen; }
     inline CRopesSA*                    GetRopes()                      { return m_pRopes; }
+    inline CParticleSystemSA*           GetParticleSystem()             { return m_pParticleSystem; }
     inline CFxSA*                       GetFx()                         { return m_pFx; }
     inline CWaterManagerSA*             GetWaterManager()               { return m_pWaterManager; }
 
@@ -249,6 +250,7 @@ private:
     CVisibilityPluginsSA*       m_pVisibilityPlugins;
     CKeyGenSA*                  m_pKeyGen;
     CRopesSA*                   m_pRopes;
+    CParticleSystemSA*          m_pParticleSystem;
     CFxSA*                      m_pFx;
     CWaterManagerSA*            m_pWaterManager;
 
@@ -293,6 +295,9 @@ private:
 
     std::map < std::string, SCheatSA* > m_Cheats;
 };
+
+// Utility functions
+void ForEachBlock( void *ptr, unsigned int count, size_t blockSize, void (*callback)( void *block ) );
 
 extern CGameSA *pGame;
 

@@ -51,7 +51,7 @@ class CReferences
     CEntity     * pEntity;
 };
 
-class CPlaceableSAInterface // 20 bytes
+class CPlaceableSAInterface // 24 bytes
 {
 public:
                                     CPlaceableSAInterface();

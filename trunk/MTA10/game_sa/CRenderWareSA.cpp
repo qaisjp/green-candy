@@ -1373,6 +1373,11 @@ void _declspec(naked) HOOK_CTxdStore_RemoveTxd ()
 RwAtomicRenderChainInterface *rwRenderChains = (RwAtomicRenderChainInterface*)0x00C88070;
 
 
+RwMatrix* CRenderWareSA::AllocateMatrix()
+{
+    return new ( pRwInterface->m_allocStruct( pRwInterface->m_matrixInfo, 0x3000D ) ) RwMatrix();
+}
+
 static bool RwFrameGetChildCount( RwFrame *child, unsigned int *count )
 {
     child->ForAllChildren( RwFrameGetChildCount, count );
