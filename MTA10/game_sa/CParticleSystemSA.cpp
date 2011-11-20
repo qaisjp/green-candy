@@ -14,32 +14,36 @@
 
 CParticleSystemSAInterface *pParticleSystem = (CParticleSystemSAInterface*)CLASS_CParticleSystem;
 
-static void InitParticleData( CParticleObjectSAInterface *block )
+static void InitParticleData( CEffectDataSAInterface *block )
 {
-    new (block) CParticleObjectSAInterface();
+    pParticleSystem->m_effectList.Add( new (block) CEffectDataSAInterface() );
 }
 
 void CParticleSystemSAInterface::Init()
 {
     unsigned int n;
-    CParticleObjectSAInterface *data;
 
-    new (&m_particles) CParticleDataStackSA();
+    new (&m_memory) CEffectStackSA();
 
     m_count = 0;
 
     for (n=0; n<8; n++)
         m_matrices[n] = pGame->GetRenderWare()->AllocateMatrix();
 
-    // Allocate from the stack (we leave out the alloc count though)
-    data = m_particles.AllocateInt( sizeof( CParticleObjectSAInterface ) * MAX_PARTICLE_DATA );
-
-    ForEachBlock( data, MAX_PARTICLE_DATA, sizeof( CParticleObjectSAInterface ), InitParticleData );
+    // Allocate from the stack (we leave out the alloc count though, debug?)
+    ForEachBlock(
+        m_effects = (CParticleDataSAInterface*)m_particles.AllocateInt( sizeof( CParticleDataSAInterface ) * MAX_PARTICLE_DATA ), 
+        MAX_PARTICLE_DATA, sizeof( CEffectDataSAInterface ), InitParticleData );
 }
 
 void CParticleSystemSAInterface::Shutdown()
 {
+    m_particles.~CAlignedStackSA();
+}
 
+void CParticleSystemSAInterface::LoadDefinitions( const char *filename )
+{
+    char buffer[256];
 }
 
 CParticleSystemSA::CParticleSystemSA()

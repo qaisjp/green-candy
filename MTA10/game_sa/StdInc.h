@@ -39,6 +39,7 @@
 #include "CEntitySA.h"
 #include "CParticleSA.h"
 #include "CParticleObjectSA.h"
+#include "CParticleDataSA.h"
 #include "CParticleSystemSA.h"
 #include "CColPointSA.h"
 #include "CVehicleSA.h"

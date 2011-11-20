@@ -3,8 +3,8 @@
 *  PROJECT:     Multi Theft Auto v1.0
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CParticleObjectSA.cpp
-*  PURPOSE:     Particle definitions
-*  DEVELOPERS:  
+*  PURPOSE:     Particle emitter
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -21,11 +21,6 @@ CParticleObjectSAInterface::CParticleObjectSAInterface()
 
 CParticleObjectSAInterface::~CParticleObjectSAInterface()
 {
-}
-
-CParticleSAInterface* CParticleObjectSAInterface::Create()
-{
-    return new CParticleSAInterface();
 }
 
 void CParticleObjectSAInterface::Stop()

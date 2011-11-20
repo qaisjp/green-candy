@@ -13,6 +13,7 @@
 #define __CCOREINTERFACE_H
 
 #include "CConsoleInterface.h"
+#include "CFileSystemInterface.h"
 #include "CCommandsInterface.h"
 #include "CCommunityInterface.h"
 #include "CRenderItemManagerInterface.h"
