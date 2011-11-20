@@ -17,76 +17,23 @@
 
 #define CLASS_CParticleSystem           0x00A9AE80
 
-template < size_t heapSize >
-class CAlignedStackSA
-{
-public:
-    CAlignedStackSA()
-    {
-        m_data = pRwInterface->m_malloc( heapSize );
-        m_size = heapSize;
-        m_offset = 0;
-
-        memset( m_data, 0, m_size );
-    }
-
-    ~CAlignedStackSA()
-    {
-        pRwInterface->m_free( m_data );
-    }
-
-    void*   Allocate( size_t size, size_t align )
-    {
-        size_t remains = m_offset % elementSize;
-        void *alloc;
-
-        // Realign the offset
-        if ( remains )
-            m_offset += align - remains;
-
-        // Bugfix
-        if ( m_offset + size > m_size )
-            return NULL;
-
-        alloc = (void*)((unsigned char*)m_data + m_offset);
-        m_offset += size;
-
-        return alloc;
-    }
-
-    void*   AllocateInt( size_t size )
-    {
-        return Push( size, sizeof(int) );
-    }
-
-    void*                                   m_data;
-    size_t                                  m_size;
-    size_t                                  m_offset;
-};
-
-typedef CAlignedStackSA < 0x100000 > CParticleDataStackSA;
-
-class CParticleControlSAInterface
-{
-public:
-                                            CParticleControlSAInterface();
-                                            ~CParticleControlSAInterface();
-
-    CParticleObjectSAInterface*             m_data;         // 0
-    size_t                                  m_size;         // 4
-    unsigned int                            m_count;        // 8
-};
+typedef CAlignedStackSA <0x100000> CEffectStackSA;
 
 class CParticleSystemSAInterface
 {
 public:
     void                                    Init();
     void                                    Shutdown();
+    void                                    LoadDefinitions( const char *filename );
 
-    BYTE                                    m_pad[136];     // 0
+    BYTE                                    m_pad[24];      // 0
+    CEffectDataSA*                          m_effects;      // 24
+    CSimpleList                             m_effectList;   // 28
+
+    BYTE                                    m_pad2[96];     // 40
     unsigned int                            m_count;        // 136
     RwMatrix*                               m_matrices[8];  // 140
-    CParticleDataStackSA                    m_particles;    // 172
+    CEffectStackSA                          m_memory;       // 172
 };
 
 class CParticleSystemSA

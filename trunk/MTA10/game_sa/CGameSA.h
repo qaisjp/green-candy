@@ -299,7 +299,5 @@ private:
 // Utility functions
 void ForEachBlock( void *ptr, unsigned int count, size_t blockSize, void (*callback)( void *block ) );
 
-extern CGameSA *pGame;
-
 #endif
 

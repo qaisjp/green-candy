@@ -441,6 +441,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CFileSystem.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CFileSystemHook.cpp"
 				>
 			</File>
@@ -834,6 +838,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CFileSystem.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CFileSystemHook.h"
 				>
 			</File>
@@ -1089,6 +1097,10 @@
 					</File>
 					<File
 						RelativePath="..\sdk\core\CExceptionInformation.h"
+						>
+					</File>
+					<File
+						RelativePath="..\sdk\core\CFileSystemInterface.h"
 						>
 					</File>
 					<File

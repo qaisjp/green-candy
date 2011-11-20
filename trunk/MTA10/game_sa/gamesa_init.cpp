@@ -15,6 +15,7 @@
 #include "profiler/SharedUtil.Profiler.h"
 
 CGameSA* pGame = NULL;
+CCoreInterface *core = NULL;
 CNet* g_pNet = NULL;
 
 //-----------------------------------------------------------
@@ -23,12 +24,14 @@ CNet* g_pNet = NULL;
 // in order for proper initialization to occur.
 
 extern "C" _declspec(dllexport)
-CGame * GetGameInterface( CCoreInterface* pCore )
+CGame* GetGameInterface( CCoreInterface* pCore )
 {
-    DEBUG_TRACE("CGame * GetGameInterface()");
+    DEBUG_TRACE("CGame* GetGameInterface()");
 
     g_pNet = pCore->GetNetwork ();
     assert ( g_pNet );
+
+    core = pCore;
 
     pGame = new CGameSA;
 

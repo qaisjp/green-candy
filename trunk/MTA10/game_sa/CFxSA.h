@@ -44,22 +44,22 @@ public:
 class CFxSA : public CFx
 {
 public:
-                        CFxSA                  ( CFxSAInterface * pInterface )    { m_pInterface = pInterface; }
+                        CFxSA                   ( CFxSAInterface * pInterface )    { m_pInterface = pInterface; }
 
-    void                AddBlood                ( CVector & vecPosition, CVector & vecDirection, int iCount, float fBrightness );
-    void                AddWood                 ( CVector & vecPosition, CVector & vecDirection, int iCount, float fBrightness );
-    void                AddSparks               ( CVector & vecPosition, CVector & vecDirection, float fForce, int iCount, CVector vecAcrossLine, unsigned char ucBlurIf0, float fSpread, float fLife );
-    void                AddTyreBurst            ( CVector & vecPosition, CVector & vecDirection );
-    void                AddBulletImpact         ( CVector & vecPosition, CVector & vecDirection, int iSmokeSize, int iSparkCount, float fSmokeIntensity );
-    void                AddPunchImpact          ( CVector & vecPosition, CVector & vecDirection, int );
-    void                AddDebris               ( CVector & vecPosition, RwColor & rwColor, float fScale, int iCount );
-    void                AddGlass                ( CVector & vecPosition, RwColor & rwColor, float fScale, int iCount );
-    void                TriggerWaterHydrant     ( CVector & vecPosition );
-    void                TriggerGunshot          ( CEntity * pEntity, CVector & vecPosition, CVector & vecDirection, bool bIncludeSparks );
-    void                TriggerTankFire         ( CVector & vecPosition, CVector & vecDirection );
-    void                TriggerWaterSplash      ( CVector & vecPosition );
-    void                TriggerBulletSplash     ( CVector & vecPosition );
-    void                TriggerFootSplash       ( CVector & vecPosition );
+    void                AddBlood                ( CVector& vecPosition, CVector& vecDirection, int iCount, float fBrightness );
+    void                AddWood                 ( CVector& vecPosition, CVector& vecDirection, int iCount, float fBrightness );
+    void                AddSparks               ( CVector& vecPosition, CVector& vecDirection, float fForce, int iCount, CVector vecAcrossLine, unsigned char ucBlurIf0, float fSpread, float fLife );
+    void                AddTyreBurst            ( CVector& vecPosition, CVector& vecDirection );
+    void                AddBulletImpact         ( CVector& vecPosition, CVector& vecDirection, int iSmokeSize, int iSparkCount, float fSmokeIntensity );
+    void                AddPunchImpact          ( CVector& vecPosition, CVector& vecDirection, int );
+    void                AddDebris               ( CVector& vecPosition, RwColor& rwColor, float fScale, int iCount );
+    void                AddGlass                ( CVector& vecPosition, RwColor& rwColor, float fScale, int iCount );
+    void                TriggerWaterHydrant     ( CVector& vecPosition );
+    void                TriggerGunshot          ( CEntity* pEntity, CVector& vecPosition, CVector& vecDirection, bool bIncludeSparks );
+    void                TriggerTankFire         ( CVector& vecPosition, CVector& vecDirection );
+    void                TriggerWaterSplash      ( CVector& vecPosition );
+    void                TriggerBulletSplash     ( CVector& vecPosition );
+    void                TriggerFootSplash       ( CVector& vecPosition );
 
 private:
     CFxSAInterface *   m_pInterface;

@@ -573,6 +573,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CParticleDataSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CParticleObjectSA.cpp"
 				>
 			</File>
@@ -1135,6 +1139,10 @@
 			</File>
 			<File
 				RelativePath="CPadSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CParticleDataSA.h"
 				>
 			</File>
 			<File

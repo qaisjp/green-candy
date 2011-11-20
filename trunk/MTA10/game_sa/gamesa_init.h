@@ -13,6 +13,9 @@
 #ifndef __CGAMESA_INIT
 #define __CGAMESA_INIT
 
+extern CGameSA *pGame;
+extern CCoreInterface *core;
+
 //
 // Use MemSet/Cpy/Put/Add for the following memory regions:
 //
