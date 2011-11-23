@@ -39,4 +39,31 @@ public:
     virtual size_t          GetString( char *pBuffer, size_t sMaxLength ) { return 0; };
 };
 
+class CFileTranslator
+{
+public:
+    virtual                 ~CFileTranslator() = 0;
+
+    virtual CFile*          Open( const std::string& path, const char *mode ) = 0;
+    virtual bool            Exists( const std::string& path ) = 0;
+    virtual bool            Delete( const std::string& path ) = 0;
+    virtual size_t          Size( const std::string& path ) = 0;
+    virtual bool            Stat( const std::string& path, struct stat *info ) = 0;
+    virtual bool            GetFullPath( const std::string& path, std::string& output ) = 0;
+    virtual bool            GetRelativePath( const std::string& path, std::string& output ) = 0;
+    virtual bool            ChangeDirectory( const std::string& path ) = 0;
+    virtual void            GetDirectory( std::string& output ) = 0;
+
+    virtual void            ScanDirectory( const std::string& path, const std::string& wildcard, bool bRecurse, 
+                                void (*dirCallback)( const std::string& filename, void *pUserdata ), 
+                                void (*fileCallback)( const std::string& filename, void *pUserdata ), 
+                                void *pUserdata ) = 0;
+};
+
+class CFileSystemInterface
+{
+public:
+    virtual CFileTranslator*    CreateTranslator( const std::string& path ) = 0;
+};
+
 #endif //_CFileSystemInterface_
