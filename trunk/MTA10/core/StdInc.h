@@ -38,12 +38,12 @@
 
 #include <net/CNet.h>
 #include <multiplayer/CMultiplayer.h>
-// Game can not be included here because of conflicting classnames (CText)
 
 // Core-level includes
 #define MTA_CLIENT
 #include "SharedUtil.h"
 #include "CrashHandler.h"
+#include "CFileSystem.h"
 #include "CCore.h"
 #include "CDebugView.h"
 #include "CChat.h"

@@ -98,40 +98,40 @@ private:
     char*           m_pPath;
 };
 
-class CSystemFileTranslator
+class CSystemFileTranslator : public CFileTranslator
 {
 public:
                     ~CSystemFileTranslator();
+                    
+    CFile*          Open( const std::string& path, const char *pMode );
+    bool            Exists( const std::string& path );
+    bool            Delete( const std::string& path );
+    size_t          Size( const std::string& path );
+    bool            Stat( const std::string& path, struct stat *pStats );
+    bool            GetFullPath( const std::string& path, std::string& output );
+    bool            GetRelativePath( const std::string& path, std::string& output );
+    bool            ChangeDirectory( const std::string& path );
+    void            GetDirectory( std::string& output, bool bSystem );
 
-    CFile*          Open( const char *pPath, const char *pMode );
-    bool            Exists( const char *pPath );
-    size_t          Size( const char *pPath );
-    void            GetDirectory( char *pBuffer, size_t sMaxBuffer, bool bSystem );
-    bool            GetFullPath( const char *pPath, char *pBuffer, size_t sMaxBuffer );
-    bool            ChangeDirectory( const char *pPath );
-    bool            Stat( const char *pPath, struct stat *pStats );
-
-    void            ScanDirectory( char *pDirectory, char *pWildcard, bool bRecurse, 
-                        void (*dirCallback)( const char *pDirectory, void *pUserdata ), 
-                        void (*fileCallback)( const char *pFilename, void *pUserdata ), 
+    void            ScanDirectory( const std::string& path, const std::string& wildcard, bool bRecurse, 
+                        void (*dirCallback)( const std::string& filename, void *pUserdata ), 
+                        void (*fileCallback)( const std::string& filename, void *pUserdata ), 
                         void *pUserdata );
 
-    eAccessLevel    GetAccessLevel();
-    eAccessLevel    GetPathAccessLevel( const char *pPath );
 private:
     friend class CFileSystem;
 
-    char            m_root[2048];
-    char            m_currentDir[1024];
+    std::string     m_root;
+    std::string     m_currentDir;
     unsigned int    m_uiTreeDepth;
-    char            m_rootTree[32][MAX_PATH];
+    char            m_rootTree[32][MAX_PATH];   // cached root tree
 
     eAccessLevel    m_eAccessPriviledge;
 };
 
 #ifdef _FILESYSTEM_ZIP_SUPPORT
 
-class	CArchiveFileTranslator
+class	CArchiveFileTranslator : public CFileTranslator
 {
 public:
     CFile*          Open( const char *pPath, const char *pMode );
@@ -147,7 +147,6 @@ public:
 
     int             GetFlags();
     void            GetHash( char pHash[MAX_HASH_SIZE], int *pHashLength );
-    eAccessLevel    GetAccessLevel();
     void            Delete();
 private:
     friend class CFileSystem;
@@ -169,10 +168,14 @@ private:
 
 extern CSystemFileTranslator *mtaFileRoot;
 
-class CFileSystem
+class CFileSystem : public CFileSystemInterface
 {
 public:
-    
+                            CFileSystem();
+                            ~CFileSystem();
+                            
+    CFileTranslator*        CreateTranslator( const std::string& path );
+    bool                    IsDirectory( const std::string& path );
 };
 
 void    Archive_Init();
