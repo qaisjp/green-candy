@@ -43,7 +43,6 @@
 #define MTA_CLIENT
 #include "SharedUtil.h"
 #include "CrashHandler.h"
-#include "CFileSystem.h"
 #include "CCore.h"
 #include "CDebugView.h"
 #include "CChat.h"

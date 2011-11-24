@@ -25,6 +25,7 @@ class CCore;
 #include "CClientTime.h"
 #include "CClientVariables.h"
 #include "CCommands.h"
+#include "CFileSystem.h"
 #include "CFileSystemHook.h"
 #include "CModuleLoader.h"
 #include "CSingleton.h"

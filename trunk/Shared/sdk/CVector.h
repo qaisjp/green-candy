@@ -49,11 +49,10 @@ public:
     { 
         double length = Length();
 
-        if ( t < FLOAT_EPSILON )
+        if ( length < FLOAT_EPSILON )
             return 0;
 
-        this /= length;
-
+        Divide( length );
         return (float)length;
     }
 
@@ -78,6 +77,13 @@ public:
         fX = _fY * param->fZ - param->fY * _fZ;
         fY = _fZ * param->fX - param->fZ * _fX;
         fZ = _fX * param->fY - param->fX * _fY;
+    }
+
+    inline void Divide( float right )
+    {
+        fX /= right;
+        fY /= right;
+        fZ /= right;
     }
 
     CVector operator + ( const CVector& vecRight ) const
@@ -154,9 +160,7 @@ public:
 
     void operator /= ( float fRight )
     {
-        fX /= fRight;
-        fY /= fRight;
-        fZ /= fRight;
+        Divide( fRight );
     }
 
     void operator /= ( const CVector& vecRight )
