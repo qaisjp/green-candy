@@ -16,7 +16,7 @@
 extern CCore *g_pCore;
 
 CFileSystem *fileSystem;
-CSystemFileTranslator *mtaFileRoot;
+CFileTranslator *mtaFileRoot;
 
 std::list <CFile*> *openFiles;
 
@@ -129,58 +129,6 @@ void Archive_Shutdown()
 
 #endif //_FILESYSTEM_ZIP_SUPPORT
 
-void File_ScanDirectory(char *pDirectory, char *pWildcard, bool bRecurse,
-                           void (*dirCallback)(const char *pDirectory, void *pUserdata),
-                           void (*fileCallback)(const char *pFilename, void *pUserdata),
-                           void *pUserdata)
-{
-    gameTranslator->ScanDirectory(pDirectory, pWildcard, bRecurse, dirCallback, fileCallback, pUserdata);
-}
-
-void	File_GetFullPath(const char *pPath, char *pBuffer, size_t sMaxBuffer)
-{
-    gameTranslator->GetFullPath(pPath, pBuffer, sMaxBuffer);
-}
-
-CFile* File_CreateBuffered(CFile *pFile)
-{
-    CBufferedFile *pBufferedFile = new CBufferedFile();
-    pFile->Seek(0, SEEK_SET);
-
-    pBufferedFile->m_pBuffer = (char*)Tag_Malloc(pFile->GetSize(), MEM_FILE);
-
-    if (!pFile->Read(pBufferedFile->m_pBuffer, pFile->GetSize(), 1))
-    {
-        Tag_Free(pBufferedFile->m_pBuffer);
-
-        delete pBufferedFile;
-        return NULL;
-    }
-
-    pBufferedFile->m_sSize = pFile->GetSize();
-    pBufferedFile->m_iSeek = 0;
-    pBufferedFile->m_pPath = (char*)Tag_Strdup(pFile->GetPath(), MEM_FILE);
-    return pBufferedFile;
-}
-
-CFile* File_ImportBuffered(char *pPath, void *pBuffer, size_t sBuffer)
-{
-    CBufferedFile *pBufferedFile;
-
-    if (!pBuffer || sBuffer == 0)
-        return NULL;
-
-    pBufferedFile = new CBufferedFile();
-
-    pBufferedFile->m_pBuffer = (char*)Tag_Malloc(sBuffer, MEM_FILE);
-    Mem_Copy(pBufferedFile->m_pBuffer, pBuffer, sBuffer);
-
-    pBufferedFile->m_sSize = sBuffer;
-    pBufferedFile->m_iSeek = 0;
-    pBufferedFile->m_pPath = (char*)Tag_Strdup(pPath, MEM_FILE);
-    return pBufferedFile;
-}
-
 /*=====================================================================
 *
 * File_OpenAbsolute
@@ -191,7 +139,7 @@ CFile* File_ImportBuffered(char *pPath, void *pBuffer, size_t sBuffer)
 *
 =======================================================================*/
 
-CFile* File_OpenAbsolute(const char *filename, const char *mode)
+static inline CFile* File_OpenAbsolute(const char *filename, const char *mode)
 {
     void *pSystemFile;
     CRawFile *pFile;
@@ -211,35 +159,24 @@ CFile* File_OpenAbsolute(const char *filename, const char *mode)
             dwCreate = OPEN_EXISTING;
             dwAccess |= GENERIC_READ;
             break;
+#ifdef _EXTRA_FILE_ACCESS_MODES
         case 'a':
-            Console_DPrintf("Silverback does not support file append mode, ignoring (%s)\n", filename);
             break;
         case 't':
-            Console_DPrintf("Silverback does not support text mode, ignoring (%s)\n", filename);
             break;
+#endif
         case '+':
             if (dwAccess & GENERIC_READ)
                 dwAccess |= GENERIC_WRITE;
             else if (dwAccess & GENERIC_WRITE)
                 dwAccess |= GENERIC_READ;
             break;
-        default:
-            Console_DPrintf("Unknown file mode descriptor '%c' (%s)\n", *pModeIter, filename);
-            break;
         }
 
         pModeIter++;
     }
     if (!dwAccess)
-    {
-        Console_DPrintf("Opening of file '%s' failed, no mode specified\n", filename);
         return NULL;
-    }
-
-    if (strlen(filename) == 0 || filename[strlen(filename)-1] == '/')
-    {
-        Console_DPrintf("weird filename %s, mode %s\n", filename, mode);
-    }
 
     pSystemFile = CreateFile(filename, dwAccess, FILE_SHARE_READ, NULL, dwCreate, 0, NULL);
 
@@ -247,31 +184,12 @@ CFile* File_OpenAbsolute(const char *filename, const char *mode)
         return NULL;
 
     pFile = new CRawFile();
-    pFile->m_pFile = pSystemFile;
-    pFile->m_pMode = mode;
-    pFile->m_pPath = (char*)Tag_Malloc(strlen(filename)+1, MEM_FILE);
-    strcpy(pFile->m_pPath, filename);
+    pFile->m_file = pSystemFile;
+    pFile->m_mode = mode;
+    pFile->m_path = filename;
 
     openFiles->push_back(pFile);
     return pFile;
-}
-
-CFile* File_Open(const char *filename, const char *mode)
-{
-    return gameTranslator->Open(filename, mode);
-}
-
-CFile* File_OpenBuffered(const char *pFilename, const char *pMode)
-{
-    CFile *pFile = File_Open(pFilename, pMode);
-    CFile *pBufferedFile;
-
-    if (!pFile)
-        return NULL;
-    pBufferedFile = File_CreateBuffered(pFile);
-    pFile->Close();
-
-    return pBufferedFile;
 }
 
 bool File_IsDirectoryAbsolute(const char *pPath)
@@ -296,7 +214,7 @@ static inline bool _File_ParseRelativePath( const char *path, std::vector < std:
 
     while (*path)
     {
-        switch (*pPath)
+        switch (*path)
         {
         case '\\':
         case '/':
@@ -353,183 +271,77 @@ static inline bool _File_ParseRelativePath( const char *path, std::vector < std:
     return true;
 }
 
-// Parse a path so it will not turn out illegal
-bool File_ParsePath( const std::string& path, std::string& output )
+// Output a parsed buffer
+static inline bool _File_ParsePath( const char *path, bool allowFile, std::string& output )
 {
     std::vector <std::string> tree( 16 );
     unsigned int n;
     bool bFile;
 
-    // We have to handle absolute path, too
-    if ( path.length() > 2 && path[1] == ':' )
-    {
-        if (!_File_ParseRelativePath( path.c_str() + 3, tree, &bFile))
-            return false;
-
-        output = SString("%c:/", pPath[0]);
-    }
-    else
-    {
-        if (!_File_ParseRelativePath( pPath, dirTree, 32, &uiTreeDepth, &bFile ))
-            return false;
-
-        output.clear();
-    }
+    if (!_File_ParseRelativePath( path, tree, &bFile ))
+        return false;
 
     if ( bFile )
     {
-        for (n=0; n<uiTreeDepth-1; n++)
-            output += SString("%s/", dirTree[n]);
-
-        output += dirTree[uiTreeDepth-1];
-    }
-    else
-    {
-        if ( uiTreeDepth == 0 )
+        for (n=0; n<tree.size()-1; n++)
         {
-            pBuffer[0] = 0;
-            return true;
+            output += tree[n];
+            output += "/";
         }
 
-        for (n=0; n<uiTreeDepth; n++)
-            output += SString("%s/", dirTree[n]);
-    }
-    return true;
-}
+        if ( allowFile )
+            output += tree[n];
 
-// Get the directory correctly parsed
-bool File_ParseDirectory(const char *pPath, char *pBuffer, size_t sMaxBuffer)
-{
-    unsigned int n;
-    unsigned int uiTreeDepth;
-    char dirTree[32][MAX_PATH];
-    bool bFile;
-
-    if (sMaxBuffer == 0)
-        return false;
-
-    // We have to handle absolute path, too
-    if (strlen(pPath) > 2 && pPath[1] == ':')
-    {
-        if (sMaxBuffer < 4)
-            return false;
-
-        if (!_File_ParseRelativePath(pPath + 3, dirTree, 32, &uiTreeDepth, &bFile))
-            return false;
-
-        pBuffer[0] = pPath[0];
-        pBuffer[1] = ':';
-        pBuffer[2] = '/';
-        pBuffer[3] = 0;
-    }
-    else
-    {
-        if (!_File_ParseRelativePath(pPath, dirTree, 32, &uiTreeDepth, &bFile))
-            return false;
-
-        pBuffer[0] = 0;
-    }
-
-    if (bFile)
-    {
-        if (uiTreeDepth == 1)
-        {
-            pBuffer[0] = 0;
-            return true;
-        }
-
-        uiTreeDepth--;
-    }
-    else if (uiTreeDepth == 0)
-    {
-        pBuffer[0] = 0;
         return true;
     }
 
-    for (n=0; n<uiTreeDepth; n++)
-        strncat(pBuffer, fmt("%s/", dirTree[n]), sMaxBuffer);
+    for (n=0; n<tree.size(); n++)
+    {
+        output += tree[n];
+        output += "/";
+    }
 
     return true;
 }
 
 // Try to create a relative version of a path
-static inline bool _File_ParsePathToRelative( const char *path, const std::vector <std::string>& tree, std::string& output )
+static inline bool _File_ParsePathToRelative( const char *path, bool allowFile, const std::vector <std::string>& root, std::string& output )
 {
-    std::vector <std::string> pathTree( 16 );
+    std::vector <std::string> tree( 16 );
     bool bFile;
     unsigned int n;
 
-    if (!_File_ParseRelativePath( path + 3, pathTree, &bFile ))
+    if (!_File_ParseRelativePath( path + 3, tree, &bFile ))
         return false;
 
-    if ( pathTree.size() < tree.size() )
+    if ( tree.size() < root.size() )
         return false;
 
-    for (n=0; n<tree.size(); n++)
-        if ( pathTree[n] != tree[n] )
+    for (n=0; n<root.size(); n++)
+        if ( tree[n] != root[n] )
             return false;
-
-    output.clear();
 
     if ( bFile )
     {
-        for (n; n<pathTree.size()-1; n++)
+        for (n; n<tree.size()-1; n++)
         {
-            output += pathTree[n];
+            output += tree[n];
             output += "/";
         }
 
-        output += pathTree[n];
-    }
-    else
-    {
-        for (n; n<pathTree.size(); n++)
-        {
-            output += pathTree[n];
-            output += "/";
-        }
-    }
-    return true;
-}
+        if ( allowFile )
+            output += tree[n];
 
-// Create a relative directory path
-static inline bool _File_ParseDirectoryToRelative( const char *path, const std::vector <std::string>& tree, std::string& output )
-{
-    std::vector <std::string> pathTree( 16 );
-    bool bFile;
-    unsigned int n;
-
-    if (!_File_ParseRelativePath( path + 3, pathTree, &bFile ))
-        return false;
-
-    if ( pathTree.size() < tree.size() )
-        return false;
-
-    for (n=0; n<tree.size(); n++)
-        if ( pathTree[n] != tree[n] )
-            return false;
-
-    output.clear();
-
-    if ( bFile )
-    {
-        if ( pathTree.size() == tree.size() )
-            return false;
-
-        pathTree.pop_back();
+        return true;
     }
 
-    for (n; n<pathTree.size(); n++)
+    for (n; n<tree.size(); n++)
     {
-        output += pathTree[n];
+        output += tree[n];
         output += "/";
     }
-    return true;
-}
 
-void File_SeekToNewLine(CFile *pFile)
-{
-    while (!pFile->IsEOF() && pFile->ReadByte() != '\n');
+    return true;
 }
 
 /*===================================================
@@ -543,16 +355,14 @@ void File_SeekToNewLine(CFile *pFile)
 
 CRawFile::~CRawFile()
 {
-    Tag_Free(m_pPath);
-
 #ifdef _WIN32
-    CloseHandle(m_pFile);
+    CloseHandle(m_file);
 #endif
 
     openFiles->remove(this);
 }
 
-size_t CRawFile::Read(void *pBuffer, size_t sElement, long iNumElements)
+size_t CRawFile::Read(void *pBuffer, size_t sElement, unsigned long iNumElements)
 {
 #ifdef _WIN32
     DWORD dwBytesRead;
@@ -560,12 +370,12 @@ size_t CRawFile::Read(void *pBuffer, size_t sElement, long iNumElements)
     if (sElement == 0 || iNumElements == 0)
         return 0;
 
-    ReadFile(m_pFile, pBuffer, sElement * iNumElements, &dwBytesRead, NULL);
+    ReadFile(m_file, pBuffer, sElement * iNumElements, &dwBytesRead, NULL);
     return dwBytesRead / sElement;
 #endif
 }
 
-size_t CRawFile::Write(void *pBuffer, size_t sElement, long iNumElements)
+size_t CRawFile::Write(void *pBuffer, size_t sElement, unsigned long iNumElements)
 {
 #ifdef _WIN32
     DWORD dwBytesWritten;
@@ -573,7 +383,7 @@ size_t CRawFile::Write(void *pBuffer, size_t sElement, long iNumElements)
     if (sElement == 0 || iNumElements == 0)
         return 0;
 
-    WriteFile(m_pFile, pBuffer, sElement * iNumElements, &dwBytesWritten, NULL);
+    WriteFile(m_file, pBuffer, sElement * iNumElements, &dwBytesWritten, NULL);
     return dwBytesWritten / sElement;
 #endif
 }
@@ -581,7 +391,7 @@ size_t CRawFile::Write(void *pBuffer, size_t sElement, long iNumElements)
 int CRawFile::Seek(long iOffset, int iType)
 {
 #ifdef _WIN32
-    if (SetFilePointer(m_pFile, iOffset, NULL, iType) == INVALID_SET_FILE_POINTER)
+    if (SetFilePointer(m_file, iOffset, NULL, iType) == INVALID_SET_FILE_POINTER)
         return -1;
     return 0;
 #endif
@@ -590,14 +400,14 @@ int CRawFile::Seek(long iOffset, int iType)
 long CRawFile::Tell()
 {
 #ifdef _WIN32
-    return SetFilePointer(m_pFile, 0, NULL, FILE_CURRENT);
+    return SetFilePointer(m_file, 0, NULL, FILE_CURRENT);
 #endif
 }
 
 bool CRawFile::IsEOF()
 {
 #ifdef _WIN32
-    return (SetFilePointer(m_pFile, 0, NULL, FILE_CURRENT) == GetFileSize(m_pFile, NULL));
+    return (SetFilePointer(m_file, 0, NULL, FILE_CURRENT) == GetFileSize(m_file, NULL));
 #endif
 }
 
@@ -605,14 +415,15 @@ bool CRawFile::Stat(struct stat *pFileStats)
 {
 #ifdef _WIN32
     BY_HANDLE_FILE_INFORMATION info;
-    if (!GetFileInformationByHandle(m_pFile, &info))
+
+    if (!GetFileInformationByHandle(m_file, &info))
         return false;
 
-    pFileStats->st_size = (long)info.nFileSizeLow >> 32 | info.nFileSizeHigh;
-    pFileStats->st_dev = (long)info.nFileIndexLow >> 32 | info.nFileSizeHigh;
-    pFileStats->st_atime = (long)info.ftLastAccessTime.dwLowDateTime >> 32 | info.ftLastAccessTime.dwHighDateTime;
-    pFileStats->st_ctime = (long)info.ftCreationTime.dwLowDateTime >> 32 | info.ftCreationTime.dwHighDateTime;
-    pFileStats->st_mtime = (long)info.ftLastWriteTime.dwLowDateTime >> 32 | info.ftLastWriteTime.dwLowDateTime;
+    pFileStats->st_size = info.nFileSizeLow;
+    pFileStats->st_dev = info.nFileIndexLow;
+    pFileStats->st_atime = info.ftLastAccessTime.dwLowDateTime;
+    pFileStats->st_ctime = info.ftCreationTime.dwLowDateTime;
+    pFileStats->st_mtime = info.ftLastWriteTime.dwLowDateTime;
     pFileStats->st_dev = info.dwVolumeSerialNumber;
     pFileStats->st_mode = 0;
     pFileStats->st_nlink = info.nNumberOfLinks;
@@ -625,20 +436,20 @@ bool CRawFile::Stat(struct stat *pFileStats)
 size_t CRawFile::GetSize()
 {
 #ifdef _WIN32
-    return GetFileSize(m_pFile, NULL);
+    return GetFileSize(m_file, NULL);
 #endif
 }
 
 void CRawFile::Flush()
 {
 #ifdef _WIN32
-    FlushFileBuffers(m_pFile);
+    FlushFileBuffers(m_file);
 #endif
 }
 
-const char*	CRawFile::GetPath()
+std::string& CRawFile::GetPath()
 {
-    return m_pPath;
+    return m_path;
 }
 
 int CRawFile::ReadInt()
@@ -692,46 +503,26 @@ size_t CRawFile::Printf(const char *pFormat, ...)
     return Write(cBuffer, 1, strlen(cBuffer));
 }
 
-size_t CRawFile::GetString(char *pBuffer, size_t sMaxLength)
-{
-    int i = 0;
-
-    if (sMaxLength == 0)
-        return 0;
-
-    while (i < sMaxLength - 1)
-    {
-        pBuffer[i] = ReadByte();
-        if (!pBuffer[i] || pBuffer[i] == '\n')
-            break;
-        //only increment i if we have a valid character
-        if (pBuffer[i] != '\r')
-            i++;
-    }
-    pBuffer[i] = 0;
-    return i;
-}
-
 /*=========================================
     CBufferedFile
 
     Loads a file at open and keeps it in a managed buffer.
 =========================================*/
 
-size_t CBufferedFile::Read(void *pBuffer, size_t sElement, long iNumElements)
+size_t CBufferedFile::Read(void *pBuffer, size_t sElement, unsigned long iNumElements)
 {
-    long iReadElements = MIN((m_sSize - m_iSeek) / sElement, iNumElements);
+    long iReadElements = min((m_sSize - m_iSeek) / sElement, iNumElements);
     size_t sRead = iReadElements * sElement;
 
     if (iNumElements <= 0)
         return 0;
 
-    Mem_Copy(pBuffer, m_pBuffer + m_iSeek, sRead);
+    memcpy(pBuffer, m_pBuffer + m_iSeek, sRead);
     m_iSeek += sRead;
     return iReadElements;
 }
 
-size_t CBufferedFile::Write(void *pBuffer, size_t sElement, long iNumElements)
+size_t CBufferedFile::Write(void *pBuffer, size_t sElement, unsigned long iNumElements)
 {
     return 0;
 }
@@ -747,8 +538,8 @@ int CBufferedFile::Seek(long iOffset, int iType)
         m_iSeek = m_sSize;
         break;
     }
-    m_iSeek = MAX(0, MIN(m_iSeek + iOffset, m_sSize));
 
+    m_iSeek = max(0, min(m_iSeek + iOffset, (long)m_sSize));
     return 0;
 }
 
@@ -788,16 +579,9 @@ void CBufferedFile::Flush()
     return;
 }
 
-const char* CBufferedFile::GetPath()
+std::string& CBufferedFile::GetPath()
 {
-    return m_pPath;
-}
-
-void CBufferedFile::Close()
-{
-    Tag_Free(m_pPath);
-    Tag_Free(m_pBuffer);
-    delete this;
+    return m_path;
 }
 
 int CBufferedFile::ReadInt()
@@ -831,24 +615,48 @@ char CBufferedFile::ReadByte()
     return *(m_pBuffer + m_iSeek++);
 }
 
-size_t CBufferedFile::GetString(char *pBuffer, size_t sMaxLength)
+/*=======================================
+    CSystemPathTranslator
+
+    Filesystem path translation utility
+=======================================*/
+
+void CSystemPathTranslator::GetDirectory( std::string& output )
 {
-    int i = 0;
+    output = m_currentDir;
+}
 
-    if (sMaxLength == 0)
-        return 0;
+bool CSystemPathTranslator::ChangeDirectory( const char *path )
+{
+    return GetRelativePath( path, false, m_currentDir );
+}
 
-    while (i < sMaxLength - 1)
+bool CSystemPathTranslator::GetFullPath( const char *path, bool allowFile, std::string& output )
+{
+    output += m_root;
+    return GetRelativePath( path, allowFile, output );
+}
+
+bool CSystemPathTranslator::GetRelativePath( const char *path, bool allowFile, std::string& output )
+{
+    std::string target;
+
+    if (!*path)
+        return false;
+
+    if ( path[0] == '/' )
+        return _File_ParsePath( path + 1, allowFile, output );
+    else if ( path[1] == ':' )
     {
-        pBuffer[i] = ReadByte();
-        if (!pBuffer[i] || pBuffer[i] == '\n')
-            break;
-        //only increment i if we have a valid character
-        if (pBuffer[i] != '\r')
-            i++;
+        if ( path[0] != m_root[0] )
+            return false;   // drive mismatch
+        
+        return _File_ParsePathToRelative( path, allowFile, m_rootTree, output );
     }
-    pBuffer[i] = 0;
-    return i;
+
+    target += m_currentDir;
+    target += path;
+    return _File_ParsePath( target.c_str(), allowFile, output );
 }
 
 #ifdef _FILESYSTEM_ZIP_SUPPORT
@@ -859,7 +667,15 @@ size_t CBufferedFile::GetString(char *pBuffer, size_t sMaxLength)
     Translator to manage files in archives.
 =======================================*/
 
-CArchiveFileTranslator* Archive_CreateTranslator(const char *pPath, enum eAccessLevel eAccess, int iFlags)
+CArchiveFileTranslator::~CArchiveFileTranslator()
+{
+    ZIP_Close(m_pArchive);
+
+    Tag_Free(m_pPath);
+    Tag_Free(m_pRoot);
+}
+
+static inline CArchiveFileTranslator* Archive_CreateTranslator(const char *pPath, enum eAccessLevel eAccess, int iFlags)
 {
     CArchiveFileTranslator *pTranslator;
     char pathBuffer[1024];
@@ -937,134 +753,66 @@ CArchiveFileTranslator* Archive_CreateTranslator(const char *pPath, enum eAccess
     return pTranslator;
 }
 
-CFile* CArchiveFileTranslator::Open(const char *pPath, const char *pMode)
+CFile* CArchiveFileTranslator::Open( const char *path, const char *mode )
 {
-    char pathBuffer[1024];
+    std::string output;
 
-    if (!*pPath)
+    if ( !GetRelativePath( path, true, output ) )
         return NULL;
 
-    if (pPath[1] == ':')
-    {
-        if (!_File_ParsePathToRelative(pPath, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-            return NULL;
-    }
-    else if (!File_ParsePath(pPath, pathBuffer, 1024))
-        return NULL;
-
-    return ZIP_OpenFileBuffered(m_pArchive, pathBuffer, pMode);
+    return ZIP_OpenFileBuffered( m_pArchive, output.c_str(), mode );
 }
 
-bool CArchiveFileTranslator::Exists(const char *pPath)
+bool CArchiveFileTranslator::Exists( const char *path )
 {
-    char pathBuffer[1024];
+    std::string output;
 
-    if (!*pPath)
+    if ( !GetRelativePath( path, true, output ) )
         return false;
 
-    if (pPath[1] == ':')
-    {
-        if (!_File_ParsePathToRelative(pPath, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-            return false;
-    }
-    else if (!File_ParsePath(pPath, pathBuffer, 1024))
-        return false;
-
-    return ZIP_FileExists(m_pArchive, pathBuffer);
+    return ZIP_FileExists( m_pArchive, output.c_str() );
 }
 
-size_t CArchiveFileTranslator::Size(const char *pPath)
+size_t CArchiveFileTranslator::Size( const char *path )
 {
-    char pathBuffer[1024];
     struct stat fileStats;
+    std::string output;
 
-    if (!*pPath)
+    if ( !GetRelativePath( path, true, output ) )
         return 0;
 
-    if (pPath[1] == ':')
-    {
-        if (!_File_ParsePathToRelative(pPath, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-            return 0;
-    }
-    else if (!File_ParsePath(pPath, pathBuffer, 1024))
-        return 0;
-
-    if (!ZIP_StatFile(m_pArchive, pathBuffer, &fileStats))
+    if (!ZIP_StatFile( m_pArchive, output.c_str(), &fileStats ))
         return 0;
 
     return fileStats.st_size;
 }
 
-void CArchiveFileTranslator::GetDirectory(char *pBuffer, size_t sMaxBuffer)
+void CArchiveFileTranslator::ScanDirectory(char *directory, char *wildcard, bool recurse, 
+                                              void (*dirCallback)(const char *directory, void *userdata), 
+                                              void (*fileCallback)(const char *filename, void *userdata), 
+                                              void *userdata)
 {
-    memcpy(pBuffer, m_pPath, min(strlen(m_pPath)+1, sMaxBuffer));
-}
+    std::string output;
 
-void CArchiveFileTranslator::ScanDirectory(char *pDirectory, char *pWildcard, bool bRecurse, 
-                                              void (*dirCallback)(const char *pDirectory, void *pUserdata), 
-                                              void (*fileCallback)(const char *pFilename, void *pUserdata), 
-                                              void *pUserdata)
-{
-    char pathBuffer[1024];
-
-    if (!*pDirectory)
+    if ( !GetRelativePath( directory, false, output ) )
         return;
 
-    if (pDirectory[1] == ':')
-    {
-        if (!_File_ParseDirectoryToRelative(pDirectory, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-            return;
-    }
-    else if (!File_ParseDirectory(pDirectory, pathBuffer, 1024))
-        return;
-
-    ZIP_ScanDirectory(m_pArchive, m_pRoot, pathBuffer, pWildcard, bRecurse, dirCallback, fileCallback, pUserdata);
+    ZIP_ScanDirectory( m_pArchive, m_root, output.c_str(), wildcard, recurse, dirCallback, fileCallback, userdata );
 }
 
-bool CArchiveFileTranslator::Stat(const char *pPath, struct stat *pStats)
+bool CArchiveFileTranslator::Stat( const char *path, struct stat *stats )
 {
-    char pathBuffer[1024];
+    std::string output;
 
-    if (!*pPath)
-        return false;
-
-    if (pPath[1] == ':')
-    {
-        if (!_File_ParsePathToRelative(pPath, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-            return false;
-    }
-    else if (!File_ParsePath(pPath, pathBuffer, 1024))
+    if ( !GetRelativePath( path, true, output ) )
         return false;
 
     return ZIP_StatFile(m_pArchive, pathBuffer, pStats);
 }
 
-eAccessLevel CArchiveFileTranslator::GetAccessLevel()
-{
-    return m_eAccessPriviledge;
-}
-
 int CArchiveFileTranslator::GetFlags()
 {
     return m_iFlags;
-}
-
-void CArchiveFileTranslator::GetHash(char pHash[MAX_HASH_SIZE], int *pHashLength)
-{
-    memcpy(pHash, m_hash, m_iHashLength);
-
-    *pHashLength = m_iHashLength;
-}
-
-void CArchiveFileTranslator::Delete()
-{
-    ZIP_Close(m_pArchive);
-
-    Tag_Free(m_pPath);
-    Tag_Free(m_pRoot);
-
-    registeredArchives->remove(this);
-    delete this;
 }
 
 #endif //_FILESYSTEM_ZIP_SUPPORT
@@ -1075,486 +823,133 @@ void CArchiveFileTranslator::Delete()
     Default file translator
 =======================================*/
 
-CSystemFileTranslator* File_CreateTranslator(const char *pRootPath, enum eAccessLevel eAccess)
+CSystemFileTranslator::~CSystemFileTranslator()
 {
-    CSystemFileTranslator *pTranslator;
-    char pathBuffer[1024];
-    char dirTree[32][MAX_PATH];
-    unsigned int uiTreeDepth;
-    bool bFile;
-    unsigned int n;
-
-    // We have to handle absolute path, too
-    if (strlen(pRootPath) > 2 && pRootPath[1] == ':')
-    {
-        if (!_File_ParseRelativePath(pRootPath + 3, dirTree, 32, &uiTreeDepth, &bFile))
-            return NULL;
-
-        if (uiTreeDepth == 0)
-            return NULL;
-
-        pathBuffer[0] = pRootPath[0];
-        pathBuffer[1] = ':';
-        pathBuffer[2] = '/';
-        pathBuffer[3] = 0;
-    }
-    else
-    {
-        strncpy(pathBuffer, System_GetRootDir(), 1023);
-        strncat(pathBuffer, pRootPath, 1023);
-
-        if (!_File_ParseRelativePath(pathBuffer + 3, dirTree, 32, &uiTreeDepth, &bFile))
-            return NULL;
-
-        pathBuffer[3] = 0;
-    }
-
-    if (bFile)
-        return NULL;
-
-    for (n=0; n<uiTreeDepth; n++)
-        strncat(pathBuffer, fmt("%s/", dirTree[n]), 1024);
-
-    if (!File_IsDirectoryAbsolute(pathBuffer))
-        return NULL;
-
-    pTranslator = new CSystemFileTranslator();
-    pTranslator->m_eAccessPriviledge = eAccess;
-
-    strcpy(pTranslator->m_root, pathBuffer);
-
-    memcpy(pTranslator->m_rootTree, dirTree, sizeof(pTranslator->m_rootTree));
-    pTranslator->m_uiTreeDepth = uiTreeDepth;
-    pTranslator->m_currentDir[0] = 0;
-    return pTranslator;
+    
 }
 
-CFile* CSystemFileTranslator::Open(const char *pPath, const char *pMode)
+CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
 {
-    char pathBuffer[1024];
-    char full_system_path[1024];
-    bool bWriting = false;
-    CFile *pFile;
+    std::string output;
 
-    if (!*pPath)
+    if ( !GetFullPath( path, true, output ) )
         return NULL;
 
-    if (pPath[0] == '/')
-    {
-        if (!File_ParsePath(pPath + 1, pathBuffer, 1024))
-            return NULL;
-
-        snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-    }
-    else
-    {
-        if (pPath[1] == ':')
-        {
-            if (!_File_ParsePathToRelative(pPath, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-                return NULL;
-
-            snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-        }
-        else
-        {
-            snprintf(pathBuffer, 1023, "%s%s", m_currentDir, pPath);
-
-            if (!File_ParsePath(pathBuffer, pathBuffer, 1024))
-                return false;
-
-            snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-        }
-    }
-
-    return File_OpenAbsolute(full_system_path, pMode);
+    return File_OpenAbsolute( output.c_str(), mode );
 }
 
-bool CSystemFileTranslator::Exists(const char *pPath)
+bool CSystemFileTranslator::Exists( const char *path )
 {
-    STRUCT_STAT tmp;
-    bool bExists = false;
-    char pathBuffer[1024];
-    char full_system_path[1024];
+    std::string output;
+    struct stat tmp;
 
-    if (!*pPath)
+    if ( !GetFullPath( path, true, output ) )
         return false;
 
-    if (pPath[0] == '/')
-    {
-        if (!File_ParsePath(pPath + 1, pathBuffer, 1024))
-            return false;
-
-        snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-    }
-    else
-    {
-        if (pPath[1] == ':')
-        {
-            if (!_File_ParsePathToRelative(pPath, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-                return false;
-
-            snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-        }
-        else
-        {
-            snprintf(pathBuffer, 1023, "%s%s", m_currentDir, pPath);
-
-            if (!File_ParsePath(pathBuffer, pathBuffer, 1024))
-                return false;
-
-            snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-        }
-    }
-
-    if (archive_precedence.integer == 1)
-        bExists = Archives_FileExists(full_system_path);
-
-    if (!bExists)
-        bExists = (stat(full_system_path, &tmp) == 0);
-
-    if (!bExists && archive_precedence.integer != 1)
-        bExists = Archives_FileExists(full_system_path);
-
-    return bExists;
+    return stat( output.c_str(), &tmp ) == 0;
 }
 
-void CSystemFileTranslator::GetDirectory(char *pBuffer, size_t sMaxBuffer, bool bSystem)
+bool CSystemFileTranslator::Stat(const char *path, struct stat *stats)
 {
-    if (bSystem)
-        snprintf(pBuffer, sMaxBuffer, "%s%s", m_root, m_currentDir);
-    else
-        snprintf(pBuffer, sMaxBuffer, "/%s", m_currentDir);
-}
-
-bool CSystemFileTranslator::ChangeDirectory(const char *pPath)
-{
-    char pathBuffer[1024];
-
-    if (pPath[0] == '/')
-    {
-        if (!File_ParseDirectory(pPath + 1, pathBuffer, 1024))
-            return false;
-    }
-    else
-    {
-        if (pPath[1] == ':')
-        {
-            if (!_File_ParseDirectoryToRelative(pPath, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-                return false;
-        }
-        else
-        {
-            snprintf(pathBuffer, 1023, "%s%s", m_currentDir, pPath);
-
-            if (!File_ParseDirectory(pathBuffer, pathBuffer, 1024))
-                return false;
-        }
-    }
-
-    memcpy(m_currentDir, pathBuffer, 1024);
-    return true;
-}
-
-bool CSystemFileTranslator::Stat(const char *pPath, struct stat *pStats)
-{
-    bool ret = false;
-    char pathBuffer[1024];
-    char full_system_path[1024];
-    OVERHEAD_INIT;
-
-    if (!*pPath)
+    std::string output;
+    
+    if ( !GetFullPath( path, true, output ) )
         return false;
 
-    if (pPath[0] == '/')
-    {
-        if (!File_ParsePath(pPath + 1, pathBuffer, 1024))
-            return NULL;
-
-        snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-    }
-    else
-    {
-        if (pPath[1] == ':')
-        {
-            if (!_File_ParsePathToRelative(pPath, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-                return NULL;
-
-            snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-        }
-        else
-        {
-            snprintf(pathBuffer, 1023, "%s%s", m_currentDir, pPath);
-
-            if (!File_ParsePath(pathBuffer, pathBuffer, 1024))
-                return false;
-
-            snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-        }
-    }
-
-    if (archive_precedence.integer == 1)
-        ret = Archive_StatFile(full_system_path, pStats);
-
-    if (!ret)
-        ret = (stat(full_system_path, pStats) == 0);
-
-    if (!ret && archive_precedence.integer != 1)
-        ret = Archive_StatFile(full_system_path, pStats);
-
-    OVERHEAD_COUNT(OVERHEAD_IO);
-    return ret;
+    return stat( output.c_str(), stats ) == 0;
 }
 
-size_t CSystemFileTranslator::Size(const char *pPath)
+size_t CSystemFileTranslator::Size( const char *path )
 {
-    STRUCT_STAT fstats;
-    char pathBuffer[1024];
-    char full_system_path[1024];
-    OVERHEAD_INIT;
+    struct stat fstats;
 
-    if (!*pPath)
+    if ( !Stat( path, &fstats ) )
         return 0;
 
-    if (pPath[0] == '/')
-    {
-        if (!File_ParsePath(pPath + 1, pathBuffer, 1024))
-            return 0;
-    }
-    else
-    {
-        if (pPath[1] == ':')
-        {
-            if (!_File_ParsePathToRelative(pPath, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-                return 0;
-        }
-        else
-        {
-            snprintf(pathBuffer, 1023, "%s%s", m_currentDir, pPath);
-
-            if (!File_ParsePath(pathBuffer, pathBuffer, 1024))
-                return 0;
-        }
-    }
-    snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-
-    if (archive_precedence.integer == 1 && Archive_StatFile(full_system_path, &fstats))
-    {
-        OVERHEAD_COUNT(OVERHEAD_IO);
-        return fstats.st_size;
-    }
-
-    if (File_Stat(pathBuffer, &fstats))
-    {
-        OVERHEAD_COUNT(OVERHEAD_IO);
-        return fstats.st_size;
-    }
-
-    if (archive_precedence.integer != 1 && Archive_StatFile(full_system_path, &fstats))
-    {
-        OVERHEAD_COUNT(OVERHEAD_IO);
-        return fstats.st_size;
-    }
-
-    OVERHEAD_COUNT(OVERHEAD_IO);
-    return 0;
+    return fstats.st_size;
 }
 
-bool CSystemFileTranslator::GetFullPath(const char *pPath, std::string& output)
-{
-    char pathBuffer[1024];
-
-    if (!*pPath)
-        return false;
-
-    if (sMaxBuffer == 0)
-        return false;
-
-    sMaxBuffer--;
-
-    if (pPath[0] == '/')
-    {
-        if (!File_ParsePath(pPath + 1, pathBuffer, 1023))
-            return false;
-
-        snprintf(pBuffer, sMaxBuffer, "%s%s", m_root, pathBuffer);
-    }
-    else if (pPath[1] == ":")
-    {
-        if (!_File_ParsePathToRelative(pPath, m_rootTree, m_uiTreeDepth, pathBuffer, 1023))
-            return NULL;
-
-        snprintf(pathBuffer, 1023, "%s%s", m_root, pathBuffer);
-    }
-    else
-    {
-        snprintf(pathBuffer, 1023, "%s%s", m_currentDir, pPath);
-
-        if (!File_ParsePath(pathBuffer, pathBuffer, 1023))
-            return false;
-
-        snprintf(pBuffer, sMaxBuffer, "%s%s", m_root, pathBuffer);
-    }
-    return true;
-}
-
-void CSystemFileTranslator::ScanDirectory(char *pDirectory, char *pWildcard, bool bRecurse, 
-                                             void (*dirCallback)(const char *pDirectory, void *pUserdata), 
-                                             void (*fileCallback)(const char *pFilename, void *pUserdata), 
-                                             void *pUserdata)
+void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
+                                            void (*dirCallback)( const std::string& dir, void *userdata), 
+                                            void (*fileCallback)( const std::string& path, void *userdata), 
+                                            void *userdata )
 {
     WIN32_FIND_DATA		finddata;
     HANDLE				handle;
-    char				searchstring[1024];
-    char				pathBuffer[1024];
+    std::string         output;
+    std::string         query;
     char				wcard[256];
-    char				fullDirectory[1024];
 
-    if (!*pDirectory)
+    if ( !GetFullPath( directory, false, output ) )
         return;
 
-    if (pDirectory[0] == '/')
-    {
-        if (!File_ParseDirectory(pDirectory + 1, pathBuffer, 1024))
-            return;
-    }
-    else
-    {
-        if (pDirectory[1] == ':')
-        {
-            if (!_File_ParseDirectoryToRelative(pDirectory, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-                return;
-        }
-        else
-        {
-            snprintf(pathBuffer, 1023, "%s%s", m_currentDir, pDirectory);
-
-            if (!File_ParseDirectory(pathBuffer, pathBuffer, 1024))
-                return;
-        }
-    }
-    snprintf(fullDirectory, 1023, "%s%s", m_root, pathBuffer);
-
-    Archive_ScanDirectory(fullDirectory, pWildcard, bRecurse, dirCallback, fileCallback, pUserdata);
-
-    if (!pWildcard)
+    if ( !wildcard )
         strcpy(wcard, "*");
     else
-        strncpy(wcard, pWildcard, 255);
+        strncpy(wcard, wildcard, 255);
 
     //first search for files only
-    if (fileCallback)
+    if ( fileCallback )
     {
-        BPrintf(searchstring, 1023, "%s%s", fullDirectory, wcard);
+        query = output;
+        query += wcard;
 
-        Cvar_SetVar(&sys_enumdir, fullDirectory);
-
-        handle = FindFirstFile(searchstring, &finddata);
+        handle = FindFirstFile( query.c_str(), &finddata );
 
         if (handle != INVALID_HANDLE_VALUE)
         {
             do
             {
-                if (!(finddata.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) &&
-                    !(finddata.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) &&
-                    !(finddata.dwFileAttributes & FILE_ATTRIBUTE_TEMPORARY) &&
-                    !(finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-                {
-                    snprintf(pathBuffer, 1023, "%s%s", fullDirectory, finddata.cFileName);
+                if ( finddata.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY | FILE_ATTRIBUTE_DIRECTORY) )
+                    continue;
 
-                    fileCallback(pathBuffer, pUserdata);		
-                }
+                std::string filename = output;
+                filename += finddata.cFileName;
+
+                fileCallback( filename.c_str(), userdata );		
+
             } while (FindNextFile(handle, &finddata));
-        }
 
-        FindClose(handle);
+            FindClose( handle );
+        }
     }
 
+    if ( !dirCallback && !recurse )
+        return;
+
     //next search for subdirectories only
-    BPrintf(searchstring, 1023, "%s*", fullDirectory);
-    searchstring[1023] = 0;
+    query = output;
+    query += '*';
 
-    handle = FindFirstFile(searchstring, &finddata);
+    handle = FindFirstFile( query.c_str(), &finddata );
 
-    if (handle == INVALID_HANDLE_VALUE)
+    if ( handle == INVALID_HANDLE_VALUE )
         return;
 
     do
     {
-        if (!(finddata.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) &&
-            !(finddata.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) &&
-            !(finddata.dwFileAttributes & FILE_ATTRIBUTE_TEMPORARY))
-        {
-            if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-            {					
-                if (strcmp(finddata.cFileName, ".") && strcmp(finddata.cFileName, "..") && strcmp(finddata.cFileName, "CVS"))
-                {
-                    BPrintf(pathBuffer, 1023, "%s%s/", fullDirectory, finddata.cFileName);
+        if ( finddata.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY) )
+            continue;
 
-                    Cvar_SetVar(&sys_enumdir, pathBuffer);
+        if ( !(finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
+            continue;
+				
+        if ( strcmp(finddata.cFileName, ".") == 0 || strcmp(finddata.cFileName, "..") == 0 )
+            continue;
 
-                    if (dirCallback)
-                        dirCallback(pathBuffer, pUserdata);
+        std::string target = output;
+        target += finddata.cFileName;
+        target += '/';
 
-                    if (bRecurse)
-                    {
-                        ScanDirectory(pathBuffer, wcard, true, dirCallback, fileCallback, pUserdata);
-                    }			
-                }
-            }
-        }
+        if ( dirCallback )
+            dirCallback( target.c_str(), userdata );
+
+        if ( recurse )
+            ScanDirectory( target.c_str(), wcard, true, dirCallback, fileCallback, userdata );
+
     } while (FindNextFile(handle, &finddata));
 
     FindClose(handle);
-
-    Cvar_SetVar(&sys_enumdir, "");
-}
-
-eAccessLevel CSystemFileTranslator::GetAccessLevel()
-{
-    return m_eAccessPriviledge;
-}
-
-eAccessLevel CSystemFileTranslator::GetPathAccessLevel(const char *pPath)
-{
-    STRUCT_STAT stats;
-    CArchiveFileTranslator *pArchive;
-    char pathBuffer[1024];
-    char full_system_path[1024];
-
-    if (pPath[0] == '/')
-    {
-        if (!File_ParsePath(pPath + 1, pathBuffer, 1024))
-            return ACCESS_GUEST;
-
-        snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-    }
-    else
-    {
-        if (pPath[1] == ':')
-        {
-            if (!_File_ParsePathToRelative(pPath, m_rootTree, m_uiTreeDepth, pathBuffer, 1024))
-                return ACCESS_GUEST;
-
-            snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-        }
-        else
-        {
-            snprintf(pathBuffer, 1023, "%s%s", m_currentDir, pPath);
-
-            if (!File_ParsePath(pathBuffer, pathBuffer, 1024))
-                return ACCESS_GUEST;
-
-            snprintf(full_system_path, 1023, "%s%s", m_root, pathBuffer);
-        }
-    }
-
-    if (archive_precedence.integer == 1 && (pArchive = Archives_FindPath(full_system_path)))
-        return pArchive->GetAccessLevel();
-    if (stat(full_system_path, &stats) == 0)
-        return ACCESS_GAME;
-    if (archive_precedence.integer != 1 && (pArchive = Archives_FindPath(full_system_path)))
-        return pArchive->GetAccessLevel();
-    return ACCESS_GUEST;
 }
 
 /*=======================================
@@ -1568,7 +963,7 @@ CFileSystem::CFileSystem()
     char pathBuffer[1024];
     GetCurrentDirectory( 1023, pathBuffer );
 
-    openFiles = new list<CFile*>();
+    openFiles = new std::list<CFile*>;
 
     mtaFileRoot = CreateTranslator( pathBuffer );
 }
@@ -1578,7 +973,7 @@ CFileSystem::~CFileSystem()
     
 }
 
-CFileTranslator* CFileSystem::CreateTranslator( const std::string& path )
+CFileTranslator* CFileSystem::CreateTranslator( const char *path )
 {
     CSystemFileTranslator *pTranslator;
     std::string root;
@@ -1586,44 +981,46 @@ CFileTranslator* CFileSystem::CreateTranslator( const std::string& path )
     unsigned int n;
     bool bFile;
 
+    if ( !*path )
+        return NULL;
+
     // We have to handle absolute path, too
-    if ( path.length() > 2 && path[1] == ':' )
+    if ( path[1] == ':' && path[2] )
     {
-        if (!_File_ParseRelativePath( path.substr( 3 ), tree, &bFile ))
+        if (!_File_ParseRelativePath( path + 3, tree, &bFile ))
             return NULL;
 
-        if (uiTreeDepth == 0)
-            return NULL;
-
-        root = SString("%c:/", path[0]);
+        root += path[0];
+        root += ":/";
     }
     else
     {
-        strncpy(pathBuffer, System_GetRootDir(), 1023);
-        strncat(pathBuffer, pRootPath, 1023);
+        char pathBuffer[1024];
+        GetCurrentDirectory( 1023, pathBuffer );
 
-        if (!_File_ParseRelativePath(pathBuffer + 3, dirTree, 32, &uiTreeDepth, &bFile))
+        root += pathBuffer;
+        root += path;
+
+        if (!_File_ParseRelativePath( root.c_str() + 3, tree, &bFile ))
             return NULL;
 
-        pathBuffer[3] = 0;
+        root.clear();
     }
 
-    if (bFile)
+    if ( bFile )
         return NULL;
 
-    for (n=0; n<uiTreeDepth; n++)
-        strncat(pathBuffer, fmt("%s/", dirTree[n]), 1024);
+    for (n=0; n<tree.size(); n++)
+    {
+        root += tree[n];
+        root += "/";
+    }
 
-    if (!File_IsDirectoryAbsolute(pathBuffer))
+    if (!File_IsDirectoryAbsolute( root.c_str() ))
         return NULL;
 
     pTranslator = new CSystemFileTranslator();
-    pTranslator->m_eAccessPriviledge = eAccess;
-
-    strcpy(pTranslator->m_root, pathBuffer);
-
-    memcpy(pTranslator->m_rootTree, dirTree, sizeof(pTranslator->m_rootTree));
-    pTranslator->m_uiTreeDepth = uiTreeDepth;
-    pTranslator->m_currentDir[0] = 0;
+    pTranslator->m_root = root;
+    pTranslator->m_rootTree = tree;
     return pTranslator;
 }
