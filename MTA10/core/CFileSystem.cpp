@@ -17,6 +17,8 @@ extern CCore *g_pCore;
 
 CFileSystem *fileSystem;
 CFileTranslator *mtaFileRoot;
+CFileTranslator *dataFileRoot;
+CFileTranslator *modFileRoot;
 
 std::list <CFile*> *openFiles;
 
@@ -129,69 +131,6 @@ void Archive_Shutdown()
 
 #endif //_FILESYSTEM_ZIP_SUPPORT
 
-/*=====================================================================
-*
-* File_OpenAbsolute
-*
-* Opens a system file.
-* The direct access to this function is not allowed due to security reasons.
-* If you want to pierce the directory, create a new translator with a specified root!
-*
-=======================================================================*/
-
-static inline CFile* File_OpenAbsolute(const char *filename, const char *mode)
-{
-    void *pSystemFile;
-    CRawFile *pFile;
-    DWORD dwAccess = 0;
-    DWORD dwCreate = 0;
-    const char *pModeIter = mode;
-
-    while (*pModeIter)
-    {
-        switch (*pModeIter)
-        {
-        case 'w':
-            dwCreate = CREATE_ALWAYS;
-            dwAccess |= GENERIC_WRITE;
-            break;
-        case 'r':
-            dwCreate = OPEN_EXISTING;
-            dwAccess |= GENERIC_READ;
-            break;
-#ifdef _EXTRA_FILE_ACCESS_MODES
-        case 'a':
-            break;
-        case 't':
-            break;
-#endif
-        case '+':
-            if (dwAccess & GENERIC_READ)
-                dwAccess |= GENERIC_WRITE;
-            else if (dwAccess & GENERIC_WRITE)
-                dwAccess |= GENERIC_READ;
-            break;
-        }
-
-        pModeIter++;
-    }
-    if (!dwAccess)
-        return NULL;
-
-    pSystemFile = CreateFile(filename, dwAccess, FILE_SHARE_READ, NULL, dwCreate, 0, NULL);
-
-    if (pSystemFile == INVALID_HANDLE_VALUE)
-        return NULL;
-
-    pFile = new CRawFile();
-    pFile->m_file = pSystemFile;
-    pFile->m_mode = mode;
-    pFile->m_path = filename;
-
-    openFiles->push_back(pFile);
-    return pFile;
-}
-
 bool File_IsDirectoryAbsolute(const char *pPath)
 {
 #ifdef WIN32
@@ -199,7 +138,7 @@ bool File_IsDirectoryAbsolute(const char *pPath)
 
     if (dwAttributes == INVALID_FILE_ATTRIBUTES)
         return false;
-    return (dwAttributes & FILE_ATTRIBUTE_DIRECTORY);
+    return (dwAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 #else
     return false;
 #endif
@@ -271,76 +210,47 @@ static inline bool _File_ParseRelativePath( const char *path, std::vector < std:
     return true;
 }
 
-// Output a parsed buffer
-static inline bool _File_ParsePath( const char *path, bool allowFile, std::string& output )
+// Output a path tree
+static inline void _File_OutputPathTree( std::vector <std::string>& tree, bool file, std::string& output )
 {
-    std::vector <std::string> tree( 16 );
     unsigned int n;
-    bool bFile;
 
-    if (!_File_ParseRelativePath( path, tree, &bFile ))
-        return false;
-
-    if ( bFile )
+    if ( file )
     {
         for (n=0; n<tree.size()-1; n++)
         {
             output += tree[n];
-            output += "/";
+            output += '/';
         }
 
-        if ( allowFile )
-            output += tree[n];
-
-        return true;
+        output += tree[n];
+        return;
     }
 
     for (n=0; n<tree.size(); n++)
     {
         output += tree[n];
-        output += "/";
+        output += '/';
     }
-
-    return true;
 }
 
-// Try to create a relative version of a path
-static inline bool _File_ParsePathToRelative( const char *path, bool allowFile, const std::vector <std::string>& root, std::string& output )
+// Get relative path tree nodes
+static inline bool _File_ParseRelativeTree( const char *path, std::vector <std::string>& root, std::vector <std::string>& output, bool *file )
 {
-    std::vector <std::string> tree( 16 );
-    bool bFile;
-    unsigned int n;
+    std::vector <std::string> tree( 32 );
+    std::vector <std::string>::iterator rootIter, treeIter;
 
-    if (!_File_ParseRelativePath( path + 3, tree, &bFile ))
+    if (!_File_ParseRelativePath( path, tree, file ))
         return false;
 
     if ( tree.size() < root.size() )
         return false;
 
-    for (n=0; n<root.size(); n++)
-        if ( tree[n] != root[n] )
+    for ( rootIter = root.begin(), treeIter = tree.begin(); rootIter != root.end(); rootIter++, treeIter++ )
+        if ( *rootIter != *treeIter )
             return false;
 
-    if ( bFile )
-    {
-        for (n; n<tree.size()-1; n++)
-        {
-            output += tree[n];
-            output += "/";
-        }
-
-        if ( allowFile )
-            output += tree[n];
-
-        return true;
-    }
-
-    for (n; n<tree.size(); n++)
-    {
-        output += tree[n];
-        output += "/";
-    }
-
+    output.insert( output.end(), treeIter, tree.end() );
     return true;
 }
 
@@ -452,55 +362,18 @@ std::string& CRawFile::GetPath()
     return m_path;
 }
 
-int CRawFile::ReadInt()
+bool CRawFile::IsReadable()
 {
-    int iBuffer = 0;
-
-    Read((char*)&iBuffer, sizeof(int), 1);
-    return iBuffer;
+#ifdef _WIN32
+    return (m_access & GENERIC_READ) != 0;
+#endif
 }
 
-short CRawFile::ReadShort()
+bool CRawFile::IsWriteable()
 {
-    short sBuffer = 0;
-
-    Read((char*)&sBuffer, sizeof(short), 1);
-    return sBuffer;
-}
-
-char CRawFile::ReadByte()
-{
-    char cBuffer = 0;
-
-    Read((char*)&cBuffer, sizeof(char), 1);
-    return cBuffer;
-}
-
-size_t CRawFile::WriteInt(int iInt)
-{
-    return Write((char*)&iInt, sizeof(int), 1);
-}
-
-size_t CRawFile::WriteShort(short iShort)
-{
-    return Write((char*)&iShort, sizeof(short), 1);
-}
-
-size_t CRawFile::WriteByte(char cByte)
-{
-    return Write((char*)&cByte, sizeof(char), 1);
-}
-
-size_t CRawFile::Printf(const char *pFormat, ...)
-{
-    va_list args;
-    char cBuffer[1024];
-
-    va_start(args, pFormat);
-    _vsnprintf(cBuffer, 1023, pFormat, args);
-    va_end(args);
-
-    return Write(cBuffer, 1, strlen(cBuffer));
+#ifdef _WIN32
+    return (m_access & GENERIC_WRITE) != 0;
+#endif
 }
 
 /*=========================================
@@ -615,6 +488,16 @@ char CBufferedFile::ReadByte()
     return *(m_pBuffer + m_iSeek++);
 }
 
+bool CBufferedFile::IsReadable()
+{
+    return true;
+}
+
+bool CBufferedFile::IsWriteable()
+{
+    return false;
+}
+
 /*=======================================
     CSystemPathTranslator
 
@@ -631,6 +514,38 @@ bool CSystemPathTranslator::ChangeDirectory( const char *path )
     return GetRelativePath( path, false, m_currentDir );
 }
 
+bool CSystemPathTranslator::GetFullPathTree( const char *path, std::vector <std::string>& tree, bool *file )
+{
+    tree = m_rootTree;
+    return GetRelativePathTree( path, tree, file );
+}
+
+bool CSystemPathTranslator::GetRelativePathTree( const char *path, std::vector <std::string>& tree, bool *file )
+{
+    std::string target;
+
+    if (!*path)
+        return false;
+
+    if ( path[0] == '/' )
+        return _File_ParseRelativePath( path + 1, tree, file );
+    else if ( path[1] == ':' )
+    {
+        if ( !path[2] )
+            return false;
+
+        if ( path[0] != m_root[0] )
+            return false;   // drive mismatch
+        
+        return _File_ParseRelativeTree( path + 3, m_rootTree, tree, file );
+    }
+
+    // This could be optimized
+    target += m_currentDir;
+    target += path;
+    return _File_ParseRelativePath( target.c_str(), tree, file );
+}
+
 bool CSystemPathTranslator::GetFullPath( const char *path, bool allowFile, std::string& output )
 {
     output += m_root;
@@ -639,24 +554,21 @@ bool CSystemPathTranslator::GetFullPath( const char *path, bool allowFile, std::
 
 bool CSystemPathTranslator::GetRelativePath( const char *path, bool allowFile, std::string& output )
 {
-    std::string target;
+    std::vector <std::string> tree( 16 );
+    bool file;
 
-    if (!*path)
+    if ( !GetRelativePathTree( path, tree, &file ) )
         return false;
 
-    if ( path[0] == '/' )
-        return _File_ParsePath( path + 1, allowFile, output );
-    else if ( path[1] == ':' )
+    if ( file && !allowFile )
     {
-        if ( path[0] != m_root[0] )
-            return false;   // drive mismatch
-        
-        return _File_ParsePathToRelative( path, allowFile, m_rootTree, output );
+        tree.pop_back();
+
+        file = false;
     }
 
-    target += m_currentDir;
-    target += path;
-    return _File_ParsePath( target.c_str(), allowFile, output );
+    _File_OutputPathTree( tree, file, output );
+    return true;
 }
 
 #ifdef _FILESYSTEM_ZIP_SUPPORT
@@ -810,11 +722,6 @@ bool CArchiveFileTranslator::Stat( const char *path, struct stat *stats )
     return ZIP_StatFile(m_pArchive, pathBuffer, pStats);
 }
 
-int CArchiveFileTranslator::GetFlags()
-{
-    return m_iFlags;
-}
-
 #endif //_FILESYSTEM_ZIP_SUPPORT
 
 /*=======================================
@@ -824,18 +731,144 @@ int CArchiveFileTranslator::GetFlags()
 =======================================*/
 
 CSystemFileTranslator::~CSystemFileTranslator()
+{ 
+}
+
+bool CSystemFileTranslator::WriteData( const char *path, char *buffer, size_t size )
 {
-    
+#ifdef _WIN32
+    HANDLE file;
+    std::string output = m_root;
+    std::vector <std::string> tree( 16 );
+    bool file;
+
+    if ( !GetRelativePathTree( path, tree, &file ) )
+        return false;
+
+    if ( !file )
+        return false;
+
+    _File_OutputPathTree( tree, true, output );
+
+    // Make sure directory exists
+    tree.pop_back();
+    _CreateDirTree( tree );
+
+    if ( !(file = CreateFile( output.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL )) )
+        return false;
+
+    WriteFile( file, buffer, size, NULL, NULL );
+
+    CloseHandle( file );
+    return true;
+#endif
+}
+
+void CSystemFileTranslator::_CreateDirTree( std::vector <std::string>& tree )
+{
+    std::vector <std::string>::iterator iter;
+    std::string path;
+
+    for ( iter = tree.begin(); iter != tree.end(); iter++ )
+    {
+        path += *iter;
+        path += '/';
+
+#ifdef _WIN32
+        CreateDirectory( path.c_str(), NULL );
+#else
+        mkdir( path.c_str() );
+#endif
+    }
+}
+
+bool CSystemFileTranslator::CreateDir( const char *path )
+{
+    std::vector <std::string> tree( 16 );
+    bool file;
+
+    if ( !GetRelativePathTree( path, tree, &file ) )
+        return false;
+
+    if ( file )
+        tree.pop_back();
+
+    _CreateDirTree( tree );
+    return true;
 }
 
 CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
 {
-    std::string output;
+    std::vector <std::string> tree( 32 );
+    std::string output = m_root;
+    CRawFile *pFile;
+    DWORD dwAccess = 0;
+    DWORD dwCreate = 0;
+    HANDLE sysHandle;
+    bool file;
 
-    if ( !GetFullPath( path, true, output ) )
+    if ( !GetRelativePathTree( path, tree, &file ) )
         return NULL;
 
-    return File_OpenAbsolute( output.c_str(), mode );
+    // We can only open files!
+    if ( !file )
+        return NULL;
+
+    _File_OutputPathTree( tree, true, output );
+
+#ifdef _WIN32
+    while (*mode)
+    {
+        switch (*mode)
+        {
+        case 'w':
+            dwCreate = CREATE_ALWAYS;
+            dwAccess |= GENERIC_WRITE;
+            break;
+        case 'r':
+            dwCreate = OPEN_EXISTING;
+            dwAccess |= GENERIC_READ;
+            break;
+#ifdef _EXTRA_FILE_ACCESS_MODES
+        case 'a':
+            break;
+        case 't':
+            break;
+#endif
+        case '+':
+            if (dwAccess & GENERIC_READ)
+                dwAccess |= GENERIC_WRITE;
+            else if (dwAccess & GENERIC_WRITE)
+                dwAccess |= GENERIC_READ;
+            break;
+        }
+
+        mode++;
+    }
+    if (!dwAccess)
+        return NULL;
+
+    // Creation requires the dir tree!
+    if ( dwCreate == CREATE_ALWAYS )
+    {
+        tree.pop_back();
+
+        _CreateDirTree( tree );
+    }
+
+    sysHandle = CreateFile( output.c_str(), dwAccess, FILE_SHARE_READ, NULL, dwCreate, 0, NULL );
+
+    if (sysHandle == INVALID_HANDLE_VALUE)
+        return NULL;
+
+    pFile = new CRawFile();
+    pFile->m_file = sysHandle;
+    pFile->m_access = dwAccess;
+    pFile->m_path = output;
+
+    openFiles->push_back(pFile);
+    return pFile;
+#endif
 }
 
 bool CSystemFileTranslator::Exists( const char *path )
@@ -847,6 +880,44 @@ bool CSystemFileTranslator::Exists( const char *path )
         return false;
 
     return stat( output.c_str(), &tmp ) == 0;
+}
+
+bool CSystemFileTranslator::Delete( const char *path )
+{
+    std::string output;
+
+    if ( !GetFullPath( path, true, output ) )
+        return false;
+
+#ifdef _WIN32
+    return DeleteFile( output.c_str() ) != FALSE;
+#endif
+}
+
+bool CSystemFileTranslator::Copy( const char *src, const char *dst )
+{
+    std::string source;
+    std::string target;
+
+    if ( !GetFullPath( src, true, source ) || !GetFullPath( dst, true, target ) )
+        return false;
+
+#ifdef _WIN32
+    return CopyFile( source.c_str(), target.c_str(), false ) != FALSE;
+#endif
+}
+
+bool CSystemFileTranslator::Rename( const char *src, const char *dst )
+{
+    std::string source;
+    std::string target;
+
+    if ( !GetFullPath( src, true, source ) || !GetFullPath( dst, true, target ) )
+        return false;
+
+#ifdef _WIN32
+    return MoveFile( source.c_str(), target.c_str() ) != FALSE;
+#endif
 }
 
 bool CSystemFileTranslator::Stat(const char *path, struct stat *stats)
@@ -960,12 +1031,19 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
 
 CFileSystem::CFileSystem()
 {
-    char pathBuffer[1024];
-    GetCurrentDirectory( 1023, pathBuffer );
-
     openFiles = new std::list<CFile*>;
 
-    mtaFileRoot = CreateTranslator( pathBuffer );
+    // Add important access zones here + extern them
+    mtaFileRoot = CreateTranslator( "mta/" );
+    dataFileRoot = CreateTranslator( GetMTADataPath() );
+    modFileRoot = CreateTranslator( "mods/" );
+
+    if ( !mtaFileRoot || !dataFileRoot || !modFileRoot )
+    {
+        MessageBox( NULL, "Your MTA:SA installation appears to be corrupted. Please reinstall!", "Filesystem Error", MB_OK );
+
+        TerminateProcess( GetCurrentProcess(), EXIT_FAILURE );
+    }
 }
 
 CFileSystem::~CFileSystem()
@@ -1023,4 +1101,30 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
     pTranslator->m_root = root;
     pTranslator->m_rootTree = tree;
     return pTranslator;
+}
+
+bool CFileSystem::IsDirectory( const char *path )
+{
+
+}
+
+bool CFileSystem::WriteMiniDump( const char *path, _EXCEPTION_POINTERS *except )
+{
+    CRawFile *file = (CRawFile*)mtaFileRoot->Open( path, "wb" );
+    MINIDUMP_EXCEPTION_INFORMATION info;
+
+    if ( !file )
+        return false;
+
+    // Create an exception information struct
+    info.ThreadId = GetCurrentThreadId();
+    info.ExceptionPointers = except;
+    info.ClientPointers = false;
+
+    // Write the dump
+    MiniDumpWriteDump( GetCurrentProcess(), GetCurrentProcessId(), file->m_file, MiniDumpNormal, &info, NULL, NULL );
+
+    delete file;
+
+    return true;
 }

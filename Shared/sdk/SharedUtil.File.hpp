@@ -18,181 +18,6 @@
 #endif
 
 //
-// Returns true if the file exists
-//
-bool SharedUtil::FileExists ( const SString& strFilename )
-{
-#ifdef WIN32
-    DWORD dwAtr = GetFileAttributes ( strFilename );
-    if ( dwAtr == INVALID_FILE_ATTRIBUTES )
-        return false;
-    return ( ( dwAtr & FILE_ATTRIBUTE_DIRECTORY) == 0 );     
-#else
-    struct stat Info;
-    if ( stat ( strFilename, &Info ) == -1 )
-        return false;
-    return !( S_ISDIR ( Info.st_mode ) );
-#endif
-}
-
-
-//
-// Returns true if the directory exists
-//
-bool SharedUtil::DirectoryExists ( const SString& strPath )
-{
-#ifdef WIN32
-    DWORD dwAtr = GetFileAttributes ( strPath );
-    if ( dwAtr == INVALID_FILE_ATTRIBUTES )
-        return false;
-    return ( ( dwAtr & FILE_ATTRIBUTE_DIRECTORY) != 0 );     
-#else
-    struct stat Info;
-    if ( stat ( strPath, &Info ) == -1 )
-        return false;
-    return ( S_ISDIR ( Info.st_mode ) );
-#endif
-}
-
-
-bool SharedUtil::FileLoad ( const SString& strFilename, SString& strBuffer, int iMaxSize )
-{
-    strBuffer = "";
-    std::vector < char > buffer;
-    if ( !FileLoad ( strFilename, buffer, iMaxSize ) )
-        return false;
-    if ( buffer.size () )
-    {
-        buffer.push_back ( 0 );
-        strBuffer = SString ( &buffer.at ( 0 ), buffer.size () );
-    }
-    return true;
-}
-
-bool SharedUtil::FileSave ( const SString& strFilename, const SString& strBuffer, bool bForce )
-{
-    return FileSave ( strFilename, strBuffer.length () ? &strBuffer.at ( 0 ) : NULL, strBuffer.length (), bForce );
-}
-
-bool SharedUtil::FileAppend ( const SString& strFilename, const SString& strBuffer, bool bForce )
-{
-    return FileAppend ( strFilename, strBuffer.length () ? &strBuffer.at ( 0 ) : NULL, strBuffer.length (), bForce );
-}
-
-bool SharedUtil::FileDelete ( const SString& strFilename, bool bForce )
-{
-#ifdef WIN32
-    if ( bForce )
-        SetFileAttributes ( strFilename, FILE_ATTRIBUTE_NORMAL );
-#endif
-    return unlink ( strFilename ) == 0;
-}
-
-bool SharedUtil::FileRename ( const SString& strFilenameOld, const SString& strFilenameNew )
-{
-#ifdef WIN32
-    return MoveFile ( strFilenameOld, strFilenameNew ) != 0;
-#else
-    return rename ( strFilenameOld, strFilenameNew ) == 0;
-#endif
-}
-
-//
-// Load binary data from a file into an array
-//
-bool SharedUtil::FileLoad ( const SString& strFilename, std::vector < char >& buffer, int iMaxSize )
-{
-    buffer.clear ();
-    // Open
-    FILE* fh = fopen ( strFilename, "rb" );
-    if ( !fh )
-        return false;
-    // Get size
-    fseek ( fh, 0, SEEK_END );
-    int size = ftell ( fh );
-    rewind ( fh );
-
-    int bytesRead = 0;
-    if ( size > 0 && size < 1e9 )
-    {
-        size = Min ( size, iMaxSize );
-        // Allocate space
-        buffer.assign ( size, 0 );
-        // Read into buffer
-        bytesRead = fread ( &buffer.at ( 0 ), 1, size, fh );
-    }
-    // Close
-    fclose ( fh );
-    return bytesRead == size;
-}
-
-
-//
-// Save binary data to a file
-//
-bool SharedUtil::FileSave ( const SString& strFilename, const void* pBuffer, unsigned long ulSize, bool bForce )
-{
-#ifdef WIN32
-    if ( bForce )
-        SetFileAttributes ( strFilename, FILE_ATTRIBUTE_NORMAL );
-#endif
-
-    if ( bForce )
-        MakeSureDirExists ( strFilename );
-
-    FILE* fh = fopen ( strFilename, "wb" );
-    if ( !fh )
-        return false;
-
-    bool bSaveOk = true;
-    if ( ulSize )
-        bSaveOk = ( fwrite ( pBuffer, 1, ulSize, fh ) == ulSize );
-    fclose ( fh );
-    return bSaveOk;
-}
-
-
-//
-// Append binary data to a file
-//
-bool SharedUtil::FileAppend ( const SString& strFilename, const void* pBuffer, unsigned long ulSize, bool bForce )
-{
-#ifdef WIN32
-    if ( bForce )
-        SetFileAttributes ( strFilename, FILE_ATTRIBUTE_NORMAL );
-#endif
-
-    FILE* fh = fopen ( strFilename, "ab" );
-    if ( !fh )
-        return false;
-
-    bool bSaveOk = true;
-    if ( ulSize )
-        bSaveOk = ( fwrite ( pBuffer, 1, ulSize, fh ) == ulSize );
-    fclose ( fh );
-    return bSaveOk;
-}
-
-
-//
-// Get a file size
-//
-uint SharedUtil::FileSize ( const SString& strFilename  )
-{
-    // Open
-    FILE* fh = fopen ( strFilename, "rb" );
-    if ( !fh )
-        return 0;
-    // Get size
-    fseek ( fh, 0, SEEK_END );
-    uint size = ftell ( fh );
-    // Close
-    fclose ( fh );
-    return size;
-}
-
-
-//
 // Ensure all directories exist to the file
 //
 void SharedUtil::MakeSureDirExists ( const SString& strPath )
@@ -222,7 +47,6 @@ void SharedUtil::MakeSureDirExists ( const SString& strPath )
         #endif
     }
 }
-
 
 SString SharedUtil::PathConform ( const SString& strPath )
 {
@@ -277,14 +101,12 @@ SString SharedUtil::GetSystemLocalAppDataPath ( void )
     return szResult;
 }
 
-
 SString SharedUtil::GetSystemCommonAppDataPath ( void )
 {
     char szResult[MAX_PATH] = "";
     SHGetFolderPath( NULL, CSIDL_COMMON_APPDATA, NULL, 0, szResult );
     return szResult;
 }
-
 
 SString SharedUtil::GetSystemTempPath ( void )
 {
@@ -358,65 +180,8 @@ bool SharedUtil::MkDir ( const SString& strInPath, bool bTree )
 }
 #endif
 
-///////////////////////////////////////////////////////////////
-//
-// FileCopy
-//
-// Copies a single file.
-//
-///////////////////////////////////////////////////////////////
-bool SharedUtil::FileCopy ( const SString& strSrc, const SString& strDest, bool bForce )
-{
-    if ( bForce )
-        MakeSureDirExists ( strDest );
 
 #ifdef WIN32
-    if ( bForce )
-        SetFileAttributes ( strDest, FILE_ATTRIBUTE_NORMAL );
-#endif
-
-    FILE* fhSrc = fopen ( strSrc, "rb" );
-    if ( !fhSrc )
-    {
-        return false;
-    }
-
-    FILE* fhDst = fopen ( strDest, "wb" );
-    if ( !fhDst )
-    {
-        fclose ( fhSrc );
-        return false;
-    }
-
-    char cBuffer[16384];
-    while ( true )
-    {
-        size_t dataLength = fread ( cBuffer, 1, 16384, fhSrc );
-        if ( dataLength == 0 )
-            break;
-        fwrite ( cBuffer, 1, dataLength, fhDst );
-    }
-
-    fclose ( fhSrc );
-    fclose ( fhDst );
-    return true;
-}
-
-
-#ifdef WIN32
-///////////////////////////////////////////////////////////////
-//
-// GetCurrentWorkingDirectory
-//
-//
-//
-///////////////////////////////////////////////////////////////
-SString SharedUtil::GetCurrentWorkingDirectory ( void )
-{
-    char szCurDir [ 1024 ] = "";
-    ::GetCurrentDirectory ( sizeof ( szCurDir ), szCurDir );
-    return szCurDir;
-}
 
 ///////////////////////////////////////////////////////////////
 //
@@ -514,7 +279,6 @@ std::vector < SString > SharedUtil::FindFiles ( const SString& strMatch, bool bF
 }
 #endif
 
-
 void SharedUtil::ExtractFilename ( const SString& strPathFilename, SString* strPath, SString* strFilename )
 {
     if ( !strPathFilename.Split ( PATH_SEPERATOR, strPath, strFilename, -1 ) )
@@ -522,12 +286,10 @@ void SharedUtil::ExtractFilename ( const SString& strPathFilename, SString* strP
             *strFilename = strPathFilename;
 }
 
-
 bool SharedUtil::ExtractExtention ( const SString& strFilename, SString* strMain, SString* strExt )
 {
     return strFilename.Split ( ".", strMain, strExt, -1 );
 }
-
 
 SString SharedUtil::ExtractPath ( const SString& strPathFilename )
 {
@@ -536,14 +298,12 @@ SString SharedUtil::ExtractPath ( const SString& strPathFilename )
     return strPath;
 }
 
-
 SString SharedUtil::ExtractFilename ( const SString& strPathFilename )
 {
     SString strFilename;
     ExtractFilename ( strPathFilename, NULL, &strFilename );
     return strFilename;
 }
-
 
 SString SharedUtil::ExtractExtention ( const SString& strPathFilename )
 {
@@ -552,14 +312,12 @@ SString SharedUtil::ExtractExtention ( const SString& strPathFilename )
     return strExt;
 }
 
-
 SString SharedUtil::ExtractBeforeExtention ( const SString& strPathFilename )
 {
     SString strMain;
     ExtractExtention ( strPathFilename, &strMain, NULL );
     return strMain;
 }
-
 
 #ifdef WIN32
 SString SharedUtil::MakeUniquePath ( const SString& strPathFilename )

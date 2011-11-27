@@ -53,10 +53,10 @@ CGameSA::CGameSA()
     eGameVersion version = FindGameVersion ();
     switch ( version )
     {
-        case VERSION_EU_10: COffsets::Initialize10EU (); break;
-        case VERSION_US_10: COffsets::Initialize10US (); break;
-        case VERSION_11:    COffsets::Initialize11 (); break;
-        case VERSION_20:    COffsets::Initialize20 (); break;
+    case VERSION_EU_10: COffsets::Initialize10EU (); break;
+    case VERSION_US_10: COffsets::Initialize10US (); break;
+    case VERSION_11:    COffsets::Initialize11 (); break;
+    case VERSION_20:    COffsets::Initialize20 (); break;
     }
 
     // Set the model ids for all the CModelInfoSA instances

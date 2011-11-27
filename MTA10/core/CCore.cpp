@@ -10,6 +10,7 @@
 *               Derek Abdine <>
 *               Ed Lyons <eai@opencoding.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -91,9 +92,9 @@ CCore::CCore ( void )
     // Initialize the global pointer
     g_pCore = this;
 
-    #if !defined(MTA_DEBUG) && !defined(MTA_ALLOW_DEBUG)
+#if !defined(MTA_DEBUG) && !defined(MTA_ALLOW_DEBUG)
     AC_RestrictAccess ();
-    #endif
+#endif
     
     m_pConfigFile = NULL;
 
@@ -108,6 +109,12 @@ CCore::CCore ( void )
         NULL
     };
     ParseCommandLine ( m_CommandLineOptions, m_szCommandLineArgs, pszNoValOptions );
+
+    // Create the file system
+    m_fileSystem                = new CFileSystem();
+
+    // Make sure we are in the mta directory
+    mtaFileRoot->ChangeDirectory( "mta" );
 
     // Create a logger instance.
     m_pLogger                   = new CLogger ( );
@@ -653,26 +660,15 @@ void CCore::SetMessageProcessor ( pfnProcessMessage pfnMessageProcessor )
 
 void CCore::ShowMessageBox ( const char* szTitle, const char* szText, unsigned int uiFlags, GUI_CALLBACK * ResponseHandler )
 {
-    CFilePathTranslator     FileTranslator;
-    string                  WorkingDirectory;
-    char                    szCurDir [ 1024 ];
+    std::string curDir;
 
     if ( m_pMessageBox )
         delete m_pMessageBox;
 
-
-    // Set the current directory to the MTA dir so we can load files using a relative path
-    FileTranslator.SetCurrentWorkingDirectory ( "MTA" );
-    FileTranslator.GetCurrentWorkingDirectory ( WorkingDirectory );
-    GetCurrentDirectory ( sizeof ( szCurDir ), szCurDir );
-    SetCurrentDirectory ( WorkingDirectory.c_str ( ) );
-
     // Create the message box
     m_pMessageBox = m_pGUI->CreateMessageBox ( szTitle, szText, uiFlags );
-    if ( ResponseHandler ) m_pMessageBox->SetClickHandler ( *ResponseHandler );
-
-    // Restore current directory
-    SetCurrentDirectory ( szCurDir );
+    if ( ResponseHandler )
+        m_pMessageBox->SetClickHandler ( *ResponseHandler );
 
     // Make sure it doesn't auto-destroy, or we'll crash if the msgbox had buttons and the user clicks OK
     m_pMessageBox->SetAutoDestroy ( false );

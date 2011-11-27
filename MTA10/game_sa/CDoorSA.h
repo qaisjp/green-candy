@@ -28,16 +28,16 @@
 class CDoorSAInterface
 {
 public:
-    FLOAT m_fOpenAngle;
-    FLOAT m_fClosedAngle;
+    float           m_fOpenAngle;
+    float           m_fClosedAngle;
     // got 2 8bit vars next so might as well make this 16bit and get more flags
-    WORD m_nDirn;
-    BYTE m_nAxis;
-    BYTE m_nDoorState;
+    unsigned short  m_nDirn;
+    unsigned char   m_nAxis;
+    unsigned char   m_nDoorState;
     // simulation variables
-    FLOAT m_fAngle;
-    FLOAT m_fPrevAngle;
-    FLOAT m_fAngVel;
+    float           m_fAngle;
+    float           m_fPrevAngle;
+    float           m_fAngVel;
 };
 
 /**

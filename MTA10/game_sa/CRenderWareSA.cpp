@@ -569,21 +569,13 @@ void CRenderWareSA::ReplaceVehicleModel ( RpClump * pNew, unsigned short usModel
 }
 
 // Reads and parses a COL3 file
-CColModel * CRenderWareSA::ReadCOL ( const char * szCOLFile )
+CColModel* CRenderWareSA::ReadCOL( CFile *file )
 {
-    if ( !szCOLFile )
-        return NULL;
-
-    // Read the file
-    FILE* pFile = fopen ( szCOLFile, "rb" );
-    if ( !pFile )
-        return NULL;
-
     // Create a new CColModel
     CColModelSA* pColModel = new CColModelSA ();
+    ColModelFileHeader header;
 
-    ColModelFileHeader header = { 0 };
-    fread ( &header, sizeof(ColModelFileHeader), 1, pFile );
+    file->Read( &header, sizeof(ColModelFileHeader), 1 );
     
     // Load the col model
     if ( header.version[0] == 'C' && header.version[1] == 'O' && header.version[2] == 'L' )

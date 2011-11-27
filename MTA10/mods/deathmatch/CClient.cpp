@@ -23,14 +23,13 @@ CGame* g_pGame = NULL;
 CMultiplayer* g_pMultiplayer = NULL;
 CNet* g_pNet = NULL;
 CClientGame* g_pClientGame = NULL;
+CFileTranslator *modFileRoot = NULL;
 
 int CClient::ClientInitialize ( const char* szArguments, CCoreInterface* pCore )
 {
     // Supported core version?
-    if ( pCore->GetVersion () != MTACORE_20 )
-    {
+    if ( pCore->GetVersion () != MTACORE_21 )
         return 1;
-    }
 
 #if defined(MTA_DM_EXPIRE_DAYS)
     // Make public client test builds expire

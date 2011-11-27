@@ -10,6 +10,7 @@
 *               Derek Abdine <>
 *               Ed Lyons <eai@opencoding.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -22,10 +23,12 @@ class CCore;
 
 #include "../version.h"
 
+#include <core/CClientBase.h>
+#include <core/CCoreInterface.h>
+#include "CFileSystem.h"
 #include "CClientTime.h"
 #include "CClientVariables.h"
 #include "CCommands.h"
-#include "CFileSystem.h"
 #include "CFileSystemHook.h"
 #include "CModuleLoader.h"
 #include "CSingleton.h"
@@ -38,8 +41,6 @@ class CCore;
 #include "CMessageLoopHook.h"
 #include "CLogger.h"
 #include "CModManager.h"
-#include <core/CClientBase.h>
-#include <core/CCoreInterface.h>
 #include "CDirect3DData.h"
 #include "tracking/CTCPManager.h"
 #include "CClientVariables.h"
@@ -98,6 +99,7 @@ public:
     CKeyBindsInterface*     GetKeyBinds                     ( void );
     CLocalGUI*              GetLocalGUI                     ( void );
     CCommunityInterface*    GetCommunity                    ( void )                { return &m_Community; };
+    CFileSystem*            GetFileSystem                   ()                      { return m_fileSystem; };
 
     void                    SaveConfig                      ( void );
 
@@ -231,6 +233,7 @@ private:
     CCommands *                 m_pCommands;
     CDirect3DData *             m_pDirect3DData;
     CConnectManager*            m_pConnectManager;
+    CFileSystem*                m_fileSystem;
 
     // Instances (put new classes here!)
     CXMLFile*                   m_pConfigFile;

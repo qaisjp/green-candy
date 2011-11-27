@@ -13,35 +13,6 @@
 namespace SharedUtil
 {
     //
-    // Returns true if the file/directory exists
-    //
-    bool            FileExists                      ( const SString& strFilename );
-    bool            DirectoryExists                 ( const SString& strPath );
-
-    //
-    // Load from a file
-    //
-    bool            FileLoad                        ( const SString& strFilename, std::vector < char >& buffer, int iMaxSize = 0x7FFFFFFF );
-    bool            FileLoad                        ( const SString& strFilename, SString& strBuffer, int iMaxSize = 0x7FFFFFFF );
-
-    //
-    // Save to a file
-    //
-    bool            FileSave                        ( const SString& strFilename, const void* pBuffer, unsigned long ulSize, bool bForce = true );
-    bool            FileSave                        ( const SString& strFilename, const SString& strBuffer, bool bForce = true );
-
-    //
-    // Append to a file
-    //
-    bool            FileAppend                      ( const SString& strFilename, const void* pBuffer, unsigned long ulSize, bool bForce = true );
-    bool            FileAppend                      ( const SString& strFilename, const SString& strBuffer, bool bForce = true );
-
-    //
-    // Get a file size
-    //
-    uint            FileSize                        ( const SString& strFilename );
-
-    //
     // Ensure all directories exist to the file
     //
     void            MakeSureDirExists               ( const SString& strPath );
@@ -56,11 +27,8 @@ namespace SharedUtil
     SString         ExtractExtention                ( const SString& strPathFilename );
     SString         ExtractBeforeExtention          ( const SString& strPathFilename );
 
-    bool            FileDelete                      ( const SString& strFilename, bool bForce = true );
-    bool            FileRename                      ( const SString& strFilenameOld, const SString& strFilenameNew );
     bool            DelTree                         ( const SString& strPath, const SString& strInsideHere );
     bool            MkDir                           ( const SString& strInPath, bool bTree = true );
-    bool            FileCopy                        ( const SString& strSrc, const SString& strDest, bool bForce = true );
     SString         GetCurrentWorkingDirectory      ( void );
     SString         GetCurrentDirectory             ( void );
     SString         GetWindowsDirectory             ( void );

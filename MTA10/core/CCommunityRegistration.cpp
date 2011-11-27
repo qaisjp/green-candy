@@ -179,11 +179,12 @@ void CCommunityRegistration::DoPulse ( void )
                     // TODO: Load it without a temp file
 
                     // Create a temp file for the png
-                    FILE * fp = fopen ( CalcMTASAPath( REGISTRATION_TEMP_FILE ), "wb" );
-                    if ( fp )
+                    CFile *file = mtaFileRoot->Open( "temp.png", "wb" );
+
+                    if ( file )
                     {
-                        fwrite ( &szBuffer[33], uiBufferLength, 1, fp );
-                        fclose ( fp );
+                        file->Write( szBuffer + 33, uiBufferLength, 1 );
+                        delete file;
 
                         m_pImageCode->LoadFromFile ( "temp.png" );
                         m_pImageCode->SetSize ( CVector2D ( 65.0f, 20.0f ), false );
@@ -191,7 +192,7 @@ void CCommunityRegistration::DoPulse ( void )
                         m_pWindow->BringToFront ();
 
                         // Delete the temp file
-                        remove ( CalcMTASAPath( REGISTRATION_TEMP_FILE ) );
+                        mtaFileRoot->Delete( "temp.png" );
                         return;
                     }
                 }

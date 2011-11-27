@@ -341,15 +341,16 @@ namespace
 
         ~CXMLBuffer ()
         {
-            // Close XML file
             if ( m_pXMLFile )
             {
                 delete m_pXMLFile;
+
                 m_pXMLFile = NULL;
                 m_pRoot = NULL;
             }
+
             // Attempt to delete temp file
-            FileDelete ( m_strTempFileName );
+            dataFileRoot->Delete( m_strTempFileName );
         }
 
         CXMLNode* SetFromData ( char* data, uint uiSize )
@@ -357,8 +358,9 @@ namespace
             assert ( !m_pXMLFile );
 
             // Try to save
-            m_strTempFileName = MakeUniquePath ( PathJoin ( GetMTADataPath (), "temp", "buffer.xml" ) );
-            if ( !FileSave ( m_strTempFileName, &data[0], uiSize ) )
+            m_strTempFileName = MakeUniquePath( SString( dataFileRoot->GetFullPath( "temp/buffer.xml" ) ) );
+
+            if ( !dataFileRoot->WriteData( m_strTempFileName, data, uiSize ) )
             {
                 AddReportLog ( 2501, SString ( "CXMLBuffer::SetFromBuffer: Could not save %s", m_strTempFileName.c_str () ) );
                 return NULL;
@@ -384,10 +386,7 @@ namespace
 
             return m_pRoot;
         }
-
     };
-
-
 
     // A node and its attributes
     struct SDataInfoItem

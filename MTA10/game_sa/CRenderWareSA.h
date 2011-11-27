@@ -64,7 +64,7 @@ class CRenderWareSA : public CRenderWare
 
     RwMatrix*           AllocateMatrix              ();
 
-    // uiModelID == 0 means no collisions will be loaded (be careful! seems crashy!)
+    // uiModelID == 0 means no collisions will be loaded
     RpClump *           ReadDFF                     ( const char * szDFF, unsigned short usModelID );
     void                DestroyDFF                  ( RpClump * pClump );
     CColModel *         ReadCOL                     ( const char * szCOLFile );
