@@ -40,60 +40,62 @@ using ChatFonts::eChatFont;
 enum eCoreVersion
 {
     MTACORE_20 = 1,
+    MTACORE_21
 };
 
 class CCoreInterface
 {
 public:
-    // Note: Always leave this on the top as the client must use this to verify
-    //       correct MTA version before trying to use any other interface funcs.
-    virtual eCoreVersion                GetVersion                      ( void ) = 0;
+    // Note: Leave this on top for compatibility reasons!
+    virtual eCoreVersion                GetVersion                      () = 0;
 
-    virtual CConsoleInterface*          GetConsole                      ( void ) = 0;
-    virtual CCommandsInterface*         GetCommands                     ( void ) = 0;
-    virtual CGame*                      GetGame                         ( void ) = 0;
-    virtual CGraphicsInterface*         GetGraphics                     ( void ) = 0;
-    virtual CGUI*                       GetGUI                          ( void ) = 0;
-    virtual CModManagerInterface*       GetModManager                   ( void ) = 0;
-    virtual CMultiplayer*               GetMultiplayer                  ( void ) = 0;
-    virtual CNet*                       GetNetwork                      ( void ) = 0;
-    virtual CXML*                       GetXML                          ( void ) = 0;
-    virtual CKeyBindsInterface*         GetKeyBinds                     ( void ) = 0;
-    virtual CXMLNode*                   GetConfig                       ( void ) = 0;
-    virtual CCVarsInterface*            GetCVars                        ( void ) = 0;
-    virtual CCommunityInterface*        GetCommunity                    ( void ) = 0;
+    virtual CConsoleInterface*          GetConsole                      () = 0;
+    virtual CCommandsInterface*         GetCommands                     () = 0;
+    virtual CGame*                      GetGame                         () = 0;
+    virtual CGraphicsInterface*         GetGraphics                     () = 0;
+    virtual CGUI*                       GetGUI                          () = 0;
+    virtual CModManagerInterface*       GetModManager                   () = 0;
+    virtual CMultiplayer*               GetMultiplayer                  () = 0;
+    virtual CNet*                       GetNetwork                      () = 0;
+    virtual CXML*                       GetXML                          () = 0;
+    virtual CKeyBindsInterface*         GetKeyBinds                     () = 0;
+    virtual CXMLNode*                   GetConfig                       () = 0;
+    virtual CCVarsInterface*            GetCVars                        () = 0;
+    virtual CCommunityInterface*        GetCommunity                    () = 0;
+    virtual CFileSystemInterface*       GetFileSystem                   () = 0;
     
 
     // Temporary functions for r1
     virtual void                    DebugEcho                       ( const char* szText ) = 0;
     virtual void                    DebugPrintf                     ( const char* szFormat, ... ) = 0;
     virtual void                    SetDebugVisible                 ( bool bVisible ) = 0;
-    virtual bool                    IsDebugVisible                  ( void ) = 0;
+    virtual bool                    IsDebugVisible                  () = 0;
     virtual void                    DebugEchoColor                  ( const char* szText, unsigned char R, unsigned char G, unsigned char B )=0;
     virtual void                    DebugPrintfColor                ( const char* szFormat, unsigned char R, unsigned char G, unsigned char B, ... ) = 0;
-    virtual void                    DebugClear                      ( void )=0;
+    virtual void                    DebugClear                      ()=0;
     virtual void                    ChatEcho                        ( const char* szText, bool bColorCoded = false ) = 0;
     virtual void                    ChatEchoColor                   ( const char* szText, unsigned char R, unsigned char G, unsigned char B, bool bColorCoded = false ) = 0;
     virtual void                    ChatPrintf                      ( const char* szFormat, bool bColorCoded, ... ) = 0;
     virtual void                    ChatPrintfColor                 ( const char* szFormat, bool bColorCoded, unsigned char R, unsigned char G, unsigned char B, ... ) = 0;
     virtual void                    SetChatVisible                  ( bool bVisible ) = 0;
-    virtual bool                    IsChatVisible                   ( void ) = 0;
-    virtual void                    TakeScreenShot                  ( void ) = 0;
+    virtual bool                    IsChatVisible                   () = 0;
+    virtual void                    TakeScreenShot                  () = 0;
     virtual void                    EnableChatInput                 ( char* szCommand, DWORD dwColor ) = 0;
-    virtual bool                    IsChatInputEnabled              ( void ) = 0;
-    virtual bool                    IsSettingsVisible               ( void ) = 0;
-    virtual bool                    IsMenuVisible                   ( void ) = 0;
-    virtual bool                    IsCursorForcedVisible           ( void ) = 0;
-    virtual bool                    IsCursorControlsToggled         ( void ) = 0;
+    virtual bool                    IsChatInputEnabled              () = 0;
+    virtual bool                    IsSettingsVisible               () = 0;
+    virtual bool                    IsMenuVisible                   () = 0;
+    virtual bool                    IsCursorForcedVisible           () = 0;
+    virtual bool                    IsCursorControlsToggled         () = 0;
     virtual void                    CallSetCursorPos                ( int X, int Y ) = 0;
 
     virtual void                    SetConnected                    ( bool bConnected ) = 0;
     virtual void                    SetOfflineMod                   ( bool bOffline ) = 0;
 
-    virtual bool                    IsConnected                     ( void ) = 0;
+    virtual bool                    IsConnected                     () = 0;
     virtual bool                    Reconnect                       ( const char* szHost, unsigned short usPort, const char* szPassword, bool bSave = true ) = 0;
 
     virtual const char *            GetModInstallRoot               ( const char * szModName )=0;
+    virtual CFileTranslator*        GetModRoot                      () = 0;
 
     virtual void                    ShowServerInfo                  ( unsigned int WindowType ) = 0;
 
@@ -101,13 +103,13 @@ public:
     virtual void                    SetMessageProcessor             ( pfnProcessMessage pfnMessageProcessor ) = 0;
     virtual void                    ShowMessageBox                  ( const char* szTitle, const char* szText, unsigned int uiFlags, GUI_CALLBACK * ResponseHandler = NULL ) = 0;
     virtual void                    RemoveMessageBox                ( bool bNextFrame = false ) = 0;
-    virtual void                    HideMainMenu                    ( void ) = 0;
-    virtual HWND                    GetHookedWindow                 ( void ) = 0;
-    virtual bool                    IsFocused                       ( void ) = 0;
-    virtual bool                    IsWindowMinimized               ( void ) = 0;
+    virtual void                    HideMainMenu                    () = 0;
+    virtual HWND                    GetHookedWindow                 () = 0;
+    virtual bool                    IsFocused                       () = 0;
+    virtual bool                    IsWindowMinimized               () = 0;
 
-    virtual void                    SaveConfig                      ( void ) = 0;
-    virtual void                    UpdateRecentlyPlayed            ( void ) = 0;
+    virtual void                    SaveConfig                      () = 0;
+    virtual void                    UpdateRecentlyPlayed            () = 0;
 
     virtual void                    SwitchRenderWindow              ( HWND hWnd, HWND hWndInput ) = 0;
     virtual void                    SetCenterCursor                 ( bool bEnabled ) = 0;
@@ -119,16 +121,16 @@ public:
     virtual void                    Quit                            ( bool bInstantly = true) = 0;
     virtual void                    InitiateUpdate                  ( const char* szType, const char* szData, const char* szHost ) = 0;
     virtual bool                    IsOptionalUpdateInfoRequired    ( const char* szHost ) = 0;
-    virtual void                    InitiateDataFilesFix            ( void ) = 0;
+    virtual void                    InitiateDataFilesFix            () = 0;
 
-    virtual uint                    GetFrameRateLimit               ( void ) = 0;
+    virtual uint                    GetFrameRateLimit               () = 0;
     virtual void                    RecalculateFrameRateLimit       ( uint uiServerFrameRateLimit = -1 ) = 0;
     virtual void                    ApplyFrameRateLimit             ( uint uiOverrideRate = -1 ) = 0;
-    virtual void                    EnsureFrameRateLimitApplied     ( void ) = 0;
+    virtual void                    EnsureFrameRateLimitApplied     () = 0;
 
-    virtual void                    OnPreHUDRender                  ( void ) = 0;
-    virtual uint                    GetMinStreamingMemory           ( void ) = 0;
-    virtual uint                    GetMaxStreamingMemory           ( void ) = 0;
+    virtual void                    OnPreHUDRender                  () = 0;
+    virtual uint                    GetMinStreamingMemory           () = 0;
+    virtual uint                    GetMaxStreamingMemory           () = 0;
 };
 
 #endif

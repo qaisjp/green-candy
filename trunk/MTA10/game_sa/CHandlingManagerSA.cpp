@@ -33,6 +33,8 @@ void DumpHandlingData ( tHandlingDataSA* pData )
 {
     unsigned int iCounter = pData->iVehicleID;
 
+    core
+
     FILE* pFile = fopen ( "C:/dumped.txt", "a+" );
 
     fprintf ( pFile, "    m_OriginalHandlingData [%u].iVehicleID = %u;\n", iCounter, iCounter );

@@ -112,17 +112,6 @@ namespace SharedUtil
             return Mid ( GetSize () - uiAmount, uiAmount );
         }
 
-        // Util
-        bool LoadFromFile ( const char* szFilename )
-        {
-            return FileLoad ( szFilename, *this );
-        }
-        bool SaveToFile ( const char* szFilename ) const
-        {
-            return FileSave ( szFilename, GetData (), GetSize () );
-        }
-
-
     protected:
         void AddBytes ( const void* pData, uint uiLength, int iOffset, bool bToFromNetwork = false )
         {

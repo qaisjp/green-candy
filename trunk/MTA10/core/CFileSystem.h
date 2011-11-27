@@ -50,20 +50,18 @@ public:
     size_t          GetSize();
     void            Flush();
     std::string&    GetPath();
-
-    int             ReadInt();
-    short           ReadShort();
-    char            ReadByte();
-    size_t          WriteInt( int iInt );
-    size_t          WriteShort( short iShort );
-    size_t          WriteByte( char cByte );
+    bool            IsReadable();
+    bool            IsWriteable();
 
     size_t          Printf( const char *pFormat, ... );
 private:
-    friend CFile*   File_OpenAbsolute( const char *pPath, const char *pMode );
+    friend class CSystemFileTranslator;
+    friend class CFileSystem;
 	
-    void*           m_file;
-    const char*     m_mode;
+#ifdef _WIN32
+    HANDLE          m_file;
+    DWORD           m_access;
+#endif
     std::string     m_path;
 };
 
@@ -81,6 +79,8 @@ public:
     size_t          GetSize();
     void            Flush();
     std::string&    GetPath();
+    bool            IsReadable();
+    bool            IsWriteable();
 
     int             ReadInt();
     short           ReadShort();
@@ -102,6 +102,8 @@ class CSystemPathTranslator : public CFileTranslator
 public:
                     ~CSystemPathTranslator();
 
+    bool            GetFullPathTree( const char *path, std::vector <std::string>& tree, bool *file );
+    bool            GetRelativePathTree( const char *path, std::vector <std::string>& tree, bool *file );
     bool            GetFullPath( const char *path, bool allowFile, std::string& output );
     bool            GetRelativePath( const char *path, bool allowFile, std::string& output );
     bool            ChangeDirectory( const char *path );
@@ -120,9 +122,13 @@ class CSystemFileTranslator : public CSystemPathTranslator
 public:
                     ~CSystemFileTranslator();
                     
+    bool            WriteData( const char *path, char *buffer, size_t size );
+    bool            CreateDir( const char *path );
     CFile*          Open( const char *path, const char *mode );
     bool            Exists( const char *path );
     bool            Delete( const char *path );
+    bool            Copy( const char *src, const char *dst );
+    bool            Rename( const char *src, const char *dst );
     size_t          Size( const char *path );
     bool            Stat( const char *path, struct stat *stats );
 
@@ -130,6 +136,9 @@ public:
                         void (*dirCallback)( const std::string& directory, void *userdata ), 
                         void (*fileCallback)( const std::string& filename, void *userdata ), 
                         void *userdata );
+
+private:
+    void            _CreateDirTree( std::vector <std::string>& tree );
 };
 
 #ifdef _FILESYSTEM_ZIP_SUPPORT
@@ -150,19 +159,18 @@ public:
                         void (*fileCallback)( const char *filename, void *userdata ), 
                         void *userdata );
 
-    int             GetFlags();
-
 private:
     friend class CFileSystem;
 
     void*           m_pArchive;
-    int             m_iFlags;
 };
 
 #endif //_FILESYSTEM_ZIP_SUPPORT
 
 
 extern CFileTranslator *mtaFileRoot;
+extern CFileTranslator *dataFileRoot;
+extern CFileTranslator *modFileRoot;
 
 class CFileSystem : public CFileSystemInterface
 {
@@ -172,11 +180,7 @@ public:
                             
     CFileTranslator*        CreateTranslator( const char *path );
     bool                    IsDirectory( const char *path );
+    bool                    WriteMiniDump( const char *path, _EXCEPTION_POINTERS *except );
 };
-
-CFile*	File_CreateBuffered(CFile *pFile);
-
-CFile*	File_Open(const char *filename, const char *mode);
-CFile*	File_OpenBuffered(const char *pFilename, const char *pMode);
 
 #endif //_CFileSystem_

@@ -253,7 +253,7 @@ int DoLaunchGame ( LPSTR lpCmdLine )
     //
     if ( !TerminateGTAIfRunning () )
     {
-        DisplayErrorMessageBox ( "MTA: SA couldn't start because an another instance of GTA is running." );
+        DisplayErrorMessageBox ( "MTA: SA couldn't start because another instance of GTA is running." );
         return 1;
     }
 

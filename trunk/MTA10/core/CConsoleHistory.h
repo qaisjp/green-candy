@@ -31,11 +31,12 @@ public:
 private:
     void                    DeleteLastEntry             ( void );
 
-    std::list < char* >     m_History;
+    typedef std::list <std::string> history_t;
+    history_t               m_History;
     unsigned int            m_uiHistoryLength;
 
     std::string             m_strFilename;
-    FILE*                   m_pFile;
+    CFile*                  m_file;
 };
 
 #endif

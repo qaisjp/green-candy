@@ -102,16 +102,6 @@ void CLocalGUI::SetSkin( const char* szName )
 
 void CLocalGUI::CreateWindows ( bool bGameIsAlreadyLoaded )
 {
-    CFilePathTranslator     FileTranslator;
-    string                  WorkingDirectory;
-    char                    szCurDir [ 1024 ];
-
-    // Set the current directory.
-    FileTranslator.SetCurrentWorkingDirectory ( "MTA" );
-    FileTranslator.GetCurrentWorkingDirectory ( WorkingDirectory );
-    GetCurrentDirectory ( sizeof ( szCurDir ), szCurDir );
-    SetCurrentDirectory ( WorkingDirectory.c_str ( ) );
-
     CGUI* pGUI = CCore::GetSingleton ().GetGUI ();
 
     // Create chatbox
@@ -144,9 +134,6 @@ void CLocalGUI::CreateWindows ( bool bGameIsAlreadyLoaded )
     // Create community registration window
     m_CommunityRegistration.CreateWindows ();
     m_CommunityRegistration.SetVisible ( false );
-
-    // Return the old current dir.
-    SetCurrentDirectory ( szCurDir );
 
     // Create our news headlines if we're already ingame
     if ( bGameIsAlreadyLoaded )

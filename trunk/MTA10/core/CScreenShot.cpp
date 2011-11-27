@@ -125,6 +125,15 @@ SString CScreenShot::GetScreenShotPath ( int iNumber )
     return strReturn;
 }
 
+static void Png_Writer( png_struct *png, char *data, size_t size )
+{
+    ((CFile*)png->io_ptr)->Write( data, size, 1 );
+}
+
+static void Png_Flusher( png_struct *png )
+{
+    ((CFile*)png->io_ptr)->Flush();
+}
 
 // Callback for threaded save
 // Static function
@@ -150,21 +159,25 @@ DWORD CScreenShot::ThreadProc ( LPVOID lpdwThreadParam )
         }
     }
 
-    FILE *file = fopen (ms_strFileName, "wb");
-        png_struct* png_ptr = png_create_write_struct ( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
-        png_info* info_ptr = png_create_info_struct ( png_ptr );
-        png_init_io ( png_ptr, file );
-        png_set_filter ( png_ptr, 0, PNG_FILTER_NONE );
-        png_set_compression_level ( png_ptr, 1 );
-        png_set_IHDR ( png_ptr, info_ptr, ulScreenWidth, ulScreenHeight, 8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT );
-        png_set_rows ( png_ptr, info_ptr, ppScreenData );
-        png_write_png ( png_ptr, info_ptr, PNG_TRANSFORM_BGR | PNG_TRANSFORM_STRIP_ALPHA, NULL );
-        png_write_end ( png_ptr, info_ptr );
-        png_destroy_write_struct ( &png_ptr, &info_ptr );
-    fclose(file);
+    CFile *file = mtaFileRoot->Open( ms_strFileName, "wb" );
+
+    // Do the .png logic
+    png_struct* png_ptr = png_create_write_struct ( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
+    png_info* info_ptr = png_create_info_struct ( png_ptr );
+    png_set_write_fn( png_ptr, file, Png_Writer, Png_Flusher );
+    png_set_filter ( png_ptr, 0, PNG_FILTER_NONE );
+    png_set_compression_level ( png_ptr, 1 );
+    png_set_IHDR ( png_ptr, info_ptr, ulScreenWidth, ulScreenHeight, 8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT );
+    png_set_rows ( png_ptr, info_ptr, ppScreenData );
+    png_write_png ( png_ptr, info_ptr, PNG_TRANSFORM_BGR | PNG_TRANSFORM_STRIP_ALPHA, NULL );
+    png_write_end ( png_ptr, info_ptr );
+    png_destroy_write_struct ( &png_ptr, &info_ptr );
+
+    delete file;
 
     // Clean up the screen data buffer
-    if ( ppScreenData ) {
+    if ( ppScreenData )
+    {
         for ( unsigned short y = 0; y < ulScreenHeight; y++ ) {
             delete [] ppScreenData[y];
         }
