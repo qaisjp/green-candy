@@ -5,6 +5,7 @@
 *  FILE:        xml/CXMLFileImpl.cpp
 *  PURPOSE:     XML file class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -26,17 +27,14 @@ CXMLFileImpl::CXMLFileImpl ( const char* szFilename, bool bUseIDs ) :
 
     // Set the filename
     if ( szFilename )
-    {
         m_strFilename = szFilename;
-    }
 
     // Add to array over XML stuff
     if ( m_bUsingIDs )
         m_ulID = CXMLArray::PopUniqueID ( this );
 }
 
-
-CXMLFileImpl::~CXMLFileImpl ( void )
+CXMLFileImpl::~CXMLFileImpl()
 {
     // Remove from array over XML stuff
     if ( m_bUsingIDs )
@@ -49,12 +47,10 @@ CXMLFileImpl::~CXMLFileImpl ( void )
     delete m_pDocument;
 }
 
-
-const char* CXMLFileImpl::GetFilename ( void )
+const char* CXMLFileImpl::GetFilename()
 {
     return m_strFilename.c_str ();
 }
-
 
 void CXMLFileImpl::SetFilename ( const char* szFilename )
 {
@@ -62,14 +58,13 @@ void CXMLFileImpl::SetFilename ( const char* szFilename )
     if ( szFilename )
         m_strFilename = szFilename;
     else
-        m_strFilename = "";
+        m_strFilename.clear();
 }
 
-
-bool CXMLFileImpl::Parse ( void )
+bool CXMLFileImpl::Parse()
 {
     // Do we have a filename?
-    if ( m_strFilename != "" )
+    if ( !m_strFilename.empty() )
     {
         // Reset previous file
         Reset ();
@@ -100,28 +95,18 @@ bool CXMLFileImpl::Parse ( void )
     return false;
 }
 
-
-bool CXMLFileImpl::Write ( void )
+bool CXMLFileImpl::Write()
 {
     // We have a filename?
     if ( m_strFilename != "" )
     {
-        // Try a safe method of saving first
-        if ( WriteSafer () )
-        {
-            return true;
-        }
-        if ( m_pDocument->SaveFile ( m_strFilename.c_str () ) )
-        {
-            return true;
-        }
+        return WriteSafer() || m_pDocument->SaveFile( m_strFilename.c_str() );
     }
 
     return false;
 }
 
-
-bool CXMLFileImpl::WriteSafer ( void )
+bool CXMLFileImpl::WriteSafer()
 {
     // We have a filename?
     if ( m_strFilename != "" )
@@ -152,16 +137,13 @@ bool CXMLFileImpl::WriteSafer ( void )
 
         // Delete backup
         unlink ( strBackup );
-
         return true;
     }
 
     return false;
 }
 
-
-
-void CXMLFileImpl::Clear ( void )
+void CXMLFileImpl::Clear()
 {
     if ( m_pRootNode )
     {
@@ -170,8 +152,7 @@ void CXMLFileImpl::Clear ( void )
     }
 }
 
-
-void CXMLFileImpl::Reset ( void )
+void CXMLFileImpl::Reset()
 {
     // Clear our wrapper tree
     ClearWrapperTree ();
@@ -204,7 +185,7 @@ CXMLNode* CXMLFileImpl::CreateRootNode ( const std::string& strTagName )
 }
 
 
-CXMLNode* CXMLFileImpl::GetRootNode ( void )
+CXMLNode* CXMLFileImpl::GetRootNode()
 {
     // Return it
     return m_pRootNode;
@@ -219,13 +200,12 @@ CXMLErrorCodes::Code CXMLFileImpl::GetLastError ( std::string& strOut )
 }
 
 
-void CXMLFileImpl::ResetLastError ( void )
+void CXMLFileImpl::ResetLastError()
 {
     // Set the code and the string
     m_errLastError = CXMLErrorCodes::NoError;
     m_strLastError = "";
 }
-
 
 void CXMLFileImpl::SetLastError ( CXMLErrorCodes::Code errCode, const std::string& strDescription )
 {
@@ -234,14 +214,13 @@ void CXMLFileImpl::SetLastError ( CXMLErrorCodes::Code errCode, const std::strin
     m_strLastError = strDescription;
 }
 
-
-TiXmlDocument* CXMLFileImpl::GetDocument ( void )
+TiXmlDocument* CXMLFileImpl::GetDocument()
 {
     return m_pDocument;
 }
 
 
-bool CXMLFileImpl::BuildWrapperTree ( void )
+bool CXMLFileImpl::BuildWrapperTree()
 {
     // Clear the previous tree
     ClearWrapperTree ();
@@ -302,7 +281,7 @@ bool CXMLFileImpl::BuildSubElements ( CXMLNodeImpl* pNode )
 }
 
 
-void CXMLFileImpl::ClearWrapperTree ( void )
+void CXMLFileImpl::ClearWrapperTree()
 {
     // Delete the previous wrapper tree
     if ( m_pRootNode )

@@ -6,6 +6,7 @@
 *  PURPOSE:     Core keybind manager
 *  DEVELOPERS:  Jax <>
 *               Florian Busse <flobu@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -1151,26 +1152,28 @@ bool CKeyBinds::GetMultiGTAControlState ( CGTAControlBind* pBind )
     eControllerAction action = pBind->control->action;
 
     list < CKeyBind* > ::const_iterator iter = m_pList->begin ();
+
     for ( ; iter != m_pList->end (); iter++ )
     {
         // If its a gta control
-        if ( (*iter)->GetType () == KEY_BIND_GTA_CONTROL )
-        {
-            CGTAControlBind* pTemp = reinterpret_cast < CGTAControlBind* > ( *iter );
-            // If the controller action is the same
-            if ( pTemp->control->action == action )
-            {
-                // Is it a different bind for the same action?
-                if ( pTemp != pBind )
-                {
-                    // If its pressed, we have a multicontrolstate
-                    if ( pTemp->bState )
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
+        if ( (*iter)->GetType () != KEY_BIND_GTA_CONTROL )
+            continue;
+
+        CGTAControlBind* pTemp = reinterpret_cast < CGTAControlBind* > ( *iter );
+
+        // If the controller action is the same
+        if ( pTemp->control->action != action )
+            continue;
+
+        // Is it a different bind for the same action?
+        if ( pTemp == pBind )
+            continue;
+
+        // If its pressed, we have a multicontrolstate
+        if ( !pTemp->bState )
+            continue;
+
+        return true;
     }
 
     return false;
@@ -2072,6 +2075,72 @@ void CKeyBinds::DoPreFramePulse ( void )
     }
 }
 
+void CKeyBinds::UpdateControlState( CControllerState& cs )
+{
+    if ( !bInVehicle )
+    {
+        cs.ButtonCircle = ( g_bcControls [ 0 ].bState && !bHasDetonator ) ? 255 : 0; // Fire
+        cs.RightShoulder2 = ( g_bcControls [ 1 ].bState ||
+                            ( bAimingWeapon &&
+                                g_bcControls [ 7 ].bState ) ) ? 255 : 0; // Next Weapon / Zoom In
+        cs.LeftShoulder2 = ( g_bcControls [ 2 ].bState ||
+                            ( bAimingWeapon && 
+                            g_bcControls [ 8 ].bState ) ) ? 255 : 0; // Previous Weapon / Zoom Out
+        cs.LeftStickY = ( ( g_bcControls [ 3 ].bState && g_bcControls [ 4 ].bState ) ||
+                        ( !g_bcControls [ 3 ].bState && !g_bcControls [ 4 ].bState ) ) ? 0 :
+                        ( g_bcControls [ 3 ].bState ) ? -128 : 128;
+        cs.LeftStickX = ( ( g_bcControls [ 5 ].bState && g_bcControls [ 6 ].bState ) ||
+                        ( !g_bcControls [ 5 ].bState && !g_bcControls [ 6 ].bState ) ) ? 0 :
+                        ( g_bcControls [ 5 ].bState ) ? -128 : 128;
+        // * Enter Exit
+        // * Change View
+        cs.ButtonSquare = ( !bEnteringVehicle && g_bcControls [ 11 ].bState ) ? 255 : 0; // Jump
+        cs.ButtonCross = ( g_bcControls [ 12 ].bState ) ? 255 : 0; // Sprint
+        cs.ShockButtonR = ( g_bcControls [ 13 ].bState ) ? 255 : 0; // Look Behind
+        cs.ShockButtonL = ( g_bcControls [ 14 ].bState ) ? 255 : 0; // Crouch
+        cs.LeftShoulder1 = ( g_bcControls [ 15 ].bState ) ? 255 : 0; // Action
+        cs.m_bPedWalk = ( g_bcControls [ 16 ].bState ) ? 255 : 0; // Walk
+        // * Vehicle Keys
+        cs.RightShoulder1 = ( g_bcControls [ 39 ].bState ) ? 255 : 0; // Aim Weapon
+        cs.DPadRight = ( g_bcControls [ 40 ].bState ) ? 255 : 0; // Conversation Yes
+        cs.DPadLeft = ( g_bcControls [ 41 ].bState ) ? 255 : 0; // Conversation No
+        cs.DPadUp = ( g_bcControls [ 42 ].bState ) ? 255 : 0; // Group Control Forwards
+        cs.DPadDown = ( g_bcControls [ 43 ].bState ) ? 255 : 0; // Group Control Backwards
+    }
+    else
+    {
+        cs.ButtonCircle = ( g_bcControls [ 17 ].bState ) ? 255 : 0; // Fire
+        cs.LeftShoulder1 = ( g_bcControls [ 18 ].bState ) ? 255 : 0; // Secondary Fire
+        cs.LeftStickX = ( ( g_bcControls [ 19 ].bState && g_bcControls [ 20 ].bState ) ||
+                        ( !g_bcControls [ 19 ].bState && !g_bcControls [ 20 ].bState ) ) ? 0 :
+                        ( g_bcControls [ 19 ].bState ) ? -128 : 128;
+        cs.LeftStickY = ( ( g_bcControls [ 21 ].bState && g_bcControls [ 22 ].bState ) ||
+                        ( !g_bcControls [ 21 ].bState && !g_bcControls [ 22 ].bState ) ) ? 0 :
+                        ( g_bcControls [ 21 ].bState ) ? -128 : 128;
+        cs.ButtonCross = ( g_bcControls [ 23 ].bState ) ? 255 : 0; // Accelerate
+        cs.ButtonSquare = ( g_bcControls [ 24 ].bState ) ? 255 : 0; // Reverse
+        cs.DPadUp = ( g_bcControls [ 25 ].bState ) ? 255 : 0; // Radio Next
+        cs.DPadDown = ( g_bcControls [ 26 ].bState ) ? 255 : 0; // Radio Previous
+        cs.m_bRadioTrackSkip = ( g_bcControls [ 27 ].bState ) ? 255 : 0; // Radio Skip
+        cs.ShockButtonL = ( g_bcControls [ 28 ].bState ) ? 255 : 0; // Horn
+        cs.ShockButtonR = ( g_bcControls [ 29 ].bState ) ? 255 : 0; // Sub Mission
+        cs.RightShoulder1 = ( g_bcControls [ 30 ].bState ) ? 255 : 0; // Handbrake
+        cs.LeftShoulder2 = ( g_bcControls [ 31 ].bState || g_bcControls [ 33 ].bState ) ? 255 : 0; // Look Left
+        cs.RightShoulder2 = ( g_bcControls [ 32 ].bState || g_bcControls [ 33 ].bState ) ? 255 : 0; // Look Right
+        // * Look Behind - uses both keys above simultaneously
+        // Mouse Look
+        cs.RightStickX = ( ( g_bcControls [ 35 ].bState && g_bcControls [ 36 ].bState ) ||
+                        ( !g_bcControls [ 35 ].bState && !g_bcControls [ 36 ].bState ) ) ? 0 :
+                        ( g_bcControls [ 35 ].bState ) ? 128 : -128;
+        cs.RightStickY = ( ( g_bcControls [ 37 ].bState && g_bcControls [ 38 ].bState ) ||
+                        ( !g_bcControls [ 37 ].bState && !g_bcControls [ 38 ].bState ) ) ? 0 :
+                        ( g_bcControls [ 37 ].bState ) ? 128 : -128;
+    }
+    cs.ButtonTriangle = ( g_bcControls [ 9 ].bState ) ? 255 : 0; // Enter Exit
+    cs.Select = ( g_bcControls [ 10 ].bState ) ? 255 : 0; // Change View   
+
+    GetJoystickManager ()->ApplyAxes ( cs, bInVehicle );
+}
 
 void CKeyBinds::DoPostFramePulse ( void )
 {
@@ -2083,10 +2152,11 @@ void CKeyBinds::DoPostFramePulse ( void )
         m_bWaitingToLoadDefaults = false; 
     }
 
-    if ( SystemState != 9 /* GS_PLAYING_GAME */ ) return;
+    if ( SystemState != GS_PLAYING_GAME )
+        return;
 
-    bool bInVehicle = false, bHasDetonator = false, bIsDead = false, bEnteringVehicle = false;
-    CPed* pPed = m_pCore->GetGame ()->GetPools ()->GetPedFromRef ( (DWORD)1 );
+    CPed* pPed = m_pCore->GetGame()->GetPools()->GetPedFromRef( 1 );
+
     // Don't set any controller states if the local player isnt alive
     if ( !pPed )
         return;
@@ -2121,74 +2191,9 @@ void CKeyBinds::DoPostFramePulse ( void )
 
     bool bAimingWeapon = g_bcControls [ 39 ].bState;
 
+    // Retrive the current controls
     CControllerState cs;
-    memset ( &cs, 0, sizeof ( CControllerState ) );
-    if ( !bIsDead )
-    {    
-        if ( !bInVehicle )
-        {
-            cs.ButtonCircle = ( g_bcControls [ 0 ].bState && !bHasDetonator ) ? 255 : 0; // Fire
-            cs.RightShoulder2 = ( g_bcControls [ 1 ].bState ||
-                                ( bAimingWeapon &&
-                                    g_bcControls [ 7 ].bState ) ) ? 255 : 0; // Next Weapon / Zoom In
-            cs.LeftShoulder2 = ( g_bcControls [ 2 ].bState ||
-                                ( bAimingWeapon && 
-                                g_bcControls [ 8 ].bState ) ) ? 255 : 0; // Previous Weapon / Zoom Out
-            cs.LeftStickY = ( ( g_bcControls [ 3 ].bState && g_bcControls [ 4 ].bState ) ||
-                            ( !g_bcControls [ 3 ].bState && !g_bcControls [ 4 ].bState ) ) ? 0 :
-                            ( g_bcControls [ 3 ].bState ) ? -128 : 128;
-            cs.LeftStickX = ( ( g_bcControls [ 5 ].bState && g_bcControls [ 6 ].bState ) ||
-                            ( !g_bcControls [ 5 ].bState && !g_bcControls [ 6 ].bState ) ) ? 0 :
-                            ( g_bcControls [ 5 ].bState ) ? -128 : 128;
-            // * Enter Exit
-            // * Change View
-            cs.ButtonSquare = ( !bEnteringVehicle && g_bcControls [ 11 ].bState ) ? 255 : 0; // Jump
-            cs.ButtonCross = ( g_bcControls [ 12 ].bState ) ? 255 : 0; // Sprint
-            cs.ShockButtonR = ( g_bcControls [ 13 ].bState ) ? 255 : 0; // Look Behind
-            cs.ShockButtonL = ( g_bcControls [ 14 ].bState ) ? 255 : 0; // Crouch
-            cs.LeftShoulder1 = ( g_bcControls [ 15 ].bState ) ? 255 : 0; // Action
-            cs.m_bPedWalk = ( g_bcControls [ 16 ].bState ) ? 255 : 0; // Walk
-            // * Vehicle Keys
-            cs.RightShoulder1 = ( g_bcControls [ 39 ].bState ) ? 255 : 0; // Aim Weapon
-            cs.DPadRight = ( g_bcControls [ 40 ].bState ) ? 255 : 0; // Conversation Yes
-            cs.DPadLeft = ( g_bcControls [ 41 ].bState ) ? 255 : 0; // Conversation No
-            cs.DPadUp = ( g_bcControls [ 42 ].bState ) ? 255 : 0; // Group Control Forwards
-            cs.DPadDown = ( g_bcControls [ 43 ].bState ) ? 255 : 0; // Group Control Backwards
-        }
-        else
-        {
-            cs.ButtonCircle = ( g_bcControls [ 17 ].bState ) ? 255 : 0; // Fire
-            cs.LeftShoulder1 = ( g_bcControls [ 18 ].bState ) ? 255 : 0; // Secondary Fire
-            cs.LeftStickX = ( ( g_bcControls [ 19 ].bState && g_bcControls [ 20 ].bState ) ||
-                            ( !g_bcControls [ 19 ].bState && !g_bcControls [ 20 ].bState ) ) ? 0 :
-                            ( g_bcControls [ 19 ].bState ) ? -128 : 128;
-            cs.LeftStickY = ( ( g_bcControls [ 21 ].bState && g_bcControls [ 22 ].bState ) ||
-                            ( !g_bcControls [ 21 ].bState && !g_bcControls [ 22 ].bState ) ) ? 0 :
-                            ( g_bcControls [ 21 ].bState ) ? -128 : 128;
-            cs.ButtonCross = ( g_bcControls [ 23 ].bState ) ? 255 : 0; // Accelerate
-            cs.ButtonSquare = ( g_bcControls [ 24 ].bState ) ? 255 : 0; // Reverse
-            cs.DPadUp = ( g_bcControls [ 25 ].bState ) ? 255 : 0; // Radio Next
-            cs.DPadDown = ( g_bcControls [ 26 ].bState ) ? 255 : 0; // Radio Previous
-            cs.m_bRadioTrackSkip = ( g_bcControls [ 27 ].bState ) ? 255 : 0; // Radio Skip
-            cs.ShockButtonL = ( g_bcControls [ 28 ].bState ) ? 255 : 0; // Horn
-            cs.ShockButtonR = ( g_bcControls [ 29 ].bState ) ? 255 : 0; // Sub Mission
-            cs.RightShoulder1 = ( g_bcControls [ 30 ].bState ) ? 255 : 0; // Handbrake
-            cs.LeftShoulder2 = ( g_bcControls [ 31 ].bState || g_bcControls [ 33 ].bState ) ? 255 : 0; // Look Left
-            cs.RightShoulder2 = ( g_bcControls [ 32 ].bState || g_bcControls [ 33 ].bState ) ? 255 : 0; // Look Right
-            // * Look Behind - uses both keys above simultaneously
-            // Mouse Look
-            cs.RightStickX = ( ( g_bcControls [ 35 ].bState && g_bcControls [ 36 ].bState ) ||
-                            ( !g_bcControls [ 35 ].bState && !g_bcControls [ 36 ].bState ) ) ? 0 :
-                            ( g_bcControls [ 35 ].bState ) ? 128 : -128;
-            cs.RightStickY = ( ( g_bcControls [ 37 ].bState && g_bcControls [ 38 ].bState ) ||
-                            ( !g_bcControls [ 37 ].bState && !g_bcControls [ 38 ].bState ) ) ? 0 :
-                            ( g_bcControls [ 37 ].bState ) ? 128 : -128;
-        }
-        cs.ButtonTriangle = ( g_bcControls [ 9 ].bState ) ? 255 : 0; // Enter Exit
-        cs.Select = ( g_bcControls [ 10 ].bState ) ? 255 : 0; // Change View   
-
-        GetJoystickManager ()->ApplyAxes ( cs, bInVehicle );
-    }
+    UpdateControlState( cs );
         
     m_pCore->GetGame ()->GetPad ()->SetCurrentControllerState ( &cs );
 

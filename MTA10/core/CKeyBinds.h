@@ -131,6 +131,8 @@ public:
 
     unsigned int            Count                       ( eKeyBindType bindType = KEY_BIND_UNDEFINED );
 
+    void                    UpdateControlState          ( CControllerState& cs );
+
     void                    DoPreFramePulse             ( void );
     void                    DoPostFramePulse            ( void );
 

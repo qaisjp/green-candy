@@ -619,24 +619,20 @@ void CCore::SetConnected ( bool bConnected )
     m_pLocalGUI->GetMainMenu ( )->SetIsIngame ( bConnected );
 }
 
-
 bool CCore::IsConnected ( void )
 {
     return m_pLocalGUI->GetMainMenu ( )->GetIsIngame ();
 }
-
 
 bool CCore::Reconnect ( const char* szHost, unsigned short usPort, const char* szPassword, bool bSave )
 {
     return m_pConnectManager->Reconnect ( szHost, usPort, szPassword, bSave );
 }
 
-
 void CCore::SetOfflineMod ( bool bOffline )
 {
     m_bIsOfflineMod = bOffline;
 }
-
 
 const char* CCore::GetModInstallRoot ( const char* szModName )
 {
@@ -644,19 +640,16 @@ const char* CCore::GetModInstallRoot ( const char* szModName )
     return m_strModInstallRoot;
 }
 
-
 void CCore::ForceCursorVisible ( bool bVisible, bool bToggleControls )
 {
     m_bCursorToggleControls = bToggleControls;
     m_pLocalGUI->ForceCursorVisible ( bVisible );
 }
 
-
 void CCore::SetMessageProcessor ( pfnProcessMessage pfnMessageProcessor )
 {
     m_pfnMessageProcessor = pfnMessageProcessor;
 }
-
 
 void CCore::ShowMessageBox ( const char* szTitle, const char* szText, unsigned int uiFlags, GUI_CALLBACK * ResponseHandler )
 {
@@ -674,7 +667,6 @@ void CCore::ShowMessageBox ( const char* szTitle, const char* szText, unsigned i
     m_pMessageBox->SetAutoDestroy ( false );
 }
 
-
 void CCore::RemoveMessageBox ( bool bNextFrame )
 {
     if ( bNextFrame )
@@ -691,12 +683,10 @@ void CCore::RemoveMessageBox ( bool bNextFrame )
     }
 }
 
-
 HWND CCore::GetHookedWindow ( void )
 {
     return CMessageLoopHook::GetSingleton ().GetHookedWindowHandle ();
 }
-
 
 void CCore::HideMainMenu ( void )
 {

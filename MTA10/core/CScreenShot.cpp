@@ -164,7 +164,7 @@ DWORD CScreenShot::ThreadProc ( LPVOID lpdwThreadParam )
     // Do the .png logic
     png_struct* png_ptr = png_create_write_struct ( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
     png_info* info_ptr = png_create_info_struct ( png_ptr );
-    png_set_write_fn( png_ptr, file, Png_Writer, Png_Flusher );
+    png_set_write_fn( png_ptr, file, (png_rw_ptr)Png_Writer, (png_flush_ptr)Png_Flusher );
     png_set_filter ( png_ptr, 0, PNG_FILTER_NONE );
     png_set_compression_level ( png_ptr, 1 );
     png_set_IHDR ( png_ptr, info_ptr, ulScreenWidth, ulScreenHeight, 8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT );

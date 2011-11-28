@@ -100,8 +100,6 @@ private:
 class CSystemPathTranslator : public CFileTranslator
 {
 public:
-                    ~CSystemPathTranslator();
-
     bool            GetFullPathTree( const char *path, std::vector <std::string>& tree, bool *file );
     bool            GetRelativePathTree( const char *path, std::vector <std::string>& tree, bool *file );
     bool            GetFullPath( const char *path, bool allowFile, std::string& output );
@@ -120,9 +118,7 @@ private:
 class CSystemFileTranslator : public CSystemPathTranslator
 {
 public:
-                    ~CSystemFileTranslator();
-                    
-    bool            WriteData( const char *path, char *buffer, size_t size );
+    bool            WriteData( const char *path, const char *buffer, size_t size );
     bool            CreateDir( const char *path );
     CFile*          Open( const char *path, const char *mode );
     bool            Exists( const char *path );
@@ -131,6 +127,7 @@ public:
     bool            Rename( const char *src, const char *dst );
     size_t          Size( const char *path );
     bool            Stat( const char *path, struct stat *stats );
+    bool            ReadToBuffer( const char *path, std::vector <char>& output );
 
     void            ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
                         void (*dirCallback)( const std::string& directory, void *userdata ), 
@@ -168,6 +165,7 @@ private:
 #endif //_FILESYSTEM_ZIP_SUPPORT
 
 
+extern CFileTranslator *tempFileRoot;
 extern CFileTranslator *mtaFileRoot;
 extern CFileTranslator *dataFileRoot;
 extern CFileTranslator *modFileRoot;
@@ -179,8 +177,13 @@ public:
                             ~CFileSystem();
                             
     CFileTranslator*        CreateTranslator( const char *path );
+
+    // Insecure functions
     bool                    IsDirectory( const char *path );
     bool                    WriteMiniDump( const char *path, _EXCEPTION_POINTERS *except );
+    bool                    Exists( const char *path );
+    size_t                  Size( const char *path );
+    bool                    ReadToBuffer( const char *path, std::vector <char>& output );
 };
 
 #endif //_CFileSystem_

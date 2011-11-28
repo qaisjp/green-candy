@@ -118,7 +118,7 @@ class CFileTranslator
 public:
     virtual                 ~CFileTranslator() = 0;
 
-    virtual bool            WriteData( const char *path, char *buffer, size_t size ) = 0;
+    virtual bool            WriteData( const char *path, const char *buffer, size_t size ) = 0;
     virtual bool            CreateDir( const char *path ) = 0;
     virtual CFile*          Open( const char *path, const char *mode ) = 0;
     virtual bool            Exists( const char *path ) = 0;
@@ -127,6 +127,7 @@ public:
     virtual bool            Rename( const char *src, const char *dst ) = 0;
     virtual size_t          Size( const char *path ) = 0;
     virtual bool            Stat( const char *path, struct stat *stats ) = 0;
+    virtual bool            ReadToBuffer( const char *path, std::vector <char>& output ) = 0;
 
     virtual bool            GetFullPathTree( const char *path, std::vector <std::string>& tree, bool *file ) = 0;
     virtual bool            GetRelativePathTree( const char *path, std::vector <std::string>& tree, bool *file ) = 0;
@@ -145,6 +146,12 @@ class CFileSystemInterface
 {
 public:
     virtual CFileTranslator*    CreateTranslator( const char *path ) = 0;
+
+    // Insecure, use with caution!
+    virtual bool                IsDirectory( const char *path ) = 0;
+    virtual bool                Exists( const char *path ) = 0;
+    virtual size_t              Size( const char *path ) = 0;
+    virtual bool                ReadToBuffer( const char *path, std::vector <char>& output ) = 0;
 };
 
 #endif //_CFileSystemInterface_

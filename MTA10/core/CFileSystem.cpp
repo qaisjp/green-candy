@@ -16,6 +16,7 @@
 extern CCore *g_pCore;
 
 CFileSystem *fileSystem;
+CFileTranslator *tempFileRoot;
 CFileTranslator *mtaFileRoot;
 CFileTranslator *dataFileRoot;
 CFileTranslator *modFileRoot;
@@ -730,11 +731,7 @@ bool CArchiveFileTranslator::Stat( const char *path, struct stat *stats )
     Default file translator
 =======================================*/
 
-CSystemFileTranslator::~CSystemFileTranslator()
-{ 
-}
-
-bool CSystemFileTranslator::WriteData( const char *path, char *buffer, size_t size )
+bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, size_t size )
 {
 #ifdef _WIN32
     HANDLE file;
@@ -940,6 +937,16 @@ size_t CSystemFileTranslator::Size( const char *path )
     return fstats.st_size;
 }
 
+bool CSystemFileTranslator::ReadToBuffer( const char *path, std::vector <char>& output )
+{
+    std::string sysPath;
+
+    if ( !GetFullPath( path, true, sysPath ) )
+        return false;
+
+    return g_pCore->GetFileSystem()->ReadToBuffer( sysPath.c_str(), output );
+}
+
 void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
                                             void (*dirCallback)( const std::string& dir, void *userdata), 
                                             void (*fileCallback)( const std::string& path, void *userdata), 
@@ -1034,6 +1041,7 @@ CFileSystem::CFileSystem()
     openFiles = new std::list<CFile*>;
 
     // Add important access zones here + extern them
+    tempFileRoot = CreateTranslator( GetMTATempPath() );
     mtaFileRoot = CreateTranslator( "mta/" );
     dataFileRoot = CreateTranslator( GetMTADataPath() );
     modFileRoot = CreateTranslator( "mods/" );
@@ -1105,7 +1113,7 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
 
 bool CFileSystem::IsDirectory( const char *path )
 {
-
+    return File_IsDirectoryAbsolute( path );
 }
 
 bool CFileSystem::WriteMiniDump( const char *path, _EXCEPTION_POINTERS *except )
@@ -1127,4 +1135,41 @@ bool CFileSystem::WriteMiniDump( const char *path, _EXCEPTION_POINTERS *except )
     delete file;
 
     return true;
+}
+
+bool CFileSystem::Exists( const char *path )
+{
+    struct stat tmp;
+
+    return stat( path, &tmp ) == 0;
+}
+
+size_t CFileSystem::Size( const char *path )
+{
+    struct stat stats;
+
+    if ( stat( path, &stats ) != 0 )
+        return 0;
+
+    return stats.st_size;
+}
+
+bool CFileSystem::ReadToBuffer( const char *path, std::vector <char>& output )
+{
+#ifdef _WIN32
+    HANDLE file = CreateFile( path, GENERIC_READ, 0, NULL, OPEN_ALWAYS, 0, NULL );
+    size_t size;
+
+    if ( file == INVALID_HANDLE_VALUE )
+        return false;
+
+    size = GetFileSize( file, NULL );
+
+    output.resize( size );
+
+    ReadFile( file, &output[0], size, NULL, NULL );
+
+    CloseHandle( file );
+    return true;
+#endif
 }

@@ -104,7 +104,7 @@ bool CModManager::IsLoaded ( void )
 CClientBase* CModManager::Load ( const char* szName, const char* szArguments )
 {
     // Make sure we haven't already loaded a mod
-    Unload ();
+    Unload();
 
     // Get the entry for the given name
     std::map <std::string, std::string>::iterator itMod = m_ModDLLFiles.find ( szName );
@@ -126,7 +126,7 @@ CClientBase* CModManager::Load ( const char* szName, const char* szArguments )
     }
 
     // Load the library and use the supplied path as an extra place to search for dependencies
-    m_hClientDLL = LoadLibraryEx ( itMod->second.c_str (), NULL, LOAD_WITH_ALTERED_SEARCH_PATH );
+    m_hClientDLL = LoadLibraryEx ( itMod->second.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH );
     if ( !m_hClientDLL )
     {
         DWORD dwError = GetLastError ();
@@ -148,10 +148,13 @@ CClientBase* CModManager::Load ( const char* szName, const char* szArguments )
         return NULL;
     }
 
-    // Get the address of InitClient
-    typedef CClientBase* (__cdecl pfnClientInitializer) ( void );     /* FIXME: Should probably not be here */
+    // Set up the mod root
+    CCore::GetSingleton().m_modRoot = CCore::GetSingleton().GetFileSystem()->CreateTranslator( itMod->second.c_str() );
 
-    pfnClientInitializer* pClientInitializer = (pfnClientInitializer*)GetProcAddress( m_hClientDLL, "InitClient" ) );
+    // Get the address of InitClient
+    typedef CClientBase* (__cdecl pfnClientInitializer) ();     /* FIXME: Should probably not be here */
+
+    pfnClientInitializer* pClientInitializer = (pfnClientInitializer*)GetProcAddress( m_hClientDLL, "InitClient" );
 
     if ( pClientInitializer == NULL )
     {
@@ -194,6 +197,9 @@ void CModManager::Unload ( void )
             m_pClientBase->ClientShutdown ();
             m_pClientBase = NULL;
         }
+
+        // Destroy mod root
+        delete CCore::GetSingleton().m_modRoot;
 
         // Unregister the commands it had registered
         CCore::GetSingleton ().GetCommands ()->DeleteAll ();
@@ -455,9 +461,6 @@ void CModManager::DumpMiniDump ( _EXCEPTION_POINTERS* pException, CExceptionInfo
     SYSTEMTIME SystemTime;
     GetLocalTime ( &SystemTime );
 
-    // Create the dump directory
-    mtaFileRoot->CreateDir( "dumps/" );
-
     SString strModuleName = pExceptionInformation->GetModuleBaseName ();
     strModuleName = strModuleName.ReplaceI ( ".dll", "" ).Replace ( ".exe", "" ).Replace ( "_", "" ).Replace ( ".", "" ).Replace ( "-", "" );
     if ( strModuleName.length () == 0 )
@@ -473,21 +476,23 @@ void CModManager::DumpMiniDump ( _EXCEPTION_POINTERS* pException, CExceptionInfo
 
     // Get path to mta dir
     SString strPathCode;
-    std::vector < SString > parts;
-    PathConform( CalcMTASAPath("") ).Split( PATH_SEPERATOR, parts );
+    std::vector <std::string> parts;
+    bool file;
 
-    for ( uint i = 0 ; i < parts.size () ; i++ )
+    mtaFileRoot->GetFullPathTree( "/", parts, &file );
+
+    for ( uint i = 0; i < parts.size(); i++ )
     {
-        if ( parts[i].CompareI ( "Program Files" ) )
+        if ( stricmp( parts[i].c_str(), "Program Files" ) == 0 )
             strPathCode += "Pr";
-        else if ( parts[i].CompareI ( "Program Files (x86)" ) )
+        else if ( stricmp( parts[i].c_str(), "Program Files (x86)" ) == 0 )
             strPathCode += "Px";
-        else if ( parts[i].CompareI ( "MTA San Andreas" ) )
+        else if ( stricmp( parts[i].c_str(), "MTA San Andreas" ) == 0 )
             strPathCode += "Mt";
-        else if ( parts[i].BeginsWithI ( "MTA San Andreas" ) )
+        else if ( strstr( parts[i].c_str(), "MTA San Andreas" ) == parts[i].c_str() )
             strPathCode += "Mb";
         else
-            strPathCode += parts[i].Left ( 1 ).ToUpper ();
+            strPathCode += toupper( parts[i][1] );
     }
 
     // Copy the file over
@@ -509,7 +514,10 @@ void CModManager::DumpMiniDump ( _EXCEPTION_POINTERS* pException, CExceptionInfo
         SystemTime.wMinute));
 
     // For the dump uploader
-    SetApplicationSetting( "diagnostics", "last-dump-save", CalcMTASAPath ( strFilename ) );
+    SString dmpPath;
+    mtaFileRoot->GetFullPath( "core.dmp", true, dmpPath );
+
+    SetApplicationSetting( "diagnostics", "last-dump-save", dmpPath );
 }
 
 void CModManager::RunErrorTool ( CExceptionInformation* pExceptionInformation )
@@ -615,10 +623,10 @@ void CModManager::VerifyAndAddEntry( const char* szModFolderPath, const char* sz
         return;
 
     // Paths given by the OS are always absolute
-    modFileRoot->GetFullPath( szModFolderPath );
+    modFileRoot->GetFullPath( szModFolderPath, true, modPath );
 
     // Attempt to load the primary client DLL
-    hDLL = LoadLibraryEx ( strClientDLL, NULL, DONT_RESOLVE_DLL_REFERENCES );
+    hDLL = LoadLibraryEx( modPath.c_str(), NULL, DONT_RESOLVE_DLL_REFERENCES );
 
     if ( !hDLL )
     {
@@ -627,14 +635,14 @@ void CModManager::VerifyAndAddEntry( const char* szModFolderPath, const char* sz
     }
 
     // Check if InitClient symbol exists
-    if ( GetProcAddress ( hDLL, "InitClient" ) != NULL )
+    if ( GetProcAddress( hDLL, "InitClient" ) != NULL )
     {
         // Add it to the list
-        m_ModDLLFiles [ szName ] = strClientDLL;
+        m_ModDLLFiles[ szName ] = modPath;
     }
     else
-        CLogger::GetSingleton ().ErrorPrintf ( "Unknown mod DLL: %s", szName );
+        CLogger::GetSingleton().ErrorPrintf( "Unknown mod DLL: %s", szName );
 
     // Free the DLL
-    FreeLibrary ( hDLL );
+    FreeLibrary( hDLL );
 }

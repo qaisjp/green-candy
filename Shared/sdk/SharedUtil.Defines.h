@@ -51,11 +51,7 @@
 #endif
 
 
-#ifdef WIN32
-    #define PATH_SEPERATOR "\\"
-#else
-    #define PATH_SEPERATOR "/"
-#endif
+#define PATH_SEPERATOR "/"
 
 
 // Auto clear a class when new'ed. (Won't work for inline creation.)

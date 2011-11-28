@@ -1,10 +1,10 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CVersionUpdater
 *  PURPOSE:     Version update check and message dialog class
-*  DEVELOPERS:  
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -358,7 +358,8 @@ namespace
             assert ( !m_pXMLFile );
 
             // Try to save
-            m_strTempFileName = MakeUniquePath( SString( dataFileRoot->GetFullPath( "temp/buffer.xml" ) ) );
+            dataFileRoot->GetFullPath( "temp/buffer.xml", true, m_strTempFileName );
+            m_strTempFileName = MakeUniquePath( m_strTempFileName );
 
             if ( !dataFileRoot->WriteData( m_strTempFileName, data, uiSize ) )
             {
@@ -366,7 +367,7 @@ namespace
                 return NULL;
             }
 
-            m_pXMLFile = CCore::GetSingleton ().GetXML ()->CreateXML ( m_strTempFileName );
+            m_pXMLFile = CCore::GetSingleton ().GetXML ()->CreateXML( m_strTempFileName );
             if ( !m_pXMLFile )
             {
                 AddReportLog ( 2502, SString ( "CXMLBuffer::SetFromBuffer: Could not CreateXML %s", m_strTempFileName.c_str () ) );
@@ -711,10 +712,12 @@ namespace
 
         static void ClearLogContents ( const SString& strIdFilter )
         {
-            if ( strIdFilter == "-all" && FileExists ( CalcMTASAPath ( "_keep_report_" ) ) )
+            if ( strIdFilter == "-all" && mtaFileRoot->Exists("../_keep_report_") )
                 return;
-            if ( FileExists ( CalcMTASAPath ( "_keep_report_all_" ) ) )
+
+            if ( mtaFileRoot->Exists( "_keep_report_all_" ) )
                 return;
+
             SetReportLogContents ( GetLogContents ( strIdFilter ) );
         }
 
@@ -877,7 +880,7 @@ namespace
         int                     iTimeoutTransfer;
         bool                    bShowDownloadPercent;
         std::vector < SString > serverList;
-        std::vector < char >    postContent;
+        std::vector <char>      postContent;
         bool                    bPostContentBinary;
         SString                 strPostFilename;
 
