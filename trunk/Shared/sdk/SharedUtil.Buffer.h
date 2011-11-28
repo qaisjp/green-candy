@@ -24,7 +24,7 @@ namespace SharedUtil
     // Wrapped byte array
     //
     //////////////////////////////////////////////////////
-    class CBuffer : protected std::vector < char >
+    class CBuffer : protected std::vector <char>
     {
     public:
         CBuffer ( void )

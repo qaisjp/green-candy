@@ -19,27 +19,14 @@ bool IsRealDeal ( void );
 
 int WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, PVOID pvNothing)
 {
-    CFilePathTranslator     FileTranslator;
-    string                  WorkingDirectory;
-
-
     if ( dwReason == DLL_PROCESS_ATTACH )
     {
         if ( IsRealDeal () )
         {
-            FileTranslator.SetCurrentWorkingDirectory ( "mta" );
-            FileTranslator.GetCurrentWorkingDirectory ( WorkingDirectory );
-            SetCurrentDirectory ( WorkingDirectory.c_str ( ) );
-
-            // For dll searches, this call replaces the current directory entry and turns off 'SafeDllSearchMode'
-            // Meaning it will search the supplied path before the system and windows directory.
-            // http://msdn.microsoft.com/en-us/library/ms682586%28VS.85%29.aspx
-            SetDllDirectory( WorkingDirectory.c_str ( ) );
+            // Search our path for .dll instead of WINDOWS
+            SetDllDirectory( GetMTASABaseDir() + "mta/" );
 
             g_pCore = new CCore;
-
-            FileTranslator.GetGTARootDirectory ( WorkingDirectory );
-            SetCurrentDirectory ( WorkingDirectory.c_str ( ) );
         }
     } 
     else if (dwReason == DLL_PROCESS_DETACH)

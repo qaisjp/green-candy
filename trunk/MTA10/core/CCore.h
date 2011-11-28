@@ -78,39 +78,40 @@ class CCore;
 
 class CCore : public CCoreInterface, public CSingleton < CCore >
 {
+    friend class CModManager;
 public:
-                            CCore                           ( void );
-                            ~CCore                          ( void );
+                            CCore                           ();
+                            ~CCore                          ();
 
     // Subsystems (query)
-    eCoreVersion            GetVersion                      ( void );
-    CConsoleInterface*      GetConsole                      ( void );
-    CCommandsInterface*     GetCommands                     ( void );
-    inline CConnectManager* GetConnectManager               ( void )                { return m_pConnectManager; };
-    CGame*                  GetGame                         ( void );
-    CGUI*                   GetGUI                          ( void );
-    CGraphicsInterface*     GetGraphics                     ( void );
-    CModManagerInterface*   GetModManager                   ( void );
-    CMultiplayer*           GetMultiplayer                  ( void );
-    CNet*                   GetNetwork                      ( void );
-    CXML*                   GetXML                          ( void )                { return m_pXML; };
-    CXMLNode*               GetConfig                       ( void );
-    CClientVariables*       GetCVars                        ( void )                { return &m_ClientVariables; };
-    CKeyBindsInterface*     GetKeyBinds                     ( void );
-    CLocalGUI*              GetLocalGUI                     ( void );
-    CCommunityInterface*    GetCommunity                    ( void )                { return &m_Community; };
-    CFileSystem*            GetFileSystem                   ()                      { return m_fileSystem; };
+    eCoreVersion            GetVersion                      ();
+    CConsoleInterface*      GetConsole                      ();
+    CCommandsInterface*     GetCommands                     ();
+    inline CConnectManager* GetConnectManager               ()                { return m_pConnectManager; };
+    CGame*                  GetGame                         ();
+    CGUI*                   GetGUI                          ();
+    CGraphicsInterface*     GetGraphics                     ();
+    CModManagerInterface*   GetModManager                   ();
+    CMultiplayer*           GetMultiplayer                  ();
+    CNet*                   GetNetwork                      ();
+    CXML*                   GetXML                          ()                { return m_pXML; };
+    CXMLNode*               GetConfig                       ();
+    CClientVariables*       GetCVars                        ()                { return &m_ClientVariables; };
+    CKeyBindsInterface*     GetKeyBinds                     ();
+    CLocalGUI*              GetLocalGUI                     ();
+    CCommunityInterface*    GetCommunity                    ()                { return &m_Community; };
+    CFileSystem*            GetFileSystem                   ()                { return m_fileSystem; };
 
-    void                    SaveConfig                      ( void );
+    void                    SaveConfig                      ();
 
     // Debug
     void                    DebugEcho                       ( const char* szText );
     void                    DebugPrintf                     ( const char* szFormat, ... );
     void                    SetDebugVisible                 ( bool bVisible );
-    bool                    IsDebugVisible                  ( void );
+    bool                    IsDebugVisible                  ();
     void                    DebugEchoColor                  ( const char* szText, unsigned char R, unsigned char G, unsigned char B );
     void                    DebugPrintfColor                ( const char* szFormat, unsigned char R, unsigned char G, unsigned char B, ... );
-    void                    DebugClear                      ( void );
+    void                    DebugClear                      ();
 
     // Chat
     void                    ChatEcho                        ( const char* szText, bool bColorCoded = false );
@@ -118,33 +119,33 @@ public:
     void                    ChatPrintf                      ( const char* szFormat, bool bColorCoded, ... );
     void                    ChatPrintfColor                 ( const char* szFormat, bool bColorCoded, unsigned char R, unsigned char G, unsigned char B, ... );
     void                    SetChatVisible                  ( bool bVisible );
-    bool                    IsChatVisible                   ( void );
+    bool                    IsChatVisible                   ();
     void                    EnableChatInput                 ( char* szCommand, DWORD dwColor );
-    bool                    IsChatInputEnabled              ( void );
+    bool                    IsChatInputEnabled              ();
 
     // Screenshots
-    void                    TakeScreenShot                  ( void );
+    void                    TakeScreenShot                  ();
 
     // GUI
-    bool                    IsSettingsVisible               ( void );
-    bool                    IsMenuVisible                   ( void );
-    bool                    IsCursorForcedVisible           ( void );
-    bool                    IsCursorControlsToggled         ( void ) { return m_bCursorToggleControls; }
-    void                    HideMainMenu                    ( void );
-    void                    HideQuickConnect                ( void );
+    bool                    IsSettingsVisible               ();
+    bool                    IsMenuVisible                   ();
+    bool                    IsCursorForcedVisible           ();
+    bool                    IsCursorControlsToggled         () { return m_bCursorToggleControls; }
+    void                    HideMainMenu                    ();
+    void                    HideQuickConnect                ();
     void                    SetCenterCursor                 ( bool bEnabled );
 
     void                    ShowServerInfo                  ( unsigned int WindowType );
 
     // Configuration
-    void                    ApplyConsoleSettings            ( void );
-    void                    ApplyGameSettings               ( void );
-    void                    ApplyCommunityState             ( void );
-    void                    UpdateRecentlyPlayed            ( void );
+    void                    ApplyConsoleSettings            ();
+    void                    ApplyGameSettings               ();
+    void                    ApplyCommunityState             ();
+    void                    UpdateRecentlyPlayed            ();
 
     // Net
     void                    SetConnected                    ( bool bConnected );
-    bool                    IsConnected                     ( void );
+    bool                    IsConnected                     ();
     bool                    Reconnect                       ( const char* szHost, unsigned short usPort, const char* szPassword, bool bSave = true );
 
     // Mod
@@ -153,77 +154,78 @@ public:
     void                    SetMessageProcessor             ( pfnProcessMessage pfnMessageProcessor );
     void                    ShowMessageBox                  ( const char* szTitle, const char* szText, unsigned int uiFlags, GUI_CALLBACK * ResponseHandler = NULL );
     void                    RemoveMessageBox                ( bool bNextFrame = false );
-    bool                    IsOfflineMod                    ( void ) { return m_bIsOfflineMod; }
+    bool                    IsOfflineMod                    () { return m_bIsOfflineMod; }
     const char *            GetModInstallRoot               ( const char * szModName );
+    CFileTranslator*        GetModRoot                      ()  { return m_modRoot; }
 
 
     // Subsystems
-    void                    CreateGame                      ( void );
-    void                    CreateMultiplayer               ( void );
-    void                    CreateNetwork                   ( void );
-    void                    CreateXML                       ( void );
+    void                    CreateGame                      ();
+    void                    CreateMultiplayer               ();
+    void                    CreateNetwork                   ();
+    void                    CreateXML                       ();
     void                    InitGUI                         ( IUnknown* pDevice );
-    void                    CreateGUI                       ( void );
-    void                    DestroyGame                     ( void );
-    void                    DestroyMultiplayer              ( void );
-    void                    DestroyNetwork                  ( void );
-    void                    DestroyXML                      ( void );
-    void                    DeinitGUI                       ( void );
-    void                    DestroyGUI                      ( void );
+    void                    CreateGUI                       ();
+    void                    DestroyGame                     ();
+    void                    DestroyMultiplayer              ();
+    void                    DestroyNetwork                  ();
+    void                    DestroyXML                      ();
+    void                    DeinitGUI                       ();
+    void                    DestroyGUI                      ();
 
     // Hooks
-    void                    ApplyHooks                      ( void );
-    HWND                    GetHookedWindow                 ( void );
+    void                    ApplyHooks                      ();
+    HWND                    GetHookedWindow                 ();
     void                    SwitchRenderWindow              ( HWND hWnd, HWND hWndInput );
     void                    CallSetCursorPos                ( int X, int Y ) { m_pSetCursorPosHook->CallSetCursorPos(X,Y); }
     void                    SetClientMessageProcessor       ( pfnProcessMessage pfnMessageProcessor ) { m_pfnMessageProcessor = pfnMessageProcessor; };
     pfnProcessMessage       GetClientMessageProcessor       ( void ) { return m_pfnMessageProcessor; }
     void                    ChangeResolution                ( long width, long height, long depth );
-    void                    ApplyLoadingCrashPatch          ( void );
+    void                    ApplyLoadingCrashPatch          ();
 
-    bool                    IsFocused                       ( void )                        { return ( GetForegroundWindow ( ) == GetHookedWindow ( ) ); };
-    bool                    IsWindowMinimized               ( void );
+    bool                    IsFocused                       ()                        { return ( GetForegroundWindow ( ) == GetHookedWindow ( ) ); };
+    bool                    IsWindowMinimized               ();
 
     // Pulse
-    void                    DoPreFramePulse                 ( void );
-    void                    DoPostFramePulse                ( void );
+    void                    DoPreFramePulse                 ();
+    void                    DoPostFramePulse                ();
 
     // Events
     bool                    OnMouseClick                    ( CGUIMouseEventArgs Args );
     bool                    OnMouseDoubleClick              ( CGUIMouseEventArgs Args );
-    void                    OnModUnload                     ( void );
+    void                    OnModUnload                     ();
 
     // Misc
-    void                    RegisterCommands                ( void );
+    void                    RegisterCommands                ();
     bool                    IsValidNick                     ( const char* szNick );     // Move somewhere else
     void                    Quit                            ( bool bInstantly = true );
     void                    InitiateUpdate                  ( const char* szType, const char* szData, const char* szHost )      { m_pLocalGUI->InitiateUpdate ( szType, szData, szHost ); }
     bool                    IsOptionalUpdateInfoRequired    ( const char* szHost )                          { return m_pLocalGUI->IsOptionalUpdateInfoRequired ( szHost ); }
-    void                    InitiateDataFilesFix            ( void )                                        { m_pLocalGUI->InitiateDataFilesFix (); }
+    void                    InitiateDataFilesFix            ()                                        { m_pLocalGUI->InitiateDataFilesFix (); }
 
-    uint                    GetFrameRateLimit               ( void )                                        { return m_uiFrameRateLimit; }
+    uint                    GetFrameRateLimit               ()                                        { return m_uiFrameRateLimit; }
     void                    RecalculateFrameRateLimit       ( uint uiServerFrameRateLimit = -1 );
     void                    ApplyFrameRateLimit             ( uint uiOverrideRate = -1 );
-    void                    EnsureFrameRateLimitApplied     ( void );
+    void                    EnsureFrameRateLimitApplied     ();
 
-    uint                    GetMinStreamingMemory           ( void );
-    uint                    GetMaxStreamingMemory           ( void );
+    uint                    GetMinStreamingMemory           ();
+    uint                    GetMaxStreamingMemory           ();
 
     SString                 GetConnectCommandFromURI        ( const char* szURI );  
     void                    GetConnectParametersFromURI     ( const char* szURI, std::string &strHost, unsigned short &usPort, std::string &strNick, std::string &strPassword );
     bool                    bScreenShot;
     std::map < std::string, std::string > & GetCommandLineOptions ( void ) { return m_CommandLineOptions; }
     const char *            GetCommandLineOption            ( const char* szOption );
-    const char *            GetCommandLineArgs              ( void ) { return m_szCommandLineArgs; }
-    void                    RequestNewNickOnStart           ( void ) { m_bWaitToSetNick = true; };
+    const char *            GetCommandLineArgs              () { return m_szCommandLineArgs; }
+    void                    RequestNewNickOnStart           () { m_bWaitToSetNick = true; };
 
     //XFire
-    SString                 UpdateXfire                     ( void );
+    SString                 UpdateXfire                     ();
     void                    SetCurrentServer                ( in_addr Addr, unsigned short usQueryPort );
     void                    SetXfireData                    ( std::string strServerName, std::string strVersion, bool bPassworded, std::string strGamemode, std::string strMap, std::string strPlayerName, std::string strPlayerCount );
 
-    void                    OnPreHUDRender                  ( void );
-    void                    OnDeviceRestore                 ( void );
+    void                    OnPreHUDRender                  ();
+    void                    OnDeviceRestore                 ();
 
 private:
     // Core devices.
@@ -261,6 +263,7 @@ private:
 
     // Mod manager
     CModManager*                m_pModManager; 
+    CFileTranslator*            m_modRoot;
 
     // Module interfaces.
     CGame *                     m_pGame;

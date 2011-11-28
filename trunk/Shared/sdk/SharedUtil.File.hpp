@@ -11,42 +11,11 @@
 *****************************************************************************/
 
 #ifdef WIN32
-    #include "shellapi.h"
-    #include "shlobj.h"
+#include "shellapi.h"
+#include "shlobj.h"
 #else
-    #include <dirent.h>
+#include <dirent.h>
 #endif
-
-//
-// Ensure all directories exist to the file
-//
-void SharedUtil::MakeSureDirExists ( const SString& strPath )
-{
-    std::vector < SString > parts;
-    PathConform ( strPath ).Split ( PATH_SEPERATOR, parts );
-
-    // Find first dir that already exists
-    int idx = parts.size () - 1;
-    for ( ; idx >= 0 ; idx-- )
-    {
-        SString strTemp = SString::Join ( PATH_SEPERATOR, parts, 0, idx );
-        if ( DirectoryExists ( strTemp ) )
-            break;        
-    }
-
-    // Make non existing dirs only
-    idx++;
-    for ( ; idx < (int)parts.size () ; idx++ )
-    {
-        SString strTemp = SString::Join ( PATH_SEPERATOR, parts, 0, idx );
-        // Call mkdir on this path
-        #ifdef WIN32
-            mkdir ( strTemp );
-        #else
-            mkdir ( strTemp ,0775 );
-        #endif
-    }
-}
 
 SString SharedUtil::PathConform ( const SString& strPath )
 {

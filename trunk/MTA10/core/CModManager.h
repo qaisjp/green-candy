@@ -25,6 +25,7 @@
 
 class CModManager : public CModManagerInterface, public CSingleton < CModManager >
 {
+    friend class CCore;
 public:
                         CModManager             ( void );
                         ~CModManager            ( void );

@@ -496,74 +496,66 @@ CEffectWrap* NewEffectWrap ( CRenderItemManager* pManager, const SString& strFil
 }
 
 
-namespace
+// Helper class for D3DXCreateEffectFromFile() to ensure includes are correctly found and don't go outside the resource directory
+class CIncludeManager : public ID3DXInclude
 {
-    // Helper class for D3DXCreateEffectFromFile() to ensure includes are correctly found and don't go outside the resource directory
-    class CIncludeManager : public ID3DXInclude
+    SString m_strRootPath;
+    SString m_strCurrentPath;
+public:
+    SString m_strReport;
+
+    CIncludeManager::CIncludeManager( const SString& strRootPath, const SString& strCurrentPath )
     {
-        SString m_strRootPath;
-        SString m_strCurrentPath;
-    public:
-        SString m_strReport;
+        m_strRootPath = strRootPath;
+        m_strCurrentPath = strCurrentPath;
+    }
 
-        CIncludeManager::CIncludeManager( const SString& strRootPath, const SString& strCurrentPath )
+    STDMETHOD(Open)( D3DXINCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes )
+    {
+        SString path;
+
+        // We need a static path
+        if ( !mtaFileRoot->GetFullPath( pFileName, true, path ) )
         {
-            m_strRootPath = strRootPath;
-            m_strCurrentPath = strCurrentPath;
+            SString msg( "[CIncludeManager: Invalid path '%s'", pFileName );
+            m_strReport += msg;
+            OutputDebugLine( msg );
+            return E_FAIL;
         }
 
-        STDMETHOD(Open)(D3DXINCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes)
+        // Load file
+        std::vector <char> buffer;
+
+        if ( !mtaFileRoot->ReadToBuffer( pFileName, buffer ) )
         {
-            SString strPathFilename = PathConform ( pFileName );
-
-            // Prepend file name with m_strRootPath + m_strCurrentPath, unless it starts with a PATH_SEPERATOR, then just prepend m_strRootPath
-            if ( strPathFilename.Left ( 1 ) == PATH_SEPERATOR )
-                strPathFilename = PathJoin ( m_strRootPath, strPathFilename );
-            else
-                strPathFilename = PathJoin ( m_strRootPath, m_strCurrentPath, strPathFilename );
-
-            // Check for illegal characters
-            if ( strPathFilename.Contains ( ".." ) )
-            {
-                SString strMsg ( "[CIncludeManager: Illegal path %s]", *strPathFilename );
-                m_strReport += strMsg;
-                OutputDebugLine ( strMsg );
-                return E_FAIL;
-            }
-
-            // Load file
-            std::vector < char > buffer;
-            if ( !FileLoad ( strPathFilename, buffer ) )
-            {
-                SString strMsg ( "[CIncludeManager: Can't find %s]", *strPathFilename );
-                m_strReport += strMsg;
-                OutputDebugLine ( strMsg );
-                return E_FAIL;
-            }
-
-            // Allocate memory for file contents
-            uint uiSize = buffer.size ();
-            BYTE* pData = static_cast < BYTE* > ( malloc ( uiSize ) );
-            memcpy( pData, &buffer[0], uiSize );
-
-            // Set result
-            *ppData = pData;
-            *pBytes = uiSize;
-
-            if ( !m_strReport.ContainsI ( strPathFilename ) )
-                m_strReport += SString ( "[Loaded '%s' (%d bytes)]", *strPathFilename, uiSize );
-
-            return S_OK;
+            SString strMsg ( "[CIncludeManager: Can't find %s]", *path );
+            m_strReport += strMsg;
+            OutputDebugLine( strMsg );
+            return E_FAIL;
         }
 
-        STDMETHOD(Close)(LPCVOID pData)
-        {
-            // Free memory allocated for file contents
-            delete pData;
-            return S_OK;
-        }
-    };
-}
+        // Allocate memory for file contents
+        BYTE* pData = (BYTE*)malloc( buffer.size() );
+        memcpy( pData, &buffer[0], buffer.size() );
+
+        // Set result
+        *ppData = pData;
+        *pBytes = buffer.size();
+
+        if ( !m_strReport.ContainsI( path ) )
+            m_strReport += SString ( "[Loaded '%s' (%d bytes)]", *path, buffer.size() );
+
+        return S_OK;
+    }
+
+    STDMETHOD(Close)( LPCVOID pData )
+    {
+        // Free memory allocated for file contents
+        free( (void*)pData );
+
+        return S_OK;
+    }
+};
 
 
 ////////////////////////////////////////////////////////////////
@@ -741,16 +733,17 @@ void CEffectWrapImpl::CreateUnderlyingData ( const SString& strFilename, const S
     {
         // Disassemble effect
         LPD3DXBUFFER pDisassembly = NULL;
+
         if ( SUCCEEDED( D3DXDisassembleEffect( m_pD3DEffect, false, &pDisassembly ) ) && pDisassembly )
         {
             LPVOID pData = pDisassembly->GetBufferPointer();
             DWORD Size = pDisassembly->GetBufferSize();
 
-            if( pData && Size )
+            if ( pData && Size )
             {
                 SString strDisassemblyContents;
                 strDisassemblyContents.assign ( (const char*)pData, Size - 1 );
-                FileSave ( strFilename + ".dis", strDisassemblyContents );
+                mtaFileRoot->WriteData( strFilename + ".dis", *strDisassemblyContents, strDisassemblyContents.size() );
             }
 
             SAFE_RELEASE( pDisassembly );

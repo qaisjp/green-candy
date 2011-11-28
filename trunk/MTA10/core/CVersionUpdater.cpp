@@ -1,10 +1,11 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CVersionUpdater.cpp
 *  PURPOSE:     Version update check and message dialog class
 *  DEVELOPERS:  You're only supposed to blow the bloody doors off.
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -14,6 +15,7 @@
 #include "CVersionUpdater.Util.hpp"
 #include "CNewsBrowser.h"
 
+extern CCore *g_pCore;
 
 ///////////////////////////////////////////////////////////////
 //
@@ -41,6 +43,9 @@ public:
     virtual void        InitiateSidegradeLaunch             ( const SString& strVersion, const SString& strHost, ushort usPort, const SString& strName, const SString& strPassword );
     virtual void        GetBlockedVersionMap                ( std::map < SString, int >& outBlockedVersionMap );
     virtual void        GetNewsSettings                     ( SString& strOutOldestPost, uint& uiOutMaxHistoryLength );
+
+    void                GetValidCached                      ( const char *path, std::list <SString>& output );
+    CFile*              OpenCached                          ( const char *path, const char *mode );
 
     // CVersionUpdater functions
     bool                EnsureLoadedConfigFromXML           ( void );
@@ -2165,6 +2170,77 @@ void CVersionUpdater::_UseDataFilesURLs ( void )
     m_JobInfo.serverList = MakeServerList ( m_MasterConfig.gtadatafiles.serverInfoMap );
 }
 
+///////////////////////////////////////////////////////////////
+//
+// CVersionUpdater::GetValidCached
+//
+// Put valid cache paths into vector
+//
+///////////////////////////////////////////////////////////////
+void CVersionUpdater::GetValidCached( const char *path, std::list <SString>& output )
+{
+    std::string parsed;
+    std::string location = "upcache/";
+
+    location += path;
+
+    // Try MTA:SA data dir
+    if ( dataFileRoot->GetFullPath( location.c_str(), true, parsed ) )
+    {
+        output.push_back( parsed );
+
+        parsed.clear();
+    }
+
+    // Try temporary cache dir
+    if ( tempFileRoot->GetFullPath( location.c_str(), true, parsed ) )
+    {
+        output.push_back( parsed );
+
+        parsed.clear();
+    }
+
+    // Try temporary dir
+    if ( tempFileRoot->GetFullPath( path, true, parsed ) )
+    {
+        output.push_back( parsed );
+
+        parsed.clear();
+    }
+
+    if ( mtaFileRoot->GetFullPath( location.c_str(), true, parsed ) )
+        output.push_back( parsed );
+}
+
+///////////////////////////////////////////////////////////////
+//
+// CVersionUpdater::OpenCached
+//
+// Try default cache positions
+//
+///////////////////////////////////////////////////////////////
+CFile* CVersionUpdater::OpenCached( const char *path, const char *mode )
+{
+    CFile *file;
+    std::string location = "upcache/";
+
+    location += path;
+
+    // Try MTA:SA data dir
+    if ( file = dataFileRoot->Open( location.c_str(), mode ) )
+        return file;
+
+    // Try temporary cache dir
+    if ( file = tempFileRoot->Open( location.c_str(), mode ) )
+        return file;
+
+    // Try temporary dir
+    if ( file = tempFileRoot->Open( m_JobInfo.strFilename, mode ) )
+        return file;
+
+    // I hope it never reaches this point
+    return mtaFileRoot->Open( location.c_str(), mode );
+}
 
 ///////////////////////////////////////////////////////////////
 //
@@ -2175,6 +2251,8 @@ void CVersionUpdater::_UseDataFilesURLs ( void )
 ///////////////////////////////////////////////////////////////
 void CVersionUpdater::_ProcessPatchFileDownload ( void )
 {
+    CFile *cached;
+
     // Check if the saved filename has already been set
     if ( !m_JobInfo.strSaveLocation.empty () )
         return;
@@ -2219,44 +2297,27 @@ void CVersionUpdater::_ProcessPatchFileDownload ( void )
     ////////////////////////
     // Save file somewhere
     // Make a list of possible places to save the file
-    SString strPathFilename;
+    // NOTE: Security patch applied
+    if ( !( cached = OpenCached( m_JobInfo.strFilename, "wb" ) ) )
     {
-        std::list < SString > saveLocationList;
-        saveLocationList.push_back ( PathJoin ( GetMTADataPath (), "upcache", m_JobInfo.strFilename ) );
-        saveLocationList.push_back ( PathJoin ( GetMTATempPath (), "upcache", m_JobInfo.strFilename ) );
-        saveLocationList.push_back ( GetMTATempPath () + m_JobInfo.strFilename );
-        saveLocationList.push_back ( PathJoin ( "\\temp", m_JobInfo.strFilename ) );
-
-        // Try each place
-        for ( std::list < SString > ::iterator iter = saveLocationList.begin () ; iter != saveLocationList.end () ; ++iter )
-        {
-            const SString strSaveLocation = MakeUniquePath ( *iter );
-            MakeSureDirExists ( strSaveLocation );
-            if ( FileSave ( strSaveLocation, pData, uiSize ) )
-            {
-                strPathFilename = strSaveLocation;
-                break;
-            }
-
-            AddReportLog ( 5004, SString ( "DoPollDownload: Unable to use the path %s", strSaveLocation.c_str() ) );
-        }
-    }
-
-    if ( strPathFilename.length () == 0 )
-    {
-        if ( m_JobInfo.serverList.size () )
+        // Okay, nothing worked. IT'S A TRAP
+        if ( !m_JobInfo.serverList.empty() )
             ListRemoveIndex( m_JobInfo.serverList, m_JobInfo.iCurrent-- );
+
         m_ConditionMap.SetCondition ( "Download", "Fail", "Saving" );
-        AddReportLog ( 5005, SString ( "DoPollDownload: Unable to save the file %s (size %d)", m_JobInfo.strFilename.c_str (), uiSize ) );
+        AddReportLog ( 5005, SString ( "DoPollDownload: Unable to save the file %s (size %d)", m_JobInfo.strFilename.c_str(), uiSize ) );
         return;
     }
+
+    assert( cached->Write( pData, uiSize, 1 ) );
     ////////////////////////
 
-    m_JobInfo.strSaveLocation = strPathFilename;
+    m_JobInfo.strSaveLocation = cached->GetPath();
     m_ConditionMap.SetCondition ( "Download", "Ok" );
-    AddReportLog ( 2007, SString ( "DoPollDownload: Downloaded %s", m_JobInfo.strSaveLocation.c_str() ) );
-}
+    AddReportLog( 2007, SString ( "DoPollDownload: Downloaded %s", m_JobInfo.strSaveLocation.c_str() ) );
 
+    delete cached;
+}
 
 ///////////////////////////////////////////////////////////////
 //
@@ -2267,85 +2328,84 @@ void CVersionUpdater::_ProcessPatchFileDownload ( void )
 ///////////////////////////////////////////////////////////////
 void CVersionUpdater::_StartDownload ( void )
 {
-    if ( ! m_JobInfo.strFilename.empty () )
+    if ( !m_JobInfo.strFilename.empty() )
     {
         // See if file already exists in upcache
-        std::list < SString > saveLocationList;
-        saveLocationList.push_back ( PathJoin ( GetMTADataPath (), "upcache", m_JobInfo.strFilename ) );
-        saveLocationList.push_back ( PathJoin ( GetMTATempPath (), "upcache", m_JobInfo.strFilename ) );
-        saveLocationList.push_back ( GetMTATempPath () + m_JobInfo.strFilename );
-        saveLocationList.push_back ( PathJoin ( "\\temp", m_JobInfo.strFilename ) );
+        std::list <SString> saveLocationList;
+
+        GetValidCached( m_JobInfo.strFilename, saveLocationList );
 
         // Try each place
-        for ( std::list < SString > ::iterator iter = saveLocationList.begin () ; iter != saveLocationList.end () ; ++iter )
+        for ( std::list <SString>::iterator iter = saveLocationList.begin(); iter != saveLocationList.end(); ++iter )
         {
             SString strPath, strFilename;
-            ExtractFilename ( *iter, &strPath, &strFilename );
             SString strMain;
-            if ( ExtractExtention ( *iter, &strMain, NULL ) )
+
+            // Transform the filename
+            ExtractFilename ( *iter, &strPath, &strFilename );
+            ExtractExtention ( *iter, &strMain, NULL );
+
+            std::vector <SString> fileList = FindFiles( strMain + "*", true, false );
+
+            for ( std::vector <SString>::iterator iter = fileList.begin(); iter != fileList.end(); ++iter )
             {
-                std::vector < SString > fileList = FindFiles ( strMain + "*", true, false );
+                SString strPathFilename = PathJoin ( strPath, *iter );
+                std::vector <char> buffer;
 
-                for ( std::vector < SString > ::iterator iter = fileList.begin () ; iter != fileList.end () ; ++iter )
+                // Check filesize
+                if ( g_pCore->GetFileSystem()->Size( strPathFilename ) != m_JobInfo.iFilesize )
+                    continue;
+
+                g_pCore->GetFileSystem()->ReadToBuffer( strPathFilename, buffer );
+
+                // Check MD5
+                // Hash data
+                MD5 md5Result;
+                char szMD5[33];
+
+                CMD5Hasher().Calculate( &buffer[0], buffer.size(), md5Result );
+                CMD5Hasher::ConvertToHex( md5Result, szMD5 );
+
+                if ( m_JobInfo.strMD5 != szMD5 )
                 {
-                    // Check filesize and then md5 and then verify signature and then use that file
-                    SString strPathFilename = PathJoin ( strPath, *iter );
-
-                    // Check filesize
-                    if ( FileSize ( strPathFilename ) != m_JobInfo.iFilesize )
-                        continue;
-
-                    CBuffer buffer;
-                    buffer.LoadFromFile ( strPathFilename );
-
-                    // Check MD5
-                    // Hash data
-                    MD5 md5Result;
-                    CMD5Hasher().Calculate ( buffer.GetData (), buffer.GetSize (), md5Result );
-                    char szMD5[33];
-                    CMD5Hasher::ConvertToHex ( md5Result, szMD5 );
-                    if ( m_JobInfo.strMD5 != szMD5 )
-                    {
-                        AddReportLog ( 5807, SString ( "StartDownload: Cached file reuse - Size correct, but md5 did not match (%s)", *strPathFilename ) );
-                        continue;
-                    }
-
-                    // Check signature
-                    if ( !CCore::GetSingleton ().GetNetwork ()->VerifySignature ( buffer.GetData (), buffer.GetSize () ) )
-                    {
-                        AddReportLog ( 5808, SString ( "StartDownload: Cached file reuse - Size and md5 correct, but signature incorrect (%s)", *strPathFilename ) );
-                        continue;
-                    }
-
-                    // Reuse file now
-                    m_JobInfo.strSaveLocation = strPathFilename;
-                    m_ConditionMap.SetCondition ( "ProcessResponse", "" );
-                    m_ConditionMap.SetCondition ( "Download", "Ok" );
-                    AddReportLog ( 5809, SString ( "StartDownload: Cached file reuse - Size, md5 and signature correct (%s)", *strPathFilename ) );
-                    return;
+                    AddReportLog ( 5807, SString ( "StartDownload: Cached file reuse - Size correct, but md5 did not match (%s)", *strPathFilename ) );
+                    continue;
                 }
+
+                // Check signature
+                if ( !CCore::GetSingleton().GetNetwork()->VerifySignature( &buffer[0], buffer.size() ) )
+                {
+                    AddReportLog ( 5808, SString ( "StartDownload: Cached file reuse - Size and md5 correct, but signature incorrect (%s)", *strPathFilename ) );
+                    continue;
+                }
+
+                // Reuse file now
+                m_JobInfo.strSaveLocation = strPathFilename;
+                m_ConditionMap.SetCondition ( "ProcessResponse", "" );
+                m_ConditionMap.SetCondition ( "Download", "Ok" );
+                AddReportLog ( 5809, SString ( "StartDownload: Cached file reuse - Size, md5 and signature correct (%s)", *strPathFilename ) );
+                return;
             }
         }
     }
 
-    switch ( DoSendDownloadRequestToNextServer () )
+    switch( DoSendDownloadRequestToNextServer () )
     {
-        case RES_FAIL:
-            // Can't find any(more) servers to send a query to
-            // Drop back to previous stack level
+    case RES_FAIL:
+        // Can't find any(more) servers to send a query to
+        // Drop back to previous stack level
 
-            // Refresh master config as well
-            OnPossibleConfigProblem ();
-            break;
+        // Refresh master config as well
+        OnPossibleConfigProblem ();
+        return;
 
-        case RES_OK:
-            // Query sent ok, now wait for response
-            Push ( _PollDownload );
-            break;
-
-        default:
-            assert ( 0 );
+    case RES_OK:
+        // Query sent ok, now wait for response
+        Push ( _PollDownload );
+        return;
     }
+
+    assert( 0 );
 }
 
 
@@ -2358,52 +2418,47 @@ void CVersionUpdater::_StartDownload ( void )
 ///////////////////////////////////////////////////////////////
 void CVersionUpdater::_PollDownload ( void )
 {
-    switch ( DoPollDownload () )
+    switch ( DoPollDownload() )
     {
-        case RES_FAIL:
-            // Connection to current server failed, try next server
-            Push ( _StartDownload );
-            // Refresh master config as well
-            OnPossibleConfigProblem ();
-            break;
+    case RES_FAIL:
+        // Connection to current server failed, try next server
+        Push ( _StartDownload );
+        // Refresh master config as well
+        OnPossibleConfigProblem ();
+        return;
 
-        case RES_OK:
-            // Got a valid response
-            // Drop back to previous stack level for processing
-            break;
+    case RES_OK:
+        // Got a valid response
+        // Drop back to previous stack level for processing
+        return;
 
-        case RES_POLL:
-            // Waiting...
+    case RES_POLL:
+        // Waiting...
 
-            if ( GetQuestionBox ().IsVisible () )
+        if ( GetQuestionBox ().IsVisible () )
+        {
+            // Handle progress/cancel if visible
+            if ( GetQuestionBox ().PollButtons () == 0 )
             {
-                // Handle progress/cancel if visible
-                if ( GetQuestionBox ().PollButtons () == 0 )
-                {
-                    m_HTTP.Get ("");
-                    GetQuestionBox ().Reset ();
-                    m_ConditionMap.SetCondition ( "ProcessResponse", "cancel" );
-                    return;
-                }
-                if ( m_JobInfo.bShowDownloadPercent )
-                    GetQuestionBox ().SetMessage ( SString ( "%3d %% completed", m_JobInfo.uiBytesDownloaded * 100 / Max < unsigned int > ( 1, m_JobInfo.iFilesize ) ) );
-                if ( m_JobInfo.iIdleTime > 1000 && m_JobInfo.iIdleTimeLeft > 500 )
-                    GetQuestionBox ().AppendMessage ( SString ( "\n\nWaiting for response  -  %-3d", m_JobInfo.iIdleTimeLeft / 1000 ) );
-                else
-                    GetQuestionBox ().AppendMessage ( "" );
+                m_HTTP.Get ("");
+                GetQuestionBox ().Reset ();
+                m_ConditionMap.SetCondition ( "ProcessResponse", "cancel" );
+                return;
             }
+            if ( m_JobInfo.bShowDownloadPercent )
+                GetQuestionBox ().SetMessage ( SString ( "%3d %% completed", m_JobInfo.uiBytesDownloaded * 100 / Max < unsigned int > ( 1, m_JobInfo.iFilesize ) ) );
+            if ( m_JobInfo.iIdleTime > 1000 && m_JobInfo.iIdleTimeLeft > 500 )
+                GetQuestionBox ().AppendMessage ( SString ( "\n\nWaiting for response  -  %-3d", m_JobInfo.iIdleTimeLeft / 1000 ) );
+            else
+                GetQuestionBox ().AppendMessage ( "" );
+        }
 
-            Push ( _PollDownload );
-            break;
-
-        default:
-            assert ( 0 );
+        Push ( _PollDownload );
+        return;
     }
+
+    assert( 0 );
 }
-
-
-
-
 
 //
 //
@@ -2480,16 +2535,18 @@ void CVersionUpdater::_UseCrashDumpURLs ( void )
 //
 //
 ///////////////////////////////////////////////////////////////
-void CVersionUpdater::_UseCrashDumpPostContent ( void )
+void CVersionUpdater::_UseCrashDumpPostContent()
 {
     // Get filename to send
-    SString strPathFilename = GetApplicationSetting ( "diagnostics", "last-dump-save" );
+    SString strPathFilename = GetApplicationSetting( "diagnostics", "last-dump-save" );
+
     if ( !strPathFilename.length () )
         return;
-    SetApplicationSetting ( "diagnostics", "last-dump-save", "" );
+
+    SetApplicationSetting( "diagnostics", "last-dump-save", "" );
 
     // Get user pref
-    if ( GetApplicationSetting ( "diagnostics", "send-dumps" ) == "no" )
+    if ( GetApplicationSetting( "diagnostics", "send-dumps" ) == "no" )
         return;
 
     // Add to history
@@ -2511,15 +2568,13 @@ void CVersionUpdater::_UseCrashDumpPostContent ( void )
                 iDuplicates++;
 
         // Add to history
-        if ( iDuplicates <= m_MasterConfig.crashdump.iDuplicates )
-        {
-            SDataInfoItem item;
-            item.strName = strModuleAndOffset;
-            item.strValue = strDateAndTime;
-            history.push_back ( item );
-        }
-        else
+        if ( iDuplicates > m_MasterConfig.crashdump.iDuplicates )
             return;
+
+        SDataInfoItem item;
+        item.strName = strModuleAndOffset;
+        item.strValue = strDateAndTime;
+        history.push_back ( item );
 
         // Sort by date
         for ( int i = 0 ; i < (int)history.size () - 1 ; i++ )
@@ -2535,18 +2590,18 @@ void CVersionUpdater::_UseCrashDumpPostContent ( void )
 
         // Remove oldest if required
         int iNumToRemove = history.size () - m_MasterConfig.crashdump.iMaxHistoryLength;
+
         if ( iNumToRemove > 0 )
             history.erase ( history.begin (), history.begin () + iNumToRemove );
 
-        CCore::GetSingleton ().SaveConfig ();
+        CCore::GetSingleton().SaveConfig ();
     }
 
-
     // Load into post buffer
-    if ( FileLoad ( strPathFilename, m_JobInfo.postContent ) )
+    if ( g_pCore->GetFileSystem()->ReadToBuffer( strPathFilename, m_JobInfo.postContent ) )
     {
         // Set post filename without path
-        strPathFilename.Split ( PATH_SEPERATOR, NULL, &m_JobInfo.strPostFilename, -1 );
+        strPathFilename.Split( PATH_SEPERATOR, NULL, &m_JobInfo.strPostFilename, -1 );
         m_JobInfo.bPostContentBinary = true;
     }
 }
