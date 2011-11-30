@@ -162,12 +162,6 @@ void CLocalGUI::CreateObjects ( IUnknown* pDevice )
     }
 
     SetSkin(currentSkinName);
-
-    // Set the current directory.
-    FileTranslator.SetCurrentWorkingDirectory ( "MTA" );
-    FileTranslator.GetCurrentWorkingDirectory ( WorkingDirectory );
-    GetCurrentDirectory ( sizeof ( szCurDir ), szCurDir );
-    SetCurrentDirectory ( WorkingDirectory.c_str ( ) );
     
     // Create graphical wrapper object.
     WriteDebugEvent ( "Creating renderer wrapper..." );
@@ -175,28 +169,18 @@ void CLocalGUI::CreateObjects ( IUnknown* pDevice )
 
     // And lot it's fonts
     WriteDebugEvent ( "Loading font texture..." );
+
     if ( m_pRendererLibrary->LoadFontTextureFromFile ( "cgui\\sans.tga" ) )
-    {
         WriteDebugEvent ( "Font texture load successful!" );
-    }
     else
-    {
         WriteDebugEvent ( "Font texture load failure!" );
-    }
 
     if ( m_pRendererLibrary->LoadFontInfoFromFile ( "cgui\\sans.dat" ) )
-    {
         WriteDebugEvent ( "Font data load successful!" );
-    }
     else
-    {
         WriteDebugEvent ( "Font data load failure!" );
-    }
 
-    CreateWindows ( false );
-
-    // Return the old current dir.
-    SetCurrentDirectory ( szCurDir );
+    CreateWindows( false );
 }
 
 

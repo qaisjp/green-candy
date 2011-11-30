@@ -476,20 +476,20 @@ void CModManager::DumpMiniDump ( _EXCEPTION_POINTERS* pException, CExceptionInfo
 
     // Get path to mta dir
     SString strPathCode;
-    std::vector <std::string> parts;
+    dirTree parts;
     bool file;
 
     mtaFileRoot->GetFullPathTree( "/", parts, &file );
 
     for ( uint i = 0; i < parts.size(); i++ )
     {
-        if ( stricmp( parts[i].c_str(), "Program Files" ) == 0 )
+        if ( parts[i] == "Program Files" )
             strPathCode += "Pr";
-        else if ( stricmp( parts[i].c_str(), "Program Files (x86)" ) == 0 )
+        else if ( parts[i] == "Program Files (x86)" )
             strPathCode += "Px";
-        else if ( stricmp( parts[i].c_str(), "MTA San Andreas" ) == 0 )
+        else if ( parts[i] == "MTA San Andreas" )
             strPathCode += "Mt";
-        else if ( strstr( parts[i].c_str(), "MTA San Andreas" ) == parts[i].c_str() )
+        else if ( parts[i].find( "MTA San Andreas" ) == 0 )
             strPathCode += "Mb";
         else
             strPathCode += toupper( parts[i][1] );
@@ -514,7 +514,7 @@ void CModManager::DumpMiniDump ( _EXCEPTION_POINTERS* pException, CExceptionInfo
         SystemTime.wMinute));
 
     // For the dump uploader
-    SString dmpPath;
+    filePath dmpPath;
     mtaFileRoot->GetFullPath( "core.dmp", true, dmpPath );
 
     SetApplicationSetting( "diagnostics", "last-dump-save", dmpPath );
@@ -582,7 +582,7 @@ void CModManager::InitializeModList ( const char* szModFolderPath )
     // Variables used to search the mod directory
     WIN32_FIND_DATAA FindData;
     HANDLE hFind;
-    std::string modPath;
+    filePath modPath;
 
     if ( !modFileRoot->GetFullPath( szModFolderPath, false, modPath ) )
         return;
@@ -615,7 +615,7 @@ void CModManager::Clear ( void )
 
 void CModManager::VerifyAndAddEntry( const char* szModFolderPath, const char* szName )
 {
-    std::string modPath;
+    filePath modPath;
     HMODULE hDLL;
 
     // NOTE: We do not have to check for race anymore!

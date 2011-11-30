@@ -61,28 +61,28 @@ namespace CEGUI {
 class CGUI_Impl : public CGUI, public CGUITabList
 {
 public:
-                                    CGUI_Impl                   ( IDirect3DDevice9* pDevice );
-                                    ~CGUI_Impl                  ( void );
+                                    CGUI_Impl                   ( IDirect3DDevice9* pDevice, CCoreInterface *coreInterface );
+                                    ~CGUI_Impl                  ();
 
     void                            SetSkin                     ( const char* szName );
 
-    void                            Draw                        ( void );
-    void                            Invalidate                  ( void );
-    void                            Restore                     ( void );
+    void                            Draw                        ();
+    void                            Invalidate                  ();
+    void                            Restore                     ();
 
-    void                            DrawMouseCursor             ( void );
+    void                            DrawMouseCursor             ();
 
     void                            ProcessMouseInput           ( CGUIMouseInput eMouseInput, unsigned long ulX = 0, unsigned long ulY = 0, CGUIMouseButton eMouseButton = NoButton );
     void                            ProcessKeyboardInput        ( unsigned long ulKey, bool bIsDown );
     void                            ProcessCharacter            ( unsigned long ulCharacter );
 
     //
-    bool                            GetGUIInputEnabled          ( void );
+    bool                            GetGUIInputEnabled          ();
     void                            SetGUIInputMode             ( eInputMode a_eMode );
-    eInputMode                      GetGUIInputMode             ( void ); 
+    eInputMode                      GetGUIInputMode             (); 
     static CEGUI::String            GetUTFString                ( const char* szInput );
-    static CEGUI::String            GetUTFString                ( std::string strInput );
-    static CEGUI::String            GetUTFString                ( CEGUI::String strInput );
+    static CEGUI::String            GetUTFString                ( const std::string& strInput );
+    static CEGUI::String            GetUTFString                ( const CEGUI::String& strInput );
 
     //
     CGUIMessageBox*                 CreateMessageBox            ( const char* szTitle, const char* szMessage, unsigned int uiFlags );
@@ -115,15 +115,15 @@ public:
     CGUIStaticImage*                CreateStaticImage           ( CGUIElement* pParent );
     CGUIStaticImage*                CreateStaticImage           ( CGUITab* pParent );
     CGUIStaticImage*                CreateStaticImage           ( CGUIGridList* pParent );
-    CGUIStaticImage*                CreateStaticImage           ( void );
+    CGUIStaticImage*                CreateStaticImage           ();
 
     CGUITabPanel*                   CreateTabPanel              ( CGUIElement* pParent );
     CGUITabPanel*                   CreateTabPanel              ( CGUITab* pParent );
-    CGUITabPanel*                   CreateTabPanel              ( void );
+    CGUITabPanel*                   CreateTabPanel              ();
 
     CGUIScrollPane*                 CreateScrollPane            ( CGUIElement* pParent );
     CGUIScrollPane*                 CreateScrollPane            ( CGUITab* pParent );
-    CGUIScrollPane*                 CreateScrollPane            ( void );
+    CGUIScrollPane*                 CreateScrollPane            ();
 
     CGUIScrollBar*                  CreateScrollBar             ( bool bHorizontal, CGUIElement* pParent = NULL );
     CGUIScrollBar*                  CreateScrollBar             ( bool bHorizontal, CGUITab* pParent = NULL );
@@ -134,60 +134,58 @@ public:
 	CGUIWindow*                     CreateWnd                   ( CGUIElement* pParent = NULL, const char* szCaption = "" );
     //
 
-    CGUITexture*                    CreateTexture               ( void );
+    CGUITexture*                    CreateTexture               ();
     CGUIFont*                       CreateFnt                   ( const char* szFontName, const char* szFontFile, unsigned int uSize = 8, unsigned int uFlags = 0, bool bAutoScale = false );
 
     void                            SetCursorEnabled            ( bool bEnabled );
-    bool                            IsCursorEnabled             ( void );
+    bool                            IsCursorEnabled             ();
 
     void                            AddChild                    ( CGUIElement_Impl* pChild );
-    CEGUI::FontManager*             GetFontManager              ( void );
-    CEGUI::ImagesetManager*         GetImageSetManager          ( void );
-    CEGUI::Renderer*                GetRenderer                 ( void );
-    CEGUI::System*                  GetGUISystem                ( void );
-    CEGUI::SchemeManager*           GetSchemeManager            ( void );
-    CEGUI::WindowManager*           GetWindowManager            ( void );
+    CEGUI::FontManager*             GetFontManager              ();
+    CEGUI::ImagesetManager*         GetImageSetManager          ();
+    CEGUI::Renderer*                GetRenderer                 ();
+    CEGUI::System*                  GetGUISystem                ();
+    CEGUI::SchemeManager*           GetSchemeManager            ();
+    CEGUI::WindowManager*           GetWindowManager            ();
     void                            GetUniqueName               ( char* pBuf );
 
-    CVector2D                       GetResolution               ( void );
+    CVector2D                       GetResolution               ();
     void                            SetResolution               ( float fWidth, float fHeight );
 
-    CGUIFont*                       GetDefaultFont              ( void );
-    CGUIFont*                       GetSmallFont                ( void );
-    CGUIFont*                       GetBoldFont                 ( void );
-    CGUIFont*                       GetClearFont                ( void );
-    CGUIFont*                       GetSAHeaderFont             ( void );
-    CGUIFont*                       GetSAGothicFont             ( void );
-    CGUIFont*                       GetSansFont                 ( void );
+    CGUIFont*                       GetDefaultFont              ();
+    CGUIFont*                       GetSmallFont                ();
+    CGUIFont*                       GetBoldFont                 ();
+    CGUIFont*                       GetClearFont                ();
+    CGUIFont*                       GetSAHeaderFont             ();
+    CGUIFont*                       GetSAGothicFont             ();
+    CGUIFont*                       GetSansFont                 ();
     bool                            IsFontPresent               ( const char* szFont ) { return m_pFontManager->isFontPresent(szFont); }
 
-    void                            SetWorkingDirectory         ( const char * szDir );
-    inline const char*              GetWorkingDirectory         ( void )    { return const_cast < const char* > ( m_szWorkingDirectory ); }
-
-    void                            SetCharacterKeyHandler       ( eInputChannel channel, const GUI_CALLBACK_KEY & Callback )    { CHECK_CHANNEL ( channel ); m_CharacterKeyHandlers[ channel ] = Callback; }
-    void                            SetKeyDownHandler            ( eInputChannel channel, const GUI_CALLBACK_KEY & Callback )    { CHECK_CHANNEL ( channel ); m_KeyDownHandlers[ channel ] = Callback; }
-    void                            SetMouseClickHandler         ( eInputChannel channel, const GUI_CALLBACK_MOUSE & Callback )  { CHECK_CHANNEL ( channel ); m_MouseClickHandlers[ channel ] = Callback; }
-    void                            SetMouseDoubleClickHandler   ( eInputChannel channel, const GUI_CALLBACK_MOUSE & Callback )  { CHECK_CHANNEL ( channel ); m_MouseDoubleClickHandlers[ channel ] = Callback; }
-    void                            SetMouseButtonDownHandler    ( eInputChannel channel, const GUI_CALLBACK_MOUSE & Callback )  { CHECK_CHANNEL ( channel ); m_MouseButtonDownHandlers[ channel ] = Callback; }
-    void                            SetMouseButtonUpHandler      ( eInputChannel channel, const GUI_CALLBACK_MOUSE & Callback )  { CHECK_CHANNEL ( channel ); m_MouseButtonUpHandlers[ channel ] = Callback; }
-    void                            SetMouseMoveHandler          ( eInputChannel channel, const GUI_CALLBACK_MOUSE & Callback )  { CHECK_CHANNEL ( channel ); m_MouseMoveHandlers[ channel ] = Callback; }
-    void                            SetMouseEnterHandler         ( eInputChannel channel, const GUI_CALLBACK_MOUSE & Callback )  { CHECK_CHANNEL ( channel ); m_MouseEnterHandlers[ channel ] = Callback; }
-    void                            SetMouseLeaveHandler         ( eInputChannel channel, const GUI_CALLBACK_MOUSE & Callback )  { CHECK_CHANNEL ( channel ); m_MouseLeaveHandlers[ channel ] = Callback; }
-    void                            SetMouseWheelHandler         ( eInputChannel channel, const GUI_CALLBACK_MOUSE & Callback )  { CHECK_CHANNEL ( channel ); m_MouseWheelHandlers[ channel ] = Callback; }
-    void                            SetMovedHandler              ( eInputChannel channel, const GUI_CALLBACK & Callback )        { CHECK_CHANNEL ( channel ); m_MovedHandlers[ channel ] = Callback; }
-    void                            SetSizedHandler              ( eInputChannel channel, const GUI_CALLBACK & Callback )        { CHECK_CHANNEL ( channel ); m_SizedHandlers[ channel ] = Callback; }
-    void                            SetFocusGainedHandler        ( eInputChannel channel, const GUI_CALLBACK_FOCUS & Callback )  { CHECK_CHANNEL ( channel ); m_FocusGainedHandlers[ channel ] = Callback; }
-    void                            SetFocusLostHandler          ( eInputChannel channel, const GUI_CALLBACK_FOCUS & Callback )  { CHECK_CHANNEL ( channel ); m_FocusLostHandlers[ channel ] = Callback; }
+    void                            SetCharacterKeyHandler       ( eInputChannel channel, const GUI_CALLBACK_KEY& Callback )    { CHECK_CHANNEL ( channel ); m_CharacterKeyHandlers[ channel ] = Callback; }
+    void                            SetKeyDownHandler            ( eInputChannel channel, const GUI_CALLBACK_KEY& Callback )    { CHECK_CHANNEL ( channel ); m_KeyDownHandlers[ channel ] = Callback; }
+    void                            SetMouseClickHandler         ( eInputChannel channel, const GUI_CALLBACK_MOUSE& Callback )  { CHECK_CHANNEL ( channel ); m_MouseClickHandlers[ channel ] = Callback; }
+    void                            SetMouseDoubleClickHandler   ( eInputChannel channel, const GUI_CALLBACK_MOUSE& Callback )  { CHECK_CHANNEL ( channel ); m_MouseDoubleClickHandlers[ channel ] = Callback; }
+    void                            SetMouseButtonDownHandler    ( eInputChannel channel, const GUI_CALLBACK_MOUSE& Callback )  { CHECK_CHANNEL ( channel ); m_MouseButtonDownHandlers[ channel ] = Callback; }
+    void                            SetMouseButtonUpHandler      ( eInputChannel channel, const GUI_CALLBACK_MOUSE& Callback )  { CHECK_CHANNEL ( channel ); m_MouseButtonUpHandlers[ channel ] = Callback; }
+    void                            SetMouseMoveHandler          ( eInputChannel channel, const GUI_CALLBACK_MOUSE& Callback )  { CHECK_CHANNEL ( channel ); m_MouseMoveHandlers[ channel ] = Callback; }
+    void                            SetMouseEnterHandler         ( eInputChannel channel, const GUI_CALLBACK_MOUSE& Callback )  { CHECK_CHANNEL ( channel ); m_MouseEnterHandlers[ channel ] = Callback; }
+    void                            SetMouseLeaveHandler         ( eInputChannel channel, const GUI_CALLBACK_MOUSE& Callback )  { CHECK_CHANNEL ( channel ); m_MouseLeaveHandlers[ channel ] = Callback; }
+    void                            SetMouseWheelHandler         ( eInputChannel channel, const GUI_CALLBACK_MOUSE& Callback )  { CHECK_CHANNEL ( channel ); m_MouseWheelHandlers[ channel ] = Callback; }
+    void                            SetMovedHandler              ( eInputChannel channel, const GUI_CALLBACK& Callback )        { CHECK_CHANNEL ( channel ); m_MovedHandlers[ channel ] = Callback; }
+    void                            SetSizedHandler              ( eInputChannel channel, const GUI_CALLBACK& Callback )        { CHECK_CHANNEL ( channel ); m_SizedHandlers[ channel ] = Callback; }
+    void                            SetFocusGainedHandler        ( eInputChannel channel, const GUI_CALLBACK_FOCUS& Callback )  { CHECK_CHANNEL ( channel ); m_FocusGainedHandlers[ channel ] = Callback; }
+    void                            SetFocusLostHandler          ( eInputChannel channel, const GUI_CALLBACK_FOCUS& Callback )  { CHECK_CHANNEL ( channel ); m_FocusLostHandlers[ channel ] = Callback; }
 
     void                            SelectInputHandlers          ( eInputChannel channel )                                       { CHECK_CHANNEL ( channel ); m_Channel = channel; }
     void                            ClearInputHandlers           ( eInputChannel channel );
-    void                            ClearSystemKeys             ( void );
+    void                            ClearSystemKeys             ();
 
-    bool                            IsTransferBoxVisible        ( void )                                    { return m_bTransferBoxVisible; };
+    bool                            IsTransferBoxVisible        ()                                    { return m_bTransferBoxVisible; };
     void                            SetTransferBoxVisible       ( bool bVisible )                           { m_bTransferBoxVisible = bVisible; };
 
     bool                            Event_CharacterKey          ( const CEGUI::EventArgs& e );
     bool                            Event_KeyDown               ( const CEGUI::EventArgs& e );
+    CGUIMouseEventArgs              Event_GetMouseEventArgs     ( const CEGUI::EventArgs& e );
     bool                            Event_MouseClick            ( const CEGUI::EventArgs& e );
     bool                            Event_MouseDoubleClick      ( const CEGUI::EventArgs& e );
     bool                            Event_MouseButtonDown       ( const CEGUI::EventArgs& e );
@@ -205,9 +203,9 @@ public:
     void                            AddToRedrawQueue            ( CGUIElement* pWindow );
     void                            RemoveFromRedrawQueue       ( CGUIElement* pWindow );
 
-    void                            CleanDeadPool               ( void );
-    CGUIWindow*                     LoadLayout                  ( CGUIElement* pParent, const SString& strFilename );
-    bool                            LoadImageset                ( const SString& strFilename );
+    void                            CleanDeadPool               ();
+    CGUIWindow*                     LoadLayout                  ( CGUIElement* pParent, const filePath& strFilename );
+    bool                            LoadImageset                ( const filePath& strFilename );
 
 private:
     CGUIButton*                     _CreateButton               ( CGUIElement_Impl* pParent = NULL, const char* szCaption = "" );
@@ -268,8 +266,6 @@ private:
     GUI_CALLBACK_FOCUS              m_FocusLostHandlers[ INPUT_CHANNEL_COUNT ];
 
     eInputChannel                   m_Channel;
-
-    char                            m_szWorkingDirectory [ MAX_PATH + 1 ];
 
     bool                            m_bTransferBoxVisible;
 

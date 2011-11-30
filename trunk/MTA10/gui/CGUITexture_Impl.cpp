@@ -9,6 +9,7 @@
 *               Chris McArthur <>
 *               Jax <>
 *               Oli <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -33,23 +34,17 @@ CGUITexture_Impl::~CGUITexture_Impl ( void )
 }
 
 
-bool CGUITexture_Impl::LoadFromFile ( const char* szFilename )
+bool CGUITexture_Impl::LoadFromFile ( const char *filename )
 {
-    // Verify that the file exists
-    WIN32_FIND_DATA FindFileData;
-    HANDLE hFind = FindFirstFile ( szFilename, &FindFileData );
-    if ( hFind == INVALID_HANDLE_VALUE )
-    {
-        return false;
-    }
+    filePath path;
 
-    // Close the find
-    FindClose ( hFind );
+    if ( !guiRoot->GetFullPath( filename, true, path ) )
+        return false;
 
     // Try to load it
     try
     {
-        m_pTexture->loadFromFile ( szFilename, "" );
+        m_pTexture->loadFromFile ( path.c_str(), "" );
     }
     catch ( CEGUI::Exception )
     {

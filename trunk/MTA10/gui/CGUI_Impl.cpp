@@ -20,31 +20,31 @@ using std::list;
 #define CGUI_MTA_DEFAULT_FONT       "tahoma.ttf"        // %WINDIR%/font/<...>
 #define CGUI_MTA_DEFAULT_FONT_BOLD  "tahomabd.ttf"      // %WINDIR%/font/<...>
 #define CGUI_MTA_CLEAR_FONT         "verdana.ttf"       // %WINDIR%/font/<...>
-#define CGUI_MTA_SUBSTITUTE_FONT    "cgui/unifont-5.1.20080907.ttf"  // GTA/MTA/<...>
-#define CGUI_MTA_SANS_FONT          "cgui/sans.ttf"     // GTA/MTA/<...>
-#define CGUI_SA_HEADER_FONT         "cgui/saheader.ttf" // GTA/MTA/<...>
-#define CGUI_SA_GOTHIC_FONT         "cgui/sagothic.ttf" // GTA/MTA/<...>
+#define CGUI_MTA_SUBSTITUTE_FONT    "unifont-5.1.20080907.ttf"  // GTA/MTA/<...>
+#define CGUI_MTA_SANS_FONT          "sans.ttf"     // GTA/MTA/<...>
+#define CGUI_SA_HEADER_FONT         "saheader.ttf" // GTA/MTA/<...>
+#define CGUI_SA_GOTHIC_FONT         "sagothic.ttf" // GTA/MTA/<...>
 #define CGUI_SA_HEADER_SIZE         26
 #define CGUI_SA_GOTHIC_SIZE         47
 #define CGUI_MTA_SANS_FONT_SIZE     9
 
-CGUI_Impl::CGUI_Impl ( IDirect3DDevice9* pDevice )
+CCoreInterface *core;
+CFileTranslator *guiRoot;
+CFileTranslator *fontRoot;
+CFileTranslator *skinRoot;
+
+CGUI_Impl::CGUI_Impl ( IDirect3DDevice9* pDevice, CCoreInterface *coreInterface )
     : m_HasSchemeLoaded(false)
 {
+    // Set important globals
+    core = coreInterface;
+    guiRoot = core->GetFileSystem()->CreateTranslator( "" );
+    guiRoot->ChangeDirectory( "mta/cgui/" );
+    skinRoot = core->GetFileSystem()->CreateTranslator( "skins/" );
+
     // Init
     m_pDevice = pDevice;
-    /*
-    m_pCharacterKeyHandler = NULL;
-    m_pKeyDownHandler = NULL;
-    m_pMouseClickHandler = NULL;
-    m_pMouseDoubleClickHandler = NULL;
-    m_pMouseWheelHandler = NULL;
-    m_pMouseMoveHandler = NULL;
-    m_pMouseEnterHandler = NULL;
-    m_pMouseLeaveHandler = NULL;
-    m_pMovedHandler = NULL;
-    m_pSizedHandler = NULL;
-    */
+
     m_Channel = INPUT_CORE;
 
     // Create a GUI system and get the windowmanager
@@ -66,27 +66,44 @@ CGUI_Impl::CGUI_Impl ( IDirect3DDevice9* pDevice )
     CEGUI::Logger::getSingleton().setLogFilename ( "CEGUI.log" );
 
     // Load our fonts
-    SString strFontsPath = PathJoin ( SharedUtil::GetWindowsDirectory (), "fonts" );
+    filePath fonts = SharedUtil::GetWindowsDirectory();
+    fonts += "fonts/";
+
+    fontRoot = core->GetFileSystem()->CreateTranslator( fonts.c_str() );
 
     m_pFontManager->setSubstituteFont ( CGUI_MTA_SUBSTITUTE_FONT, 9 );
 
 	try
 	{
+        filePath defaultFont;
+        filePath defaultBold;
+        filePath clearFont;
+        filePath headerFont;
+        filePath gothicFont;
+        filePath sansFont;
 
-        m_pDefaultFont = (CGUIFont_Impl*) CreateFnt ( "default-normal", PathJoin ( strFontsPath, CGUI_MTA_DEFAULT_FONT ), 9, 0 );
-        m_pSmallFont = (CGUIFont_Impl*) CreateFnt ( "default-small", PathJoin ( strFontsPath, CGUI_MTA_DEFAULT_FONT ), 7, 0 );
+        // Prepare font definitions
+        fontRoot->GetFullPath( CGUI_MTA_DEFAULT_FONT, true, defaultFont );
+        fontRoot->GetFullPath( CGUI_MTA_DEFAULT_FONT_BOLD, true, defaultBold );
+        fontRoot->GetFullPath( CGUI_MTA_CLEAR_FONT, true, clearFont );
+        guiRoot->GetFullPath( CGUI_SA_HEADER_FONT, true, headerFont );
+        guiRoot->GetFullPath( CGUI_SA_GOTHIC_FONT, true, gothicFont );
+        guiRoot->GetFullPath( CGUI_MTA_SANS_FONT, true, sansFont );
 
-        m_pBoldFont = (CGUIFont_Impl*) CreateFnt ( "default-bold-small", PathJoin ( strFontsPath, CGUI_MTA_DEFAULT_FONT_BOLD ), 8, 0 );
+        m_pDefaultFont = (CGUIFont_Impl*)CreateFnt( "default-normal", defaultFont.c_str(), 9, 0 );
+        m_pSmallFont = (CGUIFont_Impl*)CreateFnt( "default-small", defaultFont.c_str(), 7, 0 );
 
-        m_pClearFont = (CGUIFont_Impl*) CreateFnt ( "clear-normal", PathJoin ( strFontsPath, CGUI_MTA_CLEAR_FONT ), 9 );
-        m_pSAHeaderFont = (CGUIFont_Impl*) CreateFnt ( "sa-header", CGUI_SA_HEADER_FONT, CGUI_SA_HEADER_SIZE, 0, true );
-        m_pSAGothicFont = (CGUIFont_Impl*) CreateFnt ( "sa-gothic", CGUI_SA_GOTHIC_FONT, CGUI_SA_GOTHIC_SIZE, 0, true );
-        m_pSansFont = (CGUIFont_Impl*) CreateFnt ( "sans", CGUI_MTA_SANS_FONT, CGUI_MTA_SANS_FONT_SIZE, 0, false );
+        m_pBoldFont = (CGUIFont_Impl*)CreateFnt( "default-bold-small", defaultBold.c_str(), 8, 0 );
+
+        m_pClearFont = (CGUIFont_Impl*)CreateFnt( "clear-normal", clearFont.c_str(), 9 );
+        m_pSAHeaderFont = (CGUIFont_Impl*)CreateFnt( "sa-header", headerFont.c_str(), CGUI_SA_HEADER_SIZE, 0, true );
+        m_pSAGothicFont = (CGUIFont_Impl*)CreateFnt( "sa-gothic", gothicFont.c_str(), CGUI_SA_GOTHIC_SIZE, 0, true );
+        m_pSansFont = (CGUIFont_Impl*)CreateFnt( "sans", sansFont.c_str(), CGUI_MTA_SANS_FONT_SIZE, 0, false );
 	}
 	catch ( CEGUI::InvalidRequestException e )
 	{
         SString strMessage = e.getMessage ().c_str ();
-        BrowseToSolution ( "create-fonts", true, true, true, SString ( "Error loading fonts!\n\n%s", *strMessage ) );
+        BrowseToSolution( "create-fonts", true, true, true, SString( "Error loading fonts!\n\n%s", *strMessage ) );
 	}
 }
 
@@ -98,24 +115,26 @@ CGUI_Impl::~CGUI_Impl ( void )
 
 void CGUI_Impl::SetSkin ( const char* szName )
 {
-    if(m_HasSchemeLoaded)
+    if (m_HasSchemeLoaded)
     {
-        CEGUI::GlobalEventSet::getSingletonPtr ()->removeAllEvents();
+        CEGUI::GlobalEventSet::getSingletonPtr()->removeAllEvents();
         CEGUI::SchemeManager::getSingleton().unloadScheme(m_CurrentSchemeName);
     }
 
-    // Load the GUI scheme
-    SString savedWorkingDirectory = GetCurrentWorkingDirectory();
-    SString skinDirectory = PathJoin ( m_szWorkingDirectory, "..", "skins", szName );
-    CEGUI::Logger::getSingleton().logEvent("Set skin directory to:");
-    CEGUI::Logger::getSingleton().logEvent(skinDirectory.c_str());
-    SetCurrentDirectory(skinDirectory);
+    std::string dir = szName;
+    dir += "/CGUI.xml";
 
-    CEGUI::Scheme* scheme = CEGUI::SchemeManager::getSingleton().loadScheme("CGUI.xml");
+    if ( !skinRoot->Exists( dir.c_str() ) )
+        return;
+
+    filePath skinDir;
+
+    if ( !skinRoot->GetFullPath( dir.c_str(), false, skinDir ) )
+        return;
+
+    CEGUI::Scheme* scheme = CEGUI::SchemeManager::getSingleton().loadScheme( skinDir.c_str() );
     m_CurrentSchemeName = scheme->getName().c_str();
     m_HasSchemeLoaded = true;
-
-    SetCurrentDirectory(savedWorkingDirectory);
 
     CEGUI::System::getSingleton().setDefaultMouseCursor("CGUI-Images", "MouseArrow");
 
@@ -143,9 +162,6 @@ void CGUI_Impl::SetSkin ( const char* szName )
     // Disallow input routing to the GUI
     m_eInputMode = INPUTMODE_ALLOW_BINDS;
 
-    // Reset the working directory
-    m_szWorkingDirectory[MAX_PATH] = 0;
-
     // The transfer box is not visible by default
     m_bTransferBoxVisible = false;
 }
@@ -172,19 +188,19 @@ void CGUI_Impl::SubscribeToMouseEvents()
     pEvents->subscribeEvent ( "Window/" + CEGUI::Window::EventDeactivated       , CEGUI::Event::Subscriber ( &CGUI_Impl::Event_FocusLost, this ) );
 }
 
-CVector2D CGUI_Impl::GetResolution ( void )
+CVector2D CGUI_Impl::GetResolution()
 {
     return CVector2D ( m_pRenderer->getWidth(), m_pRenderer->getHeight() );
 }
 
 
-void CGUI_Impl::SetResolution ( float fWidth, float fHeight )
+void CGUI_Impl::SetResolution( float fWidth, float fHeight )
 {
     reinterpret_cast < CEGUI::DirectX9Renderer* > ( m_pRenderer ) -> setDisplaySize ( CEGUI::Size ( fWidth, fHeight ) );
 }
 
 
-void CGUI_Impl::Draw ( void )
+void CGUI_Impl::Draw()
 {
     // Redraw the changed elements
     if ( !m_RedrawQueue.empty() )
@@ -229,28 +245,28 @@ void CGUI_Impl::ProcessMouseInput ( CGUIMouseInput eMouseInput, unsigned long ul
 {
     switch ( eMouseInput )
     {
-        case CGUI_MI_MOUSEMOVE:
-            m_pSystem->injectMouseMove ( static_cast < float > ( ulX ), static_cast < float > ( ulY ) );
-            break;
+    case CGUI_MI_MOUSEMOVE:
+        m_pSystem->injectMouseMove ( static_cast < float > ( ulX ), static_cast < float > ( ulY ) );
+        break;
 
-        case CGUI_MI_MOUSEPOS:
-            m_pSystem->injectMousePosition ( static_cast < float > ( ulX ), static_cast < float > ( ulY ) );
-            break;
+    case CGUI_MI_MOUSEPOS:
+        m_pSystem->injectMousePosition ( static_cast < float > ( ulX ), static_cast < float > ( ulY ) );
+        break;
 
-        case CGUI_MI_MOUSEDOWN:
-            m_pSystem->injectMouseButtonDown ( static_cast < CEGUI::MouseButton > ( eMouseButton ) );
-            break;
+    case CGUI_MI_MOUSEDOWN:
+        m_pSystem->injectMouseButtonDown ( static_cast < CEGUI::MouseButton > ( eMouseButton ) );
+        break;
 
-        case CGUI_MI_MOUSEUP:
-            m_pSystem->injectMouseButtonUp ( static_cast < CEGUI::MouseButton > ( eMouseButton ) );
-            break;
+    case CGUI_MI_MOUSEUP:
+        m_pSystem->injectMouseButtonUp ( static_cast < CEGUI::MouseButton > ( eMouseButton ) );
+        break;
 
-        case CGUI_MI_MOUSEWHEEL:
-            if ( (signed long)ulX > 0 )
-                m_pSystem->injectMouseWheelChange ( +1 );
-            else
-                m_pSystem->injectMouseWheelChange ( -1 );
-            break;
+    case CGUI_MI_MOUSEWHEEL:
+        if ( (long)ulX > 0 )
+            m_pSystem->injectMouseWheelChange ( +1 );
+        else
+            m_pSystem->injectMouseWheelChange ( -1 );
+        break;
     }
 }
 
@@ -258,13 +274,9 @@ void CGUI_Impl::ProcessMouseInput ( CGUIMouseInput eMouseInput, unsigned long ul
 void CGUI_Impl::ProcessKeyboardInput ( unsigned long ulKey, bool bIsDown )
 {
     if ( bIsDown )
-    {
         m_pSystem->injectKeyDown ( ulKey );
-    }
     else
-    {
         m_pSystem->injectKeyUp ( ulKey );
-    }
 }
 
 bool CGUI_Impl::GetGUIInputEnabled ( void )
@@ -273,33 +285,29 @@ bool CGUI_Impl::GetGUIInputEnabled ( void )
     {
     case INPUTMODE_ALLOW_BINDS:
         return false;
-        break;
     case INPUTMODE_NO_BINDS:
         return true;
-        break;
     case INPUTMODE_NO_BINDS_ON_EDIT:
-        {
-            CEGUI::Window* pActiveWindow = m_pTop->getActiveChild();
-            if (!pActiveWindow || pActiveWindow == m_pTop || !pActiveWindow->isVisible())
-            {
-                return false;
-            }
-            if (pActiveWindow->getType() == "CGUI/Editbox")
-            {
-                CEGUI::Editbox* pEditBox = reinterpret_cast<CEGUI::Editbox*>(pActiveWindow);
-                return (!pEditBox->isReadOnly() && pEditBox->hasInputFocus());
-            }
-            else if (pActiveWindow->getType() == "CGUI/MultiLineEditbox")
-            {
-                CEGUI::MultiLineEditbox* pMultiLineEditBox = reinterpret_cast<CEGUI::MultiLineEditbox*>(pActiveWindow);
-                return (!pMultiLineEditBox->isReadOnly() && pMultiLineEditBox->hasInputFocus());
-            }
+        CEGUI::Window* pActiveWindow = m_pTop->getActiveChild();
+
+        if (!pActiveWindow || pActiveWindow == m_pTop || !pActiveWindow->isVisible())
             return false;
+
+        if (pActiveWindow->getType() == "CGUI/Editbox")
+        {
+            CEGUI::Editbox* pEditBox = reinterpret_cast<CEGUI::Editbox*>(pActiveWindow);
+            return (!pEditBox->isReadOnly() && pEditBox->hasInputFocus());
         }
-        break;
-    default:
+        else if (pActiveWindow->getType() == "CGUI/MultiLineEditbox")
+        {
+            CEGUI::MultiLineEditbox* pMultiLineEditBox = reinterpret_cast<CEGUI::MultiLineEditbox*>(pActiveWindow);
+            return (!pMultiLineEditBox->isReadOnly() && pMultiLineEditBox->hasInputFocus());
+        }
+
         return false;
     }
+
+    return false;
 }
 
 void CGUI_Impl::SetGUIInputMode( eInputMode a_eMode )
@@ -307,165 +315,151 @@ void CGUI_Impl::SetGUIInputMode( eInputMode a_eMode )
     m_eInputMode = a_eMode;
 }
 
-eInputMode CGUI_Impl::GetGUIInputMode( void )
+eInputMode CGUI_Impl::GetGUIInputMode()
 {
     return m_eInputMode;
 }
 
-CEGUI::String CGUI_Impl::GetUTFString ( const char* szInput )
+CEGUI::String CGUI_Impl::GetUTFString( const char* szInput )
 {
     CEGUI::String strUTF = (CEGUI::utf8*)szInput; //Convert into a CEGUI String
     return GetUTFString ( strUTF );
 }
 
-CEGUI::String CGUI_Impl::GetUTFString ( const std::string strInput )
+CEGUI::String CGUI_Impl::GetUTFString( const std::string& strInput )
 {
     CEGUI::String strUTF = (CEGUI::utf8*)strInput.c_str(); //Convert into a CEGUI String
     return GetUTFString ( strUTF );
 }
 
-CEGUI::String CGUI_Impl::GetUTFString ( const CEGUI::String strInput )
+CEGUI::String CGUI_Impl::GetUTFString( const CEGUI::String& strInput )
 {
     return strInput.bidify();  // Bidify the string
 }
 
-void CGUI_Impl::ProcessCharacter ( unsigned long ulCharacter )
+void CGUI_Impl::ProcessCharacter( unsigned long ulCharacter )
 {
     m_pSystem->injectChar( ulCharacter );
 }
 
-
-CGUIMessageBox* CGUI_Impl::CreateMessageBox ( const char* szTitle, const char* szMessage, unsigned int uiFlags )
+CGUIMessageBox* CGUI_Impl::CreateMessageBox( const char* szTitle, const char* szMessage, unsigned int uiFlags )
 {
-    return new CGUIMessageBox_Impl ( this, szTitle, szMessage, uiFlags );
+    return new CGUIMessageBox_Impl( this, szTitle, szMessage, uiFlags );
 }
 
-
-CGUIButton* CGUI_Impl::_CreateButton ( CGUIElement_Impl* pParent, const char* szCaption )
+CGUIButton* CGUI_Impl::_CreateButton( CGUIElement_Impl* pParent, const char* szCaption )
 {
-    return new CGUIButton_Impl ( this, pParent, szCaption );
+    return new CGUIButton_Impl( this, pParent, szCaption );
 }
 
-
-CGUICheckBox* CGUI_Impl::_CreateCheckBox ( CGUIElement_Impl* pParent, const char* szCaption, bool bChecked )
+CGUICheckBox* CGUI_Impl::_CreateCheckBox( CGUIElement_Impl* pParent, const char* szCaption, bool bChecked )
 {
-    return new CGUICheckBox_Impl ( this, pParent, szCaption, bChecked );
+    return new CGUICheckBox_Impl( this, pParent, szCaption, bChecked );
 }
 
-
-CGUIRadioButton* CGUI_Impl::_CreateRadioButton ( CGUIElement_Impl* pParent, const char* szCaption )
+CGUIRadioButton* CGUI_Impl::_CreateRadioButton( CGUIElement_Impl* pParent, const char* szCaption )
 {
-    return new CGUIRadioButton_Impl ( this, pParent, szCaption );
+    return new CGUIRadioButton_Impl( this, pParent, szCaption );
 }
 
-
-CGUIEdit* CGUI_Impl::_CreateEdit ( CGUIElement_Impl* pParent, const char* szText )
+CGUIEdit* CGUI_Impl::_CreateEdit( CGUIElement_Impl* pParent, const char* szText )
 {
-    return new CGUIEdit_Impl ( this, pParent, szText );
+    return new CGUIEdit_Impl( this, pParent, szText );
 }
 
-
-CGUIFont* CGUI_Impl::CreateFnt ( const char* szFontName, const char* szFontFile, unsigned int uSize, unsigned int uFlags, bool bAutoScale )
+CGUIFont* CGUI_Impl::CreateFnt( const char* szFontName, const char* szFontFile, unsigned int uSize, unsigned int uFlags, bool bAutoScale )
 {
-    return new CGUIFont_Impl ( this, szFontName, szFontFile, uSize, uFlags, bAutoScale );
+    filePath path;
+
+    if ( !fontRoot->Exists( szFontFile ) || !fontRoot->GetFullPath( szFontFile, true, path ) )
+        return NULL;
+
+    return new CGUIFont_Impl( this, szFontName, path, uSize, uFlags, bAutoScale );
 }
 
-
-CGUIGridList* CGUI_Impl::_CreateGridList ( CGUIElement_Impl* pParent, bool bFrame )
+CGUIGridList* CGUI_Impl::_CreateGridList( CGUIElement_Impl* pParent, bool bFrame )
 {
-    return new CGUIGridList_Impl ( this, pParent, bFrame );
+    return new CGUIGridList_Impl( this, pParent, bFrame );
 }
 
-
-CGUILabel* CGUI_Impl::_CreateLabel ( CGUIElement_Impl* pParent, const char* szCaption )
+CGUILabel* CGUI_Impl::_CreateLabel( CGUIElement_Impl* pParent, const char* szCaption )
 {
-    return new CGUILabel_Impl ( this, pParent, szCaption );
+    return new CGUILabel_Impl( this, pParent, szCaption );
 }
 
-
-CGUIProgressBar* CGUI_Impl::_CreateProgressBar ( CGUIElement_Impl* pParent )
+CGUIProgressBar* CGUI_Impl::_CreateProgressBar( CGUIElement_Impl* pParent )
 {
-    return new CGUIProgressBar_Impl ( this, pParent );
+    return new CGUIProgressBar_Impl( this, pParent );
 }
 
-
-CGUIMemo* CGUI_Impl::_CreateMemo ( CGUIElement_Impl* pParent, const char* szText )
+CGUIMemo* CGUI_Impl::_CreateMemo( CGUIElement_Impl* pParent, const char* szText )
 {
-    return new CGUIMemo_Impl ( this, pParent, szText );
+    return new CGUIMemo_Impl( this, pParent, szText );
 }
 
-
-CGUIStaticImage* CGUI_Impl::_CreateStaticImage ( CGUIElement_Impl* pParent )
+CGUIStaticImage* CGUI_Impl::_CreateStaticImage( CGUIElement_Impl* pParent )
 {
-    return new CGUIStaticImage_Impl ( this, pParent );
+    return new CGUIStaticImage_Impl( this, pParent );
 }
 
-
-CGUITabPanel* CGUI_Impl::_CreateTabPanel ( CGUIElement_Impl* pParent )
+CGUITabPanel* CGUI_Impl::_CreateTabPanel( CGUIElement_Impl* pParent )
 {
-    return new CGUITabPanel_Impl ( this, pParent );
+    return new CGUITabPanel_Impl( this, pParent );
 }
 
-
-CGUIScrollPane* CGUI_Impl::_CreateScrollPane ( CGUIElement_Impl* pParent )
+CGUIScrollPane* CGUI_Impl::_CreateScrollPane( CGUIElement_Impl* pParent )
 {
-    return new CGUIScrollPane_Impl ( this, pParent );
+    return new CGUIScrollPane_Impl( this, pParent );
 }
 
-
-CGUIScrollBar* CGUI_Impl::_CreateScrollBar ( bool bHorizontal, CGUIElement_Impl* pParent )
+CGUIScrollBar* CGUI_Impl::_CreateScrollBar( bool bHorizontal, CGUIElement_Impl* pParent )
 {
-    return new CGUIScrollBar_Impl ( this, bHorizontal, pParent );
+    return new CGUIScrollBar_Impl( this, bHorizontal, pParent );
 }
 
-
-CGUIComboBox* CGUI_Impl::_CreateComboBox ( CGUIElement_Impl* pParent, const char* szCaption )
+CGUIComboBox* CGUI_Impl::_CreateComboBox( CGUIElement_Impl* pParent, const char* szCaption )
 {
-    return new CGUIComboBox_Impl ( this, pParent, szCaption );
+    return new CGUIComboBox_Impl( this, pParent, szCaption );
 }
 
-
-CGUITexture* CGUI_Impl::CreateTexture ( void )
+CGUITexture* CGUI_Impl::CreateTexture()
 {
-    return new CGUITexture_Impl ( this );
+    return new CGUITexture_Impl( this );
 }
-
 
 CGUIWindow* CGUI_Impl::CreateWnd ( CGUIElement* pParent, const char* szCaption )
 {
     return new CGUIWindow_Impl ( this, pParent, szCaption );
 }
 
-
-void CGUI_Impl::SetCursorEnabled ( bool bEnabled )
+void CGUI_Impl::SetCursorEnabled( bool bEnabled )
 {
     if ( bEnabled )
-    {
-        CEGUI::MouseCursor::getSingleton ().show ();
-    }
+        CEGUI::MouseCursor::getSingleton ().show();
     else
-    {
-        CEGUI::MouseCursor::getSingleton ().hide ();
-    }
+        CEGUI::MouseCursor::getSingleton ().hide();
 }
 
-
-bool CGUI_Impl::IsCursorEnabled ( void )
+bool CGUI_Impl::IsCursorEnabled()
 {
     return CEGUI::MouseCursor::getSingleton ().isVisible ();
 }
 
-
-void CGUI_Impl::AddChild ( CGUIElement_Impl* pChild )
+void CGUI_Impl::AddChild( CGUIElement_Impl* pChild )
 {
-    m_pTop->addChildWindow ( pChild->GetWindow () );
+    m_pTop->addChildWindow( pChild->GetWindow() );
 }
 
-CGUIWindow* CGUI_Impl::LoadLayout ( CGUIElement* pParent, const SString& strFilename )
+CGUIWindow* CGUI_Impl::LoadLayout( CGUIElement* pParent, const filePath& strFilename )
 {
+    filePath path;
+
+    if ( !guiRoot->GetFullPath( strFilename.c_str(), true, path ) )
+        return NULL;
+
     try
     {
-        return new CGUIWindow_Impl ( this, pParent, "szCaption", strFilename );
+        return new CGUIWindow_Impl( this, pParent, "szCaption", path.c_str() );
     }
 	catch (...)
     {
@@ -473,13 +467,18 @@ CGUIWindow* CGUI_Impl::LoadLayout ( CGUIElement* pParent, const SString& strFile
     }
 }
 
-bool CGUI_Impl::LoadImageset ( const SString& strFilename )
+bool CGUI_Impl::LoadImageset( const filePath& strFilename )
 {
+    filePath path;
+
+    if ( !guiRoot->GetFullPath( strFilename.c_str(), true, path ) )
+        return false;
+
     try
     {
-        return GetImageSetManager()->createImageset ( strFilename, "", true ) != NULL;
+        return GetImageSetManager()->createImageset( path.c_str(), "", true ) != NULL;
     }
-	catch (CEGUI::AlreadyExistsException exc)
+	catch ( CEGUI::AlreadyExistsException exc )
     {
         return true;
     }
@@ -489,113 +488,99 @@ bool CGUI_Impl::LoadImageset ( const SString& strFilename )
     }
 }
 
-
-CEGUI::FontManager* CGUI_Impl::GetFontManager ( void )
+CEGUI::FontManager* CGUI_Impl::GetFontManager()
 {
     return m_pFontManager;
 }
 
-
-CEGUI::ImagesetManager* CGUI_Impl::GetImageSetManager ( void )
+CEGUI::ImagesetManager* CGUI_Impl::GetImageSetManager()
 {
     return m_pImageSetManager;
 }
 
-
-CEGUI::System* CGUI_Impl::GetGUISystem ( void )
+CEGUI::System* CGUI_Impl::GetGUISystem()
 {
     return m_pSystem;
 }
 
-
-CEGUI::Renderer* CGUI_Impl::GetRenderer ( void )
+CEGUI::Renderer* CGUI_Impl::GetRenderer()
 {
     return m_pRenderer;
 }
 
-
-CEGUI::SchemeManager* CGUI_Impl::GetSchemeManager ( void )
+CEGUI::SchemeManager* CGUI_Impl::GetSchemeManager()
 {
     return m_pSchemeManager;
 }
 
-
-CEGUI::WindowManager* CGUI_Impl::GetWindowManager ( void )
+CEGUI::WindowManager* CGUI_Impl::GetWindowManager()
 {
     return m_pWindowManager;
 }
 
-
-void CGUI_Impl::GetUniqueName ( char* pBuf )
+void CGUI_Impl::GetUniqueName( char* pBuf )
 {
-    snprintf ( pBuf, CGUI_CHAR_SIZE, "%x", m_ulPreviousUnique );
+    snprintf( pBuf, CGUI_CHAR_SIZE, "%x", m_ulPreviousUnique );
     m_ulPreviousUnique++;
 }
 
-
-bool CGUI_Impl::Event_CharacterKey ( const CEGUI::EventArgs& Args )
+bool CGUI_Impl::Event_CharacterKey( const CEGUI::EventArgs& Args )
 {
-    if ( m_CharacterKeyHandlers[ m_Channel ] )
-    {
-        const CEGUI::KeyEventArgs& e = reinterpret_cast < const CEGUI::KeyEventArgs& > ( Args );
-        CGUIKeyEventArgs NewArgs;
+    if ( !m_CharacterKeyHandlers[m_Channel] )
+        return true;
 
-        // copy the variables
-        NewArgs.codepoint = e.codepoint;
-        NewArgs.scancode = (CGUIKeys::Scan) e.scancode;
-        NewArgs.sysKeys = e.sysKeys;
+    const CEGUI::KeyEventArgs& e = reinterpret_cast <const CEGUI::KeyEventArgs&> ( Args );
+    CGUIKeyEventArgs NewArgs;
 
-        // get the CGUIElement
-        CGUIElement * pElement = reinterpret_cast < CGUIElement* > ( ( e.window )->getUserData () );
-        NewArgs.pWindow = pElement;
+    // copy the variables
+    NewArgs.codepoint = e.codepoint;
+    NewArgs.scancode = (CGUIKeys::Scan) e.scancode;
+    NewArgs.sysKeys = e.sysKeys;
 
-        m_CharacterKeyHandlers[ m_Channel ] ( NewArgs );
-    }
+    // get the CGUIElement
+    CGUIElement * pElement = reinterpret_cast <CGUIElement*> ( ( e.window )->getUserData () );
+    NewArgs.pWindow = pElement;
+
+    m_CharacterKeyHandlers[m_Channel]( NewArgs );
     return true;
 }
 
-
-CGUIFont* CGUI_Impl::GetDefaultFont ( void )
+CGUIFont* CGUI_Impl::GetDefaultFont()
 {
     return m_pDefaultFont;
 }
 
-
-CGUIFont* CGUI_Impl::GetSmallFont ( void )
+CGUIFont* CGUI_Impl::GetSmallFont()
 {
     return m_pSmallFont;
 }
 
-
-CGUIFont* CGUI_Impl::GetBoldFont ( void )
+CGUIFont* CGUI_Impl::GetBoldFont()
 {
     return m_pBoldFont;
 }
 
-
-CGUIFont* CGUI_Impl::GetClearFont ( void )
+CGUIFont* CGUI_Impl::GetClearFont()
 {
     return m_pClearFont;
 }
 
-
-CGUIFont* CGUI_Impl::GetSAHeaderFont ( void )
+CGUIFont* CGUI_Impl::GetSAHeaderFont()
 {
     return m_pSAHeaderFont;
 }
 
-
-CGUIFont* CGUI_Impl::GetSAGothicFont ( void )
+CGUIFont* CGUI_Impl::GetSAGothicFont()
 {
     return m_pSAGothicFont;
 }
 
-CGUIFont* CGUI_Impl::GetSansFont ( void )
+CGUIFont* CGUI_Impl::GetSansFont()
 {
     return m_pSansFont;
 }
 
-bool CGUI_Impl::Event_KeyDown ( const CEGUI::EventArgs& Args )
+bool CGUI_Impl::Event_KeyDown( const CEGUI::EventArgs& Args )
 {
     // Cast it to a set of keyboard arguments
     const CEGUI::KeyEventArgs& KeyboardArgs = reinterpret_cast < const CEGUI::KeyEventArgs& > ( Args );
@@ -618,557 +603,367 @@ bool CGUI_Impl::Event_KeyDown ( const CEGUI::EventArgs& Args )
         m_KeyDownHandlers[ m_Channel ] ( NewArgs );
     }
 
-    switch ( KeyboardArgs.scancode )
+    switch( KeyboardArgs.scancode )
     {
-        // Cut/Copy keys
-        case CEGUI::Key::X:
-        case CEGUI::Key::C:
+    // Cut/Copy keys
+    case CEGUI::Key::X:
+    case CEGUI::Key::C:
+        if ( KeyboardArgs.sysKeys & CEGUI::Control )
         {
-            if ( KeyboardArgs.sysKeys & CEGUI::Control )
+            // Data to copy
+            CEGUI::String strTemp;
+
+            // Edit boxes
+            CEGUI::Window* Wnd = KeyboardArgs.window;
+
+            if ( Wnd->getType() == "CGUI/Editbox" )
             {
-                // Data to copy
-                CEGUI::String strTemp;
+                // Turn our event window into an editbox
+                CEGUI::Editbox* WndEdit = (CEGUI::Editbox*)Wnd;
 
-                // Edit boxes
-                CEGUI::Window* Wnd = reinterpret_cast < CEGUI::Window* > ( KeyboardArgs.window );
-                if ( Wnd->getType () == "CGUI/Editbox" )
-                {
-                    // Turn our event window into an editbox
-                    CEGUI::Editbox* WndEdit = reinterpret_cast < CEGUI::Editbox* > ( Wnd );
+                // Don't allow cutting/copying if the editbox is masked
+                if ( WndEdit->isTextMasked() )
+                    break;
 
-                    // Don't allow cutting/copying if the editbox is masked
-                    if ( !WndEdit->isTextMasked () )
-                    {
-                        // Get the text from the editbox
-                        size_t sizeSelectionStart = WndEdit->getSelectionStartIndex ();
-                        size_t sizeSelectionLength = WndEdit->getSelectionLength ();
-                        strTemp = WndEdit->getText ().substr ( sizeSelectionStart, sizeSelectionLength );
+                // Get the text from the editbox
+                size_t sizeSelectionStart = WndEdit->getSelectionStartIndex ();
+                size_t sizeSelectionLength = WndEdit->getSelectionLength ();
+                strTemp = WndEdit->getText ().substr ( sizeSelectionStart, sizeSelectionLength );
 
-                        // If the user cut, remove the text too
-                        if ( KeyboardArgs.scancode == CEGUI::Key::X )
-                        {
-                            // Read only?
-                            if ( !WndEdit->isReadOnly () )
-                            {
-                                // Remove the text from the source
-                                CEGUI::String strTemp2 = WndEdit->getText ();
-                                strTemp2.replace ( sizeSelectionStart, sizeSelectionLength, "", 0 );
-                                WndEdit->setText ( strTemp2 );
-                            }
-                        }
-                    }
-                }
+                // If the user cut, remove the text too
+                if ( KeyboardArgs.scancode != CEGUI::Key::X )
+                    goto copy;
 
-                // Multiline editboxes
-                if ( Wnd->getType () == "CGUI/MultiLineEditbox" )
-                {
-                    // Turn our event window into an editbox
-                    CEGUI::MultiLineEditbox* WndEdit = reinterpret_cast < CEGUI::MultiLineEditbox* > ( Wnd );
+                // Read only?
+                if ( WndEdit->isReadOnly() )
+                    goto copy;
 
-                    // Get the text from the editbox
-                    size_t sizeSelectionStart = WndEdit->getSelectionStartIndex ();
-                    size_t sizeSelectionLength = WndEdit->getSelectionLength ();
-                    strTemp = WndEdit->getText ().substr ( sizeSelectionStart, sizeSelectionLength );
+                // Remove the text from the source
+                CEGUI::String strTemp2 = WndEdit->getText ();
+                strTemp2.replace ( sizeSelectionStart, sizeSelectionLength, "", 0 );
+                WndEdit->setText ( strTemp2 );
+            }
 
-                    // If the user cut, remove the text too
-                    if ( KeyboardArgs.scancode == CEGUI::Key::X )
-                    {
-                        // Read only?
-                        if ( !WndEdit->isReadOnly () )
-                        {
-                            // Remove the text from the source
-                            CEGUI::String strTemp2 = WndEdit->getText ();
-                            strTemp2.replace ( sizeSelectionStart, sizeSelectionLength, "", 0 );
-                            WndEdit->setText ( strTemp2 );
-                        }
-                    }
-                }
+            // Multiline editboxes
+            if ( Wnd->getType() == "CGUI/MultiLineEditbox" )
+            {
+                // Turn our event window into an editbox
+                CEGUI::MultiLineEditbox* WndEdit = (CEGUI::MultiLineEditbox*)Wnd;
 
-                // If we got something to copy
-                if ( strTemp.length () > 0 )
-                {
-                    // Convert it to Unicode
-                    std::wstring strUTF = MbUTF8ToUTF16(strTemp.bidify().c_str());
+                // Get the text from the editbox
+                size_t sizeSelectionStart = WndEdit->getSelectionStartIndex ();
+                size_t sizeSelectionLength = WndEdit->getSelectionLength ();
+                strTemp = WndEdit->getText ().substr ( sizeSelectionStart, sizeSelectionLength );
 
-                    // Open and empty the clipboard
-                    OpenClipboard ( NULL );
-                    EmptyClipboard ();
+                // If the user cut, remove the text too
+                if ( KeyboardArgs.scancode != CEGUI::Key::X )
+                    goto copy;
 
-                    // Allocate the clipboard buffer and copy the data
-                    HGLOBAL hBuf = GlobalAlloc ( GMEM_DDESHARE, strUTF.length() * sizeof(wchar_t) + sizeof(wchar_t) );
-                    wchar_t* buf = reinterpret_cast < wchar_t* > ( GlobalLock ( hBuf ) );
-                    wcscpy ( buf , strUTF.c_str () );
-                    GlobalUnlock ( hBuf );
+                // Read only?
+                if ( WndEdit->isReadOnly() )
+                    goto copy;
 
-                    // Copy the data into the clipboard
-                    SetClipboardData ( CF_UNICODETEXT , hBuf );
-
-                    // Close the clipboard
-                    CloseClipboard( );
-                }
+                // Remove the text from the source
+                CEGUI::String strTemp2 = WndEdit->getText ();
+                strTemp2.replace ( sizeSelectionStart, sizeSelectionLength, "", 0 );
+                WndEdit->setText ( strTemp2 );
             }
 
             break;
+copy:
+            if ( strTemp.empty() )
+                break;
+
+            // Convert it to Unicode
+            std::wstring strUTF = MbUTF8ToUTF16( strTemp.bidify().c_str() );
+
+            // Open and empty the clipboard
+            OpenClipboard ( NULL );
+            EmptyClipboard ();
+
+            // Allocate the clipboard buffer and copy the data
+            HGLOBAL hBuf = GlobalAlloc( GMEM_DDESHARE, strUTF.length() * sizeof(wchar_t) + sizeof(wchar_t) );
+            wchar_t* buf = (wchar_t*)GlobalLock( hBuf );
+
+            wcscpy( buf, strUTF.c_str() );
+            GlobalUnlock( hBuf );
+
+            // Copy the data into the clipboard
+            SetClipboardData( CF_UNICODETEXT, hBuf );
+
+            // Close the clipboard
+            CloseClipboard();
         }
+        break;
 
-        // Paste keys
-        case CEGUI::Key::V:
+    // Paste keys
+    case CEGUI::Key::V:
+        if ( KeyboardArgs.sysKeys & CEGUI::Control )
         {
-            if ( KeyboardArgs.sysKeys & CEGUI::Control )
+            CEGUI::Window* Wnd = reinterpret_cast < CEGUI::Window* > ( KeyboardArgs.window );
+
+            if ( Wnd->getType() == "CGUI/Editbox" || Wnd->getType() == "CGUI/MultiLineEditbox" )
             {
-                CEGUI::Window* Wnd = reinterpret_cast < CEGUI::Window* > ( KeyboardArgs.window );
-                if ( Wnd->getType ( ) == "CGUI/Editbox" || Wnd->getType () == "CGUI/MultiLineEditbox" )
+                // Open the clipboard
+                OpenClipboard( NULL );
+
+                // Get the clipboard's data and put it into a char array
+                const wchar_t * ClipboardBuffer = reinterpret_cast < const wchar_t* > ( GetClipboardData ( CF_UNICODETEXT ) );
+
+                // Check to make sure we have valid data.
+                if ( ClipboardBuffer )
                 {
-                    // Open the clipboard
-                    OpenClipboard( NULL );
+                    size_t iSelectionStart, iSelectionLength, iMaxLength, iCaratIndex;
+                    CEGUI::String strEditText;
+                    bool bReplaceNewLines = true;
+                    bool bIsBoxFull = false;
 
-                    // Get the clipboard's data and put it into a char array
-                    const wchar_t * ClipboardBuffer = reinterpret_cast < const wchar_t* > ( GetClipboardData ( CF_UNICODETEXT ) );
-
-                    // Check to make sure we have valid data.
-                    if ( ClipboardBuffer )
+                    if ( Wnd->getType ( ) == "CGUI/Editbox" )
                     {
-                        size_t iSelectionStart, iSelectionLength, iMaxLength, iCaratIndex;
-                        CEGUI::String strEditText;
-                        bool bReplaceNewLines = true;
-                        bool bIsBoxFull = false;
+                        // Turn our event window into an editbox
+                        CEGUI::Editbox* WndEdit = reinterpret_cast < CEGUI::Editbox* > ( Wnd );      
+                        //Don't paste if we're read only
+                        if ( WndEdit->isReadOnly() )
+                        {
+                            CloseClipboard();
+                            return true;
+                        }
+                        strEditText = WndEdit->getText ().bidify();
+                        iSelectionStart = WndEdit->getSelectionStartIndex ();
+                        iSelectionLength = WndEdit->getSelectionLength();
+                        iMaxLength = WndEdit->getMaxTextLength();
+                        iCaratIndex = WndEdit->getCaratIndex();
+                    }
+                    else
+                    {
+                        CEGUI::MultiLineEditbox* WndEdit = reinterpret_cast < CEGUI::MultiLineEditbox* > ( Wnd );    
+                        //Don't paste if we're read only
+                        if ( WndEdit->isReadOnly() )
+                        {
+                            CloseClipboard();
+                            return true;
+                        }
+                        strEditText = WndEdit->getText ().bidify();
+                        iSelectionStart = WndEdit->getSelectionStartIndex ();
+                        iSelectionLength = WndEdit->getSelectionLength();
+                        iMaxLength = WndEdit->getMaxTextLength();
+                        iCaratIndex = WndEdit->getCaratIndex();
+                        bReplaceNewLines = false;
+                    }
 
+                    std::wstring strClipboardText = ClipboardBuffer;
+                    size_t iNewlineIndex;
+
+                    // Remove the newlines inserting spaces instead
+                    if ( bReplaceNewLines )
+                    {
+                        do
+                        {
+                            iNewlineIndex = strClipboardText.find ( '\n' );
+                            if ( iNewlineIndex != SString::npos )
+                            {
+                                if ( iNewlineIndex > 0 && strClipboardText[ iNewlineIndex - 1 ] == '\r' )
+                                {
+                                    // \r\n
+                                    strClipboardText [ iNewlineIndex - 1 ] = ' ';
+                                    strClipboardText.replace ( iNewlineIndex, strClipboardText.length () - iNewlineIndex,
+                                                              strClipboardText.c_str(), iNewlineIndex + 1,
+                                                              strClipboardText.length () - iNewlineIndex - 1 );
+                                }
+                                else
+                                {
+                                    strClipboardText [ iNewlineIndex ] = ' ';
+                                }
+                            }
+                        } while ( iNewlineIndex != SString::npos );
+                    }
+
+                    // Put the editbox's data into a string and insert the data if it has not reached it's maximum text length
+                    std::wstring tmp = MbUTF8ToUTF16(strEditText.c_str());
+                    if ( ( strClipboardText.length () + tmp.length () ) < iMaxLength )
+                    {
+                        // Are there characters selected?
+                        size_t sizeCaratIndex = 0;
+                        if ( iSelectionLength > 0 )
+                        {
+                            // Replace what's selected with the pasted buffer and set the new carat index
+                            tmp.replace ( iSelectionStart, iSelectionLength,
+                                          strClipboardText.c_str(), strClipboardText.length () );
+                            sizeCaratIndex = iSelectionStart + strClipboardText.length ();
+                        }
+                        else
+                        {
+                            // If not, insert the clipboard buffer where we were and set the new carat index
+                            tmp.insert ( iSelectionStart, strClipboardText.c_str(), strClipboardText.length () );
+                            sizeCaratIndex = iCaratIndex + strClipboardText.length ();
+                        }
+
+                        // Set the new text and move the carat at the end of what we pasted
+                        CEGUI::String strText((CEGUI::utf8*)UTF16ToMbUTF8(tmp).c_str());
+                        strEditText = strText;
+                        iCaratIndex = sizeCaratIndex;
+                    }
+                    else
+                    {
+                        bIsBoxFull = true;
+                    }
+                    if ( bIsBoxFull )
+                    {
+                        // Fire an event if the editbox is full
                         if ( Wnd->getType ( ) == "CGUI/Editbox" )
                         {
-                            // Turn our event window into an editbox
-                            CEGUI::Editbox* WndEdit = reinterpret_cast < CEGUI::Editbox* > ( Wnd );      
-                            //Don't paste if we're read only
-                            if ( WndEdit->isReadOnly() )
-                            {
-                                CloseClipboard();
-                                return true;
-                            }
-                            strEditText = WndEdit->getText ().bidify();
-                            iSelectionStart = WndEdit->getSelectionStartIndex ();
-                            iSelectionLength = WndEdit->getSelectionLength();
-                            iMaxLength = WndEdit->getMaxTextLength();
-                            iCaratIndex = WndEdit->getCaratIndex();
+                            CEGUI::Editbox* WndEdit = reinterpret_cast < CEGUI::Editbox* > ( Wnd );  
+                            CEGUI::WindowEventArgs args( WndEdit );
+                            WndEdit->fireEvent ( CEGUI::Editbox::EventEditboxFull , args );
                         }
                         else
                         {
-                            CEGUI::MultiLineEditbox* WndEdit = reinterpret_cast < CEGUI::MultiLineEditbox* > ( Wnd );    
-                            //Don't paste if we're read only
-                            if ( WndEdit->isReadOnly() )
-                            {
-                                CloseClipboard();
-                                return true;
-                            }
-                            strEditText = WndEdit->getText ().bidify();
-                            iSelectionStart = WndEdit->getSelectionStartIndex ();
-                            iSelectionLength = WndEdit->getSelectionLength();
-                            iMaxLength = WndEdit->getMaxTextLength();
-                            iCaratIndex = WndEdit->getCaratIndex();
-                            bReplaceNewLines = false;
-                        }
-
-                        std::wstring strClipboardText = ClipboardBuffer;
-                        size_t iNewlineIndex;
-
-                        // Remove the newlines inserting spaces instead
-                        if ( bReplaceNewLines )
-                        {
-                            do
-                            {
-                                iNewlineIndex = strClipboardText.find ( '\n' );
-                                if ( iNewlineIndex != SString::npos )
-                                {
-                                    if ( iNewlineIndex > 0 && strClipboardText[ iNewlineIndex - 1 ] == '\r' )
-                                    {
-                                        // \r\n
-                                        strClipboardText [ iNewlineIndex - 1 ] = ' ';
-                                        strClipboardText.replace ( iNewlineIndex, strClipboardText.length () - iNewlineIndex,
-                                                                  strClipboardText.c_str(), iNewlineIndex + 1,
-                                                                  strClipboardText.length () - iNewlineIndex - 1 );
-                                    }
-                                    else
-                                    {
-                                        strClipboardText [ iNewlineIndex ] = ' ';
-                                    }
-                                }
-                            } while ( iNewlineIndex != SString::npos );
-                        }
-
-                        // Put the editbox's data into a string and insert the data if it has not reached it's maximum text length
-                        std::wstring tmp = MbUTF8ToUTF16(strEditText.c_str());
-                        if ( ( strClipboardText.length () + tmp.length () ) < iMaxLength )
-                        {
-                            // Are there characters selected?
-                            size_t sizeCaratIndex = 0;
-                            if ( iSelectionLength > 0 )
-                            {
-                                // Replace what's selected with the pasted buffer and set the new carat index
-                                tmp.replace ( iSelectionStart, iSelectionLength,
-                                              strClipboardText.c_str(), strClipboardText.length () );
-                                sizeCaratIndex = iSelectionStart + strClipboardText.length ();
-                            }
-                            else
-                            {
-                                // If not, insert the clipboard buffer where we were and set the new carat index
-                                tmp.insert ( iSelectionStart, strClipboardText.c_str(), strClipboardText.length () );
-                                sizeCaratIndex = iCaratIndex + strClipboardText.length ();
-                            }
-
-                            // Set the new text and move the carat at the end of what we pasted
-                            CEGUI::String strText((CEGUI::utf8*)UTF16ToMbUTF8(tmp).c_str());
-                            strEditText = strText;
-                            iCaratIndex = sizeCaratIndex;
-                        }
-                        else
-                        {
-                            bIsBoxFull = true;
-                        }
-                        if ( bIsBoxFull )
-                        {
-                            // Fire an event if the editbox is full
-                            if ( Wnd->getType ( ) == "CGUI/Editbox" )
-                            {
-                                CEGUI::Editbox* WndEdit = reinterpret_cast < CEGUI::Editbox* > ( Wnd );  
-                                CEGUI::WindowEventArgs args( WndEdit );
-                                WndEdit->fireEvent ( CEGUI::Editbox::EventEditboxFull , args );
-                            }
-                            else
-                            {
-                                CEGUI::MultiLineEditbox* WndEdit = reinterpret_cast < CEGUI::MultiLineEditbox* > ( Wnd );  
-                                CEGUI::WindowEventArgs args( WndEdit );
-                                WndEdit->fireEvent ( CEGUI::Editbox::EventEditboxFull , args );
-                            }
-                        }
-                        else
-                        {
-                            if ( Wnd->getType ( ) == "CGUI/Editbox" )
-                            {
-                                CEGUI::Editbox* WndEdit = reinterpret_cast < CEGUI::Editbox* > ( Wnd );  
-                                WndEdit->setText ( strEditText, true );
-                                WndEdit->setCaratIndex ( iCaratIndex );
-                            }
-                            else
-                            {
-                                CEGUI::MultiLineEditbox* WndEdit = reinterpret_cast < CEGUI::MultiLineEditbox* > ( Wnd );  
-                                WndEdit->setText ( strEditText, true );
-                                WndEdit->setCaratIndex ( iCaratIndex );
-                            }
+                            CEGUI::MultiLineEditbox* WndEdit = reinterpret_cast < CEGUI::MultiLineEditbox* > ( Wnd );  
+                            CEGUI::WindowEventArgs args( WndEdit );
+                            WndEdit->fireEvent ( CEGUI::Editbox::EventEditboxFull , args );
                         }
                     }
-                    
-                    // Close the clipboard
-                    CloseClipboard( );
+                    else
+                    {
+                        if ( Wnd->getType ( ) == "CGUI/Editbox" )
+                        {
+                            CEGUI::Editbox* WndEdit = reinterpret_cast < CEGUI::Editbox* > ( Wnd );  
+                            WndEdit->setText ( strEditText, true );
+                            WndEdit->setCaratIndex ( iCaratIndex );
+                        }
+                        else
+                        {
+                            CEGUI::MultiLineEditbox* WndEdit = reinterpret_cast < CEGUI::MultiLineEditbox* > ( Wnd );  
+                            WndEdit->setText ( strEditText, true );
+                            WndEdit->setCaratIndex ( iCaratIndex );
+                        }
+                    }
                 }
+                
+                // Close the clipboard
+                CloseClipboard( );
             }
-
-            break;
         }
+        break;
 
-        // Select all key
-        case CEGUI::Key::A:
-        {
-            if ( KeyboardArgs.sysKeys & CEGUI::Control )
-            {
-                // Edit boxes
-                CEGUI::Window* Wnd = reinterpret_cast < CEGUI::Window* > ( KeyboardArgs.window );
-                if ( Wnd->getType () == "CGUI/Editbox" )
-                {
-                    // Turn our event window into an editbox
-                    CEGUI::Editbox* WndEdit = reinterpret_cast < CEGUI::Editbox* > ( Wnd );
-                    WndEdit->setSelection ( 0, WndEdit->getText ().size () );
-                }
-                else if ( Wnd->getType () == "CGUI/MultiLineEditbox" )
-                {
-                    // Turn our event window into a multiline editbox
-                    CEGUI::MultiLineEditbox* WndEdit = reinterpret_cast < CEGUI::MultiLineEditbox* > ( Wnd );
-                    WndEdit->setSelection ( 0, WndEdit->getText ().size () );
-                }
-            }
-
+    // Select all key
+    case CEGUI::Key::A:
+        if ( !(KeyboardArgs.sysKeys & CEGUI::Control) )
             break;
-        }
+
+        // Edit boxes
+        CEGUI::Window* Wnd = reinterpret_cast < CEGUI::Window* > ( KeyboardArgs.window );
+
+        if ( Wnd->getType() == "CGUI/Editbox" )
+            ((CEGUI::Editbox*)Wnd)->setSelection( 0, Wnd->getText().size () );
+        else if ( Wnd->getType() == "CGUI/MultiLineEditbox" )
+            ((CEGUI::MultiLineEditbox*)Wnd)->setSelection( 0, Wnd->getText().size () );
+
+        break;
     }
 
     return true;
 }
 
-
-void CGUI_Impl::SetWorkingDirectory ( const char * szDir )
+CGUIMouseEventArgs CGUI_Impl::Event_GetMouseEventArgs( const CEGUI::EventArgs& args )
 {
-    unsigned int uiDirLen = ( unsigned int ) strlen ( szDir );
+    const CEGUI::MouseEventArgs& e = (const CEGUI::MouseEventArgs&)args;
+    CGUIMouseEventArgs NewArgs;
 
-    // Check if the worst possible size fits in the buffer
-    if ( ( uiDirLen + 1 ) > MAX_PATH ) return;
+    // get the approriate cegui window
+    CEGUI::Window *wnd = e.window;
 
-    strncpy ( m_szWorkingDirectory, szDir, MAX_PATH );
+    // Crap, CEGUI bugged
+    assert( wnd );
 
-    // We need a trailing slash, so check for one
-    if ( szDir [ uiDirLen - 1 ] != '/' && szDir [ uiDirLen - 1 ] != '\\' ) {
-        m_szWorkingDirectory [ uiDirLen ] = '/';
-        m_szWorkingDirectory [ uiDirLen + 1 ] = NULL;
-    }
+    // if its a title- or scrollbar, get the appropriate parent
+    if ( wnd->testClassName ( CEGUI::Titlebar::EventNamespace ) ||
+         wnd->testClassName ( CEGUI::Scrollbar::EventNamespace ) )
+         wnd = wnd->getParent ();
+
+    // copy the variables
+    NewArgs.button = (CGUIMouse::MouseButton)e.button;
+    NewArgs.moveDelta = CVector2D( e.moveDelta.d_x, e.moveDelta.d_y );
+    NewArgs.position = CGUIPosition( e.position.d_x, e.position.d_y );
+    NewArgs.sysKeys = e.sysKeys;
+    NewArgs.wheelChange = e.wheelChange;
+
+    // get the CGUIElement
+    NewArgs.pWindow = (CGUIElement*)wnd->getUserData();
+    return NewArgs;
 }
 
-
-bool CGUI_Impl::Event_MouseClick ( const CEGUI::EventArgs& Args )
+bool CGUI_Impl::Event_MouseClick( const CEGUI::EventArgs& Args )
 {
-    if ( m_MouseClickHandlers[ m_Channel ] )
-    {
-        const CEGUI::MouseEventArgs& e = reinterpret_cast < const CEGUI::MouseEventArgs& > ( Args );
-        CGUIMouseEventArgs NewArgs;
+    if ( !m_MouseClickHandlers[m_Channel] )
+        return true;
+    
+    m_MouseClickHandlers[m_Channel]( Event_GetMouseEventArgs(Args) );
+    return true;
+}
 
-        // get the approriate cegui window
-        CEGUI::Window * wnd = e.window;
+bool CGUI_Impl::Event_MouseDoubleClick( const CEGUI::EventArgs& Args )
+{
+    if ( !m_MouseDoubleClickHandlers[m_Channel] )
+        return true;
 
-        // if its a title- or scrollbar, get the appropriate parent
-        if ( wnd->testClassName ( CEGUI::Titlebar::EventNamespace ) ||
-             wnd->testClassName ( CEGUI::Scrollbar::EventNamespace ) )
-             wnd = wnd->getParent ();
+    m_MouseDoubleClickHandlers[m_Channel]( Event_GetMouseEventArgs( Args ) );
+    return true;
+}
 
-        // copy the variables
-        NewArgs.button = static_cast < CGUIMouse::MouseButton > ( e.button );
-        NewArgs.moveDelta = CVector2D ( e.moveDelta.d_x, e.moveDelta.d_y );
-        NewArgs.position = CGUIPosition ( e.position.d_x, e.position.d_y );
-        NewArgs.sysKeys = e.sysKeys;
-        NewArgs.wheelChange = e.wheelChange;
+bool CGUI_Impl::Event_MouseButtonDown( const CEGUI::EventArgs& Args )
+{
+    if ( !m_MouseButtonDownHandlers[m_Channel] )
+        return true;
+    
+    m_MouseButtonDownHandlers[m_Channel]( Event_GetMouseEventArgs( Args ) );
+    return true;
+}
 
-        // get the CGUIElement
-        CGUIElement * pElement = reinterpret_cast < CGUIElement* > ( wnd->getUserData () );
-        NewArgs.pWindow = pElement;
+bool CGUI_Impl::Event_MouseButtonUp( const CEGUI::EventArgs& Args )
+{
+    if ( !m_MouseButtonUpHandlers[m_Channel] )
+        return true;
+    
+    m_MouseButtonUpHandlers[m_Channel]( Event_GetMouseEventArgs( Args ) );
+    return true;
+}
+
+bool CGUI_Impl::Event_MouseWheel( const CEGUI::EventArgs& Args )
+{
+    if ( !m_MouseWheelHandlers[m_Channel] )
+        return true;
+
+    m_MouseWheelHandlers[m_Channel]( Event_GetMouseEventArgs( Args ) );
+    return true;
+}
+
+bool CGUI_Impl::Event_MouseMove( const CEGUI::EventArgs& Args )
+{
+    if ( !m_MouseMoveHandlers[m_Channel] )
+        return true;
+
+    m_MouseMoveHandlers[m_Channel]( Event_GetMouseEventArgs( Args ) );
+    return true;
+}
+
+bool CGUI_Impl::Event_MouseEnter( const CEGUI::EventArgs& Args )
+{
+    if ( !m_MouseEnterHandlers[m_Channel] )
+        return true;
         
-        m_MouseClickHandlers[ m_Channel ] ( NewArgs );
-    }
+    m_MouseEnterHandlers[m_Channel]( Event_GetMouseEventArgs( Args ) );
     return true;
 }
-
-
-bool CGUI_Impl::Event_MouseDoubleClick ( const CEGUI::EventArgs& Args )
-{
-    if ( m_MouseDoubleClickHandlers[ m_Channel ] )
-    {
-        const CEGUI::MouseEventArgs& e = reinterpret_cast < const CEGUI::MouseEventArgs& > ( Args );
-        CGUIMouseEventArgs NewArgs;
-
-        // get the approriate cegui window
-        CEGUI::Window * wnd = e.window;
-
-        // if its a title- or scrollbar, get the appropriate parent
-        if ( wnd->testClassName ( CEGUI::Titlebar::EventNamespace ) ||
-             wnd->testClassName ( CEGUI::Scrollbar::EventNamespace ) )
-             wnd = wnd->getParent ();
-
-        // copy the variables
-        NewArgs.button = static_cast < CGUIMouse::MouseButton > ( e.button );
-        NewArgs.moveDelta = CVector2D ( e.moveDelta.d_x, e.moveDelta.d_y );
-        NewArgs.position = CGUIPosition ( e.position.d_x, e.position.d_y );
-        NewArgs.sysKeys = e.sysKeys;
-        NewArgs.wheelChange = e.wheelChange;
-
-        // get the CGUIElement
-        CGUIElement * pElement = reinterpret_cast < CGUIElement* > ( wnd->getUserData () );
-        NewArgs.pWindow = pElement;
-        
-        m_MouseDoubleClickHandlers[ m_Channel ] ( NewArgs );
-    }
-    return true;
-}
-
-bool CGUI_Impl::Event_MouseButtonDown ( const CEGUI::EventArgs& Args )
-{
-    if ( m_MouseButtonDownHandlers[ m_Channel ] )
-    {
-        const CEGUI::MouseEventArgs& e = reinterpret_cast < const CEGUI::MouseEventArgs& > ( Args );
-        CGUIMouseEventArgs NewArgs;
-
-        // get the approriate cegui window
-        CEGUI::Window * wnd = e.window;
-
-        // if its a title- or scrollbar, get the appropriate parent
-        if ( wnd->testClassName ( CEGUI::Titlebar::EventNamespace ) ||
-             wnd->testClassName ( CEGUI::Scrollbar::EventNamespace ) )
-             wnd = wnd->getParent ();
-
-        // copy the variables
-        NewArgs.button = static_cast < CGUIMouse::MouseButton > ( e.button );
-        NewArgs.moveDelta = CVector2D ( e.moveDelta.d_x, e.moveDelta.d_y );
-        NewArgs.position = CGUIPosition ( e.position.d_x, e.position.d_y );
-        NewArgs.sysKeys = e.sysKeys;
-        NewArgs.wheelChange = e.wheelChange;
-
-        // get the CGUIElement
-        CGUIElement * pElement = reinterpret_cast < CGUIElement* > ( wnd->getUserData () );
-        NewArgs.pWindow = pElement;
-        
-        m_MouseButtonDownHandlers[ m_Channel ] ( NewArgs );
-    }
-    return true;
-}
-
-bool CGUI_Impl::Event_MouseButtonUp ( const CEGUI::EventArgs& Args )
-{
-    if ( m_MouseButtonUpHandlers[ m_Channel ] )
-    {
-        const CEGUI::MouseEventArgs& e = reinterpret_cast < const CEGUI::MouseEventArgs& > ( Args );
-        CGUIMouseEventArgs NewArgs;
-
-        // get the approriate cegui window
-        CEGUI::Window * wnd = e.window;
-
-        // if its a title- or scrollbar, get the appropriate parent
-        if ( wnd->testClassName ( CEGUI::Titlebar::EventNamespace ) ||
-             wnd->testClassName ( CEGUI::Scrollbar::EventNamespace ) )
-             wnd = wnd->getParent ();
-
-        // copy the variables
-        NewArgs.button = static_cast < CGUIMouse::MouseButton > ( e.button );
-        NewArgs.moveDelta = CVector2D ( e.moveDelta.d_x, e.moveDelta.d_y );
-        NewArgs.position = CGUIPosition ( e.position.d_x, e.position.d_y );
-        NewArgs.sysKeys = e.sysKeys;
-        NewArgs.wheelChange = e.wheelChange;
-
-        // get the CGUIElement
-        CGUIElement * pElement = reinterpret_cast < CGUIElement* > ( wnd->getUserData () );
-        NewArgs.pWindow = pElement;
-        
-        m_MouseButtonUpHandlers[ m_Channel ] ( NewArgs );
-    }
-    return true;
-}
-
-bool CGUI_Impl::Event_MouseWheel ( const CEGUI::EventArgs& Args )
-{
-    if ( m_MouseWheelHandlers[ m_Channel ] )
-    {
-        const CEGUI::MouseEventArgs& e = reinterpret_cast < const CEGUI::MouseEventArgs& > ( Args );
-        CGUIMouseEventArgs NewArgs;
-
-        // get the approriate cegui window
-        CEGUI::Window * wnd = e.window;
-
-        // if its a title- or scrollbar, get the appropriate parent
-        if ( wnd->testClassName ( CEGUI::Titlebar::EventNamespace ) ||
-             wnd->testClassName ( CEGUI::Scrollbar::EventNamespace ) )
-             wnd = wnd->getParent ();
-
-        // copy the variables
-        NewArgs.button = static_cast < CGUIMouse::MouseButton > ( e.button );
-        NewArgs.moveDelta = CVector2D ( e.moveDelta.d_x, e.moveDelta.d_y );
-        NewArgs.position = CGUIPosition ( e.position.d_x, e.position.d_y );
-        NewArgs.sysKeys = e.sysKeys;
-        NewArgs.wheelChange = e.wheelChange;
-
-        // get the CGUIElement
-        CGUIElement * pElement = reinterpret_cast < CGUIElement* > ( wnd->getUserData () );
-        NewArgs.pWindow = pElement;
-        
-        m_MouseWheelHandlers[ m_Channel ] ( NewArgs );
-    }
-    return true;
-}
-
-
-bool CGUI_Impl::Event_MouseMove ( const CEGUI::EventArgs& Args )
-{
-    if ( m_MouseMoveHandlers[ m_Channel ] )
-    {
-        const CEGUI::MouseEventArgs& e = reinterpret_cast < const CEGUI::MouseEventArgs& > ( Args );
-        CGUIMouseEventArgs NewArgs;
-
-        // get the approriate cegui window
-        CEGUI::Window * wnd = e.window;
-
-        // if its a title- or scrollbar, get the appropriate parent
-        if ( wnd->testClassName ( CEGUI::Titlebar::EventNamespace ) ||
-             wnd->testClassName ( CEGUI::Scrollbar::EventNamespace ) )
-             wnd = wnd->getParent ();
-
-        // copy the variables
-        NewArgs.button = static_cast < CGUIMouse::MouseButton > ( e.button );
-        NewArgs.moveDelta = CVector2D ( e.moveDelta.d_x, e.moveDelta.d_y );
-        NewArgs.position = CGUIPosition ( e.position.d_x, e.position.d_y );
-        NewArgs.sysKeys = e.sysKeys;
-        NewArgs.wheelChange = e.wheelChange;
-
-        // get the CGUIElement
-        CGUIElement * pElement = reinterpret_cast < CGUIElement* > ( wnd->getUserData () );
-        NewArgs.pWindow = pElement;
-        
-        m_MouseMoveHandlers[ m_Channel ] ( NewArgs );
-    }
-    return true;
-}
-
-
-bool CGUI_Impl::Event_MouseEnter ( const CEGUI::EventArgs& Args )
-{
-    if ( m_MouseEnterHandlers[ m_Channel ] )
-    {
-        const CEGUI::MouseEventArgs& e = reinterpret_cast < const CEGUI::MouseEventArgs& > ( Args );
-        CGUIMouseEventArgs NewArgs;
-
-        // get the approriate cegui window
-        CEGUI::Window * wnd = e.window;
-
-        // if its a title- or scrollbar, get the appropriate parent
-        if ( wnd->testClassName ( CEGUI::Titlebar::EventNamespace ) ||
-             wnd->testClassName ( CEGUI::Scrollbar::EventNamespace ) )
-             wnd = wnd->getParent ();
-
-        // copy the variables
-        NewArgs.button = static_cast < CGUIMouse::MouseButton > ( e.button );
-        NewArgs.moveDelta = CVector2D ( e.moveDelta.d_x, e.moveDelta.d_y );
-        NewArgs.position = CGUIPosition ( e.position.d_x, e.position.d_y );
-        NewArgs.sysKeys = e.sysKeys;
-        NewArgs.wheelChange = e.wheelChange;
-
-        // get the CGUIElement
-        CGUIElement * pElement = reinterpret_cast < CGUIElement* > ( wnd->getUserData () );
-        NewArgs.pWindow = pElement;
-        
-        m_MouseEnterHandlers[ m_Channel ] ( NewArgs );
-    }
-    return true;
-}
-
 
 bool CGUI_Impl::Event_MouseLeave ( const CEGUI::EventArgs& Args )
 {
-    if ( m_MouseLeaveHandlers[ m_Channel ] )
-    {
-        const CEGUI::MouseEventArgs& e = reinterpret_cast < const CEGUI::MouseEventArgs& > ( Args );
-        CGUIMouseEventArgs NewArgs;
-
-        // get the approriate cegui window
-        CEGUI::Window * wnd = e.window;
-
-        // if its a title- or scrollbar, get the appropriate parent
-        if ( wnd->testClassName ( CEGUI::Titlebar::EventNamespace ) ||
-             wnd->testClassName ( CEGUI::Scrollbar::EventNamespace ) )
-             wnd = wnd->getParent ();
-
-        // copy the variables
-        NewArgs.button = static_cast < CGUIMouse::MouseButton > ( e.button );
-        NewArgs.moveDelta = CVector2D ( e.moveDelta.d_x, e.moveDelta.d_y );
-        NewArgs.position = CGUIPosition ( e.position.d_x, e.position.d_y );
-        NewArgs.sysKeys = e.sysKeys;
-        NewArgs.wheelChange = e.wheelChange;
-
-        // get the CGUIElement
-        // ChrML: Need to nullcheck wnd again or it crashes if the window is destroyed
-        //        while it is dragged.
-        CGUIElement * pElement = NULL;
-        if ( wnd )
-        {
-            pElement = reinterpret_cast < CGUIElement* > ( wnd->getUserData () );
-        }
-
-        
-        NewArgs.pWindow = pElement;
-        
-        m_MouseLeaveHandlers[ m_Channel ] ( NewArgs );
-    }
+    if ( !m_MouseLeaveHandlers[m_Channel] )
+        return true;
+    
+    m_MouseLeaveHandlers[m_Channel]( Event_GetMouseEventArgs( Args ) );
     return true;
 }
-
 
 bool CGUI_Impl::Event_Moved ( const CEGUI::EventArgs& Args )
 {
@@ -1183,7 +978,6 @@ bool CGUI_Impl::Event_Moved ( const CEGUI::EventArgs& Args )
     }
     return true;
 }
-
 
 bool CGUI_Impl::Event_Sized ( const CEGUI::EventArgs& Args )
 {
@@ -1286,12 +1080,10 @@ void CGUI_Impl::AddToRedrawQueue ( CGUIElement* pWindow )
     m_RedrawQueue.push_back ( pWindow );
 }
 
-
 void CGUI_Impl::RemoveFromRedrawQueue ( CGUIElement* pWindow )
 {
     m_RedrawQueue.remove ( pWindow );
 }
-
 
 CGUIButton* CGUI_Impl::CreateButton ( CGUIElement* pParent, const char* szCaption )
 {
@@ -1299,13 +1091,11 @@ CGUIButton* CGUI_Impl::CreateButton ( CGUIElement* pParent, const char* szCaptio
     return _CreateButton ( wnd, szCaption );
 }
 
-
 CGUIButton* CGUI_Impl::CreateButton ( CGUITab* pParent, const char* szCaption )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateButton ( wnd, szCaption );
 }
-
 
 CGUICheckBox* CGUI_Impl::CreateCheckBox ( CGUIElement* pParent, const char* szCaption, bool bChecked )
 {
@@ -1313,13 +1103,11 @@ CGUICheckBox* CGUI_Impl::CreateCheckBox ( CGUIElement* pParent, const char* szCa
     return _CreateCheckBox ( wnd, szCaption, bChecked );
 }
 
-
 CGUICheckBox* CGUI_Impl::CreateCheckBox ( CGUITab* pParent, const char* szCaption, bool bChecked )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateCheckBox ( wnd, szCaption, bChecked );
 }
-
 
 CGUIRadioButton* CGUI_Impl::CreateRadioButton ( CGUIElement* pParent, const char* szCaption )
 {
@@ -1327,13 +1115,11 @@ CGUIRadioButton* CGUI_Impl::CreateRadioButton ( CGUIElement* pParent, const char
     return _CreateRadioButton ( wnd, szCaption );
 }
 
-
 CGUIRadioButton* CGUI_Impl::CreateRadioButton ( CGUITab* pParent, const char* szCaption )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateRadioButton ( wnd, szCaption );
 }
-
 
 CGUIEdit* CGUI_Impl::CreateEdit ( CGUIElement* pParent, const char* szText )
 {
@@ -1341,13 +1127,11 @@ CGUIEdit* CGUI_Impl::CreateEdit ( CGUIElement* pParent, const char* szText )
     return _CreateEdit ( wnd, szText );
 }
 
-
 CGUIEdit* CGUI_Impl::CreateEdit ( CGUITab* pParent, const char* szText )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateEdit ( wnd, szText );
 }
-
 
 CGUIGridList* CGUI_Impl::CreateGridList ( CGUIElement* pParent, bool bFrame )
 {
@@ -1355,13 +1139,11 @@ CGUIGridList* CGUI_Impl::CreateGridList ( CGUIElement* pParent, bool bFrame )
     return _CreateGridList ( wnd, bFrame );
 }
 
-
 CGUIGridList* CGUI_Impl::CreateGridList ( CGUITab* pParent, bool bFrame )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateGridList ( wnd, bFrame );
 }
-
 
 CGUILabel* CGUI_Impl::CreateLabel ( CGUIElement* pParent, const char* szCaption )
 {
@@ -1369,19 +1151,16 @@ CGUILabel* CGUI_Impl::CreateLabel ( CGUIElement* pParent, const char* szCaption 
     return _CreateLabel ( wnd, szCaption );
 }
 
-
 CGUILabel* CGUI_Impl::CreateLabel ( CGUITab* pParent, const char* szCaption )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateLabel ( wnd, szCaption );
 }
 
-
 CGUILabel* CGUI_Impl::CreateLabel ( const char* szCaption )
 {
     return _CreateLabel ( NULL, szCaption );
 }
-
 
 CGUIProgressBar* CGUI_Impl::CreateProgressBar ( CGUIElement* pParent )
 {
@@ -1389,13 +1168,11 @@ CGUIProgressBar* CGUI_Impl::CreateProgressBar ( CGUIElement* pParent )
     return _CreateProgressBar ( wnd );
 }
 
-
 CGUIProgressBar* CGUI_Impl::CreateProgressBar ( CGUITab* pParent )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateProgressBar ( wnd );
 }
-
 
 CGUIMemo* CGUI_Impl::CreateMemo ( CGUIElement* pParent, const char* szText )
 {
@@ -1403,13 +1180,11 @@ CGUIMemo* CGUI_Impl::CreateMemo ( CGUIElement* pParent, const char* szText )
     return _CreateMemo ( wnd, szText );
 }
 
-
 CGUIMemo* CGUI_Impl::CreateMemo ( CGUITab* pParent, const char* szText )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateMemo ( wnd, szText );
 }
-
 
 CGUIStaticImage* CGUI_Impl::CreateStaticImage ( CGUIElement* pParent )
 {
@@ -1417,13 +1192,11 @@ CGUIStaticImage* CGUI_Impl::CreateStaticImage ( CGUIElement* pParent )
     return _CreateStaticImage ( wnd );
 }
 
-
 CGUIStaticImage* CGUI_Impl::CreateStaticImage ( CGUITab* pParent )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateStaticImage ( wnd );
 }
-
 
 CGUIStaticImage* CGUI_Impl::CreateStaticImage ( CGUIGridList* pParent )
 {
@@ -1431,12 +1204,10 @@ CGUIStaticImage* CGUI_Impl::CreateStaticImage ( CGUIGridList* pParent )
     return _CreateStaticImage ( wnd );
 }
 
-
-CGUIStaticImage* CGUI_Impl::CreateStaticImage ( void )
+CGUIStaticImage* CGUI_Impl::CreateStaticImage()
 {
     return _CreateStaticImage ( NULL );
 }
-
 
 CGUITabPanel* CGUI_Impl::CreateTabPanel ( CGUIElement* pParent )
 {
@@ -1444,19 +1215,18 @@ CGUITabPanel* CGUI_Impl::CreateTabPanel ( CGUIElement* pParent )
     return _CreateTabPanel ( wnd );
 }
 
-
 CGUITabPanel* CGUI_Impl::CreateTabPanel ( CGUITab* pParent )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateTabPanel ( wnd );
 }
 
-CGUITabPanel* CGUI_Impl::CreateTabPanel ( void )
+CGUITabPanel* CGUI_Impl::CreateTabPanel()
 {
     return _CreateTabPanel ( NULL );
 }
 
-CGUIScrollPane* CGUI_Impl::CreateScrollPane ( void )
+CGUIScrollPane* CGUI_Impl::CreateScrollPane()
 {
     return _CreateScrollPane ( NULL );
 }
@@ -1467,13 +1237,11 @@ CGUIScrollPane* CGUI_Impl::CreateScrollPane ( CGUIElement* pParent )
     return _CreateScrollPane ( wnd );
 }
 
-
 CGUIScrollPane* CGUI_Impl::CreateScrollPane ( CGUITab* pParent )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateScrollPane ( wnd );
 }
-
 
 CGUIScrollBar* CGUI_Impl::CreateScrollBar ( bool bHorizontal, CGUIElement* pParent )
 {
@@ -1481,13 +1249,11 @@ CGUIScrollBar* CGUI_Impl::CreateScrollBar ( bool bHorizontal, CGUIElement* pPare
     return _CreateScrollBar ( bHorizontal, wnd );
 }
 
-
 CGUIScrollBar* CGUI_Impl::CreateScrollBar ( bool bHorizontal, CGUITab* pParent )
 {
     CGUITab_Impl* wnd = reinterpret_cast < CGUITab_Impl* > ( pParent );
     return _CreateScrollBar ( bHorizontal, wnd );
 }
-
 
 CGUIComboBox* CGUI_Impl::CreateComboBox ( CGUIElement* pParent, const char* szCaption )
 {
@@ -1495,20 +1261,19 @@ CGUIComboBox* CGUI_Impl::CreateComboBox ( CGUIElement* pParent, const char* szCa
     return _CreateComboBox ( wnd, szCaption );
 }
 
-
 CGUIComboBox* CGUI_Impl::CreateComboBox ( CGUIComboBox* pParent, const char* szCaption )
 {
     CGUIComboBox_Impl* wnd = reinterpret_cast < CGUIComboBox_Impl* > ( pParent );
     return _CreateComboBox ( wnd, szCaption );
 }
 
-void CGUI_Impl::CleanDeadPool ()
+void CGUI_Impl::CleanDeadPool()
 {
     if ( m_pWindowManager )
-        m_pWindowManager->cleanDeadPool ();
+        m_pWindowManager->cleanDeadPool();
 }
 
-void CGUI_Impl::ClearInputHandlers ( eInputChannel channel )
+void CGUI_Impl::ClearInputHandlers( eInputChannel channel )
 {
     CHECK_CHANNEL ( channel );
     m_CharacterKeyHandlers[ channel ]       = GUI_CALLBACK_KEY ();
@@ -1527,7 +1292,7 @@ void CGUI_Impl::ClearInputHandlers ( eInputChannel channel )
     m_FocusLostHandlers[ channel ]          = GUI_CALLBACK_FOCUS ();
 }
 
-void CGUI_Impl::ClearSystemKeys ( void )
+void CGUI_Impl::ClearSystemKeys()
 {
     // Unpress any held system keys
     unsigned int uiSysKeys = CEGUI::System::getSingleton().getSystemKeys();

@@ -14,28 +14,6 @@
 #ifndef _CFileSystem_
 #define _CFileSystem_
 
-#define MAX_FILE_BLOCKS 1024
-
-typedef struct
-{
-    char name[5];
-    int pos;		//position in buffer
-    unsigned int length;
-    byte *data;		//data pointer
-} block_t;
-
-typedef struct
-{
-    int num_blocks;
-    int _num_allocated;
-
-    block_t *blocks;
-} blockList_t;
-
-#define ARCHIVE_NORMAL					0x00
-#define ARCHIVE_OFFICIAL 				0x01
-#define ARCHIVE_THIS_CONNECTION_ONLY 	0x02
-
 class CRawFile : public CFile
 {
 public:
@@ -49,7 +27,7 @@ public:
     bool            Stat( struct stat *pFileStats );
     size_t          GetSize();
     void            Flush();
-    std::string&    GetPath();
+    filePath&       GetPath();
     bool            IsReadable();
     bool            IsWriteable();
 
@@ -62,7 +40,7 @@ private:
     HANDLE          m_file;
     DWORD           m_access;
 #endif
-    std::string     m_path;
+    filePath        m_path;
 };
 
 class CBufferedFile : public CFile
@@ -78,7 +56,7 @@ public:
     bool            Stat( struct stat *pFileStats );
     size_t          GetSize();
     void            Flush();
-    std::string&    GetPath();
+    filePath&       GetPath();
     bool            IsReadable();
     bool            IsWriteable();
 
@@ -86,33 +64,29 @@ public:
     short           ReadShort();
     char            ReadByte();
 
-    size_t          GetString( char *pBuffer, size_t sMaxLength );
 private:
-    friend CFile*   File_CreateBuffered( CFile *pFile );
-    friend CFile*   File_ImportBuffered( char *pPath, void *pBuffer, size_t sBuffer );
-
     char*           m_pBuffer;
     long            m_iSeek;
     size_t          m_sSize;
-    std::string     m_path;
+    filePath        m_path;
 };
 
 class CSystemPathTranslator : public CFileTranslator
 {
 public:
-    bool            GetFullPathTree( const char *path, std::vector <std::string>& tree, bool *file );
-    bool            GetRelativePathTree( const char *path, std::vector <std::string>& tree, bool *file );
-    bool            GetFullPath( const char *path, bool allowFile, std::string& output );
-    bool            GetRelativePath( const char *path, bool allowFile, std::string& output );
+    bool            GetFullPathTree( const char *path, dirTree& tree, bool *file );
+    bool            GetRelativePathTree( const char *path, dirTree& tree, bool *file );
+    bool            GetFullPath( const char *path, bool allowFile, filePath& output );
+    bool            GetRelativePath( const char *path, bool allowFile, filePath& output );
     bool            ChangeDirectory( const char *path );
-    void            GetDirectory( std::string& output );
+    void            GetDirectory( filePath& output );
 
 private:
     friend class CFileSystem;
 
-    std::string     m_root;
-    std::string     m_currentDir;
-    std::vector <std::string>   m_rootTree;
+    filePath        m_root;
+    filePath        m_currentDir;
+    dirTree         m_rootTree;
 };
 
 class CSystemFileTranslator : public CSystemPathTranslator
@@ -130,12 +104,15 @@ public:
     bool            ReadToBuffer( const char *path, std::vector <char>& output );
 
     void            ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
-                        void (*dirCallback)( const std::string& directory, void *userdata ), 
-                        void (*fileCallback)( const std::string& filename, void *userdata ), 
+                        pathCallback_t dirCallback, 
+                        pathCallback_t fileCallback, 
                         void *userdata );
 
+    void            GetDirectories( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output );
+    void            GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output );
+
 private:
-    void            _CreateDirTree( std::vector <std::string>& tree );
+    void            _CreateDirTree( dirTree& tree );
 };
 
 #ifdef _FILESYSTEM_ZIP_SUPPORT
@@ -152,8 +129,8 @@ public:
     bool            Stat( const char *path, struct stat *stats );
 
     void            ScanDirectory( char *directory, char *wildcard, bool recurse, 
-                        void (*dirCallback)( const char *directory, void *userdata ), 
-                        void (*fileCallback)( const char *filename, void *userdata ), 
+                        void (*dirCallback)( const filePath& directory, void *userdata ), 
+                        void (*fileCallback)( const filePath& filename, void *userdata ), 
                         void *userdata );
 
 private:

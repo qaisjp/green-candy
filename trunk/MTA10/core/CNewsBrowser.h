@@ -15,11 +15,11 @@
 
 struct SNewsItem
 {
-    SString                     strContentFullDir;
+    filePath                    strContentFullDir;
     SString                     strHeadline;
     SString                     strDate;
-    SString                     strLayoutFilename;
-    std::vector < SString >     imagesetFilenameList;
+    filePath                    strLayoutFilename;
+    std::vector <filePath>      imagesetFilenameList;
 };
 
 

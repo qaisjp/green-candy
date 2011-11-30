@@ -2584,21 +2584,23 @@ void CSettings::LoadChatPresets( )
     }
 }
 
+static void _LoadSkin( const filePath& path, CGUIComboBox *sel )
+{
+    SString currentSkin;
+    CGUIListItem *item;
+
+    CVARS_GET( "current_skin", currentSkin );
+
+    item = sel->AddItem( path.c_str() );
+
+    // TODO: add validation of the skin
+    if (path == currentSkin)
+        sel->SetSelectedItemByIndex( sel->GetItemIndex(item) );
+}
+
 void CSettings::LoadSkins()
 {
-    std::vector<SString> directories = FindFiles(CalcMTASAPath ( SKINS_PATH ), false, true);
-
-    std::string currentSkin;
-    CVARS_GET("current_skin", currentSkin);
-
-    for( std::vector<SString>::iterator it = directories.begin(); it != directories.end(); ++it )
-    {
-        CGUIListItem* item = m_pInterfaceSkinSelector->AddItem ( (*it) );
-        // TODO: add validation of the skin
-
-        if(currentSkin == (*it))
-            m_pInterfaceSkinSelector->SetSelectedItemByIndex(m_pInterfaceSkinSelector->GetItemIndex(item));
-    }   
+    mtaFileRoot->ScanDirectory( "skins/", "*", false, (pathCallback_t)_LoadSkin, NULL, m_pInterfaceSkinSelector );
 }
 
 void CSettings::LoadChatColorFromString ( ChatColorType eType, const string& strColor )

@@ -329,7 +329,7 @@ namespace
     class CXMLBuffer
     {
     public:
-        SString m_strTempFileName;
+        filePath m_strTempFileName;
         CXMLFile* m_pXMLFile;
         CXMLNode* m_pRoot;
 
@@ -350,7 +350,7 @@ namespace
             }
 
             // Attempt to delete temp file
-            dataFileRoot->Delete( m_strTempFileName );
+            dataFileRoot->Delete( m_strTempFileName.c_str() );
         }
 
         CXMLNode* SetFromData ( char* data, uint uiSize )
@@ -361,13 +361,13 @@ namespace
             dataFileRoot->GetFullPath( "temp/buffer.xml", true, m_strTempFileName );
             m_strTempFileName = MakeUniquePath( m_strTempFileName );
 
-            if ( !dataFileRoot->WriteData( m_strTempFileName, data, uiSize ) )
+            if ( !dataFileRoot->WriteData( m_strTempFileName.c_str(), data, uiSize ) )
             {
                 AddReportLog ( 2501, SString ( "CXMLBuffer::SetFromBuffer: Could not save %s", m_strTempFileName.c_str () ) );
                 return NULL;
             }
 
-            m_pXMLFile = CCore::GetSingleton ().GetXML ()->CreateXML( m_strTempFileName );
+            m_pXMLFile = CCore::GetSingleton ().GetXML ()->CreateXML( m_strTempFileName.c_str() );
             if ( !m_pXMLFile )
             {
                 AddReportLog ( 2502, SString ( "CXMLBuffer::SetFromBuffer: Could not CreateXML %s", m_strTempFileName.c_str () ) );
@@ -892,7 +892,7 @@ namespace
         unsigned int            uiBytesDownloaded;
 
         // Result
-        std::vector < char >    downloadBuffer;
+        std::vector <char>      downloadBuffer;
         SString                 strStatus;
         SString                 strTitle;
         SString                 strMsg;
@@ -904,7 +904,7 @@ namespace
         CValueInt               iFilesize;
         CDataInfoSet            serverInfoMap;
         SString                 strMD5;
-        SString                 strSaveLocation;
+        filePath                strSaveLocation;
     };
 
 }

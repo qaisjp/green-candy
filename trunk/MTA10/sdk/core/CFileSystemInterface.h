@@ -12,6 +12,8 @@
 #ifndef _CFileSystemInterface_
 #define _CFileSystemInterface_
 
+typedef std::vector <filePath> dirTree;
+
 enum eFileException
 {
     FILE_STREAM_TERMINATED  // user attempts to perform on a terminated file stream, ie. http timeout
@@ -30,7 +32,7 @@ public:
     virtual	bool            Stat( struct stat *stats ) = 0;
     virtual	size_t          GetSize() = 0;
     virtual	void            Flush() = 0;
-    virtual std::string&    GetPath() = 0;
+    virtual filePath&       GetPath() = 0;
     virtual bool            IsReadable() = 0;
     virtual bool            IsWriteable() = 0;
 
@@ -113,6 +115,8 @@ public:
     }
 };
 
+typedef void (*pathCallback_t)( const filePath& path, void *userdata );
+
 class CFileTranslator
 {
 public:
@@ -129,17 +133,20 @@ public:
     virtual bool            Stat( const char *path, struct stat *stats ) = 0;
     virtual bool            ReadToBuffer( const char *path, std::vector <char>& output ) = 0;
 
-    virtual bool            GetFullPathTree( const char *path, std::vector <std::string>& tree, bool *file ) = 0;
-    virtual bool            GetRelativePathTree( const char *path, std::vector <std::string>& tree, bool *file ) = 0;
-    virtual bool            GetFullPath( const char *path, bool allowFile, std::string& output ) = 0;
-    virtual bool            GetRelativePath( const char *path, bool allowFile, std::string& output ) = 0;
+    virtual bool            GetFullPathTree( const char *path, dirTree& tree, bool *file ) = 0;
+    virtual bool            GetRelativePathTree( const char *path, dirTree& tree, bool *file ) = 0;
+    virtual bool            GetFullPath( const char *path, bool allowFile, filePath& output ) = 0;
+    virtual bool            GetRelativePath( const char *path, bool allowFile, filePath& output ) = 0;
     virtual bool            ChangeDirectory( const char *path ) = 0;
-    virtual void            GetDirectory( std::string& output ) = 0;
+    virtual void            GetDirectory( filePath& output ) = 0;
 
     virtual void            ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
-                                void (*dirCallback)( const std::string& directory, void *userdata ), 
-                                void (*fileCallback)( const std::string& path, void *userdata ), 
+                                pathCallback_t dirCallback, 
+                                pathCallback_t fileCallback, 
                                 void *userdata ) = 0;
+
+    virtual void            GetDirectories( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) = 0;
+    virtual void            GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) = 0;
 };
 
 class CFileSystemInterface

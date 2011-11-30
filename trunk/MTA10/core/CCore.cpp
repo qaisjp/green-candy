@@ -785,10 +785,6 @@ void LoadModule ( CModuleLoader& m_Loader, const SString& strName, const SString
 template < class T, class U >
 T* InitModule ( CModuleLoader& m_Loader, const SString& strName, const SString& strInitializer, U* pObj )
 {
-    // Switch to MTA dir
-    SString strSavedCwd = SharedUtil::GetCurrentDirectory ();
-    SetCurrentDirectory ( CalcMTASAPath ( "mta" ) );
-
     // Get initializer function from DLL.
     typedef T* (*PFNINITIALIZER) ( U* );
     PFNINITIALIZER pfnInit = static_cast < PFNINITIALIZER > ( m_Loader.GetFunctionPointer ( strInitializer ) );
@@ -801,9 +797,6 @@ T* InitModule ( CModuleLoader& m_Loader, const SString& strName, const SString& 
 
     // If we have a valid initializer, call it.
     T* pResult = pfnInit ( pObj );
-
-    // Restore current directory
-    SetCurrentDirectory ( strSavedCwd );
 
     WriteDebugEvent ( strName + " initialized." );
     return pResult;
@@ -852,13 +845,13 @@ void CCore::DeinitGUI ( void )
 
 void CCore::InitGUI ( IUnknown* pDevice )
 {
-    IDirect3DDevice9 *dev = reinterpret_cast < IDirect3DDevice9* > ( pDevice );
+    IDirect3DDevice9 *dev = (IDirect3DDevice9*)pDevice;
     m_pGUI = InitModule < CGUI > ( m_GUIModule, "GUI", "InitGUIInterface", dev );
 
     // Set the working directory for CGUI
     m_pGUI->SetWorkingDirectory ( CalcMTASAPath ( "MTA" ) );
 
-    // and set the screenshot path to this default library (screenshots shouldnt really be made outside mods)
+    // and set the screenshot path to this default library
     std::string strScreenShotPath = CalcMTASAPath ( "screenshots" );
     CVARS_SET ( "screenshot_path", strScreenShotPath );
     CScreenShot::SetPath ( strScreenShotPath.c_str() );

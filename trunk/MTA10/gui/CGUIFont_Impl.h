@@ -20,13 +20,13 @@
 class CGUIFont_Impl : public CGUIFont
 {
 public:
-                            CGUIFont_Impl           ( class CGUI_Impl* pManager, const char* szFontName, const char* szFontFile, unsigned int uSize = 8, unsigned int uFlags = 0, bool bAutoScale = false );
-                            ~CGUIFont_Impl          ( void );
+                            CGUIFont_Impl           ( class CGUI_Impl* pManager, const char* szFontName, const filePath& szFontFile, unsigned int uSize = 8, unsigned int uFlags = 0, bool bAutoScale = false );
+                            ~CGUIFont_Impl          ();
 
     void                    SetAntiAliasingEnabled  ( bool bAntialiased );
-    bool                    IsAntiAliasingEnabled   ( void );
+    bool                    IsAntiAliasingEnabled   ();
     void                    SetAutoScalingEnabled   ( bool bAutoScaled );
-    bool                    IsAutoScalingEnabled    ( void );
+    bool                    IsAutoScalingEnabled    ();
 
     void                    SetNativeResolution     ( int iX, int iY );
 
@@ -34,14 +34,14 @@ public:
     float                   GetFontHeight           ( float fScale = 1.0f );
     float                   GetTextExtent           ( const char* szText, float fScale = 1.0f );
 
-    CEGUI::Font*            GetFont                 ( void );
+    CEGUI::Font*            GetFont                 ();
 
     void                    DrawTextString          ( const char *szText, CRect2D DrawArea, float fZ, CRect2D ClipRect, unsigned long ulFormat, unsigned long ulColor, float fScaleX, float fScaleY );
 
     void                    defineFontGlyphs        ( unsigned int uExtraGlyphs[] );
     void                    defineFontGlyphs        ( const char* szExtraGlyphs );
 
-    bool                    isGlyphBeingUsed        (unsigned long ulGlyph);
+    bool                    isGlyphBeingUsed        ( unsigned long ulGlyph );
 
 private:
     CEGUI::Font*            m_pFont;

@@ -47,12 +47,10 @@ void CGUIElement_Impl::SetVisible ( bool bVisible )
     m_pWindow->setVisible ( bVisible );
 }
 
-
 bool CGUIElement_Impl::IsVisible ( void )
 {
     return m_pWindow->isVisible ();
 }
-
 
 void CGUIElement_Impl::SetEnabled ( bool bEnabled )
 {
@@ -60,36 +58,30 @@ void CGUIElement_Impl::SetEnabled ( bool bEnabled )
     //m_pWindow->setZOrderingEnabled ( bEnabled );
 }
 
-
 bool CGUIElement_Impl::IsEnabled ( void )
 {
     return !m_pWindow->isDisabled ();
 }
-
 
 void CGUIElement_Impl::SetZOrderingEnabled ( bool bZOrderingEnabled )
 {
     m_pWindow->setZOrderingEnabled ( bZOrderingEnabled );
 }
 
-
 bool CGUIElement_Impl::IsZOrderingEnabled  ( void )
 {
     return m_pWindow->isZOrderingEnabled ();
 }
-
 
 void CGUIElement_Impl::BringToFront ( void )
 {
     m_pWindow->moveToFront ();
 }
 
-
 void CGUIElement_Impl::MoveToBack ( void )
 {
     m_pWindow->moveToBack ();
 }
-
 
 void CGUIElement_Impl::SetPosition ( const CVector2D& Position, bool bRelative )
 {
@@ -103,7 +95,6 @@ void CGUIElement_Impl::SetPosition ( const CVector2D& Position, bool bRelative )
     CorrectEdges ();
 }
 
-
 CVector2D CGUIElement_Impl::GetPosition ( bool bRelative )
 {
     CEGUI::Point CEGUITemp;
@@ -115,7 +106,6 @@ CVector2D CGUIElement_Impl::GetPosition ( bool bRelative )
 
     return CVector2D ( CEGUITemp.d_x, CEGUITemp.d_y );
 }
-
 
 void CGUIElement_Impl::GetPosition ( CVector2D& vecPosition, bool bRelative )
 {
@@ -130,7 +120,6 @@ void CGUIElement_Impl::GetPosition ( CVector2D& vecPosition, bool bRelative )
     vecPosition.fY = Temp.d_y;
 }
 
-
 void CGUIElement_Impl::SetWidth ( float fX, bool bRelative )
 {
     if ( bRelative )
@@ -139,7 +128,6 @@ void CGUIElement_Impl::SetWidth ( float fX, bool bRelative )
         m_pWindow->setWidth ( CEGUI::Absolute, fX );
 }
 
-
 void CGUIElement_Impl::SetHeight ( float fY, bool bRelative )
 {
     if ( bRelative )
@@ -147,7 +135,6 @@ void CGUIElement_Impl::SetHeight ( float fY, bool bRelative )
     else
         m_pWindow->setHeight ( CEGUI::Absolute, fY );
 }
-
 
 void CGUIElement_Impl::SetSize ( const CVector2D& vecSize, bool bRelative )
 {
@@ -158,7 +145,6 @@ void CGUIElement_Impl::SetSize ( const CVector2D& vecSize, bool bRelative )
 
     CorrectEdges ();
 }
-
 
 CVector2D CGUIElement_Impl::GetSize ( bool bRelative )
 {
@@ -171,7 +157,6 @@ CVector2D CGUIElement_Impl::GetSize ( bool bRelative )
 
     return CVector2D ( TempSize.d_width, TempSize.d_height );
 }
-
 
 void CGUIElement_Impl::GetSize ( CVector2D& vecSize, bool bRelative )
 {
@@ -186,20 +171,17 @@ void CGUIElement_Impl::GetSize ( CVector2D& vecSize, bool bRelative )
     vecSize.fY = TempSize.d_height;
 }
 
-
 void CGUIElement_Impl::SetMinimumSize ( const CVector2D& vecSize )
 {
     m_pWindow->setMetricsMode ( CEGUI::Absolute );
     m_pWindow->setMinimumSize ( CEGUI::Size ( vecSize.fX, vecSize.fY ) );
 }
 
-
 CVector2D CGUIElement_Impl::GetMinimumSize ( void )
 {
     const CEGUI::Size& TempSize = m_pWindow->getMinimumSize ();
     return CVector2D ( TempSize.d_width, TempSize.d_height );
 }
-
 
 void CGUIElement_Impl::GetMinimumSize ( CVector2D& vecSize )
 {
@@ -208,19 +190,16 @@ void CGUIElement_Impl::GetMinimumSize ( CVector2D& vecSize )
     vecSize.fY = Temp.d_height;
 }
 
-
 void CGUIElement_Impl::SetMaximumSize ( const CVector2D& vecSize )
 {
     m_pWindow->setMaximumSize ( CEGUI::Size ( vecSize.fX, vecSize.fY ) );
 }
-
 
 CVector2D CGUIElement_Impl::GetMaximumSize ( void )
 {
     const CEGUI::Size& TempSize = m_pWindow->getMaximumSize ();
     return CVector2D ( TempSize.d_width, TempSize.d_height );
 }
-
 
 void CGUIElement_Impl::GetMaximumSize ( CVector2D& vecSize )
 {
@@ -229,72 +208,60 @@ void CGUIElement_Impl::GetMaximumSize ( CVector2D& vecSize )
     vecSize.fY = Temp.d_height;
 }
 
-
 void CGUIElement_Impl::SetText ( const char *szText )
 {
     m_pWindow->setText( CGUI_Impl::GetUTFString(szText) );
 }
-
 
 std::string CGUIElement_Impl::GetText ( void )
 {
     return CGUI_Impl::GetUTFString(m_pWindow->getText ().c_str ()).c_str();
 }
 
-
 void CGUIElement_Impl::SetAlpha ( float fAlpha )
 {
     m_pWindow->setAlpha ( fAlpha );
 }
-
 
 float CGUIElement_Impl::GetAlpha ( void )
 {
     return m_pWindow->getAlpha ();
 }
 
-
 void CGUIElement_Impl::SetInheritsAlpha ( bool bInheritsAlpha )
 {
     m_pWindow->setInheritsAlpha ( bInheritsAlpha );
 }
-
 
 bool CGUIElement_Impl::GetInheritsAlpha ( void )
 {
     return m_pWindow->inheritsAlpha ();
 }
 
-
 void CGUIElement_Impl::Activate ( void )
 {
     m_pWindow->activate ();
 }
-
 
 void CGUIElement_Impl::Deactivate ( void )
 {
     m_pWindow->deactivate ();
 }
 
-
 bool CGUIElement_Impl::IsActive ( void )
 {
     return m_pWindow->isActive ();
 }
-
 
 void CGUIElement_Impl::SetAlwaysOnTop ( bool bAlwaysOnTop )
 {
     m_pWindow->setAlwaysOnTop ( bAlwaysOnTop );
 }
 
-
 bool CGUIElement_Impl::IsAlwaysOnTop ( void )
 {
     return m_pWindow->isAlwaysOnTop ();
 }
-
 
 CRect2D CGUIElement_Impl::AbsoluteToRelative ( const CRect2D& Rect )
 {
@@ -303,14 +270,12 @@ CRect2D CGUIElement_Impl::AbsoluteToRelative ( const CRect2D& Rect )
     return CRect2D ( TempRect.d_left, TempRect.d_top, TempRect.d_right, TempRect.d_bottom );
 }
 
-
 CVector2D CGUIElement_Impl::AbsoluteToRelative ( const CVector2D& Vector )
 {
     CEGUI::Size TempSize = CEGUI::Size ( Vector.fX, Vector.fY );
     TempSize = m_pWindow->absoluteToRelative ( TempSize );
     return CVector2D ( TempSize.d_width, TempSize.d_height );
 }
-
 
 CRect2D CGUIElement_Impl:: RelativeToAbsolute ( const CRect2D& Rect )
 {
@@ -319,14 +284,12 @@ CRect2D CGUIElement_Impl:: RelativeToAbsolute ( const CRect2D& Rect )
     return CRect2D ( TempRect.d_left, TempRect.d_top, TempRect.d_right, TempRect.d_bottom );
 }
 
-
 CVector2D CGUIElement_Impl::RelativeToAbsolute ( const CVector2D& Vector )
 {
     CEGUI::Size TempSize = CEGUI::Size ( Vector.fX, Vector.fY );
     TempSize = m_pWindow->relativeToAbsolute ( TempSize );
     return CVector2D ( TempSize.d_width, TempSize.d_height );
 }
-
 
 void CGUIElement_Impl::SetParent ( CGUIElement* pParent )
 {
@@ -339,7 +302,6 @@ void CGUIElement_Impl::SetParent ( CGUIElement* pParent )
     m_pParent = pParent;
 }
 
-
 CGUIElement* CGUIElement_Impl::GetParent ( void )
 {
     // Validate
@@ -349,12 +311,10 @@ CGUIElement* CGUIElement_Impl::GetParent ( void )
     return m_pParent;
 }
 
-
 CEGUI::Window* CGUIElement_Impl::GetWindow ( void )
 {
     return m_pWindow;
 }
-
 
 void CGUIElement_Impl::CorrectEdges ( void )
 {
@@ -378,7 +338,6 @@ void CGUIElement_Impl::CorrectEdges ( void )
     }
 }
 
-
 bool CGUIElement_Impl::SetFont ( const char * szFontName )
 {
     try {
@@ -388,7 +347,6 @@ bool CGUIElement_Impl::SetFont ( const char * szFontName )
         return false;
     }
 }
-
 
 std::string CGUIElement_Impl::GetFont ( void )
 {
@@ -414,7 +372,6 @@ void CGUIElement_Impl::SetProperty ( const char *szProperty, const char *szValue
     } catch ( CEGUI::Exception e ) {}
 }
 
-
 std::string CGUIElement_Impl::GetProperty ( const char *szProperty )
 {
     CEGUI::String strValue;
@@ -428,7 +385,6 @@ std::string CGUIElement_Impl::GetProperty ( const char *szProperty )
 
     return strValue.c_str ();
 }
-
 
 void CGUIElement_Impl::FillProperties ( void )
 {
@@ -482,7 +438,6 @@ CGUIPropertyIter CGUIElement_Impl::GetPropertiesBegin ( void )
     }
 }
 
-
 CGUIPropertyIter CGUIElement_Impl::GetPropertiesEnd ( void )
 {
     try {
@@ -498,30 +453,25 @@ CGUIPropertyIter CGUIElement_Impl::GetPropertiesEnd ( void )
     }
 }
 
-
 void CGUIElement_Impl::SetMovedHandler ( GUI_CALLBACK Callback )
 {
     m_OnMoved = Callback;
 }
-
 
 void CGUIElement_Impl::SetSizedHandler ( GUI_CALLBACK Callback )
 {
     m_OnSized = Callback;
 }
 
-
 void CGUIElement_Impl::SetClickHandler ( GUI_CALLBACK Callback )
 {
     m_OnClick = Callback;
 }
 
-
 void CGUIElement_Impl::SetMouseEnterHandler ( GUI_CALLBACK Callback )
 {
     m_OnMouseEnter = Callback;
 }
-
 
 void CGUIElement_Impl::SetMouseLeaveHandler ( GUI_CALLBACK Callback )
 {
@@ -538,13 +488,10 @@ void CGUIElement_Impl::SetActivateHandler ( GUI_CALLBACK Callback )
     m_OnActivate = Callback;
 }
 
-
 void CGUIElement_Impl::SetDeactivateHandler ( GUI_CALLBACK Callback )
 {
     m_OnDeactivate = Callback;
 }
-
-
 
 void CGUIElement_Impl::AddEvents ( void )
 {
@@ -559,14 +506,12 @@ void CGUIElement_Impl::AddEvents ( void )
     m_pWindow->subscribeEvent ( CEGUI::Window::EventDeactivated, CEGUI::Event::Subscriber ( &CGUIElement_Impl::Event_OnDeactivated, this ) );
 }
 
-
 bool CGUIElement_Impl::Event_OnMoved ( const CEGUI::EventArgs& e )
 {
     if ( m_OnMoved )
         m_OnMoved ( reinterpret_cast < CGUIElement* > ( this ) );
     return true;
 }
-
 
 bool CGUIElement_Impl::Event_OnSized ( const CEGUI::EventArgs& e )
 {
@@ -575,14 +520,12 @@ bool CGUIElement_Impl::Event_OnSized ( const CEGUI::EventArgs& e )
     return true;
 }
 
-
 bool CGUIElement_Impl::Event_OnClick ( const CEGUI::EventArgs& e )
 {
     if ( m_OnClick )
         m_OnClick ( reinterpret_cast < CGUIElement* > ( this ) );
     return true;
 }
-
 
 bool CGUIElement_Impl::Event_OnMouseEnter ( const CEGUI::EventArgs& e )
 {
@@ -591,14 +534,12 @@ bool CGUIElement_Impl::Event_OnMouseEnter ( const CEGUI::EventArgs& e )
     return true;
 }
 
-
 bool CGUIElement_Impl::Event_OnMouseLeave ( const CEGUI::EventArgs& e )
 {
     if ( m_OnMouseLeave )
         m_OnMouseLeave ( reinterpret_cast < CGUIElement* > ( this ) );
     return true;
 }
-
 
 bool CGUIElement_Impl::Event_OnMouseButtonDown ( const CEGUI::EventArgs& e )
 {
