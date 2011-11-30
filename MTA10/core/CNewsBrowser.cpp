@@ -53,12 +53,13 @@ CNewsBrowser::~CNewsBrowser ( void )
 ////////////////////////////////////////////////////
 void CNewsBrowser::InitNewsItemList ( void )
 {
+    std::vector <filePath> directoryList;
+
     m_NewsitemList.clear ();
 
     // Find all sub-directories in 'news' directory
-    SString strAllNewsDir = PathJoin ( GetMTADataPath (), "news" );
-    std::vector < SString > directoryList = FindFiles ( strAllNewsDir + "\\*", false, true );
-    std::sort ( directoryList.begin (), directoryList.end () );
+    dataFileRoot->GetDirectories( "news/", "*", false, directoryList );
+    std::sort( directoryList.begin (), directoryList.end () );
 
     // Get news settings
     SString strOldestPost;
@@ -75,14 +76,16 @@ void CNewsBrowser::InitNewsItemList ( void )
             continue;   // Post count too high
 
         SNewsItem newsItem;
-        newsItem.strContentFullDir = PathJoin ( strAllNewsDir, strItemDir );
+        dataFileRoot->GetFullPath( "news/", false, newsItem.strContentFullDir );
 
         // Get filenames from XML file
-        CXMLFile* pFile = g_pCore->GetXML ()->CreateXML ( PathJoin ( newsItem.strContentFullDir, "files.xml" ) );
+        CXMLFile* pFile = g_pCore->GetXML ()->CreateXML( newsItem.strContentFullDir + "files.xml" );
+
         if ( pFile )
         {
             pFile->Parse ();
-            CXMLNode* pRoot = pFile->GetRootNode ();
+
+            CXMLNode* pRoot = pFile->GetRootNode();
 
             if ( pRoot )
             {
@@ -114,7 +117,7 @@ void CNewsBrowser::InitNewsItemList ( void )
         }
 
         // Add to news item list if valid
-        if ( !newsItem.strHeadline.empty () && !newsItem.strLayoutFilename.empty () )
+        if ( !newsItem.strHeadline.empty() && !newsItem.strLayoutFilename.empty() )
             m_NewsitemList.push_back ( newsItem );
     }
 }

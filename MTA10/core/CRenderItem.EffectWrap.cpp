@@ -512,7 +512,7 @@ public:
 
     STDMETHOD(Open)( D3DXINCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes )
     {
-        SString path;
+        filePath path;
 
         // We need a static path
         if ( !mtaFileRoot->GetFullPath( pFileName, true, path ) )

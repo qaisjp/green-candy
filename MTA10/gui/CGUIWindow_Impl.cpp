@@ -24,7 +24,6 @@ CGUIWindow_Impl::CGUIWindow_Impl ( CGUI_Impl* pGUI, CGUIElement* pParent, const 
     pGUI->GetUniqueName ( szUnique );
 
     // Create the window and set default settings
-
     if ( !strLayoutFile.empty () )
     {
         // Load from XML file

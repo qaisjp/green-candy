@@ -25,20 +25,20 @@ class CGUIStaticImage_Impl : public CGUIStaticImage, public CGUIElement_Impl
 {
 public:
                                 CGUIStaticImage_Impl    ( class CGUI_Impl* pGUI, CGUIElement* pParent = NULL );
-                                ~CGUIStaticImage_Impl   ( void );
+                                ~CGUIStaticImage_Impl   ();
 
-    bool                        LoadFromFile            ( const char* szFilename, const char* szDirectory = NULL );
+    bool                        LoadFromFile            ( const char* szFilename );
     bool                        LoadFromTexture         ( CGUITexture* pTexture );
-    void                        Clear                   ( void );
+    void                        Clear                   ();
 
     void                        SetFrameEnabled         ( bool bFrameEnabled );
-    bool                        IsFrameEnabled          ( void );
+    bool                        IsFrameEnabled          ();
 
-    CEGUI::Image*               GetDirectImage          ( void );
+    CEGUI::Image*               GetDirectImage          ();
 
-    void                        Render                  ( void );
+    void                        Render                  ();
 
-    eCGUIType                   GetType                 ( void ) { return CGUI_STATICIMAGE; }
+    eCGUIType                   GetType                 () { return CGUI_STATICIMAGE; }
 
 private:
     class CGUI_Impl*            m_pGUI;

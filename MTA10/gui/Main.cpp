@@ -27,12 +27,12 @@ int WINAPI DllMain ( HINSTANCE hModule, DWORD dwReason, PVOID pvNothing )
 }
 
 extern "C" _declspec(dllexport)
-CGUI* InitGUIInterface ( IDirect3DDevice9* pDevice )
+CGUI* InitGUIInterface ( IDirect3DDevice9* pDevice, CCoreInterface *coreInterface )
 {
     // Create our GUI interface if not already done
     if ( !g_pGUI )
     {
-        g_pGUI = new CGUI_Impl ( pDevice );
+        g_pGUI = new CGUI_Impl ( pDevice, coreInterface );
     }
 
     // Return it

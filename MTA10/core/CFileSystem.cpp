@@ -132,25 +132,23 @@ void Archive_Shutdown()
 
 #endif //_FILESYSTEM_ZIP_SUPPORT
 
-bool File_IsDirectoryAbsolute(const char *pPath)
+bool File_IsDirectoryAbsolute( const char *pPath )
 {
 #ifdef WIN32
     DWORD dwAttributes = GetFileAttributes(pPath);
 
     if (dwAttributes == INVALID_FILE_ATTRIBUTES)
         return false;
+
     return (dwAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 #else
     return false;
 #endif
 }
 
-static inline bool _File_ParseRelativePath( const char *path, std::vector < std::string >& tree, bool *bFile )
+static inline bool _File_ParseRelativePath( const char *path, dirTree& tree, bool *bFile )
 {
-    std::string entry;
-    size_t n = 0;
-
-    entry.reserve( MAX_PATH );
+    filePath entry( MAX_PATH );
 
     while (*path)
     {
@@ -212,7 +210,7 @@ static inline bool _File_ParseRelativePath( const char *path, std::vector < std:
 }
 
 // Output a path tree
-static inline void _File_OutputPathTree( std::vector <std::string>& tree, bool file, std::string& output )
+static inline void _File_OutputPathTree( dirTree& tree, bool file, filePath& output )
 {
     unsigned int n;
 
@@ -236,10 +234,10 @@ static inline void _File_OutputPathTree( std::vector <std::string>& tree, bool f
 }
 
 // Get relative path tree nodes
-static inline bool _File_ParseRelativeTree( const char *path, std::vector <std::string>& root, std::vector <std::string>& output, bool *file )
+static inline bool _File_ParseRelativeTree( const char *path, dirTree& root, dirTree& output, bool *file )
 {
-    std::vector <std::string> tree( 32 );
-    std::vector <std::string>::iterator rootIter, treeIter;
+    dirTree tree( 32 );
+    dirTree::iterator rootIter, treeIter;
 
     if (!_File_ParseRelativePath( path, tree, file ))
         return false;
@@ -358,7 +356,7 @@ void CRawFile::Flush()
 #endif
 }
 
-std::string& CRawFile::GetPath()
+filePath& CRawFile::GetPath()
 {
     return m_path;
 }
@@ -453,7 +451,7 @@ void CBufferedFile::Flush()
     return;
 }
 
-std::string& CBufferedFile::GetPath()
+filePath& CBufferedFile::GetPath()
 {
     return m_path;
 }
@@ -505,7 +503,7 @@ bool CBufferedFile::IsWriteable()
     Filesystem path translation utility
 =======================================*/
 
-void CSystemPathTranslator::GetDirectory( std::string& output )
+void CSystemPathTranslator::GetDirectory( filePath& output )
 {
     output = m_currentDir;
 }
@@ -515,15 +513,15 @@ bool CSystemPathTranslator::ChangeDirectory( const char *path )
     return GetRelativePath( path, false, m_currentDir );
 }
 
-bool CSystemPathTranslator::GetFullPathTree( const char *path, std::vector <std::string>& tree, bool *file )
+bool CSystemPathTranslator::GetFullPathTree( const char *path, dirTree& tree, bool *file )
 {
     tree = m_rootTree;
     return GetRelativePathTree( path, tree, file );
 }
 
-bool CSystemPathTranslator::GetRelativePathTree( const char *path, std::vector <std::string>& tree, bool *file )
+bool CSystemPathTranslator::GetRelativePathTree( const char *path, dirTree& tree, bool *file )
 {
-    std::string target;
+    filePath target;
 
     if (!*path)
         return false;
@@ -547,15 +545,15 @@ bool CSystemPathTranslator::GetRelativePathTree( const char *path, std::vector <
     return _File_ParseRelativePath( target.c_str(), tree, file );
 }
 
-bool CSystemPathTranslator::GetFullPath( const char *path, bool allowFile, std::string& output )
+bool CSystemPathTranslator::GetFullPath( const char *path, bool allowFile, filePath& output )
 {
     output += m_root;
     return GetRelativePath( path, allowFile, output );
 }
 
-bool CSystemPathTranslator::GetRelativePath( const char *path, bool allowFile, std::string& output )
+bool CSystemPathTranslator::GetRelativePath( const char *path, bool allowFile, filePath& output )
 {
-    std::vector <std::string> tree( 16 );
+    dirTree tree( 16 );
     bool file;
 
     if ( !GetRelativePathTree( path, tree, &file ) )
@@ -735,8 +733,8 @@ bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, siz
 {
 #ifdef _WIN32
     HANDLE file;
-    std::string output = m_root;
-    std::vector <std::string> tree( 16 );
+    filePath output = m_root;
+    dirTree tree( 16 );
     bool file;
 
     if ( !GetRelativePathTree( path, tree, &file ) )
@@ -761,10 +759,10 @@ bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, siz
 #endif
 }
 
-void CSystemFileTranslator::_CreateDirTree( std::vector <std::string>& tree )
+void CSystemFileTranslator::_CreateDirTree( dirTree& tree )
 {
-    std::vector <std::string>::iterator iter;
-    std::string path;
+    dirTree::iterator iter;
+    filePath path;
 
     for ( iter = tree.begin(); iter != tree.end(); iter++ )
     {
@@ -781,7 +779,7 @@ void CSystemFileTranslator::_CreateDirTree( std::vector <std::string>& tree )
 
 bool CSystemFileTranslator::CreateDir( const char *path )
 {
-    std::vector <std::string> tree( 16 );
+    dirTree tree( 16 );
     bool file;
 
     if ( !GetRelativePathTree( path, tree, &file ) )
@@ -796,8 +794,8 @@ bool CSystemFileTranslator::CreateDir( const char *path )
 
 CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
 {
-    std::vector <std::string> tree( 32 );
-    std::string output = m_root;
+    dirTree tree( 32 );
+    filePath output = m_root;
     CRawFile *pFile;
     DWORD dwAccess = 0;
     DWORD dwCreate = 0;
@@ -870,7 +868,7 @@ CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
 
 bool CSystemFileTranslator::Exists( const char *path )
 {
-    std::string output;
+    filePath output;
     struct stat tmp;
 
     if ( !GetFullPath( path, true, output ) )
@@ -881,7 +879,7 @@ bool CSystemFileTranslator::Exists( const char *path )
 
 bool CSystemFileTranslator::Delete( const char *path )
 {
-    std::string output;
+    filePath output;
 
     if ( !GetFullPath( path, true, output ) )
         return false;
@@ -893,11 +891,19 @@ bool CSystemFileTranslator::Delete( const char *path )
 
 bool CSystemFileTranslator::Copy( const char *src, const char *dst )
 {
-    std::string source;
-    std::string target;
+    filePath source;
+    filePath target;
+    dirTree dstTree( 16 );
+    bool file;
 
-    if ( !GetFullPath( src, true, source ) || !GetFullPath( dst, true, target ) )
+    if ( !GetFullPath( src, true, source ) || !GetRelativePathTree( dst, dstTree, &file ) || !file )
         return false;
+
+    _File_OutputPathTree( dstTree, true, target );
+
+    // Make sure dir exists
+    dstTree.pop_back();
+    _CreateDirTree( dstTree );
 
 #ifdef _WIN32
     return CopyFile( source.c_str(), target.c_str(), false ) != FALSE;
@@ -906,11 +912,19 @@ bool CSystemFileTranslator::Copy( const char *src, const char *dst )
 
 bool CSystemFileTranslator::Rename( const char *src, const char *dst )
 {
-    std::string source;
-    std::string target;
+    filePath source;
+    filePath target;
+    dirTree dstTree( 16 );
+    bool file;
 
-    if ( !GetFullPath( src, true, source ) || !GetFullPath( dst, true, target ) )
+    if ( !GetFullPath( src, true, source ) || !GetRelativePathTree( dst, dstTree, &file ) || !file )
         return false;
+
+    _File_OutputPathTree( dstTree, true, target );
+
+    // Make sure dir exists
+    dstTree.pop_back();
+    _CreateDirTree( dstTree );
 
 #ifdef _WIN32
     return MoveFile( source.c_str(), target.c_str() ) != FALSE;
@@ -919,7 +933,7 @@ bool CSystemFileTranslator::Rename( const char *src, const char *dst )
 
 bool CSystemFileTranslator::Stat(const char *path, struct stat *stats)
 {
-    std::string output;
+    filePath output;
     
     if ( !GetFullPath( path, true, output ) )
         return false;
@@ -939,7 +953,7 @@ size_t CSystemFileTranslator::Size( const char *path )
 
 bool CSystemFileTranslator::ReadToBuffer( const char *path, std::vector <char>& output )
 {
-    std::string sysPath;
+    filePath sysPath;
 
     if ( !GetFullPath( path, true, sysPath ) )
         return false;
@@ -948,13 +962,13 @@ bool CSystemFileTranslator::ReadToBuffer( const char *path, std::vector <char>& 
 }
 
 void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
-                                            void (*dirCallback)( const std::string& dir, void *userdata), 
-                                            void (*fileCallback)( const std::string& path, void *userdata), 
+                                            pathCallback_t dirCallback, 
+                                            pathCallback_t fileCallback, 
                                             void *userdata )
 {
     WIN32_FIND_DATA		finddata;
     HANDLE				handle;
-    std::string         output;
+    filePath            output;
     std::string         query;
     char				wcard[256];
 
@@ -974,19 +988,19 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
 
         handle = FindFirstFile( query.c_str(), &finddata );
 
-        if (handle != INVALID_HANDLE_VALUE)
+        if ( handle != INVALID_HANDLE_VALUE )
         {
             do
             {
                 if ( finddata.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY | FILE_ATTRIBUTE_DIRECTORY) )
                     continue;
 
-                std::string filename = output;
+                filePath filename = output;
                 filename += finddata.cFileName;
 
                 fileCallback( filename.c_str(), userdata );		
 
-            } while (FindNextFile(handle, &finddata));
+            } while ( FindNextFile(handle, &finddata) );
 
             FindClose( handle );
         }
@@ -1015,7 +1029,7 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
         if ( strcmp(finddata.cFileName, ".") == 0 || strcmp(finddata.cFileName, "..") == 0 )
             continue;
 
-        std::string target = output;
+        filePath target = output;
         target += finddata.cFileName;
         target += '/';
 
@@ -1025,9 +1039,24 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
         if ( recurse )
             ScanDirectory( target.c_str(), wcard, true, dirCallback, fileCallback, userdata );
 
-    } while (FindNextFile(handle, &finddata));
+    } while ( FindNextFile(handle, &finddata) );
 
     FindClose(handle);
+}
+
+static void _scanFindCallback( const filePath& path, std::vector <filePath> *output )
+{
+    output->push_back( path );
+}
+
+void CSystemFileTranslator::GetDirectories( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output )
+{
+    ScanDirectory( path, wildcard, recurse, (pathCallback_t)_scanFindCallback, NULL, &output );
+}
+
+void CSystemFileTranslator::GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output )
+{
+    ScanDirectory( path, wildcard, recurse, NULL, (pathCallback_t)_scanFindCallback, &output );
 }
 
 /*=======================================
@@ -1062,8 +1091,8 @@ CFileSystem::~CFileSystem()
 CFileTranslator* CFileSystem::CreateTranslator( const char *path )
 {
     CSystemFileTranslator *pTranslator;
-    std::string root;
-    std::vector <std::string> tree;
+    filePath root;
+    dirTree tree( 16 );
     unsigned int n;
     bool bFile;
 
@@ -1084,7 +1113,7 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
         char pathBuffer[1024];
         GetCurrentDirectory( 1023, pathBuffer );
 
-        root += pathBuffer;
+        root = pathBuffer;
         root += path;
 
         if (!_File_ParseRelativePath( root.c_str() + 3, tree, &bFile ))
@@ -1096,13 +1125,9 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
     if ( bFile )
         return NULL;
 
-    for (n=0; n<tree.size(); n++)
-    {
-        root += tree[n];
-        root += "/";
-    }
+    _File_OutputPathTree( tree, false, root );
 
-    if (!File_IsDirectoryAbsolute( root.c_str() ))
+    if ( !IsDirectory( root.c_str() ) )
         return NULL;
 
     pTranslator = new CSystemFileTranslator();

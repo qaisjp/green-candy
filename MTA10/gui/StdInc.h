@@ -17,6 +17,7 @@
 
 #define MTA_CLIENT
 #include "SharedUtil.h"
+#include <core/CCoreInterface.h>
 #include "CGUITabListItem.h"
 #include "CGUITabList.h"
 #include "CGUI_Impl.h"
@@ -38,3 +39,5 @@
 #include "CGUITexture_Impl.h"
 #include "CGUIWindow_Impl.h"
 #include "CGUIComboBox_Impl.h"
+
+extern CFileTranslator *guiRoot;

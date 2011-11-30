@@ -44,7 +44,7 @@ public:
     virtual void        GetBlockedVersionMap                ( std::map < SString, int >& outBlockedVersionMap );
     virtual void        GetNewsSettings                     ( SString& strOutOldestPost, uint& uiOutMaxHistoryLength );
 
-    void                GetValidCached                      ( const char *path, std::list <SString>& output );
+    void                GetValidCached                      ( const char *path, std::list <filePath>& output );
     CFile*              OpenCached                          ( const char *path, const char *mode );
 
     // CVersionUpdater functions
@@ -2177,10 +2177,10 @@ void CVersionUpdater::_UseDataFilesURLs ( void )
 // Put valid cache paths into vector
 //
 ///////////////////////////////////////////////////////////////
-void CVersionUpdater::GetValidCached( const char *path, std::list <SString>& output )
+void CVersionUpdater::GetValidCached( const char *path, std::list <filePath>& output )
 {
-    std::string parsed;
-    std::string location = "upcache/";
+    filePath parsed;
+    filePath location = "upcache/";
 
     location += path;
 
@@ -2331,12 +2331,12 @@ void CVersionUpdater::_StartDownload ( void )
     if ( !m_JobInfo.strFilename.empty() )
     {
         // See if file already exists in upcache
-        std::list <SString> saveLocationList;
+        std::list <filePath> saveLocationList;
 
         GetValidCached( m_JobInfo.strFilename, saveLocationList );
 
         // Try each place
-        for ( std::list <SString>::iterator iter = saveLocationList.begin(); iter != saveLocationList.end(); ++iter )
+        for ( std::list <filePath>::iterator iter = saveLocationList.begin(); iter != saveLocationList.end(); ++iter )
         {
             SString strPath, strFilename;
             SString strMain;
@@ -2345,11 +2345,11 @@ void CVersionUpdater::_StartDownload ( void )
             ExtractFilename ( *iter, &strPath, &strFilename );
             ExtractExtention ( *iter, &strMain, NULL );
 
-            std::vector <SString> fileList = FindFiles( strMain + "*", true, false );
+            std::vector <filePath> fileList = FindFiles( strMain + "*", true, false );
 
-            for ( std::vector <SString>::iterator iter = fileList.begin(); iter != fileList.end(); ++iter )
+            for ( std::vector <filePath>::iterator iter = fileList.begin(); iter != fileList.end(); ++iter )
             {
-                SString strPathFilename = PathJoin ( strPath, *iter );
+                SString strPathFilename = strPath + *iter;
                 std::vector <char> buffer;
 
                 // Check filesize

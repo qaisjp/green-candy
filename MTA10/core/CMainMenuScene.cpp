@@ -610,7 +610,7 @@ bool CMainMenuScene::Init3DScene ( IDirect3DTexture9 * pRenderTarget, CVector2D 
     CreateCylinder( m_pDevice );
 
     // Mesh
-    if ( D3DXLoadMeshFromX( CORE_MTA_SCENE, D3DXMESH_MANAGED, m_pDevice, NULL, &pMaterials, NULL, &dwMaterials, &pMesh ) != S_OK ) {
+    if ( D3DXLoadMeshFromX( CORE_MTA_SCENE, D3DXMESH_MANAGED, m_pDevice, NULL, &pMaterials, NULL, &dwMaterials, &pMesh ) != S_OK )
         return false;
 
     pMaterialStore = reinterpret_cast < D3DXMATERIAL* > ( pMaterials->GetBufferPointer () );
