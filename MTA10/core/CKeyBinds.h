@@ -6,6 +6,7 @@
 *  PURPOSE:     Header file for core keybind manager class
 *  DEVELOPERS:  Jax <>
 *               Florian Busse <flobu@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -27,11 +28,60 @@ struct SDefaultCommandBind
     char szArguments [20];
 };
 
+enum eBindableControl
+{
+    CONTROL_FIRE,
+    CONTROL_NEXT_WEAPON,
+    CONTROL_PREVIOUS_WEAPON,
+    CONTROL_FORWARDS,
+    CONTROL_BACKWARDS,
+    CONTROL_LEFT,
+    CONTROL_RIGHT,
+    CONTROL_ZOOM_IN,
+    CONTROL_ZOOM_OUT,
+    CONTROL_ENTER_EXIT,
+    CONTROL_CHANGE_CAMERA,
+    CONTROL_JUMP,
+    CONTROL_SPRINT,
+    CONTROL_LOOK_BEHIND,
+    CONTROL_CROUCH,
+    CONTROL_ACTION,
+    CONTROL_WALK,
+    CONTROL_VEHICLE_FIRE,
+    CONTROL_VEHICLE_SECONDARY_FIRE,
+    CONTROL_VEHICLE_LEFT,
+    CONTROL_VEHICLE_RIGHT,
+    CONTROL_STEER_FORWARD,
+    CONTROL_STEER_BACK,
+    CONTROL_ACCELERATE,
+    CONTROL_BRAKE_REVERSE,
+    CONTROL_RADIO_NEXT,
+    CONTROL_RADIO_PREVIOUS,
+    CONTROL_RADIO_USER_TRACK_SKIP,
+    CONTROL_HORN,
+    CONTROL_SUB_MISSION,
+    CONTROL_HANDBRAKE,
+    CONTROL_VEHICLE_LOOK_LEFT,
+    CONTROL_VEHICLE_LOOK_RIGHT,
+    CONTROL_VEHICLE_LOOK_BEHIND,
+    CONTROL_VEHICLE_MOUSE_LOOK,
+    CONTROL_SPECIAL_CONTROL_LEFT,
+    CONTROL_SPECIAL_CONTROL_RIGHT,
+    CONTROL_SPECIAL_CONTROL_DOWN,
+    CONTROL_SPECIAL_CONTROL_UP,
+    CONTROL_AIM_WEAPON,
+    CONTROL_CONVERSATION_YES,
+    CONTROL_CONVERSATION_NO,
+    CONTROL_GROUP_CONTROL_FORWARDS,
+    CONTROL_GROUP_CONTROL_BACK,
+    MAX_CONTROLS
+};
+
 class CKeyBinds: public CKeyBindsInterface
 {
 public:
                             CKeyBinds                   ( class CCore* pCore );
-                            ~CKeyBinds                  ( void );
+                            ~CKeyBinds                  ();
 
     bool                    ProcessMessage              ( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 protected:
@@ -42,13 +92,13 @@ public:
     // Basic funcs
     void                    Add                         ( CKeyBind* pKeyBind );
     void                    Remove                      ( CKeyBind* pKeyBind );
-    void                    Clear                       ( void );
-    void                    RemoveDeletedBinds          ( void );
-    void                    ClearCommandsAndControls    ( void );
+    void                    Clear                       ();
+    void                    RemoveDeletedBinds          ();
+    void                    ClearCommandsAndControls    ();
     bool                    Call                        ( CKeyBind* pKeyBind );
     
-    std::list < CKeyBind* > ::const_iterator IterBegin  ( void )    { return m_pList->begin (); }
-    std::list < CKeyBind* > ::const_iterator IterEnd    ( void )    { return m_pList->end (); }
+    std::list <CKeyBind*> ::const_iterator IterBegin    ()    { return m_pList->begin (); }
+    std::list <CKeyBind*> ::const_iterator IterEnd      ()    { return m_pList->end (); }
 
 
     // Command-bind funcs
@@ -56,7 +106,7 @@ public:
     bool                    AddCommand                  ( const SBindableKey* pKey, const char* szCommand, const char* szArguments = NULL, bool bState = true );
     bool                    RemoveCommand               ( const char* szKey, const char* szCommand, bool bCheckState = false, bool bState = true );
     bool                    RemoveAllCommands           ( const char* szKey, bool bCheckState = false, bool bState = true );
-    bool                    RemoveAllCommands           ( void );
+    bool                    RemoveAllCommands           ();
     bool                    CommandExists               ( const char* szKey, const char* szCommand, bool bCheckState = false, bool bState = true, const char* szArguments = NULL, const char* szResource = NULL );
     bool                    SetCommandActive            ( const char* szKey, const char* szCommand, bool bState, const char* szArguments, const char* szResource, bool bActive, bool checkHitState );
     void                    SetAllCommandsActive        ( const char* szResource, bool bActive, const char* szCommand = NULL, bool bState = true, const char* szArguments = NULL, bool checkHitState = false );
@@ -70,13 +120,13 @@ public:
     bool                    RemoveGTAControl            ( const char* szKey, const char* szControl );
     void                    RemoveGTAControls           ( const char* szControl, bool bDestroy = true );
     bool                    RemoveAllGTAControls        ( const char* szKey );
-    bool                    RemoveAllGTAControls        ( void );
+    bool                    RemoveAllGTAControls        ();
     bool                    GTAControlExists            ( const char* szKey, const char* szControl );
     bool                    GTAControlExists            ( const SBindableKey* pKey, SBindableGTAControl* pControl );
-    unsigned int            GTAControlsCount            ( void );
+    unsigned int            GTAControlsCount            ();
     void                    CallGTAControlBind          ( CGTAControlBind* pBind, bool bState );
     void                    CallAllGTAControlBinds      ( eControlType controlType, bool bState );
-    bool                    GetBoundControls            ( SBindableGTAControl * pControl, std::list < CGTAControlBind * > & controlsList );
+    bool                    GetBoundControls            ( SBindableGTAControl * pControl, std::list <CGTAControlBind*>& controlsList );
 
     // Control-bind extra funcs
     bool                    GetMultiGTAControlState     ( CGTAControlBind* pBind );
@@ -84,7 +134,7 @@ public:
     bool                    SetControlEnabled           ( const char* szControl, bool bEnabled );
     void                    SetAllControlsEnabled       ( bool bGameControls, bool bMTAControls, bool bEnabled );
     void                    ResetGTAControlState        ( SBindableGTAControl * pControl );
-    void                    ResetAllGTAControlStates    ( void );    
+    void                    ResetAllGTAControlStates    ();    
 
     // Function-bind funcs
     bool                    AddFunction                 ( const char* szKey, KeyFunctionBindHandler Handler, bool bState = true, bool bIgnoreGUI = false );
@@ -92,7 +142,7 @@ public:
     bool                    RemoveFunction              ( const char* szKey, KeyFunctionBindHandler Handler, bool bCheckState = false, bool bState = true );
     bool                    RemoveFunction              ( const SBindableKey* pKey, KeyFunctionBindHandler Handler, bool bCheckState = false, bool bState = true );
     bool                    RemoveAllFunctions          ( KeyFunctionBindHandler Handler );
-    bool                    RemoveAllFunctions          ( void );
+    bool                    RemoveAllFunctions          ();
     bool                    FunctionExists              ( const char* szKey, KeyFunctionBindHandler Handler, bool bCheckState = false, bool bState = true );
     bool                    FunctionExists              ( const SBindableKey* pKey, KeyFunctionBindHandler Handler, bool bCheckState = false, bool bState = true );
 
@@ -102,7 +152,7 @@ public:
     bool                    RemoveControlFunction       ( const char* szControl, ControlFunctionBindHandler Handler, bool bCheckState = false, bool bState = true );
     bool                    RemoveControlFunction       ( SBindableGTAControl* pControl, ControlFunctionBindHandler Handler, bool bCheckState = false, bool bState = true );
     bool                    RemoveAllControlFunctions   ( ControlFunctionBindHandler Handler );
-    bool                    RemoveAllControlFunctions   ( void );
+    bool                    RemoveAllControlFunctions   ();
     bool                    ControlFunctionExists       ( const char* szControl, ControlFunctionBindHandler Handler, bool bCheckState = false, bool bState = true );
     bool                    ControlFunctionExists       ( SBindableGTAControl* pControl, ControlFunctionBindHandler Handler, bool bCheckState = false, bool bState = true );
 
@@ -118,6 +168,7 @@ public:
     void                    SetCharacterKeyHandler      ( CharacterKeyHandler Handler ) { m_CharacterKeyHandler = Handler; }
 
     // Control/action funcs
+    bool                    GetControlState             ( eBindableControl control );
     char*                   GetControlFromAction        ( eControllerAction action );
     bool                    GetActionFromControl        ( const char* szControl, eControllerAction& action );
     SBindableGTAControl*    GetBindableFromControl      ( const char* szControl );
@@ -133,15 +184,15 @@ public:
 
     void                    UpdateControlState          ( CControllerState& cs );
 
-    void                    DoPreFramePulse             ( void );
-    void                    DoPostFramePulse            ( void );
+    void                    DoPreFramePulse             ();
+    void                    DoPostFramePulse            ();
 
     bool                    LoadFromXML                 ( CXMLNode* pMainNode );
     bool                    SaveToXML                   ( CXMLNode* pMainNode );
-    void                    LoadDefaultBinds            ( void );
-    void                    LoadDefaultControls         ( void );
+    void                    LoadDefaultBinds            ();
+    void                    LoadDefaultControls         ();
     void                    LoadDefaultCommands         ( bool bForce );
-    void                    LoadControlsFromGTA         ( void );
+    void                    LoadControlsFromGTA         ();
 
     void                    BindCommand                 ( const char* szCmdLine );
     void                    UnbindCommand               ( const char* szCmdLine );
@@ -151,7 +202,7 @@ public:
 
     void                    AddSection                  ( char* szSection );
     void                    RemoveSection               ( char* szSection );
-    void                    RemoveAllSections           ( void );
+    void                    RemoveAllSections           ();
 
 private:    
     CCore*                      m_pCore;

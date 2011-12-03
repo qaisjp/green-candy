@@ -269,11 +269,13 @@ enum ePedType
     FORCE_DWORD = 0xFFFFFFF
 };
 
-class CPedSAInterface : public CPhysicalSAInterface // +1420  = current vehicle   312 first byte
+class CPedSAInterface : public CPhysicalSAInterface
 {
 public:
     void*   operator new( size_t );
     void    operator delete( void *ptr );
+
+    bool                            IsEnteringVehicle();
 
     bool                            IsPlayer();
     CPadSAInterface*                GetJoypad();
@@ -344,8 +346,9 @@ public:
                         CPedSA( CPedSAInterface * pedInterface );
                         ~CPedSA();
 
-    CPedSAInterface*    GetPedInterface () { return (CPedSAInterface*)GetInterface(); }
-    void                Init ();
+    inline CPedSAInterface* GetInterface() { return (CPedSAInterface*)m_pInterface; }
+
+    void                Init();
     void                SetModelIndex ( unsigned short index );
     void                AttachPedToBike ( CEntity * entity, CVector * vector, unsigned short sUnk, float fUnk, float fUnk2, eWeaponType weaponType );
     void                AttachPedToEntity ( DWORD dwEntityInterface, CVector * vector, unsigned short sDirection, float fRotationLimit, eWeaponType weaponType, bool bChangeCamera );
@@ -388,8 +391,18 @@ public:
 
     bool                IsDucking ();
     void                SetDucking ( bool bDuck );
-
     bool                IsInWater ();
+
+    // Common state checking
+    CTaskSA*            GetPrimaryTask();
+    bool                IsGettingIntoVehicle();
+    bool                IsEnteringVehicle();
+    bool                IsBeingJacked();
+    bool                IsLeavingVehicle();
+    bool                IsGettingOutOfVehicle();
+
+    bool                IsDying();
+    bool                IsDead();
 
     int                 GetCantBeKnockedOffBike ();
     void                SetCantBeKnockedOffBike ( int iCantBeKnockedOffBike );

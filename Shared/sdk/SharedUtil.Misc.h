@@ -49,12 +49,6 @@ namespace SharedUtil
     SString GetMTASABaseDir ( void );
 
     //
-    // Turns a relative MTASA path i.e. "MTA\file.dat"
-    // into an absolute MTASA path i.e. "C:\Program Files\MTA San Andreas\MTA\file.dat"
-    //
-    SString CalcMTASAPath ( const SString& strPath );
-
-    //
     // Run ShellExecute with these parameters after exit
     //
     void SetOnQuitCommand ( const SString& strOperation, const SString& strFile = "", const SString& strParameters = "", const SString& strDirectory = "", const SString& strShowCmd = "" );
@@ -102,7 +96,7 @@ namespace SharedUtil
     //
     // Return true if currently executing the main thread
     // See implementation for details
-    bool            IsMainThread ( void );
+    bool            IsMainThread                    ();
 
 #endif
 
@@ -114,36 +108,37 @@ namespace SharedUtil
     //
     // Output timestamped line into the debugger
     //
-    #ifdef MTA_DEBUG
-        void OutputDebugLine ( const char* szMessage );
-    #else
-        inline void OutputDebugLineDummy ( void ) {}
-        #define OutputDebugLine(x) OutputDebugLineDummy ()
-    #endif
+#ifdef MTA_DEBUG
+    void            OutputDebugLine( const char* szMessage );
+#else
+    inline void     OutputDebugLineDummy() {}
+
+#define OutputDebugLine(x) OutputDebugLineDummy ()
+#endif
 
     //
     // Return true if supplied string adheres to the new version format
     //
-    bool IsValidVersionString ( const SString& strVersion );
+    bool            IsValidVersionString ( const SString& strVersion );
 
     //
     // Try to make a path relative to the 'resources/' directory
     //
-    SString ConformResourcePath ( const char* szRes, bool bConvertToUnixPathSep = false );
+    SString         ConformResourcePath ( const char* szRes, bool bConvertToUnixPathSep = false );
 
-    SString GenerateNickname ( void );
+    SString         GenerateNickname ( void );
 
     //
     // string stuff
     //
 
-    std::wstring MbUTF8ToUTF16 (const std::string& s);
+    std::wstring    MbUTF8ToUTF16( const std::string& s );
 
-    std::string  UTF16ToMbUTF8 (const std::wstring& ws);
+    std::string     UTF16ToMbUTF8( const std::wstring& ws );
 
-    std::wstring  ANSIToUTF16 (const std::string& s);
+    std::wstring    ANSIToUTF16( const std::string& s );
 
-    int  GetUTF8Confidence (unsigned char* input, int len);
+    int             GetUTF8Confidence (unsigned char* input, int len);
 
 
     //

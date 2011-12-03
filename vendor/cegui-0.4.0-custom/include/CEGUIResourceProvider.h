@@ -108,7 +108,7 @@ public:
 
     \return
         String object containing the currently set default resource group identifier.
-    */
+    *++
     const String&   getDefaultResourceGroup(void) const     { return d_defaultResourceGroup; }
     
     /*!

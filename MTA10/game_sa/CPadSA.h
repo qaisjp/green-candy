@@ -24,6 +24,11 @@
 class CPadSAInterface
 {
 public:
+                        CPadSAInterface();
+                        ~CPadSAInterface();
+
+    void                SetHornHistory( bool state );
+
     CControllerState    m_new;                              // 0
     CControllerState    m_prev;                             // 48
     
@@ -50,6 +55,7 @@ public:
     bool                m_disableWeaponCycle;               // 284
     bool                m_disableJump;                      // 285
     bool                m_disableStats;                     // 286
+
     long                m_lastControl;                      // 287
     long                m_averageWeapon;                    // 291, since last reset
     long                m_averageEntries;                   // 295
@@ -63,24 +69,24 @@ public:
 class CPadSA : public CPad
 {
 private:
-    CPadSAInterface*    m_interface;
-    CPadSAInterface*    m_stored;
+    CPadSAInterface*            m_interface;
+    CPadSAInterface             m_stored;
 public:
-                        CPadSA( CPadSAInterface *pad );
-                        ~CPadSA();
+                                CPadSA( CPadSAInterface *pad );
+                                ~CPadSA();
 
-    CControllerState*   GetCurrentControllerState( CControllerState *state );
-    CControllerState*   GetLastControllerState( CControllerState *state );
-    void                SetCurrentControllerState( CControllerState *state );
-    void                SetLastControllerState( CControllerState *state );
-    void                Store();
-    void                Restore();
-    bool                IsEnabled();
-    void                Disable( bool bDisable );
-    void                Clear();
-    void                SetHornHistoryValue( bool value );
-    long                GetAverageWeapon();
-    void                SetLastTimeTouched( long time );
+    const CControllerState&     GetState();
+    const CControllerState&     GetPreviousState();
+    void                        SetState( CControllerState& cs );
+
+    void                        Store();
+    void                        Restore();
+    bool                        IsEnabled();
+    void                        Disable( bool bDisable );
+    void                        Clear();
+    void                        SetHornHistoryValue( bool value );
+    long                        GetAverageWeapon();
+    void                        SetLastTimeTouched( long time );
 };
 
 #endif

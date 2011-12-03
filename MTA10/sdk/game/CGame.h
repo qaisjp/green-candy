@@ -87,6 +87,8 @@ enum eGameVersion
 class __declspec(novtable) CGame 
 {
 public:
+    virtual                             ~CGame() = 0;
+
     virtual CPools*                     GetPools() = 0;
     virtual CPlayerInfo*                GetPlayerInfo() = 0;
     virtual CProjectileInfo*            GetProjectileInfo() = 0;
@@ -131,60 +133,61 @@ public:
     virtual CWeaponInfo*                GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill = WEAPONSKILL_STD ) = 0;
     virtual CModelInfo*                 GetModelInfo( unsigned short id ) = 0;
 
-    virtual unsigned long       GetSystemTime () = 0;
-    virtual bool                IsAtMenu () = 0;
-    virtual bool                IsGameLoaded () = 0;
-    virtual void                StartGame () = 0;
-    virtual void                SetSystemState ( eSystemState State ) = 0;
-    virtual eSystemState        GetSystemState () = 0;
-    virtual void                Pause ( bool bPaused ) = 0;
-    virtual bool                IsPaused () = 0;
-    virtual bool                IsInForeground () = 0;
+    virtual unsigned long       GetSystemTime() = 0;
+    virtual bool                IsAtMenu() = 0;
+    virtual bool                IsGameLoaded() = 0;
+    virtual void                StartGame() = 0;
+    virtual void                SetSystemState( eSystemState State ) = 0;
+    virtual eSystemState        GetSystemState() = 0;
+    virtual void                Pause( bool bPaused ) = 0;
+    virtual bool                IsPaused() = 0;
+    virtual bool                IsInForeground() = 0;
     virtual void                DisableRenderer( bool bDisabled ) = 0;
-    virtual void                SetRenderHook ( InRenderer* pInRenderer ) = 0;
-    virtual void                TakeScreenshot ( char * szFileName ) = 0;
-    virtual void                SetTimeScale ( float fTimeScale ) = 0;
-    virtual float               GetFPS () = 0;
-    virtual float               GetTimeStep () = 0;
-    virtual float               GetOldTimeStep () = 0;
-    virtual float               GetTimeScale () = 0;
+    virtual void                SetRenderHook( InRenderer* pInRenderer ) = 0;
+    virtual void                TakeScreenshot( char * szFileName ) = 0;
+    virtual void                SetTimeScale( float fTimeScale ) = 0;
+    virtual float               GetFPS() = 0;
+    virtual float               GetTimeStep() = 0;
+    virtual float               GetOldTimeStep() = 0;
+    virtual float               GetTimeScale() = 0;
 
-    virtual void                Initialize  () = 0;
-    virtual void                Reset () = 0;
-    virtual void                Terminate () = 0;
+    virtual void                Initialize() = 0;
+    virtual void                Reset() = 0;
+    virtual void                OnPreFrame() = 0;
+    virtual void                OnFrame();
 
     virtual bool                InitLocalPlayer() = 0;
 
-    virtual float               GetGravity () = 0;
-    virtual void                SetGravity ( float fGravity ) = 0;
+    virtual float               GetGravity() = 0;
+    virtual void                SetGravity( float fGravity ) = 0;
 
-    virtual float               GetGameSpeed () = 0;
-    virtual void                SetGameSpeed ( float fSpeed ) = 0;
+    virtual float               GetGameSpeed() = 0;
+    virtual void                SetGameSpeed( float fSpeed ) = 0;
 
-    virtual unsigned long       GetMinuteDuration () = 0;
-    virtual void                SetMinuteDuration ( unsigned long ulDelay ) = 0;
+    virtual unsigned long       GetMinuteDuration() = 0;
+    virtual void                SetMinuteDuration( unsigned long ulDelay ) = 0;
 
-    virtual unsigned char       GetBlurLevel () = 0;
-    virtual void                SetBlurLevel ( unsigned char ucLevel ) = 0;
+    virtual unsigned char       GetBlurLevel() = 0;
+    virtual void                SetBlurLevel( unsigned char ucLevel ) = 0;
 
-    virtual eGameVersion        GetGameVersion () = 0;
+    virtual eGameVersion        GetGameVersion() = 0;
 
-    virtual bool                IsCheatEnabled ( const char* szCheatName ) = 0;
-    virtual bool                SetCheatEnabled ( const char* szCheatName, bool bEnable ) = 0;
-    virtual void                ResetCheats () = 0;
+    virtual bool                IsCheatEnabled( const char* szCheatName ) = 0;
+    virtual bool                SetCheatEnabled( const char* szCheatName, bool bEnable ) = 0;
+    virtual void                ResetCheats() = 0;
 
-    virtual bool                VerifySADataFileNames () = 0;
-    virtual bool                PerformChecks () = 0;
-    virtual int&                GetCheckStatus () = 0;
+    virtual bool                VerifySADataFileNames() = 0;
+    virtual bool                PerformChecks() = 0;
+    virtual int&                GetCheckStatus() = 0;
 
-    virtual void                SetAsyncLoadingFromSettings ( bool bSettingsDontUse, bool bSettingsEnabled ) = 0;
-    virtual void                SetAsyncLoadingFromScript ( bool bScriptEnabled, bool bScriptForced ) = 0;
-    virtual void                SuspendASyncLoading ( bool bSuspend ) = 0;
-    virtual bool                IsASyncLoadingEnabled ( bool bIgnoreSuspend = false ) = 0;
+    virtual void                SetAsyncLoadingFromSettings( bool bSettingsDontUse, bool bSettingsEnabled ) = 0;
+    virtual void                SetAsyncLoadingFromScript( bool bScriptEnabled, bool bScriptForced ) = 0;
+    virtual void                SuspendASyncLoading( bool bSuspend ) = 0;
+    virtual bool                IsASyncLoadingEnabled( bool bIgnoreSuspend = false ) = 0;
 
-    virtual bool                HasCreditScreenFadedOut () = 0;
-    virtual void                FlushPendingRestreamIPL () = 0;
-    virtual void                DisableVSync () = 0;
+    virtual bool                HasCreditScreenFadedOut() = 0;
+    virtual void                FlushPendingRestreamIPL() = 0;
+    virtual void                DisableVSync() = 0;
 };
 
 #endif

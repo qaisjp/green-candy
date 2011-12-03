@@ -38,7 +38,6 @@
 #define     NUM_WeaponInfosTotal            (NUM_WeaponInfosStdSkill + (3*NUM_WeaponInfosOtherSkill)) // std, (poor, pro, special)
 
 #define     MODELINFO_LAST_PLAYER_ID        288         // ??
-#define     MODELINFO_MAX                   65535
 
 #define     FUNC_GetLevelFromPosition       0x4DD300
 
@@ -99,8 +98,8 @@ class CGameSA : public CGame
     friend class COffsets;
 
 private:
-    CWeaponInfo         * WeaponInfos[NUM_WeaponInfosTotal];
-    CModelInfoSA        ModelInfo[MODELINFO_MAX];
+    CWeaponInfo*        WeaponInfos[NUM_WeaponInfosTotal];
+    CModelInfoSA        ModelInfo[MAX_MODELS];
 public:
     CGameSA(); // constructor
     ~CGameSA ();
@@ -171,9 +170,10 @@ public:
 
     void                    SetRenderHook ( InRenderer* pInRenderer );
 
-    void                    Initialize  ();
-    void                    Reset ();
-    void                    Terminate ();
+    void                    Initialize();
+    void                    Reset();
+    void                    OnPreFrame();
+    void                    OnFrame();
 
     eGameVersion            GetGameVersion ();
     eGameVersion            FindGameVersion ();
@@ -293,7 +293,7 @@ private:
     static float*           VAR_TimeStep;
     static unsigned long*   VAR_Framelimiter;
 
-    std::map < std::string, SCheatSA* > m_Cheats;
+    std::map <std::string, SCheatSA*> m_Cheats;
 };
 
 // Utility functions

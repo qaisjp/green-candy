@@ -33,9 +33,6 @@ float* CGameSA::VAR_OldTimeStep;
 float* CGameSA::VAR_TimeStep;
 unsigned long* CGameSA::VAR_Framelimiter;
 
-/**
- * \todo allow the addon to change the size of the pools (see 0x4C0270 - CPools::Initialise) (in start game?)
- */
 CGameSA::CGameSA()
 {
     m_bAsyncSettingsDontUse = false;
@@ -159,10 +156,10 @@ CGameSA::CGameSA()
     m_pPools->SetPoolCapacity ( EVENT_POOL, 5000 );
 }
 
-CGameSA::~CGameSA ( void )
+CGameSA::~CGameSA()
 {
-    delete reinterpret_cast < CPlayerInfoSA* > ( m_pPlayerInfo );
-
+    // Destroy the player
+    delete m_pPlayerInfo;
     
     for ( int i = 0; i < NUM_WeaponInfosTotal; i++ )
     {
@@ -203,7 +200,12 @@ CGameSA::~CGameSA ( void )
     delete m_pClock;
     delete m_pPools;
     delete m_pWorld;
-    delete m_pAudio;  
+    delete m_pAudio;
+
+    // Dump any memory leaks if DETECT_LEAK is defined
+#ifdef DETECT_LEAKS    
+    DumpUnfreed();
+#endif
 }
 
 CWeaponInfoSA* CGameSA::GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill )
@@ -214,73 +216,65 @@ CWeaponInfoSA* CGameSA::GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill )
          (skill != WEAPONSKILL_STD && weapon >= WEAPONTYPE_PISTOL && weapon <= WEAPONTYPE_TEC9) )
     {
         int offset = 0;
+
         switch ( skill )
         {
-            case WEAPONSKILL_STD:
-                offset = 0;
-                break;
-            case WEAPONSKILL_POOR:
-                offset = NUM_WeaponInfosStdSkill - WEAPONTYPE_PISTOL;
-                break;
-            case WEAPONSKILL_PRO:
-                offset = NUM_WeaponInfosStdSkill + NUM_WeaponInfosOtherSkill - WEAPONTYPE_PISTOL;
-                break;
-            case WEAPONSKILL_SPECIAL:
-                offset = NUM_WeaponInfosStdSkill + 2*NUM_WeaponInfosOtherSkill - WEAPONTYPE_PISTOL;
-                break;
-            default:
-                break;
+        case WEAPONSKILL_STD:
+            offset = 0;
+            break;
+        case WEAPONSKILL_POOR:
+            offset = NUM_WeaponInfosStdSkill - WEAPONTYPE_PISTOL;
+            break;
+        case WEAPONSKILL_PRO:
+            offset = NUM_WeaponInfosStdSkill + NUM_WeaponInfosOtherSkill - WEAPONTYPE_PISTOL;
+            break;
+        case WEAPONSKILL_SPECIAL:
+            offset = NUM_WeaponInfosStdSkill + 2*NUM_WeaponInfosOtherSkill - WEAPONTYPE_PISTOL;
+            break;
+        default:
+            break;
         }
         return WeaponInfos[offset + weapon]; 
     }
-    else 
-        return NULL; 
+    return NULL; 
 }
 
-VOID CGameSA::Pause ( bool bPaused )
+void CGameSA::Pause( bool bPaused )
 {
     *VAR_GamePaused = bPaused;
 }
 
-bool CGameSA::IsPaused ( )
+bool CGameSA::IsPaused()
 {
     return *VAR_GamePaused;
 }
 
-bool CGameSA::IsInForeground ()
+bool CGameSA::IsInForeground()
 {
     return *VAR_IsForegroundWindow;
 }
 
-CModelInfo  * CGameSA::GetModelInfo(DWORD dwModelID )
+CModelInfo* CGameSA::GetModelInfo( unsigned short model )
 { 
-    DEBUG_TRACE("CModelInfo * CGameSA::GetModelInfo(DWORD dwModelID )");
-    if (dwModelID < MODELINFO_MAX) 
-    {
-        if ( ModelInfo [dwModelID ].IsValid () )
-        {
-            return &ModelInfo[dwModelID];
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-    else
-    {
-        return NULL; 
-    }
+    DEBUG_TRACE("CModelInfo* CGameSA::GetModelInfo( unsigned short model )");
+
+    if ( model > MAX_MODELS - 1 )
+        return NULL;
+
+    if ( !ModelInfo[model].IsValid() )
+        return NULL;
+
+    return &ModelInfo[model];
 }
 
 /**
  * Starts the game
  * \todo make addresses into constants
  */
-VOID CGameSA::StartGame()
+void CGameSA::StartGame()
 {
-    DEBUG_TRACE("VOID CGameSA::StartGame()");
-//  InitScriptInterface();
-    //*(BYTE *)VAR_StartGame = 1;
+    DEBUG_TRACE("void CGameSA::StartGame()");
+
     this->SetSystemState(GS_INIT_PLAYING_GAME);
     MemPutFast < BYTE > ( 0xB7CB49, 0 );
     MemPutFast < BYTE > ( 0xBA67A4, 0 );
@@ -290,73 +284,47 @@ VOID CGameSA::StartGame()
  * Sets the part of the game loading process the game is in.
  * @param dwState DWORD containing a valid state 0 - 9
  */
-VOID CGameSA::SetSystemState( eSystemState State )
+void CGameSA::SetSystemState( eSystemState State )
 {
-    DEBUG_TRACE("VOID CGameSA::SetSystemState( eSystemState State )");
+    DEBUG_TRACE("void CGameSA::SetSystemState( eSystemState State )");
     *VAR_SystemState = (DWORD)State;
 }
 
-eSystemState CGameSA::GetSystemState( )
+eSystemState CGameSA::GetSystemState()
 {
-    DEBUG_TRACE("eSystemState CGameSA::GetSystemState( )");
+    DEBUG_TRACE("eSystemState CGameSA::GetSystemState()");
     return (eSystemState)*VAR_SystemState;
 }
 
-/**
- * This adds the local player to the ped pool, nothing else
- * @return BOOL TRUE if success, FALSE otherwise
- */
-BOOL CGameSA::InitLocalPlayer(  )
+bool CGameSA::InitLocalPlayer()
 {
     DEBUG_TRACE("BOOL CGameSA::InitLocalPlayer(  )");
 
-    // Added by ChrML - Looks like it isn't safe to call this more than once but mod code might do
-    static bool bAlreadyInited = false;
-
-    if ( bAlreadyInited )
-        return TRUE;
-
-    bAlreadyInited = true;
-
-    CPoolsSA * pools = (CPoolsSA *)this->GetPools ();
-    if ( pools )
-    {
-        //* HACKED IN HERE FOR NOW *//
-        CPedSAInterface* pInterface = (*ppPedPool)->Get( 1 );
-
-        if ( pInterface )
-        {
-            pools->AddPed ( (DWORD*)pInterface );
-            return TRUE;
-        }
-
-        return FALSE;
-    }
-    return FALSE;
+    return GetPools()->GetPedFromRef( 1 ) != NULL;
 }
 
-float CGameSA::GetGravity ( void )
+float CGameSA::GetGravity()
 {
-    return * ( float* ) ( 0x863984 );
+    return *(float*)0x863984;
 }
 
-void CGameSA::SetGravity ( float fGravity )
+void CGameSA::SetGravity( float fGravity )
 {
-    MemPut < float > ( 0x863984, fGravity );
+   *(float*)0x863984 = fGravity;
 }
 
-float CGameSA::GetGameSpeed ( void )
+float CGameSA::GetGameSpeed()
 {
-    return * ( float* ) ( 0xB7CB64 );
+    return *(float*)0xB7CB64;
 }
 
-void CGameSA::SetGameSpeed ( float fSpeed )
+void CGameSA::SetGameSpeed( float fSpeed )
 {
-    MemPutFast < float > ( 0xB7CB64, fSpeed );
+    *(float*)0xB7CB64 = fSpeed;
 }
 
 // this prevents some crashes (respawning mainly)
-VOID CGameSA::DisableRenderer( bool bDisabled )
+void CGameSA::DisableRenderer( bool bDisabled )
 {
     // ENABLED:
     // 0053DF40   D915 2C13C800    FST DWORD PTR DS:[C8132C]
@@ -364,27 +332,20 @@ VOID CGameSA::DisableRenderer( bool bDisabled )
     // 0053DF40   C3               RETN
 
     if ( bDisabled )
-    {
-        MemPut < BYTE > ( 0x53DF40, 0xC3 );
-    }
+        *(unsigned char*)0x53DF40 = 0xC3;
     else
-    {
-        MemPut < BYTE > ( 0x53DF40, 0xD9 );
-    }
+        *(unsigned char*)0x53DF40 = 0xD9;
 }
 
-VOID CGameSA::SetRenderHook ( InRenderer* pInRenderer )
+void CGameSA::SetRenderHook( InRenderer* pInRenderer )
 {
     if ( pInRenderer )
         HookInstall ( (DWORD)FUNC_CDebug_DebugDisplayTextBuffer, (DWORD)pInRenderer, 6 );
     else
-    {
-        MemPut < BYTE > ( FUNC_CDebug_DebugDisplayTextBuffer, 0xC3 );
-    }
+        *(unsigned char*)FUNC_CDebug_DebugDisplayTextBuffer = 0xC3;
 }
 
-
-VOID CGameSA::TakeScreenshot ( char * szFileName )
+void CGameSA::TakeScreenshot( char *szFileName )
 {
     DWORD dwFunc = FUNC_JPegCompressScreenToFile;
     _asm
@@ -398,50 +359,31 @@ VOID CGameSA::TakeScreenshot ( char * szFileName )
     }
 }
 
-DWORD * CGameSA::GetMemoryValue ( DWORD dwOffset )
-{
-    if ( dwOffset <= MAX_MEMORY_OFFSET_1_0 )
-        return (DWORD *)dwOffset;
-    else
-        return NULL;
-}
-
-void CGameSA::Reset ( void )
+void CGameSA::Reset()
 {
     // Things to do if the game was loaded
-    if ( GetSystemState () == GS_PLAYING_GAME )
-    {
-        // Extinguish all fires
-        m_pFireManager->ExtinguishAllFires();
+    if ( GetSystemState() != GS_PLAYING_GAME )
+        return;
 
-        // Restore camera stuff
-        m_pCamera->Restore ();
-        m_pCamera->SetFadeColor ( 0, 0, 0 );
-        m_pCamera->Fade ( 0, FADE_OUT );
+    // Extinguish all fires
+    m_pFireManager->ExtinguishAllFires();
 
-        Pause ( false );        // We don't have to pause as the fadeout will stop the sound. Pausing it will make the fadein next start ugly
-        m_pHud->Disable ( false );
+    // Restore camera stuff
+    m_pCamera->Restore();
+    m_pCamera->SetFadeColor( 0, 0, 0 );
+    m_pCamera->Fade( 0, FADE_OUT );
 
-        DisableRenderer ( false );
+    Pause( false );        // We don't have to pause as the fadeout will stop the sound. Pausing it will make the fadein next start ugly
+    m_pHud->Disable( false );
 
-        // Restore the HUD
-        m_pHud->Disable ( false );
-        m_pHud->DisableAll ( false );
-    }
+    DisableRenderer( false );
+
+    // Restore the HUD
+    m_pHud->Disable( false );
+    m_pHud->DisableAll( false );
 }
 
-void CGameSA::Terminate ( void )
-{
-    // Initiate the destruction
-    delete this;
-
-    // Dump any memory leaks if DETECT_LEAK is defined
-    #ifdef DETECT_LEAKS    
-        DumpUnfreed();
-    #endif
-}
-
-void CGameSA::Initialize ( void )
+void CGameSA::Initialize()
 {
     // Initialize garages
     m_pGarages->Initialize();
@@ -451,104 +393,120 @@ void CGameSA::Initialize ( void )
     MemPutFast < BYTE > ( CLASS_CMenuManager+0x5C, 0 );
 }
 
-eGameVersion CGameSA::GetGameVersion ( void )
+void CGameSA::OnPreFrame()
+{
+    switch( GetSystemState() )
+    {
+    case GS_PLAYING_GAME:
+        // Update control with current pad
+        m_pPad->SetState( m_pPad->GetState() );
+        break;
+    }
+}
+
+void CGameSA::OnFrame()
+{
+    switch( GetSystemState() )
+    {
+    case GS_PLAYING_GAME:
+        // Update local player's control
+        
+        break;
+    }
+}
+
+eGameVersion CGameSA::GetGameVersion()
 {
     return m_eGameVersion;
 }
 
-eGameVersion CGameSA::FindGameVersion ( void )
+eGameVersion CGameSA::FindGameVersion()
 {
-    unsigned char ucA = *reinterpret_cast < unsigned char* > ( 0x748ADD );
-    unsigned char ucB = *reinterpret_cast < unsigned char* > ( 0x748ADE );
+    unsigned char ucA = *(unsigned char*)0x748ADD;
+    unsigned char ucB = *(unsigned char*)0x748ADE;
+
     if ( ucA == 0xFF && ucB == 0x53 )
-    {
         m_eGameVersion = VERSION_US_10;
-    }
     else if ( ucA == 0x0F && ucB == 0x84 )
-    {
         m_eGameVersion = VERSION_EU_10;
-    }
     else if ( ucA == 0xFE && ucB == 0x10 )
-    {
         m_eGameVersion = VERSION_11;
-    }
     else
-    {
         m_eGameVersion = VERSION_UNKNOWN;
-    }
 
     return m_eGameVersion;
 }
 
-float CGameSA::GetFPS ( void )
+float CGameSA::GetFPS()
 {
     return *VAR_FPS;
 }
 
-float CGameSA::GetTimeStep ( void )
+float CGameSA::GetTimeStep()
 {
     return *VAR_TimeStep;
 }
 
-float CGameSA::GetOldTimeStep ( void )
+float CGameSA::GetOldTimeStep()
 {
     return *VAR_OldTimeStep;
 }
 
-float CGameSA::GetTimeScale ( void )
+float CGameSA::GetTimeScale()
 {
     return *VAR_TimeScale;
 }
 
-void CGameSA::SetTimeScale ( float fTimeScale )
+void CGameSA::SetTimeScale( float fTimeScale )
 {
     *VAR_TimeScale = fTimeScale;
 }
 
-
-unsigned char CGameSA::GetBlurLevel ( void )
+unsigned char CGameSA::GetBlurLevel()
 {
-    return * ( unsigned char * ) 0x8D5104;
+    return *(unsigned char*)0x8D5104;
 }
 
-
-void CGameSA::SetBlurLevel ( unsigned char ucLevel )
+void CGameSA::SetBlurLevel( unsigned char ucLevel )
 {
-    MemPutFast < unsigned char > ( 0x8D5104, ucLevel );
+    *(unsigned char*)0x8D5104 = ucLevel;
 }
 
-unsigned long CGameSA::GetMinuteDuration ( void )
+unsigned long CGameSA::GetMinuteDuration()
 {
-    return * ( unsigned long * ) 0xB7015C;
+    return *(unsigned long*)0xB7015C;
 }
 
-
-void CGameSA::SetMinuteDuration ( unsigned long ulTime )
+void CGameSA::SetMinuteDuration( unsigned long ulTime )
 {
-    MemPutFast < unsigned long > ( 0xB7015C, ulTime );
+    *(unsigned long*)0xB7015C = ulTime;
 }
 
-bool CGameSA::IsCheatEnabled ( const char* szCheatName )
+bool CGameSA::IsCheatEnabled( const char* szCheatName )
 {
-    std::map < std::string, SCheatSA* >::iterator it = m_Cheats.find ( szCheatName );
+    std::map <std::string, SCheatSA*>::iterator it = m_Cheats.find ( szCheatName );
+
     if ( it == m_Cheats.end () )
         return false;
+
     return *(it->second->m_byAddress) != 0;
 }
 
-bool CGameSA::SetCheatEnabled ( const char* szCheatName, bool bEnable )
+bool CGameSA::SetCheatEnabled( const char* szCheatName, bool bEnable )
 {
     std::map < std::string, SCheatSA* >::iterator it = m_Cheats.find ( szCheatName );
+
     if ( it == m_Cheats.end () )
         return false;
     if ( !it->second->m_bCanBeSet )
         return false;
+
     MemPutFast < BYTE > ( it->second->m_byAddress, bEnable );
     it->second->m_bEnabled = bEnable;
     return true;
 }
 
-void CGameSA::ResetCheats ()
+void CGameSA::ResetCheats()
 {
     std::map < std::string, SCheatSA* >::iterator it;
     for ( it = m_Cheats.begin (); it != m_Cheats.end (); it++ ) {
@@ -559,7 +517,7 @@ void CGameSA::ResetCheats ()
         it->second->m_bEnabled = false;
     }
 }
-bool CGameSA::PerformChecks ( void )
+bool CGameSA::PerformChecks()
 {
     std::map < std::string, SCheatSA* >::iterator it;
     for ( it = m_Cheats.begin (); it != m_Cheats.end (); it++ ) {
@@ -568,19 +526,20 @@ bool CGameSA::PerformChecks ( void )
     }
     return true;
 }
-bool CGameSA::VerifySADataFileNames ()
+
+bool CGameSA::VerifySADataFileNames()
 {
-    return !strcmp ( *(char **)0x5B65AE, "DATA\\CARMODS.DAT" ) &&
-           !strcmp ( *(char **)0x5BD839, "DATA" ) &&
-           !strcmp ( *(char **)0x5BD84C, "HANDLING.CFG" ) &&
-           !strcmp ( *(char **)0x5BEEE8, "DATA\\melee.dat" ) &&
-           !strcmp ( *(char **)0x5B925B, "DATA\\OBJECT.DAT" ) &&
-           !strcmp ( *(char **)0x55D0FC, "data\\surface.dat" ) &&
-           !strcmp ( *(char **)0x55F2BB, "data\\surfaud.dat" ) &&
-           !strcmp ( *(char **)0x55EB9E, "data\\surfinfo.dat" ) &&
-           !strcmp ( *(char **)0x6EAEF8, "DATA\\water.dat" ) &&
-           !strcmp ( *(char **)0x6EAEC3, "DATA\\water1.dat" ) &&
-           !strcmp ( *(char **)0x5BE686, "DATA\\WEAPON.DAT" );
+    return !strcmp( *(char**)0x5B65AE, "DATA\\CARMODS.DAT" ) &&
+           !strcmp( *(char**)0x5BD839, "DATA" ) &&
+           !strcmp( *(char**)0x5BD84C, "HANDLING.CFG" ) &&
+           !strcmp( *(char**)0x5BEEE8, "DATA\\melee.dat" ) &&
+           !strcmp( *(char**)0x5B925B, "DATA\\OBJECT.DAT" ) &&
+           !strcmp( *(char**)0x55D0FC, "data\\surface.dat" ) &&
+           !strcmp( *(char**)0x55F2BB, "data\\surfaud.dat" ) &&
+           !strcmp( *(char**)0x55EB9E, "data\\surfinfo.dat" ) &&
+           !strcmp( *(char**)0x6EAEF8, "DATA\\water.dat" ) &&
+           !strcmp( *(char**)0x6EAEC3, "DATA\\water1.dat" ) &&
+           !strcmp( *(char**)0x5BE686, "DATA\\WEAPON.DAT" );
 }
 
 void CGameSA::SetAsyncLoadingFromSettings ( bool bSettingsDontUse, bool bSettingsEnabled )
@@ -607,6 +566,7 @@ bool CGameSA::IsASyncLoadingEnabled ( bool bIgnoreSuspend )
 
     if ( m_bAsyncScriptForced || m_bAsyncSettingsDontUse )
         return m_bAsyncScriptEnabled;
+
     return m_bAsyncSettingsEnabled;
 }
 
@@ -661,25 +621,23 @@ void CGameSA::SetupSpecialCharacters ( void )
 }
 
 // Well, has it?
-bool CGameSA::HasCreditScreenFadedOut ( void )
+bool CGameSA::HasCreditScreenFadedOut()
 {
-    BYTE ucAlpha = *(BYTE*)0xBAB320;
-    bool bCreditScreenFadedOut = ( GetSystemState() >= 7 ) && ( ucAlpha < 6 );
-    return bCreditScreenFadedOut;
+    return ( GetSystemState() >= GS_FRONTEND ) && ( *(BYTE*)0xBAB320 < 6 );
 }
 
 // Ensure replaced/restored textures for models in the GTA map are correct
-void CGameSA::FlushPendingRestreamIPL ( void )
+void CGameSA::FlushPendingRestreamIPL()
 {
-    CModelInfoSA::StaticFlushPendingRestreamIPL ();
+    CModelInfoSA::StaticFlushPendingRestreamIPL();
 }
 
 // Disable VSync by forcing what normally happends at the end of the loading screens
 // Note #1: This causes the D3D device to be reset after the next frame
 // Note #2: Some players do not need this to disable VSync. (Possibly because their video card driver settings override it somewhere)
-void CGameSA::DisableVSync ( void )
+void CGameSA::DisableVSync()
 {
-    MemPutFast < BYTE > ( 0xBAB318, 0 );
+   *(unsigned char*)0xBAB318 = 0;
 }
 
 void ForEachBlock( void *ptr, unsigned int count, size_t blockSize, void (*callback)( void *block ) )

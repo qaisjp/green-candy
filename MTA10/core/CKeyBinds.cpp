@@ -168,6 +168,7 @@ SBindableKey g_bkKeys[] =
     { "",           0,          NO_KEY_DEFINED,         DATA_NONE }
 };
 
+// Sync this with eBindableControl!
 SBindableGTAControl g_bcControls[] =
 {
     { "fire",                   FIRE,                   CONTROL_FOOT,    false, true, "Fire" },
@@ -1877,6 +1878,13 @@ const SBindableKey* CKeyBinds::GetBindableFromMessage ( UINT uMsg, WPARAM wParam
     return NULL;
 }
 
+bool CKeyBinds::GetControlState( eBindableControl control )
+{
+    if ( control > MAX_CONTROLS )
+        return false;
+
+    return g_bcControls[control].bState;
+}
 
 char* CKeyBinds::GetControlFromAction ( eControllerAction action )
 {
@@ -2037,10 +2045,6 @@ unsigned int CKeyBinds::Count ( eKeyBindType bindType )
 
 void CKeyBinds::DoPreFramePulse ( void )
 {
-    CControllerState cs;
-    m_pCore->GetGame ()->GetPad ()->GetCurrentControllerState ( &cs );
-    m_pCore->GetGame ()->GetPad ()->SetLastControllerState ( &cs );
-
     // HACK: chatbox binds
     if ( m_pChatBoxBind )
     {
@@ -2049,26 +2053,27 @@ void CKeyBinds::DoPreFramePulse ( void )
     }
 
     // HACK: shift keys
-    if ( m_pCore->IsFocused () )
+    if ( m_pCore->IsFocused() )
     {
-        bool bLeftShift = ( GetKeyState ( VK_LSHIFT ) & 0x8000 ) != 0;
-        bool bRightShift = ( GetKeyState ( VK_RSHIFT ) & 0x8000 ) != 0;
+        bool bLeftShift = ( GetKeyState( VK_LSHIFT ) & 0x8000 ) != 0;
+        bool bRightShift = ( GetKeyState( VK_RSHIFT ) & 0x8000 ) != 0;
 
         if ( bLeftShift != bPreLeftShift )
         {
             if ( bLeftShift )
-                ProcessKeyStroke ( &g_bkKeys [ 9 ], true );
+                ProcessKeyStroke( &g_bkKeys[9], true );
             else
-                ProcessKeyStroke ( &g_bkKeys [ 9 ], false );
+                ProcessKeyStroke( &g_bkKeys[9], false );
 
             bPreLeftShift = bLeftShift;
         }
+
         if ( bRightShift != bPreRightShift )
         {
             if ( bRightShift )
-                ProcessKeyStroke ( &g_bkKeys [ 10 ], true );
+                ProcessKeyStroke( &g_bkKeys[10], true );
             else
-                ProcessKeyStroke ( &g_bkKeys [ 10 ], false );
+                ProcessKeyStroke( &g_bkKeys[10], false );
 
             bPreRightShift = bRightShift;
         }
@@ -2146,7 +2151,7 @@ void CKeyBinds::DoPostFramePulse ( void )
 {
     eSystemState SystemState = CCore::GetSingleton ().GetGame ()->GetSystemState ();
 
-    if ( m_bWaitingToLoadDefaults && ( SystemState == 7 || SystemState == 9 ) ) // Are GTA controls actually initialized?
+    if ( m_bWaitingToLoadDefaults && ( SystemState == GS_FRONTEND || SystemState == GS_PLAYING_GAME ) ) // Are GTA controls actually initialized?
     {
         LoadDefaultBinds ();
         m_bWaitingToLoadDefaults = false; 
@@ -2179,15 +2184,6 @@ void CKeyBinds::DoPostFramePulse ( void )
     pTask = pTaskManager->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
     if ( pTask && pTask->GetTaskType () == TASK_SIMPLE_DEAD )
         bIsDead = true;
-
-    if ( bInVehicle != m_bInVehicle )
-    {
-        m_bInVehicle = bInVehicle;
-        if ( bInVehicle )
-            CallAllGTAControlBinds ( CONTROL_FOOT, false );
-        else
-            CallAllGTAControlBinds ( CONTROL_VEHICLE, false );
-    }
 
     bool bAimingWeapon = g_bcControls [ 39 ].bState;
 

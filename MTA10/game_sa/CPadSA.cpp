@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CPadSA.cpp
 *  PURPOSE:     Controller pad input logic
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -14,83 +15,92 @@
 
 #include "StdInc.h"
 
-CControllerState * CPadSA::GetCurrentControllerState(CControllerState * ControllerState)
+CPadSAInterface::CPadSAInterface()
 {
-    DEBUG_TRACE("CControllerState * CPadSA::GetCurrentControllerState(CControllerState * ControllerState)");
-    MemCpyFast (ControllerState, &this->internalInterface->NewState, sizeof(CControllerState));
-    return ControllerState;
+
 }
 
-CControllerState * CPadSA::GetLastControllerState(CControllerState * ControllerState)
+CPadSAInterface::~CPadSAInterface()
 {
-    DEBUG_TRACE("CControllerState * CPadSA::GetLastControllerState(CControllerState * ControllerState)");
-    MemCpyFast (ControllerState, &this->internalInterface->OldState, sizeof(CControllerState));
-    return ControllerState;
+
 }
 
-VOID CPadSA::SetCurrentControllerState(CControllerState * ControllerState)
+void CPadSAInterface::SetHornHistory( bool state )
 {
-    DEBUG_TRACE("VOID CPadSA::SetCurrentControllerState(CControllerState * ControllerState)");
-    MemCpyFast (&this->internalInterface->NewState, ControllerState, sizeof(CControllerState));
+    m_numHorn = ( m_numHorn + 1 ) % MAX_HORN_HISTORY;
+
+    m_hornHistory[m_numHorn] = state;
 }
 
-VOID CPadSA::SetLastControllerState(CControllerState * ControllerState)
+const CControllerState& CPadSA::GetState()
 {
-    DEBUG_TRACE("VOID CPadSA::SetLastControllerState(CControllerState * ControllerState)");
-    MemCpyFast (&this->internalInterface->OldState, ControllerState, sizeof(CControllerState));
+    DEBUG_TRACE("CControllerState& CPadSA::GetState()");
+    
+    return m_interface->m_new;
 }
 
-VOID CPadSA::Store()
+const CControllerState& CPadSA::GetPreviousState()
 {
-    DEBUG_TRACE("VOID CPadSA::Store()");
-    MemCpyFast (&this->StoredPad, this->internalInterface, sizeof(CPadSAInterface));
+    DEBUG_TRACE("CControllerState& CPadSA::GetPreviousState()");
+    
+    return m_interface->m_prev;
 }
 
-VOID CPadSA::Restore()
+void CPadSA::SetCurrentControllerState( CControllerState& cs )
 {
-    DEBUG_TRACE("VOID CPadSA::Restore()");
-    MemCpyFast (this->internalInterface, &this->StoredPad, sizeof(CPadSAInterface));
+    DEBUG_TRACE("void CPadSA::SetCurrentState( CControllerState& cs )");
+    
+    m_interface->m_prev = m_interface->m_new;
+    m_interface->m_new = cs;
 }
 
-bool CPadSA::IsEnabled ( void )
+void CPadSA::Store()
 {
-    bool bEnabled = *(BYTE *)FUNC_CPad_UpdatePads == 0x56;
-    return bEnabled;
+    DEBUG_TRACE("void CPadSA::Store()");
+
+    m_stored = *m_interface;
 }
 
-VOID CPadSA::Disable( bool bDisable )
+void CPadSA::Restore()
+{
+    DEBUG_TRACE("void CPadSA::Restore()");
+
+    *m_interface = m_stored;
+}
+
+bool CPadSA::IsEnabled()
+{
+    return *(unsigned char*)FUNC_CPad_UpdatePads == 0x56;
+}
+
+// Actually, this disables ALL pads!
+void CPadSA::Disable( bool bDisable )
 {
     if ( bDisable )
-        MemPut < BYTE > ( FUNC_CPad_UpdatePads, 0xC3 );
+        *(unsigned char*)FUNC_CPad_UpdatePads = 0xC3;
     else
-        MemPut < BYTE > ( FUNC_CPad_UpdatePads, 0x56 );
+        *(unsigned char*)FUNC_CPad_UpdatePads = 0x56;
 
     //this->internalInterface->DisablePlayerControls = bDisable;
 }
 
-VOID CPadSA::Clear ( void )
+void CPadSA::Clear()
 {
-    CControllerState cs; // create a null controller (class is inited to null)
-    SetCurrentControllerState ( &cs );
-    SetLastControllerState ( &cs );
+    m_interface->m_new = CControllerState();
+    m_interface->m_prev = CControllerState();
 }
 
-VOID CPadSA::SetHornHistoryValue( bool value )
+void CPadSA::SetHornHistoryValue( bool value )
 {
-    internalInterface->iCurrHornHistory++;
-
-    if ( internalInterface->iCurrHornHistory >= MAX_HORN_HISTORY )
-        internalInterface->iCurrHornHistory = 0;
-
-    internalInterface->bHornHistory[internalInterface->iCurrHornHistory] = value;
+    m_interface->SetHornHistory( value );
 }
 
-long CPadSA::GetAverageWeapon ( void )
+long CPadSA::GetAverageWeapon()
 {
-    return internalInterface->AverageWeapon;
+    return m_interface->m_averageWeapon;
 }
 
-void CPadSA::SetLastTimeTouched ( DWORD dwTime )
+void CPadSA::SetLastTimeTouched( long time )
 {
-    internalInterface->LastTimeTouched = dwTime;
+    m_interface->m_lastControl = time;
 }

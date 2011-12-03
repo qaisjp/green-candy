@@ -17,7 +17,7 @@
 
 enum eWeaponSkill
 {
-    WEAPONSKILL_POOR = 0,
+    WEAPONSKILL_POOR,
     WEAPONSKILL_STD,
     WEAPONSKILL_PRO,
     WEAPONSKILL_SPECIAL,    // for cops using pistols differently for example
@@ -38,7 +38,7 @@ enum eFireType
 
 enum eWeaponSlot
 {
-    WEAPONSLOT_TYPE_UNARMED = 0,
+    WEAPONSLOT_TYPE_UNARMED,
     WEAPONSLOT_TYPE_MELEE,
     WEAPONSLOT_TYPE_HANDGUN,
     WEAPONSLOT_TYPE_SHOTGUN,
@@ -69,7 +69,7 @@ enum eWeaponState
  */
 enum eWeaponType
 {
-    WEAPONTYPE_UNARMED=0,
+    WEAPONTYPE_UNARMED,
     WEAPONTYPE_BRASSKNUCKLE, 
     WEAPONTYPE_GOLFCLUB,
     WEAPONTYPE_NIGHTSTICK,
@@ -145,7 +145,7 @@ enum eWeaponType
 // VERY MUCH VC, NEEDS TO BE UPDATED
 enum eWeaponModel
 {
-    WEAPONMODEL_CELLPHONE=258,
+    WEAPONMODEL_CELLPHONE = 258,
     WEAPONMODEL_BRASSKNUCKLE,
     WEAPONMODEL_SCREWDRIVER,
     WEAPONMODEL_GOLFCLUB,
@@ -218,38 +218,51 @@ enum eWeaponModel
 class CWeaponInfo
 {
 public:
-    virtual eWeaponModel                GetModel()=0;
-    virtual FLOAT                       GetWeaponRange()=0;
-    virtual VOID                        SetWeaponRange(FLOAT fRange)=0;
-    virtual FLOAT                       GetTargetRange()=0;
-    virtual VOID                        SetTargetRange(FLOAT fRange)=0;
-    virtual CVector                     * GetFireOffset()=0;
-    virtual VOID                        SetFireOffset(CVector * vecFireOffset)=0;
-    virtual short                       GetDamagePerHit()=0;
-    virtual VOID                        SetDamagePerHit( short sDamagePerHit )=0;
-    virtual float                       GetAccuracy ( void ) = 0;
-    virtual void                        SetAccuracy ( float fAccuracy ) = 0;
+    virtual eWeaponModel                GetModel() = 0;
+
+    virtual float                       GetWeaponRange() = 0;
+    virtual void                        SetWeaponRange( float range ) = 0;
+
+    virtual float                       GetTargetRange() = 0;
+    virtual void                        SetTargetRange( float range ) = 0;
+
+    virtual CVector*                    GetFireOffset() = 0;
+    virtual void                        SetFireOffset( CVector *offset ) = 0;
+
+    virtual short                       GetDamagePerHit() = 0;
+    virtual void                        SetDamagePerHit( short sDamagePerHit ) = 0;
+
+    virtual float                       GetAccuracy() = 0;
+    virtual void                        SetAccuracy( float acc ) = 0;
     // projectile/areaeffect only
-    virtual FLOAT                       GetFiringSpeed()=0;
-    virtual VOID                        SetFiringSpeed( FLOAT fFiringSpeed )=0;
+    virtual float                       GetFiringSpeed() = 0;
+    virtual void                        SetFiringSpeed( float speed ) = 0;
     // area effect only
-    virtual FLOAT                       GetRadius()=0;
-    virtual VOID                        SetRadius( FLOAT fRadius )=0;
-    virtual FLOAT                       GetLifeSpan()=0;
-    virtual VOID                        SetLifeSpan( FLOAT fLifeSpan )=0;
-    virtual FLOAT                       GetSpread()=0;
-    virtual VOID                        SetSpread( FLOAT fSpread )=0;
-    virtual FLOAT                       GetAnimBreakoutTime()=0;
-    virtual VOID                        SetAnimBreakoutTime( FLOAT fBreakoutTime )=0;
-    virtual eWeaponSlot                 GetSlot()=0;
-    virtual VOID                        SetSlot( eWeaponSlot dwSlot )=0;
-    virtual eWeaponSkill                GetSkill()=0;
-    virtual VOID                        SetSkill( eWeaponSkill weaponSkill )=0;
-    virtual FLOAT                       GetRequiredStatLevel ()=0;
-    virtual VOID                        SetRequiredStatLevel ( FLOAT fStatLevel )=0;
-    virtual void                        SetFlag         (DWORD flag) = 0;
-    virtual void                        ClearFlag       (DWORD flag) = 0;
-    virtual bool                        IsFlagSet       (DWORD flag) = 0;
+    virtual float                       GetRadius() = 0;
+    virtual void                        SetRadius( float radius ) = 0;
+
+    virtual float                       GetLifeSpan() = 0;
+    virtual void                        SetLifeSpan(float span ) = 0;
+
+    virtual float                       GetSpread() = 0;
+    virtual void                        SetSpread( float spread )=0;
+
+    virtual float                       GetAnimBreakoutTime() = 0;
+    virtual void                        SetAnimBreakoutTime( float time ) = 0;
+
+    virtual eWeaponSlot                 GetSlot() = 0;
+    virtual void                        SetSlot( eWeaponSlot dwSlot ) = 0;
+
+    virtual eWeaponSkill                GetSkill() = 0;
+    virtual void                        SetSkill( eWeaponSkill weaponSkill ) = 0;
+
+    virtual float                       GetRequiredStatLevel() = 0;
+    virtual void                        SetRequiredStatLevel( float level ) = 0;
+
+    virtual void                        SetFlag( unsigned int flags ) = 0;
+    virtual void                        ClearFlag( unsigned int flags ) = 0;
+    virtual bool                        IsFlagSet( unsigned int flags ) = 0;
+
     virtual eFireType                   GetFireType() = 0;
 };
 

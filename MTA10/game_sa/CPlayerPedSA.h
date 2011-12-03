@@ -53,25 +53,19 @@ private:
 public:
                         CPlayerPedSA                ( ePedModel pedType );
                         CPlayerPedSA                ( CPlayerPedSAInterface * ped );
-                        ~CPlayerPedSA               ( void );
+                        ~CPlayerPedSA               ();
 
-    CWanted*            GetWanted                   ( void );
+    CWanted*            GetWanted                   ();
 
-    float               GetSprintEnergy             ( void );
+    float               GetSprintEnergy             ();
     void                SetSprintEnergy             ( float fSprintEnergy );
 
-    void                SetInitialState             ( void );
+    void                SetInitialState             ();
 
-    eMoveAnim           GetMoveAnim                 ( void );
+    eMoveAnim           GetMoveAnim                 ();
     void                SetMoveAnim                 ( eMoveAnim iAnimGroup );
 
-/*  DWORD               GetCurrentWeaponType        ( void );
-    DWORD               GetLastShotTime             ( void );
-    BOOL                IsStationaryOnFoot          ( void );
-    VOID                ResetToInitialState         ( void );
-    VOID                ClearWeaponTarget           ( void );*/
-
-    inline CPlayerPedSAInterface*   GetPlayerPedInterface   ( void )    { return static_cast < CPlayerPedSAInterface* > ( m_pInterface ); };
+    inline CPlayerPedSAInterface* GetInterface() { return m_pInterface; };
 };
 
 #endif

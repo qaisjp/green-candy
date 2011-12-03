@@ -54,100 +54,106 @@ public:
 class CPlayerPedDataSAInterface
 {
 public:
-    CWantedSAInterface* m_Wanted;       // 0
-    CPedClothesDesc* m_pClothes;        // 4
+    CWantedSAInterface*     m_Wanted;       // 0
+    CPedClothesDesc*        m_pClothes;        // 4
 
-    CPedSAInterface* m_ArrestingOfficer; // actually CCopPed *        // 8
+    CPedSAInterface*        m_ArrestingOfficer; // actually CCopPed *        // 8
 
-    CVector2D m_vecFightMovement;        // 12
-    FLOAT   m_moveBlendRatio;        // 20
-    FLOAT   m_fSprintEnergy;        // 24
-    //FLOAT m_fSprintControlCounter; // Removed arbitatrily to aligned next byte, should be here really
-    BYTE    m_nChosenWeapon;        // 28
-    BYTE    m_nCarDangerCounter;        // 29
-    long    m_nStandStillTimer;        // 30
-    DWORD   m_nHitAnimDelayTimer;        // 34
-    FLOAT   m_fAttackButtonCounter;        // 38
-    CAutomobile *m_pDangerCar;        // 42
+    CVector2D               m_vecFightMovement;        // 12
+    FLOAT                   m_moveBlendRatio;        // 20
+    FLOAT                   m_fSprintEnergy;        // 24
+    //float                 m_fSprintControlCounter; // Removed arbitatrily to aligned next byte, should be here really
+    BYTE                    m_nChosenWeapon;        // 28
+    BYTE                    m_nCarDangerCounter;        // 29
+    long                    m_nStandStillTimer;        // 30
+    DWORD                   m_nHitAnimDelayTimer;        // 34
+    FLOAT                   m_fAttackButtonCounter;        // 38
+    CVehicleSAInterface*    m_pDangerCar;        // 42
 
-    DWORD   m_bStoppedMoving : 1;        // 46
-    DWORD   m_bAdrenaline : 1;
-    DWORD   m_bHaveTargetSelected : 1;  // Needed to work out whether we lost target this frame
-    DWORD   m_bFreeAiming : 1;
-    DWORD   bCanBeDamaged : 1;
-    DWORD   bAllMeleeAttackPtsBlocked : 1;  // if all of m_pMeleeAttackers[] is blocked by collision, just attack straight ahead
-    DWORD   m_JustBeenSnacking : 1;     // If this bit is true we have just bought something from a vending machine
-    DWORD   m_bRequireHandleBreath : 1; // 
+    DWORD                   m_bStoppedMoving : 1;        // 46
+    DWORD                   m_bAdrenaline : 1;
+    DWORD                   m_bHaveTargetSelected : 1;  // Needed to work out whether we lost target this frame
+    DWORD                   m_bFreeAiming : 1;
+    DWORD                   bCanBeDamaged : 1;
+    DWORD                   bAllMeleeAttackPtsBlocked : 1;  // if all of m_pMeleeAttackers[] is blocked by collision, just attack straight ahead
+    DWORD                   m_JustBeenSnacking : 1;     // If this bit is true we have just bought something from a vending machine
+    DWORD                   m_bRequireHandleBreath : 1; // 
     
     // The player runs a group. Player is the leader. Player can go up to gang-members and make them join his group.    
-    DWORD   m_GroupStuffDisabled : 1;   // if this is true the player can't recrout or give his group commands.
-    DWORD   m_GroupAlwaysFollow : 1;    // The group is told to always follow the player (used for girlfriend missions)
-    DWORD   m_GroupNeverFollow : 1; // The group is told to always follow the player (used for girlfriend missions)
-    DWORD   m_bInVehicleDontAllowWeaponChange : 1; // stop weapon change once driveby weapon has been given
-    DWORD   m_bRenderWeapon : 1;    //  set to false during cutscenes so that knuckledusters are not rendered
+    DWORD                   m_GroupStuffDisabled : 1;   // if this is true the player can't recrout or give his group commands.
+    DWORD                   m_GroupAlwaysFollow : 1;    // The group is told to always follow the player (used for girlfriend missions)
+    DWORD                   m_GroupNeverFollow : 1; // The group is told to always follow the player (used for girlfriend missions)
+    DWORD                   m_bInVehicleDontAllowWeaponChange : 1; // stop weapon change once driveby weapon has been given
+    DWORD                   m_bRenderWeapon : 1;    //  set to false during cutscenes so that knuckledusters are not rendered
 
-    long    m_PlayerGroup;        // 48?
+    long                    m_PlayerGroup;        // 48?
 
-    DWORD   m_AdrenalineEndTime;        // 52
-    BYTE    m_nDrunkenness;
-    bool    m_bFadeDrunkenness;
-    BYTE    m_nDrugLevel;
-    BYTE    m_nScriptLimitToGangSize;
+    DWORD                   m_AdrenalineEndTime;        // 52
+    BYTE                    m_nDrunkenness;
+    bool                    m_bFadeDrunkenness;
+    BYTE                    m_nDrugLevel;
+    BYTE                    m_nScriptLimitToGangSize;
     
-    FLOAT   m_fBreath;  // for holding breath (ie underwater)
+    FLOAT                   m_fBreath;  // for holding breath (ie underwater)
 
     // once a set of melee weapon anims have been loaded and referenced for the player
     // we need to remember what we've referenced
-    AssocGroupId m_MeleeWeaponAnimReferenced;
+    AssocGroupId            m_MeleeWeaponAnimReferenced;
     // this set is for the player's extra hand combo they can learn
-    AssocGroupId m_MeleeWeaponAnimReferencedExtra;
+    AssocGroupId            m_MeleeWeaponAnimReferencedExtra;
 
-    FLOAT   m_fFPSMoveHeading;
-    FLOAT   m_fLookPitch;
-    FLOAT   m_fSkateBoardSpeed;
-    FLOAT   m_fSkateBoardLean;
+    FLOAT                   m_fFPSMoveHeading;
+    FLOAT                   m_fLookPitch;
+    FLOAT                   m_fSkateBoardSpeed;
+    FLOAT                   m_fSkateBoardLean;
     
-    DWORD * m_pSpecialAtomic; // was rpAtomic
-    FLOAT   m_fGunSpinSpeed;
-    FLOAT   m_fGunSpinAngle;
+    DWORD*                  m_pSpecialAtomic; // was rpAtomic
+    FLOAT                   m_fGunSpinSpeed;
+    FLOAT                   m_fGunSpinAngle;
 
-    DWORD   m_LastTimeFiring;
-    DWORD   m_nTargetBone;
-    CVector m_vecTargetBoneOffset;
+    DWORD                   m_LastTimeFiring;
+    DWORD                   m_nTargetBone;
+    CVector                 m_vecTargetBoneOffset;
     
-    DWORD   m_busFaresCollected;
-    bool    m_bPlayerSprintDisabled;
-    bool    m_bDontAllowWeaponChange;
-    bool    m_bForceInteriorLighting;
-    WORD    m_DPadDownPressedInMilliseconds;
-    WORD    m_DPadUpPressedInMilliseconds;
+    DWORD                   m_busFaresCollected;
+    bool                    m_bPlayerSprintDisabled;
+    bool                    m_bDontAllowWeaponChange;
+    bool                    m_bForceInteriorLighting;
+    WORD                    m_DPadDownPressedInMilliseconds;
+    WORD                    m_DPadUpPressedInMilliseconds;
         
-    BYTE    m_wetness;
-    BYTE    m_playersGangActive;
-    BYTE    m_waterCoverPerc;
-    FLOAT   m_waterHeight;
+    BYTE                    m_wetness;
+    BYTE                    m_playersGangActive;
+    BYTE                    m_waterCoverPerc;
+    FLOAT                   m_waterHeight;
 
     // used for doing lock-on with HS missiles
-    DWORD   m_FireHSMissilePressedTime;
-    CEntitySAInterface * m_LastHSMissileTarget;
+    DWORD                   m_FireHSMissilePressedTime;
+    CEntitySAInterface*     m_LastHSMissileTarget;
     
-    long    m_nModelIndexOfLastBuildingShot;
+    long                    m_nModelIndexOfLastBuildingShot;
     
-    DWORD   m_LastHSMissileLOSTime  :31;
-    DWORD   m_bLastHSMissileLOS     :1;
+    DWORD                   m_LastHSMissileLOSTime  :31;
+    DWORD                   m_bLastHSMissileLOS     :1;
     
-    CPedSAInterface * m_pCurrentProstitutePed;
-    CPedSAInterface * m_pLastProstituteShagged;
+    CPedSAInterface*        m_currentHooker;
+    CPedSAInterface*        m_lastHooker;
 
-    DWORD padding; // we're missing something here - fixes a crash (ugly hack #4432525) - eAi
+    DWORD                   m_pad;
 };
-    
+
+enum ePlayerState
+{
+    PS_PLAYING,
+    PS_DEAD,
+    PS_ARRESTED,
+    PS_FAILED_MISSION,
+    PS_QUIT
+}
 
 class CPlayerInfoSAInterface
 {
 public:
-    enum { PLAYERSTATE_PLAYING, PLAYERSTATE_HASDIED, PLAYERSTATE_HASBEENARRESTED, PLAYERSTATE_FAILEDMISSION, PLAYERSTATE_LEFTGAME };
-
     class CPlayerPedSAInterface *pPed;          // Pointer to the player ped (should always be set)
     CPlayerPedDataSAInterface PlayerPedData;    // instance of player variables
     CVehicleSAInterface *pRemoteVehicle;// Pointer to vehicle player is driving remotely at the moment.(NULL if on foot)

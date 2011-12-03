@@ -51,16 +51,6 @@ SString SharedUtil::GetMTASABaseDir ( void )
 }
 
 //
-// Turns a relative MTASA path i.e. "MTA\file.dat"
-// into an absolute MTASA path i.e. "C:\Program Files\MTA San Andreas\MTA\file.dat"
-//
-SString SharedUtil::CalcMTASAPath ( const SString& strPath )
-{
-    return PathJoin ( GetMTASABaseDir(), strPath );
-}
-
-
-//
 // Write a registry string value
 //
 static void WriteRegistryStringValue ( HKEY hkRoot, const char* szSubKey, const char* szValue, const SString& strBuffer )
@@ -131,10 +121,11 @@ SString SharedUtil::GetMajorVersionString ( void )
 static SString MakeVersionRegistryPathLegacy ( const SString& strVersion, const SString& strPath )
 {
     SString strResult = "Software\\Multi Theft Auto: San Andreas";
+
     if ( strVersion != "1.0" )
         strResult += " " + strVersion;
 
-    strResult = PathJoin ( strResult, strPath );
+    strResult += strPath;
     strResult = strResult.TrimEnd ( "\\" );
     return strResult;
 }
@@ -161,7 +152,10 @@ SString SharedUtil::GetVersionRegistryValueLegacy ( const SString& strVersion, c
 //
 static SString MakeVersionRegistryPath ( const SString& strVersion, const SString& strPath )
 {
-    SString strResult = PathJoin ( "Software\\Multi Theft Auto: San Andreas All", strVersion, strPath );
+    SString strResult = "Software\\Multi Theft Auto: San Andreas All\\";
+    strResult += strVersion;
+    strResult += "\\";
+    strResult += strPath;
     return strResult.TrimEnd ( "\\" );
 }
 
@@ -206,10 +200,6 @@ SString SharedUtil::GetCommonRegistryValue ( const SString& strPath, const SStri
     return ReadRegistryStringValue ( HKEY_LOCAL_MACHINE, MakeVersionRegistryPath ( "Common", strPath ), strName, NULL );
 }
 
-
-
-
-
 //
 // Run ShellExecute with these parameters after exit
 //
@@ -219,7 +209,6 @@ void SharedUtil::SetOnQuitCommand ( const SString& strOperation, const SString& 
     SString strValue ( "%s\t%s\t%s\t%s\t%s", strOperation.c_str (), strFile.c_str (), strParameters.c_str (), strDirectory.c_str (), strShowCmd.c_str () );
     SetRegistryValue ( "", "OnQuitCommand", strValue );
 }
-
 
 #ifdef MTASA_VERSION_MAJOR
 //
@@ -232,7 +221,6 @@ void SharedUtil::SetOnRestartCommand ( const SString& strOperation, const SStrin
     SString strValue ( "%s\t%s\t%s\t%s\t%s\t%s", strOperation.c_str (), strFile.c_str (), strParameters.c_str (), strDirectory.c_str (), strShowCmd.c_str (), strVersion.c_str () );
     SetRegistryValue ( "", "OnRestartCommand", strValue );
 }
-
 
 //
 // What to do on next restart
@@ -256,7 +244,7 @@ bool SharedUtil::GetOnRestartCommand ( SString& strOperation, SString& strFile, 
             strShowCmd = vecParts[4];
             return true;
         }
-        AddReportLog( 4000, SString ( "OnRestartCommand disregarded due to version change %s -> %s", vecParts[5].c_str (), strVersion.c_str () ) );
+        //AddReportLog( 4000, SString ( "OnRestartCommand disregarded due to version change %s -> %s", vecParts[5].c_str (), strVersion.c_str () ) );
     }
     return false;
 }
@@ -272,18 +260,18 @@ bool SharedUtil::GetOnRestartCommand ( SString& strOperation, SString& strFile, 
 //
 void SharedUtil::SetApplicationSetting ( const SString& strPath, const SString& strName, const SString& strValue )
 {
-    SetRegistryValue ( PathJoin ( "Settings", strPath ), strName, strValue );
+    SetRegistryValue ( "Settings\\" + strPath, strName, strValue );
 }
 
 SString SharedUtil::GetApplicationSetting ( const SString& strPath, const SString& strName )
 {
-    return GetRegistryValue ( PathJoin ( "Settings", strPath ), strName );
+    return GetRegistryValue ( "Settings\\" + strPath, strName );
 }
 
 // Delete a setting key
 bool SharedUtil::RemoveApplicationSettingKey ( const SString& strPath )
 {
-    return RemoveRegistryKey ( PathJoin ( "Settings", strPath ) );
+    return RemoveRegistryKey ( "Settings\\" + strPath );
 }
 
 
@@ -485,34 +473,45 @@ static SString GetReportLogHeaderText ( void )
     return strResult.TrimEnd ( " " ) + "]";
 }
 
-
 void SharedUtil::AddReportLog ( uint uiId, const SString& strText )
 {
-    SString strPathFilename = PathJoin ( GetMTADataPath (), "report.log" );
-    MakeSureDirExists ( strPathFilename );
+    std::fstream log;
+    
+    log.open( GetMTADataPath() + "report.log", std::fstream::out | std::fstream::app );
 
-    SString strMessage ( "%u: %s %s - %s\n", uiId, GetTimeString ( true, false ).c_str (), GetReportLogHeaderText ().c_str (), strText.c_str () );
-    FileAppend ( strPathFilename, &strMessage.at ( 0 ), strMessage.length () );
+    if ( !log.is_open() )
+        return;
+    
+    log << uiId << ": " << GetTimeString( true, false ) << " " << GetReportLogHeaderText() << " - " << strText << std::endl;
+
 #if MTA_DEBUG
-    OutputDebugString ( SStringX ( "ReportLog: " ) + strMessage );
+    OutputDebugString( SStringX( "ReportLog: " ) + strText );
 #endif
 }
 
-void SharedUtil::SetReportLogContents ( const SString& strText )
+void SharedUtil::SetReportLogContents( const SString& strText )
 {
-    SString strPathFilename = PathJoin ( GetMTADataPath (), "report.log" );
-    MakeSureDirExists ( strPathFilename );
-    FileSave ( strPathFilename, strText.length () ? &strText.at ( 0 ) : NULL, strText.length () );
+    std::ofstream log;
+    
+    log.open( GetMTADataPath() + "report.log", std::ofstream::app | std::ofstream::out );
+
+    if ( !log.is_open() )
+        return;
+
+    if ( !strText.empty() )
+        log << strText;
 }
 
-SString SharedUtil::GetReportLogContents ( void )
+SString SharedUtil::GetReportLogContents()
 {
-    SString strReportFilename = PathJoin ( GetMTADataPath (), "report.log" );
-    // Load file into a string
-    std::vector < char > buffer;
-    FileLoad ( strReportFilename, buffer );
-    buffer.push_back ( 0 );
-    return &buffer[0];
+    std::ifstream log;
+
+    log.open( GetMTADataPath() + "report.log" );
+
+    if ( !log.is_open() )
+        return SString();
+
+    return std::string( std::istreambuf_iterator <char>( log ), std::istreambuf_iterator <char>() );
 }
 
 
@@ -707,54 +706,55 @@ SString SharedUtil::UnescapeString ( const SString& strText, char cSpecialChar )
 //
 #ifdef WIN32
 
-    SharedUtil::CCriticalSection::CCriticalSection ( void )
-    {
-        m_pCriticalSection = new CRITICAL_SECTION;
-        InitializeCriticalSection ( ( CRITICAL_SECTION* ) m_pCriticalSection );
-    }
+SharedUtil::CCriticalSection::CCriticalSection ( void )
+{
+    m_pCriticalSection = new CRITICAL_SECTION;
+    InitializeCriticalSection ( ( CRITICAL_SECTION* ) m_pCriticalSection );
+}
 
-    SharedUtil::CCriticalSection::~CCriticalSection ( void )
-    {
-        DeleteCriticalSection ( ( CRITICAL_SECTION* ) m_pCriticalSection );
-        delete ( CRITICAL_SECTION* ) m_pCriticalSection;
-    }
+SharedUtil::CCriticalSection::~CCriticalSection ( void )
+{
+    DeleteCriticalSection ( ( CRITICAL_SECTION* ) m_pCriticalSection );
+    delete ( CRITICAL_SECTION* ) m_pCriticalSection;
+}
 
-    void SharedUtil::CCriticalSection::Lock ( void )
-    {
-        if ( m_pCriticalSection )
-            EnterCriticalSection ( ( CRITICAL_SECTION* ) m_pCriticalSection );
-    }
+void SharedUtil::CCriticalSection::Lock ( void )
+{
+    if ( m_pCriticalSection )
+        EnterCriticalSection ( ( CRITICAL_SECTION* ) m_pCriticalSection );
+}
 
-    void SharedUtil::CCriticalSection::Unlock ( void )
-    {
-        if ( m_pCriticalSection )
-            LeaveCriticalSection ( ( CRITICAL_SECTION* ) m_pCriticalSection );
-    }
+void SharedUtil::CCriticalSection::Unlock ( void )
+{
+    if ( m_pCriticalSection )
+        LeaveCriticalSection ( ( CRITICAL_SECTION* ) m_pCriticalSection );
+}
 
 #else
-    #include <pthread.h>
 
-    SharedUtil::CCriticalSection::CCriticalSection ( void )
-    {
-        m_pCriticalSection = new pthread_mutex_t;
-        pthread_mutex_init ( ( pthread_mutex_t* ) m_pCriticalSection, NULL );
-    }
+#include <pthread.h>
 
-    SharedUtil::CCriticalSection::~CCriticalSection ( void )
-    {
-        pthread_mutex_destroy ( ( pthread_mutex_t* ) m_pCriticalSection );
-        delete ( pthread_mutex_t* ) m_pCriticalSection;
-    }
+SharedUtil::CCriticalSection::CCriticalSection ( void )
+{
+    m_pCriticalSection = new pthread_mutex_t;
+    pthread_mutex_init ( ( pthread_mutex_t* ) m_pCriticalSection, NULL );
+}
 
-    void SharedUtil::CCriticalSection::Lock ( void )
-    {
-        pthread_mutex_lock ( ( pthread_mutex_t* ) m_pCriticalSection );
-    }
+SharedUtil::CCriticalSection::~CCriticalSection ( void )
+{
+    pthread_mutex_destroy ( ( pthread_mutex_t* ) m_pCriticalSection );
+    delete ( pthread_mutex_t* ) m_pCriticalSection;
+}
 
-    void SharedUtil::CCriticalSection::Unlock ( void )
-    {
-        pthread_mutex_unlock ( ( pthread_mutex_t* ) m_pCriticalSection );
-    }
+void SharedUtil::CCriticalSection::Lock ( void )
+{
+    pthread_mutex_lock ( ( pthread_mutex_t* ) m_pCriticalSection );
+}
+
+void SharedUtil::CCriticalSection::Unlock ( void )
+{
+    pthread_mutex_unlock ( ( pthread_mutex_t* ) m_pCriticalSection );
+}
 
 #endif
 
@@ -764,47 +764,48 @@ SString SharedUtil::UnescapeString ( const SString& strText, char cSpecialChar )
 // Expiry stuff
 //
 #ifdef WIN32
-    #include <time.h>
 
-    #define YEAR ((((__DATE__ [7]-'0')*10+(__DATE__ [8]-'0'))*10+(__DATE__ [9]-'0'))*10+(__DATE__ [10]-'0'))
+#include <time.h>
 
-    /* Month: 0 - 11 */
-    #define MONTH (__DATE__ [2] == 'n' ? (__DATE__ [1] == 'a' ? 0 : 5) \
-                  : __DATE__ [2] == 'b' ? 1 \
-                  : __DATE__ [2] == 'r' ? (__DATE__ [0] == 'M'? 2 : 3) \
-                  : __DATE__ [2] == 'y' ? 4 \
-                  : __DATE__ [2] == 'l' ? 6 \
-                  : __DATE__ [2] == 'g' ? 7 \
-                  : __DATE__ [2] == 'p' ? 8 \
-                  : __DATE__ [2] == 't' ? 9 \
-                  : __DATE__ [2] == 'v' ? 10 : 11)
+#define YEAR ((((__DATE__ [7]-'0')*10+(__DATE__ [8]-'0'))*10+(__DATE__ [9]-'0'))*10+(__DATE__ [10]-'0'))
 
-    #define DAY ((__DATE__ [4]==' ' ? 0 : __DATE__[4]-'0')*10+(__DATE__[5]-'0'))
+/* Month: 0 - 11 */
+#define MONTH (__DATE__ [2] == 'n' ? (__DATE__ [1] == 'a' ? 0 : 5) \
+              : __DATE__ [2] == 'b' ? 1 \
+              : __DATE__ [2] == 'r' ? (__DATE__ [0] == 'M'? 2 : 3) \
+              : __DATE__ [2] == 'y' ? 4 \
+              : __DATE__ [2] == 'l' ? 6 \
+              : __DATE__ [2] == 'g' ? 7 \
+              : __DATE__ [2] == 'p' ? 8 \
+              : __DATE__ [2] == 't' ? 9 \
+              : __DATE__ [2] == 'v' ? 10 : 11)
 
-    int SharedUtil::GetBuildAge ( void )
-    {
-        tm when;
-        memset ( &when, 0, sizeof ( when ) );
-        when.tm_year = YEAR - 1900;
-        when.tm_mon = MONTH;
-        when.tm_mday = DAY;
-        return ( int )( time ( NULL ) - mktime( &when ) ) / ( 60 * 60 * 24 );
-    }
+#define DAY ((__DATE__ [4]==' ' ? 0 : __DATE__[4]-'0')*10+(__DATE__[5]-'0'))
+
+int SharedUtil::GetBuildAge ( void )
+{
+    tm when;
+    memset ( &when, 0, sizeof ( when ) );
+    when.tm_year = YEAR - 1900;
+    when.tm_mon = MONTH;
+    when.tm_mday = DAY;
+    return ( int )( time ( NULL ) - mktime( &when ) ) / ( 60 * 60 * 24 );
+}
 
 #if defined(MTA_DM_EXPIRE_DAYS)
-    int SharedUtil::GetDaysUntilExpire ( void )
-    {
-        tm when;
-        memset ( &when, 0, sizeof ( when ) );
-        when.tm_year = YEAR - 1900;
-        when.tm_mon = MONTH;
-        when.tm_mday = DAY + MTA_DM_EXPIRE_DAYS;
-        return ( int )( mktime( &when ) - time ( NULL ) ) / ( 60 * 60 * 24 );
-    }
+
+int SharedUtil::GetDaysUntilExpire ( void )
+{
+    tm when;
+    memset ( &when, 0, sizeof ( when ) );
+    when.tm_year = YEAR - 1900;
+    when.tm_mon = MONTH;
+    when.tm_mday = DAY + MTA_DM_EXPIRE_DAYS;
+    return ( int )( mktime( &when ) - time ( NULL ) ) / ( 60 * 60 * 24 );
+}
 
 #endif
 #endif
-
 
 // Copied from CChatLine::RemoveColorCode()
 std::string SharedUtil::RemoveColorCode ( const char* szString )
@@ -852,7 +853,6 @@ std::string SharedUtil::RemoveColorCode ( const char* szString )
 
     return strOut;
 }
-
 
 // Convert a standard multibyte UTF-8 std::string into a UTF-16 std::wstring
 std::wstring SharedUtil::MbUTF8ToUTF16 (const std::string& input)

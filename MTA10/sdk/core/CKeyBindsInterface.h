@@ -202,6 +202,7 @@ public:
     virtual void                    SetCharacterKeyHandler      ( CharacterKeyHandler Handler ) = 0;
 
     // Control/action funcs
+    virtual bool                    GetControlState             ( eBindableControl control ) = 0;
     virtual char*                   GetControlFromAction        ( eControllerAction action ) = 0;
     virtual bool                    GetActionFromControl        ( const char* szControl, eControllerAction& action ) = 0;
     virtual SBindableGTAControl*    GetBindableFromControl      ( const char* szControl ) = 0;

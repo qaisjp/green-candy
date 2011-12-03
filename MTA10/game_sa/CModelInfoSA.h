@@ -98,9 +98,7 @@ enum eModelType
 class CBaseModelInfoSA
 {
 public:
-    virtual                             ~CBaseModelInfoSA()
-    {
-    }
+    virtual                             ~CBaseModelInfoSA() = 0;
 
     virtual CAtomicModelInfoSA* __thiscall              GetAtomicModelInfo() = 0;               // 4
     virtual CDamageAtomicModelInfoSA* __thiscall        GetDamageAtomicModelInfo() = 0;         // 8
@@ -195,10 +193,10 @@ protected:
     CColModel*                      m_pCustomColModel;
     CColModelSAInterface*           m_pOriginalColModelInterface;
     RpClump*                        m_pCustomClump;
-    static std::map < unsigned short, int > ms_RestreamTxdIDMap;
+    static std::map <unsigned short, int> ms_RestreamTxdIDMap;
 
 public:
-                                    CModelInfoSA            ( void );
+                                    CModelInfoSA            ();
                                     CModelInfoSA            ( unsigned short );
 
     CBaseModelInfoSAInterface *     GetInterface             ( void );
@@ -206,21 +204,21 @@ public:
 
     unsigned short                  GetModel                ( void )               { return m_modelID; }
 
-    bool                            IsBoat                  ( void );
-    bool                            IsCar                   ( void );
-    bool                            IsTrain                 ( void );
-    bool                            IsHeli                  ( void );
-    bool                            IsPlane                 ( void );
-    bool                            IsBike                  ( void );
-    bool                            IsFakePlane             ( void );
-    bool                            IsMonsterTruck          ( void );
-    bool                            IsQuadBike              ( void );
-    bool                            IsBmx                   ( void );
-    bool                            IsTrailer               ( void );
-    bool                            IsVehicle               ( void );
-    bool                            IsUpgrade               ( void );
+    bool                            IsBoat                  ();
+    bool                            IsCar                   ();
+    bool                            IsTrain                 ();
+    bool                            IsHeli                  ();
+    bool                            IsPlane                 ();
+    bool                            IsBike                  ();
+    bool                            IsFakePlane             ();
+    bool                            IsMonsterTruck          ();
+    bool                            IsQuadBike              ();
+    bool                            IsBmx                   ();
+    bool                            IsTrailer               ();
+    bool                            IsVehicle               ();
+    bool                            IsUpgrade               ();
 
-    char *                          GetNameIfVehicle        ( void );
+    char*                           GetNameIfVehicle        ();
 
     VOID                            Request                 ( bool bAndLoad = false, bool bWaitForLoad = false, bool bHighPriority = false );
     VOID                            Remove                  ( void );

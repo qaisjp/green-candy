@@ -52,7 +52,7 @@ public:
         if ( length < FLOAT_EPSILON )
             return 0;
 
-        Divide( length );
+        Divide( (float)length );
         return (float)length;
     }
 
