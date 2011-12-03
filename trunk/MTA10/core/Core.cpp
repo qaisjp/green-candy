@@ -15,13 +15,30 @@
 using std::string;
 
 CCore* g_pCore = NULL;
-bool IsRealDeal ( void );
 
-int WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, PVOID pvNothing)
+//
+// Returns true if dll has been loaded with GTA.
+//
+bool IsRealDeal()
+{
+    static bool bResult = false;
+    static bool bDone = false;
+
+    if ( !bDone )
+    {
+        MEMORY_BASIC_INFORMATION info;
+        VirtualQuery( (void*)0x0401000, &info, sizeof(MEMORY_BASIC_INFORMATION) );
+        bResult = info.RegionSize > 0x0401000;
+        bDone = true;
+    }
+    return bResult;
+}
+
+int WINAPI DllMain( HINSTANCE hModule, DWORD dwReason, PVOID pvNothing )
 {
     if ( dwReason == DLL_PROCESS_ATTACH )
     {
-        if ( IsRealDeal () )
+        if ( IsRealDeal() )
         {
             // Search our path for .dll instead of WINDOWS
             SetDllDirectory( GetMTASABaseDir() + "mta/" );
@@ -29,9 +46,9 @@ int WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, PVOID pvNothing)
             g_pCore = new CCore;
         }
     } 
-    else if (dwReason == DLL_PROCESS_DETACH)
+    else if ( dwReason == DLL_PROCESS_DETACH )
     {
-        if ( IsRealDeal () )
+        if ( IsRealDeal() )
         {
             // For now, TerminateProcess if any destruction is attempted (or we'll crash)
             TerminateProcess ( GetCurrentProcess (), 0 );
@@ -45,22 +62,4 @@ int WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, PVOID pvNothing)
     }
 
     return TRUE;
-}
-
-
-//
-// Returns true if dll has been loaded with GTA.
-//
-bool IsRealDeal ( void )
-{
-    static bool bResult = false;
-    static bool bDone = false;
-    if ( !bDone )
-    {
-        MEMORY_BASIC_INFORMATION info;
-        VirtualQuery( (void*)0x0401000, &info, sizeof(MEMORY_BASIC_INFORMATION) );
-        bResult = info.RegionSize > 0x0401000;
-        bDone = true;
-    }
-    return bResult;
 }

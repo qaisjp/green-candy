@@ -36,6 +36,8 @@ CPadSAInterface* CPedSAInterface::GetJoypad()
     return pGame->GetPadManager()->GetJoypad( 0 );
 }
 
+bool 
+
 CPedSA::CPedSA (  ) :
     m_pPedIntelligence ( NULL ),
     m_pPedInterface ( NULL ),
@@ -56,7 +58,7 @@ CPedSA::CPedSA( CPedSAInterface * pPedInterface ) :
     MemSetFast ( this->m_pWeapons, 0, sizeof ( CWeaponSA* ) * WEAPONSLOT_MAX );
 }
 
-VOID CPedSA::SetInterface( CEntitySAInterface * intInterface )
+void CPedSA::SetInterface( CEntitySAInterface * intInterface )
 {
     m_pInterface = intInterface;
 }
@@ -121,7 +123,7 @@ void CPedSA::SetModelIndex ( unsigned short id )
     GetPedInterface ()->pedSound.m_bIsFemale = ( info->m_pedType == 5 || info->m_pedType == 22 );
 }
 
-bool CPedSA::IsInWater ( void )
+bool CPedSA::IsInWater()
 {
     DEBUG_TRACE("bool CPedSA::IsInWater ()");
 
@@ -587,7 +589,7 @@ CVector * CPedSA::GetTransformedBonePosition ( eBone bone, CVector * vecPosition
     return vecPosition;
 }
 
-bool CPedSA::IsDucking ( void )
+bool CPedSA::IsDucking()
 {
     return ((CPedSAInterface*)this->GetInterface())->pedFlags.bIsDucking;
 }
@@ -597,7 +599,130 @@ void CPedSA::SetDucking ( bool bDuck )
     ((CPedSAInterface*)this->GetInterface())->pedFlags.bIsDucking = bDuck;
 }
 
-int CPedSA::GetCantBeKnockedOffBike ( void )
+CTaskSA* CPedSA::GetPrimaryTask()
+{
+    return GetPedIntelligence()->GetTaskManager()->GetTask( TASK_PRIORITY_PRIMARY );
+}
+
+bool CPedSA::IsEnteringVehicle()
+{
+    CTaskSA *task = GetPrimaryTask();
+
+    if ( !task )
+        return false;
+
+    switch( task->GetTaskType() )
+    {
+    case TASK_COMPLEX_ENTER_CAR_AS_DRIVER:
+    case TASK_COMPLEX_ENTER_CAR_AS_PASSENGER:
+        return true;
+    }
+
+    return false;
+}
+
+bool CPedSA::IsGettingIntoVehicle()
+{
+    if ( !IsEnteringVehicle() )
+        return false;
+
+    switch( GetPrimaryTask()->GetSubTask()->GetTaskType() )
+    {
+    case TASK_SIMPLE_CAR_GET_IN:
+    case TASK_SIMPLE_CAR_CLOSE_DOOR_FROM_INSIDE:
+    case TASK_SIMPLE_CAR_SHUFFLE:
+    case TASK_COMPLEX_ENTER_BOAT_AS_DRIVER:
+        return true;
+    }
+
+    return false;
+}
+
+bool CPedSA::IsBeingJacked()
+{
+    CTaskSA *task = GetPrimaryTask();
+
+    if ( !task )
+        return false;
+
+    switch( task->GetTaskType() )
+    {
+    case TASK_COMPLEX_CAR_SLOW_BE_DRAGGED_OUT_AND_STAND_UP:
+    case TASK_SIMPLE_BIKE_JACKED:
+        return true;
+    }
+
+    return false;
+}
+
+bool CPedSA::IsLeavingVehicle()
+{
+    CTaskSA *task = GetPrimaryTask();
+
+    if ( !task )
+        return false;
+
+    switch( task->GetTaskType() )
+    {
+    case TASK_COMPLEX_LEAVE_CAR: // We only use this task
+    case TASK_COMPLEX_LEAVE_CAR_AND_DIE:
+    case TASK_COMPLEX_LEAVE_CAR_AND_FLEE:
+    case TASK_COMPLEX_LEAVE_CAR_AND_WANDER:
+    case TASK_COMPLEX_SCREAM_IN_CAR_THEN_LEAVE:
+        return true;
+    }
+
+    return false;
+}
+
+bool CPedSA::IsGettingOutOfVehicle()
+{
+    // That is technically getting out of vehicle
+    if ( IsBeingJacked() )
+        return true;
+
+    if ( !IsLeavingVehicle() )
+        return false;
+
+    switch( GetPrimaryTask()->GetSubTask()->GetTaskType() )
+    {
+    case TASK_SIMPLE_CAR_GET_OUT:
+    case TASK_SIMPLE_CAR_CLOSE_DOOR_FROM_OUTSIDE:
+        return true;
+    }
+
+    return false;
+}
+
+bool CPedSA::IsDying()
+{
+    CTaskSA *task = GetPrimaryTask();
+
+    if ( !task )
+        return false;
+
+    switch( task->GetTaskType() )
+    {
+    case TASK_SIMPLE_DIE:
+    case TASK_COMPLEX_DIE:
+    case TASK_SIMPLE_DROWN:
+    case TASK_SIMPLE_DIE_IN_CAR:
+    case TASK_COMPLEX_DIE_IN_CAR:
+    case TASK_SIMPLE_DROWN_IN_CAR:
+        return true;
+    }
+
+    return false;
+}
+
+bool CPedSA::IsDead()
+{
+    CTaskSA *task = GetPrimaryTask();
+
+    return task && task->GetTaskType() == TASK_SIMPLE_DEAD;
+}
+
+int CPedSA::GetCantBeKnockedOffBike()
 {
     return ((CPedSAInterface*)this->GetInterface())->pedFlags.CantBeKnockedOffBike;
 }

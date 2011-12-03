@@ -64,15 +64,14 @@ public:
     virtual CCommunityInterface*        GetCommunity                    () = 0;
     virtual CFileSystemInterface*       GetFileSystem                   () = 0;
     
-
     // Temporary functions for r1
     virtual void                    DebugEcho                       ( const char* szText ) = 0;
     virtual void                    DebugPrintf                     ( const char* szFormat, ... ) = 0;
     virtual void                    SetDebugVisible                 ( bool bVisible ) = 0;
     virtual bool                    IsDebugVisible                  () = 0;
-    virtual void                    DebugEchoColor                  ( const char* szText, unsigned char R, unsigned char G, unsigned char B )=0;
+    virtual void                    DebugEchoColor                  ( const char* szText, unsigned char R, unsigned char G, unsigned char B ) = 0;
     virtual void                    DebugPrintfColor                ( const char* szFormat, unsigned char R, unsigned char G, unsigned char B, ... ) = 0;
-    virtual void                    DebugClear                      ()=0;
+    virtual void                    DebugClear                      () = 0;
     virtual void                    ChatEcho                        ( const char* szText, bool bColorCoded = false ) = 0;
     virtual void                    ChatEchoColor                   ( const char* szText, unsigned char R, unsigned char G, unsigned char B, bool bColorCoded = false ) = 0;
     virtual void                    ChatPrintf                      ( const char* szFormat, bool bColorCoded, ... ) = 0;
@@ -92,9 +91,9 @@ public:
     virtual void                    SetOfflineMod                   ( bool bOffline ) = 0;
 
     virtual bool                    IsConnected                     () = 0;
-    virtual bool                    Reconnect                       ( const char* szHost, unsigned short usPort, const char* szPassword, bool bSave = true ) = 0;
+    virtual bool                    Reconnect                       ( const char *szHost, unsigned short usPort, const char *szPassword, bool bSave = true ) = 0;
 
-    virtual const char *            GetModInstallRoot               ( const char * szModName )=0;
+    virtual const char*             GetModInstallRoot               ( const char *szModName ) = 0;
     virtual CFileTranslator*        GetModRoot                      () = 0;
 
     virtual void                    ShowServerInfo                  ( unsigned int WindowType ) = 0;
@@ -123,14 +122,14 @@ public:
     virtual bool                    IsOptionalUpdateInfoRequired    ( const char* szHost ) = 0;
     virtual void                    InitiateDataFilesFix            () = 0;
 
-    virtual uint                    GetFrameRateLimit               () = 0;
+    virtual unsigned int            GetFrameRateLimit               () = 0;
     virtual void                    RecalculateFrameRateLimit       ( uint uiServerFrameRateLimit = -1 ) = 0;
     virtual void                    ApplyFrameRateLimit             ( uint uiOverrideRate = -1 ) = 0;
     virtual void                    EnsureFrameRateLimitApplied     () = 0;
 
     virtual void                    OnPreHUDRender                  () = 0;
-    virtual uint                    GetMinStreamingMemory           () = 0;
-    virtual uint                    GetMaxStreamingMemory           () = 0;
+    virtual unsigned int            GetMinStreamingMemory           () = 0;
+    virtual unsigned int            GetMaxStreamingMemory           () = 0;
 };
 
 #endif

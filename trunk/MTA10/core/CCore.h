@@ -76,7 +76,7 @@ class CCore;
 #define CONFIG_RECENT_LIST_TAG      "recently_played_server"
 #define CONFIG_HISTORY_LIST_TAG     "connected_server"
 
-class CCore : public CCoreInterface, public CSingleton < CCore >
+class CCore : public CCoreInterface, public CSingleton <CCore>
 {
     friend class CModManager;
 public:
@@ -179,7 +179,7 @@ public:
     void                    SwitchRenderWindow              ( HWND hWnd, HWND hWndInput );
     void                    CallSetCursorPos                ( int X, int Y ) { m_pSetCursorPosHook->CallSetCursorPos(X,Y); }
     void                    SetClientMessageProcessor       ( pfnProcessMessage pfnMessageProcessor ) { m_pfnMessageProcessor = pfnMessageProcessor; };
-    pfnProcessMessage       GetClientMessageProcessor       ( void ) { return m_pfnMessageProcessor; }
+    pfnProcessMessage       GetClientMessageProcessor       () { return m_pfnMessageProcessor; }
     void                    ChangeResolution                ( long width, long height, long depth );
     void                    ApplyLoadingCrashPatch          ();
 
@@ -214,7 +214,7 @@ public:
     SString                 GetConnectCommandFromURI        ( const char* szURI );  
     void                    GetConnectParametersFromURI     ( const char* szURI, std::string &strHost, unsigned short &usPort, std::string &strNick, std::string &strPassword );
     bool                    bScreenShot;
-    std::map < std::string, std::string > & GetCommandLineOptions ( void ) { return m_CommandLineOptions; }
+    std::map < std::string, std::string > & GetCommandLineOptions () { return m_CommandLineOptions; }
     const char *            GetCommandLineOption            ( const char* szOption );
     const char *            GetCommandLineArgs              () { return m_szCommandLineArgs; }
     void                    RequestNewNickOnStart           () { m_bWaitToSetNick = true; };
@@ -230,10 +230,10 @@ public:
 private:
     // Core devices.
     CXML*                       m_pXML;
-    CLocalGUI *                 m_pLocalGUI;
-    CGraphics *                 m_pGraphics;
-    CCommands *                 m_pCommands;
-    CDirect3DData *             m_pDirect3DData;
+    CLocalGUI*                  m_pLocalGUI;
+    CGraphics*                  m_pGraphics;
+    CCommands*                  m_pCommands;
+    CDirect3DData*              m_pDirect3DData;
     CConnectManager*            m_pConnectManager;
     CFileSystem*                m_fileSystem;
 
@@ -243,12 +243,11 @@ private:
     CCommunity                  m_Community;
 
     // Hook interfaces.
-    CMessageLoopHook *          m_pMessageLoopHook;
-    CDirectInputHookManager *   m_pDirectInputHookManager;
-    CDirect3DHookManager *      m_pDirect3DHookManager;
-    //CFileSystemHook *           m_pFileSystemHook;
-    CSetCursorPosHook *         m_pSetCursorPosHook;
-    CTCPManager *               m_pTCPManager;
+    CMessageLoopHook*           m_pMessageLoopHook;
+    CDirectInputHookManager*    m_pDirectInputHookManager;
+    CDirect3DHookManager*       m_pDirect3DHookManager;
+    CSetCursorPosHook*          m_pSetCursorPosHook;
+    CTCPManager*                m_pTCPManager;
 
     bool                        m_bLastFocused;
     int                         m_iUnminimizeFrameCounter;
@@ -266,13 +265,13 @@ private:
     CFileTranslator*            m_modRoot;
 
     // Module interfaces.
-    CGame *                     m_pGame;
-    CNet *                      m_pNet;
-    CMultiplayer *              m_pMultiplayer;
+    CGame*                      m_pGame;
+    CNet*                       m_pNet;
+    CMultiplayer*               m_pMultiplayer;
     CGUI*                       m_pGUI;
 
     // Logger utility interface.
-    CLogger *                   m_pLogger;
+    CLogger*                    m_pLogger;
 
     CKeyBinds*                  m_pKeyBinds;
 
@@ -296,16 +295,16 @@ private:
     bool                        m_bDestroyMessageBox;
 
     bool                        m_bDoneFrameRateLimit;
-    uint                        m_uiServerFrameRateLimit;
-    uint                        m_uiFrameRateLimit;
+    unsigned int                m_uiServerFrameRateLimit;
+    unsigned int                m_uiFrameRateLimit;
     double                      m_dLastTimeMs;
     double                      m_dPrevOverrun;
     bool                        m_bWaitToSetNick;
-    uint                        m_uiNewNickWaitFrames;
+    unsigned int                m_uiNewNickWaitFrames;
 
     // Command line
     static void                 ParseCommandLine                ( std::map < std::string, std::string > & options, const char*& szArgs, const char** pszNoValOptions = NULL );
-    std::map < std::string, std::string > m_CommandLineOptions;     // e.g. "-o option" -> {"o" = "option"}
+    std::map <std::string, std::string> m_CommandLineOptions;     // e.g. "-o option" -> {"o" = "option"}
     const char*                 m_szCommandLineArgs;                // Everything that comes after the options
 };
 

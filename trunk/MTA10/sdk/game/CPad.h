@@ -56,18 +56,18 @@ public:
 class CPad
 {
 public:
-    virtual CControllerState*   GetCurrentControllerState( CControllerState *state ) = 0;
-    virtual CControllerState*   GetLastControllerState( CControllerState *state ) = 0;
-    virtual void                SetCurrentControllerState( CControllerState *state ) = 0;
-    virtual void                SetLastControllerState( CControllerState *state ) = 0;
-    virtual void                Restore() = 0;
-    virtual void                Store() = 0;
-    virtual bool                IsEnabled() = 0;
-    virtual void                Disable( bool bDisable ) = 0;
-    virtual void                Clear() = 0;
-    virtual void                SetHornHistoryValue( bool value ) = 0;
-    virtual long                GetAverageWeapon() = 0;
-    virtual void                SetLastTimeTouched( long time ) = 0;
+    virtual const CControllerState&     GetState() = 0;
+    virtual const CControllerState&     GetPreviousState() = 0;
+    virtual void                        SetState( CControllerState& cs ) = 0;
+
+    virtual void                        Restore() = 0;
+    virtual void                        Store() = 0;
+    virtual bool                        IsEnabled() = 0;
+    virtual void                        Disable( bool bDisable ) = 0;
+    virtual void                        Clear() = 0;
+    virtual void                        SetHornHistoryValue( bool value ) = 0;
+    virtual long                        GetAverageWeapon() = 0;
+    virtual void                        SetLastTimeTouched( long time ) = 0;
 };
 
 #endif

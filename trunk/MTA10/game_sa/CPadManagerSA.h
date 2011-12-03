@@ -13,6 +13,9 @@
 #ifndef _CPadManagerSA_
 #define _CPadManagerSA_
 
+#define DIGITAL_BUTTON( state ) ( state ? 255 : 0 )
+#define DIGITAL_AXIS( upState, downState ) ( ( ( (upState) && (downState) ) || !(upState) && !(downState) ) ? 0 : (upState) ? -128 : 128 )
+
 class CPadManagerSA
 {
 public:
@@ -20,6 +23,12 @@ public:
                             ~CPadManagerSA();
 
     CPadSAInterface*        GetJoypad( unsigned int index );
+
+    void                    GetFootControl( CControllerState& cs );
+    void                    GetVehicleControl( CControllerState& cs );
+    void                    UpdateLocalJoypad( CPadSAInterface& pad );
+private:
+    CKeyBindsInterface*     m_keys;
 };
 
 #endif //_CPadManagerSA_

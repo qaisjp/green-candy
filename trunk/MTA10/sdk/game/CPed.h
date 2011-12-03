@@ -140,91 +140,102 @@ enum { PLAYER_PED, CIVILIAN_PED };
 class CPed : public CPhysical
 {
 public:
-    virtual                 ~CPed ( void ) {};
+    virtual                 ~CPed() {};
 
     virtual void            AttachPedToBike( CEntity * entity, CVector * vector, unsigned short sUnk, float unk, float unk2, eWeaponType weaponType ) = 0;
-    virtual void            DetachPedFromEntity ( void ) = 0;
+    virtual void            DetachPedFromEntity() = 0;
 
     virtual bool            CanSeeEntity( CEntity * entity, float distance ) = 0;
     virtual CVehicle*       GetVehicle() = 0;
-    virtual void            Respawn ( CVector * position, bool bCameraCut ) = 0;
+    virtual void            Respawn( CVector * position, bool bCameraCut ) = 0;
 
-    virtual void            SetModelIndex       ( unsigned long ulModel ) = 0;
+    virtual void            SetModelIndex( unsigned long ulModel ) = 0;
 
-    virtual float           GetHealth () = 0;
-    virtual void            SetHealth ( float health ) = 0;
-    virtual float           GetArmor () = 0;
-    virtual void            SetArmor ( float fArmor ) = 0;
-    virtual bool            AddProjectile ( eWeaponType eWeapon, CVector vecOrigin, float fForce, CVector * target, CEntity * targetEntity ) = 0;
-    virtual CWeapon*        GiveWeapon ( eWeaponType weaponType, unsigned int uiAmmo ) = 0;
-    virtual CWeapon*        GetWeapon ( eWeaponSlot weaponSlot ) = 0;
-    virtual CWeapon*        GetWeapon ( eWeaponType weaponType ) = 0;
-    virtual void            ClearWeapons ( void ) = 0;
-    virtual void            RemoveWeaponModel ( int iModel ) = 0;
-    virtual void            ClearWeapon ( eWeaponType weaponType ) = 0;
+    virtual float           GetHealth() = 0;
+    virtual void            SetHealth( float health ) = 0;
+    virtual float           GetArmor() = 0;
+    virtual void            SetArmor( float fArmor ) = 0;
+    virtual bool            AddProjectile( eWeaponType eWeapon, CVector vecOrigin, float fForce, CVector * target, CEntity * targetEntity ) = 0;
+    virtual CWeapon*        GiveWeapon( eWeaponType weaponType, unsigned int uiAmmo ) = 0;
+    virtual CWeapon*        GetWeapon( eWeaponSlot weaponSlot ) = 0;
+    virtual CWeapon*        GetWeapon( eWeaponType weaponType ) = 0;
+    virtual void            ClearWeapons() = 0;
+    virtual void            RemoveWeaponModel( int iModel ) = 0;
+    virtual void            ClearWeapon( eWeaponType weaponType ) = 0;
 
     virtual void            SetIsStanding( bool bStanding ) = 0;
-    virtual unsigned char   GetType () = 0;
+    virtual unsigned char   GetType() = 0;
     virtual CPedIntelligence*   GetPedIntelligence() = 0;
-    virtual CPedSound*          GetPedSound () = 0;
+    virtual CPedSound*          GetPedSound() = 0;
 
     virtual float           GetCurrentRotation() = 0;
     virtual float           GetTargetRotation() = 0;
     virtual void            SetCurrentRotation( float rot ) = 0;
     virtual void            SetTargetRotation( float rot ) = 0;
     virtual eWeaponSlot     GetCurrentWeaponSlot() = 0;
-    virtual void            SetCurrentWeaponSlot ( eWeaponSlot weaponSlot ) = 0;
+    virtual void            SetCurrentWeaponSlot( eWeaponSlot weaponSlot ) = 0;
 
-    virtual CVector*        GetBonePosition ( eBone bone, CVector * vecPosition ) = 0;
-    virtual CVector*        GetTransformedBonePosition ( eBone bone, CVector * vecPosition ) = 0;
+    virtual CVector*        GetBonePosition( eBone bone, CVector * vecPosition ) = 0;
+    virtual CVector*        GetTransformedBonePosition( eBone bone, CVector * vecPosition ) = 0;
 
-    virtual bool            IsDucking ( void ) = 0;
-    virtual void            SetDucking ( bool bDuck ) = 0;
-    virtual bool            IsInWater ( void ) = 0;
-    virtual int             GetCantBeKnockedOffBike ( void ) = 0;
-    virtual void            SetCantBeKnockedOffBike ( int iCantBeKnockedOffBike ) = 0;
-    virtual void            QuitEnteringCar ( CVehicle * vehicle, int iSeat, bool bUnknown ) = 0;
+    virtual bool            IsDucking() = 0;
+    virtual void            SetDucking( bool bDuck ) = 0;
+    virtual bool            IsInWater() = 0;
 
-    virtual bool            IsWearingGoggles ( void ) = 0;
-    virtual void            SetGogglesState ( bool bIsWearingThem ) = 0;
+    virtual CTask*          GetPrimaryTask() = 0;
+    virtual bool            IsGettingIntoVehicle() = 0;
+    virtual bool            IsEnteringVehicle() = 0;
+    virtual bool            IsBeingJacked() = 0;
+    virtual bool            IsLeavingVehicle() = 0;
+    virtual bool            IsGettingOutOfVehicle() = 0;
 
-    virtual void            SetClothesTextureAndModel ( char * szModel, char * szModelLocationName, int iTexture ) = 0;
-    virtual void            RebuildPlayer ( void ) = 0;
+    virtual bool            IsDying() = 0;
+    virtual bool            IsDead() = 0;
 
-    virtual eFightingStyle  GetFightingStyle ( void ) = 0;
-    virtual void            SetFightingStyle ( eFightingStyle style, unsigned char extra ) = 0;
+    virtual int             GetCantBeKnockedOffBike() = 0;
+    virtual void            SetCantBeKnockedOffBike( int iCantBeKnockedOffBike ) = 0;
+    virtual void            QuitEnteringCar( CVehicle * vehicle, int iSeat, bool bUnknown ) = 0;
 
-    virtual CEntity*        GetContactEntity ( void ) = 0;
+    virtual bool            IsWearingGoggles() = 0;
+    virtual void            SetGogglesState( bool bIsWearingThem ) = 0;
 
-    virtual unsigned char   GetRunState ( void ) = 0;
+    virtual void            SetClothesTextureAndModel( char * szModel, char * szModelLocationName, int iTexture ) = 0;
+    virtual void            RebuildPlayer() = 0;
 
-    virtual CEntity*        GetTargetedEntity ( void ) = 0;
-    virtual void            SetTargetedEntity ( CEntity* pEntity ) = 0;
+    virtual eFightingStyle  GetFightingStyle() = 0;
+    virtual void            SetFightingStyle( eFightingStyle style, unsigned char extra ) = 0;
 
-    virtual bool            GetCanBeShotInVehicle       ( void ) = 0;
-    virtual bool            GetTestForShotInVehicle     ( void ) = 0;
+    virtual CEntity*        GetContactEntity() = 0;
 
-    virtual void            SetCanBeShotInVehicle       ( bool bShot ) = 0;
-    virtual void            SetTestForShotInVehicle     ( bool bTest ) = 0;
+    virtual unsigned char   GetRunState() = 0;
 
-    virtual unsigned char   GetOccupiedSeat ( void ) = 0;
-    virtual void            SetOccupiedSeat ( unsigned char seat ) = 0;
+    virtual CEntity*        GetTargetedEntity() = 0;
+    virtual void            SetTargetedEntity( CEntity* pEntity ) = 0;
 
-    virtual void            RemoveBodyPart ( int i, char c ) = 0;
+    virtual bool            GetCanBeShotInVehicle() = 0;
+    virtual bool            GetTestForShotInVehicle() = 0;
 
-    virtual void            SetFootBlood ( unsigned int uiFootBlood ) = 0;
-    virtual unsigned int    GetFootBlood ( void ) = 0;
+    virtual void            SetCanBeShotInVehicle( bool bShot ) = 0;
+    virtual void            SetTestForShotInVehicle( bool bTest ) = 0;
 
-    virtual bool            IsOnFire ( void ) = 0;
-    virtual void            SetOnFire ( bool bOnFire ) = 0;
+    virtual unsigned char   GetOccupiedSeat() = 0;
+    virtual void            SetOccupiedSeat( unsigned char seat ) = 0;
 
-    virtual bool            GetStayInSamePlace ( void ) = 0;
-    virtual void            SetStayInSamePlace ( bool bStay ) = 0;
+    virtual void            RemoveBodyPart( int i, char c ) = 0;
 
-    virtual void            GetVoice ( short* psVoiceType, short* psVoiceID ) = 0;
-    virtual void            GetVoice ( const char** pszVoiceType, const char** pszVoice ) = 0;
-    virtual void            SetVoice ( short sVoiceType, short sVoiceID ) = 0;
-    virtual void            SetVoice ( const char* szVoiceType, const char* szVoice ) = 0;
+    virtual void            SetFootBlood( unsigned int uiFootBlood ) = 0;
+    virtual unsigned int    GetFootBlood() = 0;
+
+    virtual bool            IsOnFire() = 0;
+    virtual void            SetOnFire( bool bOnFire ) = 0;
+
+    virtual bool            GetStayInSamePlace() = 0;
+    virtual void            SetStayInSamePlace( bool bStay ) = 0;
+
+    virtual void            GetVoice( short* psVoiceType, short* psVoiceID ) = 0;
+    virtual void            GetVoice( const char** pszVoiceType, const char** pszVoice ) = 0;
+    virtual void            SetVoice( short sVoiceType, short sVoiceID ) = 0;
+    virtual void            SetVoice( const char* szVoiceType, const char* szVoice ) = 0;
 };
 
 #endif

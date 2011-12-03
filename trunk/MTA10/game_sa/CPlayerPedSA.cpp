@@ -29,19 +29,13 @@ CPlayerPedSA::CPlayerPedSA( ePedModel pedType )
 {
     DEBUG_TRACE("CPlayerPedSA::CPlayerPedSA( ePedModel pedType )");
     // based on CPlayerPed::SetupPlayerPed (R*)
-    DWORD CPedOperatorNew = FUNC_CPedOperatorNew;
     DWORD CPlayerPedConstructor = FUNC_CPlayerPedConstructor;
 
-    DWORD dwPedPointer = 0;
+    CPlayerPedSAInterface *player = new CPlayerPedSAInterface;
+
     _asm
     {
-        push    SIZEOF_CPLAYERPED
-        call    CPedOperatorNew
-        add     esp, 4
-
-        mov     dwPedPointer, eax
-
-        mov     ecx, eax
+        mov     ecx, player
         push    0 // set to 0 and they'll behave like AI peds
         push    1
         call    CPlayerPedConstructor

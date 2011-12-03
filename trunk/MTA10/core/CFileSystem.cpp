@@ -510,7 +510,14 @@ void CSystemPathTranslator::GetDirectory( filePath& output )
 
 bool CSystemPathTranslator::ChangeDirectory( const char *path )
 {
-    return GetRelativePath( path, false, m_currentDir );
+    filePath dir;
+    GetRelativePath( path, false, dir );
+
+    if ( !GetRelativePath( path, false, dir ) || !File_IsDirectoryAbsolute( m_root + dir ) )
+        return false;
+
+    m_currentDir = dir;
+    return true;
 }
 
 bool CSystemPathTranslator::GetFullPathTree( const char *path, dirTree& tree, bool *file )
@@ -1110,10 +1117,7 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
     }
     else
     {
-        char pathBuffer[1024];
-        GetCurrentDirectory( 1023, pathBuffer );
-
-        root = pathBuffer;
+        root = GetMTASABaseDir();
         root += path;
 
         if (!_File_ParseRelativePath( root.c_str() + 3, tree, &bFile ))

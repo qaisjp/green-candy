@@ -17,22 +17,16 @@
 class CModuleLoader
 {
 public:
-    
                     CModuleLoader       ( const std::string& ModuleName );
-                    CModuleLoader       ( );
-                    ~CModuleLoader      ( ); 
+                    CModuleLoader       ();
+                    ~CModuleLoader      (); 
 
-    bool            LoadModule          ( const std::string& ModuleName );
-    void            UnloadModule        ( );
-
-    inline bool     IsOk                ( ) const { return m_bStatus; }
-    const SString&  GetLastErrorMessage ( void ) const;
-    
-    PVOID           GetFunctionPointer  ( const std::string& FunctionName );
+    bool            LoadModule          ( const std::string& ModuleName ); 
+    void*           GetFunctionPointer  ( const std::string& FunctionName );
+    void            UnloadModule        ();
 
 private:
     HMODULE     m_hLoadedModule;
-    bool        m_bStatus;
     SString     m_strLastError;
 };
 

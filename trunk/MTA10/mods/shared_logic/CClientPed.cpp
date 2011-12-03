@@ -11,6 +11,7 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Fedor Sinev <fedorsinev@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -1078,18 +1079,18 @@ CClientVehicle* CClientPed::GetClosestVehicleInRange ( bool bGetPositionFromClos
                     // Get the actual door id
                     switch ( iClosestDoor )
                     {
-                        case 10:
-                            iClosestDoor = 0;
-                            break;
-                        case 8:
-                            iClosestDoor = 1;
-                            break;
-                        case 11:
-                            iClosestDoor = 2;
-                            break;
-                        case 9:
-                            iClosestDoor = 3;
-                            break;
+                    case 10:
+                        iClosestDoor = 0;
+                        break;
+                    case 8:
+                        iClosestDoor = 1;
+                        break;
+                    case 11:
+                        iClosestDoor = 2;
+                        break;
+                    case 9:
+                        iClosestDoor = 3;
+                        break;
                     }
                     *uiClosestDoor = static_cast < unsigned int > ( iClosestDoor );
                 }
@@ -1156,18 +1157,18 @@ bool CClientPed::GetClosestDoor ( CClientVehicle* pVehicle, bool bCheckDriverDoo
             // Get the actual door id
             switch ( iClosestDoor )
             {
-                case 10:
-                    uiClosestDoor = 0;
-                    break;
-                case 8:
-                    uiClosestDoor = 1;
-                    break;
-                case 11:
-                    uiClosestDoor = 2;
-                    break;
-                case 9:
-                    uiClosestDoor = 3;
-                    break;
+            case 10:
+                uiClosestDoor = 0;
+                break;
+            case 8:
+                uiClosestDoor = 1;
+                break;
+            case 11:
+                uiClosestDoor = 2;
+                break;
+            case 9:
+                uiClosestDoor = 3;
+                break;
             }
         }
         if ( pClosestDoorPosition )
@@ -1239,6 +1240,7 @@ void CClientPed::WarpIntoVehicle ( CClientVehicle* pVehicle, unsigned int uiSeat
 {
     // Ensure vehicle model is loaded
     CModelInfo* pModelInfo = pVehicle->GetModelInfo();
+
     if ( g_pGame->IsASyncLoadingEnabled () && !pModelInfo->IsLoaded () )
     {
         if ( pVehicle->IsStreamedIn () )
@@ -1247,25 +1249,30 @@ void CClientPed::WarpIntoVehicle ( CClientVehicle* pVehicle, unsigned int uiSeat
         }
     }
 
-    // Transfer WaitingForGroundToLoad state to vehicle
     if ( m_bIsLocalPlayer )
     {
+        // Transfer WaitingForGroundToLoad state to vehicle
         if ( IsFrozenWaitingForGroundToLoad () )
         {
             SetFrozenWaitingForGroundToLoad ( false );
             pVehicle->SetFrozenWaitingForGroundToLoad ( true );
         }
-        CVector vecPosition;
-        GetPosition ( vecPosition );
-        CVector vecVehiclePosition;
-        pVehicle->GetPosition ( vecVehiclePosition );
-        float fDist = ( vecPosition - vecVehiclePosition ).Length ();
-        if ( fDist > 50 && !pVehicle->IsFrozen () )
+        else
         {
-            pVehicle->SetFrozenWaitingForGroundToLoad ( true );
+            CVector vecPosition;
+            GetPosition ( vecPosition );
+            CVector vecVehiclePosition;
+            pVehicle->GetPosition ( vecVehiclePosition );
+            float fDist = ( vecPosition - vecVehiclePosition ).Length ();
+            if ( fDist > 50 && !pVehicle->IsFrozen () )
+            {
+                pVehicle->SetFrozenWaitingForGroundToLoad ( true );
+            }
         }
-    }
 
+        // Disable foot control states
+        g_pCore->GetKeyBinds()->CallAllGTAControlBinds( CONTROL_FOOT, false );
+    }
 
     // Remove some tasks so we don't get any weird results
     SetChoking ( false );
@@ -1281,7 +1288,8 @@ void CClientPed::WarpIntoVehicle ( CClientVehicle* pVehicle, unsigned int uiSeat
     m_ucLeavingDoor = 0xFF;
 
     // Store our current seat
-    if ( m_pPlayerPed ) m_pPlayerPed->SetOccupiedSeat ( ( unsigned char ) uiSeat );
+    if ( m_pPlayerPed )
+        m_pPlayerPed->SetOccupiedSeat ( ( unsigned char ) uiSeat );
 
     // Driverseat
     if ( uiSeat == 0 )
@@ -1377,21 +1385,22 @@ void CClientPed::ResetToOutOfVehicleWeapon ( void )
 }
 
 
-CClientVehicle * CClientPed::RemoveFromVehicle ( bool bIgnoreIfGettingOut )
+CClientVehicle* CClientPed::RemoveFromVehicle( bool bIgnoreIfGettingOut )
 {
-    SetDoingGangDriveby ( false );
+    SetDoingGangDriveby( false );
 
     // Reset any enter/exit tasks
-    if ( IsEnteringVehicle () )
+    if ( IsEnteringVehicle() )
     {
-        m_pTaskManager->RemoveTask ( TASK_PRIORITY_DEFAULT );
+        m_pTaskManager->RemoveTask( TASK_PRIORITY_DEFAULT );
     }
 
     // Get the current vehicle you're in
-    CClientVehicle* pVehicle = GetRealOccupiedVehicle ();
+    CClientVehicle* pVehicle = GetRealOccupiedVehicle();
+
     if ( !pVehicle )
     {
-        pVehicle = GetOccupiedVehicle ();
+        pVehicle = GetOccupiedVehicle();
         if ( !pVehicle )
         {
             pVehicle = m_pOccupyingVehicle;
@@ -1400,17 +1409,17 @@ CClientVehicle * CClientPed::RemoveFromVehicle ( bool bIgnoreIfGettingOut )
 
     if ( pVehicle )
     {
-        pVehicle->SetSwingingDoorsAllowed ( false );
+        pVehicle->SetSwingingDoorsAllowed( false );
 
         // Warp the player out of the vehicle
         CVehicle* pGameVehicle = pVehicle->m_pVehicle;
         if ( pGameVehicle )
         {
             // Jax: this should be safe, doesn't remove the player if he's getting dragged out already (fix for getting stuck on back after being jacked)
-            if ( !bIgnoreIfGettingOut || ( !IsGettingOutOfVehicle () ) )
+            if ( !bIgnoreIfGettingOut || ( !IsGettingOutOfVehicle() ) )
             {
                 // Warp the player out
-                InternalRemoveFromVehicle ( pGameVehicle );
+                InternalRemoveFromVehicle( pGameVehicle );
             }
         }        
 
@@ -1418,25 +1427,28 @@ CClientVehicle * CClientPed::RemoveFromVehicle ( bool bIgnoreIfGettingOut )
 
         if ( m_bIsLocalPlayer )
         {
-            pVehicle->RemoveStreamReference ();
+            pVehicle->RemoveStreamReference();
         }
     }
 
     // Reset the interpolation so we won't move from the last known spot to where we exit
-    ResetInterpolation ();
+    ResetInterpolation();
 
     // Local player?
     if ( m_bIsLocalPlayer )
     {
         // Stop the radio
-        StopRadio ();
+        StopRadio();
+
+        // Reset vehicle controls
+        g_pCore->GetKeyBinds()->CallAllGTAControlBinds( CONTROL_VEHICLE, false );
     }
 
     // And in our class
     CClientVehicle::UnpairPedAndVehicle( this );
-    assert ( m_pOccupiedVehicle == NULL );
-    assert ( m_pOccupyingVehicle == NULL );
-    assert ( m_uiOccupiedVehicleSeat = 0xFF );
+    assert( m_pOccupiedVehicle == NULL );
+    assert( m_pOccupyingVehicle == NULL );
+    assert( m_uiOccupiedVehicleSeat = 0xFF );
 
     m_bForceGettingIn = false;
     m_bForceGettingOut = false;
@@ -1608,43 +1620,14 @@ void CClientPed::LockArmor ( float fArmor )
     m_fArmor = fArmor;
 }
 
-
-bool CClientPed::IsDying ( void )
+bool CClientPed::IsDying()
 {
-    if ( m_pPlayerPed )
-    {
-        CTask * pTask = m_pTaskManager->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
-        if ( pTask )
-        {
-            if ( pTask->GetTaskType () == TASK_SIMPLE_DIE ||
-                 pTask->GetTaskType () == TASK_SIMPLE_DROWN ||
-                 pTask->GetTaskType () == TASK_SIMPLE_DIE_IN_CAR ||
-                 pTask->GetTaskType () == TASK_COMPLEX_DIE_IN_CAR ||
-                 pTask->GetTaskType () == TASK_SIMPLE_DROWN_IN_CAR ||
-                 pTask->GetTaskType () == TASK_COMPLEX_DIE )
-            {
-                return true;
-            }
-        }
-    }
-    return false;
+    return m_pPlayerPed && m_pPlayerPed->IsDying();
 }
 
-
-bool CClientPed::IsDead ( void )
+bool CClientPed::IsDead()
 {
-    if ( m_pPlayerPed )
-    {
-        CTask * pTask = m_pTaskManager->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
-        if ( pTask )
-        {
-            if ( pTask->GetTaskType () == TASK_SIMPLE_DEAD )
-            {
-                return true;
-            }
-        }
-    }
-    return false;
+    return m_pPlayerPed && m_pPlayerPed->IsDead();
 }
 
 void CClientPed::Kill ( eWeaponType weaponType, unsigned char ucBodypart, bool bStealth, bool bSetDirectlyDead, AssocGroupId animGroup, AnimationId animID )
@@ -2071,18 +2054,12 @@ bool CClientPed::GetMovementState ( std::string& strStateName )
     return true;
 }
 
-CTask* CClientPed::GetCurrentPrimaryTask ( void )
+CTask* CClientPed::GetCurrentPrimaryTask()
 {
-    if ( m_pPlayerPed )
-    {
-        return m_pTaskManager->GetTask ( TASK_PRIORITY_PRIMARY );
-    }
-
-    return NULL;
+    return m_pPlayerPed->GetPrimaryTask();
 }
 
-
-bool CClientPed::IsSimplestTask ( int iTaskType )
+bool CClientPed::IsSimplestTask( int iTaskType )
 {
     if ( m_pPlayerPed )
     {
@@ -2094,7 +2071,6 @@ bool CClientPed::IsSimplestTask ( int iTaskType )
     }
     return false;
 }
-
 
 bool CClientPed::HasTask ( int iTaskType, int iTaskPriority, bool bPrimary )
 {
@@ -4292,142 +4268,30 @@ void CClientPed::DestroySatchelCharges ( bool bBlow, bool bDestroy )
     m_bDestroyingSatchels = false;
 }
 
-
-bool CClientPed::IsEnteringVehicle ( void )
+bool CClientPed::IsEnteringVehicle()
 {
-    if ( m_pPlayerPed )
-    {
-        CTask* pTask = GetCurrentPrimaryTask ();
-        if ( pTask )
-        {
-            switch ( pTask->GetTaskType () )
-            {
-                case TASK_COMPLEX_ENTER_CAR_AS_DRIVER:
-                case TASK_COMPLEX_ENTER_CAR_AS_PASSENGER:
-                {
-                    return true;
-                    break;
-                }
-                default: break;
-            }
-        }
-    }
-    return false;
+    return m_pPlayerPed && m_pPlayerPed->IsEnteringVehicle();
 }
 
-
-bool CClientPed::IsLeavingVehicle ( void )
+bool CClientPed::IsLeavingVehicle()
 {
-    if ( m_pPlayerPed )
-    {
-        CTask* pTask = GetCurrentPrimaryTask ();
-        if ( pTask )
-        {
-            switch ( pTask->GetTaskType () )
-            {
-                case TASK_COMPLEX_LEAVE_CAR: // We only use this task
-                case TASK_COMPLEX_LEAVE_CAR_AND_DIE:
-                case TASK_COMPLEX_LEAVE_CAR_AND_FLEE:
-                case TASK_COMPLEX_LEAVE_CAR_AND_WANDER:
-                case TASK_COMPLEX_SCREAM_IN_CAR_THEN_LEAVE:
-                {
-                    return true;
-                    break;
-                }
-                default: break;
-            }
-        }
-    }
-
-    return false;
+    return m_pPlayerPed && m_pPlayerPed->IsLeavingVehicle();
 }
 
-
-bool CClientPed::IsGettingIntoVehicle ( void )
+bool CClientPed::IsGettingIntoVehicle()
 {
-    if ( m_pPlayerPed )
-    {
-        CTask* pTask = GetCurrentPrimaryTask ();
-        if ( pTask )
-        {
-            if ( pTask->GetTaskType () == TASK_COMPLEX_ENTER_CAR_AS_DRIVER ||
-                 pTask->GetTaskType () == TASK_COMPLEX_ENTER_CAR_AS_PASSENGER )
-            {
-                CTask * pSubTask = pTask->GetSubTask ();
-                if ( pSubTask )
-                {
-                    switch ( pSubTask->GetTaskType () )
-                    {
-                        case TASK_SIMPLE_CAR_GET_IN:
-                        case TASK_SIMPLE_CAR_CLOSE_DOOR_FROM_INSIDE:
-                        case TASK_SIMPLE_CAR_SHUFFLE:
-                        case TASK_COMPLEX_ENTER_BOAT_AS_DRIVER:
-                        {
-                            return true;
-                            break;
-                        }
-                        default: break;
-                    }
-                }
-            }
-        }
-    }
-    return false;
+    return m_pPlayerPed && m_pPlayerPed->IsGettingIntoVehicle();
 }
 
-
-bool CClientPed::IsGettingOutOfVehicle ( void )
+bool CClientPed::IsGettingJacked()
 {
-    if ( m_pPlayerPed )
-    {
-        CTask* pTask = GetCurrentPrimaryTask ();
-        if ( pTask )
-        {
-            if ( pTask->GetTaskType () == TASK_COMPLEX_LEAVE_CAR )
-            {
-                CTask * pSubTask = pTask->GetSubTask ();
-                if ( pSubTask )
-                {
-                    switch ( pSubTask->GetTaskType () )
-                    {
-                        case TASK_SIMPLE_CAR_GET_OUT:
-                        case TASK_SIMPLE_CAR_CLOSE_DOOR_FROM_OUTSIDE:
-                        {
-                            return true;
-                            break;
-                        }
-                        default: break;
-                    }
-                }
-            }
-        }
-    }
-    return false;
+    return m_pPlayerPed && m_pPlayerPed->IsBeingJacked();
 }
 
-
-bool CClientPed::IsGettingJacked ( void )
+bool CClientPed::IsGettingOutOfVehicle()
 {
-    if ( m_pPlayerPed )
-    {
-        CTask* pTask = GetCurrentPrimaryTask ();
-        if ( pTask )
-        {
-            switch ( pTask->GetTaskType () )
-            {
-                case TASK_COMPLEX_CAR_SLOW_BE_DRAGGED_OUT_AND_STAND_UP:
-                case TASK_SIMPLE_BIKE_JACKED:
-                {
-                    return true;
-                    break;
-                }
-                default: break;
-            }
-        }
-    }
-    return false;
+    return m_pPlayerPed && m_pPlayerPed->IsLeavingVehicle();
 }
-
 
 CClientEntity* CClientPed::GetContactEntity ( void )
 {

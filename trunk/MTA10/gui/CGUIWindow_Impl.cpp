@@ -15,57 +15,55 @@
 
 #define CGUIWINDOW_NAME "CGUI/FrameWindow"
 
-CGUIWindow_Impl::CGUIWindow_Impl ( CGUI_Impl* pGUI, CGUIElement* pParent, const char* szCaption, const SString& strLayoutFile )
+CGUIWindow_Impl::CGUIWindow_Impl( CGUI_Impl* pGUI, CGUIElement* pParent, const char* szCaption, const SString& strLayoutFile )
 {
     m_pManager = pGUI;
 
     // Get an unique identifier for CEGUI
-    char szUnique [CGUI_CHAR_SIZE];
-    pGUI->GetUniqueName ( szUnique );
+    char szUnique[CGUI_CHAR_SIZE];
+    pGUI->GetUniqueName( szUnique );
 
     // Create the window and set default settings
-    if ( !strLayoutFile.empty () )
+    if ( !strLayoutFile.empty() )
     {
         // Load from XML file
-        m_pWindow = pGUI->GetWindowManager ()->loadWindowLayout ( strLayoutFile );
+        m_pWindow = pGUI->GetWindowManager()->loadWindowLayout( strLayoutFile );
     }
 
     if ( !m_pWindow )
     {
         // Create new here
-        m_pWindow = pGUI->GetWindowManager ()->createWindow ( CGUIWINDOW_NAME, szUnique );
-        m_pWindow->setRect ( CEGUI::Relative, CEGUI::Rect (0.10f, 0.10f, 0.60f, 0.90f) );
-        m_pWindow->setAlpha ( 0.8f );
+        m_pWindow = pGUI->GetWindowManager()->createWindow( CGUIWINDOW_NAME, szUnique );
+        m_pWindow->setRect( CEGUI::Relative, CEGUI::Rect(0.10f, 0.10f, 0.60f, 0.90f) );
+        m_pWindow->setAlpha( 0.8f );
 
         // Give the window a caption
-        m_pWindow->setText ( CGUI_Impl::GetUTFString(szCaption) );
+        m_pWindow->setText( CGUI_Impl::GetUTFString(szCaption) );
     }
 
-    m_pWindow->setDestroyedByParent ( false );
+    m_pWindow->setDestroyedByParent( false );
     
     // Store the pointer to this CGUI element in the CEGUI element
-    m_pWindow->setUserData ( reinterpret_cast < void* > ( this ) );
+    m_pWindow->setUserData( reinterpret_cast < void* > ( this ) );
 
     // Set fixed minimum size to 96x48
-    m_pWindow->setMetricsMode ( CEGUI::Absolute );
-    m_pWindow->setMinimumSize ( CEGUI::Size ( 96.0f, 48.0f ) );
+    m_pWindow->setMetricsMode( CEGUI::Absolute );
+    m_pWindow->setMinimumSize( CEGUI::Size ( 96.0f, 48.0f ) );
  
     // Some window specific style options
-    reinterpret_cast < CEGUI::FrameWindow* > ( m_pWindow ) -> setTitlebarFont ( "default-bold-small" );
+    reinterpret_cast <CEGUI::FrameWindow*> ( m_pWindow )->setTitlebarFont( "default-bold-small" );
 
     // Register our events
-    m_pWindow->subscribeEvent ( CEGUI::FrameWindow::EventCloseClicked, CEGUI::Event::Subscriber ( &CGUIWindow_Impl::Event_OnCloseClick, this ) );
-    m_pWindow->subscribeEvent ( CEGUI::FrameWindow::EventKeyDown, CEGUI::Event::Subscriber ( &CGUIWindow_Impl::Event_OnKeyDown, this ) );
+    m_pWindow->subscribeEvent( CEGUI::FrameWindow::EventCloseClicked, CEGUI::Event::Subscriber ( &CGUIWindow_Impl::Event_OnCloseClick, this ) );
+    m_pWindow->subscribeEvent( CEGUI::FrameWindow::EventKeyDown, CEGUI::Event::Subscriber ( &CGUIWindow_Impl::Event_OnKeyDown, this ) );
     AddEvents ();
 
     // Disable rolling up, because we don't need it and it causes a freeze
-    reinterpret_cast < CEGUI::FrameWindow* > ( m_pWindow ) -> setRollupEnabled ( false );
+    reinterpret_cast <CEGUI::FrameWindow*> ( m_pWindow )->setRollupEnabled( false );
 
     // If a parent is specified, add it to it's children list, if not, add it as a child to the pManager
     if ( pParent )
-    {
-        SetParent ( pParent );
-    }
+        SetParent( pParent );
     else
     {
         pGUI->AddChild ( this );

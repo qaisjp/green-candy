@@ -78,6 +78,8 @@ enum eInputMode
 class CGUI
 {
 public:
+    virtual                     ~CGUI                   () = 0;
+
     virtual void                SetSkin                 ( const char* szName ) = 0;
 
     virtual void                Draw                    () = 0;

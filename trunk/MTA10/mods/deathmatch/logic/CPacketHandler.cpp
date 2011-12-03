@@ -1750,7 +1750,7 @@ void CPacketHandler::Packet_Vehicle_InOut ( NetBitStreamInterface& bitStream )
                                 pInsidePlayer->SetVehicleInOutState ( VEHICLE_INOUT_NONE );
 
                                 // Is he not getting in the vehicle yet?
-                                //if ( !pPlayer->IsGettingIntoVehicle () )
+                                if ( !pPlayer->IsGettingIntoVehicle () )
                                 {
                                     // Warp him in
                                     pInsidePlayer->WarpIntoVehicle ( pVehicle, ucSeat );

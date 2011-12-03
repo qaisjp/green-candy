@@ -28,12 +28,12 @@ class SString : public std::string
 {
 public:
     // Constructors
-    SString ( )
-        : std::string ()
+    SString( )
+        : std::string()
     { }
 
-    SString ( const char* szText )
-        : std::string ( szText ? szText : "" )
+    SString( const char* szText )
+        : std::string( szText ? szText : "" )
     { }
 
     explicit SString ( const char* szFormat, ... )
@@ -99,9 +99,9 @@ public:
     SString         ReplaceI            ( const char* szOld, const char* szNew, bool bSearchJustReplaced = false ) const;
     SString         TrimStart           ( const char* szOld ) const;
     SString         TrimEnd             ( const char* szOld ) const;
-    SString         ToLower             ( void ) const;
-    SString         ToUpper             ( void ) const;
-    SString         ConformLineEndings  ( void ) const;
+    SString         ToLower             () const;
+    SString         ToUpper             () const;
+    SString         ConformLineEndings  () const;
     bool            Contains            ( const SString& strOther ) const;
     bool            ContainsI           ( const SString& strOther ) const;
     bool            CompareI            ( const SString& strOther ) const;
