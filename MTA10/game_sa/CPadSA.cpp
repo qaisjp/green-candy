@@ -17,12 +17,16 @@
 
 CPadSAInterface::CPadSAInterface()
 {
-
 }
 
 CPadSAInterface::~CPadSAInterface()
 {
+}
 
+void CPadSAInterface::SetState( const CControllerState& cs )
+{
+    m_prev = m_new;
+    m_new = cs;
 }
 
 void CPadSAInterface::SetHornHistory( bool state )
@@ -46,12 +50,11 @@ const CControllerState& CPadSA::GetPreviousState()
     return m_interface->m_prev;
 }
 
-void CPadSA::SetCurrentControllerState( CControllerState& cs )
+void CPadSA::SetState( const CControllerState& cs )
 {
-    DEBUG_TRACE("void CPadSA::SetCurrentState( CControllerState& cs )");
+    DEBUG_TRACE("void CPadSA::SetState( const CControllerState& cs )");
     
-    m_interface->m_prev = m_interface->m_new;
-    m_interface->m_new = cs;
+    m_interface->SetState( cs );
 }
 
 void CPadSA::Store()

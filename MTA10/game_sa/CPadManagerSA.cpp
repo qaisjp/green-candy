@@ -30,10 +30,11 @@ CPadSAInterface* CPadManagerSA::GetJoypad( unsigned int index )
     return (CPadSAInterface*)0x00B73458;
 }
 
-void CPadManagerSA::GetFootControl( CControllerState& cs )
+void CPadManagerSA::GetFootControl( CPedSA& ped, CControllerState& cs )
 {
     bool detonator = ped->GetCurrentWeaponSlot() == 12;
     bool aimingWeapon = m_keys->GetControlState( CONTROL_AIM_WEAPON );
+    bool enteringVehicle = ped->IsEnteringVehicle();
 
     cs.m_action4 = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_FIRE ) && !detonator );
     cs.m_rs2 = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_NEXT_WEAPON ) || ( aimingWeapon && m_keys->GetControlState( CONTROL_ZOOM_IN ) ) );
@@ -41,7 +42,7 @@ void CPadManagerSA::GetFootControl( CControllerState& cs )
     cs.m_leftAxisY = DIGITAL_AXIS( m_keys->GetControlState( CONTROL_FORWARDS ), m_keys->GetControlState( CONTROL_BACKWARDS ) );
     cs.m_leftAxisX = DIGITAL_AXIS( m_keys->GetControlState( CONTROL_LEFT ), m_keys->GetControlState( CONTROL_RIGHT ) );
 
-    cs.m_action1 = DIGITAL_BUTTON( !bEnteringVehicle && m_keys->GetControlState( CONTROL_JUMP ) );
+    cs.m_action1 = DIGITAL_BUTTON( !enteringVehicle && m_keys->GetControlState( CONTROL_JUMP ) );
     cs.m_action3 = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_SPRINT ) );
     cs.m_action6 = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_LOOK_BEHIND ) );
     cs.m_action5 = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_CROUCH ) );
@@ -55,7 +56,7 @@ void CPadManagerSA::GetFootControl( CControllerState& cs )
     cs.m_digitalDown = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_GROUP_CONTROL_BACK ) );
 }
 
-void CPadManagerSA::GetVehicleControl( CControllerState& cs )
+void CPadManagerSA::GetVehicleControl( CPedSA& ped, CControllerState& cs )
 {
     cs.m_action4 = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_VEHICLE_FIRE ) );
     cs.m_ls1 = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_VEHICLE_SECONDARY_FIRE ) );
@@ -77,30 +78,28 @@ void CPadManagerSA::GetVehicleControl( CControllerState& cs )
     cs.m_rightAxisY = DIGITAL_AXIS( m_keys->GetControlState( CONTROL_SPECIAL_CONTROL_DOWN ), m_keys->GetControlState( CONTROL_SPECIAL_CONTROL_UP ) );
 }
 
-void CPadManagerSA::UpdateLocalJoypad( CPedSA *ped )
+void CPadManagerSA::UpdateLocalJoypad( CPedSA& ped )
 {
-    bool inVehicle = ped->GetVehicle() != NULL;
-    bool enteringVehicle = ped->IsEnteringVehicle();
-    CPadSAInterface *pad = ped->GetInterface()->GetJoypad();
+    bool inVehicle = ped.GetVehicle() != NULL;
+    CPadSAInterface *pad = ped.GetInterface()->GetJoypad();
 
     // Retrive the current controls
-    CControllerState cs;
+    CControllerState cs = { 0 };
 
-    if ( !ped->IsDead() )
+    if ( !ped.IsDead() )
     {
-        if ( !inVehicle )
-            GetFootControl( cs );
+        if ( inVehicle )
+            GetVehicleControl( ped, cs );
         else
-            GetVehicleControl( cs );
+            GetFootControl( ped, cs );
+
+        // Global controls
+        cs.m_action2 = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_ENTER_EXIT ) );
+        cs.m_select = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_CHANGE_CAMERA ) );  
+
+        core->GetJoystickManager()->ApplyAxes( cs, inVehicle );
     }
-
-    // Global controls
-    cs.m_action2 = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_ENTER_EXIT ) );
-    cs.m_select = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_CHANGE_CAMERA ) );  
-
-    GetJoystickManager ()->ApplyAxes ( cs, bInVehicle );
-
-    m_pCore->GetGame ()->GetPad ()->SetCurrentControllerState ( &cs );
+    pad->SetState( cs );
 
     // Sirens
     pad->SetHornHistory( cs.m_action5 == 255 );

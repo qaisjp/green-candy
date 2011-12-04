@@ -122,6 +122,7 @@ CCore::CCore()
     // Create interaction objects.
     m_pCommands                 = new CCommands;
     m_pConnectManager           = new CConnectManager;
+    m_joystick                  = new CJoystickManager;
 
     // Create the GUI manager and the graphics lib wrapper
     m_pLocalGUI                 = new CLocalGUI;
@@ -237,7 +238,6 @@ CCore::~CCore()
     //Delete the Current Server
     delete m_pCurrentServer;
 }
-
 
 eCoreVersion CCore::GetVersion()
 {
@@ -1108,7 +1108,7 @@ void CCore::DoPostFramePulse()
         m_bLastFocused = true;
     }
 
-    GetJoystickManager ()->DoPulse ();      // Note: This may indirectly call CMessageLoopHook::ProcessMessage
+    GetJoystickManager()->DoPulse();      // Note: This may indirectly call CMessageLoopHook::ProcessMessage
     m_pKeyBinds->DoPostFramePulse ();
 
     // Pulse game

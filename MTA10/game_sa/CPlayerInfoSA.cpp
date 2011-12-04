@@ -8,6 +8,7 @@
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -15,105 +16,85 @@
 
 #include "StdInc.h"
 
-/**
- * Gets the Player Ped for the local player
- * @return CPlayerPed * for the local player
- */
-CPlayerPed * CPlayerInfoSA::GetPlayerPed (  )
+extern CBaseModelInfoSAInterface **ppModelInfo;
+
+CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()
 {
-    DEBUG_TRACE("CPlayerPed * CPlayerInfoSA::GetPlayerPed (  )");
-    return (CPlayerPed *)VAR_PlayerPed;
+    DEBUG_TRACE("CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()");
+
+    return (CPlayerPed*)VAR_PlayerPed;
 }
 
-CWanted * CPlayerInfoSA::GetWanted ( )
+CWantedSA* CPlayerInfoSA::GetWanted()
 {
-    DEBUG_TRACE("CWanted * CPlayerInfoSA::GetWanted ( )");
+    DEBUG_TRACE("CWantedSA* CPlayerInfoSA::GetWanted()");
 
-    if ( !wanted )
-        wanted = new CWantedSA(this->internalInterface->PlayerPedData.m_Wanted); 
+    if ( !m_wanted )
+        m_wanted = new CWantedSA( m_interface->m_pedData.m_Wanted ); 
 
-    return wanted;
+    return m_wanted;
 }
 
-void CPlayerInfoSA::GetCrossHair ( bool &bActivated, float &fTargetX, float &fTargetY )
+bool CPlayerInfoSA::GetCrossHair( float& tarX, float& tarY )
 {
-    DEBUG_TRACE("void CPlayerInfoSA::GetCrossHair ( bool &bEnabled, float &fTargetX, float &fTargetY )");
-    bActivated = internalInterface->CrossHair.bActivated;
-    fTargetX = internalInterface->CrossHair.TargetX;
-    fTargetY = internalInterface->CrossHair.TargetY;
+    DEBUG_TRACE("bool CPlayerInfoSA::GetCrossHair( float &tarX, float &tarY )");
+
+    tarX = m_interface->m_crossHair.m_tarX;
+    tarY = m_interface->m_crossHair.m_tarY;
+    return m_interface->m_crossHair.m_active;
 }
 
-/**
- * Gets the amount of money the player has
- * @return DWORD containing the ammount of money the player has
- */
-long CPlayerInfoSA::GetPlayerMoney (  )
+long CPlayerInfoSA::GetPlayerMoney()
 {
-    DEBUG_TRACE("unsigned long CPlayerInfoSA::GetPlayerMoney ( void )");
-    //return internalInterface->DisplayScore;
-    return * ( long * ) ( 0xB7CE50 );
+    DEBUG_TRACE("long CPlayerInfoSA::GetPlayerMoney()");
+    return *(long*)0xB7CE50;
 }
 
-/**
- * Sets the amount of money the player has
- * @param dwMoney DWORD containing the ammount of money you wish the player to have
- */
-void CPlayerInfoSA::SetPlayerMoney ( long lMoney )
+void CPlayerInfoSA::SetPlayerMoney( long value )
 {
-    DEBUG_TRACE("void CPlayerInfoSA::SetPlayerMoney ( unsigned long ulMoney )");
-    //internalInterface->DisplayScore = ulMoney;
-    MemPutFast < long > ( 0xB7CE50, lMoney );
+    DEBUG_TRACE("void CPlayerInfoSA::SetPlayerMoney( long value )");
+
+    *(long)0xB7CE50 = value;
 }
 
-/**
- *
- */
-VOID CPlayerInfoSA::GivePlayerParachute ( VOID )
+void CPlayerInfoSA::GivePlayerParachute()
 {
-    DEBUG_TRACE("VOID CPlayerInfoSA::GivePlayerParachute ( VOID )");
+    DEBUG_TRACE("VOID CPlayerInfoSA::GivePlayerParachute()");
+
     DWORD dwFunction = FUNC_GivePlayerParachute;
-    _asm {
+    _asm
+    {
         call dwFunction
     }
 }
 
-/**
- *
- */
-VOID CPlayerInfoSA::StreamParachuteWeapon ( bool bAllowParachute )
+void CPlayerInfoSA::StreamParachuteWeapon( bool allow )
 {
-    DEBUG_TRACE("VOID CPlayerInfoSA::StreamParachuteWeapon ( bool bAllowParachute )");
+    DEBUG_TRACE("void CPlayerInfoSA::StreamParachuteWeapon( bool allow )");
+
     DWORD dwFunction = FUNC_StreamParachuteWeapon;
     _asm {
-        push bAllowParachute
+        push allow
         call dwFunction
     }
 }
 
-/**
- * Not really sure what this does?
- * \todo Find out what this function actually does.
- * @param boolSafe TRUE if the player is to be made safe, FALSE to make them unsafe
- */
-VOID CPlayerInfoSA::MakePlayerSafe ( BOOL boolSafe )
+void CPlayerInfoSA::MakePlayerSafe( bool safe )
 {
-    DEBUG_TRACE("VOID CPlayerInfoSA::MakePlayerSafe ( BOOL boolSafe )");
+    DEBUG_TRACE("void CPlayerInfoSA::MakePlayerSafe( bool safe )");
+
     DWORD dwFunction = FUNC_MakePlayerSafe;
     _asm
     {
-        push    boolSafe
+        push    safe
         call    dwFunction
     }
 }
 
-/**
- * Stop the player entering a specific car
- * @param vehicle The vehicle you want to stop them entering
- * \todo Find out what this really does...
- */
-VOID CPlayerInfoSA::CancelPlayerEnteringCars ( CVehicle * vehicle )
+void CPlayerInfoSA::CancelPlayerEnteringCars( CVehicleSA* veh )
 {
-    DEBUG_TRACE("VOID CPlayerInfoSA::CancelPlayerEnteringCars ( CVehicle * vehicle )");
+    DEBUG_TRACE("void CPlayerInfoSA::CancelPlayerEnteringCars( CVehicle * vehicle )");
+
     DWORD dwFunction = FUNC_CancelPlayerEnteringCars;
     _asm
     {
@@ -127,9 +108,10 @@ VOID CPlayerInfoSA::CancelPlayerEnteringCars ( CVehicle * vehicle )
  * @see CRestartSA::OverrideNextRestart
  * @see CRestartSA::AddPoliceRestartPoint
  */
-VOID CPlayerInfoSA::ArrestPlayer (  )
+void CPlayerInfoSA::ArrestPlayer()
 {
-    DEBUG_TRACE("VOID CPlayerInfoSA::ArrestPlayer (  )");
+    DEBUG_TRACE("void CPlayerInfoSA::ArrestPlayer()");
+
     DWORD dwFunction = FUNC_ArrestPlayer;
     _asm
     {
@@ -142,9 +124,10 @@ VOID CPlayerInfoSA::ArrestPlayer (  )
  * @see CRestartSA::OverrideNextRestart
  * @see CRestartSA::AddHospitalRestartPoint
  */
-VOID CPlayerInfoSA::KillPlayer (  )
+void CPlayerInfoSA::KillPlayer()
 {
-    DEBUG_TRACE("VOID CPlayerInfoSA::KillPlayer (  )");
+    DEBUG_TRACE("void CPlayerInfoSA::KillPlayer()");
+
     DWORD dwFunction = FUNC_KillPlayer;
     _asm
     {
@@ -152,43 +135,39 @@ VOID CPlayerInfoSA::KillPlayer (  )
     }
 }
 
-
 /**
  * Creates a remote controlled vehicle of a specific type at a specified point
  * @param vehicletype This is the type of vehicle to create
  * @return CVehicle * for the created remote controlled vehicle
  */
-CVehicle * CPlayerInfoSA::GivePlayerRemoteControlledCar ( eVehicleTypes vehicletype )
+CVehicleSA* CPlayerInfoSA::GiveRemoteVehicle( unsigned short model, float x, float y, float z )
 {
-    DEBUG_TRACE("CVehicle * CPlayerInfoSA::GivePlayerRemoteControlledCar ( eVehicleTypes vehicletype )");
-    /**
-     * \todo Add the player's X, Y, Z as the initial start position
-     */
+    DEBUG_TRACE("CVehicleSA* CPlayerInfoSA::GivePlayerRemoteVehicle( unsigned short mode, float x, float y, float z )");
+
+    CModelInfoSA *info = pGame->GetModelInfo( model );
+
+    if ( !info || !info->IsVehicle() )
+        return NULL;
+
     DWORD dwFunction = FUNC_GivePlayerRemoteControlledCar;
-    //this->GetPlayerPed();
-    float fX, fY, fZ;
-    float fRotation;
     _asm
     {
-        push    vehicletype
-        push    fRotation;
-        push    fZ
-        push    fY
-        push    fX
+        push    model
+        push    0   // rotation
+        push    x
+        push    y
+        push    z
         call    dwFunction
         add     esp, 0x14
     }
 
-    return this->GetPlayerRemoteControlledCar();
-
+    return GetRemoteVehicle();
 }
 
-/**
- * Stops the player from controlling an RC vehicle
- */
-VOID CPlayerInfoSA::TakeRemoteControlledCarFromPlayer (  )
+void CPlayerInfoSA::StopRemoteControl()
 {
-    DEBUG_TRACE("VOID CPlayerInfoSA::TakeRemoteControlledCarFromPlayer (  )");
+    DEBUG_TRACE("void CPlayerInfoSA::StopRemoteControl()");
+
     DWORD dwFunction = FUNC_TakeRemoteControlledCarFromPlayer;
     _asm
     {
@@ -199,53 +178,44 @@ VOID CPlayerInfoSA::TakeRemoteControlledCarFromPlayer (  )
     }
 }
 
-/**
- * Get the car that the player is controlling remotely
- * @return CVehicle * containing the relevant vehicle, or NULL if the player isn't controlling a vehicle
- */
-CVehicle * CPlayerInfoSA::GetPlayerRemoteControlledCar (  )
+CVehicleSA* CPlayerInfoSA::GetRemoteVehicle()
 {
-    DEBUG_TRACE("CVehicle * CPlayerInfoSA::GetPlayerRemoteControlledCar (  )");
-    return (CVehicle *)VAR_PlayerRCCar;
+    DEBUG_TRACE("CVehicleSA* CPlayerInfoSA::GetRemoteVehicle()");
+
+    return pGame->GetPools()->GetVehicle( (CVehicleSAInterface*)VAR_PlayerRCCar );
 }
 
-float CPlayerInfoSA::GetFPSMoveHeading ( void )
+float CPlayerInfoSA::GetFPSMoveHeading()
 {
-    return this->GetInterface()->PlayerPedData.m_fFPSMoveHeading;
+    return m_interface->m_pedData.m_fFPSMoveHeading;
 }
 
-
-bool CPlayerInfoSA::GetDoesNotGetTired ( void )
+bool CPlayerInfoSA::GetDoesNotGetTired()
 {
-    return internalInterface->DoesNotGetTired;
+    return m_interface->m_awardNoTiredness;
 }
 
-
-void CPlayerInfoSA::SetDoesNotGetTired ( bool bDoesNotGetTired )
+void CPlayerInfoSA::SetDoesNotGetTired( bool award )
 {
-    internalInterface->DoesNotGetTired = bDoesNotGetTired;
+    m_interface->m_awardNoTiredness = award;
 }
 
-
-short CPlayerInfoSA::GetLastTimeEaten ( void )
+unsigned short CPlayerInfoSA::GetLastTimeEaten()
 {
-    return internalInterface->TimeLastEaten;
+    return m_interface->m_starvingTimer;
 }
 
-
-void CPlayerInfoSA::SetLastTimeEaten ( short sTime )
+void CPlayerInfoSA::SetLastTimeEaten( unsigned short timer )
 {
-    internalInterface->TimeLastEaten = sTime;
+    m_interface->m_starvingTimer = timer;
 }
 
-
-DWORD CPlayerInfoSA::GetLastTimeBigGunFired ( void )
+unsigned int CPlayerInfoSA::GetLastTimeBigGunFired()
 {
-    return internalInterface->LastTimeBigGunFired;
+    return m_interface->m_vehicleFireTimer;
 }
 
-
-void CPlayerInfoSA::SetLastTimeBigGunFired ( DWORD dwTime )
+void CPlayerInfoSA::SetLastTimeBigGunFired( unsigned int time )
 {
-    internalInterface->LastTimeBigGunFired = dwTime;
+    m_interface->m_vehicleFireTimer = time;
 }

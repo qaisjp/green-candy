@@ -41,21 +41,21 @@ void CDirect3DData::StoreTransform ( D3DTRANSFORMSTATETYPE dwMatrixToStore, cons
 {
     switch ( dwMatrixToStore )
     {
-        case D3DTS_VIEW:
-            // Copy the real view matrix.
-            memcpy ( &m_mViewMatrix, pMatrix, sizeof ( D3DMATRIX ) );
-            break;
-        case D3DTS_PROJECTION:
-            // Copy the real projection marix.
-            memcpy ( &m_mProjMatrix, pMatrix, sizeof ( D3DMATRIX ) );
-            break;
-        case D3DTS_WORLD:
-            // Copy the real world matrix.
-            memcpy ( &m_mWorldMatrix, pMatrix, sizeof ( D3DMATRIX ) );
-            break;
-        default:
-            // Do nothing.
-            break;
+    case D3DTS_VIEW:
+        // Copy the real view matrix.
+        memcpy ( &m_mViewMatrix, pMatrix, sizeof ( D3DMATRIX ) );
+        break;
+    case D3DTS_PROJECTION:
+        // Copy the real projection marix.
+        memcpy ( &m_mProjMatrix, pMatrix, sizeof ( D3DMATRIX ) );
+        break;
+    case D3DTS_WORLD:
+        // Copy the real world matrix.
+        memcpy ( &m_mWorldMatrix, pMatrix, sizeof ( D3DMATRIX ) );
+        break;
+    default:
+        // Do nothing.
+        break;
     }
 }
 
@@ -63,22 +63,22 @@ void CDirect3DData::GetTransform ( D3DTRANSFORMSTATETYPE dwRequestedMatrix, D3DM
 {
     switch ( dwRequestedMatrix )
     {
-        case D3DTS_VIEW:
-            // Copy the stored view matrix.
-            memcpy ( pMatrixOut, &m_mViewMatrix, sizeof ( D3DMATRIX ) );
-            break;
-        case D3DTS_PROJECTION:
-            // Copy the stored projection matrix.
-            memcpy ( pMatrixOut, &m_mProjMatrix, sizeof ( D3DMATRIX ) );
-            break;
-        case D3DTS_WORLD:
-            // Copy the stored world matrix.
-            memcpy ( pMatrixOut, &m_mWorldMatrix, sizeof ( D3DMATRIX ) );
-            break;
-        default:
-            // Zero out the structure for the user.
-            memcpy ( pMatrixOut, 0, sizeof ( D3DMATRIX ) );
-            break;
+    case D3DTS_VIEW:
+        // Copy the stored view matrix.
+        memcpy ( pMatrixOut, &m_mViewMatrix, sizeof ( D3DMATRIX ) );
+        break;
+    case D3DTS_PROJECTION:
+        // Copy the stored projection matrix.
+        memcpy ( pMatrixOut, &m_mProjMatrix, sizeof ( D3DMATRIX ) );
+        break;
+    case D3DTS_WORLD:
+        // Copy the stored world matrix.
+        memcpy ( pMatrixOut, &m_mWorldMatrix, sizeof ( D3DMATRIX ) );
+        break;
+    default:
+        // Zero out the structure for the user.
+        memcpy ( pMatrixOut, 0, sizeof ( D3DMATRIX ) );
+        break;
     }
 
     //assert ( 0 );   // Too expensive to be used because SetTransform is used too often

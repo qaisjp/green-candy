@@ -27,6 +27,7 @@ public:
                         CPadSAInterface();
                         ~CPadSAInterface();
 
+    void                SetState( const CControllerState& cs );
     void                SetHornHistory( bool state );
 
     CControllerState    m_new;                              // 0
@@ -77,12 +78,15 @@ public:
 
     const CControllerState&     GetState();
     const CControllerState&     GetPreviousState();
-    void                        SetState( CControllerState& cs );
+    void                        SetState( const CControllerState& cs );
 
     void                        Store();
     void                        Restore();
+
+    // Those are hacks
     bool                        IsEnabled();
     void                        Disable( bool bDisable );
+
     void                        Clear();
     void                        SetHornHistoryValue( bool value );
     long                        GetAverageWeapon();

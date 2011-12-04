@@ -24,9 +24,9 @@ public:
 
     CPadSAInterface*        GetJoypad( unsigned int index );
 
-    void                    GetFootControl( CControllerState& cs );
-    void                    GetVehicleControl( CControllerState& cs );
-    void                    UpdateLocalJoypad( CPadSAInterface& pad );
+    void                    GetFootControl( CPedSA& ped, CControllerState& cs );
+    void                    GetVehicleControl( CPedSA& ped, CControllerState& cs );
+    void                    UpdateLocalJoypad( CPedSA& ped );
 private:
     CKeyBindsInterface*     m_keys;
 };

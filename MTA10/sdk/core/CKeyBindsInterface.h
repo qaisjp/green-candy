@@ -51,6 +51,55 @@ enum eControlType
     CONTROL_BOTH
 };
 
+enum eBindableControl
+{
+    CONTROL_FIRE,
+    CONTROL_NEXT_WEAPON,
+    CONTROL_PREVIOUS_WEAPON,
+    CONTROL_FORWARDS,
+    CONTROL_BACKWARDS,
+    CONTROL_LEFT,
+    CONTROL_RIGHT,
+    CONTROL_ZOOM_IN,
+    CONTROL_ZOOM_OUT,
+    CONTROL_ENTER_EXIT,
+    CONTROL_CHANGE_CAMERA,
+    CONTROL_JUMP,
+    CONTROL_SPRINT,
+    CONTROL_LOOK_BEHIND,
+    CONTROL_CROUCH,
+    CONTROL_ACTION,
+    CONTROL_WALK,
+    CONTROL_VEHICLE_FIRE,
+    CONTROL_VEHICLE_SECONDARY_FIRE,
+    CONTROL_VEHICLE_LEFT,
+    CONTROL_VEHICLE_RIGHT,
+    CONTROL_STEER_FORWARD,
+    CONTROL_STEER_BACK,
+    CONTROL_ACCELERATE,
+    CONTROL_BRAKE_REVERSE,
+    CONTROL_RADIO_NEXT,
+    CONTROL_RADIO_PREVIOUS,
+    CONTROL_RADIO_USER_TRACK_SKIP,
+    CONTROL_HORN,
+    CONTROL_SUB_MISSION,
+    CONTROL_HANDBRAKE,
+    CONTROL_VEHICLE_LOOK_LEFT,
+    CONTROL_VEHICLE_LOOK_RIGHT,
+    CONTROL_VEHICLE_LOOK_BEHIND,
+    CONTROL_VEHICLE_MOUSE_LOOK,
+    CONTROL_SPECIAL_CONTROL_LEFT,
+    CONTROL_SPECIAL_CONTROL_RIGHT,
+    CONTROL_SPECIAL_CONTROL_DOWN,
+    CONTROL_SPECIAL_CONTROL_UP,
+    CONTROL_AIM_WEAPON,
+    CONTROL_CONVERSATION_YES,
+    CONTROL_CONVERSATION_NO,
+    CONTROL_GROUP_CONTROL_FORWARDS,
+    CONTROL_GROUP_CONTROL_BACK,
+    MAX_CONTROLS
+};
+
 struct SBindableGTAControl
 {
     char szControl [25];
@@ -81,7 +130,7 @@ public:
     virtual eKeyBindType    GetType    ( void ) = 0;
 };
 
-class CKeyBindWithState: public CKeyBind
+class CKeyBindWithState : public CKeyBind
 {
 public:
     inline          CKeyBindWithState ( void ) { bState = false; }
@@ -90,7 +139,7 @@ public:
 };
 
 
-class CCommandBind: public CKeyBindWithState
+class CCommandBind : public CKeyBindWithState
 {
 public:
     inline          CCommandBind    ( void ) { szCommand = NULL; szArguments = NULL; szResource = NULL; }
@@ -102,7 +151,7 @@ public:
     char*           szDefaultKey;
 };
 
-class CKeyFunctionBind: public CKeyBindWithState
+class CKeyFunctionBind : public CKeyBindWithState
 {
 public:
     eKeyBindType            GetType         ( void ) { return KEY_BIND_FUNCTION; }
@@ -110,7 +159,7 @@ public:
     bool                    bIgnoreGUI;
 };
 
-class CControlFunctionBind: public CKeyBindWithState
+class CControlFunctionBind : public CKeyBindWithState
 {
 public:
     eKeyBindType               GetType         ( void ) { return KEY_BIND_CONTROL_FUNCTION; }
@@ -118,10 +167,10 @@ public:
     ControlFunctionBindHandler Handler;
 };
 
-class CGTAControlBind: public CKeyBind
+class CGTAControlBind : public CKeyBind
 {
 public:
-    eKeyBindType    GetType       ( void ) { return KEY_BIND_GTA_CONTROL; }
+    eKeyBindType    GetType       () { return KEY_BIND_GTA_CONTROL; }
     SBindableGTAControl* control;
     bool            bState;
     bool            bEnabled;
@@ -135,11 +184,11 @@ public:
     // Basic funcs
     virtual void                    Add                         ( CKeyBind* pKeyBind ) = 0;
     virtual void                    Remove                      ( CKeyBind* pKeyBind ) = 0;
-    virtual void                    Clear                       ( void ) = 0;
+    virtual void                    Clear                       () = 0;
     virtual bool                    Call                        ( CKeyBind* pKeyBind ) = 0;
 
-    virtual std::list < CKeyBind* > ::const_iterator IterBegin  ( void ) = 0;
-    virtual std::list < CKeyBind* > ::const_iterator IterEnd    ( void ) = 0;
+    virtual std::list <CKeyBind*> ::const_iterator IterBegin    () = 0;
+    virtual std::list <CKeyBind*> ::const_iterator IterEnd      () = 0;
 
     // Command-bind funcs
     virtual bool                    AddCommand                  ( const char* szKey, const char* szCommand, const char* szArguments = NULL, bool bState = true, const char* szResource = NULL, bool bAltKey = false ) = 0;
@@ -151,17 +200,6 @@ public:
     virtual bool                    GetBoundCommands            ( const char* szCommand, std::list < CCommandBind * > & commandsList ) = 0;
 
     // Control-bind funcs
-    virtual bool                    AddGTAControl               ( const char* szKey, const char* szControl ) = 0;
-    virtual bool                    AddGTAControl               ( const char* szKey, eControllerAction action ) = 0;
-    virtual bool                    AddGTAControl               ( const SBindableKey* pKey, SBindableGTAControl* pControl ) = 0;
-    virtual bool                    RemoveGTAControl            ( const char* szKey, const char* szControl ) = 0;
-    virtual void                    RemoveGTAControls           ( const char* szControl, bool bDestroy = true ) = 0;
-    virtual bool                    RemoveAllGTAControls        ( const char* szKey ) = 0;
-    virtual bool                    RemoveAllGTAControls        ( void ) = 0;
-    virtual bool                    GTAControlExists            ( const char* szKey, const char* szControl ) = 0;
-    virtual bool                    GTAControlExists            ( const SBindableKey* pKey, SBindableGTAControl* pControl ) = 0;
-    virtual unsigned int            GTAControlsCount            ( void ) = 0;
-    virtual void                    CallGTAControlBind          ( CGTAControlBind* pBind, bool bState ) = 0;
     virtual void                    CallAllGTAControlBinds      ( eControlType controlType, bool bState ) = 0;
     virtual bool                    GetBoundControls            ( SBindableGTAControl * pControl, std::list < CGTAControlBind * > & controlsList ) = 0;
 
@@ -176,7 +214,7 @@ public:
     virtual bool                    RemoveFunction              ( const char* szKey, KeyFunctionBindHandler Handler, bool bCheckState = false, bool bState = true ) = 0;
     virtual bool                    RemoveFunction              ( const SBindableKey* pKey, KeyFunctionBindHandler Handler, bool bCheckState = false, bool bState = true ) = 0;
     virtual bool                    RemoveAllFunctions          ( KeyFunctionBindHandler Handler ) = 0;
-    virtual bool                    RemoveAllFunctions          ( void ) = 0;
+    virtual bool                    RemoveAllFunctions          () = 0;
     virtual bool                    FunctionExists              ( const char* szKey, KeyFunctionBindHandler Handler, bool bCheckState = false, bool bState = true ) = 0;
     virtual bool                    FunctionExists              ( const SBindableKey* pKey, KeyFunctionBindHandler Handler, bool bCheckState = false, bool bState = true ) = 0;
 
@@ -186,7 +224,7 @@ public:
     virtual bool                    RemoveControlFunction       ( const char* szControl, ControlFunctionBindHandler Handler, bool bCheckState = false, bool bState = true ) = 0;
     virtual bool                    RemoveControlFunction       ( SBindableGTAControl* pControl, ControlFunctionBindHandler Handler, bool bCheckState = false, bool bState = true ) = 0;
     virtual bool                    RemoveAllControlFunctions   ( ControlFunctionBindHandler Handler ) = 0;
-    virtual bool                    RemoveAllControlFunctions   ( void ) = 0;
+    virtual bool                    RemoveAllControlFunctions   () = 0;
     virtual bool                    ControlFunctionExists       ( const char* szControl, ControlFunctionBindHandler Handler, bool bCheckState = false, bool bState = true ) = 0;
     virtual bool                    ControlFunctionExists       ( SBindableGTAControl* pControl, ControlFunctionBindHandler Handler, bool bCheckState = false, bool bState = true ) = 0;
 
@@ -215,15 +253,15 @@ public:
     virtual void                    SetAllBindStates            ( bool bState, eKeyBindType onlyType = KEY_BIND_UNDEFINED ) = 0;
     virtual unsigned int            Count                       ( eKeyBindType bindType ) = 0;
 
-    virtual void                    DoPreFramePulse             ( void ) = 0;
-    virtual void                    DoPostFramePulse            ( void ) = 0;
+    virtual void                    DoPreFramePulse             () = 0;
+    virtual void                    DoPostFramePulse            () = 0;
 
     virtual bool                    LoadFromXML                 ( class CXMLNode* pMainNode ) = 0;
     virtual bool                    SaveToXML                   ( class CXMLNode* pMainNode ) = 0;
-    virtual void                    LoadDefaultBinds            ( void ) = 0;
-    virtual void                    LoadDefaultControls         ( void ) = 0;
+    virtual void                    LoadDefaultBinds            () = 0;
+    virtual void                    LoadDefaultControls         () = 0;
     virtual void                    LoadDefaultCommands         ( bool bForce ) = 0;
-    virtual void                    LoadControlsFromGTA         ( void ) = 0;
+    virtual void                    LoadControlsFromGTA         () = 0;
 
     virtual void                    BindCommand                 ( const char* szCmdLine ) = 0;
     virtual void                    UnbindCommand               ( const char* szCmdLine ) = 0;

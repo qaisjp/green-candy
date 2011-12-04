@@ -87,20 +87,21 @@ public:
     eCoreVersion            GetVersion                      ();
     CConsoleInterface*      GetConsole                      ();
     CCommandsInterface*     GetCommands                     ();
-    inline CConnectManager* GetConnectManager               ()                { return m_pConnectManager; };
+    inline CConnectManager* GetConnectManager               ()                  { return m_pConnectManager; };
     CGame*                  GetGame                         ();
     CGUI*                   GetGUI                          ();
     CGraphicsInterface*     GetGraphics                     ();
     CModManagerInterface*   GetModManager                   ();
     CMultiplayer*           GetMultiplayer                  ();
     CNet*                   GetNetwork                      ();
-    CXML*                   GetXML                          ()                { return m_pXML; };
+    CXML*                   GetXML                          ()                  { return m_pXML; };
     CXMLNode*               GetConfig                       ();
-    CClientVariables*       GetCVars                        ()                { return &m_ClientVariables; };
+    CClientVariables*       GetCVars                        ()                  { return &m_ClientVariables; };
     CKeyBindsInterface*     GetKeyBinds                     ();
     CLocalGUI*              GetLocalGUI                     ();
-    CCommunityInterface*    GetCommunity                    ()                { return &m_Community; };
-    CFileSystem*            GetFileSystem                   ()                { return m_fileSystem; };
+    CCommunityInterface*    GetCommunity                    ()                  { return &m_Community; };
+    CFileSystem*            GetFileSystem                   ()                  { return m_fileSystem; };
+    CJoystickManager*       GetJoystickManager              ()                  { return m_joystick; };
 
     void                    SaveConfig                      ();
 
@@ -236,6 +237,7 @@ private:
     CDirect3DData*              m_pDirect3DData;
     CConnectManager*            m_pConnectManager;
     CFileSystem*                m_fileSystem;
+    CJoystickManager*           m_joystick;
 
     // Instances (put new classes here!)
     CXMLFile*                   m_pConfigFile;

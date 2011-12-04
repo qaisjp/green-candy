@@ -410,7 +410,7 @@ void CGameSA::OnFrame()
     {
     case GS_PLAYING_GAME:
         // Update local player's control
-        
+        GetPadManager()->UpdateLocalJoypad( *m_pPlayerInfo->GetPlayerPed() );
         break;
     }
 }

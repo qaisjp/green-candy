@@ -437,10 +437,6 @@
 				>
 			</File>
 			<File
-				RelativePath="CFilePathTranslator.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\CFileSystem.cpp"
 				>
 			</File>
@@ -834,10 +830,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CFilePathTranslator.h"
-				>
-			</File>
-			<File
 				RelativePath=".\CFileSystem.h"
 				>
 			</File>
@@ -1105,6 +1097,10 @@
 					</File>
 					<File
 						RelativePath="..\sdk\core\CGraphicsInterface.h"
+						>
+					</File>
+					<File
+						RelativePath="..\sdk\core\CJoystickManagerInterface.h"
 						>
 					</File>
 					<File

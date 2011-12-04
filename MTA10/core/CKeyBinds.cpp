@@ -851,45 +851,21 @@ bool CKeyBinds::AddGTAControl ( const char* szKey, const char* szControl )
     const SBindableKey* boundKey = GetBindableFromKey ( szKey );
     SBindableGTAControl* boundControl = GetBindableFromControl ( szControl );
 
-    if ( boundKey && boundControl )
-    {        
-        CGTAControlBind* bind = new CGTAControlBind;
-        bind->boundKey = boundKey;
-        bind->control = boundControl;
-        bind->bState = false;
-
-        m_pList->push_back ( bind );
-
-        return true;
-    }
-
-    return false;
+    return AddGTAControl( boundKey, boundControl );
 }
-
 
 bool CKeyBinds::AddGTAControl ( const char* szKey, eControllerAction action )
 {
     char* szControl = GetControlFromAction ( action );
-    if ( szKey == NULL || szControl ) return false;
+
+    if ( szKey == NULL || szControl )
+        return false;
 
     const SBindableKey* boundKey = GetBindableFromKey ( szKey );
     SBindableGTAControl* boundControl = GetBindableFromControl ( szControl );
 
-    if ( boundKey && boundControl )
-    {        
-        CGTAControlBind* bind = new CGTAControlBind;
-        bind->boundKey = boundKey;
-        bind->control = boundControl;
-        bind->bState = false;
-
-        m_pList->push_back ( bind );
-
-        return true;
-    }
-
-    return false;
+    return AddGTAControl( boundKey, boundControl );
 }
-
 
 bool CKeyBinds::AddGTAControl ( const SBindableKey* pKey, SBindableGTAControl* pControl )
 {
@@ -911,7 +887,8 @@ bool CKeyBinds::AddGTAControl ( const SBindableKey* pKey, SBindableGTAControl* p
 
 void CKeyBinds::RemoveGTAControls ( const char* szControl, bool bDestroy )
 {
-    if ( szControl == NULL ) return;
+    if ( szControl == NULL )
+        return;
 
     list < CKeyBind* > ::iterator iter = m_pList->begin ();
     while ( iter != m_pList->end () )
@@ -1968,7 +1945,7 @@ void CKeyBinds::SetAllControls ( bool bState )
 }
 
 
-void CKeyBinds::SetAllFootControls ( bool bState )
+void CKeyBinds::SetAllFootControls( bool bState )
 {
     for ( int i = 0 ; *g_bcControls [ i ].szControl != NULL ; i++ )
     {
@@ -1981,7 +1958,7 @@ void CKeyBinds::SetAllFootControls ( bool bState )
 }
 
 
-void CKeyBinds::SetAllVehicleControls ( bool bState )
+void CKeyBinds::SetAllVehicleControls( bool bState )
 {
     for ( int i = 0 ; *g_bcControls [ i ].szControl != NULL ; i++ )
     {
@@ -2024,7 +2001,6 @@ void CKeyBinds::SetAllBindStates ( bool bState, eKeyBindType onlyType )
     }
 }
 
-
 unsigned int CKeyBinds::Count ( eKeyBindType bindType )
 {
     if ( bindType == KEY_BIND_UNDEFINED )
@@ -2042,8 +2018,7 @@ unsigned int CKeyBinds::Count ( eKeyBindType bindType )
     return uiCount;
 }
 
-
-void CKeyBinds::DoPreFramePulse ( void )
+void CKeyBinds::DoPreFramePulse()
 {
     // HACK: chatbox binds
     if ( m_pChatBoxBind )
@@ -2080,74 +2055,7 @@ void CKeyBinds::DoPreFramePulse ( void )
     }
 }
 
-void CKeyBinds::UpdateControlState( CControllerState& cs )
-{
-    if ( !bInVehicle )
-    {
-        cs.ButtonCircle = ( g_bcControls [ 0 ].bState && !bHasDetonator ) ? 255 : 0; // Fire
-        cs.RightShoulder2 = ( g_bcControls [ 1 ].bState ||
-                            ( bAimingWeapon &&
-                                g_bcControls [ 7 ].bState ) ) ? 255 : 0; // Next Weapon / Zoom In
-        cs.LeftShoulder2 = ( g_bcControls [ 2 ].bState ||
-                            ( bAimingWeapon && 
-                            g_bcControls [ 8 ].bState ) ) ? 255 : 0; // Previous Weapon / Zoom Out
-        cs.LeftStickY = ( ( g_bcControls [ 3 ].bState && g_bcControls [ 4 ].bState ) ||
-                        ( !g_bcControls [ 3 ].bState && !g_bcControls [ 4 ].bState ) ) ? 0 :
-                        ( g_bcControls [ 3 ].bState ) ? -128 : 128;
-        cs.LeftStickX = ( ( g_bcControls [ 5 ].bState && g_bcControls [ 6 ].bState ) ||
-                        ( !g_bcControls [ 5 ].bState && !g_bcControls [ 6 ].bState ) ) ? 0 :
-                        ( g_bcControls [ 5 ].bState ) ? -128 : 128;
-        // * Enter Exit
-        // * Change View
-        cs.ButtonSquare = ( !bEnteringVehicle && g_bcControls [ 11 ].bState ) ? 255 : 0; // Jump
-        cs.ButtonCross = ( g_bcControls [ 12 ].bState ) ? 255 : 0; // Sprint
-        cs.ShockButtonR = ( g_bcControls [ 13 ].bState ) ? 255 : 0; // Look Behind
-        cs.ShockButtonL = ( g_bcControls [ 14 ].bState ) ? 255 : 0; // Crouch
-        cs.LeftShoulder1 = ( g_bcControls [ 15 ].bState ) ? 255 : 0; // Action
-        cs.m_bPedWalk = ( g_bcControls [ 16 ].bState ) ? 255 : 0; // Walk
-        // * Vehicle Keys
-        cs.RightShoulder1 = ( g_bcControls [ 39 ].bState ) ? 255 : 0; // Aim Weapon
-        cs.DPadRight = ( g_bcControls [ 40 ].bState ) ? 255 : 0; // Conversation Yes
-        cs.DPadLeft = ( g_bcControls [ 41 ].bState ) ? 255 : 0; // Conversation No
-        cs.DPadUp = ( g_bcControls [ 42 ].bState ) ? 255 : 0; // Group Control Forwards
-        cs.DPadDown = ( g_bcControls [ 43 ].bState ) ? 255 : 0; // Group Control Backwards
-    }
-    else
-    {
-        cs.ButtonCircle = ( g_bcControls [ 17 ].bState ) ? 255 : 0; // Fire
-        cs.LeftShoulder1 = ( g_bcControls [ 18 ].bState ) ? 255 : 0; // Secondary Fire
-        cs.LeftStickX = ( ( g_bcControls [ 19 ].bState && g_bcControls [ 20 ].bState ) ||
-                        ( !g_bcControls [ 19 ].bState && !g_bcControls [ 20 ].bState ) ) ? 0 :
-                        ( g_bcControls [ 19 ].bState ) ? -128 : 128;
-        cs.LeftStickY = ( ( g_bcControls [ 21 ].bState && g_bcControls [ 22 ].bState ) ||
-                        ( !g_bcControls [ 21 ].bState && !g_bcControls [ 22 ].bState ) ) ? 0 :
-                        ( g_bcControls [ 21 ].bState ) ? -128 : 128;
-        cs.ButtonCross = ( g_bcControls [ 23 ].bState ) ? 255 : 0; // Accelerate
-        cs.ButtonSquare = ( g_bcControls [ 24 ].bState ) ? 255 : 0; // Reverse
-        cs.DPadUp = ( g_bcControls [ 25 ].bState ) ? 255 : 0; // Radio Next
-        cs.DPadDown = ( g_bcControls [ 26 ].bState ) ? 255 : 0; // Radio Previous
-        cs.m_bRadioTrackSkip = ( g_bcControls [ 27 ].bState ) ? 255 : 0; // Radio Skip
-        cs.ShockButtonL = ( g_bcControls [ 28 ].bState ) ? 255 : 0; // Horn
-        cs.ShockButtonR = ( g_bcControls [ 29 ].bState ) ? 255 : 0; // Sub Mission
-        cs.RightShoulder1 = ( g_bcControls [ 30 ].bState ) ? 255 : 0; // Handbrake
-        cs.LeftShoulder2 = ( g_bcControls [ 31 ].bState || g_bcControls [ 33 ].bState ) ? 255 : 0; // Look Left
-        cs.RightShoulder2 = ( g_bcControls [ 32 ].bState || g_bcControls [ 33 ].bState ) ? 255 : 0; // Look Right
-        // * Look Behind - uses both keys above simultaneously
-        // Mouse Look
-        cs.RightStickX = ( ( g_bcControls [ 35 ].bState && g_bcControls [ 36 ].bState ) ||
-                        ( !g_bcControls [ 35 ].bState && !g_bcControls [ 36 ].bState ) ) ? 0 :
-                        ( g_bcControls [ 35 ].bState ) ? 128 : -128;
-        cs.RightStickY = ( ( g_bcControls [ 37 ].bState && g_bcControls [ 38 ].bState ) ||
-                        ( !g_bcControls [ 37 ].bState && !g_bcControls [ 38 ].bState ) ) ? 0 :
-                        ( g_bcControls [ 37 ].bState ) ? 128 : -128;
-    }
-    cs.ButtonTriangle = ( g_bcControls [ 9 ].bState ) ? 255 : 0; // Enter Exit
-    cs.Select = ( g_bcControls [ 10 ].bState ) ? 255 : 0; // Change View   
-
-    GetJoystickManager ()->ApplyAxes ( cs, bInVehicle );
-}
-
-void CKeyBinds::DoPostFramePulse ( void )
+void CKeyBinds::DoPostFramePulse()
 {
     eSystemState SystemState = CCore::GetSingleton ().GetGame ()->GetSystemState ();
 
@@ -2159,42 +2067,6 @@ void CKeyBinds::DoPostFramePulse ( void )
 
     if ( SystemState != GS_PLAYING_GAME )
         return;
-
-    CPed* pPed = m_pCore->GetGame()->GetPools()->GetPedFromRef( 1 );
-
-    // Don't set any controller states if the local player isnt alive
-    if ( !pPed )
-        return;
-
-    if ( pPed->GetVehicle () )
-        bInVehicle = true;
-    if ( pPed->GetCurrentWeaponSlot () == 12 /*Detonator*/ )
-        bHasDetonator = true;
-
-    CTaskManager * pTaskManager = pPed->GetPedIntelligence ()->GetTaskManager ();
-    CTask * pTask = pTaskManager->GetTask ( TASK_PRIORITY_PRIMARY );
-    if ( pTask )
-    {
-        if ( pTask->GetTaskType () == TASK_COMPLEX_ENTER_CAR_AS_DRIVER ||
-             pTask->GetTaskType () == TASK_COMPLEX_ENTER_CAR_AS_PASSENGER )
-        {
-            bEnteringVehicle = true;
-        }
-    }
-    pTask = pTaskManager->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
-    if ( pTask && pTask->GetTaskType () == TASK_SIMPLE_DEAD )
-        bIsDead = true;
-
-    bool bAimingWeapon = g_bcControls [ 39 ].bState;
-
-    // Retrive the current controls
-    CControllerState cs;
-    UpdateControlState( cs );
-        
-    m_pCore->GetGame ()->GetPad ()->SetCurrentControllerState ( &cs );
-
-    // Sirens
-    m_pCore->GetGame ()->GetPad ()->SetHornHistoryValue ( ( cs.ShockButtonL == 255 ) );
 
     // Unset the mousewheel states if we have any bound
     if ( m_bMouseWheel )
