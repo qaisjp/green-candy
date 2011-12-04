@@ -22,62 +22,13 @@ class CKeyBinds;
 
 struct SDefaultCommandBind
 {
-    char szKey [20];
+    char szKey[20];
     bool bState;
-    char szCommand [20];
-    char szArguments [20];
+    char szCommand[20];
+    char szArguments[20];
 };
 
-enum eBindableControl
-{
-    CONTROL_FIRE,
-    CONTROL_NEXT_WEAPON,
-    CONTROL_PREVIOUS_WEAPON,
-    CONTROL_FORWARDS,
-    CONTROL_BACKWARDS,
-    CONTROL_LEFT,
-    CONTROL_RIGHT,
-    CONTROL_ZOOM_IN,
-    CONTROL_ZOOM_OUT,
-    CONTROL_ENTER_EXIT,
-    CONTROL_CHANGE_CAMERA,
-    CONTROL_JUMP,
-    CONTROL_SPRINT,
-    CONTROL_LOOK_BEHIND,
-    CONTROL_CROUCH,
-    CONTROL_ACTION,
-    CONTROL_WALK,
-    CONTROL_VEHICLE_FIRE,
-    CONTROL_VEHICLE_SECONDARY_FIRE,
-    CONTROL_VEHICLE_LEFT,
-    CONTROL_VEHICLE_RIGHT,
-    CONTROL_STEER_FORWARD,
-    CONTROL_STEER_BACK,
-    CONTROL_ACCELERATE,
-    CONTROL_BRAKE_REVERSE,
-    CONTROL_RADIO_NEXT,
-    CONTROL_RADIO_PREVIOUS,
-    CONTROL_RADIO_USER_TRACK_SKIP,
-    CONTROL_HORN,
-    CONTROL_SUB_MISSION,
-    CONTROL_HANDBRAKE,
-    CONTROL_VEHICLE_LOOK_LEFT,
-    CONTROL_VEHICLE_LOOK_RIGHT,
-    CONTROL_VEHICLE_LOOK_BEHIND,
-    CONTROL_VEHICLE_MOUSE_LOOK,
-    CONTROL_SPECIAL_CONTROL_LEFT,
-    CONTROL_SPECIAL_CONTROL_RIGHT,
-    CONTROL_SPECIAL_CONTROL_DOWN,
-    CONTROL_SPECIAL_CONTROL_UP,
-    CONTROL_AIM_WEAPON,
-    CONTROL_CONVERSATION_YES,
-    CONTROL_CONVERSATION_NO,
-    CONTROL_GROUP_CONTROL_FORWARDS,
-    CONTROL_GROUP_CONTROL_BACK,
-    MAX_CONTROLS
-};
-
-class CKeyBinds: public CKeyBindsInterface
+class CKeyBinds : public CKeyBindsInterface
 {
 public:
                             CKeyBinds                   ( class CCore* pCore );
@@ -182,8 +133,6 @@ public:
 
     unsigned int            Count                       ( eKeyBindType bindType = KEY_BIND_UNDEFINED );
 
-    void                    UpdateControlState          ( CControllerState& cs );
-
     void                    DoPreFramePulse             ();
     void                    DoPostFramePulse            ();
 
@@ -207,7 +156,7 @@ public:
 private:    
     CCore*                      m_pCore;
 
-    std::list < CKeyBind* >*    m_pList;
+    std::list <CKeyBind*>*      m_pList;
     char*                       m_szFileName;
     bool                        m_bMouseWheel;
     bool                        m_bInVehicle;

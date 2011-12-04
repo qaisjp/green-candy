@@ -21,6 +21,7 @@
 #include "CModManagerInterface.h"
 #include "CKeyBindsInterface.h"
 #include "CCVarsInterface.h"
+#include "CJoystickManagerInterface.h"
 #include "xml/CXML.h"
 #include <gui/CGUI.h>
 
@@ -63,6 +64,7 @@ public:
     virtual CCVarsInterface*            GetCVars                        () = 0;
     virtual CCommunityInterface*        GetCommunity                    () = 0;
     virtual CFileSystemInterface*       GetFileSystem                   () = 0;
+    virtual CJoystickManagerInterface*  GetJoystickManager              () = 0;
     
     // Temporary functions for r1
     virtual void                    DebugEcho                       ( const char* szText ) = 0;

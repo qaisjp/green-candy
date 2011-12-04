@@ -274,7 +274,6 @@ CSettings::CSettings ( void )
         pLabelRight->SetSize ( CVector2D ( 68.0f, 24.0f ) );
         pLabelRight->SetHorizontalAlign ( CGUI_ALIGN_HORIZONTALCENTER );
         pLabelRight->SetVerticalAlign ( CGUI_ALIGN_VERTICALCENTER );
-
     }
 
     

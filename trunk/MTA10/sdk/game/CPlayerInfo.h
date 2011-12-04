@@ -19,35 +19,37 @@
 class CPlayerInfo
 {
 public:
-    virtual long            GetPlayerMoney                  ( void ) = 0;
+    virtual long            GetPlayerMoney                  () = 0;
     virtual void            SetPlayerMoney                  ( long lMoney ) = 0;
 
-    virtual void            GivePlayerParachute             ( void ) = 0;
-    virtual void            StreamParachuteWeapon           ( bool bAllowParachute ) = 0;
+    virtual void            GivePlayerParachute             () = 0;
+    virtual void            StreamParachuteWeapon           ( bool allow ) = 0;
 
-    virtual short           GetLastTimeEaten                ( void ) = 0;
-    virtual void            SetLastTimeEaten                ( short sTime ) = 0;
+    virtual unsigned short  GetLastTimeEaten                () = 0;
+    virtual void            SetLastTimeEaten                ( unsigned short time ) = 0;
 
-    virtual CWanted*        GetWanted                       ( void ) = 0;
-    virtual float           GetFPSMoveHeading               ( void ) = 0;
+    virtual CWanted*        GetWanted                       () = 0;
+    virtual float           GetFPSMoveHeading               () = 0;
 
-    virtual void            GetCrossHair                    ( bool &bActivated, float &fTargetX, float &fTargetY ) = 0;
+    virtual bool            GetCrossHair                    ( float& tarX, float& tarY ) = 0;
 
-    virtual bool            GetDoesNotGetTired              ( void ) = 0;
-    virtual void            SetDoesNotGetTired              ( bool bDoesNotGetTired ) = 0;
+    virtual bool            GetDoesNotGetTired              () = 0;
+    virtual void            SetDoesNotGetTired              ( bool award ) = 0;
 
-    virtual CVehicle*       GivePlayerRemoteControlledCar   ( eVehicleTypes vehicletype ) = 0;
+    virtual CVehicle*       GiveRemoteVehicle               ( unsigned short model, float x, float y, float z ) = 0;
+    virtual void            StopRemoteControl               () = 0;
+    virtual CVehicle*       GetRemoteVehicle                () = 0;
 
-    virtual DWORD           GetLastTimeBigGunFired ( void ) = 0;
-    virtual void            SetLastTimeBigGunFired ( DWORD dwTime ) = 0;
+    virtual unsigned int    GetLastTimeBigGunFired          () = 0;
+    virtual void            SetLastTimeBigGunFired          ( unsigned int time ) = 0;
 
-    virtual DWORD           GetCarTwoWheelCounter       ( void ) = 0;
-    virtual float           GetCarTwoWheelDist          ( void ) = 0;
-    virtual DWORD           GetCarLess3WheelCounter     ( void ) = 0;
-    virtual DWORD           GetBikeRearWheelCounter     ( void ) = 0;
-    virtual float           GetBikeRearWheelDist        ( void ) = 0;
-    virtual DWORD           GetBikeFrontWheelCounter    ( void ) = 0;
-    virtual float           GetBikeFrontWheelDist       ( void ) = 0;
+    virtual unsigned int    GetCarTwoWheelCounter           () = 0;
+    virtual float           GetCarTwoWheelDist              () = 0;
+    virtual unsigned int    GetCarLess3WheelCounter         () = 0;
+    virtual unsigned int    GetBikeRearWheelCounter         () = 0;
+    virtual float           GetBikeRearWheelDist            () = 0;
+    virtual unsigned int    GetBikeFrontWheelCounter        () = 0;
+    virtual float           GetBikeFrontWheelDist           () = 0;
 };
 
 #endif

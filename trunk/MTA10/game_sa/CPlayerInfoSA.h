@@ -8,6 +8,7 @@
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -46,100 +47,95 @@ class CPedClothesDesc;
 class CPlayerCrossHairSAInterface
 {
 public:
-    bool    bActivated;
-    float   TargetX, TargetY;   // -1 ... 1 on screen
+    bool    m_active;
+    float   m_tarX, m_tarY;   // -1 ... 1 on screen
 };
 
 
 class CPlayerPedDataSAInterface
 {
 public:
-    CWantedSAInterface*     m_Wanted;       // 0
-    CPedClothesDesc*        m_pClothes;        // 4
+    CWantedSAInterface*     m_Wanted;                           // 0
+    CPedClothesDesc*        m_pClothes;                         // 4
 
-    CPedSAInterface*        m_ArrestingOfficer; // actually CCopPed *        // 8
+    CPedSAInterface*        m_ArrestingOfficer;                 // 8, CCopPed*
 
-    CVector2D               m_vecFightMovement;        // 12
-    FLOAT                   m_moveBlendRatio;        // 20
-    FLOAT                   m_fSprintEnergy;        // 24
-    //float                 m_fSprintControlCounter; // Removed arbitatrily to aligned next byte, should be here really
-    BYTE                    m_nChosenWeapon;        // 28
-    BYTE                    m_nCarDangerCounter;        // 29
-    long                    m_nStandStillTimer;        // 30
-    DWORD                   m_nHitAnimDelayTimer;        // 34
-    FLOAT                   m_fAttackButtonCounter;        // 38
-    CVehicleSAInterface*    m_pDangerCar;        // 42
+    CVector2D               m_vecFightMovement;                 // 12
+    float                   m_moveBlendRatio;                   // 20
+    float                   m_fSprintEnergy;                    // 24
+    //float                 m_fSprintControlCounter;            // Removed arbitatrily to aligned next byte, should be here really
+    unsigned char           m_nChosenWeapon;                    // 28
+    unsigned char           m_nCarDangerCounter;                // 29
+    long                    m_nStandStillTimer;                 // 30
+    unsigned int            m_nHitAnimDelayTimer;               // 34
+    float                   m_fAttackButtonCounter;             // 38
+    CVehicleSAInterface*    m_pDangerCar;                       // 42
 
-    DWORD                   m_bStoppedMoving : 1;        // 46
-    DWORD                   m_bAdrenaline : 1;
-    DWORD                   m_bHaveTargetSelected : 1;  // Needed to work out whether we lost target this frame
-    DWORD                   m_bFreeAiming : 1;
-    DWORD                   bCanBeDamaged : 1;
-    DWORD                   bAllMeleeAttackPtsBlocked : 1;  // if all of m_pMeleeAttackers[] is blocked by collision, just attack straight ahead
-    DWORD                   m_JustBeenSnacking : 1;     // If this bit is true we have just bought something from a vending machine
-    DWORD                   m_bRequireHandleBreath : 1; // 
+    unsigned char           m_bStoppedMoving : 1;               // 46
+    unsigned char           m_bAdrenaline : 1;
+    unsigned char           m_bHaveTargetSelected : 1;          // Needed to work out whether we lost target this frame
+    unsigned char           m_bFreeAiming : 1;
+    unsigned char           m_bCanBeDamaged : 1;
+    unsigned char           m_bAllMeleeAttackPtsBlocked : 1;    // if all of m_pMeleeAttackers[] is blocked by collision, just attack straight ahead
+    unsigned char           m_JustBeenSnacking : 1;             // If this bit is true we have just bought something from a vending machine
+    unsigned char           m_bRequireHandleBreath : 1;
+       
+    unsigned char           m_GroupStuffDisabled : 1;           // 47, if this is true the player can't recrout or give his group commands.
+    unsigned char           m_GroupAlwaysFollow : 1;            // The group is told to always follow the player (used for girlfriend missions)
+    unsigned char           m_GroupNeverFollow : 1;             // The group is told to always follow the player (used for girlfriend missions)
+    unsigned char           m_bInVehicleDontAllowWeaponChange : 1; // stop weapon change once driveby weapon has been given
+    unsigned char           m_bRenderWeapon : 1;                //  set to false during cutscenes so that knuckledusters are not rendered
+
+    long                    m_PlayerGroup;                      // 48
+
+    unsigned int            m_AdrenalineEndTime;                // 52
+    unsigned char           m_nDrunkenness;                     // 56
+    bool                    m_bFadeDrunkenness;                 // 57
+    unsigned char           m_nDrugLevel;                       // 58
+    unsigned char           m_nScriptLimitToGangSize;           // 59
     
-    // The player runs a group. Player is the leader. Player can go up to gang-members and make them join his group.    
-    DWORD                   m_GroupStuffDisabled : 1;   // if this is true the player can't recrout or give his group commands.
-    DWORD                   m_GroupAlwaysFollow : 1;    // The group is told to always follow the player (used for girlfriend missions)
-    DWORD                   m_GroupNeverFollow : 1; // The group is told to always follow the player (used for girlfriend missions)
-    DWORD                   m_bInVehicleDontAllowWeaponChange : 1; // stop weapon change once driveby weapon has been given
-    DWORD                   m_bRenderWeapon : 1;    //  set to false during cutscenes so that knuckledusters are not rendered
+    float                   m_fBreath;                          // 60, for holding breath (ie underwater)
 
-    long                    m_PlayerGroup;        // 48?
+    unsigned int            m_meleeAnimRef;                     // 64
+    unsigned int            m_meleeAnimExtraRef;                // 68
 
-    DWORD                   m_AdrenalineEndTime;        // 52
-    BYTE                    m_nDrunkenness;
-    bool                    m_bFadeDrunkenness;
-    BYTE                    m_nDrugLevel;
-    BYTE                    m_nScriptLimitToGangSize;
+    float                   m_fFPSMoveHeading;                  // 72
+    float                   m_fLookPitch;                       // 76
+    float                   m_fSkateBoardSpeed;                 // 80
+    float                   m_fSkateBoardLean;                  // 84
     
-    FLOAT                   m_fBreath;  // for holding breath (ie underwater)
+    RpAtomic*               m_pSpecialAtomic;                   // 88
+    float                   m_fGunSpinSpeed;                    // 92
+    float                   m_fGunSpinAngle;                    // 96
 
-    // once a set of melee weapon anims have been loaded and referenced for the player
-    // we need to remember what we've referenced
-    AssocGroupId            m_MeleeWeaponAnimReferenced;
-    // this set is for the player's extra hand combo they can learn
-    AssocGroupId            m_MeleeWeaponAnimReferencedExtra;
-
-    FLOAT                   m_fFPSMoveHeading;
-    FLOAT                   m_fLookPitch;
-    FLOAT                   m_fSkateBoardSpeed;
-    FLOAT                   m_fSkateBoardLean;
+    unsigned int            m_LastTimeFiring;                   // 100
+    unsigned int            m_nTargetBone;                      // 104
+    CVector                 m_vecTargetBoneOffset;              // 108
     
-    DWORD*                  m_pSpecialAtomic; // was rpAtomic
-    FLOAT                   m_fGunSpinSpeed;
-    FLOAT                   m_fGunSpinAngle;
-
-    DWORD                   m_LastTimeFiring;
-    DWORD                   m_nTargetBone;
-    CVector                 m_vecTargetBoneOffset;
-    
-    DWORD                   m_busFaresCollected;
-    bool                    m_bPlayerSprintDisabled;
-    bool                    m_bDontAllowWeaponChange;
-    bool                    m_bForceInteriorLighting;
-    WORD                    m_DPadDownPressedInMilliseconds;
-    WORD                    m_DPadUpPressedInMilliseconds;
+    unsigned int            m_busFaresCollected;                // 120
+    bool                    m_bPlayerSprintDisabled;            // 124
+    bool                    m_bDontAllowWeaponChange;           // 125
+    bool                    m_bForceInteriorLighting;           // 126
+    unsigned short          m_DPadDownPressedInMilliseconds;    // 127
+    unsigned short          m_DPadUpPressedInMilliseconds;      // 129
         
-    BYTE                    m_wetness;
-    BYTE                    m_playersGangActive;
-    BYTE                    m_waterCoverPerc;
-    FLOAT                   m_waterHeight;
+    unsigned char           m_wetness;                          // 131
+    unsigned char           m_playersGangActive;                // 132
+    unsigned char           m_waterCoverPerc;                   // 133
+    float                   m_waterHeight;                      // 134
 
-    // used for doing lock-on with HS missiles
-    DWORD                   m_FireHSMissilePressedTime;
-    CEntitySAInterface*     m_LastHSMissileTarget;
+    unsigned int            m_heatseekAimTime;                  // 138
+    CEntitySAInterface*     m_heatseekTarget;                   // 142
     
-    long                    m_nModelIndexOfLastBuildingShot;
+    long                    m_shotBuilding;                     // 146
     
-    DWORD                   m_LastHSMissileLOSTime  :31;
-    DWORD                   m_bLastHSMissileLOS     :1;
+    unsigned int            m_heatseekLockOnTime    :31;        // 150
+    unsigned int            m_heakseekLockOn        :1;
     
-    CPedSAInterface*        m_currentHooker;
-    CPedSAInterface*        m_lastHooker;
+    CPedSAInterface*        m_currentHooker;                    // 154
+    CPedSAInterface*        m_lastHooker;                       // 158
 
-    DWORD                   m_pad;
+    DWORD                   m_pad;                              // 162
 };
 
 enum ePlayerState
@@ -149,156 +145,153 @@ enum ePlayerState
     PS_ARRESTED,
     PS_FAILED_MISSION,
     PS_QUIT
-}
+};
 
 class CPlayerInfoSAInterface
 {
 public:
-    class CPlayerPedSAInterface *pPed;          // Pointer to the player ped (should always be set)
-    CPlayerPedDataSAInterface PlayerPedData;    // instance of player variables
-    CVehicleSAInterface *pRemoteVehicle;// Pointer to vehicle player is driving remotely at the moment.(NULL if on foot)
-    CVehicleSAInterface *pSpecCar;      // which car is using the special collision model
-    long        Score;          // Points for this player
-    long        DisplayScore;   // Points as they would be displayed
-    long        CollectablesPickedUp;   // How many bags of sugar do we have
-    long        TotalNumCollectables;   // How many bags of sugar are there to be had in the game
+    class CPlayerPedSAInterface*    m_ped;                              // 0, Pointer to the player ped (should always be set)
+    CPlayerPedDataSAInterface       m_pedData;                          // 4, instance of player variables
+    CVehicleSAInterface*            m_remoteVehicle;                    // 170, Pointer to vehicle player is driving remotely at the moment.(NULL if on foot)
+    CVehicleSAInterface*            m_specialColl;                      // 174, which car is using the special collision model
+    long                            m_score;                            // 178, Points for this player
+    long                            m_displayScore;                     // 182, Points as they would be displayed
+    long                            m_tokenCollected;                   // 186, How many bags of sugar do we have
+    long                            m_totalTokenCollected;              // 190, How many bags of sugar are there to be had in the game
 
-    DWORD       nLastBumpPlayerCarTimer;            // Keeps track of when the last ped bumped into the player car
+    unsigned int                    m_lastCarBump;                      // 194, Keeps track of when the last ped bumped into the player car
 
-    DWORD       TaxiTimer;          // Keeps track of how long the player has been in a taxi with a passenger (in msecs)
-    DWORD       vehicle_time_counter;  // keeps track of how long player has been in car for driving skill
-    bool        bTaxiTimerScore;    // If TRUE then add 1 to score for each second that the player is driving a taxi 
-    bool        m_bTryingToExitCar; // if player holds exit car button, want to trigger getout once car slowed enough
-                        //  with a passenger
+    unsigned int                    m_taxiTimer;                        // 198, Keeps track of how long the player has been in a taxi with a passenger (in msecs)
+    unsigned int                    m_vehicleTimer;                     // 202, keeps track of how long player has been in car for driving skill
+    bool                            m_enableTaxiSkill;                  // 206, If TRUE then add 1 to score for each second that the player is driving a taxi 
+    bool                            m_vehicleExitRequest;               // 207, if player holds exit car button, want to trigger getout once car slowed enough
 
-    CVehicleSAInterface *pLastTargetVehicle;//Last vehicle player tried to enter.
+    CVehicleSAInterface*            m_enterVehicle;                     // 208, Last vehicle player tried to enter.
 
-    BYTE        PlayerState;        // What's going on.
+    ePlayerState                    m_state;                            // 212
 
-    bool        bAfterRemoteVehicleExplosion;
-    bool        bCreateRemoteVehicleExplosion;
-    bool        bFadeAfterRemoteVehicleExplosion;
-    DWORD       TimeOfRemoteVehicleExplosion;
+    bool                            m_remoteVehicleExploded;            // 213
+    bool                            m_createRemoteVehicleExplosion;     // 214
+    bool                            m_remoteVehicleExplosionFadeCamera; // 215
+    unsigned int                    m_remoteVehicleExplosionTimer;      // 216
 
-    DWORD       LastTimeEnergyLost; // To make numbers flash on the HUD
-    DWORD       LastTimeArmourLost;
+    unsigned int                    m_healthLossTimer;                  // 220, To make numbers flash on the HUD
+    unsigned int                    m_armorLossTimer;                   // 224
 
-    DWORD       LastTimeBigGunFired;    // Tank guns etc
-    DWORD       TimesUpsideDownInARow;  // Make car blow up if car upside down
-    DWORD       TimesStuckInARow;       // Make car blow up if player cannot get out.
+    unsigned int                    m_vehicleFireTimer;                 // 228, Tank guns etc
+    unsigned int                    m_vehicleWreckTimer;                // 232, Make car blow up if car upside down
+    unsigned int                    m_vehicleStuckTimer;                // 236, Make car blow up if player cannot get out.
     
-    // working counters to calculate how long player managed stuff
-    DWORD       nCarTwoWheelCounter;        // how long has player's car been on two wheels
-    FLOAT       fCarTwoWheelDist;
-    DWORD       nCarLess3WheelCounter;  // how long has player's car been on less than 3 wheels
-    DWORD       nBikeRearWheelCounter;  // how long has player's bike been on rear wheel only
-    FLOAT       fBikeRearWheelDist;
-    DWORD       nBikeFrontWheelCounter; // how long has player's bike been on front wheel only
-    FLOAT       fBikeFrontWheelDist;
-    DWORD       nTempBufferCounter;     // so wheels can leave the ground for a few frames without stopping above counters
+    // Stunt variables
+    unsigned int                    m_twoWheelTimer;                    // 240, how long has player's car been on two wheels
+    float                           m_twoWheelDistance;                 // 244
+    unsigned int                    m_wheelieTimer;                     // 248, how long has player's car been on less than 3 wheels
+    unsigned int                    m_bikeRearTimer;                    // 252, how long has player's bike been on rear wheel only
+    float                           m_bikeRearDistance;                 // 256
+    unsigned int                    m_bikeFrontTimer;                   // 260, how long has player's bike been on front wheel only
+    float                           m_bikeFrontDistance;                // 264
+    unsigned int                    m_groundToleranceTimer;             // 268, so wheels can leave the ground for a few frames without stopping above counters
     // best values for the script to check - will be zero most of the time, only value
     // when finished trick - script should retreve value then reset to zero
-    DWORD       nBestCarTwoWheelsTimeMs;
-    FLOAT       fBestCarTwoWheelsDistM;
-    DWORD       nBestBikeWheelieTimeMs;
-    FLOAT       fBestBikeWheelieDistM;
-    DWORD       nBestBikeStoppieTimeMs;
-    FLOAT       fBestBikeStoppieDistM;
+    unsigned int                    m_bestTwoWheelTimer;                // 272
+    float                           m_bestTwoWheelDistance;             // 276
+    unsigned int                    m_bestBikeRearTimer;                // 280
+    float                           m_bestBikeRearDistance;             // 284
+    unsigned int                    m_bestBikeFrontTimer;               // 288
+    float                           m_bestBikeFrontDistance;            // 292
 
-    WORD        CarDensityForCurrentZone;
-    FLOAT       RoadDensityAroundPlayer;    // 1.0f for an average city.
+    unsigned short                  m_vehicleDensity;                   // 296
+    float                           m_roadDensity;                      // 298
 
-    DWORD       TimeOfLastCarExplosionCaused;
-    long        ExplosionMultiplier;
-    long        HavocCaused;            // A counter going up when the player does bad stuff.
-    short       TimeLastEaten;          // A counter that starts at 5000, increases by 1 every minute
+    unsigned int                    m_lastVehicleExplosion;             // 302
+    long                            m_explosionMultiplier;              // 306
+    unsigned int                    m_numHavocCaused;                   // 310
+    unsigned short                  m_starvingTimer;                    // 314
 
-    FLOAT       CurrentChaseValue;      // How 'ill' is the chase at the moment
+    float                           m_chaseMadness;                     // 316
     
-    // 'Special' abilities that gets awarded during the game
-    bool        DoesNotGetTired;
-    bool        FastReload;
-    bool        FireProof;
-    BYTE        MaxHealth;
-    BYTE        MaxArmour;
+    bool                            m_awardNoTiredness;                 // 320
+    bool                            m_awardFastReload;                  // 321
+    bool                            m_awardFireProof;                   // 322
+    unsigned char                   m_awardMaxHealth;                   // 323
+    unsigned char                   m_awardMaxArmor;                    // 324
 
-    // Get-out-of-jail-free & Free-medical-care cards
-    bool        bGetOutOfJailFree;      // Player doesn't lose money/weapons next time arrested
-    bool        bFreeHealthCare;        // Player doesn't lose money nexed time patched up at hospital
+    bool                            m_freeJail;                         // 325, Player doesn't lose money/weapons next time arrested
+    bool                            m_freeHospital;                     // 326, Player doesn't lose money nexed time patched up at hospital
 
-    bool        bCanDoDriveBy;
+    bool                            m_canDriveBy;                       // 327
     
-    BYTE        m_nBustedAudioStatus;
-    WORD        m_nLastBustMessageNumber;
+    unsigned char                   m_bustedAudioStatus;                // 328
+    unsigned short                  m_bustedMessageStatus;              // 329
 
-    CPlayerCrossHairSAInterface  CrossHair;
+    CPlayerCrossHairSAInterface     m_crossHair;                        // 331
 
-    char        m_skinName[32];
-    RwTexture*  m_pSkinTexture;
+    char                            m_skinName[32];                     // 340
+    RwTexture*                      m_skinTexture;                      // 372
 
-    bool        m_bParachuteReferenced;
-    DWORD       m_nRequireParachuteTimer;
+    bool                            m_refParachute;                     // 376
+    unsigned int                    m_parachuteTimer;                   // 377
 };
 
 class CPlayerInfoSA : public CPlayerInfo
 {
 private:
-    CPlayerInfoSAInterface  * internalInterface;
-    CWantedSA               * wanted;
+    CPlayerInfoSAInterface* m_interface;
+    CWantedSA*              m_wanted;
+
 public:
-    CPlayerInfoSA ( CPlayerInfoSAInterface * playerInfoInterface ) 
+    CPlayerInfoSA( CPlayerInfoSAInterface *info ) 
     { 
-        this->internalInterface = playerInfoInterface;
-        this->wanted = NULL; // we can't init it yet, as our interface hasn't been inited yet
+        m_interface = info;
+        m_wanted = NULL;
     }
 
-    ~CPlayerInfoSA ( void )
+    ~CPlayerInfoSA()
     {
-        if ( wanted )
-        {
-            delete wanted;
-        }
+        if ( m_wanted )
+            delete m_wanted;
     }
 
-    CPlayerInfoSAInterface * GetInterface ( void ) { return internalInterface; }
+    CPlayerInfoSAInterface*         GetInterface() { return m_interface; }
 
-    CPlayerPed      * GetPlayerPed (  );
-    CWanted         * GetWanted ( );
-    long            GetPlayerMoney ( void );
-    void            SetPlayerMoney ( long lMoney );
+    CPlayerPedSA*                   GetPlayerPed();
+    CWantedSA*                      GetWanted();
+    long                            GetPlayerMoney();
+    void                            SetPlayerMoney( long lMoney );
 
-    void            GetCrossHair ( bool &bActivated, float &fTargetX, float &fTargetY );
+    bool                            GetCrossHair( float& tarX, float& tarY );
 
-    VOID            GivePlayerParachute ( VOID );
-    VOID            StreamParachuteWeapon ( bool bAllowParachute );
+    void                            GivePlayerParachute();
+    void                            StreamParachuteWeapon( bool bAllowParachute );
 
-    short           GetLastTimeEaten ( void );
-    void            SetLastTimeEaten ( short sTime );
+    unsigned short                  GetLastTimeEaten();
+    void                            SetLastTimeEaten( unsigned short time );
 
-    VOID            MakePlayerSafe ( BOOL boolSafe );
-    VOID            CancelPlayerEnteringCars ( CVehicle * vehicle );
-    VOID            ArrestPlayer (  );
-    VOID            KillPlayer (  );
+    void                            MakePlayerSafe( bool safe );
+    void                            CancelPlayerEnteringCars( CVehicleSA* veh );
+    void                            ArrestPlayer();
+    void                            KillPlayer();
 
-    CVehicle        * GivePlayerRemoteControlledCar ( eVehicleTypes vehicletype );  // these are really members of CRemote, but they make more sense here
-    VOID            TakeRemoteControlledCarFromPlayer (  );
-    CVehicle        * GetPlayerRemoteControlledCar (  );
+    // This does not make any sense here, no joke, CRemote?
+    CVehicleSA*                     GiveRemoteVehicle( unsigned short model, float x, float y, float z );
+    void                            StopRemoteControl();
+    CVehicleSA*                     GetRemoteVehicle();
 
-    float           GetFPSMoveHeading ( void );
+    float                           GetFPSMoveHeading();
 
-    bool            GetDoesNotGetTired              ( void );
-    void            SetDoesNotGetTired              ( bool bDoesNotGetTired );
+    bool                            GetDoesNotGetTired();
+    void                            SetDoesNotGetTired( bool award );
 
-    DWORD           GetLastTimeBigGunFired ( void );
-    void            SetLastTimeBigGunFired ( DWORD dwTime );
+    unsigned int                    GetLastTimeBigGunFired();
+    void                            SetLastTimeBigGunFired( unsigned int time );
     
-    inline DWORD    GetCarTwoWheelCounter       ( void )            { return internalInterface->nCarTwoWheelCounter; }
-    inline float    GetCarTwoWheelDist          ( void )            { return internalInterface->fCarTwoWheelDist; }
-    inline DWORD    GetCarLess3WheelCounter     ( void )            { return internalInterface->nCarLess3WheelCounter; }
-    inline DWORD    GetBikeRearWheelCounter     ( void )            { return internalInterface->nBikeRearWheelCounter; }
-    inline float    GetBikeRearWheelDist        ( void )            { return internalInterface->fBikeRearWheelDist; }
-    inline DWORD    GetBikeFrontWheelCounter    ( void )            { return internalInterface->nBikeFrontWheelCounter; }
-    inline float    GetBikeFrontWheelDist       ( void )            { return internalInterface->fBikeFrontWheelDist; }
+    inline unsigned int             GetCarTwoWheelCounter()             { return m_interface->m_twoWheelTimer; }
+    inline float                    GetCarTwoWheelDist()                { return m_interface->m_twoWheelDistance; }
+    inline unsigned int             GetCarLess3WheelCounter()           { return m_interface->m_wheelieTimer; }
+    inline unsigned int             GetBikeRearWheelCounter()           { return m_interface->m_bikeRearTimer; }
+    inline float                    GetBikeRearWheelDist()              { return m_interface->m_bikeRearDistance; }
+    inline unsigned int             GetBikeFrontWheelCounter()          { return m_interface->m_bikeFrontTimer; }
+    inline float                    GetBikeFrontWheelDist()             { return m_interface->m_bikeFrontDistance; }
 };
 
 #endif

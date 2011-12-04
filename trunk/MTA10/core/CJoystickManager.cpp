@@ -5,6 +5,7 @@
 *  FILE:        core/CJoystickManager.cpp
 *  PURPOSE:     Joystick related operations
 *  DEVELOPERS:  ccw <chris@codewave.co.uk>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -27,11 +28,6 @@ using std::string;
 #define VALID_INDEX_FOR( array, index ) \
             ( index >= 0 && index < NUMELMS(array) )
 
-#define ZERO_ON_NEW \
-    void* operator new ( size_t size )              { void* ptr = ::operator new(size); memset(ptr,0,size); return ptr; } \
-    void* operator new ( size_t size, void* where ) { memset(where,0,size); return where; }
-
-
 static SString GUIDToString ( const GUID& g )
 {
     return SString (
@@ -42,182 +38,18 @@ static SString GUIDToString ( const GUID& g )
 
 DEFINE_GUID(GUID_Xbox360Controller,   0x028E045E,0x0000,0x0000,0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44);
 
-
-//////////////////////////////////////////////////////////
-//
-// Mapping
-//
-enum eJoy
-{
-    eJoyX,
-    eJoyY,
-    eJoyZ,
-    eJoyRx,
-    eJoyRy,
-    eJoyRz,
-    eJoyS1,
-    eJoyMax
-};
-
-enum eDir
-{
-    eDirNeg,
-    eDirPos,
-    eDirMax
-};
-
-enum eStick
-{
-    eLeftStickX,
-    eLeftStickY,
-    eRightStickX,
-    eRightStickY,
-    eAccelerate,
-    eBrake,
-    eStickMax
-};
-
-
-struct SMappingLine
-{
-    eJoy    SourceAxisIndex;    // 0 - 7
-    eDir    SourceAxisDir;      // 0 - 1
-    eStick  OutputAxisIndex;    // 0/1 2/3 4 5
-    eDir    OutputAxisDir;      // 0 - 1
-    bool    bEnabled;
-    int     MaxValue;
-};
-
-
-//////////////////////////////////////////////////////////
-//
-// DeviceInfo
-//
-struct SInputDeviceInfo
-{
-    IDirectInputDevice8A*   pDevice;
-    bool                    bDoneEnumAxes;
-    int                     iAxisCount;
-    int                     iDeadZone;
-    int                     iSaturation;
-    GUID                    guidProduct;
-    string                  strGuid;
-    string                  strProductName;
-
-    struct
-    {
-        bool    bEnabled;
-        long    lMax;
-        long    lMin;
-    } axis[7];
-};
-
-
-// Internal state
-struct SJoystickState
-{
-    float   rgfAxis[7];             /* axis positions     -1.f to 1.f       */
-    DWORD   rgdwPOV[4];             /* POV directions                       */
-    BYTE    rgbButtons[32];         /* 32 buttons                           */
-    BYTE    rgbButtonsWas[32];
-    BYTE    povButtonsWas[4];
-};
-
-
-///////////////////////////////////////////////////////////////
-//
-// CJoystickManager class
-//
-///////////////////////////////////////////////////////////////
-class CJoystickManager : public CJoystickManagerInterface
-{
-public:
-    ZERO_ON_NEW
-                        CJoystickManager            ( void );
-                        ~CJoystickManager           ( void );
-
-    // CJoystickManagerInterface methods
-    virtual void        OnSetDataFormat             ( IDirectInputDevice8A* pDevice, LPCDIDATAFORMAT a );
-    virtual void        RemoveDevice                ( IDirectInputDevice8A* pDevice );
-    virtual void        DoPulse                     ( void );
-    virtual void        ApplyAxes                   ( CControllerState& cs, bool bInVehicle );
-
-    // Status
-    virtual bool        IsJoypadConnected           ( void );
-
-    // Settings
-    virtual string      GetControllerName           ( void );
-    virtual int         GetDeadZone                 ( void );
-    virtual int         GetSaturation               ( void );
-    virtual void        SetDeadZone                 ( int iDeadZone );
-    virtual void        SetSaturation               ( int iSaturation );
-    virtual int         GetSettingsRevision         ( void );
-    virtual void        SetDefaults                 ( void );
-    virtual bool        SaveToXML                   ( void );
-
-    // Binding
-    virtual int         GetOutputCount              ( void );
-    virtual string      GetOutputName               ( int iOutputIndex );
-    virtual string      GetOutputInputName          ( int iOutputIndex );
-    virtual bool        BindNextUsedAxisToOutput    ( int iOutputIndex );
-    virtual bool        IsAxisBindComplete          ( void );
-    virtual bool        IsCapturingAxis             ( void );
-    virtual void        CancelCaptureAxis           ( bool bClearBinding );
-
-    // CJoystickManager methods
-    BOOL                DoEnumObjectsCallback       ( const DIDEVICEOBJECTINSTANCE* pdidoi );
-private:
-    bool                IsJoypadValid               ( void );
-    void                EnumAxes                    ( void );
-    void                ReadCurrentState            ( void );
-    CXMLNode*           GetConfigNode               ( bool bCreateIfRequired );
-    bool                LoadFromXML                 ( void );
-
-    int                     m_SettingsRevision;
-    SInputDeviceInfo        m_DevInfo;
-    SJoystickState          m_JoystickState;
-    SMappingLine            m_currentMapping[10];
-
-    // Used during axis binding
-    bool                    m_bCaptureAxis;
-    int                     m_iCaptureOutputIndex;
-    SJoystickState          m_PreBindJoystickState;
-};
-
-
-///////////////////////////////////////////////////////////////
-//
-// CJoystickManager instantiation
-//
-///////////////////////////////////////////////////////////////
-CJoystickManagerInterface* NewJoystickManager ( void )
-{
-    return new CJoystickManager ();
-}
-
-// This is nice so there
-CJoystickManagerInterface* g_pJoystickManager = NULL;
-
-CJoystickManagerInterface* GetJoystickManager ( void )
-{
-    if ( !g_pJoystickManager )
-        g_pJoystickManager = NewJoystickManager ();
-    return g_pJoystickManager;
-}
-
-
 ///////////////////////////////////////////////////////////////
 //
 // CJoystickManager implementation
 //
 ///////////////////////////////////////////////////////////////
-CJoystickManager::CJoystickManager ( void )
+CJoystickManager::CJoystickManager()
 {
     SetDefaults();
 }
 
 
-CJoystickManager::~CJoystickManager ( void )
+CJoystickManager::~CJoystickManager()
 {
 }
 
@@ -612,23 +444,23 @@ void CJoystickManager::ApplyAxes ( CControllerState& cs, bool bInVehicle )
 
         int iValue = Round ( value * line.MaxValue );
 
-             if ( line.OutputAxisIndex == eLeftStickX )   cs.LeftStickX += iValue;
-        else if ( line.OutputAxisIndex == eLeftStickY )   cs.LeftStickY += iValue;
-        else if ( line.OutputAxisIndex == eRightStickX )  cs.RightStickX += iValue;
-        else if ( line.OutputAxisIndex == eRightStickY )  cs.RightStickY += iValue;
-        else if ( line.OutputAxisIndex == eAccelerate && bInVehicle )   cs.ButtonCross += iValue;
-        else if ( line.OutputAxisIndex == eBrake && bInVehicle )        cs.ButtonSquare += iValue;
+             if ( line.OutputAxisIndex == eLeftStickX )   cs.m_leftAxisX += iValue;
+        else if ( line.OutputAxisIndex == eLeftStickY )   cs.m_leftAxisY += iValue;
+        else if ( line.OutputAxisIndex == eRightStickX )  cs.m_rightAxisX += iValue;
+        else if ( line.OutputAxisIndex == eRightStickY )  cs.m_rightAxisY += iValue;
+        else if ( line.OutputAxisIndex == eAccelerate && bInVehicle )   cs.m_action3 += iValue;
+        else if ( line.OutputAxisIndex == eBrake && bInVehicle )        cs.m_action1 += iValue;
     }
 
 
     // Keep everything in range
-    cs.LeftStickX  = Clamp < const short > ( -128, cs.LeftStickX, 128 );
-    cs.LeftStickY  = Clamp < const short > ( -128, cs.LeftStickY, 128 );
-    cs.RightStickX = Clamp < const short > ( -128, cs.RightStickX, 128 );
-    cs.RightStickY = Clamp < const short > ( -128, cs.RightStickY, 128 );
+    cs.m_leftAxisX  = Clamp < const short > ( -128, cs.m_leftAxisX, 128 );
+    cs.m_leftAxisY  = Clamp < const short > ( -128, cs.m_leftAxisY, 128 );
+    cs.m_rightAxisX = Clamp < const short > ( -128, cs.m_rightAxisX, 128 );
+    cs.m_rightAxisY = Clamp < const short > ( -128, cs.m_rightAxisY, 128 );
     
-    cs.ButtonCross  = Clamp < const short > ( 0, cs.ButtonCross, 255 );
-    cs.ButtonSquare = Clamp < const short > ( 0, cs.ButtonSquare, 255 );
+    cs.m_action3  = Clamp < const short > ( 0, cs.m_action3, 255 );
+    cs.m_action1 = Clamp < const short > ( 0, cs.m_action1, 255 );
 
 
     // Debug output
