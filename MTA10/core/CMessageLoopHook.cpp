@@ -92,6 +92,7 @@ LRESULT CALLBACK CMessageLoopHook::ProcessMessage ( HWND hwnd,
     // Prevent GTA from knowing about kill focuses. Prevents pausing.
     if ( uMsg == WM_KILLFOCUS || (uMsg == WM_ACTIVATE && LOWORD(wParam) == WA_INACTIVE) )
     {
+        g_pCore->OnFocusLost();
         return true;
     }
 
@@ -119,7 +120,8 @@ LRESULT CALLBACK CMessageLoopHook::ProcessMessage ( HWND hwnd,
         }
     }
 
-    if ( hwnd != pThis->GetHookedWindowHandle () ) return NULL;
+    if ( hwnd != pThis->GetHookedWindowHandle () )
+        return NULL;
 
     // Make sure our pointers are valid.
     if ( pThis != NULL && CLocalGUI::GetSingletonPtr ( ) != NULL && CCore::GetSingleton ().GetGame () )
@@ -145,9 +147,9 @@ LRESULT CALLBACK CMessageLoopHook::ProcessMessage ( HWND hwnd,
             CSettings* pSettings = pMainMenu->GetSettingsWindow ();
             if ( pSettings )
             {
-                if ( uMsg == WM_KEYDOWN && wParam == VK_ESCAPE && GetJoystickManager ()->IsCapturingAxis () )
+                if ( uMsg == WM_KEYDOWN && wParam == VK_ESCAPE && g_pCore->GetJoystickManager ()->IsCapturingAxis () )
                 {
-                    GetJoystickManager ()->CancelCaptureAxis ( true );
+                    g_pCore->GetJoystickManager ()->CancelCaptureAxis ( true );
                     return true;
                 }
                 bWasCaptureKey = ( pSettings->IsCapturingKey () && pSettings->ProcessMessage ( uMsg, wParam, lParam ) );

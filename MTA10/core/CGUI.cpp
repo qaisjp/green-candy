@@ -143,25 +143,22 @@ void CLocalGUI::CreateWindows ( bool bGameIsAlreadyLoaded )
 
 void CLocalGUI::CreateObjects ( IUnknown* pDevice )
 {
-    //Temps
-    CFilePathTranslator     FileTranslator;
-    string                  WorkingDirectory;
-    char                    szCurDir [ 1024 ];
-
     // Store the GUI manager pointer and create the GUI classes
     CGUI* pGUI = CCore::GetSingleton ().GetGUI ();
 
     // Set the CEGUI skin to whatever the user has selected
     SString currentSkinName;
-    CClientVariables* cvars = CCore::GetSingleton().GetCVars();
-    cvars->Get("current_skin", currentSkinName);
-    if(currentSkinName.empty())
+    CClientVariables *cvars = CCore::GetSingleton().GetCVars();
+
+    cvars->Get( "current_skin", currentSkinName );
+
+    if ( currentSkinName.empty() )
     {
         currentSkinName = DEFAULT_SKIN_NAME; 
         CVARS_SET("current_skin", currentSkinName);
     }
 
-    SetSkin(currentSkinName);
+    SetSkin( currentSkinName );
     
     // Create graphical wrapper object.
     WriteDebugEvent ( "Creating renderer wrapper..." );
@@ -333,20 +330,6 @@ void CLocalGUI::Restore ( void )
 
     if ( pGUI )
     {
-        CFilePathTranslator     FileTranslator;
-        string                  WorkingDirectory;
-        char                    szCurDir [ 1024 ];
-
-        // We must change the current directory here!
-        // This is necessary because if we don't, CLocalGUI will try to load
-        // files from the wrong path!
-
-        // Set the current directory.
-        FileTranslator.SetCurrentWorkingDirectory ( "MTA" );
-        FileTranslator.GetCurrentWorkingDirectory ( WorkingDirectory );
-        GetCurrentDirectory ( sizeof ( szCurDir ), szCurDir );
-        SetCurrentDirectory ( WorkingDirectory.c_str ( ) );
-
         // Restore the GUI
         pGUI->Restore ();
 
@@ -359,9 +342,6 @@ void CLocalGUI::Restore ( void )
         {
             WriteDebugEvent ( "WARNING: CLocalGUI::Restore() called, but CLocalGUI::CreateObjects() isn't!" );
         }
-
-        // Restore the current directory to default.
-        SetCurrentDirectory ( szCurDir );
     }
     else
     {

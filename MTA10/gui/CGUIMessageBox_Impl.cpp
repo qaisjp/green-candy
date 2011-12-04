@@ -11,7 +11,6 @@
 *****************************************************************************/
 
 #include "StdInc.h"
-#include "../core/CFilePathTranslator.h"
 
 #define MESSAGEBOX_WIDTH        400.0f
 #define MESSAGEBOX_HEIGHT       150.0f

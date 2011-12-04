@@ -16,14 +16,12 @@
 
 using std::string;
 
-CModuleLoader::CModuleLoader( const string& ModuleName )
-    : m_bStatus( false )
+CModuleLoader::CModuleLoader( const filePath& ModuleName )
 {
     LoadModule( ModuleName );
 }
 
 CModuleLoader::CModuleLoader()
-    : m_bStatus( false ) 
 {
     m_hLoadedModule = NULL;
 }
@@ -46,7 +44,7 @@ bool CModuleLoader::LoadModule( const filePath& path )
         throw std::exception( szError );
     }
 
-    return m_bStatus;
+    return true;
 }
 
 void CModuleLoader::UnloadModule()
@@ -57,13 +55,12 @@ void CModuleLoader::UnloadModule()
     FreeLibrary( m_hLoadedModule );
 
     m_hLoadedModule = NULL;
-    m_bStatus = false;
     m_strLastError = "";
 }
 
 void* CModuleLoader::GetFunctionPointer( const string& FunctionName )
 {
-    if ( !m_bStatus )
+    if ( !m_hLoadedModule )
         return NULL;
 
     return (void*)GetProcAddress( m_hLoadedModule, FunctionName.c_str() );

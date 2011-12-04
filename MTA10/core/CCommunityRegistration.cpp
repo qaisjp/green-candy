@@ -13,16 +13,14 @@
 
 #include "StdInc.h"
 
-using SharedUtil::CalcMTASAPath;
 extern CCore* g_pCore;
 
-CCommunityRegistration::CCommunityRegistration ( void )
+CCommunityRegistration::CCommunityRegistration()
 {
     m_ulStartTime = 0;
 }
 
-
-void CCommunityRegistration::CreateWindows ( void )
+void CCommunityRegistration::CreateWindows()
 {
     CGUI *pManager = g_pCore->GetGUI ();
     CMainMenu *pMainMenu = CLocalGUI::GetSingleton ().GetMainMenu ();
@@ -103,8 +101,7 @@ void CCommunityRegistration::CreateWindows ( void )
     m_pWindow->SetAlpha ( 0.9f );
 }
 
-
-CCommunityRegistration::~CCommunityRegistration ( void )
+CCommunityRegistration::~CCommunityRegistration()
 {
     delete m_pButtonRegister;
     delete m_pButtonCancel;
@@ -115,8 +112,7 @@ CCommunityRegistration::~CCommunityRegistration ( void )
     delete m_pWindow;
 }
 
-
-void CCommunityRegistration::Open ( void )
+void CCommunityRegistration::Open()
 {
     if ( m_ulStartTime == 0 )
     {
@@ -131,14 +127,13 @@ void CCommunityRegistration::Open ( void )
     }
 }
 
-
-void CCommunityRegistration::SetVisible ( bool bVisible )
+void CCommunityRegistration::SetVisible( bool bVisible )
 {
     m_pWindow->SetVisible ( bVisible );
     SetFrozen ( false );
 }
 
-void CCommunityRegistration::SetFrozen ( bool bFrozen )
+void CCommunityRegistration::SetFrozen( bool bFrozen )
 {
     m_pEditUsername->SetEnabled ( !bFrozen );
     m_pEditEmail->SetEnabled ( !bFrozen );
@@ -149,8 +144,7 @@ void CCommunityRegistration::SetFrozen ( bool bFrozen )
     m_pButtonRegister->SetText ( ( bFrozen ) ? "Registering..." : "Register" );
 }
 
-
-void CCommunityRegistration::DoPulse ( void )
+void CCommunityRegistration::DoPulse()
 {
     if ( m_ulStartTime > 0 )
     {
@@ -232,14 +226,13 @@ void CCommunityRegistration::DoPulse ( void )
     }
 }
 
-
-bool CCommunityRegistration::OnButtonCancelClick ( CGUIElement* pElement )
+bool CCommunityRegistration::OnButtonCancelClick( CGUIElement* pElement )
 {
-    m_pWindow->SetVisible ( false );
+    m_pWindow->SetVisible( false );
 
-    SetFrozen ( false );
-    m_strCommunityHash.clear ();
-    m_pImageCode->Clear ();
+    SetFrozen( false );
+    m_strCommunityHash.clear();
+    m_pImageCode->Clear();
     m_pEditUsername->SetText("");
     m_pEditEmail->SetText("");
     m_pEditPassword->SetText("");
@@ -248,8 +241,7 @@ bool CCommunityRegistration::OnButtonCancelClick ( CGUIElement* pElement )
     return true;
 }
 
-
-bool CCommunityRegistration::OnButtonRegisterClick ( CGUIElement* pElement )
+bool CCommunityRegistration::OnButtonRegisterClick( CGUIElement* pElement )
 {
     if ( m_pEditUsername->GetText().empty() )
         g_pCore->ShowMessageBox ( "Error", "Username missing", MB_BUTTON_OK | MB_ICON_INFO );
@@ -289,7 +281,7 @@ bool CCommunityRegistration::OnButtonRegisterClick ( CGUIElement* pElement )
     return true;
 }
 
-bool CCommunityRegistration::HashString ( const char* szString, std::string& strHashString )
+bool CCommunityRegistration::HashString( const char* szString, std::string& strHashString )
 {
     char szHashed[33];
     if ( szString && strlen ( szString ) > 0 )

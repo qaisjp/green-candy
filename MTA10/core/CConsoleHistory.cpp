@@ -37,7 +37,7 @@ bool CConsoleHistory::LoadFromFile ( const char* szFilename, bool bAutosave )
         delete m_file;
 
     // Open the file
-    m_file = mtaFileRoot->Open( szFileName, "w+" );
+    m_file = mtaFileRoot->Open( szFilename, "r" );
 
     if ( !m_file )
         return false;

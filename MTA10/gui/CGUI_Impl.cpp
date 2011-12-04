@@ -227,12 +227,12 @@ void CGUI_Impl::Restore()
 {
     try
     {
-        reinterpret_cast <CEGUI::DirectX9Renderer*> ( m_pRenderer )->postD3DReset ();
+        ((CEGUI::DirectX9Renderer*)m_pRenderer)->postD3DReset();
     }
     catch ( CEGUI::RendererException& exception )
     {
-        MessageBox ( 0, exception.getMessage().c_str (), "CEGUI Exception", MB_OK|MB_ICONERROR );
-        TerminateProcess ( GetCurrentProcess (), 1 );
+        MessageBox( 0, exception.getMessage().c_str (), "CEGUI Exception", MB_OK|MB_ICONERROR );
+        TerminateProcess( GetCurrentProcess (), 1 );
     }
 }
 

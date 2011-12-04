@@ -70,8 +70,8 @@ struct SInputDeviceInfo
     int                     iDeadZone;
     int                     iSaturation;
     GUID                    guidProduct;
-    string                  strGuid;
-    string                  strProductName;
+    std::string             strGuid;
+    std::string             strProductName;
 
     struct
     {
@@ -119,8 +119,8 @@ public:
 
     // Binding
     int                 GetOutputCount              ();
-    string              GetOutputName               ( int iOutputIndex );
-    string              GetOutputInputName          ( int iOutputIndex );
+    std::string         GetOutputName               ( int iOutputIndex );
+    std::string         GetOutputInputName          ( int iOutputIndex );
     bool                BindNextUsedAxisToOutput    ( int iOutputIndex );
     bool                IsAxisBindComplete          ();
     bool                IsCapturingAxis             ();

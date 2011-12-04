@@ -16,8 +16,6 @@
 #define DECLARE_PROFILER_SECTION_CModManager
 #include "profiler/SharedUtil.Profiler.h"
 
-using SharedUtil::CalcMTASAPath;
-
 typedef BOOL (WINAPI *MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hFile, MINIDUMP_TYPE DumpType,
                                     CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
                                     CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
@@ -101,50 +99,48 @@ bool CModManager::IsLoaded ( void )
     return ( m_hClientDLL != NULL );
 }
 
-CClientBase* CModManager::Load ( const char* szName, const char* szArguments )
+CClientBase* CModManager::Load( const char* szName, const char* szArguments )
 {
     // Make sure we haven't already loaded a mod
     Unload();
 
     // Get the entry for the given name
-    std::map <std::string, std::string>::iterator itMod = m_ModDLLFiles.find ( szName );
+    std::map <std::string, std::string>::iterator itMod = m_ModDLLFiles.find( szName );
 
-    if ( itMod == m_ModDLLFiles.end () )
+    if ( itMod == m_ModDLLFiles.end() )
     {
-        CCore::GetSingleton ().GetConsole ()->Printf ( "Unable to load %s (unknown mod)", szName );
+        CCore::GetSingleton().GetConsole()->Printf ( "Unable to load %s (unknown mod)", szName );
         return NULL;
     }
 
-    // Ensure DllDirectory has not been changed
-    char szDllDirectory[ MAX_PATH + 1 ] = {'\0'};
-    GetDllDirectory( sizeof ( szDllDirectory ), szDllDirectory );
+#ifdef MTA_DEBUG
+    // Make sure DllDirectory stays the same
+    filePath dllDir;
+    mtaFileRoot->GetFullPath( "", false, dllDir );
 
-    if ( stricmp( CalcMTASAPath ( "mta" ), szDllDirectory ) != 0 )
-    {
-        AddReportLog ( 3119, SString ( "DllDirectory wrong:  DllDirectory:'%s'  Path:'%s'", szDllDirectory, *CalcMTASAPath ( "mta" ) ) );
-        SetDllDirectory( CalcMTASAPath ( "mta" ) );
-    }
+    SetDllDirectory( dllDir.c_str() );
+#endif
 
     // Load the library and use the supplied path as an extra place to search for dependencies
-    m_hClientDLL = LoadLibraryEx ( itMod->second.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH );
+    m_hClientDLL = LoadLibraryEx( itMod->second.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH );
     if ( !m_hClientDLL )
     {
         DWORD dwError = GetLastError ();
         char szError[2048];
         char* p;
 
-        FormatMessage ( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+        FormatMessage( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                         NULL, dwError, LANG_NEUTRAL, szError, sizeof ( szError ), NULL );
 
         // Remove newlines from the error message
-        p = szError + strlen ( szError ) - 1;
+        p = szError + strlen( szError ) - 1;
         while ( p >= szError && (*p == '\r' || *p == '\n' ) )
         {
             *p = '\0';
             --p;
         }
 
-        CCore::GetSingleton ().GetConsole ()->Printf ( "Unable to load %s's DLL (reason: %s)", szName, szError );
+        CCore::GetSingleton().GetConsole()->Printf( "Unable to load %s's DLL (reason: %s)", szName, szError );
         return NULL;
     }
 
@@ -158,33 +154,32 @@ CClientBase* CModManager::Load ( const char* szName, const char* szArguments )
 
     if ( pClientInitializer == NULL )
     {
-        CCore::GetSingleton ().GetConsole ()->Printf ( "Unable to load %s's DLL (unknown mod)", szName, GetLastError () );
-        FreeLibrary ( m_hClientDLL );
+        CCore::GetSingleton().GetConsole()->Printf( "Unable to load %s's DLL (unknown mod)", szName );
+        FreeLibrary( m_hClientDLL );
         return NULL;
     }
 
     // Call InitClient and store the Client interface in m_pClientBase
-    m_pClientBase = pClientInitializer ();
+    m_pClientBase = pClientInitializer();
 
     // Call the client base initializer
-    if ( !m_pClientBase || m_pClientBase->ClientInitialize ( szArguments, CCore::GetSingletonPtr() ) != ERROR_SUCCESS )
+    if ( !m_pClientBase || m_pClientBase->ClientInitialize( szArguments, CCore::GetSingletonPtr() ) != ERROR_SUCCESS )
     {
-        CCore::GetSingleton ().GetConsole ()->Printf ( "Unable to load %s's DLL (unable to init, bad version?)", szName );
-        FreeLibrary ( m_hClientDLL );
+        CCore::GetSingleton().GetConsole()->Printf( "Unable to load %s's DLL (unable to init, bad version?)", szName );
+        FreeLibrary( m_hClientDLL );
         return NULL;
     }
 
     // HACK: make the console input active if its visible
-    if ( CLocalGUI::GetSingleton ().IsConsoleVisible () )
-        CLocalGUI::GetSingleton ().GetConsole ()->ActivateInput ();
+    if ( CLocalGUI::GetSingleton().IsConsoleVisible() )
+        CLocalGUI::GetSingleton().GetConsole()->ActivateInput ();
 
     // Tell chat to start handling input
-    CLocalGUI::GetSingleton ().GetChat ()->OnModLoad ();
+    CLocalGUI::GetSingleton().GetChat()->OnModLoad();
  
     // Return the interface
     return m_pClientBase;
 }
-
 
 void CModManager::Unload ( void )
 {
@@ -318,7 +313,6 @@ void CModManager::DoPulsePostFrame ( void )
     }
 }
 
-
 CClientBase* CModManager::GetCurrentMod ( void )
 {
     return m_pClientBase;
@@ -327,10 +321,10 @@ CClientBase* CModManager::GetCurrentMod ( void )
 void CModManager::RefreshMods ( void )
 {
     // Clear the list, and load it again
-    Clear ();
-    InitializeModList ( CalcMTASAPath( "mods\\" ) );
-}
+    Clear();
 
+    InitializeModList( "" );
+}
 
 long WINAPI CModManager::HandleExceptionGlobal ( _EXCEPTION_POINTERS* pException )
 {

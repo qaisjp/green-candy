@@ -25,7 +25,16 @@ typedef void (*PFN_WATCH_CALLBACK) ( CSHADERDUMMY* pContext, CD3DDUMMY* pD3DData
 class CRenderWare
 {
 public:
-    // redo this class, do not export renderware into the main game
+    // redo this class, do not export renderware into deathmatch
+    virtual unsigned short      GetTXDIDForModelID          ( unsigned short model) = 0;
+    virtual void                InitWorldTextureWatch       ( PFN_WATCH_CALLBACK pfnWatchCallback ) = 0;
+    virtual bool                AddWorldTextureWatch        ( CSHADERDUMMY* pShaderData, const char* szMatch, float fShaderPriority ) = 0;
+    virtual void                RemoveWorldTextureWatch     ( CSHADERDUMMY* pShaderData, const char* szMatch ) = 0;
+    virtual void                RemoveWorldTextureWatchByContext ( CSHADERDUMMY* pShaderData ) = 0;
+    virtual void                PulseWorldTextureWatch      () = 0;
+    virtual void                GetModelTextureNames        ( std::vector < SString >& outNameList, unsigned short model ) = 0;
+    virtual void                GetTxdTextures              ( std::vector < class RwTexture* >& outTextureList, unsigned short txd ) = 0;
+    virtual const SString&      GetTextureName              ( CD3DDUMMY* pD3DData ) = 0;
 };
 
 #endif

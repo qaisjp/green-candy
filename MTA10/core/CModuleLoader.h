@@ -17,11 +17,11 @@
 class CModuleLoader
 {
 public:
-                    CModuleLoader       ( const std::string& ModuleName );
+                    CModuleLoader       ( const filePath& ModuleName );
                     CModuleLoader       ();
                     ~CModuleLoader      (); 
 
-    bool            LoadModule          ( const std::string& ModuleName ); 
+    bool            LoadModule          ( const filePath& ModuleName ); 
     void*           GetFunctionPointer  ( const std::string& FunctionName );
     void            UnloadModule        ();
 

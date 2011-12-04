@@ -31,7 +31,6 @@ public:
     bool            IsReadable();
     bool            IsWriteable();
 
-    size_t          Printf( const char *pFormat, ... );
 private:
     friend class CSystemFileTranslator;
     friend class CFileSystem;
@@ -81,7 +80,7 @@ public:
     bool            ChangeDirectory( const char *path );
     void            GetDirectory( filePath& output );
 
-private:
+protected:
     friend class CFileSystem;
 
     filePath        m_root;
@@ -146,6 +145,7 @@ extern CFileTranslator *tempFileRoot;
 extern CFileTranslator *mtaFileRoot;
 extern CFileTranslator *dataFileRoot;
 extern CFileTranslator *modFileRoot;
+extern CFileTranslator *newsFileRoot;
 
 class CFileSystem : public CFileSystemInterface
 {

@@ -20,6 +20,7 @@ CFileTranslator *tempFileRoot;
 CFileTranslator *mtaFileRoot;
 CFileTranslator *dataFileRoot;
 CFileTranslator *modFileRoot;
+CFileTranslator *newsFileRoot;
 
 std::list <CFile*> *openFiles;
 
@@ -148,7 +149,9 @@ bool File_IsDirectoryAbsolute( const char *pPath )
 
 static inline bool _File_ParseRelativePath( const char *path, dirTree& tree, bool *bFile )
 {
-    filePath entry( MAX_PATH );
+    filePath entry;
+
+    entry.reserve( MAX_PATH );
 
     while (*path)
     {
@@ -380,6 +383,10 @@ bool CRawFile::IsWriteable()
 
     Loads a file at open and keeps it in a managed buffer.
 =========================================*/
+
+CBufferedFile::~CBufferedFile()
+{
+}
 
 size_t CBufferedFile::Read(void *pBuffer, size_t sElement, unsigned long iNumElements)
 {
@@ -742,12 +749,9 @@ bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, siz
     HANDLE file;
     filePath output = m_root;
     dirTree tree( 16 );
-    bool file;
+    bool isFile;
 
-    if ( !GetRelativePathTree( path, tree, &file ) )
-        return false;
-
-    if ( !file )
+    if ( !GetRelativePathTree( path, tree, &isFile ) || !isFile )
         return false;
 
     _File_OutputPathTree( tree, true, output );
@@ -1081,6 +1085,7 @@ CFileSystem::CFileSystem()
     mtaFileRoot = CreateTranslator( "mta/" );
     dataFileRoot = CreateTranslator( GetMTADataPath() );
     modFileRoot = CreateTranslator( "mods/" );
+    newsFileRoot = CreateTranslator( GetMTADataPath() + "news/" );
 
     if ( !mtaFileRoot || !dataFileRoot || !modFileRoot )
     {
@@ -1100,7 +1105,6 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
     CSystemFileTranslator *pTranslator;
     filePath root;
     dirTree tree( 16 );
-    unsigned int n;
     bool bFile;
 
     if ( !*path )
@@ -1147,6 +1151,7 @@ bool CFileSystem::IsDirectory( const char *path )
 
 bool CFileSystem::WriteMiniDump( const char *path, _EXCEPTION_POINTERS *except )
 {
+#ifdef _WIN32
     CRawFile *file = (CRawFile*)mtaFileRoot->Open( path, "wb" );
     MINIDUMP_EXCEPTION_INFORMATION info;
 
@@ -1163,6 +1168,7 @@ bool CFileSystem::WriteMiniDump( const char *path, _EXCEPTION_POINTERS *except )
 
     delete file;
 
+#endif
     return true;
 }
 

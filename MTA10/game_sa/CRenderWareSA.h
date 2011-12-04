@@ -60,7 +60,7 @@ class CRenderWareSA : public CRenderWare
 {
     public:
                         CRenderWareSA               ( enum eGameVersion version );
-                        ~CRenderWareSA              ( void ) {};
+                        ~CRenderWareSA              () {};
 
     RwMatrix*           AllocateMatrix              ();
 
@@ -83,6 +83,17 @@ class CRenderWareSA : public CRenderWare
 
     // szName should be without the part suffix (e.g. 'door_lf' or 'door_rf', and not 'door_lf_dummy')
     bool                ReplacePartModels           ( RpClump * pClump, RpAtomicContainer * pAtomics, unsigned int uiAtomics, const char * szName );
+
+    // UGLY core exports
+    unsigned short      GetTXDIDForModelID          ( unsigned short model);
+    void                InitWorldTextureWatch       ( PFN_WATCH_CALLBACK pfnWatchCallback );
+    bool                AddWorldTextureWatch        ( CSHADERDUMMY* pShaderData, const char* szMatch, float fShaderPriority );
+    void                RemoveWorldTextureWatch     ( CSHADERDUMMY* pShaderData, const char* szMatch );
+    void                RemoveWorldTextureWatchByContext ( CSHADERDUMMY* pShaderData );
+    void                PulseWorldTextureWatch      ();
+    void                GetModelTextureNames        ( std::vector < SString >& outNameList, unsigned short model );
+    void                GetTxdTextures              ( std::vector < RwTexture* >& outTextureList, unsigned short txd );
+    const SString&      GetTextureName              ( CD3DDUMMY* pD3DData );
 };
 
 #endif

@@ -22,7 +22,9 @@ enum eFileException
 class CFile
 {
 public:
-    virtual                 ~CFile() = 0;
+    virtual                 ~CFile()
+    {
+    }
 
     virtual	size_t          Read( void *pBuffer, size_t sElement, unsigned long iNumElements ) = 0;
     virtual	size_t          Write( void *pBuffer, size_t sElement, unsigned long iNumElements ) = 0;
@@ -120,7 +122,9 @@ typedef void (*pathCallback_t)( const filePath& path, void *userdata );
 class CFileTranslator
 {
 public:
-    virtual                 ~CFileTranslator() = 0;
+    virtual                 ~CFileTranslator()
+    {
+    }
 
     virtual bool            WriteData( const char *path, const char *buffer, size_t size ) = 0;
     virtual bool            CreateDir( const char *path ) = 0;
