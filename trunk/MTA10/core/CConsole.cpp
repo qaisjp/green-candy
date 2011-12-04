@@ -15,7 +15,6 @@
 
 #include "StdInc.h"
 
-using SharedUtil::CalcMTASAPath;
 using std::string;
 
 #define CONSOLE_HISTORY_LENGTH 64
@@ -24,7 +23,7 @@ using std::string;
 #define NATIVE_RES_X    1152.0f
 #define NATIVE_RES_Y    864.0f
 
-CConsole::CConsole ( CGUI* pManager, CGUIElement* pParent )
+CConsole::CConsole( CGUI* pManager, CGUIElement* pParent )
 {
     // Store the GUI manager
     m_pManager = pManager;
@@ -53,7 +52,7 @@ CConsole::CConsole ( CGUI* pManager, CGUIElement* pParent )
     m_pHistory->SetTextChangedHandler ( GUI_CALLBACK ( &CConsole::History_OnTextChanged, this ) );
 
     // Load the console history from a file
-    m_pConsoleHistory->LoadFromFile ( CalcMTASAPath ( "\\MTA\\console.log" ), true );
+    m_pConsoleHistory->LoadFromFile( "console.log", true );
 }
 
 CConsole::~CConsole ( void )

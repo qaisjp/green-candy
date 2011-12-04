@@ -383,7 +383,7 @@ void CCommandFuncs::Binds ( const char* szParameters )
 
 void CCommandFuncs::CopyGTAControls ( const char* szParameters )
 {
-    CKeyBindsInterface* pKeyBinds = CCore::GetSingleton ().GetKeyBinds ();
+    CKeyBinds* pKeyBinds = CCore::GetSingleton ().GetKeyBinds ();
 
     if ( pKeyBinds )
     {

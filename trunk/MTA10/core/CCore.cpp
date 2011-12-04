@@ -24,7 +24,6 @@
 #include "SharedUtil.hpp"
 #include <clocale>
 
-using SharedUtil::CalcMTASAPath;
 using namespace std;
 
 static float fTest = 1;
@@ -85,7 +84,7 @@ BOOL AC_RestrictAccess()
 }
 
 
-CCore CSingleton <CCore>::m_pSingleton = NULL;
+CCore* CSingleton <CCore>::m_pSingleton = NULL;
 
 CCore::CCore()
 {
@@ -140,7 +139,6 @@ CCore::CCore()
     m_bQuitOnPulse = false;
     m_bDestroyMessageBox = false;
     m_bCursorToggleControls = false;
-    m_bLastFocused = true;
     m_bWaitToSetNick = false;
 
     // Initialize time
@@ -294,7 +292,7 @@ CNet* CCore::GetNetwork()
     return m_pNet;
 }
 
-CKeyBindsInterface* CCore::GetKeyBinds()
+CKeyBinds* CCore::GetKeyBinds()
 {
     return m_pKeyBinds;
 }
@@ -696,7 +694,7 @@ void CCore::SetCenterCursor( bool bEnabled )
 // On failure, displays message box and terminates the current process.
 //
 ////////////////////////////////////////////////////////////////////////
-void LoadModule( CModuleLoader& m_Loader, const SString& strName, const filePath& path )
+void LoadModule( CModuleLoader& m_Loader, const SString& strName, const filePath& modPath )
 {
     WriteDebugEvent( "Loading " + strName.ToLower () );
 
@@ -710,14 +708,14 @@ void LoadModule( CModuleLoader& m_Loader, const SString& strName, const filePath
 
     // Load appropriate compilation-specific library
 #ifdef MTA_DEBUG
-    std::string strModuleFileName = strModuleName + "_d.dll";
+    filePath strModuleFileName = modPath + "_d.dll";
 #else
-    std::string strModuleFileName = strModuleName + ".dll";
+    filePath strModuleFileName = modPath + ".dll";
 #endif
 
     filePath path;
     
-    if ( !modFileRoot->GetFullPath( strModuleFileName.c_str(), true, path ) )
+    if ( !mtaFileRoot->GetFullPath( strModuleFileName.c_str(), true, path ) )
         return;
 
     try
@@ -727,7 +725,7 @@ void LoadModule( CModuleLoader& m_Loader, const SString& strName, const filePath
     catch( std::exception& e )
     {
         MessageBox( 0, SString( "Error loading %s module! (%s)", *strName.ToLower(), e.what() ), "Error", MB_OK|MB_ICONEXCLAMATION );
-        BrowseToSolution( strModuleName + "-not-loadable", true, true );
+        BrowseToSolution( modPath + "-not-loadable", true, true );
         return;
     }
 
@@ -835,8 +833,8 @@ void CCore::InitGUI( IUnknown* pDevice )
     filePath screenshots;
     mtaFileRoot->GetFullPath( "../", false, screenshots );
 
-    CVARS_SET( "screenshot_path", screenshots.c_str() );
-    CScreenShot::SetPath( screenshots.c_str() );
+    CVARS_SET( "screenshot_path", SString( screenshots ) );
+    CScreenShot::SetPath( screenshots );
 }
 
 void CCore::CreateGUI()
@@ -845,7 +843,7 @@ void CCore::CreateGUI()
     {
         LoadModule( m_GUIModule, "GUI", "cgui" );
     }
-    catch( std::exception& e )
+    catch( std::exception& )
     {
         MessageBox( NULL, "Could not initialize the graphical user interface! Reinstall MTA please.", "CGUI Not Found", MB_OK );
         TerminateProcess( GetCurrentProcess(), EXIT_FAILURE );
@@ -1015,30 +1013,23 @@ void CCore::DoPostFramePulse()
         bFirstPulse = false;
 
         // Apply all settings
-        ApplyConsoleSettings ();
-        ApplyGameSettings ();
+        ApplyConsoleSettings();
+        ApplyGameSettings();
 
-        m_pGUI->SetMouseClickHandler ( INPUT_CORE, GUI_CALLBACK_MOUSE ( &CCore::OnMouseClick, this ) );
-        m_pGUI->SetMouseDoubleClickHandler ( INPUT_CORE, GUI_CALLBACK_MOUSE ( &CCore::OnMouseDoubleClick, this ) );
+        m_pGUI->SetMouseClickHandler( INPUT_CORE, GUI_CALLBACK_MOUSE( &CCore::OnMouseClick, this ) );
+        m_pGUI->SetMouseDoubleClickHandler( INPUT_CORE, GUI_CALLBACK_MOUSE( &CCore::OnMouseDoubleClick, this ) );
         m_pGUI->SelectInputHandlers( INPUT_CORE );
 
         m_Community.Initialize ();
     }
 
-    if ( m_pGame->GetSystemState () == GS_INIT_ONCE )
-        WatchDogCompletedSection( "L2" );      // gta_sa.set seems ok
-
-    // This is the first frame in the menu?
-    if ( m_pGame->GetSystemState() == GS_FRONTEND )
+    switch( m_pGame->GetSystemState() )
     {
-        // Wait 250 frames more than the time it took to get status 7 (fade-out time)
-        static short WaitForMenu = 0;
-
-        // Cope with early finish
-        if ( m_pGame->HasCreditScreenFadedOut () )
-            WaitForMenu = 250;
-
-        if ( WaitForMenu >= 250 )
+    case GS_INIT_ONCE:
+        WatchDogCompletedSection( "L2" );      // gta_sa.set seems ok
+        break;
+    case GS_FRONTEND:
+        if ( m_pGame->HasCreditScreenFadedOut() )
         {
             if ( m_bFirstFrame )
             {
@@ -1052,11 +1043,10 @@ void CCore::DoPostFramePulse()
                 if ( m_szCommandLineArgs && strnicmp( m_szCommandLineArgs, "mtasa://", 8 ) == 0 )
                 {
                     SString strArguments = GetConnectCommandFromURI ( m_szCommandLineArgs );
+
                     // Run the connect command
-                    if ( strArguments.length() > 0 && !m_pCommands->Execute( strArguments ) )
-                    {
+                    if ( !strArguments.empty() && !m_pCommands->Execute( strArguments ) )
                         ShowMessageBox( "Error", "Error executing URL", MB_BUTTON_OK | MB_ICON_ERROR );
-                    }
                 }
                 else
                 {
@@ -1079,10 +1069,6 @@ void CCore::DoPostFramePulse()
                 }
             }
         }
-        else
-        {
-            WaitForMenu++;
-        }
 
         if ( m_bWaitToSetNick && GetLocalGUI()->GetMainMenu()->IsVisible() && !GetLocalGUI()->GetMainMenu()->IsFading() )
         {
@@ -1090,22 +1076,13 @@ void CCore::DoPostFramePulse()
             {
                 // Request a new nickname if we're waiting for one
                 GetLocalGUI()->GetMainMenu()->GetSettingsWindow()->RequestNewNickname();
+
                 m_bWaitToSetNick = false;
             }
             else
                 m_uiNewNickWaitFrames++;
         }
-    }
-
-    if ( !IsFocused() && m_bLastFocused )
-    {
-        // Fix for #4948
-        m_pKeyBinds->CallAllGTAControlBinds ( CONTROL_BOTH, false );
-        m_bLastFocused = false;
-    }
-    else if ( IsFocused() && !m_bLastFocused )
-    {
-        m_bLastFocused = true;
+        break;
     }
 
     GetJoystickManager()->DoPulse();      // Note: This may indirectly call CMessageLoopHook::ProcessMessage
@@ -1115,38 +1092,42 @@ void CCore::DoPostFramePulse()
     m_pGame->OnFrame();
 
     // Notify the mod manager and the connect manager
-    m_pModManager->DoPulsePostFrame ();
-    m_pConnectManager->DoPulse ();
+    m_pModManager->DoPulsePostFrame();
+    m_pConnectManager->DoPulse();
 
-    m_Community.DoPulse ();
+    m_Community.DoPulse();
 
-    //XFire polling
+    // XFire polling
     if ( IsConnected() )
     {
         time_t ttime;
         ttime = time ( NULL );
+
         if ( ttime >= m_tXfireUpdate + XFIRE_UPDATE_RATE )
         {
             if ( m_pCurrentServer->IsSocketClosed() )
             {
-                //Init our socket
+                // Init our socket
                 m_pCurrentServer->Init();
             }
-            //Get our xfire query reply
+
+            // Get our xfire query reply
             SString strReply = UpdateXfire( );
-            //If we Parsed or if the reply failed wait another XFIRE_UPDATE_RATE until trying again
+
+            // If we Parsed or if the reply failed wait another XFIRE_UPDATE_RATE until trying again
             if ( strReply == "ParsedQuery" || strReply == "NoReply" ) 
             {
                 m_tXfireUpdate = time ( NULL );
-                //Close the socket
+                // Close the socket
                 m_pCurrentServer->SocketClose();
             }
         }
     }
-    //Set our update time to zero to ensure that the first xfire update happens instantly when joining
     else
     {
+        // Set our update time to zero to ensure that the first xfire update happens instantly when joining
         XfireSetCustomGameData ( 0, NULL, NULL );
+
         if ( m_tXfireUpdate != 0 )
             m_tXfireUpdate = 0;
     }
@@ -1163,6 +1144,12 @@ void CCore::OnModUnload()
     // Ensure all these have been removed
     m_pKeyBinds->RemoveAllFunctions();
     m_pKeyBinds->RemoveAllControlFunctions();
+}
+
+void CCore::OnFocusLost()
+{
+    // Fix for #4948
+    m_pKeyBinds->CallAllGTAControlBinds( CONTROL_BOTH, false );
 }
 
 void CCore::RegisterCommands()
@@ -1676,7 +1663,7 @@ void CCore::ApplyLoadingCrashPatch()
 void CCore::RecalculateFrameRateLimit( unsigned int serverFPS )
 {
     // Save rate from server if valid
-    if ( uiServerFrameRateLimit != -1 )
+    if ( serverFPS != -1 )
         m_uiServerFrameRateLimit = serverFPS;
 
     // Fetch client setting

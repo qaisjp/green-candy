@@ -34,7 +34,6 @@ class CLocalGUI;
 #include <gui/CGUI.h>
 
 #include "CConsole.h"
-#include "CFilePathTranslator.h"
 #include "CLogger.h"
 #include "CMainMenu.h"
 #include "CSetCursorPosHook.h"

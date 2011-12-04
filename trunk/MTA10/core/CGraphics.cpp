@@ -617,24 +617,25 @@ void CGraphics::DrawTextQueued ( int iLeft, int iTop,
     }
 }
 
-bool CGraphics::LoadStandardDXFonts ( void )
+bool CGraphics::LoadStandardDXFonts()
 {
     // Add our custom font resources
-    if ( m_FontResourceNames.empty () )
+    if ( m_FontResourceNames.empty() )
     {
-        m_FontResourceNames.push_back ( "pricedown.ttf" );
-        m_FontResourceNames.push_back ( "sabankgothic.ttf" );
-        m_FontResourceNames.push_back ( "saheader.ttf" );
-        m_FontResourceNames.push_back ( "sagothic.ttf" );
-        m_FontResourceNames.push_back ( "unifont-5.1.20080907.ttf" );
+        m_FontResourceNames.push_back ( "cgui/pricedown.ttf" );
+        m_FontResourceNames.push_back ( "cgui/sabankgothic.ttf" );
+        m_FontResourceNames.push_back ( "cgui/saheader.ttf" );
+        m_FontResourceNames.push_back ( "cgui/sagothic.ttf" );
+        m_FontResourceNames.push_back ( "cgui/unifont-5.1.20080907.ttf" );
     }
 
     for ( uint i = 0 ; i < m_FontResourceNames.size () ; i++ )
     {
-        if ( !AddFontResourceEx ( CalcMTASAPath ( "MTA\\cgui\\" + m_FontResourceNames[i] ), FR_PRIVATE, 0 ) )
-        {
-            BrowseToSolution ( "mta-datafiles-missing", true, true, true, "Error loading MTA font " + m_FontResourceNames[i] );
-        }
+        filePath path;
+        mtaFileRoot->GetFullPath( m_FontResourceNames[i], true, path );
+
+        if ( !AddFontResourceEx( path.c_str(), FR_PRIVATE, 0 ) )
+            BrowseToSolution( "mta-datafiles-missing", true, true, true, "Error loading MTA font " + m_FontResourceNames[i] );
     }
 
     // Create DirectX font and sprite objects
@@ -709,12 +710,15 @@ bool CGraphics::DestroyAdditionalDXFont ( std::string strFontPath, ID3DXFont *pD
     return bResult;
 }
 
-bool CGraphics::DestroyStandardDXFonts ( void )
+bool CGraphics::DestroyStandardDXFonts()
 {
     // Remove our custom font resources (needs to be identical to LoadFonts)
     for ( uint i = 0 ; i < m_FontResourceNames.size () ; i++ )
     {
-        RemoveFontResourceEx ( CalcMTASAPath ( "MTA\\cgui\\" + m_FontResourceNames[i] ), FR_PRIVATE, 0 );
+        filePath path;
+        mtaFileRoot->GetFullPath( m_FontResourceNames[i], true, path );
+
+        RemoveFontResourceEx( path.c_str(), FR_PRIVATE, 0 );
     }
 
     for ( int i = 0; i < NUM_FONTS; i++ )

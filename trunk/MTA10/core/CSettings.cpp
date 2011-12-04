@@ -12,6 +12,7 @@
 *               Marcus Bauer <mabako@gmail.com>
 *               Florian Busse <flobu@gmx.net>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -182,7 +183,7 @@ CSettings::CSettings ( void )
     {
         m_JoypadSettingsRevision = -1;
 
-        CJoystickManagerInterface* JoyMan = GetJoystickManager ();
+        CJoystickManagerInterface* JoyMan = g_pCore->GetJoystickManager();
 
         m_pJoypadName = reinterpret_cast < CGUILabel* > ( pManager->CreateLabel ( pControlsPane ) );
         m_pJoypadName->SetHorizontalAlign ( CGUI_ALIGN_HORIZONTALCENTER );
@@ -1128,13 +1129,13 @@ void CSettings::UpdateVideoTab ( bool bIsVideoModeChanged )
 //
 // Saves the Joypad settings
 //
-void CSettings::ProcessJoypad( void )
+void CSettings::ProcessJoypad()
 {
     // Update from GUI
-    GetJoystickManager ()->SetDeadZone ( atoi ( m_pEditDeadzone->GetText ().c_str () ) );
-    GetJoystickManager ()->SetSaturation ( atoi ( m_pEditSaturation->GetText ().c_str () ) );
+    g_pCore->GetJoystickManager ()->SetDeadZone ( atoi ( m_pEditDeadzone->GetText ().c_str () ) );
+    g_pCore->GetJoystickManager ()->SetSaturation ( atoi ( m_pEditSaturation->GetText ().c_str () ) );
 
-    GetJoystickManager ()->SaveToXML ();
+    g_pCore->GetJoystickManager ()->SaveToXML ();
 }
 
 
@@ -1144,7 +1145,7 @@ void CSettings::ProcessJoypad( void )
 
 void CSettings::UpdateJoypadTab ()
 {
-    CJoystickManagerInterface* JoyMan = GetJoystickManager ();
+    CJoystickManagerInterface* JoyMan = g_pCore->GetJoystickManager ();
 
     // Has anything changed?
     if ( m_JoypadSettingsRevision == JoyMan->GetSettingsRevision () )
@@ -1205,11 +1206,11 @@ void CSettings::UpdateJoypadTab ()
 bool CSettings::OnJoypadTextChanged ( CGUIElement* pElement )
 {
     // Update from GUI
-    GetJoystickManager ()->SetDeadZone ( atoi ( m_pEditDeadzone->GetText ().c_str () ) );
-    GetJoystickManager ()->SetSaturation ( atoi ( m_pEditSaturation->GetText ().c_str () ) );
+    g_pCore->GetJoystickManager ()->SetDeadZone ( atoi ( m_pEditDeadzone->GetText ().c_str () ) );
+    g_pCore->GetJoystickManager ()->SetSaturation ( atoi ( m_pEditSaturation->GetText ().c_str () ) );
 
     // Dont immediately read back these settings
-    m_JoypadSettingsRevision = GetJoystickManager ()->GetSettingsRevision ();
+    m_JoypadSettingsRevision = g_pCore->GetJoystickManager ()->GetSettingsRevision ();
 
     return true;
 }
@@ -1223,7 +1224,7 @@ void CSettings::UpdateCaptureAxis ()
     if ( m_bCaptureAxis )
     {
         // Are we done?        
-        if ( GetJoystickManager ()->IsAxisBindComplete () )
+        if ( g_pCore->GetJoystickManager ()->IsAxisBindComplete () )
         {
             // Remove the messagebox we created earlier
             CCore::GetSingleton ().RemoveMessageBox ();
@@ -1294,7 +1295,7 @@ bool CSettings::OnAxisSelectClick ( CGUIElement* pElement )
 {
     int index = reinterpret_cast < int > ( pElement->GetUserData () );
 
-    if ( GetJoystickManager ()->BindNextUsedAxisToOutput ( index ) )
+    if ( g_pCore->GetJoystickManager ()->BindNextUsedAxisToOutput ( index ) )
     {
         m_bCaptureAxis = true;
         CCore::GetSingleton ().ShowMessageBox ( "Binding axis", "Move an axis to bind, or escape to clear", MB_ICON_QUESTION );
@@ -1310,7 +1311,7 @@ bool CSettings::OnAxisSelectClick ( CGUIElement* pElement )
 bool CSettings::OnJoypadDefaultClick ( CGUIElement* pElement )
 {
     // Load the default binds
-    GetJoystickManager ()->SetDefaults ();
+    g_pCore->GetJoystickManager ()->SetDefaults ();
 
     // Load the default mouse settings
     CControllerConfigManager * pController = g_pCore->GetGame ()->GetControllerConfigManager ();   
@@ -1345,7 +1346,7 @@ bool CSettings::OnBindsDefaultClick ( CGUIElement* pElement )
 // Saves the keybinds
 void CSettings::ProcessKeyBinds ( void )
 {
-    CKeyBindsInterface *pKeyBinds = CCore::GetSingleton ().GetKeyBinds ();
+    CKeyBinds *pKeyBinds = CCore::GetSingleton ().GetKeyBinds ();
 
     SString strResource;
 
@@ -2557,28 +2558,33 @@ void CSettings::SetChatColorValues ( ChatColorType eType, CColor pColor )
     m_pChatAlpha [ eType ]->SetScrollPosition ( ( float ) pColor.A / 255.0f );
 }
 
-void CSettings::LoadChatPresets( )
+void CSettings::LoadChatPresets()
 {
-    CXMLFile* pPresetsFile = CCore::GetSingleton ().GetXML ()->CreateXML ( CalcMTASAPath ( CHAT_PRESETS_PATH ) );
-    if ( pPresetsFile && pPresetsFile->Parse () )
-    {
-        CXMLNode* pPresetsRoot = pPresetsFile->GetRootNode ();
-        if ( !pPresetsRoot )
-            pPresetsRoot = pPresetsFile->CreateRootNode ( CHAT_PRESETS_ROOT );
+    filePath path;
+    mtaFileRoot->GetFullPath( "chatboxpresets.xml", true, path );
 
-        list < CXMLNode* >::const_iterator iter = pPresetsRoot->ChildrenBegin ();
-        for ( ; iter != pPresetsRoot->ChildrenEnd (); iter++ )
+    CXMLFile* pPresetsFile = CCore::GetSingleton().GetXML()->CreateXML( path.c_str() );
+
+    if ( !pPresetsFile || !pPresetsFile->Parse() )
+        return;
+
+    CXMLNode* pPresetsRoot = pPresetsFile->GetRootNode();
+
+    if ( !pPresetsRoot )
+        pPresetsRoot = pPresetsFile->CreateRootNode( CHAT_PRESETS_ROOT );
+
+    list < CXMLNode* >::const_iterator iter = pPresetsRoot->ChildrenBegin ();
+    for ( ; iter != pPresetsRoot->ChildrenEnd (); iter++ )
+    {
+        CXMLNode* pNode = reinterpret_cast < CXMLNode* > ( *iter );
+        if ( pNode->GetTagName() != "preset" )
+            continue;
+
+        CXMLAttribute* pName = pNode->GetAttributes().Find ( "name" );
+        if ( pName && pName->GetValue()[1] )
         {
-            CXMLNode* pNode = reinterpret_cast < CXMLNode* > ( *iter );
-            if ( pNode->GetTagName ().compare ( "preset" ) == 0 )
-            {
-                CXMLAttribute* pName = pNode->GetAttributes().Find ( "name" );
-                if ( pName && pName->GetValue()[1] )
-                {
-                    CGUIListItem* pItem = m_pChatPresets->AddItem ( pName->GetValue ().c_str () );
-                    pItem->SetData ( pNode );
-                }
-            }
+            CGUIListItem* pItem = m_pChatPresets->AddItem ( pName->GetValue ().c_str () );
+            pItem->SetData( pNode );
         }
     }
 }
@@ -2593,7 +2599,7 @@ static void _LoadSkin( const filePath& path, CGUIComboBox *sel )
     item = sel->AddItem( path.c_str() );
 
     // TODO: add validation of the skin
-    if (path == currentSkin)
+    if ( path == currentSkin )
         sel->SetSelectedItemByIndex( sel->GetItemIndex(item) );
 }
 

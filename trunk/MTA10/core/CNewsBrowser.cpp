@@ -243,7 +243,7 @@ void CNewsBrowser::AddNewsTab ( const SNewsItem& newsItem )
     CGUITab* pTab = m_pTabPanel->CreateTab ( "News" );
     m_TabList.push_back ( pTab );
 
-    //Create everything under a scrollpane
+    // Create everything under a scrollpane
     CGUIScrollPane* m_pScrollPane = reinterpret_cast < CGUIScrollPane* > ( pManager->CreateScrollPane ( pTab ) ); 
     m_pScrollPane->SetProperty ( "ContentPaneAutoSized", "True" );
     m_pScrollPane->SetPosition ( CVector2D ( 3, 3 ), 0 );
@@ -252,8 +252,7 @@ void CNewsBrowser::AddNewsTab ( const SNewsItem& newsItem )
     m_pScrollPane->SetVerticalScrollBar ( true );
 
     // Switch cwd
-    SString cwd = GetCurrentWorkingDirectory ();
-    SetCurrentDirectory ( newsItem.strContentFullDir );
+    assert( newsFileRoot->ChangeDirectory( newsItem.strContentFullDir ) );
 
     // Load files
     CGUIWindow* pWindow = LoadLayoutAndImages ( m_pScrollPane, newsItem );
@@ -266,9 +265,6 @@ void CNewsBrowser::AddNewsTab ( const SNewsItem& newsItem )
         if ( !strTitle.empty () )
            pTab->SetText ( strTitle );
     }
-
-    // Restore cwd
-    SetCurrentDirectory ( cwd );
 }
 
 
@@ -293,7 +289,12 @@ CGUIWindow* CNewsBrowser::LoadLayoutAndImages ( CGUIElement* pParent, const SNew
     // Load any imagesets
     for ( uint i = 0 ; i < newsItem.imagesetFilenameList.size () ; i++ )
     {
-        if ( !pManager->LoadImageset( newsItem.imagesetFilenameList[i] ) )
+        filePath path;
+        
+        if ( !newsFileRoot->GetFullPath( newsItem.imagesetFilenameList[i].c_str(), true, path ) )
+            continue;
+
+        if ( !pManager->LoadImageset( path.c_str() ) )
         {
             AddReportLog ( 3303, SString ( "CNewsBrowser::LoadLayout: Problem with LoadImageset [%s] %s", *newsItem.strContentFullDir, *newsItem.imagesetFilenameList[i] ) );
             return NULL;

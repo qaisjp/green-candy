@@ -4,8 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CServerCache.cpp
 *  PURPOSE:
-*  DEVELOPERS:
-*
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -59,18 +58,20 @@ class CServerCache : public CServerCacheInterface
 {
 public:
     ZERO_ON_NEW
-    virtual void        SaveServerCache             ( void );
+
+                        CServerCache                ();
+                        ~CServerCache               ();
+
+    virtual void        SaveServerCache             ();
     virtual void        GetServerCachedInfo         ( CServerListItem* pItem );
     virtual void        SetServerCachedInfo         ( const CServerListItem* pItem );
     virtual void        GetServerListCachedInfo     ( CServerList *pList );
     virtual bool        GenerateServerList          ( CServerList *pList );
 
-                        CServerCache                ( void );
-                        ~CServerCache               ( void );
 protected:
-    bool                LoadServerCache             ( void );
+    bool                LoadServerCache             ();
     static DWORD        StaticThreadProc            ( LPVOID lpdwThreadParam );
-    static void         StaticSaveServerCache       ( void );
+    static void         StaticSaveServerCache       ();
 
     bool                                        m_bListChanged;
     std::map < CCachedKey, CCachedInfo >        m_ServerCachedMap;
@@ -126,12 +127,17 @@ CServerCache::~CServerCache ( void )
 // Load cache data from config
 //
 ///////////////////////////////////////////////////////////////
-bool CServerCache::LoadServerCache ( void )
+bool CServerCache::LoadServerCache()
 {
+    filePath path;
+    mtaFileRoot->GetFullPath( "servercache.xml", true, path );
+
     // Load config XML file
-    CXMLFile* m_pConfigFile = CCore::GetSingleton ().GetXML ()->CreateXML ( CalcMTASAPath ( MTA_SERVER_CACHE_PATH ) );
+    CXMLFile* m_pConfigFile = CCore::GetSingleton().GetXML()->CreateXML( path.c_str() );
+
     if ( !m_pConfigFile )
         return false;
+
     m_pConfigFile->Parse ();
 
     CXMLNode* pNode = m_pConfigFile->GetRootNode ();
@@ -239,11 +245,16 @@ DWORD CServerCache::StaticThreadProc ( LPVOID lpdwThreadParam )
 //
 //
 ///////////////////////////////////////////////////////////////
-void CServerCache::StaticSaveServerCache ( void )
+void CServerCache::StaticSaveServerCache()
 {
-    CXMLFile* m_pConfigFile = CCore::GetSingleton ().GetXML ()->CreateXML ( CalcMTASAPath ( MTA_SERVER_CACHE_PATH ) );
+    filePath path;
+    mtaFileRoot->GetFullPath( "servercache.xml", true, path );
+
+    CXMLFile* m_pConfigFile = CCore::GetSingleton().GetXML()->CreateXML( path.c_str() );
+
     if ( !m_pConfigFile )
         return;
+
     m_pConfigFile->Parse ();
 
     CXMLNode* pNode = m_pConfigFile->GetRootNode ();

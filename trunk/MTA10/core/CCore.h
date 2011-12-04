@@ -53,6 +53,7 @@ class CCore;
 
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
+#include "CJoystickManager.h"
 
 #define BLUE_VERSION_STRING     "Multi Theft Auto v" MTA_DM_BUILDTAG_LONG "\n" \
                                 "Copyright (C) 2003 - 2011 Multi Theft Auto" \
@@ -97,7 +98,7 @@ public:
     CXML*                   GetXML                          ()                  { return m_pXML; };
     CXMLNode*               GetConfig                       ();
     CClientVariables*       GetCVars                        ()                  { return &m_ClientVariables; };
-    CKeyBindsInterface*     GetKeyBinds                     ();
+    CKeyBinds*              GetKeyBinds                     ();
     CLocalGUI*              GetLocalGUI                     ();
     CCommunityInterface*    GetCommunity                    ()                  { return &m_Community; };
     CFileSystem*            GetFileSystem                   ()                  { return m_fileSystem; };
@@ -195,6 +196,7 @@ public:
     bool                    OnMouseClick                    ( CGUIMouseEventArgs Args );
     bool                    OnMouseDoubleClick              ( CGUIMouseEventArgs Args );
     void                    OnModUnload                     ();
+    void                    OnFocusLost                     ();
 
     // Misc
     void                    RegisterCommands                ();
@@ -251,7 +253,6 @@ private:
     CSetCursorPosHook*          m_pSetCursorPosHook;
     CTCPManager*                m_pTCPManager;
 
-    bool                        m_bLastFocused;
     int                         m_iUnminimizeFrameCounter;
     bool                        m_bDidRecreateRenderTargets;
 
@@ -291,7 +292,7 @@ private:
     CXfireServerInfo*           m_pCurrentServer;
     time_t                      m_tXfireUpdate;
 
-    SString                     m_strModInstallRoot;
+    filePath                    m_strModInstallRoot;
 
     bool                        m_bQuitOnPulse;
     bool                        m_bDestroyMessageBox;
