@@ -166,7 +166,6 @@ namespace SharedUtil
     SString         ExtractExtention                ( const SString& strPathFilename );
     SString         ExtractBeforeExtention          ( const SString& strPathFilename );
 
-    filePath        GetCurrentWorkingDirectory      ();
     filePath        GetCurrentDirectory             ();
 #ifdef _WIN32
     filePath        GetWindowsDirectory             ();

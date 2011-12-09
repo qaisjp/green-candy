@@ -1223,15 +1223,15 @@ void CPacketHandler::Packet_DebugEcho ( NetBitStreamInterface& bitStream )
 
         switch ( ucLevel )
         {
-            case 1:
-                ucRed = 255, ucGreen = 0, ucBlue = 0;
-                break;
-            case 2:
-                ucRed = 255, ucGreen = 128, ucBlue = 0;
-                break;
-            case 3:
-                ucRed = 0, ucGreen = 255, ucBlue = 0;
-                break;
+        case 1:
+            ucRed = 255, ucGreen = 0, ucBlue = 0;
+            break;
+        case 2:
+            ucRed = 255, ucGreen = 128, ucBlue = 0;
+            break;
+        case 3:
+            ucRed = 0, ucGreen = 255, ucBlue = 0;
+            break;
         }
 
         // Echo it
@@ -1239,28 +1239,30 @@ void CPacketHandler::Packet_DebugEcho ( NetBitStreamInterface& bitStream )
 
         // Output it to the file if need be
         std::string strFileName;
-        g_pCore->GetCVars ()->Get ( "debugfile", strFileName );
+        g_pCore->GetCVars ()->Get( "debugfile", strFileName );
 
-        if ( !strFileName.empty () )
-        {
-            // get the date/time now
-            struct tm *today;
-            time_t ltime;
-            time(&ltime);
-            today = localtime(&ltime);
-            char date[100];
-            strftime(date, 30, "%Y-%m-%d %H:%M:%S", today);
-            date[29] = '\0';
+        if ( strFileName.empty() )
+            return;
 
-            // open the file for append access
-            FILE * pFile = fopen ( strFileName.c_str (), "a" );
-            if ( pFile )
-            {
-                // write out the data
-                fprintf ( pFile, "[%s] %s\n", date, szMessage );
-                fclose ( pFile );
-            }
-        }
+        // get the date/time now
+        struct tm *today;
+        time_t ltime;
+        time(&ltime);
+        today = localtime(&ltime);
+        char date[100];
+        strftime(date, 30, "%Y-%m-%d %H:%M:%S", today);
+        date[29] = '\0';
+
+        // open the file for append access
+        CFile *file = modFileRoot->Open( strFileName.c_str(), "a" );
+        
+        if ( !file )
+            return;
+
+        // write out the data
+        file->Printf( "[%s] %s\n", date, szMessage );
+        
+        delete file;
     }
 }
 

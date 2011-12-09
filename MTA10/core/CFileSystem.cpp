@@ -21,6 +21,7 @@ CFileTranslator *mtaFileRoot;
 CFileTranslator *dataFileRoot;
 CFileTranslator *modFileRoot;
 CFileTranslator *newsFileRoot;
+CFileTranslator *gameFileRoot;
 
 std::list <CFile*> *openFiles;
 
@@ -835,23 +836,22 @@ CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
             dwCreate = OPEN_EXISTING;
             dwAccess |= GENERIC_READ;
             break;
-#ifdef _EXTRA_FILE_ACCESS_MODES
         case 'a':
+            dwCreate = Exists( path ) ? OPEN_EXISTING : CREATE_ALWAYS;
+            dwAccess = GENERIC_WRITE;
             break;
+#ifdef _EXTRA_FILE_ACCESS_MODES
         case 't':
             break;
 #endif
         case '+':
-            if (dwAccess & GENERIC_READ)
-                dwAccess |= GENERIC_WRITE;
-            else if (dwAccess & GENERIC_WRITE)
-                dwAccess |= GENERIC_READ;
+            dwAccess |= GENERIC_WRITE | GENERIC_READ;
             break;
         }
 
         mode++;
     }
-    if (!dwAccess)
+    if ( !dwAccess )
         return NULL;
 
     // Creation requires the dir tree!
@@ -864,13 +864,16 @@ CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
 
     sysHandle = CreateFile( output.c_str(), dwAccess, FILE_SHARE_READ, NULL, dwCreate, 0, NULL );
 
-    if (sysHandle == INVALID_HANDLE_VALUE)
+    if ( sysHandle == INVALID_HANDLE_VALUE )
         return NULL;
 
     pFile = new CRawFile();
     pFile->m_file = sysHandle;
     pFile->m_access = dwAccess;
     pFile->m_path = output;
+
+    if ( *mode == 'a' )
+        pFile->Seek( 0, SEEK_END );
 
     openFiles->push_back(pFile);
     return pFile;
@@ -1078,6 +1081,9 @@ void CSystemFileTranslator::GetFiles( const char *path, const char *wildcard, bo
 
 CFileSystem::CFileSystem()
 {
+    char pathBuffer[1024];
+    GetModuleFileName( NULL, pathBuffer, 1024 );
+
     openFiles = new std::list<CFile*>;
 
     // Add important access zones here + extern them
@@ -1086,8 +1092,16 @@ CFileSystem::CFileSystem()
     dataFileRoot = CreateTranslator( GetMTADataPath() );
     modFileRoot = CreateTranslator( "mods/" );
     newsFileRoot = CreateTranslator( GetMTADataPath() + "news/" );
+    gameFileRoot = CreateTranslator( pathBuffer );
 
-    if ( !mtaFileRoot || !dataFileRoot || !modFileRoot )
+    if ( !gameFileRoot )
+    {
+        MessageBox( NULL, "Could not bind GTA:SA root.", "Filesystem Error", MB_OK );
+
+        TerminateProcess( GetCurrentProcess(), EXIT_FAILURE );
+    }
+
+    if ( !mtaFileRoot || !dataFileRoot || !modFileRoot || !newsFileRoot )
     {
         MessageBox( NULL, "Your MTA:SA installation appears to be corrupted. Please reinstall!", "Filesystem Error", MB_OK );
 
@@ -1131,7 +1145,7 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
     }
 
     if ( bFile )
-        return NULL;
+        tree.pop_back();
 
     _File_OutputPathTree( tree, false, root );
 

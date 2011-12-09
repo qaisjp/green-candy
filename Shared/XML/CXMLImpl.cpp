@@ -29,7 +29,7 @@ CXMLFile* CXMLImpl::CreateXML ( const char* szFilename, bool bUseIDs )
 {
     CXMLFile* xmlFile = new CXMLFileImpl ( szFilename, bUseIDs );
 
-    if ( !xmlFile->IsValid( ) )
+    if ( !xmlFile->IsValid() )
     {
         delete xmlFile;
 
