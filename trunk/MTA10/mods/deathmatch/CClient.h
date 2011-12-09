@@ -36,4 +36,6 @@ public:
     bool        HandleException                 ( CExceptionInformation* pExceptionInformation );
 };
 
+extern CFileTranslator *modFileRoot;
+
 #endif

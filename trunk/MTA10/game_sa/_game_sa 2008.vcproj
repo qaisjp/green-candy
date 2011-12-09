@@ -865,10 +865,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\TaskGoToSA.h"
-				>
-			</File>
-			<File
 				RelativePath=".\TaskIKSA.cpp"
 				>
 			</File>
@@ -1419,6 +1415,10 @@
 			</File>
 			<File
 				RelativePath=".\TaskCarSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\TaskGoToSA.h"
 				>
 			</File>
 			<File

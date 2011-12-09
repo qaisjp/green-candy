@@ -22,13 +22,20 @@ using namespace std;
 extern CClientGame* g_pClientGame;
 
 int CResource::m_iShowingCursor = 0;
+CFileTranslator *resFileRoot;
 
 CResource::CResource ( unsigned short usID, char* szResourceName, CClientEntity* pResourceEntity, CClientEntity* pResourceDynamicEntity )
 {
+    filePath resRoot;
+    modFileRoot->GetFullPath( "resources/", false, resRoot );
+
     m_usID = usID;
     m_bActive = false;
     m_bInDownloadQueue = false;
     m_bShowingCursor = false;
+
+    // Prepare file root
+    resFileRoot = g_pCore->GetFileSystem()->CreateTranslator( resRoot.c_str() );
 
     if ( szResourceName )
     {
@@ -206,28 +213,28 @@ static bool CheckFileForCorruption( string strPath )
     if ( stricmp ( szExt, ".PNG" ) == 0 )
     {
         // Open the file
-        if ( FILE* pFile = fopen ( strPath.c_str (), "rb" ) )
+        if ( CFile *file = resFileRoot->Open( strPath.c_str(), "rb" ) )
         {
             // This is what the png header should look like
             unsigned char pGoodHeader [8] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 
              // Load the header
-            unsigned char pBuffer [8] = { 0,0,0,0,0,0,0,0 };
-            fread ( pBuffer, 1, 8, pFile );
+            unsigned char pBuffer[8];
+
+            if ( file->Read( pBuffer, 1, 8 ) != 8 )
+                bIsBad = true;
 
             // Check header integrity
             if ( memcmp ( pBuffer, pGoodHeader, 8 ) )
                 bIsBad = true;
 
-            // Close the file
-            fclose ( pFile );
+            delete file;
         }
     }
-    else
-    if ( stricmp ( szExt, ".TXD" ) == 0 || stricmp ( szExt, ".DFF" ) == 0 )
+    else if ( stricmp ( szExt, ".TXD" ) == 0 || stricmp ( szExt, ".DFF" ) == 0 )
     {
-        // Open the file
-        if ( FILE* pFile = fopen ( strPath.c_str (), "rb" ) )
+        // HACK: Shouldn't this belong into the renderware system?
+        if ( CFile *file = resFileRoot->Open( strPath.c_str(), "rb" ) )
         {
             struct {
                 long id;
@@ -236,16 +243,18 @@ static bool CheckFileForCorruption( string strPath )
             } header = {0,0,0};
 
             // Load the first header
-            fread ( &header, 1, sizeof(header), pFile );
+            file->Read( &header, 1, sizeof(header) );
+
             long pos = sizeof(header);
             long validSize = header.size + pos;
 
             // Step through the sections
-            while ( pos < validSize )
+            while( pos < validSize )
             {
-                if ( fread ( &header, 1, sizeof(header), pFile ) != sizeof(header) )
+                if ( file->Read( &header, 1, sizeof(header) ) != sizeof(header) )
                     break;
-                fseek ( pFile, header.size, SEEK_CUR );
+
+                file->Seek( header.size, SEEK_CUR );
                 pos += header.size + sizeof(header);
             }
 
@@ -254,7 +263,7 @@ static bool CheckFileForCorruption( string strPath )
                 bIsBad = true;
                
             // Close the file
-            fclose ( pFile );
+            delete file;
         }        
     }
 

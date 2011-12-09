@@ -35,7 +35,6 @@
 #include "CPtrNodeSA.h"
 #include "CTransformationSA.h"
 #include "CPadSA.h"
-#include "CPadManagerSA.h"
 #include "CEntitySA.h"
 #include "CParticleSA.h"
 #include "CParticleObjectSA.h"
@@ -57,6 +56,7 @@
 #include "CObjectSA.h"
 #include "CBuildingSA.h"
 #include "CDummySA.h"
+#include "CPadManagerSA.h"
 #include "CRouteSA.h"
 #include "CEntryInfoSA.h"
 #include "CTaskAllocatorSA.h"
@@ -125,3 +125,6 @@
 #include "CPedIntelligenceSA.h"
 #include "CPoolsSA.h"
 #include "CGameSA.h"
+
+extern CGameSA *pGame;
+extern CCoreInterface *core;

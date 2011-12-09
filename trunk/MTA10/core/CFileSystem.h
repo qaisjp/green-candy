@@ -146,6 +146,7 @@ extern CFileTranslator *mtaFileRoot;
 extern CFileTranslator *dataFileRoot;
 extern CFileTranslator *modFileRoot;
 extern CFileTranslator *newsFileRoot;
+extern CFileTranslator *gameFileRoot;
 
 class CFileSystem : public CFileSystemInterface
 {

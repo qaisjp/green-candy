@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientPacketRecorder.h
@@ -8,6 +8,7 @@
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -25,31 +26,31 @@ class CClientPacketRecorder
 
 public:
                         CClientPacketRecorder       ( CClientManager* pManager );
-                        ~CClientPacketRecorder      ( void );
+                        ~CClientPacketRecorder      ();
 
     void                SetPacketHandler            ( PPACKETHANDLER pfnPacketHandler );
 
-    void                StartPlayback               ( const char* szInput, bool bFrameBased );
-    void                StartRecord                 ( const char* szOutput, bool bFrameBased );
-    void                Stop                        ( void );
+    void                StartPlayback               ( const char *input, bool frames );
+    void                StartRecord                 ( const char *output, bool frames );
+    void                Stop                        ();
 
-    bool                IsPlaying                   ( void );
-    bool                IsRecording                 ( void );
-    bool                IsPlayingOrRecording        ( void );
-    bool                IsFrameBased                ( void );
+    bool                IsPlaying                   ();
+    bool                IsRecording                 ();
+    bool                IsPlayingOrRecording        ();
+    bool                IsFrameBased                ();
 
-    void                SetFrameSkip                ( unsigned int uiFrameSkip );
+    void                SetFrameSkip                ( unsigned int frames );
 
-    void                RecordPacket                ( unsigned char ucPacketID, NetBitStreamInterface& bitStream );
+    void                RecordPacket                ( unsigned char id, NetBitStreamInterface& bitStream );
     void                RecordLocalData             ( CClientPlayer* pLocalPlayer );
 
 private:
-    void                ReadLocalData               ( FILE* pFile );
+    void                ReadLocalData               ( CFile *file );
 
-    void                DoPulse                     ( void );
+    void                DoPulse                     ();
 
     CClientManager*     m_pManager;
-    char*               m_szFilename;
+    filePath            m_filename;
     PPACKETHANDLER      m_pfnPacketHandler;
 
     long                m_lRelative;

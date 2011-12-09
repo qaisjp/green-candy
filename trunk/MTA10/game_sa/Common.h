@@ -70,6 +70,7 @@ public:
 
     class Item
     {
+    public:
         Item()
         {
             m_next = NULL;

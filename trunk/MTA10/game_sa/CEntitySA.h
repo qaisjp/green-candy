@@ -161,81 +161,81 @@ public:
 
     unsigned char           m_pad;              // 55
 
-    /* IMPORTANT: KEEP "pad" in CVehicle UP-TO-DATE if you add something here (or eventually pad someplace else) */
+    /* IMPORTANT: Do not mess with interfaces. */
 };
 
 class CEntitySA : public virtual CEntity
 {
     friend class COffsets;
 public:
-                                CEntitySA ();
+                                CEntitySA();
 
     CEntitySAInterface*         m_pInterface;
     unsigned int                m_internalID;
 
     inline CEntitySAInterface*  GetInterface() { return m_pInterface; };
 
-    void                        SetPosition ( float fX, float fY, float fZ );
-    void                        Teleport ( float fX, float fY, float fZ );
-    void                        ProcessControl ();
-    void                        SetupLighting ();
-    void                        Render ();
-    void                        SetOrientation ( float fX, float fY, float fZ );
-    void                        FixBoatOrientation ();        // eAi you might want to rename this
-    void                        SetPosition ( CVector *pos );
+    void                        SetPosition( float fX, float fY, float fZ );
+    void                        Teleport( float fX, float fY, float fZ );
+    void                        ProcessControl();
+    void                        SetupLighting();
+    void                        Render();
+    void                        SetOrientation( float fX, float fY, float fZ );
+    void                        FixBoatOrientation();        // eAi you might want to rename this
+    void                        SetPosition( CVector *pos );
 
-    void                        SetUnderwater ( bool bUnderwater );
-    bool                        GetUnderwater ();
+    void                        SetUnderwater( bool bUnderwater );
+    bool                        GetUnderwater();
 
-    void                        GetPosition ( CVector *pos );
-    void                        GetMatrix ( CMatrix *matrix ) const;
-    void                        SetMatrix ( CMatrix *matrix );
-    unsigned short              GetModelIndex ();
-    eEntityType                 GetEntityType ();
-    bool                        IsOnScreen ();
+    void                        GetPosition( CVector *pos );
+    void                        GetMatrix( CMatrix *matrix ) const;
+    void                        SetMatrix( CMatrix *matrix );
+    unsigned short              GetModelIndex();
+    eEntityType                 GetEntityType();
+    bool                        IsOnScreen();
 
-    bool                        IsVisible ();
-    void                        SetVisible ( bool bVisible );
+    bool                        IsVisible();
+    void                        SetVisible( bool bVisible );
 
-    unsigned char               GetAreaCode ();
-    void                        SetAreaCode ( unsigned char areaCode );
+    unsigned char               GetAreaCode();
+    void                        SetAreaCode( unsigned char areaCode );
 
-    float                       GetBasingDistance ();
+    float                       GetBasingDistance();
 
-    void                        SetEntityStatus ( eEntityStatus bStatus );
-    eEntityStatus               GetEntityStatus ();
+    void                        SetEntityStatus( eEntityStatus bStatus );
+    eEntityStatus               GetEntityStatus();
 
-    RwFrame*                    GetFrameFromId ( int id );
-    RwMatrix*                   GetLTMFromId ( int id );
+    RwFrame*                    GetFrameFromId( int id );
+    RwMatrix*                   GetLTMFromId( int id );
 
-    RwObject*                   GetRwObject ();
+    RwObject*                   GetRwObject();
 
-    void                        SetDoNotRemoveFromGameWhenDeleted ( bool b )    { m_doNotRemoveFromGame = b; };
+    void                        SetDoNotRemoveFromGameWhenDeleted( bool b )    { m_doNotRemoveFromGame = b; };
 
-    bool                        IsStatic ()                             { return m_pInterface->m_isStatic; }
-    void                        SetStatic ( bool enabled )              { m_pInterface->m_isStatic = enabled; };
-    void                        SetUsesCollision ( bool enabled )       { m_pInterface->m_usesCollision = enabled; };
+    bool                        IsStatic()                             { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC ); }
+    void                        SetStatic( bool enabled )              { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC, enabled ); };
+    void                        SetUsesCollision( bool enabled )       { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_COLLISION, enabled ); };
 
-    bool                        IsBackfaceCulled ()                     { return m_pInterface->m_backfaceCulled; };
-    void                        SetBackfaceCulled ( bool enabled )      { m_pInterface->m_backfaceCulled = enabled; };
+    bool                        IsBackfaceCulled()                     { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL ); };
+    void                        SetBackfaceCulled( bool enabled )      { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL, enabled ); };
 
-    void                        SetAlpha ( unsigned char alpha );
+    void                        SetAlpha( unsigned char alpha );
 
-    void                        MatrixConvertFromEulerAngles ( float fX, float fY, float fZ, int iUnknown );
-    void                        MatrixConvertToEulerAngles ( float *fX, float *fY, float *fZ, int iUnknown );
+    void                        MatrixConvertFromEulerAngles( float fX, float fY, float fZ, int iUnknown );
+    void                        MatrixConvertToEulerAngles( float *fX, float *fY, float *fZ, int iUnknown );
 
-    bool                        IsPlayingAnimation ( char *szAnimName );
+    bool                        IsPlayingAnimation( char *szAnimName );
 
-    void*                       GetStoredPointer ()                     { return m_pStoredPointer; };
-    void                        SetStoredPointer ( void *pointer )      { m_pStoredPointer = pointer; };
+    void*                       GetStoredPointer()                     { return m_pStoredPointer; };
+    void                        SetStoredPointer( void *pointer )      { m_pStoredPointer = pointer; };
 
-    bool                        IsStaticWaitingForCollision ()          { return m_pInterface->m_isStaticWaitingForCollision; }
-    void                        SetStaticWaitingForCollision ( bool bStatic ) { m_pInterface->m_isStaticWaitingForCollision = bStatic; }
+    bool                        IsStaticWaitingForCollision()          { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_WAITFORCOLL ); }
+    void                        SetStaticWaitingForCollision( bool enabled ) { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_WAITFORCOLL, enabled ); }
 
-    void                        GetImmunities ( bool& bNoClip, bool& bFrozen, bool& bBulletProof, bool& bFlameProof, bool& bUnk, bool& bUnk2, bool& bCollisionProof, bool& bExplosionProof );
+    void                        GetImmunities( bool& bNoClip, bool& bFrozen, bool& bBulletProof, bool& bFlameProof, bool& bUnk, bool& bUnk2, bool& bCollisionProof, bool& bExplosionProof );
 
-    inline unsigned long        GetArrayID ()                           { return m_ulArrayID; }
-    inline void                 SetArrayID ( unsigned long ulID )       { m_ulArrayID = ulID; }
+    inline unsigned long        GetArrayID()                           { return m_ulArrayID; }
+    inline void                 SetArrayID( unsigned long ulID )       { m_ulArrayID = ulID; }
 
 private:
     void                        SetInterface( CEntitySAInterface * intInterface ) { m_pInterface = intInterface; };

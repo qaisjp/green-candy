@@ -118,4 +118,6 @@ private:
     CElementGroup *                             m_pDefaultElementGroup;
 };
 
+extern CFileTranslator *resFileRoot;
+
 #endif

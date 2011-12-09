@@ -11,6 +11,7 @@
 *               Derek Abdine <>
 *               Chris McArthur <>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -47,11 +48,12 @@ public:
 private:
     void                            LogString                       ( const char* szPrePend, lua_State* luaVM, const char* szMessage, unsigned int uiMinimumDebugLevelunsigned, unsigned char ucRed = 255, unsigned char ucGreen = 255, unsigned char ucBlue = 255 );
     void                            PrintLog                        ( const char* szText );
+    void                            NotifySystem                    ( filePath& filename, int line, std::string& msg );
  
     CLuaManager*                    m_pLuaManager;
     unsigned int                    m_uiLogFileLevel;
-    FILE*                           m_pLogFile;
-    bool                            m_bTriggeringOnClientDebugMessage;
+    CFile*                          m_file;
+    bool                            m_triggerCall;
 };
 
 #endif

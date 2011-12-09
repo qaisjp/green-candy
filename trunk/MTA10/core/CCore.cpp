@@ -210,6 +210,7 @@ CCore::~CCore()
     delete m_pCommands;
     delete m_pConnectManager;
     delete m_pDirect3DData;
+    delete m_joystick;
 
     // Delete hooks.
     delete m_pSetCursorPosHook;

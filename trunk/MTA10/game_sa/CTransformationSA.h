@@ -44,7 +44,7 @@ class CTransformationSAInterface
 {
 public:
                                             CTransformationSAInterface( unsigned int max );
-                                            ~CTransformSAInterface();
+                                            ~CTransformationSAInterface();
 
     CTransformSAInterface*                  Allocate();
     bool                                    IsFreeMatrixAvailable();

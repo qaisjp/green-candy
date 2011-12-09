@@ -29,7 +29,7 @@ int CClient::ClientInitialize ( const char* szArguments, CCoreInterface* pCore )
 {
     // Supported core version?
     if ( pCore->GetVersion () != MTACORE_21 )
-        return 1;
+        return EXIT_FAILURE;
 
 #if defined(MTA_DM_EXPIRE_DAYS)
     // Make public client test builds expire
@@ -40,6 +40,8 @@ int CClient::ClientInitialize ( const char* szArguments, CCoreInterface* pCore )
     }
 #endif
 
+    // Core gives us a fileroot
+    modFileRoot = pCore->GetModRoot();
 
     // Init the global pointers to the interfaces
     g_pCore = pCore;
