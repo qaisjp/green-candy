@@ -2,7 +2,7 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        core/CFileSystem.cpp
+*  FILE:        Shared/core/CFileSystem.cpp
 *  PURPOSE:     File management
 *  DEVELOPERS:  S2Games <http://savage.s2games.com> (historical entry)
 *               The_GTA <quiret@gmx.de>
@@ -13,17 +13,10 @@
 
 #include "StdInc.h"
 
-extern CCore *g_pCore;
+std::list <CFile*> *openFiles;
 
 CFileSystem *fileSystem;
-CFileTranslator *tempFileRoot;
-CFileTranslator *mtaFileRoot;
-CFileTranslator *dataFileRoot;
-CFileTranslator *modFileRoot;
-CFileTranslator *newsFileRoot;
-CFileTranslator *gameFileRoot;
-
-std::list <CFile*> *openFiles;
+CFileTranslator *fileRoot;
 
 #ifdef _FILESYSTEM_ZIP_SUPPORT
 
@@ -136,7 +129,7 @@ void Archive_Shutdown()
 
 bool File_IsDirectoryAbsolute( const char *pPath )
 {
-#ifdef WIN32
+#ifdef _WIN32
     DWORD dwAttributes = GetFileAttributes(pPath);
 
     if (dwAttributes == INVALID_FILE_ATTRIBUTES)
@@ -884,7 +877,7 @@ CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
     if ( *mode == 'a' )
         pFile->Seek( 0, SEEK_END );
 
-    openFiles->push_back(pFile);
+    openFiles->push_back( pFile );
     return pFile;
 #endif
 }
@@ -954,7 +947,7 @@ bool CSystemFileTranslator::Rename( const char *src, const char *dst )
 #endif
 }
 
-bool CSystemFileTranslator::Stat(const char *path, struct stat *stats)
+bool CSystemFileTranslator::Stat( const char *path, struct stat *stats )
 {
     filePath output;
     
@@ -981,7 +974,7 @@ bool CSystemFileTranslator::ReadToBuffer( const char *path, std::vector <char>& 
     if ( !GetFullPath( path, true, sysPath ) )
         return false;
 
-    return g_pCore->GetFileSystem()->ReadToBuffer( sysPath.c_str(), output );
+    return fileSystem->ReadToBuffer( sysPath.c_str(), output );
 }
 
 void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
@@ -989,6 +982,7 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
                                             pathCallback_t fileCallback, 
                                             void *userdata )
 {
+#ifdef _WIN32
     WIN32_FIND_DATA		finddata;
     HANDLE				handle;
     filePath            output;
@@ -1064,7 +1058,8 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
 
     } while ( FindNextFile(handle, &finddata) );
 
-    FindClose(handle);
+    FindClose( handle );
+#endif
 }
 
 static void _scanFindCallback( const filePath& path, std::vector <filePath> *output )
@@ -1090,37 +1085,17 @@ void CSystemFileTranslator::GetFiles( const char *path, const char *wildcard, bo
 
 CFileSystem::CFileSystem()
 {
-    char pathBuffer[1024];
-    GetModuleFileName( NULL, pathBuffer, 1024 );
-
     openFiles = new std::list<CFile*>;
 
-    // Add important access zones here + extern them
-    tempFileRoot = CreateTranslator( GetMTATempPath() );
-    mtaFileRoot = CreateTranslator( "mta/" );
-    dataFileRoot = CreateTranslator( GetMTADataPath() );
-    modFileRoot = CreateTranslator( "mods/" );
-    newsFileRoot = CreateTranslator( GetMTADataPath() + "news/" );
-    gameFileRoot = CreateTranslator( pathBuffer );
+    // Every application should be able to access itself
+    fileRoot = CreateTranslator( "" );
 
-    if ( !gameFileRoot )
-    {
-        MessageBox( NULL, "Could not bind GTA:SA root.", "Filesystem Error", MB_OK );
-
-        TerminateProcess( GetCurrentProcess(), EXIT_FAILURE );
-    }
-
-    if ( !mtaFileRoot || !dataFileRoot || !modFileRoot || !newsFileRoot )
-    {
-        MessageBox( NULL, "Your MTA:SA installation appears to be corrupted. Please reinstall!", "Filesystem Error", MB_OK );
-
-        TerminateProcess( GetCurrentProcess(), EXIT_FAILURE );
-    }
+    fileSystem = this;
 }
 
 CFileSystem::~CFileSystem()
 {
-    
+    delete openFiles;
 }
 
 CFileTranslator* CFileSystem::CreateTranslator( const char *path )
@@ -1144,7 +1119,10 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
     }
     else
     {
-        root = GetMTASABaseDir();
+        char pathBuffer[1024];
+        GetCurrentDirectory( 1024, pathBuffer );
+
+        root = pathBuffer;
         root += path;
 
         if (!_File_ParseRelativePath( root.c_str() + 3, tree, &bFile ))
@@ -1175,7 +1153,7 @@ bool CFileSystem::IsDirectory( const char *path )
 bool CFileSystem::WriteMiniDump( const char *path, _EXCEPTION_POINTERS *except )
 {
 #ifdef _WIN32
-    CRawFile *file = (CRawFile*)mtaFileRoot->Open( path, "wb" );
+    CRawFile *file = (CRawFile*)fileRoot->Open( path, "wb" );
     MINIDUMP_EXCEPTION_INFORMATION info;
 
     if ( !file )

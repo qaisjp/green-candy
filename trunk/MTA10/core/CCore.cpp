@@ -34,6 +34,14 @@ DWORD* g_Table = new DWORD[65535];
 DWORD* g_TableSize = new DWORD[65535];
 DWORD g_dwTable = 0;
 
+// File access zones
+CFileTranslator *tempFileRoot;
+CFileTranslator *mtaFileRoot;
+CFileTranslator *dataFileRoot;
+CFileTranslator *modFileRoot;
+CFileTranslator *newsFileRoot;
+CFileTranslator *gameFileRoot;
+
 BOOL AC_RestrictAccess()
 {
     EXPLICIT_ACCESS NewAccess;
@@ -111,6 +119,33 @@ CCore::CCore()
 
     // Create the file system
     m_fileSystem                = new CFileSystem();
+
+    char pathBuffer[1024];
+    GetModuleFileName( NULL, pathBuffer, 1024 );
+
+    SString mtaRoot = GetMTASABaseDir();
+
+    // Add important access zones here + extern them
+    tempFileRoot = m_fileSystem->CreateTranslator( GetMTATempPath() );
+    mtaFileRoot = m_fileSystem->CreateTranslator( mtaRoot + "mta/" );
+    dataFileRoot = m_fileSystem->CreateTranslator( GetMTADataPath() );
+    modFileRoot = m_fileSystem->CreateTranslator( mtaRoot + "mods/" );
+    newsFileRoot = m_fileSystem->CreateTranslator( GetMTADataPath() + "news/" );
+    gameFileRoot = m_fileSystem->CreateTranslator( pathBuffer );
+
+    if ( !gameFileRoot )
+    {
+        MessageBox( NULL, "Could not bind GTA:SA root.", "Filesystem Error", MB_OK );
+
+        TerminateProcess( GetCurrentProcess(), EXIT_FAILURE );
+    }
+
+    if ( !tempFileRoot || !mtaFileRoot || !dataFileRoot || !modFileRoot || !newsFileRoot )
+    {
+        MessageBox( NULL, "Your MTA:SA installation appears to be corrupted. Please reinstall!", "Filesystem Error", MB_OK );
+
+        TerminateProcess( GetCurrentProcess(), EXIT_FAILURE );
+    }
 
     // Make sure we are in the mta directory
     mtaFileRoot->ChangeDirectory( "mta/" );

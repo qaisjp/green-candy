@@ -9,7 +9,7 @@
 *
 *****************************************************************************/
 
-#include <string>
+#include <core/Common.h>
 
 #include "MTAPlatform.h"
 #include "SharedUtil.h"

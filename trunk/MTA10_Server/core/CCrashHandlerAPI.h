@@ -290,8 +290,6 @@ BOOL BUGSUTIL_DLLINTERFACE __stdcall
 }
 #endif  //__cplusplus
 
-#endif
-
 #endif  // _CRASHHANDLER_H
 
 

@@ -38,9 +38,13 @@ CGUI_Impl::CGUI_Impl( IDirect3DDevice9* pDevice, CCoreInterface *coreInterface )
 {
     // Set important globals
     core = coreInterface;
-    guiRoot = core->GetFileSystem()->CreateTranslator( "" );
+
+    SString mtaRoot = GetMTASABaseDir();
+
+    // Make sure we can access resources in whole mtaRoot!
+    guiRoot = core->GetFileSystem()->CreateTranslator( mtaRoot );
     guiRoot->ChangeDirectory( "mta/cgui/" );
-    skinRoot = core->GetFileSystem()->CreateTranslator( "skins/" );
+    skinRoot = core->GetFileSystem()->CreateTranslator( mtaRoot + "skins/" );
 
     // Init
     m_pDevice = pDevice;
