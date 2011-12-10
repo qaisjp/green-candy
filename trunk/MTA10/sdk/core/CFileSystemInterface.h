@@ -26,8 +26,8 @@ public:
     {
     }
 
-    virtual	size_t          Read( void *pBuffer, size_t sElement, unsigned long iNumElements ) = 0;
-    virtual	size_t          Write( void *pBuffer, size_t sElement, unsigned long iNumElements ) = 0;
+    virtual	size_t          Read( void *buffer, size_t sElement, unsigned long iNumElements ) = 0;
+    virtual	size_t          Write( const void *buffer, size_t sElement, unsigned long iNumElements ) = 0;
     virtual	int             Seek( long iOffset, int iType ) = 0;
     virtual	long            Tell() = 0;
     virtual	bool            IsEOF() = 0;

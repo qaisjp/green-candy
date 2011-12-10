@@ -288,7 +288,7 @@ size_t CRawFile::Read(void *pBuffer, size_t sElement, unsigned long iNumElements
 #endif
 }
 
-size_t CRawFile::Write(void *pBuffer, size_t sElement, unsigned long iNumElements)
+size_t CRawFile::Write(const void *pBuffer, size_t sElement, unsigned long iNumElements)
 {
 #ifdef _WIN32
     DWORD dwBytesWritten;
@@ -353,6 +353,15 @@ size_t CRawFile::GetSize()
 #endif
 }
 
+void CRawFile::SetSize( size_t size )
+{
+#ifdef _WIN32
+    SetFilePointer( m_file, size, NULL, SEEK_SET );
+
+    SetEndOfFile( m_file );
+#endif
+}
+
 void CRawFile::Flush()
 {
 #ifdef _WIN32
@@ -402,7 +411,7 @@ size_t CBufferedFile::Read(void *pBuffer, size_t sElement, unsigned long iNumEle
     return iReadElements;
 }
 
-size_t CBufferedFile::Write(void *pBuffer, size_t sElement, unsigned long iNumElements)
+size_t CBufferedFile::Write(const void *pBuffer, size_t sElement, unsigned long iNumElements)
 {
     return 0;
 }

@@ -12,52 +12,42 @@
 
 #include "StdInc.h"
 
-CCommandFile::CCommandFile ( const char* szFilename,
-                             CConsole& Console,
-                             CClient& Client ) :
-m_Console ( Console ),
-m_Client ( Client )
-
+CCommandFile::CCommandFile( const char *filename, CConsole& Console, CClient& Client ) :
+    m_Console( Console ),
+    m_Client( Client )
 {
     // Load the given file
-    m_pFile = fopen ( szFilename, "r" );
+    m_pFile = fopen( szFilename, "r" );
     m_bEcho = true;
 }
 
-
-CCommandFile::~CCommandFile ( void )
+CCommandFile::~CCommandFile()
 {
     // Unload it again
-    if ( m_pFile )
-    {
-        fclose ( m_pFile );
-    }
+    if ( m_file )
+        delete m_file;
 }
 
-
-bool CCommandFile::Run ( void )
+bool CCommandFile::Run()
 {
     // Got a file?
-    if ( m_pFile )
-    {
-        // Read lines
-        char szBuffer [2048];
-        szBuffer [2047] = 0;
-        while ( fgets ( szBuffer, 2047, m_pFile ) )
-        {
-            // Parse it. Don't continue on error.
-            if ( !Parse ( szBuffer ) )
-            {
-                return false;
-            }
-        }
+    if ( !m_file )
+        return false;
+ 
+    // Read lines
+    char szBuffer[2048];
+    szBuffer[2047] = 0;
 
-        // Success
-        return true;
+    while ( fgets ( szBuffer, 2047, m_pFile ) )
+    {
+        // Parse it. Don't continue on error.
+        if ( !Parse ( szBuffer ) )
+        {
+            return false;
+        }
     }
 
-    // Nope
-    return false;
+    return true;
 }
 
 

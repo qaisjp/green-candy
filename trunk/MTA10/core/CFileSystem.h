@@ -19,13 +19,14 @@ class CRawFile : public CFile
 public:
                     ~CRawFile();
 
-    size_t          Read( void *pBuffer, size_t sElement, unsigned long iNumElements );
-    size_t          Write( void *pBuffer, size_t sElement, unsigned long iNumElements );
+    size_t          Read( void *buffer, size_t sElement, unsigned long iNumElements );
+    size_t          Write( const void *buffer, size_t sElement, unsigned long iNumElements );
     int             Seek( long iOffset, int iType );
     long            Tell();
     bool            IsEOF();
     bool            Stat( struct stat *pFileStats );
     size_t          GetSize();
+    void            SetSize( size_t size );
     void            Flush();
     filePath&       GetPath();
     bool            IsReadable();
@@ -47,8 +48,8 @@ class CBufferedFile : public CFile
 public:
                     ~CBufferedFile();
 
-    size_t          Read( void *pBuffer, size_t sElement, unsigned long iNumElements );
-    size_t          Write( void *pBuffer, size_t sElement, unsigned long iNumElements );
+    size_t          Read( void *buffer, size_t sElement, unsigned long iNumElements );
+    size_t          Write( const void *buffer, size_t sElement, unsigned long iNumElements );
     int             Seek( long iOffset, int iType );
     long            Tell();
     bool            IsEOF();

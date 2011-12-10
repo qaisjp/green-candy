@@ -229,7 +229,6 @@
 #include "CResourceMapItem.h"
 #include "CResourceScriptItem.h"
 #include "CScriptDebugging.h"
-#include "CScriptFile.h"
 #include "CSerialManager.h"
 #include "CSettings.h"
 #include "CSpatialDatabase.h"

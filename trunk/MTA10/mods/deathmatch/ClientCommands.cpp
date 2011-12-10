@@ -670,67 +670,66 @@ void DumpPlayer ( CClientPlayer* pPlayer, FILE* pFile )
 }
 
 
-void COMMAND_DumpPlayers ( const char* szCmdLine )
+void COMMAND_DumpPlayers( const char *szCmdLine )
 {
     // Create a file to dump to
-    SString strBuffer ( "%s/dump_%i.txt", g_pClientGame->GetModRoot (), GetTickCount32 () );
-    FILE* pFile = fopen ( strBuffer, "w+" );
-    if ( pFile )
+    CFile *file = modFileRoot->Open( SString( "dump_%i.txt", GetTickCount32() ) );
+
+    if ( !file )
     {
-        // Write time now
-        fprintf ( pFile, "Comments: %s\n", szCmdLine );
-        fprintf ( pFile, "Time now: %u\n\n", CClientTime::GetTime () );
-        fprintf ( pFile, "Objectcount: %u\n", g_pClientGame->GetObjectManager ()->Count () );
-        fprintf ( pFile, "Playercount: %u\n", g_pClientGame->GetPlayerManager ()->Count () );
-        fprintf ( pFile, "Vehiclecount: %u\n\n", g_pClientGame->GetVehicleManager ()->Count () );
-
-        fprintf ( pFile, "Used building pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( BUILDING_POOL ) );
-        fprintf ( pFile, "Used ped pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( PED_POOL ) );
-        fprintf ( pFile, "Used object pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( OBJECT_POOL ) );
-        fprintf ( pFile, "Used dummy pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( DUMMY_POOL ) );
-        fprintf ( pFile, "Used vehicle pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( VEHICLE_POOL ) );
-        fprintf ( pFile, "Used col model pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( COL_MODEL_POOL ) );
-        fprintf ( pFile, "Used task pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( TASK_POOL ) );
-        fprintf ( pFile, "Used event pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( EVENT_POOL ) );
-        fprintf ( pFile, "Used task alloc pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( TASK_ALLOCATOR_POOL ) );
-        fprintf ( pFile, "Used ped intelli pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( PED_INTELLIGENCE_POOL ) );
-        fprintf ( pFile, "Used ped attractor pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( PED_ATTRACTOR_POOL ) );
-        fprintf ( pFile, "Used entry info node pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( ENTRY_INFO_NODE_POOL ) );
-        fprintf ( pFile, "Used node route pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( NODE_ROUTE_POOL ) );
-        fprintf ( pFile, "Used patrol route pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( PATROL_ROUTE_POOL ) );
-        fprintf ( pFile, "Used point route pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( POINT_ROUTE_POOL ) );
-        fprintf ( pFile, "Used point double link pool: %u\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( POINTER_DOUBLE_LINK_POOL ) );
-        fprintf ( pFile, "Used point single link pool: %u\n\n\n", g_pGame->GetPools ()->GetNumberOfUsedSpaces ( POINTER_SINGLE_LINK_POOL ) );
-
-        // Loop through all players
-        vector < CClientPlayer* > ::const_iterator iter = g_pClientGame->GetPlayerManager ()->IterBegin ();
-        for ( ; iter != g_pClientGame->GetPlayerManager ()->IterEnd (); iter++ )
-        {
-            // Write the player dump
-            DumpPlayer ( *iter, pFile );
-        }
-
-        // End of the dump. Close it
-        fclose ( pFile );
-        g_pCore->GetConsole ()->Print ( "dumpplayers: Dumping successfull" );
+        g_pCore->GetConsole()->Print( "dumpplayers: Unable to create file" );
+        return;
     }
-    else
-        g_pCore->GetConsole ()->Print ( "dumpplayers: Unable to create file" );
+
+    // Write time now
+    file->Printf( "Comments: %s\n", szCmdLine );
+    file->Printf( "Time now: %u\n\n", CClientTime::GetTime() );
+    file->Printf( "Objectcount: %u\n", g_pClientGame->GetObjectManager()->Count() );
+    file->Printf( "Playercount: %u\n", g_pClientGame->GetPlayerManager()->Count() );
+    file->Printf( "Vehiclecount: %u\n\n", g_pClientGame->GetVehicleManager()->Count() );
+
+    file->Printf( "Used building pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( BUILDING_POOL ) );
+    file->Printf( "Used ped pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( PED_POOL ) );
+    file->Printf( "Used object pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( OBJECT_POOL ) );
+    file->Printf( "Used dummy pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( DUMMY_POOL ) );
+    file->Printf( "Used vehicle pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( VEHICLE_POOL ) );
+    file->Printf( "Used col model pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( COL_MODEL_POOL ) );
+    file->Printf( "Used task pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( TASK_POOL ) );
+    file->Printf( "Used event pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( EVENT_POOL ) );
+    file->Printf( "Used task alloc pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( TASK_ALLOCATOR_POOL ) );
+    file->Printf( "Used ped intelli pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( PED_INTELLIGENCE_POOL ) );
+    file->Printf( "Used ped attractor pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( PED_ATTRACTOR_POOL ) );
+    file->Printf( "Used entry info node pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( ENTRY_INFO_NODE_POOL ) );
+    file->Printf( "Used node route pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( NODE_ROUTE_POOL ) );
+    file->Printf( "Used patrol route pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( PATROL_ROUTE_POOL ) );
+    file->Printf( "Used point route pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( POINT_ROUTE_POOL ) );
+    file->Printf( "Used point double link pool: %u\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( POINTER_DOUBLE_LINK_POOL ) );
+    file->Printf( "Used point single link pool: %u\n\n\n", g_pGame->GetPools()->GetNumberOfUsedSpaces( POINTER_SINGLE_LINK_POOL ) );
+
+    // Loop through all players
+    vector <CClientPlayer*> ::const_iterator iter = g_pClientGame->GetPlayerManager()->IterBegin();
+    for ( ; iter != g_pClientGame->GetPlayerManager()->IterEnd(); iter++ )
+    {
+        // Write the player dump
+        DumpPlayer( *iter, pFile );
+    }
+
+    // End of the dump. Close it
+    delete file;
+
+    g_pCore->GetConsole()->Print( "dumpplayers: Dumping successfull" );
 }
 
 
-void COMMAND_ShowSyncData ( const char* szCmdLine )
+void COMMAND_ShowSyncData( const char* szCmdLine )
 {
     // Grab the player
     CClientPlayer* pPlayer = g_pClientGame->GetPlayerManager ()->Get ( szCmdLine );
+
     if ( pPlayer )
-    {
         g_pClientGame->GetSyncDebug ()->Attach ( *pPlayer );
-    }
     else
-    {
         g_pClientGame->GetSyncDebug ()->Detach ();
-    }
 }
 
 void COMMAND_VoicePushToTalk ( const char* szCmdLine)
@@ -915,50 +914,48 @@ void COMMAND_Watch ( const char *szCmdLine )
     }
 }
 
-
-void COMMAND_Modules ( const char *szCmdLine )
+void COMMAND_Modules( const char *szCmdLine )
 {
     // Get the base address of the requested module
     // Take a snapshot of all modules in the specified process. 
-    HANDLE hModuleSnap = CreateToolhelp32Snapshot( TH32CS_SNAPMODULE, GetCurrentProcessId () ); 
-    if ( hModuleSnap != INVALID_HANDLE_VALUE ) 
+    HANDLE hModuleSnap = CreateToolhelp32Snapshot( TH32CS_SNAPMODULE, GetCurrentProcessId() );
+
+    if ( hModuleSnap == INVALID_HANDLE_VALUE )
+        return;
+
+    // Set the size of the structure before using it. 
+    MODULEENTRY32 ModuleEntry; 
+    ModuleEntry.dwSize = sizeof(MODULEENTRY32); 
+
+    // Retrieve information about the first module, 
+    // and exit if unsuccessful 
+    if ( Module32First( hModuleSnap, &ModuleEntry ) ) 
     {
-        //  Set the size of the structure before using it. 
-        MODULEENTRY32 ModuleEntry; 
-        ModuleEntry.dwSize = sizeof ( MODULEENTRY32 ); 
+        // Create a file
+        CFile *file = modFileRoot->Open( "modules.txt", "w" );
 
-        // Retrieve information about the first module, 
-        // and exit if unsuccessful 
-        if ( Module32First ( hModuleSnap, &ModuleEntry ) ) 
+        if ( !file )
+            return;
+
+        do
         {
-            // Create a file
-            FILE* pFile = fopen ( "modules.txt", "w+" );
-            if ( pFile )
-            {
-                // Now walk the module list of the process, 
-                // and display information about each module 
-                do
-                {
-                    // Print it
-                    fprintf ( pFile, "** MODULE **\n"
-                                     "Name: %s\n"
-                                     "Base: 0x%P\n"
-                                     "Size: 0x%P\n"
-                                     "\n",
-                                     ModuleEntry.szModule,
-                                     ModuleEntry.modBaseAddr,
-                                     ModuleEntry.modBaseSize );
-                }
-                while ( Module32Next ( hModuleSnap, &ModuleEntry ) );
+            // Print it
+            file->Printf( "** MODULE **\n"
+                             "Name: %s\n"
+                             "Base: 0x%P\n"
+                             "Size: 0x%P\n"
+                             "\n",
+                             ModuleEntry.szModule,
+                             ModuleEntry.modBaseAddr,
+                             ModuleEntry.modBaseSize );
+        } while ( Module32Next( hModuleSnap, &ModuleEntry ) );
 
-                // Close it
-                fclose ( pFile );
-            }
-        }
-
-        // Close the snapshot object
-        CloseHandle( hModuleSnap ); 
+        // Close it
+        delete file;
     }
+
+    // Close the snapshot object
+    CloseHandle( hModuleSnap ); 
 }
 
 #include <CClientCorona.h>
