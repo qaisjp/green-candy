@@ -99,24 +99,24 @@ void RemoveTrack ( void* pAddress )
 }
 
 
-void DumpUnfreed ( void )
+void DumpUnfreed()
 {
     // Make sure we got a list
     if ( !pAllocList )
-    {
         return;
-    }
 
     // Create a dump file
-    FILE* pFile = fopen ( "memoryleaks_race.txt", "w+" );
-    if ( pFile )
+    CFile *file = modFileRoot->Open( "memoryleaks_race.txt", "w+" );
+
+    if ( file )
     {
         // Any unfreed items?
-        if ( pAllocList->size () > 0 )
+        if ( !pAllocList.empty() )
         {
-            // Dump each unfreed item to a file
+            // Dump each unfreed item to file
             unsigned int uiTotalSize = 0;
-            list < ALLOC_INFO* > ::iterator iter = pAllocList->begin ();
+            list <ALLOC_INFO*> ::iterator iter = pAllocList->begin ();
+
             for ( ; iter != pAllocList->end (); iter++ )
             {
                 // Grab the item and append the size to the total size
@@ -124,7 +124,7 @@ void DumpUnfreed ( void )
                 uiTotalSize += pInfo->uiSize;
 
                 // Write the current info to the file
-                fprintf ( pFile, "Address: %p\n"
+                file->Printf( pFile, "Address: %p\n"
                                  "Size:    %u\n"
                                  "File:    %s\n"
                                  "Line:    %i\n\n",
@@ -135,7 +135,7 @@ void DumpUnfreed ( void )
             }
 
             // Total size
-            fprintf ( pFile, "----------------\n"
+            file->Printf( "----------------\n"
                              "Total 'new' allocs: %u\n"
                              "Total 'delete' frees: %u\n"
                              "Total bytes leaked: %u\n",
@@ -144,12 +144,10 @@ void DumpUnfreed ( void )
                              uiTotalSize );
         }
         else
-        {
-            fprintf ( pFile, "%s", "No memoryleaks\n" );
-        }
+            file->Printf( "%s", "No memoryleaks\n" );
 
         // Close the file
-        fclose ( pFile );
+        delete file;
     }
 
     // Delete our alloc list

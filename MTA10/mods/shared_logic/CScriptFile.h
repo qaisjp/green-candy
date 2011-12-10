@@ -8,6 +8,7 @@
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -29,40 +30,38 @@ public:
         MODE_CREATE,
     };
 
-                            CScriptFile             ( const char* szFilename, unsigned long ulMaxSize );
-                            ~CScriptFile            ( void );
+                            CScriptFile             ( const char *filename, size_t maxSize );
+                            ~CScriptFile            ();
 
     // Functions required for linking
     void                    GetPosition             ( CVector& vecPosition ) const {};
     void                    SetPosition             ( const CVector& vecPosition ) {};
 
     // Functions required by CClientEntity
-    eClientEntityType       GetType                 ( void ) const  { return SCRIPTFILE; };
-    void                    Unlink                  ( void ) {};
-    bool                    ReadSpecialData         ( void )    { return true; };
+    eClientEntityType       GetType                 () const  { return SCRIPTFILE; };
+    void                    Unlink                  () {};
+    bool                    ReadSpecialData         ()    { return true; };
 
     // Load and unload routines
     bool                    Load                    ( eMode Mode );
-    void                    Unload                  ( void );
-    bool                    IsLoaded                ( void )    { return m_pFile != NULL; };
+    void                    Unload                  ();
+    bool                    IsLoaded                ()    { return m_pFile != NULL; };
 
-    // Only call functions belw this if you're sure that the file is loaded.
-    // Or you will crash.
-    bool                    IsEOF                   ( void );
-    long                    GetPointer              ( void );
-    long                    GetSize                 ( void );
+    bool                    IsEOF                   ();
+    size_t                  GetPointer              ();
+    size_t                  GetSize                 ();
 
-    long                    SetPointer              ( unsigned long ulPosition );
-    void                    SetSize                 ( unsigned long ulNewSize );
+    size_t                  SetPointer              ( size_t pos );
+    void                    SetSize                 ( size_t size );
 
-    void                    Flush                   ( void );
-    long                    Read                    ( unsigned long ulSize, char* pData );
-    long                    Write                   ( unsigned long ulSize, const char* pData );
+    void                    Flush                   ();
+    size_t                  Read                    ( size_t size, char* pData );
+    size_t                  Write                   ( size_t size, const char* pData );
 
 private:
-    FILE*                   m_pFile;
-    std::string             m_strFilename;
-    unsigned long           m_ulMaxSize;
+    CFile*                  m_file;
+    std::string             m_filename;
+    size_t                  m_maxSize;
 };
 
 #endif

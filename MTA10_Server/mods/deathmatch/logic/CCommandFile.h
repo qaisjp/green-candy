@@ -5,6 +5,7 @@
 *  FILE:        mods/deathmatch/logic/CCommandFile.h
 *  PURPOSE:     Command file parser class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -23,10 +24,9 @@ public:
                         CCommandFile            ( const char* szFilename,
                                                   CConsole& Console,
                                                   CClient& Client );
-                        ~CCommandFile           ( void );
+                        ~CCommandFile           ();
 
-    inline bool         IsValid                 ( void )        { return m_pFile != NULL; };
-    bool                Run                     ( void );
+    bool                Run                     ();
 
 private:
     bool                Parse                   ( char* szLine );
@@ -41,7 +41,7 @@ private:
     CConsole&           m_Console;
     CClient&            m_Client;
 
-    FILE*               m_pFile;
+    CFile*              m_file;
     bool                m_bEcho;
 };
 

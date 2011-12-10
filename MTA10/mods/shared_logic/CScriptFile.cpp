@@ -8,175 +8,137 @@
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
 #include <StdInc.h>
 
-CScriptFile::CScriptFile ( const char* szFilename, unsigned long ulMaxSize ) : ClassInit ( this ), CClientEntity ( INVALID_ELEMENT_ID )
+CScriptFile::CScriptFile( const char *filename, size_t maxSize ) : ClassInit ( this ), CClientEntity ( INVALID_ELEMENT_ID )
 {
     // Init
-    SetTypeName ( "file" );
-    m_pFile = NULL;
-    m_strFilename = szFilename ? szFilename : "";
-    m_ulMaxSize = ulMaxSize;
+    SetTypeName( "file" );
+
+    m_file = NULL;
+    m_filename = filename ? filename : "";
+    m_maxSize = maxSize;
 }
 
-
-CScriptFile::~CScriptFile ( void )
+CScriptFile::~CScriptFile()
 {
     // Close the file
-    Unload ();
+    Unload();
 }
 
-
-bool CScriptFile::Load ( eMode Mode )
+bool CScriptFile::Load( eMode Mode )
 {
     // If we haven't already got a file
-    if ( !m_pFile )
+    if ( m_file )
+        return false;
+
+    switch( Mode )
     {
-        switch ( Mode )
-        {
-            // Open file in read only binary mode
-            case MODE_READ:
-                m_pFile = fopen ( m_strFilename.c_str (), "rb" );
-                break;
+    case MODE_READ:
+        m_file = resFileRoot->Open( m_strFilename.c_str(), "rb" );
+        break;
 
-            // Open file in read write binary mode.
-            case MODE_READWRITE:
-                // Try to load the file in rw mode. Use existing content.
-                m_pFile = fopen ( m_strFilename.c_str (), "rb+" );
-                break;
+    case MODE_READWRITE:
+        m_file = resFileRoot->Open( m_strFilename.c_str(), "rb+" );
+        break;
 
-            // Open file in read write binary mode. Truncate size to 0.
-            case MODE_CREATE:
-                m_pFile = fopen ( m_strFilename.c_str (), "wb+" );
-                break;
-        }
-
-        // Return whether we successfully opened it or not
-        return m_pFile != NULL;
+    case MODE_CREATE:
+        m_file = resFileRoot->Open( m_strFilename.c_str(), "wb+" );
+        break;
     }
 
-    // Failed
-    return false;
+    // Return whether we successfully opened it or not
+    return m_file != NULL;
 }
 
-
-void CScriptFile::Unload ( void )
+void CScriptFile::Unload()
 {
-    // Loaded?
-    if ( m_pFile )
-    {
-        // Close the file
-        fclose ( m_pFile );
-        m_pFile = NULL;
-    }
+    if ( !m_file )
+        return;
+
+    // Close the file
+    delete m_file;
+
+    m_file = NULL;
 }
 
-
-bool CScriptFile::IsEOF ( void )
+bool CScriptFile::IsEOF()
 {
-    if ( !m_pFile )
+    if ( !m_file )
         return true;
 
     // Reached end of file?
-    return feof ( m_pFile ) != 0;
+    return m_file->IsEOF();
 }
 
-
-long CScriptFile::GetPointer ( void )
+size_t CScriptFile::GetPointer()
 {
-    if ( !m_pFile )
-        return -1;
+    if ( !m_file )
+        return 0;
 
-    return ftell ( m_pFile );
+    return m_file->Tell();
 }
 
-
-long CScriptFile::GetSize ( void )
+size_t CScriptFile::GetSize()
 {
-    if ( !m_pFile )
-        return -1;
+    if ( !m_file )
+        return 0;
 
-    // Remember current position and seek to the end
-    long lCurrentPos = ftell ( m_pFile );
-    fseek ( m_pFile, 0, SEEK_END );
-
-    // Retrieve size of file
-    long lSize = ftell ( m_pFile );
-
-    // Seek back to where the pointer was
-    fseek ( m_pFile, lCurrentPos, SEEK_SET );
-
-    // Return the size
-    return lSize;
+    return m_file->GetSize();
 }
 
-
-long CScriptFile::SetPointer ( unsigned long ulPosition )
+size_t CScriptFile::SetPointer( size_t pos )
 {
-    if ( !m_pFile )
-        return -1;
+    if ( !m_file )
+        return 0;
 
-    // Is the new position bigger than the file?
-    if ( GetSize () < static_cast < long > ( ulPosition ) )
-    {
-        // Don't make it bigger than our limit
-        if ( ulPosition > m_ulMaxSize )
-        {
-            ulPosition = m_ulMaxSize;
-        }
-    }
+    // No idea what that is...
+    if ( pos > m_file->GetSize() )
+        pos = max( pos, m_maxSize );
 
     // Move the pointer
-    fseek ( m_pFile, ulPosition, SEEK_SET );
+    m_file->Seek( (long)pos, SEEK_SET );
 
-    // Bigger than file size? Tell the script how far we were able to move it
-    long lSize = GetSize ();
-    if ( ulPosition > static_cast < unsigned long > ( lSize ) )
-    {
-        ulPosition = static_cast < unsigned long > ( lSize );
-    }
+    pos = max( pos, m_file->GetSize() );
 
     // Return the new position
-    return ulPosition;
+    return pos;
 }
 
-
-void CScriptFile::SetSize ( unsigned long ulNewSize )
+void CScriptFile::SetSize( size_t size )
 {
-    // TODO: A way to truncate a file
-    if ( !m_pFile )
+    if ( !m_file )
         return;
 
+    m_file->SetSize( size );
 }
 
-
-void CScriptFile::Flush ( void )
+void CScriptFile::Flush()
 {
-    if ( !m_pFile )
+    if ( !m_file )
         return;
 
-    fflush ( m_pFile );
+    m_file->Flush();
 }
 
-
-long CScriptFile::Read ( unsigned long ulSize, char* pData )
+size_t CScriptFile::Read( size_t size, char *data )
 {
-    if ( !m_pFile )
-        return -1;
+    if ( !m_file )
+        return 0;
 
     // Try to read data into the given block. Return number of bytes we read.
-    return fread ( pData, 1, ulSize, m_pFile );
+    return m_file->Read( data, 1, size );
 }
 
-
-long CScriptFile::Write ( unsigned long ulSize, const char* pData )
+size_t CScriptFile::Write( size_t size, const char *data )
 {
-    if ( !m_pFile )
-        return -1;
+    if ( !m_file )
+        return 0;
 
     // Write the data into the given block. Return number of bytes we wrote.
-    return fwrite ( pData, 1, ulSize, m_pFile );
+    return m_file->Write( data, 1, size );
 }
