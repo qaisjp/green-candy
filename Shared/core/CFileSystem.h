@@ -2,7 +2,7 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        core/CFileSystem.h
+*  FILE:        Shared/core/CFileSystem.h
 *  PURPOSE:     File management
 *  DEVELOPERS:  S2Games <http://savage.s2games.com> (historical entry)
 *               The_GTA <quiret@gmx.de>
@@ -141,14 +141,6 @@ private:
 
 #endif //_FILESYSTEM_ZIP_SUPPORT
 
-
-extern CFileTranslator *tempFileRoot;
-extern CFileTranslator *mtaFileRoot;
-extern CFileTranslator *dataFileRoot;
-extern CFileTranslator *modFileRoot;
-extern CFileTranslator *newsFileRoot;
-extern CFileTranslator *gameFileRoot;
-
 class CFileSystem : public CFileSystemInterface
 {
 public:
@@ -164,5 +156,7 @@ public:
     size_t                  Size( const char *path );
     bool                    ReadToBuffer( const char *path, std::vector <char>& output );
 };
+
+extern CFileTranslator *fileRoot;
 
 #endif //_CFileSystem_

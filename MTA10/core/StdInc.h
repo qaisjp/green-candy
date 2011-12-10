@@ -29,6 +29,9 @@
 #include <cstdlib>
 #include <iomanip>
 
+// Core general
+#include <core/Common.h>
+
 // SDK includes
 #include <xml/CXMLNode.h>
 #include <xml/CXMLFile.h>

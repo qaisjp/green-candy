@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="Server - Core"
 	ProjectGUID="{0550C84E-8AC6-4C44-9686-241B0BB4BD7D}"
 	RootNamespace="Server - Core"
@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../dependencies/mxml/include;../sdk;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
+				AdditionalIncludeDirectories="../dependencies/mxml/include;../sdk;../../Shared;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
 				PreprocessorDefinitions="WIN32;_DEBUG;MTA_DEBUG;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				BasicRuntimeChecks="3"
@@ -74,7 +74,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib Imagehlp.lib Winmm.lib"
+				AdditionalDependencies="wsock32.lib Imagehlp.lib Winmm.lib dbghelp.lib"
 				OutputFile="C:\Program Files\MTA San Andreas 1.2\server\core_d.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -173,7 +173,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib Imagehlp.lib Winmm.lib"
+				AdditionalDependencies="wsock32.lib Imagehlp.lib Winmm.lib dbghelp.lib"
 				OutputFile="C:\Program Files\MTA San Andreas 1.2\server\core.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -276,7 +276,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib Imagehlp.lib Winmm.lib"
+				AdditionalDependencies="wsock32.lib Imagehlp.lib Winmm.lib dbghelp.lib"
 				OutputFile="..\..\output\MTA San Andreas\server\core.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -401,6 +401,14 @@
 				</File>
 				<File
 					RelativePath=".\sockets\CTCPServerSocketImplManager.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="shared"
+				>
+				<File
+					RelativePath="..\..\Shared\core\CFileSystem.cpp"
 					>
 				</File>
 			</Filter>
@@ -564,6 +572,26 @@
 						>
 					</File>
 				</Filter>
+			</Filter>
+			<Filter
+				Name="core"
+				>
+				<File
+					RelativePath="..\..\Shared\core\CFileSystem.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Shared\core\CFileSystemInterface.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Shared\core\Common.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Shared\core\interface.h"
+					>
+				</File>
 			</Filter>
 		</Filter>
 	</Files>

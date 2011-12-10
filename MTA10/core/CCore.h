@@ -25,7 +25,6 @@ class CCore;
 
 #include <core/CClientBase.h>
 #include <core/CCoreInterface.h>
-#include "CFileSystem.h"
 #include "CClientTime.h"
 #include "CClientVariables.h"
 #include "CCommands.h"
@@ -310,5 +309,12 @@ private:
     std::map <std::string, std::string> m_CommandLineOptions;     // e.g. "-o option" -> {"o" = "option"}
     const char*                 m_szCommandLineArgs;                // Everything that comes after the options
 };
+
+extern CFileTranslator *tempFileRoot;
+extern CFileTranslator *mtaFileRoot;
+extern CFileTranslator *dataFileRoot;
+extern CFileTranslator *modFileRoot;
+extern CFileTranslator *newsFileRoot;
+extern CFileTranslator *gameFileRoot;
 
 #endif

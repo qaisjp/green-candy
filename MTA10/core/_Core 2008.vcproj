@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;../../vendor;../sdk;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
+				AdditionalIncludeDirectories=".;../../vendor;../sdk;../../Shared;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
 				PreprocessorDefinitions="_WIN32_WINNT=0x502;WIN32;MTA_DEBUG;_CRT_SECURE_NO_WARNINGS;INITGUID"
 				StringPooling="true"
 				BasicRuntimeChecks="3"
@@ -437,10 +437,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CFileSystem.cpp"
-				>
-			</File>
-			<File
 				RelativePath="CFileSystemHook.cpp"
 				>
 			</File>
@@ -720,6 +716,14 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="shared"
+				>
+				<File
+					RelativePath="..\..\Shared\core\CFileSystem.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -827,10 +831,6 @@
 			</File>
 			<File
 				RelativePath=".\CFavouritesAddByIP.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CFileSystem.h"
 				>
 			</File>
 			<File
@@ -1089,10 +1089,6 @@
 					</File>
 					<File
 						RelativePath="..\sdk\core\CExceptionInformation.h"
-						>
-					</File>
-					<File
-						RelativePath="..\sdk\core\CFileSystemInterface.h"
 						>
 					</File>
 					<File
@@ -1748,6 +1744,26 @@
 					RelativePath="..\..\Shared\sdk\UTF8.h"
 					>
 				</File>
+				<Filter
+					Name="core"
+					>
+					<File
+						RelativePath="..\..\Shared\core\CFileSystem.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\Shared\core\CFileSystemInterface.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\Shared\core\Common.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\Shared\core\interface.h"
+						>
+					</File>
+				</Filter>
 			</Filter>
 		</Filter>
 	</Files>
