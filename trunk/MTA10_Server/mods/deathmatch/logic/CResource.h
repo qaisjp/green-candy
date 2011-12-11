@@ -12,6 +12,7 @@
 *               Jax <>
 *               Cecill Etheredge <>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -171,12 +172,13 @@ class CResource : public EHS
 {
 private:
     bool                    m_bHandlingHTTPRequest;
-    bool                    m_bResourceIsZip;
-    std::string             m_strResourceName;
-    SString                 m_strAbsPath;               // Absolute path to containing directory        i.e. /server/mods/deathmatch/resources
-    std::string             m_strResourceZip;           // Absolute path to zip file (if a zip)         i.e. m_strAbsPath/resource_name.zip
-    std::string             m_strResourceDirectoryPath; // Absolute path to resource files (if a dir)   i.e. m_strAbsPath/resource_name
-    std::string             m_strResourceCachePath;     // Absolute path to unzipped cache (if a zip)   i.e. /server/mods/deathmatch/resources/cache/resource_name 
+    std::string             m_name;
+
+    CFileTranslator*        m_fileRoot;                 // Access zone of resource
+    CFileTranslator*        m_cacheRoot;                // Cached access zone
+
+    bool                    m_isZip;
+    filePath                m_zipPath;
 
     unsigned int            m_uiVersionMajor;
     unsigned int            m_uiVersionMinor;
@@ -257,38 +259,30 @@ private:
         pthread_mutex_unlock ( &m_mutex );
     }
 public:
-                            CResource ( CResourceManager * resourceManager, bool bIsZipped, const char * szAbsPath, const char * szResourceName );
-                            ~CResource ( );
+                            CResource( CResourceManager *manager, bool zip, const char *name );
+                            ~CResource();
 
-    /* Load this resource if it's not already loaded. It needs to be loaded before it can be started. */ 
-    bool                    Load ( void );
+    bool                    Load();
+    bool                    Unload();
+    void                    Reload();
 
-    /* Unload this resource. It needs to be stopped if it's running before this can be called or it will fail. */
-    bool                    Unload ( void );
-
-    void                    Reload ( void );
-
-    /* Get a resource default setting */
     bool                    GetDefaultSetting           ( const char* szName, char* szValue, size_t sizeBuffer );
-
-    /* Set a resource default setting */
     bool                    SetDefaultSetting           ( const char* szName, const char* szValue );
-
-    /* Remove a resource default setting */
     bool                    RemoveDefaultSetting        ( const char* szName );
 
-
-    /* Add a map file to a loaded resource's meta file */
     bool                    AddMapFile                  ( const char* szName, const char* szFullFilepath, int iDimension );
-
-    /* Add a config file to a loaded resource's meta file */
     bool                    AddConfigFile               ( const char* szName, const char* szFullFilepath, int iType );
-
-    /* To check if a file of given name and type are included in this resource */
     bool                    IncludedFileExists          ( const char* szName, int iType = CResourceFile::RESOURCE_FILE_TYPE_NONE );
-
-    /* Remove any included file from this loaded resource */
     bool                    RemoveFile                  ( const char* szName );
+
+    bool                    AllocateArchive             ();
+    void                    ReleaseArchive              ();
+
+    CFile*                  OpenStream                  ( const char *path, const char *mode );
+    bool                    FileCopy                    ( const char *src, const char *dst );
+    bool                    FileRename                  ( const char *src, const char *dst );
+    size_t                  FileSize                    ( const char *path );
+    bool                    FileExists                  ( const char *path );
     
     bool                    HasStarted                  ( void ) { return m_bHasStarted; };
 
@@ -345,9 +339,8 @@ public:
     inline void             SetPersistent ( bool bPersistent ) { m_bIsPersistent = bPersistent; }
     bool                    ExtractFile ( const char * szFilename );
     bool                    DoesFileExistInZip ( const char * szFilename );
-    bool                    GetFilePath ( const char * szFilename, string& strPath );
-    inline const std::string&   GetResourceDirectoryPath () { return m_strResourceDirectoryPath; };
-    inline const std::string&   GetResourceCacheDirectoryPath () { return m_strResourceCachePath; };
+    bool                    CacheFileZip ( const char *path );
+    bool                    GetFilePath ( const char *filename, filePath& strPath );
     bool                    LinkToIncludedResources ( void );
     bool                    CheckIfStartable ( void );
     inline unsigned int     GetFileCount ( void ) { return m_resourceFiles.size(); }
@@ -366,7 +359,7 @@ public:
     void                    SetProtected ( bool bProtected )    { m_bProtected = bProtected; };
     bool                    IsProtected ( void )                { return m_bProtected; };
 
-    inline bool             IsResourceZip ( void )  { return m_bResourceIsZip; };
+    inline bool             IsResourceZip ( void )  { return m_isZip; };
 
     ResponseCode            HandleRequest ( HttpRequest * ipoHttpRequest, HttpResponse * ipoHttpResponse );
 

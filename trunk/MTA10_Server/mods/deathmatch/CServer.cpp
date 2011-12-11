@@ -14,32 +14,33 @@
 #define ALLOC_STATS_MODULE_NAME "deathmatch"
 #include "SharedUtil.hpp"
 
-CServerInterface* g_pServerInterface = NULL;
-CNetServer* g_pNetServer = NULL;
+CServerInterface *g_pServerInterface = NULL;
+CNetServer *g_pNetServer = NULL;
 
-CServer::CServer ( void )
+CFileTranslator *modFileRoot;
+
+CServer::CServer()
 {
     // Init
     m_pServerInterface = NULL;
     m_pGame = NULL;
+
+    // Grab the file root for us
+    modFileRoot = g_pServerInterface->GetModManager()->GetModRoot();
 }
 
-
-CServer::~CServer ( void )
+CServer::~CServer()
 {
-    
 }
 
-
-void CServer::ServerInitialize ( CServerInterface* pServerInterface )
+void CServer::ServerInitialize( CServerInterface* pServerInterface )
 {
     m_pServerInterface = pServerInterface;
     g_pServerInterface = pServerInterface;
     g_pNetServer = pServerInterface->GetNetwork ();
 }
 
-
-bool CServer::ServerStartup ( int iArgumentCount, char* szArguments [] )
+bool CServer::ServerStartup( int iArgumentCount, char* szArguments [] )
 {
     if ( !m_pGame )
     {
@@ -50,8 +51,7 @@ bool CServer::ServerStartup ( int iArgumentCount, char* szArguments [] )
     return false;
 }
 
-
-void CServer::ServerShutdown ( void )
+void CServer::ServerShutdown()
 {
     if ( m_pGame )
     {
@@ -60,43 +60,36 @@ void CServer::ServerShutdown ( void )
     }
 }
 
-void CServer::GetTag ( char* szInfoTag, int iInfoTag )
+void CServer::GetTag( char* szInfoTag, int iInfoTag )
 {
-    if ( m_pGame )
-    {
-        m_pGame->GetTag ( szInfoTag, iInfoTag );
-    }
+    if ( !m_pGame )
+        return;
+
+    m_pGame->GetTag ( szInfoTag, iInfoTag );
 }
 
-void CServer::HandleInput ( char* szCommand )
+void CServer::HandleInput( char* szCommand )
 {
-    if ( m_pGame )
-    {
-        m_pGame->HandleInput ( szCommand );
-    }
-}
+    if ( !m_pGame )
+        return;
 
+    m_pGame->HandleInput ( szCommand );
+}
 
 void CServer::DoPulse()
 {
-    if ( m_pGame )
-    {
-        m_pGame->DoPulse ();
-    }
+    if ( !m_pGame )
+        return;
+
+    m_pGame->DoPulse ();
 }
 
-
-bool CServer::IsFinished ()
+bool CServer::IsFinished()
 {
-    if ( m_pGame )
-    {
-        return m_pGame->IsFinished ();
-    }
-
-    return false;
+    return m_pGame && m_pGame->IsFinished();
 }
 
-bool CServer::PendingWorkToDo ()
+bool CServer::PendingWorkToDo()
 {
-    return g_pNetServer->GetPendingPacketCount () > 0;
+    return g_pNetServer->GetPendingPacketCount() != 0;
 }

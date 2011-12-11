@@ -14,6 +14,7 @@
 *               Kevin Whiteside <>
 *               lil_Toady <>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -36,6 +37,9 @@ unsigned char ucProgressSkip = 0;
 
 pthread_mutex_t mutexhttp;
 
+CFileTranslator *resCacheFileRoot;
+CFileTranslator *resFileRoot;
+
 #ifdef WIN32
 BOOL WINAPI ConsoleEventHandler ( DWORD dwCtrlType )
 {
@@ -53,8 +57,8 @@ BOOL WINAPI ConsoleEventHandler ( DWORD dwCtrlType )
 #endif
 
 
-CGame::CGame ( void )
-    : m_FloodProtect( 4, 30000, 30000 )     // Max of 4 connections per 30 seconds, then 30 second ignore
+CGame::CGame() :
+    m_FloodProtect( 4, 30000, 30000 )     // Max of 4 connections per 30 seconds, then 30 second ignore
 {
     // Set our global pointer
     g_pGame = this;
@@ -379,8 +383,10 @@ void CGame::DoPulse ( void )
 }
 
 
-bool CGame::Start ( int iArgumentCount, char* szArguments [] )
+bool CGame::Start( int iArgumentCount, char *szArguments[] )
 {
+    filePath path;
+
     // Init
     m_pASE = NULL;
 
@@ -489,23 +495,27 @@ bool CGame::Start ( int iArgumentCount, char* szArguments [] )
     // Prepare our voice string
     SString strVoice = "Disabled";
     if ( m_pMainConfig->IsVoiceEnabled() )
+    {
         switch (m_pMainConfig->GetVoiceSampleRate())
         {
-            case 0:
-                strVoice = SString("Quality [%i];  Sample Rate: [8000kHz]",m_pMainConfig->GetVoiceQuality() ); break;
-            case 1:
-                strVoice = SString("Quality [%i];  Sample Rate: [16000kHz]",m_pMainConfig->GetVoiceQuality() ); break;
-            case 2:
-                strVoice = SString("Quality [%i];  Sample Rate: [32000kHz]",m_pMainConfig->GetVoiceQuality() ); break;
-            default:
-                break;
+        case 0:
+            strVoice = SString( "Quality [%i];  Sample Rate: [8000kHz]",m_pMainConfig->GetVoiceQuality() );
+            break;
+        case 1:
+            strVoice = SString( "Quality [%i];  Sample Rate: [16000kHz]",m_pMainConfig->GetVoiceQuality() );
+            break;
+        case 2:
+            strVoice = SString( "Quality [%i];  Sample Rate: [32000kHz]",m_pMainConfig->GetVoiceQuality() );
+            break;
+        default:
+            break;
         }
+    }
     if ( m_pMainConfig->GetVoiceBitrate() )
-        strVoice += SString(";  Bitrate: [%ibps]",  m_pMainConfig->GetVoiceBitrate() );
-            
+        strVoice += SString( ";  Bitrate: [%ibps]", m_pMainConfig->GetVoiceBitrate() );
 
     // Show the server header
-    CLogger::LogPrintfNoStamp ( "===========================================================\n" \
+    CLogger::LogPrintfNoStamp(  "===========================================================\n" \
                                 "= Multi Theft Auto: San Andreas v%s\n" \
                                 "===========================================================\n" \
                                 "= Server name      : %s\n" \
@@ -534,84 +544,78 @@ bool CGame::Start ( int iArgumentCount, char* szArguments [] )
     m_pAccountManager->IntegrityCheck ();
 
     // Setup resource-cache directory
+    filePath cachePath;
+    modFileRoot->GetFullPath( "resource-cache/", false, cachePath );
+    modFileRoot->CreateDir( "resource-cache/unzipped/" );
+    modFileRoot->CreateDir( "resource-cache/http-client-files/" );
+
+    filePath resPath;
+    modFileRoot->GetFullPath( "resources/", false, resPath );
+
+    resFileRoot = g_pServerInterface->GetFileSystem()->CreateTranslator( resPath.c_str() );
+    resCacheFileRoot = g_pServerInterface->GetFileSystem()->CreateTranslator( cachePath.c_str() );
+
+    modFileRoot->Rename( "resourcecache/", "resource-cache/_old_resourcecache.delete-me/" );
+
+    // Create cache readme
+    if ( CFile *file = resCacheFileRoot->Open( "DO_NOT_MODIFY_Readme.txt", "w" ) )
     {
-        SString strResourceCachePath ( "%s/resource-cache", g_pServerInterface->GetServerModPath () );
-        SString strResourceCacheUnzippedPath ( "%s/unzipped", strResourceCachePath.c_str () );
-        SString strResourceCacheHttpClientFilesPath ( "%s/http-client-files", strResourceCachePath.c_str () );
-
-        // Make sure the resource-cache directories exists
-        MakeSureDirExists ( ( strResourceCacheUnzippedPath + "/" ).c_str () );
-        MakeSureDirExists ( ( strResourceCacheHttpClientFilesPath + "/" ).c_str () );
-
-        // Rename old resourcecache dir to show that it is no longer used
-        SString strOldResourceCachePath ( "%s/resourcecache", g_pServerInterface->GetServerModPath () );
-        SString strOldResourceCachePath2 ( strResourceCachePath + "/_old_resourcecache.delete-me" );
-        #ifdef WIN32
-            MoveFile ( strOldResourceCachePath, strOldResourceCachePath2 );
-        #else
-            std::rename ( strOldResourceCachePath, strOldResourceCachePath2 );
-        #endif
-
-        // Create cache readme
-        SString strReadmeFilename ( "%s/DO_NOT_MODIFY_Readme.txt", strResourceCachePath.c_str () );
-        FILE *fh = fopen ( strReadmeFilename, "w" );
-        if ( fh )
-        {
-            fprintf ( fh, "---------------------------------------------------------------------------\n" );
-            fprintf ( fh, "The content of this directory is automatically generated by the server.\n\n" );
-            fprintf ( fh, "Do not modify or delete anything in here while the server is running.\n\n" );
-            fprintf ( fh, "When the server is not running, you can do what you want, including clearing\n" );
-            fprintf ( fh, "out all the cached files by deleting the resource-cache directory.\n" );
-            fprintf ( fh, "(It will get recreated when the server is next started)\n" );
-            fprintf ( fh, "---------------------------------------------------------------------------\n\n" );
-            fprintf ( fh, "The 'http-client-files' directory always contains the correct client files\n" );
-            fprintf ( fh, "for hosting on a web server.\n" );
-            fprintf ( fh, "* If the web server is on the same machine, you can simply link the appropriate\n" );
-            fprintf ( fh, "  web server directory to 'http-client-files'.\n" );
-            fprintf ( fh, "* If the web server is on a separate machine, ensure it has access to\n" );
-            fprintf ( fh, "  'http-client-files' via a network path, or maintain a remote copy using\n" );
-            fprintf ( fh, "  synchronization software.\n" );
-            fprintf ( fh, "---------------------------------------------------------------------------\n\n" );
-            fclose ( fh );
-        }
+        file->Printf( "%s", 
+            "---------------------------------------------------------------------------\n"
+            "The content of this directory is automatically generated by the server.\n\n"
+            "Do not modify or delete anything in here while the server is running.\n\n"
+            "When the server is not running, you can do what you want, including clearing\n"
+            "out all the cached files by deleting the resource-cache directory.\n"
+            "(It will get recreated when the server is next started)\n"
+            "---------------------------------------------------------------------------\n\n"
+            "The 'http-client-files' directory always contains the correct client files\n"
+            "for hosting on a web server.\n"
+            "* If the web server is on the same machine, you can simply link the appropriate\n"
+            "  web server directory to 'http-client-files'.\n"
+            "* If the web server is on a separate machine, ensure it has access to\n"
+            "  'http-client-files' via a network path, or maintain a remote copy using\n"
+            "  synchronization software.\n"
+            "---------------------------------------------------------------------------\n\n" );
+        
+        delete file;
     }
 
     m_pRemoteCalls = new CRemoteCalls();
-    m_pRegistry = m_pRegistryManager->OpenRegistry ( "" );
+    m_pRegistry = m_pRegistryManager->OpenRegistry( "" );
 
     m_pResourceManager = new CResourceManager;
-    m_pSettings = new CSettings ( m_pResourceManager );
+    m_pSettings = new CSettings( m_pResourceManager );
     m_pResourceManager->Refresh();
     m_pUnoccupiedVehicleSync = new CUnoccupiedVehicleSync ( m_pPlayerManager, m_pVehicleManager );
-    m_pPedSync = new CPedSync ( m_pPlayerManager, m_pPedManager );
-    m_pObjectSync = new CObjectSync ( m_pPlayerManager, m_pObjectManager );
-    // Must be created before all clients
-    m_pConsoleClient = new CConsoleClient ( m_pConsole );
+    m_pPedSync = new CPedSync( m_pPlayerManager, m_pPedManager );
+    m_pObjectSync = new CObjectSync( m_pPlayerManager, m_pObjectManager );
 
+    // Must be created before all clients
+    m_pConsoleClient = new CConsoleClient( m_pConsole );
 
 
     m_pZoneNames = new CZoneNames;
 
-    CStaticFunctionDefinitions ( this );
-    CLuaFunctionDefinitions::SetBlipManager ( m_pBlipManager );
-    CLuaFunctionDefinitions::SetLuaManager ( m_pLuaManager );
-    CLuaFunctionDefinitions::SetMarkerManager ( m_pMarkerManager );
-    CLuaFunctionDefinitions::SetObjectManager ( m_pObjectManager );
-    CLuaFunctionDefinitions::SetPickupManager ( m_pPickupManager );
-    CLuaFunctionDefinitions::SetPlayerManager ( m_pPlayerManager );
-    CLuaFunctionDefinitions::SetRadarAreaManager ( m_pRadarAreaManager );
-    CLuaFunctionDefinitions::SetTeamManager ( m_pTeamManager );
-    CLuaFunctionDefinitions::SetAccountManager ( m_pAccountManager );
-    CLuaFunctionDefinitions::SetRegisteredCommands ( m_pRegisteredCommands );
-    CLuaFunctionDefinitions::SetRootElement ( m_pMapManager->GetRootElement () );
-    CLuaFunctionDefinitions::SetScriptDebugging ( m_pScriptDebugging );
-    CLuaFunctionDefinitions::SetVehicleManager ( m_pVehicleManager );
-    CLuaFunctionDefinitions::SetColManager ( m_pColManager );
-    CLuaFunctionDefinitions::SetResourceManager ( m_pResourceManager );
-    CLuaFunctionDefinitions::SetACL ( m_pACLManager );
+    CStaticFunctionDefinitions( this );
+    CLuaFunctionDefinitions::SetBlipManager( m_pBlipManager );
+    CLuaFunctionDefinitions::SetLuaManager( m_pLuaManager );
+    CLuaFunctionDefinitions::SetMarkerManager( m_pMarkerManager );
+    CLuaFunctionDefinitions::SetObjectManager( m_pObjectManager );
+    CLuaFunctionDefinitions::SetPickupManager( m_pPickupManager );
+    CLuaFunctionDefinitions::SetPlayerManager( m_pPlayerManager );
+    CLuaFunctionDefinitions::SetRadarAreaManager( m_pRadarAreaManager );
+    CLuaFunctionDefinitions::SetTeamManager( m_pTeamManager );
+    CLuaFunctionDefinitions::SetAccountManager( m_pAccountManager );
+    CLuaFunctionDefinitions::SetRegisteredCommands( m_pRegisteredCommands );
+    CLuaFunctionDefinitions::SetRootElement( m_pMapManager->GetRootElement () );
+    CLuaFunctionDefinitions::SetScriptDebugging( m_pScriptDebugging );
+    CLuaFunctionDefinitions::SetVehicleManager( m_pVehicleManager );
+    CLuaFunctionDefinitions::SetColManager( m_pColManager );
+    CLuaFunctionDefinitions::SetResourceManager( m_pResourceManager );
+    CLuaFunctionDefinitions::SetACL( m_pACLManager );
 
     // Initialize the lua function definition dependancies
-    CLuaDefs::Initialize ( m_pMapManager->GetRootElement (),
+    CLuaDefs::Initialize( m_pMapManager->GetRootElement(),
                            &m_ElementDeleter,
                            m_pBlipManager,
                            m_pHandlingManager,
@@ -631,171 +635,159 @@ bool CGame::Start ( int iArgumentCount, char* szArguments [] )
                            m_pACLManager,
                            m_pMainConfig );
 
-    m_pPlayerManager->SetScriptDebugging ( m_pScriptDebugging );
+    m_pPlayerManager->SetScriptDebugging( m_pScriptDebugging );
 
     // Set our console control handler
-    #ifdef WIN32
-    SetConsoleCtrlHandler ( ConsoleEventHandler, TRUE );
-    #endif
+#ifdef WIN32
+    SetConsoleCtrlHandler( ConsoleEventHandler, TRUE );
+#endif
 
     // Add our builtin events
-    AddBuiltInEvents ();
+    AddBuiltInEvents();
 
     // Load the vehicle colors before the main config
-    strBuffer = g_pServerInterface->GetModManager ()->GetAbsolutePath ( "vehiclecolors.conf" );
-    if ( !m_pVehicleManager->GetColorManager ()->Load ( strBuffer ) )
+    strBuffer = g_pServerInterface->GetModManager()->GetAbsolutePath( "vehiclecolors.conf" );
+
+    if ( !m_pVehicleManager->GetColorManager()->Load( strBuffer ) )
     {
         // Try to generate a new one and load it again
-        if ( m_pVehicleManager->GetColorManager ()->Generate ( strBuffer ) )
+        if ( m_pVehicleManager->GetColorManager()->Generate( strBuffer ) )
         {
-            if ( !m_pVehicleManager->GetColorManager ()->Load ( strBuffer ) )
+            if ( !m_pVehicleManager->GetColorManager()->Load( strBuffer ) )
             {
-                CLogger::ErrorPrintf ( "%s", "Loading 'vehiclecolors.conf' failed\n " );
+                CLogger::ErrorPrintf( "%s", "Loading 'vehiclecolors.conf' failed\n " );
             }
         }
         else
         {
-            CLogger::ErrorPrintf ( "%s", "Generating a new 'vehiclecolors.conf' failed\n " );
+            CLogger::ErrorPrintf( "%s", "Generating a new 'vehiclecolors.conf' failed\n " );
         }
     }
 
     // Load the ACL's
-    if ( !m_pACLManager->Load ( const_cast < char* > ( m_pMainConfig->GetAccessControlListFile ().c_str () ) ) )
+    if ( !m_pACLManager->Load( m_pMainConfig->GetAccessControlListFile().c_str() )
         return false;
 
     // Load the registry
-    strBuffer = g_pServerInterface->GetModManager ()->GetAbsolutePath ( "registry.db" );
-    m_pRegistry->Load ( strBuffer );
+    strBuffer = g_pServerInterface->GetModManager()->GetAbsolutePath( "registry.db" );
+    m_pRegistry->Load( strBuffer );
+
     // Check accounts database and print a message if there is a problem
-    m_pRegistry->IntegrityCheck ();
+    m_pRegistry->IntegrityCheck();
 
     // Load the accounts
-    strBuffer = g_pServerInterface->GetModManager ()->GetAbsolutePath ( "accounts.xml" );
-    m_pAccountManager->SetFileName ( strBuffer );
-    m_pAccountManager->SmartLoad ();
+    strBuffer = g_pServerInterface->GetModManager()->GetAbsolutePath( "accounts.xml" );
+    m_pAccountManager->SetFileName( strBuffer );
+    m_pAccountManager->SmartLoad();
 
     // Register our packethandler
-    g_pNetServer->RegisterPacketHandler ( CGame::StaticProcessPacket, TRUE );
+    g_pNetServer->RegisterPacketHandler( CGame::StaticProcessPacket, TRUE );
 
     // Set encryption level
-    g_pNetServer->SetEncryptionEnabled ( m_pMainConfig->GetNetworkEncryptionEnabled () );
-    if ( !m_pMainConfig->GetNetworkEncryptionEnabled ()  )
-        CLogger::LogPrintf ( "Network encryption disabled\n" );
+    g_pNetServer->SetEncryptionEnabled( m_pMainConfig->GetNetworkEncryptionEnabled() );
+
+    if ( !m_pMainConfig->GetNetworkEncryptionEnabled() )
+        CLogger::LogPrintf( "Network encryption disabled\n" );
 
     // Try to start the network
-    if ( !g_pNetServer->StartNetwork ( strServerIP, usServerPort, uiMaxPlayers ) )
+    if ( !g_pNetServer->StartNetwork( strServerIP, usServerPort, uiMaxPlayers ) )
     {
-        CLogger::ErrorPrintf ( "Could not bind the server on interface '%s' and port '%u'!\n", strServerIP.c_str (), usServerPort );
+        CLogger::ErrorPrintf( "Could not bind the server on interface '%s' and port '%u'!\n", strServerIP.c_str(), usServerPort );
         return false;
     }
 
     // Load the banlist
-    m_pBanManager->LoadBanList ();
+    m_pBanManager->LoadBanList();
 
     // If the server is passworded
-    if ( m_pMainConfig->HasPassword () )
+    if ( m_pMainConfig->HasPassword() )
     {
         // Check it for validity
-        const char* szPassword = m_pMainConfig->GetPassword ().c_str ();
-        if ( m_pMainConfig->IsValidPassword ( szPassword ) )
+        if ( m_pMainConfig->IsValidPassword( m_pMainConfig->GetPassword().c_str() ) )
         {
             // Store the server password
-            CLogger::LogPrintf ( "Server password set to '%s'\n", szPassword );
+            CLogger::LogPrintf ( "Server password set to '%s'\n", m_pMainConfig->GetPassword().c_str() );
         }
         else
-        {
             CLogger::LogPrint ( "Invalid password in config, no password is used\n" );
-        }
     }
 
     // If ASE is enabled
-    if ( m_pMainConfig->GetASEEnabled () || !m_pMainConfig->GetDontBroadcastLan() )
+    if ( m_pMainConfig->GetASEEnabled() || !m_pMainConfig->GetDontBroadcastLan() )
     {
-        m_pASE = new ASE ( m_pMainConfig, m_pPlayerManager, static_cast < int > ( usServerPort ), strServerIP, !m_pMainConfig->GetDontBroadcastLan() && !m_pMainConfig->GetASEEnabled () );
+        m_pASE = new ASE( m_pMainConfig, m_pPlayerManager, static_cast < int > ( usServerPort ), strServerIP, !m_pMainConfig->GetDontBroadcastLan() && !m_pMainConfig->GetASEEnabled () );
 
-        if ( m_pMainConfig->GetSerialVerificationEnabled () )
-            m_pASE->SetRuleValue ( "SerialVerification", "yes" );
+        if ( m_pMainConfig->GetSerialVerificationEnabled() )
+            m_pASE->SetRuleValue( "SerialVerification", "yes" );
 
-        if ( m_pMainConfig->GetASEEnabled () )
-        {
-            PulseMasterServerAnnounce ();
-        }
+        if ( m_pMainConfig->GetASEEnabled() )
+            PulseMasterServerAnnounce();
 
         if ( !m_pMainConfig->GetDontBroadcastLan() )
-        {
             m_pLanBroadcast = m_pASE->InitLan();
-        }
     }
 
     // Now load the rest of the config
-    if ( !m_pMainConfig->LoadExtended () )
+    if ( !m_pMainConfig->LoadExtended() )
         return false;
 
     // Is the script debug log enabled?
-    if ( m_pMainConfig->GetScriptDebugLogEnabled () )
+    if ( m_pMainConfig->GetScriptDebugLogEnabled() )
     {
-        if ( !m_pScriptDebugging->SetLogfile ( m_pMainConfig->GetScriptDebugLogFile ().c_str (), m_pMainConfig->GetScriptDebugLogLevel () ) )
-        {
+        if ( !m_pScriptDebugging->SetLogfile( m_pMainConfig->GetScriptDebugLogFile().c_str(), m_pMainConfig->GetScriptDebugLogLevel() ) )
             CLogger::LogPrint ( "WARNING: Unable to open the given script debug logfile\n" );
-        }
     }
 
-
-    // Run startup commands
-    strBuffer = g_pServerInterface->GetModManager ()->GetAbsolutePath ( "autoexec.conf"  );
-    CCommandFile Autoexec ( strBuffer, *m_pConsole, *m_pConsoleClient );
-    if ( Autoexec.IsValid () )
+    try
     {
-        CLogger::LogPrintf ( "autoexec.conf file found! Executing...\n" );
-        Autoexec.Run ();
-    }
+        // Run startup commands
+        CCommandFile Autoexec( "autoexec.conf", *m_pConsole, *m_pConsoleClient );
 
-    // Done
+        CLogger::LogPrintf( "autoexec.conf file found! Executing...\n" );
+        Autoexec.Run();
+    }
+    catch( ... )
+    {}
+
     // If you're ever going to change this message, update the "server ready" determination
     // inside CServer.cpp in deathmatch mod aswell.
-    CLogger::LogPrint ( "Server started and is ready to accept connections!\n" );
+    CLogger::LogPrint( "Server started and is ready to accept connections!\n" );
 
-    // Create port tester
-    m_pOpenPortsTester = new COpenPortsTester ();
+    m_pOpenPortsTester = new COpenPortsTester();
 
-    // Add help hint
-    CLogger::LogPrint ( "Type 'help' for a list of commands.\n" );
+    CLogger::LogPrint( "Type 'help' for a list of commands.\n" );
 
     m_bServerFullyUp = true;
     return true;
 }
 
-
-void CGame::Stop ( void )
+void CGame::Stop()
 {
     m_bServerFullyUp = false;
 
     // Tell the log
-    CLogger::LogPrint ( "Server stopped!\n" );
+    CLogger::LogPrint( "Server stopped!\n" );
 
     // Stop our network
-    g_pNetServer->StopNetwork ();
+    g_pNetServer->StopNetwork();
 
     // Unregister our packethandler
-    g_pNetServer->RegisterPacketHandler ( NULL, TRUE );
-
+    g_pNetServer->RegisterPacketHandler( NULL, TRUE );
 }
 
-
-void CGame::StartOpenPortsTest ( void )
+void CGame::StartOpenPortsTest()
 {
     if ( m_pOpenPortsTester )
-        m_pOpenPortsTester->Start ();
+        m_pOpenPortsTester->Start();
 }
 
-
 // Remind master server once every 24 hrs
-void CGame::PulseMasterServerAnnounce ( void )
+void CGame::PulseMasterServerAnnounce()
 {
-    if ( m_llLastAnnouceTime == 0 || GetTickCount64_ () - m_llLastAnnouceTime > 24 * 60 * 60 * 1000 )
+    if ( m_llLastAnnouceTime == 0 || GetTickCount64_() - m_llLastAnnouceTime > 24 * 60 * 60 * 1000 )
     {
         bool bFirstPass = m_llLastAnnouceTime == 0;
-        m_llLastAnnouceTime = GetTickCount64_ ();
+        m_llLastAnnouceTime = GetTickCount64_();
 
         // If ASE is enabled
         if ( m_pMainConfig->GetASEEnabled () )
@@ -861,8 +853,7 @@ void CGame::PulseMasterServerAnnounce ( void )
     }
 }
 
-
-bool CGame::StaticProcessPacket ( unsigned char ucPacketID, NetServerPlayerID& Socket, NetBitStreamInterface& BitStream )
+bool CGame::StaticProcessPacket( unsigned char ucPacketID, NetServerPlayerID& Socket, NetBitStreamInterface& BitStream )
 {
     // Is it a join packet? Pass it to the handler immediately
     if ( ucPacketID == PACKET_ID_PLAYER_JOIN )
@@ -894,143 +885,142 @@ bool CGame::StaticProcessPacket ( unsigned char ucPacketID, NetServerPlayerID& S
     return false;
 }
 
-
-bool CGame::ProcessPacket ( CPacket& Packet )
+bool CGame::ProcessPacket( CPacket& Packet )
 {
     // Can we handle it?
     ePacketID PacketID = Packet.GetPacketID ();
-    switch ( PacketID )
+    switch( PacketID )
     {
-        case PACKET_ID_PLAYER_JOINDATA:
-        {
-            Packet_PlayerJoinData ( static_cast < CPlayerJoinDataPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_PLAYER_JOINDATA:
+    {
+        Packet_PlayerJoinData ( static_cast < CPlayerJoinDataPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_PED_WASTED:
-        {
-            Packet_PedWasted ( static_cast < CPedWastedPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_PED_WASTED:
+    {
+        Packet_PedWasted ( static_cast < CPedWastedPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_PLAYER_WASTED:
-        {
-            Packet_PlayerWasted ( static_cast < CPlayerWastedPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_PLAYER_WASTED:
+    {
+        Packet_PlayerWasted ( static_cast < CPlayerWastedPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_PLAYER_QUIT:
-        {
-            Packet_PlayerQuit ( static_cast < CPlayerQuitPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_PLAYER_QUIT:
+    {
+        Packet_PlayerQuit ( static_cast < CPlayerQuitPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_PLAYER_TIMEOUT:
-        {
-            Packet_PlayerTimeout ( static_cast < CPlayerTimeoutPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_PLAYER_TIMEOUT:
+    {
+        Packet_PlayerTimeout ( static_cast < CPlayerTimeoutPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_PLAYER_PURESYNC:
-        {
-            Packet_PlayerPuresync ( static_cast < CPlayerPuresyncPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_PLAYER_PURESYNC:
+    {
+        Packet_PlayerPuresync ( static_cast < CPlayerPuresyncPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_PLAYER_VEHICLE_PURESYNC:
-        {
-            Packet_VehiclePuresync ( static_cast < CVehiclePuresyncPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_PLAYER_VEHICLE_PURESYNC:
+    {
+        Packet_VehiclePuresync ( static_cast < CVehiclePuresyncPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_PLAYER_KEYSYNC:
-        {
-            Packet_Keysync ( static_cast < CKeysyncPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_PLAYER_KEYSYNC:
+    {
+        Packet_Keysync ( static_cast < CKeysyncPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_DETONATE_SATCHELS:
-        {
-            Packet_DetonateSatchels ( static_cast < CDetonateSatchelsPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_DETONATE_SATCHELS:
+    {
+        Packet_DetonateSatchels ( static_cast < CDetonateSatchelsPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_EXPLOSION:
-            Packet_ExplosionSync ( static_cast < CExplosionSyncPacket& > ( Packet ) );
-            return true;
+    case PACKET_ID_EXPLOSION:
+        Packet_ExplosionSync ( static_cast < CExplosionSyncPacket& > ( Packet ) );
+        return true;
 
-        case PACKET_ID_PROJECTILE:
-            Packet_ProjectileSync ( static_cast < CProjectileSyncPacket& > ( Packet ) );
-            return true;
+    case PACKET_ID_PROJECTILE:
+        Packet_ProjectileSync ( static_cast < CProjectileSyncPacket& > ( Packet ) );
+        return true;
 
-        case PACKET_ID_COMMAND:
-        {
-            Packet_Command ( static_cast < CCommandPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_COMMAND:
+    {
+        Packet_Command ( static_cast < CCommandPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_VEHICLE_DAMAGE_SYNC:
-        {
-            Packet_VehicleDamageSync ( static_cast < CVehicleDamageSyncPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_VEHICLE_DAMAGE_SYNC:
+    {
+        Packet_VehicleDamageSync ( static_cast < CVehicleDamageSyncPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_VEHICLE_INOUT:
-        {
-            Packet_Vehicle_InOut ( static_cast < CVehicleInOutPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_VEHICLE_INOUT:
+    {
+        Packet_Vehicle_InOut ( static_cast < CVehicleInOutPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_LUA_EVENT:
-        {
-            Packet_LuaEvent ( static_cast < CLuaEventPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_LUA_EVENT:
+    {
+        Packet_LuaEvent ( static_cast < CLuaEventPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_CUSTOM_DATA:
-        {
-            Packet_CustomData ( static_cast < CCustomDataPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_CUSTOM_DATA:
+    {
+        Packet_CustomData ( static_cast < CCustomDataPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_VOICE_DATA:
-        {
-            Packet_Voice_Data ( static_cast < CVoiceDataPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_VOICE_DATA:
+    {
+        Packet_Voice_Data ( static_cast < CVoiceDataPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_VOICE_END:
-        {
-            Packet_Voice_End ( static_cast < CVoiceEndPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_VOICE_END:
+    {
+        Packet_Voice_End ( static_cast < CVoiceEndPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_CAMERA_SYNC:
-        {
-            Packet_CameraSync ( static_cast < CCameraSyncPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_CAMERA_SYNC:
+    {
+        Packet_CameraSync ( static_cast < CCameraSyncPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_PLAYER_TRANSGRESSION:
-        {
-            Packet_PlayerTransgression ( static_cast < CPlayerTransgressionPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_PLAYER_TRANSGRESSION:
+    {
+        Packet_PlayerTransgression ( static_cast < CPlayerTransgressionPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_PLAYER_DIAGNOSTIC:
-        {
-            Packet_PlayerDiagnostic ( static_cast < CPlayerDiagnosticPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_PLAYER_DIAGNOSTIC:
+    {
+        Packet_PlayerDiagnostic ( static_cast < CPlayerDiagnosticPacket& > ( Packet ) );
+        return true;
+    }
 
-        case PACKET_ID_PLAYER_MODINFO:
-        {
-            Packet_PlayerModInfo ( static_cast < CPlayerModInfoPacket& > ( Packet ) );
-            return true;
-        }
+    case PACKET_ID_PLAYER_MODINFO:
+    {
+        Packet_PlayerModInfo ( static_cast < CPlayerModInfoPacket& > ( Packet ) );
+        return true;
+    }
 
-        default:
-            break;
+    default:
+        break;
     }
 
     // Let the unoccupied vehicle sync manager handle it
@@ -1050,31 +1040,30 @@ bool CGame::ProcessPacket ( CPacket& Packet )
     return false;
 }
 
-
-void CGame::JoinPlayer ( CPlayer& Player )
+void CGame::JoinPlayer( CPlayer& Player )
 {
     // Set the root element as his parent
     // NOTE: Make sure he doesn't get any entities sent to him because we're sending him soon
-    Player.SetDoNotSendEntities ( true );
-    Player.SetParentObject ( m_pMapManager->GetRootElement () );
-    Player.SetDoNotSendEntities ( false );
+    Player.SetDoNotSendEntities( true );
+    Player.SetParentObject( m_pMapManager->GetRootElement () );
+    Player.SetDoNotSendEntities( false );
 
     // Let him join
-    Player.Send ( CPlayerJoinCompletePacket ( Player.GetID (),
-                                              m_pPlayerManager->Count (),
-                                              m_pMapManager->GetRootElement ()->GetID (),
-                                              m_pMainConfig->GetHTTPDownloadType (),
-                                              m_pMainConfig->GetHTTPPort (),
-                                              m_pMainConfig->GetHTTPDownloadURL ().c_str (),
-                                              m_pMainConfig->GetHTTPMaxConnectionsPerClient (),
-                                              m_pMainConfig->GetEnableClientChecks (),
+    Player.Send( CPlayerJoinCompletePacket( Player.GetID(),
+                                              m_pPlayerManager->Count(),
+                                              m_pMapManager->GetRootElement ()->GetID(),
+                                              m_pMainConfig->GetHTTPDownloadType(),
+                                              m_pMainConfig->GetHTTPPort(),
+                                              m_pMainConfig->GetHTTPDownloadURL().c_str(),
+                                              m_pMainConfig->GetHTTPMaxConnectionsPerClient(),
+                                              m_pMainConfig->GetEnableClientChecks(),
                                               m_pMainConfig->IsVoiceEnabled(),
                                               m_pMainConfig->GetVoiceSampleRate(),
                                               m_pMainConfig->GetVoiceQuality(),
                                               m_pMainConfig->GetVoiceBitrate() ) );
 }
 
-void CGame::InitialDataStream ( CPlayer& Player )
+void CGame::InitialDataStream( CPlayer& Player )
 {
     // He's joined now
     Player.SetStatus ( STATUS_JOINED );
@@ -1243,108 +1232,108 @@ void CGame::QuitPlayer ( CPlayer& Player, CClient::eQuitReasons Reason, bool bSa
 }
 
 
-void CGame::AddBuiltInEvents ( void )
+void CGame::AddBuiltInEvents()
 {
     // Resource events
-    m_Events.AddEvent ( "onResourcePreStart", "resource", NULL, false );
-    m_Events.AddEvent ( "onResourceStart", "resource", NULL, false );
-    m_Events.AddEvent ( "onResourceStop", "resource", NULL, false );
+    m_Events.AddEvent( "onResourcePreStart", "resource", NULL, false );
+    m_Events.AddEvent( "onResourceStart", "resource", NULL, false );
+    m_Events.AddEvent( "onResourceStop", "resource", NULL, false );
 
     // Blip events
 
     // Marker events
-    m_Events.AddEvent ( "onMarkerHit", "player, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onMarkerLeave", "player, matchingDimension", NULL, false );
+    m_Events.AddEvent( "onMarkerHit", "player, matchingDimension", NULL, false );
+    m_Events.AddEvent( "onMarkerLeave", "player, matchingDimension", NULL, false );
 
     // Voice events
-    m_Events.AddEvent ( "onPlayerVoiceStart", "", NULL, false );
-    m_Events.AddEvent ( "onPlayerVoiceStop", "", NULL, false );
+    m_Events.AddEvent( "onPlayerVoiceStart", "", NULL, false );
+    m_Events.AddEvent( "onPlayerVoiceStop", "", NULL, false );
 
 
     // Object events
 
     // Pickup events
-    m_Events.AddEvent ( "onPickupHit", "player, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onPickupUse", "player", NULL, false );
-    m_Events.AddEvent ( "onPickupSpawn", "", NULL, false );
+    m_Events.AddEvent( "onPickupHit", "player, matchingDimension", NULL, false );
+    m_Events.AddEvent( "onPickupUse", "player", NULL, false );
+    m_Events.AddEvent( "onPickupSpawn", "", NULL, false );
 
     // Player events
-    m_Events.AddEvent ( "onPlayerConnect", "player", NULL, false );
-    m_Events.AddEvent ( "onPlayerChat", "text", NULL, false );
-    m_Events.AddEvent ( "onPlayerDamage", "attacker, weapon, bodypart, loss", NULL, false );
-    m_Events.AddEvent ( "onPlayerVehicleEnter", "vehicle, seat, jacked", NULL, false );
-    m_Events.AddEvent ( "onPlayerVehicleExit", "vehicle, reason, jacker", NULL, false );
-    m_Events.AddEvent ( "onPlayerJoin", "", NULL, false );
-    m_Events.AddEvent ( "onPlayerQuit", "reason", NULL, false );
-    m_Events.AddEvent ( "onPlayerSpawn", "spawnpoint, team", NULL, false );
-    m_Events.AddEvent ( "onPlayerTarget", "target", NULL, false );
-    m_Events.AddEvent ( "onPlayerWasted", "ammo, killer, weapon, bodypart", NULL, false );
-    m_Events.AddEvent ( "onPlayerWeaponSwitch", "previous, current", NULL, false );
-    m_Events.AddEvent ( "onPlayerMarkerHit", "marker, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onPlayerMarkerLeave", "marker, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onPlayerPickupHit", "pickup, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onPlayerPickupUse", "pickup", NULL, false );
-    m_Events.AddEvent ( "onPlayerClick", "button, state, element, posX, posY, posZ", NULL, false );
-    m_Events.AddEvent ( "onPlayerContact", "previous, current", NULL, false );
-    m_Events.AddEvent ( "onPlayerBan", "ban", NULL, false );
-    m_Events.AddEvent ( "onPlayerLogin", "guest_account, account, auto-login", NULL, false );
-    m_Events.AddEvent ( "onPlayerLogout", "account, guest_account", NULL, false );
-    m_Events.AddEvent ( "onPlayerChangeNick", "oldnick, newnick", NULL, false );
-    m_Events.AddEvent ( "onPlayerPrivateMessage", "text, player", NULL, false );
-    m_Events.AddEvent ( "onPlayerStealthKill", "target", NULL, false );
-    m_Events.AddEvent ( "onPlayerMute", "", NULL, false );
-    m_Events.AddEvent ( "onPlayerUnmute", "", NULL, false );
-    m_Events.AddEvent ( "onPlayerCommand", "command", NULL, false );
-    m_Events.AddEvent ( "onPlayerModInfo", "type, ids, names", NULL, false );
+    m_Events.AddEvent( "onPlayerConnect", "player", NULL, false );
+    m_Events.AddEvent( "onPlayerChat", "text", NULL, false );
+    m_Events.AddEvent( "onPlayerDamage", "attacker, weapon, bodypart, loss", NULL, false );
+    m_Events.AddEvent( "onPlayerVehicleEnter", "vehicle, seat, jacked", NULL, false );
+    m_Events.AddEvent( "onPlayerVehicleExit", "vehicle, reason, jacker", NULL, false );
+    m_Events.AddEvent( "onPlayerJoin", "", NULL, false );
+    m_Events.AddEvent( "onPlayerQuit", "reason", NULL, false );
+    m_Events.AddEvent( "onPlayerSpawn", "spawnpoint, team", NULL, false );
+    m_Events.AddEvent( "onPlayerTarget", "target", NULL, false );
+    m_Events.AddEvent( "onPlayerWasted", "ammo, killer, weapon, bodypart", NULL, false );
+    m_Events.AddEvent( "onPlayerWeaponSwitch", "previous, current", NULL, false );
+    m_Events.AddEvent( "onPlayerMarkerHit", "marker, matchingDimension", NULL, false );
+    m_Events.AddEvent( "onPlayerMarkerLeave", "marker, matchingDimension", NULL, false );
+    m_Events.AddEvent( "onPlayerPickupHit", "pickup, matchingDimension", NULL, false );
+    m_Events.AddEvent( "onPlayerPickupUse", "pickup", NULL, false );
+    m_Events.AddEvent( "onPlayerClick", "button, state, element, posX, posY, posZ", NULL, false );
+    m_Events.AddEvent( "onPlayerContact", "previous, current", NULL, false );
+    m_Events.AddEvent( "onPlayerBan", "ban", NULL, false );
+    m_Events.AddEvent( "onPlayerLogin", "guest_account, account, auto-login", NULL, false );
+    m_Events.AddEvent( "onPlayerLogout", "account, guest_account", NULL, false );
+    m_Events.AddEvent( "onPlayerChangeNick", "oldnick, newnick", NULL, false );
+    m_Events.AddEvent( "onPlayerPrivateMessage", "text, player", NULL, false );
+    m_Events.AddEvent( "onPlayerStealthKill", "target", NULL, false );
+    m_Events.AddEvent( "onPlayerMute", "", NULL, false );
+    m_Events.AddEvent( "onPlayerUnmute", "", NULL, false );
+    m_Events.AddEvent( "onPlayerCommand", "command", NULL, false );
+    m_Events.AddEvent( "onPlayerModInfo", "type, ids, names", NULL, false );
 
     // Ped events
-    m_Events.AddEvent ( "onPedWasted", "ammo, killer, weapon, bodypart", NULL, false );
-    m_Events.AddEvent ( "onPedWeaponSwitch", "previous, current", NULL, false );
+    m_Events.AddEvent( "onPedWasted", "ammo, killer, weapon, bodypart", NULL, false );
+    m_Events.AddEvent( "onPedWeaponSwitch", "previous, current", NULL, false );
 
     // Element events
-    m_Events.AddEvent ( "onElementColShapeHit", "colshape, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onElementColShapeLeave", "colshape, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onElementClicked", "button, state, clicker, posX, posY, posZ", NULL, false );
-    m_Events.AddEvent ( "onElementDataChange", "key, oldValue", NULL, false );
-    m_Events.AddEvent ( "onElementDestroy", "", NULL, false );
-    m_Events.AddEvent ( "onElementStartSync", "newSyncer", NULL, false );
-    m_Events.AddEvent ( "onElementStopSync", "oldSyncer", NULL, false );
+    m_Events.AddEvent( "onElementColShapeHit", "colshape, matchingDimension", NULL, false );
+    m_Events.AddEvent( "onElementColShapeLeave", "colshape, matchingDimension", NULL, false );
+    m_Events.AddEvent( "onElementClicked", "button, state, clicker, posX, posY, posZ", NULL, false );
+    m_Events.AddEvent( "onElementDataChange", "key, oldValue", NULL, false );
+    m_Events.AddEvent( "onElementDestroy", "", NULL, false );
+    m_Events.AddEvent( "onElementStartSync", "newSyncer", NULL, false );
+    m_Events.AddEvent( "onElementStopSync", "oldSyncer", NULL, false );
 
     // Radar area events
 
     // Shape events
-    m_Events.AddEvent ( "onColShapeHit", "entity, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onColShapeLeave", "entity, matchingDimension", NULL, false );
+    m_Events.AddEvent( "onColShapeHit", "entity, matchingDimension", NULL, false );
+    m_Events.AddEvent( "onColShapeLeave", "entity, matchingDimension", NULL, false );
 
     // Vehicle events
-    m_Events.AddEvent ( "onVehicleDamage", "loss", NULL, false );
-    m_Events.AddEvent ( "onVehicleRespawn", "exploded", NULL, false );
-    m_Events.AddEvent ( "onTrailerAttach", "towedBy", NULL, false );
-    m_Events.AddEvent ( "onTrailerDetach", "towedBy", NULL, false );
-    m_Events.AddEvent ( "onVehicleStartEnter", "player, seat, jacked", NULL, false );
-    m_Events.AddEvent ( "onVehicleStartExit", "player, seat, jacker", NULL, false );
-    m_Events.AddEvent ( "onVehicleEnter", "player, seat, jacked", NULL, false );
-    m_Events.AddEvent ( "onVehicleExit", "player, seat, jacker", NULL, false );
-    m_Events.AddEvent ( "onVehicleExplode", "", NULL, false );
+    m_Events.AddEvent( "onVehicleDamage", "loss", NULL, false );
+    m_Events.AddEvent( "onVehicleRespawn", "exploded", NULL, false );
+    m_Events.AddEvent( "onTrailerAttach", "towedBy", NULL, false );
+    m_Events.AddEvent( "onTrailerDetach", "towedBy", NULL, false );
+    m_Events.AddEvent( "onVehicleStartEnter", "player, seat, jacked", NULL, false );
+    m_Events.AddEvent( "onVehicleStartExit", "player, seat, jacker", NULL, false );
+    m_Events.AddEvent( "onVehicleEnter", "player, seat, jacked", NULL, false );
+    m_Events.AddEvent( "onVehicleExit", "player, seat, jacker", NULL, false );
+    m_Events.AddEvent( "onVehicleExplode", "", NULL, false );
 
     // Console events
-    m_Events.AddEvent ( "onConsole", "text", NULL, false );
+    m_Events.AddEvent( "onConsole", "text", NULL, false );
 
     // Debug events
-    m_Events.AddEvent ( "onDebugMessage", "message, level, file, line", NULL, false );
+    m_Events.AddEvent( "onDebugMessage", "message, level, file, line", NULL, false );
 
     // Ban events
-    m_Events.AddEvent ( "onBan", "ip", NULL, false );
-    m_Events.AddEvent ( "onUnban", "ip", NULL, false );
+    m_Events.AddEvent( "onBan", "ip", NULL, false );
+    m_Events.AddEvent( "onUnban", "ip", NULL, false );
 
     // Account events
-    m_Events.AddEvent ( "onAccountDataChange", "account, key, value", NULL, false );
+    m_Events.AddEvent( "onAccountDataChange", "account, key, value", NULL, false );
 
     // Other events
-    m_Events.AddEvent ( "onSettingChange", "setting, oldValue, newValue", NULL, false );
+    m_Events.AddEvent( "onSettingChange", "setting, oldValue, newValue", NULL, false );
 }
 
-void CGame::ProcessTrafficLights ( unsigned long ulCurrentTime )
+void CGame::ProcessTrafficLights( unsigned long ulCurrentTime )
 {
     unsigned long ulDiff = static_cast < unsigned long > ( (ulCurrentTime - m_ulLastTrafficUpdate)*m_fGameSpeed );
     unsigned char ucNewState = 0xFF;
@@ -1373,7 +1362,7 @@ void CGame::ProcessTrafficLights ( unsigned long ulCurrentTime )
 }
 
 
-void CGame::Packet_PlayerJoin ( NetServerPlayerID& Source )
+void CGame::Packet_PlayerJoin( NetServerPlayerID& Source )
 {
     // Reply with the mod this server is running
     NetBitStreamInterface* pBitStream = g_pNetServer->AllocateNetServerBitStream ( 0 );
@@ -1389,8 +1378,7 @@ void CGame::Packet_PlayerJoin ( NetServerPlayerID& Source )
     }
 }
 
-
-void CGame::Packet_PlayerJoinData ( CPlayerJoinDataPacket& Packet )
+void CGame::Packet_PlayerJoinData( CPlayerJoinDataPacket& Packet )
 {
     // Grab the nick
     const char* szNick = Packet.GetNick ();
@@ -1632,7 +1620,7 @@ void CGame::Packet_PlayerJoinData ( CPlayerJoinDataPacket& Packet )
     }
 }
 
-void CGame::Packet_PedWasted ( CPedWastedPacket& Packet )
+void CGame::Packet_PedWasted( CPedWastedPacket& Packet )
 {
     CElement * pElement = ( Packet.m_PedID != INVALID_ELEMENT_ID ) ? CElementIDs::GetElement ( Packet.m_PedID ) : NULL;
     CPed* pPed = static_cast < CPed* > ( pElement );
@@ -1676,7 +1664,8 @@ void CGame::Packet_PedWasted ( CPedWastedPacket& Packet )
         }
     }
 }
-void CGame::Packet_PlayerWasted ( CPlayerWastedPacket& Packet )
+
+void CGame::Packet_PlayerWasted( CPlayerWastedPacket& Packet )
 {
     CPlayer* pPlayer = Packet.GetSourcePlayer();
     if ( pPlayer ) {
@@ -1721,8 +1710,7 @@ void CGame::Packet_PlayerWasted ( CPlayerWastedPacket& Packet )
     }
 }
 
-
-void CGame::Packet_PlayerQuit ( CPlayerQuitPacket& Packet )
+void CGame::Packet_PlayerQuit( CPlayerQuitPacket& Packet )
 {
     // Grab the player
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
@@ -1733,8 +1721,7 @@ void CGame::Packet_PlayerQuit ( CPlayerQuitPacket& Packet )
     }
 }
 
-
-void CGame::Packet_PlayerTimeout ( CPlayerTimeoutPacket& Packet )
+void CGame::Packet_PlayerTimeout( CPlayerTimeoutPacket& Packet )
 {
     // Grab the player
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
@@ -1745,9 +1732,8 @@ void CGame::Packet_PlayerTimeout ( CPlayerTimeoutPacket& Packet )
     }
 }
 
-
 // Relay this (pure sync) packet to all the other players using distance rules
-void CGame::RelayPlayerPuresync ( CPacket& Packet )
+void CGame::RelayPlayerPuresync( CPacket& Packet )
 {
     UpdateModuleTickCount64 ();
 
@@ -1818,12 +1804,11 @@ void CGame::RelayPlayerPuresync ( CPacket& Packet )
     CPlayerManager::Broadcast ( Packet, sendList );
 }
 
-
-void CGame::Packet_PlayerPuresync ( CPlayerPuresyncPacket& Packet )
+void CGame::Packet_PlayerPuresync( CPlayerPuresyncPacket& Packet )
 {
     // Grab the source player
-    CPlayer* pPlayer = Packet.GetSourcePlayer ();
-    if ( pPlayer && pPlayer->IsJoined () )
+    CPlayer* pPlayer = Packet.GetSourcePlayer();
+    if ( pPlayer && pPlayer->IsJoined() )
     {
         pPlayer->NotifyReceivedSync ();
         pPlayer->IncrementPuresync ();
@@ -1846,7 +1831,7 @@ void CGame::Packet_PlayerPuresync ( CPlayerPuresyncPacket& Packet )
 }
 
 
-void CGame::Packet_Command ( CCommandPacket& Packet )
+void CGame::Packet_Command( CCommandPacket& Packet )
 {
     // Grab the source player
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
@@ -1857,8 +1842,7 @@ void CGame::Packet_Command ( CCommandPacket& Packet )
     }
 }
 
-
-void CGame::Packet_VehicleDamageSync ( CVehicleDamageSyncPacket& Packet )
+void CGame::Packet_VehicleDamageSync( CVehicleDamageSyncPacket& Packet )
 {
     // Grab the source player
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
@@ -1902,8 +1886,7 @@ void CGame::Packet_VehicleDamageSync ( CVehicleDamageSyncPacket& Packet )
     }
 }
 
-
-void CGame::Packet_VehiclePuresync ( CVehiclePuresyncPacket& Packet )
+void CGame::Packet_VehiclePuresync( CVehiclePuresyncPacket& Packet )
 {
     // Grab the source player
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
@@ -1928,8 +1911,7 @@ void CGame::Packet_VehiclePuresync ( CVehiclePuresyncPacket& Packet )
     }
 }
 
-
-void CGame::Packet_Keysync ( CKeysyncPacket& Packet )
+void CGame::Packet_Keysync( CKeysyncPacket& Packet )
 {
     // Grab the source player
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
@@ -1968,8 +1950,7 @@ void CGame::Packet_Keysync ( CKeysyncPacket& Packet )
     }
 }
 
-
-void CGame::Packet_LuaEvent ( CLuaEventPacket& Packet )
+void CGame::Packet_LuaEvent( CLuaEventPacket& Packet )
 {
     // Grab the source player, even name, element id and the arguments passed
     CPlayer* pCaller = Packet.GetSourcePlayer ();
@@ -1997,7 +1978,7 @@ void CGame::Packet_LuaEvent ( CLuaEventPacket& Packet )
     }
 }
 
-void CGame::Packet_CustomData ( CCustomDataPacket& Packet )
+void CGame::Packet_CustomData( CCustomDataPacket& Packet )
 {
     // Got a valid source?
     CPlayer* pSourcePlayer = Packet.GetSourcePlayer ();
@@ -2031,8 +2012,7 @@ void CGame::Packet_CustomData ( CCustomDataPacket& Packet )
     }
 }
 
-
-void CGame::Packet_DetonateSatchels ( CDetonateSatchelsPacket& Packet )
+void CGame::Packet_DetonateSatchels( CDetonateSatchelsPacket& Packet )
 {
     // Grab the source player
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
@@ -2045,8 +2025,7 @@ void CGame::Packet_DetonateSatchels ( CDetonateSatchelsPacket& Packet )
     }
 }
 
-
-void CGame::Packet_ExplosionSync ( CExplosionSyncPacket& Packet )
+void CGame::Packet_ExplosionSync( CExplosionSyncPacket& Packet )
 {
     // Grab the source player
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
@@ -2114,7 +2093,8 @@ void CGame::Packet_ExplosionSync ( CExplosionSyncPacket& Packet )
                         }
                         break;
                     }
-                    default: break;
+                    default:
+                        break;
                 }
             }
         }
@@ -2148,8 +2128,7 @@ void CGame::Packet_ExplosionSync ( CExplosionSyncPacket& Packet )
     }
 }
 
-
-void CGame::Packet_ProjectileSync ( CProjectileSyncPacket& Packet )
+void CGame::Packet_ProjectileSync( CProjectileSyncPacket& Packet )
 {
     // Grab the source player
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
@@ -2191,8 +2170,7 @@ void CGame::Packet_ProjectileSync ( CProjectileSyncPacket& Packet )
     }
 }
 
-
-void CGame::Packet_Vehicle_InOut ( CVehicleInOutPacket& Packet )
+void CGame::Packet_Vehicle_InOut( CVehicleInOutPacket& Packet )
 {
     // Grab the source player
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
@@ -2873,8 +2851,7 @@ void CGame::Packet_Vehicle_InOut ( CVehicleInOutPacket& Packet )
     }
 }
 
-
-void CGame::Packet_VehicleTrailer ( CVehicleTrailerPacket& Packet )
+void CGame::Packet_VehicleTrailer( CVehicleTrailerPacket& Packet )
 {
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
     if ( pPlayer && pPlayer->IsJoined () )
@@ -2974,8 +2951,7 @@ void CGame::Packet_VehicleTrailer ( CVehicleTrailerPacket& Packet )
     }
 }
 
-
-void CGame::Packet_Voice_Data ( CVoiceDataPacket& Packet )
+void CGame::Packet_Voice_Data( CVoiceDataPacket& Packet )
 {
     unsigned short usDataLength = 0;
 
@@ -3062,7 +3038,7 @@ void CGame::Packet_Voice_Data ( CVoiceDataPacket& Packet )
     }
 }
 
-void CGame::Packet_Voice_End ( CVoiceEndPacket& Packet )
+void CGame::Packet_Voice_End( CVoiceEndPacket& Packet )
 {
     unsigned short usDataLength = 0;
 
@@ -3081,9 +3057,7 @@ void CGame::Packet_Voice_End ( CVoiceEndPacket& Packet )
     }
 }
 
-
-
-void CGame::Packet_CameraSync ( CCameraSyncPacket & Packet )
+void CGame::Packet_CameraSync( CCameraSyncPacket & Packet )
 {
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
     if ( pPlayer && pPlayer->IsJoined () )
@@ -3109,8 +3083,7 @@ void CGame::Packet_CameraSync ( CCameraSyncPacket & Packet )
     }
 }
 
-
-void CGame::Packet_PlayerTransgression ( CPlayerTransgressionPacket & Packet )
+void CGame::Packet_PlayerTransgression( CPlayerTransgressionPacket & Packet )
 {
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
     if ( pPlayer && pPlayer->IsJoined () )
@@ -3123,8 +3096,7 @@ void CGame::Packet_PlayerTransgression ( CPlayerTransgressionPacket & Packet )
     }
 }
 
-
-void CGame::Packet_PlayerDiagnostic ( CPlayerDiagnosticPacket & Packet )
+void CGame::Packet_PlayerDiagnostic( CPlayerDiagnosticPacket & Packet )
 {
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
     if ( pPlayer && pPlayer->IsJoined () )
@@ -3138,8 +3110,7 @@ void CGame::Packet_PlayerDiagnostic ( CPlayerDiagnosticPacket & Packet )
     }
 }
 
-
-void CGame::Packet_PlayerModInfo ( CPlayerModInfoPacket & Packet )
+void CGame::Packet_PlayerModInfo( CPlayerModInfoPacket & Packet )
 {
     CPlayer* pPlayer = Packet.GetSourcePlayer ();
     if ( pPlayer && pPlayer->IsJoined () )
@@ -3185,8 +3156,7 @@ void CGame::Packet_PlayerModInfo ( CPlayerModInfoPacket & Packet )
     }
 }
 
-
-void CGame::PlayerCompleteConnect ( CPlayer* pPlayer, bool bSuccess, const char* szError )
+void CGame::PlayerCompleteConnect( CPlayer* pPlayer, bool bSuccess, const char* szError )
 {
     char szIP [22];
     SString strIPAndSerial( "IP: %s  Serial: %s  Version: %s", pPlayer->GetSourceIP ( szIP ), pPlayer->GetSerial ().c_str (), pPlayer->GetPlayerVersion ().c_str () );
@@ -3227,49 +3197,54 @@ void CGame::PlayerCompleteConnect ( CPlayer* pPlayer, bool bSuccess, const char*
     else
     {
         CLogger::LogPrintf ( "CONNECT: %s failed to connect (Invalid serial) (%s)\n", pPlayer->GetNick(), strIPAndSerial.c_str () );
+
         if ( szError && strlen ( szError ) > 0 )
             DisconnectPlayer ( g_pGame, *pPlayer, szError );
         else
             DisconnectPlayer ( g_pGame, *pPlayer, "Disconnected: Serial verification failed" );
+
         return;
     }
 }
 
-
-void CGame::Lock ( void )
+void CGame::Lock()
 {
-    pthread_mutex_lock ( &mutexhttp );
+    pthread_mutex_lock( &mutexhttp );
 }
 
-void CGame::Unlock ( void )
+void CGame::Unlock()
 {
-    pthread_mutex_unlock ( &mutexhttp );
+    pthread_mutex_unlock( &mutexhttp );
 }
 
-void CGame::SetGlitchEnabled ( const std::string& strGlitch, bool bEnabled )
+void CGame::SetGlitchEnabled( const std::string& strGlitch, bool bEnabled )
 {
     eGlitchType cGlitch = m_GlitchNames[strGlitch];
-    assert ( cGlitch >= 0 && cGlitch <= 3 );
+
+    assert( cGlitch >= 0 && cGlitch <= 3 );
+
     m_Glitches[cGlitch] = bEnabled;
 }
 
-bool CGame::IsGlitchEnabled ( const std::string& strGlitch )
+bool CGame::IsGlitchEnabled( const std::string& strGlitch )
 {
     eGlitchType cGlitch = m_GlitchNames[strGlitch];
     assert ( cGlitch >= 0 && cGlitch <= 3 );
     return m_Glitches[cGlitch] ? true : false;
 }
-bool CGame::IsGlitchEnabled ( eGlitchType cGlitch )
+
+bool CGame::IsGlitchEnabled( eGlitchType cGlitch )
 {
     assert ( cGlitch >= 0 && cGlitch <= 3 );
     return m_Glitches[cGlitch] || false;
 }
 
-void CGame::SetCloudsEnabled ( bool bEnabled )
+void CGame::SetCloudsEnabled( bool bEnabled )
 {
     m_bCloudsEnabled = bEnabled;
 }
-bool CGame::GetCloudsEnabled ( void )
+
+bool CGame::GetCloudsEnabled()
 {
     return m_bCloudsEnabled;
 }

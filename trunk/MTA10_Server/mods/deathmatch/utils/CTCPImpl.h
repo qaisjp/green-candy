@@ -20,19 +20,19 @@
 class CTCPImpl : public CTCP
 {
 public:
-                        CTCPImpl            ( void );
-                        ~CTCPImpl           ( void );
+                        CTCPImpl            ();
+                        ~CTCPImpl           ();
 
-    CTCPClientSocket*   CreateClient        ( void );
-    CTCPServerSocket*   CreateServer        ( void );
+    CTCPClientSocket*   CreateClient        ();
+    CTCPServerSocket*   CreateServer        ();
 
     void                DestroyClient       ( CTCPClientSocket* pClient );
     void                DestroyServer       ( CTCPServerSocket* pServer );
 
-    const char*         GetLastError        ( void );
+    const char*         GetLastError        ();
 
-    bool                Initialize          ( void );
-    void                Reset               ( void );
+    bool                Initialize          ();
+    void                Reset               ();
 
 private:
     bool                m_bInitialized;

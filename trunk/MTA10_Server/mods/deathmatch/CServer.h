@@ -18,25 +18,27 @@
 class CServer : public CServerBase
 {
 public:
-                        CServer             ( void );
-    virtual             ~CServer            ( void );
+                        CServer             ();
+    virtual             ~CServer            ();
 
     void                ServerInitialize    ( CServerInterface* pServerInterface );
     bool                ServerStartup       ( int iArgumentCount, char* szArguments [] );
-    void                ServerShutdown      ( void );
+    void                ServerShutdown      ();
 
-    void                DoPulse             ( void );
+    void                DoPulse             ();
 
     void                GetTag              ( char* szInfoTag, int iInfoTag );
     void                HandleInput         ( char* szCommand );
 
-    bool                IsFinished          ( void );
-    bool                PendingWorkToDo     ( void );
+    bool                IsFinished          ();
+    bool                PendingWorkToDo     ();
 
 private:
     CServerInterface*   m_pServerInterface;
     class CGame*        m_pGame;
 };
+
+extern CFileTranslator *modFileRoot;
 
 #endif
 

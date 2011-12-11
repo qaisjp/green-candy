@@ -5,6 +5,7 @@
 *  FILE:        mods/deathmatch/logic/CCommandFile.cpp
 *  PURPOSE:     Command file parser class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -17,8 +18,11 @@ CCommandFile::CCommandFile( const char *filename, CConsole& Console, CClient& Cl
     m_Client( Client )
 {
     // Load the given file
-    m_pFile = fopen( szFilename, "r" );
+    m_file = modFileRoot->Open( filename, "r" );
     m_bEcho = true;
+
+    if ( !m_file )
+        throw false;
 }
 
 CCommandFile::~CCommandFile()
@@ -35,23 +39,20 @@ bool CCommandFile::Run()
         return false;
  
     // Read lines
-    char szBuffer[2048];
-    szBuffer[2047] = 0;
+    std::string buf;
 
-    while ( fgets ( szBuffer, 2047, m_pFile ) )
+    while ( m_file->GetString( buf ) )
     {
         // Parse it. Don't continue on error.
-        if ( !Parse ( szBuffer ) )
-        {
+        if ( !Parse( buf.c_str() ) )
             return false;
-        }
     }
 
     return true;
 }
 
 
-bool CCommandFile::Parse ( char* szLine )
+bool CCommandFile::Parse( char* szLine )
 {
     // Skip whitespace first, then trim off the right whitespace
     szLine = SkipWhitespace ( szLine );

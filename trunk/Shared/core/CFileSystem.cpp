@@ -262,13 +262,13 @@ static inline bool _File_ParseRelativeTree( const char *path, dirTree& root, dir
 CRawFile::~CRawFile()
 {
 #ifdef _WIN32
-    CloseHandle(m_file);
+    CloseHandle( m_file );
 #endif
 
-    openFiles->remove(this);
+    openFiles->remove( this );
 }
 
-size_t CRawFile::Read(void *pBuffer, size_t sElement, unsigned long iNumElements)
+size_t CRawFile::Read( void *pBuffer, size_t sElement, unsigned long iNumElements )
 {
 #ifdef _WIN32
     DWORD dwBytesRead;
@@ -281,7 +281,7 @@ size_t CRawFile::Read(void *pBuffer, size_t sElement, unsigned long iNumElements
 #endif
 }
 
-size_t CRawFile::Write(const void *pBuffer, size_t sElement, unsigned long iNumElements)
+size_t CRawFile::Write( const void *pBuffer, size_t sElement, unsigned long iNumElements )
 {
 #ifdef _WIN32
     DWORD dwBytesWritten;
@@ -294,7 +294,7 @@ size_t CRawFile::Write(const void *pBuffer, size_t sElement, unsigned long iNumE
 #endif
 }
 
-int CRawFile::Seek(long iOffset, int iType)
+int CRawFile::Seek( long iOffset, int iType )
 {
 #ifdef _WIN32
     if (SetFilePointer(m_file, iOffset, NULL, iType) == INVALID_SET_FILE_POINTER)
@@ -306,23 +306,23 @@ int CRawFile::Seek(long iOffset, int iType)
 long CRawFile::Tell()
 {
 #ifdef _WIN32
-    return SetFilePointer(m_file, 0, NULL, FILE_CURRENT);
+    return SetFilePointer( m_file, 0, NULL, FILE_CURRENT );
 #endif
 }
 
 bool CRawFile::IsEOF()
 {
 #ifdef _WIN32
-    return (SetFilePointer(m_file, 0, NULL, FILE_CURRENT) == GetFileSize(m_file, NULL));
+    return ( SetFilePointer( m_file, 0, NULL, FILE_CURRENT ) == GetFileSize( m_file, NULL ) );
 #endif
 }
 
-bool CRawFile::Stat(struct stat *pFileStats)
+bool CRawFile::Stat( struct stat *pFileStats )
 {
 #ifdef _WIN32
     BY_HANDLE_FILE_INFORMATION info;
 
-    if (!GetFileInformationByHandle(m_file, &info))
+    if (!GetFileInformationByHandle( m_file, &info ))
         return false;
 
     pFileStats->st_size = info.nFileSizeLow;
@@ -342,7 +342,7 @@ bool CRawFile::Stat(struct stat *pFileStats)
 size_t CRawFile::GetSize()
 {
 #ifdef _WIN32
-    return GetFileSize(m_file, NULL);
+    return GetFileSize( m_file, NULL );
 #endif
 }
 
@@ -358,7 +358,7 @@ void CRawFile::SetSize( size_t size )
 void CRawFile::Flush()
 {
 #ifdef _WIN32
-    FlushFileBuffers(m_file);
+    FlushFileBuffers( m_file );
 #endif
 }
 
@@ -370,14 +370,14 @@ filePath& CRawFile::GetPath()
 bool CRawFile::IsReadable()
 {
 #ifdef _WIN32
-    return (m_access & GENERIC_READ) != 0;
+    return ( m_access & GENERIC_READ ) != 0;
 #endif
 }
 
 bool CRawFile::IsWriteable()
 {
 #ifdef _WIN32
-    return (m_access & GENERIC_WRITE) != 0;
+    return ( m_access & GENERIC_WRITE ) != 0;
 #endif
 }
 
@@ -391,27 +391,27 @@ CBufferedFile::~CBufferedFile()
 {
 }
 
-size_t CBufferedFile::Read(void *pBuffer, size_t sElement, unsigned long iNumElements)
+size_t CBufferedFile::Read( void *pBuffer, size_t sElement, unsigned long iNumElements )
 {
-    long iReadElements = min((m_sSize - m_iSeek) / sElement, iNumElements);
+    long iReadElements = min( ( m_sSize - m_iSeek ) / sElement, iNumElements );
     size_t sRead = iReadElements * sElement;
 
-    if (iNumElements <= 0)
+    if ( iNumElements == 0 )
         return 0;
 
-    memcpy(pBuffer, m_pBuffer + m_iSeek, sRead);
+    memcpy( pBuffer, m_pBuffer + m_iSeek, sRead );
     m_iSeek += sRead;
     return iReadElements;
 }
 
-size_t CBufferedFile::Write(const void *pBuffer, size_t sElement, unsigned long iNumElements)
+size_t CBufferedFile::Write( const void *pBuffer, size_t sElement, unsigned long iNumElements )
 {
     return 0;
 }
 
-int CBufferedFile::Seek(long iOffset, int iType)
+int CBufferedFile::Seek( long iOffset, int iType )
 {
-    switch (iType)
+    switch( iType )
     {
     case SEEK_SET:
         m_iSeek = 0;
@@ -421,7 +421,7 @@ int CBufferedFile::Seek(long iOffset, int iType)
         break;
     }
 
-    m_iSeek = max(0, min(m_iSeek + iOffset, (long)m_sSize));
+    m_iSeek = max( 0, min( m_iSeek + iOffset, (long)m_sSize ) );
     return 0;
 }
 
@@ -432,10 +432,10 @@ long CBufferedFile::Tell()
 
 bool CBufferedFile::IsEOF()
 {
-    return (m_iSeek == m_sSize);
+    return ( m_iSeek == m_sSize );
 }
 
-bool CBufferedFile::Stat(struct stat *pFileStats)
+bool CBufferedFile::Stat( struct stat *pFileStats )
 {
     pFileStats->st_dev = -1;
     pFileStats->st_ino = -1;
@@ -470,10 +470,10 @@ int CBufferedFile::ReadInt()
 {
     int iResult;
 
-    if ((m_sSize - m_iSeek) < sizeof(int))
+    if ( ( m_sSize - m_iSeek ) < sizeof(int) )
         return 0;
 
-    iResult = *(int*)(m_pBuffer + m_iSeek);
+    iResult = *(int*)( m_pBuffer + m_iSeek );
     m_iSeek += sizeof(int);
     return iResult;
 }
@@ -482,7 +482,7 @@ short CBufferedFile::ReadShort()
 {
     short iResult;
 
-    if ((m_sSize - m_iSeek) < sizeof(short))
+    if ( (m_sSize - m_iSeek) < sizeof(short) )
         return 0;
 
     iResult = *(short*)(m_pBuffer + m_iSeek);
@@ -492,8 +492,9 @@ short CBufferedFile::ReadShort()
 
 char CBufferedFile::ReadByte()
 {
-    if (m_sSize == m_iSeek)
+    if ( m_sSize == m_iSeek )
         return 0;
+
     return *(m_pBuffer + m_iSeek++);
 }
 

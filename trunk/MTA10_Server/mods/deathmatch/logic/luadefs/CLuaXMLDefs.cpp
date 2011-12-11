@@ -70,7 +70,7 @@ int CLuaXMLDefs::xmlCreateFile ( lua_State* luaVM )
         }
         else
         {
-            std::string strFile = lua_tostring ( luaVM, 1 );
+            std::string strFile = lua_tostring( luaVM, 1 );
             std::string strPath;
 
             if ( CResourceManager::ParseResourcePathInput ( strFile, pResource, &strPath, NULL ) )

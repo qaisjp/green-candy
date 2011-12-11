@@ -11,6 +11,7 @@
 *               Oliver Brown <>
 *               Jax <>
 *               lil_Toady <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -362,27 +363,26 @@ CResource * CResourceManager::Load ( bool bIsZipped, const char * szAbsPath, con
         m_bResourceListChanged = true;
     }
 
-    loadedResource = new CResource ( this, bIsZipped, szAbsPath, szResourceName );
-    if ( !loadedResource->IsLoaded() )
+    try
     {
-        CLogger::LogPrintf("Loading of resource '%s' failed\n", szResourceName );
-        m_resourcesToStartAfterRefresh.remove ( loadedResource );
-        RemoveFromQueue ( loadedResource );
-        delete loadedResource;
-        loadedResource = NULL;
+        loadedResource = new CResource( this, bIsZipped, szAbsPath, szResourceName );
     }
-    else
+    catch( std::exception& e )
     {
-        if ( bStartAfterLoading )
-            m_resourcesToStartAfterRefresh.push_back ( loadedResource );
-        if ( s_bNotFirstTime )
-            CLogger::LogPrintf("New resource '%s' loaded\n", loadedResource->GetName().c_str () );
-        unsigned short usID = GenerateID ();
-        loadedResource->SetID ( usID );
-        AddResourceToLists ( loadedResource );
-        m_bResourceListChanged = true;
+        CLogger::ErrorPrintf("Loading of resource '%s' failed: %s\n", szResourceName, e.what() );
+        //m_resourcesToStartAfterRefresh.remove( loadedResource );
+        //RemoveFromQueue( loadedResource );
+        return NULL;
     }
 
+    if ( bStartAfterLoading )
+        m_resourcesToStartAfterRefresh.push_back ( loadedResource );
+    if ( s_bNotFirstTime )
+        CLogger::LogPrintf("New resource '%s' loaded\n", loadedResource->GetName().c_str () );
+    unsigned short usID = GenerateID ();
+    loadedResource->SetID ( usID );
+    AddResourceToLists ( loadedResource );
+    m_bResourceListChanged = true;
     return loadedResource;
 }
 
@@ -769,135 +769,114 @@ void CResourceManager::RemoveFromQueue ( CResource* pResource )
     }
 }
 
-
-bool CResourceManager::Install ( char * szURL, char * szName )
+bool CResourceManager::Install( const char *szURL, const char *szName )
 {
-    if ( IsValidFilePath(szName) )
+    size_t size;
+    CTCPImpl tcp;
+    tcp.Initialize();
+
+    CHTTPRequest request( szURL );
+    CHTTPResponse *response = request->Send( &tcp );    // guys, why do you need to alloc on the heap? use the stack!!
+
+    if ( !response )
+        return false;
+
+    if ( ( size = response->GetDataLength() ) == 0 )
     {
-        CTCPImpl * pTCP = new CTCPImpl;
-        pTCP->Initialize ();
-
-        CHTTPRequest * request = new CHTTPRequest ( szURL );
-        CHTTPResponse * response = request->Send ( pTCP );
-        if ( response )
-        {
-            size_t dataLength = response->GetDataLength();
-            if ( dataLength != 0 )
-            {
-                const char* szBuffer = response->GetData ();
-
-                SString strResourceRoot = g_pServerInterface->GetModManager ()->GetAbsolutePath ( "resources" );
-                SString strResourceFileName ( "%s/%s.zip", strResourceRoot.c_str (), szName );
-
-                FILE * file = fopen ( strResourceFileName, "wb" );
-                if ( file )
-                {
-                    fwrite ( szBuffer, dataLength, 1, file );
-                    fclose ( file );
-                    delete pTCP;
-                    return true;
-                }
-            }
-        }
-        delete request;
-        delete pTCP;
+        delete response;
+        return false;
     }
-    return false;
+    resFileRoot->WriteData( SString( szName ) + ".zip", response->GetData(), size );
+
+    delete response;
+    return true;
 }
 
-
-CResource* CResourceManager::CreateResource ( char* szResourceName )
+CResource* CResourceManager::CreateResource( const SString& name )
 {
     // Does the resource name already exist?
-    if ( GetResource ( szResourceName ) != NULL )
+    if ( GetResource( name ) != NULL )
         return NULL;
 
-    // Make a string with the full path to the resource directory
-    SString strAbsPath = PathJoin ( g_pServerInterface->GetServerModPath (), "resources" );
-    SString strResourceDirectoryPath = PathJoin ( strAbsPath, szResourceName );
-
-    // Create that folder. Return if we failed
-    if ( mymkdir ( strResourceDirectoryPath ) != 0 )
-        return NULL;
+    filePath path;
+    
+    if ( !resFileRoot->GetFullPath( name + "/meta.xml", true, path ) )
+        return false;
 
     // Create an empty meta file for that resource
-    SString strMetaPath = PathJoin ( strResourceDirectoryPath, "meta.xml" );
-    CXMLFile* pXML = g_pServerInterface->GetXML ()->CreateXML ( strMetaPath );
-    if ( pXML )
-    {
-        // If we got the rootnode created, write the XML
-        CXMLNode* pRootNode = pXML->CreateRootNode ( "meta" );
-        if ( !pRootNode || !pXML->Write () )
-        {
-            delete pXML;
-            return NULL;
-        }
+    CXMLFile *pXML = g_pServerInterface->GetXML()->CreateXML( path.c_str() );
 
-        // Delete the XML
+    if ( !pXML )
+        return NULL;
+
+    pXML->CreateRootNode( "meta" );
+
+    if ( !pXML->Write() )
+    {
         delete pXML;
-        pXML = NULL;
+
+        return NULL;
     }
 
-    // Add the resource and load it
-    CResource* pResource = new CResource ( this, false, strAbsPath, szResourceName );
-    if ( pResource )
+    delete pXML;
+
+    CResource *res;
+
+    try
     {
-        AddResourceToLists ( pResource );
-        return pResource;
+        // Add the resource and load it
+        AddResourceToLists( res = new CResource( this, false, name ) );
+    }
+    catch( ... )
+    {
+        // Fail
+        return NULL;
     }
 
-    // We failed
-    return NULL;
+    return res;
 }
-
 
 CResource* CResourceManager::CopyResource ( CResource* pSourceResource, const char* szNewResourceName )
 {
     return NULL;
 }
 
-// pResource may be changed on return, and it could be NULL if the function returns false.
-bool CResourceManager::ParseResourcePathInput ( std::string strInput, CResource*& pResource, std::string* pstrPath, std::string* pstrMetaPath )
+bool CResourceManager::ParseResourcePathInput( std::string input, CResource*& resource, std::string* path, std::string* metaPath )
 {
-    ReplaceOccurrencesInString ( strInput, "\\", "/" );
-    std::string strMetaPath;
+    std::string meta;
 
-    if ( strInput[0] == '@' )
+    if ( input[0] == '@' )
     {
         // This isn't relevant on the server because all files are private
         // But let's skip the symbol anyway
-        strInput = strInput.substr ( 1 );
+        strInput = strInput.substr( 1 );
     }
 
-    if ( strInput[0] == ':' )
+    if ( input[0] == ':' )
     {
-        unsigned int iEnd = strInput.find_first_of ( "/" );
-        if ( iEnd )
-        {
-            std::string strResourceName = strInput.substr ( 1, iEnd - 1 );
-            pResource = g_pGame->GetResourceManager ()->GetResource ( strResourceName.c_str() );
-            if ( pResource && strInput[iEnd + 1] )
-            {
-                strMetaPath = strInput.substr ( iEnd + 1 );
-                if ( pstrMetaPath )
-                    *pstrMetaPath = strMetaPath;
-                if ( IsValidFilePath ( strMetaPath.c_str() ) )
-                {
-                    if ( pstrPath && !pResource->GetFilePath ( strMetaPath.c_str (), *pstrPath ) )
-                        *pstrPath = pResource->GetResourceDirectoryPath () + strMetaPath;
-                    return true;
-                }
-            }
-        }
+        size_t slash = input.find_first_of( '/' );
+
+        if ( slash == 0 || slash == -1 )
+            return false;
+
+        pResource = g_pGame->GetResourceManager()->GetResource( input.substr( 1, slash - 1 ) );
+
+        if ( !pResource || input[slash + 1] == 0 )
+            return false;
+
+        meta = input.substr( slash + 1 );
+
+        if ( metaPath )
+            *metaPath = meta;
+
+        return !path || resource->GetFilePath( meta.c_str(), *path );
     }
-    else if ( pResource && IsValidFilePath ( strInput.c_str() ) )
-    {
-        strMetaPath = strInput;
-        if ( pstrMetaPath )
-            *pstrMetaPath = strMetaPath;
-        if ( pstrPath && !pResource->GetFilePath ( strMetaPath.c_str (), *pstrPath ) )
-            *pstrPath = pResource->GetResourceDirectoryPath () + strMetaPath;
-        return true;
-    }
-    return false;
+
+    if ( !resource )
+        return false;
+
+    if ( metaPath )
+        *metaPath = input;
+
+    return !path || resource->GetFilePath( input, *path );
 }

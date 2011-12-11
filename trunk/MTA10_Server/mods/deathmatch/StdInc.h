@@ -4,19 +4,11 @@
 #include <windows.h>
 #include <winsock.h>
 #include <mmsystem.h>
-#endif
+#endif //_WIN32
 
-#include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <pthread.h>
 
-#include <list>
-#include <map>
-#include <set>
-#include <string>
-#include <vector>
 #include <ctime>
 #include <sstream>
 
@@ -25,6 +17,7 @@
 
 // SDK includes
 #include "MTAPlatform.h"
+#include "SharedUtil.h"
 #include <xml/CXML.h>
 #include <xml/CXMLNode.h>
 #include <xml/CXMLFile.h>
@@ -35,9 +28,11 @@
 #include "CBox.h"
 #include "CMatrix.h"
 #include "CQuat.h"
-#include "SharedUtil.h"
 #include <bochs_internal/crc32.h>
 #include "CChecksum.h"
+
+// Main includes
+#include "CServer.h"
 
 // Packet includes
 #include "net/Packets.h"
@@ -273,7 +268,6 @@
 #include <base64.h>
 
 // Module includes
-#include "CServer.h"
 #include "Config.h"
 #define SHOW_SELF_COMPILE_WARNING
 #include "../../version.h"

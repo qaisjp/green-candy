@@ -38,8 +38,8 @@ class CServerImpl;
 
 #define SERVER_RESET_RETURN 500
 
-typedef CXML* (*InitXMLInterface) ( void );
-typedef CNetServer* (*InitNetServerInterface) ( void );
+typedef CXML* (*InitXMLInterface) ();
+typedef CNetServer* (*InitNetServerInterface) ();
 
 #ifdef WIN32
 typedef void (FClientFeedback) ( const char* szText );
@@ -48,20 +48,20 @@ typedef void (FClientFeedback) ( const char* szText );
 class CServerImpl : public CServerInterface
 {
 public:
-    #ifdef WIN32
+#ifdef WIN32
                         CServerImpl         ( CThreadCommandQueue* pThreadCommandQueue );
-    #else
-                        CServerImpl         ( void );
-    #endif
+#else
+                        CServerImpl         ();
+#endif
 
-                        ~CServerImpl        ( void );
+                        ~CServerImpl        ();
 
-    CNetServer*         GetNetwork          ( void );
-    CModManager*        GetModManager       ( void );
-    CTCP*               GetTCP              ( void );
-    CXML*               GetXML              ( void );
+    CNetServer*         GetNetwork          ();
+    CModManager*        GetModManager       ();
+    CTCP*               GetTCP              ();
+    CXML*               GetXML              ();
+    CFileSystem*        GetFileSystem       ();
 
-    inline const char*  GetServerModPath   ( void )                { return m_strServerModPath; };
     const char*         GetAbsolutePath     ( const char* szRelative, char* szBuffer, unsigned int uiBufferSize );
 
     void                Printf              ( const char* szText, ... );
@@ -72,17 +72,17 @@ public:
 #endif
 
 private:
-    void                MainLoop            ( void );
+    void                MainLoop            ();
 
     bool                ParseArguments      ( int iArgumentCount, char* szArguments [] );
     bool                IsKeyPressed        ( int iKey );
     void                WaitForKey          ( int iKey );
 
     void                ShowInfoTag         ( char *szTag );
-    void                HandleInput         ( void );
+    void                HandleInput         ();
 
     void                SleepMs             ( unsigned long ulMs );
-    void                DestroyWindow       ( void );
+    void                DestroyWindow       ();
 
     CDynamicLibrary     m_NetworkLibrary;
     CDynamicLibrary     m_XMLLibrary;
@@ -90,13 +90,11 @@ private:
     CModManagerImpl*    m_pModManager;
     CTCPImpl*           m_pTCP;
     CXML*               m_pXML;
+    CFileSystem*        m_fileSystem;
 
 #ifdef WIN32
     FClientFeedback*    m_fClientFeedback;
 #endif
-
-    SString             m_strServerPath;
-    SString             m_strServerModPath;
 
     bool                m_bRequestedQuit;
     bool                m_bRequestedReset;
@@ -116,5 +114,7 @@ private:
     WINDOW*             m_wndInput;
 #endif
 };
+
+extern CFileTranslator *modFileRoot;
 
 #endif

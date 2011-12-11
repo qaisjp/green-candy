@@ -20,15 +20,13 @@
 class CServerInterface
 {
 public:
-    virtual CNetServer*     GetNetwork          ( void ) = 0;
-    virtual CModManager*    GetModManager       ( void ) = 0;
-    virtual CTCP*           GetTCP              ( void ) = 0;
-    virtual CXML*           GetXML              ( void ) = 0;
+    virtual CNetServer*             GetNetwork          () = 0;
+    virtual CModManager*            GetModManager       () = 0;
+    virtual CTCP*                   GetTCP              () = 0;
+    virtual CXML*                   GetXML              () = 0;
+    virtual CFileSystemInterface*   GetFileSystem       () = 0;
 
-    virtual const char*     GetServerModPath    ( void ) = 0;
-    virtual const char*     GetAbsolutePath     ( const char* szRelative, char* szBuffer, unsigned int uiBufferSize ) = 0;
-
-    virtual void            Printf              ( const char* szFormat, ... ) = 0;
+    virtual void                    Printf              ( const char* szFormat, ... ) = 0;
 };
 
 #endif

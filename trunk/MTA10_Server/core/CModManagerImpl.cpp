@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CModManagerImpl.cpp
 *  PURPOSE:     Mod manager class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Oli <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -19,20 +20,18 @@
 
 using namespace std;
 
-CModManagerImpl::CModManagerImpl ( CServerImpl* pServer )
+CModManagerImpl::CModManagerImpl( CServerImpl* pServer )
 {
     // Init
     m_pServer = pServer;
     m_pBase = NULL;
 }
 
-
-CModManagerImpl::~CModManagerImpl ( void )
+CModManagerImpl::~CModManagerImpl()
 {
     // Make sure the mod is unloaded
     Unload ();
 }
-
 
 bool CModManagerImpl::RequestLoad ( const char* szModName )
 {
@@ -40,76 +39,77 @@ bool CModManagerImpl::RequestLoad ( const char* szModName )
     return false;
 }
 
-
-SString CModManagerImpl::GetAbsolutePath ( const char* szRelative )
-{
-    return SString ( "%s/%s", m_strModPath.c_str (), szRelative );
-}
-
-bool CModManagerImpl::IsModLoaded ( void )
+bool CModManagerImpl::IsModLoaded()
 {
     return m_pBase != NULL;
 }
 
-
-CServerBase* CModManagerImpl::GetCurrentMod ( void )
+CServerBase* CModManagerImpl::GetCurrentMod()
 {
     return m_pBase;
 }
 
-
-bool CModManagerImpl::Load ( const char* szModName, int iArgumentCount, char* szArguments [] )
+bool CModManagerImpl::Load( const char *szModName, int iArgumentCount, char* szArguments [] )
 {
-    // Fail if no server path is specified
-    if ( m_strServerPath == "" )
+    filePath path;
+    
+    if ( !modFileRoot->GetFullPath( szModName, false, path ) )
         return false;
 
-    // Make the string path to the mod library
-    m_strModPath = SString ( "%s/mods/%s", m_strServerPath.c_str (), szModName );
+    path += szModName;
 
-    #if defined( WIN32 ) && defined( _DEBUG )
-        SString strFilename ( "%s/%s_d%s", m_strModPath.c_str (), szModName, MTA_LIB_EXTENSION );
-    #else
-        SString strFilename ( "%s/%s%s", m_strModPath.c_str (), szModName, MTA_LIB_EXTENSION );
-    #endif
+#if defined(_WIN32)
+#ifdef _DEBUG
+    path += "_d.dll";
+#else
+    path += ".dll";
+#endif //_DEBUG
+#else
+    path += ".so";
+#endif
 
     // Attempt to load it
-    if ( !m_Library.Load ( strFilename ) )
+    if ( !m_Library.Load( path.c_str() ) )
     {
         // Failed
-        Print ( "\nERROR: Loading mod (%s) failed!\n", strFilename.c_str () );
+        Print( "\nERROR: Loading mod (%s) failed!\n", path.c_str() );
         return false;
     }
 
+    // Set mod file root
+    m_modFileRoot = m_pServer->GetFileSystem()->CreateTranslator( path.c_str() );
+
     // Grab the initialization procedure
-    InitServer* pfnInitServer = (InitServer*) ( m_Library.GetProcedureAddress ( "InitServer" ) );
+    InitServer* pfnInitServer = (InitServer*)m_Library.GetProcedureAddress( "InitServer" );
+
     if ( !pfnInitServer )
     {
         // Unload the library
-        m_Library.Unload ();
+        m_Library.Unload();
 
         // Report the error
-        Print ( "\nERROR: Bad file: %s!\n", strFilename.c_str () );
+        Print( "\nERROR: Bad file: %s!\n", path.c_str() );
         return false;
     }
 
     // Call the InitServer procedure to get the interface
-    m_pBase = pfnInitServer ();
+    m_pBase = pfnInitServer();
+
     if ( !m_pBase )
     {
         // Unload the library
-        m_Library.Unload ();
+        m_Library.Unload();
 
         // Report the error
-        Print ( "\nERROR: Failed initializing '%s'!\n", strFilename.c_str () );
+        Print( "\nERROR: Failed initializing '%s'!\n", path.c_str() );
         return false;
     }
 
     // Call the initialization procedure in the interface
-    m_pBase->ServerInitialize ( m_pServer );
+    m_pBase->ServerInitialize( m_pServer );
 
     // Start the mod up
-    if ( !m_pBase->ServerStartup ( iArgumentCount, szArguments ) )
+    if ( !m_pBase->ServerStartup( iArgumentCount, szArguments ) )
     {
         // Unload the mod again
         Unload ();

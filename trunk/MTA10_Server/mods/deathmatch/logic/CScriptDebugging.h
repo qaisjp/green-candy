@@ -7,6 +7,7 @@
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Ed Lyons <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -20,11 +21,12 @@
 #include <cstdio>
 #include <list>
 
+// Ever heard of class inheritance? CLogger?
 class CScriptDebugging
 {
 public:
                                     CScriptDebugging                ( CLuaManager* pLuaManager );
-    inline                          ~CScriptDebugging               ( void )                            { ClearPlayers (); };
+    inline                          ~CScriptDebugging               ()                            { ClearPlayers (); };
 
     bool                            AddPlayer                       ( class CPlayer& Player, unsigned int uiLevel );
     bool                            RemovePlayer                    ( class CPlayer& Player );
@@ -47,6 +49,7 @@ public:
 
 private:
     void                            LogString                       ( const char* szPrePend, lua_State * luaVM, const char* szMessage, unsigned int uiMinimumDebugLevelunsigned, unsigned char ucRed = 255, unsigned char ucGreen = 255, unsigned char ucBlue = 255 );
+    void                            NotifySystem                    ( filePath& filename, int line, std::string& msg );
 
     void                            PrintLog                        ( const char* szText );
     void                            Broadcast                       ( const CPacket& Packet, unsigned int uiMinimumDebugLevel );
@@ -54,9 +57,9 @@ private:
     CLuaManager*                    m_pLuaManager;
     unsigned int                    m_uiLogFileLevel;
     unsigned int                    m_uiHtmlLogLevel;
-    FILE*                           m_pLogFile;
-    list < class CPlayer* >         m_Players;
-    bool                            m_bTriggeringOnDebugMessage;
+    CFile*                          m_file;
+    list <class CPlayer*>           m_Players;
+    bool                            m_triggerCall;
 };
 
 #endif

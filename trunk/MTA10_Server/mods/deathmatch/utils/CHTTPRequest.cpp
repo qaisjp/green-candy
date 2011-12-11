@@ -244,7 +244,7 @@ CTCPClientSocket * CHTTPRequest::SendRequest ( CTCP * pTCP )
     return pSocket;
 }
 
-CHTTPResponse * CHTTPRequest::GetResponse ( CTCPClientSocket* pSocket )
+CHTTPResponse* CHTTPRequest::GetResponse( CTCPClientSocket* pSocket )
 {
     if ( !pSocket )
         return NULL;
@@ -261,17 +261,17 @@ CHTTPResponse * CHTTPRequest::GetResponse ( CTCPClientSocket* pSocket )
     std::string strReplyBody;
     char szTempBuffer [ 256 ];
     int iSize;
-    while ( ( iSize = pSocket->ReadBuffer ( szTempBuffer, sizeof(szTempBuffer) ) ) > 0 )
+    while ( ( iSize = pSocket->ReadBuffer( szTempBuffer, sizeof(szTempBuffer) ) ) > 0 )
     {
-        strReplyBody.append ( szTempBuffer, iSize );
+        strReplyBody.append( szTempBuffer, iSize );
     }
     pSocket->Disconnect ();
     delete pSocket;
     pSocket = NULL;
 
     // Parse the reply
-    CHTTPResponse* pResponse = new CHTTPResponse ();
-    if ( !pResponse->Parse ( strReplyHeader, strReplyBody ) )
+    CHTTPResponse* pResponse = new CHTTPResponse();
+    if ( !pResponse->Parse( strReplyHeader, strReplyBody ) )
     {
         delete pResponse;
         return NULL;
