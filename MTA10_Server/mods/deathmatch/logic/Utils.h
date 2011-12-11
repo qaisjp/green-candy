@@ -38,8 +38,6 @@ bool            IsPointNearPoint3D          ( const CVector& vecPosition1, const
 void            ReplaceCharactersInString   ( char* szString, char cWhat, char cWith );
 void            ReplaceOccurrencesInString  ( std::string &s, const char *a, const char *b );
 
-bool            DoesDirectoryExist          ( const char* szPath );
-
 bool            IsIn                        ( const char* szShortText, const char* szLongText );
 char*           uppercase                   ( char* s );
 void            stripString                 ( char* szString );
@@ -60,8 +58,6 @@ bool            CleanupSockets              ( void );
 float           GetRandomFloat              ( void );
 double          GetRandomDouble             ( void );
 int             GetRandom                   ( int iLow, int iHigh );
-
-bool            IsValidFilePath             ( const char* szPath );
 
 unsigned int    HexToInt                    ( const char* szHex );
 bool            XMLColorToInt               ( const char* szColor, unsigned long& ulColor );
@@ -185,8 +181,6 @@ inline bool IsVisibleCharacter ( unsigned char c )
     // 32..126 are visible characters
     return c >= 32 && c <= 126;
 }
-
-bool            FileCopy                    ( const char* szPathNameSrc, const char* szPathDst );
 
 inline SString SQLEscape ( const SString& strEscapeString, bool bSingleQuotes, bool bDoubleQuotes )
 {

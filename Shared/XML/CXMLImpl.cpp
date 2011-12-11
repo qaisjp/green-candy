@@ -25,9 +25,14 @@ CXMLImpl::~CXMLImpl ( void )
 {
 }
 
-CXMLFile* CXMLImpl::CreateXML ( const char* szFilename, bool bUseIDs )
+CXMLFile* CXMLImpl::CreateXML( const char* szFilename, bool bUseIDs )
 {
     CXMLFile* xmlFile = new CXMLFileImpl ( szFilename, bUseIDs );
+
+#ifdef _DEBUG
+    // We usually want absolute paths here
+    assert( szFilename[1] == ':' );
+#endif
 
     if ( !xmlFile->IsValid() )
     {

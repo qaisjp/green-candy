@@ -16,18 +16,6 @@
 #include <sys/stat.h>
 #endif
 
-// Replacement functions
-int mymkdir ( const char* dirname )
-{
-    int ret=0;
-#ifdef WIN32
-    ret = mkdir(dirname);
-#else
-    ret = mkdir (dirname,0775);
-#endif
-    return ret;
-}
-
 // Platform specific functions
 #ifndef WIN32
 

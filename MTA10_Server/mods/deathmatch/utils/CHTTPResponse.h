@@ -28,16 +28,16 @@ public:
     };
 
 public:
-                    CHTTPResponse               ( void );
-                    ~CHTTPResponse              ( void );
+                    CHTTPResponse               ();
+                    ~CHTTPResponse              ();
 
     bool            Parse                       ( const std::string& strHeader, const std::string& strContent );
 
-    unsigned int    GetErrorCode                ( void );
-    const char*     GetErrorDescription         ( void );
-    int             GetProtocolVersion          ( void );
-    const char*     GetData                     ( void );
-    size_t          GetDataLength               ( void );
+    unsigned int    GetErrorCode                ();
+    const char*     GetErrorDescription         ();
+    int             GetProtocolVersion          ();
+    const char*     GetData                     ();
+    size_t          GetDataLength               ();
 
 private:
     unsigned int    m_uiErrorCode;

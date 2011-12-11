@@ -21,9 +21,7 @@ class CClient;
 class CCommandFile
 {
 public:
-                        CCommandFile            ( const char* szFilename,
-                                                  CConsole& Console,
-                                                  CClient& Client );
+                        CCommandFile            ( const char* szFilename, CConsole& Console, CClient& Client );
                         ~CCommandFile           ();
 
     bool                Run                     ();

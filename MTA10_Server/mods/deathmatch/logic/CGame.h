@@ -15,6 +15,7 @@
 *               lil_Toady <>
 *               Peter Beverloo <>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -125,7 +126,8 @@ class CWeaponDamageCheckPacket;
 class CGame
 {
 public:
-    ZERO_ON_NEW         // To be sure everything is cleared
+    ZERO_ON_NEW
+
     enum
     {
         VEHICLE_REQUEST_IN,
@@ -160,147 +162,147 @@ public:
         GLITCH_CROUCHBUG,
     };
 public:
-                                CGame                       ( void );
-                                ~CGame                      ( void );
+                                CGame                       ();
+                                ~CGame                      ();
 
     void                        GetTag                      ( char* szInfoTag, int iInfoTag );
     void                        HandleInput                 ( char* szCommand );
 
-    void                        DoPulse                     ( void );
+    void                        DoPulse                     ();
 
     bool                        Start                       ( int iArgumentCount, char* szArguments [] );
-    void                        Stop                        ( void );
+    void                        Stop                        ();
 
     static bool                 StaticProcessPacket         ( unsigned char ucPacketID, NetServerPlayerID& Socket, NetBitStreamInterface& BitStream );
     bool                        ProcessPacket               ( CPacket& Packet );
 
     inline void                 SetIsFinished               ( bool bFinished )  { m_bIsFinished = bFinished; };
-    inline bool                 IsFinished                  ( void )            { return m_bIsFinished; };
+    inline bool                 IsFinished                  ()            { return m_bIsFinished; };
 
-    inline CMainConfig*             GetConfig                   ( void )        { return m_pMainConfig; }
-    inline CHandlingManager*        GetHandlingManager          ( void )        { return m_pHandlingManager; }
-    inline CMapManager*             GetMapManager               ( void )        { return m_pMapManager; }
-    inline CPlayerManager*          GetPlayerManager            ( void )        { return m_pPlayerManager; }
-    inline CObjectManager*          GetObjectManager            ( void )        { return m_pObjectManager; }
-    inline CVehicleManager*         GetVehicleManager           ( void )        { return m_pVehicleManager; }
-    inline CTeamManager*            GetTeamManager              ( void )        { return m_pTeamManager; }
-    inline CUnoccupiedVehicleSync*  GetUnoccupiedVehicleSync    ( void )        { return m_pUnoccupiedVehicleSync; }
-    inline CPedSync*                GetPedSync                  ( void )        { return m_pPedSync; }
-    inline CObjectSync*             GetObjectSync               ( void )        { return m_pObjectSync; }
-    inline CConsole*                GetConsole                  ( void )        { return m_pConsole; }
-    inline CRegistryManager*        GetRegistryManager          ( void )        { return m_pRegistryManager; }
-    inline CRegistry*               GetRegistry                 ( void )        { return m_pRegistry; }
-    inline CAccountManager*         GetAccountManager           ( void )        { return m_pAccountManager; }
-    inline CScriptDebugging*        GetScriptDebugging          ( void )        { return m_pScriptDebugging; }
-    inline CEvents*                 GetEvents                   ( void )        { return &m_Events; }
-    inline CColManager*             GetColManager               ( void )        { return m_pColManager; }
-    inline CPedManager*             GetPedManager               ( void )        { return m_pPedManager; }
-    inline CResourceManager*        GetResourceManager          ( void )        { return m_pResourceManager; }
-    inline CMarkerManager*          GetMarkerManager            ( void )        { return m_pMarkerManager; }
-    inline CBlipManager*            GetBlipManager              ( void )        { return m_pBlipManager; }
-    inline CPickupManager*          GetPickupManager            ( void )        { return m_pPickupManager; }
-    inline CRadarAreaManager*       GetRadarAreaManager         ( void )        { return m_pRadarAreaManager; }
-    inline CGroups*                 GetGroups                   ( void )        { return m_pGroups; }
-    inline CElementDeleter*         GetElementDeleter           ( void )        { return &m_ElementDeleter; }
-    inline CHTTPD*                  GetHTTPD                    ( void )        { return m_pHTTPD; }
-    inline CSettings*               GetSettings                 ( void )        { return m_pSettings; }
-    inline CAccessControlListManager* GetACLManager             ( void )        { return m_pACLManager; }
-    inline CBanManager*             GetBanManager               ( void )        { return m_pBanManager; }
-    inline CRemoteCalls*            GetRemoteCalls              ( void )        { return m_pRemoteCalls; }
-    inline CResourceDownloader*     GetResourceDownloader       ( void )        { return m_pResourceDownloader; }
-    inline CZoneNames*              GetZoneNames                ( void )        { return m_pZoneNames; }
-    inline CClock*                  GetClock                    ( void )        { return m_pClock; }
-    inline CSerialManager*          GetSerialManager            ( void )        { return &m_SerialManager; }
-    inline CWaterManager*           GetWaterManager             ( void )        { return m_pWaterManager; }
+    inline CMainConfig*             GetConfig                   ()        { return m_pMainConfig; }
+    inline CHandlingManager*        GetHandlingManager          ()        { return m_pHandlingManager; }
+    inline CMapManager*             GetMapManager               ()        { return m_pMapManager; }
+    inline CPlayerManager*          GetPlayerManager            ()        { return m_pPlayerManager; }
+    inline CObjectManager*          GetObjectManager            ()        { return m_pObjectManager; }
+    inline CVehicleManager*         GetVehicleManager           ()        { return m_pVehicleManager; }
+    inline CTeamManager*            GetTeamManager              ()        { return m_pTeamManager; }
+    inline CUnoccupiedVehicleSync*  GetUnoccupiedVehicleSync    ()        { return m_pUnoccupiedVehicleSync; }
+    inline CPedSync*                GetPedSync                  ()        { return m_pPedSync; }
+    inline CObjectSync*             GetObjectSync               ()        { return m_pObjectSync; }
+    inline CConsole*                GetConsole                  ()        { return m_pConsole; }
+    inline CRegistryManager*        GetRegistryManager          ()        { return m_pRegistryManager; }
+    inline CRegistry*               GetRegistry                 ()        { return m_pRegistry; }
+    inline CAccountManager*         GetAccountManager           ()        { return m_pAccountManager; }
+    inline CScriptDebugging*        GetScriptDebugging          ()        { return m_pScriptDebugging; }
+    inline CEvents*                 GetEvents                   ()        { return &m_Events; }
+    inline CColManager*             GetColManager               ()        { return m_pColManager; }
+    inline CPedManager*             GetPedManager               ()        { return m_pPedManager; }
+    inline CResourceManager*        GetResourceManager          ()        { return m_pResourceManager; }
+    inline CMarkerManager*          GetMarkerManager            ()        { return m_pMarkerManager; }
+    inline CBlipManager*            GetBlipManager              ()        { return m_pBlipManager; }
+    inline CPickupManager*          GetPickupManager            ()        { return m_pPickupManager; }
+    inline CRadarAreaManager*       GetRadarAreaManager         ()        { return m_pRadarAreaManager; }
+    inline CGroups*                 GetGroups                   ()        { return m_pGroups; }
+    inline CElementDeleter*         GetElementDeleter           ()        { return &m_ElementDeleter; }
+    inline CHTTPD*                  GetHTTPD                    ()        { return m_pHTTPD; }
+    inline CSettings*               GetSettings                 ()        { return m_pSettings; }
+    inline CAccessControlListManager* GetACLManager             ()        { return m_pACLManager; }
+    inline CBanManager*             GetBanManager               ()        { return m_pBanManager; }
+    inline CRemoteCalls*            GetRemoteCalls              ()        { return m_pRemoteCalls; }
+    inline CResourceDownloader*     GetResourceDownloader       ()        { return m_pResourceDownloader; }
+    inline CZoneNames*              GetZoneNames                ()        { return m_pZoneNames; }
+    inline CClock*                  GetClock                    ()        { return m_pClock; }
+    inline CSerialManager*          GetSerialManager            ()        { return &m_SerialManager; }
+    inline CWaterManager*           GetWaterManager             ()        { return m_pWaterManager; }
 
     void                        JoinPlayer                  ( CPlayer& Player );
     void                        InitialDataStream           ( CPlayer& Player );
     void                        QuitPlayer                  ( CPlayer& Player, CClient::eQuitReasons Reason = CClient::QUIT_QUIT, bool bSayInConsole = true, const char* szKickReason = "None", const char* szResponsiblePlayer = "None" );
 
-    inline class CLuaManager*   GetLuaManager               ( void )        { return m_pLuaManager; };
+    inline class CLuaManager*   GetLuaManager               ()        { return m_pLuaManager; };
 
-    inline float                GetGravity                  ( void )        { return m_fGravity; }
+    inline float                GetGravity                  ()        { return m_fGravity; }
     inline void                 SetGravity                  ( float fGravity )  { m_fGravity = fGravity; }
 
-    inline unsigned char        GetTrafficLightState        ( void )        { return m_ucTrafficLightState; }
+    inline unsigned char        GetTrafficLightState        ()        { return m_ucTrafficLightState; }
     inline void                 SetTrafficLightState        ( unsigned char ucState ) { m_ucTrafficLightState = ucState; }
 
-    inline bool                 GetTrafficLightsLocked      ( void )        { return m_bTrafficLightsLocked; }
+    inline bool                 GetTrafficLightsLocked      ()        { return m_bTrafficLightsLocked; }
     inline void                 SetTrafficLightsLocked      ( bool bLocked ) { m_bTrafficLightsLocked = bLocked; }
 
-    inline float                GetJetpackMaxHeight         ( void ) { return m_fJetpackMaxHeight; }
+    inline float                GetJetpackMaxHeight         () { return m_fJetpackMaxHeight; }
     inline void                 SetJetpackMaxHeight         ( float fMaxHeight ) { m_fJetpackMaxHeight = fMaxHeight; }
 
-    inline float                GetGameSpeed                ( void )        { return m_fGameSpeed; }
+    inline float                GetGameSpeed                ()        { return m_fGameSpeed; }
     inline void                 SetGameSpeed                ( float fGameSpeed )  { m_fGameSpeed = fGameSpeed; }
 
-    inline bool                 HasSkyGradient              ( void )        { return m_bHasSkyGradient; }
+    inline bool                 HasSkyGradient              ()        { return m_bHasSkyGradient; }
     inline void                 SetHasSkyGradient           ( bool bHasSkyGradient ) { m_bHasSkyGradient = bHasSkyGradient; }
 
     inline void                 GetSkyGradient              ( unsigned char& ucTR, unsigned char& ucTG, unsigned char& ucTB, unsigned char& ucBR, unsigned char& ucBG, unsigned char& ucBB ) { ucTR = m_ucSkyGradientTR; ucTG = m_ucSkyGradientTG; ucTB = m_ucSkyGradientTB; ucBR = m_ucSkyGradientBR; ucBG = m_ucSkyGradientBG; ucBB = m_ucSkyGradientBB; }
     inline void                 SetSkyGradient              ( unsigned char& ucTR, unsigned char& ucTG, unsigned char& ucTB, unsigned char& ucBR, unsigned char& ucBG, unsigned char& ucBB ) { m_ucSkyGradientTR = ucTR; m_ucSkyGradientTG = ucTG; m_ucSkyGradientTB = ucTB; m_ucSkyGradientBR = ucBR; m_ucSkyGradientBG = ucBG; m_ucSkyGradientBB = ucBB; }
 
-    inline bool                 HasHeatHaze                 ( void )        { return m_bHasHeatHaze; }
+    inline bool                 HasHeatHaze                 ()        { return m_bHasHeatHaze; }
     inline void                 SetHasHeatHaze              ( bool bHasHeatHaze ) { m_bHasHeatHaze = bHasHeatHaze; }
 
     inline void                 GetHeatHaze                 ( SHeatHazeSettings& heatHazeSettings )         { heatHazeSettings = m_HeatHazeSettings; }
     inline void                 SetHeatHaze                 ( const SHeatHazeSettings& heatHazeSettings )   { m_HeatHazeSettings = heatHazeSettings; }
 
-    inline bool                 GetInteriorSoundsEnabled    ( void )        { return m_bInteriorSoundsEnabled; }
+    inline bool                 GetInteriorSoundsEnabled    ()        { return m_bInteriorSoundsEnabled; }
     inline void                 SetInteriorSoundsEnabled    ( bool bEnable )    { m_bInteriorSoundsEnabled = bEnable; }
 
-    inline bool                 HasWaterColor               ( void )        { return m_bOverrideWaterColor; }
+    inline bool                 HasWaterColor               ()        { return m_bOverrideWaterColor; }
     inline void                 SetHasWaterColor            ( bool bOverrideWaterColor ) { m_bOverrideWaterColor = bOverrideWaterColor; }
 
     inline void                 GetWaterColor               ( unsigned char& ucRed, unsigned char& ucGreen, unsigned char& ucBlue, unsigned char& ucAlpha ) { ucRed = m_ucWaterRed; ucGreen = m_ucWaterGreen; ucBlue = m_ucWaterBlue; ucAlpha = m_ucWaterAlpha; }
     inline void                 SetWaterColor               ( unsigned char& ucRed, unsigned char& ucGreen, unsigned char& ucBlue, unsigned char& ucAlpha ) { m_ucWaterRed = ucRed; m_ucWaterGreen = ucGreen; m_ucWaterBlue = ucBlue; m_ucWaterAlpha = ucAlpha; }
 
-    inline bool                 HasRainLevel                ( void )        { return m_bOverrideRainLevel; }
+    inline bool                 HasRainLevel                ()        { return m_bOverrideRainLevel; }
     inline void                 SetHasRainLevel             ( bool bOverrideRainLevel ) { m_bOverrideRainLevel = bOverrideRainLevel; }
 
-    inline float                GetRainLevel                ( void )        { return m_fRainLevel; }
+    inline float                GetRainLevel                ()        { return m_fRainLevel; }
     inline void                 SetRainLevel                ( float& fRainLevel ) { m_fRainLevel = fRainLevel; }
 
-    inline bool                 HasSunSize                  ( void )        { return m_bOverrideSunSize; }
+    inline bool                 HasSunSize                  ()        { return m_bOverrideSunSize; }
     inline void                 SetHasSunSize               ( bool bOverrideSunSize ) { m_bOverrideSunSize = bOverrideSunSize; }
 
-    inline float                GetSunSize                  ( void )        { return m_fSunSize; }
+    inline float                GetSunSize                  ()        { return m_fSunSize; }
     inline void                 SetSunSize                  ( float& fSunSize ) { m_fSunSize = fSunSize; }
 
-    inline bool                 HasSunColor                 ( void )        { return m_bOverrideSunColor; }
+    inline bool                 HasSunColor                 ()        { return m_bOverrideSunColor; }
     inline void                 SetHasSunColor              ( bool bOverrideSunColor ) { m_bOverrideSunColor = bOverrideSunColor; }
 
     inline void                 GetSunColor                 ( unsigned char& ucCoreR, unsigned char& ucCoreG, unsigned char& ucCoreB, unsigned char& ucCoronaR, unsigned char& ucCoronaG, unsigned char& ucCoronaB )    { ucCoreR = m_ucSunCoreR; ucCoreG = m_ucSunCoreG; ucCoreB = m_ucSunCoreB; ucCoronaR = m_ucSunCoronaR; ucCoronaG = m_ucSunCoronaG; ucCoronaB = m_ucSunCoronaB; }
     inline void                 SetSunColor                 ( unsigned char& ucCoreR, unsigned char& ucCoreG, unsigned char& ucCoreB, unsigned char& ucCoronaR, unsigned char& ucCoronaG, unsigned char& ucCoronaB )    { m_ucSunCoreR = ucCoreR; m_ucSunCoreG = ucCoreG; m_ucSunCoreB = ucCoreB; m_ucSunCoronaR = ucCoronaR; m_ucSunCoronaG = ucCoronaG; m_ucSunCoronaB = ucCoronaB; }
 
-    inline bool                 HasWindVelocity             ( void )        { return m_bOverrideWindVelocity; }
+    inline bool                 HasWindVelocity             ()        { return m_bOverrideWindVelocity; }
     inline void                 SetHasWindVelocity          ( bool bOverrideWindVelocity ) { m_bOverrideWindVelocity = bOverrideWindVelocity; }
 
     inline void                 GetWindVelocity             ( float& fVelX, float& fVelY, float& fVelZ )    { fVelX = m_fWindVelX; fVelY = m_fWindVelY; fVelZ = m_fWindVelZ; }
     inline void                 SetWindVelocity             ( float& fVelX, float& fVelY, float& fVelZ )    { m_fWindVelX = fVelX; m_fWindVelY = fVelY; m_fWindVelZ = fVelZ; }
 
-    inline bool                 HasFarClipDistance          ( void )        { return m_bOverrideFarClip; }
+    inline bool                 HasFarClipDistance          ()        { return m_bOverrideFarClip; }
     inline void                 SetHasFarClipDistance       ( bool bOverrideFarClip ) { m_bOverrideFarClip = bOverrideFarClip; }
 
-    inline float                GetFarClipDistance          ( void )        { return m_fFarClipDistance; }
+    inline float                GetFarClipDistance          ()        { return m_fFarClipDistance; }
     inline void                 SetFarClipDistance          ( float& fFarClipDistance ) { m_fFarClipDistance = fFarClipDistance; }
 
-    inline bool                 HasFogDistance              ( void )        { return m_bOverrideFogDistance; }
+    inline bool                 HasFogDistance              ()        { return m_bOverrideFogDistance; }
     inline void                 SetHasFogDistance           ( bool bOverrideFogDistance ) { m_bOverrideFogDistance = bOverrideFogDistance; }
 
-    inline float                GetFogDistance              ( void )        { return m_fFogDistance; }
+    inline float                GetFogDistance              ()        { return m_fFogDistance; }
     inline void                 SetFogDistance              ( float& fFogDistance ) { m_fFogDistance = fFogDistance; }
 
-    inline float                GetAircraftMaxHeight        ( void ) { return m_fAircraftMaxHeight; }
+    inline float                GetAircraftMaxHeight        () { return m_fAircraftMaxHeight; }
     inline void                 SetAircraftMaxHeight        ( float fMaxHeight ) { m_fAircraftMaxHeight = fMaxHeight; }
 
-    inline bool*                GetGarageStates             ( void )        { return m_bGarageStates; }
+    inline bool*                GetGarageStates             ()        { return m_bGarageStates; }
 
-    void                        Lock                        ( void );
-    void                        Unlock                      ( void );
+    void                        Lock                        ();
+    void                        Unlock                      ();
 
-    inline bool                 IsBeingDeleted              ( void )        { return m_bBeingDeleted; }
-    void                        ResetMapInfo                ( void );
+    inline bool                 IsBeingDeleted              ()        { return m_bBeingDeleted; }
+    void                        ResetMapInfo                ();
 
     void                        SetGlitchEnabled            ( const std::string& strGlitch, bool bEnabled );
     bool                        IsGlitchEnabled             ( const std::string& strGlitch );
@@ -309,15 +311,15 @@ public:
     bool                        IsGlitch                    ( const std::string& strGlitch )    { return m_GlitchNames.count(strGlitch) > 0; }
 
     void                        SetCloudsEnabled            ( bool bEnabled );
-    bool                        GetCloudsEnabled            ( void );
+    bool                        GetCloudsEnabled            ();
 
-    void                        PulseMasterServerAnnounce   ( void );
-    void                        StartOpenPortsTest          ( void );
+    void                        PulseMasterServerAnnounce   ();
+    void                        StartOpenPortsTest          ();
 
-    bool                        IsServerFullyUp             ( void )        { return m_bServerFullyUp; }
+    bool                        IsServerFullyUp             ()        { return m_bServerFullyUp; }
 
 private:
-    void                        AddBuiltInEvents            ( void );
+    void                        AddBuiltInEvents            ();
     void                        RelayPlayerPuresync         ( class CPacket& Packet );
 
     void                        ProcessTrafficLights        ( unsigned long ulCurrentTime );
@@ -451,11 +453,11 @@ private:
     std::map<std::string,eGlitchType> m_GlitchNames;
     bool                        m_Glitches[4];
 
-    // This is ticked to true when the app should end
+    // This is true when the app should end
     bool                        m_bIsFinished;
     bool                        m_bBeingDeleted;
 
-    //Clouds Enabled
+    // Clouds Enabled
     bool                        m_bCloudsEnabled;
 
     long long                   m_llLastAnnouceTime;
@@ -463,5 +465,8 @@ private:
 
     bool                        m_bServerFullyUp;       // No http operations should be allowed unless this is true
 };
+
+extern CFileTranslator *resCacheFileRoot;
+extern CFileTranslator *resFileRoot;
 
 #endif

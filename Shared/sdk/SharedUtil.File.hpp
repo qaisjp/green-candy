@@ -111,22 +111,22 @@ std::vector < SString > SharedUtil::FindFiles ( const SString& strMatch, bool bF
 }
 #endif
 
-void SharedUtil::ExtractFilename ( const SString& strPathFilename, SString* strPath, SString* strFilename )
+void SharedUtil::ExtractFilename ( const SString& in, SString* strPath, SString* strFilename )
 {
-    if ( !strPathFilename.Split ( PATH_SEPERATOR, strPath, strFilename, -1 ) )
+    if ( !in.Split ( PATH_SEPERATOR, strPath, strFilename, -1 ) )
         if ( strFilename )
-            *strFilename = strPathFilename;
+            *strFilename = in;
 }
 
-bool SharedUtil::ExtractExtention( const SString& strFilename, SString* strMain, SString* strExt )
+bool SharedUtil::ExtractExtention( const SString& in, SString* strMain, SString* strExt )
 {
-    return strFilename.Split ( ".", strMain, strExt, -1 );
+    return in.Split ( ".", strMain, strExt, -1 );
 }
 
-SString SharedUtil::ExtractFilename( const SString& strPathFilename )
+SString SharedUtil::ExtractFilename( const SString& in )
 {
     SString strFilename;
-    ExtractFilename ( strPathFilename, NULL, &strFilename );
+    ExtractFilename ( in, NULL, &strFilename );
     return strFilename;
 }
 

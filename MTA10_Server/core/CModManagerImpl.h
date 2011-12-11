@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CModManagerImpl.h
 *  PURPOSE:     Mod manager class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Oli <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -29,37 +30,37 @@ class CModManagerImpl : public CModManager
 {
 public:
                         CModManagerImpl         ( CServerImpl* pServer );
-                        ~CModManagerImpl        ( void );
+                        ~CModManagerImpl        ();
 
     inline void         SetServerPath           ( const char* szServerPath )    { m_strServerPath = szServerPath; };
 
     bool                RequestLoad             ( const char* szModName );
 
-    inline const char*  GetModPath              ( void )                    { return m_strModPath; };
-    virtual SString     GetAbsolutePath         ( const char* szRelative );
+    CFileTranslator*    GetModRoot              ()  { return m_modRoot; };
 
-    bool                IsModLoaded             ( void );
-    CServerBase*        GetCurrentMod           ( void );
+    bool                IsModLoaded             ();
+    CServerBase*        GetCurrentMod           ();
 
     bool                Load                    ( const char* szModName, int iArgumentCount, char* szArguments [] );
-    void                Unload                  ( void );
+    void                Unload                  ();
 
     void                HandleInput             ( const char* szCommand );
     void                GetTag                  ( char* szInfoTag, int iInfoTag );
 
-    void                DoPulse                 ( void );
+    void                DoPulse                 ();
 
-    bool                IsFinished              ( void );
+    bool                IsFinished              ();
 
-    bool                PendingWorkToDo         ( void );
+    bool                PendingWorkToDo         ();
 
 private:
     CServerImpl*        m_pServer;
 
     CServerBase*        m_pBase;
     CDynamicLibrary     m_Library;
-    SString             m_strServerPath;
-    SString             m_strModPath;
+
+    filePath            m_modPath;
+    CFileTranslator*    m_modRoot;
 };
 
 #endif

@@ -15,10 +15,9 @@
 class CModManager
 {
 public:
-    virtual bool            RequestLoad         ( const char* szModName ) = 0;
+    virtual bool                RequestLoad         ( const char* szModName ) = 0;
 
-    virtual const char*     GetModPath          ( void ) = 0;
-    virtual SString         GetAbsolutePath     ( const char* szRelative ) = 0;
+    virtual CFileTranslator*    GetModRoot          () = 0;
 };
 
 #endif

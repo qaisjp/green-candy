@@ -5,6 +5,7 @@
 *  FILE:        mods/deathmatch/logic/CResourceHTMLItem.cpp
 *  PURPOSE:     Resource server-side HTML item class
 *  DEVELOPERS:  Ed Lyons <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -93,45 +94,36 @@ ResponseCode CResourceHTMLItem::Request ( HttpRequest * ipoHttpRequest, HttpResp
     }
     else
     {
-        // its a raw page
-        FILE * file = fopen ( m_strResourceFileName.c_str (), "rb" );
-        if ( file )
+        std::vector <char> content;
+
+        if ( modFileRoot->ReadToBuffer( m_path.c_str(), content ) )
         {
-            fseek ( file, 0, SEEK_END );
-            long lBufferLength = ftell ( file );
-            char* pBuffer = new char [ lBufferLength ];
-            rewind ( file );
-            fread ( pBuffer, 1, lBufferLength, file );
-            fclose ( file );
-            ipoHttpResponse->oResponseHeaders [ "content-type" ] = m_strMime.c_str ();
-            ipoHttpResponse->SetBody ( pBuffer, lBufferLength );
-            delete[] pBuffer;
+            ipoHttpResponse->oResponseHeaders["content-type"] = m_strMime.c_str();
+            ipoHttpResponse->SetBody( &content[0], content.size() );
         }
         else
-        {
-            ipoHttpResponse->SetBody ( "Can't read file!", strlen("Can't read file!") );
-        }
+            ipoHttpResponse->SetBody( "Can't read file!", 16 );
     }
     m_bIsBeingRequested = false;
     return m_responseCode;
 }
 
-void CResourceHTMLItem::ClearPageBuffer ( )
+void CResourceHTMLItem::ClearPageBuffer()
 {
     m_strPageBuffer.clear ();
 }
 
-void CResourceHTMLItem::SetResponseHeader ( const char* szHeaderName, const char* szHeaderValue )
+void CResourceHTMLItem::SetResponseHeader( const char* szHeaderName, const char* szHeaderValue )
 {
-    m_currentResponse->oResponseHeaders [ szHeaderName ] = szHeaderValue;
+    m_currentResponse->oResponseHeaders[szHeaderName] = szHeaderValue;
 }
 
-void CResourceHTMLItem::SetResponseCode ( int responseCode )
+void CResourceHTMLItem::SetResponseCode( int responseCode )
 {
     m_responseCode = (ResponseCode)responseCode;
 }
 
-void CResourceHTMLItem::SetResponseCookie ( const char* szCookieName, const char* szCookieValue )
+void CResourceHTMLItem::SetResponseCookie( const char* szCookieName, const char* szCookieValue )
 {
     CookieParameters params;
     Datum data;
@@ -140,177 +132,199 @@ void CResourceHTMLItem::SetResponseCookie ( const char* szCookieName, const char
     m_currentResponse->SetCookie ( params );
 }
 
-bool CResourceHTMLItem::AppendToPageBuffer ( const char * szText, size_t length )
+bool CResourceHTMLItem::AppendToPageBuffer( const char * szText, size_t length )
 {
     if ( szText )
-        m_strPageBuffer.append ( szText, length );
+        m_strPageBuffer.append( szText, length );
     return true;
 }
 
-bool CResourceHTMLItem::Start ( void )
+bool CResourceHTMLItem::Start()
 {
-    if ( !m_bIsRaw )
+    CFile *file;
+
+    if ( m_bIsRaw )
     {
-        // go through and search for <* or *>
-        FILE * pFile = fopen ( m_strResourceFileName.c_str (), "r" );
-        if ( !pFile )
+        // its a raw page
+        file = modFileRoot->Open( m_path.c_str(), "rb" );
+
+        if ( !file )
             return false;
 
-        bool bInCode = false;
-        bool bJustStartedCodeBlock = false;
-        bool bIsShorthandCodeBlock = false;
-        std::string strScript;
-        strScript += "function renderPage ( requestHeaders, form, cookies, hostname, url, querystring, user )\n";
-        strScript += "\nhttpWrite ( \""; // bit hacky, possibly can be terminated straight away
-        unsigned char c;
-        int i = 0;
-        while ( !feof ( pFile ) )
-        {
-            c = ReadChar ( pFile );
-            if ( feof ( pFile ) )
-                break;
+        GetMimeType( m_strResourceFileName.c_str() );
 
-            if ( bInCode == false ) // we're in a plain HTML section
-            {
-                if ( c == '<' && !feof ( pFile ) )
-                {
-                    c = ReadChar ( pFile );
-                    if ( c == '*' ) // we've found <*
-                    {
-                        bInCode = true;
-                        bJustStartedCodeBlock = true;
-                        strScript.append("\" )\n"); // add ") to the end to terminate our last non-code section
-                    }
-                    else
-                    {   // we found < but not a *, so just output both characters we read
-                        strScript += '<';
-                        strScript += c;
-                    }
-                }
-                else
-                {
-                    if ( c == '\r' )
-                    {
-                        strScript += "\\r";
-                    }
-                    else if ( c == '\n' )
-                    {
-                        strScript += "\\n";
-                    }
-                    else if ( c == '\\' )
-                    {
-                        strScript += "\\\\";
-                    }
-                    else if ( c == '\"' )
-                    {
-                        strScript += "\\\"";
-                    }
-                    else
-                        strScript += c;
-                }
-            }
-            else
-            {   // we're in a code block
-                if ( c == '*' && !feof ( pFile ) )
-                {
-                    c = ReadChar ( pFile );
-                    if ( c == '>' ) // we've found *>
-                    {
-                        bInCode = false;
-                        if ( bIsShorthandCodeBlock )
-                        {
-                            bIsShorthandCodeBlock = false;
-                            strScript += ')'; // terminate the 'httpWrite' function
-                        }
-                        strScript.append ( "\nhttpWrite ( \"" ); // add httpWrite ( " to start a new non-code section
-                    }
-                    else
-                    { // we found * but not a >, so just output both characters we read
-                        strScript += '*';
-                        strScript += c;
-                    }
-                }
-                else if ( c == '=' && bJustStartedCodeBlock )
-                {
-                    strScript.append("httpWrite ( ");
-                    bIsShorthandCodeBlock = true;
-                }
-                else
-                {
-                    if ( c != '\t' && c != ' ' ) // we allow whitespace before the shorthand '=' sign
-                        bJustStartedCodeBlock = false;
-                    strScript += c;
-                }
-            }
-            i++;
-        }
-
-        if ( !bInCode )
-            strScript.append("\" )\n");
-        strScript.append("\nend");
-
-   /*     FILE * debug = fopen ("debug.lua", "w" );
-        fwrite ( m_szBuffer, 1, strlen(m_szBuffer), debug );
-        fclose ( debug );*/
-
-        m_pVM = g_pGame->GetLuaManager()->CreateVirtualMachine ( m_resource );
-        m_pVM->LoadScript ( strScript.c_str () );
-        m_pVM->SetResourceFile ( this );
-        m_pVM->RegisterHTMLDFunctions();
-
-        fclose ( pFile );
-
-        GetMimeType ( m_strResourceFileName.c_str () );
+        // don't actually read it here, it could be way too large
+        delete file;
 
         return true;
     }
-    else
-    {
-        // its a raw page
-        FILE * file = fopen ( m_strResourceFileName.c_str (), "rb" );
-        if ( file )
-        {
-            GetMimeType ( m_strResourceFileName.c_str () );
 
-            // don't actually read it here, it could be way too large
-            fclose ( file );
-            return true;
-        }
+    // go through and search for <* or *>
+    file = modFileRoot->Open( m_path.c_str(), "r" );
+
+    if ( !file )
         return false;
-    }
-}
 
-void CResourceHTMLItem::GetMimeType ( const char * szFilename )
-{
-    const char* pExtn = strrchr ( szFilename, '.' );
-    if ( pExtn )
+    bool bInCode = false;
+    bool bJustStartedCodeBlock = false;
+    bool bIsShorthandCodeBlock = false;
+    std::string strScript( "function renderPage( requestHeaders, form, cookies, hostname, url, querystring, user )\n" );
+    strScript += "\nhttpWrite( \""; // bit hacky, possibly can be terminated straight away
+    unsigned char c;
+    unsigned int i = 0;
+
+    while ( !file->IsEOF() )
     {
-        pExtn++;
-        if ( strcmp ( pExtn, "css" ) == 0 )
-            m_strMime = "text/css";
-        else if ( strcmp ( pExtn, "png" ) == 0 )
-            m_strMime = "image/png";
-        else if ( strcmp ( pExtn, "gif" ) == 0 )
-            m_strMime = "image/gif";
-        else if ( strcmp ( pExtn, "jpg" ) == 0 || strcmp ( pExtn, "jpeg" ) == 0 )
-            m_strMime = "image/jpg";
-        else if ( strcmp ( pExtn, "js" ) == 0 )
-            m_strMime = "text/javascript";
+        c = file->ReadByte();
+
+        if ( file->IsEOF() )
+            break;
+
+        if ( bInCode == false ) // we're in a plain HTML section
+        {
+            if ( c == '<' )
+            {
+                c = file->ReadByte();
+
+                if ( c == '*' ) // we've found <*
+                {
+                    bInCode = true;
+                    bJustStartedCodeBlock = true;
+                    strScript += "\" )\n"; // add ") to the end to terminate our last non-code section
+                }
+                else
+                {   // we found < but not a *, so just output both characters we read
+                    strScript += '<';
+                    strScript += c;
+                }
+            }
+            else
+            {
+                if ( c == '\r' )
+                    strScript += "\\r";
+                else if ( c == '\n' )
+                    strScript += "\\n";
+                else if ( c == '\\' )
+                    strScript += "\\\\";
+                else if ( c == '\"' )
+                    strScript += "\\\"";
+                else
+                    strScript += c;
+            }
+        }
         else
-            m_strMime = "text/html";
+        {
+            // we're in a code block
+            if ( c == '*' )
+            {
+                c = file->ReadByte();
+
+                if ( c == '>' ) // we've found *>
+                {
+                    bInCode = false;
+
+                    if ( bIsShorthandCodeBlock )
+                    {
+                        bIsShorthandCodeBlock = false;
+                        strScript += ')'; // terminate the 'httpWrite' function
+                    }
+
+                    strScript += "\nhttpWrite ( \""; // add httpWrite ( " to start a new non-code section
+                }
+                else
+                {
+                    // we found * but not a >, so just output both characters we read
+                    strScript += '*';
+                    strScript += c;
+                }
+            }
+            else if ( c == '=' && bJustStartedCodeBlock )
+            {
+                strScript += "httpWrite ( ";
+                bIsShorthandCodeBlock = true;
+            }
+            else
+            {
+                if ( c != '\t' && c != ' ' ) // we allow whitespace before the shorthand '=' sign
+                    bJustStartedCodeBlock = false;
+
+                strScript += c;
+            }
+        }
+        i++;
     }
-    else
-        m_strMime = "text/html";
+
+    if ( !bInCode )
+        strScript += "\" )\n";
+
+    strScript += "\nend";
+
+#if 0
+    FILE *debug = fopen( "debug.lua", "w" );
+    fwrite( m_szBuffer, 1, strlen(m_szBuffer), debug );
+    fclose( debug );
+#endif
+
+    m_pVM = g_pGame->GetLuaManager()->CreateVirtualMachine( m_resource );
+    m_pVM->LoadScript( strScript.c_str() );
+    m_pVM->SetResourceFile( this );
+    m_pVM->RegisterHTMLDFunctions();
+
+    delete file;
+
+    GetMimeType ( m_strResourceFileName.c_str () );
+    return true;
 }
 
-bool CResourceHTMLItem::Stop ( void )
+void CResourceHTMLItem::GetMimeType( const char * szFilename )
+{
+    const char* pExtn = strrchr( szFilename, '.' );
+
+    if ( !pExtn )
+    {
+        m_strMime = "text/html";
+        return;
+    }
+
+    pExtn++;
+
+    if ( stricmp( pExtn, "css" ) == 0 )
+    {
+        m_strMime = "text/css";
+        return;
+    }
+    else if ( stricmp( pExtn, "png" ) == 0 )
+    {
+        m_strMime = "image/png";
+        return;
+    }
+    else if ( stricmp( pExtn, "gif" ) == 0 )
+    {
+        m_strMime = "image/gif";
+        return;
+    }
+    else if ( stricmp( pExtn, "jpg" ) == 0 || stricmp( pExtn, "jpeg" ) == 0 )
+    {
+        m_strMime = "image/jpg";
+        return;
+    }
+    else if ( stricmp( pExtn, "js" ) == 0 )
+    {
+        m_strMime = "text/javascript";
+        return;
+    }
+
+    m_strMime = "text/html";
+}
+
+bool CResourceHTMLItem::Stop()
 {
     if ( m_pVM )
     {
         // Delete the events on this VM
-        g_pGame->GetMapManager ()->GetRootElement()->DeleteEvents ( m_pVM, true );
+        g_pGame->GetMapManager()->GetRootElement()->DeleteEvents( m_pVM, true );
 
-        g_pGame->GetLuaManager()->RemoveVirtualMachine ( m_pVM );
+        g_pGame->GetLuaManager()->RemoveVirtualMachine( m_pVM );
     }
 
     m_pVM = NULL;

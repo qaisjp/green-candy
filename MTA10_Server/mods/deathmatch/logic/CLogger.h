@@ -53,8 +53,9 @@ public:
 private:
     static void         HandleLogPrint     ( bool bTimeStamp, const char* szPrePend, const char* szMessage, bool bToConsole, bool bToLogFile, bool bToAuthFile, eLogLevel logLevel = LOGLEVEL_MEDIUM );
 
-    static FILE*        m_pLogFile;
-    static FILE*        m_pAuthFile;
+    static CFile*       m_log;
+    static CFile*       m_authLog;
+
     static eLogLevel    m_MinLogLevel;
     static bool         m_bPrintingDots;
     static SString      m_strCaptureBuffer;

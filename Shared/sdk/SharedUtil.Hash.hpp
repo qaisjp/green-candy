@@ -30,16 +30,16 @@ namespace SharedUtil
     #define S43 15
     #define S44 21
     
-    CMD5Hasher::CMD5Hasher ( void )
+    CMD5Hasher::CMD5Hasher()
     {
     }
     
     
-    CMD5Hasher::~CMD5Hasher ( void )
+    CMD5Hasher::~CMD5Hasher()
     {
     }
     
-    bool CMD5Hasher::Calculate ( const char* szFilename, MD5& md5Result )
+    bool CMD5Hasher::Calculate( const char* szFilename, MD5& md5Result )
     {
         //CRYPT_START
         // Try to load the file
@@ -73,7 +73,7 @@ namespace SharedUtil
     }
     
     
-    bool CMD5Hasher::Calculate ( const void* pBuffer, size_t sizeLength, MD5& md5Result )
+    bool CMD5Hasher::Calculate( const void* pBuffer, size_t sizeLength, MD5& md5Result )
     {
         //CRYPT_START
         // Hash it
@@ -88,7 +88,7 @@ namespace SharedUtil
     }
     
     
-    void CMD5Hasher::ConvertToHex ( const MD5& Input, char* pBuffer )
+    void CMD5Hasher::ConvertToHex( const MD5& Input, char* pBuffer )
     {
         for ( int i = 0; i < 16; i++ )
         {
@@ -99,7 +99,7 @@ namespace SharedUtil
     }
     
     
-    SString CMD5Hasher::CalculateHexString ( const char* szFilename )
+    SString CMD5Hasher::CalculateHexString( const char* szFilename )
     {
         MD5 md5;
         CMD5Hasher Hasher;
@@ -112,7 +112,7 @@ namespace SharedUtil
         return "";
     }
     
-    SString CMD5Hasher::CalculateHexString ( const void* pBuffer, size_t sizeLength )
+    SString CMD5Hasher::CalculateHexString( const void* pBuffer, size_t sizeLength )
     {
         MD5 md5;
         CMD5Hasher Hasher;
@@ -126,22 +126,22 @@ namespace SharedUtil
     }
     
     
-    void CMD5Hasher::Init ( void )
+    void CMD5Hasher::Init()
     {
-      // Nothing counted, so count=0
-      m_count[0] = 0;
-      m_count[1] = 0;
-    
-      // Load magic initialization constants.
-      m_state[0] = 0x67452301;
-      m_state[1] = 0xefcdab89;
-      m_state[2] = 0x98badcfe;
-      m_state[3] = 0x10325476;
+        // Nothing counted, so count=0
+        m_count[0] = 0;
+        m_count[1] = 0;
+
+        // Load magic initialization constants.
+        m_state[0] = 0x67452301;
+        m_state[1] = 0xefcdab89;
+        m_state[2] = 0x98badcfe;
+        m_state[3] = 0x10325476;
     }
     
     
-    void CMD5Hasher::Update (unsigned char *input, unsigned int input_length) {
-    
+    void CMD5Hasher::Update( unsigned char *input, unsigned int input_length )
+    {
         //CRYPT_START
         unsigned long input_index, buffer_index;
         unsigned long buffer_space;                // how much space is left in buffer
@@ -185,35 +185,33 @@ namespace SharedUtil
         //CRYPT_END
     }
     
-    
-    void CMD5Hasher::Finalize ( void )
+    void CMD5Hasher::Finalize()
     {
-      unsigned char bits[8];
-      unsigned int index, padLen;
-      static unsigned char PADDING[64]={
+        unsigned char bits[8];
+        unsigned int index, padLen;
+        static unsigned char PADDING[64]={
         0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
         };
-    
-      // Save number of bits
-      Encode (bits, m_count, 8);
-    
-      // Pad out to 56 mod 64.
-      index = (unsigned long) ((m_count[0] >> 3) & 0x3f);
-      padLen = (index < 56) ? (56 - index) : (120 - index);
-      Update (PADDING, padLen);
-    
-      // Append length (before padding)
-      Update (bits, 8);
-    
-      // Store state in digest
-      Encode ( m_digest, m_state, 16 );
-    
-      // Zeroize sensitive information
-      memset ( m_buffer, 0, sizeof (*m_buffer) );
+
+        // Save number of bits
+        Encode (bits, m_count, 8);
+
+        // Pad out to 56 mod 64.
+        index = (unsigned long) ((m_count[0] >> 3) & 0x3f);
+        padLen = (index < 56) ? (56 - index) : (120 - index);
+        Update (PADDING, padLen);
+
+        // Append length (before padding)
+        Update (bits, 8);
+
+        // Store state in digest
+        Encode ( m_digest, m_state, 16 );
+
+        // Zeroize sensitive information
+        memset ( m_buffer, 0, sizeof (*m_buffer) );
     }
-    
     
     void CMD5Hasher::Transform ( unsigned char block [64] )
     {
@@ -302,59 +300,51 @@ namespace SharedUtil
         memset ( (unsigned char*) x, 0, sizeof (x) );
     }
     
-    
-    void CMD5Hasher::Encode (unsigned char *output, unsigned long *input, unsigned long len)
+    void CMD5Hasher::Encode( unsigned char *output, unsigned long *input, unsigned long len )
     {
-      unsigned int i, j;
-    
-      for (i = 0, j = 0; j < len; i++, j += 4) {
+        unsigned int i, j;
+
+        for (i = 0, j = 0; j < len; i++, j += 4) {
         output[j]   = (unsigned char)  (input[i] & 0xff);
         output[j+1] = (unsigned char) ((input[i] >> 8) & 0xff);
         output[j+2] = (unsigned char) ((input[i] >> 16) & 0xff);
         output[j+3] = (unsigned char) ((input[i] >> 24) & 0xff);
-      }
+        }
     }
     
-    
-    void CMD5Hasher::Decode (unsigned long *output, unsigned char *input, unsigned long len)
+    void CMD5Hasher::Decode( unsigned long *output, unsigned char *input, unsigned long len )
     {
-      unsigned int i, j;
-    
-      for (i = 0, j = 0; j < len; i++, j += 4)
-        output[i] = ((unsigned long)input[j]) | (((unsigned long)input[j+1]) << 8) |
-          (((unsigned long)input[j+2]) << 16) | (((unsigned long)input[j+3]) << 24);
+        unsigned int i, j;
+
+        for (i = 0, j = 0; j < len; i++, j += 4)
+            output[i] = ((unsigned long)input[j]) | (((unsigned long)input[j+1]) << 8) |
+                (((unsigned long)input[j+2]) << 16) | (((unsigned long)input[j+3]) << 24);
     }
-    
     
     inline unsigned long CMD5Hasher::RotateLeft (unsigned long x, unsigned long n )
     {
-      return (x << n) | (x >> (32-n));
+        return (x << n) | (x >> (32-n));
     }
-    
     
     inline unsigned long CMD5Hasher::F ( unsigned long x, unsigned long y, unsigned long z )
     {
         return (x & y) | (~x & z);
     }
     
-    
     inline unsigned long CMD5Hasher::G ( unsigned long x, unsigned long y, unsigned long z )
     {
         return (x & z) | (y & ~z);
     }
-    
     
     inline unsigned long CMD5Hasher::H ( unsigned long x, unsigned long y, unsigned long z )
     {
         return x ^ y ^ z;
     }
     
-    
     inline unsigned long CMD5Hasher::I ( unsigned long x, unsigned long y, unsigned long z )
     {
         return y ^ (x | ~z);
     }
-    
     
     inline void CMD5Hasher::FF ( unsigned long& a, unsigned long b, unsigned long c, unsigned long d, unsigned long x, unsigned long  s, unsigned long ac )
     {
@@ -362,13 +352,11 @@ namespace SharedUtil
         a = RotateLeft (a, s) +b;
     }
     
-    
     inline void CMD5Hasher::GG ( unsigned long& a, unsigned long b, unsigned long c, unsigned long d, unsigned long x, unsigned long s, unsigned long ac )
     {
         a += G(b, c, d) + x + ac;
         a = RotateLeft (a, s) +b;
     }
-    
     
     inline void CMD5Hasher::HH ( unsigned long& a, unsigned long b, unsigned long c, unsigned long d, unsigned long x, unsigned long s, unsigned long ac )
     {
@@ -376,11 +364,9 @@ namespace SharedUtil
         a = RotateLeft (a, s) +b;
     }
     
-    
     inline void CMD5Hasher::II ( unsigned long& a, unsigned long b, unsigned long c, unsigned long d, unsigned long x, unsigned long s, unsigned long ac )
     {
         a += I(b, c, d) + x + ac;
         a = RotateLeft (a, s) +b;
     }
-
 }

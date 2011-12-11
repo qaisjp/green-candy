@@ -129,32 +129,21 @@ void CResourceChecker::CheckFileForIssues ( const string& strPath, const string&
 //
 //
 ///////////////////////////////////////////////////////////////
-void CResourceChecker::CheckPngFileForIssues ( const string& strPath, const string& strFileName, const string& strResourceName )
+void CResourceChecker::CheckPngFileForIssues( const string& strPath, const string& strFileName, const string& strResourceName )
 {
-    bool bIsBad         = false;
+    CFile *file = modFileRoot->Open( strPath.c_str(), "rb" );
 
-    // Open the file
-    if ( FILE* pFile = fopen ( strPath.c_str (), "rb" ) )
-    {
-        // This is what the png header should look like
-        unsigned char pGoodHeader [8] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+    if ( !file )
+        return;
 
-            // Load the header
-        unsigned char pBuffer [8] = { 0,0,0,0,0,0,0,0 };
-        fread ( pBuffer, 1, 8, pFile );
+    unsigned char pGoodHeader [8] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+    unsigned char pBuffer[8];
 
-        // Check header integrity
-        if ( memcmp ( pBuffer, pGoodHeader, 8 ) )
-            bIsBad = true;
+    if ( file->Read( pBuffer, 1, 8 ) != 8 || memcmp( pBuffer, pGoodHeader, 8 ) )
+        CLogger::LogPrintf( "WARNING: File '%s' in resource '%s' is invalid.\n", strFileName.c_str(), strResourceName.c_str() );
 
-        // Close the file
-        fclose ( pFile );
-    }
-
-    if ( bIsBad )
-    {
-        CLogger::LogPrintf ( "WARNING: File '%s' in resource '%s' is invalid.\n", strFileName.c_str () , strResourceName.c_str () );
-    }
+    // Close the file
+    delete file;
 }
 
 
@@ -165,45 +154,48 @@ void CResourceChecker::CheckPngFileForIssues ( const string& strPath, const stri
 // Check dff and txd files
 //
 ///////////////////////////////////////////////////////////////
-void CResourceChecker::CheckRwFileForIssues ( const string& strPath, const string& strFileName, const string& strResourceName )
+void CResourceChecker::CheckRwFileForIssues( const string& strPath, const string& strFileName, const string& strResourceName )
 {
-    bool bIsBad         = false;
+    CFile *file = modFileRoot->Open( strPath.c_str(), "rb" );
 
-    // Open the file
-    if ( FILE* pFile = fopen ( strPath.c_str (), "rb" ) )
+    if ( !file )
+        return;
+
+    struct {
+        long id;
+        long size;
+        long ver;
+    } header;
+
+    // Load the first header
+    if ( file->Read( &header, 1, sizeof(header) ) != sizeof(header) )
+        goto bad;
+
+    long pos = sizeof(header);
+    long validSize = header.size + sizeof(header);
+
+    // Step through the sections
+    while ( pos < validSize )
     {
-        struct {
-            long id;
-            long size;
-            long ver;
-        } header = {0,0,0};
+        if ( file->Read( &header, 1, sizeof(header) ) != sizeof(header) )
+            goto bad;
 
-        // Load the first header
-        fread ( &header, 1, sizeof(header), pFile );
-        long pos = sizeof(header);
-        long validSize = header.size + pos;
-
-        // Step through the sections
-        while ( pos < validSize )
-        {
-            if ( fread ( &header, 1, sizeof(header), pFile ) != sizeof(header) )
-                break;
-            fseek ( pFile, header.size, SEEK_CUR );
-            pos += header.size + sizeof(header);
-        }
-
-        // Check integrity
-        if ( pos != validSize )
-            bIsBad = true;
-
-        // Close the file
-        fclose ( pFile );
+        file->Seek( header.size, SEEK_CUR );
+        pos += header.size + sizeof(header);
     }
 
-    if ( bIsBad )
-    {
-        CLogger::LogPrintf ( "WARNING: File '%s' in resource '%s' is invalid.\n", strFileName.c_str () , strResourceName.c_str () );
-    }
+    // Check integrity
+    if ( pos != validSize )
+        goto bad;
+
+    // Close the file
+    delete file;
+
+    return;
+bad:
+    CLogger::LogPrintf( "WARNING: File '%s' in resource '%s' is invalid.\n", strFileName.c_str() , strResourceName.c_str() );
+
+    delete file;
 }
 
 
@@ -211,80 +203,65 @@ void CResourceChecker::CheckRwFileForIssues ( const string& strPath, const strin
 //
 // CResourceChecker::CheckLuaFileForIssues
 //
-//
+// FIXME: Seriously, update the performance of this.
+//        Did a .lua coder get to work on MTA?!
 //
 ///////////////////////////////////////////////////////////////
-void CResourceChecker::CheckLuaFileForIssues ( const string& strPath, const string& strFileName, const string& strResourceName, bool bClientScript )
+void CResourceChecker::CheckLuaFileForIssues( const string& strPath, const string& strFileName, const string& strResourceName, bool bClientScript )
 {
     // Load the original file into a string
-    string strFileContents;
+    CFile *file = modFileRoot->Open( strPath.c_str(), "rb" );
 
-    // Open the file
-    if ( FILE* pFile = fopen ( strPath.c_str (), "rb" ) )
-    {
-        // Get the file size,
-        unsigned long ulLength = 0;
-        fseek( pFile, 0, SEEK_END );
-        ulLength = ftell( pFile );
-        fseek( pFile, 0, SEEK_SET );
-
-        // Load file into a buffer
-        char* pBuffer  = new char[ ulLength + 1 ];
-        memset ( pBuffer, 0, ulLength + 1 );
-        pBuffer[ ulLength ] = 0;
-
-        if ( fread ( pBuffer, 1, ulLength, pFile ) == ulLength )
-        {
-            // assign to the string
-            strFileContents.assign ( pBuffer, ulLength );
-        }
-
-        // Clean up
-        fclose ( pFile );
-        delete [] pBuffer;
-    }
-
-    if ( strFileContents.length () == 0 )
+    if ( !file )
         return;
+
+    size_t size = file->GetSize();
+
+    if ( size == 0 )
+        return;
+
+    // Load file into a buffer
+    char* pBuffer = new char[ size + 1 ];
+    pBuffer[size] = 0;
+
+    if ( file->Read( pBuffer, 1, size ) != size )
+        return;
+
+    // assign to the string
+    string content( pBuffer, size );
+
+    // Clean up
+    delete file;
+
+    delete [] pBuffer;
 
     // Don't check compiled scripts
-    if ( strFileContents[0] == 0x1b )
+    if ( content[0] == 0x1b )
         return;
 
-    // Process
-    if ( strFileContents.length () > 1000000 )
-        CLogger::LogPrintf ( "Please wait...\n" );
-
-    // Ouput warnings...
-    if ( m_bUpgradeScripts == false )
+    if ( !m_bUpgradeScripts )
     {
-        CheckLuaSourceForIssues ( strFileContents, strFileName, bClientScript, "Warnings" );
+        CheckLuaSourceForIssues( strFileContents, strFileName, bClientScript, "Warnings" );
+        return;
     }
-    else
-    // ..or do an upgrade
-    if ( m_bUpgradeScripts == true )
-    {
-        string strNewFileContents;
-        CheckLuaSourceForIssues ( strFileContents, strFileName, bClientScript, "Upgrade", &strNewFileContents );
 
-        // Has contents changed?
-        if ( strNewFileContents.length () > 0 && strNewFileContents != strFileContents )
-        {
-            // Rename original to lua.old
-            if( !RenameBackupFile( strPath, ".old" ) )
-                return;
+    string strNewFileContents;
+    CheckLuaSourceForIssues( strFileContents, strFileName, bClientScript, "Upgrade", &strNewFileContents );
 
-            // Save new content
-            if ( FILE* pFile = fopen ( strPath.c_str (), "wb" ) )
-            {
-                fwrite ( strNewFileContents.c_str (), 1, strNewFileContents.length (), pFile );
-                fclose ( pFile );
-                CLogger::LogPrintf ( "Upgrading %s:%s ...........done\n", strResourceName.c_str (), strFileName.c_str () );
+    // Has content changed?
+    if ( strNewFileContents.empty() || strNewFileContents == content )
+        return;
 
-                m_upgradedFullPathList.push_back( strPath );
-            }
-        }
-    }
+    // Rename original to lua.old
+    if( !RenameBackupFile( strPath, ".old" ) )
+        return;
+
+    if ( !modFileRoot->WriteData( strPath.c_str(), strNewFileContents.c_str(), strNewFileContents.size() ) )
+        return;
+
+    CLogger::LogPrintf( "Upgraded %s:%s!\n", strResourceName.c_str(), strFileName.c_str() );
+
+    m_upgradedFullPathList.push_back( strPath );
 }
 
 
@@ -763,20 +740,21 @@ bool CResourceChecker::GetLuaFunctionNameUpgradeInfo ( const string& strFunction
 bool CResourceChecker::RenameBackupFile( const string& strOrigFilename, const string& strBakAppend )
 {
     string strBakFilename = strOrigFilename + strBakAppend;
-    for ( int i = 0 ; rename( strOrigFilename.c_str (), strBakFilename.c_str () ) ; i++ )
+
+    for ( int i=0; modFileRoot->Rename( strOrigFilename.c_str(), strBakFilename.c_str() ); i++ )
     {
         if ( i > 1000 )
         {
-            CLogger::LogPrintf ( "Unable to rename %s to %s\n", strOrigFilename.c_str (), strBakFilename.c_str () );
+            CLogger::LogPrintf ( "Unable to rename %s to %s\n", strOrigFilename.c_str(), strBakFilename.c_str() );
             return false;
         }
+
         char buffer[32];
         snprintf( buffer, 32, "%d", i + 1 );
         strBakFilename = strOrigFilename + strBakAppend + "_" + buffer;
     }
     return true;
 }
-
 
 ///////////////////////////////////////////////////////////////
 //
@@ -785,31 +763,34 @@ bool CResourceChecker::RenameBackupFile( const string& strOrigFilename, const st
 // Based on example at http://www.winimage.com/zLibDll/minizip.html
 // by Ivan A. Krestinin
 //
+// TODO: Update this to be proper for MTA
+//       Copying code without looking at it is low, BLUE.
+//
 ///////////////////////////////////////////////////////////////
 int CResourceChecker::ReplaceFilesInZIP( const string& strOrigZip, const string& strTempZip, const vector < string >& pathInArchiveList, const vector < string >& m_upgradedFullPathList )
 {
     // open source and destination file
     zlib_filefunc_def ffunc;
-    #ifdef WIN32
+#ifdef WIN32
     fill_win32_filefunc(&ffunc);
-    #else
+#else
     fill_fopen_filefunc(&ffunc);
-    #endif
+#endif
 
     zipFile szip = unzOpen2(strOrigZip.c_str(), &ffunc);
-    if (szip==NULL) { /*free(tmp_name);*/ return 0; }
+    if (szip==NULL) { return 0; }
     zipFile dzip = zipOpen2(strTempZip.c_str(), APPEND_STATUS_CREATE, NULL, &ffunc);
-    if (dzip==NULL) { unzClose(szip); /*free(tmp_name);*/ return 0; }
+    if (dzip==NULL) { unzClose(szip); return 0; }
 
     // get global commentary
     unz_global_info glob_info;
-    if (unzGetGlobalInfo(szip, &glob_info) != UNZ_OK) { zipClose(dzip, NULL); unzClose(szip); /*free(tmp_name);*/ return 0; }
+    if (unzGetGlobalInfo(szip, &glob_info) != UNZ_OK) { zipClose(dzip, NULL); unzClose(szip); return 0; }
 
     char* glob_comment = NULL;
     if (glob_info.size_comment > 0)
     {
         glob_comment = (char*)malloc(glob_info.size_comment+1);
-        if ((glob_comment==NULL)&&(glob_info.size_comment!=0)) { zipClose(dzip, NULL); unzClose(szip); /*free(tmp_name);*/ return 0; }
+        if ((glob_comment==NULL)&&(glob_info.size_comment!=0)) { zipClose(dzip, NULL); unzClose(szip); return 0; }
 
         if ((unsigned int)unzGetGlobalComment(szip, glob_comment, glob_info.size_comment+1) != glob_info.size_comment)  { zipClose(dzip, NULL); unzClose(szip); free(glob_comment); /*free(tmp_name);*/ return 0; }
     }
@@ -836,63 +817,30 @@ int CResourceChecker::ReplaceFilesInZIP( const string& strOrigZip, const string&
                 fullPathReplacement = m_upgradedFullPathList[i];
 
         // Replace file in zip
-        if ( fullPathReplacement.length () )
+        if ( !fullPathReplacement.empty() )
         {
-            void* buf = NULL;
-            unsigned long ulLength = 0;
+            std::vector <char> buf;
 
-            // Get new file into a buffer
-            if ( FILE* pFile = fopen ( fullPathReplacement.c_str (), "rb" ) )
-            {
-                // Get the file size,
-                fseek( pFile, 0, SEEK_END );
-                ulLength = ftell( pFile );
-                fseek( pFile, 0, SEEK_SET );
-
-                // Load file into a buffer
-                buf = new char[ ulLength ];
-                if ( fread ( buf, 1, ulLength, pFile ) != ulLength )
-                {
-                    free( buf );
-                    buf = NULL;
-                }
-
-                // Clean up
-                fclose ( pFile );
-            }
-
-            if( !buf )
+            if ( !modFileRoot->ReadToBuffer( fullPathReplacement.c_str(), buf ) )
                 break;
 
-            // open destination file
             zip_fileinfo zfi;
-            memcpy (&zfi.tmz_date, &unzfi.tmu_date, sizeof(tm_unz));
+            memcpy( &zfi.tmz_date, &unzfi.tmu_date, sizeof(tm_unz) );
             zfi.dosDate = unzfi.dosDate;
             zfi.internal_fa = unzfi.internal_fa;
             zfi.external_fa = unzfi.external_fa;
 
-            char* extrafield = NULL;
-            char* commentary = NULL;
-            int size_local_extra = 0;
-            void* local_extra = NULL;
-            int unzfi_size_file_extra = 0;
-            int method = Z_DEFLATED;
-            int level = Z_DEFAULT_COMPRESSION;
-
-
-            if (zipOpenNewFileInZip(dzip, dos_fn, &zfi, local_extra, size_local_extra, extrafield, unzfi_size_file_extra, commentary, method, level )!=UNZ_OK)
-                {free(extrafield); free(commentary); free(local_extra); free(buf); break;}
+            if ( zipOpenNewFileInZip( dzip, dos_fn, &zfi, NULL, 0a, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION ) != UNZ_OK )
+                break;
 
             // write file
-            if (zipWriteInFileInZip(dzip, buf, ulLength)!=UNZ_OK)
-                {free(extrafield); free(commentary); free(local_extra); free(buf); break;}
+            if ( zipWriteInFileInZip( dzip, &buf[0], buf.size() ) != UNZ_OK )
+                break;
 
-            if (zipCloseFileInZip(dzip/*, unzfi.uncompressed_size, unzfi.crc*/)!=UNZ_OK)
-                {free(extrafield); free(commentary); free(local_extra); free(buf); break;}
+            if ( zipCloseFileInZip( dzip ) != UNZ_OK )
+                break;
         }
-
-        // Copy file in zip
-        if ( !fullPathReplacement.length () )
+        else    // copy
         {
             char* extrafield = (char*)malloc(unzfi.size_file_extra);
             if ((extrafield==NULL)&&(unzfi.size_file_extra!=0)) break;

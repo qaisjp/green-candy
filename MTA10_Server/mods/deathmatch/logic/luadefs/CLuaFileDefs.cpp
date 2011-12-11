@@ -34,12 +34,8 @@ void CLuaFileDefs::LoadFunctions ( void )
     CLuaCFunctions::AddFunction ( "fileRename", CLuaFileDefs::fileRename );
 }
 
-
 int CLuaFileDefs::fileCreate ( lua_State* luaVM )
 {
-    if ( lua_type ( luaVM, 2 ) == LUA_TLIGHTUSERDATA )
-        m_pScriptDebugging->LogCustom ( luaVM, "fileCreate may be using an outdated syntax. Please check and update." );
-
     // Grab our lua VM
     CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
     if ( pLuaMain )
@@ -82,7 +78,7 @@ int CLuaFileDefs::fileCreate ( lua_State* luaVM )
                         CResource* pParentResource = pLuaMain->GetResource ();
                         if ( pParentResource )
                         {
-                            // Add it to the scrpt resource element group
+                            // Add it to the script resource element group
                             CElementGroup* pGroup = pParentResource->GetElementGroup ();
                             if ( pGroup )
                             {
@@ -96,7 +92,6 @@ int CLuaFileDefs::fileCreate ( lua_State* luaVM )
                         Packet.Add ( pFile );
                         m_pPlayerManager->BroadcastOnlyJoined ( Packet );
 
-                        // Success. Return the file.
                         lua_pushelement ( luaVM, pFile );
                         return 1;
                     }
@@ -117,7 +112,6 @@ int CLuaFileDefs::fileCreate ( lua_State* luaVM )
             m_pScriptDebugging->LogBadType ( luaVM, "fileCreate" );
     }
 
-    // Failed
     lua_pushboolean ( luaVM, false );
     return 1;
 }

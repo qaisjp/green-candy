@@ -21,35 +21,34 @@
 class CServer
 {
 public:
-                                CServer             ( void );
-                                ~CServer            ( void );
+                                CServer             ();
+                                ~CServer            ();
 
-    void                        DoPulse             ( void );
+    void                        DoPulse             ();
 
     bool                        Start               ( const char* szConfig );
-    bool                        Stop                ( void );
-    bool                        IsStarted           ( void );
-    inline bool                 IsRunning           ( void )                    { return m_pLibrary != NULL; };
-    inline bool                 IsReady             ( void )                    { return m_bIsReady; };
+    bool                        Stop                ();
+    bool                        IsStarted           ();
+    inline bool                 IsRunning           ()                    { return m_pLibrary != NULL; };
+    inline bool                 IsReady             ()                    { return m_bIsReady; };
 
-    int                         GetLastError        ( void )                    { return m_iLastError; };
+    int                         GetLastError        ()                    { return m_iLastError; };
 
     bool                        Send                ( const char* szString );
 
-    const std::string&          GetPassword         ( void )                    { return m_strPassword; };
+    const std::string&          GetPassword         ()                    { return m_strPassword; };
     void                        SetPassword         ( const char* szPassword )  { m_strPassword = szPassword; };
 
 private:
     static DWORD WINAPI         Thread_EntryPoint   ( LPVOID pThis );
-    unsigned long               Thread_Run          ( void );
+    unsigned long               Thread_Run          ();
 
     bool                        m_bIsReady;
     HANDLE                      m_hThread;
     CDynamicLibrary* volatile   m_pLibrary;
     CCriticalSection            m_CriticalSection;
-    SString                     m_strServerRoot;
-    SString                     m_strDLLFile;
-    SString                     m_strConfig;
+    filePath                    m_strDLLFile;
+    filePath                    m_strConfig;
 
     int                         m_iLastError;
 

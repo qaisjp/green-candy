@@ -14,7 +14,7 @@
 
 CServer* g_pServer = NULL;
 
-MTAEXPORT CServerBase* InitServer ( void )
+MTAEXPORT CServerBase* InitServer()
 {
     // Create a server and return it
     if ( !g_pServer )
@@ -26,7 +26,7 @@ MTAEXPORT CServerBase* InitServer ( void )
 }
 
 
-MTAEXPORT void ReleaseServer ( void )
+MTAEXPORT void ReleaseServer()
 {
     // Destroy the server
     if ( g_pServer )

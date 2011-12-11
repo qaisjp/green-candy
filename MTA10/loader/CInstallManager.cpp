@@ -578,7 +578,7 @@ SString CInstallManager::_ProcessLayoutChecks ( void )
 // Change the link timestamp in gta_sa.exe to trick windows 7 into using aero
 //
 //////////////////////////////////////////////////////////
-SString CInstallManager::_ProcessAeroChecks ( void )
+SString CInstallManager::_ProcessAeroChecks()
 {
     // Check is Windows 7
     if ( GetApplicationSetting ( "os-version" ) >= "6.1" )

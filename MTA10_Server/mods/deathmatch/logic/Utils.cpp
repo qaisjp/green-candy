@@ -44,35 +44,6 @@
 #include <sys/types.h>  // For stat().
 #include <sys/stat.h>   // For stat().
 
-bool DoesDirectoryExist ( const char* szPath )
-{
-    /* Didn't seem to work on Tweak server
-    if ( access ( szPath, 0 ) == 0 )
-    {
-        struct stat status;
-        stat ( szPath, &status );
-
-        if ( status.st_mode & S_IFDIR )
-        {
-            return true;
-        }
-    }
-
-    return false;
-    */
-
-#ifdef WIN32
-    DWORD dwAtr = GetFileAttributes ( szPath );
-    if ( dwAtr == INVALID_FILE_ATTRIBUTES )
-        return false;
-    return ( ( dwAtr & FILE_ATTRIBUTE_DIRECTORY) != 0 );     
-#else
-    struct stat Info;
-    stat ( szPath, &Info );
-    return ( S_ISDIR ( Info.st_mode ) );
-#endif
-}
-
 
 bool CheckNickProvided ( const char* szNick )
 {
@@ -436,23 +407,6 @@ int GetRandom ( int iLow, int iHigh )
     double dHigh = static_cast < double > ( iHigh );
 
     return static_cast < int > ( floor ( ( dHigh - dLow + 1.0 ) * GetRandomDouble () ) ) + iLow;
-}
-
-bool IsValidFilePath ( const char *szDir )
-{
-    if ( szDir == NULL ) return false;
-
-    unsigned int uiLen = strlen ( szDir );
-    unsigned char c, c_d;
-    
-    // iterate through the char array
-    for ( unsigned int i = 0; i < uiLen; i++ ) {
-        c = szDir[i];                                       // current character
-        c_d = ( i < ( uiLen - 1 ) ) ? szDir[i+1] : 0;       // one character ahead, if any
-        if ( !IsVisibleCharacter ( c ) || c == ':' || ( c == '.' && c_d == '.' ) || ( c == '\\' && c_d == '\\' ) )
-            return false;
-    }
-    return true;
 }
 
 unsigned int HexToInt ( const char * szHex )
@@ -884,37 +838,6 @@ const char* HTMLEscapeString ( const char *szSource )
         }
     }
     return szBuffer;
-}
-
-
-// Copies a single file.
-bool FileCopy ( const char* szPathNameSrc, const char* szPathDst )
-{
-    FILE* fhSrc = fopen ( szPathNameSrc, "rb" );
-    if ( !fhSrc )
-    {
-        return false;
-    }
-
-    FILE* fhDst = fopen ( szPathDst, "wb" );
-    if ( !fhDst )
-    {
-        fclose ( fhSrc );
-        return false;
-    }
-
-    char cBuffer[16384];
-    while ( true )
-    {
-        size_t dataLength = fread ( cBuffer, 1, 16384, fhSrc );
-        if ( dataLength == 0 )
-            break;
-        fwrite ( cBuffer, 1, dataLength, fhDst );
-    }
-
-    fclose ( fhSrc );
-    fclose ( fhDst );
-    return true;
 }
 
 eEulerRotationOrder    EulerRotationOrderFromString(const char* szString)

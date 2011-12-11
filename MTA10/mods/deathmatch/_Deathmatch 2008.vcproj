@@ -1009,10 +1009,6 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CScriptFile.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CVariableBuffer.cpp"
 					>
 				</File>
@@ -1740,6 +1736,18 @@
 					RelativePath="..\..\..\Shared\animation\CPositionRotationAnimation.cpp"
 					>
 				</File>
+				<Filter
+					Name="base_logic"
+					>
+					<File
+						RelativePath="..\..\..\Shared\logic\CScriptFile.cpp"
+						>
+					</File>
+				</Filter>
+			</Filter>
+			<Filter
+				Name="derived"
+				>
 			</Filter>
 		</Filter>
 		<Filter
@@ -2499,10 +2507,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CScriptFile.h"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CSimulatedPlayPosition.h"
 					>
 				</File>
@@ -2630,6 +2634,22 @@
 					RelativePath="..\..\..\Shared\animation\TInterpolation.h"
 					>
 				</File>
+				<Filter
+					Name="base_logic"
+					>
+					<File
+						RelativePath="..\..\..\Shared\logic\CScriptFile.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\include.h"
+						>
+					</File>
+				</Filter>
+			</Filter>
+			<Filter
+				Name="derived"
+				>
 			</Filter>
 		</Filter>
 	</Files>

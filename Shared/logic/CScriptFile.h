@@ -1,9 +1,9 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        mods/shared_logic/CScriptFile.h
+*  FILE:        Shared/logic/CScriptFile.h
 *  PURPOSE:     Script file class header
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
@@ -19,7 +19,8 @@
 #include <stdio.h>
 #include <string>
 
-class CScriptFile : public CClientEntity
+template < class inherit >
+class CScriptFile : public inherit
 {
     DECLARE_CLASS( CScriptFile, CClientEntity )
 public:
