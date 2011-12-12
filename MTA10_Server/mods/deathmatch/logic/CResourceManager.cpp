@@ -17,9 +17,6 @@
 *
 *****************************************************************************/
 
-// This class controls all the resources that are loaded, and loads
-// new resources on demand
-
 #include "StdInc.h"
 
 extern CServerInterface* g_pServerInterface;
@@ -36,17 +33,14 @@ struct SResInfo
     bool bPathIssue;
 };
 
-
-CResourceManager::CResourceManager ( void )
+CResourceManager::CResourceManager()
 {
     m_bResourceListChanged = false;
     m_uiResourceLoadedCount = 0;
     m_uiResourceFailedCount = 0;
-
-    sprintf ( m_szResourceDirectory, "%s/resources", g_pServerInterface->GetServerModPath () );
 }
 
-CResourceManager::~CResourceManager ( void )
+CResourceManager::~CResourceManager()
 {
     // First process the queue to make sure all queued up tasks are done
     ProcessQueue ();
@@ -61,7 +55,6 @@ CResourceManager::~CResourceManager ( void )
         delete (*iter);
     }
 }
-
 
 // Load the complete list of resources and create their objects
 // DOES NOT reload already loaded resources, we need a special function for lua for that (e.g. reloadResource)
@@ -213,35 +206,28 @@ bool CResourceManager::Refresh ( bool bRefreshAll )
     return true;
 }
 
-void CResourceManager::Upgrade ( void )
+void CResourceManager::Upgrade()
 {
     // Modify source files if needed
     for ( list < CResource* > ::const_iterator iter = m_resources.begin () ; iter != m_resources.end (); iter++ )
         (*iter)->ApplyUpgradeModifications ();
 
-    // Refresh everything
-    Refresh ( true );
+    Refresh( true );
 }
 
-char * CResourceManager::GetResourceDirectory ( void )
-{
-    return m_szResourceDirectory;
-}
-
-// first, go through each resource then link up to other resources, any that fail are noted
-// then go through each resource and perform a recursive check
-void CResourceManager::CheckResourceDependencies ( void )
+void CResourceManager::CheckResourceDependencies()
 {
     m_uiResourceLoadedCount = 0;
     m_uiResourceFailedCount = 0;
-    list < CResource* > ::const_iterator iter = m_resources.begin ();
-    for ( ; iter != m_resources.end (); iter++ )
-    {
-        (*iter)->LinkToIncludedResources();
-    }
 
-    iter = m_resources.begin ();
+    list <CResource*>::const_iterator iter = m_resources.begin();
+
     for ( ; iter != m_resources.end (); iter++ )
+        (*iter)->LinkToIncludedResources();
+
+    iter = m_resources.begin();
+
+    for ( ; iter != m_resources.end(); iter++ )
     {
         if ( (*iter)->CheckIfStartable() )
             m_uiResourceLoadedCount++;
@@ -250,7 +236,7 @@ void CResourceManager::CheckResourceDependencies ( void )
     }
 }
 
-void CResourceManager::ListResourcesLoaded ( void )
+void CResourceManager::ListResourcesLoaded()
 {
     unsigned int uiCount = 0;
     unsigned int uiFailedCount = 0;
@@ -281,7 +267,7 @@ void CResourceManager::ListResourcesLoaded ( void )
 }
 
 // check all loaded resources and see if they're still valid (i.e. have a meta.xml file)
-void CResourceManager::UnloadRemovedResources ( void )
+void CResourceManager::UnloadRemovedResources()
 {
     list < CResource* > resourcesToDelete;
     list < CResource* > ::const_iterator iter = m_resources.begin ();
@@ -306,7 +292,7 @@ void CResourceManager::UnloadRemovedResources ( void )
     }
 }
 
-void CResourceManager::Unload ( CResource * resource )
+void CResourceManager::Unload( CResource * resource )
 {
     RemoveResourceFromLists ( resource );
     m_resourcesToStartAfterRefresh.remove ( resource );
@@ -314,7 +300,7 @@ void CResourceManager::Unload ( CResource * resource )
     delete resource;
 }
 
-CResource * CResourceManager::Load ( bool bIsZipped, const char * szAbsPath, const char * szResourceName )
+CResource* CResourceManager::Load( bool bIsZipped, const char * szAbsPath, const char * szResourceName )
 {
     CResource * loadedResource = NULL;
     bool bStartAfterLoading = false;
@@ -386,7 +372,7 @@ CResource * CResourceManager::Load ( bool bIsZipped, const char * szAbsPath, con
     return loadedResource;
 }
 
-CResource * CResourceManager::GetResource ( const char * szResourceName )
+CResource* CResourceManager::GetResource( const char * szResourceName )
 {
     CResource** ppResource = MapFind ( m_NameResourceMap, SStringX ( szResourceName ).ToUpper () );
     if ( ppResource )
@@ -395,13 +381,13 @@ CResource * CResourceManager::GetResource ( const char * szResourceName )
 }
 
 
-bool CResourceManager::Exists ( CResource* pResource )
+bool CResourceManager::Exists( CResource* pResource )
 {
-    return m_resources.Contains ( pResource );
+    return m_resources.Contains( pResource );
 }
 
 
-unsigned short CResourceManager::GenerateID ( void )
+unsigned short CResourceManager::GenerateID()
 {
     // Create a map of all used IDs
     map < unsigned short, bool > idMap;
@@ -421,7 +407,7 @@ unsigned short CResourceManager::GenerateID ( void )
 }
 
 
-void CResourceManager::OnPlayerJoin ( CPlayer& Player )
+void CResourceManager::OnPlayerJoin( CPlayer& Player )
 {
     // Loop through our started resources so they start in the correct order clientside
     list < CResource* > ::iterator iter = CResource::m_StartedResources.begin ();
@@ -434,7 +420,7 @@ void CResourceManager::OnPlayerJoin ( CPlayer& Player )
 //
 // Add resource <-> luaVM lookup mapping
 //
-void CResourceManager::NotifyResourceVMOpen ( CResource* pResource, CLuaMain* pVM )
+void CResourceManager::NotifyResourceVMOpen( CResource* pResource, CLuaMain* pVM )
 {
     lua_State* luaVM = pVM->GetVirtualMachine ();
     assert ( luaVM );
@@ -444,10 +430,7 @@ void CResourceManager::NotifyResourceVMOpen ( CResource* pResource, CLuaMain* pV
     MapSet ( m_LuaStateResourceMap, luaVM, pResource );
 }
 
-//
-// Remove resource <-> luaVM lookup mapping
-//
-void CResourceManager::NotifyResourceVMClose ( CResource* pResource, CLuaMain* pVM )
+void CResourceManager::NotifyResourceVMClose( CResource* pResource, CLuaMain* pVM )
 {
     lua_State* luaVM = pVM->GetVirtualMachine ();
     assert ( luaVM );
@@ -457,10 +440,7 @@ void CResourceManager::NotifyResourceVMClose ( CResource* pResource, CLuaMain* p
     MapRemove ( m_LuaStateResourceMap, luaVM );
 }
 
-//
-// Add resource to the internal lists
-//
-void CResourceManager::AddResourceToLists ( CResource* pResource )
+void CResourceManager::AddResourceToLists( CResource* pResource )
 {
     SString strResourceNameKey = SString ( pResource->GetName () ).ToUpper ();
 
@@ -475,10 +455,7 @@ void CResourceManager::AddResourceToLists ( CResource* pResource )
     MapSet ( m_NameResourceMap, strResourceNameKey, pResource );
 }
 
-//
-// Remove resource from the internal lists
-//
-void CResourceManager::RemoveResourceFromLists ( CResource* pResource )
+void CResourceManager::RemoveResourceFromLists( CResource* pResource )
 {
     SString strResourceNameKey = SString ( pResource->GetName () ).ToUpper ();
 
@@ -489,7 +466,7 @@ void CResourceManager::RemoveResourceFromLists ( CResource* pResource )
 }
 
 
-CResource* CResourceManager::GetResourceFromLuaState ( lua_State* luaVM )
+CResource* CResourceManager::GetResourceFromLuaState( lua_State* luaVM )
 {
     luaVM = lua_getmainstate ( luaVM );
 
@@ -508,8 +485,7 @@ CResource* CResourceManager::GetResourceFromLuaState ( lua_State* luaVM )
     return NULL;
 }
 
-
-bool CResourceManager::IsAResourceElement ( CElement* pElement )
+bool CResourceManager::IsAResourceElement( CElement* pElement )
 {
     list < CResource* > ::const_iterator iter = m_resources.begin ();
     for ( ; iter != m_resources.end (); iter++ )
@@ -538,7 +514,7 @@ bool CResourceManager::IsAResourceElement ( CElement* pElement )
 }
 
 
-bool CResourceManager::StartResource ( CResource* pResource, list < CResource* > * dependents, bool bStartedManually, bool bStartIncludedResources, bool bConfigs, bool bMaps, bool bScripts, bool bHTML, bool bClientConfigs, bool bClientScripts, bool bClientFiles )
+bool CResourceManager::StartResource( CResource* pResource, list < CResource* > * dependents, bool bStartedManually, bool bStartIncludedResources, bool bConfigs, bool bMaps, bool bScripts, bool bHTML, bool bClientConfigs, bool bClientScripts, bool bClientFiles )
 {
     // Has resurce changed since load?
     if ( pResource->HasResourceChanged() )
@@ -569,38 +545,31 @@ bool CResourceManager::StartResource ( CResource* pResource, list < CResource* >
 }
 
 
-bool CResourceManager::Reload ( CResource* pResource )
+bool CResourceManager::Reload( CResource* pResource )
 {
-    // Copy old resource's name
-    std::string strResourceName = pResource->GetName ();
+    std::string strResourceName = pResource->GetName();
 
-    // Output it was changed
-    CLogger::LogPrintf ( "Resource '%s' changed, reloading and starting\n", strResourceName.c_str () );
+    CLogger::LogPrintf( "Resource '%s' changed, reloading and starting\n", strResourceName.c_str () );
 
-    // Delete the old resource and create a new one
-    pResource->Reload ();
-
-    // Was it loaded successfully?
-    if ( pResource->IsLoaded () )
+    try
     {
-        // Add the resource back to the list
-        m_bResourceListChanged = true;
-
-        // Generate a new ID for it
-        pResource->SetID ( GenerateID () );
+        // Delete the old resource and create a new one
+        pResource->Reload();
     }
-    else
+    catch( std::exception& e )
     {
-        CLogger::LogPrintf ( "Loading of resource '%s' failed\n", strResourceName.c_str () );
+        CLogger::LogPrintf( "Loading of resource '%s' failed: %s\n", strResourceName.c_str(), e.what() );
         return false;
     }
 
-    // Success
+    m_bResourceListChanged = true;
+
+    pResource->SetID( GenerateID() );
     return true;
 }
 
 
-bool CResourceManager::StopAllResources ( void )
+bool CResourceManager::StopAllResources()
 {
     CLogger::SetMinLogLevel ( LOGLEVEL_MEDIUM );
     CLogger::LogPrint ( "Stopping resources..." );
@@ -627,8 +596,7 @@ bool CResourceManager::StopAllResources ( void )
     return true;
 }
 
-
-void CResourceManager::QueueResource ( CResource* pResource, eResourceQueue eQueueType, const sResourceStartFlags* Flags, list < CResource* > * dependents )
+void CResourceManager::QueueResource( CResource* pResource, eResourceQueue eQueueType, const sResourceStartFlags* Flags, list < CResource* > * dependents )
 {
     // Make the queue item
     sResourceQueue sItem;
@@ -658,7 +626,7 @@ void CResourceManager::QueueResource ( CResource* pResource, eResourceQueue eQue
 }
 
 
-void CResourceManager::ProcessQueue ( void )
+void CResourceManager::ProcessQueue()
 {
     // While we have queuestuff to process
     while ( m_resourceQueue.size () > 0 )
@@ -751,11 +719,9 @@ void CResourceManager::ProcessQueue ( void )
                 CLogger::LogPrintf ( "%s restarted successfully\n", sItem.pResource->GetName ().c_str () );
         }
     }
-
 }
 
-
-void CResourceManager::RemoveFromQueue ( CResource* pResource )
+void CResourceManager::RemoveFromQueue( CResource* pResource )
 {
     // Loop through our resourcequeue
     std::list < sResourceQueue > ::iterator iter = m_resourceQueue.begin ();
@@ -836,7 +802,7 @@ CResource* CResourceManager::CreateResource( const SString& name )
     return res;
 }
 
-CResource* CResourceManager::CopyResource ( CResource* pSourceResource, const char* szNewResourceName )
+CResource* CResourceManager::CopyResource( CResource* pSourceResource, const char* szNewResourceName )
 {
     return NULL;
 }

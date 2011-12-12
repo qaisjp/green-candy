@@ -44,10 +44,10 @@ CResource::CResource( CResourceManager *manager, bool zip, const SString& name )
     filePath fileRoot;
     filePath cacheRoot;
     resFileRoot->GetFullPath( name + "/", false, fileRoot );
-    resCacheFileRoot->GetFullPath( name + "/", false, cacheRoot );
+    resCacheFileRoot->GetFullPath( "unzipped/" + name + "/", false, cacheRoot );
 
     // Create the cache directory
-    if ( !resCacheFileRoot->CreateDir( name + "/" ) )
+    if ( !resCacheFileRoot->CreateDir( cacheRoot.c_str() ) )
         throw std::exception( "Failed to create directory" );
 
     m_fileRoot = g_pServerInterface->GetFileSystem()->CreateTranslator( fileRoot.c_str() );
@@ -57,14 +57,19 @@ CResource::CResource( CResourceManager *manager, bool zip, const SString& name )
     m_isZip = zip;
     m_name = name;
 
+    // Cache the zip path
+    if ( zip )
+        resFileRoot->GetFullPath( std::string( name ) + ".zip", true, m_zipPath );
+
     pthread_mutex_init( &m_mutex, NULL );
 
     m_bDoneUpgradeWarnings = false;
 
+    // Try to load us
     Load();
 
     // Register us in the EHS stuff
-    g_pGame->GetHTTPD()->RegisterEHS ( this, m_strResourceName.c_str () );
+    g_pGame->GetHTTPD()->RegisterEHS( this, m_name.c_str() );
 
     m_oEHSServerParameters["norouterequest"] = true;
     RegisterEHS( this, "call" );
@@ -100,16 +105,10 @@ bool CResource::Load()
     m_bHasStarted = false;
 
     m_pVM = NULL;
-    // @@@@@ Set some type of HTTP access here
 
     // Register the time we loaded this resource and zero out the time we started it
-    time ( &m_timeLoaded );
+    time( &m_timeLoaded );
     m_timeStarted = 0;
-
-    // Store the actual directory and zip paths for fast access
-    m_strResourceDirectoryPath  = PathJoin ( m_strAbsPath, m_strResourceName, "/" );
-    m_strResourceCachePath      = PathJoin ( g_pServerInterface->GetServerModPath (), "resource-cache", "unzipped", m_strResourceName, "/" );
-    m_strResourceZip            = PathJoin ( m_strAbsPath, m_strResourceName + ".zip" );
 
     if ( m_isZip )
     {
@@ -274,24 +273,9 @@ bool CResource::Load()
     return true;
 }
 
-void ReplaceSlashes ( string& strPath )
+bool CResource::Unload()
 {
-    ReplaceOccurrencesInString ( strPath, "\\", "/" );
-}
-
-void ReplaceSlashes ( char* szPath )
-{
-    size_t iLen = strlen ( szPath );
-    for ( size_t i = 0; i < iLen; i++ )
-    {
-        if ( szPath [ i ] == '\\' )
-            szPath [ i ] = '/';
-    }
-}
-
-bool CResource::Unload ( void )
-{
-    Stop(true);
+    Stop( true );
 
     TidyUp();
     m_bLoaded = false;
@@ -306,31 +290,28 @@ bool CResource::Unload ( void )
     m_strResourceZip = "";
     m_strResourceCachePath = "";
     m_strResourceDirectoryPath = "";
-
     return true;
 }
 
-
-void CResource::Reload ( void )
+void CResource::Reload()
 {
     Unload ();
     Load ();
 }
 
-
-CResource::~CResource ( )
+CResource::~CResource()
 {
-    Unload ();
+    Unload();
 
-    m_strResourceName = "";
+    UnregisterEHS( "call" );
+    g_pGame->GetHTTPD()->UnregisterEHS( m_name.c_str() );
 
     m_bDestroyed = true;
 
-    pthread_mutex_destroy(&m_mutex);
+    pthread_mutex_destroy( &m_mutex );
 }
 
-
-void CResource::TidyUp ( void )
+void CResource::TidyUp()
 {
     // Close the zipfile stuff
     if ( m_zipfile )
@@ -360,9 +341,6 @@ void CResource::TidyUp ( void )
     {
         (*iterc)->InvalidateIncludedResourceReference ( this );
     }
-
-    this->UnregisterEHS("call");
-    g_pGame->GetHTTPD()->UnregisterEHS ( m_strResourceName.c_str () );
 }
 
 bool CResource::AllocateArchive()
@@ -468,8 +446,7 @@ void CResource::SetInfoValue ( const char * szKey, const char * szValue )
     }
 }
 
-
-CChecksum CResource::GenerateChecksum ( void )
+CChecksum CResource::GenerateChecksum()
 {
     // initialize all of the CRC variables
     m_checksum = CChecksum ();
@@ -486,19 +463,16 @@ CChecksum CResource::GenerateChecksum ( void )
     }
 
     if ( GetFilePath ( "meta.xml", strPath ) )
-    {
         m_checksum = CChecksum::GenerateChecksumFromFile ( strPath );
-    }
 
     return m_checksum;
 }
 
-
-bool CResource::HasResourceChanged ()
+bool CResource::HasResourceChanged()
 {
     string strPath;
 
-    list < CResourceFile* > ::iterator iterf = m_resourceFiles.begin ();
+    list <CResourceFile*>::iterator iterf = m_resourceFiles.begin ();
     for ( ; iterf != m_resourceFiles.end (); iterf++ )
     {
         if ( GetFilePath ( (*iterf)->GetName(), strPath ) )
@@ -509,7 +483,7 @@ bool CResource::HasResourceChanged ()
         }
     }
 
-    if ( GetFilePath ( "meta.xml", strPath ) )
+    if ( GetFilePath( "meta.xml", strPath ) )
     {
         CChecksum checksum = CChecksum::GenerateChecksumFromFile ( strPath );
         if ( checksum != m_checksum )
@@ -518,14 +492,12 @@ bool CResource::HasResourceChanged ()
     return false;
 }
 
-
-void CResource::ApplyUpgradeModifications ( void )
+void CResource::ApplyUpgradeModifications()
 {
-    CResourceChecker ().ApplyUpgradeModifications ( this, m_strResourceZip );
+    CResourceChecker ().ApplyUpgradeModifications( this, m_strResourceZip );
 }
 
-
-bool CResource::Start ( list<CResource *> * dependents, bool bStartedManually, bool bStartIncludedResources, bool bConfigs, bool bMaps, bool bScripts, bool bHTML, bool bClientConfigs, bool bClientScripts, bool bClientFiles )
+bool CResource::Start( list <CResource*> *dependents, bool bStartedManually, bool bStartIncludedResources, bool bConfigs, bool bMaps, bool bScripts, bool bHTML, bool bClientConfigs, bool bClientScripts, bool bClientFiles )
 {
     if ( m_bLoaded && !m_bActive )
     {
@@ -856,48 +828,50 @@ bool CResource::Stop ( bool bStopManually )
 }
 
 // Create a virtual machine for everything in this resource
-bool CResource::CreateVM ( void )
+bool CResource::CreateVM()
 {
     // Create the virtual machine
     if ( m_pVM == NULL )
     {
-        m_pVM = g_pGame->GetLuaManager ()->CreateVirtualMachine ( this );
-        m_resourceManager->NotifyResourceVMOpen ( this, m_pVM );
+        m_pVM = g_pGame->GetLuaManager()->CreateVirtualMachine( this );
+        m_resourceManager->NotifyResourceVMOpen( this, m_pVM );
     }
 
     if ( m_pVM )
     {
-        m_pVM->SetScriptName ( m_strResourceName.c_str () );
+        m_pVM->SetScriptName( m_strResourceName.c_str() );
         return true;
     }
 
     return false;
 }
 
-bool CResource::DestroyVM ( void )
+bool CResource::DestroyVM()
 {
     // Remove all player keybinds on this VM
-    list < CPlayer* > ::const_iterator iter = g_pGame->GetPlayerManager ()->IterBegin ();
-    for ( ; iter != g_pGame->GetPlayerManager ()->IterEnd () ; iter++ )
+    list <CPlayer*>::const_iterator iter = g_pGame->GetPlayerManager()->IterBegin();
+    for ( ; iter != g_pGame->GetPlayerManager()->IterEnd(); iter++ )
     {
-        CKeyBinds* pBinds = (*iter)->GetKeyBinds ();
+        CKeyBinds* pBinds = (*iter)->GetKeyBinds();
         if ( pBinds )
-            pBinds->RemoveAllKeys ( m_pVM );
+            pBinds->RemoveAllKeys( m_pVM );
     }
 
     // Delete the events on this VM
-    m_pRootElement->DeleteEvents ( m_pVM, true );
+    m_pRootElement->DeleteEvents( m_pVM, true );
 
     // Delete the virtual machine
-    m_resourceManager->NotifyResourceVMClose ( this, m_pVM );
-    g_pGame->GetLuaManager ()->RemoveVirtualMachine ( m_pVM );
+    m_resourceManager->NotifyResourceVMClose( this, m_pVM );
+    g_pGame->GetLuaManager()->RemoveVirtualMachine( m_pVM );
     m_pVM = NULL;
     return true;
 }
 
-void CResource::DisplayInfo ( void ) // duplicated for HTML
+void CResource::DisplayInfo() // duplicated for HTML
 {
     CLogger::LogPrintf ( "== Details for resource '%s' ==\n", m_strResourceName.c_str () );
+
+#if 0
     if ( m_bActive )
     {
         // count the number of elements
@@ -921,10 +895,11 @@ void CResource::DisplayInfo ( void ) // duplicated for HTML
             }
         }
 
-        //CLogger::LogPrintf ( "Author: %s  Version: %d  Map elements: %d  Script elements: %d\n", m_szAuthor, m_uiVersion, uiMapElementCount, uiScriptElementCount );
+        CLogger::LogPrintf ( "Author: %s  Version: %d  Map elements: %d  Script elements: %d\n", m_szAuthor, m_uiVersion, uiMapElementCount, uiScriptElementCount );
     }
-    //else
-        //CLogger::LogPrintf ( "Author: %s  Version: %d\n", m_szAuthor, m_uiVersion );
+    else
+        CLogger::LogPrintf ( "Author: %s  Version: %d\n", m_szAuthor, m_uiVersion );
+#endif
 
     if ( m_bActive )
     {
@@ -974,14 +949,28 @@ void CResource::DisplayInfo ( void ) // duplicated for HTML
     CLogger::LogPrintf ( "== End ==\n" );
 }
 
-char * CResource::DisplayInfoHTML ( char * info, size_t length )
+void CResource::OutputHTMLEntry( std::string& buf )
 {
-    #define LAZYNESS counter += snprintf ( info + counter, length - counter,
+    buf += "<a href='/resources/";
+    buf += m_name;
+    buf += "/' style='color:black;'>";
 
-    size_t counter = 0;
-    counter = snprintf ( info, length, "<font face='tahoma,arial' size=-1><h2>Details for resource '%s'</h2><br>\n", m_strResourceName.c_str () );
+    buf += m_name;
+
+    buf += "</a> <sup><font size=-2><a href='/resource-info/";
+    buf += m_name;
+    buf += "/' style='color:black;'>Info</a></font></sup>";
+}
+
+void CResource::DisplayInfoHTML( std::string& buf )
+{
+    buf += "<font face='tahoma,arial' size=-1><h2>Details for resource '";
+    buf += m_name.c_str();
+    buf += "'<h2><br>\n";
+
     if ( m_bActive )
     {
+#if 0
         // count the number of elements
         unsigned int uiMapElementCount = 0;
         unsigned int uiScriptElementCount = 0;
@@ -1003,127 +992,156 @@ char * CResource::DisplayInfoHTML ( char * info, size_t length )
             }
         }
 
-        //LAZYNESS "Author: %s<BR>Version: %d<BR>Map elements: %d<BR>Script elements: %d<BR>", m_szAuthor, m_uiVersion, uiMapElementCount, uiScriptElementCount );
-        LAZYNESS "Loaded: %s<BR>", asctime(localtime((const time_t *)&m_timeLoaded)) );
-        LAZYNESS "Started: %s<BR>", asctime(localtime((const time_t *)&m_timeStarted)) );
+        LAZYNESS "Author: %s<BR>Version: %d<BR>Map elements: %d<BR>Script elements: %d<BR>", m_szAuthor, m_uiVersion, uiMapElementCount, uiScriptElementCount );
+#endif
+        buf += "Loaded: ";
+        buf += asctime(localtime((const time_t*)&m_timeLoaded));
+        buf += "<BR>";
+
+        buf += "Started: ";
+        buf += asctime(localtime((const time_t *)&m_timeStarted));
+        buf += "<BR>";
+    }
+    else if ( m_timeStarted != 0 )
+    {
+        buf += "Last ran: ";
+        buf += asctime(localtime((const time_t *)&m_timeStarted));
+        buf += "<BR>";
     }
     else
     {
-        //LAZYNESS "Author: %s<BR>Version: %d<BR>Loaded %s<BR>", m_szAuthor, m_uiVersion, asctime(localtime((const time_t *)&m_timeLoaded)) );
-        if ( m_timeStarted != 0 )
-            LAZYNESS "Last ran: %s<BR>", asctime(localtime((const time_t *)&m_timeStarted)) );
-        LAZYNESS "Last ran: never<BR>" );
+#if 0
+        LAZYNESS "Author: %s<BR>Version: %d<BR>Loaded %s<BR>", m_szAuthor, m_uiVersion, asctime(localtime((const time_t *)&m_timeLoaded)) );
+#endif
+        buf += "Last ran: never<BR>";
     }
 
     if ( m_bActive )
     {
-        LAZYNESS "Status: Running<BR>" );
-        LAZYNESS "Dependents: %d<br>", m_dependents.size() );
+        buf += "Status: Running<BR>";
+        buf += "Dependents: ";
+        buf += m_dependents.size();
+        buf += "<br>";
+
         if ( m_dependents.size() != 0 )
         {
-            list < CResource* > ::iterator iterr = m_dependents.begin ();
+            list <CResource*>::iterator iterr = m_dependents.begin();
+
             for ( ; iterr != m_dependents.end (); iterr++ )
             {
-                LAZYNESS " <li><a href='/resources/%s/' style='color:black;'>%s</a> <sup><font size=-2><a href='/resource-info/%s/' style='color:black;'>Info</a></font></sup>", (*iterr)->GetName().c_str (), (*iterr)->GetName().c_str (), (*iterr)->GetName().c_str () );
+                buf += "<li>";
+
+                (*iterr)->OutputHTMLEntry( buf );
             }
-            LAZYNESS "<BR>" );
+
+            buf += "<BR>";
         }
     }
     else if ( m_bLoaded )
-        LAZYNESS "Status: Stopped<BR>" );
+        buf += "Status: Stopped<BR>";
     else if ( !m_strCircularInclude.empty () )
     {
-        LAZYNESS "Status: Circular include error: %s<BR>", m_strCircularInclude.c_str () );
+        buf += "Status: Circular include error: ";
+        buf += m_strCircularInclude.c_str();
+        buf += "<BR>";
     }
     else
-        LAZYNESS "Status: Failed to load<BR>" );
+        buf += "Status: Failed to load<BR>";
 
-    LAZYNESS "Included resources: %d<BR>", m_includedResources.size() );
+    buf += "Included resources: ";
+    buf += m_includedResources.size();
+    buf += "<BR>";
 
-    list < CIncludedResources* > ::iterator iterr = m_includedResources.begin ();
-    for ( ; iterr != m_includedResources.end (); iterr++ )
+    list <CIncludedResources*>::iterator iterr = m_includedResources.begin();
+
+    for ( ; iterr != m_includedResources.end(); iterr++ )
     {
-        CIncludedResources * includedResource = (*iterr);
-        LAZYNESS " <li><a href='/resources/%s/' style='color:black;'>%s</a> <sup><font size=-2><a href='/resource-info/%s/' style='color:black;'>Info</a></font></sup>", (*iterr)->GetName().c_str (), (*iterr)->GetName().c_str (), (*iterr)->GetName().c_str () );
+        buf += "<li>";
+
+        (*iterr)->GetResource()->OutputHTMLEntry( buf );
+
         if ( includedResource->DoesExist() )
         {
             if ( includedResource->GetResource()->IsLoaded() )
-
-                LAZYNESS " .. OK<BR>" );
+                buf += " .. OK<BR>";
             else
-                LAZYNESS " .. FAILED TO LOAD<BR>" );
+                buf += " .. FAILED TO LOAD<BR>";
         }
         else
         {
             if ( includedResource->IsBadVersion() )
             {
-                LAZYNESS " .. BAD VERSION (not between %d and %d)<BR>", includedResource->GetMinimumVersion(), includedResource->GetMaximumVersion() );
+                buf += " .. BAD VERSION (not between ";
+                buf += (*iterr)->GetMinimumVersion();
+                buf += " and ";
+                buf += (*iterr)->GetMaximumVersion();
+                buf += ")<BR>";
             }
             else
-            {
-                LAZYNESS " .. NOT FOUND<BR>");
-            }
+                buf += " .. NOT FOUND<BR>";
         }
     }
 
-    LAZYNESS "Exported functions: %d<br>", m_exportedFunctions.size() );
+    buf += "Exported functions: ";
+    buf += m_exportedFunctions.size();
+    buf += "<br>";
+
     if ( m_exportedFunctions.size() != 0 )
     {
-        list < CExportedFunction* > ::iterator iterf = m_exportedFunctions.begin ();
+        list <CExportedFunction*>::iterator iterf = m_exportedFunctions.begin();
+
         for ( ; iterf != m_exportedFunctions.end (); iterf++ )
         {
             if ( (*iterf)->IsHTTPAccessible() )
             {
-                LAZYNESS "<li> <a href='/call/%s/%s?' style='color: black;'>%s</a>", m_strResourceName.c_str (), (*iterf)->GetFunctionName ().c_str (), (*iterf)->GetFunctionName ().c_str () );
+                buf += "<li> <a href='/call/";
+                buf += m_name.c_str();
+                buf += '/';
+                buf += (*iterf)->GetFunctionName();
+                buf += "?' style='color: black;'>";
+                buf += (*iterf)->GetFunctionName();
+                buf += "</a>";
             }
             else
             {
-                LAZYNESS "<li> %s", (*iterf)->GetFunctionName ().c_str () );
+                buf += "<li> ";
+                buf += (*iterf)->GetFunctionName();
             }
-
         }
-        LAZYNESS "<BR>" );
+
+        buf += "<BR>";
     }
 
+    buf += "Files: ";
+    buf += m_resourceFiles.size();
+    buf += "<br>";
 
-    LAZYNESS "Files: %d<br>", m_resourceFiles.size() );
     if ( m_exportedFunctions.size() != 0 )
     {
-        list < CResourceFile* > ::iterator iterf = m_resourceFiles.begin ();
-        for ( ; iterf != m_resourceFiles.end (); iterf++ )
+        list <CResourceFile*>::iterator iterf = m_resourceFiles.begin ();
+
+        for ( ; iterf != m_resourceFiles.end(); iterf++ )
         {
-            if ( (*iterf)->GetType() == CResourceFile::RESOURCE_FILE_TYPE_HTML )
-            {
-                if ( ((CResourceHTMLItem *)(*iterf))->IsDefaultPage() )
-                    LAZYNESS "<b>" );
+            buf += "<li> ";
 
-                LAZYNESS "<li> <a href='/resources/%s/%s' style='color:black;'>%s</a>", m_strResourceName.c_str (), (*iterf)->GetName(), (*iterf)->GetName() );
-
-                if ( ((CResourceHTMLItem *)(*iterf))->IsDefaultPage() )
-                    LAZYNESS "</b>" );
-
-            }
-            else
-                LAZYNESS "<li> %s", (*iterf)->GetName() );
+            (*iterf)->OutputHTMLEntry( buf );
         }
-        LAZYNESS "<BR>" );
+        
+        buf += "<BR>";
     }
-    LAZYNESS "<BR><BR><a href='/resources/' style='color:black' />Resource List</a>" );
+    
+    buf += "<BR><BR><a href='/resources/' style='color:black' />Resource List</a>";
     return info;
 }
 
 unsigned long get_current_file_crc( unzFile uf )
 {
-    char filename_inzip[256];
-    int err=UNZ_OK;
+    unz_file_info info;
 
-
-    unz_file_info file_info;
-    err = unzGetCurrentFileInfo(uf,&file_info,filename_inzip,sizeof(filename_inzip),NULL,0,NULL,0);
-    if ( err == UNZ_OK )
-        return file_info.crc;
-    else
+    if ( unzGetCurrentFileInfo( uf, &info, NULL, 0, NULL, 0, NULL, 0 ) != UNZ_OK )
         return 0;
+
+    return info.crc;
 }
 
 void change_file_date( const char *filename, uLong dosdate, tm_unz tmu_date )
@@ -1236,7 +1254,12 @@ bool CResource::CacheFileZip( const char *path )
     if ( !IsResourceZip() )
         return false;
 
-    if ( !AllocateArchive() || unzLocateFile( m_zipfile, szFilename, false ) == UNZ_END_OF_LIST_OF_FILE )
+    filePath relPath;
+
+    if ( !m_fileRoot->GetRelativePath( path, true, relPath.c_str() ) )
+        return false;
+
+    if ( !AllocateArchive() || unzLocateFile( m_zipfile, relPath.c_str(), false ) == UNZ_END_OF_LIST_OF_FILE )
     {
 #ifdef RESOURCE_DEBUG_MESSAGES
         CLogger::LogPrintf("Can't find %s in zip or in folder\n", szFilename );
@@ -1245,14 +1268,15 @@ bool CResource::CacheFileZip( const char *path )
     }
 
     // The extracted file has to be in cache!
-    m_cacheRoot->GetFullPath( filename, true, strPath );
-
-    if ( m_cacheRoot->Exists( filename ) )
+    if ( m_cacheRoot->Exists( relPath.c_str() ) )
     {
-        if ( get_current_file_crc( m_zipfile ) == CRCGenerator::GetCRCFromFile( strPath.c_str() ) )
+        filePath rootPath;
+        m_fileRoot->GetFullPath( relPath.c_str(), true, rootPath );
+
+        if ( get_current_file_crc( m_zipfile ) == CRCGenerator::GetCRCFromFile( rootPath.c_str() ) )
         {
 #ifdef RESOURCE_DEBUG_MESSAGES
-            CLogger::LogPrintf( "Up to date %s already extracted from zip\n", szFilename );
+            CLogger::LogPrintf( "Up to date %s already extracted from zip\n", relPath.c_str() );
 #endif
             unzClose( m_zipfile );
             m_zipfile = NULL;
@@ -1269,7 +1293,7 @@ bool CResource::CacheFileZip( const char *path )
     }
 
     // Do it!
-    ExtractFile( filename );
+    do_extract_currentfile( m_zipfile, false, NULL, m_cacheRoot );
 
     ReleaseArchive();
     return true;
@@ -2295,14 +2319,6 @@ ResponseCode CResource::HandleRequest ( HttpRequest * ipoHttpRequest, HttpRespon
         return HTTPRESPONSECODE_200_OK;
     }
 
-    // if the mutex is already locked (i.e. the resource is being deleted), we return from this asap
-    // otherwise, we get the mutex and can handle the request
-
-  /*  if ( pthread_mutex_trylock(&m_mutex) == EBUSY ) {
-        ipoHttpResponse->SetBody("Resource shutting down",strlen("Resource shutting down"));
-        printf(" X\n");
-        return HTTPRESPONSECODE_500_INTERNALSERVERERROR;
-    }*/
     g_pGame->Lock(); // get the mutex (blocking)
 
     std::string strAccessType;
@@ -2330,9 +2346,8 @@ ResponseCode CResource::HandleRequest ( HttpRequest * ipoHttpRequest, HttpRespon
         g_pGame->Unlock();
         return response;
     }
-   g_pGame->Unlock();
-   return HTTPRESPONSECODE_200_OK;
-
+    g_pGame->Unlock();
+    return HTTPRESPONSECODE_200_OK;
 }
 
 void Unescape ( std::string& str )
@@ -2630,15 +2645,17 @@ ResponseCode CResource::HandleRequestCall ( HttpRequest * ipoHttpRequest, HttpRe
     return HTTPRESPONSECODE_200_OK;
 }
 
-ResponseCode CResource::HandleRequestInfo ( HttpRequest * ipoHttpRequest, HttpResponse * ipoHttpResponse )
+ResponseCode CResource::HandleRequestInfo( HttpRequest *ipoHttpRequest, HttpResponse *ipoHttpResponse )
 {
-    char szDebug[4024];
-    DisplayInfoHTML ( szDebug, 4024 );
-    ipoHttpResponse->SetBody ( szDebug, strlen(szDebug) );
+    std::string debug;
+
+    DisplayInfoHTML( debug );
+
+    ipoHttpResponse->SetBody( debug.c_str(), debug.size() );
     return HTTPRESPONSECODE_200_OK;
 }
 
-ResponseCode CResource::HandleRequestActive ( HttpRequest * ipoHttpRequest, HttpResponse * ipoHttpResponse, CAccount* account )
+ResponseCode CResource::HandleRequestActive( HttpRequest * ipoHttpRequest, HttpResponse * ipoHttpResponse, CAccount* account )
 {
     const char* szUrl = ipoHttpRequest->sOriginalUri.c_str ();
     std::string strFile;
@@ -2817,33 +2834,31 @@ bool CResource::CallExportedFunction ( char * szFunctionName, CLuaArguments& arg
     return false;
 }
 
-bool CResource::CheckState ( void )
+bool CResource::CheckState()
 {
     if ( m_dependents.size() == 0 && m_bIsPersistent == false )
     {
-        Stop ( false );
+        Stop( false );
         return false;
     }
-    else
-    {
-        return Start ( );
-    }
+    return Start();
 }
 
-
-void CResource::OnPlayerJoin ( CPlayer& Player )
+void CResource::OnPlayerJoin( CPlayer& Player )
 {
-    // do the player join crap
-    Player.Send ( CResourceStartPacket ( m_strResourceName.c_str (), this ) );
+    Player.Send( CResourceStartPacket( m_name.c_str(), this ) );
 }
 
 bool CIncludedResources::CreateLink() // just a pointer to it
 {
     // Grab the resource that we are
-    m_resource = m_resourceManager->GetResource ( m_strResourceName.c_str () );
+    m_resource = m_resourceManager->GetResource( m_strResourceName.c_str () );
 
     m_bBadVersion = false;
 
+#if 1
+    return m_bExists = ( m_resource != NULL );
+#else
     // Does it exist?
     if ( !m_resource )
         m_bExists = false;
@@ -2853,17 +2868,18 @@ bool CIncludedResources::CreateLink() // just a pointer to it
     if ( m_resource )
     {
         // Grab the version and check that it's in range
-        /*unsigned int uiVersion = m_resource->GetVersion ();
+        unsigned int uiVersion = m_resource->GetVersion ();
         if ( uiVersion < m_uiMinimumVersion || uiVersion > m_uiMaximumVersion )
         {
             CLogger::ErrorPrintf ( "Incompatible version of %s for resource %s\n", m_szResourceName, m_owner->GetName().c_str () );
             CLogger::ErrorPrintf ( "Version between %u and %u needed, version %u installed\n", m_uiMinimumVersion, m_uiMaximumVersion, uiVersion );
             m_bExists = false;
             m_bBadVersion = true;
-        }*/
+        }
     }
 
     return m_bExists;
+#endif
 }
 
 void CResource::InvalidateIncludedResourceReference ( CResource * resource )

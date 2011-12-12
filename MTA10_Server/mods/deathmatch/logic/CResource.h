@@ -69,27 +69,28 @@ private:
     eExportedFunctionType           m_ucType;
 
 public:
-                                    CExportedFunction ( const std::string& strFunctionName, const std::string& access, bool bHTTPAccess, eExportedFunctionType ucType, bool bRestricted )
-                                    {
-                                        m_ucType = ucType;
-                                        m_strFunctionName = strFunctionName;
-                                        m_bHTTPAccess = bHTTPAccess;
-                                        m_bRestricted = bRestricted;
-                                        size_t leng = access.length ();
-                                        char szResourceName[MAX_RESOURCE_NAME_LENGTH] = {'\0'};
-                                        size_t s = 0;
-                                        for ( size_t i = 0; i < leng; i++ )
-                                        {
-                                            if ( access[i] != ',' )
-                                                szResourceName[s] = access[i];
-                                            else if ( strlen(szResourceName) != 0 )
-                                            {
-                                                m_accessList.push_back ( szResourceName );
-                                                szResourceName[0] = '\0';
-                                                s = 0;
-                                            }
-                                        }   
-                                    }
+    CExportedFunction( const std::string& strFunctionName, const std::string& access, bool bHTTPAccess, eExportedFunctionType ucType, bool bRestricted )
+    {
+        m_ucType = ucType;
+        m_strFunctionName = strFunctionName;
+        m_bHTTPAccess = bHTTPAccess;
+        m_bRestricted = bRestricted;
+        size_t leng = access.length ();
+        char szResourceName[MAX_RESOURCE_NAME_LENGTH] = {'\0'};
+        size_t s = 0;
+
+        for ( size_t i = 0; i < leng; i++ )
+        {
+            if ( access[i] != ',' )
+                szResourceName[s] = access[i];
+            else if ( strlen(szResourceName) != 0 )
+            {
+                m_accessList.push_back ( szResourceName );
+                szResourceName[0] = '\0';
+                s = 0;
+            }
+        }   
+    }
 
     inline eExportedFunctionType    GetType ( void ) { return m_ucType; }
     inline const std::string&       GetFunctionName ( void ) { return m_strFunctionName; }
@@ -137,16 +138,16 @@ public:
         m_resource = NULL;
     }
 
-    inline const std::string&   GetName             ( void )    { return m_strResourceName; }
-    int                         GetMinimumVersion   ( void )    { return m_uiMinimumVersion; }
-    int                         GetMaximumVersion   ( void )    { return m_uiMaximumVersion; }
-    inline SVersion*            GetMinVersion       ( void )    { return &m_MinVersion; };
-    inline SVersion*            GetMaxVersion       ( void )    { return &m_MaxVersion; };
-    inline bool                 DoesExist           ( void ) { return m_bExists; }
-    inline bool                 IsBadVersion        ( void ) { return m_bBadVersion; }
-    inline CResource *          GetResource         ( void ) { return m_resource; }
-    bool                        CreateLink          ( void );
-    inline void                 InvalidateReference ( void ) { m_resource = NULL; m_bExists = false; };
+    inline const std::string&   GetName             ()    { return m_strResourceName; }
+    int                         GetMinimumVersion   ()    { return m_uiMinimumVersion; }
+    int                         GetMaximumVersion   ()    { return m_uiMaximumVersion; }
+    inline SVersion*            GetMinVersion       ()    { return &m_MinVersion; };
+    inline SVersion*            GetMaxVersion       ()    { return &m_MaxVersion; };
+    inline bool                 DoesExist           () { return m_bExists; }
+    inline bool                 IsBadVersion        () { return m_bBadVersion; }
+    inline CResource *          GetResource         () { return m_resource; }
+    bool                        CreateLink          ();
+    inline void                 InvalidateReference () { m_resource = NULL; m_bExists = false; };
 };
 
 class CInfoValue
@@ -154,18 +155,21 @@ class CInfoValue
 private:
     std::string m_strName;
     std::string m_strValue;
+
 public:
     CInfoValue ( const std::string& strName, const std::string& strValue )
     {
         m_strName = strName;
         m_strValue = strValue;
     }
+
     ~CInfoValue ()
     {
     }
-    inline const std::string&   GetValue ( void )                       { return m_strValue; }
+
+    inline const std::string&   GetValue ()                             { return m_strValue; }
     inline void                 SetValue ( const std::string& szValue ) { m_strValue = szValue; }
-    inline const std::string&   GetName  ( void )                       { return m_strName; }
+    inline const std::string&   GetName  ()                             { return m_strName; }
 };
 
 class CResource : public EHS
@@ -345,6 +349,7 @@ public:
     bool                    CheckIfStartable ( void );
     inline unsigned int     GetFileCount ( void ) { return m_resourceFiles.size(); }
     void                    DisplayInfo ( void );
+    void                    OutputHTMLEntry( std::string& buf );
     char *                  DisplayInfoHTML ( char * info, size_t length );
     list<CResourceFile *>*  GetFiles ( void ) { return &m_resourceFiles; }
     CElementGroup *         GetElementGroup ( void ) { return m_pDefaultElementGroup; }

@@ -42,6 +42,7 @@
 
 // Shared logic includes
 #include <Utils.h>
+#include <logic/include.h>
 #include <CClientCommon.h>
 #include <CClientManager.h>
 #include <CClient3DMarker.h>

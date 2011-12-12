@@ -12,3 +12,8 @@
 
 #include <StdInc.h>
 
+class ScriptFile : public CScriptFile <CElement>
+{
+public:
+    
+};
