@@ -13,6 +13,7 @@
 #ifndef _SHARED_LOGIC_INCLUDE_
 #define _SHARED_LOGIC_INCLUDE_
 
+#include <SharedUtil.h>
 #include "CScriptFile.h"
 
 #endif //_SHARED_LOGIC_INCLUDE_

@@ -60,38 +60,36 @@ private:
     };
 
 public:
-                                CResourceManager                ( void );
-                                ~CResourceManager               ( void );
+                                CResourceManager                ();
+                                ~CResourceManager               ();
 
     CResource *                 Load                            ( bool bIsZipped, const char * szAbsPath, const char * szResourceName );
     void                        Unload                          ( CResource * resource );
     CResource *                 GetResource                     ( const char * szResourceName );
     bool                        Exists                          ( CResource* pResource );
-    void                        UnloadRemovedResources          ( void );
-    void                        CheckResourceDependencies       ( void );
-    void                        ListResourcesLoaded             ( void );
-    std::list < CResource* > ::const_iterator  IterBegin        ( void )            { return m_resources.begin (); };
-    std::list < CResource* > ::const_iterator  IterEnd          ( void )            { return m_resources.end (); };
+    void                        UnloadRemovedResources          ();
+    void                        CheckResourceDependencies       ();
+    void                        ListResourcesLoaded             ();
+    std::list < CResource* > ::const_iterator  IterBegin        ()            { return m_resources.begin (); };
+    std::list < CResource* > ::const_iterator  IterEnd          ()            { return m_resources.end (); };
 
     bool                        Refresh                         ( bool bRefreshAll = false );
-    void                        Upgrade                         ( void );
-    inline unsigned int         GetResourceLoadedCount          ( void )            { return m_uiResourceLoadedCount; }
-    inline unsigned int         GetResourceFailedCount          ( void )            { return m_uiResourceFailedCount; }
+    void                        Upgrade                         ();
+    inline unsigned int         GetResourceLoadedCount          ()            { return m_uiResourceLoadedCount; }
+    inline unsigned int         GetResourceFailedCount          ()            { return m_uiResourceFailedCount; }
     void                        OnPlayerJoin                    ( CPlayer& Player );
-    
-    char *                      GetResourceDirectory            ( void );
 
     bool                        StartResource                   ( CResource* pResource, list < CResource* > * dependents = NULL, bool bStartedManually = false, bool bStartIncludedResources = true, bool bConfigs = true, bool bMaps = true, bool bScripts = true, bool bHTML = true, bool bClientConfigs = true, bool bClientScripts = true, bool bClientFiles = true );
     bool                        Reload                          ( CResource* pResource );
-    bool                        StopAllResources                ( void );
+    bool                        StopAllResources                ();
 
     void                        QueueResource                   ( CResource* pResource, eResourceQueue eQueueType, const sResourceStartFlags* Flags, list < CResource* > * dependents = NULL );
-    void                        ProcessQueue                    ( void );
+    void                        ProcessQueue                    ();
     void                        RemoveFromQueue                 ( CResource* pResource );
 
     bool                        IsAResourceElement              ( CElement* pElement );
 
-    unsigned short              GenerateID                      ( void );
+    unsigned short              GenerateID                      ();
 
     CResource*                  GetResourceFromLuaState         ( struct lua_State* luaVM );
     bool                        Install                         ( char * szURL, char * szName );
@@ -116,9 +114,9 @@ private:
     list<CResource *>           m_resourcesToStartAfterRefresh;
 
     // Maps to speed things up
-    std::map < CResource*, lua_State* >     m_ResourceLuaStateMap;
-    std::map < lua_State*, CResource* >     m_LuaStateResourceMap;
-    std::map < SString, CResource* >        m_NameResourceMap;
+    std::map <CResource*, lua_State*>       m_ResourceLuaStateMap;
+    std::map <lua_State*, CResource*>       m_LuaStateResourceMap;
+    std::map <SString, CResource*>          m_NameResourceMap;
 
     list<sResourceQueue>        m_resourceQueue;
 };

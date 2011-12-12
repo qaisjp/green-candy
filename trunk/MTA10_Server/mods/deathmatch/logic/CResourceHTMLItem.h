@@ -38,6 +38,8 @@ public:
     inline void                         SetDefaultPage                  ( bool bDefault ) { m_bDefault = bDefault; }
     inline bool                         IsRestricted                    () { return m_bRestricted; };
 
+    void                                OutputHTMLEntry                 ( std::string& buf );
+
 private:
     void                                GetMimeType                     ( const char * szFilename );
 

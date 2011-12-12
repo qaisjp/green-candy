@@ -72,3 +72,7 @@ ResponseCode CResourceFile::Request( HttpRequest * ipoHttpRequest, HttpResponse 
     return HTTPRESPONSECODE_200_OK;
 }
 
+void CResourceFile::OutputHTMLEntry( std::string& buf )
+{
+    buf += m_name;
+}

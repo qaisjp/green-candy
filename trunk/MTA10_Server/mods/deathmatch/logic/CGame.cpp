@@ -555,6 +555,7 @@ bool CGame::Start( int iArgumentCount, char *szArguments[] )
     resFileRoot = g_pServerInterface->GetFileSystem()->CreateTranslator( resPath.c_str() );
     resCacheFileRoot = g_pServerInterface->GetFileSystem()->CreateTranslator( cachePath.c_str() );
 
+    // COMPATIBILITY: Rename old resource cache
     modFileRoot->Rename( "resourcecache/", "resource-cache/_old_resourcecache.delete-me/" );
 
     // Create cache readme

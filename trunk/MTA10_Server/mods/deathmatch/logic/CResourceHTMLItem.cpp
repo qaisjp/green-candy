@@ -19,7 +19,7 @@
 extern CServerInterface* g_pServerInterface;
 extern CGame* g_pGame;
 
-CResourceHTMLItem::CResourceHTMLItem ( CResource * resource, const char * szShortName, const char * szResourceFileName, CXMLAttributes * xmlAttributes, bool bIsDefault, bool bIsRaw, bool bRestricted ) : CResourceFile ( resource, szShortName, szResourceFileName, xmlAttributes )
+CResourceHTMLItem::CResourceHTMLItem( CResource * resource, const char * szShortName, const char * szResourceFileName, CXMLAttributes * xmlAttributes, bool bIsDefault, bool bIsRaw, bool bRestricted ) : CResourceFile ( resource, szShortName, szResourceFileName, xmlAttributes )
 {
     m_bIsRaw = bIsRaw;
     m_type = RESOURCE_FILE_TYPE_HTML;
@@ -29,12 +29,12 @@ CResourceHTMLItem::CResourceHTMLItem ( CResource * resource, const char * szShor
     m_bRestricted = bRestricted;
 }
 
-CResourceHTMLItem::~CResourceHTMLItem ( void )
+CResourceHTMLItem::~CResourceHTMLItem()
 {
     Stop();
 }
 
-ResponseCode CResourceHTMLItem::Request ( HttpRequest * ipoHttpRequest, HttpResponse * ipoHttpResponse, CAccount * account )
+ResponseCode CResourceHTMLItem::Request( HttpRequest * ipoHttpRequest, HttpResponse * ipoHttpResponse, CAccount * account )
 {
     if ( !m_pVM )
         Start ();
@@ -329,4 +329,25 @@ bool CResourceHTMLItem::Stop()
 
     m_pVM = NULL;
     return true;
+}
+
+void CResourceHTMLItem::OutputHTMLEntry( std::string& buf )
+{
+    if ( m_bDefault )
+        buf += "<b>";
+
+    buf += "<li>";
+
+    buf += "<a href='/resources/";
+    buf += m_resource->GetName();
+    buf += '/';
+    buf += m_name;
+    buf += "' style='color:black;'>";
+    
+    CResourceFile::OutputHTMLEntry( buf );
+
+    buf += "</a>";
+
+    if ( m_bDefault )
+        buf += "</b>";
 }

@@ -33,6 +33,7 @@
 
 // Main includes
 #include "CServer.h"
+#include <logic/include.h>
 
 // Packet includes
 #include "net/Packets.h"
@@ -246,6 +247,9 @@
 #include "CZoneNames.h"
 #include "TaskNames.h"
 #include "Utils.h"
+
+// Derived logic
+#include <derived/include.h>
 
 #include "CStaticFunctionDefinitions.h"
 

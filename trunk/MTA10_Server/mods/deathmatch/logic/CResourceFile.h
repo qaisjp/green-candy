@@ -65,6 +65,8 @@ public:
     inline CChecksum            GetLastChecksum() { return m_checksum; }
     void                        SetLastChecksum( CChecksum checksum ) { m_checksum = checksum; }
 
+    virtual void                OutputHTMLEntry( std::string& buf );
+
     double                      GetApproxSize();    // Only used by download counters
     string                      GetMetaFileAttribute( const string& key ) { return m_attributeMap[key]; }
 };
