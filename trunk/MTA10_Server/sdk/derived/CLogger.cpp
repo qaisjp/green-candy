@@ -1,21 +1,19 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        mods/deathmatch/logic/CLogger.cpp
-*  PURPOSE:     Server logger class
-*  DEVELOPERS:  Christian Myhre Lundheim <>
-*               The_GTA <quiret@gmx.de>
+*  FILE:        derived/CLogger.cpp
+*  PURPOSE:     Logger
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
-#include "StdInc.h"
+#include <StdInc.h>
 
 using namespace std;
 
-CFile* CLogger::m_log = NULL;
 CFile* CLogger::m_authLog = NULL;
 eLogLevel CLogger::m_MinLogLevel = LOGLEVEL_LOW;
 bool CLogger::m_bPrintingDots = false;
@@ -33,14 +31,13 @@ void CLogger::LogPrintf( const char* szFormat, ... )
     VSNPRINTF( szBuffer, MAX_STRING_LENGTH, szFormat, marker );
     va_end( marker );
 
-    // Timestamp and send to the console and logfile
-    HandleLogPrint( true, "", szBuffer, true, true, false );
+    LogPrint( szBuffer );
 }
 
 void CLogger::LogPrint( const char* szText )
 {
     // Timestamp and send to the console and logfile
-    HandleLogPrint( true, "", szText, true, true, false );
+    HandleLogPrint( true, "", szText, true, false );
 }
 
 // As above, but with a log level
@@ -53,14 +50,13 @@ void CLogger::LogPrintf( eLogLevel logLevel, const char* szFormat, ... )
     VSNPRINTF( szBuffer, MAX_STRING_LENGTH, szFormat, marker );
     va_end( marker );
 
-    // Timestamp and send to the console and logfile
-    HandleLogPrint( true, "", szBuffer, true, true, false, logLevel );
+    LogPrint( logLevel, szBuffer );
 }
 
 void CLogger::LogPrint( eLogLevel logLevel, const char* szText )
 {
     // Timestamp and send to the console and logfile
-    HandleLogPrint( true, "", szText, true, true, false, logLevel );
+    HandleLogPrint( true, "", szText, true, false, logLevel );
 }
 
 void CLogger::LogPrintfNoStamp( const char* szFormat, ... )
@@ -72,14 +68,13 @@ void CLogger::LogPrintfNoStamp( const char* szFormat, ... )
     VSNPRINTF( szBuffer, MAX_STRING_LENGTH, szFormat, marker );
     va_end( marker );
 
-    // Send to the console and logfile
-    HandleLogPrint( false, "", szBuffer, true, true, false );
+    LogPrintNoStamp( szBuffer );
 }
 
 void CLogger::LogPrintNoStamp( const char* szText )
 {
     // Send to the console and logfile
-    HandleLogPrint( false, "", szText, true, true, false );
+    HandleLogPrint( false, "", szText, true, false );
 }
 
 void CLogger::ErrorPrintf( const char* szFormat, ... )
@@ -92,7 +87,7 @@ void CLogger::ErrorPrintf( const char* szFormat, ... )
     va_end( marker );
 
     // Timestamp and send to the console and logfile
-    HandleLogPrint( true, "ERROR: ", szBuffer, true, true, false );
+    HandleLogPrint( true, "ERROR: ", szBuffer, true, false );
 }
 
 void CLogger::DebugPrintf( const char* szFormat, ... )
@@ -106,7 +101,7 @@ void CLogger::DebugPrintf( const char* szFormat, ... )
     va_end( marker );
 
     // Timestamp and send to the console and logfile
-    HandleLogPrint( true, "DEBUG: ", szBuffer, true, true, false );
+    HandleLogPrint( true, "DEBUG: ", szBuffer, true, false );
 #endif
 }
 
@@ -120,23 +115,7 @@ void CLogger::AuthPrintf( const char* szFormat, ... )
     va_end( marker );
 
     // Timestamp and send to the console, logfile and authfile
-    HandleLogPrint( true, "", szBuffer, true, true, true );
-}
-
-bool CLogger::SetLogFile( const char *filename )
-{
-    // Eventually delete our current file
-    if ( m_file )
-    {
-        delete m_file;
-        m_file = NULL;
-    }
-
-    if ( !filename || !filename[0] )
-        return true;
-
-    m_file = modFileRoot->Open( filename, "a+" );
-    return m_file != NULL;
+    HandleLogPrint( true, "", szBuffer, true, true );
 }
 
 bool CLogger::SetAuthFile( const char *filename )
@@ -170,7 +149,7 @@ void CLogger::ProgressDotsUpdate()
     if ( !m_bPrintingDots )
         return;
 
-    HandleLogPrint( false, "", ".", true, true, false );
+    HandleLogPrint( false, "", ".", true, false );
 }
 
 void CLogger::ProgressDotsEnd()
@@ -179,7 +158,7 @@ void CLogger::ProgressDotsEnd()
         return;
 
     m_bPrintingDots = false;
-    HandleLogPrint( false, "", "\n", true, true, false );
+    HandleLogPrint( false, "", "\n", true, false );
 }
 
 void CLogger::BeginConsoleOutputCapture()
@@ -205,49 +184,31 @@ SString CLogger::EndConsoleOutputCapture()
 }
 
 // Handle where to send the message
-void CLogger::HandleLogPrint( bool bTimeStamp, const char* szPrePend, const char* szMessage, bool bToConsole, bool bToLogFile, bool bToAuthFile, eLogLevel logLevel )
+void CLogger::HandleLogPrint( bool time, const char *pre, const char *msg, bool console, bool auth, eLogLevel logLevel )
 {
     if ( logLevel < m_MinLogLevel )
         return;
 
     // Handle interruption of progress dots
-    if ( m_bPrintingDots && ( bTimeStamp || strlen( szPrePend ) != 0 || strlen( szMessage ) > 1 || szMessage[0] != '.' ) )
+    if ( m_bPrintingDots && ( time || strlen( pre ) != 0 || strlen( msg ) > 1 || msg[0] != '.' ) )
         ProgressDotsEnd();
 
+    Logger::HandleLogPrint( time, pre, msg );
+
     // Put the timestamp at the beginning of the string
-    string strOutputShort;
-    string strOutputLong;
+    string outShort;
+    string outLong;
 
-    if ( bTimeStamp )
-    {
-        char szBuffer[MAX_STRING_LENGTH] = { "\0" };
-        time_t timeNow;
-        time( &timeNow );
-        tm* pCurrentTime = localtime( &timeNow );
+    BuildEntry( time, pre, msg, &outShort, &outLong );
 
-        if ( !strftime( szBuffer, MAX_STRING_LENGTH - 1, "[%H:%M:%S] ", pCurrentTime ) )
-            szBuffer[0] = 0;
+    if ( console )
+        g_pServerInterface->Printf( "%s", outShort.c_str() );
 
-        strOutputShort = szBuffer;
-
-        if ( !strftime( szBuffer, MAX_STRING_LENGTH - 1, "[%Y-%m-%d %H:%M:%S] ", pCurrentTime ) )
-            szBuffer[0] = 0;
-
-        strOutputLong = szBuffer;
-    }
-
-    // Build the final string
-    strOutputShort = strOutputShort + szPrePend + szMessage;
-    strOutputLong = strOutputLong + szPrePend + szMessage;
-
-    if ( bToConsole )
-        g_pServerInterface->Printf( "%s", strOutputShort.c_str() );
-
-    if ( bToConsole && m_bCaptureConsole )
+    if ( console && m_bCaptureConsole )
     {
         m_CaptureBufferMutex.Lock();
-        m_strCaptureBuffer += szPrePend;
-        m_strCaptureBuffer += szMessage;
+        m_strCaptureBuffer += pre;
+        m_strCaptureBuffer += msg;
 
         if ( m_strCaptureBuffer.length() > 1000 )
             m_bCaptureConsole = false;
@@ -255,15 +216,9 @@ void CLogger::HandleLogPrint( bool bTimeStamp, const char* szPrePend, const char
         m_CaptureBufferMutex.Unlock();
     }
 
-    if ( bToLogFile && m_file )
+    if ( auth && m_authLog )
     {
-        m_file->Printf( "%s", strOutputLong.c_str() );
-        m_file->Flush();
-    }
-
-    if ( bToAuthFile && m_authLog )
-    {
-        m_authLog->Printf( "%s", strOutputLong.c_str() );
+        m_authLog->Printf( "%s", outLong.c_str() );
         m_authLog->Flush();
     }
 }

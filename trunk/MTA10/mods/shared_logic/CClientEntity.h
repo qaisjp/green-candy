@@ -21,10 +21,6 @@ class CClientEntity;
 #define __CCLIENTENTITY_H
 
 #include "CElementArray.h"
-#include "CClientCommon.h"
-#include <assert.h>
-#include <list>
-#include <google/dense_hash_map>
 class CLuaFunctionRef;
 
 // Used to check fast version of getElementsByType

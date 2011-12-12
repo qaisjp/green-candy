@@ -13,6 +13,8 @@
 #ifndef _SERVER_DERIVED_LOGIC_
 #define _SERVER_DERIVED_LOGIC_
 
-#include "ScriptFile.h"
+#include <SharedUtil.h>
+#include "CScriptFile.h"
+#include "CLogger.h"
 
 #endif //_SERVER_DERIVED_LOGIC_

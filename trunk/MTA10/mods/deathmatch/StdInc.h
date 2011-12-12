@@ -58,6 +58,7 @@
 #include <CClientDFF.h>
 #include <CClientDummy.h>
 #include <CClientEntity.h>
+#include <derived/include.h>    // DERIVED
 #include <CClientSpatialDatabase.h>
 #include <CClientExplosionManager.h>
 #include <CClientPed.h>
@@ -77,7 +78,6 @@
 #include <CClientShader.h>
 #include <CCustomData.h>
 #include <CElementArray.h>
-#include <CLogger.h>
 #include <CMapEventManager.h>
 #include <CModelNames.h>
 #include <CScriptFile.h>

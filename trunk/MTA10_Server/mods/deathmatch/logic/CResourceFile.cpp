@@ -16,7 +16,7 @@
 
 #include "StdInc.h"
 
-CResourceFile::CResourceFile( CResource *resource, const char *name, const filePath& path, CXMLAttributes *xmlAttributes ) 
+CResourceFile::CResourceFile( CResource *resource, const char *name, const filePath& path, CXMLAttributes *attr ) 
 { 
     m_path = path;
     m_name = name;
@@ -25,10 +25,10 @@ CResourceFile::CResourceFile( CResource *resource, const char *name, const fileP
     m_pVM = NULL;
 
     // Create a map of the attributes for later use
-    if ( !xmlAttributes )
+    if ( !attr )
         return;
 
-    for ( list <CXMLAttribute*>::iterator iter = xmlAttributes->ListBegin(); iter != xmlAttributes->ListEnd(); iter++ )
+    for ( list <CXMLAttribute*>::iterator iter = attr->ListBegin(); iter != attr->ListEnd(); iter++ )
         m_attributeMap[(*iter)->GetName()] = (*iter)->GetValue();
 }
 

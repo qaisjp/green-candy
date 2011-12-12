@@ -47,7 +47,7 @@ public:
     }
 
     // static generators
-    static CChecksum GenerateChecksumFromFile ( const SString& strFilename )
+    static CChecksum GenerateChecksumFromFile( const filePath& strFilename )
     {
         CChecksum result;
         result.ulCRC = CRCGenerator::GetCRCFromFile ( strFilename );

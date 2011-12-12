@@ -14,6 +14,7 @@
 #define _SHARED_LOGIC_INCLUDE_
 
 #include <SharedUtil.h>
-#include "CScriptFile.h"
+#include "ScriptFile.h"
+#include "Logger.h"
 
 #endif //_SHARED_LOGIC_INCLUDE_
