@@ -96,7 +96,7 @@ inline SString GetClassTypeName ( CClientProjectile* )      { return "projectile
 inline SString GetClassTypeName ( CClientGUIElement* )      { return "gui-element"; }
 inline SString GetClassTypeName ( CClientColShape* )        { return "colshape"; }
 inline SString GetClassTypeName ( CClientDummy* )           { return "dummy"; }
-inline SString GetClassTypeName ( CScriptFile* )            { return "scriptfile"; }
+inline SString GetClassTypeName ( ScriptFile* )             { return "scriptfile"; }
 inline SString GetClassTypeName ( CClientDFF* )             { return "dff"; }
 inline SString GetClassTypeName ( CClientColModel* )        { return "col-model"; }
 inline SString GetClassTypeName ( CClientTXD* )             { return "txd"; }

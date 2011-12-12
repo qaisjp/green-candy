@@ -235,6 +235,8 @@ private:
     bool                    m_bProtected;
     bool                    m_bStartedManually;
 
+    void                    ThrowError( const char *msg, ... );
+
     bool                    CheckState ( void ); // if the resource has no Dependents, stop it, if it has, start it. returns true if the resource is started.
     bool                    ReadIncludedResources ( class CXMLNode * root );
     bool                    ReadIncludedMaps ( CXMLNode * root );
@@ -269,6 +271,8 @@ public:
     bool                    Load();
     bool                    Unload();
     void                    Reload();
+
+    CXMLFile*               GrabMeta                    ( CXMLNode*& root );
 
     bool                    GetDefaultSetting           ( const char* szName, char* szValue, size_t sizeBuffer );
     bool                    SetDefaultSetting           ( const char* szName, const char* szValue );

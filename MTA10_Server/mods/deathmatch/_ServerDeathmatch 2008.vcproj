@@ -569,10 +569,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\logic\CLogger.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\logic\CMainConfig.cpp"
 					>
 				</File>
@@ -1208,7 +1204,11 @@
 					Name="derived"
 					>
 					<File
-						RelativePath="..\..\sdk\derived\ScriptFile.cpp"
+						RelativePath="..\..\sdk\derived\CLogger.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\sdk\derived\CScriptFile.cpp"
 						>
 					</File>
 				</Filter>
@@ -1448,7 +1448,11 @@
 					Name="base_logic"
 					>
 					<File
-						RelativePath="..\..\..\Shared\logic\CScriptFile.cpp"
+						RelativePath="..\..\..\Shared\logic\Logger.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\ScriptFile.cpp"
 						>
 					</File>
 				</Filter>
@@ -1679,10 +1683,6 @@
 				</File>
 				<File
 					RelativePath=".\logic\CLanBroadcast.h"
-					>
-				</File>
-				<File
-					RelativePath=".\logic\CLogger.h"
 					>
 				</File>
 				<File
@@ -2349,11 +2349,15 @@
 					Name="derived"
 					>
 					<File
-						RelativePath="..\..\sdk\derived\include.h"
+						RelativePath="..\..\sdk\derived\CLogger.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\sdk\derived\ScriptFile.h"
+						RelativePath="..\..\sdk\derived\CScriptFile.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\sdk\derived\include.h"
 						>
 					</File>
 				</Filter>
@@ -2425,11 +2429,15 @@
 					Name="base_logic"
 					>
 					<File
-						RelativePath="..\..\..\Shared\logic\CScriptFile.h"
+						RelativePath="..\..\..\Shared\logic\include.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\Shared\logic\include.h"
+						RelativePath="..\..\..\Shared\logic\Logger.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\ScriptFile.h"
 						>
 					</File>
 				</Filter>

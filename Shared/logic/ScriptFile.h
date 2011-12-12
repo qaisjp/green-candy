@@ -3,7 +3,7 @@
 *  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        Shared/logic/CScriptFile.h
+*  FILE:        Shared/logic/ScriptFile.h
 *  PURPOSE:     Script file class header
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
@@ -12,17 +12,12 @@
 *
 *****************************************************************************/
 
-#ifndef __CFILE_H
-#define __CFILE_H
-
-#include "CClientEntity.h"
-#include <stdio.h>
-#include <string>
+#ifndef _BASE_SCRIPTFILE_
+#define _BASE_SCRIPTFILE_
 
 template < class inherit >
-class CScriptFile : public inherit
+class ScriptFile : public inherit
 {
-    DECLARE_CLASS( CScriptFile, CClientEntity )
 public:
     enum eMode
     {
@@ -31,22 +26,8 @@ public:
         MODE_CREATE,
     };
 
-                            CScriptFile             ( const char *filename, size_t maxSize );
-                            ~CScriptFile            ();
-
-    // Functions required for linking
-    void                    GetPosition             ( CVector& vecPosition ) const {};
-    void                    SetPosition             ( const CVector& vecPosition ) {};
-
-    // Functions required by CClientEntity
-    eClientEntityType       GetType                 () const  { return SCRIPTFILE; };
-    void                    Unlink                  () {};
-    bool                    ReadSpecialData         ()    { return true; };
-
-    // Load and unload routines
-    bool                    Load                    ( eMode Mode );
-    void                    Unload                  ();
-    bool                    IsLoaded                ()    { return m_pFile != NULL; };
+                            ScriptFile             ( CFile *file );
+                            ~ScriptFile            ();
 
     bool                    IsEOF                   ();
     size_t                  GetPointer              ();
@@ -59,10 +40,8 @@ public:
     size_t                  Read                    ( size_t size, char* pData );
     size_t                  Write                   ( size_t size, const char* pData );
 
-private:
+protected:
     CFile*                  m_file;
-    std::string             m_filename;
-    size_t                  m_maxSize;
 };
 
-#endif
+#endif //_BASE_SCRIPTFILE_

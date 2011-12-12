@@ -21,18 +21,49 @@ class CXMLAttribute;
 class CXMLAttributes
 {
 public:
-    virtual unsigned int                Count           ( void ) = 0;
+    virtual unsigned int                Count           () = 0;
     virtual CXMLAttribute*              Find            ( const char* szName ) = 0;
     virtual CXMLAttribute*              Get             ( unsigned int uiIndex ) = 0;
 
     virtual CXMLAttribute*              Create          ( const char* szName ) = 0;
     virtual CXMLAttribute*              Create          ( const CXMLAttribute& Copy ) = 0;
-    virtual void                        DeleteAll       ( void ) = 0;
+    virtual void                        DeleteAll       () = 0;
 
-    virtual std::list < CXMLAttribute* >::iterator
-                                        ListBegin ( void ) = 0;
-    virtual std::list < CXMLAttribute* >::iterator
-                                        ListEnd   ( void ) = 0;
+    virtual std::list < CXMLAttribute* >::iterator  ListBegin() = 0;
+    virtual std::list < CXMLAttribute* >::iterator  ListEnd() = 0;
+
+    template <class type>
+    void    Set( const char *key, type value )
+    {
+        CXMLAttribute *att = Find( key );
+
+        if ( att )
+            att->SetValue( value );
+        else
+            Create( key )->SetValue( value );
+    }
+
+    template <class type>
+    type    Get( const char *key )
+    {
+        CXMLAttribute *att = Find( key );
+
+        if ( !att )
+            return (type)0;
+
+        return att->GetValue();
+    }
+
+    template <class type>
+    type    GetDefault( const char *key, type def )
+    {
+        CXMLAttribute *att = Find( key );
+
+        if ( !att )
+            return def;
+
+        return att->GetValue();
+    }
 };
 
 #endif

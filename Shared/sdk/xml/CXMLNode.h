@@ -59,6 +59,17 @@ public:
     virtual bool                CopyChildrenInto    ( CXMLNode* pDestination, bool bRecursive ) = 0;
 
     virtual bool                IsValid             ( void ) = 0;
+
+    CXMLNode& Establish( const char *name )
+    {
+        return *FindSubNode( name ) || *CreateSubNode( name );
+    }
+
+    template <class type>
+    type operator []( const char *key )
+    {
+        return GetAttributes().Get( key );
+    }
 };
 
 #endif

@@ -51,7 +51,7 @@ protected:
     map <string, string>        m_attributeMap; // Map of attributes from the meta.xml file
     
 public:
-                                CResourceFile( class CResource *resource, const char *name, filePath& path, CXMLAttributes *xmlAttributes );
+                                CResourceFile( class CResource *resource, const filePath& path, CXMLAttributes *attr );
     virtual                     ~CResourceFile();
 
     virtual ResponseCode        Request( HttpRequest *ipoHttpRequest, HttpResponse *ipoHttpResponse );

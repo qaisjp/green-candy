@@ -21,7 +21,6 @@
 #include <cstdio>
 #include <list>
 
-// Ever heard of class inheritance? CLogger?
 class CScriptDebugging
 {
 public:

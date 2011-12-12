@@ -961,10 +961,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CLogger.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CMapEvent.cpp"
 					>
 				</File>
@@ -1740,7 +1736,11 @@
 					Name="base_logic"
 					>
 					<File
-						RelativePath="..\..\..\Shared\logic\CScriptFile.cpp"
+						RelativePath="..\..\..\Shared\logic\Logger.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\ScriptFile.cpp"
 						>
 					</File>
 				</Filter>
@@ -1748,6 +1748,14 @@
 			<Filter
 				Name="derived"
 				>
+				<File
+					RelativePath="..\..\sdk\derived\CLogger.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\sdk\derived\CScriptFile.cpp"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -2483,10 +2491,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CLogger.h"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CMapEvent.h"
 					>
 				</File>
@@ -2638,11 +2642,15 @@
 					Name="base_logic"
 					>
 					<File
-						RelativePath="..\..\..\Shared\logic\CScriptFile.h"
+						RelativePath="..\..\..\Shared\logic\include.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\Shared\logic\include.h"
+						RelativePath="..\..\..\Shared\logic\Logger.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\ScriptFile.h"
 						>
 					</File>
 				</Filter>
@@ -2650,6 +2658,18 @@
 			<Filter
 				Name="derived"
 				>
+				<File
+					RelativePath="..\..\sdk\derived\CLogger.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\sdk\derived\CScriptFile.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\sdk\derived\include.h"
+					>
+				</File>
 			</Filter>
 		</Filter>
 	</Files>
