@@ -23,7 +23,6 @@ class CLuaManager;
 #include <list>
 #include "../CClientGUIManager.h"
 #include "../CEvents.h"
-#include "../CScriptDebugging.h"
 #include "CLuaMain.h"
 #include "../CRegisteredCommands.h"
 

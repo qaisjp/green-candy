@@ -16,5 +16,6 @@
 #include <SharedUtil.h>
 #include "CScriptFile.h"
 #include "CLogger.h"
+#include "CScriptDebugging.h"
 
 #endif //_SERVER_DERIVED_LOGIC_

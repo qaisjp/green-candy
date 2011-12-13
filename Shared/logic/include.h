@@ -16,5 +16,6 @@
 #include <SharedUtil.h>
 #include "ScriptFile.h"
 #include "Logger.h"
+#include "ScriptDebugging.h"
 
 #endif //_SHARED_LOGIC_INCLUDE_
