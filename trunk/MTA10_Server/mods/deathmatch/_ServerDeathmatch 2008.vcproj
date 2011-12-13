@@ -769,10 +769,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\logic\CScriptDebugging.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\logic\CSerialManager.cpp"
 					>
 				</File>
@@ -1208,6 +1204,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\sdk\derived\CScriptDebugging.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\sdk\derived\CScriptFile.cpp"
 						>
 					</File>
@@ -1449,6 +1449,10 @@
 					>
 					<File
 						RelativePath="..\..\..\Shared\logic\Logger.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\ScriptDebugging.cpp"
 						>
 					</File>
 					<File
@@ -1859,10 +1863,6 @@
 				</File>
 				<File
 					RelativePath=".\logic\CRPCFunctions.h"
-					>
-				</File>
-				<File
-					RelativePath=".\logic\CScriptDebugging.h"
 					>
 				</File>
 				<File
@@ -2353,6 +2353,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\sdk\derived\CScriptDebugging.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\sdk\derived\CScriptFile.h"
 						>
 					</File>
@@ -2434,6 +2438,10 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\Logger.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\ScriptDebugging.h"
 						>
 					</File>
 					<File

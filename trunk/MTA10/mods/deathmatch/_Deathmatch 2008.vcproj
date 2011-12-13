@@ -977,34 +977,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CScriptDebugging.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)/$(InputName)1.obj"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)/$(InputName)1.obj"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Nightly|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)/$(InputName)1.obj"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CVariableBuffer.cpp"
 					>
 				</File>
@@ -1740,6 +1712,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\ScriptDebugging.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\ScriptFile.cpp"
 						>
 					</File>
@@ -1750,6 +1726,10 @@
 				>
 				<File
 					RelativePath="..\..\sdk\derived\CLogger.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\sdk\derived\CScriptDebugging.cpp"
 					>
 				</File>
 				<File
@@ -2507,10 +2487,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CScriptDebugging.h"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CSimulatedPlayPosition.h"
 					>
 				</File>
@@ -2650,6 +2626,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\ScriptDebugging.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\ScriptFile.h"
 						>
 					</File>
@@ -2660,6 +2640,10 @@
 				>
 				<File
 					RelativePath="..\..\sdk\derived\CLogger.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\sdk\derived\CScriptDebugging.h"
 					>
 				</File>
 				<File
