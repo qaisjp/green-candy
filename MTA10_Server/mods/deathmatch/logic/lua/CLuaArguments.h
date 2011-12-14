@@ -44,8 +44,6 @@ class CResource;
 class CTextDisplay;
 class CTextItem;
 
-class CLuaArguments;
-
 class CLuaArguments
 {
 public:

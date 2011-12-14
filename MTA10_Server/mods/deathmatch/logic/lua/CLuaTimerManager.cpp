@@ -156,11 +156,12 @@ void CLuaTimerManager::TakeOutTheTrash ( void )
     list < CLuaTimer* > ::iterator iter = m_TrashCan.begin ();
     for ( ; iter != m_TrashCan.end () ; iter++ )
     {
-        // Delete the object
         CLuaTimer* pTimer = *iter;
+
         if ( Exists ( pTimer ) )
         {
-            if ( !m_TimerList.empty() ) m_TimerList.remove ( pTimer );
+            if ( !m_TimerList.empty() )
+                m_TimerList.remove ( pTimer );
             delete pTimer;
         }
     }

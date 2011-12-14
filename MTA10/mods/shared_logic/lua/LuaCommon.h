@@ -14,17 +14,6 @@
 #ifndef __CLUACOMMON_H
 #define __CLUACOMMON_H
 
-extern "C"
-{
-    #include "lua.h"
-    #include "lualib.h"
-    #include "lauxlib.h"
-}
-
-CLuaFunctionRef         luaM_toref              ( lua_State *luaVM, int iArgument );
-
-#define TO_ELEMENTID(x) ((ElementID) reinterpret_cast < unsigned long > (x) )
-
 // Predeclarations of our classes
 class CClientColModel;
 class CClientColShape;

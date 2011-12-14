@@ -126,7 +126,6 @@ void CLuaMain::InitVM ( void )
     // Create a new VM
     m_luaVM = lua_open ();
 
-
     // Set the instruction count hook
     lua_sethook ( m_luaVM, InstructionCountHook, LUA_MASKCOUNT, HOOK_INSTRUCTION_COUNT );
 

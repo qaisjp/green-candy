@@ -108,7 +108,6 @@ bool CLuaTimerManager::Exists ( CLuaTimer* pLuaTimer )
 }
 
 
-
 CLuaTimer* CLuaTimerManager::AddTimer ( const CLuaFunctionRef& iLuaFunction, CTickCount llTimeDelay, unsigned int uiRepeats, const CLuaArguments& Arguments )
 {
     // Check for the minimum interval
@@ -161,7 +160,6 @@ void CLuaTimerManager::TakeOutTheTrash ( void )
     {
         CLuaTimer* pTimer = *iter;
 
-        // Clean up the timer
         if ( Exists ( pTimer ) )
         {
             if ( !m_TimerList.empty() )

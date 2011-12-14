@@ -1112,10 +1112,6 @@
 						>
 					</File>
 					<File
-						RelativePath=".\logic\lua\CLuaFunctionRef.cpp"
-						>
-					</File>
-					<File
 						RelativePath=".\logic\lua\CLuaMain.cpp"
 						>
 					</File>
@@ -1449,6 +1445,14 @@
 					>
 					<File
 						RelativePath="..\..\..\Shared\logic\Logger.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionRef.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaMain.cpp"
 						>
 					</File>
 					<File
@@ -2249,10 +2253,6 @@
 						>
 					</File>
 					<File
-						RelativePath=".\logic\lua\CLuaFunctionRef.h"
-						>
-					</File>
-					<File
 						RelativePath=".\logic\lua\CLuaMain.h"
 						>
 					</File>
@@ -2438,6 +2438,26 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\Logger.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaArguments.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaCommon.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionRef.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaMain.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaTimer.h"
 						>
 					</File>
 					<File

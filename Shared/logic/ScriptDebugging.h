@@ -41,4 +41,8 @@ protected:
     unsigned int                    m_fileLevel;
 };
 
+// We require a global definition of the script debugging
+// Define it in your project somewhere
+extern ScriptDebugging *scriptDebug;
+
 #endif //_BASE_SCRIPT_DEBUGGING_

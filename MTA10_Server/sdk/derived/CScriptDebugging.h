@@ -23,9 +23,10 @@ public:
     bool                        RemovePlayer                    ( class CPlayer& player );
     void                        ClearPlayers                    ();
 
-    void                        LogError                        ( const filePath& path, int iLine, SString strMsg );
+    void                        LogError                        ( const char *path, int iLine, SString strMsg );
 
     bool                        SetLogfile                      ( const char *path, unsigned int level );
+    void                        SetHTMLLogLevel                 ( unsigned int level );
 
 protected:
     void                        NotifySystem                    ( unsigned int level, lua_State *lua, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b );

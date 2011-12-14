@@ -25,7 +25,6 @@ CScriptDebugging::~CScriptDebugging()
 
 bool CScriptDebugging::AddPlayer( CPlayer& player, unsigned int level )
 {
-    // Want a level above 0?
     if ( level )
     {
         // He's not already debugging? Add him to our list.
@@ -39,7 +38,6 @@ bool CScriptDebugging::AddPlayer( CPlayer& player, unsigned int level )
             m_players.remove( &player );
     }
 
-    // Give him the level
     player.m_uiScriptDebugLevel = level;
     return true;
 }
@@ -67,9 +65,12 @@ void CScriptDebugging::ClearPlayers()
     m_players.clear();
 }
 
-void CScriptDebugging::LogError( const filePath& path, int line, SString msg )
+void CScriptDebugging::LogError( const char *path, int line, SString msg )
 {
-    SString strText = SString( "ERROR: %s:%d: %s", strFile.c_str (), iLine, strMsg.c_str() );
+    filePath relPath;
+    PathRelative( path, relPath );
+
+    SString strText = SString( "ERROR: %s:%d: %s", relPath.c_str(), iLine, strMsg.c_str() );
 
     NotifySystem( strFile, iLine, strText.c_str() );
 
@@ -107,6 +108,11 @@ bool CScriptDebugging::SetLogfile( const char *filename, unsigned int level )
     m_fileLevel = level;
     m_file = file;
     return true;
+}
+
+void CScriptDebugging::SetHTMLLogLevel( unsigned int level )
+{
+    m_htmlLogLevel = level;
 }
 
 void CScriptDebugging::NotifySystem( unsigned int level, lua_State *lua, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b )
@@ -156,6 +162,11 @@ void CScriptDebugging::NotifySystem( unsigned int level, lua_State *lua, const f
 
     // Tell the players
     Broadcast( CDebugEchoPacket( strText, level, r, g, b ), level );
+}
+
+void CScriptDebugging::PathRelative( const char *in, filePath& out )
+{
+    modFileRoot->GetRelativePath( in, true, out );
 }
 
 void CScriptDebugging::Broadcast( const CPacket& packet, unsigned int level )
