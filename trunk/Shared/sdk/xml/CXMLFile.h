@@ -23,23 +23,23 @@ class CXMLNode;
 class CXMLFile: public CXMLCommon
 {
 public:
-    virtual                         ~CXMLFile           ( void ) {};
+    virtual                         ~CXMLFile           () {};
 
-    virtual const char*             GetFilename         ( void ) = 0;
+    virtual const char*             GetFilename         () = 0;
     virtual void                    SetFilename         ( const char* szFilename ) = 0;
 
-    virtual bool                    Parse               ( void ) = 0;
-    virtual bool                    Write               ( void ) = 0;
-    virtual void                    Clear               ( void ) = 0;
-    virtual void                    Reset               ( void ) = 0;
+    virtual bool                    Parse               () = 0;
+    virtual bool                    Write               () = 0;
+    virtual void                    Clear               () = 0;
+    virtual void                    Reset               () = 0;
 
     virtual CXMLNode*               CreateRootNode      ( const std::string& strTagName ) = 0;
-    virtual CXMLNode*               GetRootNode         ( void ) = 0;
+    virtual CXMLNode*               GetRootNode         () = 0;
 
     virtual CXMLErrorCodes::Code    GetLastError        ( std::string& strOut ) = 0;
-    virtual void                    ResetLastError      ( void ) = 0;
+    virtual void                    ResetLastError      () = 0;
 
-    virtual bool                    IsValid             ( void ) = 0;
+    virtual bool                    IsValid             () = 0;
 };
 
 #endif

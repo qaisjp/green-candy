@@ -36,8 +36,6 @@ extern "C"
     #define LUA_CHECKSTACK(vm,space) lua_checkstack(vm, (space)*2 )
 #endif
 
-class CLuaArguments;
-
 class CLuaArguments
 {
 public:

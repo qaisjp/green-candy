@@ -250,7 +250,7 @@ bool CLuaArguments::Call ( CLuaMain* pLuaMain, const CLuaFunctionRef& iLuaFuncti
         while ( lua_gettop ( luaVM ) - luaStackPointer > 0 )
             lua_pop ( luaVM, 1 );
 
-       return false; // the function call failed
+        return false; // the function call failed
     }
     else
     {
@@ -293,14 +293,8 @@ bool CLuaArguments::CallGlobal ( CLuaMain* pLuaMain, const char* szFunction, CLu
 
     // Call the function with our arguments
     pLuaMain->ResetInstructionCount ();
-    int iret = 0;
-    try {
-        iret = lua_pcall ( luaVM, m_Arguments.size (), LUA_MULTRET, 0 );
-    }
-    catch ( ... )
-    {
-        return false;
-    }
+
+    int iret = lua_pcall ( luaVM, m_Arguments.size (), LUA_MULTRET, 0 );
     if ( iret == LUA_ERRRUN || iret == LUA_ERRMEM )
     {
         std::string strRes = ConformResourcePath ( lua_tostring( luaVM, -1 ) );

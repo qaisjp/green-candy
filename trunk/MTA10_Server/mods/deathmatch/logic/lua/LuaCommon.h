@@ -14,17 +14,6 @@
 #ifndef __LUACOMMON_H
 #define __LUACOMMON_H
 
-extern "C"
-{
-    #include "lua.h"
-    #include "lualib.h"
-    #include "lauxlib.h"
-}
-
-CLuaFunctionRef         luaM_toref              ( lua_State *luaVM, int iArgument );
-
-#define TO_ELEMENTID(x) ((ElementID) reinterpret_cast < unsigned long > (x) )
-
 // Lua pop macros for our datatypes
 class CElement*         lua_toelement           ( lua_State* luaVM, int iArgument );
 class CAccount*         lua_toaccount           ( lua_State* luaVM, int iArgument );

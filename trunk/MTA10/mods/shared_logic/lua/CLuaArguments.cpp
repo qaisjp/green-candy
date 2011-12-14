@@ -107,12 +107,13 @@ void CLuaArguments::ReadTable ( lua_State* luaVM, int iIndexBegin, std::map < co
         pKnownTables = new std::map < const void*, CLuaArguments* > ();
         bKnownTablesCreated = true;
     }
+
     pKnownTables->insert ( std::make_pair ( lua_topointer(luaVM, iIndexBegin), this ) );
 
     // Delete the previous arguments if any
     DeleteArguments ();
 
-    LUA_CHECKSTACK ( luaVM, 1 );
+    LUA_CHECKSTACK ( luaVM, 2 );
     lua_pushnil(luaVM);  /* first key */
     if ( iIndexBegin < 0 )
         iIndexBegin--;
@@ -229,14 +230,11 @@ bool CLuaArguments::Call ( CLuaMain* pLuaMain, const CLuaFunctionRef& iLuaFuncti
     {
         SString strRes = ConformResourcePath ( lua_tostring( luaVM, -1 ) );
         
-        // Split the error message
         vector <SString> vecSplit;
         strRes.Split ( ":", vecSplit );
         
-        // If it consists of 3 parts
         if ( vecSplit.size ( ) >= 3 )
         {
-            // Pass it to a special LogError function (because with normal Lua errors, the other one won't be able to get the file and line of the error)
             SString strFile = vecSplit[0];
             int     iLine   = atoi ( vecSplit[1].c_str ( ) );
             SString strMsg  = vecSplit[2].substr ( 1 );
