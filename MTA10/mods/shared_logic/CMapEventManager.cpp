@@ -251,13 +251,13 @@ bool CMapEventManager::Call ( const char* szName, const CLuaArguments& Arguments
                 {
                     // Grab the current VM
                     lua_State* pState = pMapEvent->GetVM ()->GetVM ();
-                    #if MTA_DEBUG
-                        int luaStackPointer = lua_gettop ( pState );
-                    #endif
+#if MTA_DEBUG
+                    int luaStackPointer = lua_gettop ( pState );
+#endif
 
                     TIMEUS startTime = GetTimeUs();
 
-                    // Store the current values of the globals
+                    // Store globals
                     lua_getglobal ( pState, "source" );
                     CLuaArgument OldSource ( pState, -1 );
                     lua_pop( pState, 1 );
@@ -278,7 +278,7 @@ bool CMapEventManager::Call ( const char* szName, const CLuaArguments& Arguments
                     CLuaArgument OldEventName ( pState, -1 );
                     lua_pop( pState, 1 );
 
-                    // Set the "source", "this", "sourceResource" and the "sourceResourceRoot" globals on that VM
+                    // Init globals
                     lua_pushelement ( pState, pSource );
                     lua_setglobal ( pState, "source" );
 
@@ -298,7 +298,7 @@ bool CMapEventManager::Call ( const char* szName, const CLuaArguments& Arguments
                     pMapEvent->Call ( Arguments );
                     bCalled = true;
 
-                    // Reset the globals on that VM
+                    // Reset globals
                     OldSource.Push ( pState );
                     lua_setglobal ( pState, "source" );
 
@@ -314,9 +314,9 @@ bool CMapEventManager::Call ( const char* szName, const CLuaArguments& Arguments
                     OldEventName.Push ( pState );
                     lua_setglobal ( pState, "eventName" );
 
-                    #if MTA_DEBUG
-                        assert ( lua_gettop ( pState ) == luaStackPointer );
-                    #endif
+#if MTA_DEBUG
+                    assert ( lua_gettop ( pState ) == luaStackPointer );
+#endif
 
                     CClientPerfStatLuaTiming::GetSingleton ()->UpdateLuaTiming ( pMapEvent->GetVM (), szName, GetTimeUs() - startTime );
                 }
@@ -325,7 +325,7 @@ bool CMapEventManager::Call ( const char* szName, const CLuaArguments& Arguments
     }
 
     // Clean out the trash if we're no longer calling events.
-    if ( !bIsAlreadyIterating )\
+    if ( !bIsAlreadyIterating )
     {
         TakeOutTheTrash ();
 

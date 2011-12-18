@@ -1,9 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/logic/lua/CLuaManager.cpp
-*  PURPOSE:     Lua virtual machine manager class
+*  PURPOSE:     Management of Lua hyperstructures
+*       Every lua hyperstructure is a table in a global lua environment
+*       upkept by the LuaManager entity. LuaManager is supposed to secure
+*       the connections between hyperstructures and provide the basic
+*       framework for their runtime.
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Jax <>
 *               Cecill Etheredge <ijsf@gmx.net>
@@ -11,6 +15,7 @@
 *               Christian Myhre Lundheim <>
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

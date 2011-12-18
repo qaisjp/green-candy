@@ -15,8 +15,6 @@
 #ifndef __CLUAARGUMENT_H
 #define __CLUAARGUMENT_H
 
-#include <string>
-
 extern "C"
 {
     #include "lua.h"
@@ -53,9 +51,9 @@ public:
     void                    Read                ( double dNumber );
     void                    Read                ( const std::string& strString );
     void                    Read                ( CElement* pElement );
+    void                    Read                ( class CLuaArguments * table );
 
     void                    ReadUserData        ( void* pUserData );
-    void                    Read                ( class CLuaArguments * table );
 
     inline int              GetType             ( void ) const      { return m_iType; };
 

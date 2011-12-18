@@ -136,7 +136,7 @@ void CLuaMain::InitVM ( void )
     luaopen_table ( m_luaVM );
     luaopen_debug ( m_luaVM );
 
-    // Initialize security restrictions. Very important to prevent lua trojans and viruses!
+    // Initialize security restrictions
     InitSecurity();
 
     // Register module functions

@@ -47,14 +47,15 @@ public:
     bool                    operator !=         ( const CLuaArgument& Argument );
 
     void                    Read                ( lua_State* luaVM, int iArgument, std::map < const void*, CLuaArguments* > * pKnownTables = NULL );
+    void                    Push                ( lua_State* luaVM, std::map < CLuaArguments*, int > * pKnownTables = NULL ) const;
+
     void                    Read                ( bool bBool );
     void                    Read                ( double dNumber );
     void                    Read                ( const std::string& strString );
     void                    Read                ( void* pUserData );
     void                    Read                ( CClientEntity* pElement );
-    void                    ReadElementID       ( ElementID ID );
 
-    void                    Push                ( lua_State* luaVM, std::map < CLuaArguments*, int > * pKnownTables = NULL ) const;
+    void                    ReadElementID       ( ElementID ID );
 
     inline int              GetType             ( void ) const      { return m_iType; };
 

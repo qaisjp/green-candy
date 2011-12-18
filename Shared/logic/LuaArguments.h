@@ -3,7 +3,7 @@
 *  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        mods/shared_logic/lua/CLuaArguments.h
+*  FILE:        Shared/logic/LuaArguments.h
 *  PURPOSE:     Lua arguments manager class header
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Jax <>
@@ -24,15 +24,15 @@
 class LuaArguments
 {
 public:
-                                                        LuaArguments()                { }
-                                                        LuaArguments( const LuaArguments& args, std::map <LuaArguments*, LuaArguments*> *knownTables = NULL );
-                                                        LuaArguments( NetBitStreamInterface& stream, std::vector <LuaArguments*> *knownTables = NULL );
-                                                        ~LuaArguments()                { DeleteArguments (); };
+                                                        LuaArguments();
+                                                        LuaArguments( const LuaArguments& args );
+                                                        LuaArguments( NetBitStreamInterface& stream );
+                                                        ~LuaArguments();
 
-    void                                                CopyRecursive( const LuaArguments& args, std::map <LuaArguments*, LuaArguments*> *knownTables = NULL );
+    void                                                CopyRecursive( const LuaArguments& args );
 
-    const CLuaArguments&                                operator = ( const LuaArguments& args );
-    CLuaArgument*                                       operator [] ( unsigned int pos ) const;
+    const LuaArguments&                                 operator = ( const LuaArguments& args );
+    LuaArgument*                                        operator [] ( unsigned int pos ) const;
 
     void                                                ReadArgument( lua_State *lua, signed int index );
     void                                                ReadArguments( lua_State *lua, signed int indexStart = 1 );
@@ -41,8 +41,9 @@ public:
     bool                                                Call( class LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *ret = NULL ) const;
     bool                                                CallGlobal( class LuaMain* pLuaMain, const char *funcName, LuaArguments *ret = NULL ) const;
 
-    void                                                ReadTable( lua_State* luaVM, int indexStart, std::map <const void*, LuaArguments*> *knownTables = NULL );
-    void                                                PushAsTable( lua_State* luaVM, std::map <CLuaArguments*, int> *knownTables = NULL );
+    void                                                ReadTable( lua_State* luaVM, int indexStart );
+    void                                                PushAsTable( lua_State* luaVM );
+    void                                                PushAsTable( lua_State* luaVM );
 
     LuaArgument*                                        PushNil();
     LuaArgument*                                        PushBoolean( bool b );
@@ -54,16 +55,20 @@ public:
 
     void                                                DeleteArguments();
 
-    bool                                                ReadFromBitStream( NetBitStreamInterface& bitStream, std::vector <LuaArguments*> *knownTables = NULL );
-    bool                                                WriteToBitStream( NetBitStreamInterface& bitStream, std::map <LuaArguments*, unsigned long> *knownTables = NULL ) const;
+    bool                                                ReadFromBitStream( NetBitStreamInterface& bitStream );
+    bool                                                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
     void                                                ValidateTableKeys();
 
     unsigned int                                        Count() const          { return static_cast < unsigned int > ( m_args.size() ); };
     std::vector <LuaArgument*> ::const_iterator         IterBegin()                { return m_args.begin(); };
     std::vector <LuaArgument*> ::const_iterator         IterEnd()                { return m_args.end(); };
 
-private:
-    std::vector <LuaArgument*>                       m_args;
+protected:
+    void                                                SetParent( LuaArguments *parent );
+
+    std::vector <LuaArgument*>          m_args;
+    std::vector <LuaArguments*>         m_cachedTables;
+    LuaArguments*                       m_parent;   // LuaArguments is a table!
 };
 
 #endif //_BASE_LUA_ARGUMENTS_
