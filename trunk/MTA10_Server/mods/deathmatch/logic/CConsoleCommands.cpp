@@ -1844,8 +1844,8 @@ bool CConsoleCommands::LoadModule ( CConsole* pConsole, const char* szArguments,
         // These modules are late loaded
         if ( !g_pGame->GetLuaManager ()->GetLuaModuleManager ()->_LoadModule ( szArguments, strFilename, true ) )
         {
-                pEchoClient->SendConsole ( "stop: Resource could not be found" );
-                return true;
+            pEchoClient->SendConsole ( "stop: Resource could not be found" );
+            return true;
         }
     }
     else

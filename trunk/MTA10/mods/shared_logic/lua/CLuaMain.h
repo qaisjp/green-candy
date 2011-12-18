@@ -34,7 +34,7 @@ struct CRefInfo
     int iFunction;
 };
 
-class CLuaMain //: public CClient
+class CLuaMain
 {
 public:
     enum

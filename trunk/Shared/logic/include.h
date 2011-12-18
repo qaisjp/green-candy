@@ -20,6 +20,8 @@
 #include "ScriptDebugging.h"
 #include "LuaFunctionRef.h"
 #include "LuaTimer.h"
+#include "LuaArgument.h"
+#include "LuaArguments.h"
 #include "LuaMain.h"
 
 #endif //_SHARED_LOGIC_INCLUDE_

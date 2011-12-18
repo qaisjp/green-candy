@@ -250,22 +250,20 @@ bool CLuaArguments::Call ( CLuaMain* pLuaMain, const CLuaFunctionRef& iLuaFuncti
 
         return false; // the function call failed
     }
-    else
+
+    int iReturns = lua_gettop ( luaVM ) - luaStackPointer;
+
+    if ( returnValues != NULL )
     {
-        int iReturns = lua_gettop ( luaVM ) - luaStackPointer;
-
-        if ( returnValues != NULL )
+        for ( int i = - iReturns; i <= -1; i++ )
         {
-            for ( int i = - iReturns; i <= -1; i++ )
-            {
-                returnValues->ReadArgument ( luaVM, i );
-            }
+            returnValues->ReadArgument ( luaVM, i );
         }
-
-        // cleanup the stack
-        while ( lua_gettop ( luaVM ) - luaStackPointer > 0 )
-            lua_pop ( luaVM, 1 );
     }
+
+    // cleanup the stack
+    while ( lua_gettop ( luaVM ) - luaStackPointer > 0 )
+        lua_pop ( luaVM, 1 );
         
     CClientPerfStatLuaTiming::GetSingleton ()->UpdateLuaTiming ( pLuaMain, pLuaMain->GetFunctionTag ( iLuaFunction.m_iFunction ), GetTimeUs() - startTime );
     return true;
