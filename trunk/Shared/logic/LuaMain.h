@@ -3,7 +3,7 @@
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        Shared/logic/LuaMain.h
-*  PURPOSE:     Lua virtual machine extension
+*  PURPOSE:     Lua hyperstructure
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
@@ -13,84 +13,81 @@
 #ifndef _BASE_LUA_MAIN_
 #define _BASE_LUA_MAIN_
 
-#include "CLuaTimerManager.h"
-
-#include "CLuaFunctionDefs.h"
-
 #include <xml/CXMLFile.h>
-
-#define MAX_SCRIPTNAME_LENGTH 64
-
-#include <list>
 
 struct CRefInfo
 {
-    unsigned long ulUseCount;
-    int iFunction;
+    unsigned long refCount;
+    int idx;
 };
 
 class LuaMain
 {
+    friend class LuaManager;
 public:
     enum
     {
         OWNER_SERVER,
-        OWNER_MAP,
+        OWNER_MAP
     };
 
-public:
-                                    LuaMain( class CLuaManager* pLuaManager, CResource* pResourceOwner );
-                                    ~LuaMain();
+                                    LuaMain( class LuaManager& manager );
+    virtual                         ~LuaMain();
 
-    bool                            BeingDeleted();
+    LuaFunctionRef                  CreateReference( int stack );
+    void                            Reference( const LuaFunctionRef& ref );
+    void                            Dereference( const LuaFunctionRef& ref );
 
-    bool                            LoadScriptFromFile( const char* szLUAScript );
-    bool                            LoadScriptFromBuffer( const char* cpBuffer, unsigned int uiSize, const char* szFileName, bool bUTF8 );
-    bool                            LoadScript( const char* szLUAScript );
-    void                            UnloadScript();
+    virtual void                    RegisterFunction( const char *name, lua_CFunction *proto );
+
+    void                            CallStack( int args );
+    void                            CallStackVoid( int args );
+    LuaArguments                    CallStackResult( int args );
+    //TODO: Function reference calling
+
+    bool                            LoadScriptFromBuffer( const char *buf, size_t size, const char *path, bool bUTF8 );
+    bool                            LoadScript( const char *buf );
 
     void                            DoPulse();
 
     const std::string&              GetName() const                     { return m_name; };
     void                            SetName( const char *name )         { m_name = name; };
 
-    inline CLuaTimerManager*        GetTimerManager() const                  { return m_pLuaTimerManager; };
-    inline lua_State*               GetVirtualMachine() const                  { return m_luaVM; };
+    inline LuaTimerManager&         GetTimerManager() const                  { return m_timers; };
+    inline lua_State*               GetVirtualMachine() const                  { return m_lua; };
 
-    void                            ResetInstructionCount();
-
-    inline class CResource*         GetResource()                        { return m_pResource; }
+    virtual bool                    ParseRelative( const char *in, filePath& out ) = 0;
 
     virtual CXMLFile*               CreateXML( const char *path ) = 0;
-    virtual void                    DestroyXML( CXMLFile *file ) = 0;
-    virtual void                    DestroyXML( CXMLNode *root ) = 0;
     virtual void                    SaveXML( CXMLNode *root ) = 0;
+    void                            DestroyXML( CXMLFile *file );
+    void                            DestroyXML( CXMLNode *root );
     unsigned long                   GetXMLFileCount() const                  { return m_XMLFiles.size(); };
-    unsigned long                   GetTimerCount() const                  { return m_pLuaTimerManager ? m_pLuaTimerManager->GetTimerCount() : 0; };
+    unsigned long                   GetTimerCount() const                  { return m_timers.GetTimerCount(); };
 
-    void                            InitVM();
-    const SString&                  GetFunctionTag( int ref );
+    const SString&                  GetFunctionTag( int ref ) const;
 
 private:
     void                            InitSecurity();
 
+protected:
+    void                            InitVM( int structure, int meta );
+
     std::string                     m_name;
-    int                             m_iOwner;
+    int                             m_global;
+    int                             m_structure;
+    int                             m_meta;
 
     lua_State*                      m_lua;
-    class LuaManager*               m_system;
-    LuaTimerManager*               m_pLuaTimerManager;
+    class LuaManager&               m_system;
+    LuaTimerManager                 m_timers;
 
-    bool                            m_bBeingDeleted; // prevent it being deleted twice
-
-    unsigned long                   m_ulFunctionEnterTime;
-
-    class CResource*                m_pResource;
+    unsigned long                   m_functionEnter;
 
     std::list <CXMLFile*>           m_XMLFiles;
 public:
-    std::map <const void*, CRefInfo>    m_CallbackTable;
-    std::map <int, SString>             m_FunctionTagMap;
+    std::map <const void*, CRefInfo>    m_refStore;
+    std::map <int, SString>             m_tagStore;
 };
 
 #endif //_BASE_LUA_MAIN_

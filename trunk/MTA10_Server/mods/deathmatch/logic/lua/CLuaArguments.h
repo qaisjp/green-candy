@@ -16,11 +16,6 @@
 #ifndef __CLUAARGUMENTS_H
 #define __CLUAARGUMENTS_H
 
-extern "C"
-{
-    #include "lua.h"
-}
-
 #include "CLuaArgument.h"
 #include <vector>
 #include "../common/CBitStream.h"

@@ -115,8 +115,10 @@ void CScriptDebugging::SetHTMLLogLevel( unsigned int level )
     m_htmlLogLevel = level;
 }
 
-void CScriptDebugging::NotifySystem( unsigned int level, lua_State *lua, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b )
+void CScriptDebugging::NotifySystem( unsigned int level, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b )
 {
+    const CLuaMain *context = g_pGame->GetLuaManager()->GetStatus();
+
     if ( m_triggerCall )
     {
         m_triggerCall = true;
@@ -147,16 +149,13 @@ void CScriptDebugging::NotifySystem( unsigned int level, lua_State *lua, const f
     // Log to console
     CLogger::LogPrintf( "%s\n", msg.c_str() );
 
-    if ( m_htmlLogLevel >= level && lua )
+    if ( m_htmlLogLevel >= level && context )
     {
-        if ( CLuaMain *luaMain = g_pGame->GetLuaManager()->GetVirtualMachine( lua ) )
+        if ( CResourceFile *file = context->GetResourceFile() && file->GetType() == CResourceHTMLItem::RESOURCE_FILE_TYPE_HTML )
         {
-            if ( CResourceFile *file = pLuaMain->GetResourceFile() && file->GetType() == CResourceHTMLItem::RESOURCE_FILE_TYPE_HTML )
-            {
-                CResourceHTMLItem *html = (CResourceHTMLItem*)file;
-                html->AppendToPageBuffer( msg.c_str(), msg.size() );
-                html->AppendToPageBuffer( "<br/>" );
-            }
+            CResourceHTMLItem *html = (CResourceHTMLItem*)file;
+            html->AppendToPageBuffer( msg.c_str(), msg.size() );
+            html->AppendToPageBuffer( "<br/>" );
         }
     }
 

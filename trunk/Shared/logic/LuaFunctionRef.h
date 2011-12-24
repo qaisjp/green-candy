@@ -19,6 +19,7 @@
 
 class LuaFunctionRef
 {
+    friend class LuaMain;
 public:
                         LuaFunctionRef();
                         LuaFunctionRef( LuaMain *lua, int ref, const void *call );

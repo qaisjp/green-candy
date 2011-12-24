@@ -23,5 +23,6 @@
 #include "LuaArgument.h"
 #include "LuaArguments.h"
 #include "LuaMain.h"
+#include "LuaManager.h"
 
 #endif //_SHARED_LOGIC_INCLUDE_

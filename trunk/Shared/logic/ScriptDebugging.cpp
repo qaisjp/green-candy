@@ -26,7 +26,7 @@ ScriptDebugging::ScriptDebugging()
     m_file = NULL;
 }
 
-void ScriptDebugging::LogCustom( lua_State *lua, unsigned char red, unsigned char green, unsigned char blue, const char *fmt, ... )
+void ScriptDebugging::LogCustom( unsigned char red, unsigned char green, unsigned char blue, const char *fmt, ... )
 {
     char szBuffer[MAX_STRING_LENGTH];
     va_list marker;
@@ -34,10 +34,10 @@ void ScriptDebugging::LogCustom( lua_State *lua, unsigned char red, unsigned cha
     VSNPRINTF( szBuffer, MAX_STRING_LENGTH, fmt, marker );
     va_end( marker );
 
-    LogString( "", lua, szBuffer, 0, red, green, blue );
+    LogString( "", szBuffer, 0, red, green, blue );
 }
 
-void ScriptDebugging::LogInformation( lua_State *lua, const char *fmt, ... )
+void ScriptDebugging::LogInformation( const char *fmt, ... )
 {
     char szBuffer[MAX_STRING_LENGTH];
     va_list marker;
@@ -45,10 +45,10 @@ void ScriptDebugging::LogInformation( lua_State *lua, const char *fmt, ... )
     VSNPRINTF( szBuffer, MAX_STRING_LENGTH, fmt, marker );
     va_end( marker );
 
-    LogString( "INFO: ", lua, szBuffer, 3 );
+    LogString( "INFO: ", szBuffer, 3 );
 }
 
-void ScriptDebugging::LogWarning( lua_State *lua, const char *fmt, ... )
+void ScriptDebugging::LogWarning( const char *fmt, ... )
 {
     char szBuffer[MAX_STRING_LENGTH];
     va_list marker;
@@ -56,10 +56,10 @@ void ScriptDebugging::LogWarning( lua_State *lua, const char *fmt, ... )
     VSNPRINTF( szBuffer, MAX_STRING_LENGTH, fmt, marker );
     va_end( marker );
 
-    LogString( "WARNING: ", lua, szBuffer, 2 );
+    LogString( "WARNING: ", szBuffer, 2 );
 }
 
-void ScriptDebugging::LogError( lua_State *lua, const char *fmt, ... )
+void ScriptDebugging::LogError( const char *fmt, ... )
 {
     // Compose the formatted message
     char szBuffer[MAX_STRING_LENGTH];
@@ -69,30 +69,30 @@ void ScriptDebugging::LogError( lua_State *lua, const char *fmt, ... )
     va_end( marker );
 
     // Log it
-    LogString( "ERROR: ", lua, szBuffer, 1 );
+    LogString( "ERROR: ", szBuffer, 1 );
 }
 
-void ScriptDebugging::LogBadPointer( lua_State *lua, const char *func, const char *argType, unsigned int argID )
+void ScriptDebugging::LogBadPointer( const char *func, const char *argType, unsigned int argID )
 {
-    LogWarning( lua, "Bad '%s' pointer @ '%s'(%u)", argType, func, argID );
+    LogWarning( "Bad '%s' pointer @ '%s'(%u)", argType, func, argID );
 }
 
-void ScriptDebugging::LogBadType( lua_State *lua, const char *func )
+void ScriptDebugging::LogBadType( const char *func )
 {
-    LogWarning( lua, "Bad argument @ '%s'", func );
+    LogWarning( "Bad argument @ '%s'", func );
 }
 
-void ScriptDebugging::LogCustom( lua_State *lua, const char *msg )
+void ScriptDebugging::LogCustom( const char *msg )
 {
-    LogWarning( lua, "%s", msg );
+    LogWarning( "%s", msg );
 }
 
-void ScriptDebugging::LogBadLevel( lua_State *lua, const char *func, unsigned int level )
+void ScriptDebugging::LogBadLevel( const char *func, unsigned int level )
 {
-    LogWarning( lua, "Requires level '%d' @ '%s", level, func );
+    LogWarning( "Requires level '%d' @ '%s", level, func );
 }
 
-void ScriptDebugging::LogString( const char *pre, lua_State *lua, const char *msg, unsigned int minLevel, unsigned char red, unsigned char green, unsigned char blue )
+void ScriptDebugging::LogString( const char *pre, const char *msg, unsigned int minLevel, unsigned char red, unsigned char green, unsigned char blue )
 {
     SString strText;
     lua_Debug debugInfo;

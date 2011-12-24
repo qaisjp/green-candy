@@ -18,11 +18,6 @@
 #ifndef __CLUAARGUMENTS_H
 #define __CLUAARGUMENTS_H
 
-extern "C"
-{
-    #include "lua.h"
-}
-
 #include <net/bitstream.h>
 #include "CLuaArgument.h"
 #include <vector>

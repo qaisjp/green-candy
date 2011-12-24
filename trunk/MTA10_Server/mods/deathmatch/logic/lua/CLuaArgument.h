@@ -15,10 +15,6 @@
 #ifndef __CLUAARGUMENT_H
 #define __CLUAARGUMENT_H
 
-extern "C"
-{
-    #include "lua.h"
-}
 #include "../common/CBitStream.h"
 #include "json.h"
 

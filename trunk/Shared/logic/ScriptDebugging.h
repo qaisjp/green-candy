@@ -19,22 +19,22 @@ class ScriptDebugging
 {
 public:
                                     ScriptDebugging                 ();
-    inline                          ~ScriptDebugging                ();
+                                    ~ScriptDebugging                ();
 
-    void                            LogCustom                       ( lua_State *lua, unsigned char red, unsigned char green, unsigned char blue, const char *fmt, ... );
-    void                            LogInformation                  ( lua_State *lua, const char *fmt, ... );
-    void                            LogWarning                      ( lua_State *lua, const char *fmt, ... );
-    void                            LogError                        ( lua_State *lua, const char *fmt, ... );
-    void                            LogBadPointer                   ( lua_State *lua, const char *func, const char *argType, unsigned int argID );
-    void                            LogBadType                      ( lua_State *lua, const char *func );
-    void                            LogBadLevel                     ( lua_State *lua, const char *func, unsigned int level );
+    void                            LogCustom                       ( unsigned char red, unsigned char green, unsigned char blue, const char *fmt, ... );
+    void                            LogInformation                  ( const char *fmt, ... );
+    void                            LogWarning                      ( const char *fmt, ... );
+    void                            LogError                        ( const char *fmt, ... );
+    void                            LogBadPointer                   ( const char *func, const char *argType, unsigned int argID );
+    void                            LogBadType                      ( const char *func );
+    void                            LogBadLevel                     ( const char *func, unsigned int level );
 
 protected:
     // Inheritance requirements
-    virtual void                    NotifySystem                    ( unsigned int level, lua_State *lua, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b ) = 0;
+    virtual void                    NotifySystem                    ( unsigned int level, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b ) = 0;
     virtual void                    PathRelative                    ( const char *in, filePath& out ) = 0;
 
-    void                            LogString                       ( const char *pre, lua_State *lua, const char *msg, unsigned int minLevel, unsigned char red = 255, unsigned char green = 255, unsigned char blue = 255 );
+    void                            LogString                       ( const char *pre, const char *msg, unsigned int minLevel, unsigned char red = 255, unsigned char green = 255, unsigned char blue = 255 );
     void                            PrintLog                        ( const char *msg );
 
     CFile*                          m_file;

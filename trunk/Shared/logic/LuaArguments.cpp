@@ -115,7 +115,7 @@ void LuaArguments::ReadTable( lua_State* luaVM, int indexStart, std::map <const 
 
 void LuaArguments::ReadArgument( lua_State* luaVM, int index )
 {
-    m_args.push_back( new CLuaArgument( luaVM, index ) );
+    m_args.push_back( new LuaArgument( luaVM, index ) );
 }
 
 void LuaArguments::PushArguments( lua_State* luaVM ) const

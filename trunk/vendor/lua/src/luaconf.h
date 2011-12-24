@@ -605,8 +605,30 @@ union luai_Cast { double l_d; long l_l; };
 */
 #if defined(__cplusplus)
 /* C++ exceptions */
-#define LUAI_THROW(L,c)	throw(c)
-#define LUAI_TRY(L,c,a)	try { a } catch(...) \
+#include <exception>
+
+// Added special exception management (The_GTA)
+class lua_exception : public std::exception
+{
+public:
+    lua_exception( unsigned int status, const char *msg ) : std::exception( msg )
+    {
+        m_status = status;
+    }
+
+    unsigned int status()
+    {
+        return m_status;
+    }
+
+private:
+    unsigned int m_status;
+};
+
+#define LUAI_THROW(L,c)	throw lua_exception( (c)->status, "internal lua error" )
+#define LUAI_TRY(L,c,a)	try { a } catch( lua_exception& e ) \
+    { lua_pushstring( L, e.what() ); (c)->status = e.status(); } \
+    catch(...) \
 	{ if ((c)->status == 0) (c)->status = -1; }
 #define luai_jmpbuf	int  /* dummy variable */
 

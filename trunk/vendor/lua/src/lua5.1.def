@@ -52,7 +52,6 @@ EXPORTS
   lua_touserdata
   lua_close
   lua_getmainstate
-  lua_registerPreCallHook
   lua_call
   lua_concat
   lua_createtable
