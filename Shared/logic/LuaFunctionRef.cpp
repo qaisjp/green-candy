@@ -32,23 +32,23 @@ LuaFunctionRef::LuaFunctionRef( const LuaFunctionRef& other )
     m_ref = other.m_ref;
     m_call = other.m_call;
 
-    m_lua->ReferenceFunction( m_ref, m_call );
+    m_lua->Reference( *this );
 }
 
 LuaFunctionRef::~LuaFunctionRef()
 {
-    m_lua->DerefenceFunction( m_ref, m_call );
+    m_lua->Dereference( *this );
 }
 
 LuaFunctionRef& LuaFunctionRef::operator = ( const LuaFunctionRef& other )
 {
-    m_lua->DerefenceFunction( m_ref, m_call );
+    m_lua->Dereference( *this );
 
     m_luaVM = other.m_luaVM;
     m_iFunction = other.m_iFunction;
     m_pFuncPtr = other.m_pFuncPtr;
 
-    m_lua->ReferenceFunction( m_ref, m_call );
+    m_lua->Reference( *this );
     return *this;
 }
 

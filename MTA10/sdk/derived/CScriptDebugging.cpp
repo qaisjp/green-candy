@@ -17,7 +17,7 @@ CScriptDebugging::CScriptDebugging()
     m_triggerCall = false;
 }
 
-void CScriptDebugging::NotifySystem( unsigned int level, lua_State *lua, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b )
+void CScriptDebugging::NotifySystem( unsigned int level, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b )
 {
     char r, g, b;
 

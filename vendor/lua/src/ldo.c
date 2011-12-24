@@ -30,13 +30,6 @@
 #include "lvm.h"
 #include "lzio.h"
 
-// MTA Specific
-lua_PreCallHook pPreCallHook = NULL;
-void lua_registerPreCallHook ( lua_PreCallHook f )
-{
-    pPreCallHook = f;
-}
-
 /*
 ** {======================================================
 ** Error-recovery functions
@@ -309,8 +302,6 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
   }
   else {  /* if is a C function, call it */
     CallInfo *ci;
-    // MTA Specific
-    int allowed = 1;
     int n = 0;
     luaD_checkstack(L, LUA_MINSTACK);  /* ensure minimum stack size */
     ci = inc_ci(L);  /* now `enter' new function */
@@ -322,11 +313,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     if (L->hookmask & LUA_MASKCALL)
       luaD_callhook(L, LUA_HOOKCALL, -1);
     lua_unlock(L);
-    // MTA Specific
-    if ( pPreCallHook )
-        allowed = pPreCallHook ( *curr_func(L)->c.f, L );
-    if ( allowed )
-        n = (*curr_func(L)->c.f)(L);  /* do the actual call */
+    n = (*curr_func(L)->c.f)(L);  /* do the actual call */
     lua_lock(L);
     if (n < 0)  /* yielding? */
       return PCRYIELD;
@@ -381,7 +368,11 @@ void luaD_call (lua_State *L, StkId func, int nResults) {
     if (L->nCcalls == LUAI_MAXCCALLS)
       luaG_runerror(L, "C stack overflow");
     else if (L->nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)))
-      luaD_throw(L, LUA_ERRERR);  /* error while handing stack error */
+#ifdef __cplusplus
+        throw lua_exception( LUA_ERRERR, "stack handling error" );
+#else
+        luaD_throw(L, LUA_ERRERR);  /* error while handing stack error */
+#endif
   }
   if (luaD_precall(L, func, nResults) == PCRLUA)  /* is a Lua function? */
     luaV_execute(L, 1);  /* call it */

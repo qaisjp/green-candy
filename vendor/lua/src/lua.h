@@ -52,12 +52,6 @@ typedef struct lua_State lua_State;
 typedef int (*lua_CFunction) (lua_State *L);
 
 /*
-** MTA Specific stuff written by Oli for pre C Function call hooking
-*/
-typedef int (*lua_PreCallHook) ( lua_CFunction f, lua_State* L );
-void lua_registerPreCallHook ( lua_PreCallHook f );
-
-/*
 ** functions that read/write blocks when loading/dumping Lua chunks
 */
 typedef const char * (*lua_Reader) (lua_State *L, void *ud, size_t *sz);

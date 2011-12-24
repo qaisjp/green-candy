@@ -25,28 +25,133 @@
 
 class LuaManager
 {
-    friend class LuaMain;
 public:
-                                    LuaManager( RegisteredCommands& commands, Events& events );
+                                    LuaManager( RegisteredCommands& commands, Events& events, ScriptDebugging& debug );
                                     ~LuaManager();
 
-    // Provide your own creation function
-    bool                            Remove( LuaMain *lua );
-    LuaMain*                        Get( lua_State *lua );
+    inline ScriptDebugging&         GetDebug()                  { return m_debug; }
+    inline int                      GetGlobalEnvironment()      { return LUA_GLOBALSINDEX; }
 
-    inline std::list <LuaMain*>::const_iterator IterBegin()     { return m_structures.begin (); };
-    inline std::list <LuaMain*>::const_iterator IterEnd()       { return m_structures.end (); };
+    // Security inheritances
+    virtual int                     AccessGlobal();
+    virtual int                     AccessGlobalTable();
+
+    // Current execution information
+    const LuaMain*                  GetStatus( int *line = NULL, std::string *src = NULL, std::string *proto_name = NULL );
+
+    void                            Throw( unsigned int id, const char *error );
+
+    // Provide your own creation function
+    void                            Init( LuaMain *lua );
+    LuaMain*                        Get( lua_State *lua );
+    bool                            Remove( LuaMain *lua );
+
+    inline std::list <LuaMain*>::const_iterator IterBegin()     { return m_structures.begin(); }
+    inline std::list <LuaMain*>::const_iterator IterEnd()       { return m_structures.end(); }
 
     void                            DoPulse();
+    void                            ResetInstructionCount();
+    void                            InstructionCountHook();
+
+private:
+    void                            InitSecurity();
 
 protected:
     void                            LoadCFunctions();
+    void                            CallStack( int args );
+    void                            CallStackVoid( int args );
+    LuaArguments                    CallStackResult( int args );
+
+    class env_status
+    {
+        inline void Update( int *line, std::string *src, std::string *proto_name )
+        {
+            lua_Debug info;
+
+            // Gather main information
+            if ( lua_getinfo( &m_lua, "nlS", &info ) )
+            {
+                if ( line )
+                    *line = info.currentline;
+
+                if ( src )
+                    *src = info.short_src;
+
+                if ( proto_name )
+                    *proto_name = info.name;
+            }
+            else if ( line )
+                *line = -1;
+        }
+
+    public:
+        env_status( const lua_State& lua, const LuaMain& context )
+        {
+            m_env = context;
+            m_frozen = false;
+            m_lua = lua;
+        }
+
+        const LuaMain&    Get( int *line, std::string *src, std::string *proto_name )
+        {
+            if ( !m_frozen )
+                Update( line, src, proto_name );
+            else
+            {
+                if ( line )
+                    *line = m_line;
+
+                if ( src )
+                    *src = m_src;
+
+                if ( proto_name )
+                    *proto_name = m_proto_name;
+            }
+
+            return m_env;
+        }
+
+        void    Finalize()
+        {
+            if ( m_frozen )
+                return;
+
+            Update( &m_line, &m_src, &m_proto_name );
+
+            m_frozen = true;
+        }
+
+        void    Resume()
+        {
+            m_frozen = false;
+        }
+    private:
+        int m_line;
+        std::string m_src;
+        std::string m_proto_name;
+        const LuaMain& m_env;
+
+        bool m_frozen;
+        lua_State& m_lua;
+    };
+
+    void                            PushStatus( const LuaMain& main );
+    const LuaMain*                  PopStatus( int *line = NULL, std::string *src = NULL, std::string *proto = NULL );
+    
+    std::vector <env_status>        m_envStack;
 
     lua_State*                      m_lua;
+    unsigned long                   m_functionEnter;
+    int                             m_access;
 
     class RegisteredCommands&       m_commands;
     class Events&                   m_events;
-    list <LuaMain*>                 m_structures;
+    ScriptDebugging&                m_debug;
+    std::list <LuaMain*>            m_structures;
 };
+
+// quick macros
+#define lua_getmanager( L ) ((LuaManager*)lua_rawgeti( L, LUA_REGISTRYINDEX, 1 ))
+#define lua_getcontext( L ) ((LuaMain*)lua_rawgeti( L, LUA_REGISTRYINDEX, 2 ))
 
 #endif //_BASE_LUA_MANAGER_

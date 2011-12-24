@@ -119,7 +119,7 @@ public:
     inline CResource *              GetResource             ( void ) { return m_pResource; }
 
     inline void                     SetResourceFile         ( class CResourceFile * resourceFile ) { m_pResourceFile = resourceFile; }
-    inline CResourceFile *          GetResourceFile         ( void ) { return m_pResourceFile; }
+    inline CResourceFile *          GetResourceFile         ( void ) const { return m_pResourceFile; }
 
     void                            RegisterHTMLDFunctions  ( void );
 

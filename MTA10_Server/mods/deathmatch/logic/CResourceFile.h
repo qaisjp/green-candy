@@ -59,7 +59,7 @@ public:
     virtual bool                Start() = 0;
     virtual bool                Stop() = 0;
 
-    inline eResourceType        GetType() { return m_type; }
+    inline eResourceType        GetType() const { return m_type; }
     inline const char *         GetName() { return m_name.c_str(); }
 
     inline CChecksum            GetLastChecksum() { return m_checksum; }
