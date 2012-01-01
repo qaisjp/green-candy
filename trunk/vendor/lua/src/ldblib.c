@@ -175,7 +175,7 @@ static int db_setlocal (lua_State *L) {
 }
 
 
-static int auxupvalue (lua_State *L, int get) {
+static inline int auxupvalue (lua_State *L, int get) {
   const char *name;
   int n = luaL_checkint(L, 2);
   luaL_checktype(L, 1, LUA_TFUNCTION);

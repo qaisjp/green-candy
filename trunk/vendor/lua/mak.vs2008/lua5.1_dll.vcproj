@@ -300,6 +300,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lclass.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lclasslib.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\lcode.c"
 				>
 			</File>
@@ -421,6 +429,14 @@
 			</File>
 			<File
 				RelativePath="..\src\lauxlib.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lclass.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lclasslib.h"
 				>
 			</File>
 			<File

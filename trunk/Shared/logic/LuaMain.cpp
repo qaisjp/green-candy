@@ -27,7 +27,6 @@ LuaMain::LuaMain( LuaManager& manager )
 LuaMain::~LuaMain()
 {
     // TODO: Kill hyperstructure out of management VM
-    luaL_unref( m_lua, LUA_REGISTRYINDEX, m_meta );
 }
 
 // Custom Lua stack argument->reference routine
@@ -44,7 +43,7 @@ CLuaFunctionRef LuaMain::CreateReference( int stack )
 
     // Get a lua ref
     lua_settop( m_lua, stack );
-    int ref = lua_ref( m_lua, 1 );
+    int ref = luaL_ref( m_lua, LUA_REGISTRYINDEX );
 
     // Save ref info
     CRefInfo info;
@@ -88,34 +87,6 @@ void LuaMain::RegisterFunction( const char *name, lua_CFunction *proto )
     lua_setfield( m_lua, m_structure, name );
 }
 
-void LuaMain::CallStack( int args )
-{
-    m_system.PushStatus( *this );
-
-    m_system.CallStack( args );
-
-    m_system.PopStatus();
-}
-
-void LuaMain::CallStackVoid( int args )
-{
-    m_system.PushStatus( *this );
-    
-    m_system.CallStackVoid( args );
-
-    m_system.PopStatus();
-}
-
-LuaArguments LuaMain::CallStackResult( int args )
-{
-    m_system.PushStatus( *this );
-
-    LuaArguments args = m_system.CallStackResult( args );
-
-    m_system.PopStatus();
-    return args;
-}
-
 void LuaMain::InitSecurity()
 {
     // TODO: Safe implementation of these routines
@@ -134,11 +105,10 @@ void LuaMain::InitVM( int structure, int meta )
     m_structure = structure;
     m_meta = meta;
 
-    luaL_ref( m_lua, meta );
-#if 0
     // Initialize security restrictions
     InitSecurity();
 
+#if 0
     // Register module functions
     CLuaCFunctions::RegisterFunctionsWithVM ( m_luaVM );
 

@@ -24,6 +24,11 @@ struct CRefInfo
 class LuaMain
 {
     friend class LuaManager;
+
+    // Manager only
+                                    LuaMain( class LuaManager& manager );
+    virtual                         ~LuaMain();
+
 public:
     enum
     {
@@ -31,18 +36,15 @@ public:
         OWNER_MAP
     };
 
-                                    LuaMain( class LuaManager& manager );
-    virtual                         ~LuaMain();
-
     LuaFunctionRef                  CreateReference( int stack );
     void                            Reference( const LuaFunctionRef& ref );
     void                            Dereference( const LuaFunctionRef& ref );
 
     virtual void                    RegisterFunction( const char *name, lua_CFunction *proto );
 
-    void                            CallStack( int args );
-    void                            CallStackVoid( int args );
-    LuaArguments                    CallStackResult( int args );
+    inline void                     CallStack( int args )           { m_system.AcquireContext( *this ).CallStack( args ); }
+    inline void                     CallStackVoid( int args );      { m_system.AcquireContext( *this ).CallStackVoid( args ); }
+    inline LuaArguments             CallStackResult( int args );    { return m_system.AcquireContext( *this ).CallStackResult( args ); }
     //TODO: Function reference calling
 
     bool                            LoadScriptFromBuffer( const char *buf, size_t size, const char *path, bool bUTF8 );

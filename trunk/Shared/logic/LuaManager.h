@@ -23,8 +23,15 @@
 
 #include "LuaCFunctions.h"
 
+enum eLuaTypeEx
+{
+    LUA_TGLOBALPROXY = LUA_TTHREAD + 1,
+    LUA_TELEMENT
+};
+
 class LuaManager
 {
+    friend class LuaMain;
 public:
                                     LuaManager( RegisteredCommands& commands, Events& events, ScriptDebugging& debug );
                                     ~LuaManager();
@@ -45,6 +52,19 @@ public:
     void                            Init( LuaMain *lua );
     LuaMain*                        Get( lua_State *lua );
     bool                            Remove( LuaMain *lua );
+
+    void                            PushThread( lua_State *thread )     { m_threadStack.push_back( thread ); }
+    lua_State*                      GetThread()                         { return m_threadStack.empty() ? m_lua : *m_threadStack.end(); }
+    lua_State*                      PopThread()
+    {
+        if ( m_threadStack.empty() )
+            return NULL;
+
+        lua_State *thread = *m_threadStack.end();
+
+        m_threadStack.pop_back();
+        return thread;
+    }
 
     inline std::list <LuaMain*>::const_iterator IterBegin()     { return m_structures.begin(); }
     inline std::list <LuaMain*>::const_iterator IterEnd()       { return m_structures.end(); }
@@ -69,7 +89,7 @@ protected:
             lua_Debug info;
 
             // Gather main information
-            if ( lua_getinfo( &m_lua, "nlS", &info ) )
+            if ( lua_getstack( &m_lua, 1, &info ) && lua_getinfo( &m_lua, "nlS", &info ) )
             {
                 if ( line )
                     *line = info.currentline;
@@ -135,14 +155,56 @@ protected:
         lua_State& m_lua;
     };
 
+    // Inline stack utility
+    class context
+    {
+        friend class LuaManager;
+
+        LuaContext( LuaMain& context, LuaManager& system )
+        {
+            m_context = context;
+            m_system = system;
+
+            system.PushStatus( context );
+        }
+
+        LuaMain& m_context;
+        LuaManager& m_system;
+
+    public:
+        ~LuaContext()
+        {
+            m_system.PopStatus();
+        }
+
+        inline void CallStack( int args )
+        {
+            m_system.CallStack( args );
+        }
+
+        inline void CallStackVoid( int args )
+        {
+            m_system.CallStackVoid( args );
+        }
+
+        inline LuaArguments CallStackResult( int args )
+        {
+            return m_system.CallStackResult( args );
+        }
+    };
+
+    friend class context;
+
+    inline context                  AcquireContext( LuaMain& env )  { return context( env, *this ); }
     void                            PushStatus( const LuaMain& main );
     const LuaMain*                  PopStatus( int *line = NULL, std::string *src = NULL, std::string *proto = NULL );
     
-    std::vector <env_status>        m_envStack;
+    std::list <env_status>          m_envStack;
 
     lua_State*                      m_lua;
     unsigned long                   m_functionEnter;
-    int                             m_access;
+
+    std::list <lua_State*>          m_threadStack;
 
     class RegisteredCommands&       m_commands;
     class Events&                   m_events;

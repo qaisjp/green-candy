@@ -99,6 +99,7 @@ typedef struct lua_TValue {
 #define hvalue(o)	check_exp(ttistable(o), &(o)->value.gc->h)
 #define bvalue(o)	check_exp(ttisboolean(o), (o)->value.b)
 #define thvalue(o)	check_exp(ttisthread(o), &(o)->value.gc->th)
+#define mvalue(o)   check_exp(ttismeta(o), &(o)->value.gc->m)
 
 #define l_isfalse(o)	(ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0))
 
@@ -155,6 +156,10 @@ typedef struct lua_TValue {
     i_o->value.gc=cast(GCObject *, (x)); i_o->tt=LUA_TPROTO; \
     checkliveness(G(L),i_o); }
 
+#define setjvalue(L,obj,x) \
+  { TValue *i_o=(obj); \
+    i_o->value.gc=cast(GCObject *, (x)); i_o->tt=LUA_TCLASS; \
+    checkliveness(G(L),i_o); }
 
 
 
@@ -347,6 +352,14 @@ typedef struct Table {
   int sizearray;  /* size of `array' array */
 } Table;
 
+
+typedef struct Class
+{
+    CommonHeader;
+    Table *env;
+    struct Class *super;
+    GCObject *gclist;
+} Class;
 
 
 /*

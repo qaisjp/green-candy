@@ -1708,6 +1708,30 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaArgument.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaArguments.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionRef.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaMain.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaManager.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaTimer.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\ScriptDebugging.cpp"
 						>
 					</File>
@@ -2618,6 +2642,34 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaArgument.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaArguments.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaCommon.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionRef.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaMain.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaManager.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaTimer.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\ScriptDebugging.h"
 						>
 					</File>
@@ -2632,6 +2684,10 @@
 				>
 				<File
 					RelativePath="..\..\sdk\derived\CLogger.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\sdk\derived\CLuaManager.h"
 					>
 				</File>
 				<File
