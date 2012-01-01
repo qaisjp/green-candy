@@ -7,6 +7,9 @@
 class Account
 {
 	friend class AccountManager;
+
+								Account( const std::string& name, const std::string& password );
+								~Account();
 public:
 	const std::string&			GetName();
 
@@ -23,7 +26,7 @@ public:
 								AccountManager();
 								~AccountManager();
 
-	Account*					CreateAccount( const std::string& name, const std::string& password );
+	Account&					CreateAccount( const std::string& name, const std::string& password );
 
 private:
 	typedef std::list <Account> accountList_t;
