@@ -55,7 +55,6 @@ typedef struct CallInfo {
 } CallInfo;
 
 
-
 #define curr_func(L)	(clvalue(L->ci->func))
 #define ci_func(ci)	(clvalue((ci)->func))
 #define f_isLua(ci)	(!ci_func(ci)->c.isC)
@@ -91,6 +90,7 @@ typedef struct global_State {
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
   struct Table *mt[NUM_TAGS];  /* metatables for basic types */
   TString *tmname[TM_N];  /* array with tag-method names */
+  lua_CFunction events[LUA_NUM_EVENTS];
 } global_State;
 
 
@@ -139,6 +139,7 @@ union GCObject {
   union Udata u;
   union Closure cl;
   struct Table h;
+  struct Class c;
   struct Proto p;
   struct UpVal uv;
   struct lua_State th;  /* thread */
@@ -152,6 +153,7 @@ union GCObject {
 #define gco2u(o)	(&rawgco2u(o)->uv)
 #define gco2cl(o)	check_exp((o)->gch.tt == LUA_TFUNCTION, &((o)->cl))
 #define gco2h(o)	check_exp((o)->gch.tt == LUA_TTABLE, &((o)->h))
+#define gco2j(o)    check_exp((o)->gch.tt == LUA_TCLASS, &((o)->c))
 #define gco2p(o)	check_exp((o)->gch.tt == LUA_TPROTO, &((o)->p))
 #define gco2uv(o)	check_exp((o)->gch.tt == LUA_TUPVAL, &((o)->uv))
 #define ngcotouv(o) \

@@ -25,12 +25,6 @@
 
 using std::list;
 
-static int DummyPreCall ( lua_CFunction f, lua_State* L )
-{
-    // Always allow functions
-    return true;
-}
-
 CLuaManager::CLuaManager ( CClientGame* pClientGame )
 {
     m_pEvents = pClientGame->GetEvents ();

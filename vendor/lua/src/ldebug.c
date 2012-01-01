@@ -624,7 +624,11 @@ void luaG_errormsg (lua_State *L) {
     incr_top(L);
     luaD_call(L, L->top - 2, 1);  /* call it */
   }
+#ifdef __cplusplus
+    throw lua_exception( LUA_ERRRUN, lua_tostring( L, -1 ) );
+#else
   luaD_throw(L, LUA_ERRRUN);
+#endif
 }
 
 
@@ -633,10 +637,6 @@ void luaG_runerror (lua_State *L, const char *fmt, ...) {
   va_start(argp, fmt);
   addinfo(L, luaO_pushvfstring(L, fmt, argp));
   va_end(argp);
-#ifdef __cplusplus
-    throw lua_exception( LUA_ERRRUN, lua_tostring( L, -1 ) );
-#else
   luaG_errormsg(L);
-#endif
 }
 

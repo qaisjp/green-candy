@@ -423,6 +423,8 @@ LUA_API int lua_resume (lua_State *L, int nargs) {
   if (L->nCcalls >= LUAI_MAXCCALLS)
     return resume_error(L, "C stack overflow");
   luai_userstateresume(L, nargs);
+  lua_pushthreadex( G(L)->mainthread, L );
+  lua_callevent( G(L)->mainthread, LUA_EVENT_THREAD_CONTEXT_PUSH, 1 );
   lua_assert(L->errfunc == 0);
   L->baseCcalls = ++L->nCcalls;
   status = luaD_rawrunprotected(L, resume, L->top - nargs);
@@ -448,6 +450,7 @@ LUA_API int lua_yield (lua_State *L, int nresults) {
     luaG_runerror(L, "attempt to yield across metamethod/C-call boundary");
   L->base = L->top - nresults;  /* protect stack slots below */
   L->status = LUA_YIELD;
+  lua_callevent( G(L)->mainthread, LUA_EVENT_THREAD_CONTEXT_POP, 0 );
   lua_unlock(L);
   return -1;
 }

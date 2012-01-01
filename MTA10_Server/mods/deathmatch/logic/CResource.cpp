@@ -2413,8 +2413,8 @@ ResponseCode CResource::HandleRequestCall ( HttpRequest * ipoHttpRequest, HttpRe
                                         }
                                         else
                                         {
-                                            g_pGame->GetScriptDebugging()->LogError ( NULL, "HTTP Get - Invalid element specified." );
-                                            luaArgs.PushNil ();
+                                            g_pGame->GetScriptDebugging()->LogError( "HTTP Get - Invalid element specified." );
+                                            luaArgs.PushNil();
                                         }
                                         break;
                                     }
@@ -2427,8 +2427,8 @@ ResponseCode CResource::HandleRequestCall ( HttpRequest * ipoHttpRequest, HttpRe
                                         }
                                         else
                                         {
-                                            g_pGame->GetScriptDebugging()->LogError ( NULL, "HTTP Get - Invalid resource specified." );
-                                            luaArgs.PushNil ();
+                                            g_pGame->GetScriptDebugging()->LogError("HTTP Get - Invalid resource specified." );
+                                            luaArgs.PushNil();
                                         }
                                         break;
                                     }

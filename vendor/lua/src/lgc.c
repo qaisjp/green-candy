@@ -20,6 +20,7 @@
 #include "lstate.h"
 #include "lstring.h"
 #include "ltable.h"
+#include "lclass.h"
 #include "ltm.h"
 
 
@@ -66,49 +67,64 @@ static void removeentry (Node *n) {
 }
 
 
-static void reallymarkobject (global_State *g, GCObject *o) {
-  lua_assert(iswhite(o) && !isdead(g, o));
-  white2gray(o);
-  switch (o->gch.tt) {
-    case LUA_TSTRING: {
-      return;
+static void reallymarkobject (global_State *g, GCObject *o)
+{
+    lua_assert(iswhite(o) && !isdead(g, o));
+    white2gray(o);
+
+    switch (o->gch.tt)
+    {
+    case LUA_TSTRING:
+        return;
+    case LUA_TUSERDATA:
+        {
+            Table *mt = gco2u(o)->metatable;
+            gray2black(o);  /* udata are never gray */
+            if (mt) markobject(g, mt);
+                markobject(g, gco2u(o)->env);
+        }
+        return;
+    case LUA_TUPVAL:
+        {
+            UpVal *uv = gco2uv(o);
+            markvalue(g, uv->v);
+            if (uv->v == &uv->u.value)  /* closed? */
+                gray2black(o);  /* open upvalues are never black */
+        }
+        return;
+    case LUA_TFUNCTION:
+        {
+            gco2cl(o)->c.gclist = g->gray;
+            g->gray = o;
+        }
+        return;
+    case LUA_TTABLE:
+        {
+            gco2h(o)->gclist = g->gray;
+            g->gray = o;
+        }
+        return;
+    case LUA_TCLASS:
+        {
+            gco2j(o)->gclist = g->gray;
+            g->gray = o;
+        }
+        return;
+    case LUA_TTHREAD:
+        {
+            gco2th(o)->gclist = g->gray;
+            g->gray = o;
+        }
+        return;
+    case LUA_TPROTO:
+        {
+            gco2p(o)->gclist = g->gray;
+            g->gray = o;
+        }
+        return;
     }
-    case LUA_TUSERDATA: {
-      Table *mt = gco2u(o)->metatable;
-      gray2black(o);  /* udata are never gray */
-      if (mt) markobject(g, mt);
-      markobject(g, gco2u(o)->env);
-      return;
-    }
-    case LUA_TUPVAL: {
-      UpVal *uv = gco2uv(o);
-      markvalue(g, uv->v);
-      if (uv->v == &uv->u.value)  /* closed? */
-        gray2black(o);  /* open upvalues are never black */
-      return;
-    }
-    case LUA_TFUNCTION: {
-      gco2cl(o)->c.gclist = g->gray;
-      g->gray = o;
-      break;
-    }
-    case LUA_TTABLE: {
-      gco2h(o)->gclist = g->gray;
-      g->gray = o;
-      break;
-    }
-    case LUA_TTHREAD: {
-      gco2th(o)->gclist = g->gray;
-      g->gray = o;
-      break;
-    }
-    case LUA_TPROTO: {
-      gco2p(o)->gclist = g->gray;
-      g->gray = o;
-      break;
-    }
-    default: lua_assert(0);
-  }
+
+    lua_assert( 0 );
 }
 
 
@@ -196,6 +212,13 @@ static int traversetable (global_State *g, Table *h) {
 }
 
 
+inline static void traverseclass( global_State *g, Class *c )
+{
+    markobject( g, c->env );
+    traverseclass( g, c->super );   // WARNING: Security inheritance required, deadlock?
+}
+
+
 /*
 ** All marks are conditional because a GC may happen while the
 ** prototype is still being created
@@ -274,49 +297,61 @@ static void traversestack (global_State *g, lua_State *l) {
 ** traverse one gray object, turning it to black.
 ** Returns `quantity' traversed.
 */
-static l_mem propagatemark (global_State *g) {
-  GCObject *o = g->gray;
-  lua_assert(isgray(o));
-  gray2black(o);
-  switch (o->gch.tt) {
+static l_mem propagatemark (global_State *g)
+{
+    GCObject *o = g->gray;
+    lua_assert(isgray(o));
+    gray2black(o);
+
+    switch (o->gch.tt)
+    {
     case LUA_TTABLE: {
-      Table *h = gco2h(o);
-      g->gray = h->gclist;
-      if (traversetable(g, h))  /* table is weak? */
-        black2gray(o);  /* keep it gray */
-      return sizeof(Table) + sizeof(TValue) * h->sizearray +
-                             sizeof(Node) * sizenode(h);
+        Table *h = gco2h(o);
+        g->gray = h->gclist;
+        if (traversetable(g, h))  /* table is weak? */
+            black2gray(o);  /* keep it gray */
+        return sizeof(Table) + sizeof(TValue) * h->sizearray +
+            sizeof(Node) * sizenode(h);
     }
+    case LUA_TCLASS:
+        {
+            Class *c = gco2j(o);
+            g->gray = c->gclist;
+            traverseclass( g, c );
+            return sizeof(Class);
+        }
     case LUA_TFUNCTION: {
-      Closure *cl = gco2cl(o);
-      g->gray = cl->c.gclist;
-      traverseclosure(g, cl);
-      return (cl->c.isC) ? sizeCclosure(cl->c.nupvalues) :
-                           sizeLclosure(cl->l.nupvalues);
+        Closure *cl = gco2cl(o);
+        g->gray = cl->c.gclist;
+        traverseclosure(g, cl);
+        return (cl->c.isC) ? sizeCclosure(cl->c.nupvalues) :
+            sizeLclosure(cl->l.nupvalues);
     }
     case LUA_TTHREAD: {
-      lua_State *th = gco2th(o);
-      g->gray = th->gclist;
-      th->gclist = g->grayagain;
-      g->grayagain = o;
-      black2gray(o);
-      traversestack(g, th);
-      return sizeof(lua_State) + sizeof(TValue) * th->stacksize +
-                                 sizeof(CallInfo) * th->size_ci;
+        lua_State *th = gco2th(o);
+        g->gray = th->gclist;
+        th->gclist = g->grayagain;
+        g->grayagain = o;
+        black2gray(o);
+        traversestack(g, th);
+        return sizeof(lua_State) + sizeof(TValue) * th->stacksize +
+            sizeof(CallInfo) * th->size_ci;
     }
     case LUA_TPROTO: {
-      Proto *p = gco2p(o);
-      g->gray = p->gclist;
-      traverseproto(g, p);
-      return sizeof(Proto) + sizeof(Instruction) * p->sizecode +
-                             sizeof(Proto *) * p->sizep +
-                             sizeof(TValue) * p->sizek + 
-                             sizeof(int) * p->sizelineinfo +
-                             sizeof(LocVar) * p->sizelocvars +
-                             sizeof(TString *) * p->sizeupvalues;
+        Proto *p = gco2p(o);
+        g->gray = p->gclist;
+        traverseproto(g, p);
+        return sizeof(Proto) + sizeof(Instruction) * p->sizecode +
+            sizeof(Proto *) * p->sizep +
+            sizeof(TValue) * p->sizek + 
+            sizeof(int) * p->sizelineinfo +
+            sizeof(LocVar) * p->sizelocvars +
+            sizeof(TString *) * p->sizeupvalues;
     }
-    default: lua_assert(0); return 0;
-  }
+    }
+
+    lua_assert( 0 );
+    return 0;
 }
 
 
@@ -375,36 +410,39 @@ static void cleartable (GCObject *l) {
 }
 
 
-static void freeobj (lua_State *L, GCObject *o) {
-  switch (o->gch.tt) {
-    case LUA_TPROTO: luaF_freeproto(L, gco2p(o)); break;
-    case LUA_TFUNCTION: luaF_freeclosure(L, gco2cl(o)); break;
-    case LUA_TUPVAL: luaF_freeupval(L, gco2uv(o)); break;
-    case LUA_TTABLE: luaH_free(L, gco2h(o)); break;
+static void freeobj (lua_State *L, GCObject *o)
+{
+    switch (o->gch.tt)
+    {
+    case LUA_TPROTO: luaF_freeproto(L, gco2p(o)); return;
+    case LUA_TFUNCTION: luaF_freeclosure(L, gco2cl(o)); return;
+    case LUA_TUPVAL: luaF_freeupval(L, gco2uv(o)); return;
+    case LUA_TTABLE: luaH_free(L, gco2h(o)); return;
+    case LUA_TCLASS:
+        luaJ_free( L, gco2j(o) );
+        return;
     case LUA_TTHREAD: {
-      lua_assert(gco2th(o) != L && gco2th(o) != G(L)->mainthread);
-      luaE_freethread(L, gco2th(o));
-      break;
+        lua_assert(gco2th(o) != L && gco2th(o) != G(L)->mainthread);
+        luaE_freethread(L, gco2th(o));
+        return;
     }
     case LUA_TSTRING: {
-      G(L)->strt.nuse--;
-      luaM_freemem(L, o, sizestring(gco2ts(o)));
-      break;
+        G(L)->strt.nuse--;
+        luaM_freemem(L, o, sizestring(gco2ts(o)));
+        return;
     }
     case LUA_TUSERDATA: {
-      luaM_freemem(L, o, sizeudata(gco2u(o)));
-      break;
+        luaM_freemem(L, o, sizeudata(gco2u(o)));
+        return;
     }
-    default: lua_assert(0);
-  }
+    }
+
+    lua_assert( 0 );
 }
-
-
 
 #define sweepwholelist(L,p)	sweeplist(L,p,MAX_LUMEM)
 
-
-static GCObject **sweeplist (lua_State *L, GCObject **p, lu_mem count) {
+static GCObject** sweeplist (lua_State *L, GCObject **p, lu_mem count) {
   GCObject *curr;
   global_State *g = G(L);
   int deadmask = otherwhite(g);
@@ -426,7 +464,6 @@ static GCObject **sweeplist (lua_State *L, GCObject **p, lu_mem count) {
   }
   return p;
 }
-
 
 static void checkSizes (lua_State *L) {
   global_State *g = G(L);

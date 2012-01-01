@@ -71,16 +71,40 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 #define LUA_TNONE		(-1)
 
 #define LUA_TNIL		0
-#define LUA_TBOOLEAN		1
+#define LUA_TBOOLEAN    1
 #define LUA_TLIGHTUSERDATA	2
 #define LUA_TNUMBER		3
 #define LUA_TSTRING		4
 #define LUA_TTABLE		5
-#define LUA_TFUNCTION		6
-#define LUA_TUSERDATA		7
-#define LUA_TTHREAD		8
+#define LUA_TFUNCTION   6
+#define LUA_TUSERDATA   7
+#define LUA_TCLASS      8
+#define LUA_TTHREAD		9
 
-
+/*
+* WARNING: if you change the order of this enumeration,
+* grep "ORDER TM"
+*/
+typedef enum {
+  TM_INDEX,
+  TM_NEWINDEX,
+  TM_GC,
+  TM_MODE,
+  TM_EQ,  /* last tag method with `fast' access */
+  TM_ADD,
+  TM_SUB,
+  TM_MUL,
+  TM_DIV,
+  TM_MOD,
+  TM_POW,
+  TM_UNM,
+  TM_LEN,
+  TM_LT,
+  TM_LE,
+  TM_CONCAT,
+  TM_CALL,
+  TM_N		/* number of elements in the enum */
+} TMS;
 
 /* minimum Lua stack available to a C function */
 #define LUA_MINSTACK	20
@@ -114,7 +138,19 @@ LUA_API lua_CFunction (lua_atpanic) (lua_State *L, lua_CFunction panicf);
 
 // MTA Specific functions.
 // ChrML: Added function to get the main state from a lua state that is a coroutine
-LUA_API lua_State* (lua_getmainstate) (lua_State* L);
+LUA_API lua_State* (lua_getmainstate) (lua_State *L);
+
+// The_GTA: Basic event routining to have control over lua
+enum eLuaEvent
+{
+    LUA_EVENT_THREAD_CONTEXT_PUSH,
+    LUA_EVENT_THREAD_CONTEXT_POP,
+    LUA_NUM_EVENTS
+};
+LUA_API void (lua_setevent) (lua_State *L, eLuaEvent evt, lua_CFunction *proto);
+
+// The_GTA: Lua extension to lock meta access
+LUA_API void (lua_setmetalock) (lua_State *L, int s, bool b);
 
 /*
 ** basic stack manipulation
@@ -172,6 +208,7 @@ LUA_API void  (lua_pushcclosure) (lua_State *L, lua_CFunction fn, int n);
 LUA_API void  (lua_pushboolean) (lua_State *L, int b);
 LUA_API void  (lua_pushlightuserdata) (lua_State *L, void *p);
 LUA_API int   (lua_pushthread) (lua_State *L);
+LUA_API int   (lua_pushthreadex) (lua_State *L, lua_State *thread);
 
 
 /*

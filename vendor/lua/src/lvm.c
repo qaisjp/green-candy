@@ -113,7 +113,7 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       Table *h = hvalue(t);
       const TValue *res = luaH_get(h, key); /* do a primitive get */
       if (!ttisnil(res) ||  /* result is no nil? */
-          (tm = fasttm(L, h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
+          (tm = fasttm( L, h->metatable, TM_INDEX )) == NULL) { /* or no TM? */
         setobj2s(L, val, res);
         return;
       }
@@ -140,7 +140,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
       Table *h = hvalue(t);
       TValue *oldval = luaH_set(L, h, key); /* do a primitive set */
       if (!ttisnil(oldval) ||  /* result is no nil? */
-          (tm = fasttm(L, h->metatable, TM_NEWINDEX)) == NULL) { /* or no TM? */
+          (tm = fasttm( L, h->metatable, TM_NEWINDEX )) == NULL) { /* or no TM? */
         setobj2t(L, oldval, val);
         luaC_barriert(L, h, val);
         return;
@@ -171,20 +171,18 @@ static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
   return 1;
 }
 
-
-static const TValue *get_compTM (lua_State *L, Table *mt1, Table *mt2,
-                                  TMS event) {
-  const TValue *tm1 = fasttm(L, mt1, event);
-  const TValue *tm2;
-  if (tm1 == NULL) return NULL;  /* no metamethod */
-  if (mt1 == mt2) return tm1;  /* same metatables => same metamethods */
-  tm2 = fasttm(L, mt2, event);
-  if (tm2 == NULL) return NULL;  /* no metamethod */
-  if (luaO_rawequalObj(tm1, tm2))  /* same metamethods? */
-    return tm1;
-  return NULL;
+static const TValue *get_compTM (lua_State *L, Table *mt1, Table *mt2, TMS event)
+{
+    const TValue *tm1 = fasttm(L, mt1, event);
+    const TValue *tm2;
+    if (tm1 == NULL) return NULL;  /* no metamethod */
+    if (mt1 == mt2) return tm1;  /* same metatables => same metamethods */
+    tm2 = fasttm(L, mt2, event);
+    if (tm2 == NULL) return NULL;  /* no metamethod */
+    if (luaO_rawequalObj(tm1, tm2))  /* same metamethods? */
+        return tm1;
+    return NULL;
 }
-
 
 static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
                          TMS event) {
@@ -764,3 +762,12 @@ void luaV_execute (lua_State *L, int nexeccalls) {
   }
 }
 
+LUAI_FUNC void lua_callevent( lua_State *lua, eLuaEvent evt, int nargs )
+{
+    if ( !G(lua)->events[evt] )
+        return;
+
+    lua_pushcclosure( lua, G(lua)->events[evt], 0 );
+    lua_insert( lua, -nargs );
+    lua_call( lua, nargs, 0 );
+}

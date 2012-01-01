@@ -27,9 +27,41 @@
 #define HOOK_INSTRUCTION_COUNT 1000000
 #define HOOK_MAXIMUM_TIME 5000
 
+static int lua_pushstackthread( lua_State *lua )
+{
+    lua_getmanager( lua )->PushThread( lua_tothread( lua, -1 ) );
+    return 0;
+}
+
+static int lua_popstackthread( lua_State *lua )
+{
+    lua_getmanager( lua )->PopThread();
+    return 0;
+}
+
+#define lua_getglobalproxy( L ) (lua_rawseti( L, LUA_REGISTRYINDEX, 2 ))
+#define lua_getaccessinterface( L ) (lua_rawseti( L, LUA_REGISTRYINDEX, 3))
+
+class luaglobal_entry
+{
+public:
+    luaglobal_entry( LuaManager& system, LuaMain& context )
+    {
+        
+    }
+
+    ~luaglobal_entry()
+    {
+        
+    }
+
+private:
+    LuaManager& m_system;
+    LuaMain& m_context;
+};
+
 static void InstructionCountHook( lua_State *lua, lua_Debug *debug )
 {
-    // Grab our lua VM
     lua_getmanager( lua )->InstructionCountHook();
 }
 
@@ -44,6 +76,16 @@ static const luaL_Reg interface_access = {
     { 0, 0 }
 };
 
+static int luaglobal_index( lua_State *lua )
+{
+    return lua_getmanager( lua )->AccessGlobal();
+}
+
+static int luaglobal_newindex( lua_State *lua )
+{
+    //TODO: Register process!
+}
+
 LuaManager::LuaManager( RegisteredCommands& commands, Events& events, ScriptDebugging& debug )
 {
     m_commands = commands;
@@ -56,26 +98,47 @@ LuaManager::LuaManager( RegisteredCommands& commands, Events& events, ScriptDebu
     m_lua = luaL_newstate();
     lua_sethook( m_lua, InstructionCountHook, LUA_MASKCOUNT, HOOK_INSTRUCTION_COUNT );
 
+    // Setup callbacks
+    lua_setevent( m_lua, LUA_EVENT_THREAD_CONTEXT_PUSH, lua_pushstackthread );
+    lua_setevent( m_lua, LUA_EVENT_THREAD_CONTEXT_POP, lua_popstackthread );
+
     // Cache the lua manager in the VM
     lua_pushlightuserdata( m_lua, this );
-    luaL_ref( m_lua, 1 );  // has to be first!
+    luaL_ref( m_lua, LUA_REGISTRYINDEX );   // first in registry!
+    
+    // Setup the proxy global table
+    lua_newtable( m_lua );
+    lua_newtable( m_lua );
+
+    lua_pushlstring( m_lua, "__index", 7 );
+    lua_pushcclosure( m_lua, luaglobal_index, 0 );
+    lua_settable( m_lua, 2 );
+
+    lua_pushlstring( m_lua, "__newindex", 10 );
+    lua_pushcclosure( m_lua, luaglobal_newindex, 0 );
+    lua_settable( m_lua, 2 );
+
+    lua_setmetatable( m_lua, 1 );
+    lua_pop( m_lua, 1 );
+
+    luaL_ref( m_lua, LUA_REGISTRYINDEX );   // second in registry!
 
     // Setup libraries
     luaopen_base( m_lua );
     luaopen_math( m_lua );
     luaopen_string( m_lua );
     luaopen_table( m_lua );
+    luaopen_class( m_lua );
     luaopen_debug( m_lua ); // WARNING: CREATE OUR OWN DEBUG LIB!!!
 
     // Fast access global interface
     lua_newtable( m_lua );
     luaL_openlib( m_lua, NULL, interface_access, 0 );
+    luaL_ref( m_lua, LUA_REGISTRYINDEX );   // third in registry!
 
     // Load our C Functions into LUA and hook callback
     LuaCFunctions::InitializeHashMaps();
     LoadCFunctions();
-
-    lua_registerPreCallHook( CLuaDefs::CanUseFunction );
 }
 
 LuaManager::~LuaManager()
@@ -131,7 +194,7 @@ void LuaManager::Throw( unsigned int id, const char *error )
     std::string src;
     std::string proto;
 
-    while ( LuaMain *env = PopStatus( &line, &src, &proto ) )
+    while ( PopStatus( &line, &src, &proto ) )
     {
         if ( line == -1 )
         {
@@ -156,7 +219,7 @@ void LuaManager::InstructionCountHook()
     if ( timeGetTime() < m_functionEnter + HOOK_MAXIMUM_TIME )
         return;
 
-    LuaMain *env = GetStatus();
+    const LuaMain *env = GetStatus();
 
     // Print it in the console
     Logger::ErrorPrintf( "Infinite/too long execution (%s)", env->GetName().c_str() );
@@ -168,7 +231,7 @@ void LuaManager::InstructionCountHook()
 void LuaManager::CallStack( int args )
 {
     if ( lua_type( m_lua, -1 ) != LUA_TFUNCTION )
-        throw lua_exception( LUA_ERRSYNTAX, "expected function at LuaManager::CallStack!" );
+        Throw( LUA_ERRSYNTAX, "expected function at LuaManager::CallStack!" );
 
     // We could theoretically protect it ourselves
     switch( int ret = lua_pcall( m_lua, args, LUA_MULTRET, 0 ) )
@@ -180,7 +243,7 @@ void LuaManager::CallStack( int args )
         std::string msg( err, len );
 
         // Clean the stack
-        lua_settop( m_lua, -2 );
+        lua_settop( m_lua, -3 );
 
         throw lua_exception( ret, msg );
     }
@@ -225,7 +288,7 @@ static int luamain_index( lua_State *lua )
 // ARGS: table, key
 int LuaManager::AccessGlobal()
 {
-    lua_rawgeti( m_lua, LUA_REGISTRYINDEX, m_access );
+    lua_getaccessinterface( m_lua );
     lua_pushvalue( m_lua, -2 );
     lua_gettable( m_lua, -2 );
 
@@ -304,11 +367,9 @@ LuaMain* LuaManager::Get( lua_State *lua )
     return NULL;
 }
 
+//TODO: Runtime unwinding
 bool LuaManager::Remove( LuaMain *lua )
 {
-    if ( !lua )
-        return false;
-
     // Remove all events registered by it and all commands added
     m_events.RemoveAllEvents( lua );
     m_commands.CleanUpForVM( lua );
