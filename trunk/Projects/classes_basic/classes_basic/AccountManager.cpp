@@ -1,12 +1,17 @@
 #include "main.h"
 
-// Dummy constructor and destructor, we do nit need to do anything here
+// Dummy constructor and destructor, we do not need to do anything here
 AccountManager::AccountManager()
 {
 }
 
 AccountManager::~AccountManager()
 {
+	// Destroy the accounts and clear the heap memory
+	accountList_t::iterator iter = m_accounts.begin();
+
+	for ( ; iter != m_accounts.end(); iter++ )
+		delete *iter;
 }
 
 Account* AccountManager::CreateAccount( const std::string& name, const std::string& password )
