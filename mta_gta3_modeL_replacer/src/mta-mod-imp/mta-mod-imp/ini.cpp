@@ -35,29 +35,41 @@ CINI::CINI(const char *buffer)
 		size_t len;
 		const char *token = syntax->ParseToken( &len );
 
-		if ( len == 1 && *token == '[' )
+		if ( len == 1 )
 		{
-			char *name;
-			unsigned long offset = syntax->GetOffset();
-			size_t len;
+			if ( *token == '[' )
+			{
+				char *name;
+				unsigned long offset = syntax->GetOffset();
+				size_t len;
 
-			// Read section and select it
-			if ( !syntax->ScanCharacterEx( ']', true, true, false ) )
+				// Read section and select it
+				if ( !syntax->ScanCharacterEx( ']', true, true, false ) )
+					continue;
+
+				len = syntax->GetOffset() - offset - 1;
+
+				name = (char*)malloc( len + 1 );
+				strncpy( name, token + 1, len );
+
+				name[len] = 0;
+
+				section = new Entry( name );
+
+				entries.push_back( section );
+			}
+			else if ( *token == ';' )
+			{
+				syntax->ScanCharacter( '\n' );
+				syntax->Seek( -1 );
 				continue;
-
-			len = syntax->GetOffset() - offset - 1;
-
-			name = (char*)malloc( len + 1 );
-			strncpy( name, token + 1, len );
-
-			name[len] = 0;
-
-			section = new Entry( name );
-
-			entries.push_back( section );
+			}
+			else
+				goto sectionDo;
 		}
 		else if ( section )
 		{
+sectionDo:
 			char name[256];
 			char value[256];
 			const char *set;
