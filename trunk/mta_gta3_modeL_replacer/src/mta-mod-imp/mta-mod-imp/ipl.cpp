@@ -2,9 +2,10 @@
 
 #define pi 3.14159265
 #define round(a) ((floor(a)+0.5)<a?ceil(a):floor(a))
+#define clamp(a, lo, hi) (a > hi ? hi : (a < lo ? lo : a) )
 
 // Yup2...
-double rad2deg(double radian)
+inline double rad2deg(double radian)
 {
 	return radian * (180 / pi);
 }
@@ -27,7 +28,7 @@ void QuatToEuler(const quat_t *quat, double *rotx,  double *roty, double *rotz)
 	sqz = quat->z * quat->z;
 	
 	rotxrad = (double)atan2l(2.0 * ( quat->y * quat->z + quat->x * quat->w ) , ( -sqx - sqy + sqz + sqw ));
-	rotyrad = (double)asinl(-2.0 * ( quat->x * quat->z - quat->y * quat->w ));
+	rotyrad = (double)asinl( clamp( -2.0 * ( quat->x * quat->z - quat->y * quat->w ), -1, 1 ));
 	rotzrad = (double)atan2l(2.0 * ( quat->x * quat->y + quat->z * quat->w ) , (  sqx - sqy - sqz + sqw ));
 	
 	*rotx = rad2deg(rotxrad);
