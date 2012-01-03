@@ -5,6 +5,12 @@
 */
 #include "main.h"
 
+enum eStreamMethod
+{
+	STREAM_STREAM,
+	STREAM_DISTANCE
+};
+
 CIPL *ipls[256];
 unsigned int numIPL = 0;
 CIDE *ides[256];
@@ -12,6 +18,7 @@ unsigned int numIDE = 0;
 bool modelLOD[65536];
 bool avalID[65536];
 bool mtaBLUE;
+eStreamMethod streamMethod;
 
 instanceList_t instances;
 objectList_t objects;
@@ -34,7 +41,8 @@ const char *pLuaHeader=
 	"setCloudsEnabled(false);\n" \
 	"setFarClipDistance(350);\n" \
 	"setFogDistance(10);\n" \
-	"setPedFrozen(getLocalPlayer(), true);\n\n" \
+	"setPedFrozen(getLocalPlayer(), true);\n\n";
+const char *pLuaDistanceMethodBegin=
 	"function modelStreamOut ()\n" \
 	"	local pModel = pModels[getElementModel(source)];\n\n" \
 	"	if not (pModel) then return end;\n\n" \
@@ -60,7 +68,40 @@ const char *pLuaHeader=
 	"		return true;\n" \
 	"	end\n\n" \
 	"	engineReplaceCOL(pModel.col, getElementModel(source));\n" \
+	"end\n\n";
+const char *pLuaStreamMethodBegin=
+	"function modelStreamOut ()\n" \
+	"	local pModel = pModels[getElementModel(source)];\n\n" \
+	"	if not (pModel) then return end;\n\n" \
+	"	if (pModel.isRequesting == 2) then\n" \
+	"		pModel.isRequesting = 1;\n\n" \
+	"		if not (pModel.col) then\n" \
+	"			outputDebugString(\"missing collision for \" .. pModel.name);\n" \
+	"			return true;\n" \
+	"		end\n\n" \
+	"		engineReplaceCOL(pModel.col, getElementModel(source));\n" \
+	"		return true;\n" \
+	"	end\n" \
+	"	pModel.numStream = pModel.numStream - 1;\n\n" \
+	"	if (pModel.numStream == 0) then\n" \
+	"		engineRestoreCOL(getElementModel(source));\n" \
+	"		engineRestoreModel(getElementModel(source));\n" \
+	"	end\n" \
 	"end\n\n" \
+	"function modelStreamIn ()\n" \
+	"	local pModel = pModels[getElementModel(source)];\n\n" \
+	"	if not (pModel) then return end;\n\n" \
+	"	if (pModel.isRequesting) then return end\n\n" \
+	"	pModel.numStream = pModel.numStream + 1;\n\n" \
+	"	if not (pModel.numStream == 1) then return end;\n\n" \
+	"	pModel.isRequesting = 2;\n\n" \
+	"	if not (pModel.model) then\n" \
+	"		outputDebugString(\"model missing \" .. pModel.name);\n" \
+	"		return false;\n" \
+	"	end\n\n" \
+	"	engineReplaceModel(pModel.model, getElementModel(source));\n" \
+	"end\n\n";
+const char *pLuaModelLoadBegin=
 	"function loadModels ()\n" \
 	"	local pModel, pTXD, pColl, pTable;\n\n";
 #if (MODEL_METHOD == MODEL_STATIC)
@@ -98,9 +139,13 @@ const char *pLuaModelTableLoad=
 	"		engineSetModelLODDistance(m.model, m.lod);\n" \
 	"	end;\n";
 #endif
-const char *pLuaEnd=
+const char *pLuaModelLoadEnd=
 	"end\n" \
-	"loadModels();\n\n" \
+	"loadModels();\n\n";
+const char *pLuaStreamMethodEnd=
+	"addEventHandler(\"onClientElementStreamIn\", resourceRoot, modelStreamIn);\n" \
+	"addEventHandler(\"onClientElementStreamOut\", resourceRoot, modelStreamOut);\n\n";
+const char *pLuaDistanceMethodEnd=
 	"addEventHandler(\"onClientElementStreamIn\", resourceRoot, function()\n" \
 	"		local pModel = pModels[getElementModel(source)];\n\n" \
 	"		if not (pModel.isRequesting) then return true; end;\n\n" \
@@ -144,7 +189,8 @@ const char *pLuaEnd=
 	"			end\n" \
 	"		end\n" \
 	"	end\n" \
-	");\n\n" \
+	");\n\n";
+const char *pLuaEnd=
 	"addEventHandler(\"onClientResourceStop\", resourceRoot, function()\n" \
 	"		disableRequests = true;\n\n" \
 	"		for m,n in pairs(pModels) do\n" \
@@ -294,7 +340,7 @@ void	LoadReplaceIPL(const char *filename)
 	unsigned int numInst = 0;
 
 	for ( iter = ipl->m_instances.begin(); iter != ipl->m_instances.end(); iter++, numInst++ )
-		modelLOD[(*iter)->m_modelID] = ipl->IsLOD( numInst );
+		modelLOD[(*iter)->m_modelID] = (ipl->IsLOD( numInst ) || (*iter)->m_lod != -1);
 
 	delete ipl;
 }
@@ -350,8 +396,30 @@ int		main (int argc, char *argv[])
 		usYoffset = mainEntry->GetInt("yOffset");
 		usZoffset = mainEntry->GetInt("zOffset");
 		mtaBLUE = mainEntry->GetBool("mtaBLUE");
+
+		const char *method = mainEntry->Get("method");
+
+		if ( strcmp(method, "stream") == 0 )
+		{
+			streamMethod = STREAM_STREAM;
+
+			printf( "WARNING: This method only works without asynchronous loading\n" );
+		}
+		else if ( strcmp(method, "distance") == 0 )
+			streamMethod = STREAM_DISTANCE;
+		else
+		{
+			printf( "Invalid streaming method; defaulting to distance\n" );
+
+			streamMethod = STREAM_DISTANCE;
+
+			goto nonotify;
+		}
+
+		printf( "Using StreamingMethod: %s\n", method );
 	}
 
+nonotify:
 	if (mtaBLUE)
 		printf( "Compiling with MTA:BLUE support...\n" );
 	
@@ -399,6 +467,7 @@ int		main (int argc, char *argv[])
 		if ((find = FindFirstFile("*.ipl", &findData)) == INVALID_HANDLE_VALUE)
 		{
 			printf("Error: Could not find any GTA:SA item placement information\n");
+
 			getchar();
 			return EXIT_FAILURE;
 		}
@@ -451,6 +520,18 @@ int		main (int argc, char *argv[])
 #elif (MAP_METHOD==MAP_LUA)
 	fprintf(pLuaServer,pServerMapHeader);
 #endif
+
+	switch( streamMethod )
+	{
+	case STREAM_DISTANCE:
+		fprintf(pLuaFile, pLuaDistanceMethodBegin);
+		break;
+	case STREAM_STREAM:
+		fprintf(pLuaFile, pLuaStreamMethodBegin);
+		break;
+	}
+
+	fprintf(pLuaFile, pLuaModelLoadBegin);
 #if (MODEL_METHOD==MODEL_TABLE)
 	fprintf(pLuaFile,pLuaModelTableBegin);
 #endif
@@ -610,19 +691,31 @@ int		main (int argc, char *argv[])
 	}
 #if (MODEL_METHOD==MODEL_TABLE)
 	// We need to write the model loader
-	fprintf(pLuaFile,"\n");
-	fprintf(pLuaFile,pLuaModelTableEnd);
-	fprintf(pLuaFile,pLuaModelTableLoad);
+	fprintf(pLuaFile, "\n");
+	fprintf(pLuaFile, pLuaModelTableEnd);
+	fprintf(pLuaFile, pLuaModelTableLoad);
 #endif
 	// Write end
+	fprintf(pLuaFile, pLuaModelLoadEnd);
 #if (MAP_METHOD==MAP_XML)
-	fprintf(pMapFile,pMapEnd);
+	fprintf(pMapFile, pMapEnd);
 #elif (MAP_METHOD==MAP_LUA)
-	fprintf(pLuaServer,pServerMapEnd);
+	fprintf(pLuaServer, pServerMapEnd);
 #endif
-	fprintf(pLuaServer,pServerEnd);
-	fprintf(pMetaFile,pMetaEnd);
-	fprintf(pLuaFile,pLuaEnd);
+
+	switch( streamMethod )
+	{
+	case STREAM_DISTANCE:
+		fprintf(pLuaFile, pLuaDistanceMethodEnd);
+		break;
+	case STREAM_STREAM:
+		fprintf(pLuaFile, pLuaStreamMethodEnd);
+		break;
+	}
+
+	fprintf(pLuaServer, pServerEnd);
+	fprintf(pMetaFile, pMetaEnd);
+	fprintf(pLuaFile, pLuaEnd);
 	// Close em
 	fclose(pLuaFile);
 	fclose(pMetaFile);
