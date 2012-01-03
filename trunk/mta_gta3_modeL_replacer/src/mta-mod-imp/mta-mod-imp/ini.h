@@ -75,7 +75,7 @@ public:
 			settings.push_back( set );
 		}
 
-		const char*	Get(const char *key)
+		inline const char*	Get(const char *key)
 		{
 			Setting *set = Find(key);
 
@@ -85,7 +85,7 @@ public:
 			return set->value;
 		}
 
-		int GetInt(const char *key)
+		inline int GetInt(const char *key)
 		{
 			const char *value = Get(key);
 
@@ -95,7 +95,7 @@ public:
 			return atoi(value);
 		}
 
-		double GetFloat(const char *key)
+		inline double GetFloat(const char *key)
 		{
 			const char *value = Get(key);
 
@@ -103,6 +103,16 @@ public:
 				return 0;
 
 			return atof(value);
+		}
+
+		inline bool GetBool(const char *key)
+		{
+			const char *value = Get(key);
+
+			if (!value)
+				return false;
+
+			return (strcmp(value, "true") == 0) || (unsigned int)atoi(value) != 0;
 		}
 
 		char*		m_name;

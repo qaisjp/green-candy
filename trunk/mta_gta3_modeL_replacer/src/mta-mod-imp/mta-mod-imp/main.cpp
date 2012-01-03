@@ -9,7 +9,9 @@ CIPL *ipls[256];
 unsigned int numIPL = 0;
 CIDE *ides[256];
 unsigned int numIDE = 0;
+bool modelLOD[65536];
 bool avalID[65536];
+bool mtaBLUE;
 
 instanceList_t instances;
 objectList_t objects;
@@ -227,7 +229,7 @@ CObject*	GetObjectByModel(const char *model)
 // Process data
 void	LoadTargetIPL(const char *filename)
 {
-	unsigned int numInst = -1;
+	unsigned int numInst = 0;
 #ifdef _SAME_NAME_METHOD
 	char buffer[1024];
 	CIDE *ide;
@@ -238,10 +240,8 @@ void	LoadTargetIPL(const char *filename)
 
 	ipl = LoadIPL(filename);
 
-	for (i_iter = ipl->m_instances.begin(); i_iter != ipl->m_instances.end(); i_iter++)
+	for (i_iter = ipl->m_instances.begin(); i_iter != ipl->m_instances.end(); i_iter++, numInst++)
 	{
-		numInst++;
-
 		if (ipl->IsLOD(numInst))
 			continue;
 
@@ -287,6 +287,18 @@ void	LoadTargetIDE(const char *name)
 }
 #endif
 
+void	LoadReplaceIPL(const char *filename)
+{
+	CIPL *ipl = LoadIPL(filename);
+	instanceList_t::iterator iter;
+	unsigned int numInst = 0;
+
+	for ( iter = ipl->m_instances.begin(); iter != ipl->m_instances.end(); iter++, numInst++ )
+		modelLOD[(*iter)->m_modelID] = ipl->IsLOD( numInst );
+
+	delete ipl;
+}
+
 void	LoadReplaceIDE(const char *filename)
 {
 	CIDE *ide = LoadIDE(filename);
@@ -297,6 +309,9 @@ void	LoadReplaceIDE(const char *filename)
 	{
 		//if ((*iter)->m_flags & (OBJECT_ALPHA1 | OBJECT_ALPHA2 | OBJECT_NOCULL | OBJECT_BREAKGLASS | OBJECT_BREAKGLASS_CRACK | OBJECT_GARAGE | OBJECT_MULTICLUMP | OBJECT_USE_POLYSHADOW | OBJECT_EXPLOSIVE | OBJECT_UNKNOWN | OBJECT_UNKNOWN_2 | OBJECT_GRAFFITI | OBJECT_NOBACKFACECULL | OBJECT_STATUE | OBJECT_UNKNOWN_HIGH))
 		if ((*iter)->m_flags != 0 && !((*iter)->m_flags & OBJECT_INTERIOR))
+			continue;
+
+		if (mtaBLUE && modelLOD[(*iter)->m_modelID])
 			continue;
 
 		avalID[(*iter)->m_modelID] = true;
@@ -334,7 +349,11 @@ int		main (int argc, char *argv[])
 		usXoffset = mainEntry->GetInt("xOffset");
 		usYoffset = mainEntry->GetInt("yOffset");
 		usZoffset = mainEntry->GetInt("zOffset");
+		mtaBLUE = mainEntry->GetBool("mtaBLUE");
 	}
+
+	if (mtaBLUE)
+		printf( "Compiling with MTA:BLUE support...\n" );
 	
 	// Reset the IDs
 	for (n=0; n < 65536; n++)
@@ -370,6 +389,28 @@ int		main (int argc, char *argv[])
 	FindClose(find);
 #endif
 
+	if (mtaBLUE)
+	{
+		memset( modelLOD, 0, sizeof(modelLOD) );
+
+		// Load all GTA:SA static scene objects (hack)
+		SetCurrentDirectory("..\\rplipl");
+
+		if ((find = FindFirstFile("*.ipl", &findData)) == INVALID_HANDLE_VALUE)
+		{
+			printf("Error: Could not find any GTA:SA item placement information\n");
+			getchar();
+			return EXIT_FAILURE;
+		}
+
+		LoadReplaceIPL( findData.cFileName );
+
+		while (FindNextFile( find, &findData ))
+			LoadReplaceIPL( findData.cFileName );
+
+		FindClose( find );
+	}
+
 	// We must get all replacable IDE model ids
 	SetCurrentDirectory("..\\rplide");
 
@@ -383,7 +424,7 @@ int		main (int argc, char *argv[])
 
 	FindClose(find);
 
-	// Set up the directory sheme
+	// Set up the directory scheme
 	CreateDirectory("..\\output", NULL);
 
 	SetCurrentDirectory("..\\output");
