@@ -127,7 +127,7 @@ void	CIPL::ReadInstances()
 
 		inst->m_lod = atoi(row[10]);
 
-		if (inst->m_lod != -1)
+		if ( inst->m_lod != -1 )
 			m_isLOD[inst->m_lod] = true;
 
 		m_instances.push_back(inst);
@@ -140,4 +140,12 @@ bool	CIPL::IsLOD(unsigned int id)
 		return false;
 
 	return m_isLOD[id];
+}
+
+CInstance*	CIPL::GetLod(CInstance *scene)
+{
+	if ( scene->m_lod == -1 )
+		return NULL;
+
+	return m_instances.at( scene->m_lod );
 }
