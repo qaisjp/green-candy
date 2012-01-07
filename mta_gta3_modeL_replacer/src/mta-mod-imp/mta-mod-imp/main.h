@@ -9,6 +9,8 @@
 #include <math.h>
 
 #include <list>
+#include <vector>
+#include <map>
 
 using namespace std;
 
@@ -18,21 +20,7 @@ using namespace std;
 #include "ini.h"
 #pragma warning(disable: 4996)
 
-// IPL inst entry
-typedef struct ipl_inst_s
-{
-	unsigned short usModelID;
-	unsigned char *p_ucName;
-	unsigned char ucUnknown;
-	float fPosX;
-	float fPosY;
-	float fPosZ;
-	double fRotX;
-	double fRotY;
-	double fRotZ;
-	double fRotW;
-	char ucIsLOD;
-} ipl_inst_t;
+typedef std::map <unsigned short, CInstance*> lodMap_t;
 
 // Gay quats
 typedef struct quat_s

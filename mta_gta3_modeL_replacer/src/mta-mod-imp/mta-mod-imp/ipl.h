@@ -17,9 +17,10 @@ public:
 	long			m_flags;
 
 	int				m_lod;
+	int				m_lodID;
 };
 
-typedef	list <CInstance*> instanceList_t;
+typedef	std::vector <CInstance*> instanceList_t;
 
 class CIPL
 {
@@ -29,6 +30,7 @@ public:
 					~CIPL();
 
 	bool			IsLOD(unsigned int id);
+	CInstance*		GetLod(CInstance *obj);
 
 	instanceList_t	m_instances;
 private:

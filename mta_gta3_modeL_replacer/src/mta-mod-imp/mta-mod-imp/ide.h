@@ -39,6 +39,9 @@ public:
 	double			m_drawDistance;
 
 	int				m_flags;
+
+	// hack
+	unsigned short	m_realModelID;
 };
 
 typedef list <CObject*> objectList_t;
