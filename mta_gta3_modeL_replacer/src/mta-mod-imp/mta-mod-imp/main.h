@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 //#include <unistd.h>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>

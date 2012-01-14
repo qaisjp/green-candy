@@ -16,15 +16,22 @@ unsigned int numIPL = 0;
 CIDE *ides[256];
 unsigned int numIDE = 0;
 bool modelLOD[65536];
-bool avalID[65536];
+CObject *avalID[65536];
 bool mtaBLUE;
 unsigned int jetpackHeight;
 bool lodSupport;
+bool forceLODInherit;
 bool staticCompile;
 bool cached;
 bool debug;
 unsigned int streamerMemory;
+bool autoCollect;
+unsigned int runtimeCorrection;
 eStreamMethod streamMethod;
+
+unsigned short modelIDs[65536];
+const char *names[65536];
+unsigned short usNames = 0;
 
 instanceList_t instances;
 objectList_t objects;
@@ -90,6 +97,8 @@ inline void luaBegin( FILE *file )
 		"debug.sethook(nil);\n\n"
 	);
 
+	// getResourceSize if not cached...?
+
 	fprintf( file,
 		"local function getResourceSize(path)\n" \
 		"	if not (fileExists(path)) then return 0; end;\n\n" \
@@ -142,9 +151,30 @@ inline void luaBegin( FILE *file )
 			"local function loadResources(model, size)\n" \
 			"	engineImportTXD(model.txd, model.id);\n\n" \
 			"	model.model = engineLoadDFF(model.model_file, 0);\n\n" \
-			"	if not (model.model) then return false; end;\n\n" \
-			"	model.col = engineLoadCOL(model.col_file, 0);\n\n" \
-			"	if not (model.col) then return false; end;\n\n" \
+			"	if not (model.model) then return false; end;\n\n"
+		);
+
+		if ( lodSupport )
+		{
+			fprintf( file,
+				"	if not (model.col_file) then\n" \
+				"		if not (model.super) then return false; end\n\n" \
+				"		model.col = pModels[model.super].col;\n" \
+				"	else\n" \
+				"		model.col = engineLoadCOL(model.col_file, 0);\n\n" \
+				"		if not (model.col) then return false; end\n" \
+				"	end\n\n"
+			);
+		}
+		else
+		{
+			fprintf( file, 
+				"	model.col = engineLoadCOL(model.col_file, 0);\n\n" \
+				"	if not (model.col) then return false; end\n\n"
+			);
+		}
+
+		fprintf( file,
 			"	cached[model.id] = {\n" \
 			"		model = model,\n" \
 			"		size = size\n" \
@@ -156,7 +186,9 @@ inline void luaBegin( FILE *file )
 			"local function freeResources(model)\n" \
 			"	local cache = cached[model.id];\n\n" \
 			"	if not (cache) then return true; end\n\n" \
-			"	destroyElement(model.model);\n" \
+			"	if (model.col_file) then\n" \
+			"		destroyElement(model.model);\n" \
+			"	end\n" \
 			"	destroyElement(model.col);\n" \
 			"	model.model = nil;\n" \
 			"	model.col = nil;\n" \
@@ -166,8 +198,26 @@ inline void luaBegin( FILE *file )
 			"end\n\n" \
 			"local function cacheResources(model)\n" \
 			"	if (resourceQueue[model.id]) then return false; end\n\n" \
-			"	if (cached[model.id]) then return true; end\n\n" \
-			"	local size = getResourceSize(model.model_file) + getResourceSize(model.col_file);\n\n" \
+			"	if (cached[model.id]) then return true; end\n\n"
+		);
+
+		if ( lodSupport )
+		{
+			fprintf( file,
+				"	local size = getResourceSize(model.model_file);\n" \
+				"	if (model.col_file) then\n" \
+				"		size = size + getResourceSize(model.col_file);\n" \
+				"	end\n"
+			);
+		}
+		else
+		{
+			fprintf( file,
+				"	local size = getResourceSize(model.model_file) + getResourceSize(model.col_file);\n\n"
+			);
+		}
+
+		fprintf( file,
 			"	if ( streamerMemory + size > %u ) then\n" \
 			"		outputDebugString(\"streamer memory limit reached... queueing request!\");\n\n" \
 			"		resourceQueue[model.id] = {\n" \
@@ -186,6 +236,17 @@ inline void luaBegin( FILE *file )
 		"	if (model.loaded) then return true; end\n\n"
 	);
 
+	if ( lodSupport )
+	{
+		fprintf( file,
+			"	if (model.super) then\n" \
+			"		if not (loadModel(pModels[model.super])) then\n" \
+			"			return false;\n" \
+			"		end\n" \
+			"	end\n\n"
+		);
+	}
+
 	if ( cached )
 	{
 		fprintf( file,
@@ -193,28 +254,9 @@ inline void luaBegin( FILE *file )
 		);
 	}
 
-	if ( streamMethod == STREAM_STREAM )
-	{
-		fprintf( file,
-			"	model.isRequesting = 2;\n"
-		);
-	}
-
 	fprintf( file,
 		"	engineReplaceModel(model.model, model.id);\n" \
-		"	engineReplaceCOL(model.col, model.id);\n"
-	);
-
-	if ( streamMethod == STREAM_STREAM )
-	{
-		fprintf( file,
-			"	if (model.isRequesting == 2) then\n" \
-			"		model.isRequesting = false;\n" \
-			"	end\n\n"
-		);
-	}
-
-	fprintf( file,
+		"	engineReplaceCOL(model.col, model.id);\n\n" \
 		"	model.loaded = true;\n"
 	);
 
@@ -229,25 +271,15 @@ inline void luaBegin( FILE *file )
 		"	return true;\n" \
 		"end\n\n" \
 		"local function freeModel(model)\n" \
-		"	if not (model.loaded) then return true; end\n\n"
-	);
-
-	if ( streamMethod == STREAM_STREAM )
-	{
-		fprintf( file,
-			"	model.isRequesting = 3;\n"
-		);
-	}
-
-	fprintf( file,
+		"	if not (model.loaded) then return true; end\n\n" \
 		"	engineRestoreModel(model.id);\n" \
-		"	engineRestoreCOL(model.id);\n"
+		"	engineRestoreCOL(model.id);\n\n"
 	);
 
-	if ( streamMethod == STREAM_STREAM )
+	if ( cached && autoCollect )
 	{
 		fprintf( file,
-			"	model.isRequesting = false;\n"
+			"	freeResources(model);\n\n"
 		);
 	}
 
@@ -264,72 +296,142 @@ inline void luaBegin( FILE *file )
 	}
 
 	fprintf( file,
-		"	model.loaded = false;\n" \
+		"	model.loaded = false;\n"
+	);
+
+	if ( lodSupport )
+	{
+		fprintf( file,
+			"	if (model.super) then\n" \
+			"		return freeModel(pModels[model.super]);\n" \
+			"	end\n"
+		);
+	}
+
+	fprintf( file,
 		"end\n\n"
 	);
 }
 
 inline void luaMethodBegin( FILE *file )
 {
-	switch( streamMethod )
+	fprintf( file,
+		"local function modelStreamOut ()\n" \
+		"	local pModel = pModels[getElementModel(source)];\n\n" \
+		"	if not (pModel) then return end;\n\n"
+	);
+
+	if ( lodSupport )
 	{
-	case STREAM_DISTANCE:
-		fprintf( file, 
-			"local function modelStreamOut ()\n" \
-			"	local pModel = pModels[getElementModel(source)];\n\n" \
-			"	if not (pModel) then return end;\n\n" \
-			"	pModel.numStream = pModel.numStream - 1;\n\n" \
-			"	if (pModel.numStream == 0) then\n" \
-			"		freeModel(pModel);\n" \
-			"	end\n" \
-			"end\n\n" \
-			"local function modelStreamIn ()\n" \
-			"	local pModel = pModels[getElementModel(source)];\n\n" \
-			"	if not (pModel) then return end;\n\n" \
-			"	pModel.numStream = pModel.numStream + 1;\n\n" \
-			"	if not (loadModel(pModel)) then\n" \
-			"		setElementInterior(source, 123);\n" \
-			"		setElementCollisionsEnabled(source, false);\n" \
-			"		return false;\n" \
-			"	end\n" \
-			"end\n\n"
-		);
-		return;
-	case STREAM_STREAM:
 		fprintf( file,
-			"local function modelStreamOut ()\n" \
-			"	local pModel = pModels[getElementModel(source)];\n\n" \
-			"	if not (pModel) then return end;\n\n" \
+			"	if (pModel.lodID) then return true; end\n\n"
+		);
+	}
+
+	if ( streamMethod == STREAM_STREAM )
+	{
+		fprintf( file, 
 			"	if (pModel.isRequesting == 2) then\n" \
 			"		pModel.isRequesting = 1;\n" \
 			"		return true;\n" \
 			"	elseif (pModel.isRequesting == 3) then\n" \
 			"		pModel.isRequesting = 4;\n" \
 			"		return true;\n" \
-			"	end\n\n" \
-			"	pModel.numStream = pModel.numStream - 1;\n\n" \
-			"	if (pModel.numStream == 0) then\n" \
-			"		freeModel(pModel);\n" \
-			"	end\n" \
-			"end\n\n" \
-			"local function modelStreamIn ()\n" \
-			"	local pModel = pModels[getElementModel(source)];\n\n" \
-			"	if not (pModel) then return end;\n\n" \
+			"	elseif (pModel.isRequesting) then return true; end\n\n"
+		);
+	}
+	
+	fprintf( file,
+		"	pModel.numStream = pModel.numStream - 1;\n\n" \
+		"	if (pModel.numStream == 0) then\n"
+	);
+
+	if ( streamMethod == STREAM_STREAM )
+	{
+		fprintf( file,
+			"		pModel.isRequesting = 3;\n\n"
+		);
+	}
+
+	fprintf( file,
+		"		freeModel(pModel);\n"
+	);
+
+	if ( streamMethod == STREAM_STREAM )
+	{
+		fprintf( file,
+			"\n" \
+			"		pModel.isRequesting = false;\n"
+		);
+	}
+
+	fprintf( file,
+		"	end\n" \
+		"end\n\n" \
+		"local function modelStreamIn ()\n" \
+		"	local pModel = pModels[getElementModel(source)];\n\n" \
+		"	if not (pModel) then return end;\n\n"
+	);
+
+	if ( lodSupport )
+	{
+		fprintf( file,
+			"	if (pModel.lodID) then return true; end\n\n"
+		);
+	}
+
+	if ( streamMethod == STREAM_STREAM )
+	{
+		fprintf( file,
 			"	if (pModel.isRequesting == 1) then\n" \
 			"		pModel.isRequesting = false;\n" \
 			"		return true;\n" \
-			"	end\n\n" \
-			"	pModel.numStream = pModel.numStream + 1;\n\n" \
-			"	if (pModel.loaded) then return true; end;\n\n" \
-			"	if not (loadModel(pModel)) then\n" \
-			"		setElementInterior(source, 123);\n" \
-			"		setElementCollisionsEnabled(source, false);\n" \
-			"		return false;\n" \
-			"	end\n" \
-			"end\n\n"
+			"	elseif (pModel.isRequesting) then return true; end\n\n"
 		);
-		return;
+
+		if ( cached && runtimeCorrection )
+		{
+			fprintf( file,
+				"	pModel.requestFrames = %u;\n", runtimeCorrection
+			);
+		}
 	}
+
+	fprintf( file,
+		"	pModel.numStream = pModel.numStream + 1;\n\n" \
+		"	if not (pModel.numStream == 1) then return true; end\n\n"
+	);
+
+	if ( streamMethod == STREAM_STREAM )
+	{
+		fprintf( file,
+			"	pModel.isRequesting = 2;\n\n"
+		);
+	}
+
+	fprintf( file,
+		"	if not (loadModel(pModel)) then\n" \
+		"		setElementInterior(source, 123);\n" \
+		"		setElementCollisionsEnabled(source, false);\n" \
+		"	end\n"
+	);
+
+	if ( streamMethod == STREAM_STREAM )
+	{
+		fprintf( file,
+			"\n" \
+			"	if (pModel.isRequesting == 2) then\n" \
+			"		outputDebugString(\"invalid model request '\"..pModel.name..\"'\");\n" \
+			"		freeModel(pModel);\n" \
+			"		pModel.isRequesting = false;\n\n" \
+			"		pModel.numStream = 0;\n" \
+			"	end\n"
+		);
+	}
+
+	fprintf( file,
+		"end\n\n"
+	);
 }
 
 inline void luaModelBeginLoader( FILE *file )
@@ -405,7 +507,7 @@ inline void luaModelLoadEntry( FILE *file, const char *name, const char *txdName
 		);
 
 		if ( lodSupport && lodID != 0 )
-			fprintf( file, ", lod_id=%u }", lodID );
+			fprintf( file, ", lodID=%u }", lodID );
 		else
 			fprintf( file, " }" );
 	}
@@ -421,7 +523,7 @@ inline void luaModelLODBegin( FILE *file )
 	}
 }
 
-inline void luaModelLODEntry( FILE *file, unsigned short id, const char *name, const char *txdName, const char *lod )
+inline void luaModelLODEntry( FILE *file, unsigned short id, const char *name, const char *colName, const char *txdName, const char *lod, unsigned short super )
 {
 	if ( !staticCompile )
 	{
@@ -429,19 +531,71 @@ inline void luaModelLODEntry( FILE *file, unsigned short id, const char *name, c
 			fprintf( file, ",\n" );
 		
 		fprintf( file,
-			"		{ %u, \"%s\", \"%s\", \"%s\", %s }", id, name, name, txdName, lod
+			"		{ %u, \"%s\", \"%s\", %s, %u", id, name, txdName, lod, super
 		);
+
+		if ( colName )
+		{
+			fprintf( file,
+				", \"%s\" }", colName
+			);
+		}
+		else
+		{
+			fprintf( file,
+				" }"
+			);
+		}
 	}
 	else
 	{
 		fprintf( file,
-			"	engineImportTXD(requestTexture(false, \"textures/%s.txd\"), %u);\n" \
-			"	engineReplaceModel(engineLoadDFF(\"models/%s.dff\", 0), %u);\n" \
-			"	engineReplaceCOL(engineLoadCOL(\"coll/%s.col\"), %u);\n", txdName, id, name, id, name, id
+			"	pModels[%u] = {\n" \
+			"		id = %u,\n" \
+			"		name = %s,\n" \
+			"		txd = requestTexture(false, \"textures/%s.txd\"),\n", id, id, name, txdName
 		);
 
 		fprintf( file,
-			"	engineSetModelLODDistance(%u, %s);\n", id, lod
+			"		numStream = 0,\n" \
+			"		lod = %s,\n" \
+			"		super = %u\n" \
+			"	};\n" \
+			"	pModelEntry = pModels[%u];\n", lod, super, id
+		);
+
+		if ( cached )
+		{
+			if ( colName )
+			{
+				fprintf( file,
+					"	pModelEntry.col_file = \"coll/%s.col\";\n", colName
+				);
+			}
+
+			fprintf( file,
+				"	pModelEntry.model_file = \"models/%s.dff\";\n", name
+			);
+		}
+		else
+		{
+			fprintf( file,
+				"	engineImportTXD(pModelEntry.txd, %u);\n" \
+				"	pModelEntry.model = engineLoadDFF(\"models/%s.dff\", 0);\n" \
+				"	engineReplaceModel(pModelEntry.model, %u);\n", id, name, id
+			);
+
+			if ( colName )
+			{
+				fprintf( file,
+					"	pModelEntry.col = engineLoadCOL(\"coll/%s.col\");\n" \
+					"	engineReplaceCOL(pModelEntry.col, %u);\n", colName, id
+				);
+			}
+		}
+
+		fprintf( file,
+			"	engineSetModelLODDistance(%u, %s / 5);\n", id, lod
 		);
 	}
 }
@@ -454,11 +608,48 @@ inline void luaModelLODEnd( FILE *file )
 			"\n" \
 			"	};\n\n" \
 			"	for m,n in ipairs(pTable) do\n" \
-			"		engineImportTXD(requestTexture(false, \"textures/\"..n[4]..\".txd\"), n[1]);\n" \
-			"		engineReplaceModel(engineLoadDFF(\"models/\"..n[2]..\".dff\", 0), n[1]);\n" \
-			"		engineReplaceCOL(engineLoadCOL(\"coll/\"..n[3]..\".col\"), n[1]);\n" \
-			"		engineSetModelLODDistance(n[1], n[5] / 5);\n" \
-			"	end\n" \
+			"		pModels[n[1]] = {\n" \
+			"			id = n[1],\n" \
+			"			name = n[2],\n" \
+			"			txd = requestTexture(false, \"textures/\"..n[3]..\".txd\"),\n" \
+			"			numStream = 0,\n" \
+			"			lod = n[4] / 5,\n" \
+			"			super = n[5]\n" \
+			"		};\n" \
+			"		pModelEntry = pModels[n[1]];\n"
+		);
+
+		if ( cached )
+		{
+			fprintf( file,
+				"		pModelEntry.model_file = \"models/\"..n[2]..\".dff\";\n"
+			);
+
+			if ( !forceLODInherit )
+			{
+				fprintf( file,
+					"		if ( #n == 6 ) then\n" \
+					"			pModelEntry.col_file = \"coll/\"..n[6]..\".col\";\n" \
+					"		end\n"
+				);
+			}
+		}
+		else
+		{
+			fprintf( file,
+				"		engineImportTXD(pModelEntry.txd, n[1]);\n" \
+				"		pModelEntry.model = engineLoadDFF(\"models/\"..n[2]..\".dff\", 0);\n" \
+				"		engineReplaceModel(pModelEntry.model, n[1]);\n" \
+				"		if ( #n == 6 ) then\n" \
+				"			pModelEntry.col = engineLoadCOL(\"coll/\"..n[6]..\".col\");\n" \
+				"			engineReplaceCOL(pModelEntry.col, n[1]);\n" \
+				"		end\n"
+			);
+		}
+
+		fprintf( file,
+			"		engineSetModelLODDistance(n[1], n[4] / 5);\n" \
+			"	end\n"
 		);
 	}
 
@@ -476,17 +667,22 @@ inline void luaModelLoadEnd( FILE *file )
 			"	};\n\n" \
 			"	local n,m;\n\n" \
 			"	for n,m in ipairs(pTable) do\n" \
-			"		pModels[m.model]={};\n" \
-			"		pModelEntry=pModels[m.model];\n" \
-			"		pModelEntry.name = m.model_file;\n" \
-			"		pModelEntry.txd=requestTexture(pModelEntry, \"textures/\"..m.txd_file..\".txd\");\n"
+			"		pModels[m.model] = {\n" \
+			"			id = m.model,\n" \
+			"			name = m.model_file,\n" \
+			"			txd = requestTexture(false, \"textures/\"..m.txd_file..\".txd\"),\n" \
+			"			numStream = 0,\n" \
+			"			lod = m.lod,\n" \
+			"			lodID = m.lodID\n" \
+			"		};\n" \
+			"		pModelEntry = pModels[m.model];\n" \
 		);
 
 		if ( cached )
 		{
 			fprintf( file,
 				"		pModelEntry.model_file=\"models/\"..m.model_file..\".dff\";\n" \
-				"		pModelEntry.col_file=\"coll/\"..m.coll_file..\".col\";\n"
+				"		pModelEntry.col_file=\"coll/\"..m.coll_file..\".col\";\n" 
 			);
 		}
 		else
@@ -499,9 +695,6 @@ inline void luaModelLoadEnd( FILE *file )
 		}
 
 		fprintf( file,
-			"		pModelEntry.numStream=0;\n" \
-			"		pModelEntry.lod=m.lod;\n" \
-			"		pModelEntry.id=m.model;\n" \
 			"		engineSetModelLODDistance(m.model, m.lod);\n\n"
 		);
 
@@ -540,7 +733,7 @@ inline void luaMethodEnd( FILE *file )
 			"addEventHandler(\"onClientPreRender\", root, function()\n" \
 			"		local m,n;\n" \
 			"		local objects = getElementsByType(\"object\", resourceRoot);\n" \
-			"		local x, y, z = getElementPosition(localPlayer);\n\n" \
+			"		local x, y, z = getCameraMatrix();\n\n" \
 			"		for m,n in ipairs(objects) do\n" \
 			"			local model = pModels[getElementModel(n)];\n\n" \
 			"			if (model) then\n" \
@@ -564,22 +757,47 @@ inline void luaMethodEnd( FILE *file )
 		);
 		return;
 	case STREAM_STREAM:
+		if ( cached && runtimeCorrection )
+		{
+			fprintf( file,
+				"addEventHandler(\"onClientPreRender\", root, function()\n" \
+				"		for m,n in pairs(pModels) do\n" \
+				"			if (n.isRequesting) then\n" \
+				"				n.requestFrames = n.requestFrames - 1;\n\n" \
+				"				if (n.requestFrames == 0) then\n" \
+				"					n.isRequesting = false;\n"
+			);
+
+			if ( debug )
+			{
+				fprintf( file,
+					"					outputDebugString(\"model '\" .. n.name ..\"' timed out\");\n"
+				);
+			}
+
+			fprintf( file,
+				"					freeModel(n);\n" \
+				"				end\n" \
+				"			end\n" \
+				"		end\n" \
+				"	end\n" \
+				");\n\n"
+			);
+		}
+
 		fprintf( file,
 			"for m,n in ipairs(getElementsByType(\"object\", resourceRoot)) do\n" \
 			"	if (isElementStreamedIn(n)) then\n" \
 			"		source = n;\n" \
 			"		modelStreamIn();\n" \
-			"		streamedObjects[n] = true;\n" \
 			"	end\n" \
 			"end\n\n" \
 			"addEventHandler(\"onClientElementStreamIn\", resourceRoot, function()\n" \
-			"		modelStreamIn();\n\n" \
-			"		streamedObjects[source] = true;\n" \
+			"		modelStreamIn();\n" \
 			"	end\n" \
 			");\n" \
 			"addEventHandler(\"onClientElementStreamOut\", resourceRoot, function()\n" \
-			"		modelStreamOut();\n\n" \
-			"		streamedObjects[source] = nil;\n" \
+			"		modelStreamOut();\n" \
 			"	end\n" \
 			");\n\n"
 		);
@@ -615,14 +833,53 @@ inline void luaEnd( FILE *file )
 			"			freeResources(cacheObj);\n" \
 			"		end\n" \
 			"		resourceQueue[request.model.id] = nil;\n\n" \
-			"		if not (loadModel(request.model)) then return false; end\n\n" \
-			"		local m,n;\n" \
-			"		for m,n in ipairs(getElementsByType(\"object\", resourceRoot)) do\n" \
-			"			if (getElementModel(n) == request.model.id) then\n" \
-			"				setElementInterior(n, 0);\n" \
-			"				setElementCollisionsEnabled(n, true);\n" \
-			"			end\n" \
-			"		end\n" \
+			"		local model = request.model;\n\n" \
+		);
+
+		if ( streamMethod == STREAM_STREAM )
+		{
+			fprintf( file,
+				"		if not ( model.numStream == 0 ) then\n" \
+				"			model.isRequesting = 2;\n" \
+				"		end\n\n"
+			);
+		}
+
+		fprintf( file,
+			"		if not (loadModel(model)) then return false; end\n\n"
+		);
+
+		if ( streamMethod == STREAM_STREAM )
+		{
+			fprintf( file,
+				"		if ( model.isRequesting == 2 ) then\n" \
+				"			outputDebugString(\"invalid model request '\" .. model.name ..\"'\");\n" \
+				"			freeModel(model);\n" \
+				"			model.isRequesting = false;\n\n" \
+				"			model.numStream = 0;\n" \
+				"		else\n" \
+				"			for m,n in ipairs(getElementsByType(\"object\", resourceRoot)) do\n" \
+				"				if (getElementModel(n) == model.id) then\n" \
+				"					setElementInterior(n, 0);\n" \
+				"					setElementCollisionsEnabled(n, true);\n" \
+				"				end\n" \
+				"			end\n" \
+				"		end\n\n"
+			);
+		}
+		else
+		{
+			fprintf( file,
+				"		for m,n in ipairs(getElementsByType(\"object\", resourceRoot)) do\n" \
+				"			if (getElementModel(n) == model.id) then\n" \
+				"				setElementInterior(n, 0);\n" \
+				"				setElementCollisionsEnabled(n, true);\n" \
+				"			end\n" \
+				"		end\n"
+			);
+		}
+
+		fprintf( file,
 			"	end\n" \
 			");\n\n" \
 			"addCommandHandler(\"mcollect\", function()\n" \
@@ -680,7 +937,15 @@ inline void luaEnd( FILE *file )
 			"			dxDrawText(n.name .. \" (\" .. n.numStream .. \", \" .. tostring(n.isRequesting) .. \")\", 50, 160 + m * 15);\n" \
 			"		end\n" \
 			"	end\n" \
-			");\n\n"
+			");\n\n" \
+			"addEventHandler(\"onClientClick\", root, function(button, state, c, d, e, f, g, element)\n" \
+			"		if not (button == \"left\") or not (state == \"down\") then return end\n\n" \
+			"		if not (element) then return end\n\n" \
+			"		local model = pModels[getElementModel(element)];\n\n" \
+			"		if not (model) then return end\n\n" \
+			"		outputChatBox(\"name: \" .. model.name .. \" (\" .. model.id .. \")\");\n" \
+			"	end\n" \
+			");\n\n" \
 		);
 	}
 
@@ -728,13 +993,6 @@ const char *pMetaHeaderMap=
 const char *pMetaHeader2=
 	"	<script src=\"%s\" type=\"client\" />\n" \
 	"	<script src=\"main_server.lua\" type=\"server\" />\n";
-const char *pMetaEntryTXD=
-	"	<file src=\"models\\%s.dff\" type=\"client\" />\n" \
-	"	<file src=\"coll\\%s.col\" type=\"client\" />\n" \
-	"	<file src=\"textures\\%s.txd\" type=\"client\" />\n";
-const char *pMetaEntry=
-	"	<file src=\"models\\%s.dff\" type=\"client\" />\n" \
-	"	<file src=\"coll\\%s.col\" type=\"client\" />\n";
 const char *pMetaEnd=
 	"</meta>\n";
 
@@ -794,6 +1052,29 @@ void	LoadTargetIDE(const char *name)
 
 	for (iter = ide->m_objects.begin(); iter != ide->m_objects.end(); iter++)
 	{
+		unsigned int m;
+
+		// Assign the ID
+		for (m=0; m<65534; m++)
+		{
+			if ( !avalID[m] )
+				continue;
+
+			avalID[m] = NULL;
+			break;
+		}
+		if ( m == 65534 )
+		{
+			printf( "ERROR: requiring %u more valid model ids\n", numAvailable );
+			
+			getchar();
+			exit(EXIT_FAILURE);
+		}
+		(*iter)->m_realModelID = m;
+		modelIDs[(*iter)->m_modelID] = m;
+
+		numAvailable--;
+
 		if ( lodSupport )
 		{
 			//TODO: One lod to multiple objects!
@@ -828,34 +1109,29 @@ void	LoadReplaceIDE(const char *filename)
 	// Marks all ids as available
 	for (iter = ide->m_objects.begin(); iter != ide->m_objects.end(); iter++)
 	{
-		if ((*iter)->m_flags & (OBJECT_SCM | OBJECT_NOLOD | OBJECT_GRAFFITI | OBJECT_STATUE | OBJECT_UNKNOWN | OBJECT_UNKNOWN_2 | OBJECT_ALPHA1 | OBJECT_ALPHA2 | OBJECT_BREAKGLASS | OBJECT_BREAKGLASS_CRACK | OBJECT_GARAGE | OBJECT_MULTICLUMP | OBJECT_USE_POLYSHADOW | OBJECT_EXPLOSIVE | OBJECT_GRAFFITI | OBJECT_VEGETATION | OBJECT_BIG_VEGETATION | OBJECT_UNKNOWN_HIGH))
+		if ((*iter)->m_flags & (OBJECT_GRAFFITI | OBJECT_STATUE | OBJECT_UNKNOWN | OBJECT_UNKNOWN_2 | OBJECT_ALPHA1 | OBJECT_ALPHA2 | OBJECT_BREAKGLASS | OBJECT_BREAKGLASS_CRACK | OBJECT_GARAGE | OBJECT_MULTICLUMP | OBJECT_EXPLOSIVE | OBJECT_VEGETATION | OBJECT_BIG_VEGETATION | OBJECT_UNKNOWN_HIGH))
 		//if ((*iter)->m_flags != 0 && !((*iter)->m_flags & OBJECT_INTERIOR))
 			continue;
 
 		if (mtaBLUE && modelLOD[(*iter)->m_modelID])
 			continue;
 
-		avalID[(*iter)->m_modelID] = true;
+		avalID[(*iter)->m_modelID] = *iter;
 		numAvailable++;
 	}
-
-	delete ide;
 }
 
-const char *names[65536];
-unsigned short modelIDs[65536];
 const char *txdNames[65536];
 const char *txdName;
-unsigned short usNames = 0;
+const char *colName;
 unsigned short usTxdNames = 0;
 char lodBuffer[128];
 FILE *pMetaFile;
 
-inline bool AllocateResources( const char *name )
+inline bool AllocateResources( const char *name, bool lod )
 {
 	char buffer[1024];
 	char copyBuffer[1024];
-	unsigned int m;
 
 	// Copy the model file
 	_snprintf(buffer, 1023, "..\\resources\\%s.dff", name);
@@ -871,40 +1147,35 @@ inline bool AllocateResources( const char *name )
 	if (CopyFile(buffer, copyBuffer, true))
 		printf("copying model '%s'\n", name);
 
-	// Now the collision
-	_snprintf(buffer, 1023, "..\\resources\\%s.col", name);
-
-	if (!FileExists(buffer))
+	if ( !lod || !forceLODInherit )
 	{
-		printf("error: collision missing (%s)\n", buffer);
-		return false;
-	}
+		// Now the collision
+		_snprintf(buffer, 1023, "..\\resources\\%s.col", name);
 
-	_snprintf(copyBuffer, 1023, "..\\output\\coll\\%s.col", name);
-
-	if (CopyFile(buffer, copyBuffer, true))
-		printf("copying collision '%s'\n", name);
-
-	// Assign the ID
-	names[usNames] = name;
-
-	for (m=0; m<65534; m++)
-	{
-		if (avalID[m])
+		if ( !FileExists(buffer) )
 		{
-			avalID[m] = false;
-			break;
+			if ( !lod )
+			{
+				printf("error: collision missing (%s)\n", buffer);
+				return false;
+			}
+		
+			colName = NULL;
+		}
+		else
+		{
+			colName = name;
+
+			_snprintf(copyBuffer, 1023, "..\\output\\coll\\%s.col", colName);
+
+			if (CopyFile(buffer, copyBuffer, true))
+				printf("copying collision '%s'\n", colName);
 		}
 	}
-	if (m == 65534)
-	{
-		printf("Internal Error!\n");
+	else
+		colName = NULL;
 
-		getchar();
-		return false;
-	}
-
-	modelIDs[usNames++] = m;
+	names[usNames++] = name;
 
 	CObject *txdObj = GetObjectByModel(name);
 
@@ -940,12 +1211,12 @@ inline bool AllocateResources( const char *name )
 					printf("copying texture '%s'\n", txdName);
 			}
 
-			fprintf(pMetaFile, pMetaEntryTXD, name, name, txdName);
+			fprintf( pMetaFile,
+				"	<file src=\"textures\\%s.txd\" type=\"client\" />\n", txdName
+			);
 
 			txdNames[usTxdNames++] = txdName;
 		}
-		else
-			fprintf(pMetaFile, pMetaEntry, name, name);
 	}
 	else
 	{
@@ -953,9 +1224,19 @@ inline bool AllocateResources( const char *name )
 		strcpy(lodBuffer, "500");
 
 		printf("could not find object def for '%s'\n", name);
-
-		fprintf(pMetaFile, pMetaEntry, name, name);
 	}
+
+	fprintf( pMetaFile,
+		"	<file src=\"models\\%s.dff\" type=\"client\" />\n", name
+	);
+
+	if ( colName )
+	{
+		fprintf( pMetaFile, 
+			"	<file src=\"coll\\%s.col\" type=\"client\" />\n", colName
+		);
+	}
+
 	return true;
 }
 
@@ -983,10 +1264,13 @@ int		main (int argc, char *argv[])
 		mtaBLUE = mainEntry->GetBool("mtaBLUE");
 		jetpackHeight = (unsigned int)mainEntry->GetInt("jetpackHeight");
 		lodSupport = mainEntry->GetBool("lodSupport");
+		forceLODInherit = mainEntry->GetBool("forceLODInherit");
 		staticCompile = mainEntry->GetBool("static");
 		cached = mainEntry->GetBool("cached");
 		streamerMemory = (unsigned int)mainEntry->GetInt("streamerMemory") * 1024 * 1024;
 		debug = mainEntry->GetBool("debug");
+		autoCollect = mainEntry->GetBool("autoCollect");
+		runtimeCorrection = (unsigned int)mainEntry->GetInt("runtimeCorrection");
 
 		const char *method = mainEntry->Get("method");
 
@@ -1000,9 +1284,9 @@ int		main (int argc, char *argv[])
 			streamMethod = STREAM_DISTANCE;
 		else
 		{
-			printf( "Invalid streaming method; defaulting to distance\n" );
+			printf( "Invalid streaming method; defaulting to stream\n" );
 
-			streamMethod = STREAM_DISTANCE;
+			streamMethod = STREAM_STREAM;
 
 			goto nonotify;
 		}
@@ -1018,9 +1302,12 @@ int		main (int argc, char *argv[])
 		mtaBLUE = false;
 		jetpackHeight = 1000;
 		lodSupport = false;
+		forceLODInherit = true;
 		staticCompile = false;
 		cached = false;
 		debug = false;
+		autoCollect = false;
+		runtimeCorrection = true;
 	}
 
 nonotify:
@@ -1029,47 +1316,10 @@ nonotify:
 	
 	// Reset the IDs
 	for (n=0; n < 65536; n++)
-		avalID[n] = false;
-
-	// We change into ipl directory
-	SetCurrentDirectory("ipl\\");
+		avalID[n] = NULL;
 
 	numIPL = 0;
 	numIDE = 0;
-
-	// We scan through all ipl files and load em
-	if ((find = FindFirstFile("*.ipl", &findData)) == INVALID_HANDLE_VALUE)
-	{
-		printf( "ERROR: Could not find any item placement files (ipl/.ipl)" );
-
-		getchar();
-		return EXIT_FAILURE;
-	}
-
-	LoadTargetIPL(findData.cFileName);
-
-	while (FindNextFile(find, &findData))
-		LoadTargetIPL(findData.cFileName);
-
-	FindClose(find);
-
-#ifndef _SAME_NAME_METHOD
-	// Now proceed through all .ide files
-	if ((find = FindFirstFile("*.ide", &findData)) == INVALID_HANDLE_VALUE)
-	{
-		printf( "ERROR: Could not find any model definitions (ipl/.ide)\n" );
-
-		getchar();
-		return EXIT_FAILURE;
-	}
-
-	LoadTargetIDE(findData.cFileName);
-
-	while (FindNextFile(find, &findData))
-		LoadTargetIDE(findData.cFileName);
-
-	FindClose(find);
-#endif
 
 	if (mtaBLUE)
 	{
@@ -1112,13 +1362,40 @@ nonotify:
 
 	FindClose(find);
 
-	if (numAvailable < objects.size())
+	// We change into ipl directory
+	SetCurrentDirectory("ipl\\");
+
+	// We scan through all ipl files and load em
+	if ((find = FindFirstFile("*.ipl", &findData)) == INVALID_HANDLE_VALUE)
 	{
-		printf("ERROR: We require %u more valid model ids\n", objects.size() - numAvailable);
+		printf( "ERROR: Could not find any item placement files (ipl/.ipl)" );
 
 		getchar();
 		return EXIT_FAILURE;
 	}
+
+	LoadTargetIPL(findData.cFileName);
+
+	while (FindNextFile(find, &findData))
+		LoadTargetIPL(findData.cFileName);
+
+	FindClose(find);
+
+	// Now proceed through all .ide files
+	if ((find = FindFirstFile("*.ide", &findData)) == INVALID_HANDLE_VALUE)
+	{
+		printf( "ERROR: Could not find any model definitions (ipl/.ide)\n" );
+
+		getchar();
+		return EXIT_FAILURE;
+	}
+
+	LoadTargetIDE(findData.cFileName);
+
+	while (FindNextFile(find, &findData))
+		LoadTargetIDE(findData.cFileName);
+
+	FindClose(find);
 
 	// Set up the directory scheme
 	CreateDirectory("..\\output", NULL);
@@ -1178,14 +1455,12 @@ nonotify:
 			if (m != usNames)
 				continue;
 
-			if ( !AllocateResources( (*objIter)->m_modelName ) )
+			if ( !AllocateResources( (*objIter)->m_modelName, true ) )
 				continue;
 
 			_snprintf( lodBuffer, 127, "%.0f", (*objIter)->m_drawDistance );
 
-			(*objIter)->m_realModelID = modelIDs[usNames-1];
-
-			luaModelLODEntry( pLuaFile, (*objIter)->m_realModelID, (*objIter)->m_modelName, (*objIter)->m_textureName, lodBuffer );
+			luaModelLODEntry( pLuaFile, (*objIter)->m_realModelID, (*objIter)->m_modelName, colName, (*objIter)->m_textureName, lodBuffer, GetObjectByModel( lodMap[(*objIter)->m_modelID]->m_name )->m_realModelID );
 		}
 
 		luaModelLODEnd( pLuaFile );
@@ -1210,26 +1485,26 @@ nonotify:
 		{
 #if (MAP_METHOD==MAP_XML)
 			// We add all map entries
-			fprintf(pMapFile, pMapEntry, name, modelIDs[m], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
+			fprintf(pMapFile, pMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
 			fprintf(pMapFile, pMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
 #elif (MAP_METHOD==MAP_LUA)
 			// Yup, we script our elements
-			fprintf(pLuaServer, pServerMapEntry, name, modelIDs[m], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
+			fprintf(pLuaServer, pServerMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
 			fprintf(pLuaServer, pServerMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
 #endif
 			continue;
 		}
 
-		if ( !AllocateResources( name ) )
+		if ( !AllocateResources( name, false ) )
 			continue;
 
 #if (MAP_METHOD==MAP_XML)
 		// We add all map entries
-		fprintf(pMapFile, pMapEntry, name, modelIDs[usNames-1], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
+		fprintf(pMapFile, pMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
 		fprintf(pMapFile, pMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
 #elif (MAP_METHOD==MAP_LUA)
 		// Yup, we script our elements
-		fprintf(pLuaServer, pServerMapEntry, name, modelIDs[usNames-1], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
+		fprintf(pLuaServer, pServerMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
 		fprintf(pLuaServer, pServerMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
 #endif
 
@@ -1239,7 +1514,7 @@ nonotify:
 			lod = lodObj->m_realModelID;
 
 		// Now LUA
-		luaModelLoadEntry( pLuaFile, name, txdName, modelIDs[usNames-1], lodBuffer, lod );
+		luaModelLoadEntry( pLuaFile, name, txdName, modelIDs[(*iter)->m_modelID], lodBuffer, lod );
 	}
 	
 	luaModelLoadEnd( pLuaFile );
@@ -1264,7 +1539,7 @@ nonotify:
 
 	SetCurrentDirectory("../");
 #if (LUA_DOCOMPILE==TRUE)
-	system("luac5.1.exe -o output/script.luac output/script.lua");
+	system("luac5.1.exe -os output/script.luac output/script.lua");
 
 	DeleteFile("output/script.lua");
 #endif
