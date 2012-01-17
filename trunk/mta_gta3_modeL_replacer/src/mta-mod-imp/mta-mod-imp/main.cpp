@@ -149,7 +149,10 @@ inline void luaBegin( FILE *file )
 	{
 		fprintf( file,
 			"local function loadResources(model, size)\n" \
-			"	engineImportTXD(model.txd, model.id);\n\n" \
+			"	if not (model.impTxd) then\n" \
+			"		engineImportTXD(model.txd, model.id);\n\n" \
+			"		model.impTxd = true;\n" \
+			"	end\n\n" \
 			"	model.model = engineLoadDFF(model.model_file, 0);\n\n" \
 			"	if not (model.model) then return false; end;\n\n"
 		);
@@ -187,9 +190,9 @@ inline void luaBegin( FILE *file )
 			"	local cache = cached[model.id];\n\n" \
 			"	if not (cache) then return true; end\n\n" \
 			"	if (model.col_file) then\n" \
-			"		destroyElement(model.model);\n" \
+			"		destroyElement(model.col);\n" \
 			"	end\n" \
-			"	destroyElement(model.col);\n" \
+			"	destroyElement(model.model);\n" \
 			"	model.model = nil;\n" \
 			"	model.col = nil;\n" \
 			"	cached[model.id] = nil;\n" \
@@ -1059,13 +1062,13 @@ void	LoadTargetIDE(const char *name)
 		{
 			if ( !avalID[m] )
 				continue;
-
+			
 			avalID[m] = NULL;
 			break;
 		}
 		if ( m == 65534 )
 		{
-			printf( "ERROR: requiring %u more valid model ids\n", numAvailable );
+			printf( "ERROR: requiring more valid model ids\n" );
 			
 			getchar();
 			exit(EXIT_FAILURE);
@@ -1326,7 +1329,7 @@ nonotify:
 		memset( modelLOD, 0, sizeof(modelLOD) );
 
 		// Load all GTA:SA static scene objects (hack)
-		SetCurrentDirectory("..\\rplipl");
+		SetCurrentDirectory("rplipl\\");
 
 		if ((find = FindFirstFile("*.ipl", &findData)) == INVALID_HANDLE_VALUE)
 		{
@@ -1342,10 +1345,12 @@ nonotify:
 			LoadReplaceIPL( findData.cFileName );
 
 		FindClose( find );
+
+		SetCurrentDirectory("..");
 	}
 
 	// We must get all replacable IDE model ids
-	SetCurrentDirectory("..\\rplide");
+	SetCurrentDirectory("rplide\\");
 
 	if ((find = FindFirstFile("*.ide", &findData)) == INVALID_HANDLE_VALUE)
 	{
@@ -1363,7 +1368,7 @@ nonotify:
 	FindClose(find);
 
 	// We change into ipl directory
-	SetCurrentDirectory("ipl\\");
+	SetCurrentDirectory("..\\ipl\\");
 
 	// We scan through all ipl files and load em
 	if ((find = FindFirstFile("*.ipl", &findData)) == INVALID_HANDLE_VALUE)
@@ -1539,7 +1544,7 @@ nonotify:
 
 	SetCurrentDirectory("../");
 #if (LUA_DOCOMPILE==TRUE)
-	system("luac5.1.exe -os output/script.luac output/script.lua");
+	system("luac5.1.exe -s -o output/script.luac output/script.lua");
 
 	DeleteFile("output/script.lua");
 #endif
