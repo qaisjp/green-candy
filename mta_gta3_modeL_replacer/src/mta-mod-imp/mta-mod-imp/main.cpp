@@ -153,7 +153,7 @@ inline void luaBegin( FILE *file )
 			"		engineImportTXD(model.txd, model.id);\n\n" \
 			"		model.impTxd = true;\n" \
 			"	end\n\n" \
-			"	model.model = engineLoadDFF(model.model_file, 0);\n\n" \
+			"	model.model = engineLoadDFF(model.model_file, model.id);\n\n" \
 			"	if not (model.model) then return false; end;\n\n"
 		);
 
@@ -476,8 +476,8 @@ inline void luaModelLoadEntry( FILE *file, const char *name, const char *txdName
 		else
 		{
 			fprintf( file,
-				"	pTable.model=engineLoadDFF(\"models/%s.dff\",0);\n" \
-				"	pTable.col=engineLoadCOL(\"coll/%s.col\");\n", name, name
+				"	pTable.model=engineLoadDFF(\"models/%s.dff\", %u);\n" \
+				"	pTable.col=engineLoadCOL(\"coll/%s.col\");\n", name, id, name
 			);
 		}
 
@@ -584,8 +584,8 @@ inline void luaModelLODEntry( FILE *file, unsigned short id, const char *name, c
 		{
 			fprintf( file,
 				"	engineImportTXD(pModelEntry.txd, %u);\n" \
-				"	pModelEntry.model = engineLoadDFF(\"models/%s.dff\", 0);\n" \
-				"	engineReplaceModel(pModelEntry.model, %u);\n", id, name, id
+				"	pModelEntry.model = engineLoadDFF(\"models/%s.dff\", %u);\n" \
+				"	engineReplaceModel(pModelEntry.model, %u);\n", id, name, id, id
 			);
 
 			if ( colName )
@@ -641,7 +641,7 @@ inline void luaModelLODEnd( FILE *file )
 		{
 			fprintf( file,
 				"		engineImportTXD(pModelEntry.txd, n[1]);\n" \
-				"		pModelEntry.model = engineLoadDFF(\"models/\"..n[2]..\".dff\", 0);\n" \
+				"		pModelEntry.model = engineLoadDFF(\"models/\"..n[2]..\".dff\", n[1]);\n" \
 				"		engineReplaceModel(pModelEntry.model, n[1]);\n" \
 				"		if ( #n == 6 ) then\n" \
 				"			pModelEntry.col = engineLoadCOL(\"coll/\"..n[6]..\".col\");\n" \
@@ -692,7 +692,7 @@ inline void luaModelLoadEnd( FILE *file )
 		{
 			fprintf( file, 
 				"		engineImportTXD(pModelEntry.txd, m.model);\n" \
-				"		pModelEntry.model=engineLoadDFF(\"models/\"..m.model_file..\".dff\",0);\n" \
+				"		pModelEntry.model=engineLoadDFF(\"models/\"..m.model_file..\".dff\", m.model);\n" \
 				"		pModelEntry.col=engineLoadCOL(\"coll/\"..m.coll_file..\".col\");\n"
 			);
 		}
