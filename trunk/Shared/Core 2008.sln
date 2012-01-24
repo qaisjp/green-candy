@@ -1,5 +1,5 @@
 Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+# Visual C++ Express 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client - Core", "..\MTA10\core\_Core 2008.vcproj", "{4C71249E-EA08-4A3D-9AEF-28707ACC6531}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0008960E-E0DD-41A6-8265-00B31DDB4C21} = {0008960E-E0DD-41A6-8265-00B31DDB4C21}
@@ -77,6 +77,11 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sqlite", "..\vendor\sqlite\sqlite.vcproj", "{71C9B848-4138-4D4A-B131-1A42E7AC66B6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client - Launch", "..\MTA10\launch\_Launch 2008.vcproj", "{C9188AB9-F099-4370-85DC-876B3904B939}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua_interpret", "..\lua_interpret\lua_interpret.vcproj", "{B2743453-2FC6-4B60-B8FA-CA87F9995411}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8EEECEE6-A6EC-BC48-8E76-22B87825444B} = {8EEECEE6-A6EC-BC48-8E76-22B87825444B}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -223,6 +228,12 @@ Global
 		{C9188AB9-F099-4370-85DC-876B3904B939}.Nightly|Win32.Build.0 = Nightly|Win32
 		{C9188AB9-F099-4370-85DC-876B3904B939}.Release|Win32.ActiveCfg = Release|Win32
 		{C9188AB9-F099-4370-85DC-876B3904B939}.Release|Win32.Build.0 = Release|Win32
+		{B2743453-2FC6-4B60-B8FA-CA87F9995411}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B2743453-2FC6-4B60-B8FA-CA87F9995411}.Debug|Win32.Build.0 = Debug|Win32
+		{B2743453-2FC6-4B60-B8FA-CA87F9995411}.Nightly|Win32.ActiveCfg = Release|Win32
+		{B2743453-2FC6-4B60-B8FA-CA87F9995411}.Nightly|Win32.Build.0 = Release|Win32
+		{B2743453-2FC6-4B60-B8FA-CA87F9995411}.Release|Win32.ActiveCfg = Release|Win32
+		{B2743453-2FC6-4B60-B8FA-CA87F9995411}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
