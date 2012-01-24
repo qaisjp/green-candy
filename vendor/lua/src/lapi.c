@@ -1103,37 +1103,14 @@ LUA_API void lua_newclass( lua_State *lua )
     Class *c;
     lua_lock( lua );
 
-    c = luaJ_new( lua );
+    c = luaJ_new( lua, NULL );
     setjvalue( lua, lua->top, c );
+    api_incr_top( lua );
 
     lua_unlock( lua );
 }
 
-LUA_API void lua_constructclass( lua_State *lua, int nargs )
+LUA_API void lua_constructclass( lua_State *L, int nargs )
 {
-    luaL_checktype( L, 1, LUA_TFUNCTION );
-
-    int top = lua_gettop( L );
-
-    lua_newtable( L );
-    lua_pushvalue( L, top );
-    luaL_openlib( L, NULL, classinternal, 1 );
-
-    lua_newtable( L );
-
-    lua_pushvalue( L, top );
-    lua_pushcclosure( L, classcm_index, 1 );
-    lua_setfield( L, top + 1, "__index" );
-
-    lua_pushvalue( L, top );
-    lua_pushcclosure( L, classcm_newindex, 1 );
-    lua_setfield( L, top + 1, "__newindex" );
-
-    lua_setmetatable( L, top );
-    lua_pop( L, 1 );
-
-    // Put the class as result
-    lua_insert( L, 1 );
-    lua_call( L, top - 1, 0 );
-    return 1;
+    return;
 }
