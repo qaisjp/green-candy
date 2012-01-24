@@ -721,6 +721,18 @@ inline void luaModelLoadEnd( FILE *file )
 		);
 	}
 
+	if ( !cached )
+	{
+		fprintf( file,
+			"\n" \
+			"	for m,n in pairs(pModels) do\n" \
+			"		if (n.super) and not (n.col) then\n" \
+			"			n.col = pModels[n.super].col;\n" \
+			"		end\n" \
+			"	end\n"
+		);
+	}
+
 	fprintf( file, 
 		"end\n" \
 		"loadModels();\n\n"
@@ -953,9 +965,15 @@ inline void luaEnd( FILE *file )
 	}
 
 	fprintf( file,
-		"collectgarbage();\n" \
-		"setJetpackMaxHeight(%u);\n", usZoffset + jetpackHeight
+		"collectgarbage();\n"
 	);
+
+	if ( jetpackHeight != 0 )
+	{
+		fprintf( file,
+			"setJetpackMaxHeight(%u);\n", usZoffset + jetpackHeight
+		);
+	}
 }
 
 const char *pServerHeader=
@@ -1135,6 +1153,7 @@ inline bool AllocateResources( const char *name, bool lod )
 {
 	char buffer[1024];
 	char copyBuffer[1024];
+	unsigned int k;
 
 	// Copy the model file
 	_snprintf(buffer, 1023, "..\\resources\\%s.dff", name);
@@ -1178,56 +1197,50 @@ inline bool AllocateResources( const char *name, bool lod )
 	else
 		colName = NULL;
 
-	names[usNames++] = name;
-
 	CObject *txdObj = GetObjectByModel(name);
 
-	if (txdObj)
+	if (!txdObj)
 	{
-		unsigned int k;
-
-		if (lodSupport)
-			_snprintf(lodBuffer, 127, "%.0f", txdObj->m_drawDistance);
-		else
-			strcpy(lodBuffer, "500");
-
-		txdName = txdObj->m_textureName;
-
-		for (k=0; k < usTxdNames; k++)
-			if (strcmp(txdNames[k], txdName) == 0)
-				break;
-
-		// Little hack
-		if (k == usTxdNames)
-		{
-			// Copy over resources
-			_snprintf(buffer, 1023, "..\\resources\\%s.txd", txdName);
-
-			if (!FileExists(buffer))
-				printf("texture missing: %s (ignoring)\n", buffer);
-			else
-			{
-				_snprintf(copyBuffer, 1023, "..\\output\\textures\\%s.txd", txdName);
-
-				// Copy the resource over
-				if (CopyFile(buffer, copyBuffer, true))
-					printf("copying texture '%s'\n", txdName);
-			}
-
-			fprintf( pMetaFile,
-				"	<file src=\"textures\\%s.txd\" type=\"client\" />\n", txdName
-			);
-
-			txdNames[usTxdNames++] = txdName;
-		}
+		printf("could not find object def for '%s'\n", name);
+		return false;
 	}
+
+	if (lodSupport)
+		_snprintf(lodBuffer, 127, "%.0f", txdObj->m_drawDistance);
 	else
-	{
-		txdName = "_";
 		strcpy(lodBuffer, "500");
 
-		printf("could not find object def for '%s'\n", name);
+	txdName = txdObj->m_textureName;
+
+	for (k=0; k < usTxdNames; k++)
+		if (strcmp(txdNames[k], txdName) == 0)
+			break;
+
+	// Little hack
+	if (k == usTxdNames)
+	{
+		// Copy over resources
+		_snprintf(buffer, 1023, "..\\resources\\%s.txd", txdName);
+
+		if (!FileExists(buffer))
+			printf("texture missing: %s (ignoring)\n", buffer);
+		else
+		{
+			_snprintf(copyBuffer, 1023, "..\\output\\textures\\%s.txd", txdName);
+
+			// Copy the resource over
+			if (CopyFile(buffer, copyBuffer, true))
+				printf("copying texture '%s'\n", txdName);
+		}
+
+		fprintf( pMetaFile,
+			"	<file src=\"textures\\%s.txd\" type=\"client\" />\n", txdName
+		);
+
+		txdNames[usTxdNames++] = txdName;
 	}
+
+	names[usNames++] = name;
 
 	fprintf( pMetaFile,
 		"	<file src=\"models\\%s.dff\" type=\"client\" />\n", name
@@ -1294,9 +1307,6 @@ int		main (int argc, char *argv[])
 			goto nonotify;
 		}
 
-		if (lodSupport)
-			printf( "WARNING: Compiling with lod support does not guarrante an error-free mainworld\n" );
-
 		printf( "Using StreamingMethod: %s\n", method );
 	}
 	else
@@ -1310,7 +1320,7 @@ int		main (int argc, char *argv[])
 		cached = false;
 		debug = false;
 		autoCollect = false;
-		runtimeCorrection = true;
+		runtimeCorrection = 0;
 	}
 
 nonotify:
