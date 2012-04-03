@@ -15,7 +15,7 @@
 
 #include "lobject.h"
 
-LUAI_FUNC Class* luaJ_new( lua_State *L, Class *super );
+LUAI_FUNC Class* luaJ_new( lua_State *L, int nargs );
 LUAI_FUNC void luaJ_construct( lua_State *L, int nargs );
 LUAI_FUNC void luaJ_free( lua_State *L, Class *c );
 

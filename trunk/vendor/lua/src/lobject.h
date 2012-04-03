@@ -83,6 +83,7 @@ typedef struct lua_TValue {
 #define ttisfunction(o)	(ttype(o) == LUA_TFUNCTION)
 #define ttisboolean(o)	(ttype(o) == LUA_TBOOLEAN)
 #define ttisuserdata(o)	(ttype(o) == LUA_TUSERDATA)
+#define ttisclass(o)    (ttype(o) == LUA_TCLASS)
 #define ttisthread(o)	(ttype(o) == LUA_TTHREAD)
 #define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)
 
@@ -99,6 +100,7 @@ typedef struct lua_TValue {
 #define hvalue(o)	check_exp(ttistable(o), &(o)->value.gc->h)
 #define bvalue(o)	check_exp(ttisboolean(o), (o)->value.b)
 #define thvalue(o)	check_exp(ttisthread(o), &(o)->value.gc->th)
+#define jvalue(o)   check_exp(ttisclass(o), &(o)->value.gc->j)
 #define mvalue(o)   check_exp(ttismeta(o), &(o)->value.gc->m)
 
 #define l_isfalse(o)	(ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0))
@@ -357,7 +359,7 @@ typedef struct Class
 {
     CommonHeader;
     Table *env;
-    struct Class *super;
+    Table *meta;
     GCObject *gclist;
 } Class;
 

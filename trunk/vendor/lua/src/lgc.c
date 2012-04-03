@@ -215,7 +215,7 @@ static int traversetable (global_State *g, Table *h) {
 inline static void traverseclass( global_State *g, Class *c )
 {
     markobject( g, c->env );
-    traverseclass( g, c->super );   // WARNING: Security inheritance required, deadlock?
+    markobject( g, c->meta );
 }
 
 

@@ -106,7 +106,7 @@ LuaManager::LuaManager( RegisteredCommands& commands, Events& events, ScriptDebu
     lua_pushlightuserdata( m_lua, this );
     luaL_ref( m_lua, LUA_REGISTRYINDEX );   // first in registry!
     
-    // Setup the proxy global table
+    // Setup the global table
     lua_newtable( m_lua );
     lua_newtable( m_lua );
 

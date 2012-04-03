@@ -15,12 +15,51 @@
 using namespace std;
 
 lua_State *state;
+unsigned short fltCw;
+
+int doubleprec( lua_State *lua )
+{
+    luaL_checktype( lua, 1, LUA_TBOOLEAN );
+
+    if ( lua_toboolean( lua, 1 ) )
+    {
+        __asm
+        {
+            fstcw fltCw
+            mov ax, fltCw
+            or ax, 0x200
+            mov fltCw,ax
+            fldcw fltCw
+        }
+    }
+    else
+    {
+        __asm
+        {
+            fstcw fltCw
+            mov ax, fltCw
+            and ax, 0xFDFF
+            mov fltCw,ax
+            fldcw fltCw
+        }
+    }
+
+    lua_pushboolean( lua, true );
+    return 1;
+}
 
 void lua_exec( const std::string& cmd )
 {
     int top = lua_gettop( state );
 
-    luaL_loadstring( state, cmd.c_str() );
+    if ( luaL_loadstring( state, cmd.c_str() ) != 0 )
+    {
+        const char *err = lua_tostring( state, -1 );
+        lua_pop( state, 1 );
+
+        throw lua_exception( LUA_ERRSYNTAX, err );
+    }
+
     if ( lua_pcall( state, 0, LUA_MULTRET, 0 ) != 0 )
     {
         const char *err = lua_tostring( state, -1 );
@@ -70,26 +109,37 @@ int main( int argc, char *argv[] )
 
     luaL_openlibs( state );
 
+    lua_register( state, "doubleprec", doubleprec );
+
     try
     {
         while ( getline( cin, script ) )
         {
             try
             {
-                lua_exec( script );
+                std::string retCmd = "return ";
+                retCmd += script;
+
+                lua_exec( retCmd );
             }
             catch( lua_exception& )
             {
                 try
                 {
-                    std::string retCmd = "return ";
-                    retCmd += script;
-
-                    lua_exec( retCmd );
+                    lua_exec( script );
                 }
                 catch( lua_exception& e )
                 {
-                    cout << "error\n";
+                    switch( e.status() )
+                    {
+                    case LUA_ERRRUN:
+                        cout << "error\n";
+                        break;
+                    case LUA_ERRSYNTAX:
+                        cout << "syntax_error\n";
+                        break;
+                    }
+
                     cout << e.what();
                     cout << "\n";
                 }
