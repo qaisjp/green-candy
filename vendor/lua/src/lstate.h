@@ -139,7 +139,7 @@ union GCObject {
   union Udata u;
   union Closure cl;
   struct Table h;
-  struct Class c;
+  struct Class j;
   struct Proto p;
   struct UpVal uv;
   struct lua_State th;  /* thread */
@@ -153,7 +153,7 @@ union GCObject {
 #define gco2u(o)	(&rawgco2u(o)->uv)
 #define gco2cl(o)	check_exp((o)->gch.tt == LUA_TFUNCTION, &((o)->cl))
 #define gco2h(o)	check_exp((o)->gch.tt == LUA_TTABLE, &((o)->h))
-#define gco2j(o)    check_exp((o)->gch.tt == LUA_TCLASS, &((o)->c))
+#define gco2j(o)    check_exp((o)->gch.tt == LUA_TCLASS, &((o)->j))
 #define gco2p(o)	check_exp((o)->gch.tt == LUA_TPROTO, &((o)->p))
 #define gco2uv(o)	check_exp((o)->gch.tt == LUA_TUPVAL, &((o)->uv))
 #define ngcotouv(o) \

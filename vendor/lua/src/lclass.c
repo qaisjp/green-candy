@@ -21,7 +21,7 @@
 
 static int methodenv_index( lua_State *L )
 {
-    
+    lua_rawget( L, 1 );
     return 1;
 }
 
@@ -30,7 +30,7 @@ static int methodenv_newindex( lua_State *L )
     return 0;
 }
 
-Class* luaJ_new( lua_State *L, Class *super )
+Class* luaJ_new( lua_State *L, int nargs )
 {
     Class *c = luaM_new( L, Class );
     Table *meta = luaH_new( L, 0, 0 );
@@ -44,20 +44,25 @@ Class* luaJ_new( lua_State *L, Class *super )
     sethvalue( L, L->top, meta );
     api_incr_top( L );
 
-    lua_pushvalue( L, -2 );
+    // The upvalue has to be the class
+    setjvalue( L, L->top, c );
+    api_incr_top( L );
     lua_pushcclosure( L, methodenv_index, 1 );
     lua_setfield( L, -2, "__index" );
 
-    lua_pushvalue( L, -2 );
+    // The upvalue has to be the class
+    setjvalue( L, L->top, c );
+    api_incr_top( L );
     lua_pushcclosure( L, methodenv_newindex, 1 );
     lua_setfield( L, -2, "__newindex" );
 
     lua_pushboolean( L, false );
     lua_setfield( L, -2, "__metatable" );
 
-    lua_pop( L, 1 );
+    sethvalue( L, L->top - 1, c->env );
+    lua_setfenv( L, -nargs - 2 );
 
-    c->super = super;
+    lua_call( L, nargs, 0 );
     return c;
 }
 
@@ -66,38 +71,8 @@ void luaJ_free( lua_State *L, Class *c )
     luaM_free( L, c );
 }
 
-static int classcm_index( lua_State *L )
-{
-    return 1;
-}
-
-static int classcm_newindex( lua_State *L )
-{
-    return 0;
-}
-
 void luaJ_construct( lua_State *L, int nargs )
 {
-    int top = lua_gettop( L );
-
-    lua_newtable( L );
-    lua_newtable( L );
-
-    lua_pushvalue( L, top );
-    lua_pushcclosure( L, classcm_index, 1 );
-    lua_setfield( L, top + 1, "__index" );
-
-    lua_pushvalue( L, top );
-    lua_pushcclosure( L, classcm_newindex, 1 );
-    lua_setfield( L, top + 1, "__newindex" );
-
-    lua_pushboolean( L, false );
-    lua_setfield( L, top + 1, "__metatable" );
-
-    lua_setmetatable( L, top );
-    lua_pop( L, 1 );
-
-    lua_setfenv( L, -nargs - 1 );
-
-    lua_call( L, top - 1, 0 );
+    setjvalue( L, L->top - 1, luaJ_new( L, nargs ));
+    api_incr_top( L );
 }
