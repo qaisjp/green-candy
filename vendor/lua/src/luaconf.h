@@ -604,6 +604,7 @@ union luai_Cast { double l_d; long l_l; };
 ** and with longjmp/setjmp otherwise.
 */
 #if defined(__cplusplus)
+#include <string>
 /* C++ exceptions */
 #include <exception>
 
@@ -627,7 +628,7 @@ private:
 
 #define LUAI_THROW(L,c)	throw lua_exception( (c)->status, "internal lua error" )
 #define LUAI_TRY(L,c,a)	try { a } catch( lua_exception& e ) \
-    { lua_pushstring( L, e.what() ); (c)->status = e.status(); } \
+    { (c)->status = e.status(); } \
     catch(...) \
 	{ if ((c)->status == 0) (c)->status = -1; }
 #define luai_jmpbuf	int  /* dummy variable */

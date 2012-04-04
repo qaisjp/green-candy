@@ -229,14 +229,16 @@ LUA_API void lua_pushvalue (lua_State *L, int idx) {
 ** access functions (stack -> C)
 */
 
-LUA_API int lua_type (lua_State *L, int idx) {
-  StkId o = index2adr(L, idx);
-  return (o == luaO_nilobject) ? LUA_TNONE : ttype(o);
+LUA_API int lua_type (lua_State *L, int idx)
+{
+    StkId o = index2adr(L, idx);
+    return (o == luaO_nilobject) ? LUA_TNONE : ttype(o);
 }
 
-LUA_API const char *lua_typename (lua_State *L, int t) {
-  UNUSED(L);
-  return (t == LUA_TNONE) ? "no value" : luaT_typenames[t];
+LUA_API const char *lua_typename (lua_State *L, int t)
+{
+    UNUSED(L);
+    return (t == LUA_TNONE) ? "no value" : luaT_typenames[t];
 }
 
 LUA_API int lua_iscfunction (lua_State *L, int idx) {
@@ -798,15 +800,16 @@ LUA_API int lua_setfenv (lua_State *L, int idx) {
      api_check(L, (nr) == LUA_MULTRET || (L->ci->top - L->top >= (nr) - (na)))
 	
 
-LUA_API void lua_call (lua_State *L, int nargs, int nresults) {
-  StkId func;
-  lua_lock(L);
-  api_checknelems(L, nargs+1);
-  checkresults(L, nargs, nresults);
-  func = L->top - (nargs+1);
-  luaD_call(L, func, nresults);
-  adjustresults(L, nresults);
-  lua_unlock(L);
+LUA_API void lua_call (lua_State *L, int nargs, int nresults)
+{
+    StkId func;
+    lua_lock(L);
+    api_checknelems(L, nargs+1);
+    checkresults(L, nargs, nresults);
+    func = L->top - (nargs+1);
+    luaD_call(L, func, nresults);
+    adjustresults(L, nresults);
+    lua_unlock(L);
 }
 
 
@@ -827,7 +830,8 @@ static void f_call (lua_State *L, void *ud) {
 
 
 
-LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc) {
+LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+{
   struct CallS c;
   int status;
   ptrdiff_t func;
@@ -836,7 +840,8 @@ LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc) {
   checkresults(L, nargs, nresults);
   if (errfunc == 0)
     func = 0;
-  else {
+  else
+  {
     StkId o = index2adr(L, errfunc);
     api_checkvalidindex(L, o);
     func = savestack(L, o);
@@ -984,6 +989,33 @@ LUA_API int lua_gc (lua_State *L, int what, int data) {
 /*
 ** miscellaneous functions
 */
+
+LUA_API void lua_pushtype( lua_State *L, int idx )
+{
+    StkId o = index2adr( L, idx );
+
+    if ( ttype(o) == LUA_TCLASS )
+    {
+        const TValue *tm = luaT_gettmbyobj( L, L->base, TM_TYPE );
+
+        switch( ttype(tm) )
+        {
+        case LUA_TSTRING:
+            setobj2s( L, L->top, tm );
+            api_incr_top( L );
+            return;
+        case LUA_TFUNCTION:
+            setobj2s( L, L->top, tm );
+            api_incr_top( L );
+            setobj2s( L, L->top, o );
+            api_incr_top( L );
+            lua_call( L, 1, 1 );
+            return;
+        }
+    }
+
+    lua_pushstring(L, lua_typename( L, ttype(o) ));
+}
 
 
 LUA_API int lua_error (lua_State *L) {

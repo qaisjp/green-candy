@@ -10,7 +10,7 @@
 *
 *****************************************************************************/
 
-#include "main.h"
+#include "StdInc.h"
 
 using namespace std;
 
@@ -64,7 +64,7 @@ void lua_exec( const std::string& cmd )
     {
         const char *err = lua_tostring( state, -1 );
         lua_pop( state, 1 );
-
+        
         throw lua_exception( LUA_ERRRUN, err );
     }
 
@@ -101,6 +101,35 @@ void lua_exec( const std::string& cmd )
     lua_settop( state, top );
 }
 
+void loadBenchFile( const filePath& path, void *ud )
+{
+    filePath relPath;
+    fileRoot->GetRelativePath( path, true, relPath );
+
+    std::vector <char> buff;
+    fileRoot->ReadToBuffer( path, buff );
+
+    // Zero terminate
+    buff.push_back( 0 );
+
+    if ( luaL_loadstring( state, &buff[0] ) != 0 )
+    {
+        cout << "failed to load library " << relPath << "\n";
+        return;
+    }
+
+    if ( lua_pcall( state, 0, 0, 0 ) != 0 )
+    {
+        cout << "failed to run library " << relPath << "\n";
+        cout << lua_tostring( state, -1 );
+
+        lua_pop( state, 1 );
+        return;
+    }
+
+    cout << "init: " << relPath << "\n";
+}
+
 int main( int argc, char *argv[] )
 {
     std::string script;
@@ -108,6 +137,14 @@ int main( int argc, char *argv[] )
     state = lua_open();
 
     luaL_openlibs( state );
+
+    // Include everything from /luabench/
+    cout << "starting luaBench files...\n";
+
+    new CFileSystem();
+    fileRoot->ScanDirectory( "/luabench/", "*.lua", false, NULL, loadBenchFile, NULL );
+
+    cout << "\n";
 
     lua_register( state, "doubleprec", doubleprec );
 

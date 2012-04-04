@@ -77,8 +77,8 @@ static void traceexec (lua_State *L, const Instruction *pc) {
 }
 
 
-static void callTMres (lua_State *L, StkId res, const TValue *f,
-                        const TValue *p1, const TValue *p2) {
+static void callTMres (lua_State *L, StkId res, const TValue *f, const TValue *p1, const TValue *p2)
+{
   ptrdiff_t result = savestack(L, res);
   setobj2s(L, L->top, f);  /* push function */
   setobj2s(L, L->top+1, p1);  /* 1st argument */
@@ -105,7 +105,8 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
 }
 
 
-void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
+void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val)
+{
   int loop;
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;
@@ -123,7 +124,15 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
     else if (ttisclass(t))
     {
         Class *c = jvalue(t);
-        
+        if ( (tm = fasttm( L, c->env, TM_INDEX )) == NULL )
+        {
+            const TValue *res = luaH_get( c->env, key );
+            if ( !ttisnil(res) || (tm = fasttm( L, c->meta, TM_INDEX)) == NULL )
+            {
+                setobj2s( L, val, res );
+                return;
+            }
+        }
     }
     else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX)))
       luaG_typeerror(L, t, "index");
@@ -137,33 +146,52 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
 }
 
 
-void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
-  int loop;
-  TValue temp;
-  for (loop = 0; loop < MAXTAGLOOP; loop++) {
-    const TValue *tm;
-    if (ttistable(t)) {  /* `t' is a table? */
-      Table *h = hvalue(t);
-      TValue *oldval = luaH_set(L, h, key); /* do a primitive set */
-      if (!ttisnil(oldval) ||  /* result is no nil? */
-          (tm = fasttm( L, h->metatable, TM_NEWINDEX )) == NULL) { /* or no TM? */
-        setobj2t(L, oldval, val);
-        luaC_barriert(L, h, val);
-        return;
-      }
-      /* else will try the tag method */
+void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val)
+{
+    int loop;
+    TValue temp;
+    for (loop = 0; loop < MAXTAGLOOP; loop++)
+    {
+        const TValue *tm;
+        if (ttistable(t))
+        {  /* `t' is a table? */
+            Table *h = hvalue(t);
+            TValue *oldval = luaH_set(L, h, key); /* do a primitive set */
+            if (!ttisnil(oldval) ||  /* result is no nil? */
+              (tm = fasttm( L, h->metatable, TM_NEWINDEX )) == NULL)
+            { /* or no TM? */
+                setobj2t(L, oldval, val);
+                luaC_barriert(L, h, val);
+                return;
+            }
+            /* else will try the tag method */
+        }
+        else if (ttisclass(t))
+        {
+            Class *j = jvalue(t);
+            if ( (tm = fasttm( L, j->env, TM_NEWINDEX)) == NULL )
+            {
+                TValue *oldval = luaH_set( L, j->env, key );
+                if ( !ttisnil(oldval) || (tm = fasttm( L, j->meta, TM_NEWINDEX )) == NULL )
+                {
+                    setobj2t( L, oldval, val );
+                    luaC_barriert( L, j->env, val );
+                    return;
+                }
+            }
+        }
+        else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX)))
+            luaG_typeerror(L, t, "index");
+        if (ttisfunction(tm))
+        {
+            callTM(L, tm, t, key, val);
+            return;
+        }
+        /* else repeat with `tm' */
+        setobj(L, &temp, tm);  /* avoid pointing inside table (may rehash) */
+        t = &temp;
     }
-    else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX)))
-      luaG_typeerror(L, t, "index");
-    if (ttisfunction(tm)) {
-      callTM(L, tm, t, key, val);
-      return;
-    }
-    /* else repeat with `tm' */
-    setobj(L, &temp, tm);  /* avoid pointing inside table (may rehash) */
-    t = &temp;
-  }
-  luaG_runerror(L, "loop in settable");
+    luaG_runerror(L, "loop in settable");
 }
 
 

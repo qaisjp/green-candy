@@ -21,12 +21,28 @@
 
 static int methodenv_index( lua_State *L )
 {
+    lua_pushvalue( L, 2 );
+    lua_pushvalue( L, 2 );
+
+    lua_rawget( L, lua_upvalueindex( 2 ) );
+
+    if ( lua_type( L, 4 ) != LUA_TNIL )
+        return 1;
+
+    lua_pop( L, 1 );
     lua_rawget( L, 1 );
+
+    if ( lua_type( L, 3 ) != LUA_TNIL )
+        return 1;
+
+    lua_pop( L, 1 );
+    lua_gettable( L, LUA_ENVIRONINDEX );
     return 1;
 }
 
 static int methodenv_newindex( lua_State *L )
 {
+    lua_rawset( L, 1 );
     return 0;
 }
 
@@ -39,6 +55,7 @@ Class* luaJ_new( lua_State *L, int nargs )
     // Set up the method environment
     c->env = luaH_new( L, 0, 0 );
     c->env->metatable = meta;
+    c->meta = NULL;
 
     // Put the meta to stack
     sethvalue( L, L->top, meta );
@@ -47,7 +64,14 @@ Class* luaJ_new( lua_State *L, int nargs )
     // The upvalue has to be the class
     setjvalue( L, L->top, c );
     api_incr_top( L );
-    lua_pushcclosure( L, methodenv_index, 1 );
+
+    // Create a read-only storage
+    lua_newtable( L );
+    sethvalue( L, L->top, c->env );
+    api_incr_top( L );
+    lua_setfield( L, -2, "_ENV" );
+
+    lua_pushcclosure( L, methodenv_index, 2 );
     lua_setfield( L, -2, "__index" );
 
     // The upvalue has to be the class

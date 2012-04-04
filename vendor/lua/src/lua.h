@@ -103,6 +103,9 @@ typedef enum {
   TM_LE,
   TM_CONCAT,
   TM_CALL,
+  TM_REDIRECT,
+  TM_METATABLE,
+  TM_TYPE,
   TM_N		/* number of elements in the enum */
 } TMS;
 
@@ -274,14 +277,16 @@ LUA_API int (lua_gc) (lua_State *L, int what, int data);
 ** miscellaneous functions
 */
 
-LUA_API int   (lua_error) (lua_State *L);
+LUA_API void    (lua_pushtype) (lua_State *L, int idx);
 
-LUA_API int   (lua_next) (lua_State *L, int idx);
+LUA_API int     (lua_error) (lua_State *L);
 
-LUA_API void  (lua_concat) (lua_State *L, int n);
+LUA_API int     (lua_next) (lua_State *L, int idx);
+
+LUA_API void    (lua_concat) (lua_State *L, int n);
 
 LUA_API lua_Alloc (lua_getallocf) (lua_State *L, void **ud);
-LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
+LUA_API void    (lua_setallocf) (lua_State *L, lua_Alloc f, void *ud);
 
 
 
