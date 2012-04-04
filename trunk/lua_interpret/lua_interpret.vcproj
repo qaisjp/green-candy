@@ -197,6 +197,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\luafile.h"
+				>
+			</File>
+			<File
 				RelativePath=".\StdInc.h"
 				>
 			</File>

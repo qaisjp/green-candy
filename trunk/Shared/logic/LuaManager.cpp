@@ -70,7 +70,8 @@ static int mainaccess_global( lua_State *lua )
     return lua_getmanager( lua )->AccessGlobalTable();
 }
 
-static const luaL_Reg interface_access = {
+static const luaL_Reg interface_access =
+{
     { "_G", mainaccess_global },
     { "_ENV", mainaccess_global },
     { 0, 0 }

@@ -1148,19 +1148,19 @@ LUA_API void lua_setevent( lua_State *lua, eLuaEvent evt, lua_CFunction proto )
     G(lua)->events[evt] = proto;
 }
 
-LUA_API void lua_newclass( lua_State *lua )
-{
-    Class *c;
-    lua_lock( lua );
-
-    c = luaJ_new( lua, 0 );
-    setjvalue( lua, lua->top, c );
-    api_incr_top( lua );
-
-    lua_unlock( lua );
-}
-
 LUA_API void lua_constructclass( lua_State *L, int nargs )
 {
-    return;
+    Class *c;
+    lua_lock( L );
+
+    c = luaJ_new( L, nargs );
+    setjvalue( L, L->top, c );
+    api_incr_top( L );
+
+    lua_unlock( L );
+}
+
+LUA_API void lua_newclass( lua_State *lua )
+{
+    lua_constructclass( lua, 0 );
 }

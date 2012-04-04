@@ -8,6 +8,8 @@ EXPORTS
   lua_getupvalue
   lua_setlocal
   lua_setupvalue
+  lua_constructclass
+  lua_newclass
   lua_topointer
   lua_iscfunction
   lua_isnumber
