@@ -19,6 +19,7 @@
 #include <DbgHelp.h>
 #include "lauxlib.h"
 #include "lualib.h"
+#include "luafile.h"
 #include <sstream>
 #include <iostream>
 #include <sys/stat.h>

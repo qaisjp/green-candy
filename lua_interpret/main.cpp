@@ -137,6 +137,7 @@ int main( int argc, char *argv[] )
     state = lua_open();
 
     luaL_openlibs( state );
+    luafile_open( state );
 
     // Include everything from /luabench/
     cout << "starting luaBench files...\n";
