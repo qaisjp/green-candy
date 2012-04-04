@@ -42,11 +42,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\vendor\lua\src;..\vendor"
+				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor;..\Shared\sdk;..\Shared"
 				PreprocessorDefinitions="WIN32;_DEBUG"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="1"
-				PrecompiledHeaderThrough="main.h"
+				PrecompiledHeaderThrough="StdInc.h"
+				PrecompiledHeaderFile="$(IntDir)\$(TargetName)_d.pch"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -61,7 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lua5.1d.lib"
+				AdditionalDependencies="lua5.1d.lib DbgHelp.lib"
 				OutputFile="$(OutDir)\lint_d.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="../vendor/lua/lib"
@@ -118,12 +119,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="C:\Users\HP\Desktop\mta_green\vendor\lua\src"
+				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor;..\Shared\sdk;..\Shared"
 				PreprocessorDefinitions="WIN32;NDEBUG"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
-				UsePrecompiledHeader="1"
-				PrecompiledHeaderThrough="main.h"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderThrough="StdInc.h"
+				PrecompiledHeaderFile="$(IntDir)\$(TargetName)_r.pch"
 				WarningLevel="3"
 				DebugInformationFormat="0"
 			/>
@@ -138,7 +140,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lua5.1.lib"
+				AdditionalDependencies="lua5.1.lib DbgHelp.lib"
 				OutputFile="$(OutDir)\lint.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="../vendor/lua/lib"
@@ -187,6 +189,26 @@
 		/>
 	</References>
 	<Files>
+		<Filter
+			Name="include"
+			>
+			<File
+				RelativePath="..\Shared\core\CFileSystem.h"
+				>
+			</File>
+			<File
+				RelativePath=".\StdInc.h"
+				>
+			</File>
+		</Filter>
+		<File
+			RelativePath="..\Shared\core\CFileSystem.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\luafile.cpp"
+			>
+		</File>
 		<File
 			RelativePath=".\main.cpp"
 			>

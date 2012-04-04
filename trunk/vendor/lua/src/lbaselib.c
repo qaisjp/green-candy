@@ -18,6 +18,7 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "ltm.h"
+#include "lstate.h"
 
 
 
@@ -225,10 +226,11 @@ static int luaB_collectgarbage (lua_State *L) {
 }
 
 
-static int luaB_type (lua_State *L) {
-  luaL_checkany(L, 1);
-  lua_pushstring(L, luaL_typename(L, 1));
-  return 1;
+static int luaB_type (lua_State *L)
+{
+    luaL_checkany(L, 1);
+    lua_pushtype( L, 1 );
+    return 1;
 }
 
 

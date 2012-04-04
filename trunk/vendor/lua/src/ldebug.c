@@ -556,32 +556,34 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name) {
 
 
 /* only ANSI way to check whether a pointer points to an array */
-static int isinstack (CallInfo *ci, const TValue *o) {
-  StkId p;
-  for (p = ci->base; p < ci->top; p++)
-    if (o == p) return 1;
-  return 0;
+static int isinstack (CallInfo *ci, const TValue *o)
+{
+    StkId p;
+    for (p = ci->base; p < ci->top; p++)
+        if (o == p)
+            return 1;
+    return 0;
 }
 
 
-void luaG_typeerror (lua_State *L, const TValue *o, const char *op) {
-  const char *name = NULL;
-  const char *t = luaT_typenames[ttype(o)];
-  const char *kind = (isinstack(L->ci, o)) ?
-                         getobjname(L, L->ci, cast_int(o - L->base), &name) :
-                         NULL;
-  if (kind)
-    luaG_runerror(L, "attempt to %s %s " LUA_QS " (a %s value)",
-                op, kind, name, t);
-  else
-    luaG_runerror(L, "attempt to %s a %s value", op, t);
+void luaG_typeerror (lua_State *L, const TValue *o, const char *op)
+{
+    const char *name = NULL;
+    const char *t = luaT_typenames[ttype(o)];
+    const char *kind = (isinstack(L->ci, o)) ? getobjname(L, L->ci, cast_int(o - L->base), &name) : NULL;
+
+    if (kind)
+        luaG_runerror(L, "attempt to %s %s " LUA_QS " (a %s value)", op, kind, name, t);
+    else
+        luaG_runerror(L, "attempt to %s a %s value", op, t);
 }
 
 
-void luaG_concaterror (lua_State *L, StkId p1, StkId p2) {
-  if (ttisstring(p1) || ttisnumber(p1)) p1 = p2;
-  lua_assert(!ttisstring(p1) && !ttisnumber(p1));
-  luaG_typeerror(L, p1, "concatenate");
+void luaG_concaterror (lua_State *L, StkId p1, StkId p2)
+{
+    if (ttisstring(p1) || ttisnumber(p1)) p1 = p2;
+    lua_assert(!ttisstring(p1) && !ttisnumber(p1));
+    luaG_typeerror(L, p1, "concatenate");
 }
 
 

@@ -47,7 +47,8 @@ void luaT_init (lua_State *L) {
     "__concat",
     "__call",
     "__redirect",
-    "__metatable"
+    "__metatable",
+    "__type"
   };
   int i;
   for (i=0; i<TM_N; i++) {
@@ -80,6 +81,8 @@ inline Table* luaT_getmetabyobj( lua_State *L, const TValue *o )
         return hvalue(o)->metatable;
     case LUA_TUSERDATA:
         return uvalue(o)->metatable;
+    case LUA_TCLASS:
+        return jvalue(o)->meta;
     }
 
     return G(L)->mt[ttype(o)];
@@ -87,6 +90,12 @@ inline Table* luaT_getmetabyobj( lua_State *L, const TValue *o )
 
 const TValue *luaT_gettmbyobj( lua_State *L, const TValue *o, TMS event )
 {
+    if ( ttype(o) == LUA_TCLASS )
+    {
+        const TValue *res = luaH_getstr( jvalue(o)->env, G(L)->tmname[event] );
+        if ( res )
+            return res;
+    }
     Table *mt = luaT_getmetabyobj( L, o );
     return (mt ? luaH_getstr( mt, G(L)->tmname[event] ) : luaO_nilobject);
 }

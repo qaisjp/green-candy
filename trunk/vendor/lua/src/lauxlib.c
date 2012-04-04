@@ -64,8 +64,9 @@ LUALIB_API int luaL_typerror (lua_State *L, int narg, const char *tname) {
 }
 
 
-static void tag_error (lua_State *L, int narg, int tag) {
-  luaL_typerror(L, narg, lua_typename(L, tag));
+static void tag_error (lua_State *L, int narg, int tag)
+{
+    luaL_typerror(L, narg, lua_typename(L, tag));
 }
 
 

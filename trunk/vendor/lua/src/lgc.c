@@ -215,7 +215,8 @@ static int traversetable (global_State *g, Table *h) {
 inline static void traverseclass( global_State *g, Class *c )
 {
     markobject( g, c->env );
-    markobject( g, c->meta );
+    if ( c->meta )
+        markobject( g, c->meta );
 }
 
 

@@ -233,7 +233,7 @@ static inline void _File_OutputPathTree( dirTree& tree, bool file, filePath& out
 // Get relative path tree nodes
 static inline bool _File_ParseRelativeTree( const char *path, dirTree& root, dirTree& output, bool *file )
 {
-    dirTree tree( 32 );
+    dirTree tree;
     dirTree::iterator rootIter, treeIter;
 
     if (!_File_ParseRelativePath( path, tree, file ))
@@ -571,7 +571,7 @@ bool CSystemPathTranslator::GetFullPath( const char *path, bool allowFile, fileP
 
 bool CSystemPathTranslator::GetRelativePath( const char *path, bool allowFile, filePath& output )
 {
-    dirTree tree( 16 );
+    dirTree tree;
     bool file;
 
     if ( !GetRelativePathTree( path, tree, &file ) )
@@ -752,7 +752,7 @@ bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, siz
 #ifdef _WIN32
     HANDLE file;
     filePath output = m_root;
-    dirTree tree( 16 );
+    dirTree tree;
     bool isFile;
 
     if ( !GetRelativePathTree( path, tree, &isFile ) || !isFile )
@@ -794,7 +794,7 @@ void CSystemFileTranslator::_CreateDirTree( dirTree& tree )
 
 bool CSystemFileTranslator::CreateDir( const char *path )
 {
-    dirTree tree( 16 );
+    dirTree tree;
     bool file;
 
     if ( !GetRelativePathTree( path, tree, &file ) )
@@ -809,7 +809,7 @@ bool CSystemFileTranslator::CreateDir( const char *path )
 
 CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
 {
-    dirTree tree( 32 );
+    dirTree tree;
     filePath output = m_root;
     CRawFile *pFile;
     DWORD dwAccess = 0;
@@ -910,7 +910,7 @@ bool CSystemFileTranslator::Copy( const char *src, const char *dst )
 {
     filePath source;
     filePath target;
-    dirTree dstTree( 16 );
+    dirTree dstTree;
     bool file;
 
     if ( !GetFullPath( src, true, source ) || !GetRelativePathTree( dst, dstTree, &file ) || !file )
@@ -931,7 +931,7 @@ bool CSystemFileTranslator::Rename( const char *src, const char *dst )
 {
     filePath source;
     filePath target;
-    dirTree dstTree( 16 );
+    dirTree dstTree;
     bool file;
 
     if ( !GetFullPath( src, true, source ) || !GetRelativePathTree( dst, dstTree, &file ) || !file )
@@ -1086,10 +1086,17 @@ void CSystemFileTranslator::GetFiles( const char *path, const char *wildcard, bo
 
 CFileSystem::CFileSystem()
 {
+    char cwd[1024];
+    getcwd( cwd, 1023 );
+
+    // Make sure it is a correct directory
+    filePath cwd_ex = cwd;
+    cwd_ex += '\\';
+
     openFiles = new std::list<CFile*>;
 
     // Every application should be able to access itself
-    fileRoot = CreateTranslator( "" );
+    fileRoot = CreateTranslator( cwd_ex );
 
     fileSystem = this;
 }
@@ -1103,7 +1110,7 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
 {
     CSystemFileTranslator *pTranslator;
     filePath root;
-    dirTree tree( 16 );
+    dirTree tree;
     bool bFile;
 
     if ( !*path )
@@ -1196,6 +1203,7 @@ bool CFileSystem::ReadToBuffer( const char *path, std::vector <char>& output )
 #ifdef _WIN32
     HANDLE file = CreateFile( path, GENERIC_READ, 0, NULL, OPEN_ALWAYS, 0, NULL );
     size_t size;
+    DWORD _pf;
 
     if ( file == INVALID_HANDLE_VALUE )
         return false;
@@ -1203,8 +1211,9 @@ bool CFileSystem::ReadToBuffer( const char *path, std::vector <char>& output )
     size = GetFileSize( file, NULL );
 
     output.resize( size );
+    output.reserve( size );
 
-    ReadFile( file, &output[0], size, NULL, NULL );
+    ReadFile( file, &output[0], size, &_pf, NULL );
 
     CloseHandle( file );
     return true;

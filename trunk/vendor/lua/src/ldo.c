@@ -105,16 +105,42 @@ void luaD_throw (lua_State *L, int errcode) {
 }
 
 
-int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
-  struct lua_longjmp lj;
-  lj.status = 0;
-  lj.previous = L->errorJmp;  /* chain new error handler */
-  L->errorJmp = &lj;
-  LUAI_TRY(L, &lj,
-    (*f)(L, ud);
-  );
-  L->errorJmp = lj.previous;  /* restore old error handler */
-  return lj.status;
+int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud)
+{
+    struct lua_longjmp lj;
+    lj.status = 0;
+    lj.previous = L->errorJmp;  /* chain new error handler */
+    L->errorJmp = &lj;
+    LUAI_TRY(L, &lj,
+        (*f)(L, ud);
+    );
+    L->errorJmp = lj.previous;  /* restore old error handler */
+    return lj.status;
+}
+
+int luaD_rawrunprotectedEx( lua_State *L, Pfunc f, void *ud, std::string& err )
+{
+    struct lua_longjmp lj;
+    lj.status = 0;
+    lj.previous = L->errorJmp;  /* chain new error handler */
+    L->errorJmp = &lj;
+    try
+    {
+        (*f)(L, ud);
+    }
+    catch( lua_exception& e )
+    {
+        err = e.what();
+        return L->status = e.status();
+    }
+    catch( ... )
+    {
+        if ( L->status == 0 )
+            L->status = -1;
+        return -1;
+    }
+    L->errorJmp = lj.previous;  /* restore old error handler */
+    return lj.status;
 }
 
 /* }====================================================== */
@@ -456,19 +482,21 @@ LUA_API int lua_yield (lua_State *L, int nresults) {
 }
 
 
-int luaD_pcall (lua_State *L, Pfunc func, void *u,
-                ptrdiff_t old_top, ptrdiff_t ef) {
+int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t ef)
+{
   int status;
   unsigned short oldnCcalls = L->nCcalls;
   ptrdiff_t old_ci = saveci(L, L->ci);
   lu_byte old_allowhooks = L->allowhook;
   ptrdiff_t old_errfunc = L->errfunc;
+  std::string errmsg;
   L->errfunc = ef;
-  status = luaD_rawrunprotected(L, func, u);
+  status = luaD_rawrunprotectedEx(L, func, u, errmsg);
   if (status != 0) {  /* an error occurred? */
     StkId oldtop = restorestack(L, old_top);
     luaF_close(L, oldtop);  /* close eventual pending closures */
-    luaD_seterrorobj(L, status, oldtop);
+    L->top = oldtop;
+    lua_pushlstring( L, errmsg.c_str(), errmsg.size() );
     L->nCcalls = oldnCcalls;
     L->ci = restoreci(L, old_ci);
     L->base = L->ci->base;

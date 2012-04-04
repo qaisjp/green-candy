@@ -14,6 +14,8 @@
 #ifndef _CFileSystem_
 #define _CFileSystem_
 
+#include <direct.h>
+
 class CRawFile : public CFile
 {
 public:
