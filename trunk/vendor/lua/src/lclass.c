@@ -89,15 +89,22 @@ void Class::DecrementMethodStack( lua_State *lua )
     }
 }
 
+TValue* Class::GetSuperMethod( lua_State *lua )
+{
+    return luaH_setstr( lua, internStorage, superCached );
+}
+
 // Easy wrapper for C++ support
 class MethodStackAllocation
 {
 public:
     MethodStackAllocation( lua_State *thread, Class *myClass, const TValue& val )
     {
-        setobj( thread, &m_prevSuper, myClass->superMethod );
+        TValue *superMethod = myClass->GetSuperMethod( thread );
 
-        setobj( thread, myClass->superMethod, &val );
+        setobj( thread, &m_prevSuper, superMethod );
+
+        setobj( thread, superMethod, &val );
         myClass->IncrementMethodStack( thread );
 
         m_instance = myClass;
@@ -107,7 +114,7 @@ public:
     ~MethodStackAllocation()
     {
         m_instance->DecrementMethodStack( m_thread );
-        setobj( m_thread, m_instance->superMethod, &m_prevSuper );
+        setobj( m_thread, m_instance->GetSuperMethod( m_thread ), &m_prevSuper );
     }
 
     Class*      m_instance;
@@ -386,7 +393,6 @@ Class* luaJ_new( lua_State *L, int nargs )
     c->reqDestruction = false;
     c->inMethod = 0;
     c->refCount = 0;
-    c->superMethod = NULL;
 
     // Set up the environments
     c->env = luaH_new( L, 0, 0 );
@@ -399,6 +405,8 @@ Class* luaJ_new( lua_State *L, int nargs )
     c->env->metatable = meta;
     c->outenv->metatable = outmeta;
 
+    c->superCached = luaS_newlstr( L, "super", 5 );
+
     // Perform a temporary keep
     ClassConstructionAllocation construction( L, c );
 
@@ -410,10 +418,6 @@ Class* luaJ_new( lua_State *L, int nargs )
     lua_setfield( L, -2, "destroy" );
 
     lua_pop( L, 1 );
-
-    // Cache some special values
-    c->superMethod = luaH_setstr( L, c->internStorage, luaS_newlstr( L, "super", 5 ) );
-    setbvalue( c->superMethod, false );
 
     // Specify the outrange connection
     sethvalue( L, L->top, outmeta );

@@ -618,12 +618,12 @@ public:
         m_thread = L;
     }
 
-    unsigned int status()
+    unsigned int status() const
     {
         return m_status;
     }
 
-    lua_State* getThread()
+    lua_State* getThread() const
     {
         return m_thread;
     }

@@ -226,6 +226,8 @@ inline static void traverseclass( global_State *g, Class *c )
    
     if ( ttisfunction( &c->destructor ) )
         markobject( g, &c->destructor );
+
+    stringmark( c->superCached );
 }
 
 

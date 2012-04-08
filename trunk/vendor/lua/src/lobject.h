@@ -372,10 +372,11 @@ typedef struct Class
 
     void IncrementMethodStack( lua_State *lua );
     void DecrementMethodStack( lua_State *lua );
+    TValue* GetSuperMethod( lua_State *lua );
 
     // Cached values
-    TValue *superMethod;    // WARNING: make sure GC does not collect this entry
     TValue destructor;
+    TString *superCached;
 
     GCObject *gclist;
 } Class;
