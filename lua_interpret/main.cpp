@@ -132,6 +132,22 @@ void loadBenchFile( const filePath& path, void *ud )
     cout << "init: " << relPath << "\n";
 }
 
+void handleError( const lua_exception& e )
+{
+    switch( e.status() )
+    {
+    case LUA_ERRRUN:
+        cout << "error\n";
+        break;
+    case LUA_ERRSYNTAX:
+        cout << "syntax_error\n";
+        break;
+    }
+
+    cout << e.what();
+    cout << "\n";
+}
+
 int main( int argc, char *argv[] )
 {
     std::string script;
@@ -162,26 +178,21 @@ int main( int argc, char *argv[] )
 
                 lua_exec( retCmd );
             }
-            catch( lua_exception& )
+            catch( lua_exception& _e )
             {
+                if ( _e.status() != LUA_ERRSYNTAX )
+                {
+                    handleError( _e );
+                    continue;
+                }
+
                 try
                 {
                     lua_exec( script );
                 }
                 catch( lua_exception& e )
                 {
-                    switch( e.status() )
-                    {
-                    case LUA_ERRRUN:
-                        cout << "error\n";
-                        break;
-                    case LUA_ERRSYNTAX:
-                        cout << "syntax_error\n";
-                        break;
-                    }
-
-                    cout << e.what();
-                    cout << "\n";
+                    handleError( e );
                 }
             }
         }
