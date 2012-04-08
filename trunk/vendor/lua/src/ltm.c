@@ -90,7 +90,7 @@ const TValue *luaT_gettmbyobj( lua_State *L, const TValue *o, TMS event )
 {
     if ( ttype(o) == LUA_TCLASS )
     {
-        const TValue *res = luaH_getstr( jvalue(o)->env, G(L)->tmname[event] );
+        const TValue *res = luaH_getstr( jvalue(o)->storage, G(L)->tmname[event] );
         if ( res )
             return res;
     }

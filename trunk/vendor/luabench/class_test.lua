@@ -1,27 +1,15 @@
 function createResource()
 	return class.construct(function()
-			local disallow = {
-				__index = true,
-				__newindex = true,
-				__type = true,
-				_ENV = true
-			};
-	
 			function __index(c, k)
-				if (disallow[k]) then
-					return false;
-				end
+				-- Secure the metamethods
+				if (string.sub(k, 1, 2) == "__") then return end;
 				
 				return _ENV[k];
 			end
 			
 			function __newindex(c, k, v)
-				if (disallow[k]) then
-					return false;
-				end
-			
 				print("setting " .. k .. " to " .. tostring(v));
-				_ENV[k] = v;
+				_OUTENV[k] = v;
 			end
 			
 			function safeDestroy()
@@ -36,8 +24,6 @@ function createResource()
 			end
 			
 			__type = "resource";
-			
-			__newindex = "FUCKYOU";
 		end
 	);
 end
