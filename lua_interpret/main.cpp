@@ -57,7 +57,7 @@ void lua_exec( const std::string& cmd )
         const char *err = lua_tostring( state, -1 );
         lua_pop( state, 1 );
 
-        throw lua_exception( LUA_ERRSYNTAX, err );
+        throw lua_exception( state, LUA_ERRSYNTAX, err );
     }
 
     if ( lua_pcall( state, 0, LUA_MULTRET, 0 ) != 0 )
@@ -65,7 +65,7 @@ void lua_exec( const std::string& cmd )
         const char *err = lua_tostring( state, -1 );
         lua_pop( state, 1 );
         
-        throw lua_exception( LUA_ERRRUN, err );
+        throw lua_exception( state, LUA_ERRRUN, err );
     }
 
     int now = lua_gettop( state );
@@ -126,6 +126,8 @@ void loadBenchFile( const filePath& path, void *ud )
         lua_pop( state, 1 );
         return;
     }
+
+    int top = lua_gettop( state );
 
     cout << "init: " << relPath << "\n";
 }

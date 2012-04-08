@@ -109,7 +109,7 @@ void luaX_lexerror (LexState *ls, const char *msg, int token) {
   if (token)
     luaO_pushfstring(ls->L, "%s near " LUA_QS, msg, txtToken(ls, token));
 #ifdef __cplusplus
-  throw lua_exception( LUA_ERRSYNTAX, orig );
+  throw lua_exception( ls->L, LUA_ERRSYNTAX, orig );
 #else
   luaD_throw(ls->L, LUA_ERRSYNTAX);
 #endif

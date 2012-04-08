@@ -108,6 +108,7 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
 void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val)
 {
   int loop;
+  TValue _distr;
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;
     if (ttistable(t))
@@ -124,14 +125,14 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val)
     else if (ttisclass(t))
     {
         Class *c = jvalue(t);
+
+        if ( c->destroyed )
+            throw lua_exception( L, LUA_ERRRUN, "cannot index a destroyed class" );
+
         if ( (tm = fasttm( L, c->env, TM_INDEX )) == NULL )
         {
-            const TValue *res = luaH_get( c->env, key );
-            if ( !ttisnil(res) || (tm = fasttm( L, c->meta, TM_INDEX)) == NULL )
-            {
-                setobj2s( L, val, res );
-                return;
-            }
+            sethvalue( L, &_distr, c->outenv );
+            tm = &_distr;
         }
     }
     else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX)))
@@ -153,6 +154,17 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val)
     for (loop = 0; loop < MAXTAGLOOP; loop++)
     {
         const TValue *tm;
+
+        // We target the outer environment
+        if (ttisclass(t))
+        {
+            if ( jvalue(t)->destroyed )
+                throw lua_exception( L, LUA_ERRRUN, "cannot index a destroyed class" );
+
+            sethvalue( L, &temp, jvalue(t)->outenv );
+            t = &temp;
+        }
+
         if (ttistable(t))
         {  /* `t' is a table? */
             Table *h = hvalue(t);
@@ -165,20 +177,6 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val)
                 return;
             }
             /* else will try the tag method */
-        }
-        else if (ttisclass(t))
-        {
-            Class *j = jvalue(t);
-            if ( (tm = fasttm( L, j->env, TM_NEWINDEX)) == NULL )
-            {
-                TValue *oldval = luaH_set( L, j->env, key );
-                if ( !ttisnil(oldval) || (tm = fasttm( L, j->meta, TM_NEWINDEX )) == NULL )
-                {
-                    setobj2t( L, oldval, val );
-                    luaC_barriert( L, j->env, val );
-                    return;
-                }
-            }
         }
         else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX)))
             luaG_typeerror(L, t, "index");

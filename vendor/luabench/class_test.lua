@@ -24,7 +24,20 @@ function createResource()
 				_ENV[k] = v;
 			end
 			
+			function safeDestroy()
+				destroy();
+				
+				print("called destructor");
+				return true;
+			end
+			
+			function destroy()
+				print("destroying class");
+			end
+			
 			__type = "resource";
+			
+			__newindex = "FUCKYOU";
 		end
 	);
 end

@@ -395,7 +395,7 @@ void luaD_call (lua_State *L, StkId func, int nResults) {
       luaG_runerror(L, "C stack overflow");
     else if (L->nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)))
 #ifdef __cplusplus
-        throw lua_exception( LUA_ERRERR, "stack handling error" );
+        throw lua_exception( L, LUA_ERRERR, "stack handling error" );
 #else
         luaD_throw(L, LUA_ERRERR);  /* error while handing stack error */
 #endif

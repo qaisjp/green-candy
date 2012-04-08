@@ -70,8 +70,9 @@ typedef union {
 
 #define TValuefields	Value value; int tt
 
-typedef struct lua_TValue {
-  TValuefields;
+typedef struct lua_TValue
+{
+    TValuefields;
 } TValue;
 
 
@@ -359,7 +360,23 @@ typedef struct Class
 {
     CommonHeader;
     Table *env;
-    Table *meta;
+    Table *outenv;
+    Table *methods;
+    Table *storage;
+    Table *forceSuper;
+    Table *internStorage;
+    unsigned int inMethod;
+    unsigned int refCount;
+    bool reqDestruction;
+    bool destroyed;
+
+    void IncrementMethodStack( lua_State *lua );
+    void DecrementMethodStack( lua_State *lua );
+
+    // Cached values
+    TValue *superMethod;
+    TValue destructor;
+
     GCObject *gclist;
 } Class;
 

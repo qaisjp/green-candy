@@ -214,9 +214,22 @@ static int traversetable (global_State *g, Table *h) {
 
 inline static void traverseclass( global_State *g, Class *c )
 {
+    if ( c->destroyed )
+        return;
+
     markobject( g, c->env );
-    if ( c->meta )
-        markobject( g, c->meta );
+    markobject( g, c->outenv );
+    markobject( g, c->storage );
+    markobject( g, c->methods );
+
+    if ( c->superMethod )
+    {
+        markobject( g, c->superMethod );
+        markobject( g, &c->destructor );
+    }
+
+    markobject( g, c->forceSuper );
+    markobject( g, c->internStorage );
 }
 
 
@@ -671,62 +684,94 @@ void luaC_step (lua_State *L) {
 }
 
 
-void luaC_fullgc (lua_State *L) {
-  global_State *g = G(L);
-  if (g->gcstate <= GCSpropagate) {
-    /* reset sweep marks to sweep all elements (returning them to white) */
-    g->sweepstrgc = 0;
-    g->sweepgc = &g->rootgc;
-    /* reset other collector lists */
-    g->gray = NULL;
-    g->grayagain = NULL;
-    g->weak = NULL;
-    g->gcstate = GCSsweepstring;
-  }
-  lua_assert(g->gcstate != GCSpause && g->gcstate != GCSpropagate);
-  /* finish any pending sweep phase */
-  while (g->gcstate != GCSfinalize) {
-    lua_assert(g->gcstate == GCSsweepstring || g->gcstate == GCSsweep);
-    singlestep(L);
-  }
-  markroot(L);
-  while (g->gcstate != GCSpause) {
-    singlestep(L);
-  }
-  setthreshold(g);
+void luaC_finish( lua_State *L )
+{
+    global_State *g = G(L);
+
+    while (g->gcstate != GCSfinalize)
+    {
+        lua_assert(g->gcstate == GCSsweepstring || g->gcstate == GCSsweep);
+        singlestep(L);
+    }
 }
 
 
-void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v) {
-  global_State *g = G(L);
-  lua_assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
-  lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
-  lua_assert(ttype(&o->gch) != LUA_TTABLE);
-  /* must keep invariant? */
-  if (g->gcstate == GCSpropagate)
-    reallymarkobject(g, v);  /* restore invariant */
-  else  /* don't mind */
+void luaC_fullgc (lua_State *L)
+{
+    global_State *g = G(L);
+
+    if (g->gcstate <= GCSpropagate)
+    {
+        /* reset sweep marks to sweep all elements (returning them to white) */
+        g->sweepstrgc = 0;
+        g->sweepgc = &g->rootgc;
+        /* reset other collector lists */
+        g->gray = NULL;
+        g->grayagain = NULL;
+        g->weak = NULL;
+        g->gcstate = GCSsweepstring;
+    }
+    lua_assert(g->gcstate != GCSpause && g->gcstate != GCSpropagate);
+
+    /* finish any pending sweep phase */
+    luaC_finish( L );
+
+    markroot(L);
+
+    while (g->gcstate != GCSpause)
+        singlestep(L);
+
+    setthreshold(g);
+}
+
+
+void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v)
+{
+    global_State *g = G(L);
+    lua_assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
+    lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
+    lua_assert(ttype(&o->gch) != LUA_TTABLE);
+
+    /* must keep invariant? */
+    if (g->gcstate == GCSpropagate)
+        return reallymarkobject(g, v);  /* restore invariant */
+
+    /* don't mind */
     makewhite(g, o);  /* mark as white just to avoid other barriers */
 }
 
 
-void luaC_barrierback (lua_State *L, Table *t) {
-  global_State *g = G(L);
-  GCObject *o = obj2gco(t);
-  lua_assert(isblack(o) && !isdead(g, o));
-  lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
-  black2gray(o);  /* make table gray (again) */
-  t->gclist = g->grayagain;
-  g->grayagain = o;
+void luaC_barrierbackj (lua_State *L, Class *j)
+{
+    global_State *g = G(L);
+    GCObject *o = obj2gco(j);
+    lua_assert(isblack(o) && !isdead(g, o));
+    lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
+    black2gray(o);  /* make class gray (again) */
+    j->gclist = g->grayagain;
+    g->grayagain = o;
 }
 
 
-void luaC_link (lua_State *L, GCObject *o, lu_byte tt) {
-  global_State *g = G(L);
-  o->gch.next = g->rootgc;
-  g->rootgc = o;
-  o->gch.marked = luaC_white(g);
-  o->gch.tt = tt;
+void luaC_barrierback (lua_State *L, Table *t)
+{
+    global_State *g = G(L);
+    GCObject *o = obj2gco(t);
+    lua_assert(isblack(o) && !isdead(g, o));
+    lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
+    black2gray(o);  /* make table gray (again) */
+    t->gclist = g->grayagain;
+    g->grayagain = o;
+}
+
+
+void luaC_link (lua_State *L, GCObject *o, lu_byte tt)
+{
+    global_State *g = G(L);
+    o->gch.next = g->rootgc;
+    g->rootgc = o;
+    o->gch.marked = luaC_white(g);
+    o->gch.tt = tt;
 }
 
 
