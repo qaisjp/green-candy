@@ -612,9 +612,10 @@ union luai_Cast { double l_d; long l_l; };
 class lua_exception : public std::exception
 {
 public:
-    lua_exception( unsigned int status, const char *msg ) : std::exception( msg )
+    lua_exception( struct lua_State *L, unsigned int status, const char *msg ) : std::exception( msg )
     {
         m_status = status;
+        m_thread = L;
     }
 
     unsigned int status()
@@ -622,11 +623,17 @@ public:
         return m_status;
     }
 
+    lua_State* getThread()
+    {
+        return m_thread;
+    }
+
 private:
-    unsigned int m_status;
+    unsigned int        m_status;
+    struct lua_State*   m_thread;
 };
 
-#define LUAI_THROW(L,c)	throw lua_exception( (c)->status, "internal lua error" )
+#define LUAI_THROW(L,c)	throw lua_exception( L, (c)->status, "internal lua error" )
 #define LUAI_TRY(L,c,a)	try { a } catch( lua_exception& e ) \
     { (c)->status = e.status(); } \
     catch(...) \

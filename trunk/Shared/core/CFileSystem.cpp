@@ -1043,8 +1043,9 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
 
         if ( !(finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
             continue;
-				
-        if ( strcmp(finddata.cFileName, ".") == 0 || strcmp(finddata.cFileName, "..") == 0 )
+		
+        // Optimization :)
+        if ( *(unsigned short*)finddata.cFileName == 0x2E00 || (*(unsigned short*)finddata.cFileName == 0x2E2E && *(unsigned char*)(finddata.cFileName + 2) == 0x00) )
             continue;
 
         filePath target = output;
@@ -1210,10 +1211,13 @@ bool CFileSystem::ReadToBuffer( const char *path, std::vector <char>& output )
 
     size = GetFileSize( file, NULL );
 
-    output.resize( size );
-    output.reserve( size );
+    if ( size != 0 )
+    {
+        output.resize( size );
+        output.reserve( size );
 
-    ReadFile( file, &output[0], size, &_pf, NULL );
+        ReadFile( file, &output[0], size, &_pf, NULL );
+    }
 
     CloseHandle( file );
     return true;

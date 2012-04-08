@@ -38,7 +38,7 @@ const char lua_ident[] =
   "$URL: www.lua.org $\n";
 
 
-static TValue *index2adr (lua_State *L, int idx) {
+TValue *index2adr (lua_State *L, int idx) {
   if (idx > 0) {
     TValue *o = L->base + (idx - 1);
     api_check(L, idx <= L->ci->top - L->base);
@@ -996,6 +996,12 @@ LUA_API void lua_pushtype( lua_State *L, int idx )
 
     if ( ttype(o) == LUA_TCLASS )
     {
+        if ( jvalue(o)->destroyed )
+        {
+            lua_pushlstring( L, "destroyed_class", 15 );
+            return;
+        }
+
         const TValue *tm = luaT_gettmbyobj( L, L->base, TM_TYPE );
 
         switch( ttype(tm) )

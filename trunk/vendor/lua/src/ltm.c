@@ -81,8 +81,6 @@ inline Table* luaT_getmetabyobj( lua_State *L, const TValue *o )
         return hvalue(o)->metatable;
     case LUA_TUSERDATA:
         return uvalue(o)->metatable;
-    case LUA_TCLASS:
-        return jvalue(o)->meta;
     }
 
     return G(L)->mt[ttype(o)];

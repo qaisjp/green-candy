@@ -627,7 +627,7 @@ void luaG_errormsg (lua_State *L) {
     luaD_call(L, L->top - 2, 1);  /* call it */
   }
 #ifdef __cplusplus
-    throw lua_exception( LUA_ERRRUN, lua_tostring( L, -1 ) );
+    throw lua_exception( L, LUA_ERRRUN, lua_tostring( L, -1 ) );
 #else
   luaD_throw(L, LUA_ERRRUN);
 #endif

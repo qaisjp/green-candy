@@ -212,7 +212,7 @@ void LuaManager::Throw( unsigned int id, const char *error )
         msg += '\n';
     }
 
-    throw lua_exception( id, msg );
+    throw lua_exception( m_lua, id, msg );
 }
 
 void LuaManager::InstructionCountHook()
@@ -246,7 +246,7 @@ void LuaManager::CallStack( int args )
         // Clean the stack
         lua_settop( m_lua, -3 );
 
-        throw lua_exception( ret, msg );
+        throw lua_exception( m_lua, ret, msg );
     }
 }
 
