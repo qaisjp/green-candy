@@ -129,7 +129,7 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val)
         if ( c->destroyed )
             throw lua_exception( L, LUA_ERRRUN, "cannot index a destroyed class" );
 
-        if ( (tm = fasttm( L, c->env, TM_INDEX )) == NULL )
+        if ( (tm = fasttm( L, c->storage, TM_INDEX )) == NULL )
         {
             sethvalue( L, &_distr, c->outenv );
             tm = &_distr;
@@ -158,10 +158,15 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val)
         // We target the outer environment
         if (ttisclass(t))
         {
-            if ( jvalue(t)->destroyed )
+            Class *j = jvalue( t );
+
+            if ( j->destroyed )
                 throw lua_exception( L, LUA_ERRRUN, "cannot index a destroyed class" );
 
-            sethvalue( L, &temp, jvalue(t)->outenv );
+            if ( tm = fasttm( L, j->storage, TM_NEWINDEX ) )
+                goto doMeta;
+
+            sethvalue( L, &temp, j->outenv );
             t = &temp;
         }
 
@@ -180,6 +185,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val)
         }
         else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX)))
             luaG_typeerror(L, t, "index");
+doMeta:
         if (ttisfunction(tm))
         {
             callTM(L, tm, t, key, val);

@@ -36,7 +36,10 @@ static int envmeta_newindex( lua_State *L )
     lua_gettable( L, lua_upvalueindex( 2 ) );
 
     if ( lua_type( L, 4 ) != LUA_TNIL )
-        throw lua_exception( L, LUA_ERRRUN, "" );
+        throw lua_exception( L, LUA_ERRRUN, "cannot overwrite methods of class internals" );
+
+    lua_settop( L, 3 );
+    lua_settable( L, lua_upvalueindex( 1 ) );
     return 0;
 }
 
@@ -92,9 +95,9 @@ class MethodStackAllocation
 public:
     MethodStackAllocation( lua_State *thread, Class *myClass, const TValue& val )
     {
-        m_prevSuper = *myClass->superMethod;
+        setobj( thread, &m_prevSuper, myClass->superMethod );
 
-        setobj2s( m_thread, myClass->superMethod, &val );
+        setobj( thread, myClass->superMethod, &val );
         myClass->IncrementMethodStack( thread );
 
         m_instance = myClass;
@@ -104,7 +107,7 @@ public:
     ~MethodStackAllocation()
     {
         m_instance->DecrementMethodStack( m_thread );
-        setobj2s( m_thread, m_instance->superMethod, &m_prevSuper );
+        setobj( m_thread, m_instance->superMethod, &m_prevSuper );
     }
 
     Class*      m_instance;
@@ -330,14 +333,14 @@ static int methodenv_newindex( lua_State *L )
         lua_settable( L, lua_upvalueindex( 3 ) );
         return 0;
     }
-    else
-    {
-        lua_pushvalue( L, 2 );
-        lua_rawget( L, lua_upvalueindex( 2 ) );
 
-        if ( lua_type( L, 4 ) != LUA_TNIL )
-            throw lua_exception( L, LUA_ERRRUN, "class methods cannot be overwritten" );
-    }
+    lua_pushvalue( L, 2 );
+    lua_rawget( L, lua_upvalueindex( 2 ) );
+
+    if ( lua_type( L, 4 ) != LUA_TNIL )
+        throw lua_exception( L, LUA_ERRRUN, "class methods cannot be overwritten" );
+
+    lua_settop( L, 3 );
 
     lua_settable( L, lua_upvalueindex( 3 ) );
     return 0;
@@ -378,7 +381,6 @@ Class* luaJ_new( lua_State *L, int nargs )
     luaC_link( L, obj2gco( c ), LUA_TCLASS );   // Link it into the GC system
     Table *meta = luaH_new( L, 0, 0 );
     Table *outmeta = luaH_new( L, 0, 0 );
-    ClassConstructionAllocation construction( L, c );
 
     c->destroyed = false;
     c->reqDestruction = false;
@@ -397,13 +399,8 @@ Class* luaJ_new( lua_State *L, int nargs )
     c->env->metatable = meta;
     c->outenv->metatable = outmeta;
 
-    global_State *g = G(L);
-
-    if ( g->gcstate > GCSpropagate )
-        __asm nop
-
-    // GC prevention
-    luaC_barrierbackj( L, c );
+    // Perform a temporary keep
+    ClassConstructionAllocation construction( L, c );
 
     // Init the forceSuper table
     sethvalue( L, L->top, c->forceSuper );
@@ -416,6 +413,7 @@ Class* luaJ_new( lua_State *L, int nargs )
 
     // Cache some special values
     c->superMethod = luaH_setstr( L, c->internStorage, luaS_newlstr( L, "super", 5 ) );
+    setbvalue( c->superMethod, false );
 
     // Specify the outrange connection
     sethvalue( L, L->top, outmeta );
@@ -447,6 +445,9 @@ Class* luaJ_new( lua_State *L, int nargs )
     sethvalue( L, L->top, c->env );
     api_incr_top( L );
     lua_setfield( L, -2, "_ENV" );
+    sethvalue( L, L->top, c->outenv );
+    api_incr_top( L );
+    lua_setfield( L, -2, "_OUTENV" );
 
     // Set some internal functions
     setjvalue( L, L->top, c );
@@ -517,6 +518,11 @@ Class* luaJ_new( lua_State *L, int nargs )
     lua_setfield( L, -2, "destroy" );
 
     lua_pop( L, 1 );
+
+    // Apply the environment to the constructor
+    sethvalue( L, L->top, c->env );
+    api_incr_top( L );
+    lua_setfenv( L, -nargs - 1 );
 
     // Call the constructor
     lua_call( L, nargs, 0 );

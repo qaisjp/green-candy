@@ -1004,6 +1004,9 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
         query = output;
         query += wcard;
 
+        // I am unsure whether ".." could turn dangerous here (wcard)
+        // My tests indicated that Windows secures against uprooting(!)
+
         handle = FindFirstFile( query.c_str(), &finddata );
 
         if ( handle != INVALID_HANDLE_VALUE )
@@ -1045,7 +1048,7 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
             continue;
 		
         // Optimization :)
-        if ( *(unsigned short*)finddata.cFileName == 0x2E00 || (*(unsigned short*)finddata.cFileName == 0x2E2E && *(unsigned char*)(finddata.cFileName + 2) == 0x00) )
+        if ( *(unsigned short*)finddata.cFileName == 0x002E || (*(unsigned short*)finddata.cFileName == 0x2E2E && *(unsigned char*)(finddata.cFileName + 2) == 0x00) )
             continue;
 
         filePath target = output;
@@ -1218,6 +1221,8 @@ bool CFileSystem::ReadToBuffer( const char *path, std::vector <char>& output )
 
         ReadFile( file, &output[0], size, &_pf, NULL );
     }
+    else
+        output.clear();
 
     CloseHandle( file );
     return true;

@@ -374,7 +374,7 @@ typedef struct Class
     void DecrementMethodStack( lua_State *lua );
 
     // Cached values
-    TValue *superMethod;
+    TValue *superMethod;    // WARNING: make sure GC does not collect this entry
     TValue destructor;
 
     GCObject *gclist;

@@ -221,15 +221,11 @@ inline static void traverseclass( global_State *g, Class *c )
     markobject( g, c->outenv );
     markobject( g, c->storage );
     markobject( g, c->methods );
-
-    if ( c->superMethod )
-    {
-        markobject( g, c->superMethod );
-        markobject( g, &c->destructor );
-    }
-
     markobject( g, c->forceSuper );
     markobject( g, c->internStorage );
+   
+    if ( ttisfunction( &c->destructor ) )
+        markobject( g, &c->destructor );
 }
 
 
