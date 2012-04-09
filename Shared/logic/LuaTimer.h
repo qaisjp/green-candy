@@ -22,7 +22,6 @@
 class LuaTimer
 {
 public:
-
                             LuaTimer                    ( const LuaFunctionRef& iLuaFunction, const CLuaArguments& Arguments );
                             ~LuaTimer                   ( void );
 

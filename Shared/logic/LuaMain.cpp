@@ -81,6 +81,17 @@ void LuaMain::Dereference( const LuaFunctionRef& ref )
     }
 }
 
+void LuaMain::PushReference( const LuaFunctionRef& ref )
+{
+    CRefInfo *iref = MapFind( m_refStore, ref.m_call );
+
+    if ( !iref )
+        return;
+
+    lua_pushnumber( m_lua, iref->idx );
+    lua_rawget( m_lua, LUA_REGISTRYINDEX );
+}
+
 void LuaMain::RegisterFunction( const char *name, lua_CFunction *proto )
 {
     lua_pushcclosure( m_lua, proto, 0 );

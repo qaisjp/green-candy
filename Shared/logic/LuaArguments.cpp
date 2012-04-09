@@ -77,7 +77,7 @@ void LuaArguments::CopyRecursive( const LuaArguments& args, std::map <LuaArgumen
         m_args.push_back( new LuaArgument( **iter, tables ) );
 }
 
-void LuaArguments::ReadArguments( lua_State* luaVM, int indexStart )
+void LuaArguments::ReadArguments( lua_State *luaVM, int indexStart )
 {
     // Tidy up setup :)
     DeleteArguments();
@@ -89,7 +89,7 @@ void LuaArguments::ReadArguments( lua_State* luaVM, int indexStart )
         m_args.push_back( new LuaArgument( luaVM, indexStart++, tables ) );
 }
 
-void LuaArguments::ReadTable( lua_State* luaVM, int indexStart, std::map <const void*, LuaArguments*>& tables )
+void LuaArguments::ReadTable( lua_State *luaVM, int indexStart )
 {
     tables.insert( std::make_pair( lua_topointer( luaVM, indexStart ), this ) );
 
@@ -113,12 +113,12 @@ void LuaArguments::ReadTable( lua_State* luaVM, int indexStart, std::map <const 
     }
 }
 
-void LuaArguments::ReadArgument( lua_State* luaVM, int index )
+void LuaArguments::ReadArgument( lua_State *luaVM, int index )
 {
     m_args.push_back( new LuaArgument( luaVM, index ) );
 }
 
-void LuaArguments::PushArguments( lua_State* luaVM ) const
+void LuaArguments::PushArguments( lua_State *luaVM ) const
 {
     // Push all our arguments
     std::vector <LuaArgument*>::const_iterator iter = m_args.begin();
@@ -127,346 +127,146 @@ void LuaArguments::PushArguments( lua_State* luaVM ) const
         (*iter)->Push( luaVM );
 }
 
-void LuaArguments::PushAsTable( lua_State* luaVM, std::map <LuaArguments*, int>& tables )
+void LuaArguments::PushAsTable( lua_State *luaVM )
 {
     // Ensure there is enough space on the Lua stack
-    LUA_CHECKSTACK ( luaVM, 4 );
+    LUA_CHECKSTACK( luaVM, 4 );
 
-    bool bKnownTablesCreated = false;
-    if ( !pKnownTables )
+    lua_newtable( luaVM );
+
+	// construct the table
+    vector <LuaArgument*>::const_iterator iter = m_args.begin();
+    for ( ; iter != m_args.end() && (iter+1) != m_args.end(); iter++ )
     {
-        pKnownTables = new std::map < CLuaArguments*, int > ();
-        bKnownTablesCreated = true;
-
-		lua_newtable ( luaVM );
-		// using registry to make it fail safe, else we'd have to carry
-		// either lua top or current depth variable between calls
-		lua_setfield ( luaVM, LUA_REGISTRYINDEX, "cache" );
-    }
-
-    lua_newtable ( luaVM );
-
-	// push it onto the known tables
-	int size = pKnownTables->size();
-	lua_getfield ( luaVM, LUA_REGISTRYINDEX, "cache" );
-	lua_pushnumber ( luaVM, ++size );
-	lua_pushvalue ( luaVM, -3 );
-	lua_settable ( luaVM, -3 );
-	lua_pop ( luaVM, 1 );
-    pKnownTables->insert ( std::make_pair ( (CLuaArguments *)this, size ) );
-
-    vector < CLuaArgument* > ::const_iterator iter = m_Arguments.begin ();
-    for ( ; iter != m_Arguments.end () && (iter+1) != m_Arguments.end (); iter ++ )
-    {
-        (*iter++)->Push( luaVM, pKnownTables ); // index
-        (*iter)->Push( luaVM, pKnownTables ); // value
+        (*iter++)->Push( luaVM ); // index
+        (*iter)->Push( luaVM ); // value
         lua_settable( luaVM, -3 );
     }
-
-    if ( bKnownTablesCreated )
-	{
-		// clear the cache
-		lua_pushnil ( luaVM );
-		lua_setfield ( luaVM, LUA_REGISTRYINDEX, "cache" );
-        delete pKnownTables;
-	}
 }
 
-void CLuaArguments::PushArguments ( CLuaArguments& Arguments )
+void LuaArguments::PushArguments( LuaArguments& args )
 {
-    vector < CLuaArgument* > ::const_iterator iter = Arguments.IterBegin ();
-    for ( ; iter != Arguments.IterEnd (); iter++ )
-    {
-        CLuaArgument* pArgument = new CLuaArgument ( **iter );
-        m_Arguments.push_back ( pArgument );
-    }
+    vector <LuaArgument*>::const_iterator iter = args.IterBegin();
+
+    for ( ; iter != args.IterEnd(); iter++ )
+        m_args.push_back( (*iter)->Clone() );
 }
 
-bool CLuaArguments::Call ( CLuaMain* pLuaMain, const CLuaFunctionRef& iLuaFunction, CLuaArguments * returnValues ) const
+bool LuaArguments::Call( LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *res )
 {
-    assert ( pLuaMain );
-    TIMEUS startTime = GetTimeUs ();
+    // Performance query
+    int top = lua_gettop( lua->GetVirtualMachine() );
+    bool excpt;
 
-    // Add the function name to the stack and get the event from the table
-    lua_State* luaVM = pLuaMain->GetVirtualMachine ();
-    assert ( luaVM );
-    LUA_CHECKSTACK ( luaVM, 1 );
-    int luaStackPointer = lua_gettop ( luaVM );
-    lua_getref ( luaVM, iLuaFunction.ToInt () );
-
-    // Push our arguments onto the stack
-    PushArguments ( luaVM );
+    lua->PushReference( ref );
+    PushArguments( lua->GetVirtualMachine() );
 
     // Call the function with our arguments
-    pLuaMain->ResetInstructionCount ();
+    if ( !res )
+        return lua->PCallStackVoid( m_args.size() );
 
-    int iret = lua_pcall ( luaVM, m_Arguments.size (), LUA_MULTRET, 0 );
-    if ( iret == LUA_ERRRUN || iret == LUA_ERRMEM )
-    {
-        SString strRes = ConformResourcePath ( lua_tostring( luaVM, -1 ) );
-        
-        vector <SString> vecSplit;
-        strRes.Split ( ":", vecSplit );
-        
-        if ( vecSplit.size ( ) >= 3 )
-        {
-            SString strFile = vecSplit[0];
-            int     iLine   = atoi ( vecSplit[1].c_str ( ) );
-            SString strMsg  = vecSplit[2].substr ( 1 );
-            
-            g_pClientGame->GetScriptDebugging()->LogError ( strFile, iLine, strMsg );
-        }
-        else
-            g_pClientGame->GetScriptDebugging()->LogError ( luaVM, "%s", strRes.c_str () );
-
-        // cleanup the stack
-        while ( lua_gettop ( luaVM ) - luaStackPointer > 0 )
-            lua_pop ( luaVM, 1 );
-
-        return false; // the function call failed
-    }
-    else
-    {
-        int iReturns = lua_gettop ( luaVM ) - luaStackPointer;
-
-        if ( returnValues != NULL )
-        {
-            for ( int i = - iReturns; i <= -1; i++ )
-            {
-                returnValues->ReadArgument ( luaVM, i );
-            }
-        }
-
-        // cleanup the stack
-        while ( lua_gettop ( luaVM ) - luaStackPointer > 0 )
-            lua_pop ( luaVM, 1 );
-    }
-        
-    CClientPerfStatLuaTiming::GetSingleton ()->UpdateLuaTiming ( pLuaMain, pLuaMain->GetFunctionTag ( iLuaFunction.m_iFunction ), GetTimeUs() - startTime );
-    return true;
+    *res = lua->PCallStackResult( m_args.size(), excpt );
+    return !excpt;
 }
 
-
-bool CLuaArguments::CallGlobal ( CLuaMain* pLuaMain, const char* szFunction, CLuaArguments * returnValues ) const
+LuaArgument* LuaArguments::PushNil()
 {
-    assert ( pLuaMain );
-    assert ( szFunction );
-    TIMEUS startTime = GetTimeUs ();
-
-    // Add the function name to the stack and get the event from the table
-    lua_State* luaVM = pLuaMain->GetVirtualMachine ();
-    assert ( luaVM );
-    LUA_CHECKSTACK ( luaVM, 1 );
-    int luaStackPointer = lua_gettop ( luaVM );
-    lua_pushstring ( luaVM, szFunction );
-    lua_gettable ( luaVM, LUA_GLOBALSINDEX );
-
-    // Push our arguments onto the stack
-    PushArguments ( luaVM );
-
-    // Call the function with our arguments
-    pLuaMain->ResetInstructionCount ();
-
-    int iret = lua_pcall ( luaVM, m_Arguments.size (), LUA_MULTRET, 0 );
-    if ( iret == LUA_ERRRUN || iret == LUA_ERRMEM )
-    {
-        std::string strRes = ConformResourcePath ( lua_tostring( luaVM, -1 ) );
-        g_pClientGame->GetScriptDebugging()->LogError ( luaVM, "%s", strRes.c_str () );
-
-        // cleanup the stack
-        while ( lua_gettop ( luaVM ) - luaStackPointer > 0 )
-            lua_pop ( luaVM, 1 );
-
-        return false; // the function call failed
-    }
-    else
-    {
-        int iReturns = lua_gettop ( luaVM ) - luaStackPointer;
-
-        if ( returnValues != NULL )
-        {
-            for ( int i = - iReturns; i <= -1; i++ )
-            {
-                returnValues->ReadArgument ( luaVM, i );
-            }
-        }
-
-        // cleanup the stack
-        while ( lua_gettop ( luaVM ) - luaStackPointer > 0 )
-            lua_pop ( luaVM, 1 );
-    }
-        
-    CClientPerfStatLuaTiming::GetSingleton ()->UpdateLuaTiming ( pLuaMain, szFunction, GetTimeUs() - startTime );
-    return true;
+    LuaArgument *arg = new LuaArgument;
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-CLuaArgument* CLuaArguments::PushNil ( void )
+LuaArgument* LuaArguments::PushBoolean( bool b )
 {
-    CLuaArgument* pArgument = new CLuaArgument;
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
+    LuaArgument *arg = new LuaArgument( b );
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-CLuaArgument* CLuaArguments::PushBoolean ( bool bBool )
+LuaArgument* LuaArguments::PushNumber( double d )
 {
-    CLuaArgument* pArgument = new CLuaArgument ( bBool );
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
+    LuaArgument *arg = new LuaArgument( d );
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-CLuaArgument* CLuaArguments::PushNumber ( double dNumber )
+LuaArgument* LuaArguments::PushString( const std::string& str )
 {
-    CLuaArgument* pArgument = new CLuaArgument ( dNumber );
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
+    LuaArgument *arg = new LuaArgument( str );
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-CLuaArgument* CLuaArguments::PushString ( const std::string& strString )
+LuaArgument* LuaArguments::PushUserData( void *ud )
 {
-    CLuaArgument* pArgument = new CLuaArgument ( strString );
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
+    LuaArgument *arg = new LuaArgument( ud );
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-CLuaArgument* CLuaArguments::PushUserData ( void* pUserData )
+LuaArgument* LuaArguments::PushArgument( const LuaArgument& other )
 {
-    CLuaArgument* pArgument = new CLuaArgument ( pUserData );
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
+    LuaArgument *arg = other.clone();
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-CLuaArgument* CLuaArguments::PushElement ( CClientEntity* pElement )
+LuaArgument* LuaArguments::PushTable( const LuaArguments& table )
 {
-    CLuaArgument* pArgument = new CLuaArgument ( pElement );
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
+    LuaArgument *arg = new LuaArgument();
+    arg->Read( table );
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-CLuaArgument* CLuaArguments::PushArgument ( const CLuaArgument& Argument )
-{
-    CLuaArgument* pArgument = new CLuaArgument ( Argument );
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
-}
-
-
-CLuaArgument* CLuaArguments::PushTable ( CLuaArguments * table )
-{
-    CLuaArgument* pArgument = new CLuaArgument (  );
-    pArgument->Read(table);
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
-}
-
-
-void CLuaArguments::DeleteArguments ( void )
+void LuaArguments::DeleteArguments()
 {
     // Delete each item
-    vector < CLuaArgument* > ::iterator iter = m_Arguments.begin ();
-    for ( ; iter != m_Arguments.end (); iter++ )
-    {
+    std::vector <LuaArgument*>::iterator iter = m_args.begin();
+
+    for ( ; iter != m_args.end(); iter++ )
         delete *iter;
-    }
 
     // Clear the vector
-    m_Arguments.clear ();
+    m_args.clear();
 }
 
-
-void CLuaArguments::ValidateTableKeys ( void )
+void LuaArguments::ValidateTableKeys()
 {
-    // Iterate over m_Arguments as pairs
-    // If first is LUA_TNIL, then remove pair
-    vector < CLuaArgument* > ::iterator iter = m_Arguments.begin ();
-    for ( ; iter != m_Arguments.end () ; )
+    // Remove nil table keys
+    std::vector <LuaArgument*>::iterator iter = m_args.begin();
+
+    for ( ; iter != m_args.end(); )
     {
         // Check first in pair
-        if ( (*iter)->GetType () == LUA_TNIL )
+        if ( (*iter)->GetType() == LUA_TNIL )
         {
             // Remove pair
             delete *iter;
-            iter = m_Arguments.erase ( iter );
-            if ( iter != m_Arguments.end () )
+
+            iter = m_args.erase( iter );
+
+            if ( iter != m_args.end() )
             {
                 delete *iter;
-                iter = m_Arguments.erase ( iter );
+
+                iter = m_args.erase( iter );
             }
+
             // Check if end
-            if ( iter == m_Arguments.end () )
+            if ( iter == m_args.end() )
                 break;
         }
         else
         {
             // Skip second in pair
             iter++;
+
             // Check if end
-            if ( iter == m_Arguments.end () )
+            if ( iter == m_args.end() )
                 break;
 
             iter++;
         }
     }
-}
-
-
-bool CLuaArguments::ReadFromBitStream ( NetBitStreamInterface& bitStream, std::vector < CLuaArguments* > * pKnownTables )
-{
-    bool bKnownTablesCreated = false;
-    if ( !pKnownTables )
-    {
-        pKnownTables = new std::vector < CLuaArguments* > ();
-        bKnownTablesCreated = true;
-    }
-
-    unsigned short usNumArgs;
-    if ( bitStream.ReadCompressed ( usNumArgs ) )
-    {
-        pKnownTables->push_back ( this );
-        for ( unsigned short us = 0 ; us < usNumArgs ; us++ )
-        {
-            CLuaArgument* pArgument = new CLuaArgument ( bitStream, pKnownTables );
-            m_Arguments.push_back ( pArgument );
-        }
-    }
-
-    if ( bKnownTablesCreated )
-        delete pKnownTables;
-
-    return true;
-}
-
-
-bool CLuaArguments::WriteToBitStream ( NetBitStreamInterface& bitStream, std::map < CLuaArguments*, unsigned long > * pKnownTables ) const
-{
-    bool bKnownTablesCreated = false;
-    if ( !pKnownTables )
-    {
-        pKnownTables = new std::map < CLuaArguments*, unsigned long > ();
-        bKnownTablesCreated = true;
-    }
-
-    bool bSuccess = true;
-    pKnownTables->insert ( make_pair ( (CLuaArguments *)this, pKnownTables->size () ) );
-    bitStream.WriteCompressed ( static_cast < unsigned short > ( m_Arguments.size () ) );
-    vector < CLuaArgument* > ::const_iterator iter = m_Arguments.begin ();
-    for ( ; iter != m_Arguments.end () ; iter++ )
-    {
-        CLuaArgument* pArgument = *iter;
-        if ( !pArgument->WriteToBitStream ( bitStream, pKnownTables ) )
-        {
-            bSuccess = false;
-        }
-    }
-
-    if ( bKnownTablesCreated )
-        delete pKnownTables;
-
-    return bSuccess;
 }

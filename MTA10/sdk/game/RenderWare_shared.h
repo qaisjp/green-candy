@@ -14,6 +14,7 @@
 #define _RenderWare_Shared_H_
 
 // TODO: Remove the internal RW definitions, DIF
+#include <CMatrix.h>
 
 // RenderWare primitive types
 struct RwV2d

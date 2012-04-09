@@ -62,7 +62,8 @@ public:
 
     CXMLNode& Establish( const char *name )
     {
-        return *FindSubNode( name ) || *CreateSubNode( name );
+        CXMLNode *tmp;
+        return *((tmp = FindSubNode( name )) ? tmp : CreateSubNode( name ));
     }
 
     template <class type>
