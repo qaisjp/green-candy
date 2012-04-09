@@ -38,8 +38,7 @@ public:
     void                                                ReadArguments( lua_State *lua, signed int indexStart = 1 );
     void                                                PushArguments( lua_State *lua ) const;
     void                                                PushArguments( LuaArguments& args );
-    bool                                                Call( class LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *ret = NULL ) const;
-    bool                                                CallGlobal( class LuaMain* pLuaMain, const char *funcName, LuaArguments *ret = NULL ) const;
+    virtual bool                                        Call( class LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *res );
 
     void                                                ReadTable( lua_State* luaVM, int indexStart );
     void                                                PushAsTable( lua_State* luaVM );
@@ -51,13 +50,13 @@ public:
     LuaArgument*                                        PushString( const std::string& str );
     LuaArgument*                                        PushUserData( void *data );
     LuaArgument*                                        PushArgument( const LuaArgument& argument );
-    LuaArgument*                                        PushTable( LuaArguments *table );
+    LuaArgument*                                        PushTable( const LuaArguments& table );
 
     void                                                DeleteArguments();
-
-    bool                                                ReadFromBitStream( NetBitStreamInterface& bitStream );
-    bool                                                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
     void                                                ValidateTableKeys();
+
+    virtual bool                                        ReadFromBitStream( NetBitStreamInterface& bitStream ) = 0;
+    bool                                                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
 
     unsigned int                                        Count() const          { return static_cast < unsigned int > ( m_args.size() ); };
     std::vector <LuaArgument*> ::const_iterator         IterBegin()                { return m_args.begin(); };

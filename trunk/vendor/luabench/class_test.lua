@@ -1,8 +1,6 @@
 function createResource()
 	return class.construct(function()
 			function __index(c, k)
-				print("index " .. k);
-			
 				-- Secure the metamethods
 				if (string.sub(k, 1, 2) == "__") then return end;
 				
@@ -16,6 +14,7 @@ function createResource()
 			
 			function rootMethod()
 				print("root1 called");
+				return safeDestroy();
 			end
 			
 			function rootMethod()
@@ -26,15 +25,27 @@ function createResource()
 			function safeDestroy()
 				destroy();
 				
-				print("called destructor");
-				return true;
+				error("destroyed resource...");
 			end
 			
 			function destroy()
-				print("destroying class");
+				print("destroyed resource!");
 			end
 			
 			__type = "resource";
+		end
+	);
+end
+
+function createClass()
+	return class.construct(function()
+			function __index(c, k)
+				return _OUTENV[k];
+			end
+	
+			function __newindex(c, k, v)
+				_ENV[k] = v;
+			end
 		end
 	);
 end

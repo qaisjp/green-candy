@@ -50,25 +50,6 @@ CLuaManager::~CLuaManager ( void )
     CLuaCFunctions::RemoveAllFunctions ();
 }
 
-void CLuaManager::StopScriptsOwnedBy ( int iOwner )
-{
-    // Delete all the scripts by the given owner
-    list < CLuaMain* > ::iterator iter = m_virtualMachines.begin ();
-    while ( iter != m_virtualMachines.end () )
-    {
-        if ( (*iter)->GetOwner () == iOwner )
-        {
-            // Delete the object
-            delete *iter;
-
-            // Remove from list
-            iter = m_virtualMachines.erase ( iter );
-        }
-        else
-            ++iter;
-    }
-}
-
 CLuaMain * CLuaManager::CreateVirtualMachine ( CResource* pResourceOwner )
 {
     // Create it and add it to the list over VM's

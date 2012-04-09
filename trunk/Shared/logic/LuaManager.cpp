@@ -42,24 +42,6 @@ static int lua_popstackthread( lua_State *lua )
 #define lua_getglobalproxy( L ) (lua_rawseti( L, LUA_REGISTRYINDEX, 2 ))
 #define lua_getaccessinterface( L ) (lua_rawseti( L, LUA_REGISTRYINDEX, 3))
 
-class luaglobal_entry
-{
-public:
-    luaglobal_entry( LuaManager& system, LuaMain& context )
-    {
-        
-    }
-
-    ~luaglobal_entry()
-    {
-        
-    }
-
-private:
-    LuaManager& m_system;
-    LuaMain& m_context;
-};
-
 static void InstructionCountHook( lua_State *lua, lua_Debug *debug )
 {
     lua_getmanager( lua )->InstructionCountHook();
@@ -73,7 +55,6 @@ static int mainaccess_global( lua_State *lua )
 static const luaL_Reg interface_access =
 {
     { "_G", mainaccess_global },
-    { "_ENV", mainaccess_global },
     { 0, 0 }
 };
 
@@ -85,6 +66,13 @@ static int luaglobal_index( lua_State *lua )
 static int luaglobal_newindex( lua_State *lua )
 {
     //TODO: Register process!
+}
+
+static int luamain_constructor( lua_State *lua )
+{
+    lua_pushlstring( lua, "main", 4 );
+    lua_setfield( lua, LUA_ENVIRONINDEX, "__type" );
+    return 0;
 }
 
 LuaManager::LuaManager( RegisteredCommands& commands, Events& events, ScriptDebugging& debug )
@@ -106,22 +94,10 @@ LuaManager::LuaManager( RegisteredCommands& commands, Events& events, ScriptDebu
     // Cache the lua manager in the VM
     lua_pushlightuserdata( m_lua, this );
     luaL_ref( m_lua, LUA_REGISTRYINDEX );   // first in registry!
-    
-    // Setup the global table
-    lua_newtable( m_lua );
-    lua_newtable( m_lua );
 
-    lua_pushlstring( m_lua, "__index", 7 );
-    lua_pushcclosure( m_lua, luaglobal_index, 0 );
-    lua_settable( m_lua, 2 );
-
-    lua_pushlstring( m_lua, "__newindex", 10 );
-    lua_pushcclosure( m_lua, luaglobal_newindex, 0 );
-    lua_settable( m_lua, 2 );
-
-    lua_setmetatable( m_lua, 1 );
-    lua_pop( m_lua, 1 );
-
+    // Setup the global
+    lua_newtable( L );
+    lua_pushvalue( L, 1 );
     luaL_ref( m_lua, LUA_REGISTRYINDEX );   // second in registry!
 
     // Setup libraries
@@ -137,9 +113,8 @@ LuaManager::LuaManager( RegisteredCommands& commands, Events& events, ScriptDebu
     luaL_openlib( m_lua, NULL, interface_access, 0 );
     luaL_ref( m_lua, LUA_REGISTRYINDEX );   // third in registry!
 
-    // Load our C Functions into LUA and hook callback
+    // Initialize back hashmaps
     LuaCFunctions::InitializeHashMaps();
-    LoadCFunctions();
 }
 
 LuaManager::~LuaManager()
@@ -231,7 +206,8 @@ void LuaManager::InstructionCountHook()
 
 void LuaManager::CallStack( int args )
 {
-    if ( lua_type( m_lua, -1 ) != LUA_TFUNCTION )
+#ifdef LUA_PROTECT_DEFAULT
+    if ( lua_type( m_lua, -args - 1 ) != LUA_TFUNCTION )
         Throw( LUA_ERRSYNTAX, "expected function at LuaManager::CallStack!" );
 
     // We could theoretically protect it ourselves
@@ -248,15 +224,22 @@ void LuaManager::CallStack( int args )
 
         throw lua_exception( m_lua, ret, msg );
     }
+#else
+    lua_call( m_lua, args, LUA_MULTRET );
+#endif //LUA_PROTECT_DEFAULT
 }
 
 void LuaManager::CallStackVoid( int args )
 {
+#ifdef LUA_PROTECT_DEFAULT
     int top = lua_gettop( m_lua );
 
     CallStack( args );
 
     lua_settop( m_lua, top - args );
+#else
+    lua_call( m_lua, args, 0 );
+#endif //LUA_PROTECT_DEFAULT
 }
 
 LuaArguments LuaManager::CallStackResult( int argc )
@@ -272,6 +255,59 @@ LuaArguments LuaManager::CallStackResult( int argc )
         args.ReadArgument( m_lua, rettop-- );
 
     lua_settop( m_lua, top - argc );
+    return args;
+}
+
+bool LuaManager::PCallStack( int argc )
+{
+    int top = lua_gettop( m_lua );
+
+    try
+    {
+        CallStack( argc );
+    }
+    catch( lua_exception& e )
+    {
+        lua_settop( m_lua, top );
+
+        m_debug.LogError( "%s", e.what() );
+        return false;
+    }
+    return true;
+}
+
+bool LuaManager::PCallStackVoid( int argc )
+{
+    int top = lua_gettop( m_lua );
+
+    try
+    {
+        CallStackVoid( argc );
+    }
+    catch( lua_exception& e )
+    {
+        lua_settop( m_lua, top );
+
+        m_debug.LogError( "%s", e.what() );
+        return false;
+    }
+    return true;
+}
+
+LuaArguments LuaManager::PCallStackResult( int argc, bool& excpt )
+{
+    LuaArguments args;
+    int top = lua_gettop( m_lua );
+
+    if ( lua_pcall( m_lua, argc, LUA_MULTRET, 0 ) != 0 )
+    {
+        m_debug.LogError( "%s", lua_tostring( m_lua, top + 1 ) );
+        excpt = true;
+    }
+    else
+        excpt = false;
+
+    args.ReadArguments( m_lua, top );
     return args;
 }
 
@@ -322,29 +358,35 @@ int LuaManager::AccessGlobalTable()
 
 void LuaManager::Init( LuaMain *lua )
 {
+    // We need threads for every environment
+    lua->m_lua = lua_newthread( m_lua );
+
     // Create the hyperstructure
     lua_newtable( m_lua );
     int structure = lua_gettop( m_lua );
 
-    // Create the common metatable
-    lua_newtable( m_lua );
-    int meta = lua_gettop( m_lua );
-    
+    // Load our functions into the VM
+    LoadCFunctions();
+
+    // Setup the resource class
+    lua_pushcclosure( m_lua, luamain_constructor, 0 );
+    lua_newclass( m_lua );
+
     // if env.val == nil, check _G!
     lua_pushlstring( m_lua, "__index", 7 );
     lua_pushcclosure( m_lua, luamain_index, 0 );
-    lua_settable( m_lua, meta );
+    lua_settable( m_lua, structure + 1 );
 
     lua_pushlstring( m_lua, "__metatable", 11 );
     lua_pushboolean( m_lua, true );
-    lua_settable( m_lua, meta );
+    lua_settable( m_lua, structure + 1 );
 
-    lua_setmetatable( m_lua, structure );
+    lua_setfield( L, structure, "resMain" );
 
     // Add it to the global env
     lua_pushlstring( m_lua, lua->GetName().c_str(), lua->GetName().size() );
     lua_setglobal( m_lua, structure );
-    
+
     // Notify the VM
     lua->InitVM( structure, meta );
 }
@@ -428,4 +470,20 @@ void LuaManager::LoadCFunctions()
 void LuaManager::ResetInstructionCount()
 {
     m_functionEnter = timeGetTime();
+}
+
+bool LuaArguments::WriteToBitStream( NetBitStreamInterface& bitStream ) const
+{
+    bool success = true;
+    std::vector <LuaArgument*>::const_iterator iter = m_args.begin();
+
+    bitStream.WriteCompressed( (unsigned short)m_args.size() );
+
+    for ( ; iter != m_args.end(); iter++ )
+    {
+        if ( !(*iter)->WriteToBitStream( bitStream ) )
+            success = false;
+    }
+
+    return success;
 }

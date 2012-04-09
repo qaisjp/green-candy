@@ -194,7 +194,7 @@ static int classmethod_fsDestroyRoot( lua_State *L )
     }
 
     lua_pushvalue( L, lua_upvalueindex( 2 ) );
-    lua_call( L, 0, 0 );
+    lua_pcall( L, 0, 0, 0 );
     return 0;
 }
 
@@ -209,20 +209,20 @@ static int classmethod_fsDestroySuper( lua_State *L )
     }
 
     lua_pushvalue( L, lua_upvalueindex( 3 ) );
-    lua_call( L, 0, 0 );
+    lua_pcall( L, 0, 0, 0 );
 
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_call( L, 0, 0 );
+    lua_pcall( L, 0, 0, 0 );
     return 0;
 }
 
 static int classmethod_fsDestroyBridge( lua_State *L )
 {
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_call( L, 0, 0 );
+    lua_pcall( L, 0, 0, 0 );
 
     lua_pushvalue( L, lua_upvalueindex( 2 ) );
-    lua_call( L, 0, 0 );
+    lua_pcall( L, 0, 0, 0 );
     return 0;
 }
 
@@ -326,10 +326,10 @@ static int methodenv_newindex( lua_State *L )
             }
         }
 
+        // Give it the environment
         sethvalue( L, L->top, j->env );
         api_incr_top( L );
-        lua_setfenv( L, 4 );
-
+        lua_setfenv( L, 3 );
         lua_remove( L, 3 );
 
         // We have to put it into the environment, too (caching <3)

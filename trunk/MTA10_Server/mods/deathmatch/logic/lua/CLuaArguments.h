@@ -39,65 +39,25 @@ class CResource;
 class CTextDisplay;
 class CTextItem;
 
-class CLuaArguments
+class CLuaArguments : public LuaArguments
 {
 public:
-                                                        CLuaArguments       ( void )                { }
-                                                        CLuaArguments       ( const CLuaArguments& Arguments, std::map < CLuaArguments*, CLuaArguments* > * pKnownTables = NULL );
-                                                        CLuaArguments       ( NetBitStreamInterface& bitStream, std::vector < CLuaArguments* > * pKnownTables = NULL );
-                                                        ~CLuaArguments      ( void )                { DeleteArguments (); };
+    CLuaArgument*                                       PushElement( CElement* pElement );
+    CLuaArgument*                                       PushACL( CAccessControlList* pACL );
+    CLuaArgument*                                       PushACLGroup( CAccessControlListGroup* pACLGroup );
+    CLuaArgument*                                       PushAccount( CAccount* pAccount );
+    CLuaArgument*                                       PushResource( CResource* pResource );
+    CLuaArgument*                                       PushTextDisplay( CTextDisplay* pTextDisplay );
+    CLuaArgument*                                       PushTextItem( CTextItem* pTextItem );
+    CLuaArgument*                                       PushTimer( CLuaTimer* pLuaTimer );
 
-    void                                                CopyRecursive       ( const CLuaArguments& Arguments, std::map < CLuaArguments*, CLuaArguments* > * pKnownTables = NULL );
-
-    const CLuaArguments&                                operator =          ( const CLuaArguments& Arguments );
-    CLuaArgument*                                       operator []         ( const unsigned int uiPosition ) const;
-
-    void                                                ReadArgument        ( lua_State* luaVM, signed int uiIndex );
-    void                                                ReadArguments       ( lua_State* luaVM, signed int uiIndexBegin = 1 );
-    void                                                PushArguments       ( lua_State* luaVM ) const;
-    void                                                PushArguments       ( CLuaArguments& Arguments );
-    bool                                                Call                ( class CLuaMain* pLuaMain, const CLuaFunctionRef& iLuaFunction, CLuaArguments * returnValues = NULL ) const;
-    bool                                                CallGlobal          ( class CLuaMain* pLuaMain, const char* szFunction, CLuaArguments * returnValues = NULL ) const;
-
-    void                                                ReadTable           ( lua_State* luaVM, int iIndexBegin, std::map < const void*, CLuaArguments* > * pKnownTables = NULL );
-    void                                                PushAsTable         ( lua_State* luaVM, std::map < CLuaArguments*, int > * pKnownTables = NULL );
-
-    CLuaArgument*                                       PushNil             ( void );
-    CLuaArgument*                                       PushBoolean         ( bool bBool );
-    CLuaArgument*                                       PushNumber          ( double dNumber );
-    CLuaArgument*                                       PushString          ( const std::string& strString );
-    CLuaArgument*                                       PushUserData        ( void* pUserData );
-    CLuaArgument*                                       PushElement         ( CElement* pElement );
-    CLuaArgument*                                       PushACL             ( CAccessControlList* pACL );
-    CLuaArgument*                                       PushACLGroup        ( CAccessControlListGroup* pACLGroup );
-    CLuaArgument*                                       PushAccount         ( CAccount* pAccount );
-    CLuaArgument*                                       PushResource        ( CResource* pResource );
-    CLuaArgument*                                       PushTextDisplay     ( CTextDisplay* pTextDisplay );
-    CLuaArgument*                                       PushTextItem        ( CTextItem* pTextItem );
-    CLuaArgument*                                       PushTimer           ( CLuaTimer* pLuaTimer );
-
-    CLuaArgument*                                       PushArgument        ( const CLuaArgument& argument );
-    CLuaArgument*                                       PushTable           ( CLuaArguments * table );
-
-    void                                                DeleteArguments     ( void );
-    void                                                ValidateTableKeys   ( void );
-
-    bool                                                ReadFromBitStream   ( NetBitStreamInterface& bitStream, std::vector < CLuaArguments* > * pKnownTables = NULL );
-    bool                                                ReadFromJSONString  ( const char* szJSON );
-    bool                                                WriteToBitStream    ( NetBitStreamInterface& bitStream, std::map < CLuaArguments*, unsigned long > * pKnownTables = NULL ) const;
-    std::vector < char * > *                            WriteToCharVector   ( std::vector < char * > * values );
-    bool                                                WriteToJSONString   ( std::string& strJSON, bool bSerialize = false );
-    json_object *                                       WriteTableToJSONObject ( bool bSerialize = false, std::map < CLuaArguments*, unsigned long > * pKnownTables = NULL );
-    json_object *                                       WriteToJSONArray    ( bool bSerialize );
-    bool                                                ReadFromJSONObject  ( json_object * object, std::vector < CLuaArguments* > * pKnownTables = NULL );
-    bool                                                ReadFromJSONArray   ( json_object * object, std::vector < CLuaArguments* > * pKnownTables = NULL );
-
-    unsigned int                                        Count               ( void ) const          { return static_cast < unsigned int > ( m_Arguments.size () ); };
-    std::vector < CLuaArgument* > ::const_iterator      IterBegin           ( void )                { return m_Arguments.begin (); };
-    std::vector < CLuaArgument* > ::const_iterator      IterEnd             ( void )                { return m_Arguments.end (); };
-
-private:
-    std::vector < CLuaArgument* >                       m_Arguments;
+    bool                                                ReadFromBitStream( NetBitStreamInterface& bitStream );
+    bool                                                ReadFromJSONString( const char* szJSON );
+    bool                                                WriteToJSONString( std::string& strJSON, bool bSerialize = false );
+    json_object*                                        WriteTableToJSONObject( bool bSerialize = false, std::map < CLuaArguments*, unsigned long > * pKnownTables = NULL );
+    json_object*                                        WriteToJSONArray( bool bSerialize );
+    bool                                                ReadFromJSONObject( json_object * object, std::vector < CLuaArguments* > * pKnownTables = NULL );
+    bool                                                ReadFromJSONArray( json_object * object, std::vector < CLuaArguments* > * pKnownTables = NULL );
 };
 
 #endif

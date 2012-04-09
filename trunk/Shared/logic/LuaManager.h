@@ -54,7 +54,7 @@ public:
     bool                            Remove( LuaMain *lua );
 
     void                            PushThread( lua_State *thread )     { m_threadStack.push_back( thread ); }
-    lua_State*                      GetThread()                         { return m_threadStack.empty() ? m_lua : *m_threadStack.end(); }
+    lua_State*                      GetThread() const                   { return m_threadStack.empty() ? m_lua : *m_threadStack.end(); }
     lua_State*                      PopThread()
     {
         if ( m_threadStack.empty() )
@@ -81,10 +81,13 @@ protected:
     void                            CallStack( int args );
     void                            CallStackVoid( int args );
     LuaArguments                    CallStackResult( int args );
+    void                            PCallStack( int args );
+    void                            PCallStackVoid( int args );
+    LuaArguments                    PCallStackResult( int args );
 
     class env_status
     {
-        inline void Update( int *line, std::string *src, std::string *proto_name )
+        inline void Update( int *line, std::string *src, std::string *proto_name ) const
         {
             lua_Debug info;
 
@@ -112,7 +115,7 @@ protected:
             m_lua = lua;
         }
 
-        const LuaMain&    Get( int *line, std::string *src, std::string *proto_name )
+        const LuaMain&    Get( int *line, std::string *src, std::string *proto_name ) const
         {
             if ( !m_frozen )
                 Update( line, src, proto_name );
@@ -164,12 +167,14 @@ protected:
         {
             m_context = context;
             m_system = system;
+            m_lua = *m_context;
 
             system.PushStatus( context );
         }
 
         LuaMain& m_context;
         LuaManager& m_system;
+        lua_State* m_lua;
 
     public:
         ~LuaContext()
@@ -179,17 +184,81 @@ protected:
 
         inline void CallStack( int args )
         {
-            m_system.CallStack( args );
+            lua_call( m_lua, args, LUA_MULTRET );
         }
 
         inline void CallStackVoid( int args )
         {
-            m_system.CallStackVoid( args );
+            lua_call( m_lua, args, 0 );
         }
 
         inline LuaArguments CallStackResult( int args )
         {
-            return m_system.CallStackResult( args );
+            int top = lua_gettop( m_lua );
+
+            CallStack( argc );
+
+            LuaArguments args;
+            int rettop = lua_gettop( m_lua );
+
+            while ( rettop != top )
+                args.ReadArgument( m_lua, rettop-- );
+
+            lua_settop( m_lua, top - argc );
+            return args;
+        }
+
+        inline bool PCallStack( int args )
+        {
+            int top = lua_gettop( m_lua );
+
+            try
+            {
+                CallStack( argc );
+            }
+            catch( lua_exception& e )
+            {
+                lua_settop( m_lua, top );
+
+                m_system.m_debug.LogError( "%s", e.what() );
+                return false;
+            }
+            return true;
+        }
+
+        inline bool PCallStackVoid( int args )
+        {
+            int top = lua_gettop( m_lua );
+
+            try
+            {
+                CallStackVoid( argc );
+            }
+            catch( lua_exception& e )
+            {
+                lua_settop( m_lua, top );
+
+                m_system.m_debug.LogError( "%s", e.what() );
+                return false;
+            }
+            return true;
+        }
+
+        inline LuaArguments PCallStackResult( int args, bool& excpt )
+        {
+            LuaArguments args;
+            int top = lua_gettop( m_lua );
+
+            if ( lua_pcall( m_lua, argc, LUA_MULTRET, 0 ) != 0 )
+            {
+                m_system.m_debug.LogError( "%s", lua_tostring( m_lua, top + 1 ) );
+                excpt = true;
+            }
+            else
+                excpt = false;
+
+            args.ReadArguments( m_lua, top );
+            return args;
         }
     };
 

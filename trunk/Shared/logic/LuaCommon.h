@@ -6,7 +6,7 @@
 *  PURPOSE:     Master lua header
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
-*               The_GTA
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -18,8 +18,6 @@
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
-
-CLuaFunctionRef         luaM_toref              ( lua_State *luaVM, int iArgument );
 
 #define TO_ELEMENTID(x) ((ElementID) reinterpret_cast < unsigned long > (x) )
 
