@@ -7,6 +7,7 @@
 *  DEVELOPERS:  Ed Lyons <>
 *               Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -723,89 +724,6 @@ bool CLuaArgument::WriteToBitStream ( NetBitStreamInterface& bitStream, std::map
 
     // Success
     return true;
-}
-
-char * CLuaArgument::WriteToString ( char * szBuffer, int length )
-{
-    switch ( GetType () )
-    {
-        case LUA_TNIL:
-        {
-            snprintf ( szBuffer, length, "0" );
-            return szBuffer;
-        }
-        case LUA_TBOOLEAN:
-        {
-            if ( GetBoolean () )
-                snprintf ( szBuffer, length, "true" );
-            else
-                snprintf ( szBuffer, length, "false" );
-            return szBuffer;
-        }
-        case LUA_TTABLE:
-        {
-            g_pGame->GetScriptDebugging()->LogError ( NULL, "Cannot convert table to string (do not use tables as keys in tables if you want to send them over http/JSON)." );
-            return NULL;
-        }
-        case LUA_TNUMBER:
-        {
-            float fNum = static_cast < float > ( GetNumber () );
-            int iNum = static_cast < int > ( GetNumber () );
-            if ( iNum == fNum )
-            {
-                snprintf ( szBuffer, length, "%d", iNum );
-                return szBuffer;
-            }
-            else
-            {
-                snprintf ( szBuffer, length, "%f", fNum );
-                return szBuffer;
-            }
-            break;
-        }
-        case LUA_TSTRING:
-        {
-            const char* szTemp = GetString ().c_str ();
-            unsigned short usLength = static_cast < unsigned short > ( strlen ( szTemp ) );
-            if ( strlen ( szTemp ) == usLength )
-            {
-                snprintf ( szBuffer, length, "%s", szTemp );
-                return szBuffer;
-            }
-            else
-            {
-                g_pGame->GetScriptDebugging()->LogError ( NULL, "String is too long. Limit is 65535 characters." );
-            }
-            break;
-        }
-        case LUA_TLIGHTUSERDATA:
-        {
-            CElement* pElement = GetElement ();
-            CResource* pResource = reinterpret_cast < CResource* > ( GetLightUserData() );
-            if ( pElement )
-            {
-                snprintf ( szBuffer, length, "#E#%d", (int)pElement->GetID().Value() );
-                return szBuffer;
-            }
-            else if ( VERIFY_RESOURCE(pResource) )
-            {
-                snprintf ( szBuffer, length, "#R#%s", pResource->GetName().c_str () );
-                return szBuffer;
-            }
-            else
-            {
-                g_pGame->GetScriptDebugging()->LogError ( NULL, "Couldn't convert element to string, only valid elements can be sent." );
-                return NULL;
-            }
-            break;
-        }
-        default:
-        {
-            g_pGame->GetScriptDebugging()->LogError ( NULL, "Couldn't convert argument to string, unsupported data type. Use String, Number, Boolean or Element." );
-            return NULL;
-        }
-    }
-    return NULL;
 }
 
 void CLuaArgument::LogUnableToPacketize ( const char* szMessage ) const

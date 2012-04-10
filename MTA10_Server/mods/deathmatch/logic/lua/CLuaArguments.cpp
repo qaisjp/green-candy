@@ -203,6 +203,72 @@ json_object* CLuaArguments::WriteToJSONArray( bool serialize )
     return arr;
 }
 
+static inline bool json_WriteArgumentToString( const LuaArgument& arg, std::string& buf )
+{
+    switch( arg.GetType() )
+    {
+    case LUA_TNONE:
+    case LUA_TNIL:
+        buf = "0";
+        return true;
+
+    case LUA_TBOOLEAN:
+        buf = arg.GetString();
+        return true;
+
+    case LUA_TTABLE:
+        g_pGame->GetScriptDebugging()->LogError( "Cannot convert table to string (do not use tables as keys in tables if you want to send them over http/JSON)." );
+        return false;
+
+    case LUA_TNUMBER:
+        float fNum = (float)GetNumber();
+        int iNum = (int)GetNumber();
+        std::stringstream stream;
+
+        if ( iNum == fNum )
+            stream << iNum;
+        else
+            stream << fNum;
+
+        buf = stream.str();
+        return true;
+
+    case LUA_TSTRING:
+        size_t len = arg.GetString().size();
+
+        if ( len > 65535 )
+        {
+            g_pGame->GetScriptDebugging()->LogError( "String is too long. Limit is 65535 characters." );
+            return false;
+        }
+
+        buf = arg.GetString();
+        return true;
+
+    case LUA_TLIGHTUSERDATA:
+        CLuaArgument& argex = (CLuaArgument&)arg;
+        CElement *elem = argex.GetElement();
+        CResource *res = (CResource*)GetLightUserData();
+
+        if ( elem )
+        {
+            buf = SString( "#E#%d", (int)elem->GetID().Value() );
+            return true;
+        }
+        else if ( VERIFY_RESOURCE( res ) )
+        {
+            buf = SString( "#R#%s", res->GetName().c_str() );
+            return true;
+        }
+
+        g_pGame->GetScriptDebugging()->LogError( "Couldn't convert element to string, only valid elements can be sent." );
+        return false;
+    }
+
+    g_pGame->GetScriptDebugging()->LogError( "Couldn't convert argument to string, unsupported data type. Use String, Number, Boolean or Element." );
+    return false;
+}
+
 json_object* CLuaArguments::WriteTableToJSONObject( bool serialize )
 {
     std::vector <LuaArgument*>::iterator iter = m_args.begin();
@@ -232,7 +298,7 @@ json_object* CLuaArguments::WriteTableToJSONObject( bool serialize )
     {
         std::string buf;
 
-        if ( !(*iter)->WriteToString( buf ) ) // index
+        if ( !json_WriteArgumentToString( **iter, buf ) ) // index
             break;
 
         iter++;

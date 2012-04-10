@@ -10,14 +10,12 @@
 *               Oliver Brown <>
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
 #include "StdInc.h"
 #include "net/SyncStructures.h"
-
-#define ARGUMENT_TYPE_INT       9
-#define ARGUMENT_TYPE_FLOAT     10
 
 #ifndef VERIFY_ENTITY
 #define VERIFY_ENTITY(entity) (CStaticFunctionDefinitions::GetRootElement()->IsMyChild(entity,true)&&!entity->IsBeingDeleted())
@@ -25,218 +23,14 @@
 
 extern CClientGame* g_pClientGame;
 
-using namespace std;
-
 // Prevent the warning issued when doing unsigned short -> void*
 #pragma warning(disable:4312)
-
-
-
-CLuaArgument::CLuaArgument ( void )
-{
-    m_iType = LUA_TNIL;
-    m_pTableData = NULL;
-    m_pLightUserData = NULL;
-}
-
-
-CLuaArgument::CLuaArgument ( bool bBool )
-{
-    m_pTableData = NULL;
-    Read ( bBool );
-}
-
-
-CLuaArgument::CLuaArgument ( double dNumber )
-{
-    m_pTableData = NULL;
-    Read ( dNumber );
-}
-
-
-CLuaArgument::CLuaArgument ( const std::string& strString )
-{
-    m_pTableData = NULL;
-    Read ( strString );
-}
-
-CLuaArgument::CLuaArgument ( void* pUserData )
-{
-    m_pTableData = NULL;
-    Read ( pUserData );
-}
-
 
 CLuaArgument::CLuaArgument ( CClientEntity* pElement )
 {
     m_pTableData = NULL;
     Read ( pElement );
 }
-
-
-CLuaArgument::CLuaArgument ( const CLuaArgument& Argument, std::map < CLuaArguments*, CLuaArguments* > * pKnownTables )
-{
-    // Initialize and call our = on the argument
-    m_pTableData = NULL;
-    CopyRecursive ( Argument, pKnownTables );
-}
-
-
-CLuaArgument::CLuaArgument ( NetBitStreamInterface& bitStream, std::vector < CLuaArguments* > * pKnownTables )
-{
-    m_pTableData = NULL;
-    ReadFromBitStream ( bitStream, pKnownTables );
-}
-
-
-CLuaArgument::CLuaArgument ( lua_State* luaVM, int iArgument, std::map < const void*, CLuaArguments* > * pKnownTables )
-{
-    // Read the argument out of the lua VM
-    m_pTableData = NULL;
-    Read ( luaVM, iArgument, pKnownTables );
-}
-
-
-CLuaArgument::~CLuaArgument ( void )
-{
-    // Eventually destroy our table
-    DeleteTableData ();
-}
-
-void CLuaArgument::CopyRecursive ( const CLuaArgument& Argument, std::map < CLuaArguments*, CLuaArguments* > * pKnownTables )
-{
-    // Clear the string
-    m_strString = "";
-
-    // Destroy our old tabledata if neccessary
-    DeleteTableData ();
-
-    // Copy over line and filename too
-    m_strFilename = Argument.m_strFilename;
-    m_iLine = Argument.m_iLine;
-
-    // Set our variable equally to the copy class
-    m_iType = Argument.m_iType;
-    switch ( m_iType )
-    {
-        case LUA_TBOOLEAN:
-        {
-            m_bBoolean = Argument.m_bBoolean;
-            break;
-        }
-
-        case LUA_TLIGHTUSERDATA:
-        {
-            m_pLightUserData = Argument.m_pLightUserData;
-            break;
-        }
-
-        case LUA_TNUMBER:
-        {
-            m_Number = Argument.m_Number;
-            break;
-        }
-
-        case LUA_TTABLE:
-        {
-            if ( pKnownTables && pKnownTables->find ( Argument.m_pTableData ) != pKnownTables->end () )
-            {
-                m_pTableData = pKnownTables->find ( Argument.m_pTableData )->second;
-                m_bWeakTableRef = true;
-            }
-            else
-            {
-                m_pTableData = new CLuaArguments ( *Argument.m_pTableData, pKnownTables );
-                m_bWeakTableRef = false;
-            }
-            break;
-        }
-
-        case LUA_TSTRING:
-        {
-            m_strString = Argument.m_strString;
-            break;
-        }
-
-        default: break;
-    }
-}
-
-const CLuaArgument& CLuaArgument::operator = ( const CLuaArgument& Argument )
-{
-    CopyRecursive ( Argument );
-
-    // Return the given class allowing for chaining
-    return Argument;
-}
-
-bool CLuaArgument::operator == ( const CLuaArgument& Argument )
-{
-    std::set < CLuaArguments* > knownTables;
-    return CompareRecursive ( Argument, &knownTables );
-}
-
-
-bool CLuaArgument::operator != ( const CLuaArgument& Argument )
-{
-    std::set < CLuaArguments* > knownTables;
-    return !CompareRecursive ( Argument, &knownTables );
-}
-
-bool CLuaArgument::CompareRecursive ( const CLuaArgument& Argument, std::set < CLuaArguments* > * pKnownTables )
-{
-    // If the types differ, they're not matching
-    if ( Argument.m_iType != m_iType )
-        return false;
-
-    // Compare the variables depending on the type
-    switch ( m_iType )
-    {
-        case LUA_TBOOLEAN:
-        {
-            return m_bBoolean == Argument.m_bBoolean;
-        }
-
-        case LUA_TLIGHTUSERDATA:
-        {
-            return m_pLightUserData == Argument.m_pLightUserData;
-        }
-
-        case LUA_TNUMBER:
-        {
-            return m_Number == Argument.m_Number;
-        }
-
-        case LUA_TTABLE:
-        {
-            if ( m_pTableData->Count () != Argument.m_pTableData->Count () )
-                return false;
-
-            vector < CLuaArgument * > ::const_iterator iter = m_pTableData->IterBegin ();
-            vector < CLuaArgument * > ::const_iterator iterCompare = Argument.m_pTableData->IterBegin ();
-            while ( iter != m_pTableData->IterEnd () && iterCompare != Argument.m_pTableData->IterEnd () )
-            {
-                if ( pKnownTables->find ( m_pTableData ) == pKnownTables->end () )
-                {
-                    pKnownTables->insert ( m_pTableData );
-                    if ( *iter != *iterCompare )
-                        return false;
-                }
-            
-                iter++;
-                iterCompare++;
-            }
-            return true;
-        }
-        case LUA_TSTRING:
-        {
-            return m_strString == Argument.m_strString;
-        }
-    }
-
-    return true;
-}
-
 
 void CLuaArgument::Read ( lua_State* luaVM, int iArgument, std::map < const void*, CLuaArguments* > * pKnownTables )
 {
