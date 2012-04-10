@@ -199,6 +199,16 @@ public:
         return ReadStringCharacters ( result, usLength );
     }
 
+    bool ReadStringCompressed( std::string& buf )
+    {
+        unsigned short len;
+
+        if ( !ReadCompressed( len ) )
+            return false;
+
+        return ReadStringCharacters( buf, len );
+    }
+
     #ifdef MTA_CLIENT
         #define MAX_ELEMENTS    MAX_CLIENT_ELEMENTS
     #else

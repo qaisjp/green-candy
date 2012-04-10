@@ -51,8 +51,6 @@ public:
     void                    Read                ( void* pUserData );
     void                    Read                ( CClientEntity* pElement );
 
-    void                    ReadElementID       ( ElementID ID );
-
     inline int              GetType             ( void ) const      { return m_iType; };
 
     inline bool             GetBoolean          ( void ) const      { return m_bBoolean; };
@@ -63,24 +61,6 @@ public:
 
     bool                    ReadFromBitStream   ( NetBitStreamInterface& bitStream, std::vector < CLuaArguments* > * pKnownTables = NULL );
     bool                    WriteToBitStream    ( NetBitStreamInterface& bitStream, std::map < CLuaArguments*, unsigned long > * pKnownTables = NULL ) const;
-
-private:
-    void                    LogUnableToPacketize    ( const char* szMessage ) const;
-
-    int                     m_iType;
-    bool                    m_bBoolean;
-    lua_Number              m_Number;
-    std::string             m_strString;
-    void*                   m_pLightUserData;
-    CLuaArguments*          m_pTableData;
-    bool                    m_bWeakTableRef;
-
-    std::string             m_strFilename;
-    int                     m_iLine;
-
-    void                    CopyRecursive       ( const CLuaArgument& Argument, std::map < CLuaArguments*, CLuaArguments* > * pKnownTables = NULL );
-    bool                    CompareRecursive    ( const CLuaArgument& Argument, std::set < CLuaArguments* > * pKnownTables = NULL );
-    void                    DeleteTableData     ( void );
 };
 
 #endif

@@ -184,81 +184,32 @@ protected:
 
         inline void CallStack( int args )
         {
-            lua_call( m_lua, args, LUA_MULTRET );
+            m_system.CallStack( args );
         }
 
         inline void CallStackVoid( int args )
         {
-            lua_call( m_lua, args, 0 );
+            m_system.CallStack( args );
         }
 
         inline LuaArguments CallStackResult( int args )
         {
-            int top = lua_gettop( m_lua );
-
-            CallStack( argc );
-
-            LuaArguments args;
-            int rettop = lua_gettop( m_lua );
-
-            while ( rettop != top )
-                args.ReadArgument( m_lua, rettop-- );
-
-            lua_settop( m_lua, top - argc );
-            return args;
+            return m_system.CallStackResult( args );
         }
 
         inline bool PCallStack( int args )
         {
-            int top = lua_gettop( m_lua );
-
-            try
-            {
-                CallStack( argc );
-            }
-            catch( lua_exception& e )
-            {
-                lua_settop( m_lua, top );
-
-                m_system.m_debug.LogError( "%s", e.what() );
-                return false;
-            }
-            return true;
+            return m_system.PCallStack( args );
         }
 
         inline bool PCallStackVoid( int args )
         {
-            int top = lua_gettop( m_lua );
-
-            try
-            {
-                CallStackVoid( argc );
-            }
-            catch( lua_exception& e )
-            {
-                lua_settop( m_lua, top );
-
-                m_system.m_debug.LogError( "%s", e.what() );
-                return false;
-            }
-            return true;
+            return m_system.PCallStackVoid( args );
         }
 
         inline LuaArguments PCallStackResult( int args, bool& excpt )
         {
-            LuaArguments args;
-            int top = lua_gettop( m_lua );
-
-            if ( lua_pcall( m_lua, argc, LUA_MULTRET, 0 ) != 0 )
-            {
-                m_system.m_debug.LogError( "%s", lua_tostring( m_lua, top + 1 ) );
-                excpt = true;
-            }
-            else
-                excpt = false;
-
-            args.ReadArguments( m_lua, top );
-            return args;
+            return m_system.PCallStackResult( args, excpt );
         }
     };
 
