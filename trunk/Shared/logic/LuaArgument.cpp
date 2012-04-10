@@ -17,17 +17,6 @@
 
 #include "StdInc.h"
 
-#define ARGUMENT_TYPE_INT       9
-#define ARGUMENT_TYPE_FLOAT     10
-
-#ifndef VERIFY_ENTITY
-#define VERIFY_ENTITY(entity) (CStaticFunctionDefinitions::GetRootElement()->IsMyChild(entity,true)&&!entity->IsBeingDeleted())
-#endif
-
-extern CClientGame* g_pClientGame;
-
-using namespace std;
-
 // Prevent the warning issued when doing unsigned short -> void*
 #pragma warning(disable:4312)
 
@@ -37,6 +26,7 @@ LuaArgument::LuaArgument()
     m_type = LUA_TNIL;
     m_table = NULL;
     m_lightUD = NULL;
+    m_string = "";
 }
 
 LuaArgument::LuaArgument( bool b )
@@ -441,142 +431,95 @@ bool LuaArgument::ReadFromBitStream( NetBitStreamInterface& bitStream )
     return false;
 }
 
-bool CLuaArgument::WriteToBitStream( NetBitStreamInterface& bitStream ) const
+bool LuaArgument::WriteToBitStream( NetBitStreamInterface& bitStream ) const
 {
     SLuaTypeSync type;
 
-    switch ( GetType () )
+    switch( m_type )
     {
-        // Nil type
-        case LUA_TNIL:
+    case LUA_TNIL:
+        type.data.ucType = LUA_TNIL;
+        bitStream.Write( &type );
+        return true;
+
+    case LUA_TBOOLEAN:
+        type.data.ucType = LUA_TBOOLEAN;
+        bitStream.Write( &type );
+        bitStream.WriteBit( GetBoolean() );
+        return true;
+
+    case LUA_TTABLE:
+#ifdef _TODO
+        if ( pKnownTables && pKnownTables->find ( m_pTableData ) != pKnownTables->end () )
         {
-            type.data.ucType = LUA_TNIL;
+            // Self-referencing table
+            type.data.ucType = LUA_TTABLEREF;
             bitStream.Write ( &type );
-            break;
+            bitStream.WriteCompressed ( pKnownTables->find ( m_pTableData )->second );
         }
-
-        // Boolean type
-        case LUA_TBOOLEAN:
+        else
         {
-            type.data.ucType = LUA_TBOOLEAN;
+            type.data.ucType = LUA_TTABLE;
             bitStream.Write ( &type );
 
-            // Write the boolean to it
-            bitStream.WriteBit ( GetBoolean () );
-            break;
+            // Write the subtable to the bitstream
+            m_pTableData->WriteToBitStream ( bitStream, pKnownTables );
         }
+#endif //_TODO
+        return true;
 
-        // Table argument
-        case LUA_TTABLE:
+    case LUA_TNUMBER:
+        type.data.ucType = LUA_TNUMBER;
+        bitStream.Write( &type );
+
+        float fNumber = (float)GetNumber();
+        long lNumber = (long)fNumber;
+        float fNumberInteger = (float)lNumber;
+
+        // Check if the number is an integer and can fit a long datatype
+        if ( fabs(fNumber) > fabs(fNumberInteger + 1) || fabs(fNumber - fNumberInteger) >= FLOAT_EPSILON )
         {
-            if ( pKnownTables && pKnownTables->find ( m_pTableData ) != pKnownTables->end () )
-            {
-                // Self-referencing table
-                type.data.ucType = LUA_TTABLEREF;
-                bitStream.Write ( &type );
-                bitStream.WriteCompressed ( pKnownTables->find ( m_pTableData )->second );
-            }
-            else
-            {
-                type.data.ucType = LUA_TTABLE;
-                bitStream.Write ( &type );
-
-                // Write the subtable to the bitstream
-                m_pTableData->WriteToBitStream ( bitStream, pKnownTables );
-            }
-            break;
+            bitStream.WriteBit( true );
+            bitStream.Write( fNumber );
+            return true;
         }
 
-        // Number argument?
-        case LUA_TNUMBER:
+        bitStream.WriteBit( false );
+        bitStream.WriteCompressed( lNumber );
+        return true;
+
+    case LUA_TSTRING:
+        size_t len = m_string.size();
+
+        if ( len > 65535 )
         {
-            type.data.ucType = LUA_TNUMBER;
-            bitStream.Write ( &type );
-            float fNumber = static_cast < float > ( GetNumber () );
-            long lNumber = static_cast < long > ( fNumber );
-            float fNumberInteger = static_cast < float > ( lNumber );
-
-            // Check if the number is an integer and can fit a long datatype
-            if ( fabs ( fNumber ) > fabs ( fNumberInteger + 1 ) ||
-                 fabs ( fNumber - fNumberInteger ) >= FLOAT_EPSILON )
-            {
-                bitStream.WriteBit ( true );
-                bitStream.Write ( fNumber );
-            }
-            else
-            {
-                bitStream.WriteBit ( false );
-                bitStream.WriteCompressed ( lNumber );
-            }
-            break;
-        }
-
-        // String argument
-        case LUA_TSTRING:
-        {           
-            // Grab the string and its length. Is it short enough to be sendable?
-            const char* szTemp = m_strString.c_str ();
-            size_t sizeTemp = m_strString.length ();
-            unsigned short usLength = static_cast < unsigned short > ( sizeTemp );
-            if ( sizeTemp == usLength )
-            {
-                // This is a string argument
-                type.data.ucType = LUA_TSTRING;
-                bitStream.Write ( &type );
-
-                // Write its length
-                bitStream.WriteCompressed ( usLength );
-
-                // Write the content too if it's not empty
-                if ( usLength > 0 )
-                {
-                    bitStream.Write ( const_cast < char* > ( szTemp ), usLength );
-                }
-            }
-            else
-            {
-                // Too long string
-                LogUnableToPacketize ( "Couldn't packetize argument list. Invalid string specified, limit is 65535 characters." );
-
-                // Write a nil though so other side won't get out of sync
-                bitStream.Write ( (unsigned char) LUA_TNIL );
-                return false;
-            }
-            break;
-        }
-
-        default:
-        {
-            LogUnableToPacketize ( "Couldn't packetize argument list, unknown type specified." );
+            // Too long string
+            LogUnableToPacketize( "Couldn't packetize argument list. Invalid string specified, limit is 65535 characters." );
 
             // Write a nil though so other side won't get out of sync
-            type.data.ucType = LUA_TNIL;
-            bitStream.Write ( &type );
+            bitStream.Write( (unsigned char)LUA_TNIL );
             return false;
         }
-    }
 
-    return true;
+        type.data.ucType = LUA_TSTRING;
+        bitStream.Write( &type );
+        return bitStream.WriteStringCompressed( m_string );
+    }
+    LogUnableToPacketize( "Couldn't packetize argument list, unknown type specified." );
+
+    // Write a nil though so other side won't get out of sync
+    type.data.ucType = LUA_TNIL;
+    bitStream.Write( &type );
+    return false;
 }
 
-void CLuaArgument::LogUnableToPacketize ( const char* szMessage ) const
+void LuaArgument::DeleteTableData()
 {
-    if ( m_strFilename.length () > 0 )
-    {
-        g_pClientGame->GetScriptDebugging ()->LogWarning ( NULL, "%s:%d: %s\n", ConformResourcePath ( m_strFilename.c_str () ).c_str (), m_iLine, szMessage );
-    }
-    else
-    {
-        g_pClientGame->GetScriptDebugging ()->LogWarning ( NULL, "Unknown: %s\n", szMessage );
-    }
-}
+    if ( !m_pTableData )
+        return;
 
-void CLuaArgument::DeleteTableData ( )
-{
-    if ( m_pTableData )
-    {
-        if ( !m_bWeakTableRef )
-            delete m_pTableData;
-        m_pTableData = NULL;
-    }
+    if ( !m_weakRef )
+        delete m_table;
+
+    m_table = NULL;
 }

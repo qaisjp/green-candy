@@ -10,6 +10,7 @@
 *               Oliver Brown <>
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -24,43 +25,20 @@ class CLuaArguments;
 
 #define LUA_TTABLEREF 9
 
-class CLuaArgument
+class CLuaArgument : public LuaArgument
 {
 public:
-                            CLuaArgument        ( void );
-                            CLuaArgument        ( bool bBool );
-                            CLuaArgument        ( double dNumber );
-                            CLuaArgument        ( const std::string& strString );
-                            CLuaArgument        ( void* pUserData );
-                            CLuaArgument        ( CClientEntity* pElement );
-                            CLuaArgument        ( const CLuaArgument& Argument, std::map < CLuaArguments*, CLuaArguments* > * pKnownTables = NULL );
-                            CLuaArgument        ( NetBitStreamInterface& bitStream, std::vector < CLuaArguments* > * pKnownTables = NULL );
-                            CLuaArgument        ( lua_State* luaVM, int iArgument, std::map < const void*, CLuaArguments* > * pKnownTables = NULL );
-                            ~CLuaArgument       ( void );
+                            CLuaArgument( CClientEntity* pElement );
+                            ~CLuaArgument();
 
-    const CLuaArgument&     operator =          ( const CLuaArgument& Argument );
-    bool                    operator ==         ( const CLuaArgument& Argument );
-    bool                    operator !=         ( const CLuaArgument& Argument );
+    void                    Read( CClientEntity* pElement );
 
-    void                    Read                ( lua_State* luaVM, int iArgument, std::map < const void*, CLuaArguments* > * pKnownTables = NULL );
-    void                    Push                ( lua_State* luaVM, std::map < CLuaArguments*, int > * pKnownTables = NULL ) const;
+    CClientEntity*          GetElement() const;
 
-    void                    Read                ( bool bBool );
-    void                    Read                ( double dNumber );
-    void                    Read                ( const std::string& strString );
-    void                    Read                ( void* pUserData );
-    void                    Read                ( CClientEntity* pElement );
-
-    inline int              GetType             ( void ) const      { return m_iType; };
-
-    inline bool             GetBoolean          ( void ) const      { return m_bBoolean; };
-    inline lua_Number       GetNumber           ( void ) const      { return m_Number; };
-    const char*             GetString           ( void )            { return m_strString.c_str (); };
-    inline void*            GetLightUserData    ( void ) const      { return m_pLightUserData; };
-    CClientEntity*          GetElement          ( void ) const;
-
-    bool                    ReadFromBitStream   ( NetBitStreamInterface& bitStream, std::vector < CLuaArguments* > * pKnownTables = NULL );
-    bool                    WriteToBitStream    ( NetBitStreamInterface& bitStream, std::map < CLuaArguments*, unsigned long > * pKnownTables = NULL ) const;
+    bool                    ReadFromBitStream( NetBitStreamInterface& bitStream );
+    bool                    WriteToBitStream( NetBitStreamInterface& bitStream ) const;
+protected:
+    void                    LogUnableToPacketize( const char *msg ) const;
 };
 
 #endif

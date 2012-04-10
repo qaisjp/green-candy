@@ -32,7 +32,7 @@ public:
                                 LuaArgument( const LuaArgument& arg );
                                 LuaArgument( NetBitStreamInterface& bitStream );
                                 LuaArgument( lua_State *lua, int idx );
-                                ~LuaArgument();
+    virtual                     ~LuaArgument();
 
     const CLuaArgument&         operator = ( const LuaArgument& arg );
     bool                        operator == ( const LuaArgument& arg );
@@ -47,18 +47,18 @@ public:
 
     void                        Push( lua_State* lua ) const;
 
-    inline int                  GetType() const      { return m_iType; };
+    inline int                  GetType() const      { return m_type; };
 
-    inline bool                 GetBoolean() const      { return m_bBoolean; };
-    inline lua_Number           GetNumber() const      { return m_Number; };
-    virtual bool                GetString( std::string& buf ) const;
-    inline void*                GetLightUserData() const      { return m_pLightUserData; };
+    inline bool                 GetBoolean() const      { return m_bool; };
+    inline lua_Number           GetNumber() const      { return m_num; };
+    inline const std::string&   GetString() const       { return m_string; }
+    inline void*                GetLightUserData() const      { return m_lightUD; };
 
     virtual bool                ReadFromBitStream( NetBitStreamInterface& bitStream );
     virtual bool                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
 
-private:
-    void                        LogUnableToPacketize( const char *msg ) const;
+protected:
+    virtual void                LogUnableToPacketize( const char *msg ) const = 0;
     void                        CopyRecursive( const LuaArgument& arg );
     bool                        CompareRecursive( const LuaArgument& arg );
     void                        DeleteTableData();
