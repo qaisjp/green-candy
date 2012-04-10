@@ -106,8 +106,8 @@ void LuaArguments::ReadTable( lua_State *luaVM, int indexStart )
     // The_GTA: Google for lua table iteration
     while ( lua_next( luaVM, indexStart ) != 0 )
     {
-        m_args.push_back( new CLuaArgument( luaVM, -2, tables ) );
-        m_args.push_back( new CLuaArgument( luaVM, -1, tables ) );
+        m_args.push_back( new LuaArgument( luaVM, -2, tables ) );
+        m_args.push_back( new LuaArgument( luaVM, -1, tables ) );
        
         lua_pop( luaVM, 1 );
     }
@@ -167,6 +167,31 @@ bool LuaArguments::Call( LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *
 
     *res = lua->PCallStackResult( m_args.size(), excpt );
     return !excpt;
+}
+
+bool LuaArguments::IsIndexedArray()
+{
+    unsigned int n = 1;
+    std::vector <LuaArgument*>::const_iterator iter = m_args.begin ();
+
+    for ( ; iter != m_args.end(); iter+=2, n++ )
+    {
+        LuaArgument *arg = *iter;
+
+        if ( arg->GetType() != LUA_TNUMBER )
+            return false;
+
+        double num = arg->GetNumber();
+        unsigned int iNum = (unsigned int)num;
+
+        if ( num != iNum )
+            return false;
+
+        if ( n != iNum ) // check if the value matches its index in the table
+            return false;
+    }
+
+    return true;
 }
 
 LuaArgument* LuaArguments::PushNil()

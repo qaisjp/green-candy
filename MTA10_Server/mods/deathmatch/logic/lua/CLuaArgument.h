@@ -65,24 +65,6 @@ public:
     json_object*            WriteToJSONObject   ( bool bSerialize = false, std::map < CLuaArguments*, unsigned long > * pKnownTables = NULL );
     bool                    ReadFromJSONObject  ( json_object* object, std::vector < CLuaArguments* > * pKnownTables = NULL );
     char *                  WriteToString       ( char * szBuffer, int length );
-
-private:
-    void                    LogUnableToPacketize    ( const char* szMessage ) const;
-
-    int                     m_iType;
-    bool                    m_bBoolean;
-    lua_Number              m_Number;
-    std::string             m_strString;
-    void*                   m_pLightUserData;
-    CLuaArguments*          m_pTableData;
-    bool                    m_bWeakTableRef;
-
-    std::string             m_strFilename;
-    int                     m_iLine;
-
-    void                    CopyRecursive       ( const CLuaArgument& Argument, std::map < CLuaArguments*, CLuaArguments* > * pKnownTables = NULL );
-    bool                    CompareRecursive    ( const CLuaArgument& Argument, std::set < CLuaArguments* > * pKnownTables = NULL );
-    void                    DeleteTableData     ( void );
 };
 
 #endif

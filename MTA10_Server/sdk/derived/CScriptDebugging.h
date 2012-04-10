@@ -23,7 +23,7 @@ public:
     bool                        RemovePlayer                    ( class CPlayer& player );
     void                        ClearPlayers                    ();
 
-    void                        LogError                        ( const char *path, int iLine, SString strMsg );
+    void                        LogError                        ( const char *path, int line, SString msg );
 
     bool                        SetLogfile                      ( const char *path, unsigned int level );
     void                        SetHTMLLogLevel                 ( unsigned int level );

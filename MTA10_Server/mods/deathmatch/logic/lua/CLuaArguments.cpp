@@ -49,314 +49,330 @@ CLuaArgument* CLuaArguments::PushACLGroup( CAccessControlListGroup *aclGroup )
     return arg;
 }
 
-CLuaArgument* CLuaArguments::PushAccount ( CAccount* pAccount )
+CLuaArgument* CLuaArguments::PushAccount( CAccount *acc )
 {
-    CLuaArgument* pArgument = new CLuaArgument;
-    pArgument->ReadUserData ( pAccount );
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
+    CLuaArgument *arg = new CLuaArgument;
+    arg->ReadUserData( acc );
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-CLuaArgument* CLuaArguments::PushResource ( CResource* pResource )
+CLuaArgument* CLuaArguments::PushResource( CResource *res )
 {
-    CLuaArgument* pArgument = new CLuaArgument;
-    pArgument->ReadUserData ( pResource );
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
+    CLuaArgument *arg = new CLuaArgument;
+    arg->ReadUserData( res );
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-CLuaArgument* CLuaArguments::PushTextDisplay ( CTextDisplay* pTextDisplay )
+CLuaArgument* CLuaArguments::PushTextDisplay( CTextDisplay *disp )
 {
-    CLuaArgument* pArgument = new CLuaArgument;
-    pArgument->ReadUserData ( pTextDisplay );
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
+    CLuaArgument *arg = new CLuaArgument;
+    arg->ReadUserData( disp );
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-CLuaArgument* CLuaArguments::PushTextItem ( CTextItem* pTextItem )
+CLuaArgument* CLuaArguments::PushTextItem( CTextItem *item )
 {
-    CLuaArgument* pArgument = new CLuaArgument;
-    pArgument->ReadUserData ( pTextItem );
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
+    CLuaArgument *arg = new CLuaArgument;
+    arg->ReadUserData( item );
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-CLuaArgument* CLuaArguments::PushTimer ( CLuaTimer* pLuaTimer )
+CLuaArgument* CLuaArguments::PushTimer( CLuaTimer *timer )
 {
-    CLuaArgument* pArgument = new CLuaArgument;
-    pArgument->ReadUserData ( pLuaTimer );
-    m_Arguments.push_back ( pArgument );
-    return pArgument;
+    CLuaArgument *arg = new CLuaArgument;
+    arg->ReadUserData( timer );
+    m_args.push_back( arg );
+    return arg;
 }
 
-
-void CLuaArguments::DeleteArguments ( void )
+bool CLuaArguments::ReadFromBitStream( NetBitStreamInterface& bitStream )
 {
-    // Delete each item
-    vector < CLuaArgument* > ::iterator iter = m_Arguments.begin ();
-    for ( ; iter != m_Arguments.end (); iter++ )
-    {
-        delete *iter;
-    }
-
-    // Clear the vector
-    m_Arguments.clear ();
-}
-
-
-void CLuaArguments::ValidateTableKeys ( void )
-{
-    // Iterate over m_Arguments as pairs
-    // If first is LUA_TNIL, then remove pair
-    vector < CLuaArgument* > ::iterator iter = m_Arguments.begin ();
-    for ( ; iter != m_Arguments.end () ; )
-    {
-        // Check first in pair
-        if ( (*iter)->GetType () == LUA_TNIL )
-        {
-            // Remove pair
-            delete *iter;
-            iter = m_Arguments.erase ( iter );
-            if ( iter != m_Arguments.end () )
-            {
-                delete *iter;
-                iter = m_Arguments.erase ( iter );
-            }
-            // Check if end
-            if ( iter == m_Arguments.end () )
-                break;
-        }
-        else
-        {
-            // Skip second in pair
-            iter++;
-            // Check if end
-            if ( iter == m_Arguments.end () )
-                break;
-
-            iter++;
-        }
-    }
-}
-
-
-bool CLuaArguments::ReadFromBitStream ( NetBitStreamInterface& bitStream, std::vector < CLuaArguments* > * pKnownTables )
-{
-    bool bKnownTablesCreated = false;
-    if ( !pKnownTables )
-    {
-        pKnownTables = new std::vector < CLuaArguments* > ();
-        bKnownTablesCreated = true;
-    }
-
     unsigned short usNumArgs;
-    if ( bitStream.ReadCompressed ( usNumArgs ) )
-    {
-        pKnownTables->push_back ( this );
-        for ( unsigned short us = 0 ; us < usNumArgs ; us++ )
-        {
-            CLuaArgument* pArgument = new CLuaArgument ( bitStream, pKnownTables );
-            m_Arguments.push_back ( pArgument );
-        }
-    }
 
-    if ( bKnownTablesCreated )
-        delete pKnownTables;
+    if ( !bitStream.ReadCompressed( usNumArgs ) )
+        return true;
+
+    while ( usNumArgs-- )
+        m_Arguments.push_back( new CLuaArgument( bitStream ) );
 
     return true;
 }
 
-
-bool CLuaArguments::WriteToBitStream ( NetBitStreamInterface& bitStream, std::map < CLuaArguments*, unsigned long > * pKnownTables ) const
+bool CLuaArguments::WriteToJSONString( std::string& json, bool serialize )
 {
-    bool bKnownTablesCreated = false;
-    if ( !pKnownTables )
-    {
-        pKnownTables = new std::map < CLuaArguments*, unsigned long > ();
-        bKnownTablesCreated = true;
-    }
+    json_object *arr = WriteToJSONArray( serialize );
 
-    bool bSuccess = true;
-    pKnownTables->insert ( make_pair ( (CLuaArguments *)this, pKnownTables->size () ) );
-    bitStream.WriteCompressed ( static_cast < unsigned short > ( m_Arguments.size () ) );
-    vector < CLuaArgument* > ::const_iterator iter = m_Arguments.begin ();
-    for ( ; iter != m_Arguments.end () ; iter++ )
-    {
-        CLuaArgument* pArgument = *iter;
-        if ( !pArgument->WriteToBitStream ( bitStream, pKnownTables ) )
-        {
-            bSuccess = false;
-        }
-    }
+    if ( !arr )
+        return false;
 
-    if ( bKnownTablesCreated )
-        delete pKnownTables;
-
-    return bSuccess;
+    json = json_object_get_string( arr );
+    json_object_put( arr ); // dereference - causes a crash, is actually commented out in the example too
+    return true;
 }
 
-bool CLuaArguments::WriteToJSONString ( std::string& strJSON, bool bSerialize )
-{
-    json_object * my_array = WriteToJSONArray ( bSerialize );
-    if ( my_array )
-    {
-        strJSON = json_object_get_string ( my_array );
-        json_object_put ( my_array ); // dereference - causes a crash, is actually commented out in the example too
-        return true;
-    }
-    return false;
-}
+#ifndef VERIFY_ELEMENT
+#define VERIFY_ELEMENT(element) (g_pGame->GetMapManager()->GetRootElement ()->IsMyChild(element,true)&&!element->IsBeingDeleted())
+#endif
 
-json_object * CLuaArguments::WriteToJSONArray ( bool bSerialize )
+#ifndef VERIFY_RESOURCE
+#define VERIFY_RESOURCE(resource) (g_pGame->GetResourceManager()->Exists(resource))
+#endif
+
+inline static json_object* json_CreateObjectFromArgument( LuaArgument& arg, bool serialize )
 {
-    json_object * my_array = json_object_new_array();
-    vector < CLuaArgument* > ::const_iterator iter = m_Arguments.begin ();
-    for ( ; iter != m_Arguments.end () ; iter++ )
+    switch( arg->GetType() )
     {
-        CLuaArgument* pArgument = *iter;
-        json_object * object = pArgument->WriteToJSONObject ( bSerialize );
-        if ( object )
+    case LUA_TNIL:
+        return json_object_new_int( 0 );
+    case LUA_TBOOLEAN:
+        return json_object_new_boolean( arg.GetBoolean() );
+    case LUA_TTABLE:
+#ifdef _TODO
+        if ( pKnownTables && pKnownTables->find ( m_pTableData ) != pKnownTables->end () )
         {
-            json_object_array_add(my_array, object);
+            char szTableID[10];
+            snprintf ( szTableID, sizeof(szTableID), "^T^%lu", pKnownTables->find ( m_pTableData )->second );
+            return json_object_new_string ( szTableID );
         }
         else
         {
-            break;
+            return m_pTableData->WriteTableToJSONObject( bSerialize, pKnownTables );
         }
+#endif //_TODO
+        break;
+    case LUA_TNUMBER:
+        int iNum = (int)arg.GetNumber();
+
+        if ( iNum == (float)arg.GetNumber() )
+            return json_object_new_int( iNum );
+
+        return json_object_new_double( arg.GetNumber() );
+    case LUA_TSTRING:
+        if ( arg.GetString().size() > 65535 )
+        {
+            g_pGame->GetScriptDebugging()->LogError( "Couldn't convert argument list to JSON. Invalid string specified, limit is 65535 characters." );
+            return NULL;
+        }
+
+        return json_object_new_string_len( arg.GetString().c_str(), arg.GetString().size() );
+    case LUA_TLIGHTUSERDATA:
+        CElement *pElement = arg.GetElement();
+        CResource *pResource = (CResource*)arg.GetLightUserData();
+        
+        // Elements are dynamic, so storing them is potentially unsafe
+        if ( pElement && serialize )
+        {
+            char szElementID[10];
+            snprintf( szElementID, 9, "^E^%d", pElement->GetID().Value() );
+            return json_object_new_string( szElementID );
+        }
+        else if ( VERIFY_RESOURCE( pResource ) )
+        {
+            char szElementID[ MAX_RESOURCE_NAME_LENGTH + 4 ];
+            snprintf( szElementID, MAX_RESOURCE_NAME_LENGTH + 3, "^R^%s", pResource->GetName().c_str() );
+            return json_object_new_string( szElementID );
+        }
+
+        g_pGame->GetScriptDebugging()->LogError( "Couldn't convert argument list to JSON, only valid elements can be sent." );
+        return NULL;
     }
-    return my_array;
+
+    g_pGame->GetScriptDebugging()->LogError( "Couldn't convert argument list to JSON, unsupported data type. Use Table, Nil, String, Number, Boolean, Resource or Element." );
+    return NULL;
 }
 
-json_object * CLuaArguments::WriteTableToJSONObject ( bool bSerialize, std::map < CLuaArguments*, unsigned long > * pKnownTables )
+json_object* CLuaArguments::WriteToJSONArray( bool serialize )
 {
-    bool bKnownTablesCreated = false;
-    if ( !pKnownTables )
+    //TODO: add table referencing support
+    json_object *arr = json_object_new_array();
+    std::vector <LuaArgument*>::const_iterator iter = m_args.begin();
+
+    for ( ; iter != m_args.end() ; iter++ )
     {
-        pKnownTables = new std::map < CLuaArguments*, unsigned long > ();
-        bKnownTablesCreated = true;
+        json_object *obj = json_CreateObjectFromArgument( **iter, serialize );
+
+        if ( !obj )
+            continue;
+
+        json_object_array_add( arr, obj );
+    }
+    return arr;
+}
+
+json_object* CLuaArguments::WriteTableToJSONObject( bool serialize )
+{
+    std::vector <LuaArgument*>::iterator iter = m_args.begin();
+
+    if ( IsIndexedArray() )
+    {
+        json_object *arr = json_object_new_array();
+
+        for ( ; iter != m_args.end(); iter++ ) 
+        {
+            iter++; // skip the key values
+
+            json_object *obj = json_CreateObjectFromArgument( **iter, serialize );
+
+            if ( !obj )
+                break;
+
+            json_object_array_add( arr, obj );
+        }
+
+        return arr;
     }
 
-    pKnownTables->insert ( std::make_pair ( this, pKnownTables->size () ) );
+    json_object *dict = json_object_new_object();
 
-    bool bIsArray = true;
-    unsigned int iArrayPos = 1; // lua arrays are 1 based
-    vector < CLuaArgument* > ::const_iterator iter = m_Arguments.begin ();
-    for ( ; iter != m_Arguments.end () ; iter+=2 )
+    for ( ; iter != m_args.end(); iter++ )
     {
-        CLuaArgument* pArgument = *iter;
-        if ( pArgument->GetType() == LUA_TNUMBER )
+        std::string buf;
+
+        if ( !(*iter)->WriteToString( buf ) ) // index
+            break;
+
+        iter++;
+
+        json_object *obj = json_CreateObjectFromArgument( **iter, serialize );
+
+        if ( !obj2 )
+            break;
+
+        json_object_object_add( dict, buf.c_str(), obj );
+    }
+
+    return dict;
+}
+
+inline static CLuaArgument* json_CreateArgumentFromObject( json_object *obj )
+{
+    if ( is_error( obj ) )
+        return NULL;
+
+    if ( !obj )
+        return new CLuaArgument; 
+
+    switch( json_object_get_type( obj ) )
+    {
+    case json_type_null:
+        return new CLuaArgument;
+    case json_type_boolean:
+        return new CLuaArgument( json_object_get_boolean( obj ) == TRUE );
+    case json_type_double:
+        return new CLuaArgument( json_object_get_double( obj ) );
+    case json_type_int:
+        return new CLuaArgument( (double)json_object_get_int( object ) );
+    case json_type_object:
+        m_pTableData = new CLuaArguments();
+        m_pTableData->ReadFromJSONObject ( object, pKnownTables );
+        m_bWeakTableRef = false;
+        m_iType = LUA_TTABLE;
+        break;
+    case json_type_array:
+        m_pTableData = new CLuaArguments();
+        m_pTableData->ReadFromJSONArray ( object, pKnownTables );
+        m_bWeakTableRef = false;
+        m_iType = LUA_TTABLE;
+        break;
+    case json_type_string:
         {
-            double num = pArgument->GetNumber();
-            unsigned int iNum = static_cast < unsigned int > ( num );
-            if ( num == iNum )
+        char * szString = json_object_get_string ( object );
+        if ( strlen(szString) > 3 && szString[0] == '^' && szString[2] == '^' && szString[1] != '^' )
+        {
+            switch ( szString[1] )
             {
-                if ( iArrayPos != iNum ) // check if the value matches its index in the table
+                case 'E': // element
                 {
-                    bIsArray = false;
+                    int id = atoi ( szString + 3 );
+                    CElement * element = NULL;
+                    if ( id != INT_MAX && id != INT_MIN && id != 0 )
+                        element = CElementIDs::GetElement(id);
+                    if ( element )
+                    {
+                        Read ( element );
+                    }
+                    else 
+                    {
+                        // Appears sometimes when a player quits
+                        //g_pGame->GetScriptDebugging()->LogError ( NULL, SString ( "Invalid element specified in JSON string '%s'.", szString ) );
+                        m_iType = LUA_TNIL;
+                    }
+                    break;
+                }
+                case 'R': // resource
+                {
+                    CResource * resource = g_pGame->GetResourceManager()->GetResource(szString+3);
+                    if ( resource )
+                    {
+                        ReadUserData ((void *)resource);
+                    }
+                    else 
+                    {
+                        g_pGame->GetScriptDebugging()->LogError ( NULL, SString ( "Invalid resource specified in JSON string '%s'.", szString ) );
+                        m_iType = LUA_TNIL;
+                    }
+                    break;
+                }
+                case 'T':   // Table reference
+                {
+                    unsigned long ulTableID = static_cast < unsigned long > ( atol ( szString + 3 ) );
+                    if ( pKnownTables && ulTableID >= 0 && ulTableID < pKnownTables->size () )
+                    {
+                        m_pTableData = pKnownTables->at ( ulTableID );
+                        m_bWeakTableRef = true;
+                        m_iType = LUA_TTABLE;
+                    }
+                    else
+                    {
+                        g_pGame->GetScriptDebugging()->LogError ( NULL, SString ( "Invalid table reference specified in JSON string '%s'.", szString ) );
+                        m_iType = LUA_TNIL;
+                    }
                     break;
                 }
             }
-            else
-            {
-                bIsArray = false;
-                break;
-            }
         }
         else
-        {
-            bIsArray = false;
-            break;
+            Read(std::string ( szString ));
+        break;
         }
-        iArrayPos++;
+    default:
+        return false;
     }
-    
-    if ( bIsArray )
-    {
-        json_object * my_array = json_object_new_array();
-        vector < CLuaArgument* > ::const_iterator iter = m_Arguments.begin ();
-        for ( ; iter != m_Arguments.end () ; iter++ ) 
-        {
-            iter++; // skip the key values
-            CLuaArgument* pArgument = *iter;
-            json_object * object = pArgument->WriteToJSONObject ( bSerialize, pKnownTables );
-            if ( object )
-            {
-                json_object_array_add(my_array, object);
-            }
-            else
-            {
-                break;
-            }
-        }
-        if ( bKnownTablesCreated )
-            delete pKnownTables;
-        return my_array;
-    }
-    else
-    {
-        json_object * my_object = json_object_new_object();
-        iter = m_Arguments.begin ();
-        for ( ; iter != m_Arguments.end () ; iter++ )
-        {
-            char szKey[255];
-            szKey[0] = '\0';
-            CLuaArgument* pArgument = *iter;
-            if ( !pArgument->WriteToString(szKey, 255) ) // index
-                break;
-            iter++;
-            pArgument = *iter;
-            json_object * object = pArgument->WriteToJSONObject ( bSerialize, pKnownTables ); // value
-
-            if ( object )
-            {
-                json_object_object_add(my_object, szKey, object);
-            }
-            else
-            {            
-                break;
-            }
-        }
-        if ( bKnownTablesCreated )
-            delete pKnownTables;
-        return my_object;
-    }
+    return true;
 }
 
-
-bool CLuaArguments::ReadFromJSONString ( const char* szJSON )
+bool CLuaArguments::ReadFromJSONString( const char* szJSON )
 {
-    json_object* object = json_tokener_parse ( szJSON );
-    if ( !is_error(object) )
-    {
-        if ( json_object_get_type ( object ) == json_type_array )
-        {
-            bool bSuccess = true;
+    json_object* object = json_tokener_parse( szJSON );
 
-            std::vector < CLuaArguments* > knownTables;
-            
-            for(int i=0; i < json_object_array_length(object); i++) 
-            {
-                json_object *arrayObject = json_object_array_get_idx(object, i);
-                CLuaArgument * pArgument = new CLuaArgument();
-                bSuccess = pArgument->ReadFromJSONObject ( arrayObject, &knownTables );
-                m_Arguments.push_back ( pArgument ); // then the value
-                if ( !bSuccess )
-                    break;
-            }
-            json_object_put ( object ); // dereference
-            return bSuccess;
-        }
-        json_object_put ( object ); // dereference
+    if ( is_error(object) )
+        return false;
+
+    if ( json_object_get_type( object ) != json_type_array )
+    {
+        json_object_put( object );
+        return false;
     }
-//    else
-//        g_pGame->GetScriptDebugging()->LogError ( "Could not parse invalid JSON object.");
- //   else
-//        g_pGame->GetScriptDebugging()->LogError ( "Could not parse HTTP POST request, ensure data uses JSON.");
-    return false;
+
+    bool bSuccess = true;
+    
+    for ( int i=0; i < json_object_array_length( object ); i++ ) 
+    {
+        json_object *arrayObject = json_object_array_get_idx(object, i);
+        CLuaArgument *arg = new CLuaArgument();
+
+        bSuccess = pArgument->ReadFromJSONObject( arrayObject );
+        m_Arguments.push_back ( pArgument ); // then the value
+
+        if ( !bSuccess )
+            break;
+    }
+    json_object_put ( object ); // dereference
+    return bSuccess;
 }
 
 bool CLuaArguments::ReadFromJSONObject ( json_object * object, std::vector < CLuaArguments* > * pKnownTables )

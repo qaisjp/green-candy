@@ -1,0 +1,582 @@
+/*****************************************************************************
+*
+*  PROJECT:     Multi Theft Auto v1.2
+*  LICENSE:     See LICENSE in the top level directory
+*  FILE:        Shared/logic/LuaArgument.cpp
+*  PURPOSE:     Lua argument class
+*  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
+*               Jax <>
+*               Oliver Brown <>
+*               Kevin Whiteside <kevuwk@gmail.com>
+*               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
+*****************************************************************************/
+
+#include "StdInc.h"
+
+#define ARGUMENT_TYPE_INT       9
+#define ARGUMENT_TYPE_FLOAT     10
+
+#ifndef VERIFY_ENTITY
+#define VERIFY_ENTITY(entity) (CStaticFunctionDefinitions::GetRootElement()->IsMyChild(entity,true)&&!entity->IsBeingDeleted())
+#endif
+
+extern CClientGame* g_pClientGame;
+
+using namespace std;
+
+// Prevent the warning issued when doing unsigned short -> void*
+#pragma warning(disable:4312)
+
+
+LuaArgument::LuaArgument()
+{
+    m_type = LUA_TNIL;
+    m_table = NULL;
+    m_lightUD = NULL;
+}
+
+LuaArgument::LuaArgument( bool b )
+{
+    m_table = NULL;
+    Read( b );
+}
+
+LuaArgument::LuaArgument( double d )
+{
+    m_table = NULL;
+    Read( d );
+}
+
+LuaArgument::LuaArgument( const std::string& str )
+{
+    m_table = NULL;
+    Read( str );
+}
+
+LuaArgument::LuaArgument( void *ud )
+{
+    m_table = NULL;
+    Read( ud );
+}
+
+LuaArgument::LuaArgument( const CLuaArgument& arg )
+{
+    // Initialize and call our = on the argument
+    m_table = NULL;
+    CopyRecursive( arg );
+}
+
+LuaArgument::LuaArgument( NetBitStreamInterface& bitStream )
+{
+    m_table = NULL;
+    ReadFromBitStream( bitStream );
+}
+
+LuaArgument::LuaArgument( lua_State *lua, int idx )
+{
+    // Read the argument out of the lua VM
+    m_table = NULL;
+    Read( lua, idx );
+}
+
+LuaArgument::~LuaArgument()
+{
+    // Eventually destroy our table
+    DeleteTableData();
+}
+
+void LuaArgument::CopyRecursive( const LuaArgument& arg )
+{
+    // Clear the string
+    m_string = "";
+
+    // Destroy our old tabledata if neccessary
+    DeleteTableData();
+
+    // Copy over line and filename too
+    m_path = arg.m_path;
+    m_line = arg.m_line;
+
+    // Set our variable equally to the copy class
+    m_type = arg.m_type;
+
+    switch( m_type )
+    {
+    case LUA_TBOOLEAN:
+        m_bool = arg.GetBoolean();
+        break;
+
+    case LUA_TLIGHTUSERDATA:
+        m_lightUD = arg.GetLightUserData();
+        break;
+
+    case LUA_TNUMBER:
+        m_num = arg.GetNumber();
+        break;
+
+    case LUA_TTABLE:
+#ifdef _TODO
+        if ( pKnownTables && pKnownTables->find ( Argument.m_pTableData ) != pKnownTables->end () )
+        {
+            m_pTableData = pKnownTables->find ( Argument.m_pTableData )->second;
+            m_bWeakTableRef = true;
+        }
+        else
+        {
+            m_pTableData = new CLuaArguments ( *Argument.m_pTableData, pKnownTables );
+            m_bWeakTableRef = false;
+        }
+#endif //_TODO
+        break;
+
+    case LUA_TSTRING:
+        m_string = arg.m_string;
+        break;
+    }
+}
+
+const LuaArgument& LuaArgument::operator = ( const LuaArgument& arg )
+{
+    CopyRecursive( arg );
+
+    // Return the given class allowing for chaining
+    return arg;
+}
+
+bool LuaArgument::operator == ( const LuaArgument& arg )
+{
+    return CompareRecursive( arg );
+}
+
+bool LuaArgument::operator != ( const LuaArgument& arg )
+{
+    return !CompareRecursive( arg );
+}
+
+bool LuaArgument::CompareRecursive( const LuaArgument& arg )
+{
+    // If the types differ, they're not matching
+    if ( arg.m_type == m_type )
+        return false;
+
+    // Compare the variables depending on the type
+    switch( m_type )
+    {
+    case LUA_TBOOLEAN:
+        return m_bool == arg.GetBoolean();
+
+    case LUA_TLIGHTUSERDATA:
+        return m_lightUD == arg.GetLightUserData();
+
+    case LUA_TNUMBER:
+        return m_num == arg.GetNumber();
+
+    case LUA_TTABLE:
+#ifdef _TODO
+        if ( m_pTableData->Count () != Argument.m_pTableData->Count () )
+            return false;
+
+        vector < CLuaArgument * > ::const_iterator iter = m_pTableData->IterBegin ();
+        vector < CLuaArgument * > ::const_iterator iterCompare = Argument.m_pTableData->IterBegin ();
+        while ( iter != m_pTableData->IterEnd () && iterCompare != Argument.m_pTableData->IterEnd () )
+        {
+            if ( pKnownTables->find ( m_pTableData ) == pKnownTables->end () )
+            {
+                pKnownTables->insert ( m_pTableData );
+                if ( *iter != *iterCompare )
+                    return false;
+            }
+        
+            iter++;
+            iterCompare++;
+        }
+        return true;
+#endif //_TODO
+        return false;
+    case LUA_TSTRING:
+        return m_string == arg.m_string;
+    }
+
+    return false;
+}
+
+void LuaArgument::Read( lua_State *lua, int idx )
+{
+    // Store debug data for later retrieval
+    lua_Debug debugInfo;
+
+    if ( lua_getstack( lua, 1, &debugInfo ) )
+    {
+        lua_getinfo( lua, "nlS", &debugInfo );
+
+        m_path = debugInfo.source;
+        m_line = debugInfo.currentline;
+    }
+    else
+    {
+        m_path.clear();
+        m_line = 0;
+    }
+
+    // Eventually delete our previous string
+    m_string = "";
+
+    DeleteTableData();
+
+    // Grab the argument type
+    m_type = lua_type( lua, idx );
+
+    // Read out the content depending on the type
+    switch( m_type )
+    {
+    case LUA_TNONE:
+    case LUA_TNIL:
+        return;
+
+    case LUA_TBOOLEAN:
+        m_bool = lua_toboolean( lua, idx ) ? true : false;
+        return;
+
+    case LUA_TTABLE:
+#ifdef _TODO
+        const void* pTable = lua_topointer ( luaVM, iArgument );
+        if ( pKnownTables && pKnownTables->find ( pTable ) != pKnownTables->end () )
+        {
+            m_pTableData = pKnownTables->find ( pTable )->second;
+            m_bWeakTableRef = true;
+        }
+        else
+        {
+            m_pTableData = new CLuaArguments ();
+            m_pTableData->ReadTable ( luaVM, iArgument, pKnownTables );
+            m_bWeakTableRef = false;
+        }
+#endif //_TODO
+        return;
+
+    case LUA_TLIGHTUSERDATA:
+        m_lightUD = lua_touserdata( lua, idx );
+        return;
+
+    case LUA_TNUMBER:
+        m_num = lua_tonumber( lua, idx );
+        return;
+
+    case LUA_TSTRING:
+        size_t len;
+        const char *buf = lua_tolstring( lua, arg, &len );
+
+        // Set our string
+        m_string.assign( buf, len );
+        return;
+
+    case LUA_TFUNCTION:
+        // TODO: add function reading (has to work inside tables too)
+        m_type = LUA_TNIL;
+        return;
+    }
+
+    m_type = LUA_TNONE;
+}
+
+void LuaArgument::Read( bool b )
+{
+    m_string = b ? "true", : "false";
+    m_type = LUA_TBOOLEAN;
+    DeleteTableData();
+    m_bool = b;
+}
+
+void LuaArgument::Read( double d )
+{
+    std::stringstream stream;
+
+    stream << std::setprecision( 16 ) << d;
+
+    m_string = stream.str();
+    m_type = LUA_TNUMBER;
+    DeleteTableData();
+    m_num = d;
+}
+
+void LuaArgument::Read( const std::string& string )
+{
+    m_type = LUA_TSTRING;
+    DeleteTableData();
+    m_string = string;
+}
+
+void LuaArgument::Read( void *ud )
+{
+    m_string = "";
+    DeleteTableData();
+    m_type = LUA_TLIGHTUSERDATA;
+    m_lightUD = ud;
+}
+
+void LuaArgument::Push( lua_State *lua ) const
+{
+    LUA_CHECKSTACK( lua, 1 );
+
+    switch( m_type )
+    {
+    case LUA_TBOOLEAN:
+        lua_pushboolean( lua, m_bool );
+        return;
+
+    case LUA_TLIGHTUSERDATA:
+        lua_pushlightuserdata( lua, m_lightUD );
+        return;
+
+    case LUA_TNUMBER:
+        lua_pushnumber( lua, m_num );
+        return;
+
+    case LUA_TTABLE:
+#ifdef _TODO
+        if ( pKnownTables && pKnownTables->find ( m_pTableData ) != pKnownTables->end () )
+        {
+            lua_getfield ( luaVM, LUA_REGISTRYINDEX, "cache" );
+			lua_pushnumber ( luaVM, pKnownTables->find ( m_pTableData )->second );
+			lua_gettable ( luaVM, -2 );
+			lua_remove ( luaVM, -2 );
+        }
+        else
+        {
+            m_pTableData->PushAsTable ( luaVM, pKnownTables );
+        }
+#endif //_TODO
+        return;
+
+    case LUA_TSTRING:
+        lua_pushlstring( lua, m_string.c_str(), m_string.size() );
+        return;
+    }
+
+    lua_pushnil( lua );
+}
+
+bool LuaArgument::ReadFromBitStream( NetBitStreamInterface& bitStream )
+{
+    DeleteTableData();
+
+    SLuaTypeSync type;
+
+    // Read out the type
+    if ( !bitStream.Read( &type ) )
+        return false;
+
+    switch( type.data.ucType )
+    {
+    case LUA_TNIL:
+        m_type = LUA_TNIL;
+        return true;
+
+    case LUA_TBOOLEAN:
+        m_bool = bitStream.ReadBit();
+        return true;
+
+    case LUA_TNUMBER:
+        if ( bitStream.ReadBit() )
+        {
+            float fNum;
+
+            if ( bitStream.Read( fNum ) )
+                Read( (double)fNum );
+
+            return true;
+        }
+
+        long lNum;
+
+        if ( bitStream.ReadCompressed( lNum ) )
+            Read( (double)lNum );
+
+        return true;
+
+    case LUA_TTABLE:
+#ifdef _TODO
+        m_pTableData = new CLuaArguments ( bitStream, pKnownTables );
+        m_bWeakTableRef = false;
+        m_iType = LUA_TTABLE;
+        m_pTableData->ValidateTableKeys ();
+#endif //_TODO
+        return true;
+
+    // Table reference (self-referencing tables)
+    case LUA_TTABLEREF:
+#ifdef _TODO
+        unsigned long ulTableRef;
+        if ( bitStream.ReadCompressed ( ulTableRef ) )
+        {
+            if ( pKnownTables && ulTableRef < pKnownTables->size () )
+            {
+                m_pTableData = pKnownTables->at ( ulTableRef );
+                m_bWeakTableRef = true;
+                m_iType = LUA_TTABLE;
+            }
+        }
+#endif //_TODO
+        return true;
+
+    case LUA_TSTRING:
+        // Read out the string length
+        unsigned short len;
+        std::string buf;
+
+        if ( !bitStream.ReadStringCompressed( buf ) )
+        {
+            Read( std::string() );
+            return true;
+        }
+
+        Read( buf );
+        return true;
+    }
+
+    return false;
+}
+
+bool CLuaArgument::WriteToBitStream( NetBitStreamInterface& bitStream ) const
+{
+    SLuaTypeSync type;
+
+    switch ( GetType () )
+    {
+        // Nil type
+        case LUA_TNIL:
+        {
+            type.data.ucType = LUA_TNIL;
+            bitStream.Write ( &type );
+            break;
+        }
+
+        // Boolean type
+        case LUA_TBOOLEAN:
+        {
+            type.data.ucType = LUA_TBOOLEAN;
+            bitStream.Write ( &type );
+
+            // Write the boolean to it
+            bitStream.WriteBit ( GetBoolean () );
+            break;
+        }
+
+        // Table argument
+        case LUA_TTABLE:
+        {
+            if ( pKnownTables && pKnownTables->find ( m_pTableData ) != pKnownTables->end () )
+            {
+                // Self-referencing table
+                type.data.ucType = LUA_TTABLEREF;
+                bitStream.Write ( &type );
+                bitStream.WriteCompressed ( pKnownTables->find ( m_pTableData )->second );
+            }
+            else
+            {
+                type.data.ucType = LUA_TTABLE;
+                bitStream.Write ( &type );
+
+                // Write the subtable to the bitstream
+                m_pTableData->WriteToBitStream ( bitStream, pKnownTables );
+            }
+            break;
+        }
+
+        // Number argument?
+        case LUA_TNUMBER:
+        {
+            type.data.ucType = LUA_TNUMBER;
+            bitStream.Write ( &type );
+            float fNumber = static_cast < float > ( GetNumber () );
+            long lNumber = static_cast < long > ( fNumber );
+            float fNumberInteger = static_cast < float > ( lNumber );
+
+            // Check if the number is an integer and can fit a long datatype
+            if ( fabs ( fNumber ) > fabs ( fNumberInteger + 1 ) ||
+                 fabs ( fNumber - fNumberInteger ) >= FLOAT_EPSILON )
+            {
+                bitStream.WriteBit ( true );
+                bitStream.Write ( fNumber );
+            }
+            else
+            {
+                bitStream.WriteBit ( false );
+                bitStream.WriteCompressed ( lNumber );
+            }
+            break;
+        }
+
+        // String argument
+        case LUA_TSTRING:
+        {           
+            // Grab the string and its length. Is it short enough to be sendable?
+            const char* szTemp = m_strString.c_str ();
+            size_t sizeTemp = m_strString.length ();
+            unsigned short usLength = static_cast < unsigned short > ( sizeTemp );
+            if ( sizeTemp == usLength )
+            {
+                // This is a string argument
+                type.data.ucType = LUA_TSTRING;
+                bitStream.Write ( &type );
+
+                // Write its length
+                bitStream.WriteCompressed ( usLength );
+
+                // Write the content too if it's not empty
+                if ( usLength > 0 )
+                {
+                    bitStream.Write ( const_cast < char* > ( szTemp ), usLength );
+                }
+            }
+            else
+            {
+                // Too long string
+                LogUnableToPacketize ( "Couldn't packetize argument list. Invalid string specified, limit is 65535 characters." );
+
+                // Write a nil though so other side won't get out of sync
+                bitStream.Write ( (unsigned char) LUA_TNIL );
+                return false;
+            }
+            break;
+        }
+
+        default:
+        {
+            LogUnableToPacketize ( "Couldn't packetize argument list, unknown type specified." );
+
+            // Write a nil though so other side won't get out of sync
+            type.data.ucType = LUA_TNIL;
+            bitStream.Write ( &type );
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void CLuaArgument::LogUnableToPacketize ( const char* szMessage ) const
+{
+    if ( m_strFilename.length () > 0 )
+    {
+        g_pClientGame->GetScriptDebugging ()->LogWarning ( NULL, "%s:%d: %s\n", ConformResourcePath ( m_strFilename.c_str () ).c_str (), m_iLine, szMessage );
+    }
+    else
+    {
+        g_pClientGame->GetScriptDebugging ()->LogWarning ( NULL, "Unknown: %s\n", szMessage );
+    }
+}
+
+void CLuaArgument::DeleteTableData ( )
+{
+    if ( m_pTableData )
+    {
+        if ( !m_bWeakTableRef )
+            delete m_pTableData;
+        m_pTableData = NULL;
+    }
+}

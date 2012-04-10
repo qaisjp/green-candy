@@ -24,58 +24,56 @@ class LuaArgument
 {
     friend class LuaArguments;
 public:
-                            CLuaArgument();
-                            CLuaArgument( bool bBool );
-                            CLuaArgument( double dNumber );
-                            CLuaArgument( const std::string& strString );
-                            CLuaArgument( void* pUserData );
-                            CLuaArgument( const CLuaArgument& arg );
-                            CLuaArgument( NetBitStreamInterface& bitStream );
-                            CLuaArgument( lua_State* luaVM, int iArgument );
-                            ~CLuaArgument();
+                                LuaArgument();
+                                LuaArgument( bool b );
+                                LuaArgument( double d );
+                                LuaArgument( const std::string& str );
+                                LuaArgument( void *ud );
+                                LuaArgument( const LuaArgument& arg );
+                                LuaArgument( NetBitStreamInterface& bitStream );
+                                LuaArgument( lua_State *lua, int idx );
+                                ~LuaArgument();
 
-    const CLuaArgument&     operator = ( const CLuaArgument& Argument );
-    bool                    operator == ( const CLuaArgument& Argument );
-    bool                    operator != ( const CLuaArgument& Argument );
+    const CLuaArgument&         operator = ( const LuaArgument& arg );
+    bool                        operator == ( const LuaArgument& arg );
+    bool                        operator != ( const LuaArgument& arg );
 
-    void                    Read( lua_State* luaVM, int iArgument );
-    void                    Read( bool bBool );
-    void                    Read( double dNumber );
-    void                    Read( const std::string& strString );
-    void                    Read( void* pUserData );
-    void                    Read( CClientEntity* pElement );
+    void                        Read( lua_State *lua, int idx );
+    void                        Read( bool b );
+    void                        Read( double d );
+    void                        Read( const std::string& str );
+    void                        Read( class LuaArguments *table );
+    void                        ReadUserData( void *ud );
 
-    void                    Push( lua_State* luaVM ) const;
+    void                        Push( lua_State* lua ) const;
 
-    void                    ReadElementID( ElementID ID );
+    inline int                  GetType() const      { return m_iType; };
 
-    inline int              GetType() const      { return m_iType; };
+    inline bool                 GetBoolean() const      { return m_bBoolean; };
+    inline lua_Number           GetNumber() const      { return m_Number; };
+    virtual bool                GetString( std::string& buf ) const;
+    inline void*                GetLightUserData() const      { return m_pLightUserData; };
 
-    inline bool             GetBoolean() const      { return m_bBoolean; };
-    inline lua_Number       GetNumber() const      { return m_Number; };
-    const char*             GetString()            { return m_strString.c_str (); };
-    inline void*            GetLightUserData() const      { return m_pLightUserData; };
-
-    bool                    ReadFromBitStream( NetBitStreamInterface& bitStream );
-    bool                    WriteToBitStream( NetBitStreamInterface& bitStream ) const;
+    virtual bool                ReadFromBitStream( NetBitStreamInterface& bitStream );
+    virtual bool                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
 
 private:
-    void                    LogUnableToPacketize( const char* szMessage ) const;
-    void                    CopyRecursive( const CLuaArgument& Argument );
-    bool                    CompareRecursive( const CLuaArgument& Argument );
-    void                    DeleteTableData();
+    void                        LogUnableToPacketize( const char *msg ) const;
+    void                        CopyRecursive( const LuaArgument& arg );
+    bool                        CompareRecursive( const LuaArgument& arg );
+    void                        DeleteTableData();
 
-    LuaArguments*           m_table;
+    LuaArguments*               m_table;
 
-    int                     m_iType;
-    bool                    m_bBoolean;
-    lua_Number              m_Number;
-    std::string             m_strString;
-    void*                   m_pLightUserData;
-    bool                    m_bWeakTableRef;
+    int                         m_type;
+    bool                        m_bool;
+    lua_Number                  m_num;
+    std::string                 m_string;
+    void*                       m_lightUD;
+    bool                        m_weakRef;
 
-    filePath                m_path;
-    int                     m_iLine;
+    filePath                    m_path;
+    int                         m_line;
 };
 
 #endif //_BASE_LUA_ARGUMENT_

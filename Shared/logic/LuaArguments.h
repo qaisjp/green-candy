@@ -44,6 +44,8 @@ public:
     void                                                PushAsTable( lua_State* luaVM );
     void                                                PushAsTable( lua_State* luaVM );
 
+    bool                                                IsIndexedArray();
+
     LuaArgument*                                        PushNil();
     LuaArgument*                                        PushBoolean( bool b );
     LuaArgument*                                        PushNumber( double num );

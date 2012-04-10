@@ -358,37 +358,38 @@ int LuaManager::AccessGlobalTable()
 
 void LuaManager::Init( LuaMain *lua )
 {
+    lua_State *thread = lua_newthread( m_lua );
+
     // We need threads for every environment
-    lua->m_lua = lua_newthread( m_lua );
+    lua->m_lua = thread;
 
     // Create the hyperstructure
-    lua_newtable( m_lua );
-    int structure = lua_gettop( m_lua );
+    lua_newtable( thread );
 
     // Load our functions into the VM
     LoadCFunctions();
 
     // Setup the resource class
-    lua_pushcclosure( m_lua, luamain_constructor, 0 );
-    lua_newclass( m_lua );
+    lua_pushcclosure( thread, luamain_constructor, 0 );
+    lua_newclass( thread );
 
     // if env.val == nil, check _G!
-    lua_pushlstring( m_lua, "__index", 7 );
-    lua_pushcclosure( m_lua, luamain_index, 0 );
-    lua_settable( m_lua, structure + 1 );
+    lua_pushlstring( thread, "__index", 7 );
+    lua_pushcclosure( thread, luamain_index, 0 );
+    lua_settable( thread, 2 );
 
-    lua_pushlstring( m_lua, "__metatable", 11 );
-    lua_pushboolean( m_lua, true );
-    lua_settable( m_lua, structure + 1 );
+    lua_pushlstring( thread, "__metatable", 11 );
+    lua_pushboolean( thread, true );
+    lua_settable( thread, 2 );
 
-    lua_setfield( L, structure, "resMain" );
+    lua_setfield( L, 1, "resMain" );
 
     // Add it to the global env
     lua_pushlstring( m_lua, lua->GetName().c_str(), lua->GetName().size() );
-    lua_setglobal( m_lua, structure );
+    lua_setglobal( m_lua, 1 );
 
     // Notify the VM
-    lua->InitVM( structure, meta );
+    lua->InitVM( 1, 2 );
 }
 
 LuaMain* LuaManager::Get( lua_State *lua )
