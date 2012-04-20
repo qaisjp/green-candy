@@ -528,14 +528,7 @@ void CSystemPathTranslator::GetDirectory( filePath& output ) const
 
 bool CSystemPathTranslator::ChangeDirectory( const char *path )
 {
-    filePath dir;
-    GetRelativePath( path, false, dir );
-
-    if ( !GetRelativePath( path, false, dir ) || !File_IsDirectoryAbsolute( m_root + dir ) )
-        return false;
-
-    m_currentDir = dir;
-    return true;
+    return GetRelativePath( path, false, m_currentDir );
 }
 
 bool CSystemPathTranslator::GetFullPathTree( const char *path, dirTree& tree, bool *file ) const
@@ -546,31 +539,10 @@ bool CSystemPathTranslator::GetFullPathTree( const char *path, dirTree& tree, bo
 
 bool CSystemPathTranslator::GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const
 {
-    filePath target;
-
-    switch( *path )
-    {
-    case '/':
+    if ( *path == '/' )
         return _File_ParseRelativePath( path + 1, tree, file );
-    case 0:
-        break;
-    // Drive letters
-    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g': case 'h': case 'i': case 'j': case 'k': case 'l': case 'm': case 'n':
-    case 'o': case 'p': case 'q': case 'r': case 's': case 't': case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
-    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G': case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
-    case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T': case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
-        if ( path[1] == ':' )
-        {
-            if ( !path[2] )
-                return false;
 
-            if ( tolower( path[0] ) != tolower( m_root[0] ) )
-                return false;   // drive mismatch
-            
-            return _File_ParseRelativeTree( path + 3, m_rootTree, tree, file );
-        }
-        break;
-    }
+    filePath target;
 
     // This could be optimized
     target += m_currentDir;
@@ -762,6 +734,16 @@ bool CArchiveFileTranslator::Stat( const char *path, struct stat *stats )
     Default file translator
 =======================================*/
 
+CSystemFileTranslator::~CSystemFileTranslator()
+{
+#ifdef _WIN32
+    if ( m_curDirHandle )
+        CloseHandle( m_curDirHandle );
+
+    CloseHandle( m_rootHandle );
+#endif
+}
+
 bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, size_t size )
 {
 #ifdef _WIN32
@@ -909,6 +891,18 @@ bool CSystemFileTranslator::Exists( const char *path ) const
     return stat( output.c_str(), &tmp ) == 0;
 }
 
+static void _deleteFileCallback( const filePath& path, void *ud )
+{
+    DeleteFile( path );
+}
+
+static void _deleteDirCallback( const filePath& path, void *ud )
+{
+    ((CFileTranslator*)ud)->ScanDirectory( path, "*", false, _deleteDirCallback, _deleteFileCallback, ud );
+
+    RemoveDirectory( path );
+}
+
 bool CSystemFileTranslator::Delete( const char *path )
 {
     filePath output;
@@ -917,6 +911,16 @@ bool CSystemFileTranslator::Delete( const char *path )
         return false;
 
 #ifdef _WIN32
+    if ( output.at( output.size() - 1 ) == '/' )
+    {
+        if ( !File_IsDirectoryAbsolute( output.c_str() ) )
+            return false;
+
+        // Remove all files and directories inside
+        ScanDirectory( output.c_str(), "*", false, _deleteDirCallback, _deleteFileCallback, this );
+        return RemoveDirectory( output.c_str() ) != FALSE;
+    }
+
     return DeleteFile( output.c_str() ) != FALSE;
 #endif
 }
@@ -991,6 +995,57 @@ bool CSystemFileTranslator::ReadToBuffer( const char *path, std::vector <char>& 
         return false;
 
     return fileSystem->ReadToBuffer( sysPath.c_str(), output );
+}
+
+bool CSystemFileTranslator::GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const
+{
+    switch( *path )
+    {
+    // Drive letters
+    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g': case 'h': case 'i': case 'j': case 'k': case 'l': case 'm': case 'n':
+    case 'o': case 'p': case 'q': case 'r': case 's': case 't': case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
+    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G': case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
+    case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T': case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
+        if ( path[1] == ':' )
+        {
+            if ( !path[2] )
+                return false;
+
+            if ( tolower( path[0] ) != tolower( m_root[0] ) )
+                return false;   // drive mismatch
+            
+            return _File_ParseRelativeTree( path + 3, m_rootTree, tree, file );
+        }
+        break;
+    }
+
+    return CSystemPathTranslator::GetRelativePathTree( path, tree, file );
+}
+
+bool CSystemFileTranslator::ChangeDirectory( const char *path )
+{
+    filePath absPath;
+
+    if ( !GetFullPath( path, false, absPath ) )
+        return false;
+
+#ifdef _WIN32
+    HANDLE dir = CreateFile( absPath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL );
+
+    if ( dir == INVALID_HANDLE_VALUE )
+        return false;
+
+    if ( m_curDirHandle )
+        CloseHandle( m_curDirHandle );
+
+    m_curDirHandle = dir;
+#else
+    if ( !File_IsDirectoryAbsolute( absPath.c_str() ) )
+        return false;
+#endif //_WIN32
+
+    m_currentDir = absPath.substr( m_root.size() );
+    return true;
 }
 
 void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
@@ -1103,8 +1158,44 @@ void CSystemFileTranslator::GetFiles( const char *path, const char *wildcard, bo
     Management class
 =======================================*/
 
+#ifdef _WIN32
+
+struct MySecurityAttributes
+{
+    DWORD count;
+    LUID_AND_ATTRIBUTES attr[2];
+};
+
+#endif
+
 CFileSystem::CFileSystem()
 {
+#ifdef _WIN32
+    HANDLE token;
+    MySecurityAttributes priv;
+
+    // We need SE_BACKUP_NAME to gain directory access on Windows
+    if ( !OpenProcessToken( GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token ) )
+        throw std::exception( "failed to adjust fileSystem privileges" );
+
+    priv.count = 2;
+
+    if ( !LookupPrivilegeValue( NULL, SE_BACKUP_NAME, &priv.attr[0].Luid ) )
+        throw std::exception( "failed to lookup privilege UID" );
+
+    priv.attr[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    if ( !LookupPrivilegeValue( NULL, SE_RESTORE_NAME, &priv.attr[1].Luid ) )
+        throw std::exception( "failed to lookup privilege UID" );
+
+    priv.attr[1].Attributes = SE_PRIVILEGE_ENABLED;
+
+    if ( !AdjustTokenPrivileges( token, false, (TOKEN_PRIVILEGES*)&priv, sizeof(MySecurityAttributes), NULL, NULL ) )
+        throw std::exception( "lacking administrator privileges for fileSystem" );
+
+    CloseHandle( token );
+#endif
+
     char cwd[1024];
     getcwd( cwd, 1023 );
 
@@ -1165,12 +1256,25 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
 
     _File_OutputPathTree( tree, false, root );
 
+#ifdef _WIN32
+    HANDLE dir = CreateFile( root.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL );
+
+    if ( dir == INVALID_HANDLE_VALUE )
+        return NULL;
+#else
     if ( !IsDirectory( root.c_str() ) )
         return NULL;
+#endif //_WIN32
 
     pTranslator = new CSystemFileTranslator();
     pTranslator->m_root = root;
     pTranslator->m_rootTree = tree;
+
+#ifdef _WIN32
+    pTranslator->m_rootHandle = dir;
+    pTranslator->m_curDirHandle = NULL;
+#endif
+
     return pTranslator;
 }
 

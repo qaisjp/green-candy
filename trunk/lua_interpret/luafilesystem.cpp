@@ -49,6 +49,13 @@ static int filesystem_createDir( lua_State *L )
     return 1;
 }
 
+static int filesystem_chdir( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TSTRING );
+    lua_pushboolean( L, ((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->ChangeDirectory( lua_tostring( L, 1 ) ) );
+    return 1;
+}
+
 static int filesystem_delete( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TSTRING );
@@ -209,6 +216,7 @@ static const luaL_Reg fsys_methods[] =
     { "open", filesystem_open },
     { "exists", filesystem_exists },
     { "createDir", filesystem_createDir },
+    { "chdir", filesystem_chdir },
     { "delete", filesystem_delete },
     { "copy", filesystem_copy },
     { "rename", filesystem_rename },
