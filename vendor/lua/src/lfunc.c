@@ -19,34 +19,39 @@
 #include "lstate.h"
 
 
+Closure *luaF_newCclosure (lua_State *L, int nelems, Table *e)
+{
+    Closure *c = cast(Closure *, luaM_malloc(L, sizeCclosure(nelems)));
+    luaC_link(L, obj2gco(c), LUA_TFUNCTION);
 
-Closure *luaF_newCclosure (lua_State *L, int nelems, Table *e) {
-  Closure *c = cast(Closure *, luaM_malloc(L, sizeCclosure(nelems)));
-  luaC_link(L, obj2gco(c), LUA_TFUNCTION);
-  c->c.isC = 1;
-  c->c.env = e;
-  c->c.nupvalues = cast_byte(nelems);
-  return c;
+    c->c.isC = 1;
+    c->c.env = e;
+    c->c.nupvalues = cast_byte(nelems);
+    return c;
 }
 
+Closure *luaF_newLclosure (lua_State *L, int nelems, Table *e)
+{
+    Closure *c = cast(Closure *, luaM_malloc(L, sizeLclosure(nelems)));
+    luaC_link(L, obj2gco(c), LUA_TFUNCTION);
 
-Closure *luaF_newLclosure (lua_State *L, int nelems, Table *e) {
-  Closure *c = cast(Closure *, luaM_malloc(L, sizeLclosure(nelems)));
-  luaC_link(L, obj2gco(c), LUA_TFUNCTION);
-  c->l.isC = 0;
-  c->l.env = e;
-  c->l.nupvalues = cast_byte(nelems);
-  while (nelems--) c->l.upvals[nelems] = NULL;
-  return c;
+    c->l.isC = 0;
+    c->l.env = e;
+    c->l.nupvalues = cast_byte(nelems);
+
+    while (nelems--)
+        c->l.upvals[nelems] = NULL;
+
+    return c;
 }
 
-
-UpVal *luaF_newupval (lua_State *L) {
-  UpVal *uv = luaM_new(L, UpVal);
-  luaC_link(L, obj2gco(uv), LUA_TUPVAL);
-  uv->v = &uv->u.value;
-  setnilvalue(uv->v);
-  return uv;
+UpVal *luaF_newupval (lua_State *L)
+{
+    UpVal *uv = luaM_new(L, UpVal);
+    luaC_link(L, obj2gco(uv), LUA_TUPVAL);
+    uv->v = &uv->u.value;
+    setnilvalue(uv->v);
+    return uv;
 }
 
 

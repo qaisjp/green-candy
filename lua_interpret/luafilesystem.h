@@ -2,18 +2,17 @@
 *
 *  PROJECT:     Lua Interpreter
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        luafile.h
-*  PURPOSE:     File environment header
+*  FILE:        luafilesystem.h
+*  PURPOSE:     Lua filesystem access
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
-#ifndef _FILELIB_
-#define _FILELIB_
+#ifndef _FILESYSTEMLIB_
+#define _FILESYSTEMLIB_
 
-int luaconstructor_file( lua_State *lua );
-void luafile_open( lua_State *lua );
+void luafilesystem_open( lua_State *L );
 
-#endif //_FILELIB_
+#endif //_FILESYSTEMLIB_

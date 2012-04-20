@@ -213,6 +213,9 @@ static inline void _File_OutputPathTree( dirTree& tree, bool file, filePath& out
 
     if ( file )
     {
+        if ( tree.empty() )
+            return;
+
         for (n=0; n<tree.size()-1; n++)
         {
             output += tree[n];
@@ -231,10 +234,11 @@ static inline void _File_OutputPathTree( dirTree& tree, bool file, filePath& out
 }
 
 // Get relative path tree nodes
-static inline bool _File_ParseRelativeTree( const char *path, dirTree& root, dirTree& output, bool *file )
+static inline bool _File_ParseRelativeTree( const char *path, const dirTree& root, dirTree& output, bool *file )
 {
     dirTree tree;
-    dirTree::iterator rootIter, treeIter;
+    dirTree::const_iterator rootIter;
+    dirTree::iterator treeIter;
 
     if (!_File_ParseRelativePath( path, tree, file ))
         return false;
@@ -245,6 +249,9 @@ static inline bool _File_ParseRelativeTree( const char *path, dirTree& root, dir
     for ( rootIter = root.begin(), treeIter = tree.begin(); rootIter != root.end(); rootIter++, treeIter++ )
         if ( *rootIter != *treeIter )
             return false;
+
+    if ( *file && treeIter == tree.end() )
+        return false;
 
     output.insert( output.end(), treeIter, tree.end() );
     return true;
@@ -332,7 +339,7 @@ bool CRawFile::Stat( struct stat *pFileStats )
     pFileStats->st_mtime = info.ftLastWriteTime.dwLowDateTime;
     pFileStats->st_dev = info.dwVolumeSerialNumber;
     pFileStats->st_mode = 0;
-    pFileStats->st_nlink = info.nNumberOfLinks;
+    pFileStats->st_nlink = (unsigned short)info.nNumberOfLinks;
     pFileStats->st_rdev = 0;
     pFileStats->st_gid = 0;
     return true;
@@ -514,7 +521,7 @@ bool CBufferedFile::IsWriteable()
     Filesystem path translation utility
 =======================================*/
 
-void CSystemPathTranslator::GetDirectory( filePath& output )
+void CSystemPathTranslator::GetDirectory( filePath& output ) const
 {
     output = m_currentDir;
 }
@@ -531,30 +538,38 @@ bool CSystemPathTranslator::ChangeDirectory( const char *path )
     return true;
 }
 
-bool CSystemPathTranslator::GetFullPathTree( const char *path, dirTree& tree, bool *file )
+bool CSystemPathTranslator::GetFullPathTree( const char *path, dirTree& tree, bool *file ) const
 {
     tree = m_rootTree;
     return GetRelativePathTree( path, tree, file );
 }
 
-bool CSystemPathTranslator::GetRelativePathTree( const char *path, dirTree& tree, bool *file )
+bool CSystemPathTranslator::GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const
 {
     filePath target;
 
-    if (!*path)
-        return false;
-
-    if ( path[0] == '/' )
-        return _File_ParseRelativePath( path + 1, tree, file );
-    else if ( path[1] == ':' )
+    switch( *path )
     {
-        if ( !path[2] )
-            return false;
+    case '/':
+        return _File_ParseRelativePath( path + 1, tree, file );
+    case 0:
+        break;
+    // Drive letters
+    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g': case 'h': case 'i': case 'j': case 'k': case 'l': case 'm': case 'n':
+    case 'o': case 'p': case 'q': case 'r': case 's': case 't': case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
+    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G': case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
+    case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T': case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
+        if ( path[1] == ':' )
+        {
+            if ( !path[2] )
+                return false;
 
-        if ( path[0] != m_root[0] )
-            return false;   // drive mismatch
-        
-        return _File_ParseRelativeTree( path + 3, m_rootTree, tree, file );
+            if ( tolower( path[0] ) != tolower( m_root[0] ) )
+                return false;   // drive mismatch
+            
+            return _File_ParseRelativeTree( path + 3, m_rootTree, tree, file );
+        }
+        break;
     }
 
     // This could be optimized
@@ -563,13 +578,13 @@ bool CSystemPathTranslator::GetRelativePathTree( const char *path, dirTree& tree
     return _File_ParseRelativePath( target.c_str(), tree, file );
 }
 
-bool CSystemPathTranslator::GetFullPath( const char *path, bool allowFile, filePath& output )
+bool CSystemPathTranslator::GetFullPath( const char *path, bool allowFile, filePath& output ) const
 {
     output += m_root;
     return GetRelativePath( path, allowFile, output );
 }
 
-bool CSystemPathTranslator::GetRelativePath( const char *path, bool allowFile, filePath& output )
+bool CSystemPathTranslator::GetRelativePath( const char *path, bool allowFile, filePath& output ) const
 {
     dirTree tree;
     bool file;
@@ -774,9 +789,9 @@ bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, siz
 #endif
 }
 
-void CSystemFileTranslator::_CreateDirTree( dirTree& tree )
+void CSystemFileTranslator::_CreateDirTree( const dirTree& tree )
 {
-    dirTree::iterator iter;
+    dirTree::const_iterator iter;
     filePath path;
 
     for ( iter = tree.begin(); iter != tree.end(); iter++ )
@@ -883,7 +898,7 @@ CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
 #endif
 }
 
-bool CSystemFileTranslator::Exists( const char *path )
+bool CSystemFileTranslator::Exists( const char *path ) const
 {
     filePath output;
     struct stat tmp;
@@ -948,7 +963,7 @@ bool CSystemFileTranslator::Rename( const char *src, const char *dst )
 #endif
 }
 
-bool CSystemFileTranslator::Stat( const char *path, struct stat *stats )
+bool CSystemFileTranslator::Stat( const char *path, struct stat *stats ) const
 {
     filePath output;
     
@@ -958,7 +973,7 @@ bool CSystemFileTranslator::Stat( const char *path, struct stat *stats )
     return stat( output.c_str(), stats ) == 0;
 }
 
-size_t CSystemFileTranslator::Size( const char *path )
+size_t CSystemFileTranslator::Size( const char *path ) const
 {
     struct stat fstats;
 
@@ -968,7 +983,7 @@ size_t CSystemFileTranslator::Size( const char *path )
     return fstats.st_size;
 }
 
-bool CSystemFileTranslator::ReadToBuffer( const char *path, std::vector <char>& output )
+bool CSystemFileTranslator::ReadToBuffer( const char *path, std::vector <char>& output ) const
 {
     filePath sysPath;
 
@@ -981,7 +996,7 @@ bool CSystemFileTranslator::ReadToBuffer( const char *path, std::vector <char>& 
 void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
                                             pathCallback_t dirCallback, 
                                             pathCallback_t fileCallback, 
-                                            void *userdata )
+                                            void *userdata ) const
 {
 #ifdef _WIN32
     WIN32_FIND_DATA		finddata;
@@ -1072,12 +1087,12 @@ static void _scanFindCallback( const filePath& path, std::vector <filePath> *out
     output->push_back( path );
 }
 
-void CSystemFileTranslator::GetDirectories( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output )
+void CSystemFileTranslator::GetDirectories( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const
 {
     ScanDirectory( path, wildcard, recurse, (pathCallback_t)_scanFindCallback, NULL, &output );
 }
 
-void CSystemFileTranslator::GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output )
+void CSystemFileTranslator::GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const
 {
     ScanDirectory( path, wildcard, recurse, NULL, (pathCallback_t)_scanFindCallback, &output );
 }
@@ -1135,12 +1150,14 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
         GetCurrentDirectory( 1024, pathBuffer );
 
         root = pathBuffer;
+        root += "\\";
         root += path;
 
         if (!_File_ParseRelativePath( root.c_str() + 3, tree, &bFile ))
             return NULL;
 
-        root.clear();
+        root.resize( 2 );
+        root += "/";
     }
 
     if ( bFile )

@@ -129,28 +129,28 @@ public:
     virtual bool            WriteData( const char *path, const char *buffer, size_t size ) = 0;
     virtual bool            CreateDir( const char *path ) = 0;
     virtual CFile*          Open( const char *path, const char *mode ) = 0;
-    virtual bool            Exists( const char *path ) = 0;
+    virtual bool            Exists( const char *path ) const = 0;
     virtual bool            Delete( const char *path ) = 0;
     virtual bool            Copy( const char *src, const char *dst ) = 0;
     virtual bool            Rename( const char *src, const char *dst ) = 0;
-    virtual size_t          Size( const char *path ) = 0;
-    virtual bool            Stat( const char *path, struct stat *stats ) = 0;
-    virtual bool            ReadToBuffer( const char *path, std::vector <char>& output ) = 0;
+    virtual size_t          Size( const char *path ) const = 0;
+    virtual bool            Stat( const char *path, struct stat *stats ) const = 0;
+    virtual bool            ReadToBuffer( const char *path, std::vector <char>& output ) const = 0;
 
-    virtual bool            GetFullPathTree( const char *path, dirTree& tree, bool *file ) = 0;
-    virtual bool            GetRelativePathTree( const char *path, dirTree& tree, bool *file ) = 0;
-    virtual bool            GetFullPath( const char *path, bool allowFile, filePath& output ) = 0;
-    virtual bool            GetRelativePath( const char *path, bool allowFile, filePath& output ) = 0;
+    virtual bool            GetFullPathTree( const char *path, dirTree& tree, bool *file ) const = 0;
+    virtual bool            GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const = 0;
+    virtual bool            GetFullPath( const char *path, bool allowFile, filePath& output ) const = 0;
+    virtual bool            GetRelativePath( const char *path, bool allowFile, filePath& output ) const = 0;
     virtual bool            ChangeDirectory( const char *path ) = 0;
-    virtual void            GetDirectory( filePath& output ) = 0;
+    virtual void            GetDirectory( filePath& output ) const = 0;
 
     virtual void            ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
                                 pathCallback_t dirCallback, 
                                 pathCallback_t fileCallback, 
-                                void *userdata ) = 0;
+                                void *userdata ) const = 0;
 
-    virtual void            GetDirectories( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) = 0;
-    virtual void            GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) = 0;
+    virtual void            GetDirectories( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const = 0;
+    virtual void            GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const = 0;
 };
 
 class CFileSystemInterface

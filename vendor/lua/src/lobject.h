@@ -314,9 +314,10 @@ typedef struct LClosure {
 } LClosure;
 
 
-typedef union Closure {
-  CClosure c;
-  LClosure l;
+typedef union Closure
+{
+    CClosure c;
+    LClosure l;
 } Closure;
 
 

@@ -27,6 +27,29 @@ struct char_traits_i : public std::char_traits <char>
     {
         return toupper(left) < toupper(right);
     }
+
+    static int __CLRCALL_OR_CDECL compare( const char *s1, const char *s2, size_t n )
+    {
+        while ( n-- )
+        {
+            if ( toupper(*s1) < toupper(*s2) )
+                return -1;
+
+            if ( toupper(*s1) > toupper(*s2) )
+                return 1;
+
+            ++s1; ++s2;
+        }
+
+        return 0;
+    }
+
+    static const char* __CLRCALL_OR_CDECL find( const char *s, size_t cnt, char a )
+    {
+        while ( cnt-- && toupper(*s++) != toupper(a) );
+
+        return s;
+    }
 };
 
 class filePath : public std::basic_string <char, char_traits_i>

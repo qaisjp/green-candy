@@ -79,8 +79,19 @@ void lua_exec( const std::string& cmd )
 
     for ( n=top; n != now; n++ )
     {
-        const char *type = lua_typename( state, lua_type( state, n + 1 ) );
-        const char *strRep = lua_tostring( state, n + 1 );
+        const char *strRep;
+        int t = lua_type( state, n + 1 );
+        const char *type = lua_typename( state, t );
+
+        switch( t )
+        {
+        case LUA_TBOOLEAN:
+            strRep = lua_toboolean( state, n + 1 ) ? "true" : "false";
+            break;
+        default:
+            strRep = lua_tostring( state, n + 1 );
+            break;
+        }
 
         if ( !strRep )
         {
@@ -154,13 +165,15 @@ int main( int argc, char *argv[] )
 
     state = lua_open();
 
+    new CFileSystem();
+
     luaL_openlibs( state );
     luafile_open( state );
+    luafilesystem_open( state );
 
     // Include everything from /luabench/
     cout << "starting luaBench files...\n";
 
-    new CFileSystem();
     fileRoot->ScanDirectory( "/luabench/", "*.lua", false, NULL, loadBenchFile, NULL );
 
     cout << "\n";

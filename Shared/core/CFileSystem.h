@@ -76,12 +76,12 @@ private:
 class CSystemPathTranslator : public CFileTranslator
 {
 public:
-    bool            GetFullPathTree( const char *path, dirTree& tree, bool *file );
-    bool            GetRelativePathTree( const char *path, dirTree& tree, bool *file );
-    bool            GetFullPath( const char *path, bool allowFile, filePath& output );
-    bool            GetRelativePath( const char *path, bool allowFile, filePath& output );
+    bool            GetFullPathTree( const char *path, dirTree& tree, bool *file ) const;
+    bool            GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const;
+    bool            GetFullPath( const char *path, bool allowFile, filePath& output ) const;
+    bool            GetRelativePath( const char *path, bool allowFile, filePath& output ) const;
     bool            ChangeDirectory( const char *path );
-    void            GetDirectory( filePath& output );
+    void            GetDirectory( filePath& output ) const;
 
 protected:
     friend class CFileSystem;
@@ -97,24 +97,24 @@ public:
     bool            WriteData( const char *path, const char *buffer, size_t size );
     bool            CreateDir( const char *path );
     CFile*          Open( const char *path, const char *mode );
-    bool            Exists( const char *path );
+    bool            Exists( const char *path ) const;
     bool            Delete( const char *path );
     bool            Copy( const char *src, const char *dst );
     bool            Rename( const char *src, const char *dst );
-    size_t          Size( const char *path );
-    bool            Stat( const char *path, struct stat *stats );
-    bool            ReadToBuffer( const char *path, std::vector <char>& output );
+    size_t          Size( const char *path ) const;
+    bool            Stat( const char *path, struct stat *stats ) const;
+    bool            ReadToBuffer( const char *path, std::vector <char>& output ) const;
 
     void            ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
                         pathCallback_t dirCallback, 
                         pathCallback_t fileCallback, 
-                        void *userdata );
+                        void *userdata ) const;
 
-    void            GetDirectories( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output );
-    void            GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output );
+    void            GetDirectories( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const;
+    void            GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const;
 
 private:
-    void            _CreateDirTree( dirTree& tree );
+    void            _CreateDirTree( const dirTree& tree );
 };
 
 #ifdef _FILESYSTEM_ZIP_SUPPORT
