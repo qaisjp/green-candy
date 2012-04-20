@@ -77,7 +77,7 @@ class CSystemPathTranslator : public CFileTranslator
 {
 public:
     bool            GetFullPathTree( const char *path, dirTree& tree, bool *file ) const;
-    bool            GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const;
+    virtual bool    GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const;
     bool            GetFullPath( const char *path, bool allowFile, filePath& output ) const;
     bool            GetRelativePath( const char *path, bool allowFile, filePath& output ) const;
     bool            ChangeDirectory( const char *path );
@@ -94,6 +94,8 @@ protected:
 class CSystemFileTranslator : public CSystemPathTranslator
 {
 public:
+                    ~CSystemFileTranslator();
+
     bool            WriteData( const char *path, const char *buffer, size_t size );
     bool            CreateDir( const char *path );
     CFile*          Open( const char *path, const char *mode );
@@ -105,6 +107,9 @@ public:
     bool            Stat( const char *path, struct stat *stats ) const;
     bool            ReadToBuffer( const char *path, std::vector <char>& output ) const;
 
+    bool            GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const;
+    bool            ChangeDirectory( const char *path );
+
     void            ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
                         pathCallback_t dirCallback, 
                         pathCallback_t fileCallback, 
@@ -114,7 +119,14 @@ public:
     void            GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const;
 
 private:
+    friend class CFileSystem;
+
     void            _CreateDirTree( const dirTree& tree );
+
+#ifdef _WIN32
+    HANDLE          m_rootHandle;
+    HANDLE          m_curDirHandle;
+#endif
 };
 
 #ifdef _FILESYSTEM_ZIP_SUPPORT
