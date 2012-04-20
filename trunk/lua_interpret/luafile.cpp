@@ -23,7 +23,7 @@ static int luafile_onIndex( lua_State *lua )
         return 0;
 
     lua_pop( lua, 1 );
-    lua_rawget( lua, LUA_ENVIRONINDEX );
+    lua_gettable( lua, LUA_ENVIRONINDEX );
     return 1;
 }
 
@@ -75,7 +75,7 @@ static const luaL_Reg fileInterface[] =
     { NULL, NULL }
 };
 
-static int luaconstructor_file( lua_State *lua )
+int luaconstructor_file( lua_State *lua )
 {
     lua_pushvalue( lua, LUA_ENVIRONINDEX );
     lua_pushvalue( lua, lua_upvalueindex( 1 ) );
@@ -96,124 +96,6 @@ static int luaconstructor_file( lua_State *lua )
     return 0;
 }
 
-static int lua_fileOpen( lua_State *lua )
-{
-    luaL_checktype( lua, 1, LUA_TSTRING );
-    luaL_checktype( lua, 2, LUA_TSTRING );
-
-    CFile *file = fileRoot->Open( lua_tostring( lua, 1 ), lua_tostring( lua, 2 ) );
-
-    if ( !file )
-    {
-        cout << "invalid file access\n";
-
-        lua_pushboolean( lua, false );
-        return 1;
-    }
-
-    lua_pushlightuserdata( lua, file );
-    lua_pushcclosure( lua, luaconstructor_file, 1 );
-    lua_newclass( lua );
-    return 1;
-}
-
-static void lua_findScanCallback( const filePath& path, void *ud )
-{
-    lua_pushlstring( (lua_State*)ud, path, path.size() );
-    luaL_ref( (lua_State*)ud, -2 );
-}
-
-static int lua_fileScanDir( lua_State *lua )
-{
-    luaL_checktype( lua, 1, LUA_TSTRING );
-    
-    const char *path = lua_tostring( lua, 1 );
-    const char *wildcard;
-    bool recursive;
-
-    int top = lua_gettop( lua );
-
-    if ( top > 1 )
-    {
-        wildcard = lua_tostring( lua, 2 );
-
-        if ( top > 2 )
-            recursive = lua_toboolean( lua, 3 ) == 1;
-        else
-            recursive = false;
-    }
-    else
-    {
-        wildcard = "*";
-        recursive = false;
-    }
-
-    lua_newtable( lua );
-
-    fileRoot->ScanDirectory( path, wildcard, recursive, lua_findScanCallback, lua_findScanCallback, lua );
-    return 1;
-}
-
-static int lua_getFiles( lua_State *lua )
-{
-    luaL_checktype( lua, 1, LUA_TSTRING );
-    
-    const char *path = lua_tostring( lua, 1 );
-    const char *wildcard;
-    bool recursive;
-
-    int top = lua_gettop( lua );
-
-    if ( top > 1 )
-    {
-        wildcard = lua_tostring( lua, 2 );
-
-        if ( top > 2 )
-            recursive = lua_toboolean( lua, 3 ) == 1;
-        else
-            recursive = false;
-    }
-    else
-    {
-        wildcard = "*";
-        recursive = false;
-    }
-
-    lua_newtable( lua );
-
-    fileRoot->ScanDirectory( path, wildcard, recursive, 0, lua_findScanCallback, lua );
-    return 1;
-}
-
-static int lua_getDirs( lua_State *lua )
-{
-    luaL_checktype( lua, 1, LUA_TSTRING );
-    
-    const char *path = lua_tostring( lua, 1 );
-    bool recursive;
-
-    if ( lua_gettop( lua ) > 1 )
-        recursive = lua_toboolean( lua, 2 ) == 1;
-    else
-        recursive = false;
-
-    lua_newtable( lua );
-
-    fileRoot->ScanDirectory( path, "*", recursive, lua_findScanCallback, 0, lua );
-    return 1;
-}
-
-static const luaL_Reg fileLib[] =
-{
-    { "fileOpen", lua_fileOpen },
-    { "fileScanDir", lua_fileScanDir },
-    { "getFiles", lua_getFiles },
-    { "getDirs", lua_getDirs },
-    { NULL, NULL }
-};
-
 void luafile_open( lua_State *lua )
 {
-    lua_pushvalue( lua, LUA_GLOBALSINDEX );
-    luaL_openlib( lua, NULL, fileLib, 0 );
 }

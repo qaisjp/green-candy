@@ -13,6 +13,7 @@
 #ifndef _FILELIB_
 #define _FILELIB_
 
+int luaconstructor_file( lua_State *lua );
 void luafile_open( lua_State *lua );
 
 #endif //_FILELIB_

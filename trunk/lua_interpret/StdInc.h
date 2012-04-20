@@ -20,11 +20,14 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "luafile.h"
+#include "luafilesystem.h"
 #include <sstream>
 #include <iostream>
 #include <sys/stat.h>
 #include <SharedUtil.h>
 #include <core/CFileSystemInterface.h>
 #include <core/CFileSystem.h>
+
+extern CFileSystem *fileSystem;
 
 #endif //_MAIN_

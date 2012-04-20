@@ -100,6 +100,9 @@ class MethodStackAllocation
 public:
     MethodStackAllocation( lua_State *thread, Class *myClass, const TValue& val )
     {
+        if ( myClass->destroyed )
+            throw lua_exception( thread, LUA_ERRRUN, "attempted to access a destroyed class' method" );
+
         TValue *superMethod = myClass->GetSuperMethod( thread );
 
         setobj( thread, &m_prevSuper, superMethod );
@@ -193,6 +196,10 @@ static int classmethod_fsDestroyRoot( lua_State *L )
         return 0;
     }
 
+    // I think we do not need to check for a destroyed class here
+    if ( j->reqDestruction )
+        return 0;
+
     lua_pushvalue( L, lua_upvalueindex( 2 ) );
     lua_pcall( L, 0, 0, 0 );
     return 0;
@@ -208,6 +215,12 @@ static int classmethod_fsDestroySuper( lua_State *L )
         return 0;
     }
 
+    if ( j->destroyed )
+        throw lua_exception( L, LUA_ERRRUN, "attempted to destroy a destroyed class!" );
+    
+    if ( j->reqDestruction )
+        return 0;
+
     lua_pushvalue( L, lua_upvalueindex( 3 ) );
     lua_pcall( L, 0, 0, 0 );
 
@@ -218,6 +231,7 @@ static int classmethod_fsDestroySuper( lua_State *L )
 
 static int classmethod_fsDestroyBridge( lua_State *L )
 {
+    // No check required, internal method
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     lua_pcall( L, 0, 0, 0 );
 
