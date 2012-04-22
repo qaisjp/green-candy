@@ -18,5 +18,6 @@
 #include "CScriptDebugging.h"
 #include "CLogger.h"
 #include "CLuaManager.h"
+#include "CLuaTimer.h"
 
 #endif //_CLIENT_DERIVED_INCLUDE_

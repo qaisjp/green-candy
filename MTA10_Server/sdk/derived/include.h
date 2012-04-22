@@ -17,5 +17,6 @@
 #include "CScriptFile.h"
 #include "CLogger.h"
 #include "CScriptDebugging.h"
+#include "CLuaTimer.h"
 
 #endif //_SERVER_DERIVED_LOGIC_

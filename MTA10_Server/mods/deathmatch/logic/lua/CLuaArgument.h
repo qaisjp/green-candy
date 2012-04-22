@@ -33,10 +33,12 @@ public:
     void                    Read( CElement* pElement );
     CElement*               GetElement() const;
 
-    bool                    ReadFromBitStream( NetBitStreamInterface& bitStream );
     bool                    WriteToBitStream( NetBitStreamInterface& bitStream ) const;
     json_object*            WriteToJSONObject( bool serialize = false );
     bool                    ReadFromJSONObject( json_object* object );
+
+protected:
+    bool                    ReadTypeFromBitStream( NetBitStreamInterface& stream, int type );
 };
 
 #endif

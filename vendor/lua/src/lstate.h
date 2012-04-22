@@ -7,6 +7,10 @@
 #ifndef lstate_h
 #define lstate_h
 
+#ifdef _WIN32
+#include <windows.h>
+#endif //_WIN32
+
 #include "lua.h"
 
 #include "lobject.h"
@@ -128,6 +132,11 @@ struct lua_State
     GCObject *gclist;
     struct lua_longjmp *errorJmp;  /* current error recover point */
     ptrdiff_t errfunc;  /* current error handling function (stack index) */
+#ifdef _WIN32
+    HANDLE threadHandle;
+    HANDLE signalBegin;
+    HANDLE signalWait;
+#endif //_WIN32
 };
 
 

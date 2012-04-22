@@ -1140,10 +1140,6 @@
 						>
 					</File>
 					<File
-						RelativePath="..\shared_logic\lua\CLuaTimer.cpp"
-						>
-					</File>
-					<File
 						RelativePath="..\shared_logic\lua\CLuaTimerManager.cpp"
 						>
 					</File>
@@ -1732,6 +1728,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaTimerManager.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\ScriptDebugging.cpp"
 						>
 					</File>
@@ -1746,6 +1746,14 @@
 				>
 				<File
 					RelativePath="..\..\sdk\derived\CLogger.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\sdk\derived\CLuaManager.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\sdk\derived\CLuaTimer.cpp"
 					>
 				</File>
 				<File
@@ -2574,10 +2582,6 @@
 						>
 					</File>
 					<File
-						RelativePath="..\shared_logic\lua\CLuaTimer.h"
-						>
-					</File>
-					<File
 						RelativePath="..\shared_logic\lua\CLuaTimerManager.h"
 						>
 					</File>
@@ -2670,6 +2674,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaTimerManager.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\ScriptDebugging.h"
 						>
 					</File>
@@ -2688,6 +2696,10 @@
 				</File>
 				<File
 					RelativePath="..\..\sdk\derived\CLuaManager.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\sdk\derived\CLuaTimer.h"
 					>
 				</File>
 				<File

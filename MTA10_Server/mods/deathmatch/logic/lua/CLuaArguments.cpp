@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/lua/CLuaArguments.cpp
 *  PURPOSE:     Lua argument manager class
@@ -9,6 +9,7 @@
 *               Jax <>
 *               Chris McArthur <>
 *               Cecill Etheredge <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -26,10 +27,15 @@ extern CGame* g_pGame;
 #define VERIFY_ELEMENT(element) (g_pGame->GetMapManager()->GetRootElement ()->IsMyChild(element,true)&&!element->IsBeingDeleted())
 #endif
 
+CLuaArguments::CLuaArguments( NetBitStreamInterface& stream )
+{
+    ReadFromBitStream( stream );
+}
+
 CLuaArgument* CLuaArguments::PushElement( CElement *element )
 {
     CLuaArgument *arg = new CLuaArgument( element );
-    m_Arguments.push_back( arg );
+    m_args.push_back( arg );
     return arg;
 }
 
@@ -98,6 +104,21 @@ bool CLuaArguments::ReadFromBitStream( NetBitStreamInterface& bitStream )
 
     while ( usNumArgs-- )
         m_Arguments.push_back( new CLuaArgument( bitStream ) );
+
+    return true;
+}
+
+bool CLuaArguments::WriteToBitStream( NetBitStreamInterface& bitStream ) const
+{
+    std::vector <LuaArgument*>::const_iterator iter = m_args.begin();
+
+    bitStream.WriteCompressed( (unsigned short)m_args.size() ) );
+
+    for ( ; iter != m_args.end(); iter++ )
+    {
+        if ( !(*iter)->WriteToBitStream( bitStream ) )
+            return false;
+    }
 
     return true;
 }
@@ -333,89 +354,80 @@ inline static CLuaArgument* json_CreateArgumentFromObject( json_object *obj )
     case json_type_int:
         return new CLuaArgument( (double)json_object_get_int( object ) );
     case json_type_object:
-        m_pTableData = new CLuaArguments();
+#ifdef _TODO
+        m_table = new CLuaArguments();
         m_pTableData->ReadFromJSONObject ( object, pKnownTables );
         m_bWeakTableRef = false;
         m_iType = LUA_TTABLE;
         break;
+#endif //_TODO
+        return NULL;
     case json_type_array:
+#ifdef _TODO
         m_pTableData = new CLuaArguments();
         m_pTableData->ReadFromJSONArray ( object, pKnownTables );
         m_bWeakTableRef = false;
         m_iType = LUA_TTABLE;
         break;
+#endif //_TODO
+        return NULL;
     case json_type_string:
+        char *string = json_object_get_string( obj );
+
+        if ( strlen( string ) < 4 || string[0] != '^' || string[2] != '^' )
         {
-        char * szString = json_object_get_string ( object );
-        if ( strlen(szString) > 3 && szString[0] == '^' && szString[2] == '^' && szString[1] != '^' )
+            Read( std::string( szString ) );
+            return true;
+        }
+
+        switch( string[1] )
         {
-            switch ( szString[1] )
+        case 'E': // element
+            int id = atoi( string + 3 );
+            CElement *element;
+
+            if ( id == 0 || !( element = CElementIDs::GetElement( id ) ) )
+                return new CLuaArgument;
+
+            return new CLuaArgument( element );
+        case 'R': // resource
+            CResource *resource = g_pGame->GetResourceManager()->GetResource( string + 3 );
+
+            if ( !resource )
             {
-                case 'E': // element
-                {
-                    int id = atoi ( szString + 3 );
-                    CElement * element = NULL;
-                    if ( id != INT_MAX && id != INT_MIN && id != 0 )
-                        element = CElementIDs::GetElement(id);
-                    if ( element )
-                    {
-                        Read ( element );
-                    }
-                    else 
-                    {
-                        // Appears sometimes when a player quits
-                        //g_pGame->GetScriptDebugging()->LogError ( NULL, SString ( "Invalid element specified in JSON string '%s'.", szString ) );
-                        m_iType = LUA_TNIL;
-                    }
-                    break;
-                }
-                case 'R': // resource
-                {
-                    CResource * resource = g_pGame->GetResourceManager()->GetResource(szString+3);
-                    if ( resource )
-                    {
-                        ReadUserData ((void *)resource);
-                    }
-                    else 
-                    {
-                        g_pGame->GetScriptDebugging()->LogError ( NULL, SString ( "Invalid resource specified in JSON string '%s'.", szString ) );
-                        m_iType = LUA_TNIL;
-                    }
-                    break;
-                }
-                case 'T':   // Table reference
-                {
-                    unsigned long ulTableID = static_cast < unsigned long > ( atol ( szString + 3 ) );
-                    if ( pKnownTables && ulTableID >= 0 && ulTableID < pKnownTables->size () )
-                    {
-                        m_pTableData = pKnownTables->at ( ulTableID );
-                        m_bWeakTableRef = true;
-                        m_iType = LUA_TTABLE;
-                    }
-                    else
-                    {
-                        g_pGame->GetScriptDebugging()->LogError ( NULL, SString ( "Invalid table reference specified in JSON string '%s'.", szString ) );
-                        m_iType = LUA_TNIL;
-                    }
-                    break;
-                }
+                g_pGame->GetScriptDebugging()->LogError( "Invalid resource specified in JSON string '%s'.", string );
+                return new CLuaArgument;
             }
+            return CLuaArgument( (void *)resource );
+        case 'T':   // Table reference
+#ifdef _TODO
+            unsigned long ulTableID = static_cast < unsigned long > ( atol ( szString + 3 ) );
+
+            if ( pKnownTables && ulTableID >= 0 && ulTableID < pKnownTables->size () )
+            {
+                m_pTableData = pKnownTables->at ( ulTableID );
+                m_bWeakTableRef = true;
+                m_iType = LUA_TTABLE;
+            }
+            else
+            {
+                g_pGame->GetScriptDebugging()->LogError ( NULL, SString ( "Invalid table reference specified in JSON string '%s'.", szString ) );
+                m_iType = LUA_TNIL;
+            }
+            break;
+#endif //_TODO
+            return new CLuaArgument;
         }
-        else
-            Read(std::string ( szString ));
-        break;
-        }
-    default:
-        return false;
+        return new CLuaArgument;
     }
-    return true;
+    return new CLuaArgument;
 }
 
-bool CLuaArguments::ReadFromJSONString( const char* szJSON )
+bool CLuaArguments::ReadFromJSONString( const char *json )
 {
-    json_object* object = json_tokener_parse( szJSON );
+    json_object *object = json_tokener_parse( json );
 
-    if ( is_error(object) )
+    if ( is_error( object ) )
         return false;
 
     if ( json_object_get_type( object ) != json_type_array )
@@ -424,95 +436,70 @@ bool CLuaArguments::ReadFromJSONString( const char* szJSON )
         return false;
     }
 
-    bool bSuccess = true;
+    int size = json_object_array_length( object );
     
-    for ( int i=0; i < json_object_array_length( object ); i++ ) 
+    for ( int i=0; i < size; i++ ) 
     {
-        json_object *arrayObject = json_object_array_get_idx(object, i);
-        CLuaArgument *arg = new CLuaArgument();
+        CLuaArgument *arg = json_CreateArgumentFromObject( json_object_array_get_idx( object, i ) );
 
-        bSuccess = pArgument->ReadFromJSONObject( arrayObject );
-        m_Arguments.push_back ( pArgument ); // then the value
+        m_args.push_back( new CLuaArgument( i ) );
 
-        if ( !bSuccess )
-            break;
+        if ( !arg )
+        {
+            json_object_put( object );
+            return false;
+        }
+
+        m_args.push_back( arg ); // then the value
     }
-    json_object_put ( object ); // dereference
-    return bSuccess;
+    json_object_put( object ); // dereference
+    return true;
 }
 
-bool CLuaArguments::ReadFromJSONObject ( json_object * object, std::vector < CLuaArguments* > * pKnownTables )
+bool CLuaArguments::ReadFromJSONObject( json_object *object )
 {
-    if ( !is_error(object) )
+    if ( is_error( object ) )
+        return false;
+
+    if ( json_object_get_type ( object ) != json_type_object )
+        return false;
+
+    json_object_object_foreach( object, key, val ) 
     {
-        if ( json_object_get_type ( object ) == json_type_object )
-        {
-            bool bKnownTablesCreated = false;
-            if ( !pKnownTables )
-            {
-                pKnownTables = new std::vector < CLuaArguments* > ();
-                bKnownTablesCreated = true;
-            }
+        CLuaArgument *arg;
 
-            pKnownTables->push_back ( this );
+        arg = json_CreateArgumentFromObject( val );
 
-            bool bSuccess = true;
-            json_object_object_foreach(object, key, val) 
-            {
-                CLuaArgument* pArgument = new CLuaArgument ( std::string ( key ) );
-                m_Arguments.push_back ( pArgument ); // push the key first
-                pArgument = new CLuaArgument ( );
-                bSuccess = pArgument->ReadFromJSONObject ( val, pKnownTables ); // then the value
-                m_Arguments.push_back ( pArgument );
-                if ( !bSuccess )
-                    break;
-            }
+        if ( !arg )
+            return false;
 
-            if ( bKnownTablesCreated )
-                delete pKnownTables;
-            return bSuccess;
-        }
+        m_args.push_back( new CLuaArgument( std::string( key ) ) ); // push the key first
+        m_args.push_back( arg ); // now the value
     }
- //   else
-//        g_pGame->GetScriptDebugging()->LogError ( "Could not parse invalid JSON object.");
-    return false;
+
+    return true;
 }
 
-bool CLuaArguments::ReadFromJSONArray ( json_object * object, std::vector < CLuaArguments* > * pKnownTables )
+bool CLuaArguments::ReadFromJSONArray( json_object *object )
 {
-    if ( !is_error(object) )
+    if ( is_error( object ) )
+        return false;
+
+    if ( json_object_get_type( object ) != json_type_array )
+        return false;
+
+    int size = json_object_array_length( object );
+
+    for ( int i=0; i < size; i++ ) 
     {
-        if ( json_object_get_type ( object ) == json_type_array )
-        {
-            bool bKnownTablesCreated = false;
-            if ( !pKnownTables )
-            {
-                pKnownTables = new std::vector < CLuaArguments* > ();
-                bKnownTablesCreated = true;
-            }
+        CLuaArgument *arg;
 
-            pKnownTables->push_back ( this );
+        if ( !( arg = json_CreateArgumentFromObject( json_object_array_get_idx( object, i ) ) ) )
+            return false;
 
-            bool bSuccess = true;
-            for(int i=0; i < json_object_array_length(object); i++) 
-            {
-                json_object *arrayObject = json_object_array_get_idx(object, i);
-                CLuaArgument* pArgument = new CLuaArgument ((double)i+1); // push the key
-                m_Arguments.push_back ( pArgument );
-
-                pArgument = new CLuaArgument();
-                bSuccess = pArgument->ReadFromJSONObject ( arrayObject, pKnownTables );
-                m_Arguments.push_back ( pArgument ); // then the valoue
-                if ( !bSuccess )
-                    break;
-            }
-
-            if ( bKnownTablesCreated )
-                delete pKnownTables;
-            return bSuccess;
-        }
+        m_args.push_back( new CLuaArgument( (double)i + 1 ) ); // push the key
+        m_args.push_back( arg ); // then the value
     }
-//    else
-//        g_pGame->GetScriptDebugging()->LogError ( "Could not parse invalid JSON object.");
-    return false;
+
+    return true;
 }

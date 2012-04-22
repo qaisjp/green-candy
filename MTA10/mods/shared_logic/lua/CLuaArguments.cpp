@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaArguments.cpp
@@ -27,6 +27,11 @@ using namespace std;
  
 extern CClientGame* g_pClientGame;
 
+CLuaArguments::CLuaArguments( NetBitStreamInterface& stream )
+{
+    ReadFromBitStream( stream );
+}
+
 CLuaArgument* CLuaArguments::PushElement( CClientEntity* element )
 {
     CLuaArgument *arg = new CLuaArgument( element );
@@ -43,6 +48,21 @@ bool CLuaArguments::ReadFromBitStream( NetBitStreamInterface& bitStream )
 
     while ( usNumArgs-- )
         m_Arguments.push_back( new CLuaArgument( bitStream ) );
+
+    return true;
+}
+
+bool CLuaArguments::WriteToBitStream( NetBitStreamInterface& bitStream ) const
+{
+    std::vector <LuaArgument*>::const_iterator iter = m_args.begin();
+
+    bitStream.WriteCompressed( (unsigned short)m_args.size() ) );
+
+    for ( ; iter != m_args.end(); iter++ )
+    {
+        if ( !(*iter)->WriteToBitStream( bitStream ) )
+            return false;
+    }
 
     return true;
 }

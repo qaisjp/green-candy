@@ -20,7 +20,7 @@
 
 class LuaArguments;
 
-class LuaArgument
+class LuaArgument abstract
 {
     friend class LuaArguments;
 public:
@@ -34,10 +34,11 @@ public:
                                 LuaArgument( lua_State *lua, int idx );
     virtual                     ~LuaArgument();
 
-    const CLuaArgument&         operator = ( const LuaArgument& arg );
+    const LuaArgument&          operator = ( const LuaArgument& arg );
     bool                        operator == ( const LuaArgument& arg );
     bool                        operator != ( const LuaArgument& arg );
 
+    void                        ReadNil();
     void                        Read( lua_State *lua, int idx );
     void                        Read( bool b );
     void                        Read( double d );
@@ -54,10 +55,12 @@ public:
     inline const std::string&   GetString() const       { return m_string; }
     inline void*                GetLightUserData() const      { return m_lightUD; };
 
-    virtual bool                ReadFromBitStream( NetBitStreamInterface& bitStream );
+    bool                        ReadFromBitStream( NetBitStreamInterface& bitStream );
     virtual bool                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
 
 protected:
+    virtual bool                ReadTypeFromBitStream( NetBitStreamInterface& stream, int type );
+
     virtual void                LogUnableToPacketize( const char *msg ) const = 0;
     void                        CopyRecursive( const LuaArgument& arg );
     bool                        CompareRecursive( const LuaArgument& arg );

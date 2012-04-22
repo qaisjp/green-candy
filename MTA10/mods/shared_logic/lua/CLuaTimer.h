@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/logic/lua/CLuaTimer.h
 *  PURPOSE:     Lua timer class
@@ -19,7 +19,6 @@ class CLuaTimer;
 #define __CLUATIMER_H
 
 // Define includes
-#include "LuaCommon.h"
 #include "CLuaArguments.h"
 
 #define LUA_TIMER_MIN_INTERVAL      50

@@ -518,39 +518,45 @@ static int costatus (lua_State *L, lua_State *co) {
   }
 }
 
-
-static int luaB_costatus (lua_State *L) {
-  lua_State *co = lua_tothread(L, 1);
-  luaL_argcheck(L, co, 1, "coroutine expected");
-  lua_pushstring(L, statnames[costatus(L, co)]);
-  return 1;
+static int luaB_costatus (lua_State *L)
+{
+    lua_State *co = lua_tothread(L, 1);
+    luaL_argcheck(L, co, 1, "coroutine expected");
+    lua_pushstring(L, statnames[costatus(L, co)]);
+    return 1;
 }
 
+inline static int auxresume( lua_State *L, lua_State *co, int narg )
+{
+    int status = costatus(L, co);
 
-static int auxresume (lua_State *L, lua_State *co, int narg) {
-  int status = costatus(L, co);
-  if (!lua_checkstack(co, narg))
-    luaL_error(L, "too many arguments to resume");
-  if (status != CO_SUS) {
-    lua_pushfstring(L, "cannot resume %s coroutine", statnames[status]);
-    return -1;  /* error flag */
-  }
-  lua_xmove(L, co, narg);
-  lua_setlevel(L, co);
-  status = lua_resume(co, narg);
-  if (status == 0 || status == LUA_YIELD) {
+    if ( !lua_checkstack( co, narg ) )
+        luaL_error( L, "too many arguments to resume" );
+
+    if ( status != CO_SUS )
+    {
+        lua_pushfstring( L, "cannot resume %s coroutine", statnames[status] );
+        return -1;  /* error flag */
+    }
+
+    lua_xmove(L, co, narg);
+    lua_setlevel(L, co);
+    status = lua_resume(co, narg);
+
+    if ( status != 0 && status != LUA_YIELD )
+    {
+        lua_xmove( co, L, 1 );  /* move error message */
+        return -1;  /* error flag */
+    }
+
     int nres = lua_gettop(co);
-    if (!lua_checkstack(L, nres + 1))
-      luaL_error(L, "too many results to resume");
+
+    if ( !lua_checkstack( L, nres + 1 ) )
+        luaL_error( L, "too many results to resume" );
+
     lua_xmove(co, L, nres);  /* move yielded values */
     return nres;
-  }
-  else {
-    lua_xmove(co, L, 1);  /* move error message */
-    return -1;  /* error flag */
-  }
 }
-
 
 static int luaB_coresume (lua_State *L) {
   lua_State *co = lua_tothread(L, 1);
@@ -587,8 +593,7 @@ static int luaB_auxwrap (lua_State *L) {
 
 static int luaB_cocreate (lua_State *L) {
   lua_State *NL = lua_newthread(L);
-  luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
-    "Lua function expected");
+  luaL_argcheck(L, lua_isfunction(L, 1), 1, "function expected");
   lua_pushvalue(L, 1);  /* move function to top */
   lua_xmove(L, NL, 1);  /* move function from L to NL */
   return 1;

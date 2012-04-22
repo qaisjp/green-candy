@@ -12,6 +12,7 @@
 *               Christian Myhre Lundheim <>
 *               Chris McArthur <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -34,9 +35,12 @@
 class CLuaArguments : public LuaArguments
 {
 public:
+                                                        CLuaArguments( NetBitStreamInterface& stream );
+
     CLuaArgument*                                       PushElement( CClientEntity* pElement );
 
     bool                                                ReadFromBitStream( NetBitStreamInterface& bitStream );
+    bool                                                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
 };
 
 #endif

@@ -199,11 +199,13 @@ public:
         return ReadStringCharacters ( result, usLength );
     }
 
-    bool WriteStringCompressed( const std::string& str )
+    void WriteStringCompressed( const std::string& str )
     {
         unsigned short len = str.size();
+
         WriteCompressed( len );
-        return WriteStringCharacters( str, len );
+
+        WriteStringCharacters( str, len );
     }
 
     bool ReadStringCompressed( std::string& buf )

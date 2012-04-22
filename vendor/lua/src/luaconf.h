@@ -608,6 +608,30 @@ union luai_Cast { double l_d; long l_l; };
 /* C++ exceptions */
 #include <exception>
 
+class lua_thread_termination : public std::exception
+{
+public:
+    lua_thread_termination( struct lua_State *L, unsigned int status )
+    {
+        m_status = status;
+        m_thread = L;
+    }
+
+    unsigned int status() const
+    {
+        return m_status;
+    }
+
+    lua_State* getThread() const
+    {
+        return m_thread;
+    }
+
+private:
+    unsigned int    m_status;
+    lua_State*      m_thread;
+};
+
 // Added special exception management (The_GTA)
 class lua_exception : public std::exception
 {

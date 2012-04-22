@@ -23,10 +23,8 @@
 
 LuaArgument::LuaArgument()
 {
-    m_type = LUA_TNIL;
     m_table = NULL;
-    m_lightUD = NULL;
-    m_string = "";
+    ReadNil();
 }
 
 LuaArgument::LuaArgument( bool b )
@@ -82,7 +80,7 @@ LuaArgument::~LuaArgument()
 void LuaArgument::CopyRecursive( const LuaArgument& arg )
 {
     // Clear the string
-    m_string = "";
+    m_string.clear();
 
     // Destroy our old tabledata if neccessary
     DeleteTableData();
@@ -97,16 +95,16 @@ void LuaArgument::CopyRecursive( const LuaArgument& arg )
     switch( m_type )
     {
     case LUA_TBOOLEAN:
-        m_bool = arg.GetBoolean();
-        break;
+        Read( arg.GetBoolean() );
+        return;
 
     case LUA_TLIGHTUSERDATA:
-        m_lightUD = arg.GetLightUserData();
-        break;
+        Read( arg.GetLightUserData() );
+        return;
 
     case LUA_TNUMBER:
-        m_num = arg.GetNumber();
-        break;
+        Read( arg.GetNumber() );
+        return;
 
     case LUA_TTABLE:
 #ifdef _TODO
@@ -121,12 +119,14 @@ void LuaArgument::CopyRecursive( const LuaArgument& arg )
             m_bWeakTableRef = false;
         }
 #endif //_TODO
-        break;
+        return;
 
     case LUA_TSTRING:
-        m_string = arg.m_string;
-        break;
+        Read( arg.m_string );
+        return;
     }
+
+    ReadNil();
 }
 
 const LuaArgument& LuaArgument::operator = ( const LuaArgument& arg )
@@ -213,22 +213,19 @@ void LuaArgument::Read( lua_State *lua, int idx )
     }
 
     // Eventually delete our previous string
-    m_string = "";
+    m_string.clear();
 
     DeleteTableData();
 
-    // Grab the argument type
-    m_type = lua_type( lua, idx );
-
     // Read out the content depending on the type
-    switch( m_type )
+    switch( lua_type( lua, idx ) )
     {
     case LUA_TNONE:
     case LUA_TNIL:
         return;
 
     case LUA_TBOOLEAN:
-        m_bool = lua_toboolean( lua, idx ) ? true : false;
+        Read( lua_toboolean( lua, idx ) ? true : false );
         return;
 
     case LUA_TTABLE:
@@ -249,11 +246,11 @@ void LuaArgument::Read( lua_State *lua, int idx )
         return;
 
     case LUA_TLIGHTUSERDATA:
-        m_lightUD = lua_touserdata( lua, idx );
+        Read( lua_touserdata( lua, idx ) );
         return;
 
     case LUA_TNUMBER:
-        m_num = lua_tonumber( lua, idx );
+        Read( lua_tonumber( lua, idx ) );
         return;
 
     case LUA_TSTRING:
@@ -266,11 +263,18 @@ void LuaArgument::Read( lua_State *lua, int idx )
 
     case LUA_TFUNCTION:
         // TODO: add function reading (has to work inside tables too)
-        m_type = LUA_TNIL;
+        ReadNil();
         return;
     }
 
-    m_type = LUA_TNONE;
+    ReadNil();
+}
+
+void LuaArgument::ReadNil()
+{
+    m_string = std::string( "nil", 3 );
+    m_type = LUA_TNIL;
+    DeleteTableData();
 }
 
 void LuaArgument::Read( bool b )
@@ -350,32 +354,25 @@ void LuaArgument::Push( lua_State *lua ) const
     lua_pushnil( lua );
 }
 
-bool LuaArgument::ReadFromBitStream( NetBitStreamInterface& bitStream )
+bool LuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int type )
 {
-    DeleteTableData();
-
-    SLuaTypeSync type;
-
-    // Read out the type
-    if ( !bitStream.Read( &type ) )
-        return false;
-
     switch( type.data.ucType )
     {
+    case LUA_TNONE:
     case LUA_TNIL:
-        m_type = LUA_TNIL;
+        ReadNil();
         return true;
 
     case LUA_TBOOLEAN:
-        m_bool = bitStream.ReadBit();
+        Read( tream.ReadBit() );
         return true;
 
     case LUA_TNUMBER:
-        if ( bitStream.ReadBit() )
+        if ( stream.ReadBit() )
         {
             float fNum;
 
-            if ( bitStream.Read( fNum ) )
+            if ( stream.Read( fNum ) )
                 Read( (double)fNum );
 
             return true;
@@ -383,19 +380,20 @@ bool LuaArgument::ReadFromBitStream( NetBitStreamInterface& bitStream )
 
         long lNum;
 
-        if ( bitStream.ReadCompressed( lNum ) )
+        if ( stream.ReadCompressed( lNum ) )
             Read( (double)lNum );
 
         return true;
 
     case LUA_TTABLE:
 #ifdef _TODO
-        m_pTableData = new CLuaArguments ( bitStream, pKnownTables );
+        m_pTableData = new CLuaArguments( stream, pKnownTables );
         m_bWeakTableRef = false;
         m_iType = LUA_TTABLE;
-        m_pTableData->ValidateTableKeys ();
-#endif //_TODO
+        m_pTableData->ValidateTableKeys();
         return true;
+#endif //_TODO
+        return false;
 
     // Table reference (self-referencing tables)
     case LUA_TTABLEREF:
@@ -403,22 +401,23 @@ bool LuaArgument::ReadFromBitStream( NetBitStreamInterface& bitStream )
         unsigned long ulTableRef;
         if ( bitStream.ReadCompressed ( ulTableRef ) )
         {
-            if ( pKnownTables && ulTableRef < pKnownTables->size () )
+            if ( pKnownTables && ulTableRef < pKnownTables->size() )
             {
-                m_pTableData = pKnownTables->at ( ulTableRef );
+                m_pTableData = pKnownTables->at( ulTableRef );
                 m_bWeakTableRef = true;
                 m_iType = LUA_TTABLE;
             }
         }
-#endif //_TODO
         return true;
+#endif //_TODO
+        return false;
 
     case LUA_TSTRING:
         // Read out the string length
         unsigned short len;
         std::string buf;
 
-        if ( !bitStream.ReadStringCompressed( buf ) )
+        if ( !stream.ReadStringCompressed( buf ) )
         {
             Read( std::string() );
             return true;
@@ -429,6 +428,19 @@ bool LuaArgument::ReadFromBitStream( NetBitStreamInterface& bitStream )
     }
 
     return false;
+}
+
+bool LuaArgument::ReadFromBitStream( NetBitStreamInterface& bitStream )
+{
+    DeleteTableData();
+
+    SLuaTypeSync type;
+
+    // Read out the type
+    if ( !bitStream.Read( &type ) )
+        return false;
+
+    return ReadTypeFromBitStream( bitStream, type.data.ucType );
 }
 
 bool LuaArgument::WriteToBitStream( NetBitStreamInterface& bitStream ) const

@@ -1,16 +1,15 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        mods/shared_logic/logic/lua/CLuaTimer.cpp
-*  PURPOSE:     Lua timer class
-*  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
-*               Jax <>
-*               Cecill Etheredge <ijsf@gmx.net>
+*  FILE:        derived/CLuaTimer.cpp
+*  PURPOSE:     Lua timed execution
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
-#include <StdInc.h>
+#include "StdInc.h"
 
+// the class is inlined
