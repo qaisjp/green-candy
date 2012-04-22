@@ -44,8 +44,8 @@ public:
     virtual void                    RegisterFunction( const char *name, lua_CFunction *proto );
 
     inline void                     CallStack( int args )           { m_system.AcquireContext( *this ).CallStack( args ); }
-    inline void                     CallStackVoid( int args );      { m_system.AcquireContext( *this ).CallStackVoid( args ); }
-    inline LuaArguments             CallStackResult( int args );    { return m_system.AcquireContext( *this ).CallStackResult( args ); }
+    inline void                     CallStackVoid( int args )       { m_system.AcquireContext( *this ).CallStackVoid( args ); }
+    inline LuaArguments             CallStackResult( int args )     { return m_system.AcquireContext( *this ).CallStackResult( args ); }
     bool                            PCallStack( int args );
     bool                            PCallStackVoid( int args );
     LuaArguments                    PCallStackResult( int args, bool& excpt );

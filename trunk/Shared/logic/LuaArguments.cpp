@@ -19,8 +19,6 @@
 *****************************************************************************/
 
 #include "StdInc.h"
-#define DECLARE_PROFILER_SECTION_CLuaArguments
-#include "profiler/SharedUtil.Profiler.h"
 
 #ifndef VERIFY_ENTITY
 #define VERIFY_ENTITY(entity) (CStaticFunctionDefinitions::GetRootElement()->IsMyChild(entity,true)&&!entity->IsBeingDeleted())
@@ -29,11 +27,6 @@
 
 LuaArguments::LuaArguments()
 {
-}
-
-LuaArguments::LuaArguments( NetBitStreamInterface& stream )
-{
-    ReadFromBitStream( stream );
 }
 
 LuaArguments::LuaArguments( const LuaArguments& args )
@@ -63,7 +56,7 @@ const LuaArguments& LuaArguments::operator = ( const LuaArguments& args )
     return args;
 }
 
-void LuaArguments::CopyRecursive( const LuaArguments& args, std::map <LuaArguments*, LuaArguments*>& tables )
+void LuaArguments::CopyRecursive( const LuaArguments& args )
 {
     // We require a clean setup
     DeleteArguments();
@@ -74,7 +67,7 @@ void LuaArguments::CopyRecursive( const LuaArguments& args, std::map <LuaArgumen
     vector <LuaArgument*>::const_iterator iter = args.m_args.begin();
 
     for ( ; iter != args.m_args.end(); iter++ )
-        m_args.push_back( new LuaArgument( **iter, tables ) );
+        m_args.push_back( (*iter)->Clone() );
 }
 
 void LuaArguments::ReadArguments( lua_State *luaVM, int indexStart )
@@ -154,7 +147,6 @@ void LuaArguments::PushArguments( LuaArguments& args )
 
 bool LuaArguments::Call( LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *res )
 {
-    // Performance query
     int top = lua_gettop( lua->GetVirtualMachine() );
     bool excpt;
 

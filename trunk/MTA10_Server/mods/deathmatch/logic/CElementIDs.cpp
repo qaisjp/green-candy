@@ -56,7 +56,7 @@ void CElementIDs::PushUniqueID ( CElement* pElement )
 CElement* CElementIDs::GetElement ( ElementID ID )
 {
     // Return the element with the given ID
-    if ( ID != INVALID_ELEMENT_ID && ID < MAX_SERVER_ELEMENTS )
+    if ( ID < MAX_SERVER_ELEMENTS )
         return m_Elements [ID.Value()];
 
     return NULL;

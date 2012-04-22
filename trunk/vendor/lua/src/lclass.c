@@ -81,6 +81,10 @@ void Class::DecrementMethodStack( lua_State *lua )
     // I am not sure whether the stack could corrupt.
     // This needs testing with exception handling
     // Yes, exceptions will not hinder the requested destruction of a class.
+
+    // The new lua thread architecture preserve class referencing!
+    // Now there is no more issue with keeping a coroutine state to save a class
+    // from destruction. Hahaha!
     if (reqDestruction && inMethod == 0)
     {
         setobj2s( lua, lua->top, &destructor );

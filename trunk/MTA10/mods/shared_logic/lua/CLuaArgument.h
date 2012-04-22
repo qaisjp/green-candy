@@ -32,12 +32,13 @@ public:
                             ~CLuaArgument();
 
     void                    Read( CClientEntity* pElement );
-
     CClientEntity*          GetElement() const;
 
-    bool                    ReadFromBitStream( NetBitStreamInterface& bitStream );
     bool                    WriteToBitStream( NetBitStreamInterface& bitStream ) const;
+
 protected:
+    bool                    ReadTypeFromBitStream( NetBitStreamInterface& stream, int type );
+
     void                    LogUnableToPacketize( const char *msg ) const;
 };
 

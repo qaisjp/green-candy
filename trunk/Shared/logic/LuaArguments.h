@@ -26,7 +26,6 @@ class LuaArguments
 public:
                                                         LuaArguments();
                                                         LuaArguments( const LuaArguments& args );
-                                                        LuaArguments( NetBitStreamInterface& stream );
                                                         ~LuaArguments();
 
     void                                                CopyRecursive( const LuaArguments& args );
@@ -42,7 +41,6 @@ public:
 
     void                                                ReadTable( lua_State* luaVM, int indexStart );
     void                                                PushAsTable( lua_State* luaVM );
-    void                                                PushAsTable( lua_State* luaVM );
 
     bool                                                IsIndexedArray();
 
@@ -56,9 +54,6 @@ public:
 
     void                                                DeleteArguments();
     void                                                ValidateTableKeys();
-
-    virtual bool                                        ReadFromBitStream( NetBitStreamInterface& bitStream ) = 0;
-    bool                                                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
 
     unsigned int                                        Count() const          { return static_cast < unsigned int > ( m_args.size() ); };
     std::vector <LuaArgument*> ::const_iterator         IterBegin()                { return m_args.begin(); };

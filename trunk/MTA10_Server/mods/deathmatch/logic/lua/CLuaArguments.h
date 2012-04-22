@@ -42,6 +42,8 @@ class CTextItem;
 class CLuaArguments : public LuaArguments
 {
 public:
+                                                        CLuaArguments( NetBitStreamInterface& stream );
+
     CLuaArgument*                                       PushElement( CElement* pElement );
     CLuaArgument*                                       PushACL( CAccessControlList* pACL );
     CLuaArgument*                                       PushACLGroup( CAccessControlListGroup* pACLGroup );
@@ -52,6 +54,8 @@ public:
     CLuaArgument*                                       PushTimer( CLuaTimer* pLuaTimer );
 
     bool                                                ReadFromBitStream( NetBitStreamInterface& bitStream );
+    bool                                                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
+
     bool                                                ReadFromJSONString( const char* szJSON );
     bool                                                WriteToJSONString( std::string& strJSON, bool bSerialize = false );
     json_object*                                        WriteTableToJSONObject( bool bSerialize = false, std::map < CLuaArguments*, unsigned long > * pKnownTables = NULL );

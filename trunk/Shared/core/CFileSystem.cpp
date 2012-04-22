@@ -893,14 +893,18 @@ bool CSystemFileTranslator::Exists( const char *path ) const
 
 static void _deleteFileCallback( const filePath& path, void *ud )
 {
+#ifdef _WIN32
     DeleteFile( path );
+#endif
 }
 
 static void _deleteDirCallback( const filePath& path, void *ud )
 {
     ((CFileTranslator*)ud)->ScanDirectory( path, "*", false, _deleteDirCallback, _deleteFileCallback, ud );
 
+#ifdef _WIN32
     RemoveDirectory( path );
+#endif
 }
 
 bool CSystemFileTranslator::Delete( const char *path )

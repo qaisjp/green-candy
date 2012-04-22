@@ -18,7 +18,7 @@
 #define PrintFunction	luaU_print
 
 #define Sizeof(x)	((int)sizeof(x))
-#define VOID(p)		((const void*)(p))
+#define CVOID(p)    ((const void*)(p))
 
 static void PrintString(const TString* ts)
 {
@@ -142,7 +142,7 @@ static void PrintCode(const Proto* f)
     printf("\t; to %d",sbx+pc+2);
     break;
    case OP_CLOSURE:
-    printf("\t; %p",VOID(f->p[bx]));
+    printf("\t; %p",CVOID(f->p[bx]));
     break;
    case OP_SETLIST:
     if (c==0) printf("\t; %d",(int)code[++pc]);
@@ -170,7 +170,7 @@ static void PrintHeader(const Proto* f)
  printf("\n%s <%s:%d,%d> (%d instruction%s, %d bytes at %p)\n",
  	(f->linedefined==0)?"main":"function",s,
 	f->linedefined,f->lastlinedefined,
-	S(f->sizecode),f->sizecode*Sizeof(Instruction),VOID(f));
+	S(f->sizecode),f->sizecode*Sizeof(Instruction),CVOID(f));
  printf("%d%s param%s, %d slot%s, %d upvalue%s, ",
 	f->numparams,f->is_vararg?"+":"",SS(f->numparams),
 	S(f->maxstacksize),S(f->nups));
@@ -181,7 +181,7 @@ static void PrintHeader(const Proto* f)
 static void PrintConstants(const Proto* f)
 {
  int i,n=f->sizek;
- printf("constants (%d) for %p:\n",n,VOID(f));
+ printf("constants (%d) for %p:\n",n,CVOID(f));
  for (i=0; i<n; i++)
  {
   printf("\t%d\t",i+1);
@@ -193,7 +193,7 @@ static void PrintConstants(const Proto* f)
 static void PrintLocals(const Proto* f)
 {
  int i,n=f->sizelocvars;
- printf("locals (%d) for %p:\n",n,VOID(f));
+ printf("locals (%d) for %p:\n",n,CVOID(f));
  for (i=0; i<n; i++)
  {
   printf("\t%d\t%s\t%d\t%d\n",
@@ -204,7 +204,7 @@ static void PrintLocals(const Proto* f)
 static void PrintUpvalues(const Proto* f)
 {
  int i,n=f->sizeupvalues;
- printf("upvalues (%d) for %p:\n",n,VOID(f));
+ printf("upvalues (%d) for %p:\n",n,CVOID(f));
  if (f->upvalues==NULL) return;
  for (i=0; i<n; i++)
  {
