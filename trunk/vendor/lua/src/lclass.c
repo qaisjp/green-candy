@@ -82,7 +82,7 @@ void Class::DecrementMethodStack( lua_State *lua )
     // This needs testing with exception handling
     // Yes, exceptions will not hinder the requested destruction of a class.
 
-    // The new lua thread architecture preserve class referencing!
+    // The new lua thread architecture preserves class referencing!
     // Now there is no more issue with keeping a coroutine state to save a class
     // from destruction. Hahaha!
     if (reqDestruction && inMethod == 0)
@@ -255,6 +255,7 @@ static int classmethod_fsDestroyHandler( lua_State *L )
     lua_pushcclosure( L, classmethod_fsDestroyBridge, 2 );
 
     setobj( L, &j->destructor, L->top - 1 );
+    luaC_forceupdatef( L, obj2gco( jvalue( &j->destructor ) ) );
     lua_settop( L, 3 );
 
     lua_pushcclosure( L, classmethod_fsDestroySuper, 3 );
@@ -403,10 +404,16 @@ private:
 Class* luaJ_new( lua_State *L, int nargs )
 {
     Class *c = luaM_new( L, Class );
-    luaC_link( L, obj2gco( c ), LUA_TCLASS );   // Link it into the GC system
+
+    // Link it into the GC system
+    c->next = G(L)->mainthread->next;
+    G(L)->mainthread->next = obj2gco( c );
+
     Table *meta = luaH_new( L, 0, 0 );
     Table *outmeta = luaH_new( L, 0, 0 );
 
+    c->tt = LUA_TCLASS;
+    c->marked = luaC_white( G(L) ); // do not collect
     c->destroyed = false;
     c->reqDestruction = false;
     c->inMethod = 0;

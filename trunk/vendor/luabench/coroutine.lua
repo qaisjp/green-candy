@@ -6,6 +6,10 @@ function createAsyncFile()
 				yield();
 				return "";
 			end
+			
+			function destroy()
+				print("destroyed async file");
+			end
 		end
 	);
 end
