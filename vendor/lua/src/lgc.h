@@ -99,7 +99,7 @@
 #define luaC_objbarriert(L,t,o)  \
    { if (iswhite(obj2gco(o)) && isblack(obj2gco(t))) luaC_barrierback(L,t); }
 
-LUAI_FUNC size_t luaC_separateudata (lua_State *L, int all);
+LUAI_FUNC size_t luaC_separatefinalization( lua_State *L, int all );
 LUAI_FUNC void luaC_callGCTM (lua_State *L);
 LUAI_FUNC void luaC_freeall (lua_State *L);
 LUAI_FUNC void luaC_step (lua_State *L);
@@ -108,6 +108,7 @@ LUAI_FUNC void luaC_fullgc (lua_State *L);
 LUAI_FUNC void luaC_link (lua_State *L, GCObject *o, lu_byte tt);
 LUAI_FUNC void luaC_linkupval (lua_State *L, UpVal *uv);
 LUAI_FUNC void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v);
+LUAI_FUNC void luaC_forceupdatef( lua_State *L, GCObject *o );
 LUAI_FUNC void luaC_barrierbackj (lua_State *L, Class *j);
 LUAI_FUNC void luaC_barrierback (lua_State *L, Table *t);
 

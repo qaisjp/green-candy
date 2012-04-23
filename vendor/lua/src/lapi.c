@@ -409,6 +409,8 @@ LUA_API const void *lua_topointer (lua_State *L, int idx)
     case LUA_TUSERDATA:
     case LUA_TLIGHTUSERDATA:
         return lua_touserdata(L, idx);
+    case LUA_TCLASS:
+        return jvalue(o);
     default:
         return NULL;
     }
@@ -631,26 +633,32 @@ LUA_API int lua_getmetatable (lua_State *L, int objindex)
 
 LUA_API void lua_getfenv (lua_State *L, int idx)
 {
-  StkId o;
-  lua_lock(L);
-  o = index2adr(L, idx);
-  api_checkvalidindex(L, o);
-  switch (ttype(o)) {
+    StkId o;
+    lua_lock(L);
+
+    o = index2adr(L, idx);
+    api_checkvalidindex(L, o);
+
+    switch (ttype(o))
+    {
     case LUA_TFUNCTION:
-      sethvalue(L, L->top, clvalue(o)->c.env);
-      break;
+        sethvalue(L, L->top, clvalue(o)->c.env);
+        break;
     case LUA_TUSERDATA:
-      sethvalue(L, L->top, uvalue(o)->env);
-      break;
+        sethvalue(L, L->top, uvalue(o)->env);
+        break;
     case LUA_TTHREAD:
-      setobj2s(L, L->top,  gt(thvalue(o)));
-      break;
+        setobj2s(L, L->top,  gt(thvalue(o)));
+        break;
+    case LUA_TCLASS:
+        sethvalue(L, L->top, jvalue(o)->env);
+        break;
     default:
-      setnilvalue(L->top);
-      break;
-  }
-  api_incr_top(L);
-  lua_unlock(L);
+        setnilvalue(L->top);
+        break;
+    }
+    api_incr_top(L);
+    lua_unlock(L);
 }
 
 
