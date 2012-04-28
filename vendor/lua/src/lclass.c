@@ -461,33 +461,28 @@ Class* luaJ_new( lua_State *L, int nargs )
     lua_pop( L, 1 );
 
     // Put the meta to stack
-    sethvalue( L, L->top, meta );
-    api_incr_top( L );
+    sethvalue( L, L->top++, meta );
 
     // The upvalue has to be the class
-    setjvalue( L, L->top, c );
-    api_incr_top( L );
+    setjvalue( L, L->top++, c );
 
     // Create a read-only storage
-    sethvalue( L, L->top, c->internStorage );
-    api_incr_top( L );
-    sethvalue( L, L->top, c->env );
-    api_incr_top( L );
+    sethvalue( L, L->top++, c->internStorage );
+    sethvalue( L, L->top++, c->env );
     lua_setfield( L, -2, "_ENV" );
-    sethvalue( L, L->top, c->outenv );
-    api_incr_top( L );
+    sethvalue( L, L->top++, c->outenv );
     lua_setfield( L, -2, "_OUTENV" );
+    setjvalue( L, L->top++, c );
+    lua_setfield( L, -2, "this" );
 
     // Set some internal functions
-    setjvalue( L, L->top, c );
-    api_incr_top( L );
+    setjvalue( L, L->top++, c );
     
     lua_pushcclosure( L, classmethod_registerForcedSuper, 1 );
     lua_setfield( L, -2, "registerForcedSuper" );
 
     // Give it the iternal storage
-    sethvalue( L, L->top, c->storage );
-    api_incr_top( L );
+    sethvalue( L, L->top++, c->storage );
 
     // We also need the previous environment
     lua_pushvalue( L, LUA_ENVIRONINDEX );
@@ -496,16 +491,13 @@ Class* luaJ_new( lua_State *L, int nargs )
     lua_setfield( L, -2, "__index" );
 
     // The upvalue has to be the class
-    setjvalue( L, L->top, c );
-    api_incr_top( L );
+    setjvalue( L, L->top++, c );
 
     // Method registry
-    sethvalue( L, L->top, c->methods );
-    api_incr_top( L );
+    sethvalue( L, L->top++, c->methods );
     
     // Internal storage
-    sethvalue( L, L->top, c->storage );
-    api_incr_top( L );
+    sethvalue( L, L->top++, c->storage );
 
     lua_pushcclosure( L, methodenv_newindex, 3 );
     lua_setfield( L, -2, "__newindex" );
@@ -516,24 +508,19 @@ Class* luaJ_new( lua_State *L, int nargs )
     sethvalue( L, L->top - 1, c->env );
     lua_setfenv( L, -nargs - 2 );
 
-    sethvalue( L, L->top, c->env );
-    api_incr_top( L );
+    sethvalue( L, L->top++, c->env );
 
     // Register the interface
-    setjvalue( L, L->top, c );
-    api_incr_top( L );
+    setjvalue( L, L->top++, c );
 
     luaL_openlib( L, NULL, classmethods, 1 );
 
     sethvalue( L, L->top - 1, c->methods );
 
     // Prepare the destructor
-    setjvalue( L, L->top, c );
-    api_incr_top( L );
+    setjvalue( L, L->top++, c );
 
-    setjvalue( L, L->top, c );
-    api_incr_top( L );
-
+    setjvalue( L, L->top++, c );
     lua_pushcclosure( L, classmethod_destructor, 1 );
     setobj( L, &c->destructor, L->top - 1 );
 
@@ -549,8 +536,7 @@ Class* luaJ_new( lua_State *L, int nargs )
     lua_pop( L, 1 );
 
     // Apply the environment to the constructor
-    sethvalue( L, L->top, c->env );
-    api_incr_top( L );
+    sethvalue( L, L->top++, c->env );
     lua_setfenv( L, -nargs - 1 );
 
     // Call the constructor

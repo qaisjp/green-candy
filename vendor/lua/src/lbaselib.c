@@ -606,6 +606,20 @@ static int luaB_cowrap (lua_State *L) {
   return 1;
 }
 
+static int luaB_term( lua_State *L )
+{
+    lua_State *co = lua_tothread( L, 1 );
+
+    if ( costatus( L, co ) != CO_SUS )
+    {
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    luaE_terminate( L, co );
+    lua_pushboolean( L, true );
+    return 1;
+}
 
 static int luaB_yield (lua_State *L) {
   return lua_yield(L, lua_gettop(L));
@@ -625,6 +639,7 @@ static const luaL_Reg co_funcs[] = {
   {"running", luaB_corunning},
   {"status", luaB_costatus},
   {"wrap", luaB_cowrap},
+  {"term", luaB_term},
   {"yield", luaB_yield},
   {NULL, NULL}
 };

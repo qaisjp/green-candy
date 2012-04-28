@@ -81,7 +81,7 @@ inline static void traverseclass( global_State *g, Class *j )
     markobject( g, j->internStorage );
 
     if ( ttisfunction( &j->destructor ) )
-        markobject( g, &j->destructor );
+        markobject( g, clvalue( &j->destructor ) );
 
     stringmark( j->superCached );
 }
@@ -124,28 +124,20 @@ static void reallymarkobject (global_State *g, GCObject *o)
         }
         return;
     case LUA_TFUNCTION:
-        {
-            gco2cl(o)->c.gclist = g->gray;
-            g->gray = o;
-        }
+        gco2cl(o)->c.gclist = g->gray;
+        g->gray = o;
         return;
     case LUA_TTABLE:
-        {
-            gco2h(o)->gclist = g->gray;
-            g->gray = o;
-        }
+        gco2h(o)->gclist = g->gray;
+        g->gray = o;
         return;
     case LUA_TTHREAD:
-        {
-            gco2th(o)->gclist = g->gray;
-            g->gray = o;
-        }
+        gco2th(o)->gclist = g->gray;
+        g->gray = o;
         return;
     case LUA_TPROTO:
-        {
-            gco2p(o)->gclist = g->gray;
-            g->gray = o;
-        }
+        gco2p(o)->gclist = g->gray;
+        g->gray = o;
         return;
     }
 
@@ -211,13 +203,22 @@ size_t luaC_separatefinalization( lua_State *L, int all )
             j = gco2j( curr );
             p = &curr->gch.next;
 
-            if ( !( iswhite(curr) || all ) )
+            if ( !( iswhite(curr) || all ) ) // we cannot destroy our class yet, bound in thread
                 break;
+
+            if ( j->inMethod )
+            {
+                // Poll it for next collection cycle
+                traverseclass( g, j );
+                break;
+            }
 
             markfinalized( j );
 
             if ( j->destroyed )
                 break;
+
+            lua_assert( !j->inMethod );
 
             lu_byte oldah = L->allowhook;
             lu_mem oldt = g->GCthreshold;

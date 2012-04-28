@@ -11,6 +11,7 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+#include <signal.h>
 
 using namespace std;
 
@@ -159,9 +160,16 @@ void handleError( const lua_exception& e )
     cout << "\n";
 }
 
+void signal_handler( int sig )
+{
+    lua_close( state );
+}
+
 int main( int argc, char *argv[] )
 {
     std::string script;
+
+    signal( SIGBREAK, signal_handler );
 
     state = lua_open();
 

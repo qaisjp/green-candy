@@ -29,3 +29,26 @@ function countcode()
 		+ countsize(root.getFiles("/", "*.cpp", true)) 
 		+ countsize(root.getFiles("/", "*.h", true))) / 1024 / 1024 .. " mb");
 end
+
+function dircmdex()
+	local filenum = 0;
+	local dirnum = 0;
+
+	local function filecb(path)
+		local rel = root.relPath(path);
+	
+		print(rel .. " (size=" .. root.size(rel) .. ")");
+		
+		filenum = filenum + 1;
+	end
+	
+	local function dircb(path)
+		print(path);
+		
+		dirnum = dirnum + 1;
+	end
+	
+	root.scanDirEx("/", "*", dircb, filecb, true);
+	
+	print("\nfiles: " .. filenum .. ", dirs: " .. dirnum);
+end

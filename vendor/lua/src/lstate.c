@@ -140,10 +140,20 @@ static DWORD __stdcall luaE_threadEntryPoint( void *ud )
         L->status = cast_byte( e.status() );  /* mark thread as `dead' */
         luaD_seterrorobj( L, L->status, L->top );
         L->ci->top = L->top;
+
+        lua_settop( L, 0 );
     }
     catch( lua_thread_termination& e )
     {
         L->status = e.status();
+
+        lua_settop( L, 0 );
+    }
+    catch( ... )
+    {
+        L->status = -1;
+
+        lua_settop( L, 0 );
     }
 
     SetEvent( L->signalWait );
@@ -164,13 +174,16 @@ lua_State* luaE_newthread( lua_State *L )
 
 #ifdef _WIN32
     L1->threadHandle = CreateThread( NULL, 0, luaE_threadEntryPoint, L1, 0, NULL );
+
+    if ( !L1->threadHandle )
+        throw lua_exception( L, LUA_ERRRUN, "cannot allocate thread" );
 #endif
 
     lua_assert(iswhite(obj2gco(L1)));
     return L1;
 }
 
-static void luaE_terminate()
+static void luaE_term()
 {
     lua_State *L;
 
@@ -182,11 +195,10 @@ static void luaE_terminate()
     throw lua_thread_termination( L, 0 );
 }
 
-void luaE_freethread (lua_State *L, lua_State *L1)
+void luaE_terminate( lua_State *L, lua_State *L1 )
 {
     luaF_close(L1, L1->stack);  /* close all upvalues for this thread */
     lua_assert(L1->openupval == NULL);
-    luai_userstatefree(L1);
 
 #ifdef _WIN32
     DWORD status;
@@ -201,7 +213,7 @@ void luaE_freethread (lua_State *L, lua_State *L1)
         GetThreadContext( L1->threadHandle, &context );
 
         context.Ebx = (DWORD)L1;
-        context.Eip = (DWORD)luaE_terminate;
+        context.Eip = (DWORD)luaE_term;
 
         SetThreadContext( L1->threadHandle, &context );
 
@@ -209,10 +221,17 @@ void luaE_freethread (lua_State *L, lua_State *L1)
         
         WaitForSingleObject( L1->threadHandle, INFINITE );
     }
+#endif
+}
 
+void luaE_freethread (lua_State *L, lua_State *L1)
+{
+    luaE_terminate( L, L1 );
+    luai_userstatefree(L1);
+
+    CloseHandle( L1->threadHandle );
     CloseHandle( L1->signalBegin );
     CloseHandle( L1->signalWait );
-#endif
 
     freestack(L, L1);
     luaM_freemem(L, fromstate(L1), state_size(lua_State));

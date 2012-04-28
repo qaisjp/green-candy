@@ -13,3 +13,9 @@ function createAsyncFile()
 		end
 	);
 end
+
+function corotentry()
+	local file = createAsyncFile();
+	
+	return file.read();
+end

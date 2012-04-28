@@ -58,6 +58,31 @@ static int luafile_readFloat( lua_State *lua )
     return 1;
 }
 
+static int luafile_write( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TSTRING );
+
+    size_t len;
+    const char *string = lua_tolstring( L, 1, &len );
+
+    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->Write( string, 1, len ) );
+    return 1;
+}
+
+static int luafile_writeInt( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TNUMBER );
+    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->WriteInt( (int)lua_tonumber( L, 1 ) ) );
+    return 1;
+}
+
+static int luafile_writeFloat( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TNUMBER );
+    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->WriteFloat( (float)lua_tonumber( L, 1 ) ) );
+    return 1;
+}
+
 static int luafile_destroy( lua_State *lua )
 {
     delete (CFile*)lua_touserdata( lua, lua_upvalueindex( 1 ) );
@@ -71,6 +96,9 @@ static const luaL_Reg fileInterface[] =
     { "read", luafile_read },
     { "readInt", luafile_readInt },
     { "readFloat", luafile_readFloat },
+    { "write", luafile_write },
+    { "writeInt", luafile_writeInt },
+    { "writeFloat", luafile_writeFloat },
     { "destroy", luafile_destroy },
     { NULL, NULL }
 };
