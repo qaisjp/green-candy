@@ -204,9 +204,47 @@ static int filesystem_getDirs( lua_State *lua )
     return 1;
 }
 
+static void filesystem_exfilecb( const filePath& path, void *ud )
+{
+    lua_State *L = (lua_State*)ud;
+    lua_pushvalue( L, 4 );
+    lua_pushlstring( L, path.c_str(), path.size() );
+    lua_call( L, 1, 0 );
+}
+
+static void filesystem_exdircb( const filePath& path, void *ud )
+{
+    lua_State *L = (lua_State*)ud;
+    lua_pushvalue( L, 3 );
+    lua_pushlstring( L, path.c_str(), path.size() );
+    lua_call( L, 1, 0 );
+}
+
+static int filesystem_scanDirEx( lua_State *lua )
+{
+    luaL_checktype( lua, 1, LUA_TSTRING );
+    luaL_checktype( lua, 2, LUA_TSTRING );
+    luaL_checktype( lua, 3, LUA_TFUNCTION );
+    luaL_checktype( lua, 4, LUA_TFUNCTION );
+    
+    const char *path = lua_tostring( lua, 1 );
+    const char *wildcard = wildcard = lua_tostring( lua, 2 );
+    bool recursive;
+
+    int top = lua_gettop( lua );
+
+    if ( top > 4 )
+        recursive = lua_toboolean( lua, 5 ) == 1;
+    else
+        recursive = false;
+
+    ((CFileTranslator*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ScanDirectory( path, wildcard, recursive, filesystem_exdircb, filesystem_exfilecb, lua );
+    return 0;
+}
+
 static int filesystem_destroy( lua_State *L )
 {
-    delete ((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ));
+    delete (CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 
     return 0;
 }
@@ -226,6 +264,7 @@ static const luaL_Reg fsys_methods[] =
     { "getDirs", filesystem_getDirs },
     { "getFiles", filesystem_getFiles },
     { "scanDir", filesystem_scanDir },
+    { "scanDirEx", filesystem_scanDirEx },
     { "destroy", filesystem_destroy },
     { NULL, NULL }
 };

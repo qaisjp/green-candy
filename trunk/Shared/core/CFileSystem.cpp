@@ -824,35 +824,33 @@ CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
     _File_OutputPathTree( tree, true, output );
 
 #ifdef _WIN32
-    while (*mode)
+    switch (*mode)
     {
-        switch (*mode)
-        {
-        case 'w':
-            dwCreate = CREATE_ALWAYS;
-            dwAccess |= GENERIC_WRITE;
-            break;
-        case 'r':
-            dwCreate = OPEN_EXISTING;
-            dwAccess |= GENERIC_READ;
-            break;
-        case 'a':
-            dwCreate = Exists( path ) ? OPEN_EXISTING : CREATE_ALWAYS;
-            dwAccess = GENERIC_WRITE;
-            break;
+    case 'w':
+        dwCreate = CREATE_ALWAYS;
+        dwAccess |= GENERIC_WRITE;
+        goto modular;
+    case 'r':
+        dwCreate = OPEN_EXISTING;
+        dwAccess |= GENERIC_READ;
+        goto modular;
+    case 'a':
+        dwCreate = Exists( path ) ? OPEN_EXISTING : CREATE_ALWAYS;
+        dwAccess = GENERIC_WRITE;
+        goto modular;
 #ifdef _EXTRA_FILE_ACCESS_MODES
-        case 't':
-            break;
+    case 't':
+        break;
 #endif
-        case '+':
-            dwAccess |= GENERIC_WRITE | GENERIC_READ;
+modular:
+        if ( mode[1] != '+' )
             break;
-        }
 
-        mode++;
-    }
-    if ( !dwAccess )
+        dwAccess |= GENERIC_WRITE | GENERIC_READ;
+        break;
+    default:
         return NULL;
+    }
 
     // Creation requires the dir tree!
     if ( dwCreate == CREATE_ALWAYS )
@@ -1072,70 +1070,79 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
     else
         strncpy(wcard, wildcard, 255);
 
-    //first search for files only
-    if ( fileCallback )
+    try
     {
-        query = output;
-        query += wcard;
+        //first search for files only
+        if ( fileCallback )
+        {
+            query = output;
+            query += wcard;
 
-        // I am unsure whether ".." could turn dangerous here (wcard)
-        // My tests indicated that Windows secures against uprooting(!)
+            // I am unsure whether ".." could turn dangerous here (wcard)
+            // My tests indicated that Windows secures against uprooting(!)
+
+            handle = FindFirstFile( query.c_str(), &finddata );
+
+            if ( handle != INVALID_HANDLE_VALUE )
+            {
+                do
+                {
+                    if ( finddata.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY | FILE_ATTRIBUTE_DIRECTORY) )
+                        continue;
+
+                    filePath filename = output;
+                    filename += finddata.cFileName;
+
+                    fileCallback( filename.c_str(), userdata );		
+
+                } while ( FindNextFile(handle, &finddata) );
+
+                FindClose( handle );
+            }
+        }
+
+        if ( !dirCallback && !recurse )
+            return;
+
+        //next search for subdirectories only
+        query = output;
+        query += '*';
 
         handle = FindFirstFile( query.c_str(), &finddata );
 
-        if ( handle != INVALID_HANDLE_VALUE )
+        if ( handle == INVALID_HANDLE_VALUE )
+            return;
+
+        do
         {
-            do
-            {
-                if ( finddata.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY | FILE_ATTRIBUTE_DIRECTORY) )
-                    continue;
+            if ( finddata.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY) )
+                continue;
 
-                filePath filename = output;
-                filename += finddata.cFileName;
+            if ( !(finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
+                continue;
+    		
+            // Optimization :)
+            if ( *(unsigned short*)finddata.cFileName == 0x002E || (*(unsigned short*)finddata.cFileName == 0x2E2E && *(unsigned char*)(finddata.cFileName + 2) == 0x00) )
+                continue;
 
-                fileCallback( filename.c_str(), userdata );		
+            filePath target = output;
+            target += finddata.cFileName;
+            target += '/';
 
-            } while ( FindNextFile(handle, &finddata) );
+            if ( dirCallback )
+                dirCallback( target.c_str(), userdata );
 
-            FindClose( handle );
-        }
+            if ( recurse )
+                ScanDirectory( target.c_str(), wcard, true, dirCallback, fileCallback, userdata );
+
+        } while ( FindNextFile(handle, &finddata) );
     }
-
-    if ( !dirCallback && !recurse )
-        return;
-
-    //next search for subdirectories only
-    query = output;
-    query += '*';
-
-    handle = FindFirstFile( query.c_str(), &finddata );
-
-    if ( handle == INVALID_HANDLE_VALUE )
-        return;
-
-    do
+    catch( ... )
     {
-        if ( finddata.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY) )
-            continue;
-
-        if ( !(finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
-            continue;
-		
-        // Optimization :)
-        if ( *(unsigned short*)finddata.cFileName == 0x002E || (*(unsigned short*)finddata.cFileName == 0x2E2E && *(unsigned char*)(finddata.cFileName + 2) == 0x00) )
-            continue;
-
-        filePath target = output;
-        target += finddata.cFileName;
-        target += '/';
-
-        if ( dirCallback )
-            dirCallback( target.c_str(), userdata );
-
-        if ( recurse )
-            ScanDirectory( target.c_str(), wcard, true, dirCallback, fileCallback, userdata );
-
-    } while ( FindNextFile(handle, &finddata) );
+        // Callbacks may throw exceptions
+        FindClose( handle );
+        throw;
+    }
 
     FindClose( handle );
 #endif

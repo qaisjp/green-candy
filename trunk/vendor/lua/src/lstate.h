@@ -178,6 +178,7 @@ union GCObject {
 
 
 LUAI_FUNC lua_State *luaE_newthread (lua_State *L);
+LUAI_FUNC void luaE_terminate( lua_State *L, lua_State *L1 );
 LUAI_FUNC void luaE_freethread (lua_State *L, lua_State *L1);
 
 #endif
