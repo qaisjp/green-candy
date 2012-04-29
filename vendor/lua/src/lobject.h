@@ -33,25 +33,7 @@
 /*
 ** Union of all collectable objects
 */
-typedef union GCObject GCObject;
-
-
-/*
-** Common Header for all collectable objects (in macro form, to be
-** included in other objects)
-*/
-#define CommonHeader	GCObject *next; lu_byte tt; lu_byte marked
-
-
-/*
-** Common header in struct form
-*/
-typedef struct GCheader {
-  CommonHeader;
-} GCheader;
-
-
-
+typedef class GCObject GCObject;
 
 /*
 ** Union of all Lua values
@@ -75,6 +57,16 @@ typedef struct lua_TValue
     TValuefields;
 } TValue;
 
+class TString;
+class Table;
+class Proto;
+class Closure;
+class Udata;
+class Class;
+class UpVal;
+class LocVar;
+class lua_State;
+
 
 /* Macros to test type */
 #define ttisnil(o)	(ttype(o) == LUA_TNIL)
@@ -93,16 +85,15 @@ typedef struct lua_TValue
 #define gcvalue(o)	check_exp(iscollectable(o), (o)->value.gc)
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->value.p)
 #define nvalue(o)	check_exp(ttisnumber(o), (o)->value.n)
-#define rawtsvalue(o)	check_exp(ttisstring(o), &(o)->value.gc->ts)
-#define tsvalue(o)	(&rawtsvalue(o)->tsv)
-#define rawuvalue(o)	check_exp(ttisuserdata(o), &(o)->value.gc->u)
-#define uvalue(o)	(&rawuvalue(o)->uv)
-#define clvalue(o)	check_exp(ttisfunction(o), &(o)->value.gc->cl)
-#define hvalue(o)	check_exp(ttistable(o), &(o)->value.gc->h)
+#define rawtsvalue(o)	check_exp(ttisstring(o), (TString*)(o))
+#define tsvalue(o)	(rawtsvalue(o))
+#define rawuvalue(o)	check_exp(ttisuserdata(o), (Udata*)(o))
+#define uvalue(o)	(rawuvalue(o))
+#define clvalue(o)	check_exp(ttisfunction(o), (Closure*)(o))
+#define hvalue(o)	check_exp(ttistable(o), (Table*)(o))
 #define bvalue(o)	check_exp(ttisboolean(o), (o)->value.b)
-#define thvalue(o)	check_exp(ttisthread(o), &(o)->value.gc->th)
-#define jvalue(o)   check_exp(ttisclass(o), &(o)->value.gc->j)
-#define mvalue(o)   check_exp(ttismeta(o), &(o)->value.gc->m)
+#define thvalue(o)	check_exp(ttisthread(o), (lua_State*)(o))
+#define jvalue(o)   check_exp(ttisclass(o), (Class*)(o))
 
 #define l_isfalse(o)	(ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0))
 
@@ -114,7 +105,7 @@ typedef struct lua_TValue
 
 #define checkliveness(g,obj) \
   lua_assert(!iscollectable(obj) || \
-  ((ttype(obj) == (obj)->value.gc->gch.tt) && !isdead(g, (obj)->value.gc)))
+  ((ttype(obj) == (obj)->value.gc->tt) && !isdead(g, (obj)->value.gc)))
 
 
 /* Macros to set values */
@@ -200,65 +191,102 @@ typedef struct lua_TValue
 
 typedef TValue *StkId;  /* index to stack elements */
 
+struct global_State;
+
+
+class GCObject
+{
+public:
+    virtual             ~GCObject() = 0;
+
+    virtual TString*    GetTString()        { return NULL; }
+    virtual Udata*      GetUserData()       { return NULL; }
+    virtual Closure*    GetClosure()        { return NULL; }
+    virtual Table*      GetTable()          { return NULL; }
+    virtual Class*      GetClass()          { return NULL; }
+    virtual Proto*      GetProto()          { return NULL; }
+    virtual UpVal*      GetUpValue()        { return NULL; }
+    virtual LocVar*     GetLocVar()         { return NULL; }
+    virtual lua_State*  GetThread()         { return NULL; }
+
+    virtual void        MarkGC( global_State *g )       { }
+    virtual int         TraverseGC( global_State *g )   { return 0; }
+
+    GCObject *next;
+    lu_byte tt;
+    lu_byte marked;
+    lua_State *_lua;
+};
+
+class GrayObject : public GCObject
+{
+public:
+    void                MarkGC( global_State *g );
+    virtual size_t      Propagate( global_State *g ) = 0;
+
+    GrayObject *gclist;
+};
 
 /*
 ** String headers for string table
 */
-typedef union TString {
-  L_Umaxalign dummy;  /* ensures maximum alignment for strings */
-  struct {
-    CommonHeader;
+LUA_MAXALIGN class TString : public GCObject
+{
+public:
+    ~TString();
+
     lu_byte reserved;
     unsigned int hash;
     size_t len;
-  } tsv;
-} TString;
-
+};
 
 #define getstr(ts)	cast(const char *, (ts) + 1)
 #define svalue(o)       getstr(rawtsvalue(o))
 
 
+LUA_MAXALIGN class Udata : public GCObject
+{
+public:
+    ~Udata();
 
-typedef union Udata {
-  L_Umaxalign dummy;  /* ensures maximum alignment for `local' udata */
-  struct {
-    CommonHeader;
-    struct Table *metatable;
-    struct Table *env;
+    void MarkGC( global_State *g );
+
+    Table *metatable;
+    Table *env;
     size_t len;
-  } uv;
-} Udata;
-
-
-
+};
 
 /*
 ** Function Prototypes
 */
-typedef struct Proto {
-  CommonHeader;
-  TValue *k;  /* constants used by the function */
-  Instruction *code;
-  struct Proto **p;  /* functions defined inside the function */
-  int *lineinfo;  /* map from opcodes to source lines */
-  struct LocVar *locvars;  /* information about local variables */
-  TString **upvalues;  /* upvalue names */
-  TString  *source;
-  int sizeupvalues;
-  int sizek;  /* size of `k' */
-  int sizecode;
-  int sizelineinfo;
-  int sizep;  /* size of `p' */
-  int sizelocvars;
-  int linedefined;
-  int lastlinedefined;
-  GCObject *gclist;
-  lu_byte nups;  /* number of upvalues */
-  lu_byte numparams;
-  lu_byte is_vararg;
-  lu_byte maxstacksize;
-} Proto;
+class Proto : public GrayObject
+{
+public:
+    ~Proto();
+
+    int TraverseGC( global_State *g );
+    size_t Propagate( global_State *g );
+
+    TValue *k;  /* constants used by the function */
+    Instruction *code;
+    Proto **p;  /* functions defined inside the function */
+    int *lineinfo;  /* map from opcodes to source lines */
+    LocVar *locvars;  /* information about local variables */
+    TString **upvalues;  /* upvalue names */
+    TString  *source;
+    int sizeupvalues;
+    int sizek;  /* size of `k' */
+    int sizecode;
+    int sizelineinfo;
+    int sizep;  /* size of `p' */
+    int sizelocvars;
+    int linedefined;
+    int lastlinedefined;
+    lu_byte nups;  /* number of upvalues */
+    lu_byte numparams;
+    lu_byte is_vararg;
+    lu_byte maxstacksize;
+};
 
 
 /* masks for new-style vararg */
@@ -267,62 +295,92 @@ typedef struct Proto {
 #define VARARG_NEEDSARG		4
 
 
-typedef struct LocVar {
-  TString *varname;
-  int startpc;  /* first point where variable is active */
-  int endpc;    /* first point where variable is dead */
-} LocVar;
+class LocVar : public GCObject
+{
+public:
+    ~LocVar();
 
+    TString *varname;
+    int startpc;  /* first point where variable is active */
+    int endpc;    /* first point where variable is dead */
+};
 
 
 /*
 ** Upvalues
 */
 
-typedef struct UpVal {
-  CommonHeader;
-  TValue *v;  /* points to stack or to its own value */
-  union {
-    TValue value;  /* the value (when closed) */
-    struct {  /* double linked list (when open) */
-      struct UpVal *prev;
-      struct UpVal *next;
-    } l;
-  } u;
-} UpVal;
+class UpVal : public GCObject
+{
+public:
+    ~UpVal();
+
+    void MarkGC( global_State *g );
+
+    TValue *v;  /* points to stack or to its own value */
+    union
+    {
+        TValue value;  /* the value (when closed) */
+
+        struct
+        {  /* double linked list (when open) */
+          UpVal *prev;
+          UpVal *next;
+        } l;
+    } u;
+};
 
 
 /*
 ** Closures
 */
 
-#define ClosureHeader \
-	CommonHeader; lu_byte isC; lu_byte nupvalues; GCObject *gclist; \
-	struct Table *env
-
-typedef struct CClosure {
-  ClosureHeader;
-  lua_CFunction f;
-  TValue upvalue[1];
-} CClosure;
-
-
-typedef struct LClosure {
-  ClosureHeader;
-  struct Proto *p;
-  UpVal *upvals[1];
-} LClosure;
-
-
-typedef union Closure
+class Closure : public GrayObject
 {
-    CClosure c;
-    LClosure l;
-} Closure;
+public:
+                            ~Closure();
 
+    int                     TraverseGC( global_State *g );
 
-#define iscfunction(o)	(ttype(o) == LUA_TFUNCTION && clvalue(o)->c.isC)
-#define isLfunction(o)	(ttype(o) == LUA_TFUNCTION && !clvalue(o)->c.isC)
+    Closure*                GetClosure()    { return this; }
+    virtual class CClosure* GetCClosure()   { return NULL; }
+    virtual class LClosure* GetLClosure()   { return NULL; }
+
+    lu_byte isC;
+    lu_byte nupvalues;
+    Table *env;
+};
+
+class CClosure : public Closure
+{
+public:
+    ~CClosure();
+
+    int TraverseGC( global_State *g );
+    size_t Propagate( global_State *g );
+
+    CClosure* GetCClosure()     { return this; }
+
+    lua_CFunction f;
+    TValue upvalue[1];
+};
+
+class LClosure : public Closure
+{
+public:
+    ~LClosure();
+
+    int TraverseGC( global_State *g );
+    size_t Propagate( global_State *g );
+
+    LClosure* GetLClosure()     { return this; }
+
+    Proto *p;
+    UpVal *upvals[1];
+};
+
+#define iscfunction(o)	(ttype(o) == LUA_TFUNCTION && clvalue(o)->isC)
+#define isLfunction(o)	(ttype(o) == LUA_TFUNCTION && !clvalue(o)->isC)
 
 
 /*
@@ -343,23 +401,36 @@ typedef struct Node {
   TKey i_key;
 } Node;
 
-
-typedef struct Table {
-  CommonHeader;
-  lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 
-  lu_byte lsizenode;  /* log2 of size of `node' array */
-  struct Table *metatable;
-  TValue *array;  /* array part */
-  Node *node;
-  Node *lastfree;  /* any free position is before this position */
-  GCObject *gclist;
-  int sizearray;  /* size of `array' array */
-} Table;
-
-
-typedef struct Class
+class Table : public GrayObject
 {
-    CommonHeader;
+public:
+    ~Table();
+
+    void MarkGC( global_State *g );
+    int TraverseGC( global_State *g );
+    size_t Propagate( global_State *g );
+
+    Table* GetTable()   { return this; }
+
+    lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 
+    lu_byte lsizenode;  /* log2 of size of `node' array */
+    Table *metatable;
+    TValue *array;  /* array part */
+    Node *node;
+    Node *lastfree;  /* any free position is before this position */
+    int sizearray;  /* size of `array' array */
+};
+
+class Class : public GCObject, public virtual ILuaClass
+{
+public:
+    ~Class();
+
+    void MarkGC( global_State *g );
+    int TraverseGC( global_State *g );
+
+    Class* GetClass()   { return this; }
+
     Table *env;
     Table *outenv;
     Table *methods;
@@ -373,14 +444,13 @@ typedef struct Class
 
     void IncrementMethodStack( lua_State *lua );
     void DecrementMethodStack( lua_State *lua );
+    void RequestDestruction();
     TValue* GetSuperMethod( lua_State *lua );
 
     // Cached values
     TValue destructor;
     TString *superCached;
-
-    GCObject *gclist;
-} Class;
+};
 
 
 /*

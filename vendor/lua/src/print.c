@@ -23,7 +23,7 @@
 static void PrintString(const TString* ts)
 {
  const char* s=getstr(ts);
- size_t i,n=ts->tsv.len;
+ size_t i,n=ts->len;
  putchar('"');
  for (i=0; i<n; i++)
  {

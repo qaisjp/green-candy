@@ -18,6 +18,7 @@
 
 class LuaTimerManager
 {
+    friend class LuaTimer;
 public:
     inline                      LuaTimerManager()                       { m_iterList = false; }
     inline                      ~LuaTimerManager()                      { RemoveAllTimers(); };
@@ -36,12 +37,8 @@ public:
 
     void                        GetTimers( CTickCount time, LuaMain *main );
 
-    void                        TakeOutTheTrash();
-
 private:
     CMappedList <LuaTimer*>     m_list;
-    std::list <LuaTimer*>       m_trash;
-    bool                        m_iterList;
 };
 
 #endif //_BASE_LUA_TIMER_MANAGER

@@ -23,10 +23,11 @@
 
 #define luaM_freemem(L, b, s)	luaM_realloc_(L, (b), (s), 0)
 #define luaM_free(L, b)		luaM_realloc_(L, (b), sizeof(*(b)), 0)
+#define luaM_delete(L, b, t)  { b->~t(); luaM_free(L, b); }
 #define luaM_freearray(L, b, n, t)   luaM_reallocv(L, (b), n, 0, sizeof(t))
 
 #define luaM_malloc(L,t)	luaM_realloc_(L, NULL, 0, (t))
-#define luaM_new(L,t)		cast(t *, luaM_malloc(L, sizeof(t)))
+#define luaM_new(L,t)		cast(t *, new (luaM_malloc(L, sizeof(t))) t)
 #define luaM_newvector(L,n,t) \
 		cast(t *, luaM_reallocv(L, NULL, 0, n, sizeof(t)))
 

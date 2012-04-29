@@ -21,6 +21,7 @@
 #include "LuaFunctionRef.h"
 #include "LuaArgument.h"
 #include "LuaArguments.h"
+#include "LuaClass.h"
 #include "LuaTimer.h"
 #include "LuaTimerManager.h"
 #include "LuaMain.h"

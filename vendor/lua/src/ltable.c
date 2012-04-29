@@ -49,7 +49,7 @@
 
 #define hashpow2(t,n)      (gnode(t, lmod((n), sizenode(t))))
   
-#define hashstr(t,str)  hashpow2(t, (str)->tsv.hash)
+#define hashstr(t,str)  hashpow2(t, (str)->hash)
 #define hashboolean(t,p)        hashpow2(t, p)
 
 
@@ -370,14 +370,13 @@ Table *luaH_new (lua_State *L, int narray, int nhash) {
   return t;
 }
 
+Table::~Table()
+{
+    if ( node != dummynode )
+        luaM_freearray( _lua, node, sizenode( this ), Node );
 
-void luaH_free (lua_State *L, Table *t) {
-  if (t->node != dummynode)
-    luaM_freearray(L, t->node, sizenode(t), Node);
-  luaM_freearray(L, t->array, t->sizearray, TValue);
-  luaM_free(L, t);
+    luaM_freearray( _lua, array, sizearray, TValue );
 }
-
 
 static Node *getfreepos (Table *t) {
   while (t->lastfree-- > t->node) {

@@ -10,6 +10,8 @@ EXPORTS
   lua_setupvalue
   lua_constructclass
   lua_newclass
+  lua_refclass
+  lua_basicprotect
   lua_topointer
   lua_iscfunction
   lua_isnumber

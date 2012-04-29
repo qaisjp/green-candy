@@ -141,7 +141,9 @@ public:
     virtual bool            GetFullPathTree( const char *path, dirTree& tree, bool& file ) const = 0;
     virtual bool            GetRelativePathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const = 0;
     virtual bool            GetRelativePathTree( const char *path, dirTree& tree, bool& file ) const = 0;
+    virtual bool            GetFullPathFromRoot( const char *path, bool allowFile, filePath& output ) const = 0;
     virtual bool            GetFullPath( const char *path, bool allowFile, filePath& output ) const = 0;
+    virtual bool            GetRelativePathFromRoot( const char *path, bool allowFile, filePath& output ) const = 0;
     virtual bool            GetRelativePath( const char *path, bool allowFile, filePath& output ) const = 0;
     virtual bool            ChangeDirectory( const char *path ) = 0;
     virtual void            GetDirectory( filePath& output ) const = 0;

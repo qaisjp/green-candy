@@ -594,6 +594,12 @@ union luai_Cast { double l_d; long l_l; };
 */
 #define LUAI_USER_ALIGNMENT_T	union { double u; void *s; long l; }
 
+#ifdef _MSC_VER
+#define LUA_MAXALIGN    __declspec(align(8))
+#elif __GNUC__
+#define LUA_MAXALIGN    __attribute__(aligned(8))
+#endif
+
 
 /*
 @@ LUAI_THROW/LUAI_TRY define how Lua does exception handling.
@@ -611,7 +617,7 @@ union luai_Cast { double l_d; long l_l; };
 class lua_thread_termination : public std::exception
 {
 public:
-    lua_thread_termination( struct lua_State *L, unsigned int status )
+    lua_thread_termination( class lua_State *L, unsigned int status )
     {
         m_status = status;
         m_thread = L;
@@ -636,7 +642,7 @@ private:
 class lua_exception : public std::exception
 {
 public:
-    lua_exception( struct lua_State *L, unsigned int status, const char *msg ) : std::exception( msg )
+    lua_exception( lua_State *L, unsigned int status, const char *msg ) : std::exception( msg )
     {
         m_status = status;
         m_thread = L;
@@ -654,7 +660,7 @@ public:
 
 private:
     unsigned int        m_status;
-    struct lua_State*   m_thread;
+    lua_State*   m_thread;
 };
 
 #define LUAI_THROW(L,c)	throw lua_exception( L, (c)->status, "internal lua error" )
@@ -663,6 +669,15 @@ private:
     catch(...) \
 	{ if ((c)->status == 0) (c)->status = -1; }
 #define luai_jmpbuf	int  /* dummy variable */
+
+class ILuaClass
+{
+public:
+    virtual void    IncrementMethodStack( lua_State *L ) = 0;
+    virtual void    DecrementMethodStack( lua_State *L ) = 0;
+
+    virtual void    RequestDestruction() = 0;
+};
 
 #elif defined(LUA_USE_ULONGJMP)
 /* in Unix, try _longjmp/_setjmp (more efficient) */

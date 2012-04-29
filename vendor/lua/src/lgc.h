@@ -62,15 +62,15 @@
 #define WHITEBITS	bit2mask(WHITE0BIT, WHITE1BIT)
 
 
-#define iswhite(x)      test2bits((x)->gch.marked, WHITE0BIT, WHITE1BIT)
-#define isblack(x)      testbit((x)->gch.marked, BLACKBIT)
+#define iswhite(x)      test2bits((x)->marked, WHITE0BIT, WHITE1BIT)
+#define isblack(x)      testbit((x)->marked, BLACKBIT)
 #define isgray(x)	(!isblack(x) && !iswhite(x))
 
 #define otherwhite(g)	(g->currentwhite ^ WHITEBITS)
-#define isdead(g,v)	((v)->gch.marked & otherwhite(g) & WHITEBITS)
+#define isdead(g,v)	((v)->marked & otherwhite(g) & WHITEBITS)
 
-#define changewhite(x)	((x)->gch.marked ^= WHITEBITS)
-#define gray2black(x)	l_setbit((x)->gch.marked, BLACKBIT)
+#define changewhite(x)	((x)->marked ^= WHITEBITS)
+#define gray2black(x)	l_setbit((x)->marked, BLACKBIT)
 
 #define valiswhite(x)	(iscollectable(x) && iswhite(gcvalue(x)))
 
@@ -109,7 +109,6 @@ LUAI_FUNC void luaC_link (lua_State *L, GCObject *o, lu_byte tt);
 LUAI_FUNC void luaC_linkupval (lua_State *L, UpVal *uv);
 LUAI_FUNC void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v);
 LUAI_FUNC void luaC_forceupdatef( lua_State *L, GCObject *o );
-LUAI_FUNC void luaC_barrierbackj (lua_State *L, Class *j);
 LUAI_FUNC void luaC_barrierback (lua_State *L, Table *t);
 
 

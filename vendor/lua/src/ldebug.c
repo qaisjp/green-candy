@@ -37,7 +37,7 @@ static int currentpc (lua_State *L, CallInfo *ci) {
   if (!isLua(ci)) return -1;  /* function is not a Lua function? */
   if (ci == L->ci)
     ci->savedpc = L->savedpc;
-  return pcRel(ci->savedpc, ci_func(ci)->l.p);
+  return pcRel(ci->savedpc, ci_func(ci)->GetLClosure()->p);
 }
 
 
@@ -46,7 +46,7 @@ static int currentline (lua_State *L, CallInfo *ci) {
   if (pc < 0)
     return -1;  /* only active lua functions have current-line information */
   else
-    return getline(ci_func(ci)->l.p, pc);
+    return getline(ci_func(ci)->GetLClosure()->p, pc);
 }
 
 
@@ -105,7 +105,7 @@ LUA_API int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
 
 
 static Proto *getluaproto (CallInfo *ci) {
-  return (isLua(ci) ? ci_func(ci)->l.p : NULL);
+  return (isLua(ci) ? ci_func(ci)->GetLClosure()->p : NULL);
 }
 
 
@@ -147,20 +147,24 @@ LUA_API const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n) {
 }
 
 
-static void funcinfo (lua_Debug *ar, Closure *cl) {
-  if (cl->c.isC) {
-    ar->source = "=[C]";
-    ar->linedefined = -1;
-    ar->lastlinedefined = -1;
-    ar->what = "C";
-  }
-  else {
-    ar->source = getstr(cl->l.p->source);
-    ar->linedefined = cl->l.p->linedefined;
-    ar->lastlinedefined = cl->l.p->lastlinedefined;
-    ar->what = (ar->linedefined == 0) ? "main" : "Lua";
-  }
-  luaO_chunkid(ar->short_src, ar->source, LUA_IDSIZE);
+static void funcinfo (lua_Debug *ar, Closure *cl)
+{
+    if (cl->isC)
+    {
+        ar->source = "=[C]";
+        ar->linedefined = -1;
+        ar->lastlinedefined = -1;
+        ar->what = "C";
+    }
+    else
+    {
+        LClosure *lcl = cl->GetLClosure();
+        ar->source = getstr(lcl->p->source);
+        ar->linedefined = lcl->p->linedefined;
+        ar->lastlinedefined = lcl->p->lastlinedefined;
+        ar->what = (ar->linedefined == 0) ? "main" : "Lua";
+    }
+    luaO_chunkid(ar->short_src, ar->source, LUA_IDSIZE);
 }
 
 
@@ -174,19 +178,25 @@ static void info_tailcall (lua_Debug *ar) {
 }
 
 
-static void collectvalidlines (lua_State *L, Closure *f) {
-  if (f == NULL || f->c.isC) {
-    setnilvalue(L->top);
-  }
-  else {
-    Table *t = luaH_new(L, 0, 0);
-    int *lineinfo = f->l.p->lineinfo;
-    int i;
-    for (i=0; i<f->l.p->sizelineinfo; i++)
-      setbvalue(luaH_setnum(L, t, lineinfo[i]), 1);
-    sethvalue(L, L->top, t); 
-  }
-  incr_top(L);
+static void collectvalidlines (lua_State *L, Closure *f)
+{
+    if (f == NULL || f->isC)
+    {
+        setnilvalue(L->top);
+    }
+    else
+    {
+        Table *t = luaH_new(L, 0, 0);
+        LClosure *lcl = f->GetLClosure();
+        int *lineinfo = lcl->p->lineinfo;
+        int i;
+
+        for (i=0; i<lcl->p->sizelineinfo; i++)
+            setbvalue(luaH_setnum(L, t, lineinfo[i]), 1);
+
+        sethvalue(L, L->top, t); 
+    }
+    incr_top(L);
 }
 
 
@@ -208,7 +218,7 @@ static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
         break;
       }
       case 'u': {
-        ar->nups = f->c.nupvalues;
+        ar->nups = f->nupvalues;
         break;
       }
       case 'n': {
@@ -496,48 +506,55 @@ static const char *kname (Proto *p, int c) {
 
 static const char *getobjname (lua_State *L, CallInfo *ci, int stackpos,
                                const char **name) {
-  if (isLua(ci)) {  /* a Lua function? */
-    Proto *p = ci_func(ci)->l.p;
+    if (!isLua(ci))  /* a Lua function? */
+        return NULL;
+
+    Proto *p = ci_func(ci)->GetLClosure()->p;
     int pc = currentpc(L, ci);
     Instruction i;
     *name = luaF_getlocalname(p, stackpos+1, pc);
+
     if (*name)  /* is a local? */
-      return "local";
+        return "local";
+
     i = symbexec(p, pc, stackpos);  /* try symbolic execution */
     lua_assert(pc != -1);
-    switch (GET_OPCODE(i)) {
-      case OP_GETGLOBAL: {
+
+    switch (GET_OPCODE(i))
+    {
+    case OP_GETGLOBAL: {
         int g = GETARG_Bx(i);  /* global index */
         lua_assert(ttisstring(&p->k[g]));
         *name = svalue(&p->k[g]);
         return "global";
-      }
-      case OP_MOVE: {
+    }
+    case OP_MOVE: {
         int a = GETARG_A(i);
         int b = GETARG_B(i);  /* move from `b' to `a' */
+
         if (b < a)
-          return getobjname(L, ci, b, name);  /* get name for `b' */
+            return getobjname(L, ci, b, name);  /* get name for `b' */
+
         break;
-      }
-      case OP_GETTABLE: {
+    }
+    case OP_GETTABLE: {
         int k = GETARG_C(i);  /* key index */
         *name = kname(p, k);
         return "field";
-      }
-      case OP_GETUPVAL: {
+    }
+    case OP_GETUPVAL: {
         int u = GETARG_B(i);  /* upvalue index */
         *name = p->upvalues ? getstr(p->upvalues[u]) : "?";
         return "upvalue";
-      }
-      case OP_SELF: {
+    }
+    case OP_SELF: {
         int k = GETARG_C(i);  /* key index */
         *name = kname(p, k);
         return "method";
-      }
-      default: break;
     }
-  }
-  return NULL;  /* no useful name found */
+    default: break;
+    }
+    return NULL;
 }
 
 
@@ -546,7 +563,7 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name) {
   if ((isLua(ci) && ci->tailcalls > 0) || !isLua(ci - 1))
     return NULL;  /* calling function is not Lua (or is unknown) */
   ci--;  /* calling function */
-  i = ci_func(ci)->l.p->code[currentpc(L, ci)];
+  i = ci_func(ci)->GetLClosure()->p->code[currentpc(L, ci)];
   if (GET_OPCODE(i) == OP_CALL || GET_OPCODE(i) == OP_TAILCALL ||
       GET_OPCODE(i) == OP_TFORLOOP)
     return getobjname(L, ci, GETARG_A(i), name);
