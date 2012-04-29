@@ -169,6 +169,7 @@ int main( int argc, char *argv[] )
 {
     std::string script;
 
+    signal( SIGTERM, signal_handler );
     signal( SIGBREAK, signal_handler );
 
     state = lua_open();

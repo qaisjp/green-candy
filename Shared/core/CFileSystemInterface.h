@@ -137,8 +137,10 @@ public:
     virtual bool            Stat( const char *path, struct stat *stats ) const = 0;
     virtual bool            ReadToBuffer( const char *path, std::vector <char>& output ) const = 0;
 
-    virtual bool            GetFullPathTree( const char *path, dirTree& tree, bool *file ) const = 0;
-    virtual bool            GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const = 0;
+    virtual bool            GetFullPathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const = 0;
+    virtual bool            GetFullPathTree( const char *path, dirTree& tree, bool& file ) const = 0;
+    virtual bool            GetRelativePathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const = 0;
+    virtual bool            GetRelativePathTree( const char *path, dirTree& tree, bool& file ) const = 0;
     virtual bool            GetFullPath( const char *path, bool allowFile, filePath& output ) const = 0;
     virtual bool            GetRelativePath( const char *path, bool allowFile, filePath& output ) const = 0;
     virtual bool            ChangeDirectory( const char *path ) = 0;
