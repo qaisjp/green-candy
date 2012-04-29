@@ -93,6 +93,11 @@ void Class::DecrementMethodStack( lua_State *lua )
     }
 }
 
+void Class::RequestDestruction()
+{
+    reqDestruction = true;
+}
+
 TValue* Class::GetSuperMethod( lua_State *lua )
 {
     return luaH_setstr( lua, internStorage, superCached );
@@ -544,13 +549,42 @@ Class* luaJ_new( lua_State *L, int nargs )
     return c;
 }
 
-void luaJ_free( lua_State *L, Class *c )
+Class::~Class()
 {
-    luaM_free( L, c );
 }
 
 void luaJ_construct( lua_State *L, int nargs )
 {
     setjvalue( L, L->top - 1, luaJ_new( L, nargs ));
     api_incr_top( L );
+}
+
+// Basic protection for classes
+static int protect_index( lua_State *L )
+{
+    size_t len;
+    const char *str = lua_tolstring( L, 2, &len );
+
+    if ( len > 1 && *(unsigned short*)str == 0x5f5f )
+        return 0;
+
+    lua_gettable( L, LUA_ENVIRONINDEX );
+    return 1;
+}
+
+static int protect_newindex( lua_State *L )
+{
+    return 0;
+}
+
+static const luaL_Reg bprotect_methods[] =
+{
+    { "__index", protect_index },
+    { "__newindex", protect_newindex },
+    { NULL, NULL }
+};
+
+void luaJ_basicprotect( lua_State *L )
+{
+    luaL_openlib( L, NULL, bprotect_methods, 0 );
 }

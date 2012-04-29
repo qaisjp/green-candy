@@ -150,7 +150,7 @@ static void correctstack (lua_State *L, TValue *oldstack) {
   CallInfo *ci;
   GCObject *up;
   L->top = (L->top - oldstack) + L->stack;
-  for (up = L->openupval; up != NULL; up = up->gch.next)
+  for (up = L->openupval; up != NULL; up = up->next)
     gco2uv(up)->v = (gco2uv(up)->v - oldstack) + L->stack;
   for (ci = L->base_ci; ci <= L->ci; ci++) {
     ci->top = (ci->top - oldstack) + L->stack;
@@ -293,7 +293,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults)
         func = tryfuncTM(L, func);  /* check the `function' tag method */
 
     funcr = savestack(L, func);
-    cl = &clvalue(func)->l;
+    cl = clvalue(func)->GetLClosure();
     L->ci->savedpc = L->savedpc;
 
     if ( !cl->isC )
@@ -361,7 +361,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults)
         luaD_callhook(L, LUA_HOOKCALL, -1);
 
     lua_unlock(L);
-    n = (*curr_func(L)->c.f)(L);  /* do the actual call */
+    n = (*curr_func(L)->GetCClosure()->f)(L);  /* do the actual call */
     lua_lock(L);
 
     if ( n < 0 )
@@ -531,16 +531,16 @@ struct SParser {  /* data to `f_parser' */
 static void f_parser (lua_State *L, void *ud) {
   int i;
   Proto *tf;
-  Closure *cl;
+  LClosure *cl;
   struct SParser *p = cast(struct SParser *, ud);
   int c = luaZ_lookahead(p->z);
   luaC_checkGC(L);
   tf = ((c == LUA_SIGNATURE[0]) ? luaU_undump : luaY_parser)(L, p->z,
                                                              &p->buff, p->name);
   cl = luaF_newLclosure(L, tf->nups, hvalue(gt(L)));
-  cl->l.p = tf;
+  cl->p = tf;
   for (i = 0; i < tf->nups; i++)  /* initialize eventual upvalues */
-    cl->l.upvals[i] = luaF_newupval(L);
+    cl->upvals[i] = luaF_newupval(L);
   setclvalue(L, L->top, cl);
   incr_top(L);
 }

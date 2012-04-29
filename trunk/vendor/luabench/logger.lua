@@ -21,13 +21,3 @@ function createLogger(path)
 		end
 	);
 end
-
-log = createLogger("exec.log");
-
-local _print = print;
-
-function print(...)
-	log.output(...);
-	
-	return _print(...);
-end

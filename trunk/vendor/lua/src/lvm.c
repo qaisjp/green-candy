@@ -57,23 +57,29 @@ int luaV_tostring (lua_State *L, StkId obj) {
 }
 
 
-static void traceexec (lua_State *L, const Instruction *pc) {
-  lu_byte mask = L->hookmask;
-  const Instruction *oldpc = L->savedpc;
-  L->savedpc = pc;
-  if ((mask & LUA_MASKCOUNT) && L->hookcount == 0) {
-    resethookcount(L);
-    luaD_callhook(L, LUA_HOOKCOUNT, -1);
-  }
-  if (mask & LUA_MASKLINE) {
-    Proto *p = ci_func(L->ci)->l.p;
-    int npc = pcRel(pc, p);
-    int newline = getline(p, npc);
-    /* call linehook when enter a new function, when jump back (loop),
-       or when enter a new line */
-    if (npc == 0 || pc <= oldpc || newline != getline(p, pcRel(oldpc, p)))
-      luaD_callhook(L, LUA_HOOKLINE, newline);
-  }
+static void traceexec( lua_State *L, const Instruction *pc )
+{
+    lu_byte mask = L->hookmask;
+    const Instruction *oldpc = L->savedpc;
+
+    L->savedpc = pc;
+
+    if ( (mask & LUA_MASKCOUNT) && L->hookcount == 0 )
+    {
+        resethookcount(L);
+        luaD_callhook(L, LUA_HOOKCOUNT, -1);
+    }
+    if ( mask & LUA_MASKLINE )
+    {
+        Proto *p = ci_func(L->ci)->GetLClosure()->p;
+        int npc = pcRel(pc, p);
+        int newline = getline(p, npc);
+
+        /* call linehook when enter a new function, when jump back (loop),
+           or when enter a new line */
+        if ( npc == 0 || pc <= oldpc || newline != getline(p, pcRel(oldpc, p)) )
+            luaD_callhook(L, LUA_HOOKLINE, newline);
+    }
 }
 
 
@@ -237,9 +243,9 @@ static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
 
 static int l_strcmp (const TString *ls, const TString *rs) {
   const char *l = getstr(ls);
-  size_t ll = ls->tsv.len;
+  size_t ll = ls->len;
   const char *r = getstr(rs);
-  size_t lr = rs->tsv.len;
+  size_t lr = rs->len;
   for (;;) {
     int temp = strcoll(l, r);
     if (temp != 0) return temp;
@@ -430,7 +436,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
  reentry:  /* entry point */
   lua_assert(isLua(L->ci));
   pc = L->savedpc;
-  cl = &clvalue(L->ci->func)->l;
+  cl = clvalue(L->ci->func)->GetLClosure();
   base = L->base;
   k = cl->p->k;
   /* main loop of interpreter */
@@ -775,13 +781,13 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         p = cl->p->p[GETARG_Bx(i)];
         nup = p->nups;
         ncl = luaF_newLclosure(L, nup, cl->env);
-        ncl->l.p = p;
+        LClosure *lcl = ncl->GetLClosure();
         for (j=0; j<nup; j++, pc++) {
           if (GET_OPCODE(*pc) == OP_GETUPVAL)
-            ncl->l.upvals[j] = cl->upvals[GETARG_B(*pc)];
+            lcl->upvals[j] = cl->upvals[GETARG_B(*pc)];
           else {
             lua_assert(GET_OPCODE(*pc) == OP_MOVE);
-            ncl->l.upvals[j] = luaF_findupval(L, base + GETARG_B(*pc));
+            lcl->upvals[j] = luaF_findupval(L, base + GETARG_B(*pc));
           }
         }
         setclvalue(L, ra, ncl);

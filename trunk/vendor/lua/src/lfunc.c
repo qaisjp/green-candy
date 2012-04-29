@@ -19,28 +19,30 @@
 #include "lstate.h"
 
 
-Closure *luaF_newCclosure (lua_State *L, int nelems, Table *e)
+CClosure *luaF_newCclosure (lua_State *L, int nelems, Table *e)
 {
-    Closure *c = cast(Closure *, luaM_malloc(L, sizeCclosure(nelems)));
+    CClosure *c = cast(CClosure *, luaM_malloc(L, sizeCclosure(nelems)));
+    new (c) CClosure;
     luaC_link(L, obj2gco(c), LUA_TFUNCTION);
 
-    c->c.isC = 1;
-    c->c.env = e;
-    c->c.nupvalues = cast_byte(nelems);
+    c->isC = 1;
+    c->env = e;
+    c->nupvalues = cast_byte(nelems);
     return c;
 }
 
-Closure *luaF_newLclosure (lua_State *L, int nelems, Table *e)
+LClosure *luaF_newLclosure (lua_State *L, int nelems, Table *e)
 {
-    Closure *c = cast(Closure *, luaM_malloc(L, sizeLclosure(nelems)));
+    LClosure *c = cast(LClosure *, luaM_malloc(L, sizeLclosure(nelems)));
+    new (c) LClosure;
     luaC_link(L, obj2gco(c), LUA_TFUNCTION);
 
-    c->l.isC = 0;
-    c->l.env = e;
-    c->l.nupvalues = cast_byte(nelems);
+    c->isC = 0;
+    c->env = e;
+    c->nupvalues = cast_byte(nelems);
 
     while (nelems--)
-        c->l.upvals[nelems] = NULL;
+        c->upvals[nelems] = NULL;
 
     return c;
 }
@@ -90,13 +92,11 @@ static void unlinkupval (UpVal *uv) {
   uv->u.l.prev->u.l.next = uv->u.l.next;
 }
 
-
-void luaF_freeupval (lua_State *L, UpVal *uv) {
-  if (uv->v != &uv->u.value)  /* is it open? */
-    unlinkupval(uv);  /* remove from open list */
-  luaM_free(L, uv);  /* free upvalue */
+UpVal::~UpVal()
+{
+    if ( v != &u.value )  /* is it open? */
+        unlinkupval( this );  /* remove from open list */
 }
-
 
 void luaF_close (lua_State *L, StkId level) {
   UpVal *uv;
@@ -106,7 +106,9 @@ void luaF_close (lua_State *L, StkId level) {
     lua_assert(!isblack(o) && uv->v != &uv->u.value);
     L->openupval = uv->next;  /* remove from `open' list */
     if (isdead(g, o))
-      luaF_freeupval(L, uv);  /* free upvalue */
+    {
+      luaM_delete(L, uv, UpVal);  /* free upvalue */
+    }
     else {
       unlinkupval(uv);
       setobj(L, &uv->u.value, uv->v);
@@ -142,24 +144,23 @@ Proto *luaF_newproto (lua_State *L) {
   return f;
 }
 
-
-void luaF_freeproto (lua_State *L, Proto *f) {
-  luaM_freearray(L, f->code, f->sizecode, Instruction);
-  luaM_freearray(L, f->p, f->sizep, Proto *);
-  luaM_freearray(L, f->k, f->sizek, TValue);
-  luaM_freearray(L, f->lineinfo, f->sizelineinfo, int);
-  luaM_freearray(L, f->locvars, f->sizelocvars, struct LocVar);
-  luaM_freearray(L, f->upvalues, f->sizeupvalues, TString *);
-  luaM_free(L, f);
-}
-
-
-void luaF_freeclosure (lua_State *L, Closure *c)
+Proto::~Proto()
 {
-    int size = (c->c.isC) ? sizeCclosure(c->c.nupvalues) : sizeLclosure(c->l.nupvalues);
-    luaM_freemem(L, c, size);
+    luaM_freearray(_lua, code, sizecode, Instruction);
+    luaM_freearray(_lua, p, sizep, Proto *);
+    luaM_freearray(_lua, k, sizek, TValue);
+    luaM_freearray(_lua, lineinfo, sizelineinfo, int);
+    luaM_freearray(_lua, locvars, sizelocvars, LocVar);
+    luaM_freearray(_lua, upvalues, sizeupvalues, TString *);
 }
 
+CClosure::~CClosure()
+{
+}
+
+LClosure::~LClosure()
+{
+}
 
 /*
 ** Look for n-th local variable at line `line' in function `func'.

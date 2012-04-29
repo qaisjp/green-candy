@@ -62,7 +62,7 @@ typedef struct CallInfo {
 
 #define curr_func(L)	(clvalue(L->ci->func))
 #define ci_func(ci)	(clvalue((ci)->func))
-#define f_isLua(ci)	(!ci_func(ci)->c.isC)
+#define f_isLua(ci)	(!ci_func(ci)->isC)
 #define isLua(ci)	(ttisfunction((ci)->func) && f_isLua(ci))
 
 // Internal functions
@@ -81,9 +81,9 @@ typedef struct global_State {
   int sweepstrgc;  /* position of sweep in `strt' */
   GCObject *rootgc;  /* list of all collectable objects */
   GCObject **sweepgc;  /* position of sweep in `rootgc' */
-  GCObject *gray;  /* list of gray objects */
-  GCObject *grayagain;  /* list of objects to be traversed atomically */
-  GCObject *weak;  /* list of weak tables (to be cleared) */
+  GrayObject *gray;  /* list of gray objects */
+  GrayObject *grayagain;  /* list of objects to be traversed atomically */
+  GrayObject *weak;  /* list of weak tables (to be cleared) */
   GCObject *tmudata;  /* last element of list of userdata to be GC */
   Mbuffer buff;  /* temporary buffer for string concatentation */
   lu_mem GCthreshold;
@@ -94,9 +94,9 @@ typedef struct global_State {
   int gcstepmul;  /* GC `granularity' */
   lua_CFunction panic;  /* to be called in unprotected errors */
   TValue l_registry;
-  struct lua_State *mainthread;
+  lua_State *mainthread;
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
-  struct Table *mt[NUM_TAGS];  /* metatables for basic types */
+  Table *mt[NUM_TAGS];  /* metatables for basic types */
   TString *tmname[TM_N];  /* array with tag-method names */
   lua_CFunction events[LUA_NUM_EVENTS];
 } global_State;
@@ -105,9 +105,13 @@ typedef struct global_State {
 /*
 ** `per thread' state
 */
-struct lua_State
+class lua_State : public GrayObject
 {
-    CommonHeader;
+public:
+    ~lua_State();
+
+    size_t Propagate( global_State *g );
+
     lu_byte status;
     StkId top;  /* first free slot in the stack */
     StkId base;  /* base of current function */
@@ -130,7 +134,6 @@ struct lua_State
     TValue l_gt;  /* table of globals */
     TValue env;  /* temporary place for environments */
     GCObject *openupval;  /* list of open upvalues in this stack */
-    GCObject *gclist;
     struct lua_longjmp *errorJmp;  /* current error recover point */
     ptrdiff_t errfunc;  /* current error handling function (stack index) */
 #ifdef _WIN32
@@ -144,35 +147,18 @@ struct lua_State
 #define G(L)	(L->l_G)
 
 
-/*
-** Union of all collectable objects
-*/
-union GCObject {
-  GCheader gch;
-  union TString ts;
-  union Udata u;
-  union Closure cl;
-  struct Table h;
-  struct Class j;
-  struct Proto p;
-  struct UpVal uv;
-  struct lua_State th;  /* thread */
-};
-
-
 /* macros to convert a GCObject into a specific value */
-#define rawgco2ts(o)	check_exp((o)->gch.tt == LUA_TSTRING, &((o)->ts))
-#define gco2ts(o)	(&rawgco2ts(o)->tsv)
-#define rawgco2u(o)	check_exp((o)->gch.tt == LUA_TUSERDATA, &((o)->u))
-#define gco2u(o)	(&rawgco2u(o)->uv)
-#define gco2cl(o)	check_exp((o)->gch.tt == LUA_TFUNCTION, &((o)->cl))
-#define gco2h(o)	check_exp((o)->gch.tt == LUA_TTABLE, &((o)->h))
-#define gco2j(o)    check_exp((o)->gch.tt == LUA_TCLASS, &((o)->j))
-#define gco2p(o)	check_exp((o)->gch.tt == LUA_TPROTO, &((o)->p))
-#define gco2uv(o)	check_exp((o)->gch.tt == LUA_TUPVAL, &((o)->uv))
-#define ngcotouv(o) \
-	check_exp((o) == NULL || (o)->gch.tt == LUA_TUPVAL, &((o)->uv))
-#define gco2th(o)	check_exp((o)->gch.tt == LUA_TTHREAD, &((o)->th))
+#define rawgco2ts(o)	check_exp((o)->tt == LUA_TSTRING, (TString*)(o))
+#define gco2ts(o)	(rawgco2ts(o))
+#define rawgco2u(o)	check_exp((o)->tt == LUA_TUSERDATA, (Udata*)(o))
+#define gco2u(o)	(rawgco2u(o))
+#define gco2cl(o)	check_exp((o)->tt == LUA_TFUNCTION, (Closure*)(o))
+#define gco2h(o)	check_exp((o)->tt == LUA_TTABLE, (Table*)(o))
+#define gco2j(o)    check_exp((o)->tt == LUA_TCLASS, (Class*)(o))
+#define gco2p(o)	check_exp((o)->tt == LUA_TPROTO, (Proto*)(o))
+#define gco2uv(o)	check_exp((o)->tt == LUA_TUPVAL, (UpVal*)(o))
+#define ngcotouv(o) check_exp((o) == NULL || (o)->tt == LUA_TUPVAL, (UpVal*)(o))
+#define gco2th(o)	check_exp((o)->tt == LUA_TTHREAD, (lua_State*)(o))
 
 /* macro to convert any Lua object into a GCObject */
 #define obj2gco(v)	(cast(GCObject *, (v)))

@@ -2469,6 +2469,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaClass.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\LuaCommon.h"
 						>
 					</File>

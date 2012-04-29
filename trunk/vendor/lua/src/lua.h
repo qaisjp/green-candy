@@ -47,7 +47,7 @@
 #define LUA_ERRERR	5
 
 
-typedef struct lua_State lua_State;
+class lua_State;
 
 typedef int (*lua_CFunction) (lua_State *L);
 
@@ -383,6 +383,55 @@ LUA_API const char *lua_getupvalue (lua_State *L, int funcindex, int n);
 LUA_API const char *lua_setupvalue (lua_State *L, int funcindex, int n);
 LUA_API void lua_constructclass( lua_State *L, int nargs );
 LUA_API void lua_newclass( lua_State *L );
+LUA_API ILuaClass* lua_refclass( lua_State *L, int idx );
+LUA_API void lua_basicprotect( lua_State *L );
+
+#ifdef __cplusplus
+#include <list>
+
+// Helper class for class referencing
+class lua_class_reference
+{
+public:
+    lua_class_reference( lua_State *L, int idx )
+    {
+        if ( lua_type( L, idx ) != LUA_TCLASS )
+            throw lua_exception( L, LUA_ERRRUN, "invalid type @ class reference" );
+
+        m_lua = L;
+
+        m_class = lua_refclass( L, idx );
+        m_class->IncrementMethodStack( L );
+    }
+
+    ~lua_class_reference()
+    {
+        m_class->DecrementMethodStack( m_lua );
+    }
+
+    ILuaClass* GetClass()
+    {
+        return m_class;
+    }
+
+private:
+    lua_State*  m_lua;
+    ILuaClass*  m_class;
+};
+
+class luaRefs : public std::list <lua_class_reference*>
+{
+public:
+    ~luaRefs()
+    {
+        luaRefs::const_iterator iter = begin();
+
+        for ( ; iter != end(); iter++ )
+            delete *iter;
+    }
+};
+
+#endif
 
 LUA_API int lua_sethook (lua_State *L, lua_Hook func, int mask, int count);
 LUA_API lua_Hook lua_gethook (lua_State *L);

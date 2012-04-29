@@ -88,11 +88,31 @@ static int filesystem_size( lua_State *L )
 
 static int filesystem_relPath( lua_State *L )
 {
-    luaL_checktype( L, 1, LUA_TSTRING );
-    
+    const char *src = lua_tostring( L, 1 );
     filePath path;
 
-    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetRelativePath( lua_tostring( L, 1 ), true, path ) )
+    if ( !src )
+        src = "";
+
+    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetRelativePath( src, true, path ) )
+    {
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    lua_pushlstring( L, path.c_str(), path.size() );
+    return 1;
+}
+
+static int filesystem_relPathRoot( lua_State *L )
+{
+    const char *src = lua_tostring( L, 1 );
+    filePath path;
+
+    if ( !src )
+        src = "";
+
+    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetRelativePathFromRoot( src, true, path ) )
     {
         lua_pushboolean( L, false );
         return 1;
@@ -104,11 +124,31 @@ static int filesystem_relPath( lua_State *L )
 
 static int filesystem_absPath( lua_State *L )
 {
-    luaL_checktype( L, 1, LUA_TSTRING );
-    
+    const char *src = lua_tostring( L, 1 );
     filePath path;
 
-    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetFullPath( lua_tostring( L, 1 ), true, path ) )
+    if ( !src )
+        src = "";
+
+    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetFullPath( src, true, path ) )
+    {
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    lua_pushlstring( L, path.c_str(), path.size() );
+    return 1;
+}
+
+static int filesystem_absPathRoot( lua_State *L )
+{
+    const char *src = lua_tostring( L, 1 );
+    filePath path;
+
+    if ( !src )
+        src = "";
+
+    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetFullPathFromRoot( src, true, path ) )
     {
         lua_pushboolean( L, false );
         return 1;
@@ -262,7 +302,9 @@ static const luaL_Reg fsys_methods[] =
     { "rename", filesystem_rename },
     { "size", filesystem_size },
     { "relPath", filesystem_relPath },
+    { "relPathRoot", filesystem_relPathRoot },
     { "absPath", filesystem_absPath },
+    { "absPathRoot", filesystem_absPathRoot },
     { "getDirs", filesystem_getDirs },
     { "getFiles", filesystem_getFiles },
     { "scanDir", filesystem_scanDir },
