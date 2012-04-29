@@ -11,6 +11,8 @@
 *****************************************************************************/
 
 #ifdef _WIN32
+#define _File_PathCharComp( c1, c2 ) ( tolower( c1 ) == tolower( c2 ) )
+
 struct char_traits_i : public std::char_traits <char>
 {
     static bool __CLRCALL_OR_CDECL eq( const char left, const char right )
@@ -70,6 +72,8 @@ public:
         return compare( 0, size(), right.c_str() ) == 0;
     }
 #else
+#define _File_PathCharComp( c1, c2 ) ( c1 == c2 )
+
 class filePath : public std::string
 {
     typedef std::string _baseString;
@@ -80,12 +84,20 @@ public:
     {
     }
 
+    filePath( const filePath& right )
+        : _baseString( right.c_str(), right.size() )
+    { }
+
     filePath( const std::string& right )
         : _baseString( right.c_str(), right.size() )
     { }
 
     filePath( const _baseString& right )
         : _baseString( right )
+    { }
+
+    filePath( const char *right, size_t len )
+        : _baseString( right, len )
     { }
 
     filePath( const char *right )

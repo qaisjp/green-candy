@@ -76,9 +76,13 @@ private:
 class CSystemPathTranslator : public CFileTranslator
 {
 public:
-    bool            GetFullPathTree( const char *path, dirTree& tree, bool *file ) const;
-    virtual bool    GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const;
+    bool            GetFullPathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetFullPathTree( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetRelativePathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetRelativePathTree( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetFullPathFromRoot( const char *path, bool allowFile, filePath& output ) const;
     bool            GetFullPath( const char *path, bool allowFile, filePath& output ) const;
+    bool            GetRelativePathFromRoot( const char *path, bool allowFile, filePath& output ) const;
     bool            GetRelativePath( const char *path, bool allowFile, filePath& output ) const;
     bool            ChangeDirectory( const char *path );
     void            GetDirectory( filePath& output ) const;
@@ -89,6 +93,7 @@ protected:
     filePath        m_root;
     filePath        m_currentDir;
     dirTree         m_rootTree;
+    dirTree         m_curDirTree;
 };
 
 class CSystemFileTranslator : public CSystemPathTranslator
@@ -107,7 +112,12 @@ public:
     bool            Stat( const char *path, struct stat *stats ) const;
     bool            ReadToBuffer( const char *path, std::vector <char>& output ) const;
 
-    bool            GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const;
+#ifdef _WIN32
+    bool            GetRelativePathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetRelativePathTree( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetFullPathTree( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetFullPath( const char *path, bool allowFile, filePath& output ) const;
+#endif //_WIN32
     bool            ChangeDirectory( const char *path );
 
     void            ScanDirectory( const char *directory, const char *wildcard, bool recurse, 

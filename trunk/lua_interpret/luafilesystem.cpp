@@ -224,21 +224,23 @@ static int filesystem_scanDirEx( lua_State *lua )
 {
     luaL_checktype( lua, 1, LUA_TSTRING );
     luaL_checktype( lua, 2, LUA_TSTRING );
-    luaL_checktype( lua, 3, LUA_TFUNCTION );
-    luaL_checktype( lua, 4, LUA_TFUNCTION );
+    
+    int top = lua_gettop( lua );
+
+    if ( top < 3 )
+        throw lua_exception( lua, LUA_ERRRUN, "require directory handler at least" );
     
     const char *path = lua_tostring( lua, 1 );
     const char *wildcard = wildcard = lua_tostring( lua, 2 );
-    bool recursive;
+    bool recursive = lua_toboolean( lua, 5 ) == 1;
+    pathCallback_t file;
 
-    int top = lua_gettop( lua );
-
-    if ( top > 4 )
-        recursive = lua_toboolean( lua, 5 ) == 1;
+    if ( top > 3 )
+        file = filesystem_exfilecb;
     else
-        recursive = false;
+        file = NULL;
 
-    ((CFileTranslator*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ScanDirectory( path, wildcard, recursive, filesystem_exdircb, filesystem_exfilecb, lua );
+    ((CFileTranslator*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ScanDirectory( path, wildcard, recursive, filesystem_exdircb, file, lua );
     return 0;
 }
 

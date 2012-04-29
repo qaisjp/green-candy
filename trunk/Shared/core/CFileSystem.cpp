@@ -141,10 +141,9 @@ bool File_IsDirectoryAbsolute( const char *pPath )
 #endif
 }
 
-static inline bool _File_ParseRelativePath( const char *path, dirTree& tree, bool *bFile )
+static inline bool _File_ParseRelativePath( const char *path, dirTree& tree, bool& file )
 {
     filePath entry;
-
     entry.reserve( MAX_PATH );
 
     while (*path)
@@ -198,16 +197,16 @@ static inline bool _File_ParseRelativePath( const char *path, dirTree& tree, boo
     {
         tree.push_back( entry );
 
-        *bFile = true;
+        file = true;
     }
     else
-        *bFile = false;
+        file = false;
 
     return true;
 }
 
 // Output a path tree
-static inline void _File_OutputPathTree( dirTree& tree, bool file, filePath& output )
+static inline void _File_OutputPathTree( const dirTree& tree, bool file, filePath& output )
 {
     unsigned int n;
 
@@ -234,7 +233,7 @@ static inline void _File_OutputPathTree( dirTree& tree, bool file, filePath& out
 }
 
 // Get relative path tree nodes
-static inline bool _File_ParseRelativeTree( const char *path, const dirTree& root, dirTree& output, bool *file )
+static inline bool _File_ParseRelativeTree( const char *path, const dirTree& root, dirTree& output, bool& file )
 {
     dirTree tree;
     dirTree::const_iterator rootIter;
@@ -243,15 +242,108 @@ static inline bool _File_ParseRelativeTree( const char *path, const dirTree& roo
     if (!_File_ParseRelativePath( path, tree, file ))
         return false;
 
-    if ( tree.size() < root.size() )
+    if ( file )
+    {
+        if ( tree.size() <= root.size() )
+            return false;
+    }
+    else if ( tree.size() < root.size() )
         return false;
 
     for ( rootIter = root.begin(), treeIter = tree.begin(); rootIter != root.end(); rootIter++, treeIter++ )
         if ( *rootIter != *treeIter )
             return false;
 
-    if ( *file && treeIter == tree.end() )
+    output.insert( output.end(), treeIter, tree.end() );
+    return true;
+}
+
+filePath _dirBack = "..";
+
+static inline bool _File_ParseDeriviation( const dirTree& curTree, dirTree::const_iterator& treeIter, dirTree& output, size_t sizeDiff, bool file )
+{
+    for ( dirTree::const_iterator rootIter( curTree.begin() ); rootIter != curTree.end(); rootIter++, treeIter++, sizeDiff-- )
+    {
+        if ( !sizeDiff )
+        {
+            // This cannot fail, as we go down to root at maximum
+            for ( ; rootIter != curTree.end(); rootIter++ )
+                output.push_back( _dirBack );
+
+            if ( file )
+                output.push_back( *treeIter );
+
+            return true;
+        }
+
+        if ( *rootIter != *treeIter )
+        {
+            for ( ; rootIter != curTree.end(); rootIter++ )
+                output.push_back( _dirBack );
+
+            break;
+        }
+    }
+
+    return false;
+}
+
+static inline bool _File_ParseDeriviateTreeRoot( const dirTree& pathFind, const dirTree& curTree, dirTree& output, bool file )
+{
+    dirTree::const_iterator treeIter( pathFind.begin() );
+
+    if ( _File_ParseDeriviation( curTree, treeIter, output, file ? pathFind.size() - 1 : pathFind.size(), file ) )
+        return true;
+
+    for ( ; treeIter != pathFind.end(); treeIter++ )
+        output.push_back( *treeIter );
+
+    return true;
+}
+
+static inline bool _File_ParseDeriviateTree( const char *path, const dirTree& curTree, dirTree& output, bool& file )
+{
+    dirTree tree = curTree;
+
+    if ( !_File_ParseRelativePath( path, tree, file ) )
         return false;
+
+    return _File_ParseDeriviateTreeRoot( tree, curTree, output, file );
+}
+
+// Do the same as above, but derive from current directory
+static inline bool _File_ParseRelativeTreeDeriviate( const char *path, const dirTree& root, const dirTree& curTree, dirTree& output, bool& file )
+{
+    dirTree tree;
+    dirTree::const_iterator rootIter;
+    dirTree::iterator treeIter;
+    size_t sizeDiff;
+
+    if (!_File_ParseRelativePath( path, tree, file ))
+        return false;
+
+    if ( file )
+    {
+        // File should not count as directory
+        if ( tree.size() <= root.size() )
+            return false;
+
+        sizeDiff = tree.size() - root.size() - 1;
+    }
+    else
+    {
+        if ( tree.size() < root.size() )
+            return false;
+
+        sizeDiff = tree.size() - root.size();
+    }
+
+    for ( rootIter = root.begin(), treeIter = tree.begin(); rootIter != root.end(); rootIter++, treeIter++ )
+        if ( *rootIter != *treeIter )
+            return false;
+
+    if ( _File_ParseDeriviation( curTree, treeIter, output, sizeDiff, file ) )
+        return true;
 
     output.insert( output.end(), treeIter, tree.end() );
     return true;
@@ -528,32 +620,122 @@ void CSystemPathTranslator::GetDirectory( filePath& output ) const
 
 bool CSystemPathTranslator::ChangeDirectory( const char *path )
 {
-    return GetRelativePath( path, false, m_currentDir );
+    dirTree tree;
+    bool file;
+
+    if ( !GetRelativePathTreeFromRoot( path, tree, file ) )
+        return false;
+
+    if ( file )
+        tree.pop_back();
+
+    m_curDirTree = tree;
+
+    m_currentDir.clear();
+    _File_OutputPathTree( tree, false, m_currentDir );
+    return true;
 }
 
-bool CSystemPathTranslator::GetFullPathTree( const char *path, dirTree& tree, bool *file ) const
+bool CSystemPathTranslator::GetFullPathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const
 {
+    dirTree output;
     tree = m_rootTree;
-    return GetRelativePathTree( path, tree, file );
+
+    if ( !GetRelativePathTreeFromRoot( path, output, file ) )
+        return false;
+
+    tree.insert( tree.end(), output.begin(), output.end() );
+    return true;
 }
 
-bool CSystemPathTranslator::GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const
+bool CSystemPathTranslator::GetFullPathTree( const char *path, dirTree& tree, bool& file ) const
+{
+    dirTree output;
+    tree = m_rootTree;
+
+    if ( *path == '/' )
+    {
+        if ( !_File_ParseRelativePath( path + 1, output, file ) )
+            return false;
+    }
+    else
+    {
+        output = m_curDirTree;
+        
+        if ( !_File_ParseRelativePath( path, output, file ) )
+            return false;
+    }
+
+    tree.insert( tree.end(), output.begin(), output.end() );
+    return true;
+}
+
+bool CSystemPathTranslator::GetRelativePathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const
 {
     if ( *path == '/' )
         return _File_ParseRelativePath( path + 1, tree, file );
 
-    filePath target;
+    tree = m_curDirTree;
+    return _File_ParseRelativePath( path, tree, file );
+}
 
-    // This could be optimized
-    target += m_currentDir;
-    target += path;
-    return _File_ParseRelativePath( target.c_str(), tree, file );
+bool CSystemPathTranslator::GetRelativePathTree( const char *path, dirTree& tree, bool& file ) const
+{
+    if ( *path == '/' )
+    {
+        dirTree relTree;
+
+        if ( !_File_ParseRelativePath( path + 1, relTree, file ) )
+            return false;
+
+        return _File_ParseDeriviateTreeRoot( relTree, m_curDirTree, tree, file );
+    }
+
+    return _File_ParseDeriviateTree( path, m_curDirTree, tree, file );
+}
+
+bool CSystemPathTranslator::GetFullPathFromRoot( const char *path, bool allowFile, filePath& output ) const
+{
+    output = m_root;
+    return GetRelativePathFromRoot( path, allowFile, output );
 }
 
 bool CSystemPathTranslator::GetFullPath( const char *path, bool allowFile, filePath& output ) const
 {
-    output += m_root;
-    return GetRelativePath( path, allowFile, output );
+    dirTree tree;
+    bool file;
+
+    if ( !GetFullPathTree( path, tree, file ) )
+        return false;
+
+    if ( file && !allowFile )
+    {
+        tree.pop_back();
+
+        file = false;
+    }
+
+    _File_OutputPathTree( tree, file, output );
+    return true;
+}
+
+bool CSystemPathTranslator::GetRelativePathFromRoot( const char *path, bool allowFile, filePath& output ) const
+{
+    dirTree tree;
+    bool file;
+
+    if ( !GetRelativePathTreeFromRoot( path, tree, file ) )
+        return false;
+
+    if ( file && !allowFile )
+    {
+        tree.pop_back();
+
+        file = false;
+    }
+
+    _File_OutputPathTree( tree, file, output );
+    return true;
 }
 
 bool CSystemPathTranslator::GetRelativePath( const char *path, bool allowFile, filePath& output ) const
@@ -561,7 +743,7 @@ bool CSystemPathTranslator::GetRelativePath( const char *path, bool allowFile, f
     dirTree tree;
     bool file;
 
-    if ( !GetRelativePathTree( path, tree, &file ) )
+    if ( !GetRelativePathTree( path, tree, file ) )
         return false;
 
     if ( file && !allowFile )
@@ -734,6 +916,21 @@ bool CArchiveFileTranslator::Stat( const char *path, struct stat *stats )
     Default file translator
 =======================================*/
 
+static inline bool _File_IsAbsolutePath( const char *path )
+{
+    switch( *path )
+    {
+    // Drive letters
+    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g': case 'h': case 'i': case 'j': case 'k': case 'l': case 'm': case 'n':
+    case 'o': case 'p': case 'q': case 'r': case 's': case 't': case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
+    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G': case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
+    case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T': case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
+        return ( path[1] == ':' && path[2] != 0 );
+    }
+
+    return false;
+}
+
 CSystemFileTranslator::~CSystemFileTranslator()
 {
 #ifdef _WIN32
@@ -752,7 +949,7 @@ bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, siz
     dirTree tree;
     bool isFile;
 
-    if ( !GetRelativePathTree( path, tree, &isFile ) || !isFile )
+    if ( !GetRelativePathTreeFromRoot( path, tree, isFile ) || !isFile )
         return false;
 
     _File_OutputPathTree( tree, true, output );
@@ -774,7 +971,8 @@ bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, siz
 void CSystemFileTranslator::_CreateDirTree( const dirTree& tree )
 {
     dirTree::const_iterator iter;
-    filePath path;
+    filePath path = m_root;
+    path += m_currentDir;
 
     for ( iter = tree.begin(); iter != tree.end(); iter++ )
     {
@@ -794,7 +992,7 @@ bool CSystemFileTranslator::CreateDir( const char *path )
     dirTree tree;
     bool file;
 
-    if ( !GetRelativePathTree( path, tree, &file ) )
+    if ( !GetRelativePathTreeFromRoot( path, tree, file ) )
         return false;
 
     if ( file )
@@ -814,7 +1012,7 @@ CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
     HANDLE sysHandle;
     bool file;
 
-    if ( !GetRelativePathTree( path, tree, &file ) )
+    if ( !GetRelativePathTreeFromRoot( path, tree, file ) )
         return NULL;
 
     // We can only open files!
@@ -934,7 +1132,7 @@ bool CSystemFileTranslator::Copy( const char *src, const char *dst )
     dirTree dstTree;
     bool file;
 
-    if ( !GetFullPath( src, true, source ) || !GetRelativePathTree( dst, dstTree, &file ) || !file )
+    if ( !GetFullPath( src, true, source ) || !GetRelativePathTreeFromRoot( dst, dstTree, file ) || !file )
         return false;
 
     _File_OutputPathTree( dstTree, true, target );
@@ -955,7 +1153,7 @@ bool CSystemFileTranslator::Rename( const char *src, const char *dst )
     dirTree dstTree;
     bool file;
 
-    if ( !GetFullPath( src, true, source ) || !GetRelativePathTree( dst, dstTree, &file ) || !file )
+    if ( !GetFullPath( src, true, source ) || !GetRelativePathTreeFromRoot( dst, dstTree, file ) || !file )
         return false;
 
     _File_OutputPathTree( dstTree, true, target );
@@ -999,37 +1197,73 @@ bool CSystemFileTranslator::ReadToBuffer( const char *path, std::vector <char>& 
     return fileSystem->ReadToBuffer( sysPath.c_str(), output );
 }
 
-bool CSystemFileTranslator::GetRelativePathTree( const char *path, dirTree& tree, bool *file ) const
-{
-    switch( *path )
-    {
-    // Drive letters
-    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g': case 'h': case 'i': case 'j': case 'k': case 'l': case 'm': case 'n':
-    case 'o': case 'p': case 'q': case 'r': case 's': case 't': case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
-    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G': case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
-    case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T': case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
-        if ( path[1] == ':' )
-        {
-            if ( !path[2] )
-                return false;
+#ifdef _WIN32
 
-            if ( tolower( path[0] ) != tolower( m_root[0] ) )
-                return false;   // drive mismatch
-            
-            return _File_ParseRelativeTree( path + 3, m_rootTree, tree, file );
-        }
-        break;
+bool CSystemFileTranslator::GetRelativePathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const
+{
+    if ( _File_IsAbsolutePath( path ) )
+    {
+        if ( !_File_PathCharComp( path[0], m_root[0] ) )
+            return false;   // drive mismatch
+        
+        return _File_ParseRelativeTree( path, m_rootTree, tree, file );
+    }
+
+    return CSystemPathTranslator::GetRelativePathTreeFromRoot( path, tree, file );
+}
+
+bool CSystemFileTranslator::GetRelativePathTree( const char *path, dirTree& tree, bool& file ) const
+{
+    if ( _File_IsAbsolutePath( path ) )
+    {
+        if ( !_File_PathCharComp( path[0], m_root[0] ) )
+            return false;   // drive mismatch
+        
+        return _File_ParseRelativeTreeDeriviate( path + 3, m_rootTree, m_curDirTree, tree, file );
     }
 
     return CSystemPathTranslator::GetRelativePathTree( path, tree, file );
 }
 
+bool CSystemFileTranslator::GetFullPathTree( const char *path, dirTree& tree, bool& file ) const
+{
+    if ( _File_IsAbsolutePath( path ) )
+    {
+        if ( !_File_PathCharComp( path[0], m_root[0] ) )
+            return false;   // drive mismatch
+
+        tree = m_rootTree;
+        return _File_ParseRelativeTree( path + 3, m_rootTree, tree, file );
+    }
+
+    return CSystemPathTranslator::GetFullPathTree( path, tree, file );
+}
+
+bool CSystemFileTranslator::GetFullPath( const char *path, bool allowFile, filePath& output ) const
+{
+    if ( !CSystemPathTranslator::GetFullPath( path, allowFile, output ) )
+        return false;
+
+    output.insert( 0, m_root.c_str(), 3 );
+    return true;
+}
+
+#endif //_WIN32
+
 bool CSystemFileTranslator::ChangeDirectory( const char *path )
 {
+    dirTree tree;
     filePath absPath;
+    bool file;
 
-    if ( !GetFullPath( path, false, absPath ) )
+    if ( !GetRelativePathTreeFromRoot( path, tree, file ) )
         return false;
+
+    if ( file )
+        tree.pop_back();
+
+    absPath = m_root;
+    _File_OutputPathTree( tree, false, absPath );
 
 #ifdef _WIN32
     HANDLE dir = CreateFile( absPath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL );
@@ -1046,7 +1280,10 @@ bool CSystemFileTranslator::ChangeDirectory( const char *path )
         return false;
 #endif //_WIN32
 
-    m_currentDir = absPath.substr( m_root.size() );
+    m_currentDir.clear();
+    _File_OutputPathTree( tree, false, m_currentDir );
+
+    m_curDirTree = tree;
     return true;
 }
 
@@ -1240,7 +1477,7 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
     // We have to handle absolute path, too
     if ( path[1] == ':' && path[2] )
     {
-        if (!_File_ParseRelativePath( path + 3, tree, &bFile ))
+        if (!_File_ParseRelativePath( path + 3, tree, bFile ))
             return NULL;
 
         root += path[0];
@@ -1255,7 +1492,7 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
         root += "\\";
         root += path;
 
-        if (!_File_ParseRelativePath( root.c_str() + 3, tree, &bFile ))
+        if (!_File_ParseRelativePath( root.c_str() + 3, tree, bFile ))
             return NULL;
 
         root.resize( 2 );

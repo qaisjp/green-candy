@@ -2,7 +2,7 @@ root = file.getRoot();
 
 function dircmd()
 	local m,n;
-	local files = root.scanDir("/", "*", true);
+	local files = root.scanDir("", "*", true);
 	
 	for m,n in ipairs(files) do
 		local rel = root.relPath(n);
@@ -48,7 +48,7 @@ function dircmdex()
 		dirnum = dirnum + 1;
 	end
 	
-	root.scanDirEx("/", "*", dircb, filecb, true);
+	root.scanDirEx("", "*", dircb, filecb, true);
 	
 	print("\nfiles: " .. filenum .. ", dirs: " .. dirnum);
 end
