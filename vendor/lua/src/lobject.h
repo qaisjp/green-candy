@@ -14,6 +14,7 @@
 
 #include "llimits.h"
 #include "lua.h"
+#include "lmem.h"
 
 
 /* tags for values visible from Lua */
@@ -33,7 +34,7 @@
 /*
 ** Union of all collectable objects
 */
-typedef class GCObject GCObject;
+class GCObject;
 
 /*
 ** Union of all Lua values
@@ -42,7 +43,7 @@ typedef union {
   GCObject *gc;
   void *p;
   lua_Number n;
-  int b;
+  bool b;
 } Value;
 
 
@@ -85,15 +86,15 @@ class lua_State;
 #define gcvalue(o)	check_exp(iscollectable(o), (o)->value.gc)
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->value.p)
 #define nvalue(o)	check_exp(ttisnumber(o), (o)->value.n)
-#define rawtsvalue(o)	check_exp(ttisstring(o), (TString*)(o))
+#define rawtsvalue(o)	check_exp(ttisstring(o), (TString*)((o)->value.gc))
 #define tsvalue(o)	(rawtsvalue(o))
-#define rawuvalue(o)	check_exp(ttisuserdata(o), (Udata*)(o))
+#define rawuvalue(o)	check_exp(ttisuserdata(o), (Udata*)((o)->value.gc))
 #define uvalue(o)	(rawuvalue(o))
-#define clvalue(o)	check_exp(ttisfunction(o), (Closure*)(o))
-#define hvalue(o)	check_exp(ttistable(o), (Table*)(o))
+#define clvalue(o)	check_exp(ttisfunction(o), (Closure*)((o)->value.gc))
+#define hvalue(o)	check_exp(ttistable(o), (Table*)((o)->value.gc))
 #define bvalue(o)	check_exp(ttisboolean(o), (o)->value.b)
-#define thvalue(o)	check_exp(ttisthread(o), (lua_State*)(o))
-#define jvalue(o)   check_exp(ttisclass(o), (Class*)(o))
+#define thvalue(o)	check_exp(ttisthread(o), (lua_State*)((o)->value.gc))
+#define jvalue(o)   check_exp(ttisclass(o), (Class*)((o)->value.gc))
 
 #define l_isfalse(o)	(ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0))
 
@@ -101,7 +102,7 @@ class lua_State;
 ** for internal debug only
 */
 #define checkconsistency(obj) \
-  lua_assert(!iscollectable(obj) || (ttype(obj) == (obj)->value.gc->gch.tt))
+  lua_assert(!iscollectable(obj) || (ttype(obj) == (obj)->value.gc->tt))
 
 #define checkliveness(g,obj) \
   lua_assert(!iscollectable(obj) || \
@@ -118,41 +119,41 @@ class lua_State;
   { TValue *i_o=(obj); i_o->value.p=(x); i_o->tt=LUA_TLIGHTUSERDATA; }
 
 #define setbvalue(obj,x) \
-  { TValue *i_o=(obj); i_o->value.b=(x); i_o->tt=LUA_TBOOLEAN; }
+  { TValue *i_o=(obj); i_o->value.b=(x) & 1; i_o->tt=LUA_TBOOLEAN; }
 
 #define setsvalue(L,obj,x) \
   { TValue *i_o=(obj); \
-    i_o->value.gc=cast(GCObject *, (x)); i_o->tt=LUA_TSTRING; \
+    i_o->value.gc=(x); i_o->tt=LUA_TSTRING; \
     checkliveness(G(L),i_o); }
 
 #define setuvalue(L,obj,x) \
   { TValue *i_o=(obj); \
-    i_o->value.gc=cast(GCObject *, (x)); i_o->tt=LUA_TUSERDATA; \
+    i_o->value.gc=(x); i_o->tt=LUA_TUSERDATA; \
     checkliveness(G(L),i_o); }
 
 #define setthvalue(L,obj,x) \
   { TValue *i_o=(obj); \
-    i_o->value.gc=cast(GCObject *, (x)); i_o->tt=LUA_TTHREAD; \
+    i_o->value.gc=(x); i_o->tt=LUA_TTHREAD; \
     checkliveness(G(L),i_o); }
 
 #define setclvalue(L,obj,x) \
   { TValue *i_o=(obj); \
-    i_o->value.gc=cast(GCObject *, (x)); i_o->tt=LUA_TFUNCTION; \
+    i_o->value.gc=(x); i_o->tt=LUA_TFUNCTION; \
     checkliveness(G(L),i_o); }
 
 #define sethvalue(L,obj,x) \
   { TValue *i_o=(obj); \
-    i_o->value.gc=cast(GCObject *, (x)); i_o->tt=LUA_TTABLE; \
+    i_o->value.gc=(x); i_o->tt=LUA_TTABLE; \
     checkliveness(G(L),i_o); }
 
 #define setptvalue(L,obj,x) \
   { TValue *i_o=(obj); \
-    i_o->value.gc=cast(GCObject *, (x)); i_o->tt=LUA_TPROTO; \
+    i_o->value.gc=(x); i_o->tt=LUA_TPROTO; \
     checkliveness(G(L),i_o); }
 
 #define setjvalue(L,obj,x) \
   { TValue *i_o=(obj); \
-    i_o->value.gc=cast(GCObject *, (x)); i_o->tt=LUA_TCLASS; \
+    i_o->value.gc=(x); i_o->tt=LUA_TCLASS; \
     checkliveness(G(L),i_o); }
 
 
@@ -197,7 +198,7 @@ struct global_State;
 class GCObject
 {
 public:
-    virtual             ~GCObject() = 0;
+    virtual             ~GCObject()         { }
 
     virtual TString*    GetTString()        { return NULL; }
     virtual Udata*      GetUserData()       { return NULL; }
@@ -212,6 +213,23 @@ public:
     virtual void        MarkGC( global_State *g )       { }
     virtual int         TraverseGC( global_State *g )   { return 0; }
 
+    void* operator new( size_t size, lua_State *main ) throw()
+    {
+        GCObject *obj = (GCObject*)luaM_realloc_( main, NULL, 0, size );
+        obj->_lua = main;
+        return obj;
+    }
+
+    void operator delete( void *ptr ) throw()
+    {
+        luaM_freemem( ((GCObject*)ptr)->_lua, ptr, 0 );
+    }
+
+    void operator delete( void *ptr, size_t size ) throw()
+    {
+        luaM_freemem( ((GCObject*)ptr)->_lua, ptr, size );
+    }
+
     GCObject *next;
     lu_byte tt;
     lu_byte marked;
@@ -221,6 +239,8 @@ public:
 class GrayObject : public GCObject
 {
 public:
+    ~GrayObject() {}
+
     void                MarkGC( global_State *g );
     virtual size_t      Propagate( global_State *g ) = 0;
 
@@ -230,10 +250,23 @@ public:
 /*
 ** String headers for string table
 */
+#define sizestring(s)	(sizeof(TString)+((s)->len+1)*sizeof(char))
+#define sizeudata(u)	(sizeof(Udata)+(u)->len)
+
 LUA_MAXALIGN class TString : public GCObject
 {
 public:
     ~TString();
+
+    void* operator new( size_t size, lua_State *main, size_t len ) throw()
+    {
+        return GCObject::operator new( (len+1)*sizeof(char) + size, main );
+    }
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizestring( ((TString*)ptr) ) );
+    }
 
     lu_byte reserved;
     unsigned int hash;
@@ -251,6 +284,16 @@ public:
 
     void MarkGC( global_State *g );
 
+    void* operator new( size_t size, lua_State *main, size_t sData ) throw()
+    {
+        return GCObject::operator new( sData + size, main );
+    }
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeudata( (Udata*)ptr ) );
+    }
+
     Table *metatable;
     Table *env;
     size_t len;
@@ -266,6 +309,11 @@ public:
 
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeof(Proto) );
+    }
 
     TValue *k;  /* constants used by the function */
     Instruction *code;
@@ -295,11 +343,9 @@ public:
 #define VARARG_NEEDSARG		4
 
 
-class LocVar : public GCObject
+class LocVar
 {
 public:
-    ~LocVar();
-
     TString *varname;
     int startpc;  /* first point where variable is active */
     int endpc;    /* first point where variable is dead */
@@ -316,6 +362,11 @@ public:
     ~UpVal();
 
     void MarkGC( global_State *g );
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeof(UpVal) );
+    }
 
     TValue *v;  /* points to stack or to its own value */
     union
@@ -334,6 +385,12 @@ public:
 /*
 ** Closures
 */
+
+#define sizeCclosure(n)	(cast(int, sizeof(CClosure)) + \
+                         cast(int, sizeof(TValue)*((n)-1)))
+
+#define sizeLclosure(n)	(cast(int, sizeof(LClosure)) + \
+                         cast(int, sizeof(TValue *)*((n)-1)))
 
 class Closure : public GrayObject
 {
@@ -361,6 +418,16 @@ public:
 
     CClosure* GetCClosure()     { return this; }
 
+    void* operator new( size_t size, lua_State *main, unsigned int nup )
+    {
+        return GCObject::operator new( sizeCclosure( nup ), main );
+    }
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeCclosure( ((Closure*)ptr)->nupvalues ) );
+    }
+
     lua_CFunction f;
     TValue upvalue[1];
 };
@@ -374,6 +441,16 @@ public:
     size_t Propagate( global_State *g );
 
     LClosure* GetLClosure()     { return this; }
+
+    void* operator new( size_t size, lua_State *main, unsigned int nup )
+    {
+        return GCObject::operator new( sizeLclosure( nup ), main );
+    }
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeLclosure( ((Closure*)ptr)->nupvalues ) );
+    }
 
     Proto *p;
     UpVal *upvals[1];
@@ -406,11 +483,15 @@ class Table : public GrayObject
 public:
     ~Table();
 
-    void MarkGC( global_State *g );
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
 
     Table* GetTable()   { return this; }
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeof(Table) );
+    }
 
     lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 
     lu_byte lsizenode;  /* log2 of size of `node' array */
@@ -431,6 +512,16 @@ public:
 
     Class* GetClass()   { return this; }
 
+    void IncrementMethodStack( lua_State *lua );
+    void DecrementMethodStack( lua_State *lua );
+    void RequestDestruction();
+    TValue* GetSuperMethod( lua_State *lua );
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeof(Class) );
+    }
+
     Table *env;
     Table *outenv;
     Table *methods;
@@ -441,11 +532,6 @@ public:
     unsigned int refCount;
     bool reqDestruction;
     bool destroyed;
-
-    void IncrementMethodStack( lua_State *lua );
-    void DecrementMethodStack( lua_State *lua );
-    void RequestDestruction();
-    TValue* GetSuperMethod( lua_State *lua );
 
     // Cached values
     TValue destructor;

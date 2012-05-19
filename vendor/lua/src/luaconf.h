@@ -670,6 +670,12 @@ private:
 	{ if ((c)->status == 0) (c)->status = -1; }
 #define luai_jmpbuf	int  /* dummy variable */
 
+class ILuaState
+{
+public:
+    virtual bool    IsThread() = 0;
+};
+
 class ILuaClass
 {
 public:

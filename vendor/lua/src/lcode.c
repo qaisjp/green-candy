@@ -261,7 +261,7 @@ int luaK_numberK (FuncState *fs, lua_Number r) {
 }
 
 
-static int boolK (FuncState *fs, int b) {
+static int boolK (FuncState *fs, bool b) {
   TValue o;
   setbvalue(&o, b);
   return addk(fs, &o, &o);

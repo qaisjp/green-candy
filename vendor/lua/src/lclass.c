@@ -260,7 +260,7 @@ static int classmethod_fsDestroyHandler( lua_State *L )
     lua_pushcclosure( L, classmethod_fsDestroyBridge, 2 );
 
     setobj( L, &j->destructor, L->top - 1 );
-    luaC_forceupdatef( L, obj2gco( jvalue( &j->destructor ) ) );
+    luaC_forceupdatef( L, jvalue( &j->destructor ) );
     lua_settop( L, 3 );
 
     lua_pushcclosure( L, classmethod_fsDestroySuper, 3 );
@@ -408,11 +408,11 @@ private:
 
 Class* luaJ_new( lua_State *L, int nargs )
 {
-    Class *c = luaM_new( L, Class );
+    Class *c = new (L) Class;
 
     // Link it into the GC system
     c->next = G(L)->mainthread->next;
-    G(L)->mainthread->next = obj2gco( c );
+    G(L)->mainthread->next = c;
 
     Table *meta = luaH_new( L, 0, 0 );
     Table *outmeta = luaH_new( L, 0, 0 );
@@ -441,8 +441,7 @@ Class* luaJ_new( lua_State *L, int nargs )
     ClassConstructionAllocation construction( L, c );
 
     // Init the forceSuper table
-    sethvalue( L, L->top, c->forceSuper );
-    api_incr_top( L );
+    sethvalue( L, L->top++, c->forceSuper );
 
     lua_pushcclosure( L, classmethod_fsDestroyHandler, 0 );
     lua_setfield( L, -2, "destroy" );
@@ -450,17 +449,13 @@ Class* luaJ_new( lua_State *L, int nargs )
     lua_pop( L, 1 );
 
     // Specify the outrange connection
-    sethvalue( L, L->top, outmeta );
-    api_incr_top( L );
+    sethvalue( L, L->top++, outmeta );
 
     lua_pushboolean( L, false );
     lua_setfield( L, -2, "__metatable" );
 
-    sethvalue( L, L->top, c->storage );
-    api_incr_top( L );
-
-    sethvalue( L, L->top, c->methods );
-    api_incr_top( L );
+    sethvalue( L, L->top++, c->storage );
+    sethvalue( L, L->top++, c->methods );
 
     luaL_openlib( L, NULL, envmeta_interface, 2 );
     lua_pop( L, 1 );
@@ -486,7 +481,7 @@ Class* luaJ_new( lua_State *L, int nargs )
     lua_pushcclosure( L, classmethod_registerForcedSuper, 1 );
     lua_setfield( L, -2, "registerForcedSuper" );
 
-    // Give it the iternal storage
+    // Give it the internal storage
     sethvalue( L, L->top++, c->storage );
 
     // We also need the previous environment

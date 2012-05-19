@@ -257,7 +257,7 @@ static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
   /* add `arg' parameter */
   if (htab) {
     sethvalue(L, L->top++, htab);
-    lua_assert(iswhite(obj2gco(htab)));
+    lua_assert(iswhite(htab));
   }
   return base;
 }
@@ -286,17 +286,15 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
 
 int luaD_precall (lua_State *L, StkId func, int nresults)
 {
-    LClosure *cl;
     ptrdiff_t funcr;
 
     if (!ttisfunction(func)) /* `func' is not a function? */
         func = tryfuncTM(L, func);  /* check the `function' tag method */
 
     funcr = savestack(L, func);
-    cl = clvalue(func)->GetLClosure();
     L->ci->savedpc = L->savedpc;
 
-    if ( !cl->isC )
+    if ( LClosure *cl = clvalue(func)->GetLClosure() )
     {  /* Lua function? prepare its call */
         CallInfo *ci;
         StkId st, base;
@@ -444,6 +442,9 @@ LUA_API int lua_resume (lua_State *L, int nargs)
 {
     lua_lock(L);
 
+    if ( !L->IsThread() )
+        return resume_error(L, "not a thread");
+
     if (L->status != LUA_YIELD && (L->status != 0 || L->ci != L->base_ci))
         return resume_error(L, "cannot resume non-suspended coroutine");
 
@@ -458,10 +459,7 @@ LUA_API int lua_resume (lua_State *L, int nargs)
     L->baseCcalls = ++L->nCcalls;
     
     // The OS thread is saved on it's position
-#ifdef _WIN32
-    SetEvent( L->signalBegin );
-    WaitForSingleObject( L->signalWait, INFINITE );
-#endif
+    ((lua_Thread*)L)->resume();
 
     --L->nCcalls;
     lua_unlock(L);
@@ -470,7 +468,7 @@ LUA_API int lua_resume (lua_State *L, int nargs)
 
 LUA_API int lua_yield( lua_State *L, int nresults )
 {
-    if ( G(L)->mainthread == L )
+    if ( !L->IsThread() )
         throw lua_exception( L, LUA_ERRRUN, "cannot yield from main thread" );
 
     luai_userstateyield(L, nresults);
@@ -481,10 +479,7 @@ LUA_API int lua_yield( lua_State *L, int nresults )
     lua_callevent( G(L)->mainthread, LUA_EVENT_THREAD_CONTEXT_POP, 0 );
 
     // Give back control to the previous thread
-#ifdef _WIN32
-    SetEvent( L->signalWait );
-    WaitForSingleObject( L->signalBegin, INFINITE );
-#endif
+    ((lua_Thread*)L)->yield();
 
     lua_unlock(L);
     return 0;

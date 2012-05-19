@@ -83,21 +83,21 @@
 	luaC_step(L); }
 
 
-#define luaC_barrier(L,p,v) { if (valiswhite(v) && isblack(obj2gco(p)))  \
-	luaC_barrierf(L,obj2gco(p),gcvalue(v)); }
+#define luaC_barrier(L,p,v) { if (valiswhite(v) && isblack(p))  \
+	luaC_barrierf(L,p,gcvalue(v)); }
 
-#define luaC_barrierj(L,j,v) { if (valiswhite(v) && isblack(obj2gco(t)))  \
+#define luaC_barrierj(L,j,v) { if (valiswhite(v) && isblack(t))  \
     luaC_barrierbackj(L,j); }
 
-#define luaC_barriert(L,t,v) { if (valiswhite(v) && isblack(obj2gco(t)))  \
+#define luaC_barriert(L,t,v) { if (valiswhite(v) && isblack(t))  \
 	luaC_barrierback(L,t); }
 
 #define luaC_objbarrier(L,p,o)  \
-	{ if (iswhite(obj2gco(o)) && isblack(obj2gco(p))) \
-		luaC_barrierf(L,obj2gco(p),obj2gco(o)); }
+	{ if (iswhite(o) && isblack(p)) \
+		luaC_barrierf(L,p,o); }
 
 #define luaC_objbarriert(L,t,o)  \
-   { if (iswhite(obj2gco(o)) && isblack(obj2gco(t))) luaC_barrierback(L,t); }
+   { if (iswhite(o) && isblack(t)) luaC_barrierback(L,t); }
 
 LUAI_FUNC size_t luaC_separatefinalization( lua_State *L, int all );
 LUAI_FUNC void luaC_callGCTM (lua_State *L);

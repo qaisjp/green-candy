@@ -19,14 +19,14 @@
 #include <DbgHelp.h>
 #include "lauxlib.h"
 #include "lualib.h"
-#include "luafile.h"
-#include "luafilesystem.h"
 #include <sstream>
 #include <iostream>
 #include <sys/stat.h>
 #include <SharedUtil.h>
 #include <core/CFileSystemInterface.h>
 #include <core/CFileSystem.h>
+#include "luafile.h"
+#include "luafilesystem.h"
 
 extern CFileSystem *fileSystem;
 
