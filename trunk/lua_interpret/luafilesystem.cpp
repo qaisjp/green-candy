@@ -10,7 +10,7 @@
 *
 *****************************************************************************/
 
-#include "StdInc.h"
+#include <StdInc.h>
 
 static int rootIdx;
 
@@ -23,15 +23,17 @@ static int filesystem_open( lua_State *lua )
 
     if ( !file )
     {
-        std::cout << "invalid file access\n";
-
         lua_pushboolean( lua, false );
         return 1;
     }
 
     lua_pushlightuserdata( lua, file );
     lua_pushcclosure( lua, luaconstructor_file, 1 );
+#ifdef FU_CLASS
+    lua_newclass( lua, (unk*)file );
+#else
     lua_newclass( lua );
+#endif
     return 1;
 }
 
@@ -264,23 +266,15 @@ static int filesystem_scanDirEx( lua_State *lua )
 {
     luaL_checktype( lua, 1, LUA_TSTRING );
     luaL_checktype( lua, 2, LUA_TSTRING );
-    
-    int top = lua_gettop( lua );
+    luaL_checktype( lua, 3, LUA_TFUNCTION );
 
-    if ( top < 3 )
-        throw lua_exception( lua, LUA_ERRRUN, "require directory handler at least" );
-    
-    const char *path = lua_tostring( lua, 1 );
-    const char *wildcard = wildcard = lua_tostring( lua, 2 );
-    bool recursive = lua_toboolean( lua, 5 ) == 1;
-    pathCallback_t file;
+    ((CFileTranslator*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ScanDirectory( 
+        lua_tostring( lua, 1 ), 
+        lua_tostring( lua, 2 ), 
+        lua_toboolean( lua, 5 ) == 1, 
+        filesystem_exdircb, 
+        lua_type( lua, 4 ) == LUA_TFUNCTION ? filesystem_exfilecb : NULL, lua );
 
-    if ( top > 3 )
-        file = filesystem_exfilecb;
-    else
-        file = NULL;
-
-    ((CFileTranslator*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ScanDirectory( path, wildcard, recursive, filesystem_exdircb, file, lua );
     return 0;
 }
 
@@ -328,7 +322,11 @@ void luafsys_pushroot( lua_State *L, CFileTranslator *root )
 {
     lua_pushlightuserdata( L, root );
     lua_pushcclosure( L, luafsys_constructor, 1 );
+#ifdef FU_CLASS
+    lua_newclass( L, (unk*)root );
+#else
     lua_newclass( L );
+#endif
 }
 
 int luafsys_createTranslator( lua_State *L )
@@ -349,29 +347,38 @@ int luafsys_createTranslator( lua_State *L )
 
 int luafsys_getRoot( lua_State *L )
 {
-    lua_rawgeti( L, LUA_REGISTRYINDEX, rootIdx );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
     return 1;
 }
 
 static const luaL_Reg fsysLib[] =
 {
     { "createTranslator", luafsys_createTranslator },
-    { "getRoot", luafsys_getRoot },
     { NULL, NULL }
 };
 
 int luafsys_init( lua_State *L )
 {
     // Specify the root fileTranslator
-    luafsys_pushroot( L, fileRoot );
-    rootIdx = luaL_ref( L, LUA_REGISTRYINDEX );
-    return 0;
+    luafsys_pushroot( L, fileSystem->CreateTranslator( "/" ) );
+    return 1;
 }
 
 void luafilesystem_open( lua_State *L )
 {
-    luaL_openlib( L, "file", fsysLib, 0 );
+    lua_newtable( L );
+    luaL_openlib( L, NULL, fsysLib, 0 );
+
+    lua_pushlstring( L, "getRoot", 7 );
 
     lua_pushcclosure( L, luafsys_init, 0 );
-    lua_call( L, 0, 0 );
+    lua_call( L, 0, 1 );
+
+    lua_pushlstring( L, "root", 4 );
+
+    lua_pushvalue( L, -2 );
+    lua_rawset( L, -5 );
+
+    lua_pushcclosure( L, luafsys_getRoot, 1 );
+    lua_rawset( L, -3 );
 }

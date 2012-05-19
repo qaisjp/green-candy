@@ -97,19 +97,23 @@ static Node *hashnum (const Table *t, lua_Number n) {
 ** returns the `main' position of an element in a table (that is, the index
 ** of its hash value)
 */
-static Node *mainposition (const Table *t, const TValue *key) {
-  switch (ttype(key)) {
+static Node *mainposition (const Table *t, const TValue *key)
+{
+    int b;
+    switch (ttype(key))
+    {
     case LUA_TNUMBER:
-      return hashnum(t, nvalue(key));
+        return hashnum(t, nvalue(key));
     case LUA_TSTRING:
-      return hashstr(t, rawtsvalue(key));
+        return hashstr(t, rawtsvalue(key));
     case LUA_TBOOLEAN:
-      return hashboolean(t, bvalue(key));
+        b = bvalue(key);
+        return hashboolean(t, b);
     case LUA_TLIGHTUSERDATA:
-      return hashpointer(t, pvalue(key));
+        return hashpointer(t, pvalue(key));
     default:
-      return hashpointer(t, gcvalue(key));
-  }
+        return hashpointer(t, gcvalue(key));
+    }
 }
 
 
@@ -354,10 +358,9 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
 ** }=============================================================
 */
 
-
 Table *luaH_new (lua_State *L, int narray, int nhash) {
-  Table *t = luaM_new(L, Table);
-  luaC_link(L, obj2gco(t), LUA_TTABLE);
+  Table *t = new (L) Table;
+  luaC_link(L, t, LUA_TTABLE);
   t->metatable = NULL;
   t->flags = cast_byte(~0);
   /* temporary values (kept only if some malloc fails) */

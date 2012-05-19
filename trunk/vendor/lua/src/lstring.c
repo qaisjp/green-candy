@@ -51,15 +51,13 @@ TString::~TString()
     G(_lua)->strt.nuse--;
 }
 
-
 static TString *newlstr (lua_State *L, const char *str, size_t l,
                                        unsigned int h) {
   TString *ts;
   stringtable *tb;
   if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
     luaM_toobig(L);
-  ts = cast(TString *, luaM_malloc(L, (l+1)*sizeof(char)+sizeof(TString)));
-  new (ts) TString;
+  ts = new (L, l) TString;
   ts->len = l;
   ts->hash = h;
   ts->marked = luaC_white(G(L));
@@ -70,7 +68,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   tb = &G(L)->strt;
   h = lmod(h, tb->size);
   ts->next = tb->hash[h];  /* chain new entry */
-  tb->hash[h] = obj2gco(ts);
+  tb->hash[h] = ts;
   tb->nuse++;
   if (tb->nuse > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(L, tb->size*2);  /* too crowded */
@@ -98,13 +96,15 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   return newlstr(L, str, l, h);  /* not found */
 }
 
+Udata::~Udata()
+{
+}
 
 Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata))
     luaM_toobig(L);
-  u = cast(Udata *, luaM_malloc(L, s + sizeof(Udata)));
-  new (u) Udata;
+  u = new (L, s) Udata;
   u->marked = luaC_white(G(L));  /* is not finalized */
   u->tt = LUA_TUSERDATA;
   u->len = s;
@@ -112,7 +112,6 @@ Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
   u->env = e;
   /* chain it on udata list (after main thread) */
   u->next = G(L)->mainthread->next;
-  G(L)->mainthread->next = obj2gco(u);
+  G(L)->mainthread->next = u;
   return u;
 }
-

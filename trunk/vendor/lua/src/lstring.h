@@ -13,10 +13,6 @@
 #include "lstate.h"
 
 
-#define sizestring(s)	(sizeof(TString)+((s)->len+1)*sizeof(char))
-
-#define sizeudata(u)	(sizeof(Udata)+(u)->len)
-
 #define luaS_new(L, s)	(luaS_newlstr(L, s, strlen(s)))
 #define luaS_newliteral(L, s)	(luaS_newlstr(L, "" s, \
                                  (sizeof(s)/sizeof(char))-1))

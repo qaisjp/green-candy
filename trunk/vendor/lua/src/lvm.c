@@ -675,7 +675,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
             for (aux = 0; pfunc+aux < L->top; aux++)  /* move frame down */
               setobjs2s(L, func+aux, pfunc+aux);
             ci->top = L->top = func+aux;  /* correct top */
-            lua_assert(L->top == L->base + clvalue(func)->l.p->maxstacksize);
+            lua_assert(L->top == L->base + clvalue(func)->GetLClosure()->p->maxstacksize);
             ci->savedpc = L->savedpc;
             ci->tailcalls++;  /* one more call lost */
             L->ci--;  /* remove new frame */
@@ -782,6 +782,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         nup = p->nups;
         ncl = luaF_newLclosure(L, nup, cl->env);
         LClosure *lcl = ncl->GetLClosure();
+        lcl->p = p;
         for (j=0; j<nup; j++, pc++) {
           if (GET_OPCODE(*pc) == OP_GETUPVAL)
             lcl->upvals[j] = cl->upvals[GETARG_B(*pc)];

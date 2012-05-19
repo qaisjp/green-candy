@@ -24,11 +24,6 @@
 #include "ltm.h"
 
 
-#define state_size(x)	(sizeof(x) + LUAI_EXTRASPACE)
-#define fromstate(l)	(cast(lu_byte *, (l)) - LUAI_EXTRASPACE)
-#define tostate(l)   (cast(lua_State *, cast(lu_byte *, l) + LUAI_EXTRASPACE))
-
-
 /*
 ** Main thread combines a thread state and the global state
 */
@@ -100,31 +95,36 @@ static void preinit_state (lua_State *L, global_State *g)
     L->savedpc = NULL;
     L->errfunc = 0;
     setnilvalue(gt(L));
-
-#ifdef _WIN32
-    L->signalBegin = CreateEvent( NULL, false, false, NULL );
-    L->signalWait = CreateEvent( NULL, false, false, NULL );
-#endif
 }
 
+void* lua_State::operator new( size_t size, lua_Alloc f, void *ud )
+{
+    return (*f)(ud, NULL, 0, state_size(LG));
+}
+
+void lua_State::operator delete( void *ptr )
+{
+    global_State *g = G(((lua_State*)ptr));
+    g->frealloc( g->ud, fromstate(ptr), state_size(LG), 0 );
+}
 
 static void close_state (lua_State *L)
 {
     global_State *g = G(L);
     luaF_close(L, L->stack);  /* close all upvalues for this thread */
     luaC_freeall(L);  /* collect all objects */
-    lua_assert(g->rootgc == obj2gco(L));
+    lua_assert(g->rootgc == L);
     lua_assert(g->strt.nuse == 0);
     luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size, TString *);
     luaZ_freebuffer(L, &g->buff);
     freestack(L, L);
     lua_assert(g->totalbytes == sizeof(LG));
-    (*g->frealloc)(g->ud, fromstate(L), state_size(LG), 0);
+    delete L;
 }
 
 static DWORD __stdcall luaE_threadEntryPoint( void *ud )
 {
-    lua_State *L = (lua_State*)ud;
+    lua_Thread *L = (lua_Thread*)ud;
 
     try
     {
@@ -160,11 +160,18 @@ static DWORD __stdcall luaE_threadEntryPoint( void *ud )
     return L->status;
 }
 
-lua_State* luaE_newthread( lua_State *L )
+lua_Thread::lua_Thread()
 {
-    lua_State *L1 = tostate( luaM_malloc( L, state_size( lua_State ) ) );
-    new (L1) lua_State;
-    luaC_link(L, obj2gco(L1), LUA_TTHREAD);
+#ifdef _WIN32
+    signalBegin = CreateEvent( NULL, false, false, NULL );
+    signalWait = CreateEvent( NULL, false, false, NULL );
+#endif
+}
+
+lua_Thread* luaE_newthread( lua_State *L )
+{
+    lua_Thread *L1 = new (L) lua_Thread;
+    luaC_link(L, L1, LUA_TTHREAD);
     preinit_state(L1, G(L));
     stack_init(L1, L);  /* init stack */
     setobj2n(L, gt(L1), gt(L));  /* share table of globals */
@@ -180,7 +187,7 @@ lua_State* luaE_newthread( lua_State *L )
         throw lua_exception( L, LUA_ERRRUN, "cannot allocate thread" );
 #endif
 
-    lua_assert(iswhite(obj2gco(L1)));
+    lua_assert(iswhite(L1));
     return L1;
 }
 
@@ -196,14 +203,14 @@ static void luaE_term()
     throw lua_thread_termination( L, 0 );
 }
 
-void luaE_terminate( lua_State *L, lua_State *L1 )
+void luaE_terminate( lua_Thread *L )
 {
-    luaF_close(L1, L1->stack);  /* close all upvalues for this thread */
-    lua_assert(L1->openupval == NULL);
+    luaF_close(L, L->stack);  /* close all upvalues for this thread */
+    lua_assert(L->openupval == NULL);
 
 #ifdef _WIN32
     DWORD status;
-    GetExitCodeThread( L1->threadHandle, &status );
+    GetExitCodeThread( L->threadHandle, &status );
 
     if ( status == STILL_ACTIVE )
     {
@@ -211,31 +218,36 @@ void luaE_terminate( lua_State *L, lua_State *L1 )
         CONTEXT context;
         context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 
-        GetThreadContext( L1->threadHandle, &context );
+        GetThreadContext( L->threadHandle, &context );
 
-        context.Ebx = (DWORD)L1;
+        context.Ebx = (DWORD)L;
         context.Eip = (DWORD)luaE_term;
 
-        SetThreadContext( L1->threadHandle, &context );
+        SetThreadContext( L->threadHandle, &context );
 
-        SetEvent( L1->signalBegin );
+        SetEvent( L->signalBegin );
         
-        WaitForSingleObject( L1->threadHandle, INFINITE );
+        WaitForSingleObject( L->threadHandle, INFINITE );
     }
 #endif
 }
 
-void luaE_freethread (lua_State *L, lua_State *L1)
+lua_State::~lua_State()
 {
-    luaE_terminate( L, L1 );
-    luai_userstatefree(L1);
+}
 
-    CloseHandle( L1->threadHandle );
-    CloseHandle( L1->signalBegin );
-    CloseHandle( L1->signalWait );
+lua_Thread::~lua_Thread()
+{
+    luaE_terminate( this );
+    luai_userstatefree( this );
 
-    freestack(L, L1);
-    luaM_freemem(L, fromstate(L1), state_size(lua_State));
+#ifdef _WIN32
+    CloseHandle( threadHandle );
+    CloseHandle( signalBegin );
+    CloseHandle( signalWait );
+#endif //_WIN32
+
+    freestack( l_G->mainthread, this );
 }
 
 LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud)
@@ -243,9 +255,11 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud)
     int i;
     lua_State *L;
     global_State *g;
-    void *l = (*f)(ud, NULL, 0, state_size(LG));
-    if (l == NULL)
+    lua_State *l = new (f, ud) lua_State;
+
+    if ( l == NULL )
         return NULL;
+
     L = tostate(l);
     g = &((LG *)L)->g;
     L->next = NULL;
@@ -267,7 +281,7 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud)
     luaZ_initbuffer(L, &g->buff);
     g->panic = NULL;
     g->gcstate = GCSpause;
-    g->rootgc = obj2gco(L);
+    g->rootgc = L;
     g->sweepstrgc = 0;
     g->sweepgc = &g->rootgc;
     g->gray = NULL;
@@ -292,11 +306,6 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud)
         return NULL;
     }
 
-#ifdef _WIN32
-    // Obtain the main thread handle
-    DuplicateHandle( GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(), &L->threadHandle, 0, false, DUPLICATE_SAME_ACCESS );
-#endif
-
     luai_userstateopen(L);
     return L;
 }
@@ -309,20 +318,24 @@ static void callallgcTM (lua_State *L, void *ud)
 }
 
 
-LUA_API void lua_close (lua_State *L) {
-  L = G(L)->mainthread;  /* only the main thread can be closed */
-  lua_lock(L);
-  luaF_close(L, L->stack);  /* close all upvalues for this thread */
-  luaC_separatefinalization(L, 1);  /* separate udata that have GC metamethods */
-  L->errfunc = 0;  /* no error function during GC metamethods */
-  do {  /* repeat until no more errors */
-    L->ci = L->base_ci;
-    L->base = L->top = L->ci->base;
-    L->nCcalls = L->baseCcalls = 0;
-  } while (luaD_rawrunprotected(L, callallgcTM, NULL) != 0);
-  lua_assert(G(L)->tmudata == NULL);
-  luai_userstateclose(L);
-  close_state(L);
+LUA_API void lua_close (lua_State *L)
+{
+    L = G(L)->mainthread;  /* only the main thread can be closed */
+    lua_lock(L);
+    luaF_close(L, L->stack);  /* close all upvalues for this thread */
+    luaC_separatefinalization(L, 1);  /* separate udata that have GC metamethods */
+    L->errfunc = 0;  /* no error function during GC metamethods */
+
+    do
+    {  /* repeat until no more errors */
+        L->ci = L->base_ci;
+        L->base = L->top = L->ci->base;
+        L->nCcalls = L->baseCcalls = 0;
+    } while (luaD_rawrunprotected(L, callallgcTM, NULL) != 0);
+
+    lua_assert(G(L)->tmudata == NULL);
+    luai_userstateclose(L);
+    close_state(L);
 }
 
 // MTA specific

@@ -10,7 +10,7 @@
 *
 *****************************************************************************/
 
-#include "StdInc.h"
+#include <StdInc.h>
 
 using namespace std;
 
@@ -38,11 +38,36 @@ static int luafile_read( lua_State *lua )
     luaL_checktype( lua, 1, LUA_TNUMBER );
 
     CFile *file = (CFile*)lua_touserdata( lua, lua_upvalueindex( 1 ) );
-    std::vector <char> buf( (size_t)lua_tonumber( lua, 1 ) );
 
-    buf.resize( file->Read( &buf[0], 1, buf.size() ) );
+    size_t bytesRead = (size_t)lua_tonumber( lua, 1 );
 
-    lua_pushlstring( lua, &buf[0], buf.size() );
+    if ( bytesRead == 0 )
+    {
+        lua_pushlstring( lua, "", 0 );
+        return 1;
+    }
+
+    std::vector <char> buf( bytesRead );
+
+#ifdef FU_CLASS
+    bytesRead = file->Read( &buf[0], 1, bytesRead );
+
+    if ( bytesRead == 0 )
+    {
+        lua_pushlstring( lua, "", 0 );
+        return 1;
+    }
+#else
+    bytesRead = file->Read( &buf[0], 1, bytesRead );
+#endif
+
+    lua_pushlstring( lua, &buf[0], bytesRead );
+    return 1;
+}
+
+static int luafile_readShort( lua_State *lua )
+{
+    lua_pushnumber( lua, ((CFile*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ReadShort() );
     return 1;
 }
 
@@ -69,6 +94,13 @@ static int luafile_write( lua_State *L )
     return 1;
 }
 
+static int luafile_writeShort( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TNUMBER );
+    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->WriteShort( (int)lua_tonumber( L, 1 ) ) );
+    return 1;
+}
+
 static int luafile_writeInt( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TNUMBER );
@@ -83,6 +115,68 @@ static int luafile_writeFloat( lua_State *L )
     return 1;
 }
 
+static int luafile_size( lua_State *L )
+{
+    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->GetSize() );
+    return 1;
+}
+
+static int luafile_tell( lua_State *L )
+{
+    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->Tell() );
+    return 1;
+}
+
+static int luafile_seek( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TNUMBER );
+
+    int seekType;
+
+    switch( lua_type( L, 2 ) )
+    {
+    case LUA_TNUMBER:
+        if ( (seekType = (int)lua_tonumber( L, 2 )) < 0 || seekType > SEEK_END )
+            goto defMethod;
+
+        break;
+    case LUA_TSTRING:
+        {
+            const char *type = lua_tostring( L, 2 );
+
+            if ( strcmp( type, "cur" ) == 0 )
+            {
+                seekType = SEEK_CUR;
+                break;
+            }
+            else if ( strcmp( type, "set" ) == 0 )
+            {
+                seekType = SEEK_SET;
+                break;
+            }
+            else if ( strcmp( type, "end" ) == 0 )
+            {
+                seekType = SEEK_END;
+                break;
+            }
+        }
+    default:
+defMethod:
+        lua_pushstring( L, "unknown seekmode" );
+        lua_error( L );
+        return -1;
+    }
+
+    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->Seek( (long)lua_tonumber( L, 1 ), seekType ) );
+    return 1;
+}
+
+static int luafile_eof( lua_State *L )
+{
+    lua_pushboolean( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->IsEOF() );
+    return 1;
+}
+
 static int luafile_destroy( lua_State *lua )
 {
     delete (CFile*)lua_touserdata( lua, lua_upvalueindex( 1 ) );
@@ -94,11 +188,17 @@ static const luaL_Reg fileInterface[] =
 {
     { "__newindex", luafile_onNewindex },
     { "read", luafile_read },
+    { "readShort", luafile_readShort },
     { "readInt", luafile_readInt },
     { "readFloat", luafile_readFloat },
     { "write", luafile_write },
+    { "writeShort", luafile_writeShort },
     { "writeInt", luafile_writeInt },
     { "writeFloat", luafile_writeFloat },
+    { "size", luafile_size },
+    { "tell", luafile_tell },
+    { "seek", luafile_seek },
+    { "eof", luafile_eof },
     { "destroy", luafile_destroy },
     { NULL, NULL }
 };

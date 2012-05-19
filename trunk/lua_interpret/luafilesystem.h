@@ -13,6 +13,7 @@
 #ifndef _FILESYSTEMLIB_
 #define _FILESYSTEMLIB_
 
+void luafsys_pushroot( lua_State *L, CFileTranslator *root );
 void luafilesystem_open( lua_State *L );
 
 #endif //_FILESYSTEMLIB_

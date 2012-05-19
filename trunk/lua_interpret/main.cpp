@@ -133,7 +133,7 @@ void loadBenchFile( const filePath& path, void *ud )
     if ( lua_pcall( state, 0, 0, 0 ) != 0 )
     {
         cout << "failed to run library " << relPath << "\n";
-        cout << lua_tostring( state, -1 );
+        cout << lua_tostring( state, -1 ) << "\n";
 
         lua_pop( state, 1 );
         return;
@@ -178,7 +178,10 @@ int main( int argc, char *argv[] )
 
     luaL_openlibs( state );
     luafile_open( state );
+
+    lua_pushvalue( state, LUA_GLOBALSINDEX );
     luafilesystem_open( state );
+    lua_setfield( state, -2, "file" );
 
     // Include everything from /luabench/
     cout << "starting luaBench files...\n";

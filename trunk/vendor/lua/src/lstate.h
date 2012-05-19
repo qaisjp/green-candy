@@ -101,16 +101,24 @@ typedef struct global_State {
   lua_CFunction events[LUA_NUM_EVENTS];
 } global_State;
 
+#define tostate(l)      (cast(lua_State *, cast(lu_byte *, l) + LUAI_EXTRASPACE))
+#define state_size(x)	(sizeof(x) + LUAI_EXTRASPACE)
+#define fromstate(l)	(cast(lu_byte *, (l)) - LUAI_EXTRASPACE)
 
 /*
 ** `per thread' state
 */
-class lua_State : public GrayObject
+class lua_State : public GrayObject, virtual public ILuaState
 {
 public:
     ~lua_State();
 
+    bool IsThread()     { return false; }
+
     size_t Propagate( global_State *g );
+
+    void* operator new( size_t size, lua_Alloc f, void *ud );
+    void operator delete( void *ptr );
 
     lu_byte status;
     StkId top;  /* first free slot in the stack */
@@ -136,6 +144,42 @@ public:
     GCObject *openupval;  /* list of open upvalues in this stack */
     struct lua_longjmp *errorJmp;  /* current error recover point */
     ptrdiff_t errfunc;  /* current error handling function (stack index) */
+};
+
+class lua_Thread : public lua_State
+{
+public:
+    lua_Thread();
+    ~lua_Thread();
+
+    bool IsThread()     { return true; }
+
+    void* operator new( size_t size, lua_State *main ) throw()
+    {
+        return GCObject::operator new( size + LUAI_EXTRASPACE, main );
+    }
+
+    void operator delete( void *ptr, lua_State *main ) throw()
+    {
+        GCObject::operator delete( fromstate( (lua_State*)ptr ), state_size( lua_Thread ) );
+    }
+    
+    inline void resume()
+    {
+#ifdef _WIN32
+        SetEvent( signalBegin );
+        WaitForSingleObject( signalWait, INFINITE );
+#endif
+    }
+
+    inline void yield()
+    {
+#ifdef _WIN32
+        SetEvent( signalWait );
+        WaitForSingleObject( signalBegin, INFINITE );
+#endif
+    }
+
 #ifdef _WIN32
     HANDLE threadHandle;
     HANDLE signalBegin;
@@ -160,12 +204,9 @@ public:
 #define ngcotouv(o) check_exp((o) == NULL || (o)->tt == LUA_TUPVAL, (UpVal*)(o))
 #define gco2th(o)	check_exp((o)->tt == LUA_TTHREAD, (lua_State*)(o))
 
-/* macro to convert any Lua object into a GCObject */
-#define obj2gco(v)	(cast(GCObject *, (v)))
 
-
-LUAI_FUNC lua_State *luaE_newthread (lua_State *L);
-LUAI_FUNC void luaE_terminate( lua_State *L, lua_State *L1 );
+LUAI_FUNC lua_Thread *luaE_newthread (lua_State *L);
+LUAI_FUNC void luaE_terminate( lua_Thread *L );
 LUAI_FUNC void luaE_freethread (lua_State *L, lua_State *L1);
 
 #endif

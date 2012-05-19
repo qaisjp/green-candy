@@ -610,13 +610,16 @@ static int luaB_term( lua_State *L )
 {
     lua_State *co = lua_tothread( L, 1 );
 
+    if ( !co->IsThread() )
+        throw lua_exception( L, LUA_ERRRUN, "cannot terminate main state" );
+
     if ( costatus( L, co ) != CO_SUS )
     {
         lua_pushboolean( L, false );
         return 1;
     }
 
-    luaE_terminate( L, co );
+    luaE_terminate( (lua_Thread*)L );
     lua_pushboolean( L, true );
     return 1;
 }

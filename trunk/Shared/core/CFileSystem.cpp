@@ -412,7 +412,7 @@ long CRawFile::Tell()
 bool CRawFile::IsEOF()
 {
 #ifdef _WIN32
-    return ( SetFilePointer( m_file, 0, NULL, FILE_CURRENT ) == GetFileSize( m_file, NULL ) );
+    return ( SetFilePointer( m_file, 0, NULL, FILE_CURRENT ) >= GetFileSize( m_file, NULL ) );
 #endif
 }
 
@@ -1034,13 +1034,14 @@ CFile* CSystemFileTranslator::Open( const char *path, const char *mode )
     case 'a':
         dwCreate = Exists( path ) ? OPEN_EXISTING : CREATE_ALWAYS;
         dwAccess = GENERIC_WRITE;
-        goto modular;
+
 #ifdef _EXTRA_FILE_ACCESS_MODES
+        goto modular;
     case 't':
         break;
 #endif
 modular:
-        if ( mode[1] != '+' )
+        if ( mode[1] == 'b' && mode[2] != '+' || mode[1] != '+' )
             break;
 
         dwAccess |= GENERIC_WRITE | GENERIC_READ;
