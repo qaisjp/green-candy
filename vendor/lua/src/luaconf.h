@@ -670,17 +670,24 @@ private:
 	{ if ((c)->status == 0) (c)->status = -1; }
 #define luai_jmpbuf	int  /* dummy variable */
 
-class ILuaState
+class ILuaState abstract
 {
 public:
     virtual bool    IsThread() = 0;
 };
 
-class ILuaClass
+class ILuaClass abstract
 {
 public:
     virtual void    IncrementMethodStack( lua_State *L ) = 0;
     virtual void    DecrementMethodStack( lua_State *L ) = 0;
+
+    virtual void    SetTransmit( int type ) = 0;
+    virtual int     GetTransmit() = 0;
+    virtual bool    IsTransmit( int type ) = 0;
+
+    virtual void    PushEnvironment( lua_State *L ) = 0;
+    virtual void    PushOuterEnvironment( lua_State *L ) = 0;
 
     virtual void    RequestDestruction() = 0;
 };

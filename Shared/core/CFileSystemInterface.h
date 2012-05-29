@@ -19,7 +19,7 @@ enum eFileException
     FILE_STREAM_TERMINATED  // user attempts to perform on a terminated file stream, ie. http timeout
 };
 
-class CFile
+class CFile abstract
 {
 public:
     virtual                 ~CFile()
@@ -29,14 +29,15 @@ public:
     virtual	size_t          Read( void *buffer, size_t sElement, unsigned long iNumElements ) = 0;
     virtual	size_t          Write( const void *buffer, size_t sElement, unsigned long iNumElements ) = 0;
     virtual	int             Seek( long iOffset, int iType ) = 0;
-    virtual	long            Tell() = 0;
-    virtual	bool            IsEOF() = 0;
-    virtual	bool            Stat( struct stat *stats ) = 0;
-    virtual	size_t          GetSize() = 0;
+    virtual	long            Tell() const = 0;
+    virtual	bool            IsEOF() const = 0;
+    virtual	bool            Stat( struct stat *stats ) const = 0;
+    virtual void            PushStat( const struct stat *stats ) = 0;
+    virtual	size_t          GetSize() const = 0;
     virtual	void            Flush() = 0;
-    virtual filePath&       GetPath() = 0;
-    virtual bool            IsReadable() = 0;
-    virtual bool            IsWriteable() = 0;
+    virtual const filePath& GetPath() const = 0;
+    virtual bool            IsReadable() const = 0;
+    virtual bool            IsWriteable() const = 0;
 
     // Utility definitions
     virtual	int             ReadInt()
@@ -115,6 +116,12 @@ public:
             output += c;
         }
     }
+
+    template <class type>
+    bool    ReadStruct( type& buf )
+    {
+        return Read( &buf, 1, sizeof( type ) ) == sizeof( type );
+    }
 };
 
 typedef void (*pathCallback_t)( const filePath& path, void *userdata );
@@ -161,6 +168,9 @@ class CFileSystemInterface
 {
 public:
     virtual CFileTranslator*    CreateTranslator( const char *path ) = 0;
+    virtual CFileTranslator*    OpenArchive( CFile& file ) = 0;
+
+    virtual CFileTranslator*    CreateZIPArchive( CFile& file ) = 0;
 
     // Insecure, use with caution!
     virtual bool                IsDirectory( const char *path ) = 0;

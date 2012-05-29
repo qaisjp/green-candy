@@ -13,6 +13,8 @@
 #ifndef _FILELIB_
 #define _FILELIB_
 
+#define LUACLASS_FILE   136
+
 int luaconstructor_file( lua_State *lua );
 void luafile_open( lua_State *lua );
 

@@ -17,6 +17,7 @@
 
 #include <windows.h>
 #include <DbgHelp.h>
+#include <time.h>
 #include "lauxlib.h"
 #include "lualib.h"
 #include <sstream>

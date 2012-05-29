@@ -12,6 +12,7 @@ EXPORTS
   lua_newclass
   lua_refclass
   lua_basicprotect
+  lua_basicextend
   lua_topointer
   lua_iscfunction
   lua_isnumber

@@ -278,6 +278,22 @@ static int filesystem_scanDirEx( lua_State *lua )
     return 0;
 }
 
+static int filesystem_extend( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TFUNCTION );
+
+    // Make it class root
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_setfenv( L, 1 );
+
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+
+    lua_insert( L, 2 );
+
+    lua_call( L, lua_gettop( L ) - 1, 0 );
+    return 0;
+}
+
 static int filesystem_destroy( lua_State *L )
 {
     delete (CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) );
@@ -303,12 +319,18 @@ static const luaL_Reg fsys_methods[] =
     { "getFiles", filesystem_getFiles },
     { "scanDir", filesystem_scanDir },
     { "scanDirEx", filesystem_scanDirEx },
+    { "extend", filesystem_extend },
     { "destroy", filesystem_destroy },
     { NULL, NULL }
 };
 
 int luafsys_constructor( lua_State *L )
 {
+#ifndef FU_CLASS
+    ILuaClass *j = lua_refclass( L, 1 );
+    j->SetTransmit( LUACLASS_FILETRANSLATOR );
+#endif
+
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, fsys_methods, 1 );
@@ -345,6 +367,62 @@ int luafsys_createTranslator( lua_State *L )
     return 1;
 }
 
+static int archive_destroy( lua_State *L )
+{
+    // Decrement the file reference count
+    ILuaClass *j = lua_refclass( L, lua_upvalueindex( 1 ) );
+    j->DecrementMethodStack( L );
+
+    return 0;
+}
+
+static const luaL_Reg archiveLib[] =
+{
+    { "destroy", archive_destroy },
+    { NULL, NULL }
+};
+
+static int archive_constructor( lua_State *L )
+{
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, archiveLib, 1 );
+    return 0;
+}
+
+int luafsys_createArchiveTranslator( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TCLASS );
+
+    ILuaClass *j = lua_refclass( L, 1 );
+
+    if ( !j->IsTransmit( LUACLASS_FILE ) )
+        throw lua_exception( L, LUA_ERRRUN, "expected file at archive creation" );
+
+    // Keep the file alive during archive business
+    j->IncrementMethodStack( L );
+
+    // Grab the file interface
+    lua_getfield( L, 1, "ioptr" );
+
+    CFileTranslator *root = fileSystem->OpenArchive( *(CFile*)lua_touserdata( L, 2 ) );
+
+    if ( !root )
+    {
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    luafsys_pushroot( L, root );
+
+    // Extend the fileTranslator class
+    lua_getfield( L, 3, "extend" );
+    lua_pushvalue( L, 1 );
+    lua_pushcclosure( L, archive_constructor, 1 );
+    lua_call( L, 1, 0 );
+    return 1;
+}
+
 int luafsys_getRoot( lua_State *L )
 {
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -354,6 +432,7 @@ int luafsys_getRoot( lua_State *L )
 static const luaL_Reg fsysLib[] =
 {
     { "createTranslator", luafsys_createTranslator },
+    { "createArchiveTranslator", luafsys_createArchiveTranslator },
     { NULL, NULL }
 };
 

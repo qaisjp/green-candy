@@ -1,4 +1,9 @@
 root = file.getRoot();
+droot = file.createTranslator("C:/");
+
+function archiveTest()
+	return file.createArchiveTranslator(droot.open("lol.zip", "rb+"));
+end
 
 function dircmd()
 	local m,n;

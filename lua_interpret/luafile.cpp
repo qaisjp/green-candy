@@ -23,7 +23,7 @@ static int luafile_onIndex( lua_State *lua )
         return 0;
 
     lua_pop( lua, 1 );
-    lua_gettable( lua, LUA_ENVIRONINDEX );
+    lua_gettable( lua, lua_upvalueindex( 2 ) );
     return 1;
 }
 
@@ -205,9 +205,10 @@ static const luaL_Reg fileInterface[] =
 
 int luaconstructor_file( lua_State *lua )
 {
-    lua_pushvalue( lua, LUA_ENVIRONINDEX );
-    lua_pushvalue( lua, lua_upvalueindex( 1 ) );
-    luaL_openlib( lua, NULL, fileInterface, 1 );
+#ifndef FU_CLASS
+    // Register as file
+    ILuaClass *j = lua_refclass( lua, 1 );
+    j->SetTransmit( LUACLASS_FILE );
 
     // Create the illegal access table
     lua_newtable( lua );
@@ -216,8 +217,21 @@ int luaconstructor_file( lua_State *lua )
     lua_pushboolean( lua, false );
     lua_setfield( lua, 2, "__newindex" );
 
-    lua_pushcclosure( lua, luafile_onIndex, 1 );
+    // We need the class outer environment
+    j->PushOuterEnvironment( lua );
+
+    lua_pushcclosure( lua, luafile_onIndex, 2 );
     lua_setfield( lua, LUA_ENVIRONINDEX, "__index" );
+
+    lua_pushvalue( lua, lua_upvalueindex( 1 ) );
+    lua_setfield( lua, LUA_ENVIRONINDEX, "ioptr" );
+
+    lua_basicextend( lua );
+#endif
+
+    lua_pushvalue( lua, LUA_ENVIRONINDEX );
+    lua_pushvalue( lua, lua_upvalueindex( 1 ) );
+    luaL_openlib( lua, NULL, fileInterface, 1 );
 
     lua_pushlstring( lua, "file", 4 );
     lua_setfield( lua, LUA_ENVIRONINDEX, "__type" );

@@ -1200,10 +1200,16 @@ LUA_API void lua_newclass( lua_State *lua )
 
 LUA_API ILuaClass* lua_refclass( lua_State *L, int idx )
 {
+    lua_assert( lua_type( L, idx ) == LUA_TCLASS );
     return jvalue( index2adr( L, idx ) );
 }
 
 LUA_API void lua_basicprotect( lua_State *L )
 {
     luaJ_basicprotect( L );
+}
+
+LUA_API void lua_basicextend( lua_State *L )
+{
+    luaJ_basicextend( L );
 }
