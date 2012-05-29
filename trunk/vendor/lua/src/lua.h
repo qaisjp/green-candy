@@ -385,6 +385,7 @@ LUA_API void lua_constructclass( lua_State *L, int nargs );
 LUA_API void lua_newclass( lua_State *L );
 LUA_API ILuaClass* lua_refclass( lua_State *L, int idx );
 LUA_API void lua_basicprotect( lua_State *L );
+LUA_API void lua_basicextend( lua_State *L );
 
 #ifdef __cplusplus
 #include <list>

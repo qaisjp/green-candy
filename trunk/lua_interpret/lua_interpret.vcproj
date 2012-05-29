@@ -42,9 +42,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor;..\Shared\sdk;..\Shared"
+				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared"
 				PreprocessorDefinitions="WIN32;_DEBUG"
 				RuntimeLibrary="1"
+				StructMemberAlignment="0"
 				UsePrecompiledHeader="1"
 				PrecompiledHeaderThrough="StdInc.h"
 				PrecompiledHeaderFile="$(IntDir)\$(TargetName)_d.pch"
@@ -62,10 +63,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lua5.1d.lib DbgHelp.lib"
+				AdditionalDependencies="lua5.1d.lib DbgHelp.lib zlibd_2008.lib"
 				OutputFile="$(OutDir)\lint_d.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="../vendor/lua/lib"
+				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib"
+				IgnoreAllDefaultLibraries="false"
+				IgnoreDefaultLibraryNames="LIBCMTD.lib"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
 				TargetMachine="1"
@@ -119,7 +122,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor;..\Shared\sdk;..\Shared"
+				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared"
 				PreprocessorDefinitions="WIN32;NDEBUG"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
@@ -140,10 +143,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lua5.1.lib DbgHelp.lib"
+				AdditionalDependencies="lua5.1.lib DbgHelp.lib zlib_2008.lib"
 				OutputFile="$(OutDir)\lint.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="../vendor/lua/lib"
+				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib"
+				IgnoreAllDefaultLibraries="false"
+				IgnoreDefaultLibraryNames="LIBCMT.lib"
 				GenerateDebugInformation="false"
 				AssemblyDebug="2"
 				TargetMachine="1"
@@ -197,6 +202,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Shared\core\CFileSystem.Utils.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\CFileSystem.zip.h"
+				>
+			</File>
+			<File
 				RelativePath=".\luafile.h"
 				>
 			</File>
@@ -211,6 +224,10 @@
 		</Filter>
 		<File
 			RelativePath="..\Shared\core\CFileSystem.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\Shared\core\CFileSystem.zip.cpp"
 			>
 		</File>
 		<File

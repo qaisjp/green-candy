@@ -507,14 +507,23 @@ class Class : public GCObject, public virtual ILuaClass
 public:
     ~Class();
 
-    void MarkGC( global_State *g );
-    int TraverseGC( global_State *g );
+    void    MarkGC( global_State *g );
+    int     TraverseGC( global_State *g );
 
-    Class* GetClass()   { return this; }
+    Class*  GetClass()   { return this; }
 
-    void IncrementMethodStack( lua_State *lua );
-    void DecrementMethodStack( lua_State *lua );
-    void RequestDestruction();
+    void    IncrementMethodStack( lua_State *lua );
+    void    DecrementMethodStack( lua_State *lua );
+
+    void    SetTransmit( int type );
+    int     GetTransmit();
+    bool    IsTransmit( int type );
+
+    void    PushEnvironment( lua_State *L );
+    void    PushOuterEnvironment( lua_State *L );
+
+    void    RequestDestruction();
+
     TValue* GetSuperMethod( lua_State *lua );
 
     void operator delete( void *ptr ) throw()
@@ -532,6 +541,8 @@ public:
     unsigned int refCount;
     bool reqDestruction;
     bool destroyed;
+
+    int transType;
 
     // Cached values
     TValue destructor;

@@ -163,16 +163,20 @@ void handleError( const lua_exception& e )
 void signal_handler( int sig )
 {
     lua_close( state );
+
+    delete fileSystem;
 }
 
 int main( int argc, char *argv[] )
 {
     std::string script;
 
+    state = lua_open();
+
+    srand( (unsigned int)time( NULL ) );
+
     signal( SIGTERM, signal_handler );
     signal( SIGBREAK, signal_handler );
-
-    state = lua_open();
 
     new CFileSystem();
 
@@ -228,5 +232,8 @@ int main( int argc, char *argv[] )
     }
 
     lua_close( state );
+
+    delete fileSystem;
+
     return EXIT_SUCCESS;
 }

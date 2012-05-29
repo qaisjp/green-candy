@@ -72,7 +72,8 @@ TValue *index2adr (lua_State *L, int idx);
 /*
 ** `global state', shared by all threads of this state
 */
-typedef struct global_State {
+typedef struct global_State
+{
   stringtable strt;  /* hash table for strings */
   lua_Alloc frealloc;  /* function to reallocate memory */
   void *ud;         /* auxiliary data to `frealloc' */

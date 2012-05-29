@@ -93,6 +93,31 @@ void Class::DecrementMethodStack( lua_State *lua )
     }
 }
 
+void Class::SetTransmit( int type )
+{
+    transType = type;
+}
+
+int Class::GetTransmit()
+{
+    return transType;
+}
+
+bool Class::IsTransmit( int type )
+{
+    return transType == type;
+}
+
+void Class::PushEnvironment( lua_State *L )
+{
+    sethvalue( L, L->top++, env );
+}
+
+void Class::PushOuterEnvironment( lua_State *L )
+{
+    sethvalue( L, L->top++, outenv );
+}
+
 void Class::RequestDestruction()
 {
     reqDestruction = true;
@@ -423,6 +448,7 @@ Class* luaJ_new( lua_State *L, int nargs )
     c->reqDestruction = false;
     c->inMethod = 0;
     c->refCount = 0;
+    c->transType = -1;
 
     // Set up the environments
     c->env = luaH_new( L, 0, 0 );
@@ -539,8 +565,11 @@ Class* luaJ_new( lua_State *L, int nargs )
     sethvalue( L, L->top++, c->env );
     lua_setfenv( L, -nargs - 1 );
 
-    // Call the constructor
-    lua_call( L, nargs, 0 );
+    // Call the constructor (class as first arg)
+    setjvalue( L, L->top++, c );
+    lua_insert( L, -nargs - 1 );
+
+    lua_call( L, nargs + 1, 0 );
     return c;
 }
 
@@ -582,4 +611,25 @@ static const luaL_Reg bprotect_methods[] =
 void luaJ_basicprotect( lua_State *L )
 {
     luaL_openlib( L, NULL, bprotect_methods, 0 );
+}
+
+static int extend_handler( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TFUNCTION );
+
+    // Make it class root
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_setfenv( L, 1 );
+
+    lua_getfield( L, LUA_ENVIRONINDEX, "this" );
+    lua_insert( L, 2 );
+
+    lua_call( L, lua_gettop( L ) - 1, 0 );
+    return 0;
+}
+
+void luaJ_basicextend( lua_State *L )
+{
+    lua_pushcclosure( L, extend_handler, 0 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "extend" );
 }

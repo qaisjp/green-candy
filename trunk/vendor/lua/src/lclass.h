@@ -18,5 +18,6 @@
 LUAI_FUNC Class* luaJ_new( lua_State *L, int nargs );
 LUAI_FUNC void luaJ_construct( lua_State *L, int nargs );
 LUAI_FUNC void luaJ_basicprotect( lua_State *L );
+LUAI_FUNC void luaJ_basicextend( lua_State *L );
 
 #endif //_LUA_CLASS_

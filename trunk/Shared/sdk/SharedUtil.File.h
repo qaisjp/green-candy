@@ -59,6 +59,14 @@ class filePath : public std::basic_string <char, char_traits_i>
     typedef std::basic_string <char, char_traits_i> _baseString;
 
 public:
+    bool operator ==( const filePath& right ) const
+    {
+        if ( right.size() != size() )
+            return false;
+
+        return compare( 0, size(), right.c_str() ) == 0;
+    }
+
     bool operator ==( const char *right ) const
     {
         return compare( right ) == 0;
@@ -70,6 +78,29 @@ public:
             return false;
 
         return compare( 0, size(), right.c_str() ) == 0;
+    }
+
+    filePath& operator +=( char right )
+    {
+        push_back( right );
+        return *this;
+    }
+
+    filePath& operator +=( const char *right )
+    {
+        append( right );
+        return *this;
+    }
+
+    filePath& operator +=( const std::string& right )
+    {
+        append( right.c_str(), right.size() );
+        return *this;
+    }
+
+    filePath operator +( const std::string& right ) const
+    {
+        return _baseString( *this ).append( right.c_str(), right.size() );
     }
 #else
 #define _File_PathCharComp( c1, c2 ) ( c1 == c2 )
@@ -177,11 +208,6 @@ public:
     filePath operator +( const _baseString& right ) const
     {
         return _baseString( *this ) + right;
-    }
-
-    filePath operator +( const std::string& right ) const
-    {
-        return _baseString( *this ).append( right.c_str(), right.size() );
     }
 
     filePath operator +( const char *right ) const

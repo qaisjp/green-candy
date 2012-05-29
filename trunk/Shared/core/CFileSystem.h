@@ -16,6 +16,22 @@
 
 #include <direct.h>
 
+#ifndef _WIN32
+#define FILE_MODE_CREATE    0x01
+#define FILE_MODE_OPEN      0x02
+
+#define FILE_ACCESS_WRITE   0x01
+#define FILE_ACCESS_READ    0x02
+#else
+#define FILE_MODE_CREATE    CREATE_ALWAYS
+#define FILE_MODE_OPEN      OPEN_EXISTING
+
+#define FILE_ACCESS_WRITE   GENERIC_WRITE
+#define FILE_ACCESS_READ    GENERIC_READ
+#endif
+
+
+
 class CRawFile : public CFile
 {
 public:
@@ -24,15 +40,16 @@ public:
     size_t          Read( void *buffer, size_t sElement, unsigned long iNumElements );
     size_t          Write( const void *buffer, size_t sElement, unsigned long iNumElements );
     int             Seek( long iOffset, int iType );
-    long            Tell();
-    bool            IsEOF();
-    bool            Stat( struct stat *pFileStats );
-    size_t          GetSize();
+    long            Tell() const;
+    bool            IsEOF() const;
+    bool            Stat( struct stat *stats ) const;
+    void            PushStat( const struct stat *stats );
+    size_t          GetSize() const;
     void            SetSize( size_t size );
     void            Flush();
-    filePath&       GetPath();
-    bool            IsReadable();
-    bool            IsWriteable();
+    const filePath& GetPath() const;
+    bool            IsReadable() const;
+    bool            IsWriteable() const;
 
 private:
     friend class CSystemFileTranslator;
@@ -53,14 +70,15 @@ public:
     size_t          Read( void *buffer, size_t sElement, unsigned long iNumElements );
     size_t          Write( const void *buffer, size_t sElement, unsigned long iNumElements );
     int             Seek( long iOffset, int iType );
-    long            Tell();
-    bool            IsEOF();
-    bool            Stat( struct stat *pFileStats );
-    size_t          GetSize();
+    long            Tell() const;
+    bool            IsEOF() const;
+    bool            Stat( struct stat *stats ) const;
+    void            PushStat( const struct stat *stats );
+    size_t          GetSize() const;
     void            Flush();
-    filePath&       GetPath();
-    bool            IsReadable();
-    bool            IsWriteable();
+    const filePath& GetPath() const;
+    bool            IsReadable() const;
+    bool            IsWriteable() const;
 
     int             ReadInt();
     short           ReadShort();
@@ -96,6 +114,9 @@ protected:
     dirTree         m_curDirTree;
 };
 
+#define FILE_FLAG_TEMPORARY     0x00000001
+#define FILE_FLAG_UNBUFFERED      0x00000002
+
 class CSystemFileTranslator : public CSystemPathTranslator
 {
 public:
@@ -104,6 +125,7 @@ public:
     bool            WriteData( const char *path, const char *buffer, size_t size );
     bool            CreateDir( const char *path );
     CFile*          Open( const char *path, const char *mode );
+    CFile*          OpenEx( const char *path, const char *mode, unsigned int flags );
     bool            Exists( const char *path ) const;
     bool            Delete( const char *path );
     bool            Copy( const char *src, const char *dst );
@@ -139,39 +161,22 @@ private:
 #endif
 };
 
-#ifdef _FILESYSTEM_ZIP_SUPPORT
-
-class	CArchiveFileTranslator : public CSystemPathTranslator
-{
-public:
-                    ~CArchiveFileTranslator();
-
-    CFile*          Open( const char *path, const char *mode );
-    bool            Exists( const char *path );
-    bool            Delete( const char *path );
-    size_t          Size( const char *path );
-    bool            Stat( const char *path, struct stat *stats );
-
-    void            ScanDirectory( char *directory, char *wildcard, bool recurse, 
-                        void (*dirCallback)( const filePath& directory, void *userdata ), 
-                        void (*fileCallback)( const filePath& filename, void *userdata ), 
-                        void *userdata );
-
-private:
-    friend class CFileSystem;
-
-    void*           m_pArchive;
-};
-
-#endif //_FILESYSTEM_ZIP_SUPPORT
+// Include extensions
+#include "CFileSystem.zip.h"
 
 class CFileSystem : public CFileSystemInterface
 {
 public:
                             CFileSystem();
                             ~CFileSystem();
+
+    void                    InitZIP();
+    void                    DestroyZIP();
                             
     CFileTranslator*        CreateTranslator( const char *path );
+    CFileTranslator*        OpenArchive( CFile& file );
+
+    CFileTranslator*        CreateZIPArchive( CFile& file );
 
     // Insecure functions
     bool                    IsDirectory( const char *path );
@@ -182,5 +187,31 @@ public:
 };
 
 extern CFileTranslator *fileRoot;
+
+namespace FileSystem
+{
+    template <class t, typename F>
+    inline bool MappedReaderReverse( CFile& file, F f )
+    {
+        t buf;
+        long off;
+
+        file.Seek( -(long)sizeof( buf ), SEEK_END );
+
+        do
+        {
+            file.Read( &buf, 1, sizeof( buf ) );
+
+            if ( f( buf, off ) )
+            {
+                file.Seek( -(long)sizeof( buf ) + off, SEEK_CUR );
+                return true;
+            }
+
+        } while ( file.Seek( -(long)sizeof( buf ) * 2, SEEK_CUR ) != 0 );
+
+        return false;
+    }
+}
 
 #endif //_CFileSystem_
