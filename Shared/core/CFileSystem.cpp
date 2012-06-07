@@ -254,6 +254,13 @@ void CRawFile::PushStat( const struct stat *stats )
 #endif //_WIN32
 }
 
+void CRawFile::SetSeekEnd()
+{
+#ifdef _WIN32
+    SetEndOfFile( m_file );
+#endif //_WIN32
+}
+
 size_t CRawFile::GetSize() const
 {
 #ifdef _WIN32
@@ -374,6 +381,11 @@ void CBufferedFile::PushStat( const struct stat *stats )
 size_t CBufferedFile::GetSize() const
 {
     return m_sSize;
+}
+
+void CBufferedFile::SetSeekEnd()
+{
+
 }
 
 void CBufferedFile::Flush()
@@ -779,13 +791,15 @@ bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, siz
     tree.pop_back();
     _CreateDirTree( tree );
 
-    if ( !(file = CreateFile( output.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL )) )
+    if ( (file = CreateFile( output.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL )) == INVALID_HANDLE_VALUE )
         return false;
 
-    WriteFile( file, buffer, size, NULL, NULL );
+    DWORD numWritten;
+
+    WriteFile( file, buffer, size, &numWritten, NULL );
 
     CloseHandle( file );
-    return true;
+    return numWritten == size;
 #endif
 }
 
@@ -1120,7 +1134,7 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
         //first search for files only
         if ( fileCallback )
         {
-            query = output;
+            query = std::string( output.c_str(), output.size() );
             query += wcard;
 
             // I am unsure whether ".." could turn dangerous here (wcard)
@@ -1150,7 +1164,7 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
             return;
 
         //next search for subdirectories only
-        query = output;
+        query = std::string( output.c_str(), output.size() );
         query += '*';
 
         handle = FindFirstFile( query.c_str(), &finddata );

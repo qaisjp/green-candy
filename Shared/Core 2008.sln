@@ -80,6 +80,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client - Launch", "..\MTA10
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua_interpret", "..\lua_interpret\lua_interpret.vcproj", "{B2743453-2FC6-4B60-B8FA-CA87F9995411}"
 	ProjectSection(ProjectDependencies) = postProject
+		{CCABBC2E-172D-46FD-BC43-5A9FCD295112} = {CCABBC2E-172D-46FD-BC43-5A9FCD295112}
 		{8EEECEE6-A6EC-BC48-8E76-22B87825444B} = {8EEECEE6-A6EC-BC48-8E76-22B87825444B}
 	EndProjectSection
 EndProject

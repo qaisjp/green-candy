@@ -367,6 +367,21 @@ int luafsys_createTranslator( lua_State *L )
     return 1;
 }
 
+static int archive_save( lua_State *L )
+{
+    lua_getfield( L, lua_upvalueindex( 1 ), "ioptr" );
+
+    if ( !((CFile*)lua_touserdata( L, lua_gettop( L ) ))->IsWriteable() )
+    {
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    ((CArchiveFileTranslator*)lua_touserdata( L, lua_upvalueindex( 2 ) ))->Save();
+    lua_pushboolean( L, true );
+    return 1;
+}
+
 static int archive_destroy( lua_State *L )
 {
     // Decrement the file reference count
@@ -378,6 +393,7 @@ static int archive_destroy( lua_State *L )
 
 static const luaL_Reg archiveLib[] =
 {
+    { "save", archive_save },
     { "destroy", archive_destroy },
     { NULL, NULL }
 };
@@ -386,7 +402,8 @@ static int archive_constructor( lua_State *L )
 {
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, archiveLib, 1 );
+    lua_pushvalue( L, lua_upvalueindex( 2 ) );
+    luaL_openlib( L, NULL, archiveLib, 2 );
     return 0;
 }
 
@@ -418,7 +435,8 @@ int luafsys_createArchiveTranslator( lua_State *L )
     // Extend the fileTranslator class
     lua_getfield( L, 3, "extend" );
     lua_pushvalue( L, 1 );
-    lua_pushcclosure( L, archive_constructor, 1 );
+    lua_pushlightuserdata( L, root );
+    lua_pushcclosure( L, archive_constructor, 2 );
     lua_call( L, 1, 0 );
     return 1;
 }

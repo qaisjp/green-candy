@@ -59,6 +59,10 @@ class filePath : public std::basic_string <char, char_traits_i>
     typedef std::basic_string <char, char_traits_i> _baseString;
 
 public:
+    explicit filePath( const std::string& right )
+        : _baseString( right.c_str(), right.size() )
+    { }
+
     bool operator ==( const filePath& right ) const
     {
         if ( right.size() != size() )
@@ -92,6 +96,12 @@ public:
         return *this;
     }
 
+    filePath& operator +=( const filePath& right )
+    {
+        append( right.c_str(), right.size() );
+        return *this;
+    }
+
     filePath& operator +=( const std::string& right )
     {
         append( right.c_str(), right.size() );
@@ -100,7 +110,12 @@ public:
 
     filePath operator +( const std::string& right ) const
     {
-        return _baseString( *this ).append( right.c_str(), right.size() );
+        return filePath( *this ).append( right.c_str(), right.size() );
+    }
+
+    operator std::string () const
+    {
+        return std::string( c_str(), size() );
     }
 #else
 #define _File_PathCharComp( c1, c2 ) ( c1 == c2 )
@@ -116,10 +131,6 @@ public:
     }
 
     filePath( const filePath& right )
-        : _baseString( right.c_str(), right.size() )
-    { }
-
-    filePath( const std::string& right )
         : _baseString( right.c_str(), right.size() )
     { }
 
@@ -200,10 +211,12 @@ public:
         return c_str();
     }
 
+#if 0
     operator SString () const
     {
         return SString( c_str(), size() );
     }
+#endif
 
     filePath operator +( const _baseString& right ) const
     {

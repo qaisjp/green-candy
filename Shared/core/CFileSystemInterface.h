@@ -33,6 +33,7 @@ public:
     virtual	bool            IsEOF() const = 0;
     virtual	bool            Stat( struct stat *stats ) const = 0;
     virtual void            PushStat( const struct stat *stats ) = 0;
+    virtual void            SetSeekEnd() = 0;
     virtual	size_t          GetSize() const = 0;
     virtual	void            Flush() = 0;
     virtual const filePath& GetPath() const = 0;
@@ -104,7 +105,12 @@ public:
         return Write(cBuffer, 1, strlen(cBuffer));
     }
 
-    virtual void            GetString( std::string &output )
+    size_t                  WriteString( const std::string& input )
+    {
+        return Write( input.c_str(), 1, input.size() );
+    }
+
+    void                    GetString( std::string& output )
     {
         for (;;)
         {
@@ -121,6 +127,12 @@ public:
     bool    ReadStruct( type& buf )
     {
         return Read( &buf, 1, sizeof( type ) ) == sizeof( type );
+    }
+
+    template <class type>
+    bool    WriteStruct( type& buf )
+    {
+        return Write( &buf, 1, sizeof( type ) ) == sizeof( type );
     }
 };
 

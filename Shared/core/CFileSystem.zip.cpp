@@ -6,6 +6,8 @@
 *  PURPOSE:     ZIP archive filesystem
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  Docu: https://users.cs.jmu.edu/buchhofp/forensics/formats/pkzip.html
+*
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
@@ -91,6 +93,11 @@ void CArchiveFileTranslator::fileDeflate::PushStat( const struct stat *stats )
     m_info.SetModTime( *date );
 }
 
+void CArchiveFileTranslator::fileDeflate::SetSeekEnd()
+{
+
+}
+
 size_t CArchiveFileTranslator::fileDeflate::GetSize() const
 {
     return m_sysFile.GetSize();
@@ -122,6 +129,9 @@ CArchiveFileTranslator::CArchiveFileTranslator( CFile& file ) : m_file( file )
     filePath path;
     std::stringstream stream;
 
+    // TODO: Get real .zip structure offset
+    m_structOffset = 0;
+
     // Current directory starts at root
     m_curDirEntry = &m_root;
     m_root.parent = NULL;
@@ -136,7 +146,12 @@ CArchiveFileTranslator::CArchiveFileTranslator( CFile& file ) : m_file( file )
     sysTmpRoot->CreateDir( dirName.c_str() );
     sysTmpRoot->GetFullPathFromRoot( dirName.c_str(), false, path );
 
-    m_fileRoot = (CSystemFileTranslator*)fileSystem->CreateTranslator( path.c_str() );
+    m_fileRoot = fileSystem->CreateTranslator( path.c_str() );
+    m_fileRoot->CreateDir( "unpack/" );
+    m_fileRoot->CreateDir( "realtime/" );
+
+    m_unpackRoot = fileSystem->CreateTranslator( path + "unpack/" );
+    m_realtimeRoot = fileSystem->CreateTranslator( path + "realtime/" );
 }
 
 CArchiveFileTranslator::~CArchiveFileTranslator()
@@ -144,6 +159,8 @@ CArchiveFileTranslator::~CArchiveFileTranslator()
     filePath path;
     m_fileRoot->GetFullPath( "/", false, path );
 
+    delete m_unpackRoot;
+    delete m_realtimeRoot;
     delete m_fileRoot;
 
     // Delete all temporary files
@@ -200,12 +217,6 @@ bool CArchiveFileTranslator::CreateDir( const char *path )
     return true;
 }
 
-#define ZIP_FILE_MODE_CREATE    0x01
-#define ZIP_FILE_MODE_OPEN      0x02
-
-#define ZIP_ACCESS_WRITE        0x01
-#define ZIP_ACCESS_READ         0x02
-
 CFile* CArchiveFileTranslator::Open( const char *path, const char *mode )
 {
     dirTree tree;
@@ -246,13 +257,13 @@ CFile* CArchiveFileTranslator::Open( const char *path, const char *mode )
 
         if ( entry->archived && !entry->cached )
         {
-            dstFile = m_fileRoot->Open( relPath.c_str(), "wb+" );
+            dstFile = m_realtimeRoot->Open( relPath.c_str(), "wb+" );
 
             Extract( *dstFile, *entry );
             entry->cached = true;
         }
         else
-            dstFile = m_fileRoot->Open( relPath.c_str(), "rb+" );
+            dstFile = m_realtimeRoot->Open( relPath.c_str(), "rb+" );
 
         break;
     case FILE_MODE_CREATE:
@@ -264,7 +275,7 @@ CFile* CArchiveFileTranslator::Open( const char *path, const char *mode )
 
         entry = &dir->AddFile( name );
 
-        dstFile = m_fileRoot->Open( relPath.c_str(), "wb+" );
+        dstFile = m_realtimeRoot->Open( relPath.c_str(), "wb+" );
         break;
     }
 
@@ -423,23 +434,6 @@ struct _centralFile
     size_t          localHeaderOffset;
 };
 
-struct _localHeader
-{
-    unsigned int    signature;
-    unsigned short  version;
-    unsigned short  flags;
-    unsigned short  compression;
-    unsigned short  modTime;
-    unsigned short  modDate;
-    unsigned int    crc32;
-
-    size_t          sizeCompressed;
-    size_t          sizeReal;
-    
-    unsigned short  nameLen;
-    unsigned short  commentLen;
-};
-
 #pragma pack()
 
 CArchiveFileTranslator::directory& CArchiveFileTranslator::_CreateDirTree( directory& dir, const dirTree& tree )
@@ -471,52 +465,59 @@ void CArchiveFileTranslator::ReadFiles( unsigned int count )
         dirTree tree;
         bool isFile;
 
-        if ( !GetRelativePathTreeFromRoot( buf, tree, isFile ) || !isFile )
+        if ( !GetRelativePathTreeFromRoot( buf, tree, isFile ) )
             throw;
 
-        filePath name = tree[ tree.size() - 1 ];
-        tree.pop_back();
-
-        // Deposit in the correct directory
-        file& entry = _CreateDirTree( m_root, tree ).AddFile( name );
-
-        // Store attributes
-        entry.version = header.version;
-        entry.reqVersion = header.reqVersion;
-        entry.flags = header.flags;
-        entry.compression = header.compression;
-        entry.modTime = header.modTime;
-        entry.modDate = header.modDate;
-        entry.crc32 = header.crc32;
-        entry.sizeCompressed = header.sizeCompressed;
-        entry.sizeReal = header.sizeReal;
-        entry.diskID = header.diskID;
-        entry.internalAttr = header.internalAttr;
-        entry.externalAttr = header.externalAttr;
-        entry.localHeaderOffset = header.localHeaderOffset;
-        entry.archived = true;
-        entry.cached = false;
-
-        if ( header.extraLen )
+        if ( isFile )
         {
-            m_file.Read( buf, 1, header.extraLen );
-            entry.extra = std::string( buf, header.extraLen );
+            filePath name = tree[ tree.size() - 1 ];
+            tree.pop_back();
+
+            // Deposit in the correct directory
+            file& entry = _CreateDirTree( m_root, tree ).AddFile( name );
+
+            // Store attributes
+            entry.relPath = buf;
+            entry.version = header.version;
+            entry.reqVersion = header.reqVersion;
+            entry.flags = header.flags;
+            entry.compression = header.compression;
+            entry.modTime = header.modTime;
+            entry.modDate = header.modDate;
+            entry.crc32 = header.crc32;
+            entry.sizeCompressed = header.sizeCompressed;
+            entry.sizeReal = header.sizeReal;
+            entry.diskID = header.diskID;
+            entry.internalAttr = header.internalAttr;
+            entry.externalAttr = header.externalAttr;
+            entry.localHeaderOffset = header.localHeaderOffset;
+            entry.archived = true;
+
+            if ( header.extraLen )
+            {
+                m_file.Read( buf, 1, header.extraLen );
+                entry.extra = std::string( buf, header.extraLen );
+            }
+
+            if ( header.commentLen )
+            {
+                m_file.Read( buf, 1, header.commentLen );
+                entry.comment = std::string( buf, header.commentLen );
+            }
         }
-
-        if ( header.commentLen )
+        else
         {
-            m_file.Read( buf, 1, header.commentLen );
-            entry.comment = std::string( buf, header.commentLen );
+            _CreateDirTree( m_root, tree );
+
+            // Does not make sense, but for safety's sake
+            m_file.Seek( header.commentLen + header.extraLen, SEEK_CUR );
         }
     }
 }
 
-void CArchiveFileTranslator::Extract( CFile& dstFile, file& info )
+inline void CArchiveFileTranslator::seekFile( const file& info, _localHeader& header )
 {
     m_file.Seek( info.localHeaderOffset, SEEK_SET );
-
-    _localHeader header;
-    size_t s = sizeof( header );
 
     if ( !m_file.ReadStruct( header ) )
         throw;
@@ -525,24 +526,29 @@ void CArchiveFileTranslator::Extract( CFile& dstFile, file& info )
         throw;
 
     m_file.Seek( header.nameLen + header.commentLen, SEEK_CUR );
+}
+
+void CArchiveFileTranslator::Extract( CFile& dstFile, file& info )
+{
+    CFile *from;
+    size_t comprSize = info.sizeCompressed;
+
+    if ( info.subParsed )
+        from = m_unpackRoot->Open( info.relPath.c_str(), "rb" );
+    else
+    {
+        _localHeader header;
+        seekFile( info, header );
+
+        from = &m_file;
+    }
 
     char buf[16384];
 
-    switch( header.compression )
+    switch( info.compression )
     {
     case 0:
-        {
-            size_t toRead;
-
-            while ( ( toRead = min( sizeof( buf ), header.sizeCompressed ) ) != 0 )
-            {
-                size_t rb = m_file.Read( buf, 1, toRead );
-
-                header.sizeCompressed -= rb;
-
-                dstFile.Write( buf, 1, rb );
-            }
-        }
+        FileSystem::StreamCopyCount( *from, dstFile, comprSize );
         break;
     case 8:
         {
@@ -559,13 +565,13 @@ void CArchiveFileTranslator::Extract( CFile& dstFile, file& info )
 
             do
             {
-                size_t toRead = min( sizeof( buf ), header.sizeCompressed );
+                size_t toRead = min( sizeof( buf ), comprSize );
 
                 if ( toRead == 0 )
                     break;
 
-                size_t rb = m_file.Read( buf, 1, toRead );
-                header.sizeCompressed -= rb;
+                size_t rb = from->Read( buf, 1, toRead );
+                comprSize -= rb;
 
                 stream.avail_in = rb;
                 stream.next_in = (Bytef*)buf;
@@ -577,18 +583,30 @@ void CArchiveFileTranslator::Extract( CFile& dstFile, file& info )
 
                     ret = inflate( &stream, Z_NO_FLUSH );
 
+                    switch( ret )
+                    {
+                    case Z_DATA_ERROR:
+                    case Z_NEED_DICT:
+                    case Z_MEM_ERROR:
+                        goto z_error;
+                    }
+
                     dstFile.Write( outbuf, 1, sizeof( outbuf ) - stream.avail_out );
 
                 } while ( stream.avail_out == 0 );
 
             } while ( ret != Z_STREAM_END );
 
+z_error:
             inflateEnd( &stream );
         }
         break;
     default:
         assert( 0 );
     }
+
+    if ( info.subParsed )
+        delete from;
 }
 
 CFileTranslator* CFileSystem::CreateZIPArchive( CFile& file )
@@ -629,9 +647,246 @@ CFileTranslator* CFileSystem::OpenArchive( CFile& file )
     return zip;
 }
 
+void CArchiveFileTranslator::CacheDirectory( const directory& dir )
+{
+    fileList::const_iterator fileIter = dir.files.begin();
+
+    for ( ; fileIter != dir.files.end(); fileIter++ )
+    {
+        if ( (*fileIter)->cached || (*fileIter)->subParsed )
+            continue;
+
+        // Dump the compressed content
+        _localHeader header;
+        seekFile( **fileIter, header );
+
+        CFile *dst = m_unpackRoot->Open( (*fileIter)->relPath.c_str(), "wb" );
+
+        FileSystem::StreamCopyCount( m_file, *dst, (*fileIter)->sizeCompressed );
+
+        delete dst;
+
+        (*fileIter)->subParsed = true;
+    }
+
+    directory::subDirs::const_iterator iter = dir.children.begin();
+
+    for ( ; iter != dir.children.end(); iter++ )
+        CacheDirectory( **iter );
+}
+
+struct zip_deflate_compression
+{
+    zip_deflate_compression( CArchiveFileTranslator::_localHeader& header, int level ) : m_header( header )
+    {
+        m_header.sizeCompressed = 0;
+        
+        m_stream.zalloc = NULL;
+        m_stream.zfree = NULL;
+        m_stream.opaque = NULL;
+        m_stream.avail_in = 0;
+        m_stream.avail_out = 0;
+        m_stream.next_in = NULL;
+        m_stream.total_in = 0;
+        m_stream.total_out = 0;
+
+        if ( deflateInit2( &m_stream, level, Z_DEFLATED, -MAX_WBITS, 8, Z_DEFAULT_STRATEGY ) != Z_OK )
+            throw;
+    }
+
+    ~zip_deflate_compression()
+    {
+        deflateEnd( &m_stream );
+    }
+
+    inline void prepare( char *buf, size_t size, bool eof )
+    {
+        m_flush = eof ? Z_FINISH : Z_NO_FLUSH;
+
+        m_stream.avail_in = size;
+        m_stream.next_in = (Bytef*)buf;
+
+        m_header.crc32 = crc32( m_header.crc32, (Bytef*)buf, size );
+    }
+
+    inline bool parse( char *buf, size_t size, size_t& sout )
+    {
+        m_stream.avail_out = size;
+        m_stream.next_out = (Bytef*)buf;
+
+        int ret = deflate( &m_stream, m_flush );
+
+        sout = size - m_stream.avail_out;
+
+        m_header.sizeCompressed += sout;
+
+        if ( ret == Z_STREAM_ERROR )
+            throw;
+
+        return m_stream.avail_out == 0;
+    }
+
+    int m_flush;
+    z_stream m_stream;
+    CArchiveFileTranslator::_localHeader& m_header;
+};
+
+void CArchiveFileTranslator::SaveDirectory( directory& dir, size_t& size )
+{
+    directory::subDirs::iterator iter = dir.children.begin();
+
+    for ( ; iter != dir.children.end(); iter++ )
+        SaveDirectory( **iter, size );
+
+    fileList::iterator fileIter = dir.files.begin();
+
+    for ( ; fileIter != dir.files.end(); fileIter++ )
+    {
+        file& info = **fileIter;
+        _localHeader header;
+        header.signature = ZIP_LOCAL_FILE_SIGNATURE;
+        header.modTime = info.modTime;
+        header.modDate = info.modDate;
+        header.nameLen = info.relPath.size();
+        header.commentLen = info.comment.size();
+
+        // Update the offset
+        info.localHeaderOffset = m_file.Tell() - m_structOffset;
+
+        size += sizeof( header ) + header.nameLen + header.commentLen;
+
+        if ( !info.cached )
+        {
+            header.version = info.version;
+            header.flags = info.flags;
+            header.compression = info.compression;
+            header.crc32 = info.crc32;
+            header.sizeCompressed = info.sizeCompressed;
+            header.sizeReal = info.sizeReal;
+
+            size += info.sizeCompressed;
+
+            m_file.WriteStruct( header );
+            m_file.WriteString( info.relPath.c_str() );
+            m_file.WriteString( info.comment );
+
+            CFile *src = m_unpackRoot->Open( info.relPath.c_str(), "rb" );
+
+            FileSystem::StreamCopy( *src, m_file );
+
+            delete src;
+        }
+        else    // has to be cached
+        {
+            header.version = 10;    // WINNT
+            header.flags = info.flags;
+            header.compression = 8; // deflate
+            header.crc32 = 0;
+
+            m_file.WriteStruct( header );
+            m_file.WriteString( info.relPath.c_str() );
+            m_file.WriteString( info.comment );
+
+            CFile *src = m_realtimeRoot->Open( info.relPath.c_str(), "rb" );
+
+            info.sizeReal = header.sizeReal = src->GetSize();
+
+            FileSystem::StreamParser( *src, m_file, zip_deflate_compression( header, Z_DEFAULT_COMPRESSION ) );
+
+            delete src;
+
+            size += info.sizeCompressed = header.sizeCompressed;
+            info.crc32 = header.crc32;
+
+            long wayOff = header.sizeCompressed + header.nameLen + header.commentLen;
+
+            m_file.Seek( -wayOff - sizeof( header ), SEEK_CUR );
+            m_file.WriteStruct( header );
+            m_file.Seek( wayOff, SEEK_CUR );
+        }
+    }
+}
+
+unsigned int CArchiveFileTranslator::BuildCentralFileHeaders( const directory& dir, size_t& size )
+{
+    directory::subDirs::const_iterator iter = dir.children.begin();
+    unsigned int cnt = 0;
+
+    for ( ; iter != dir.children.end(); iter++ )
+        cnt += BuildCentralFileHeaders( **iter, size );
+
+    fileList::const_iterator fileIter = dir.files.begin();
+
+    for ( ; fileIter != dir.files.end(); fileIter++ )
+    {
+        const file& info = **fileIter;
+        _centralFile header;
+
+        header.signature = ZIP_FILE_SIGNATURE;
+        header.version = info.version;
+        header.reqVersion = info.reqVersion;
+        header.flags = info.flags;
+        header.compression = info.compression;
+        header.modTime = info.modTime;
+        header.modDate = info.modDate;
+        header.crc32 = info.crc32;
+        header.sizeCompressed = info.sizeCompressed;
+        header.sizeReal = info.sizeReal;
+        header.nameLen = info.relPath.size();
+        header.extraLen = info.extra.size();
+        header.commentLen = info.comment.size();
+        header.diskID = info.diskID;
+        header.internalAttr = info.internalAttr;
+        header.externalAttr = info.externalAttr;
+        header.localHeaderOffset = info.localHeaderOffset;
+
+        m_file.WriteStruct( header );
+        m_file.WriteString( info.relPath.c_str() );
+        m_file.WriteString( info.extra );
+        m_file.WriteString( info.comment );
+
+        size += sizeof( header ) + header.nameLen + header.extraLen + header.commentLen;
+        cnt++;
+    }
+
+    return cnt;
+}
+
 void CArchiveFileTranslator::Save()
 {
-    
+    if ( !m_file.IsWriteable() )
+        return;
+
+    // Cache the .zip content
+    CacheDirectory( m_root );
+
+    // Rewrite the archive
+    m_file.Seek( m_structOffset, SEEK_SET );
+
+    size_t fileSize = 0;
+    SaveDirectory( m_root, fileSize );
+
+    // Create the central directory
+    size_t centralSize = 0;
+    unsigned int entryCount = BuildCentralFileHeaders( m_root, centralSize );
+
+    // Finishing entry
+    m_file.WriteInt( ZIP_SIGNATURE );
+
+    _endDir tail;
+    tail.diskID = 0;
+    tail.diskAlign = 0;
+    tail.entries = entryCount;
+    tail.totalEntries = entryCount;
+    tail.centralDirectorySize = centralSize;
+    tail.centralDirectoryOffset = fileSize; // we might need the offset of the .zip here
+    tail.commentLen = m_comment.size();
+
+    m_file.WriteStruct( tail );
+    m_file.WriteString( m_comment );
+
+    // Cap the stream
+    m_file.SetSeekEnd();
 }
 
 void CFileSystem::InitZIP()

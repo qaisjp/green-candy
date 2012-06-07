@@ -1,8 +1,8 @@
 root = file.getRoot();
-droot = file.createTranslator("C:/");
+dynroot = file.createTranslator(root.absPath("luabench/"));
 
 function archiveTest()
-	return file.createArchiveTranslator(droot.open("lol.zip", "rb+"));
+	return file.createArchiveTranslator(dynroot.open("lol.zip", "rb+"));
 end
 
 function dircmd()
@@ -16,6 +16,15 @@ function dircmd()
 	end
 	
 	print("\n" .. #files .. " entries found");
+end
+
+function dorot()
+	local zfile = dynroot.open("lol.zip", "rb+");
+	local z = file.createArchiveTranslator(zfile);
+
+	z.save();
+	z.destroy();
+	zfile.destroy();
 end
 
 local function countsize(files)

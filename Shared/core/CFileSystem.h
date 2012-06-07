@@ -44,6 +44,7 @@ public:
     bool            IsEOF() const;
     bool            Stat( struct stat *stats ) const;
     void            PushStat( const struct stat *stats );
+    void            SetSeekEnd();
     size_t          GetSize() const;
     void            SetSize( size_t size );
     void            Flush();
@@ -74,6 +75,7 @@ public:
     bool            IsEOF() const;
     bool            Stat( struct stat *stats ) const;
     void            PushStat( const struct stat *stats );
+    void            SetSeekEnd();
     size_t          GetSize() const;
     void            Flush();
     const filePath& GetPath() const;
@@ -115,7 +117,8 @@ protected:
 };
 
 #define FILE_FLAG_TEMPORARY     0x00000001
-#define FILE_FLAG_UNBUFFERED      0x00000002
+#define FILE_FLAG_UNBUFFERED    0x00000002
+#define FILE_FLAG_GRIPLOCK      0x00000004
 
 class CSystemFileTranslator : public CSystemPathTranslator
 {
@@ -211,6 +214,60 @@ namespace FileSystem
         } while ( file.Seek( -(long)sizeof( buf ) * 2, SEEK_CUR ) != 0 );
 
         return false;
+    }
+
+    inline void StreamCopy( CFile& src, CFile& dst )
+    {
+        char buf[8096];
+
+        while ( !src.IsEOF() )
+        {
+            size_t rb = src.Read( buf, 1, sizeof( buf ) );
+            dst.Write( buf, 1, rb );
+        }
+    }
+
+    inline void StreamCopyCount( CFile& src, CFile& dst, size_t cnt )
+    {
+        size_t toRead;
+        char buf[8096];
+
+        while ( ( toRead = min( sizeof( buf ), cnt ) ) != 0 )
+        {
+            size_t rb = src.Read( buf, 1, toRead );
+
+            cnt -= rb;
+
+            dst.Write( buf, 1, rb );
+        }
+    }
+
+    template <class cb>
+    inline void StreamParser( CFile& src, CFile& dst, cb f )
+    {
+        char buf[8096];
+        char outBuf[16192];
+        size_t outSize;
+
+        for (;;)
+        {
+            size_t rb = src.Read( buf, 1, sizeof( buf ) );
+
+            bool eof = src.IsEOF();
+            f.prepare( buf, rb, eof );
+
+            for (;;)
+            {
+                bool cnt = f.parse( outBuf, sizeof( outBuf ), outSize );
+                dst.Write( outBuf, 1, outSize );
+
+                if ( !cnt )
+                    break;
+            }
+
+            if ( eof )
+                break;
+        }
     }
 }
 

@@ -44,6 +44,27 @@ public:
 
     void            Save();
 
+    CFile&          m_file;
+
+#pragma pack(1)
+    struct _localHeader
+    {
+        unsigned int    signature;
+        unsigned short  version;
+        unsigned short  flags;
+        unsigned short  compression;
+        unsigned short  modTime;
+        unsigned short  modDate;
+        unsigned int    crc32;
+
+        size_t          sizeCompressed;
+        size_t          sizeReal;
+        
+        unsigned short  nameLen;
+        unsigned short  commentLen;
+    };
+#pragma pack()
+
 private:
     void            ReadFiles( unsigned int count );
 
@@ -76,6 +97,7 @@ private:
     struct file
     {
         filePath        name;
+        filePath        relPath;
         unsigned short  version;
         unsigned short  reqVersion;
         unsigned short  flags;
@@ -97,6 +119,7 @@ private:
 
         bool            archived;
         bool            cached;
+        bool            subParsed;
         class stream*   locker;
 
         inline void SetModTime( const tm& date )
@@ -125,7 +148,16 @@ private:
             date.tm_wday = 0;
             date.tm_yday = 0;
         }
+
+        inline bool IsNative() const
+        {
+#ifdef _WIN32
+            return version == 10;
+#endif //_WIN32
+        }
     };
+
+    inline void seekFile( const file& info, _localHeader& header );
 
     // We need to cache data on the disk
     void            Extract( CFile& dstFile, file& info );
@@ -144,6 +176,7 @@ private:
         bool            IsEOF() const;
         bool            Stat( struct stat *stats ) const;
         void            PushStat( const struct stat *stats );
+        void            SetSeekEnd();
         size_t          GetSize() const;
         void            Flush();
         bool            IsReadable() const;
@@ -201,6 +234,9 @@ private:
         {
             file& entry = *new file;
             entry.name = fileName;
+            entry.cached = false;
+            entry.subParsed = false;
+            entry.archived = false;
 
             files.push_back( &entry );
             return entry;
@@ -245,6 +281,10 @@ private:
     };
 
     directory m_root;
+
+    void            CacheDirectory( const directory& dir );
+    void            SaveDirectory( directory& dir, size_t& size );
+    unsigned int    BuildCentralFileHeaders( const directory& dir, size_t& size );
 
     inline directory*   GetDirTree( directory& root, dirTree::const_iterator& iter, dirTree::const_iterator& end )
     {
@@ -342,10 +382,14 @@ private:
         std::string     globalComment;
     };
 
-    CFile&      m_file;
     directory*  m_curDirEntry;
+    std::string m_comment;
 
     CFileTranslator*    m_fileRoot;
+    CFileTranslator*    m_unpackRoot;
+    CFileTranslator*    m_realtimeRoot;
+
+    size_t      m_structOffset;
 };
 
 #endif //_FILESYSTEM_ZIP_
