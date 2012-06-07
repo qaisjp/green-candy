@@ -245,10 +245,9 @@ inline bool _File_ParseMode( const CFileTranslator& root, const filePath& path, 
         return false;
     }
 
-    if ( mode[1] == 'b' && mode[2] != '+' || mode[1] != '+' )
-        return true;
+    if ( mode[1] == 'b' && mode[2] == '+' || mode[1] == '+' )
+        access |= FILE_ACCESS_WRITE | FILE_ACCESS_READ;
 
-    access |= FILE_ACCESS_WRITE | FILE_ACCESS_READ;
     return true;
 }
 
