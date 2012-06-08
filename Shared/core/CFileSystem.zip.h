@@ -69,16 +69,21 @@ private:
     void            ReadFiles( unsigned int count );
 
     struct file;
+    struct directory;
 
     class stream abstract : public CFile
     {
         friend class CArchiveFileTranslator;
     public:
         stream( CArchiveFileTranslator& zip, file& info, CFile& sysFile ) : m_info( info ), m_archive( zip ), m_sysFile( sysFile )
-        { }
+        {
+            info.locks.push_back( this );
+        }
 
         ~stream()
         {
+            m_info.locks.remove( this );
+
             delete &m_sysFile;
         }
 
@@ -120,7 +125,10 @@ private:
         bool            archived;
         bool            cached;
         bool            subParsed;
-        class stream*   locker;
+        
+        typedef std::list <stream*> lockList;
+        lockList        locks;
+        directory*      dir;
 
         inline void SetModTime( const tm& date )
         {
@@ -149,6 +157,38 @@ private:
             date.tm_yday = 0;
         }
 
+        inline void UpdateTime()
+        {
+            time_t curTime = time( NULL );
+            SetModTime( *gmtime( &curTime ) );
+        }
+
+        inline void Reset()
+        {
+#ifdef _WIN32
+            version = 10;
+#endif //_WIN32
+            reqVersion = 0x14;
+            flags = 0;
+            compression = 8;
+
+            UpdateTime();
+
+            crc32 = 0;
+            sizeCompressed = 0;
+            sizeReal = 0;
+            diskID = 0;
+            internalAttr = 0;
+            externalAttr = 0;
+            
+            extra.clear();
+            comment.clear();
+
+            archived = false;
+            cached = false;
+            subParsed = false;
+        }
+
         inline bool IsNative() const
         {
 #ifdef _WIN32
@@ -161,6 +201,25 @@ private:
 
     // We need to cache data on the disk
     void            Extract( CFile& dstFile, file& info );
+
+    inline const file*  GetFileEntry( const char *path ) const
+    {
+        dirTree tree;
+        bool isFile;
+
+        if ( !GetRelativePathTree( path, tree, isFile ) || !isFile )
+            return NULL;
+
+        filePath fileName = tree[ tree.size() - 1 ];
+        tree.pop_back();
+
+        const directory *dir = GetDeriviateDir( *m_curDirEntry, tree );
+
+        if ( !dir )
+            return NULL;
+
+        return dir->GetFile( fileName );
+    }
 
     class fileDeflate : public stream
     {
@@ -193,7 +252,25 @@ private:
 
     struct directory
     {
+        directory( filePath fileName, filePath path ) : name( fileName ), relPath( path )
+        {
+        }
+
+        ~directory()
+        {
+            subDirs::iterator iter = children.begin();
+
+            for ( ; iter != children.end(); iter++ )
+                delete *iter;
+
+            fileList::iterator fileIter = files.begin();
+
+            for ( ; fileIter != files.end(); fileIter++ )
+                delete *fileIter;
+        }
+
         filePath name;
+        filePath relPath;
 
         typedef std::list <directory*> subDirs;
 
@@ -222,7 +299,7 @@ private:
             if ( dir )
                 return *dir;
 
-            dir = new directory;
+            dir = new directory( dirName, relPath + dirName + "/" );
             dir->name = dirName;
             dir->parent = this;
 
@@ -230,19 +307,75 @@ private:
             return *dir;
         }
 
+        inline void     PositionFile( file& entry )
+        {
+            entry.relPath = relPath;
+            entry.relPath += entry.name;
+        }
+
         inline file&    AddFile( const filePath& fileName )
         {
             file& entry = *new file;
             entry.name = fileName;
+            
+            PositionFile( entry );
+
             entry.cached = false;
             entry.subParsed = false;
             entry.archived = false;
+            entry.dir = this;
 
             files.push_back( &entry );
             return entry;
         }
 
+        inline void     UnlinkFile( file& entry )
+        {
+            files.remove( &entry );
+        }
+
+        inline void     MoveTo( file& entry )
+        {
+            entry.dir->UnlinkFile( entry );
+
+            entry.dir = this;
+
+            files.push_back( &entry );
+
+            PositionFile( entry );
+        }
+
         inline file*    GetFile( const filePath& fileName )
+        {
+            fileList::const_iterator iter = files.begin();
+
+            for ( ; iter != files.end(); iter++ )
+            {
+                if ( (*iter)->name == fileName )
+                    return *iter;
+            }
+
+            return NULL;
+        }
+
+        inline file*    MakeFile( const filePath& fileName )
+        {
+            file *entry = GetFile( fileName );
+
+            if ( entry )
+            {
+                if ( !entry->locks.empty() )
+                    return NULL;
+
+                entry->name = fileName;
+                entry->Reset();
+                return entry;
+            }
+
+            return &AddFile( fileName );
+        }
+
+        inline const file*  GetFile( const filePath& fileName ) const
         {
             fileList::const_iterator iter = files.begin();
 
@@ -259,7 +392,7 @@ private:
         {
             delete &entry;
 
-            files.remove( &entry );
+            UnlinkFile( entry );
         }
 
         inline bool     RemoveFile( const filePath& fileName )
@@ -270,9 +403,7 @@ private:
             {
                 if ( (*iter)->name == fileName )
                 {
-                    delete *iter;
-
-                    files.remove( *iter );
+                    RemoveFile( **iter );
                     return true;
                 }
             }
@@ -286,9 +417,9 @@ private:
     void            SaveDirectory( directory& dir, size_t& size );
     unsigned int    BuildCentralFileHeaders( const directory& dir, size_t& size );
 
-    inline directory*   GetDirTree( directory& root, dirTree::const_iterator& iter, dirTree::const_iterator& end )
+    inline const directory* GetDirTree( const directory& root, dirTree::const_iterator& iter, dirTree::const_iterator& end ) const
     {
-        directory *curDir = &root;
+        const directory *curDir = &root;
 
         for ( ; iter != end; iter++ )
         {
@@ -299,39 +430,15 @@ private:
         return curDir;
     }
 
-    inline directory*   GetDirTree( const dirTree& tree )
+    inline const directory* GetDirTree( const dirTree& tree ) const
     {
         return GetDirTree( m_root, tree.begin(), tree.end() );
     }
 
-    inline directory*   GetDeriviateDir( directory& root, const dirTree& tree );
-    inline directory&   MakeDeriviateDir( directory& root, const dirTree& tree );
+    inline const directory*     GetDeriviateDir( const directory& root, const dirTree& tree ) const;
+    inline directory&           MakeDeriviateDir( directory& root, const dirTree& tree );
 
-    directory&      _CreateDirTree( directory& root, const dirTree& tree );
-
-    struct dataDescriptor
-    {
-        unsigned int    crc32;
-        size_t          sizeCompressed;
-        size_t          sizeReal;
-    };
-
-    struct localFileHeader
-    {
-        unsigned int    signature;
-        unsigned short  version;
-        unsigned short  flags;
-        unsigned short  compression;
-        unsigned short  modTime;
-        unsigned short  modDate;
-
-        dataDescriptor  desc;
-        
-        //sizefname 16
-        //sizeextra 16
-        std::string     name;
-        std::string     extra;
-    };
+    directory&          _CreateDirTree( directory& root, const dirTree& tree );
 
     struct extraData
     {
@@ -339,47 +446,6 @@ private:
         size_t          size;
 
         //data
-    };
-
-    struct centralFileHeader
-    {
-        unsigned int    signature;
-        unsigned short  version;
-        unsigned short  reqVersion;
-        unsigned short  flags;
-        unsigned short  compression;
-        unsigned short  modTime;
-        unsigned short  modData;
-
-        dataDescriptor  desc;
-
-        //filename 16
-        //extra 16
-        //comment 16
-
-        unsigned short  diskID;
-        unsigned short  internalAttr;
-        unsigned int    externalAttr;
-        size_t          localHeaderOffset;
-
-        std::string     name;
-        std::string     extra;
-        std::string     comment;
-    };
-
-    struct centralDirectoryEnd
-    {
-        unsigned int    signature;
-        unsigned short  diskID;
-        unsigned short  diskAlign;
-        unsigned short  entries;
-        unsigned short  totalEntries;
-        size_t          centralDirectorySize;
-        size_t          centralDirectoryOffset;
-
-        //commentlen 16
-
-        std::string     globalComment;
     };
 
     directory*  m_curDirEntry;

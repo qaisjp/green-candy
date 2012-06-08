@@ -119,6 +119,7 @@ protected:
 #define FILE_FLAG_TEMPORARY     0x00000001
 #define FILE_FLAG_UNBUFFERED    0x00000002
 #define FILE_FLAG_GRIPLOCK      0x00000004
+#define FILE_FLAG_WRITESHARE    0x00000008
 
 class CSystemFileTranslator : public CSystemPathTranslator
 {
@@ -243,7 +244,7 @@ namespace FileSystem
     }
 
     template <class cb>
-    inline void StreamParser( CFile& src, CFile& dst, cb f )
+    inline void StreamParser( CFile& src, CFile& dst, cb& f )
     {
         char buf[8096];
         char outBuf[16192];
@@ -254,6 +255,49 @@ namespace FileSystem
             size_t rb = src.Read( buf, 1, sizeof( buf ) );
 
             bool eof = src.IsEOF();
+            f.prepare( buf, rb, eof );
+
+            for (;;)
+            {
+                bool cnt = f.parse( outBuf, sizeof( outBuf ), outSize );
+                dst.Write( outBuf, 1, outSize );
+
+                if ( !cnt )
+                    break;
+            }
+
+            if ( eof )
+                break;
+        }
+    }
+
+    template <class cb>
+    inline void StreamParserCount( CFile& src, CFile& dst, size_t cnt, cb& f )
+    {
+        char buf[8096];
+        char outBuf[16192];
+        size_t outSize;
+        size_t toRead;
+
+        for (;;)
+        {
+            bool eof;
+
+            if ( sizeof( buf ) >= cnt )
+            {
+                eof = true;
+
+                toRead = cnt;
+            }
+            else
+            {
+                eof = false;
+
+                cnt -= toRead = sizeof( buf );
+            }
+
+            size_t rb = src.Read( buf, 1, toRead );
+
             f.prepare( buf, rb, eof );
 
             for (;;)
