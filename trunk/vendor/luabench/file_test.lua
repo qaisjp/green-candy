@@ -21,6 +21,8 @@ end
 function dorot()
 	local zfile = dynroot.open("lol.zip", "rb+");
 	local z = file.createArchiveTranslator(zfile);
+	
+	z.open("proto.jpg", "rb+").destroy();
 
 	z.save();
 	z.destroy();

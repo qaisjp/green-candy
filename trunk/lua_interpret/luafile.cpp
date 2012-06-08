@@ -121,6 +121,25 @@ static int luafile_size( lua_State *L )
     return 1;
 }
 
+static int luafile_stat( lua_State *L )
+{
+    struct stat stats;
+    
+    if ( !((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Stat( &stats ) )
+        return 0;
+
+    lua_newtable( L );
+    lua_pushnumber( L, (lua_Number)stats.st_atime );
+    lua_setfield( L, 1, "accessTime" );
+    lua_pushnumber( L, (lua_Number)stats.st_ctime );;
+    lua_setfield( L, 1, "creationTime" );
+    lua_pushnumber( L, (lua_Number)stats.st_mtime );
+    lua_setfield( L, 1, "modTime" );
+    lua_pushnumber( L, stats.st_size );
+    lua_setfield( L, 1, "size" );
+    return 1;
+}
+
 static int luafile_tell( lua_State *L )
 {
     lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->Tell() );
@@ -196,6 +215,7 @@ static const luaL_Reg fileInterface[] =
     { "writeInt", luafile_writeInt },
     { "writeFloat", luafile_writeFloat },
     { "size", luafile_size },
+    { "stat", luafile_stat },
     { "tell", luafile_tell },
     { "seek", luafile_seek },
     { "eof", luafile_eof },

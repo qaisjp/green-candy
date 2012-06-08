@@ -124,7 +124,7 @@ bool CArchiveFileTranslator::fileDeflate::IsWriteable() const
     ZIP translation utility
 =======================================*/
 
-CArchiveFileTranslator::CArchiveFileTranslator( CFile& file ) : m_file( file )
+CArchiveFileTranslator::CArchiveFileTranslator( CFile& file ) : m_file( file ), m_root( filePath(), filePath() )
 {
     filePath path;
     std::stringstream stream;
@@ -167,9 +167,9 @@ CArchiveFileTranslator::~CArchiveFileTranslator()
     sysTmpRoot->Delete( path.c_str() );
 }
 
-inline CArchiveFileTranslator::directory* CArchiveFileTranslator::GetDeriviateDir( directory& root, const dirTree& tree )
+inline const CArchiveFileTranslator::directory* CArchiveFileTranslator::GetDeriviateDir( const directory& root, const dirTree& tree ) const
 {
-    directory *curDir = &root;
+    const directory *curDir = &root;
     dirTree::const_iterator iter = tree.begin();
 
     for ( ; iter != tree.end() && ( *iter == _dirBack ); iter++ )
@@ -245,7 +245,7 @@ CFile* CArchiveFileTranslator::Open( const char *path, const char *mode )
     switch( m )
     {
     case FILE_MODE_OPEN:
-        dir = GetDeriviateDir( *m_curDirEntry, tree );
+        dir = (directory*)GetDeriviateDir( *m_curDirEntry, tree );
 
         if ( !dir )
             return NULL;
@@ -267,15 +267,14 @@ CFile* CArchiveFileTranslator::Open( const char *path, const char *mode )
 
         break;
     case FILE_MODE_CREATE:
-        dir = &MakeDeriviateDir( *m_curDirEntry, tree );
-        entry = dir->GetFile( name );
+        entry = MakeDeriviateDir( *m_curDirEntry, tree ).MakeFile( name );
 
-        if ( entry )
-            dir->RemoveFile( *entry );
-
-        entry = &dir->AddFile( name );
+        if ( !entry )
+            return NULL;
 
         dstFile = m_realtimeRoot->Open( relPath.c_str(), "wb+" );
+
+        entry->cached = true;
         break;
     }
 
@@ -297,32 +296,197 @@ CFile* CArchiveFileTranslator::Open( const char *path, const char *mode )
 
 bool CArchiveFileTranslator::Exists( const char *path ) const
 {
-    return false;
+    dirTree tree;
+    bool isFile;
+
+    if ( !GetRelativePathTree( path, tree, isFile ) )
+        return false;
+
+    if ( isFile )
+    {
+        filePath name = tree[ tree.size() - 1 ];
+        tree.pop_back();
+
+        const directory *dir = GetDeriviateDir( *m_curDirEntry, tree );
+        return dir && dir->GetFile( name ) != NULL;
+    }
+
+    return GetDeriviateDir( *m_curDirEntry, tree ) != NULL;
 }
 
 bool CArchiveFileTranslator::Delete( const char *path )
 {
-    return false;
+    dirTree tree;
+    bool isFile;
+
+    if ( !GetRelativePathTree( path, tree, isFile ) )
+        return false;
+
+    directory *dir;
+
+    if ( !isFile )
+    {
+        if ( !( dir = (directory*)GetDeriviateDir( *m_curDirEntry, tree ) ) )
+            return false;
+
+        delete dir;
+        
+        return true;
+    }
+
+    filePath name = tree[ tree.size() - 1 ];
+    tree.pop_back();
+
+    return ( dir = (directory*)GetDeriviateDir( *m_curDirEntry, tree ) ) && dir->RemoveFile( name );
 }
 
 bool CArchiveFileTranslator::Copy( const char *src, const char *dst )
 {
-    return false;
+    file *srcEntry = (file*)GetFileEntry( src );
+
+    if ( !srcEntry )
+        return false;
+
+    dirTree tree;
+    bool isFile;
+
+    if ( !GetRelativePathTree( dst, tree, isFile ) || !isFile )
+        return false;
+
+    filePath fileName = tree[ tree.size() - 1 ];
+    tree.pop_back();
+
+    file *dstEntry = _CreateDirTree( *m_curDirEntry, tree ).MakeFile( fileName );
+
+    if ( !dstEntry )
+        return false;
+
+    // Copy over general attributes
+    dstEntry->flags = srcEntry->flags;
+    dstEntry->compression = srcEntry->compression;
+    dstEntry->modTime = srcEntry->modTime;
+    dstEntry->modDate = srcEntry->modDate;
+    dstEntry->diskID = srcEntry->diskID;
+    dstEntry->internalAttr = srcEntry->internalAttr;
+    dstEntry->externalAttr = srcEntry->externalAttr;
+    dstEntry->extra = srcEntry->extra;
+    dstEntry->comment = srcEntry->comment;
+    
+    if ( !srcEntry->cached )
+    {
+        dstEntry->version = srcEntry->version;
+        dstEntry->reqVersion = srcEntry->reqVersion;
+        dstEntry->crc32 = srcEntry->crc32;
+        dstEntry->sizeCompressed = srcEntry->sizeCompressed;
+        dstEntry->sizeReal = srcEntry->sizeReal;
+        dstEntry->subParsed = true;
+
+        if ( !srcEntry->subParsed )
+        {
+            _localHeader header;
+            seekFile( *srcEntry, header );
+
+            CFile *dstFile = m_unpackRoot->Open( dstEntry->relPath.c_str(), "wb" );
+
+            FileSystem::StreamCopyCount( m_file, *dstFile, header.sizeCompressed );
+
+            delete dstFile;
+        }
+        else
+            m_unpackRoot->Copy( srcEntry->relPath.c_str(), dstEntry->relPath.c_str() );
+    }
+    else
+    {
+        dstEntry->cached = true;
+
+        m_realtimeRoot->Copy( srcEntry->relPath.c_str(), dstEntry->relPath.c_str() );
+    }
+
+    return true;
 }
 
 bool CArchiveFileTranslator::Rename( const char *src, const char *dst )
 {
-    return false;
+    file *entry = (file*)GetFileEntry( src );
+
+    if ( !entry )
+        return false;
+
+    dirTree tree;
+    bool isFile;
+
+    if ( !GetRelativePathTree( dst, tree, isFile ) || !isFile )
+        return false;
+
+    filePath fileName = tree[ tree.size() - 1 ];
+    tree.pop_back();
+
+    // Give it a new name
+    entry->name = fileName;
+
+    if ( !entry->cached )
+    {
+        if ( !entry->subParsed )
+        {
+            _localHeader header;
+            seekFile( *entry, header );
+
+            CFile *dstFile = m_unpackRoot->Open( dst, "wb" );
+
+            FileSystem::StreamCopyCount( m_file, *dstFile, header.sizeCompressed );
+
+            delete dstFile;
+        }
+        else
+            m_unpackRoot->Rename( entry->relPath.c_str(), dst );
+    }
+    else
+        m_realtimeRoot->Rename( entry->relPath.c_str(), dst );
+
+    _CreateDirTree( *m_curDirEntry, tree ).MoveTo( *entry );
+    return true;
 }
 
 size_t CArchiveFileTranslator::Size( const char *path ) const
 {
-    return 0;
+    const file *entry = GetFileEntry( path );
+
+    if ( !entry )
+        return 0;
+
+    if ( !entry->cached )
+        return entry->sizeReal;
+
+    return m_realtimeRoot->Size( path );
 }
 
 bool CArchiveFileTranslator::Stat( const char *path, struct stat *stats ) const
 {
-    return false;
+    const file *entry = GetFileEntry( path );
+
+    if ( !entry )
+        return false;
+
+    tm date;
+    entry->GetModTime( date );
+
+    date.tm_year -= 1900;
+
+    stats->st_mtime = stats->st_ctime = stats->st_atime = mktime( &date );
+    stats->st_dev = entry->diskID;
+    stats->st_rdev = 0;
+    stats->st_gid = 0;
+    stats->st_ino = 0;
+    stats->st_mode = 0;
+    stats->st_nlink = 0;
+    stats->st_uid = 0;
+
+    if ( !entry->cached )
+        stats->st_size = entry->sizeReal;
+    else
+        stats->st_size = m_realtimeRoot->Size( entry->relPath.c_str() );
+
+    return true;
 }
 
 bool CArchiveFileTranslator::ReadToBuffer( const char *path, std::vector <char>& output ) const
@@ -341,7 +505,7 @@ bool CArchiveFileTranslator::ChangeDirectory( const char *path )
     if ( file )
         tree.pop_back();
 
-    directory *dir = GetDirTree( tree );
+    directory *dir = (directory*)GetDirTree( tree );
 
     if ( !dir )
         return false;
@@ -356,7 +520,7 @@ bool CArchiveFileTranslator::ChangeDirectory( const char *path )
 
 void CArchiveFileTranslator::ScanDirectory( const char *directory, const char *wildcard, bool recurse, pathCallback_t dirCallback, pathCallback_t fileCallback, void *userdata ) const
 {
-    
+
 }
 
 static void _scanFindCallback( const filePath& path, std::vector <filePath> *output )
@@ -477,7 +641,6 @@ void CArchiveFileTranslator::ReadFiles( unsigned int count )
             file& entry = _CreateDirTree( m_root, tree ).AddFile( name );
 
             // Store attributes
-            entry.relPath = buf;
             entry.version = header.version;
             entry.reqVersion = header.reqVersion;
             entry.flags = header.flags;
@@ -509,7 +672,6 @@ void CArchiveFileTranslator::ReadFiles( unsigned int count )
         {
             _CreateDirTree( m_root, tree );
 
-            // Does not make sense, but for safety's sake
             m_file.Seek( header.commentLen + header.extraLen, SEEK_CUR );
         }
     }
@@ -528,6 +690,49 @@ inline void CArchiveFileTranslator::seekFile( const file& info, _localHeader& he
     m_file.Seek( header.nameLen + header.commentLen, SEEK_CUR );
 }
 
+struct zip_inflate_decompression
+{
+    zip_inflate_decompression()
+    {
+        m_stream.zalloc = NULL;
+        m_stream.zfree = NULL;
+        m_stream.opaque = NULL;
+
+        if ( inflateInit2( &m_stream, -MAX_WBITS ) != Z_OK )
+            throw;
+    }
+
+    ~zip_inflate_decompression()
+    {
+        inflateEnd( &m_stream );
+    }
+
+    inline void prepare( const char *buf, size_t size, bool eof )
+    {
+        m_stream.avail_in = size;
+        m_stream.next_in = (Bytef*)buf;
+    }
+
+    inline bool parse( char *buf, size_t size, size_t& sout )
+    {
+        m_stream.avail_out = size;
+        m_stream.next_out = (Bytef*)buf;
+
+        switch( inflate( &m_stream, Z_NO_FLUSH ) )
+        {
+        case Z_DATA_ERROR:
+        case Z_NEED_DICT:
+        case Z_MEM_ERROR:
+            throw;
+        }
+
+        sout = size - m_stream.avail_out;
+        return m_stream.avail_out == 0;
+    }
+
+    z_stream m_stream;
+};
+
 void CArchiveFileTranslator::Extract( CFile& dstFile, file& info )
 {
     CFile *from;
@@ -543,63 +748,13 @@ void CArchiveFileTranslator::Extract( CFile& dstFile, file& info )
         from = &m_file;
     }
 
-    char buf[16384];
-
     switch( info.compression )
     {
     case 0:
         FileSystem::StreamCopyCount( *from, dstFile, comprSize );
         break;
     case 8:
-        {
-            int ret;
-            char outbuf[16384];
-            z_stream stream;
-            stream.zalloc = NULL;
-            stream.zfree = NULL;
-            stream.opaque = NULL;
-            stream.avail_in = 0;
-            stream.next_in = NULL;
-
-            inflateInit2( &stream, -MAX_WBITS );
-
-            do
-            {
-                size_t toRead = min( sizeof( buf ), comprSize );
-
-                if ( toRead == 0 )
-                    break;
-
-                size_t rb = from->Read( buf, 1, toRead );
-                comprSize -= rb;
-
-                stream.avail_in = rb;
-                stream.next_in = (Bytef*)buf;
-
-                do
-                {
-                    stream.avail_out = sizeof( outbuf );
-                    stream.next_out = (Bytef*)outbuf;
-
-                    ret = inflate( &stream, Z_NO_FLUSH );
-
-                    switch( ret )
-                    {
-                    case Z_DATA_ERROR:
-                    case Z_NEED_DICT:
-                    case Z_MEM_ERROR:
-                        goto z_error;
-                    }
-
-                    dstFile.Write( outbuf, 1, sizeof( outbuf ) - stream.avail_out );
-
-                } while ( stream.avail_out == 0 );
-
-            } while ( ret != Z_STREAM_END );
-
-z_error:
-            inflateEnd( &stream );
-        }
+        FileSystem::StreamParserCount( *from, dstFile, comprSize, zip_inflate_decompression() );
         break;
     default:
         assert( 0 );
@@ -684,11 +839,6 @@ struct zip_deflate_compression
         m_stream.zalloc = NULL;
         m_stream.zfree = NULL;
         m_stream.opaque = NULL;
-        m_stream.avail_in = 0;
-        m_stream.avail_out = 0;
-        m_stream.next_in = NULL;
-        m_stream.total_in = 0;
-        m_stream.total_out = 0;
 
         if ( deflateInit2( &m_stream, level, Z_DEFLATED, -MAX_WBITS, 8, Z_DEFAULT_STRATEGY ) != Z_OK )
             throw;
@@ -787,7 +937,7 @@ void CArchiveFileTranslator::SaveDirectory( directory& dir, size_t& size )
             m_file.WriteString( info.relPath.c_str() );
             m_file.WriteString( info.comment );
 
-            CFile *src = m_realtimeRoot->Open( info.relPath.c_str(), "rb" );
+            CFile *src = ((CSystemFileTranslator*)m_realtimeRoot)->OpenEx( info.relPath.c_str(), "rb", FILE_FLAG_WRITESHARE );
 
             info.sizeReal = header.sizeReal = src->GetSize();
 
