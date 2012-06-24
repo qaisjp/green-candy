@@ -40,17 +40,11 @@ public:
     inline char *   GetFunctionName ( void ) { return m_szFunctionName; }
 };
 
-class CResource
+class CResource : public Resource
 {  
-
 public:
                             CResource       ( unsigned short usID, char* szResourceName, CClientEntity* pResourceEntity, CClientEntity* pResourceDynamicEntity );
                             ~CResource      ( void );
-
-    inline unsigned short   GetID           ( void )                { return m_usID; };
-    inline char*            GetName         ( void )                { return m_szResourceName; };
-    inline CLuaMain*        GetVM           ( void )                { return m_pLuaVM; };
-    inline bool             GetActive       ( void )                { return m_bActive; };
 
     void                    Load            ( CClientEntity *pRootEntity );
 
@@ -90,12 +84,8 @@ public:
     inline std::list < CExportedFunction* >::iterator    IterEndExportedFunctions     ( void )        { return m_exportedFunctions.end(); }
 
 private:
-    unsigned short          m_usID;
-    char                    m_szResourceName [ MAX_RESOURCE_NAME_LENGTH ];
-    CLuaMain*               m_pLuaVM;
     CLuaManager*            m_pLuaManager;
     class CClientEntity*    m_pRootEntity;
-    bool                    m_bActive;
     class CClientEntity*    m_pResourceEntity;          // no idea what this is used for anymore
     class CClientEntity*    m_pResourceDynamicEntity;   // parent of elements created by the resource
     class CClientEntity*    m_pResourceCOLRoot;
@@ -108,8 +98,7 @@ private:
     static int              m_iShowingCursor;
     bool                    m_bShowingCursor;
 
-    SString                 m_strResourceDirectoryPath;         // stores the path to /mods/deathmatch/resources/resource_name
-    SString                 m_strResourcePrivateDirectoryPath;  // stores the path to /mods/deathmatch/priv/server-id/resource_name
+    CFileTranslator*        m_privateRoot;  // server id private directory
 
     std::list < class CResourceFile* >          m_ResourceFiles;
     std::list < class CResourceConfigItem* >    m_ConfigFiles;

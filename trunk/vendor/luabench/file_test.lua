@@ -5,6 +5,12 @@ function archiveTest()
 	return file.createArchiveTranslator(dynroot.open("lol.zip", "rb+"));
 end
 
+function zipcep()
+	zz = file.createArchiveTranslator(dynroot.open("zipception.zip", "rb"));
+	
+	return file.createArchiveTranslator(zz.open("lol.zip", "rb"));
+end
+
 function dircmd()
 	local m,n;
 	local files = root.scanDir("", "*", true);

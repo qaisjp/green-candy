@@ -1100,10 +1100,6 @@
 						>
 					</File>
 					<File
-						RelativePath=".\logic\lua\CLuaCFunctions.cpp"
-						>
-					</File>
-					<File
 						RelativePath=".\logic\lua\CLuaFunctionDefinitions.cpp"
 						>
 					</File>
@@ -1456,6 +1452,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaCFunctions.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\LuaFunctionRef.cpp"
 						>
 					</File>
@@ -1473,6 +1473,14 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\LuaTimerManager.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\Resource.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\ResourceManager.cpp"
 						>
 					</File>
 					<File
@@ -2321,10 +2329,6 @@
 						>
 					</File>
 					<File
-						RelativePath=".\logic\luadefs\CLuaFileDefs.h"
-						>
-					</File>
-					<File
 						RelativePath=".\logic\luadefs\CLuaHandlingDefs.h"
 						>
 					</File>
@@ -2350,10 +2354,6 @@
 					</File>
 					<File
 						RelativePath=".\logic\luadefs\CLuaWorldDefs.h"
-						>
-					</File>
-					<File
-						RelativePath=".\logic\luadefs\CLuaXMLDefs.h"
 						>
 					</File>
 					<File
@@ -2469,6 +2469,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaCFunctions.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\LuaClass.h"
 						>
 					</File>
@@ -2494,6 +2498,14 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\LuaTimerManager.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\Resource.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\ResourceManager.h"
 						>
 					</File>
 					<File

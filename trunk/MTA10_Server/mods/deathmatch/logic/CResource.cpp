@@ -2815,48 +2815,18 @@ void CResource::InvalidateIncludedResourceReference ( CResource * resource )
 
 CFile* CResource::OpenStream( const char *path, const char *mode )
 {
-    return m_fileRoot->Open( path, mode ) || CacheFileZip( path ) && m_cacheRoot->Open( path, mode );
-}
-
-bool CResource::FileCopy( const char *src, const char *dst )
-{
-    std::vector <char> buf;
-
-    if ( !m_fileRoot->ReadToBuffer( src, buf ) )
-    {
-        if ( !CacheFileZip( src ) )
-            return false;
-
-        if ( !m_cacheRoot->ReadToBuffer( src, buf ) )
-            return false;
-    }
-
-    return m_fileRoot->WriteData( dst, &buf[0], buf.size() );
+    return m_fileRoot.Open( path, mode ) || CacheFileZip( path ) && m_cacheRoot->Open( path, mode );
 }
 
 bool CResource::FileRename( const char *src, const char *dst )
 {
-    if ( !m_fileRoot->Exists( src ) )
+    if ( !m_fileRoot.Exists( src ) )
         return FileCopy( src, dst );
 
-    return m_fileRoot->Rename( src, dst );
+    return m_fileRoot.Rename( src, dst );
 }
 
-size_t CResource::FileSize( const char *path )
+bool CResource::FileExists( const char *path ) const
 {
-    CFile *file = OpenStream( path, "rb" );
-
-    if ( !file )
-        return 0;
-
-    size_t ret = file->GetSize();
-
-    delete file;
-
-    return ret;
-}
-
-bool CResource::FileExists( const char *path )
-{
-    return m_fileRoot->Exists( path ) || CacheFileZip( path );
+    return m_fileRoot.Exists( path ) || CacheFileZip( path );
 }

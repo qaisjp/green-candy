@@ -673,6 +673,7 @@ private:
 class ILuaState abstract
 {
 public:
+    virtual void    SetMainThread( bool enable ) = 0;
     virtual bool    IsThread() = 0;
 };
 

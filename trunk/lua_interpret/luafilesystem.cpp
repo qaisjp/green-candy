@@ -11,6 +11,7 @@
 *****************************************************************************/
 
 #include <StdInc.h>
+#include "luafile.Utils.hxx"
 
 static int rootIdx;
 
@@ -34,6 +35,10 @@ static int filesystem_open( lua_State *lua )
 #else
     lua_newclass( lua );
 #endif
+
+    // Register the file
+    lua_pushvalue( lua, 3 );
+    luaL_ref( lua, lua_upvalueindex( 2 ) );
     return 1;
 }
 
@@ -85,6 +90,22 @@ static int filesystem_size( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TSTRING );
     lua_pushnumber( L, ((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Size( lua_tostring( L, 1 ) ) );
+    return 1;
+}
+
+static int filesystem_stat( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TSTRING );
+
+    struct stat stats;
+
+    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Stat( lua_tostring( L, 1 ), &stats ) )
+    {
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    luafile_pushStats( L, stats );
     return 1;
 }
 
@@ -296,6 +317,17 @@ static int filesystem_extend( lua_State *L )
 
 static int filesystem_destroy( lua_State *L )
 {
+    lua_pushnil( L );
+
+    // All associated files have to be destroyed first
+    while ( lua_next( L, lua_upvalueindex( 2 ) ) != 0 )
+    {
+        lua_getfield( L, 2, "destroy" );
+        lua_call( L, 0, 0 );
+
+        lua_settop( L, 1 );
+    }
+
     delete (CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 
     return 0;
@@ -311,6 +343,7 @@ static const luaL_Reg fsys_methods[] =
     { "copy", filesystem_copy },
     { "rename", filesystem_rename },
     { "size", filesystem_size },
+    { "stat", filesystem_stat },
     { "relPath", filesystem_relPath },
     { "relPathRoot", filesystem_relPathRoot },
     { "absPath", filesystem_absPath },
@@ -333,7 +366,8 @@ int luafsys_constructor( lua_State *L )
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, fsys_methods, 1 );
+    lua_newtable( L );
+    luaL_openlib( L, NULL, fsys_methods, 2 );
 
     lua_pushlstring( L, "filesystem", 10 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

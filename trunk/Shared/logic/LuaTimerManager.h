@@ -20,7 +20,7 @@ class LuaTimerManager
 {
     friend class LuaTimer;
 public:
-    inline                      LuaTimerManager()                       { m_iterList = false; }
+    inline                      LuaTimerManager()                       {}
     inline                      ~LuaTimerManager()                      { RemoveAllTimers(); };
 
     void                        DoPulse( LuaMain *main );

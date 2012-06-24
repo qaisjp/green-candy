@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CResourceManager.h
 *  PURPOSE:     Header for resource manager class
@@ -10,6 +10,7 @@
 *               Jax <>
 *               Christian Myhre Lundheim <>
 *               Derek Abdine <>
+*               The_GTA <quiret@gmx.de>
 *               
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -20,40 +21,25 @@ class CResourceManager;
 #ifndef __CRESOURCEMANAGER_H
 #define __CRESOURCEMANAGER_H
 
-#include <list>
-
 class CClientEntity;
-class CResource;
 
-enum eAccessType
-{
-    ACCESS_PUBLIC,
-    ACCESS_PRIVATE,
-};
-
-class CResourceManager
+class CResourceManager : public ResourceManager
 {  
-
 public:
-                                CResourceManager            ( void );
-                                ~CResourceManager           ( void );
+                            CResourceManager();
+                            ~CResourceManager();
 
-    CResource*                  Add                         ( unsigned short usID, char* szResourceName, CClientEntity* pResourceEntity, CClientEntity* pResourceDynamicEntity );
-    CResource*                  GetResource                 ( const char* szResourceName );
-    CResource*                  GetResource                 ( unsigned short usID );
-    bool                        RemoveResource              ( unsigned short usID );
-    void                        Remove                      ( CResource* pResource );
-    bool                        Exists                      ( CResource* pResource );
-    void                        StopAll                     ( void );
+    CResource*              Add( unsigned short id, const char *name, CClientEntity *resEntity, CClientEntity *dynamicEntity );
 
-    void                        LoadUnavailableResources    ( CClientEntity* pRootEntity );
+    void                    LoadUnavailableResources( CClientEntity *root );
 
-    static bool                 ParseResourcePathInput      ( std::string strInput, CResource* &pResource, std::string &strPath, std::string &strMetaPath );
-    static bool                 ParseResourcePathInput      ( std::string strInput, CResource* &pResource, std::string &strPath );
-
-private:
-
-    CMappedList < CResource* >  m_resources;
+    bool                    ParseResourcePath( Resource*& res, const char *path, std::string& meta );
+    CFile*                  OpenStream( Resource *res, const char *path, const char *mode );
+    bool                    FileCopy( Resource *res, const char *src, const char *dst );
+    bool                    FileRename( Resource *res, const char *src, const char *dst );
+    size_t                  FileSize( Resource *res, const char *path );
+    bool                    FileExists( Resource *res, const char *path );
+    bool                    FileDelete( Resource *res, const char *path );
 };
 
 #endif

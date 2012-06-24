@@ -114,7 +114,9 @@ class lua_State : public GrayObject, virtual public ILuaState
 public:
     ~lua_State();
 
-    bool IsThread()     { return false; }
+    // lua_State is always the main thread
+    virtual void SetMainThread( bool enabled )  {}
+    virtual bool IsThread()                     { return false; }
 
     size_t Propagate( global_State *g );
 
@@ -153,7 +155,8 @@ public:
     lua_Thread();
     ~lua_Thread();
 
-    bool IsThread()     { return true; }
+    void SetMainThread( bool enable )   { isMain = enable; }
+    bool IsThread()                     { return !isMain; }
 
     void* operator new( size_t size, lua_State *main ) throw()
     {
@@ -186,6 +189,7 @@ public:
     HANDLE signalBegin;
     HANDLE signalWait;
 #endif //_WIN32
+    bool isMain;
 };
 
 

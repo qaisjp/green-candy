@@ -137,9 +137,17 @@ static DWORD __stdcall luaE_threadEntryPoint( void *ud )
     }
     catch( lua_exception& e )
     {
-        L->status = cast_byte( e.status() );  /* mark thread as `dead' */
-        luaD_seterrorobj( L, L->status, L->top );
-        L->ci->top = L->top;
+        if ( G( e.getThread() )->mainthread != G( L )->mainthread )
+        {
+            // A different .lua runtime triggered an exception
+            L->status = -1;
+        }
+        else
+        {
+            L->status = cast_byte( e.status() );  /* mark thread as `dead' */
+            luaD_seterrorobj( L, L->status, L->top );
+            L->ci->top = L->top;
+        }
 
         lua_settop( L, 0 );
     }
@@ -186,6 +194,8 @@ lua_Thread* luaE_newthread( lua_State *L )
     if ( !L1->threadHandle )
         throw lua_exception( L, LUA_ERRRUN, "cannot allocate thread" );
 #endif
+
+    L1->isMain = false;
 
     lua_assert(iswhite(L1));
     return L1;

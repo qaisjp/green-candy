@@ -49,6 +49,19 @@ int doubleprec( lua_State *lua )
     return 1;
 }
 
+class proc_exit : public std::exception
+{
+public:
+    proc_exit( const char *msg ) : std::exception( msg )
+    {
+    }
+};
+
+int exitproc( lua_State *L )
+{
+    throw proc_exit( ":D" );
+}
+
 void lua_exec( const std::string& cmd )
 {
     int top = lua_gettop( state );
@@ -195,6 +208,7 @@ int main( int argc, char *argv[] )
     cout << "\n";
 
     lua_register( state, "doubleprec", doubleprec );
+    lua_register( state, "exit", exitproc );
 
     try
     {

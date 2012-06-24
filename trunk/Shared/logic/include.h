@@ -13,11 +13,13 @@
 #ifndef _SHARED_LOGIC_INCLUDE_
 #define _SHARED_LOGIC_INCLUDE_
 
-#include <SharedUtil.h>
 #include "LuaCommon.h"
+#include <luafile.h>
+#include <luafilesystem.h>
 #include "ScriptFile.h"
 #include "Logger.h"
 #include "ScriptDebugging.h"
+#include "RegisteredCommands.h"
 #include "LuaFunctionRef.h"
 #include "LuaArgument.h"
 #include "LuaArguments.h"
@@ -26,5 +28,8 @@
 #include "LuaTimerManager.h"
 #include "LuaMain.h"
 #include "LuaManager.h"
+#include "Resource.h"
+#include "ResourceManager.h"
+#include "LuaFunctionDefs.h"
 
 #endif //_SHARED_LOGIC_INCLUDE_

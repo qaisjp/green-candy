@@ -41,17 +41,17 @@ public:
     void                            Dereference( const LuaFunctionRef& ref );
     void                            PushReference( const LuaFunctionRef& ref );
 
-    virtual void                    RegisterFunction( const char *name, lua_CFunction *proto );
+    virtual void                    RegisterFunction( const char *name, lua_CFunction proto );
 
-    inline void                     CallStack( int args )           { m_system.AcquireContext( *this ).CallStack( args ); }
-    inline void                     CallStackVoid( int args )       { m_system.AcquireContext( *this ).CallStackVoid( args ); }
-    inline LuaArguments             CallStackResult( int args )     { return m_system.AcquireContext( *this ).CallStackResult( args ); }
+    void							CallStack( int args );
+    void							CallStackVoid( int args );
+    LuaArguments					CallStackResult( int args );
     bool                            PCallStack( int args );
     bool                            PCallStackVoid( int args );
     LuaArguments                    PCallStackResult( int args, bool& excpt );
     //TODO: Function reference calling
 
-    bool                            LoadScriptFromBuffer( const char *buf, size_t size, const char *path, bool bUTF8 );
+    bool                            LoadScriptFromBuffer( const char *buf, size_t size, const char *path, bool utf8 );
     bool                            LoadScript( const char *buf );
 
     void                            DoPulse();
@@ -59,21 +59,23 @@ public:
     const std::string&              GetName() const                     { return m_name; };
     void                            SetName( const char *name )         { m_name = name; };
 
-    inline LuaTimerManager&         GetTimerManager() const                  { return m_timers; };
+    inline LuaTimerManager&         GetTimerManager()						{ return m_timers; };
     inline lua_State*               GetVirtualMachine() const                  { return m_lua; };
 
     inline lua_State*               operator * () const                 { return GetVirtualMachine(); }
 
-    virtual bool                    ParseRelative( const char *in, filePath& out ) = 0;
+    virtual bool                    ParseRelative( const char *in, filePath& out ) const = 0;
 
+#ifndef _KILLFRENZY
     virtual CXMLFile*               CreateXML( const char *path ) = 0;
     virtual void                    SaveXML( CXMLNode *root ) = 0;
     void                            DestroyXML( CXMLFile *file );
     void                            DestroyXML( CXMLNode *root );
     unsigned long                   GetXMLFileCount() const                  { return m_XMLFiles.size(); };
     unsigned long                   GetTimerCount() const                  { return m_timers.GetTimerCount(); };
+#endif //_KILLFRENZY
 
-    const SString&                  GetFunctionTag( int ref ) const;
+    const SString&                  GetFunctionTag( int ref );
 
 private:
     void                            InitSecurity();
@@ -92,7 +94,10 @@ protected:
 
     unsigned long                   m_functionEnter;
 
+#ifndef _KILLFRENZY
     std::list <CXMLFile*>           m_XMLFiles;
+#endif //_KILLFRENZY
+
 public:
     std::map <const void*, CRefInfo>    m_refStore;
     std::map <int, SString>             m_tagStore;

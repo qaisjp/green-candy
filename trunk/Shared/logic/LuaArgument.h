@@ -30,7 +30,9 @@ public:
                                 LuaArgument( const std::string& str );
                                 LuaArgument( void *ud );
                                 LuaArgument( const LuaArgument& arg );
+#ifndef _KILLFRENZY
                                 LuaArgument( NetBitStreamInterface& bitStream );
+#endif //_KILLFRENZY
                                 LuaArgument( lua_State *lua, int idx );
     virtual                     ~LuaArgument();
 
@@ -55,11 +57,15 @@ public:
     inline const std::string&   GetString() const       { return m_string; }
     inline void*                GetLightUserData() const      { return m_lightUD; };
 
+#ifndef _KILLFRENZY
     bool                        ReadFromBitStream( NetBitStreamInterface& bitStream );
     virtual bool                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
+#endif //_KILLFRENZY
 
 protected:
+#ifndef _KILLFRENZY
     virtual bool                ReadTypeFromBitStream( NetBitStreamInterface& stream, int type );
+#endif //_KILLFRENZY
 
     virtual void                LogUnableToPacketize( const char *msg ) const = 0;
     void                        CopyRecursive( const LuaArgument& arg );

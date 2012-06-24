@@ -11,6 +11,7 @@
 *****************************************************************************/
 
 #include <StdInc.h>
+#include "luafile.Utils.hxx"
 
 using namespace std;
 
@@ -128,15 +129,7 @@ static int luafile_stat( lua_State *L )
     if ( !((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Stat( &stats ) )
         return 0;
 
-    lua_newtable( L );
-    lua_pushnumber( L, (lua_Number)stats.st_atime );
-    lua_setfield( L, 1, "accessTime" );
-    lua_pushnumber( L, (lua_Number)stats.st_ctime );;
-    lua_setfield( L, 1, "creationTime" );
-    lua_pushnumber( L, (lua_Number)stats.st_mtime );
-    lua_setfield( L, 1, "modTime" );
-    lua_pushnumber( L, stats.st_size );
-    lua_setfield( L, 1, "size" );
+    luafile_pushStats( L, stats );
     return 1;
 }
 
@@ -196,6 +189,13 @@ static int luafile_eof( lua_State *L )
     return 1;
 }
 
+static int luafile_flush( lua_State *L )
+{
+    ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->Flush();
+    lua_pushboolean( L, true );
+    return 1;
+}
+
 static int luafile_destroy( lua_State *lua )
 {
     delete (CFile*)lua_touserdata( lua, lua_upvalueindex( 1 ) );
@@ -219,6 +219,7 @@ static const luaL_Reg fileInterface[] =
     { "tell", luafile_tell },
     { "seek", luafile_seek },
     { "eof", luafile_eof },
+    { "flush", luafile_flush },
     { "destroy", luafile_destroy },
     { NULL, NULL }
 };

@@ -17,9 +17,7 @@
 
 #include "StdInc.h"
 
-using std::list;
-
-CResourceManager::CResourceManager ( void )
+CResourceManager::CResourceManager()
 {
 }
 
@@ -50,51 +48,15 @@ CResource* CResourceManager::Add ( unsigned short usID, char* szResourceName, CC
     return NULL;
 }
 
-
-CResource* CResourceManager::GetResource ( unsigned short usID )
+void CResourceManager::LoadUnavailableResources( CClientEntity *root )
 {
-    list < CResource* > ::const_iterator iter = m_resources.begin ();
-    for ( ; iter != m_resources.end (); iter++ )
+    resourceList_t::const_iterator iter = m_resources.begin();
+
+    for ( ; iter != m_resources.end(); iter++ )
     {
-        if ( ( *iter )->GetID() == usID )
-            return ( *iter );
+        if ( !( (*iter)->GetActive() ) )
+            ((CResource*)*iter)->Load( root );
     }
-    return NULL;
-}
-
-
-CResource* CResourceManager::GetResource ( const char* szResourceName )
-{
-    list < CResource* > ::const_iterator iter = m_resources.begin ();
-    for ( ; iter != m_resources.end (); iter++ )
-    {
-        if ( stricmp ( ( *iter )->GetName(), szResourceName ) == 0 )
-            return ( *iter );
-    }
-    return NULL;
-}
-
-
-void CResourceManager::LoadUnavailableResources ( CClientEntity *pRootEntity )
-{
-    list < CResource* > ::const_iterator iter = m_resources.begin ();
-    for ( ; iter != m_resources.end (); iter++ )
-    {
-        if ( !( ( *iter )->GetActive () ) )
-            ( *iter )->Load ( pRootEntity );
-    }
-}
-
-
-bool CResourceManager::RemoveResource ( unsigned short usID )
-{
-    CResource* pResource = GetResource ( usID );
-    if ( pResource )
-    {
-        Remove ( pResource );
-        return true;
-    }
-    return false;
 }
 
 void CResourceManager::Remove ( CResource* pResource )
@@ -122,47 +84,117 @@ void CResourceManager::StopAll ( void )
     }
 }
 
-bool CResourceManager::ParseResourcePathInput ( std::string strInput, CResource* &pResource, std::string &strPath )
+bool CResourceManager::ParseResourcePath( Resource*& res, const char *path, std::string& meta )
 {
-	std::string dummy;
-	return ParseResourcePathInput ( strInput, pResource, strPath, dummy );
+    if ( path[0] == '@' )
+        meta = '@';
+
+    if ( !ResourceManager::ParseResourcePath( res, path, path ) )
+        return false;
+
+    meta += path;
+    return true;
 }
 
-// pResource may be changed on return, and it could be NULL if the function returns false.
-bool CResourceManager::ParseResourcePathInput ( std::string strInput, CResource* &pResource, std::string &strPath, std::string &strMetaPath )
+
+CFile* CResourceManager::OpenStream( Resource *res, const char *path, const char *mode )
 {
-    ReplaceOccurrencesInString ( strInput, "\\", "/" );
-    eAccessType accessType = ACCESS_PUBLIC;
+    string meta;
 
-    if ( strInput[0] == '@' )
+    if ( !ParseResourcePath( res, path, meta ) )
+        return NULL;
+
+    return res->OpenStream( meta.c_str(), mode );
+}
+
+bool CResourceManager::FileCopy( Resource *res, const char *src, const char *dst )
+{
+    Resource *dstRes = res;
+    std::string srcMeta;
+    std::string dstMeta;
+
+    if ( !ParseResourcePath( res, src, srcMeta ) || !ParseResourcePath( dstRes, dst, dstMeta ) )
+        return false;
+
+    if ( res == dstRes )
+        return res->FileCopy( src, dst );
+
+    CFile *srcFile = res->OpenStream( src, "rb" );
+
+    if ( !srcFile )
+        return false;
+
+    CFile *dstFile = dstRes->OpenStream( dst, "wb" );
+
+    if ( !dstFile )
     {
-        accessType = ACCESS_PRIVATE;
-        strInput = strInput.substr ( 1 );
+        delete srcFile;
+
+        return false;
     }
 
-    if ( strInput[0] == ':' )
+    FileSystem::StreamCopy( *srcFile, *dstFile );
+
+    delete srcFile;
+    delete dstFile;
+
+    return true;
+}
+
+bool CResourceManager::FileRename( Resource *res, const char *src, const char *dst )
+{
+    Resource *dstRes = res;
+    std::string srcMeta;
+    std::string dstMeta;
+
+    if ( !ParseResourcePath( res, src, srcMeta ) || !ParseResourcePath( dstRes, dst, dstMeta ) )
+        return false;
+
+    if ( res == dstRes )
+        return res->FileRename( src, dst );
+
+    CFile *srcFile = res->OpenStream( src, "rb+" );
+
+    if ( !srcFile )
+        return false;
+
+    CFile *dstFile = dstRes->OpenStream( dst, "wb" );
+
+    if ( !dstFile )
     {
-        unsigned int iEnd = strInput.find_first_of("/");
-        if ( iEnd )
-        {
-            std::string strResourceName = strInput.substr(1,iEnd-1);
-            pResource = g_pClientGame->GetResourceManager()->GetResource ( strResourceName.c_str() );
-            if ( pResource && strInput[iEnd+1] )
-            {
-                strMetaPath = strInput.substr(iEnd+1);
-                if ( IsValidFilePath ( strMetaPath.c_str() ) )
-                {
-                    strPath = PathJoin ( pResource->GetResourceDirectoryPath ( accessType ), strMetaPath );
-                    return true;
-                }
-            }
-        }
+        delete srcFile;
+
+        return false;
     }
-    else if ( pResource && IsValidFilePath ( strInput.c_str() ) )
-    {
-        strPath = PathJoin ( pResource->GetResourceDirectoryPath ( accessType ), strInput );
-        strMetaPath = strInput;
-        return true;
-    }
-    return false;
+
+    FileSystem::StreamCopy( *srcFile, *dstFile );
+
+    delete srcFile;
+    delete dstFile;
+
+    return res->FileDelete( src );
+}
+
+size_t CResourceManager::FileSize( Resource *res, const char *path )
+{
+    std::string meta;
+
+    if ( !ParseResourcePath( res, path, meta ) )
+        return 0;
+
+    return res->FileSize( meta.c_str() );
+}
+
+bool CResourceManager::FileExists( Resource *res, const char *path )
+{
+    std::string meta;
+
+    return ParseResourcePath( res, path, meta ) && res->FileExists( meta.c_str() );
+}
+
+bool CResourceManager::FileDelete( Resource *res, const char *path )
+{
+    std::string meta;
+
+    return ParseResourcePath( res, path, meta ) && res->FileDelete( meta.c_str() );
 }

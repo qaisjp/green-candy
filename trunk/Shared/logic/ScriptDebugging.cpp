@@ -20,7 +20,7 @@
 
 #define MAX_STRING_LENGTH 2048
 
-ScriptDebugging::ScriptDebugging()
+ScriptDebugging::ScriptDebugging( LuaManager& manager ) : m_system( manager )
 {
     m_fileLevel = 0;
     m_file = NULL;
@@ -82,9 +82,9 @@ void ScriptDebugging::LogBadType( const char *func )
     LogWarning( "Bad argument @ '%s'", func );
 }
 
-void ScriptDebugging::LogCustom( const char *msg )
+void ScriptDebugging::LogCustom( unsigned char red, unsigned char green, unsigned char blue, const char *fmt, ... )
 {
-    LogWarning( "%s", msg );
+    //LogWarning( "%s", fmt );
 }
 
 void ScriptDebugging::LogBadLevel( const char *func, unsigned int level )
@@ -99,8 +99,9 @@ void ScriptDebugging::LogString( const char *pre, const char *msg, unsigned int 
 
     // Initialize values for onClientDebugMessage
     SString strMsg = msg;
-    SString strFile;
+    filePath path;
     int iLine = -1;
+    lua_State *lua = m_system.GetThread();
 
     if ( lua && lua_getstack( lua, 1, &debugInfo ) )
     {
@@ -110,19 +111,19 @@ void ScriptDebugging::LogString( const char *pre, const char *msg, unsigned int 
         if ( debugInfo.source[0] == '@' )
         {
             // Get and store the location of the debug message
-            strFile = PathRelative( debugInfo.source + 1 );
+            PathRelative( debugInfo.source + 1, path );
             iLine = debugInfo.currentline;
 
             // Populate a message to print/send (unless "info" type)
             if ( minLevel < 3 )
-                strText = SString( "%s%s:%d: %s", pre, strFile.c_str(), debugInfo.currentline, msg );
+                strText = SString( "%s%s:%d: %s", pre, path.c_str(), debugInfo.currentline, msg );
         }
         else
         {
-            strFile = debugInfo.short_src;
+            path = debugInfo.short_src;
 
             if ( minLevel < 3 )
-                strText = SString( "%s%s %s", pre, msg, strFile.c_str() );
+                strText = SString( "%s%s %s", pre, msg, path.c_str() );
         }
 
         // Create a different message if type is "INFO"
@@ -132,7 +133,7 @@ void ScriptDebugging::LogString( const char *pre, const char *msg, unsigned int 
     else
         strText = SString( "%s%s", pre, msg );
 
-    NotifySystem( strFile, lua, iLine, strMsg, red, green, blue );
+    NotifySystem( minLevel, path, iLine, strMsg, red, green, blue );
 
     // Log it to the file if enough level
     if ( m_fileLevel >= minLevel )

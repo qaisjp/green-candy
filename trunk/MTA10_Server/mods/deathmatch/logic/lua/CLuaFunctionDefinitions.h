@@ -50,9 +50,6 @@ public:
     static void     SetResourceManager                  ( class CResourceManager* pResourceManager );
     static void     SetACL                              ( class CAccessControlListManager* pACLManager );
 
-    // Reserved functions
-    static int      DisabledFunction                    ( lua_State* luaVM );
-
     //
     static int      CallRemote                          ( lua_State* luaVM );
 
@@ -397,16 +394,11 @@ public:
     static int      RemoveCommandHandler                ( lua_State* luaVM );
     static int      ExecuteCommandHandler               ( lua_State* luaVM );
 
-    // JSON functions
-    static int      toJSON                              ( lua_State* luaVM );
-    static int      fromJSON                            ( lua_State* luaVM );
-
     // Standard server functions
     static int      GetMaxPlayers                       ( lua_State* luaVM );
     static int      SetMaxPlayers                       ( lua_State* luaVM );
     static int      OutputChatBox                       ( lua_State* luaVM );
     static int      OutputConsole                       ( lua_State* luaVM );
-    static int      OutputDebugString                   ( lua_State* luaVM );
     static int      OutputServerLog                     ( lua_State* luaVM );
     static int      GetServerName                       ( lua_State* luaVM );
     static int      GetServerHttpPort                   ( lua_State* luaVM );
@@ -417,34 +409,6 @@ public:
     static int      SetServerConfigSetting              ( lua_State* luaVM );
 
     static int      shutdown                            ( lua_State* luaVM );
-
-    // Utility vector math functions
-    static int      GetDistanceBetweenPoints2D          ( lua_State* luaVM );
-    static int      GetDistanceBetweenPoints3D          ( lua_State* luaVM );
-    static int      GetEasingValue                      ( lua_State* luaVM );
-    static int      InterpolateBetween                  ( lua_State* luaVM );
-
-    // Util functions to make scripting easier for the end user
-    // Some of these are based on standard mIRC script funcs as a lot of people will be used to them
-    static int      GetTickCount_                       ( lua_State* luaVM );
-    static int      GetCTime                            ( lua_State* luaVM );
-    static int      Split                               ( lua_State* luaVM );
-    static int      GetTok                              ( lua_State* luaVM );
-    static int      SetTimer                            ( lua_State* luaVM );
-    static int      KillTimer                           ( lua_State* luaVM );
-    static int      ResetTimer                          ( lua_State* luaVM );
-    static int      GetTimers                           ( lua_State* luaVM );
-    static int      IsTimer                             ( lua_State* luaVM );
-    static int      GetTimerDetails                     ( lua_State* luaVM );
-    static int      GetColorFromString                  ( lua_State* luaVM );
-    static int      Reference                           ( lua_State* luaVM );
-    static int      Dereference                         ( lua_State* luaVM );
-    static int      UtfLen                              ( lua_State* luaVM );
-    static int      UtfSeek                             ( lua_State* luaVM );
-    static int      UtfSub                              ( lua_State* luaVM );
-    static int      UtfChar                             ( lua_State* luaVM );
-    static int      UtfCode                             ( lua_State* luaVM );
-    static int      GetValidPedModels                   ( lua_State* luaVM );
 
     // Loaded Map Functions
     static int      GetRootElement                      ( lua_State* luaVM );
@@ -530,7 +494,6 @@ public:
     static int      Set                                 ( lua_State* luaVM );
 
     // Utility
-    static int      Md5                                 ( lua_State* luaVM );
     static int      GetNetworkUsageData                 ( lua_State* luaVM );
     static int      GetNetworkStats                     ( lua_State* luaVM );
     static int      GetVersion                          ( lua_State* luaVM );

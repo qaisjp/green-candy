@@ -18,7 +18,7 @@ using namespace std;
 class ScriptDebugging
 {
 public:
-                                    ScriptDebugging                 ();
+                                    ScriptDebugging                 ( class LuaManager& manager );
                                     ~ScriptDebugging                ();
 
     void                            LogCustom                       ( unsigned char red, unsigned char green, unsigned char blue, const char *fmt, ... );
@@ -39,6 +39,7 @@ protected:
 
     CFile*                          m_file;
     unsigned int                    m_fileLevel;
+    LuaManager&                     m_system;
 };
 
 // We require a global definition of the script debugging

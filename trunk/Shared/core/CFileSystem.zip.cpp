@@ -54,6 +54,7 @@ size_t CArchiveFileTranslator::fileDeflate::Write( const void *buffer, size_t sE
     if ( !m_writeable )
         return 0;
 
+    m_info.UpdateTime();
     return m_sysFile.Write( buffer, sElement, iNumElements );
 }
 
@@ -80,9 +81,7 @@ bool CArchiveFileTranslator::fileDeflate::Stat( struct stat *stats ) const
 
     date.tm_year -= 1900;
 
-    stats->st_mtime = mktime( &date );
-    stats->st_atime = stats->st_mtime;
-    stats->st_ctime = stats->st_mtime;
+    stats->st_mtime = stats->st_atime = stats->st_ctime = mktime( &date );
     return true;
 }
 
@@ -95,7 +94,7 @@ void CArchiveFileTranslator::fileDeflate::PushStat( const struct stat *stats )
 
 void CArchiveFileTranslator::fileDeflate::SetSeekEnd()
 {
-
+    
 }
 
 size_t CArchiveFileTranslator::fileDeflate::GetSize() const
@@ -272,6 +271,9 @@ CFile* CArchiveFileTranslator::Open( const char *path, const char *mode )
         if ( !entry )
             return NULL;
 
+		// Files start off clean
+		entry->Reset();
+
         dstFile = m_realtimeRoot->Open( relPath.c_str(), "wb+" );
 
         entry->cached = true;
@@ -283,8 +285,8 @@ CFile* CArchiveFileTranslator::Open( const char *path, const char *mode )
 
     fileDeflate *f = new fileDeflate( *this, *entry, *dstFile );
     f->m_path = relPath;
-    f->m_writeable = ( access & FILE_ACCESS_READ ) != 0;
-    f->m_readable = ( access & FILE_ACCESS_WRITE ) != 0;
+    f->m_writeable = ( access & FILE_ACCESS_WRITE ) != 0;
+    f->m_readable = ( access & FILE_ACCESS_READ ) != 0;
 
     // Update the stat
     struct stat info;
@@ -327,6 +329,9 @@ bool CArchiveFileTranslator::Delete( const char *path )
     if ( !isFile )
     {
         if ( !( dir = (directory*)GetDeriviateDir( *m_curDirEntry, tree ) ) )
+            return false;
+
+        if ( dir->IsLocked() )
             return false;
 
         delete dir;
@@ -421,9 +426,6 @@ bool CArchiveFileTranslator::Rename( const char *src, const char *dst )
     filePath fileName = tree[ tree.size() - 1 ];
     tree.pop_back();
 
-    // Give it a new name
-    entry->name = fileName;
-
     if ( !entry->cached )
     {
         if ( !entry->subParsed )
@@ -441,7 +443,15 @@ bool CArchiveFileTranslator::Rename( const char *src, const char *dst )
             m_unpackRoot->Rename( entry->relPath.c_str(), dst );
     }
     else
+    {
+        if ( !entry->locks.empty() )
+            return false;
+
         m_realtimeRoot->Rename( entry->relPath.c_str(), dst );
+    }
+
+    // Give it a new name
+    entry->name = fileName;
 
     _CreateDirTree( *m_curDirEntry, tree ).MoveTo( *entry );
     return true;
@@ -830,12 +840,49 @@ void CArchiveFileTranslator::CacheDirectory( const directory& dir )
         CacheDirectory( **iter );
 }
 
-struct zip_deflate_compression
+struct zip_stream_compression
 {
-    zip_deflate_compression( CArchiveFileTranslator::_localHeader& header, int level ) : m_header( header )
+    zip_stream_compression( CArchiveFileTranslator::_localHeader& header ) : m_header( header )
     {
         m_header.sizeCompressed = 0;
-        
+    }
+
+    inline void checksum( const char *buf, size_t size )
+    {
+        m_header.crc32 = crc32( m_header.crc32, (Bytef*)buf, size );
+    }
+
+    inline void prepare( const char *buf, size_t size, bool eof )
+    {
+        m_rcv = size;
+        m_buf = buf;
+
+        checksum( buf, size );
+    }
+
+    inline bool parse( char *buf, size_t size, size_t& sout )
+    {
+        size_t toWrite = min( size, m_rcv );
+        memcpy( buf, m_buf, toWrite );
+
+        m_header.sizeCompressed += toWrite;
+
+        m_buf += toWrite;
+        m_rcv -= toWrite;
+
+        sout = size;
+        return m_rcv != 0;
+    }
+
+    size_t m_rcv;
+    const char* m_buf;
+    CArchiveFileTranslator::_localHeader& m_header;
+};
+
+struct zip_deflate_compression : public zip_stream_compression
+{
+    zip_deflate_compression( CArchiveFileTranslator::_localHeader& header, int level ) : zip_stream_compression( header )
+    {
         m_stream.zalloc = NULL;
         m_stream.zfree = NULL;
         m_stream.opaque = NULL;
@@ -849,14 +896,14 @@ struct zip_deflate_compression
         deflateEnd( &m_stream );
     }
 
-    inline void prepare( char *buf, size_t size, bool eof )
+    inline void prepare( const char *buf, size_t size, bool eof )
     {
         m_flush = eof ? Z_FINISH : Z_NO_FLUSH;
 
         m_stream.avail_in = size;
         m_stream.next_in = (Bytef*)buf;
 
-        m_header.crc32 = crc32( m_header.crc32, (Bytef*)buf, size );
+        zip_stream_compression::checksum( buf, size );
     }
 
     inline bool parse( char *buf, size_t size, size_t& sout )
@@ -878,7 +925,6 @@ struct zip_deflate_compression
 
     int m_flush;
     z_stream m_stream;
-    CArchiveFileTranslator::_localHeader& m_header;
 };
 
 void CArchiveFileTranslator::SaveDirectory( directory& dir, size_t& size )
@@ -930,7 +976,7 @@ void CArchiveFileTranslator::SaveDirectory( directory& dir, size_t& size )
         {
             header.version = 10;    // WINNT
             header.flags = info.flags;
-            header.compression = 8; // deflate
+            header.compression = info.compression = 8; // deflate
             header.crc32 = 0;
 
             m_file.WriteStruct( header );
@@ -941,7 +987,17 @@ void CArchiveFileTranslator::SaveDirectory( directory& dir, size_t& size )
 
             info.sizeReal = header.sizeReal = src->GetSize();
 
-            FileSystem::StreamParser( *src, m_file, zip_deflate_compression( header, Z_DEFAULT_COMPRESSION ) );
+            switch( header.compression )
+            {
+            case 0:
+                FileSystem::StreamParser( *src, m_file, zip_stream_compression( header ) );
+                break;
+            case 8:
+                FileSystem::StreamParser( *src, m_file, zip_deflate_compression( header, Z_DEFAULT_COMPRESSION ) );
+                break;
+            default:
+                assert( 0 );
+            }
 
             delete src;
 
@@ -950,7 +1006,7 @@ void CArchiveFileTranslator::SaveDirectory( directory& dir, size_t& size )
 
             long wayOff = header.sizeCompressed + header.nameLen + header.commentLen;
 
-            m_file.Seek( -wayOff - sizeof( header ), SEEK_CUR );
+            m_file.Seek( -wayOff - (long)sizeof( header ), SEEK_CUR );
             m_file.WriteStruct( header );
             m_file.Seek( wayOff, SEEK_CUR );
         }
