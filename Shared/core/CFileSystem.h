@@ -226,6 +226,8 @@ namespace FileSystem
             size_t rb = src.Read( buf, 1, sizeof( buf ) );
             dst.Write( buf, 1, rb );
         }
+
+        dst.SetSeekEnd();
     }
 
     inline void StreamCopyCount( CFile& src, CFile& dst, size_t cnt )
@@ -241,6 +243,8 @@ namespace FileSystem
 
             dst.Write( buf, 1, rb );
         }
+
+        dst.SetSeekEnd();
     }
 
     template <class cb>
@@ -269,6 +273,8 @@ namespace FileSystem
             if ( eof )
                 break;
         }
+
+        dst.SetSeekEnd();
     }
 
     template <class cb>
@@ -312,6 +318,8 @@ namespace FileSystem
             if ( eof )
                 break;
         }
+        
+        dst.SetSeekEnd();
     }
 }
 

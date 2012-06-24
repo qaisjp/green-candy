@@ -81,9 +81,9 @@ protected:
     void                            CallStack( int args );
     void                            CallStackVoid( int args );
     LuaArguments                    CallStackResult( int args );
-    void                            PCallStack( int args );
-    void                            PCallStackVoid( int args );
-    LuaArguments                    PCallStackResult( int args );
+    bool                            PCallStack( int args );
+    bool                            PCallStackVoid( int args );
+    LuaArguments                    PCallStackResult( int args, bool& excpt );
 
     class env_status
     {
@@ -108,11 +108,9 @@ protected:
         }
 
     public:
-        env_status( const lua_State& lua, const LuaMain& context )
+        env_status( lua_State& lua, const LuaMain& context ) : m_lua( lua ), m_env( context )
         {
-            m_env = context;
             m_frozen = false;
-            m_lua = lua;
         }
 
         const LuaMain&    Get( int *line, std::string *src, std::string *proto_name ) const
@@ -163,10 +161,8 @@ protected:
     {
         friend class LuaManager;
 
-        LuaContext( LuaMain& context, LuaManager& system )
+        context( LuaMain& context, LuaManager& system ) : m_context( context ), m_system( system )
         {
-            m_context = context;
-            m_system = system;
             m_lua = *m_context;
 
             system.PushStatus( context );
@@ -177,7 +173,7 @@ protected:
         lua_State* m_lua;
 
     public:
-        ~LuaContext()
+        ~context()
         {
             m_system.PopStatus();
         }
@@ -233,7 +229,7 @@ protected:
 };
 
 // quick macros
-#define lua_getmanager( L ) ((LuaManager*)lua_rawgeti( L, LUA_REGISTRYINDEX, 1 ))
-#define lua_getcontext( L ) ((LuaMain*)lua_rawgeti( L, LUA_REGISTRYINDEX, 2 ))
+#define lua_getmanager( L ) (lua_rawgeti( L, LUA_REGISTRYINDEX, 1 ))
+#define lua_getcontext( L ) (lua_rawgeti( L, LUA_REGISTRYINDEX, 2 ))
 
 #endif //_BASE_LUA_MANAGER_

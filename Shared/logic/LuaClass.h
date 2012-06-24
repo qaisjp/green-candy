@@ -33,7 +33,6 @@ public:
         lua_rawgeti( m_lua, LUA_REGISTRYINDEX, m_ridx );
         new (&ref) lua_class_reference( m_lua, -1 );    // Do not construct the object in this scope
         lua_pop( m_lua, 1 );
-        return ref;
     }
 
     void Reference( luaRefs& refs )

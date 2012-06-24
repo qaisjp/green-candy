@@ -18,9 +18,8 @@
 
 #include <StdInc.h>
 
-LuaMain::LuaMain( LuaManager& manager )
+LuaMain::LuaMain( LuaManager& manager ) : m_system( manager )
 {
-    m_system = manager;
     m_lua = manager.m_lua;
 }
 
@@ -30,11 +29,11 @@ LuaMain::~LuaMain()
 }
 
 // Custom Lua stack argument->reference routine
-CLuaFunctionRef LuaMain::CreateReference( int stack )
+LuaFunctionRef LuaMain::CreateReference( int stack )
 {
     const void *ptr = lua_topointer( m_lua, stack );
 
-    if ( CRefInfo *info = m_refStore[ptr] )
+    if ( CRefInfo *info = &m_refStore[ptr] )
     {
         // Re-use the lua ref we already have
         info->refCount++;
@@ -92,10 +91,25 @@ void LuaMain::PushReference( const LuaFunctionRef& ref )
     lua_rawget( m_lua, LUA_REGISTRYINDEX );
 }
 
-void LuaMain::RegisterFunction( const char *name, lua_CFunction *proto )
+void LuaMain::RegisterFunction( const char *name, lua_CFunction proto )
 {
     lua_pushcclosure( m_lua, proto, 0 );
     lua_setfield( m_lua, m_structure, name );
+}
+
+void LuaMain::CallStack( int args )
+{
+    m_system.AcquireContext( *this ).CallStack( args );
+}
+
+void LuaMain::CallStackVoid( int args )
+{
+    m_system.AcquireContext( *this ).CallStackVoid( args );
+}
+
+LuaArguments LuaMain::CallStackResult( int args )
+{
+    return m_system.AcquireContext( *this ).CallStackResult( args );
 }
 
 void LuaMain::InitSecurity()
@@ -144,25 +158,26 @@ void LuaMain::InitVM( int structure, int meta )
 #endif
 }
 
-bool CLuaMain::LoadScriptFromBuffer ( const char* cpBuffer, unsigned int uiSize, const char* szFileName, bool bUTF8 )
+bool LuaMain::LoadScriptFromBuffer( const char *buf, size_t size, const char *path, bool utf8 )
 {
     // Are we not marked as UTF-8 already, and not precompiled?
-    std::string strUTFScript;
-    if ( !bUTF8 && ( uiSize < 5 || cpBuffer[0] != 27 || cpBuffer[1] != 'L' || cpBuffer[2] != 'u' || cpBuffer[3] != 'a' || cpBuffer[4] != 'Q' ) )
+    std::string script;
+
+    if ( !utf8 && ( size < 5 || buf[0] != 27 || buf[1] != 'L' || buf[2] != 'u' || buf[3] != 'a' || buf[4] != 'Q' ) )
     {
-        std::string strBuffer = std::string(cpBuffer, uiSize);
-        strUTFScript = UTF16ToMbUTF8(ANSIToUTF16( strBuffer ));
-        if ( uiSize != strUTFScript.size() )
+        script = UTF16ToMbUTF8( ANSIToUTF16( std::string( buf, size ) ) );
+
+        if ( size != script.size() )
         {
-            uiSize = strUTFScript.size();
+            size = script.size();
             g_pClientGame->GetScriptDebugging()->LogWarning ( m_luaVM, "Script '%s' is not encoded in UTF-8.  Loading as ANSI...", ConformResourcePath(szFileName).c_str() );
         }
     }
     else
-        strUTFScript = std::string(cpBuffer, uiSize);
+        script = std::string( buf, size );
 
     // Run the script
-    if ( luaL_loadbuffer( m_luaVM, bUTF8 ? cpBuffer : strUTFScript.c_str(), uiSize, SString ( "@%s", szFileName ) ) )
+    if ( luaL_loadbuffer( m_luaVM, bUTF8 ? cpBuffer : strUTFScript.c_str(), uiSize, SString ( "@%s", szFileName ) ) != 0 )
     {
         // Print the error
         std::string strRes = ConformResourcePath ( lua_tostring( m_luaVM, -1 ) );
@@ -228,13 +243,15 @@ void LuaMain::DoPulse()
     m_timers.DoPulse( this );
 }
 
+#ifndef _KILLFRENZY
+
 void LuaMain::DestroyXML( CXMLFile *file )
 {
     m_XMLFiles.remove( file );
     delete file;
 }
 
-void CLuaMain::DestroyXML( CXMLNode *root )
+void LuaMain::DestroyXML( CXMLNode *root )
 {
     std::list <CXMLFile*>::iterator iter = m_XMLFiles.begin();
 
@@ -248,10 +265,12 @@ void CLuaMain::DestroyXML( CXMLNode *root )
     }
 }
 
+#endif //_KILLFRENZY
+
 const SString& LuaMain::GetFunctionTag( int refID )
 {
     // Find existing
-    SString* pTag = MapFind( m_tagStore, refID );
+    const SString* pTag = MapFind( m_tagStore, refID );
 #ifndef MTA_DEBUG
     if ( !pTag )
 #endif
@@ -273,7 +292,7 @@ const SString& LuaMain::GetFunctionTag( int refID )
                 strText = SString( "@func_%d %s", refID, debugInfo.short_src );
         }
         else
-            strText = SString( "@func_%d NULL", iLuaFunction );
+            strText = SString( "@func_%d NULL", refID );
 
 #ifdef MTA_DEBUG
         if ( pTag )

@@ -20,7 +20,7 @@ namespace SharedUtil
     uint        GetTickCount32 ( void );
 
     // Forbid use of GetTickCount
-    #define GetTickCount GetTickCount_has_been_replaced_with_GetTickCount32
+    //#define GetTickCount GetTickCount_has_been_replaced_with_GetTickCount32
 
     //
     // Retrieves the number of milliseconds that have elapsed since some arbitrary point in time.

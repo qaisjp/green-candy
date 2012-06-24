@@ -317,6 +317,7 @@ private:
         {
             file& entry = *new file;
             entry.name = fileName;
+			entry.flags = 0;
             
             PositionFile( entry );
 
@@ -343,6 +344,19 @@ private:
             files.push_back( &entry );
 
             PositionFile( entry );
+        }
+
+        inline bool     IsLocked()
+        {
+            fileList::const_iterator iter = files.begin();
+
+            for ( ; iter != files.end(); iter++ )
+            {
+                if ( !(*iter)->locks.empty() )
+                    return true;
+            }
+
+            return false;
         }
 
         inline file*    GetFile( const filePath& fileName )
@@ -388,11 +402,15 @@ private:
             return NULL;
         }
 
-        inline void     RemoveFile( file& entry )
+        inline bool     RemoveFile( file& entry )
         {
+            if ( !entry.locks.empty() )
+                return false;
+
             delete &entry;
 
             UnlinkFile( entry );
+            return true;
         }
 
         inline bool     RemoveFile( const filePath& fileName )
@@ -402,10 +420,7 @@ private:
             for ( ; iter != files.end(); iter++ )
             {
                 if ( (*iter)->name == fileName )
-                {
-                    RemoveFile( **iter );
-                    return true;
-                }
+                    return RemoveFile( **iter );
             }
             return false;
         }

@@ -52,23 +52,17 @@ CResource::CResource ( unsigned short usID, char* szResourceName, CClientEntity*
     m_pResourceEntity = pResourceEntity;
     m_pResourceDynamicEntity = pResourceDynamicEntity;
 
-    // Create our GUI root element. We set its parent when we're loaded.
-    // Make it a system entity so nothing but us can delete it.
+    // Create our root elements. We set theirs parents when we're loaded.
+    // Make them system entities so nothing but us can delete them.
     m_pResourceGUIEntity = new CClientDummy ( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "guiroot" );
     m_pResourceGUIEntity->MakeSystemEntity ();
 
-    // Create our COL root element. We set its parent when we're loaded.
-    // Make it a system entity so nothing but us can delete it.
     m_pResourceCOLRoot = new CClientDummy ( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "colmodelroot" );
     m_pResourceCOLRoot->MakeSystemEntity ();
 
-    // Create our DFF root element. We set its parent when we're loaded.
-    // Make it a system entity so nothing but us can delete it.
     m_pResourceDFFEntity = new CClientDummy ( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot" );
     m_pResourceDFFEntity->MakeSystemEntity ();
 
-    // Create our TXD root element. We set its parent when we're loaded.
-    // Make it a system entity so nothing but us can delete it.
     m_pResourceTXDRoot = new CClientDummy ( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot" );
     m_pResourceTXDRoot->MakeSystemEntity ();
 

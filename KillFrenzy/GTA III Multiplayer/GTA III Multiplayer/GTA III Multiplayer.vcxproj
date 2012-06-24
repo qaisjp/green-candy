@@ -1,0 +1,211 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{70646E9A-088B-4498-B1F2-46574738E163}</ProjectGuid>
+    <RootNamespace>GTAIIIMultiplayer</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\kf\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\kf\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">gtamod_d</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">gtamod</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>.\;..\..\..\Shared\core;..\..\..\Shared;..\..\..\Shared\sdk;..\..\..\vendor\zlib;..\..\..\vendor\lua\src;..\..\..\vendor\sparsehash\current\src;..\..\..\vendor\sparsehash\current\src\windows;..\..\..\lua_interpret</AdditionalIncludeDirectories>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <ExpandAttributedSource>false</ExpandAttributedSource>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>StdInc.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>detours/detours.lib;d3dx8.lib;fmod/fmodex_vc.lib;zlib_2008.lib;DbgHelp.lib;lua5.1d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\kf\gtamod_d.dll</OutputFile>
+      <AdditionalLibraryDirectories>C:\dx8sdk\DXF\DXSDK\lib;..\..\..\vendor\zlib\lib\;..\..\..\vendor\lua\lib\</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AssemblyDebug>true</AssemblyDebug>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapExports>true</MapExports>
+      <TurnOffAssemblyGeneration>
+      </TurnOffAssemblyGeneration>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>.\;..\..\..\Shared\core;..\..\..\Shared;..\..\..\Shared\sdk;..\..\..\vendor\zlib;..\..\..\vendor\lua\src;..\..\..\vendor\sparsehash\current\src;..\..\..\vendor\sparsehash\current\src\windows;..\..\..\lua_interpret</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>StdInc.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>detours/detours.lib;d3dx8.lib;fmod/fmodex_vc.lib;zlib_2008.lib;DbgHelp.lib;lua5.1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\kf\gtamod.dll</OutputFile>
+      <AdditionalLibraryDirectories>C:\dx8sdk\DXF\DXSDK\lib;..\..\..\vendor\zlib\lib\;..\..\..\vendor\lua\lib\</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Reference Include="System">
+      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+    </Reference>
+    <Reference Include="System.Data">
+      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+    </Reference>
+    <Reference Include="System.Drawing">
+      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+    </Reference>
+    <Reference Include="System.Windows.Forms">
+      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+    </Reference>
+    <Reference Include="System.Xml">
+      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\lua_interpret\luafile.h" />
+    <ClInclude Include="..\..\..\lua_interpret\luafilesystem.h" />
+    <ClInclude Include="..\..\..\Shared\core\CFileSystem.h" />
+    <ClInclude Include="..\..\..\Shared\core\CFileSystem.Utils.hxx" />
+    <ClInclude Include="..\..\..\Shared\core\CFileSystem.zip.h" />
+    <ClInclude Include="..\..\..\Shared\logic\include.h" />
+    <ClInclude Include="..\..\..\Shared\logic\Logger.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaArgument.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaArguments.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaCFunctions.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaClass.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaCommon.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaFunctionDefs.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaFunctionRef.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaMain.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaManager.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaTimer.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaTimerManager.h" />
+    <ClInclude Include="..\..\..\Shared\logic\RegisteredCommands.h" />
+    <ClInclude Include="..\..\..\Shared\logic\Resource.h" />
+    <ClInclude Include="..\..\..\Shared\logic\ResourceManager.h" />
+    <ClInclude Include="..\..\..\Shared\logic\ScriptDebugging.h" />
+    <ClInclude Include="..\..\..\Shared\logic\ScriptFile.h" />
+    <ClInclude Include="console.h" />
+    <ClInclude Include="d3d8_f.h" />
+    <ClInclude Include="d3devt.h" />
+    <ClInclude Include="derived\CScriptDebugging.h" />
+    <ClInclude Include="derived\include.h" />
+    <ClInclude Include="dinput8.h" />
+    <ClInclude Include="entity.h" />
+    <ClInclude Include="game.h" />
+    <ClInclude Include="lua.h" />
+    <ClInclude Include="StdInc.h" />
+    <ClInclude Include="matrix.h" />
+    <ClInclude Include="modelinfo.h" />
+    <ClInclude Include="ped.h" />
+    <ClInclude Include="pool.h" />
+    <ClInclude Include="scm.h" />
+    <ClInclude Include="sound.h" />
+    <ClInclude Include="streamer.h" />
+    <ClInclude Include="vehicle.h" />
+    <ClInclude Include="window.h" />
+    <ClInclude Include="world.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\lua_interpret\luafile.cpp" />
+    <ClCompile Include="..\..\..\lua_interpret\luafilesystem.cpp" />
+    <ClCompile Include="..\..\..\Shared\core\CFileSystem.cpp" />
+    <ClCompile Include="..\..\..\Shared\core\CFileSystem.zip.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\Logger.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaArgument.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaArguments.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaCFunctions.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaFunctionRef.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaMain.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaManager.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaTimer.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaTimerManager.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\RegisteredCommands.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\Resource.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\ResourceManager.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\ScriptDebugging.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\ScriptFile.cpp" />
+    <ClCompile Include="console.cpp" />
+    <ClCompile Include="core.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="d3d8_f.cpp" />
+    <ClCompile Include="d3devt.cpp" />
+    <ClCompile Include="derived\CScriptDebugging.cpp" />
+    <ClCompile Include="dinput8.cpp" />
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="entity.cpp" />
+    <ClCompile Include="game.cpp" />
+    <ClCompile Include="lua.cpp" />
+    <ClCompile Include="matrix.cpp" />
+    <ClCompile Include="modelinfo.cpp" />
+    <ClCompile Include="ped.cpp" />
+    <ClCompile Include="pool.cpp" />
+    <ClCompile Include="scm.cpp" />
+    <ClCompile Include="sound.cpp" />
+    <ClCompile Include="streamer.cpp" />
+    <ClCompile Include="vehicle.cpp" />
+    <ClCompile Include="window.cpp" />
+    <ClCompile Include="world.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -372,21 +372,6 @@ CResource* CResourceManager::Load( bool bIsZipped, const char * szAbsPath, const
     return loadedResource;
 }
 
-CResource* CResourceManager::GetResource( const char * szResourceName )
-{
-    CResource** ppResource = MapFind ( m_NameResourceMap, SStringX ( szResourceName ).ToUpper () );
-    if ( ppResource )
-        return *ppResource;
-    return NULL;
-}
-
-
-bool CResourceManager::Exists( CResource* pResource )
-{
-    return m_resources.Contains( pResource );
-}
-
-
 unsigned short CResourceManager::GenerateID()
 {
     // Create a map of all used IDs
@@ -454,17 +439,6 @@ void CResourceManager::AddResourceToLists( CResource* pResource )
     assert ( !pLuaMain );
     MapSet ( m_NameResourceMap, strResourceNameKey, pResource );
 }
-
-void CResourceManager::RemoveResourceFromLists( CResource* pResource )
-{
-    SString strResourceNameKey = SString ( pResource->GetName () ).ToUpper ();
-
-    assert ( m_resources.Contains ( pResource ) );
-    assert ( MapContains ( m_NameResourceMap, strResourceNameKey ) );
-    m_resources.remove ( pResource );
-    MapRemove ( m_NameResourceMap, strResourceNameKey );
-}
-
 
 CResource* CResourceManager::GetResourceFromLuaState( lua_State* luaVM )
 {
@@ -569,7 +543,7 @@ bool CResourceManager::Reload( CResource* pResource )
 }
 
 
-bool CResourceManager::StopAllResources()
+bool CResourceManager::StopAll()
 {
     CLogger::SetMinLogLevel ( LOGLEVEL_MEDIUM );
     CLogger::LogPrint ( "Stopping resources..." );
@@ -805,44 +779,4 @@ CResource* CResourceManager::CreateResource( const SString& name )
 CResource* CResourceManager::CopyResource( CResource* pSourceResource, const char* szNewResourceName )
 {
     return NULL;
-}
-
-bool CResourceManager::ParseResourcePathInput( std::string input, CResource*& resource, std::string* path, std::string* metaPath )
-{
-    std::string meta;
-
-    if ( input[0] == '@' )
-    {
-        // This isn't relevant on the server because all files are private
-        // But let's skip the symbol anyway
-        strInput = strInput.substr( 1 );
-    }
-
-    if ( input[0] == ':' )
-    {
-        size_t slash = input.find_first_of( '/' );
-
-        if ( slash == 0 || slash == -1 )
-            return false;
-
-        pResource = g_pGame->GetResourceManager()->GetResource( input.substr( 1, slash - 1 ) );
-
-        if ( !pResource || input[slash + 1] == 0 )
-            return false;
-
-        meta = input.substr( slash + 1 );
-
-        if ( metaPath )
-            *metaPath = meta;
-
-        return !path || resource->GetFilePath( meta.c_str(), *path );
-    }
-
-    if ( !resource )
-        return false;
-
-    if ( metaPath )
-        *metaPath = input;
-
-    return !path || resource->GetFilePath( input, *path );
 }

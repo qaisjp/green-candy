@@ -214,6 +214,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\luafile.Utils.hxx"
+				>
+			</File>
+			<File
 				RelativePath=".\luafilesystem.h"
 				>
 			</File>

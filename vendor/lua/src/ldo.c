@@ -137,7 +137,7 @@ int luaD_rawrunprotectedEx( lua_State *L, Pfunc f, void *ud, std::string& err )
     {
         if ( L->status == 0 )
             L->status = -1;
-        return -1;
+        throw;
     }
     L->errorJmp = lj.previous;  /* restore old error handler */
     return lj.status;

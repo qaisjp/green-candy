@@ -113,6 +113,13 @@ public:
         return filePath( *this ).append( right.c_str(), right.size() );
     }
 
+    filePath operator +( const char right ) const
+    {
+        filePath outPath( *this );
+        outPath.push_back( right );
+        return outPath;
+    }
+
     operator std::string () const
     {
         return std::string( c_str(), size() );

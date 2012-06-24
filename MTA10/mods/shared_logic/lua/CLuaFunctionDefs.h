@@ -38,9 +38,6 @@ public:
                               class CScriptDebugging* pScriptDebugging,
                               class CClientGame* pClientGame );
 
-    // Reserved functions
-    LUA_DECLARE ( DisabledFunction );
-
     // Resource functions
     LUA_DECLARE ( Call );
     LUA_DECLARE ( GetThisResource );
@@ -86,7 +83,6 @@ public:
     LUA_DECLARE ( OutputConsole );
     LUA_DECLARE ( OutputChatBox );
     LUA_DECLARE ( ShowChat );
-    LUA_DECLARE ( OutputClientDebugString );
     LUA_DECLARE ( SetClipboard );
     LUA_DECLARE ( GetClipboard );
 
@@ -459,7 +455,7 @@ public:
     
     LUA_DECLARE ( ShowCursor );
 
-    // Engine (RenderWare lower-level) functions
+    // Engine (RenderWare abtract) functions
     LUA_DECLARE ( EngineLoadDFF );
     LUA_DECLARE ( EngineLoadTXD );
     LUA_DECLARE ( EngineLoadCOL );
@@ -504,23 +500,8 @@ public:
     LUA_DECLARE ( dxGetStatus );
     LUA_DECLARE ( dxSetTestMode );
 
-    // Util functions to make scripting easier for the end user
-    // Some of these are based on standard mIRC script funcs as a lot of people will be used to them
-    LUA_DECLARE ( GetTok );
-    LUA_DECLARE ( Split );
-    LUA_DECLARE ( SetTimer );
-    LUA_DECLARE ( KillTimer );
-    LUA_DECLARE ( ResetTimer );
-    LUA_DECLARE ( GetTimers );
-    LUA_DECLARE ( IsTimer );
-    LUA_DECLARE ( GetTimerDetails );
-    LUA_DECLARE ( GetTickCount_ );
-    LUA_DECLARE ( GetCTime );
-    LUA_DECLARE ( tocolor );
-    LUA_DECLARE ( Reference );
-    LUA_DECLARE ( Dereference );
-    LUA_DECLARE ( GetColorFromString );
-    LUA_DECLARE ( GetValidPedModels );
+    // Pfft utils
+    LUA_DECLARE( tocolor );
     
     // GUI funcs
     LUA_DECLARE ( GUIGetInputEnabled );
@@ -729,25 +710,6 @@ public:
     LUA_DECLARE ( ToggleControl );
     LUA_DECLARE ( ToggleAllControls );
 
-    // XML Functions
-    LUA_DECLARE ( XMLNodeFindChild );
-    LUA_DECLARE ( XMLNodeGetChildren );
-    LUA_DECLARE ( XMLNodeGetValue );
-    LUA_DECLARE ( XMLNodeSetValue );
-    LUA_DECLARE ( XMLNodeGetAttributes );
-    LUA_DECLARE ( XMLNodeGetAttribute );
-    LUA_DECLARE ( XMLNodeSetAttribute );
-    LUA_DECLARE ( XMLNodeGetParent );
-    LUA_DECLARE ( XMLLoadFile );
-    LUA_DECLARE ( XMLCreateFile );
-    LUA_DECLARE ( XMLUnloadFile );
-    LUA_DECLARE ( XMLSaveFile );
-    LUA_DECLARE ( XMLCreateChild );
-    LUA_DECLARE ( XMLDestroyNode );
-    LUA_DECLARE ( XMLCopyFile );
-    LUA_DECLARE ( XMLNodeGetName );
-    LUA_DECLARE ( XMLNodeSetName );
-
     // Projectile funcs
     LUA_DECLARE ( CreateProjectile );
     LUA_DECLARE ( GetProjectileType );
@@ -785,31 +747,17 @@ public:
     LUA_DECLARE ( GetPlayerUserName );
     LUA_DECLARE ( GetPlayerSerial );
 
-    // Utility vector math functions
-    LUA_DECLARE ( GetDistanceBetweenPoints2D );
-    LUA_DECLARE ( GetDistanceBetweenPoints3D );
-    LUA_DECLARE ( GetEasingValue );
-    LUA_DECLARE ( InterpolateBetween );
-
     // Map funcs
     LUA_DECLARE ( IsPlayerMapForced );
     LUA_DECLARE ( IsPlayerMapVisible );
     LUA_DECLARE ( GetPlayerMapBoundingBox );
 
     // Utility
-    LUA_DECLARE ( Md5 );
     LUA_DECLARE ( GetNetworkUsageData );
     LUA_DECLARE ( GetNetworkStats );
     LUA_DECLARE ( GetPerformanceStats );
 
     LUA_DECLARE ( GetVersion );
-
-    // UTF functions
-    LUA_DECLARE ( UtfLen );
-    LUA_DECLARE ( UtfSeek );
-    LUA_DECLARE ( UtfSub );
-    LUA_DECLARE ( UtfChar );
-    LUA_DECLARE ( UtfCode );
 
 private:
     // Static references to objects

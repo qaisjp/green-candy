@@ -221,7 +221,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
 
 void CClumpModelInfoSAInterface::AssignAtomics( CAtomicHierarchySAInterface *atomics )
 {
-    for (atomics; atomics->m_name; atomics++)
+    for ( ; atomics->m_name; atomics++ )
     {
         RwFrame *component;
 

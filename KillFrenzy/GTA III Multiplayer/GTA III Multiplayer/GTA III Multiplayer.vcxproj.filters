@@ -1,0 +1,234 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{274f67cf-31d2-41cb-9a73-9fee4d2e68d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mta_green">
+      <UniqueIdentifier>{536c8ada-742d-477a-8d7f-3dcb0a78bcb0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mta_green\include">
+      <UniqueIdentifier>{ace4caea-89a7-4792-b3f7-474b9f316df2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="derived">
+      <UniqueIdentifier>{177c0ffe-3efb-43ac-9232-6890fef7807f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="derived\include">
+      <UniqueIdentifier>{1e1acd3f-4ac3-4a76-92e1-a3bd9c0d156f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lua">
+      <UniqueIdentifier>{dc3e36eb-47e6-45a8-96e7-6df752eac083}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lua\include">
+      <UniqueIdentifier>{9edd119d-7a5f-4b1f-8aca-d7e948d42229}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="console.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d8_f.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="d3devt.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="entity.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="game.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="modelinfo.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="ped.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="pool.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="scm.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="vehicle.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="window.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="streamer.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="dinput8.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="sound.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="world.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="matrix.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="StdInc.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\core\CFileSystem.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\core\CFileSystem.zip.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\core\CFileSystem.Utils.hxx">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="lua.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\include.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\Logger.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaArgument.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaArguments.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaClass.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaCommon.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaFunctionRef.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaMain.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaManager.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaTimer.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaTimerManager.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\ScriptDebugging.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\ScriptFile.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="derived\include.h">
+      <Filter>derived\include</Filter>
+    </ClInclude>
+    <ClInclude Include="derived\CScriptDebugging.h">
+      <Filter>derived\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaCFunctions.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaFunctionDefs.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua_interpret\luafilesystem.h">
+      <Filter>lua\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua_interpret\luafile.h">
+      <Filter>lua\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\Resource.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\ResourceManager.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\RegisteredCommands.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="console.cpp" />
+    <ClCompile Include="core.cpp" />
+    <ClCompile Include="d3d8_f.cpp" />
+    <ClCompile Include="d3devt.cpp" />
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="entity.cpp" />
+    <ClCompile Include="game.cpp" />
+    <ClCompile Include="modelinfo.cpp" />
+    <ClCompile Include="pool.cpp" />
+    <ClCompile Include="vehicle.cpp" />
+    <ClCompile Include="window.cpp" />
+    <ClCompile Include="scm.cpp" />
+    <ClCompile Include="streamer.cpp" />
+    <ClCompile Include="ped.cpp" />
+    <ClCompile Include="dinput8.cpp" />
+    <ClCompile Include="sound.cpp" />
+    <ClCompile Include="world.cpp" />
+    <ClCompile Include="matrix.cpp" />
+    <ClCompile Include="..\..\..\Shared\core\CFileSystem.zip.cpp" />
+    <ClCompile Include="..\..\..\Shared\core\CFileSystem.cpp" />
+    <ClCompile Include="lua.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\Logger.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaArgument.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaArguments.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaFunctionRef.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaMain.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaManager.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaTimer.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaTimerManager.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\ScriptDebugging.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\ScriptFile.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="derived\CScriptDebugging.cpp">
+      <Filter>derived</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaCFunctions.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua_interpret\luafilesystem.cpp">
+      <Filter>lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua_interpret\luafile.cpp">
+      <Filter>lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\Resource.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\ResourceManager.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\RegisteredCommands.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
