@@ -348,8 +348,6 @@ bool	__stdcall		Hook_IsStreamRunning(int iSoundID)
 // Core attempts to set up a channel sound
 bool	__stdcall		Hook_SetupSoundEffect( int iChannel, int iSound, char cBufferID )
 {
-	unsigned int iBufferOffset;
-
 	iChannel += CHANNEL_FREE;
 
 	if ( cBufferID > NUM_SOUNDBUFFER )

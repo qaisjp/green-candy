@@ -537,10 +537,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\logic\CEvents.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\logic\CGame.cpp"
 					>
 				</File>
@@ -1440,6 +1436,10 @@
 					Name="base_logic"
 					>
 					<File
+						RelativePath="..\..\..\Shared\logic\Events.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\Logger.cpp"
 						>
 					</File>
@@ -1473,6 +1473,10 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\LuaTimerManager.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\RegisteredCommands.cpp"
 						>
 					</File>
 					<File
@@ -1687,10 +1691,6 @@
 				</File>
 				<File
 					RelativePath=".\logic\CElementRefManager.h"
-					>
-				</File>
-				<File
-					RelativePath=".\logic\CEvents.h"
 					>
 				</File>
 				<File
@@ -2453,6 +2453,10 @@
 					Name="base_logic"
 					>
 					<File
+						RelativePath="..\..\..\Shared\logic\Events.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\include.h"
 						>
 					</File>
@@ -2498,6 +2502,10 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\LuaTimerManager.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\RegisteredCommands.h"
 						>
 					</File>
 					<File

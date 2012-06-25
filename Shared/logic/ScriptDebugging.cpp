@@ -82,11 +82,6 @@ void ScriptDebugging::LogBadType( const char *func )
     LogWarning( "Bad argument @ '%s'", func );
 }
 
-void ScriptDebugging::LogCustom( unsigned char red, unsigned char green, unsigned char blue, const char *fmt, ... )
-{
-    //LogWarning( "%s", fmt );
-}
-
 void ScriptDebugging::LogBadLevel( const char *func, unsigned int level )
 {
     LogWarning( "Requires level '%d' @ '%s", level, func );

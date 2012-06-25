@@ -32,6 +32,7 @@ enum eLuaTypeEx
 class LuaManager
 {
     friend class LuaMain;
+    friend class RegisteredCommands;
 public:
                                     LuaManager( RegisteredCommands& commands, Events& events, ScriptDebugging& debug );
                                     ~LuaManager();
@@ -71,7 +72,7 @@ public:
 
     void                            DoPulse();
     void                            ResetInstructionCount();
-    void                            InstructionCountHook();
+    void                            InstructionCountHook( lua_State *L, lua_Debug *ar );
 
 private:
     void                            InitSecurity();

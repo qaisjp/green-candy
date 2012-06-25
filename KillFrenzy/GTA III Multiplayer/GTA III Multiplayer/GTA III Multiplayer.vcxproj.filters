@@ -123,9 +123,6 @@
     <ClInclude Include="..\..\..\Shared\logic\ScriptDebugging.h">
       <Filter>mta_green\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Shared\logic\ScriptFile.h">
-      <Filter>mta_green\include</Filter>
-    </ClInclude>
     <ClInclude Include="derived\include.h">
       <Filter>derived\include</Filter>
     </ClInclude>
@@ -151,6 +148,9 @@
       <Filter>mta_green\include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Shared\logic\RegisteredCommands.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\Events.h">
       <Filter>mta_green\include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -203,9 +203,6 @@
     <ClCompile Include="..\..\..\Shared\logic\ScriptDebugging.cpp">
       <Filter>mta_green</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Shared\logic\ScriptFile.cpp">
-      <Filter>mta_green</Filter>
-    </ClCompile>
     <ClCompile Include="derived\CScriptDebugging.cpp">
       <Filter>derived</Filter>
     </ClCompile>
@@ -228,6 +225,9 @@
       <Filter>mta_green</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Shared\logic\RegisteredCommands.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\Events.cpp">
       <Filter>mta_green</Filter>
     </ClCompile>
   </ItemGroup>

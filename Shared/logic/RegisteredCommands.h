@@ -13,37 +13,46 @@
 #ifndef _BASE_REGISTERED_COMMANDS_
 #define _BASE_REGISTERED_COMMANDS_
 
+class LuaMain;
+class LuaManager;
+
+class Command : public LuaClass
+{
+public:
+    Command( lua_State *L, int ridx ) : LuaClass( L, ridx )
+    {
+    }
+
+    LuaMain*        lua;
+    std::string     key;
+    LuaFunctionRef  ref;
+    bool            caseSensitive;
+};
+
 class RegisteredCommands
 {
-    struct SCommand
-    {
-        class CLuaMain* pLuaMain;
-        std::string key;
-        LuaFunctionRef ref;
-        bool restrict;
-        bool caseSensitive;
-    };
-
 public:
-                                        RegisteredCommands();
+                                        RegisteredCommands( LuaManager& manager );
                                         ~RegisteredCommands();
 
-    bool                                Add( class CLuaMain* pLuaMain, const char* szKey, const LuaFunctionRef& iLuaFunction, bool bRestricted, bool bCaseSensitive );
-    bool                                Remove( class CLuaMain* pLuaMain, const char* szKey, const LuaFunctionRef& iLuaFunction = LuaFunctionRef() );
+    bool                                Add( LuaMain *lua, const std::string& key, const LuaFunctionRef& ref, bool caseSensitive );
+    bool                                Remove( LuaMain *lua, const std::string& key );
     void                                Clear();
-    void                                CleanUpForVM( class CLuaMain* pLuaMain );
+    void                                CleanUp( LuaMain *lua );
 
-    bool                                Exists( const char* szKey, class CLuaMain* pLuaMain = NULL );
+    bool                                Exists( const char *key, LuaMain *lua = NULL );
 
-    bool                                Process( const char* szKey, const char* szArguments, class CClient* pClient );
+    typedef std::list <Command*> commandList_t;
+    std::list <Command*>    m_commands;
 
 protected:
-    SCommand*                           Get( const char* szKey, class CLuaMain* pLuaMain = NULL );
-    void                                Call( class CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, const char* szKey, const char* szArguments, class CClient* pClient );
+    Command*                            Get( const char *key, LuaMain *lua = NULL );
+    
+    unsigned int    m_refTable;
 
-    list < SCommand* >                  m_Commands;
-    list < SCommand* >                  m_TrashCan;
-    bool                                m_bIteratingList;
+    int luaconstructor_command( lua_State *L );
+
+    LuaManager&     m_system;
 };
 
 #endif //_BASE_REGISTERED_COMMANDS_

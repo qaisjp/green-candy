@@ -28,7 +28,7 @@ public:
     bool                        Exists( LuaTimer *timer );
     LuaTimer*                   GetTimer( unsigned int id );
 
-    LuaTimer*                   AddTimer( const LuaFunctionRef& ref, CTickCount delay, unsigned int repCount, const LuaArguments& args );
+    LuaTimer*                   AddTimer( lua_State *L, const LuaFunctionRef& ref, CTickCount delay, unsigned int repCount, const LuaArguments& args );
     void                        RemoveTimer( LuaTimer* pLuaTimer );
     void                        RemoveAllTimers();
     unsigned long               GetTimerCount() const                   { return m_list.size(); }

@@ -27,15 +27,20 @@
 #define HOOK_INSTRUCTION_COUNT 1000000
 #define HOOK_MAXIMUM_TIME 5000
 
+static LuaManager* lua_readmanager( lua_State *L )
+{
+    return lua_readuserdata <LuaManager, LUA_REGISTRYINDEX, 1> ( L );
+}
+
 static int lua_pushstackthread( lua_State *lua )
 {
-    lua_getmanager( lua )->PushThread( lua_tothread( lua, -1 ) );
+    lua_readmanager( lua )->PushThread( lua_tothread( lua, -1 ) );
     return 0;
 }
 
 static int lua_popstackthread( lua_State *lua )
 {
-    lua_getmanager( lua )->PopThread();
+    lua_readmanager( lua )->PopThread();
     return 0;
 }
 
@@ -44,23 +49,23 @@ static int lua_popstackthread( lua_State *lua )
 
 static void InstructionCountHook( lua_State *lua, lua_Debug *debug )
 {
-    lua_getmanager( lua )->InstructionCountHook();
+    lua_readmanager( lua )->InstructionCountHook();
 }
 
 static int mainaccess_global( lua_State *lua )
 {
-    return lua_getmanager( lua )->AccessGlobalTable();
+    return lua_readmanager( lua )->AccessGlobalTable();
 }
 
-static const luaL_Reg interface_access =
+static const luaL_Reg interface_access[] =
 {
     { "_G", mainaccess_global },
-    { 0, 0 }
+    { NULL, NULL }
 };
 
 static int luaglobal_index( lua_State *lua )
 {
-    return lua_getmanager( lua )->AccessGlobal();
+    return lua_readmanager( lua )->AccessGlobal();
 }
 
 static int luaglobal_newindex( lua_State *lua )
@@ -75,12 +80,11 @@ static int luamain_constructor( lua_State *lua )
     return 0;
 }
 
-LuaManager::LuaManager( RegisteredCommands& commands, Events& events, ScriptDebugging& debug )
+LuaManager::LuaManager( RegisteredCommands& commands, Events& events, ScriptDebugging& debug ) :
+    m_commands( commands ),
+    m_events( events ),
+    m_debug( debug )
 {
-    m_commands = commands;
-    m_events = events;
-    m_debug = debug;
-
     ResetInstructionCount();
 
     // Setup the virtual machine
@@ -96,8 +100,8 @@ LuaManager::LuaManager( RegisteredCommands& commands, Events& events, ScriptDebu
     luaL_ref( m_lua, LUA_REGISTRYINDEX );   // first in registry!
 
     // Setup the global
-    lua_newtable( L );
-    lua_pushvalue( L, 1 );
+    lua_newtable( m_lua );
+    lua_pushvalue( m_lua, 1 );
     luaL_ref( m_lua, LUA_REGISTRYINDEX );   // second in registry!
 
     // Setup libraries
@@ -146,12 +150,12 @@ const LuaMain* LuaManager::GetStatus( int *line, std::string *src, std::string *
     return &(*m_envStack.end()).Get( line, src, proto_name );
 }
 
-const LuaMain* LuaManager::PopStatus( int *line, std::string *src, std::stirng *proto_name )
+const LuaMain* LuaManager::PopStatus( int *line, std::string *src, std::string *proto_name )
 {
     if ( m_envStack.empty() )
         return NULL;
 
-    const LuaMain& context = (*m_envStack.end()).Get( line, src, proto_name );
+    const LuaMain& context = m_envStack.back().Get( line, src, proto_name );
 
     m_envStack.pop_back();
 
@@ -187,10 +191,10 @@ void LuaManager::Throw( unsigned int id, const char *error )
         msg += '\n';
     }
 
-    throw lua_exception( m_lua, id, msg );
+    throw lua_exception( m_lua, id, msg.c_str() );
 }
 
-void LuaManager::InstructionCountHook()
+void LuaManager::InstructionCountHook( lua_State *L, lua_Debug *ar )
 {
     if ( timeGetTime() < m_functionEnter + HOOK_MAXIMUM_TIME )
         return;

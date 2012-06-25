@@ -28,27 +28,14 @@ static inline const char* lua_getclassdesc( int ctype )
     return "class";
 }
 
-template <class type, int t, int idx>
-static inline type* lua_readuserdata( lua_State *L )
-{
-    int top = lua_gettop( L );
-
-    lua_rawgeti( L, t, idx );
-    
-    type *ud = (type*)lua_touserdata( L, top + 1 );
-
-    lua_settop( L, top );
-    return ud;
-}
-
 static inline LuaMain* lua_readcontext( lua_State *L )
 {
-    lua_readuserdata <LuaMain*, LUA_REGISTRYINDEX, 2> ( L );
+    return lua_readuserdata <LuaMain, LUA_REGISTRYINDEX, 2> ( L );
 }
 
 static inline Resource* lua_readresource( lua_State *L )
 {
-    lua_readuserdata <Resource*, LUA_REGISTRYINDEX, 3> ( L );
+    return lua_readuserdata <Resource, LUA_REGISTRYINDEX, 3> ( L );
 }
 
 static inline ILuaClass& lua_classobtain( lua_State *L, int idx, int ctype )

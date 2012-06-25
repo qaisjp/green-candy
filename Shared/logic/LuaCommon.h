@@ -21,4 +21,17 @@
 
 #define TO_ELEMENTID(x) ((ElementID) reinterpret_cast < unsigned long > (x) )
 
+template <class type, int t, int idx>
+static inline type* lua_readuserdata( lua_State *L )
+{
+    int top = lua_gettop( L );
+
+    lua_rawgeti( L, t, idx );
+    
+    type *ud = (type*)lua_touserdata( L, top + 1 );
+
+    lua_settop( L, top );
+    return ud;
+}
+
 #endif //_BASE_LUA_COMMON

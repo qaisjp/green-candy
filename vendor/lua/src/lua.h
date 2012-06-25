@@ -394,6 +394,10 @@ LUA_API void lua_basicextend( lua_State *L );
 class lua_class_reference
 {
 public:
+    lua_class_reference()
+    {
+    }
+
     lua_class_reference( lua_State *L, int idx )
     {
         if ( lua_type( L, idx ) != LUA_TCLASS )
