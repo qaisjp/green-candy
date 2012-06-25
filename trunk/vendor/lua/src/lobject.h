@@ -514,6 +514,8 @@ public:
 
     void    IncrementMethodStack( lua_State *lua );
     void    DecrementMethodStack( lua_State *lua );
+    void    ClearReferences( lua_State *lua );
+    void    CheckDestruction( lua_State *lua );
 
     void    SetTransmit( int type );
     int     GetTransmit();

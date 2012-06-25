@@ -28,9 +28,22 @@ public:
         lua_rawseti( m_lua, LUA_REGISTRYINDEX, m_ridx );
     }
 
-    void Reference( lua_class_reference& ref )
+    inline void PushStack()
     {
         lua_rawgeti( m_lua, LUA_REGISTRYINDEX, m_ridx );
+    }
+
+    inline void PushStack( lua_State *L )
+    {
+        PushStack();
+
+        lua_xmove( m_lua, L, 1 );
+        lua_pop( m_lua, 1 );
+    }
+
+    void Reference( lua_class_reference& ref )
+    {
+        PushStack();
         new (&ref) lua_class_reference( m_lua, -1 );    // Do not construct the object in this scope
         lua_pop( m_lua, 1 );
     }

@@ -35,15 +35,17 @@ static int luaconstructor_timer( lua_State *L )
     return 0;
 }
 
-LuaTimer::LuaTimer( lua_State *lua, LuaTimerManager *manager, const LuaFunctionRef& ref )
+static int _trefget( LuaTimer& timer, lua_State *lua )
 {
-    lua_pushlightuserdata( lua, *this );
+    lua_pushlightuserdata( lua, &timer );
     lua_pushcclosure( lua, luaconstructor_timer, 1 );
     lua_newclass( lua );
     lua_basicprotect( lua );
+    return luaL_ref( lua, LUA_REGISTRYINDEX );
+}
 
-    LuaClass( lua, luaL_ref( lua, LUA_REGISTRYINDEX ) );
-
+LuaTimer::LuaTimer( lua_State *lua, LuaTimerManager *manager, const LuaFunctionRef& ref ) : LuaClass( lua, _trefget( *this, lua ) )
+{
     m_ref = ref;
     m_manager = manager;
 }
@@ -51,7 +53,7 @@ LuaTimer::LuaTimer( lua_State *lua, LuaTimerManager *manager, const LuaFunctionR
 LuaTimer::~LuaTimer()
 {
     // Remove it from the internal table
-    m_manager->m_list.remove( *this );
+    m_manager->m_list.remove( this );
 }
 
 void LuaTimer::Execute( LuaMain *main )
@@ -60,7 +62,7 @@ void LuaTimer::Execute( LuaMain *main )
         return;
 
     lua_class_reference ref;
-    Reference( &ref );
+    Reference( ref );
 
     m_args->Call( main, m_ref );
 
@@ -76,7 +78,7 @@ void LuaTimer::Execute( LuaMain *main )
         m_repCount--;
 }
 
-CTickCount CLuaTimer::GetTimeLeft()
+CTickCount LuaTimer::GetTimeLeft()
 {
-    return m_llStartTime + m_llDelay - CTickCount::Now();
+    return m_startTime + m_delay - CTickCount::Now();
 }

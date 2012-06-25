@@ -74,10 +74,8 @@ void Class::IncrementMethodStack( lua_State *lua )
     inMethod++;
 }
 
-void Class::DecrementMethodStack( lua_State *lua )
+void Class::CheckDestruction( lua_State *lua )
 {
-    inMethod--;
-
     // I am not sure whether the stack could corrupt.
     // This needs testing with exception handling
     // Yes, exceptions will not hinder the requested destruction of a class.
@@ -85,12 +83,28 @@ void Class::DecrementMethodStack( lua_State *lua )
     // The new lua thread architecture preserves class referencing!
     // Now there is no more issue with keeping a coroutine state to save a class
     // from destruction. Hahaha!
-    if (reqDestruction && inMethod == 0)
+    if ( reqDestruction && inMethod == 0 )
     {
         setobj2s( lua, lua->top, &destructor );
         api_incr_top( lua );
         lua_call( lua, 0, 0 );
     }
+}
+
+void Class::DecrementMethodStack( lua_State *lua )
+{
+    inMethod--;
+
+    CheckDestruction( lua );
+}
+
+void Class::ClearReferences( lua_State *lua )
+{
+    inMethod -= refCount;
+
+    refCount = 0;
+
+    CheckDestruction( lua );
 }
 
 void Class::SetTransmit( int type )
@@ -304,6 +318,9 @@ static int classmethod_reference( lua_State *L )
 static int classmethod_dereference( lua_State *L )
 {
     Class *j = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
+
+    if ( j->refCount == 0 )
+        return 0;
 
     j->inMethod--;
     j->refCount--;

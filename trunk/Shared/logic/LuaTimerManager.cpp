@@ -65,12 +65,12 @@ void LuaTimerManager::ResetTimer( LuaTimer *timer )
     timer->SetStartTime( CTickCount::Now() );
 }
 
-bool CLuaTimerManager::Exists( LuaTimer *timer )
+bool LuaTimerManager::Exists( LuaTimer *timer )
 {
     return m_list.Contains( timer );
 }
 
-LuaTimer* LuaTimerManager::AddTimer( lua_State *L, const LuaFunctionRef& ref, CTickCount delay, unsigned int repCount, const CLuaArguments& args )
+LuaTimer* LuaTimerManager::AddTimer( lua_State *L, const LuaFunctionRef& ref, CTickCount delay, unsigned int repCount, const LuaArguments& args )
 {
     // Check for the minimum interval
     if ( delay.ToLongLong() < LUA_TIMER_MIN_INTERVAL )
@@ -103,7 +103,7 @@ void LuaTimerManager::GetTimers( CTickCount time, LuaMain *main )
 
         lua_State *L = main->GetVirtualMachine();
         lua_pushnumber( L, ++n );
-        lua_pushtimer( L, *iter );
+        (*iter)->PushStack( L );
         lua_settable( L, -3 );
     }
 }

@@ -37,7 +37,7 @@ public:
     void                                                ReadArguments( lua_State *lua, signed int indexStart = 1 );
     void                                                PushArguments( lua_State *lua ) const;
     void                                                PushArguments( LuaArguments& args );
-    virtual bool                                        Call( class LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *res );
+    virtual bool                                        Call( class LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *res = NULL );
 
     void                                                ReadTable( lua_State* luaVM, int indexStart );
     void                                                PushAsTable( lua_State* luaVM );

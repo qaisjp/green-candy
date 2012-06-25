@@ -26,8 +26,8 @@ public:
         MODE_CREATE,
     };
 
-                            ScriptFile             ( CFile *file );
-                            ~ScriptFile            ();
+                            ScriptFile              ( CFile *file );
+                            ~ScriptFile             ();
 
     bool                    IsEOF                   ();
     size_t                  GetPointer              ();

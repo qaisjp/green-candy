@@ -188,6 +188,10 @@ size_t luaC_separatefinalization( lua_State *L, int all )
             if ( !( iswhite(curr) || all ) ) // we cannot destroy our class yet, bound in thread
                 break;
 
+            // If we clear everything, .lua references do not count
+            if ( all )
+                j->ClearReferences( L );
+
             if ( j->inMethod )
             {
                 // Poll it for next collection cycle

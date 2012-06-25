@@ -17,24 +17,19 @@
 
 #include "StdInc.h"
 
-CRegisteredCommands::CRegisteredCommands ( CAccessControlListManager* pACLManager )
+CRegisteredCommands::CRegisteredCommands( LuaManager& manager, CAccessControlListManager* pACLManager ) : RegisteredCommands( manager )
 {
     m_pACLManager = pACLManager;
     m_bIteratingList = false;
 }
 
-
-CRegisteredCommands::~CRegisteredCommands ( void )
+CRegisteredCommands::~CRegisteredCommands()
 {
-    ClearCommands ();
+    ClearCommands();
 }
-
 
 bool CRegisteredCommands::AddCommand ( CLuaMain* pLuaMain, const char* szKey, const CLuaFunctionRef& iLuaFunction, bool bRestricted, bool bCaseSensitive )
 {
-    assert ( pLuaMain );
-    assert ( szKey );
-
     // Check if we already have this key and handler
     SCommand* pCommand = GetCommand ( szKey, pLuaMain );
     if ( pCommand &&
@@ -57,103 +52,8 @@ bool CRegisteredCommands::AddCommand ( CLuaMain* pLuaMain, const char* szKey, co
     return true;
 }
 
-
-bool CRegisteredCommands::RemoveCommand ( CLuaMain* pLuaMain, const char* szKey, const CLuaFunctionRef& iLuaFunction )
-{
-    assert ( pLuaMain );
-    assert ( szKey );
-
-    // Call the handler for every virtual machine that matches the given key
-    bool bFound = false;
-    list < SCommand* > ::iterator iter = m_Commands.begin ();
-    int iCompareResult;
-
-    while ( iter != m_Commands.end () )
-    {
-        if ( (*iter)->bCaseSensitive )
-            iCompareResult = strcmp ( (*iter)->szKey, szKey );
-        else
-            iCompareResult = stricmp ( (*iter)->szKey, szKey );
-
-        // Matching vm's and names?
-        if ( (*iter)->pLuaMain == pLuaMain && iCompareResult == 0 )
-        {
-            if ( VERIFY_FUNCTION ( iLuaFunction ) && (*iter)->iLuaFunction != iLuaFunction )
-            {
-                iter++;
-                continue;
-            }
-
-            // Delete it and remove it from our list
-            if ( m_bIteratingList )
-            {
-                m_TrashCan.push_back ( *iter );
-                ++iter;
-            }
-            else
-            {
-                delete *iter;
-                iter = m_Commands.erase ( iter );
-            }
-            bFound = true;
-        }
-        else
-            ++iter;
-    }
-
-    return bFound;
-}
-
-
-void CRegisteredCommands::ClearCommands ( void )
-{
-    // Delete all the commands
-    list < SCommand* > ::const_iterator iter = m_Commands.begin ();
-    for ( ; iter != m_Commands.end (); iter++ )
-    {
-        delete *iter;
-    }
-
-    // Clear the list
-    m_Commands.clear ();
-}
-
-
-void CRegisteredCommands::CleanUpForVM ( CLuaMain* pLuaMain )
-{
-    assert ( pLuaMain );
-
-    // Delete every command that matches
-    list < SCommand* > ::iterator iter = m_Commands.begin ();
-    while ( iter != m_Commands.end () )
-    {
-        // Matching VM's?
-        if ( (*iter)->pLuaMain == pLuaMain )
-        {
-            // Delete the entry and remove it from the list
-            delete *iter;
-            iter = m_Commands.erase ( iter );
-        }
-        else
-        {
-            ++iter;
-        }
-    }
-}
-
-
-bool CRegisteredCommands::CommandExists ( const char* szKey, CLuaMain* pLuaMain )
-{
-    assert ( szKey );
-
-    return GetCommand ( szKey, pLuaMain ) != NULL;
-}
-
-
 bool CRegisteredCommands::ProcessCommand ( const char* szKey, const char* szArguments, CClient* pClient )
 {
-    assert ( szKey );
-
     // Call the handler for every virtual machine that matches the given key
     bool bHandled = false;
     m_bIteratingList = true;
@@ -189,39 +89,8 @@ bool CRegisteredCommands::ProcessCommand ( const char* szKey, const char* szArgu
     return bHandled;
 }
 
-
-CRegisteredCommands::SCommand* CRegisteredCommands::GetCommand ( const char* szKey, class CLuaMain* pLuaMain )
-{
-    assert ( szKey );
-
-    // Try to find an entry with a matching name in our list
-    list < SCommand* > ::const_iterator iter = m_Commands.begin ();
-    int iCompareResult;
-
-    for ( ; iter != m_Commands.end (); iter++ )
-    {
-        if ( (*iter)->bCaseSensitive )
-            iCompareResult = strcmp ( (*iter)->szKey, szKey );
-        else
-            iCompareResult = stricmp ( (*iter)->szKey, szKey );
-
-        // Matching name and no given VM or matching VM
-        if ( iCompareResult == 0 && ( !pLuaMain || pLuaMain == (*iter)->pLuaMain ) )
-        {
-            return *iter;
-        }
-    }
-
-    // Doesn't exist
-    return NULL;
-}
-
-
 void CRegisteredCommands::CallCommandHandler ( CLuaMain* pLuaMain, const CLuaFunctionRef& iLuaFunction, const char* szKey, const char* szArguments, CClient* pClient )
 {
-    assert ( pLuaMain );
-    assert ( szKey );
-
     CLuaArguments Arguments;
     // First, try to call a handler with the same number of arguments
     if ( pClient )
@@ -270,16 +139,3 @@ void CRegisteredCommands::CallCommandHandler ( CLuaMain* pLuaMain, const CLuaFun
     // Call the handler with the arguments we pushed
     Arguments.Call ( pLuaMain, iLuaFunction );
 }
-
-
-void CRegisteredCommands::TakeOutTheTrash ( void )
-{
-    list < SCommand* > ::iterator iter = m_TrashCan.begin ();
-    for ( ; iter != m_TrashCan.end (); iter++ )
-    {
-        if ( !m_Commands.empty() ) m_Commands.remove ( *iter );
-        delete *iter;
-    }
-    m_TrashCan.clear ();
-}
-

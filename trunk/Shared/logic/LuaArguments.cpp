@@ -139,7 +139,7 @@ void LuaArguments::PushAsTable( lua_State *luaVM )
 
 void LuaArguments::PushArguments( LuaArguments& args )
 {
-    vector <LuaArgument*>::const_iterator iter = args.IterBegin();
+    std::vector <LuaArgument*>::const_iterator iter = args.IterBegin();
 
     for ( ; iter != args.IterEnd(); iter++ )
         m_args.push_back( (*iter)->Clone() );
