@@ -17,6 +17,10 @@
 
 namespace LuaFunctionDefs
 {
+    void SetResourceManager( ResourceManager& man );
+    void SetRegisteredCommands( RegisteredCommands& cmds );
+    void SetDebugging( ScriptDebugging& debug );
+
     // Reserved functions
     LUA_DECLARE( DisabledFunction );
 
@@ -37,11 +41,11 @@ namespace LuaFunctionDefs
     LUA_DECLARE( fileCopy );
 
     // UTF functions
-    LUA_DECLARE( UtfLen );
-    LUA_DECLARE( UtfSeek );
-    LUA_DECLARE( UtfSub );
-    LUA_DECLARE( UtfChar );
-    LUA_DECLARE( UtfCode );
+    LUA_DECLARE( utfLen );
+    LUA_DECLARE( utfSeek );
+    LUA_DECLARE( utfSub );
+    LUA_DECLARE( utfChar );
+    LUA_DECLARE( utfCode );
 
 #ifndef _KILLFRENZY
     // XML Functions
@@ -69,27 +73,24 @@ namespace LuaFunctionDefs
     LUA_DECLARE( fromJSON );
 
     // Utility
-    LUA_DECLARE( Md5 );
-    LUA_DECLARE( GetTok );
-    LUA_DECLARE( Split );
-    LUA_DECLARE( SetTimer );
-    LUA_DECLARE( KillTimer );
-    LUA_DECLARE( ResetTimer );
-    LUA_DECLARE( GetTimers );
-    LUA_DECLARE( IsTimer );
-    LUA_DECLARE( GetTimerDetails );
-    LUA_DECLARE( GetTickCount_ );
-    LUA_DECLARE( GetCTime );
-    LUA_DECLARE( Reference );
-    LUA_DECLARE( Dereference );
-    LUA_DECLARE( GetColorFromString );
-    LUA_DECLARE( GetValidPedModels );
-    LUA_DECLARE( OutputDebugString );
+    LUA_DECLARE( md5 );
+    LUA_DECLARE( gettok );
+    LUA_DECLARE( split );
+    LUA_DECLARE( setTimer );
+    LUA_DECLARE( killTimer );
+    LUA_DECLARE( resetTimer );
+    LUA_DECLARE( getTimers );
+    LUA_DECLARE( isTimer );
+    LUA_DECLARE( getTimerDetails );
+    LUA_DECLARE( getTickCount );
+    LUA_DECLARE( getCTime );
+    LUA_DECLARE( getColorFromString );
+    LUA_DECLARE( getValidPedModels );
+    LUA_DECLARE( outputDebugString );
+    LUA_DECLARE( print );
 
-    LUA_DECLARE( GetDistanceBetweenPoints2D );
-    LUA_DECLARE( GetDistanceBetweenPoints3D );
-    LUA_DECLARE( GetEasingValue );
-    LUA_DECLARE( InterpolateBetween );
+    LUA_DECLARE( getDistance2D );
+    LUA_DECLARE( getDistance3D );
 };
 
 #endif //_LUA_BASE_DEFS_

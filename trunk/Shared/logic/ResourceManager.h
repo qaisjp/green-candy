@@ -34,15 +34,15 @@ public:
     virtual bool            FileExists( Resource *res, const char *path );
     virtual bool            FileDelete( Resource *res, const char *path );
 
+    // Share this value with all deriviates
+    static CFileTranslator *resFileRoot;
+
 protected:
     typedef std::list <Resource*> resourceList_t;
     typedef std::map <filePath, Resource*> resNameMap_t;
 
     resourceList_t  m_resources;
     resNameMap_t    m_resByName;
-
-    // Share this value with all deriviates
-    static CFileTranslator *resFileRoot;
 };
 
 #endif //_BASE_RESOURCE_MANAGER_

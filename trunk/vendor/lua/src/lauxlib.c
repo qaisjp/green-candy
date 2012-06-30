@@ -28,7 +28,7 @@
 
 
 /* convert a stack index to positive */
-#define abs_index(L, i)		((i) > 0 || (i) <= LUA_REGISTRYINDEX ? (i) : \
+#define abs_index(L, i)		((i) > 0 || (i) <= LUA_STACKLAST ? (i) : \
 					lua_gettop(L) + (i) + 1)
 
 

@@ -30,7 +30,7 @@ class Events
 {
 public:
                                 Events();
-    inline                      ~Events()                   { RemoveAllEvents(); };
+    inline                      ~Events()                   { RemoveAll(); };
 
     bool                        Add( const char *name, const char *args, LuaMain *lua, bool allowRemote );
     void                        Remove( Event *evt );
@@ -55,8 +55,6 @@ public:
     const char*                 GetLastError();
 
 private:
-    void                        RemoveAllEvents();
-
     eventList_t                 m_events;
 
     std::vector <int>           m_cancelList;

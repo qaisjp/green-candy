@@ -17,7 +17,7 @@
 
 #include <StdInc.h>
 
-void LuaTimerManager::DoPulse( LuaMain *main )
+void LuaTimerManager::DoPulse( LuaMain& main )
 {
     CTickCount curTime = CTickCount::Now();
     luaRefs refs;
@@ -70,7 +70,7 @@ bool LuaTimerManager::Exists( LuaTimer *timer )
     return m_list.Contains( timer );
 }
 
-LuaTimer* LuaTimerManager::AddTimer( lua_State *L, const LuaFunctionRef& ref, CTickCount delay, unsigned int repCount, const LuaArguments& args )
+LuaTimer* LuaTimerManager::AddTimer( lua_State *L, const LuaFunctionRef& ref, CTickCount delay, unsigned int repCount )
 {
     // Check for the minimum interval
     if ( delay.ToLongLong() < LUA_TIMER_MIN_INTERVAL )

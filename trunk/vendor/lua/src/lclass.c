@@ -100,6 +100,9 @@ void Class::DecrementMethodStack( lua_State *lua )
 
 void Class::ClearReferences( lua_State *lua )
 {
+    if ( !refCount )
+        return;
+
     inMethod -= refCount;
 
     refCount = 0;

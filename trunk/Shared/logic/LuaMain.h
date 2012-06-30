@@ -21,9 +21,10 @@ struct CRefInfo
     int idx;
 };
 
-class LuaMain
+class LuaMain abstract
 {
     friend class LuaManager;
+protected:
 
     // Manager only
                                     LuaMain( class LuaManager& manager );
@@ -45,10 +46,10 @@ public:
 
     void							CallStack( int args );
     void							CallStackVoid( int args );
-    LuaArguments					CallStackResult( int args );
+    void					        CallStackResult( int argc, LuaArguments& args );
     bool                            PCallStack( int args );
     bool                            PCallStackVoid( int args );
-    LuaArguments                    PCallStackResult( int args, bool& excpt );
+    bool                            PCallStackResult( int argc, LuaArguments& args );
     //TODO: Function reference calling
 
     bool                            LoadScriptFromBuffer( const char *buf, size_t size, const char *path, bool utf8 );

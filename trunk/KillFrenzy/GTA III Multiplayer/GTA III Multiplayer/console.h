@@ -17,11 +17,11 @@ extern char m_consoleInput[MAX_CONSOLE_LINE];
 #define VK_SHIFT		0x10
 
 // Init
-void	Console_Init ();
-LRESULT CALLBACK	Console_WndProc ( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
+void	Console_Init();
+LRESULT CALLBACK	Console_WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 // Functionality
-void	Console_Draw ( IDirect3DDevice8 *pDevice );
-void	Console_Printf ( char *Text, D3DCOLOR Color, ... );
+void	Console_Draw( IDirect3DDevice8 *pDevice );
+void	Console_Printf( const char *Text, D3DCOLOR Color, ... );
 
 extern CGame	*m_pGame;
 

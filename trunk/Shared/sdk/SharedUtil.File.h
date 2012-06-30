@@ -145,6 +145,10 @@ public:
         : _baseString( right )
     { }
 
+    filePath( const SString& right )
+        : _baseString( right.c_str(), right.size() )
+    { }
+
     filePath( const char *right, size_t len )
         : _baseString( right, len )
     { }

@@ -42,11 +42,12 @@ LuaFunctionRef::~LuaFunctionRef()
 
 LuaFunctionRef& LuaFunctionRef::operator = ( const LuaFunctionRef& other )
 {
-    m_lua->Dereference( *this );
+    if ( m_ref != LUA_REFNIL )
+        m_lua->Dereference( *this );
 
-    m_luaVM = other.m_luaVM;
-    m_iFunction = other.m_iFunction;
-    m_pFuncPtr = other.m_pFuncPtr;
+    m_lua = other.m_lua;
+    m_ref = other.m_ref;
+    m_call = other.m_call;
 
     m_lua->Reference( *this );
     return *this;

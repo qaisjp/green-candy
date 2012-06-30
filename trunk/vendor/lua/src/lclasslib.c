@@ -29,7 +29,7 @@ static const luaL_Reg classlib[] = {
     { NULL, NULL }
 };
 
-int luaopen_class( lua_State *L )
+LUA_API int luaopen_class( lua_State *L )
 {
     luaL_register( L, LUA_CLASSLIBNAME, classlib );
     return 1;

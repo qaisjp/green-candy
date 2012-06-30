@@ -31,40 +31,56 @@
 #include "lvm.h"
 
 
-
 const char lua_ident[] =
   "$Lua: " LUA_RELEASE " " LUA_COPYRIGHT " $\n"
   "$Authors: " LUA_AUTHORS " $\n"
   "$URL: www.lua.org $\n";
 
+TValue* index2adr( lua_State *L, int idx )
+{
+    if ( idx > 0 )
+    {
+        TValue *o = L->base + (idx - 1);
+        api_check(L, idx <= L->ci->top - L->base);
 
-TValue *index2adr (lua_State *L, int idx) {
-  if (idx > 0) {
-    TValue *o = L->base + (idx - 1);
-    api_check(L, idx <= L->ci->top - L->base);
-    if (o >= L->top) return cast(TValue *, luaO_nilobject);
-    else return o;
-  }
-  else if (idx > LUA_REGISTRYINDEX) {
-    api_check(L, idx != 0 && -idx <= L->top - L->base);
-    return L->top + idx;
-  }
-  else switch (idx) {  /* pseudo-indices */
-    case LUA_REGISTRYINDEX: return registry(L);
-    case LUA_ENVIRONINDEX: {
-      Closure *func = curr_func(L);
-      sethvalue(L, &L->env, func->env);
-      return &L->env;
+        if ( o >= L->top )
+            return cast(TValue *, luaO_nilobject);
+        else
+            return o;
     }
-    case LUA_GLOBALSINDEX: return gt(L);
-    default: {
-      Closure *func = curr_func(L);
-      idx = LUA_GLOBALSINDEX - idx;
-      return (idx <= func->nupvalues)
-                ? &func->GetCClosure()->upvalue[idx-1]
-                : cast(TValue *, luaO_nilobject);
+    else if ( idx > LUA_STACKLAST )
+    {
+        api_check(L, idx != 0 && -idx <= L->top - L->base);
+        return L->top + idx;
     }
-  }
+
+    switch( idx )
+    {  /* pseudo-indices */
+    case LUA_STORAGEINDEX:
+        return &L->storage;
+    case LUA_REGISTRYINDEX:
+        return registry(L);
+    case LUA_ENVIRONINDEX:
+    {
+        if ( L->nCcalls )
+        {
+            Closure *func = curr_func(L);
+            sethvalue(L, &L->env, func->env);
+            return &L->env;
+        }
+    }
+    case LUA_GLOBALSINDEX:
+        return gt(L);
+    default:
+    {
+        Closure *func = curr_func(L);
+
+        idx = LUA_GLOBALSINDEX - idx;
+        return (idx <= func->nupvalues)
+            ? &func->GetCClosure()->upvalue[idx-1]
+            : cast(TValue *, luaO_nilobject);
+    }
+    }
 }
 
 
@@ -1172,7 +1188,6 @@ LUA_API const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
   return name;
 }
 
-
 LUA_API void lua_setevent( lua_State *lua, eLuaEvent evt, lua_CFunction proto )
 {
     if ( evt > LUA_NUM_EVENTS-1 )
@@ -1212,4 +1227,9 @@ LUA_API void lua_basicprotect( lua_State *L )
 LUA_API void lua_basicextend( lua_State *L )
 {
     luaJ_basicextend( L );
+}
+
+LUA_API ILuaState& lua_getstateapi( lua_State *L )
+{
+    return *L;
 }

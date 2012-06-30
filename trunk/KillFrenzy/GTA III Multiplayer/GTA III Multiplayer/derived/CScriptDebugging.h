@@ -16,7 +16,13 @@
 class CScriptDebugging : public ScriptDebugging
 {
 public:
+                            CScriptDebugging( class CLuaManager& manager );
 
+    bool                    SetLogfile( const char *path, unsigned int level );
+
+protected:
+    void                    NotifySystem( unsigned int level, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b );
+    void                    PathRelative( const char *in, filePath& out );
 };
 
 #endif //_SCRIPT_DEBUGGING_

@@ -14,5 +14,10 @@
 #define _DERIVED_LOGIC_
 
 #include "CScriptDebugging.h"
+#include "CRegisteredCommands.h"
+#include "CEvents.h"
+#include "CLuaMain.h"
+#include "CLuaManager.h"
+#include "CResourceManager.h"
 
 #endif //_DERIVED_LOGIC_

@@ -48,21 +48,23 @@ LuaArgument::LuaArgument( const std::string& str )
 LuaArgument::LuaArgument( void *ud )
 {
     m_table = NULL;
-    Read( ud );
+    ReadUserData( ud );
 }
 
-LuaArgument::LuaArgument( const CLuaArgument& arg )
+LuaArgument::LuaArgument( const LuaArgument& arg )
 {
     // Initialize and call our = on the argument
     m_table = NULL;
     CopyRecursive( arg );
 }
 
+#ifndef _KILLFRENZY
 LuaArgument::LuaArgument( NetBitStreamInterface& bitStream )
 {
     m_table = NULL;
     ReadFromBitStream( bitStream );
 }
+#endif //_KILLFRENZY
 
 LuaArgument::LuaArgument( lua_State *lua, int idx )
 {
@@ -99,7 +101,7 @@ void LuaArgument::CopyRecursive( const LuaArgument& arg )
         return;
 
     case LUA_TLIGHTUSERDATA:
-        Read( arg.GetLightUserData() );
+        ReadUserData( arg.GetLightUserData() );
         return;
 
     case LUA_TNUMBER:
@@ -217,6 +219,9 @@ void LuaArgument::Read( lua_State *lua, int idx )
 
     DeleteTableData();
 
+    size_t len;
+    const char *buf;
+
     // Read out the content depending on the type
     switch( lua_type( lua, idx ) )
     {
@@ -246,7 +251,7 @@ void LuaArgument::Read( lua_State *lua, int idx )
         return;
 
     case LUA_TLIGHTUSERDATA:
-        Read( lua_touserdata( lua, idx ) );
+        ReadUserData( lua_touserdata( lua, idx ) );
         return;
 
     case LUA_TNUMBER:
@@ -254,8 +259,7 @@ void LuaArgument::Read( lua_State *lua, int idx )
         return;
 
     case LUA_TSTRING:
-        size_t len;
-        const char *buf = lua_tolstring( lua, arg, &len );
+        buf = lua_tolstring( lua, idx, &len );
 
         // Set our string
         m_string.assign( buf, len );
@@ -279,7 +283,7 @@ void LuaArgument::ReadNil()
 
 void LuaArgument::Read( bool b )
 {
-    m_string = b ? "true", : "false";
+    m_string = b ? "true" : "false";
     m_type = LUA_TBOOLEAN;
     DeleteTableData();
     m_bool = b;
@@ -288,8 +292,9 @@ void LuaArgument::Read( bool b )
 void LuaArgument::Read( double d )
 {
     std::stringstream stream;
+    stream.precision( 16 );
 
-    stream << std::setprecision( 16 ) << d;
+    stream << d;
 
     m_string = stream.str();
     m_type = LUA_TNUMBER;
@@ -304,7 +309,7 @@ void LuaArgument::Read( const std::string& string )
     m_string = string;
 }
 
-void LuaArgument::Read( void *ud )
+void LuaArgument::ReadUserData( void *ud )
 {
     m_string = "";
     DeleteTableData();
@@ -354,6 +359,7 @@ void LuaArgument::Push( lua_State *lua ) const
     lua_pushnil( lua );
 }
 
+#ifndef _KILLFRENZY
 bool LuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int type )
 {
     switch( type.data.ucType )
@@ -524,10 +530,11 @@ bool LuaArgument::WriteToBitStream( NetBitStreamInterface& bitStream ) const
     bitStream.Write( &type );
     return false;
 }
+#endif //_KILLFRENZY
 
 void LuaArgument::DeleteTableData()
 {
-    if ( !m_pTableData )
+    if ( !m_table )
         return;
 
     if ( !m_weakRef )

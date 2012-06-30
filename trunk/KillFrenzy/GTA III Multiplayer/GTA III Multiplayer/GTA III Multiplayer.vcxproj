@@ -140,9 +140,16 @@
     <ClInclude Include="..\..\..\Shared\logic\Resource.h" />
     <ClInclude Include="..\..\..\Shared\logic\ResourceManager.h" />
     <ClInclude Include="..\..\..\Shared\logic\ScriptDebugging.h" />
+    <ClInclude Include="..\..\..\Shared\sdk\CVector.h" />
+    <ClInclude Include="..\..\..\Shared\sdk\CVector2D.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="d3d8_f.h" />
     <ClInclude Include="d3devt.h" />
+    <ClInclude Include="derived\CEvents.h" />
+    <ClInclude Include="derived\CLuaMain.h" />
+    <ClInclude Include="derived\CLuaManager.h" />
+    <ClInclude Include="derived\CRegisteredCommands.h" />
+    <ClInclude Include="derived\CResourceManager.h" />
     <ClInclude Include="derived\CScriptDebugging.h" />
     <ClInclude Include="derived\include.h" />
     <ClInclude Include="dinput8.h" />
@@ -188,6 +195,11 @@
     </ClCompile>
     <ClCompile Include="d3d8_f.cpp" />
     <ClCompile Include="d3devt.cpp" />
+    <ClCompile Include="derived\CEvents.cpp" />
+    <ClCompile Include="derived\CLuaMain.cpp" />
+    <ClCompile Include="derived\CLuaManager.cpp" />
+    <ClCompile Include="derived\CRegisteredCommands.cpp" />
+    <ClCompile Include="derived\CResourceManager.cpp" />
     <ClCompile Include="derived\CScriptDebugging.cpp" />
     <ClCompile Include="dinput8.cpp" />
     <ClCompile Include="dllmain.cpp" />

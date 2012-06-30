@@ -30,4 +30,27 @@ LUAI_FUNC void luaG_errormsg (lua_State *L);
 LUAI_FUNC int luaG_checkcode (const Proto *pt);
 LUAI_FUNC int luaG_checkopenop (Instruction i);
 
+class callstack_ref
+{
+    friend class lua_State;
+public:
+    callstack_ref( lua_State& L ) : m_lua( L )
+    {
+        if ( ++L.nCcalls >= LUAI_MAXCCALLS )
+        {
+            if ( L.nCcalls == LUAI_MAXCCALLS )
+                luaG_runerror( &L, "C stack overflow" );
+            else if ( L.nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)) )
+                throw lua_exception( &L, LUA_ERRERR, "stack handling error" );
+        }
+    }
+
+    ~callstack_ref()
+    {
+        m_lua.nCcalls--;
+    }
+
+    lua_State& m_lua;
+};
+
 #endif

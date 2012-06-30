@@ -61,30 +61,32 @@ void LuaArguments::CopyRecursive( const LuaArguments& args )
     // We require a clean setup
     DeleteArguments();
 
+#ifdef _TODO
     tables.insert( std::make_pair( (LuaArguments*)&args, (LuaArguments*)this ) );
+#endif
 
     // Copy all the arguments
-    vector <LuaArgument*>::const_iterator iter = args.m_args.begin();
+    argList_t::const_iterator iter = args.m_args.begin();
 
     for ( ; iter != args.m_args.end(); iter++ )
         m_args.push_back( (*iter)->Clone() );
 }
 
-void LuaArguments::ReadArguments( lua_State *luaVM, int indexStart )
+void LuaArguments::ReadArguments( lua_State *L, int indexStart )
 {
     // Tidy up setup :)
     DeleteArguments();
 
-    std::map <const void*, LuaArguments*> tables;
-
     // Start reading arguments until there are none left
-    while ( lua_type( luaVM, indexStart ) != LUA_TNONE )
-        m_args.push_back( new LuaArgument( luaVM, indexStart++, tables ) );
+    while ( lua_type( L, indexStart ) != LUA_TNONE )
+        ReadArgument( L, indexStart++ );
 }
 
 void LuaArguments::ReadTable( lua_State *luaVM, int indexStart )
 {
+#ifdef _TODO
     tables.insert( std::make_pair( lua_topointer( luaVM, indexStart ), this ) );
+#endif
 
     // Tidy up
     DeleteArguments();
@@ -99,17 +101,19 @@ void LuaArguments::ReadTable( lua_State *luaVM, int indexStart )
     // The_GTA: Google for lua table iteration
     while ( lua_next( luaVM, indexStart ) != 0 )
     {
-        m_args.push_back( new LuaArgument( luaVM, -2, tables ) );
-        m_args.push_back( new LuaArgument( luaVM, -1, tables ) );
+        ReadArgument( luaVM, -2 );
+        ReadArgument( luaVM, -1 );
        
         lua_pop( luaVM, 1 );
     }
 }
 
+#if 0
 void LuaArguments::ReadArgument( lua_State *luaVM, int index )
 {
     m_args.push_back( new LuaArgument( luaVM, index ) );
 }
+#endif
 
 void LuaArguments::PushArguments( lua_State *luaVM ) const
 {
@@ -148,7 +152,6 @@ void LuaArguments::PushArguments( LuaArguments& args )
 bool LuaArguments::Call( LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *res )
 {
     int top = lua_gettop( lua->GetVirtualMachine() );
-    bool excpt;
 
     lua->PushReference( ref );
     PushArguments( lua->GetVirtualMachine() );
@@ -157,8 +160,7 @@ bool LuaArguments::Call( LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *
     if ( !res )
         return lua->PCallStackVoid( m_args.size() );
 
-    *res = lua->PCallStackResult( m_args.size(), excpt );
-    return !excpt;
+    return lua->PCallStackResult( m_args.size(), *res );
 }
 
 bool LuaArguments::IsIndexedArray()
@@ -186,6 +188,7 @@ bool LuaArguments::IsIndexedArray()
     return true;
 }
 
+#if 0
 LuaArgument* LuaArguments::PushNil()
 {
     LuaArgument *arg = new LuaArgument;
@@ -235,6 +238,7 @@ LuaArgument* LuaArguments::PushTable( const LuaArguments& table )
     m_args.push_back( arg );
     return arg;
 }
+#endif
 
 void LuaArguments::DeleteArguments()
 {

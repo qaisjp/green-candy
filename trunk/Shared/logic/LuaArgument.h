@@ -40,6 +40,8 @@ public:
     bool                        operator == ( const LuaArgument& arg );
     bool                        operator != ( const LuaArgument& arg );
 
+    virtual LuaArgument*        Clone() const = 0;
+
     void                        ReadNil();
     void                        Read( lua_State *lua, int idx );
     void                        Read( bool b );

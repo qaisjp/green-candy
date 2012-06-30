@@ -32,16 +32,19 @@ LuaMain::~LuaMain()
 LuaFunctionRef LuaMain::CreateReference( int stack )
 {
     const void *ptr = lua_topointer( m_lua, stack );
+    CRefInfo *e_info;
 
-    if ( CRefInfo *info = &m_refStore[ptr] )
+    if ( !m_refStore.empty() && ( e_info = MapFind( m_refStore, ptr ) ) )
     {
         // Re-use the lua ref we already have
-        info->refCount++;
-        return LuaFunctionRef( this, info->idx, ptr );
+        e_info->refCount++;
+        return LuaFunctionRef( this, e_info->idx, ptr );
     }
 
+    //TODO: globalize references across threads
+
     // Get a lua ref
-    lua_settop( m_lua, stack );
+    lua_pushvalue( m_lua, stack );
     int ref = luaL_ref( m_lua, LUA_REGISTRYINDEX );
 
     // Save ref info
@@ -55,6 +58,9 @@ LuaFunctionRef LuaMain::CreateReference( int stack )
 
 void LuaMain::Reference( const LuaFunctionRef& ref )
 {
+    if ( m_refStore.empty() )
+        return;
+
     CRefInfo *iref = MapFind( m_refStore, ref.m_call );
 
     if ( !iref )
@@ -65,6 +71,9 @@ void LuaMain::Reference( const LuaFunctionRef& ref )
 
 void LuaMain::Dereference( const LuaFunctionRef& ref )
 {
+    if ( m_refStore.empty() )
+        return;
+
     CRefInfo *iref = MapFind( m_refStore, ref.m_call );
 
     if ( !iref )
@@ -75,7 +84,7 @@ void LuaMain::Dereference( const LuaFunctionRef& ref )
         // Remove on last unuse
         lua_unref( m_lua, iref->idx );
 
-        MapRemove( m_refStore, pFuncPtr );
+        MapRemove( m_refStore, iref );
         MapRemove( m_tagStore, ref.m_ref );
     }
 }
@@ -94,7 +103,7 @@ void LuaMain::PushReference( const LuaFunctionRef& ref )
 void LuaMain::RegisterFunction( const char *name, lua_CFunction proto )
 {
     lua_pushcclosure( m_lua, proto, 0 );
-    lua_setfield( m_lua, m_structure, name );
+    lua_setfield( m_lua, LUA_GLOBALSINDEX, name );
 }
 
 void LuaMain::CallStack( int args )
@@ -107,20 +116,37 @@ void LuaMain::CallStackVoid( int args )
     m_system.AcquireContext( *this ).CallStackVoid( args );
 }
 
-LuaArguments LuaMain::CallStackResult( int args )
+void LuaMain::CallStackResult( int argc, LuaArguments& args )
 {
-    return m_system.AcquireContext( *this ).CallStackResult( args );
+    m_system.AcquireContext( *this ).CallStackResult( argc, args );
+}
+
+bool LuaMain::PCallStack( int argc )
+{
+    return m_system.AcquireContext( *this ).PCallStack( argc );
+}
+
+bool LuaMain::PCallStackVoid( int argc )
+{
+    return m_system.AcquireContext( *this ).PCallStackVoid( argc );
+}
+
+bool LuaMain::PCallStackResult( int argc, LuaArguments& args )
+{
+    return m_system.AcquireContext( *this ).PCallStackResult( argc, args );
 }
 
 void LuaMain::InitSecurity()
 {
+    using namespace LuaFunctionDefs;
+
     // TODO: Safe implementation of these routines
-    RegisterFunction( "dofile", LuaFunctionDefs::DisabledFunction );
-    RegisterFunction( "loadfile", LuaFunctionDefs::DisabledFunction );
-    RegisterFunction( "require", LuaFunctionDefs::DisabledFunction );
-    RegisterFunction( "loadlib", LuaFunctionDefs::DisabledFunction );
-    RegisterFunction( "getfenv", LuaFunctionDefs::DisabledFunction );
-    RegisterFunction( "newproxy", LuaFunctionDefs::DisabledFunction );
+    RegisterFunction( "dofile", DisabledFunction );
+    RegisterFunction( "loadfile", DisabledFunction );
+    RegisterFunction( "require", DisabledFunction );
+    RegisterFunction( "loadlib", DisabledFunction );
+    RegisterFunction( "getfenv", DisabledFunction );
+    RegisterFunction( "newproxy", DisabledFunction );
 }
 
 void LuaMain::InitVM( int structure, int meta )
@@ -160,9 +186,14 @@ void LuaMain::InitVM( int structure, int meta )
 
 bool LuaMain::LoadScriptFromBuffer( const char *buf, size_t size, const char *path, bool utf8 )
 {
-    // Are we not marked as UTF-8 already, and not precompiled?
+    filePath relPath;
+
+    if ( !ParseRelative( path, relPath ) )
+        return false;
+
     std::string script;
 
+    // Are we not marked as UTF-8 already, and not precompiled?
     if ( !utf8 && ( size < 5 || buf[0] != 27 || buf[1] != 'L' || buf[2] != 'u' || buf[3] != 'a' || buf[4] != 'Q' ) )
     {
         script = UTF16ToMbUTF8( ANSIToUTF16( std::string( buf, size ) ) );
@@ -170,51 +201,34 @@ bool LuaMain::LoadScriptFromBuffer( const char *buf, size_t size, const char *pa
         if ( size != script.size() )
         {
             size = script.size();
-            g_pClientGame->GetScriptDebugging()->LogWarning ( m_luaVM, "Script '%s' is not encoded in UTF-8.  Loading as ANSI...", ConformResourcePath(szFileName).c_str() );
+
+            m_system.m_debug.LogWarning( "Script '%s' is not encoded in UTF-8.  Loading as ANSI...", relPath.c_str() );
         }
     }
     else
         script = std::string( buf, size );
 
     // Run the script
-    if ( luaL_loadbuffer( m_luaVM, bUTF8 ? cpBuffer : strUTFScript.c_str(), uiSize, SString ( "@%s", szFileName ) ) != 0 )
+    if ( luaL_loadbuffer( m_lua, script.c_str(), size, SString( "@%s", relPath.c_str() ) ) != 0 )
     {
         // Print the error
-        std::string strRes = ConformResourcePath ( lua_tostring( m_luaVM, -1 ) );
-        if ( strRes.length () )
+        std::string result = lua_getstring( m_lua, -1 );
+
+        if ( result.length() )
         {
-            CLogger::LogPrintf ( "SCRIPT ERROR: %s\n", strRes.c_str () );
-            g_pClientGame->GetScriptDebugging()->LogWarning ( m_luaVM, "Loading script failed: %s", strRes.c_str () );
+            Logger::LogPrintf( "SCRIPT ERROR: %s\n", result.c_str() );
+            m_system.m_debug.LogWarning( "Loading script failed: %s", result.c_str() );
         }
         else
         {
-            CLogger::LogPrint ( "SCRIPT ERROR: Unknown\n" );
-            g_pClientGame->GetScriptDebugging()->LogInformation ( m_luaVM, "Loading script failed for unknown reason" );
+            Logger::LogPrint( "SCRIPT ERROR: Unknown\n" );
+            m_system.m_debug.LogInformation( "Loading script failed for unknown reason" );
         }
         return false;
     }
-    ResetInstructionCount();
+    m_system.ResetInstructionCount();
 
-    int iret = lua_pcall ( m_luaVM, 0, 0, 0 ) ;
-    if ( iret == LUA_ERRRUN || iret == LUA_ERRMEM )
-    {
-        SString strRes = ConformResourcePath ( lua_tostring( m_luaVM, -1 ) );
-
-        std::vector <SString> vecSplit;
-        strRes.Split ( ":", vecSplit );
-        
-        if ( vecSplit.size ( ) >= 3 )
-        {
-            SString strFile = vecSplit[0];
-            int     iLine   = atoi ( vecSplit[1].c_str ( ) );
-            SString strMsg  = vecSplit[2].substr ( 1 );
-            
-            g_pClientGame->GetScriptDebugging()->LogError ( strFile, iLine, strMsg );
-        }
-        else
-            g_pClientGame->GetScriptDebugging()->LogError ( m_luaVM, "%s", strRes.c_str () );
-    }
-    return true;
+    return PCallStackVoid( 0 );
 }
 
 bool LuaMain::LoadScript( const char *buf )
@@ -222,16 +236,16 @@ bool LuaMain::LoadScript( const char *buf )
     // Run the script
     if ( luaL_loadbuffer( m_lua, buf, strlen( buf ), NULL ) != 0 )
     {
-        m_system.GetDebug().LogError( m_lua, "Loading in-line script failed: %s", lua_tostring( m_lua, -1 ) );
+        m_system.GetDebug().LogError( "Loading in-line script failed: %s", lua_tostring( m_lua, -1 ) );
         return false;
     }
-    ResetInstructionCount();
+    m_system.ResetInstructionCount();
 
     switch( lua_pcall( m_lua, 0, 0, 0 ) )
     {
     case LUA_ERRRUN:
     case LUA_ERRMEM:
-        m_system.GetDebug().LogError( m_lua, "Executing in-line script failed: %s", lua_tostring( m_lua, -1 ) );
+        m_system.GetDebug().LogError( "Executing in-line script failed: %s", lua_tostring( m_lua, -1 ) );
         return false;
     }
 
@@ -240,7 +254,7 @@ bool LuaMain::LoadScript( const char *buf )
 
 void LuaMain::DoPulse()
 {
-    m_timers.DoPulse( this );
+    m_timers.DoPulse( *this );
 }
 
 #ifndef _KILLFRENZY

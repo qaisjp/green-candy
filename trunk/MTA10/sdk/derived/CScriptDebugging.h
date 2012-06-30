@@ -18,11 +18,11 @@ class CScriptDebugging : public ScriptDebugging
 public:
                                 CScriptDebugging();
 
-    bool                        SetLogfile                      ( const char *path, unsigned int level );
+    bool                        SetLogfile( const char *path, unsigned int level );
 
 protected:
-    void                        NotifySystem                    ( unsigned int level, lua_State *lua, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b );
-    void                        PathRelative                    ( const char *in, filePath& out );
+    void                        NotifySystem( unsigned int level, lua_State *lua, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b );
+    void                        PathRelative( const char *in, filePath& out );
 
 private:
     bool                        m_triggerCall;

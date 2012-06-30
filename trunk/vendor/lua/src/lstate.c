@@ -76,7 +76,7 @@ static void f_luaopen (lua_State *L, void *ud) {
 }
 
 
-static void preinit_state (lua_State *L, global_State *g)
+static inline void preinit_state (lua_State *L, global_State *g)
 {
     G(L) = g;
     L->stack = NULL;
@@ -94,6 +94,7 @@ static void preinit_state (lua_State *L, global_State *g)
     L->base_ci = L->ci = NULL;
     L->savedpc = NULL;
     L->errfunc = 0;
+    sethvalue( L, &L->storage, luaH_new( L, 0, 0 ) );
     setnilvalue(gt(L));
 }
 
@@ -277,7 +278,6 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud)
     g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);
     L->marked = luaC_white(g);
     set2bits(L->marked, FIXEDBIT, SFIXEDBIT);
-    preinit_state(L, g);
     g->frealloc = f;
     g->ud = ud;
     g->mainthread = L;
@@ -287,6 +287,7 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud)
     g->strt.size = 0;
     g->strt.nuse = 0;
     g->strt.hash = NULL;
+    preinit_state(L, g);
     setnilvalue(registry(L));
     luaZ_initbuffer(L, &g->buff);
     g->panic = NULL;

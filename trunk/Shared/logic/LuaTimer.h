@@ -19,6 +19,8 @@
 #ifndef _BASE_LUA_TIMER_
 #define _BASE_LUA_TIMER_
 
+#define LUACLASS_TIMER  1
+
 #define LUA_TIMER_MIN_INTERVAL      50
 
 class LuaTimer : public LuaClass
@@ -36,14 +38,14 @@ public:
     inline unsigned int     GetRepeats() const                          { return m_repCount; };
     inline void             SetRepeats( unsigned int repCount )         { m_repCount = repCount; }
 
-    void                    Execute( class LuaMain *main );
+    void                    ObtainArguments( lua_State *L, int idx = 1 );
+    void                    Execute( class LuaMain& main );
 
     CTickCount              GetTimeLeft();
 
 private:
     LuaTimerManager*        m_manager;
     LuaFunctionRef          m_ref;
-    LuaArguments*           m_args;
     CTickCount              m_startTime;
     CTickCount              m_delay;
     unsigned int            m_repCount;

@@ -49,7 +49,7 @@ static int lua_popstackthread( lua_State *lua )
 
 static void InstructionCountHook( lua_State *lua, lua_Debug *debug )
 {
-    lua_readmanager( lua )->InstructionCountHook();
+    lua_readmanager( lua )->InstructionCountHook( lua, debug );
 }
 
 static int mainaccess_global( lua_State *lua )
@@ -80,8 +80,7 @@ static int luamain_constructor( lua_State *lua )
     return 0;
 }
 
-LuaManager::LuaManager( RegisteredCommands& commands, Events& events, ScriptDebugging& debug ) :
-    m_commands( commands ),
+LuaManager::LuaManager( Events& events, ScriptDebugging& debug ) :
     m_events( events ),
     m_debug( debug )
 {
@@ -89,7 +88,7 @@ LuaManager::LuaManager( RegisteredCommands& commands, Events& events, ScriptDebu
 
     // Setup the virtual machine
     m_lua = luaL_newstate();
-    lua_sethook( m_lua, InstructionCountHook, LUA_MASKCOUNT, HOOK_INSTRUCTION_COUNT );
+    lua_sethook( m_lua, ::InstructionCountHook, LUA_MASKCOUNT, HOOK_INSTRUCTION_COUNT );
 
     // Setup callbacks
     lua_setevent( m_lua, LUA_EVENT_THREAD_CONTEXT_PUSH, lua_pushstackthread );
@@ -125,7 +124,7 @@ LuaManager::~LuaManager()
 {
     LuaCFunctions::RemoveAllFunctions();
 
-    std::list <LuaMain*>::iterator iter;
+    std::list <LuaMain*>::const_iterator iter;
 
     for ( iter = IterBegin(); iter != IterEnd(); iter++ )
         delete *iter;
@@ -184,7 +183,7 @@ void LuaManager::Throw( unsigned int id, const char *error )
 
         msg += '"';
         msg += src;
-        msg += '":';
+        msg += "\":";
         msg += proto;
         msg += ':';
         msg += SString( "%u", line );
@@ -196,7 +195,7 @@ void LuaManager::Throw( unsigned int id, const char *error )
 
 void LuaManager::InstructionCountHook( lua_State *L, lua_Debug *ar )
 {
-    if ( timeGetTime() < m_functionEnter + HOOK_MAXIMUM_TIME )
+    if ( GetTickCount() < m_functionEnter + HOOK_MAXIMUM_TIME )
         return;
 
     const LuaMain *env = GetStatus();
@@ -210,12 +209,14 @@ void LuaManager::InstructionCountHook( lua_State *L, lua_Debug *ar )
 
 void LuaManager::CallStack( int args )
 {
+    lua_State *L = GetThread();
+
 #ifdef LUA_PROTECT_DEFAULT
-    if ( lua_type( m_lua, -args - 1 ) != LUA_TFUNCTION )
+    if ( lua_type( L, -args - 1 ) != LUA_TFUNCTION )
         Throw( LUA_ERRSYNTAX, "expected function at LuaManager::CallStack!" );
 
     // We could theoretically protect it ourselves
-    switch( int ret = lua_pcall( m_lua, args, LUA_MULTRET, 0 ) )
+    switch( int ret = lua_pcall( L, args, LUA_MULTRET, 0 ) )
     {
     case LUA_ERRRUN:
     case LUA_ERRMEM:
@@ -229,42 +230,41 @@ void LuaManager::CallStack( int args )
         throw lua_exception( m_lua, ret, msg );
     }
 #else
-    lua_call( m_lua, args, LUA_MULTRET );
+    lua_call( L, args, LUA_MULTRET );
 #endif //LUA_PROTECT_DEFAULT
 }
 
 void LuaManager::CallStackVoid( int args )
 {
+    lua_State *L = GetThread();
+
 #ifdef LUA_PROTECT_DEFAULT
-    int top = lua_gettop( m_lua );
+    int top = lua_gettop( L );
 
     CallStack( args );
 
-    lua_settop( m_lua, top - args );
+    lua_settop( L, top - args );
 #else
-    lua_call( m_lua, args, 0 );
+    lua_call( L, args, 0 );
 #endif //LUA_PROTECT_DEFAULT
 }
 
-LuaArguments LuaManager::CallStackResult( int argc )
+void LuaManager::CallStackResult( int argc, LuaArguments& args )
 {
-    int top = lua_gettop( m_lua );
+    lua_State *L = GetThread();
+    int top = lua_gettop( L );
 
     CallStack( argc );
 
-    LuaArguments args;
-    int rettop = lua_gettop( m_lua );
+    args.ReadArguments( L, top );
 
-    while ( rettop != top )
-        args.ReadArgument( m_lua, rettop-- );
-
-    lua_settop( m_lua, top - argc );
-    return args;
+    lua_settop( L, top - argc - 1 );
 }
 
 bool LuaManager::PCallStack( int argc )
 {
-    int top = lua_gettop( m_lua );
+    lua_State *L = GetThread();
+    int top = lua_gettop( L );
 
     try
     {
@@ -272,7 +272,7 @@ bool LuaManager::PCallStack( int argc )
     }
     catch( lua_exception& e )
     {
-        lua_settop( m_lua, top );
+        lua_settop( L, top - argc - 1 );
 
         m_debug.LogError( "%s", e.what() );
         return false;
@@ -282,7 +282,8 @@ bool LuaManager::PCallStack( int argc )
 
 bool LuaManager::PCallStackVoid( int argc )
 {
-    int top = lua_gettop( m_lua );
+    lua_State *L = GetThread();
+    int top = lua_gettop( L );
 
     try
     {
@@ -290,7 +291,7 @@ bool LuaManager::PCallStackVoid( int argc )
     }
     catch( lua_exception& e )
     {
-        lua_settop( m_lua, top );
+        lua_settop( L, top - argc - 1 );
 
         m_debug.LogError( "%s", e.what() );
         return false;
@@ -298,32 +299,33 @@ bool LuaManager::PCallStackVoid( int argc )
     return true;
 }
 
-LuaArguments LuaManager::PCallStackResult( int argc, bool& excpt )
+bool LuaManager::PCallStackResult( int argc, LuaArguments& args )
 {
-    LuaArguments args;
-    int top = lua_gettop( m_lua );
+    lua_State *L = GetThread();
+    int top = lua_gettop( L );
+    bool success;
 
-    if ( lua_pcall( m_lua, argc, LUA_MULTRET, 0 ) != 0 )
+    if ( lua_pcall( L, argc, LUA_MULTRET, 0 ) != 0 )
     {
-        m_debug.LogError( "%s", lua_tostring( m_lua, top + 1 ) );
-        excpt = true;
+        m_debug.LogError( "%s", lua_tostring( L, top + 1 ) );
+        success = false;
     }
     else
-        excpt = false;
+        success = true;
 
-    args.ReadArguments( m_lua, top );
-    return args;
+    args.ReadArguments( L, top );
+    return success;
 }
 
 static int luamain_index( lua_State *lua )
 {
     lua_gettable( lua, 1 );
 
-    if ( !lua_isnil( m_lua, -1 ) )
+    if ( !lua_isnil( lua, -1 ) )
         return 1;
 
-    lua_pop( m_lua, 1 );
-    return lua_getmanager( lua )->AccessGlobal();
+    lua_pop( lua, 1 );
+    return lua_readmanager( lua )->AccessGlobal();
 }
 
 // ARGS: table, key
@@ -335,20 +337,25 @@ int LuaManager::AccessGlobal()
 
     if ( lua_isnil( m_lua, -1 ) )
     {
-        lua_getglobal( m_lua, -2 );
+        lua_pop( m_lua, 1 );
+        lua_gettable( m_lua, LUA_GLOBALSINDEX );
         return 1;
     }
 
+    int top = lua_gettop( m_lua );
+
     try
     {
-        int top = lua_gettop( m_lua );
-
         CallStack( 1 );
 
         return lua_gettop( m_lua ) - top;
     }
     catch( lua_exception& e )
-        m_debug.LogError( m_lua, e.what() );
+    {
+        m_debug.LogError( e.what() );
+
+        lua_settop( m_lua, top );
+    }
 
     return 0;
 }
@@ -363,6 +370,8 @@ int LuaManager::AccessGlobalTable()
 void LuaManager::Init( LuaMain *lua )
 {
     lua_State *thread = lua_newthread( m_lua );
+    ILuaState& api = lua_getstateapi( thread );
+    api.SetMainThread( true );
 
     // We need threads for every environment
     lua->m_lua = thread;
@@ -386,11 +395,19 @@ void LuaManager::Init( LuaMain *lua )
     lua_pushboolean( thread, true );
     lua_settable( thread, 2 );
 
-    lua_setfield( L, 1, "resMain" );
+    lua_setfield( thread, 1, "resMain" );
 
     // Add it to the global env
     lua_pushlstring( m_lua, lua->GetName().c_str(), lua->GetName().size() );
-    lua_setglobal( m_lua, 1 );
+    lua_xmove( thread, m_lua, 1 );
+    lua_settable( m_lua, LUA_GLOBALSINDEX );
+
+    // Reference the manager and the context
+    lua_pushlightuserdata( thread, lua );
+    lua_pushlightuserdata( thread, this );
+
+    luaL_ref( thread, LUA_STORAGEINDEX );
+    luaL_ref( thread, LUA_STORAGEINDEX );
 
     // Notify the VM
     lua->InitVM( 1, 2 );
@@ -418,9 +435,8 @@ LuaMain* LuaManager::Get( lua_State *lua )
 //TODO: Runtime unwinding
 bool LuaManager::Remove( LuaMain *lua )
 {
-    // Remove all events registered by it and all commands added
-    m_events.RemoveAllEvents( lua );
-    m_commands.CleanUpForVM( lua );
+    // Remove all events registered by it
+    m_events.RemoveAll( lua );
 
     delete lua;
 
@@ -431,51 +447,90 @@ bool LuaManager::Remove( LuaMain *lua )
 
 void LuaManager::DoPulse()
 {
-    std::list <LuaMain*>::iterator iter;
+    std::list <LuaMain*>::const_iterator iter;
 
     for ( iter = IterBegin(); iter != IterEnd(); iter++ )
         (*iter)->DoPulse();
 }
 
+#define LUA_REGISTER( L, x ) lua_register( L, #x, x )
+
 void LuaManager::LoadCFunctions()
 {
+    using namespace LuaFunctionDefs;
+
+    LUA_REGISTER( m_lua, fileOpen );
+    LUA_REGISTER( m_lua, fileExists );
+    LUA_REGISTER( m_lua, fileCreate );
+    LUA_REGISTER( m_lua, fileIsEOF );
+    LUA_REGISTER( m_lua, fileGetPos );
+    LUA_REGISTER( m_lua, fileSetPos );
+    LUA_REGISTER( m_lua, fileGetSize );
+    LUA_REGISTER( m_lua, fileRead );
+    LUA_REGISTER( m_lua, fileWrite );
+    LUA_REGISTER( m_lua, fileFlush );
+    LUA_REGISTER( m_lua, fileClose );
+    LUA_REGISTER( m_lua, fileDelete );
+    LUA_REGISTER( m_lua, fileRename );
+    LUA_REGISTER( m_lua, fileCopy );
+
+    LUA_REGISTER( m_lua, utfLen );
+    LUA_REGISTER( m_lua, utfSeek );
+    LUA_REGISTER( m_lua, utfSub );
+    LUA_REGISTER( m_lua, utfChar );
+    LUA_REGISTER( m_lua, utfCode );
+
+    LUA_REGISTER( m_lua, getTickCount );
+    LUA_REGISTER( m_lua, getCTime );
+    LUA_REGISTER( m_lua, setTimer );
+    LUA_REGISTER( m_lua, killTimer );
+    LUA_REGISTER( m_lua, isTimer );
+    LUA_REGISTER( m_lua, print );
+
+    LUA_REGISTER( m_lua, getDistance2D );
+    LUA_REGISTER( m_lua, getDistance3D );
+
+#if 0
     // JSON funcs
-    lua_register( m_lua, "toJSON", LuaFunctionDefinitions::toJSON );
-    lua_register( m_lua, "fromJSON", LuaFunctionDefinitions::fromJSON );
+    lua_register( m_lua, "toJSON", toJSON );
+    lua_register( m_lua, "fromJSON", fromJSON );
 
     // Utility
-    lua_register( m_lua, "getDistanceBetweenPoints2D", LuaFunctionDefinitions::GetDistanceBetweenPoints2D );
-    lua_register( m_lua, "getDistanceBetweenPoints3D", LuaFunctionDefinitions::GetDistanceBetweenPoints3D );
-    lua_register( m_lua, "getEasingValue", LuaFunctionDefinitions::GetEasingValue );
-    lua_register( m_lua, "interpolateBetween", LuaFunctionDefinitions::InterpolateBetween );
+    lua_register( m_lua, "getDistanceBetweenPoints2D", GetDistanceBetweenPoints2D );
+    lua_register( m_lua, "getDistanceBetweenPoints3D", GetDistanceBetweenPoints3D );
+    lua_register( m_lua, "getEasingValue", GetEasingValue );
+    lua_register( m_lua, "interpolateBetween", InterpolateBetween );
 
-    lua_register( m_lua, "getTickCount", LuaFunctionDefinitions::GetTickCount_ );
-    lua_register( m_lua, "getRealTime", LuaFunctionDefinitions::GetCTime );
-    lua_register( m_lua, "split", LuaFunctionDefinitions::Split );
-    lua_register( m_lua, "gettok", LuaFunctionDefinitions::GetTok );
-    lua_register( m_lua, "setTimer", LuaFunctionDefinitions::SetTimer );
-    lua_register( m_lua, "killTimer", LuaFunctionDefinitions::KillTimer );
-    lua_register( m_lua, "resetTimer", LuaFunctionDefinitions::ResetTimer );
-    lua_register( m_lua, "getTimers", LuaFunctionDefinitions::GetTimers );
-    lua_register( m_lua, "isTimer", LuaFunctionDefinitions::IsTimer );
-    lua_register( m_lua, "getTimerDetails", LuaFunctionDefinitions::GetTimerDetails );
-    lua_register( m_lua, "getColorFromString", LuaFunctionDefinitions::GetColorFromString );
+    lua_register( m_lua, "getTickCount", GetTickCount_ );
+    lua_register( m_lua, "getRealTime", GetCTime );
+    lua_register( m_lua, "split", Split );
+    lua_register( m_lua, "gettok", GetTok );
+    lua_register( m_lua, "setTimer", SetTimer );
+    lua_register( m_lua, "killTimer", KillTimer );
+    lua_register( m_lua, "resetTimer", ResetTimer );
+    lua_register( m_lua, "getTimers", GetTimers );
+    lua_register( m_lua, "isTimer", IsTimer );
+    lua_register( m_lua, "getTimerDetails", GetTimerDetails );
+    lua_register( m_lua, "getColorFromString", GetColorFromString );
 
     // UTF functions
-    lua_register( m_lua, "utfLen", LuaFunctionDefinitions::UtfLen );
-    lua_register( m_lua, "utfSeek", LuaFunctionDefinitions::UtfSeek );
-    lua_register( m_lua, "utfSub", LuaFunctionDefinitions::UtfSub );
-    lua_register( m_lua, "utfChar", LuaFunctionDefinitions::UtfChar );
-    lua_register( m_lua, "utfCode", LuaFunctionDefinitions::UtfCode );
+    lua_register( m_lua, "utfLen", UtfLen );
+    lua_register( m_lua, "utfSeek", UtfSeek );
+    lua_register( m_lua, "utfSub", UtfSub );
+    lua_register( m_lua, "utfChar", UtfChar );
+    lua_register( m_lua, "utfCode", UtfCode );
 
-    lua_register( m_lua, "md5", LuaFunctionDefinitions::Md5 );
-    lua_register( m_lua, "getVersion", LuaFunctionDefinitions::GetVersion );
+    lua_register( m_lua, "md5", Md5 );
+    lua_register( m_lua, "getVersion", LuaFunctionDefs::GetVersion );
+#endif
 }
 
 void LuaManager::ResetInstructionCount()
 {
-    m_functionEnter = timeGetTime();
+    m_functionEnter = GetTickCount();
 }
+
+#ifndef _KILLFRENZY
 
 bool LuaArguments::WriteToBitStream( NetBitStreamInterface& bitStream ) const
 {
@@ -492,3 +547,5 @@ bool LuaArguments::WriteToBitStream( NetBitStreamInterface& bitStream ) const
 
     return success;
 }
+
+#endif

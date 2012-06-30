@@ -29,12 +29,12 @@ enum eLuaTypeEx
     LUA_TELEMENT
 };
 
-class LuaManager
+class LuaManager abstract
 {
     friend class LuaMain;
     friend class RegisteredCommands;
 public:
-                                    LuaManager( RegisteredCommands& commands, Events& events, ScriptDebugging& debug );
+                                    LuaManager( Events& events, ScriptDebugging& debug );
                                     ~LuaManager();
 
     inline ScriptDebugging&         GetDebug()                  { return m_debug; }
@@ -52,16 +52,16 @@ public:
     // Provide your own creation function
     void                            Init( LuaMain *lua );
     LuaMain*                        Get( lua_State *lua );
-    bool                            Remove( LuaMain *lua );
+    virtual bool                    Remove( LuaMain *lua );
 
     void                            PushThread( lua_State *thread )     { m_threadStack.push_back( thread ); }
-    lua_State*                      GetThread() const                   { return m_threadStack.empty() ? m_lua : *m_threadStack.end(); }
+    lua_State*                      GetThread() const                   { return m_threadStack.empty() ? m_lua : m_threadStack.back(); }
     lua_State*                      PopThread()
     {
         if ( m_threadStack.empty() )
             return NULL;
 
-        lua_State *thread = *m_threadStack.end();
+        lua_State *thread = m_threadStack.back();
 
         m_threadStack.pop_back();
         return thread;
@@ -81,10 +81,10 @@ protected:
     void                            LoadCFunctions();
     void                            CallStack( int args );
     void                            CallStackVoid( int args );
-    LuaArguments                    CallStackResult( int args );
+    void                            CallStackResult( int argc, LuaArguments& args );
     bool                            PCallStack( int args );
     bool                            PCallStackVoid( int args );
-    LuaArguments                    PCallStackResult( int args, bool& excpt );
+    bool                            PCallStackResult( int argc, LuaArguments& args );
 
     class env_status
     {
@@ -167,6 +167,7 @@ protected:
             m_lua = *m_context;
 
             system.PushStatus( context );
+            system.PushThread( *context );
         }
 
         LuaMain& m_context;
@@ -177,6 +178,7 @@ protected:
         ~context()
         {
             m_system.PopStatus();
+            m_system.PopThread();
         }
 
         inline void CallStack( int args )
@@ -189,9 +191,9 @@ protected:
             m_system.CallStack( args );
         }
 
-        inline LuaArguments CallStackResult( int args )
+        inline void CallStackResult( int argc, LuaArguments& args )
         {
-            return m_system.CallStackResult( args );
+            return m_system.CallStackResult( argc, args );
         }
 
         inline bool PCallStack( int args )
@@ -204,9 +206,9 @@ protected:
             return m_system.PCallStackVoid( args );
         }
 
-        inline LuaArguments PCallStackResult( int args, bool& excpt )
+        inline bool PCallStackResult( int argc, LuaArguments& args )
         {
-            return m_system.PCallStackResult( args, excpt );
+            return m_system.PCallStackResult( argc, args );
         }
     };
 
@@ -223,14 +225,13 @@ protected:
 
     std::list <lua_State*>          m_threadStack;
 
-    class RegisteredCommands&       m_commands;
     class Events&                   m_events;
     ScriptDebugging&                m_debug;
     std::list <LuaMain*>            m_structures;
 };
 
 // quick macros
-#define lua_getmanager( L ) (lua_rawgeti( L, LUA_REGISTRYINDEX, 1 ))
-#define lua_getcontext( L ) (lua_rawgeti( L, LUA_REGISTRYINDEX, 2 ))
+#define lua_getmanager( L ) (lua_rawgeti( L, LUA_STORAGEINDEX, 1 ))
+#define lua_getcontext( L ) (lua_rawgeti( L, LUA_STORAGEINDEX, 2 ))
 
 #endif //_BASE_LUA_MANAGER_
