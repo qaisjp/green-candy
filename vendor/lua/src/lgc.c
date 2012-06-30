@@ -206,6 +206,8 @@ size_t luaC_separatefinalization( lua_State *L, int all )
 
             lua_assert( !j->inMethod );
 
+            deadmem += sizeof( Class );
+
             oldah = L->allowhook;
             oldt = g->GCthreshold;
 
@@ -368,6 +370,7 @@ static void checkstacksizes (lua_State *L, StkId max) {
 static void traversestack (global_State *g, lua_State *l) {
   StkId o, lim;
   CallInfo *ci;
+  markvalue(g, &l->storage);
   markvalue(g, gt(l));
   lim = l->top;
   for (ci = l->base_ci; ci <= l->ci; ci++) {
@@ -563,9 +566,6 @@ inline static void GCTM (lua_State *L)
     setobj2s( L, L->top, tm );
     setuvalue( L, L->top+1, udata );
     L->top += 2;
-
-    L->allowhook = 0;  /* stop debug hooks during GC tag method */
-    g->GCthreshold = 2*g->totalbytes;  /* avoid GC steps */
 
     luaD_call(L, L->top - 2, 0);
 

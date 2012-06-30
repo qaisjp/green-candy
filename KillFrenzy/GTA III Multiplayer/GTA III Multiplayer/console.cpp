@@ -25,53 +25,72 @@ void	Console_Init ()
 	m_numberOfLines=0;
 }
 
+static inline bool stradjust( const char*& msg, char delim )
+{
+    if ( *msg == 0 )
+        return false;
+
+    while ( *msg != delim )
+    {
+        if ( *msg == 0 )
+            return true;
+
+        msg++;
+    }
+
+    return true;
+}
+
+static inline bool strgettok( const char*& msg, char delim, std::string& out )
+{
+    const char *dpass = msg;
+
+    if ( !stradjust( msg, delim ) )
+        return false;
+
+    out = std::string( dpass, (size_t)( msg - dpass ) );
+
+    msg++;
+    return true;
+}
+
+static inline void strsplit( const char *msg, std::vector <std::string>& out )
+{
+    std::string item;
+
+    while ( strgettok( msg, ' ', item ) )
+    {
+        if ( item.size() == 0 )
+            continue;
+
+        out.push_back( item );
+    }
+}
+
 // Processes the console input
-bool	Console_ProcessInput ( char *input )
+bool	Console_ProcessInput( const char *input )
 {
 	size_t sLen=strlen(input);
 	
 	if (sLen!=0)
 	{
-		if (input[0]=='/')
+		if ( input[0] == '/' )
 		{
 			input++;
 	
-			Console_Printf ( "> %s\n", 0xffffffff, input );
+			Console_Printf( "> %s\n", 0xffffffff, input );
 
-			char *cCmdName;
-			char *cInput = input;
-			int iArgc=0;
-			char *cArgv[0xFF];
+            // Process as command
+            std::string cmd;
 
-			while (*cInput && *cInput != ' ')
-				cInput++;
-			size_t sSize=(size_t)cInput-(size_t)input;
-			cCmdName = (char*)malloc(sSize+1);
-			memcpy ( cCmdName, input, sSize );
-			cCmdName[sSize]=0;
-			
-			cInput = strtok ( cInput, " " );
-			if (cInput)
-			do
-			{
-				if (iArgc==0xFF)
-					break;
-				size_t sLen=strlen(cInput);
-				cArgv[iArgc]=(char*)malloc(sLen+1);
-				memcpy ( cArgv[iArgc], cInput, sLen );
-				cArgv[iArgc][sLen]=0;
-				iArgc++;
-			} while ( cInput = strtok ( NULL, " " ) );
+            if ( !strgettok( input, ' ', cmd ) )
+                return true;
+
+			std::vector <std::string> args;
+            strsplit( input, args );
 
 			// Process the command
-			Core_ProcessCommand ( cCmdName, iArgc, cArgv );
-
-			// Free the resources
-			while (iArgc!=0)
-			{
-				free (cArgv[iArgc-1]);
-				iArgc--;
-			}
+			Core_ProcessCommand( cmd, args );
 		}
 		else
 		{
@@ -82,7 +101,7 @@ bool	Console_ProcessInput ( char *input )
 }
 
 // Processes the console input
-LRESULT CALLBACK	Console_WndProc ( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+LRESULT CALLBACK	Console_WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	//bool isExtendedKey = (lParam << 24)&1;
 	if (uMsg == WM_CHAR)
@@ -147,7 +166,7 @@ LRESULT CALLBACK	Console_WndProc ( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 =================================*/
 
 // Draw the console
-void	Console_Draw ( IDirect3DDevice8 *pDevice )
+void	Console_Draw( IDirect3DDevice8 *pDevice )
 {
 	ID3DXFont *pFont;
 	unsigned int uiCurOffset=0;
@@ -193,26 +212,30 @@ void	Console_Draw ( IDirect3DDevice8 *pDevice )
 		// Format the entry and post it
 		size_t n;
 		size_t sSize=strlen(m_consoleInput);
-		int iInputWidth=0;
-		char cOutputBuff[MAX_CONSOLE_LINE];
-		cOutputBuff[0]=0;
+
+        if ( sSize )
+        {
+		    int iInputWidth=0;
+		    char cOutputBuff[MAX_CONSOLE_LINE];
+		    cOutputBuff[0]=0;
 	
-		TypeRect.left = TypeRect.right;
-		TypeRect.right = (int)(m_iScreenWidth*0.05)+(int)(m_iScreenWidth*0.35)+18;
-		for (n=sSize-1; n!=0; n--)
-		{
-			int iCurWidth = D3D_GetCharWidth ( pFont, m_consoleInput[n], 1 );
+		    TypeRect.left = TypeRect.right;
+		    TypeRect.right = (int)(m_iScreenWidth*0.05)+(int)(m_iScreenWidth*0.35)+18;
+		    for (n=sSize-1; n!=0; n--)
+		    {
+			    int iCurWidth = D3D_GetCharWidth ( pFont, m_consoleInput[n], 1 );
 			
-			if (iInputWidth+iCurWidth>TypeRect.right-TypeRect.left)
-			{
-				break;
-			}
-			else
-				iInputWidth+=iCurWidth;
-		}
-		memcpy (cOutputBuff, m_consoleInput+n, sSize-n+1);
-		cOutputBuff[sSize-n+1]=0;
-		pFont->DrawTextA (cOutputBuff, -1, &TypeRect, DT_NOPREFIX, 0xffffffff);
+			    if (iInputWidth+iCurWidth>TypeRect.right-TypeRect.left)
+			    {
+				    break;
+			    }
+			    else
+				    iInputWidth+=iCurWidth;
+		    }
+		    memcpy (cOutputBuff, m_consoleInput+n, sSize-n+1);
+		    cOutputBuff[sSize-n+1]=0;
+		    pFont->DrawTextA (cOutputBuff, -1, &TypeRect, DT_NOPREFIX, 0xffffffff);
+        }
 	}
 
 	pFont->End ( );
@@ -220,7 +243,7 @@ void	Console_Draw ( IDirect3DDevice8 *pDevice )
 }
 
 // Print a line
-void	Console_Printf ( char *Text, D3DCOLOR Color, ... )
+void	Console_Printf( const char *Text, D3DCOLOR Color, ... )
 {
 	char line_buff[0xFFFF];
 	va_list vl;

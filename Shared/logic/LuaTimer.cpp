@@ -19,6 +19,8 @@
 static int timer_destroy( lua_State *L )
 {
     delete (LuaTimer*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    return 0;
 }
 
 static const luaL_Reg timer_methods[] =
@@ -29,7 +31,14 @@ static const luaL_Reg timer_methods[] =
 
 static int luaconstructor_timer( lua_State *L )
 {
+    ILuaClass *j = lua_refclass( L, 1 );
+    j->SetTransmit( LUACLASS_TIMER );
+
+    lua_newtable( L );
+    lua_setfield( L, LUA_ENVIRONINDEX, "args" );
+
     lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_basicprotect( L );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, timer_methods, 1 );
     return 0;
@@ -40,7 +49,6 @@ static int _trefget( LuaTimer& timer, lua_State *lua )
     lua_pushlightuserdata( lua, &timer );
     lua_pushcclosure( lua, luaconstructor_timer, 1 );
     lua_newclass( lua );
-    lua_basicprotect( lua );
     return luaL_ref( lua, LUA_REGISTRYINDEX );
 }
 
@@ -56,7 +64,24 @@ LuaTimer::~LuaTimer()
     m_manager->m_list.remove( this );
 }
 
-void LuaTimer::Execute( LuaMain *main )
+void LuaTimer::ObtainArguments( lua_State *L, int idx )
+{
+    PushStack( L );
+    lua_getfield( L, -1, "args" );
+    lua_insert( L, idx );
+    lua_pop( L, 1 );
+
+    int top = lua_gettop( L );
+    int sidx = idx;
+    idx++;
+
+    while ( top-- > idx )
+        luaL_ref( L, sidx );
+
+    lua_settop( L, top );
+}
+
+void LuaTimer::Execute( LuaMain& main )
 {
     if ( !VERIFY_FUNCTION( m_ref ) )
         return;
@@ -64,7 +89,17 @@ void LuaTimer::Execute( LuaMain *main )
     lua_class_reference ref;
     Reference( ref );
 
-    m_args->Call( main, m_ref );
+    lua_State *L = *main;
+
+    PushStack( L );
+    main.PushReference( m_ref );
+
+    int top = lua_gettop( L );
+    lua_getfield( L, -2, "args" );
+    lua_unpack( L );
+    main.PCallStackVoid( lua_gettop( L ) - top );
+
+    lua_pop( L, 1 );
 
     if ( m_repCount == 1 )
     {

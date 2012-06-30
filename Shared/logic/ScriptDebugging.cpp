@@ -26,6 +26,11 @@ ScriptDebugging::ScriptDebugging( LuaManager& manager ) : m_system( manager )
     m_file = NULL;
 }
 
+ScriptDebugging::~ScriptDebugging()
+{
+    CloseLogFile();
+}
+
 void ScriptDebugging::LogCustom( unsigned char red, unsigned char green, unsigned char blue, const char *fmt, ... )
 {
     char szBuffer[MAX_STRING_LENGTH];
@@ -85,6 +90,18 @@ void ScriptDebugging::LogBadType( const char *func )
 void ScriptDebugging::LogBadLevel( const char *func, unsigned int level )
 {
     LogWarning( "Requires level '%d' @ '%s", level, func );
+}
+
+void ScriptDebugging::CloseLogFile()
+{
+    if ( !m_file )
+        return;
+
+    m_file->Printf( "INFO: Logging to this file ended\n" );
+        
+    delete m_file;
+
+    m_file = NULL;
 }
 
 void ScriptDebugging::LogString( const char *pre, const char *msg, unsigned int minLevel, unsigned char red, unsigned char green, unsigned char blue )

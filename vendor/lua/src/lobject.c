@@ -212,3 +212,10 @@ void luaO_chunkid (char *out, const char *source, size_t bufflen) {
     }
   }
 }
+
+void* GCObject::operator new( size_t size, lua_State *main ) throw()
+{
+    GCObject *obj = (GCObject*)luaM_realloc_( main, NULL, 0, size );
+    obj->_lua = G(main)->mainthread;
+    return obj;
+}

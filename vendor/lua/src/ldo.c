@@ -412,21 +412,14 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
 ** When returns, all the results are on the stack, starting at the original
 ** function position.
 */ 
-void luaD_call (lua_State *L, StkId func, int nResults) {
-  if (++L->nCcalls >= LUAI_MAXCCALLS) {
-    if (L->nCcalls == LUAI_MAXCCALLS)
-      luaG_runerror(L, "C stack overflow");
-    else if (L->nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)))
-#ifdef __cplusplus
-        throw lua_exception( L, LUA_ERRERR, "stack handling error" );
-#else
-        luaD_throw(L, LUA_ERRERR);  /* error while handing stack error */
-#endif
-  }
-  if (luaD_precall(L, func, nResults) == PCRLUA)  /* is a Lua function? */
-    luaV_execute(L, 1);  /* call it */
-  L->nCcalls--;
-  luaC_checkGC(L);
+void luaD_call (lua_State *L, StkId func, int nResults)
+{
+    callstack_ref ref( *L );
+
+    if (luaD_precall( L, func, nResults) == PCRLUA )  /* is a Lua function? */
+        luaV_execute( L, 1 );  /* call it */
+
+    luaC_checkGC(L);
 }
 
 inline static int resume_error (lua_State *L, const char *msg)
@@ -448,7 +441,7 @@ LUA_API int lua_resume (lua_State *L, int nargs)
     if (L->status != LUA_YIELD && (L->status != 0 || L->ci != L->base_ci))
         return resume_error(L, "cannot resume non-suspended coroutine");
 
-    if (L->nCcalls >= LUAI_MAXCCALLS)
+    if ( L->nCcalls >= LUAI_MAXCCALLS )
         return resume_error(L, "C stack overflow");
 
     luai_userstateresume(L, nargs);
@@ -456,12 +449,13 @@ LUA_API int lua_resume (lua_State *L, int nargs)
     lua_callevent( G(L)->mainthread, LUA_EVENT_THREAD_CONTEXT_PUSH, 1 );
     lua_assert(L->errfunc == 0);
 
-    L->baseCcalls = ++L->nCcalls;
+    callstack_ref ref( *L );
+
+    L->baseCcalls = L->nCcalls;
     
     // The OS thread is saved on it's position
     ((lua_Thread*)L)->resume();
 
-    --L->nCcalls;
     lua_unlock(L);
     return L->status;
 }

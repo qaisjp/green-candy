@@ -12,6 +12,8 @@
 
 #include <StdInc.h>
 
+CFileTranslator* ResourceManager::resFileRoot = NULL;
+
 ResourceManager::ResourceManager()
 {
 }

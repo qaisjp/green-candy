@@ -185,15 +185,12 @@ class lua_State;
 
 #define setttype(obj, tt) (ttype(obj) = (tt))
 
-
 #define iscollectable(o)	(ttype(o) >= LUA_TSTRING)
 
-
+#define G(L)	(L->l_G)
 
 typedef TValue *StkId;  /* index to stack elements */
-
 struct global_State;
-
 
 class GCObject
 {
@@ -213,12 +210,7 @@ public:
     virtual void        MarkGC( global_State *g )       { }
     virtual int         TraverseGC( global_State *g )   { return 0; }
 
-    void* operator new( size_t size, lua_State *main ) throw()
-    {
-        GCObject *obj = (GCObject*)luaM_realloc_( main, NULL, 0, size );
-        obj->_lua = main;
-        return obj;
-    }
+    void* operator new( size_t size, lua_State *main ) throw();
 
     void operator delete( void *ptr ) throw()
     {

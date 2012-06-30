@@ -21,6 +21,8 @@
 #include <sstream>
 #include <vector>
 #include <google/dense_hash_map>
+#include <CVector.h>
+#include <CVector2D.h>
 #include <SharedUtil.h>
 #include <CFileSystemInterface.h>
 #include <CFileSystem.h>
@@ -56,17 +58,18 @@
 // Initialize
 void	Core_Init();
 void	Core_Destroy();
-bool	Core_SetModuleAccessLevel ( HMODULE pModule, DWORD dwAccessLevel, DWORD *pOldProt );
-bool	Core_ProcessCommand ( char *cmdName, int iArgc, char **cArgv );
-int NEAR	Hook_DebugPrintf ( DWORD dwUnk, char *cDebugString, ... );
+bool	Core_SetModuleAccessLevel( HMODULE pModule, DWORD dwAccessLevel, DWORD *pOldProt );
+bool	Core_ProcessCommand( const std::string& cmdName, std::vector <std::string>& args );
+int NEAR	Hook_DebugPrintf( DWORD dwUnk, char *cDebugString, ... );
 // Frames
-void	Core_FirstFrame ();
-bool	Core_PreRender ();
-bool	Core_Render ( IDirect3DDevice8 *pD3D );
-bool	Core_PostRender ();
+void	Core_FirstFrame();
+bool	Core_PreRender();
+bool	Core_Render( IDirect3DDevice8 *pD3D );
+bool	Core_PostRender();
 
 // Exports
 extern unsigned int isCoreLoaded;
 extern CFileSystem *fileSystem;
+extern CFileTranslator *modFileRoot;
 
 #endif //__MAIN__

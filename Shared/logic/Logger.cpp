@@ -15,7 +15,7 @@
 
 using namespace std;
 
-FILE* Logger::m_file = NULL;
+CFile* Logger::m_file = NULL;
 
 #define MAX_STRING_LENGTH 2048
 
@@ -68,7 +68,7 @@ void Logger::ErrorPrintf( const char* szFormat, ... )
     HandleLogPrint( true, "ERROR: ", szBuffer );
 }
 
-void CLogger::DebugPrintf( const char* szFormat, ... )
+void Logger::DebugPrintf( const char* szFormat, ... )
 {
 #ifdef MTA_DEBUG
     // Compose the formatted message
@@ -83,7 +83,7 @@ void CLogger::DebugPrintf( const char* szFormat, ... )
 #endif
 }
 
-void CLogger::SetLogFile( const char *filename )
+bool Logger::SetLogFile( const char *filename )
 {
     // Eventually delete our current file
     if ( m_file )
@@ -99,9 +99,9 @@ void CLogger::SetLogFile( const char *filename )
     return m_file != NULL;
 }
 
-void Logger::BuildEntry( bool time, const char *pre, const char *msg, std::string *shrt, std::string *lng )
+void Logger::BuildEntry( bool t, const char *pre, const char *msg, std::string *shrt, std::string *lng )
 {
-    if ( time )
+    if ( t )
     {
         char szBuffer[MAX_STRING_LENGTH];
         time_t timeNow;
@@ -127,10 +127,16 @@ void Logger::BuildEntry( bool time, const char *pre, const char *msg, std::strin
 
     // Build the final string
     if ( shrt )
-        *shrt += pre + msg;
+    {
+        *shrt += pre;
+        *shrt += msg;
+    }
 
     if ( lng )
-        *lng += pre + msg;
+    {
+        *lng += pre;
+        *lng += msg;
+    }
 }
 
 // Handle where to send the message
@@ -144,6 +150,6 @@ void Logger::HandleLogPrint( bool time, const char *pre, const char *msg )
 
     BuildEntry( time, pre, msg, NULL, &outLong );
 
-    m_file->Printf( "%s", strOutputLong.c_str () );
+    m_file->Printf( "%s", outLong.c_str () );
     m_file->Flush();
 }

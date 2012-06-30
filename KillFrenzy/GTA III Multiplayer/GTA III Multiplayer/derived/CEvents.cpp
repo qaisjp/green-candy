@@ -2,22 +2,20 @@
 *
 *  PROJECT:     KillFrenzy! 1.0
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        derived/include.h
-*  PURPOSE:     Master include for derived classes
+*  FILE:        derived/CEvents.cpp
+*  PURPOSE:     Lua event handling environment extension
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
-#ifndef _DERIVED_LOGIC_
-#define _DERIVED_LOGIC_
+#include <StdInc.h>
 
-#include "CScriptDebugging.h"
-#include "CRegisteredCommands.h"
-#include "CEvents.h"
-#include "CLuaMain.h"
-#include "CLuaManager.h"
-#include "CResourceManager.h"
+CEvents::CEvents()
+{
+}
 
-#endif //_DERIVED_LOGIC_
+CEvents::~CEvents()
+{
+}

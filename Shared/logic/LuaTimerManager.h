@@ -23,13 +23,13 @@ public:
     inline                      LuaTimerManager()                       {}
     inline                      ~LuaTimerManager()                      { RemoveAllTimers(); };
 
-    void                        DoPulse( LuaMain *main );
+    void                        DoPulse( LuaMain& main );
 
     bool                        Exists( LuaTimer *timer );
     LuaTimer*                   GetTimer( unsigned int id );
 
-    LuaTimer*                   AddTimer( lua_State *L, const LuaFunctionRef& ref, CTickCount delay, unsigned int repCount, const LuaArguments& args );
-    void                        RemoveTimer( LuaTimer* pLuaTimer );
+    LuaTimer*                   AddTimer( lua_State *L, const LuaFunctionRef& ref, CTickCount delay, unsigned int repCount );
+    void                        RemoveTimer( LuaTimer *timer );
     void                        RemoveAllTimers();
     unsigned long               GetTimerCount() const                   { return m_list.size(); }
 

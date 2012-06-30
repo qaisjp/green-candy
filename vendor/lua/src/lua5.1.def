@@ -8,11 +8,13 @@ EXPORTS
   lua_getupvalue
   lua_setlocal
   lua_setupvalue
+  lua_setevent
   lua_constructclass
   lua_newclass
   lua_refclass
   lua_basicprotect
   lua_basicextend
+  lua_getstateapi
   lua_topointer
   lua_iscfunction
   lua_isnumber
@@ -126,6 +128,7 @@ EXPORTS
   luaopen_os
   luaopen_package
   luaopen_string
+  luaopen_class
   luaopen_table
   luaL_openlibs
   luaU_dump

@@ -34,4 +34,24 @@ static inline type* lua_readuserdata( lua_State *L )
     return ud;
 }
 
+static inline std::string lua_getstring( lua_State *L, int idx )
+{
+    size_t len;
+    const char *msg = lua_tolstring( L, idx, &len );
+
+    return std::string( msg, len );
+}
+
+static inline void lua_unpack( lua_State *L )
+{
+    int idx = lua_gettop( L );
+
+    lua_pushnil( L );
+
+    while ( lua_next( L, idx ) )
+        lua_insert( L, -2 );
+
+    lua_remove( L, idx );
+}
+
 #endif //_BASE_LUA_COMMON

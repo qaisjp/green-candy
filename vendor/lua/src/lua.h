@@ -33,6 +33,8 @@
 /*
 ** pseudo-indices
 */
+#define LUA_STACKLAST       (-9000)
+#define LUA_STORAGEINDEX    (-9999)
 #define LUA_REGISTRYINDEX	(-10000)
 #define LUA_ENVIRONINDEX	(-10001)
 #define LUA_GLOBALSINDEX	(-10002)
@@ -150,7 +152,7 @@ enum eLuaEvent
     LUA_EVENT_THREAD_CONTEXT_POP,
     LUA_NUM_EVENTS
 };
-LUA_API void (lua_setevent) (lua_State *L, eLuaEvent evt, lua_CFunction *proto);
+LUA_API void (lua_setevent) (lua_State *L, eLuaEvent evt, lua_CFunction proto);
 
 // The_GTA: Lua extension to lock meta access
 LUA_API void (lua_setmetalock) (lua_State *L, int s, bool b);
@@ -386,6 +388,7 @@ LUA_API void lua_newclass( lua_State *L );
 LUA_API ILuaClass* lua_refclass( lua_State *L, int idx );
 LUA_API void lua_basicprotect( lua_State *L );
 LUA_API void lua_basicextend( lua_State *L );
+LUA_API ILuaState& lua_getstateapi( lua_State *L );
 
 #ifdef __cplusplus
 #include <list>

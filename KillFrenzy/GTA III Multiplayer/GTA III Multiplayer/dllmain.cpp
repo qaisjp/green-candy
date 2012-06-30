@@ -5,6 +5,11 @@ int WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, PVOID pvNothing)
 {
 	if (dwReason==DLL_PROCESS_ATTACH)
 	{
+#if 0
+        while ( !IsDebuggerPresent() )
+            Sleep( 1 );
+#endif
+
 		// Init stuff here
 		Core_Init();
 	}

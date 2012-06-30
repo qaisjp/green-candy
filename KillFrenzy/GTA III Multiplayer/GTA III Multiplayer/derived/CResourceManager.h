@@ -2,22 +2,21 @@
 *
 *  PROJECT:     KillFrenzy! 1.0
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        derived/include.h
-*  PURPOSE:     Master include for derived classes
+*  FILE:        derived/CResourceManager.h
+*  PURPOSE:     Extension package management
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
-#ifndef _DERIVED_LOGIC_
-#define _DERIVED_LOGIC_
+#ifndef _RESOURCE_MANAGER_
+#define _RESOURCE_MANAGER_
 
-#include "CScriptDebugging.h"
-#include "CRegisteredCommands.h"
-#include "CEvents.h"
-#include "CLuaMain.h"
-#include "CLuaManager.h"
-#include "CResourceManager.h"
+class CResourceManager : public ResourceManager
+{
+public:
 
-#endif //_DERIVED_LOGIC_
+};
+
+#endif //_RESOURCE_MANAGER_

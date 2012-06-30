@@ -22,6 +22,12 @@
     <Filter Include="lua\include">
       <UniqueIdentifier>{9edd119d-7a5f-4b1f-8aca-d7e948d42229}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sdk">
+      <UniqueIdentifier>{22c0d9c3-d17f-48d5-81bf-e2e240663c66}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sdk\Include">
+      <UniqueIdentifier>{26e0b679-46c8-47e9-800b-bf9241755363}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="console.h">
@@ -153,6 +159,27 @@
     <ClInclude Include="..\..\..\Shared\logic\Events.h">
       <Filter>mta_green\include</Filter>
     </ClInclude>
+    <ClInclude Include="derived\CLuaMain.h">
+      <Filter>derived\include</Filter>
+    </ClInclude>
+    <ClInclude Include="derived\CLuaManager.h">
+      <Filter>derived\include</Filter>
+    </ClInclude>
+    <ClInclude Include="derived\CResourceManager.h">
+      <Filter>derived\include</Filter>
+    </ClInclude>
+    <ClInclude Include="derived\CRegisteredCommands.h">
+      <Filter>derived\include</Filter>
+    </ClInclude>
+    <ClInclude Include="derived\CEvents.h">
+      <Filter>derived\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\sdk\CVector2D.h">
+      <Filter>sdk\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\sdk\CVector.h">
+      <Filter>sdk\Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="console.cpp" />
@@ -229,6 +256,21 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Shared\logic\Events.cpp">
       <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="derived\CLuaManager.cpp">
+      <Filter>derived</Filter>
+    </ClCompile>
+    <ClCompile Include="derived\CLuaMain.cpp">
+      <Filter>derived</Filter>
+    </ClCompile>
+    <ClCompile Include="derived\CResourceManager.cpp">
+      <Filter>derived</Filter>
+    </ClCompile>
+    <ClCompile Include="derived\CRegisteredCommands.cpp">
+      <Filter>derived</Filter>
+    </ClCompile>
+    <ClCompile Include="derived\CEvents.cpp">
+      <Filter>derived</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

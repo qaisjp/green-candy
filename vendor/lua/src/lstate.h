@@ -147,6 +147,7 @@ public:
     GCObject *openupval;  /* list of open upvalues in this stack */
     struct lua_longjmp *errorJmp;  /* current error recover point */
     ptrdiff_t errfunc;  /* current error handling function (stack index) */
+    TValue storage;
 };
 
 class lua_Thread : public lua_State
@@ -163,9 +164,9 @@ public:
         return GCObject::operator new( size + LUAI_EXTRASPACE, main );
     }
 
-    void operator delete( void *ptr, lua_State *main ) throw()
+    void operator delete( void *ptr ) throw()
     {
-        GCObject::operator delete( fromstate( (lua_State*)ptr ), state_size( lua_Thread ) );
+        GCObject::operator delete( fromstate( (lua_Thread*)ptr ), state_size( lua_Thread ) );
     }
     
     inline void resume()
@@ -191,10 +192,6 @@ public:
 #endif //_WIN32
     bool isMain;
 };
-
-
-#define G(L)	(L->l_G)
-
 
 /* macros to convert a GCObject into a specific value */
 #define rawgco2ts(o)	check_exp((o)->tt == LUA_TSTRING, (TString*)(o))

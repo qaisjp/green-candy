@@ -543,7 +543,7 @@ channelData_t*	Sound_GetFreeChannel ()
 }
 
 // Load music stream
-Sound*		Music_LoadFile(char *pFileName)
+Sound*		Music_LoadFile(const char *pFileName)
 {
 	Sound *pSound;
 
@@ -554,7 +554,7 @@ Sound*		Music_LoadFile(char *pFileName)
 }
 
 // Load sound sample
-Sound*		Sound_LoadFile(char *pFileName)
+Sound*		Sound_LoadFile(const char *pFileName)
 {
 	Sound *pSound;
 
