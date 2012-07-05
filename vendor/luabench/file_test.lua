@@ -35,6 +35,12 @@ function dorot()
 	zfile.destroy();
 end
 
+function ctest()
+	local z = archiveTest();
+	
+	z.open("lol.jpg", "rb+");
+end
+
 local function countsize(files)
 	local m,n;
 	local size = 0;

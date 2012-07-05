@@ -8,11 +8,29 @@ CFileTranslator *modFileRoot;
 
 extern DWORD *m_pScriptBase;
 
+CGamePlayer *g_player;
+
 /*=================================================
 	Initialize
 =================================================*/
 CVehicle*		m_pTmpVeh;
 CPed*			m_pTmpPed;
+
+void Hook_PrintDebugf( const char *fmt, ... )
+{
+    if ( !m_bShowInternalDebug )
+        return;
+
+    char buffer[2048];
+    va_list args;
+    va_start( args, fmt );
+
+    vsnprintf( buffer, 2047, fmt, args );
+
+    va_end( args );
+
+    Console_Printf( buffer, 0xffffffff );
+}
 
 // Init the core
 void	Core_Init()
@@ -20,6 +38,9 @@ void	Core_Init()
 	// Before everything, we free whole code of gtaIII
 	DWORD blah;
 	Core_SetModuleAccessLevel ( GetModuleHandle ("gta3.exe"), PAGE_EXECUTE_READWRITE, &blah );
+
+    // Hook the debug output
+    DetourFunction( (PBYTE)FUNC_DebugPrintf, (PBYTE)Hook_PrintDebugf );
 
     // Initialize the fileSystem
 	new CFileSystem();
@@ -40,6 +61,14 @@ void	Core_Init()
 	m_pGame = new CGame ();
 
 	//isCoreLoaded=1;
+}
+
+void    Core_InitGame()
+{
+    // Create our player
+	g_player = new CGamePlayer( lua_manager->GetVirtualMachine(), *Player_Create( 0, 19, 72, 16.5 ) );
+
+    Lua_Start();
 }
 
 // Free all memory and close all other activities
@@ -73,16 +102,7 @@ bool	Core_SetModuleAccessLevel ( HMODULE pModule, DWORD dwAccessLevel, DWORD *pO
 // Processes a command
 bool	Core_ProcessCommand( const std::string& cmdName, std::vector <std::string>& args )
 {
-	if ( cmdName == "test" )
-	{
-		if ( args.size() > 0 )
-		{
-			m_pTmpPed->m_uiTaskID = atoi( args[0].c_str() );
-			m_pTmpPed->m_pTaskEntity = m_pTmpVeh;
-		}
-		return true;
-	}
-	else if ( cmdName == "vel" )
+    if ( cmdName == "vel" )
 	{
 		CEntity *pEntity = Player_GetBySlot(0);
 		size_t sClass = sizeof(CEntity);
@@ -100,17 +120,6 @@ bool	Core_ProcessCommand( const std::string& cmdName, std::vector <std::string>&
 	{
 		m_pGame->FadeCamera( 1, atoi( args[0].c_str() ) == 1 );
 		//SCM_ProcessCommand(&fade, 1000, atoi(cArgv[0]));
-		return true;
-	}
-	else if ( cmdName == "cmd" )
-	{
-		CPed *pPlayer = Player_GetBySlot(0);
-		DWORD dwVar;
-		vec3_t vecPos;
-		pPlayer->GetPosition(vecPos);
-
-		__asm int 3
-		SCM_ProcessCommand(&create_actor, 6, 1, vecPos[0], vecPos[1]+5, vecPos[2]+5, &dwVar);
 		return true;
 	}
 	else if ( cmdName == "aval" )
@@ -139,33 +148,10 @@ bool	Core_ProcessCommand( const std::string& cmdName, std::vector <std::string>&
 		Music_Play(pSound, -1, false);
 		return true;
 	}
-	else if ( cmdName == "s" )
-	{
-        if ( args.size() < 1 )
-            return false;
-
-		//CPed *pPlayer = m_pGame->GetPedRef(1);
-
-		SCM_ProcessCommand(&play_music, atoi( args[0].c_str() ));
-	}
-	else if ( cmdName == "ss" )
-	{
-		if ( args.size() < 1 )
-			return false;
-
-		Sound_PlayInternal2D(atoi( args[0].c_str() ), CHANNEL_FREE);
-		return true;
-	}
 	else if ( cmdName == "sounddump" )
 	{
 		Sound_Dump();
-	}
-	else if ( cmdName == "w" )
-	{
-        if ( args.size() < 1 )
-            return false;
-
-		SCM_ProcessCommand( &set_weather, atoi( args[0].c_str() ) );
+        return true;
 	}
 	else if ( cmdName == "getstate" )
 	{
@@ -274,63 +260,12 @@ bool	Core_ProcessCommand( const std::string& cmdName, std::vector <std::string>&
 		player->SetPosition(fPosX, fPosY, fPosZ);
 		return true;
 	}
-	else if ( cmdName == "getpos" )
-	{
-		CPed *player = Player_GetBySlot(0);
-		vec3_t vecPos;
-		player->GetPosition(vecPos);
-		Console_Printf( "%f, %f, %f\n", 0xffffffff, vecPos[0], vecPos[1], vecPos[2] );
-		return true;
-	}
-	else if ( cmdName == "getrot" )
-	{
-		CPed *pPlayer = Player_GetBySlot(0);
-		CEntity *pEntity = pPlayer->GetOccupiedVehicle();
-		vec3_t vecRot;
-
-		if (!pEntity)
-			pEntity=pPlayer;
-		pEntity->m_matrix.GetRotation(vecRot);
-
-		Console_Printf("X: %f Y: %f Z: %f\n", 0xffffffff, vecRot[0], vecRot[1], vecRot[2]);
-	}
 	else if ( cmdName == "freem" )
 	{
 		if ( args.size() < 1 )
             return false;
 
 		Model_Free(atoi( args[0].c_str() ));
-	}
-	else if ( cmdName == "psvc" )
-	{
-        if ( args.size() < 1 )
-            return false;
-
-		CPed *player = Player_GetBySlot(0);
-		vec3_t vecPos;
-		unsigned short usModelID=atoi( args[0].c_str() );
-
-		if (player->GetOccupiedVehicle())
-		{
-			CVehicle *pVehicle = player->GetOccupiedVehicle();
-
-			if ( args.size() < 2 )
-				pVehicle->m_matrix.GetOffset(0, 7.5, 2.5, vecPos);
-			else
-				pVehicle->m_matrix.GetOffset(0, 7.5, (float)atof( args[1].c_str() ), vecPos);
-
-			m_pTmpVeh = Vehicle_Create ( usModelID, vecPos[0], vecPos[1], vecPos[2] );
-		}
-		else
-		{
-			if ( args.size() < 2 )
-				player->m_matrix.GetOffset(0, 5, 2.5, vecPos);
-			else
-				player->m_matrix.GetOffset(0, 5, (float)atof( args[1].c_str() ), vecPos);
-
-			m_pTmpVeh = Vehicle_Create ( usModelID, vecPos[0], vecPos[1], vecPos[2] );
-		}
-		return true;
 	}
 	else if ( cmdName == "psp" )
 	{
@@ -349,6 +284,7 @@ bool	Core_ProcessCommand( const std::string& cmdName, std::vector <std::string>&
 		CPed *pPed=Player_GetBySlot(0);
 		m_pTmpPed=pPed;
 		CPed *pPlayer=Player_Create(0, pPed->m_matrix.m_vecPos[0], pPed->m_matrix.m_vecPos[1], pPed->m_matrix.m_vecPos[2]);
+        return true;
 	}
 	else if ( cmdName == "getveh" )
 	{
@@ -367,7 +303,11 @@ bool	Core_ProcessCommand( const std::string& cmdName, std::vector <std::string>&
 	}
 	else if ( cmdName == "dstr" )
 	{
-		delete m_pTmpVeh;
+        if ( !m_pTmpVeh )
+            return true;
+
+		m_pTmpVeh->Destroy();
+        return true;
 	}
 	else if ( cmdName == "dp" )
 	{
@@ -413,6 +353,7 @@ bool	Core_ProcessCommand( const std::string& cmdName, std::vector <std::string>&
 
 		Console_Printf("Ped: %i\n", 0xffffffff, *(BYTE*)(pPed+0x50));
 		Console_Printf("Vehicle: %i\n", 0xffffffff, *(BYTE*)(pVehicle+0x50));
+        return true;
 	}
 	else if ( cmdName == "mi" )
 	{
@@ -439,9 +380,22 @@ bool	Core_ProcessCommand( const std::string& cmdName, std::vector <std::string>&
 	}
 	else if ( cmdName == "nogui" )
 	{
-		m_bDisableHUD = !m_bDisableHUD;
+        m_bDisableHUD = !m_bDisableHUD;
+        return true;
 	}
-	return false;
+    else if ( cmdName == "showdebug" )
+    {
+        m_bShowInternalDebug = !m_bShowInternalDebug;
+
+        if ( m_bShowInternalDebug )
+            Console_Printf( "Enabled GTAIII debug output\n", 0xffffffff );
+        else
+            Console_Printf( "Disabled GTAIII debug output\n", 0xffffffff );
+
+        return true;
+    }
+
+	return Lua_ProcessCommand( cmdName, args );
 }
 
 /*=================================================
@@ -455,8 +409,6 @@ void	Core_FirstFrame ()
 	//DetourFunction ( (PBYTE)FUNC_DebugPrintf, (PBYTE)Hook_DebugPrintf );
 	Console_Printf ("run();\n", 0xffffff);
 	//m_pGame->StartGame ( true );
-
-    Lua_Start();
 }
 
 // Pre render frame
@@ -485,9 +437,10 @@ bool	Core_Render ( IDirect3DDevice8 *pD3D )
 bool	Core_PostRender ()
 {
 	// Cursor fix
-	if (m_bIsFocused && !m_bConsoleIsTyping && !*(BYTE*)(MEM_SHOWMENU) && m_pGame->GetSystemState ()==GS_PLAYING_GAME)
+	if ( m_bIsFocused && !m_bConsoleIsTyping && !*(BYTE*)(MEM_SHOWMENU) && m_pGame->GetSystemState() == GS_PLAYING_GAME )
 	{
 		RECT wndRect;
+
 		if (GetWindowRect (hGTAWindow, &wndRect))
 		{
 			SetCursorPos ( wndRect.left+m_iScreenWidth/2, wndRect.top+m_iScreenHeight/2 );

@@ -477,7 +477,6 @@ LUALIB_API void luaL_buffinit (lua_State *L, luaL_Buffer *B) {
 
 /* }====================================================== */
 
-
 LUALIB_API int luaL_ref (lua_State *L, int t) {
   int ref;
   t = abs_index(L, t);

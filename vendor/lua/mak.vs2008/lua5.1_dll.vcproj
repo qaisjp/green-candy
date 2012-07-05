@@ -19,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="../../"
-			IntermediateDirectory="../obj/lua5.1_dll/Debug"
+			IntermediateDirectory="../obj/lua5.1_dll/Debug_2008"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -106,7 +106,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="../../"
-			IntermediateDirectory="../obj/lua5.1_dll/Release"
+			IntermediateDirectory="../obj/lua5.1_dll/Release_2008"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"

@@ -115,8 +115,11 @@ public:
     ~lua_State();
 
     // lua_State is always the main thread
-    virtual void SetMainThread( bool enabled )  {}
-    virtual bool IsThread()                     { return false; }
+    virtual void    SetMainThread( bool enabled )  {}
+    virtual bool    IsThread()                     { return false; }
+
+    virtual void    SetYieldDisabled( bool disable )    {}
+    virtual bool    IsYieldDisabled()              { return true; }
 
     size_t Propagate( global_State *g );
 
@@ -136,7 +139,6 @@ public:
     int stacksize;
     int size_ci;  /* size of array `base_ci' */
     unsigned short nCcalls;  /* number of nested C calls */
-    unsigned short baseCcalls;  /* nested C calls when resuming coroutine */
     lu_byte hookmask;
     lu_byte allowhook;
     int basehookcount;
@@ -156,8 +158,11 @@ public:
     lua_Thread();
     ~lua_Thread();
 
-    void SetMainThread( bool enable )   { isMain = enable; }
-    bool IsThread()                     { return !isMain; }
+    void    SetMainThread( bool enable )        { isMain = enable; }
+    bool    IsThread()                          { return !isMain; }
+
+    void    SetYieldDisabled( bool disable )    { yieldDisabled = disable; }
+    bool    IsYieldDisabled()                   { return yieldDisabled; }
 
     void* operator new( size_t size, lua_State *main ) throw()
     {
@@ -191,6 +196,7 @@ public:
     HANDLE signalWait;
 #endif //_WIN32
     bool isMain;
+    bool yieldDisabled;
 };
 
 /* macros to convert a GCObject into a specific value */

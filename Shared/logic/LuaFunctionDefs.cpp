@@ -16,19 +16,6 @@ static ScriptDebugging *debug;
 static RegisteredCommands *cmds;
 static ResourceManager *resManager;
 
-static inline const char* lua_getclassdesc( int ctype )
-{
-    switch( ctype )
-    {
-    case LUACLASS_FILE:
-        return "file";
-    case LUACLASS_FILETRANSLATOR:
-        return "fileTranslator";
-    }
-
-    return "class";
-}
-
 static inline LuaMain* lua_readcontext( lua_State *L )
 {
     return lua_readuserdata <LuaMain, LUA_STORAGEINDEX, 2> ( L );
@@ -37,24 +24,6 @@ static inline LuaMain* lua_readcontext( lua_State *L )
 static inline Resource* lua_readresource( lua_State *L )
 {
     return lua_readuserdata <Resource, LUA_STORAGEINDEX, 3> ( L );
-}
-
-static inline ILuaClass& lua_classobtain( lua_State *L, int idx, int ctype )
-{
-    luaL_checktype( L, idx, LUA_TCLASS );
-
-    ILuaClass *j = lua_refclass( L, idx );
-
-    if ( !j->IsTransmit( ctype ) )
-        throw lua_exception( L, LUA_ERRRUN, SString( "expected class type '%s'", lua_getclassdesc( ctype ) ) );
-
-    return *j;
-}
-
-static inline void luaL_checktyperange( lua_State *L, int idx, int t, int r )
-{
-    while ( r-- )
-        luaL_checktype( L, idx++, t );
 }
 
 namespace LuaFunctionDefs

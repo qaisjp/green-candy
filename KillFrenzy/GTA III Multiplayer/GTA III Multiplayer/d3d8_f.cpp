@@ -1006,6 +1006,7 @@ HRESULT		__stdcall Direct3D8_CreateDevice ( d3dproxy8_t *_this, UINT Adapter, D3
 #endif
 
 	ChangeDisplaySettings(NULL, 0);
+    ShowWindow( hFocusWindow, SW_SHOWNORMAL );
 
 	// Create the real device
 	ret = m_pOrigDevice->CreateDevice ( Adapter, DeviceType, hGTAWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface );

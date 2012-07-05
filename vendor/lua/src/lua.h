@@ -439,6 +439,25 @@ public:
     }
 };
 
+class lua_yield_shield
+{
+public:
+    lua_yield_shield( lua_State *L ) : m_api( lua_getstateapi( L ) )
+    {
+        m_prev = m_api.IsYieldDisabled();
+
+        m_api.SetYieldDisabled( true );
+    }
+
+    ~lua_yield_shield()
+    {
+        m_api.SetYieldDisabled( m_prev );
+    }
+
+    bool        m_prev;
+    ILuaState&  m_api;
+};
+
 #endif
 
 LUA_API int lua_sethook (lua_State *L, lua_Hook func, int mask, int count);

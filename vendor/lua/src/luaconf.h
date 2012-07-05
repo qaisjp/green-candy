@@ -675,6 +675,9 @@ class ILuaState abstract
 public:
     virtual void    SetMainThread( bool enable ) = 0;
     virtual bool    IsThread() = 0;
+
+    virtual void    SetYieldDisabled( bool disable ) = 0;
+    virtual bool    IsYieldDisabled() = 0;
 };
 
 class ILuaClass abstract
@@ -682,6 +685,9 @@ class ILuaClass abstract
 public:
     virtual void    IncrementMethodStack( lua_State *L ) = 0;
     virtual void    DecrementMethodStack( lua_State *L ) = 0;
+    virtual void    ClearReferences( lua_State *L ) = 0;
+
+    virtual void    PushMethod( lua_State *L, const char *key ) = 0;
 
     virtual void    SetTransmit( int type ) = 0;
     virtual int     GetTransmit() = 0;
@@ -689,6 +695,7 @@ public:
 
     virtual void    PushEnvironment( lua_State *L ) = 0;
     virtual void    PushOuterEnvironment( lua_State *L ) = 0;
+    virtual void    PushChildAPI( lua_State *L ) = 0;
 
     virtual void    RequestDestruction() = 0;
 };

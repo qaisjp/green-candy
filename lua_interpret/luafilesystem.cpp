@@ -37,8 +37,9 @@ static int filesystem_open( lua_State *lua )
 #endif
 
     // Register the file
-    lua_pushvalue( lua, 3 );
-    luaL_ref( lua, lua_upvalueindex( 2 ) );
+    lua_getfield( lua, 3, "setParent" );
+    lua_pushvalue( lua, lua_upvalueindex( 2 ) );
+    lua_call( lua, 1, 0 );
     return 1;
 }
 
@@ -299,35 +300,8 @@ static int filesystem_scanDirEx( lua_State *lua )
     return 0;
 }
 
-static int filesystem_extend( lua_State *L )
-{
-    luaL_checktype( L, 1, LUA_TFUNCTION );
-
-    // Make it class root
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_setfenv( L, 1 );
-
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-
-    lua_insert( L, 2 );
-
-    lua_call( L, lua_gettop( L ) - 1, 0 );
-    return 0;
-}
-
 static int filesystem_destroy( lua_State *L )
 {
-    lua_pushnil( L );
-
-    // All associated files have to be destroyed first
-    while ( lua_next( L, lua_upvalueindex( 2 ) ) != 0 )
-    {
-        lua_getfield( L, 2, "destroy" );
-        lua_call( L, 0, 0 );
-
-        lua_settop( L, 1 );
-    }
-
     delete (CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 
     return 0;
@@ -352,7 +326,6 @@ static const luaL_Reg fsys_methods[] =
     { "getFiles", filesystem_getFiles },
     { "scanDir", filesystem_scanDir },
     { "scanDirEx", filesystem_scanDirEx },
-    { "extend", filesystem_extend },
     { "destroy", filesystem_destroy },
     { NULL, NULL }
 };
@@ -366,7 +339,7 @@ int luafsys_constructor( lua_State *L )
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_newtable( L );
+    lua_getfield( L, LUA_ENVIRONINDEX, "this" );
     luaL_openlib( L, NULL, fsys_methods, 2 );
 
     lua_pushlstring( L, "filesystem", 10 );

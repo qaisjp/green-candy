@@ -50,7 +50,9 @@ static inline bool strgettok( const char*& msg, char delim, std::string& out )
 
     out = std::string( dpass, (size_t)( msg - dpass ) );
 
-    msg++;
+    if ( *msg != 0 )
+        msg++;
+
     return true;
 }
 
@@ -70,40 +72,38 @@ static inline void strsplit( const char *msg, std::vector <std::string>& out )
 // Processes the console input
 bool	Console_ProcessInput( const char *input )
 {
-	size_t sLen=strlen(input);
-	
-	if (sLen!=0)
+    if ( *input == 0 )
+        return true;
+
+	if ( input[0] == '/' )
 	{
-		if ( input[0] == '/' )
-		{
-			input++;
+		input++;
 	
-			Console_Printf( "> %s\n", 0xffffffff, input );
+		Console_Printf( "> %s\n", 0xffffffff, input );
 
-            // Process as command
-            std::string cmd;
+        // Process as command
+        std::string cmd;
 
-            if ( !strgettok( input, ' ', cmd ) )
-                return true;
+        if ( !strgettok( input, ' ', cmd ) )
+            return true;
 
-			std::vector <std::string> args;
-            strsplit( input, args );
+		std::vector <std::string> args;
+        strsplit( input, args );
 
-			// Process the command
-			Core_ProcessCommand( cmd, args );
-		}
-		else
-		{
-			Console_Printf("echo: %s\n", 0xffffffff, input);
-		}
+		// Process the command
+		Core_ProcessCommand( cmd, args );
 	}
-	return true;
+	else
+	{
+		Console_Printf("echo: %s\n", 0xffffffff, input);
+	}
+
+    return true;
 }
 
 // Processes the console input
 LRESULT CALLBACK	Console_WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
-	//bool isExtendedKey = (lParam << 24)&1;
 	if (uMsg == WM_CHAR)
 	{
 		unsigned char ucKey=tolower(wParam);

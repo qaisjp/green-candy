@@ -56,6 +56,18 @@ LuaFunctionRef LuaMain::CreateReference( int stack )
     return LuaFunctionRef( this, ref, ptr );
 }
 
+bool LuaMain::GetReference( int stack, LuaFunctionRef& ref )
+{
+    const void *ptr = lua_topointer( m_lua, stack );
+    CRefInfo *info;
+
+    if ( m_refStore.empty() || !( info = MapFind( m_refStore, ptr ) ) )
+        return false;
+
+    ref = LuaFunctionRef( this, info->idx, ptr );
+    return true;
+}
+
 void LuaMain::Reference( const LuaFunctionRef& ref )
 {
     if ( m_refStore.empty() )
@@ -96,8 +108,7 @@ void LuaMain::PushReference( const LuaFunctionRef& ref )
     if ( !iref )
         return;
 
-    lua_pushnumber( m_lua, iref->idx );
-    lua_rawget( m_lua, LUA_REGISTRYINDEX );
+    m_system.PushReference( m_lua, ref );
 }
 
 void LuaMain::RegisterFunction( const char *name, lua_CFunction proto )

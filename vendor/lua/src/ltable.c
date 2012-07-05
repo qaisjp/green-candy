@@ -577,7 +577,19 @@ int luaH_getn (Table *t) {
   else return unbound_search(t, j);
 }
 
+Table& luaH_copy( lua_State *L, const Table& t )
+{
+    Table& h = *luaH_new( L, t.sizearray, (int)pow( 2.0f, t.lsizenode ) );
+    int n;
 
+    for ( n=0; n<t.sizearray; n++ )
+    {
+        h.array[n].tt = t.array[n].tt;
+        h.array[n].value = t.array[n].value;
+    }
+
+    return h;
+}
 
 #if defined(LUA_DEBUG)
 

@@ -1,5 +1,53 @@
 #include "StdInc.h"
 
+static int matrix_offset( lua_State *L )
+{
+    luaL_checktyperange( L, 1, LUA_TNUMBER, 3 );
+
+    vec3_t pos;
+    ((CMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetOffset( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ), pos );
+
+    lua_pushnumber( L, pos[0] );
+    lua_pushnumber( L, pos[1] );
+    lua_pushnumber( L, pos[2] );
+    return 3;
+}
+
+static int matrix_destroy( lua_State *L )
+{
+    delete (CMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    return 0;
+}
+
+static const luaL_Reg matrix_interface[] =
+{
+    { "offset", matrix_offset },
+    { "destroy", matrix_destroy },
+    { NULL, NULL }
+};
+
+static int luaconstructor_matrix( lua_State *L )
+{
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_MATRIX );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, matrix_interface, 1 );
+
+    lua_pushlstring( L, "matrix", 6 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+void lua_creatematrix( lua_State *L, CMatrix& matrix )
+{
+    lua_pushlightuserdata( L, new CMatrix( matrix ) );
+    lua_pushcclosure( L, luaconstructor_matrix, 1 );
+    lua_newclass( L );
+}
+
 void		CMatrix::GetOffset(float fOffX, float fOffY, float fOffZ, vec3_t vecOut)
 {
 	vecOut[0] =-m_vecRight[0] * fOffX - m_vecRight[1] * fOffY - m_vecRight[2] * fOffZ + m_vecPos[0];

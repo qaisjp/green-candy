@@ -2,23 +2,24 @@
 *
 *  PROJECT:     KillFrenzy! 1.0
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        derived/include.h
-*  PURPOSE:     Master include for derived classes
+*  FILE:        lua/luaped.h
+*  PURPOSE:     Game Lua ped
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
-#ifndef _DERIVED_LOGIC_
-#define _DERIVED_LOGIC_
+#ifndef _GAME_PED_
+#define _GAME_PED_
 
-#include "CScriptDebugging.h"
-#include "CRegisteredCommands.h"
-#include "CEvents.h"
-#include "CLuaMain.h"
-#include "CLuaManager.h"
-#include "CResourceManager.h"
-#include "CLuaFunctionDefs.h"
+#define LUACLASS_PED 12
 
-#endif //_DERIVED_LOGIC_
+class CGamePed : public CGameEntity
+{
+public:
+                        CGamePed( lua_State *L, bool system, CPed& ped );
+                        ~CGamePed();
+};
+
+#endif //_GAME_PED_

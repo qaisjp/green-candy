@@ -78,6 +78,7 @@ void		Sound_Init();
 void		Sound_Destroy();
 FMOD::Sound*	Music_LoadFile(const char *path);
 FMOD::Sound*	Sound_LoadFile(const char *path);
+int	        Sound_GetFreeChannel();
 bool		Music_Play(FMOD::Sound* pSound, int channel, bool bLoop);
 bool		Sound_Play2D(FMOD::Sound* pSound, int channel);
 bool		Sound_PlayInternal2D(unsigned int uiID, int channel);

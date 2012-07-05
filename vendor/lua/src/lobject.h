@@ -10,7 +10,7 @@
 
 
 #include <stdarg.h>
-
+#include <vector>
 
 #include "llimits.h"
 #include "lua.h"
@@ -208,7 +208,6 @@ public:
     virtual lua_State*  GetThread()         { return NULL; }
 
     virtual void        MarkGC( global_State *g )       { }
-    virtual int         TraverseGC( global_State *g )   { return 0; }
 
     void* operator new( size_t size, lua_State *main ) throw();
 
@@ -508,6 +507,9 @@ public:
     void    DecrementMethodStack( lua_State *lua );
     void    ClearReferences( lua_State *lua );
     void    CheckDestruction( lua_State *lua );
+    bool    PreDestructor( lua_State *L );  
+
+    void    PushMethod( lua_State *L, const char *key );
 
     void    SetTransmit( int type );
     int     GetTransmit();
@@ -515,6 +517,7 @@ public:
 
     void    PushEnvironment( lua_State *L );
     void    PushOuterEnvironment( lua_State *L );
+    void    PushChildAPI( lua_State *L );
 
     void    RequestDestruction();
 
@@ -531,12 +534,18 @@ public:
     Table *storage;
     Table *forceSuper;
     Table *internStorage;
+    Class *parent;
+    Class *childAPI;
     unsigned int inMethod;
     unsigned int refCount;
     bool reqDestruction;
     bool destroyed;
+    bool destroying;
 
     int transType;
+
+    typedef std::vector <Class*> childList_t;
+    childList_t children;
 
     // Cached values
     TValue destructor;

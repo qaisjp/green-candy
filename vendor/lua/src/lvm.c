@@ -433,7 +433,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
   StkId base;
   TValue *k;
   const Instruction *pc;
- reentry:  /* entry point */
+reentry:  /* entry point */
   lua_assert(isLua(L->ci));
   pc = L->savedpc;
   cl = clvalue(L->ci->func)->GetLClosure();

@@ -14,7 +14,8 @@
 
 static LUA_DECLARE( luacmd_destroy )
 {
-    ((RegisteredCommands*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->m_commands.remove( (Command*)lua_touserdata( L, lua_upvalueindex( 2 ) ) );
+    Command& cmd = *(Command*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+    cmd.manager.m_commands.remove( &cmd );
     return 0;
 }
 
@@ -26,21 +27,34 @@ static const luaL_Reg cmdInterface[] =
 
 int RegisteredCommands::luaconstructor_command( lua_State *L )
 {
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushvalue( L, lua_upvalueindex( 2 ) );
-    luaL_openlib( L, NULL, cmdInterface, 2 );
+    luaL_openlib( L, NULL, cmdInterface, 1 );
     return 0;
+}
+
+typedef std::vector <std::string> argList_t;
+
+bool Command::Execute( const argList_t& args )
+{
+    lua_State *L = **lua;
+
+    lua->PushReference( ref );
+    
+    argList_t::const_iterator iter = args.begin();
+
+    for ( ; iter != args.end(); iter++ )
+        lua_pushlstring( L, iter->c_str(), iter->size() );
+
+    return lua->PCallStackVoid( args.size() );
 }
 
 RegisteredCommands::RegisteredCommands( LuaManager& manager ) : m_system( manager )
 {
-    lua_newtable( manager.m_lua );
-    m_refTable = luaL_ref( manager.m_lua, LUA_REGISTRYINDEX );
 }
 
 RegisteredCommands::~RegisteredCommands()
 {
-    luaL_unref( m_system.m_lua, LUA_REGISTRYINDEX, m_refTable );
 }
 
 bool RegisteredCommands::Remove( LuaMain *lua, const std::string& key )

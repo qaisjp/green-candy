@@ -2,23 +2,24 @@
 *
 *  PROJECT:     KillFrenzy! 1.0
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        derived/include.h
-*  PURPOSE:     Master include for derived classes
+*  FILE:        lua/luaplayer.h
+*  PURPOSE:     Game Lua player
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
-#ifndef _DERIVED_LOGIC_
-#define _DERIVED_LOGIC_
+#ifndef _GAME_PLAYER_
+#define _GAME_PLAYER_
 
-#include "CScriptDebugging.h"
-#include "CRegisteredCommands.h"
-#include "CEvents.h"
-#include "CLuaMain.h"
-#include "CLuaManager.h"
-#include "CResourceManager.h"
-#include "CLuaFunctionDefs.h"
+#define LUACLASS_PLAYER 13
 
-#endif //_DERIVED_LOGIC_
+class CGamePlayer : public CGamePed
+{
+public:
+                            CGamePlayer( lua_State *L, CPed& player );
+                            ~CGamePlayer();
+};
+
+#endif //_GAME_PLAYER_

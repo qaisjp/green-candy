@@ -1,6 +1,8 @@
 #ifndef	_MATRIX_
 #define _MATRIX_
 
+#define LUACLASS_MATRIX 20
+
 #define	DEG2RAD(deg)	(M_PI*deg/180)
 #define RAD2DEG(rad)	(rad*180/M_PI)
 
@@ -17,5 +19,7 @@ public:
 	void			SetRotation(float fRotX, float fRotY, float fRotZ);
 	void			GetRotation(vec3_t vecRot);
 };
+
+void lua_creatematrix( lua_State *L, CMatrix& matrix );
 
 #endif //_MATRIX_
