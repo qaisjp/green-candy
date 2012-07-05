@@ -178,6 +178,8 @@ void signal_handler( int sig )
     lua_close( state );
 
     delete fileSystem;
+
+    exit( EXIT_SUCCESS );
 }
 
 int main( int argc, char *argv[] )

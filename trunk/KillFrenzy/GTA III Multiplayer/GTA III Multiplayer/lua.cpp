@@ -3,7 +3,7 @@
 
 static CRegisteredCommands *cmds;
 static CEvents *events;
-static CLuaManager *manager;
+CLuaManager *lua_manager;
 static CResourceManager *resMan;
 static CScriptDebugging *debug;
 
@@ -31,7 +31,7 @@ static inline void loadresource( const filePath& path, void *ud )
 
     CFileTranslator *resRoot = fileSystem->CreateTranslator( path.c_str() );
 
-    CLuaMain *main = manager->Create( relPath, *resRoot );
+    CLuaMain *main = lua_manager->Create( relPath, *resRoot );
 
     // Load all .lua scripts
     resRoot->ScanDirectory( "/", "*.lua", false, NULL, loadscript, main );
@@ -46,15 +46,18 @@ void Lua_Init()
 
     // Start the .lua management
     events = new CEvents;
-    manager = new CLuaManager( *events );
+    lua_manager = new CLuaManager( *events );
     resMan = new CResourceManager();
-    debug = &manager->GetDebug();
-    cmds = &manager->GetCommands();
+    debug = &lua_manager->GetDebug();
+    cmds = &lua_manager->GetCommands();
 
     // Setup shared dependencies
     LuaFunctionDefs::SetResourceManager( *resMan );
     LuaFunctionDefs::SetRegisteredCommands( *cmds );
     LuaFunctionDefs::SetDebugging( *debug );
+    CLuaFunctionDefs::SetResourceManager( *resMan );
+    CLuaFunctionDefs::SetRegisteredCommands( *cmds );
+    CLuaFunctionDefs::SetDebugging( *debug );
 }
 
 void Lua_Start()
@@ -65,12 +68,24 @@ void Lua_Start()
 
 void Lua_Frame()
 {
-    manager->DoPulse();
+    lua_manager->DoPulse();
+}
+
+bool Lua_ProcessCommand( const std::string& cmdName, const std::vector <std::string>& args )
+{
+    Command *cmd = cmds->Get( cmdName.c_str() );
+
+    if ( !cmd )
+        return false;
+
+    return cmd->Execute( args );
 }
 
 void Lua_Destroy()
 {
+    lua_manager->Shutdown();
+
     delete events;
-    delete manager;
+    delete lua_manager;
     delete resMan;
 }

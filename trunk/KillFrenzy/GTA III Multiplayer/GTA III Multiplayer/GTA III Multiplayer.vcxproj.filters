@@ -28,6 +28,12 @@
     <Filter Include="sdk\Include">
       <UniqueIdentifier>{26e0b679-46c8-47e9-800b-bf9241755363}</UniqueIdentifier>
     </Filter>
+    <Filter Include="game">
+      <UniqueIdentifier>{817df76f-eb78-49cc-88ee-aa5a9f1f1136}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game\Include">
+      <UniqueIdentifier>{38b8cdb8-038a-4ab7-a953-21d28069e6bd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="console.h">
@@ -180,6 +186,21 @@
     <ClInclude Include="..\..\..\Shared\sdk\CVector.h">
       <Filter>sdk\Include</Filter>
     </ClInclude>
+    <ClInclude Include="derived\CLuaFunctionDefs.h">
+      <Filter>derived\include</Filter>
+    </ClInclude>
+    <ClInclude Include="lua\luavehicle.h">
+      <Filter>lua\include</Filter>
+    </ClInclude>
+    <ClInclude Include="lua\luaentity.h">
+      <Filter>lua\include</Filter>
+    </ClInclude>
+    <ClInclude Include="lua\luaped.h">
+      <Filter>lua\include</Filter>
+    </ClInclude>
+    <ClInclude Include="lua\luaplayer.h">
+      <Filter>lua\include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="console.cpp" />
@@ -271,6 +292,21 @@
     </ClCompile>
     <ClCompile Include="derived\CEvents.cpp">
       <Filter>derived</Filter>
+    </ClCompile>
+    <ClCompile Include="derived\CLuaFunctionDefs.cpp">
+      <Filter>derived</Filter>
+    </ClCompile>
+    <ClCompile Include="lua\luavehicle.cpp">
+      <Filter>lua</Filter>
+    </ClCompile>
+    <ClCompile Include="lua\luaentity.cpp">
+      <Filter>lua</Filter>
+    </ClCompile>
+    <ClCompile Include="lua\luaped.cpp">
+      <Filter>lua</Filter>
+    </ClCompile>
+    <ClCompile Include="lua\luaplayer.cpp">
+      <Filter>lua</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

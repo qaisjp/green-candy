@@ -49,14 +49,19 @@
 #include "streamer.h"
 #include "scm.h"
 #include "lua.h"
+#include "lua/luaentity.h"
+#include "lua/luavehicle.h"
+#include "lua/luaped.h"
+#include "lua/luaplayer.h"
 #include "detours/detours.h"
 #define EXIT_FAILURE 1
 #define EXIT_SUCCESS 0
 
-#define FUNC_DebugPrintf		0x0059E870
+#define FUNC_DebugPrintf		0x0059E720
 
 // Initialize
 void	Core_Init();
+void    Core_InitGame();
 void	Core_Destroy();
 bool	Core_SetModuleAccessLevel( HMODULE pModule, DWORD dwAccessLevel, DWORD *pOldProt );
 bool	Core_ProcessCommand( const std::string& cmdName, std::vector <std::string>& args );

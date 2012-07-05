@@ -12,7 +12,7 @@ extern bool	m_bIsSinglePlayer;
 // Process the messages
 LRESULT	CALLBACK	Window_ProcessMessage ( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
-	if (uMsg == WM_CLOSE)
+	if ( uMsg == WM_CLOSE )
 	{
 		// Clean up our environment
 		Core_Destroy();
@@ -21,16 +21,16 @@ LRESULT	CALLBACK	Window_ProcessMessage ( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 	}
 
 	// Log states
-	if ( uMsg == WM_KILLFOCUS || ( uMsg==WM_ACTIVATE && LOWORD(wParam)==WA_INACTIVE ) )
+	if ( uMsg == WM_KILLFOCUS || ( uMsg == WM_ACTIVATE && LOWORD(wParam) == WA_INACTIVE ) )
 	{
-		m_bIsFocused=FALSE;
+		m_bIsFocused = false;
 		return 1;
 	}
-	else if ( uMsg == WM_SETFOCUS || ( uMsg==WM_ACTIVATE && LOWORD(wParam)==WA_INACTIVE ) )
+	else if ( uMsg == WM_SHOWWINDOW || (uMsg == WM_SETFOCUS || ( uMsg == WM_ACTIVATE && LOWORD(wParam) == WA_INACTIVE) ) )
 	{
-		m_bIsFocused=TRUE;
+		m_bIsFocused = true;
 	}
-	if (isCoreLoaded)
+	if ( isCoreLoaded )
 	{
 		if (!(Console_WndProc ( hWnd, uMsg, wParam, lParam )))
 			if (!m_bConsoleIsTyping && !(uMsg==WM_KEYDOWN && wParam==VK_ESCAPE && !m_bIsSinglePlayer))

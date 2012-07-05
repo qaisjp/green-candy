@@ -19,5 +19,6 @@
 #include "CLuaMain.h"
 #include "CLuaManager.h"
 #include "CResourceManager.h"
+#include "CLuaFunctionDefs.h"
 
 #endif //_DERIVED_LOGIC_

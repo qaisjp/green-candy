@@ -528,7 +528,7 @@ void		Sound_Init()
 }
 
 // Returns a free sound channel
-channelData_t*	Sound_GetFreeChannel ()
+int	Sound_GetFreeChannel()
 {
 	int n;
 
@@ -537,9 +537,9 @@ channelData_t*	Sound_GetFreeChannel ()
 		channelData_t *pData = &m_channels[n];
 
 		if (!pData->bActive)
-			return pData;
+			return n;
 	}
-	return NULL;
+	return -1;
 }
 
 // Load music stream

@@ -199,7 +199,7 @@ bool	CGame::FadeCamera ( float fTime, bool bFadeIn )
 {
 	DWORD dwFunc=FUNC_FadeCamera;
 	float m_fTime=fTime;
-	bool m_bFadeIn=bFadeIn;
+	DWORD m_bFadeIn=bFadeIn;
 	__asm
 	{
 		push m_fTime

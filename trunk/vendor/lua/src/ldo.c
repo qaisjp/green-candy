@@ -80,7 +80,6 @@ static void resetstack (lua_State *L, int status) {
   L->base = L->ci->base;
   luaF_close(L, L->base);  /* close eventual pending closures */
   luaD_seterrorobj(L, status, L->base);
-  L->nCcalls = L->baseCcalls;
   L->allowhook = 1;
   restore_stack_limit(L);
   L->errfunc = 0;
@@ -415,9 +414,19 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
 void luaD_call (lua_State *L, StkId func, int nResults)
 {
     callstack_ref ref( *L );
+    CallInfo *info = L->ci;
 
-    if (luaD_precall( L, func, nResults) == PCRLUA )  /* is a Lua function? */
-        luaV_execute( L, 1 );  /* call it */
+    try
+    {
+        if (luaD_precall( L, func, nResults) == PCRLUA )  /* is a Lua function? */
+            luaV_execute( L, 1 );  /* call it */
+    }
+    catch( ... )
+    {
+        // Restore basic business
+        L->ci = info;
+        throw;
+    }
 
     luaC_checkGC(L);
 }
@@ -438,7 +447,7 @@ LUA_API int lua_resume (lua_State *L, int nargs)
     if ( !L->IsThread() )
         return resume_error(L, "not a thread");
 
-    if (L->status != LUA_YIELD && (L->status != 0 || L->ci != L->base_ci))
+    if ( L->status != LUA_YIELD && (L->status != 0 || L->ci != L->base_ci) )
         return resume_error(L, "cannot resume non-suspended coroutine");
 
     if ( L->nCcalls >= LUAI_MAXCCALLS )
@@ -450,8 +459,6 @@ LUA_API int lua_resume (lua_State *L, int nargs)
     lua_assert(L->errfunc == 0);
 
     callstack_ref ref( *L );
-
-    L->baseCcalls = L->nCcalls;
     
     // The OS thread is saved on it's position
     ((lua_Thread*)L)->resume();
@@ -464,6 +471,9 @@ LUA_API int lua_yield( lua_State *L, int nresults )
 {
     if ( !L->IsThread() )
         throw lua_exception( L, LUA_ERRRUN, "cannot yield from main thread" );
+
+    if ( L->IsYieldDisabled() )
+        throw lua_exception( L, LUA_ERRRUN, "cannot yield at current runtime" );
 
     luai_userstateyield(L, nresults);
     lua_lock(L);

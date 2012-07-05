@@ -14,6 +14,40 @@
 #define _LUA_BASE_DEFS_
 
 #define LUA_DECLARE(x) int x( lua_State *L )
+#define LUA_REGISTER( L, x ) lua_register( L, #x, x )
+
+static inline const char* lua_getclassdesc( int ctype )
+{
+    switch( ctype )
+    {
+    case LUACLASS_FILE:
+        return "file";
+    case LUACLASS_FILETRANSLATOR:
+        return "fileTranslator";
+    case LUACLASS_TIMER:
+        return "timer";
+    }
+
+    return "class";
+}
+
+static inline ILuaClass& lua_classobtain( lua_State *L, int idx, int ctype )
+{
+    luaL_checktype( L, idx, LUA_TCLASS );
+
+    ILuaClass *j = lua_refclass( L, idx );
+
+    if ( !j->IsTransmit( ctype ) )
+        throw lua_exception( L, LUA_ERRRUN, SString( "expected class type '%s'", lua_getclassdesc( ctype ) ) );
+
+    return *j;
+}
+
+static inline void luaL_checktyperange( lua_State *L, int idx, int t, int r )
+{
+    while ( r-- )
+        luaL_checktype( L, idx++, t );
+}
 
 namespace LuaFunctionDefs
 {

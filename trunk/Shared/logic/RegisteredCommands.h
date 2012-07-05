@@ -15,14 +15,18 @@
 
 class LuaMain;
 class LuaManager;
+class RegisteredCommands;
 
 class Command : public LuaClass
 {
 public:
-    Command( lua_State *L, int ridx ) : LuaClass( L, ridx )
+    Command( lua_State *L, RegisteredCommands& cmds, int ridx ) : manager( cmds ), LuaClass( L, ridx )
     {
     }
 
+    virtual bool Execute( const std::vector <std::string>& args );
+
+    RegisteredCommands& manager;
     LuaMain*        lua;
     std::string     key;
     LuaFunctionRef  ref;
@@ -31,12 +35,13 @@ public:
 
 class RegisteredCommands
 {
+    friend class Command;
 public:
                                         RegisteredCommands( LuaManager& manager );
                                         ~RegisteredCommands();
 
-    bool                                Add( LuaMain *lua, const std::string& key, const LuaFunctionRef& ref, bool caseSensitive );
     bool                                Remove( LuaMain *lua, const std::string& key );
+    Command*                            Get( const char *key, LuaMain *lua = NULL );
     void                                Clear();
     void                                CleanUp( LuaMain *lua );
 
@@ -45,13 +50,9 @@ public:
     typedef std::list <Command*> commandList_t;
     std::list <Command*>    m_commands;
 
-protected:
-    Command*                            Get( const char *key, LuaMain *lua = NULL );
-    
-    unsigned int    m_refTable;
+    static int luaconstructor_command( lua_State *L );
 
-    int luaconstructor_command( lua_State *L );
-
+protected:    
     LuaManager&     m_system;
 };
 

@@ -65,7 +65,7 @@ int	WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	VirtualFreeEx(procInfo.hProcess, pLibPathRemote, strlen(libPath)+1, MEM_RELEASE);
 
 	// Resume execution
-	ResumeThread(procInfo.hThread);
+  	ResumeThread(procInfo.hThread);
 	CloseHandle(procInfo.hProcess);
 	CloseHandle(procInfo.hThread);
 	CloseHandle(hRemoteThread);

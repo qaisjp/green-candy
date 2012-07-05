@@ -79,6 +79,17 @@ int Class::TraverseGC( global_State *g )
     markobject( g, forceSuper );
     markobject( g, internStorage );
 
+    if ( parent )
+    {
+        markobject( g, parent );
+        markobject( g, childAPI );
+    }
+
+    childList_t::iterator iter = children.begin();
+
+    for ( ; iter != children.end(); iter++ )
+        markobject( g, *iter );
+
     if ( ttisfunction( &destructor ) )
         markobject( g, clvalue( &destructor ) );
 
@@ -204,7 +215,12 @@ size_t luaC_separatefinalization( lua_State *L, int all )
             if ( j->destroyed )
                 break;
 
-            lua_assert( !j->inMethod );
+            if ( !j->PreDestructor( L ) )
+            {
+                // Not ready to be destroyed yet
+                j->TraverseGC( g );
+                break;
+            }
 
             deadmem += sizeof( Class );
 

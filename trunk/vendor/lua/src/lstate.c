@@ -89,7 +89,7 @@ static inline void preinit_state (lua_State *L, global_State *g)
     resethookcount(L);
     L->openupval = NULL;
     L->size_ci = 0;
-    L->nCcalls = L->baseCcalls = 0;
+    L->nCcalls = 0;
     L->status = 0;
     L->base_ci = L->ci = NULL;
     L->savedpc = NULL;
@@ -133,7 +133,6 @@ static DWORD __stdcall luaE_threadEntryPoint( void *ud )
 
         lua_call( L, lua_gettop( L ) - 1, LUA_MULTRET );
 
-        lua_assert(L->nCcalls == L->baseCcalls);
         L->status = 0;
     }
     catch( lua_exception& e )
@@ -175,6 +174,8 @@ lua_Thread::lua_Thread()
     signalBegin = CreateEvent( NULL, false, false, NULL );
     signalWait = CreateEvent( NULL, false, false, NULL );
 #endif
+    isMain = false;
+    yieldDisabled = false;
 }
 
 lua_Thread* luaE_newthread( lua_State *L )
@@ -195,8 +196,6 @@ lua_Thread* luaE_newthread( lua_State *L )
     if ( !L1->threadHandle )
         throw lua_exception( L, LUA_ERRRUN, "cannot allocate thread" );
 #endif
-
-    L1->isMain = false;
 
     lua_assert(iswhite(L1));
     return L1;
@@ -341,7 +340,7 @@ LUA_API void lua_close (lua_State *L)
     {  /* repeat until no more errors */
         L->ci = L->base_ci;
         L->base = L->top = L->ci->base;
-        L->nCcalls = L->baseCcalls = 0;
+        L->nCcalls = 0;
     } while (luaD_rawrunprotected(L, callallgcTM, NULL) != 0);
 
     lua_assert(G(L)->tmudata == NULL);

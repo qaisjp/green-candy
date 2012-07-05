@@ -49,3 +49,39 @@ function createClass()
 		end
 	);
 end
+
+function tr()
+	local a = createClass();
+	local b = createClass();
+	
+	function a.destroy()
+		print("a destroyed");
+	end
+	
+	function b.destroy()
+		print("b destroyed");
+	end
+	
+	a.setParent(b);
+	
+	function b.method()
+		print(":D");
+		return true;
+	end
+	
+	function a.method()
+		destroy();
+	
+		b.destroy();
+		
+		print("stage 2");
+		
+		--destroy();
+		
+		print("stage 3");
+		
+		return b.method();
+	end
+	
+	a.method();
+end

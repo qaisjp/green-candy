@@ -146,6 +146,7 @@
     <ClInclude Include="d3d8_f.h" />
     <ClInclude Include="d3devt.h" />
     <ClInclude Include="derived\CEvents.h" />
+    <ClInclude Include="derived\CLuaFunctionDefs.h" />
     <ClInclude Include="derived\CLuaMain.h" />
     <ClInclude Include="derived\CLuaManager.h" />
     <ClInclude Include="derived\CRegisteredCommands.h" />
@@ -156,6 +157,10 @@
     <ClInclude Include="entity.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="lua.h" />
+    <ClInclude Include="lua\luaentity.h" />
+    <ClInclude Include="lua\luaped.h" />
+    <ClInclude Include="lua\luaplayer.h" />
+    <ClInclude Include="lua\luavehicle.h" />
     <ClInclude Include="StdInc.h" />
     <ClInclude Include="matrix.h" />
     <ClInclude Include="modelinfo.h" />
@@ -196,6 +201,7 @@
     <ClCompile Include="d3d8_f.cpp" />
     <ClCompile Include="d3devt.cpp" />
     <ClCompile Include="derived\CEvents.cpp" />
+    <ClCompile Include="derived\CLuaFunctionDefs.cpp" />
     <ClCompile Include="derived\CLuaMain.cpp" />
     <ClCompile Include="derived\CLuaManager.cpp" />
     <ClCompile Include="derived\CRegisteredCommands.cpp" />
@@ -206,6 +212,10 @@
     <ClCompile Include="entity.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="lua.cpp" />
+    <ClCompile Include="lua\luaentity.cpp" />
+    <ClCompile Include="lua\luaped.cpp" />
+    <ClCompile Include="lua\luaplayer.cpp" />
+    <ClCompile Include="lua\luavehicle.cpp" />
     <ClCompile Include="matrix.cpp" />
     <ClCompile Include="modelinfo.cpp" />
     <ClCompile Include="ped.cpp" />

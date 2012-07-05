@@ -20,6 +20,7 @@
 class LuaFunctionRef
 {
     friend class LuaMain;
+    friend class LuaManager;
 public:
                         LuaFunctionRef();
                         LuaFunctionRef( LuaMain *lua, int ref, const void *call );
@@ -27,6 +28,7 @@ public:
                         ~LuaFunctionRef();
 
     int                 ToInt() const;
+    const void*         GetPointer() const    { return m_call; }
 
     LuaFunctionRef&     operator = ( const LuaFunctionRef& other );
     bool                operator == ( const LuaFunctionRef& other ) const;

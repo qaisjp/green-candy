@@ -44,7 +44,7 @@ typedef struct scmThread_s	// 0x88 bytes total.
 
 struct SCRIPT_COMMAND		//	Params
 {							//		i = integer
-	WORD OpCode;			//		f = float
+	unsigned short OpCode;	//		f = float
 	char Params[13];		//		v = variable
 };							//		s = string
 
@@ -113,7 +113,30 @@ const SCRIPT_COMMAND enter_car_driver				= { 0x01D4, "ii" };			// actor_id, car_
 	Vice City SCM hook code end
 */
 
-void	SCM_Init ();
-bool	SCM_ProcessCommand ( const struct SCRIPT_COMMAND *cmd,  ... );
+class scmThread
+{
+public:
+    scmThread( unsigned short opCode );
+    ~scmThread();
+
+    void PushInt( int num );
+    void PushString( const std::string& string );
+    void PushFloat( float num );
+    void PrepareVariable();
+
+    bool Process();
+
+    int  GetResult( unsigned int id );
+
+    char m_scriptBuffer[65536];
+    int m_varBuffer[4];
+    int m_origVarBuffer[4];
+    size_t m_cursor;
+    size_t m_varCursor;
+};
+
+void	SCM_Init();
+
+extern class CGamePlayer *g_player;
 
 #endif

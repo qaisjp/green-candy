@@ -108,13 +108,9 @@ void		CVehicle::Destroy()
 		push dwVehicleInterface
 		call dwUnknownDestroy
 		pop ecx
-
-		// Call destructor
-		mov ebx,dwVehicleInterface
-		mov eax,[ebx]
-		push 1
-		call [eax]
 	}
+
+    delete this;
 }
 
 #if 0

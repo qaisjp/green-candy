@@ -37,12 +37,16 @@ public:
                                     LuaManager( Events& events, ScriptDebugging& debug );
                                     ~LuaManager();
 
+    void                            Shutdown();
+
     inline ScriptDebugging&         GetDebug()                  { return m_debug; }
     inline int                      GetGlobalEnvironment()      { return LUA_GLOBALSINDEX; }
 
     // Security inheritances
     virtual int                     AccessGlobal();
     virtual int                     AccessGlobalTable();
+
+    lua_State*                      GetVirtualMachine() const   { return m_lua; }
 
     // Current execution information
     const LuaMain*                  GetStatus( int *line = NULL, std::string *src = NULL, std::string *proto_name = NULL );
@@ -53,6 +57,9 @@ public:
     void                            Init( LuaMain *lua );
     LuaMain*                        Get( lua_State *lua );
     virtual bool                    Remove( LuaMain *lua );
+
+    // Global referencing functions - use with caution
+    void                            PushReference( lua_State *L, const LuaFunctionRef& ref );
 
     void                            PushThread( lua_State *thread )     { m_threadStack.push_back( thread ); }
     lua_State*                      GetThread() const                   { return m_threadStack.empty() ? m_lua : m_threadStack.back(); }
@@ -78,7 +85,6 @@ private:
     void                            InitSecurity();
 
 protected:
-    void                            LoadCFunctions();
     void                            CallStack( int args );
     void                            CallStackVoid( int args );
     void                            CallStackResult( int argc, LuaArguments& args );

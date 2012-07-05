@@ -2,7 +2,6 @@
 #include "StdInc.h"
 scmThread_t	customThread;
 DWORD* m_pScriptBase=(DWORD*)0x0074B248;
-char m_scriptBuffer[MAX_SCRIPT_SIZE];
 
 /*==================================
 	SCM Functions
@@ -10,12 +9,7 @@ char m_scriptBuffer[MAX_SCRIPT_SIZE];
 
 void	SCM_GameInit()
 {
-	DWORD *blah;
-
-	// Just create some stupid player
-	Player_Create(0, 19, 72, 16.5);
-	//__asm int 3
-	//SCM_ProcessCommand(&create_player, 0, 0, 0, 0, &blah);
+    Core_InitGame();
 }
 
 // Initialize environment
@@ -35,110 +29,99 @@ void	SCM_Init ()
 	//memset((void*)0x004393D0, 0x90, 0x20);
 }
 
-// Execute our scriptbuffer
-bool	SCM_ExecuteBuffer ( )
+scmThread::scmThread( unsigned short opCode )
 {
-	DWORD dwFunc=FUNC_ProcessSCMCommand;
+    m_cursor = 2;
+    m_varCursor = 0;
+
+    *(unsigned short*)m_scriptBuffer = opCode;
+}
+
+scmThread::~scmThread()
+{
+    // Write back the original vars
+    unsigned int n;
+
+    for ( n=0; n<m_varCursor; n++ )
+        *(int*)( m_pScriptBase + n ) = m_origVarBuffer[n];
+}
+
+void scmThread::PushInt( int num )
+{
+	if ( (num & 0xFF) == num )
+	{
+		*(short*)((int)m_scriptBuffer + m_cursor) = (SCMCAST_CHAR | (char)num << 8);
+		m_cursor += 2;
+        return;
+	}
+	else if ( (num & 0xFFFF) == num )
+	{
+        m_scriptBuffer[m_cursor++] = SCMCAST_CHAR;
+		*(short*)((int)m_scriptBuffer + m_cursor) = ((short)num << 8);
+		m_cursor += sizeof(short);
+        return;
+	}
+
+	m_scriptBuffer[ m_cursor++ ] = SCMCAST_INT;
+	*(int*)((int)m_scriptBuffer + m_cursor) = num;
+	m_cursor += sizeof(int);
+}
+
+void scmThread::PushString( const std::string& string )
+{
+    unsigned int n;
+    size_t len = min(8, string.size());
+
+    for ( n=0; n<len; n++ )
+        m_scriptBuffer[ m_cursor++ ] = string[n];
+
+    for ( n; n<8; n++ )
+        m_scriptBuffer[ m_cursor++ ] = 0;
+}
+
+void scmThread::PushFloat( float num )
+{
+	m_scriptBuffer[ m_cursor++ ] = SCMCAST_FLOAT;
+
+	*(short*)((int)m_scriptBuffer + m_cursor ) = (short)( num * 0x10 );
+	m_cursor += sizeof(short);
+}
+
+void scmThread::PrepareVariable()
+{
+    if ( m_varCursor == 4 )
+        return;
+
+    unsigned int *varPos = (unsigned int*)( m_pScriptBase + m_varCursor );
+    unsigned int *varBase = (unsigned int*)( &m_origVarBuffer + m_varCursor );
+
+	m_origVarBuffer[ m_varCursor ] = *varPos;
+    *varPos = *varBase;
+
+	// Set script information
+    m_scriptBuffer[m_cursor++] = SCMCAST_VAR;
+    *(unsigned short*)((int)m_scriptBuffer + m_cursor) = m_varCursor++ * 4;
+	m_cursor += sizeof(unsigned short);
+}
+
+bool scmThread::Process()
+{
+	DWORD dwFunc = FUNC_ProcessSCMCommand;
 
 	customThread.dwScriptIP = (int)m_scriptBuffer - (int)m_pScriptBase;
+
 	__asm
 	{
-		lea ecx, customThread
+		lea ecx,customThread
 		call dwFunc
 	}
 	return customThread.bJumpFlag == 1;
 }
 
-// Interpret a single command
-bool	SCM_ProcessCommand ( const struct SCRIPT_COMMAND *cmd,  ... )
+int scmThread::GetResult( unsigned int id )
 {
-	char *pDec=(char*)cmd->Params;
-	va_list vArgs;
-	int iPos=2;
-	DWORD *pVariableBase=m_pScriptBase;
-	DWORD variableBuffer[MAX_VARIABLES];
-	int iVariablePos=0;
-	bool bResult;
+    if ( id > 3 )
+        return 0;
 
-	*(WORD*)(m_scriptBuffer) = cmd->OpCode;
-
-	va_start(vArgs, cmd);
-	while (*pDec)
-	{
-		switch (*pDec)
-		{
-		case 'i':
-			{
-				unsigned int integer = va_arg(vArgs, unsigned int);
-
-				if ((integer & 0xFF) == integer)
-				{
-					*(WORD*)((int)m_scriptBuffer+iPos) = (SCMCAST_CHAR | (char)integer << 8);
-					iPos+=2;
-				}
-				else if ((integer & 0xFFFF) == integer)
-				{
-					*(WORD*)((int)m_scriptBuffer+iPos) = (SCMCAST_SHORT | (short)integer << 8);
-					iPos+=3;
-				}
-				else
-				{
-					m_scriptBuffer[iPos]=SCMCAST_INT;
-					*(DWORD*)((int)m_scriptBuffer+iPos+1) = integer;
-					iPos+=5;
-				}
-				break;
-			}
-		case 'v':
-			{
-				// Retrive the original variable and write our own one
-				DWORD* pVar=va_arg(vArgs, DWORD*);
-
-				variableBuffer[iVariablePos]=*pVariableBase;
-				*(DWORD**)pVariableBase=pVar;
-				pVariableBase++;
-				iVariablePos++;
-
-				// Set script information
-				*(DWORD*)((int)m_scriptBuffer+iPos) = (SCMCAST_VAR | (WORD)((int)pVariableBase - (int)m_pScriptBase) << 8);
-				iPos+=3;
-				break;
-			}
-		case 's':
-			{
-				char* pString = va_arg(vArgs, char*);
-				__asm
-				{
-					lea eax,m_scriptBuffer
-					mov ecx,iPos
-					mov ebx,pString
-					imul ecx,4
-					add eax,ecx
-					emms
-					movq mm0,dword ptr[ebx]
-					movq dword ptr[eax],mm0
-				}
-				iPos+=8;
-				break;
-			}
-		case 'f':
-			{
-				float flt = (float)va_arg(vArgs, double);
-
-				m_scriptBuffer[iPos]=SCMCAST_FLOAT;
-				*(float*)((int)m_scriptBuffer+iPos+1) = flt;
-				iPos+=5;
-				break;
-			}
-		}
-		pDec++;
-	}
-	bResult = SCM_ExecuteBuffer();
-
-	// Write back the original variables, if there
-	for (iPos=0; iPos<iVariablePos; iPos++)
-		*(DWORD*)(m_pScriptBase + iPos) = variableBuffer[iPos];
-
-	va_end(vArgs);
-	return bResult;
+    return *(int*)( m_pScriptBase + id );
 }
