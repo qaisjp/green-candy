@@ -32,7 +32,6 @@ class CClientTXD;
 class CClientVehicle;
 class CClientWater;
 class CClientRadarArea;
-class CLuaTimer;
 class CResource;
 class CXMLNode;
 

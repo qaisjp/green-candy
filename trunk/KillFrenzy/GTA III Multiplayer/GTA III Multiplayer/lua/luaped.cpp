@@ -41,4 +41,5 @@ CGamePed::CGamePed( lua_State *L, bool system, CPed& ped ) : CGameEntity( L, sys
 
 CGamePed::~CGamePed()
 {
+    GetEntity().Destroy();
 }

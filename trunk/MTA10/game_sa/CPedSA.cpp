@@ -349,14 +349,6 @@ void CPedSA::SetType ( DWORD m_dwType )
     >m_dwType = m_dwType;
 }
 
-DWORD * CPedSA::GetMemoryValue ( DWORD dwOffset )
-{
-    if ( dwOffset <= SIZEOF_CPLAYERPED )
-        return (DWORD *)((DWORD)(this->GetInterface()) + dwOffset);
-    else
-        return NULL;
-}
-
 void CPedSA::RemoveWeaponModel ( int iModel )
 {
     DWORD dwFunc = FUNC_RemoveWeaponModel;

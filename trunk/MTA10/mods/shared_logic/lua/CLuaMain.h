@@ -19,20 +19,9 @@ class CLuaMain;
 #define __CLUAMAIN_H
 
 #include "CLuaTimerManager.h"
-
 #include "CLuaFunctionDefs.h"
 
-#include <xml/CXMLFile.h>
-
-#define MAX_SCRIPTNAME_LENGTH 64
-
 #include <list>
-
-struct CRefInfo
-{
-    unsigned long int ulUseCount;
-    int iFunction;
-};
 
 class CLuaMain
 {

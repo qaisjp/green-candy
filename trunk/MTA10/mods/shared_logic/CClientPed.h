@@ -270,9 +270,6 @@ public:
     void                        SetAimInterpolated          ( unsigned long ulDelay, float fArmDirectionX, float fArmDirectionY, bool bAkimboAimUp, unsigned char cInVehicleAimAnim );
     void                        SetAimingData               ( unsigned long ulDelay, const CVector& vecTargetPosition, float fArmDirectionX, float fArmDirectionY, char cInVehicleAimAnim, CVector* pSource, bool bInterpolateAim );
 
-    inline unsigned long        GetMemoryValue              ( unsigned long ulOffset )                  { return ( m_pPlayerPed ) ? *m_pPlayerPed->GetMemoryValue ( ulOffset ) : 0; };
-    inline unsigned long        GetGameBaseAddress          ( void )                                    { return ( m_pPlayerPed ) ? (unsigned long)m_pPlayerPed->GetMemoryValue ( 0 ) : 0; };
-
     void                        Duck                        ( bool bDuck );
     bool                        IsDucked                    ( void );
 
