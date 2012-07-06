@@ -19,96 +19,97 @@
 
 #include "StdInc.h"
 
-int CLuaFunctionDefs::AddCommandHandler ( lua_State* luaVM )
+namespace CLuaFunctionDefs
 {
-//  bool addCommandHandler ( string commandName, function handlerFunction, [bool caseSensitive = true] )
-    SString strKey; CLuaFunctionRef iLuaFunction; bool bCaseSensitive;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadString ( strKey );
-    argStream.ReadFunction ( iLuaFunction );
-    argStream.ReadBool ( bCaseSensitive, true );
-    argStream.ReadFunctionComplete ();
-
-    if ( !argStream.HasErrors () )
+    LUA_DECLARE( addCommandHandler )
     {
-        // Grab our VM
-        CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-        if ( pLuaMain )
+    //  bool addCommandHandler ( string commandName, function handlerFunction, [bool caseSensitive = true] )
+        SString strKey; CLuaFunctionRef iLuaFunction; bool bCaseSensitive;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadString ( strKey );
+        argStream.ReadFunction ( iLuaFunction );
+        argStream.ReadBool ( bCaseSensitive, true );
+        argStream.ReadFunctionComplete ();
+
+        if ( !argStream.HasErrors () )
         {
-            // Add them to our list over command handlers
-            if ( m_pRegisteredCommands->AddCommand ( pLuaMain, strKey, iLuaFunction, bCaseSensitive ) )
+            // Grab our VM
+            CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( L );
+            if ( pLuaMain )
             {
-                lua_pushboolean ( luaVM, true );
-                return 1;
+                // Add them to our list over command handlers
+                if ( m_pRegisteredCommands->AddCommand ( pLuaMain, strKey, iLuaFunction, bCaseSensitive ) )
+                {
+                    lua_pushboolean ( L, true );
+                    return 1;
+                }
             }
         }
+        else
+            m_pScriptDebugging->LogCustom ( L, SString ( "Bad argument @ '%s' [%s]", "addCommandHandler", *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "addCommandHandler", *argStream.GetErrorMessage () ) );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::RemoveCommandHandler ( lua_State* luaVM )
-{
-//  bool removeCommandHandler ( string commandName )
-    SString strKey;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadString ( strKey );
-
-    if ( !argStream.HasErrors () )
+    LUA_DECLARE( removeCommandHandler )
     {
-        // Grab our VM
-        CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-        if ( pLuaMain )
+    //  bool removeCommandHandler ( string commandName )
+        SString strKey;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadString ( strKey );
+
+        if ( !argStream.HasErrors () )
         {
-            // Remove it from our list
-            if ( m_pRegisteredCommands->RemoveCommand ( pLuaMain, strKey ) )
+            // Grab our VM
+            CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( L );
+            if ( pLuaMain )
             {
-                lua_pushboolean ( luaVM, true );
-                return 1;
+                // Remove it from our list
+                if ( m_pRegisteredCommands->RemoveCommand ( pLuaMain, strKey ) )
+                {
+                    lua_pushboolean ( L, true );
+                    return 1;
+                }
             }
         }
+        else
+            m_pScriptDebugging->LogCustom ( L, SString ( "Bad argument @ '%s' [%s]", "removeCommandHandler", *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "removeCommandHandler", *argStream.GetErrorMessage () ) );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::ExecuteCommandHandler ( lua_State* luaVM )
-{
-//  bool executeCommandHandler ( string commandName, [ string args ] )
-    SString strKey; SString strArgs;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadString ( strKey );
-    argStream.ReadString ( strArgs, "" );
-
-    if ( !argStream.HasErrors () )
+    LUA_DECLARE( executeCommandHandler )
     {
+    //  bool executeCommandHandler ( string commandName, [ string args ] )
+        SString strKey; SString strArgs;
 
-        // Grab our VM
-        CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-        if ( pLuaMain )
+        CScriptArgReader argStream ( L );
+        argStream.ReadString ( strKey );
+        argStream.ReadString ( strArgs, "" );
+
+        if ( !argStream.HasErrors () )
         {
-            // Call it
-            if ( m_pRegisteredCommands->ProcessCommand ( strKey, strArgs ) )
+
+            // Grab our VM
+            CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( L );
+            if ( pLuaMain )
             {
-                lua_pushboolean ( luaVM, true );
-                return 1;
+                // Call it
+                if ( m_pRegisteredCommands->ProcessCommand ( strKey, strArgs ) )
+                {
+                    lua_pushboolean ( L, true );
+                    return 1;
+                }
             }
         }
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "executeCommandHandler", *argStream.GetErrorMessage () ) );
+        else
+            m_pScriptDebugging->LogCustom ( L, SString ( "Bad argument @ '%s' [%s]", "executeCommandHandler", *argStream.GetErrorMessage () ) );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
+        lua_pushboolean ( L, false );
+        return 1;
+    }
 }

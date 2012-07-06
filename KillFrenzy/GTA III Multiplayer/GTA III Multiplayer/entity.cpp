@@ -1,39 +1,39 @@
 #include "StdInc.h"
 
-void		CEntity::SetPosition(float fPosX, float fPosY, float fPosZ)
+void		CEntity::SetPosition( float fPosX, float fPosY, float fPosZ )
 {
 	m_matrix.m_vecPos[0] = fPosX;
 	m_matrix.m_vecPos[1] = fPosY;
 	m_matrix.m_vecPos[2] = fPosZ;
 }
 
-void		CEntity::SetPosition(vec3_t vecPos)
+void		CEntity::SetPosition( const vec3_t vecPos )
 {
 	m_matrix.m_vecPos[0] = vecPos[0];
 	m_matrix.m_vecPos[1] = vecPos[1];
 	m_matrix.m_vecPos[2] = vecPos[2];
 }
 
-void		CEntity::GetPosition(vec3_t vecPos)
+void		CEntity::GetPosition( vec3_t vecPos ) const
 {
 	vecPos[0] = m_matrix.m_vecPos[0];
 	vecPos[1] = m_matrix.m_vecPos[1];
 	vecPos[2] = m_matrix.m_vecPos[2];
 }
 
-void		CEntity::SetRotation(float fRotX, float fRotY, float fRotZ)
+void		CEntity::SetRotation( float fRotX, float fRotY, float fRotZ )
 {
-
+    m_matrix.SetRotation( fRotX, fRotY, fRotZ );
 }
 
-void		CEntity::SetRotation(vec3_t vecRot)
+void		CEntity::SetRotation( const vec3_t vecRot )
 {
-
+    m_matrix.SetRotation( vecRot );
 }
 
-void		CEntity::GetRotation(vec3_t vecRot)
+void		CEntity::GetRotation( vec3_t vecRot ) const
 {
-
+    m_matrix.GetRotation( vecRot );
 }
 
 // Teleport a entity

@@ -250,8 +250,6 @@ public:
 
     void                        FuckCarCompletely       ( bool bKeepWheels );
 
-    unsigned long               GetMemoryValue          ( unsigned long ulOffset );
-    unsigned long               GetGameBaseAddress      ( void );
     void                        WorldIgnore             ( bool bWorldIgnore );
 
     inline bool                 IsVirtual               ( void )                            { return m_pVehicle == NULL; };

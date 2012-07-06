@@ -66,6 +66,17 @@ static int entity_getMatrix( lua_State *L )
     return 1;
 }
 
+static int entity_getModelID( lua_State *L )
+{
+    lua_pushnumber( L, ((CGameEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetEntity().m_usModelID );
+    return 1;
+}
+
+static int entity_setModelID( lua_State *L )
+{
+    return 0;
+}
+
 static int entity_destroy( lua_State *L )
 {
     delete (CGameEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) );
@@ -80,6 +91,8 @@ static const luaL_Reg entity_interface[] =
     { "getRotation", entity_getRotation },
     { "setRotation", entity_setRotation },
     { "getMatrix", entity_getMatrix },
+    { "getModelID", entity_getModelID },
+    { "setModelID", entity_setModelID },
     { "destroy", entity_destroy },
     { NULL, NULL }
 };

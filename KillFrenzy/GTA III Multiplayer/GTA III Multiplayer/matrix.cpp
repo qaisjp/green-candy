@@ -48,19 +48,19 @@ void lua_creatematrix( lua_State *L, CMatrix& matrix )
     lua_newclass( L );
 }
 
-void		CMatrix::GetOffset(float fOffX, float fOffY, float fOffZ, vec3_t vecOut)
+void		CMatrix::GetOffset( float fOffX, float fOffY, float fOffZ, vec3_t vecOut ) const
 {
 	vecOut[0] =-m_vecRight[0] * fOffX - m_vecRight[1] * fOffY - m_vecRight[2] * fOffZ + m_vecPos[0];
 	vecOut[1] = m_vecFront[0] * fOffX + m_vecFront[1] * fOffY + m_vecFront[2] * fOffZ + m_vecPos[1];
 	vecOut[2] = m_vecUp[0] * fOffX + m_vecUp[1] * fOffY + m_vecUp[2] * fOffZ + m_vecPos[2];
 }
 
-void		CMatrix::SetRotation(vec3_t vecRot)
+void		CMatrix::SetRotation( const vec3_t vecRot )
 {
 	SetRotation(vecRot[0], vecRot[1], vecRot[2]);
 }
 
-void		CMatrix::SetRotation(float fRotX, float fRotY, float fRotZ)
+void		CMatrix::SetRotation( float fRotX, float fRotY, float fRotZ )
 {
 	double ch = cos(DEG2RAD(fRotX));	// ATTITUDE
 	double sh = sin(DEG2RAD(fRotX));
@@ -80,7 +80,7 @@ void		CMatrix::SetRotation(float fRotX, float fRotY, float fRotZ)
 	m_vecUp[2] = (float)(-sh*sa*sb + ch*cb);
 }
 
-void		CMatrix::GetRotation(vec3_t vecRot)
+void		CMatrix::GetRotation( vec3_t vecRot ) const
 {
 	vecRot[0] = (float)RAD2DEG(atan2(-m_vecUp[0], m_vecRight[0]));
 	vecRot[2] = (float)RAD2DEG(asin(m_vecFront[0]));

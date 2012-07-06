@@ -28,10 +28,12 @@ class CLuaArguments;
 class CLuaArgument : public LuaArgument
 {
 public:
-                            CLuaArgument( CClientEntity* pElement );
+                            CLuaArgument( CClientEntity *element );
                             ~CLuaArgument();
 
-    void                    Read( CClientEntity* pElement );
+    virtual LuaArgument*    Clone() const;
+
+    void                    Read( CClientEntity *element );
     CClientEntity*          GetElement() const;
 
     bool                    WriteToBitStream( NetBitStreamInterface& bitStream ) const;

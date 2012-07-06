@@ -19,99 +19,96 @@
 
 #include "StdInc.h"
 
-int CLuaFunctionDefs::GetBodyPartName ( lua_State* luaVM )
+namespace CLuaFunctionDefs
 {
-    int iArgument1 = lua_type ( luaVM, 1 );
-    if ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING )
+    LUA_DECLARE( getBodyPartName )
     {
-        unsigned char ucID = static_cast < unsigned char > ( lua_tonumber ( luaVM, 1 ) );
-
-        char szBuffer [256];
-        if ( CStaticFunctionDefinitions::GetBodyPartName ( ucID, szBuffer ) )
+        int iArgument1 = lua_type ( L, 1 );
+        if ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING )
         {
-            lua_pushstring ( luaVM, szBuffer );
-            return 1;
+            unsigned char ucID = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
+
+            char szBuffer [256];
+            if ( CStaticFunctionDefinitions::GetBodyPartName ( ucID, szBuffer ) )
+            {
+                lua_pushstring ( L, szBuffer );
+                return 1;
+            }
         }
+        else
+            m_pScriptDebugging->LogBadType ( L, "getBodyPartName" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getBodyPartName" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetClothesByTypeIndex ( lua_State* luaVM )
-{
-    int iArgument1 = lua_type ( luaVM, 1 );
-    int iArgument2 = lua_type ( luaVM, 2 );
-    if ( ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING ) &&
-        ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) )
+    LUA_DECLARE( getClothesByTypeIndex )
     {
-        unsigned char ucType = static_cast < unsigned char > ( lua_tonumber ( luaVM, 1 ) );
-        unsigned char ucIndex = static_cast < unsigned char > ( lua_tonumber ( luaVM, 2 ) );
-
-        char szTexture [ 128 ], szModel [ 128 ];
-        if ( CStaticFunctionDefinitions::GetClothesByTypeIndex ( ucType, ucIndex, szTexture, szModel ) )
+        int iArgument1 = lua_type ( L, 1 );
+        int iArgument2 = lua_type ( L, 2 );
+        if ( ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING ) &&
+            ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) )
         {
-            lua_pushstring ( luaVM, szTexture );
-            lua_pushstring ( luaVM, szModel );
-            return 2;
+            unsigned char ucType = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
+            unsigned char ucIndex = static_cast < unsigned char > ( lua_tonumber ( L, 2 ) );
+
+            char szTexture [ 128 ], szModel [ 128 ];
+            if ( CStaticFunctionDefinitions::GetClothesByTypeIndex ( ucType, ucIndex, szTexture, szModel ) )
+            {
+                lua_pushstring ( L, szTexture );
+                lua_pushstring ( L, szModel );
+                return 2;
+            }
         }
+        else
+            m_pScriptDebugging->LogBadType ( L, "getClothesByTypeIndex" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getClothesByTypeIndex" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetTypeIndexFromClothes ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TSTRING )
+    LUA_DECLARE( getTypeIndexFromClothes )
     {
-        const char* szTexture = lua_tostring ( luaVM, 1 );
-        const char* szModel = NULL;
-        if ( lua_type ( luaVM, 2 ) == LUA_TSTRING )
-            szModel = lua_tostring ( luaVM, 2 );
-
-        unsigned char ucType, ucIndex;
-        if ( CStaticFunctionDefinitions::GetTypeIndexFromClothes ( const_cast < char* > ( szTexture ), const_cast < char* > ( szModel ), ucType, ucIndex ) )
+        if ( lua_type ( L, 1 ) == LUA_TSTRING )
         {
-            lua_pushnumber ( luaVM, ucType );
-            lua_pushnumber ( luaVM, ucIndex );
-            return 2;
+            const char* szTexture = lua_tostring ( L, 1 );
+            const char* szModel = NULL;
+            if ( lua_type ( L, 2 ) == LUA_TSTRING )
+                szModel = lua_tostring ( L, 2 );
+
+            unsigned char ucType, ucIndex;
+            if ( CStaticFunctionDefinitions::GetTypeIndexFromClothes ( const_cast < char* > ( szTexture ), const_cast < char* > ( szModel ), ucType, ucIndex ) )
+            {
+                lua_pushnumber ( L, ucType );
+                lua_pushnumber ( L, ucIndex );
+                return 2;
+            }
         }
+        else
+            m_pScriptDebugging->LogBadType ( L, "getTypeIndexFromClothes" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getTypeIndexFromClothes" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetClothesTypeName ( lua_State* luaVM )
-{
-    int iArgument1 = lua_type ( luaVM, 1 );
-    if ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING )
+    LUA_DECLARE( getClothesTypeName )
     {
-        unsigned char ucType = static_cast < unsigned char > ( lua_tonumber ( luaVM, 1 ) );
-
-        char szName [ 40 ];
-        if ( CStaticFunctionDefinitions::GetClothesTypeName ( ucType, szName ) )
+        int iArgument1 = lua_type ( L, 1 );
+        if ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING )
         {
-            lua_pushstring ( luaVM, szName );
-            return 1;
+            unsigned char ucType = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
+
+            char szName [ 40 ];
+            if ( CStaticFunctionDefinitions::GetClothesTypeName ( ucType, szName ) )
+            {
+                lua_pushstring ( L, szName );
+                return 1;
+            }
         }
+        else
+            m_pScriptDebugging->LogBadType ( L, "getClothesTypeName" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getClothesTypeName" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
 }
-
-
-

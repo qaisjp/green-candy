@@ -1638,28 +1638,6 @@ void CClientVehicle::FuckCarCompletely ( bool bKeepWheels )
 }
 
 
-unsigned long CClientVehicle::GetMemoryValue ( unsigned long ulOffset )
-{
-    if ( m_pVehicle )
-    {
-        return *m_pVehicle->GetMemoryValue ( ulOffset );
-    }
-
-    return 0;
-}
-
-
-unsigned long CClientVehicle::GetGameBaseAddress ( void )
-{
-    if ( m_pVehicle )
-    {
-        return reinterpret_cast < unsigned long > ( m_pVehicle->GetMemoryValue ( 0 ) );
-    }
-
-    return 0;
-}
-
-
 void CClientVehicle::WorldIgnore ( bool bWorldIgnore )
 {
     if ( bWorldIgnore )

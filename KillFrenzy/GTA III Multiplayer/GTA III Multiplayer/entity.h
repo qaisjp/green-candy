@@ -31,15 +31,15 @@ class CEntity
 public:
 	virtual					~CEntity() = 0;
 
-	void					SetPosition(float fPosX, float fPosY, float fPosZ);
-	void					SetPosition(vec3_t vecPos);
-	void					GetPosition(vec3_t vecPos);
-	void					SetRotation(float fRotX, float fRotY, float fRotZ);
-	void					SetRotation(vec3_t vecRot);
-	void					GetRotation(vec3_t vecRot);
-	void					Teleport(float fPosX, float fPosY, float fPosZ);
+	void					SetPosition( float fPosX, float fPosY, float fPosZ );
+	void					SetPosition( const vec3_t vecPos );
+	void					GetPosition( vec3_t vecPos ) const;
+	void					SetRotation( float fRotX, float fRotY, float fRotZ );
+	void					SetRotation( const vec3_t vecRot );
+	void					GetRotation( vec3_t vecRot ) const;
+	void					Teleport( float fPosX, float fPosY, float fPosZ );
 	void					RemoveControlEntity();
-	void					RemovePassengerEntity(CEntity *pPassenger);
+	void					RemovePassengerEntity( CEntity *pPassenger );
 
 	CMatrix					m_matrix;				// +4
 	CMatrix*				m_pPreviousMatrix;		// +68

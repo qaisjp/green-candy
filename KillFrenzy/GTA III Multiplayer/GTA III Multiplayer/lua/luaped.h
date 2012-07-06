@@ -20,6 +20,8 @@ class CGamePed : public CGameEntity
 public:
                         CGamePed( lua_State *L, bool system, CPed& ped );
                         ~CGamePed();
+
+    inline CPed&        GetEntity()         { return (CPed&)m_entity; }
 };
 
 #endif //_GAME_PED_

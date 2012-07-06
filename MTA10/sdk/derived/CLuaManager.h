@@ -18,7 +18,7 @@ class CLuaManager : public LuaManager
 public:
     inline CScriptDebugging&        GetDebug()  { return (CScriptDebugging&)m_debug; }
 
-    const CLuaMain*                 GetStatus( int *line, std::string *src, std::string *proto_name )    { return (const CLuaMain*)LuaManager::Get( line, stc, proto_name ); }
+    const CLuaMain*                 GetStatus( int *line, std::string *src, std::string *proto_name )    { return (const CLuaMain*)LuaManager::GetStatus( line, src, proto_name ); }
 };
 
 #endif //_LUA_MANAGER_

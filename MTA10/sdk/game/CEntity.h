@@ -58,8 +58,8 @@ public:
     virtual void                        Render () = 0;
     virtual void                        SetOrientation ( float fX, float fY, float fZ )=0;
     virtual void                        FixBoatOrientation () = 0;
-    virtual void                        GetPosition ( CVector pos ) = 0;
-    virtual void                        GetMatrix ( CMatrix matrix ) const = 0;
+    virtual void                        GetPosition ( CVector& pos ) = 0;
+    virtual void                        GetMatrix ( CMatrix& matrix ) const = 0;
     virtual void                        SetMatrix ( CMatrix matrix ) = 0;
     virtual unsigned short              GetModelIndex () = 0;
     virtual eEntityType                 GetEntityType () = 0;

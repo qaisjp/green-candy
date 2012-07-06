@@ -13,20 +13,6 @@
 #ifndef _LUA_TIMER_
 #define _LUA_TIMER_
 
-class CLuaTimer : public LuaTimer
-{
-public:
-    CLuaTimer( const LuaFunctionRef& ref, const LuaArguments& args )
-    {
-        LuaTimer( ref );
-
-        m_args = new CLuaArguments( args );
-    }
-
-    ~CLuaTimer()
-    {
-        delete m_args;
-    }
-};
+typedef LuaTimer CLuaTimer;
 
 #endif //_LUA_TIMER_

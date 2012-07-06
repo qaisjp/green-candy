@@ -1237,14 +1237,6 @@ void CVehicleSA::SetSirenOrAlarmActive ( bool bActive )
    ((CVehicleSAInterface *)this->GetInterface())->m_nVehicleFlags.bSirenOrAlarm = bActive;
 }
 
-DWORD * CVehicleSA::GetMemoryValue ( DWORD dwOffset )
-{
-    if ( dwOffset <= SIZEOF_CHELI )
-        return (DWORD *)((DWORD)(this->GetInterface()) + dwOffset);
-    else
-        return NULL;
-}
-
 /*
 
 bool CVehicleSA::isInRect(FLOAT fX1, FLOAT fY1, FLOAT fX2, FLOAT fY2, bool bShowHotspot)

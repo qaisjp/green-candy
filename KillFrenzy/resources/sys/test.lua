@@ -74,3 +74,10 @@ addCommandHandler("psvc", function(id)
 		veh.setRotation(localPlayer.getRotation());
 	end
 );
+
+addCommandHandler("getrot", function()
+		local x, y, z = localPlayer.getRotation();
+		
+		print("X: " .. x .. ", Y: " .. y .. ", Z: " .. z);
+	end
+);
