@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{14d188a2-c2b0-4a9f-8d60-46a6ad3c0fe9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="filesys">
+      <UniqueIdentifier>{ea37bbd7-0fbc-47a0-afd5-4e2b183bcc88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="filesys\include">
+      <UniqueIdentifier>{d4ec8e07-1f7a-4eae-bd8d-91ec7109e1ff}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="..\..\..\Shared\core\CFileSystem.zip.cpp">
+      <Filter>filesys</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\core\CFileSystem.cpp">
+      <Filter>filesys</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="StdInc.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\core\CFileSystemInterface.h">
+      <Filter>filesys\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\core\CFileSystem.h">
+      <Filter>filesys\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\core\CFileSystem.Utils.hxx">
+      <Filter>filesys\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\core\CFileSystem.zip.h">
+      <Filter>filesys\include</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
