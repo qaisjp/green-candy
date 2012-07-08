@@ -19,6 +19,9 @@
     <ClCompile Include="..\..\..\Shared\core\CFileSystem.cpp">
       <Filter>filesys</Filter>
     </ClCompile>
+    <ClCompile Include="grammar.cpp" />
+    <ClCompile Include="emotions.cpp" />
+    <ClCompile Include="..\..\..\vendor\tinyxml2\trunk\tinyxml2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StdInc.h">
@@ -35,6 +38,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Shared\core\CFileSystem.zip.h">
       <Filter>filesys\include</Filter>
+    </ClInclude>
+    <ClInclude Include="grammar.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="emotions.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\vendor\tinyxml2\trunk\tinyxml2.h">
+      <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
