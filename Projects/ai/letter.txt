@@ -1,0 +1,9 @@
+Hello Wafamde!
+
+This is a test letter. If you want to write a human-like AI, you have to teach it how to understand sentences.
+So, let us begin by structuring this letter. Every sentence should contain a message to the AI. It should store some information it got
+from them into it's memory. At some point, we might create a database with it's "memory", so it will remember reading this letter.
+We also have to teach it the English language or if we are more advanced a language dictionary system.
+
+Lets have at it!
+The_GTA
