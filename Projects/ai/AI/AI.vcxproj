@@ -47,7 +47,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;../../../Shared/core;../../../Shared/sdk;../../../vendor/zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../../../Shared/core;../../../Shared/sdk;../../../vendor/zlib;../../../vendor/tinyxml2/trunk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>StdInc.h</PrecompiledHeaderFile>
@@ -70,7 +70,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>./;../../../Shared/core;../../../Shared/sdk;../../../vendor/zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;../../../Shared/core;../../../Shared/sdk;../../../vendor/zlib;../../../vendor/tinyxml2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>StdInc.h</PrecompiledHeaderFile>
@@ -92,6 +92,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\Shared\core\CFileSystem.cpp" />
     <ClCompile Include="..\..\..\Shared\core\CFileSystem.zip.cpp" />
+    <ClCompile Include="..\..\..\vendor\tinyxml2\trunk\tinyxml2.cpp" />
+    <ClCompile Include="emotions.cpp" />
+    <ClCompile Include="grammar.cpp" />
     <ClCompile Include="main.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -102,6 +105,9 @@
     <ClInclude Include="..\..\..\Shared\core\CFileSystem.Utils.hxx" />
     <ClInclude Include="..\..\..\Shared\core\CFileSystem.zip.h" />
     <ClInclude Include="..\..\..\Shared\core\CFileSystemInterface.h" />
+    <ClInclude Include="..\..\..\vendor\tinyxml2\trunk\tinyxml2.h" />
+    <ClInclude Include="emotions.h" />
+    <ClInclude Include="grammar.h" />
     <ClInclude Include="StdInc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
