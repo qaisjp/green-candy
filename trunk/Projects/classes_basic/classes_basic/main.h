@@ -19,12 +19,14 @@ class Client
 public:
 	enum eAccess
 	{
-		// Fill me please... 
+		root,
+		guest,
+		admin,
+		moderator
 	};
-
 	// You could implement this; try to print the username of which account you logged into!
-	void				OnLogin( class Account& acc );
-	void				OnLogout();
+		void				OnLogin( class Account& acc );
+		void				OnLogout();
 
 	// Dummy data.
 	int stuff;

@@ -5,6 +5,7 @@ using namespace std;
 // The main entrypoint to our program, let the account management begin!
 int main( int argc, char *argv[] )
 {
+
 	// We create the manager and root client on the stack
 	// Their constructors get called here
 	AccountManager manager;
