@@ -38,7 +38,7 @@ Account* AccountManager::Login( Client& user, const std::string& name, const std
 	for ( ; iter != m_accounts.end(); iter++ )
 	{
 		// Does the username match?
-		if ( (*iter)->GetName() != name )
+		if ( (*iter)->GetName() != name ) 
 			continue;
 
 		// Does the password match of the account? If not, we know that there will not be any second account with the same name
