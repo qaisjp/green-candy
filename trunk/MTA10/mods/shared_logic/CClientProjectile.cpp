@@ -166,11 +166,11 @@ bool CClientProjectile::IsActive ( void )
 }
 
 
-bool CClientProjectile::GetMatrix ( CMatrix & matrix )
+bool CClientProjectile::GetMatrix ( CMatrix& matrix )
 {
     if ( m_pProjectile )
     {
-        if ( m_pProjectile->GetMatrix ( &matrix ) )
+        if ( m_pProjectile->GetMatrix ( matrix ) )
         {
             // Jax: If the creator is a ped, we need to invert X and Y on Direction and Was for CMultiplayer::ConvertMatrixToEulerAngles
             if ( m_pCreator && IS_PED ( m_pCreator ) )
@@ -200,16 +200,14 @@ bool CClientProjectile::SetMatrix ( const CMatrix & matrix_ )
         matrix.vUp.fY = 0.0f - matrix.vUp.fY;
     }
 
-    m_pProjectile->SetMatrix ( &matrix );
+    m_pProjectile->SetMatrix( matrix );
     return true;
 }
 
-
 void CClientProjectile::GetPosition ( CVector & vecPosition ) const
 {
-    vecPosition = *m_pProjectile->GetPosition ();
+    m_pProjectile->GetPosition( vecPosition );
 }
-
 
 void CClientProjectile::SetPosition ( const CVector & vecPosition )
 {
@@ -246,15 +244,15 @@ void CClientProjectile::SetRotationDegrees ( CVector & vecRotation )
 }
 
 
-void CClientProjectile::GetVelocity ( CVector & vecVelocity )
+void CClientProjectile::GetVelocity ( CVector& vecVelocity )
 {
-    m_pProjectile->GetMoveSpeed ( &vecVelocity );
+    m_pProjectile->GetMoveSpeed( vecVelocity );
 }
 
 
-void CClientProjectile::SetVelocity ( CVector & vecVelocity )
+void CClientProjectile::SetVelocity ( CVector& vecVelocity )
 {
-    m_pProjectile->SetMoveSpeed ( &vecVelocity );
+    m_pProjectile->SetMoveSpeed( vecVelocity );
 }
 
 

@@ -38,7 +38,7 @@ class RegisteredCommands
     friend class Command;
 public:
                                         RegisteredCommands( LuaManager& manager );
-                                        ~RegisteredCommands();
+    virtual                             ~RegisteredCommands();
 
     bool                                Remove( LuaMain *lua, const std::string& key );
     Command*                            Get( const char *key, LuaMain *lua = NULL );

@@ -19,212 +19,204 @@
 
 #include "StdInc.h"
 
-int CLuaFunctionDefs::CreateProjectile ( lua_State* luaVM )
+namespace CLuaFunctionDefs
 {
-    if ( ( lua_istype ( luaVM, 1, LUA_TLIGHTUSERDATA ) ) &&
-        ( lua_istype ( luaVM, 2, LUA_TNUMBER ) || lua_istype ( luaVM, 2, LUA_TSTRING ) ) )
+    LUA_DECLARE( createProjectile )
     {
-        CClientEntity* pCreator = lua_toelement ( luaVM, 1 );
-        if ( pCreator )
+        if ( ( lua_istype ( L, 1, LUA_TLIGHTUSERDATA ) ) &&
+            ( lua_istype ( L, 2, LUA_TNUMBER ) || lua_istype ( L, 2, LUA_TSTRING ) ) )
         {
-            unsigned char ucWeaponType = static_cast < unsigned char > ( lua_tonumber ( luaVM, 2 ) );
-            CVector vecOrigin;
-            pCreator->GetPosition ( vecOrigin );
-            float fForce = 1.0f;
-            CClientEntity* pTarget = NULL;
-            CVector *pvecRotation = NULL, *pvecMoveSpeed = NULL;
-            unsigned short usModel = 0;
-            if ( ( lua_istype ( luaVM, 3, LUA_TNUMBER ) || lua_istype ( luaVM, 3, LUA_TSTRING ) ) &&
-                ( lua_istype ( luaVM, 4, LUA_TNUMBER ) || lua_istype ( luaVM, 4, LUA_TSTRING ) ) &&
-                ( lua_istype ( luaVM, 5, LUA_TNUMBER ) || lua_istype ( luaVM, 5, LUA_TSTRING ) ) )
+            CClientEntity* pCreator = lua_toelement ( L, 1 );
+            if ( pCreator )
             {
-                vecOrigin = CVector ( static_cast < float > ( lua_tonumber ( luaVM, 3 ) ),
-                    static_cast < float > ( lua_tonumber ( luaVM, 4 ) ),
-                    static_cast < float > ( lua_tonumber ( luaVM, 5 ) ) );
-
-                if ( lua_istype ( luaVM, 6, LUA_TNUMBER ) || lua_istype ( luaVM, 6, LUA_TSTRING ) )
+                unsigned char ucWeaponType = static_cast < unsigned char > ( lua_tonumber ( L, 2 ) );
+                CVector vecOrigin;
+                pCreator->GetPosition ( vecOrigin );
+                float fForce = 1.0f;
+                CClientEntity* pTarget = NULL;
+                CVector *pvecRotation = NULL, *pvecMoveSpeed = NULL;
+                unsigned short usModel = 0;
+                if ( ( lua_istype ( L, 3, LUA_TNUMBER ) || lua_istype ( L, 3, LUA_TSTRING ) ) &&
+                    ( lua_istype ( L, 4, LUA_TNUMBER ) || lua_istype ( L, 4, LUA_TSTRING ) ) &&
+                    ( lua_istype ( L, 5, LUA_TNUMBER ) || lua_istype ( L, 5, LUA_TSTRING ) ) )
                 {
-                    fForce = static_cast < float > ( lua_tonumber ( luaVM, 6 ) );
+                    vecOrigin = CVector ( static_cast < float > ( lua_tonumber ( L, 3 ) ),
+                        static_cast < float > ( lua_tonumber ( L, 4 ) ),
+                        static_cast < float > ( lua_tonumber ( L, 5 ) ) );
 
-                    if ( lua_istype ( luaVM, 7, LUA_TLIGHTUSERDATA ) )
+                    if ( lua_istype ( L, 6, LUA_TNUMBER ) || lua_istype ( L, 6, LUA_TSTRING ) )
                     {
-                        CClientEntity* pTemp = lua_toelement ( luaVM, 7 );
-                        if ( pTemp )
+                        fForce = static_cast < float > ( lua_tonumber ( L, 6 ) );
+
+                        if ( lua_istype ( L, 7, LUA_TLIGHTUSERDATA ) )
                         {
-                            pTarget = pTemp;
+                            CClientEntity* pTemp = lua_toelement ( L, 7 );
+                            if ( pTemp )
+                            {
+                                pTarget = pTemp;
+                            }
+                            else
+                                m_pScriptDebugging->LogBadPointer( "createProjectile", "element", 7 );
                         }
-                        else
-                            m_pScriptDebugging->LogBadPointer ( luaVM, "createProjectile", "element", 7 );
-                    }
 
-                    int iArgument8 = lua_type ( luaVM, 8 );
-                    int iArgument9 = lua_type ( luaVM, 9 );
-                    int iArgument10 = lua_type ( luaVM, 10 );
-                    if ( ( iArgument8 == LUA_TSTRING || iArgument8 == LUA_TNUMBER ) &&
-                        ( iArgument9 == LUA_TSTRING || iArgument9 == LUA_TNUMBER ) &&
-                        ( iArgument10 == LUA_TSTRING || iArgument10 == LUA_TNUMBER ) )
-                    {
-                        pvecRotation = new CVector ( static_cast < float > ( lua_tonumber ( luaVM, 8 ) ),
-                            static_cast < float > ( lua_tonumber ( luaVM, 9 ) ),
-                            static_cast < float > ( lua_tonumber ( luaVM, 10 ) ) );
-                    }
-                    int iArgument11 = lua_type ( luaVM, 11 );
-                    int iArgument12 = lua_type ( luaVM, 12 );
-                    int iArgument13 = lua_type ( luaVM, 13 );
-                    if ( ( iArgument11 == LUA_TSTRING || iArgument11 == LUA_TNUMBER ) &&
-                        ( iArgument12 == LUA_TSTRING || iArgument12 == LUA_TNUMBER ) &&
-                        ( iArgument13 == LUA_TSTRING || iArgument13 == LUA_TNUMBER ) )
-                    {
-                        pvecMoveSpeed = new CVector ( static_cast < float > ( lua_tonumber ( luaVM, 11 ) ),
-                            static_cast < float > ( lua_tonumber ( luaVM, 12 ) ),
-                            static_cast < float > ( lua_tonumber ( luaVM, 13 ) ) );
-
-                        int iArgument14 = lua_type ( luaVM, 14 );
-                        if ( iArgument14 == LUA_TSTRING || iArgument14 == LUA_TNUMBER )
+                        int iArgument8 = lua_type ( L, 8 );
+                        int iArgument9 = lua_type ( L, 9 );
+                        int iArgument10 = lua_type ( L, 10 );
+                        if ( ( iArgument8 == LUA_TSTRING || iArgument8 == LUA_TNUMBER ) &&
+                            ( iArgument9 == LUA_TSTRING || iArgument9 == LUA_TNUMBER ) &&
+                            ( iArgument10 == LUA_TSTRING || iArgument10 == LUA_TNUMBER ) )
                         {
-                            usModel = static_cast < unsigned short > ( lua_tonumber ( luaVM, 14 ) );
+                            pvecRotation = new CVector ( static_cast < float > ( lua_tonumber ( L, 8 ) ),
+                                static_cast < float > ( lua_tonumber ( L, 9 ) ),
+                                static_cast < float > ( lua_tonumber ( L, 10 ) ) );
+                        }
+                        int iArgument11 = lua_type ( L, 11 );
+                        int iArgument12 = lua_type ( L, 12 );
+                        int iArgument13 = lua_type ( L, 13 );
+                        if ( ( iArgument11 == LUA_TSTRING || iArgument11 == LUA_TNUMBER ) &&
+                            ( iArgument12 == LUA_TSTRING || iArgument12 == LUA_TNUMBER ) &&
+                            ( iArgument13 == LUA_TSTRING || iArgument13 == LUA_TNUMBER ) )
+                        {
+                            pvecMoveSpeed = new CVector ( static_cast < float > ( lua_tonumber ( L, 11 ) ),
+                                static_cast < float > ( lua_tonumber ( L, 12 ) ),
+                                static_cast < float > ( lua_tonumber ( L, 13 ) ) );
+
+                            int iArgument14 = lua_type ( L, 14 );
+                            if ( iArgument14 == LUA_TSTRING || iArgument14 == LUA_TNUMBER )
+                            {
+                                usModel = static_cast < unsigned short > ( lua_tonumber ( L, 14 ) );
+                            }
                         }
                     }
                 }
-            }
 
-            CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-            if ( pLuaMain )
-            {
+                CLuaMain* pLuaMain = lua_readcontext( L );
                 CResource * pResource = pLuaMain->GetResource();
-                if ( pResource )
+                CClientProjectile * pProjectile = CStaticFunctionDefinitions::CreateProjectile ( *pResource, *pCreator, ucWeaponType, vecOrigin, fForce, pTarget, pvecRotation, pvecMoveSpeed, usModel );
+                if ( pProjectile )
                 {
-                    CClientProjectile * pProjectile = CStaticFunctionDefinitions::CreateProjectile ( *pResource, *pCreator, ucWeaponType, vecOrigin, fForce, pTarget, pvecRotation, pvecMoveSpeed, usModel );
-                    if ( pProjectile )
+                    CElementGroup * pGroup = pResource->GetElementGroup();
+                    if ( pGroup )
                     {
-                        CElementGroup * pGroup = pResource->GetElementGroup();
-                        if ( pGroup )
-                        {
-                            pGroup->Add ( ( CClientEntity* ) pProjectile );
-                        }
-
-                        if ( pvecRotation )
-                        {
-                            delete pvecRotation;
-                            pvecRotation = NULL;
-                        }
-                        if ( pvecMoveSpeed )
-                        {
-                            delete pvecMoveSpeed;
-                            pvecMoveSpeed = NULL;
-                        }
-
-                        lua_pushelement ( luaVM, pProjectile );
-                        return 1;
+                        pGroup->Add ( ( CClientEntity* ) pProjectile );
                     }
+
+                    if ( pvecRotation )
+                    {
+                        delete pvecRotation;
+                        pvecRotation = NULL;
+                    }
+                    if ( pvecMoveSpeed )
+                    {
+                        delete pvecMoveSpeed;
+                        pvecMoveSpeed = NULL;
+                    }
+
+                    lua_pushelement ( L, pProjectile );
+                    return 1;
                 }
+                if ( pvecRotation )
+                    delete pvecRotation;
+
+                if ( pvecMoveSpeed )
+                    delete pvecMoveSpeed;
             }
-            if ( pvecRotation )
-            {
-                delete pvecRotation;
-                pvecRotation = NULL;
-            }
-            if ( pvecMoveSpeed )
-            {
-                delete pvecMoveSpeed;
-                pvecMoveSpeed = NULL;
-            }
+            else
+                m_pScriptDebugging->LogBadPointer( "createProjectile", "element", 1 );
         }
         else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "createProjectile", "element", 1 );
+            m_pScriptDebugging->LogBadType( "createProjectile" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "createProjectile" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetProjectileType ( lua_State* luaVM )
-{
-    // Verify the argument
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
+    LUA_DECLARE( getProjectileType )
     {
-        CClientProjectile* pProjectile = lua_toprojectile ( luaVM, 1 );
-        if ( pProjectile )
+        // Verify the argument
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
         {
-            unsigned char ucWeapon = pProjectile->GetWeaponType();
-            lua_pushnumber ( luaVM, static_cast < lua_Number > ( ucWeapon ) );
-            return 1;
-        }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getProjectileType", "projectile", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getProjectileType" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetProjectileTarget ( lua_State* luaVM )
-{
-    // Verify the argument
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
-    {
-        CClientProjectile* pProjectile = lua_toprojectile ( luaVM, 1 );
-        if ( pProjectile )
-        {
-            unsigned char ucWeapon = pProjectile->GetWeaponType();
-			if (ucWeapon == WEAPONTYPE_ROCKET_HS)
-			{
-				lua_pushelement ( luaVM, pProjectile->GetTargetEntity() );
+            CClientProjectile* pProjectile = lua_toprojectile ( L, 1 );
+            if ( pProjectile )
+            {
+                unsigned char ucWeapon = pProjectile->GetWeaponType();
+                lua_pushnumber ( L, static_cast < lua_Number > ( ucWeapon ) );
                 return 1;
-			}
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getProjectileType", "projectile", 1 );
         }
         else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getProjectileTarget", "projectile", 1 );
+            m_pScriptDebugging->LogBadType( "getProjectileType" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getProjectileTarget" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetProjectileCreator ( lua_State* luaVM )
-{
-    // Verify the argument
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
+    LUA_DECLARE( getProjectileTarget )
     {
-        CClientProjectile* pProjectile = lua_toprojectile ( luaVM, 1 );
-        if ( pProjectile )
+        // Verify the argument
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
         {
-			lua_pushelement ( luaVM, pProjectile->GetCreator() );
-            return 1;
+            CClientProjectile* pProjectile = lua_toprojectile ( L, 1 );
+            if ( pProjectile )
+            {
+                unsigned char ucWeapon = pProjectile->GetWeaponType();
+			    if (ucWeapon == WEAPONTYPE_ROCKET_HS)
+			    {
+				    lua_pushelement ( L, pProjectile->GetTargetEntity() );
+                    return 1;
+			    }
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getProjectileTarget", "projectile", 1 );
         }
         else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getProjectileCreator", "projectile", 1 );
+            m_pScriptDebugging->LogBadType( "getProjectileTarget" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getProjectileCreator" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetProjectileForce ( lua_State* luaVM )
-{
-    // Verify the argument
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
+    LUA_DECLARE( getProjectileCreator )
     {
-        CClientProjectile* pProjectile = lua_toprojectile ( luaVM, 1 );
-        if ( pProjectile )
+        // Verify the argument
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
         {
-			lua_pushnumber ( luaVM, static_cast < lua_Number > ( pProjectile->GetForce() ) );
-            return 1;
+            CClientProjectile* pProjectile = lua_toprojectile ( L, 1 );
+            if ( pProjectile )
+            {
+			    lua_pushelement ( L, pProjectile->GetCreator() );
+                return 1;
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getProjectileCreator", "projectile", 1 );
         }
         else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getProjectileForce", "projectile", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getProjectileForce" );
+            m_pScriptDebugging->LogBadType( "getProjectileCreator" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getProjectileForce )
+    {
+        // Verify the argument
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
+        {
+            CClientProjectile* pProjectile = lua_toprojectile ( L, 1 );
+            if ( pProjectile )
+            {
+			    lua_pushnumber ( L, static_cast < lua_Number > ( pProjectile->GetForce() ) );
+                return 1;
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getProjectileForce", "projectile", 1 );
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getProjectileForce" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
 }

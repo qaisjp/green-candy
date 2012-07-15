@@ -24,6 +24,7 @@ CMultiplayer* g_pMultiplayer = NULL;
 CNet* g_pNet = NULL;
 CClientGame* g_pClientGame = NULL;
 CFileTranslator *modFileRoot = NULL;
+CFileTranslator *mtaFileRoot = NULL;
 
 int CClient::ClientInitialize ( const char* szArguments, CCoreInterface* pCore )
 {
@@ -42,6 +43,7 @@ int CClient::ClientInitialize ( const char* szArguments, CCoreInterface* pCore )
 
     // Core gives us a fileroot
     modFileRoot = pCore->GetModRoot();
+    mtaFileRoot = pCore->GetMTARoot();
 
     // Init the global pointers to the interfaces
     g_pCore = pCore;

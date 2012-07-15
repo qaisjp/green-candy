@@ -415,11 +415,6 @@ public:
     inline bool                 IsStealthAiming         ( void )            { return m_bStealthAiming; }
     void                        SetStealthAiming        ( bool bAiming );
 
-    CAnimBlendAssociation *     AddAnimation            ( AssocGroupId group, AnimationId id );
-    CAnimBlendAssociation *     BlendAnimation          ( AssocGroupId group, AnimationId id, float fBlendDelta );
-    CAnimBlendAssociation *     GetAnimation            ( AnimationId id );
-    CAnimBlendAssociation *     GetFirstAnimation       ( void );
-
 protected:
     // This constructor is for peds managed by a player. These are unknown to the ped manager.
                                 CClientPed                  ( CClientManager* pManager, unsigned long ulModelID, ElementID ID, bool bIsLocalPlayer );

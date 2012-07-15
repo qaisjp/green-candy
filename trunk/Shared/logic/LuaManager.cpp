@@ -27,9 +27,27 @@
 #define HOOK_INSTRUCTION_COUNT 1000000
 #define HOOK_MAXIMUM_TIME 5000
 
+ResourceManager* LuaManager::m_resMan = NULL;
+
 static LuaManager* lua_readmanager( lua_State *L )
 {
     return lua_readuserdata <LuaManager, LUA_REGISTRYINDEX, 1> ( L );
+}
+
+static int lua_cocreatethread( lua_State *L )
+{
+    // Inherit previous settings
+    lua_State *thread = lua_tothread( L, 1 );
+    lua_rawgeti( L, LUA_STORAGEINDEX, 1 );
+    lua_rawgeti( L, LUA_STORAGEINDEX, 2 );
+    lua_rawgeti( L, LUA_STORAGEINDEX, 3 );
+
+    lua_xmove( L, thread, 3 );
+
+    lua_rawseti( L, LUA_STORAGEINDEX, 3 );
+    lua_rawseti( L, LUA_STORAGEINDEX, 2 );
+    lua_rawseti( L, LUA_STORAGEINDEX, 1 );
+    return 0;
 }
 
 static int lua_pushstackthread( lua_State *lua )
@@ -84,13 +102,11 @@ LuaManager::LuaManager( Events& events, ScriptDebugging& debug ) :
     m_events( events ),
     m_debug( debug )
 {
-    ResetInstructionCount();
-
     // Setup the virtual machine
     m_lua = luaL_newstate();
-    lua_sethook( m_lua, ::InstructionCountHook, LUA_MASKCOUNT, HOOK_INSTRUCTION_COUNT );
 
     // Setup callbacks
+    lua_setevent( m_lua, LUA_EVENT_THREAD_CO_CREATE, lua_cocreatethread );
     lua_setevent( m_lua, LUA_EVENT_THREAD_CONTEXT_PUSH, lua_pushstackthread );
     lua_setevent( m_lua, LUA_EVENT_THREAD_CONTEXT_POP, lua_popstackthread );
 
@@ -102,14 +118,6 @@ LuaManager::LuaManager( Events& events, ScriptDebugging& debug ) :
     lua_newtable( m_lua );
     lua_pushvalue( m_lua, 1 );
     luaL_ref( m_lua, LUA_REGISTRYINDEX );   // second in registry!
-
-    // Setup libraries
-    luaopen_base( m_lua );
-    luaopen_math( m_lua );
-    luaopen_string( m_lua );
-    luaopen_table( m_lua );
-    luaopen_class( m_lua );
-    luaopen_debug( m_lua ); // WARNING: CREATE OUR OWN DEBUG LIB!!!
 
     // Fast access global interface
     lua_newtable( m_lua );
@@ -146,7 +154,7 @@ LuaManager::~LuaManager()
 void LuaManager::PushStatus( const LuaMain& main )
 {
     if ( !m_envStack.empty() )
-        (*m_envStack.end()).Finalize();
+        m_envStack.back().Finalize();
 
     m_envStack.push_back( env_status( *m_lua, main ) );
 }
@@ -156,7 +164,15 @@ const LuaMain* LuaManager::GetStatus( int *line, std::string *src, std::string *
     if ( m_envStack.empty() )
         return NULL;
 
-    return &(*m_envStack.end()).Get( line, src, proto_name );
+    return &m_envStack.back().Get( line, src, proto_name );
+}
+
+unsigned long LuaManager::GetRuntime()
+{
+    if ( m_envStack.empty() )
+        return 0;
+
+    return m_envStack.back().GetRuntime();
 }
 
 const LuaMain* LuaManager::PopStatus( int *line, std::string *src, std::string *proto_name )
@@ -169,43 +185,14 @@ const LuaMain* LuaManager::PopStatus( int *line, std::string *src, std::string *
     m_envStack.pop_back();
 
     if ( !m_envStack.empty() )
-        (*m_envStack.end()).Resume();
+        m_envStack.back().Resume();
 
     return &context;
 }
 
-void LuaManager::Throw( unsigned int id, const char *error )
-{
-    std::string msg = error;
-    msg += '\n';
-
-    int line;
-    std::string src;
-    std::string proto;
-
-    while ( PopStatus( &line, &src, &proto ) )
-    {
-        if ( line == -1 )
-        {
-            msg += "unknown C proto\n";
-            continue;
-        }
-
-        msg += '"';
-        msg += src;
-        msg += "\":";
-        msg += proto;
-        msg += ':';
-        msg += SString( "%u", line );
-        msg += '\n';
-    }
-
-    throw lua_exception( m_lua, id, msg.c_str() );
-}
-
 void LuaManager::InstructionCountHook( lua_State *L, lua_Debug *ar )
 {
-    if ( GetTickCount() < m_functionEnter + HOOK_MAXIMUM_TIME )
+    if ( GetRuntime() < HOOK_MAXIMUM_TIME )
         return;
 
     const LuaMain *env = GetStatus();
@@ -214,7 +201,7 @@ void LuaManager::InstructionCountHook( lua_State *L, lua_Debug *ar )
     Logger::ErrorPrintf( "Infinite/too long execution (%s)", env->GetName().c_str() );
 
     // Error out
-    Throw( LUA_ERRRUN, "Aborting; infinite running script" );
+    throw lua_exception( L, LUA_ERRRUN, "Aborting; infinite running script" );
 }
 
 void LuaManager::CallStack( int args )
@@ -248,15 +235,25 @@ static inline bool lua_protectedcall( LuaManager& man, lua_State *L, int argc, i
     if ( lua_type( L, -argc - 1 ) != LUA_TFUNCTION )
         throw lua_exception( L, LUA_ERRSYNTAX, "expected function at LuaManager::CallStack!" );
 
+    lua_Debug debug;
+
     // We could theoretically protect it ourselves
-    switch( int ret = lua_pcall( L, argc, retc, 0 ) )
+    switch( int ret = lua_pcallex( L, argc, retc, 0, &debug ) )
     {
     case LUA_ERRRUN:
     case LUA_ERRMEM:
-        man.GetDebug().LogError( "%s", lua_tostring( L, -1 ) );
+        if ( debug.currentline == -1 )
+            man.GetDebug().LogError( "%s", lua_tostring( L, -1 ) );
+        else
+        {
+            if ( debug.source[0] == '@' )
+                man.GetDebug().LogError( "%s:%u: %s", debug.source + 1, debug.currentline, lua_tostring( L, -1 ) );
+            else
+                man.GetDebug().LogError( "%s:%u: %s", debug.short_src, debug.currentline, lua_tostring( L, -1 ) );
+        }
 
         // Clean the stack
-        lua_settop( L, -3 );
+        lua_settop( L, -2 );
         return false;
     }
 
@@ -335,7 +332,10 @@ int LuaManager::AccessGlobalTable()
     return 1;
 }
 
-static void LoadCFunctions( lua_State *L )
+#undef LUA_REGISTER
+#define LUA_REGISTER( main, x ) main->RegisterFunction( #x, x )
+
+static int LoadCFunctions( LuaMain *L )
 {
     using namespace LuaFunctionDefs;
 
@@ -364,11 +364,16 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, getCTime );
     LUA_REGISTER( L, setTimer );
     LUA_REGISTER( L, killTimer );
+    LUA_REGISTER( L, resetTimer );
     LUA_REGISTER( L, isTimer );
+    LUA_REGISTER( L, getTimers );
+    LUA_REGISTER( L, getTimerDetails );
     LUA_REGISTER( L, print );
 
     LUA_REGISTER( L, getDistance2D );
     LUA_REGISTER( L, getDistance3D );
+
+    LUA_REGISTER( L, getResources );
 
 #if 0
     // JSON funcs
@@ -403,6 +408,8 @@ static void LoadCFunctions( lua_State *L )
     lua_register( m_lua, "md5", Md5 );
     lua_register( m_lua, "getVersion", LuaFunctionDefs::GetVersion );
 #endif
+
+    return 0;
 }
 
 void LuaManager::Init( LuaMain *lua )
@@ -411,15 +418,33 @@ void LuaManager::Init( LuaMain *lua )
     ILuaState& api = lua_getstateapi( thread );
     api.SetMainThread( true );
 
+    // Adjust for custom environment, so that resources do not collide
+    lua_newenvironment( thread );
+
+    // Prevent too long runtime
+    lua_sethook( thread, ::InstructionCountHook, LUA_MASKCOUNT, HOOK_INSTRUCTION_COUNT );
+
     // We need threads for every environment
     lua->m_lua = thread;
 
-    // Create the hyperstructure
-    lua_newtable( thread );
+    // Prepare special globals
+    m_resMan->PushStack( thread );
+    lua_setfield( thread, LUA_GLOBALSINDEX, "root" );
 
-    // Load our functions into the VM
-    LoadCFunctions( thread );
+    // Setup libraries
+    luaopen_base( thread );
+    luaopen_math( thread );
+    luaopen_string( thread );
+    luaopen_table( thread );
+#ifdef _DEBUG
+    luaopen_debug( thread ); // WARNING: CREATE OUR OWN DEBUG LIB!!!
+#endif
+    luaopen_class( thread );
 
+    // Load our functions into the hyperstructure
+    LoadCFunctions( lua );
+
+#if 0
     // Setup the resource class
     lua_pushcclosure( thread, luamain_constructor, 0 );
     lua_newclass( thread );
@@ -439,6 +464,7 @@ void LuaManager::Init( LuaMain *lua )
     lua_pushlstring( m_lua, lua->GetName().c_str(), lua->GetName().size() );
     lua_xmove( thread, m_lua, 1 );
     lua_settable( m_lua, LUA_GLOBALSINDEX );
+#endif
 
     // Reference the manager and the context
     lua_pushlightuserdata( thread, lua );
@@ -494,11 +520,6 @@ void LuaManager::DoPulse()
 
     for ( iter = IterBegin(); iter != IterEnd(); iter++ )
         (*iter)->DoPulse();
-}
-
-void LuaManager::ResetInstructionCount()
-{
-    m_functionEnter = GetTickCount();
 }
 
 #ifndef _KILLFRENZY

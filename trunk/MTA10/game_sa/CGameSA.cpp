@@ -411,6 +411,20 @@ void CGameSA::OnFrame()
     case GS_PLAYING_GAME:
         // Update local player's control
         GetPadManager()->UpdateLocalJoypad( *m_pPlayerInfo->GetPlayerPed() );
+
+        // Pulse the peds
+        unsigned int n;
+
+        for ( n=0; n<MAX_PEDS; n++ )
+        {
+            CPedSAInterface *ped = (*ppPedPool)->Get( n );
+
+            if ( !ped )
+                continue;
+
+            ped->OnFrame();
+        }
+
         break;
     }
 }

@@ -638,6 +638,24 @@ private:
     lua_State*      m_thread;
 };
 
+struct lua_Debug {
+  int event;
+  const char *name;	/* (n) */
+  const char *namewhat;	/* (n) `global', `local', `field', `method' */
+  const char *what;	/* (S) `Lua', `C', `main', `tail' */
+  const char *source;	/* (S) */
+  int currentline;	/* (l) */
+  int nups;		/* (u) number of upvalues */
+  int linedefined;	/* (S) */
+  int lastlinedefined;	/* (S) */
+  char short_src[LUA_IDSIZE]; /* (S) */
+  /* private part */
+  int i_ci;  /* active function */
+};
+
+LUA_API int lua_getstack (lua_State *L, int level, lua_Debug *ar);
+LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar);
+
 // Added special exception management (The_GTA)
 class lua_exception : public std::exception
 {
@@ -646,6 +664,29 @@ public:
     {
         m_status = status;
         m_thread = L;
+
+        if ( !lua_getstack( L, 0, &m_debug ) )
+            return;
+
+        lua_getinfo( L, "nlS", &m_debug );
+
+        if ( m_debug.currentline != -1 )
+            return;
+
+        // Script debug has higher priority, scan for it
+        unsigned int n = 1;
+        lua_Debug debug;
+
+        while ( lua_getstack( L, n++, &debug ) )
+        {
+            lua_getinfo( L, "nlS", &debug );
+
+            if ( debug.currentline == -1 )
+                continue;
+
+            m_debug = debug;
+            break;
+        }
     }
 
     unsigned int status() const
@@ -658,9 +699,15 @@ public:
         return m_thread;
     }
 
+    void getDebug( lua_Debug& debug )
+    {
+        debug = m_debug;
+    }
+
 private:
     unsigned int        m_status;
-    lua_State*   m_thread;
+    lua_State*          m_thread;
+    lua_Debug           m_debug;
 };
 
 #define LUAI_THROW(L,c)	throw lua_exception( L, (c)->status, "internal lua error" )
@@ -689,7 +736,8 @@ public:
 
     virtual void    PushMethod( lua_State *L, const char *key ) = 0;
 
-    virtual void    SetTransmit( int type ) = 0;
+    virtual void    SetTransmit( int type, void *entity ) = 0;
+    virtual bool    GetTransmit( int type, void*& entity ) = 0;
     virtual int     GetTransmit() = 0;
     virtual bool    IsTransmit( int type ) = 0;
 

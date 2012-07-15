@@ -193,16 +193,12 @@ inline float GetOffsetDegrees ( float a, float b )
     return c;
 }
 
-
-bool            DoesFileExist               ( const char* szFilename );
-
 // Misc utility functions
 char*           ReplaceAnyStringOccurrence  ( char* szBuffer, const char* szWhat, const char* szWith, size_t sizeMax );
 unsigned int    StripUnwantedCharacters     ( char* szText, unsigned char cReplace = ' ' );
 unsigned int    StripControlCodes           ( char* szText, unsigned char cReplace = ' ' );
 bool            IsWantedCharacter           ( unsigned char c );
 bool            IsControlCode               ( unsigned char c );
-bool            IsValidFilePath             ( const char* szDir );
 void            ReplaceOccurrencesInString  ( std::string &s, const char *a, const char *b );
 
 void            RaiseFatalError             ( unsigned int uiCode );
@@ -238,7 +234,7 @@ enum eEulerRotationOrder
     EULER_INVALID = 0xFF,
 };
 
-eEulerRotationOrder EulerRotationOrderFromString(const char* szString);
+eEulerRotationOrder EulerRotationOrderFromString( const char* szString );
 CVector             ConvertEulerRotationOrder   ( const CVector& a_vRotation, eEulerRotationOrder a_eSrcOrder, eEulerRotationOrder a_eDstOrder );
 
 // for debug

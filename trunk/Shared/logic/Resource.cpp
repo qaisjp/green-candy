@@ -12,16 +12,75 @@
 
 #include <StdInc.h>
 
-Resource::Resource( unsigned short id, const filePath& name, CFileTranslator& root ) : m_fileRoot( root )
+static int resource_getName( lua_State *L )
 {
-    m_id = id;
+    Resource& res = *(Resource*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+    const filePath& name = res.GetName();
+
+    lua_pushlstring( L, name.c_str(), name.size() );
+    return 1;
+}
+
+static int resource_destroy( lua_State *L )
+{
+    delete (Resource*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    return 0;
+}
+
+static const luaL_Reg resource_interface[] =
+{
+    { "getName", resource_getName },
+    { "destroy", resource_destroy },
+    { NULL, NULL }
+};
+
+static int luaconstructor_resource( lua_State *L )
+{
+    Resource *res = (Resource*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_RESOURCE, res );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, resource_interface, 1 );
+
+    lua_pushlstring( L, "resource", 8 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+static inline int _trefget( lua_State *L, Resource& res )
+{
+    lua_pushlightuserdata( L, &res );
+    lua_pushcclosure( L, luaconstructor_resource, 1 );
+    lua_newclass( L );
+    return luaL_ref( L, LUA_REGISTRYINDEX );
+}
+
+Resource::Resource( LuaMain& main, const filePath& name, CFileTranslator& root ) : LuaClass( *main, _trefget( *main, *this ) ), m_fileRoot( root ), m_lua( main )
+{
     m_name = name;
     m_active = false;
-    m_lua = NULL;
+
+    // The Lua hyperstructure should assign us
+    main.m_resource = this;
+
+    // Register itself to the Lua environment
+    lua_State *L = *main;
+
+    PushStack( L );
+    lua_setfield( L, LUA_GLOBALSINDEX, "resource" );
 }
 
 Resource::~Resource()
 {
+}
+
+bool Resource::GetFullMetaPath( const char *path, filePath& absPath )
+{
+    return m_fileRoot.GetFullPath( path, true, absPath );
 }
 
 CFile* Resource::OpenStream( const char *path, const char *mode )

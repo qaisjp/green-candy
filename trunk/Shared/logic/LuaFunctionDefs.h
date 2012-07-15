@@ -51,6 +51,10 @@ static inline void luaL_checktyperange( lua_State *L, int idx, int t, int r )
 
 namespace LuaFunctionDefs
 {
+    extern ScriptDebugging *debug;
+    extern RegisteredCommands *cmds;
+    extern ResourceManager *resManager;
+
     void SetResourceManager( ResourceManager& man );
     void SetRegisteredCommands( RegisteredCommands& cmds );
     void SetDebugging( ScriptDebugging& debug );

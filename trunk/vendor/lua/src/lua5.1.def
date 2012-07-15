@@ -33,6 +33,7 @@ EXPORTS
   lua_load
   lua_next
   lua_pcall
+  lua_pcallex
   lua_pushthread
   lua_setfenv
   lua_setmetatable
@@ -55,6 +56,7 @@ EXPORTS
   lua_tothread
   lua_newstate
   lua_newthread
+  lua_newenvironment
   lua_objlen
   lua_touserdata
   lua_close

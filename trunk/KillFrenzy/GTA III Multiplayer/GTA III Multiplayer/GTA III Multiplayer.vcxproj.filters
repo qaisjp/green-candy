@@ -34,6 +34,12 @@
     <Filter Include="game\Include">
       <UniqueIdentifier>{38b8cdb8-038a-4ab7-a953-21d28069e6bd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="mta_green\luadefs">
+      <UniqueIdentifier>{d2b51542-28d5-42c2-94c2-0c5f3c4e46ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mta_green\luadefs\include">
+      <UniqueIdentifier>{53cf618f-a60a-498e-9b18-e93919e5055b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="console.h">
@@ -144,9 +150,6 @@
     <ClInclude Include="..\..\..\Shared\logic\LuaCFunctions.h">
       <Filter>mta_green\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Shared\logic\LuaFunctionDefs.h">
-      <Filter>mta_green\include</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\lua_interpret\luafilesystem.h">
       <Filter>lua\include</Filter>
     </ClInclude>
@@ -200,6 +203,15 @@
     </ClInclude>
     <ClInclude Include="lua\luaplayer.h">
       <Filter>lua\include</Filter>
+    </ClInclude>
+    <ClInclude Include="derived\CResource.h">
+      <Filter>derived\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaFunctionDefs.h">
+      <Filter>mta_green\luadefs\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaFunctionDefs.Resources.h">
+      <Filter>mta_green\luadefs\include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -257,9 +269,6 @@
     <ClCompile Include="..\..\..\Shared\logic\LuaCFunctions.cpp">
       <Filter>mta_green</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.cpp">
-      <Filter>mta_green</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\lua_interpret\luafilesystem.cpp">
       <Filter>lua</Filter>
     </ClCompile>
@@ -307,6 +316,15 @@
     </ClCompile>
     <ClCompile Include="lua\luaplayer.cpp">
       <Filter>lua</Filter>
+    </ClCompile>
+    <ClCompile Include="derived\CResource.cpp">
+      <Filter>derived</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.cpp">
+      <Filter>mta_green\luadefs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.Resources.cpp">
+      <Filter>mta_green\luadefs</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

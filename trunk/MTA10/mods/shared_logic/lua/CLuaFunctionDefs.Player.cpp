@@ -20,518 +20,508 @@
 
 #include "StdInc.h"
 
-int CLuaFunctionDefs::GetLocalPlayer ( lua_State* luaVM )
+namespace CLuaFunctionDefs
 {
-    CClientPlayer* pPlayer = CStaticFunctionDefinitions::GetLocalPlayer ();
-
-    // Return the local player
-    lua_pushelement ( luaVM, pPlayer );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetPlayerName ( lua_State* luaVM )
-{
-//  string getPlayerName ( player thePlayer )
-    CClientPlayer* pPlayer;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadUserData ( pPlayer );
-
-    if ( !argStream.HasErrors () )
+    LUA_DECLARE( getLocalPlayer )
     {
-        // Grab his nametag text and return it
-        const char* szName = pPlayer->GetNick ();
-        if ( szName )
-        {
-            lua_pushstring ( luaVM, szName );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "getPlayerName", *argStream.GetErrorMessage () ) );
+        CClientPlayer* pPlayer = CStaticFunctionDefinitions::GetLocalPlayer ();
 
-    // Error
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetPlayerFromName ( lua_State* luaVM )
-{
-//  player getPlayerFromName ( string playerName )
-    SString strNick;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadString ( strNick );
-
-    if ( !argStream.HasErrors () )
-    {
-        // Grab the player with that nick
-        CClientPlayer* pPlayer = CStaticFunctionDefinitions::GetPlayerFromName ( strNick );
-        if ( pPlayer )
-        {
-            // Return the player
-            lua_pushelement ( luaVM, pPlayer );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "getPlayerFromName", *argStream.GetErrorMessage () ) );
-
-    // Doesn't exist
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetPlayerNametagText ( lua_State* luaVM )
-{
-//  string getPlayerNametagText ( player thePlayer )
-    CClientPlayer* pPlayer;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadUserData ( pPlayer );
-
-    if ( !argStream.HasErrors () )
-    {
-        // Grab his nametag text and return it
-        const char* szName = pPlayer->GetNametagText ();
-        if ( szName )
-        {
-            lua_pushstring ( luaVM, szName );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "getPlayerNametagText", *argStream.GetErrorMessage () ) );
-
-    // Failed
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetPlayerNametagColor ( lua_State* luaVM )
-{
-//  int, int, int getPlayerNametagColor ( player thePlayer )
-    CClientPlayer* pPlayer;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadUserData ( pPlayer );
-
-    if ( !argStream.HasErrors () )
-    {
-        // Grab his nametag color and return it
-        unsigned char ucR, ucG, ucB;
-        pPlayer->GetNametagColor ( ucR, ucG, ucB );
-
-        lua_pushnumber ( luaVM, ucR );
-        lua_pushnumber ( luaVM, ucG );
-        lua_pushnumber ( luaVM, ucB );
-        return 3;
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "getPlayerNametagColor", *argStream.GetErrorMessage () ) );
-
-    // Failed
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::IsPlayerNametagShowing ( lua_State* luaVM )
-{
-//  bool isPlayerNametagShowing ( player thePlayer )
-    CClientPlayer* pPlayer;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadUserData ( pPlayer );
-
-    if ( !argStream.HasErrors () )
-    {
-        bool bIsNametagShowing = pPlayer->IsNametagShowing ();
-        lua_pushboolean ( luaVM, bIsNametagShowing );
+        // Return the local player
+        lua_pushelement ( L, pPlayer );
         return 1;
     }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "isPlayerNametagShowing", *argStream.GetErrorMessage () ) );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetPlayerPing ( lua_State* luaVM )
-{
-//  int getPlayerPing ( player thePlayer )
-    CClientPlayer* pPlayer;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadUserData ( pPlayer );
-
-    if ( !argStream.HasErrors () )
+    LUA_DECLARE( getPlayerName )
     {
-        // Grab his ping
-        unsigned int uiPing = pPlayer->GetPing ();
-        lua_pushnumber ( luaVM, uiPing );
-        return 1;
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "getPlayerPing", *argStream.GetErrorMessage () ) );
+    //  string getPlayerName ( player thePlayer )
+        CClientPlayer* pPlayer;
 
-    // Failed
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetPlayerTeam ( lua_State* luaVM )
-{
-//  team getPlayerTeam ( player thePlayer )
-    CClientPlayer* pPlayer;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadUserData ( pPlayer );
-
-    if ( !argStream.HasErrors () )
-    {
-        // Grab his team and return it
-        CClientTeam* pTeam = pPlayer->GetTeam ();
-        if ( pTeam )
-        {
-            lua_pushelement ( luaVM, pTeam );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "getPlayerTeam", *argStream.GetErrorMessage () ) );
-
-    // Failed
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::IsPlayerDead ( lua_State* luaVM )
-{
-//  bool isPlayerDead ( player thePlayer )
-    CClientPlayer* pPlayer;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadUserData ( pPlayer );
-
-    if ( !argStream.HasErrors () )
-    {
-        // Grab his dead state and return it
-        bool bDead = pPlayer->IsDead ();
-        lua_pushboolean ( luaVM, bDead );
-        return 1;
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "isPlayerDead", *argStream.GetErrorMessage () ) );
-
-    // Failed
-    lua_pushnil ( luaVM );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetPlayerMoney ( lua_State* luaVM )
-{
-    long lMoney;
-    if ( CStaticFunctionDefinitions::GetPlayerMoney ( lMoney ) )
-    {
-        lua_pushnumber ( luaVM, lMoney );
-        return 1;
-    }            
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetPlayerWantedLevel ( lua_State* luaVM )
-{
-    char cWanted;
-    if ( CStaticFunctionDefinitions::GetPlayerWantedLevel ( cWanted ) )
-    {
-        lua_pushnumber ( luaVM, cWanted );
-        return 1;
-    }
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::ShowPlayerHudComponent ( lua_State* luaVM )
-{
-//  bool showPlayerHudComponent ( string component, bool show )
-    eHudComponent component; bool bShow;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadEnumString ( component );
-    argStream.ReadBool ( bShow );
-
-    if ( !argStream.HasErrors () )
-    {
-        if ( CStaticFunctionDefinitions::ShowPlayerHudComponent ( component, bShow ) )
-        {
-            lua_pushboolean ( luaVM, true );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "showPlayerHudComponent", *argStream.GetErrorMessage () ) );
-
-    // Failed
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::SetPlayerMoney ( lua_State* luaVM )
-{
-//  bool setPlayerMoney ( int amount )
-    int lMoney;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadNumber ( lMoney );
-
-    if ( !argStream.HasErrors () )
-    {
-        if ( CStaticFunctionDefinitions::SetPlayerMoney ( lMoney ) )
-        {
-            lua_pushboolean ( luaVM, true );
-            return 1;
-        }        
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "setPlayerMoney", *argStream.GetErrorMessage () ) );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GivePlayerMoney ( lua_State* luaVM )
-{
-//  bool givePlayerMoney ( int amount )
-    int lMoney;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadNumber ( lMoney );
-
-    if ( !argStream.HasErrors () )
-    {
-        if ( CStaticFunctionDefinitions::GivePlayerMoney ( lMoney ) )
-        {
-            lua_pushboolean ( luaVM, true );
-            return 1;
-        }        
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "givePlayerMoney", *argStream.GetErrorMessage () ) );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::TakePlayerMoney ( lua_State* luaVM )
-{
-//  bool takePlayerMoney ( int amount )
-    int lMoney;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadNumber ( lMoney );
-
-    if ( !argStream.HasErrors () )
-    {
-        if ( CStaticFunctionDefinitions::TakePlayerMoney ( lMoney ) )
-        {
-            lua_pushboolean ( luaVM, true );
-            return 1;
-        }        
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "takePlayerMoney", *argStream.GetErrorMessage () ) );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::SetPlayerNametagText ( lua_State* luaVM )
-{
-//  bool setPlayerNametagText ( player thePlayer, string text )
-    CClientEntity* pPlayer; SString strText;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadUserData ( pPlayer );
-    argStream.ReadString ( strText );
-
-    if ( !argStream.HasErrors () )
-    {
-        if ( CStaticFunctionDefinitions::SetPlayerNametagText ( *pPlayer, strText ) )
-        {
-            lua_pushboolean ( luaVM, true );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "setPlayerNametagText", *argStream.GetErrorMessage () ) );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::SetPlayerNametagColor ( lua_State* luaVM )
-{
-    CScriptArgReader argStream ( luaVM );
-    if ( !argStream.NextIsBool ( 1 ) )
-    {
-        // Call type 1
-        //  bool setPlayerNametagColor ( player thePlayer, int r, int g, int b )
-        CClientEntity* pPlayer; int iR; int iG; int iB;
-
+        CScriptArgReader argStream ( L );
         argStream.ReadUserData ( pPlayer );
-        argStream.ReadNumber ( iR );
-        argStream.ReadNumber ( iG );
-        argStream.ReadNumber ( iB );
 
         if ( !argStream.HasErrors () )
         {
-            if ( CStaticFunctionDefinitions::SetPlayerNametagColor ( *pPlayer, false, iR, iG, iB ) )
+            // Grab his nametag text and return it
+            const char* szName = pPlayer->GetNick ();
+            if ( szName )
             {
-                lua_pushboolean ( luaVM, true );
+                lua_pushstring ( L, szName );
                 return 1;
             }
         }
-    }
-    else
-    {
-        // Call type 2
-        //  bool setPlayerNametagColor ( player thePlayer, false )
-        CClientEntity* pPlayer; bool bFalse;
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "getPlayerName", *argStream.GetErrorMessage () ) );
 
-        argStream.ReadUserData ( pPlayer );
-        argStream.ReadBool ( bFalse );
+        // Error
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getPlayerFromName )
+    {
+    //  player getPlayerFromName ( string playerName )
+        SString strNick;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadString ( strNick );
 
         if ( !argStream.HasErrors () )
         {
-            if ( bFalse == false )
+            // Grab the player with that nick
+            CClientPlayer* pPlayer = CStaticFunctionDefinitions::GetPlayerFromName ( strNick );
+            if ( pPlayer )
             {
-                if ( CStaticFunctionDefinitions::SetPlayerNametagColor ( *pPlayer, true, 255, 255, 255 ) )
+                // Return the player
+                lua_pushelement ( L, pPlayer );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "getPlayerFromName", *argStream.GetErrorMessage () ) );
+
+        // Doesn't exist
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getPlayerNametagText )
+    {
+    //  string getPlayerNametagText ( player thePlayer )
+        CClientPlayer* pPlayer;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadUserData ( pPlayer );
+
+        if ( !argStream.HasErrors () )
+        {
+            // Grab his nametag text and return it
+            const char* szName = pPlayer->GetNametagText ();
+            if ( szName )
+            {
+                lua_pushstring ( L, szName );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "getPlayerNametagText", *argStream.GetErrorMessage () ) );
+
+        // Failed
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getPlayerNametagColor )
+    {
+    //  int, int, int getPlayerNametagColor ( player thePlayer )
+        CClientPlayer* pPlayer;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadUserData ( pPlayer );
+
+        if ( !argStream.HasErrors () )
+        {
+            // Grab his nametag color and return it
+            unsigned char ucR, ucG, ucB;
+            pPlayer->GetNametagColor ( ucR, ucG, ucB );
+
+            lua_pushnumber ( L, ucR );
+            lua_pushnumber ( L, ucG );
+            lua_pushnumber ( L, ucB );
+            return 3;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "getPlayerNametagColor", *argStream.GetErrorMessage () ) );
+
+        // Failed
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( isPlayerNametagShowing )
+    {
+    //  bool isPlayerNametagShowing ( player thePlayer )
+        CClientPlayer* pPlayer;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadUserData ( pPlayer );
+
+        if ( !argStream.HasErrors () )
+        {
+            bool bIsNametagShowing = pPlayer->IsNametagShowing ();
+            lua_pushboolean ( L, bIsNametagShowing );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "isPlayerNametagShowing", *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getPlayerPing )
+    {
+    //  int getPlayerPing ( player thePlayer )
+        CClientPlayer* pPlayer;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadUserData ( pPlayer );
+
+        if ( !argStream.HasErrors () )
+        {
+            // Grab his ping
+            unsigned int uiPing = pPlayer->GetPing ();
+            lua_pushnumber ( L, uiPing );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "getPlayerPing", *argStream.GetErrorMessage () ) );
+
+        // Failed
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getPlayerTeam )
+    {
+    //  team getPlayerTeam ( player thePlayer )
+        CClientPlayer* pPlayer;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadUserData ( pPlayer );
+
+        if ( !argStream.HasErrors () )
+        {
+            // Grab his team and return it
+            CClientTeam* pTeam = pPlayer->GetTeam ();
+            if ( pTeam )
+            {
+                lua_pushelement ( L, pTeam );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "getPlayerTeam", *argStream.GetErrorMessage () ) );
+
+        // Failed
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( isPlayerDead )
+    {
+    //  bool isPlayerDead ( player thePlayer )
+        CClientPlayer* pPlayer;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadUserData ( pPlayer );
+
+        if ( !argStream.HasErrors () )
+        {
+            // Grab his dead state and return it
+            bool bDead = pPlayer->IsDead ();
+            lua_pushboolean ( L, bDead );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "isPlayerDead", *argStream.GetErrorMessage () ) );
+
+        // Failed
+        lua_pushnil ( L );
+        return 1;
+    }
+
+    LUA_DECLARE( getPlayerMoney )
+    {
+        long lMoney;
+        if ( CStaticFunctionDefinitions::GetPlayerMoney ( lMoney ) )
+        {
+            lua_pushnumber ( L, lMoney );
+            return 1;
+        }            
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getPlayerWantedLevel )
+    {
+        char cWanted;
+        if ( CStaticFunctionDefinitions::GetPlayerWantedLevel ( cWanted ) )
+        {
+            lua_pushnumber ( L, cWanted );
+            return 1;
+        }
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( showPlayerHudComponent )
+    {
+    //  bool showPlayerHudComponent ( string component, bool show )
+        eHudComponent component; bool bShow;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadEnumString ( component );
+        argStream.ReadBool ( bShow );
+
+        if ( !argStream.HasErrors () )
+        {
+            if ( CStaticFunctionDefinitions::ShowPlayerHudComponent ( component, bShow ) )
+            {
+                lua_pushboolean ( L, true );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "showPlayerHudComponent", *argStream.GetErrorMessage () ) );
+
+        // Failed
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( setPlayerMoney )
+    {
+    //  bool setPlayerMoney ( int amount )
+        int lMoney;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadNumber ( lMoney );
+
+        if ( !argStream.HasErrors () )
+        {
+            if ( CStaticFunctionDefinitions::SetPlayerMoney ( lMoney ) )
+            {
+                lua_pushboolean ( L, true );
+                return 1;
+            }        
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "setPlayerMoney", *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( givePlayerMoney )
+    {
+    //  bool givePlayerMoney ( int amount )
+        int lMoney;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadNumber ( lMoney );
+
+        if ( !argStream.HasErrors () )
+        {
+            if ( CStaticFunctionDefinitions::GivePlayerMoney ( lMoney ) )
+            {
+                lua_pushboolean ( L, true );
+                return 1;
+            }        
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "givePlayerMoney", *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( takePlayerMoney )
+    {
+    //  bool takePlayerMoney ( int amount )
+        int lMoney;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadNumber ( lMoney );
+
+        if ( !argStream.HasErrors () )
+        {
+            if ( CStaticFunctionDefinitions::TakePlayerMoney ( lMoney ) )
+            {
+                lua_pushboolean ( L, true );
+                return 1;
+            }        
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "takePlayerMoney", *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( setPlayerNametagText )
+    {
+    //  bool setPlayerNametagText ( player thePlayer, string text )
+        CClientEntity* pPlayer; SString strText;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadUserData ( pPlayer );
+        argStream.ReadString ( strText );
+
+        if ( !argStream.HasErrors () )
+        {
+            if ( CStaticFunctionDefinitions::SetPlayerNametagText ( *pPlayer, strText ) )
+            {
+                lua_pushboolean ( L, true );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "setPlayerNametagText", *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( setPlayerNametagColor )
+    {
+        CScriptArgReader argStream ( L );
+        if ( !argStream.NextIsBool ( 1 ) )
+        {
+            // Call type 1
+            //  bool setPlayerNametagColor ( player thePlayer, int r, int g, int b )
+            CClientEntity* pPlayer; int iR; int iG; int iB;
+
+            argStream.ReadUserData ( pPlayer );
+            argStream.ReadNumber ( iR );
+            argStream.ReadNumber ( iG );
+            argStream.ReadNumber ( iB );
+
+            if ( !argStream.HasErrors () )
+            {
+                if ( CStaticFunctionDefinitions::SetPlayerNametagColor ( *pPlayer, false, iR, iG, iB ) )
                 {
-                    lua_pushboolean ( luaVM, true );
+                    lua_pushboolean ( L, true );
                     return 1;
                 }
             }
         }
+        else
+        {
+            // Call type 2
+            //  bool setPlayerNametagColor ( player thePlayer, false )
+            CClientEntity* pPlayer; bool bFalse;
+
+            argStream.ReadUserData ( pPlayer );
+            argStream.ReadBool ( bFalse );
+
+            if ( !argStream.HasErrors () )
+            {
+                if ( bFalse == false )
+                {
+                    if ( CStaticFunctionDefinitions::SetPlayerNametagColor ( *pPlayer, true, 255, 255, 255 ) )
+                    {
+                        lua_pushboolean ( L, true );
+                        return 1;
+                    }
+                }
+            }
+        }
+
+        if ( argStream.HasErrors () )
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "setPlayerNametagColor", *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
 
-    if ( argStream.HasErrors () )
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "setPlayerNametagColor", *argStream.GetErrorMessage () ) );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::SetPlayerNametagShowing ( lua_State* luaVM )
-{
-//  bool setPlayerNametagShowing ( player thePlayer, bool showing )
-    CClientEntity* pPlayer; bool bShowing;
-
-    CScriptArgReader argStream ( luaVM );
-    argStream.ReadUserData ( pPlayer );
-    argStream.ReadBool ( bShowing );
-
-    if ( !argStream.HasErrors () )
+    LUA_DECLARE( setPlayerNametagShowing )
     {
-        // Set the new rotation
-        if ( CStaticFunctionDefinitions::SetPlayerNametagShowing ( *pPlayer, bShowing ) )
+    //  bool setPlayerNametagShowing ( player thePlayer, bool showing )
+        CClientEntity* pPlayer; bool bShowing;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadUserData ( pPlayer );
+        argStream.ReadBool ( bShowing );
+
+        if ( !argStream.HasErrors () )
         {
-            lua_pushboolean ( luaVM, true );
+            // Set the new rotation
+            if ( CStaticFunctionDefinitions::SetPlayerNametagShowing ( *pPlayer, bShowing ) )
+            {
+                lua_pushboolean ( L, true );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "setPlayerNametagShowing", *argStream.GetErrorMessage () ) );
+
+        // Failed
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    // Community
+    LUA_DECLARE( getPlayerUserName )
+    {
+        std::string strUser;
+
+        g_pCore->GetCommunity ()->GetUsername ( strUser );
+        if ( !strUser.empty () )
+        {
+            lua_pushstring ( L, strUser.c_str () );
             return 1;
         }
-    }
-    else
-        m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "setPlayerNametagShowing", *argStream.GetErrorMessage () ) );
-
-    // Failed
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-// Community
-
-int CLuaFunctionDefs::GetPlayerUserName ( lua_State* luaVM )
-{
-    std::string strUser;
-
-    g_pCore->GetCommunity ()->GetUsername ( strUser );
-    if ( !strUser.empty () )
-    {
-        lua_pushstring ( luaVM, strUser.c_str () );
-        return 1;
-    }
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetPlayerSerial ( lua_State* luaVM )
-{
-    char szSerial [ 64 ];
-    g_pCore->GetNetwork ()->GetSerial ( szSerial, sizeof ( szSerial ) );
-
-    if ( szSerial )
-    {
-        lua_pushstring ( luaVM, szSerial );
+        lua_pushboolean ( L, false );
         return 1;
     }
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-// Player Map
-
-int CLuaFunctionDefs::IsPlayerMapForced ( lua_State* luaVM )
-{    
-    bool bForced;
-    if ( CStaticFunctionDefinitions::IsPlayerMapForced ( bForced ) )
+    LUA_DECLARE( getPlayerSerial )
     {
-        lua_pushboolean ( luaVM, bForced );
+        char szSerial [ 64 ];
+        g_pCore->GetNetwork ()->GetSerial ( szSerial, sizeof ( szSerial ) );
+
+        if ( szSerial )
+        {
+            lua_pushstring ( L, szSerial );
+            return 1;
+        }
+
+        lua_pushboolean ( L, false );
         return 1;
-    }    
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::IsPlayerMapVisible ( lua_State* luaVM )
-{    
-    bool bForced;
-    if ( CStaticFunctionDefinitions::IsPlayerMapVisible ( bForced ) )
-    {
-        lua_pushboolean ( luaVM, bForced );
-        return 1;
-    }    
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetPlayerMapBoundingBox ( lua_State* luaVM )
-{    
-    // Grab the bounding box and return it
-    CVector vecMin, vecMax;
-    if ( CStaticFunctionDefinitions::GetPlayerMapBoundingBox ( vecMin, vecMax ) )
-    {
-        lua_pushnumber ( luaVM, vecMin.fX );
-        lua_pushnumber ( luaVM, vecMin.fY );
-        lua_pushnumber ( luaVM, vecMax.fX );
-        lua_pushnumber ( luaVM, vecMax.fY );
-        return 4;
     }
-    //The map is invisible
-    lua_pushboolean ( luaVM, false );
-    return 1;
+
+    // Player Map
+    LUA_DECLARE( isPlayerMapForced )
+    {    
+        bool bForced;
+        if ( CStaticFunctionDefinitions::IsPlayerMapForced ( bForced ) )
+        {
+            lua_pushboolean ( L, bForced );
+            return 1;
+        }    
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( isPlayerMapVisible )
+    {    
+        bool bForced;
+        if ( CStaticFunctionDefinitions::IsPlayerMapVisible ( bForced ) )
+        {
+            lua_pushboolean ( L, bForced );
+            return 1;
+        }    
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getPlayerMapBoundingBox )
+    {    
+        // Grab the bounding box and return it
+        CVector vecMin, vecMax;
+        if ( CStaticFunctionDefinitions::GetPlayerMapBoundingBox ( vecMin, vecMax ) )
+        {
+            lua_pushnumber ( L, vecMin.fX );
+            lua_pushnumber ( L, vecMin.fY );
+            lua_pushnumber ( L, vecMax.fX );
+            lua_pushnumber ( L, vecMax.fY );
+            return 4;
+        }
+        //The map is invisible
+        lua_pushboolean ( L, false );
+        return 1;
+    }
 }

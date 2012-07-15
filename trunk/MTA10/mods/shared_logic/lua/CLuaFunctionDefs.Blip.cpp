@@ -94,30 +94,23 @@ namespace CLuaFunctionDefs
                 }
             }
 
-            CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( L );
-            if ( pLuaMain )
+            CLuaMain* pLuaMain = lua_readcontext( L );
+            CResource* pResource = pLuaMain->GetResource ();
+            CClientRadarMarker* pMarker = CStaticFunctionDefinitions::CreateBlip ( *pResource, vecPosition, ucIcon, ucSize, color, sOrdering, usVisibleDistance );
+            if ( pMarker )
             {
-                CResource* pResource = pLuaMain->GetResource ();
-                if ( pResource )
+                CElementGroup * pGroup = pResource->GetElementGroup();
+                if ( pGroup )
                 {
-                    // Create the blip
-                    CClientRadarMarker* pMarker = CStaticFunctionDefinitions::CreateBlip ( *pResource, vecPosition, ucIcon, ucSize, color, sOrdering, usVisibleDistance );
-                    if ( pMarker )
-                    {
-                        CElementGroup * pGroup = pResource->GetElementGroup();
-                        if ( pGroup )
-                        {
-                            pGroup->Add ( pMarker );
-                        }
-
-                        lua_pushelement ( L, pMarker );
-                        return 1;
-                    }
+                    pGroup->Add ( pMarker );
                 }
+
+                lua_pushelement ( L, pMarker );
+                return 1;
             }
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "createBlip" );
+            m_pScriptDebugging->LogBadType( "createBlip" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -188,32 +181,27 @@ namespace CLuaFunctionDefs
                     }
                 }
 
-                CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( L );
-                if ( pLuaMain )
+                CLuaMain* pLuaMain = lua_readcontext( L );
+                CResource* pResource = pLuaMain->GetResource ();
+
+                // Create the blip
+                CClientRadarMarker* pMarker = CStaticFunctionDefinitions::CreateBlipAttachedTo ( *pResource, *pEntity, ucIcon, ucSize, color, sOrdering, usVisibleDistance );
+                if ( pMarker )
                 {
-                    CResource* pResource = pLuaMain->GetResource ();
-                    if ( pResource )
+                    CElementGroup * pGroup = pResource->GetElementGroup();
+                    if ( pGroup )
                     {
-                        // Create the blip
-                        CClientRadarMarker* pMarker = CStaticFunctionDefinitions::CreateBlipAttachedTo ( *pResource, *pEntity, ucIcon, ucSize, color, sOrdering, usVisibleDistance );
-                        if ( pMarker )
-                        {
-                            CElementGroup * pGroup = pResource->GetElementGroup();
-                            if ( pGroup )
-                            {
-                                pGroup->Add ( pMarker );
-                            }
-                            lua_pushelement ( L, pMarker );
-                            return 1;
-                        }
+                        pGroup->Add ( pMarker );
                     }
+                    lua_pushelement ( L, pMarker );
+                    return 1;
                 }
             }
             else
-                m_pScriptDebugging->LogBadPointer ( L, "createBlipAttachedTo", "element", 1 );
+                m_pScriptDebugging->LogBadPointer( "createBlipAttachedTo", "element", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "createBlipAttachedTo" );
+            m_pScriptDebugging->LogBadType( "createBlipAttachedTo" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -231,10 +219,10 @@ namespace CLuaFunctionDefs
                 return 1;
             }
             else
-                m_pScriptDebugging->LogBadPointer ( L, "getBlipIcon", "blip", 1 );
+                m_pScriptDebugging->LogBadPointer( "getBlipIcon", "blip", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "getBlipIcon" );
+            m_pScriptDebugging->LogBadType( "getBlipIcon" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -252,10 +240,10 @@ namespace CLuaFunctionDefs
                 return 1;
             }
             else
-                m_pScriptDebugging->LogBadPointer ( L, "getBlipSize", "blip", 1 );
+                m_pScriptDebugging->LogBadPointer( "getBlipSize", "blip", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "getBlipSize" );
+            m_pScriptDebugging->LogBadType( "getBlipSize" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -276,10 +264,10 @@ namespace CLuaFunctionDefs
                 return 4;
             }
             else
-                m_pScriptDebugging->LogBadPointer ( L, "getBlipColor", "blip", 1 );
+                m_pScriptDebugging->LogBadPointer( "getBlipColor", "blip", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "getBlipColor" );
+            m_pScriptDebugging->LogBadType( "getBlipColor" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -297,10 +285,10 @@ namespace CLuaFunctionDefs
                 return 1;
             }
             else
-                m_pScriptDebugging->LogBadPointer ( L, "getBlipOrdering", "blip", 1 );
+                m_pScriptDebugging->LogBadPointer( "getBlipOrdering", "blip", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "getBlipOrdering" );
+            m_pScriptDebugging->LogBadType( "getBlipOrdering" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -318,10 +306,10 @@ namespace CLuaFunctionDefs
                 return 1;
             }
             else
-                m_pScriptDebugging->LogBadPointer ( L, "getBlipVisibleDistance", "blip", 1 );
+                m_pScriptDebugging->LogBadPointer( "getBlipVisibleDistance", "blip", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "getBlipVisibleDistance" );
+            m_pScriptDebugging->LogBadType( "getBlipVisibleDistance" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -345,10 +333,10 @@ namespace CLuaFunctionDefs
                 }
             }
             else
-                m_pScriptDebugging->LogBadPointer ( L, "setBlipIcon", "element", 1 );
+                m_pScriptDebugging->LogBadPointer( "setBlipIcon", "element", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "setBlipIcon" );
+            m_pScriptDebugging->LogBadType( "setBlipIcon" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -371,10 +359,10 @@ namespace CLuaFunctionDefs
                 }
             }
             else
-                m_pScriptDebugging->LogBadPointer ( L, "setBlipSize", "element", 1 );
+                m_pScriptDebugging->LogBadPointer( "setBlipSize", "element", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "setBlipSize" );
+            m_pScriptDebugging->LogBadType( "setBlipSize" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -409,10 +397,10 @@ namespace CLuaFunctionDefs
                 }
             }
             else
-                m_pScriptDebugging->LogBadPointer ( L, "setBlipColor", "element", 1 );
+                m_pScriptDebugging->LogBadPointer( "setBlipColor", "element", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "setBlipColor" );
+            m_pScriptDebugging->LogBadType( "setBlipColor" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -437,10 +425,10 @@ namespace CLuaFunctionDefs
                 }
             }
             else
-                m_pScriptDebugging->LogBadPointer ( L, "setBlipOrdering", "element", 1 );
+                m_pScriptDebugging->LogBadPointer( "setBlipOrdering", "element", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "setBlipOrdering" );
+            m_pScriptDebugging->LogBadType( "setBlipOrdering" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -465,10 +453,10 @@ namespace CLuaFunctionDefs
                 }
             }
             else
-                m_pScriptDebugging->LogBadPointer ( L, "setBlipVisibleDistance", "element", 1 );
+                m_pScriptDebugging->LogBadPointer( "setBlipVisibleDistance", "element", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "setBlipVisibleDistance" );
+            m_pScriptDebugging->LogBadType( "setBlipVisibleDistance" );
 
         lua_pushboolean ( L, false );
         return 1;

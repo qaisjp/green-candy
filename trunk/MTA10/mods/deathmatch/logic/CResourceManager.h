@@ -30,6 +30,8 @@ public:
                             ~CResourceManager();
 
     CResource*              Add( unsigned short id, const char *name, CClientEntity *resEntity, CClientEntity *dynamicEntity );
+    void                    Remove( Resource *res );
+    void                    StopAll();
 
     void                    LoadUnavailableResources( CClientEntity *root );
 

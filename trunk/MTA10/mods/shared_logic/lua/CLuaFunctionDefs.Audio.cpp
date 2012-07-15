@@ -27,32 +27,27 @@ namespace CLuaFunctionDefs
         if ( lua_istype ( L, 1, LUA_TSTRING ) )
         {
             SString strSound = lua_tostring ( L, 1 );
-            CLuaMain * luaMain = m_pLuaManager->GetVirtualMachine ( L );
-            if ( luaMain )
+            CLuaMain * luaMain = lua_readcontext( L );
+            CResource* pResource = luaMain->GetResource();
+
+            filePath strFilename;
+            const char *meta;
+            bool bIsURL = !m_pResourceManager->ParseResourceFullPath( (Resource*&)pResource, strSound, meta, strFilename );
+
+            if ( !bIsURL )
+                strSound = strFilename;
+
+            bool bLoop = false;
+            if ( lua_istype ( L, 2, LUA_TBOOLEAN ) )
             {
-                CResource* pResource = luaMain->GetResource();
-                if ( pResource )
-                {
-                    SString strFilename;
-                    bool bIsURL = false;
-                    if ( CResourceManager::ParseResourcePathInput( strSound, pResource, strFilename ) )
-                        strSound = strFilename;
-                    else
-                        bIsURL = true;
+                bLoop = ( lua_toboolean ( L, 2 ) ) ? true : false;
+            }
 
-                    bool bLoop = false;
-                    if ( lua_istype ( L, 2, LUA_TBOOLEAN ) )
-                    {
-                        bLoop = ( lua_toboolean ( L, 2 ) ) ? true : false;
-                    }
-
-                    CClientSound* pSound = CStaticFunctionDefinitions::PlaySound ( pResource, strSound, bIsURL, bLoop );
-                    if ( pSound )
-                    {
-                        lua_pushelement ( L, pSound );
-                        return 1;
-                    }
-                }
+            CClientSound* pSound = CStaticFunctionDefinitions::PlaySound ( pResource, strSound, bIsURL, bLoop );
+            if ( pSound )
+            {
+                lua_pushelement ( L, pSound );
+                return 1;
             }
         }
         lua_pushboolean ( L, false );
@@ -75,32 +70,26 @@ namespace CLuaFunctionDefs
 
             SString strSound = lua_tostring ( L, 1 );
 
-            CLuaMain * luaMain = m_pLuaManager->GetVirtualMachine ( L );
-            if ( luaMain )
+            CLuaMain * luaMain = lua_readcontext( L );
+            CResource* pResource = luaMain->GetResource();
+            const char *meta;
+            filePath strFilename;
+            bool bIsURL = !m_pResourceManager->ParseResourceFullPath( (Resource*&)pResource, strSound, meta, strFilename );
+
+            if ( !bIsURL )
+                strSound = strFilename;
+
+            bool bLoop = false;
+            if ( lua_istype ( L, 5, LUA_TBOOLEAN ) )
             {
-                CResource* pResource = luaMain->GetResource();
-                if ( pResource )
-                {
-                    SString strFilename;
-                    bool bIsURL = false;
-                    if ( CResourceManager::ParseResourcePathInput( strSound, pResource, strFilename ) )
-                        strSound = strFilename;
-                    else
-                        bIsURL = true;
+                bLoop = ( lua_toboolean ( L, 5 ) ) ? true : false;
+            }
 
-                    bool bLoop = false;
-                    if ( lua_istype ( L, 5, LUA_TBOOLEAN ) )
-                    {
-                        bLoop = ( lua_toboolean ( L, 5 ) ) ? true : false;
-                    }
-
-                    CClientSound* pSound = CStaticFunctionDefinitions::PlaySound3D ( pResource, strSound, bIsURL, vecPosition, bLoop );
-                    if ( pSound )
-                    {
-                        lua_pushelement ( L, pSound );
-                        return 1;
-                    }
-                }
+            CClientSound* pSound = CStaticFunctionDefinitions::PlaySound3D ( pResource, strSound, bIsURL, vecPosition, bLoop );
+            if ( pSound )
+            {
+                lua_pushelement ( L, pSound );
+                return 1;
             }
         }
         lua_pushboolean ( L, false );
@@ -562,7 +551,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "playMissionAudio" );
+            m_pScriptDebugging->LogBadType( "playMissionAudio" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -583,10 +572,10 @@ namespace CLuaFunctionDefs
                 }
             }
             else
-                m_pScriptDebugging->LogError ( L, "Invalid sound ID specified. Valid sound IDs are 0 - 101." );
+                m_pScriptDebugging->LogError( "Invalid sound ID specified. Valid sound IDs are 0 - 101." );
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "playSoundFrontEnd" );
+            m_pScriptDebugging->LogBadType( "playSoundFrontEnd" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -610,7 +599,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "preloadMissionAudio" );
+            m_pScriptDebugging->LogBadType( "preloadMissionAudio" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -634,7 +623,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogCustom ( L, SString ( "Bad argument @ '%s' [%s]", "setAmbientSoundEnabled", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "setAmbientSoundEnabled", *argStream.GetErrorMessage () ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -658,7 +647,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogCustom ( L, SString ( "Bad argument @ '%s' [%s]", "isAmbientSoundEnabled", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "isAmbientSoundEnabled", *argStream.GetErrorMessage () ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -673,7 +662,7 @@ namespace CLuaFunctionDefs
             return 1;
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "resetAmbientSounds" );
+            m_pScriptDebugging->LogBadType( "resetAmbientSounds" );
 
         lua_pushboolean ( L, false );
         return 1;

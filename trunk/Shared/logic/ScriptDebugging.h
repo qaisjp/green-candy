@@ -22,6 +22,7 @@ public:
                                     ~ScriptDebugging();
 
     void                            LogCustom( unsigned char red, unsigned char green, unsigned char blue, const char *fmt, ... );
+    void                            LogCustom( const char *msg, unsigned char red = 255, unsigned char green = 255, unsigned char blue = 255 );
     void                            LogInformation( const char *fmt, ... );
     void                            LogWarning( const char *fmt, ... );
     void                            LogError( const char *fmt, ... );

@@ -19,11 +19,11 @@ CPadManagerSA::CPadManagerSA()
 
 CPadManagerSA::~CPadManagerSA()
 {
-
 }
 
 CPadSAInterface* CPadManagerSA::GetJoypad( unsigned int index )
 {
+    // There is only one playerData
     if ( index != 0 )
         return NULL;
 

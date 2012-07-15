@@ -22,7 +22,6 @@
 #include <net/bitstream.h>
 #include "CLuaArgument.h"
 #include <vector>
-#include "CLuaFunctionRef.h"
 
 #if MTA_DEBUG
     // Tight allocation in debug to find trouble.
@@ -35,9 +34,19 @@
 class CLuaArguments : public LuaArguments
 {
 public:
+                                                        CLuaArguments();
                                                         CLuaArguments( NetBitStreamInterface& stream );
 
-    CLuaArgument*                                       PushElement( CClientEntity* pElement );
+    void                                                ReadArgument( lua_State *L, int idx );
+
+    LuaArgument*                                        PushNil();
+    LuaArgument*                                        PushBoolean( bool b );
+    LuaArgument*                                        PushNumber( double num );
+    LuaArgument*                                        PushString( const std::string& str );
+    LuaArgument*                                        PushUserData( void *data );
+    LuaArgument*                                        PushArgument( const LuaArgument& argument );
+    LuaArgument*                                        PushTable( const LuaArguments& table );
+    CLuaArgument*                                       PushElement( CClientEntity *element );
 
     bool                                                ReadFromBitStream( NetBitStreamInterface& bitStream );
     bool                                                WriteToBitStream( NetBitStreamInterface& bitStream ) const;

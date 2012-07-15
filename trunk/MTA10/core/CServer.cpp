@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        mods/deathmatch/logic/CServer.cpp
+*  FILE:        core/CServer.cpp
 *  PURPOSE:     Local server instancing class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,15 +14,16 @@
 
 #include <StdInc.h>
 
-static volatile bool g_bIsStarted = false;
+static volatile bool isStarted = false;
 extern CCoreInterface* g_pCore;
-CCriticalSection CServer::m_OutputCC;
-std::list < std::string > CServer::m_OutputQueue;
+
+static CCriticalSection         outputCC;
+static std::list <std::string>  outputQueue;
 
 #ifdef MTA_DEBUG
-    #define SERVER_DLL_PATH "core_d.dll"
+#define SERVER_DLL_PATH "core_d.dll"
 #else
-    #define SERVER_DLL_PATH "core.dll"
+#define SERVER_DLL_PATH "core.dll"
 #endif
 
 #define ERROR_NO_ERROR 0
@@ -37,68 +39,30 @@ char* szServerErrors[4] =
     "Error loading mod"
 };
 
-CServer::CServer ( void )
+CServer::CServer()
 {
-    assert ( !g_bIsStarted );
-
     // Initialize
-    m_bIsReady = false;
-    m_pLibrary = NULL;
-    m_hThread = INVALID_HANDLE_VALUE;
-    m_iLastError = ERROR_NO_ERROR;
+    m_ready = false;
+    m_library = NULL;
+    m_thread = INVALID_HANDLE_VALUE;
+    m_lastError = ERROR_NO_ERROR;
 
     m_strServerRoot = CalcMTASAPath ( "server" );
     m_strDLLFile = PathJoin ( m_strServerRoot, SERVER_DLL_PATH );
 }
 
-
-CServer::~CServer ( void )
+CServer::~CServer()
 {
-    // Make sure the server is stopped
-    Stop ();
+    Stop();
 
     // Make sure the thread handle is closed
     if ( m_hThread != INVALID_HANDLE_VALUE )
-    {
         CloseHandle ( m_hThread );
-    }
 }
 
-
-void CServer::DoPulse ( void )
+void CServer::DoPulse()
 {
-    if ( IsRunning () )
-    {
-        // Make sure the server doesn't happen to be adding anything right now
-        m_OutputCC.Lock ();
-
-        // Anything to output to console?
-        if ( m_OutputQueue.size () > 0 )
-        {
-            // Loop through our output queue and echo it to console
-            std::list < std::string >::const_iterator iter = m_OutputQueue.begin ();
-            for ( ; iter != m_OutputQueue.end (); iter++ )
-            {
-                // Echo it
-                const char* szString = iter->c_str ();
-                g_pCore->GetConsole ()->Echo ( szString );
-
-                // Does the message end with "Server started and is ready to accept connections!\n"?
-                size_t sizeString = iter->length ();
-                if ( sizeString >= 51 &&
-                    stricmp ( szString + sizeString - 51, "Server started and is ready to accept connections!\n" ) == 0 )
-                {
-                    m_bIsReady = true;
-                }
-            }
-
-            // Clear the list
-            m_OutputQueue.clear ();
-        }
-        // Unlock again
-        m_OutputCC.Unlock ();
-    }
-    else
+    if ( !IsRunning() )
     {
         // not running, errored?
         if ( GetLastError() != ERROR_NO_ERROR )
@@ -106,48 +70,72 @@ void CServer::DoPulse ( void )
             Stop ();
         }
     }
+    
+    // Make sure the server doesn't happen to be adding anything right now
+    m_OutputCC.Lock();
+
+    // Anything to output to console?
+    if ( m_OutputQueue.size() > 0 )
+    {
+        // Loop through our output queue and echo it to console
+        std::list <std::string>::const_iterator iter = m_OutputQueue.begin();
+
+        for ( ; iter != m_OutputQueue.end(); iter++ )
+        {
+            // Echo it
+            const char* szString = iter->c_str();
+            g_pCore->GetConsole()->Echo( szString );
+
+            // Does the message end with "Server started and is ready to accept connections!\n"?
+            size_t sizeString = iter->length();
+            if ( sizeString >= 51 &&
+                stricmp( szString + sizeString - 51, "Server started and is ready to accept connections!\n" ) == 0 )
+            {
+                m_bIsReady = true;
+            }
+        }
+
+        // Clear the list
+        m_OutputQueue.clear();
+    }
+
+    // Unlock again
+    m_OutputCC.Unlock();
 }
 
-
-bool CServer::Start ( const char* szConfig )
+bool CServer::Start( const char *config )
 {
-    // Not already started?
     if ( !g_bIsStarted )
     {
         m_strConfig = szConfig;
 
         // Check that the DLL exists
-        if ( !DoesFileExist ( m_strDLLFile ) )
+        if ( !DoesFileExist( m_strDLLFile ) )
         {
-            g_pCore->GetConsole ()->Printf ( "Unable to find: '%s'", m_strDLLFile.c_str () );
+            g_pCore->GetConsole()->Printf( "Unable to find: '%s'", m_strDLLFile.c_str () );
             return false;
         }
 
-        // We're now started, but not ready
         g_bIsStarted = true;
         m_bIsReady = false;
 
         // Close the previous thread?
         if ( m_hThread != INVALID_HANDLE_VALUE )
-        {
             CloseHandle ( m_hThread );
-        }
 
         // Create a thread to run the server
         DWORD dwTemp;
         m_hThread = CreateThread ( NULL, 0, Thread_EntryPoint, this, 0, &dwTemp );
-        return m_hThread != NULL;
+        return m_hThread != INVALID_HANDLE_VALUE;
     }
 
     return false;
 }
 
-
-bool CServer::IsStarted ( void )
+bool CServer::IsStarted()
 {
     return g_bIsStarted;
 }
-
 
 bool CServer::Stop ( void )
 {
@@ -298,7 +286,7 @@ unsigned long CServer::Thread_Run ( void )
             char szArgument6 [32];
             strcpy ( szArgument6, "--clientfeedback" );
             szArguments [5] = szArgument6;
-            szArguments [6] = reinterpret_cast < char* > ( CServer::AddServerOutput );
+            szArguments [6] = (char*)CServer::AddServerOutput;
 
             // We're now running the server
             m_CriticalSection.Unlock ();

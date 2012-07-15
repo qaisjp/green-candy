@@ -1456,6 +1456,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\LuaFunctionRef.cpp"
 						>
 					</File>
@@ -2293,10 +2297,6 @@
 						>
 					</File>
 					<File
-						RelativePath=".\logic\lua\CLuaTimerManager.h"
-						>
-					</File>
-					<File
 						RelativePath="..\..\..\Shared\sdk\net\rpc_enums.h"
 						>
 					</File>
@@ -2482,6 +2482,10 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\LuaCommon.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.h"
 						>
 					</File>
 					<File

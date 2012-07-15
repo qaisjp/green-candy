@@ -668,7 +668,7 @@ enum RwStreamMode
 // RenderWare base types
 struct RwBuffer
 {
-    void            *ptr;
+    void*           ptr;
     unsigned int    size;
 };
 union RwStreamTypeData

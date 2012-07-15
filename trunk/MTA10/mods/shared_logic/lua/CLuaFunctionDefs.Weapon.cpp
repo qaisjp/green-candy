@@ -19,66 +19,66 @@
 
 #include "StdInc.h"
 
-int CLuaFunctionDefs::GetWeaponNameFromID ( lua_State* luaVM )
+namespace CLuaFunctionDefs
 {
-    int iArgument1 = lua_type ( luaVM, 1 );
-    if ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING )
+    LUA_DECLARE( getWeaponNameFromID )
     {
-        unsigned char ucID = static_cast < unsigned char > ( lua_tonumber ( luaVM, 1 ) );
-
-        char szBuffer [256];
-        if ( CStaticFunctionDefinitions::GetWeaponNameFromID ( ucID, szBuffer, sizeof(szBuffer) ) )
+        int iArgument1 = lua_type ( L, 1 );
+        if ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING )
         {
-            lua_pushstring ( luaVM, szBuffer );
-            return 1;
+            unsigned char ucID = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
+
+            char szBuffer [256];
+            if ( CStaticFunctionDefinitions::GetWeaponNameFromID ( ucID, szBuffer, sizeof(szBuffer) ) )
+            {
+                lua_pushstring ( L, szBuffer );
+                return 1;
+            }
         }
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getWeaponNameFromID" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetSlotFromWeapon ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TNUMBER || lua_type ( luaVM, 1 ) == LUA_TSTRING )
-    {
-        unsigned char ucWeaponID = static_cast < unsigned char > ( lua_tonumber ( luaVM, 1 ) );
-        char cSlot = CWeaponNames::GetSlotFromWeapon ( ucWeaponID );
-        if ( cSlot >= 0 )
-            lua_pushnumber ( luaVM, cSlot );
         else
-            lua_pushboolean ( luaVM, false );
-        //lua_pushnumber ( luaVM, CWeaponNames::GetSlotFromWeapon ( ucWeaponID ) );
+            m_pScriptDebugging->LogBadType( "getWeaponNameFromID" );
+
+        lua_pushboolean ( L, false );
         return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getSlotFromWeapon" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetWeaponIDFromName ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TSTRING )
+    LUA_DECLARE( getSlotFromWeapon )
     {
-        const char* szName = lua_tostring ( luaVM, 1 );
-        unsigned char ucID;
-
-        if ( CStaticFunctionDefinitions::GetWeaponIDFromName ( szName, ucID ) )
+        if ( lua_type ( L, 1 ) == LUA_TNUMBER || lua_type ( L, 1 ) == LUA_TSTRING )
         {
-            lua_pushnumber ( luaVM, ucID );
+            unsigned char ucWeaponID = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
+            char cSlot = CWeaponNames::GetSlotFromWeapon ( ucWeaponID );
+            if ( cSlot >= 0 )
+                lua_pushnumber ( L, cSlot );
+            else
+                lua_pushboolean ( L, false );
+            //lua_pushnumber ( L, CWeaponNames::GetSlotFromWeapon ( ucWeaponID ) );
             return 1;
         }
+        else
+            m_pScriptDebugging->LogBadType( "getSlotFromWeapon" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getWeaponIDFromName" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
+    LUA_DECLARE( getWeaponIDFromName )
+    {
+        if ( lua_type ( L, 1 ) == LUA_TSTRING )
+        {
+            const char* szName = lua_tostring ( L, 1 );
+            unsigned char ucID;
+
+            if ( CStaticFunctionDefinitions::GetWeaponIDFromName ( szName, ucID ) )
+            {
+                lua_pushnumber ( L, ucID );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getWeaponIDFromName" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
 }
-
-

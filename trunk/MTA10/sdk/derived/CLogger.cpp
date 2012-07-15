@@ -58,7 +58,7 @@ void CLogger::DebugPrintf( const char* szFormat, ... )
     va_end( marker );
 
     // Timestamp and send to the console and logfile
-    HandleLogPrint( true, "DEBUG: ", szBuffer, true );
+    HandleLogPrint( true, "DEBUG: ", szBuffer );
 #endif
 }
 

@@ -271,13 +271,13 @@ void CClientVehicle::GetPosition ( CVector& vecPosition ) const
         }
         else
         {
-            vecPosition = *m_pVehicle->GetPosition ( );
+            m_pVehicle->GetPosition( vecPosition );
         }
     }
     // Streamed in?
     else if ( m_pVehicle )
     {
-        vecPosition = *m_pVehicle->GetPosition ();
+        m_pVehicle->GetPosition( vecPosition );
     }
     // Attached to something?
     else if ( m_pAttachedToEntity )
@@ -311,11 +311,11 @@ void CClientVehicle::SetPosition ( const CVector& vecPosition, bool bResetInterp
         if ( !m_pDriver )
         {
             CVector vecMoveSpeed;
-            m_pVehicle->GetMoveSpeed ( &vecMoveSpeed );
+            m_pVehicle->GetMoveSpeed ( vecMoveSpeed );
             if ( vecMoveSpeed.fX == 0.0f && vecMoveSpeed.fY == 0.0f && vecMoveSpeed.fZ == 0.0f )
             {
                 vecMoveSpeed.fZ -= 0.01f;
-                m_pVehicle->SetMoveSpeed ( &vecMoveSpeed );
+                m_pVehicle->SetMoveSpeed ( vecMoveSpeed );
             }
         }
     }
@@ -416,7 +416,7 @@ float CClientVehicle::GetDistanceFromCentreOfMassToBaseOfModel ( void )
 {
     if ( m_pVehicle )
     {
-        return m_pVehicle->GetDistanceFromCentreOfMassToBaseOfModel ();
+        return m_pVehicle->GetBasingDistance();
     }
     return 0.0f;
 }
@@ -431,7 +431,7 @@ bool CClientVehicle::GetMatrix ( CMatrix& Matrix ) const
     {
         if ( m_pVehicle )
         {
-            m_pVehicle->GetMatrix ( &Matrix );
+            m_pVehicle->GetMatrix ( Matrix );
         }
         else
         {
@@ -447,7 +447,7 @@ bool CClientVehicle::SetMatrix ( const CMatrix& Matrix )
 {
     if ( m_pVehicle )
     {
-        m_pVehicle->SetMatrix ( const_cast < CMatrix* > ( &Matrix ) );
+        m_pVehicle->SetMatrix ( Matrix );
 
         // If it is a boat, we need to call FixBoatOrientation or it won't move/rotate properly
         if ( m_eVehicleType == CLIENTVEHICLE_BOAT )
@@ -491,7 +491,7 @@ void CClientVehicle::GetMoveSpeed ( CVector& vecMoveSpeed ) const
     {
         if ( m_pVehicle )
         {
-            m_pVehicle->GetMoveSpeed ( &vecMoveSpeed );
+            m_pVehicle->GetMoveSpeed ( vecMoveSpeed );
         }
         else
         {
@@ -520,7 +520,7 @@ void CClientVehicle::SetMoveSpeed ( const CVector& vecMoveSpeed )
     {
         if ( m_pVehicle )
         {
-            m_pVehicle->SetMoveSpeed ( const_cast < CVector* > ( &vecMoveSpeed ) );
+            m_pVehicle->SetMoveSpeed ( vecMoveSpeed );
         }
         m_vecMoveSpeed = vecMoveSpeed;
     }
@@ -535,7 +535,7 @@ void CClientVehicle::GetTurnSpeed ( CVector& vecTurnSpeed ) const
     }
     if ( m_pVehicle )
     {
-        m_pVehicle->GetTurnSpeed ( &vecTurnSpeed );
+        m_pVehicle->GetTurnSpeed ( vecTurnSpeed );
     }
     else
     {
@@ -550,7 +550,7 @@ void CClientVehicle::SetTurnSpeed ( const CVector& vecTurnSpeed )
     {
         if ( m_pVehicle )
         {
-            m_pVehicle->SetTurnSpeed ( const_cast < CVector* > ( &vecTurnSpeed ) );
+            m_pVehicle->SetTurnSpeed ( vecTurnSpeed );
         }
         m_vecTurnSpeed = vecTurnSpeed;
     }
@@ -1682,9 +1682,9 @@ void CClientVehicle::SetFrozen ( bool bFrozen )
         CVector vecTemp;
         if ( m_pVehicle )
         {
-            m_pVehicle->GetMatrix ( &m_matFrozen );
-            m_pVehicle->SetMoveSpeed ( &vecTemp );
-            m_pVehicle->SetTurnSpeed ( &vecTemp );
+            m_pVehicle->GetMatrix ( m_matFrozen );
+            m_pVehicle->SetMoveSpeed ( vecTemp );
+            m_pVehicle->SetTurnSpeed ( vecTemp );
         }
         else
         {
@@ -1702,9 +1702,9 @@ void CClientVehicle::SetFrozen ( bool bFrozen )
             CVector vecTemp;
             if ( m_pVehicle )
             {
-                m_pVehicle->GetMatrix ( &m_matFrozen );
-                m_pVehicle->SetMoveSpeed ( &vecTemp );
-                m_pVehicle->SetTurnSpeed ( &vecTemp );
+                m_pVehicle->GetMatrix ( m_matFrozen );
+                m_pVehicle->SetMoveSpeed ( vecTemp );
+                m_pVehicle->SetTurnSpeed ( vecTemp );
             }
             else
             {
@@ -1741,9 +1741,9 @@ void CClientVehicle::SetFrozenWaitingForGroundToLoad ( bool bFrozen )
             CVector vecTemp;
             if ( m_pVehicle )
             {
-                m_pVehicle->GetMatrix ( &m_matFrozen );
-                m_pVehicle->SetMoveSpeed ( &vecTemp );
-                m_pVehicle->SetTurnSpeed ( &vecTemp );
+                m_pVehicle->GetMatrix ( m_matFrozen );
+                m_pVehicle->SetMoveSpeed ( vecTemp );
+                m_pVehicle->SetTurnSpeed ( vecTemp );
             }
             else
             {
@@ -1933,9 +1933,9 @@ void CClientVehicle::StreamedInPulse ( void )
         if ( m_bIsFrozen )
         {
             CVector vecTemp;
-            m_pVehicle->SetMatrix ( &m_matFrozen );
-            m_pVehicle->SetMoveSpeed ( &vecTemp );
-            m_pVehicle->SetTurnSpeed ( &vecTemp );
+            m_pVehicle->SetMatrix ( m_matFrozen );
+            m_pVehicle->SetMoveSpeed ( vecTemp );
+            m_pVehicle->SetTurnSpeed ( vecTemp );
         }
         else
         {
@@ -1945,14 +1945,14 @@ void CClientVehicle::StreamedInPulse ( void )
                    m_pObjectManager->ObjectsAroundPointLoaded ( m_matFrozen.vPos, 200.0f, m_usDimension )*/ ) )
             {
                 // Remember the matrix
-                m_pVehicle->GetMatrix ( &m_matFrozen );
+                m_pVehicle->GetMatrix ( m_matFrozen );
             }
             else
             {
                 // Force the position to the last remembered matrix (..and make sure gravity doesn't pull it down)
-                m_pVehicle->SetMatrix ( &m_matFrozen );
+                m_pVehicle->SetMatrix ( m_matFrozen );
                 CVector vec(0.0f, 0.0f, 0.0f);
-                m_pVehicle->SetMoveSpeed ( &vec );
+                m_pVehicle->SetMoveSpeed ( vec );
 
                 // Added by ChrML 27. Nov: Shouldn't cause any problems
                 m_pVehicle->SetUsesCollision ( false );
@@ -1961,7 +1961,7 @@ void CClientVehicle::StreamedInPulse ( void )
 
         // Calculate the velocity
         CMatrix MatrixCurrent;
-        m_pVehicle->GetMatrix ( &MatrixCurrent );
+        m_pVehicle->GetMatrix ( MatrixCurrent );
         m_vecMoveSpeedMeters = ( MatrixCurrent.vPos - m_MatrixLast.vPos ) * g_pGame->GetFPS ();
         // Store the current matrix
         m_MatrixLast = MatrixCurrent;        
@@ -1992,18 +1992,18 @@ void CClientVehicle::StreamedInPulse ( void )
         {
             CControllerState cs;
             m_pDriver->GetControllerState ( cs );
-            bool bAcclerate = cs.ButtonCross > 128;
-            bool bBrake = cs.ButtonSquare > 128;
+            bool bAcclerate = cs.IsCrossDown();
+            bool bBrake = cs.IsSquareDown();
 
             // Is doing burnout ?
             if ( bAcclerate && bBrake )
             {
                 CVector vecMoveSpeed;
-                m_pVehicle->GetMoveSpeed ( &vecMoveSpeed );
+                m_pVehicle->GetMoveSpeed ( vecMoveSpeed );
                 if ( fabsf ( vecMoveSpeed.fX ) < 0.06f * 2 && fabsf ( vecMoveSpeed.fY ) < 0.06f * 2 && fabsf ( vecMoveSpeed.fZ ) < 0.01f * 2 )
                 {
                     CVector vecTurnSpeed;
-                    m_pVehicle->GetTurnSpeed ( &vecTurnSpeed );
+                    m_pVehicle->GetTurnSpeed ( vecTurnSpeed );
                     if ( fabsf ( vecTurnSpeed.fX ) < 0.006f * 2 && fabsf ( vecTurnSpeed.fY ) < 0.006f * 2 && fabsf ( vecTurnSpeed.fZ ) < 0.04f * 2 )
                     {
                         // Apply turn speed limit
@@ -2011,7 +2011,7 @@ void CClientVehicle::StreamedInPulse ( void )
                         fLength = Min ( fLength, 0.02f );
                         vecTurnSpeed *= fLength;
 
-                        m_pVehicle->SetTurnSpeed ( &vecTurnSpeed );
+                        m_pVehicle->SetTurnSpeed ( vecTurnSpeed );
                     }
                 }
             }
@@ -2021,7 +2021,8 @@ void CClientVehicle::StreamedInPulse ( void )
         ProcessDoorInterpolation ();
 
         // Grab our current position
-        CVector vecPosition = *m_pVehicle->GetPosition ();
+        CVector vecPosition;
+        m_pVehicle->GetPosition( vecPosition );
 
         if ( m_pAttachedToEntity )
         {
@@ -2187,10 +2188,10 @@ void CClientVehicle::Create ( void )
         }
 
         // Got any settings to restore?
-        m_pVehicle->SetMatrix ( &m_Matrix );
+        m_pVehicle->SetMatrix ( m_Matrix );
         m_matFrozen = m_Matrix;
-        m_pVehicle->SetMoveSpeed ( &m_vecMoveSpeed );
-        m_pVehicle->SetTurnSpeed ( &m_vecTurnSpeed );
+        m_pVehicle->SetMoveSpeed ( m_vecMoveSpeed );
+        m_pVehicle->SetTurnSpeed ( m_vecTurnSpeed );
         m_pVehicle->SetVisible ( m_bVisible );
         m_pVehicle->SetUsesCollision ( m_bIsCollisionEnabled );
         m_pVehicle->SetEngineBroken ( m_bEngineBroken );
@@ -2325,7 +2326,7 @@ void CClientVehicle::Create ( void )
              m_vecMoveSpeed.fZ < 0.01f && m_vecMoveSpeed.fZ > -0.01f )
         {
             m_vecMoveSpeed = CVector ( 0.0f, 0.0f, 0.01f );
-            m_pVehicle->SetMoveSpeed ( &m_vecMoveSpeed );
+            m_pVehicle->SetMoveSpeed ( m_vecMoveSpeed );
         }
 
         // Validate
@@ -2373,9 +2374,9 @@ void CClientVehicle::Destroy ( void )
         m_pManager->InvalidateEntity ( this );
 
         // Store anything we allow GTA to change
-        m_pVehicle->GetMatrix ( &m_Matrix );
-        m_pVehicle->GetMoveSpeed ( &m_vecMoveSpeed );
-        m_pVehicle->GetTurnSpeed ( &m_vecTurnSpeed );
+        m_pVehicle->GetMatrix ( m_Matrix );
+        m_pVehicle->GetMoveSpeed ( m_vecMoveSpeed );
+        m_pVehicle->GetTurnSpeed ( m_vecTurnSpeed );
         m_fHealth = GetHealth ();
         m_bSireneOrAlarmActive = m_pVehicle->IsSirenOrAlarmActive () ? true:false;
         m_bLandingGearDown = IsLandingGearDown ();
@@ -2446,7 +2447,7 @@ void CClientVehicle::Destroy ( void )
         }
 
         // Destroy the vehicle
-        g_pGame->GetPools ()->RemoveVehicle ( m_pVehicle );
+        delete m_pVehicle;
         m_pVehicle = NULL;
 
         // Remove reference to its model
@@ -2778,7 +2779,7 @@ bool CClientVehicle::IsOnWater ( void )
         float fWaterLevel;
         CVector vecPosition, vecTemp;
         GetPosition ( vecPosition );
-        float fDistToBaseOfModel = vecPosition.fZ - m_pVehicle->GetDistanceFromCentreOfMassToBaseOfModel();
+        float fDistToBaseOfModel = vecPosition.fZ - m_pVehicle->GetBasingDistance();
         if ( g_pGame->GetWaterManager ()->GetWaterLevel ( vecPosition, &fWaterLevel, true, &vecTemp ) )
         {
             if (fDistToBaseOfModel <= fWaterLevel) {
@@ -3139,11 +3140,11 @@ void CClientVehicle::UpdateTargetPosition ( void )
             {
                 // Ghostmode upwards movement compensation
                 CVector MoveSpeed;
-                m_pVehicle->GetMoveSpeed ( &MoveSpeed );
+                m_pVehicle->GetMoveSpeed ( MoveSpeed );
                 float SpeedXY = CVector( MoveSpeed.fX, MoveSpeed.fY, 0 ).Length ();
                 if ( MoveSpeed.fZ > 0.00 && MoveSpeed.fZ < 0.02 && MoveSpeed.fZ > SpeedXY )
                     MoveSpeed.fZ = SpeedXY;
-                m_pVehicle->SetMoveSpeed ( &MoveSpeed );
+                m_pVehicle->SetMoveSpeed ( MoveSpeed );
             }
         }
 
@@ -3674,9 +3675,9 @@ void CClientVehicle::HandleWaitingForGroundToLoad ( void )
 
     // Reset position
     CVector vecTemp;
-    m_pVehicle->SetMatrix ( &m_matFrozen );
-    m_pVehicle->SetMoveSpeed ( &vecTemp );
-    m_pVehicle->SetTurnSpeed ( &vecTemp );
+    m_pVehicle->SetMatrix ( m_matFrozen );
+    m_pVehicle->SetMoveSpeed ( vecTemp );
+    m_pVehicle->SetTurnSpeed ( vecTemp );
     m_vecMoveSpeedMeters = vecTemp;
     m_vecMoveSpeed = vecTemp;
     m_vecTurnSpeed = vecTemp;

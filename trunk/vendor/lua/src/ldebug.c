@@ -654,8 +654,8 @@ void luaG_errormsg (lua_State *L) {
 void luaG_runerror (lua_State *L, const char *fmt, ...) {
   va_list argp;
   va_start(argp, fmt);
-  addinfo(L, luaO_pushvfstring(L, fmt, argp));
+  luaO_pushvfstring(L, fmt, argp);
   va_end(argp);
-  luaG_errormsg(L);
+  throw lua_exception( L, LUA_ERRRUN, lua_tostring( L, -1 ) );
 }
 

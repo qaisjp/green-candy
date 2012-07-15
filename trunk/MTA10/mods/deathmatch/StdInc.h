@@ -19,6 +19,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include <google/dense_hash_map>
+
 // SDK includes
 #define MTA_CLIENT
 #include "SharedUtil.h"
@@ -91,7 +93,6 @@
 #include <luadefs/CLuaDefs.h>
 #include <luadefs/CLuaTaskDefs.h>
 #include <luadefs/CLuaFxDefs.h>
-#include <luadefs/CLuaFileDefs.h>
 
 // Shared includes
 #include "TInterpolation.h"

@@ -16,6 +16,22 @@
 
 #include <StdInc.h>
 
+static int timer_reset( lua_State *L )
+{
+    ((LuaTimer*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetStartTime( CTickCount::Now() );
+    return 0;
+}
+
+static int timer_getDetails( lua_State *L )
+{
+    LuaTimer& timer = *(LuaTimer*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    lua_pushnumber( L, timer.GetTimeLeft().ToDouble() );
+    lua_pushnumber( L, timer.GetRepeats() );
+    lua_pushnumber( L, timer.GetDelay().ToDouble() );
+    return 3;
+}
+
 static int timer_destroy( lua_State *L )
 {
     delete (LuaTimer*)lua_touserdata( L, lua_upvalueindex( 1 ) );
@@ -25,14 +41,18 @@ static int timer_destroy( lua_State *L )
 
 static const luaL_Reg timer_methods[] =
 {
+    { "reset", timer_reset },
+    { "getDetails", timer_getDetails },
     { "destroy", timer_destroy },
     { NULL, NULL }
 };
 
 static int luaconstructor_timer( lua_State *L )
 {
+    LuaTimer *timer = (LuaTimer*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
     ILuaClass *j = lua_refclass( L, 1 );
-    j->SetTransmit( LUACLASS_TIMER );
+    j->SetTransmit( LUACLASS_TIMER, timer );
 
     lua_newtable( L );
     lua_setfield( L, LUA_ENVIRONINDEX, "args" );

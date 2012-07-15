@@ -84,3 +84,8 @@ function dircmdex(rt)
 	
 	print("\nfiles: " .. filenum .. ", dirs: " .. dirnum);
 end
+
+function findD3D()
+	local r = file.createTranslator( root.absPath() .. "../" );
+	r.scanDir("/", "d3dx9.h", print, print, true);
+end

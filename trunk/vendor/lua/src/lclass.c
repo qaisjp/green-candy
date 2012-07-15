@@ -106,6 +106,7 @@ static inline bool class_preDestructor( lua_State *L, Class& j )
         lua_call( L, 0, 0 );
 
         //TODO: This may be risky, I have to analyze whether GC may kill our runtime
+        //REPORT: I have seen no errors so far!
 
         if ( !c.destroyed )
         {
@@ -176,19 +177,32 @@ void Class::PushMethod( lua_State *L, const char *key )
     setobj( L, L->top++, luaH_getstr( methods, luaS_new( L, key ) ) );
 }
 
-void Class::SetTransmit( int type )
+void Class::SetTransmit( int type, void *entity )
 {
-    transType = type;
+    trans[type] = entity;
+
+    transRecent = type;
+}
+
+bool Class::GetTransmit( int type, void*& entity )
+{
+    transMap_t::iterator iter = trans.find( type );
+
+    if ( iter == trans.end() )
+        return false;
+
+    entity = iter->second;
+    return true;
 }
 
 int Class::GetTransmit()
 {
-    return transType;
+    return transRecent;
 }
 
 bool Class::IsTransmit( int type )
 {
-    return transType == type;
+    return trans.count( type ) == 1;
 }
 
 void Class::PushEnvironment( lua_State *L )
@@ -454,7 +468,10 @@ static int classmethod_getChildren( lua_State *L )
     unsigned int n = 1;
 
     for ( ; iter != j.children.end(); iter++, n++ )
+    {
         setjvalue( L, luaH_setnum( L, &tab, n ), *iter );
+        luaC_objbarriert( L, &tab, *iter );
+    }
 
     sethvalue( L, L->top++, &tab );
     return 1;
@@ -665,15 +682,25 @@ static int methodenv_newindex( lua_State *L )
 
             // Better avoid using the (limited) stack!
             Closure *method = clvalue( L->top - 1 );
+            bool methWhite = iswhite( method ) != 0;
 
             // Apply the class environment
             method->env = j.env;
 
             // We have to put it into the environment, too (caching <3)
             if ( val == luaO_nilobject )
+            {
                 setclvalue( L, luaH_setstr( L, j.storage, key ), method );
+                
+                if ( methWhite && isblack( j.storage ) )
+                    luaC_barrierback( L, j.storage );
+            }
             
             setclvalue( L, luaH_setstr( L, methTable, key ), method );
+
+            if ( methWhite && isblack( methTable ) )
+                luaC_barrierback( L, methTable );
+
             return 0;
         }
     }
@@ -737,7 +764,7 @@ Class* luaJ_new( lua_State *L, int nargs )
     c->reqDestruction = false;
     c->inMethod = 0;
     c->refCount = 0;
-    c->transType = -1;
+    c->transRecent = -1;
     c->parent = NULL;
 
     // Set up the environments
@@ -747,6 +774,7 @@ Class* luaJ_new( lua_State *L, int nargs )
     c->methods = luaH_new( L, 0, 0 );
     c->forceSuper = luaH_new( L, 0, 0 );
     c->internStorage = luaH_new( L, 0, 0 );
+    setnilvalue( &c->destructor );
 
     c->env->metatable = meta;
     c->outenv->metatable = outmeta;

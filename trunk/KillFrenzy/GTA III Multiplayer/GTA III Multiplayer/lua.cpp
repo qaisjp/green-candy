@@ -7,20 +7,6 @@ CLuaManager *lua_manager;
 static CResourceManager *resMan;
 static CScriptDebugging *debug;
 
-static inline void loadscript( const filePath& path, void *ud )
-{
-    CLuaMain *main = (CLuaMain*)ud;
-    std::vector <char> buf;
-
-    if ( !main->m_fileRoot.ReadToBuffer( path.c_str(), buf ) )
-        return;
-
-    if ( buf.size() == 0 )
-        return;
-
-    main->LoadScriptFromBuffer( &buf[0], buf.size(), path.c_str(), false );
-}
-
 static inline void loadresource( const filePath& path, void *ud )
 {
     filePath relPath;
@@ -29,12 +15,7 @@ static inline void loadresource( const filePath& path, void *ud )
     // Get the directory slash away
     relPath.pop_back();
 
-    CFileTranslator *resRoot = fileSystem->CreateTranslator( path.c_str() );
-
-    CLuaMain *main = lua_manager->Create( relPath, *resRoot );
-
-    // Load all .lua scripts
-    resRoot->ScanDirectory( "/", "*.lua", false, NULL, loadscript, main );
+    resMan->Load( relPath );
 }
 
 void Lua_Init()
@@ -47,7 +28,8 @@ void Lua_Init()
     // Start the .lua management
     events = new CEvents;
     lua_manager = new CLuaManager( *events );
-    resMan = new CResourceManager();
+    resMan = new CResourceManager( events, *lua_manager );
+    LuaManager::m_resMan = resMan;
     debug = &lua_manager->GetDebug();
     cmds = &lua_manager->GetCommands();
 
@@ -87,5 +69,4 @@ void Lua_Destroy()
 
     delete events;
     delete lua_manager;
-    delete resMan;
 }

@@ -1664,7 +1664,7 @@ bool CKeyBinds::ControlFunctionExists ( SBindableGTAControl* pControl, ControlFu
 
 char* CKeyBinds::GetKeyFromCode ( unsigned long ulCode )
 {
-    for ( int i = 0 ; *g_bkKeys [ i ].szKey != NULL ; i++ )
+    for ( int i = 0 ; *g_bkKeys [ i ].szKey != 0; i++ )
     {
         SBindableKey* temp = &g_bkKeys [ i ];
         if ( temp->ulCode == ulCode )
@@ -1679,7 +1679,7 @@ char* CKeyBinds::GetKeyFromCode ( unsigned long ulCode )
 
 bool CKeyBinds::GetCodeFromKey ( const char* szKey, unsigned long& ulCode )
 {
-    for ( int i = 0 ; *g_bkKeys [ i ].szKey != NULL ; i++ )
+    for ( int i = 0 ; *g_bkKeys [ i ].szKey != 0; i++ )
     {
         SBindableKey* temp = &g_bkKeys [ i ];
         if ( stricmp ( temp->szKey, szKey ) == 0 )
@@ -1694,7 +1694,7 @@ bool CKeyBinds::GetCodeFromKey ( const char* szKey, unsigned long& ulCode )
 
 const SBindableKey * CKeyBinds::GetBindableFromKey ( const char* szKey )
 {
-    for ( int i = 0 ; *g_bkKeys [ i ].szKey != NULL ; i++ )
+    for ( int i = 0 ; *g_bkKeys [ i ].szKey != 0; i++ )
     {
         SBindableKey* temp = &g_bkKeys [ i ];
         if ( !stricmp ( temp->szKey, szKey ) )
@@ -1709,7 +1709,7 @@ const SBindableKey * CKeyBinds::GetBindableFromKey ( const char* szKey )
 
 SBindableGTAControl* CKeyBinds::GetBindableFromAction ( eControllerAction action )
 {
-    for ( int i = 0 ; *g_bcControls [ i ].szControl != NULL ; i++ )
+    for ( int i = 0 ; *g_bcControls [ i ].szControl != 0; i++ )
     {
         SBindableGTAControl* temp = &g_bcControls [ i ];
         if ( temp->action == action )
@@ -1721,6 +1721,28 @@ SBindableGTAControl* CKeyBinds::GetBindableFromAction ( eControllerAction action
     return NULL;
 }
 
+SBindableGTAControl* CKeyBinds::GetBindable( eBindableControl cntrl )
+{
+    if ( cntrl > MAX_CONTROLS || cntrl < 0 )
+        return NULL;
+
+    return &g_bcControls[cntrl];
+}
+
+bool CKeyBinds::GetBindableIndex( const std::string& name, eBindableControl& cntrl )
+{
+    unsigned int n;
+
+    for ( n=0; g_bcControls[n].szControl[0] != 0; n++ )
+    {
+        if ( name == g_bcControls[n].szControl )
+        {
+            cntrl = (eBindableControl)n;
+            return true;
+        }
+    }
+    return false;
+}
 
 bool CKeyBinds::IsKey ( const char* szKey )
 {

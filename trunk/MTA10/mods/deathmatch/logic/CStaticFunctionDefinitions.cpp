@@ -101,14 +101,14 @@ bool CStaticFunctionDefinitions::AddEvent ( CLuaMain& LuaMain, const char* szNam
     if ( strlen ( szName ) > 0 )
     {
         // Add our event to CEvents
-        return m_pEvents->AddEvent ( szName, "", &LuaMain, bAllowRemoteTrigger );
+        return m_pEvents->Add( szName, "", &LuaMain, bAllowRemoteTrigger );
     }
 
     return false;
 }
 
 
-bool CStaticFunctionDefinitions::AddEventHandler ( CLuaMain& LuaMain, const char* szName, CClientEntity& Entity, const CLuaFunctionRef& iLuaFunction, bool bPropagated )
+bool CStaticFunctionDefinitions::AddEventHandler ( CLuaMain& LuaMain, const char* szName, CClientEntity& Entity, const LuaFunctionRef& iLuaFunction, bool bPropagated )
 {
     assert ( szName );
 
@@ -124,7 +124,7 @@ bool CStaticFunctionDefinitions::AddEventHandler ( CLuaMain& LuaMain, const char
 }
 
 
-bool CStaticFunctionDefinitions::RemoveEventHandler ( CLuaMain& LuaMain, const char* szName, CClientEntity& Entity, const CLuaFunctionRef& iLuaFunction )
+bool CStaticFunctionDefinitions::RemoveEventHandler ( CLuaMain& LuaMain, const char* szName, CClientEntity& Entity, const LuaFunctionRef& iLuaFunction )
 {
     assert ( szName );
 
@@ -149,7 +149,7 @@ bool CStaticFunctionDefinitions::TriggerEvent ( const char* szName, CClientEntit
     {
         // Call the event
         Entity.CallEvent ( szName, Arguments, true );
-        bWasCancelled = m_pEvents->WasEventCancelled ();
+        bWasCancelled = m_pEvents->WasCancelled ();
         return true;
     }
 
@@ -188,16 +188,14 @@ bool CStaticFunctionDefinitions::TriggerServerEvent ( const char* szName, CClien
 
 bool CStaticFunctionDefinitions::CancelEvent ( bool bCancel )
 {
-    m_pEvents->CancelEvent ( bCancel );
+    m_pEvents->Cancel( bCancel );
     return true;
 }
 
-
-bool CStaticFunctionDefinitions::WasEventCancelled ( void )
+bool CStaticFunctionDefinitions::WasEventCancelled()
 {
-    return m_pEvents->WasEventCancelled ();
+    return m_pEvents->WasCancelled ();
 }
-
 
 bool CStaticFunctionDefinitions::OutputConsole ( const char* szText )
 {
@@ -1434,9 +1432,9 @@ bool CStaticFunctionDefinitions::GetPedTask ( CClientPed& Ped, bool bPrimary, un
     {
         CTask* pTask = NULL;
         if ( bPrimary )
-            pTask = pTaskManager->GetTask ( uiTaskType );
+            pTask = pTaskManager->GetTask ( (eTaskPriority)uiTaskType );
         else
-            pTask = pTaskManager->GetTaskSecondary ( uiTaskType );
+            pTask = pTaskManager->GetTaskSecondary ( (eTaskPriority)uiTaskType );
 
         while ( pTask )
         {
@@ -1573,7 +1571,7 @@ char* CStaticFunctionDefinitions::GetPedSimplestTask ( CClientPed& Ped )
         {
             for ( unsigned int i = 0 ; i < TASK_PRIORITY_MAX ; i++ )
             {
-                pTask = pTaskManager->GetSimplestTask ( i );
+                pTask = pTaskManager->GetSimplestTask ( (eTaskPriority)i );
                 if ( pTask )
                     break;
             }
@@ -1606,7 +1604,7 @@ bool CStaticFunctionDefinitions::IsPedDoingTask ( CClientPed& Ped, const char* s
         CTask* pTask = NULL;
         for ( int i = 0 ; i < TASK_PRIORITY_MAX ; i++ )
         {
-            pTask = pTaskManager->GetTask ( i );
+            pTask = pTaskManager->GetTask ( (eTaskPriority)i );
             while ( pTask )
             {
                 if ( stricmp ( pTask->GetTaskName (), szTaskName ) == 0 )
@@ -4020,7 +4018,7 @@ CClientGUIElement* CStaticFunctionDefinitions::GUICreateStaticImage ( CLuaMain& 
     if ( strPath )
     {
         // Load the image
-        if ( !static_cast < CGUIStaticImage* > ( pElement ) -> LoadFromFile ( "", strPath ) ) {
+        if ( !static_cast < CGUIStaticImage* > ( pElement ) -> LoadFromFile ( strPath ) ) {
             // If this fails, there's no reason to keep the widget (we don't have any IE-style "not found" icons yet)
             // So delete it and reset the pointer, so we return NULL
             delete pGUIElement;
@@ -4049,7 +4047,7 @@ bool CStaticFunctionDefinitions::GUIStaticImageLoadImage ( CClientEntity& Entity
             if ( strDir )
             {
                 // load the image, if any
-                return static_cast < CGUIStaticImage* > ( pCGUIElement ) -> LoadFromFile ( "", strDir );
+                return static_cast < CGUIStaticImage* > ( pCGUIElement ) -> LoadFromFile ( strDir );
             }
         }
     }
@@ -5570,7 +5568,7 @@ bool CStaticFunctionDefinitions::GetCloudsEnabled ( )
 }
 
 
-bool CStaticFunctionDefinitions::BindKey ( const char* szKey, const char* szHitState, CLuaMain* pLuaMain, const CLuaFunctionRef& iLuaFunction, CLuaArguments& Arguments )
+bool CStaticFunctionDefinitions::BindKey ( const char* szKey, const char* szHitState, CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, CLuaArguments& Arguments )
 {
     assert ( szKey );
     assert ( szHitState );
@@ -5658,7 +5656,7 @@ bool CStaticFunctionDefinitions::BindKey ( const char* szKey, const char* szHitS
     return bSuccess;
 }
 
-bool CStaticFunctionDefinitions::UnbindKey ( const char* szKey, CLuaMain* pLuaMain, const char* szHitState, const CLuaFunctionRef& iLuaFunction )
+bool CStaticFunctionDefinitions::UnbindKey ( const char* szKey, CLuaMain* pLuaMain, const char* szHitState, const LuaFunctionRef& iLuaFunction )
 {
     assert ( szKey );
     assert ( pLuaMain );

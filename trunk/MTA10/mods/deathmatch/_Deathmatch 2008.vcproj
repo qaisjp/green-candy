@@ -529,10 +529,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\logic\CServer.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\logic\CServerIdManager.cpp"
 					>
 				</File>
@@ -969,10 +965,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CRegisteredCommands.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CVariableBuffer.cpp"
 					>
 				</File>
@@ -1021,10 +1013,6 @@
 					</File>
 					<File
 						RelativePath="..\shared_logic\lua\CLuaFunctionDefs.Camera.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\shared_logic\lua\CLuaFunctionDefs.Commands.cpp"
 						>
 					</File>
 					<File
@@ -1128,14 +1116,6 @@
 						>
 					</File>
 					<File
-						RelativePath="..\shared_logic\lua\CLuaManager.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\shared_logic\lua\CLuaTimerManager.cpp"
-						>
-					</File>
-					<File
 						RelativePath="..\shared_logic\lua\LuaCommon.cpp"
 						>
 					</File>
@@ -1177,10 +1157,6 @@
 					>
 					<File
 						RelativePath="..\shared_logic\luadefs\CLuaDefs.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\shared_logic\luadefs\CLuaFileDefs.cpp"
 						>
 					</File>
 					<File
@@ -1712,6 +1688,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\LuaFunctionRef.cpp"
 						>
 					</File>
@@ -1747,10 +1727,6 @@
 						RelativePath="..\..\..\Shared\logic\ScriptDebugging.cpp"
 						>
 					</File>
-					<File
-						RelativePath="..\..\..\Shared\logic\ScriptFile.cpp"
-						>
-					</File>
 				</Filter>
 			</Filter>
 			<Filter
@@ -1769,11 +1745,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\sdk\derived\CScriptDebugging.cpp"
+					RelativePath="..\..\sdk\derived\CRegisteredCommands.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\sdk\derived\CScriptFile.cpp"
+					RelativePath="..\..\sdk\derived\CScriptDebugging.cpp"
 					>
 				</File>
 			</Filter>
@@ -1928,10 +1904,6 @@
 				</File>
 				<File
 					RelativePath=".\logic\CScriptKeyBinds.h"
-					>
-				</File>
-				<File
-					RelativePath=".\logic\CServer.h"
 					>
 				</File>
 				<File
@@ -2519,10 +2491,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CRegisteredCommands.h"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CSimulatedPlayPosition.h"
 					>
 				</File>
@@ -2578,15 +2546,7 @@
 						>
 					</File>
 					<File
-						RelativePath="..\shared_logic\lua\CLuaManager.h"
-						>
-					</File>
-					<File
 						RelativePath="..\shared_logic\lua\CLuaModuleManager.h"
-						>
-					</File>
-					<File
-						RelativePath="..\shared_logic\lua\CLuaTimerManager.h"
 						>
 					</File>
 					<File
@@ -2670,6 +2630,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\LuaFunctionRef.h"
 						>
 					</File>
@@ -2705,10 +2669,6 @@
 						RelativePath="..\..\..\Shared\logic\ScriptDebugging.h"
 						>
 					</File>
-					<File
-						RelativePath="..\..\..\Shared\logic\ScriptFile.h"
-						>
-					</File>
 				</Filter>
 			</Filter>
 			<Filter
@@ -2727,11 +2687,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\sdk\derived\CScriptDebugging.h"
+					RelativePath="..\..\sdk\derived\CRegisteredCommands.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\sdk\derived\CScriptFile.h"
+					RelativePath="..\..\sdk\derived\CScriptDebugging.h"
 					>
 				</File>
 				<File

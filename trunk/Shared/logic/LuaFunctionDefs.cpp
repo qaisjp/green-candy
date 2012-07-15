@@ -12,10 +12,6 @@
 
 #include <StdInc.h>
 
-static ScriptDebugging *debug;
-static RegisteredCommands *cmds;
-static ResourceManager *resManager;
-
 static inline LuaMain* lua_readcontext( lua_State *L )
 {
     return lua_readuserdata <LuaMain, LUA_STORAGEINDEX, 2> ( L );
@@ -23,11 +19,15 @@ static inline LuaMain* lua_readcontext( lua_State *L )
 
 static inline Resource* lua_readresource( lua_State *L )
 {
-    return lua_readuserdata <Resource, LUA_STORAGEINDEX, 3> ( L );
+    return lua_readcontext( L )->GetResource();
 }
 
 namespace LuaFunctionDefs
 {
+    ScriptDebugging *debug;
+    RegisteredCommands *cmds;
+    ResourceManager *resManager;
+
     void SetResourceManager( ResourceManager& man )
     {
         resManager = &man;
@@ -97,28 +97,28 @@ namespace LuaFunctionDefs
 
     LUA_DECLARE( fileIsEOF )
     {
-        lua_classobtain( L, 1, LUACLASS_FILE );
+        ILuaClass& j = lua_classobtain( L, 1, LUACLASS_FILE );
 
-        lua_getfield( L, 1, "eof" );
+        j.PushMethod( L, "eof" );
         lua_call( L, 0, 1 );
         return 1;
     }
 
     LUA_DECLARE( fileGetPos )
     {
-        lua_classobtain( L, 1, LUACLASS_FILE );
+        ILuaClass& j = lua_classobtain( L, 1, LUACLASS_FILE );
 
-        lua_getfield( L, 1, "tell" );
+        j.PushMethod( L, "tell" );
         lua_call( L, 0, 1 );
         return 1;
     }
 
     LUA_DECLARE( fileSetPos )
     {
-        lua_classobtain( L, 1, LUACLASS_FILE );
+        ILuaClass& j = lua_classobtain( L, 1, LUACLASS_FILE );
         luaL_checktype( L, 2, LUA_TNUMBER );
 
-        lua_getfield( L, 1, "seek" );
+        j.PushMethod( L, "seek" );
         lua_pushvalue( L, 2 );
         lua_pushlstring( L, "set", 3 );
         lua_call( L, 2, 1 );
@@ -127,19 +127,19 @@ namespace LuaFunctionDefs
 
     LUA_DECLARE( fileGetSize )
     {
-        lua_classobtain( L, 1, LUACLASS_FILE );
-        
-        lua_getfield( L, 1, "size" );
+        ILuaClass& j = lua_classobtain( L, 1, LUACLASS_FILE );
+
+        j.PushMethod( L, "size" );
         lua_call( L, 0, 1 );
         return 1;
     }
 
     LUA_DECLARE( fileRead )
     {
-        lua_classobtain( L, 1, LUACLASS_FILE );
+        ILuaClass& j = lua_classobtain( L, 1, LUACLASS_FILE );
         luaL_checktype( L, 2, LUA_TNUMBER );
 
-        lua_getfield( L, 1, "read" );
+        j.PushMethod( L, "read" );
         lua_pushvalue( L, 2 );
         lua_call( L, 1, 1 );
         return 1;
@@ -147,10 +147,10 @@ namespace LuaFunctionDefs
 
     LUA_DECLARE( fileWrite )
     {
-        lua_classobtain( L, 1, LUACLASS_FILE );
+        ILuaClass& j = lua_classobtain( L, 1, LUACLASS_FILE );
         luaL_checktype( L, 2, LUA_TSTRING );
 
-        lua_getfield( L, 1, "write" );
+        j.PushMethod( L, "write" );
         lua_pushvalue( L, 2 );
         lua_call( L, 1, 1 );
         return 1;
@@ -158,18 +158,18 @@ namespace LuaFunctionDefs
 
     LUA_DECLARE( fileFlush )
     {
-        lua_classobtain( L, 1, LUACLASS_FILE );
-        
-        lua_getfield( L, 1, "flush" );
+        ILuaClass& j = lua_classobtain( L, 1, LUACLASS_FILE );
+
+        j.PushMethod( L, "flush" );
         lua_call( L, 0, 1 );
         return 1;
     }
 
     LUA_DECLARE( fileClose )
     {
-        lua_classobtain( L, 1, LUACLASS_FILE );
+        ILuaClass& j = lua_classobtain( L, 1, LUACLASS_FILE );
 
-        lua_getfield( L, 1, "destroy" );
+        j.PushMethod( L, "destroy" );
         lua_call( L, 0, 0 );
 
         lua_pushboolean( L, true );
@@ -318,7 +318,6 @@ namespace LuaFunctionDefs
         return 1;
     }
 
-
     LUA_DECLARE( getCTime )
     {
         time_t timer;
@@ -377,7 +376,7 @@ namespace LuaFunctionDefs
     }
 
 #if 0
-    LUA_DECLARE( Split )
+    LUA_DECLARE( split )
     {
         if ( ( lua_type ( luaVM, 1 ) != LUA_TSTRING ) || ( lua_type ( luaVM, 2 ) != LUA_TNUMBER && ( lua_type ( luaVM, 2 ) != LUA_TSTRING ) ) )
         {
@@ -517,119 +516,74 @@ namespace LuaFunctionDefs
 
     LUA_DECLARE( killTimer )
     {
-        lua_classobtain( L, 1, LUACLASS_TIMER );
+        ILuaClass& j = lua_classobtain( L, 1, LUACLASS_TIMER );
 
-        lua_getfield( L, 1, "destroy" );
+        j.PushMethod( L, "destroy" );
         lua_call( L, 0, 0 );
         return 0;
     }
 
-#if 0
-    int CLuaFunctionDefinitions::ResetTimer ( lua_State* luaVM )
+    LUA_DECLARE( resetTimer )
     {
     //  bool resetTimer ( timer theTimer )
-        CLuaTimer* pLuaTimer;
+        ILuaClass& j = lua_classobtain( L, 1, LUACLASS_TIMER );
 
-        CScriptArgReader argStream ( luaVM );
-        argStream.ReadUserData ( pLuaTimer );
+        j.PushMethod( L, "reset" );
+        lua_call( L, 0, 0 );
 
-        if ( !argStream.HasErrors () )
-        {
-            CLuaMain * luaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-            if ( luaMain )
-            {
-                luaMain->GetTimerManager ()->ResetTimer ( pLuaTimer );
-
-                lua_pushboolean ( luaVM, true );
-                return 1;
-            }
-        }
-        else
-            m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "resetTimer", *argStream.GetErrorMessage () ) );
-
-        lua_pushboolean ( luaVM, false );
+        lua_pushboolean( L, true );
         return 1;
     }
-#endif
 
     LUA_DECLARE( isTimer )
     {
         return lua_type( L, 1 ) == LUA_TCLASS && lua_refclass( L, 1 )->IsTransmit( LUACLASS_TIMER );
     }
 
-#if 0
-    int CLuaFunctionDefinitions::GetTimers ( lua_State* luaVM )
+    LUA_DECLARE( getTimers )
     {
     //  table getTimers ( [ time ] )
-        double dTime;
+        LuaMain& main = *lua_readcontext( L );
 
-        CScriptArgReader argStream ( luaVM );
-        argStream.ReadNumber ( dTime, 0 );
+        lua_newtable( L );
 
-        if ( !argStream.HasErrors () )
-        {
-            // Find our VM
-            CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-            if ( pLuaMain )
-            {
-                // Create a new table
-                lua_newtable ( luaVM );
+        double time;
 
-                // Add all the timers with less than ulTime left
-                pLuaMain->GetTimerManager ()->GetTimers ( CTickCount ( dTime ), luaVM );
-                return 1;
-            }
-        }
+        if ( lua_gettop( L ) > 1 )
+            time = lua_tonumber( L, 1 );
         else
-            m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "getTimers", *argStream.GetErrorMessage () ) );
+            time = 0;
 
-        lua_pushboolean ( luaVM, false );
+        // Add all the timers with less than ulTime left
+        main.GetTimerManager().GetTimers( CTickCount( time ), &main );
         return 1;
     }
 
-
-    int CLuaFunctionDefinitions::GetTimerDetails ( lua_State* luaVM )
+    LUA_DECLARE( getTimerDetails )
     {
     //  int, int, int getTimerDetails ( timer theTimer )
-        CLuaTimer* pLuaTimer;
+        ILuaClass& j = lua_classobtain( L, 1, LUACLASS_TIMER );
 
-        CScriptArgReader argStream ( luaVM );
-        argStream.ReadUserData ( pLuaTimer );
-
-        if ( !argStream.HasErrors () )
-        {
-            lua_pushnumber( luaVM, pLuaTimer->GetTimeLeft ().ToDouble () );
-            lua_pushnumber( luaVM, pLuaTimer->GetRepeats () );
-            lua_pushnumber( luaVM, pLuaTimer->GetDelay ().ToDouble () );
-            return 3;
-        }
-        else
-            m_pScriptDebugging->LogCustom ( luaVM, SString ( "Bad argument @ '%s' [%s]", "getTimerDetails", *argStream.GetErrorMessage () ) );
-
-        lua_pushboolean ( luaVM, false );
-        return 1;
+        j.PushMethod( L, "getDetails" );
+        lua_call( L, 0, 3 );
+        return 3;
     }
 
-
-    int CLuaFunctionDefinitions::GetColorFromString ( lua_State* luaVM )
+#if 0
+    LUA_DECLARE( getColorFromString )
     {
-        unsigned char ucColorRed, ucColorGreen, ucColorBlue, ucColorAlpha;
-        int iArgument1 = lua_type ( luaVM, 1 );
-        if ( iArgument1 == LUA_TSTRING )
-        {
-            const char* szColor = lua_tostring ( luaVM, 1 );
+        luaL_checktype( L, 1, LUA_TSTRING );
 
-            if ( XMLColorToInt ( szColor, ucColorRed, ucColorGreen, ucColorBlue, ucColorAlpha ) )
-            {
-                lua_pushnumber ( luaVM, ucColorRed );
-                lua_pushnumber ( luaVM, ucColorGreen );
-                lua_pushnumber ( luaVM, ucColorBlue );
-                lua_pushnumber ( luaVM, ucColorAlpha );
-                return 4;
-            }
+        unsigned char r, g, b;
+
+        if ( !XMLColorToInt( lua_tostring( L, 1 ), ucColorRed, ucColorGreen, ucColorBlue, ucColorAlpha ) )
+        {
+            lua_pushnumber ( luaVM, ucColorRed );
+            lua_pushnumber ( luaVM, ucColorGreen );
+            lua_pushnumber ( luaVM, ucColorBlue );
+            lua_pushnumber ( luaVM, ucColorAlpha );
+            return 4;
         }
-        lua_pushboolean ( luaVM, false );
-        return 1;
     }
 
     int CLuaFunctionDefinitions::GetValidPedModels ( lua_State* luaVM )

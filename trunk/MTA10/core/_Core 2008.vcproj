@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;../../vendor;../sdk;../../Shared;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
+				AdditionalIncludeDirectories=".;../../vendor;../sdk;../../Shared;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows;../../vendor/zlib/"
 				PreprocessorDefinitions="_WIN32_WINNT=0x502;WIN32;MTA_DEBUG;_CRT_SECURE_NO_WARNINGS;INITGUID"
 				StringPooling="true"
 				BasicRuntimeChecks="3"
@@ -153,7 +153,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories=".;../../vendor;../sdk;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
+				AdditionalIncludeDirectories=".;../../vendor;../sdk;../../Shared;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows;../../vendor/zlib/"
 				PreprocessorDefinitions="_WIN32_WINNT=0x502;WIN32;_CRT_SECURE_NO_WARNINGS;INITGUID"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -258,7 +258,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories=".;../../vendor;../sdk;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
+				AdditionalIncludeDirectories=".;../../vendor;../sdk;../../Shared;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows;../../vendor/zlib/"
 				PreprocessorDefinitions="_WIN32_WINNT=0x502;WIN32;_CRT_SECURE_NO_WARNINGS;INITGUID"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -609,6 +609,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CServer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CServerBrowser.cpp"
 				>
 			</File>
@@ -721,6 +725,10 @@
 				>
 				<File
 					RelativePath="..\..\Shared\core\CFileSystem.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Shared\core\CFileSystem.zip.cpp"
 					>
 				</File>
 			</Filter>
@@ -950,6 +958,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CServer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CServerBrowser.h"
 				>
 			</File>
@@ -1109,6 +1121,10 @@
 					</File>
 					<File
 						RelativePath="..\sdk\core\CRenderItemManagerInterface.h"
+						>
+					</File>
+					<File
+						RelativePath="..\sdk\core\CServerInterface.h"
 						>
 					</File>
 					<File
@@ -1749,6 +1765,14 @@
 					>
 					<File
 						RelativePath="..\..\Shared\core\CFileSystem.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\Shared\core\CFileSystem.Utils.hxx"
+						>
+					</File>
+					<File
+						RelativePath="..\..\Shared\core\CFileSystem.zip.h"
 						>
 					</File>
 					<File

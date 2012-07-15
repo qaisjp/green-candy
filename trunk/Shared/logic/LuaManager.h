@@ -29,6 +29,8 @@ enum eLuaTypeEx
     LUA_TELEMENT
 };
 
+class ResourceManager;
+
 class LuaManager abstract
 {
     friend class LuaMain;
@@ -50,8 +52,7 @@ public:
 
     // Current execution information
     const LuaMain*                  GetStatus( int *line = NULL, std::string *src = NULL, std::string *proto_name = NULL );
-
-    void                            Throw( unsigned int id, const char *error );
+    unsigned long                   GetRuntime();
 
     // Provide your own creation function
     void                            Init( LuaMain *lua );
@@ -78,8 +79,9 @@ public:
     inline std::list <LuaMain*>::const_iterator IterEnd()       { return m_structures.end(); }
 
     void                            DoPulse();
-    void                            ResetInstructionCount();
     void                            InstructionCountHook( lua_State *L, lua_Debug *ar );
+
+    static ResourceManager*         m_resMan;
 
 private:
     void                            InitSecurity();
@@ -118,6 +120,8 @@ protected:
         env_status( lua_State& lua, const LuaMain& context ) : m_lua( lua ), m_env( context )
         {
             m_frozen = false;
+            m_runtime = 0;
+            m_functionEnter = GetTickCount();
         }
 
         const LuaMain&    Get( int *line, std::string *src, std::string *proto_name ) const
@@ -139,6 +143,14 @@ protected:
             return m_env;
         }
 
+        unsigned long   GetRuntime()
+        {
+            if ( m_frozen )
+                return m_runtime;
+
+            return GetTickCount() - m_functionEnter;
+        }
+
         void    Finalize()
         {
             if ( m_frozen )
@@ -147,17 +159,22 @@ protected:
             Update( &m_line, &m_src, &m_proto_name );
 
             m_frozen = true;
+            m_runtime = GetTickCount() - m_functionEnter;
         }
 
         void    Resume()
         {
             m_frozen = false;
+            m_functionEnter = GetTickCount() - m_runtime;   // Optimization!
         }
+
     private:
         int m_line;
         std::string m_src;
         std::string m_proto_name;
         const LuaMain& m_env;
+        unsigned long m_runtime;
+        unsigned long m_functionEnter;
 
         bool m_frozen;
         lua_State& m_lua;
@@ -227,7 +244,6 @@ protected:
     std::list <env_status>          m_envStack;
 
     lua_State*                      m_lua;
-    unsigned long                   m_functionEnter;
 
     std::list <lua_State*>          m_threadStack;
 

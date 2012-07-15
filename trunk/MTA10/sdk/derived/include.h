@@ -14,9 +14,9 @@
 #define _CLIENT_DERIVED_INCLUDE_
 
 #include <SharedUtil.h>
-#include "CScriptFile.h"
 #include "CScriptDebugging.h"
 #include "CLogger.h"
+#include "CRegisteredCommands.h"
 #include "CLuaManager.h"
 #include "CLuaTimer.h"
 

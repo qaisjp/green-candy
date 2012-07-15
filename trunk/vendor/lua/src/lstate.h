@@ -97,7 +97,6 @@ typedef struct global_State
   TValue l_registry;
   lua_State *mainthread;
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
-  Table *mt[NUM_TAGS];  /* metatables for basic types */
   TString *tmname[TM_N];  /* array with tag-method names */
   lua_CFunction events[LUA_NUM_EVENTS];
 } global_State;
@@ -150,6 +149,7 @@ public:
     struct lua_longjmp *errorJmp;  /* current error recover point */
     ptrdiff_t errfunc;  /* current error handling function (stack index) */
     TValue storage;
+    Table *mt[NUM_TAGS];  /* metatables for basic types */
 };
 
 class lua_Thread : public lua_State
@@ -164,12 +164,12 @@ public:
     void    SetYieldDisabled( bool disable )    { yieldDisabled = disable; }
     bool    IsYieldDisabled()                   { return yieldDisabled; }
 
-    void* operator new( size_t size, lua_State *main ) throw()
+    void* operator new( size_t size, lua_State *main )
     {
         return GCObject::operator new( size + LUAI_EXTRASPACE, main );
     }
 
-    void operator delete( void *ptr ) throw()
+    void operator delete( void *ptr )
     {
         GCObject::operator delete( fromstate( (lua_Thread*)ptr ), state_size( lua_Thread ) );
     }
@@ -213,7 +213,8 @@ public:
 #define gco2th(o)	check_exp((o)->tt == LUA_TTHREAD, (lua_State*)(o))
 
 
-LUAI_FUNC lua_Thread *luaE_newthread (lua_State *L);
+LUAI_FUNC lua_Thread* luaE_newthread (lua_State *L);
+LUAI_FUNC void luaE_newenvironment( lua_State *L );
 LUAI_FUNC void luaE_terminate( lua_Thread *L );
 LUAI_FUNC void luaE_freethread (lua_State *L, lua_State *L1);
 

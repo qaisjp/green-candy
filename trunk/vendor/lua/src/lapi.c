@@ -157,6 +157,10 @@ LUA_API lua_State *lua_newthread (lua_State *L) {
   return L1;
 }
 
+LUA_API void lua_newenvironment( lua_State *L )
+{
+    luaE_newenvironment( L );
+}
 
 
 /*
@@ -771,7 +775,7 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex)
         break;
     default:
         {
-            G(L)->mt[ttype(obj)] = mt;
+            L->mt[ttype(obj)] = mt;
         }
         break;
     }
@@ -854,7 +858,7 @@ static void f_call (lua_State *L, void *ud) {
 
 
 
-LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+LUA_API int lua_pcallex (lua_State *L, int nargs, int nresults, int errfunc, lua_Debug *debug)
 {
   struct CallS c;
   int status;
@@ -872,10 +876,16 @@ LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
   }
   c.func = L->top - (nargs+1);  /* function to be called */
   c.nresults = nresults;
-  status = luaD_pcall(L, f_call, &c, savestack(L, c.func), func);
+  status = luaD_pcall(L, f_call, &c, savestack(L, c.func), func, debug);
   adjustresults(L, nresults);
   lua_unlock(L);
   return status;
+}
+
+
+LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+{
+    return lua_pcallex( L, nargs, nresults, errfunc, NULL );
 }
 
 
@@ -907,7 +917,7 @@ LUA_API int lua_cpcall (lua_State *L, lua_CFunction func, void *ud) {
   lua_lock(L);
   c.func = func;
   c.ud = ud;
-  status = luaD_pcall(L, f_Ccall, &c, savestack(L, L->top), 0);
+  status = luaD_pcall(L, f_Ccall, &c, savestack(L, L->top), 0, NULL);
   lua_unlock(L);
   return status;
 }

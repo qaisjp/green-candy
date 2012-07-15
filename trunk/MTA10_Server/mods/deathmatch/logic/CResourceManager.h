@@ -16,18 +16,10 @@
 *
 *****************************************************************************/
 
-// This class controls all the resources that are loaded, and loads
-// new resources on demand
-
 #ifndef CRESOURCEMANAGER_H
 #define CRESOURCEMANAGER_H
 
-#include "CResource.h"
-#include "CElement.h"
 #include "ehs/ehs.h"
-#include <list>
-
-class CResource;
 
 class CResourceManager : public EHS, public ResourceManager
 {
@@ -42,13 +34,13 @@ public:
 
     struct sResourceStartFlags
     {
-        bool bConfigs;
-        bool bMaps;
-        bool bScripts;
-        bool bHTML;
-        bool bClientConfigs;
-        bool bClientScripts;
-        bool bClientFiles;
+        bool bConfigs : 1;
+        bool bMaps : 1;
+        bool bScripts : 1;
+        bool bHTML : 1;
+        bool bClientConfigs : 1;
+        bool bClientScripts : 1;
+        bool bClientFiles : 1;
     };
 
 private:
@@ -57,21 +49,22 @@ private:
         CResource*          pResource;
         eResourceQueue      eQueue;
         sResourceStartFlags Flags;
-        vector < SString >  dependents;
+        std::vector <SString>   dependents;
     };
 
 public:
                                 CResourceManager();
                                 ~CResourceManager();
 
-    CResource*                  Load( bool bIsZipped, const char * szAbsPath, const char * szResourceName );
+    CResource*                  Load( bool zip, const char *path, const char *name );
+    CResource*                  Create( const char *name );
+    CResource*                  Copy( CResource *src, const char *dst );
     void                        Unload( CResource *resource );
     void                        UnloadRemovedResources();
     void                        CheckResourceDependencies();
     void                        ListResourcesLoaded();
 
-    std::list < CResource* > ::const_iterator  IterBegin()              { return m_resources.begin(); };
-    std::list < CResource* > ::const_iterator  IterEnd()                { return m_resources.end(); };
+    typedef std::list <CResource*> resList_t;
 
     bool                        Refresh( bool all = false );
     void                        Upgrade();
@@ -79,38 +72,38 @@ public:
     inline unsigned int         GetResourceFailedCount()                { return m_uiResourceFailedCount; }
     void                        OnPlayerJoin( CPlayer& Player );
 
-    bool                        StartResource( CResource* pResource, list < CResource* > * dependents = NULL, bool bStartedManually = false, bool bStartIncludedResources = true, bool bConfigs = true, bool bMaps = true, bool bScripts = true, bool bHTML = true, bool bClientConfigs = true, bool bClientScripts = true, bool bClientFiles = true );
-    bool                        Reload( CResource* pResource );
+    bool                        StartResource( CResource *res, const resList_t *dependents = NULL, 
+                                                bool manual = false, bool startIncludes = true,
+                                                bool configs = true, bool maps = true, bool scripts = true, bool html = true, bool clientConfigs = true,
+                                                bool clientScripts = true, bool clientFiles = true );
+    bool                        Reload( CResource *res );
     void                        StopAll();
 
-    void                        QueueResource( CResource* pResource, eResourceQueue eQueueType, const sResourceStartFlags* Flags, list < CResource* > * dependents = NULL );
+    void                        QueueResource( CResource *res, eResourceQueue eQueueType, const sResourceStartFlags* Flags, const resList_t *dependents = NULL );
     void                        ProcessQueue();
-    void                        RemoveFromQueue( CResource* pResource );
+    void                        RemoveFromQueue( CResource *res );
 
-    bool                        IsAResourceElement( CElement* pElement );
+    bool                        IsAResourceElement( CElement *element );
 
     unsigned short              GenerateID();
 
-    CResource*                  GetResourceFromLuaState( lua_State* luaVM );
+    CResource*                  GetResourceFromLuaState( lua_State *L );
     bool                        Install( const char *url, const char *name );
 
-    CResource*                  CreateResource( char *name );
-    CResource*                  CopyResource( CResource *src, const char *dst );
-
-    void                        NotifyResourceVMOpen( CResource* pResource, CLuaMain* pVM );
-    void                        NotifyResourceVMClose( CResource* pResource, CLuaMain* pVM );
+    void                        NotifyResourceVMOpen( CResource *res, CLuaMain *main );
+    void                        NotifyResourceVMClose( CResource *res, CLuaMain *main );
 
 private:
-    unsigned int                m_uiResourceLoadedCount;
-    unsigned int                m_uiResourceFailedCount;
-    bool                        m_bResourceListChanged;
-    list<CResource *>           m_resourcesToStartAfterRefresh;
+    unsigned int                m_loadedCount;
+    unsigned int                m_failedCount;
+    bool                        m_resListChanged;
+    resList_t                   m_loadQueue;
 
     // Maps to speed things up
-    std::map <CResource*, lua_State*>       m_ResourceLuaStateMap;
-    std::map <lua_State*, CResource*>       m_LuaStateResourceMap;
+    std::map <CResource*, lua_State*>   m_ResourceLuaStateMap;
+    std::map <lua_State*, CResource*>   m_LuaStateResourceMap;
 
-    list<sResourceQueue>        m_resourceQueue;
+    std::list <sResourceQueue>  m_resourceQueue;
 };
 
 #endif

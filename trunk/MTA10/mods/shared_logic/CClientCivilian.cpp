@@ -70,13 +70,13 @@ void CClientCivilian::Unlink ( void )
 }
 
 
-int CClientCivilian::GetRotation ( void )
+int CClientCivilian::GetRotation()
 {
     int iRotation = 0;
     double dRotation;
 
     CMatrix pMat;
-    m_pCivilianPed->GetMatrix ( &pMat );
+    m_pCivilianPed->GetMatrix ( pMat );
 
     float fX = pMat.vFront.fX;
     float fY = pMat.vFront.fY;
@@ -127,9 +127,9 @@ void CClientCivilian::SetRotation ( int iRotation )
 //    m_vecRotation = CVector ( fX, 0, 0 );
 
     CMatrix pMat;
-    m_pCivilianPed->GetMatrix ( &pMat );
+    m_pCivilianPed->GetMatrix ( pMat );
 
-    m_pCivilianPed->SetMatrix ( &pMat );
+    m_pCivilianPed->SetMatrix ( pMat );
 }
 
 
@@ -137,7 +137,7 @@ float CClientCivilian::GetDistanceFromCentreOfMassToBaseOfModel ( void )
 {
     if ( m_pCivilianPed )
     {
-        return m_pCivilianPed->GetDistanceFromCentreOfMassToBaseOfModel ();
+        return m_pCivilianPed->GetBasingDistance();
     }
    return 0.0f;;
 }
@@ -145,39 +145,39 @@ float CClientCivilian::GetDistanceFromCentreOfMassToBaseOfModel ( void )
 
 bool CClientCivilian::GetMatrix ( CMatrix& Matrix ) const
 {
-    m_pCivilianPed->GetMatrix ( &Matrix );
+    m_pCivilianPed->GetMatrix ( Matrix );
     return true;
 }
 
 
 bool CClientCivilian::SetMatrix ( const CMatrix& Matrix )
 {
-    m_pCivilianPed->SetMatrix ( const_cast < CMatrix* > ( &Matrix ) );
+    m_pCivilianPed->SetMatrix ( Matrix );
     return true;
 }
 
 
 void CClientCivilian::GetMoveSpeed ( CVector& vecMoveSpeed ) const
 {
-    m_pCivilianPed->GetMoveSpeed ( &vecMoveSpeed );
+    m_pCivilianPed->GetMoveSpeed ( vecMoveSpeed );
 }
 
 
 void CClientCivilian::SetMoveSpeed ( const CVector& vecMoveSpeed )
 {
-    m_pCivilianPed->SetMoveSpeed ( const_cast < CVector* > ( &vecMoveSpeed ) );
+    m_pCivilianPed->SetMoveSpeed ( vecMoveSpeed );
 }
 
 
 void CClientCivilian::GetTurnSpeed ( CVector& vecTurnSpeed ) const
 {
-    m_pCivilianPed->GetTurnSpeed ( &vecTurnSpeed );
+    m_pCivilianPed->GetTurnSpeed ( vecTurnSpeed );
 }
 
 
 void CClientCivilian::SetTurnSpeed ( const CVector& vecTurnSpeed )
 {
-    m_pCivilianPed->SetTurnSpeed ( const_cast < CVector* > ( &vecTurnSpeed ) );
+    m_pCivilianPed->SetTurnSpeed ( vecTurnSpeed );
 }
 
 

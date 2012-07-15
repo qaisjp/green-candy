@@ -387,7 +387,7 @@ bool CClientPed::GetMatrix ( CMatrix& Matrix ) const
     else
     if ( m_pPlayerPed )
     {
-        m_pPlayerPed->GetMatrix ( &Matrix );
+        m_pPlayerPed->GetMatrix( Matrix );
     }
     else
     {
@@ -402,7 +402,7 @@ bool CClientPed::SetMatrix ( const CMatrix& Matrix )
 {
     if ( m_pPlayerPed )
     {
-        m_pPlayerPed->SetMatrix ( const_cast < CMatrix* > ( &Matrix ) );
+        m_pPlayerPed->SetMatrix( Matrix );
     }
 
     if ( m_Matrix.vPos != Matrix.vPos )
@@ -428,7 +428,7 @@ void CClientPed::GetPosition ( CVector& vecPosition ) const
     // Streamed in?
     else if ( m_pPlayerPed )
     {
-        vecPosition = *m_pPlayerPed->GetPosition ();
+        m_pPlayerPed->GetPosition ( vecPosition );
     }
     // In a vehicle?    
     else if ( pVehicle )
@@ -698,7 +698,7 @@ void CClientPed::GetMoveSpeed ( CVector& vecMoveSpeed ) const
 {
     if ( m_pPlayerPed )
     {
-        m_pPlayerPed->GetMoveSpeed ( &vecMoveSpeed );
+        m_pPlayerPed->GetMoveSpeed( vecMoveSpeed );
     }
     else
     {
@@ -711,7 +711,7 @@ void CClientPed::SetMoveSpeed ( const CVector& vecMoveSpeed )
 {
     if ( m_pPlayerPed )
     {
-        m_pPlayerPed->SetMoveSpeed ( const_cast < CVector* > ( &vecMoveSpeed ) );
+        m_pPlayerPed->SetMoveSpeed ( vecMoveSpeed );
     }
     m_vecMoveSpeed = vecMoveSpeed;
 }
@@ -721,7 +721,7 @@ void CClientPed::GetTurnSpeed ( CVector& vecTurnSpeed ) const
 {
     if ( m_pPlayerPed )
     {
-        m_pPlayerPed->GetTurnSpeed ( &vecTurnSpeed );
+        m_pPlayerPed->GetTurnSpeed ( vecTurnSpeed );
     }
     else
     {
@@ -734,7 +734,7 @@ void CClientPed::SetTurnSpeed ( const CVector& vecTurnSpeed )
 {
     if ( m_pPlayerPed )
     {
-        m_pPlayerPed->SetTurnSpeed ( const_cast < CVector* > ( &vecTurnSpeed ) );
+        m_pPlayerPed->SetTurnSpeed ( vecTurnSpeed );
     }
     m_vecTurnSpeed = vecTurnSpeed;
 }
@@ -745,13 +745,13 @@ void CClientPed::GetControllerState ( CControllerState& ControllerState )
     // Local player
     if ( m_bIsLocalPlayer )
     {
-        m_pPad->GetCurrentControllerState ( &ControllerState );
+        ControllerState = m_pPad->GetState());
 
         // Fix for GTA bug allowing to drive bikes and boats with engine off (3437)
         CClientVehicle* pVehicle = GetRealOccupiedVehicle();
         if ( pVehicle && !pVehicle->IsEngineOn() )
         {
-            ControllerState.ButtonCross = 0;
+            ControllerState.SetCrossDown( false );
         }
     }
     else
@@ -766,7 +766,7 @@ void CClientPed::GetLastControllerState ( CControllerState& ControllerState )
     // Local player
     if ( m_bIsLocalPlayer )
     {
-        m_pPad->GetLastControllerState ( &ControllerState );
+        ControllerState = m_pPad->GetPreviousState();
     }
     else
     {
@@ -780,21 +780,19 @@ void CClientPed::SetControllerState ( const CControllerState& ControllerState )
     // Local player
     if ( m_bIsLocalPlayer )
     {
-        // Put the current keystate in the old keystate
-        CControllerState csOld;
-        m_pPad->GetCurrentControllerState ( &csOld );
-        m_pPad->SetLastControllerState ( &csOld );
+        // Reset the controls
+        m_pPad->Clear();
 
         // Set the new current keystate
-        m_pPad->SetCurrentControllerState ( const_cast < CControllerState* > ( &ControllerState ) );
+        m_pPad->SetState( ControllerState );
     }
     else
     {
         // Put the current into the old keystates
-        memcpy ( m_lastControllerState, m_currentControllerState, sizeof ( CControllerState ) );
+        *m_lastControllerState = *m_currentControllerState;
 
         // Set the new current keystate
-        memcpy ( m_currentControllerState, &ControllerState, sizeof ( CControllerState ) );       
+        *m_currentControllerState = ControllerState;   
     }
 }
 
@@ -1723,7 +1721,7 @@ void CClientPed::SetFrozen ( bool bFrozen )
 
             if ( m_pPlayerPed )
             {
-                m_pPlayerPed->GetMatrix ( &m_matFrozen );
+                m_pPlayerPed->GetMatrix ( m_matFrozen );
             }
             else
             {
@@ -1766,7 +1764,7 @@ void CClientPed::SetFrozenWaitingForGroundToLoad ( bool bFrozen )
 */
             if ( m_pPlayerPed )
             {
-                m_pPlayerPed->GetMatrix ( &m_matFrozen );
+                m_pPlayerPed->GetMatrix ( m_matFrozen );
             }
             else
             {
@@ -2021,7 +2019,7 @@ eMovementState CClientPed::GetMovementState ( void )
             unsigned int iRunState = m_pPlayerPed->GetRunState();
 
             // Is he moving the contoller at all?
-            if ( iRunState == 1 && cs.LeftStickX == 0 && cs.LeftStickY == 0 )
+            if ( iRunState == 1 && cs.m_leftAxisX == 0 && cs.m_leftAxisY == 0 )
                 return MOVEMENTSTATE_STAND;
 
             //Is he either pressing the walk key, or has run state 1?
@@ -2037,7 +2035,7 @@ eMovementState CClientPed::GetMovementState ( void )
         else
         {
             // Is he moving the contoller at all?
-            if ( cs.LeftStickX == 0 && cs.LeftStickY == 0 )
+            if ( cs.m_leftAxisX == 0 && cs.m_leftAxisY == 0 )
                 return MOVEMENTSTATE_CROUCH;
         }
     }
@@ -2080,7 +2078,7 @@ bool CClientPed::HasTask ( int iTaskType, int iTaskPriority, bool bPrimary )
         CTask * pTask = NULL;
         if ( iTaskPriority >= 0 && iTaskPriority < iNumTasks )
         {
-            pTask = ( bPrimary ) ? m_pTaskManager->GetTask ( iTaskPriority ) : m_pTaskManager->GetTaskSecondary ( iTaskPriority );
+            pTask = ( bPrimary ) ? m_pTaskManager->GetTask ( (eTaskPriority)iTaskPriority ) : m_pTaskManager->GetTaskSecondary ( (eTaskPriority)iTaskPriority );
             if ( pTask && pTask->GetTaskType () == iTaskType )
             {
                 return true;
@@ -2138,7 +2136,7 @@ bool CClientPed::KillTask ( int iTaskPriority, bool bGracefully )
 {
     if ( m_pTaskManager )
     {
-        CTask * pTask = m_pTaskManager->GetTask ( iTaskPriority );
+        CTask * pTask = m_pTaskManager->GetTask ( (eTaskPriority)iTaskPriority );
         if ( pTask )
         {
             if ( bGracefully )
@@ -2146,7 +2144,7 @@ bool CClientPed::KillTask ( int iTaskPriority, bool bGracefully )
                 pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE, NULL );
                 pTask->Destroy ();                
             }
-            m_pTaskManager->RemoveTask ( iTaskPriority );
+            m_pTaskManager->RemoveTask ( (eTaskPriority)iTaskPriority );
             return true;
         }
     }
@@ -2166,7 +2164,7 @@ bool CClientPed::KillTaskSecondary ( int iTaskPriority, bool bGracefully )
                 pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE, NULL );
                 pTask->Destroy ();
             }
-            m_pTaskManager->RemoveTaskSecondary ( iTaskPriority );
+            m_pTaskManager->RemoveTaskSecondary ( (eTaskPriority)iTaskPriority );
             return true;
         }
     }
@@ -2351,8 +2349,7 @@ void CClientPed::StreamedInPulse ( void )
                 {
                     //Disable movement keys.  This stops an exploit where players can run
                     //with guns shortly after standing
-                    Current.LeftStickX = 0;
-                    Current.LeftStickY = 0;
+                    Current.ResetLeftAxis();
                 }
             }
 
@@ -2362,8 +2359,8 @@ void CClientPed::StreamedInPulse ( void )
             // a normal stance.  This can normally be cut using the crouch key, so block it
             if ( !g_pClientGame->IsGlitchEnabled ( CClientGame::GLITCH_CROUCHBUG ) )
             {
-                if ( Current.RightShoulder1 == 0 && Current.LeftShoulder1 == 0 && Current.ButtonCircle == 0 )
-                    Current.ShockButtonL = 0;
+                if ( !Current.IsRightShoulder1Down() && !Current.IsLeftShoulder1Down() && !Current.IsCircleDown() )
+                    Current.m_action5 = 0;
             }
         }
         else
@@ -2374,11 +2371,10 @@ void CClientPed::StreamedInPulse ( void )
             // These weapons are weapons you can run with, but can't run with while aiming
             // This fixes a weapon desync bug involving aiming and sprinting packets arriving simultaneously
             eWeaponType iCurrentWeapon = GetCurrentWeaponType ();
-            if ( Current.RightShoulder1 != 0 && 
-                ( iCurrentWeapon == 29 || iCurrentWeapon == 24 || iCurrentWeapon == 23 || iCurrentWeapon == 41 || iCurrentWeapon == 42 ) )
+            if ( Current.IsRightShoulder1Down() && ( iCurrentWeapon == 29 || iCurrentWeapon == 24 || iCurrentWeapon == 23 || iCurrentWeapon == 41 || iCurrentWeapon == 42 ) )
             {
-                Current.ButtonCircle = 0;
-                Current.LeftShoulder1 = 0;
+                Current.SetCircleDown( false );
+                Current.m_ls1 = 0;
             }
         }
 
@@ -2409,16 +2405,16 @@ void CClientPed::StreamedInPulse ( void )
             {
                 if ( !g_pClientGame->IsGlitchEnabled ( CClientGame::GLITCH_FASTFIRE ) )
                 {
-                    Current.ButtonSquare = 0;
-                    Current.ButtonCross = 0;
+                    Current.SetSquareDown( false );
+                    Current.SetCrossDown( false );
                 }
                 //Disable the fire keys whilst crouching as well
-                Current.ButtonCircle = 0;
-                Current.LeftShoulder1 = 0;
+                Current.SetCircleDown( false );
+                Current.m_ls1 = 0;
                 if ( m_ulLastTimeBeganCrouch >= ulNow - 400.0f*fSpeedRatio )
                 {
                     //Disable double crouching (another anim cut)
-                    Current.ShockButtonL = 0;
+                    Current.SetLeftShockDown( false );
                 }
             }
         }
@@ -2429,7 +2425,7 @@ void CClientPed::StreamedInPulse ( void )
         {
             if ( !g_pClientGame->IsGlitchEnabled (  CClientGame::GLITCH_FASTFIRE ) )
             {
-                Current.ShockButtonL = 0;
+                Current.SetLeftShockDown( false );
             }
         }
 
@@ -2446,30 +2442,28 @@ void CClientPed::StreamedInPulse ( void )
                 // Don't allow the aiming key (RightShoulder1)
                 // This fixes bug allowing you to run around in aim mode while
                 // entering a vehicle both locally and remotly.
-                Current.RightShoulder1 = 0;
+                Current.m_rs1 = 0;
             }
         }
         //Fix for reloading aborting
         if ( GetWeapon()->GetState() == WEAPONSTATE_RELOADING )
         {
             //Disable changing weapons
-            Current.DPadUp = 0;
-            Current.DPadDown = 0;
+            Current.m_digitalUp = 0;
+            Current.m_digitalDown = 0;
             //Disable vehicle entry
-            Current.ButtonTriangle = 0;
+            Current.SetTriangleDown( false );
             //Disable jumping
-            Current.ButtonSquare = 0;
+            Current.SetSquareDown( false );
             //if we are ducked disable movement (otherwise it will abort reloading)
-            if ( IsDucked() ) {
-                Current.LeftStickX = 0;
-                Current.LeftStickY = 0;
-            }
+            if ( IsDucked() )
+                Current.ResetLeftAxis();
         }
         //Fix for crouching the end of animation aborting reload
         CControllerState Previous;
         GetLastControllerState ( Previous );
-        if ( IsDucked() && ( Current.LeftStickX == 0 || Current.LeftStickY == 0)) {
-            if (Previous.LeftStickY != 0 || Previous.LeftStickX != 0 ) 
+        if ( IsDucked() && ( Current.m_leftAxisX == 0 || Current.m_leftAxisY == 0 )) {
+            if (Previous.m_leftAxisX != 0 || Previous.m_leftAxisY != 0 ) 
                 m_ulLastTimeMovedWhileCrouched = ulNow;
         }
         // Is this the local player?
@@ -2488,8 +2482,8 @@ void CClientPed::StreamedInPulse ( void )
                     if ( pWeapon->GetAmmoTotal () == 0 )
                     {
                         // Make sure our fire key isn't pressed
-                        Current.ButtonCircle = 0;
-                        Current.LeftShoulder1 = 0;
+                        Current.SetCircleDown( false );
+                        Current.m_ls1 = 0;
                     }
                 }
             }
@@ -2522,56 +2516,56 @@ void CClientPed::StreamedInPulse ( void )
                 // Apply fix for aimable weapons only
                 switch ( GetCurrentWeaponType () )
                 {
-                    case 23:    // Silenced Pistol
-                    case 24:    // Desert Eagle
-                    case 25:    // Shotgun
-                    case 27:    // SPAZ-12 Combat Shotgun
-                    case 29:    // MP5
-                    case 30:    // AK-47
-                    case 31:    // M4
-                    case 33:    // Country Rifle
-                    case 34:    // Sniper Rifle
-                    case 35:    // Rocket Launcher
-                    case 36:    // Heat-Seeking RPG
-                    case 37:    // Flamethrower
-                    case 38:    // Minigun
-                    case 41:    // Spraycan
-                    case 42:    // Fire Extinguisher
-                    case 43:    // Camera
-                        // See which way input wants to go
-                        const bool bInputRight = Current.LeftStickX >  6;
-                        const bool bInputLeft  = Current.LeftStickX < -6;
-                        const bool bInputFwd   = Current.LeftStickY < -6;
-                        const bool bInputBack  = Current.LeftStickY >  6;
+                case 23:    // Silenced Pistol
+                case 24:    // Desert Eagle
+                case 25:    // Shotgun
+                case 27:    // SPAZ-12 Combat Shotgun
+                case 29:    // MP5
+                case 30:    // AK-47
+                case 31:    // M4
+                case 33:    // Country Rifle
+                case 34:    // Sniper Rifle
+                case 35:    // Rocket Launcher
+                case 36:    // Heat-Seeking RPG
+                case 37:    // Flamethrower
+                case 38:    // Minigun
+                case 41:    // Spraycan
+                case 42:    // Fire Extinguisher
+                case 43:    // Camera
+                    // See which way input wants to go
+                    const bool bInputRight = Current.m_leftAxisX >  6;
+                    const bool bInputLeft  = Current.m_leftAxisX < -6;
+                    const bool bInputFwd   = Current.m_leftAxisY < -6;
+                    const bool bInputBack  = Current.m_leftAxisY >  6;
 
-                        // See which way ped is currently going
-                        CVector vecVelocity, vecRotationRadians;
-                        GetMoveSpeed ( vecVelocity );
-                        GetRotationRadians ( vecRotationRadians );
-                        RotateVector ( vecVelocity, -vecRotationRadians );
+                    // See which way ped is currently going
+                    CVector vecVelocity, vecRotationRadians;
+                    GetMoveSpeed ( vecVelocity );
+                    GetRotationRadians ( vecRotationRadians );
+                    RotateVector ( vecVelocity, -vecRotationRadians );
 
-                        // Calc how much to pulse other axis
-                        short sFixY = 0;
-                        short sFixX = 0;
+                    // Calc how much to pulse other axis
+                    short sFixY = 0;
+                    short sFixX = 0;
 
-                        if ( bInputRight && vecVelocity.fX >= 0.f )
-                            sFixY = static_cast < short > ( UnlerpClamped ( 0.02f, vecVelocity.fX, 0.f ) * 64 );
-                        else
-                        if ( bInputLeft && vecVelocity.fX <= 0.f )
-                            sFixY = static_cast < short > ( UnlerpClamped ( -0.02f, vecVelocity.fX, 0.f ) * -64 );
+                    if ( bInputRight && vecVelocity.fX >= 0.f )
+                        sFixY = static_cast < short > ( UnlerpClamped ( 0.02f, vecVelocity.fX, 0.f ) * 64 );
+                    else
+                    if ( bInputLeft && vecVelocity.fX <= 0.f )
+                        sFixY = static_cast < short > ( UnlerpClamped ( -0.02f, vecVelocity.fX, 0.f ) * -64 );
 
-                        if ( bInputFwd && vecVelocity.fY >= 0.f )
-                            sFixX = static_cast < short > ( UnlerpClamped ( 0.02f, vecVelocity.fY, 0.f ) * 64 );
-                        else
-                        if ( bInputBack && vecVelocity.fY <= 0.f )
-                            sFixX = static_cast < short > ( UnlerpClamped ( -0.02f, vecVelocity.fY, 0.f ) * -64 );
+                    if ( bInputFwd && vecVelocity.fY >= 0.f )
+                        sFixX = static_cast < short > ( UnlerpClamped ( 0.02f, vecVelocity.fY, 0.f ) * 64 );
+                    else
+                    if ( bInputBack && vecVelocity.fY <= 0.f )
+                        sFixX = static_cast < short > ( UnlerpClamped ( -0.02f, vecVelocity.fY, 0.f ) * -64 );
 
-                        // Apply pulse if bigger than existing input value
-                        if ( abs ( sFixY ) > abs ( Current.LeftStickY ) )
-                             Current.LeftStickY = sFixY;
+                    // Apply pulse if bigger than existing input value
+                    if ( abs ( sFixY ) > abs ( Current.m_leftAxisY ) )
+                         Current.m_leftAxisX = sFixY;
 
-                        if ( abs ( sFixX ) > abs ( Current.LeftStickX ) )
-                             Current.LeftStickX = sFixX;
+                    if ( abs ( sFixX ) > abs ( Current.m_leftAxisX ) )
+                         Current.m_leftAxisX = sFixX;
                 }
             }
         }
@@ -2582,7 +2576,7 @@ void CClientPed::StreamedInPulse ( void )
         // like weapon switching.
         if ( m_bIsLocalPlayer )
         {
-            m_pPad->SetCurrentControllerState ( &Current );
+            m_pPad->InjectCurrent( Current );
         }
         else
         {
@@ -2592,7 +2586,7 @@ void CClientPed::StreamedInPulse ( void )
         // Are we frozen and not in a vehicle
         if ( IsFrozen () && !pVehicle )
         {
-            m_pPlayerPed->SetMatrix ( &m_matFrozen );
+            m_pPlayerPed->SetMatrix ( m_matFrozen );
         }
 
         // Is our health locked?
@@ -2720,15 +2714,9 @@ void CClientPed::StreamedInPulse ( void )
             }            
         }
 
-        // Update our alpha
-        unsigned char ucAlpha = m_ucAlpha;
-        // Are we in a different interior to the camera? set our alpha to 0
-        if ( m_ucInterior != g_pGame->GetWorld ()->GetCurrentArea () ) ucAlpha = 0;
-        RpClump * pClump = m_pPlayerPed->GetRpClump ();
-        if ( pClump ) g_pGame->GetVisibilityPlugins ()->SetClumpAlpha ( pClump, ucAlpha );
-
         // Grab our current position
-        CVector vecPosition = *m_pPlayerPed->GetPosition ();
+        CVector vecPosition;
+        m_pPlayerPed->GetPosition ( vecPosition );
         // Have we moved?
         if ( vecPosition != m_Matrix.vPos )
         {
@@ -3068,11 +3056,11 @@ void CClientPed::_CreateModel ( void )
         }
 
         // Restore any settings 
-        m_pPlayerPed->SetMatrix ( &m_Matrix );
+        m_pPlayerPed->SetMatrix ( m_Matrix );
         m_pPlayerPed->SetCurrentRotation ( m_fCurrentRotation );
         m_pPlayerPed->SetTargetRotation ( m_fTargetRotation );
-        m_pPlayerPed->SetMoveSpeed ( &m_vecMoveSpeed );
-        m_pPlayerPed->SetTurnSpeed ( &m_vecTurnSpeed );
+        m_pPlayerPed->SetMoveSpeed ( m_vecMoveSpeed );
+        m_pPlayerPed->SetTurnSpeed ( m_vecTurnSpeed );
         Duck ( m_bDucked );
         SetWearingGoggles ( m_bWearingGoggles );
         m_pPlayerPed->SetVisible ( m_bVisible );
@@ -3204,11 +3192,11 @@ void CClientPed::_DestroyModel ()
     }
 
     // Remember the player position
-    m_Matrix.vPos = *m_pPlayerPed->GetPosition ();
+    m_pPlayerPed->GetPosition ( m_Matrix.vPos );
 
     m_fCurrentRotation = m_pPlayerPed->GetCurrentRotation ();
-    m_pPlayerPed->GetMoveSpeed ( &m_vecMoveSpeed );
-    m_pPlayerPed->GetTurnSpeed ( &m_vecTurnSpeed );
+    m_pPlayerPed->GetMoveSpeed ( m_vecMoveSpeed );
+    m_pPlayerPed->GetTurnSpeed ( m_vecTurnSpeed );
     m_bDucked = IsDucked ();
     m_bWearingGoggles = IsWearingGoggles ();
     m_pPlayerPed->SetOnFire ( false );
@@ -3240,7 +3228,7 @@ void CClientPed::_DestroyModel ()
     m_pManager->InvalidateEntity ( this );
 
     // Remove the ped from the world
-    g_pGame->GetPools ()->RemovePed ( m_pPlayerPed );
+    delete m_pPlayerPed;
     m_pPlayerPed = NULL;
     m_pTaskManager = NULL;
 
@@ -3522,7 +3510,7 @@ void CClientPed::InternalWarpIntoVehicle ( CVehicle* pGameVehicle )
             if ( !pCamera->IsInFixedMode () )
             {
                 // Jax: very hacky, clean up if possible (some camera-target pointer)
-                * ( unsigned long * ) ( 0xB6F3B8 ) = ( unsigned long ) pGameVehicle->GetVehicleInterface ();
+                * (CVehicleSAInterface*)0xB6F3B8 = pGameVehicle->GetVehicleInterface();
             }
         }
     }
@@ -3548,7 +3536,7 @@ void CClientPed::InternalRemoveFromVehicle ( CVehicle* pGameVehicle )
             pOutTask->Destroy ();
         }
 
-        m_Matrix.vPos = *m_pPlayerPed->GetPosition ();
+        m_pPlayerPed->GetPosition ( m_Matrix.vPos );
 
         // Local player?
         if ( m_bIsLocalPlayer )
@@ -4097,7 +4085,7 @@ bool CClientPed::GetShotData ( CVector * pvecOrigin, CVector * pvecTarget, CVect
                 vecTarget = vecOrigin;
                 vecTarget.fZ += fRange;
             }
-            else if ( Controller.RightShoulder1 == 255 )    // First-person weapons, crosshair active: sync the crosshair
+            else if ( Controller.IsRightShoulder1Down() )    // First-person weapons, crosshair active: sync the crosshair
             {
                 g_pGame->GetCamera ()->Find3rdPersonCamTargetVector ( fRange, &vecGunMuzzle, &vecOrigin, &vecTarget );
             }
@@ -4326,7 +4314,7 @@ bool CClientPed::HasAkimboPointingUpwards ( void )
         {
             CControllerState csController;
             GetControllerState ( csController );
-            if ( csController.RightShoulder1 )
+            if ( csController.IsRightShoulder1Down() )
             {
                 CWeapon* pWeapon = GetWeapon ( GetCurrentWeaponSlot () );
                 if ( pWeapon )
@@ -4353,13 +4341,13 @@ bool CClientPed::HasAkimboPointingUpwards ( void )
 }
 
 
-float CClientPed::GetDistanceFromCentreOfMassToBaseOfModel ( void )
+float CClientPed::GetDistanceFromCentreOfMassToBaseOfModel()
 {
     if ( m_pPlayerPed )
     {
-        return m_pPlayerPed->GetDistanceFromCentreOfMassToBaseOfModel ();
+        return m_pPlayerPed->GetBasingDistance();
     }
-   return 0.0f;;
+    return 0.0f;
 }
 
 
@@ -5036,15 +5024,15 @@ void CClientPed::SetSpeechEnabled ( bool bEnabled )
 }
 
 
-bool CClientPed::CanReloadWeapon ( void )
+bool CClientPed::CanReloadWeapon()
 {
     unsigned long ulNow = CClientTime::GetTime ();
     CControllerState Current;
     GetControllerState ( Current );
     int iWeaponType = GetWeapon()->GetType();
     //Hes not Aiming, ducked or if he is ducked he is not currently moving and he hasn't moved while crouching in the last 300ms (sometimes the crouching move anim runs over and kills the reload animation)
-    if ( Current.RightShoulder1 == false && 
-        ( !IsDucked() || ( Current.LeftStickX == 0 && Current.LeftStickY == 0 ) )
+    if ( !Current.IsRightShoulder1Down() && 
+        ( !IsDucked() || ( Current.m_leftAxisX == 0 && Current.m_leftAxisY == 0 ) )
         && ulNow - m_ulLastTimeMovedWhileCrouched > 300) 
     {
         //Ignore certain weapons (anything without clip ammo)
@@ -5144,47 +5132,6 @@ void CClientPed::SetStealthAiming ( bool bAiming )
         m_bStealthAiming = bAiming;
     }
 }
-
-
-CAnimBlendAssociation * CClientPed::AddAnimation ( AssocGroupId group, AnimationId id )
-{
-    if ( m_pPlayerPed )
-    {
-        return g_pGame->GetAnimManager ()->AddAnimation ( m_pPlayerPed->GetRpClump (), group, id );
-    }
-    return NULL;
-}
-
-
-CAnimBlendAssociation * CClientPed::BlendAnimation ( AssocGroupId group, AnimationId id, float fBlendDelta )
-{
-    if ( m_pPlayerPed )
-    {
-        return g_pGame->GetAnimManager ()->BlendAnimation ( m_pPlayerPed->GetRpClump (), group, id, fBlendDelta );
-    }
-    return NULL;
-}
-
-
-CAnimBlendAssociation * CClientPed::GetAnimation ( AnimationId id )
-{
-    if ( m_pPlayerPed )
-    {
-        return g_pGame->GetAnimManager ()->RpAnimBlendClumpGetAssociation ( m_pPlayerPed->GetRpClump (), id );
-    }
-    return NULL;
-}
-
-
-CAnimBlendAssociation * CClientPed::GetFirstAnimation ( void )
-{
-    if ( m_pPlayerPed )
-    {
-        return g_pGame->GetAnimManager ()->RpAnimBlendClumpGetFirstAssociation ( m_pPlayerPed->GetRpClump () );
-    }
-    return NULL;
-}
-
 
 CSphere CClientPed::GetWorldBoundingSphere ( void )
 {

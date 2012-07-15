@@ -29,8 +29,10 @@ static const luaL_Reg matrix_interface[] =
 
 static int luaconstructor_matrix( lua_State *L )
 {
+    CMatrix *matrix = (CMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
     ILuaClass& j = *lua_refclass( L, 1 );
-    j.SetTransmit( LUACLASS_MATRIX );
+    j.SetTransmit( LUACLASS_MATRIX, matrix );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );

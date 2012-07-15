@@ -81,3 +81,45 @@ addCommandHandler("getrot", function()
 		print("X: " .. x .. ", Y: " .. y .. ", Z: " .. z);
 	end
 );
+
+local testVehicles = {};
+
+addCommandHandler("testlag", function()
+		local m;
+		local x, y, z = localPlayer.getPosition();
+		
+		y = y + 15;
+		z = z + 5;
+		
+		for m=1,100 do
+			local veh = createVehicle(100, x, y, z + m * 3);
+		
+			if (veh) then
+				table.insert(testVehicles, veh);
+			end
+		end
+	end
+);
+
+addCommandHandler("clear", function()
+		local m,n;
+		
+		for m,n in ipairs(testVehicles) do
+			n.destroy();
+		end
+		
+		testVehicles = {};
+	end
+);
+
+local aa = {};
+
+addCommandHandler("tt", function()
+		for m=1,100 do
+			table.insert(aa, class.construct(function()
+				
+				end
+			));
+		end
+	end
+);

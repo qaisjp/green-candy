@@ -24,7 +24,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( addCommandHandler )
     {
     //  bool addCommandHandler ( string commandName, function handlerFunction, [bool caseSensitive = true] )
-        SString strKey; CLuaFunctionRef iLuaFunction; bool bCaseSensitive;
+        SString strKey; LuaFunctionRef iLuaFunction; bool bCaseSensitive;
 
         CScriptArgReader argStream ( L );
         argStream.ReadString ( strKey );
@@ -47,7 +47,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogCustom ( L, SString ( "Bad argument @ '%s' [%s]", "addCommandHandler", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "addCommandHandler", *argStream.GetErrorMessage () ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -76,7 +76,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogCustom ( L, SString ( "Bad argument @ '%s' [%s]", "removeCommandHandler", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "removeCommandHandler", *argStream.GetErrorMessage () ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -107,7 +107,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogCustom ( L, SString ( "Bad argument @ '%s' [%s]", "executeCommandHandler", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "executeCommandHandler", *argStream.GetErrorMessage () ) );
 
         lua_pushboolean ( L, false );
         return 1;

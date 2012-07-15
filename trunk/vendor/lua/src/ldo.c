@@ -117,7 +117,7 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud)
     return lj.status;
 }
 
-int luaD_rawrunprotectedEx( lua_State *L, Pfunc f, void *ud, std::string& err )
+int luaD_rawrunprotectedEx( lua_State *L, Pfunc f, void *ud, std::string& err, lua_Debug *debug )
 {
     struct lua_longjmp lj;
     lj.status = 0;
@@ -129,6 +129,9 @@ int luaD_rawrunprotectedEx( lua_State *L, Pfunc f, void *ud, std::string& err )
     }
     catch( lua_exception& e )
     {
+        if ( debug )
+            e.getDebug( *debug );
+
         err = e.what();
         return L->status = e.status();
     }
@@ -414,7 +417,7 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
 void luaD_call (lua_State *L, StkId func, int nResults)
 {
     callstack_ref ref( *L );
-    CallInfo *info = L->ci;
+    ptrdiff_t cioff = saveci( L, L->ci );
 
     try
     {
@@ -424,7 +427,7 @@ void luaD_call (lua_State *L, StkId func, int nResults)
     catch( ... )
     {
         // Restore basic business
-        L->ci = info;
+        L->ci = restoreci( L, cioff );
         throw;
     }
 
@@ -490,23 +493,19 @@ LUA_API int lua_yield( lua_State *L, int nresults )
 }
 
 
-int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t ef)
+int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t ef, lua_Debug *debug)
 {
   int status;
-  unsigned short oldnCcalls = L->nCcalls;
-  ptrdiff_t old_ci = saveci(L, L->ci);
   lu_byte old_allowhooks = L->allowhook;
   ptrdiff_t old_errfunc = L->errfunc;
   std::string errmsg;
   L->errfunc = ef;
-  status = luaD_rawrunprotectedEx(L, func, u, errmsg);
+  status = luaD_rawrunprotectedEx(L, func, u, errmsg, debug);
   if (status != 0) {  /* an error occurred? */
     StkId oldtop = restorestack(L, old_top);
     luaF_close(L, oldtop);  /* close eventual pending closures */
     L->top = oldtop;
     lua_pushlstring( L, errmsg.c_str(), errmsg.size() );
-    L->nCcalls = oldnCcalls;
-    L->ci = restoreci(L, old_ci);
     L->base = L->ci->base;
     L->savedpc = L->ci->savedpc;
     L->allowhook = old_allowhooks;
@@ -551,7 +550,7 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name)
   int status;
   p.z = z; p.name = name;
   luaZ_initbuffer(L, &p.buff);
-  status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc);
+  status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc, NULL);
   luaZ_freebuffer(L, &p.buff);
   return status;
 }

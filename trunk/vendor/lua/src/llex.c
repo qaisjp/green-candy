@@ -98,23 +98,17 @@ static const char *txtToken (LexState *ls, int token) {
   }
 }
 
+void luaX_lexerror (LexState *ls, const char *msg, int token)
+{
+    const char *orig = msg;
 
-void luaX_lexerror (LexState *ls, const char *msg, int token) {
-  char buff[MAXSRC];
-#ifdef __cplusplus
-  const char *orig = msg;
-#endif
-  luaO_chunkid(buff, getstr(ls->source), MAXSRC);
-  msg = luaO_pushfstring(ls->L, "%s:%d: %s", buff, ls->linenumber, msg);
-  if (token)
-    luaO_pushfstring(ls->L, "%s near " LUA_QS, msg, txtToken(ls, token));
-#ifdef __cplusplus
-  throw lua_exception( ls->L, LUA_ERRSYNTAX, orig );
-#else
-  luaD_throw(ls->L, LUA_ERRSYNTAX);
-#endif
+    if ( !token )
+        lua_pushstring( ls->L, msg );
+    else
+        luaO_pushfstring( ls->L, "%s near " LUA_QS, msg, txtToken(ls, token) );
+
+    throw lua_exception( ls->L, LUA_ERRSYNTAX, lua_tostring( ls->L, -1 ) );
 }
-
 
 void luaX_syntaxerror (LexState *ls, const char *msg) {
   luaX_lexerror(ls, msg, ls->t.token);

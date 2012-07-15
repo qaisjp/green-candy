@@ -21,31 +21,32 @@ CResourceManager::CResourceManager()
 {
 }
 
-
-CResourceManager::~CResourceManager ( void )
+CResourceManager::~CResourceManager()
 {
-    while ( !m_resources.empty () )
+    while ( !m_resources.empty() )
     {
-        CResource* pResource = m_resources.back ();
+        CResource *res = m_resources.back();
 
-        CLuaArguments Arguments;
-        Arguments.PushUserData ( pResource );
-        pResource->GetResourceEntity ()->CallEvent ( "onClientResourceStop", Arguments, true );
-        delete pResource;
+        CLuaArguments args;
+        Arguments.PushUserData( res );
+        res->GetResourceEntity()->CallEvent( "onClientResourceStop", args, true );
+        delete res;
 
-        m_resources.pop_back ();
+        m_resources.pop_back();
     }
 }
 
-CResource* CResourceManager::Add ( unsigned short usID, char* szResourceName, CClientEntity* pResourceEntity, CClientEntity* pResourceDynamicEntity )
+CResource* CResourceManager::Add( unsigned short id, const char *name, CClientEntity *resEntity, CClientEntity *dynamicEntity )
 {
-    CResource* pResource = new CResource ( usID, szResourceName, pResourceEntity, pResourceDynamicEntity );
-    if ( pResource )
-    {
-        m_resources.push_back ( pResource );
-        return pResource;
-    }
-    return NULL;
+    filePath resPath;
+
+    if ( !resFileRoot->GetFullPathFromRoot( name, false, resPath ) )
+        return NULL;
+
+    CResource *res = new CResource( id, name, resEntity, dynamicEntity );
+
+    m_resources.push_back( res );
+    return res;
 }
 
 void CResourceManager::LoadUnavailableResources( CClientEntity *root )
@@ -59,29 +60,18 @@ void CResourceManager::LoadUnavailableResources( CClientEntity *root )
     }
 }
 
-void CResourceManager::Remove ( CResource* pResource )
+void CResourceManager::Remove( Resource *res )
 {
     // Delete all the resource's locally created children (the server won't do that)
-    pResource->DeleteClientChildren ();
+    ((CResource)res)->DeleteClientChildren();
 
-    // Delete the resource
-    if ( !m_resources.empty() ) m_resources.remove ( pResource );
-    delete pResource;
+    ResourceManager::Remove( res );
 }
 
-
-bool CResourceManager::Exists ( CResource* pResource )
+void CResourceManager::StopAll()
 {
-    return m_resources.Contains ( pResource );
-}
-
-
-void CResourceManager::StopAll ( void )
-{
-    while ( m_resources.size () > 0 )
-    {
-        Remove ( m_resources.front () );
-    }
+    while ( m_resources.size() != 0 )
+        Remove( m_resources.front() );
 }
 
 bool CResourceManager::ParseResourcePath( Resource*& res, const char *path, std::string& meta )
@@ -95,7 +85,6 @@ bool CResourceManager::ParseResourcePath( Resource*& res, const char *path, std:
     meta += path;
     return true;
 }
-
 
 CFile* CResourceManager::OpenStream( Resource *res, const char *path, const char *mode )
 {

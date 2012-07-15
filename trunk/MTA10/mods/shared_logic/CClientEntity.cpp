@@ -387,7 +387,7 @@ bool CClientEntity::GetCustomDataInt ( const char* szName, int& iOut, bool bInhe
         int iType = pData->GetType ();
         if ( iType == LUA_TSTRING )
         {
-            iOut = atoi ( pData->GetString () );
+            iOut = atoi ( pData->GetString().c_str() );
         }
         else if ( iType == LUA_TNUMBER )
         {
@@ -426,7 +426,7 @@ bool CClientEntity::GetCustomDataFloat ( const char* szName, float& fOut, bool b
         int iType = pData->GetType ();
         if ( iType == LUA_TSTRING )
         {
-            fOut = static_cast < float > ( atof ( pData->GetString () ) );
+            fOut = static_cast < float > ( atof ( pData->GetString().c_str() ) );
         }
         else if ( iType == LUA_TNUMBER )
         {
@@ -454,7 +454,7 @@ bool CClientEntity::GetCustomDataBool ( const char* szName, bool& bOut, bool bIn
         int iType = pData->GetType ();
         if ( iType == LUA_TSTRING )
         {
-            const char* szString = pData->GetString ();
+            const char* szString = pData->GetString ().c_str();
             if ( strcmp ( szString, "true" ) == 0 || strcmp ( szString, "1" ) == 0 )
             {
                 bOut = true;
@@ -572,7 +572,8 @@ bool CClientEntity::GetMatrix ( CMatrix& matrix ) const
     const CEntity* pEntity = GetGameEntity ();
     if ( pEntity )
     {
-        if ( pEntity->GetMatrix ( &matrix ) ) return true;
+        pEntity->GetMatrix( matrix );
+        return true;
     }
 
     return false;
@@ -584,7 +585,7 @@ bool CClientEntity::SetMatrix ( const CMatrix& matrix )
     CEntity * pEntity = GetGameEntity ();
     if ( pEntity )
     {
-        pEntity->SetMatrix ( const_cast < CMatrix * > ( &matrix ) );
+        pEntity->SetMatrix ( matrix );
         return true;
     }
 
@@ -707,7 +708,7 @@ void CClientEntity::SetAttachedOffsets ( CVector & vecPosition, CVector & vecRot
 }
 
 
-bool CClientEntity::AddEvent ( CLuaMain* pLuaMain, const char* szName, const CLuaFunctionRef& iLuaFunction, bool bPropagated )
+bool CClientEntity::AddEvent ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction, bool bPropagated )
 {
     return m_pEventManager->Add ( pLuaMain, szName, iLuaFunction, bPropagated );
 }
@@ -718,7 +719,7 @@ bool CClientEntity::CallEvent ( const char* szName, const CLuaArguments& Argumen
     CEvents* pEvents = g_pClientGame->GetEvents();
 
     // Make sure our event-manager knows we're about to call an event
-    pEvents->PreEventPulse ();
+    pEvents->PrePulse();
 
     // Call the event on our parents/us first
     CallParentEvent ( szName, Arguments, this );
@@ -730,10 +731,10 @@ bool CClientEntity::CallEvent ( const char* szName, const CLuaArguments& Argumen
     }
 
     // Tell the event manager that we're done calling the event
-    pEvents->PostEventPulse ();
+    pEvents->PostPulse();
 
     // Return whether it got cancelled or not
-    return ( !pEvents->WasEventCancelled () );
+    return ( !pEvents->WasCancelled () );
 }
 
 
@@ -776,7 +777,7 @@ void CClientEntity::CallParentEvent ( const char* szName, const CLuaArguments& A
 }
 
 
-bool CClientEntity::DeleteEvent ( CLuaMain* pLuaMain, const char* szName, const CLuaFunctionRef& iLuaFunction )
+bool CClientEntity::DeleteEvent ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction )
 {
     return m_pEventManager->Delete ( pLuaMain, szName, iLuaFunction );
 }
@@ -1266,18 +1267,6 @@ bool CClientEntity::IsOnScreen ( void )
     }
     return false;
 }
-
-
-RpClump * CClientEntity::GetClump ( void )
-{
-    CEntity * pEntity = GetGameEntity ();
-    if ( pEntity )
-    {
-        return pEntity->GetRpClump ();
-    }
-    return NULL;
-}
-
 
 // Entities from root optimization for getElementsByType
 typedef CIntrusiveListExt < CClientEntity, &CClientEntity::m_FromRootNode > CFromRootListType;

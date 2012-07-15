@@ -10,15 +10,11 @@
 *
 *****************************************************************************/
 
-class CLuaTimerManager;
-
 #ifndef __CLUATIMERMANAGER_H
 #define __CLUATIMERMANAGER_H
 
 #include <list>
 
-class CLuaTimerManager : public LuaTimerManager
-{
-};
+typedef LuaTimerManager CLuaTimerManager;
 
 #endif

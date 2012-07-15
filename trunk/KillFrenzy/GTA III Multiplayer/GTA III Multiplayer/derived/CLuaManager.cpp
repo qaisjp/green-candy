@@ -21,7 +21,10 @@ CLuaManager::~CLuaManager()
 {
 }
 
-static void LoadCFunctions( lua_State *L )
+#undef LUA_REGISTER
+#define LUA_REGISTER( L, x ) L->RegisterFunction( #x, x )
+
+static void LoadCFunctions( CLuaMain *L )
 {
     using namespace CLuaFunctionDefs;
 
@@ -33,6 +36,8 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, callSCM );
 
     LUA_REGISTER( L, createVehicle );
+
+    LUA_REGISTER( L, print );
 }
 
 CLuaMain* CLuaManager::Create( const std::string& name, CFileTranslator& fileRoot )
@@ -41,7 +46,7 @@ CLuaMain* CLuaManager::Create( const std::string& name, CFileTranslator& fileRoo
     main.m_name = name;
 
     Init( &main );
-    LoadCFunctions( *main );
+    LoadCFunctions( &main );
 
     // Add special globals
     g_player->PushStack( *main );

@@ -16,9 +16,18 @@
 class CLuaManager : public LuaManager
 {
 public:
+                                    CLuaManager();
+                                    ~CLuaManager();
+
+    CLuaMain*                       Create( const std::string& name, CFileTranslator& fileRoot, CResource& resource );
+    bool                            Remove( LuaMain *lua );
+
     inline CScriptDebugging&        GetDebug()  { return (CScriptDebugging&)m_debug; }
 
     const CLuaMain*                 GetStatus( int *line, std::string *src, std::string *proto_name )    { return (const CLuaMain*)LuaManager::GetStatus( line, src, proto_name ); }
+
+protected:
+    CRegisteredCommands m_commands;
 };
 
 #endif //_LUA_MANAGER_

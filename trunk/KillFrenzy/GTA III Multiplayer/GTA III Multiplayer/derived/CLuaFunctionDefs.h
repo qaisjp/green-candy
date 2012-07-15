@@ -31,6 +31,9 @@ namespace CLuaFunctionDefs
 
     // Vehicle functions
     LUA_DECLARE( createVehicle );
+
+    // Utility functions
+    LUA_DECLARE( print );
 };
 
 #endif //_LUA_FUNCTIONS_

@@ -153,4 +153,10 @@ namespace CLuaFunctionDefs
         gameVeh.PushStack( L );
         return 1;
     }
+
+    LUA_DECLARE( print )
+    {
+        Console_Printf( "%s\n", 0xffffffff, lua_tostring( L, 1 ) );
+        return 0;
+    }
 }

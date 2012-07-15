@@ -26,12 +26,10 @@ public:
 
     static bool                     GetAnalogControlIndex ( const char * szName, unsigned int & uiIndex );
 
-                                    CClientPad              ( void );
+                                    CClientPad              ();
 
     bool                            GetControlState         ( const char * szName, bool & bState );
     bool                            SetControlState         ( const char * szName, bool bState );
-
-    void                            DoPulse                 ( CClientPed * pPed );
 
     static bool                     GetAnalogControlState   ( const char * szName, CControllerState & cs, bool bOnFoot, float & fState );
     static bool                     GetControlState         ( const char * szName, CControllerState & State, bool bOnFoot );

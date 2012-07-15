@@ -21,7 +21,7 @@ public:
     bool                        SetLogfile( const char *path, unsigned int level );
 
 protected:
-    void                        NotifySystem( unsigned int level, lua_State *lua, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b );
+    void                        NotifySystem( unsigned int level, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b );
     void                        PathRelative( const char *in, filePath& out );
 
 private:

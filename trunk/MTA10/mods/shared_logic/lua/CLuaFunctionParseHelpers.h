@@ -16,9 +16,9 @@ DECLARE_ENUM( eLuaType );
 DECLARE_ENUM( CGUIVerticalAlign );
 DECLARE_ENUM( CGUIHorizontalAlign );
 DECLARE_ENUM( eInputMode );
-DECLARE_ENUM( eAccessType );
 DECLARE_ENUM( TrafficLight::EColor );
 DECLARE_ENUM( TrafficLight::EState );
+DECLARE_ENUM( eAccessType );
 DECLARE_ENUM( CEasingCurve::eType );
 DECLARE_ENUM( eAmbientSoundType )
 DECLARE_ENUM( eCGUIType );
@@ -96,7 +96,6 @@ inline SString GetClassTypeName ( CClientProjectile* )      { return "projectile
 inline SString GetClassTypeName ( CClientGUIElement* )      { return "gui-element"; }
 inline SString GetClassTypeName ( CClientColShape* )        { return "colshape"; }
 inline SString GetClassTypeName ( CClientDummy* )           { return "dummy"; }
-inline SString GetClassTypeName ( ScriptFile* )             { return "scriptfile"; }
 inline SString GetClassTypeName ( CClientDFF* )             { return "dff"; }
 inline SString GetClassTypeName ( CClientColModel* )        { return "col-model"; }
 inline SString GetClassTypeName ( CClientTXD* )             { return "txd"; }
@@ -159,11 +158,11 @@ CXMLNode* UserDataCast ( CXMLNode*, void* ptr, lua_State* )
 template < class T >
 CLuaTimer* UserDataCast ( CLuaTimer*, void* ptr, lua_State* luaVM )
 {
-    CLuaMain* pLuaMain = CLuaDefs::m_pLuaManager->GetVirtualMachine ( luaVM );
+    CLuaMain* pLuaMain = CLuaFunctionDefs::lua_readcontext( luaVM );
     if ( pLuaMain )
     {
         CLuaTimer* pLuaTimer = reinterpret_cast < CLuaTimer* > ( ptr );
-        if ( pLuaMain->GetTimerManager ()->Exists ( pLuaTimer ) )
+        if ( pLuaMain->GetTimerManager ().Exists ( pLuaTimer ) )
             return pLuaTimer;
     }
     return NULL;

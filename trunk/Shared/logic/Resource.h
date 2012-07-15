@@ -13,17 +13,20 @@
 #ifndef _BASE_RESOURCE_
 #define _BASE_RESOURCE_
 
-class Resource
+#define LUACLASS_RESOURCE   22
+
+class Resource : public LuaClass
 {
+    friend class ResourceManager;
 public:
-                                Resource( unsigned short id, const filePath& name, CFileTranslator& root );
+                                Resource( LuaMain& main, const filePath& name, CFileTranslator& root );
     virtual                     ~Resource();
 
-    inline unsigned short       GetID()                 { return m_id; };
     inline const filePath&      GetName()               { return m_name; };
-    inline LuaMain*             GetVM()                 { return m_lua; };
+    inline LuaMain&             GetVM()                 { return m_lua; };
     inline bool                 GetActive()             { return m_active; };
 
+    virtual bool                GetFullMetaPath( const char *path, filePath& absPath );
     virtual CFile*              OpenStream( const char *path, const char *mode );
     virtual bool                FileCopy( const char *src, const char *dst );
     virtual bool                FileRename( const char *src, const char *dst );
@@ -31,10 +34,9 @@ public:
     virtual bool                FileExists( const char *path ) const;
     virtual bool                FileDelete( const char *path );
 
-private:
-    unsigned short      m_id;
+protected:
     filePath            m_name;
-    LuaMain*            m_lua;
+    LuaMain&            m_lua;
     bool                m_active;
 
     CFileTranslator&    m_fileRoot;

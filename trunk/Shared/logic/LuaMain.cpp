@@ -41,8 +41,6 @@ LuaFunctionRef LuaMain::CreateReference( int stack )
         return LuaFunctionRef( this, e_info->idx, ptr );
     }
 
-    //TODO: globalize references across threads
-
     // Get a lua ref
     lua_pushvalue( m_lua, stack );
     int ref = luaL_ref( m_lua, LUA_REGISTRYINDEX );
@@ -237,7 +235,6 @@ bool LuaMain::LoadScriptFromBuffer( const char *buf, size_t size, const char *pa
         }
         return false;
     }
-    m_system.ResetInstructionCount();
 
     return PCallStackVoid( 0 );
 }
@@ -250,7 +247,6 @@ bool LuaMain::LoadScript( const char *buf )
         m_system.GetDebug().LogError( "Loading in-line script failed: %s", lua_tostring( m_lua, -1 ) );
         return false;
     }
-    m_system.ResetInstructionCount();
 
     switch( lua_pcall( m_lua, 0, 0, 0 ) )
     {

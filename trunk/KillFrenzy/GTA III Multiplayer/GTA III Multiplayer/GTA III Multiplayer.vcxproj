@@ -131,6 +131,7 @@
     <ClInclude Include="..\..\..\Shared\logic\LuaClass.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaCommon.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaFunctionDefs.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaFunctionDefs.Resources.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaFunctionRef.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaMain.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaManager.h" />
@@ -150,6 +151,7 @@
     <ClInclude Include="derived\CLuaMain.h" />
     <ClInclude Include="derived\CLuaManager.h" />
     <ClInclude Include="derived\CRegisteredCommands.h" />
+    <ClInclude Include="derived\CResource.h" />
     <ClInclude Include="derived\CResourceManager.h" />
     <ClInclude Include="derived\CScriptDebugging.h" />
     <ClInclude Include="derived\include.h" />
@@ -184,6 +186,7 @@
     <ClCompile Include="..\..\..\Shared\logic\LuaArguments.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaCFunctions.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.Resources.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaFunctionRef.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaMain.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaManager.cpp" />
@@ -205,6 +208,7 @@
     <ClCompile Include="derived\CLuaMain.cpp" />
     <ClCompile Include="derived\CLuaManager.cpp" />
     <ClCompile Include="derived\CRegisteredCommands.cpp" />
+    <ClCompile Include="derived\CResource.cpp" />
     <ClCompile Include="derived\CResourceManager.cpp" />
     <ClCompile Include="derived\CScriptDebugging.cpp" />
     <ClCompile Include="dinput8.cpp" />

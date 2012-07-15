@@ -29,6 +29,12 @@ void CPadSAInterface::SetState( const CControllerState& cs )
     m_new = cs;
 }
 
+// Hack for hax
+void CPedSAInterface::InjectCurrent( const CControllerState& cs )
+{
+    m_new = cs;
+}
+
 void CPadSAInterface::SetHornHistory( bool state )
 {
     m_numHorn = ( m_numHorn + 1 ) % MAX_HORN_HISTORY;

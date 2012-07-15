@@ -36,7 +36,17 @@ CPadSAInterface* CPedSAInterface::GetJoypad()
     return pGame->GetPadManager()->GetJoypad( 0 );
 }
 
-bool 
+void CPedSAInterface::OnFrame()
+{
+    // Update our alpha
+    unsigned char ucAlpha = m_alpha;
+
+    // Are we in a different interior to the camera? set our alpha to 0
+    if ( m_areaCode != pGame->GetWorld()->GetCurrentArea() )
+        ucAlpha = 0;
+
+    pGame->GetVisibilityPlugins()->SetClumpAlpha( (RpClump*)m_rwObject, ucAlpha );
+}
 
 CPedSA::CPedSA (  ) :
     m_pPedIntelligence ( NULL ),

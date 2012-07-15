@@ -37,5 +37,6 @@ public:
 };
 
 extern CFileTranslator *modFileRoot;
+extern CFileTranslator *mtaFileRoot;
 
 #endif
