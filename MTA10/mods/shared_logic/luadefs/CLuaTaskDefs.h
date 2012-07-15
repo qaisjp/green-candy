@@ -15,25 +15,24 @@
 #include "CLuaDefs.h"
 #include "lua/LuaCommon.h"
 
-class CLuaTaskDefs: public CLuaDefs
+namespace CLuaFunctionDefs
 {
-public:
-    static void     LoadFunctions                       ( void );
+    void LoadTaskFunctions();
 
-    static int      createTaskInstance                  ( lua_State* luaVM );
+    LUA_DECLARE( createTaskInstance );
 
-    static int      getTaskName                         ( lua_State* luaVM );
+    LUA_DECLARE( getTaskName );
 
-    static int      getTaskParameter                    ( lua_State* luaVM );
-    static int      getTaskParameters                   ( lua_State* luaVM );
-    static int      setTaskParameters                   ( lua_State* luaVM );
-    static int      clearTaskParameters                 ( lua_State* luaVM );
+    LUA_DECLARE( getTaskParameter );
+    LUA_DECLARE( getTaskParameters );
+    LUA_DECLARE( setTaskParameters );
+    LUA_DECLARE( clearTaskParameters );
 
-    static int      runTaskFunction                     ( lua_State* luaVM );
+    LUA_DECLARE( runTaskFunction );
 
     // Should be in player defs
-    static int      getPlayerTaskInstance               ( lua_State* luaVM );
-    static int      setPlayerTask                       ( lua_State* luaVM );
+    LUA_DECLARE( getPlayerTaskInstance );
+    LUA_DECLARE( setPlayerTask );
 };
 
 #endif

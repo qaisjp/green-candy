@@ -18,9 +18,6 @@
 *
 *****************************************************************************/
 
-// This class controls a single resource, being a zip file 
-// or a folder that contains a number of files
-
 #ifndef CRESOURCE_H
 #define CRESOURCE_H
 
@@ -31,17 +28,8 @@
 #include "CResourceFile.h"
 #include "CResourceManager.h"
 #include "CElementGroup.h"
-#include <unzip.h>
-#include <list>
-#include <vector>
 #include "ehs/ehs.h"
-#include <time.h>
 #include <pthread.h>
-
-#define MAX_AUTHOR_LENGTH           255
-#define MAX_RESOURCE_NAME_LENGTH    255
-#define MAX_FUNCTION_NAME_LENGTH    50
-#define MAX_RESOURCE_VERSION_LENGTH 100
 
 struct SVersion
 {

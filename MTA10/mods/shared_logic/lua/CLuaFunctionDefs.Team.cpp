@@ -19,112 +19,106 @@
 
 #include "StdInc.h"
 
-using std::list;
-
-int CLuaFunctionDefs::GetTeamFromName ( lua_State* luaVM )
+namespace CLuaFunctionDefs
 {
-    if ( lua_type ( luaVM, 1 ) == LUA_TSTRING )
+    LUA_DECLARE( getTeamFromName )
     {
-        const char* szTeamName = lua_tostring ( luaVM, 1 );
-        CClientTeam* pTeam = m_pTeamManager->GetTeam ( szTeamName );
-        if ( pTeam )
+        if ( lua_type ( L, 1 ) == LUA_TSTRING )
         {
-            lua_pushelement ( luaVM, pTeam );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getTeamFromName" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetTeamName ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
-    {
-        CClientTeam* pTeam = lua_toteam ( luaVM, 1 );
-        if ( pTeam )
-        {
-            const char* szName = pTeam->GetTeamName ();
-            if ( szName )
+            const char* szTeamName = lua_tostring ( L, 1 );
+            CClientTeam* pTeam = m_pTeamManager->GetTeam ( szTeamName );
+            if ( pTeam )
             {
-                lua_pushstring ( luaVM, szName );
+                lua_pushelement ( L, pTeam );
                 return 1;
             }
         }
         else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getTeamName", "team", 1 );
+            m_pScriptDebugging->LogBadType( "getTeamFromName" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getTeamName" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetTeamColor ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
+    LUA_DECLARE( getTeamName )
     {
-        CClientTeam* pTeam = lua_toteam ( luaVM, 1 );
-        if ( pTeam )
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
         {
-            unsigned char ucRed, ucGreen, ucBlue;
-            pTeam->GetColor ( ucRed, ucGreen, ucBlue );
-
-            lua_pushnumber ( luaVM, ucRed );
-            lua_pushnumber ( luaVM, ucGreen );
-            lua_pushnumber ( luaVM, ucBlue );
-            return 3;
-        }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getTeamColor", "team", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getTeamColor" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetTeamFriendlyFire ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
-    {
-        CClientTeam* pTeam = lua_toteam ( luaVM, 1 );
-        if ( pTeam )
-        {
-            bool bFriendlyFire = pTeam->GetFriendlyFire ();
-            lua_pushboolean ( luaVM, bFriendlyFire );
-            return 1;
-        }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getTeamFriendlyFire", "team", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getTeamFriendlyFire" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetPlayersInTeam ( lua_State* luaVM )
-{
-    CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-    if ( pLuaMain )
-    {
-        if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
-        {
-            CClientTeam* pTeam = lua_toteam ( luaVM, 1 );
+            CClientTeam* pTeam = lua_toteam ( L, 1 );
             if ( pTeam )
             {
-                lua_newtable ( luaVM );
+                const char* szName = pTeam->GetTeamName ();
+                if ( szName )
+                {
+                    lua_pushstring ( L, szName );
+                    return 1;
+                }
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getTeamName", "team", 1 );
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getTeamName" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getTeamColor )
+    {
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
+        {
+            CClientTeam* pTeam = lua_toteam ( L, 1 );
+            if ( pTeam )
+            {
+                unsigned char ucRed, ucGreen, ucBlue;
+                pTeam->GetColor ( ucRed, ucGreen, ucBlue );
+
+                lua_pushnumber ( L, ucRed );
+                lua_pushnumber ( L, ucGreen );
+                lua_pushnumber ( L, ucBlue );
+                return 3;
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getTeamColor", "team", 1 );
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getTeamColor" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getTeamFriendlyFire )
+    {
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
+        {
+            CClientTeam* pTeam = lua_toteam ( L, 1 );
+            if ( pTeam )
+            {
+                bool bFriendlyFire = pTeam->GetFriendlyFire ();
+                lua_pushboolean ( L, bFriendlyFire );
+                return 1;
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getTeamFriendlyFire", "team", 1 );
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getTeamFriendlyFire" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getPlayersInTeam )
+    {
+        CLuaMain* pLuaMain = lua_readcontext( L );
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
+        {
+            CClientTeam* pTeam = lua_toteam ( L, 1 );
+            if ( pTeam )
+            {
+                lua_newtable ( L );
 
                 unsigned int uiIndex = 0;
 
@@ -132,44 +126,41 @@ int CLuaFunctionDefs::GetPlayersInTeam ( lua_State* luaVM )
                 for ( ; iter != pTeam->IterEnd () ; iter++ )
                 {
                     CClientPlayer* pPlayer = *iter;
-                    lua_pushnumber ( luaVM, ++uiIndex );
-                    lua_pushelement ( luaVM, pPlayer );
-                    lua_settable ( luaVM, -3 );
+                    lua_pushnumber ( L, ++uiIndex );
+                    lua_pushelement ( L, pPlayer );
+                    lua_settable ( L, -3 );
                 }
 
                 return 1;
             }
             else
-                m_pScriptDebugging->LogBadPointer ( luaVM, "getPlayersInTeam", "team", 1 );
+                m_pScriptDebugging->LogBadPointer( "getPlayersInTeam", "team", 1 );
         }
         else
-            m_pScriptDebugging->LogBadType ( luaVM, "getPlayersInTeam" );
+            m_pScriptDebugging->LogBadType( "getPlayersInTeam" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::CountPlayersInTeam ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
+    LUA_DECLARE( countPlayersInTeam )
     {
-        CClientTeam* pTeam = lua_toteam ( luaVM, 1 );
-        if ( pTeam )
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
         {
-            unsigned int uiCount = pTeam->CountPlayers ();
-            lua_pushnumber ( luaVM, uiCount );
-            return 1;
+            CClientTeam* pTeam = lua_toteam ( L, 1 );
+            if ( pTeam )
+            {
+                unsigned int uiCount = pTeam->CountPlayers ();
+                lua_pushnumber ( L, uiCount );
+                return 1;
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "countPlayersInTeam", "team", 1 );
         }
         else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "countPlayersInTeam", "team", 1 );
+            m_pScriptDebugging->LogBadType( "countPlayersInTeam" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "countPlayersInTeam" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
 }
-
-

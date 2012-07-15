@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CResource.h
 *  PURPOSE:     Resource object class
@@ -9,6 +9,7 @@
 *               Jax <>
 *               Chris McArthur <>
 *               Ed Lyons <eai@opencoding.net>
+*               The_GTA <quiret@gmx.de>
 *               
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -17,94 +18,94 @@
 #ifndef CRESOURCE_H
 #define CRESOURCE_H
 
-#include "..\shared_logic\lua\CLuaManager.h"
-#include "CClientEntity.h"
 #include "CResourceConfigItem.h"
 #include "CResourceFile.h"
 #include "CElementGroup.h"
-#include <list>
-
-#define MAX_RESOURCE_NAME_LENGTH    255
-#define MAX_FUNCTION_NAME_LENGTH    50
 
 class CExportedFunction
 {
-private:
-    char            m_szFunctionName[MAX_FUNCTION_NAME_LENGTH];
 public:
-    CExportedFunction ( char * szFunctionName )
+    CExportedFunction( const std::string& name )
     {
-        strncpy ( m_szFunctionName, szFunctionName, MAX_FUNCTION_NAME_LENGTH - 1 );
-    };
+        m_name = name;
+    }
 
-    inline char *   GetFunctionName ( void ) { return m_szFunctionName; }
+    inline const std::string&   GetFunctionName()    { return m_name; }
+
+private:
+    std::string m_name;
 };
+
+class CClientEntity;
 
 class CResource : public Resource
 {  
 public:
-                            CResource       ( unsigned short usID, char* szResourceName, CClientEntity* pResourceEntity, CClientEntity* pResourceDynamicEntity );
-                            ~CResource      ( void );
+                                CResource( unsigned short id, const char *name, CClientEntity *entity, CClientEntity *dynamicEntity );
+                                ~CResource();
 
-    void                    Load            ( CClientEntity *pRootEntity );
+    void                        Load( CClientEntity *root );
 
-    bool                    InDownloadQueue     ( void )            { return m_bInDownloadQueue; };
-    bool                    SetInDownloadQueue  ( bool bIn )        { m_bInDownloadQueue = bIn; };
+    bool                        InDownloadQueue()                                   { return m_inDownQueue; };
+    bool                        SetInDownloadQueue( bool in )                       { m_inDownQueue = in; };
 
-    CDownloadableResource*  QueueFile       ( CDownloadableResource::eResourceType resourceType, const char *szFileName, CChecksum serverChecksum );
+    CDownloadableResource*      QueueFile( CDownloadableResource::eResourceType type, const char *path, CChecksum chksm );
 
-    CDownloadableResource*  AddConfigFile   ( char *szFileName, CChecksum serverChecksum );
+    typedef std::list <class CResourceConfigItem*> configList_t;
 
-    inline std::list < class CResourceConfigItem* >::iterator    ConfigIterBegin     ( void )        { return m_ConfigFiles.begin(); }
-    inline std::list < class CResourceConfigItem* >::iterator    ConfigIterEnd       ( void )        { return m_ConfigFiles.end(); }
+    CDownloadableResource*      AddConfigFile( const char *path, CChecksum chksum );
+    configList_t::iterator      ConfigIterBegin()                                   { return m_configFiles.begin(); }
+    configList_t::iterator      ConfigIterEnd()                                     { return m_configFiles.end(); }
 
-    CElementGroup *         GetElementGroup ( void )                { return m_pDefaultElementGroup; }
+    CElementGroup*              GetElementGroup()                                   { return m_defaultGroup; }
 
-    void                    AddExportedFunction (char *szFunctionName );
-    bool                    CallExportedFunction ( const char * szFunctionName, CLuaArguments& args, CLuaArguments& returns, CResource& caller );
+    void                        AddExportedFunction( const char *name );
+    bool                        CallExportedFunction( const char *name, const CLuaArguments& args, CLuaArguments& returns, CResource& caller );
 
-    class CClientEntity*    GetResourceEntity ( void )              { return m_pResourceEntity; }
-    void                    SetResourceEntity ( CClientEntity* pEntity )    { m_pResourceEntity = pEntity; }
-    class CClientEntity*    GetResourceDynamicEntity ( void )                       { return m_pResourceDynamicEntity; }
-    void                    SetResourceDynamicEntity ( CClientEntity* pEntity )     { m_pResourceDynamicEntity = pEntity; }
-    SString                 GetResourceDirectoryPath ( eAccessType accessType );
-    class CClientEntity*    GetResourceGUIEntity ( void )                   { return m_pResourceGUIEntity; }
-    void                    SetResourceGUIEntity      ( CClientEntity* pEntity )    { m_pResourceGUIEntity = pEntity; }
-    inline CClientEntity*   GetResourceCOLModelRoot ( void )                           { return m_pResourceCOLRoot; };
-    inline CClientEntity*   GetResourceDFFRoot ( void )                           { return m_pResourceDFFEntity; };
-    inline CClientEntity*   GetResourceTXDRoot ( void )                           { return m_pResourceTXDRoot; };
+    typedef std::list <CExportedFunction*> exports_t;
+
+    exports_t::iterator         IterBeginExportedFunctions()                        { return m_exports.begin(); }
+    exports_t::iterator         IterEndExportedFunctions()                          { return m_exports.end(); }
+
+    class CClientEntity*        GetResourceEntity()                                 { return m_resourceEntity; }
+    void                        SetResourceEntity( CClientEntity *entity )          { m_resourceEntity = entity; }
+    class CClientEntity*        GetResourceDynamicEntity()                          { return m_dynamicEntity; }
+    class CClientEntity*        GetResourceGUIEntity()                              { return m_guiEntity; }
+    inline CClientEntity*       GetResourceCOLModelRoot()                           { return m_colEntity; };
+    inline CClientEntity*       GetResourceDFFRoot()                                { return m_dffEntity; };
+    inline CClientEntity*       GetResourceTXDRoot()                                { return m_txdEntity; };
 
     // This is to delete all the elements created in this resource that are created locally in this client
-    void                    DeleteClientChildren        ( void );
+    void                        DeleteClientChildren();
 
     // Use this for cursor showing/hiding
-    void                    ShowCursor                  ( bool bShow, bool bToggleControls = true );
-
-    inline std::list < CExportedFunction* >::iterator    IterBeginExportedFunctions   ( void )        { return m_exportedFunctions.begin(); }
-    inline std::list < CExportedFunction* >::iterator    IterEndExportedFunctions     ( void )        { return m_exportedFunctions.end(); }
+    void                        ShowCursor( bool bShow, bool bToggleControls = true );
 
 private:
-    CLuaManager*            m_pLuaManager;
-    class CClientEntity*    m_pRootEntity;
-    class CClientEntity*    m_pResourceEntity;          // no idea what this is used for anymore
-    class CClientEntity*    m_pResourceDynamicEntity;   // parent of elements created by the resource
-    class CClientEntity*    m_pResourceCOLRoot;
-    class CClientEntity*    m_pResourceDFFEntity;
-    class CClientEntity*    m_pResourceGUIEntity;
-    class CClientEntity*    m_pResourceTXDRoot;
-    bool                    m_bInDownloadQueue;
+    CLuaManager*                m_luaManager;
+    CClientEntity*              m_rootEntity;
+    CClientEntity*              m_resourceEntity;
+    CClientEntity*              m_dynamicEntity;
+    CClientEntity*              m_colEntity;
+    CClientEntity*              m_dffEntity;
+    CClientEntity*              m_guiEntity;
+    CClientEntity*              m_txdEntity;
+    bool                        m_inDownQueue;
 
     // To control cursor show/hide
-    static int              m_iShowingCursor;
-    bool                    m_bShowingCursor;
+    static int                  m_refShowCursor;
+    bool                        m_showCursor;
 
-    CFileTranslator*        m_privateRoot;  // server id private directory
+    CFileTranslator*            m_privateRoot;  // server id private directory
 
-    std::list < class CResourceFile* >          m_ResourceFiles;
-    std::list < class CResourceConfigItem* >    m_ConfigFiles;
-    std::list<CElementGroup *>                  m_elementGroups; // stores elements created by scripts in this resource
-    std::list<CExportedFunction *>              m_exportedFunctions;
-    CElementGroup *                             m_pDefaultElementGroup;
+    typedef std::list <class CResourceFile*> fileList_t;
+    typedef std::list <CElementGroup*> groupList_t;
+
+    fileList_t                  m_files;
+    configList_t                m_configFiles;
+    groupList_t                 m_elementGroups; // stores elements created by scripts in this resource
+    exports_t                   m_exports;
+    CElementGroup*              m_defaultGroup;
 };
 
 extern CFileTranslator *resFileRoot;

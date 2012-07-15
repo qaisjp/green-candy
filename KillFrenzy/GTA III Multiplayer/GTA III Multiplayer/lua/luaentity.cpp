@@ -99,8 +99,10 @@ static const luaL_Reg entity_interface[] =
 
 static int entity_constructor( lua_State *L )
 {
+    CGameEntity *entity = (CGameEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
     ILuaClass& j = *lua_refclass( L, 1 );
-    j.SetTransmit( LUACLASS_ENTITY );
+    j.SetTransmit( LUACLASS_ENTITY, entity );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );

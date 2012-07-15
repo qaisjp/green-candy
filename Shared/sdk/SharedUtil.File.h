@@ -59,7 +59,7 @@ class filePath : public std::basic_string <char, char_traits_i>
     typedef std::basic_string <char, char_traits_i> _baseString;
 
 public:
-    explicit filePath( const std::string& right )
+    filePath( const std::string& right )
         : _baseString( right.c_str(), right.size() )
     { }
 
@@ -145,7 +145,7 @@ public:
         : _baseString( right )
     { }
 
-    filePath( const SString& right )
+    explicit filePath( const SString& right )
         : _baseString( right.c_str(), right.size() )
     { }
 
@@ -222,12 +222,10 @@ public:
         return c_str();
     }
 
-#if 0
     operator SString () const
     {
         return SString( c_str(), size() );
     }
-#endif
 
     filePath operator +( const _baseString& right ) const
     {

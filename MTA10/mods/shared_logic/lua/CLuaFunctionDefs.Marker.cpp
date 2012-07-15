@@ -19,440 +19,428 @@
 
 #include "StdInc.h"
 
-int CLuaFunctionDefs::CreateMarker ( lua_State* luaVM )
+namespace CLuaFunctionDefs
 {
-    // Valid position arguments?
-    int iArgument1 = lua_type ( luaVM, 1 );
-    int iArgument2 = lua_type ( luaVM, 2 );
-    int iArgument3 = lua_type ( luaVM, 3 );
-    if ( ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING ) &&
-        ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) &&
-        ( iArgument3 == LUA_TNUMBER || iArgument3 == LUA_TSTRING ) )
+    LUA_DECLARE( createMarker )
     {
-        // Grab the position
-        CVector vecPosition;
-        vecPosition.fX = static_cast < float > ( lua_tonumber ( luaVM, 1 ) );
-        vecPosition.fY = static_cast < float > ( lua_tonumber ( luaVM, 2 ) );
-        vecPosition.fZ = static_cast < float > ( lua_tonumber ( luaVM, 3 ) );
-
-        // Other defaulted arguments
-        unsigned char ucType = 0;
-        float fSize = 4.0f;
-        SColorRGBA color ( 0, 0, 255, 255 );
-
-        // Optional type argument
-        char szDefaultType [] = "default";
-        const char* szType = szDefaultType;
-        int iArgument4 = lua_type ( luaVM, 4 );
-        if ( iArgument4 == LUA_TSTRING )
+        // Valid position arguments?
+        int iArgument1 = lua_type ( L, 1 );
+        int iArgument2 = lua_type ( L, 2 );
+        int iArgument3 = lua_type ( L, 3 );
+        if ( ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING ) &&
+            ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) &&
+            ( iArgument3 == LUA_TNUMBER || iArgument3 == LUA_TSTRING ) )
         {
-            szType = lua_tostring ( luaVM, 4 );
-        }
+            // Grab the position
+            CVector vecPosition;
+            vecPosition.fX = static_cast < float > ( lua_tonumber ( L, 1 ) );
+            vecPosition.fY = static_cast < float > ( lua_tonumber ( L, 2 ) );
+            vecPosition.fZ = static_cast < float > ( lua_tonumber ( L, 3 ) );
 
-        // Optional size argument
-        int iArgument5 = lua_type ( luaVM, 5 );
-        if ( iArgument5 == LUA_TNUMBER || iArgument5 == LUA_TSTRING )
-        {
-            lua_Number nSize = lua_tonumber ( luaVM, 5 );
-            if ( nSize > 0 )
+            // Other defaulted arguments
+            unsigned char ucType = 0;
+            float fSize = 4.0f;
+            SColorRGBA color ( 0, 0, 255, 255 );
+
+            // Optional type argument
+            char szDefaultType [] = "default";
+            const char* szType = szDefaultType;
+            int iArgument4 = lua_type ( L, 4 );
+            if ( iArgument4 == LUA_TSTRING )
             {
-                fSize = static_cast < float > ( nSize );
+                szType = lua_tostring ( L, 4 );
             }
-        }
 
-        // Optional red argument
-        int iArgument6 = lua_type ( luaVM, 6 );
-        if ( iArgument6 == LUA_TNUMBER || iArgument6 == LUA_TSTRING )
-        {
-            lua_Number nRed = lua_tonumber ( luaVM, 6 );
-            if ( nRed >= 0 && nRed <= 255 )
+            // Optional size argument
+            int iArgument5 = lua_type ( L, 5 );
+            if ( iArgument5 == LUA_TNUMBER || iArgument5 == LUA_TSTRING )
             {
-                color.R = static_cast < unsigned char > ( nRed );
+                lua_Number nSize = lua_tonumber ( L, 5 );
+                if ( nSize > 0 )
+                {
+                    fSize = static_cast < float > ( nSize );
+                }
             }
-        }
 
-        // Optional green argument
-        int iArgument7 = lua_type ( luaVM, 7 );
-        if ( iArgument7 == LUA_TNUMBER || iArgument7 == LUA_TSTRING )
-        {
-            lua_Number nGreen = lua_tonumber ( luaVM, 7 );
-            if ( nGreen >= 0 && nGreen <= 255 )
+            // Optional red argument
+            int iArgument6 = lua_type ( L, 6 );
+            if ( iArgument6 == LUA_TNUMBER || iArgument6 == LUA_TSTRING )
             {
-                color.G = static_cast < unsigned char > ( nGreen );
+                lua_Number nRed = lua_tonumber ( L, 6 );
+                if ( nRed >= 0 && nRed <= 255 )
+                {
+                    color.R = static_cast < unsigned char > ( nRed );
+                }
             }
-        }
 
-        // Optional blue argument
-        int iArgument8 = lua_type ( luaVM, 8 );
-        if ( iArgument8 == LUA_TNUMBER || iArgument8 == LUA_TSTRING )
-        {
-            lua_Number nBlue = lua_tonumber ( luaVM, 8 );
-            if ( nBlue >= 0 && nBlue <= 255 )
+            // Optional green argument
+            int iArgument7 = lua_type ( L, 7 );
+            if ( iArgument7 == LUA_TNUMBER || iArgument7 == LUA_TSTRING )
             {
-                color.B = static_cast < unsigned char > ( nBlue );
+                lua_Number nGreen = lua_tonumber ( L, 7 );
+                if ( nGreen >= 0 && nGreen <= 255 )
+                {
+                    color.G = static_cast < unsigned char > ( nGreen );
+                }
             }
-        }
 
-        // Optional alpha argument
-        int iArgument9 = lua_type ( luaVM, 9 );
-        if ( iArgument9 == LUA_TNUMBER || iArgument9 == LUA_TSTRING )
-        {
-            lua_Number nAlpha = lua_tonumber ( luaVM, 9 );
-            if ( nAlpha >= 0 && nAlpha <= 255 )
+            // Optional blue argument
+            int iArgument8 = lua_type ( L, 8 );
+            if ( iArgument8 == LUA_TNUMBER || iArgument8 == LUA_TSTRING )
             {
-                color.A = static_cast < unsigned char > ( nAlpha );
+                lua_Number nBlue = lua_tonumber ( L, 8 );
+                if ( nBlue >= 0 && nBlue <= 255 )
+                {
+                    color.B = static_cast < unsigned char > ( nBlue );
+                }
             }
-        }
 
-        CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-        if ( pLuaMain )
-        {
+            // Optional alpha argument
+            int iArgument9 = lua_type ( L, 9 );
+            if ( iArgument9 == LUA_TNUMBER || iArgument9 == LUA_TSTRING )
+            {
+                lua_Number nAlpha = lua_tonumber ( L, 9 );
+                if ( nAlpha >= 0 && nAlpha <= 255 )
+                {
+                    color.A = static_cast < unsigned char > ( nAlpha );
+                }
+            }
+
+            CLuaMain* pLuaMain = lua_readcontext( L );
             CResource* pResource = pLuaMain->GetResource();
+
+            // Create it
+            CClientMarker* pMarker = CStaticFunctionDefinitions::CreateMarker ( *pResource, vecPosition, szType, fSize, color );
+            if ( pMarker )
             {
-                // Create it
-                CClientMarker* pMarker = CStaticFunctionDefinitions::CreateMarker ( *pResource, vecPosition, szType, fSize, color );
-                if ( pMarker )
+                CElementGroup * pGroup = pResource->GetElementGroup();
+                if ( pGroup )
                 {
-                    CElementGroup * pGroup = pResource->GetElementGroup();
-                    if ( pGroup )
+                    pGroup->Add ( ( CClientEntity* ) pMarker );
+                }
+
+                lua_pushelement ( L, pMarker );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogBadType( "createMarker" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+
+    LUA_DECLARE( getMarkerCount )
+    {
+        unsigned int uiCount = m_pMarkerManager->Count ();
+        lua_pushnumber ( L, static_cast < lua_Number > ( uiCount ) );
+        return 1;
+    }
+
+
+    LUA_DECLARE( getMarkerType )
+    {
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
+        {
+            CClientMarker* pMarker = lua_tomarker ( L, 1 );
+            if ( pMarker )
+            {
+                char szMarkerType [64];
+                if ( CClientMarker::TypeToString ( pMarker->GetMarkerType (), szMarkerType ) )
+                {
+                    lua_pushstring ( L, szMarkerType );
+                    return 1;
+                }
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getMarkerType", "marker", 1 );
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getMarkerType" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getMarkerSize )
+    {
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
+        {
+            CClientMarker* pMarker = lua_tomarker ( L, 1 );
+            if ( pMarker )
+            {
+                float fSize = pMarker->GetSize ();
+                lua_pushnumber ( L, static_cast < lua_Number > ( fSize ) );
+                return 1;
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getMarkerSize", "marker", 1 );
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getMarkerSize" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getMarkerColor )
+    {
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
+        {
+            CClientMarker* pMarker = lua_tomarker ( L, 1 );
+            if ( pMarker )
+            {
+                SColor color = pMarker->GetColor ();
+                lua_pushnumber ( L, static_cast < lua_Number > ( color.R ) );
+                lua_pushnumber ( L, static_cast < lua_Number > ( color.G ) );
+                lua_pushnumber ( L, static_cast < lua_Number > ( color.B ) );
+                lua_pushnumber ( L, static_cast < lua_Number > ( color.A ) );
+                return 4;
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getMarkerColor", "marker", 1 );
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getMarkerColor" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getMarkerTarget )
+    {
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
+        {
+            CClientMarker* pMarker = lua_tomarker ( L, 1 );
+            if ( pMarker )
+            {
+                CVector vecTarget;
+                if ( CStaticFunctionDefinitions::GetMarkerTarget ( *pMarker, vecTarget ) )
+                {
+                    lua_pushnumber ( L, vecTarget.fX );
+                    lua_pushnumber ( L, vecTarget.fY );
+                    lua_pushnumber ( L, vecTarget.fZ );
+                    return 3;
+                }
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getMarkerTarget", "marker", 1 );
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getMarkerTarget" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getMarkerIcon )
+    {
+        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
+        {
+            CClientMarker* pMarker = lua_tomarker ( L, 1 );
+            if ( pMarker )
+            {
+                char szMarkerIcon [64];
+                CClientCheckpoint* pCheckpoint = pMarker->GetCheckpoint ();
+                if ( pCheckpoint )
+                {
+                    CClientCheckpoint::IconToString ( pCheckpoint->GetIcon (), szMarkerIcon );
+                    lua_pushstring ( L, szMarkerIcon );
+                    return 1;
+                }
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getMarkerIcon", "marker", 1 );
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getMarkerIcon" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( setMarkerType )
+    {
+        int iArgument1 = lua_type ( L, 1 );
+        int iArgument2 = lua_type ( L, 2 );
+        if ( iArgument1 == LUA_TLIGHTUSERDATA &&
+            iArgument2 == LUA_TSTRING )
+        {
+            CClientEntity* pEntity = lua_toelement ( L, 1 );
+            const char* szType = lua_tostring ( L, 2 );
+            if ( pEntity )
+            {
+                bool bSuccess = CStaticFunctionDefinitions::SetMarkerType ( *pEntity, szType );
+                lua_pushboolean ( L, bSuccess );
+                return 1;
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "setMarkerType", "element", 1 );
+        }
+        else
+            m_pScriptDebugging->LogBadType( "setMarkerType" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( setMarkerSize )
+    {
+        int iArgument2 = lua_type ( L, 2 );
+        if ( ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA ) &&
+            ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) )
+        {
+            CClientEntity* pEntity = lua_toelement ( L, 1 );
+            if ( pEntity )
+            {
+                if ( CStaticFunctionDefinitions::SetMarkerSize ( *pEntity, static_cast < float > ( lua_tonumber ( L, 2 ) ) ) )
+                {
+                    lua_pushboolean ( L, true );
+                    return 1;
+                }
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "setMarkerSize", "element", 1 );
+        }
+        else
+            m_pScriptDebugging->LogBadType( "setMarkerSize" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( setMarkerColor )
+    {
+        // Verify the argument types
+        int iArgument2 = lua_type ( L, 2 );
+        int iArgument3 = lua_type ( L, 3 );
+        int iArgument4 = lua_type ( L, 4 );
+        int iArgument5 = lua_type ( L, 5 );
+        if ( ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA ) &&
+            ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) &&
+            ( iArgument3 == LUA_TNUMBER || iArgument3 == LUA_TSTRING ) &&
+            ( iArgument4 == LUA_TNUMBER || iArgument4 == LUA_TSTRING ) )
+        {
+            // Convert to numbers
+            CClientEntity* pEntity = lua_toelement ( L, 1 );
+            double dRed = lua_tonumber ( L, 2 );
+            double dGreen = lua_tonumber ( L, 3 );
+            double dBlue = lua_tonumber ( L, 4 );
+            double dAlpha = 255;
+            if ( iArgument5 == LUA_TNUMBER || iArgument5 == LUA_TSTRING )
+                dAlpha = lua_tonumber ( L, 5 );
+
+            // Verify the pointer
+            if ( pEntity )
+            {
+                // Check the ranges
+                if ( dRed >= 0 && dRed <= 255 &&
+                    dGreen >= 0 && dGreen <= 255 &&
+                    dBlue >= 0 && dBlue <= 255 &&
+                    dAlpha >= 0 && dAlpha <= 255 )
+                {
+                    SColor color;
+                    color.R = static_cast < unsigned char > ( dRed );
+                    color.G = static_cast < unsigned char > ( dGreen );
+                    color.B = static_cast < unsigned char > ( dBlue );
+                    color.A = static_cast < unsigned char > ( dAlpha );
+
+                    // Set the new color
+                    if ( CStaticFunctionDefinitions::SetMarkerColor ( *pEntity, color ) )
                     {
-                        pGroup->Add ( ( CClientEntity* ) pMarker );
+                        lua_pushboolean ( L, true );
+                        return 1;
                     }
-
-                    lua_pushelement ( luaVM, pMarker );
-                    return 1;
                 }
             }
+            else
+                m_pScriptDebugging->LogBadPointer( "setMarkerColor", "element", 1 );
         }
+        else
+            m_pScriptDebugging->LogBadType( "setMarkerColor" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "createMarker" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetMarkerCount ( lua_State* luaVM )
-{
-    unsigned int uiCount = m_pMarkerManager->Count ();
-    lua_pushnumber ( luaVM, static_cast < lua_Number > ( uiCount ) );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetMarkerType ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
+    LUA_DECLARE( setMarkerTarget )
     {
-        CClientMarker* pMarker = lua_tomarker ( luaVM, 1 );
-        if ( pMarker )
+        // Verify the element argument
+        int iArgument1 = lua_type ( L, 1 );
+        if ( iArgument1 == LUA_TLIGHTUSERDATA )
         {
-            char szMarkerType [64];
-            if ( CClientMarker::TypeToString ( pMarker->GetMarkerType (), szMarkerType ) )
+            // Grab and verify the element
+            CClientEntity* pEntity = lua_toelement ( L, 1 );
+            if ( pEntity )
             {
-                lua_pushstring ( luaVM, szMarkerType );
-                return 1;
-            }
-        }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getMarkerType", "marker", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getMarkerType" );
+                CVector vecTarget;
+                CVector* pTargetVector = NULL;
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetMarkerSize ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
-    {
-        CClientMarker* pMarker = lua_tomarker ( luaVM, 1 );
-        if ( pMarker )
-        {
-            float fSize = pMarker->GetSize ();
-            lua_pushnumber ( luaVM, static_cast < lua_Number > ( fSize ) );
-            return 1;
-        }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getMarkerSize", "marker", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getMarkerSize" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetMarkerColor ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
-    {
-        CClientMarker* pMarker = lua_tomarker ( luaVM, 1 );
-        if ( pMarker )
-        {
-            SColor color = pMarker->GetColor ();
-            lua_pushnumber ( luaVM, static_cast < lua_Number > ( color.R ) );
-            lua_pushnumber ( luaVM, static_cast < lua_Number > ( color.G ) );
-            lua_pushnumber ( luaVM, static_cast < lua_Number > ( color.B ) );
-            lua_pushnumber ( luaVM, static_cast < lua_Number > ( color.A ) );
-            return 4;
-        }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getMarkerColor", "marker", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getMarkerColor" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetMarkerTarget ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
-    {
-        CClientMarker* pMarker = lua_tomarker ( luaVM, 1 );
-        if ( pMarker )
-        {
-            CVector vecTarget;
-            if ( CStaticFunctionDefinitions::GetMarkerTarget ( *pMarker, vecTarget ) )
-            {
-                lua_pushnumber ( luaVM, vecTarget.fX );
-                lua_pushnumber ( luaVM, vecTarget.fY );
-                lua_pushnumber ( luaVM, vecTarget.fZ );
-                return 3;
-            }
-        }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getMarkerTarget", "marker", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getMarkerTarget" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetMarkerIcon ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA )
-    {
-        CClientMarker* pMarker = lua_tomarker ( luaVM, 1 );
-        if ( pMarker )
-        {
-            char szMarkerIcon [64];
-            CClientCheckpoint* pCheckpoint = pMarker->GetCheckpoint ();
-            if ( pCheckpoint )
-            {
-                CClientCheckpoint::IconToString ( pCheckpoint->GetIcon (), szMarkerIcon );
-                lua_pushstring ( luaVM, szMarkerIcon );
-                return 1;
-            }
-        }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getMarkerIcon", "marker", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getMarkerIcon" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::SetMarkerType ( lua_State* luaVM )
-{
-    int iArgument1 = lua_type ( luaVM, 1 );
-    int iArgument2 = lua_type ( luaVM, 2 );
-    if ( iArgument1 == LUA_TLIGHTUSERDATA &&
-        iArgument2 == LUA_TSTRING )
-    {
-        CClientEntity* pEntity = lua_toelement ( luaVM, 1 );
-        const char* szType = lua_tostring ( luaVM, 2 );
-        if ( pEntity )
-        {
-            bool bSuccess = CStaticFunctionDefinitions::SetMarkerType ( *pEntity, szType );
-            lua_pushboolean ( luaVM, bSuccess );
-            return 1;
-        }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "setMarkerType", "element", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "setMarkerType" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::SetMarkerSize ( lua_State* luaVM )
-{
-    int iArgument2 = lua_type ( luaVM, 2 );
-    if ( ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA ) &&
-        ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) )
-    {
-        CClientEntity* pEntity = lua_toelement ( luaVM, 1 );
-        if ( pEntity )
-        {
-            if ( CStaticFunctionDefinitions::SetMarkerSize ( *pEntity, static_cast < float > ( lua_tonumber ( luaVM, 2 ) ) ) )
-            {
-                lua_pushboolean ( luaVM, true );
-                return 1;
-            }
-        }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "setMarkerSize", "element", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "setMarkerSize" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::SetMarkerColor ( lua_State* luaVM )
-{
-    // Verify the argument types
-    int iArgument2 = lua_type ( luaVM, 2 );
-    int iArgument3 = lua_type ( luaVM, 3 );
-    int iArgument4 = lua_type ( luaVM, 4 );
-    int iArgument5 = lua_type ( luaVM, 5 );
-    if ( ( lua_type ( luaVM, 1 ) == LUA_TLIGHTUSERDATA ) &&
-        ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) &&
-        ( iArgument3 == LUA_TNUMBER || iArgument3 == LUA_TSTRING ) &&
-        ( iArgument4 == LUA_TNUMBER || iArgument4 == LUA_TSTRING ) )
-    {
-        // Convert to numbers
-        CClientEntity* pEntity = lua_toelement ( luaVM, 1 );
-        double dRed = lua_tonumber ( luaVM, 2 );
-        double dGreen = lua_tonumber ( luaVM, 3 );
-        double dBlue = lua_tonumber ( luaVM, 4 );
-        double dAlpha = 255;
-        if ( iArgument5 == LUA_TNUMBER || iArgument5 == LUA_TSTRING )
-            dAlpha = lua_tonumber ( luaVM, 5 );
-
-        // Verify the pointer
-        if ( pEntity )
-        {
-            // Check the ranges
-            if ( dRed >= 0 && dRed <= 255 &&
-                dGreen >= 0 && dGreen <= 255 &&
-                dBlue >= 0 && dBlue <= 255 &&
-                dAlpha >= 0 && dAlpha <= 255 )
-            {
-                SColor color;
-                color.R = static_cast < unsigned char > ( dRed );
-                color.G = static_cast < unsigned char > ( dGreen );
-                color.B = static_cast < unsigned char > ( dBlue );
-                color.A = static_cast < unsigned char > ( dAlpha );
-
-                // Set the new color
-                if ( CStaticFunctionDefinitions::SetMarkerColor ( *pEntity, color ) )
+                // Valid target vector arguments?
+                int iArgument2 = lua_type ( L, 2 );
+                int iArgument3 = lua_type ( L, 3 );
+                int iArgument4 = lua_type ( L, 4 );
+                if ( ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) &&
+                    ( iArgument3 == LUA_TNUMBER || iArgument3 == LUA_TSTRING ) &&
+                    ( iArgument4 == LUA_TNUMBER || iArgument4 == LUA_TSTRING ) )
                 {
-                    lua_pushboolean ( luaVM, true );
+                    // Grab the target vector
+                    vecTarget.fX = static_cast < float > ( lua_tonumber ( L, 2 ) );
+                    vecTarget.fY = static_cast < float > ( lua_tonumber ( L, 3 ) );
+                    vecTarget.fZ = static_cast < float > ( lua_tonumber ( L, 4 ) );
+
+                    pTargetVector = &vecTarget;
+                }
+                else if ( iArgument2 != LUA_TNONE )
+                {
+                    m_pScriptDebugging->LogBadType( "setMarkerTarget" );
+
+                    lua_pushboolean ( L, false );
+                    return 1;
+                }
+
+                // Do it
+                if ( CStaticFunctionDefinitions::SetMarkerTarget ( *pEntity, pTargetVector ) )
+                {
+                    lua_pushboolean ( L, true );
                     return 1;
                 }
             }
+            else
+                m_pScriptDebugging->LogBadPointer( "setMarkerTarget", "element", 1 );
         }
         else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "setMarkerColor", "element", 1 );
+            m_pScriptDebugging->LogBadType( "setMarkerTarget" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "setMarkerColor" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::SetMarkerTarget ( lua_State* luaVM )
-{
-    // Verify the element argument
-    int iArgument1 = lua_type ( luaVM, 1 );
-    if ( iArgument1 == LUA_TLIGHTUSERDATA )
+    LUA_DECLARE( setMarkerIcon )
     {
-        // Grab and verify the element
-        CClientEntity* pEntity = lua_toelement ( luaVM, 1 );
-        if ( pEntity )
+        int iArgument1 = lua_type ( L, 1 );
+        int iArgument2 = lua_type ( L, 2 );
+        if ( iArgument1 == LUA_TLIGHTUSERDATA &&
+            iArgument2 == LUA_TSTRING )
         {
-            CVector vecTarget;
-            CVector* pTargetVector = NULL;
-
-            // Valid target vector arguments?
-            int iArgument2 = lua_type ( luaVM, 2 );
-            int iArgument3 = lua_type ( luaVM, 3 );
-            int iArgument4 = lua_type ( luaVM, 4 );
-            if ( ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) &&
-                ( iArgument3 == LUA_TNUMBER || iArgument3 == LUA_TSTRING ) &&
-                ( iArgument4 == LUA_TNUMBER || iArgument4 == LUA_TSTRING ) )
+            CClientEntity* pEntity = lua_toelement ( L, 1 );
+            const char* szIcon = lua_tostring ( L, 2 );
+            if ( pEntity )
             {
-                // Grab the target vector
-                vecTarget.fX = static_cast < float > ( lua_tonumber ( luaVM, 2 ) );
-                vecTarget.fY = static_cast < float > ( lua_tonumber ( luaVM, 3 ) );
-                vecTarget.fZ = static_cast < float > ( lua_tonumber ( luaVM, 4 ) );
-
-                pTargetVector = &vecTarget;
+                if ( CStaticFunctionDefinitions::SetMarkerIcon ( *pEntity, szIcon ) )
+                {
+                    lua_pushboolean ( L, true );
+                    return 1;
+                }
             }
-            else if ( iArgument2 != LUA_TNONE )
-            {
-                m_pScriptDebugging->LogBadType ( luaVM, "setMarkerTarget" );
-
-                lua_pushboolean ( luaVM, false );
-                return 1;
-            }
-
-            // Do it
-            if ( CStaticFunctionDefinitions::SetMarkerTarget ( *pEntity, pTargetVector ) )
-            {
-                lua_pushboolean ( luaVM, true );
-                return 1;
-            }
+            else
+                m_pScriptDebugging->LogBadPointer( "setMarkerIcon", "element", 1 );
         }
         else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "setMarkerTarget", "element", 1 );
+            m_pScriptDebugging->LogBadType( "setMarkerIcon" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "setMarkerTarget" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
 }
-
-
-int CLuaFunctionDefs::SetMarkerIcon ( lua_State* luaVM )
-{
-    int iArgument1 = lua_type ( luaVM, 1 );
-    int iArgument2 = lua_type ( luaVM, 2 );
-    if ( iArgument1 == LUA_TLIGHTUSERDATA &&
-        iArgument2 == LUA_TSTRING )
-    {
-        CClientEntity* pEntity = lua_toelement ( luaVM, 1 );
-        const char* szIcon = lua_tostring ( luaVM, 2 );
-        if ( pEntity )
-        {
-            if ( CStaticFunctionDefinitions::SetMarkerIcon ( *pEntity, szIcon ) )
-            {
-                lua_pushboolean ( luaVM, true );
-                return 1;
-            }
-        }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "setMarkerIcon", "element", 1 );
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "setMarkerIcon" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-

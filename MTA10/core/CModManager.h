@@ -59,7 +59,9 @@ private:
 
     void                VerifyAndAddEntry       ( const char* szModFolderPath, const char* szName );
 
-    std::map < std::string, std::string > m_ModDLLFiles;
+    typedef std::map <filePath, filePath> modMap_t;
+
+    std::map <filePath, filePath> m_ModDLLFiles;
     HMODULE             m_hClientDLL;
     CClientBase*        m_pClientBase;
 

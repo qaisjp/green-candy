@@ -29,10 +29,7 @@ class CRegisteredCommands;
 
 namespace CLuaFunctionDefs
 {
-public:
-    void Initialize( class CLuaManager* pLuaManager,
-                     class CScriptDebugging* pScriptDebugging,
-                     class CClientGame* pClientGame );
+    void Initialize( class CLuaManager *manager, class CScriptDebugging *debug, class CClientGame *game );
 
     // Resource functions
     LUA_DECLARE( call );

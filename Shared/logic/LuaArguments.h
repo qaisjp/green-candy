@@ -35,7 +35,7 @@ class LuaArguments
 public:
                                                         LuaArguments();
                                                         LuaArguments( const LuaArguments& args );
-                                                        ~LuaArguments();
+    virtual                                             ~LuaArguments();
 
     void                                                CopyRecursive( const LuaArguments& args );
 
@@ -46,20 +46,20 @@ public:
     void                                                ReadArguments( lua_State *lua, signed int indexStart = 1 );
     void                                                PushArguments( lua_State *lua ) const;
     void                                                PushArguments( LuaArguments& args );
-    virtual bool                                        Call( class LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *res = NULL );
+    virtual bool                                        Call( class LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *res = NULL ) const;
 
     void                                                ReadTable( lua_State *L, int indexStart );
     void                                                PushAsTable( lua_State *L );
 
     bool                                                IsIndexedArray();
 
-    virtual LuaArgument&                                PushNil() = 0;
-    virtual LuaArgument&                                PushBoolean( bool b ) = 0;
-    virtual LuaArgument&                                PushNumber( double num ) = 0;
-    virtual LuaArgument&                                PushString( const std::string& str ) = 0;
-    virtual LuaArgument&                                PushUserData( void *data ) = 0;
-    virtual LuaArgument&                                PushArgument( const LuaArgument& argument ) = 0;
-    virtual LuaArgument&                                PushTable( const LuaArguments& table ) = 0;
+    virtual LuaArgument*                                PushNil() = 0;
+    virtual LuaArgument*                                PushBoolean( bool b ) = 0;
+    virtual LuaArgument*                                PushNumber( double num ) = 0;
+    virtual LuaArgument*                                PushString( const std::string& str ) = 0;
+    virtual LuaArgument*                                PushUserData( void *data ) = 0;
+    virtual LuaArgument*                                PushArgument( const LuaArgument& argument ) = 0;
+    virtual LuaArgument*                                PushTable( const LuaArguments& table ) = 0;
 
     void                                                DeleteArguments();
     void                                                ValidateTableKeys();
@@ -67,6 +67,10 @@ public:
     unsigned int                                        Count() const          { return static_cast < unsigned int > ( m_args.size() ); };
     std::vector <LuaArgument*> ::const_iterator         IterBegin()                { return m_args.begin(); };
     std::vector <LuaArgument*> ::const_iterator         IterEnd()                { return m_args.end(); };
+
+#ifndef _KILLFRENZY
+    bool                                                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
+#endif
 
 protected:
     void                                                SetParent( LuaArguments *parent );

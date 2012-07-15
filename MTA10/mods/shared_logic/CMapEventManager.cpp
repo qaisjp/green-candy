@@ -36,7 +36,7 @@ CMapEventManager::~CMapEventManager ( void )
 }
 
 
-bool CMapEventManager::Add ( CLuaMain* pLuaMain, const char* szName, const CLuaFunctionRef& iLuaFunction, bool bPropagated )
+bool CMapEventManager::Add ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction, bool bPropagated )
 {
     // Check for max name length
     if ( strlen ( szName ) <= MAPEVENT_MAX_LENGTH_NAME )
@@ -50,7 +50,7 @@ bool CMapEventManager::Add ( CLuaMain* pLuaMain, const char* szName, const CLuaF
 }
 
 
-bool CMapEventManager::Delete ( CLuaMain* pLuaMain, const char* szName, const CLuaFunctionRef& iLuaFunction )
+bool CMapEventManager::Delete ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction )
 {
     // Delete all the events with matching names
     bool bRemovedSomeone = false;
@@ -250,8 +250,8 @@ bool CMapEventManager::Call ( const char* szName, const CLuaArguments& Arguments
                 if ( pSource == pThis || pMapEvent->IsPropagated () )
                 {
                     // Grab the current VM
-                    lua_State* pState = pMapEvent->GetVM ()->GetVM ();
-#if MTA_DEBUG
+                    lua_State* pState = **pMapEvent->GetVM ();
+#ifdef MTA_DEBUG
                     int luaStackPointer = lua_gettop ( pState );
 #endif
 
@@ -357,7 +357,7 @@ void CMapEventManager::TakeOutTheTrash ( void )
 }
 
 
-bool CMapEventManager::HandleExists ( CLuaMain* pLuaMain, const char* szName, const CLuaFunctionRef& iLuaFunction )
+bool CMapEventManager::HandleExists ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction )
 {
     // Return true if we find an event which matches the handle
     list < CMapEvent* > ::const_iterator iter = m_Events.begin ();

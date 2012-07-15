@@ -543,7 +543,7 @@ static void modinit (lua_State *L, const char *modname) {
 static int ll_module (lua_State *L) {
   const char *modname = luaL_checkstring(L, 1);
   int loaded = lua_gettop(L) + 1;  /* index of _LOADED table */
-  lua_getfield(L, LUA_REGISTRYINDEX, "_LOADED");
+  lua_getfield(L, LUA_STORAGEINDEX, "_LOADED");
   lua_getfield(L, loaded, modname);  /* get _LOADED[modname] */
   if (!lua_istable(L, -1)) {  /* not found? */
     lua_pop(L, 1);  /* remove previous result */

@@ -14,8 +14,6 @@
 
 #include "StdInc.h"
 
-using SharedUtil::CalcMTASAPath;
-
 extern CClientGame* g_pClientGame;
 
 #define CGUI_ICON_NETWORK_TROUBLE       "mta\\cgui\\images\\16-message-warn.png"
@@ -25,9 +23,12 @@ CClientManager::CClientManager ( void )
     // Initialize time
     CClientTime::InitializeTime ();
 
+    filePath texPath;
+    mtaFileRoot->GetFullPath( CGUI_ICON_NETWORK_TROUBLE, true, texPath );
+
     // Load the connection trouble texture
     m_pConnectionTroubleTexture = g_pCore->GetGUI ()->CreateTexture ();
-    m_pConnectionTroubleTexture->LoadFromFile ( CalcMTASAPath( CGUI_ICON_NETWORK_TROUBLE ) );
+    m_pConnectionTroubleTexture->LoadFromFile ( texPath.c_str() );
 
     m_pMarkerStreamer = new CClientStreamer ( CClientMarker::IsLimitReached, 600.0f );
     m_pObjectStreamer = new CClientStreamer ( CClientObjectManager::IsObjectLimitReached, 500.0f );

@@ -137,7 +137,7 @@ void CClientPacketRecorder::RecordPacket( unsigned char ucPacketID, NetBitStream
         return;
 
     // Open our file
-    CFile *file = modFileRoot->Open( m_szFilename, "ab+" );
+    CFile *file = modFileRoot->Open( m_filename, "ab+" );
 
     if ( !file )
         return;
@@ -152,12 +152,13 @@ void CClientPacketRecorder::RecordPacket( unsigned char ucPacketID, NetBitStream
     file->WriteByte( ucPacketID );
 
     // Write the size of the bitstream
-    file->WriteInt( bitStream.GetNumberOfBytesUsed() );
+    size_t size = bitStream.GetNumberOfBytesUsed()
+    file->WriteInt( size );
 
     // Write the content of the bitstream to the file
     char c = 0;
 
-    for ( unsigned long i = 0; i < ulSize; i++ )
+    for ( unsigned long i = 0; i < size; i++ )
     {
         bitStream.Read( c );
         file->WriteByte( c );
@@ -176,7 +177,7 @@ void CClientPacketRecorder::RecordLocalData( CClientPlayer* pLocalPlayer )
         return;
 
     // Open our file
-    CFile *file = modFileRoot->Open( m_szFilename, "ab+" );
+    CFile *file = modFileRoot->Open( m_filename, "ab+" );
 
     if ( !file )
         return;

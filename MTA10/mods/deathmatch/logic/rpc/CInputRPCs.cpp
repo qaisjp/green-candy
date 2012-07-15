@@ -289,7 +289,7 @@ void CInputRPCs::ShowCursor ( NetBitStreamInterface& bitStream )
          bitStream.Read ( usResource ) &&
          bitStream.Read ( ucToggleControls ) )
     {
-        CResource* pResource = g_pClientGame->GetResourceManager ()->GetResource ( usResource );
+        CResource* pResource = g_pClientGame->GetResourceManager ()->Get( usResource );
         if ( pResource )
         {
             pResource->ShowCursor ( ucShow == 1, ucToggleControls == 1 );

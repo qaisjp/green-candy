@@ -13,7 +13,7 @@
 
 #include <StdInc.h>
 
-CMapEvent::CMapEvent ( CLuaMain* pMain, const char* szName, const CLuaFunctionRef& iLuaFunction, bool bPropagated )
+CMapEvent::CMapEvent( CLuaMain* pMain, const char* szName, const LuaFunctionRef& iLuaFunction, bool bPropagated )
 {
     // Init
     m_pMain = pMain;
@@ -26,17 +26,12 @@ CMapEvent::CMapEvent ( CLuaMain* pMain, const char* szName, const CLuaFunctionRe
     m_szName [ MAPEVENT_MAX_LENGTH_NAME ] = '\0';
 }
 
-
-CMapEvent::~CMapEvent ( void )
+CMapEvent::~CMapEvent()
 {
 }
 
-
-void CMapEvent::Call ( const CLuaArguments& Arguments )
+void CMapEvent::Call( const CLuaArguments& args )
 {
-    if ( m_pMain )
-    {
-        // Call our function with the given arguments
-        Arguments.Call ( m_pMain, m_iLuaFunction );
-    }
+    // Call our function with the given arguments
+    args.Call( m_pMain, m_iLuaFunction );
 }

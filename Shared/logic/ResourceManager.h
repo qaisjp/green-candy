@@ -13,20 +13,26 @@
 #ifndef _BASE_RESOURCE_MANAGER_
 #define _BASE_RESOURCE_MANAGER_
 
-class ResourceManager abstract
+#define LUACLASS_ROOT   23
+
+class ResourceManager abstract : public LuaClass
 {
 public:
-                            ResourceManager();
-                            ~ResourceManager();
+                            ResourceManager( lua_State *L );
+    virtual                 ~ResourceManager();
 
     Resource*               Get( const char *name );
-    Resource*               Get( unsigned short id );
-    bool                    Remove( unsigned short id );
     virtual void            Remove( Resource *res );
     bool                    Exists( Resource *res ) const;
 
+    typedef std::list <Resource*> resourceList_t;
+
+    resourceList_t::const_iterator  IterBegin()         { return m_resources.begin(); };
+    resourceList_t::const_iterator  IterEnd()           { return m_resources.end(); };
+
     // File interface
     bool                    ParseResourcePath( Resource*& res, const char *path, const char*& meta );
+    bool                    ParseResourceFullPath( Resource*& res, const char *path, const char*& meta, filePath& absPath );
     virtual CFile*          OpenStream( Resource *res, const char *path, const char *mode );
     virtual bool            FileCopy( Resource *res, const char *src, const char *dst );
     virtual bool            FileRename( Resource *res, const char *src, const char *dst );
@@ -38,7 +44,6 @@ public:
     static CFileTranslator *resFileRoot;
 
 protected:
-    typedef std::list <Resource*> resourceList_t;
     typedef std::map <filePath, Resource*> resNameMap_t;
 
     resourceList_t  m_resources;

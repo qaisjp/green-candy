@@ -25,8 +25,10 @@ static const luaL_Reg vehicle_interface[] =
 
 static int vehicle_constructor( lua_State *L )
 {
+    CGameVehicle *veh = (CGameVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
     ILuaClass& j = *lua_refclass( L, 1 );
-    j.SetTransmit( LUACLASS_VEHICLE );
+    j.SetTransmit( LUACLASS_VEHICLE, veh );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );

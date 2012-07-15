@@ -28,6 +28,7 @@ public:
                         ~CPadSAInterface();
 
     void                SetState( const CControllerState& cs );
+    void                InjectCurrent( const CControllerState& cs );
     void                SetHornHistory( bool state );
 
     CControllerState    m_new;                              // 0

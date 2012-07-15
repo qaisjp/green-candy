@@ -323,29 +323,6 @@ bool	Core_ProcessCommand( const std::string& cmdName, std::vector <std::string>&
 		Console_Printf( "Name: %s\n", 0xffffffff, pInfo->m_modelType );
 		return true;
 	}
-	else if ( cmdName == "testlag" )
-	{
-		CPed *player = Player_GetBySlot(0);
-		float fPosX=player->m_matrix.m_vecPos[0];
-		float fPosY=player->m_matrix.m_vecPos[1]+15;
-		float fPosZ=player->m_matrix.m_vecPos[2]+5;
-		unsigned int n;
-
-		/*__asm int 3
-		SCM_ProcessCommand ( &request_model, usModelID );
-		SCM_ProcessCommand ( &load_requested_models );
-
-		while (!Model_IsLoaded(usModelID))
-		{
-			SCM_ProcessCommand ( &request_model, usModelID );
-			SCM_ProcessCommand ( &load_requested_models );
-
-			Sleep(10);
-		}*/
-
-		for (n=0; n<100; n++)
-			Vehicle_Create ( 111, fPosX, fPosY, fPosZ+n*3 );
-	}
 	else if ( cmdName == "test2" )
 	{
 		CPed *pPed=(CPed*)((*m_ppPedPool)->m_pPoolHeap)+1;

@@ -227,9 +227,11 @@ static const luaL_Reg fileInterface[] =
 int luaconstructor_file( lua_State *lua )
 {
 #ifndef FU_CLASS
+    CFile *file = (CFile*)lua_touserdata( lua, lua_upvalueindex( 1 ) );
+
     // Register as file
     ILuaClass *j = lua_refclass( lua, 1 );
-    j->SetTransmit( LUACLASS_FILE );
+    j->SetTransmit( LUACLASS_FILE, file );
 
     // Create the illegal access table
     lua_newtable( lua );

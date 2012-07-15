@@ -21,6 +21,82 @@ public:
         memset( this, 0, sizeof(CControllerState) );
     }
 
+    inline void ResetLeftAxis()
+    {
+        m_leftAxisX = 0;
+        m_leftAxisY = 0;
+    }
+
+    inline void SetSquareDown( bool down )
+    {
+        m_action1 = down ? 0x100 : 0;
+    }
+
+    inline bool IsSquareDown()
+    {
+        return m_action1 > 0x80;
+    }
+
+    inline void SetTriangleDown( bool down )
+    {
+        m_action2 = down ? 0x100 : 0;
+    }
+
+    inline bool IsTriangleDown()
+    {
+        return m_action2 > 0x80;
+    }
+
+    inline void SetCrossDown( bool down )
+    {
+        m_action3 = down ? 0x100 : 0;
+    }
+
+    inline bool IsCrossDown()
+    {
+        return m_action3 > 0x80;
+    }
+
+    inline void SetCircleDown( bool down )
+    {
+        m_action4 = down ? 0x100 : 0;
+    }
+
+    inline void SetLeftShockDown( bool down )
+    {
+        m_action5 = down ? 0x100 : 0;
+    }
+
+    inline void SetRightShockDown( bool down )
+    {
+        m_action6 = down ? 0x100 : 0;
+    }
+
+    inline bool IsCircleDown()
+    {
+        return m_action4 > 0x80;
+    }
+
+    inline bool IsLeftShoulder1Down()
+    {
+        return m_ls1 == 0xFF;
+    }
+
+    inline bool IsLeftShoulder2Down()
+    {
+        return m_ls2 == 0xFF;
+    }
+
+    inline bool IsRightShoulder1Down()
+    {
+        return m_rs1 == 0xFF;
+    }
+
+    inline bool IsRightShoulder2Down()
+    {
+        return m_rs2 == 0xFF;
+    }
+
     short   m_leftAxisX;            // 0, move/steer left (-128?)/right (+128)
     short   m_leftAxisY;            // 2, move back(+128)/forwards(-128?)
     short   m_rightAxisX;           // 4, numpad 6(+128)/numpad 4(-128?)
@@ -58,7 +134,8 @@ class CPad
 public:
     virtual const CControllerState&     GetState() = 0;
     virtual const CControllerState&     GetPreviousState() = 0;
-    virtual void                        SetState( CControllerState& cs ) = 0;
+    virtual void                        SetState( const CControllerState& cs ) = 0;
+    virtual void                        InjectCurrent( const CControllerState& cs ) = 0;
 
     virtual void                        Restore() = 0;
     virtual void                        Store() = 0;

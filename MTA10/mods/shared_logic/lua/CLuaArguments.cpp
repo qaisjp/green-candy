@@ -27,9 +27,68 @@ using namespace std;
  
 extern CClientGame* g_pClientGame;
 
+CLuaArguments::CLuaArguments() : LuaArguments()
+{
+}
+
 CLuaArguments::CLuaArguments( NetBitStreamInterface& stream )
 {
     ReadFromBitStream( stream );
+}
+
+void CLuaArguments::ReadArgument( lua_State *L, int idx )
+{
+    m_args.push_back( new CLuaArgument( L, idx ) );
+}
+
+LuaArgument* CLuaArguments::PushNil()
+{
+    CLuaArgument *arg = new CLuaArgument;
+    m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushBoolean( bool b )
+{
+    CLuaArgument *arg = new CLuaArgument( b );
+    m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushNumber( double d )
+{
+    CLuaArgument *arg = new CLuaArgument( d );
+    m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushString( const std::string& str )
+{
+    CLuaArgument *arg = new CLuaArgument( str );
+    m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushUserData( void *ud )
+{
+    CLuaArgument *arg = new CLuaArgument( ud );
+    m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushArgument( const LuaArgument& other )
+{
+    CLuaArgument *arg = other.Clone();
+    m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushTable( const LuaArguments& table )
+{
+    CLuaArgument *arg = new CLuaArgument();
+    arg->Read( &table );
+    m_args.push_back( arg );
+    return arg;
 }
 
 CLuaArgument* CLuaArguments::PushElement( CClientEntity* element )
@@ -47,7 +106,7 @@ bool CLuaArguments::ReadFromBitStream( NetBitStreamInterface& bitStream )
         return true;
 
     while ( usNumArgs-- )
-        m_Arguments.push_back( new CLuaArgument( bitStream ) );
+        m_args.push_back( new CLuaArgument( bitStream ) );
 
     return true;
 }

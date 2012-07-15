@@ -116,6 +116,11 @@ public:
         return m_active;
     }
 
+    unsigned int    GetMax()
+    {
+        return m_max;
+    }
+
     type*           m_pool;
     unsigned char*  m_flags;
     unsigned int    m_max;

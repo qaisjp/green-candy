@@ -28,12 +28,40 @@ class CLuaArguments;
 class CLuaArgument : public LuaArgument
 {
 public:
-                            CLuaArgument( CClientEntity *element );
-                            ~CLuaArgument();
+    CLuaArgument() : LuaArgument()
+    {
+    }
+
+    CLuaArgument( bool b ) : LuaArgument( b )
+    {
+    }
+
+    CLuaArgument( double d ) : LuaArgument( d )
+    {
+    }
+
+    CLuaArgument( const std::string& str ) : LuaArgument( str )
+    {
+    }
+
+    CLuaArgument( void *ud ) : LuaArgument( ud )
+    {
+    }
+
+    CLuaArgument( NetBitStreamInterface& stream ) : LuaArgument( stream )
+    {
+    }
+
+    CLuaArgument( lua_State *L, int idx ) : LuaArgument( L, idx )
+    {
+    }
+
+    CLuaArgument( CClientEntity *element );
+    ~CLuaArgument();
 
     virtual LuaArgument*    Clone() const;
 
-    void                    Read( CClientEntity *element );
+    void                    ReadEntity( CClientEntity *element );
     CClientEntity*          GetElement() const;
 
     bool                    WriteToBitStream( NetBitStreamInterface& bitStream ) const;

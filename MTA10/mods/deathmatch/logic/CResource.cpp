@@ -17,132 +17,104 @@
 #include "StdInc.h"
 #include "CServerIdManager.h"
 
-using namespace std;
+extern CClientGame      *g_pClientGame;
+extern CCoreInterface   *g_pCore;
 
-extern CClientGame* g_pClientGame;
-
-int CResource::m_iShowingCursor = 0;
+int CResource::m_refShowingCursor = 0;
 CFileTranslator *resFileRoot;
 
-CResource::CResource ( unsigned short usID, char* szResourceName, CClientEntity* pResourceEntity, CClientEntity* pResourceDynamicEntity )
+static inline CFileTranslator* _rtget( const char *name )
 {
-    filePath resRoot;
-    modFileRoot->GetFullPath( "resources/", false, resRoot );
+    filePath path;
+    ResourceManager::resFileRoot->GetFullPath( name, false, path );
 
-    m_usID = usID;
-    m_bActive = false;
-    m_bInDownloadQueue = false;
-    m_bShowingCursor = false;
+    return g_pCore->GetFileSystem()->CreateTranslator( path.c_str() );
+}
 
-    // Prepare file root
-    resFileRoot = g_pCore->GetFileSystem()->CreateTranslator( resRoot.c_str() );
+CResource::CResource( unsigned short id, const filePath& name, CClientEntity *entity, CClientEntity *dynamicEntity ) : Resource( id, name, _rtget( name ) )
+{
+    m_luaManager = g_pClientGame->GetLuaManager();
+    m_inDownQueue = false;
+    m_showingCursor = false;
 
-    if ( szResourceName )
-    {
-        strncpy ( m_szResourceName, szResourceName, MAX_RESOURCE_NAME_LENGTH );
-        if ( MAX_RESOURCE_NAME_LENGTH )
-        {
-            m_szResourceName [ MAX_RESOURCE_NAME_LENGTH-1 ] = 0;
-        }
-    }
-    m_pLuaManager = g_pClientGame->GetLuaManager();
-    m_pRootEntity = g_pClientGame->GetRootEntity ();
-    m_pDefaultElementGroup = new CElementGroup ( this );
-    m_elementGroups.push_back ( m_pDefaultElementGroup ); // for use by scripts
-    m_pResourceEntity = pResourceEntity;
-    m_pResourceDynamicEntity = pResourceDynamicEntity;
+    m_rootEntity = g_pClientGame->GetRootEntity();
+    m_defaultGroup = new CElementGroup( this );
+    m_elementGroups.push_back( m_defaultGroup ); // for use by scripts
+
+    m_resourceEntity = entity;
+    m_dynamicEntity = dynamicEntity;
 
     // Create our root elements. We set theirs parents when we're loaded.
     // Make them system entities so nothing but us can delete them.
-    m_pResourceGUIEntity = new CClientDummy ( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "guiroot" );
-    m_pResourceGUIEntity->MakeSystemEntity ();
+    m_pResourceGUIEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "guiroot" );
+    m_pResourceGUIEntity->MakeSystemEntity();
 
-    m_pResourceCOLRoot = new CClientDummy ( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "colmodelroot" );
-    m_pResourceCOLRoot->MakeSystemEntity ();
+    m_pResourceCOLRoot = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "colmodelroot" );
+    m_pResourceCOLRoot->MakeSystemEntity();
 
-    m_pResourceDFFEntity = new CClientDummy ( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot" );
-    m_pResourceDFFEntity->MakeSystemEntity ();
+    m_pResourceDFFEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot" );
+    m_pResourceDFFEntity->MakeSystemEntity();
 
-    m_pResourceTXDRoot = new CClientDummy ( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot" );
-    m_pResourceTXDRoot->MakeSystemEntity ();
+    m_pResourceTXDRoot = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot" );
+    m_pResourceTXDRoot->MakeSystemEntity();
 
-    m_strResourceDirectoryPath = SString ( "%s/resources/%s", g_pClientGame->GetModRoot (), m_szResourceName );
-    m_strResourcePrivateDirectoryPath = PathJoin ( CServerIdManager::GetSingleton ()->GetConnectionPrivateDirectory (), m_szResourceName );
+    // Set up our private path
+    filePath privPath;
+    ResourceManager::resFileRoot->GetFullPath( CServerIdManager::GetSingleton()->GetConnectionPrivateDirectory() + name, false, privPath );
 
-    m_pLuaVM = m_pLuaManager->CreateVirtualMachine ( this );
-    if ( m_pLuaVM )
-    {
-        m_pLuaVM->SetScriptName ( szResourceName );
-    }
+    m_privateRoot = g_pCore->GetFileSystem()->CreateTranslator( privPath.c_str() );
+
+    // Create our virtual machine
+    m_lua = m_luaManager->Create( name.c_str() );
+    m_lua->SetName( name.c_str() );
 }
 
-
-CResource::~CResource ( void )
+CResource::~CResource()
 {
     // Make sure we don't force the cursor on
-    ShowCursor ( false );
+    ShowCursor( false );
 
     // Do this before we delete our elements.
-    m_pRootEntity->CleanUpForVM ( m_pLuaVM, true );
-    m_pLuaManager->RemoveVirtualMachine ( m_pLuaVM );
+    m_pRootEntity->CleanUpForVM( m_lua, true );
+    m_luaManager->Remove( m_lua );
 
     // Remove all keybinds on this VM
-    g_pClientGame->GetScriptKeyBinds ()->RemoveAllKeys ( m_pLuaVM );
-    g_pCore->GetKeyBinds()->SetAllCommandsActive ( m_szResourceName, false );
+    g_pClientGame->GetScriptKeyBinds()->RemoveAllKeys( m_lua );
+    g_pCore->GetKeyBinds()->SetAllCommandsActive( m_name.c_str(), false );
 
-    // Destroy the txd root so all dff elements are deleted except those moved out
-    g_pClientGame->GetElementDeleter ()->DeleteRecursive ( m_pResourceTXDRoot );
-    m_pResourceTXDRoot = NULL;
-
-    // Destroy the ddf root so all dff elements are deleted except those moved out
-    g_pClientGame->GetElementDeleter ()->DeleteRecursive ( m_pResourceDFFEntity );
-    m_pResourceDFFEntity = NULL;
-
-    // Destroy the colmodel root so all colmodel elements are deleted except those moved out
-    g_pClientGame->GetElementDeleter ()->DeleteRecursive ( m_pResourceCOLRoot );
-    m_pResourceCOLRoot = NULL;
-
-    // Destroy the gui root so all gui elements are deleted except those moved out
-    g_pClientGame->GetElementDeleter ()->DeleteRecursive ( m_pResourceGUIEntity );
-    m_pResourceGUIEntity = NULL;
+    // Destroy all entities
+    g_pClientGame->GetElementDeleter()->DeleteRecursive( m_txdEntity );
+    g_pClientGame->GetElementDeleter()->DeleteRecursive( m_dffEntity );
+    g_pClientGame->GetElementDeleter()->DeleteRecursive( m_colEntity );
+    g_pClientGame->GetElementDeleter()->DeleteRecursive( m_guiEntity );
 
     // Undo all changes to water
-    g_pGame->GetWaterManager ()->UndoChanges ( this );
+    g_pGame->GetWaterManager()->UndoChanges( this );
 
     // TODO: remove them from the core too!!
     // Destroy all the element groups attached directly to this resource
-    list < CElementGroup* > ::iterator itere = m_elementGroups.begin ();
-    for ( ; itere != m_elementGroups.end (); itere++ )
-    {
-        delete (*itere);
-    }
-    m_elementGroups.clear();
-    m_pDefaultElementGroup = NULL;
+    groupList_t::iterator itere = m_elementGroups.begin();
 
-    m_pRootEntity = NULL;
-    m_pResourceEntity = NULL;
+    for ( ; itere != m_elementGroups.end(); itere++ )
+        delete *itere;
 
-    list < CResourceFile* >::iterator iter = m_ResourceFiles.begin ();
-    for ( ; iter != m_ResourceFiles.end (); iter++ )
-    {
-        delete ( *iter );
-    }
-    m_ResourceFiles.empty ();
+    m_defaultGroup = NULL;
 
-    list < CResourceConfigItem* >::iterator iterc = m_ConfigFiles.begin ();
-    for ( ; iterc != m_ConfigFiles.end (); iterc++ )
-    {
-        delete ( *iterc );
-    }
-    m_ConfigFiles.empty ();
+    m_rootEntity = NULL;
+    m_resourceEntity = NULL;
 
-    // Delete the exported functions
-    list < CExportedFunction* >::iterator iterExportedFunction = m_exportedFunctions.begin();
-    for ( ; iterExportedFunction != m_exportedFunctions.end(); iterExportedFunction++ )
-    {
-        delete ( *iterExportedFunction );
-    }
-    m_exportedFunctions.empty();
+    // Clean up memory!
+    fileList_t::iterator iter = m_files.begin();
+    for ( ; iter != m_ResourceFiles.end(); iter++ )
+        delete *iter;
+
+    configList_t::iterator iterc = m_configFiles.begin();
+    for ( ; iterc != m_ConfigFiles.end(); iterc++ )
+        delete *iterc;
+
+    exports_t::iterator iterex = m_exports.begin();
+    for ( ; iterex != m_exportedFunctions.end(); iterex++ )
+        delete *iterex;
 }
 
 CDownloadableResource* CResource::QueueFile ( CDownloadableResource::eResourceType resourceType, const char *szFileName, CChecksum serverChecksum )
@@ -199,7 +171,7 @@ bool CResource::CallExportedFunction ( const char * szFunctionName, CLuaArgument
 //
 // Quick integrity check of png, dff and txd files
 //
-static bool CheckFileForCorruption( string strPath )
+static bool CheckFileForCorruption( std::string strPath )
 {
     const char* szExt   = strPath.c_str () + max<long>( 0, strPath.length () - 4 );
     bool bIsBad         = false;
@@ -210,16 +182,16 @@ static bool CheckFileForCorruption( string strPath )
         if ( CFile *file = resFileRoot->Open( strPath.c_str(), "rb" ) )
         {
             // This is what the png header should look like
-            unsigned char pGoodHeader [8] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+            const unsigned char pGoodHeader[8] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 
              // Load the header
             unsigned char pBuffer[8];
 
-            if ( file->Read( pBuffer, 1, 8 ) != 8 )
+            if ( !file->ReadStruct( pBuffer ) )
                 bIsBad = true;
 
             // Check header integrity
-            if ( memcmp ( pBuffer, pGoodHeader, 8 ) )
+            if ( memcmp( pBuffer, pGoodHeader, 8 ) )
                 bIsBad = true;
 
             delete file;
@@ -237,7 +209,7 @@ static bool CheckFileForCorruption( string strPath )
             } header = {0,0,0};
 
             // Load the first header
-            file->Read( &header, 1, sizeof(header) );
+            file->ReadStruct( header );
 
             long pos = sizeof(header);
             long validSize = header.size + pos;
@@ -245,7 +217,7 @@ static bool CheckFileForCorruption( string strPath )
             // Step through the sections
             while( pos < validSize )
             {
-                if ( file->Read( &header, 1, sizeof(header) ) != sizeof(header) )
+                if ( !file->ReadStruct( header ) )
                     break;
 
                 file->Seek( header.size, SEEK_CUR );
@@ -258,59 +230,57 @@ static bool CheckFileForCorruption( string strPath )
                
             // Close the file
             delete file;
-        }        
+        }
     }
 
     return bIsBad;
 }
 
-
-void CResource::Load ( CClientEntity *pRootEntity )
+void CResource::Load( CClientEntity *root )
 {
-    m_pRootEntity = pRootEntity;
-    if ( m_pRootEntity )
-    {
-        // Set the GUI parent to the resource root entity
-        m_pResourceCOLRoot->SetParent ( m_pResourceEntity );
-        m_pResourceDFFEntity->SetParent ( m_pResourceEntity );
-        m_pResourceGUIEntity->SetParent ( m_pResourceEntity );
-        m_pResourceTXDRoot->SetParent ( m_pResourceEntity );
-    }
+    m_pRootEntity = root;
 
-    CLogger::LogPrintf ( "> Starting resource '%s'", m_szResourceName );
+    // Set the GUI parent to the resource root entity
+    m_colEntity->SetParent( root );
+    m_dffEntity->SetParent( root );
+    m_guiEntity->SetParent( root );
+    m_txdEntity->SetParent( root );
 
-    char szBuffer [ MAX_PATH ] = { 0 };
-    list < CResourceConfigItem* >::iterator iterc = m_ConfigFiles.begin ();
-    for ( ; iterc != m_ConfigFiles.end (); iterc++ )
+    CLogger::LogPrintf( "> Starting resource '%s'\n", m_name.c_str() );
+
+    configList_t::iterator iterc = m_configFiles.begin();
+    for ( ; iterc != m_configFiles.end(); iterc++ )
     {
         if ( !(*iterc)->Start() )
-        {
-            CLogger::LogPrintf ( "Failed to start resource item %s in %s\n", (*iterc)->GetName(), m_szResourceName );
-        }
+            CLogger::LogPrintf( "Failed to start resource item %s in %s\n", (*iterc)->GetName(), m_name.c_str() );
     }
 
     // Load the files that are queued in the list "to be loaded"
-    list < CResourceFile* > ::iterator iter = m_ResourceFiles.begin ();
-    for ( ; iter != m_ResourceFiles.end (); iter++ )
+    fileList_t::iterator iter = m_files.begin();
+    for ( ; iter != m_files.end(); iter++ )
     {
-        CResourceFile* pResourceFile = *iter;
+        CResourceFile *file = *iter;
+
         // Only load the resource file if it is a client script
-        if ( pResourceFile->GetResourceType () == CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_SCRIPT )
+        if ( file->GetResourceType() == CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_SCRIPT )
         {
             // Load the file
-            std::vector < char > buffer;
-            FileLoad ( pResourceFile->GetName (), buffer );
-            unsigned int iSize = buffer.size();
+            std::vector <char> buffer;
+            
+            if ( !m_fileRoot.ReadToBuffer( file->GetName(), buffer ) )
+                continue;
+
+            size_t size = buffer.size();
 
             // Check the contents
-            if ( iSize > 0 && CChecksum::GenerateChecksumFromBuffer ( &buffer.at ( 0 ), iSize ).CompareWithLegacy ( pResourceFile->GetServerChecksum () ) )
+            if ( size > 0 && CChecksum::GenerateChecksumFromBuffer( &buffer[0], size ).CompareWithLegacy( file->GetServerChecksum() ) )
             {
                 //UTF-8 BOM?  Compare by checking the standard UTF-8 BOM of 3 characters (in signed format, hence negative)
-                if ( iSize < 3 || buffer[0] != -0x11 || buffer[1] != -0x45 || buffer[2] != -0x41 ) 
+                if ( size < 3 || buffer[0] != -0x11 || buffer[1] != -0x45 || buffer[2] != -0x41 ) 
                     //Maybe not UTF-8, if we have a >80% heuristic detection confidence, assume it is
-                    m_pLuaVM->LoadScriptFromBuffer ( &buffer.at ( 0 ), iSize, pResourceFile->GetName (), GetUTF8Confidence ( (unsigned char*)&buffer.at ( 0 ), iSize ) >= 80 );
-                else if ( iSize != 3 )  //If there's a BOM, but the script is not empty, load ignoring the first 3 bytes
-                    m_pLuaVM->LoadScriptFromBuffer ( &buffer.at ( 3 ), iSize-3, pResourceFile->GetName (), true );
+                    m_lua->LoadScriptFromBuffer( &buffer.at( 0 ), size, file->GetName(), GetUTF8Confidence( (unsigned char*)&buffer.at( 0 ), size ) >= 80 );
+                else if ( size != 3 )  //If there's a BOM, but the script is not empty, load ignoring the first 3 bytes
+                    m_lua->LoadScriptFromBuffer( &buffer.at( 3 ), size - 3, file->GetName(), true );
             }
             else
             {
@@ -318,8 +288,7 @@ void CResource::Load ( CClientEntity *pRootEntity )
                 g_pCore->ChatEchoColor ( strBuffer, 255, 0, 0 );
             }
         }
-        else
-        if ( CheckFileForCorruption ( pResourceFile->GetName () ) )
+        else if ( CheckFileForCorruption ( pResourceFile->GetName () ) )
         {
             SString strBuffer ( "WARNING: File '%s' in resource '%s' is invalid.", pResourceFile->GetShortName (), m_szResourceName );
             g_pCore->DebugEchoColor ( strBuffer, 255, 0, 0 );
@@ -375,12 +344,4 @@ void CResource::ShowCursor ( bool bShow, bool bToggleControls )
         g_pCore->ForceCursorVisible ( m_iShowingCursor > 0, bToggleControls );
         g_pClientGame->SetCursorEventsEnabled ( m_iShowingCursor > 0 );
     }
-}
-
-
-SString CResource::GetResourceDirectoryPath ( eAccessType accessType )
-{
-    if ( accessType == ACCESS_PRIVATE )
-        return m_strResourcePrivateDirectoryPath;
-    return m_strResourceDirectoryPath;
 }

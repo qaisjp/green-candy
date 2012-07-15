@@ -18,6 +18,7 @@
 #include "CEvents.h"
 #include "CLuaMain.h"
 #include "CLuaManager.h"
+#include "CResource.h"
 #include "CResourceManager.h"
 #include "CLuaFunctionDefs.h"
 

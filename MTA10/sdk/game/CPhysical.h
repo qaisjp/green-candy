@@ -19,10 +19,10 @@ class CPhysical : public CEntity
 public:
     virtual             ~CPhysical () {};
 
-    virtual void        GetMoveSpeed                ( CVector moveSpeed ) = 0;
-    virtual void        GetTurnSpeed                ( CVector turnSpeed ) = 0;
-    virtual void        SetMoveSpeed                ( CVector moveSpeed ) = 0;
-    virtual void        SetTurnSpeed                ( CVector turnSpeed ) = 0;
+    virtual void        GetMoveSpeed                ( CVector& moveSpeed ) = 0;
+    virtual void        GetTurnSpeed                ( CVector& turnSpeed ) = 0;
+    virtual void        SetMoveSpeed                ( const CVector& moveSpeed ) = 0;
+    virtual void        SetTurnSpeed                ( const CVector& turnSpeed ) = 0;
 
     virtual float       GetMass                     () = 0;
     virtual void        SetMass                     ( float fMass ) = 0;

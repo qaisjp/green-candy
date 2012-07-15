@@ -19,6 +19,7 @@
 #include "lualib.h"
 #include "ltm.h"
 #include "lstate.h"
+#include "lvm.h"
 
 
 
@@ -79,15 +80,21 @@ static int luaB_tonumber (lua_State *L) {
 }
 
 
-static int luaB_error (lua_State *L) {
-  int level = luaL_optint(L, 2, 1);
-  lua_settop(L, 1);
-  if (lua_isstring(L, 1) && level > 0) {  /* add extra information? */
-    luaL_where(L, level);
-    lua_pushvalue(L, 1);
-    lua_concat(L, 2);
-  }
-  return lua_error(L);
+static int luaB_error (lua_State *L)
+{
+#if 0
+    int level = luaL_optint(L, 2, 1);
+    lua_settop(L, 1);
+    if (lua_isstring(L, 1) && level > 0)
+    {  /* add extra information? */
+        luaL_where(L, level);
+        lua_pushvalue(L, 1);
+        lua_concat(L, 2);
+    }
+#else
+    lua_settop( L, 1 );
+#endif
+    return lua_error(L);
 }
 
 
@@ -274,14 +281,19 @@ static int luaB_ipairs (lua_State *L) {
 }
 
 
-static int load_aux (lua_State *L, int status) {
-  if (status == 0)  /* OK? */
-    return 1;
-  else {
+static int load_aux (lua_State *L, int status)
+{
+    if (status == 0)  /* OK? */
+    {
+        // Inherit environment
+        lua_pushvalue( L, LUA_ENVIRONINDEX );
+        lua_setfenv( L, -2 );
+        return 1;
+    }
+
     lua_pushnil(L);
     lua_insert(L, -2);  /* put before error message */
     return 2;  /* return nil plus error message */
-  }
 }
 
 
@@ -591,12 +603,19 @@ static int luaB_auxwrap (lua_State *L) {
 }
 
 
-static int luaB_cocreate (lua_State *L) {
-  lua_State *NL = lua_newthread(L);
-  luaL_argcheck(L, lua_isfunction(L, 1), 1, "function expected");
-  lua_pushvalue(L, 1);  /* move function to top */
-  lua_xmove(L, NL, 1);  /* move function from L to NL */
-  return 1;
+static int luaB_cocreate (lua_State *L)
+{
+    luaL_argcheck(L, lua_isfunction(L, 1), 1, "function expected");
+
+    lua_State *NL = lua_newthread(L);
+
+    lua_pushvalue(L, 1);  /* move function to top */
+    lua_xmove(L, NL, 1);  /* move function from L to NL */
+
+    // Notify the system
+    setthvalue( L, L->top++, NL );
+    lua_callevent( L, LUA_EVENT_THREAD_CO_CREATE, 1 );
+    return 1;
 }
 
 
@@ -658,25 +677,26 @@ static void auxopen (lua_State *L, const char *name,
 }
 
 
-static void base_open (lua_State *L) {
-  /* set global _G */
-  lua_pushvalue(L, LUA_GLOBALSINDEX);
-  lua_setglobal(L, "_G");
-  /* open lib into global table */
-  luaL_register(L, "_G", base_funcs);
-  lua_pushliteral(L, LUA_VERSION);
-  lua_setglobal(L, "_VERSION");  /* set global _VERSION */
-  /* `ipairs' and `pairs' need auxliliary functions as upvalues */
-  auxopen(L, "ipairs", luaB_ipairs, ipairsaux);
-  auxopen(L, "pairs", luaB_pairs, luaB_next);
-  /* `newproxy' needs a weaktable as upvalue */
-  lua_createtable(L, 0, 1);  /* new table `w' */
-  lua_pushvalue(L, -1);  /* `w' will be its own metatable */
-  lua_setmetatable(L, -2);
-  lua_pushliteral(L, "kv");
-  lua_setfield(L, -2, "__mode");  /* metatable(w).__mode = "kv" */
-  lua_pushcclosure(L, luaB_newproxy, 1);
-  lua_setglobal(L, "newproxy");  /* set global `newproxy' */
+static void base_open (lua_State *L)
+{
+    /* set global _G */
+    lua_pushvalue(L, LUA_GLOBALSINDEX);
+    lua_setfield(L, LUA_GLOBALSINDEX, "_G");
+    /* open lib into global table */
+    luaL_register(L, "_G", base_funcs);
+    lua_pushliteral(L, LUA_VERSION);
+    lua_setglobal(L, "_VERSION");  /* set global _VERSION */
+    /* `ipairs' and `pairs' need auxliliary functions as upvalues */
+    auxopen(L, "ipairs", luaB_ipairs, ipairsaux);
+    auxopen(L, "pairs", luaB_pairs, luaB_next);
+    /* `newproxy' needs a weaktable as upvalue */
+    lua_createtable(L, 0, 1);  /* new table `w' */
+    lua_pushvalue(L, -1);  /* `w' will be its own metatable */
+    lua_setmetatable(L, -2);
+    lua_pushliteral(L, "kv");
+    lua_setfield(L, -2, "__mode");  /* metatable(w).__mode = "kv" */
+    lua_pushcclosure(L, luaB_newproxy, 1);
+    lua_setfield(L, LUA_GLOBALSINDEX, "newproxy");  /* set global `newproxy' */
 }
 
 

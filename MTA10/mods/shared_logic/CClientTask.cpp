@@ -499,7 +499,7 @@ const char* CClientTask::GetParameterString ( const char* szKey )
     if ( pArgument && pArgument->GetType () == LUA_TSTRING )
     {
         // Return the string
-        return pArgument->GetString ();
+        return pArgument->GetString().c_str();
     }
 
     // Non-existing

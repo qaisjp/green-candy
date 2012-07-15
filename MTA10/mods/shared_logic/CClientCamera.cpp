@@ -120,7 +120,10 @@ void CClientCamera::DoPulse ( void )
                 }
 
                 // Set the new world center/rotation
-                g_pMultiplayer->SetCenterOfWorld ( NULL, m_pFocusedGameEntity->GetPosition (), fRotation );
+                CVector pos;
+                m_pFocusedGameEntity->GetPosition( pos );
+
+                g_pMultiplayer->SetCenterOfWorld ( NULL, &pos, fRotation );
             }
         }
     }

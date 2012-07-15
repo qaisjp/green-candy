@@ -62,17 +62,18 @@ static void freestack (lua_State *L, lua_State *L1) {
 /*
 ** open parts that may cause memory-allocation errors
 */
-static void f_luaopen (lua_State *L, void *ud) {
-  global_State *g = G(L);
-  UNUSED(ud);
-  stack_init(L, L);  /* init stack */
-  sethvalue(L, gt(L), luaH_new(L, 0, 2));  /* table of globals */
-  sethvalue(L, registry(L), luaH_new(L, 0, 2));  /* registry */
-  luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
-  luaT_init(L);
-  luaX_init(L);
-  luaS_fix(luaS_newliteral(L, MEMERRMSG));
-  g->GCthreshold = 4*g->totalbytes;
+static void f_luaopen (lua_State *L, void *ud)
+{
+    global_State *g = G(L);
+    UNUSED(ud);
+    stack_init(L, L);  /* init stack */
+    luaE_newenvironment( L );
+    sethvalue(L, registry(L), luaH_new(L, 0, 2));  /* registry */
+    luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
+    luaT_init(L);
+    luaX_init(L);
+    luaS_fix(luaS_newliteral(L, MEMERRMSG));
+    g->GCthreshold = 4*g->totalbytes;
 }
 
 
@@ -180,6 +181,7 @@ lua_Thread::lua_Thread()
 
 lua_Thread* luaE_newthread( lua_State *L )
 {
+    unsigned int n;
     lua_Thread *L1 = new (L) lua_Thread;
     luaC_link(L, L1, LUA_TTHREAD);
     preinit_state(L1, G(L));
@@ -189,6 +191,10 @@ lua_Thread* luaE_newthread( lua_State *L )
     L1->basehookcount = L->basehookcount;
     L1->hook = L->hook;
     resethookcount(L1);
+
+    // Inherit the metatables
+    for ( n=0; n<NUM_TAGS; n++ )
+        L1->mt[n] = L->mt[n];
 
 #ifdef _WIN32
     L1->threadHandle = CreateThread( NULL, 0, luaE_threadEntryPoint, L1, 0, NULL );
@@ -260,9 +266,21 @@ lua_Thread::~lua_Thread()
     freestack( l_G->mainthread, this );
 }
 
-LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud)
+LUAI_FUNC void luaE_newenvironment( lua_State *L )
 {
-    int i;
+    Table *g = luaH_new( L, 0, 2 );
+    sethvalue( L, gt(L), g );
+    luaC_objbarrier( L, g, L );
+
+    unsigned int n;
+
+    for ( n=0; n<NUM_TAGS; n++ )
+        L->mt[n] = NULL;
+}
+
+LUAI_FUNC lua_State *lua_newstate (lua_Alloc f, void *ud)
+{
+    unsigned int i;
     lua_State *L;
     global_State *g;
     lua_State *l = new (f, ud) lua_State;
@@ -306,8 +324,8 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud)
     for ( i=0; i<LUA_NUM_EVENTS; i++ )
         g->events[i] = NULL;
 
-    for (i=0; i<NUM_TAGS; i++)
-        g->mt[i] = NULL;
+    for ( i=0; i<NUM_TAGS; i++ )
+        L->mt[i] = NULL;
 
     if ( luaD_rawrunprotected( L, f_luaopen, NULL ) != 0 )
     {
@@ -319,7 +337,6 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud)
     luai_userstateopen(L);
     return L;
 }
-
 
 static void callallgcTM (lua_State *L, void *ud)
 {

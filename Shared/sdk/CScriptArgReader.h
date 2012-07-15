@@ -294,7 +294,7 @@ public:
         int iArgument = lua_type ( m_luaVM, m_iIndex );
         if ( iArgument != LUA_TNONE )
         {
-            outValue.Read ( m_luaVM, m_iIndex++ );
+            outValue.Read( m_luaVM, m_iIndex++ );
             return true;
         }
 
@@ -305,9 +305,9 @@ public:
 
 
     //
-    // Read a function, but don't do it yet due to Lua statck issues
+    // Read a function, but don't do it yet due to Lua stack issues
     //
-    bool ReadFunction ( CLuaFunctionRef& outValue, int defaultValue = -2 )
+    bool ReadFunction ( LuaFunctionRef& outValue, int defaultValue = -2 )
     {
         assert ( !m_pPendingFunctionOutValue );
 
@@ -318,10 +318,9 @@ public:
             m_pPendingFunctionIndex = m_iIndex++;
             return true;
         }
-        else
-        if ( defaultValue == LUA_REFNIL )
+        else if ( defaultValue == LUA_REFNIL )
         {
-            outValue = CLuaFunctionRef ();
+            outValue = LuaFunctionRef();
             return true;
         }
 
@@ -339,7 +338,7 @@ public:
             return true;
 
         assert ( m_pPendingFunctionIndex != -1 );
-        *m_pPendingFunctionOutValue = luaM_toref ( m_luaVM, m_pPendingFunctionIndex );
+        *m_pPendingFunctionOutValue = lua_readuserdata <CLuaMain, LUA_REGISTRYINDEX, 2> ( m_luaVM )->CreateReference( m_pPendingFunctionIndex );
         if ( VERIFY_FUNCTION( *m_pPendingFunctionOutValue ) )
         {
             m_pPendingFunctionIndex = -1;
@@ -461,6 +460,6 @@ public:
     SString                 m_strErrorExpectedType;
     int                     m_iIndex;
     lua_State*              m_luaVM;
-    CLuaFunctionRef*        m_pPendingFunctionOutValue;
+    LuaFunctionRef*         m_pPendingFunctionOutValue;
     int                     m_pPendingFunctionIndex;
 };

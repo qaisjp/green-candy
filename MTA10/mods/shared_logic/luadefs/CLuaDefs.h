@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/luadefs/CLuaDefs.h
 *  PURPOSE:     Lua definitions header
 *  DEVELOPERS:  Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -32,38 +33,41 @@ class CRenderWare;
 class CResourceManager;
 class CScriptDebugging;
 
-#define argtype(number,type) (lua_type(luaVM,number) == type)
-#define argtype2(number,type,type2) (lua_type(luaVM,number) == type || lua_type(luaVM,number) == type2)
+#define argtype(number,type) (lua_type(L,number) == type)
+#define argtype2(number,type,type2) (lua_type(L,number) == type || lua_type(L,number) == type2)
 
-class CLuaDefs
+namespace CLuaFunctionDefs
 {
-public:
-    static void                         Initialize      ( class CClientGame* pClientGame,
-                                                          CLuaManager* pLuaManager,
-                                                          CScriptDebugging* pScriptDebugging );
+    void Initialize( CClientGame *game,
+                     CLuaManager *manager,
+                     CScriptDebugging *debug );
 
-// This is just for the LUA funcs. Please don't public this and use it other
-// places in the client.
-public:
-    static CLuaManager*                 m_pLuaManager;
-    static CScriptDebugging*            m_pScriptDebugging;
-    static class CClientGame*           m_pClientGame;
-    static CClientManager*              m_pManager;
-    static CClientEntity*               m_pRootEntity;
-    static CClientGUIManager*           m_pGUIManager;
-    static CClientPlayerManager*        m_pPlayerManager;
-    static CClientRadarMarkerManager*   m_pRadarMarkerManager;
-    static CResourceManager*            m_pResourceManager;
-    static CClientVehicleManager*       m_pVehicleManager;
-    static CClientColManager*           m_pColManager;
-    static CClientObjectManager*        m_pObjectManager;
-    static CClientTeamManager*          m_pTeamManager;
-    static CRenderWare*                 m_pRenderWare;
-    static CClientMarkerManager*        m_pMarkerManager;
-    static CClientPickupManager*        m_pPickupManager;
-    static CClientDFFManager*           m_pDFFManager;
-    static CClientColModelManager*      m_pColModelManager;
-    static CRegisteredCommands*         m_pRegisteredCommands;  
-};
+    static inline CLuaMain* lua_readcontext( lua_State *L )
+    {
+        return lua_readuserdata <CLuaMain, LUA_STORAGEINDEX, 2> ( L );
+    }
+
+    // This is just for the LUA funcs. Please don't public this and use it other
+    // places in the client.
+    extern CLuaManager*                 m_pLuaManager;
+    extern CScriptDebugging*            m_pScriptDebugging;
+    extern CClientGame*                 m_pClientGame;
+    extern CClientManager*              m_pManager;
+    extern CClientEntity*               m_pRootEntity;
+    extern CClientGUIManager*           m_pGUIManager;
+    extern CClientPlayerManager*        m_pPlayerManager;
+    extern CClientRadarMarkerManager*   m_pRadarMarkerManager;
+    extern CResourceManager*            m_pResourceManager;
+    extern CClientVehicleManager*       m_pVehicleManager;
+    extern CClientColManager*           m_pColManager;
+    extern CClientObjectManager*        m_pObjectManager;
+    extern CClientTeamManager*          m_pTeamManager;
+    extern CRenderWare*                 m_pRenderWare;
+    extern CClientMarkerManager*        m_pMarkerManager;
+    extern CClientPickupManager*        m_pPickupManager;
+    extern CClientDFFManager*           m_pDFFManager;
+    extern CClientColModelManager*      m_pColModelManager;
+    extern CRegisteredCommands*         m_pRegisteredCommands;  
+}
 
 #endif

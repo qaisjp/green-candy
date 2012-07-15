@@ -12,15 +12,13 @@
 
 #include <StdInc.h>
 
-CScriptDebugging::CScriptDebugging()
+CScriptDebugging::CScriptDebugging() : ScriptDebugging( *g_pClientGame->GetLuaManager() )
 {
     m_triggerCall = false;
 }
 
 void CScriptDebugging::NotifySystem( unsigned int level, const filePath& filename, int line, std::string& msg, unsigned char r, unsigned char g, unsigned char b )
 {
-    char r, g, b;
-
     if ( !m_triggerCall )
     {
         m_triggerCall = true;
@@ -69,7 +67,7 @@ void CScriptDebugging::NotifySystem( unsigned int level, const filePath& filenam
         break;
     }
 
-    g_pCore->DebugEchoColor( msg, r, g, b );
+    g_pCore->DebugEchoColor( msg.c_str(), r, g, b );
 }
 
 void CScriptDebugging::PathRelative( const char *in, filePath& out )

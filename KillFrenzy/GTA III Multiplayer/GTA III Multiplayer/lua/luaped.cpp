@@ -19,8 +19,10 @@ static const luaL_Reg ped_interface[] =
 
 static int ped_constructor( lua_State *L )
 {
+    CPed *ped = (CPed*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
     ILuaClass& j = *lua_refclass( L, 1 );
-    j.SetTransmit( LUACLASS_PED );
+    j.SetTransmit( LUACLASS_PED, ped );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );

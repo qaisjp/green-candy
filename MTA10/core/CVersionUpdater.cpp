@@ -1488,22 +1488,22 @@ void CVersionUpdater::_PollQuestionNoYes ( void )
 {
     switch ( GetQuestionBox ().PollButtons () )
     {
-        case BUTTON_NONE:
-            Push ( _PollQuestionNoYes );
-            break;
+    case BUTTON_NONE:
+        Push ( _PollQuestionNoYes );
+        break;
 
-        case BUTTON_0:
-            m_ConditionMap.SetCondition ( "QuestionResponse", "No" );
-            GetQuestionBox ().Reset ();
-            break;
+    case BUTTON_0:
+        m_ConditionMap.SetCondition ( "QuestionResponse", "No" );
+        GetQuestionBox ().Reset ();
+        break;
 
-        case BUTTON_1:
-            m_ConditionMap.SetCondition ( "QuestionResponse", "Yes" );
-            GetQuestionBox ().Reset ();
-            break;
+    case BUTTON_1:
+        m_ConditionMap.SetCondition ( "QuestionResponse", "Yes" );
+        GetQuestionBox ().Reset ();
+        break;
 
-        default:
-            assert ( 0 );
+    default:
+        assert ( 0 );
     }
 }
 
@@ -2349,8 +2349,10 @@ void CVersionUpdater::_StartDownload ( void )
 
             for ( std::vector <filePath>::iterator iter = fileList.begin(); iter != fileList.end(); ++iter )
             {
-                SString strPathFilename = strPath + *iter;
+                filePath strPathFilename( strPath );
                 std::vector <char> buffer;
+
+                strPathFilename += *iter;
 
                 // Check filesize
                 if ( g_pCore->GetFileSystem()->Size( strPathFilename ) != m_JobInfo.iFilesize )

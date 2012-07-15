@@ -13,8 +13,8 @@
 #ifndef _CPadManagerSA_
 #define _CPadManagerSA_
 
-#define DIGITAL_BUTTON( state ) ( state ? 255 : 0 )
-#define DIGITAL_AXIS( upState, downState ) ( ( ( (upState) && (downState) ) || !(upState) && !(downState) ) ? 0 : (upState) ? -128 : 128 )
+#define DIGITAL_BUTTON( state ) ( state ? 0xFF : 0 )
+#define DIGITAL_AXIS( upState, downState ) ( ( ( (upState) && (downState) ) || !(upState) && !(downState) ) ? 0 : (upState) ? -0x80 : 0x80 )
 
 class CPadManagerSA
 {

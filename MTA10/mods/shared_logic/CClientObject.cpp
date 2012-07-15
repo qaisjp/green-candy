@@ -73,11 +73,11 @@ void CClientObject::Unlink ( void )
 }
 
 
-void CClientObject::GetPosition ( CVector & vecPosition ) const
+void CClientObject::GetPosition ( CVector& vecPosition ) const
 {
     if ( m_pObject )
     {
-        vecPosition = *m_pObject->GetPosition ();
+        m_pObject->GetPosition( vecPosition );
     }
     else if ( m_pAttachedToEntity )
     {
@@ -132,7 +132,7 @@ void CClientObject::GetRotationRadians ( CVector& vecRotation ) const
         //   but we need to get the real rotation for when the game moves the objects..
         //  (eg: physics/attaching), the code below returns wrong values, see #2732
         CMatrix matTemp;
-        m_pObject->GetMatrix ( &matTemp );
+        m_pObject->GetMatrix ( matTemp );
         g_pMultiplayer->ConvertMatrixToEulerAngles ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
     }
     else
@@ -216,7 +216,7 @@ float CClientObject::GetDistanceFromCentreOfMassToBaseOfModel ( void )
 {
     if ( m_pObject )
     {
-        return m_pObject->GetDistanceFromCentreOfMassToBaseOfModel ();
+        return m_pObject->GetBasingDistance();
     }
     else
     {
@@ -458,7 +458,7 @@ void CClientObject::Destroy ( void )
         m_pManager->InvalidateEntity ( this );
 
         // Destroy the object
-        g_pGame->GetPools ()->RemoveObject ( m_pObject );
+        delete m_pObject;
         m_pObject = NULL;
 
         // Remove our reference to its model
@@ -487,7 +487,8 @@ void CClientObject::StreamedInPulse ( void )
     if ( !m_bIsStatic )
     {
         // Grab our actual position (as GTA moves it too)
-        CVector vecPosition = *m_pObject->GetPosition ();
+        CVector vecPosition;
+        m_pObject->GetPosition ( vecPosition );
 
         // Has it moved without MTA knowing?
         if ( vecPosition != m_vecPosition )
@@ -515,7 +516,7 @@ void CClientObject::GetMoveSpeed ( CVector& vecMoveSpeed ) const
 {
     if ( m_pObject )
     {
-        m_pObject->GetMoveSpeed ( &vecMoveSpeed );
+        m_pObject->GetMoveSpeed ( vecMoveSpeed );
     }
     else
     {
@@ -528,7 +529,7 @@ void CClientObject::SetMoveSpeed ( const CVector& vecMoveSpeed )
 {
     if ( m_pObject )
     {
-        m_pObject->SetMoveSpeed ( const_cast < CVector* > ( &vecMoveSpeed ) );
+        m_pObject->SetMoveSpeed ( vecMoveSpeed );
     }
     m_vecMoveSpeed = vecMoveSpeed;
 }

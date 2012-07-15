@@ -21,9 +21,12 @@ struct CRefInfo
     int idx;
 };
 
+class Resource;
+
 class LuaMain abstract
 {
     friend class LuaManager;
+    friend class Resource;
 protected:
 
     // Manager only
@@ -59,10 +62,11 @@ public:
     void                            DoPulse();
 
     const std::string&              GetName() const                     { return m_name; };
-    void                            SetName( const char *name )         { m_name = name; };
+    void                            SetName( const std::string& name )  { m_name = name; };
 
-    inline LuaTimerManager&         GetTimerManager()						{ return m_timers; };
-    inline lua_State*               GetVirtualMachine() const                  { return m_lua; };
+    inline LuaTimerManager&         GetTimerManager()                   { return m_timers; };
+    inline lua_State*               GetVirtualMachine() const           { return m_lua; };
+    inline Resource*                GetResource()                       { return m_resource; }
 
     inline lua_State*               operator * () const                 { return GetVirtualMachine(); }
 
@@ -73,8 +77,8 @@ public:
     virtual void                    SaveXML( CXMLNode *root ) = 0;
     void                            DestroyXML( CXMLFile *file );
     void                            DestroyXML( CXMLNode *root );
-    unsigned long                   GetXMLFileCount() const                  { return m_XMLFiles.size(); };
-    unsigned long                   GetTimerCount() const                  { return m_timers.GetTimerCount(); };
+    unsigned long                   GetXMLFileCount() const             { return m_XMLFiles.size(); };
+    unsigned long                   GetTimerCount() const               { return m_timers.GetTimerCount(); };
 #endif //_KILLFRENZY
 
     const SString&                  GetFunctionTag( int ref );
@@ -83,21 +87,23 @@ private:
     void                            InitSecurity();
 
 protected:
-    void                            InitVM( int structure, int meta );
+    virtual void                    InitVM( int structure, int meta );
 
     std::string                     m_name;
     int                             m_global;
     int                             m_structure;
     int                             m_meta;
 
+    Resource*                       m_resource;
+
     lua_State*                      m_lua;
     class LuaManager&               m_system;
     LuaTimerManager                 m_timers;
 
-    unsigned long                   m_functionEnter;
-
 #ifndef _KILLFRENZY
-    std::list <CXMLFile*>           m_XMLFiles;
+    typedef std::list <CXMLFile*> xmlFiles_t;
+
+    xmlFiles_t                      m_XMLFiles;
 #endif //_KILLFRENZY
 
 public:

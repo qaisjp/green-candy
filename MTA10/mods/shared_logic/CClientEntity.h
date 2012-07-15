@@ -21,7 +21,7 @@ class CClientEntity;
 #define __CCLIENTENTITY_H
 
 #include "CElementArray.h"
-class CLuaFunctionRef;
+class LuaFunctionRef;
 
 // Used to check fast version of getElementsByType
 //#define CHECK_ENTITIES_FROM_ROOT  MTA_DEBUG
@@ -224,11 +224,11 @@ public:
     virtual bool                                IsAttachToable          ( void );
     virtual void                                DoAttaching             ( void );
 
-    bool                                        AddEvent                ( CLuaMain* pLuaMain, const char* szName, const CLuaFunctionRef& iLuaFunction, bool bPropagated );
+    bool                                        AddEvent                ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction, bool bPropagated );
     bool                                        CallEvent               ( const char* szName, const CLuaArguments& Arguments, bool bCallOnChildren );
     void                                        CallEventNoParent       ( const char* szName, const CLuaArguments& Arguments, CClientEntity* pSource );
     void                                        CallParentEvent         ( const char* szName, const CLuaArguments& Arguments, CClientEntity* pSource );
-    bool                                        DeleteEvent             ( CLuaMain* pLuaMain, const char* szName, const CLuaFunctionRef& iLuaFunction );
+    bool                                        DeleteEvent             ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction );
     void                                        DeleteEvents            ( CLuaMain* pLuaMain, bool bRecursive );
     void                                        DeleteAllEvents         ( void );
 
@@ -287,7 +287,6 @@ public:
     unsigned char                               GetInterior                 ( void );
     virtual void                                SetInterior                 ( unsigned char ucInterior );
     bool                                        IsOnScreen                  ( void );
-    virtual RpClump *                           GetClump                    ( void );
 
     // Spatial database
     virtual CSphere                             GetWorldBoundingSphere      ( void );

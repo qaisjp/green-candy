@@ -27,7 +27,8 @@
 #include "CPed.h"
 #include "CVehicle.h"
 
-enum ePools {
+enum ePools
+{
     BUILDING_POOL = 0,
     PED_POOL,
     OBJECT_POOL,

@@ -362,7 +362,7 @@ void LuaArgument::Push( lua_State *lua ) const
 #ifndef _KILLFRENZY
 bool LuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int type )
 {
-    switch( type.data.ucType )
+    switch( type )
     {
     case LUA_TNONE:
     case LUA_TNIL:
@@ -370,7 +370,7 @@ bool LuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int type
         return true;
 
     case LUA_TBOOLEAN:
-        Read( tream.ReadBit() );
+        Read( stream.ReadBit() );
         return true;
 
     case LUA_TNUMBER:
@@ -487,41 +487,46 @@ bool LuaArgument::WriteToBitStream( NetBitStreamInterface& bitStream ) const
         return true;
 
     case LUA_TNUMBER:
-        type.data.ucType = LUA_TNUMBER;
-        bitStream.Write( &type );
-
-        float fNumber = (float)GetNumber();
-        long lNumber = (long)fNumber;
-        float fNumberInteger = (float)lNumber;
-
-        // Check if the number is an integer and can fit a long datatype
-        if ( fabs(fNumber) > fabs(fNumberInteger + 1) || fabs(fNumber - fNumberInteger) >= FLOAT_EPSILON )
         {
-            bitStream.WriteBit( true );
-            bitStream.Write( fNumber );
-            return true;
-        }
+            type.data.ucType = LUA_TNUMBER;
+            bitStream.Write( &type );
 
-        bitStream.WriteBit( false );
-        bitStream.WriteCompressed( lNumber );
+            float fNumber = (float)GetNumber();
+            long lNumber = (long)fNumber;
+            float fNumberInteger = (float)lNumber;
+
+            // Check if the number is an integer and can fit a long datatype
+            if ( fabs(fNumber) > fabs(fNumberInteger + 1) || fabs(fNumber - fNumberInteger) >= FLOAT_EPSILON )
+            {
+                bitStream.WriteBit( true );
+                bitStream.Write( fNumber );
+                return true;
+            }
+
+            bitStream.WriteBit( false );
+            bitStream.WriteCompressed( lNumber );
+        }
         return true;
 
     case LUA_TSTRING:
-        size_t len = m_string.size();
-
-        if ( len > 65535 )
         {
-            // Too long string
-            LogUnableToPacketize( "Couldn't packetize argument list. Invalid string specified, limit is 65535 characters." );
+            size_t len = m_string.size();
 
-            // Write a nil though so other side won't get out of sync
-            bitStream.Write( (unsigned char)LUA_TNIL );
-            return false;
+            if ( len > 65535 )
+            {
+                // Too long string
+                LogUnableToPacketize( "Couldn't packetize argument list. Invalid string specified, limit is 65535 characters." );
+
+                // Write a nil though so other side won't get out of sync
+                bitStream.Write( (unsigned char)LUA_TNIL );
+                return false;
+            }
+
+            type.data.ucType = LUA_TSTRING;
+            bitStream.Write( &type );
         }
-
-        type.data.ucType = LUA_TSTRING;
-        bitStream.Write( &type );
-        return bitStream.WriteStringCompressed( m_string );
+        bitStream.WriteStringCompressed( m_string );
+        return true;
     }
     LogUnableToPacketize( "Couldn't packetize argument list, unknown type specified." );
 

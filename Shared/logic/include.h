@@ -16,7 +16,6 @@
 #include "LuaCommon.h"
 #include <luafile.h>
 #include <luafilesystem.h>
-#include "ScriptFile.h"
 #include "Logger.h"
 #include "ScriptDebugging.h"
 #include "LuaFunctionRef.h"
@@ -32,5 +31,6 @@
 #include "Resource.h"
 #include "ResourceManager.h"
 #include "LuaFunctionDefs.h"
+#include "LuaFunctionDefs.Resources.h"
 
 #endif //_SHARED_LOGIC_INCLUDE_

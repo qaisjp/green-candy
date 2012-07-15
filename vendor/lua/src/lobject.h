@@ -11,6 +11,7 @@
 
 #include <stdarg.h>
 #include <vector>
+#include <map>
 
 #include "llimits.h"
 #include "lua.h"
@@ -209,14 +210,14 @@ public:
 
     virtual void        MarkGC( global_State *g )       { }
 
-    void* operator new( size_t size, lua_State *main ) throw();
+    void* operator new( size_t size, lua_State *main );
 
-    void operator delete( void *ptr ) throw()
+    void operator delete( void *ptr )
     {
         luaM_freemem( ((GCObject*)ptr)->_lua, ptr, 0 );
     }
 
-    void operator delete( void *ptr, size_t size ) throw()
+    void operator delete( void *ptr, size_t size )
     {
         luaM_freemem( ((GCObject*)ptr)->_lua, ptr, size );
     }
@@ -511,7 +512,8 @@ public:
 
     void    PushMethod( lua_State *L, const char *key );
 
-    void    SetTransmit( int type );
+    void    SetTransmit( int type, void *entity );
+    bool    GetTransmit( int type, void*& entity );
     int     GetTransmit();
     bool    IsTransmit( int type );
 
@@ -542,7 +544,9 @@ public:
     bool destroyed;
     bool destroying;
 
-    int transType;
+    typedef std::map <int, void*> transMap_t;
+    transMap_t trans;
+    int transRecent;
 
     typedef std::vector <Class*> childList_t;
     childList_t children;

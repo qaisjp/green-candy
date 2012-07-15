@@ -35,6 +35,13 @@ class CClientRadarArea;
 class CResource;
 class CXMLNode;
 
+// temporary
+enum eAccessType
+{
+    ACCESS_PUBLIC,
+    ACCESS_PRIVATE
+};
+
 
 // Lua push/pop macros for our datatypes
 CClientRadarMarker*     lua_toblip          ( lua_State* luaVM, int iArgument );

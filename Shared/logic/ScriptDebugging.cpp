@@ -42,6 +42,11 @@ void ScriptDebugging::LogCustom( unsigned char red, unsigned char green, unsigne
     LogString( "", szBuffer, 0, red, green, blue );
 }
 
+void ScriptDebugging::LogCustom( const char *msg, unsigned char red, unsigned char green, unsigned char blue )
+{
+    LogString( "", msg, 0, red, green, blue );
+}
+
 void ScriptDebugging::LogInformation( const char *fmt, ... )
 {
     char szBuffer[MAX_STRING_LENGTH];
@@ -145,7 +150,7 @@ void ScriptDebugging::LogString( const char *pre, const char *msg, unsigned int 
     else
         strText = SString( "%s%s", pre, msg );
 
-    NotifySystem( minLevel, path, iLine, strMsg, red, green, blue );
+    NotifySystem( minLevel, path, iLine, strText, red, green, blue );
 
     // Log it to the file if enough level
     if ( m_fileLevel >= minLevel )

@@ -20,135 +20,125 @@
 
 #include "StdInc.h"
 
-using std::list;
-
-int CLuaFunctionDefs::GetCursorPosition ( lua_State* luaVM )
+namespace CLuaFunctionDefs
 {
-    CVector2D vecCursor;
-    CVector vecWorld;
-    if ( CStaticFunctionDefinitions::GetCursorPosition ( vecCursor, vecWorld ) )
+    LUA_DECLARE( getCursorPosition )
     {
-        lua_pushnumber ( luaVM, ( double ) vecCursor.fX );
-        lua_pushnumber ( luaVM, ( double ) vecCursor.fY );
-        lua_pushnumber ( luaVM, ( double ) vecWorld.fX );
-        lua_pushnumber ( luaVM, ( double ) vecWorld.fY );
-        lua_pushnumber ( luaVM, ( double ) vecWorld.fZ );
-        return 5;
-    }
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::SetCursorPosition ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TNUMBER )
-    {
-        if ( lua_type ( luaVM, 2 ) == LUA_TNUMBER )
+        CVector2D vecCursor;
+        CVector vecWorld;
+        if ( CStaticFunctionDefinitions::GetCursorPosition ( vecCursor, vecWorld ) )
         {
-
-            HWND hookedWindow = g_pCore->GetHookedWindow ();
-
-            tagPOINT windowPos = { 0 };
-            ClientToScreen( hookedWindow, &windowPos );
-
-            CVector2D vecResolution = g_pCore->GetGUI ()->GetResolution ();
-
-            float fX = static_cast < float > ( lua_tonumber ( luaVM, 1 ) );
-            float fY = static_cast < float > ( lua_tonumber ( luaVM, 2 ) );
-
-            if ( fX < 0 )
-                fX = 0.0f;
-            else if ( fX > vecResolution.fX )
-                fX = vecResolution.fX;
-            if ( fY < 0 )
-                fY = 0.0f;
-            else if ( fY > vecResolution.fY )
-                fY = vecResolution.fY;
-
-            g_pCore->CallSetCursorPos ( ( int ) fX + ( int ) windowPos.x, ( int ) fY + ( int ) windowPos.y );
-            lua_pushboolean ( luaVM, true );
-            return 1;
+            lua_pushnumber ( L, ( double ) vecCursor.fX );
+            lua_pushnumber ( L, ( double ) vecCursor.fY );
+            lua_pushnumber ( L, ( double ) vecWorld.fX );
+            lua_pushnumber ( L, ( double ) vecWorld.fY );
+            lua_pushnumber ( L, ( double ) vecWorld.fZ );
+            return 5;
         }
-        else
-            m_pScriptDebugging->LogBadPointer ( luaVM, "getMarkerColor", "integer", 2 );
-    }
-    else
-        m_pScriptDebugging->LogBadPointer ( luaVM, "getMarkerColor", "integer", 1 );
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::IsCursorShowing ( lua_State* luaVM )
-{
-    bool bShowing = false;
-    if ( CStaticFunctionDefinitions::IsCursorShowing ( bShowing ) )
-    {
-        lua_pushboolean ( luaVM, bShowing );
+        lua_pushboolean ( L, false );
         return 1;
     }
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
 
-
-int CLuaFunctionDefs::ShowCursor ( lua_State* luaVM )
-{
-    // Get the VM
-    CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-    if ( pLuaMain )
+    LUA_DECLARE( setCursorPosition )
     {
+        if ( lua_type ( L, 1 ) == LUA_TNUMBER )
+        {
+            if ( lua_type ( L, 2 ) == LUA_TNUMBER )
+            {
+
+                HWND hookedWindow = g_pCore->GetHookedWindow ();
+
+                tagPOINT windowPos = { 0 };
+                ClientToScreen( hookedWindow, &windowPos );
+
+                CVector2D vecResolution = g_pCore->GetGUI ()->GetResolution ();
+
+                float fX = static_cast < float > ( lua_tonumber ( L, 1 ) );
+                float fY = static_cast < float > ( lua_tonumber ( L, 2 ) );
+
+                if ( fX < 0 )
+                    fX = 0.0f;
+                else if ( fX > vecResolution.fX )
+                    fX = vecResolution.fX;
+                if ( fY < 0 )
+                    fY = 0.0f;
+                else if ( fY > vecResolution.fY )
+                    fY = vecResolution.fY;
+
+                g_pCore->CallSetCursorPos ( ( int ) fX + ( int ) windowPos.x, ( int ) fY + ( int ) windowPos.y );
+                lua_pushboolean ( L, true );
+                return 1;
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "getMarkerColor", "integer", 2 );
+        }
+        else
+            m_pScriptDebugging->LogBadPointer( "getMarkerColor", "integer", 1 );
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( isCursorShowing )
+    {
+        bool bShowing = false;
+        if ( CStaticFunctionDefinitions::IsCursorShowing ( bShowing ) )
+        {
+            lua_pushboolean ( L, bShowing );
+            return 1;
+        }
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( showCursor )
+    {
+        // Get the VM
+        CLuaMain* pLuaMain = lua_readcontext( L );
+
         // Boolean type passed?
-        if ( lua_type ( luaVM, 1 ) == LUA_TBOOLEAN )
+        if ( lua_type ( L, 1 ) == LUA_TBOOLEAN )
         {
             // Grab the argument
-            bool bShow = lua_toboolean ( luaVM, 1 ) ?true:false;
+            bool bShow = lua_toboolean ( L, 1 ) ?true:false;
             bool bToggleControls = true;
-            if ( lua_type ( luaVM, 2 ) == LUA_TBOOLEAN )
-                bToggleControls = ( lua_toboolean ( luaVM, 2 ) ) ? true:false;
+            if ( lua_type ( L, 2 ) == LUA_TBOOLEAN )
+                bToggleControls = ( lua_toboolean ( L, 2 ) ) ? true:false;
 
             // Grab the resource belonging to this VM
             CResource* pResource = pLuaMain->GetResource ();
-            if ( pResource )
-            {
-                // Show/hide it inside that resource
-                pResource->ShowCursor ( bShow, bToggleControls );
-                lua_pushboolean ( luaVM, true );
-                return 1;
-            }
+
+            // Show/hide it inside that resource
+            pResource->ShowCursor ( bShow, bToggleControls );
+            lua_pushboolean ( L, true );
+            return 1;
         }
         else
-            m_pScriptDebugging->LogBadType ( luaVM, "showCursor" );
+            m_pScriptDebugging->LogBadType( "showCursor" );
+
+        // Fail
+        lua_pushboolean ( L, false );
+        return 1;
     }
 
-    // Fail
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::BindKey ( lua_State* luaVM )
-{
-    CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-    if ( pLuaMain )
+    LUA_DECLARE( bindKey )
     {
-        if ( lua_type ( luaVM, 1 ) == LUA_TSTRING &&
-            lua_type ( luaVM, 2 ) == LUA_TSTRING )
-        {
-            const char* szKey = lua_tostring ( luaVM, 1 );
-            const char* szHitState = lua_tostring ( luaVM, 2 );
+        CLuaMain* pLuaMain = lua_readcontext( L );
 
-            if ( lua_type ( luaVM, 3 ) == LUA_TSTRING )
+        if ( lua_type ( L, 1 ) == LUA_TSTRING && lua_type ( L, 2 ) == LUA_TSTRING )
+        {
+            const char* szKey = lua_tostring ( L, 1 );
+            const char* szHitState = lua_tostring ( L, 2 );
+
+            if ( lua_type ( L, 3 ) == LUA_TSTRING )
             {
                 const char* szResource = pLuaMain->GetResource()->GetName();
-                const char* szCommand = lua_tostring ( luaVM, 3 );
+                const char* szCommand = lua_tostring ( L, 3 );
                 const char* szArguments = "";
-                if  ( lua_type ( luaVM, 4 ) == LUA_TSTRING )
-                    szArguments = lua_tostring ( luaVM, 4 );
+                if  ( lua_type ( L, 4 ) == LUA_TSTRING )
+                    szArguments = lua_tostring ( L, 4 );
                 if ( CStaticFunctionDefinitions::BindKey ( szKey, szHitState, szCommand, szArguments, szResource ) )
                 {
-                    lua_pushboolean ( luaVM, true );
+                    lua_pushboolean ( L, true );
                     return 1;
                 }  
             }
@@ -156,229 +146,218 @@ int CLuaFunctionDefs::BindKey ( lua_State* luaVM )
             { 
                 // Jax: grab our arguments first, luaM_toref pops the stack!
                 CLuaArguments Arguments;
-                Arguments.ReadArguments ( luaVM, 4 );
-                CLuaFunctionRef iLuaFunction = luaM_toref ( luaVM, 3 );            
+                Arguments.ReadArguments ( L, 4 );
+                LuaFunctionRef iLuaFunction = pLuaMain->CreateReference( 3 );            
 
                 if ( VERIFY_FUNCTION ( iLuaFunction ) )
                 {
                     if ( CStaticFunctionDefinitions::BindKey ( szKey, szHitState, pLuaMain, iLuaFunction, Arguments ) )
                     {
-                        lua_pushboolean ( luaVM, true );
+                        lua_pushboolean ( L, true );
                         return 1;
                     }
                 }
                 else
-                    m_pScriptDebugging->LogBadPointer ( luaVM, "bindKey", "function", 3 );
+                    m_pScriptDebugging->LogBadPointer( "bindKey", "function", 3 );
             }
         }
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::UnbindKey ( lua_State* luaVM )
-{
-    CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-    if ( pLuaMain )
+    LUA_DECLARE( unbindKey )
     {
-        if ( lua_type ( luaVM, 1 ) == LUA_TSTRING )
+        CLuaMain* pLuaMain = lua_readcontext( L );
+
+        if ( lua_type ( L, 1 ) == LUA_TSTRING )
         {
-            const char* szKey = lua_tostring ( luaVM, 1 );
+            const char* szKey = lua_tostring ( L, 1 );
             const char* szHitState = NULL;
 
-            if ( lua_type ( luaVM, 2 ) )
-                szHitState = lua_tostring ( luaVM, 2 );
+            if ( lua_type ( L, 2 ) )
+                szHitState = lua_tostring ( L, 2 );
 
-            if ( lua_type ( luaVM, 3 ) == LUA_TSTRING )
+            if ( lua_type ( L, 3 ) == LUA_TSTRING )
             {
                 const char* szResource = pLuaMain->GetResource()->GetName();
-                const char* szCommand = lua_tostring ( luaVM, 3 );
+                const char* szCommand = lua_tostring ( L, 3 );
                 if ( CStaticFunctionDefinitions::UnbindKey ( szKey, szHitState, szCommand, szResource ) )
                 {
-                    lua_pushboolean ( luaVM, true );
+                    lua_pushboolean ( L, true );
                     return 1;
                 }
             }
             else
             {   
-                CLuaFunctionRef iLuaFunction;
-                if ( lua_type ( luaVM, 3 ) == LUA_TFUNCTION )
-                    iLuaFunction = luaM_toref ( luaVM, 3 );
+                LuaFunctionRef iLuaFunction;
+                if ( lua_type ( L, 3 ) == LUA_TFUNCTION )
+                    iLuaFunction = pLuaMain->CreateReference( 3 );
 
                 if ( IS_REFNIL ( iLuaFunction ) || VERIFY_FUNCTION ( iLuaFunction ) )
                 {
                     if ( CStaticFunctionDefinitions::UnbindKey ( szKey, pLuaMain, szHitState, iLuaFunction ) )
                     {
-                        lua_pushboolean ( luaVM, true );
+                        lua_pushboolean ( L, true );
                         return 1;
                     }
                 }
                 else
                 {
-                    m_pScriptDebugging->LogBadType ( luaVM, "unbindKey" );
+                    m_pScriptDebugging->LogBadType( "unbindKey" );
                 }
             }
         }
         else
         {
-            m_pScriptDebugging->LogBadType ( luaVM, "unbindKey" );
+            m_pScriptDebugging->LogBadType( "unbindKey" );
         }
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetKeyState ( lua_State * luaVM )
-{
-    if ( lua_istype ( luaVM, 1, LUA_TSTRING ) )
+    LUA_DECLARE( getKeyState )
     {
-        const char* szKey = lua_tostring ( luaVM, 1 );
-        bool bState;
-        if ( CStaticFunctionDefinitions::GetKeyState ( szKey, bState ) )
+        if ( lua_istype ( L, 1, LUA_TSTRING ) )
         {
-            lua_pushboolean ( luaVM, bState );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getKeyType" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetControlState ( lua_State * luaVM )
-{
-    if ( lua_istype ( luaVM, 1, LUA_TSTRING ) )
-    {
-        const char* szControl = lua_tostring ( luaVM, 1 );
-        bool bState;
-        if ( CStaticFunctionDefinitions::GetControlState ( szControl , bState ) )
-        {
-            lua_pushboolean ( luaVM, bState );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getControlType" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-int CLuaFunctionDefs::GetAnalogControlState ( lua_State * luaVM )
-{
-    if ( lua_istype ( luaVM, 1, LUA_TSTRING ) )
-    {
-        const char* szControl = lua_tostring ( luaVM, 1 );
-        float fState;
-        if ( CStaticFunctionDefinitions::GetAnalogControlState ( szControl , fState ) )
-        {
-            lua_pushnumber ( luaVM, fState );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getAnalogControlState" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-
-int CLuaFunctionDefs::IsControlEnabled ( lua_State * luaVM )
-{
-    if ( lua_istype ( luaVM, 1, LUA_TSTRING ) )
-    {
-        const char* szControl = lua_tostring ( luaVM, 1 );
-        bool bEnabled;
-        if ( CStaticFunctionDefinitions::IsControlEnabled ( szControl, bEnabled ) )
-        {
-            lua_pushboolean ( luaVM, bEnabled );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "isControlEnabled" );
-
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetBoundKeys ( lua_State * luaVM )
-{
-    if ( lua_istype ( luaVM, 1, LUA_TSTRING ) )
-    {
-        const char * szControl = lua_tostring ( luaVM, 1 );
-        SBindableGTAControl * pControl = g_pCore->GetKeyBinds ()->GetBindableFromControl ( szControl );
-        // Did we find a control matching the string given?
-        if ( pControl )
-        {
-            list < CGTAControlBind * > controlBinds;
-            g_pCore->GetKeyBinds ()->GetBoundControls ( pControl, controlBinds );
-            if ( !controlBinds.empty () )
+            const char* szKey = lua_tostring ( L, 1 );
+            bool bState;
+            if ( CStaticFunctionDefinitions::GetKeyState ( szKey, bState ) )
             {
-                lua_newtable ( luaVM );
-                list < CGTAControlBind * > ::iterator iter = controlBinds.begin ();
-                for ( ; iter != controlBinds.end () ; iter++ )
-                {
-                    lua_pushstring ( luaVM, (*iter)->boundKey->szKey );
-                    lua_pushstring ( luaVM, "down" );
-                    lua_settable ( luaVM, -3 );
-                }
+                lua_pushboolean ( L, bState );
+                return 1;
             }
-            else
-                lua_pushboolean ( luaVM, false );
-            return 1;
         }
-        // If not, assume its a command
         else
-        {
-            list < CCommandBind * > commandBinds;
-            g_pCore->GetKeyBinds ()->GetBoundCommands ( szControl, commandBinds );
-            if ( !commandBinds.empty () )
-            {
-                lua_newtable ( luaVM );
-                list < CCommandBind * > ::iterator iter = commandBinds.begin ();
-                for ( ; iter != commandBinds.end () ; iter++ )
-                {
-                    lua_pushstring ( luaVM, (*iter)->boundKey->szKey );
-                    lua_pushstring ( luaVM, (*iter)->bHitState ? "down" : "up" );
-                    lua_settable ( luaVM, -3 );
-                }
-            }
-            else
-                lua_pushboolean ( luaVM, false );
-            return 1;
-        }
+            m_pScriptDebugging->LogBadType( "getKeyType" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "getBoundKeys" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetFunctionsBoundToKey ( lua_State* luaVM )
-{
-    CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-    if ( pLuaMain )
+    LUA_DECLARE( getControlState )
     {
-        if ( lua_type ( luaVM, 1 ) == LUA_TSTRING )
+        if ( lua_istype ( L, 1, LUA_TSTRING ) )
         {
-            const char* szKey = lua_tostring ( luaVM, 1 );
+            const char* szControl = lua_tostring ( L, 1 );
+            bool bState;
+            if ( CStaticFunctionDefinitions::GetControlState ( szControl , bState ) )
+            {
+                lua_pushboolean ( L, bState );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getControlType" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getAnalogControlState )
+    {
+        if ( lua_istype ( L, 1, LUA_TSTRING ) )
+        {
+            const char* szControl = lua_tostring ( L, 1 );
+            float fState;
+            if ( CStaticFunctionDefinitions::GetAnalogControlState ( szControl , fState ) )
+            {
+                lua_pushnumber ( L, fState );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getAnalogControlState" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( isControlEnabled )
+    {
+        if ( lua_istype ( L, 1, LUA_TSTRING ) )
+        {
+            const char* szControl = lua_tostring ( L, 1 );
+            bool bEnabled;
+            if ( CStaticFunctionDefinitions::IsControlEnabled ( szControl, bEnabled ) )
+            {
+                lua_pushboolean ( L, bEnabled );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogBadType( "isControlEnabled" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getBoundKeys )
+    {
+        if ( lua_istype ( L, 1, LUA_TSTRING ) )
+        {
+            const char * szControl = lua_tostring ( L, 1 );
+            SBindableGTAControl * pControl = g_pCore->GetKeyBinds ()->GetBindableFromControl ( szControl );
+            // Did we find a control matching the string given?
+            if ( pControl )
+            {
+                list < CGTAControlBind * > controlBinds;
+                g_pCore->GetKeyBinds ()->GetBoundControls ( pControl, controlBinds );
+                if ( !controlBinds.empty () )
+                {
+                    lua_newtable ( L );
+                    list < CGTAControlBind * > ::iterator iter = controlBinds.begin ();
+                    for ( ; iter != controlBinds.end () ; iter++ )
+                    {
+                        lua_pushstring ( L, (*iter)->boundKey->szKey );
+                        lua_pushstring ( L, "down" );
+                        lua_settable ( L, -3 );
+                    }
+                }
+                else
+                    lua_pushboolean ( L, false );
+                return 1;
+            }
+            // If not, assume its a command
+            else
+            {
+                list < CCommandBind * > commandBinds;
+                g_pCore->GetKeyBinds ()->GetBoundCommands ( szControl, commandBinds );
+                if ( !commandBinds.empty () )
+                {
+                    lua_newtable ( L );
+                    list < CCommandBind * > ::iterator iter = commandBinds.begin ();
+                    for ( ; iter != commandBinds.end () ; iter++ )
+                    {
+                        lua_pushstring ( L, (*iter)->boundKey->szKey );
+                        lua_pushstring ( L, (*iter)->bHitState ? "down" : "up" );
+                        lua_settable ( L, -3 );
+                    }
+                }
+                else
+                    lua_pushboolean ( L, false );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogBadType( "getBoundKeys" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( getFunctionsBoundToKey )
+    {
+        CLuaMain* pLuaMain = lua_readcontext( L );
+
+        if ( lua_type ( L, 1 ) == LUA_TSTRING )
+        {
+            const char* szKey = lua_tostring ( L, 1 );
             const char* szHitState = NULL;
-            if ( lua_type ( luaVM, 2 ) )
+            if ( lua_type ( L, 2 ) )
             {
-                szHitState = lua_tostring ( luaVM, 2 );
+                szHitState = lua_tostring ( L, 2 );
             }
 
             bool bCheckHitState = false, bHitState = true;
@@ -391,7 +370,7 @@ int CLuaFunctionDefs::GetFunctionsBoundToKey ( lua_State* luaVM )
             }
 
             // Create a new table
-            lua_newtable ( luaVM );
+            lua_newtable ( L );
 
             // Add all the bound functions to it
             unsigned int uiIndex = 0;
@@ -410,9 +389,9 @@ int CLuaFunctionDefs::GetFunctionsBoundToKey ( lua_State* luaVM )
                             {
                                 if ( strcmp ( szKey, pBind->boundKey->szKey ) == 0 )
                                 {
-                                    lua_pushnumber ( luaVM, ++uiIndex );
-                                    lua_rawgeti ( luaVM, LUA_REGISTRYINDEX, pBind->m_iLuaFunction.ToInt () );
-                                    lua_settable ( luaVM, -3 );
+                                    lua_pushnumber ( L, ++uiIndex );
+                                    lua_rawgeti ( L, LUA_REGISTRYINDEX, pBind->m_iLuaFunction.ToInt () );
+                                    lua_settable ( L, -3 );
                                 }
                             }
                             break;
@@ -424,9 +403,9 @@ int CLuaFunctionDefs::GetFunctionsBoundToKey ( lua_State* luaVM )
                             {
                                 if ( strcmp ( szKey, pBind->boundControl->szControl ) == 0 )
                                 {
-                                    lua_pushnumber ( luaVM, ++uiIndex );
-                                    lua_rawgeti ( luaVM, LUA_REGISTRYINDEX, pBind->m_iLuaFunction.ToInt () );
-                                    lua_settable ( luaVM, -3 );
+                                    lua_pushnumber ( L, ++uiIndex );
+                                    lua_rawgeti ( L, LUA_REGISTRYINDEX, pBind->m_iLuaFunction.ToInt () );
+                                    lua_settable ( L, -3 );
                                 }
                             }
                             break;
@@ -439,22 +418,19 @@ int CLuaFunctionDefs::GetFunctionsBoundToKey ( lua_State* luaVM )
             return 1;
         }
         else
-            m_pScriptDebugging->LogBadType ( luaVM, "getFunctionsBoundToKey" );
+            m_pScriptDebugging->LogBadType( "getFunctionsBoundToKey" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetKeyBoundToFunction ( lua_State* luaVM )
-{
-    CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-    if ( pLuaMain )
+    LUA_DECLARE( getKeyBoundToFunction )
     {
-        if ( lua_type ( luaVM, 1 ) == LUA_TFUNCTION || lua_type ( luaVM, 1 ) == LUA_TSTRING )
+        CLuaMain* pLuaMain = lua_readcontext( L );
+
+        if ( lua_type ( L, 1 ) == LUA_TFUNCTION || lua_type ( L, 1 ) == LUA_TSTRING )
         {
-            CLuaFunctionRef iLuaFunction = luaM_toref ( luaVM, 1 );
+            LuaFunctionRef iLuaFunction = pLuaMain->CreateReference( 1 );
             // get the key
             list < CScriptKeyBind* > ::const_iterator iter =  m_pClientGame->GetScriptKeyBinds ()->IterBegin ();
             for ( ; iter !=  m_pClientGame->GetScriptKeyBinds ()->IterEnd (); iter++ )
@@ -470,7 +446,7 @@ int CLuaFunctionDefs::GetKeyBoundToFunction ( lua_State* luaVM )
                             // ACHTUNG: DOES IT FIND THE CORRECT LUA REF HERE?
                             if ( iLuaFunction == pBind->m_iLuaFunction )
                             {
-                                lua_pushstring ( luaVM, pBind->boundKey->szKey );
+                                lua_pushstring ( L, pBind->boundKey->szKey );
                                 return 1;
                             }
                             break;
@@ -481,7 +457,7 @@ int CLuaFunctionDefs::GetKeyBoundToFunction ( lua_State* luaVM )
                             // ACHTUNG: DOES IT FIND THE CORRECT LUA REF HERE?
                             if ( iLuaFunction == pBind->m_iLuaFunction )
                             {
-                                lua_pushstring ( luaVM, pBind->boundKey->szKey );
+                                lua_pushstring ( L, pBind->boundKey->szKey );
                                 return 1;
                             }
                             break;
@@ -491,30 +467,27 @@ int CLuaFunctionDefs::GetKeyBoundToFunction ( lua_State* luaVM )
                     }
                 }
             }
-            lua_pushboolean ( luaVM, false );
+            lua_pushboolean ( L, false );
             return 1;
         }
         else
-            m_pScriptDebugging->LogBadType ( luaVM, "getKeyBoundToFunction" );
+            m_pScriptDebugging->LogBadType( "getKeyBoundToFunction" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetCommandsBoundToKey ( lua_State* luaVM )
-{
-    CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-    if ( pLuaMain )
+    LUA_DECLARE( getCommandsBoundToKey )
     {
-        if ( lua_type ( luaVM, 1 ) == LUA_TSTRING )
+        CLuaMain* pLuaMain = lua_readcontext( L );
+
+        if ( lua_type ( L, 1 ) == LUA_TSTRING )
         {
-            const char* szKey = lua_tostring ( luaVM, 1 );
+            const char* szKey = lua_tostring ( L, 1 );
             const char* szHitState = NULL;
-            if ( lua_type ( luaVM, 2 ) == LUA_TSTRING )
+            if ( lua_type ( L, 2 ) == LUA_TSTRING )
             {
-                szHitState = lua_tostring ( luaVM, 2 );
+                szHitState = lua_tostring ( L, 2 );
             }
 
             bool bCheckHitState = false, bHitState = true;
@@ -527,7 +500,7 @@ int CLuaFunctionDefs::GetCommandsBoundToKey ( lua_State* luaVM )
             }
 
             // Create a new table
-            lua_newtable ( luaVM );
+            lua_newtable ( L );
 
             // Add all the bound functions to it
             unsigned int uiIndex = 0;
@@ -542,9 +515,9 @@ int CLuaFunctionDefs::GetCommandsBoundToKey ( lua_State* luaVM )
                     {
                         if ( strcmp ( szKey, pBind->boundKey->szKey ) == 0 )
                         {
-                            lua_pushstring ( luaVM, pBind->szCommand );
-                            lua_pushstring ( luaVM, pBind->szArguments );
-                            lua_settable ( luaVM, -3 );
+                            lua_pushstring ( L, pBind->szCommand );
+                            lua_pushstring ( L, pBind->szArguments );
+                            lua_settable ( L, -3 );
                         }
                     }
                 }
@@ -552,22 +525,19 @@ int CLuaFunctionDefs::GetCommandsBoundToKey ( lua_State* luaVM )
             return 1;
         }
         else
-            m_pScriptDebugging->LogBadType ( luaVM, "getFunctionsBoundToKey" );
+            m_pScriptDebugging->LogBadType( "getFunctionsBoundToKey" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::GetKeyBoundToCommand ( lua_State* luaVM )
-{
-    CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( luaVM );
-    if ( pLuaMain )
+    LUA_DECLARE( getKeyBoundToCommand )
     {
-        if ( lua_type ( luaVM, 1 ) == LUA_TSTRING )
+        CLuaMain* pLuaMain = lua_readcontext( L );
+
+        if ( lua_type ( L, 1 ) == LUA_TSTRING )
         {
-            const char* szCommand = lua_tostring ( luaVM, 1 );
+            const char* szCommand = lua_tostring ( L, 1 );
             // get the key
             list < CKeyBind* > ::const_iterator iter = g_pCore->GetKeyBinds ()->IterBegin ();
             for ( ; iter != g_pCore->GetKeyBinds ()->IterEnd (); iter++ )
@@ -580,86 +550,83 @@ int CLuaFunctionDefs::GetKeyBoundToCommand ( lua_State* luaVM )
                         CCommandBind* pBind = static_cast < CCommandBind* > ( pKeyBind );
                         if ( strcmp ( szCommand, pBind->szCommand ) == 0 )
                         {
-                            lua_pushstring ( luaVM, pBind->boundKey->szKey );
+                            lua_pushstring ( L, pBind->boundKey->szKey );
                             return 1;
                         }
                     }
                 }
             }
-            lua_pushboolean ( luaVM, false );
+            lua_pushboolean ( L, false );
             return 1;
         }
         else
-            m_pScriptDebugging->LogBadType ( luaVM, "getKeyBoundToFunction" );
+            m_pScriptDebugging->LogBadType( "getKeyBoundToFunction" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::SetControlState ( lua_State * luaVM )
-{
-    if ( lua_istype ( luaVM, 1, LUA_TSTRING ) && lua_istype ( luaVM, 2, LUA_TBOOLEAN ) )
+    LUA_DECLARE( setControlState )
     {
-        const char* szControl = lua_tostring ( luaVM, 1 );
-        bool bState = ( lua_toboolean ( luaVM, 2 ) ) ? true:false;
-        if ( CStaticFunctionDefinitions::SetControlState ( szControl, bState ) )
+        if ( lua_istype ( L, 1, LUA_TSTRING ) && lua_istype ( L, 2, LUA_TBOOLEAN ) )
         {
-            lua_pushboolean ( luaVM, true );
-            return 1;
+            const char* szControl = lua_tostring ( L, 1 );
+            bool bState = ( lua_toboolean ( L, 2 ) ) ? true:false;
+            if ( CStaticFunctionDefinitions::SetControlState ( szControl, bState ) )
+            {
+                lua_pushboolean ( L, true );
+                return 1;
+            }
         }
+        else
+            m_pScriptDebugging->LogBadType( "setControlState" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "setControlState" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::ToggleControl ( lua_State * luaVM )
-{
-    if ( lua_istype ( luaVM, 1, LUA_TSTRING ) && lua_istype ( luaVM, 2, LUA_TBOOLEAN ) )
+    LUA_DECLARE( toggleControl )
     {
-        const char* szControl = lua_tostring ( luaVM, 1 );
-        bool bEnabled = ( lua_toboolean ( luaVM, 2 ) ) ? true:false;
-        if ( CStaticFunctionDefinitions::ToggleControl ( szControl, bEnabled ) )
+        if ( lua_istype ( L, 1, LUA_TSTRING ) && lua_istype ( L, 2, LUA_TBOOLEAN ) )
         {
-            lua_pushboolean ( luaVM, true );
-            return 1;
+            const char* szControl = lua_tostring ( L, 1 );
+            bool bEnabled = ( lua_toboolean ( L, 2 ) ) ? true:false;
+            if ( CStaticFunctionDefinitions::ToggleControl ( szControl, bEnabled ) )
+            {
+                lua_pushboolean ( L, true );
+                return 1;
+            }
         }
+        else
+            m_pScriptDebugging->LogBadType( "toggleControl" );
+
+        lua_pushboolean ( L, false );
+        return 1;
     }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "toggleControl" );
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
-}
-
-
-int CLuaFunctionDefs::ToggleAllControls ( lua_State* luaVM )
-{
-    if ( lua_type ( luaVM, 1 ) == LUA_TBOOLEAN )
+    LUA_DECLARE( toggleAllControls )
     {
-        bool bEnabled = ( lua_toboolean ( luaVM, 1 ) ) ? true:false;
-        bool bGTAControls = true, bMTAControls = true;
-
-        if ( lua_type ( luaVM, 2 ) == LUA_TBOOLEAN )
-            bGTAControls = ( lua_toboolean ( luaVM, 2 ) ) ? true:false;
-
-        if ( lua_type ( luaVM, 3 ) == LUA_TBOOLEAN )
-            bMTAControls = ( lua_toboolean ( luaVM, 3 ) ) ? true:false;
-
-        if ( CStaticFunctionDefinitions::ToggleAllControls ( bGTAControls, bMTAControls, bEnabled ) )
+        if ( lua_type ( L, 1 ) == LUA_TBOOLEAN )
         {
-            lua_pushboolean ( luaVM, true );
-            return 1;
-        }
-    }
-    else
-        m_pScriptDebugging->LogBadType ( luaVM, "toggleAllControls" );
+            bool bEnabled = ( lua_toboolean ( L, 1 ) ) ? true:false;
+            bool bGTAControls = true, bMTAControls = true;
 
-    lua_pushboolean ( luaVM, false );
-    return 1;
+            if ( lua_type ( L, 2 ) == LUA_TBOOLEAN )
+                bGTAControls = ( lua_toboolean ( L, 2 ) ) ? true:false;
+
+            if ( lua_type ( L, 3 ) == LUA_TBOOLEAN )
+                bMTAControls = ( lua_toboolean ( L, 3 ) ) ? true:false;
+
+            if ( CStaticFunctionDefinitions::ToggleAllControls ( bGTAControls, bMTAControls, bEnabled ) )
+            {
+                lua_pushboolean ( L, true );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogBadType( "toggleAllControls" );
+
+        lua_pushboolean ( L, false );
+        return 1;
+    }
 }

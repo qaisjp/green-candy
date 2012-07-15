@@ -36,7 +36,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "getBodyPartName" );
+            m_pScriptDebugging->LogBadType( "getBodyPartName" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -61,7 +61,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "getClothesByTypeIndex" );
+            m_pScriptDebugging->LogBadType( "getClothesByTypeIndex" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -85,7 +85,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "getTypeIndexFromClothes" );
+            m_pScriptDebugging->LogBadType( "getTypeIndexFromClothes" );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -106,7 +106,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogBadType ( L, "getClothesTypeName" );
+            m_pScriptDebugging->LogBadType( "getClothesTypeName" );
 
         lua_pushboolean ( L, false );
         return 1;

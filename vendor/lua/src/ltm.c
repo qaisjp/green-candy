@@ -83,7 +83,7 @@ inline Table* luaT_getmetabyobj( lua_State *L, const TValue *o )
         return uvalue(o)->metatable;
     }
 
-    return G(L)->mt[ttype(o)];
+    return L->mt[ttype(o)];
 }
 
 const TValue *luaT_gettmbyobj( lua_State *L, const TValue *o, TMS event )

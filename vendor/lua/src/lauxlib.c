@@ -83,14 +83,20 @@ LUALIB_API void luaL_where (lua_State *L, int level) {
 }
 
 
-LUALIB_API int luaL_error (lua_State *L, const char *fmt, ...) {
-  va_list argp;
-  va_start(argp, fmt);
-  luaL_where(L, 1);
-  lua_pushvfstring(L, fmt, argp);
-  va_end(argp);
-  lua_concat(L, 2);
-  return lua_error(L);
+LUALIB_API int luaL_error (lua_State *L, const char *fmt, ...)
+{
+    va_list argp;
+    va_start( argp, fmt );
+#if 0
+    luaL_where(L, 1);
+    lua_pushvfstring(L, fmt, argp);
+    va_end(argp);
+    lua_concat(L, 2);
+#else
+    lua_pushvfstring( L, fmt, argp );
+#endif
+    va_end( argp );
+    return lua_error( L );
 }
 
 /* }====================================================== */
@@ -239,32 +245,53 @@ static int libsize (const luaL_Reg *l) {
 }
 
 
-LUALIB_API void luaI_openlib (lua_State *L, const char *libname,
-                              const luaL_Reg *l, int nup) {
-  if (libname) {
-    int size = libsize(l);
-    /* check whether lib already exists */
-    luaL_findtable(L, LUA_REGISTRYINDEX, "_LOADED", 1);
-    lua_getfield(L, -1, libname);  /* get _LOADED[libname] */
-    if (!lua_istable(L, -1)) {  /* not found? */
-      lua_pop(L, 1);  /* remove previous result */
-      /* try global variable (and create one if it does not exist) */
-      if (luaL_findtable(L, LUA_GLOBALSINDEX, libname, size) != NULL)
-        luaL_error(L, "name conflict for module " LUA_QS, libname);
-      lua_pushvalue(L, -1);
-      lua_setfield(L, -3, libname);  /* _LOADED[libname] = new table */
+LUALIB_API void luaI_openlib( lua_State *L, const char *libname, const luaL_Reg *l, int nup )
+{
+    if ( libname )
+    {
+        int size = libsize(l);
+
+        // Check the registry, too
+        luaL_findtable( L, LUA_REGISTRYINDEX, "_LOADED", 1 );
+        lua_getfield( L, -1, libname );
+
+        if ( !lua_istable( L, -1 ) )
+        {
+            lua_pop( L, 2 );
+
+            /* check whether lib already exists */
+            luaL_findtable( L, LUA_STORAGEINDEX, "_LOADED", 1 );
+            lua_getfield( L, -1, libname );  /* get _LOADED[libname] */
+
+            if ( !lua_istable(L, -1) )
+            {  /* not found? */
+                lua_pop( L, 1 );  /* remove previous result */
+
+                /* try environment variable (and create one if it does not exist) */
+                if ( luaL_findtable( L, LUA_GLOBALSINDEX, libname, size ) != NULL )
+                    luaL_error( L, "name conflict for module " LUA_QS, libname );
+
+                lua_pushvalue( L, -1 );
+                lua_setfield( L, -3, libname );  /* _LOADED[libname] = new table */
+            }
+        }
+
+        lua_remove( L, -2 );  /* remove _LOADED table */
+        lua_insert( L, -(nup+1) );  /* move library table to the start of the upvalues */
     }
-    lua_remove(L, -2);  /* remove _LOADED table */
-    lua_insert(L, -(nup+1));  /* move library table to below upvalues */
-  }
-  for (; l->name; l++) {
-    int i;
-    for (i=0; i<nup; i++)  /* copy upvalues to the top */
-      lua_pushvalue(L, -nup);
-    lua_pushcclosure(L, l->func, nup);
-    lua_setfield(L, -(nup+2), l->name);
-  }
-  lua_pop(L, nup);  /* remove upvalues */
+
+    for ( ; l->name; l++ )
+    {
+        int i;
+
+        for ( i=0; i<nup; i++ )  /* copy upvalues to the top */
+            lua_pushvalue( L, -nup );
+
+        lua_pushcclosure( L, l->func, nup );
+        lua_setfield( L, -(nup+2), l->name );
+    }
+
+    lua_pop( L, nup );  /* remove upvalues */
 }
 
 
@@ -354,8 +381,7 @@ LUALIB_API const char *luaL_gsub (lua_State *L, const char *s, const char *p,
 }
 
 
-LUALIB_API const char *luaL_findtable (lua_State *L, int idx,
-                                       const char *fname, int szhint) {
+LUALIB_API const char *luaL_findtable (lua_State *L, int idx, const char *fname, int szhint) {
   const char *e;
   lua_pushvalue(L, idx);
   do {

@@ -17,7 +17,7 @@
 
 #include "StdInc.h"
 
-using SharedUtil::CalcMTASAPath;
+extern CCoreInterface *g_pCore;
 
 CClientRadarMarker::CClientRadarMarker ( CClientManager* pManager, ElementID ID, short sOrdering, unsigned short usVisibleDistance ) : ClassInit ( this ), CClientEntity ( ID )
 {
@@ -193,8 +193,10 @@ void CClientRadarMarker::SetSprite ( unsigned long ulSprite )
             m_pMapMarkerImage = NULL;
         }
 
-        SString strSprite ( "MTA\\cgui\\images\\radarset\\%02u.png", ulSprite );
-        m_pMapMarkerImage = g_pCore->GetGraphics()->LoadTexture ( CalcMTASAPath ( strSprite ) );
+        filePath texPath;
+        mtaFileRoot->GetFullPathRoot( SString( "MTA/cgui/images/radarset/%02u.png", ulSprite ).c_str(), true, texPath );
+
+        m_pMapMarkerImage = g_pCore->GetGraphics()->LoadTexture( texPath );
     }
 }
 

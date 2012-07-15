@@ -333,8 +333,10 @@ static const luaL_Reg fsys_methods[] =
 int luafsys_constructor( lua_State *L )
 {
 #ifndef FU_CLASS
+    CFileTranslator *trans = (CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
     ILuaClass *j = lua_refclass( L, 1 );
-    j->SetTransmit( LUACLASS_FILETRANSLATOR );
+    j->SetTransmit( LUACLASS_FILETRANSLATOR, trans );
 #endif
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );

@@ -1,11 +1,10 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        CServerIdManagerImpl.cpp
-*  PURPOSE:
-*  DEVELOPERS:
-*
+*  PURPOSE:     Server private directory management
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -58,22 +57,23 @@ class CServerIdManagerImpl : public CServerIdManager
 public:
     ZERO_ON_NEW
 
-    virtual SString         GetConnectionPrivateDirectory   ( void );
+    virtual filePath        GetConnectionPrivateDirectory();
 
-                            CServerIdManagerImpl            ( void );
-                            ~CServerIdManagerImpl           ( void );
+                            CServerIdManagerImpl();
+                            ~CServerIdManagerImpl();
+
 protected:
-    void                    SaveServerIdMap                 ( bool bWait = false );
-    const CServerIdInfo&    GetServerIdInfo                 ( const SString& strServerId );
-    bool                    LoadServerIdMap                 ( void );
-    static DWORD            StaticThreadProc                ( LPVOID lpdwThreadParam );
-    static void             StaticSaveServerIdMap           ( void );
+    void                    SaveServerIdMap( bool bWait = false );
+    const CServerIdInfo&    GetServerIdInfo( const SString& strServerId );
+    bool                    LoadServerIdMap();
+    static DWORD            StaticThreadProc( LPVOID lpdwThreadParam );
+    static void             StaticSaveServerIdMap();
 
     bool                                        m_bListChanged;
     bool                                        m_bClearedDefaultDirectory;
-    std::map < CServerIdKey, CServerIdInfo >    m_ServerIdMap;
-    SString                                     m_strServerIdLookupBaseDir;
-    SString                                     m_strTempErrorDir;
+    std::map <CServerIdKey, CServerIdInfo>      m_ServerIdMap;
+    CFileTranslator*                            m_privateRoot;
+    CFileTranslator*                            m_errorRoot;
 };
 
 
@@ -101,18 +101,20 @@ CServerIdManager* CServerIdManager::GetSingleton ()
 //
 //
 ///////////////////////////////////////////////////////////////
-CServerIdManagerImpl::CServerIdManagerImpl ( void )
+CServerIdManagerImpl::CServerIdManagerImpl()
 {
+    filePath path;
+
     // Calc private dir root
-    m_strServerIdLookupBaseDir = CalcMTASAPath ( MTA_SERVERID_LOOKUP_DIR );
-    MakeSureDirExists ( PathJoin ( m_strServerIdLookupBaseDir, "" ) );
+    modFileRoot->GetFullPath( "/priv/", false, path );
+    m_privateRoot = g_pCore->GetFileSystem()->CreateTranslator( path.c_str() );
 
     // Calc temp dir path incase of server id error
-    m_strTempErrorDir = PathJoin ( m_strServerIdLookupBaseDir, "_error" );
+    path += "_error/";
+    m_errorRoot = g_pCore->GetFileSystem()->CreateTranslator( path.c_str() );
 
     // If temp dir has been used, clean it
-    if ( DirectoryExists ( m_strTempErrorDir ) )
-        DelTree ( m_strTempErrorDir, m_strServerIdLookupBaseDir );
+    m_errorRoot->Delete( "/" );
 
     LoadServerIdMap ();
 }
@@ -127,6 +129,8 @@ CServerIdManagerImpl::CServerIdManagerImpl ( void )
 ///////////////////////////////////////////////////////////////
 CServerIdManagerImpl::~CServerIdManagerImpl ( void )
 {
+    delete m_privateRoot;
+    delete m_errorRoot;
 }
 
 
@@ -137,15 +141,21 @@ CServerIdManagerImpl::~CServerIdManagerImpl ( void )
 // Load server id data from xml file
 //
 ///////////////////////////////////////////////////////////////
-bool CServerIdManagerImpl::LoadServerIdMap ( void )
+bool CServerIdManagerImpl::LoadServerIdMap()
 {
     // Load config XML file
-    CXMLFile* pConfigFile = g_pCore->GetXML ()->CreateXML ( CalcMTASAPath ( MTA_SERVERID_LOOKUP_XML ) );
+    filePath path;
+    m_privateRoot->GetFullPath( "/server-ids.xml", true, path );
+
+    CXMLFile* pConfigFile = g_pCore->GetXML()->CreateXML( path.c_str() );
+
     if ( !pConfigFile )
         return false;
-    pConfigFile->Parse ();
+
+    pConfigFile->Parse();
 
     CXMLNode* pRoot = pConfigFile->GetRootNode ();
+
     if ( !pRoot )
         pRoot = pConfigFile->CreateRootNode ( "root" );
 
@@ -166,9 +176,9 @@ bool CServerIdManagerImpl::LoadServerIdMap ( void )
             MapSet ( m_ServerIdMap, key, info );
     }
 
-    // Maybe one day remove unwanted directories
-
+    // TODO: Maybe one day remove unwanted directories
     delete pConfigFile;
+
     return true;
 }
 
@@ -180,7 +190,7 @@ bool CServerIdManagerImpl::LoadServerIdMap ( void )
 // Save server id data to xml file
 //
 ///////////////////////////////////////////////////////////////
-void CServerIdManagerImpl::SaveServerIdMap ( bool bWait )
+void CServerIdManagerImpl::SaveServerIdMap( bool bWait )
 {
     // Check if need to save
     if ( !m_bListChanged )
@@ -236,11 +246,16 @@ DWORD CServerIdManagerImpl::StaticThreadProc ( LPVOID lpdwThreadParam )
 //
 //
 ///////////////////////////////////////////////////////////////
-void CServerIdManagerImpl::StaticSaveServerIdMap ( void )
+void CServerIdManagerImpl::StaticSaveServerIdMap()
 {
-    CXMLFile* pConfigFile = g_pCore->GetXML ()->CreateXML ( CalcMTASAPath ( MTA_SERVERID_LOOKUP_XML ) );
+    filePath path;
+    mtaFileRoot->GetFullPath( "/server-ids.xml", true, path );
+
+    CXMLFile* pConfigFile = g_pCore->GetXML()->CreateXML( path.c_str() );
+
     if ( !pConfigFile )
         return;
+
     pConfigFile->Reset ();
 
     CXMLNode* pRoot = pConfigFile->GetRootNode ();
@@ -270,18 +285,24 @@ void CServerIdManagerImpl::StaticSaveServerIdMap ( void )
 //
 //
 ///////////////////////////////////////////////////////////////
-SString CServerIdManagerImpl::GetConnectionPrivateDirectory ( void )
+filePath CServerIdManagerImpl::GetConnectionPrivateDirectory()
 {
+    filePath path;
+
     // Get ServerId for this connection
     SString strServerId = g_pCore->GetNetwork ()->GetCurrentServerId ();
 
     // If ServerId is invalid, use the temp dir
-    if ( strServerId.length () < 10 )
-        return m_strTempErrorDir;
+    if ( strServerId.length() < 10 )
+    {
+        m_errorRoot->GetFullPathFromRoot( "/", false, path );
+        return path;
+    }
 
     // Otherwise fetch the server unique dir
-    const CServerIdInfo& info = GetServerIdInfo ( strServerId );
-    return PathJoin ( m_strServerIdLookupBaseDir, info.strDir );
+    const CServerIdInfo& info = GetServerIdInfo( strServerId );
+    m_privateRoot->GetFullPathFromRoot( info.strDir, false, path );
+    return path;
 }
 
 
@@ -292,7 +313,7 @@ SString CServerIdManagerImpl::GetConnectionPrivateDirectory ( void )
 //
 //
 ///////////////////////////////////////////////////////////////
-const CServerIdInfo& CServerIdManagerImpl::GetServerIdInfo ( const SString& strServerId )
+const CServerIdInfo& CServerIdManagerImpl::GetServerIdInfo( const SString& strServerId )
 {
     // Find
     CServerIdKey findKey;
@@ -323,20 +344,16 @@ const CServerIdInfo& CServerIdManagerImpl::GetServerIdInfo ( const SString& strS
         }
 
         // Ensure the directory does not exist
-        while ( DirectoryExists ( PathJoin ( m_strServerIdLookupBaseDir, strDir ) ) )
-        {
-            strDir = IncrementCounter ( strDir );
-        }
+        while ( m_privateRoot->Exists( strDir ) )
+            strDir = IncrementCounter( strDir );
 
         // Add new item
-        {
-            CServerIdInfo info;
-            info.strDir = strDir;
-            MapSet ( m_ServerIdMap, findKey, info );
+        CServerIdInfo info;
+        info.strDir = strDir;
+        MapSet ( m_ServerIdMap, findKey, info );
 
-            m_bListChanged = true;
-            SaveServerIdMap ();
-        }
+        m_bListChanged = true;
+        SaveServerIdMap ();
 
         pInfo = MapFind ( m_ServerIdMap, findKey ); 
     }

@@ -105,7 +105,7 @@ CClientBase* CModManager::Load( const char* szName, const char* szArguments )
     Unload();
 
     // Get the entry for the given name
-    std::map <std::string, std::string>::iterator itMod = m_ModDLLFiles.find( szName );
+    modMap_t::iterator itMod = m_ModDLLFiles.find( szName );
 
     if ( itMod == m_ModDLLFiles.end() )
     {
@@ -145,10 +145,10 @@ CClientBase* CModManager::Load( const char* szName, const char* szArguments )
     }
 
     // Set up the mod root
-    CCore::GetSingleton().m_modRoot = CCore::GetSingleton().GetFileSystem()->CreateTranslator( itMod->second.c_str() );
+    g_pCore->m_modRoot = g_pCore->GetFileSystem()->CreateTranslator( itMod->second.c_str() );
 
     // Get the address of InitClient
-    typedef CClientBase* (__cdecl pfnClientInitializer) ();     /* FIXME: Should probably not be here */
+    typedef CClientBase* (__cdecl pfnClientInitializer) ();
 
     pfnClientInitializer* pClientInitializer = (pfnClientInitializer*)GetProcAddress( m_hClientDLL, "InitClient" );
 
@@ -473,7 +473,7 @@ void CModManager::DumpMiniDump ( _EXCEPTION_POINTERS* pException, CExceptionInfo
     dirTree parts;
     bool file;
 
-    mtaFileRoot->GetFullPathTree( "/", parts, &file );
+    mtaFileRoot->GetFullPathTree( "/", parts, file );
 
     for ( uint i = 0; i < parts.size(); i++ )
     {

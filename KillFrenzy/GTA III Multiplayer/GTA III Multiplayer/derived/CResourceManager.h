@@ -16,7 +16,15 @@
 class CResourceManager : public ResourceManager
 {
 public:
+                                    CResourceManager( CEvents *events, CLuaManager& manager );
+                                    ~CResourceManager();
 
+    CResource*                      Load( const std::string& name );
+
+    inline CLuaManager&             GetLuaManager()                         { return m_luaManager; }
+
+protected:
+    CLuaManager&    m_luaManager;
 };
 
 #endif //_RESOURCE_MANAGER_

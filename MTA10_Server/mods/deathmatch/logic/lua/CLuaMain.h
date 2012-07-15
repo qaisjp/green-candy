@@ -33,128 +33,67 @@ class CRadarAreaManager;
 class CVehicleManager;
 class CMapManager;
 
-struct CRefInfo
-{
-    unsigned long int ulUseCount;
-    int iFunction;
-};
+class CLuaManager;
+class CResourceFile;
 
-class CLuaMain
+class CLuaMain : public LuaMain
 {
 public:
-    enum
-    {
-        OWNER_SERVER,
-        OWNER_MAP,
-    };
+                                    CLuaMain( CLuaManager& luaManager,
+                                              CObjectManager *objectManager,
+                                              CPlayerManager *playerManager,
+                                              CVehicleManager *vehicleManager,
+                                              CBlipManager *blipManager,
+                                              CRadarAreaManager *radarManager,
+                                              CMapManager *mapManager,
+                                              CResource *resource );
+                                    ~CLuaMain();
 
-public:
-                                    CLuaMain                ( class CLuaManager* pLuaManager,
-                                                              CObjectManager* pObjectManager,
-                                                              CPlayerManager* pPlayerManager,
-                                                              CVehicleManager* pVehicleManager,
-                                                              CBlipManager* pBlipManager,
-                                                              CRadarAreaManager* pRadarAreaManager,
-                                                              CMapManager* pMapManager,
-                                                              CResource* pResourceOwner );
-                                    ~CLuaMain               ( void );
+    void                            InitVM();
 
-    int                             GetClientType           ( void ) { return CClient::CLIENT_SCRIPT; };
-    const char*                     GetNick                 ( void ) { return m_szScriptName; };
+    void                            RegisterFunction( const char *name, lua_CFunction proto );
 
-    void                            SendEcho                ( const char* szEcho ) {};
-    void                            SendConsole             ( const char* szEcho ) {};
-
-    inline int                      GetOwner                ( void )                        { return m_iOwner; };
-    inline void                     SetOwner                ( int iOwner )                  { m_iOwner = iOwner; };
-
-    bool                            LoadScriptFromFile      ( const char* szLUAScript );
-    bool                            LoadScriptFromBuffer    ( const char* cpBuffer, unsigned int uiSize, const char* szFileName, bool bUTF8 );
-    bool                            LoadScript              ( const char* szLUAScript );
-    void                            UnloadScript            ( void );
-
-    void                            Start                   ( void );
-
-    void                            DoPulse                 ( void );
-
-    void                            GetScriptName           ( char* szLuaScript ) const     { strcpy ( szLuaScript, m_szScriptName ); };
-    inline const char*              GetScriptNamePointer    ( void ) const                  { return m_szScriptName; };
-    void                            SetScriptName           ( const char* szName )          { strncpy ( m_szScriptName, szName, MAX_SCRIPTNAME_LENGTH ); };
-
-    void                            RegisterFunction        ( const char* szFunction, lua_CFunction function );
-
-    inline lua_State*               GetVM                   ( void )                        { return m_luaVM; };
-    inline CLuaTimerManager*        GetTimerManager         ( void ) const                  { return m_pLuaTimerManager; };
-
-    inline CBlipManager*            GetBlipManager          ( void ) const                  { return m_pBlipManager; };
-    inline CObjectManager*          GetObjectManager        ( void ) const                  { return m_pObjectManager; };
-    inline CPlayerManager*          GetPlayerManager        ( void ) const                  { return m_pPlayerManager; };
-    inline CVehicleManager*         GetVehicleManager       ( void ) const                  { return m_pVehicleManager; };
-    inline CMapManager*             GetMapManager           ( void ) const                  { return m_pMapManager; };
+    inline CBlipManager*            GetBlipManager() const                                  { return m_blipManager; };
+    inline CObjectManager*          GetObjectManager() const                                { return m_objectManager; };
+    inline CPlayerManager*          GetPlayerManager() const                                { return m_playerManager; };
+    inline CVehicleManager*         GetVehicleManager() const                               { return m_vehicleManager; };
+    inline CMapManager*             GetMapManager() const                                   { return m_mapManager; };
     
-    CXMLFile *                      CreateXML               ( const char* szFilename );
-    void                            DestroyXML              ( CXMLFile* pFile );
-    void                            DestroyXML              ( CXMLNode* pRootNode );
-    void                            SaveXML                 ( CXMLNode * pRootNode );
-    bool                            XMLExists               ( CXMLFile* pFile );
-    unsigned long                   GetXMLFileCount         ( void ) const                  { return m_XMLFiles.size (); };
-    unsigned long                   GetTimerCount           ( void ) const                  { return m_pLuaTimerManager ? m_pLuaTimerManager->GetTimerCount () : 0; };
-    unsigned long                   GetElementCount         ( void ) const                  { return m_pResource && m_pResource->GetElementGroup () ? m_pResource->GetElementGroup ()->GetCount () : 0; };
-    unsigned long                   GetTextDisplayCount     ( void ) const                  { return m_Displays.size (); };
-    unsigned long                   GetTextItemCount        ( void ) const                  { return m_TextItems.size (); };
+    CXMLFile*                       CreateXML( const char *path );
+    void                            SaveXML( CXMLNode *root );
+    unsigned long                   GetElementCount() const                                 { return m_resource && GetResource()->GetElementGroup() ? GetResource()->GetElementGroup()->GetCount() : 0; };
+    unsigned long                   GetTextDisplayCount() const                             { return m_displays.size(); };
+    unsigned long                   GetTextItemCount() const                                { return m_textItems.size(); };
 
-    CTextDisplay *                  CreateDisplay           ( void );
-    void                            DestroyDisplay          ( CTextDisplay * pDisplay );
-    CTextItem *                     CreateTextItem          ( const char* szText, float fX, float fY, eTextPriority priority = PRIORITY_LOW, const SColor color = -1, float fScale = 1.0f, unsigned char format = 0, unsigned char ucShadowAlpha = 0 );
-    void                            DestroyTextItem         ( CTextItem * pTextItem );
+    CTextDisplay*                   CreateDisplay();
+    void                            DestroyDisplay( CTextDisplay *display );
+    CTextItem*                      CreateTextItem( const char *text, float x, float y, eTextPriority priority = PRIORITY_LOW, const SColor color = -1, float scale = 1.0f, unsigned char format = 0, unsigned char shadowAlpha = 0 );
+    void                            DestroyTextItem( CTextItem *item );
 
-    bool                            TextDisplayExists       ( CTextDisplay* pDisplay );
-    bool                            TextItemExists          ( CTextItem* pTextItem );
+    bool                            TextDisplayExists( CTextDisplay *display );
+    bool                            TextItemExists( CTextItem *item );
 
-    bool                            BeingDeleted            ( void );
-    inline lua_State *              GetVirtualMachine       ( void ) const                  { return m_luaVM; };
+    inline CResource*               GetResource()                                           { return (CResource*)m_resource; }
 
-    void                            ResetInstructionCount   ( void );
+    inline void                     SetResourceFile( CResourceFile *file )                  { m_resourceFile = file; }
+    inline CResourceFile*           GetResourceFile() const                                 { return m_resourceFile; }
 
-    inline CResource *              GetResource             ( void ) { return m_pResource; }
+    void                            RegisterHTMLDFunctions();
 
-    inline void                     SetResourceFile         ( class CResourceFile * resourceFile ) { m_pResourceFile = resourceFile; }
-    inline CResourceFile *          GetResourceFile         ( void ) const { return m_pResourceFile; }
-
-    void                            RegisterHTMLDFunctions  ( void );
-
-    void                            InitVM                  ( void );
-    const SString&                  GetFunctionTag          ( int iFunctionNumber );
 private:
-    void                            InitSecurity            ( void );
+    CResourceFile*                  m_resourceFile;
+    CBlipManager*                   m_blipManager;
+    CObjectManager*                 m_objectManager;
+    CPlayerManager*                 m_playerManager;
+    CRadarAreaManager*              m_radarAreaManager;
+    CVehicleManager*                m_vehicleManager;
+    CMapManager*                    m_mapManager;
 
-    static void                     InstructionCountHook    ( lua_State* luaVM, lua_Debug* pDebug );
+    typedef std::list <CTextDisplay*> textDisplays_t;
+    typedef std::list <CTextItem*> textItems_t;
 
-    char                            m_szScriptName [MAX_SCRIPTNAME_LENGTH + 1];
-    int                             m_iOwner;
-
-    lua_State*                      m_luaVM;
-    CLuaTimerManager*               m_pLuaTimerManager;
-
-    class CResource*                m_pResource;
-    class CResourceFile*            m_pResourceFile;
-    CBlipManager*                   m_pBlipManager;
-    CObjectManager*                 m_pObjectManager;
-    CPlayerManager*                 m_pPlayerManager;
-    CRadarAreaManager*              m_pRadarAreaManager;
-    CVehicleManager*                m_pVehicleManager;
-    CMapManager*                    m_pMapManager;
-
-    list < CXMLFile* >              m_XMLFiles;
-    list < CTextDisplay* >          m_Displays;
-    list < CTextItem* >             m_TextItems;
-
-    bool                            m_bBeingDeleted; // prevent it being deleted twice
-
-    unsigned long                   m_ulFunctionEnterTime;
-public:
-    std::map < const void*, CRefInfo >      m_CallbackTable;
-    std::map < int, SString >       m_FunctionTagMap;
+    textDisplays_t                  m_displays;
+    textItems_t                     m_textItems;
 };
 
 #endif

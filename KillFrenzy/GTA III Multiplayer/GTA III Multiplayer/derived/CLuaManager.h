@@ -13,6 +13,8 @@
 #ifndef _LUA_MANAGER_
 #define _LUA_MANAGER_
 
+class CResourceManager;
+
 class CLuaManager : public LuaManager
 {
 public:

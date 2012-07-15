@@ -108,13 +108,6 @@ void LuaArguments::ReadTable( lua_State *luaVM, int indexStart )
     }
 }
 
-#if 0
-void LuaArguments::ReadArgument( lua_State *luaVM, int index )
-{
-    m_args.push_back( new LuaArgument( luaVM, index ) );
-}
-#endif
-
 void LuaArguments::PushArguments( lua_State *luaVM ) const
 {
     // Push all our arguments
@@ -149,7 +142,7 @@ void LuaArguments::PushArguments( LuaArguments& args )
         m_args.push_back( (*iter)->Clone() );
 }
 
-bool LuaArguments::Call( LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *res )
+bool LuaArguments::Call( LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *res ) const
 {
     int top = lua_gettop( lua->GetVirtualMachine() );
 
@@ -187,58 +180,6 @@ bool LuaArguments::IsIndexedArray()
 
     return true;
 }
-
-#if 0
-LuaArgument* LuaArguments::PushNil()
-{
-    LuaArgument *arg = new LuaArgument;
-    m_args.push_back( arg );
-    return arg;
-}
-
-LuaArgument* LuaArguments::PushBoolean( bool b )
-{
-    LuaArgument *arg = new LuaArgument( b );
-    m_args.push_back( arg );
-    return arg;
-}
-
-LuaArgument* LuaArguments::PushNumber( double d )
-{
-    LuaArgument *arg = new LuaArgument( d );
-    m_args.push_back( arg );
-    return arg;
-}
-
-LuaArgument* LuaArguments::PushString( const std::string& str )
-{
-    LuaArgument *arg = new LuaArgument( str );
-    m_args.push_back( arg );
-    return arg;
-}
-
-LuaArgument* LuaArguments::PushUserData( void *ud )
-{
-    LuaArgument *arg = new LuaArgument( ud );
-    m_args.push_back( arg );
-    return arg;
-}
-
-LuaArgument* LuaArguments::PushArgument( const LuaArgument& other )
-{
-    LuaArgument *arg = other.clone();
-    m_args.push_back( arg );
-    return arg;
-}
-
-LuaArgument* LuaArguments::PushTable( const LuaArguments& table )
-{
-    LuaArgument *arg = new LuaArgument();
-    arg->Read( table );
-    m_args.push_back( arg );
-    return arg;
-}
-#endif
 
 void LuaArguments::DeleteArguments()
 {

@@ -280,6 +280,8 @@ public:
     bool                            IsPlayer();
     CPadSAInterface*                GetJoypad();
 
+    void                            OnFrame();
+
     // current weapon slot 1184 ( and +1816?)
     //CPedIKSAInterface     pedIK; // 528
     //CWeaponSAInterface    Weapons[9]; // 1032

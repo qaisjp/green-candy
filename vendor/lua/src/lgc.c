@@ -72,6 +72,9 @@ int Class::TraverseGC( global_State *g )
     if ( destroyed )
         return 0;
 
+    if ( ttisfunction( &destructor ) )
+        markobject( g, clvalue( &destructor ) );
+
     markobject( g, env );
     markobject( g, outenv );
     markobject( g, storage );
@@ -89,9 +92,6 @@ int Class::TraverseGC( global_State *g )
 
     for ( ; iter != children.end(); iter++ )
         markobject( g, *iter );
-
-    if ( ttisfunction( &destructor ) )
-        markobject( g, clvalue( &destructor ) );
 
     stringmark( superCached );
     return 0;
@@ -248,8 +248,8 @@ size_t luaC_separatefinalization( lua_State *L, int all )
 int Table::TraverseGC( global_State *g )
 {
     int i;
-    int weakkey = 0;
-    int weakvalue = 0;
+    bool weakkey;
+    bool weakvalue;
     const TValue *mode;
 
     if ( metatable )
@@ -269,10 +269,15 @@ int Table::TraverseGC( global_State *g )
             gclist = g->weak;  /* must be cleared after GC, ... */
             g->weak = this;  /* ... so put in the appropriate list */
         }
-    }
 
-    if ( weakkey && weakvalue )
-        return 1;
+        if ( weakkey && weakvalue )
+            return 1;
+    }
+    else
+    {
+        weakkey = false;
+        weakvalue = false;
+    }
 
     if ( !weakvalue )
     {
@@ -609,28 +614,31 @@ void luaC_freeall (lua_State *L) {
     sweepwholelist(L, &g->strt.hash[i]);
 }
 
+static void markmt( lua_State *L )
+{
+    int i;
 
-static void markmt (global_State *g) {
-  int i;
-  for (i=0; i<NUM_TAGS; i++)
-    if (g->mt[i]) markobject(g, g->mt[i]);
+    for ( i=0; i<NUM_TAGS; i++ )
+    {
+        if ( L->mt[i] )
+            markobject( G(L), L->mt[i] );
+    }
 }
-
 
 /* mark root set */
-static void markroot (lua_State *L) {
-  global_State *g = G(L);
-  g->gray = NULL;
-  g->grayagain = NULL;
-  g->weak = NULL;
-  markobject(g, g->mainthread);
-  /* make global table be traversed before main stack */
-  markvalue(g, gt(g->mainthread));
-  markvalue(g, registry(L));
-  markmt(g);
-  g->gcstate = GCSpropagate;
+static void markroot (lua_State *L)
+{
+    global_State *g = G(L);
+    g->gray = NULL;
+    g->grayagain = NULL;
+    g->weak = NULL;
+    markobject(g, g->mainthread);
+    /* make global table be traversed before main stack */
+    markvalue(g, gt(g->mainthread));
+    markvalue(g, registry(L));
+    markmt( L );
+    g->gcstate = GCSpropagate;
 }
-
 
 static void remarkupvals (global_State *g) {
   UpVal *uv;
@@ -641,8 +649,7 @@ static void remarkupvals (global_State *g) {
   }
 }
 
-
-inline static void atomic (lua_State *L)
+inline static void atomic( lua_State *L )
 {
     global_State *g = G(L);
     size_t udsize;  /* total size of userdata to be finalized */
@@ -655,7 +662,7 @@ inline static void atomic (lua_State *L)
     g->weak = NULL;
     lua_assert(!iswhite(g->mainthread));
     markobject(g, L);  /* mark running thread */
-    markmt(g);  /* mark basic metatables (again) */
+    markmt( L );  /* mark basic metatables (again) */
     propagateall(g);
     /* remark gray again */
     g->gray = g->grayagain;
