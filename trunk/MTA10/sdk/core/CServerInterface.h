@@ -16,7 +16,7 @@
 class CServerInterface
 {
 public:
-    virtual bool                        Start( const char *config  ) = 0;
+    virtual bool                        Start( const std::string& config ) = 0;
     virtual bool                        Stop() = 0;
     virtual bool                        IsStarted() = 0;
     virtual bool                        IsRunning() = 0;

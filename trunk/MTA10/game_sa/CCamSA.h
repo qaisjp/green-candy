@@ -24,140 +24,140 @@
 const int NUMBER_OF_VECTORS_FOR_AVERAGE=2;
 #define CAM_NUM_TARGET_HISTORY          4
 
-class CCamSAInterface // 568 bytes?
+class CCamSAInterface // 551 bytes
 {
 public:
+    bool    bBelowMinDist;                                          // 0, used for follow ped mode
+    bool    bBehindPlayerDesired;                                   // 1, used for follow ped mode
+    bool    m_bCamLookingAtVector;                                  // 2
+    bool    m_bCollisionChecksOn;                                   // 3
+    bool    m_bFixingBeta;                                          // 4, used for camera on a string
+    bool    m_bTheHeightFixerVehicleIsATrain;                       // 5
+    bool    LookBehindCamWasInFront;                                // 6
+    bool    LookingBehind;                                          // 7
+    bool    LookingLeft;                                            // 8
+    bool    LookingRight;                                           // 9
+    bool    ResetStatics;                                           // 10, for interpolation type stuff to work
+    bool    Rotating;                                               // 11
 
-    bool    bBelowMinDist; //used for follow ped mode
-    bool    bBehindPlayerDesired; //used for follow ped mode
-    bool    m_bCamLookingAtVector;
-    bool    m_bCollisionChecksOn;
-    bool    m_bFixingBeta; //used for camera on a string
-    bool    m_bTheHeightFixerVehicleIsATrain;
-    bool    LookBehindCamWasInFront;
-    bool    LookingBehind;
-    bool    LookingLeft; // 32
-    bool    LookingRight;
-    bool    ResetStatics; //for interpolation type stuff to work
-    bool    Rotating;
-
-    short   Mode;                   // CameraMode
-    unsigned int  m_uiFinishTime; // 52
+    short   Mode;                                                   // 12, CameraMode
+    unsigned int  m_uiFinishTime;                                   // 14
     
-    int     m_iDoCollisionChecksOnFrameNum; 
-    int     m_iDoCollisionCheckEveryNumOfFrames;
-    int     m_iFrameNumWereAt;  // 64
-    int     m_iRunningVectorArrayPos;
-    int     m_iRunningVectorCounter;
-    int     DirectionWasLooking;
+    int     m_iDoCollisionChecksOnFrameNum;                         // 18
+    int     m_iDoCollisionCheckEveryNumOfFrames;                    // 22
+    int     m_iFrameNumWereAt;                                      // 26
+    int     m_iRunningVectorArrayPos;                               // 30
+    int     m_iRunningVectorCounter;                                // 34
+    int     DirectionWasLooking;                                    // 38
     
-    float   f_max_role_angle; //=DEGTORAD(5.0f);    
-    float   f_Roll; //used for adding a slight roll to the camera in the
-    float   f_rollSpeed; //camera on a string mode
-    float   m_fSyphonModeTargetZOffSet;
-    float   m_fAmountFractionObscured;
-    float   m_fAlphaSpeedOverOneFrame; // 100
-    float   m_fBetaSpeedOverOneFrame;
-    float   m_fBufferedTargetBeta;
-    float   m_fBufferedTargetOrientation;
-    float   m_fBufferedTargetOrientationSpeed;
-    float   m_fCamBufferedHeight;
-    float   m_fCamBufferedHeightSpeed;
-    float   m_fCloseInPedHeightOffset;
-    float   m_fCloseInPedHeightOffsetSpeed; // 132
-    float   m_fCloseInCarHeightOffset;
-    float   m_fCloseInCarHeightOffsetSpeed;
-    float   m_fDimensionOfHighestNearCar;       
-    float   m_fDistanceBeforeChanges;
-    float   m_fFovSpeedOverOneFrame;
-    float   m_fMinDistAwayFromCamWhenInterPolating;
-    float   m_fPedBetweenCameraHeightOffset;
-    float   m_fPlayerInFrontSyphonAngleOffSet; // 164
-    float   m_fRadiusForDead;
-    float   m_fRealGroundDist; //used for follow ped mode
-    float   m_fTargetBeta;
-    float   m_fTimeElapsedFloat;    
-    float   m_fTilt;
-    float   m_fTiltSpeed;
+    float   f_max_role_angle;                                       // 42, =DEGTORAD(5.0f);    
+    float   f_Roll;                                                 // 46, used for adding a slight roll to the camera in the
+    float   f_rollSpeed;                                            // 50, camera on a string mode
+    float   m_fSyphonModeTargetZOffSet;                             // 54
+    float   m_fAmountFractionObscured;                              // 58
+    float   m_fAlphaSpeedOverOneFrame;                              // 62
+    float   m_fBetaSpeedOverOneFrame;                               // 66
+    float   m_fBufferedTargetBeta;                                  // 70
+    float   m_fBufferedTargetOrientation;                           // 74
+    float   m_fBufferedTargetOrientationSpeed;                      // 78
+    float   m_fCamBufferedHeight;                                   // 82
+    float   m_fCamBufferedHeightSpeed;                              // 86
+    float   m_fCloseInPedHeightOffset;                              // 90
+    float   m_fCloseInPedHeightOffsetSpeed;                         // 94
+    float   m_fCloseInCarHeightOffset;                              // 98
+    float   m_fCloseInCarHeightOffsetSpeed;                         // 102
+    float   m_fDimensionOfHighestNearCar;                           // 106
+    float   m_fDistanceBeforeChanges;                               // 110
+    float   m_fFovSpeedOverOneFrame;                                // 114
+    float   m_fMinDistAwayFromCamWhenInterPolating;                 // 118
+    float   m_fPedBetweenCameraHeightOffset;                        // 122
+    float   m_fPlayerInFrontSyphonAngleOffSet;                      // 126
+    float   m_fRadiusForDead;                                       // 130
+    float   m_fRealGroundDist;                                      // 134, used for follow ped mode
+    float   m_fTargetBeta;                                          // 138
+    float   m_fTimeElapsedFloat;                                    // 142
+    float   m_fTilt;                                                // 146
+    float   m_fTiltSpeed;                                           // 150
 
-    float   m_fTransitionBeta;
-    float   m_fTrueBeta;
-    float   m_fTrueAlpha; // 200
-    float   m_fInitialPlayerOrientation; //used for first person
+    float   m_fTransitionBeta;                                      // 154
+    float   m_fTrueBeta;                                            // 158
+    float   m_fTrueAlpha;                                           // 162
+    float   m_fInitialPlayerOrientation;                            // 166, used for first person
 
-    float   Alpha;
-    float   AlphaSpeed;
-    float   FOV;
-    float   FOVSpeed;
-    float   Beta;
-    float   BetaSpeed;
-    float   Distance; // 232
-    float   DistanceSpeed;
-    float   CA_MIN_DISTANCE;
-    float   CA_MAX_DISTANCE;
-    float   SpeedVar;
-    float   m_fCameraHeightMultiplier; //used by TwoPlayer_Separate_Cars_TopDown
+    float   Alpha;                                                  // 168
+    float   AlphaSpeed;                                             // 172
+    float   FOV;                                                    // 176
+    float   FOVSpeed;                                               // 180
+    float   Beta;                                                   // 184
+    float   BetaSpeed;                                              // 188
+    float   Distance;                                               // 192
+    float   DistanceSpeed;                                          // 196
+    float   CA_MIN_DISTANCE;                                        // 200
+    float   CA_MAX_DISTANCE;                                        // 204
+    float   SpeedVar;                                               // 208
+    float   m_fCameraHeightMultiplier;                              // 212, used by TwoPlayer_Separate_Cars_TopDown
     
     // ped onfoot zoom distance
-    float m_fTargetZoomGroundOne;
-    float m_fTargetZoomGroundTwo; // 256
-    float m_fTargetZoomGroundThree;
+    float m_fTargetZoomGroundOne;                                   // 216
+    float m_fTargetZoomGroundTwo;                                   // 220
+    float m_fTargetZoomGroundThree;                                 // 224
     // ped onfoot alpha angle offset
-    float m_fTargetZoomOneZExtra;
-    float m_fTargetZoomTwoZExtra;
-    float m_fTargetZoomTwoInteriorZExtra; //extra one for interior
-    float m_fTargetZoomThreeZExtra;
+    float m_fTargetZoomOneZExtra;                                   // 228
+    float m_fTargetZoomTwoZExtra;                                   // 232
+    float m_fTargetZoomTwoInteriorZExtra;                           // 236, extra one for interior
+    float m_fTargetZoomThreeZExtra;                                 // 240
     
-    float m_fTargetZoomZCloseIn;
-    float m_fMinRealGroundDist;
-    float m_fTargetCloseInDist;
+    float m_fTargetZoomZCloseIn;                                    // 244
+    float m_fMinRealGroundDist;                                     // 248
+    float m_fTargetCloseInDist;                                     // 252
 
     // For targetting in cooperative mode.
-    float   Beta_Targeting; // 292
-    float   X_Targetting, Y_Targetting;
-    int CarWeAreFocussingOn; //which car is closer to the camera in 2 player cooperative mode with separate cars.
-    float   CarWeAreFocussingOnI; //interpolated version
+    float   Beta_Targeting;                                         // 256
+    float   X_Targetting, Y_Targetting;                             // 260
+    int CarWeAreFocussingOn;                                        // 264, which car is closer to the camera in 2 player cooperative mode with separate cars.
+    float   CarWeAreFocussingOnI;                                   // 268, interpolated version
     
-    float m_fCamBumpedHorz; // 312
-    float m_fCamBumpedVert;
-    int m_nCamBumpedTime; // 320
-    static int CAM_BUMPED_SWING_PERIOD;
+    float m_fCamBumpedHorz;                                         // 272
+    float m_fCamBumpedVert;                                         // 276
+    int m_nCamBumpedTime;                                           // 280
+
+    // NOT IN CLASS
+    static int CAM_BUMPED_SWING_PERIOD;                 
     static int CAM_BUMPED_END_TIME;
     static float CAM_BUMPED_DAMP_RATE;
     static float CAM_BUMPED_MOVE_MULT;
 
-    CVector m_cvecSourceSpeedOverOneFrame; // 324
-    CVector m_cvecTargetSpeedOverOneFrame; // 336
-    CVector m_cvecUpOverOneFrame; // 348
+    CVector m_cvecSourceSpeedOverOneFrame;                          // 284
+    CVector m_cvecTargetSpeedOverOneFrame;                          // 296
+    CVector m_cvecUpOverOneFrame;                                   // 308
     
-    CVector m_cvecTargetCoorsForFudgeInter; // 360
-    CVector m_cvecCamFixedModeVector; // 372
-    CVector m_cvecCamFixedModeSource; // 384
-    CVector m_cvecCamFixedModeUpOffSet; // 396
-    CVector m_vecLastAboveWaterCamPosition; //408  //helper for when the player has gone under the water
+    CVector m_cvecTargetCoorsForFudgeInter;                         // 320
+    CVector m_cvecCamFixedModeVector;                               // 334
+    CVector m_cvecCamFixedModeSource;                               // 346
+    CVector m_cvecCamFixedModeUpOffSet;                             // 358
+    CVector m_vecLastAboveWaterCamPosition;                         // 370, helper for when the player has gone under the water
 
-    CVector m_vecBufferedPlayerBodyOffset; // 420
+    CVector m_vecBufferedPlayerBodyOffset;                          // 382
 
     // The three vectors that determine this camera for this frame
-    CVector Front;  // 432                                              // Direction of looking in
-    CVector Source;                                                 // Coors in world space
-    CVector SourceBeforeLookBehind;
-    CVector Up;                                                     // Just that
-    CVector m_arrPreviousVectors[NUMBER_OF_VECTORS_FOR_AVERAGE];    // used to average stuff
+    CVector Front;                                                  // 394, Direction of looking in
+    CVector Source;                                                 // 406, Coors in world space
+    CVector SourceBeforeLookBehind;                                 // 418
+    CVector Up;                                                     // 430, Just that
+    CVector m_arrPreviousVectors[NUMBER_OF_VECTORS_FOR_AVERAGE];    // 442, used to average stuff
 
-    CVector m_aTargetHistoryPos[CAM_NUM_TARGET_HISTORY];
-    DWORD m_nTargetHistoryTime[CAM_NUM_TARGET_HISTORY];
-    DWORD m_nCurrentHistoryPoints;
+    CVector m_aTargetHistoryPos[CAM_NUM_TARGET_HISTORY];            // 466
+    DWORD m_nTargetHistoryTime[CAM_NUM_TARGET_HISTORY];             // 514
+    DWORD m_nCurrentHistoryPoints;                                  // 522
 
-    CEntitySAInterface *CamTargetEntity;
-protected:
-    float       m_fCameraDistance;
-    float       m_fIdealAlpha;
-    float       m_fPlayerVelocity;
-    //CVector TempRight;
-    CAutomobileSAInterface  *m_pLastCarEntered; // So interpolation works
-    CPedSAInterface         *m_pLastPedLookedAt;// So interpolation works 
-    bool        m_bFirstPersonRunAboutActive;
+    CEntitySAInterface *CamTargetEntity;                            // 526
+
+    float       m_fCameraDistance;                                  // 530
+    float       m_fIdealAlpha;                                      // 534
+    float       m_fPlayerVelocity;                                  // 538
+    CVehicleSAInterface* m_pLastCarEntered;                         // 542, So interpolation works
+    CPedSAInterface*        m_pLastPedLookedAt;                     // 546, So interpolation works 
+    bool        m_bFirstPersonRunAboutActive;                       // 550
 };
 
 class CCamSA : public CCam

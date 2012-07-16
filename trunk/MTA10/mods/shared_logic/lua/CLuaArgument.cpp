@@ -32,7 +32,7 @@ CLuaArgument::CLuaArgument( CClientEntity *element )
     Read( element );
 }
 
-void CLuaArgument::Read( CClientEntity *element )
+void CLuaArgument::ReadEntity( CClientEntity *element )
 {
     DeleteTableData();
 
@@ -85,7 +85,7 @@ bool CLuaArgument::WriteToBitStream( NetBitStreamInterface& stream ) const
         {
             // Write a nil though so other side won't get out of sync
             type.data.ucType = LUA_TNIL;
-            bitStream.Write( &type );
+            stream.Write( &type );
             return false;
         }
 
@@ -94,13 +94,13 @@ bool CLuaArgument::WriteToBitStream( NetBitStreamInterface& stream ) const
         {
             // Write a nil though so other side won't get out of sync
             type.data.ucType = LUA_TNIL;
-            bitStream.Write( &type );
+            stream.Write( &type );
             return false;
         }
 
         type.data.ucType = LUA_TLIGHTUSERDATA;
-        bitStream.Write( &type );
-        bitStream.Write( element->GetID() );
+        stream.Write( &type );
+        stream.Write( element->GetID() );
         return true;
     }
 

@@ -57,7 +57,7 @@ class CServerIdManagerImpl : public CServerIdManager
 public:
     ZERO_ON_NEW
 
-    virtual filePath        GetConnectionPrivateDirectory();
+    filePath                GetConnectionPrivateDirectory();
 
                             CServerIdManagerImpl();
                             ~CServerIdManagerImpl();

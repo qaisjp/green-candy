@@ -15,8 +15,6 @@
 #ifndef __CSERVER_H
 #define __CSERVER_H
 
-#include "CDynamicLibrary.h"
-
 class CServer : public CServerInterface
 {
 public:
@@ -25,15 +23,15 @@ public:
 
     void                        DoPulse();
 
-    bool                        Start( const char* szConfig );
+    bool                        Start( const std::string& config );
     bool                        Stop();
     bool                        IsStarted();
-    inline bool                 IsRunning()                             { return m_library != NULL; };
+    inline bool                 IsRunning()                             { return m_lib != NULL; };
     inline bool                 IsReady()                               { return m_ready; };
 
     int                         GetLastError()                          { return m_lastError; };
 
-    bool                        Send( const char* szString );
+    bool                        Send( const char *cmd );
 
 private:
     static DWORD WINAPI         Thread_EntryPoint( LPVOID pThis );
@@ -46,9 +44,9 @@ private:
     CDynamicLibrary* volatile   m_lib;
     CCriticalSection            m_criticalSection;
 
-    int                         m_lastError;
+    std::string                 m_config;
 
-    static void                 AddServerOutput( const char* szOutput );
+    int                         m_lastError;
 };
 
 #endif

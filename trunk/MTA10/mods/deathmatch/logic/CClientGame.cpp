@@ -124,9 +124,6 @@ CClientGame::CClientGame ( bool bLocalPlay )
 
     m_bWasMinimized = false;
 
-    // Grab the mod path
-    m_strModRoot = g_pCore->GetModInstallRoot ( "deathmatch" );
-
     // Override CGUI's global events
     g_pCore->GetGUI ()->SetKeyDownHandler           ( INPUT_MOD, GUI_CALLBACK_KEY ( &CClientGame::OnKeyDown, this ) );
     g_pCore->GetGUI ()->SetMouseClickHandler        ( INPUT_MOD, GUI_CALLBACK_MOUSE ( &CClientGame::OnMouseClick, this ) );

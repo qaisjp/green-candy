@@ -17,8 +17,14 @@
 
 #include "StdInc.h"
 
+CFileTranslator *resFileRoot;
+
 CResourceManager::CResourceManager()
 {
+    filePath resRoot;
+    modFileRoot->GetFullPath( "/resources/", false, resRoot );
+
+    resFileRoot = g_pCore->GetFileSystem()->CreateTranslator( resRoot.c_str() );
 }
 
 CResourceManager::~CResourceManager()
@@ -43,7 +49,9 @@ CResource* CResourceManager::Add( unsigned short id, const char *name, CClientEn
     if ( !resFileRoot->GetFullPathFromRoot( name, false, resPath ) )
         return NULL;
 
-    CResource *res = new CResource( id, name, resEntity, dynamicEntity );
+    CFileTranslator *root = g_pCore->GetFileSystem()->CreateTranslator( path.c_str() );
+
+    CResource *res = new CResource( g_pClientGame->GetLuaManager()->Create( name, *root ), id, name, *root, resEntity, dynamicEntity );
 
     m_resources.push_back( res );
     return res;

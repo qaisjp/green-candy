@@ -170,18 +170,17 @@ bool CClientProjectile::GetMatrix ( CMatrix& matrix )
 {
     if ( m_pProjectile )
     {
-        if ( m_pProjectile->GetMatrix ( matrix ) )
+        m_pProjectile->GetMatrix ( matrix ) )
+
+        // Jax: If the creator is a ped, we need to invert X and Y on Direction and Was for CMultiplayer::ConvertMatrixToEulerAngles
+        if ( m_pCreator && IS_PED ( m_pCreator ) )
         {
-            // Jax: If the creator is a ped, we need to invert X and Y on Direction and Was for CMultiplayer::ConvertMatrixToEulerAngles
-            if ( m_pCreator && IS_PED ( m_pCreator ) )
-            {
-                matrix.vFront.fX = 0.0f - matrix.vFront.fX;
-                matrix.vFront.fY = 0.0f - matrix.vFront.fY;
-                matrix.vUp.fX = 0.0f - matrix.vUp.fX;
-                matrix.vUp.fY = 0.0f - matrix.vUp.fY;
-            }
-            return true;
+            matrix.vFront.fX = 0.0f - matrix.vFront.fX;
+            matrix.vFront.fY = 0.0f - matrix.vFront.fY;
+            matrix.vUp.fX = 0.0f - matrix.vUp.fX;
+            matrix.vUp.fY = 0.0f - matrix.vUp.fY;
         }
+        return true;
     }
     return false;
 }
@@ -211,9 +210,8 @@ void CClientProjectile::GetPosition ( CVector & vecPosition ) const
 
 void CClientProjectile::SetPosition ( const CVector & vecPosition )
 {
-    m_pProjectile->SetPosition ( const_cast < CVector* > ( &vecPosition ) );
+    m_pProjectile->SetPosition( vecPosition );
 }
-
 
 void CClientProjectile::GetRotation ( CVector & vecRotation )
 {

@@ -26,7 +26,7 @@ class CResource;
 class CLuaMain : public LuaMain
 {
 public:
-                                    CLuaMain( CLuaManager& manager, CFileTranslator& fileRoot, CResource *resource );
+                                    CLuaMain( CLuaManager& manager, CFileTranslator& fileRoot );
                                     ~CLuaMain();
 
     void                            InitVM( int structure, int meta );

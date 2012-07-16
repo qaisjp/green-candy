@@ -1877,7 +1877,7 @@ const SBindableKey* CKeyBinds::GetBindableFromMessage ( UINT uMsg, WPARAM wParam
     return NULL;
 }
 
-bool CKeyBinds::GetControlState( eBindableControl control )
+bool CKeyBinds::GetControlState( eBindableControl control ) const
 {
     if ( control > MAX_CONTROLS )
         return false;

@@ -19,10 +19,11 @@ class Resource : public LuaClass
 {
     friend class ResourceManager;
 public:
-                                Resource( LuaMain& main, const filePath& name, CFileTranslator& root );
+                                Resource( LuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root );
     virtual                     ~Resource();
 
     inline const filePath&      GetName()               { return m_name; };
+    inline unsigned short       GetID()                 { return m_id; };
     inline LuaMain&             GetVM()                 { return m_lua; };
     inline bool                 GetActive()             { return m_active; };
 
@@ -36,6 +37,7 @@ public:
 
 protected:
     filePath            m_name;
+    unsigned short      m_id;
     LuaMain&            m_lua;
     bool                m_active;
 

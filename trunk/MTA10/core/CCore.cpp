@@ -147,9 +147,6 @@ CCore::CCore()
         TerminateProcess( GetCurrentProcess(), EXIT_FAILURE );
     }
 
-    // Make sure we are in the mta directory
-    mtaFileRoot->ChangeDirectory( "mta/" );
-
     // Create a logger instance.
     m_pLogger                   = new CLogger();
 
@@ -165,6 +162,7 @@ CCore::CCore()
 
     // Create the mod manager
     m_pModManager               = new CModManager;
+    m_server                    = new CServer;
 
     m_pfnMessageProcessor       = NULL;
     m_pMessageBox = NULL;
@@ -730,7 +728,7 @@ void CCore::SetCenterCursor( bool bEnabled )
 // On failure, displays message box and terminates the current process.
 //
 ////////////////////////////////////////////////////////////////////////
-void LoadModule( CModuleLoader& m_Loader, const SString& strName, const filePath& modPath )
+void LoadModule( CDynamicLibrary& m_Loader, const SString& strName, const filePath& modPath )
 {
     WriteDebugEvent( "Loading " + strName.ToLower () );
 
@@ -756,7 +754,7 @@ void LoadModule( CModuleLoader& m_Loader, const SString& strName, const filePath
 
     try
     {
-        m_Loader.LoadModule( path.c_str() );
+        m_Loader.Load( path.c_str() );
     }
     catch( std::exception& e )
     {
@@ -778,11 +776,11 @@ void LoadModule( CModuleLoader& m_Loader, const SString& strName, const filePath
 //
 ////////////////////////////////////////////////////////////////////////
 template <class T, class U>
-T* InitModule( CModuleLoader& m_Loader, const SString& strName, const char *init, U* pObj )
+T* InitModule( CDynamicLibrary& m_Loader, const SString& strName, const char *init, U* pObj )
 {
     // Get initializer function from DLL.
     typedef T* (*PFNINITIALIZER)( U* );
-    PFNINITIALIZER pfnInit = (PFNINITIALIZER)m_Loader.GetFunctionPointer( init );
+    PFNINITIALIZER pfnInit = (PFNINITIALIZER)m_Loader.GetProcedureAddress( init );
 
     if ( !pfnInit )
     {
@@ -805,11 +803,11 @@ T* InitModule( CModuleLoader& m_Loader, const SString& strName, const char *init
 //
 ////////////////////////////////////////////////////////////////////////
 template <class T, class U>
-T* InitModuleEx( CModuleLoader& m_Loader, const SString& strName, const char *init, U* pObj )
+T* InitModuleEx( CDynamicLibrary& m_Loader, const SString& strName, const char *init, U* pObj )
 {
     // Get initializer function from DLL.
     typedef T* (*PFNINITIALIZER)( U*, CCoreInterface* );
-    PFNINITIALIZER pfnInit = (PFNINITIALIZER)m_Loader.GetFunctionPointer( init );
+    PFNINITIALIZER pfnInit = (PFNINITIALIZER)m_Loader.GetProcedureAddress( init );
 
     if ( !pfnInit )
     {
@@ -833,7 +831,7 @@ T* InitModuleEx( CModuleLoader& m_Loader, const SString& strName, const char *in
 //
 ////////////////////////////////////////////////////////////////////////
 template <class T, class U>
-T* CreateModule( CModuleLoader& m_Loader, const SString& strName, const filePath& path, const char *init, U* pObj )
+T* CreateModule( CDynamicLibrary& m_Loader, const SString& strName, const filePath& path, const char *init, U* pObj )
 {
     LoadModule( m_Loader, strName, path );
     return InitModule <T> ( m_Loader, strName, init, pObj );
@@ -841,19 +839,19 @@ T* CreateModule( CModuleLoader& m_Loader, const SString& strName, const filePath
 
 void CCore::CreateGame()
 {
-    m_pGame = CreateModule < CGame > ( m_GameModule, "Game", "game_sa", "GetGameInterface", this );
+    m_pGame = CreateModule <CGame> ( m_GameModule, "Game", "game_sa", "GetGameInterface", this );
 
     if ( m_pGame->GetGameVersion () >= VERSION_11 )
     {
         MessageBox( 0, "Only GTA:SA version 1.0 is supported! You are now being redirected to a page where you can patch your version.", "Error", MB_OK | MB_ICONEXCLAMATION );
         BrowseToSolution( "downgrade" );
-        TerminateProcess( GetCurrentProcess (), 1 );
+        TerminateProcess( GetCurrentProcess(), 1 );
     }
 }
 
 void CCore::CreateMultiplayer()
 {
-    m_pMultiplayer = CreateModule < CMultiplayer > ( m_MultiplayerModule, "Multiplayer", "multiplayer_sa", "InitMultiplayerInterface", this );
+    m_pMultiplayer = CreateModule <CMultiplayer> ( m_MultiplayerModule, "Multiplayer", "multiplayer_sa", "InitMultiplayerInterface", this );
 }
 
 void CCore::DeinitGUI()
@@ -896,7 +894,7 @@ void CCore::DestroyGUI()
         m_pGUI = NULL;
     }
 
-    m_GUIModule.UnloadModule ();
+    m_GUIModule.Unload();
 }
 
 void CCore::CreateNetwork()
@@ -905,7 +903,7 @@ void CCore::CreateNetwork()
 
     // Network module compatibility check
     typedef unsigned long (*PFNCHECKCOMPATIBILITY) ( unsigned long );
-    PFNCHECKCOMPATIBILITY pfnCheckCompatibility = (PFNCHECKCOMPATIBILITY)m_NetModule.GetFunctionPointer( "CheckCompatibility" );
+    PFNCHECKCOMPATIBILITY pfnCheckCompatibility = (PFNCHECKCOMPATIBILITY)m_NetModule.GetProcedureAddress( "CheckCompatibility" );
 
     if ( !pfnCheckCompatibility || !pfnCheckCompatibility( MTA_DM_CLIENT_NET_MODULE_VERSION ) )
     {
@@ -970,7 +968,7 @@ void CCore::DestroyGame()
         m_pGame = NULL;
     }
 
-    m_GameModule.UnloadModule();
+    m_GameModule.Unload();
 }
 
 void CCore::DestroyMultiplayer()
@@ -980,7 +978,7 @@ void CCore::DestroyMultiplayer()
     if ( m_pMultiplayer )
         m_pMultiplayer = NULL;
 
-    m_MultiplayerModule.UnloadModule();
+    m_MultiplayerModule.Unload();
 }
 
 void CCore::DestroyXML()
@@ -999,7 +997,7 @@ void CCore::DestroyXML()
         m_pXML = NULL;
     }
 
-    m_XMLModule.UnloadModule();
+    m_XMLModule.Unload();
 }
 
 void CCore::DestroyNetwork()
@@ -1011,7 +1009,7 @@ void CCore::DestroyNetwork()
         m_pNet = NULL;
     }
 
-    m_NetModule.UnloadModule();
+    m_NetModule.Unload();
 }
 
 bool CCore::IsWindowMinimized()

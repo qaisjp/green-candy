@@ -59,9 +59,10 @@ static inline int _trefget( lua_State *L, Resource& res )
     return luaL_ref( L, LUA_REGISTRYINDEX );
 }
 
-Resource::Resource( LuaMain& main, const filePath& name, CFileTranslator& root ) : LuaClass( *main, _trefget( *main, *this ) ), m_fileRoot( root ), m_lua( main )
+Resource::Resource( LuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root ) : LuaClass( *main, _trefget( *main, *this ) ), m_fileRoot( root ), m_lua( main )
 {
     m_name = name;
+    m_id = id;
     m_active = false;
 
     // The Lua hyperstructure should assign us

@@ -176,6 +176,12 @@ public:
     bool            bEnabled;
 };
 
+class CControlInterface
+{
+public:
+    virtual bool                    GetControlState( eBindableControl control ) const = 0;
+}
+
 class CKeyBindsInterface
 {
 public:
@@ -240,13 +246,13 @@ public:
     virtual void                    SetCharacterKeyHandler( CharacterKeyHandler Handler ) = 0;
 
     // Control/action funcs
-    virtual bool                    GetControlState( eBindableControl control ) = 0;
+    virtual bool                    GetControlState( eBindableControl control ) const = 0;
     virtual char*                   GetControlFromAction( eControllerAction action ) = 0;
     virtual bool                    GetActionFromControl( const char* szControl, eControllerAction& action ) = 0;
     virtual SBindableGTAControl*    GetBindableFromControl( const char* szControl ) = 0;
     virtual SBindableGTAControl*    GetBindableFromAction( eControllerAction action ) = 0;
     virtual SBindableGTAControl*    GetBindable( eBindableControl cntrl ) = 0;
-    virtual bool                    GetBindableIndex( const std::string& name, eBindableControl& cntrl );
+    virtual bool                    GetBindableIndex( const std::string& name, eBindableControl& cntrl ) = 0;
     virtual bool                    IsControl( const char* szControl ) = 0;
 
     virtual void                    SetAllFootControls( bool bState ) = 0;

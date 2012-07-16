@@ -280,6 +280,8 @@ public:
     bool                            IsPlayer();
     CPadSAInterface*                GetJoypad();
 
+
+
     void                            OnFrame();
 
     // current weapon slot 1184 ( and +1816?)
@@ -342,30 +344,34 @@ private:
 
     unsigned int        m_type;
     unsigned char       m_ucOccupiedSeat;
+    bool                m_stealthAiming;
 
 public:
                         CPedSA(  );
                         CPedSA( CPedSAInterface * pedInterface );
                         ~CPedSA();
 
-    inline CPedSAInterface* GetInterface() { return (CPedSAInterface*)m_pInterface; }
+    inline CPedSAInterface* GetInterface()                                          { return (CPedSAInterface*)m_pInterface; }
 
     void                Init();
-    void                SetModelIndex ( unsigned short index );
-    void                AttachPedToBike ( CEntity * entity, CVector * vector, unsigned short sUnk, float fUnk, float fUnk2, eWeaponType weaponType );
-    void                AttachPedToEntity ( DWORD dwEntityInterface, CVector * vector, unsigned short sDirection, float fRotationLimit, eWeaponType weaponType, bool bChangeCamera );
-    void                DetachPedFromEntity ( void );
+    void                SetModelIndex( unsigned short index );
+    void                AttachPedToBike( CEntity * entity, CVector * vector, unsigned short sUnk, float fUnk, float fUnk2, eWeaponType weaponType );
+    void                AttachPedToEntity( DWORD dwEntityInterface, CVector * vector, unsigned short sDirection, float fRotationLimit, eWeaponType weaponType, bool bChangeCamera );
+    void                DetachPedFromEntity();
     
-    bool                CanSeeEntity ( CEntity * entity, float fDistance );
-    CVehicle*           GetVehicle ();
-    void                Respawn (CVector * position, bool bCameraCut);
-    bool                AddProjectile ( eWeaponType eWeapon, CVector vecOrigin, float fForce, CVector * target, CEntity * targetEntity );
+    bool                CanSeeEntity( CEntity * entity, float fDistance );
+    CVehicle*           GetVehicle();
+    void                Respawn(CVector * position, bool bCameraCut);
+    bool                AddProjectile( eWeaponType eWeapon, CVector vecOrigin, float fForce, CVector * target, CEntity * targetEntity );
 
-    float               GetHealth ();
-    void                SetHealth ( float fHealth );
+    float               GetHealth();
+    void                SetHealth( float fHealth );
 
-    float               GetArmor ();
-    void                SetArmor ( float fArmor );
+    float               GetArmor();
+    void                SetArmor( float fArmor );
+
+    void                SetStealthAiming( bool enable );
+    bool                IsStealthAiming();
 
     CWeapon*            GiveWeapon ( eWeaponType weaponType, unsigned int uiAmmo );
     CWeapon*            GetWeapon ( eWeaponSlot weaponSlot );
@@ -375,15 +381,15 @@ public:
     void                ClearWeapon ( eWeaponType weaponType );
 
     void                SetIsStanding( bool bStanding );
-    CPedIntelligence*   GetPedIntelligence ()     { return m_pPedIntelligence; }
-    CPedSound*          GetPedSound ()            { return m_pPedSound; }
-    unsigned char       GetType ();
-    void                SetType ( unsigned char type );
+    CPedIntelligence*   GetPedIntelligence()                                        { return m_pPedIntelligence; }
+    CPedSound*          GetPedSound()                                               { return m_pPedSound; }
+    unsigned char       GetType();
+    void                SetType( unsigned char type );
 
     float               GetCurrentRotation();
     float               GetTargetRotation();
-    void                SetCurrentRotation(FLOAT fRotation);
-    void                SetTargetRotation(FLOAT fRotation);
+    void                SetCurrentRotation( FLOAT fRotation );
+    void                SetTargetRotation( FLOAT fRotation );
 
     eWeaponSlot         GetCurrentWeaponSlot ();
     void                SetCurrentWeaponSlot ( eWeaponSlot weaponSlot );

@@ -44,4 +44,6 @@ public:
     bool                    FileDelete( Resource *res, const char *path );
 };
 
+extern CFileTranslator *resFileRoot;
+
 #endif

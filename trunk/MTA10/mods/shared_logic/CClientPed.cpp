@@ -37,17 +37,6 @@ enum eAnimGroups
     ANIM_GROUP_STEALTH_KN=87,
 };
 
-enum eAnimIDs
-{
-    ANIM_ID_WALK_CIVI=0,
-    ANIM_ID_RUN_CIVI,
-    ANIM_ID_SPRINT_PANIC,
-    ANIM_ID_IDLE_STANCE,
-    ANIM_ID_WEAPON_CROUCH=55,
-    ANIM_ID_GOGGLES_ON=224,
-    ANIM_ID_STEALTH_AIM=347,
-};
-
 #define STEALTH_KILL_RANGE 2.5f
 
 struct SBodyPartName { char szName [32]; };
@@ -236,7 +225,7 @@ void CClientPed::Init ( CClientManager* pManager, unsigned long ulModelID, bool 
 }
 
 
-CClientPed::~CClientPed ( void )
+CClientPed::~CClientPed()
 {
     // Remove from the ped manager
     m_pManager->GetPedManager ()->RemoveFromList ( this );
@@ -470,7 +459,7 @@ void CClientPed::SetPosition ( const CVector& vecPosition, bool bResetInterpolat
                 }
 
                 // Set the real position
-                m_pPlayerPed->SetPosition ( const_cast < CVector* > ( &vecPosition ) );
+                m_pPlayerPed->SetPosition( vecPosition );
             }
         }
     }
@@ -745,7 +734,7 @@ void CClientPed::GetControllerState ( CControllerState& ControllerState )
     // Local player
     if ( m_bIsLocalPlayer )
     {
-        ControllerState = m_pPad->GetState());
+        ControllerState = m_pPad->GetState();
 
         // Fix for GTA bug allowing to drive bikes and boats with engine off (3437)
         CClientVehicle* pVehicle = GetRealOccupiedVehicle();
@@ -2088,7 +2077,7 @@ bool CClientPed::HasTask ( int iTaskType, int iTaskPriority, bool bPrimary )
         {
             for ( int i = 0 ; i < TASK_PRIORITY_MAX ; i++ )
             {
-                pTask = m_pTaskManager->GetTask ( i );
+                pTask = m_pTaskManager->GetTask ( (eTaskPriority)i );
                 if ( pTask && pTask->GetTaskType () == iTaskType )
                 {
                     return true;
@@ -2280,33 +2269,6 @@ void CClientPed::StreamedInPulse ( void )
         {
             // Check if the ped got in fire without the script control
             m_bIsOnFire = m_pPlayerPed->IsOnFire();
-
-            // Do our stealth aiming stuff
-            SetStealthAiming ( ShouldBeStealthAiming () );
-        }
-
-        // Is the player stealth aiming?
-        if ( m_bStealthAiming )
-        {
-            // Grab our current anim
-            CAnimBlendAssociation * pAssoc = GetFirstAnimation ();
-            if ( pAssoc )
-            {
-                // Check we're not doing any important animations
-                AnimationId animId = pAssoc->GetAnimID ();
-                if ( animId == ANIM_ID_WALK_CIVI || animId == ANIM_ID_RUN_CIVI ||
-                     animId == ANIM_ID_IDLE_STANCE || animId == ANIM_ID_WEAPON_CROUCH ||
-                     animId == ANIM_ID_STEALTH_AIM )
-                {
-                    // Are our knife anims loaded?
-                    CAnimBlock * pBlock = g_pGame->GetAnimManager ()->GetAnimationBlock ( "KNIFE" );
-                    if ( pBlock->IsLoaded () )
-                    {
-                        // Force the animation
-                        BlendAnimation ( ANIM_GROUP_STEALTH_KN, ANIM_ID_STEALTH_AIM, 8.0f );
-                    }
-                }
-            }
         }
 
         // Is the player choking?
@@ -2691,10 +2653,10 @@ void CClientPed::StreamedInPulse ( void )
         }
 
         // Are we a CClientPed and not a CClientPlayer
-        if ( GetType () == CCLIENTPED )
+        if ( GetType() == CCLIENTPED )
         {
             // Update our controller state to match our scripted pad
-            m_Pad.DoPulse ( this );
+            g_pGame->GetPadManager()->UpdateJoypad( m_Pad, (CPed*)GetGameEntity() );
         }
 
         // Are we waiting on an unloaded anim-block?
@@ -2708,6 +2670,7 @@ void CClientPed::StreamedInPulse ( void )
                 // Copy our name incase it gets deleted
                 char * szAnimName = new char [ strlen ( m_szAnimationName ) + 1 ];
                 strcpy ( szAnimName, m_szAnimationName );
+
                 // Run our animation
                 RunNamedAnimation ( m_pAnimationBlock, szAnimName, m_iTimeAnimation, m_bLoopAnimation, m_bUpdatePositionAnimation, m_bInterruptableAnimation, m_bFreezeLastFrameAnimation );
                 delete [] szAnimName;                
@@ -3020,7 +2983,7 @@ void CClientPed::UpdateKeysync ( bool bCleanup )
 }
 
 
-void CClientPed::_CreateModel ( void )
+void CClientPed::_CreateModel()
 {
     // Replace the loaded model info with the model we're going to load and
     // add a reference to it.
@@ -3028,7 +2991,7 @@ void CClientPed::_CreateModel ( void )
     m_pLoadedModelInfo->AddRef ( true );
 
     // Create the new ped
-    m_pPlayerPed = dynamic_cast < CPlayerPed* > ( g_pGame->GetPools ()->AddPed ( static_cast < ePedModel > ( m_ulModel ) ) );
+    m_pPlayerPed = (CPlayerPed*)g_pGame->GetPools()->AddPed( (ePedModel)m_ulModel );
     if ( m_pPlayerPed )
     {
         // Put our pointer in the stored data and update the remote data with the new model pointer
@@ -3510,7 +3473,7 @@ void CClientPed::InternalWarpIntoVehicle ( CVehicle* pGameVehicle )
             if ( !pCamera->IsInFixedMode () )
             {
                 // Jax: very hacky, clean up if possible (some camera-target pointer)
-                * (CVehicleSAInterface*)0xB6F3B8 = pGameVehicle->GetVehicleInterface();
+                * (void*)0xB6F3B8 = pGameVehicle->GetInterface();
             }
         }
     }
@@ -4590,17 +4553,17 @@ CClientEntity* CClientPed::GetTargetedEntity ( void )
         {
             switch ( pEntity->GetEntityType () )
             {
-                case ENTITY_TYPE_PED:
-                    pReturn = m_pManager->GetPedManager ()->Get ( dynamic_cast < CPlayerPed * > ( pEntity ), true, false );
-                    break;
-                case ENTITY_TYPE_VEHICLE:
-                    pReturn = m_pManager->GetVehicleManager ()->Get ( dynamic_cast < CVehicle * > ( pEntity ), false );
-                    break;
-                case ENTITY_TYPE_OBJECT:
-                    pReturn = m_pManager->GetObjectManager ()->Get ( dynamic_cast < CObject * > ( pEntity ), false );
-                    break;
-                default:
-                    break;
+            case ENTITY_TYPE_PED:
+                pReturn = m_pManager->GetPedManager ()->Get ( dynamic_cast < CPlayerPed * > ( pEntity ), true, false );
+                break;
+            case ENTITY_TYPE_VEHICLE:
+                pReturn = m_pManager->GetVehicleManager ()->Get ( dynamic_cast < CVehicle * > ( pEntity ), false );
+                break;
+            case ENTITY_TYPE_OBJECT:
+                pReturn = m_pManager->GetObjectManager ()->Get ( dynamic_cast < CObject * > ( pEntity ), false );
+                break;
+            default:
+                break;
             }
         }
     }
@@ -5064,73 +5027,9 @@ bool CClientPed::ReloadWeapon ( void )
     return false;
 }
 
-
-bool CClientPed::ShouldBeStealthAiming ( void )
-{
-    if ( m_pPlayerPed )
-    {
-        // Do we have a knife?
-        if ( GetCurrentWeaponType () == WEAPONTYPE_KNIFE )
-        {
-            // Do we have the aim key pressed?
-            CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds();
-            if ( pKeyBinds )
-            {
-                SBindableGTAControl* pAimControl = pKeyBinds->GetBindableFromControl ( "aim_weapon" );
-                if ( pAimControl && pAimControl->bState )
-                {
-                    //We need to be either crouched, walking or standing
-                    SBindableGTAControl* pWalkControl = pKeyBinds->GetBindableFromControl ( "walk" );
-                    if ( m_pPlayerPed->GetRunState() == 1 || m_pPlayerPed->GetRunState() == 4 || pWalkControl && pWalkControl->bState )
-                    {
-                        // Do we have a target ped?
-                        CClientPed * pTargetPed = GetTargetedPed ();
-                        if ( pTargetPed && pTargetPed->GetGamePlayer () )
-                        {
-                            // Are we close enough to the target?
-                            CVector vecPos, vecPos_2;
-                            GetPosition ( vecPos );
-                            pTargetPed->GetPosition ( vecPos_2 );
-                            if ( DistanceBetweenPoints3D ( vecPos, vecPos_2 ) <= STEALTH_KILL_RANGE )
-                            {
-                                // Grab our current anim
-                                CAnimBlendAssociation * pAssoc = GetFirstAnimation ();
-                                if ( pAssoc )
-                                {
-                                    // Our game checks for stealth killing
-                                    if ( m_pPlayerPed->GetPedIntelligence ()->TestForStealthKill ( pTargetPed->GetGamePlayer (), false ) )
-                                    {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return false;
-}
-
-
 void CClientPed::SetStealthAiming ( bool bAiming )
 {
-    if ( bAiming != m_bStealthAiming )
-    {
-        // Stop aiming?
-        if ( !bAiming )
-        {
-            // Do we have the aiming animation?
-            CAnimBlendAssociation * pAssoc = GetAnimation ( ANIM_ID_STEALTH_AIM );
-            if ( pAssoc )
-            {
-                // Stop our animation
-                pAssoc->SetBlendAmount ( -2.0f );
-            }
-        }
-        m_bStealthAiming = bAiming;
-    }
+    m_pPlayerPed->SetStealthAiming( bAiming );
 }
 
 CSphere CClientPed::GetWorldBoundingSphere ( void )

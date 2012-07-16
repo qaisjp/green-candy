@@ -27,9 +27,9 @@ static void LoadCFunctions( lua_State *L )
 
 }
 
-CLuaMain* CLuaManager::Create( const std::string& name, CFileTranslator& fileRoot, CResource& resource )
+CLuaMain* CLuaManager::Create( const std::string& name, CFileTranslator& fileRoot )
 {
-    CLuaMain& main = *new CLuaMain( *this, fileRoot, &resource );
+    CLuaMain& main = *new CLuaMain( *this, fileRoot );
     main.SetName( name );
 
     Init( &main );

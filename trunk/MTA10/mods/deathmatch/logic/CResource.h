@@ -41,7 +41,7 @@ class CClientEntity;
 class CResource : public Resource
 {  
 public:
-                                CResource( unsigned short id, const char *name, CClientEntity *entity, CClientEntity *dynamicEntity );
+                                CResource( CLuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root, CClientEntity *entity, CClientEntity *dynamicEntity );
                                 ~CResource();
 
     void                        Load( CClientEntity *root );
@@ -107,7 +107,5 @@ private:
     exports_t                   m_exports;
     CElementGroup*              m_defaultGroup;
 };
-
-extern CFileTranslator *resFileRoot;
 
 #endif

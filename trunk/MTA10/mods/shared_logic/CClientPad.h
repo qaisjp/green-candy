@@ -12,30 +12,33 @@
 #ifndef __CClientPad_H
 #define __CClientPad_H
 
-#define MAX_GTA_CONTROLS 44
 #define MAX_GTA_ANALOG_CONTROLS 14
 
 class CClientPed;
 class CControllerState;
 
-class CClientPad
+class CClientPad : public virtual CControlInterface
 {
 public:
-    static bool                     GetControlIndex         ( const char * szName, unsigned int & uiIndex );
-    static const char *             GetControlName          ( unsigned int uiIndex );
+                                    CClientPad();
 
-    static bool                     GetAnalogControlIndex ( const char * szName, unsigned int & uiIndex );
+    bool                            GetControlState( eBindableControl control ) const;
 
-                                    CClientPad              ();
+    bool                            GetControlState( const char *name, bool& state );
+    bool                            SetControlState( const char *name, bool state );
 
-    bool                            GetControlState         ( const char * szName, bool & bState );
-    bool                            SetControlState         ( const char * szName, bool bState );
+    bool                            GetControlState( eBindableControl cntrl );
 
-    static bool                     GetAnalogControlState   ( const char * szName, CControllerState & cs, bool bOnFoot, float & fState );
-    static bool                     GetControlState         ( const char * szName, CControllerState & State, bool bOnFoot );
+    static bool                     GetControlIndex( const char *name, unsigned int& index );
+    static const char*              GetControlName( unsigned int index );
+
+    static bool                     GetAnalogControlIndex( const char *name, unsigned int& index );
+
+    static bool                     GetAnalogControlState( const char *name, CControllerState& cs, bool onFoot, float& state );
+    static bool                     GetControlState( const char *name, CControllerState& State, bool onFoot );
 
 protected:
-    bool                            m_bStates [ MAX_GTA_CONTROLS ];
+    bool                            m_states[MAX_CONTROLS];
 };
 
 #endif

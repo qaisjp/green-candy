@@ -40,7 +40,8 @@
 class CPlayerPedSAInterface : public CPedSAInterface // CPlayerPed 1956 bytes in SA
 {
 public:
-
+    void                OnFrame();
+    bool                ShouldBeStealthAiming();
 };
 
 class CPlayerPedSA : public virtual CPlayerPed, public virtual CPedSA
@@ -49,23 +50,26 @@ private:
     bool                                m_bIsLocal;
     class CPlayerPedDataSAInterface*    m_pData;
     CWantedSA*                          m_pWanted;
+    bool                                m_stealthAiming;
 
 public:
-                        CPlayerPedSA                ( ePedModel pedType );
-                        CPlayerPedSA                ( CPlayerPedSAInterface * ped );
-                        ~CPlayerPedSA               ();
+                        CPlayerPedSA( ePedModel pedType );
+                        CPlayerPedSA( CPlayerPedSAInterface * ped );
+                        ~CPlayerPedSA();
 
-    CWanted*            GetWanted                   ();
+    void                OnFrame();
 
-    float               GetSprintEnergy             ();
-    void                SetSprintEnergy             ( float fSprintEnergy );
+    CWanted*            GetWanted();
 
-    void                SetInitialState             ();
+    float               GetSprintEnergy();
+    void                SetSprintEnergy( float fSprintEnergy );
 
-    eMoveAnim           GetMoveAnim                 ();
-    void                SetMoveAnim                 ( eMoveAnim iAnimGroup );
+    void                SetInitialState();
 
-    inline CPlayerPedSAInterface* GetInterface() { return m_pInterface; };
+    eMoveAnim           GetMoveAnim();
+    void                SetMoveAnim( eMoveAnim iAnimGroup );
+
+    inline CPlayerPedSAInterface* GetInterface()                { return m_pInterface; };
 };
 
 #endif

@@ -64,10 +64,8 @@ const char szPreloadedScript [] = ""\
     "exports = setmetatable({}, exportsMT)\n";
 
 
-CLuaMain::CLuaMain( CLuaManager& manager, CFileTranslator& fileRoot, CResource *resource ) : LuaMain( manager ), m_fileRoot( fileRoot )
+CLuaMain::CLuaMain( CLuaManager& manager, CFileTranslator& fileRoot ) : LuaMain( manager ), m_fileRoot( fileRoot )
 {
-    m_resource = resource;
-
     CClientPerfStatLuaMemory::GetSingleton()->OnLuaMainCreate( this );
     CClientPerfStatLuaTiming::GetSingleton()->OnLuaMainCreate( this );
 }

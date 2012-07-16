@@ -23,5 +23,6 @@
 #include <SharedUtil.h>
 #include "interface.h"
 #include "CFileSystem.h"
+#include "CDynamicLibrary.h"
 
 #endif //_CORE_SHARED_
