@@ -30,7 +30,6 @@ class CCore;
 #include "CCommands.h"
 #include "CFileSystemHook.h"
 #include "CServer.h"
-#include "CModuleLoader.h"
 #include "CSingleton.h"
 #include "CGUI.h"
 #include "CConnectManager.h"
@@ -100,7 +99,7 @@ public:
     CGUI*                   GetGUI();
     CGraphicsInterface*     GetGraphics();
     CModManagerInterface*   GetModManager();
-    CServer*                GetServer();
+    CServer*                GetServer()                                                         { return m_server; }
     CMultiplayer*           GetMultiplayer();
     CNet*                   GetNetwork();
     CXML*                   GetXML()                                                            { return m_pXML; };
@@ -269,14 +268,15 @@ private:
     bool                        m_bDidRecreateRenderTargets;
 
     // Module loader objects.
-    CModuleLoader               m_GameModule;
-    CModuleLoader               m_MultiplayerModule;
-    CModuleLoader               m_NetModule;
-    CModuleLoader               m_XMLModule;
-    CModuleLoader               m_GUIModule;
+    CDynamicLibrary             m_GameModule;
+    CDynamicLibrary             m_MultiplayerModule;
+    CDynamicLibrary             m_NetModule;
+    CDynamicLibrary             m_XMLModule;
+    CDynamicLibrary             m_GUIModule;
 
     // Mod manager
-    CModManager*                m_pModManager; 
+    CModManager*                m_pModManager;
+    CServer*                    m_server;
     CFileTranslator*            m_modRoot;
 
     // Module interfaces.

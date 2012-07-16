@@ -58,7 +58,7 @@ public:
     virtual void                        Render() = 0;
     virtual void                        SetOrientation( float fX, float fY, float fZ )=0;
     virtual void                        FixBoatOrientation() = 0;
-    virtual void                        GetPosition( CVector& pos ) = 0;
+    virtual void                        GetPosition( const CVector& pos ) = 0;
     virtual void                        GetMatrix( CMatrix& matrix ) const = 0;
     virtual void                        SetMatrix( const CMatrix& matrix ) = 0;
     virtual unsigned short              GetModelIndex() = 0;
@@ -83,7 +83,7 @@ public:
 
     virtual void                        MatrixConvertFromEulerAngles( float fX, float fY, float fZ, int iUnknown ) = 0;
     virtual void                        MatrixConvertToEulerAngles( float *fX, float *fY, float *fZ, int iUnknown ) = 0;
-    virtual bool                        IsPlayingAnimation( char * szAnimName ) = 0;
+    virtual bool                        IsPlayingAnimation( const char *name ) = 0;
 
     virtual void*                       GetStoredPointer() = 0;
     virtual void                        SetStoredPointer( void *pointer ) = 0;

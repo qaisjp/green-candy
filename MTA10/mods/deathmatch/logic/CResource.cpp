@@ -20,18 +20,7 @@
 extern CClientGame      *g_pClientGame;
 extern CCoreInterface   *g_pCore;
 
-int CResource::m_refShowingCursor = 0;
-CFileTranslator *resFileRoot;
-
-static inline CFileTranslator* _rtget( const char *name )
-{
-    filePath path;
-    ResourceManager::resFileRoot->GetFullPath( name, false, path );
-
-    return g_pCore->GetFileSystem()->CreateTranslator( path.c_str() );
-}
-
-CResource::CResource( unsigned short id, const filePath& name, CClientEntity *entity, CClientEntity *dynamicEntity ) : Resource( id, name, _rtget( name ) )
+CResource::CResource( CLuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root, CClientEntity *entity, CClientEntity *dynamicEntity ) : Resource( main, id, name, root )
 {
     m_luaManager = g_pClientGame->GetLuaManager();
     m_inDownQueue = false;

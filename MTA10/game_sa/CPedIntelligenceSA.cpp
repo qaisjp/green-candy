@@ -23,6 +23,24 @@ void CPedIntelligenceSAInterface::operator delete( void *ptr )
     (*ppPedIntelligencePool)->Free( (CPedIntelligenceSAInterface*)ptr );
 }
 
+bool CPedIntelligenceSAInterface::TestForStealthKill( CPedSAInterface *ped, bool bUnk )
+{
+    bool bReturn;
+    DWORD dwThis = (DWORD)this;
+    DWORD dwPed = (DWORD)ped;
+    DWORD dwFunc = FUNC_CPedIntelligence_TestForStealthKill;
+
+    _asm
+    {
+        mov     ecx, dwThis
+        push    bUnk
+        push    dwPed
+        call    dwFunc
+        mov     bReturn, al
+    }
+    return bReturn;
+}
+
 CPedIntelligenceSA::CPedIntelligenceSA ( CPedIntelligenceSAInterface *intelligence, CPed *ped )
 {
     m_interface = intelligence;
@@ -73,22 +91,4 @@ int CPedIntelligenceSA::GetCurrentEventType ( void )
 CEvent * CPedIntelligenceSA::GetCurrentEvent ( void )
 {
     return NULL;
-}
-
-bool CPedIntelligenceSA::TestForStealthKill ( CPed * pPed, bool bUnk )
-{
-    bool bReturn;
-    DWORD dwThis = (DWORD)m_pInterface;
-    DWORD dwPed = (DWORD)pPed->GetInterface();
-    DWORD dwFunc = FUNC_CPedIntelligence_TestForStealthKill;
-
-    _asm
-    {
-        mov     ecx, dwThis
-        push    bUnk
-        push    dwPed
-        call    dwFunc
-        mov     bReturn, al
-    }
-    return bReturn;
 }

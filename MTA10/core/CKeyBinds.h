@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CKeyBinds.h
 *  PURPOSE:     Header file for core keybind manager class
@@ -28,18 +28,19 @@ struct SDefaultCommandBind
     char szArguments[20];
 };
 
-class CKeyBinds : public CKeyBindsInterface
+class CKeyBinds : public CKeyBindsInterface, public virtual CControlInterface
 {
 public:
                             CKeyBinds( class CCore* pCore );
                             ~CKeyBinds();
 
     bool                    ProcessMessage( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
+
 protected:
     bool                    ProcessCharacter( WPARAM wChar );
     bool                    ProcessKeyStroke( const SBindableKey * pKey, bool bState );
-public:
 
+public:
     // Basic funcs
     void                    Add( CKeyBind* pKeyBind );
     void                    Remove( CKeyBind* pKeyBind );
@@ -119,7 +120,7 @@ public:
     void                    SetCharacterKeyHandler( CharacterKeyHandler Handler ) { m_CharacterKeyHandler = Handler; }
 
     // Control/action funcs
-    bool                    GetControlState( eBindableControl control );
+    bool                    GetControlState( eBindableControl control ) const;
     char*                   GetControlFromAction( eControllerAction action );
     bool                    GetActionFromControl( const char* szControl, eControllerAction& action );
     SBindableGTAControl*    GetBindableFromControl( const char* szControl );

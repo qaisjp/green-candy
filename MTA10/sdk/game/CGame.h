@@ -48,6 +48,7 @@ typedef void ( InRenderer ) ( void );
 #include "CMenuManager.h"
 #include "CModelInfo.h"
 #include "CPad.h"
+#include "CPadManager.h"
 #include "CPathFind.h"
 #include "CPedDamageResponse.h"
 #include "CPedModelInfo.h"
@@ -108,6 +109,7 @@ public:
     virtual CPickups*                   GetPickups() = 0;
     virtual C3DMarkers*                 Get3DMarkers() = 0;
     virtual CPad*                       GetPad() = 0;
+    virtual CPadManager*                GetPadManager() = 0;
     virtual CAERadioTrackManager*       GetAERadioTrackManager() = 0;
     virtual CAudio*                     GetAudio() = 0;
     virtual CMenuManager*               GetMenuManager() = 0;

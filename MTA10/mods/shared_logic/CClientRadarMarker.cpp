@@ -194,7 +194,7 @@ void CClientRadarMarker::SetSprite ( unsigned long ulSprite )
         }
 
         filePath texPath;
-        mtaFileRoot->GetFullPathRoot( SString( "MTA/cgui/images/radarset/%02u.png", ulSprite ).c_str(), true, texPath );
+        mtaFileRoot->GetFullPathFromRoot( SString( "MTA/cgui/images/radarset/%02u.png", ulSprite ).c_str(), true, texPath );
 
         m_pMapMarkerImage = g_pCore->GetGraphics()->LoadTexture( texPath );
     }

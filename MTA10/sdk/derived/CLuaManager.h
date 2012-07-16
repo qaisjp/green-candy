@@ -19,7 +19,7 @@ public:
                                     CLuaManager();
                                     ~CLuaManager();
 
-    CLuaMain*                       Create( const std::string& name, CFileTranslator& fileRoot, CResource& resource );
+    CLuaMain*                       Create( const std::string& name, CFileTranslator& fileRoot );
     bool                            Remove( LuaMain *lua );
 
     inline CScriptDebugging&        GetDebug()  { return (CScriptDebugging&)m_debug; }

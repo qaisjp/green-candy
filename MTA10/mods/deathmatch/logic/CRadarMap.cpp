@@ -15,7 +15,6 @@
 
 #include "StdInc.h"
 
-using SharedUtil::CalcMTASAPath;
 using std::list;
 
 CRadarMap::CRadarMap ( CClientManager* pManager )
@@ -54,8 +53,11 @@ CRadarMap::CRadarMap ( CClientManager* pManager )
     SetupMapVariables ();
 
     // Create the radar and local player blip images
-    m_pRadarImage = g_pCore->GetGraphics()->LoadTexture ( CalcMTASAPath("MTA\\cgui\\images\\radar.jpg"), RADAR_TEXTURE_WIDTH, RADAR_TEXTURE_HEIGHT );
-    m_pLocalPlayerBlip = g_pCore->GetGraphics()->LoadTexture ( CalcMTASAPath("MTA\\cgui\\images\\radarset\\02.png")  );
+    filePath imgPath;
+    mtaFileRoot->GetFullPath( "/cgui/images/", false, imgPath );
+
+    m_pRadarImage = g_pCore->GetGraphics()->LoadTexture( ( imgPath + "radar.jpg" ).c_str(), RADAR_TEXTURE_WIDTH, RADAR_TEXTURE_HEIGHT );
+    m_pLocalPlayerBlip = g_pCore->GetGraphics()->LoadTexture( ( imgPath + "radarset/02.png" ).c_str() );
 
     // Create the text display for the mode text
     m_pModeText = new CClientTextDisplay ( m_pManager->GetDisplayManager (), 0xFFFFFFFF, false );

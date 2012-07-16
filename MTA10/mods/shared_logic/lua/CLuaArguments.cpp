@@ -78,7 +78,7 @@ LuaArgument* CLuaArguments::PushUserData( void *ud )
 
 LuaArgument* CLuaArguments::PushArgument( const LuaArgument& other )
 {
-    CLuaArgument *arg = other.Clone();
+    CLuaArgument *arg = (CLuaArgument*)other.Clone();
     m_args.push_back( arg );
     return arg;
 }
@@ -115,7 +115,7 @@ bool CLuaArguments::WriteToBitStream( NetBitStreamInterface& bitStream ) const
 {
     std::vector <LuaArgument*>::const_iterator iter = m_args.begin();
 
-    bitStream.WriteCompressed( (unsigned short)m_args.size() ) );
+    bitStream.WriteCompressed( (unsigned short)m_args.size() );
 
     for ( ; iter != m_args.end(); iter++ )
     {

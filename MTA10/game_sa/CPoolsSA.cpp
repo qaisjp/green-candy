@@ -76,7 +76,7 @@ CPoolsSA::CPoolsSA()
     m_getVehicleEnabled = true;
 }
 
-CPoolsSA::~CPoolsSA ( void )
+CPoolsSA::~CPoolsSA()
 {
     delete *ppPtrNodeSinglePool;
     delete *ppPtrNodeDoublePool;
@@ -102,7 +102,7 @@ CPoolsSA::~CPoolsSA ( void )
     delete *ppPedAttractorPool;
 }
 
-void CPoolsSA::DeleteAllBuildings ( void )
+void CPoolsSA::DeleteAllBuildings( )
 {
     /*
     for ( int i = 0; i < MAX_BUILDINGS; i++ )
@@ -134,7 +134,7 @@ CVehicle* CPoolSA::GetVehicle( void *entity )
     if ( !m_getVehicleEnabled )
         return NULL;
 
-    return ((CVehicleSAInterface*)entity)->m_pVehicle;
+    return ((CVehicleSAInterface*)entity)->m_vehicle;
 }
 
 unsigned int CPoolsSA::GetVehicleRef ( CVehicle* pVehicle )
@@ -294,7 +294,7 @@ void CPoolsSA::DeleteAllPeds ( )
     m_pedMap.clear();
 }
 
-CEntity* CPoolsSA::GetEntity ( void *entity )
+CEntity* CPoolsSA::GetEntity( void *entity )
 {
     switch ( ((CEntitySAInterface*)entity)->m_type )
     {
@@ -309,12 +309,12 @@ CEntity* CPoolsSA::GetEntity ( void *entity )
     return NULL;
 }
 
-CBuilding * CPoolsSA::AddBuilding ( DWORD dwModelID )
+CBuilding* CPoolsSA::AddBuilding ( DWORD dwModelID )
 {
     DEBUG_TRACE("CBuilding * CPoolsSA::AddBuilding ( DWORD dwModelID )");
     
     return new CBuildingSA( dwModelID );
-}
+}s
 
 CVehicle* CPoolsSA::AddTrain ( CVector * vecPosition, DWORD dwModels[], int iSize, bool bDirection )
 {

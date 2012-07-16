@@ -305,7 +305,7 @@ void CClientVehicle::SetPosition ( const CVector& vecPosition, bool bResetInterp
 
     if ( m_pVehicle )
     {
-        m_pVehicle->SetPosition ( const_cast < CVector* > ( &vecPosition ) );
+        m_pVehicle->SetPosition( vecPosition );
         
         // Jax: can someone find a cleaner alternative for this, it fixes vehicles not being affected by gravity (supposed to be a flag used only on creation, but isnt)
         if ( !m_pDriver )

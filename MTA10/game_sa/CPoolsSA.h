@@ -190,43 +190,43 @@ extern CPedAttractorPool** ppPedAttractorPool;
 class CPoolsSA : public CPools
 {
 public:
-                            CPoolsSA            ( );
-                            ~CPoolsSA           ( );
+                            CPoolsSA();
+                            ~CPoolsSA();
 
     // Vehicles pool
-    CVehicle*               AddVehicle          ( eVehicleTypes eVehicleType );
-    CVehicle*               GetVehicle          ( void *entity );
-    unsigned int            GetVehicleRef       ( CVehicle *veh );
-    CVehicle*               GetVehicleFromRef   ( unsigned int index );
-    void                    DeleteAllVehicles   ();
+    CVehicle*               AddVehicle( eVehicleTypes eVehicleType );
+    CVehicle*               GetVehicle( void *entity );
+    unsigned int            GetVehicleRef( CVehicle *veh );
+    CVehicle*               GetVehicleFromRef( unsigned int index );
+    void                    DeleteAllVehicles();
 
     // Objects pool
-    CObject*                AddObject           ( DWORD dwModelID );
-    CObject*                GetObject           ( void *entity );
-    unsigned int            GetObjectRef        ( CObject *obj );
-    CObject*                GetObjectFromRef    ( unsigned int index );
-    void                    DeleteAllObjects    ();
+    CObject*                AddObject( unsigned short modelID );
+    CObject*                GetObject( void *entity );
+    unsigned int            GetObjectRef( CObject *obj );
+    CObject*                GetObjectFromRef( unsigned int index );
+    void                    DeleteAllObjects();
 
     // Peds pool
-    CPed*                   AddPed              ( ePedModel ePedType );
-    CPed*                   AddCivilianPed      ( DWORD* pGameInterface );
-    CPed*                   GetPed              ( void *entity );
-    unsigned int            GetPedRef           ( CPed* pPed );
-    CPed*                   GetPedFromRef       ( unsigned int index );
-    void                    DeleteAllPeds       ();
+    CPed*                   AddPed( ePedModel ePedType );
+    CPed*                   AddCivilianPed( DWORD* pGameInterface );
+    CPed*                   GetPed( void *entity );
+    unsigned int            GetPedRef( CPed* pPed );
+    CPed*                   GetPedFromRef( unsigned int index );
+    void                    DeleteAllPeds();
 
-    CEntity*                GetEntity           ( void *entity );
+    CEntity*                GetEntity( void *entity );
 
     // Others
-    CBuilding*              AddBuilding         ( DWORD dwModelID );
-    void                    DeleteAllBuildings  ( );
-    CVehicle*               AddTrain            ( CVector* vecPosition, DWORD dwModels[], int iSize, bool bDirection );
+    CBuilding*              AddBuilding( unsigned short modelID );
+    void                    DeleteAllBuildings();
+    CVehicle*               AddTrain( CVector* vecPosition, DWORD dwModels[], int iSize, bool bDirection );
 
-    int                     GetNumberOfUsedSpaces   ( ePools pools );
-    void                    DumpPoolsStatus         ( );
+    int                     GetNumberOfUsedSpaces( ePools pools );
+    void                    DumpPoolsStatus();
 
-    unsigned int            GetPoolDefaultCapacity  ( ePools pool );
-    unsigned int            GetPoolCapacity         ( ePools pool );
+    unsigned int            GetPoolDefaultCapacity( ePools pool );
+    unsigned int            GetPoolCapacity( ePools pool );
 
 private:
     typedef google::dense_hash_map <CObjectSAInterface*, CObjectSA*> gObjectMap;

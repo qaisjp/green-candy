@@ -37,7 +37,7 @@ public:
     inline CCivilianPed*            GetGameCivilian         ( void )                            { return m_pCivilianPed; }
 
     inline void                     GetPosition             ( CVector& vecPosition ) const      { m_pCivilianPed->GetPosition( vecPosition ); };
-    inline void                     SetPosition             ( const CVector& vecPosition )      { m_pCivilianPed->SetPosition( const_cast < CVector* > ( &vecPosition ) ); };
+    inline void                     SetPosition             ( const CVector& vecPosition )      { m_pCivilianPed->SetPosition( vecPosition ); };
     int                             GetRotation             ( void );
     void                            GetRotation             ( CVector& vecRotation ) const;
     void                            SetRotation             ( const CVector& vecRotation );

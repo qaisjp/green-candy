@@ -15,7 +15,7 @@
 #include <StdInc.h>
 
 static volatile bool isStarted = false;
-extern CCoreInterface* g_pCore;
+extern CCore* g_pCore;
 
 static CCriticalSection         outputCC;
 static std::list <std::string>  outputQueue;
@@ -43,21 +43,20 @@ CServer::CServer()
 {
     // Initialize
     m_ready = false;
-    m_library = NULL;
+    m_lib = NULL;
     m_thread = INVALID_HANDLE_VALUE;
     m_lastError = ERROR_NO_ERROR;
 
-    m_strServerRoot = CalcMTASAPath ( "server" );
-    m_strDLLFile = PathJoin ( m_strServerRoot, SERVER_DLL_PATH );
+    // Create the server root translator
+    filePath rootPath;
+    fileRoot->GetFullPath( "/server/", false, rootPath );
+
+    m_serverRoot = g_pCore->GetFileSystem()->CreateTranslator( rootPath.c_str() );
 }
 
 CServer::~CServer()
 {
     Stop();
-
-    // Make sure the thread handle is closed
-    if ( m_hThread != INVALID_HANDLE_VALUE )
-        CloseHandle ( m_hThread );
 }
 
 void CServer::DoPulse()
@@ -72,162 +71,158 @@ void CServer::DoPulse()
     }
     
     // Make sure the server doesn't happen to be adding anything right now
-    m_OutputCC.Lock();
+    outputCC.Lock();
 
     // Anything to output to console?
-    if ( m_OutputQueue.size() > 0 )
+    if ( outputQueue.size() > 0 )
     {
         // Loop through our output queue and echo it to console
-        std::list <std::string>::const_iterator iter = m_OutputQueue.begin();
+        std::list <std::string>::const_iterator iter = outputQueue.begin();
 
-        for ( ; iter != m_OutputQueue.end(); iter++ )
+        for ( ; iter != outputQueue.end(); iter++ )
         {
             // Echo it
-            const char* szString = iter->c_str();
-            g_pCore->GetConsole()->Echo( szString );
+            const char *echo = iter->c_str();
+            g_pCore->GetConsole()->Echo( echo );
 
             // Does the message end with "Server started and is ready to accept connections!\n"?
-            size_t sizeString = iter->length();
-            if ( sizeString >= 51 &&
-                stricmp( szString + sizeString - 51, "Server started and is ready to accept connections!\n" ) == 0 )
+            size_t size = iter->length();
+
+            if ( size >= 51 &&
+                stricmp( echo + size - 51, "Server started and is ready to accept connections!\n" ) == 0 )
             {
-                m_bIsReady = true;
+                m_ready = true;
             }
         }
 
         // Clear the list
-        m_OutputQueue.clear();
+        outputQueue.clear();
     }
 
     // Unlock again
-    m_OutputCC.Unlock();
+    outputCC.Unlock();
 }
 
-bool CServer::Start( const char *config )
+bool CServer::Start( const std::string& config )
 {
-    if ( !g_bIsStarted )
+    if ( isStarted )
+        return false;
+
+    m_config = config;
+
+    // Check that the DLL exists
+    if ( !m_serverRoot->Exists( SERVER_DLL_PATH ) )
     {
-        m_strConfig = szConfig;
-
-        // Check that the DLL exists
-        if ( !DoesFileExist( m_strDLLFile ) )
-        {
-            g_pCore->GetConsole()->Printf( "Unable to find: '%s'", m_strDLLFile.c_str () );
-            return false;
-        }
-
-        g_bIsStarted = true;
-        m_bIsReady = false;
-
-        // Close the previous thread?
-        if ( m_hThread != INVALID_HANDLE_VALUE )
-            CloseHandle ( m_hThread );
-
-        // Create a thread to run the server
-        DWORD dwTemp;
-        m_hThread = CreateThread ( NULL, 0, Thread_EntryPoint, this, 0, &dwTemp );
-        return m_hThread != INVALID_HANDLE_VALUE;
+        g_pCore->GetConsole()->Printf( "Unable to find: '%s'", SERVER_DLL_PATH );
+        return false;
     }
 
-    return false;
+    isStarted = true;
+    m_ready = false;
+
+    // Close the previous thread?
+    if ( m_thread != INVALID_HANDLE_VALUE )
+        CloseHandle( m_thread );
+
+    // Create a thread to run the server
+    DWORD temp;
+    m_thread = CreateThread( NULL, 0, Thread_EntryPoint, this, 0, &temp );
+    return m_thread != INVALID_HANDLE_VALUE;
 }
 
 bool CServer::IsStarted()
 {
-    return g_bIsStarted;
+    return isStarted;
 }
 
-bool CServer::Stop ( void )
+bool CServer::Stop()
 {
     // Started?
-    if ( g_bIsStarted )
+    if ( isStarted )
     {
         // Wait for the library to come true or is started to go false
         // This is so a call to Start then fast call to Stop will work. Otherwize it might not
         // get time to start the server thread before we terminate it and we will end up
         // starting it after this call to Stop.
-        while ( g_bIsStarted && !m_pLibrary )
-        {
-            Sleep ( 1 );
-        }
+        while ( isStarted && !m_lib )
+            Sleep( 1 );
 
         // Lock
-        m_CriticalSection.Lock ();
+        m_criticalSection.Lock();
 
         // Is the server running?
-        if ( m_pLibrary )
+        if ( m_lib )
         {
             // Send the exit message
-            Send ( "exit" );
+            Send( "exit" );
         }
 
         // Unlock it so we won't deadlock
-        m_CriticalSection.Unlock ();
+        m_criticalSection.Unlock();
     }
 
     // If we have a thread, wait for it to finish
-    if ( m_hThread != INVALID_HANDLE_VALUE )
+    if ( m_thread != INVALID_HANDLE_VALUE )
     {
         // Let the thread finish
-        WaitForSingleObject ( m_hThread, INFINITE );
+        WaitForSingleObject( m_thread, INFINITE );
 
         // If we can get an exit code, see if it's non-zero
-        DWORD dwExitCode = 0;
-        if ( GetExitCodeThread ( m_hThread, &dwExitCode ) )
+        DWORD exitCode = 0;
+
+        if ( GetExitCodeThread( m_thread, &exitCode ) )
         {
             // Non-zero, output error
-            if ( dwExitCode != 0 )
+            if ( exitCode != 0 )
             {
-                g_pCore->ShowMessageBox ( "Error", "Could not start the local server. See console for details.", MB_BUTTON_OK | MB_ICON_ERROR );
-                g_pCore->GetConsole ()->Printf ( "Error: Could not start local server. [%s]", szServerErrors[GetLastError()] );
+                g_pCore->ShowMessageBox( "Error", "Could not start the local server. See console for details.", MB_BUTTON_OK | MB_ICON_ERROR );
+                g_pCore->GetConsole()->Printf( "Error: Could not start local server. [%s]", szServerErrors[ GetLastError() ] );
             }
         }
 
         // Close it
-        CloseHandle ( m_hThread );
-        m_hThread = INVALID_HANDLE_VALUE;
+        CloseHandle( m_thread );
+        m_thread = INVALID_HANDLE_VALUE;
     }
 
-    m_iLastError = ERROR_NO_ERROR;
-
+    m_lastError = ERROR_NO_ERROR;
     return true;
 }
 
-
-bool CServer::Send ( const char* szString )
+bool CServer::Send( const char *cmd )
 {
     // Server running?
-    bool bReturn = false;
-    if ( g_bIsStarted )
+    bool ret = false;
+
+    if ( isStarted )
     {
         // Wait for the library to come true or is started to go false
-        while ( g_bIsStarted && !m_pLibrary )
-        {
-            Sleep ( 1 );
-        } 
+        while ( isStarted && !m_lib )
+            Sleep( 1 );
 
         // Lock
-        m_CriticalSection.Lock ();
+        m_criticalSection.Lock();
 
         // Are we running the server
-        if ( m_pLibrary )
+        if ( m_lib )
         {
             // Grab the SendServerCommand function pointer
             typedef bool ( SendServerCommand_t )( const char* );
-            SendServerCommand_t* pfnSendServerCommand = reinterpret_cast < SendServerCommand_t* > ( m_pLibrary->GetProcedureAddress ( "SendServerCommand" ) );
+            SendServerCommand_t *pfnSendServerCommand = (SendServerCommand_t*)m_lib->GetProcedureAddress( "SendServerCommand" );
+
             if ( pfnSendServerCommand )
             {
                 // Call it with the command
-                bReturn = pfnSendServerCommand ( szString );
+                ret = pfnSendServerCommand( cmd );
             }
         }
 
         // Unlock
-        m_CriticalSection.Unlock ();
+        m_criticalSection.Unlock ();
     }
 
     // Return
-    return bReturn;
+    return ret;
 }
 
 
@@ -236,99 +231,75 @@ DWORD WINAPI CServer::Thread_EntryPoint ( LPVOID pThis )
     return reinterpret_cast < CServer* > ( pThis )->Thread_Run ();
 }
 
+static void addServerOutput( const char *msg )
+{
+    // Make sure the client doesn't process the queue right now
+    outputCC.Lock();
 
-unsigned long CServer::Thread_Run ( void )
+    // Add the string to the queue
+    outputQueue.push_back( msg );
+
+    outputCC.Unlock();
+}
+
+unsigned long CServer::Thread_Run()
 {
     // Enter critical section
-    m_CriticalSection.Lock ();
+    m_criticalSection.Lock();
 
-    // Already loaded? Just return or we get a memory leak.
-    if ( m_pLibrary )
+    if ( m_lib )
     {
-        m_CriticalSection.Unlock ();
+        m_criticalSection.Unlock();
         return 0;
     }
 
+    filePath path;
+    m_serverRoot->GetFullPath( "/" SERVER_DLL_PATH, true, path );
+
     // Load the DLL
-    m_pLibrary = new CDynamicLibrary;
-    if ( m_pLibrary->Load ( m_strDLLFile ) )
+    m_lib = new CDynamicLibrary;
+    if ( m_lib->Load( path.c_str() ) )
     {
         // Grab the entrypoint
-        typedef int ( Main_t )( int, char* [] );
-        Main_t* pfnEntryPoint = reinterpret_cast < Main_t* > ( m_pLibrary->GetProcedureAddress ( "Run" ) );
+        typedef int (Main_t)( int, const char* [] );
+        Main_t* pfnEntryPoint = (Main_t*)m_lib->GetProcedureAddress( "Run" );
+
         if ( pfnEntryPoint )
         {
             // Populate the arguments array
-            char szArgument1 [8];
-            strcpy ( szArgument1, "-D" );
+            const char *args[7];
 
-            char szArgument2 [256];
-            strncpy ( szArgument2, m_strServerRoot, 256 );
-            szArgument2 [ 255 ] = 0;
+            filePath rootDir;
+            m_serverRoot->GetFullPathFromRoot( "/", false, rootDir );
 
-            char szArgument3 [16];
-            strcpy ( szArgument3, "--config" );
-
-            char szArgument4 [64];
-            strcpy ( szArgument4, m_strConfig );
-
-            char szArgument5 [8];
-            strcpy ( szArgument5, "-s" );
-
-            char* szArguments [7];
-            szArguments [0] = szArgument1;
-            szArguments [1] = szArgument2;
-            szArguments [2] = szArgument3;
-            szArguments [3] = szArgument4;
-            szArguments [4] = szArgument5;
+            args[0] = "-D";
+            args[1] = rootDir.c_str();
+            args[2] = "--config";
+            args[3] = m_config.c_str();
+            args[4] = "-s";
 
             // Give the server our function to output stuff to the console
-            char szArgument6 [32];
-            strcpy ( szArgument6, "--clientfeedback" );
-            szArguments [5] = szArgument6;
-            szArguments [6] = (char*)CServer::AddServerOutput;
+            args[5] = "--clientfeedback";
+            args[6] = (const char*)addServerOutput;
 
             // We're now running the server
-            m_CriticalSection.Unlock ();
+            m_criticalSection.Unlock();
 
             // Call it and grab what it returned
-            int iReturn = pfnEntryPoint ( 7, szArguments );
-
-            m_iLastError = iReturn;
+            m_lastError = pfnEntryPoint( 7, args );
 
             // Lock again
-            m_CriticalSection.Lock ();
-
-            // Delete the library
-            delete m_pLibrary;
-            m_pLibrary = NULL;
-
-            // Return what the server returned
-            m_CriticalSection.Unlock ();
-            g_bIsStarted = false;
-            return iReturn;
+            m_criticalSection.Lock();
         }
+        else
+            m_lastError = 1;
     }
 
-    // Delete the library again
-    delete m_pLibrary;
-    m_pLibrary = NULL;
+    // Delete the library
+    delete m_lib;
+    m_lib = NULL;
 
-    // Unlock the critialsection and return failed
-    m_CriticalSection.Unlock ();
-    g_bIsStarted = false;
-    return 1;
-}
-
-
-void CServer::AddServerOutput ( const char* szOutput )
-{
-    // Make sure the client doesn't process the queue right now
-    m_OutputCC.Lock ();
-
-    // Add the string to the queue
-    m_OutputQueue.push_back ( szOutput );
-
-    // Unlock again
-    m_OutputCC.Unlock ();
+    m_criticalSection.Unlock();
+    isStarted = false;
+    return m_lastError;
 }

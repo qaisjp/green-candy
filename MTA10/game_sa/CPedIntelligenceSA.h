@@ -45,6 +45,8 @@ public:
     void*   operator new( size_t );
     void    operator delete( void *ptr );
 
+    bool                            TestForStealthKill( CPedSAInterface *ped, bool bUnk );
+
 // CEventHandlerHistory @ + 56
     CPedSAInterface*                m_ped;
     CTaskManagerSAInterface*        m_taskManager;          // 4
@@ -70,8 +72,6 @@ public:
 
     CTaskManager*                   GetTaskManager ();
     CVehicleScanner*                GetVehicleScanner ();
-
-    bool                            TestForStealthKill ( CPed * pPed, bool bUnk );
 
 private:
     CPedIntelligenceSAInterface*    m_interface;

@@ -412,6 +412,9 @@ void CGameSA::OnFrame()
         // Update local player's control
         GetPadManager()->UpdateLocalJoypad( *m_pPlayerInfo->GetPlayerPed() );
 
+        // Frame the player's activity
+        m_pPlayerInfo->GetPlayerPed()->OnFrame();
+
         // Pulse the peds
         unsigned int n;
 

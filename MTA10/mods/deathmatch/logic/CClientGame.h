@@ -33,7 +33,6 @@
 #include "CNetAPI.h"
 #include "CNetworkStats.h"
 #include "CSyncDebug.h"
-#include "CServer.h"
 #include "CTransferBox.h"
 #include "rpc/CRPCFunctions.h"
 #include "CUnoccupiedVehicleSync.h"
@@ -488,8 +487,6 @@ private:
     bool                                m_bHudAreaNameDisabled;
 
     // Revised facilities
-    CServer                             m_Server;
-
     CVoiceRecorder*                     m_pVoiceRecorder;
 
     CClientPlayer*                      m_pLocalPlayer;

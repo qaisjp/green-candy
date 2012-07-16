@@ -41,11 +41,43 @@ void CPedSAInterface::OnFrame()
     // Update our alpha
     unsigned char ucAlpha = m_alpha;
 
-    // Are we in a different interior to the camera? set our alpha to 0
+    // Are we in a different interior than the camera? set our alpha to 0
     if ( m_areaCode != pGame->GetWorld()->GetCurrentArea() )
         ucAlpha = 0;
 
     pGame->GetVisibilityPlugins()->SetClumpAlpha( (RpClump*)m_rwObject, ucAlpha );
+
+    // Update player information
+    CPedSA *ped = (CPedSA*)pGame->GetPools()->GetPed( this );
+
+    // Cannot fix if the ped is managed by GTA:SA internally
+    if ( !ped )
+        return;
+
+    // Is the player stealth aiming?
+    if ( ped->IsStealthAiming() )
+    {
+        // Grab our current anim
+        CAnimBlendAssociation *assoc = pGame->GetAnimManager()->RpAnimBlendClumpGetFirstAssociation( (RpClump*)m_rwObject );
+
+        if ( assoc )
+        {
+            // Check we're not doing any important animations
+            switch( assoc->GetAnimID() )
+            {
+            case ANIM_ID_WALK_CIVI:
+            case ANIM_ID_RUN_CIVI:
+            case ANIM_ID_IDLE_STANCE:
+            case ANIM_ID_WEAPON_CROUCH:
+            case ANIM_ID_STEALTH_AIM:
+                if ( pGame->GetAnimManager()->GetAnimationBlock( "KNIFE" )->IsLoaded() )
+                {
+                    // Force the animation
+                    pGame->GetAnimManager()->BlendAnimation( (RpClump*)m_rwObject, ANIM_GROUP_STEALTH_KN, ANIM_ID_STEALTH_AIM, 8.0f );
+                }
+            }
+        }
+    }
 }
 
 CPedSA::CPedSA (  ) :
@@ -55,7 +87,7 @@ CPedSA::CPedSA (  ) :
 {
     DEBUG_TRACE("CPedSA::CPedSA(  )");
 
-    MemSetFast ( this->m_pWeapons, 0, sizeof ( CWeaponSA* ) * WEAPONSLOT_MAX );
+    memset( m_pWeapons, 0, sizeof ( CWeaponSA* ) * WEAPONSLOT_MAX );
 }
 
 CPedSA::CPedSA( CPedSAInterface * pPedInterface ) :
@@ -65,7 +97,7 @@ CPedSA::CPedSA( CPedSAInterface * pPedInterface ) :
 {
     DEBUG_TRACE("CPedSA::CPedSA( CPedSAInterface * pedInterface )");
 
-    MemSetFast ( this->m_pWeapons, 0, sizeof ( CWeaponSA* ) * WEAPONSLOT_MAX );
+    memset( m_pWeapons, 0, sizeof ( CWeaponSA* ) * WEAPONSLOT_MAX );
 }
 
 void CPedSA::SetInterface( CEntitySAInterface * intInterface )
@@ -335,6 +367,32 @@ float CPedSA::GetArmor ( void )
 void CPedSA::SetArmor ( float fArmor )
 {
     GetPedInterface ()->fArmor = fArmor;
+}
+
+void CPedSA::SetStealthAiming( bool enable )
+{
+    if ( enable == m_stealthAiming )
+        return;
+
+    // Stop aiming?
+    if ( !enable )
+    {
+        // Do we have the aiming animation?
+        CAnimBlendAssociationSA *assoc = pGame->GetAnimManager()->RpAnimBlendClumpGetAssociation( (RpClump*)m_rwObject, ANIM_ID_STEALTH_AIM );
+
+        if ( assoc )
+        {
+            // Stop our animation
+            assoc->SetBlendAmount( -2.0f );
+        }
+    }
+
+    m_stealthAiming = enable;
+}
+
+bool CPedSA::IsStealthAiming()
+{
+    return m_stealthAiming;
 }
 
 void CPedSA::SetIsStanding( bool bStanding )
@@ -871,12 +929,12 @@ unsigned char CPedSA::GetRunState ( void )
     return *(unsigned char*) (((DWORD)m_pInterface + 1332));
 }
 
-CEntity* CPedSA::GetTargetedEntity ( void )
+CEntity* CPedSA::GetTargetedEntity()
 {
-    CEntitySAInterface* pInterface = ((CPedSAInterface *)this->GetInterface())->pTargetedEntity;
+    CEntitySAInterface* pInterface = ((CPedSAInterface *)this->GetInterface())->m_target;
     CPoolsSA * pPools = pGame->GetPools();
 
-    switch ( pInterface->nType )
+    switch ( pInterface->m_type )
     {
     case ENTITY_TYPE_PED:
         pReturn = (CEntity*)(pPools->GetPed((DWORD *)pInterface));

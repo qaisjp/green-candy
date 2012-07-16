@@ -47,18 +47,18 @@ class CAnimBlendAssociationSA : public CAnimBlendAssociation
 public:
                                         CAnimBlendAssociationSA ( CAnimBlendAssociationSAInterface * pInterface )   { m_pInterface = pInterface; }
 
-    CAnimBlendAssociationSAInterface *  GetInterface            ( void )                                            { return m_pInterface; }
-    AssocGroupId                        GetAnimGroup            ( void )                                            { return ( AssocGroupId ) m_pInterface->sAnimGroup; }
-    AnimationId                         GetAnimID               ( void )                                            { return ( AnimationId ) m_pInterface->sAnimID; }
-    CAnimBlendHierarchy *               GetAnimHierarchy        ( void );
+    CAnimBlendAssociationSAInterface*   GetInterface()                                              { return m_pInterface; }
+    AssocGroupId                        GetAnimGroup()                                              { return ( AssocGroupId ) m_pInterface->sAnimGroup; }
+    AnimationId                         GetAnimID()                                                 { return ( AnimationId ) m_pInterface->sAnimID; }
+    CAnimBlendHierarchy*                GetAnimHierarchy();
 
-    inline float                        GetBlendAmount          ( void )            { return m_pInterface->fBlendAmount; }
-    inline void                         SetBlendAmount          ( float fAmount )   { m_pInterface->fBlendAmount = fAmount; }
+    inline float                        GetBlendAmount()                                            { return m_pInterface->fBlendAmount; }
+    inline void                         SetBlendAmount( float fAmount )                             { m_pInterface->fBlendAmount = fAmount; }
 
-    void                                SetCurrentProgress      ( float fProgress );
+    void                                SetCurrentProgress( float fProgress );
 
 protected:
-    CAnimBlendAssociationSAInterface *  m_pInterface;
+    CAnimBlendAssociationSAInterface*   m_pInterface;
 };
 
 #endif

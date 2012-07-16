@@ -489,10 +489,6 @@
 				>
 			</File>
 			<File
-				RelativePath="CModuleLoader.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\CNewsBrowser.cpp"
 				>
 			</File>
@@ -724,6 +720,10 @@
 				Name="shared"
 				>
 				<File
+					RelativePath="..\..\Shared\core\CDynamicLibrary.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Shared\core\CFileSystem.cpp"
 					>
 				</File>
@@ -899,10 +899,6 @@
 			</File>
 			<File
 				RelativePath=".\CModManager.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CModuleLoader.h"
 				>
 			</File>
 			<File
@@ -1763,6 +1759,10 @@
 				<Filter
 					Name="core"
 					>
+					<File
+						RelativePath="..\..\Shared\core\CDynamicLibrary.h"
+						>
+					</File>
 					<File
 						RelativePath="..\..\Shared\core\CFileSystem.h"
 						>

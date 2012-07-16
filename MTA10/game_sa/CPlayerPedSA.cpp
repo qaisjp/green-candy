@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CPlayerPedSA.cpp
 *  PURPOSE:     Player ped entity
@@ -11,12 +11,68 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               aru <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #include "StdInc.h"
+
+enum eAnimIDs
+{
+    ANIM_ID_WALK_CIVI = 0,
+    ANIM_ID_RUN_CIVI,
+    ANIM_ID_SPRINT_PANIC,
+    ANIM_ID_IDLE_STANCE,
+    ANIM_ID_WEAPON_CROUCH = 55,
+    ANIM_ID_GOGGLES_ON = 224,
+    ANIM_ID_STEALTH_AIM = 347
+};
+
+bool CPlayerPedSAInterface::ShouldBeStealthAiming()
+{
+    // Do we have a knife?
+    if ( GetCurrentWeaponType() != WEAPONTYPE_KNIFE )
+        return false;
+
+    CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds();
+    SBindableGTAControl* pAimControl = pKeyBinds->GetBindableFromIndex( CONTROL_AIM_WEAPON );
+
+    if ( !pAimControl->bState )
+        return false;
+
+    // We need to be either crouched, walking or standing
+    SBindableGTAControl *pWalkControl = pKeyBinds->GetBindableFromIndex( CONTROL_WALK );
+
+    if ( m_pPlayerPed->GetRunState() != 1 && m_pPlayerPed->GetRunState() != 4 || !pWalkControl->bState )
+        return false;
+
+    // Do we have a target ped?
+    if ( !m_target || m_target->m_type != ENTITY_TYPE_PED )
+        return false;
+
+    // Are we close enough to the target?
+    CVector pos, pos2;
+    GetPosition( pos );
+    pTargetPed->GetPosition( pos2 );
+
+    pos -= pos2;
+
+    if ( pos.Length() > STEALTH_KILL_RANGE )
+        return false;
+
+    // Grab our current anim
+    if ( !pGame->GetAnimManager()->RpAnimBlendClumpGetFirstAssociation( (RpClump*)m_rwObject ) )
+        return false;
+
+    // GTA:SA checks for stealth killing
+    return m_pedIntelligence->TestForStealthKill( (CPedSAInterface*)m_target, false );
+}
+
+void CPlayerPedSAInterface::OnFrame()
+{
+}
 
 /**
  * Constructor for CPlayerPedSA
@@ -28,9 +84,9 @@ static CWantedSAInterface* pLocalWanted = 0;
 CPlayerPedSA::CPlayerPedSA( ePedModel pedType )
 {
     DEBUG_TRACE("CPlayerPedSA::CPlayerPedSA( ePedModel pedType )");
+
     // based on CPlayerPed::SetupPlayerPed (R*)
     DWORD CPlayerPedConstructor = FUNC_CPlayerPedConstructor;
-
     CPlayerPedSAInterface *player = new CPlayerPedSAInterface;
 
     _asm
@@ -41,17 +97,16 @@ CPlayerPedSA::CPlayerPedSA( ePedModel pedType )
         call    CPlayerPedConstructor
     }
 
-    this->SetInterface((CEntitySAInterface *)dwPedPointer);
+    SetInterface( (CEntitySAInterface*)dwPedPointer );
 
-    this->Init(); // init our interfaces 
+    Init(); // init our interfaces 
     CPoolsSA * pools = (CPoolsSA *)pGame->GetPools ( );
-    this->internalID =  pools->GetPedRef ( (DWORD *)this->GetInterface () );
+    internalID =  pools->GetPedRef ( (DWORD *)this->GetInterface () );
     CWorldSA * world = (CWorldSA *)pGame->GetWorld();
     
-    this->SetModelIndex(pedType);
-    this->BeingDeleted = FALSE;
-    this->DoNotRemoveFromGame = FALSE;
-    this->SetType ( PLAYER_PED );
+    SetModelIndex( pedType );
+    DoNotRemoveFromGame = FALSE;
+    SetType( PLAYER_PED );
 
     // Allocate a player data struct and set it as the players
     m_bIsLocal = false;
@@ -60,7 +115,7 @@ CPlayerPedSA::CPlayerPedSA( ePedModel pedType )
     // Copy the local player data so we're defaulted to something good
     CPlayerPedSA* pLocalPlayerSA = dynamic_cast < CPlayerPedSA* > ( pools->GetPedFromRef ( (DWORD)1 ) );
     if ( pLocalPlayerSA )
-        MemCpyFast ( m_pData, ((CPlayerPedSAInterface*)pLocalPlayerSA->GetInterface ())->pPlayerData, sizeof ( CPlayerPedDataSAInterface ) );
+        memcpy ( m_pData, ((CPlayerPedSAInterface*)pLocalPlayerSA->GetInterface ())->pPlayerData, sizeof ( CPlayerPedDataSAInterface ) );
 
     // Replace the player ped data in our ped interface with the one we just created
     GetPlayerPedInterface ()->pPlayerData = m_pData;
@@ -91,17 +146,17 @@ CPlayerPedSA::CPlayerPedSA( ePedModel pedType )
     world->Add ( m_pInterface );
 }
 
-
 CPlayerPedSA::CPlayerPedSA ( CPlayerPedSAInterface * pPlayer )
 {
     DEBUG_TRACE("CPlayerPedSA::CPlayerPedSA( CPedSAInterface * ped )");
-    // based on CPlayerPed::SetupPlayerPed (R*)
-    this->SetInterface((CEntitySAInterface *)pPlayer);
 
-    this->Init();
+    // based on CPlayerPed::SetupPlayerPed (R*)
+    SetInterface((CEntitySAInterface *)pPlayer);
+
+    Init();
     CPoolsSA * pools = (CPoolsSA *)pGame->GetPools();
-    this->internalID =  pools->GetPedRef ( (DWORD *)this->GetInterface () );
-    this->SetType ( PLAYER_PED );
+    internalID =  pools->GetPedRef ( (DWORD *)this->GetInterface () );
+    SetType ( PLAYER_PED );
 
     m_bIsLocal = true;
     DoNotRemoveFromGame = true;
@@ -124,11 +179,11 @@ CPlayerPedSA::CPlayerPedSA ( CPlayerPedSAInterface * pPlayer )
     GetPlayerPedInterface ()->pedFlags.bNeverEverTargetThisPed = true;
 }
 
-
-CPlayerPedSA::~CPlayerPedSA ( void )
+CPlayerPedSA::~CPlayerPedSA()
 {
     DEBUG_TRACE("CPlayerPedSA::~CPlayerPedSA( )");
-    if(!this->BeingDeleted && DoNotRemoveFromGame == false)
+
+    if( !DoNotRemoveFromGame )
     {
         if ( *(DWORD*)m_pInterface != VTBL_CPlaceable )
         {
@@ -138,8 +193,6 @@ CPlayerPedSA::~CPlayerPedSA ( void )
         
             delete m_pInterface;
         }
-        this->BeingDeleted = true;
-        ((CPoolsSA *)pGame->GetPools())->RemovePed((CPed *)(CPedSA *)this, false);
     }
 
     // Delete the player data
@@ -149,41 +202,30 @@ CPlayerPedSA::~CPlayerPedSA ( void )
     }
 }
 
+void CPlayerPedSA::OnFrame()
+{
+    // Update our stealth status
+    SetStealthAiming( GetInterface()->ShouldBeStealthAiming() );
 
-CWanted* CPlayerPedSA::GetWanted ( void )
+    GetInterface()->OnFrame();
+}
+
+CWanted* CPlayerPedSA::GetWanted()
 {
     return m_pWanted;
 }
 
-
-float CPlayerPedSA::GetSprintEnergy ( void )
+float CPlayerPedSA::GetSprintEnergy()
 {
-    /*
-    OutputDebugString("GetSprintEnergy HACK\n");
-
-    m_pData->bCanBeDamaged = true;
-    m_pData->m_bRenderWeapon = true;
-    m_pData->m_bDontAllowWeaponChange = true;
-
-    ((CPedSAInterface*)GetInterface())->pedFlags.bUpdateAnimHeading = true;
-    ((CPedSAInterface*)GetInterface())->pedFlags.bHeadStuckInCollision = true;
-    ((CPedSAInterface*)GetInterface())->pedFlags.bDonePositionOutOfCollision = true;
-    ((CPedSAInterface*)GetInterface())->pedFlags.bIsRestoringGun = true;
-
-    RebuildPlayer ();
-    */
-
     return m_pData->m_fSprintEnergy;
 }
 
-
-void CPlayerPedSA::SetSprintEnergy ( float fSprintEnergy )
+void CPlayerPedSA::SetSprintEnergy( float fSprintEnergy )
 {
     m_pData->m_fSprintEnergy = fSprintEnergy;
 }
 
-
-void CPlayerPedSA::SetInitialState ( void )
+void CPlayerPedSA::SetInitialState()
 {
     DWORD dwUnknown = 1;
     DWORD dwFunction = FUNC_SetInitialState;
@@ -203,13 +245,13 @@ void CPlayerPedSA::SetInitialState ( void )
     GetPlayerPedInterface()->pedFlags.bStayInSamePlace = false;
 }
 
-eMoveAnim CPlayerPedSA::GetMoveAnim ( void )
+eMoveAnim CPlayerPedSA::GetMoveAnim()
 {
     CPedSAInterface *pedInterface = ( CPedSAInterface * ) this->GetInterface();
     return (eMoveAnim)pedInterface->iMoveAnimGroup;
 }
 
-void CPlayerPedSA::SetMoveAnim ( eMoveAnim iAnimGroup )
+void CPlayerPedSA::SetMoveAnim( eMoveAnim iAnimGroup )
 {
     // Set the the new move animation group
     CPedSAInterface *pedInterface = ( CPedSAInterface * ) this->GetInterface();
@@ -223,73 +265,3 @@ void CPlayerPedSA::SetMoveAnim ( eMoveAnim iAnimGroup )
         call    dwFunc
     }
 }
-
-/**
- * Gets information on the player's wanted status
- * @return Pointer to a CWanted class containing the wanted information for the PlayerPed.
- */
-//CWanted   * CPlayerPedSA::GetWanted (  )
-//{
-    //return internalInterface->Wanted;
-//}
-
-/**
- * Gets the current weapon type that the playerped is using
- * @return DWORD containing the current weapon type
- * \todo Check this is the weapon type, not the actual weapon ID (or whatever)
- */
-/*DWORD CPlayerPedSA::GetCurrentWeaponType (  )
-{
-    return internalInterface->CurrentWeapon;
-}*/
-
-/** 
- * Gets the time the last shot was fired by the playerped
- * @return DWORD containing a system time value
- */
-/*DWORD CPlayerPedSA::GetLastShotTime (  )
-{
-    return internalInterface->LastShotTime;
-}
-*/
-/**
- * Checks if the player is stationary on foot
- * \todo Does this duplicate?
- * @return BOOL TRUE if the player is stationary on foot, FALSE otherwise
- */
-/*
-BOOL CPlayerPedSA::IsStationaryOnFoot (  )
-{
-    return internalInterface->StationaryOnFoot;
-}*/
-
-/**
- * Resets the played ped to their initial state
- * \note This also resets some global values, such as game speed
- */
-/*
-VOID CPlayerPedSA::ResetToInitialState (  )
-{
-    DWORD dwFunction = FUNC_SetInitialState;
-    DWORD dwThis = (DWORD)internalInterface;
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunction
-    }
-}*/
-
-/**
- * Clears information related to the player targeting
- */
-/*
-VOID CPlayerPedSA::ClearWeaponTarget (  )
-{
-    DWORD dwFunction = FUNC_ClearWeaponTarget;
-    DWORD dwThis = (DWORD)internalInterface;
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunction
-    }
-}*/

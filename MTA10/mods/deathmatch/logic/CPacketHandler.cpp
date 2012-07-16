@@ -3167,15 +3167,16 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     if ( bitStream.ReadBit ( bHasPosition ) && bHasPosition )
                         bitStream.Read ( &position );
 
-                    if (pDummy)
+                    if ( pDummy )
                     {
                         if ( bHasPosition )
                             pDummy->SetPosition ( position.data.vecPosition );
                         if ( strcmp ( szTypeName, "resource" ) == 0 )
                         {
-                            CResource* pResource = g_pClientGame->m_pResourceManager->GetResource ( szName );
+                            CResource* pResource = g_pClientGame->m_pResourceManager->Get( szName );
+
                             if ( pResource )
-                                pResource->SetResourceEntity ( pDummy ); // problem with resource starting without this entity
+                                pResource->SetResourceEntity( pDummy ); // problem with resource starting without this entity
                         }
                     }
 
@@ -4030,10 +4031,10 @@ void CPacketHandler::Packet_LuaEvent ( NetBitStreamInterface& bitStream )
             CLuaArguments Arguments ( bitStream );
 
             // Grab the event. Does it exist and is it remotly triggerable?
-            SEvent* pEvent = g_pClientGame->m_Events.Get ( szName );
+            Event* pEvent = g_pClientGame->m_Events.Get ( szName );
             if ( pEvent )
             {
-                if ( pEvent->bAllowRemoteTrigger )
+                if ( pEvent->allowRemote )
                 {
                     // Grab the element we trigger it on
                     CClientEntity* pEntity = CElementIDs::GetElement ( EntityID );
@@ -4076,46 +4077,37 @@ void CPacketHandler::Packet_ResourceStart ( NetBitStreamInterface& bitStream )
     * * unsigned char (x)    - function name
     */
 
-    CNetHTTPDownloadManagerInterface* pHTTP = g_pCore->GetNetwork ()->GetHTTPDownloadManager ();
+    CNetHTTPDownloadManagerInterface* pHTTP = g_pCore->GetNetwork()->GetHTTPDownloadManager();
 
     // Number of Resources to be Downloaded
     unsigned short usResourcesToBeDownloaded = 0;
 
     // Resource Name Size
     unsigned char ucResourceNameSize;
-    bitStream.Read ( ucResourceNameSize );
-
-    if ( ucResourceNameSize > MAX_RESOURCE_NAME_LENGTH )
-    {
-        RaiseFatalError ( 14 );
-        return;
-    }
+    bitStream.Read( ucResourceNameSize );
 
     // Resource Name
-    char* szResourceName = new char [ ucResourceNameSize + 1 ];
-    bitStream.Read ( szResourceName, ucResourceNameSize );
-    if (ucResourceNameSize)
-       szResourceName [ ucResourceNameSize ] = NULL;
+    std::string name;
+    bitStream.ReadStringCharacters( name, ucResourceNameSize );
 
     // Resource ID
     unsigned short usResourceID;
-    bitStream.Read ( usResourceID );
+    bitStream.Read( usResourceID );
 
     // Resource Entity ID
     ElementID ResourceEntityID, ResourceDynamicEntityID;
-    bitStream.Read ( ResourceEntityID );
-    bitStream.Read ( ResourceDynamicEntityID );
+    bitStream.Read( ResourceEntityID );
+    bitStream.Read( ResourceDynamicEntityID );
 
     // Get the resource entity
-    CClientEntity* pResourceEntity = CElementIDs::GetElement ( ResourceEntityID );
+    CClientEntity* pResourceEntity = CElementIDs::GetElement( ResourceEntityID );
 
     // Get the resource dynamic entity
-    CClientEntity* pResourceDynamicEntity = CElementIDs::GetElement ( ResourceDynamicEntityID );
+    CClientEntity* pResourceDynamicEntity = CElementIDs::GetElement( ResourceDynamicEntityID );
 
-    CResource* pResource = g_pClientGame->m_pResourceManager->Add ( usResourceID, szResourceName, pResourceEntity, pResourceDynamicEntity );
+    CResource* pResource = g_pClientGame->m_pResourceManager->Add( usResourceID, name.c_str(), pResourceEntity, pResourceDynamicEntity );
     if ( pResource )
     {
-
         // Resource Chunk Type (F = Resource File, E = Exported Function)
         unsigned char ucChunkType;
         // Resource Chunk Size
@@ -4137,7 +4129,7 @@ void CPacketHandler::Packet_ResourceStart ( NetBitStreamInterface& bitStream )
                 if ( bitStream.Read ( ucChunkSize ) )
                 {
                     szChunkData = new char [ ucChunkSize + 1 ];
-                    if ( ucChunkSize > 0 )
+                    if ( ucChunkSize != 0 )
                     {
                         bitStream.Read ( szChunkData, ucChunkSize );
                     }
@@ -4169,21 +4161,17 @@ void CPacketHandler::Packet_ResourceStart ( NetBitStreamInterface& bitStream )
                         CDownloadableResource* pDownloadableResource = NULL;
                         switch ( ucChunkSubType )
                         {
-                            case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_FILE:
-                                pDownloadableResource = pResource->QueueFile ( CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_FILE, szChunkData, chunkChecksum );
-
-                                break;
-                            case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_SCRIPT:
-                                pDownloadableResource = pResource->QueueFile ( CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_SCRIPT, szChunkData, chunkChecksum );
-
-                                break;
-                            case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_CONFIG:
-                                pDownloadableResource = pResource->AddConfigFile ( szChunkData, chunkChecksum );
-
-                                break;
-                            default:
-
-                                break;
+                        case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_FILE:
+                            pDownloadableResource = pResource->QueueFile ( CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_FILE, szChunkData, chunkChecksum );
+                            break;
+                        case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_SCRIPT:
+                            pDownloadableResource = pResource->QueueFile ( CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_SCRIPT, szChunkData, chunkChecksum );
+                            break;
+                        case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_CONFIG:
+                            pDownloadableResource = pResource->AddConfigFile ( szChunkData, chunkChecksum );
+                            break;
+                        default:
+                            break;
                         }
 
                         // Is it a valid downloadable resource?
@@ -4197,7 +4185,7 @@ void CPacketHandler::Packet_ResourceStart ( NetBitStreamInterface& bitStream )
                                 if ( szTempName )
                                 {
                                     // Make sure its directory exists
-                                    MakeSureDirExists ( szTempName );
+                                    resFileRoot->CreateDir( szTempName );
                                 }
 
                                 // Combine the HTTP Download URL, the Resource Name and the Resource File
@@ -4260,7 +4248,7 @@ void CPacketHandler::Packet_ResourceStop ( NetBitStreamInterface& bitStream )
     unsigned short usID;
     if ( bitStream.Read ( usID ) )
     {
-        CResource* pResource = g_pClientGame->m_pResourceManager->GetResource ( usID );
+        CResource* pResource = g_pClientGame->m_pResourceManager->Get( usID );
         if ( pResource )
         {
             // Grab the resource entity
