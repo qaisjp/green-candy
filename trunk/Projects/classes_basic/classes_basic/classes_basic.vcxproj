@@ -60,6 +60,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\mta_gta3_modeL_replacer\src\mta-mod-imp\mta-mod-imp\csv.cpp" />
     <ClCompile Include="Account.cpp" />
     <ClCompile Include="AccountManager.cpp" />
     <ClCompile Include="Client.cpp" />
@@ -67,6 +68,7 @@
     <ClCompile Include="NewClient.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\mta_gta3_modeL_replacer\src\mta-mod-imp\mta-mod-imp\csv.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="NewClient.h" />
   </ItemGroup>

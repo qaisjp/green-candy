@@ -5,6 +5,8 @@ using namespace std;
 // The main entrypoint to our program, let the account management begin!
 int main( int argc, char *argv[] )
 {
+	login:
+
     cout << "Hello guy! You have to login to proceed.\nUsername: ";
 
     std::string username;
@@ -15,6 +17,7 @@ int main( int argc, char *argv[] )
     std::string password;
     cin >> password;
 
+
 	// We create the manager and root client on the stack
 	// Their constructors get called here
 	AccountManager manager;
@@ -22,10 +25,11 @@ int main( int argc, char *argv[] )
 
 	// We create the account into our system so we can login :)
 	manager.CreateAccount( "hrla", "lol" );
+	Account *myacc;
 
     try
     {
-	    Account *myacc = manager.Login( root, username, password );
+	    myacc = manager.Login( root, username, password );
     }
     catch( Rock& errObj )
     {
@@ -35,6 +39,20 @@ int main( int argc, char *argv[] )
 
         throw;
     }
+
+	if(myacc == NULL)
+		goto login;
+
+	cout << "Would you like to logout?\nUse YES or NO\n";
+	std:string anwser;
+	cin >> anwser;
+	if(anwser=="YES")
+	{
+		myacc->Logout();
+		goto login;
+	}
+	else
+		cout << "You are still logged in";
 
 	return EXIT_SUCCESS;
 

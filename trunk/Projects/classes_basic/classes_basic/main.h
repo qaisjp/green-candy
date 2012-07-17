@@ -9,7 +9,6 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
-#include <stdio.h>
 
 // Simple client represenation for our account system!
 // In our example we create the root client; you know, that is an all access client on linux
