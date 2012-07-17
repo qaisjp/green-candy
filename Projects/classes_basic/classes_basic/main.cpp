@@ -5,19 +5,36 @@ using namespace std;
 // The main entrypoint to our program, let the account management begin!
 int main( int argc, char *argv[] )
 {
+    cout << "Hello guy! You have to login to proceed.\nUsername: ";
+
+    std::string username;
+    cin >> username;
+
+    cout << "Password: ";
+
+    std::string password;
+    cin >> password;
 
 	// We create the manager and root client on the stack
 	// Their constructors get called here
 	AccountManager manager;
-	Client root;
+	NewClient root;
 
 	// We create the account into our system so we can login :)
 	manager.CreateAccount( "hrla", "lol" );
 
-	Account *myacc = manager.Login( root, "hrla", "lol" );	// works
-	Account *myacc2 = manager.Login( root, "hrla", "troll" );	// fails, returns NULL
+    try
+    {
+	    Account *myacc = manager.Login( root, username, password );
+    }
+    catch( Rock& errObj )
+    {
+        cout << "We encountered an exception :(\n";
+        cout << errObj.GetErrorInfo();
+        cout << "\n";
 
-	cout << "Hello world!";
+        throw;
+    }
 
 	return EXIT_SUCCESS;
 

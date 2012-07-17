@@ -10,10 +10,12 @@ Account::Account( const std::string& name, const std::string& password )
 	m_client = NULL;
 }
 
-// Practically we do not need to destroy the account, it would be cool if you added a way to cleanup the account from the manager if destroyed
-// Account destruction does not make sense in the long run anyways; you can decide.
+// On destruction, we logout any existing clients, so they successfully terminate their session!
 Account::~Account()
 {
+    std::cout << "Terminating account...\n";
+
+    Logout();
 }
 
 // Public members to allow constant access to username
@@ -37,6 +39,9 @@ bool Account::Login( Client& user )
 
 	// Store the logged in client for future usage
 	m_client = &user;
+
+    // Notify the client of the operation!
+    user.OnLogin( *this );
 	return true;
 }
 

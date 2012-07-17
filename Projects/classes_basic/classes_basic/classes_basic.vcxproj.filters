@@ -5,6 +5,7 @@
     <ClCompile Include="Account.cpp" />
     <ClCompile Include="AccountManager.cpp" />
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="NewClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">
@@ -13,6 +14,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="NewClient.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
