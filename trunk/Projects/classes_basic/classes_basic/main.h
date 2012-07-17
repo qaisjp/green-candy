@@ -9,6 +9,7 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <stdio.h>
 
 // Simple client represenation for our account system!
 // In our example we create the root client; you know, that is an all access client on linux
@@ -25,12 +26,30 @@ public:
 		moderator
 	};
 	// You could implement this; try to print the username of which account you logged into!
-		void				OnLogin( class Account& acc );
-		void				OnLogout();
+	virtual void		OnLogin( class Account& acc );
+	virtual void		OnLogout();
 
 	// Dummy data.
 	int stuff;
 };
+
+class Rock
+{
+public:
+    Rock( const char *msg )
+    {
+        m_msg = msg;
+    }
+
+    const char* GetErrorInfo()
+    {
+        return m_msg.c_str();
+    }
+
+    std::string m_msg;
+};
+
+#include "NewClient.h"
 
 // An Account.
 class Account
