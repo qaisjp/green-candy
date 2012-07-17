@@ -6,6 +6,7 @@
     <ClCompile Include="AccountManager.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="NewClient.cpp" />
+    <ClCompile Include="..\..\..\mta_gta3_modeL_replacer\src\mta-mod-imp\mta-mod-imp\csv.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">
@@ -17,6 +18,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="NewClient.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\mta_gta3_modeL_replacer\src\mta-mod-imp\mta-mod-imp\csv.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
