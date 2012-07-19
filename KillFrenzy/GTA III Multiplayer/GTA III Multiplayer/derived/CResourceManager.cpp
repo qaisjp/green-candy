@@ -43,7 +43,7 @@ CResource* CResourceManager::Load( const std::string& name )
 
     CFileTranslator *fileRoot = fileSystem->CreateTranslator( absPath.c_str() );
 
-    CResource *res = new CResource( *m_luaManager.Create( name, *fileRoot ), filePath( name ), *fileRoot );
+    CResource *res = new CResource( *m_luaManager.Create( name, *fileRoot ), 0, filePath( name ), *fileRoot );
 
     // Load all .lua scripts
     fileRoot->ScanDirectory( "/", "*.lua", false, NULL, loadscript, &res->GetVM() );

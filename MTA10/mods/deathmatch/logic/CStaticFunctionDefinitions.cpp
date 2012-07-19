@@ -309,12 +309,10 @@ CClientEntity* CStaticFunctionDefinitions::GetElementChild ( CClientEntity& Enti
     return NULL;
 }
 
-
-bool CStaticFunctionDefinitions::GetElementMatrix ( CClientEntity& Entity, CMatrix& matrix )
+bool CStaticFunctionDefinitions::GetElementMatrix ( CClientEntity& Entity, RwMatrix& matrix )
 {
     return Entity.GetMatrix ( matrix );
 }
-
 
 bool CStaticFunctionDefinitions::GetElementPosition ( CClientEntity& Entity, CVector& vecPosition )
 {
@@ -1903,18 +1901,11 @@ bool CStaticFunctionDefinitions::SetPedAnimationProgress ( CClientEntity& Entity
 {    
     RUN_CHILDREN SetPedAnimationProgress ( **iter, szAnimName, fProgress );
 
-    if ( IS_PED ( &Entity ) )
-    {
-        CClientPed& Ped = static_cast < CClientPed& > ( Entity );
-        CAnimBlendAssociation* pA = g_pGame->GetAnimManager ()->RpAnimBlendClumpGetAssociation ( Ped.GetClump (), szAnimName );
+    if ( !IS_PED ( &Entity ) )
+        return false;
 
-        if ( pA )
-        {
-            pA->SetCurrentProgress ( fProgress );
-        }
-    }
-
-    return false;
+    ((CClientPed&)Entity).SetAnimationProgress( szAnimName, fProgress );
+    return true;
 }
 
 

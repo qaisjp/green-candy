@@ -12,7 +12,7 @@
 
 #include <StdInc.h>
 
-CLuaManager::CLuaManager() : LuaManager( *g_pClientGame->GetEvents(), *g_pClientGame->GetScriptDebugging() ), m_commands( *this )
+CLuaManager::CLuaManager() : LuaManager( *g_pClientGame->GetEvents(), m_debug ), m_debug( this ), m_commands( *this )
 {
 }
 

@@ -64,9 +64,11 @@ public:
     void                                                DeleteArguments();
     void                                                ValidateTableKeys();
 
-    unsigned int                                        Count() const          { return static_cast < unsigned int > ( m_args.size() ); };
-    std::vector <LuaArgument*> ::const_iterator         IterBegin()                { return m_args.begin(); };
-    std::vector <LuaArgument*> ::const_iterator         IterEnd()                { return m_args.end(); };
+    typedef std::vector <LuaArgument*> argList_t;
+
+    unsigned int                                        Count() const               { return m_args.size(); };
+    argList_t::const_iterator                           IterBegin() const           { return m_args.begin(); };
+    argList_t::const_iterator                           IterEnd() const             { return m_args.end(); };
 
 #ifndef _KILLFRENZY
     bool                                                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
@@ -74,8 +76,6 @@ public:
 
 protected:
     void                                                SetParent( LuaArguments *parent );
-
-    typedef std::vector <LuaArgument*> argList_t;
 
     argList_t                           m_args;
     std::vector <LuaArguments*>         m_cachedTables;

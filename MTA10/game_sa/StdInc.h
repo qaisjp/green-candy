@@ -15,7 +15,6 @@
 #include <string>
 #include <vector>
 
-#include <CMatrix.h>
 #include <CQuat.h>
 
 // SDK includes

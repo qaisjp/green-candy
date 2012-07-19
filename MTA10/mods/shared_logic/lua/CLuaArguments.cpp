@@ -12,6 +12,7 @@
 *               Christian Myhre Lundheim <>
 *               Chris McArthur <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -19,12 +20,6 @@
 #define DECLARE_PROFILER_SECTION_CLuaArguments
 #include "profiler/SharedUtil.Profiler.h"
 
-using namespace std;
-
-#ifndef VERIFY_ENTITY
-#define VERIFY_ENTITY(entity) (CStaticFunctionDefinitions::GetRootElement()->IsMyChild(entity,true)&&!entity->IsBeingDeleted())
-#endif
- 
 extern CClientGame* g_pClientGame;
 
 CLuaArguments::CLuaArguments() : LuaArguments()

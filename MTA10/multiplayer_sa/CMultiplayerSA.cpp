@@ -3447,10 +3447,9 @@ void CMultiplayerSA::Reset ( void )
 }
 
 
-void CMultiplayerSA::ConvertEulerAnglesToMatrix ( CMatrix& Matrix, float fX, float fY, float fZ )
+void CMultiplayerSA::ConvertEulerAnglesToMatrix ( RwMatrix& Matrix, float fX, float fY, float fZ )
 {
-    RwMatrix matrix ( Matrix );
-    RwMatrix* pMatrix = &matrixPadded;
+    RwMatrix* pMatrix = &Matrix;
     DWORD dwFunc = FUNC_CMatrix__ConvertFromEulerAngles;
     int iUnknown = 21;
     _asm
@@ -3462,19 +3461,12 @@ void CMultiplayerSA::ConvertEulerAnglesToMatrix ( CMatrix& Matrix, float fX, flo
         mov     ecx, pMatrix
         call    dwFunc
     }
-
-    // Convert the result matrix to the CMatrix we know
-    matrixPadded.ConvertToMatrix ( Matrix );
 }
 
 
-void CMultiplayerSA::ConvertMatrixToEulerAngles ( const CMatrix& Matrix, float& fX, float& fY, float& fZ )
+void CMultiplayerSA::ConvertMatrixToEulerAngles ( const RwMatrix& Matrix, float& fX, float& fY, float& fZ )
 {
-    // Convert the given matrix to a padded matrix
-    RwMatrix matrix ( Matrix );
-
-    // Grab its pointer and call gta's func
-    RwMatrix* pMatrix = &matrix;
+    RwMatrix* pMatrix = &Matrix;
     DWORD dwFunc = FUNC_CMatrix__ConvertToEulerAngles;
 
     float* pfX = &fX;
@@ -3838,42 +3830,42 @@ void _declspec(naked) HOOK_CPhysical_ApplyGravity ()
 
 // ---------------------------------------------------
 
-void GetMatrixForGravity ( const CVector& vecGravity, CMatrix& mat )
+void GetMatrixForGravity( const CVector& vecGravity, RwMatrix& mat )
 {
     // Calculates a basis where the z axis is the inverse of the gravity
-    if ( vecGravity.Length () > 0.0001f )
+    if ( vecGravity.Length() > 0.0001f )
     {
-        mat.vUp = -vecGravity;
-        mat.vUp.Normalize ();
-        if ( fabs(mat.vUp.fX) > 0.0001f || fabs(mat.vUp.fZ) > 0.0001f )
+        mat.up = -vecGravity;
+        mat.up.Normalize();
+
+        if ( fabs( mat.up.fX ) > 0.0001f || fabs( mat.up.fZ ) > 0.0001f )
         {
-            CVector y ( 0.0f, 1.0f, 0.0f );
-            mat.vFront = vecGravity;
-            mat.vFront.CrossProduct ( &y );
-            mat.vFront.CrossProduct ( &vecGravity );
-            mat.vFront.Normalize ();
+            CVector y( 0.0f, 1.0f, 0.0f );
+            mat.front = vecGravity;
+            mat.front.CrossProduct( &y );
+            mat.front.CrossProduct( &vecGravity );
+            mat.front.Normalize();
         }
         else
-        {
-            mat.vFront = CVector ( 0.0f, 0.0f, vecGravity.fY );
-        }
-        mat.vRight = mat.vFront;
-        mat.vRight.CrossProduct ( &mat.vUp );
+            mat.vFront = CVector( 0.0f, 0.0f, vecGravity.fY );
+
+        mat.right = mat.front;
+        mat.right.CrossProduct( &mat.up );
     }
     else
     {
         // No gravity, use default axes
-        mat.vRight = CVector ( 1.0f, 0.0f, 0.0f );
-        mat.vFront = CVector ( 0.0f, 1.0f, 0.0f );
-        mat.vUp    = CVector ( 0.0f, 0.0f, 1.0f );
+        mat.right = CVector ( 1.0f, 0.0f, 0.0f );
+        mat.front = CVector ( 0.0f, 1.0f, 0.0f );
+        mat.up    = CVector ( 0.0f, 0.0f, 1.0f );
     }
 }
 
 // ---------------------------------------------------
 
-CMatrix gravcam_matGravity;
-CMatrix gravcam_matInvertGravity;
-CMatrix gravcam_matVehicleTransform;
+RwMatrix gravcam_matGravity;
+RwMatrix gravcam_matInvertGravity;
+RwMatrix gravcam_matVehicleTransform;
 CVector gravcam_vecVehicleVelocity;
 
 bool _cdecl VehicleCamStart ( DWORD dwCam, DWORD pVehicleInterface )
@@ -3894,9 +3886,9 @@ bool _cdecl VehicleCamStart ( DWORD dwCam, DWORD pVehicleInterface )
     gravcam_matInvertGravity.Invert ();
 
     pVehicle->GetMatrix ( &gravcam_matVehicleTransform );
-    CMatrix matVehicleInverted = gravcam_matInvertGravity * gravcam_matVehicleTransform;
+    RwMatrix matVehicleInverted = gravcam_matInvertGravity * gravcam_matVehicleTransform;
     matVehicleInverted.vPos = gravcam_matVehicleTransform.vPos;
-    pVehicle->SetMatrix ( &matVehicleInverted );
+    pVehicle->SetMatrix ( matVehicleInverted );
 
     pVehicle->GetMoveSpeed ( &gravcam_vecVehicleVelocity );
     CVector vecVelocityInverted = gravcam_matInvertGravity * gravcam_vecVehicleVelocity;
@@ -4183,11 +4175,11 @@ float _cdecl VehicleBurnCheck ( DWORD pVehicleInterface )
         return 1.0f;
 
     CVector vecGravity;
-    CMatrix matVehicle;
+    RwMatrix matVehicle;
     pVehicle->GetGravity ( &vecGravity );
-    pVehicle->GetMatrix ( &matVehicle );
+    pVehicle->GetMatrix ( matVehicle );
     vecGravity = -vecGravity;
-    return matVehicle.vUp.DotProduct ( &vecGravity );
+    return matVehicle.up.DotProduct ( &vecGravity );
 }
 
 void _declspec(naked) HOOK_OccupiedVehicleBurnCheck ()

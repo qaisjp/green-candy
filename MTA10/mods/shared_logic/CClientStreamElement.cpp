@@ -246,10 +246,10 @@ float CClientStreamElement::GetDistanceToBoundingBoxSquared ( const CVector& vec
     const CVector& vecMax = m_vecCachedBoundingBox[1];
 
     // Get bounding box axes
-    CMatrix gtaMatrix;
+    RwMatrix gtaMatrix;
     GetMatrix ( gtaMatrix );
 
-    const CVector* vecBoxAxes[3] = { &gtaMatrix.vRight, &gtaMatrix.vFront, &gtaMatrix.vUp };
+    const CVector* vecBoxAxes[3] = { &gtaMatrix.right, &gtaMatrix.at, &gtaMatrix.up };
 
     return GetBoxDistanceSq ( vecPosition, GetStreamPosition (), &vecMin.fX, &vecMax.fX, vecBoxAxes );
 }

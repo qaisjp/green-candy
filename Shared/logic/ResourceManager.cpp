@@ -91,10 +91,33 @@ Resource* ResourceManager::Get( const char *name )
     return *res;
 }
 
+Resource* ResourceManager::Get( unsigned short id )
+{
+    resourceList_t::iterator iter = m_resources.begin();
+
+    for ( ; iter != m_resources.end(); iter++ )
+    {
+        if ( (*iter)->GetID() == id )
+            return *iter;
+    }
+
+    return NULL;
+}
+
 void ResourceManager::Remove( Resource *res )
 {
     m_resources.remove( res );
     MapRemove( m_resByName, res->GetName() );
+}
+
+void ResourceManager::Remove( unsigned short id )
+{
+    Resource *res = Get( id );
+
+    if ( !res )
+        return;
+
+    Remove( res );
 }
 
 bool ResourceManager::Exists( Resource *res ) const

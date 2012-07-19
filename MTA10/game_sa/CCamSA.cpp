@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CCamSA.cpp
 *  PURPOSE:     Camera entity
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Jax <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -14,28 +15,30 @@
 
 #include "StdInc.h"
 
-CEntity* CCamSA::GetTargetEntity ( void ) const
+CEntity* CCamSA::GetTargetEntity() const
 {
-    CEntitySAInterface * pInterface = m_pInterface->CamTargetEntity;
-    CPoolsSA* pPools = (CPoolsSA *)pGame->GetPools();
+    CPoolsSA* pPools = (CPoolsSA*)pGame->GetPools();
     CEntity* pReturn = NULL;
 
-    if ( pPools && pInterface )
+    switch( m_pInterface->CamTargetEntity->m_type )
     {
-        switch ( pInterface->nType )
-        {
-            case ENTITY_TYPE_PED:
-                pReturn = (CEntity*)(pPools->GetPed((DWORD *)pInterface));
-                break;
-            case ENTITY_TYPE_VEHICLE:
-                pReturn = (CEntity*)(pPools->GetVehicle((DWORD *)pInterface));
-                break;
-            case ENTITY_TYPE_OBJECT:
-                pReturn = (CEntity*)(pPools->GetObject ((DWORD *)pInterface));
-                break;
-            default:
-                break;
-        }
+    case ENTITY_TYPE_PED:
+        return pPools->GetPed( m_pInterface->CamTargetEntity );
+    case ENTITY_TYPE_VEHICLE:
+        return pPools->GetVehicle( m_pInterface->CamTargetEntity );
+    case ENTITY_TYPE_OBJECT:
+        return pPools->GetObject( m_pInterface->CamTargetEntity );
     }
-    return pReturn;
+
+    return NULL;
+}
+
+void CCamSA::SetVehicleInterpolationSource( CVehicleSA *veh )
+{
+    m_pInterface->m_pLastCarEntered = veh->GetInterface();
+}
+
+void CCamSA::SetPedInterpolationSource( CPedSA *ped )
+{
+    m_pInterface->m_pLastPedLookedAt = ped->GetInterface();
 }

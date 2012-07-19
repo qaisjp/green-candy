@@ -205,7 +205,7 @@ void            RaiseFatalError             ( unsigned int uiCode );
 void            RaiseProtocolError          ( unsigned int uiCode );
 
 void            RotateVector                ( CVector& vecLine, const CVector& vecRotation );
-void            AttachedMatrix              ( CMatrix & matrix, CMatrix & returnMatrix, CVector vecDirection, CVector vecRotation );
+void            AttachedMatrix              ( const RwMatrix& matrix, RwMatrix& returnMatrix, CVector vecDirection, CVector vecRotation );
 
 unsigned int    GetRandom                   ( unsigned int uiLow, unsigned int uiHigh );
 double          GetRandomDouble             ( void );

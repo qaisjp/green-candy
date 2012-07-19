@@ -19,40 +19,40 @@ class CClientMarker;
 class CClientCorona : public CClientMarkerCommon
 {
 public:
-                                    CClientCorona                       ( CClientMarker * pThis );
-                                    ~CClientCorona                      ( void );
+                                    CClientCorona( CClientMarker * pThis );
+                                    ~CClientCorona();
 
-    inline unsigned int             GetMarkerType                       ( void ) const                      { return CClientMarkerCommon::CLASS_CORONA; }
+    inline unsigned int             GetMarkerType() const                           { return CClientMarkerCommon::CLASS_CORONA; }
 
-    bool                            IsHit                               ( const CVector& vecPosition ) const;
+    bool                            IsHit( const CVector& vecPosition ) const;
 
-    inline void                     GetPosition                         ( CVector& vecPosition ) const      { vecPosition = m_Matrix.vPos; }
-    inline void                     SetPosition                         ( const CVector& vecPosition )      { m_Matrix.vPos = vecPosition; }
+    inline void                     GetPosition( CVector& vecPosition ) const       { vecPosition = m_Matrix.pos; }
+    inline void                     SetPosition( const CVector& vecPosition )       { m_Matrix.pos = vecPosition; }
 
-    inline void                     GetMatrix                           ( CMatrix & mat )                   { mat = m_Matrix; }
-    inline void                     SetMatrix                           ( CMatrix & mat )                   { m_Matrix = mat; }
+    inline void                     GetMatrix( RwMatrix& mat )                      { mat = m_Matrix; }
+    inline void                     SetMatrix( const RwMatrix& mat )                { m_Matrix = mat; }
 
-    inline bool                     IsVisible                           ( void ) const                      { return m_bVisible; };
-    inline void                     SetVisible                          ( bool bVisible )                   { m_bVisible = bVisible; };
+    inline bool                     IsVisible() const                               { return m_bVisible; };
+    inline void                     SetVisible( bool bVisible )                     { m_bVisible = bVisible; };
 
-    inline SColor                   GetColor                            ( void ) const                      { return m_Color; }
-    inline void                     SetColor                            ( const SColor color )              { m_Color = color; }
+    inline SColor                   GetColor() const                                { return m_Color; }
+    inline void                     SetColor( const SColor color )                  { m_Color = color; }
 
-    inline float                    GetSize                             ( void ) const                      { return m_fSize; };
-    inline void                     SetSize                             ( float fSize )                     { m_fSize = fSize; };
+    inline float                    GetSize() const                                 { return m_fSize; };
+    inline void                     SetSize( float fSize )                          { m_fSize = fSize; };
 
 protected:
-    bool                            IsStreamedIn                        ( void )                            { return m_bStreamedIn; };
-    void                            StreamIn                            ( void );
-    void                            StreamOut                           ( void );
+    bool                            IsStreamedIn()                                  { return m_bStreamedIn; };
+    void                            StreamIn();
+    void                            StreamOut();
 
-    void                            DoPulse                             ( void );
+    void                            DoPulse();
 
 private:
     CClientMarker *                 m_pThis;
     bool                            m_bStreamedIn;
     unsigned long                   m_ulIdentifier;
-    CMatrix                         m_Matrix;
+    RwMatrix                        m_Matrix;
     bool                            m_bVisible;
     float                           m_fSize;
     SColor                          m_Color;

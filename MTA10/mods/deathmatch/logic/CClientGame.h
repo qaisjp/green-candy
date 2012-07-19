@@ -216,7 +216,7 @@ public:
     inline CLuaManager*                 GetLuaManager                   ( void )        { return m_pLuaManager; }
     inline CScriptKeyBinds*             GetScriptKeyBinds               ( void )        { return m_pScriptKeyBinds; }
     inline CScriptDebugging*            GetScriptDebugging              ( void )        { return m_pScriptDebugging; }
-    inline CRegisteredCommands*         GetRegisteredCommands           ( void )        { return &m_RegisteredCommands; }
+    inline CRegisteredCommands*         GetRegisteredCommands           ( void )        { return m_RegisteredCommands; }
     inline CZoneNames*                  GetZoneNames                    ( void )        { return m_pZoneNames; };
     inline CNametags*                   GetNametags                     ( void )        { return m_pNametags; }
     inline CSyncDebug*                  GetSyncDebug                    ( void )        { return m_pSyncDebug; };
@@ -374,17 +374,17 @@ private:
 
     void                                DrawFPS                         ( void );
     
-    #ifdef MTA_DEBUG
+#ifdef MTA_DEBUG
     void                                DrawTasks                       ( CClientPlayer* pPlayer );
     void                                DrawPlayerDetails               ( CClientPlayer* pPlayer );
     void                                UpdateMimics                    ( void );
     void                                DoPaintballs                    ( void );
     void                                DrawWeaponsyncData              ( CClientPlayer* pPlayer );
-    #endif
+#endif
 
-    #ifdef MTA_WEPSYNCDBG
+#ifdef MTA_WEPSYNCDBG
     void                                DrawWeaponsyncData              ( CClientPlayer* pPlayer );
-    #endif
+#endif
 
 
     void                                DownloadFiles                   ( void );
@@ -486,6 +486,8 @@ private:
     bool                                m_bInitiallyFadedOut;
     bool                                m_bHudAreaNameDisabled;
 
+    std::string                         m_localServerPassword;
+
     // Revised facilities
     CVoiceRecorder*                     m_pVoiceRecorder;
 
@@ -496,10 +498,10 @@ private:
     CClientEntity*                      m_pRootEntity;
     CLuaManager*                        m_pLuaManager;
     CScriptDebugging*                   m_pScriptDebugging;
-    CRegisteredCommands                 m_RegisteredCommands;
+    CRegisteredCommands*                m_RegisteredCommands;
 
     // Map statuses
-    char                                m_szCurrentMapName [MAX_MAPNAME_LENGTH + 1];
+    char                                m_szCurrentMapName[MAX_MAPNAME_LENGTH + 1];
     SString                             m_strModRoot;
 
     CBlendedWeather*                    m_pBlendedWeather;
@@ -583,14 +585,15 @@ private:
 
     // Cache for speeding up collision processing
 public:
-    std::map < CClientEntity *, bool >                m_AllDisabledCollisions;
+    typedef std::map <CClientEntity *, bool> disabledColl_t; 
+    disabledColl_t                      m_AllDisabledCollisions;
 private:
 
-    #if defined (MTA_DEBUG) || defined (MTA_BETA)
+#if defined (MTA_DEBUG) || defined (MTA_BETA)
     bool                                m_bShowSyncingInfo;
-    #endif
+#endif
 
-    #ifdef MTA_DEBUG
+#ifdef MTA_DEBUG
     CClientPlayer*                      m_pShowPlayerTasks;
     CClientPlayer*                      m_pShowPlayer;
     std::list < CClientPlayer* >        m_Mimics;
@@ -602,7 +605,7 @@ private:
     CVector                             m_vecLastMimicRot;
     bool                                m_bDoPaintballs;
     bool                                m_bShowInterpolation;
-    #endif
+#endif
 
     // Debug class. Empty in release.
 public:

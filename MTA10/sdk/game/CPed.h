@@ -159,6 +159,8 @@ public:
     virtual void            SetStealthAiming( bool enable ) = 0;
     virtual bool            IsStealthAiming() = 0;
 
+    virtual void            SetAnimationProgress( const char *name, float progress ) = 0;
+
     virtual bool            AddProjectile( eWeaponType eWeapon, CVector vecOrigin, float fForce, CVector * target, CEntity * targetEntity ) = 0;
     virtual CWeapon*        GiveWeapon( eWeaponType weaponType, unsigned int uiAmmo ) = 0;
     virtual CWeapon*        GetWeapon( eWeaponSlot weaponSlot ) = 0;

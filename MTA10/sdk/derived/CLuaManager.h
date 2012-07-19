@@ -28,6 +28,7 @@ public:
 
 protected:
     CRegisteredCommands m_commands;
+    CScriptDebugging    m_debug;
 };
 
 #endif //_LUA_MANAGER_

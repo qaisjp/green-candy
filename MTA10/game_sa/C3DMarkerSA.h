@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/C3DMarkerSA.h
 *  PURPOSE:     Header file for 3D Marker entity class
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -55,37 +56,45 @@ public:
 class C3DMarkerSA : public C3DMarker
 {
 private:
-    C3DMarkerSAInterface        * internalInterface;
+    C3DMarkerSAInterface*           m_interface;
+
 public:
-    // constructor
-    C3DMarkerSA(C3DMarkerSAInterface * markerInterface) { internalInterface = markerInterface; };
+    C3DMarkerSA( C3DMarkerSAInterface *marker )     { m_interface = marker; };
 
-    C3DMarkerSAInterface    * GetInterface() { return internalInterface; }
+    C3DMarkerSAInterface*   GetInterface()          { return m_interface; }
 
-    void            GetMatrix       ( CMatrix * pMatrix );
-    void            SetMatrix       ( CMatrix * pMatrix );
-    void            SetPosition(CVector * vecPosition);
-    CVector         * GetPosition();
-    DWORD           GetType(); // need enum?
-    void            SetType(DWORD dwType); // doesn't work propperly (not virtualed)
-    BOOL            IsActive();
-    DWORD           GetIdentifier();
+    void            GetMatrix( RwMatrix& matrix );
+    void            SetMatrix( const RwMatrix& matrix );
+
+    void            SetPosition( const CVector& pos );
+    const CVector&  GetPosition();
+
+    unsigned int    GetType(); // need enum?
+    void            SetType( unsigned int type ); // doesn't work propperly (not virtualed)
+    bool            IsActive();
+    unsigned int    GetIdentifier();
+
     SColor          GetColor();
-    void            SetColor(const SColor color); // actually BGRA
-    void            SetPulsePeriod(WORD wPulsePeriod);
-    void            SetRotateRate(short RotateRate);
-    FLOAT           GetSize();
-    void            SetSize(FLOAT fSize);
-    FLOAT           GetBrightness();
-    void            SetBrightness(FLOAT fBrightness);
-    void            SetCameraRange(FLOAT fCameraRange);
-    void            SetPulseFraction(FLOAT fPulseFraction); // doesn't work propperly (not virtualed)
-    FLOAT           GetPulseFraction();
+    void            SetColor( const SColor color ); // actually BGRA
+
+    void            SetRotateRate( short rate );
+
+    void            SetPulsePeriod( unsigned short period);
+    void            SetPulseFraction( float fraction ); // doesn't work propperly (not virtualed)
+    float           GetPulseFraction();
+
+    float           GetSize();
+    void            SetSize( float size );
+
+    float           GetBrightness();
+    void            SetBrightness( float brightness );
+
+    void            SetCameraRange( float range );
+
     void            Disable();
     void            DeleteMarkerObject();
     void            Reset();
-    void            SetActive() { this->internalInterface->m_bIsUsed = true;};
-    RpClump *       GetRwObject() { return this->internalInterface->m_pRwObject; }
+    void            SetActive()                     { internalInterface->m_bIsUsed = true; };
 };
 
 #endif

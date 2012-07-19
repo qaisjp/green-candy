@@ -280,8 +280,6 @@ public:
     bool                            IsPlayer();
     CPadSAInterface*                GetJoypad();
 
-
-
     void                            OnFrame();
 
     // current weapon slot 1184 ( and +1816?)
@@ -297,7 +295,11 @@ public:
     int                             m_moveAnimGroup;            // 1236
     BYTE                            m_pad5[52];                 // 1240
     CPedIKSAInterface               m_pedIK;                    // 1292 (length 32 bytes)
-    int                             m_pad6[5];                  // 1324
+    int                             m_pad6[2];                  // 1324
+
+    unsigned char                   m_runState;                 // 1332
+
+    BYTE                            m_pad18[9];                 // 1333
 
     float                           m_health;                   // 1344
     int                             m_pad7;                     // 1348
@@ -325,7 +327,9 @@ public:
     BYTE                            m_fightStyleExtra;          // 1838
     BYTE                            m_pad15;                    // 1839
     CFireInterface*                 m_fire;                     // 1840
-    BYTE                            m_pad16[104];               // 1844
+    BYTE                            m_pad19[28];                // 1844
+    unsigned int                    m_footBloodDensity;         // 1872
+    BYTE                            m_pad16[72];                // 1876
     CEntitySAInterface*             m_target;                   // 1948
     BYTE                            m_pad17[36];                // 1952
 };
@@ -372,6 +376,8 @@ public:
 
     void                SetStealthAiming( bool enable );
     bool                IsStealthAiming();
+
+    void                SetAnimationProgress( const char *name, float progress );
 
     CWeapon*            GiveWeapon ( eWeaponType weaponType, unsigned int uiAmmo );
     CWeapon*            GetWeapon ( eWeaponSlot weaponSlot );

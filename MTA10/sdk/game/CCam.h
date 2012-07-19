@@ -15,16 +15,19 @@
 class CCam
 {
 public:
-    virtual CVector*        GetFront            () const = 0;
-    virtual CVector*        GetUp               () const = 0;
-    virtual CVector*        GetSource           () const = 0;
-    virtual CVector*        GetFixedModeSource  () const = 0;
-    virtual CVector*        GetFixedModeVector  () const = 0;
-    virtual CVector*        GetTargetHistoryPos () const = 0;
-    virtual unsigned int    GetMode             () const = 0;
-    virtual float           GetFOV              () const = 0;
-    virtual void            SetFOV              ( float fFOV ) = 0;
-    virtual CEntity*        GetTargetEntity     () const = 0;
+    virtual void            SetVehicleInterpolationSource( CVehicle *veh ) = 0;
+    virtual void            SetPedInterpolationSource( CPed *ped ) = 0;
+
+    virtual CVector*        GetFront() const = 0;
+    virtual CVector*        GetUp() const = 0;
+    virtual CVector*        GetSource() const = 0;
+    virtual CVector*        GetFixedModeSource() const = 0;
+    virtual CVector*        GetFixedModeVector() const = 0;
+    virtual CVector*        GetTargetHistoryPos() const = 0;
+    virtual unsigned int    GetMode() const = 0;
+    virtual float           GetFOV() const = 0;
+    virtual void            SetFOV( float fFOV ) = 0;
+    virtual CEntity*        GetTargetEntity() const = 0;
 };
 
 #endif

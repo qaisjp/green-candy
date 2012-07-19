@@ -467,6 +467,7 @@ void CFoo::Test ( const char* szString )
     }
 
 
+#if 0
     else if ( strnicmp ( szString, "veh", 3 ) == 0 )
     {
         int i = 600;
@@ -495,6 +496,7 @@ void CFoo::Test ( const char* szString )
 
         fclose ( p );
     }
+#endif
 
 
     else if ( strnicmp ( szString, "groups", 6 ) == 0 )

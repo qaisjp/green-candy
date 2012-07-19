@@ -13,10 +13,12 @@
 #ifndef _SCRIPT_DEBUGGING_
 #define _SCRIPT_DEBUGGING_
 
+class CLuaManager;
+
 class CScriptDebugging : public ScriptDebugging
 {
 public:
-                                CScriptDebugging();
+                                CScriptDebugging( CLuaManager& manager );
 
     bool                        SetLogfile( const char *path, unsigned int level );
 

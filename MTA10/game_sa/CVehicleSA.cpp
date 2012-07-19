@@ -1864,59 +1864,62 @@ void CVehicleSA::SetTaxiLightOn ( bool bLightOn )
     }
 }
 
-void GetMatrixForGravity ( const CVector& vecGravity, CMatrix& mat )
+void GetMatrixForGravity( const CVector& vecGravity, RwMatrix& mat )
 {
     // Calculates a basis where the z axis is the inverse of the gravity
-    if ( vecGravity.Length () > 0.0001f )
+    if ( vecGravity.Length() > 0.0001f )
     {
-        mat.vUp = -vecGravity;
-        mat.vUp.Normalize ();
-        if ( fabs(mat.vUp.fX) > 0.0001f || fabs(mat.vUp.fZ) > 0.0001f )
+        mat.up = -vecGravity;
+        mat.up.Normalize();
+
+        if ( fabs( mat.up.fX ) > 0.0001f || fabs( mat.up.fZ ) > 0.0001f )
         {
-            CVector y ( 0.0f, 1.0f, 0.0f );
-            mat.vFront = vecGravity;
-            mat.vFront.CrossProduct ( &y );
-            mat.vFront.CrossProduct ( &vecGravity );
-            mat.vFront.Normalize ();
+            CVector y( 0.0f, 1.0f, 0.0f );
+            mat.front = vecGravity;
+            mat.front.CrossProduct( &y );
+            mat.front.CrossProduct( &vecGravity );
+            mat.front.Normalize();
         }
         else
-        {
-            mat.vFront = CVector ( 0.0f, 0.0f, vecGravity.fY );
-        }
-        mat.vRight = mat.vFront;
-        mat.vRight.CrossProduct ( &mat.vUp );
+            mat.vFront = CVector( 0.0f, 0.0f, vecGravity.fY );
+
+        mat.right = mat.front;
+        mat.right.CrossProduct( &mat.up );
     }
     else
     {
         // No gravity, use default axes
-        mat.vRight = CVector ( 1.0f, 0.0f, 0.0f );
-        mat.vFront = CVector ( 0.0f, 1.0f, 0.0f );
-        mat.vUp    = CVector ( 0.0f, 0.0f, 1.0f );
+        mat.right = CVector ( 1.0f, 0.0f, 0.0f );
+        mat.front = CVector ( 0.0f, 1.0f, 0.0f );
+        mat.up    = CVector ( 0.0f, 0.0f, 1.0f );
     }
 }
 
 
-void CVehicleSA::SetGravity ( const CVector* pvecGravity )
+void CVehicleSA::SetGravity( const CVector* pvecGravity )
 {
-    if ( pGame->GetPools ()->GetPedFromRef ( 1 )->GetVehicle () == this )
+    if ( pGame->GetPlayerInfo()->GetPlayerPed()->GetVehicle() == this )
     {
         // If this is the local player's vehicle, adjust the camera's position history.
         // This is to keep the automatic camera settling (which happens when driving while not moving the mouse)
         // nice and consistent while the gravity changes.
-        CCam* pCam = pGame->GetCamera ()->GetCam ( pGame->GetCamera ()->GetActiveCam () );
+        CCamSA *pCam = pGame->GetCamera()->GetCam( pGame->GetCamera()->GetActiveCam() );
 
-        CMatrix matOld, matNew;
-        GetMatrixForGravity ( m_vecGravity, matOld );
-        GetMatrixForGravity ( *pvecGravity, matNew );
+        RwMatrix matOld, matNew;
+        GetMatrixForGravity( m_vecGravity, matOld );
+        GetMatrixForGravity( *pvecGravity, matNew );
+
+        if ( !m_pInterface->m_matrix )
+            m_pInterface->AllocateMatrix();
         
-        CVector* pvecPosition = &m_pInterface->Placeable.matrix->vPos;
+        CVector *pos = &m_pInterface->m_matrix->pos;
 
-        matOld.Invert ();
-        pCam->GetTargetHistoryPos () [ 0 ] = matOld * (pCam->GetTargetHistoryPos () [ 0 ] - *pvecPosition);
-        pCam->GetTargetHistoryPos () [ 0 ] = matNew * pCam->GetTargetHistoryPos () [ 0 ] + *pvecPosition;
+        matOld.Invert();
+        pCam->GetTargetHistoryPos()[0] = matOld * (pCam->GetTargetHistoryPos()[0] - *pos);
+        pCam->GetTargetHistoryPos()[0] = matNew * pCam->GetTargetHistoryPos()[0] + *pos;
 
-        pCam->GetTargetHistoryPos () [ 1 ] = matOld * (pCam->GetTargetHistoryPos () [ 1 ] - *pvecPosition);
-        pCam->GetTargetHistoryPos () [ 1 ] = matNew * pCam->GetTargetHistoryPos () [ 1 ] + *pvecPosition;
+        pCam->GetTargetHistoryPos()[1] = matOld * (pCam->GetTargetHistoryPos()[1] - *pos);
+        pCam->GetTargetHistoryPos()[1] = matNew * pCam->GetTargetHistoryPos()[1] + *pos;
     }
 
     m_vecGravity = *pvecGravity;

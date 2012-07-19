@@ -38,57 +38,58 @@ public:
         ICON_FINISH,
     };
 
-                                    CClientCheckpoint               ( CClientMarker * pThis );
-                                    ~CClientCheckpoint              ( void );
+                                    CClientCheckpoint( CClientMarker * pThis );
+                                    ~CClientCheckpoint();
 
-    inline unsigned int             GetMarkerType                   ( void ) const                      { return CClientMarkerCommon::CLASS_CHECKPOINT; };
+    inline unsigned int             GetMarkerType() const                                   { return CClientMarkerCommon::CLASS_CHECKPOINT; };
 
-    unsigned long                   GetCheckpointType               ( void ) const;
-    void                            SetCheckpointType               ( unsigned long ulType );
+    unsigned long                   GetCheckpointType() const;
+    void                            SetCheckpointType( unsigned long ulType );
 
-    bool                            IsHit                           ( const CVector& vecPosition ) const;
+    bool                            IsHit( const CVector& vecPosition ) const;
     
-    inline void                     GetPosition                     ( CVector& vecPosition ) const      { vecPosition = m_Matrix.vPos; };
-    void                            SetPosition                     ( const CVector& vecPosition );
-    void                            SetDirection                    ( const CVector& vecDirection );
-    void                            SetNextPosition                 ( const CVector& vecPosition );
+    inline void                     GetPosition( CVector& vecPosition ) const               { vecPosition = m_Matrix.pos; };
+    void                            SetPosition( const CVector& vecPosition );
+    void                            SetDirection( const CVector& vecDirection );
+    void                            SetNextPosition( const CVector& vecPosition );
 
-    void                            GetMatrix                       ( CMatrix & mat );
-    void                            SetMatrix                       ( CMatrix & mat );
+    void                            GetMatrix( RwMatrix& mat );
+    void                            SetMatrix( const RwMatrix& mat );
 
-    inline bool                     IsVisible                       ( void ) const                      { return m_bVisible; }
-    void                            SetVisible                      ( bool bVisible );
+    inline bool                     IsVisible() const                                       { return m_bVisible; }
+    void                            SetVisible( bool bVisible );
 
-    inline unsigned int             GetIcon                         ( void ) const                      { return m_uiIcon; }
-    void                            SetIcon                         ( unsigned int uiIcon );
+    inline unsigned int             GetIcon() const                                         { return m_uiIcon; }
+    void                            SetIcon( unsigned int uiIcon );
     
-    inline SColor                   GetColor                        ( void ) const                      { return m_Color; }
-    void                            SetColor                        ( const SColor color );
+    inline SColor                   GetColor() const                                        { return m_Color; }
+    void                            SetColor( const SColor color );
 
-    inline float                    GetSize                         ( void ) const                      { return m_fSize; };
-    void                            SetSize                         ( float fSize );
+    inline float                    GetSize() const                                         { return m_fSize; };
+    void                            SetSize( float fSize );
 
-    inline bool                     HasTarget                       ( void )                            { return m_bHasTarget; }
-    inline void                     SetHasTarget                    ( bool bHasTarget )                 { m_bHasTarget = bHasTarget; }
-    inline void                     GetTarget                       ( CVector& vecTarget )              { vecTarget = m_vecTarget; }
-    inline void                     SetTarget                       ( const CVector& vecTarget )        { m_vecTarget = vecTarget; }
+    inline bool                     HasTarget()                                             { return m_bHasTarget; }
+    inline void                     SetHasTarget( bool bHasTarget )                         { m_bHasTarget = bHasTarget; }
+    inline void                     GetTarget( CVector& vecTarget )                         { vecTarget = m_vecTarget; }
+    inline void                     SetTarget( const CVector& vecTarget )                   { m_vecTarget = vecTarget; }
 
-    static unsigned char            StringToIcon                    ( const char* szString );
-    static bool                     IconToString                    ( unsigned char ucIcon, char* szString );
-    void                            ReCreateWithSameIdentifier      ( void );
+    static unsigned char            StringToIcon( const char* szString );
+    static bool                     IconToString( unsigned char ucIcon, char* szString );
+    void                            ReCreateWithSameIdentifier();
+
 protected:
-    bool                            IsStreamedIn                    ( void )                            { return m_bStreamedIn; };
-    void                            StreamIn                        ( void );
-    void                            StreamOut                       ( void );
+    bool                            IsStreamedIn()                                          { return m_bStreamedIn; };
+    void                            StreamIn();
+    void                            StreamOut();
 
 private:
-    void                            Create                          ( unsigned long ulIdentifier = 0 );
-    void                            Destroy                         ( void );
-    void                            ReCreate                        ( void );
+    void                            Create( unsigned long ulIdentifier = 0 );
+    void                            Destroy();
+    void                            ReCreate();
 
-    CClientMarker *                 m_pThis;
+    CClientMarker*                  m_pThis;
     bool                            m_bStreamedIn;
-    CMatrix                         m_Matrix;
+    RwMatrix                        m_Matrix;
     CVector                         m_vecDirection;
     CVector                         m_vecTargetPosition;
     bool                            m_bVisible;

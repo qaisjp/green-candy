@@ -1,10 +1,11 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CLocalServer.cpp
 *  PURPOSE:     Local server setup GUI
 *  DEVELOPERS:  Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *               
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,6 +14,7 @@
 #include "StdInc.h"
 
 using std::list;
+using namespace LocalServer;
 
 extern CCoreInterface* g_pCore;
 extern CClientGame* g_pClientGame;
@@ -20,10 +22,10 @@ extern CClientGame* g_pClientGame;
 // SResInfo - Item in list of potential resources - Used in GetResourceNameList()
 struct SResInfo
 {
-    SString strAbsPath;
-    SString strName;
-    bool bIsDir;
-    bool bPathIssue;
+    filePath absPath;
+    filePath name;
+    bool isDir;
+    bool pathIssue;
 };
 
 
@@ -183,12 +185,14 @@ bool CLocalServer::OnCancelButtonClick ( CGUIElement *pElement )
     return true;
 }
 
-bool CLocalServer::Load ( void )
+bool CLocalServer::Load()
 {
-    // Get server module root
-    SString strServerPath = CalcMTASAPath( PathJoin ( "server", "mods", "deathmatch" ) );
+    filePath path;
+    g_pCore->GetServer()->GetFileRoot().GetFullPathFromRoot( "server/mods/deathmatch/", false, path );
 
-    m_pConfig = g_pCore->GetXML ()->CreateXML ( PathJoin ( strServerPath, m_strConfig ) );
+    path += m_strConfig;
+
+    m_pConfig = g_pCore->GetXML()->CreateXML( path.c_str() );
     if ( m_pConfig && m_pConfig->Parse() )
     {
         CXMLNode* pRoot = m_pConfig->GetRootNode();
@@ -216,12 +220,12 @@ bool CLocalServer::Load ( void )
     }
 
     // Get list of resource names
-    std::vector < SString > resourceNameList;
-    GetResourceNameList ( resourceNameList, strServerPath );
+    resNameList_t resourceNameList;
+    GetResourceNameList( resourceNameList, path );
 
     // Put resource names into the GUI
-    for ( std::vector < SString >::iterator iter = resourceNameList.begin () ; iter != resourceNameList.end () ; ++iter )
-        HandleResource ( *iter );
+    for ( resNameList_t::iterator iter = resourceNameList.begin(); iter != resourceNameList.end(); iter++ )
+        HandleResource( (*iter).c_str() );
 
     return true;
 }
@@ -230,112 +234,136 @@ bool CLocalServer::Load ( void )
 //
 // Scan resource directories
 //
-void CLocalServer::GetResourceNameList ( std::vector < SString >& outResourceNameList, const SString& strModPath )
+typedef std::map <filePath, SResInfo> resInfo_t;
+
+struct _resscan
 {
-    // Make list of potential active resources
-    std::map < SString, SResInfo > resInfoMap;
+    const CFileTranslator *resRoot;
+    resInfo_t map;
+    size_t rootLen;
+};
 
-    // Initial search dir
-    std::vector < SString > resourcesPathList;
-    resourcesPathList.push_back ( "resources" );
+static inline bool resname_legal( const filePath& name )
+{
+    size_t n;
 
-    //SString strModPath = g_pServerInterface->GetModManager ()->GetModPath ();
-    for ( uint i = 0 ; i < resourcesPathList.size () ; i++ )
+    for ( n = 0; n < name.size(); n++ )
     {
-        // Enumerate all files and directories
-        SString strResourcesRelPath = resourcesPathList[i];
-        SString strResourcesAbsPath = PathJoin ( strModPath, strResourcesRelPath, "/" );
-        std::vector < SString > itemList = FindFiles ( strResourcesAbsPath, true, true );
-
-        // Check each item
-        for ( uint i = 0 ; i < itemList.size () ; i++ )
+        switch( name[n] )
         {
-            SString strName = itemList[i];
-
-            // Ignore items that start with a dot
-            if ( strName[0] == '.' )
-                continue;
-
-            bool bIsDir = DirectoryExists ( PathJoin ( strResourcesAbsPath, strName ) );
-
-            // Recurse into [directories]
-            if ( bIsDir && ( strName.BeginsWith( "#" ) || ( strName.BeginsWith( "[" ) && strName.EndsWith( "]" ) ) ) )
-            {
-                resourcesPathList.push_back ( PathJoin ( strResourcesRelPath, strName ) );
-                continue;
-            }
-
-            // Extract file extention
-            SString strExt;
-            if ( !bIsDir )
-                ExtractExtention ( strName, &strName, &strExt );
-
-            // Ignore files that are not .zip
-            if ( !bIsDir && strExt != "zip" )
-                continue;
-
-            // Ignore items that have dot or space in the name
-            if ( strName.Contains ( "." ) || strName.Contains ( " " ) )
-            {
-                CLogger::LogPrintf ( "WARNING: Not loading resource '%s' as it contains illegal characters\n", *strName );
-                continue;
-            }
-
-            // Ignore dir items with no meta.xml (assume it's the result of saved files from a zipped resource)
-            if ( bIsDir && !FileExists ( PathJoin ( strResourcesAbsPath, strName, "meta.xml" ) ) )
-                continue;
-
-            // Add potential resource to list
-            SResInfo newInfo;
-            newInfo.strAbsPath = strResourcesAbsPath;
-            newInfo.strName = strName;
-            newInfo.bIsDir = bIsDir;
-            newInfo.bPathIssue = false;
-
-            // Check for duplicate
-            if ( SResInfo* pDup = MapFind ( resInfoMap, strName ) )
-            {
-                // Is path the same?
-                if ( newInfo.strAbsPath == pDup->strAbsPath )
-                {
-                    if ( newInfo.bIsDir )
-                    {
-                        // If non-zipped item, replace already existing zipped item on the same path
-                        assert ( !pDup->bIsDir );
-                        *pDup = newInfo;
-                    }
-                }
-                else
-                {
-                    // Don't load resource if there are duplicates on different paths
-                    pDup->bPathIssue = true;
-                }
-            }
-            else
-            {
-                // No duplicate found
-                MapSet ( resInfoMap, strName, newInfo );
-            }
+        case ' ':
+        case '.':
+            return false;
         }
     }
 
+    return true;
+}
+
+static void _resscan_file( const filePath& path, void *ud )
+{
+    if ( path[0] == '.' )
+        return;
+
+    struct _resscan& scan = *(struct _resscan*)ud;
+    filePath name = path.substr( scan.rootLen, path.size() - 4 );
+
+    if ( !resname_legal( name ) )
+        return;
+
+    filePath absPath = filePath( path );
+    absPath.resize( path.size() - name.size() - 4 );
+
+    if ( SResInfo *dup = MapFind( scan.map, name ) )
+    {
+        if ( dup->absPath != absPath )
+            dup->pathIssue = true;
+
+        return;
+    }
+
+    SResInfo info;
+    info.name = name;
+    info.absPath = absPath;
+    info.isDir = false;
+    info.pathIssue = false;
+    MapSet( scan.map, name, info );
+}
+
+static void _resscan_dir( const filePath& path, void *ud )
+{
+    struct _resscan& scan = *(struct _resscan*)ud;
+    const char c = path[0];
+
+    if ( c == '.' )
+        return;
+
+    if ( c == '#' || c == '[' && *path.rbegin() == ']' )
+    {
+        // Optimization for our scan
+        size_t rl = scan.rootLen;
+        scan.rootLen = path.size();
+
+        scan.resRoot->ScanDirectory( path.c_str(), "*.zip", false, _resscan_dir, _resscan_file, ud );
+
+        scan.rootLen = rl;
+        return;
+    }
+
+    filePath name = filePath( path ).substr( scan.rootLen, path.size() - 1 );
+
+    if ( !resname_legal( name ) )
+        return;
+
+    filePath metaPath = path;
+    metaPath += "meta.xml";
+
+    if ( !scan.resRoot->Exists( metaPath.c_str() ) )
+        return;
+
+    if ( SResInfo *dup = SharedUtil::MapFind( scan.map, name ) )
+    {
+        if ( dup->absPath == path )
+            dup->isDir = true;
+        else
+            dup->pathIssue = true;
+
+        return;
+    }
+
+    SResInfo info;
+    info.name = name;
+    info.absPath = path;
+    info.isDir = true;
+    info.pathIssue = false;
+    SharedUtil::MapSet( scan.map, name, info );
+}
+
+void CLocalServer::GetResourceNameList( resNameList_t& outResourceNameList, const SString& strModPath )
+{
+    // Make list of potential active resources
+    _resscan scan;
+    scan.resRoot = &g_pCore->GetServer()->GetFileRoot();
+    scan.rootLen = strModPath.size();
+
+    scan.resRoot->ScanDirectory( strModPath, "*.zip", false, _resscan_dir, _resscan_file, &scan );
+
     // Print important errors
-    for ( std::map < SString, SResInfo >::const_iterator iter = resInfoMap.begin () ; iter != resInfoMap.end () ; ++iter )
+    for ( resInfo_t::const_iterator iter = scan.map.begin(); iter != scan.map.end(); iter++ )
     {
         const SResInfo& info = iter->second;
-        if ( info.bPathIssue )
+
+        if ( info.pathIssue )
         {
-            CLogger::ErrorPrintf ( "Not processing resource '%s' as it has duplicates on different paths\n", *info.strName );
+            CLogger::ErrorPrintf( "Not processing resource '%s' as it has duplicates on different paths\n", info.name.c_str() );
+            continue;
         }
-        else
-        {
-            outResourceNameList.push_back ( info.strName );
-        }
+
+        outResourceNameList.push_back( info.name );
     }
 }
 
-
-bool CLocalServer::Save ( void )
+bool CLocalServer::Save()
 {
     if ( m_pConfig && m_pConfig->GetRootNode() )
     {
@@ -387,7 +415,7 @@ void CLocalServer::StoreConfigValue ( const char* szNode, const char* szValue )
     }
 }
 
-void CLocalServer::HandleResource ( const char* szResource )
+void CLocalServer::HandleResource( const char *szResource )
 {
     for ( int i = 0; i < m_pResourcesCur->GetRowCount(); i++ )
     {

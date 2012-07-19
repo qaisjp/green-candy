@@ -708,7 +708,7 @@ void CVehicleModelInfoSAInterface::Setup()
                  seat->m_offset = (CVector)hier->m_modelling.pos;
 
                  // Calculate the quat for rotation
-                 new (&seat->m_quat) CQuat((CMatrix*)&hier->m_modelling);
+                 new (&seat->m_quat) CQuat( hier->m_modelling );
 
                  seat->m_id = hier->m_hierarchyId;
             }

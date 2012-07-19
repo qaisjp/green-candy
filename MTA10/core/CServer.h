@@ -31,6 +31,8 @@ public:
 
     int                         GetLastError()                          { return m_lastError; };
 
+    const CFileTranslator&      GetFileRoot() const                     { return *m_serverRoot; };
+
     bool                        Send( const char *cmd );
 
 private:

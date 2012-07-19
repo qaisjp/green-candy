@@ -21,6 +21,7 @@
 class CClientEntity;
 class CClientManager;
 class CClientPlayer;
+class CClientVehicle;
 class CClientPlayerManager;
 
 enum eClientCameraAttachMode
@@ -34,55 +35,58 @@ class CClientCamera : public CClientEntity
     friend class CClientManager;
 
 public:
-    inline void                 Unlink                      ( void )                        { };
-    void                        DoPulse                     ( void );
+    inline void                 Unlink()                                        { };
 
-    inline eClientEntityType    GetType                     ( void ) const                  { return CCLIENTCAMERA; };
+    void                        DoPulse();
 
-    bool                        GetMatrix                   ( CMatrix& Matrix ) const;
-    void                        GetPosition                 ( CVector& vecPosition ) const;
-    void                        GetRotation                 ( CVector& vecRotation ) const;
-    void                        SetPosition                 ( const CVector& vecPosition );
-    void                        SetRotation                 ( const CVector& vecRotation );
-    void                        GetTarget                   ( CVector& vecTarget ) const;
-    void                        SetTarget                   ( const CVector& vecPosition );
-    float                       GetRoll                     ()                              { return m_fRoll; }
-    void                        SetRoll                     ( float fRoll )                 { m_fRoll = fRoll; }
-    float                       GetFOV                      ()                              { return m_fFOV; }
-    void                        SetFOV                      ( float fFOV )                  { m_fFOV = fFOV; }
+    inline eClientEntityType    GetType() const                                 { return CCLIENTCAMERA; };
 
-    void                        FadeIn                      ( float fTime );
-    void                        FadeOut                     ( float fTime, unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue );
+    bool                        GetMatrix( RwMatrix& mat ) const;
+    void                        GetPosition( CVector& pos ) const;
+    void                        GetRotation( CVector& rot ) const;
+    void                        SetPosition( const CVector& pos );
+    void                        SetRotation( const CVector& rot );
+    void                        GetTarget( CVector& target ) const;
+    void                        SetTarget( const CVector& pos );
+    float                       GetRoll()                                       { return m_fRoll; }
+    void                        SetRoll( float roll )                           { m_fRoll = roll; }
+    float                       GetFOV()                                        { return m_fFOV; }
+    void                        SetFOV( float fov )                             { m_fFOV = fov; }
 
-    inline CClientPlayer*       GetFocusedPlayer            ( void )                        { return m_pFocusedPlayer; };
-    void                        SetFocus                    ( CClientEntity* pEntity, eCamMode eMode, bool bSmoothTransition = false );
-    void                        SetFocus                    ( CClientPlayer* pPlayer, eCamMode eMode, bool bSmoothTransition = false );
-    void                        SetFocus                    ( CVector * vecTarget, bool bSmoothTransition );
-    void                        SetFocusToLocalPlayer       ( void );
+    void                        FadeIn( float time );
+    void                        FadeOut( float time, unsigned char red, unsigned char green, unsigned char blue );
 
-    void                        SetCameraViewMode               ( eVehicleCamMode eMode );
-    eVehicleCamMode             GetCameraViewMode               ( void );
-    void                        SetCameraClip               ( bool bObjects, bool bVehicles );
+    inline CClientPlayer*       GetFocusedPlayer()                              { return m_pFocusedPlayer; };
+    void                        SetFocus( CClientEntity *entity, eCamMode mode, bool smoothTransition = false );
+    void                        SetFocus( CClientPlayer *player, eCamMode mode, bool smoothTransition = false );
+    void                        SetFocus( CVector& vecTarget, bool bSmoothTransition );
+    void                        SetFocusToLocalPlayer();
 
-    inline bool                 IsInFixedMode               ( void )                        { return m_bFixed; }
+    void                        SetCameraViewMode( eVehicleCamMode mode );
+    eVehicleCamMode             GetCameraViewMode();
+    void                        SetCameraClip( bool objects, bool vehicles );
 
-    void                        ToggleCameraFixedMode       ( bool bEnabled );
+    void                        SetVehicleInterpolationSource( CClientVehicle *veh );
 
-    CClientEntity *             GetTargetEntity             ( void );
+    inline bool                 IsInFixedMode()                                 { return m_bFixed; }
 
-    void                        UnreferencePlayer           ( CClientPlayer* pPlayer );
+    void                        ToggleCameraFixedMode( bool enabled );
+
+    CClientEntity*              GetTargetEntity();
+
+    void                        UnreferencePlayer( CClientPlayer *player );
 
 private:
-                                CClientCamera               ( CClientManager* pManager );
-                                ~CClientCamera              ( void );
+                                CClientCamera( CClientManager *manager );
+                                ~CClientCamera();
 
-    static bool                 ProcessFixedCamera          ( CCam* pCam );
+    static bool                 ProcessFixedCamera( CCam *cam );
 
-    void                        SetFocusToLocalPlayerImpl   ( void );
+    void                        SetFocusToLocalPlayerImpl();
 
-    void                        UnreferenceEntity           ( CClientEntity* pEntity );    
-    void                        InvalidateEntity            ( CClientEntity* pEntity );
-    void                        RestoreEntity               ( CClientEntity* pEntity );
+    void                        UnreferenceEntity( CClientEntity *entity );    
+    void                        InvalidateEntity( CClientEntity *entity );
+    void                        RestoreEntity( CClientEntity *entity );
 
     CClientPlayerManager*       m_pPlayerManager;
 

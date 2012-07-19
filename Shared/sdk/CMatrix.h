@@ -23,39 +23,39 @@ public:
     CMatrix ( )
     {
         // Load the identity matrix
-        vRight = CVector ( 1.0f, 0.0f, 0.0f );
-        vFront = CVector ( 0.0f, 1.0f, 0.0f );
-        vUp    = CVector ( 0.0f, 0.0f, 1.0f );
-        vPos   = CVector ( 0.0f, 0.0f, 0.0f );
+        right = CVector ( 1.0f, 0.0f, 0.0f );
+        at = CVector ( 0.0f, 1.0f, 0.0f );
+        up    = CVector ( 0.0f, 0.0f, 1.0f );
+        pos   = CVector ( 0.0f, 0.0f, 0.0f );
     }
 
     CMatrix operator+ ( const CMatrix& other ) const
     {
         CMatrix matResult;
-        matResult.vRight = vRight + other.vRight;
-        matResult.vFront = vFront + other.vFront;
-        matResult.vUp    = vUp    + other.vUp;
-        matResult.vPos   = vPos   + other.vPos;
+        matResult.right = right + other.right;
+        matResult.at = at + other.at;
+        matResult.up    = up    + other.up;
+        matResult.pos   = pos   + other.pos;
         return matResult;
     }
 
     CMatrix operator- ( const CMatrix& other ) const
     {
         CMatrix matResult;
-        matResult.vRight = vRight - other.vRight;
-        matResult.vFront = vFront - other.vFront;
-        matResult.vUp    = vUp    - other.vUp;
-        matResult.vPos   = vPos   - other.vPos;
+        matResult.right = right - other.right;
+        matResult.at = at - other.at;
+        matResult.up    = up    - other.up;
+        matResult.pos   = pos   - other.pos;
         return matResult;
     }
 
     CMatrix operator* ( const CMatrix& other ) const
     {
         CMatrix matResult;
-        matResult.vRight = (*this) * other.vRight;
-        matResult.vFront = (*this) * other.vFront;
-        matResult.vUp    = (*this) * other.vUp;
-        matResult.vPos   = (*this) * other.vPos;
+        matResult.right = (*this) * other.right;
+        matResult.at = (*this) * other.at;
+        matResult.up    = (*this) * other.up;
+        matResult.pos   = (*this) * other.pos;
         return matResult;
     }
 
@@ -68,26 +68,26 @@ public:
     CVector operator* ( const CVector& vec ) const
     {
         return CVector (
-            vRight.fX*vec.fX + vFront.fX*vec.fY + vUp.fX*vec.fZ,
-            vRight.fY*vec.fX + vFront.fY*vec.fY + vUp.fY*vec.fZ,
-            vRight.fZ*vec.fX + vFront.fZ*vec.fY + vUp.fZ*vec.fZ
+            right.fX*vec.fX + at.fX*vec.fY + up.fX*vec.fZ,
+            right.fY*vec.fX + at.fY*vec.fY + up.fY*vec.fZ,
+            right.fZ*vec.fX + at.fZ*vec.fY + up.fZ*vec.fZ
         );
     }
 
     void Invert ()
     {
         // Transpose the rotation matrix and negate the position
-        CVector vOldRight = vRight, vOldFront = vFront, vOldUp = vUp;
-        vRight = CVector ( vOldRight.fX, vOldFront.fX, vOldUp.fX );
-        vFront = CVector ( vOldRight.fY, vOldFront.fY, vOldUp.fY );
-        vUp    = CVector ( vOldRight.fZ, vOldFront.fZ, vOldUp.fZ );
-        vPos  *= -1.0f;
+        CVector vOldRight = right, vOldFront = at, vOldUp = up;
+        right = CVector ( vOldRight.fX, vOldFront.fX, vOldUp.fX );
+        at = CVector ( vOldRight.fY, vOldFront.fY, vOldUp.fY );
+        up    = CVector ( vOldRight.fZ, vOldFront.fZ, vOldUp.fZ );
+        pos  *= -1.0f;
     }
 
-    CVector vRight;
-    CVector vFront;
-    CVector vUp;
-    CVector vPos;
+    CVector right;
+    CVector at;
+    CVector up;
+    CVector pos;
 };
 
 #endif

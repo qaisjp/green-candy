@@ -26,7 +26,6 @@
 #include "CVector.h"
 #include "CSphere.h"
 #include "CBox.h"
-#include "CMatrix.h"
 #include "CQuat.h"
 #include <bochs_internal/crc32.h>
 #include "CChecksum.h"

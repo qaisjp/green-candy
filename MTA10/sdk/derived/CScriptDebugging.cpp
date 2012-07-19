@@ -12,7 +12,7 @@
 
 #include <StdInc.h>
 
-CScriptDebugging::CScriptDebugging() : ScriptDebugging( *g_pClientGame->GetLuaManager() )
+CScriptDebugging::CScriptDebugging( CLuaManager& debug ) : ScriptDebugging( debug )
 {
     m_triggerCall = false;
 }

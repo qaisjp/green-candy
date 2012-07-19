@@ -180,7 +180,7 @@ class CControlInterface
 {
 public:
     virtual bool                    GetControlState( eBindableControl control ) const = 0;
-}
+};
 
 class CKeyBindsInterface
 {

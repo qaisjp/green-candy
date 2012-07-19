@@ -20,11 +20,11 @@
 extern CClientGame      *g_pClientGame;
 extern CCoreInterface   *g_pCore;
 
-CResource::CResource( CLuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root, CClientEntity *entity, CClientEntity *dynamicEntity ) : Resource( main, id, name, root )
+CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& root, CClientEntity *entity, CClientEntity *dynamicEntity ) : Resource( *g_pClientGame->GetLuaManager()->Create( name.c_str(), root ), id, name, root )
 {
     m_luaManager = g_pClientGame->GetLuaManager();
     m_inDownQueue = false;
-    m_showingCursor = false;
+    m_showCursor = false;
 
     m_rootEntity = g_pClientGame->GetRootEntity();
     m_defaultGroup = new CElementGroup( this );
@@ -33,29 +33,25 @@ CResource::CResource( CLuaMain& main, unsigned short id, const filePath& name, C
     m_resourceEntity = entity;
     m_dynamicEntity = dynamicEntity;
 
-    // Create our root elements. We set theirs parents when we're loaded.
+    // Create our root elements. We set their parents when we're loaded.
     // Make them system entities so nothing but us can delete them.
-    m_pResourceGUIEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "guiroot" );
-    m_pResourceGUIEntity->MakeSystemEntity();
+    m_guiEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "guiroot" );
+    m_guiEntity->MakeSystemEntity();
 
-    m_pResourceCOLRoot = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "colmodelroot" );
-    m_pResourceCOLRoot->MakeSystemEntity();
+    m_colEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "colmodelroot" );
+    m_colEntity->MakeSystemEntity();
 
-    m_pResourceDFFEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot" );
-    m_pResourceDFFEntity->MakeSystemEntity();
+    m_dffEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot" );
+    m_dffEntity->MakeSystemEntity();
 
-    m_pResourceTXDRoot = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot" );
-    m_pResourceTXDRoot->MakeSystemEntity();
+    m_txdEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot" );
+    m_txdEntity->MakeSystemEntity();
 
     // Set up our private path
     filePath privPath;
     ResourceManager::resFileRoot->GetFullPath( CServerIdManager::GetSingleton()->GetConnectionPrivateDirectory() + name, false, privPath );
 
     m_privateRoot = g_pCore->GetFileSystem()->CreateTranslator( privPath.c_str() );
-
-    // Create our virtual machine
-    m_lua = m_luaManager->Create( name.c_str() );
-    m_lua->SetName( name.c_str() );
 }
 
 CResource::~CResource()
@@ -64,11 +60,12 @@ CResource::~CResource()
     ShowCursor( false );
 
     // Do this before we delete our elements.
-    m_pRootEntity->CleanUpForVM( m_lua, true );
-    m_luaManager->Remove( m_lua );
+    m_rootEntity->CleanUpForVM( (CLuaMain*)&m_lua, true );
+    
+    g_pClientGame->GetLuaManager()->Remove( &m_lua );
 
     // Remove all keybinds on this VM
-    g_pClientGame->GetScriptKeyBinds()->RemoveAllKeys( m_lua );
+    g_pClientGame->GetScriptKeyBinds()->RemoveAllKeys( (CLuaMain*)&m_lua );
     g_pCore->GetKeyBinds()->SetAllCommandsActive( m_name.c_str(), false );
 
     // Destroy all entities
@@ -94,63 +91,78 @@ CResource::~CResource()
 
     // Clean up memory!
     fileList_t::iterator iter = m_files.begin();
-    for ( ; iter != m_ResourceFiles.end(); iter++ )
+    for ( ; iter != m_files.end(); iter++ )
         delete *iter;
 
     configList_t::iterator iterc = m_configFiles.begin();
-    for ( ; iterc != m_ConfigFiles.end(); iterc++ )
+    for ( ; iterc != m_configFiles.end(); iterc++ )
         delete *iterc;
 
     exports_t::iterator iterex = m_exports.begin();
-    for ( ; iterex != m_exportedFunctions.end(); iterex++ )
+    for ( ; iterex != m_exports.end(); iterex++ )
         delete *iterex;
 }
 
 CDownloadableResource* CResource::QueueFile ( CDownloadableResource::eResourceType resourceType, const char *szFileName, CChecksum serverChecksum )
 {
-    // Create the resource file and add it to the list
-    SString strBuffer ( "%s\\resources\\%s\\%s", g_pClientGame->GetModRoot (), m_szResourceName, szFileName );
+    filePath path;
 
-    CResourceFile* pResourceFile = new CResourceFile ( resourceType, szFileName, strBuffer, serverChecksum );
-    if ( pResourceFile )
-    {
-        m_ResourceFiles.push_back ( pResourceFile );
-    }
+    if ( !m_fileRoot.GetFullPathFromRoot( szFileName, true, path ) )
+        return NULL;
 
-    return pResourceFile;
+    CResourceFile *info = new CResourceFile( resourceType, szFileName, path.c_str(), serverChecksum );
+
+    if ( !info )
+        return NULL;
+
+    m_files.push_back( info );
+    return info;
 }
 
-
-CDownloadableResource* CResource::AddConfigFile ( char *szFileName, CChecksum serverChecksum )
+CDownloadableResource* CResource::AddConfigFile ( const char *szFileName, CChecksum serverChecksum )
 {
-    // Create the config file and add it to the list
-    SString strBuffer ( "%s\\resources\\%s\\%s", g_pClientGame->GetModRoot (), m_szResourceName, szFileName );
+    filePath path;
     
-    CResourceConfigItem* pConfig = new CResourceConfigItem ( this, szFileName, strBuffer, serverChecksum );
-    if ( pConfig )
-    {
-        m_ConfigFiles.push_back ( pConfig );
-    }
+    if ( !m_fileRoot.GetFullPathFromRoot( szFileName, true, path ) )
+        return NULL;
+    
+    CResourceConfigItem *info = new CResourceConfigItem( this, szFileName, path.c_str(), serverChecksum );
 
-    return pConfig;
+    if ( !info )
+        return NULL;
+
+    m_configFiles.push_back( info );
+    return info;
 }
 
-void CResource::AddExportedFunction ( char *szFunctionName )
+void CResource::AddExportedFunction( const char *name )
 {
-    m_exportedFunctions.push_back(new CExportedFunction ( szFunctionName ) );
+    m_exports.push_back( new CExportedFunction( name ) );
 }
 
-bool CResource::CallExportedFunction ( const char * szFunctionName, CLuaArguments& args, CLuaArguments& returns, CResource& caller )
+bool CResource::CallExportedFunction( const char *name, const CLuaArguments& args, CLuaArguments& returns, CResource& caller )
 {
-    list < CExportedFunction* > ::iterator iter =  m_exportedFunctions.begin ();
-    for ( ; iter != m_exportedFunctions.end (); iter++ )
+    exports_t::iterator iter = m_exports.begin();
+    for ( ; iter != m_exports.end(); iter++ )
     {
-        if ( strcmp ( (*iter)->GetFunctionName(), szFunctionName ) == 0 )
+        if ( (*iter)->GetFunctionName() == name )
         {
-            if ( args.CallGlobal ( m_pLuaVM, szFunctionName, &returns ) )
+            lua_State *L = *m_lua;
+
+            lua_getfield( L, LUA_GLOBALSINDEX, name );
+
+            if ( lua_type( L, -1 ) == LUA_TNIL )
             {
-                return true;
+                lua_pop( L, 1 );
+                return false;
             }
+            
+            LuaArguments::argList_t::const_iterator iter = args.IterBegin();
+
+            for ( ; iter != args.IterEnd(); iter++ )
+                (*iter)->Push( L );
+
+            return m_lua.PCallStackResult( args.Count(), returns );
         }
     }
     return false;
@@ -227,7 +239,7 @@ static bool CheckFileForCorruption( std::string strPath )
 
 void CResource::Load( CClientEntity *root )
 {
-    m_pRootEntity = root;
+    m_rootEntity = root;
 
     // Set the GUI parent to the resource root entity
     m_colEntity->SetParent( root );
@@ -267,70 +279,61 @@ void CResource::Load( CClientEntity *root )
                 //UTF-8 BOM?  Compare by checking the standard UTF-8 BOM of 3 characters (in signed format, hence negative)
                 if ( size < 3 || buffer[0] != -0x11 || buffer[1] != -0x45 || buffer[2] != -0x41 ) 
                     //Maybe not UTF-8, if we have a >80% heuristic detection confidence, assume it is
-                    m_lua->LoadScriptFromBuffer( &buffer.at( 0 ), size, file->GetName(), GetUTF8Confidence( (unsigned char*)&buffer.at( 0 ), size ) >= 80 );
+                    m_lua.LoadScriptFromBuffer( &buffer.at( 0 ), size, file->GetName(), GetUTF8Confidence( (unsigned char*)&buffer.at( 0 ), size ) >= 80 );
                 else if ( size != 3 )  //If there's a BOM, but the script is not empty, load ignoring the first 3 bytes
-                    m_lua->LoadScriptFromBuffer( &buffer.at( 3 ), size - 3, file->GetName(), true );
+                    m_lua.LoadScriptFromBuffer( &buffer.at( 3 ), size - 3, file->GetName(), true );
             }
             else
             {
-                SString strBuffer ( "ERROR: File '%s' in resource '%s' - CRC mismatch.", pResourceFile->GetShortName (), m_szResourceName );
+                SString strBuffer ( "ERROR: File '%s' in resource '%s' - CRC mismatch.", file->GetShortName (), m_name.c_str() );
                 g_pCore->ChatEchoColor ( strBuffer, 255, 0, 0 );
             }
         }
-        else if ( CheckFileForCorruption ( pResourceFile->GetName () ) )
+        else if ( CheckFileForCorruption ( file->GetName () ) )
         {
-            SString strBuffer ( "WARNING: File '%s' in resource '%s' is invalid.", pResourceFile->GetShortName (), m_szResourceName );
+            SString strBuffer ( "WARNING: File '%s' in resource '%s' is invalid.", file->GetShortName (), m_name.c_str() );
             g_pCore->DebugEchoColor ( strBuffer, 255, 0, 0 );
         }
     }
 
     // Set active flag
-    m_bActive = true;
+    m_active = true;
 
-    // Did we get a resource root entity?
-    if ( m_pResourceEntity )
-    {
-        // Call the Lua "onClientResourceStart" event
-        CLuaArguments Arguments;
-        Arguments.PushUserData ( this );
-        m_pResourceEntity->CallEvent ( "onClientResourceStart", Arguments, true );
-    }
-    else
-        assert ( 0 );
+    // Call the Lua "onClientResourceStart" event
+    CLuaArguments args;
+    args.PushUserData( this );
+    m_resourceEntity->CallEvent( "onClientResourceStart", args, true );
 }
 
 
-void CResource::DeleteClientChildren ( void )
+void CResource::DeleteClientChildren()
 {
-    // Run this on our resource entity if we have one
-    if ( m_pResourceEntity )
-        m_pResourceEntity->DeleteClientChildren ();
+    m_resourceEntity->DeleteClientChildren();
 }
 
-
-void CResource::ShowCursor ( bool bShow, bool bToggleControls )
+void CResource::ShowCursor( bool bShow, bool bToggleControls )
 {
     // Different cursor showing state than earlier?
-    if ( bShow != m_bShowingCursor )
+    if ( bShow != m_showCursor )
     {
         // Going to show the cursor?
         if ( bShow )
         {
             // Increase the cursor ref count
-            m_iShowingCursor += 1;
+            m_refShowCursor++;
         }
         else
         {
 
             // Decrease the cursor ref count
-            m_iShowingCursor -= 1;
+            m_refShowCursor--;
         }
 
         // Update our showing cursor state
-        m_bShowingCursor = bShow;
+        m_showCursor = bShow;
 
         // Show cursor if more than 0 resources wanting the cursor on
-        g_pCore->ForceCursorVisible ( m_iShowingCursor > 0, bToggleControls );
-        g_pClientGame->SetCursorEventsEnabled ( m_iShowingCursor > 0 );
+        g_pCore->ForceCursorVisible ( m_refShowCursor != 0, bToggleControls );
+        g_pClientGame->SetCursorEventsEnabled ( m_refShowCursor != 0 );
     }
 }

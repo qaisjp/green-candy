@@ -25,49 +25,7 @@ void	Console_Init ()
 	m_numberOfLines=0;
 }
 
-static inline bool stradjust( const char*& msg, char delim )
-{
-    if ( *msg == 0 )
-        return false;
-
-    while ( *msg != delim )
-    {
-        if ( *msg == 0 )
-            return true;
-
-        msg++;
-    }
-
-    return true;
-}
-
-static inline bool strgettok( const char*& msg, char delim, std::string& out )
-{
-    const char *dpass = msg;
-
-    if ( !stradjust( msg, delim ) )
-        return false;
-
-    out = std::string( dpass, (size_t)( msg - dpass ) );
-
-    if ( *msg != 0 )
-        msg++;
-
-    return true;
-}
-
-static inline void strsplit( const char *msg, std::vector <std::string>& out )
-{
-    std::string item;
-
-    while ( strgettok( msg, ' ', item ) )
-    {
-        if ( item.size() == 0 )
-            continue;
-
-        out.push_back( item );
-    }
-}
+using namespace CommandlineTools;
 
 // Processes the console input
 bool	Console_ProcessInput( const char *input )

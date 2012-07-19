@@ -155,7 +155,7 @@ public:
     float       m_fCameraDistance;                                  // 530
     float       m_fIdealAlpha;                                      // 534
     float       m_fPlayerVelocity;                                  // 538
-    CVehicleSAInterface* m_pLastCarEntered;                         // 542, So interpolation works
+    CVehicleSAInterface*    m_pLastCarEntered;                      // 542, So interpolation works
     CPedSAInterface*        m_pLastPedLookedAt;                     // 546, So interpolation works 
     bool        m_bFirstPersonRunAboutActive;                       // 550
 };
@@ -166,21 +166,25 @@ private:
     CCamSAInterface*    m_pInterface;
 
 public:
-                        CCamSA                      ( CCamSAInterface* pInterface )     { m_pInterface = pInterface; }
-    CCamSAInterface*    GetInterface                ()              { return m_pInterface; }
+                        CCamSA( CCamSAInterface* pInterface )       { m_pInterface = pInterface; }
 
-    CVector*            GetFront                    () const        { return &m_pInterface->Front; }
-    CVector*            GetUp                       () const        { return &m_pInterface->Up; }
-    CVector*            GetSource                   () const        { return &m_pInterface->Source; }
-    unsigned int        GetMode                     () const        { return m_pInterface->Mode; }
-    float               GetFOV                      () const        { return m_pInterface->FOV; }
-    void                SetFOV                      ( float fFOV )  { m_pInterface->FOV = fFOV; }
+    CCamSAInterface*    GetInterface()                              { return m_pInterface; }
 
-    CVector*            GetFixedModeSource          () const        { return &m_pInterface->m_cvecCamFixedModeSource; }
-    CVector*            GetFixedModeVector          () const        { return &m_pInterface->m_cvecCamFixedModeVector; }
-    CVector*            GetTargetHistoryPos         () const        { return m_pInterface->m_aTargetHistoryPos; }
+    void                SetVehicleInterpolationSource( CVehicleSA *veh );
+    void                SetPedInterpolationSource( CPedSA *ped );
 
-    CEntity*            GetTargetEntity             () const;
+    CVector*            GetFront() const                            { return &m_pInterface->Front; }
+    CVector*            GetUp() const                               { return &m_pInterface->Up; }
+    CVector*            GetSource() const                           { return &m_pInterface->Source; }
+    unsigned int        GetMode() const                             { return m_pInterface->Mode; }
+    float               GetFOV() const                              { return m_pInterface->FOV; }
+    void                SetFOV( float fFOV )                        { m_pInterface->FOV = fFOV; }
+
+    CVector*            GetFixedModeSource() const                  { return &m_pInterface->m_cvecCamFixedModeSource; }
+    CVector*            GetFixedModeVector() const                  { return &m_pInterface->m_cvecCamFixedModeVector; }
+    CVector*            GetTargetHistoryPos() const                 { return m_pInterface->m_aTargetHistoryPos; }
+
+    CEntity*            GetTargetEntity() const;
 };
 
 #endif

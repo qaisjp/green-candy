@@ -63,23 +63,21 @@ CClientCivilian::~CClientCivilian( void )
     Unlink ();
 }
 
-
-void CClientCivilian::Unlink ( void )
+void CClientCivilian::Unlink()
 {
-    m_pCivilianManager->RemoveFromList ( this );
+    m_pCivilianManager->RemoveFromList( this );
 }
-
 
 int CClientCivilian::GetRotation()
 {
     int iRotation = 0;
     double dRotation;
 
-    CMatrix pMat;
-    m_pCivilianPed->GetMatrix ( pMat );
+    RwMatrix pMat;
+    m_pCivilianPed->GetMatrix( pMat );
 
-    float fX = pMat.vFront.fX;
-    float fY = pMat.vFront.fY;
+    float fX = pMat.at.fX;
+    float fY = pMat.at.fY;
     dRotation = acos ( fY );
 
     if (fX <= 0)
@@ -126,9 +124,8 @@ void CClientCivilian::SetRotation ( int iRotation )
     // Store the rotation vector
 //    m_vecRotation = CVector ( fX, 0, 0 );
 
-    CMatrix pMat;
+    RwMatrix pMat;
     m_pCivilianPed->GetMatrix ( pMat );
-
     m_pCivilianPed->SetMatrix ( pMat );
 }
 
@@ -143,14 +140,14 @@ float CClientCivilian::GetDistanceFromCentreOfMassToBaseOfModel ( void )
 }
 
 
-bool CClientCivilian::GetMatrix ( CMatrix& Matrix ) const
+bool CClientCivilian::GetMatrix( RwMatrix& Matrix ) const
 {
-    m_pCivilianPed->GetMatrix ( Matrix );
+    m_pCivilianPed->GetMatrix( Matrix );
     return true;
 }
 
 
-bool CClientCivilian::SetMatrix ( const CMatrix& Matrix )
+bool CClientCivilian::SetMatrix ( const RwMatrix& Matrix )
 {
     m_pCivilianPed->SetMatrix ( Matrix );
     return true;

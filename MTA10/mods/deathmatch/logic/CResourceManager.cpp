@@ -19,7 +19,7 @@
 
 CFileTranslator *resFileRoot;
 
-CResourceManager::CResourceManager()
+CResourceManager::CResourceManager() : ResourceManager( g_pClientGame->GetLuaManager()->GetVirtualMachine() )
 {
     filePath resRoot;
     modFileRoot->GetFullPath( "/resources/", false, resRoot );
@@ -31,10 +31,10 @@ CResourceManager::~CResourceManager()
 {
     while ( !m_resources.empty() )
     {
-        CResource *res = m_resources.back();
+        CResource *res = (CResource*)m_resources.back();
 
         CLuaArguments args;
-        Arguments.PushUserData( res );
+        args.PushUserData( res );
         res->GetResourceEntity()->CallEvent( "onClientResourceStop", args, true );
         delete res;
 
@@ -49,9 +49,9 @@ CResource* CResourceManager::Add( unsigned short id, const char *name, CClientEn
     if ( !resFileRoot->GetFullPathFromRoot( name, false, resPath ) )
         return NULL;
 
-    CFileTranslator *root = g_pCore->GetFileSystem()->CreateTranslator( path.c_str() );
+    CFileTranslator *root = g_pCore->GetFileSystem()->CreateTranslator( resPath.c_str() );
 
-    CResource *res = new CResource( g_pClientGame->GetLuaManager()->Create( name, *root ), id, name, *root, resEntity, dynamicEntity );
+    CResource *res = new CResource( id, name, *root, resEntity, dynamicEntity );
 
     m_resources.push_back( res );
     return res;
@@ -71,7 +71,7 @@ void CResourceManager::LoadUnavailableResources( CClientEntity *root )
 void CResourceManager::Remove( Resource *res )
 {
     // Delete all the resource's locally created children (the server won't do that)
-    ((CResource)res)->DeleteClientChildren();
+    ((CResource*)res)->DeleteClientChildren();
 
     ResourceManager::Remove( res );
 }

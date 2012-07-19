@@ -142,7 +142,7 @@ public:
     unsigned char display_kbd_debug;                        // 71
     float kbd_fov_value;                                    // 72
 
-        // The following fields allow the level designers to specify the camera for 2 player games.
+    // The following fields allow the level designers to specify the camera for 2 player games.
     short   m_ModeForTwoPlayersSeparateCars;                // 76
     short   m_ModeForTwoPlayersSameCarShootingAllowed;      // 78
     short   m_ModeForTwoPlayersSameCarShootingNotAllowed;   // 80
@@ -382,47 +382,57 @@ class CCameraSA : public CCamera
 {
     friend class COffsets;
 private:
-    CCameraSAInterface          * internalInterface;
-    CCamSA                      * Cams[MAX_CAMS];
+    CCameraSAInterface*         m_interface;
+    CCamSA*                     m_cams[MAX_CAMS];
+
 public:
-                                CCameraSA(CCameraSAInterface * cameraInterface);
-                                ~CCameraSA ( void );
+                                CCameraSA( CCameraSAInterface *cam );
+                                ~CCameraSA();
 
-    CCameraSAInterface          * GetInterface() { return internalInterface; };
-    VOID                        TakeControl(CEntity * entity, eCamMode CamMode, int CamSwitchStyle);
-    VOID                        TakeControl(CVector * position, int CamSwitchStyle);
-    VOID                        TakeControlAttachToEntity(CEntity * TargetEntity, CEntity * AttachEntity, 
-                                                          CVector * vecOffset, CVector * vecLookAt, 
-                                                          float fTilt, int CamSwitchStyle);
-    VOID                        Restore();
-    VOID                        RestoreWithJumpCut();
-    CMatrix                     * GetMatrix ( CMatrix * matrix );
-    VOID                        SetMatrix ( CMatrix * matrix );
-    VOID                        SetCamPositionForFixedMode ( CVector * vecPosition, CVector * vecUpOffset );
-    VOID                        Find3rdPersonCamTargetVector ( FLOAT fDistance, CVector * vecGunMuzzle, CVector * vecSource, CVector * vecTarget );
-    float                       Find3rdPersonQuickAimPitch ( void );
-    BYTE                        GetActiveCam();
+    CCameraSAInterface*         GetInterface()                      { return m_interface; };
 
-    CCam                        * GetCam(BYTE bCameraID);
-    virtual CCam                * GetCam ( CCamSAInterface* camInterface );
+    void                        TakeControl( CEntity *entity, eCamMode mode, int switchStyle );
+    void                        TakeControl( CVector& pos, int switchStyle );
+    void                        TakeControlAttachToEntity( CEntity *target, CEntity *attach, CVector& offset, CVector& lookAt, float tilt, int switchStyle );
 
-    VOID                        SetWidescreen(BOOL bWidescreen);
-    BOOL                        GetWidescreen();
-    FLOAT                       GetCarZoom();
-    VOID                        SetCarZoom(FLOAT fCarZoom);
-    bool                        TryToStartNewCamMode(DWORD dwCamMode);
-    bool                        ConeCastCollisionResolve(CVector *pPos, CVector *pLookAt, CVector *pDest, float rad, float minDist, float *pDist);
-    void                        VectorTrackLinear ( CVector * pTo, CVector * pFrom, float time, bool bSmoothEnds );
-    bool                        IsFading ( void );
-    int                         GetFadingDirection ( void );
-    void                        Fade ( float fFadeOutTime, int iOutOrIn );
-    void                        SetFadeColor ( unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue );
-    float                       GetCameraRotation ( void );
-    RwMatrix *                  GetLTM ( void );
-    CEntity *                   GetTargetEntity ( void );
-    void                        SetCameraClip ( bool bObjects, bool bVehicles );
-    BYTE                        GetCameraViewMode ( void );
-    VOID                        SetCameraViewMode ( BYTE dwCamMode );
+    void                        Restore();
+    void                        RestoreWithJumpCut();
+
+    const RwMatrix&             GetMatrix();
+    void                        SetMatrix( const RwMatrix& mat );
+
+    void                        SetCamPositionForFixedMode( CVector& pos, CVector& upOffset );
+    void                        Find3rdPersonCamTargetVector( float distance, CVector& gunMuzzle, CVector& source, CVector& target );
+    float                       Find3rdPersonQuickAimPitch();
+
+    unsigned char               GetActiveCam();
+
+    CCamSA*                     GetCam( unsigned char id );
+    CCamSA*                     GetCam( CCamSAInterface *cam );
+
+    void                        SetWidescreen( bool wide );
+    bool                        GetWidescreen();
+
+    float                       GetCarZoom();
+    void                        SetCarZoom( float zoom );
+
+    bool                        TryToStartNewCamMode( unsigned short mode );
+    bool                        ConeCastCollisionResolve( CVector& pos, CVector& lookAt, CVector& dest, float rad, float minDist, float& dist );
+    void                        VectorTrackLinear( CVector& to, CVector& from, float time, bool smoothEnds );
+
+    bool                        IsFading();
+    int                         GetFadingDirection();
+    void                        Fade( float fadeOutTime, int outOrIn );
+    void                        SetFadeColor( unsigned char red, unsigned char green, unsigned char blue );
+
+    float                       GetCameraRotation();
+    const RwMatrix&             GetLTM();
+
+    CEntity*                    GetTargetEntity();
+
+    void                        SetCameraClip( bool ibjects, bool vehicles );
+    unsigned char               GetCameraViewMode();
+    void                        SetCameraViewMode( unsigned short mode );
 };
 
 #endif

@@ -370,10 +370,10 @@ void CClientPerfStatLuaTimingImpl::GetLuaTimingStats ( CClientPerfStatResult* pR
     for ( CLuaMainTimingMap::iterator iter = AllLuaTiming.LuaMainTimingMap.begin () ; iter != AllLuaTiming.LuaMainTimingMap.end () ; ++iter )
     {
         CLuaMainTiming& LuaMainTiming = iter->second;
-        const SString& resname = iter->first->GetScriptNamePointer ();
+        const std::string& resname = iter->first->GetName();
 
         // Apply filter
-        if ( strFilter != "" && resname.find ( strFilter ) == SString::npos )
+        if ( strFilter != "" && resname.find ( strFilter ) == std::string::npos )
             continue;
 
         OutputTimingBlock ( pResult, LuaMainTiming.ResourceTiming, flags, resname, false );
@@ -383,7 +383,7 @@ void CClientPerfStatLuaTimingImpl::GetLuaTimingStats ( CClientPerfStatResult* pR
         {
             const SString& eventname = iter->first;
             const CTimingBlock& TimingBlock = iter->second;
-            OutputTimingBlock ( pResult, TimingBlock, flags, std::string ( "." ) + eventname, true  );
+            OutputTimingBlock ( pResult, TimingBlock, flags, std::string ( ".", 1 ) + eventname, true  );
         }
     }
 }

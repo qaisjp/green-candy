@@ -19,17 +19,6 @@
 
 #include "StdInc.h"
 
-enum eAnimIDs
-{
-    ANIM_ID_WALK_CIVI = 0,
-    ANIM_ID_RUN_CIVI,
-    ANIM_ID_SPRINT_PANIC,
-    ANIM_ID_IDLE_STANCE,
-    ANIM_ID_WEAPON_CROUCH = 55,
-    ANIM_ID_GOGGLES_ON = 224,
-    ANIM_ID_STEALTH_AIM = 347
-};
-
 bool CPlayerPedSAInterface::ShouldBeStealthAiming()
 {
     // Do we have a knife?

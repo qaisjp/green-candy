@@ -183,19 +183,19 @@ namespace CLuaFunctionDefs
             if ( pEntity )
             {
                 // Grab the position
-                CMatrix matrix;
+                RwMatrix matrix;
                 if ( CStaticFunctionDefinitions::GetElementMatrix ( *pEntity, matrix ) )
-                {            
+                {
                     // Return it
                     lua_createtable ( L, 4, 0 );
 
                     // First row
                     lua_createtable ( L, 4, 0 );
-                    lua_pushnumber ( L, matrix.vRight.fX );
+                    lua_pushnumber ( L, matrix.right.fX );
                     lua_rawseti ( L, -2, 1 );
-                    lua_pushnumber ( L, matrix.vRight.fY );
+                    lua_pushnumber ( L, matrix.right.fY );
                     lua_rawseti ( L, -2, 2 );
-                    lua_pushnumber ( L, matrix.vRight.fZ );
+                    lua_pushnumber ( L, matrix.right.fZ );
                     lua_rawseti ( L, -2, 3 );
                     lua_pushnumber ( L, 1.0f );
                     lua_rawseti ( L, -2, 4 );
@@ -203,11 +203,11 @@ namespace CLuaFunctionDefs
 
                     // Second row
                     lua_createtable ( L, 4, 0 );
-                    lua_pushnumber ( L, matrix.vFront.fX );
+                    lua_pushnumber ( L, matrix.at.fX );
                     lua_rawseti ( L, -2, 1 );
-                    lua_pushnumber ( L, matrix.vFront.fY );
+                    lua_pushnumber ( L, matrix.at.fY );
                     lua_rawseti ( L, -2, 2 );
-                    lua_pushnumber ( L, matrix.vFront.fZ );
+                    lua_pushnumber ( L, matrix.at.fZ );
                     lua_rawseti ( L, -2, 3 );
                     lua_pushnumber ( L, 1.0f );
                     lua_rawseti ( L, -2, 4 );
@@ -215,11 +215,11 @@ namespace CLuaFunctionDefs
 
                     // Third row
                     lua_createtable ( L, 4, 0 );
-                    lua_pushnumber ( L, matrix.vUp.fX );
+                    lua_pushnumber ( L, matrix.up.fX );
                     lua_rawseti ( L, -2, 1 );
-                    lua_pushnumber ( L, matrix.vUp.fY );
+                    lua_pushnumber ( L, matrix.up.fY );
                     lua_rawseti ( L, -2, 2 );
-                    lua_pushnumber ( L, matrix.vUp.fZ );
+                    lua_pushnumber ( L, matrix.up.fZ );
                     lua_rawseti ( L, -2, 3 );
                     lua_pushnumber ( L, 1.0f );
                     lua_rawseti ( L, -2, 4 );
@@ -227,11 +227,11 @@ namespace CLuaFunctionDefs
 
                     // Fourth row
                     lua_createtable ( L, 4, 0 );
-                    lua_pushnumber ( L, matrix.vPos.fX );
+                    lua_pushnumber ( L, matrix.pos.fX );
                     lua_rawseti ( L, -2, 1 );
-                    lua_pushnumber ( L, matrix.vPos.fY );
+                    lua_pushnumber ( L, matrix.pos.fY );
                     lua_rawseti ( L, -2, 2 );
-                    lua_pushnumber ( L, matrix.vPos.fZ );
+                    lua_pushnumber ( L, matrix.pos.fZ );
                     lua_rawseti ( L, -2, 3 );
                     lua_pushnumber ( L, 1.0f );
                     lua_rawseti ( L, -2, 4 );

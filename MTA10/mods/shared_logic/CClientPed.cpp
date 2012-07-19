@@ -31,12 +31,6 @@ extern CClientGame* g_pClientGame;
 #define PED_INTERPOLATION_WARP_THRESHOLD            5   // Minimal threshold
 #define PED_INTERPOLATION_WARP_THRESHOLD_FOR_SPEED  5   // Units to increment the threshold per speed unit
 
-enum eAnimGroups
-{    
-    ANIM_GROUP_GOGGLES=32,
-    ANIM_GROUP_STEALTH_KN=87,
-};
-
 #define STEALTH_KILL_RANGE 2.5f
 
 struct SBodyPartName { char szName [32]; };
@@ -366,7 +360,7 @@ void CClientPed::ResetStats ( void )
 }
 
 
-bool CClientPed::GetMatrix ( CMatrix& Matrix ) const
+bool CClientPed::GetMatrix ( RwMatrix& Matrix ) const
 {
     // Are we frozen?
     if ( IsFrozen () )
@@ -387,16 +381,16 @@ bool CClientPed::GetMatrix ( CMatrix& Matrix ) const
 }
 
 
-bool CClientPed::SetMatrix ( const CMatrix& Matrix )
+bool CClientPed::SetMatrix ( const RwMatrix& Matrix )
 {
     if ( m_pPlayerPed )
     {
         m_pPlayerPed->SetMatrix( Matrix );
     }
 
-    if ( m_Matrix.vPos != Matrix.vPos )
+    if ( m_Matrix.pos != Matrix.pos )
     {
-        UpdateStreamPosition ( Matrix.vPos );
+        UpdateStreamPosition ( Matrix.pos );
     }
     m_Matrix = Matrix;
     m_matFrozen = Matrix;
@@ -412,7 +406,7 @@ void CClientPed::GetPosition ( CVector& vecPosition ) const
     // Are we frozen?
     if ( IsFrozen () )
     {
-        vecPosition = m_matFrozen.vPos;
+        vecPosition = m_matFrozen.pos;
     }    
     // Streamed in?
     else if ( m_pPlayerPed )
@@ -433,7 +427,7 @@ void CClientPed::GetPosition ( CVector& vecPosition ) const
     // None of the above?
     else
     {
-        vecPosition = m_Matrix.vPos;
+        vecPosition = m_Matrix.pos;
     }
 }
 
@@ -453,7 +447,7 @@ void CClientPed::SetPosition ( const CVector& vecPosition, bool bResetInterpolat
                 if ( m_bIsLocalPlayer )
                 {
                     // If move is big enough, do ground checks
-                    float DistanceMoved = ( m_Matrix.vPos - vecPosition ).Length ();
+                    float DistanceMoved = ( m_Matrix.pos - vecPosition ).Length ();
                     if ( DistanceMoved > 50 && !IsFrozen () )
                         SetFrozenWaitingForGroundToLoad ( true );
                 }
@@ -465,11 +459,11 @@ void CClientPed::SetPosition ( const CVector& vecPosition, bool bResetInterpolat
     }
 
     // Have we moved to a different position?
-    if ( m_Matrix.vPos != vecPosition )
+    if ( m_Matrix.pos != vecPosition )
     {
         // Store our new position
-        m_Matrix.vPos = vecPosition;
-        m_matFrozen.vPos = vecPosition;
+        m_Matrix.pos = vecPosition;
+        m_matFrozen.pos = vecPosition;
 
         // Update our streaming position
         UpdateStreamPosition ( vecPosition );
@@ -517,7 +511,7 @@ void CClientPed::Teleport ( const CVector& vecPosition )
                 if ( m_bIsLocalPlayer )
                 {
                     // If move is big enough, do ground checks
-                    float DistanceMoved = ( m_Matrix.vPos - vecPosition ).Length ();
+                    float DistanceMoved = ( m_Matrix.pos - vecPosition ).Length ();
                     if ( DistanceMoved > 50 && !IsFrozen () )
                         SetFrozenWaitingForGroundToLoad ( true );
                 }
@@ -529,11 +523,11 @@ void CClientPed::Teleport ( const CVector& vecPosition )
     }
 
     // Have we moved to a different position?
-    if ( m_Matrix.vPos != vecPosition )
+    if ( m_Matrix.pos != vecPosition )
     {
         // Store our new position
-        m_Matrix.vPos = vecPosition;
-        m_matFrozen.vPos = vecPosition;
+        m_Matrix.pos = vecPosition;
+        m_matFrozen.pos = vecPosition;
 
         // Update our streaming position
         UpdateStreamPosition ( vecPosition );
@@ -552,16 +546,14 @@ void CClientPed::GetRotationDegrees ( CVector& vecRotation ) const
     vecRotation.fZ = vecRotation.fZ * 180.0f / 3.1415926535897932384626433832795f;
 }
 
-
-void CClientPed::GetRotationRadians ( CVector& vecRotation ) const
+void CClientPed::GetRotationRadians( CVector& vecRotation ) const
 {
-    CMatrix matTemp;
+    RwMatrix matTemp;
     GetMatrix ( matTemp );
     g_pMultiplayer->ConvertMatrixToEulerAngles ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
 }
 
-
-void CClientPed::SetRotationDegrees ( const CVector& vecRotation )
+void CClientPed::SetRotationDegrees( const CVector& vecRotation )
 {
     // Convert from degrees to radians
     CVector vecTemp;
@@ -578,21 +570,16 @@ void CClientPed::SetRotationDegrees ( const CVector& vecRotation )
         SetCameraRotation ( vecTemp.fZ );
 }
 
-
-void CClientPed::SetRotationRadians ( const CVector& vecRotation )
+void CClientPed::SetRotationRadians( const CVector& vecRotation )
 {
     // Grab the matrix, apply the rotation to it and set it again
-    CMatrix matTemp;
+    RwMatrix matTemp;
     GetMatrix ( matTemp );
     g_pMultiplayer->ConvertEulerAnglesToMatrix ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
     SetMatrix ( matTemp );
 }
 
-
-void CClientPed::Spawn ( const CVector& vecPosition,
-                         float fRotation,
-                         unsigned short usModel,
-                         unsigned char ucInterior )
+void CClientPed::Spawn( const CVector& vecPosition, float fRotation, unsigned short usModel, unsigned char ucInterior )
 {
     // Remove us from our car
     RemoveFromVehicle ();    
@@ -1291,11 +1278,20 @@ void CClientPed::WarpIntoVehicle ( CClientVehicle* pVehicle, unsigned int uiSeat
         }
 
         // Warp the player into the car's driverseat
-        CVehicle* pGameVehicle = pVehicle->m_pVehicle;
+        CVehicle *pGameVehicle = pVehicle->m_pVehicle;
         if ( pGameVehicle )
         {
             // Warp him in
-            InternalWarpIntoVehicle ( pGameVehicle );
+            InternalWarpIntoVehicle( pGameVehicle );
+
+            // Jax: make sure our camera is fixed on the new vehicle
+            if ( m_bIsLocalPlayer )
+            {
+                CClientCamera *pCamera = m_pManager->GetCamera();
+
+                if ( !pCamera->IsInFixedMode() )
+                    pCamera->SetVehicleInterpolationSource( pVehicle );
+            }
         }
 
         // Update the vehicle and us so we know we've occupied it
@@ -2656,7 +2652,7 @@ void CClientPed::StreamedInPulse ( void )
         if ( GetType() == CCLIENTPED )
         {
             // Update our controller state to match our scripted pad
-            g_pGame->GetPadManager()->UpdateJoypad( m_Pad, (CPed*)GetGameEntity() );
+            g_pGame->GetPadManager()->UpdateJoypad( m_Pad, *(CPed*)GetGameEntity() );
         }
 
         // Are we waiting on an unloaded anim-block?
@@ -2681,11 +2677,11 @@ void CClientPed::StreamedInPulse ( void )
         CVector vecPosition;
         m_pPlayerPed->GetPosition ( vecPosition );
         // Have we moved?
-        if ( vecPosition != m_Matrix.vPos )
+        if ( vecPosition != m_Matrix.pos )
         {
             // Store our new position
-            m_Matrix.vPos = vecPosition;
-            m_matFrozen.vPos = vecPosition;
+            m_Matrix.pos = vecPosition;
+            m_matFrozen.pos = vecPosition;
 
             // Update our streaming position
             UpdateStreamPosition ( vecPosition );
@@ -2991,7 +2987,7 @@ void CClientPed::_CreateModel()
     m_pLoadedModelInfo->AddRef ( true );
 
     // Create the new ped
-    m_pPlayerPed = (CPlayerPed*)g_pGame->GetPools()->AddPed( (ePedModel)m_ulModel );
+    m_pPlayerPed = dynamic_cast <CPlayerPed*> ( g_pGame->GetPools()->AddPed( (ePedModel)m_ulModel ) );
     if ( m_pPlayerPed )
     {
         // Put our pointer in the stored data and update the remote data with the new model pointer
@@ -3015,7 +3011,7 @@ void CClientPed::_CreateModel()
                 m_interp.pTargetOriginSource->GetPosition ( vecOrigin );
                 vecPosition += vecOrigin;
             }
-            m_Matrix.vPos = vecPosition;
+            m_Matrix.pos = vecPosition;
         }
 
         // Restore any settings 
@@ -3155,7 +3151,7 @@ void CClientPed::_DestroyModel ()
     }
 
     // Remember the player position
-    m_pPlayerPed->GetPosition ( m_Matrix.vPos );
+    m_pPlayerPed->GetPosition ( m_Matrix.pos );
 
     m_fCurrentRotation = m_pPlayerPed->GetCurrentRotation ();
     m_pPlayerPed->GetMoveSpeed ( m_vecMoveSpeed );
@@ -3465,17 +3461,6 @@ void CClientPed::InternalWarpIntoVehicle ( CVehicle* pGameVehicle )
         {
             SetCanBeKnockedOffBike ( false );
         }
-
-        // Jax: make sure our camera is fixed on the new vehicle
-        if ( m_bIsLocalPlayer )
-        {
-            CClientCamera * pCamera = m_pManager->GetCamera ();
-            if ( !pCamera->IsInFixedMode () )
-            {
-                // Jax: very hacky, clean up if possible (some camera-target pointer)
-                * (void*)0xB6F3B8 = pGameVehicle->GetInterface();
-            }
-        }
     }
 }
 
@@ -3499,7 +3484,7 @@ void CClientPed::InternalRemoveFromVehicle ( CVehicle* pGameVehicle )
             pOutTask->Destroy ();
         }
 
-        m_pPlayerPed->GetPosition ( m_Matrix.vPos );
+        m_pPlayerPed->GetPosition ( m_Matrix.pos );
 
         // Local player?
         if ( m_bIsLocalPlayer )
@@ -3673,13 +3658,6 @@ void CClientPed::SetWearingGoggles ( bool bWearing )
         {
             // Make him wear goggles
             m_pPlayerPed->SetGogglesState ( bWearing );
-
-            // Are our goggle anims loaded?
-            CAnimBlock * pBlock = g_pGame->GetAnimManager ()->GetAnimationBlock ( "GOGGLES" );
-            if ( pBlock->IsLoaded () )
-            {
-                BlendAnimation ( ANIM_GROUP_GOGGLES, ANIM_ID_GOGGLES_ON, 4.0f );
-            }
         }
     }
     m_bWearingGoggles = bWearing;
@@ -3693,7 +3671,8 @@ bool CClientPed::IsWearingGoggles ( bool bCheckMoving )
         if ( bCheckMoving )
         {
             bool bPuttingOn;
-            if ( IsMovingGoggles ( bPuttingOn ) ) return bPuttingOn;
+            if ( IsMovingGoggles ( bPuttingOn ) )
+                return bPuttingOn;
         }
 
         return m_pPlayerPed->IsWearingGoggles ();
@@ -3702,7 +3681,7 @@ bool CClientPed::IsWearingGoggles ( bool bCheckMoving )
 }
 
 
-bool CClientPed::IsMovingGoggles ( bool & bPuttingOn )
+bool CClientPed::IsMovingGoggles ( bool& bPuttingOn )
 {
     if ( m_pPlayerPed )
     {
@@ -4050,21 +4029,19 @@ bool CClientPed::GetShotData ( CVector * pvecOrigin, CVector * pvecTarget, CVect
             }
             else if ( Controller.IsRightShoulder1Down() )    // First-person weapons, crosshair active: sync the crosshair
             {
-                g_pGame->GetCamera ()->Find3rdPersonCamTargetVector ( fRange, &vecGunMuzzle, &vecOrigin, &vecTarget );
+                g_pGame->GetCamera ()->Find3rdPersonCamTargetVector( fRange, vecGunMuzzle, vecOrigin, vecTarget );
             }
             else if ( pVehicle )                            // Drive-by/vehicle weapons: camera origin as origin, performing collision tests
             {
                 CColPoint* pCollision;
-                CMatrix mat;
+                RwMatrix mat = g_pGame->GetCamera ()->GetMatrix();
                 bool bCollision;
 
-                g_pGame->GetCamera ()->GetMatrix ( &mat );
-
-                CVector vecCameraOrigin = mat.vPos;
+                CVector vecCameraOrigin = mat.pos;
                 CVector vecTemp = vecCameraOrigin;
-                g_pGame->GetCamera ()->Find3rdPersonCamTargetVector ( fRange, &vecCameraOrigin, &vecTemp, &vecTarget );
+                g_pGame->GetCamera ()->Find3rdPersonCamTargetVector ( fRange, vecCameraOrigin, vecTemp, vecTarget );
 
-                bCollision = g_pGame->GetWorld ()->ProcessLineOfSight ( &mat.vPos, &vecTarget, &pCollision, NULL );
+                bCollision = g_pGame->GetWorld ()->ProcessLineOfSight ( &mat.pos, &vecTarget, &pCollision, NULL );
                 if ( pCollision )
                 {
                     if ( bCollision )
@@ -4832,7 +4809,7 @@ void CClientPed::RunNamedAnimation ( CAnimBlock * pBlock, const char * szAnimNam
 }
 
 
-void CClientPed::KillAnimation ( void )
+void CClientPed::KillAnimation()
 {
     if ( m_pPlayerPed )
     {
@@ -4855,6 +4832,14 @@ void CClientPed::KillAnimation ( void )
         m_szAnimationName = NULL;
     }
     m_bRequestedAnimation = false;
+}
+
+void CClientPed::SetAnimationProgress( const char *name, float progress )
+{
+    if ( !m_pPlayerPed )
+        return;
+    
+    m_pPlayerPed->SetAnimationProgress( name, progress );
 }
 
 void CClientPed::PostWeaponFire ( void )
@@ -5079,7 +5064,7 @@ void CClientPed::HandleWaitingForGroundToLoad ( void )
     }
 
     // Reset position
-    SetPosition ( m_matFrozen.vPos );
+    SetPosition ( m_matFrozen.pos );
     SetMatrix ( m_matFrozen );
     SetMoveSpeed ( CVector () );
 

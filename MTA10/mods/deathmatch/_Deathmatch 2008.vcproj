@@ -413,10 +413,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\logic\CDynamicLibrary.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\logic\CElementDeleter.cpp"
 					>
 				</File>
@@ -1824,10 +1820,6 @@
 				</File>
 				<File
 					RelativePath=".\logic\CDownloadableResource.h"
-					>
-				</File>
-				<File
-					RelativePath=".\logic\CDynamicLibrary.h"
 					>
 				</File>
 				<File

@@ -16,7 +16,7 @@
 class CResource : public Resource
 {
 public:
-                               CResource( LuaMain& main, const filePath& name, CFileTranslator& root );
+                               CResource( LuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root );
                                ~CResource();
 
 

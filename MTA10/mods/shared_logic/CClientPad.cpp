@@ -63,7 +63,7 @@ bool CClientPad::GetControlState( const char *name, bool& state )
 {
     unsigned int index;
 
-    if ( !GetControlIndex( szName, index ) )
+    if ( !GetControlIndex( name, index ) )
         return false;
 
     state = m_states[index];

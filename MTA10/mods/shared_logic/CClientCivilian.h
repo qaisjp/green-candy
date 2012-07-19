@@ -28,51 +28,51 @@ class CClientCivilian : public CClientEntity
     friend class CClientCivilianManager;
 
 public:
-                                    ~CClientCivilian        ( void );
+                                    ~CClientCivilian();
     
-    void                            Unlink                  ( void );
+    void                            Unlink();
     
-    inline eClientEntityType        GetType                 ( void ) const                      { return CCLIENTCIVILIAN; };
+    inline eClientEntityType        GetType() const                                         { return CCLIENTCIVILIAN; };
 
-    inline CCivilianPed*            GetGameCivilian         ( void )                            { return m_pCivilianPed; }
+    inline CCivilianPed*            GetGameCivilian()                                       { return m_pCivilianPed; }
 
-    inline void                     GetPosition             ( CVector& vecPosition ) const      { m_pCivilianPed->GetPosition( vecPosition ); };
-    inline void                     SetPosition             ( const CVector& vecPosition )      { m_pCivilianPed->SetPosition( vecPosition ); };
-    int                             GetRotation             ( void );
-    void                            GetRotation             ( CVector& vecRotation ) const;
-    void                            SetRotation             ( const CVector& vecRotation );
-    void                            SetRotation             ( int iRotation );
+    inline void                     GetPosition( CVector& vecPosition ) const               { m_pCivilianPed->GetPosition( vecPosition ); };
+    inline void                     SetPosition( const CVector& vecPosition )               { m_pCivilianPed->SetPosition( vecPosition ); };
+    int                             GetRotation();
+    void                            GetRotation( CVector& vecRotation ) const;
+    void                            SetRotation( const CVector& vecRotation );
+    void                            SetRotation( int iRotation );
 
-    inline void                     ModelRequestCallback    ( unsigned short usModelID )        {};
+    inline void                     ModelRequestCallback( unsigned short usModelID )        {};
 
-    float                           GetDistanceFromCentreOfMassToBaseOfModel ( void );
+    float                           GetDistanceFromCentreOfMassToBaseOfModel();
 
-    bool                            GetMatrix               ( CMatrix& Matrix ) const;
-    bool                            SetMatrix               ( const CMatrix& Matrix );
+    bool                            GetMatrix( RwMatrix& Matrix ) const;
+    bool                            SetMatrix( const RwMatrix& Matrix );
 
-    void                            GetMoveSpeed            ( CVector& vecMoveSpeed ) const;
-    void                            SetMoveSpeed            ( const CVector& vecMoveSpeed );
-    void                            GetTurnSpeed            ( CVector& vecTurnSpeed ) const;
-    void                            SetTurnSpeed            ( const CVector& vecTurnSpeed );
+    void                            GetMoveSpeed( CVector& vecMoveSpeed ) const;
+    void                            SetMoveSpeed( const CVector& vecMoveSpeed );
+    void                            GetTurnSpeed( CVector& vecTurnSpeed ) const;
+    void                            SetTurnSpeed( const CVector& vecTurnSpeed );
 
-    bool                            IsVisible               ( void );
-    void                            SetVisible              ( bool bVisible );
+    bool                            IsVisible();
+    void                            SetVisible( bool bVisible );
 
-    float                           GetHealth               ( void ) const;
-    void                            SetHealth               ( float fHealth );
+    float                           GetHealth() const;
+    void                            SetHealth( float fHealth );
 
-    int                             GetModelID              ( void );
-    void                            SetModelID              ( int iModelID );
+    int                             GetModelID();
+    void                            SetModelID( int iModelID );
 
 private:
-                                    CClientCivilian         ( class CClientManager* pManager, ElementID ID, int iPedModel );
-                                    CClientCivilian         ( class CClientManager* pManager, ElementID ID, CCivilianPed* pCivilianPed );
+                                    CClientCivilian( class CClientManager* pManager, ElementID ID, int iPedModel );
+                                    CClientCivilian( class CClientManager* pManager, ElementID ID, CCivilianPed* pCivilianPed );
 
-    void                            Dump                    ( FILE* pFile, bool bDumpDetails, unsigned int uiIndex );
+    void                            Dump( FILE* pFile, bool bDumpDetails, unsigned int uiIndex );
 
-    void                            Create                  ( void );
-    void                            Destroy                 ( void );
-    void                            ReCreate                ( void );
+    void                            Create();
+    void                            Destroy();
+    void                            ReCreate();
 
     class CClientCivilianManager*   m_pCivilianManager;
 

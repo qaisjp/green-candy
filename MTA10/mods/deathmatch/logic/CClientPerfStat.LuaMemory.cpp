@@ -177,7 +177,7 @@ void CClientPerfStatLuaMemoryImpl::UpdateLuaMemory ( CLuaMain* pLuaMain, int iMe
     pLuaMainMemory->Max = Max ( pLuaMainMemory->Max, pLuaMainMemory->Current );
 
     pLuaMainMemory->OpenXMLFiles = pLuaMain->GetXMLFileCount ();
-    pLuaMainMemory->Refs = pLuaMain->m_CallbackTable.size ();
+    pLuaMainMemory->Refs = pLuaMain->m_refStore.size();
     pLuaMainMemory->TimerCount = pLuaMain->GetTimerCount ();
     pLuaMainMemory->ElementCount = pLuaMain->GetElementCount ();
 }
@@ -237,19 +237,15 @@ void CClientPerfStatLuaMemoryImpl::GetLuaMemoryStats ( CClientPerfStatResult* pR
 
 
     // Fetch mem stats from Lua
+    for ( std::map < CLuaMain*, int >::iterator iter = m_LuaMainMap.begin () ; iter != m_LuaMainMap.end () ; ++iter )
     {
-        for ( std::map < CLuaMain*, int >::iterator iter = m_LuaMainMap.begin () ; iter != m_LuaMainMap.end () ; ++iter )
-        {
-            CLuaMain* pLuaMain = iter->first;
-            if ( pLuaMain->GetVM() )
-            {
-                if ( bAccurate )
-                    lua_gc(pLuaMain->GetVM(), LUA_GCCOLLECT, 0);
+        CLuaMain *pLuaMain = iter->first;
+        lua_State *L = **pLuaMain;;
 
-                int iMemUsed = lua_getgccount( pLuaMain->GetVM() );
-                UpdateLuaMemory ( pLuaMain, iMemUsed );
-            }
-        }
+        if ( bAccurate )
+            lua_gc( L, LUA_GCCOLLECT, 0 );
+
+        UpdateLuaMemory( pLuaMain, lua_getgccount( L ) );
     }
 
     pResult->AddColumn ( "name" );
@@ -321,10 +317,10 @@ void CClientPerfStatLuaMemoryImpl::GetLuaMemoryStats ( CClientPerfStatResult* pR
     for ( CLuaMainMemoryMap::iterator iter = AllLuaMemory.LuaMainMemoryMap.begin () ; iter != AllLuaMemory.LuaMainMemoryMap.end () ; ++iter )
     {
         CLuaMainMemory& LuaMainMemory = iter->second;
-        SString resname = iter->first->GetScriptNamePointer ();
+        std::string resname = iter->first->GetName();
 
         // Apply filter
-        if ( strFilter != "" && resname.find ( strFilter ) == SString::npos )
+        if ( strFilter != "" && resname.find ( strFilter ) == std::string::npos )
             continue;
 
         // Add row

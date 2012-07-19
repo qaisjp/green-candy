@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/C3DMarkerSA.cpp
 *  PURPOSE:     3D Marker entity
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -14,66 +15,58 @@
 
 #include "StdInc.h"
 
-void C3DMarkerSA::GetMatrix ( CMatrix * pMatrix )
+void C3DMarkerSA::GetMatrix( RwMatrix& mat )
 {
-    RwMatrix * mat = &GetInterface ()->m_mat;
-    MemCpyFast ( &pMatrix->vPos, &mat->vPos, sizeof ( CVector ) );
-    MemCpyFast ( &pMatrix->vFront, &mat->vFront, sizeof ( CVector ) );
-    MemCpyFast ( &pMatrix->vRight, &mat->vRight, sizeof ( CVector ) );
-    MemCpyFast ( &pMatrix->vUp, &mat->vUp, sizeof ( CVector ) );
+    mat = GetInterface()->m_mat;
 }
 
-
-void C3DMarkerSA::SetMatrix ( CMatrix * pMatrix )
+void C3DMarkerSA::SetMatrix( const RwMatrix& mat )
 {
-    RwMatrix * mat = &GetInterface ()->m_mat;
-    MemCpyFast ( &mat->vPos, &pMatrix->vPos, sizeof ( CVector ) );
-    MemCpyFast ( &mat->vFront, &pMatrix->vFront, sizeof ( CVector ) );
-    MemCpyFast ( &mat->vRight, &pMatrix->vRight, sizeof ( CVector ) );
-    MemCpyFast ( &mat->vUp, &pMatrix->vUp, sizeof ( CVector ) );
+    GetInterface()->m_mat = mat;
 }
 
-VOID C3DMarkerSA::SetPosition(CVector * vecPosition)
+void C3DMarkerSA::SetPosition( const CVector& pos )
 {
-    DEBUG_TRACE("VOID C3DMarkerSA::SetPosition(CVector * vecPosition)");
-    this->GetInterface()->m_mat.vPos = *vecPosition;
+    DEBUG_TRACE("void C3DMarkerSA::SetPosition( const CVector& pos )");
+    GetInterface()->m_mat.pos = pos;
 }
 
-CVector * C3DMarkerSA::GetPosition()
+const CVector& C3DMarkerSA::GetPosition()
 {
-    DEBUG_TRACE("CVector * C3DMarkerSA::GetPosition()");
-    return &this->GetInterface()->m_mat.vPos;
+    DEBUG_TRACE("const CVector& C3DMarkerSA::GetPosition()");
+    return GetInterface()->m_mat.pos;
 }
 
-DWORD C3DMarkerSA::GetType()
+unsigned int C3DMarkerSA::GetType()
 {
-    DEBUG_TRACE("DWORD C3DMarkerSA::GetType()");
-    return this->GetInterface()->m_nType;
+    DEBUG_TRACE("unsigned int C3DMarkerSA::GetType()");
+    return GetInterface()->m_nType;
 }
 
-VOID C3DMarkerSA::SetType(DWORD dwType)
+void C3DMarkerSA::SetType( unsigned int type )
 {
-    DEBUG_TRACE("VOID C3DMarkerSA::SetType(DWORD dwType)");
-    this->GetInterface()->m_nType = (unsigned short)(dwType);
+    DEBUG_TRACE("void C3DMarkerSA::SetType( unsigned int type )");
+    GetInterface()->m_nType = type;
 }
 
-BOOL C3DMarkerSA::IsActive()
+bool C3DMarkerSA::IsActive()
 {
     DEBUG_TRACE("BOOL C3DMarkerSA::IsActive()");
-    return (BOOL)this->GetInterface()->m_bIsUsed;
+    return GetInterface()->m_bIsUsed;
 }
 
-DWORD C3DMarkerSA::GetIdentifier()
+unsigned int C3DMarkerSA::GetIdentifier()
 {
     DEBUG_TRACE("DWORD C3DMarkerSA::GetIdentifier()");
-    return this->GetInterface()->m_nIdentifier;
+    return GetInterface()->m_nIdentifier;
 }
 
 SColor C3DMarkerSA::GetColor()
 {
-    DEBUG_TRACE("RGBA C3DMarkerSA::GetColor()");
+    DEBUG_TRACE("SColor C3DMarkerSA::GetColor()");
+
     // From ABGR
-    unsigned long ulABGR = this->GetInterface()->rwColour;
+    unsigned long ulABGR = GetInterface()->rwColour;
     SColor color;
     color.A = ( ulABGR >> 24 ) && 0xff;
     color.B = ( ulABGR >> 16 ) && 0xff;
@@ -82,93 +75,92 @@ SColor C3DMarkerSA::GetColor()
     return color;
 }
 
-VOID C3DMarkerSA::SetColor(const SColor color)
+void C3DMarkerSA::SetColor( const SColor color )
 {
     // To ABGR
-    this->GetInterface()->rwColour = ( color.A << 24 ) | ( color.B << 16 ) | ( color.G << 8 ) | color.R;
+    GetInterface()->rwColour = ( color.A << 24 ) | ( color.B << 16 ) | ( color.G << 8 ) | color.R;
 }
 
-VOID C3DMarkerSA::SetPulsePeriod(WORD wPulsePeriod)
+void C3DMarkerSA::SetPulsePeriod( unsigned short period )
 {
-    DEBUG_TRACE("VOID C3DMarkerSA::SetPulsePeriod(WORD wPulsePeriod)");
-    this->GetInterface()->m_nPulsePeriod = wPulsePeriod;
+    DEBUG_TRACE("void C3DMarkerSA::SetPulsePeriod( unsigned short period )");
+    GetInterface()->m_nPulsePeriod = period;
 }
 
-VOID C3DMarkerSA::SetRotateRate(short RotateRate)
+void C3DMarkerSA::SetRotateRate( short rate )
 {
-    DEBUG_TRACE("VOID C3DMarkerSA::SetRotateRate(short RotateRate)");
-    this->GetInterface()->m_nRotateRate = RotateRate;
+    DEBUG_TRACE("void C3DMarkerSA::SetRotateRate( short rate )");
+    GetInterface()->m_nRotateRate = rate;
 }
 
-FLOAT C3DMarkerSA::GetSize()
+float C3DMarkerSA::GetSize()
 {
-    DEBUG_TRACE("FLOAT C3DMarkerSA::GetSize()");
-    return this->GetInterface()->m_fSize;
+    DEBUG_TRACE("float C3DMarkerSA::GetSize()");
+    return GetInterface()->m_fSize;
 }
 
-VOID C3DMarkerSA::SetSize(FLOAT fSize)
+void C3DMarkerSA::SetSize( float size )
 {
-    DEBUG_TRACE("VOID C3DMarkerSA::SetSize(FLOAT fSize)");
-    this->GetInterface()->m_fSize = fSize;
+    DEBUG_TRACE("void C3DMarkerSA::SetSize( float size )");
+    GetInterface()->m_fSize = size;
 }
 
-FLOAT C3DMarkerSA::GetBrightness()
+float C3DMarkerSA::GetBrightness()
 {
-    DEBUG_TRACE("FLOAT C3DMarkerSA::GetBrightness()");
-    return this->GetInterface()->m_fBrightness;
+    DEBUG_TRACE("float C3DMarkerSA::GetBrightness()");
+    return GetInterface()->m_fBrightness;
 }
 
-VOID C3DMarkerSA::SetBrightness(FLOAT fBrightness)
+void C3DMarkerSA::SetBrightness( float brightness )
 {
-    DEBUG_TRACE("VOID C3DMarkerSA::SetBrightness(FLOAT fBrightness)");
-    this->GetInterface()->m_fBrightness = fBrightness;
+    DEBUG_TRACE("void C3DMarkerSA::SetBrightness( float brightness )");
+    GetInterface()->m_fBrightness = brightness;
 }
 
-VOID C3DMarkerSA::SetCameraRange(FLOAT fCameraRange)
+void C3DMarkerSA::SetCameraRange( float range )
 {
-    DEBUG_TRACE("VOID C3DMarkerSA::SetCameraRange(FLOAT fCameraRange)");
-    this->GetInterface()->m_fCameraRange = fCameraRange;
+    DEBUG_TRACE("void C3DMarkerSA::SetCameraRange( float range )");
+    GetInterface()->m_fCameraRange = range;
 }
 
-VOID C3DMarkerSA::SetPulseFraction(FLOAT fPulseFraction)
+void C3DMarkerSA::SetPulseFraction( float fraction )
 {
-    DEBUG_TRACE("VOID C3DMarkerSA::SetPulseFraction(FLOAT fPulseFraction)");
-    this->GetInterface()->m_fPulseFraction = fPulseFraction;
+    DEBUG_TRACE("void C3DMarkerSA::SetPulseFraction( float fraction )");
+    GetInterface()->m_fPulseFraction = fraction;
 }
 
-FLOAT C3DMarkerSA::GetPulseFraction()
+float C3DMarkerSA::GetPulseFraction()
 {
-    DEBUG_TRACE("FLOAT C3DMarkerSA::GetPulseFraction()");
-    return this->GetInterface()->m_fPulseFraction;
+    DEBUG_TRACE("float C3DMarkerSA::GetPulseFraction()");
+    return GetInterface()->m_fPulseFraction;
 }
 
-VOID C3DMarkerSA::Disable ()
+void C3DMarkerSA::Disable()
 {
-    DEBUG_TRACE("VOID C3DMarkerSA::Disable ()");
-    this->GetInterface()->m_nIdentifier = 0;
+    DEBUG_TRACE("void C3DMarkerSA::Disable()");
+    GetInterface()->m_nIdentifier = 0;
 }
 
-VOID C3DMarkerSA::DeleteMarkerObject ()
+void C3DMarkerSA::DeleteMarkerObject()
 {
-    if ( this->GetInterface()->m_pRwObject )
+    DEBUG_TRACE("void C3DMarkerSA::DeleteMarkerObject()");
+
+    if ( !this->GetInterface()->m_pRwObject )
+        return;
+
+    DWORD dwFunc = FUNC_DeleteMarkerObject;
+    DWORD dwThis = (DWORD)GetInterface();
+    _asm
     {
-        DWORD dwFunc = FUNC_DeleteMarkerObject;
-        DWORD dwThis = (DWORD)this->GetInterface();
-        _asm
-        {
-            mov     ecx, dwThis
-            call    dwFunc
-        }
+        mov     ecx, dwThis
+        call    dwFunc
+    }
 
-        //OutputDebugString ( "Object destroyed!" );
-    }
-    else
-    {
-        //OutputDebugString ( "No object to destroy!" );
-    }
+    //OutputDebugString ( "Object destroyed!" );
 }
 
-VOID C3DMarkerSA::Reset()
+void C3DMarkerSA::Reset()
 {
-    this->internalInterface->m_lastPosition = this->internalInterface->m_mat.vPos;
+    DEBUG_TRACE("void C3DMarkerSA::Reset()");
+    m_interface->m_lastPosition = m_interface->m_mat.pos;
 }

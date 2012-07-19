@@ -49,6 +49,9 @@ struct RwColor
 {
     unsigned char r, g, b, a;
 };
+
+static const float negOne = -1.0f;
+
 class RwMatrix
 {   // 16-byte padded
 public:
@@ -70,10 +73,109 @@ public:
 
     RwMatrix( const CMatrix& from )
     {
-        right = from.vRight;
-        up = from.vUp;
-        at = from.vFront;
-        pos = from.vPos;
+        right = from.right;
+        up = from.up;
+        at = from.at;
+        pos = from.pos;
+    }
+
+    RwMatrix( const RwMatrix& mat )
+    {
+        right = mat.right;
+        up = mat.up;
+        at = mat.at;
+        pos = mat.pos;
+    }
+
+    RwMatrix operator + ( const RwMatrix& mat )
+    {
+        float outmt[16];
+
+        __asm
+        {
+            mov eax,mat
+            mov ebx,this
+            mov edx,outmt
+
+            movups xmm0,[eax]
+            movups xmm1,[eax+0x10]
+            movups xmm2,[eax+0x20]
+            movups xmm3,[eax+0x30]
+
+            movups xmm4,[ebx]
+            movups xmm5,[ebx+0x10]
+            movups xmm6,[ebx+0x20]
+            movups xmm7,[ebx+0x30]
+
+            addps xmm0,xmm4
+            addps xmm1,xmm5
+            addps xmm2,xmm6
+            addps xmm3,xmm7
+
+            movups [edx],xmm0
+            movups [edx+0x10],xmm1
+            movups [edx+0x20],xmm2
+            movups [edx+0x30],xmm3
+        }
+
+        return *(RwMatrix*)outmt;
+    }
+
+    RwMatrix operator - ( const RwMatrix& mat )
+    {
+        float outmt[16];
+
+        __asm
+        {
+            mov eax,mat
+            mov ebx,this
+            mov edx,outmt
+
+            movups xmm0,[eax]
+            movups xmm1,[eax+0x10]
+            movups xmm2,[eax+0x20]
+            movups xmm3,[eax+0x30]
+
+            movups xmm4,[ebx]
+            movups xmm5,[ebx+0x10]
+            movups xmm6,[ebx+0x20]
+            movups xmm7,[ebx+0x30]
+
+            subps xmm0,xmm4
+            subps xmm1,xmm5
+            subps xmm2,xmm6
+            subps xmm3,xmm7
+
+            movups [edx],xmm0
+            movups [edx+0x10],xmm1
+            movups [edx+0x20],xmm2
+            movups [edx+0x30],xmm3
+        }
+
+        return *(RwMatrix*)outmt;
+    }
+
+    RwMatrix operator * ( const RwMatrix& mat )
+    {
+        RwMatrix outmt;
+        Multiply( mat, outmt );
+        return outmt;
+    }
+
+    RwMatrix operator / ( RwMatrix other )
+    {
+        other.Invert();
+
+        return *this * other;
+    }
+
+    CVector operator * ( const CVector& vec )
+    {
+        return CVector(
+            right.fX * vec.fX + at.fX * vec.fY + up.fX * vec.fZ,
+            right.fY * vec.fX + at.fY * vec.fY + up.fY * vec.fZ,
+            right.fZ * vec.fX + at.fZ * vec.fY + up.fZ * vec.fZ
+        );
     }
 
     inline void rotX( float radians )
@@ -131,7 +233,7 @@ public:
     }
 
     // I hope this works :3
-    inline void Multiply( const RwMatrix mat, RwMatrix dst )
+    inline void Multiply( const RwMatrix& mat, RwMatrix& dst )
     {
 	    __asm
 	    {
@@ -202,7 +304,53 @@ public:
 	    }
     }
 
-    float & operator [] ( unsigned int i )
+    inline void Invert()
+    {
+        // Optimization to use SSE registers instead of stack space
+        __asm
+        {
+            mov eax,this
+
+            movups xmm0,[eax]
+            movups xmm1,[eax+0x10]
+            movups xmm2,[eax+0x20]
+            movups xmm3,[eax+0x30]
+
+            // Prepare for position invert
+            movss xmm4,negOne
+
+            movss [eax],xmm0
+            movss [eax+0x04],xmm1
+            movss [eax+0x08],xmm2
+
+            // Left-shift the vectors
+            shufps xmm0,xmm0,0x49
+            shufps xmm1,xmm1,0x49
+            shufps xmm2,xmm2,0x49
+
+            // Pos invert prep
+            shufps xmm4,xmm4,0x40
+
+            movss [eax+0x10],xmm0
+            movss [eax+0x14],xmm1
+            movss [eax+0x18],xmm2
+
+            // Left-shift the vectors
+            shufps xmm0,xmm0,0x49
+            shufps xmm1,xmm1,0x49
+            shufps xmm2,xmm2,0x49
+
+            movss [eax+0x20],xmm0
+            movss [eax+0x24],xmm1
+            movss [eax+0x28],xmm2
+
+            // Invert the position
+            mulps xmm3,xmm4
+            movups [eax+0x30],xmm3
+        }
+    }
+
+    float& operator [] ( unsigned int i )
     {
         return ((float*)(this))[i];
     }
