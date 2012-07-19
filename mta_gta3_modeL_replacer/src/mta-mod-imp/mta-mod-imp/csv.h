@@ -13,14 +13,16 @@ typedef unsigned char **CSV_ROW;
 
 class CCSV
 {
+    friend CCSV*    CreateCSV( const char *filename );
 	friend CCSV*	LoadCSV(const char *filename);
 
 public:
-					CCSV();
+					CCSV( FILE *ioptr );
 					~CCSV();
 
 	unsigned int	GetCurrentLine();
 
+    void            WriteNextRow( const std::vector <std::string>& items );
 	bool			ReadNextRow();
 	unsigned int	GetItemCount();
 	const char*		GetRowItem(unsigned int id);

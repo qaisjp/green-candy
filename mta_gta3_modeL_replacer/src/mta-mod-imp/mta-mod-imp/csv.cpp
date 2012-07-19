@@ -5,27 +5,33 @@
 	Init
 ======================*/
 
+CCSV*   CreateCSV( const char *filename )
+{
+    FILE *file = fopen( filename, "w" );
+
+    if ( !file )
+        return NULL;
+
+    return new CCSV( file );
+}
+
 // Inits .csv files
 CCSV*	LoadCSV(const char *filename)
 {
-	CCSV *csv;
 	FILE *file = fopen(filename, "r");
 
 	if (!file)
 		return NULL;
 
-	csv = new CCSV();
-
-	csv->m_currentLine = 0;
-	csv->m_numItems = 0;
-	csv->m_file = file;
-	csv->m_row = NULL;
-	return csv;
+    return new CCSV( file );
 }
 
-CCSV::CCSV()
+CCSV::CCSV( FILE *ioptr )
 {
-
+    m_currentLine = 0;
+    m_numItems = 0;
+    m_file = ioptr;
+    m_row = NULL;
 }
 
 CCSV::~CCSV()
@@ -48,6 +54,27 @@ unsigned int	CCSV::GetItemCount()
 unsigned int	CCSV::GetCurrentLine()
 {
 	return m_currentLine;
+}
+
+// Writes a line
+void    CCSV::WriteNextRow( const std::vector <std::string>& items )
+{
+    std::vector <std::string>::const_iterator iter = items.begin();
+
+    while ( iter != items.end() )
+    {
+        const std::string& item = *iter;
+        fwrite( item.c_str(), 1, item.size(), m_file );
+
+        iter++;
+
+        if ( iter != items.end() )
+            fputc( CSV_SEPERATION, m_file );
+    }
+
+    fputc( '\n', m_file );
+
+	m_currentLine++;
 }
 
 // Gets a line
