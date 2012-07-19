@@ -134,10 +134,11 @@ inline SString GetClassTypeName ( CEntity* )                { return "entity"; }
 template < class T >
 CResource* UserDataCast ( CResource*, void* ptr, lua_State* )
 {
-    CResource* pResource = reinterpret_cast < CResource* > ( ptr );
-    if ( CLuaDefs::m_pResourceManager->Exists ( pResource ) )
-        return pResource;
-    return NULL;
+    CResource* pResource = (CResource*)ptr;
+    if ( !CLuaFunctionDefs::m_pResourceManager->Exists( pResource ) )
+        return NULL;
+
+    return pResource;
 }
 
 

@@ -25,10 +25,10 @@ LuaMain::LuaMain( LuaManager& manager ) : m_system( manager )
 
 LuaMain::~LuaMain()
 {
-    // TODO: Kill hyperstructure out of management VM
+    // TODO: Think about removing LuaMain out of the hyperstructure management!
 }
 
-// Custom Lua stack argument->reference routine
+// Custom Lua 'stack argument'->'reference' routine
 LuaFunctionRef LuaMain::CreateReference( int stack )
 {
     const void *ptr = lua_topointer( m_lua, stack );

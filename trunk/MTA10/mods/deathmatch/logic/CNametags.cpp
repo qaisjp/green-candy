@@ -75,7 +75,7 @@ void CNametags::DrawFromAim ( void )
 
             // Grab our controller state
             CControllerState State;
-            g_pGame->GetPad ()->GetCurrentControllerState ( &State );
+            State = g_pGame->GetPad()->GetState();
 
             // Grab our current weapon slot. Use screen center if melee or none
             CVector vecStart;
@@ -95,13 +95,12 @@ void CNametags::DrawFromAim ( void )
                 CCam* pActive = pCamera->GetCam ( pCamera->GetActiveCam () );
 
                 // Grab the camera matrix
-                CMatrix matCamera;
-                pCamera->GetMatrix ( &matCamera );
-                vecStart = matCamera.vPos;
+                RwMatrix matCamera = pCamera->GetMatrix();
+                vecStart = matCamera.pos;
 
                 // Range
                 float fRange;
-                if ( eSlot == WEAPONSLOT_TYPE_RIFLE && State.RightShoulder1 )
+                if ( eSlot == WEAPONSLOT_TYPE_RIFLE && State.IsRightShoulder1Down() )
                 {
                     fRange = SNIPER_AIM_VISIBLE_RANGE;
                 }
@@ -119,7 +118,7 @@ void CNametags::DrawFromAim ( void )
             {
                 // Grab the weapon and keysync state. If it exists and he holds Target down
                 CWeapon* pPlayerWeapon = pLocalPlayer->GetWeapon ();
-                if ( pPlayerWeapon && State.RightShoulder1 )
+                if ( pPlayerWeapon && State.IsRightShoulder1Down() )
                 {
                     // Grab the gun muzzle position
                     CWeaponInfo* pCurrentWeaponInfo = pPlayerWeapon->GetInfo ();
@@ -127,7 +126,7 @@ void CNametags::DrawFromAim ( void )
                     pLocalPlayer->GetTransformedBonePosition ( BONE_RIGHTWRIST, vecGunMuzzle );
 
                     // Grab the target point
-                    pCamera->Find3rdPersonCamTargetVector ( AIM_VISIBLE_RANGE, &vecGunMuzzle, &vecStart, &vecTarget );
+                    pCamera->Find3rdPersonCamTargetVector ( AIM_VISIBLE_RANGE, vecGunMuzzle, vecStart, vecTarget );
                 }
                 else
                 {
@@ -135,9 +134,8 @@ void CNametags::DrawFromAim ( void )
                     CCam* pActive = pCamera->GetCam ( pCamera->GetActiveCam () );
 
                     // Grab the camera matrix
-                    CMatrix matCamera;
-                    pCamera->GetMatrix ( &matCamera );
-                    vecStart = matCamera.vPos;
+                    RwMatrix matCamera = pCamera->GetMatrix();
+                    vecStart = matCamera.pos;
 
                     // Find the target position
                     CVector vecFront = *pActive->GetFront ();
@@ -334,8 +332,7 @@ void CNametags::DrawDefault ( void )
     CVehicle * pLocalGameVehicle = NULL;
     if ( pLocalVehicle ) pLocalGameVehicle = pLocalVehicle->GetGameVehicle ();
 
-    CMatrix CameraMatrix;
-    g_pGame->GetCamera ()->GetMatrix ( &CameraMatrix );
+    RwMatrix CameraMatrix = g_pGame->GetCamera()->GetMatrix();
 
     // Remove collision from our local vehicle (if we have one)
     if ( pLocalVehicle ) pLocalVehicle->WorldIgnore ( true );
@@ -378,7 +375,7 @@ void CNametags::DrawDefault ( void )
             flags.bCheckVehicles = true;
             flags.bCheckPeds = false;
             flags.bCheckObjects = true;
-            bCollision = g_pCore->GetGame ()->GetWorld ()->ProcessLineOfSight ( &CameraMatrix.vPos, &vecPlayerPosition, &pColPoint, &pGameEntity, flags );
+            bCollision = g_pCore->GetGame ()->GetWorld ()->ProcessLineOfSight ( &CameraMatrix.pos, &vecPlayerPosition, &pColPoint, &pGameEntity, flags );
             if ( !bCollision || ( pGameEntity && pPlayerVehicle && pGameEntity == pPlayerVehicle->GetGameEntity() ) )
             {
                 pPlayer->SetNametagDistance ( sqrt ( fDistanceExp ) );

@@ -25,7 +25,6 @@
 #include "StdInc.h"
 #include <net/SyncStructures.h>
 
-using SharedUtil::CalcMTASAPath;
 using std::list;
 using std::vector;
 
@@ -236,14 +235,14 @@ CClientGame::CClientGame ( bool bLocalPlay )
     g_pCore->GetKeyBinds ()->SetCharacterKeyHandler ( CClientGame::StaticCharacterKeyHandler );
     g_pNet->RegisterPacketHandler ( CClientGame::StaticProcessPacket );
 
-    m_pLuaManager = new CLuaManager ( this );
-    m_pScriptDebugging = new CScriptDebugging ( m_pLuaManager );
-    m_pScriptDebugging->SetLogfile ( CalcMTASAPath("mta\\clientscript.log"), 3 );
+    m_pLuaManager = new CLuaManager;
+    m_pScriptDebugging = &m_pLuaManager->GetDebug();
+    m_pScriptDebugging->SetLogfile ( "clientscript.log", 3 );
+    m_RegisteredCommands = new CRegisteredCommands( *m_pLuaManager );
 
-    m_pLuaManager->SetScriptDebugging ( m_pScriptDebugging );
     CStaticFunctionDefinitions ( m_pLuaManager, &m_Events, g_pCore, g_pGame, this, m_pManager );
     CLuaFunctionDefs::Initialize ( m_pLuaManager, m_pScriptDebugging, this );
-    CLuaDefs::Initialize ( this, m_pLuaManager, m_pScriptDebugging );
+    CLuaFunctionDefs::Initialize ( this, m_pLuaManager, m_pScriptDebugging );
 
     // Disable the enter/exit vehicle key button (we want to handle this button ourselves)
     g_pMultiplayer->DisableEnterExitVehicleKey ( true );
@@ -261,17 +260,17 @@ CClientGame::CClientGame ( bool bLocalPlay )
 
     m_bBeingDeleted = false;
 
-    #if defined (MTA_DEBUG) || defined (MTA_BETA)
+#if defined (MTA_DEBUG) || defined (MTA_BETA)
     m_bShowSyncingInfo = false;
-    #endif
+#endif
 
-    #ifdef MTA_DEBUG
+#ifdef MTA_DEBUG
     m_pShowPlayer = m_pShowPlayerTasks = NULL;
     m_bMimicLag = false;
     m_ulLastMimicLag = 0;
     m_bDoPaintballs = false;
     m_bShowInterpolation = false;
-    #endif
+#endif
 
     // Add our lua events
     AddBuiltInEvents ();
@@ -390,15 +389,13 @@ CClientGame::~CClientGame ( void )
     m_pBlendedWeather = NULL;
     delete m_pMovingObjectsManager;
     delete m_pRadarMap;
+    delete m_RegisteredCommands;
     delete m_pLuaManager;
 
     delete m_pRootEntity;
 
     delete m_pZoneNames;
     delete m_pScriptKeyBinds;    
-
-    // Delete the scriptdebugger
-    delete m_pScriptDebugging;
 
     // Delete the transfer boxes
     delete m_pTransferBox;
@@ -599,7 +596,7 @@ bool CClientGame::StartLocalGame ( const char* szConfig, const char* szPassword 
     if ( m_bLocalPlay )
     {
         // Start the server locally
-        if ( !m_Server.Start ( strTemp ) )
+        if ( !g_pCore->GetServer()->Start( strTemp ) )
         {
             m_bWaitingForLocalConnect = true;
             m_bErrorStartingLocal = true;
@@ -608,9 +605,8 @@ bool CClientGame::StartLocalGame ( const char* szConfig, const char* szPassword 
             return false;
         }
 
-        if ( szPassword )
-            m_Server.SetPassword ( szPassword );
-
+        m_localServerPassword = szPassword;
+        
         // Display the status box<<<<<
         g_pCore->ShowMessageBox ( "Local Server", "Starting local server ...", MB_ICON_INFO );
     }
@@ -830,6 +826,10 @@ void CClientGame::DoPulsePostFrame ( void )
     }
 }
 
+typedef std::map <CEntitySAInterface*, CClientEntity*> cachedColl_t;
+
+static bool m_BuiltCollisionMapThisFrame = false;
+static cachedColl_t m_CachedCollisionMap;
 
 void CClientGame::DoPulses ( void )
 {
@@ -846,9 +846,6 @@ void CClientGame::DoPulses ( void )
 
     // Call debug code if debug mode
     m_Foo.DoPulse ();
-
-    // Output stuff from our internal server eventually
-    m_Server.DoPulse ();
 
     if ( m_pManager->IsGameLoaded () && m_Status == CClientGame::STATUS_JOINED && GetTickCount64_ () - m_llLastTransgressionTime > 60000 )
     {
@@ -945,14 +942,13 @@ void CClientGame::DoPulses ( void )
             g_pNet->SetServerBitStreamVersion ( MTA_DM_BITSTREAM_VERSION );
 
             // Run the game normally.
-            StartGame ( m_szLocalNick, m_Server.GetPassword().c_str() );
+            StartGame ( m_szLocalNick, m_localServerPassword.c_str() );
         }
         else
         {
             // Going to try connecting? Do this when the internal server has booted
             // and we haven't started the connecting.
-            if ( m_Server.IsReady () &&
-                m_iLocalConnectAttempts == 0 )
+            if ( g_pCore->GetServer()->IsReady () && m_iLocalConnectAttempts == 0 )
             {
                 g_pCore->ShowMessageBox ( "Local Server", "Connecting to local server...", MB_ICON_INFO );
 
@@ -1007,7 +1003,6 @@ void CClientGame::DoPulses ( void )
 
         // Get rid of our deleted elements
         m_ElementDeleter.DoDeleteAll ();
-        m_pLuaManager->ProcessPendingDeleteList ();
 
         // Get rid of deleted GUI elements
         g_pCore->GetGUI ()->CleanDeadPool ();
@@ -1349,13 +1344,13 @@ void CClientGame::SetMimic ( unsigned int uiMimicCount )
 #endif
 
 
-void CClientGame::DoVehicleInKeyCheck ( void )
+void CClientGame::DoVehicleInKeyCheck()
 {
     // Grab the controller state
-    CControllerState cs;
-    g_pGame->GetPad ()->GetCurrentControllerState ( &cs );
+    CControllerState cs = g_pGame->GetPad ()->GetState();
+
     static bool bButtonTriangleWasDown = false;
-    if ( cs.ButtonTriangle )
+    if ( cs.IsTriangleDown() )
     {
         if ( !bButtonTriangleWasDown )
         {
@@ -2279,9 +2274,8 @@ bool CClientGame::ProcessMessageForCursorEvents ( HWND hwnd, UINT uMsg, WPARAM w
                     // Grab the camera position
                     CCamera* pCamera = g_pGame->GetCamera ();
                     CCam* pCam = pCamera->GetCam ( pCamera->GetActiveCam () );
-                    CMatrix matCamera;
-                    pCamera->GetMatrix ( &matCamera );
-                    vecOrigin = matCamera.vPos;
+                    RwMatrix matCamera = pCamera->GetMatrix();
+                    vecOrigin = matCamera.pos;
 
                     CColPoint* pColPoint = NULL;
                     CEntity* pGameEntity = NULL;
@@ -2499,126 +2493,125 @@ void CClientGame::SetWanted ( DWORD dwWanted )
 }
 
 
-void CClientGame::AddBuiltInEvents ( void )
+void CClientGame::AddBuiltInEvents()
 {
-
     // Resource events
-    m_Events.AddEvent ( "onClientResourceStart", "resource", NULL, false );
-    m_Events.AddEvent ( "onClientResourceStop", "resource", NULL, false );
+    m_Events.Add( "onClientResourceStart", "resource", NULL, false );
+    m_Events.Add( "onClientResourceStop", "resource", NULL, false );
 
     // Element events
-    m_Events.AddEvent ( "onClientElementDataChange", "name", NULL, false );
-    m_Events.AddEvent ( "onClientElementStreamIn", "", NULL, false );
-    m_Events.AddEvent ( "onClientElementStreamOut", "", NULL, false );
-    m_Events.AddEvent ( "onClientElementDestroy", "", NULL, false );
+    m_Events.Add( "onClientElementDataChange", "name", NULL, false );
+    m_Events.Add( "onClientElementStreamIn", "", NULL, false );
+    m_Events.Add( "onClientElementStreamOut", "", NULL, false );
+    m_Events.Add( "onClientElementDestroy", "", NULL, false );
 
     // Player events
-    m_Events.AddEvent ( "onClientPlayerJoin", "", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerQuit", "reason", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerTarget", "target", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerSpawn", "team", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerChangeNick", "oldNick", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerVehicleEnter", "vehicle, seat", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerVehicleExit", "vehicle, seat", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerTask", "priority, slot, name", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerWeaponSwitch", "previous, current", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerStuntStart", "type", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerStuntFinish", "type, time, distance", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerRadioSwitch", "", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerDamage", "attacker, weapon, bodypart", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerWeaponFire", "weapon, ammo, ammoInClip, hitX, hitY, hitZ, hitElement", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerWasted", "", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerChoke", "", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerVoiceStart", "", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerVoiceStop", "", NULL, false );
-    m_Events.AddEvent ( "onClientPlayerStealthKill", "target", NULL, false );
+    m_Events.Add( "onClientPlayerJoin", "", NULL, false );
+    m_Events.Add( "onClientPlayerQuit", "reason", NULL, false );
+    m_Events.Add( "onClientPlayerTarget", "target", NULL, false );
+    m_Events.Add( "onClientPlayerSpawn", "team", NULL, false );
+    m_Events.Add( "onClientPlayerChangeNick", "oldNick", NULL, false );
+    m_Events.Add( "onClientPlayerVehicleEnter", "vehicle, seat", NULL, false );
+    m_Events.Add( "onClientPlayerVehicleExit", "vehicle, seat", NULL, false );
+    m_Events.Add( "onClientPlayerTask", "priority, slot, name", NULL, false );
+    m_Events.Add( "onClientPlayerWeaponSwitch", "previous, current", NULL, false );
+    m_Events.Add( "onClientPlayerStuntStart", "type", NULL, false );
+    m_Events.Add( "onClientPlayerStuntFinish", "type, time, distance", NULL, false );
+    m_Events.Add( "onClientPlayerRadioSwitch", "", NULL, false );
+    m_Events.Add( "onClientPlayerDamage", "attacker, weapon, bodypart", NULL, false );
+    m_Events.Add( "onClientPlayerWeaponFire", "weapon, ammo, ammoInClip, hitX, hitY, hitZ, hitElement", NULL, false );
+    m_Events.Add( "onClientPlayerWasted", "", NULL, false );
+    m_Events.Add( "onClientPlayerChoke", "", NULL, false );
+    m_Events.Add( "onClientPlayerVoiceStart", "", NULL, false );
+    m_Events.Add( "onClientPlayerVoiceStop", "", NULL, false );
+    m_Events.Add( "onClientPlayerStealthKill", "target", NULL, false );
 
     // Ped events
-    m_Events.AddEvent ( "onClientPedDamage", "attacker, weapon, bodypart", NULL, false );
-    m_Events.AddEvent ( "onClientPedWeaponFire", "weapon, ammo, ammoInClip, hitX, hitY, hitZ, hitElement", NULL, false );
-    m_Events.AddEvent ( "onClientPedWasted", "", NULL, false );
-    m_Events.AddEvent ( "onClientPedChoke", "", NULL, false );
+    m_Events.Add( "onClientPedDamage", "attacker, weapon, bodypart", NULL, false );
+    m_Events.Add( "onClientPedWeaponFire", "weapon, ammo, ammoInClip, hitX, hitY, hitZ, hitElement", NULL, false );
+    m_Events.Add( "onClientPedWasted", "", NULL, false );
+    m_Events.Add( "onClientPedChoke", "", NULL, false );
 
     // Vehicle events
-    m_Events.AddEvent ( "onClientVehicleRespawn", "", NULL, false );
-    m_Events.AddEvent ( "onClientVehicleEnter", "player, seat", NULL, false );
-    m_Events.AddEvent ( "onClientVehicleExit", "player, seat", NULL, false );
-    m_Events.AddEvent ( "onClientVehicleStartEnter", "player, seat", NULL, false );
-    m_Events.AddEvent ( "onClientVehicleStartExit", "player, seat", NULL, false );
-    m_Events.AddEvent ( "onClientTrailerAttach", "towedBy", NULL, false );
-    m_Events.AddEvent ( "onClientTrailerDetach", "towedBy", NULL, false );
-    m_Events.AddEvent ( "onClientVehicleExplode", "", NULL, false );
+    m_Events.Add( "onClientVehicleRespawn", "", NULL, false );
+    m_Events.Add( "onClientVehicleEnter", "player, seat", NULL, false );
+    m_Events.Add( "onClientVehicleExit", "player, seat", NULL, false );
+    m_Events.Add( "onClientVehicleStartEnter", "player, seat", NULL, false );
+    m_Events.Add( "onClientVehicleStartExit", "player, seat", NULL, false );
+    m_Events.Add( "onClientTrailerAttach", "towedBy", NULL, false );
+    m_Events.Add( "onClientTrailerDetach", "towedBy", NULL, false );
+    m_Events.Add( "onClientVehicleExplode", "", NULL, false );
 
     // GUI events
-    m_Events.AddEvent ( "onClientGUIClick", "button, state, absoluteX, absoluteY", NULL, false );
-    m_Events.AddEvent ( "onClientGUIDoubleClick", "button, state, absoluteX, absoluteY", NULL, false );
-    m_Events.AddEvent ( "onClientGUIMouseDown", "button, absoluteX, absoluteY", NULL, false );
-    m_Events.AddEvent ( "onClientGUIMouseUp", "button, absoluteX, absoluteY", NULL, false );
-    m_Events.AddEvent ( "onClientGUIScroll", "element", NULL, false );
-    m_Events.AddEvent ( "onClientGUIChanged", "element", NULL, false );
-    m_Events.AddEvent ( "onClientGUIAccepted", "element", NULL, false );
-    //m_Events.AddEvent ( "onClientGUIClose", "element", NULL, false );
-    //m_Events.AddEvent ( "onClientGUIKeyDown", "element", NULL, false );
-    m_Events.AddEvent ( "onClientGUITabSwitched", "element", NULL, false );
-    m_Events.AddEvent ( "onClientGUIComboBoxAccepted", "element", NULL, false );
+    m_Events.Add( "onClientGUIClick", "button, state, absoluteX, absoluteY", NULL, false );
+    m_Events.Add( "onClientGUIDoubleClick", "button, state, absoluteX, absoluteY", NULL, false );
+    m_Events.Add( "onClientGUIMouseDown", "button, absoluteX, absoluteY", NULL, false );
+    m_Events.Add( "onClientGUIMouseUp", "button, absoluteX, absoluteY", NULL, false );
+    m_Events.Add( "onClientGUIScroll", "element", NULL, false );
+    m_Events.Add( "onClientGUIChanged", "element", NULL, false );
+    m_Events.Add( "onClientGUIAccepted", "element", NULL, false );
+    //m_Events.Add( "onClientGUIClose", "element", NULL, false );
+    //m_Events.Add( "onClientGUIKeyDown", "element", NULL, false );
+    m_Events.Add( "onClientGUITabSwitched", "element", NULL, false );
+    m_Events.Add( "onClientGUIComboBoxAccepted", "element", NULL, false );
 
     // Input events
-    m_Events.AddEvent ( "onClientDoubleClick", "button, screenX, screenY, worldX, worldY, worldZ, element", NULL, false );
-    m_Events.AddEvent ( "onClientMouseMove", "screenX, screenY", NULL, false );
-    m_Events.AddEvent ( "onClientMouseEnter", "screenX, screenY", NULL, false );
-    m_Events.AddEvent ( "onClientMouseLeave", "screenX, screenY", NULL, false );
-    m_Events.AddEvent ( "onClientMouseWheel", "", NULL, false );
-    m_Events.AddEvent ( "onClientGUIMove", "", NULL, false );
-    m_Events.AddEvent ( "onClientGUISize", "", NULL, false );
-    m_Events.AddEvent ( "onClientGUIFocus", "", NULL, false );
-    m_Events.AddEvent ( "onClientGUIBlur", "", NULL, false );
-    m_Events.AddEvent ( "onClientKey", "key, state", NULL, false );
-    m_Events.AddEvent ( "onClientCharacter", "character", NULL, false );
+    m_Events.Add( "onClientDoubleClick", "button, screenX, screenY, worldX, worldY, worldZ, element", NULL, false );
+    m_Events.Add( "onClientMouseMove", "screenX, screenY", NULL, false );
+    m_Events.Add( "onClientMouseEnter", "screenX, screenY", NULL, false );
+    m_Events.Add( "onClientMouseLeave", "screenX, screenY", NULL, false );
+    m_Events.Add( "onClientMouseWheel", "", NULL, false );
+    m_Events.Add( "onClientGUIMove", "", NULL, false );
+    m_Events.Add( "onClientGUISize", "", NULL, false );
+    m_Events.Add( "onClientGUIFocus", "", NULL, false );
+    m_Events.Add( "onClientGUIBlur", "", NULL, false );
+    m_Events.Add( "onClientKey", "key, state", NULL, false );
+    m_Events.Add( "onClientCharacter", "character", NULL, false );
 
     // Console events
-    m_Events.AddEvent ( "onClientConsole", "text", NULL, false );
+    m_Events.Add( "onClientConsole", "text", NULL, false );
 
     // Chat events
-    m_Events.AddEvent ( "onClientChatMessage", "test, r, g, b", NULL, false );
+    m_Events.Add( "onClientChatMessage", "test, r, g, b", NULL, false );
 
     // Debug events
-    m_Events.AddEvent ( "onClientDebugMessage", "message, level, file, line", NULL, false );
+    m_Events.Add( "onClientDebugMessage", "message, level, file, line", NULL, false );
 
     // Game events
-    m_Events.AddEvent ( "onClientPreRender", "", NULL, false );
-    m_Events.AddEvent ( "onClientHUDRender", "", NULL, false );
-    m_Events.AddEvent ( "onClientRender", "", NULL, false );
-    m_Events.AddEvent ( "onClientMinimize", "", NULL, false );
-    m_Events.AddEvent ( "onClientRestore", "", NULL, false );
+    m_Events.Add( "onClientPreRender", "", NULL, false );
+    m_Events.Add( "onClientHUDRender", "", NULL, false );
+    m_Events.Add( "onClientRender", "", NULL, false );
+    m_Events.Add( "onClientMinimize", "", NULL, false );
+    m_Events.Add( "onClientRestore", "", NULL, false );
 
     // Cursor events
-    m_Events.AddEvent ( "onClientClick", "button, state, screenX, screenY, worldX, worldY, worldZ, gui_clicked", NULL, false );
-    m_Events.AddEvent ( "onClientCursorMove", "relativeX, relativeX, absoluteX, absoluteY, worldX, worldY, worldZ", NULL, false );
+    m_Events.Add( "onClientClick", "button, state, screenX, screenY, worldX, worldY, worldZ, gui_clicked", NULL, false );
+    m_Events.Add( "onClientCursorMove", "relativeX, relativeX, absoluteX, absoluteY, worldX, worldY, worldZ", NULL, false );
 
     // Marker events
-    m_Events.AddEvent ( "onClientMarkerHit", "entity, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onClientMarkerLeave", "entity, matchingDimension", NULL, false );
+    m_Events.Add( "onClientMarkerHit", "entity, matchingDimension", NULL, false );
+    m_Events.Add( "onClientMarkerLeave", "entity, matchingDimension", NULL, false );
 
     // Marker events
-    m_Events.AddEvent ( "onClientPickupHit", "entity, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onClientPickupLeave", "entity, matchingDimension", NULL, false );
+    m_Events.Add( "onClientPickupHit", "entity, matchingDimension", NULL, false );
+    m_Events.Add( "onClientPickupLeave", "entity, matchingDimension", NULL, false );
 
     // Col-shape events
-    m_Events.AddEvent ( "onClientColShapeHit", "entity, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onClientColShapeLeave", "entity, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onClientElementColShapeHit", "colShape, matchingDimension", NULL, false );
-    m_Events.AddEvent ( "onClientElementColShapeLeave", "colShape, matchingDimension", NULL, false );
+    m_Events.Add( "onClientColShapeHit", "entity, matchingDimension", NULL, false );
+    m_Events.Add( "onClientColShapeLeave", "entity, matchingDimension", NULL, false );
+    m_Events.Add( "onClientElementColShapeHit", "colShape, matchingDimension", NULL, false );
+    m_Events.Add( "onClientElementColShapeLeave", "colShape, matchingDimension", NULL, false );
 
     // Explosion events
-    m_Events.AddEvent ( "onClientExplosion", "x, y, z, type", NULL, false );
+    m_Events.Add( "onClientExplosion", "x, y, z, type", NULL, false );
 
     // Projectile events
-    m_Events.AddEvent ( "onClientProjectileCreation", "creator", NULL, false );
+    m_Events.Add( "onClientProjectileCreation", "creator", NULL, false );
 
     // Sound events
-    m_Events.AddEvent ( "onClientSoundStream", "success, length, streamName", NULL, false );
-    m_Events.AddEvent ( "onClientSoundFinishedDownload", "length", NULL, false );
-    m_Events.AddEvent ( "onClientSoundChangedMeta", "streamTitle", NULL, false );
+    m_Events.Add( "onClientSoundStream", "success, length, streamName", NULL, false );
+    m_Events.Add( "onClientSoundFinishedDownload", "length", NULL, false );
+    m_Events.Add( "onClientSoundChangedMeta", "streamTitle", NULL, false );
 }
 
 
@@ -2794,16 +2787,16 @@ void CClientGame::DrawPlayerDetails ( CClientPlayer* pPlayer )
                         vecPosition.fX, vecPosition.fY, vecPosition.fZ,
                         fRotation, fCameraRotation,
                         fHealth,
-                        cs.LeftShoulder1,
-                        cs.RightShoulder1,
-                        cs.ButtonSquare,
-                        cs.ButtonCross,
-                        cs.ButtonCircle,
-                        cs.ShockButtonL,
-                        cs.m_bPedWalk,
-                        cs.m_bVehicleMouseLook,
-                        cs.LeftStickX,
-                        cs.LeftStickY,
+                        cs.m_ls1,
+                        cs.m_rs1,
+                        cs.m_action1,
+                        cs.m_action3,
+                        cs.m_action4,
+                        cs.m_action5,
+                        cs.m_pedWalk,
+                        cs.m_vehicleMouseLook,
+                        cs.m_leftAxisX,
+                        cs.m_leftAxisY,
                         iPrimaryTask,
                         bIsDucked,
                         bWearingGoggles,
@@ -2924,7 +2917,7 @@ void CClientGame::UpdateMimics ( void )
 
             // Is the current weapon goggles (44 or 45) or a camera (43), or a detonator (40), don't apply the fire key
             if ( weaponSlot == 11 || weaponSlot == 12 || ucWeaponType == 43 )
-                Controller.ButtonCircle = 0;
+                Controller.SetCircleDown( false );
 
             CClientVehicle* pVehicle = m_pLocalPlayer->GetOccupiedVehicle ();
             unsigned int uiSeat = m_pLocalPlayer->GetOccupiedVehicleSeat ();
@@ -2979,7 +2972,7 @@ void CClientGame::UpdateMimics ( void )
                 pMimic->SetDoingGangDriveby ( bDoingDriveby );
                 pMimic->SetStealthAiming ( bStealthAiming );
 
-                Controller.ShockButtonL = 0;
+                Controller.m_action5 = 0;
 
                 if ( m_bMimicLag )
                 {
@@ -3003,9 +2996,7 @@ void CClientGame::UpdateMimics ( void )
                 if ( ucWeaponType != 0 )
                 {
                     if ( ucWeaponType == 44 || ucWeaponType == 45 )
-                    {
-                        Controller.ButtonCircle = 0;
-                    }
+                        Controller.SetCircleDown( false );
 
                     if ( m_bMimicLag )
                     {
@@ -3536,7 +3527,7 @@ bool CClientGame::ProcessCollisionHandler ( CEntitySAInterface* pThisInterface, 
         m_BuiltCollisionMapThisFrame = true;
         m_CachedCollisionMap.clear ();
 
-        std::map < CClientEntity*, bool > ::iterator iter = m_AllDisabledCollisions.begin ();
+        disabledColl_t::iterator iter = m_AllDisabledCollisions.begin ();
         for ( ; iter != m_AllDisabledCollisions.end () ; iter++ )
         {
             CClientEntity* pEntity = iter->first;
@@ -3549,7 +3540,7 @@ bool CClientGame::ProcessCollisionHandler ( CEntitySAInterface* pThisInterface, 
     }
 
     // Check both elements appear in the cached map before doing extra processing
-    std::map < CEntitySAInterface*, CClientEntity* > ::iterator iter1 = m_CachedCollisionMap.find ( (CEntitySAInterface*)pThisInterface );
+    cachedColl_t::iterator iter1 = m_CachedCollisionMap.find ( (CEntitySAInterface*)pThisInterface );
     if ( iter1 != m_CachedCollisionMap.end () )
     {
         std::map < CEntitySAInterface*, CClientEntity* > ::iterator iter2 = m_CachedCollisionMap.find ( (CEntitySAInterface*)pOtherInterface );

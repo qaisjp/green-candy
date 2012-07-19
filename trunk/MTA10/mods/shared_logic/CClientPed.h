@@ -100,7 +100,7 @@ struct SLastSyncedPedData
 {
     float               fHealth;
     float               fArmour;
-    CVector             vPosition;
+    CVector             position;
     CVector             vVelocity;
     float               fRotation;
 };
@@ -132,8 +132,8 @@ public:
 
     inline bool                 IsLocalPlayer()                                             { return m_bIsLocalPlayer; }
 
-    bool                        GetMatrix( CMatrix& Matrix ) const;
-    bool                        SetMatrix( const CMatrix& Matrix );
+    bool                        GetMatrix( RwMatrix& Matrix ) const;
+    bool                        SetMatrix( const RwMatrix& Matrix );
     virtual CSphere             GetWorldBoundingSphere();
 
     void                        GetPosition( CVector& vecPosition ) const;
@@ -275,7 +275,7 @@ public:
   
     void                        SetWearingGoggles( bool bWearing );
     inline bool                 IsWearingGoggles( bool bCheckMoving = false );
-    bool                        IsMovingGoggles();
+    bool                        IsMovingGoggles( bool& putOn );
 
     void                        WorldIgnore( bool bIgnore );
 
@@ -377,6 +377,7 @@ public:
     void                        KillAnimation();
     inline CAnimBlock *         GetAnimationBlock()                                         { return m_pAnimationBlock; }
     inline char *               GetAnimationName()                                          { return m_szAnimationName; }
+    void                        SetAnimationProgress( const char *name, float progress );
 
     bool                        IsUsingGun();
 
@@ -463,7 +464,7 @@ public:
     bool                        m_bIsLocalPlayer;
     int                         m_pRespawnState;
     unsigned long               m_ulModel;  
-    CMatrix                     m_matFrozen;
+    RwMatrix                    m_matFrozen;
     bool                        m_bRadioOn;
     unsigned char               m_ucRadioChannel;
     bool                        m_bHealthLocked;
@@ -523,7 +524,7 @@ public:
     float                       m_fCurrentRotation;
     float                       m_fMoveSpeed;
     bool                        m_bCanBeKnockedOffBike;
-    CMatrix                     m_Matrix;
+    RwMatrix                    m_Matrix;
     CVector                     m_vecMoveSpeed;
     CVector                     m_vecTurnSpeed;
     eWeaponSlot                 m_CurrentWeaponSlot;

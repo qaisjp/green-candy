@@ -370,33 +370,30 @@ void CPedRPCs::SetPedAnimationProgress ( CClientEntity* pSource, NetBitStreamInt
     unsigned char ucAnimSize;
     float fProgress;
 
-    if ( bitStream.Read ( ucAnimSize ) )
+    if ( !bitStream.Read( ucAnimSize ) )
+        return;
+
+    // Grab the ped
+    CClientPed *ped = m_pPedManager->Get( pSource->GetID(), true );
+
+    if ( !ped )
+        return;
+
+    if ( ucAnimSize > 0 )
     {
-        // Grab the ped
-        CClientPed * pPed = m_pPedManager->Get ( pSource->GetID (), true );
-        if ( pPed )
+        if ( bitStream.Read ( szAnimName, ucAnimSize ) )
         {
-            if ( ucAnimSize > 0 )
-            {
-                if ( bitStream.Read ( szAnimName, ucAnimSize ) )
-                {
-                    szAnimName [ ucAnimSize ] = 0;
-                    if ( bitStream.Read ( fProgress ) )
-                    {
-                        CAnimBlendAssociation* pA = g_pGame->GetAnimManager ()->RpAnimBlendClumpGetAssociation ( pPed->GetClump (), szAnimName );
-                        if ( pA )
-                        {
-                            pA->SetCurrentProgress ( fProgress );
-                        }
-                    }
-                }
-            }
-            else
-            {
-                pPed->KillAnimation ();
-            }
+            szAnimName[ucAnimSize] = 0;
+
+            if ( !bitStream.Read ( fProgress ) )
+                return;
+
+            ped->SetAnimationProgress( szAnimName, fProgress );
         }
+        return;
     }
+
+    ped->KillAnimation();
 }
 
 

@@ -37,11 +37,11 @@ public:
 
     bool                            IsHit                               ( const CVector& vecPosition ) const;
 
-    inline void                     GetPosition                         ( CVector& vecPosition ) const      { vecPosition = m_Matrix.vPos; };
-    inline void                     SetPosition                         ( const CVector& vecPosition )      { m_Matrix.vPos = vecPosition; };
+    inline void                     GetPosition                         ( CVector& vecPosition ) const      { vecPosition = m_Matrix.pos; };
+    inline void                     SetPosition                         ( const CVector& vecPosition )      { m_Matrix.pos = vecPosition; };
 
-    inline void                     GetMatrix                           ( CMatrix & mat )                   { mat = m_Matrix; };
-    inline void                     SetMatrix                           ( CMatrix & mat )                   { m_Matrix = mat; };
+    inline void                     GetMatrix                           ( RwMatrix& mat )                   { mat = m_Matrix; };
+    inline void                     SetMatrix                           ( const RwMatrix& mat )             { m_Matrix = mat; };
 
     inline bool                     IsVisible                           ( void ) const                      { return m_bVisible; };
     inline void                     SetVisible                          ( bool bVisible )                   { m_bVisible = bVisible; };
@@ -63,7 +63,7 @@ protected:
 
 private:
     CClientMarker *                 m_pThis;
-    CMatrix                         m_Matrix;
+    RwMatrix                        m_Matrix;
 
     bool                            m_bVisible;
     DWORD                           m_dwType;

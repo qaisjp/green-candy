@@ -12,7 +12,6 @@
 #ifndef __CMULTIPLAYER
 #define __CMULTIPLAYER
 
-#include <CMatrix.h>
 #include <CVector.h>
 
 #include <game/CExplosion.h>
@@ -180,11 +179,11 @@ public:
 
     virtual void                        Reset                       () = 0;
 
-    virtual void                        ConvertEulerAnglesToMatrix  ( CMatrix& Matrix, float fX, float fY, float fZ ) = 0;
-    virtual void                        ConvertMatrixToEulerAngles  ( const CMatrix& Matrix, float& fX, float& fY, float& fZ ) = 0;
+    virtual void                        ConvertEulerAnglesToMatrix  ( RwMatrix& Matrix, float fX, float fY, float fZ ) = 0;
+    virtual void                        ConvertMatrixToEulerAngles  ( const RwMatrix& Matrix, float& fX, float& fY, float& fZ ) = 0;
 
-    virtual void                        ConvertEulerAnglesToMatrix  ( CMatrix& Matrix, CVector & vecAngles ) = 0;
-    virtual void                        ConvertMatrixToEulerAngles  ( const CMatrix& Matrix, CVector & vecAngles ) = 0;
+    virtual void                        ConvertEulerAnglesToMatrix  ( RwMatrix& Matrix, CVector & vecAngles ) = 0;
+    virtual void                        ConvertMatrixToEulerAngles  ( const RwMatrix& Matrix, CVector & vecAngles ) = 0;
 
     virtual float                       GetGlobalGravity            () = 0;
     virtual void                        SetGlobalGravity            ( float fGravity ) = 0;

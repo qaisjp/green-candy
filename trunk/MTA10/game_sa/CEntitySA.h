@@ -155,7 +155,7 @@ public:
     unsigned char           m_numRenderedLOD;   // 53
 
     //********* BEGIN CEntityInfo **********//
-    BYTE                    m_type : 3;        // 54 (2 == Vehicle)
+    BYTE                    m_type : 3;         // 54 ( see ENTITY_TYPE_* )
     BYTE                    m_status : 5;  
     //********* END CEntityInfo **********//
 
@@ -188,8 +188,8 @@ public:
     bool                        GetUnderwater();
 
     void                        GetPosition( CVector *pos );
-    void                        GetMatrix( CMatrix *matrix ) const;
-    void                        SetMatrix( CMatrix *matrix );
+    void                        GetMatrix( RwMatrix& mat ) const;
+    void                        SetMatrix( const RwMatrix& mat );
     unsigned short              GetModelIndex();
     eEntityType                 GetEntityType();
     bool                        IsOnScreen();

@@ -19,6 +19,23 @@
 
 extern CGameSA* pGame;
 
+enum eAnimGroups
+{    
+    ANIM_GROUP_GOGGLES=32,
+    ANIM_GROUP_STEALTH_KN=87,
+};
+
+enum eAnimIDs
+{
+    ANIM_ID_WALK_CIVI = 0,
+    ANIM_ID_RUN_CIVI,
+    ANIM_ID_SPRINT_PANIC,
+    ANIM_ID_IDLE_STANCE,
+    ANIM_ID_WEAPON_CROUCH = 55,
+    ANIM_ID_GOGGLES_ON = 224,
+    ANIM_ID_STEALTH_AIM = 347
+};
+
 bool CPedSAInterface::IsPlayer()
 {
 #ifndef _SINGLEPLAYER
@@ -393,6 +410,16 @@ void CPedSA::SetStealthAiming( bool enable )
 bool CPedSA::IsStealthAiming()
 {
     return m_stealthAiming;
+}
+
+void CPedSA::SetAnimationProgress( const char *name, float progress )
+{
+    CAnimBlendAssociationSA *assoc = (CAnimBlendAssociationSA*)pGame->GetAnimManager()->RpAnimBlendClumpGetAssociation( (RpClump*)m_rwObject, name );
+    
+    if ( !assoc )
+        return;
+
+    assoc->SetCurrentProgress( progress );
 }
 
 void CPedSA::SetIsStanding( bool bStanding )
@@ -811,10 +838,10 @@ void CPedSA::QuitEnteringCar ( CVehicle * vehicle, int iSeat, bool bUnknown )
     }
 }
 
-bool CPedSA::IsWearingGoggles ( void )
+bool CPedSA::IsWearingGoggles()
 {
     DWORD dwFunc = FUNC_IsWearingGoggles;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     bool bReturn = false;
     _asm
     {
@@ -825,25 +852,31 @@ bool CPedSA::IsWearingGoggles ( void )
     return bReturn;
 }
 
-void CPedSA::SetGogglesState ( bool bIsWearingThem )
+void CPedSA::SetGogglesState( bool bIsWearingThem )
 {
     DWORD dwFunc = FUNC_TakeOffGoggles;
     if ( bIsWearingThem )
         dwFunc = FUNC_PutOnGoggles;
 
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     _asm
     {
         mov     ecx, dwThis
         call    dwFunc
     }
+
+    // Are our goggle anims loaded?
+    CAnimBlock *block = pGame->GetAnimManager()->GetAnimationBlock( "GOGGLES" );
+
+    if ( block->IsLoaded() )
+        pGame->GetAnimManager()->BlendAnimation( (RpClump*)GetInterface()->m_rwObject, ANIM_GROUP_GOGGLES, ANIM_ID_GOGGLES_ON, 4.0f );
 }
 
-void CPedSA::SetClothesTextureAndModel ( char * szTexture, char * szModel, int textureType )
+void CPedSA::SetClothesTextureAndModel( char * szTexture, char * szModel, int textureType )
 {
     DWORD dwFunc = FUNC_CPedClothesDesc__SetTextureAndModel;
     //DWORD dwThis = (DWORD)this->GetInterface()->PlayerPedData.m_pClothes;
-    DWORD dwThis = (DWORD)((CPedSAInterface *)this->GetInterface())->pPlayerData->m_pClothes;
+    DWORD dwThis = (DWORD)((CPedSAInterface *)GetInterface())->pPlayerData->m_pClothes;
     _asm
     {
         mov     ecx, dwThis
@@ -854,10 +887,10 @@ void CPedSA::SetClothesTextureAndModel ( char * szTexture, char * szModel, int t
     }
 }
 
-void CPedSA::RebuildPlayer ( void )
+void CPedSA::RebuildPlayer()
 {
     DWORD dwFunc = FUNC_CClothes__RebuildPlayer;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)>GetInterface();
     _asm
     {
         push    0
@@ -867,16 +900,16 @@ void CPedSA::RebuildPlayer ( void )
     }
 }
 
-eFightingStyle CPedSA::GetFightingStyle ( void )
+eFightingStyle CPedSA::GetFightingStyle()
 {
-    return ( eFightingStyle ) ((CPedSAInterface *)this->GetInterface())->bFightingStyle;
+    return ( eFightingStyle ) ((CPedSAInterface *)GetInterface())->bFightingStyle;
 }
 
 void CPedSA::SetFightingStyle ( eFightingStyle style, BYTE bStyleExtra )
 {
     BYTE bStyle = ( BYTE ) style;
-    BYTE* pFightingStyle = &((CPedSAInterface *)this->GetInterface())->bFightingStyle;
-    BYTE* pFightingStyleExtra = &((CPedSAInterface *)this->GetInterface())->bFightingStyleExtra;
+    BYTE* pFightingStyle = &((CPedSAInterface *)GetInterface())->bFightingStyle;
+    BYTE* pFightingStyleExtra = &GetInterface()->m_fightStyleExtra;
     if ( bStyle != *pFightingStyle )
     {
         *pFightingStyle = bStyle;
@@ -908,43 +941,40 @@ void CPedSA::SetFightingStyle ( eFightingStyle style, BYTE bStyleExtra )
 }
 
 
-CEntity* CPedSA::GetContactEntity ( void )
+CEntity* CPedSA::GetContactEntity()
 {
-    CEntitySAInterface* pInterface = ((CPedSAInterface *)this->GetInterface())->pContactEntity;
-    CPoolsSA * pPools = pGame->GetPools();
+    CEntitySAInterface* pInterface = GetInterface()->m_contactEntity;
+    CPoolsSA *pPools = pGame->GetPools();
 
     switch ( pInterface->nType )
     {
     case ENTITY_TYPE_VEHICLE:
-        return (CEntity*)(pPools->GetVehicle((DWORD *)pInterface));
+        return pPools->GetVehicle( pInterface );
     case ENTITY_TYPE_OBJECT:
-        return (CEntity*)(pPools->GetObject ((DWORD *)pInterface));
+        return pPools->GetObject( pInterface );
     }
 
     return NULL;
 }
 
-unsigned char CPedSA::GetRunState ( void )
+unsigned char CPedSA::GetRunState()
 {
-    return *(unsigned char*) (((DWORD)m_pInterface + 1332));
+    return GetInterface()->m_runState;
 }
 
 CEntity* CPedSA::GetTargetedEntity()
 {
-    CEntitySAInterface* pInterface = ((CPedSAInterface *)this->GetInterface())->m_target;
-    CPoolsSA * pPools = pGame->GetPools();
+    CEntitySAInterface *pInterface = GetInterface()->m_target;
+    CPoolsSA *pPools = pGame->GetPools();
 
-    switch ( pInterface->m_type )
+    switch( pInterface->m_type )
     {
     case ENTITY_TYPE_PED:
-        pReturn = (CEntity*)(pPools->GetPed((DWORD *)pInterface));
-        break;
+        return pPools->GetPed( pInterface );
     case ENTITY_TYPE_VEHICLE:
-        pReturn = (CEntity*)(pPools->GetVehicle((DWORD *)pInterface));
-        break;
+        return pPools->GetVehicle( pInterface );
     case ENTITY_TYPE_OBJECT:
-        pReturn = (CEntity*)(pPools->GetObject ((DWORD *)pInterface));
-        break;
+        return pPools->GetObject( pInterface );
     }
 
     return NULL;
@@ -961,37 +991,32 @@ void CPedSA::SetTargetedEntity ( CEntity* pEntity )
             pInterface = pEntitySA->GetInterface ();
     }
 
-    ((CPedSAInterface *)this->GetInterface())->pTargetedEntity = pInterface;
+    GetInterface()->m_target = pInterface;
 }
 
-
-bool CPedSA::GetCanBeShotInVehicle ( void )
+bool CPedSA::GetCanBeShotInVehicle()
 {
-    return GetPedInterface ()->pedFlags.bCanBeShotInVehicle;
+    return GetInterface()->m_pedFlags.bCanBeShotInVehicle;
 }
 
-
-bool CPedSA::GetTestForShotInVehicle ( void )
+bool CPedSA::GetTestForShotInVehicle()
 {
-    return GetPedInterface ()->pedFlags.bTestForShotInVehicle;
+    return GetInterface()->m_pedFlags.bTestForShotInVehicle;
 }
-
 
 void CPedSA::SetCanBeShotInVehicle ( bool bShot )
 {
     GetPedInterface ()->pedFlags.bCanBeShotInVehicle = bShot;
 }
 
-
 void CPedSA::SetTestForShotInVehicle ( bool bTest )
 {
     GetPedInterface ()->pedFlags.bTestForShotInVehicle = bTest;
 }
 
-
-void CPedSA::RemoveBodyPart ( int i, char c )
+void CPedSA::RemoveBodyPart( int i, char c )
 {
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     DWORD dwFunc = FUNC_CPed_RemoveBodyPart;
     _asm
     {
@@ -1002,46 +1027,41 @@ void CPedSA::RemoveBodyPart ( int i, char c )
     }
 }
 
-void CPedSA::SetFootBlood ( unsigned int uiFootBlood )
+void CPedSA::SetFootBlood( unsigned int uiFootBlood )
 {
     DWORD dwThis = (DWORD)this->GetInterface();
 
-    // Check if the ped is to have foot blood
-    if ( uiFootBlood > 0 )
-        *(unsigned short*)(dwThis + 0x46F) |= 0x10;
-    else
-        *(unsigned short*)(dwThis + 0x46F) &= ~0x10;
+    // Adjust the footBlood flag
+    GetInterface()->m_pedFlags.bDoBloodyFootprints = m_uiFootBlood != 0;
 
     // Set the amount of foot blood
-    *(unsigned int*)(dwThis + 0x750) = uiFootBlood;
+    GetInterface()->m_footBloodDensity = uiFootBlood;
 }
 
-unsigned int CPedSA::GetFootBlood ( void )
+unsigned int CPedSA::GetFootBlood()
 {
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
 
-    // Check if the ped has the foot blood flag
-    if ( *(unsigned short*)(dwThis + 0x46F) & 0x10 )
-        return *(unsigned int*)(dwThis + 0x750);
+    if ( !GetInterface()->m_pedFlags.bDoBloodyFootprints )
+        return 0;
 
-    // Otherwise, return zero as there is no foot blood
-    return 0;
+    return GetInterface()->m_footBloodDensity;
 }
 
-bool CPedSA::IsOnFire ( void )
+bool CPedSA::IsOnFire()
 {
-    return GetPedInterface()->pFireOnPed != NULL;
+    return GetInterface()->m_fire != NULL;
 }
 
-void CPedSA::SetOnFire ( bool bOnFire )
+void CPedSA::SetOnFire( bool bOnFire )
 {
-    CPedSAInterface* pInterface = GetPedInterface();
+    CPedSAInterface* pInterface = GetInterface();
     CFireSA *pFire;
 
     if ( !bOnFire )
     {
         // Make sure that we have some attached fire
-        if ( pInterface->pFireOnPed != NULL )
+        if ( pInterface->m_fire != NULL )
         {
             CFireManagerSA* pFireManager = static_cast < CFireManagerSA * > ( pGame->GetFireManager() );
             CFire* pFire = pFireManager->GetFire( static_cast < CFireSAInterface * > ( pInterface->pFireOnPed ) );
@@ -1055,7 +1075,7 @@ void CPedSA::SetOnFire ( bool bOnFire )
     }
 
     // If we are already on fire, don't apply a new fire
-    if ( pInterface->pFireOnPed )
+    if ( pInterface->m_fire )
         return;
 
     pFire = pGame->GetFireManager()->StartFire ( this, NULL, (float)DEFAULT_FIRE_PARTICLE_SIZE );
@@ -1073,7 +1093,6 @@ void CPedSA::SetOnFire ( bool bOnFire )
     pFire->SetNumGenerationsAllowed( 0 );
     pInterface->pFireOnPed = pFire->GetInterface();
 }
-
 
 void CPedSA::SetStayInSamePlace ( bool bStay )
 {

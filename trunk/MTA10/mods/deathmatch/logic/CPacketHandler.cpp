@@ -2229,7 +2229,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
     // unsigned char        (1)     - weapon type (if type is weapon)
 
     // Vehicles:
-    // CMatrix              (48)    - matrix
+    // RwMatrix             (48)    - matrix
     // unsigned char        (1)     - vehicle id
     // float                (4)     - health
     // unsigned char        (1)     - color 1
@@ -3173,7 +3173,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                             pDummy->SetPosition ( position.data.vecPosition );
                         if ( strcmp ( szTypeName, "resource" ) == 0 )
                         {
-                            CResource* pResource = g_pClientGame->m_pResourceManager->Get( szName );
+                            CResource* pResource = (CResource*)g_pClientGame->m_pResourceManager->Get( szName );
 
                             if ( pResource )
                                 pResource->SetResourceEntity( pDummy ); // problem with resource starting without this entity
@@ -4237,9 +4237,6 @@ void CPacketHandler::Packet_ResourceStart ( NetBitStreamInterface& bitStream )
                 pResource->Load ( g_pClientGame->m_pRootEntity );
         }
     }
-
-    delete [] szResourceName;
-    szResourceName = NULL;
 }
 
 void CPacketHandler::Packet_ResourceStop ( NetBitStreamInterface& bitStream )
@@ -4248,7 +4245,7 @@ void CPacketHandler::Packet_ResourceStop ( NetBitStreamInterface& bitStream )
     unsigned short usID;
     if ( bitStream.Read ( usID ) )
     {
-        CResource* pResource = g_pClientGame->m_pResourceManager->Get( usID );
+        CResource* pResource = (CResource*)g_pClientGame->m_pResourceManager->Get( usID );
         if ( pResource )
         {
             // Grab the resource entity
@@ -4262,7 +4259,7 @@ void CPacketHandler::Packet_ResourceStop ( NetBitStreamInterface& bitStream )
             }
 
             // Delete the resource
-            g_pClientGame->m_pResourceManager->RemoveResource ( usID );
+            g_pClientGame->m_pResourceManager->Remove( usID );
         }
     }
 }

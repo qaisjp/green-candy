@@ -1,10 +1,11 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CLocalServer.h
 *  PURPOSE:     Header for local server class
 *  DEVELOPERS:  Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *               
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -16,26 +17,31 @@
 #include <CClientGUIManager.h>
 #include <string>
 
+namespace LocalServer
+{
+    typedef std::vector <filePath> resNameList_t;
+}
+
 class CLocalServer
 {
 public:
-                                CLocalServer        ( const char* szConfig );
-                                ~CLocalServer       ( void );
+                                CLocalServer( const char* szConfig );
+                                ~CLocalServer();
 
 protected:
-    bool                        OnStartButtonClick  ( CGUIElement* pElement );
-    bool                        OnCancelButtonClick ( CGUIElement* pElement );
-    bool                        OnAddButtonClick    ( CGUIElement* pElement );
-    bool                        OnDelButtonClick    ( CGUIElement* pElement );
+    bool                        OnStartButtonClick( CGUIElement* pElement );
+    bool                        OnCancelButtonClick( CGUIElement* pElement );
+    bool                        OnAddButtonClick( CGUIElement* pElement );
+    bool                        OnDelButtonClick( CGUIElement* pElement );
 
     // Server config
-    bool                        Load                ( void );
-    bool                        Save                ( void );
+    bool                        Load();
+    bool                        Save();
 
-    void                        StoreConfigValue    ( const char* szNode, const char* szValue );
+    void                        StoreConfigValue( const char* szNode, const char* szValue );
 
-    void                        HandleResource      ( const char* szResource );
-    void                        GetResourceNameList ( std::vector < SString >& outResourceNameList, const SString& strResourceDirectoryPath );
+    void                        HandleResource( const char* szResource );
+    void                        GetResourceNameList( LocalServer::resNameList_t& outResourceNameList, const SString& strResourceDirectoryPath );
 
 private:
 

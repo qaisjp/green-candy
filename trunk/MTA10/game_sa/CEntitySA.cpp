@@ -266,95 +266,87 @@ VOID CEntitySA::SetPosition( CVector * vecPosition )
         SetPosition ( vecPosition->fX, vecPosition->fY, vecPosition->fZ );
 }
 
-CVector * CEntitySA::GetPosition( )
+void CEntitySA::GetPosition( CVector& pos )
 {
-    DEBUG_TRACE("CVector * CEntitySA::GetPosition( )");
-    if ( m_pInterface->Placeable.matrix )
-        return &m_pInterface->Placeable.matrix->vPos;
-    else
-        return &m_pInterface->Placeable.m_transform.m_translate; 
+    DEBUG_TRACE("void CEntitySA::GetPosition( CVector& pos )");
+
+    if ( !m_pInterface->m_matrix )
+        m_pInterface->AllocateMatrix();
+
+    pos = m_pInterface->m_matrix->pos;
 }
 
-
-CMatrix * CEntitySA::GetMatrix ( CMatrix * matrix ) const
+void CEntitySA::GetMatrix( RwMatrix& mat ) const
 {
-    DEBUG_TRACE("CMatrix * CEntitySA::GetMatrix ( CMatrix * matrix )");
-    if ( m_pInterface->Placeable.matrix && matrix )
-    {
-        MemCpyFast (&matrix->vFront,     &m_pInterface->Placeable.matrix->vFront, sizeof(CVector));
-        MemCpyFast (&matrix->vPos,           &m_pInterface->Placeable.matrix->vPos, sizeof(CVector));
-        MemCpyFast (&matrix->vUp,            &m_pInterface->Placeable.matrix->vUp, sizeof(CVector));
-        MemCpyFast (&matrix->vRight,         &m_pInterface->Placeable.matrix->vRight, sizeof(CVector));
-        return matrix;
-    }
-    else
-    {
-        return NULL;
-    }
+    DEBUG_TRACE("void CEntitySA::GetMatrix( RwMatrix& mat ) const");
+
+    if ( !m_pInterface->m_matrix )
+        m_pInterface->AllocateMatrix(); // We allocate a matrix for us
+    
+    mat = *m_pInterface->m_matrix;
 }
 
-VOID CEntitySA::SetMatrix ( CMatrix * matrix )
+void CEntitySA::SetMatrix( const RwMatrix& mat )
 {
-    DEBUG_TRACE("VOID CEntitySA::SetMatrix ( CMatrix * matrix )");
-    if ( m_pInterface->Placeable.matrix && matrix )
+    DEBUG_TRACE("void CEntitySA::SetMatrix( const RwMatrix& mat )");
+
+    if ( !m_pInterface->m_matrix )
+        m_pInterface->AllocateMatrix(); // We need a matrix nao
+
+    *m_pInterface->m_matrix = mat;
+    m_pInterface->m_position = mat.pos;
+
+    /*
+    WORD wModelID = GetModelIndex();
+    if ( wModelID == 537 || wModelID == 538 || wModelID == 569 || wModelID == 570 || wModelID == 590 || wModelID == 449 )
     {
-        MemCpyFast (&m_pInterface->Placeable.matrix->vFront,     &matrix->vFront, sizeof(CVector));
-        MemCpyFast (&m_pInterface->Placeable.matrix->vPos,           &matrix->vPos, sizeof(CVector));
-        MemCpyFast (&m_pInterface->Placeable.matrix->vUp,            &matrix->vUp, sizeof(CVector));
-        MemCpyFast (&m_pInterface->Placeable.matrix->vRight,         &matrix->vRight, sizeof(CVector));
-
-        m_pInterface->Placeable.m_transform.m_translate = matrix->vPos;
-
-        /*
-        WORD wModelID = GetModelIndex();
-        if ( wModelID == 537 || wModelID == 538 || wModelID == 569 || wModelID == 570 || wModelID == 590 || wModelID == 449 )
-        {
-            DWORD dwThis = (DWORD) m_pInterface;
-            DWORD dwFunc = 0x6F6CC0;
-            _asm
-            {
-                mov     ecx, dwThis
-                call    dwFunc
-            }
-            
-            //OutputDebugString ( "Set train position on tracks (matrix)!\n" );
-        }
-        */
-
-        pGame->GetWorld()->Remove ( this );
         DWORD dwThis = (DWORD) m_pInterface;
-        DWORD dwFunc = 0x446F90;    // CEntity::UpdateRwMatrix
+        DWORD dwFunc = 0x6F6CC0;
         _asm
         {
             mov     ecx, dwThis
             call    dwFunc
         }
-
-        dwFunc = 0x532B00;          // CEntity::UpdateRwFrame
-        _asm
-        {
-            mov     ecx, dwThis
-            call    dwFunc
-        }
-        pGame->GetWorld()->Add ( this );
+        
+        //OutputDebugString ( "Set train position on tracks (matrix)!\n" );
     }
+    */
+
+    pGame->GetWorld()->Remove( this );
+
+    DWORD dwThis = (DWORD)m_pInterface;
+    DWORD dwFunc = 0x446F90;    // CEntity::UpdateRwMatrix
+    _asm
+    {
+        mov     ecx, dwThis
+        call    dwFunc
+    }
+
+    dwFunc = 0x532B00;          // CEntity::UpdateRwFrame
+    _asm
+    {
+        mov     ecx, dwThis
+        call    dwFunc
+    }
+
+    pGame->GetWorld()->Add( this );
 }
 
-WORD CEntitySA::GetModelIndex ()
+unsigned short CEntitySA::GetModelIndex()
 {
-    DEBUG_TRACE("WORD CEntitySA::GetModelIndex ()");
-    return m_pInterface->m_nModelIndex;
+    DEBUG_TRACE("unsigned short CEntitySA::GetModelIndex()");
+    return m_pInterface->m_model;
 }
 
-eEntityType CEntitySA::GetEntityType ()
+eEntityType CEntitySA::GetEntityType()
 {
-    DEBUG_TRACE("eEntityType CEntitySA::GetEntityType ()");
-    return (eEntityType)m_pInterface->nType;
+    DEBUG_TRACE("eEntityType CEntitySA::GetEntityType()");
+    return (eEntityType)m_pInterface->m_type;
 }
 
-FLOAT CEntitySA::GetDistanceFromCentreOfMassToBaseOfModel()
+float CEntitySA::GetBasingDistance()
 {
-    DEBUG_TRACE("FLOAT CEntitySA::GetDistanceFromCentreOfMassToBaseOfModel()");
+    DEBUG_TRACE("float CEntitySA::GetBasingDistance()");
     DWORD dwFunc = FUNC_GetDistanceFromCentreOfMassToBaseOfModel;
     DWORD dwThis = (DWORD) m_pInterface;
     FLOAT fReturn;
@@ -452,43 +444,50 @@ void CEntitySA::SetVisible ( bool bVisible )
     m_pInterface->bIsVisible = bVisible;
 }
 
-VOID CEntitySA::MatrixConvertFromEulerAngles ( float fX, float fY, float fZ, int iUnknown )
+void CEntitySA::MatrixConvertFromEulerAngles( float x, float y, float z, int unk )
 {
-    RwMatrix * matrixPadded = m_pInterface->Placeable.matrix;
-    if ( matrixPadded )
+    if ( !m_pInterface->m_matrix )
+        m_pInterface->AllocateMatrix();
+
+    DWORD matint = (DWORD)m_pInterface->m_matrix;
+
+    DWORD dwFunc = FUNC_CMatrix__ConvertFromEulerAngles;
+    _asm
     {
-        DWORD dwFunc = FUNC_CMatrix__ConvertFromEulerAngles;
-        _asm
-        {
-            push    iUnknown
-            push    fZ
-            push    fY
-            push    fX
-            mov     ecx, matrixPadded
-            call    dwFunc
-        }
+        push    unk
+        push    z
+        push    y
+        push    x
+        mov     ecx,matint
+        call    dwFunc
     }
 }
 
-VOID CEntitySA::MatrixConvertToEulerAngles ( float * fX, float * fY, float * fZ, int iUnknown )
+void CEntitySA::MatrixConvertToEulerAngles( float& x, float& y, float& z, int unk )
 {
-    RwMatrix * matrixPadded = m_pInterface->Placeable.matrix;
-    if ( matrixPadded )
+    if ( !m_pInterface->m_matrix )
     {
-        DWORD dwFunc = FUNC_CMatrix__ConvertToEulerAngles;
-        _asm
-        {
-            push    iUnknown
-            push    fZ
-            push    fY
-            push    fX
-            mov     ecx, matrixPadded
-            call    dwFunc
-        }
+        x = 0;
+        y = 0;
+        z = 0;
+        return;
+    }
+
+    DWORD matint = (DWORD)m_pInterface->m_matrix;
+
+    DWORD dwFunc = FUNC_CMatrix__ConvertToEulerAngles;
+    _asm
+    {
+        push    unk
+        push    z
+        push    y
+        push    x
+        mov     ecx,matint
+        call    dwFunc
     }
 }
 
-bool CEntitySA::IsPlayingAnimation ( char * szAnimName )
+bool CEntitySA::IsPlayingAnimation( const char *name )
 {
     DWORD dwReturn = 0;
     DWORD dwFunc = FUNC_RpAnimBlendClumpGetAssociation;
@@ -496,28 +495,24 @@ bool CEntitySA::IsPlayingAnimation ( char * szAnimName )
 
     _asm
     {
-        push    szAnimName
+        push    name
         push    dwThis
         call    dwFunc
         add     esp, 8
         mov     dwReturn, eax
     }
-    if ( dwReturn )
-        return true;
-    else
-        return false;
+    return dwReturn != 0;
 }
 
-BYTE CEntitySA::GetAreaCode ( void )
+unsigned char CEntitySA::GetAreaCode()
 {
     return m_pInterface->m_areaCode;
 }
 
-void CEntitySA::SetAreaCode ( BYTE areaCode )
+void CEntitySA::SetAreaCode( unsigned char area)
 {
-    m_pInterface->m_areaCode = areaCode;
+    m_pInterface->m_areaCode = area;
 }
-
 
 void CEntitySA::GetImmunities ( bool & bNoClip, bool & bFrozen, bool & bBulletProof, bool & bFlameProof, bool & bUnk, bool & bUnk2, bool & bCollisionProof, bool & bExplosionProof )
 {

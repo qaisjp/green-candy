@@ -72,7 +72,7 @@ void CClient3DMarker::Set3DMarkerType ( unsigned long ulType )
 
 bool CClient3DMarker::IsHit ( const CVector& vecPosition ) const
 {
-    return IsPointNearPoint3D ( m_Matrix.vPos, vecPosition, m_fSize + 4 );
+    return IsPointNearPoint3D ( m_Matrix.pos, vecPosition, m_fSize + 4 );
 }
 
 
@@ -96,14 +96,14 @@ void CClient3DMarker::DoPulse ( void )
     if ( m_bMarkerStreamedIn && m_bVisible && m_pThis->GetInterior () == g_pGame->GetWorld ()->GetCurrentArea () )
     {       
         SColor color = GetColor ();
-        m_pMarker = g_pGame->Get3DMarkers ()->CreateMarker ( m_ulIdentifier, static_cast < e3DMarkerType > ( m_dwType ), &m_Matrix.vPos, m_fSize, 0.2f, color.R, color.G, color.B, color.A );
+        m_pMarker = g_pGame->Get3DMarkers ()->CreateMarker ( m_ulIdentifier, static_cast < e3DMarkerType > ( m_dwType ), &m_Matrix.pos, m_fSize, 0.2f, color.R, color.G, color.B, color.A );
         if ( m_pMarker )
         {
             // Make sure it doesn't get cleaned up
             m_pMarker->SetActive ();
             m_pMarker->SetColor ( m_Color );
             m_pMarker->SetSize ( m_fSize );
-            m_pMarker->SetMatrix ( &m_Matrix );
+            m_pMarker->SetMatrix ( m_Matrix );
 
             // This appears to do nothing
             g_pGame->GetVisibilityPlugins ()->SetClumpAlpha ( ( RpClump * ) m_pMarker->GetRwObject (), m_Color.A );

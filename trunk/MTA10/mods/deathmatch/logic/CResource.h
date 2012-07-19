@@ -41,7 +41,7 @@ class CClientEntity;
 class CResource : public Resource
 {  
 public:
-                                CResource( CLuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root, CClientEntity *entity, CClientEntity *dynamicEntity );
+                                CResource( unsigned short id, const filePath& name, CFileTranslator& root, CClientEntity *entity, CClientEntity *dynamicEntity );
                                 ~CResource();
 
     void                        Load( CClientEntity *root );

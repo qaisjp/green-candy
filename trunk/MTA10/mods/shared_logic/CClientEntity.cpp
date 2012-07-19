@@ -567,7 +567,7 @@ void CClientEntity::DeleteAllCustomData ( CLuaMain* pLuaMain, bool bRecursive )
     }
 }
 
-bool CClientEntity::GetMatrix ( CMatrix& matrix ) const
+bool CClientEntity::GetMatrix ( RwMatrix& matrix ) const
 {
     const CEntity* pEntity = GetGameEntity ();
     if ( pEntity )
@@ -580,7 +580,7 @@ bool CClientEntity::GetMatrix ( CMatrix& matrix ) const
 }
 
 
-bool CClientEntity::SetMatrix ( const CMatrix& matrix )
+bool CClientEntity::SetMatrix ( const RwMatrix& matrix )
 {
     CEntity * pEntity = GetGameEntity ();
     if ( pEntity )
@@ -1118,17 +1118,16 @@ bool CClientEntity::IsAttachToable ( void )
 }
 
 
-void CClientEntity::DoAttaching ( void )
+void CClientEntity::DoAttaching()
 {
     if ( m_pAttachedToEntity )
     {
-        CMatrix matrix, returnMatrix;
-        if ( !m_pAttachedToEntity->GetMatrix ( matrix ) )
-            m_pAttachedToEntity->GetPosition ( matrix.vPos );
+        RwMatrix matrix, returnMatrix;
+        m_pAttachedToEntity->GetMatrix( matrix );
 
-        AttachedMatrix ( matrix, returnMatrix, m_vecAttachedPosition, m_vecAttachedRotation );
+        AttachedMatrix( matrix, returnMatrix, m_vecAttachedPosition, m_vecAttachedRotation );
 
-        if ( !SetMatrix ( returnMatrix ) ) SetPosition ( returnMatrix.vPos );
+        SetMatrix ( returnMatrix );
     }
 }
 

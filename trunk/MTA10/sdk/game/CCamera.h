@@ -102,38 +102,49 @@ enum {FADE_OUT=0, FADE_IN};
 class CCamera
 {
 public:
-    // cammode 56 = heli chase, 14 = wheel cam
-    // switchstyle 1 = smooth, 2 = cut
-    virtual VOID                        TakeControl(CEntity * entity, eCamMode CamMode, int CamSwitchStyle)=0;
-    virtual VOID                        TakeControl(CVector * position, int CamSwitchStyle)=0;
-    virtual VOID                        TakeControlAttachToEntity(CEntity * TargetEntity, CEntity * AttachEntity, 
-                                                                  CVector * vecOffset, CVector * vecLookAt, 
-                                                                  float fTilt, int CamSwitchStyle)=0;
-    virtual VOID                        Restore()=0;
-    virtual VOID                        RestoreWithJumpCut()=0;
-    virtual CMatrix                     * GetMatrix ( CMatrix * matrix )=0;
-    virtual VOID                        SetMatrix ( CMatrix * matrix )=0;
-    virtual VOID                        SetCamPositionForFixedMode ( CVector * vecPosition, CVector * vecUpOffset )=0;
-    virtual VOID                        Find3rdPersonCamTargetVector ( FLOAT fDistance, CVector * vecGunMuzzle, CVector * vecSource, CVector * vecTarget )=0;
-    virtual float                       Find3rdPersonQuickAimPitch ( void ) = 0;
-    virtual BYTE                        GetActiveCam()=0;
-    virtual CCam                        * GetCam(BYTE bCameraID)=0;
-    virtual VOID                        SetWidescreen(BOOL bWidescreen)=0;
-    virtual BOOL                        GetWidescreen()=0;
-    virtual float                       GetCarZoom()=0;
-    virtual VOID                        SetCarZoom(float fCarZoom)=0;
-    virtual bool                        TryToStartNewCamMode(DWORD dwCamMode)=0;
-    virtual bool                        ConeCastCollisionResolve(CVector *pPos, CVector *pLookAt, CVector *pDest, float rad, float minDist, float *pDist)=0;
-    virtual void                        VectorTrackLinear ( CVector * pTo, CVector * pFrom, float time, bool bSmoothEnds )=0;
-    virtual bool                        IsFading ( void )=0;
-    virtual int                         GetFadingDirection ( void )=0;
-    virtual void                        Fade ( float fFadeOutTime, int iOutOrIn )=0;
-    virtual void                        SetFadeColor ( unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue )=0;
-    virtual float                       GetCameraRotation ( void )=0;
-    virtual CEntity *                   GetTargetEntity ( void )=0;
-    virtual void                        SetCameraClip ( bool bObjects, bool bVehicles )=0;
-    virtual VOID                        SetCameraViewMode ( BYTE dwCamMode )=0;
-    virtual BYTE                        GetCameraViewMode ( void )=0;
+    // camMode 56 = heli chase, 14 = wheel cam
+    // switchStyle 1 = smooth, 2 = cut
+    virtual void                        TakeControl( CEntity *entity, eCamMode mode, int switchStyle ) = 0;
+    virtual void                        TakeControl( CVector& pos, int switchStyle ) = 0;
+    virtual void                        TakeControlAttachToEntity( CEntity *target, CEntity *attach, CVector& offset, CVector& lookAt, float tilt, int switchStyle ) = 0;
+
+    virtual void                        Restore() = 0;
+    virtual void                        RestoreWithJumpCut() = 0;
+
+    virtual const RwMatrix&             GetMatrix() = 0;
+    virtual void                        SetMatrix( const RwMatrix& mat ) = 0;
+
+    virtual void                        SetCamPositionForFixedMode( CVector& pos, CVector& upOffset ) = 0;
+    virtual void                        Find3rdPersonCamTargetVector( float distance, CVector& gunMuzzle, CVector& source, CVector& target ) = 0;
+    virtual float                       Find3rdPersonQuickAimPitch() = 0;
+
+    virtual unsigned char               GetActiveCam() = 0;
+
+    virtual CCam*                       GetCam( unsigned char id ) = 0;
+
+    virtual void                        SetWidescreen( bool wide ) = 0;
+    virtual bool                        GetWidescreen() = 0;
+
+    virtual float                       GetCarZoom() = 0;
+    virtual void                        SetCarZoom( float zoom ) = 0;
+
+    virtual bool                        TryToStartNewCamMode( unsigned short mode ) = 0;
+    virtual bool                        ConeCastCollisionResolve( CVector& pos, CVector& lookAt, CVector& dest, float rad, float minDist, float& dist ) = 0;
+    virtual void                        VectorTrackLinear( CVector& to, CVector& from, float time, bool smoothEnds ) = 0;
+
+    virtual bool                        IsFading() = 0;
+    virtual int                         GetFadingDirection() = 0;
+    virtual void                        Fade( float fadeOutTime, int outOrIn ) = 0;
+    virtual void                        SetFadeColor( unsigned char red, unsigned char green, unsigned char blue ) = 0;
+
+    virtual float                       GetCameraRotation() = 0;
+    virtual const RwMatrix&             GetLTM() = 0;
+
+    virtual CEntity*                    GetTargetEntity() = 0;
+
+    virtual void                        SetCameraClip( bool ibjects, bool vehicles ) = 0;
+    virtual unsigned char               GetCameraViewMode() = 0;
+    virtual void                        SetCameraViewMode( unsigned short mode ) = 0;
 };
 
 

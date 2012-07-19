@@ -152,7 +152,7 @@ void CClientPacketRecorder::RecordPacket( unsigned char ucPacketID, NetBitStream
     file->WriteByte( ucPacketID );
 
     // Write the size of the bitstream
-    size_t size = bitStream.GetNumberOfBytesUsed()
+    size_t size = bitStream.GetNumberOfBytesUsed();
     file->WriteInt( size );
 
     // Write the content of the bitstream to the file
@@ -199,7 +199,7 @@ void CClientPacketRecorder::RecordLocalData( CClientPlayer* pLocalPlayer )
     if ( pVehicle )
     {
         // Read out the matrix, movespeed and turnspeed
-        CMatrix matrix;
+        RwMatrix matrix;
         CVector speed;
         CVector turnSpeed;
         pVehicle->GetMatrix( matrix );
@@ -207,10 +207,10 @@ void CClientPacketRecorder::RecordLocalData( CClientPlayer* pLocalPlayer )
         pVehicle->GetTurnSpeed( turnSpeed );
 
         // Write it
-        file->Write( &matrix.vRight, sizeof(float), 3 );
-        file->Write( &matrix.vFront, sizeof(float), 3 );
-        file->Write( &matrix.vUp, sizeof(float), 3 );
-        file->Write( &matrix.vPos, sizeof(float), 3 );
+        file->Write( &matrix.right, sizeof(float), 3 );
+        file->Write( &matrix.at, sizeof(float), 3 );
+        file->Write( &matrix.up, sizeof(float), 3 );
+        file->Write( &matrix.pos, sizeof(float), 3 );
 
         file->Write( &speed, sizeof(float), 3 );
         file->Write( &turnSpeed, sizeof(float), 3 );
@@ -242,15 +242,15 @@ void CClientPacketRecorder::ReadLocalData( CFile *file )
         return;
 
     // Temp vars
-    CMatrix matrix;
+    RwMatrix matrix;
     CVector speed;
     CVector turnSpeed;
 
     // Read it out
-    file->Read( &matrix.vRight, sizeof(float), 3 );
-    file->Read( &matrix.vFront, sizeof(float), 3 );
-    file->Read( &matrix.vUp, sizeof(float), 3 );
-    file->Read( &matrix.vPos, sizeof(float), 3 );
+    file->Read( &matrix.right, sizeof(float), 3 );
+    file->Read( &matrix.at, sizeof(float), 3 );
+    file->Read( &matrix.up, sizeof(float), 3 );
+    file->Read( &matrix.pos, sizeof(float), 3 );
 
     file->Read( &speed, sizeof(float), 3 );
     file->Read( &turnSpeed, sizeof(float), 3 );

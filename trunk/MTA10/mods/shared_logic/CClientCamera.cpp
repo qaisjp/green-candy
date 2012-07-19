@@ -64,8 +64,8 @@ void CClientCamera::DoPulse ( void )
     {
         // Make sure the world center/rotation is where the camera is
         CVector vecRotation;
-        CMatrix matTemp;
-        GetMatrix ( matTemp );
+        RwMatrix matTemp;
+        GetMatrix( matTemp );
         g_pMultiplayer->ConvertMatrixToEulerAngles ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );    
         g_pMultiplayer->SetCenterOfWorld ( NULL, &m_vecFixedPosition, 3.1415926535897932384626433832795f - vecRotation.fZ );
     }
@@ -129,50 +129,38 @@ void CClientCamera::DoPulse ( void )
     }
 }
 
-
-bool CClientCamera::GetMatrix ( CMatrix& Matrix ) const
+bool CClientCamera::GetMatrix( RwMatrix& Matrix ) const
 {
-    m_pCamera->GetMatrix ( &Matrix );
+    Matrix = m_pCamera->GetMatrix();
     return true;
 }
 
-
-void CClientCamera::GetPosition ( CVector& vecPosition ) const
+void CClientCamera::GetPosition( CVector& vecPosition ) const
 {
     if ( m_bFixed )
-    {
         vecPosition = m_vecFixedPosition;
-    }
     else
-    {
-        CMatrix matTemp;
-        m_pCamera->GetMatrix ( &matTemp );
-        vecPosition = matTemp.vPos;
-    }
+        vecPosition = m_pCamera->GetMatrix().pos;
 }
 
-
-void CClientCamera::SetPosition ( const CVector& vecPosition )
+void CClientCamera::SetPosition( const CVector& vecPosition )
 {
     // Make sure that's where the world center is
     CVector vecRotation;
-    CMatrix matTemp;
-    GetMatrix ( matTemp );
+    RwMatrix matTemp;
+    GetMatrix( matTemp );
     g_pMultiplayer->ConvertMatrixToEulerAngles ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
-    CVector * v = & ( const_cast < CVector& > ( vecPosition ) );
-    g_pMultiplayer->SetCenterOfWorld ( NULL, v, 3.1415926535897932384626433832795f - vecRotation.fZ );
+    CVector v = vecPosition;
+    g_pMultiplayer->SetCenterOfWorld ( NULL, &v, PI - vecRotation.fZ );
 
     // Store the position so it can be updated from our hook
     m_vecFixedPosition = vecPosition;
 }
 
-
-void CClientCamera::GetRotation ( CVector& vecRotation ) const
+void CClientCamera::GetRotation( CVector& vecRotation ) const
 {
     CCam* pCam = m_pCamera->GetCam ( m_pCamera->GetActiveCam () );
-    CMatrix matrix;
-    m_pCamera->GetMatrix ( &matrix );
-    g_pMultiplayer->ConvertMatrixToEulerAngles ( matrix, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+    g_pMultiplayer->ConvertMatrixToEulerAngles ( m_pCamera->GetMatrix(), vecRotation.fX, vecRotation.fY, vecRotation.fZ );
     ConvertRadiansToDegrees ( vecRotation );
     vecRotation += CVector ( 180.0f, 180.0f, 180.0f );
     if ( vecRotation.fX > 360.0f ) vecRotation.fX -= 360.0f;
@@ -204,11 +192,8 @@ void CClientCamera::GetTarget ( CVector & vecTarget ) const
     if ( m_bFixed ) vecTarget = m_vecFixedTarget;
     else
     {
-        CMatrix matTemp;
-        m_pCamera->GetMatrix ( &matTemp );
-
         CCam* pCam = m_pCamera->GetCam ( m_pCamera->GetActiveCam () );
-        vecTarget = matTemp.vPos + *pCam->GetFront ();
+        vecTarget = m_pCamera->GetMatrix().pos + *pCam->GetFront ();
     }
 }
 
@@ -314,7 +299,7 @@ void CClientCamera::SetFocus ( CClientPlayer* pPlayer, eCamMode eMode, bool bSmo
 }
 
 
-void CClientCamera::SetFocus ( CVector * vecTarget, bool bSmoothTransition )
+void CClientCamera::SetFocus ( CVector& vecTarget, bool bSmoothTransition )
 {
     // Grab the camera
     if ( m_pCamera )
@@ -428,6 +413,10 @@ void CClientCamera::SetCameraClip ( bool bObjects, bool bVehicles )
     m_pCamera->SetCameraClip ( bObjects, bVehicles );
 }
 
+void CClientCamera::SetVehicleInterpolationSource( CClientVehicle *veh )
+{
+    m_pCamera->GetCam( 0 )->SetVehicleInterpolationSource( dynamic_cast <CVehicle*> ( veh->GetGameEntity() ) );
+}
 
 void CClientCamera::ToggleCameraFixedMode ( bool bEnabled )
 {    
@@ -447,7 +436,7 @@ void CClientCamera::ToggleCameraFixedMode ( bool bEnabled )
             SetFocus ( pLocalPlayer, MODE_FIXED, false );
 
         // Set the target position
-        SetFocus ( &m_vecFixedPosition, false );
+        SetFocus ( m_vecFixedPosition, false );
     }
     else
     {

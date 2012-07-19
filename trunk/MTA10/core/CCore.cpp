@@ -1024,6 +1024,9 @@ void CCore::DoPreFramePulse()
     // Pulse game
     m_pGame->OnPreFrame();
 
+    // Output server messages
+    m_server->DoPulse();
+
     // Notify the mod manager
     m_pModManager->DoPulsePreFrame();  
 

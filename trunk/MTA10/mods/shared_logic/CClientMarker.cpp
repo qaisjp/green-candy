@@ -84,8 +84,7 @@ void CClientMarker::GetPosition ( CVector& vecPosition ) const
     }
 }
 
-
-void CClientMarker::SetPosition ( const CVector& vecPosition )
+void CClientMarker::SetPosition( const CVector& vecPosition )
 {
     if ( m_pMarker ) m_pMarker->SetPosition ( vecPosition );
     if ( m_pCollision ) m_pCollision->SetPosition ( vecPosition );
@@ -94,20 +93,20 @@ void CClientMarker::SetPosition ( const CVector& vecPosition )
     UpdateStreamPosition ( vecPosition );
 }
 
-
-bool CClientMarker::SetMatrix ( const CMatrix & matrix )
+bool CClientMarker::SetMatrix( const RwMatrix& matrix )
 {
-    if ( m_pMarker ) m_pMarker->SetMatrix ( const_cast < CMatrix & > ( matrix ) );
-    if ( m_pCollision ) m_pCollision->SetPosition ( matrix.vPos );
+    if ( m_pMarker )
+        m_pMarker->SetMatrix( matrix );
+
+    if ( m_pCollision )
+        m_pCollision->SetPosition( matrix.pos );
 
     // Update our streaming position
-    UpdateStreamPosition ( matrix.vPos );
-
+    UpdateStreamPosition ( matrix.pos );
     return true;
 }
 
-
-void CClientMarker::DoPulse ( void )
+void CClientMarker::DoPulse()
 {
     // Update our position/rotation if we're attached
     DoAttaching ();

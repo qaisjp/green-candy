@@ -183,7 +183,7 @@ filePath SharedUtil::MakeUniquePath( const filePath& path )
 // FindFiles
 //
 // Find all files or directories at a path
-// INSECURE! Use the filesystem instead!
+// The_GTA: INSECURE! Use the filesystem instead!
 //
 ///////////////////////////////////////////////////////////////
 std::vector <filePath> SharedUtil::FindFiles( const filePath& path, bool bFiles, bool bDirectories )

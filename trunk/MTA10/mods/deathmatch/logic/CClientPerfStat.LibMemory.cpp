@@ -11,7 +11,6 @@
 *****************************************************************************/
 
 #include "StdInc.h"
-#include "CDynamicLibrary.h"
 
 namespace
 {
@@ -44,7 +43,6 @@ namespace
     struct CLibraryInfo
     {
         SString strName;
-        CDynamicLibrary* pLibrary;
         PFNGETALLOCSTATS pfnGetAllocStats;
     };
 }

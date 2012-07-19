@@ -24,6 +24,8 @@ public:
 
     virtual int                         GetLastError() = 0;
 
+    virtual const CFileTranslator&      GetFileRoot() const = 0;
+
     virtual bool                        Send( const char *cmd ) = 0;
 };
 

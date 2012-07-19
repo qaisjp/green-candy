@@ -255,7 +255,7 @@ void CPedSync::WritePedInformation ( NetBitStreamInterface* pBitStream, CClientP
     pPed->GetMoveSpeed ( vecVelocity );
 
     unsigned char ucFlags = 0;
-    if ( vecPosition != pPed->m_LastSyncedData->vPosition ) ucFlags |= 0x01;
+    if ( vecPosition != pPed->m_LastSyncedData->position ) ucFlags |= 0x01;
     if ( pPed->GetCurrentRotation() != pPed->m_LastSyncedData->fRotation ) ucFlags |= 0x02;
     if ( vecVelocity != pPed->m_LastSyncedData->vVelocity ) ucFlags |= 0x04;
     if ( pPed->GetHealth() != pPed->m_LastSyncedData->fHealth ) ucFlags |= 0x08;
@@ -279,7 +279,7 @@ void CPedSync::WritePedInformation ( NetBitStreamInterface* pBitStream, CClientP
         pBitStream->Write ( vecPosition.fX );
         pBitStream->Write ( vecPosition.fY );
         pBitStream->Write ( vecPosition.fZ );
-        pPed->m_LastSyncedData->vPosition = vecPosition;
+        pPed->m_LastSyncedData->position = vecPosition;
     }
 
     if ( ucFlags & 0x02 )

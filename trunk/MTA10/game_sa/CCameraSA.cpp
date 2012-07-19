@@ -30,28 +30,31 @@ static bool bCameraClipVehicles;
 DWORD RETURN_Camera_CollisionDetection =    0x520195;
 void HOOK_Camera_CollisionDetection ();
 
-CCameraSA::CCameraSA(CCameraSAInterface * cameraInterface)
+CCameraSA::CCameraSA( CCameraSAInterface *cam )
 { 
     DEBUG_TRACE("CCameraSA::CCameraSA(CCameraSAInterface * cameraInterface)");
-    this->internalInterface = cameraInterface;
-    for(int i = 0; i<MAX_CAMS;i++)
-        this->Cams[i] = new CCamSA(&this->internalInterface->Cams[i]);
+
+    m_interface = cam;
+
+    for( unsigned int i = 0; i<MAX_CAMS; i++ )
+        m_cams[i] = new CCamSA( &m_interface->m_cams[i] );
+
     bCameraClipObjects = true;
     bCameraClipVehicles = true;
-    HookInstall(HOOKPOS_Camera_CollisionDetection, (DWORD)HOOK_Camera_CollisionDetection, 5 );
+
+    HookInstall( HOOKPOS_Camera_CollisionDetection, (DWORD)HOOK_Camera_CollisionDetection, 5 );
 }
 
-CCameraSA::~CCameraSA ( void )
+CCameraSA::~CCameraSA()
 {
-    for ( int i = 0; i < MAX_CAMS; i++ )
-    {
-        delete Cams [i];
-    }
+    for ( unsigned int i = 0; i < MAX_CAMS; i++ )
+        delete m_cams[i];
 }
 
-VOID CCameraSA::Restore()
+void CCameraSA::Restore()
 {
-    DEBUG_TRACE("VOID CCameraSA::Restore()");    
+    DEBUG_TRACE("void CCameraSA::Restore()");
+
     DWORD dwFunc = FUNC_Restore;
     CCameraSAInterface * cameraInterface = this->GetInterface();
     _asm
@@ -61,9 +64,10 @@ VOID CCameraSA::Restore()
     }
 }
 
-VOID CCameraSA::RestoreWithJumpCut()
+void CCameraSA::RestoreWithJumpCut()
 {
-    DEBUG_TRACE("VOID CCameraSA::RestoreWithJumpCut()");
+    DEBUG_TRACE("void CCameraSA::RestoreWithJumpCut()");
+
     CCameraSAInterface * cameraInterface = this->GetInterface();
     DWORD dwFunc = 0x50BD40;
     _asm
@@ -82,33 +86,35 @@ VOID CCameraSA::RestoreWithJumpCut()
 /**
  * \todo Find out what the last two paramters are
  */
-VOID CCameraSA::TakeControl(CEntity * entity, eCamMode CamMode, int CamSwitchStyle)
+void CCameraSA::TakeControl( CEntity *entity, eCamMode CamMode, int switchStyle )
 {
     DEBUG_TRACE("VOID CCameraSA::TakeControl(CEntity * entity, eCamMode CamMode, int CamSwitchStyle)");
 
-    CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( entity );
-    if ( !pEntitySA ) return;
+    CEntitySA *pEntitySA = dynamic_cast <CEntitySA*> ( entity );
 
-    CEntitySAInterface * entityInterface = pEntitySA->GetInterface();
-    CCameraSAInterface * cameraInterface = this->GetInterface();
+    if ( !pEntitySA )
+        return;
+
+    CEntitySAInterface *itent = pEntitySA->GetInterface();
+    CCameraSAInterface *cmint = GetInterface();
     // __thiscall
 
     DWORD CCamera__TakeControl = FUNC_TakeControl;
     _asm 
     {
-        mov ecx, cameraInterface
+        mov ecx, cmint
         push 1
         push CamSwitchStyle
         push CamMode
-        push entityInterface
+        push itent
         call CCamera__TakeControl
     }
 }
 
-VOID CCameraSA::TakeControl(CVector * position, int CamSwitchStyle)
+void CCameraSA::TakeControl( CVector& pos, int switchStyle )
 {
     DEBUG_TRACE("VOID CCameraSA::TakeControl(CVector * position, int CamSwitchStyle)");
-    CCameraSAInterface * cameraInterface = this->GetInterface();
+    CCameraSAInterface *cmint = GetInterface();
     // __thiscall
     CVector vecOffset;
 /*  vecOffset.fZ = 0.5f;
@@ -127,7 +133,7 @@ VOID CCameraSA::TakeControl(CVector * position, int CamSwitchStyle)
     DWORD CCamera__TakeControlNoEntity = FUNC_TakeControlNoEntity;
     _asm 
     {
-        mov ecx, cameraInterface
+        mov ecx, cmint
         push 1
         push CamSwitchStyle
         push position
@@ -137,7 +143,7 @@ VOID CCameraSA::TakeControl(CVector * position, int CamSwitchStyle)
     DWORD dwFunc = 0x50BEC0;
     _asm
     {
-        mov ecx, cameraInterface
+        mov ecx, cmintss
         lea     eax, vecOffset
         push    eax
         push    position
@@ -149,33 +155,29 @@ VOID CCameraSA::TakeControl(CVector * position, int CamSwitchStyle)
 // vecOffset: an offset from 0,0,0
 // vecLookAt: an offset from 0,0,0
 
-VOID CCameraSA::TakeControlAttachToEntity(CEntity * TargetEntity, CEntity * AttachEntity, 
-                                          CVector * vecOffset, CVector * vecLookAt, 
-                                          float fTilt, int CamSwitchStyle)
+void CCameraSA::TakeControlAttachToEntity( CEntity *target, CEntity *attach, CVector& offset, CVector& lookAt, float tilt, int switchStyle )
 {
-    DEBUG_TRACE("VOID CCameraSA::TakeControlAttachToEntity(CEntity * TargetEntity, CEntity * AttachEntity, CVector * vecOffset, CVector * vecLookAt, float fTilt, int CamSwitchStyle)");
+    DEBUG_TRACE("void CCameraSA::TakeControlAttachToEntity( CEntity *target, CEntity *attach, CVector& offset, CVector& lookAt, float tilt, int switchStyle )");
+
     char szDebug[255] = {'\0'};
-    CEntitySAInterface * targetEntityInterface = 0;
-    CEntitySAInterface * attachEntityInterface = 0;
+    CEntitySAInterface *teint = 0;
+    CEntitySAInterface *aeint = 0;
 
-    if(TargetEntity)
+    if( target )
     {
-        CEntitySA* pTargetEntitySA = dynamic_cast < CEntitySA* > ( TargetEntity );
+        CEntitySA* pTargetEntitySA = dynamic_cast <CEntitySA*> ( target );
         if ( pTargetEntitySA )
-            targetEntityInterface = pTargetEntitySA->GetInterface ();
+            teint = pTargetEntitySA->GetInterface();
     }
 
-    if(AttachEntity)
-    {
-        CEntitySA* pAttachEntitySA = dynamic_cast < CEntitySA* > ( AttachEntity );
-        if ( pAttachEntitySA )
-            attachEntityInterface = pAttachEntitySA->GetInterface ();
-    }
-    
-    if(!attachEntityInterface)
+    CEntitySA* pAttachEntitySA = dynamic_cast <CEntitySA*> ( attach );
+
+    if ( !pAttachEntitySA )
         return;
 
-    CCameraSAInterface * cameraInterface = this->GetInterface();
+    aeint = pAttachEntitySA->GetInterface();
+
+    CCameraSAInterface *cmint = GetInterface();
     // __thiscall
 
     //  void    TakeControlAttachToEntity(CEntity* NewTarget, CEntity* AttachEntity, 
@@ -183,51 +185,28 @@ VOID CCameraSA::TakeControlAttachToEntity(CEntity * TargetEntity, CEntity * Atta
     //  int WhoIsTakingControl=SCRIPT_CAM_CONTROL);
     DWORD CCamera__TakeControlAttachToEntity = FUNC_TakeControlAttachToEntity;
 
-    
     _asm 
     {
-        mov ecx, cameraInterface
+        mov ecx,cmint
         push 1
-        push CamSwitchStyle
-        push fTilt
-        push vecLookAt
-        push vecOffset
-        push attachEntityInterface
-        push targetEntityInterface
+        push switchStyle
+        push tilt
+        push lookAt
+        push offset
+        push aeint
+        push teint
         call CCamera__TakeControlAttachToEntity
     }
 }
 
-CMatrix * CCameraSA::GetMatrix ( CMatrix * matrix )
+const RwMatrix& CCameraSA::GetMatrix()
 {
-    DEBUG_TRACE("CMatrix * CCameraSA::GetMatrix ( CMatrix * matrix )");
-    //_asm int 3
-    //CCameraSAInterface * pCamInterface = this->GetInterface();
-    RwMatrix * pCamMatrix = &this->GetInterface()->m_cameraMatrix; // ->Placeable.matrix;
-    if ( pCamMatrix )
-    {
-        MemCpyFast (&matrix->vFront,     &pCamMatrix->vFront,    sizeof(CVector));
-        MemCpyFast (&matrix->vPos,           &pCamMatrix->vPos,          sizeof(CVector));
-        MemCpyFast (&matrix->vUp,            &pCamMatrix->vUp,           sizeof(CVector));
-        MemCpyFast (&matrix->vRight,         &pCamMatrix->vRight,            sizeof(CVector));   
-    }
-    else
-        MemSetFast (matrix, 0, sizeof(CMatrix));
-
-    return matrix;
+    return GetInterface()->m_cameraMatrix; // ->Placeable.matrix;
 }
 
-VOID CCameraSA::SetMatrix ( CMatrix * matrix )
+void CCameraSA::SetMatrix( const RwMatrix& mat )
 {
-    DEBUG_TRACE("VOID CCameraSA::SetMatrix ( CMatrix * matrix )");
-    RwMatrix * pCamMatrix = this->GetInterface()->Placeable.matrix;
-    if ( pCamMatrix )
-    {
-        MemCpyFast (&pCamMatrix->vFront,     &matrix->vFront,    sizeof(CVector));
-        MemCpyFast (&pCamMatrix->vPos,           &matrix->vPos,          sizeof(CVector));
-        MemCpyFast (&pCamMatrix->vUp,            &matrix->vUp,           sizeof(CVector));
-        MemCpyFast (&pCamMatrix->vRight,         &matrix->vRight,            sizeof(CVector));
-    }   
+    mat = GetInterface()->m_cameraMatrix;
 }
 
 VOID CCameraSA::SetCamPositionForFixedMode ( CVector * vecPosition, CVector * vecUpOffset )
@@ -286,7 +265,7 @@ BYTE CCameraSA::GetActiveCam()
     return cameraInterface->ActiveCam;
 }
 
-CCam * CCameraSA::GetCam(BYTE bCameraID)
+CCamSA* CCameraSA::GetCam(BYTE bCameraID)
 {
     DEBUG_TRACE("CCam * CCameraSA::GetCam(BYTE bCameraID)");
     
@@ -296,14 +275,13 @@ CCam * CCameraSA::GetCam(BYTE bCameraID)
     return NULL;
 }
 
-
-CCam* CCameraSA::GetCam ( CCamSAInterface* camInterface )
+CCamSA* CCameraSA::GetCam( CCamSAInterface* camInterface )
 {
-    for ( int i = 0; i < MAX_CAMS; i++ )
+    for ( unsigned int i = 0; i < MAX_CAMS; i++ )
     {
-        if ( Cams [i] && Cams [i]->GetInterface () == camInterface )
+        if ( m_cams[i] && m_cams[i]->GetInterface() == camInterface )
         {
-            return Cams [i];
+            return m_cams [i];
         }
     }
 
@@ -473,30 +451,21 @@ RwMatrix* CCameraSA::GetLTM ( void )
     return internalInterface->m_pRwCamera->m_parent->m_ltm;
 }
 
-CEntity * CCameraSA::GetTargetEntity ( void )
+CEntity* CCameraSA::GetTargetEntity ( void )
 {
-    CEntitySAInterface * pInterface = this->GetInterface()->pTargetEntity;
-    CPoolsSA * pPools = ((CPoolsSA *)pGame->GetPools());
-    CEntity * pReturn = NULL;
+    CEntitySAInterface* pInterface = GetInterface()->pTargetEntity;
+    CPoolsSA* pPools = ((CPoolsSA *)pGame->GetPools());
 
-    if ( pPools && pInterface )
+    switch( pInterface->nType )
     {
-        switch ( pInterface->nType )
-        {
-            case ENTITY_TYPE_PED:
-                pReturn = (CEntity*)(pPools->GetPed((DWORD *)pInterface));
-                break;
-            case ENTITY_TYPE_VEHICLE:
-                pReturn = (CEntity*)(pPools->GetVehicle((DWORD *)pInterface));
-                break;
-            case ENTITY_TYPE_OBJECT:
-                pReturn = (CEntity*)(pPools->GetObject ((DWORD *)pInterface));
-                break;
-            default:
-                break;
-        }
+    case ENTITY_TYPE_PED:
+        return pPools->GetPed( pInterface );
+    case ENTITY_TYPE_VEHICLE:
+        return pPools->GetVehicle( pInterface );
+    case ENTITY_TYPE_OBJECT:
+        return pPools->GetObject( pInterface );
     }
-    return pReturn;
+    return NULL;
 }
 
 void CCameraSA::SetCameraClip ( bool bObjects, bool bVehicles )

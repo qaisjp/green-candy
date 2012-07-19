@@ -31,6 +31,7 @@ public:
 
     CResource*              Add( unsigned short id, const char *name, CClientEntity *resEntity, CClientEntity *dynamicEntity );
     void                    Remove( Resource *res );
+    void                    Remove( unsigned short id )                     { return ResourceManager::Remove( id ); }
     void                    StopAll();
 
     void                    LoadUnavailableResources( CClientEntity *root );

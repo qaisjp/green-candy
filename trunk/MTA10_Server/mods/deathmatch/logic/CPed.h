@@ -19,7 +19,6 @@
 #include "CPlayerClothes.h"
 #include "CVehicle.h"
 #include "CPlayerTasks.h"
-#include <CMatrix.h>
 
 #define INVALID_VEHICLE_SEAT 0xFF
 #define NUM_PLAYER_STATS 343
@@ -228,7 +227,7 @@ public:
 
 protected:
     unsigned short                              m_usModel;
-    CMatrix                                     m_Matrix;    
+    RwMatrix                                    m_Matrix;    
     bool                                        m_bDucked;
     bool                                        m_bIsChoking;
     bool                                        m_bWearingGoggles;

@@ -54,48 +54,48 @@ class CClientProjectile : public CClientEntity
     friend class CClientPed;
     friend class CClientVehicle;
 public:
-                                        CClientProjectile       ( class CClientManager* pManager,
-                                                                  CProjectile* pProjectile,
-                                                                  CProjectileInfo* pProjectileInfo,
-                                                                  CClientEntity * pCreator,
-                                                                  CClientEntity * pTarget,
-                                                                  eWeaponType weaponType,
-                                                                  CVector * pvecOrigin,
-                                                                  CVector * pvecTarget,
-                                                                  float fForce,
-                                                                  bool bLocal );
-                                        ~CClientProjectile      ( void );
+                                        CClientProjectile( class CClientManager* pManager,
+                                                           CProjectile* pProjectile,
+                                                           CProjectileInfo* pProjectileInfo,
+                                                           CClientEntity * pCreator,
+                                                           CClientEntity * pTarget,
+                                                           eWeaponType weaponType,
+                                                           CVector * pvecOrigin,
+                                                           CVector * pvecTarget,
+                                                           float fForce,
+                                                           bool bLocal );
+                                        ~CClientProjectile();
 
-    eClientEntityType                   GetType                 ( void ) const                      { return CCLIENTPROJECTILE; }
-    inline CEntity*                     GetGameEntity           ( void )                            { return m_pProjectile; }
-    inline const CEntity*               GetGameEntity           ( void ) const                      { return m_pProjectile; }
-    void                                Unlink                  ( void );
+    eClientEntityType                   GetType() const                                 { return CCLIENTPROJECTILE; }
+    inline CEntity*                     GetGameEntity()                                 { return m_pProjectile; }
+    inline const CEntity*               GetGameEntity() const                           { return m_pProjectile; }
+    void                                Unlink();
 
 
-    void                                DoPulse                 ( void );
-    void                                Initiate                ( CVector * pvecPosition, CVector * pvecRotation, CVector * pvecVelocity, unsigned short usModel );
-    void                                Destroy                 ( void );
+    void                                DoPulse();
+    void                                Initiate( CVector * pvecPosition, CVector * pvecRotation, CVector * pvecVelocity, unsigned short usModel );
+    void                                Destroy();
 
-    bool                                IsActive                ( void );
-    bool                                GetMatrix               ( CMatrix & matrix );
-    bool                                SetMatrix               ( const CMatrix & matrix );
-    void                                GetPosition             ( CVector & vecPosition ) const;
-    void                                SetPosition             ( const CVector & vecPosition );
-    void                                GetRotation             ( CVector & vecRotation );
-    void                                GetRotationDegrees      ( CVector & vecRotation );
-    void                                SetRotation             ( CVector & vecRotation );
-    void                                SetRotationDegrees      ( CVector & vecRotation );
-    void                                GetVelocity             ( CVector & vecVelocity );
-    void                                SetVelocity             ( CVector & vecVelocity );
-    void                                SetModel                ( unsigned short usModel );
+    bool                                IsActive();
+    bool                                GetMatrix( RwMatrix& matrix );
+    bool                                SetMatrix( const RwMatrix& matrix );
+    void                                GetPosition( CVector& vecPosition ) const;
+    void                                SetPosition( const CVector& vecPosition );
+    void                                GetRotation( CVector& vecRotation );
+    void                                GetRotationDegrees( CVector& vecRotation );
+    void                                SetRotation( const CVector& vecRotation );
+    void                                SetRotationDegrees( const CVector& vecRotation );
+    void                                GetVelocity( CVector& vecVelocity );
+    void                                SetVelocity( CVector& vecVelocity );
+    void                                SetModel( unsigned short usModel );
 
-    inline CClientEntity *              GetCreator              ( void )        { return m_pCreator; }
-    inline CClientEntity *              GetTargetEntity         ( void )        { return m_pTarget; }
-    inline eWeaponType                  GetWeaponType           ( void )        { return m_weaponType; }
-    inline CVector *                    GetOrigin               ( void )        { return m_pvecOrigin; }
-    inline CVector *                    GetTarget               ( void )        { return m_pvecTarget; }
-    inline float                        GetForce                ( void )        { return m_fForce; }
-    inline bool                         IsLocal                 ( void )        { return m_bLocal; }
+    inline CClientEntity *              GetCreator()                                    { return m_pCreator; }
+    inline CClientEntity *              GetTargetEntity()                               { return m_pTarget; }
+    inline eWeaponType                  GetWeaponType()                                 { return m_weaponType; }
+    inline CVector *                    GetOrigin()                                     { return m_pvecOrigin; }
+    inline CVector *                    GetTarget()                                     { return m_pvecTarget; }
+    inline float                        GetForce()                                      { return m_fForce; }
+    inline bool                         IsLocal()                                       { return m_bLocal; }
     
 protected:
     CClientProjectileManager*           m_pProjectileManager;

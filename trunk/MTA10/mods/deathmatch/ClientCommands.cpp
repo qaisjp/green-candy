@@ -17,6 +17,8 @@
 using std::list;
 using std::vector;
 
+using namespace CommandlineTools;
+
 #ifdef MTA_DEBUG
 #include <Tlhelp32.h>
 #include <Psapi.h>
@@ -28,6 +30,18 @@ using std::vector;
 #pragma warning(disable:4312)
 
 extern CClientGame* g_pClientGame;
+
+static inline void luaexecute( const char *name, const char *cmdArgs )
+{
+    if ( Command *cmd = g_pClientGame->GetRegisteredCommands()->Get( name ) )
+    {
+        std::vector <std::string> args;
+
+        strsplit( cmdArgs, args );
+
+        cmd->Execute( args );
+    }
+}
 
 bool COMMAND_Executed ( const char* szCommand, const char* szArguments, bool bHandleRemotely, bool bHandled )
 {
@@ -43,36 +57,7 @@ bool COMMAND_Executed ( const char* szCommand, const char* szArguments, bool bHa
         {
             // Is the command "say" and the arguments start with '/' ? (command comes from the chatbox)
             if ( stricmp ( szCommand, "chatboxsay" ) == 0 )
-            {
-                /* This code seems redundant, the chatbox now properly simulates commands.
-                // His line starts with '/'?
-                if ( *szArguments == '/' )
-                {
-                    // Copy the characters after the slash to the 0 terminator to a seperate buffer
-                    strncpy ( szBuffer, &szArguments [ 1 ], 256 );
-                    szBuffer [ 255 ] = 0;
-
-                    // Split it into command and arguments
-                    char* szNewCommand = strtok ( szBuffer, " " );
-                    char* szNewArguments = strtok ( NULL, "\0" );
-                    if ( szNewCommand )
-                    {
-                        // Execute it as another command
-                        if ( szNewArguments )
-                        {
-                            g_pCore->GetCommands ()->Execute ( szNewCommand, szNewArguments );
-                        }
-                        else
-                        {
-                            g_pCore->GetCommands ()->Execute ( szNewCommand, "" );
-                        }
-
-                        return true;
-                    }
-                }
-                */
                 szCommandBufferPointer = "say";
-            }
         }
 
         // Toss them together so we can send it to the server
@@ -87,7 +72,7 @@ bool COMMAND_Executed ( const char* szCommand, const char* szArguments, bool bHa
         strClumpedCommandUTF = strClumpedCommandUTF.substr(0,MAX_COMMAND_LENGTH);
         strClumpedCommand = UTF16ToMbUTF8(strClumpedCommandUTF);
 
-        g_pClientGame->GetRegisteredCommands ()->ProcessCommand ( szCommandBufferPointer, szArguments );
+        luaexecute( szCommandBufferPointer, szArguments );
 
         // Call the onClientConsole event
         Arguments.PushString ( strClumpedCommand );
@@ -113,7 +98,7 @@ bool COMMAND_Executed ( const char* szCommand, const char* szArguments, bool bHa
     else
     {
         // Call our comand-handlers for core-executed commands too
-        g_pClientGame->GetRegisteredCommands ()->ProcessCommand ( szCommand, szArguments );
+        luaexecute( szCommand, szArguments );
     }
     return false;
 }
@@ -405,95 +390,95 @@ void COMMAND_TextScale ( const char* szCmdLine )
 }
 
 
-void DumpPlayer ( CClientPlayer* pPlayer, FILE* pFile )
+void DumpPlayer ( CClientPlayer* pPlayer, CFile *file )
 {
     unsigned int uiIndex = 0;
 
     // Player
-    fprintf ( pFile, "%s\n", "*** START OF PLAYER ***" );
+    file->Printf( "%s\n", "*** START OF PLAYER ***" );
 
     // Write the data
-    fprintf ( pFile, "Nick: %s\n", pPlayer->GetNick () );
+    file->Printf( "Nick: %s\n", pPlayer->GetNick () );
     
     CVector vecTemp;
     pPlayer->GetPosition ( vecTemp );
-    fprintf ( pFile, "Position: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
+    file->Printf( "Position: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
 
-    fprintf ( pFile, "Nametag text: %s\n", pPlayer->GetNametagText () );
+    file->Printf( "Nametag text: %s\n", pPlayer->GetNametagText () );
 
     unsigned char ucR, ucG, ucB;
     pPlayer->GetNametagColor ( ucR, ucG, ucB );
-    fprintf ( pFile, "Nametag color: %u %u %u\n", ucR, ucG, ucB );
+    file->Printf( "Nametag color: %u %u %u\n", ucR, ucG, ucB );
 
-    fprintf ( pFile, "Nametag show: %u\n", pPlayer->IsNametagShowing () );
+    file->Printf( "Nametag show: %u\n", pPlayer->IsNametagShowing () );
 
-    fprintf ( pFile, "Local player: %u\n", pPlayer->IsLocalPlayer () );
-    fprintf ( pFile, "Dead: %u\n", pPlayer->IsDead () );
+    file->Printf( "Local player: %u\n", pPlayer->IsLocalPlayer () );
+    file->Printf( "Dead: %u\n", pPlayer->IsDead () );
 
-    fprintf ( pFile, "Exp aim: %u\n", pPlayer->IsExtrapolatingAim () );
-    fprintf ( pFile, "Latency: %u\n", pPlayer->GetLatency () );
+    file->Printf( "Exp aim: %u\n", pPlayer->IsExtrapolatingAim () );
+    file->Printf( "Latency: %u\n", pPlayer->GetLatency () );
 
-    fprintf ( pFile, "Last psync time: %u\n", pPlayer->GetLastPuresyncTime () );
-    fprintf ( pFile, "Has con trouble: %u\n\n", pPlayer->HasConnectionTrouble () );
+    file->Printf( "Last psync time: %u\n", pPlayer->GetLastPuresyncTime () );
+    file->Printf( "Has con trouble: %u\n\n", pPlayer->HasConnectionTrouble () );
 
     CClientTeam* pTeam = pPlayer->GetTeam ();
     if ( pTeam )
-        fprintf ( pFile, "Team: %s\n", pTeam->GetTeamName () );
+        file->Printf( "Team: %s\n", pTeam->GetTeamName () );
 
     // Get the matrix
-    CMatrix matPlayer;
+    RwMatrix matPlayer;
     pPlayer->GetMatrix ( matPlayer );
 
-    fprintf ( pFile, "Matrix: vecRoll: %f %f %f\n", matPlayer.vRight.fX, matPlayer.vRight.fY, matPlayer.vRight.fZ );
-    fprintf ( pFile, "        vecDir:  %f %f %f\n", matPlayer.vFront.fX, matPlayer.vFront.fY, matPlayer.vFront.fZ );
-    fprintf ( pFile, "        vecWas:  %f %f %f\n", matPlayer.vUp.fX, matPlayer.vUp.fY, matPlayer.vUp.fZ );
-    fprintf ( pFile, "        vecPos:  %f %f %f\n\n", matPlayer.vPos.fX, matPlayer.vPos.fY, matPlayer.vPos.fZ );
+    file->Printf( "Matrix: vecRoll: %f %f %f\n", matPlayer.right.fX, matPlayer.right.fY, matPlayer.right.fZ );
+    file->Printf( "        vecDir:  %f %f %f\n", matPlayer.at.fX, matPlayer.at.fY, matPlayer.at.fZ );
+    file->Printf( "        vecWas:  %f %f %f\n", matPlayer.up.fX, matPlayer.up.fY, matPlayer.up.fZ );
+    file->Printf( "        vecPos:  %f %f %f\n\n", matPlayer.pos.fX, matPlayer.pos.fY, matPlayer.pos.fZ );
 
-    fprintf ( pFile, "Euler rot: %f\n", pPlayer->GetCurrentRotation () );
-    fprintf ( pFile, "Cam rot: %f\n", pPlayer->GetCameraRotation () );
+    file->Printf( "Euler rot: %f\n", pPlayer->GetCurrentRotation () );
+    file->Printf( "Cam rot: %f\n", pPlayer->GetCameraRotation () );
 
     pPlayer->GetMoveSpeed ( vecTemp );
-    fprintf ( pFile, "Move speed: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
+    file->Printf( "Move speed: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
 
     pPlayer->GetTurnSpeed ( vecTemp );
-    fprintf ( pFile, "Turn speed: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
+    file->Printf( "Turn speed: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
 
     CControllerState State;
     pPlayer->GetControllerState ( State );
 
     signed short* pController = reinterpret_cast < signed short* > ( &State );
-    fprintf ( pFile, "CContr state: \n" );
+    file->Printf( "CContr state: \n" );
     for ( uiIndex = 0; uiIndex < 36; uiIndex++ )
     {
-        fprintf ( pFile, "State [%u] = %i\n", uiIndex, pController [uiIndex] );
+        file->Printf( "State [%u] = %i\n", uiIndex, pController [uiIndex] );
     }
 
     pPlayer->GetLastControllerState ( State );
 
     pController = reinterpret_cast < signed short* > ( &State );
-    fprintf ( pFile, "LContr state: \n" );
+    file->Printf( "LContr state: \n" );
     for ( uiIndex = 0; uiIndex < 36; uiIndex++ )
     {
-        fprintf ( pFile, "State [%u] = %i\n", uiIndex, pController [uiIndex] );
+        file->Printf( "State [%u] = %i\n", uiIndex, pController [uiIndex] );
     }
 
-    fprintf ( pFile, "\nVeh IO state: %i\n", pPlayer->GetVehicleInOutState () );
-    fprintf ( pFile, "Visible: %u\n", pPlayer->IsVisible () );
-    fprintf ( pFile, "Health: %f\n", pPlayer->GetHealth () );
-    fprintf ( pFile, "Armor: %f\n", pPlayer->GetArmor () );
-    fprintf ( pFile, "On screen: %u\n", pPlayer->IsOnScreen () );
-    fprintf ( pFile, "Frozen: %u\n", pPlayer->IsFrozen () );
-    fprintf ( pFile, "Respawn state: %i\n", pPlayer->GetRespawnState () );
+    file->Printf( "\nVeh IO state: %i\n", pPlayer->GetVehicleInOutState () );
+    file->Printf( "Visible: %u\n", pPlayer->IsVisible () );
+    file->Printf( "Health: %f\n", pPlayer->GetHealth () );
+    file->Printf( "Armor: %f\n", pPlayer->GetArmor () );
+    file->Printf( "On screen: %u\n", pPlayer->IsOnScreen () );
+    file->Printf( "Frozen: %u\n", pPlayer->IsFrozen () );
+    file->Printf( "Respawn state: %i\n", pPlayer->GetRespawnState () );
 
-    fprintf ( pFile, "Cur weapon slot: %i\n", static_cast < int > ( pPlayer->GetCurrentWeaponSlot () ) );
-    fprintf ( pFile, "Cur weapon type: %i\n", static_cast < int > ( pPlayer->GetCurrentWeaponType () ) );
+    file->Printf( "Cur weapon slot: %i\n", static_cast < int > ( pPlayer->GetCurrentWeaponSlot () ) );
+    file->Printf( "Cur weapon type: %i\n", static_cast < int > ( pPlayer->GetCurrentWeaponType () ) );
 
     CWeapon* pWeapon = pPlayer->GetWeapon ();
     if ( pWeapon )
     {
-        fprintf ( pFile, "Cur weapon state: %i\n", static_cast < int > ( pWeapon->GetState () ) );
-        fprintf ( pFile, "Cur weapon ammo clip: %u\n", pWeapon->GetAmmoInClip () );
-        fprintf ( pFile, "Cur weapon ammo total: %u\n", pWeapon->GetAmmoTotal () );
+        file->Printf( "Cur weapon state: %i\n", static_cast < int > ( pWeapon->GetState () ) );
+        file->Printf( "Cur weapon ammo clip: %u\n", pWeapon->GetAmmoInClip () );
+        file->Printf( "Cur weapon ammo total: %u\n", pWeapon->GetAmmoTotal () );
     }
 
     CTaskManager* pTaskMgr = pPlayer->GetTaskManager ();
@@ -503,177 +488,177 @@ void DumpPlayer ( CClientPlayer* pPlayer, FILE* pFile )
         CTask* pTask = pTaskMgr->GetTask ( TASK_PRIORITY_PRIMARY );
         if ( pTask )
         {
-            fprintf ( pFile, "Primary task name: %s\n", pTask->GetTaskName () );
-            fprintf ( pFile, "Primary task type: %i\n", pTask->GetTaskType () );
+            file->Printf( "Primary task name: %s\n", pTask->GetTaskName () );
+            file->Printf( "Primary task type: %i\n", pTask->GetTaskType () );
         }
         else
-            fprintf ( pFile, "Primary task: none\n" );
+            file->Printf( "Primary task: none\n" );
 
         // Physical response task
         pTask = pTaskMgr->GetTask ( TASK_PRIORITY_PHYSICAL_RESPONSE );
         if ( pTask )
         {
-            fprintf ( pFile, "Physical response task name: %s\n", pTask->GetTaskName () );
-            fprintf ( pFile, "Physical response task type: %i\n", pTask->GetTaskType () );
+            file->Printf( "Physical response task name: %s\n", pTask->GetTaskName () );
+            file->Printf( "Physical response task type: %i\n", pTask->GetTaskType () );
         }
         else
-            fprintf ( pFile, "Physical response task: none\n" );
+            file->Printf( "Physical response task: none\n" );
 
         // Event response task temp
         pTask = pTaskMgr->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_TEMP );
         if ( pTask )
         {
-            fprintf ( pFile, "Event rsp tmp task name: %s\n", pTask->GetTaskName () );
-            fprintf ( pFile, "Event rsp tmp task type: %i\n", pTask->GetTaskType () );
+            file->Printf( "Event rsp tmp task name: %s\n", pTask->GetTaskName () );
+            file->Printf( "Event rsp tmp task type: %i\n", pTask->GetTaskType () );
         }
         else
-            fprintf ( pFile, "Event rsp tmp task: none\n" );
+            file->Printf( "Event rsp tmp task: none\n" );
 
         // Event response task nontemp
         pTask = pTaskMgr->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
         if ( pTask )
         {
-            fprintf ( pFile, "Event rsp nontmp task name: %s\n", pTask->GetTaskName () );
-            fprintf ( pFile, "Event rsp nontmp task type: %i\n", pTask->GetTaskType () );
+            file->Printf( "Event rsp nontmp task name: %s\n", pTask->GetTaskName () );
+            file->Printf( "Event rsp nontmp task type: %i\n", pTask->GetTaskType () );
         }
         else
-            fprintf ( pFile, "Event rsp nontmp task: none\n" );
+            file->Printf( "Event rsp nontmp task: none\n" );
 
         // Event response task nontemp
         pTask = pTaskMgr->GetTask ( TASK_PRIORITY_DEFAULT );
         if ( pTask )
         {
-            fprintf ( pFile, "Default task name: %s\n", pTask->GetTaskName () );
-            fprintf ( pFile, "Default task type: %i\n", pTask->GetTaskType () );
+            file->Printf( "Default task name: %s\n", pTask->GetTaskName () );
+            file->Printf( "Default task type: %i\n", pTask->GetTaskType () );
         }
         else
-            fprintf ( pFile, "Default task: none\n" );
+            file->Printf( "Default task: none\n" );
 
         // Secondary attack
         pTask = pTaskMgr->GetTaskSecondary ( TASK_SECONDARY_ATTACK );
         if ( pTask )
         {
-            fprintf ( pFile, "Secondary attack task name: %s\n", pTask->GetTaskName () );
-            fprintf ( pFile, "Secondary attack task type: %i\n", pTask->GetTaskType () );
+            file->Printf( "Secondary attack task name: %s\n", pTask->GetTaskName () );
+            file->Printf( "Secondary attack task type: %i\n", pTask->GetTaskType () );
         }
         else
-            fprintf ( pFile, "Secondary attack task task: none\n" );
+            file->Printf( "Secondary attack task task: none\n" );
 
         // Secondary duck
         pTask = pTaskMgr->GetTaskSecondary ( TASK_SECONDARY_DUCK );
         if ( pTask )
         {
-            fprintf ( pFile, "Secondary duck task name: %s\n", pTask->GetTaskName () );
-            fprintf ( pFile, "Secondary duck task type: %i\n", pTask->GetTaskType () );
+            file->Printf( "Secondary duck task name: %s\n", pTask->GetTaskName () );
+            file->Printf( "Secondary duck task type: %i\n", pTask->GetTaskType () );
         }
         else
-            fprintf ( pFile, "Secondary duck task task: none\n" );
+            file->Printf( "Secondary duck task task: none\n" );
 
         // Secondary say
         pTask = pTaskMgr->GetTaskSecondary ( TASK_SECONDARY_SAY );
         if ( pTask )
         {
-            fprintf ( pFile, "Secondary say task name: %s\n", pTask->GetTaskName () );
-            fprintf ( pFile, "Secondary say task type: %i\n", pTask->GetTaskType () );
+            file->Printf( "Secondary say task name: %s\n", pTask->GetTaskName () );
+            file->Printf( "Secondary say task type: %i\n", pTask->GetTaskType () );
         }
         else
-            fprintf ( pFile, "Secondary say task task: none\n" );
+            file->Printf( "Secondary say task task: none\n" );
 
         // Secondary facial complex
         pTask = pTaskMgr->GetTaskSecondary ( TASK_SECONDARY_FACIAL_COMPLEX );
         if ( pTask )
         {
-            fprintf ( pFile, "Secondary facial task name: %s\n", pTask->GetTaskName () );
-            fprintf ( pFile, "Secondary facial task type: %i\n", pTask->GetTaskType () );
+            file->Printf( "Secondary facial task name: %s\n", pTask->GetTaskName () );
+            file->Printf( "Secondary facial task type: %i\n", pTask->GetTaskType () );
         }
         else
-            fprintf ( pFile, "Secondary facial task task: none\n" );
+            file->Printf( "Secondary facial task task: none\n" );
 
         // Secondary partial anim
         pTask = pTaskMgr->GetTaskSecondary ( TASK_SECONDARY_PARTIAL_ANIM );
         if ( pTask )
         {
-            fprintf ( pFile, "Secondary partial anim task name: %s\n", pTask->GetTaskName () );
-            fprintf ( pFile, "Secondary partial anim task type: %i\n", pTask->GetTaskType () );
+            file->Printf( "Secondary partial anim task name: %s\n", pTask->GetTaskName () );
+            file->Printf( "Secondary partial anim task type: %i\n", pTask->GetTaskType () );
         }
         else
-            fprintf ( pFile, "Secondary partial anim task task: none\n" );
+            file->Printf( "Secondary partial anim task task: none\n" );
 
         // Secondary IK
         pTask = pTaskMgr->GetTaskSecondary ( TASK_SECONDARY_IK );
         if ( pTask )
         {
-            fprintf ( pFile, "Secondary IK task name: %s\n", pTask->GetTaskName () );
-            fprintf ( pFile, "Secondary IK task type: %i\n", pTask->GetTaskType () );
+            file->Printf( "Secondary IK task name: %s\n", pTask->GetTaskName () );
+            file->Printf( "Secondary IK task type: %i\n", pTask->GetTaskType () );
         }
         else
-            fprintf ( pFile, "Secondary IK task task: none\n" );
+            file->Printf( "Secondary IK task task: none\n" );
     }
 
     float fX, fY;
     pPlayer->GetAim ( fX, fY );
-    fprintf ( pFile, "Aim: %f %f\n", fX, fY );
+    file->Printf( "Aim: %f %f\n", fX, fY );
 
     vecTemp = pPlayer->GetAimSource ();
-    fprintf ( pFile, "Aim source: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
+    file->Printf( "Aim source: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
 
     vecTemp = pPlayer->GetAimTarget ();
-    fprintf ( pFile, "Aim target: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
+    file->Printf( "Aim target: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
 
-    fprintf ( pFile, "Veh aim anim: %u\n", pPlayer->GetVehicleAimAnim () );
-    fprintf ( pFile, "Ducked: %u\n", pPlayer->IsDucked () );
-    fprintf ( pFile, "Wearing googles: %u\n", pPlayer->IsWearingGoggles () );
-    fprintf ( pFile, "Has jetpack: %u\n", pPlayer->HasJetPack () );
-    fprintf ( pFile, "In water: %u\n", pPlayer->IsInWater () );
-    fprintf ( pFile, "On ground: %u\n", pPlayer->IsOnGround () );
-    fprintf ( pFile, "Is climbing: %u\n", pPlayer->IsClimbing () );
-    fprintf ( pFile, "Interiour: %u\n", pPlayer->GetInterior () );
-    fprintf ( pFile, "Fight style: %u\n", static_cast < int > ( pPlayer->GetFightingStyle () ) );
-    fprintf ( pFile, "Satchel count: %u\n", pPlayer->CountProjectiles ( WEAPONTYPE_REMOTE_SATCHEL_CHARGE ) );
+    file->Printf( "Veh aim anim: %u\n", pPlayer->GetVehicleAimAnim () );
+    file->Printf( "Ducked: %u\n", pPlayer->IsDucked () );
+    file->Printf( "Wearing googles: %u\n", pPlayer->IsWearingGoggles () );
+    file->Printf( "Has jetpack: %u\n", pPlayer->HasJetPack () );
+    file->Printf( "In water: %u\n", pPlayer->IsInWater () );
+    file->Printf( "On ground: %u\n", pPlayer->IsOnGround () );
+    file->Printf( "Is climbing: %u\n", pPlayer->IsClimbing () );
+    file->Printf( "Interiour: %u\n", pPlayer->GetInterior () );
+    file->Printf( "Fight style: %u\n", static_cast < int > ( pPlayer->GetFightingStyle () ) );
+    file->Printf( "Satchel count: %u\n", pPlayer->CountProjectiles ( WEAPONTYPE_REMOTE_SATCHEL_CHARGE ) );
 
     CRemoteDataStorage* pRemote = pPlayer->GetRemoteData ();
     if ( pRemote )
     {
         vecTemp = pRemote->GetAkimboTarget ();
-        fprintf ( pFile, "Akimbo target: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
-        fprintf ( pFile, "Akimbo aim up: %u\n", pRemote->GetAkimboTargetUp () );
+        file->Printf( "Akimbo target: %f %f %f\n", vecTemp.fX, vecTemp.fY, vecTemp.fZ );
+        file->Printf( "Akimbo aim up: %u\n", pRemote->GetAkimboTargetUp () );
     }
     else
-        fprintf ( pFile, "Remote: no\n" );
+        file->Printf( "Remote: no\n" );
 
-    fprintf ( pFile, "Using gun: %u\n", pPlayer->IsUsingGun () );
-    fprintf ( pFile, "Entering veh: %u\n", pPlayer->IsEnteringVehicle () );
-    fprintf ( pFile, "Getting jacked: %u\n", pPlayer->IsGettingJacked () );
-    fprintf ( pFile, "Alpha: %u\n", pPlayer->GetAlpha () );
+    file->Printf( "Using gun: %u\n", pPlayer->IsUsingGun () );
+    file->Printf( "Entering veh: %u\n", pPlayer->IsEnteringVehicle () );
+    file->Printf( "Getting jacked: %u\n", pPlayer->IsGettingJacked () );
+    file->Printf( "Alpha: %u\n", pPlayer->GetAlpha () );
     
 
-    fprintf ( pFile, "Stats:\n" );
+    file->Printf( "Stats:\n" );
 
     for ( uiIndex = 0; uiIndex < NUM_PLAYER_STATS; uiIndex++ )
     {
-        fprintf ( pFile, "Stat [%u] = %f\n", uiIndex, pPlayer->GetStat ( uiIndex ) );
+        file->Printf( "Stat [%u] = %f\n", uiIndex, pPlayer->GetStat ( uiIndex ) );
     }
 
-    fprintf ( pFile, "Streamed in: %u\n", pPlayer->IsStreamedIn () );
+    file->Printf( "Streamed in: %u\n", pPlayer->IsStreamedIn () );
 
 
-    fprintf ( pFile, "Model: %u\n", pPlayer->GetModel () );
+    file->Printf( "Model: %u\n", pPlayer->GetModel () );
 
     // Write model data
     CModelInfo* pInfo = g_pGame->GetModelInfo ( pPlayer->GetModel () );
-    fprintf ( pFile, "Model ref count: %i\n", pInfo->GetRefCount () );
-    fprintf ( pFile, "Model loaded: %u\n", pInfo->IsLoaded () );
-    fprintf ( pFile, "Model valid: %u\n", pInfo->IsValid () );
+    file->Printf( "Model ref count: %i\n", pInfo->GetRefCount () );
+    file->Printf( "Model loaded: %u\n", pInfo->IsLoaded () );
+    file->Printf( "Model valid: %u\n", pInfo->IsValid () );
 
     // End of player
-    fprintf ( pFile, "%s", "\n*** END OF PLAYER ***\n\n\n\n" );
+    file->Printf( "%s", "\n*** END OF PLAYER ***\n\n\n\n" );
 }
 
 
 void COMMAND_DumpPlayers( const char *szCmdLine )
 {
     // Create a file to dump to
-    CFile *file = modFileRoot->Open( SString( "dump_%i.txt", GetTickCount32() ) );
+    CFile *file = modFileRoot->Open( SString( "dump_%i.txt", GetTickCount32() ), "w" );
 
     if ( !file )
     {
@@ -972,9 +957,9 @@ void COMMAND_Debug ( const char *szCmdLine )
     return;
 
     CPools* pPools = g_pGame->GetPools ();
-    int iEntryInfoNodeEntries = pPools->GetEntryInfoNodePool ()->GetNumberOfUsedSpaces ();
-    int iPointerNodeSingleLinkEntries = pPools->GetPointerNodeSingleLinkPool ()->GetNumberOfUsedSpaces ();
-    int iPointerNodeDoubleLinkEntries = pPools->GetPointerNodeDoubleLinkPool ()->GetNumberOfUsedSpaces ();
+    int iEntryInfoNodeEntries = pPools->GetNumberOfUsedSpaces( ENTRY_INFO_NODE_POOL );
+    int iPointerNodeSingleLinkEntries = pPools->GetNumberOfUsedSpaces( POINTER_SINGLE_LINK_POOL );
+    int iPointerNodeDoubleLinkEntries = pPools->GetNumberOfUsedSpaces( POINTER_DOUBLE_LINK_POOL );
 
     g_pCore->GetConsole ()->Printf ( "entry info: %i", iEntryInfoNodeEntries );
     g_pCore->GetConsole ()->Printf ( "single node: %i", iPointerNodeSingleLinkEntries );
@@ -986,7 +971,7 @@ void COMMAND_Debug ( const char *szCmdLine )
 CVehicle* aaa = NULL;
 CVehicle* bbb = NULL;
 
-CMatrix *save = NULL;
+RwMatrix *save = NULL;
 float fTest = 0;
 
 #include <crtdbg.h>

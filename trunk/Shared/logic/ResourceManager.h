@@ -22,7 +22,9 @@ public:
     virtual                 ~ResourceManager();
 
     Resource*               Get( const char *name );
+    Resource*               Get( unsigned short id );
     virtual void            Remove( Resource *res );
+    void                    Remove( unsigned short id );
     bool                    Exists( Resource *res ) const;
 
     typedef std::list <Resource*> resourceList_t;

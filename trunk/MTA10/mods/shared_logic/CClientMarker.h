@@ -42,56 +42,56 @@ public:
         MARKER_INVALID = 0xFF,
     };
 
-                                CClientMarker           ( class CClientManager* pManager, ElementID ID, int iMarkerType );
-                                ~CClientMarker          ( void );
+                                CClientMarker( class CClientManager* pManager, ElementID ID, int iMarkerType );
+                                ~CClientMarker();
 
-    void                        Unlink                  ( void );
+    void                        Unlink();
 
-    void                        GetPosition             ( CVector& vecPosition ) const;
-    void                        SetPosition             ( const CVector& vecPosition );
-    bool                        SetMatrix               ( const CMatrix & matrix );
+    void                        GetPosition( CVector& vecPosition ) const;
+    void                        SetPosition( const CVector& vecPosition );
+    bool                        SetMatrix( const RwMatrix& matrix );
 
-    void                        DoPulse                 ( void );
+    void                        DoPulse();
 
-    inline eClientEntityType    GetType                 ( void ) const                          { return CCLIENTMARKER; }
+    inline eClientEntityType    GetType() const                                     { return CCLIENTMARKER; }
 
-    CClientMarker::eMarkerType  GetMarkerType           ( void ) const;
-    void                        SetMarkerType           ( CClientMarker::eMarkerType eType );
+    CClientMarker::eMarkerType  GetMarkerType() const;
+    void                        SetMarkerType( CClientMarker::eMarkerType eType );
 
-    class CClient3DMarker*      Get3DMarker             ( void );
-    class CClientCheckpoint*    GetCheckpoint           ( void );
-    class CClientCorona*        GetCorona               ( void );
+    class CClient3DMarker*      Get3DMarker();
+    class CClientCheckpoint*    GetCheckpoint();
+    class CClientCorona*        GetCorona();
 
-    bool                        IsHit                   ( const CVector& vecPosition ) const;
-    bool                        IsHit                   ( CClientEntity* pEntity ) const;
+    bool                        IsHit( const CVector& vecPosition ) const;
+    bool                        IsHit( CClientEntity* pEntity ) const;
 
-    bool                        IsVisible               ( void ) const;
-    void                        SetVisible              ( bool bVisible );
+    bool                        IsVisible() const;
+    void                        SetVisible( bool bVisible );
 
-    SColor                      GetColor                ( void ) const;
-    void                        SetColor                ( const SColor color );
+    SColor                      GetColor() const;
+    void                        SetColor( const SColor color );
 
-    float                       GetSize                 ( void ) const;
-    void                        SetSize                 ( float fSize );
+    float                       GetSize() const;
+    void                        SetSize( float fSize );
 
-    static int                  StringToType            ( const char* szString );
-    static bool                 TypeToString            ( unsigned int uiType, char* szString );
+    static int                  StringToType( const char* szString );
+    static bool                 TypeToString( unsigned int uiType, char* szString );
 
-    static bool                 IsLimitReached          ( void );
+    static bool                 IsLimitReached();
 
-    inline CClientColShape *    GetColShape             ( void ) { return m_pCollision; }
+    inline CClientColShape*     GetColShape() { return m_pCollision; }
 
-    void                        Callback_OnCollision    ( CClientColShape& Shape, CClientEntity& Entity );
-    void                        Callback_OnLeave        ( CClientColShape& Shape, CClientEntity& Entity );
+    void                        Callback_OnCollision( CClientColShape& Shape, CClientEntity& Entity );
+    void                        Callback_OnLeave( CClientColShape& Shape, CClientEntity& Entity );
 
-    virtual CSphere             GetWorldBoundingSphere  ( void );
+    virtual CSphere             GetWorldBoundingSphere();
 
 protected:
-    void                        StreamIn                ( bool bInstantly );
-    void                        StreamOut               ( void );
+    void                        StreamIn( bool bInstantly );
+    void                        StreamOut();
 
 private:
-    void                        CreateOfType            ( int iType );
+    void                        CreateOfType( int iType );
 
     CClientMarkerManager*       m_pMarkerManager;
     CClientMarkerCommon*        m_pMarker;

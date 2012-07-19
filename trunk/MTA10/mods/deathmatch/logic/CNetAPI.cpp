@@ -904,9 +904,8 @@ void CNetAPI::ReadPlayerPuresync ( CClientPlayer* pPlayer, NetBitStreamInterface
 void WriteCameraOrientation ( const CVector& vecPositionBase, NetBitStreamInterface& BitStream )
 {
     // Calc the camera position and rotation
-    CMatrix camMatrix;
-    g_pGame->GetCamera ()->GetMatrix ( &camMatrix );
-    const CVector& vecCamPosition = camMatrix.vPos;
+    RwMatrix camMatrix = g_pGame->GetCamera()->GetMatrix();
+    const CVector& vecCamPosition = camMatrix.pos;
     const CVector& vecCamFwd = camMatrix.vFront;
     float fCamRotZ = atan2 ( vecCamFwd.fX, vecCamFwd.fY );
     float fCamRotX = atan2 ( vecCamFwd.fZ, DistanceBetweenPoints2D ( CVector (), vecCamFwd ) );

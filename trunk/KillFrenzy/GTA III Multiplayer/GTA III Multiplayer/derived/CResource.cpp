@@ -12,7 +12,7 @@
 
 #include <StdInc.h>
 
-CResource::CResource( LuaMain& main, const filePath& name, CFileTranslator& root ) : Resource( main, name, root )
+CResource::CResource( LuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root ) : Resource( main, id, name, root )
 {
 }
 

@@ -131,7 +131,7 @@ void CClientObject::GetRotationRadians ( CVector& vecRotation ) const
         // We've been returning the rotation that got set last so far (::m_vecRotation)..
         //   but we need to get the real rotation for when the game moves the objects..
         //  (eg: physics/attaching), the code below returns wrong values, see #2732
-        CMatrix matTemp;
+        RwMatrix matTemp;
         m_pObject->GetMatrix ( matTemp );
         g_pMultiplayer->ConvertMatrixToEulerAngles ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
     }

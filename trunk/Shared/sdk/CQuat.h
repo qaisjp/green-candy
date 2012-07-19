@@ -32,21 +32,25 @@ public:
     //      http://cache-www.intel.com/cd/00/00/29/37/293748_293748.pdf
     //      http://cache-www.intel.com/cd/00/00/29/37/293747_293747.pdf
 
-    CQuat() {
+    CQuat()
+    {
         x = y = z = w = 0;
-    };
-    CQuat(CMatrix* m) {
-        w = sqrt( SharedUtil::Max( (float)0, 1.0f + m->vRight.fX + m->vFront.fY + m->vUp.fZ ) ) * 0.5f;
-        x = sqrt( SharedUtil::Max( (float)0, 1.0f + m->vRight.fX - m->vFront.fY - m->vUp.fZ ) ) * 0.5f;
-        y = sqrt( SharedUtil::Max( (float)0, 1.0f - m->vRight.fX + m->vFront.fY - m->vUp.fZ ) ) * 0.5f;
-        z = sqrt( SharedUtil::Max( (float)0, 1.0f - m->vRight.fX - m->vFront.fY + m->vUp.fZ ) ) * 0.5f;
-        
-        x = static_cast < float > ( _copysign( x, m->vUp.fY - m->vFront.fZ ) );
-        y = static_cast < float > ( _copysign( y, m->vRight.fZ - m->vUp.fX ) );
-        z = static_cast < float > ( _copysign( z, m->vFront.fX - m->vRight.fY ) );
-    };
+    }
 
-    static void ToMatrix(const CQuat& q, CMatrix& m){
+    CQuat(RwMatrix& m)
+    {
+        w = sqrt( SharedUtil::Max( (float)0, 1.0f + m.right.fX + m.at.fY + m.up.fZ ) ) * 0.5f;
+        x = sqrt( SharedUtil::Max( (float)0, 1.0f + m.right.fX - m.at.fY - m.up.fZ ) ) * 0.5f;
+        y = sqrt( SharedUtil::Max( (float)0, 1.0f - m.right.fX + m.at.fY - m.up.fZ ) ) * 0.5f;
+        z = sqrt( SharedUtil::Max( (float)0, 1.0f - m.right.fX - m.at.fY + m.up.fZ ) ) * 0.5f;
+        
+        x = static_cast < float > ( _copysign( x, m.up.fY - m.at.fZ ) );
+        y = static_cast < float > ( _copysign( y, m.right.fZ - m.up.fX ) );
+        z = static_cast < float > ( _copysign( z, m.at.fX - m.right.fY ) );
+    }
+
+    static void ToMatrix(const CQuat& q, RwMatrix& m)
+    {
         float xx = q.x * q.x;
         float xy = q.x * q.y;
         float xz = q.x * q.z;
@@ -59,21 +63,22 @@ public:
         float zz = q.z * q.z;
         float zw = q.z * q.w;
 
-        m.vRight.fX =       1.0f -  2.0f * ( yy + zz );
-        m.vRight.fY =               2.0f * ( xy - zw );
-        m.vRight.fZ =               2.0f * ( xz + yw );
+        m.right.fX =       1.0f -  2.0f * ( yy + zz );
+        m.right.fY =               2.0f * ( xy - zw );
+        m.right.fZ =               2.0f * ( xz + yw );
 
-        m.vFront.fX =           2.0f * ( xy + zw );
-        m.vFront.fY =   1.0f -  2.0f * ( xx + zz );
-        m.vFront.fZ =           2.0f * ( yz - xw );
+        m.at.fX =                  2.0f * ( xy + zw );
+        m.at.fY =          1.0f -  2.0f * ( xx + zz );
+        m.at.fZ =                  2.0f * ( yz - xw );
 
-        m.vUp.fX =                  2.0f * ( xz - yw );
-        m.vUp.fY =                  2.0f * ( yz + xw );
-        m.vUp.fZ =          1.0f -  2.0f * ( xx + yy );
-    };
+        m.up.fX =                  2.0f * ( xz - yw );
+        m.up.fY =                  2.0f * ( yz + xw );
+        m.up.fZ =          1.0f -  2.0f * ( xx + yy );
+    }
 
     // Linear interpolation
-    static void LERP(const CQuat& qa, const CQuat& qb, CQuat& qm, float t) {
+    static void LERP(const CQuat& qa, const CQuat& qb, CQuat& qm, float t)
+    {
         float cosom, scale0, scale1, s;
         cosom = qa.x * qb.x + qa.y * qb.y + qa.z * qb.z + qa.w * qb.w;
         scale0 = 1.0f - t;
@@ -87,10 +92,11 @@ public:
         qm.y *= s;
         qm.z *= s;
         qm.w *= s;
-    };
+    }
 
     // Spherical linear interpolation
-    static void SLERP(const CQuat& qa, const CQuat& qb, CQuat& qm, float t) {
+    static void SLERP(const CQuat& qa, const CQuat& qb, CQuat& qm, float t)
+    {
         // Calculate angle between them.
         float cosHalfTheta = qa.w * qb.w + qa.x * qb.x + qa.y * qb.y + qa.z * qb.z;
         // if qa=qb or qa=-qb then theta = 0 and we can return qa
@@ -117,7 +123,8 @@ public:
         qm.x = (qa.x * ratioA + qb.x * ratioB);
         qm.y = (qa.y * ratioA + qb.y * ratioB);
         qm.z = (qa.z * ratioA + qb.z * ratioB);
-    };
+    }
+
 private:
     float x, y, z, w;
 };

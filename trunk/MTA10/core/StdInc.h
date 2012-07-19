@@ -32,6 +32,8 @@
 // Core general
 #include <core/Common.h>
 
+#include <game/CRenderWare.h>
+
 // SDK includes
 #include <xml/CXMLNode.h>
 #include <xml/CXMLFile.h>
