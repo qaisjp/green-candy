@@ -614,7 +614,7 @@ static bool RwAtomicRegisterDefaultVehicle( RpAtomic *child, void *data )
 
 void CVehicleModelInfoSAInterface::RegisterRenderCallbacks()
 {
-    switch (m_vehicleType)
+    switch( m_vehicleType )
     {
     case VEHICLE_TRAIN:
         m_rwClump->ForAllAtomics( RwAtomicRegisterTrain, 0 );

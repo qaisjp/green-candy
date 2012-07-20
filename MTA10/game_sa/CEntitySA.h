@@ -29,7 +29,7 @@
 #define FUNC_SetRwObjectAlpha                               0x5332C0
 #define FUNC_SetOrientation                                 0x439A80
 
-#define FUNC_CMatrix__ConvertToEulerAngles                    0x59A840
+#define FUNC_CMatrix__ConvertToEulerAngles                  0x59A840
 #define FUNC_CMatrix__ConvertFromEulerAngles                0x59AA40
 
 #define FUNC_IsOnScreen                                     0x534540
@@ -114,27 +114,27 @@ public:
                                     CEntitySAInterface();
                                     ~CEntitySAInterface();
 
-    virtual void __thiscall         AddRect ( CRect rect );
-    virtual bool __thiscall         AddToWorld ();
-    virtual void __thiscall         RemoveFromWorld ();
-    virtual void __thiscall         SetStatic ( bool enabled );
-    virtual void __thiscall         SetModelIndex ( unsigned short id );
-    virtual void __thiscall         SetModelIndexNoCreate ( unsigned short id );
-    virtual RwObject* __thiscall    CreateRwObject ();
-    virtual void __thiscall         DeleteRwObject ();
-    virtual void __thiscall         GetBoundingBox ( CBoundingBox box );
-    virtual void __thiscall         ProcessControl ();
-    virtual void __thiscall         ProcessCollision ();
-    virtual void __thiscall         ProcessShift ();
-    virtual bool __thiscall         TestCollision ();
-    virtual void __thiscall         Teleport ( float x, float y, float z, int unk );
-    virtual void __thiscall         PreFrame ();
-    virtual bool __thiscall         Frame ();
-    virtual void __thiscall         PreRender ();
-    virtual void __thiscall         Render ();
-    virtual void __thiscall         SetupLighting ();
-    virtual void __thiscall         RemoveLighting ();
-    virtual void __thiscall         Invalidate ();
+    virtual void __thiscall         AddRect( CRect rect );
+    virtual bool __thiscall         AddToWorld();
+    virtual void __thiscall         RemoveFromWorld();
+    virtual void __thiscall         SetStatic( bool enabled );
+    virtual void __thiscall         SetModelIndex( unsigned short id );
+    virtual void __thiscall         SetModelIndexNoCreate( unsigned short id );
+    virtual RwObject* __thiscall    CreateRwObject();
+    virtual void __thiscall         DeleteRwObject();
+    virtual void __thiscall         GetBoundingBox( CBoundingBox box );
+    virtual void __thiscall         ProcessControl();
+    virtual void __thiscall         ProcessCollision();
+    virtual void __thiscall         ProcessShift();
+    virtual bool __thiscall         TestCollision();
+    virtual void __thiscall         Teleport( float x, float y, float z, int unk );
+    virtual void __thiscall         PreFrame();
+    virtual bool __thiscall         Frame();
+    virtual void __thiscall         PreRender();
+    virtual void __thiscall         Render();
+    virtual void __thiscall         SetupLighting();
+    virtual void __thiscall         RemoveLighting();
+    virtual void __thiscall         Invalidate();
 
     RwObject*               m_rwObject;         // 24
 
@@ -169,11 +169,12 @@ class CEntitySA : public virtual CEntity
     friend class COffsets;
 public:
                                 CEntitySA();
+                                ~CEntitySA();
 
     CEntitySAInterface*         m_pInterface;
     unsigned int                m_internalID;
 
-    inline CEntitySAInterface*  GetInterface() { return m_pInterface; };
+    inline CEntitySAInterface*  GetInterface()                          { return m_pInterface; };
 
     void                        SetPosition( float fX, float fY, float fZ );
     void                        Teleport( float fX, float fY, float fZ );
@@ -185,66 +186,70 @@ public:
     void                        SetPosition( CVector *pos );
 
     void                        SetUnderwater( bool bUnderwater );
-    bool                        GetUnderwater();
+    bool                        GetUnderwater() const;
 
-    void                        GetPosition( CVector *pos );
+    void                        GetPosition( CVector *pos ) const;
     void                        GetMatrix( RwMatrix& mat ) const;
     void                        SetMatrix( const RwMatrix& mat );
-    unsigned short              GetModelIndex();
-    eEntityType                 GetEntityType();
-    bool                        IsOnScreen();
+    unsigned short              GetModelIndex() const;
+    eEntityType                 GetEntityType() const;
+    bool                        IsOnScreen() const;
 
-    bool                        IsVisible();
-    void                        SetVisible( bool bVisible );
+    bool                        IsVisible() const                       { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_VISIBLE ); }
+    void                        SetVisible( bool enabled )              { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_VISIBLE, enabled ); }
 
-    unsigned char               GetAreaCode();
+    unsigned char               GetAreaCode() const;
     void                        SetAreaCode( unsigned char areaCode );
 
-    float                       GetBasingDistance();
+    float                       GetBasingDistance() const;
 
     void                        SetEntityStatus( eEntityStatus bStatus );
-    eEntityStatus               GetEntityStatus();
+    eEntityStatus               GetEntityStatus() const;
 
-    RwFrame*                    GetFrameFromId( int id );
-    RwMatrix*                   GetLTMFromId( int id );
+    RwFrame*                    GetFrameFromId( int id ) const;
+    RwMatrix*                   GetLTMFromId( int id ) const;
 
-    RwObject*                   GetRwObject();
+    RwObject*                   GetRwObject() const;
 
-    void                        SetDoNotRemoveFromGameWhenDeleted( bool b )    { m_doNotRemoveFromGame = b; };
+    void                        SetDoNotRemoveFromGameWhenDeleted( bool b )     { m_doNotRemoveFromGame = b; };
 
-    bool                        IsStatic()                             { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC ); }
-    void                        SetStatic( bool enabled )              { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC, enabled ); };
-    void                        SetUsesCollision( bool enabled )       { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_COLLISION, enabled ); };
+    bool                        IsStatic() const                        { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC ); }
+    void                        SetStatic( bool enabled )               { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC, enabled ); };
+    void                        SetUsesCollision( bool enabled )        { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_COLLISION, enabled ); };
 
-    bool                        IsBackfaceCulled()                     { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL ); };
-    void                        SetBackfaceCulled( bool enabled )      { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL, enabled ); };
+    bool                        IsBackfaceCulled() const                { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL ); };
+    void                        SetBackfaceCulled( bool enabled )       { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL, enabled ); };
 
     void                        SetAlpha( unsigned char alpha );
 
-    void                        MatrixConvertFromEulerAngles( float fX, float fY, float fZ, int iUnknown );
-    void                        MatrixConvertToEulerAngles( float *fX, float *fY, float *fZ, int iUnknown );
+    void                        MatrixConvertFromEulerAngles( float x, float y, float z, int unk );
+    void                        MatrixConvertToEulerAngles( float& x, float& y, float& z, int unk ) const;
 
-    bool                        IsPlayingAnimation( char *szAnimName );
+    bool                        IsPlayingAnimation( const char *name ) const;
 
-    void*                       GetStoredPointer()                     { return m_pStoredPointer; };
-    void                        SetStoredPointer( void *pointer )      { m_pStoredPointer = pointer; };
+    void*                       GetStoredPointer() const                { return m_pStoredPointer; };
+    void                        SetStoredPointer( void *pointer )       { m_pStoredPointer = pointer; };
 
-    bool                        IsStaticWaitingForCollision()          { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_WAITFORCOLL ); }
+    bool                        IsStaticWaitingForCollision() const          { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_WAITFORCOLL ); }
     void                        SetStaticWaitingForCollision( bool enabled ) { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_WAITFORCOLL, enabled ); }
 
-    void                        GetImmunities( bool& bNoClip, bool& bFrozen, bool& bBulletProof, bool& bFlameProof, bool& bUnk, bool& bUnk2, bool& bCollisionProof, bool& bExplosionProof );
+    bool                        IsCollidableWith( CEntitySA *entity ) const;
+    void                        SetCollidableWith( CEntitySA *entity, bool enable );
 
-    inline unsigned long        GetArrayID()                           { return m_ulArrayID; }
-    inline void                 SetArrayID( unsigned long ulID )       { m_ulArrayID = ulID; }
+    inline unsigned long        GetArrayID() const                      { return m_ulArrayID; }
+    inline void                 SetArrayID( unsigned long ulID )        { m_ulArrayID = ulID; }
 
 private:
-    void                        SetInterface( CEntitySAInterface * intInterface ) { m_pInterface = intInterface; };
+    void                        SetInterface( CEntitySAInterface *intf )   { m_pInterface = intf; };
 
     static unsigned long        FUNC_CClumpModelInfo__GetFrameFromId;
 
     unsigned long               m_ulArrayID;
 
     void*                       m_pStoredPointer;
+
+    typedef std::map <CEntitySAInterface*, bool> disabledColl_t;
+    disabledColl_t              m_disabledColl;
 
     bool                        m_beingDeleted; // to prevent it trying to delete twice
     bool                        m_doNotRemoveFromGame; // when deleted, if this is true, it won't be removed from the game

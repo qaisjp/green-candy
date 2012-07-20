@@ -1,50 +1,43 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientTXD.h
 *  PURPOSE:     TXD manager class header
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
 #ifndef __CCLIENTTXD_H
 #define __CCLIENTTXD_H
 
-#include "CClientEntity.h"
-
-class CClientTXD : public CClientEntity
+class CClientTXD : public LuaElement
 {
-    DECLARE_CLASS( CClientTXD, CClientEntity )
 public:
-                                    CClientTXD              ( class CClientManager* pManager, ElementID ID );
-                                    ~CClientTXD             ( void );
+                                    CClientTXD( class CClientManager* pManager, ElementID ID );
+                                    ~CClientTXD();
 
-    eClientEntityType               GetType                 ( void ) const              { return CCLIENTTXD; }
+    eClientEntityType               GetType() const              { return CCLIENTTXD; }
 
-    bool                            LoadTXD                 ( const char* szFile, bool bFilteringEnabled = true );
-    void                            UnloadTXD               ( void );
-    inline bool                     IsLoaded                ( void )                    { return !m_Textures.empty (); }
+    bool                            LoadTXD( const char* szFile, bool bFilteringEnabled = true );
+    void                            UnloadTXD();
+    inline bool                     IsLoaded()                    { return !m_Textures.empty (); }
 
-    bool                            Import                  ( unsigned short usModelID );
-    bool                            IsImported              ( unsigned short usModelID );
+    bool                            Import( unsigned short usModelID );
+    bool                            IsImported( unsigned short usModelID );
 
-    void                            Remove                  ( unsigned short usModelID );
-    void                            RemoveAll               ( void );
+    void                            Remove( unsigned short usModelID );
+    void                            RemoveAll();
 
-    static bool                     IsImportableModel       ( unsigned short usModelID );
-
-    // Sorta a hack that these are required by CClientEntity...
-    void                            Unlink                  ( void ) {};
-    void                            GetPosition             ( CVector& vecPosition ) const {};
-    void                            SetPosition             ( const CVector& vecPosition ) {};
+    static bool                     IsImportableModel( unsigned short usModelID );
 
 private:
-    void                            InternalRemove          ( unsigned short usModel );
-    void                            Restream                ( unsigned short usModel );
-    static RwTexture*               FindNamedTextureInList ( std::list < RwTexture* >& list, const char* szTexName );
+    void                            InternalRemove( unsigned short usModel );
+    void                            Restream( unsigned short usModel );
+    static RwTexture*               FindNamedTextureInList( std::list < RwTexture* >& list, const char* szTexName );
 
     std::list < RwTexture* >        m_Textures;
 

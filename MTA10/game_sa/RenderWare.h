@@ -302,6 +302,10 @@ class RwTexDictionary : public RwObject
 public:
     RwList <RwTexture>              textures;
     RwListEntry <RwTexDictionary>   globalTXDs;
+
+    bool                    ForAllTextures( bool (*callback)( RwTexture *tex, void *ud ), void *ud );
+    RwTexture*              GetFirstTexture();
+    RwTexture*              FindNamedTexture( const char *name );
 };
 class RwRaster
 {
@@ -322,6 +326,7 @@ public:
 };
 class RwTexture
 {
+public:
     RwRaster*                   raster;                         // 0
     RwTexDictionary*            txd;                            // 4
     RwListEntry <RwTexture>     TXDList;                        // 8
@@ -329,6 +334,9 @@ class RwTexture
     char                        mask[RW_TEXTURE_NAME_LENGTH];   // 48
     unsigned int                flags;                          // 80
     unsigned int                refs;                           // 84
+
+    void                        AddToDictionary( RwTexDictionary *txd );
+    void                        RemoveFromDictionary();
 };
 struct RwTextureCoordinates
 {

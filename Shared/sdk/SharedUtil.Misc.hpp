@@ -16,9 +16,11 @@
 #include "CNickGen.h"
 #include "UTF8Detect.cpp"
 #ifdef WIN32
-    #include <direct.h>
-    #include <shellapi.h>
+#include <direct.h>
+#include <shellapi.h>
 #endif
+
+#include <fstream>
 
 #ifdef MTA_CLIENT
 #ifdef WIN32

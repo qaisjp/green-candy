@@ -406,7 +406,6 @@ private:
     static void                         StaticPreWorldProcessHandler    ( void );
     static void                         StaticPostWorldProcessHandler   ( void );
     static void                         StaticIdleHandler               ( void );
-    static bool                         StaticProcessCollisionHandler   ( CEntitySAInterface* pThisInterface, CEntitySAInterface* pOtherInterface );
  
     bool                                DamageHandler                   ( CPed* pDamagePed, CEventDamage * pEvent );
     void                                FireHandler                     ( CFire* pFire );
@@ -418,9 +417,6 @@ private:
     void                                PreWorldProcessHandler          ( void );
     void                                PostWorldProcessHandler         ( void );
     void                                IdleHandler                     ( void );
-    void                                AddAnimationHandler             ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID );
-    void                                BlendAnimationHandler           ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID, float fBlendDelta );
-    bool                                ProcessCollisionHandler         ( CEntitySAInterface* pThisInterface, CEntitySAInterface* pOtherInterface );
    
     static bool                         StaticProcessMessage            ( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
     bool                                ProcessMessage                  ( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
@@ -582,12 +578,6 @@ private:
     bool                                m_bBeingDeleted;        // To enable speedy disconnect
 
     bool                                m_bWasMinimized;
-
-    // Cache for speeding up collision processing
-public:
-    typedef std::map <CClientEntity *, bool> disabledColl_t; 
-    disabledColl_t                      m_AllDisabledCollisions;
-private:
 
 #if defined (MTA_DEBUG) || defined (MTA_BETA)
     bool                                m_bShowSyncingInfo;

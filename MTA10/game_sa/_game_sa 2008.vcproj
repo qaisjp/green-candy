@@ -733,6 +733,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CTexDictionarySA.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CTextSA.cpp"
 				>
 			</File>

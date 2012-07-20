@@ -696,7 +696,7 @@ void COMMAND_DumpPlayers( const char *szCmdLine )
     for ( ; iter != g_pClientGame->GetPlayerManager()->IterEnd(); iter++ )
     {
         // Write the player dump
-        DumpPlayer( *iter, pFile );
+        DumpPlayer( *iter, file );
     }
 
     // End of the dump. Close it

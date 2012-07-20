@@ -19,7 +19,7 @@
 #include <game/CPools.h>
 #include <google/dense_hash_map>
 
-template < class type, int max >
+template <class type, int max>
 class CPool
 {
 public:

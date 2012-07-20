@@ -44,7 +44,7 @@ int main( int argc, char *argv[] )
 		goto login;
 
 	cout << "Would you like to logout?\nUse YES or NO\n";
-	std:string anwser;
+	std::string anwser;
 	cin >> anwser;
 	if(anwser=="YES")
 	{

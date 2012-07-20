@@ -66,7 +66,6 @@ class CRenderWareSA : public CRenderWare
 
     // uiModelID == 0 means no collisions will be loaded
     RpClump *           ReadDFF                     ( const char * szDFF, unsigned short usModelID );
-    void                DestroyDFF                  ( RpClump * pClump );
     CColModel *         ReadCOL                     ( const char * szCOLFile );
     void                ReplaceCollisions           ( CColModel * pColModel, unsigned short usModelID );
 

@@ -203,7 +203,7 @@ CClientGame::CClientGame ( bool bLocalPlay )
     if ( bLocalPlay )
         m_ulTimeStart = 0;
     else
-        m_ulTimeStart = CClientTime::GetTime ();
+        m_ulTimeStart = CClientTime::GetTime();
 
     m_dwFrameTimeSlice = 0;
     m_dwLastFrameTick = 0;
@@ -228,7 +228,6 @@ CClientGame::CClientGame ( bool bLocalPlay )
     g_pMultiplayer->SetPreWorldProcessHandler ( CClientGame::StaticPreWorldProcessHandler );
     g_pMultiplayer->SetPostWorldProcessHandler ( CClientGame::StaticPostWorldProcessHandler );
     g_pMultiplayer->SetIdleHandler ( CClientGame::StaticIdleHandler );
-    g_pMultiplayer->SetProcessCollisionHandler ( CClientGame::StaticProcessCollisionHandler );
     m_pProjectileManager->SetInitiateHandler ( CClientGame::StaticProjectileInitiateHandler );
     g_pCore->SetMessageProcessor ( CClientGame::StaticProcessMessage );
     g_pCore->GetKeyBinds ()->SetKeyStrokeHandler ( CClientGame::StaticKeyStrokeHandler );
@@ -294,10 +293,10 @@ CClientGame::CClientGame ( bool bLocalPlay )
         g_pCore->GetCVars()->Set ( "streaming_memory", g_pCore->GetMaxStreamingMemory () );
 }
 
-
-CClientGame::~CClientGame ( void )
+CClientGame::~CClientGame()
 {
     m_bBeingDeleted = true;
+
     // Stop all explosions. Unfortunately this doesn't fix the crash
     // if a vehicle is destroyed while it explodes.
     g_pGame->GetExplosionManager ()->RemoveAllExplosions ();
@@ -318,18 +317,19 @@ CClientGame::~CClientGame ( void )
     g_pCore->GetGUI ()->ClearInputHandlers ( INPUT_MOD );
 
     // Destroy mimics
-    #ifdef MTA_DEBUG
-        list < CClientPlayer* > ::const_iterator iterMimics = m_Mimics.begin ();
-        for ( ; iterMimics != m_Mimics.end (); iterMimics++ )
-        {
-            CClientPlayer* pPlayer = *iterMimics;
-            CClientVehicle* pVehicle = pPlayer->GetOccupiedVehicle ();
-            if ( pVehicle )
-                delete pVehicle;
+#ifdef MTA_DEBUG
+    std::list <CClientPlayer*> ::const_iterator iterMimics = m_Mimics.begin ();
+    for ( ; iterMimics != m_Mimics.end(); iterMimics++ )
+    {
+        CClientPlayer* pPlayer = *iterMimics;
+        CClientVehicle* pVehicle = pPlayer->GetOccupiedVehicle();
 
-            delete pPlayer;
-        }
-    #endif
+        if ( pVehicle )
+            delete pVehicle;
+
+        delete pPlayer;
+    }
+#endif
 
     // Hide the transfer box incase it is showing
     m_pTransferBox->Hide();
@@ -356,8 +356,6 @@ CClientGame::~CClientGame ( void )
     g_pMultiplayer->SetPreWorldProcessHandler (  NULL );
     g_pMultiplayer->SetPostWorldProcessHandler (  NULL );
     g_pMultiplayer->SetIdleHandler ( NULL );
-    g_pMultiplayer->SetAddAnimationHandler ( NULL );
-    g_pMultiplayer->SetBlendAnimationHandler ( NULL );
     g_pMultiplayer->SetProcessCollisionHandler ( NULL );
     m_pProjectileManager->SetInitiateHandler ( NULL );
     g_pCore->SetMessageProcessor ( NULL );
@@ -826,16 +824,9 @@ void CClientGame::DoPulsePostFrame ( void )
     }
 }
 
-typedef std::map <CEntitySAInterface*, CClientEntity*> cachedColl_t;
-
-static bool m_BuiltCollisionMapThisFrame = false;
-static cachedColl_t m_CachedCollisionMap;
-
 void CClientGame::DoPulses ( void )
 {
     g_pCore->ApplyFrameRateLimit ();
-
-    m_BuiltCollisionMapThisFrame = false;
 
     if ( m_bIsPlayingBack && m_bFirstPlaybackFrame && m_pManager->IsGameLoaded () )
     {
@@ -922,9 +913,9 @@ void CClientGame::DoPulses ( void )
     m_pObjectSync->DoPulse ();
     m_pLuaManager->DoPulse ();
 
-    #ifdef MTA_DEBUG
+#ifdef MTA_DEBUG
     UpdateMimics ();
-    #endif
+#endif
 
     // Grab the current time
     unsigned long ulCurrentTime = CClientTime::GetTime ();
@@ -1083,33 +1074,33 @@ void CClientGame::DoPulses ( void )
                 SString strError;
                 switch ( ucError )
                 {
-                    case ID_RSA_PUBLIC_KEY_MISMATCH:
-                        strError = "Disconnected: unknown protocol error.";  // encryption key mismatch
-                        break;
-                    case ID_REMOTE_DISCONNECTION_NOTIFICATION:
-                        strError = "Disconnected: disconnected remotely.";
-                        break;
-                    case ID_REMOTE_CONNECTION_LOST:
-                        strError = "Disconnected: connection lost remotely.";
-                        break;
-                    case ID_CONNECTION_BANNED:
-                        strError = "Disconnected: you are banned from this server.";
-                        break;
-                    case ID_NO_FREE_INCOMING_CONNECTIONS:
-                        strError = "Disconnected: the server is currently full.";
-                        break;
-                    case ID_DISCONNECTION_NOTIFICATION:
-                        strError = "Disconnected: disconnected from the server.";
-                        break;
-                    case ID_CONNECTION_LOST:
-                        strError = "Disconnected: connection to the server was lost.";
-                        break;
-                    case ID_INVALID_PASSWORD:
-                        strError = "Disconnected: invalid password specified.";
-                        break;
-                    default:
-                        strError = "Disconnected: connection was refused.";
-                        break;
+                case ID_RSA_PUBLIC_KEY_MISMATCH:
+                    strError = "Disconnected: unknown protocol error.";  // encryption key mismatch
+                    break;
+                case ID_REMOTE_DISCONNECTION_NOTIFICATION:
+                    strError = "Disconnected: disconnected remotely.";
+                    break;
+                case ID_REMOTE_CONNECTION_LOST:
+                    strError = "Disconnected: connection lost remotely.";
+                    break;
+                case ID_CONNECTION_BANNED:
+                    strError = "Disconnected: you are banned from this server.";
+                    break;
+                case ID_NO_FREE_INCOMING_CONNECTIONS:
+                    strError = "Disconnected: the server is currently full.";
+                    break;
+                case ID_DISCONNECTION_NOTIFICATION:
+                    strError = "Disconnected: disconnected from the server.";
+                    break;
+                case ID_CONNECTION_LOST:
+                    strError = "Disconnected: connection to the server was lost.";
+                    break;
+                case ID_INVALID_PASSWORD:
+                    strError = "Disconnected: invalid password specified.";
+                    break;
+                default:
+                    strError = "Disconnected: connection was refused.";
+                    break;
                 }
 
                 // Display an error, reset the error status and exit
@@ -3360,16 +3351,6 @@ bool CClientGame::StaticChokingHandler ( unsigned char ucWeaponType )
     return g_pClientGame->ChokingHandler ( ucWeaponType );
 }
 
-void CClientGame::StaticAddAnimationHandler ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID )
-{
-    g_pClientGame->AddAnimationHandler ( pClump, animGroup, animID );
-}
-
-void CClientGame::StaticBlendAnimationHandler ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID, float fBlendDelta )
-{
-    g_pClientGame->BlendAnimationHandler ( pClump, animGroup, animID, fBlendDelta );
-}
-
 void CClientGame::StaticPreWorldProcessHandler ( void )
 {
     g_pClientGame->PreWorldProcessHandler ();
@@ -3384,11 +3365,6 @@ void CClientGame::StaticPostWorldProcessHandler ( void )
 void CClientGame::StaticIdleHandler ( void )
 {
     g_pClientGame->IdleHandler ();
-}
-
-bool CClientGame::StaticProcessCollisionHandler ( CEntitySAInterface* pThisInterface, CEntitySAInterface* pOtherInterface )
-{
-    return g_pClientGame->ProcessCollisionHandler ( pThisInterface, pOtherInterface );
 }
 
 void CClientGame::DrawRadarAreasHandler ( void )
@@ -3514,63 +3490,6 @@ bool CClientGame::ChokingHandler ( unsigned char ucWeaponType )
     CLuaArguments Arguments;
     Arguments.PushNumber ( ucWeaponType );
     return m_pLocalPlayer->CallEvent ( "onClientPlayerChoke", Arguments, true );
-}
-
-bool CClientGame::ProcessCollisionHandler ( CEntitySAInterface* pThisInterface, CEntitySAInterface* pOtherInterface )
-{
-    if ( pThisInterface == pOtherInterface )
-        return true;
-
-    if ( !m_BuiltCollisionMapThisFrame )
-    {
-        // Build a map of CPhysicalSAInterface*/CClientEntity*'s that have collision disabled
-        m_BuiltCollisionMapThisFrame = true;
-        m_CachedCollisionMap.clear ();
-
-        disabledColl_t::iterator iter = m_AllDisabledCollisions.begin ();
-        for ( ; iter != m_AllDisabledCollisions.end () ; iter++ )
-        {
-            CClientEntity* pEntity = iter->first;
-            CEntity* pGameEntity = pEntity->GetGameEntity ();
-            CEntitySAInterface* pInterface = pGameEntity ? pGameEntity->GetInterface () : NULL;
-
-            if ( pInterface )
-                m_CachedCollisionMap[ pInterface ] = pEntity;
-        }
-    }
-
-    // Check both elements appear in the cached map before doing extra processing
-    cachedColl_t::iterator iter1 = m_CachedCollisionMap.find ( (CEntitySAInterface*)pThisInterface );
-    if ( iter1 != m_CachedCollisionMap.end () )
-    {
-        std::map < CEntitySAInterface*, CClientEntity* > ::iterator iter2 = m_CachedCollisionMap.find ( (CEntitySAInterface*)pOtherInterface );
-        if ( iter2 != m_CachedCollisionMap.end () )
-        {
-            // Re-get the entity pointers using a safer method
-            CEntity * pGameEntity = g_pGame->GetPools ()->GetEntity ( ( DWORD* ) pThisInterface );
-            CEntity * pGameColEntity = g_pGame->GetPools ()->GetEntity ( ( DWORD* ) pOtherInterface );
-
-            if ( pGameEntity && pGameColEntity )
-            {        
-                CClientEntity * pEntity = m_pManager->FindEntity ( pGameEntity, true );
-                CClientEntity * pColEntity = m_pManager->FindEntity ( pGameColEntity, true );
-
-                if ( pEntity && pColEntity )
-                {
-                    #if MTA_DEBUG
-                        CClientEntity* ppThisEntity2 = iter1->second;
-                        CClientEntity* ppOtherEntity2 = iter2->second;
-                        // These should match, but its not essential.
-                        assert ( ppThisEntity2 == pEntity );
-                        assert ( ppOtherEntity2 == pColEntity );
-                    #endif
-                    if ( !pEntity->IsCollidableWith ( pColEntity ) ) return false;
-                }
-            }
-        }
-    }
-
-    return true;
 }
 
 void CClientGame::DownloadFiles ( void )

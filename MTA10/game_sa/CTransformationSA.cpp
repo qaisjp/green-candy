@@ -25,7 +25,7 @@ void Transformation_Init()
 
 CTransformationSAInterface::CTransformationSAInterface( unsigned int max )
 {
-    CAllocatedTransformSAInterface *trans = malloc( max * sizeof(CTransformSAInterface) + sizeof(CAllocatedTransformSAInterface) );
+    CAllocatedTransformSAInterface *trans = (CAllocatedTransformSAInterface*)malloc( max * sizeof(CTransformSAInterface) + sizeof(CAllocatedTransformSAInterface) );
 
     // Store the count
     trans->m_count = max;
@@ -71,7 +71,9 @@ bool CTransformationSAInterface::FreeUnimportantMatrix()
     return true;
 }
 
-void CTransformSAInterface::NewMatrix()
+void CTransformationSAInterface::NewMatrix()
 {
-    LIST_APPEND( m_freeList, new CTransformSAInterface() );
+    CTransformSAInterface *item = new CTransformSAInterface;
+
+    LIST_APPEND( m_freeList, *item );
 }
