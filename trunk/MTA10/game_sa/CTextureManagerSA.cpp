@@ -26,16 +26,31 @@ CTxdInstanceSA::CTxdInstanceSA(const char *name)
     m_hash = pGame->GetKeyGen()->GetUppercaseKey(name);
 }
 
-int Txd_DeleteAll( RwTexture *tex, void *data )
+bool Txd_DeleteAll( RwTexture *tex, void *data )
 {
-    RwTextureDestroy(tex);
-    return 0;
+    if ( tex->refs < 2 )
+    {
+        tex->RemoveFromDictionary();
+
+        RwTextureDestroy( tex );
+    }
+
+    return true;
 }
 
 CTxdInstanceSA::~CTxdInstanceSA()
 {
-    RwTexDictionaryForAllTextures( m_txd, Txd_DeleteAll, NULL );
-    RwTexDictionaryDestroy( m_txd );
+    if ( m_txd )
+    {
+        m_txd->ForAllTextures( Txd_DeleteAll, NULL );
+
+        RwTexDictionaryDestroy( m_txd );
+
+        m_txd = NULL;
+    }
+
+    if ( m_parentTxd != 0xFFFF )
+        (*ppTxdPool)->Get( m_parentTxd )->Dereference();
 }
 
 void* CTxdInstanceSA::operator new( size_t )
@@ -55,7 +70,7 @@ bool CTxdInstanceSA::LoadTXD( const char *filename )
     unsigned int version;
     unsigned int numTextures;
 
-    if (!stream)
+    if ( !stream ) 
         return false;
 
     if (!RwStreamFindChunk( stream, 0x16, NULL, NULL ) || 
@@ -76,7 +91,7 @@ bool CTxdInstanceSA::LoadTXD( const char *filename )
             return false;
         }
 
-        RwTexDictionaryAddTexture( m_txd, texture );
+        texture->AddToDictionary( m_txd );
     }
 
     RwStreamClose( stream );
@@ -106,6 +121,15 @@ void CTxdInstanceSA::Reference()
 void CTxdInstanceSA::Dereference()
 {
     m_references--;
+
+    // We unload ourselves
+    if ( m_references == 0 )
+        pGame->GetStreaming()->FreeModel( DATA_TEXTURE_BLOCK + (*ppTxdPool)->GetIndex( this ) );
+}
+
+void CTxdInstanceSA::SetCurrent()
+{
+    RwTexDictionarySetCurrent( m_txd );
 }
 
 CTextureManagerSA::CTextureManagerSA()
@@ -115,10 +139,11 @@ CTextureManagerSA::CTextureManagerSA()
     // We init it ourselves
     *(unsigned char*)FUNC_InitTextureManager = 0xC3;
 
-    pTxdPool = new CTxdPool();
+    *ppTxdPool = new CTxdPool;
 
-    for (n=0; n<7; n++)
-        CreateTxdEntry("*");
+    // Reserve 7 txds
+    for ( n=0; n<7; n++ )
+        CreateTxdEntry( "*" );
 
     __asm
     {
@@ -137,7 +162,9 @@ CTextureManagerSA::CTextureManagerSA()
 
 CTextureManagerSA::~CTextureManagerSA()
 {
-    delete (*ppTxdPool);
+    (*ppTxdPool)->Clear();
+
+    delete *ppTxdPool;
 }
 
 int CTextureManagerSA::FindTxdEntry( const char *name )
@@ -163,10 +190,34 @@ int CTextureManagerSA::CreateTxdEntry( const char *name )
     CTxdInstanceSA *inst = new CTxdInstanceSA(name);
 
     // Check for crashes here
-    if (!inst)
+    if ( !inst )
         return -1;
 
     return (*ppTxdPool)->GetIndex(inst);
+}
+
+CTexDictionarySA* CTextureManagerSA::CreateTxd( const char *name )
+{
+    CTexDictionarySA *txd = new CTexDictionarySA( name );
+
+    m_texDicts.push_back( txd );
+    return txd;
+}
+
+CTexDictionarySA* CTextureManagerSA::CreateTxd( const char *name, unsigned short id )
+{
+    CTxdInstanceSA *itxd = (*ppTxdPool)->Get( id );
+
+    if ( !itxd )
+        return NULL;
+
+    CTexDictionarySA *txd = new CTexDictionarySA( name, itxd );
+
+    if ( !txd )
+        return NULL;
+
+    m_texDicts.push_back( txd );
+    return txd;
 }
 
 unsigned short CTextureManagerSA::LoadDictionary( const char *filename )
@@ -178,10 +229,10 @@ unsigned short CTextureManagerSA::LoadDictionaryEx( const char *name, const char
 {
     CTxdInstanceSA *txd = CreateTxdEntry( name );
 
-    if (!txd)
+    if ( !txd )
         return -1;
 
-    if (!txd->LoadTXD( filename ))
+    if ( !txd->LoadTXD( filename ) )
     {
         delete txd;
 
@@ -191,4 +242,26 @@ unsigned short CTextureManagerSA::LoadDictionaryEx( const char *name, const char
     txd->InitParent();
 
     return (*ppTxdPool)->GetIndex( txd );
+}
+
+bool CTextureManagerSA::SetCurrentTexture( unsigned short id )
+{
+    CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
+
+    if ( !txd )
+        return false;
+
+    txd->SetCurrent();
+    return true;
+}
+
+void CTextureManagerSA::RemoveTxdEntry( unsigned short id )
+{
+    CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
+
+    // Crashfix
+    if ( !txd )
+        return;
+
+    delete txd;
 }

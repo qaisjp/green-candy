@@ -154,70 +154,74 @@ public:
     CWeaponInfoSA*          GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill = WEAPONSKILL_STD );
     CModelInfoSA*           GetModelInfo( unsigned short id );
 
-    inline unsigned long    GetSystemTime ()      { return *VAR_SystemTime; };
-    inline bool             IsAtMenu ()           { return *VAR_IsAtMenu; };
-    inline bool             IsGameLoaded ()       { return *VAR_IsGameLoaded; };
-    void                    StartGame ();
-    void                    SetSystemState ( eSystemState State );
-    eSystemState            GetSystemState ();
-    inline bool             IsNastyGame ()                    { return *VAR_IsNastyGame; };
-    inline void             SetNastyGame ( bool IsNasty )       { *VAR_IsNastyGame = IsNasty; };
-    void                    Pause ( bool bPaused );
-    bool                    IsPaused ();
-    bool                    IsInForeground ();
+    inline unsigned long    GetSystemTime()                     { return *VAR_SystemTime; };
+    inline bool             IsAtMenu()                          { return *VAR_IsAtMenu; };
+    inline bool             IsGameLoaded()                      { return *VAR_IsGameLoaded; };
+    void                    StartGame();
+    void                    SetSystemState( eSystemState State );
+    eSystemState            GetSystemState();
+    inline bool             IsNastyGame()                       { return *VAR_IsNastyGame; };
+    inline void             SetNastyGame( bool IsNasty )        { *VAR_IsNastyGame = IsNasty; };
+    void                    Pause( bool bPaused );
+    bool                    IsPaused();
+    bool                    IsInForeground();
     void                    DisableRenderer( bool bDisabled );
-    void                    TakeScreenshot ( char * szFileName );
+    void                    TakeScreenshot( char * szFileName );
 
-    void                    SetRenderHook ( InRenderer* pInRenderer );
+    void                    SetRenderHook( InRenderer* pInRenderer );
 
     void                    Initialize();
     void                    Reset();
     void                    OnPreFrame();
     void                    OnFrame();
 
-    eGameVersion            GetGameVersion ();
-    eGameVersion            FindGameVersion ();
+    eGameVersion            GetGameVersion();
+    eGameVersion            FindGameVersion();
 
-    float                   GetFPS ();
-    float                   GetTimeStep ();
-    float                   GetOldTimeStep ();
-    float                   GetTimeScale ();
-    void                    SetTimeScale ( float fTimeScale );
+    float                   GetFPS();
+    float                   GetTimeStep();
+    float                   GetOldTimeStep();
+    float                   GetTimeScale();
+    void                    SetTimeScale( float fTimeScale );
 
-    bool                    InitLocalPlayer(  );
+    bool                    InitLocalPlayer();
 
-    float                   GetGravity ();
-    void                    SetGravity ( float fGravity );
+    float                   GetGravity();
+    void                    SetGravity( float fGravity );
 
-    float                   GetGameSpeed ();
-    void                    SetGameSpeed ( float fSpeed );
+    float                   GetGameSpeed();
+    void                    SetGameSpeed( float fSpeed );
 
-    unsigned char           GetBlurLevel ();
-    void                    SetBlurLevel ( unsigned char ucLevel );
+    unsigned char           GetBlurLevel();
+    void                    SetBlurLevel( unsigned char ucLevel );
 
-    unsigned long           GetMinuteDuration ();
-    void                    SetMinuteDuration ( unsigned long ulTime );
+    unsigned long           GetMinuteDuration();
+    void                    SetMinuteDuration( unsigned long ulTime );
 
-    bool                    IsCheatEnabled ( const char* szCheatName );
-    bool                    SetCheatEnabled ( const char* szCheatName, bool bEnable );
-    void                    ResetCheats ();
+    bool                    IsCheatEnabled( const char* szCheatName );
+    bool                    SetCheatEnabled( const char* szCheatName, bool bEnable );
+    void                    ResetCheats();
 
     bool                    VerifySADataFileNames ();
-    bool                    PerformChecks ();
-    int&                    GetCheckStatus () { return m_iCheckStatus; }
+    bool                    PerformChecks();
+    int&                    GetCheckStatus()                    { return m_iCheckStatus; }
 
+    bool                    ProcessCollisionHandler( CEntitySAInterface *caller, CEntitySAInterface *colld );
 
-    void                    SetAsyncLoadingFromSettings ( bool bSettingsDontUse, bool bSettingsEnabled );
-    void                    SetAsyncLoadingFromScript ( bool bScriptEnabled, bool bScriptForced );
-    void                    SuspendASyncLoading ( bool bSuspend );
-    bool                    IsASyncLoadingEnabled ( bool bIgnoreSuspend = false );
+    void                    AddAnimationHandler( RpClump *clump, AssocGroupId animGroup, AnimationId animID );
+    void                    BlendAnimationHandler( RpClump *clump, AssocGroupId animGroup, AnimationId animID, float blendDelta );
 
-    bool                    HasCreditScreenFadedOut ();
+    void                    SetAsyncLoadingFromSettings( bool bSettingsDontUse, bool bSettingsEnabled );
+    void                    SetAsyncLoadingFromScript( bool bScriptEnabled, bool bScriptForced );
+    void                    SuspendASyncLoading( bool bSuspend );
+    bool                    IsASyncLoadingEnabled( bool bIgnoreSuspend = false );
 
-    void                    SetupSpecialCharacters ();
+    bool                    HasCreditScreenFadedOut();
 
-    void                    FlushPendingRestreamIPL ();
-    void                    DisableVSync ();
+    void                    SetupSpecialCharacters();
+
+    void                    FlushPendingRestreamIPL();
+    void                    DisableVSync();
 
 private:
     CPoolsSA*                   m_pPools;
@@ -270,6 +274,18 @@ private:
     CSettingsSA*                m_pSettings;
     CCarEnterExitSA*            m_pCarEnterExit;
     CControllerConfigManagerSA* m_pControllerConfigManager;
+
+    // Cache for speeding up collision processing
+    typedef std::map <CEntitySAInterface*, CEntitySA*> cachedColl_t;
+
+    bool                        m_didCacheColl = false;
+    cachedColl_t                m_cachedColl;
+
+public:
+    typedef std::map <CEntitySA*, bool> disabledColl_t; 
+    disabledColl_t              m_disabledColl;
+
+private:
 
     eGameVersion            m_eGameVersion;
     bool                    m_bAsyncSettingsDontUse;

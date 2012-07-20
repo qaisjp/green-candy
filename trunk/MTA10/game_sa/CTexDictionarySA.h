@@ -16,22 +16,38 @@
 
 class CTextureSA;
 
-class CTexDictionarySA
+class CTexDictionarySA : public CTexDictionary
 {
     friend class CTextureManagerSA;
 public:
+                            CTexDictionarySA( const char *name );
+                            CTexDictionarySA( const char *name, CTxdInstanceSA *txd );
                             ~CTexDictionarySA();
 
-    const char*             GetName();
+    bool                    Load( const char *filename, bool filtering );
+    void                    Clear();
 
-    bool                    IsImported( unsigned short id );
+    const char*             GetName() const                 { return m_name.c_str(); }
+    unsigned int            GetHash() const                 { return m_tex->m_hash; }
+
+    bool                    Import( unsigned short id );
+    bool                    ImportTXD( unsigned short id );
+    bool                    Remove( unsigned short id );
+    bool                    RemoveTXD( unsigned short id );
+
+    bool                    IsImported( unsigned short id ) const;
+    bool                    IsImportedTXD( unsigned short id ) const;
 
 protected:
-    bool                    Import( unsigned short id );
-    bool                    Remove( unsigned short id );
+    std::string             m_name;
 
+    typedef std::list <unsigned short> importList_t;
+    importList_t            m_imported;
+
+public:
     typedef std::list <CTextureSA*> textureList_t;
 
+    CTxdInstanceSA*         m_tex;
     textureList_t           m_textures;
 };
 

@@ -277,8 +277,8 @@ public:
     virtual CEntity*                            GetGameEntity()                                 { return NULL; }
     virtual const CEntity*                      GetGameEntity() const                           { return NULL; }
 
-    bool                                        IsCollidableWith( CClientEntity * pEntity );
-    void                                        SetCollidableWith( CClientEntity * pEntity, bool bCanCollide );
+    bool                                        IsCollidableWith( CClientEntity *entity ) const;
+    void                                        SetCollidableWith( CClientEntity *entity, bool enable );
 
     bool                                        IsDoubleSided();
     void                                        SetDoubleSided( bool bEnable );
@@ -337,7 +337,6 @@ protected:
     std::list < CClientPed * >                  m_OriginSourceUsers;
     std::list < CClientPed * >                  m_Contacts;
     unsigned char                               m_ucInterior;
-    std::map < CClientEntity *, bool >          m_DisabledCollisions;
     bool                                        m_bDoubleSided;
     bool                                        m_bDoubleSidedInit;
 

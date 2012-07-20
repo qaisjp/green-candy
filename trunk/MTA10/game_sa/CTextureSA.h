@@ -14,35 +14,42 @@
 #ifndef _CTextureSA_H_
 #define _CTextureSA_H_
 
-class CTextureSA
+class CTexDictionarySA;
+
+class CTextureSA : public CTexture
 {
     friend class CTexDictionarySA;
     friend class CTextureManagerSA;
 public:
                             CTextureSA( RwTexture *tex );
+                            CTextureSA( CTexDictionarySA *txd, RwTexture *tex );
                             ~CTextureSA();
 
-    const char*             GetName();
-    unsigned int            GetHash();
+    const char*             GetName() const;
+    unsigned int            GetHash() const;
 
-#if 0
-    bool                    IsImported( unsigned short id );
-#endif
+    bool                    Import( unsigned short id );
+    bool                    ImportTXD( unsigned short id );
+    bool                    Remove( unsigned short id );
+    bool                    RemoveTXD( unsigned short id );
+
+    void                    ClearImports();
+
+    bool                    IsImported( unsigned short id ) const;
+    bool                    IsImportedTXD( unsigned short id ) const;
 
 protected:
-#if 0
-    bool                    Import( unsigned short id );
-    bool                    Remove( unsigned short id );
-
-    typedef list <CBaseModelInfoSAInterface*> importList_t;
-#endif
-
     CTexDictionarySA*       m_dictionary;
     RwTexture*              m_texture;
+
+    struct import
+    {
+        RwTexture *copy;
+        RwTexture *original;
+    };
     
-#if 0
-    importList_t            m_imported;
-#endif
-};
+    typedef std::map <unsigned short, import> importMap_t;
+
+    importMap_t             m_imported;
 
 #endif

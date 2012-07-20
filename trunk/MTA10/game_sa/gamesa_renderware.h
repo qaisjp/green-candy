@@ -95,6 +95,7 @@ typedef RwTexDictionary *       (__cdecl *RwTexDictionaryGetCurrent_t)          
 typedef RwTexture *             (__cdecl *RwTexDictionaryFindNamedTexture_t)    (RwTexDictionary * dict, const char* name);
 typedef int                     (__cdecl *RwTexDictionaryDestroy_t)             (RwTexDictionary *txd);
 typedef RwTexture*              (__cdecl *RwTextureCreate_t)                    (RwRaster *raster);
+typedef void                    (__cdecl *RwTextureUnlinkFromDictionary_t)      (RwTexture *texture);
 typedef int                     (__cdecl *RwTextureDestroy_t)                   (RwTexture *texture);
 typedef float                   (__cdecl *RwV3dNormalize_t)                     (RwV3d * out, const RwV3d * in);
 typedef RwV3d *                 (__cdecl *RwV3dTransformVector_t)               (RwV3d * out, const RwV3d * in, const RwMatrix * matrix);
@@ -104,7 +105,7 @@ typedef RwRaster*               (__cdecl *RwRasterCreate_t)                     
 typedef RpWorld *               (__cdecl *RpWorldAddAtomic_t)                   (RpWorld * world, RpAtomic * atomic);
 typedef RpWorld *               (__cdecl *RpWorldAddClump_t)                    (RpWorld * world, RpClump * clump);
 typedef RpWorld *               (__cdecl *RpWorldAddLight_t)                    (RpWorld * world, RpLight * light);
-typedef void                    (__cdecl *RpPrtStdGlobalDataSetStreamEmbedded_t)(void * value);
+typedef void                    (__cdecl *RpPrtStdGlobalDataSetStreamEmbedded_t)(CBaseModelInfoSAInterface *info);
 typedef RwError*                (__cdecl *RwErrorGet_t)                         (RwError *code);
 typedef void                    (__cdecl *RwPrefetch_t)                         ();
 
@@ -162,6 +163,7 @@ RwTexDictionaryFindNamedTexture_t       RwTexDictionaryFindNamedTexture         
 RwTexDictionaryAddTexture_t             RwTexDictionaryAddTexture               = (RwTexDictionaryAddTexture_t)             0xDEAD;
 RwTexDictionaryDestroy_t                RwTexDictionaryDestroy                  = (RwTexDictionaryDestroy_t)                0xDEAD;
 RwTextureCreate_t                       RwTextureCreate                         = (RwTextureCreate_t)                       0xDEAD;
+RwTextureUnlinkFromDictionary_t         RwTextureUnlinkFromDictionary           = (RwTextureUnlinkFromDictionary_t)         0xDEAD;
 RwTextureDestroy_t                      RwTextureDestroy                        = (RwTextureDestroy_t)                      0xDEAD;
 RpGeometryCreate_t                      RpGeometryCreate                        = (RpGeometryCreate_t)                      0xDEAD;
 RpGeometryGetAnimation_t                RpGeometryGetAnimation                  = (RpGeometryGetAnimation_t)                0xDEAD;

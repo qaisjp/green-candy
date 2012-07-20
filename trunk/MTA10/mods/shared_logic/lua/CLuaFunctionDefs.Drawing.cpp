@@ -444,7 +444,7 @@ namespace CLuaFunctionDefs
             {
                 if ( pFileResource->FileExists( meta ) )
                 {
-                    SString strRootPath = strPath.Left ( strPath.length () - strMetaPath.length () );
+                    filePath strRootPath = filePath( strPath.c_str(), strPath.length() - strlen( meta ) );
                     SString strStatus;
                     CClientShader* pShader = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateShader ( strPath, strRootPath, strStatus, bDebug );
                     if ( pShader )
@@ -458,13 +458,14 @@ namespace CLuaFunctionDefs
                     else
                     {
                         // Replace any path in the error message with our own one
-                        SString strRootPathWithoutResource = strRootPath.Left ( strRootPath.TrimEnd ( "\\" ).length () - SStringX ( pFileResource->GetName () ).length () ) ;
+                        SString path = filePath( strRootPath );
+                        SString strRootPathWithoutResource = path.Left( path.TrimEnd ( "\\" ).length() - pFileResource->GetName().length() );
                         strStatus = strStatus.ReplaceI ( strRootPathWithoutResource, "" );
                         m_pScriptDebugging->LogCustom( SString ( "Problem @ '%s' [%s]", "dxCreateShader", *strStatus ) );
                     }
                 }
                 else
-                    m_pScriptDebugging->LogCustom( SString ( "Missing file @ '%s' [%s]", "dxCreateShader", *ConformResourcePath ( strPath, true ) ) );
+                    m_pScriptDebugging->LogCustom( SString ( "Missing file @ '%s' [%s]", "dxCreateShader", strPath.c_str() ) );
             }
             else
                 m_pScriptDebugging->LogCustom( SString ( "Bad file-path @ '%s' [%s]", "dxCreateShader", *strFilePath ) );

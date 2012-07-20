@@ -22,12 +22,14 @@ CPhysicalSAInterface::CPhysicalSAInterface()
 
     AllocateMatrix();
 
+#if 0
     m_velocity.Reset();
     m_spin.Reset();
     m_vecUnk.Reset();
     m_vecUnk2.Reset();
     m_vecUnk3.Reset();
     m_vecUnk4.Reset();
+#endif
 
     m_mass = 1;
     m_turnMass = 1;
@@ -46,9 +48,11 @@ CPhysicalSAInterface::CPhysicalSAInterface()
     m_damageImpulseMagnitude = 0;
     m_damageEntity = NULL;
 
+#if 0
     m_vecUnk5.Reset();
     m_vecUnk6.Reset();
     m_centerOfMass.Reset();
+#endif
 
     m_distanceTravelled = 0;
 
@@ -68,119 +72,122 @@ CPhysicalSAInterface::CPhysicalSAInterface()
     m_lighting = 0;
 }
 
-void CPhysicalSA::GetMoveSpeed( CVector *velocity )
+void CPhysicalSA::GetMoveSpeed( CVector& vel ) const
 {
-    DEBUG_TRACE("void CPhysicalSA::GetMoveSpeed( CVector *velocity )");
+    DEBUG_TRACE("void CPhysicalSA::GetMoveSpeed( CVector& vel ) const");
     
-    *velocity = m_velocity;
+    vel = m_velocity;
 }
 
-void CPhysicalSA::GetTurnSpeed( CVector *spin )
+void CPhysicalSA::GetTurnSpeed( CVector& spin ) const
 {
-    DEBUG_TRACE("void CPhysicalSA::GetTurnSpeed( CVector *spin )");
+    DEBUG_TRACE("void CPhysicalSA::GetTurnSpeed( CVector& spin ) const");
     
-    *spin = m_spin;
+    spin = m_spin;
 }
 
-void CPhysicalSA::SetMoveSpeed(CVector *velocity)
+void CPhysicalSA::SetMoveSpeed( const CVector& vel )
 {
-    DEBUG_TRACE("void CPhysicalSA::SetMoveSpeed( CVector *velocity )");
+    DEBUG_TRACE("void CPhysicalSA::SetMoveSpeed( const CVector& vel )");
     
-    m_velocity = *velocity;
+    m_velocity = vel;
 }
 
-void CPhysicalSA::SetTurnSpeed(CVector *spin)
+void CPhysicalSA::SetTurnSpeed( const CVector& spin )
 {
-    DEBUG_TRACE("void CPhysicalSA::SetTurnSpeed( CVector *spin )");
+    DEBUG_TRACE("void CPhysicalSA::SetTurnSpeed( const CVector& spin )");
     
-    m_spin = *spin;
+    m_spin = spin;
 }
 
-float CPhysicalSA::GetMass ()
+float CPhysicalSA::GetMass() const
 {
     return GetInterface()->m_mass;
 }
 
-void CPhysicalSA::SetMass ( float mass )
+void CPhysicalSA::SetMass( float mass )
 {
     GetInterface()->m_mass = mass;
 }
 
-float CPhysicalSA::GetTurnMass ()
+float CPhysicalSA::GetTurnMass() const
 {
     return GetInterface()->m_turnMass;
 }
 
-void CPhysicalSA::SetTurnMass ( float turnMass )
+void CPhysicalSA::SetTurnMass( float turnMass )
 {
     GetInterface()->m_turnMass = turnMass;
 }
 
-float CPhysicalSA::GetElasticity ()
+float CPhysicalSA::GetElasticity() const
 {
     return GetInterface()->m_elasticity;
 }
 
-void CPhysicalSA::SetElasticity ( float elasticity )
+void CPhysicalSA::SetElasticity( float elasticity )
 {
     GetInterface()->m_elasticity = elasticity;
 }
 
-float CPhysicalSA::GetBuoyancyConstant ()
+float CPhysicalSA::GetBuoyancyConstant() const
 {
     return GetInterface()->m_buoyancyConstant;
 }
 
-void CPhysicalSA::SetBuoyancyConstant ( float buoyancyConstant )
+void CPhysicalSA::SetBuoyancyConstant( float buoyancyConstant )
 {
     GetInterface()->m_buoyancyConstant = buoyancyConstant;
 }
 
-void CPhysicalSA::ProcessCollision ()
+void CPhysicalSA::ProcessCollision()
 {
-    DEBUG_TRACE("void CPhysicalSA::ProcessCollision ()");
+    DEBUG_TRACE("void CPhysicalSA::ProcessCollision()");
 
     GetInterface()->ProcessCollision();
 }
 
-float CPhysicalSA::GetDamageImpulseMagnitude ()
+float CPhysicalSA::GetDamageImpulseMagnitude() const
 {
     return GetInterface()->m_damageImpulseMagnitude;
 }
 
-void CPhysicalSA::SetDamageImpulseMagnitude ( float magnitude )
+void CPhysicalSA::SetDamageImpulseMagnitude( float magnitude )
 {
     GetInterface()->m_damageImpulseMagnitude = magnitude;
 }
 
-CEntity* CPhysicalSA::GetDamageEntity ()
+CEntity* CPhysicalSA::GetDamageEntity() const
 {
     return pGame->GetPools()->GetEntity( GetInterface()->m_damageEntity );
 }
 
-void CPhysicalSA::SetDamageEntity ( CEntity* pEntity )
+void CPhysicalSA::SetDamageEntity( CEntity *entity )
 {
-    CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
+    CEntitySA* pEntitySA = dynamic_cast <CEntitySA*> ( pEntity );
 
-    GetInterface()->m_damageEntity = pEntitySA->GetInterface ();
+    if ( !pEntitySA )
+        return;
+
+    GetInterface()->m_damageEntity = pEntitySA->GetInterface();
 }
 
-void CPhysicalSA::ResetLastDamage ( void )
+void CPhysicalSA::ResetLastDamage() const
 {
     GetInterface()->m_damageImpulseMagnitude = 0;
     GetInterface()->m_damageEntity = NULL;
 }
 
-CEntity * CPhysicalSA::GetAttachedEntity ( void )
+CEntity* CPhysicalSA::GetAttachedEntity() const
 {
     return pGame->GetPools()->GetEntity( GetInterface()->m_attachedTo );
 }
 
-void CPhysicalSA::AttachTo ( CPhysical *entity, const CVector& vecPosition, const CVector& vecRotation )
+void CPhysicalSA::AttachTo( CPhysical& Entity, const CVector& pos, const CVector& rot )
 {
-    DEBUG_TRACE("void CPhysicalSA::AttachTo( CPhysical& Entity, const CVector& vecPosition, const CVector& vecRotation )");
+    DEBUG_TRACE("void CPhysicalSA::AttachTo( CPhysical& Entity, const CVector& pos, const CVector& rot )");
 
-    InternalAttachTo( (DWORD)dynamic_cast <CPhysicalSA*> ( entity )->GetInterface(), &vecPosition, &vecRotation );
+    InternalAttachTo( (DWORD)dynamic_cast <CPhysicalSA&> ( Entity ).GetInterface(), pos, rot );
 }
 
 void CPhysicalSA::DetachFrom( float fUnkX, float fUnkY, float fUnkZ, bool bUnk )
@@ -206,9 +213,9 @@ void CPhysicalSA::DetachFrom( float fUnkX, float fUnkY, float fUnkZ, bool bUnk )
     }
 }
 
-bool CPhysicalSA::InternalAttachTo(DWORD dwEntityInterface, const CVector * vecPosition, const CVector * vecRotation)
+bool CPhysicalSA::InternalAttachTo( DWORD dwEntityInterface, const CVector& pos, const CVector& rot )
 {
-    DEBUG_TRACE("bool CPhysicalSA::AttachToEntity(CPhysical * entityToAttach, CVector * vecPosition, CVector * vecRotation)");
+    DEBUG_TRACE("bool CPhysicalSA::InternalAttachTo( DWORD dwEntityInterface, const CVector& pos, const CVector& rot )");
 
     DWORD dwFunc = FUNC_AttachEntityToEntity;
     DWORD dwThis = (DWORD)GetInterface();
@@ -216,11 +223,11 @@ bool CPhysicalSA::InternalAttachTo(DWORD dwEntityInterface, const CVector * vecP
 
     _asm
     {
-        mov     ecx, vecRotation
+        mov     ecx,rot
         push    [ecx+8]
         push    [ecx+4]
         push    [ecx]
-        mov     ecx, vecPosition
+        mov     ecx,pos
         push    [ecx+8]
         push    [ecx+4]
         push    [ecx]
@@ -232,24 +239,37 @@ bool CPhysicalSA::InternalAttachTo(DWORD dwEntityInterface, const CVector * vecP
     return (dwReturn != NULL);
 }
 
-void CPhysicalSA::GetAttachedOffsets ( CVector& vecPosition, CVector& vecRotation )
+void CPhysicalSA::GetAttachedOffsets( CVector& pos, CVector& rot ) const
 {
-    vecPosition = GetInterface()->m_attachOffset;
-    vecRotation = GetInterface()->m_attachRotation;
+    pos = GetInterface()->m_attachOffset;
+    rot = GetInterface()->m_attachRotation;
 }
 
-void CPhysicalSA::SetAttachedOffsets ( CVector& vecPosition, CVector& vecRotation )
+void CPhysicalSA::SetAttachedOffsets( const CVector& pos, const CVector& rot )
 {
-    GetInterface()->m_attachOffset = vecPosition;
-    GetInterface()->m_attachRotation = vecRotation;
+    GetInterface()->m_attachOffset = pos;
+    GetInterface()->m_attachRotation = rot;
 }
 
-float CPhysicalSA::GetLighting ()
+void CPhysicalSA::GetImmunities( bool& bNoClip, bool& bFrozen, bool& bBulletProof, bool & bFlameProof, bool & bUnk, bool & bUnk2, bool & bCollisionProof, bool & bExplosionProof ) const
+{
+    unsigned char ucImmunities = GetInterface()->m_numImmunities;
+    bNoClip = ( ucImmunities & 0x1 ) ? true:false;
+    bFrozen = ( ucImmunities & 0x2 ) ? true:false;
+    bBulletProof = ( ucImmunities & 0x4 ) ? true:false;
+    bFlameProof = ( ucImmunities & 0x8 ) ? true:false;
+    bUnk = ( ucImmunities & 0x10 ) ? true:false;
+    bUnk2 = ( ucImmunities & 0x20 ) ? true:false;
+    bCollisionProof = ( ucImmunities & 0x40 ) ? true:false;
+    bExplosionProof = ( ucImmunities & 0x80 ) ? true:false;
+}
+
+float CPhysicalSA::GetLighting() const
 {
     return GetInterface()->m_lighting;
 }
 
-void CPhysicalSA::SetLighting ( float lighting )
+void CPhysicalSA::SetLighting( float lighting )
 {
     GetInterface()->m_lighting = lighting;
 }

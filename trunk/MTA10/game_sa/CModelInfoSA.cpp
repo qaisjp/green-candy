@@ -597,7 +597,7 @@ void CModelInfoSA::AddRef ( bool bWaitForLoad, bool bHighPriority )
 
 int CModelInfoSA::GetRefCount ()
 {
-    return static_cast < int > ( m_dwReferences );
+    return (int)m_dwReferences;
 }
 
 void CModelInfoSA::RemoveRef ( bool bRemoveExtraGTARef )
@@ -693,7 +693,6 @@ void CModelInfoSA::MaybeRemoveExtraGTARef ( void )
 // Remove extra GTA ref and handle actual model unload if then required
 void CModelInfoSA::DoRemoveExtraGTARef ( void )
 {
-    // Seriously, if we are not loaded, why the fuck is there a modelInfo?
     if (m_modelID == 0)
         return;
 

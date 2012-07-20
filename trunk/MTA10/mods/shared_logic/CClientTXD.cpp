@@ -13,18 +13,12 @@
 
 #include <StdInc.h>
 
-std::map < unsigned short, std::list < RwTexture* > > CClientTXD::ms_ReplacedTXDTextures;
-std::map < unsigned short, std::list < RwTexture* > > CClientTXD::ms_AddedTXDTextures;
-
-CClientTXD::CClientTXD ( class CClientManager* pManager, ElementID ID ) : ClassInit ( this ), CClientEntity ( ID )
+CClientTXD::CClientTXD ( class CClientManager* pManager, ElementID ID )
 {
     // Init
     m_pManager = pManager;
     m_usMainModel = 0xFFFF;
-
-    SetTypeName ( "txd" );
 }
-
 
 CClientTXD::~CClientTXD ( void )
 {

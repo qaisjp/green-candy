@@ -125,21 +125,15 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
     }
     else if ( id < 25000 )
     {
-        int textureDictionary;
-        dwFunc = 0x00408370;
+        CTxdInstanceSA *txd = (*ppTxdPool)->Get( id - DATA_TEXTURE_BLOCK );
 
-        __asm
-        {
-            movsx eax,id
-            sub eax,20000
-            push eax
-            call dwFunc
-            pop textureDictionary
-        }
+        // Crashfix
+        if ( !txd )
+            return;
 
         // I think it loads textures, lol
-        if ( textureDictionary != -1 )
-            RequestModel( textureDictionary + DATA_TEXTURE_BLOCK, flags );
+        if ( txd->m_parentTxd != -1 )
+            RequestModel( txd->m_parentTxd + DATA_TEXTURE_BLOCK, flags );
     }
 
     dwFunc = 0x00407480;
@@ -169,10 +163,7 @@ void CStreamingSA::FreeModel( unsigned short id )
     if ( info->m_eLoading == MODEL_UNAVAILABLE )
         return;
 
-    if (info->m_eLoading == MODEL_UNAVAILABLE)
-        return;
-
-    if (id < DATA_TEXTURE_BLOCK)
+    if ( id < DATA_TEXTURE_BLOCK )
     {
         int unk;
         unsigned int *unk2;
@@ -187,7 +178,7 @@ void CStreamingSA::FreeModel( unsigned short id )
             unk = *(int*)VAR_PEDSPECMODEL;
             unk2 = (unsigned int*)ARRAY_PEDSPECMODEL;
 
-            while (unk2 < (unsigned int*)ARRAY_PEDSPECMODEL + 5)
+            while ( unk2 < (unsigned int*)ARRAY_PEDSPECMODEL + 5 )
             {
                 if (*unk2 == id)
                 {
@@ -217,7 +208,7 @@ void CStreamingSA::FreeModel( unsigned short id )
     else if ( id < 25000 )
     {
         // Remove texture reference?
-        CTxdStore_RemoveTxd( id - DATA_TEXTURE_BLOCK );
+        pGame->GetTextureManager()->RemoveTxdEntry( id - DATA_TEXTURE_BLOCK );
     }
     else if ( id < 25255 )
     {

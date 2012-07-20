@@ -78,9 +78,9 @@ CClientEntity::CClientEntity ( ElementID ID )
 
 CClientEntity::~CClientEntity ( void )
 {
-    #ifdef MTA_DEBUG
-        --iCount;
-    #endif
+#ifdef MTA_DEBUG
+    --iCount;
+#endif
 
     // Make sure we won't get deleted later by the element deleter if we've been requested so
     if ( m_bBeingDeleted )
@@ -164,19 +164,9 @@ CClientEntity::~CClientEntity ( void )
     }
     m_Contacts.clear ();
 
-    // Unlink disabled-collisions
-    while ( !m_DisabledCollisions.empty () )
-    {
-        CClientEntity * pEntity = m_DisabledCollisions.begin ()->first;
-        SetCollidableWith ( pEntity, true );
-    }
-
     // Remove from spatial database
     if ( !g_pClientGame->IsBeingDeleted () )
         GetClientSpatialDatabase ()->RemoveEntity ( this );
-
-    // Ensure not referenced in the disabled collisions list
-    assert ( !MapContains ( g_pClientGame->m_AllDisabledCollisions, this ) );
 
     // Ensure nothing has inadvertently set a parent
     assert ( m_pParent == NULL );
@@ -647,7 +637,7 @@ void CClientEntity::InternalAttachTo ( CClientEntity* pEntity )
                     CVehicle * pGameVehicle = static_cast < CClientVehicle* > ( pEntity )->GetGameVehicle ();
                     if ( pGameVehicle )
                     {
-                        pThis->AttachEntityToEntity ( *pGameVehicle, m_vecAttachedPosition, m_vecAttachedRotation );
+                        pThis->AttachTo( *pGameVehicle, m_vecAttachedPosition, m_vecAttachedRotation );
                     }
                     break;
                 }
@@ -657,7 +647,7 @@ void CClientEntity::InternalAttachTo ( CClientEntity* pEntity )
                     CPlayerPed * pGamePed = static_cast < CClientPed* > ( pEntity )->GetGamePlayer ();
                     if ( pGamePed )
                     {
-                        pThis->AttachEntityToEntity ( *pGamePed, m_vecAttachedPosition, m_vecAttachedRotation );                
+                        pThis->AttachTo( *pGamePed, m_vecAttachedPosition, m_vecAttachedRotation );                
                     }
                     break;
                 }
@@ -666,7 +656,7 @@ void CClientEntity::InternalAttachTo ( CClientEntity* pEntity )
                     CObject * pGameObject = static_cast < CClientObject* > ( pEntity )->GetGameObject ();
                     if ( pGameObject )
                     {
-                        pThis->AttachEntityToEntity ( *pGameObject, m_vecAttachedPosition, m_vecAttachedRotation );
+                        pThis->AttachTo( *pGameObject, m_vecAttachedPosition, m_vecAttachedRotation );
                     }
                     break;
                 }
@@ -675,7 +665,7 @@ void CClientEntity::InternalAttachTo ( CClientEntity* pEntity )
                     CObject * pGameObject = static_cast < CClientPickup * > ( pEntity )->GetGameObject ();
                     if ( pGameObject )
                     {
-                        pThis->AttachEntityToEntity ( *pGameObject, m_vecAttachedPosition, m_vecAttachedRotation );
+                        pThis->AttachTo( *pGameObject, m_vecAttachedPosition, m_vecAttachedRotation );
                     }
                     break;
                 }
@@ -683,7 +673,7 @@ void CClientEntity::InternalAttachTo ( CClientEntity* pEntity )
         }
         else
         {
-            pThis->DetachEntityFromEntity ( 0, 0, 0, 0 );
+            pThis->DetachFrom( 0, 0, 0, 0 );
         }
     }
 }
@@ -1461,43 +1451,24 @@ void CClientEntity::_GetEntitiesFromRoot ( unsigned int uiTypeHash, std::map < C
 
 #endif
 
-
-bool CClientEntity::IsCollidableWith ( CClientEntity * pEntity )
+// TODO: fix crash if game entity is not present
+bool CClientEntity::IsCollidableWith( CClientEntity *entity ) const
 {
-    return !MapContains ( m_DisabledCollisions, pEntity );
+    return GetGameEntity()->IsCollidableWith( entity->GetGameEntity() );
 }
 
-
-void CClientEntity::SetCollidableWith ( CClientEntity * pEntity, bool bCanCollide )
+void CClientEntity::SetCollidableWith( CClientEntity *entity, bool enable )
 {
-    // quit if no change
-    if ( MapContains( m_DisabledCollisions, pEntity ) != bCanCollide )
-        return;
-
-    if ( bCanCollide )
-    {
-        MapRemove ( m_DisabledCollisions, pEntity );
-        if ( m_DisabledCollisions.empty () )
-            MapRemove ( g_pClientGame->m_AllDisabledCollisions, this );
-    }
-    else
-    {
-        MapSet ( m_DisabledCollisions, pEntity, true );
-        MapSet ( g_pClientGame->m_AllDisabledCollisions, this, true );
-    }
-    // Set in the other entity as well
-    pEntity->SetCollidableWith ( this, bCanCollide );
+    GetGameEntity()->SetCollidableWith( entity->GetGameEntity(), enable );
 }
 
-
-CSphere CClientEntity::GetWorldBoundingSphere ( void )
+CSphere CClientEntity::GetWorldBoundingSphere()
 {
     // Default to a point around the entity's position
     CVector vecPosition;
     GetPosition ( vecPosition );
     return CSphere ( vecPosition, 0.f );
 }
-
 
 void CClientEntity::UpdateSpatialData ( void )
 {

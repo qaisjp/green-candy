@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CGameSA.cpp
 *  PURPOSE:     Base game logic handling
@@ -11,6 +11,7 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -32,6 +33,23 @@ float* CGameSA::VAR_FPS;
 float* CGameSA::VAR_OldTimeStep;
 float* CGameSA::VAR_TimeStep;
 unsigned long* CGameSA::VAR_Framelimiter;
+
+static CMultiplayer* multiplayer;
+
+static bool ProcessCollisions( CEntitySAInterface *caller, CEntitySAInterface *colld )
+{
+    return pGame->ProcessCollisionHandler( caller, colld );
+}
+
+static void AddAnimation( RpClump *clump, AssocGroupId animGroup, AnimationId animId )
+{
+    pGame->AddAnimationHandler( clump, animGroup, animId );
+}
+
+static void BlendAnimation( RpClump *clump, AssocGroupId animGroup, AnimationId animId, float blendDelta )
+{
+    pGame->BlendAnimationHandler( clump, animGroup, animId, blendDelta );
+}
 
 CGameSA::CGameSA()
 {
@@ -106,6 +124,10 @@ CGameSA::CGameSA()
     m_pParticleSystem           = new CParticleSystemSA();
     m_pFx                       = new CFxSA ( (CFxSAInterface *)CLASS_CFx );
     m_pWaterManager             = new CWaterManagerSA ();
+
+    // Extend multiplayer with internal extensions
+    multiplayer = core->GetMultiplayer();
+    multiplayer->SetProcessCollisionHandler( ProcessCollisions );
 
     // :D
     Transformation_Init();
@@ -202,7 +224,7 @@ CGameSA::~CGameSA()
     delete m_pWorld;
     delete m_pAudio;
 
-    // Dump any memory leaks if DETECT_LEAK is defined
+    // Dump any memory leaks if DETECT_LEAKS is defined
 #ifdef DETECT_LEAKS    
     DumpUnfreed();
 #endif
@@ -210,7 +232,7 @@ CGameSA::~CGameSA()
 
 CWeaponInfoSA* CGameSA::GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill )
 { 
-    DEBUG_TRACE("CWeaponInfo * CGameSA::GetWeaponInfo(eWeaponType weapon)");
+    DEBUG_TRACE("CWeaponInfoSA* CGameSA::GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill )");
     
     if ( (skill == WEAPONSKILL_STD && weapon >= WEAPONTYPE_UNARMED && weapon < WEAPONTYPE_LAST_WEAPONTYPE) ||
          (skill != WEAPONSKILL_STD && weapon >= WEAPONTYPE_PISTOL && weapon <= WEAPONTYPE_TEC9) )
@@ -275,9 +297,9 @@ void CGameSA::StartGame()
 {
     DEBUG_TRACE("void CGameSA::StartGame()");
 
-    this->SetSystemState(GS_INIT_PLAYING_GAME);
-    MemPutFast < BYTE > ( 0xB7CB49, 0 );
-    MemPutFast < BYTE > ( 0xBA67A4, 0 );
+    SetSystemState( GS_INIT_PLAYING_GAME );
+    *(unsigned char*)0xB7CB49 = 0;
+    *(unsigned char*)0xBA67A4 = 0;
 }
 
 /**
@@ -298,7 +320,7 @@ eSystemState CGameSA::GetSystemState()
 
 bool CGameSA::InitLocalPlayer()
 {
-    DEBUG_TRACE("BOOL CGameSA::InitLocalPlayer(  )");
+    DEBUG_TRACE("bool CGameSA::InitLocalPlayer()");
 
     return GetPools()->GetPedFromRef( 1 ) != NULL;
 }
@@ -387,7 +409,7 @@ void CGameSA::Initialize()
 {
     // Initialize garages
     m_pGarages->Initialize();
-    SetupSpecialCharacters ();
+    SetupSpecialCharacters();
 
     // *Sebas* Hide the GTA:SA Main menu.
     MemPutFast < BYTE > ( CLASS_CMenuManager+0x5C, 0 );
@@ -395,6 +417,8 @@ void CGameSA::Initialize()
 
 void CGameSA::OnPreFrame()
 {
+    m_didCacheColl = false;
+
     switch( GetSystemState() )
     {
     case GS_PLAYING_GAME:
@@ -542,6 +566,50 @@ bool CGameSA::PerformChecks()
             return false;
     }
     return true;
+}
+
+bool CGameSA::ProcessCollisionHandler( CEntitySAInterface *caller, CEntitySAInterface *colld )
+{
+    if ( caller == colld )
+        return true;
+
+    if ( !m_didCacheColl )
+    {
+        // Build a map of CPhysicalSAInterface*/CClientEntity*'s that have collision disabled
+        m_didCacheColl = true;
+        m_cachedColl.clear();
+
+        disabledColl_t::iterator iter = m_disabledColl.begin();
+
+        for ( ; iter != m_disabledColl.end(); iter++ )
+            m_cachedColl[iter->first->GetInterface()] = iter->first;
+    }
+
+    // Check both elements appear in the cached map before doing extra processing
+    cachedColl_t::iterator iter1 = m_cachedColl.find( caller );
+
+    if ( iter1 == m_CachedCollisionMap.end() )
+        return true;
+
+    cachedColl_t::iterator iter2 = m_cachedColl.find( colld );
+
+    if ( iter2 == m_CachedCollisionMap.end() )
+        return true;
+
+    if ( !iter1->second->IsCollidableWith( iter2->second ) )
+        return false;
+
+    return true;
+}
+
+void CGameSA::AddAnimationHandler( RpClump *clump, AssocGroupId animGroup, AnimationId animID )
+{
+
+}
+
+void CGameSA::BlendAnimationHandler( RpClump *clump, AssocGroupId animGroup, AnimationId animId, float blendDelta )
+{
+
 }
 
 bool CGameSA::VerifySADataFileNames()

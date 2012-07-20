@@ -1496,7 +1496,15 @@
 						>
 					</File>
 					<File
+						RelativePath="..\sdk\game\CTexDictionary.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\MTA10\sdk\game\CText.h"
+						>
+					</File>
+					<File
+						RelativePath="..\sdk\game\CTexture.h"
 						>
 					</File>
 					<File

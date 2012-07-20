@@ -96,40 +96,42 @@ public:
 class CPhysicalSA : public virtual CPhysical, public virtual CEntitySA
 {
 public:
-    CPhysicalSAInterface* GetInterface      ();
+    CPhysicalSAInterface* GetInterface();
 
-    void        GetMoveSpeed                ( CVector *vecMoveSpeed );
-    void        GetTurnSpeed                ( CVector *vecTurnSpeed );
-    void        SetMoveSpeed                ( CVector *vecMoveSpeed );
-    void        SetTurnSpeed                ( CVector *vecTurnSpeed );
+    void            GetMoveSpeed( CVector& moveSpeed ) const;
+    void            GetTurnSpeed( CVector& turnSpeed ) const;
+    void            SetMoveSpeed( const CVector& moveSpeed );
+    void            SetTurnSpeed( const CVector& turnSpeed );
 
-    float       GetMass                     ();
-    void        SetMass                     ( float fMass );
-    float       GetTurnMass                 ();
-    void        SetTurnMass                 ( float fTurnMass );
-    float       GetElasticity               ();
-    void        SetElasticity               ( float fElasticity );
-    float       GetBuoyancyConstant         ();
-    void        SetBuoyancyConstant         ( float fBuoyancyConstant );
+    float           GetMass() const;
+    void            SetMass( float fMass );
+    float           GetTurnMass() const;
+    void            SetTurnMass( float fTurnMass );
+    float           GetElasticity() const;
+    void            SetElasticity( float fElasticity );
+    float           GetBuoyancyConstant() const;
+    void            SetBuoyancyConstant( float fBuoyancyConstant );
 
-    void        ProcessCollision            ();
+    void            ProcessCollision();
 
-    float       GetDamageImpulseMagnitude   ();
-    void        SetDamageImpulseMagnitude   ( float fMagnitude );
-    CEntity*    GetDamageEntity             ();
-    void        SetDamageEntity             ( CEntity* pEntity );
-    void        ResetLastDamage             ();
+    float           GetDamageImpulseMagnitude() const;
+    void            SetDamageImpulseMagnitude( float fMagnitude );
+    CEntity*        GetDamageEntity() const;
+    void            SetDamageEntity( CEntity *entity );
+    void            ResetLastDamage();
 
-    CEntity*    GetAttachedEntity           ();
-    void        AttachTo                    ( CPhysical& Entity, const CVector& vecPosition, const CVector& vecRotation );
-    void        DetachFrom                  ( float fUnkX, float fUnkY, float fUnkZ, bool bUnk );
-    void        GetAttachedOffsets          ( CVector & vecPosition, CVector & vecRotation );
-    void        SetAttachedOffsets          ( CVector & vecPosition, CVector & vecRotation );
+    CEntity*        GetAttachedEntity() const;
+    void            AttachTo( CPhysical& Entity, const CVector& vecPosition, const CVector& vecRotation );
+    void            DetachFrom( float fUnkX, float fUnkY, float fUnkZ, bool bUnk );
+    void            GetAttachedOffsets( CVector& pos, CVector& rot );
+    void            SetAttachedOffsets( const CVector& pos, const CVector& rot );
 
-    virtual bool InternalAttachTo           ( DWORD dwEntityInterface, const CVector * vecPosition, const CVector * vecRotation );
+    virtual bool    InternalAttachTo( DWORD dwEntityInterface, const CVector * vecPosition, const CVector * vecRotation );
 
-    float       GetLighting                 ();
-    void        SetLighting                 ( float fLighting );
+    void            GetImmunities( bool& bNoClip, bool& bFrozen, bool& bBulletProof, bool& bFlameProof, bool& bUnk, bool& bUnk2, bool& bCollisionProof, bool& bExplosionProof ) const;
+
+    float           GetLighting() const;
+    void            SetLighting( float fLighting );
 
 };
 
