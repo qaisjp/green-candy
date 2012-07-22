@@ -8,5 +8,6 @@ bool Lua_ProcessCommand( const std::string& cmdName, const std::vector <std::str
 void Lua_Destroy();
 
 extern class CLuaManager *lua_manager;
+extern class CResourceManager *resMan;
 
 #endif //_LUA_

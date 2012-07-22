@@ -17,6 +17,7 @@
 
 class CD3DDUMMY;
 class CSHADERDUMMY;
+class CColModel;
 
 typedef void (*PFN_WATCH_CALLBACK) ( CSHADERDUMMY* pContext, CD3DDUMMY* pD3DDataNew, CD3DDUMMY* pD3DDataOld );
 
@@ -25,7 +26,8 @@ typedef void (*PFN_WATCH_CALLBACK) ( CSHADERDUMMY* pContext, CD3DDUMMY* pD3DData
 class CRenderWare
 {
 public:
-    // redo this class, do not export renderware into deathmatch
+    virtual CColModel*          ReadCOL( CFile *file ) = 0;
+
     virtual unsigned short      GetTXDIDForModelID          ( unsigned short model) = 0;
     virtual void                InitWorldTextureWatch       ( PFN_WATCH_CALLBACK pfnWatchCallback ) = 0;
     virtual bool                AddWorldTextureWatch        ( CSHADERDUMMY* pShaderData, const char* szMatch, float fShaderPriority ) = 0;

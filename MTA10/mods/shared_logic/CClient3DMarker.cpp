@@ -106,7 +106,7 @@ void CClient3DMarker::DoPulse ( void )
             m_pMarker->SetMatrix ( m_Matrix );
 
             // This appears to do nothing
-            g_pGame->GetVisibilityPlugins ()->SetClumpAlpha ( ( RpClump * ) m_pMarker->GetRwObject (), m_Color.A );
+            //g_pGame->GetVisibilityPlugins ()->SetClumpAlpha ( ( RpClump * ) m_pMarker->GetRwObject (), m_Color.A );
         }
     }
 }

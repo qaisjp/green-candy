@@ -15,7 +15,6 @@
 #define __CGAMESA_TRAILER
 
 #include <game/CTrailer.h>
-#include "CAutomobileSA.h"
 
 class CTrailerSAInterface : public CAutomobileSAInterface
 {

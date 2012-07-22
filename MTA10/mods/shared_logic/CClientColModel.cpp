@@ -1,29 +1,24 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientColModel.cpp
 *  PURPOSE:     Model collision (.col file) entity class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #include "StdInc.h"
 
-CClientColModel::CClientColModel ( CClientManager* pManager, ElementID ID ) : ClassInit ( this ), CClientEntity ( ID )
+CClientColModel::CClientColModel( LuaClass& root ) : LuaElement( root )
 {
-    // Init
-    m_pManager = pManager;
-    m_pColModelManager = pManager->GetColModelManager ();
-    m_pColModel = NULL;
-
-    SetTypeName ( "col" );
-
     // Add us to DFF manager's list
     m_pColModelManager->AddToList ( this );
 }
-
 
 CClientColModel::~CClientColModel ( void )
 {
@@ -37,23 +32,21 @@ CClientColModel::~CClientColModel ( void )
         delete m_pColModel;
 }
 
-
-bool CClientColModel::LoadCol ( const char* szFile )
+bool CClientColModel::LoadCol( CFile *file )
 {
     // Not already got a col model?
     if ( !m_pColModel )
     {
         // Load the collision file
-        m_pColModel = g_pGame->GetRenderWare ()->ReadCOL ( szFile );
+        m_pColModel = g_pGame->GetRenderWare ()->ReadCOL( file );
 
         // Success if the col model is != NULL
-        return ( m_pColModel != NULL );
+        return m_pColModel != NULL;
     }
 
     // Failed. Already loaded
     return false;
 }
-
 
 bool CClientColModel::Replace ( unsigned short usModel )
 {
@@ -83,7 +76,6 @@ bool CClientColModel::Replace ( unsigned short usModel )
     return false;
 }
 
-
 void CClientColModel::Restore ( unsigned short usModel )
 {
     // Restore it
@@ -92,7 +84,6 @@ void CClientColModel::Restore ( unsigned short usModel )
     // Remove the restored id from the list
     m_Replaced.remove ( usModel );
 }
-
 
 void CClientColModel::RestoreAll ( void )
 {
@@ -108,11 +99,10 @@ void CClientColModel::RestoreAll ( void )
     m_Replaced.clear ();
 }
 
-
-bool CClientColModel::HasReplaced ( unsigned short usModel )
+bool CClientColModel::HasReplaced ( unsigned short usModel ) const
 {
     // Loop through our replaced ids
-    std::list < unsigned short > ::iterator iter = m_Replaced.begin ();
+    std::list < unsigned short > ::const_iterator iter = m_Replaced.begin ();
     for ( ; iter != m_Replaced.end (); iter++ )
     {
         // Is this the given ID
@@ -126,7 +116,6 @@ bool CClientColModel::HasReplaced ( unsigned short usModel )
     // We have not replaced it
     return false;
 }
-
 
 void CClientColModel::InternalRestore ( unsigned short usModel )
 {

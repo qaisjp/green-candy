@@ -744,6 +744,7 @@ public:
     virtual void    PushEnvironment( lua_State *L ) = 0;
     virtual void    PushOuterEnvironment( lua_State *L ) = 0;
     virtual void    PushChildAPI( lua_State *L ) = 0;
+    virtual void    PushParent( lua_State *L ) = 0;
 
     virtual void    RequestDestruction() = 0;
 };

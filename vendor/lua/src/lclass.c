@@ -226,6 +226,17 @@ void Class::PushChildAPI( lua_State *L )
     setjvalue( L, L->top++, childAPI );
 }
 
+void Class::PushParent( lua_State *L )
+{
+    if ( !parent )
+    {
+        setnilvalue( L->top++ );
+        return;
+    }
+
+    setjvalue( L, L->top++, parent );
+}
+
 void Class::RequestDestruction()
 {
     reqDestruction = true;
@@ -250,6 +261,7 @@ public:
         setobj( thread, &m_prevSuper, superMethod );
 
         setobj( thread, superMethod, &val );
+        luaC_barriert( thread, myClass->internStorage, &val );
         myClass->IncrementMethodStack( thread );
 
         m_instance = myClass;
@@ -260,6 +272,7 @@ public:
     {
         m_instance->DecrementMethodStack( m_thread );
         setobj( m_thread, m_instance->GetSuperMethod( m_thread ), &m_prevSuper );
+        luaC_barriert( m_thread, m_instance->internStorage, &m_prevSuper );
     }
 
     Class*      m_instance;
@@ -525,10 +538,24 @@ static int classmethod_setParent( lua_State *L )
 
     Class& c = *jvalue( L->base );
 
-    if ( c.destroying )
+    if ( &c == &j || c.destroying )
     {
         setbvalue( L->top++, false );
         return 1;
+    }
+
+    // Prevent circle jerks or pervert child relationships
+    Class *parent = c.parent;
+
+    while ( parent )
+    {
+        if ( parent == &j )
+        {
+            setbvalue( L->top++, false );
+            return 1;
+        }
+
+        parent = parent->parent;
     }
 
     c.PushMethod( L, "isValidChild" );

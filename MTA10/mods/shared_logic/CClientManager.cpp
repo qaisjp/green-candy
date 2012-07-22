@@ -57,7 +57,6 @@ CClientManager::CClientManager ( void )
     m_pColManager = new CClientColManager;
     m_pGroups = new CClientGroups;
     m_pProjectileManager = new CClientProjectileManager ( this );
-    m_pDFFManager = new CClientDFFManager ( this );
     m_pColModelManager = new CClientColModelManager ( this );
     m_pExplosionManager = new CClientExplosionManager ( this );
     m_pWaterManager = new CClientWaterManager ( this );
@@ -88,9 +87,6 @@ CClientManager::~CClientManager ( void )
 
     delete m_pColModelManager;
     m_pColModelManager = NULL;
-
-    delete m_pDFFManager;
-    m_pDFFManager = NULL;
 
     delete m_pProjectileManager;
     m_pProjectileManager = NULL;
@@ -229,6 +225,20 @@ void CClientManager::UpdateStreamers ( void )
     }
 }
 
+void CClientManager::Restream( unsigned short id )
+{
+    if ( id > 19999 )
+        return;
+
+    CModelInfo *info = g_pGame->GetModelInfo( id );
+
+    if ( info->IsVehicle() )
+        g_pClientGame->GetVehicleManager()->RestreamVehicles( id );
+    else if ( CClientObjectManager::IsValidModel( id ) )
+        g_pClientGame->GetObjectManager()->RestreamObjects( id );
+
+    g_pGame->GetModelInfo( id )->RestreamIPL();
+}
 
 void CClientManager::InvalidateEntity ( CClientEntity* pEntity )
 {

@@ -1,46 +1,37 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientColModel.h
 *  PURPOSE:     Model collision (.col file) entity class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #ifndef __CCLIENTCOLMODEL_H
 #define __CCLIENTCOLMODEL_H
 
-#include <list>
-#include "CClientEntity.h"
-
-class CClientColModel : public CClientEntity
+class CClientColModel : public LuaElement
 {
-    DECLARE_CLASS( CClientColModel, CClientEntity )
 public:
-                                    CClientColModel         ( class CClientManager* pManager, ElementID ID );
-                                    ~CClientColModel        ( void );
+                                    CClientColModel( LuaClass& root );
+                                    ~CClientColModel();
 
-    eClientEntityType               GetType                 ( void ) const              { return CCLIENTCOL; }
+    bool                            LoadCol( CFile *file );
+    inline bool                     IsLoaded() const                { return m_pColModel != NULL; };
 
-    bool                            LoadCol                 ( const char* szFile );
-    inline bool                     IsLoaded                ( void )                    { return m_pColModel != NULL; };
+    bool                            Replace( unsigned short usModel );
+    void                            Restore( unsigned short usModel );
+    void                            RestoreAll();
 
-    bool                            Replace                 ( unsigned short usModel );
-    void                            Restore                 ( unsigned short usModel );
-    void                            RestoreAll              ( void );
-
-    bool                            HasReplaced             ( unsigned short usModel );
-
-
-    // Sorta a hack that these are required by CClientEntity...
-    void                            Unlink                  ( void ) {};
-    void                            GetPosition             ( CVector& vecPosition ) const {};
-    void                            SetPosition             ( const CVector& vecPosition ) {};
+    bool                            HasReplaced( unsigned short usModel ) const;
 
 private:
-    void                            InternalRestore         ( unsigned short usModel );
+    void                            InternalRestore( unsigned short usModel );
 
     class CClientColModelManager*   m_pColModelManager;
     

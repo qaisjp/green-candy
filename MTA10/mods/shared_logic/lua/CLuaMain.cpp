@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaMain.cpp
@@ -10,6 +10,9 @@
 *               Derek Abdine <>
 *               Jax <>
 *               Ed Lyons <eai@opencoding.net>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -79,9 +82,6 @@ CLuaMain::~CLuaMain()
 void CLuaMain::InitVM( int structure, int meta )
 {
     LuaMain::InitVM( structure, meta );
-
-    // Register module functions
-    CLuaCFunctions::RegisterFunctionsWithVM( m_lua );
 
     // Update global variables
     lua_pushelement( m_lua, g_pClientGame->GetRootEntity() );

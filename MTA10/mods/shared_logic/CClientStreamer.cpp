@@ -487,7 +487,6 @@ void CClientStreamer::Restream ( void )
     }
 }
 
-
 void CClientStreamer::OnEnterSector ( CClientStreamSector * pSector )
 {
     CClientStreamElement * pElement = NULL;

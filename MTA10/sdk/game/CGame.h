@@ -68,8 +68,11 @@ typedef void ( InRenderer ) ( void );
 #include "CTasks.h"
 #include "CText.h"
 #include "CTheCarGenerators.h"
+#include "CModel.h"
+#include "CModelManager.h"
 #include "CTexture.h"
 #include "CTexDictionary.h"
+#include "CTextureManager.h"
 #include "CVisibilityPlugins.h"
 #include "CWaterManager.h"
 #include "CWeather.h"
@@ -125,6 +128,7 @@ public:
     virtual CCarEnterExit*              GetCarEnterExit() = 0;
     virtual CControllerConfigManager*   GetControllerConfigManager() = 0;
     virtual CRenderWare*                GetRenderWare() = 0;
+    virtual CModelManager*              GetModelManager() = 0;
     virtual CTextureManager*            GetTextureManager() = 0;
     virtual CHandlingManager*           GetHandlingManager() = 0;
     virtual CAnimManager*               GetAnimManager() = 0;

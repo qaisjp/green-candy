@@ -452,6 +452,8 @@ public:
     void                    RemoveVisibilityFlags( unsigned short flags );
     unsigned short          GetVisibilityFlags();
 
+    void                    SetExtendedRenderFlags( unsigned short flags );
+
     void                    FetchMateria( RpMaterials *mats );
 };
 class RwAtomicZBufferEntry

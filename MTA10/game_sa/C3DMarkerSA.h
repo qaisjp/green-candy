@@ -67,7 +67,7 @@ public:
     void            SetMatrix( const RwMatrix& matrix );
 
     void            SetPosition( const CVector& pos );
-    const CVector&  GetPosition();
+    const CVector&  GetPosition() const;
 
     unsigned int    GetType(); // need enum?
     void            SetType( unsigned int type ); // doesn't work propperly (not virtualed)
@@ -94,7 +94,7 @@ public:
     void            Disable();
     void            DeleteMarkerObject();
     void            Reset();
-    void            SetActive()                     { internalInterface->m_bIsUsed = true; };
+    void            SetActive()                     { m_interface->m_bIsUsed = true; };
 };
 
 #endif

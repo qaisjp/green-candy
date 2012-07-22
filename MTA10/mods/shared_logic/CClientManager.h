@@ -21,7 +21,6 @@ class CClientManager;
 #include "CClientCamera.h"
 #include "CClientCivilianManager.h"
 #include "CClientColModelManager.h"
-#include "CClientDFFManager.h"
 #include "CClientEntity.h"
 #include "CClientGUIManager.h"
 #include "CClientMarkerManager.h"
@@ -63,7 +62,6 @@ public:
     inline CClientCamera*               GetCamera                   ( void )        { return m_pCamera; }
     inline CClientCivilianManager*      GetCivilianManager          ( void )        { return m_pCivilianManager; }
     inline CClientColModelManager*      GetColModelManager          ( void )        { return m_pColModelManager; }
-    inline CClientDFFManager*           GetDFFManager               ( void )        { return m_pDFFManager; }
     inline CClientGUIManager*           GetGUIManager               ( void )        { return m_pGUIManager; }
     inline CClientMarkerManager*        GetMarkerManager            ( void )        { return m_pMarkerManager; }
     inline CClientStreamer*             GetMarkerStreamer           ( void )        { return m_pMarkerStreamer; }
@@ -98,6 +96,8 @@ public:
     inline bool                         IsBeingDeleted              ( void )        { return m_bBeingDeleted; }
     void                                SetGameUnloadedFlag         ( void )        { m_bGameUnloadedFlag = true; }
 
+    void                                Restream( unsigned short usModel );
+
     void                                InvalidateEntity            ( CClientEntity* pEntity );
     void                                RestoreEntity               ( CClientEntity* pEntity );
     void                                UnreferenceEntity           ( CClientEntity* pEntity );
@@ -111,7 +111,6 @@ private:
     CClientCamera*                      m_pCamera;
     CClientCivilianManager*             m_pCivilianManager;
     CClientColModelManager*             m_pColModelManager;
-    CClientDFFManager*                  m_pDFFManager;
     CClientGUIManager*                  m_pGUIManager;
     CClientMarkerManager*               m_pMarkerManager;
     CClientStreamer*                    m_pMarkerStreamer;

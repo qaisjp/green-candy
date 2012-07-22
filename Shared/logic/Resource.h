@@ -18,6 +18,7 @@
 class Resource : public LuaClass
 {
     friend class ResourceManager;
+    friend class LuaElement;
 public:
                                 Resource( LuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root );
     virtual                     ~Resource();

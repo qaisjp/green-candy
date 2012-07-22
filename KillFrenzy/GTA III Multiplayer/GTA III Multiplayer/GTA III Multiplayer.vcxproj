@@ -130,6 +130,7 @@
     <ClInclude Include="..\..\..\Shared\logic\LuaCFunctions.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaClass.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaCommon.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaElement.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaFunctionDefs.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaFunctionDefs.Resources.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaFunctionRef.h" />
@@ -185,6 +186,7 @@
     <ClCompile Include="..\..\..\Shared\logic\LuaArgument.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaArguments.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaCFunctions.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaElement.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.Resources.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaFunctionRef.cpp" />

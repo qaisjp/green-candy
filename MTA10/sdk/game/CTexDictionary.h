@@ -13,24 +13,30 @@
 #ifndef _CTexDictionary_
 #define _CTexDictionary_
 
-class CTexDictionary
+class CTexDictionary abstract
 {
 public:
     virtual                         ~CTexDictionary()   {};
 
     virtual bool                    Load( const char *filename, bool filtering ) = 0;
+    virtual std::vector <CTexture*> GetTextures() = 0;
     virtual void                    Clear() = 0;
 
     virtual const char*             GetName() const = 0;
     virtual unsigned int            GetHash() const = 0;
+    virtual unsigned short          GetID() const = 0;
 
     virtual bool                    Import( unsigned short id ) = 0;
     virtual bool                    ImportTXD( unsigned short id ) = 0;
     virtual bool                    Remove( unsigned short id ) = 0;
     virtual bool                    RemoveTXD( unsigned short id ) = 0;
 
+    virtual void                    ClearImports() = 0;
+
     virtual bool                    IsImported( unsigned short id ) const = 0;
     virtual bool                    IsImportedTXD( unsigned short id ) const = 0;
+
+    virtual const std::vector <unsigned short>& GetImportedList() const = 0;
 };
 
 #endif //_CTexDictionary_

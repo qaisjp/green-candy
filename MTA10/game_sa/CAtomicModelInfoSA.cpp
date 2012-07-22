@@ -11,3 +11,19 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+#include "gamesa_renderware.h"
+
+void CAtomicModelInfoSA::SetAtomic( RpAtomic *atomic )
+{
+    // TODO
+}
+
+void CAtomicModelInfoSA::SetupPipeline( RpAtomic *link )
+{
+    m_atomicLink = link;
+
+    if ( link->IsNight() )
+        RpAtomicSetupObjectPipeline( link );
+    else if ( link->m_pipeline == RW_ATOMIC_RENDER_VEHICLE )
+        RpAtomicSetupVehiclePipeline( link );
+}

@@ -16,6 +16,8 @@
 
 #include <game/CTextureManager.h>
 
+class CTexDictionarySA;
+
 class CTxdInstanceSA
 {
     friend class CTextureManagerSA;
@@ -41,6 +43,7 @@ public:
 
 class CTextureManagerSA : public CTextureManager
 {
+    friend class CTexDictionarySA;
 public:
                         CTextureManagerSA();
                         ~CTextureManagerSA();
@@ -48,8 +51,8 @@ public:
     int                 FindTxdEntry( const char *name ) const;
     int                 CreateTxdEntry( const char *name );
 
-    CTexDictionarySA*   CreateTxd( const char *name );
-    CTexDictionarySA*   CreateTxd( const char *name, unsigned short txdId );
+    CTexDictionary*     CreateTxd( const char *name );
+    CTexDictionary*     CreateTxd( const char *name, unsigned short txdId );
 
     int                 LoadDictionary( const char *filename );
     int                 LoadDictionaryEx( const char *name, const char *filename );

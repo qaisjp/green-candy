@@ -15,7 +15,6 @@
 #define __CGAMESA_CIVILIANPED
 
 #include <game/CCivilianPed.h>
-#include "CPedSA.h"
 
 #define FUNC_ClearWeaponTarget          0x533B30
 

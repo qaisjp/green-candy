@@ -520,6 +520,7 @@ public:
     void    PushEnvironment( lua_State *L );
     void    PushOuterEnvironment( lua_State *L );
     void    PushChildAPI( lua_State *L );
+    void    PushParent( lua_State *L );
 
     void    RequestDestruction();
 

@@ -54,7 +54,7 @@ CClientPad::CClientPad()
     memset( m_states, 0, sizeof( m_states ) );
 }
 
-bool CClientPad::GetControlState( eBindableControl control )
+bool CClientPad::GetControlState( eBindableControl control ) const
 {
     return m_states[control];
 }

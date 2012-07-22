@@ -15,7 +15,6 @@
 #define __CGAMESA_PLANE
 
 #include <game/CPlane.h>
-#include "CAutomobileSA.h"
 
 class CPlaneSAInterface : public CAutomobileSAInterface
 {

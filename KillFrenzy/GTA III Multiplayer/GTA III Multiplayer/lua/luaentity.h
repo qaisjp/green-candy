@@ -13,12 +13,13 @@
 #ifndef _GAME_ENTITY_
 #define _GAME_ENTITY_
 
-#define LUACLASS_ENTITY 10
+#define LUACLASS_ENTITY     10
+#define LUACLASS_SYSENTITY  14
 
-class CGameEntity abstract : public LuaClass
+class CGameEntity abstract : public LuaElement
 {
 public:
-                            CGameEntity( lua_State *L, bool system, CEntity& entity );
+                            CGameEntity( LuaClass& root, bool system, CEntity& entity );
     virtual                 ~CGameEntity();
 
     inline CEntity&         GetEntity()     { return m_entity; }

@@ -213,6 +213,9 @@
     <ClInclude Include="..\..\..\Shared\logic\LuaFunctionDefs.Resources.h">
       <Filter>mta_green\luadefs\include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaElement.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="console.cpp" />
@@ -325,6 +328,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.Resources.cpp">
       <Filter>mta_green\luadefs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaElement.cpp">
+      <Filter>mta_green</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

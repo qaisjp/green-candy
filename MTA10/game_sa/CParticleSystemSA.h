@@ -19,6 +19,8 @@
 
 typedef CAlignedStackSA <0x100000> CEffectStackSA;
 
+class CEffectDataSA;
+
 class CParticleSystemSAInterface
 {
 public:

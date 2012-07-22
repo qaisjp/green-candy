@@ -111,6 +111,7 @@ CGameSA::CGameSA()
     m_pProjectileInfo           = new CProjectileInfoSA();
     m_pRenderWare               = new CRenderWareSA( version );
     m_pExtensionManager         = new CRwExtensionManagerSA();
+    m_pModelManager             = new CModelManagerSA();
     m_pTextureManager           = new CTextureManagerSA();
     m_pHandlingManager          = new CHandlingManagerSA ();
     m_pEventList                = new CEventListSA();
@@ -197,6 +198,7 @@ CGameSA::~CGameSA()
     delete m_pAnimManager;
     delete m_pTasks;
     delete m_pTextureManager;
+    delete m_pModelManager;
     delete m_pRenderWare;
     delete m_pTaskManagementSystem;
     delete m_pHandlingManager;

@@ -20,7 +20,6 @@
 #include <game/CModelInfo.h>
 #include <game/Common.h>
 
-#include "CColModelSA.h"
 #include "CRenderWareSA.h"
 class CPedModelInfoSA;
 class CPedModelInfoSAInterface;
@@ -55,27 +54,7 @@ class CPedModelInfoSAInterface;
 #define     FUNC_AddPedModel                0x4c67a0
 #define     VAR_CTempColModels_ModelPed1    0x968DF0
 
-class CAtomicModelInfo_SA_VTBL
-{
-    DWORD           SetAtomic;                      // (RpAtomic*)
-};
-
-class CDamageAtomicModelInfo_SA_VTBL: public CAtomicModelInfo_SA_VTBL
-{
-};
-
-class CLodAtomicModelInfo_SA_VTBL: public CAtomicModelInfo_SA_VTBL
-{
-};
-
-class CTimeModelInfo_SA_VTBL: public CAtomicModelInfo_SA_VTBL
-{
-};
-
-class CLodTimeModelInfo_SA_VTBL: public CLodAtomicModelInfo_SA_VTBL
-{
-};
-
+#if 0
 class CClumpModelInfo_SA_VTBL
 {
     DWORD           SetClump;                       // (RpClump*)
@@ -84,6 +63,7 @@ class CClumpModelInfo_SA_VTBL
 class CWeaponModelInfo_SA_VTBL: public CClumpModelInfo_SA_VTBL
 {
 };
+#endif
 
 class CAtomicModelInfoSA;
 class CDamageAtomicModelInfoSA;
@@ -95,10 +75,10 @@ enum eModelType
     MODEL_PED
 };
 
-class CBaseModelInfoSA
+class CBaseModelInfoSA abstract
 {
 public:
-    virtual                             ~CBaseModelInfoSA() = 0;
+    virtual                             ~CBaseModelInfoSA()     {}
 
     virtual CAtomicModelInfoSA* __thiscall              GetAtomicModelInfo() = 0;               // 4
     virtual CDamageAtomicModelInfoSA* __thiscall        GetDamageAtomicModelInfo() = 0;         // 8
@@ -159,7 +139,7 @@ public:
     unsigned char               m_alpha;                    // +12
 
     unsigned char               m_num2dfx;                  // +13
-    short                       m_effectID: 16;             // +14      Something with 2d effects
+    short                       m_effectID;                 // +14      Something with 2d effects
 
     short                       m_dynamicIndex;             // +16
 
@@ -178,11 +158,6 @@ public:
     // CWeaponModelInfo:
     // +36 = Weapon info as int
 };
-
-/**
- * \todo Someone move GetLevelFromPosition out of here or delete it entirely please
- */
-
 
 class CModelInfoSA : public CModelInfo
 {

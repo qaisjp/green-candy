@@ -39,8 +39,10 @@ static int vehicle_constructor( lua_State *L )
     return 0;
 }
 
-CGameVehicle::CGameVehicle( lua_State *L, bool system, CVehicle& veh ) : CGameEntity( L, system, veh )
+CGameVehicle::CGameVehicle( LuaClass& root, bool system, CVehicle& veh ) : CGameEntity( root, system, veh )
 {
+    lua_State *L = root.GetVM();
+
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, vehicle_constructor, 1 );

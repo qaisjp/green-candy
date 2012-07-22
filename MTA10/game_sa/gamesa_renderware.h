@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/gamesa_renderware.h
 *  PURPOSE:     RenderWare interface mappings to Grand Theft Auto: San Andreas
@@ -17,7 +17,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-#include <RenderWare.h>
+#include "RenderWare.h"
 
 class CColModelSAInterface;
 
@@ -34,7 +34,7 @@ typedef int                     (__cdecl *RwStreamFindChunk_t)                  
 typedef unsigned int            (__cdecl *RwStreamReadBlocks_t)                 (RwStream *stream, unsigned int *numBlocks, unsigned int size);
 typedef RwTexture*              (__cdecl *RwStreamReadTexture_t)                (RwStream *stream);
 typedef int                     (__cdecl *RwStreamClose_t)                      (RwStream *stream, void *pData);
-typedef RpAtomic *              (__cdecl *RpAtomicCreate_t)                     (void);
+typedef RpAtomic *              (__cdecl *RpAtomicCreate_t)                     ();
 typedef RpAtomic *              (__cdecl *RpAtomicClone_t)                      (RpAtomic * atomic);
 typedef RpAtomic *              (__cdecl *RpAtomicSetGeometry_t)                (RpAtomic * atomic, RpGeometry * geometry, unsigned int flags);
 typedef RpAtomic *              (__cdecl *RpAtomicSetFrame_t)                   (RpAtomic * atomic, RwFrame * frame);
@@ -55,7 +55,7 @@ typedef void                    (__cdecl *RpClumpSetupFrameCallback_t)          
 typedef int                     (__cdecl *RpClumpDestroy_t)                     (RpClump *clump);
 typedef bool                    (__cdecl *RwAnimationInit_t)                    (RpAnimation *anim, RwExtension *ext);
 typedef bool                    (__cdecl *RwSkeletonUpdate_t)                   (RpSkeleton *skel);
-typedef RwFrame *               (__cdecl *RwFrameCreate_t)                      (void);
+typedef RwFrame *               (__cdecl *RwFrameCreate_t)                      ();
 typedef RwMatrix*               (__cdecl *RwFrameGetLTM_t)                      (RwFrame *frame);
 typedef RwFrame *               (__cdecl *RwFrameAddChild_t)                    (RwFrame * parent, RwFrame * child);
 typedef RwFrame *               (__cdecl *RwFrameRemoveChild_t)                 (RwFrame * child);
@@ -75,23 +75,23 @@ typedef RpGeometry *            (__cdecl *RpGeometryTriangleSetMaterial_t)      
 typedef int                     (__cdecl *RpGeometryDestroy_t)                  (RpGeometry * geo);
 typedef void *                  (__cdecl *RwIm3DTransform_t)                    (RwVertex *pVerts, unsigned int numVerts, RwMatrix *ltm, unsigned int flags);
 typedef int                     (__cdecl *RwIm3DRenderIndexedPrimitive_t)       (RwPrimitiveType primType, unsigned short *indices, int numIndices);
-typedef int                     (__cdecl *RwIm3DEnd_t)                          (void);
+typedef int                     (__cdecl *RwIm3DEnd_t)                          ();
 typedef RpLight *               (__cdecl *RpLightCreate_t)                      (int type);
 typedef RpLight *               (__cdecl *RpLightSetRadius_t)                   (RpLight * light, float radius);
 typedef RpLight *               (__cdecl *RpLightSetColor_t)                    (RpLight * light, const RwColorFloat * color);
-typedef RwMatrix *              (__cdecl *RwMatrixCreate_t)                     (void);
+typedef RwMatrix *              (__cdecl *RwMatrixCreate_t)                     ();
 typedef RwMatrix *              (__cdecl *RwMatrixInvert_t)                     (RwMatrix *dst, const RwMatrix *src);
 typedef RwMatrix *              (__cdecl *RwMatrixTranslate_t)                  (RwMatrix * matrix, const RwV3d * translation, RwTransformOrder order);
 typedef RwMatrix *              (__cdecl *RwMatrixScale_t)                      (RwMatrix * matrix, const RwV3d * translation, RwTransformOrder order);
 typedef float                   (__cdecl *RwMatrixUnknown_t)                    (const RwMatrix *matrix, const RwMatrix *matrix2, unsigned char flags);
-typedef RpMaterial *            (__cdecl *RpMaterialCreate_t)                   (void);
+typedef RpMaterial *            (__cdecl *RpMaterialCreate_t)                   ();
 typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial * mat);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryCreate_t)              ();
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryStreamRead_t)          (RwStream *stream);
 typedef RwTexDictionary *       (__cdecl *RwTexDictionarySetCurrent_t)          (RwTexDictionary * dict);
 typedef const RwTexDictionary * (__cdecl *RwTexDictionaryForAllTextures_t)      (const RwTexDictionary * dict, int (*callback)( RwTexture *texture, void *data ), void * data);
 typedef RwTexture *             (__cdecl *RwTexDictionaryAddTexture_t)          (RwTexDictionary * dict, RwTexture * texture);
-typedef RwTexDictionary *       (__cdecl *RwTexDictionaryGetCurrent_t)          (void);
+typedef RwTexDictionary *       (__cdecl *RwTexDictionaryGetCurrent_t)          ();
 typedef RwTexture *             (__cdecl *RwTexDictionaryFindNamedTexture_t)    (RwTexDictionary * dict, const char* name);
 typedef int                     (__cdecl *RwTexDictionaryDestroy_t)             (RwTexDictionary *txd);
 typedef RwTexture*              (__cdecl *RwTextureCreate_t)                    (RwRaster *raster);
@@ -232,10 +232,10 @@ CClothesBuilder_CopyTexture_t   CClothesBuilder_CopyTexture     = (CClothesBuild
 /*****************************************************************************/
 
 // Matrix copying
-void RwFrameCopyMatrix ( RwFrame * dst, RwFrame * src )
+void RwFrameCopyMatrix( RwFrame * dst, RwFrame * src )
 {
-    MemCpyFast (&dst->m_modelling, &src->m_modelling, sizeof(RwMatrix));
-    MemCpyFast (&dst->m_ltm, &src->m_ltm, sizeof(RwMatrix));
+    dst->m_modelling = src->m_modelling;
+    dst->m_ltm = src->m_ltm;
 }
 
-#endif
+#endif //__GAMESA_RENDERWARE

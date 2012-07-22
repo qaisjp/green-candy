@@ -14,43 +14,28 @@
 #ifndef __CCLIENTTXD_H
 #define __CCLIENTTXD_H
 
+#define LUACLASS_TXD    20
+
 class CClientTXD : public LuaElement
 {
 public:
-                                    CClientTXD( class CClientManager* pManager, ElementID ID );
+                                    CClientTXD( LuaClass& root, CTexDictionary& txd );
                                     ~CClientTXD();
 
-    eClientEntityType               GetType() const              { return CCLIENTTXD; }
+    const std::string               GetName() const                 { return m_txd.GetName(); }
+    unsigned int                    GetHash() const                 { return m_txd.GetHash(); }
+    unsigned short                  GetID() const                   { return m_txd.GetID(); }
 
-    bool                            LoadTXD( const char* szFile, bool bFilteringEnabled = true );
+    bool                            LoadTXD( const char *path, bool filtering = true );
     void                            UnloadTXD();
-    inline bool                     IsLoaded()                    { return !m_Textures.empty (); }
 
     bool                            Import( unsigned short usModelID );
-    bool                            IsImported( unsigned short usModelID );
+    bool                            IsImported( unsigned short usModelID ) const;
 
     void                            Remove( unsigned short usModelID );
     void                            RemoveAll();
 
-    static bool                     IsImportableModel( unsigned short usModelID );
-
-private:
-    void                            InternalRemove( unsigned short usModel );
-    void                            Restream( unsigned short usModel );
-    static RwTexture*               FindNamedTextureInList( std::list < RwTexture* >& list, const char* szTexName );
-
-    std::list < RwTexture* >        m_Textures;
-
-    // This model contains our primary textures rather than copies
-    unsigned short                  m_usMainModel;
-
-    // Any SA textures that were replaced by custom ones (txd => texture list)
-    static std::map < unsigned short, std::list < RwTexture* > > ms_ReplacedTXDTextures;
-    // Any custom textures that were added (txd => texture list)
-    static std::map < unsigned short, std::list < RwTexture* > > ms_AddedTXDTextures;
-
-    // The models we have imported ourselves into
-    std::list < unsigned short >    m_ImportedModels;
+    CTexDictionary&         m_txd;
 };
 
 #endif

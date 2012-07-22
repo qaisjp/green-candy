@@ -13,12 +13,38 @@
 #ifndef _CAtomicModelInfoSA_
 #define _CAtomicModelInfoSA_
 
-class CAtomicModelInfoSAInterface : public CBaseModelInfoSAInterface
+class CAtomicModelInfoSA : public CBaseModelInfoSAInterface
 {
 public:
     virtual void __thiscall             SetAtomic( RpAtomic *atomic );
 
     RpAtomic*                           m_rpAtomic;     // 28
+};
+
+class CDamageAtomicModelInfoSA : public CAtomicModelInfoSA
+{
+public:
+    void                                SetupPipeline( RpAtomic *link );
+
+    RpAtomic*                           m_atomicLink;
+};
+
+class CLodAtomicModelInfoSA : public CAtomicModelInfoSA
+{
+public:
+
+};
+
+class CTimeModelInfoSA : public CAtomicModelInfoSA
+{
+public:
+
+};
+
+class CLodTimeModelInfoSA : public CLodAtomicModelInfoSA
+{
+public:
+
 };
 
 #endif //_CAtomicModelInfoSA_

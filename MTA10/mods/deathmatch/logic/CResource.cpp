@@ -20,6 +20,8 @@
 extern CClientGame      *g_pClientGame;
 extern CCoreInterface   *g_pCore;
 
+int CResource::m_refShowCursor = 0;
+
 CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& root, CClientEntity *entity, CClientEntity *dynamicEntity ) : Resource( *g_pClientGame->GetLuaManager()->Create( name.c_str(), root ), id, name, root )
 {
     m_luaManager = g_pClientGame->GetLuaManager();

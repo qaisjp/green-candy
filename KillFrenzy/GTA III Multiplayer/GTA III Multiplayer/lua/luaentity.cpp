@@ -77,13 +77,6 @@ static int entity_setModelID( lua_State *L )
     return 0;
 }
 
-static int entity_destroy( lua_State *L )
-{
-    delete (CGameEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) );
-
-    return 0;
-}
-
 static const luaL_Reg entity_interface[] =
 {
     { "getPosition", entity_getPosition },
@@ -93,7 +86,6 @@ static const luaL_Reg entity_interface[] =
     { "getMatrix", entity_getMatrix },
     { "getModelID", entity_getModelID },
     { "setModelID", entity_setModelID },
-    { "destroy", entity_destroy },
     { NULL, NULL }
 };
 
@@ -119,7 +111,12 @@ static int sysentity_index( lua_State *L )
 {
     if ( lua_type( L, 2 ) == LUA_TSTRING )
     {
-        if ( lua_getstring( L, 2 ) == "destroy" )
+        std::string key = lua_getstring( L, 2 );
+
+        if ( key == "destroy" )
+            return 0;
+
+        if ( key == "setParent" )
             return 0;
     }
 
@@ -137,6 +134,11 @@ static const luaL_Reg sysentity_interface[] =
 
 static int sysentity_constructor( lua_State *L )
 {
+    CGameEntity *entity = (CGameEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_SYSENTITY, entity );
+
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, sysentity_interface, 1 );
@@ -146,24 +148,22 @@ static int sysentity_constructor( lua_State *L )
     return 0;
 }
 
-static inline int _trefget( lua_State *L, bool sys, CGameEntity& entity )
+CGameEntity::CGameEntity( LuaClass& root, bool system, CEntity& entity ) : m_entity( entity ), LuaElement( root )
 {
-    lua_pushlightuserdata( L, &entity );
-    lua_pushcclosure( L, entity_constructor, 1 );
-    lua_newclass( L );
+    lua_State *L = root.GetVM();
 
-    if ( sys )
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, entity_constructor, 1 );
+    luaJ_extend( L, -2, 0 );
+
+    if ( system )
     {
-        lua_pushlightuserdata( L, &entity );
+        lua_pushlightuserdata( L, this );
         lua_pushcclosure( L, sysentity_constructor, 1 );
         luaJ_extend( L, -2, 0 );
     }
 
-    return luaL_ref( L, LUA_REGISTRYINDEX );
-}
-
-CGameEntity::CGameEntity( lua_State *L, bool system, CEntity& entity ) : m_entity( entity ), LuaClass( L, _trefget( L, system, *this ) )
-{
     m_system = system;
 }
 

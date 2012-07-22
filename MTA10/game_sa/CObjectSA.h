@@ -1,18 +1,17 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CObjectSA.h
 *  PURPOSE:     Header file for object entity class
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Jax <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
-
-#include "CPedSA.h"
 
 #ifndef __CGAMESA_OBJECT
 #define __CGAMESA_OBJECT
@@ -40,25 +39,26 @@ private:
     bool                        m_bIsAGangTag;
 
 public:
-                                CObjectSA           ( CObjectSAInterface * objectInterface );
-                                CObjectSA           ( DWORD dwModel );
-                                ~CObjectSA          ( void );
+                                CObjectSA( CObjectSAInterface * objectInterface );
+                                CObjectSA( DWORD dwModel );
+                                ~CObjectSA();
 
-    inline CObjectSAInterface * GetObjectInterface  ( void )    { return ( CObjectSAInterface * ) GetInterface (); }
+    inline CObjectSAInterface*  GetInterface()                          { return (CObjectSAInterface*)GetInterface(); }
 
-    void                        Explode             ( void );
-    void                        Break               ( void );
-    void                        SetScale            ( float fScale );
-    void                        SetHealth           ( float fHealth );
-    float                       GetHealth           ( void );
-    void                        SetModelIndex       ( unsigned short ulModel );
+    void                        Explode();
+    void                        Break();
+    void                        SetScale( float fScale );
+    void                        SetHealth( float fHealth );
+    float                       GetHealth();
+    void                        SetModelIndex( unsigned short ulModel );
 
-    inline void                 SetAlpha            ( unsigned char ucAlpha ) { m_ucAlpha = ucAlpha; }
-    inline unsigned char        GetAlpha            ( ) { return m_ucAlpha; }
+    inline void                 SetAlpha( unsigned char ucAlpha )       { m_ucAlpha = ucAlpha; }
+    inline unsigned char        GetAlpha()                              { return m_ucAlpha; }
 
-    bool                        IsAGangTag          ( ) const { return m_bIsAGangTag; }
+    bool                        IsAGangTag() const                      { return m_bIsAGangTag; }
+
 private:
-    void                        CheckForGangTag     ( );
+    void                        CheckForGangTag();
 };
 
 /*

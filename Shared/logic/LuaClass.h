@@ -48,6 +48,11 @@ public:
         refs.push_back( ref );
     }
 
+    inline lua_State* GetVM()
+    {
+        return m_lua;
+    }
+
     inline void Destroy()
     {
         PushStack( m_lua );

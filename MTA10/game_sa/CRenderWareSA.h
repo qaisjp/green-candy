@@ -66,7 +66,7 @@ class CRenderWareSA : public CRenderWare
 
     // uiModelID == 0 means no collisions will be loaded
     RpClump *           ReadDFF                     ( const char * szDFF, unsigned short usModelID );
-    CColModel *         ReadCOL                     ( const char * szCOLFile );
+    CColModel*          ReadCOL                     ( CFile *file );
     void                ReplaceCollisions           ( CColModel * pColModel, unsigned short usModelID );
 
     // Positions the front seat by reading out the vector from the 'ped_frontseat' atomic in the clump (RpClump*)

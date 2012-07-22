@@ -1508,6 +1508,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\sdk\game\CTextureManager.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\MTA10\sdk\game\CTheCarGenerators.h"
 						>
 					</File>

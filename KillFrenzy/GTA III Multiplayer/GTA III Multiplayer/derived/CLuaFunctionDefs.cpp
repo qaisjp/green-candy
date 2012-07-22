@@ -149,7 +149,7 @@ namespace CLuaFunctionDefs
             return 1;
         }
 
-        CGameVehicle& gameVeh = *new CGameVehicle( L, false, *veh );
+        CGameVehicle& gameVeh = *new CGameVehicle( *(CResource*)lua_readcontext( L ).GetResource(), false, *veh );
         gameVeh.PushStack( L );
         return 1;
     }

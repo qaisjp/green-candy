@@ -19,6 +19,8 @@
 
 #include "StdInc.h"
 
+extern CGame *g_pGame;
+
 namespace CLuaFunctionDefs
 {
     LUA_DECLARE( engineLoadCOL )
@@ -26,41 +28,33 @@ namespace CLuaFunctionDefs
         CLuaMain* pLuaMain = lua_readcontext( L );
         CResource* pResource = pLuaMain->GetResource ();
 
-        // Grab the filename
-        SString strFile = ( lua_istype ( L, 1, LUA_TSTRING ) ? lua_tostring ( L, 1 ) : "" );
-        
-        filePath strPath;
-        const char *meta;
-        // Is this a legal filepath?
-        if ( m_pResourceManager->ParseResourceFullPath( (Resource*&)pResource, strFile, meta, strPath ) )
+        CFile *file = m_pResourceManager->OpenStream( pResource, lua_istype ( L, 1, LUA_TSTRING ) ? lua_tostring ( L, 1 ) : "" , "rb" );
+
+        if ( file )
         {
-            // Grab the resource root entity
-            CClientEntity* pRoot = pResource->GetResourceCOLModelRoot ();
+            // TODO: plant the COL root
 
             // Create the col model
-            CClientColModel* pCol = new CClientColModel ( m_pManager, INVALID_ELEMENT_ID );
+            CClientColModel *pCol = new CClientColModel( *pLuaMain->GetResource() );
 
             // Attempt loading the file
-            if ( pCol->LoadCol ( strPath ) )
+            if ( pCol->LoadCol( file ) )
             {
-                // Success. Make it a child of the resource collision root
-                pCol->SetParent ( pRoot );
+                delete file;
 
-                // Return the created col model
-                lua_pushelement ( L, pCol );
+                pCol->PushStack( L );
                 return 1;
             }
             else
-            {
-                // Delete it again. We failed
-                delete pCol;
-            }
+                pCol->Destroy();
+
+            delete file;
         }
         else
             m_pScriptDebugging->LogBadType( "engineLoadCOL" );
 
         // We failed for some reason
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
@@ -75,34 +69,20 @@ namespace CLuaFunctionDefs
         // Is this a legal filepath?
         if ( lua_istype ( L, 2, LUA_TNUMBER ) && m_pResourceManager->ParseResourceFullPath( (Resource*&)pResource, strFile, meta, strPath ) )
         {
-            // Check the model ID
-            unsigned short usModelID = static_cast < unsigned short > ( lua_tonumber ( L, 2 ) );
-            if ( usModelID == 0 || CClientDFFManager::IsReplacableModel ( usModelID ) )
-            {
-                // Grab the resource root entity
-                CClientEntity* pRoot = pResource->GetResourceDFFRoot ();
+            CModel *model = g_pGame->GetModelManager()->CreateModel( strPath.c_str(), lua_tonumber( L, 2 ) );
 
-                // Create a DFF element
-                CClientDFF* pDFF = new CClientDFF ( m_pManager, INVALID_ELEMENT_ID );
+            if ( !model )
+                goto error;
 
-                // Try to load the DFF file
-                if ( pDFF->LoadDFF ( strPath, usModelID ) )
-                {
-                    // Success loading the file. Set parent to DFF root
-                    pDFF->SetParent ( pRoot );
+            // TODO: plant the DFF root
 
-                    // Return the DFF
-                    lua_pushelement ( L, pDFF );
-                    return 1;
-                }
-                else
-                {
-                    // Delete it again
-                    delete pDFF;
-                }
-            }
-            else
-                m_pScriptDebugging->LogBadPointer( "engineLoadDFF", "number", 2 );
+            // Create a DFF element
+            CClientDFF *dff = new CClientDFF( *lua_readcontext( L )->GetResource(), *model );
+            dff->PushStack( L );
+            return 1;
+
+error:
+            m_pScriptDebugging->LogBadPointer( "engineLoadDFF", "number", 2 );
         }
         else
             m_pScriptDebugging->LogBadPointer( "engineLoadDFF", "string", 1 );
@@ -122,40 +102,41 @@ namespace CLuaFunctionDefs
             bFilteringEnabled = ( lua_toboolean ( L, 2 ) ) ? true:false;
 
         // Grab the filename
-        SString strFile = ( lua_istype ( L, 1, LUA_TSTRING ) ? lua_tostring ( L, 1 ) : "" );
+        SString strFile = ( lua_istype( L, 1, LUA_TSTRING ) ? lua_tostring( L, 1 ) : "" );
         
         filePath strPath;
         const char *meta;
         // Is this a legal filepath?
         if ( m_pResourceManager->ParseResourceFullPath( (Resource*&)pResource, strFile, meta, strPath ) )
         {
-            // Grab the resource root entity
-            CClientEntity* pRoot = pResource->GetResourceTXDRoot ();
+            CTexDictionary *dict = g_pGame->GetTextureManager()->CreateTxd( ExtractFilename( strPath ).c_str() );
 
-            // Create a TXD element
-            CClientTXD* pTXD = new CClientTXD ( m_pManager, INVALID_ELEMENT_ID );
-
-            // Try to load the TXD file
-            if ( pTXD->LoadTXD ( strPath, bFilteringEnabled ) )
+            if ( !dict )
             {
-                // Success loading the file. Set parent to TXD root
-                pTXD->SetParent ( pRoot );
-
-                // Return the TXD
-                lua_pushelement ( L, pTXD );
+                lua_pushboolean( L, false );
                 return 1;
             }
-            else
+            //TODO: plant TXDRoot
+
+            // Create a TXD element
+            CClientTXD *pTXD = new CClientTXD( *lua_readcontext( L )->GetResource(), *dict );
+
+            // Try to load the TXD file
+            if ( pTXD->LoadTXD( strPath, bFilteringEnabled ) )
             {
-                // Delete it again
-                delete pTXD;
+                // Return the TXD
+                pTXD->PushStack( L );
+                return 1;
             }
+
+            // Delete it again
+            delete pTXD;
         }
         else
             m_pScriptDebugging->LogBadPointer( "engineLoadTXD", "string", 1 );
 
         // We failed
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
@@ -214,88 +195,74 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( engineImportTXD )
     {
+        if ( lua_type( L, 1 ) != LUA_TCLASS )
+            goto typeError;
+
+        ILuaClass& j = *lua_refclass( L, 1 );
+        CClientTXD *pTXD;
+
+        if ( !j.GetTransmit( LUACLASS_TXD, (void*&)pTXD ) )
+            goto typeError;
+
         // Grab the TXD and the model ID
-        CClientTXD* pTXD = ( lua_istype ( L, 1, LUA_TLIGHTUSERDATA ) ? lua_totxd ( L, 1 ) : NULL );
-        unsigned short usModelID = ( lua_istype ( L, 2, LUA_TNUMBER ) ? ( static_cast < unsigned short > ( lua_tonumber ( L, 2 ) ) ) : 0 );
+        unsigned short usModelID = lua_istype( L, 2, LUA_TNUMBER ) ? lua_tonumber( L, 2 ) : 0;
 
-        // Valid txd?
-        if ( pTXD )
+        // Try to import
+        if ( pTXD->Import( usModelID ) )
         {
-            // Valid importable model?
-            if ( CClientTXD::IsImportableModel ( usModelID ) )
-            {
-                // Try to import
-                if ( pTXD->Import ( usModelID ) )
-                {
-                    // Success
-                    lua_pushboolean ( L, true );
-                    return 1;
-                }
-            }
-            else
-                m_pScriptDebugging->LogBadPointer( "engineImportTXD", "number", 2 );
+            // Success
+            lua_pushboolean( L, true );
+            return 1;
         }
-        else
-            m_pScriptDebugging->LogBadPointer( "engineImportTXD", "txd", 1 );
 
+        m_pScriptDebugging->LogBadPointer( "engineImportTXD", "number", 2 );
+        goto error;
+
+typeError:
+        m_pScriptDebugging->LogBadPointer( "engineImportTXD", "txd", 1 );
+
+error:
         // Failed
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
     LUA_DECLARE( engineReplaceModel )
     {
-        // Grab the DFF and model ID
-        CClientDFF* pDFF = ( lua_istype ( L, 1, LUA_TLIGHTUSERDATA ) ? lua_todff ( L, 1 ) : NULL );
-        unsigned short usModelID = ( lua_istype ( L, 2, LUA_TNUMBER ) ? ( static_cast < unsigned short > ( lua_tonumber ( L, 2 ) ) ) : 0 );
+        if ( lua_type( L, 1 ) != LUA_TCLASS )
+            goto typeError;
 
-        // Valid client DFF?
-        if ( pDFF )
-        {
-            // Valid model?
-            if ( CClientDFFManager::IsReplacableModel ( usModelID ) )
-            {
-                // Replace the model
-                pDFF->ReplaceModel ( usModelID );
+        ILuaClass& j = *lua_refclass( L, 1 );
+        CClientDFF *dff;
 
-                // Success
-                lua_pushboolean ( L, true );
-                return true;
-            }
-            else
-                m_pScriptDebugging->LogBadPointer( "engineReplaceModel", "number", 2 );
-        }
-        else
-            m_pScriptDebugging->LogBadPointer( "engineReplaceModel", "dff", 1 );
+        if ( !j.GetTransmit( LUACLASS_DFF, (void*&)dff ) )
+            goto typeError;
+
+        lua_pushboolean( L, dff->ReplaceModel( lua_istype( L, 2, LUA_TNUMBER ) ? lua_tonumber( L, 2 ) : 0 ) );
+        return 1;
+
+typeError:
+        m_pScriptDebugging->LogBadPointer( "engineReplaceModel", "dff", 1 );
 
         // Failure
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
     LUA_DECLARE( engineRestoreModel )
     {
-        // Grab the model ID
-        unsigned short usModelID = ( lua_istype ( L, 1, LUA_TNUMBER ) ? ( static_cast < unsigned short > ( lua_tonumber ( L, 1 ) ) ) : 0 );
+        // Restore the model
+        if ( g_pGame->GetModelManager()->RestoreModel( lua_istype( L, 1, LUA_TNUMBER ) ? lua_tonumber( L, 1 ) : 0 ) )
+        {
+            // Success
+            lua_pushboolean( L, true );
+            return 1;
+        }
 
-        // Valid client DFF and model?
-        if ( CClientDFFManager::IsReplacableModel ( usModelID )  )
-        {
-            // Restore the model
-            if ( m_pDFFManager->RestoreModel ( usModelID ) )
-            {
-                // Success
-                lua_pushboolean ( L, true );
-                return true;
-            }
-        }
-        else
-        {
-            m_pScriptDebugging->LogBadType( "engineRestoreModel" );
-        }
+        m_pScriptDebugging->LogBadType( "engineRestoreModel" );
 
         // Failure
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 

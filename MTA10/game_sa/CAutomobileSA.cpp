@@ -48,7 +48,7 @@ CAutomobileSAInterface::CAutomobileSAInterface( bool unk, unsigned short model, 
     m_handling = &m_OriginalHandlingData[ handling ];
     m_handlingFlags = m_handling->uiHandlingFlags;
 
-    if ( m_handlingFlags & 0x10000 && (rand() & 3) )
+    if ( ( m_handlingFlags & 0x10000 ) && ( rand() & 3 ) )
     {
 
     }

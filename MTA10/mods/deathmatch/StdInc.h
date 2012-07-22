@@ -45,6 +45,7 @@
 // Shared logic includes
 #include <Utils.h>
 #include <logic/include.h>
+#include <lua/CLuaElement.h>
 #include <CClientCommon.h>
 #include <CClientManager.h>
 #include <CClient3DMarker.h>
@@ -76,6 +77,7 @@
 #include <CClientDxFont.h>
 #include <CClientGuiFont.h>
 #include <CClientMaterial.h>
+#include <CClientGameTexture.h>
 #include <CClientTexture.h>
 #include <CClientShader.h>
 #include <CCustomData.h>

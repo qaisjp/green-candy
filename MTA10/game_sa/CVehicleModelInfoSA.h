@@ -13,8 +13,6 @@
 #ifndef __CVehicleModelInfoSA_H
 #define __CVehicleModelInfoSA_H
 
-#include "CModelInfoSA.h"
-
 enum eVehicleType
 {
     VEHICLE_CAR,

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CNetAPI.cpp
 *  PURPOSE:     Packet processing class
@@ -13,6 +13,7 @@
 *               Chris McArthur <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *               
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -323,7 +324,7 @@ void CNetAPI::DoPulse ( void )
                 {
                     // Disable our controls (swap with a blank controller state)
                     CControllerState state;
-                    g_pCore->GetGame ()->GetPad ()->SetCurrentControllerState ( &state );
+                    g_pCore->GetGame ()->GetPad ()->InjectCurrent( state );
 
                     // Grab our vehicle
                     CClientVehicle* pVehicle = pPlayer->GetOccupiedVehicle ();
@@ -388,20 +389,20 @@ bool CNetAPI::IsSmallKeySyncNeeded ( CClientPed* pPlayerModel )
          ( pVehicle->GetVehicleType () == CLIENTVEHICLE_PLANE ||
            pVehicle->GetVehicleType () == CLIENTVEHICLE_HELI ) )
     {
-        bPlaneRudderSync = ( ControllerState.LeftShoulder2 != LastControllerState.LeftShoulder2 ||
-                             ControllerState.RightShoulder2 != LastControllerState.RightShoulder2 );
+        bPlaneRudderSync = ( ControllerState.m_ls1 != LastControllerState.m_ls2||
+                             ControllerState.m_rs2 != LastControllerState.m_rs2 );
     }
 
     // Compare the parts we sync
     return ( bPlaneRudderSync ||
-             ControllerState.LeftShoulder1 != LastControllerState.LeftShoulder1 ||
-             ControllerState.RightShoulder1 != LastControllerState.RightShoulder1 ||
-             ControllerState.ButtonSquare != LastControllerState.ButtonSquare ||
-             ControllerState.ButtonCross != LastControllerState.ButtonCross ||
-             ControllerState.ButtonCircle != LastControllerState.ButtonCircle ||
-             ControllerState.ButtonTriangle != LastControllerState.ButtonTriangle ||
-             ControllerState.ShockButtonL != LastControllerState.ShockButtonL ||
-             ControllerState.m_bPedWalk != LastControllerState.m_bPedWalk );
+             ControllerState.m_ls1 != LastControllerState.m_ls1 ||
+             ControllerState.m_rs1 != LastControllerState.m_rs1 ||
+             ControllerState.m_action1 != LastControllerState.m_action1 ||
+             ControllerState.m_action3 != LastControllerState.m_action3 ||
+             ControllerState.m_action4 != LastControllerState.m_action4 ||
+             ControllerState.m_action2 != LastControllerState.m_action2 ||
+             ControllerState.m_action5 != LastControllerState.m_action5 ||
+             ControllerState.m_pedWalk != LastControllerState.m_pedWalk );
 }
 
 
@@ -480,8 +481,8 @@ void CNetAPI::ReadKeysync ( CClientPlayer* pPlayer, NetBitStreamInterface& BitSt
 
     // We don't sync the direction keys in keysync, so we set them
     // to the current ones.
-    ControllerState.LeftStickX = CurrentControllerState.LeftStickX;
-    ControllerState.LeftStickY = CurrentControllerState.LeftStickY;
+    ControllerState.m_leftAxisX = CurrentControllerState.m_leftAxisX;
+    ControllerState.m_leftAxisY = CurrentControllerState.m_leftAxisY;
 
     // Flags
     SKeysyncFlags flags;
@@ -491,7 +492,7 @@ void CNetAPI::ReadKeysync ( CClientPlayer* pPlayer, NetBitStreamInterface& BitSt
     CClientVehicle* pVehicle = pPlayer->GetOccupiedVehicle ();
 
     // If he's shooting
-    if ( ControllerState.ButtonCircle )
+    if ( ControllerState.m_action4 )
     {
         // Read out his current weapon slot
         SWeaponSlotSync slot;
@@ -501,7 +502,7 @@ void CNetAPI::ReadKeysync ( CClientPlayer* pPlayer, NetBitStreamInterface& BitSt
 
         // Is the current weapon a goggle (44 or 45) or a camera (43), detonator (40), don't apply the fire key
         if ( uiSlot == 11 || uiSlot == 12 || ( pWeapon && pWeapon->GetType () == 43 ) )
-            ControllerState.ButtonCircle = 0;
+            ControllerState.m_action4 = 0;
 
         if ( CWeaponNames::DoesSlotHaveAmmo ( uiSlot ) )
         {
@@ -586,25 +587,25 @@ void CNetAPI::ReadKeysync ( CClientPlayer* pPlayer, NetBitStreamInterface& BitSt
 
         if ( pVehicle->GetUpgrades ()->HasUpgrade ( 1087 ) ) // Hydraulics?
         {
-            short sRightStickX, sRightStickY;
-            BitStream.Read ( sRightStickX );
-            BitStream.Read ( sRightStickY );
+            short sm_rightAxisX, sm_rightAxisY;
+            BitStream.Read ( sm_rightAxisX );
+            BitStream.Read ( sm_rightAxisY );
 
-            ControllerState.RightStickX = sRightStickX;
-            ControllerState.RightStickY = sRightStickY;
+            ControllerState.m_rightAxisX = sm_rightAxisX;
+            ControllerState.m_rightAxisY = sm_rightAxisY;
         }
 
         // Jax: temp fix for rhino firing, CPlayerInfo::m_LastTimeBigGunFired needs to be context-switched
         if ( pVehicle->GetModel () == VT_RHINO )
         {
-            ControllerState.ButtonCircle = 0;
+            ControllerState.m_action4 = 0;
         }
 
         if ( pVehicle->GetVehicleType () == CLIENTVEHICLE_PLANE ||
              pVehicle->GetVehicleType () == CLIENTVEHICLE_HELI )
         {
-            ControllerState.LeftShoulder2 = 255 * BitStream.ReadBit ();
-            ControllerState.RightShoulder2 = 255 * BitStream.ReadBit ();
+            ControllerState.m_ls2 = 255 * BitStream.ReadBit ();
+            ControllerState.m_rs2 = 255 * BitStream.ReadBit ();
         }
 
         // Apply the new keysync data immediately
@@ -613,7 +614,7 @@ void CNetAPI::ReadKeysync ( CClientPlayer* pPlayer, NetBitStreamInterface& BitSt
     else
     {
         // null out the crouch key or it will conflict with the crouch syncing
-        ControllerState.ShockButtonL = 0;
+        ControllerState.m_action5 = 0;
         pPlayer->Duck ( flags.data.bIsDucked );   
         pPlayer->SetChoking ( flags.data.bIsChoking );       
     }
@@ -648,7 +649,7 @@ void CNetAPI::WriteKeysync ( CClientPed* pPlayerModel, NetBitStreamInterface& Bi
     BitStream.Write ( &flags );
 
     // Are we shooting?
-    if ( ControllerState.ButtonCircle )
+    if ( ControllerState.m_action4 )
     {
         // Grab the current weapon
         CWeapon * pPlayerWeapon = pPlayerModel->GetWeapon ();
@@ -702,16 +703,16 @@ void CNetAPI::WriteKeysync ( CClientPed* pPlayerModel, NetBitStreamInterface& Bi
         {
             if ( pUpgrades->HasUpgrade ( 1087 ) ) // Hydraulics?
             {
-                BitStream.Write ( ControllerState.RightStickX );
-                BitStream.Write ( ControllerState.RightStickY );
+                BitStream.Write ( ControllerState.m_rightAxisX );
+                BitStream.Write ( ControllerState.m_rightAxisY );
             }
         }
 
         if ( pVehicle->GetVehicleType () == CLIENTVEHICLE_PLANE ||
              pVehicle->GetVehicleType () == CLIENTVEHICLE_HELI )
         {
-            BitStream.WriteBit ( ControllerState.LeftShoulder2 != 0 );
-            BitStream.WriteBit ( ControllerState.RightShoulder2 != 0 );
+            BitStream.WriteBit ( ControllerState.m_ls2 != 0 );
+            BitStream.WriteBit ( ControllerState.m_rs2 != 0 );
         }
     }
 }
@@ -807,7 +808,7 @@ void CNetAPI::ReadPlayerPuresync ( CClientPlayer* pPlayer, NetBitStreamInterface
 
         // Is the current weapon goggles (44 or 45) or a camera (43), or a detonator (40), don't apply the fire key
         if ( uiSlot == 11 || uiSlot == 12 || ( pWeapon && pWeapon->GetType () == 43 ) )
-            ControllerState.ButtonCircle = 0;
+            ControllerState.m_action4 = 0;
 
         if ( CWeaponNames::DoesSlotHaveAmmo ( uiSlot ) )
         {            
@@ -842,7 +843,7 @@ void CNetAPI::ReadPlayerPuresync ( CClientPlayer* pPlayer, NetBitStreamInterface
             }
 
             // Read out the aim directions
-            SWeaponAimSync aim ( fWeaponRange, ( ControllerState.RightShoulder1 || ControllerState.ButtonCircle ) );
+            SWeaponAimSync aim ( fWeaponRange, ( ControllerState.m_rs1 || ControllerState.m_action4 ) );
             BitStream.Read ( &aim );
 
             // Interpolate the aiming
@@ -867,7 +868,7 @@ void CNetAPI::ReadPlayerPuresync ( CClientPlayer* pPlayer, NetBitStreamInterface
     }
 
      // null out the crouch bit or it'll conflict with the crouched syncing
-    ControllerState.ShockButtonL = 0;    
+    ControllerState.m_action5 = 0;    
     
     // If the players in contact with an object/vehicle, revert to contact position
     if ( pContactEntity )
@@ -906,7 +907,7 @@ void WriteCameraOrientation ( const CVector& vecPositionBase, NetBitStreamInterf
     // Calc the camera position and rotation
     RwMatrix camMatrix = g_pGame->GetCamera()->GetMatrix();
     const CVector& vecCamPosition = camMatrix.pos;
-    const CVector& vecCamFwd = camMatrix.vFront;
+    const CVector& vecCamFwd = camMatrix.at;
     float fCamRotZ = atan2 ( vecCamFwd.fX, vecCamFwd.fY );
     float fCamRotX = atan2 ( vecCamFwd.fZ, DistanceBetweenPoints2D ( CVector (), vecCamFwd ) );
 
@@ -1099,11 +1100,11 @@ void CNetAPI::WritePlayerPuresync ( CClientPlayer* pPlayerModel, NetBitStreamInt
 
             // Sync aim data
             CShotSyncData* pShotsyncData = g_pMultiplayer->GetLocalShotSyncData ();
-            SWeaponAimSync aim ( 0.0f, ( ControllerState.RightShoulder1 || ControllerState.ButtonCircle ) );
+            SWeaponAimSync aim ( 0.0f, ( ControllerState.m_rs1 || ControllerState.m_action4 ) );
             aim.data.fArm = pShotsyncData->m_fArmDirectionY;
 
             // Write the vectors data only if he's aiming or shooting
-            if ( ControllerState.RightShoulder1 || ControllerState.ButtonCircle )
+            if ( ControllerState.m_rs1 || ControllerState.m_action4 )
             {
                 pPlayerModel->GetShotData ( &(aim.data.vecOrigin), &(aim.data.vecTarget) );
             }
@@ -1171,7 +1172,7 @@ void CNetAPI::ReadVehiclePuresync ( CClientPlayer* pPlayer, CClientVehicle* pVeh
     // Jax: temp fix for rhino firing, CPlayerInfo::m_LastTimeBigGunFired needs to be context-switched
     if ( pVehicle->GetModel () == VT_RHINO )
     {
-        ControllerState.ButtonCircle = 0;
+        ControllerState.m_action4 = 0;
     }
     pPlayer->SetControllerState ( ControllerState );
 
@@ -1280,7 +1281,7 @@ void CNetAPI::ReadVehiclePuresync ( CClientPlayer* pPlayer, CClientVehicle* pVeh
 
         // Is the current weapon a goggle (44 or 45) or a camera (43), or a detonator (40), don't apply the fire key
         if ( uiSlot == 11 || uiSlot == 12 || ( pWeapon && pWeapon->GetType () == 43 ) )
-            ControllerState.ButtonCircle = 0;
+            ControllerState.m_action4 = 0;
 
         if ( flags.data.bIsDoingGangDriveby && CWeaponNames::DoesSlotHaveAmmo ( uiSlot ) )
         {
@@ -1351,8 +1352,8 @@ void CNetAPI::ReadVehiclePuresync ( CClientPlayer* pPlayer, CClientVehicle* pVeh
     // if it's an aircraft.
     if ( flags.data.bIsAircraft )
     {
-        ControllerState.LeftShoulder2 = BitStream.ReadBit () * 255;
-        ControllerState.RightShoulder2 = BitStream.ReadBit () * 255;
+        ControllerState.m_ls2 = BitStream.ReadBit () * 255;
+        ControllerState.m_rs2 = BitStream.ReadBit () * 255;
     }
 
     pPlayer->SetControllerState ( ControllerState );
@@ -1524,8 +1525,8 @@ void CNetAPI::WriteVehiclePuresync ( CClientPed* pPlayerModel, CClientVehicle* p
     // it's an aircraft.
     if ( flags.data.bIsAircraft )
     {
-        BitStream.WriteBit ( ControllerState.LeftShoulder2 != 0 );
-        BitStream.WriteBit ( ControllerState.RightShoulder2 != 0 );
+        BitStream.WriteBit ( ControllerState.m_ls2 != 0 );
+        BitStream.WriteBit ( ControllerState.m_rs2 != 0 );
     }
 
     // Write the sent position to the interpolator
@@ -1540,14 +1541,14 @@ bool CNetAPI::ReadSmallKeysync ( CControllerState& ControllerState, const CContr
         return false;
 
     // Put the result into the controllerstate
-    ControllerState.LeftShoulder1   = 255 * keys.data.bLeftShoulder1;
-    ControllerState.RightShoulder1  = 255 * keys.data.bRightShoulder1;
-    ControllerState.ButtonSquare    = 255 * keys.data.bButtonSquare;
-    ControllerState.ButtonCross     = 255 * keys.data.bButtonCross;
-    ControllerState.ButtonCircle    = 255 * keys.data.bButtonCircle;
-    ControllerState.ButtonTriangle  = 255 * keys.data.bButtonTriangle;
-    ControllerState.ShockButtonL    = 255 * keys.data.bShockButtonL;
-    ControllerState.m_bPedWalk      = 255 * keys.data.bPedWalk;
+    ControllerState.m_ls1   = 255 * keys.data.bm_ls1;
+    ControllerState.m_rs1  = 255 * keys.data.bm_rs1;
+    ControllerState.m_action1    = 255 * keys.data.bm_action1;
+    ControllerState.m_action3     = 255 * keys.data.bm_action3;
+    ControllerState.m_action4    = 255 * keys.data.bm_action4;
+    ControllerState.m_action2  = 255 * keys.data.bm_action2;
+    ControllerState.m_action5    = 255 * keys.data.bm_action5;
+    ControllerState.m_pedWalk      = 255 * keys.data.bPedWalk;
 
     return true;
 }
@@ -1556,14 +1557,14 @@ bool CNetAPI::ReadSmallKeysync ( CControllerState& ControllerState, const CContr
 void CNetAPI::WriteSmallKeysync ( const CControllerState& ControllerState, const CControllerState& LastControllerState, NetBitStreamInterface& BitStream )
 {
     SSmallKeysyncSync keys;
-    keys.data.bLeftShoulder1    = ( ControllerState.LeftShoulder1 != 0 );       // Action / Secondary-Fire
-    keys.data.bRightShoulder1   = ( ControllerState.RightShoulder1 != 0 );      // Aim-Weapon / Handbrake
-    keys.data.bButtonSquare     = ( ControllerState.ButtonSquare != 0 );        // Jump / Reverse
-    keys.data.bButtonCross      = ( ControllerState.ButtonCross != 0 );         // Sprint / Accelerate
-    keys.data.bButtonCircle     = ( ControllerState.ButtonCircle != 0 );        // Fire // Fire
-    keys.data.bButtonTriangle   = ( ControllerState.ButtonTriangle != 0 );      // Enter/Exit/Special-Attack / Enter/exit
-    keys.data.bShockButtonL     = ( ControllerState.ShockButtonL != 0 );        // Crouch / Horn
-    keys.data.bPedWalk          = ( ControllerState.m_bPedWalk != 0 );          // Walk / -
+    keys.data.bm_ls1    = ( ControllerState.m_ls1 != 0 );       // Action / Secondary-Fire
+    keys.data.bm_rs1   = ( ControllerState.m_rs1 != 0 );      // Aim-Weapon / Handbrake
+    keys.data.bm_action1     = ( ControllerState.m_action1 != 0 );        // Jump / Reverse
+    keys.data.bm_action3      = ( ControllerState.m_action3 != 0 );         // Sprint / Accelerate
+    keys.data.bm_action4     = ( ControllerState.m_action4 != 0 );        // Fire // Fire
+    keys.data.bm_action2   = ( ControllerState.m_action2 != 0 );      // Enter/Exit/Special-Attack / Enter/exit
+    keys.data.bm_action5     = ( ControllerState.m_action5 != 0 );        // Crouch / Horn
+    keys.data.bPedWalk          = ( ControllerState.m_pedWalk != 0 );          // Walk / -
 
     // Write it
     BitStream.Write ( &keys );
@@ -1578,17 +1579,17 @@ bool CNetAPI::ReadFullKeysync ( CControllerState& ControllerState, NetBitStreamI
         return false;
 
     // Put the result into the controllerstate
-    ControllerState.LeftShoulder1   = 255 * keys.data.bLeftShoulder1;
-    ControllerState.RightShoulder1  = 255 * keys.data.bRightShoulder1;
-    ControllerState.ButtonSquare    = 255 * keys.data.bButtonSquare;
-    ControllerState.ButtonCross     = 255 * keys.data.bButtonCross;
-    ControllerState.ButtonCircle    = 255 * keys.data.bButtonCircle;
-    ControllerState.ButtonTriangle  = 255 * keys.data.bButtonTriangle;
-    ControllerState.ShockButtonL    = 255 * keys.data.bShockButtonL;
-    ControllerState.m_bPedWalk      = 255 * keys.data.bPedWalk;
+    ControllerState.m_ls1   = 255 * keys.data.bm_ls1;
+    ControllerState.m_rs1  = 255 * keys.data.bm_rs1;
+    ControllerState.m_action1    = 255 * keys.data.bm_action1;
+    ControllerState.m_action3     = 255 * keys.data.bm_action3;
+    ControllerState.m_action4    = 255 * keys.data.bm_action4;
+    ControllerState.m_action2  = 255 * keys.data.bm_action2;
+    ControllerState.m_action5    = 255 * keys.data.bm_action5;
+    ControllerState.m_pedWalk      = 255 * keys.data.bPedWalk;
 
-    ControllerState.LeftStickX      = keys.data.sLeftStickX;
-    ControllerState.LeftStickY      = keys.data.sLeftStickY;
+    ControllerState.m_leftAxisX      = keys.data.sLeftStickX;
+    ControllerState.m_leftAxisY      = keys.data.sLeftStickY;
 
     return true;
 }
@@ -1598,16 +1599,16 @@ void CNetAPI::WriteFullKeysync ( const CControllerState& ControllerState, NetBit
 {
     // Put the controllerstate bools into a key byte
     SFullKeysyncSync keys;
-    keys.data.bLeftShoulder1    = ( ControllerState.LeftShoulder1 != 0 );
-    keys.data.bRightShoulder1   = ( ControllerState.RightShoulder1 != 0 );
-    keys.data.bButtonSquare     = ( ControllerState.ButtonSquare != 0 );
-    keys.data.bButtonCross      = ( ControllerState.ButtonCross != 0 );
-    keys.data.bButtonCircle     = ( ControllerState.ButtonCircle != 0 );
-    keys.data.bButtonTriangle   = ( ControllerState.ButtonTriangle != 0 );
-    keys.data.bShockButtonL     = ( ControllerState.ShockButtonL != 0 );
-    keys.data.bPedWalk          = ( ControllerState.m_bPedWalk != 0 );
-    keys.data.sLeftStickX       = ControllerState.LeftStickX;
-    keys.data.sLeftStickY       = ControllerState.LeftStickY;
+    keys.data.bm_ls1    = ( ControllerState.m_ls1 != 0 );
+    keys.data.bm_rs1   = ( ControllerState.m_rs1 != 0 );
+    keys.data.bm_action1     = ( ControllerState.m_action1 != 0 );
+    keys.data.bm_action3      = ( ControllerState.m_action3 != 0 );
+    keys.data.bm_action4     = ( ControllerState.m_action4 != 0 );
+    keys.data.bm_action2   = ( ControllerState.m_action2 != 0 );
+    keys.data.bm_action5     = ( ControllerState.m_action5 != 0 );
+    keys.data.bPedWalk          = ( ControllerState.m_pedWalk != 0 );
+    keys.data.sLeftStickX       = ControllerState.m_leftAxisX;
+    keys.data.sLeftStickY       = ControllerState.m_leftAxisY;
 
     // Write it
     BitStream.Write ( &keys );
