@@ -15,7 +15,6 @@
 #ifndef __CPedModelInfoSA_H
 #define __CPedModelInfoSA_H
 
-#include "CModelInfoSA.h"
 #include <game/CPedModelInfo.h>
 
 class ePedStats;

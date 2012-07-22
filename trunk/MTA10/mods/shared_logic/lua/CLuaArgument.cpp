@@ -32,6 +32,15 @@ CLuaArgument::CLuaArgument( CClientEntity *element )
     Read( element );
 }
 
+CLuaArgument::~CLuaArgument()
+{
+}
+
+LuaArgument* CLuaArgument::Clone() const
+{
+    return new CLuaArgument( this );
+}
+
 void CLuaArgument::ReadEntity( CClientEntity *element )
 {
     DeleteTableData();

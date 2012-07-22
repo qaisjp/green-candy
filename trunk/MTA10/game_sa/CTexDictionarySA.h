@@ -25,18 +25,24 @@ public:
                             ~CTexDictionarySA();
 
     bool                    Load( const char *filename, bool filtering );
+    std::vector <CTexture*> GetTextures()                   { return (std::vector <CTexture*>&)m_textures; }
     void                    Clear();
 
     const char*             GetName() const                 { return m_name.c_str(); }
     unsigned int            GetHash() const                 { return m_tex->m_hash; }
+    unsigned short          GetID() const;
 
     bool                    Import( unsigned short id );
     bool                    ImportTXD( unsigned short id );
     bool                    Remove( unsigned short id );
     bool                    RemoveTXD( unsigned short id );
 
+    void                    ClearImports();
+
     bool                    IsImported( unsigned short id ) const;
     bool                    IsImportedTXD( unsigned short id ) const;
+
+    const std::vector <unsigned short>& GetImportedList() const     { return (const std::vector <unsigned short>&)m_imported; }
 
 protected:
     std::string             m_name;
@@ -51,4 +57,4 @@ public:
     textureList_t           m_textures;
 };
 
-#endif
+#endif //_CTexDictionarySA_H_

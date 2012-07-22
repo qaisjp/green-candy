@@ -419,7 +419,6 @@ RpClump* CRenderWareSA::ReadDFF( const char *path, unsigned short id )
 void CRenderWareSA::ReplaceVehicleModel( RpClump * pNew, unsigned short usModelID )
 {
     // get the modelinfo array
-    DWORD dwFunc = FUNC_LoadVehicleModel;
     CBaseModelInfoSAInterface *pModel = ppModelInfo[usModelID];
 
     if ( !pModel )
@@ -428,14 +427,15 @@ void CRenderWareSA::ReplaceVehicleModel( RpClump * pNew, unsigned short usModelI
     if ( pModel->GetModelType() != MODEL_VEHICLE )
         return;
 
-    if ( pNew != ((CClumpModelInfoSAInterface*)pModel)->m_rwClump )
+    CClumpModelInfoSAInterface *info = (CClumpModelInfoSAInterface*)pModel;
+
+    if ( pNew != info->m_rwClump )
     {
-        __asm
-        {
-            mov     ecx, pModel
-            push    pNew
-            call    dwFunc
-        }
+        // Delete the old clump
+        info->DeleteRwObject();
+
+        // Load a new model association
+        info->SetClump( pNew );
     }
 }
 
@@ -472,11 +472,9 @@ CColModel* CRenderWareSA::ReadCOL( CFile *file )
     else
     {
         delete pColModel;
-        fclose ( pFile );
+
         return NULL;
     }
-
-    fclose ( pFile );
 
     // Return the collision model
     return pColModel;
@@ -516,33 +514,57 @@ unsigned int CRenderWareSA::LoadAtomics ( RpClump * pClump, RpAtomicContainer * 
 typedef struct
 {
     unsigned short usTxdID;
-    RpClump* pClump;
+    unsigned short modelID;
 } SAtomicsReplacer;
 
-static bool AtomicsReplacer ( RpAtomic* pAtomic, SAtomicsReplacer* pData )
+// Based on FUNC_AtomicsReplacer
+static void RwAtomicInsertClump( unsigned short modelID, RpAtomic *atomic )
 {
-    ( (void (*)(RpAtomic*, void*))FUNC_AtomicsReplacer ) ( pAtomic, pData->pClump );
+    CBaseModelInfoSAInterface *info = ppModelInfo[modelID];
+    CAtomicModelInfoSA *ainfo = info->GetAtomicModelInfo();
+    bool unk;
+    void *unk2;
+
+    // MTA: we create a copy of the atomic
+    RpAtomic *newatom = RpAtomicClone( atomic );
+
+    // This possibly adds the reference to the texture, we should reven this
+    ((void (*)(const char*, void*&, bool&))0x005370A0)( atomic->m_parent->m_nodeName, unk2, unk );
+
+    newatom->SetRenderCallback( NULL );
+
+    if ( !unk )
+        ainfo->GetDamageAtomicModelInfo()->SetupPipeline( newatom );
+    else
+        ainfo->SetAtomic( newatom );
+
+#if 0
+    RpClumpRemoveAtomic( clump, atomic );
+#endif
+
+    RpAtomicSetFrame( newatom, RwFrameCreate() );
+    
+    newatom->SetExtendedRenderFlags( modelID );
+}
+
+// TODO: identify this runtime; it might be better to assign single atomics!
+static bool AtomicsReplacer( RpAtomic* pAtomic, SAtomicsReplacer* pData )
+{
+    RwAtomicInsertClump( pData->modelID, pAtomic );
 
     // The above function adds a reference to the model's TXD. Remove it again.
     (*ppTxdEntry)->Get( pData->usTxdID )->Dereference();
     return true;
 }
 
-void CRenderWareSA::ReplaceAllAtomicsInModel ( RpClump * pSrc, unsigned short usModelID )
+void CRenderWareSA::ReplaceAllAtomicsInModel( RpClump *src, unsigned short id )
 {
-    // Clone the clump that's to be replaced (FUNC_AtomicsReplacer removes the atomics from the source clump)
-    RpClump *pCopy = RpClumpClone( pSrc );
-
     // Replace the atomics
     SAtomicsReplacer data;
-    data.usTxdID = ppModelInfo[usModelID]->m_textureDictionary;
-    data.pClump = pCopy;
+    data.usTxdID = ppModelInfo[id]->m_textureDictionary;
+    data.modelID = id;
 
-    *(unsigned short*)DWORD_AtomicsReplacerModelID = usModelID;
-    pCopy->ForAllAtomics( AtomicsReplacer, &data );
-
-    // Get rid of the now empty copied clump
-    RpClumpDestroy ( pCopy );
+    src->ForAllAtomics( AtomicsReplacer, &data );
 }
 
 // Replaces all atomics in a vehicle
@@ -1630,6 +1652,11 @@ void RpAtomic::RemoveVisibilityFlags( unsigned short flags )
 unsigned short RpAtomic::GetVisibilityFlags()
 {
     return *(unsigned short*)&m_matrixFlags;
+}
+
+void RpAtomic::SetExtendedRenderFlags( unsigned short flags )
+{
+    *(unsigned short*)&m_renderFlags = flags;
 }
 
 void RpAtomic::FetchMateria( RpMaterials *mats )

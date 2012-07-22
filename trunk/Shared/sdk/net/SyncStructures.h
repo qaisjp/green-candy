@@ -816,13 +816,13 @@ struct SFullKeysyncSync : public ISyncStructure
 
     struct
     {
-        bool bLeftShoulder1 : 1;
-        bool bRightShoulder1 : 1;
-        bool bButtonSquare : 1;
-        bool bButtonCross : 1;
-        bool bButtonCircle : 1;
-        bool bButtonTriangle : 1;
-        bool bShockButtonL : 1;
+        bool bm_ls1 : 1;
+        bool bm_rs1 : 1;
+        bool bm_action1 : 1;
+        bool bm_action3 : 1;
+        bool bm_action4 : 1;
+        bool bm_action2 : 1;
+        bool bm_action5 : 1;
         bool bPedWalk : 1;
         short sLeftStickX;
         short sLeftStickY;
@@ -845,13 +845,13 @@ struct SSmallKeysyncSync : public ISyncStructure
 
     struct
     {
-        bool bLeftShoulder1 : 1;
-        bool bRightShoulder1 : 1;
-        bool bButtonSquare : 1;
-        bool bButtonCross : 1;
-        bool bButtonCircle : 1;
-        bool bButtonTriangle : 1;
-        bool bShockButtonL : 1;
+        bool bm_ls1 : 1;
+        bool bm_rs1 : 1;
+        bool bm_action1 : 1;
+        bool bm_action3 : 1;
+        bool bm_action4 : 1;
+        bool bm_action2 : 1;
+        bool bm_action5 : 1;
         bool bPedWalk : 1;
     } data;
 };

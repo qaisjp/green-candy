@@ -123,3 +123,15 @@ addCommandHandler("tt", function()
 		end
 	end
 );
+
+addCommandHandler("cjerk", function()
+		local a = class.construct(function() end);
+		local b = class.construct(function() end);
+		
+		a.setParent(b);
+		
+		if (b.setParent(a)) then
+			print("WARNING: circle jerk!");
+		end
+	end
+);

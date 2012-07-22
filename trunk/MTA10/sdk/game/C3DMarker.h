@@ -27,7 +27,7 @@ public:
     virtual void            SetMatrix( const RwMatrix& mat ) = 0;
 
     virtual void            SetPosition( const CVector& pos ) = 0;
-    virtual CVector&        GetPosition() = 0;
+    virtual const CVector&  GetPosition() const = 0;
 
     virtual unsigned int    GetType() = 0; // need enum?
     virtual bool            IsActive() = 0;

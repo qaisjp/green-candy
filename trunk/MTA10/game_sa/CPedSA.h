@@ -21,8 +21,6 @@ class CPedSA;
 #include <game/CPed.h>
 #include <game/CWeapon.h>
 
-#include "CPedModelInfoSA.h"
-
 #include "CEntitySA.h"
 #include "CFireSA.h"
 #include "CPedIKSA.h"
@@ -261,6 +259,7 @@ public:
 //#endif
 };
 
+#if 0
 enum ePedType
 {
     PLAYER_LOCAL,
@@ -268,6 +267,9 @@ enum ePedType
     
     FORCE_DWORD = 0xFFFFFFF
 };
+#endif
+
+class CPadSAInterface;
 
 class CPedSAInterface : public CPhysicalSAInterface
 {
@@ -355,7 +357,7 @@ public:
                         CPedSA( CPedSAInterface * pedInterface );
                         ~CPedSA();
 
-    inline CPedSAInterface* GetInterface()                                          { return (CPedSAInterface*)m_pInterface; }
+    inline CPedSAInterface* GetPedInterface()                                       { return (CPedSAInterface*)m_pInterface; }
 
     void                Init();
     void                SetModelIndex( unsigned short index );

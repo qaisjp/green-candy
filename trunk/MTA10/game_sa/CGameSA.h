@@ -140,6 +140,7 @@ public:
     inline CControllerConfigManagerSA*  GetControllerConfigManager()    { return m_pControllerConfigManager; };
     inline CRenderWareSA*               GetRenderWare()                 { return m_pRenderWare; };
     inline CRwExtensionManagerSA*       GetRwExtensionManager()         { return m_pRwExtensionManager; };
+    inline CModelManagerSA*             GetModelManager()               { return m_pModelManager; }
     inline CTextureManagerSA*           GetTextureManager()             { return m_pTextureManager; };
     inline CHandlingManagerSA*          GetHandlingManager()            { return m_pHandlingManager; };
     inline CAnimManagerSA*              GetAnimManager()                { return m_pAnimManager; }
@@ -155,8 +156,8 @@ public:
     CModelInfoSA*           GetModelInfo( unsigned short id );
 
     inline unsigned long    GetSystemTime()                     { return *VAR_SystemTime; };
-    inline bool             IsAtMenu()                          { return *VAR_IsAtMenu; };
-    inline bool             IsGameLoaded()                      { return *VAR_IsGameLoaded; };
+    inline bool             IsAtMenu()                          { return *VAR_IsAtMenu == 1; };
+    inline bool             IsGameLoaded()                      { return *VAR_IsGameLoaded == 1; };
     void                    StartGame();
     void                    SetSystemState( eSystemState State );
     eSystemState            GetSystemState();
@@ -247,6 +248,7 @@ private:
     C3DMarkersSA*               m_p3DMarkers;
     CRenderWareSA*              m_pRenderWare;
     CRwExtensionManagerSA*      m_pRwExtensionManager;
+    CModelManagerSA*            m_pModelManager;
     CTextureManagerSA*          m_pTextureManager;
     CHandlingManagerSA*         m_pHandlingManager;
     CAnimManagerSA*             m_pAnimManager;
@@ -278,7 +280,7 @@ private:
     // Cache for speeding up collision processing
     typedef std::map <CEntitySAInterface*, CEntitySA*> cachedColl_t;
 
-    bool                        m_didCacheColl = false;
+    bool                        m_didCacheColl;
     cachedColl_t                m_cachedColl;
 
 public:

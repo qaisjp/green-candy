@@ -16,7 +16,6 @@
 #define __CCUSTOMDATA_H
 
 #include "lua/CLuaArgument.h"
-#include <list>
 
 #define MAX_CUSTOMDATA_NAME_LENGTH 128
 

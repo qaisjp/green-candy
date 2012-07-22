@@ -14,7 +14,7 @@
 #ifndef __CGAMESA_BMX
 #define __CGAMESA_BMX
 
-#include <game/CBmx.h>
+#include <game/CBicycle.h>
 
 class CBicycleSAInterface : public CAutomobileSAInterface
 {

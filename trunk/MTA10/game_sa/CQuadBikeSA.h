@@ -15,7 +15,6 @@
 #define __CGAMESA_QUADBIKE
 
 #include <game/CQuadBike.h>
-#include "CAutomobileSA.h"
 
 class CQuadBikeSAInterface : public CAutomobileSAInterface
 {

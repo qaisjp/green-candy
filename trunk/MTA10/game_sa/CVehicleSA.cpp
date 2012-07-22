@@ -247,11 +247,11 @@ CVehicleSAInterface::CVehicleSAInterface( unsigned char createdBy )
 
     m_unk24 = 0;
 
-    m_bodyDirtLevel = rand() % 15;
+    m_bodyDirtLevel = (float)rand() % 15;
     
     m_timeOfCreation = pGame->GetSystemTime();
 
-    m_unk37 = 205089.12;
+    m_unk37 = 205089.12f;
 }
 
 CVehicleSAInterface::~CVehicleSAInterface()

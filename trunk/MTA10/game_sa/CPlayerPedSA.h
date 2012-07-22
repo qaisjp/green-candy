@@ -19,9 +19,7 @@
 #ifndef __CGAMESA_PLAYERPED
 #define __CGAMESA_PLAYERPED
 
-
 #include <game/CPlayerPed.h>
-#include "CPedSA.h"
 #include "CWantedSA.h"
 
 #define FUNC_SetInitialState            0x60CD20
@@ -69,7 +67,7 @@ public:
     eMoveAnim           GetMoveAnim();
     void                SetMoveAnim( eMoveAnim iAnimGroup );
 
-    inline CPlayerPedSAInterface* GetInterface()                { return m_pInterface; };
+    inline CPlayerPedSAInterface* GetInterface()                { return (CPlayerPedSAInterface*)m_pInterface; };
 };
 
 #endif

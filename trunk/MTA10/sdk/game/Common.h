@@ -1088,7 +1088,7 @@ enum eCoronaTrailSA
 
 enum ePedType
 {
-   PEDTYPE_PLAYER1=0,
+   PEDTYPE_PLAYER1,
    PEDTYPE_PLAYER2,         // 2nd player in single player game (using 2nd pad)
    PEDTYPE_PLAYER_NETWORK,      // Player controlled over the network (not by this machine)
    PEDTYPE_PLAYER_UNUSED,      // Not used at the moment
@@ -1122,7 +1122,9 @@ enum ePedType
    PEDTYPE_MISSION8,   //32bits
    // WE'RE USING BIT-FLAGS FOR PED AQUANTANCES
    // SO 32 IS THE MAX NUMBER OF PED TYPES WE CAN HAVE!!!!
-   PEDTYPE_LAST_PEDTYPE
+   PEDTYPE_LAST_PEDTYPE,
+
+   __FORCE_DWORD = 0xFFFFFFFF
 };
 
 enum ePedState

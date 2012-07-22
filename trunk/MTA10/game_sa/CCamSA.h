@@ -17,9 +17,6 @@
 #define __CGAMESA_CAM
 
 #include <game/CCam.h>
-#include "CEntitySA.h"
-#include "CAutomobileSA.h"
-#include "CPedSA.h"
 
 const int NUMBER_OF_VECTORS_FOR_AVERAGE=2;
 #define CAM_NUM_TARGET_HISTORY          4

@@ -19,7 +19,7 @@ enum eParticleStatus
 {
     PARTICLE_STOPPED = 0,
 
-    FORCE_DWORD = 0xFFFFFFFF
+    _FORCE_DWORD = 0xFFFFFFFF
 };
 
 class CParticleSAInterface

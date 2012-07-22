@@ -13,212 +13,119 @@
 
 #include <StdInc.h>
 
-CClientTXD::CClientTXD ( class CClientManager* pManager, ElementID ID )
+typedef std::vector <unsigned short> imports_t;
+
+static int txd_getName( lua_State *L )
 {
-    // Init
-    m_pManager = pManager;
-    m_usMainModel = 0xFFFF;
+    CClientTXD *txd = (CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+    const std::string& name = txd->GetName();
+    
+    lua_pushlstring( L, name.c_str(), name.size() );
+    return 1;
 }
 
-CClientTXD::~CClientTXD ( void )
+static int txd_getHash( lua_State *L )
 {
-    // Remove us from all the models
-    RemoveAll ();
-
-    // Destroy all our textures
-    std::list < RwTexture* >::iterator it;
-    for ( it = m_Textures.begin (); it != m_Textures.end (); it++ )
-    {
-        g_pGame->GetRenderWare ()->DestroyTexture ( *it );
-    }
-    m_Textures.clear ();
+    lua_pushnumber( L, ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetHash() );
+    return 1;
 }
 
-
-bool CClientTXD::LoadTXD ( const char* szFile, bool bFilteringEnabled )
+static int txd_getID( lua_State *L )
 {
-    // Are we not already loaded?
-    if ( m_Textures.empty () )
-    {
-        // Try to load it
-        RwTexDictionary* pTXD = g_pGame->GetRenderWare ()->ReadTXD ( szFile );
-        if ( pTXD )
-        {
-            // Get the list of textures into our own list
-            RwListEntry* pSentinel = &pTXD->textures.root;
-            RwListEntry* pTexLink = pSentinel->next;
-            while ( pTexLink != pSentinel )
-            {
-                RwTexture* pTex = (RwTexture *)( (BYTE *)pTexLink - offsetof(RwTexture, TXDList) );
-                m_Textures.push_back ( pTex );
-                pTex->txd = NULL;
-                if ( bFilteringEnabled )
-                    pTex->flags = 0x1102;       // Enable filtering (otherwise textures are pixely)
-
-                pTexLink = pTexLink->next;
-            }
-
-            // Make the txd forget it has any textures and destroy it
-            pTXD->textures.root.next = &pTXD->textures.root;
-            pTXD->textures.root.prev = &pTXD->textures.root;
-            g_pGame->GetRenderWare ()->DestroyTXD ( pTXD );
-            pTXD = NULL;
-
-            // We succeeded if we got any textures
-            return m_Textures.size () > 0;
-        }
-    }
-
-    // Failed
-    return false;
+    lua_pushnumber( L, ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetID() );
+    return 1;
 }
 
-bool CClientTXD::Import ( unsigned short usModelID )
+static const luaL_Reg txd_interface[] =
 {
-    // Have we got textures and haven't already imported into this model?
-    if ( !m_Textures.empty () && !IsImported ( usModelID ) && g_pGame->GetModelInfo ( usModelID ) )
-    {
-        // Grab the lists of replaced and added textures for the model's TXD
-        unsigned short usTxdID = g_pGame->GetModelInfo ( usModelID )->GetTextureDictionaryID ();
-        std::list < RwTexture* >& replacedTextures = ms_ReplacedTXDTextures.insert (
-            make_pair ( usTxdID, std::list < RwTexture* > () )
-        ).first->second;
-        std::list < RwTexture* >& addedTextures = ms_AddedTXDTextures.insert (
-            make_pair ( usTxdID, std::list < RwTexture* > () )
-        ).first->second;
+    { "getName", txd_getName },
+    { "getHash", txd_getHash },
+    { "getID", txd_getID },
+    { NULL, NULL }
+};
 
-        // If we already used our main textures in a model, we need to make copies now
-        // for this new model.
-        bool bMakeCopy = ( m_usMainModel != 0xFFFF );
+typedef std::vector <CTexture*> textures_t;
 
-        // Add the textures.
-        g_pGame->GetRenderWare ()->ModelInfoTXDAddTextures ( m_Textures, usModelID, bMakeCopy, &replacedTextures, &addedTextures );
+static int luaconstructor_txd( lua_State *L )
+{
+    CClientTXD *txd = (CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 
-        // Add the id to the list over which models we've imported ourselves into.
-        m_ImportedModels.push_back ( usModelID );
-        if ( m_usMainModel == 0xFFFF )
-            m_usMainModel = usModelID;
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_TXD, txd );
 
-        Restream ( usModelID );
-        return true;
-    }
+    // Create game textures
+    textures_t tex = txd->m_txd.GetTextures();
+    textures_t::iterator iter = tex.begin();
 
-    return false;
+    for ( ; iter != tex.end(); iter++ )
+        new CClientGameTexture( *txd, **iter );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, txd_interface, 1 );
+
+    lua_basicprotect( L );
+    return 0;
 }
 
-
-bool CClientTXD::IsImported ( unsigned short usModelID )
+CClientTXD::CClientTXD( LuaClass& root, CTexDictionary& txd ) : LuaElement( root ), m_txd( txd )
 {
-    return std::find ( m_ImportedModels.begin (), m_ImportedModels.end (), usModelID ) != m_ImportedModels.end ();
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_txd, 1 );
+    luaJ_extend( L, -2, 0 );
 }
 
-
-void CClientTXD::Remove ( unsigned short usModelID )
+CClientTXD::~CClientTXD()
 {
-    if ( IsImported ( usModelID ) )
-    {
-        // Remove the model
-        InternalRemove ( usModelID );
-
-        // Remove it from the list
-        m_ImportedModels.remove ( usModelID );
-
-        // If we just removed ourselves from our main model, we are free again to use our main
-        // textures in a model directly
-        if ( usModelID == m_usMainModel )
-            m_usMainModel = 0xFFFF;
-    }
+    delete &m_txd;
 }
 
-
-void CClientTXD::RemoveAll ( void )
+bool CClientTXD::LoadTXD( const char *path, bool filtering )
 {
-    std::list < unsigned short > ::iterator it;
-    for ( it = m_ImportedModels.begin (); it != m_ImportedModels.end (); it++ )
-    {
-        InternalRemove ( *it );
-    }
+    if ( !m_txd.Load( path, filtering ) )
+        return false;
 
-    m_ImportedModels.clear ();
-    m_usMainModel = 0xFFFF;
+    imports_t imports = m_txd.GetImportedList();
+    imports_t::const_iterator iter = imports.begin();
+
+    for ( ; iter != imports.end(); iter++ )
+        g_pClientGame->GetManager()->Restream( *iter );
+
+    return true;
 }
 
-
-bool CClientTXD::IsImportableModel ( unsigned short usModelID )
+bool CClientTXD::Import( unsigned short id )
 {
-    // Currently we work on vehicles and objects
-    return CClientObjectManager::IsValidModel ( usModelID ) ||
-           CClientVehicleManager::IsValidModel ( usModelID ) ||
-           CClientPlayerManager::IsValidModel( usModelID );
+    if ( !m_txd.Import( id ) )
+        return false;
+
+    g_pClientGame->GetManager()->Restream( id );
+    return true;
 }
 
-
-void CClientTXD::InternalRemove ( unsigned short usModelID )
+bool CClientTXD::IsImported( unsigned short id ) const
 {
-    // If this is not our main model, we added copies in there and we need to destroy them now
-    bool bDestroy = ( usModelID != m_usMainModel );
-
-    // Remove the textures
-    g_pGame->GetRenderWare ()->ModelInfoTXDRemoveTextures ( m_Textures, usModelID, bDestroy, true );
-
-    // Re-add any replaced textures
-    unsigned short usTxdID = g_pGame->GetModelInfo ( usModelID )->GetTextureDictionaryID ();
-    std::map < unsigned short, std::list < RwTexture* > >::iterator it;
-    it = ms_ReplacedTXDTextures.find ( usTxdID );
-    if ( it != ms_ReplacedTXDTextures.end () )
-    {
-        std::list < RwTexture* >::iterator myIt;
-        std::list < RwTexture* > replacedTextures;
-        for ( myIt = m_Textures.begin (); myIt != m_Textures.end (); myIt++ )
-        {
-            RwTexture* pReplacedTexture = FindNamedTextureInList ( it->second, (*myIt)->name );
-            if ( pReplacedTexture )
-            {
-                replacedTextures.push_back ( pReplacedTexture );
-                it->second.remove ( pReplacedTexture );
-            }
-        }
-        g_pGame->GetRenderWare ()->ModelInfoTXDAddTextures ( replacedTextures, usModelID, false, NULL, NULL, false );
-        if ( it->second.empty () )
-            ms_ReplacedTXDTextures.erase ( it );
-    }
-
-    // Remove any added textures from the list
-    it = ms_AddedTXDTextures.find ( usTxdID );
-    if ( it != ms_AddedTXDTextures.end () )
-    {
-        std::list < RwTexture* >::iterator myIt;
-        for ( myIt = m_Textures.begin (); myIt != m_Textures.end (); myIt++ )
-        {
-            it->second.remove ( *myIt );
-        }
-        if ( it->second.empty () )
-            ms_AddedTXDTextures.erase ( it );
-    }
-
-    Restream ( usModelID );
+    return m_txd.IsImported( id );
 }
 
-RwTexture* CClientTXD::FindNamedTextureInList ( std::list < RwTexture* >& list, const char* szTexName )
+void CClientTXD::Remove( unsigned short id )
 {
-    std::list < RwTexture* >::iterator it;
-    for ( it = list.begin (); it != list.end (); it++ )
-    {
-        if ( !stricmp ( szTexName, (*it)->name ) )
-            return *it;
-    }
-    return NULL;
+    if ( !m_txd.Remove( id ) )
+        return;
+
+    g_pClientGame->GetManager()->Restream( id );
 }
 
-void CClientTXD::Restream ( unsigned short usModelID )
+void CClientTXD::RemoveAll()
 {
-    if ( CClientVehicleManager::IsValidModel ( usModelID ) )
-    {
-        m_pManager->GetVehicleManager ()->RestreamVehicles ( usModelID );
-    }
-    else if ( CClientObjectManager::IsValidModel ( usModelID ) )
-    {
-        m_pManager->GetObjectManager ()->RestreamObjects ( usModelID );
-    }
-    g_pGame->GetModelInfo ( usModelID )->RestreamIPL ();
+    imports_t imports = m_txd.GetImportedList();
+    imports_t::const_iterator iter = imports.begin();
+
+    m_txd.ClearImports();
+
+    for ( ; iter != imports.end(); iter++ )
+        g_pClientGame->GetManager()->Restream( *iter );
 }

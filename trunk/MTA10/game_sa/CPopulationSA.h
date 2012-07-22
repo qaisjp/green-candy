@@ -14,9 +14,6 @@
 #define __CGAMESA_POPULATION
 
 #include <game/CPopulation.h>
-#include "CPedSA.h"
-
-#include <list>
 
 class CPopulationSA : public CPopulation
 {

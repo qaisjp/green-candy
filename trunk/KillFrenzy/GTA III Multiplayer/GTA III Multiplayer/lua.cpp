@@ -4,7 +4,7 @@
 static CRegisteredCommands *cmds;
 static CEvents *events;
 CLuaManager *lua_manager;
-static CResourceManager *resMan;
+CResourceManager *resMan;
 static CScriptDebugging *debug;
 
 static inline void loadresource( const filePath& path, void *ud )

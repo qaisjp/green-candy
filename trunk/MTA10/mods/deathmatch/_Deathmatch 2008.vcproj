@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../../vendor/libv2;../../../vendor/libspeex;../../../vendor/portaudio;../../../vendor/bass;../../../Shared/publicsdk/include;../../Voice;./;../shared_logic;../../../Shared/XML/interface;../../../vendor;../../../vendor/lua/src;../../../vendor/zlib;../../sdk/;../../../Shared/sdk;../../../vendor/sparsehash/current/src;../../../vendor/sparsehash/current/src/windows;../../../Shared/animation;../../../vendor/bochs;../../../vendor/bob_withers;../../../Shared;../../../lua_interpret"
+				AdditionalIncludeDirectories="./;../../../vendor/libv2;../../../vendor/libspeex;../../../vendor/portaudio;../../../vendor/bass;../../../Shared/publicsdk/include;../../Voice;../shared_logic;../../../Shared/XML/interface;../../../vendor;../../../vendor/lua/src;../../../vendor/zlib;../../sdk/;../../../Shared/sdk;../../../vendor/sparsehash/current/src;../../../vendor/sparsehash/current/src/windows;../../../Shared/animation;../../../vendor/bochs;../../../vendor/bob_withers;../../../Shared;../../../lua_interpret"
 				PreprocessorDefinitions="WIN32;_DEBUG;MTA_DEBUG;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				MinimalRebuild="false"
@@ -140,7 +140,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../../../vendor/libv2;../../../vendor/libspeex;../../../vendor/portaudio;../../../vendor/bass;../../../Shared/publicsdk/include;../../Voice;./;../shared_logic;../../../Shared/XML/interface;../../../vendor;../../../vendor/lua/src;../../../vendor/zlib;../../sdk/;../../../Shared/sdk;../../../vendor/sparsehash/current/src;../../../vendor/sparsehash/current/src/windows;../../../Shared/animation;../../../vendor/bochs;../../../vendor/bob_withers;../../../Shared;../../../lua_interpret"
+				AdditionalIncludeDirectories="./;../../../vendor/libv2;../../../vendor/libspeex;../../../vendor/portaudio;../../../vendor/bass;../../../Shared/publicsdk/include;../../Voice;../shared_logic;../../../Shared/XML/interface;../../../vendor;../../../vendor/lua/src;../../../vendor/zlib;../../sdk/;../../../Shared/sdk;../../../vendor/sparsehash/current/src;../../../vendor/sparsehash/current/src/windows;../../../Shared/animation;../../../vendor/bochs;../../../vendor/bob_withers;../../../Shared;../../../lua_interpret"
 				PreprocessorDefinitions="WIN32;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -238,7 +238,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../../../vendor/libv2;../../../vendor/libspeex;../../../vendor/portaudio;../../../vendor/bass;../../../Shared/publicsdk/include;../../Voice;./;../shared_logic;../../../Shared/XML/interface;../../../vendor;../../../vendor/lua/src;../../../vendor/zlib;../../sdk/;../../../Shared/sdk;../../../vendor/sparsehash/current/src;../../../vendor/sparsehash/current/src/windows;../../../Shared/animation;../../../vendor/bochs;../../../vendor/bob_withers;../../../Shared;../../../lua_interpret"
+				AdditionalIncludeDirectories="./;../../../vendor/libv2;../../../vendor/libspeex;../../../vendor/portaudio;../../../vendor/bass;../../../Shared/publicsdk/include;../../Voice;../shared_logic;../../../Shared/XML/interface;../../../vendor;../../../vendor/lua/src;../../../vendor/zlib;../../sdk/;../../../Shared/sdk;../../../vendor/sparsehash/current/src;../../../vendor/sparsehash/current/src/windows;../../../Shared/animation;../../../vendor/bochs;../../../vendor/bob_withers;../../../Shared;../../../lua_interpret"
 				PreprocessorDefinitions="WIN32;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -709,10 +709,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CClientDFFManager.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CClientDisplay.cpp"
 					>
 				</File>
@@ -734,6 +730,10 @@
 				</File>
 				<File
 					RelativePath="..\shared_logic\CClientExplosionManager.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\shared_logic\CClientGameTexture.cpp"
 					>
 				</File>
 				<File
@@ -996,6 +996,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\shared_logic\lua\CLuaElement.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\shared_logic\lua\CLuaFunctionDefs.Audio.cpp"
 						>
 					</File>
@@ -1161,6 +1165,10 @@
 					</File>
 					<File
 						RelativePath="..\shared_logic\luadefs\CLuaTaskDefs.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\lua_interpret\luafile.cpp"
 						>
 					</File>
 				</Filter>
@@ -1684,7 +1692,15 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaElement.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.Resources.cpp"
 						>
 					</File>
 					<File
@@ -2227,10 +2243,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CClientDFFManager.h"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CClientDisplay.h"
 					>
 				</File>
@@ -2252,6 +2264,10 @@
 				</File>
 				<File
 					RelativePath="..\shared_logic\CClientExplosionManager.h"
+					>
+				</File>
+				<File
+					RelativePath="..\shared_logic\CClientGameTexture.h"
 					>
 				</File>
 				<File
@@ -2526,6 +2542,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\shared_logic\lua\CLuaElement.h"
+						>
+					</File>
+					<File
 						RelativePath="..\shared_logic\lua\CLuaFunctionDefs.h"
 						>
 					</File>
@@ -2622,7 +2642,15 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaElement.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.Resources.h"
 						>
 					</File>
 					<File

@@ -15,7 +15,6 @@
 #define __CGAMESA_MONSTERTRUCK
 
 #include <game/CMonsterTruck.h>
-#include "CAutomobileSA.h"
 
 class CMonsterTruckSAInterface : public CAutomobileSAInterface
 {

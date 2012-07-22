@@ -51,5 +51,6 @@ protected:
     typedef std::map <unsigned short, import> importMap_t;
 
     importMap_t             m_imported;
+};
 
 #endif

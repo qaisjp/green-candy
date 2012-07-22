@@ -16,7 +16,7 @@
 class CTexture
 {
 public:
-    virtual                         ~CTexDictionary()   {};
+    virtual                         ~CTexture()   {};
 
     virtual const char*             GetName() const = 0;
     virtual unsigned int            GetHash() const = 0;

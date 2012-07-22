@@ -1456,7 +1456,15 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaElement.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.Resources.cpp"
 						>
 					</File>
 					<File
@@ -2485,7 +2493,15 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaElement.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.Resources.h"
 						>
 					</File>
 					<File

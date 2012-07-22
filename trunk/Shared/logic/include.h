@@ -28,6 +28,7 @@
 #include "LuaTimerManager.h"
 #include "LuaMain.h"
 #include "LuaManager.h"
+#include "LuaElement.h"
 #include "Resource.h"
 #include "ResourceManager.h"
 #include "LuaFunctionDefs.h"

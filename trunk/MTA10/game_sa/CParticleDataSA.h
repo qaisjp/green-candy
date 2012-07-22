@@ -17,7 +17,7 @@ enum ePartObjectStatus
 {
     PARTOBJ_STATUS_STOPPED = 2,
 
-    FORCE_DWORD = 0xFFFFFFFF
+    ___FORCE_DWORD = 0xFFFFFFFF
 };
 
 class CEffectDataSAInterface : public CSimpleList::Item
@@ -44,7 +44,7 @@ public:
     BYTE                        m_pad2[4];              // 28
     CVector                     m_pos;                  // 32
 
-    BYTE                        m_pad[16];              // 44
+    BYTE                        m_pad3[16];             // 44
 };
 
 #endif //_CParticleDataSA_

@@ -1,11 +1,14 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientDFF.h
 *  PURPOSE:     .dff model handling class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -14,48 +17,27 @@ class CClientDFF;
 #ifndef __CCLIENTDFF_H
 #define __CCLIENTDFF_H
 
-#include <list>
-#include "CClientEntity.h"
-//#include "CClientDFFManager.h"
+#define LUACLASS_DFF    23
 
-class CClientDFF : public CClientEntity
+class CClientDFF : public LuaElement
 {
-    DECLARE_CLASS( CClientDFF, CClientEntity )
     friend class CClientDFFManager;
-
 public:
-                                    CClientDFF              ( class CClientManager* pManager, ElementID ID );
-                                    ~CClientDFF             ( void );
+                                    CClientDFF( LuaClass& root, CModel& model );
+                                    ~CClientDFF();
 
-    eClientEntityType               GetType                 ( void ) const              { return CCLIENTDFF; }
+    const char*                     GetName() const         { return m_model.GetName(); }
+    unsigned int                    GetHash() const         { return m_model.GetHash(); }
 
-    bool                            LoadDFF                 ( const char* szFile, unsigned short usCollisionModel = 0 );
-    void                            UnloadDFF               ( void );
-    inline bool                     IsLoaded                ( void )                    { return m_pLoadedClump != NULL; };
-
-    bool                            ReplaceModel            ( unsigned short usModel );
-
-    bool                            HasReplaced             ( unsigned short usModel );
-
-    void                            RestoreModel            ( unsigned short usModel );
-    void                            RestoreModels           ( void );
-
-    // Sorta a hack that these are required by CClientEntity...
-    void                            Unlink                  ( void ) {};
-    void                            GetPosition             ( CVector& vecPosition ) const {};
-    void                            SetPosition             ( const CVector& vecPosition ) {};
+    bool                            ReplaceModel( unsigned short id );
+    bool                            HasReplaced( unsigned short id );
+    void                            RestoreModel( unsigned short id );
+    void                            RestoreModels();
 
 protected:
-    void                            InternalRestoreModel    ( unsigned short usModel );
+    void                            RestreamAll() const;
 
-    bool                            ReplaceObjectModel      ( unsigned short usModel );
-    bool                            ReplaceVehicleModel     ( unsigned short usModel );
-
-    class CClientDFFManager*        m_pDFFManager;
-
-    RpClump*                        m_pLoadedClump;
-
-    std::list < unsigned short >    m_Replaced;
+    CModel&                         m_model;
 };
 
 #endif

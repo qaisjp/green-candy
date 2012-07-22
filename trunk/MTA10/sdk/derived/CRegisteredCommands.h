@@ -13,6 +13,13 @@
 #ifndef _REGISTERED_COMMANDS_
 #define _REGISTERED_COMMANDS_
 
+class CCommand : public Command
+{
+public:
+    CCommand( lua_State *L, class CRegisteredCommands& cmds );
+    ~CCommand();
+};
+
 class CRegisteredCommands : public RegisteredCommands
 {
 public:

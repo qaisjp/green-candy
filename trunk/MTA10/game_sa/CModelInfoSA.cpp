@@ -807,10 +807,6 @@ void CModelInfoSA::RequestVehicleUpgrade ( void )
 
 void CModelInfoSA::SetCustomModel ( RpClump* pClump )
 {
-    // Error
-    if ( pClump == NULL )
-        return;
-
     // Store the custom clump
     m_pCustomClump = pClump;
 

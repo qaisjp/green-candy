@@ -195,9 +195,9 @@ bool CWorldSA::ProcessLineOfSight( const CVector * vecStart, const CVector * vec
 
             pBuildingResult->bValid = true;
             pBuildingResult->usModelID = targetEntity->m_model;
-            pBuildingResult->vecPosition = targetEntity->m_placeable.m_transform.m_translate;
+            pBuildingResult->vecPosition = targetEntity->m_position;
 
-            if ( targetEntity->m_placeable.m_matrix )
+            if ( targetEntity->m_matrix )
             {
                 CVector& vecRotation = pBuildingResult->vecRotation;
                 ConvertMatrixToEulerAngles ( *targetEntity->m_placeable.m_matrix, vecRotation.fX, vecRotation.fY, vecRotation.fZ );

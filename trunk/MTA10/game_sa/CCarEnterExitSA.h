@@ -16,12 +16,14 @@
 #define __CGAMESA_CARENTEREXIT
 
 #include <game/CCarEnterExit.h>
-#include "CPedSA.h"
 
 #define FUNC_GetNearestCarDoor                  0x6528F0
 #define FUNC_GetNearestCarPassengerDoor         0x650BB0
 #define FUNC_ComputeTargetDoorToExit            0x64F110
 #define FUNC_IsRoomForPedToLeaveCar             0x6504C0
+
+class CPed;
+class CPedSA;
 
 class CCarEnterExitSA : public CCarEnterExit
 {

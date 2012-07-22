@@ -48,6 +48,8 @@ CTexDictionarySA::~CTexDictionarySA()
     Clear();
 
     m_tex->Dereference();
+
+    pGame->GetTextureManager()->m_texDicts.remove( this );
 }
 
 struct _rwAssign
@@ -91,6 +93,11 @@ void CTexDictionarySA::Clear()
         delete *m_textures.begin();
 
     m_imported.clear();
+}
+
+unsigned short CTexDictionarySA::GetID()
+{
+    return (*ppTxdPool)->GetIndex( m_tex );
 }
 
 bool CTexDictionarySA::IsImported( unsigned short id ) const
@@ -171,4 +178,10 @@ bool CTexDictionarySA::RemoveTXD( unsigned short id )
 
     m_imported.erase( iter );
     return true;
+}
+
+void CTexDictionarySA::ClearImports()
+{
+    while ( !m_imported.empty() )
+        RemoveTXD( *m_imported.begin() );
 }
