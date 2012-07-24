@@ -27,6 +27,9 @@
 #include <CFileSystemInterface.h>
 #include <CFileSystem.h>
 #include <logic/include.h>
+
+using namespace Networking;
+
 #include "derived/include.h"
 #include "d3d8.h"
 #include "d3dx8.h"

@@ -1,5 +1,4 @@
 #include "StdInc.h"
-CModelLoadInfoEx	m_modelRequests[MODELINFO_MAXENTRIES];
 
 /*==========================
 	Model functions
@@ -8,8 +7,6 @@ CModelLoadInfoEx	m_modelRequests[MODELINFO_MAXENTRIES];
 // Init environment
 void			Model_Init ()
 {
-	//m_uiRequests=0;
-	memset(m_modelRequests, 0, sizeof(m_modelRequests));
 }
 
 // Retrives a modelinterface by id

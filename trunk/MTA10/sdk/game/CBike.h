@@ -17,10 +17,10 @@
 class CBike : public virtual CVehicle
 {   
 public:
-    virtual                         ~CBike ( void ) {};
+    virtual                     ~CBike()    {};
 
-    //virtual void PlaceOnRoadProperly ( void )=0;
-
+    virtual unsigned char       GetBikeWheelStatus( unsigned char wheel ) = 0;
+    virtual void                SetBikeWheelStatus( unsigned char wheel, unsigned char status ) = 0;
 };
 
 #endif

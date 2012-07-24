@@ -12,31 +12,41 @@
 
 #include "StdInc.h"
 
-CBikeSA::CBikeSA( CBikeSAInterface * bike )
-{
-    DEBUG_TRACE("CBikeSA::CBikeSA( CBikeSAInterface * bike )");
-    this->m_pInterface = bike;
-}
-
-CBikeSA::CBikeSA( eVehicleTypes dwModelID ):CVehicleSA( dwModelID )
+CBikeSA::CBikeSA( unsigned short modelId ) : CVehicleSA( modelId )
 {
     DEBUG_TRACE("CBikeSA::CBikeSA( eVehicleTypes dwModelID ):CVehicleSA( dwModelID )");
-    /*if(this->internalInterface)
-    {
-        // create the actual vehicle
-        DWORD dwFunc = FUNC_CBikeContructor;
-        DWORD dwThis = (DWORD)this->internalInterface;
-        _asm
-        {
-            mov     ecx, dwThis
-            push    MISSION_VEHICLE
-            push    dwModelID
-            call    dwFunc
-        }
-
-        this->SetEntityStatus(STATUS_ABANDONED); // so it actually shows up in the world
-
-        pGame->GetWorld()->Add((CEntitySA *)this);
-    }*/
 }
 
+CBikeSA::~CBikeSA()
+{
+
+}
+
+void CBikeSA::PlaceOnRoadProperly()
+{
+    DEBUG_TRACE("void CBikeSA::PlaceBikeOnRoadProperly()");
+    DWORD dwFunc = FUNC_Bike_PlaceOnRoadProperly;
+    DWORD dwBike = (DWORD)GetInterface();
+
+    _asm
+    {
+        mov     ecx, dwBike
+        call    dwFunc
+    }
+}
+
+unsigned char CVehicleSA::GetBikeWheelStatus( unsigned char id )
+{
+    if ( id > 1 )
+        return 0;
+
+    return GetInterface()->m_wheelStatus[id];
+}
+
+void CVehicleSA::SetBikeWheelStatus( unsigned char id, unsigned char status )
+{
+    if ( id > 1 )
+        return;
+
+    GetInterface()->m_wheelStatus[id] = status;
+}

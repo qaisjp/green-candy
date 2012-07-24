@@ -103,15 +103,6 @@ public:
 	BYTE					pad[8];
 };
 
-class CModelLoadInfoEx
-{
-public:
-	unsigned int			m_uiRefs;
-
-	CEntityMP*				m_ppEntities[MAX_MODEL_REQUEST_QUEUE];								// Entities
-	void					(*m_ppOnLoad[MAX_MODEL_REQUEST_QUEUE])	(CEntityMP *pEntity);		// Callbacks for entities
-};
-
 class CSpecialPedModelInfo
 {
 public:

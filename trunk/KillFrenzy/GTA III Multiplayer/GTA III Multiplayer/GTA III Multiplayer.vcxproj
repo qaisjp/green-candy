@@ -138,6 +138,7 @@
     <ClInclude Include="..\..\..\Shared\logic\LuaManager.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaTimer.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaTimerManager.h" />
+    <ClInclude Include="..\..\..\Shared\logic\networking\NetworkStruct.h" />
     <ClInclude Include="..\..\..\Shared\logic\RegisteredCommands.h" />
     <ClInclude Include="..\..\..\Shared\logic\Resource.h" />
     <ClInclude Include="..\..\..\Shared\logic\ResourceManager.h" />

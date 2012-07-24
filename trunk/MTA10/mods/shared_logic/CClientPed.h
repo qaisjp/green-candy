@@ -184,7 +184,7 @@ public:
     inline int                  GetVehicleInOutState()                                      { return m_iVehicleInOutState; };
     inline void                 SetVehicleInOutState( int iState )                          { m_iVehicleInOutState = iState; };
 
-    inline unsigned long        GetModel()                                                  { return m_ulModel; };
+    inline unsigned short       GetModel()                                                  { return m_ulModel; };
     bool                        SetModel( unsigned long ulModel );
 
     bool                        GetCanBeKnockedOffBike();
@@ -463,7 +463,7 @@ public:
     CPad*                       m_pPad;
     bool                        m_bIsLocalPlayer;
     int                         m_pRespawnState;
-    unsigned long               m_ulModel;  
+    unsigned short              m_ulModel;  
     RwMatrix                    m_matFrozen;
     bool                        m_bRadioOn;
     unsigned char               m_ucRadioChannel;

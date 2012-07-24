@@ -16,51 +16,6 @@
 using namespace std;
 
 lua_State *state;
-unsigned short fltCw;
-
-int doubleprec( lua_State *lua )
-{
-    luaL_checktype( lua, 1, LUA_TBOOLEAN );
-
-    if ( lua_toboolean( lua, 1 ) )
-    {
-        __asm
-        {
-            fstcw fltCw
-            mov ax, fltCw
-            or ax, 0x200
-            mov fltCw,ax
-            fldcw fltCw
-        }
-    }
-    else
-    {
-        __asm
-        {
-            fstcw fltCw
-            mov ax, fltCw
-            and ax, 0xFDFF
-            mov fltCw,ax
-            fldcw fltCw
-        }
-    }
-
-    lua_pushboolean( lua, true );
-    return 1;
-}
-
-class proc_exit : public std::exception
-{
-public:
-    proc_exit( const char *msg ) : std::exception( msg )
-    {
-    }
-};
-
-int exitproc( lua_State *L )
-{
-    throw proc_exit( ":D" );
-}
 
 void lua_exec( const std::string& cmd )
 {
@@ -182,8 +137,104 @@ void signal_handler( int sig )
     exit( EXIT_SUCCESS );
 }
 
+#include "../Shared/logic/networking/NetworkStruct.h"
+
+using namespace Networking;
+
+static const NetworkDataType testStructDef[] =
+{
+    { NETWORK_BOOL, "testBool" },
+    { NETWORK_BYTE, "testByte" },
+    { NETWORK_WORD, "testWord" },
+    { NETWORK_DWORD, "testDWord" },
+    { NETWORK_FLOAT, "testFloat" },
+    { NETWORK_DOUBLE, "testDouble" }
+};
+
+enum eTestStruct
+{
+    TEST_BOOL,
+    TEST_BYTE,
+    TEST_WORD,
+    TEST_DWORD,
+    TEST_FLOAT,
+    TEST_DOUBLE
+};
+
+struct testStruct
+{
+    bool tbool;
+    char tbyte;
+    short tword;
+    int tint;
+    float tfloat;
+    double tdouble;
+
+#pragma warning(push)
+#pragma warning(disable: 4800)
+#pragma warning(disable: 4244)
+    template <class type>
+    inline type NetworkRead( const unsigned char id ) const
+    {
+        switch( id )
+        {
+        case TEST_BOOL:     return tbool;
+        case TEST_BYTE:     return tbyte;
+        case TEST_WORD:     return tword;
+        case TEST_DWORD:    return tint;
+        case TEST_FLOAT:    return tfloat;
+        case TEST_DOUBLE:   return tdouble;
+        }
+
+        return 0;
+    }
+
+    template <>
+    inline CVector NetworkRead <CVector> ( const unsigned char id ) const
+    {
+        return CVector();
+    }
+
+    template <class type>
+    inline void NetworkWrite( const unsigned char id, const type val )
+    {
+        switch( id )
+        {
+        case TEST_BOOL:     tbool = val; return;
+        case TEST_BYTE:     tbyte = val; return;
+        case TEST_WORD:     tword = val; return;
+        case TEST_DWORD:    tint = val; return;
+        case TEST_FLOAT:    tfloat = val; return;
+        case TEST_DOUBLE:   tdouble = val; return;
+        }
+    }
+
+    template <>
+    inline void NetworkWrite <CVector> ( const unsigned char id, const CVector val )
+    {
+        
+    }
+#pragma warning(pop)
+};
+
+typedef NetworkSyncStruct <testStruct, ETSIZE(testStructDef)> test_network;
+
 int main( int argc, char *argv[] )
 {
+    test_network instance( testStructDef );
+    testStruct a;
+    testStruct b;
+
+    test_network::streamType stream( testStructDef );
+
+    instance.Set( b );
+
+    a.tbool = true;
+    b.tdouble = 5.0;
+
+    instance.Write( b, stream );
+    
+
     std::string script;
 
     state = lua_open();
@@ -208,9 +259,6 @@ int main( int argc, char *argv[] )
     fileRoot->ScanDirectory( "/luabench/", "*.lua", false, NULL, loadBenchFile, NULL );
 
     cout << "\n";
-
-    lua_register( state, "doubleprec", doubleprec );
-    lua_register( state, "exit", exitproc );
 
     try
     {

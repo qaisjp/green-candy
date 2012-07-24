@@ -169,7 +169,7 @@ class CEntitySA : public virtual CEntity
     friend class COffsets;
 public:
                                 CEntitySA();
-                                ~CEntitySA();
+    virtual                     ~CEntitySA();
 
     CEntitySAInterface*         m_pInterface;
     unsigned int                m_internalID;

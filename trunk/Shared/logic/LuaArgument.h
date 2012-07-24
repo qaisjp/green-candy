@@ -47,7 +47,7 @@ public:
     void                        Read( bool b );
     void                        Read( double d );
     void                        Read( const std::string& str );
-    void                        Read( class LuaArguments *table );
+    void                        Read( const class LuaArguments *table );
     void                        ReadUserData( void *ud );
 
     void                        Push( lua_State* lua ) const;

@@ -25,9 +25,13 @@ public:
     inline CEntity&         GetEntity()     { return m_entity; }
     inline bool             IsSystem()      { return m_system; }
 
+    void                    Frame();
+
 protected:
     CEntity&                m_entity;
     bool                    m_system;   // System entities may not be destroyed
+
+    entity_network          m_sync;
 };
 
 #endif //_GAME_ENTITY_

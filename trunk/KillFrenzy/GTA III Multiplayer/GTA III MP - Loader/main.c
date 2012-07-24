@@ -63,7 +63,7 @@ int	WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	}*/
 	// We dont need the memory allocated at the process anymore
 	VirtualFreeEx(procInfo.hProcess, pLibPathRemote, strlen(libPath)+1, MEM_RELEASE);
-
+    
 	// Resume execution
   	ResumeThread(procInfo.hThread);
 	CloseHandle(procInfo.hProcess);

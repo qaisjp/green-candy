@@ -29,7 +29,7 @@ extern CClientGame* g_pClientGame;
 CLuaArgument::CLuaArgument( CClientEntity *element )
 {
     m_table = NULL;
-    Read( element );
+    ReadEntity( element );
 }
 
 CLuaArgument::~CLuaArgument()
@@ -38,7 +38,7 @@ CLuaArgument::~CLuaArgument()
 
 LuaArgument* CLuaArgument::Clone() const
 {
-    return new CLuaArgument( this );
+    return new CLuaArgument( *this );
 }
 
 void CLuaArgument::ReadEntity( CClientEntity *element )

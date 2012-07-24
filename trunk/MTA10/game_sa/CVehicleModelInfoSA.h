@@ -15,18 +15,17 @@
 
 enum eVehicleType
 {
-    VEHICLE_CAR,
-    VEHICLE_MONSTERTRUCK,
-    VEHICLE_QUADBIKE,
+    VEHICLE_CAR = 1,
+    VEHICLE_UNKNOWN3,
     VEHICLE_HELI,
     VEHICLE_PLANE,
+    VEHICLE_UNKNOWN,
     VEHICLE_BOAT,
     VEHICLE_TRAIN,
-    VEHICLE_UNKNOWN,    // what is this?
-    VEHICLE_FAKEPLANE,
+    VEHICLE_UNKNOWN2,    // what is this?
     VEHICLE_BIKE,
     VEHICLE_BICYCLE,
-    VEHICLE_TRAILER,
+    VEHICLE_AUTOMOBILETRAILER,
     FORCE_DWORD = 0xFFFFFFFF
 };
 
@@ -81,6 +80,8 @@ public:
     void                            RegisterRoot();
     void                            SetupMateria();
     void                            InitNameplate();
+
+    unsigned short                  GetNumberOfValidPaintjobs();
 
     RpMaterial*                     m_plateMaterial;        // 36
     BYTE                            m_pad2[9];              // 40

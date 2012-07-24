@@ -148,7 +148,7 @@ static int sysentity_constructor( lua_State *L )
     return 0;
 }
 
-CGameEntity::CGameEntity( LuaClass& root, bool system, CEntity& entity ) : m_entity( entity ), LuaElement( root )
+CGameEntity::CGameEntity( LuaClass& root, bool system, CEntity& entity ) : m_entity( entity ), LuaElement( root ), m_sync( entityDef )
 {
     lua_State *L = root.GetVM();
 
@@ -156,7 +156,7 @@ CGameEntity::CGameEntity( LuaClass& root, bool system, CEntity& entity ) : m_ent
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, entity_constructor, 1 );
     luaJ_extend( L, -2, 0 );
-
+    
     if ( system )
     {
         lua_pushlightuserdata( L, this );
@@ -170,4 +170,25 @@ CGameEntity::CGameEntity( LuaClass& root, bool system, CEntity& entity ) : m_ent
 CGameEntity::~CGameEntity()
 {
     // We have to destroy the entity in a subclass
+}
+
+void CGameEntity::Frame()
+{
+    entity_network::streamType stream( entityDef );
+
+    entity_network newNet( entityDef );
+
+    // Trade changes
+    newNet.Set( m_entity );
+
+    m_sync.Write( m_entity, stream );
+
+    if ( stream.IsWritten() )
+    {
+        Console_Printf( "update!\n", 0xFFFFFFFF );
+
+        stream.Reset();
+
+        m_sync.Establish( m_entity, stream );
+    }
 }

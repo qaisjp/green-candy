@@ -420,7 +420,6 @@ bool LuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int type
 
     case LUA_TSTRING:
         // Read out the string length
-        unsigned short len;
         std::string buf;
 
         if ( !stream.ReadStringCompressed( buf ) )

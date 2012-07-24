@@ -109,6 +109,7 @@ enum eRwType
 };
 
 #define RW_OBJ_REGISTERED           0x02
+#define RW_OBJ_VISIBLE              0x04
 #define RW_OBJ_HIERARCHY_CACHED     0x10
 
 // RenderWare/plugin base types
@@ -120,6 +121,9 @@ public:
     unsigned char   m_flags;
     unsigned char   m_privateFlags;
     class RwFrame*  m_parent;                // should be RwFrame with RpClump
+
+    inline bool         IsVisible()                     { return IS_FLAG( m_flags, RW_OBJ_VISIBLE ); }
+    inline void         SetVisible( bool vis )          { BOOL_FLAG( m_flags, RW_OBJ_VISIBLE, vis ); }
 };
 struct RwVertex
 {
@@ -288,6 +292,8 @@ public:
 
     bool                    ForAllObjects( bool (*callback)( RwObject *object, void *data ), void *data );
     RwObject*               GetFirstObject();
+    RwObject*               GetLastVisibleObject();
+    RwObject*               GetLastObject();
     bool                    ForAllAtomics( bool (*callback)( RpAtomic *atomic, void *data ), void *data );
     RpAtomic*               GetFirstAtomic();
     void                    SetAtomicVisibility( unsigned short flags );

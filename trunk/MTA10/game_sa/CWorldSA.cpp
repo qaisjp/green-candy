@@ -200,7 +200,7 @@ bool CWorldSA::ProcessLineOfSight( const CVector * vecStart, const CVector * vec
             if ( targetEntity->m_matrix )
             {
                 CVector& vecRotation = pBuildingResult->vecRotation;
-                ConvertMatrixToEulerAngles ( *targetEntity->m_placeable.m_matrix, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+                ConvertMatrixToEulerAngles ( *targetEntity->m_matrix, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
                 vecRotation = -vecRotation;
             }
         }
