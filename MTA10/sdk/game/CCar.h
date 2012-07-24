@@ -2,21 +2,21 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        sdk/game/CBicycle.h
-*  PURPOSE:     BMX vehicle entity interface
+*  FILE:        sdk/game/CCar.h
+*  PURPOSE:     Car vehicle entity interface
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
-#ifndef __CGAME_BICYCLE
-#define __CGAME_BICYCLE
+#ifndef _CCar_H_
+#define _CCar_H_
 
-class CBicycle : public virtual CBike
+class CCar : public virtual CAutomobile
 {
 public:
-    virtual                     ~CBicycle() {};
+    virtual                     ~CCar() {}
 };
 
-#endif
+#endif //_CCar_H_

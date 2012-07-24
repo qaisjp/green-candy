@@ -385,6 +385,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CAutomobileTrailerSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CBicycleSA.cpp"
 				>
 			</File>
@@ -414,6 +418,10 @@
 			</File>
 			<File
 				RelativePath=".\CCarGeneratorSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CCarSA.cpp"
 				>
 			</File>
 			<File
@@ -530,6 +538,10 @@
 			</File>
 			<File
 				RelativePath=".\CHandlingManagerSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\sdk\game\CHeliSA.cpp"
 				>
 			</File>
 			<File
@@ -958,6 +970,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CAutomobileTrailerSA.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CBicycleSA.h"
 				>
 			</File>
@@ -987,6 +1003,10 @@
 			</File>
 			<File
 				RelativePath=".\CCarGeneratorSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CCarSA.h"
 				>
 			</File>
 			<File
@@ -1103,6 +1123,10 @@
 			</File>
 			<File
 				RelativePath="CHandlingManagerSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CHeliSA.h"
 				>
 			</File>
 			<File

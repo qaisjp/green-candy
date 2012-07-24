@@ -989,3 +989,14 @@ void CVehicleModelInfoSAInterface::InitNameplate()
     if ( plate.plate )
         m_plateMaterial = plate.plate;
 }
+
+unsigned short CVehicleModelInfoSAInterface::GetNumberOfValidPaintjobs()
+{
+    unsigned int n;
+
+    for ( n = 0; n < 4; n++ )
+        if ( m_paintjobTypes[n] = 0xFFFF )
+            break;
+    
+    return n;
+}

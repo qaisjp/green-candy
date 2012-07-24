@@ -20,46 +20,78 @@
 class CAutomobile : public virtual CVehicle
 {
 public:
-    virtual                         ~CAutomobile ( void ) {};
+    virtual                         ~CAutomobile()  {};
 
-    virtual bool                    BurstTyre ( DWORD dwTyreID ) = 0;
-    virtual bool                    BreakTowLink ( void ) = 0;
-    virtual void                    BlowUpCar ( CEntity* pEntity ) = 0;
-    virtual void                    BlowUpCarsInPath ( void ) = 0;
-    virtual void                    CloseAllDoors ( void ) = 0;
-    virtual void                    CloseBoot ( void ) = 0;
-    virtual float                   FindWheelWidth ( bool bUnknown ) = 0;
-   // virtual void                    Fix ( void ) = 0;
-    virtual void                    FixDoor ( int iCarNodeIndex, eDoorsSA Door ) = 0;
-    virtual int                     FixPanel ( int iCarNodeIndex, ePanelsSA Panel ) = 0;
-    virtual bool                    GetAllWheelsOffGround ( void ) = 0;
-    virtual float                   GetCarPitch ( void ) = 0;
-    virtual float                   GetCarRoll ( void ) = 0;
-    virtual void                    GetComponentWorldPosition ( int iComponentID, CVector* pVector) = 0;
-    //virtual float                   GetHeightAboveRoad ( void ) = 0;  /* TODO */
-    virtual DWORD                   GetNumContactWheels ( void ) = 0;
-    virtual float                   GetRearHeightAboveRoad ( void ) = 0;
-    virtual bool                    IsComponentPresent ( int iComponentID ) = 0;
-    virtual bool                    IsDoorClosed ( eDoorsSA Door ) = 0;
-    virtual bool                    IsDoorFullyOpen ( eDoorsSA Door ) = 0;
-    virtual bool                    IsDoorMissing ( eDoorsSA Door ) = 0;
-    virtual bool                    IsDoorReady ( eDoorsSA Door ) = 0;
-    virtual bool                    IsInAir ( void ) = 0;
-    virtual bool                    IsOpenTopCar ( void ) = 0;
-    //virtual void                    PlaceOnRoadProperly ( void ) = 0;
-    virtual void                    PlayCarHorn ( void ) = 0;
-    virtual void                    PopBoot ( void ) = 0;
-    virtual void                    PopBootUsingPhysics ( void ) = 0;
-    virtual void                    PopDoor ( int iCarNodeIndex, eDoorsSA Door, bool bUnknown ) = 0;
-    virtual void                    PopPanel ( int iCarNodeIndex, ePanelsSA Panel, bool bFallOffFast ) = 0;
-    virtual void                    ResetSuspension ( void ) = 0;
-    virtual void                    SetRandomDamage ( bool bUnknown ) = 0;
-    virtual void                    SetTaxiLight ( bool bState ) = 0;
-    virtual void                    SetTotalDamage ( bool bUnknown ) = 0;
-    virtual void                    SetTowLink ( CVehicle* pVehicle, bool bRemoveAdd ) = 0;
-    virtual CPhysical*              SpawnFlyingComponent ( int iCarNodeIndex, int iUnknown ) = 0;
+    virtual unsigned char           GetCurrentGear() const = 0;
+    virtual float                   GetGasPedal() const = 0;
+    virtual float                   GetHeightAboveRoad() const = 0;
+    virtual float                   GetSteerAngle() const = 0;
+    virtual bool                    GetTowBarPos( CVector *pVector ) const = 0;
+    virtual bool                    GetTowHitchPos( CVector *pVector ) const = 0;
+    virtual bool                    IsOnItsSide() const = 0;
+    virtual bool                    IsLawEnforcementVehicle() const = 0;
 
-    virtual CDoor                   * GetDoor(eDoors doorID) = 0;
+    virtual bool                    CanPedEnterCar() const = 0;
+    virtual bool                    CanPedJumpOutCar( CPed *ped ) const = 0;
+    virtual void                    AddVehicleUpgrade( unsigned short model ) = 0;
+    virtual void                    RemoveVehicleUpgrade( unsigned short model ) = 0;
+    virtual bool                    CanPedLeanOut( CPed* pPed ) const = 0;
+    virtual bool                    CanPedStepOutCar( bool bUnknown ) const = 0;
+
+    virtual CDoor*                  GetDoor( unsigned char ucDoor ) const = 0;
+    virtual void                    OpenDoor( unsigned char ucDoor, float fRatio, bool bMakeNoise = false ) = 0;
+    virtual void                    SetSwingingDoorsAllowed( bool bAllowed ) = 0;
+    virtual bool                    AreSwingingDoorsAllowed() const = 0;
+    virtual bool                    AreDoorsLocked() const = 0;
+    virtual void                    LockDoors( bool bLocked ) = 0;
+    virtual bool                    AreDoorsUndamageable() const = 0;
+    virtual void                    SetDoorsUndamageable( bool bUndamageable ) = 0;
+
+    virtual bool                    CarHasRoof() const = 0;
+    virtual void                    ExtinguishCarFire() = 0;
+
+    virtual void                    SetColor( SColor color1, SColor color2, SColor color3, SColor color4, int ) = 0;
+    virtual void                    GetColor( SColor *color1, SColor *color2, SColor *color3, SColor *color4, int ) const = 0;
+    virtual bool                    IsSirenOrAlarmActive() const = 0;
+    virtual void                    SetSirenOrAlarmActive( bool bActive ) = 0;
+
+    virtual void                    Fix() = 0;
+    virtual void                    BlowUp( CEntity *pCreator, unsigned long ulUnknown ) = 0;
+    virtual void                    BlowUpCutSceneNoExtras( unsigned long ulUnknown1, unsigned long ulUnknown2, unsigned long ulUnknown3, unsigned long ulUnknown4 ) = 0;
+
+    virtual void                    SetAlpha( unsigned char alpha ) = 0;
+    virtual unsigned char           GetAlpha() const = 0;
+
+    virtual void                    FadeOut( bool bFadeOut ) = 0;
+    virtual bool                    IsFadingOut() const = 0;
+
+    virtual CDamageManager*         GetDamageManager() = 0;
+
+    virtual bool                    SetTowLink( CVehicle *pVehicle ) = 0;
+    virtual bool                    BreakTowLink() = 0;
+    virtual CAutomobile*            GetTowedVehicle() const = 0;
+    virtual CAutomobile*            GetTowedByVehicle() const = 0;
+
+    virtual void                    BurstTyre( unsigned char tyre ) = 0;
+
+    virtual void                    SetAdjustablePropertyValue( unsigned short usAdjustableProperty ) = 0;
+    virtual void                    SetTaxiLightOn( bool bLightState ) = 0;
+    virtual void                    SetExplodeTime( unsigned long ulTime ) = 0;
+
+    virtual void                    GetTurretRotation( float& horizontal, float& vertical ) = 0;
+    virtual void                    SetTurretRotation( float horizontal, float vertical ) = 0;
+
+    virtual SColor                  GetHeadLightColor() const = 0;
+    virtual void                    SetHeadLightColor( const SColor color ) = 0;
+
+    virtual CObject*                SpawnFlyingComponent( int i_1, unsigned int ui_2 ) = 0;
+    virtual void                    SetWheelVisibility( eWheels wheel, bool bVisible ) = 0;
+
+    virtual void                    RecalculateHandling() = 0;
+    virtual void*                   GetPrivateSuspensionLines() = 0;
+
+    virtual CColModel*              GetSpecialColModel() = 0;
+    virtual bool                    UpdateMovingCollision( float fAngle ) = 0;
 };
 
 #endif

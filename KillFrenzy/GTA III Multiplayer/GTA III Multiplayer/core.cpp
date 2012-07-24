@@ -8,7 +8,7 @@ CFileTranslator *modFileRoot;
 
 extern DWORD *m_pScriptBase;
 
-CGamePlayer *g_player;
+CGamePlayer *g_player = NULL;
 
 /*=================================================
 	Initialize
@@ -391,6 +391,9 @@ void	Core_FirstFrame ()
 // Pre render frame
 bool	Core_PreRender ()
 {
+    if ( g_player )
+        g_player->Frame();
+
 	/*char buff[0xff];
 
 	Draw_SetColor(0xff0000ff);

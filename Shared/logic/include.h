@@ -13,6 +13,10 @@
 #ifndef _SHARED_LOGIC_INCLUDE_
 #define _SHARED_LOGIC_INCLUDE_
 
+#include "networking/NetworkStruct.h"
+#ifndef _KILLFRENZY
+#include "networking/NetworkRakNet.h"
+#endif
 #include "LuaCommon.h"
 #include <luafile.h>
 #include <luafilesystem.h>

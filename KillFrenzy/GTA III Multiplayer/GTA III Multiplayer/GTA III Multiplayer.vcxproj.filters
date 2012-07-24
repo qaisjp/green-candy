@@ -216,6 +216,9 @@
     <ClInclude Include="..\..\..\Shared\logic\LuaElement.h">
       <Filter>mta_green\include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\networking\NetworkStruct.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="console.cpp" />

@@ -240,7 +240,7 @@ public:
     CClientEntity*                              FindChildIndex( const char* szType, unsigned int uiIndex, unsigned int& uiCurrentIndex, bool bRecursive );
     CClientEntity*                              FindChildByType( const char* szType, unsigned int uiIndex, bool bRecursive );
     CClientEntity*                              FindChildByTypeIndex( unsigned int uiTypeHash, unsigned int uiIndex, unsigned int& uiCurrentIndex, bool bRecursive );
-    void                                        FindAllChildrenByType( const char* szType, struct lua_State* luaVM, bool bStreamedIn = false );
+    void                                        FindAllChildrenByType( const char* szType, lua_State* luaVM, bool bStreamedIn = false );
     void                                        FindAllChildrenByTypeIndex( unsigned int uiTypeHash, lua_State* luaVM, unsigned int& uiIndex, bool bStreamedIn = false );
 
     inline unsigned int                         CountChildren()                                 { return m_Children.size(); };

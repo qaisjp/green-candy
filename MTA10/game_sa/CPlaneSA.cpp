@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CPlaneSA.cpp
 *  PURPOSE:     Plane vehicle entity
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,13 +14,21 @@
 
 #include "StdInc.h"
 
-CPlaneSA::CPlaneSA( CPlaneSAInterface * plane ):CAutomobileSA( plane )
+CPlaneSA::CPlaneSA( unsigned short modelId ) : CAutomobileSA( modelId )
 {
-    DEBUG_TRACE("CPlaneSA::CPlaneSA( CPlaneSAInterface * plane )");
-    this->m_pInterface = plane;
+    DEBUG_TRACE("CPlaneSA::CPlaneSA( unsigned short modelId ) : CAutomobileSA( modelId )");
 }
 
-CPlaneSA::CPlaneSA( eVehicleTypes dwModelID ):CAutomobileSA( dwModelID )
+CPlaneSA::~CPlaneSA()
 {
-    DEBUG_TRACE("CPlaneSA::CPlaneSA( eVehicleTypes dwModelID ):CVehicleSA( dwModelID )");
+}
+
+bool CPlaneSA::IsSmokeTrailEnabled()
+{
+    return GetInterface()->m_smokeTrailEnabled;
+}
+
+void CPlaneSA::SetSmokeTrailEnabled( bool enabled )
+{
+    GetInterface()->m_smokeTrailEnabled = enabled;
 }

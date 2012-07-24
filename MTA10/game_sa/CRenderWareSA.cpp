@@ -1384,6 +1384,36 @@ RwObject* RwFrame::GetFirstObject()
     return obj;
 }
 
+static bool RwFrameObjectGetLast( RwObject *obj, RwObject **dst )
+{
+    *dst = obj;
+    return true;
+}
+
+RwObject* RwFrame::GetLastObject()
+{
+    RwObject *obj = NULL;
+
+    ForAllObjects( RwFrameObjectGetLast, &obj );
+    return obj;
+}
+
+static bool RwFrameObjectGetVisibleLast( RwObject *obj, RwObject **dst )
+{
+    if ( obj->m_flags & RW_OBJ_VISIBLE )
+        *dst = obj;
+
+    return true;
+}
+
+RwObject* RwFrame::GetLastVisibleObject()
+{
+    RwObject *obj = NULL;
+
+    ForAllObjects( RwFrameObjectGetVisibleLast, &obj );
+    return atomic;
+}
+
 struct _rwObjectGetAtomic
 {
     bool                (*routine)( RpAtomic *atomic, void *data );

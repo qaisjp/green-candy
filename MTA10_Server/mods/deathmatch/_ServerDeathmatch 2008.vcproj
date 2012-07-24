@@ -2525,6 +2525,14 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\networking\NetworkRakNet.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\networking\NetworkStruct.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\RegisteredCommands.h"
 						>
 					</File>

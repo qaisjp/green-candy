@@ -24,6 +24,7 @@
 #include <iostream>
 #include <sys/stat.h>
 #include <SharedUtil.h>
+#include <CVector.h>
 #include <core/CFileSystemInterface.h>
 #include <core/CFileSystem.h>
 #include "luafile.h"

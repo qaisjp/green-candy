@@ -17,7 +17,7 @@
 class CBoat : public virtual CVehicle
 {
 public:
-    virtual                         ~CBoat ( void ) {};
+    virtual                         ~CBoat()    {}
 };
 
 #endif

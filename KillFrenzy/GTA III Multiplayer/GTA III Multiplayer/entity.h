@@ -26,6 +26,18 @@ enum ePedTask
 	NUM_PEDTASKS
 };
 
+static const NetworkDataType entityDef[] =
+{
+    { NETWORK_VECTOR3D, "pos" },
+    { NETWORK_VECTOR3D, "velocity" }
+};
+
+enum eEntityDef
+{
+    ENTITYDEF_POS,
+    ENTITYDEF_VELOCITY
+};
+
 class CEntity
 {
 public:
@@ -94,15 +106,51 @@ public:
 	BYTE					pad15[92];				// +552
 	unsigned int			m_uiPassengerFlag;		// +644
 	BYTE					pad3[32];				// +648
+
+    template <class type>
+    inline void NetworkWrite( const unsigned char id, const type& val )
+    {
+        // void for now
+    }
+
+    template <>
+    inline void NetworkWrite <CVector> ( const unsigned char id, const CVector& val )
+    {
+        switch( id )
+        {
+        case ENTITYDEF_POS:
+            m_matrix.m_vecPos[0] = val.fX;
+            m_matrix.m_vecPos[1] = val.fY;
+            m_matrix.m_vecPos[2] = val.fZ;
+            break;
+        case ENTITYDEF_VELOCITY:
+            m_vecVelocity[0] = val.fX;
+            m_vecVelocity[1] = val.fY;
+            m_vecVelocity[2] = val.fZ;
+            break;
+        }
+    }
+
+    template <class type>
+    inline type NetworkRead( const unsigned char id ) const
+    {
+        return type();
+    }
+
+    template <>
+    inline CVector NetworkRead( const unsigned char id ) const
+    {
+        switch( id )
+        {
+        case ENTITYDEF_POS:         return CVector( m_matrix.m_vecPos[0], m_matrix.m_vecPos[1], m_matrix.m_vecPos[2] );
+        case ENTITYDEF_VELOCITY:    return CVector( m_vecVelocity[0], m_vecVelocity[1], m_vecVelocity[2] );
+        }
+
+        return CVector();
+    }
 };	// 680 Bytes size
 
-// Multiplayer struct
-class CEntityMP
-{
-public:
-	unsigned short			m_usModelID;
-	vec3_t					m_vecPos;
-};
+typedef NetworkSyncStruct <CEntity, ETSIZE(entityDef)> entity_network;
 
 void		Entity_Init();
 

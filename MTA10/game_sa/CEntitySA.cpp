@@ -102,6 +102,13 @@ CEntitySA::~CEntitySA()
     // Unlink disabled-collisions
     while ( !m_disabledColl.empty() )
         SetCollidableWith( m_disabledColl.begin()->first, true );
+
+    CWorldSA *world = pGame->GetWorld();
+    world->Remove( m_pInterface );
+    world->RemoveReferencesToDeletedObject( m_pInterface );
+
+    // Clever little trick, eh
+    delete m_pInterface;
 }
 
 void CEntitySA::SetPosition( float x, float y, float z )

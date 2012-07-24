@@ -69,7 +69,7 @@ namespace CLuaFunctionDefs
         // Is this a legal filepath?
         if ( lua_istype ( L, 2, LUA_TNUMBER ) && m_pResourceManager->ParseResourceFullPath( (Resource*&)pResource, strFile, meta, strPath ) )
         {
-            CModel *model = g_pGame->GetModelManager()->CreateModel( strPath.c_str(), lua_tonumber( L, 2 ) );
+            CModel *model = g_pGame->GetModelManager()->CreateModel( strPath.c_str(), lua_tointeger( L, 2 ) );
 
             if ( !model )
                 goto error;
@@ -205,7 +205,7 @@ error:
             goto typeError;
 
         // Grab the TXD and the model ID
-        unsigned short usModelID = lua_istype( L, 2, LUA_TNUMBER ) ? lua_tonumber( L, 2 ) : 0;
+        unsigned short usModelID = lua_istype( L, 2, LUA_TNUMBER ) ? lua_tointeger( L, 2 ) : 0;
 
         // Try to import
         if ( pTXD->Import( usModelID ) )
@@ -238,7 +238,7 @@ error:
         if ( !j.GetTransmit( LUACLASS_DFF, (void*&)dff ) )
             goto typeError;
 
-        lua_pushboolean( L, dff->ReplaceModel( lua_istype( L, 2, LUA_TNUMBER ) ? lua_tonumber( L, 2 ) : 0 ) );
+        lua_pushboolean( L, dff->ReplaceModel( lua_istype( L, 2, LUA_TNUMBER ) ? lua_tointeger( L, 2 ) : 0 ) );
         return 1;
 
 typeError:
@@ -252,7 +252,7 @@ typeError:
     LUA_DECLARE( engineRestoreModel )
     {
         // Restore the model
-        if ( g_pGame->GetModelManager()->RestoreModel( lua_istype( L, 1, LUA_TNUMBER ) ? lua_tonumber( L, 1 ) : 0 ) )
+        if ( g_pGame->GetModelManager()->RestoreModel( lua_istype( L, 1, LUA_TNUMBER ) ? lua_tointeger( L, 1 ) : 0 ) )
         {
             // Success
             lua_pushboolean( L, true );

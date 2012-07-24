@@ -19,13 +19,14 @@
 
 #include "Common.h"
 
-#include "CAutomobile.h"
-#include "CBoat.h"
-#include "CBike.h"
 #include "CBuilding.h"
 #include "CObject.h"
 #include "CPed.h"
 #include "CVehicle.h"
+#include "CAutomobile.h"
+#include "CBoat.h"
+#include "CBike.h"
+#include "CTrain.h"
 
 enum ePools
 {
