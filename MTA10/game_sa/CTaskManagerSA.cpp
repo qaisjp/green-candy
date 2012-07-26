@@ -169,7 +169,7 @@ void CTaskManagerSA::SetTaskSecondary( CTaskSA* pTask, int iType )
     _asm
     {
         push    iType
-        push    taskInterface
+        push    dwInterface
         mov     ecx, dwInterface
         call    dwFunc
     }
@@ -180,16 +180,16 @@ void CTaskManagerSA::SetTaskSecondary( CTaskSA* pTask, int iType )
  */
 CTaskSA* CTaskManagerSA::GetTaskSecondary( int iType )
 {
-    DEBUG_TRACE("CTask* CTaskManagerSA::GetTaskSecondary(const int iType)");
+    DEBUG_TRACE("CTask* CTaskManagerSA::GetTaskSecondary( int iType )");
 
-    return iType < TASK_SECONDARY_MAX ? m_pTaskManagementSystem->GetTask ( m_interface->m_tasksSecondary[ iType ] ) ? NULL;
+    return iType < TASK_SECONDARY_MAX ? m_pTaskManagementSystem->GetTask ( m_interface->m_tasksSecondary[ iType ] ) : NULL;
 }
 
 bool CTaskManagerSA::HasTaskSecondary( const CTask *pTaskSecondary )
 {
     _asm int 3
 
-    DEBUG_TRACE("bool CTaskManagerSA::HasTaskSecondary(const CTask* pTaskSecondary)");
+    DEBUG_TRACE("bool CTaskManagerSA::HasTaskSecondary( const CTask* pTaskSecondary )");
 
     DWORD dwFunc = FUNC_HasTaskSecondary;
     bool bReturn;
@@ -219,16 +219,16 @@ void CTaskManagerSA::Flush( eTaskPriority priority )
 {
     unsigned int i;
 
-    DEBUG_TRACE("void CTaskManagerSA::Flush(bool bImmediately)");
+    DEBUG_TRACE("void CTaskManagerSA::Flush( eTaskPriority priority )");
 
     for (i=0; i < TASK_PRIORITY_MAX; i++)
     {
-        CTaskSA *task = GetTask ( i );
+        CTaskSA *task = GetTask ( (eTaskPriority)i );
 
         if ( !task )
             continue;
 
-        task->MakeAbortable( m_ped, priority, NULL );
+        task->MakeAbortable( m_ped, priority );
     }
 
     for (i=0; i < TASK_SECONDARY_MAX; i++)
@@ -238,6 +238,6 @@ void CTaskManagerSA::Flush( eTaskPriority priority )
         if ( !task )
             continue;
 
-        task->MakeAbortable( m_ped, priority, NULL );
+        task->MakeAbortable( m_ped, priority );
     }
 }

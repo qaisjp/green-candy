@@ -35,126 +35,128 @@ class CVehicle : public virtual CPhysical
 public:
     virtual                     ~CVehicle() {};
 
-    virtual float               GetHealth() const;
-    virtual void                SetHealth( float fHealth );
+    virtual unsigned int        GetPoolIndex() const;
 
-    virtual unsigned char       GetNumberGettingIn() const;
-    virtual unsigned char       GetPassengerCount() const;
-    virtual unsigned char       GetMaxPassengerCount() const;
+    virtual float               GetHealth() const = 0;
+    virtual void                SetHealth( float fHealth ) = 0;
 
-    virtual CDoor*              GetDoor( unsigned char ucDoor );
-    virtual void                OpenDoor( unsigned char ucDoor, float fRatio, bool bMakeNoise = false );
-    virtual bool                AreDoorsLocked() const;
-    virtual void                LockDoors( bool bLocked );
-    virtual bool                AreDoorsUndamageable() const;
-    virtual void                SetDoorsUndamageable( bool bUndamageable );
+    virtual unsigned char       GetNumberGettingIn() const = 0;
+    virtual unsigned char       GetPassengerCount() const = 0;
+    virtual unsigned char       GetMaxPassengerCount() const = 0;
 
-    virtual void                SetAlpha( unsigned char alpha );
-    virtual unsigned char       GetAlpha() const;
-    virtual void                SetColor( SColor color1, SColor color2, SColor color3, SColor color4, int );
-    virtual void                GetColor( SColor& color1, SColor& color2, SColor& color3, SColor& color4, int ) const;
+    virtual CDoor*              GetDoor( unsigned char ucDoor ) = 0;
+    virtual void                OpenDoor( unsigned char ucDoor, float fRatio, bool bMakeNoise = false ) = 0;
+    virtual bool                AreDoorsLocked() const = 0;
+    virtual void                LockDoors( bool bLocked ) = 0;
+    virtual bool                AreDoorsUndamageable() const = 0;
+    virtual void                SetDoorsUndamageable( bool bUndamageable ) = 0;
+
+    virtual void                SetAlpha( unsigned char alpha ) = 0;
+    virtual unsigned char       GetAlpha() const = 0;
+    virtual void                SetColor( SColor color1, SColor color2, SColor color3, SColor color4, int ) = 0;
+    virtual void                GetColor( SColor& color1, SColor& color2, SColor& color3, SColor& color4, int ) const = 0;
 
     // Virtually internal shared functions
-    virtual void                BurstTyre( unsigned char tyre );
-    virtual bool                CanPedEnterCar() const;
-    virtual bool                CanPedJumpOutCar( CPed *ped ) const;
-    virtual bool                CanPedLeanOut( CPed *ped ) const;
-    virtual bool                CanPedStepOutCar( bool unk ) const;
-    virtual bool                CarHasRoof() const;
-    virtual bool                GetTowBarPos( CVector& pos ) const;
-    virtual bool                GetTowHitchPos( CVector& pos ) const;
-    virtual bool                SetTowLink( CVehicle *vehicle );
-    virtual bool                BreakTowLink();
-    virtual float               GetHeightAboveRoad() const;
-    virtual void                Fix();
-    virtual void                BlowUp( CEntity *creator, unsigned long unk );
-    virtual void                BlowUpCutSceneNoExtras( unsigned int unk1, unsigned int unk2, unsigned int unk3, unsigned int unk4 );
-    virtual void                RecalculateSuspensionLines();
+    virtual void                BurstTyre( unsigned char tyre ) = 0;
+    virtual bool                CanPedEnterCar() const = 0;
+    virtual bool                CanPedJumpOutCar( CPed *ped ) const = 0;
+    virtual bool                CanPedLeanOut( CPed *ped ) const = 0;
+    virtual bool                CanPedStepOutCar( bool unk ) const = 0;
+    virtual bool                CarHasRoof() const = 0;
+    virtual bool                GetTowBarPos( CVector& pos ) const = 0;
+    virtual bool                GetTowHitchPos( CVector& pos ) const = 0;
+    virtual bool                SetTowLink( CVehicle *vehicle ) = 0;
+    virtual bool                BreakTowLink() = 0;
+    virtual float               GetHeightAboveRoad() const = 0;
+    virtual void                Fix() = 0;
+    virtual void                BlowUp( CEntity *creator, unsigned long unk ) = 0;
+    virtual void                BlowUpCutSceneNoExtras( unsigned int unk1, unsigned int unk2, unsigned int unk3, unsigned int unk4 ) = 0;
+    virtual void                RecalculateSuspensionLines() = 0;
 
-    virtual CVehicle*           GetTowedVehicle() const;
-    virtual CVehicle*           GetTowedByVehicle() const;
+    virtual CVehicle*           GetTowedVehicle() const = 0;
+    virtual CVehicle*           GetTowedByVehicle() const = 0;
 
-    virtual void                SetExplodeTime( unsigned long ulTime );
-    virtual unsigned long       GetExplodeTime() const;
+    virtual void                SetExplodeTime( unsigned long ulTime ) = 0;
+    virtual unsigned long       GetExplodeTime() const = 0;
 
-    virtual bool                IsOnItsSide() const;
-    virtual bool                IsLawEnforcementVehicle() const;
+    virtual bool                IsOnItsSide() const = 0;
+    virtual bool                IsLawEnforcementVehicle() const = 0;
 
-    virtual unsigned char       GetCurrentGear() const;
-    virtual float               GetGasPedal() const;
-    virtual float               GetSteerAngle() const;
+    virtual unsigned char       GetCurrentGear() const = 0;
+    virtual float               GetGasPedal() const = 0;
+    virtual float               GetSteerAngle() const = 0;
 
-    virtual bool                AddProjectile( eWeaponType eWeapon, CVector vecOrigin, float fForce, CVector * target, CEntity * targetEntity );
-    virtual void                AddVehicleUpgrade( unsigned short model );
-    virtual void                RemoveVehicleUpgrade( unsigned short model );
+    virtual bool                AddProjectile( eWeaponType eWeapon, const CVector& vecOrigin, float fForce, const CVector& targetPos, CEntity *target ) = 0;
+    virtual void                AddVehicleUpgrade( unsigned short model ) = 0;
+    virtual void                RemoveVehicleUpgrade( unsigned short model ) = 0;
 
-    virtual unsigned int        GetBaseVehicleType() const;
+    virtual unsigned int        GetBaseVehicleType() const = 0;
 
-    virtual void                SetBodyDirtLevel( float fDirtLevel );
-    virtual float               GetBodyDirtLevel() const;
+    virtual void                SetBodyDirtLevel( float fDirtLevel ) = 0;
+    virtual float               GetBodyDirtLevel() const = 0;
 
-    virtual CPed*               GetDriver() const;
-    virtual CPed*               GetPassenger( unsigned char ucSlot ) const;
-    virtual bool                IsBeingDriven() const;
-    virtual bool                IsPassenger( CPed *ped ) const;
-    virtual bool                IsSphereTouchingVehicle( CVector * vecOrigin, float fRadius ) const;
-    virtual bool                IsUpsideDown() const;
-    virtual void                MakeDirty( CColPoint *point );
+    virtual CPed*               GetDriver() const = 0;
+    virtual CPed*               GetPassenger( unsigned char ucSlot ) const = 0;
+    virtual bool                IsBeingDriven() const = 0;
+    virtual bool                IsPassenger( CPed *ped ) const = 0;
+    virtual bool                IsSphereTouchingVehicle( const CVector& vecOrigin, float fRadius ) const = 0;
+    virtual bool                IsUpsideDown() const = 0;
+    virtual void                MakeDirty( CColPoint *point ) = 0;
 
-    virtual void                PlaceOnRoadProperly();
+    virtual void                PlaceOnRoadProperly() = 0;
 
-    virtual void                SetRemap( int iRemap );
-    virtual int                 GetRemapIndex() const;
-    virtual void                SetRemapTexDictionary( int iRemapTextureDictionary );
+    virtual void                SetRemap( int remap ) = 0;
+    virtual int                 GetRemapIndex() const = 0;
+    virtual void                SetRemapTexDictionary( int txd ) = 0;
 
-    virtual bool                IsEngineBroken() const;
-    virtual bool                IsScriptLocked() const;
-    virtual bool                IsDamaged() const;
-    virtual bool                IsDrowning() const;
-    virtual bool                IsEngineOn() const;
-    virtual bool                IsHandbrakeOn() const;
-    virtual bool                IsRCVehicle() const;
-    virtual bool                GetAlwaysLeaveSkidMarks() const;
-    virtual bool                GetCanBeDamaged() const;
-    virtual bool                GetCanBeTargettedByHeatSeekingMissiles() const;
-    virtual bool                GetCanShootPetrolTank() const;
-    virtual bool                GetChangeColourWhenRemapping() const;
-    virtual bool                GetComedyControls() const;
-    virtual bool                GetGunSwitchedOff() const;
-    virtual bool                GetLightsOn() const;
-    virtual bool                GetTakeLessDamage() const;
-    virtual bool                GetTyresDontBurst() const;
-    virtual bool                IsSirenOrAlarmActive() const;
-    virtual bool                IsFadingOut() const;
-    virtual unsigned int        GetOverrideLights() const;
+    virtual bool                IsEngineBroken() const = 0;
+    virtual bool                IsScriptLocked() const = 0;
+    virtual bool                IsDamaged() const = 0;
+    virtual bool                IsDrowning() const = 0;
+    virtual bool                IsEngineOn() const = 0;
+    virtual bool                IsHandbrakeOn() const = 0;
+    virtual bool                IsRCVehicle() const = 0;
+    virtual bool                GetAlwaysLeaveSkidMarks() const = 0;
+    virtual bool                GetCanBeDamaged() const = 0;
+    virtual bool                GetCanBeTargettedByHeatSeekingMissiles() const = 0;
+    virtual bool                GetCanShootPetrolTank() const = 0;
+    virtual bool                GetChangeColourWhenRemapping() const = 0;
+    virtual bool                GetComedyControls() const = 0;
+    virtual bool                GetGunSwitchedOff() const = 0;
+    virtual bool                GetLightsOn() const = 0;
+    virtual bool                GetTakeLessDamage() const = 0;
+    virtual bool                GetTyresDontBurst() const = 0;
+    virtual bool                IsSirenOrAlarmActive() const = 0;
+    virtual bool                IsFadingOut() const = 0;
+    virtual unsigned int        GetOverrideLights() const = 0;
     
-    virtual void                SetEngineBroken( bool bEngineBroken );
-    virtual void                SetScriptLocked( bool bLocked );
-    virtual void                SetAlwaysLeaveSkidMarks( bool bAlwaysLeaveSkidMarks );
-    virtual void                SetCanBeDamaged( bool bCanBeDamaged );
-    virtual void                SetCanBeTargettedByHeatSeekingMissiles( bool bEnabled );
-    virtual void                SetCanShootPetrolTank( bool bCanShoot );
-    virtual void                SetChangeColourWhenRemapping( bool bChangeColour );
-    virtual void                SetComedyControls( bool bComedyControls );
-    virtual void                SetEngineOn( bool bEngineOn );
-    virtual void                SetGunSwitchedOff( bool bGunsOff );
-    virtual void                SetHandbrakeOn( bool bHandbrakeOn );
-    virtual void                SetLightsOn( bool bLightsOn );
-    virtual void                SetOverrideLights( unsigned int uiOverrideLights );
-    virtual void                SetTakeLessDamage( bool bTakeLessDamage );
-    virtual void                SetTyresDontBurst( bool bTyresDontBurst );
-    virtual void                SetSirenOrAlarmActive( bool active );
-    virtual void                SetFadingOut( bool enable );
+    virtual void                SetEngineBroken( bool bEngineBroken ) = 0;
+    virtual void                SetScriptLocked( bool bLocked ) = 0;
+    virtual void                SetAlwaysLeaveSkidMarks( bool bAlwaysLeaveSkidMarks ) = 0;
+    virtual void                SetCanBeDamaged( bool bCanBeDamaged ) = 0;
+    virtual void                SetCanBeTargettedByHeatSeekingMissiles( bool bEnabled ) = 0;
+    virtual void                SetCanShootPetrolTank( bool bCanShoot ) = 0;
+    virtual void                SetChangeColourWhenRemapping( bool bChangeColour ) = 0;
+    virtual void                SetComedyControls( bool bComedyControls ) = 0;
+    virtual void                SetEngineOn( bool bEngineOn ) = 0;
+    virtual void                SetGunSwitchedOff( bool bGunsOff ) = 0;
+    virtual void                SetHandbrakeOn( bool bHandbrakeOn ) = 0;
+    virtual void                SetLightsOn( bool bLightsOn ) = 0;
+    virtual void                SetOverrideLights( unsigned int uiOverrideLights ) = 0;
+    virtual void                SetTakeLessDamage( bool bTakeLessDamage ) = 0;
+    virtual void                SetTyresDontBurst( bool bTyresDontBurst ) = 0;
+    virtual void                SetSirenOrAlarmActive( bool active ) = 0;
+    virtual void                SetFadingOut( bool enable ) = 0;
 
-    virtual CHandlingEntry*     GetHandlingData();
-    virtual void                SetHandlingData( CHandlingEntrySA *handling );
+    virtual CHandlingEntry*     GetHandlingData() = 0;
+    virtual void                SetHandlingData( CHandlingEntry *handling ) = 0;
 
-    virtual void                GetGravity( CVector& grav ) const;
-    virtual void                SetGravity( const CVector& grav );
+    virtual void                GetGravity( CVector& grav ) const = 0;
+    virtual void                SetGravity( const CVector& grav ) = 0;
 
-    virtual CColModel*          GetSpecialColModel() const;
+    virtual CColModel*          GetSpecialColModel() const = 0;
 
-    virtual void                RecalculateHandling();
+    virtual void                RecalculateHandling() = 0;
 };
 
 #endif

@@ -70,125 +70,61 @@ void CPlayerPedSAInterface::OnFrame()
 static CPedClothesDesc* pLocalClothes = 0;
 static CWantedSAInterface* pLocalWanted = 0;
 
-CPlayerPedSA::CPlayerPedSA( ePedModel pedType )
+CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, bool isLocal ) : CPedSA( ped )
 {
-    DEBUG_TRACE("CPlayerPedSA::CPlayerPedSA( ePedModel pedType )");
-
-    // based on CPlayerPed::SetupPlayerPed (R*)
-    DWORD CPlayerPedConstructor = FUNC_CPlayerPedConstructor;
-    CPlayerPedSAInterface *player = new CPlayerPedSAInterface;
-
-    _asm
-    {
-        mov     ecx, player
-        push    0 // set to 0 and they'll behave like AI peds
-        push    1
-        call    CPlayerPedConstructor
-    }
-
-    SetInterface( (CEntitySAInterface*)dwPedPointer );
-
-    Init(); // init our interfaces 
-    CPoolsSA * pools = (CPoolsSA *)pGame->GetPools ( );
-    internalID =  pools->GetPedRef ( (DWORD *)this->GetInterface () );
-    CWorldSA * world = (CWorldSA *)pGame->GetWorld();
+    DEBUG_TRACE("CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, bool isLocal )");
     
-    SetModelIndex( pedType );
-    DoNotRemoveFromGame = FALSE;
     SetType( PLAYER_PED );
+    SetModelIndex( modelId );
 
-    // Allocate a player data struct and set it as the players
-    m_bIsLocal = false;
-    m_pData = new CPlayerPedDataSAInterface;
+    m_bIsLocal = isLocal;
 
-    // Copy the local player data so we're defaulted to something good
-    CPlayerPedSA* pLocalPlayerSA = dynamic_cast < CPlayerPedSA* > ( pools->GetPedFromRef ( (DWORD)1 ) );
-    if ( pLocalPlayerSA )
-        memcpy ( m_pData, ((CPlayerPedSAInterface*)pLocalPlayerSA->GetInterface ())->pPlayerData, sizeof ( CPlayerPedDataSAInterface ) );
+    if ( !isLocal )
+    {
+        // Allocate a player data struct and set it as the players
+        m_pData = new CPlayerPedDataSAInterface;
 
-    // Replace the player ped data in our ped interface with the one we just created
-    GetPlayerPedInterface ()->pPlayerData = m_pData;
+        // Copy the local player data so we're defaulted to something good
+        CPlayerPedSA *localPlayer = pGame->GetPlayerInfo()->GetPlayerPed();
+        if ( localPlayer != this )
+            memcpy( m_pData, localPlayer->GetInterface()->m_playerData, sizeof(CPlayerPedDataSAInterface) );
+
+        // Replace the player ped data in our ped interface with the one we just created
+        GetInterface()->m_playerData = m_pData;
+    }
 
     // Set default stuff
     m_pData->m_bRenderWeapon = true;
     m_pData->m_Wanted = pLocalWanted;
     m_pData->m_fSprintEnergy = 1000.0f;
 
-    // Clothes pointers or we'll crash later (TODO: Wrap up with some cloth classes and make it unique per player)
+    // Set clothes pointer or we'll crash later (TODO: Wrap up with some cloth classes and make it unique per player)
     m_pData->m_pClothes = pLocalClothes;
 
-    // Not sure why was this here (svn blame reports that this line came from the old SVN),
-    // but it's causing a bug in what the just streamed-in players that are in the air are
-    // processed as if they would be standing on some surface, screwing velocity calculations
-    // for players floating in air (using superman script, for example) because GTA:SA will
-    // try to apply the floor friction to their velocity.
-    //SetIsStanding ( true );
-
-    GetPlayerPedInterface ()->pedFlags.bCanBeShotInVehicle = true;
-    GetPlayerPedInterface ()->pedFlags.bTestForShotInVehicle = true;
+    SetCanBeShotInVehicle( true );
+    SetTestForShotInVehicle( true );
     // Stop remote players targeting eachother, this also stops the local player targeting them (needs to be fixed)
-    GetPlayerPedInterface ()->pedFlags.bNeverEverTargetThisPed = true;
-    GetPlayerPedInterface ()->pedFlags.bIsLanding = false;
-    GetPlayerPedInterface ()->fRotationSpeed = 7.5;
-    m_pInterface->bStreamingDontDelete = true;
-    m_pInterface->bDontStream = true;
-    world->Add ( m_pInterface );
-}
+    GetInterface()->m_pedFlags.bNeverEverTargetThisPed = true;
+    GetInterface()->m_pedFlags.bIsLanding = false;
+    GetInterface()->m_rotationSpeed = 7.5;
 
-CPlayerPedSA::CPlayerPedSA ( CPlayerPedSAInterface * pPlayer )
-{
-    DEBUG_TRACE("CPlayerPedSA::CPlayerPedSA( CPedSAInterface * ped )");
-
-    // based on CPlayerPed::SetupPlayerPed (R*)
-    SetInterface((CEntitySAInterface *)pPlayer);
-
-    Init();
-    CPoolsSA * pools = (CPoolsSA *)pGame->GetPools();
-    internalID =  pools->GetPedRef ( (DWORD *)this->GetInterface () );
-    SetType ( PLAYER_PED );
-
-    m_bIsLocal = true;
-    DoNotRemoveFromGame = true;
-    m_pData = GetPlayerPedInterface ()->pPlayerData;
-    m_pWanted = NULL;
-
-    GetPlayerPedInterface ()->pedFlags.bCanBeShotInVehicle = true;
-    GetPlayerPedInterface ()->pedFlags.bTestForShotInVehicle = true;    
-    GetPlayerPedInterface ()->pedFlags.bIsLanding = false;
-    GetPlayerPedInterface ()->fRotationSpeed = 7.5;
-
-
-    pLocalClothes = m_pData->m_pClothes;
-    pLocalWanted = m_pData->m_Wanted;
-
-    GetPlayerPedInterface ()->pedFlags.bCanBeShotInVehicle = true;
-    // Something resets this, constantly
-    GetPlayerPedInterface ()->pedFlags.bTestForShotInVehicle = true;
-    // Stop remote players targeting the local (need to stop them targeting eachother too)
-    GetPlayerPedInterface ()->pedFlags.bNeverEverTargetThisPed = true;
+    BOOL_FLAG( GetInterface()->m_entityFlags, ENTITY_DISABLESTREAMING, true );
+    BOOL_FLAG( GetInterface()->m_entityFlags, ENTITY_NOSTREAM, true );
 }
 
 CPlayerPedSA::~CPlayerPedSA()
 {
-    DEBUG_TRACE("CPlayerPedSA::~CPlayerPedSA( )");
+    DEBUG_TRACE("CPlayerPedSA::~CPlayerPedSA()");
 
-    if( !DoNotRemoveFromGame )
-    {
-        if ( *(DWORD*)m_pInterface != VTBL_CPlaceable )
-        {
-            CWorldSA * world = (CWorldSA *)pGame->GetWorld();
-            world->Remove ( m_pInterface );
-            world->RemoveReferencesToDeletedObject ( m_pInterface );
-        
-            delete m_pInterface;
-        }
-    }
+    CWorldSA *world = pGame->GetWorld();
+    world->Remove( m_pInterface );
+    world->RemoveReferencesToDeletedObject( m_pInterface );
+
+    delete m_pInterface;
 
     // Delete the player data
     if ( !m_bIsLocal )
-    {
         delete m_pData;
-    }
 }
 
 void CPlayerPedSA::OnFrame()

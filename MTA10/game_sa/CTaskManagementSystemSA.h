@@ -29,13 +29,13 @@ class CTaskManagementSystemSA;
 class CTaskManagementSystemSA : public CTaskManagementSystem
 {
 public:
-                                CTaskManagementSystemSA             ( void );
-                                ~CTaskManagementSystemSA            ( void );
+                                CTaskManagementSystemSA();
+                                ~CTaskManagementSystemSA();
 
-    CTaskSA*                    AddTask                             ( CTaskSA * pTask );
-    void                        RemoveTask                          ( CTaskSAInterface * pTaskInterface );
-    CTaskSA*                    GetTask                             ( CTaskSAInterface * pTaskInterface );
-    CTaskSA*                    CreateAppropriateTask               ( CTaskSAInterface * pTaskInterface, int iTaskType );
+    CTaskSA*                    AddTask( CTaskSA *task );
+    void                        RemoveTask( CTaskSAInterface *task );
+    CTaskSA*                    GetTask( CTaskSAInterface *task );
+    CTaskSA*                    CreateAppropriateTask( CTaskSAInterface *task, int iTaskType );
 
 private:
     struct STaskListItem

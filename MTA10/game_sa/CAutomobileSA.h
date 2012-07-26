@@ -17,7 +17,6 @@
 
 #include <game/CAutomobile.h>
 
-#include "CDamageManagerSA.h"
 #include "CDoorSA.h"
 
 #define FUNC_CAutomobile_BurstTyre                  0x6A32B0
@@ -137,14 +136,14 @@ public:
     BYTE                        m_pad11[52];                            // 2388
 };
 
-class CAutomobileSA : public virtual CAutomobile, public virtual CVehicleSA
+class CAutomobileSA : public virtual CAutomobile, public CVehicleSA
 {
 public:
-                                CAutomobileSA( unsigned short modelId );
                                 CAutomobileSA( CAutomobileSAInterface *automobile );
                                 ~CAutomobileSA();
 
     inline CAutomobileSAInterface*  GetInterface()                                      { return (CAutomobileSAInterface*)m_pInterface; }
+    inline const CAutomobileSAInterface*    GetInterface() const                        { return (const CAutomobileSAInterface*)m_pInterface; }
 
     CDoorSA*                    GetDoor( unsigned char ucDoor );
     void                        SetSwingingDoorsAllowed( bool bAllowed )                { m_swingingDoorsAllowed = bAllowed; }
@@ -171,11 +170,11 @@ public:
     void                        GetTurretRotation( float& horizontal, float& vertical ) const;
     void                        SetTurretRotation( float horizontal, float vertical );
 
-    void*                       GetPrivateSuspensionLines()                             { return m_pSuspensionLines; }
+    void*                       GetPrivateSuspensionLines()                             { return m_suspensionLines; }
 
     void                        RecalculateHandling();
     void                        RecalculateSuspensionLines();
-    bool                        UpdateMovingCollision( float fAngle );
+    bool                        UpdateMovingCollision( float angle );
 
 private:
     CDamageManagerSA*           m_damageManager;

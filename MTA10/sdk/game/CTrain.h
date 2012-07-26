@@ -19,9 +19,9 @@ public:
     virtual                     ~CTrain()    {}
 
     virtual CTrain*             GetNextTrainCarriage() const = 0;
-    virtual void                SetNextTrainCarriage( CVehicle *next ) = 0;
+    virtual void                SetNextTrainCarriage( CTrain *next ) = 0;
     virtual CTrain*             GetPreviousTrainCarriage() const = 0;
-    virtual void                SetPreviousTrainCarriage( CVehicle *previous ) = 0;
+    virtual void                SetPreviousTrainCarriage( CTrain *prev ) = 0;
 
     virtual bool                IsDerailed() const = 0;
     virtual void                SetDerailed( bool bDerailed ) = 0;

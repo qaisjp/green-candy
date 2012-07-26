@@ -12,7 +12,7 @@
 
 #include "StdInc.h"
 
-CHeliSA::CHeliSA( unsigned short modelId ) : CAutomobileSA( modelId )
+CHeliSA::CHeliSA( CHeliSAInterface *heli ) : CAutomobileSA( heli )
 {
 }
 
@@ -23,34 +23,32 @@ CHeliSA::~CHeliSA()
 void CHeliSA::SetWinchType( eWinchType winchType )
 {
     if ( winchType < 4 && winchType != 2 )
-    {
-        GetVehicleInterface ()->WinchType = winchType;
-    }
+        GetInterface()->m_winchType = winchType;
 }
 
-void CHeliSA::PickupEntityWithWinch ( CEntity* pEntity )
+void CHeliSA::PickupEntityWithWinch( CEntity* pEntity )
 {
-    CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
+    CEntitySA *pEntitySA = dynamic_cast <CEntitySA*> ( pEntity );
 
-    if ( pEntitySA )
+    if ( !pEntitySA )
+        return;
+
+    DWORD dwFunc = FUNC_CVehicle_PickUpEntityWithWinch;
+    DWORD dwThis = (DWORD)GetInterface();
+    DWORD dwEntityInterface = (DWORD)pEntitySA->GetInterface();
+
+    _asm
     {
-        DWORD dwFunc = FUNC_CVehicle_PickUpEntityWithWinch;
-        DWORD dwThis = (DWORD) GetInterface();
-        DWORD dwEntityInterface = (DWORD) pEntitySA->GetInterface ();
-
-        _asm
-        {
-            push    dwEntityInterface
-            mov     ecx, dwThis
-            call    dwFunc
-        }
+        push    dwEntityInterface
+        mov     ecx, dwThis
+        call    dwFunc
     }
 }
 
-void CHeliSA::ReleasePickedUpEntityWithWinch ( void )
+void CHeliSA::ReleasePickedUpEntityWithWinch()
 {
     DWORD dwFunc = FUNC_CVehicle_ReleasePickedUpEntityWithWinch;
-    DWORD dwThis = (DWORD) GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
 
     _asm
     {
@@ -59,26 +57,25 @@ void CHeliSA::ReleasePickedUpEntityWithWinch ( void )
     }
 }
 
-void CHeliSA::SetRopeHeightForHeli ( float fRopeHeight )
+void CHeliSA::SetRopeHeightForHeli( float height )
 {
     DWORD dwFunc = FUNC_CVehicle_SetRopeHeightForHeli;
     DWORD dwThis = (DWORD) GetInterface();
 
     _asm
     {
-        push    fRopeHeight
+        push    height
         mov     ecx, dwThis
         call    dwFunc
     }
 }
 
-CPhysical * CHeliSA::QueryPickedUpEntityWithWinch()
+CPhysical* CHeliSA::QueryPickedUpEntityWithWinch()
 {
     DWORD dwFunc = FUNC_CVehicle_QueryPickedUpEntityWithWinch;
     DWORD dwThis = (DWORD)GetInterface();
 
     CPhysicalSAInterface *phys;
-    CPhysical *physRet;
     _asm
     {
         mov     ecx, dwThis       
@@ -89,25 +86,15 @@ CPhysical * CHeliSA::QueryPickedUpEntityWithWinch()
     if ( !phys )
         return NULL;
 
-    switch( phys->nType )
+    switch( phys->m_type )
     {
     case ENTITY_TYPE_PED:
-        return (CPhysicalSA*)pPools->GetPed( phys );
+        return (CPhysicalSA*)pGame->GetPools()->GetPed( phys );
     case ENTITY_TYPE_VEHICLE:
         return (CPhysicalSA*)pGame->GetPools()->GetVehicle ( phys );
     case ENTITY_TYPE_OBJECT:
-        return (CPhysicalSA*)pPools->GetObject( phys );
+        return (CPhysicalSA*)pGame->GetPools()->GetObject( phys );
     }
 
     return NULL;
-}
-
-bool CHeliSA::IsHeliSearchLightVisible()
-{
-    return GetInterface()->m_searchLightVisible;
-}
-
-void CHeliSA::SetHeliSearchLightVisible( bool enable )
-{
-    GetInterface()->m_searchLightVisible = enable;
 }

@@ -61,7 +61,7 @@ typedef RwFrame *               (__cdecl *RwFrameAddChild_t)                    
 typedef RwFrame *               (__cdecl *RwFrameRemoveChild_t)                 (RwFrame * child);
 typedef RwFrame *               (__cdecl *RwFrameTranslate_t)                   (RwFrame * frame, const RwV3d * v, RwTransformOrder order);
 typedef RwFrame *               (__cdecl *RwFrameScale_t)                       (RwFrame * frame, const RwV3d * v, RwTransformOrder order);
-typedef void                    (__cdecl *RwFrameOrient_t)                      (RwFrame *frame, float unk, float unk2, CVector *unk3);
+typedef void                    (__cdecl *RwFrameOrient_t)                      (RwFrame *frame, float unk, float unk2, CVector& unk3);
 typedef RwFrame *               (__cdecl *RwFrameSetIdentity_t)                 (RwFrame * frame);
 typedef void                    (__cdecl *RwFrameCloneHierarchy_t)              (RwFrame *frame);
 typedef void                    (__cdecl *RwObjectFrameRender_t)                (RwRender *data, RwObjectFrame *frame, unsigned int unk);
@@ -83,7 +83,7 @@ typedef RwMatrix *              (__cdecl *RwMatrixCreate_t)                     
 typedef RwMatrix *              (__cdecl *RwMatrixInvert_t)                     (RwMatrix *dst, const RwMatrix *src);
 typedef RwMatrix *              (__cdecl *RwMatrixTranslate_t)                  (RwMatrix * matrix, const RwV3d * translation, RwTransformOrder order);
 typedef RwMatrix *              (__cdecl *RwMatrixScale_t)                      (RwMatrix * matrix, const RwV3d * translation, RwTransformOrder order);
-typedef float                   (__cdecl *RwMatrixUnknown_t)                    (const RwMatrix *matrix, const RwMatrix *matrix2, unsigned char flags);
+typedef float                   (__cdecl *RwMatrixUnknown_t)                    (const RwMatrix& matrix, const RwMatrix& matrix2, unsigned char flags);
 typedef RpMaterial *            (__cdecl *RpMaterialCreate_t)                   ();
 typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial * mat);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryCreate_t)              ();

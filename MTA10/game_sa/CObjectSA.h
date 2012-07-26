@@ -29,36 +29,46 @@ public:
     void*   operator new( size_t );
     void    operator delete( void *ptr );
 
-    BYTE                        m_pad[100];
+    BYTE                        m_pad4[4];              // 312
+    unsigned char               m_unk40;                // 316
+    BYTE                        m_pad2[23];             // 317
+    float                       m_health;               // 340
+    DWORD                       m_pad3;                 // 344
+    float                       m_scale;                // 348
+
+    BYTE                        m_pad[60];              // 352
 };
 
-class CObjectSA : public virtual CObject, public virtual CPhysicalSA
+class CObjectSA : public virtual CObject, public CPhysicalSA
 {
-private:
-    unsigned char               m_ucAlpha;
-    bool                        m_bIsAGangTag;
-
 public:
-                                CObjectSA( CObjectSAInterface * objectInterface );
-                                CObjectSA( DWORD dwModel );
+                                CObjectSA( CObjectSAInterface *obj );
                                 ~CObjectSA();
 
-    inline CObjectSAInterface*  GetInterface()                          { return (CObjectSAInterface*)GetInterface(); }
+    inline CObjectSAInterface*  GetInterface()                                  { return (CObjectSAInterface*)m_pInterface; }
+    inline const CObjectSAInterface*    GetInterface() const                    { return (const CObjectSAInterface*)m_pInterface; }
+
+    unsigned int                GetPoolIndex() const                            { return m_poolIndex; }
 
     void                        Explode();
     void                        Break();
-    void                        SetScale( float fScale );
-    void                        SetHealth( float fHealth );
-    float                       GetHealth();
+    void                        SetScale( float scale )                         { GetInterface()->m_scale = scale; }
+    float                       GetScale() const                                { return GetInterface()->m_scale; }
+    void                        SetHealth( float fHealth )                      { GetInterface()->m_health = fHealth; }
+    float                       GetHealth() const                               { return GetInterface()->m_health; }
     void                        SetModelIndex( unsigned short ulModel );
 
-    inline void                 SetAlpha( unsigned char ucAlpha )       { m_ucAlpha = ucAlpha; }
-    inline unsigned char        GetAlpha()                              { return m_ucAlpha; }
+    inline void                 SetAlpha( unsigned char ucAlpha )               { m_ucAlpha = ucAlpha; }
+    inline unsigned char        GetAlpha() const                                { return m_ucAlpha; }
 
-    bool                        IsAGangTag() const                      { return m_bIsAGangTag; }
+    bool                        IsAGangTag() const                              { return m_bIsAGangTag; }
 
 private:
     void                        CheckForGangTag();
+
+    unsigned char               m_ucAlpha;
+    bool                        m_bIsAGangTag;
+    unsigned int                m_poolIndex;
 };
 
 /*

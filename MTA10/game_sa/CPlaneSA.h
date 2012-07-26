@@ -37,7 +37,6 @@ class CPlaneSA : public virtual CPlane, public virtual CAutomobileSA
 {
 public:
                                 CPlaneSA( CPlaneSAInterface *plane );
-                                CPlaneSA( unsigned short model );
                                 ~CPlaneSA();
 
     inline CPlaneSAInterface*   GetInterface()                              { return (CPlaneSAInterface*)m_pInterface; }

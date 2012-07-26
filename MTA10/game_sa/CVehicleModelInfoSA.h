@@ -15,14 +15,15 @@
 
 enum eVehicleType
 {
-    VEHICLE_CAR = 1,
+    VEHICLE_CAR,
+    VEHICLE_UNKNOWN4,
     VEHICLE_UNKNOWN3,
     VEHICLE_HELI,
     VEHICLE_PLANE,
-    VEHICLE_UNKNOWN,
     VEHICLE_BOAT,
     VEHICLE_TRAIN,
-    VEHICLE_UNKNOWN2,    // what is this?
+    VEHICLE_UNKNOWN,
+    VEHICLE_FAKEPLANE,    // what is this?
     VEHICLE_BIKE,
     VEHICLE_BICYCLE,
     VEHICLE_AUTOMOBILETRAILER,
@@ -31,7 +32,6 @@ enum eVehicleType
 
 #define MAX_SEATS               15
 #define MAX_PASSENGERS          8
-#define MAX_DOORS               6
 
 class CVehicleSeatInfoSA
 {
@@ -44,7 +44,7 @@ public:
 class CVehicleSeatPlacementSAInterface
 {
 public:
-    CVehicleSeatPlacementSAInterface();
+                                    CVehicleSeatPlacementSAInterface();
 
     void*   operator new( size_t );
     void    operator delete( void *ptr );

@@ -152,6 +152,21 @@ void CEntitySA::SetPosition( float x, float y, float z )
     }
 }
 
+void CEntitySA::SetPosition( const CVector& pos )
+{
+    SetPosition( pos.fX, pos.fY, pos.fZ );
+}
+
+void CEntitySA::GetPosition( CVector& pos ) const
+{
+    DEBUG_TRACE("void CEntitySA::GetPosition( CVector& pos ) const");
+
+    if ( !m_pInterface->m_matrix )
+        m_pInterface->AllocateMatrix();
+
+    pos = m_pInterface->m_matrix->pos;
+}
+
 void CEntitySA::Teleport( float x, float y, float z )
 {
     DEBUG_TRACE("void CEntitySA::Teleport( float x, float y, float z )");
@@ -174,23 +189,6 @@ void CEntitySA::SetupLighting()
     DEBUG_TRACE("void CEntitySA::SetupLighting()");
     
     m_pInterface->SetupLighting();
-}
-
-void CEntitySA::Render()
-{
-    DEBUG_TRACE("void CEntitySA::Render()");
-
-    m_pInterface->Render();
-
-/*  DWORD dwFunc = 0x553260;
-    DWORD dwThis = (DWORD) m_pInterface;
-
-    _asm
-    {
-        push    dwThis
-        call    dwFunc
-        add     esp, 4
-    }*/
 }
 
 void CEntitySA::SetOrientation( float x, float y, float z )
@@ -250,37 +248,6 @@ void CEntitySA::FixBoatOrientation()
     }
 
     pGame->GetWorld()->Add ( this );
-}
-
-void CEntitySA::SetPosition( const CVector& pos )
-{
-    DEBUG_TRACE("void CEntitySA::SetPosition( const CVector& pos )");
-/*  FLOAT fX = vecPosition->fX;
-    FLOAT fY = vecPosition->fY;
-    FLOAT fZ = vecPosition->fZ;
-    DWORD dwFunc = 0x5A17B0;
-    DWORD dwThis = (DWORD) m_pInterface;
-    _asm
-    {
-        mov     ecx, dwThis
-        push 0
-        push fZ
-        push fY
-        push fX
-        call    dwFunc
-    }*/
-
-    SetPosition( pos.fX, pos.fY, pos.fZ );
-}
-
-void CEntitySA::GetPosition( CVector& pos ) const
-{
-    DEBUG_TRACE("void CEntitySA::GetPosition( CVector& pos ) const");
-
-    if ( !m_pInterface->m_matrix )
-        m_pInterface->AllocateMatrix();
-
-    pos = m_pInterface->m_matrix->pos;
 }
 
 void CEntitySA::GetMatrix( RwMatrix& mat ) const

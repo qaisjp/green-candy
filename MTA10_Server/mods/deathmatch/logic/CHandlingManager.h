@@ -6,6 +6,7 @@
 *  PURPOSE:     Header file for vehicle handling manager class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Florian Busse <flobu@gmx.net>
+*               The_GTA <quiret@gmx.de>s
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -21,26 +22,26 @@ class CHandlingManager;
 class CHandlingManager
 {
 public:
-                                CHandlingManager                ( void );
-                                ~CHandlingManager               ( void );
+                                CHandlingManager();
+                                ~CHandlingManager();
 
-    CHandlingEntry*             CreateHandlingData              ( void );
+    CHandlingEntry*             CreateHandlingData();
 
-    bool                        ApplyHandlingData               ( eVehicleTypes eModel, CHandlingEntry* pEntry );
+    bool                        ApplyHandlingData( eVehicleTypes eModel, CHandlingEntry* pEntry );
 
-    CHandlingEntry*             GetModelHandlingData            ( eVehicleTypes eModel );
-    const CHandlingEntry*       GetOriginalHandlingData         ( eVehicleTypes eModel );
+    CHandlingEntry*             GetModelHandlingData( eVehicleTypes eModel );
+    const CHandlingEntry*       GetOriginalHandlingData( eVehicleTypes eModel );
 
-    eHandlingTypes              GetHandlingID                   ( eVehicleTypes eModel );
+    eHandlingTypes              GetHandlingID( eVehicleTypes eModel );
 
     // Helper functions
-    eHandlingProperty           GetPropertyEnumFromName         ( std::string strName);
-    bool                        HasModelHandlingChanged         ( eVehicleTypes eModel);
-    void                        SetModelHandlingHasChanged      ( eVehicleTypes eModel, bool bChanged );
+    eHandlingProperty           GetPropertyEnumFromName( std::string strName );
+    bool                        HasModelHandlingChanged( eVehicleTypes eModel );
+    void                        SetModelHandlingHasChanged( eVehicleTypes eModel, bool bChanged );
 
     std::map < std::string, eHandlingProperty > m_HandlingNames;
 private:
-    void                        InitializeDefaultHandlings      ( void );
+    void                        InitializeDefaultHandlings();
 
     // Original handling data unaffected by handling.cfg changes
     static tHandlingData        m_OriginalHandlingData [HT_MAX];

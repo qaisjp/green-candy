@@ -13,14 +13,11 @@
 
 #include "StdInc.h"
 
-CBicycleSA::CBicycleSA( CBicycleSAInterface *bike )
+CBicycleSA::CBicycleSA( CBicycleSAInterface *bike ) : CBikeSA( bike )
 {
     DEBUG_TRACE("CBicycleSA::CBicycleSA( CBicycleSAInterface *bike )");
-
-    m_pInterface = bmx;
 }
 
-CBicycleSA::CBicycleSA( unsigned short model ) : CAutomobileSA( model )
+CBicylcleSA::~CBicycleSA()
 {
-    DEBUG_TRACE("CBmxSA::CBmxSA( eVehicleTypes dwModelID ):CBikeSA( dwModelID )");
 }

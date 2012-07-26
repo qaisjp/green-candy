@@ -15,6 +15,7 @@
 #define _CTexDictionarySA_H_
 
 class CTextureSA;
+class CTxdInstanceSA;
 
 class CTexDictionarySA : public CTexDictionary
 {
@@ -29,7 +30,7 @@ public:
     void                    Clear();
 
     const char*             GetName() const                 { return m_name.c_str(); }
-    unsigned int            GetHash() const                 { return m_tex->m_hash; }
+    unsigned int            GetHash() const;
     unsigned short          GetID() const;
 
     bool                    Import( unsigned short id );

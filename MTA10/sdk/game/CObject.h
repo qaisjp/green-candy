@@ -21,21 +21,21 @@ class CObjectSAInterface;
 class CObject : public virtual CPhysical
 {
 public:
-    virtual                         ~CObject            ( void ) {};
+    virtual                         ~CObject() {};
 
-    virtual CObjectSAInterface *    GetObjectInterface  ( void ) = 0;
+    virtual unsigned int            GetPoolIndex() const;
 
-    virtual void                    Explode             ( void ) = 0;
-    virtual void                    Break               ( void ) = 0;
-    virtual void                    SetScale            ( float fScale ) = 0;
-    virtual void                    SetHealth           ( float fHealth ) = 0;
-    virtual float                   GetHealth           ( void ) = 0;
-    virtual void                    SetModelIndex       ( unsigned short ulModel ) = 0;
+    virtual void                    Explode() = 0;
+    virtual void                    Break() = 0;
+    virtual void                    SetScale( float fScale ) = 0;
+    virtual void                    SetHealth( float fHealth ) = 0;
+    virtual float                   GetHealth() const = 0;
+    virtual void                    SetModelIndex( unsigned short ulModel ) = 0;
 
-    virtual void                    SetAlpha            ( unsigned char ucAlpha ) = 0;
-    virtual unsigned char           GetAlpha            ( ) = 0;
+    virtual void                    SetAlpha( unsigned char ucAlpha ) = 0;
+    virtual unsigned char           GetAlpha() const = 0;
 
-    virtual bool                    IsAGangTag          ( ) const = 0;
+    virtual bool                    IsAGangTag() const = 0;
 };
 
 #endif

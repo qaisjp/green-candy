@@ -17,8 +17,11 @@
 
 #include <game/TaskCarAccessories.h>
 
-#include "CVehicleSA.h"
 #include "TaskSA.h"
+
+class CVehicle;
+class CVehicleSA;
+class CVehicleSAInterface;
 
 // temporary
 class CAnimBlendAssociation;

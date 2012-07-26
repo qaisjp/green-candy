@@ -14,7 +14,6 @@
 #ifndef __CGAME_PLAYERPED
 #define __CGAME_PLAYERPED
 
-#include "CPed.h"
 #include "CWanted.h"
 
 class CPlayerPed : public virtual CPed

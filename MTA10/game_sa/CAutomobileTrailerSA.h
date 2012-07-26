@@ -24,7 +24,8 @@ public:
 class CAutomobileTrailerSA : public virtual CAutomobileTrailer, public CAutomobileSA
 {
 public:
-    
+                                    CAutomobileTrailerSA( CAutomobileTrailerSAInterface *trailer );
+                                    ~CAutomobileTrailerSA();
 };
 
 #endif //_CAutomobileTrailerSA_H_

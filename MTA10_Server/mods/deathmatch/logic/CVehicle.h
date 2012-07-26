@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CVehicle.h
 *  PURPOSE:     Vehicle entity class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
 *               Florian Busse <flobu@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -22,7 +23,6 @@ class CVehicle;
 #include "CElement.h"
 #include "CEvents.h"
 #include "CVehicleUpgrades.h"
-#include "CHandlingEntry.h"
 
 #define MAX_VEHICLE_SEATS 9
 #define DEFAULT_VEHICLE_HEALTH 1000

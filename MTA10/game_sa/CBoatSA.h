@@ -28,7 +28,7 @@ public:
                                 CBoatSA( CBoatSAInterface *boat );
                                 CBoatSA( unsigned short model );
 
-    virtual                     ~CBoatSA() {};
+                                ~CBoatSA() {};
 };
 
 #endif

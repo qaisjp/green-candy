@@ -66,9 +66,14 @@ public:
         return (fX*fX) + (fY*fY) + (fZ*fZ);
     }
 
+    inline float DotProduct( const CVector& param ) const
+    {
+        return fX*param.fX + fY*param.fY + fZ*param.fZ;
+    }
+
     inline float DotProduct ( const CVector *param ) const
     {
-        return fX*param->fX + fY*param->fY + fZ*param->fZ;
+        return DotProduct( *param );
     }
 
     inline void CrossProduct ( const CVector *param ) 

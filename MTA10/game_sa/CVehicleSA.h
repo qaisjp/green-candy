@@ -23,7 +23,6 @@
 #include "Common.h"
 #include "CPhysicalSA.h"
 #include "CHandlingManagerSA.h"
-#include "CDamageManagerSA.h"
 #include "CDoorSA.h"
 
 class CVehicleSA;
@@ -391,8 +390,8 @@ public:
     virtual void __thiscall         PlayHorn() = 0;
     virtual unsigned int __thiscall GetNumContactWheels() const = 0;
     virtual void __thiscall         Damage() = 0;
-    virtual bool __thiscall         CanPedStepOutCar( bool unk ) const = 0;
-    virtual bool __thiscall         CanPedJumpOutCar( CPedSAInterface *passenger ) const = 0;
+    virtual bool __thiscall         CanPedStepOut( bool unk ) const = 0;
+    virtual bool __thiscall         CanPedJumpOut( CPedSAInterface *passenger ) const = 0;
     virtual bool __thiscall         GetTowHitchPosition( CVector& pos, unsigned int unk, unsigned int unk2 ) const = 0;
     virtual bool __thiscall         GetTowbarPosition( CVector& pos, unsigned int unk, unsigned int unk2 ) const = 0;
     virtual bool __thiscall         SetTowLink( CVehicleSAInterface *towVehicle, unsigned int unk ) = 0;
@@ -597,10 +596,12 @@ class CVehicleSA : public virtual CVehicle, public CPhysicalSA
     friend class CPoolsSA;
 public:
                                 CVehicleSA( CVehicleSAInterface *vehicle );
-                                CVehicleSA( unsigned short model );
                                 ~CVehicleSA();
 
     inline CVehicleSAInterface* GetInterface()                                          { return (CVehicleSAInterface*)m_pInterface; }
+    inline const CVehicleSAInterface*   GetInterface() const                            { return (const CVehicleSAInterface*)m_pInterface; }
+
+    unsigned int                GetPoolIndex() const                                    { return m_poolIndex; }
 
     void                        Init();
 
@@ -626,12 +627,12 @@ public:
     // Virtually internal shared functions
     void                        BurstTyre( unsigned char tyre )                         { GetInterface()->BurstTyre( tyre, 1 ); }
     bool                        CanPedEnterCar() const;
-    bool                        CanPedJumpOutCar( CPed *ped ) const                     { return GetInterface()->CanPedJumpOutOfCar( dynamic_cast <CPedSA*> ( ped )->GetInterface() ); }
+    bool                        CanPedJumpOutCar( CPed *ped ) const                     { return GetInterface()->CanPedJumpOut( dynamic_cast <CPedSA*> ( ped )->GetInterface() ); }
     bool                        CanPedLeanOut( CPed *ped ) const;
-    bool                        CanPedStepOutCar( bool unk ) const                      { return GetInterface()->CanPedStepOutCar( unk ); }
+    bool                        CanPedStepOutCar( bool unk ) const                      { return GetInterface()->CanPedStepOut( unk ); }
     bool                        CarHasRoof() const                                      { GetInterface()->IsRoofPresent(); }
-    bool                        GetTowBarPos( CVector& pos ) const                      { return GetVehicleInterface()->GetTowbarPosition( pos, 1, 0 ); }
-    bool                        GetTowHitchPos( CVector& pos ) const                    { return GetVehicleInterface()->GetTowHitchPosition( pos, 1, 0 ); }
+    bool                        GetTowBarPos( CVector& pos ) const                      { return GetInterface()->GetTowbarPosition( pos, 1, 0 ); }
+    bool                        GetTowHitchPos( CVector& pos ) const                    { return GetInterface()->GetTowHitchPosition( pos, 1, 0 ); }
     bool                        SetTowLink( CVehicle *vehicle )                         { return GetInterface()->SetTowLink( dynamic_cast <CVehicleSA*> ( vehicle )->GetInterface(), 1 ); }
     bool                        BreakTowLink()                                          { return GetInterface()->BreakTowLink(); }
     float                       GetHeightAboveRoad() const                              { return GetInterface()->GetModelOffset(); }
@@ -649,11 +650,11 @@ public:
     bool                        IsOnItsSide() const;
     bool                        IsLawEnforcementVehicle() const;
 
-    unsigned char               GetCurrentGear() const                                  { return GetInterface ()->m_currentGear; }
-    float                       GetGasPedal() const                                     { return GetVehicleInterface()->m_gasPedal; }
+    unsigned char               GetCurrentGear() const                                  { return GetInterface()->m_currentGear; }
+    float                       GetGasPedal() const                                     { return GetInterface()->m_gasPedal; }
     float                       GetSteerAngle() const                                   { return GetInterface()->m_steerAngle; }
 
-    bool                        AddProjectile( eWeaponType eWeapon, CVector vecOrigin, float fForce, CVector * target, CEntity * targetEntity );
+    bool                        AddProjectile( eWeaponType eWeapon, const CVector& vecOrigin, float fForce, const CVector& targetPos, CEntity *target );
     void                        AddVehicleUpgrade( unsigned short model );
     void                        RemoveVehicleUpgrade( unsigned short model );
 
@@ -666,7 +667,7 @@ public:
     CPed*                       GetPassenger( unsigned char ucSlot ) const;
     bool                        IsBeingDriven() const                                   { return GetInterface()->m_driver != NULL; }
     bool                        IsPassenger( CPed *ped ) const;
-    bool                        IsSphereTouchingVehicle( CVector * vecOrigin, float fRadius ) const;
+    bool                        IsSphereTouchingVehicle( const CVector& pos, float fRadius ) const;
     bool                        IsUpsideDown() const                                    { return GetInterface()->m_matrix->up.fZ <= -0.9; }
     void                        MakeDirty( CColPoint *point );
 
@@ -716,7 +717,7 @@ public:
     void                        SetFadingOut( bool enable )                             { GetInterface()->SetFadingOut( enable ); }
 
     CHandlingEntrySA*           GetHandlingData()                                       { return m_pHandlingData; }
-    void                        SetHandlingData( CHandlingEntrySA *handling );
+    void                        SetHandlingData( CHandlingEntry *handling );
 
     void                        GetGravity( CVector& grav ) const                       { grav = m_vecGravity; }
     void                        SetGravity( const CVector& grav );
@@ -730,6 +731,7 @@ protected:
     unsigned char               m_alpha;
     CVector                     m_vecGravity;
     SColor                      m_RGBColors[4];
+    unsigned int                m_poolIndex;
 };
 
 #endif

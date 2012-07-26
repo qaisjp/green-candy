@@ -37,7 +37,7 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
 
     for (n=0; n<m_numRwExtensions; n++)
     {
-        if ((ext = pExtInterface[n])->m_id == rwId)
+        if ((ext = &pExtInterface[n])->m_id == rwId)
             break;
     }
 
@@ -47,7 +47,7 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
         return NULL;
     }
 
-    inst = pRwInterface->m_malloc( sizeof(RwExtension) + ext->m_structSize * count + ext->m_internalSize );
+    inst = (RwExtension*)pRwInterface->m_malloc( sizeof(RwExtension) + ext->m_structSize * count + ext->m_internalSize );
 
     inst->m_size = size;
     inst->m_count = count;

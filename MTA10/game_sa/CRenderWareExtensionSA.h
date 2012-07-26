@@ -24,7 +24,7 @@ public:
     // todo: Possibility to register extensions
 
     RwExtension*        Allocate( unsigned int extId, unsigned int count, size_t size, unsigned int unk );
-    void*               Free( RwExtension *ext );
+    void                Free( RwExtension *ext );
 
     unsigned int        GetNumExtensions();
 };
