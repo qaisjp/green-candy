@@ -69,7 +69,7 @@ bool CTextureSA::IsImported( unsigned short id ) const
 
 bool CTextureSA::IsImportedTXD( unsigned short id ) const
 {
-    return std::count( m_imported.begin(), m_imported.end(), id ) != 0;
+    return m_imported.count( id ) != 0;
 }
 
 bool CTextureSA::Import( unsigned short id )
@@ -124,12 +124,12 @@ bool CTextureSA::Remove( unsigned short id )
 
 bool CTextureSA::RemoveTXD( unsigned short id )
 {
-    importMap_t iter = m_imported.find( id );
+    importMap_t::iterator iter = m_imported.find( id );
 
     if ( iter == m_imported.end() )
         return false;
 
-    import& imp = *iter;
+    import& imp = ( *iter ).second;
     RwTexDictionary *txd = imp.copy->txd;
     imp.copy->RemoveFromDictionary();
 

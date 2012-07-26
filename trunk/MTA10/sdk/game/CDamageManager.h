@@ -27,8 +27,9 @@ const unsigned char DT_ENG_RADIATOR_STEAM = 0x04;
 const unsigned char DT_ENG_ON_FIRE = 0x08;
 */
 
-enum eWheelStatus {
-    DT_WHEEL_INTACT=0,
+enum eWheelStatus
+{
+    DT_WHEEL_INTACT,
 //  DT_WHEEL_CAP_MISSING,
 //  DT_WHEEL_WARPED,
     DT_WHEEL_BURST,
@@ -38,8 +39,9 @@ enum eWheelStatus {
     DT_WHEEL_INTACT_COLLISIONLESS,
 };
 
-enum eDoorStatus {
-    DT_DOOR_INTACT=0,
+enum eDoorStatus
+{
+    DT_DOOR_INTACT,
     DT_DOOR_SWINGING_FREE,
     DT_DOOR_BASHED,
     DT_DOOR_BASHED_AND_SWINGING_FREE,
@@ -48,7 +50,7 @@ enum eDoorStatus {
 
 enum ePlaneComponentStatus 
 {
-    DT_PLANE_INTACT=0,
+    DT_PLANE_INTACT,
     DT_PLANE_BASHED,
 //  DT_PLANE_BASHED2,
     DT_PLANE_MISSING
@@ -56,7 +58,7 @@ enum ePlaneComponentStatus
 
 enum eComponentStatus 
 {
-    DT_PANEL_INTACT=0,
+    DT_PANEL_INTACT,
 //  DT_PANEL_SHIFTED,
     DT_PANEL_BASHED,
     DT_PANEL_BASHED2,
@@ -65,7 +67,7 @@ enum eComponentStatus
 
 enum eLightStatus 
 {
-    DT_LIGHT_OK=0,
+    DT_LIGHT_OK,
     DT_LIGHT_SMASHED
 };
 
@@ -125,29 +127,29 @@ enum eLights
 class CDamageManager
 {
 public:
-    virtual unsigned char   GetEngineStatus         () = 0;
-    virtual void            SetEngineStatus         ( unsigned char status ) = 0;
+    virtual unsigned char   GetEngineStatus() const = 0;
+    virtual void            SetEngineStatus( unsigned char status ) = 0;
 
-    virtual unsigned char   GetDoorStatus           ( eDoors bDoor ) = 0;
-    virtual void            SetDoorStatus           ( eDoors bDoor, unsigned char status ) = 0;
+    virtual unsigned char   GetDoorStatus( eDoors bDoor ) const = 0;
+    virtual void            SetDoorStatus( eDoors bDoor, unsigned char status ) = 0;
 
-    virtual unsigned char   GetWheelStatus          ( eWheels bTire ) = 0;
-    virtual void            SetWheelStatus          ( eWheels bTire, unsigned char status ) = 0;
+    virtual unsigned char   GetWheelStatus( eWheels bTire ) const = 0;
+    virtual void            SetWheelStatus( eWheels bTire, unsigned char status ) = 0;
 
-    virtual unsigned char   GetPanelStatus          ( unsigned char panel ) = 0;
-    virtual unsigned long   GetPanelStatus          () = 0;
-    virtual void            SetPanelStatus          ( unsigned char panel, unsigned char status ) = 0;
-    virtual void            SetPanelStatus          ( unsigned long ulStatus ) = 0;
+    virtual unsigned char   GetPanelStatus( unsigned char panel ) const = 0;
+    virtual unsigned long   GetPanelStatus() const = 0;
+    virtual void            SetPanelStatus( unsigned char panel, unsigned char status ) = 0;
+    virtual void            SetPanelStatus( unsigned long ulStatus ) = 0;
 
-    virtual unsigned char   GetLightStatus          ( unsigned char light ) = 0;
-    virtual unsigned char   GetLightStatus          () = 0;
-    virtual void            SetLightStatus          ( unsigned char light, unsigned char status ) = 0;
-    virtual void            SetLightStatus          ( unsigned char ucStatus ) = 0;
+    virtual unsigned char   GetLightStatus( unsigned char light ) const = 0;
+    virtual unsigned char   GetLightStatus() const = 0;
+    virtual void            SetLightStatus( unsigned char light, unsigned char status ) = 0;
+    virtual void            SetLightStatus( unsigned char ucStatus ) = 0;
 
-    virtual unsigned char   GetAeroplaneCompStatus  ( unsigned char id ) = 0;
-    virtual void            SetAeroplaneCompStatus  ( unsigned char id, unsigned char status ) = 0; //component ids begin at 12 - probably
+    virtual unsigned char   GetAeroplaneCompStatus( unsigned char id ) const = 0;
+    virtual void            SetAeroplaneCompStatus( unsigned char id, unsigned char status ) = 0; //component ids begin at 12 - probably
 
-    virtual void            FuckCarCompletely       ( bool keepWheels ) = 0;
+    virtual void            FuckCarCompletely( bool keepWheels ) = 0;
 };
 
 #endif

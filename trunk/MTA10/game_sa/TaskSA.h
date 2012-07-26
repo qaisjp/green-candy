@@ -19,6 +19,8 @@
 #include <game/Task.h>
 #include "TaskNamesSA.h"
 
+class CPedSAInterface;
+
 class CTaskTimer
 {
 public:
@@ -36,8 +38,8 @@ public:
 
     virtual CTaskSAInterface* __thiscall        Clone();
     virtual CTaskSAInterface* __thiscall        GetSubTask();
-    virtual bool __thiscall                     IsSimpleTask();
-    virtual int __thiscall                      GetTaskType();
+    virtual bool __thiscall                     IsSimpleTask() const;
+    virtual int __thiscall                      GetTaskType() const;
     virtual void __thiscall                     StopTimer( CEventSAInterface *evt );
     virtual bool __thiscall                     MakeAbortable( CPedSAInterface *ped, int priority, CEventSAInterface *evt );
 
@@ -67,37 +69,41 @@ public:
 
 class CTaskSA : public virtual CTask
 {
+    friend class CTaskManagementSystemSA;
 protected:
     CTaskSAInterface*           m_interface;
     CTaskSA*                    m_parent;
     bool                        m_beingDestroyed;
 
 public:
-                        CTaskSA                 ();
-                        ~CTaskSA                ();
+                        CTaskSA();
+                        ~CTaskSA();
 
-    CTask*              Clone                   ();
-    void                SetParent               ( CTask* pParent );
-    CTask*              GetParent               ()                              { return m_parent; }
-    CTask*              GetSubTask              ();
-    bool                IsSimpleTask            ();
-    int                 GetTaskType             ();
-    void                StopTimer               ( CEventSAInterface* pEvent );
-    bool                MakeAbortable           ( CPed* pPed, int iPriority, CEventSAInterface *pEvent );
-    char*               GetTaskName             ();
+    CTask*              Clone();
+    void                SetParent( CTask *parent );
+    CTask*              GetParent()                                         { return m_parent; }
+    CTask*              GetSubTask();
 
-    CTaskSAInterface*   GetInterface            ()                              { return m_interface; }
-    bool                IsValid                 ()                              { return m_interface != NULL; }
+    bool                IsSimpleTask() const                                { return m_interface->IsSimpleTask(); }
+    int                 GetTaskType() const                                 { return m_interface->GetTaskType(); }
+    const char*         GetTaskName() const                                 { return TaskNames[ m_interface->GetTaskType() ].szName; }
+    bool                IsValid() const                                     { return m_interface != NULL; }
 
-    void                CreateTaskInterface     ();
+    void                StopTimer( CEventSAInterface *evt )                 { m_interface->StopTimer( evt ); }
+    bool                MakeAbortable( CPed *ped, int iPriority );
 
-    void                SetAsPedTask            ( CPed * pPed, const int iTaskPriority, const bool bForceNewTask = false );
-    void                SetAsSecondaryPedTask   ( CPed * pPed, const int iType );
-    void                Destroy                 ();
-    void                DestroyJustThis         ();
+    CTaskSAInterface*   GetInterface()                                      { return m_interface; }
+    const CTaskSAInterface* GetInterface() const                            { return m_interface; }
+
+    void                CreateTaskInterface();
+
+    void                SetAsPedTask( CPed *ped, int iTaskPriority, bool bForceNewTask = false );
+    void                SetAsSecondaryPedTask( CPed *ped, int iType );
+    void                Destroy();
+    void                DestroyJustThis();
 
 private:
-    void                SetInterface            ( CTaskSAInterface* pInterface ) { m_interface = pInterface; };
+    void                SetInterface( CTaskSAInterface *pInterface )        { m_interface = pInterface; };
 };
 
 class CTaskSimpleSA : public CTaskSA, public virtual CTaskSimple

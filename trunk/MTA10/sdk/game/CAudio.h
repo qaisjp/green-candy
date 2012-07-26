@@ -12,35 +12,35 @@
 #ifndef __CGAME_AUDIO
 #define __CGAME_AUDIO
 
-#include "CVehicle.h"
-
 enum eAmbientSoundType
 {
     AMBIENT_SOUND_GENERAL,
     AMBIENT_SOUND_GUNFIRE,
 };
 
+class CPhysical;
+
 class CAudio
 {
 public:
-    virtual VOID PlayFrontEndSound(DWORD dwSound)=0;
-    virtual VOID PlayBeatTrack ( short iTrack )=0;
-    virtual VOID SetEffectsMasterVolume ( BYTE bVolume )=0; // 64 = max volume
-    virtual VOID SetMusicMasterVolume ( BYTE bVolume )=0;
-    virtual VOID ClearMissionAudio ( int slot = 1)=0;
-    virtual VOID PreloadMissionAudio ( unsigned short usAudioEvent, int slot = 1 )=0;
-    virtual unsigned char GetMissionAudioLoadingStatus ( int slot = 1 )=0;
-    virtual bool IsMissionAudioSampleFinished ( int slot = 1 )=0;
-    virtual VOID AttachMissionAudioToPhysical ( CPhysical * physical, int slot = 1 )=0;
-    virtual VOID SetMissionAudioPosition ( CVector * position, int slot = 1 )=0;
-    virtual bool PlayLoadedMissionAudio ( int slot = 1 )=0;
-    virtual VOID PauseAllSound ( bool bPaused )=0;
-    virtual VOID StopRadio()=0;
-    virtual VOID StartRadio( unsigned int station )=0;
-    virtual void PauseAmbientSounds ( bool bPaused )=0;
-    virtual VOID SetAmbientSoundEnabled ( eAmbientSoundType eType, bool bEnabled )=0;
-    virtual bool IsAmbientSoundEnabled ( eAmbientSoundType eType )=0;
-    virtual void ResetAmbientSounds ( void )=0;
+    virtual void                PlayFrontEndSound( unsigned short id ) = 0;
+    virtual void                PlayBeatTrack( short iTrack ) = 0;
+    virtual void                SetEffectsMasterVolume( unsigned short volume ) = 0; // 64 = max volume
+    virtual void                SetMusicMasterVolume( BYTE bVolume ) = 0;
+    virtual void                ClearMissionAudio( int slot = 1) = 0;
+    virtual void                PreloadMissionAudio( unsigned short usAudioEvent, int slot = 1 ) = 0;
+    virtual unsigned char       GetMissionAudioLoadingStatus( int slot = 1 ) = 0;
+    virtual bool                IsMissionAudioSampleFinished( int slot = 1 ) = 0;
+    virtual void                AttachMissionAudioToPhysical( CPhysical *physical, int slot = 1 ) = 0;
+    virtual void                SetMissionAudioPosition( const CVector& pos, int slot = 1 ) = 0;
+    virtual bool                PlayLoadedMissionAudio( int slot = 1 ) = 0;
+    virtual void                PauseAllSound( bool bPaused ) = 0;
+    virtual void                StopRadio() = 0;
+    virtual void                StartRadio( unsigned int station ) = 0;
+    virtual void                PauseAmbientSounds( bool bPaused ) = 0;
+    virtual void                SetAmbientSoundEnabled( eAmbientSoundType eType, bool bEnabled ) = 0;
+    virtual bool                IsAmbientSoundEnabled( eAmbientSoundType eType ) = 0;
+    virtual void                ResetAmbientSounds() = 0;
 };
 
 #endif

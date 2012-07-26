@@ -93,46 +93,46 @@ public:
     float                   m_lighting3;                // 308
 };
 
-class CPhysicalSA : public virtual CPhysical, public virtual CEntitySA
+class CPhysicalSA : public virtual CPhysical, public CEntitySA
 {
 public:
-    CPhysicalSAInterface* GetInterface();
+    inline CPhysicalSAInterface* GetInterface()                                 { return (CPhysicalSAInterface*)m_pInterface; }
+    inline const CPhysicalSAInterface* GetInterface() const                     { return (const CPhysicalSAInterface*)m_pInterface; }
 
-    void            GetMoveSpeed( CVector& moveSpeed ) const;
-    void            GetTurnSpeed( CVector& turnSpeed ) const;
-    void            SetMoveSpeed( const CVector& moveSpeed );
-    void            SetTurnSpeed( const CVector& turnSpeed );
+    void            GetMoveSpeed( CVector& moveSpeed ) const                    { moveSpeed = GetInterface()->m_velocity; }
+    void            GetTurnSpeed( CVector& turnSpeed ) const                    { turnSpeed = GetInterface()->m_spin; }
+    void            SetMoveSpeed( const CVector& moveSpeed )                    { GetInterface()->m_velocity = moveSpeed; }
+    void            SetTurnSpeed( const CVector& turnSpeed )                    { GetInterface()->m_spin = turnSpeed; }
 
-    float           GetMass() const;
-    void            SetMass( float fMass );
-    float           GetTurnMass() const;
-    void            SetTurnMass( float fTurnMass );
-    float           GetElasticity() const;
-    void            SetElasticity( float fElasticity );
-    float           GetBuoyancyConstant() const;
-    void            SetBuoyancyConstant( float fBuoyancyConstant );
+    float           GetMass() const                                             { return GetInterface()->m_mass; }
+    void            SetMass( float mass )                                       { GetInterface()->m_mass = mass; }
+    float           GetTurnMass() const                                         { return GetInterface()->m_turnMass; }
+    void            SetTurnMass( float mass )                                   { GetInterface()->m_turnMass = mass; }
+    float           GetElasticity() const                                       { return GetInterface()->m_elasticity; }
+    void            SetElasticity( float elas )                                 { GetInterface()->m_elasticity = elas; }
+    float           GetBuoyancyConstant() const                                 { return GetInterface()->m_buoyancyConstant; }
+    void            SetBuoyancyConstant( float cnst )                           { GetInterface()->m_buoyancyConstant = cnst; }
 
-    void            ProcessCollision();
+    void            ProcessCollision()                                          { GetInterface()->ProcessCollision(); }
 
-    float           GetDamageImpulseMagnitude() const;
-    void            SetDamageImpulseMagnitude( float fMagnitude );
+    float           GetDamageImpulseMagnitude() const                           { return GetInterface()->m_damageImpulseMagnitude; }
+    void            SetDamageImpulseMagnitude( float fMagnitude )               { GetInterface()->m_damageImpulseMagnitude = fMagnitude; }
     CEntity*        GetDamageEntity() const;
     void            SetDamageEntity( CEntity *entity );
     void            ResetLastDamage();
 
     CEntity*        GetAttachedEntity() const;
-    void            AttachTo( CPhysical& Entity, const CVector& vecPosition, const CVector& vecRotation );
+    void            AttachTo( CPhysical& Entity, const CVector& pos, const CVector& rot );
     void            DetachFrom( float fUnkX, float fUnkY, float fUnkZ, bool bUnk );
-    void            GetAttachedOffsets( CVector& pos, CVector& rot );
+    void            GetAttachedOffsets( CVector& pos, CVector& rot ) const;
     void            SetAttachedOffsets( const CVector& pos, const CVector& rot );
 
-    virtual bool    InternalAttachTo( DWORD dwEntityInterface, const CVector * vecPosition, const CVector * vecRotation );
+    virtual bool    InternalAttachTo( CEntitySAInterface *entity, const CVector& pos, const CVector& rot );
 
     void            GetImmunities( bool& bNoClip, bool& bFrozen, bool& bBulletProof, bool& bFlameProof, bool& bUnk, bool& bUnk2, bool& bCollisionProof, bool& bExplosionProof ) const;
 
-    float           GetLighting() const;
-    void            SetLighting( float fLighting );
-
+    float           GetLighting() const                                         { return GetInterface()->m_lighting; }
+    void            SetLighting( float fLighting )                              { GetInterface()->m_lighting = fLighting; }
 };
 
 #endif

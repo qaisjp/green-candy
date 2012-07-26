@@ -50,10 +50,10 @@ class CEntity
 public:
     virtual                             ~CEntity () {};
 
-    virtual void                        SetPosition( float fX, float fY, float fZ ) = 0;
-    virtual void                        SetPosition( const CVector& vecPosition ) = 0;
-    virtual void                        GetPosition( const CVector& pos ) const = 0;
-    virtual void                        Teleport( float fX, float fY, float fZ ) = 0;
+    virtual void                        SetPosition( float x, float y, float z ) = 0;
+    virtual void                        SetPosition( const CVector& pos ) = 0;
+    virtual void                        GetPosition( CVector& pos ) const = 0;
+    virtual void                        Teleport( float x, float y, float z ) = 0;
 
     virtual void                        ProcessControl() = 0;
     virtual void                        SetupLighting() = 0;
@@ -93,7 +93,7 @@ public:
 
     virtual void                        MatrixConvertFromEulerAngles( float x, float y, float z, int unk ) = 0;
     virtual void                        MatrixConvertToEulerAngles( float& x, float& y, float& z, int unk ) const = 0;
-    virtual bool                        IsPlayingAnimation( const char *name ) = 0;
+    virtual bool                        IsPlayingAnimation( const char *name ) const = 0;
 
     virtual void*                       GetStoredPointer() const = 0;
     virtual void                        SetStoredPointer( void *pointer ) = 0;

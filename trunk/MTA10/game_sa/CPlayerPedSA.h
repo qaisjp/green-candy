@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CPlayerPedSA.h
 *  PURPOSE:     Header file for player ped entity class
@@ -11,6 +11,7 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               aru <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -33,8 +34,6 @@
 
 #define FUNC_CPlayerPed_ReApplyMoveAnims    0x609650
 
-#define SIZEOF_CPLAYERPED               1956
-
 class CPlayerPedSAInterface : public CPedSAInterface // CPlayerPed 1956 bytes in SA
 {
 public:
@@ -44,30 +43,30 @@ public:
 
 class CPlayerPedSA : public virtual CPlayerPed, public virtual CPedSA
 {
-private:
-    bool                                m_bIsLocal;
-    class CPlayerPedDataSAInterface*    m_pData;
-    CWantedSA*                          m_pWanted;
-    bool                                m_stealthAiming;
-
 public:
-                        CPlayerPedSA( ePedModel pedType );
-                        CPlayerPedSA( CPlayerPedSAInterface * ped );
+                        CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, bool isLocal );
                         ~CPlayerPedSA();
+
+    inline CPlayerPedSAInterface* GetInterface()                { return (CPlayerPedSAInterface*)m_pInterface; }
+    inline const CPlayerPedSAInterface* GetInterface() const    { return (const CPlayerPedSAInterface*)m_pInterface; }
 
     void                OnFrame();
 
     CWanted*            GetWanted();
 
-    float               GetSprintEnergy();
+    float               GetSprintEnergy() const;
     void                SetSprintEnergy( float fSprintEnergy );
 
     void                SetInitialState();
 
-    eMoveAnim           GetMoveAnim();
+    eMoveAnim           GetMoveAnim() const;
     void                SetMoveAnim( eMoveAnim iAnimGroup );
 
-    inline CPlayerPedSAInterface* GetInterface()                { return (CPlayerPedSAInterface*)m_pInterface; };
+private:
+    bool                                m_bIsLocal;
+    class CPlayerPedDataSAInterface*    m_pData;
+    CWantedSA*                          m_pWanted;
+    bool                                m_stealthAiming;
 };
 
 #endif

@@ -41,6 +41,39 @@ public:
     unsigned int        m_hash;
 };
 
+//
+// STexInfo and SShadInfo are used for mapping GTA world textures to shaders
+//
+struct STexInfo;
+struct SShadInfo
+{
+    SShadInfo ( const SString& strMatch, CSHADERDUMMY* pShaderData, float fOrderPriority )
+        : strMatch ( strMatch.ToLower () )
+        , pShaderData ( pShaderData )
+        , fOrderPriority ( fOrderPriority )
+    {
+    }
+    const SString           strMatch;           // Always lower case
+    CSHADERDUMMY* const     pShaderData;
+    const float             fOrderPriority;
+    std::set < STexInfo* >  associatedTexInfoMap;
+};
+
+struct STexInfo
+{
+    STexInfo ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData )
+        : usTxdId ( usTxdId )
+        , strTextureName ( strTextureName.ToLower () )
+        , pD3DData ( pD3DData )
+        , pAssociatedShadInfo ( NULL )
+    {
+    }
+    const ushort            usTxdId;
+    const SString           strTextureName;     // Always lower case
+    CD3DDUMMY* const        pD3DData;
+    SShadInfo*              pAssociatedShadInfo;
+};
+
 class CTextureManagerSA : public CTextureManager
 {
     friend class CTexDictionarySA;
@@ -51,8 +84,8 @@ public:
     int                 FindTxdEntry( const char *name ) const;
     int                 CreateTxdEntry( const char *name );
 
-    CTexDictionary*     CreateTxd( const char *name );
-    CTexDictionary*     CreateTxd( const char *name, unsigned short txdId );
+    CTexDictionarySA*   CreateTxd( const char *name );
+    CTexDictionarySA*   CreateTxd( const char *name, unsigned short txdId );
 
     int                 LoadDictionary( const char *filename );
     int                 LoadDictionaryEx( const char *name, const char *filename );

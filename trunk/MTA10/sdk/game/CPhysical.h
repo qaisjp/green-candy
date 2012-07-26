@@ -14,7 +14,7 @@
 
 #include "CEntity.h"
 
-class CPhysical : public CEntity
+class CPhysical : public virtual CEntity
 {
 public:
     virtual             ~CPhysical()    {};

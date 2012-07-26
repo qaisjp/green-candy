@@ -17,9 +17,6 @@
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
-#define DATA_TEXTURE_BLOCK      20000
-#define DATA_ANIM_BLOCK         25575
-
 #define ARRAY_PEDSPECMODEL      0x008E4C00
 #define VAR_PEDSPECMODEL        0x008E4BB0
 #define VAR_SPECPTR             0x008E4CB4

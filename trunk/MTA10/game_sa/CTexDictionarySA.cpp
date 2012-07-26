@@ -37,7 +37,7 @@ static bool RwTexDictionaryAssign( RwTexture *tex, void *ud )
 CTexDictionarySA::CTexDictionarySA( const char *name, CTxdInstanceSA *txd )
 {
     m_name = name;
-    m_txd = txd;
+    m_tex = txd;
 
     // Virtualize all instances found
     txd->m_txd->ForAllTextures( RwTexDictionaryAssign, this );
@@ -69,6 +69,11 @@ static bool RwTexDictionaryAssignNew( RwTexture *tex, void *ud )
     return true;
 }
 
+unsigned int CTexDictionarySA::GetHash() const
+{
+    return m_tex->m_hash;
+}
+
 bool CTexDictionarySA::Load( const char *filename, bool filtering )
 {
     // Try to load it
@@ -95,7 +100,7 @@ void CTexDictionarySA::Clear()
     m_imported.clear();
 }
 
-unsigned short CTexDictionarySA::GetID()
+unsigned short CTexDictionarySA::GetID() const
 {
     return (*ppTxdPool)->GetIndex( m_tex );
 }
@@ -171,10 +176,10 @@ bool CTexDictionarySA::RemoveTXD( unsigned short id )
     if ( !(*ppTxdPool)->Get( id ) )
         return false;
 
-    textureList_t::iterator iter = m_textures.begin();
+    textureList_t::iterator itera = m_textures.begin();
 
-    for ( ; iter != m_textures.end(); iter++ )
-        (*iter)->RemoveTXD( id );
+    for ( ; itera != m_textures.end(); itera++ )
+        (*itera)->RemoveTXD( id );
 
     m_imported.erase( iter );
     return true;

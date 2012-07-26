@@ -19,13 +19,13 @@
 #include <game/CPools.h>
 #include <google/dense_hash_map>
 
-template <class type, int max>
+template <class type, int max, const size_t size = sizeof(type)>
 class CPool
 {
 public:
     CPool()
     {
-        m_pool = (type*)malloc( sizeof(type) * max );
+        m_pool = (type*)malloc( size * max );
         m_flags = (unsigned char*)malloc( max );
 
         m_poolActive = true;
@@ -37,6 +37,8 @@ public:
         m_active = 0;
     }
 
+    // This function expects the entities to free themselves from this;
+    // so do not decrease the count here!
     void    Clear()
     {
         unsigned int n;
@@ -58,7 +60,12 @@ public:
         free(m_flags);
     }
 
-    type*   Allocate()
+    inline type*    GetOffset( unsigned int id )
+    {
+        return (type*)( (unsigned int)m_pool + size * id );
+    }
+
+    inline type*    Allocate()
     {
         unsigned int n;
 
@@ -73,20 +80,25 @@ public:
             m_flags[n] &= ~0x80;
 
             m_active++;
-            return &m_pool[n];
+            return GetOffset( n );
         }
 
         return NULL;
     }
 
-    type*   Get( unsigned int id )
+    inline type*    Get( unsigned int id )
     {
-        return (id >= m_max) && !(m_flags[id] & 0x80) ? &m_pool[id] ? NULL;
+        return ( (id >= m_max) && !(m_flags[id] & 0x80) ) ? GetOffset( id ) : NULL;
     }
 
     unsigned int    GetIndex( type *entity )
     {
-        return (unsigned int)(entity - m_pool) / sizeof(type);
+        return (unsigned int)(entity - m_pool) / size;
+    }
+
+    bool            IsValid( type *entity )
+    {
+        return entity >= m_pool && GetIndex( entity ) < m_max;
     }
 
     void    Free( unsigned int id )
@@ -103,7 +115,7 @@ public:
 
     void    Free( type *entity )
     {
-        Free(GetIndex(entity));
+        Free( GetIndex( entity ) );
     }
 
     bool    Full()
@@ -134,6 +146,13 @@ public:
     BYTE            m_pad[196];
 };
 
+// Rockstar's inheritance trick; keep these chains updated!
+#define MAX_VEHICLE_SIZE ( max(sizeof(CHeliSAInterface),max(sizeof(CTrainSAInterface),max(sizeof(CAutomobileSAInterface),max(sizeof(CBikeSAInterface),max(sizeof(CBicycleSAInterface),max(sizeof(CPlaneSAInterface),max(sizeof(CBoatSAInterface),sizeof(CAutomobileTrailerSAInterface)))))))) )
+
+#define MAX_PED_SIZE ( max(sizeof(CPedSAInterface),max(sizeof(CPlayerPedSAInterface),sizeof(CCivilianPedSAInterface))) )
+
+#define MAX_OBJECT_SIZE ( max(sizeof(CObjectSAInterface),sizeof(CProjectileSAInterface)) )
+
 typedef CPool <CVehicleSeatPlacementSAInterface, 500> CVehicleSeatPlacementPool;
 typedef CPool <CColModelSAInterface, 20000> CColModelPool;
 
@@ -143,9 +162,9 @@ typedef CPool <CEntryInfoSA, 500> CEntryInfoPool;
 
 typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
 
-typedef CPool <CVehicleSAInterface, MAX_VEHICLES> CVehiclePool;
-typedef CPool <CPedSAInterface, MAX_PEDS> CPedPool;
-typedef CPool <CObjectSAInterface, MAX_OBJECTS> CObjectPool;
+typedef CPool <CVehicleSAInterface, MAX_VEHICLES, MAX_VEHICLE_SIZE> CVehiclePool;
+typedef CPool <CPedSAInterface, MAX_PEDS, MAX_PED_SIZE> CPedPool;
+typedef CPool <CObjectSAInterface, MAX_OBJECTS, MAX_OBJECT_SIZE> CObjectPool;
 
 typedef CPool <CBuildingSAInterface, MAX_BUILDINGS> CBuildingPool;
 typedef CPool <CDummySAInterface, 4000> CDummyPool;
@@ -187,32 +206,58 @@ extern CTaskAllocatorPool** ppTaskAllocatorPool;
 extern CPedIntelligencePool** ppPedIntelligencePool;
 extern CPedAttractorPool** ppPedAttractorPool;
 
+// MTA pools; lets use the trick ourselves, shall we? :P
+// Do not forget to extend this chain once new interfaces are spotted!
+#define MAX_MTA_VEHICLE_SIZE ( max(sizeof(CVehicleSA),max(sizeof(CTrainSA),max(sizeof(CPlaneSA),max(sizeof(CHeliSA),max(sizeof(CBikeSA),max(sizeof(CBicycleSA),max(sizeof(CAutomobileTrailerSA),sizeof(CBoatSA)))))))) )
+
+#define MAX_MTA_PED_SIZE ( max(sizeof(CPedSA),max(sizeof(CPlayerPedSA),sizeof(CCivilianPedSA))) )
+
+#define MAX_MTA_OBJECT_SIZE ( max(sizeof(CObjectSA),sizeof(CProjectileSA)) )
+
+typedef CPool <CVehicleSA, MAX_VEHICLES, MAX_MTA_VEHICLE_SIZE> CMTAVehiclePool;
+typedef CPool <CPedSA, MAX_PEDS, MAX_MTA_PED_SIZE> CMTAPedPool;
+typedef CPool <CObjectSA, MAX_OBJECTS, MAX_MTA_OBJECT_SIZE> CMTAObjectPool;
+
+extern CMTAVehiclePool *mtaVehiclePool;
+extern CMTAPedPool *mtaPedPool;
+extern CMTAObjectPool *mtaObjectPool;
+
 class CPoolsSA : public CPools
 {
 public:
                             CPoolsSA();
                             ~CPoolsSA();
 
+public:
     // Vehicles pool
-    CVehicle*               AddVehicle( eVehicleTypes eVehicleType );
-    CVehicle*               GetVehicle( void *entity );
-    unsigned int            GetVehicleRef( CVehicle *veh );
-    CVehicle*               GetVehicleFromRef( unsigned int index );
+    CBicycle*               AddBicycle( unsigned short modelId );
+    CBike*                  AddBike( unsigned short modelId );
+    CHeli*                  AddHeli( unsigned short modelId );
+    CPlane*                 AddPlane( unsigned short modelId );
+    CTrain*                 AddTrain( unsigned short modelId, const CVector& pos, bool direction );
+    CAutomobileTrailer*     AddTrailer( unsigned short modelId );
+    CAutomobile*            AddAutomobile( unsigned short modelId );
+    CBoat*                  AddBoat( unsigned short modelId );
+    CVehicle*               AddVehicle( unsigned short modelID );
+    CVehicle*               GetVehicle( void *entity ) const;
+    unsigned int            GetVehicleRef( CVehicle *veh ) const;
+    CVehicle*               GetVehicleFromRef( unsigned int index ) const;
     void                    DeleteAllVehicles();
 
     // Objects pool
     CObject*                AddObject( unsigned short modelID );
-    CObject*                GetObject( void *entity );
-    unsigned int            GetObjectRef( CObject *obj );
-    CObject*                GetObjectFromRef( unsigned int index );
+    CObject*                GetObject( void *entity ) const;
+    unsigned int            GetObjectRef( CObject *obj ) const;
+    CObject*                GetObjectFromRef( unsigned int index ) const;
     void                    DeleteAllObjects();
 
     // Peds pool
-    CPed*                   AddPed( ePedModel ePedType );
-    CPed*                   AddCivilianPed( DWORD* pGameInterface );
-    CPed*                   GetPed( void *entity );
-    unsigned int            GetPedRef( CPed* pPed );
-    CPed*                   GetPedFromRef( unsigned int index );
+    CPed*                   AddPed( unsigned short modelID );
+    CPed*                   AddCivilianPed( unsigned short modelID );
+    CPed*                   AddCivilianPed( CCivilianPedSAInterface *ped );
+    CPed*                   GetPed( void *entity ) const;
+    unsigned int            GetPedRef( CPed *ped ) const;
+    CPed*                   GetPedFromRef( unsigned int index ) const;
     void                    DeleteAllPeds();
 
     CEntity*                GetEntity( void *entity );
@@ -220,23 +265,21 @@ public:
     // Others
     CBuilding*              AddBuilding( unsigned short modelID );
     void                    DeleteAllBuildings();
-    CVehicle*               AddTrain( CVector* vecPosition, DWORD dwModels[], int iSize, bool bDirection );
 
-    int                     GetNumberOfUsedSpaces( ePools pools );
-    void                    DumpPoolsStatus();
+    int                     GetNumberOfUsedSpaces( ePools pools ) const;
+    void                    DumpPoolsStatus() const;
 
-    unsigned int            GetPoolDefaultCapacity( ePools pool );
-    unsigned int            GetPoolCapacity( ePools pool );
+    unsigned int            GetPoolDefaultCapacity( ePools pool ) const;
+    unsigned int            GetPoolCapacity( ePools pool ) const;
 
 private:
-    typedef google::dense_hash_map <CObjectSAInterface*, CObjectSA*> gObjectMap;
-    typedef google::dense_hash_map <CPedSAInterface*, CPedSA*> gPedMap;
-
-    gObjectMap              m_objectMap;
-    gPedMap                 m_pedMap;
-
     bool                    m_getVehicleEnabled;
 };
+
+// Global linkage between internal interfaces and MTA
+extern CVehicleSA *mtaVehicles[MAX_VEHICLES];
+extern CPedSA *mtaPeds[MAX_PEDS];
+extern CObjectSA *mtaObjects[MAX_OBJECTS];
 
 
 #define FUNC_GetVehicle                     0x54fff0
@@ -247,7 +290,7 @@ private:
 //#define FUNC_GetPedCount                  0x4A7440
 #define FUNC_GetObject                      0x550050
 #define FUNC_GetObjectRef                   0x550020
-//#define FUNC_GetObjectCount                   0x4A74D0
+//#define FUNC_GetObjectCount               0x4A74D0
 
 #define CLASS_CPool_VehicleModels           0xB4E680
 

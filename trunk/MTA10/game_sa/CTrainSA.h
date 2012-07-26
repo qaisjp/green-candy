@@ -13,6 +13,8 @@
 #ifndef _CTrainSA_
 #define _CTrainSA_
 
+#include <game/CTrain.h>
+
 #define FUNC_CTrain__GetDoorAngleOpenRatio      0x6F59C0
 
 class CTrainSAInterface : public CVehicleSAInterface
@@ -28,8 +30,8 @@ public:
     DWORD                       m_pad3;                                 // 1468
     unsigned char               m_railTrackID;                          // 1472
     BYTE                        m_pad4[15];                             // 1473
-    CVehicleSAInterface*        m_prevCarriage;                         // 1488
-    CVehicleSAInterface*        m_nextCarriage;                         // 1492
+    CTrainSAInterface*          m_prevCarriage;                         // 1488
+    CTrainSAInterface*          m_nextCarriage;                         // 1492
 
     CDoorSAInterface            m_doors[MAX_DOORS];                     // 1496
 };
@@ -37,31 +39,32 @@ public:
 class CTrainSA : public virtual CTrain, public CVehicleSA
 {
 public:
-                                CTrainSA( unsigned short modelId );
+                                CTrainSA( CTrainSAInterface *train );
                                 ~CTrainSA();
 
-    inline CTrainSAInterface*   GetInterface()                          { return (CTrainSAInterface*)m_pInterface; }
+    inline CTrainSAInterface*   GetInterface()                                      { return (CTrainSAInterface*)m_pInterface; }
+    inline const CTrainSAInterface* GetInterface() const                            { return (const CTrainSAInterface*)m_pInterface; }
 
     void                        SetMoveSpeed( const CVector& moveSpeed );
 
     CDoorSA*                    GetDoor( unsigned char ucDoor );
 
-    CTrainSAInterface*          GetNextCarriageInTrain() const;
-    CTrain*                     GetNextTrainCarriage() const;
-    void                        SetNextTrainCarriage( CVehicle *next );
-    CTrainSAInterface*          GetPreviousCarriageInTrain() const;
-    CTrain*                     GetPreviousTrainCarriage() const;
-    void                        SetPreviousTrainCarriage( CVehicle *pPrevious );
+    CTrainSAInterface*          GetNextCarriageInTrain() const                      { return GetInterface()->m_nextCarriage; }
+    CTrain*                     GetNextTrainCarriage() const                        { return (CTrainSA*)GetInterface()->m_nextCarriage->m_vehicle; }
+    void                        SetNextTrainCarriage( CTrain *next );
+    CTrainSAInterface*          GetPreviousCarriageInTrain() const                  { return GetInterface()->m_prevCarriage; }
+    CTrain*                     GetPreviousTrainCarriage() const                    { return (CTrainSA*)GetInterface()->m_prevCarriage->m_vehicle; }
+    void                        SetPreviousTrainCarriage( CTrain *prev );
 
-    bool                        IsDerailed() const;
+    bool                        IsDerailed() const                                  { return GetInterface()->m_trainFlags.bIsDerailed; }
     void                        SetDerailed( bool bDerailed );
-    inline bool                 IsDerailable() const                    { return m_isDerailable; }
-    inline void                 SetDerailable( bool enable )            { m_isDerailable = enable; }
-    float                       GetTrainSpeed() const;
-    void                        SetTrainSpeed( float fSpeed );
-    bool                        GetTrainDirection() const;
-    void                        SetTrainDirection( bool bDirection );
-    unsigned char               GetRailTrack() const;
+    inline bool                 IsDerailable() const                                { return m_isDerailable; }
+    inline void                 SetDerailable( bool enable )                        { m_isDerailable = enable; }
+    float                       GetTrainSpeed() const                               { return GetInterface()->m_trainSpeed; }
+    void                        SetTrainSpeed( float fSpeed )                       { GetInterface()->m_trainSpeed = fSpeed; }
+    bool                        GetTrainDirection() const                           { return GetInterface()->m_trainFlags.bDirection != 0; }
+    void                        SetTrainDirection( bool bDirection )                { GetInterface()->m_trainFlags.bDirection = bDirection; }
+    unsigned char               GetRailTrack() const                                { return GetInterface()->m_railTrackID; }
     void                        SetRailTrack( unsigned char track );
 
 protected:

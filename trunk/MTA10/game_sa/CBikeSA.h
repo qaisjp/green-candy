@@ -40,7 +40,7 @@ public:
 class CBikeSA : public virtual CBike, public virtual CVehicleSA
 {
 public:
-                                    CBikeSA( unsigned short model );
+                                    CBikeSA( CBikeSAInterface *bike );
                                     ~CBikeSA();
 
     inline CBikeSAInterface*        GetInterface()                          { return (CBikeSAInterface*)m_pInterface; }

@@ -12,8 +12,6 @@
 #ifndef __CHANDLINGENTRY
 #define __CHANDLINGENTRY
 
-#include <CVector.h>
-
 // ### MODELFLAGS ###
 // 1st digit
 #define MODELFLAGS_IS_VAN                   0x00000001

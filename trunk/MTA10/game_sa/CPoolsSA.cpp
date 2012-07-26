@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CPoolsSA.cpp
 *  PURPOSE:     Game entity pools
@@ -17,7 +17,9 @@
 
 #include "StdInc.h"
 
-#define FUNC_InitGamePools
+#define FUNC_InitGamePools  0x00550F10
+
+extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CPtrNodeSinglePool      **ppPtrNodeSinglePool = (CPtrNodeSinglePool**)CLASS_CPtrNodeSingleLinkPool;
 CPtrNodeDoublePool      **ppPtrNodeDoublePool = (CPtrNodeDoublePool**)CLASS_CPtrNodeDoubleLinkPool;
@@ -43,6 +45,11 @@ CTaskAllocatorPool      **ppTaskAllocatorPool = (CTaskAllocatorPool**)CLASS_CTas
 CPedIntelligencePool    **ppPedIntelligencePool = (CPedIntelligencePool**)CLASS_CPedIntelligencePool;
 CPedAttractorPool       **ppPedAttractorPool = (CPedAttractorPool**)CLASS_CPedAttractorPool;
 
+// MTA Pools
+CMTAVehiclePool *mtaVehiclePool;
+CMTAPedPool *mtaPedPool;
+CMTAObjectPool *mtaObjectPool;
+
 CPoolsSA::CPoolsSA()
 {
     DEBUG_TRACE("CPoolsSA::CPoolsSA()");
@@ -55,7 +62,7 @@ CPoolsSA::CPoolsSA()
     *ppEntryInfoPool = new CEntryInfoPool();
 
     *ppVehiclePool = new CVehiclePool();
-    *ppPedPool = new CObjectPool();
+    *ppPedPool = new CPedPool();
     *ppBuildingPool = new CBuildingPool();
     *ppObjectPool = new CObjectPool();
 
@@ -73,11 +80,30 @@ CPoolsSA::CPoolsSA()
     *ppPedIntelligencePool = new CPedIntelligencePool();
     *ppPedAttractorPool = new CPedAttractorPool();
 
+    // Init our pools
+    mtaVehiclePool = new CMTAVehiclePool;
+    mtaPedPool = new CMTAPedPool;
+    mtaObjectPool = new CMTAObjectPool;
+
+    // Initialize the entity cache
+    memset( mtaVehicles, 0, sizeof(mtaVehicles) );
+    memset( mtaPeds, 0, sizeof(mtaPeds) );
+    memset( mtaObjects, 0, sizeof(mtaObjects) );
+
     m_getVehicleEnabled = true;
 }
 
 CPoolsSA::~CPoolsSA()
 {
+    // Clear all our entities and delete the pools
+    mtaVehiclePool->Clear();
+    mtaPedPool->Clear();
+    mtaObjectPool->Clear();
+
+    delete mtaObjectPool;
+    delete mtaPedPool;
+    delete mtaVehiclePool;
+
     delete *ppPtrNodeSinglePool;
     delete *ppPtrNodeDoublePool;
     delete *ppEntryInfoPool;
@@ -102,7 +128,7 @@ CPoolsSA::~CPoolsSA()
     delete *ppPedAttractorPool;
 }
 
-void CPoolsSA::DeleteAllBuildings( )
+void CPoolsSA::DeleteAllBuildings()
 {
     /*
     for ( int i = 0; i < MAX_BUILDINGS; i++ )
@@ -118,47 +144,312 @@ void CPoolsSA::DeleteAllBuildings( )
 //////////////////////////////////////////////////////////////////////////////////////////
 //                                    VEHICLES POOL                                     //
 //////////////////////////////////////////////////////////////////////////////////////////
-CVehicle* CPoolsSA::AddVehicle ( eVehicleTypes eVehicleType )
-{
-    DEBUG_TRACE("CVehicle* CPoolsSA::AddVehicle ( eVehicleTypes eVehicleType )");
-    
-    // We do not wanna add when the pool is full
-    if ((*ppVehiclePool)->Full())
-        return NULL;
+CVehicleSA *mtaVehicles[MAX_VEHICLES];
 
-    return new CVehicleSA( eVehicleType );
+// TODO: analyze this and put it into C++ code; will improve understanding and performance!
+static inline CVehicleSAInterface* CreateVehicle( unsigned short modelId )
+{
+    // for SA, we can just call the following function and it should work:
+    // SCM_CreateCarForScript(int,class CVector,unsigned char)
+    //                              ModelID, Position, IsMissionVehicle
+    CVehicleSAInterface *veh;
+
+    DWORD dwFunc = FUNC_CCarCtrlCreateCarForScript;
+    _asm
+    {
+        push    0           // its a mission vehicle
+        push    0
+        push    0
+        push    0           // spawn at 0,0,0
+        push    modelId  
+        call    dwFunc
+        add     esp, 0x14
+        mov     veh, eax
+    }
+
+    return veh;
 }
 
-CVehicle* CPoolSA::GetVehicle( void *entity )
+CBicycle* CPoolsSA::AddBicycle( unsigned short modelID )
 {
-    if ( !m_getVehicleEnabled )
+    DEBUG_TRACE("CBicycle* CPoolsSA::AddBicycle( unsigned short modelID )");
+
+    if ( modelID > MAX_MODELS-1 )
+        return NULL;
+
+    // We do not wanna add when the pool is full
+    if ( (*ppVehiclePool)->Full() )
+        return NULL;
+
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_BICYCLE )
+        return NULL;
+
+    return new CBicycleSA( (CBicycleSAInterface*)CreateVehicle( modelID ) );
+}
+
+CBike* CPoolsSA::AddBike( unsigned short modelID )
+{
+    DEBUG_TRACE("CBike* CPoolsSA::AddBike( unsigned short modelID )");
+
+    if ( modelID > MAX_MODELS-1 )
+        return NULL;
+
+    // We do not wanna add when the pool is full
+    if ( (*ppVehiclePool)->Full() )
+        return NULL;
+
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE )
+        return NULL;
+
+    switch( info->m_vehicleType )
+    {
+    case VEHICLE_BIKE:
+        return new CBikeSA( (CBikeSAInterface*)CreateVehicle( modelID ) );
+    case VEHICLE_BICYCLE:
+        return new CBicycleSA( (CBicycleSAInterface*)CreateVehicle( modelID ) );
+    }
+
+    return NULL;
+}
+
+CHeli* CPoolsSA::AddHeli( unsigned short modelID )
+{
+    DEBUG_TRACE("CHeli* CPoolsSA::AddHeli( unsigned short modelID )");
+
+    if ( modelID > MAX_MODELS-1 )
+        return NULL;
+
+    // We do not wanna add when the pool is full
+    if ( (*ppVehiclePool)->Full() )
+        return NULL;
+
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_HELI )
+        return NULL;
+
+    return new CHeliSA( (CHeliSAInterface*)CreateVehicle( modelID ) );
+}
+
+CPlane* CPoolsSA::AddPlane( unsigned short modelID )
+{
+    DEBUG_TRACE("CPlane* CPoolsSA::AddPlane( unsigned short modelID )");
+
+    if ( modelID > MAX_MODELS-1 )
+        return NULL;
+
+    // We do not wanna add when the pool is full
+    if ( (*ppVehiclePool)->Full() )
+        return NULL;
+
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_PLANE )
+        return NULL;
+
+    return new CPlaneSA( (CPlaneSAInterface*)CreateVehicle( modelID ) );
+}
+
+CTrain* CPoolsSA::AddTrain( unsigned short modelID, const CVector& pos, bool direction )
+{
+    DEBUG_TRACE("CTrain* CPoolsSA::AddTrain( unsigned short modelID, const CVector& pos, bool direction )");
+
+    if ( modelID > MAX_MODELS-1 )
+        return NULL;
+
+    // We do not wanna add when the pool is full
+    if ( (*ppVehiclePool)->Full() )
+        return NULL;
+
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_TRAIN )
+        return NULL;
+
+    // clean the existing array
+    memset( (void*)VAR_TrainModelArray, 0, 32 * sizeof(DWORD) );
+
+    // We only want one model
+    *(unsigned short*)VAR_TrainModelArray = modelID; 
+
+    CTrainSAInterface *trainBeginning;
+    CTrainSAInterface *trainEnd;
+    float fX = pos.fX;
+    float fY = pos.fY;
+    float fZ = pos.fZ;
+
+    // Disable GetVehicle because CreateMissionTrain calls it before our CVehicleSA instance is inited
+    m_getVehicleEnabled = false;
+
+    DWORD dwFunc = FUNC_CTrain_CreateMissionTrain;
+    _asm
+    {
+        push    0 // place as close to point as possible (rather than at node)? (maybe) (actually seems to have an effect on the speed, so changed from 1 to 0)
+        push    0 // start finding closest from here 
+        push    -1 // node to start at (-1 for closest node)
+        lea     ecx, trainEnd
+        push    ecx // end of train
+        lea     ecx, trainBeginning 
+        push    ecx // begining of train
+        push    0 // train type (always use 0 as thats where we're writing to)
+        push    direction
+        push    fZ
+        push    fY
+        push    fX
+        call    dwFunc
+        add     esp, 0x28
+    }
+
+    // Enable GetVehicle
+    m_getVehicleEnabled = true;
+
+    CTrainSA *trainHead = new CTrainSA( trainBeginning );
+#if 0
+    CVehicleSA *carriage = trainHead;
+    
+    while ( carriage )
+    {
+        CVehicleSAInterface* vehCarriage = carriage->GetNextCarriageInTrain ();
+
+        if ( !vehCarriage )
+            break;
+
+        carriage = new CVehicleSA ( vehCarriage );
+    }
+#endif //0
+
+    // Stops the train from moving at ludacrist speeds right after creation
+    // due to some glitch in the node finding in CreateMissionTrain
+    trainHead->SetMoveSpeed( CVector( 0, 0, 0 ) );
+
+    return trainHead;
+}
+
+CAutomobileTrailer* CPoolsSA::AddTrailer( unsigned short modelID )
+{
+    DEBUG_TRACE("CAutomobileTrailer* CPoolsSA::AddTrailer( unsigned short modelID )");
+
+    if ( modelID > MAX_MODELS-1 )
+        return NULL;
+
+    // We do not wanna add when the pool is full
+    if ( (*ppVehiclePool)->Full() )
+        return NULL;
+
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetModelType() != VEHICLE_AUTOMOBILETRAILER )
+        return NULL;
+
+    return new CAutomobileTrailerSA( (CAutomobileTrailerSA*)CreateVehicle( modelID ) );
+}
+
+CAutomobile* CPoolsSA::AddAutomobile( unsigned short modelID )
+{
+    DEBUG_TRACE("CAutomobile* CPoolsSA::AddAutomobile( unsigned short modelID )");
+
+    if ( modelID > MAX_MODELS-1 )
+        return NULL;
+
+    // We do not wanna add if the pool is full
+    if ( (*ppVehiclePool)->Full() )
+        return NULL;
+
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE )
+        return NULL;
+
+    switch( info->m_vehicleType )
+    {
+    case VEHICLE_PLANE:
+        return AddPlane( modelID );
+    case VEHICLE_HELI:
+        return AddHeli( modelID );
+    case VEHICLE_CAR:
+        return new CAutomobileSA( (CAutomobileSAInterface*)CreateVehicle( modelID ) );
+    case VEHICLE_AUTOMOBILETRAILER:
+        return AddTrailer( modelID );
+    }
+
+    return NULL;
+}
+
+CBoat* CPoolsSA::AddBoat( unsigned short modelID )
+{
+    DEBUG_TRACE("CBoat* CPoolsSA::AddBoat( unsigned short modelID )");
+
+    if ( modelID > MAX_MODELS-1 )
+        return NULL;
+
+    // We do not wanna add if the pool is full
+    if ( (*ppVehiclePool)->Full() )
+        return NULL;
+
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_BOAT )
+        return NULL;
+
+    return new CBoatSA( (CBoatSAInterface*)CreateVehicle( modelID ) );
+}
+
+CVehicle* CPoolsSA::AddVehicle( unsigned short modelID )
+{
+    DEBUG_TRACE("CVehicle* CPoolsSA::AddVehicle( unsigned short modelID )");
+
+    if ( modelID > MAX_MODELS-1 )
+        return NULL;
+
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE )
+        return NULL;
+
+    switch( info->m_vehicleType )
+    {
+    case VEHICLE_TRAIN:
+        return AddTrain( modelID, CVector( 0, 0, 0 ), true );
+    case VEHICLE_BIKE:
+    case VEHICLE_BICYCLE:
+        return AddBike( modelID );
+    case VEHICLE_PLANE:
+    case VEHICLE_HELI:
+    case VEHICLE_CAR:
+    case VEHICLE_AUTOMOBILETRAILER:
+        return AddAutomobile( modelID );
+    case VEHICLE_BOAT:
+        return AddBoat( modelID );
+    }
+
+    return NULL;
+}
+
+CVehicle* CPoolsSA::GetVehicle( void *entity )
+{
+    if ( m_getVehicleEnabled )
         return NULL;
 
     return ((CVehicleSAInterface*)entity)->m_vehicle;
 }
 
-unsigned int CPoolsSA::GetVehicleRef ( CVehicle* pVehicle )
+CVehicle* CPoolsSA::GetVehicleFromRef( unsigned int index )
 {
-    DEBUG_TRACE("DWORD CPoolsSA::GetVehicleRef ( CVehicle* pVehicle )");
+    DEBUG_TRACE("CVehicle* CPoolsSA::GetVehicleFromRef( unsigned int index )");
 
-    return (*ppVehiclePool)->GetIndex( ((CVehicleSA*)pVehicle)->GetVehicleInterface() );
-}
-
-CVehicle* CPoolsSA::GetVehicleFromRef ( unsigned int index )
-{
-    DEBUG_TRACE("CVehicle* CPoolsSA::GetVehicleFromRef ( DWORD dwGameRef )");
-
-    CVehicleSAInterface *veh = (*ppVehiclePool)->Get( index );
-
-    if ( !veh )
+    if ( index > MAX_VEHICLES-1 )
         return NULL;
 
-    return veh->m_pVehicle;
+    return mtaVehicles[index];
 }
 
-void CPoolsSA::DeleteAllVehicles ( )
+void CPoolsSA::DeleteAllVehicles()
 {
-    DEBUG_TRACE("void CPoolsSA::DeleteAllVehicles ( )");
+    DEBUG_TRACE("void CPoolsSA::DeleteAllVehicles()");
 
     (*ppVehiclePool)->Clear();
 }
@@ -166,132 +457,161 @@ void CPoolsSA::DeleteAllVehicles ( )
 //////////////////////////////////////////////////////////////////////////////////////////
 //                                     OBJECTS POOL                                     //
 //////////////////////////////////////////////////////////////////////////////////////////
-CObject* CPoolsSA::AddObject ( DWORD dwModelID )
+CObjectSA *mtaObjects[MAX_OBJECTS];
+
+static inline CObjectSAInterface* CreateObject( unsigned short model )
 {
-    CObjectSA *obj;
+    DWORD CObjectCreate = FUNC_CObject_Create;  
+    CObjectSAInterface *obj;
+    _asm
+    {
+        push    1
+        push    dwModel
+        call    CObjectCreate
+        add     esp, 8
+        mov     obj, eax
+    }
 
-    DEBUG_TRACE("CObject * CPoolsSA::AddObject ( DWORD dwModelID )");
-
-    if ((*ppObjectPool)->Full())
-        return NULL;
-
-    obj = new CObjectSA( dwModelID );
-
-    // We have to create a hash map entry
-    m_objectMap.insert( gObjectMap::value_type( obj->m_pInterface, obj ) );
-
+    pGame->GetWorld()->Add( obj );
     return obj;
 }
 
-CObject* CPoolSA::GetObject( void *entity )
+CObject* CPoolsSA::AddObject( unsigned short modelId )
 {
-    gObjectMap::iterator iter = m_objectMap.find( (CObjectSAInterface*)entity );
+    DEBUG_TRACE("CObject* CPoolsSA::AddObject( unsigned short modelId )");
 
-    if ( iter == m_objectMap.end() )
+    if ( (*ppObjectPool)->Full() )
         return NULL;
 
-    return (*iter).second;
+    CBaseModelInfoSAInterface *info = ppModelInfo[modelId];
+
+    return new CObjectSA( CreateObject( modelId ) );
 }
 
-unsigned int CPoolsSA::GetObjectRef ( CObject* pObject )
+CObject* CPoolsSA::GetObject( void *entity )
 {
-    DEBUG_TRACE("DWORD CPoolsSA::GetObjectRef ( CObject* pObject )");
-
-    return (*ppObjectPool)->GetIndex( ((CObjectSA*)pObject)->m_pInterface );
-}
-
-CObject* CPoolsSA::GetObjectFromRef ( unsigned int index )
-{
-    DEBUG_TRACE("CObject* CPoolsSA::GetObjectFromRef ( DWORD dwGameRef )");
-
-    CObjectSAInterface *obj = (*ppObjectPool)->Get( index );
-    gObjectMap::iterator iter;
-
-    if ( !obj )
+    if ( !(*ppObjectPool)->IsValid( (CObjectSAInterface*)entity ) )
         return NULL;
 
-    iter = m_objectMap.find( obj );
-
-    if ( iter == m_objectMap.end() )
-        return NULL;
-
-    return (*iter).second;
+    return mtaObjects[ (*ppObjectPool)->GetIndex( (CObjectSAInterface*)entity ) ];
 }
 
-void CPoolsSA::DeleteAllObjects ( )
+CObject* CPoolsSA::GetObjectFromRef( unsigned int index )
 {
-    DEBUG_TRACE("void CPoolsSA::DeleteAllObjects ( )");
+    DEBUG_TRACE("CObject* CPoolsSA::GetObjectFromRef( unsigned int index )");
+
+    if ( index > MAX_OBJECTS-1 )
+        return NULL;
+
+    return mtaObjects[index];
+}
+
+void CPoolsSA::DeleteAllObjects()
+{
+    DEBUG_TRACE("void CPoolsSA::DeleteAllObjects()");
 
     (*ppObjectPool)->Clear();
-
-    m_objectMap.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //                                       PEDS POOL                                      //
 //////////////////////////////////////////////////////////////////////////////////////////
-CPed* CPoolsSA::AddPed ( ePedModel ePedType )
+CPedSA *mtaPeds[MAX_PEDS];
+
+inline static CPlayerPedSAInterface* CreatePlayerPed()
 {
-    DEBUG_TRACE("CPed* CPoolsSA::AddPed ( ePedModel ePedType )");
+    // based on CPlayerPed::SetupPlayerPed (R*)
+    DWORD CPlayerPedConstructor = FUNC_CPlayerPedConstructor;
+    CPlayerPedSAInterface *player = (CPlayerPedSAInterface*)(*ppPedPool)->Allocate();
 
-    if ((*ppPedPool)->Full())
-        return NULL;
+    _asm
+    {
+        mov     ecx, player
+        push    0 // set to 0 and they'll behave like AI peds
+        push    1
+        call    CPlayerPedConstructor
+    }
 
-    return new CPedSA( ePedType );
+    pGame->GetWorld()->Add( player );
+    return player;
 }
 
-CPed* CPoolsSA::AddCivilianPed ( DWORD* pGameInterface )
+CPed* CPoolsSA::AddPed( unsigned short modelId )
 {
-    DEBUG_TRACE("CPed* CPoolsSA::AddCivilianPed ( DWORD* pGameInterface )");
+    DEBUG_TRACE("CPed* CPoolsSA::AddPed( unsigned short modelId )");
 
-    CPedSA *ped = new CCivilianPedSA( (CPedSAInterface*)pGameInterface );
+    if ( (*ppPedPool)->Full() )
+        return NULL;
 
-    m_pedMap.insert( gPedMap::value_type( (CPedSAInterface*)pGameInterface, ped ) );
-    return ped;
+    if ( modelId > MAX_MODELS-1 )
+        return;
+
+    CBaseModelInfoSAInterface *info = ppModelInfo[modelId];
+
+    if ( !info || info->GetModelType() != MODEL_PED )
+        return;
+
+    return new CPlayerPedSA( CreatePlayerPed(), modelId, false );
+}
+
+inline static CCivilianPedSAInterface* CreateCivilianPed()
+{
+    // based on CCivilianPed::SetupPlayerPed (R*)
+    DWORD CCivilianPedConstructor = FUNC_CCivilianPedConstructor;
+    CCivilianPedSAInterface *ped = (CCivilianPedSAInterface*)(*ppPedPool)->Allocate();
+
+    _asm
+    {
+        mov     ecx,ped
+        push    0 // set to 0 and they'll behave like AI peds
+        push    1 // ped type
+        call    CCivilianPedConstructor
+    }
+
+    pGame->GetWorld()->Add( ped );
+    return ped:
+}
+
+CPed* CPoolsSA::AddCivilianPed( unsigned short modelID )
+{
+    DEBUG_TRACE("CPed* CPoolsSA::AddCivilianPed( unsigned short modelID )");
+
+    if ( (*ppPedPool)->Full() )
+        return NULL;
+
+    return new CCivilianPedSA( CreateCivilianPed(), modelID );
+}
+
+CPed* CPoolsSA::AddCivilianPed( void *entity )
+{
+    DEBUG_TRACE("CPed* CPoolsSA::AddCivilianPed( void *entity )");
+
+    return new CCivilianPedSA( (CCivilianPedSAInterface*)entity );
 }
 
 CPed* CPoolSA::GetPed( void *entity )
 {
-    gPedMap::iterator iter = m_pedMap.find( (CPedSAInterface*)entity );
-
-    if ( iter == m_pedMap.end() )
+    if ( !(*ppPedPool)->IsValid( (CPedSAInterface*)entity ) )
         return NULL;
 
-    return (*iter).second;
+    return mtaPeds[ (*ppPedPool)->GetIndex( (CPedSAInterface*)entity ) ];
 }
 
-unsigned int CPoolsSA::GetPedRef ( CPed* pPed )
+CPed* CPoolsSA::GetPedFromRef( unsigned int index )
 {
-    DEBUG_TRACE("DWORD CPoolsSA::GetPedRef ( CPed* pPed )");
+    DEBUG_TRACE("CPed* CPoolsSA::GetPedFromRef( unsigned int index )");
 
-    return (*ppPedPool)->GetIndex( ((CPedSA*)pPed)->m_pInterface );
-}
-
-CPed* CPoolsSA::GetPedFromRef ( unsigned int index )
-{
-    DEBUG_TRACE("CPed* CPoolsSA::GetPedFromRef ( DWORD dwGameRef )");
-
-    CPedSAInterface *ped = (*ppPedPool)->Get( index );
-    gPedMap::iterator iter;
-
-    if ( !ped )
+    if ( index > MAX_PEDS )
         return NULL;
 
-    iter = m_pedMap.find( ped );
-
-    if ( iter == m_pedMap.end() )
-        return NULL;
-
-    return (*iter).second;
+    return mtaPeds[index];
 }
 
-void CPoolsSA::DeleteAllPeds ( )
+void CPoolsSA::DeleteAllPeds()
 {
-    DEBUG_TRACE("void CPoolsSA::DeleteAllPeds ( )");
+    DEBUG_TRACE("void CPoolsSA::DeleteAllPeds()");
 
     (*ppPedPool)->Clear();
-
-    m_pedMap.clear();
 }
 
 CEntity* CPoolsSA::GetEntity( void *entity )
@@ -309,87 +629,14 @@ CEntity* CPoolsSA::GetEntity( void *entity )
     return NULL;
 }
 
-CBuilding* CPoolsSA::AddBuilding ( DWORD dwModelID )
+CBuilding* CPoolsSA::AddBuilding( unsigned short modelID )
 {
-    DEBUG_TRACE("CBuilding * CPoolsSA::AddBuilding ( DWORD dwModelID )");
+    DEBUG_TRACE("CBuilding* CPoolsSA::AddBuilding( unsigned short modelID )");
+
+    if ( (*ppBuildingPool)->Full() )
+        return NULL;
     
-    return new CBuildingSA( dwModelID );
-}s
-
-CVehicle* CPoolsSA::AddTrain ( CVector * vecPosition, DWORD dwModels[], int iSize, bool bDirection )
-{
-    DEBUG_TRACE("CVehicle* CPoolsSA::AddTrain ( CVector * vecPosition, DWORD dwModels[], int iSize, bool bDirection )");
-
-    // clean the existing array
-    MemSetFast ( (void *)VAR_TrainModelArray, 0, 32 * sizeof(DWORD) );
-
-    // now load the models we're going to use and add them to the array
-    for ( int i = 0; i < iSize; i++ )
-    {
-        if ( dwModels[i] == 449 || dwModels[i] == 537 || 
-            dwModels[i] == 538 || dwModels[i] == 569 || 
-            dwModels[i] == 590 )
-        {
-            MemPutFast < DWORD > ( VAR_TrainModelArray + i * 4, dwModels[i] );
-        }
-    }
-
-    CVehicleSAInterface * trainBeginning;
-    CVehicleSAInterface * trainEnd;
-
-    float fX = vecPosition->fX;
-    float fY = vecPosition->fY;
-    float fZ = vecPosition->fZ;
-
-    // Disable GetVehicle because CreateMissionTrain calls it before our CVehicleSA instance is inited
-    m_getVehicleEnabled = false;
-
-    DWORD dwFunc = FUNC_CTrain_CreateMissionTrain;
-    _asm
-    {
-        push    0 // place as close to point as possible (rather than at node)? (maybe) (actually seems to have an effect on the speed, so changed from 1 to 0)
-        push    0 // start finding closest from here 
-        push    -1 // node to start at (-1 for closest node)
-        lea     ecx, trainEnd
-        push    ecx // end of train
-        lea     ecx, trainBegining 
-        push    ecx // begining of train
-        push    0 // train type (always use 0 as thats where we're writing to)
-        push    bDirection // direction 
-        push    fZ // z
-        push    fY // y
-        push    fX // x
-        call    dwFunc
-        add     esp, 0x28
-    }
-
-    assert( trainBeginning );
-    assert( !(*ppVehiclePool)->Full() );
-
-    // Enable GetVehicle
-    m_getVehicleEnabled = true;
-
-    CVehicleSA *trainHead = new CVehicleSA ( trainBegining );
-    CVehicleSA *carriage = trainHead;
-    
-    while ( carriage )
-    {
-        assert( !(*ppVehiclePool)->Full() );
-
-        CVehicleSAInterface* vehCarriage = carriage->GetNextCarriageInTrain ();
-
-        if ( !vehCarriage )
-            break;
-
-        carriage = new CVehicleSA ( vehCarriage );
-    }
-
-    // Stops the train from moving at ludacrist speeds right after creation
-    // due to some glitch in the node finding in CreateMissionTrain
-    CVector vec(0, 0, 0);
-    trainHead->SetMoveSpeed ( &vec );
-
-    return trainHead;
+    return new CBuildingSA( modelID );
 }
 
 char szOutput[1024];
@@ -424,9 +671,9 @@ void CPoolsSA::DumpPoolsStatus ()
 #endif
 }
 
-int CPoolsSA::GetPoolDefaultCapacity ( ePools pool )
+int CPoolsSA::GetPoolDefaultCapacity( ePools pool )
 {
-    switch ( pool )
+    switch( pool )
     {
     case BUILDING_POOL:             return 13000;
     case PED_POOL:                  return 140;
@@ -449,7 +696,7 @@ int CPoolsSA::GetPoolDefaultCapacity ( ePools pool )
     return 0;
 }
 
-unsigned int CPoolsSA::GetNumberOfUsedSpaces ( ePools pool )
+unsigned int CPoolsSA::GetNumberOfUsedSpaces( ePools pool )
 {
     switch( pool )
     {

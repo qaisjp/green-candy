@@ -48,6 +48,11 @@ struct RwColorFloat
 struct RwColor
 {
     unsigned char r, g, b, a;
+
+    operator unsigned int ()
+    {
+        return ( a ) | ( (unsigned int)b >> 8 ) | ( (unsigned int)g >> 16 ) | ( (unsigned int)r >> 24 );
+    }
 };
 
 static const float negOne = -1.0f;

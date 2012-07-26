@@ -14,13 +14,12 @@
 
 #include "CObject.h"
 
-class CProjectile: public virtual CObject
+class CProjectile : public virtual CObject
 {
 public:
-    virtual                 ~CProjectile ( void ) {};
+                            ~CProjectile()  {};
 
-    virtual void            Destroy()=0;
-    virtual void            SetProjectileInfo ( class CProjectileInfo* pProjectileInfo )=0;
+    virtual void            SetProjectileInfo( class CProjectileInfo *info ) = 0;
 };
 
 #endif

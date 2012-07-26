@@ -21,41 +21,6 @@
 #include "CModelInfoSA.h"
 #include "CColModelSA.h"
 
-
-//
-// STexInfo and SShadInfo are used for mapping GTA world textures to shaders
-//
-struct STexInfo;
-struct SShadInfo
-{
-    SShadInfo ( const SString& strMatch, CSHADERDUMMY* pShaderData, float fOrderPriority )
-        : strMatch ( strMatch.ToLower () )
-        , pShaderData ( pShaderData )
-        , fOrderPriority ( fOrderPriority )
-    {
-    }
-    const SString           strMatch;           // Always lower case
-    CSHADERDUMMY* const     pShaderData;
-    const float             fOrderPriority;
-    std::set < STexInfo* >  associatedTexInfoMap;
-};
-
-struct STexInfo
-{
-    STexInfo ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData )
-        : usTxdId ( usTxdId )
-        , strTextureName ( strTextureName.ToLower () )
-        , pD3DData ( pD3DData )
-        , pAssociatedShadInfo ( NULL )
-    {
-    }
-    const ushort            usTxdId;
-    const SString           strTextureName;     // Always lower case
-    CD3DDUMMY* const        pD3DData;
-    SShadInfo*              pAssociatedShadInfo;
-};
-
-
 class CRenderWareSA : public CRenderWare
 {
     public:

@@ -40,7 +40,7 @@ CTransformationSAInterface::CTransformationSAInterface( unsigned int max )
     LIST_APPEND( m_activeList, m_activeItem );
 
     while ( max-- )
-        LIST_APPEND( m_freeList, m_stack + max );
+        LIST_APPEND( m_freeList, *( m_stack + max ) );
 }
 
 CTransformSAInterface* CTransformationSAInterface::Allocate()
@@ -50,8 +50,8 @@ CTransformSAInterface* CTransformationSAInterface::Allocate()
     if ( matrix == &m_freeItem )
         return NULL;
 
-    LIST_REMOVE( matrix );
-    LIST_APPEND( m_activeList, matrix );
+    LIST_REMOVE( *matrix );
+    LIST_APPEND( m_activeList, *matrix );
     return matrix;
 }
 

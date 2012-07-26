@@ -315,10 +315,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\CClient.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\Client.cpp"
 				>
 			</File>
@@ -638,6 +634,10 @@
 				</File>
 				<File
 					RelativePath="..\shared_logic\CBassAudio.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CClient.cpp"
 					>
 				</File>
 				<File

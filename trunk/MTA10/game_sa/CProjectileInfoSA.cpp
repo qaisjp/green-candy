@@ -35,30 +35,31 @@ void CProjectileInfoSA::RemoveAllProjectiles (  )
  * @return CProjectile * for the requested projectile, or NULL if the projectile slot is empty or the ID is invalid
  * \todo Check this CProjectile array is how it says in the function
  */
-CProjectile * CProjectileInfoSA::GetProjectile ( DWORD ID )
+CProjectile* CProjectileInfoSA::GetProjectile( unsigned short id )
 {
-    DEBUG_TRACE("CProjectile * CProjectileInfoSA::GetProjectile ( DWORD ID )");
-    if(ID >= 0 && ID < 32)
-        return (CProjectile *)(ARRAY_CProjectile + ID * sizeof(CProjectile *));
-    else
+    DEBUG_TRACE("CProjectile* CProjectileInfoSA::GetProjectile( unsigned short id )");
+
+    if ( id > 31 )
         return NULL;
+
+    return dynamic_cast <CProjectile*> ( pGame->GetPools()->GetObject( (CProjectileSAInterface*)(ARRAY_CProjectile + id * sizeof(void*)) ) );
 }
 
-CProjectile * CProjectileInfoSA::GetProjectile ( void * projectilePointer )
+CProjectile* CProjectileInfoSA::GetProjectile( void *projectilePointer )
 {
     // This must be destroyed later
     return new CProjectileSA((CProjectileSAInterface*)projectilePointer);
 }
 
-CProjectileInfo * CProjectileInfoSA::GetProjectileInfo ( void * projectileInfoInterface )
+CProjectileInfo* CProjectileInfoSA::GetProjectileInfo( void *info )
 {
-    return projectileInfo[((DWORD)projectileInfoInterface - ARRAY_CProjectileInfo) / sizeof(CProjectileInfoSAInterface)];
+    return m_info[((DWORD)info - ARRAY_CProjectileInfo) / sizeof(CProjectileInfoSAInterface)];
 }
 
 void CProjectileInfoSA::RemoveProjectile ( CProjectileInfo * pProjectileInfo, CProjectile * pProjectile )
 {
     DWORD dwFunc = FUNC_RemoveProjectile;
-    CProjectileInfoSAInterface * projectileInfoInterface = ((CProjectileInfoSA*)pProjectileInfo)->internalInterface;
+    CProjectileInfoSAInterface * projectileInfoInterface = ((CProjectileInfoSA*)pProjectileInfo)->m_interface;
 
     CProjectileSA* pProjectileSA = dynamic_cast < CProjectileSA* > ( pProjectile );
     if ( !pProjectileSA ) return;
@@ -84,19 +85,19 @@ void CProjectileInfoSA::RemoveProjectile ( CProjectileInfo * pProjectileInfo, CP
     }
 }
 
-CProjectileInfo * CProjectileInfoSA::GetNextFreeProjectileInfo ( )
+CProjectileInfo* CProjectileInfoSA::GetNextFreeProjectileInfo()
 {
     for ( int i = 0; i < PROJECTILE_INFO_COUNT; i++ )
     {
-        if ( projectileInfo[i]->internalInterface->dwProjectileType == 0 )
-            return projectileInfo[i];
+        if ( m_info[i]->m_interface->dwProjectileType == 0 )
+            return m_info[i];
     }
     return NULL;
 }
 
-CProjectileInfo * CProjectileInfoSA::GetProjectileInfo ( DWORD dwIndex )
+CProjectileInfo* CProjectileInfoSA::GetProjectileInfo( unsigned short id )
 {
-    return projectileInfo[dwIndex];
+    return m_info[id];
 }
 
 /**
@@ -111,96 +112,80 @@ CProjectileInfo * CProjectileInfoSA::GetProjectileInfo ( DWORD dwIndex )
  */
 
 
-bool CProjectileInfoSA::AddProjectile ( CEntity * creator, eWeaponType eWeapon, CVector vecOrigin, float fForce, CVector * target, CEntity * targetEntity )
+bool CProjectileInfoSA::AddProjectile( CEntity *creator, eWeaponType eWeapon, const CVector& vecOrigin, float fForce, const CVector& targetPos, CEntity *target )
 {
-    DEBUG_TRACE("bool CProjectileInfoSA::AddProjectile ( CEntity * creator, eWeaponType eWeapon, CVector vecOffset, float fForce )");
+    DEBUG_TRACE("bool CProjectileInfoSA::AddProjectile( CEntity *creator, eWeaponType eWeapon, const CVector& vecOrigin, float fForce, const CVector& target, CEntity *target )");
     
     DWORD dwFunction = FUNC_AddProjectile;
     DWORD dwReturn = 0;
-    CEntitySAInterface * creatorVC = NULL;
+    CEntitySAInterface *creatorSA = NULL;
+
     if ( creator != NULL )   
     {
         CEntitySA* pCreatorSA = dynamic_cast < CEntitySA* > ( creator );
         if ( pCreatorSA )
         {
-            creatorVC = pCreatorSA->GetInterface();
-            pGame->GetWorld()->IgnoreEntity(creator);
+            creatorSA = pCreatorSA->GetInterface();
+            pGame->GetWorld()->IgnoreEntity( creator );
         }
     }
 
-    CEntitySAInterface * targetVC = NULL;
+    CEntitySAInterface *targetSA = NULL;
     
-    if ( targetEntity != NULL )
+    if ( target != NULL )
     {
-        CEntitySA* pTargetEntitySA = dynamic_cast < CEntitySA* > ( targetEntity );
+        CEntitySA *pTargetEntitySA = dynamic_cast < CEntitySA* > ( target );
         if ( pTargetEntitySA )
-            targetVC = pTargetEntitySA->GetInterface ();
+            targetSA = pTargetEntitySA->GetInterface ();
     }
 
     
     _asm
     {
-        push    eax
-            
-        push    targetVC
-        push    target
+        push    targetSA
+        push    targetPos
         push    fForce
-        lea     eax, vecOrigin
+        lea     eax,vecOrigin
         push    [eax+8]
         push    [eax+4]
         push    [eax]
         push    eWeapon
-        push    creatorVC
+        push    creatorSA
         call    dwFunction
         add     esp, 32
         mov     dwReturn, eax
-
-        pop     eax
     }
-    pGame->GetWorld()->IgnoreEntity(NULL);
+
+    pGame->GetWorld()->IgnoreEntity( NULL );
     return dwReturn != 0;
 }
 
-CEntity* CProjectileInfoSA::GetTarget ( void )
+CEntity* CProjectileInfoSA::GetTarget() const
 {
-    CEntitySAInterface* pTargetInterface = internalInterface->pEntProjectileTarget;
+    CEntitySAInterface* pTargetInterface = m_interface->pEntProjectileTarget;
     CEntity* pTarget = NULL;
-    if ( pTargetInterface )
+
+    if ( !pTargetInterface )
+        return NULL;
+
+    switch ( pTargetInterface->m_type )
     {
-        switch ( pTargetInterface->nType )
-        {
-            case ENTITY_TYPE_PED:
-            {
-                pTarget = pGame->GetPools ()->GetPed ( (DWORD *) pTargetInterface );
-                break;
-            }
-
-            case ENTITY_TYPE_VEHICLE:
-            {
-                pTarget = pGame->GetPools ()->GetVehicle ( (DWORD *) pTargetInterface );
-                break;
-            }
-
-            case ENTITY_TYPE_OBJECT:
-            {
-                //pTarget = pGame->GetPools ()->GetObject ( (DWORD *) pExplodingEntityInterface );
-                break;
-            }
-        }
+    case ENTITY_TYPE_PED:       return pGame->GetPools()->GetPed( pTargetInterface );
+    case ENTITY_TYPE_VEHICLE:   return pGame->GetPools()->GetVehicle( pTargetInterface );
+    case ENTITY_TYPE_OBJECT:    return pGame->GetPools()->GetObject( pTargetInterface );
     }
-    return pTarget;
-}
 
+    return NULL;
+}
 
 void CProjectileInfoSA::SetTarget ( CEntity* pEntity )
 {
     CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
     if ( pEntitySA )
-        internalInterface->pEntProjectileTarget = pEntitySA->GetInterface ();
+        m_interface->pEntProjectileTarget = pEntitySA->GetInterface();
 }
 
-
-bool CProjectileInfoSA::IsActive ( void )
+bool CProjectileInfoSA::IsActive() const
 {
-    return ( internalInterface->bProjectileActive == 1 );
+    return ( m_interface->bProjectileActive == 1 );
 }

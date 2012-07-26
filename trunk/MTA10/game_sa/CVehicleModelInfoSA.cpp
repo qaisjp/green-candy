@@ -45,7 +45,7 @@ void    VehicleModels_Init()
     CTxdInstanceSA *txdEntry;
 
     // Do not execute it
-    *(unsigned char*)FUNC_InitVehicleModels = 0xC3;
+    *(unsigned char*)FUNC_InitVehicleData = 0xC3;
 
     __asm
     {
@@ -58,7 +58,7 @@ void    VehicleModels_Init()
     }
 
     // Load the generic vehicle textures
-    txdEntry = pGame->GetTextureManager()->FindTxdEntry( "vehicle" );
+    txdEntry = (*ppTxdPool)->Get( pGame->GetTextureManager()->FindTxdEntry( "vehicle" ) );
 
     if ( txdEntry )
         txdEntry->LoadTXD( "MODELS\\GENERIC\\VEHICLE.TXD" );
@@ -68,11 +68,11 @@ void    VehicleModels_Init()
     // Reference it
     txdEntry->Reference();
 
-    *(RwTexture*)0x00B4E68C = RwTexDictionaryFindNamedTexture( txdEntry->m_txd, "vehiclelights128" );
-    *(RwTexture*)0x00B4E690 = RwTexDictionaryFindNamedTexture( txdEntry->m_txd, "vehiclelightson128" );
+    *(RwTexture**)0x00B4E68C = txdEntry->m_txd->FindNamedTexture( "vehiclelights128" );
+    *(RwTexture**)0x00B4E690 = txdEntry->m_txd->FindNamedTexture( "vehiclelightson128" );
 
     // Allocate the seat placement pool
-    pVehicleSeatPlacementPool = new CVehicleSeatPlacementPool;
+    *ppVehicleSeatPlacementPool = new CVehicleSeatPlacementPool;
 
     __asm
     {
@@ -100,10 +100,10 @@ void CVehicleModelInfoSAInterface::SetAnimFile( const char *name )
 {
     char *anim;
 
-    if ( strcmp(name, "null") == 0 )
+    if ( strcmp( name, "null" ) == 0 )
         return;
 
-    anim = malloc( strlen( name ) + 1 );
+    anim = (char*)malloc( strlen( name ) + 1 );
 
     strcpy(anim, name);
 
@@ -133,7 +133,7 @@ int CVehicleModelInfoSAInterface::GetAnimFileIndex()
 
 void CVehicleModelInfoSAInterface::SetClump( RpClump *clump )
 {
-    m_seatPlacement = new (pVehicleSeatPlacementPool->Allocate()) CVehicleSeatPlacementSAInterface();
+    m_seatPlacement = new CVehicleSeatPlacementSAInterface();
 
     CClumpModelInfoSAInterface::SetClump( clump );
 
@@ -186,10 +186,10 @@ static bool RwAtomicRenderTranslucentTrain( RpAtomic *atomic )
     // Set up rendering
     level.m_render = RpAtomicRender;
     level.m_atomic = atomic;
-    level.m_distance = *(float*)VAR_ATOMIC_RENDR_OFFSET;
+    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET;
 
     if ( !(atomic->m_matrixFlags & 0x40) )
-        level.m_lod += calc;
+        level.m_distance += calc;
 
     if ( !rwRenderChains->PushRender( &level ) )
         RpAtomicRender( atomic );
@@ -264,7 +264,7 @@ static bool RwAtomicRenderTranslucentBoat( RpAtomic *atomic )
 
     if ( atomic->m_matrixFlags & 0x40 )
     {
-        RwAtomicRenderDetailLevel level;
+        RwAtomicZBufferEntry level;
 
         level.m_atomic = atomic;
         level.m_render = RpAtomicRender;
@@ -342,12 +342,13 @@ static bool RwAtomicRenderTranslucentHeli( RpAtomic *atomic )
         return true;
 
     // Set up rendering
+    RwAtomicZBufferEntry level;
     level.m_render = RpAtomicRender;
     level.m_atomic = atomic;
-    level.m_distance = *(float*)VAR_ATOMIC_RENDR_OFFSET;
+    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET;
 
     if ( atomic->m_matrixFlags & 0x40 )
-        level.m_distance -= 0.00009999997;
+        level.m_distance -= 0.0001f;
     else
         level.m_distance += calc;
 
@@ -359,16 +360,16 @@ static bool RwAtomicRenderTranslucentHeli( RpAtomic *atomic )
 
 static bool RwAtomicRenderHeliMovingRotor( RpAtomic *atomic )
 {
-    CVector *vecRotor;
+    CVector vecRotor;
     RwAtomicZBufferEntry level;
 
     if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliRotorRenderDistance )
         return true;
 
-    vecRotor = (CVector*)&atomic->m_parent->m_ltm.pos - (CVector*)0x00C88050;
+    vecRotor = atomic->m_parent->m_ltm.pos - *(CVector*)0x00C88050;
 
     // Fun Fact: The top rotor has a 20 unit radius!
-    level.m_distance = vecRotor->DotProduct( (CVector*)&atomic->m_geometry->m_parent->m_ltm.at ) * 20 + *(float*)VAR_ATOMIC_RENDER_OFFSET;
+    level.m_distance = vecRotor.DotProduct( atomic->m_geometry->m_parent->m_ltm.at ) * 20 + *(float*)VAR_ATOMIC_RENDER_OFFSET;
     level.m_render = RpAtomicRender;
     level.m_atomic = atomic;
 
@@ -380,22 +381,31 @@ static bool RwAtomicRenderHeliMovingRotor( RpAtomic *atomic )
 
 static bool RwAtomicRenderHeliMovingRotor2( RpAtomic *atomic )
 {
-    CVector *vecRotor;
+    CVector vecRotor;
     RwAtomicZBufferEntry level;
 
     if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliRotorRenderDistance )
         return true;
 
-    vecRotor = (CVector)&atomic->m_parent->m_ltm.pos - (CVector)0x00C88050;
+    vecRotor = atomic->m_parent->m_ltm.pos - *(CVector*)0x00C88050;
 
     // Lulz, heavy math, much assembly, small C++ code
-    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET - vecRotor->DotProduct( (CVector*)&atomic->m_geometry->m_parent->m_ltm.right ) - vecRotor->DotProduct( (CVector*)&atomic->m_geometry->m_parent->m_ltm.up );
+    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET - vecRotor.DotProduct( atomic->m_geometry->m_parent->m_ltm.right ) - vecRotor.DotProduct( atomic->m_geometry->m_parent->m_ltm.up );
     level.m_render = RpAtomicRender;
     level.m_atomic = atomic;
 
     if ( !rwRenderChains->PushRender( &level ) )
         RpAtomicRender( atomic );
 
+    return true;
+}
+
+static bool RwAtomicRenderPlaneLOD( RpAtomic *atomic )  // actually the same as train
+{
+    if (*(float*)VAR_ATOMIC_RENDER_OFFSET <= planeLODDistance)
+        return true;
+
+    RpAtomicRender( atomic );
     return true;
 }
 
@@ -412,7 +422,7 @@ static bool RwAtomicRenderPlane( RpAtomic *atomic )
     // Lol, serious checking going on here!
     if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C88028 && !(atomic->m_matrixFlags & 0x04)
         && *(float*)0x00C88020 > 0.2f
-        && RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags ) >= 0.0f
+        && RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags ) >= 0.0f )
         return true;
 
     RpAtomicRender( atomic );
@@ -442,12 +452,13 @@ static bool RwAtomicRenderTranslucentPlane( RpAtomic *atomic )
         return true;
 
     // Set up rendering
+    RwAtomicZBufferEntry level;
     level.m_render = RpAtomicRender;
     level.m_atomic = atomic;
-    level.m_distance = *(float*)VAR_ATOMIC_RENDR_OFFSET;
+    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET;
 
     if ( atomic->m_matrixFlags & 0x40 )
-        level.m_distance -= 0.00009999997;
+        level.m_distance -= 0.0001f;
     else
         level.m_distance += calc;
 
@@ -480,12 +491,13 @@ static bool RwAtomicRenderTranslucentDefaultVehicle( RpAtomic *atomic ) // actua
         return true;
 
     // Set up rendering
+    RwAtomicZBufferEntry level;
     level.m_render = RpAtomicRender;
     level.m_atomic = atomic;
-    level.m_distance = *(float*)VAR_ATOMIC_RENDR_OFFSET;
+    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET;
 
     if ( atomic->m_matrixFlags & 0x40 )
-        level.m_distance -= 0.00009999997;
+        level.m_distance -= 0.0001f;
     else
         level.m_distance += calc;
 
@@ -535,11 +547,11 @@ static bool RwAtomicSetupVehicleDamaged( RpAtomic *child )
     return true;
 }
 
-static bool RwAtomicRegisterTrain( RpAtomic *child, void *data )
+static bool RwAtomicRegisterTrain( RpAtomic *child, int )
 {
     if ( strstr(child->m_parent->m_nodeName, "_vlo") )
     {
-        child->SetRenderCallback( child );
+        child->SetRenderCallback( RwAtomicRenderTrainLOD );
         return true;
     }
     else if ( child->m_geometry->IsAlpha() )
@@ -551,7 +563,7 @@ static bool RwAtomicRegisterTrain( RpAtomic *child, void *data )
     return true;
 }
 
-static bool RwAtomicRegisterBoat( RpAtomic *child, void *data )
+static bool RwAtomicRegisterBoat( RpAtomic *child, int )
 {
     if ( strcmp( child->m_parent->m_nodeName, "boat_hi" ) )
         child->SetRenderCallback( RwAtomicRenderBoat );         // boat_hi does not support alpha?
@@ -566,7 +578,7 @@ static bool RwAtomicRegisterBoat( RpAtomic *child, void *data )
     return true;
 }
 
-static bool RwAtomicRegisterHeli( RpAtomic *child, void *data )
+static bool RwAtomicRegisterHeli( RpAtomic *child, int )
 {
     if ( strcmp( child->m_parent->m_nodeName, "moving_rotor" ) == 0 )
         child->SetRenderCallback( RwAtomicRenderHeliMovingRotor );
@@ -583,11 +595,11 @@ static bool RwAtomicRegisterHeli( RpAtomic *child, void *data )
     return true;
 }
 
-static bool RwAtomicRegisterPlane( RpAtomic *child, void *data )
+static bool RwAtomicRegisterPlane( RpAtomic *child, int )
 {
     if ( strstr(child->m_parent->m_nodeName, "_vlo") )
     {
-        child->SetRenderCallback( child );
+        child->SetRenderCallback( RwAtomicRenderPlaneLOD );
         return true;
     }
     else if ( child->m_geometry->IsAlpha() )
@@ -599,11 +611,11 @@ static bool RwAtomicRegisterPlane( RpAtomic *child, void *data )
     return true;
 }
 
-static bool RwAtomicRegisterDefaultVehicle( RpAtomic *child, void *data )
+static bool RwAtomicRegisterDefaultVehicle( RpAtomic *child, int )
 {
     if ( strstr( child->m_parent->m_nodeName, "_vlo" ) == 0 )
         child->SetRenderCallback( RwAtomicRenderHeliLOD );
-    else if ( child->m_geometry->IsAlpha() || strncmp( child->m_parent->m_nodeName, "windscreen", 10) == 0 )
+    else if ( child->m_geometry->IsAlpha() || strnicmp( child->m_parent->m_nodeName, "windscreen", 10 ) == 0 )
         child->SetRenderCallback( RwAtomicRenderTranslucentDefaultVehicle );
     else
         child->SetRenderCallback( RwAtomicRenderDefaultVehicle );
@@ -656,7 +668,7 @@ CVehicleSeatPlacementSAInterface::CVehicleSeatPlacementSAInterface()
     m_atomicCount = 0;
 
     m_unknown4 = 0;
-    m_unknown3 = 0;
+    m_usageFlags = 0;
 }
 
 void* CVehicleSeatPlacementSAInterface::operator new( size_t )
@@ -687,17 +699,17 @@ void CVehicleModelInfoSAInterface::Setup()
 
     for (info; info->m_name; info++)
     {
-        if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_SEAT | ATOMIC_HIER_UNKNOWN3) && hier = m_rwClump->m_parent->FindFreeChildByName( info->m_name ) )
+        if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_SEAT | ATOMIC_HIER_UNKNOWN3) && ( hier = m_rwClump->m_parent->FindFreeChildByName( info->m_name ) ) )
         {
             if ( info->m_flags & ATOMIC_HIER_FRONTSEAT )
             {
                 RwFrame *parent = hier;
 
                 // Position the seats
-                m_seatPlacement->m_seatOffset = (CVector)hier->m_parent->m_ltm.pos;
+                m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ] = (CVector)hier->m_parent->m_ltm.pos;
 
-                while ( parent = parent->m_parent && parent->m_parent )
-                    pRwInterface->m_matrixTransform3( m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], 1, parent->m_parent->m_modelling );
+                while ( ( parent = parent->m_parent ) && parent->m_parent )
+                    pRwInterface->m_matrixTransform3( &m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], &m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], 1, &parent->m_parent->m_modelling );
 
                 RwFrameCloneHierarchy( hier );
             }
@@ -708,7 +720,7 @@ void CVehicleModelInfoSAInterface::Setup()
                  seat->m_offset = (CVector)hier->m_modelling.pos;
 
                  // Calculate the quat for rotation
-                 new (&seat->m_quat) CQuat( hier->m_modelling );
+                 seat->m_quat = CQuat( hier->m_modelling );
 
                  seat->m_id = hier->m_hierarchyId;
             }
@@ -728,7 +740,7 @@ void CVehicleModelInfoSAInterface::Setup()
             }
         }
 
-        if ( info->m_flags & (ATOMIC_HIER_UNKNOWN4 | ATOMIC_HIER_UNKNOWN5) && hier = m_rwClump->m_parent->FindChildByHierarchy( info->m_frameHierarchy ) )
+        if ( info->m_flags & (ATOMIC_HIER_UNKNOWN4 | ATOMIC_HIER_UNKNOWN5) && ( hier = m_rwClump->m_parent->FindChildByHierarchy( info->m_frameHierarchy ) ) )
         {
             for ( hier; hier; hier = hier->GetFirstChild() )
             {
@@ -781,9 +793,10 @@ void CVehicleModelInfoSAInterface::Setup()
 
         SetComponentFlags( hier, info->m_flags );
 
+        RpAtomic *clone;
+
         if ( info->m_flags & (ATOMIC_HIER_UNKNOWN4 | 0x04) )
         {
-            RpAtomic *clone;
             RwFrame *frame;
 
             if ( !obj1 )
@@ -791,7 +804,7 @@ void CVehicleModelInfoSAInterface::Setup()
 
             if ( info->m_flags & ATOMIC_HIER_UNKNOWN4 )
             {
-                clone = RpAtomicClone( obj1 )
+                clone = RpAtomicClone( obj1 );
 
                 RpAtomicSetFrame( clone, hier );
                 RpClumpAddAtomic( m_rwClump, clone );
@@ -831,7 +844,7 @@ void CVehicleModelInfoSAInterface::Setup()
 
             clone = RpAtomicClone( obj2 );
 
-            RpAtomicSetFrame( hier, clone );
+            RpAtomicSetFrame( clone, hier );
 
             RpClumpAddAtomic( m_rwClump, clone );
 
@@ -874,7 +887,7 @@ void CVehicleModelInfoSAInterface::SetComponentFlags( RwFrame *frame, unsigned i
         frame->SetAtomicVisibility( 0x40 );
 }
 
-static bool RwClumpAtomicSetupVehiclePipeline( RpAtomic *child, void *data )
+static bool RwClumpAtomicSetupVehiclePipeline( RpAtomic *child, int )
 {
     RpAtomicSetupVehiclePipeline( child );
     return true;
@@ -883,18 +896,18 @@ static bool RwClumpAtomicSetupVehiclePipeline( RpAtomic *child, void *data )
 void CVehicleModelInfoSAInterface::RegisterRoot()
 {
     RwFrame *frame;
-    CVector normal = { 1.0f, 0, 0 };
+    CVector normal( 1.0f, 0, 0 );
 
     // Make sure we render using the vehicle pipeline
     m_rwClump->ForAllAtomics( RwClumpAtomicSetupVehiclePipeline, 0 );
 
     // Do not do stuff if we have a root already
-    if ( *(RwFrame*)0x00B4E6B8 )
+    if ( *(RwFrame**)0x00B4E6B8 )
         return;
 
     frame = RwFrameCreate();
 
-    *(RwFrame*)0x00B4E6B8 = frame;
+    *(RwFrame**)0x00B4E6B8 = frame;
 
     RwFrameOrient( frame, 60, 0, normal );
 
@@ -906,26 +919,23 @@ void CVehicleModelInfoSAInterface::RegisterRoot()
 
 void CVehicleModelInfoSAInterface::SetupMateria()
 {
-    RpMaterials mats;
-    unsigned int n;
-
     RwPrefetch();
+    {
+        RpMaterials mats( 20 );
+        unsigned int n;
 
-    new (&mats) RpMaterials( 20 );
+        m_rwClump->FetchMateria( mats );
 
-    m_rwClump->FetchMateria( &mats );
-
-    for (n=0; n<m_seatPlacement->m_atomicCount; n++)
-        m_seatPlacement->m_atomics[n]->FetchMateria( &mats );
-
-    delete &mats;
+        for ( n=0; n<m_seatPlacement->m_atomicCount; n++ )
+            m_seatPlacement->m_atomics[n]->FetchMateria( mats );
+    }
 
     m_rwClump->RemoveAtomicVisibilityFlags( 0x2000 );
 }
 
 #define RAND        (double)(rand() & 0xFFFF) / 0x7FFF
-#define RANDCHAR    RAND * 0.23
-#define RANDNUM     RAND * -9
+#define RANDCHAR    (char)( RAND * 0.23 )
+#define RANDNUM     (char)( RAND * -9 )
 
 bool GetRandomNameplateText( char *buffer, size_t max )
 {
@@ -939,7 +949,7 @@ bool GetRandomNameplateText( char *buffer, size_t max )
     buffer[2] = '0' - RANDNUM;
     buffer[3] = '0' - RANDNUM;
 
-    for (n=4; n<max; )
+    for ( n=4; n<max; )
     {
         buffer[n++] = '0' - RANDNUM;
         buffer[n++] = 'A' - RANDCHAR;

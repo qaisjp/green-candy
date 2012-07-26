@@ -26,7 +26,7 @@ CTaskSimpleChokingSA::CTaskSimpleChokingSA ( CPed* pAttacker, bool bIsTearGas )
 
     // Grab the GTA class for the attacker if any
     CPedSAInterface* pAttackerInterface = NULL;
-    if ( pAttackerSA ) pAttackerInterface = pAttackerSA->GetPedInterface ();
+    if ( pAttackerSA ) pAttackerInterface = pAttackerSA->GetInterface ();
 
     CreateTaskInterface();
 
@@ -85,14 +85,14 @@ void CTaskSimpleChokingSA::UpdateChoke ( CPed* pPed, CPed* pAttacker, bool bIsTe
     CPedSA* pPedSA = dynamic_cast < CPedSA* > ( pPed );
     if ( !pPedSA ) return;
 
-    CPedSAInterface* pPedInterface = pPedSA->GetPedInterface ();
+    CPedSAInterface* pPedInterface = pPedSA->GetInterface ();
 
     CPedSAInterface* pAttackerInterface = NULL;
     if ( pAttacker )
     {
         CPedSA* pAttackerSA = dynamic_cast < CPedSA* > ( pAttacker );
         if ( pAttackerSA )
-            pAttackerInterface = pAttackerSA->GetPedInterface ();
+            pAttackerInterface = pAttackerSA->GetInterface ();
     }
 
     // Call the func

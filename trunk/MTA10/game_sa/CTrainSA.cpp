@@ -12,7 +12,7 @@
 
 #include "StdInc.h"
 
-CTrainSA::CTrainSA( unsigned short modelId ) : CVehicleSA( modelId )
+CTrainSA::CTrainSA( CTrainSAInterface *train ) : CVehicleSA( train )
 {
     m_isDerailable = true;
 
@@ -60,9 +60,9 @@ void CTrainSA::SetMoveSpeed( const CVector& vecMoveSpeed )
 #endif
 }
 
-void CVehicleSA::SetNextTrainCarriage ( CVehicle *next )
+void CTrainSA::SetNextTrainCarriage( CTrain *next )
 {
-    CVehicleSA *veh = dynamic_cast <CVehicleSA*> ( next );
+    CTrainSA *veh = dynamic_cast <CTrainSA*> ( next );
 
     if ( !veh )
     {
@@ -70,20 +70,15 @@ void CVehicleSA::SetNextTrainCarriage ( CVehicle *next )
         return;
     }
 
-    GetInterface()->m_nextCarriage = veh;
+    GetInterface()->m_nextCarriage = veh->GetInterface();
 
     if ( veh->GetPreviousTrainCarriage() != this )
         veh->SetPreviousTrainCarriage( this );
 }
 
-CVehicleSAInterface* CVehicleSA::GetPreviousCarriageInTrain ( void )
+void CTrainSA::SetPreviousTrainCarriage( CTrain *previous )
 {
-    return GetInterface()->m_prevCarriage;
-}
-
-void CVehicleSA::SetPreviousTrainCarriage ( CVehicle *previous )
-{
-    CVehicleSA *veh = dynamic_cast <CVehicleSA*> ( previous );
+    CTrainSA *veh = dynamic_cast <CTrainSA*> ( previous );
 
     if ( !veh )
     {
@@ -93,23 +88,13 @@ void CVehicleSA::SetPreviousTrainCarriage ( CVehicle *previous )
 
     GetInterface()->m_prevCarriage = veh->GetInterface();
 
-    if ( veh->GetNextTrainCarriage () != this )
-        veh->SetNextTrainCarriage ( this );
+    if ( veh->GetNextTrainCarriage() != this )
+        veh->SetNextTrainCarriage( this );
 }
 
-CVehicle* CVehicleSA::GetPreviousTrainCarriage ( void )
+void CTrainSA::SetDerailed( bool bDerailed )
 {
-    return GetInterface()->m_prevCarriage->m_vehicle;
-}
-
-bool CVehicleSA::IsDerailed ( void )
-{
-    return GetInterface()->m_trainFlags.bIsDerailed;
-}
-
-void CVehicleSA::SetDerailed( bool bDerailed )
-{
-    DWORD dwThis = (DWORD)pInterface;
+    DWORD dwThis = (DWORD)m_pInterface;
 
     if ( bDerailed )
     {
@@ -133,44 +118,9 @@ void CVehicleSA::SetDerailed( bool bDerailed )
     GetInterface()->m_trainSpeed = 0.0f;
 }
 
-CVehicleSAInterface* CTrainSA::GetNextCarriageInTrain()
+void CTrainSA::SetRailTrack( unsigned char track )
 {
-    return GetInterface()->m_nextCarriage;
-}
-
-CVehicle* CTrainSA::GetNextTrainCarriage()
-{
-    return pGame->GetPools()->GetVehicle( GetInterface()->m_nextCarriage );
-}
-
-float CTrainSA::GetTrainSpeed ()
-{
-    return GetInterface()->m_trainSpeed;
-}
-
-void CTrainSA::SetTrainSpeed( float fSpeed )
-{
-    GetInterface()->m_trainSpeed = fSpeed;
-}
-
-bool CTrainSA::GetTrainDirection ()
-{
-    return GetInterface()->m_trainFlags.bDirection != 0;
-}
-
-void CTrainSA::SetTrainDirection ( bool bDirection )
-{
-    GetInterface()->m_trainFlags.bDirection = bDirection;
-}
-
-unsigned char CTrainSA::GetRailTrack ()
-{
-    return GetVehicleInterface ()->m_railTrackID;
-}
-
-void CTrainSA::SetRailTrack ( unsigned char track )
-{
-    if ( ucTrackID > NUM_RAILTRACKS-1 )
+    if ( track > NUM_RAILTRACKS-1 )
         return;
 
     CTrainSAInterface *train = GetInterface();

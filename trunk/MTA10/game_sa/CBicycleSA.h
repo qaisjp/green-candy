@@ -26,8 +26,7 @@ class CBicycleSA : public virtual CBicycle, public CBikeSA
 {
 public:
                                 CBicycleSA( CBicycleSAInterface *bike );
-                                CBicycleSA( unsigned short mode );
-    virtual                     ~CBicycleSA()   {};
+                                ~CBicycleSA();
 };
 
 #endif

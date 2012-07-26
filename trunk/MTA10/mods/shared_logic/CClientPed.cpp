@@ -1623,7 +1623,7 @@ void CClientPed::Kill ( eWeaponType weaponType, unsigned char ucBodypart, bool b
         if ( pTask && pTask->GetTaskType () == TASK_COMPLEX_IN_WATER )
         {
             // Kill the task
-            pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_URGENT, NULL );
+            pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_URGENT );
         }
 
         if ( bSetDirectlyDead )
@@ -2126,7 +2126,7 @@ bool CClientPed::KillTask ( int iTaskPriority, bool bGracefully )
         {
             if ( bGracefully )
             {
-                pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE, NULL );
+                pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
                 pTask->Destroy ();                
             }
             m_pTaskManager->RemoveTask ( (eTaskPriority)iTaskPriority );
@@ -2146,7 +2146,7 @@ bool CClientPed::KillTaskSecondary ( int iTaskPriority, bool bGracefully )
         {
             if ( bGracefully )
             {
-                pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE, NULL );
+                pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
                 pTask->Destroy ();
             }
             m_pTaskManager->RemoveTaskSecondary ( (eTaskPriority)iTaskPriority );
@@ -2456,7 +2456,7 @@ void CClientPed::StreamedInPulse ( void )
                 {
                     if ( IsUsingGun () )
                     {
-                        pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_URGENT, NULL );
+                        pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_URGENT );
                     }
                 }
             }
@@ -3805,7 +3805,7 @@ bool CClientPed::SetHasJetPack ( bool bHasJetPack )
                 CTask * pTask = m_pTaskManager->GetTask ( TASK_PRIORITY_PRIMARY );
                 if ( pTask )
                 {
-                    pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE, NULL );
+                    pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
                     pTask->Destroy ();
                     m_pTaskManager->RemoveTask ( TASK_PRIORITY_PRIMARY );
                     
@@ -3814,7 +3814,7 @@ bool CClientPed::SetHasJetPack ( bool bHasJetPack )
                 pTask = m_pTaskManager->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_TEMP );
                 if ( pTask )
                 {
-                    pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE, NULL );
+                    pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
                     pTask->Destroy ();
                     m_pTaskManager->RemoveTask ( TASK_PRIORITY_EVENT_RESPONSE_TEMP );                    
                 }
@@ -3822,7 +3822,7 @@ bool CClientPed::SetHasJetPack ( bool bHasJetPack )
                 pTask = m_pTaskManager->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
                 if ( pTask )
                 {
-                    pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE, NULL );
+                    pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
                     pTask->Destroy ();
                     m_pTaskManager->RemoveTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );                    
                 }
@@ -3842,7 +3842,7 @@ bool CClientPed::SetHasJetPack ( bool bHasJetPack )
             CTask * pPrimaryTask = m_pTaskManager->GetSimplestActiveTask ( );
             if ( pPrimaryTask && pPrimaryTask->GetTaskType() == TASK_SIMPLE_JETPACK )
             {
-                pPrimaryTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_URGENT, NULL );
+                pPrimaryTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_URGENT );
             }
 
             m_bHasJetPack = false;
@@ -4690,7 +4690,7 @@ void CClientPed::SetDoingGangDriveby ( bool bDriveby )
         {
             if ( !bDriveby )
             {
-                pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_URGENT, NULL );
+                pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_URGENT );
             }
         }
         else if ( bDriveby )
@@ -4819,7 +4819,7 @@ void CClientPed::KillAnimation()
             int iTaskType = pTask->GetTaskType ();
             if ( iTaskType == TASK_SIMPLE_NAMED_ANIM || iTaskType == TASK_SIMPLE_ANIM )
             {                
-                pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE, NULL );
+                pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
                 pTask->Destroy ();
                 m_pTaskManager->RemoveTask ( TASK_PRIORITY_PRIMARY );
             }

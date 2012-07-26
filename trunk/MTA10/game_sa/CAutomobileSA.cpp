@@ -149,7 +149,7 @@ void CAutomobileSAInterface::UpdateNitrous( unsigned char rounds )
     m_nitroBoosts = rounds;
 }
 
-CAutomobileSA::CAutomobileSA( unsigned short modelId ) : CVehicleSA( modelId ), m_HeadLightColor( SColorRGBA( 255, 255, 255, 255 ) )
+CAutomobileSA::CAutomobileSA( CAutomobileSAInterface *veh ) : CVehicleSA( veh ), m_HeadLightColor( SColorRGBA( 255, 255, 255, 255 ) )
 {
     m_damageManager = new CDamageManagerSA( GetInterface(), &GetInterface()->m_damage );
 

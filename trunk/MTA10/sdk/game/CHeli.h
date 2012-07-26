@@ -24,9 +24,10 @@ public:
     virtual void                SetRopeHeightForHeli( float height ) = 0;
     virtual CPhysical*          QueryPickedUpEntityWithWinch() = 0;
 
-    virtual bool                IsHeliSearchLightVisible() = 0;
-    virtual void                SetHeliSearchLightVisible( bool bVisible ) = 0;
+    virtual bool                IsHeliSearchLightVisible() const = 0;
+    virtual void                SetHeliSearchLightVisible( bool vis ) = 0;
 
+    virtual float               GetHeliRotorSpeed() const = 0;
     virtual void                SetHeliRotorSpeed( float speed ) = 0;
 };
 

@@ -135,10 +135,13 @@ struct RwVertex
 
 // Macros used by RW, taken from SGU :)
 #define LIST_APPEND(link, item) ( (item).next = &(link), (item).prev = (link).prev, (item).prev->next = &(item), (item).next->prev = &(item) )
-#define LIST_INSERT(link, item) ( (item).next = (link).next, (item).prev = &(link), (item).prev->next = (item), (item).next->prev = (item) )
+#define LIST_INSERT(link, item) ( (item).next = (link).next, (item).prev = &(link), (item).prev->next = &(item), (item).next->prev = &(item) )
 #define LIST_REMOVE(link) ( (link).prev->next = (link).next, (link).next->prev = (link).prev )
 #define LIST_CLEAR(link) ( (link).prev = &(link), (link).next = &(link) )
 #define LIST_EMPTY(link) ( (link).prev == &(link) && (link).next == &(link) )
+#define LIST_GETITEM(type, item, node) ( (type*)( (unsigned int)(item) - offsetof(type, node) ) )
+#define LIST_FOREACH_BEGIN(type, root, node, list, iter) for ( iter = root.next; iter != &root; iter = iter->next ) { type *item = LIST_GETITEM(type, iter, node);
+#define LIST_FOREACH_END }
 
 template < class type >
 struct RwListEntry
@@ -201,7 +204,15 @@ public:
     RwRenderLink*           m_link;         // 16
 
     RwRenderLink*           AllocateLink( unsigned int count );
-    void                    ForAllLinks( void (*callback)( RwRenderLink *link, void *data ), void *data );
+    template <class type>
+    void                    ForAllLinks( void (*callback)( RwRenderLink *link, type *data ), type *data )
+    {
+        RwRenderLink *link = m_link;
+        unsigned int n;
+
+        for ( n=0; n<m_count; link++ )
+            callback( link, data );
+    }
 };
 class RwBoneInfo
 {
@@ -213,6 +224,7 @@ public:
 };
 class RwAnimInfo    // dynamic
 {
+public:
     void*                   m_unknown;      // 0
     CVector                 m_offset;       // 4
     BYTE                    m_pad[12];      // 16
@@ -284,17 +296,68 @@ public:
     unsigned int            m_hierarchyId;  // 196
 
     unsigned int            CountChildren();
-    bool                    ForAllChildren( bool (*callback)( RwFrame *frame, void *data ), void *data );
+    template <class type>
+    bool                    ForAllChildren( bool (*callback)( RwFrame *frame, type *data ), type *data )
+    {
+        RwFrame *child;
+
+        for ( child = m_child; child; child = child->m_next )
+        {
+            if ( !callback( child, data ) )
+                return false;
+        }
+
+        return true;
+    }
     RwFrame*                GetFirstChild();
     RwFrame*                FindFreeChildByName( const char *name );
     RwFrame*                FindChildByName( const char *name );
     RwFrame*                FindChildByHierarchy( unsigned int id );
 
-    bool                    ForAllObjects( bool (*callback)( RwObject *object, void *data ), void *data );
+    template <class type>
+    bool                    ForAllObjects( bool (*callback)( RwObject *object, type *data ), type *data )
+    {
+        RwListEntry <RwObjectFrame> *child;
+
+        for ( child = m_objects.root.next; child != &m_objects.root; child = child->next )
+        {
+            if ( !callback( (RwObject*)( (unsigned int)child - offsetof(RwObjectFrame, m_lFrame) ), data ) )
+                return false;
+        }
+
+        return true;
+    }
     RwObject*               GetFirstObject();
     RwObject*               GetLastVisibleObject();
     RwObject*               GetLastObject();
-    bool                    ForAllAtomics( bool (*callback)( RpAtomic *atomic, void *data ), void *data );
+
+    template <class type>
+    struct _rwObjectGetAtomic
+    {
+        bool                (*routine)( RpAtomic *atomic, type data );
+        type                data;
+    };
+
+    template <class type>
+    static bool RwObjectDoAtomic( RwObject *child, _rwObjectGetAtomic <type> *info )
+    {
+        // Check whether the object is a atomic
+        if ( child->m_type != 0x14 )
+            return true;
+
+        return info->routine( (RpAtomic*)child, info->data );
+    }
+
+    template <class type>
+    bool                    ForAllAtomics( bool (*callback)( RpAtomic *atomic, type data ), type data )
+    {
+        _rwObjectGetAtomic <type> info;
+
+        info.routine = callback;
+        info.data = data;
+
+        return ForAllObjects( RwObjectDoAtomic <type>, &info );
+    }
     RpAtomic*               GetFirstAtomic();
     void                    SetAtomicVisibility( unsigned short flags );
     void                    BaseAtomicHierarchy();
@@ -460,7 +523,7 @@ public:
 
     void                    SetExtendedRenderFlags( unsigned short flags );
 
-    void                    FetchMateria( RpMaterials *mats );
+    void                    FetchMateria( RpMaterials& mats );
 };
 class RwAtomicZBufferEntry
 {
@@ -525,16 +588,28 @@ public:
     RpAnimHierarchy*        GetAtomicAnimHierarchy();
     RpAnimHierarchy*        GetAnimHierarchy();
 
-    void                    ScanAtomicHierarchy( RwFrame *atomics, size_t max );
+    void                    ScanAtomicHierarchy( RwFrame **atomics, size_t max );
 
     RpAtomic*               GetFirstAtomic();
     RpAtomic*               Find2dfx();
 
     void                    SetupAtomicRender();
     void                    RemoveAtomicVisibilityFlags( unsigned short flags );
-    void                    FetchMateria( RpMaterials *mats );
+    void                    FetchMateria( RpMaterials& mats );
 
-    RpClump*                ForAllAtomics( bool (*callback)( RpAtomic *child, void *data ), void *data );
+    template <class type>
+    RpClump*                ForAllAtomics( bool (*callback)( RpAtomic *child, type data ), type data )
+    {
+        RwListEntry <RpAtomic> *child = m_atomics.root.next;
+
+        for ( ; child != &m_atomics.root; child = child->next )
+        {
+            if ( !callback( (RpAtomic*)( (unsigned int)child - offsetof(RpAtomic, m_atomics)), data ) )
+                return NULL;
+        }
+
+        return this;
+    }
 
     void                    GetBoneTransform( CVector *offset );
 };
@@ -598,9 +673,21 @@ public:
     RpSkeleton*             m_skeleton;                         // 100
     RwColor                 m_nightColor;                       // 104
     BYTE                    m_pad[12];                          // 108
-    Rw2dfx                  m_2dfx;                             // 120
+    Rw2dfx*                 m_2dfx;                             // 120
 
-    bool                    ForAllMateria( bool (*callback)( RpMaterial *mat, void *data ), void *data );
+    template <class type>
+    bool                    ForAllMateria( bool (*callback)( RpMaterial *mat, type data ), type data )
+    {
+        unsigned int n;
+
+        for ( n=0; n<m_materials.m_entries; n++ )
+        {
+            if ( !callback( m_materials.m_data[n], data ) )
+                return false;
+        }
+
+        return true;
+    }
     bool                    IsAlpha();
 };
 class RwStructInfo

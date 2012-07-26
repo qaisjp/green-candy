@@ -31,25 +31,19 @@ struct CFileObjectInstance
     long flags; // = -1
 };
 
-CObjectSA::CObjectSA(CObjectSAInterface * objectInterface)
+CObjectSA::CObjectSA( CObjectSAInterface *obj )
 {
-    DEBUG_TRACE("CObjectSA::CObjectSA(CObjectSAInterface * objectInterface)");
-    this->SetInterface(objectInterface);
-    m_ucAlpha = 255;
+    DEBUG_TRACE("CObjectSA::CObjectSA( CObjectSAInterface *obj )");
 
-    CheckForGangTag ();
-}
+    m_pInterface = obj;
 
-CObjectSA::CObjectSA( DWORD dwModel )
-{
-    DEBUG_TRACE("CObjectSA::CObjectSA( DWORD dwModel )");
-
-    CWorldSA * world = (CWorldSA *)pGame->GetWorld();
-
-    DWORD dwThis = 0;
+    // Setup some flags
+    m_doNotRemoveFromGame = false;
+    obj->m_unk = 6;
+    BOOL_FLAG( m_entityFlags, ENTITY_DISABLESTREAMING, true );
     
+    // TODO: Some old building code; figure out what to do with it
 #ifdef MTA_USE_BUILDINGS_AS_OBJECTS
-
     DWORD dwFunc = 0x538090; // CFileLoader__LoadObjectInstance
     CFileObjectInstance fileLoader;
     MemSetFast (&fileLoader, 0, sizeof(CFileObjectInstance));
@@ -119,93 +113,52 @@ CObjectSA::CObjectSA( DWORD dwModel )
         call    dwFunc
         add     esp, 4
     }
-
-#else
-
-
-    DWORD CObjectCreate = FUNC_CObject_Create;  
-    DWORD dwObjectPtr = 0;
-    _asm
-    {
-        push    1
-        push    dwModel
-        call    CObjectCreate
-        add     esp, 8
-        mov     dwObjectPtr, eax
-    }
-    if ( dwObjectPtr )
-    {
-        this->SetInterface((CEntitySAInterface *)dwObjectPtr);
-
-        world->Add( m_pInterface );
-
-        // Setup some flags
-        this->BeingDeleted = FALSE;
-        this->DoNotRemoveFromGame = FALSE;
-        MemPutFast < BYTE > ( dwObjectPtr + 316, 6 );
-        m_pInterface->bStreamingDontDelete = true;
-    }
-    else
-    {
-        // The exception handler doesn't work for some reason, so do this
-        this->SetInterface ( NULL );
-    }
 #endif
 
-    this->internalID = pGame->GetPools ()->GetObjectRef ( (DWORD *)this->GetInterface () );
+    m_poolIndex = (*ppObjectPool)->GetIndex( obj );
+    mtaObjects[m_poolIndex] = this;
 
     m_ucAlpha = 255;
 
-    if ( m_pInterface )
-        CheckForGangTag ();
+    CheckForGangTag ();
 }
 
-CObjectSA::~CObjectSA( )
+CObjectSA::~CObjectSA()
 {
-    DEBUG_TRACE("CObjectSA::~CObjectSA( )");
-    //OutputDebugString("Attempting to destroy Object\n");
-    if(!this->BeingDeleted && DoNotRemoveFromGame == false)
-    {
-        DWORD dwInterface = (DWORD)this->GetInterface();
-        if ( dwInterface )
-        {       
-            if ( *(DWORD*)m_pInterface != VTBL_CPlaceable )
-            {
-                CWorldSA * world = (CWorldSA *)pGame->GetWorld();
-                world->Remove(this->GetInterface());
-                world->RemoveReferencesToDeletedObject(this->GetInterface());
-            
-                delete m_pInterface;
-        
+    DEBUG_TRACE("CObjectSA::~CObjectSA()");
+
+    mtaObjects[m_poolIndex] = NULL;
+
+    if ( m_doNotRemoveFromGame )
+        return;
+
+    CWorldSA *world = pGame->GetWorld();
+    world->Remove( GetInterface() );
+    world->RemoveReferencesToDeletedObject( GetInterface() );
+
+    delete m_pInterface;
+
 #ifdef MTA_USE_BUILDINGS_AS_OBJECTS
-                DWORD dwModelID = this->internalInterface->m_nModelIndex;
-                // REMOVE ref to colstore thingy
-                dwFunc = 0x4107D0;
-                _asm
-                {
-                    mov     eax, dwModelID
-                    mov     eax, 0xA9B0C8[eax*4]
-                    mov     eax, [eax+20]
-                    movzx   eax, byte ptr [eax+40]
-                    push    eax
-                    call    dwFunc
-                    add     esp, 4
-                }
-#endif
-            }
-        }
-
-        this->BeingDeleted = true;
-        ((CPoolsSA *)pGame->GetPools())->RemoveObject((CObject *)(CObjectSA *)this);
-
-        //OutputDebugString("Destroying Object\n");
+    DWORD dwModelID = this->internalInterface->m_nModelIndex;
+    // REMOVE ref to colstore thingy
+    dwFunc = 0x4107D0;
+    _asm
+    {
+        mov     eax, dwModelID
+        mov     eax, 0xA9B0C8[eax*4]
+        mov     eax, [eax+20]
+        movzx   eax, byte ptr [eax+40]
+        push    eax
+        call    dwFunc
+        add     esp, 4
     }
+#endif
 }
 
 void CObjectSA::Explode()
 {
     DWORD dwFunc = FUNC_CObject_Explode;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
 
     _asm
     {
@@ -214,11 +167,11 @@ void CObjectSA::Explode()
     }
 }
 
-void CObjectSA::Break ()
+void CObjectSA::Break()
 {
     // Works only if health is 0
     DWORD dwFunc = 0x5A0D90;
-    DWORD dwThis = (DWORD) GetInterface ();
+    DWORD dwThis = (DWORD)GetInterface ();
 
     _asm
     {
@@ -227,40 +180,16 @@ void CObjectSA::Break ()
     }
 }
 
-void CObjectSA::SetScale( float faScale )
-{
-    DWORD dwFunc = 0x4745E0;
-    DWORD dwThis = (DWORD)this->GetInterface();
-    _asm
-    {
-        push    faScale
-        mov     ecx, dwThis
-        call    dwFunc
-    }
-
-//  *(FLOAT *)(this->GetInterface() + 348) = fScale;
-}
-
-void CObjectSA::SetHealth ( float fHealth )
-{
-    MemPutFast < float > ( (DWORD)this->GetInterface () + 340, fHealth );
-}
-
-float CObjectSA::GetHealth ( void )
-{
-    return *(float *)( (DWORD)this->GetInterface () + 340 );
-}
-
-void CObjectSA::SetModelIndex ( unsigned short ulModel )
+void CObjectSA::SetModelIndex( unsigned short ulModel )
 {
     m_pInterface->SetModelIndex( ulModel );
 
-    CheckForGangTag ();
+    CheckForGangTag();
 }
 
-void CObjectSA::CheckForGangTag ( )
+void CObjectSA::CheckForGangTag()
 {
-    switch ( GetModelIndex () )
+    switch( GetModelIndex() )
     {
     case 1524: case 1525: case 1526: case 1527:
     case 1528: case 1529: case 1530: case 1531:

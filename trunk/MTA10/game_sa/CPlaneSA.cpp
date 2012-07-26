@@ -14,9 +14,9 @@
 
 #include "StdInc.h"
 
-CPlaneSA::CPlaneSA( unsigned short modelId ) : CAutomobileSA( modelId )
+CPlaneSA::CPlaneSA( CPlaneSAInterface *plane ) : CAutomobileSA( plane )
 {
-    DEBUG_TRACE("CPlaneSA::CPlaneSA( unsigned short modelId ) : CAutomobileSA( modelId )");
+    DEBUG_TRACE("CPlaneSA::CPlaneSA( CPlaneSAInterface *plane )");
 }
 
 CPlaneSA::~CPlaneSA()

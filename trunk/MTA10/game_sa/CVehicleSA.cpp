@@ -19,7 +19,7 @@
 #include "gamesa_renderware.h"
 
 extern CGameSA* pGame;
-extern CBaseModelInfoSAInterface *ppModelInfo;
+extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CVehicleControlSAInterface::CVehicleControlSAInterface()
 {
@@ -226,8 +226,8 @@ CVehicleSAInterface::CVehicleSAInterface( unsigned char createdBy )
     m_control.m_creationTime = pGame->GetSystemTime();
     m_control.m_flags &= ~0x04;
 
-    m_unk29 = -1;
-    m_unk28 = -1;
+    m_paintjobTxd = -1;
+    m_queuePaintjob = -1;
     m_unk30 = 0;
 
     m_unk31 = 0;
@@ -249,7 +249,7 @@ CVehicleSAInterface::CVehicleSAInterface( unsigned char createdBy )
 
     m_unk24 = 0;
 
-    m_bodyDirtLevel = (float)rand() % 15;
+    m_bodyDirtLevel = (float)( rand() % 15 );
     
     m_timeOfCreation = pGame->GetSystemTime();
 
@@ -263,124 +263,72 @@ CVehicleSAInterface::~CVehicleSAInterface()
 
 void CVehicleSAInterface::HandlePopulation( bool create )
 {
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[m_model];
+
     if ( create )
     {
-        switch( m_createdBy - 1 )
+        switch( m_createdBy )
         {
-        case 0:
-            if ( m_vehicleType & VEHICLE_POLICE )
-                *((unsigned int*)VAR_PoliceVehicleCount)++;
-
-            *((unsigned int*)VAR_VehicleCount)++;
-            return;
         case 1:
-            if ( m_vehicleType & VEHICLE_POLICE )
-            {
-                *((unsigned int*)VAR_PoliceVehicleCount)--;
+            if ( info->m_vehicleType & VEHICLE_POLICE )
+                *((unsigned int*)VAR_PoliceVehicleCount) += 1;
 
-                m_vehicleType &= ~VEHICLE_POLICE;
-            }
-
-            *((unsigned int*)0x0096909C)++;
+            *((unsigned int*)VAR_VehicleCount) += 1;
             return;
         case 2:
-            *((unsigned int*)0x009690A0)++;
+            if ( info->m_vehicleType & VEHICLE_POLICE )
+                *((unsigned int*)VAR_PoliceVehicleCount) += 1;
+
+            *((unsigned int*)0x0096909C) += 1;
             return;
         case 3:
-            *((unsigned int*)0x009690A4)++;
+            *((unsigned int*)0x009690A0) += 1;
+            return;
+        case 4:
+            *((unsigned int*)0x009690A4) += 1;
             return;
         }
 
         return;
     }
 
-    switch( m_createdBy - 1 )
+    switch( m_createdBy )
     {
-    case 0:
-        if ( m_vehicleType & VEHICLE_POLICE )
-            *((unsigned int*)VAR_PoliceVehicleCount)--;
-s
-        *((unsigned int*)VAR_VehicleCount)--;
-        return;
     case 1:
-        *((unsigned int*)0x0096909C)--;
+        if ( info->m_vehicleType & VEHICLE_POLICE )
+            *((unsigned int*)VAR_PoliceVehicleCount) -= 1;
+
+        *((unsigned int*)VAR_VehicleCount) -= 1;
         return;
     case 2:
-        *((unsigned int*)0x009690A0)--;
+        *((unsigned int*)0x0096909C) -= 1;
         return;
     case 3:
-        *((unsigned int*)0x009690A4)--;
+        *((unsigned int*)0x009690A0) -= 1;
+        return;
+    case 4:
+        *((unsigned int*)0x009690A4) -= 1;
         return;
     }
 }
 
-CVehicleSA::CVehicleSA( unsigned short modelId ) : m_alpha( 255 ), m_vecGravity( 0.0f, 0.0f, -1.0f )
+CVehicleSA::CVehicleSA( CVehicleSAInterface *veh ) : m_alpha( 255 ), m_vecGravity( 0.0f, 0.0f, -1.0f )
 {
-    DEBUG_TRACE("CVehicleSA::CVehicleSA( eVehicleTypes dwModelID )");
-    // for SA, we can just call the following function and it should work:
-    // SCM_CreateCarForScript(int,class CVector,unsigned char)
-    //                              ModelID, Position, IsMissionVehicle
+    DEBUG_TRACE("CVehicleSA::CVehicleSA( CVehicleSAInterface *veh )");
 
     m_pHandlingData = NULL;
-    m_pSuspensionLines = NULL;
+    m_pInterface = veh;
 
-    DWORD dwReturn = 0;
+    // Register the interface
+    m_poolIndex = (*ppVehiclePool)->GetIndex( veh );
+    mtaVehicles[m_poolIndex] = this;
 
-    DWORD dwFunc = FUNC_CCarCtrlCreateCarForScript;
-    _asm
-    {
-        push    0           // its a mission vehicle
-        push    0
-        push    0
-        push    0           // spawn at 0,0,0
-        push    dwModelID   
-        call    dwFunc
-        add     esp, 0x14
-        mov     dwReturn, eax
-    }
-
-    m_pInterface = reinterpret_cast < CEntitySAInterface* > ( dwReturn );
-#if 0
-    this->BeingDeleted = FALSE;
-
-    m_pInterface->bStreamingDontDelete = true;
-    m_pInterface->bDontStream = true;
-    
-    // store our CVehicleSA pointer in the vehicle's time of creation member (as it won't get modified later and as far as I know it isn't used for something important)
-    GetVehicleInterface ()->m_pVehicle = this;
-
-    // Unlock doors as they spawn randomly with locked doors
-    LockDoors ( false );
-
-    // Reset the car countss to 0 so that this vehicle doesn't affect the population vehicles
-    for ( int i = 0; i < 5; i++ )
-    {
-        MemPutFast < DWORD > ( VARS_CarCounts + i * sizeof(DWORD), 0 );
-    }
-
-    // only applicable for CAutomobile based vehicles (i.e. not bikes or boats, but includes planes, helis etc)
-    this->damageManager = new CDamageManagerSA ( m_pInterface, (CDamageManagerSAInterface *)((DWORD)this->GetInterface() + 1440));
-
-
-    // Replace the handling interface with our own to prevent handlig.cfg cheats and allow custom handling stuff.
-    // We don't use SA's array because we want one handling per vehicle type and also allow custom handlings
-    // per car later.
-    /*CHandlingEntry* pEntry = pGame->GetHandlingManager ()->CreateHandlingData ();
-    //CHandlingEntry* pEntry = pGame->GetHandlingManager ()->GetHandlingData ( dwModelID );
-    pEntry->ApplyHandlingData ( pGame->GetHandlingManager ()->GetHandlingData ( dwModelID ) );  // We need to do that so vehicle handling wont get corrupted
-    SetHandlingData ( pEntry );
-    pEntry->Recalculate ();*/
-
-    GetVehicleInterface ()->m_nVehicleFlags.bVehicleCanBeTargetted = true;
-
-    this->internalID = pGame->GetPools ()->GetVehicleRef ( (DWORD *)this->GetVehicleInterface () );
-#else
-    Init ();    // Use common setup
-#endif
+    Init();    // Use common setup
 }
 
 void CVehicleSA::Init()
 {
+    // We take care of the streaming, so disable GTA:SA control
     BOOL_FLAG( GetInterface()->m_entityFlags, ENTITY_DISABLESTREAMING, true );
     BOOL_FLAG( GetInterface()->m_entityFlags, ENTITY_NOSTREAM, true );
 
@@ -395,7 +343,7 @@ void CVehicleSA::Init()
 
     m_internalID = pGame->GetPools ()->GetVehicleRef( this );
 
-    m_ucAlpha = 255;
+    m_alpha = 255;
     m_vecGravity = CVector ( 0.0f, 0.0f, -1.0f );
 
     m_RGBColors[0] = CVehicleColor::GetRGBFromPaletteIndex( GetInterface()->m_color1 );
@@ -409,6 +357,9 @@ CVehicleSA::~CVehicleSA()
     DEBUG_TRACE("CVehicleSA::~CVehicleSA()");
 
     GetInterface()->m_vehicle = NULL;
+
+    // Remove our registration
+    mtaVehicles[m_poolIndex] = NULL;
 }
 
 void CVehicleSA::SetColor( SColor color1, SColor color2, SColor color3, SColor color4, int )
@@ -432,12 +383,12 @@ void CVehicleSA::SetHealth( float health )
     GetInterface()->m_health = health;
 
     if ( health >= 250.0f )
-        GetInterface()->m_explodeTime = 0.0f;
+        GetInterface()->m_explodeTime = 0;
 }
 
-bool CVehicleSA::AddProjectile( eWeaponType eWeapon, CVector vecOrigin, float fForce, CVector * target, CEntity * targetEntity )
+bool CVehicleSA::AddProjectile( eWeaponType eWeapon, const CVector& vecOrigin, float fForce, const CVector& targetPos, CEntity *target )
 {
-    return pGame->GetProjectileInfo()->AddProjectile( this, eWeapon, vecOrigin, fForce, target, targetEntity );
+    return pGame->GetProjectileInfo()->AddProjectile( (CEntitySA*)this, eWeapon, vecOrigin, fForce, targetPos, target );
 }
 
 void CVehicleSA::AddVehicleUpgrade( unsigned short model )
@@ -555,7 +506,7 @@ bool CVehicleSA::CanPedLeanOut( CPed *ped ) const
     bool bReturn;
     CPedSA* pPedSA = dynamic_cast < CPedSA* > ( ped );
     DWORD dwThis = (DWORD)m_pInterface;
-    CPedSAInterface* pPedInt = pPedSA->GetPedInterface();
+    CPedSAInterface* pPedInt = pPedSA->GetInterface();
     DWORD dwFunc = FUNC_CVehicle_CanPedLeanOut;
 
     _asm
@@ -617,7 +568,7 @@ bool CVehicleSA::IsPassenger( CPed *ped ) const
     return false;
 }
 
-bool CVehicleSA::IsSphereTouchingVehicle( CVector& vecOrigin, float fRadius ) const
+bool CVehicleSA::IsSphereTouchingVehicle( const CVector& vecOrigin, float fRadius ) const
 {
     DEBUG_TRACE("bool CVehicleSA::IsSphereTouchingVehicle( CVector& vecOrigin, float fRadius ) const");
 
@@ -745,10 +696,10 @@ void CVehicleSA::SetRemap( int iRemap )
     {
         unsigned short paintjobId = GetInterface()->m_paintjobTxd;
 
-        if ( paintJobId != -1 )
+        if ( paintjobId != -1 )
         {
             (*ppTxdPool)->Get( paintjobId )->Dereference();
-            m_unk30 = 0;
+            GetInterface()->m_unk30 = 0;
 
             GetInterface()->m_paintjobTxd = -1;
             GetInterface()->m_queuePaintjob = -1;
@@ -775,10 +726,10 @@ int CVehicleSA::GetRemapIndex() const
     return -1;
 }
 
-void CVehicleSA::SetHandlingData( CHandlingEntrySA *handling )
+void CVehicleSA::SetHandlingData( CHandlingEntry *handling )
 {
     // Store the handling and recalculate it
-    m_pHandlingData = handling;
+    m_pHandlingData = (CHandlingEntrySA*)handling;
     GetInterface()->m_handling = m_pHandlingData->GetInterface();
 
     RecalculateHandling();
@@ -800,22 +751,22 @@ void GetMatrixForGravity( const CVector& vecGravity, RwMatrix& mat )
         if ( fabs( mat.up.fX ) > 0.0001f || fabs( mat.up.fZ ) > 0.0001f )
         {
             CVector y( 0.0f, 1.0f, 0.0f );
-            mat.front = vecGravity;
-            mat.front.CrossProduct( &y );
-            mat.front.CrossProduct( &vecGravity );
-            mat.front.Normalize();
+            mat.at = vecGravity;
+            mat.at.CrossProduct( &y );
+            mat.at.CrossProduct( &vecGravity );
+            mat.at.Normalize();
         }
         else
-            mat.vFront = CVector( 0.0f, 0.0f, vecGravity.fY );
+            mat.at = CVector( 0.0f, 0.0f, vecGravity.fY );
 
-        mat.right = mat.front;
+        mat.right = mat.at;
         mat.right.CrossProduct( &mat.up );
     }
     else
     {
         // No gravity, use default axes
         mat.right = CVector ( 1.0f, 0.0f, 0.0f );
-        mat.front = CVector ( 0.0f, 1.0f, 0.0f );
+        mat.at =    CVector ( 0.0f, 1.0f, 0.0f );
         mat.up    = CVector ( 0.0f, 0.0f, 1.0f );
     }
 }
@@ -849,14 +800,14 @@ void CVehicleSA::SetGravity( const CVector& grav )
     m_vecGravity = grav;
 }
 
-CColModel* CVehicleSA::GetSpecialColModel() const
+CColModelSA* CVehicleSA::GetSpecialColModel() const
 {
     unsigned char colModel = GetInterface()->m_specialColModel;
 
     if ( colModel == 0xFF )
         return NULL;
 
-    return new CColModelSA( &((CColModelSAInterface*)VAR_CVehicle_SpecialColModels)[ vehicle->m_specialColModel ] );
+    return new CColModelSA( &((CColModelSAInterface*)VAR_CVehicle_SpecialColModels)[ GetInterface()->m_specialColModel ] );
 }
 
 void* CVehicleSAInterface::operator new( size_t )

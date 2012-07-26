@@ -56,7 +56,7 @@ CTaskManagementSystemSA::~CTaskManagementSystemSA ( void )
 }
 
 
-CTask * CTaskManagementSystemSA::AddTask ( CTaskSA * pTask )
+CTaskSA* CTaskManagementSystemSA::AddTask ( CTaskSA * pTask )
 {
     if ( !pTask )
         return NULL;
@@ -109,7 +109,8 @@ void CTaskManagementSystemSA::RemoveTask ( CTaskSAInterface * pTaskInterface )
 CTaskSA * CTaskManagementSystemSA::GetTask ( CTaskSAInterface * pTaskInterface )
 {
     // Return NULL if we got passed NULL
-    if ( pTaskInterface == 0 ) return NULL;
+    if ( pTaskInterface == 0 )
+        return NULL;
 
     // Find it in our list
     STaskListItem* pListItem;
@@ -127,17 +128,7 @@ CTaskSA * CTaskManagementSystemSA::GetTask ( CTaskSAInterface * pTaskInterface )
 
     // its not existed before, lets create the task
     // First, we create a temp task
-    int iTaskType = 9999;
-    DWORD dwFunc = pTaskInterface->VTBL->GetTaskType;
-    if ( dwFunc && dwFunc != 0x82263A )
-    {
-        _asm
-        {
-            mov     ecx, pTaskInterface
-            call    dwFunc
-            mov     iTaskType, eax
-        }
-    }
+    int iTaskType = pTaskInterface->GetTaskType();
 
     // Create it and add it to our list
     CTaskSA * pTask = dynamic_cast < CTaskSA* > ( CreateAppropriateTask ( pTaskInterface, iTaskType ) );
@@ -152,7 +143,7 @@ CTaskSA * CTaskManagementSystemSA::GetTask ( CTaskSAInterface * pTaskInterface )
     return pTask;
 }
 
-CTask * CTaskManagementSystemSA::CreateAppropriateTask ( CTaskSAInterface * pTaskInterface, int iTaskType )
+CTaskSA* CTaskManagementSystemSA::CreateAppropriateTask( CTaskSAInterface *task, int iTaskType )
 {
     CTaskSA* pTaskSA = NULL;
 
@@ -254,9 +245,9 @@ CTask * CTaskManagementSystemSA::CreateAppropriateTask ( CTaskSAInterface * pTas
         break;
     }
 
-    assert ( pTaskSA && !pTaskSA->GetInterface () );
+    assert ( pTaskSA && !pTaskSA->GetInterface() );
 
     // Set the internal interface
-    pTaskSA->SetInterface ( pTaskInterface );
+    pTaskSA->SetInterface( task );
     return pTaskSA;
 }

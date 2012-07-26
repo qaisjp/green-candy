@@ -18,7 +18,6 @@
 #ifndef __CGAMESA_ENTITY
 #define __CGAMESA_ENTITY
 
-#include "Common.h"
 #include "COffsets.h"
 #include <game/CEntity.h>
 #include <CVector2D.h>
@@ -174,34 +173,38 @@ public:
     CEntitySAInterface*         m_pInterface;
     unsigned int                m_internalID;
 
-    inline CEntitySAInterface*  GetInterface()                          { return m_pInterface; };
+    inline CEntitySAInterface*  GetInterface()                                  { return m_pInterface; }
+    inline const CEntitySAInterface*    GetInterface() const                    { return m_pInterface; }
 
-    void                        SetPosition( float fX, float fY, float fZ );
-    void                        Teleport( float fX, float fY, float fZ );
+    void                        SetPosition( float x, float y, float z );
+    void                        SetPosition( const CVector& pos );
+    void                        GetPosition( CVector& pos ) const;
+    void                        Teleport( float x, float y, float z );
+
     void                        ProcessControl();
     void                        SetupLighting();
-    void                        Render();
-    void                        SetOrientation( float fX, float fY, float fZ );
+    void                        Render()                                        { m_pInterface->Render(); }
+
+    void                        SetOrientation( float x, float y, float z );
     void                        FixBoatOrientation();        // eAi you might want to rename this
-    void                        SetPosition( CVector *pos );
+    void                        GetMatrix( RwMatrix& mat ) const;
+    void                        SetMatrix( const RwMatrix& mat );
+
+    unsigned short              GetModelIndex() const;
+    eEntityType                 GetEntityType() const;
+
+    float                       GetBasingDistance() const;
+
+    bool                        IsOnScreen() const;
 
     void                        SetUnderwater( bool bUnderwater );
     bool                        GetUnderwater() const;
 
-    void                        GetPosition( CVector *pos ) const;
-    void                        GetMatrix( RwMatrix& mat ) const;
-    void                        SetMatrix( const RwMatrix& mat );
-    unsigned short              GetModelIndex() const;
-    eEntityType                 GetEntityType() const;
-    bool                        IsOnScreen() const;
-
-    bool                        IsVisible() const                       { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_VISIBLE ); }
-    void                        SetVisible( bool enabled )              { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_VISIBLE, enabled ); }
+    bool                        IsVisible() const                               { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_VISIBLE ); }
+    void                        SetVisible( bool enabled )                      { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_VISIBLE, enabled ); }
 
     unsigned char               GetAreaCode() const;
     void                        SetAreaCode( unsigned char areaCode );
-
-    float                       GetBasingDistance() const;
 
     void                        SetEntityStatus( eEntityStatus bStatus );
     eEntityStatus               GetEntityStatus() const;
@@ -213,12 +216,12 @@ public:
 
     void                        SetDoNotRemoveFromGameWhenDeleted( bool b )     { m_doNotRemoveFromGame = b; };
 
-    bool                        IsStatic() const                        { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC ); }
-    void                        SetStatic( bool enabled )               { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC, enabled ); };
-    void                        SetUsesCollision( bool enabled )        { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_COLLISION, enabled ); };
+    bool                        IsStatic() const                                { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC ); }
+    void                        SetStatic( bool enabled )                       { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC, enabled ); };
+    void                        SetUsesCollision( bool enabled )                { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_COLLISION, enabled ); };
 
-    bool                        IsBackfaceCulled() const                { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL ); };
-    void                        SetBackfaceCulled( bool enabled )       { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL, enabled ); };
+    bool                        IsBackfaceCulled() const                        { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL ); };
+    void                        SetBackfaceCulled( bool enabled )               { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL, enabled ); };
 
     void                        SetAlpha( unsigned char alpha );
 
@@ -227,20 +230,20 @@ public:
 
     bool                        IsPlayingAnimation( const char *name ) const;
 
-    void*                       GetStoredPointer() const                { return m_pStoredPointer; };
-    void                        SetStoredPointer( void *pointer )       { m_pStoredPointer = pointer; };
+    void*                       GetStoredPointer() const                        { return m_pStoredPointer; };
+    void                        SetStoredPointer( void *pointer )               { m_pStoredPointer = pointer; };
 
-    bool                        IsStaticWaitingForCollision() const          { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_WAITFORCOLL ); }
-    void                        SetStaticWaitingForCollision( bool enabled ) { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_WAITFORCOLL, enabled ); }
+    bool                        IsStaticWaitingForCollision() const             { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_WAITFORCOLL ); }
+    void                        SetStaticWaitingForCollision( bool enabled )    { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_WAITFORCOLL, enabled ); }
 
-    bool                        IsCollidableWith( CEntitySA *entity ) const;
-    void                        SetCollidableWith( CEntitySA *entity, bool enable );
+    bool                        IsCollidableWith( CEntity *entity ) const;
+    void                        SetCollidableWith( CEntity *entity, bool enable );
 
-    inline unsigned long        GetArrayID() const                      { return m_ulArrayID; }
-    inline void                 SetArrayID( unsigned long ulID )        { m_ulArrayID = ulID; }
+    inline unsigned long        GetArrayID() const                              { return m_ulArrayID; }
+    inline void                 SetArrayID( unsigned long ulID )                { m_ulArrayID = ulID; }
 
-private:
-    void                        SetInterface( CEntitySAInterface *intf )   { m_pInterface = intf; };
+protected:
+    void                        SetInterface( CEntitySAInterface *intf )        { m_pInterface = intf; };
 
     static unsigned long        FUNC_CClumpModelInfo__GetFrameFromId;
 

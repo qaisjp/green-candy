@@ -20,26 +20,29 @@ class CHeliSAInterface : public CAutomobileSAInterface
 public:
     BYTE                        m_pad40[137];                           // 2440
     bool                        m_searchLightVisible;                   // 2577
+
+    BYTE                        m_padend[6];                            // 2578
 };
 
 class CHeliSA : public virtual CHeli, public CAutomobileSA
 {
 public:
-                                CHeliSA( unsigned short modelId );
+                                CHeliSA( CHeliSAInterface *heli );
                                 ~CHeliSA();
 
     inline CHeliSAInterface*    GetInterface()                                      { return (CHeliSAInterface*)m_pInterface; }
+    inline const CHeliSAInterface*  GetInterface() const                            { return (const CHeliSAInterface*)m_pInterface; }
 
     void                        SetWinchType( eWinchType winchType );
-    void                        PickupEntityWithWinch( CEntity* pEntity );
+    void                        PickupEntityWithWinch( CEntity *entity );
     void                        ReleasePickedUpEntityWithWinch();
-    void                        SetRopeHeightForHeli( float fRopeHeight );
+    void                        SetRopeHeightForHeli( float height );
     CPhysical*                  QueryPickedUpEntityWithWinch();
 
-    bool                        IsHeliSearchLightVisible();
-    void                        SetHeliSearchLightVisible( bool bVisible );
+    bool                        IsHeliSearchLightVisible() const                    { return GetInterface()->m_searchLightVisible; }
+    void                        SetHeliSearchLightVisible( bool vis )               { GetInterface()->m_searchLightVisible = vis; }
 
-    float                       GetHeliRotorSpeed()                                 { return GetInterface()->m_rotorSpeed; }
+    float                       GetHeliRotorSpeed() const                           { return GetInterface()->m_rotorSpeed; }
     void                        SetHeliRotorSpeed( float fSpeed )                   { GetInterface()->m_rotorSpeed = fSpeed; }
 };
 

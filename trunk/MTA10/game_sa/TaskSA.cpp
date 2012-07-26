@@ -39,12 +39,12 @@ CTaskSAInterface* CTaskSAInterface::GetSubTask()
     return NULL;
 }
 
-bool CTaskSAInterface::IsSimpleTask()
+bool CTaskSAInterface::IsSimpleTask() const
 {
     return false;
 }
 
-int CTaskSAInterface::GetTaskType()
+int CTaskSAInterface::GetTaskType() const
 {
     return -1;
 }
@@ -77,20 +77,19 @@ CTaskSA::~CTaskSA()
     dwTasksAlive--;
 }
 
-
 // allocate memory for the task (ammount nSize)
 void CTaskSA::CreateTaskInterface()
 {
-    DEBUG_TRACE("void CTaskSA::CreateTaskInterface(size_t nSize)");
+    DEBUG_TRACE("void CTaskSA::CreateTaskInterface()");
 
     m_interface = new CTaskSAInterface(); // :3
     m_parent = NULL;
 }
 
-CTask * CTaskSA::Clone() 
+CTask* CTaskSA::Clone() 
 {
     // This will crash! >:D
-    return (CTask *)m_interface->Clone();
+    return (CTask*)m_interface->Clone();
 }
 
 void CTaskSA::SetParent( CTask* pParent ) 
@@ -104,49 +103,16 @@ void CTaskSA::SetParent( CTask* pParent )
     m_parent = parent;
 }
 
-CTask * CTaskSA::GetSubTask() 
+CTask* CTaskSA::GetSubTask() 
 {
-    DEBUG_TRACE("CTask * CTaskSA::GetSubTask()");
+    DEBUG_TRACE("CTask* CTaskSA::GetSubTask()");
 
-    return pGame->GetTaskManagementSystem()->GetTask ( m_interface->GetSubTask() );
+    return pGame->GetTaskManagementSystem()->GetTask( m_interface->GetSubTask() );
 }
 
-bool CTaskSA::IsSimpleTask()
+bool CTaskSA::MakeAbortable( CPed *ped, int iPriority )
 {
-    DEBUG_TRACE("bool CTaskSA::IsSimpleTask()");
- 
-    return m_interface->IsSimpleTask();
-}
-
-int CTaskSA::GetTaskType() 
-{
-    DEBUG_TRACE("int CTaskSA::GetTaskType()");
-
-    return m_interface->GetTaskType();
-}
-
-void CTaskSA::StopTimer(CEventSAInterface* pEvent) 
-{
-    DEBUG_TRACE("void CTaskSA::StopTimer(const CEvent* pEvent)");
-    
-    m_interface->StopTimer( pEvent );
-}
-
-/**
- * \todo Handle pEvent correctly to convert it
- */
-bool CTaskSA::MakeAbortable( CPed* pPed, int iPriority, CEventSAInterface* pEvent ) 
-{
-    DEBUG_TRACE("bool CTaskSA::MakeAbortable(CPed* pPed, const int iPriority, const CEvent* pEvent)");
-
-    return m_interface->MakeAbortable( ((CPedSA*)pPed)->GetPedInterface(), iPriority, pEvent );
-}
-
-char * CTaskSA::GetTaskName()
-{
-    DEBUG_TRACE("char * CTaskSA::GetTaskName()");
-
-    return TaskNames[ m_interface->GetTaskType() ].szName;
+    return m_interface->MakeAbortable( dynamic_cast <CPedSA*> ( ped )->GetInterface(), iPriority, NULL );
 }
 
 void CTaskSA::Destroy()
@@ -169,14 +135,14 @@ void CTaskSA::DestroyJustThis()
     delete this;
 }
 
-void CTaskSA::SetAsPedTask ( CPed * pPed, int iTaskPriority, bool bForceNewTask )
+void CTaskSA::SetAsPedTask( CPed *ped, int iTaskPriority, bool bForceNewTask )
 {
-    ((CTaskManagerSA*)pPed->GetPedIntelligence()->GetTaskManager())->SetTask ( this, (eTaskPriority)iTaskPriority, bForceNewTask );
+    ((CTaskManagerSA*)ped->GetPedIntelligence()->GetTaskManager())->SetTask( this, (eTaskPriority)iTaskPriority, bForceNewTask );
 }
 
-void CTaskSA::SetAsSecondaryPedTask ( CPed * pPed, const int iType )
+void CTaskSA::SetAsSecondaryPedTask( CPed *ped, int iType )
 {
-    ((CTaskManagerSA*)pPed->GetPedIntelligence()->GetTaskManager())->SetTaskSecondary ( this, iType );
+    ((CTaskManagerSA*)ped->GetPedIntelligence()->GetTaskManager())->SetTaskSecondary( this, iType );
 }
 
 
@@ -184,18 +150,18 @@ void CTaskSA::SetAsSecondaryPedTask ( CPed * pPed, const int iType )
 // ## CTaskSimple Functions
 // ####################################################################
 
-bool CTaskSimpleSA::ProcessPed ( CPed* pPed )
+bool CTaskSimpleSA::ProcessPed( CPed* ped )
 {
-    DEBUG_TRACE("bool CTaskSimpleSA::ProcessPed(CPed* pPed)");
+    DEBUG_TRACE("bool CTaskSimpleSA::ProcessPed( CPed* ped )");
 
-    return GetInterface()->ProcessPed( ((CPedSA*)pPed)->GetPedInterface() );
+    return GetInterface()->ProcessPed( dynamic_cast <CPedSA*> ( ped )->GetInterface() );
 }
 
-bool CTaskSimpleSA::SetPedPosition ( CPed* pPed )
+bool CTaskSimpleSA::SetPedPosition( CPed* ped )
 {
-    DEBUG_TRACE("bool CTaskSimpleSA::SetPedPosition(CPed* pPed)");
+    DEBUG_TRACE("bool CTaskSimpleSA::SetPedPosition( CPed* ped )");
 
-    return GetInterface()->SetPedPosition( ((CPedSA*)pPed)->GetPedInterface() );
+    return GetInterface()->SetPedPosition( dynamic_cast <CPedSA*> ( ped )->GetInterface() );
 }
 
 // ####################################################################
@@ -213,20 +179,20 @@ CTask * CTaskComplexSA::CreateNextSubTask ( CPed* pPed )
 {
     DEBUG_TRACE("CTask * CTaskComplexSA::CreateNextSubTask(CPed* pPed)");
 
-    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask ( GetInterface()->CreateNextSubTask( dynamic_cast <CPedSA*> ( pPed )->GetPedInterface() ) );
+    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask ( GetInterface()->CreateNextSubTask( dynamic_cast <CPedSA*> ( pPed )->GetInterface() ) );
 }
 
 CTask * CTaskComplexSA::CreateFirstSubTask ( CPed* pPed )
 {
     DEBUG_TRACE("CTask * CTaskComplexSA::CreateFirstSubTask(CPed* pPed)");
 
-    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask ( GetInterface()->CreateFirstSubTask( dynamic_cast <CPedSA*> ( pPed )->GetPedInterface() ) );
+    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask ( GetInterface()->CreateFirstSubTask( dynamic_cast <CPedSA*> ( pPed )->GetInterface() ) );
 }
 
 CTask * CTaskComplexSA::ControlSubTask ( CPed* pPed )
 {
     DEBUG_TRACE("CTask * CTaskComplexSA::ControlSubTask(CPed* pPed)");
 
-    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask( GetInterface()->ControlSubTask( dynamic_cast <CPedSA*> ( pPed )->GetPedInterface() ) );
+    return ((CTaskManagementSystemSA*)pGame->GetTaskManagementSystem())->GetTask( GetInterface()->ControlSubTask( dynamic_cast <CPedSA*> ( pPed )->GetInterface() ) );
 }
 

@@ -18,6 +18,7 @@
 #define VALID_POSITION_LIMIT 100000
 
 extern CGameSA* pGame;
+extern CBaseModelInfoSAInterface *ppModelInfo;
 
 enum eAnimGroups
 {    
@@ -97,114 +98,94 @@ void CPedSAInterface::OnFrame()
     }
 }
 
-CPedSA::CPedSA (  ) :
-    m_pPedIntelligence ( NULL ),
-    m_pPedInterface ( NULL ),
-    m_pPedSound ( NULL )
+CPedSA::CPedSA( CPedSAInterface *ped )
 {
-    DEBUG_TRACE("CPedSA::CPedSA(  )");
+    DEBUG_TRACE("CPedSA::CPedSA( CPedSAInterface *ped )");
 
-    memset( m_pWeapons, 0, sizeof ( CWeaponSA* ) * WEAPONSLOT_MAX );
-}
+    m_poolIndex = (*ppPedPool)->GetIndex( ped );
+    mtaPeds[m_poolIndex] = this;
 
-CPedSA::CPedSA( CPedSAInterface * pPedInterface ) :
-    m_pPedIntelligence ( NULL ),
-    m_pPedInterface ( pPedInterface ),
-    m_pPedSound ( NULL )
-{
-    DEBUG_TRACE("CPedSA::CPedSA( CPedSAInterface * pedInterface )");
+    m_pInterface = ped;
+    m_intelligence = new CPedIntelligenceSA( GetInterface()->m_intelligence, this );
+    m_sound = new CPedSoundSA( &GetInterface()->m_sound );
 
-    memset( m_pWeapons, 0, sizeof ( CWeaponSA* ) * WEAPONSLOT_MAX );
-}
-
-void CPedSA::SetInterface( CEntitySAInterface * intInterface )
-{
-    m_pInterface = intInterface;
-}
-
-CPedSA::~CPedSA ( void )
-{
-    if ( m_pPedIntelligence )
-        delete m_pPedIntelligence;
-
-    if ( m_pPedSound )
-        delete m_pPedSound;
-
-    for ( int i = 0; i < WEAPONSLOT_MAX; i++ )
-    {
-        if ( this->m_pWeapons[i] )
-            delete this->m_pWeapons[i];
-    }
-}
-
-// used to init weapons at the moment, called by CPlayerPedSA when its been constructed
-// can't use constructor as thats called before the interface pointer has been set the the aforementioned constructor
-/**
- * \todo Reimplement weapons and PedIK for SA
- */
-
-void CPedSA::Init()
-{
-    DEBUG_TRACE("void CPedSA::Init()");
-    CPedSAInterface * pedInterface = GetPedInterface ();
-    
-    DWORD dwPedIntelligence = 0;
-    DWORD dwFunc = 0x411DE0;
-    DWORD dwInterface = (DWORD)pedInterface;
-    _asm
-    {
-        mov     ecx, dwInterface
-        call    dwFunc
-        mov     dwPedIntelligence, eax
-    }
-    CPedIntelligenceSAInterface * m_pPedIntelligenceInterface = (CPedIntelligenceSAInterface *)dwPedIntelligence;
-    this->m_pPedIntelligence = new CPedIntelligenceSA(m_pPedIntelligenceInterface, this);
-    this->m_pPedSound = new CPedSoundSA ( &pedInterface->pedSound );
-
-    for ( int i = 0; i < WEAPONSLOT_MAX; i++ )
-        this->m_pWeapons[i] = new CWeaponSA(&(pedInterface->Weapons[i]), this, (eWeaponSlot)i);
+    for ( unsigned int i = 0; i < WEAPONSLOT_MAX; i++ )
+        m_weapons[i] = new CWeaponSA( &GetInterface()->m_weapons[i], this, (eWeaponSlot)i );
 
     //this->m_pPedIK = new Cm_pPedIKSA(&(pedInterface->m_pPedIK));
 }
 
-void CPedSA::SetModelIndex ( unsigned short id )
+CPedSA::~CPedSA()
 {
-    DEBUG_TRACE("void CPedSA::SetModelIndex ( DWORD dwModelIndex )");
-    
-    m_pInterface->SetModelIndex( dwModelIndex );
+    delete m_intelligence;
+    delete m_sound;
 
-    // Also set the voice gender
-    CPedModelInfoSAInterface* info = pPedModelPool->Get( id );
+    for ( unsigned int i = 0; i < WEAPONSLOT_MAX; i++ )
+        delete m_weapons[i];
 
-    if ( !pModelInfo )
+    mtaPeds[m_poolIndex] = NULL;
+}
+
+/**
+ * \todo Reimplement weapons and PedIK for SA
+ */
+
+void CPedSA::SetModelIndex( unsigned short id )
+{
+    DEBUG_TRACE("void CPedSA::SetModelIndex( unsigned short id )");
+
+    if ( id > MAX_MODELS-1 )
         return;
 
-    GetPedInterface ()->pedSound.m_bIsFemale = ( info->m_pedType == 5 || info->m_pedType == 22 );
+    CBaseModelInfoSAInterface *info = ppModelInfo[id];
+
+    if ( !info || info->GetModelType() != MODEL_PED )
+        return;
+    
+    m_pInterface->SetModelIndex( id );
+
+    // Also set the voice gender
+    CPedModelInfoSAInterface* info = (CPedModelInfoSAInterface*)ppModelInfo[id];
+
+    if ( !info )
+        return; // error
+
+    switch( info->m_pedType )
+    {
+    case PEDTYPE_CIVFEMALE:
+    case PEDTYPE_PROSTITUTE:
+        GetInterface()->m_sound.m_bIsFemale = true;
+        break;
+    default:
+        GetInterface()->m_sound.m_bIsFemale = false;
+        break;
+    }
 }
 
-bool CPedSA::IsInWater()
+bool CPedSA::IsInWater() const
 {
-    DEBUG_TRACE("bool CPedSA::IsInWater ()");
+    DEBUG_TRACE("bool CPedSA::IsInWater() const");
 
-    CTask *pTask = this->m_pPedIntelligence->GetTaskManager ()->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
+    CTask *task = m_intelligence->GetTaskManager()->GetTask( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
 
-    return ( pTask && ( pTask->GetTaskType () == TASK_COMPLEX_IN_WATER ) );
+    return ( task && ( task->GetTaskType() == TASK_COMPLEX_IN_WATER ) );
 }
 
-void CPedSA::AttachPedToBike(CEntity * entity, CVector * vector, unsigned short sUnk, FLOAT fUnk, FLOAT fUnk2, eWeaponType weaponType)
+void CPedSA::AttachPedToBike( CEntity *entity, const CVector& offset, unsigned short sUnk, float fUnk, float fUnk2, eWeaponType weaponType )
 {
-    DEBUG_TRACE("void CPedSA::AttachPedToBike(CEntity * entity, CVector * vector, unsigned short sUnk, FLOAT fUnk, FLOAT fUnk2, eWeaponType weaponType)");
+    DEBUG_TRACE("void CPedSA::AttachPedToBike( CEntity *entity, const CVector& offset, unsigned short sUnk, float fUnk, float fUnk2, eWeaponType weaponType )");
 
-    CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( entity );
+    CEntitySA* pEntitySA = dynamic_cast <CEntitySA*> ( entity );
+
     if ( !pEntitySA )
         return;
 
     DWORD dwEntityInterface = (DWORD)pEntitySA->GetInterface();
     DWORD dwFunc = FUNC_AttachPedToBike;
-    FLOAT fX = vector->fX;
-    FLOAT fY = vector->fY;
-    FLOAT fZ = vector->fZ;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    float fX = offset.fX;
+    float fY = offset.fY;
+    float fZ = offset.fZ;
+    DWORD dwThis = (DWORD)GetInterface();
     _asm
     {
         push    weaponType
@@ -220,16 +201,10 @@ void CPedSA::AttachPedToBike(CEntity * entity, CVector * vector, unsigned short 
     }   
 }
 
-bool CPedSA::AddProjectile ( eWeaponType eWeapon, CVector vecOrigin, float fForce, CVector * target, CEntity * targetEntity )
-{
-    return ((CProjectileInfoSA*)pGame->GetProjectileInfo())->AddProjectile ( (CEntitySA*)this, eWeapon, vecOrigin, fForce, target, targetEntity );
-}
-
-
-void CPedSA::DetachPedFromEntity ( void )
+void CPedSA::DetachPedFromEntity()
 {
     DWORD dwFunc = FUNC_DetachPedFromEntity;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     _asm
     {
         mov     ecx, dwThis
@@ -237,98 +212,98 @@ void CPedSA::DetachPedFromEntity ( void )
     }
 }
 
-bool CPedSA::InternalAttachToEntity(DWORD dwEntityInterface, const CVector * vecPosition, const CVector * vecRotation)
+bool CPedSA::InternalAttachTo( CEntitySAInterface *entity, const CVector& pos, const CVector& rot )
 {
-    AttachPedToEntity ( dwEntityInterface, const_cast < CVector * > ( vecPosition ), 0, 0.0f, WEAPONTYPE_UNARMED, FALSE );
+    AttachPedToEntity( entity, pos, 0, 0.0f, WEAPONTYPE_UNARMED, FALSE );
     return true;
 }
 
-void CPedSA::AttachPedToEntity(DWORD dwEntityInterface, CVector * vector, unsigned short sDirection, FLOAT fRotationLimit, eWeaponType weaponType, bool bChangeCamera)
+void CPedSA::AttachPedToEntity( CEntitySAInterface *entity, const CVector& offset, unsigned short sDirection, float rotLimit, eWeaponType weaponType, bool camChange )
 {
     // sDirection and fRotationLimit only apply to first-person shooting (bChangeCamera)
-    DEBUG_TRACE("void CPedSA::AttachPedToEntity(CVehicle * entity, CVector * vector, unsigned short sUnk, FLOAT fUnk, eWeaponType weaponType)");
+    DEBUG_TRACE("void CPedSA::AttachPedToEntity( CEntitySAInterface *entity, const CVector& offset, unsigned short sDirection, float rotLimit, eWeaponType weaponType, bool camChange )");
     DWORD dwFunc = FUNC_AttachPedToEntity;
-    DWORD dwThis = (DWORD)this->GetInterface();
-    float fX = vector->fX;
-    float fY = vector->fY;
-    float fZ = vector->fZ;
-    BYTE bPedType = ((CPedSAInterface*)GetInterface())->bPedType;
+    DWORD dwThis = (DWORD)GetInterface();
+    float fX = offset.fX;
+    float fY = offset.fY;
+    float fZ = offset.fZ;
+    ePedType type = GetInterface()->m_pedType;
 
-    // Hack the CPed type(?) to non-player so the camera doesn't get changed
-    if ( !bChangeCamera )
-        ((CPedSAInterface*)GetInterface())->bPedType = 2;
+    // Hack the CPed type to non-player so the camera doesn't get changed
+    if ( !camChange )
+        GetInterface()->m_pedType = 2;
 
     _asm
     {
         push    weaponType
-        push    fRotationLimit
-        movzx   ecx, sDirection
+        push    rotLimit
+        movzx   ecx,sDirection
         push    ecx
         push    fZ
         push    fY
         push    fX
-        push    dwEntityInterface
-        mov     ecx, dwThis
+        push    entity
+        mov     ecx,dwThis
         call    dwFunc
     }
     
     // Hack the CPed type(?) to whatever it was set to
-    if ( !bChangeCamera )
-        ((CPedSAInterface*)GetInterface())->bPedType = bPedType;
+    if ( !camChange )
+        GetInterface()->m_pedType = type;
 }
 
-bool CPedSA::CanSeeEntity(CEntity * entity, FLOAT fDistance)
+bool CPedSA::CanSeeEntity( CEntity *entity, float distance ) const
 {
-    DEBUG_TRACE("bool CPedSA::CanSeeEntity(CEntity * entity, FLOAT fDistance)");
+    DEBUG_TRACE("bool CPedSA::CanSeeEntity( CEntity *entity, float distance ) const");
 
     DWORD dwFunc = FUNC_CanSeeEntity;
     bool bReturn = false;
 
     CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( entity );
-    if ( pEntitySA )
+
+    DWORD dwEntityInterface = (DWORD)pEntitySA->GetInterface();
+    _asm
     {
-        DWORD dwEntityInterface = (DWORD)pEntitySA->GetInterface();
-        _asm
-        {
-            push    fDistance
-            push    dwEntityInterface
-            call    dwFunc
-            mov     bReturn, al
-        }
+        push    distance
+        push    dwEntityInterface
+        call    dwFunc
+        mov     bReturn, al
     }
 
     return bReturn;
 }
 
-CVehicle * CPedSA::GetVehicle()
+CVehicle* CPedSA::GetVehicle() const
 {
-    DEBUG_TRACE("CVehicle * CPedSA::GetVehicle()");
-    if ( ((CPedSAInterface *)this->GetInterface())->pedFlags.bInVehicle )
-    {
-        CVehicleSAInterface * vehicle = (CVehicleSAInterface *)(((CPedSAInterface *)this->GetInterface())->CurrentObjective);
-        if (vehicle)
-            return ((CPoolsSA *)pGame->GetPools())->GetVehicle((DWORD *)vehicle);
-    }
-    return NULL;
+    DEBUG_TRACE("CVehicle* CPedSA::GetVehicle() const");
+
+    if ( !GetInterface()->m_pedFlags.bInVehicle )
+        return NULL;
+
+    CVehicleSAInterface *vehicle = (CVehicleSAInterface*)GetInterface()->m_objective;
+
+    if ( !vehicle )
+        return NULL;
+
+    return pGame->GetPools()->GetVehicle( vehicle );
 }
 
-void CPedSA::Respawn(CVector * position, bool bCameraCut)
+void CPedSA::Respawn( const CVector& pos, bool camCut )
 {
-    CPed * pLocalPlayer = pGame->GetPools()->GetPedFromRef ( (DWORD)1 );
+    DEBUG_TRACE("void CPedSA::Respawn( const CVector& pos, bool camCut )");
 
-    if ( !bCameraCut )
+    if ( !camCut )
     {
          // DISABLE call to CCamera__RestoreWithJumpCut when respawning
-        MemSet ( (void*)0x4422EA, 0x90, 20 );
+        MemSet( (void*)0x4422EA, 0x90, 20 );
     }
 
-    DEBUG_TRACE("void CPedSA::Respawn(CVector * position)");
-    FLOAT fX = position->fX;
-    FLOAT fY = position->fY;
-    FLOAT fZ = position->fZ;
-    FLOAT fUnk = 1.0f; 
+    float fX = pos.fX;
+    float fY = pos.fY;
+    float fZ = pos.fZ;
+    float fUnk = 1.0f; 
     DWORD dwFunc = FUNC_RestorePlayerStuffDuringResurrection;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     _asm
     {
         push    fUnk
@@ -357,7 +332,7 @@ void CPedSA::Respawn(CVector * position, bool bCameraCut)
         call    dwFunc
     }
 
-    if ( !bCameraCut )
+    if ( !camCut )
     {
         // B9 28 F0 B6 00 E8 4C 9A 0C 00 B9 28 F0 B6 00 E8 B2 97 0C 00
         unsigned char szCode[] = {0xB9, 0x28, 0xF0, 0xB6, 0x00, 0xE8, 0x4C, 0x9A, 0x0C, 0x00, 0xB9, 0x28, 0xF0, 0xB6, 0x00, 0xE8, 0xB2, 0x97, 0x0C, 0x00} ;
@@ -366,24 +341,9 @@ void CPedSA::Respawn(CVector * position, bool bCameraCut)
     }
 }
 
-FLOAT CPedSA::GetHealth()
+bool CPedSA::AddProjectile( eWeaponType eWeapon, const CVector& vecOrigin, float fForce, const CVector& targetPos, CEntity *target )
 {
-    return GetPedInterface ()->fHealth;
-}
-
-void CPedSA::SetHealth ( float fHealth )
-{
-    GetPedInterface ()->fHealth = fHealth;
-}
-
-float CPedSA::GetArmor ( void )
-{
-    return GetPedInterface ()->fArmor;
-}
-
-void CPedSA::SetArmor ( float fArmor )
-{
-    GetPedInterface ()->fArmor = fArmor;
+    return pGame->GetProjectileInfo()->AddProjectile( this, eWeapon, vecOrigin, fForce, targetPos, target );
 }
 
 void CPedSA::SetStealthAiming( bool enable )
@@ -407,11 +367,6 @@ void CPedSA::SetStealthAiming( bool enable )
     m_stealthAiming = enable;
 }
 
-bool CPedSA::IsStealthAiming()
-{
-    return m_stealthAiming;
-}
-
 void CPedSA::SetAnimationProgress( const char *name, float progress )
 {
     CAnimBlendAssociationSA *assoc = (CAnimBlendAssociationSA*)pGame->GetAnimManager()->RpAnimBlendClumpGetAssociation( (RpClump*)m_rwObject, name );
@@ -422,29 +377,7 @@ void CPedSA::SetAnimationProgress( const char *name, float progress )
     assoc->SetCurrentProgress( progress );
 }
 
-void CPedSA::SetIsStanding( bool bStanding )
-{
-    DWORD dwFunc = FUNC_SetIsStanding;
-    DWORD dwThis = (DWORD)this->GetInterface();
-    _asm
-    {
-        mov     ecx, dwThis
-        push    bStanding
-        call    dwFunc
-    }
-}
-
-DWORD CPedSA::GetType ( void )
-{
-    return m_dwType;
-}
-
-void CPedSA::SetType ( DWORD m_dwType )
-{
-    >m_dwType = m_dwType;
-}
-
-void CPedSA::RemoveWeaponModel ( int iModel )
+void CPedSA::RemoveWeaponModel( int iModel )
 {
     DWORD dwFunc = FUNC_RemoveWeaponModel;
     DWORD dwThis = (DWORD)GetInterface();
@@ -456,7 +389,7 @@ void CPedSA::RemoveWeaponModel ( int iModel )
     }
 }
 
-void CPedSA::ClearWeapon ( eWeaponType weaponType )
+void CPedSA::ClearWeapon( eWeaponType weaponType )
 {
     DWORD dwFunc = FUNC_ClearWeapon;
     DWORD dwThis = (DWORD)GetInterface();
@@ -468,14 +401,16 @@ void CPedSA::ClearWeapon ( eWeaponType weaponType )
     }
 }
 
-CWeapon * CPedSA::GiveWeapon ( eWeaponType weaponType, unsigned int uiAmmo )
+CWeapon* CPedSA::GiveWeapon( eWeaponType weaponType, unsigned int uiAmmo )
 {
     if ( weaponType != WEAPONTYPE_UNARMED )
     {
-        CWeaponInfo* pInfo = pGame->GetWeaponInfo ( weaponType );
+        CWeaponInfo* pInfo = pGame->GetWeaponInfo( weaponType );
+
         if ( pInfo )
         {
             int iModel = pInfo->GetModel();
+
             if ( iModel )
             {
                 CModelInfo * pWeaponModel = pGame->GetModelInfo ( iModel );
@@ -487,15 +422,6 @@ CWeapon * CPedSA::GiveWeapon ( eWeaponType weaponType, unsigned int uiAmmo )
             // If the weapon is satchels, load the detonator too
             if ( weaponType == WEAPONTYPE_REMOTE_SATCHEL_CHARGE )
             {
-                /*int iModel = pGame->GetWeaponInfo ( WEAPONTYPE_DETONATOR )->GetModel();
-                if ( iModel )
-                {
-                    CModelInfo * pWeaponModel = pGame->GetModelInfo ( iModel );
-                    if ( pWeaponModel )
-                    {
-                        pWeaponModel->Request ( true, true );
-                    }
-                }*/
                 // Load the weapon and give it properly so getPedWeapon shows the weapon is there.
                 GiveWeapon( WEAPONTYPE_DETONATOR, 1 );
             }
@@ -504,7 +430,7 @@ CWeapon * CPedSA::GiveWeapon ( eWeaponType weaponType, unsigned int uiAmmo )
 
     DWORD dwReturn = 0;
     DWORD dwFunc = FUNC_GiveWeapon;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     _asm
     {
         mov     ecx, dwThis
@@ -516,182 +442,140 @@ CWeapon * CPedSA::GiveWeapon ( eWeaponType weaponType, unsigned int uiAmmo )
     }
 
     // ryden: Hack to increase the sniper range
-    CWeapon* pWeapon = GetWeapon ( (eWeaponSlot)dwReturn );
+    CWeapon *pWeapon = GetWeapon( (eWeaponSlot)dwReturn );
 
     if ( weaponType == WEAPONTYPE_SNIPERRIFLE )
     {
-        pWeapon->GetInfo ()->SetWeaponRange ( 300.0f );
-        pWeapon->GetInfo ()->SetTargetRange ( 250.0f );
+        pWeapon->GetInfo()->SetWeaponRange ( 300.0f );
+        pWeapon->GetInfo()->SetTargetRange ( 250.0f );
     }
 
     return pWeapon;
 }
 
-CWeapon * CPedSA::GetWeapon ( eWeaponType weaponType )
+CWeapon* CPedSA::GetWeapon( eWeaponType weaponType )
 {
-    if ( weaponType < WEAPONTYPE_LAST_WEAPONTYPE )
-    {
-        CWeapon* pWeapon = GetWeapon ( pGame->GetWeaponInfo ( weaponType )->GetSlot () );
-        if ( pWeapon->GetType () == weaponType )
-            return pWeapon;
-    }
-    return NULL;
-}
-
-CWeapon * CPedSA::GetWeapon ( eWeaponSlot weaponSlot )
-{
-    if ( weaponSlot < WEAPONSLOT_MAX )
-    {
-        return m_pWeapons[weaponSlot];
-    }
-    else
+    if ( weaponType > WEAPONTYPE_LAST_WEAPONTYPE-1 )
         return NULL;
+
+    CWeapon *pWeapon = GetWeapon( pGame->GetWeaponInfo( weaponType )->GetSlot() );
+
+    if ( pWeapon->GetType() != weaponType )
+        return NULL;
+
+    return pWeapon;
 }
 
-void CPedSA::ClearWeapons ( void )
+CWeapon* CPedSA::GetWeapon( eWeaponSlot weaponSlot )
+{
+    if ( weaponSlot > WEAPONSLOT_MAX-1 )
+        return NULL;
+
+    return m_pWeapons[weaponSlot];
+}
+
+void CPedSA::ClearWeapons()
 {
     // Remove all the weapons
     for ( unsigned int i = 0; i < WEAPONSLOT_MAX; i++ )
     {
-        if ( m_pWeapons [i] ) 
+        if ( m_weapons[i] ) 
         {
-            m_pWeapons [i]->SetAmmoInClip ( 0 );
-            m_pWeapons [i]->SetAmmoTotal ( 0 );
-            m_pWeapons [i]->Remove ();            
+            m_weapons[i]->SetAmmoInClip( 0 );
+            m_weapons[i]->SetAmmoTotal( 0 );
+            m_weapons[i]->Remove();            
         }
     }
 }
 
-FLOAT CPedSA::GetCurrentRotation()
+void CPedSA::SetCurrentWeaponSlot( eWeaponSlot weaponSlot )
 {
-    return GetPedInterface ()->fCurrentRotation;
-}
+    if ( weaponSlot > WEAPONSLOT_MAX-1 )
+        return;
 
-FLOAT CPedSA::GetTargetRotation()
-{
-    return GetPedInterface ()->fTargetRotation;
-}
+    eWeaponSlot currentSlot = GetCurrentWeaponSlot ();
 
-void CPedSA::SetCurrentRotation(FLOAT fRotation)
-{
-    GetPedInterface ()->fCurrentRotation = fRotation;
-    
-//  char szDebug[255] = {'\0'};
-//  sprintf(szDebug,"CurrentRotate Offset: %d", ((DWORD)&((CPedSAInterface *)this->GetInterface())->CurrentRotate) -  (DWORD)this->GetInterface());
-//  OutputDebugString(szDebug);
-}
+    if ( weaponSlot == GetCurrentWeaponSlot() )
+        return;
 
-void CPedSA::SetTargetRotation(FLOAT fRotation)
-{
-    GetPedInterface ()->fTargetRotation = fRotation;
-}
+    CWeapon * pWeapon = GetWeapon( currentSlot );
 
-eWeaponSlot CPedSA::GetCurrentWeaponSlot ()
-{
-    return (eWeaponSlot) GetPedInterface ()->bCurrentWeaponSlot;
-}
+    if ( pWeapon )
+        RemoveWeaponModel( pWeapon->GetInfo ()->GetModel() );
 
-void CPedSA::SetCurrentWeaponSlot ( eWeaponSlot weaponSlot )
-{
-    if ( weaponSlot < WEAPONSLOT_MAX )
+    CPedSAInterface *thisPed = (CPedSAInterface*)GetInterface();
+ 
+    // set the new weapon slot
+    thisPed->bCurrentWeaponSlot = weaponSlot;
+
+    // is the player the local player?
+    CPlayerPedSA *localPlayer = pGame->GetPlayerInfo()->GetPlayerPed();
+    DWORD dwThis = (DWORD)GetInterface();
+
+    if ( localPlayer == (CPlayerPedSA*)this )
     {
-        eWeaponSlot currentSlot = GetCurrentWeaponSlot ();
-        if ( weaponSlot != GetCurrentWeaponSlot () )
+        pGame->GetPlayerInfo()->GetInterface()->PlayerPedData.m_nChosenWeapon = weaponSlot;
+
+        DWORD dwFunc = FUNC_MakeChangesForNewWeapon_Slot;
+        _asm
         {
-            CWeapon * pWeapon = GetWeapon ( currentSlot );
-            if ( pWeapon ) RemoveWeaponModel ( pWeapon->GetInfo ()->GetModel () );
-
-            CPedSAInterface * thisPed = (CPedSAInterface *)this->GetInterface();
-         
-            // set the new weapon slot
-            thisPed->bCurrentWeaponSlot = weaponSlot;
-
-            // is the player the local player?
-            CPed * pPed = pGame->GetPools()->GetPedFromRef ( (DWORD)1 );
-            //if ( pPed == this && thisPed->pPlayerInfo )
-            //{
-            
-            DWORD dwThis = (DWORD)this->GetInterface();
-            if ( pPed == this )
-            {
-               ((CPlayerInfoSA *)pGame->GetPlayerInfo())->GetInterface()->PlayerPedData.m_nChosenWeapon = weaponSlot;
-
-                DWORD dwFunc = FUNC_MakeChangesForNewWeapon_Slot;
-                _asm
-                {
-                    mov     ecx, dwThis
-                    push    weaponSlot
-                    call    dwFunc
-                }
-            }
-            else
-            {
-                DWORD dwFunc = FUNC_SetCurrentWeapon;
-                _asm
-                {
-                    mov     ecx, dwThis
-                    push    weaponSlot
-                    call    dwFunc
-                }
-            }
+            mov     ecx, dwThis
+            push    weaponSlot
+            call    dwFunc
         }
+
+        return;
+    }
+
+    DWORD dwFunc = FUNC_SetCurrentWeapon;
+    _asm
+    {
+        mov     ecx, dwThis
+        push    weaponSlot
+        call    dwFunc
     }
 }
 
-CVector * CPedSA::GetBonePosition ( eBone bone, CVector * vecPosition )
+void CPedSA::GetBonePosition( eBone bone, CVector& pos ) const
 {
     DWORD dwFunc = FUNC_GetBonePosition;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     _asm
     {
         push    1
         push    bone
-        push    vecPosition
+        push    pos
         mov     ecx, dwThis
         call    dwFunc
     }
-
-    return vecPosition;
 }
 
-CVector * CPedSA::GetTransformedBonePosition ( eBone bone, CVector * vecPosition )
+void CPedSA::GetTransformedBonePosition( eBone bone, CVector& pos ) const
 {
     DWORD dwFunc = FUNC_GetTransformedBonePosition;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     _asm
     {
         push    1
         push    bone
-        push    vecPosition
+        push    pos
         mov     ecx, dwThis
         call    dwFunc
     }
 
     // Clamp to a sane range as this function can occasionally return massive values,
     // which causes ProcessLineOfSight to effectively freeze
-    vecPosition->fX = Clamp < float > ( -VALID_POSITION_LIMIT, vecPosition->fX, VALID_POSITION_LIMIT );
-    vecPosition->fY = Clamp < float > ( -VALID_POSITION_LIMIT, vecPosition->fY, VALID_POSITION_LIMIT );
-    vecPosition->fZ = Clamp < float > ( -VALID_POSITION_LIMIT, vecPosition->fZ, VALID_POSITION_LIMIT );
-
-    return vecPosition;
+    pos.fX = Clamp <float> ( -VALID_POSITION_LIMIT, vecPosition->fX, VALID_POSITION_LIMIT );
+    pos.fY = Clamp <float> ( -VALID_POSITION_LIMIT, vecPosition->fY, VALID_POSITION_LIMIT );
+    pos.fZ = Clamp <float> ( -VALID_POSITION_LIMIT, vecPosition->fZ, VALID_POSITION_LIMIT );
 }
 
-bool CPedSA::IsDucking()
-{
-    return ((CPedSAInterface*)this->GetInterface())->pedFlags.bIsDucking;
-}
-
-void CPedSA::SetDucking ( bool bDuck )
-{
-    ((CPedSAInterface*)this->GetInterface())->pedFlags.bIsDucking = bDuck;
-}
-
-CTaskSA* CPedSA::GetPrimaryTask()
+CTaskSA* CPedSA::GetPrimaryTask() const
 {
     return GetPedIntelligence()->GetTaskManager()->GetTask( TASK_PRIORITY_PRIMARY );
 }
 
-bool CPedSA::IsEnteringVehicle()
+bool CPedSA::IsEnteringVehicle() const
 {
     CTaskSA *task = GetPrimaryTask();
 
@@ -708,7 +592,7 @@ bool CPedSA::IsEnteringVehicle()
     return false;
 }
 
-bool CPedSA::IsGettingIntoVehicle()
+bool CPedSA::IsGettingIntoVehicle() const
 {
     if ( !IsEnteringVehicle() )
         return false;
@@ -725,7 +609,7 @@ bool CPedSA::IsGettingIntoVehicle()
     return false;
 }
 
-bool CPedSA::IsBeingJacked()
+bool CPedSA::IsBeingJacked() const
 {
     CTaskSA *task = GetPrimaryTask();
 
@@ -742,7 +626,7 @@ bool CPedSA::IsBeingJacked()
     return false;
 }
 
-bool CPedSA::IsLeavingVehicle()
+bool CPedSA::IsLeavingVehicle() const
 {
     CTaskSA *task = GetPrimaryTask();
 
@@ -762,7 +646,7 @@ bool CPedSA::IsLeavingVehicle()
     return false;
 }
 
-bool CPedSA::IsGettingOutOfVehicle()
+bool CPedSA::IsGettingOutOfVehicle() const
 {
     // That is technically getting out of vehicle
     if ( IsBeingJacked() )
@@ -781,7 +665,7 @@ bool CPedSA::IsGettingOutOfVehicle()
     return false;
 }
 
-bool CPedSA::IsDying()
+bool CPedSA::IsDying() const
 {
     CTaskSA *task = GetPrimaryTask();
 
@@ -802,30 +686,22 @@ bool CPedSA::IsDying()
     return false;
 }
 
-bool CPedSA::IsDead()
+bool CPedSA::IsDead() const
 {
     CTaskSA *task = GetPrimaryTask();
 
     return task && task->GetTaskType() == TASK_SIMPLE_DEAD;
 }
 
-int CPedSA::GetCantBeKnockedOffBike()
+void CPedSA::QuitEnteringCar( CVehicle *vehicle, int iSeat, bool bUnknown )
 {
-    return ((CPedSAInterface*)this->GetInterface())->pedFlags.CantBeKnockedOffBike;
-}
+    CVehicleSA* pVehicleSA = dynamic_cast <CVehicleSA*> ( vehicle );
 
-void CPedSA::SetCantBeKnockedOffBike ( int iCantBeKnockedOffBike )
-{
-    ((CPedSAInterface*)this->GetInterface())->pedFlags.CantBeKnockedOffBike = iCantBeKnockedOffBike;
-}
-
-void CPedSA::QuitEnteringCar ( CVehicle * vehicle, int iSeat, bool bUnknown )
-{
-    CVehicleSA* pVehicleSA = dynamic_cast < CVehicleSA* > ( vehicle );
-    if ( !pVehicleSA ) return;
+    if ( !pVehicleSA )
+        return;
 
     DWORD dwFunc = FUNC_QuitEnteringCar;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     DWORD dwVehicle = (DWORD)pVehicleSA->GetInterface();
     _asm
     {
@@ -838,25 +714,9 @@ void CPedSA::QuitEnteringCar ( CVehicle * vehicle, int iSeat, bool bUnknown )
     }
 }
 
-bool CPedSA::IsWearingGoggles()
+void CPedSA::SetGogglesState( bool wear )
 {
-    DWORD dwFunc = FUNC_IsWearingGoggles;
-    DWORD dwThis = (DWORD)GetInterface();
-    bool bReturn = false;
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunc
-        mov     bReturn, al
-    }
-    return bReturn;
-}
-
-void CPedSA::SetGogglesState( bool bIsWearingThem )
-{
-    DWORD dwFunc = FUNC_TakeOffGoggles;
-    if ( bIsWearingThem )
-        dwFunc = FUNC_PutOnGoggles;
+    DWORD dwFunc = wear ? FUNC_PutOnGoggles : FUNC_TakeOffGoggles;
 
     DWORD dwThis = (DWORD)GetInterface();
     _asm
@@ -864,6 +724,9 @@ void CPedSA::SetGogglesState( bool bIsWearingThem )
         mov     ecx, dwThis
         call    dwFunc
     }
+
+    if ( !wear )
+        return;
 
     // Are our goggle anims loaded?
     CAnimBlock *block = pGame->GetAnimManager()->GetAnimationBlock( "GOGGLES" );
@@ -872,11 +735,10 @@ void CPedSA::SetGogglesState( bool bIsWearingThem )
         pGame->GetAnimManager()->BlendAnimation( (RpClump*)GetInterface()->m_rwObject, ANIM_GROUP_GOGGLES, ANIM_ID_GOGGLES_ON, 4.0f );
 }
 
-void CPedSA::SetClothesTextureAndModel( char * szTexture, char * szModel, int textureType )
+void CPedSA::SetClothesTextureAndModel( const char *tex, const char *model, short txd )
 {
     DWORD dwFunc = FUNC_CPedClothesDesc__SetTextureAndModel;
-    //DWORD dwThis = (DWORD)this->GetInterface()->PlayerPedData.m_pClothes;
-    DWORD dwThis = (DWORD)((CPedSAInterface *)GetInterface())->pPlayerData->m_pClothes;
+    DWORD dwThis = (DWORD)GetInterface()->m_playerData->m_pClothes;
     _asm
     {
         mov     ecx, dwThis
@@ -890,7 +752,7 @@ void CPedSA::SetClothesTextureAndModel( char * szTexture, char * szModel, int te
 void CPedSA::RebuildPlayer()
 {
     DWORD dwFunc = FUNC_CClothes__RebuildPlayer;
-    DWORD dwThis = (DWORD)>GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     _asm
     {
         push    0
@@ -900,87 +762,69 @@ void CPedSA::RebuildPlayer()
     }
 }
 
-eFightingStyle CPedSA::GetFightingStyle()
+void CPedSA::SetFightingStyle( eFightingStyle style, unsigned char extra )
 {
-    return ( eFightingStyle ) ((CPedSAInterface *)GetInterface())->bFightingStyle;
-}
+    if ( style == GetInterface()->m_fightStyle )
+        return;
 
-void CPedSA::SetFightingStyle ( eFightingStyle style, BYTE bStyleExtra )
-{
-    BYTE bStyle = ( BYTE ) style;
-    BYTE* pFightingStyle = &((CPedSAInterface *)GetInterface())->bFightingStyle;
-    BYTE* pFightingStyleExtra = &GetInterface()->m_fightStyleExtra;
-    if ( bStyle != *pFightingStyle )
+    GetInterface()->m_fightStyle = style;
+
+    if ( extra > 6 )
+        return;
+
+    switch( extra )
     {
-        *pFightingStyle = bStyle;
-        if ( bStyleExtra > 0 && bStyleExtra <= 6 )
-        {
-            bStyleExtra--;
-            BYTE bTemp = *pFightingStyleExtra;
-            switch ( bStyleExtra )
-            {
-            case 1:
-                bTemp |= 1;
-                break;
-            case 2:
-                bTemp |= 2;
-                break;
-            case 3:
-                bTemp |= 4;
-                break;
-            case 4:
-                bTemp |= 8;
-                break;
-            case 5:
-                bTemp |= 16;
-                break;
-            }
-            *pFightingStyleExtra = bTemp;
-        }
+    case 2:
+        GetInterface()->m_fightStyleExtra |= 0x01;
+        break;
+    case 3:
+        GetInterface()->m_fightStyleExtra |= 0x02;
+        break;
+    case 4:
+        GetInterface()->m_fightStyleExtra |= 0x04;
+        break;
+    case 5:
+        GetInterface()->m_fightStyleExtra |= 0x08;
+        break;
+    case 6:
+        GetInterface()->m_fightStyleExtra |= 0x10;
+        break;
     }
 }
 
-
-CEntity* CPedSA::GetContactEntity()
+CEntity* CPedSA::GetContactEntity() const
 {
     CEntitySAInterface* pInterface = GetInterface()->m_contactEntity;
-    CPoolsSA *pPools = pGame->GetPools();
 
-    switch ( pInterface->nType )
+    switch( pInterface->m_type )
     {
     case ENTITY_TYPE_VEHICLE:
-        return pPools->GetVehicle( pInterface );
+        return pGame->GetPools()->GetVehicle( pInterface );
     case ENTITY_TYPE_OBJECT:
-        return pPools->GetObject( pInterface );
+        return pGame->GetPools()->GetObject( pInterface );
     }
 
     return NULL;
-}
-
-unsigned char CPedSA::GetRunState()
-{
-    return GetInterface()->m_runState;
 }
 
 CEntity* CPedSA::GetTargetedEntity()
 {
     CEntitySAInterface *pInterface = GetInterface()->m_target;
-    CPoolsSA *pPools = pGame->GetPools();
 
     switch( pInterface->m_type )
     {
     case ENTITY_TYPE_PED:
-        return pPools->GetPed( pInterface );
+        return pGame->GetPools()->GetPed( pInterface );
     case ENTITY_TYPE_VEHICLE:
-        return pPools->GetVehicle( pInterface );
+        return pGame->GetPools()->GetVehicle( pInterface );
     case ENTITY_TYPE_OBJECT:
-        return pPools->GetObject( pInterface );
+        return pGame->GetPools()->GetObject( pInterface );
     }
 
     return NULL;
 }
 
-void CPedSA::SetTargetedEntity ( CEntity* pEntity )
+void CPedSA::SetTargetedEntity( CEntity *entity )
 {
     CEntitySAInterface* pInterface = NULL;
     if ( pEntity )
@@ -988,30 +832,10 @@ void CPedSA::SetTargetedEntity ( CEntity* pEntity )
         CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
 
         if ( pEntitySA )
-            pInterface = pEntitySA->GetInterface ();
+            pInterface = pEntitySA->GetInterface();
     }
 
     GetInterface()->m_target = pInterface;
-}
-
-bool CPedSA::GetCanBeShotInVehicle()
-{
-    return GetInterface()->m_pedFlags.bCanBeShotInVehicle;
-}
-
-bool CPedSA::GetTestForShotInVehicle()
-{
-    return GetInterface()->m_pedFlags.bTestForShotInVehicle;
-}
-
-void CPedSA::SetCanBeShotInVehicle ( bool bShot )
-{
-    GetPedInterface ()->pedFlags.bCanBeShotInVehicle = bShot;
-}
-
-void CPedSA::SetTestForShotInVehicle ( bool bTest )
-{
-    GetPedInterface ()->pedFlags.bTestForShotInVehicle = bTest;
 }
 
 void CPedSA::RemoveBodyPart( int i, char c )
@@ -1027,30 +851,21 @@ void CPedSA::RemoveBodyPart( int i, char c )
     }
 }
 
-void CPedSA::SetFootBlood( unsigned int uiFootBlood )
+void CPedSA::SetFootBlood( unsigned int density )
 {
-    DWORD dwThis = (DWORD)this->GetInterface();
-
     // Adjust the footBlood flag
-    GetInterface()->m_pedFlags.bDoBloodyFootprints = m_uiFootBlood != 0;
+    GetInterface()->m_pedFlags.bDoBloodyFootprints = density != 0;
 
     // Set the amount of foot blood
-    GetInterface()->m_footBloodDensity = uiFootBlood;
+    GetInterface()->m_footBloodDensity = density;
 }
 
-unsigned int CPedSA::GetFootBlood()
+unsigned int CPedSA::GetFootBlood() const
 {
-    DWORD dwThis = (DWORD)GetInterface();
-
     if ( !GetInterface()->m_pedFlags.bDoBloodyFootprints )
         return 0;
 
     return GetInterface()->m_footBloodDensity;
-}
-
-bool CPedSA::IsOnFire()
-{
-    return GetInterface()->m_fire != NULL;
 }
 
 void CPedSA::SetOnFire( bool bOnFire )
@@ -1063,13 +878,10 @@ void CPedSA::SetOnFire( bool bOnFire )
         // Make sure that we have some attached fire
         if ( pInterface->m_fire != NULL )
         {
-            CFireManagerSA* pFireManager = static_cast < CFireManagerSA * > ( pGame->GetFireManager() );
-            CFire* pFire = pFireManager->GetFire( static_cast < CFireSAInterface * > ( pInterface->pFireOnPed ) );
+            CFire* pFire = pGame->GetFireManager()->GetFire( (CFireSAInterface*)pInterface->pFireOnPed );
 
             if ( pFire )
-            {
                 pFire->Extinguish();
-            }
         }
         return;
     }
@@ -1078,7 +890,7 @@ void CPedSA::SetOnFire( bool bOnFire )
     if ( pInterface->m_fire )
         return;
 
-    pFire = pGame->GetFireManager()->StartFire ( this, NULL, (float)DEFAULT_FIRE_PARTICLE_SIZE );
+    pFire = pGame->GetFireManager()->StartFire( this, NULL, (float)DEFAULT_FIRE_PARTICLE_SIZE );
 
     if ( !pFire )
         return;
@@ -1094,12 +906,7 @@ void CPedSA::SetOnFire( bool bOnFire )
     pInterface->pFireOnPed = pFire->GetInterface();
 }
 
-void CPedSA::SetStayInSamePlace ( bool bStay )
-{
-    GetPedInterface ()->pedFlags.bStayInSamePlace = bStay;
-}
-
-void CPedSA::GetVoice ( short* psVoiceType, short* psVoiceID )
+void CPedSA::GetVoice( short *psVoiceType, short *psVoiceID ) const
 {
     if ( psVoiceType )
         *psVoiceType = m_pPedSound->GetVoiceTypeID ();
@@ -1108,10 +915,10 @@ void CPedSA::GetVoice ( short* psVoiceType, short* psVoiceID )
         *psVoiceID = m_pPedSound->GetVoiceID ();
 }
 
-void CPedSA::GetVoice ( const char** pszVoiceType, const char** pszVoice )
+void CPedSA::GetVoice( const char **pszVoiceType, const char **pszVoice ) const
 {
     short sVoiceType, sVoiceID;
-    GetVoice ( &sVoiceType, &sVoiceID );
+    GetVoice( &sVoiceType, &sVoiceID );
 
     if ( pszVoiceType )
         *pszVoiceType = CPedSoundSA::GetVoiceTypeNameFromID ( sVoiceType );
@@ -1120,13 +927,13 @@ void CPedSA::GetVoice ( const char** pszVoiceType, const char** pszVoice )
         *pszVoice = CPedSoundSA::GetVoiceNameFromID ( sVoiceType, sVoiceID );
 }
 
-void CPedSA::SetVoice ( short sVoiceType, short sVoiceID )
+void CPedSA::SetVoice( short sVoiceType, short sVoiceID )
 {
     m_pPedSound->SetVoiceTypeID ( sVoiceType );
     m_pPedSound->SetVoiceID ( sVoiceID );
 }
 
-void CPedSA::SetVoice ( const char* szVoiceType, const char* szVoice )
+void CPedSA::SetVoice( const char *szVoiceType, const char *szVoice )
 {
     short sVoiceType = CPedSoundSA::GetVoiceTypeIDFromName ( szVoiceType );
     short sVoiceID = CPedSoundSA::GetVoiceIDFromName ( sVoiceType, szVoice );

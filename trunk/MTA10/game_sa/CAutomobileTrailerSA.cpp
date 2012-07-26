@@ -11,3 +11,11 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+
+CAutomobileTrailerSA::CAutomobileTrailerSA( CAutomobileTrailerSAInterface *trailer ) : CAutomobileSA( trailer )
+{
+}
+
+CAutomobileTrailerSA::~CAutomobileTrailerSA()
+{
+}

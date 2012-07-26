@@ -18,7 +18,7 @@
 
 void CWorldSA::Add ( CEntity * pEntity )
 {
-    DEBUG_TRACE("VOID CWorldSA::Add ( CEntity * pEntity )");
+    DEBUG_TRACE("void CWorldSA::Add ( CEntity * pEntity )");
 
     CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
 
@@ -38,7 +38,7 @@ void CWorldSA::Add ( CEntity * pEntity )
 
 void CWorldSA::Add ( CEntitySAInterface * entityInterface )
 {
-    DEBUG_TRACE("VOID CWorldSA::Add ( CEntitySAInterface * entityInterface )");
+    DEBUG_TRACE("void CWorldSA::Add ( CEntitySAInterface * entityInterface )");
     DWORD dwFunction = FUNC_Add;
     _asm
     {
@@ -50,7 +50,7 @@ void CWorldSA::Add ( CEntitySAInterface * entityInterface )
 
 void CWorldSA::Remove ( CEntity * pEntity )
 {
-    DEBUG_TRACE("VOID CWorldSA::Remove ( CEntity * entity )");
+    DEBUG_TRACE("void CWorldSA::Remove ( CEntity * entity )");
 
     CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
 
@@ -66,7 +66,7 @@ void CWorldSA::Remove ( CEntity * pEntity )
 
 void CWorldSA::Remove ( CEntitySAInterface * entityInterface )
 {
-    DEBUG_TRACE("VOID CWorldSA::Remove ( CEntitySAInterface * entityInterface )");
+    DEBUG_TRACE("void CWorldSA::Remove ( CEntitySAInterface * entityInterface )");
     DWORD dwFunction = FUNC_Remove;
     _asm
     {
