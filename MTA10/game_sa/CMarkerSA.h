@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CMarkerSA.h
 *  PURPOSE:     Header file for marker entity class
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -25,57 +26,58 @@ class CEntryExit;
 class CMarkerSAInterface
 {
 public:
-    /* GTA Variables */
-    DWORD nColour;
-    // The following parameter is used when Blip Type is CAR, CHAR or OBJECT
-    long PoolIndex; 
-    // The following parameter is used when Blip Type is COORDS 
-    CVector position;//vec2DBlip;
+    unsigned int        m_colorID;
+    
+    long                m_poolIndex; // parameter is used when Blip Type is CAR, CHAR or OBJECT
+    CVector             m_position; // parameter is used when Blip Type is COORDS 
 
-    WORD ReferenceIndex;
+    unsigned short      m_referenceIndex;
 
-    FLOAT fBlipMarkerScale;
-    WORD nBlipScale;
-    CEntryExit* pEntryExit;
+    float               m_markerScale;
+    unsigned short      m_blipScale;
+    CEntryExit*         m_entryExit;
 
-    BYTE nBlipSprite;
+    unsigned char       m_sprite;
 
-    BYTE bBright                : 1;
-    BYTE bTrackingBlip          : 1;
-    BYTE bShortRange            : 1;
-    BYTE bFriendly              : 1;    
-    BYTE bBlipRemain            : 1;
-    BYTE bBlipFade              : 1;
-    BYTE nCoordBlipAppearance   : 2;
+    unsigned char       m_bright : 1;
+    unsigned char       m_tracking : 1;
+    unsigned char       m_shortRange : 1;
+    unsigned char       m_friendly : 1;    
+    unsigned char       m_blipRemain : 1;
+    unsigned char       m_blipFade : 1;
+    unsigned char       m_coordBlipAppearance : 2;
 
-    BYTE nBlipDisplayFlag       : 2;
-    BYTE BlipType               : 4;
+    unsigned char       m_displayFlag : 2;
+    unsigned char       m_blipType : 4;
 };
 
 class CMarkerSA : public CMarker
 {
 public:
     /* Our Functions */
-                        CMarkerSA       ( CMarkerSAInterface * markerInterface ) { internalInterface = markerInterface; };
+                                CMarkerSA( CMarkerSAInterface *marker )     { m_interface = marker; };
 
-    void                Init            ( void );
+    CMarkerSAInterface*         GetInterface()                              { return m_interface; };
+    const CMarkerSAInterface*   GetInterface() const                        { return m_interface; }
 
-    VOID                SetSprite ( eMarkerSprite Sprite );
-    VOID                SetDisplay ( eMarkerDisplay wDisplay );
-    VOID                SetScale ( WORD wScale );
-    VOID                SetColor ( eMarkerColor color );
-    VOID                SetColor ( const SColor color );
-    VOID                Remove ( );
-    BOOL                IsActive (  );
-    VOID                SetPosition ( CVector * vecPosition );
-    VOID                SetEntity ( CVehicle * vehicle );
-    VOID                SetEntity ( CPed * ped );
-    VOID                SetEntity ( CObject * object );
-    CEntity             * GetEntity (  );
-    CVector         * GetPosition (  );
-    CMarkerSAInterface  * GetInterface (  ) { return internalInterface; };
+    void                        Init();
+
+    void                        SetSprite( eMarkerSprite Sprite )           { m_interface->m_sprite = Sprite; }
+    void                        SetDisplay( eMarkerDisplay wDisplay )       { m_interface->m_displayFlag = wDisplay; }
+    void                        SetScale( unsigned short scale );
+    void                        SetColor( eMarkerColor color );
+    void                        SetColor( const SColor color );
+    void                        Remove();
+    bool                        IsActive() const                            { return m_interface->m_blipType != MARKER_TYPE_UNUSED; }
+    void                        SetPosition( const CVector& pos )           { m_interface->m_position = pos; }
+    const CVector&              GetPosition() const                         { return m_interface->m_position; }
+    void                        SetEntity( CVehicle *vehicle );
+    void                        SetEntity( CPed *ped );
+    void                        SetEntity( CObject *object );
+    CEntity*                    GetEntity() const;
+
 private:
-    CMarkerSAInterface  * internalInterface;
+    CMarkerSAInterface*         m_interface;
 };
 
 #endif

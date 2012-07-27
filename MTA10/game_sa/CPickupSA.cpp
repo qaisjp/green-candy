@@ -177,10 +177,10 @@ VOID CPickupSA::GetRidOfObjects()
     }
 }
 
-VOID CPickupSA::Remove()
+void CPickupSA::Remove()
 {
     DWORD dwFunc = FUNC_CPickup_Remove;
-    DWORD dwThis = (DWORD)this->GetInterface();
+    DWORD dwThis = (DWORD)GetInterface();
     _asm
     {
         mov     ecx, dwThis
@@ -188,10 +188,12 @@ VOID CPickupSA::Remove()
     }
 
     // CPickup::Remove also destroys the owned object, so we need to delete our CObjectSA class
-    if ( this->object )
+    if ( object )
     {
-        ((CEntitySA*)this->object)->DoNotRemoveFromGame = true;
-        delete this->object;
-        this->object = NULL;
+        object->m_doNotRemoveFromGame = true;
+
+        delete object;
+
+        object = NULL;
     }
 }

@@ -162,7 +162,7 @@ public:
 class CModelInfoSA : public CModelInfo
 {
 protected:
-    CBaseModelInfoSAInterface *     m_pInterface;
+    CBaseModelInfoSAInterface*      m_pInterface;
     unsigned short                  m_modelID;
     DWORD                           m_dwReferences;
     CColModel*                      m_pCustomColModel;
@@ -171,79 +171,77 @@ protected:
     static std::map <unsigned short, int> ms_RestreamTxdIDMap;
 
 public:
-                                    CModelInfoSA            ();
-                                    CModelInfoSA            ( unsigned short );
+                                    CModelInfoSA();
+                                    CModelInfoSA( unsigned short id );
 
-    CBaseModelInfoSAInterface *     GetInterface             ( void );
-    CPedModelInfoSAInterface *      GetPedModelInfoInterface ( void )              { return reinterpret_cast < CPedModelInfoSAInterface * > ( GetInterface () ); }
+    CBaseModelInfoSAInterface*      GetInterface()                          { return m_pInterface; }
+    CPedModelInfoSAInterface*       GetPedModelInfoInterface()              { return (CPedModelInfoSAInterface*)GetInterface(); }
+    const CPedModelInfoSAInterface* GetPedModelInfoInterface() const        { return (const CPedModelInfoSAInterface*)m_pInterface; }
 
-    unsigned short                  GetModel                ( void )               { return m_modelID; }
+    unsigned short                  GetModel() const                        { return m_modelID; }
 
-    bool                            IsBoat                  ();
-    bool                            IsCar                   ();
-    bool                            IsTrain                 ();
-    bool                            IsHeli                  ();
-    bool                            IsPlane                 ();
-    bool                            IsBike                  ();
-    bool                            IsFakePlane             ();
-    bool                            IsMonsterTruck          ();
-    bool                            IsQuadBike              ();
-    bool                            IsBmx                   ();
-    bool                            IsTrailer               ();
-    bool                            IsVehicle               ();
-    bool                            IsUpgrade               ();
+    eVehicleType                    GetVehicleType() const;
+    bool                            IsBoat() const;
+    bool                            IsCar() const;
+    bool                            IsTrain() const;
+    bool                            IsHeli() const;
+    bool                            IsPlane() const;
+    bool                            IsBike() const;
+    bool                            IsBmx() const;
+    bool                            IsTrailer() const;
+    bool                            IsVehicle() const;
+    bool                            IsUpgrade() const;
 
-    char*                           GetNameIfVehicle        ();
+    const char*                     GetNameIfVehicle() const;
 
-    VOID                            Request                 ( bool bAndLoad = false, bool bWaitForLoad = false, bool bHighPriority = false );
-    VOID                            Remove                  ( void );
-    BYTE                            GetLevelFromPosition    ( CVector * vecPosition );
-    BOOL                            IsLoaded                ( void );
-    void                            InternalRemoveGTARef    ( void );
-    BYTE                            GetFlags                ( void );
-    CBoundingBox *                  GetBoundingBox          ( void );
-    bool                            IsValid                 ( void );
-    float                           GetDistanceFromCentreOfMassToBaseOfModel ( void );
-    unsigned short                  GetTextureDictionaryID  ( void );
-    void                            SetTextureDictionaryID  ( unsigned short usID );
-    float                           GetLODDistance          ( void );
-    void                            SetLODDistance          ( float fDistance );
-    void                            RestreamIPL             ( void );
-    static void                     StaticFlushPendingRestreamIPL ( void );
+    void                            Request( bool bAndLoad = false, bool bWaitForLoad = false, bool bHighPriority = false );
+    void                            Remove();
+    unsigned char                   GetLevelFromPosition( const CVector& vecPosition ) const;
+    bool                            IsLoaded() const;
+    unsigned char                   GetFlags() const;
+    const CBoundingBox&             GetBoundingBox() const;
+    bool                            IsValid() const;
+    float                           GetDistanceFromCentreOfMassToBaseOfModel() const;
+    unsigned short                  GetTextureDictionaryID() const;
+    void                            SetTextureDictionaryID( unsigned short usID );
+    float                           GetLODDistance() const;
+    void                            SetLODDistance( float fDistance );
+    void                            RestreamIPL();
+    static void                     StaticFlushPendingRestreamIPL();
 
-    void                            AddRef                  ( bool bWaitForLoad, bool bHighPriority = false );
-    int                             GetRefCount             ( void );
-    void                            RemoveRef               ( bool bRemoveExtraGTARef = false );
-    void                            MaybeRemoveExtraGTARef  ( void );
-    void                            DoRemoveExtraGTARef     ( void );
+    void                            AddRef( bool bWaitForLoad, bool bHighPriority = false );
+    int                             GetRefCount() const                     { return (int)m_dwReferences; }
+    void                            RemoveRef( bool bRemoveExtraGTARef = false );
+    void                            MaybeRemoveExtraGTARef();
+    void                            DoRemoveExtraGTARef();
 
     // CVehicleModelInfo specific
-    short                           GetAvailableVehicleMod  ( unsigned short usSlot );
-    bool                            IsUpgradeAvailable      ( eVehicleUpgradePosn posn );
-    void                            SetCustomCarPlateText   ( const char * szText );
-    unsigned int                    GetNumRemaps            ( void );
-    void*                           GetVehicleSuspensionData( void );
-    void*                           SetVehicleSuspensionData( void* pSuspensionLines );
+    short                           GetAvailableVehicleMod( unsigned short usSlot ) const;
+    bool                            IsUpgradeAvailable( eVehicleUpgradePosn posn ) const;
+    void                            SetCustomCarPlateText( const char *szText );
+    unsigned int                    GetNumRemaps() const;
+    void*                           GetVehicleSuspensionData() const;
+    void*                           SetVehicleSuspensionData( void *pSuspensionLines );
 
     // Upgrades only!
-    void                            RequestVehicleUpgrade   ( void );
+    void                            RequestVehicleUpgrade();
 
     // ONLY use for peds
-    void                            GetVoice                ( short* psVoiceType, short* psVoice );
-    void                            GetVoice                ( const char** pszVoiceType, const char** szVoice );
-    void                            SetVoice                ( short sVoiceType, short sVoice );
-    void                            SetVoice                ( const char* szVoiceType, const char* szVoice );
+    void                            GetVoice( short* psVoiceType, short* psVoice ) const;
+    void                            GetVoice( const char** pszVoiceType, const char** szVoice ) const;
+    void                            SetVoice( short sVoiceType, short sVoice );
+    void                            SetVoice( const char* szVoiceType, const char* szVoice );
 
     // Custom collision related functions
-    void                            SetCustomModel          ( RpClump* pClump );
-    void                            RestoreOriginalModel    ( void );
-    void                            SetColModel             ( CColModel* pColModel );
-    void                            RestoreColModel         ( void );
-    void                            MakeCustomModel         ( void );
+    void                            SetCustomModel( RpClump* pClump );
+    void                            RestoreOriginalModel();
+    void                            SetColModel( CColModel* pColModel );
+    void                            RestoreColModel();
+    void                            MakeCustomModel();
 
-    inline void                     SetModelID              ( unsigned short id ) { m_modelID = id; }
+    inline void                     SetModelID( unsigned short id )         { m_modelID = id; }
 
-    void                            MakePedModel            ( char * szTexture );
+    void                            MakePedModel( const char *texture );
 };
 
 #endif

@@ -28,7 +28,7 @@ CTxdInstanceSA::CTxdInstanceSA(const char *name)
     m_hash = pGame->GetKeyGen()->GetUppercaseKey(name);
 }
 
-bool Txd_DeleteAll( RwTexture *tex, void *data )
+bool Txd_DeleteAll( RwTexture *tex, int )
 {
     if ( tex->refs < 2 )
     {
@@ -44,7 +44,7 @@ CTxdInstanceSA::~CTxdInstanceSA()
 {
     if ( m_txd )
     {
-        m_txd->ForAllTextures( Txd_DeleteAll, NULL );
+        m_txd->ForAllTextures( Txd_DeleteAll, 0 );
 
         RwTexDictionaryDestroy( m_txd );
 
@@ -705,13 +705,13 @@ void CTextureManagerSA::GetModelTextureNames ( std::vector < SString >& outNameL
 // CTextureManagerSA::GetTxdTextures
 //
 ////////////////////////////////////////////////////////////////
-static bool StaticGetTextureCB( RwTexture* texture, void *ud )
+static bool StaticGetTextureCB( RwTexture* texture, std::vector <RwTexture*>* list )
 {
-    ((std::vector <RwTexture*>*)ud)->push_back( texture );
+    list->push_back( texture );
     return true;
 }
 
-void CRenderWareSA::GetTxdTextures ( std::vector < RwTexture* >& outTextureList, ushort usTxdId )
+void CTextureManagerSA::GetTxdTextures ( std::vector < RwTexture* >& outTextureList, ushort usTxdId )
 {
     if ( usTxdId == 0 )
         return;

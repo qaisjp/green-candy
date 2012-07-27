@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CFireSA.cpp
 *  PURPOSE:     Fire
@@ -9,6 +9,7 @@
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -16,30 +17,18 @@
 
 #include "StdInc.h"
 
-/**
- * Put the fire out
- */
-VOID CFireSA::Extinguish (  )
+void CFireSA::Extinguish()
 {
-    DEBUG_TRACE("VOID CFireSA::Extinguish (  )");
+    DEBUG_TRACE("void CFireSA::Extinguish()");
+
     DWORD dwFunction = FUNC_Extinguish;
-    DWORD dwPointer = (DWORD)this->internalInterface;
+    DWORD dwPointer = (DWORD)m_interface;
     _asm
     {
         mov     ecx, dwPointer
         call    dwFunction
     }
-    this->internalInterface->bActive = FALSE;
-}
-
-/**
- * Gets the position the fire is burning at
- * @return CVector * containing the fire's position
- */
-CVector * CFireSA::GetPosition ( )
-{
-    DEBUG_TRACE("CVector * CFireSA::GetPosition ( )");
-    return &internalInterface->vecPosition;
+    m_interface->m_active = false;
 }
 
 /**
@@ -47,154 +36,70 @@ CVector * CFireSA::GetPosition ( )
  * @param vecPosition CVector * containing the desired position for the fire.
  * @see CFireSA::SetTarget
  */
-VOID CFireSA::SetPosition ( CVector & vecPosition )
+void CFireSA::SetPosition( const CVector& pos )
 {
-    DEBUG_TRACE("VOID CFireSA::SetPosition ( CVector & vecPosition )");
-    this->internalInterface->entityTarget = 0;
-    MemCpyFast (&internalInterface->vecPosition, &vecPosition, sizeof(CVector));
+    DEBUG_TRACE("void CFireSA::SetPosition( const CVector& pos )");
+    
+    m_interface->m_target = NULL;
+    m_interface->m_position = pos;
 }
 
-/**
- * Set the time that the fire will be extinguished.
- * @param dwTime DWORD containing the time that the fire will be extinguished.  This is in game-time units which can be got from CGame::GetSystemTime;
- */
-VOID CFireSA::SetTimeToBurnOut ( DWORD dwTime )
+CEntity* CFireSA::GetCreator() const
 {
-    DEBUG_TRACE("VOID CFireSA::SetTimeToBurnOut ( DWORD dwTime )");
-    internalInterface->nTimeToBurn = dwTime;
-}
+    DEBUG_TRACE("CEntity* CFireSA::GetCreator() const");
 
-DWORD CFireSA::GetTimeToBurnOut (  )
-{
-    DEBUG_TRACE("DWORD CFireSA::GetTimeToBurnOut (  )");
-    return internalInterface->nTimeToBurn;
-}
-
-CEntity * CFireSA::GetCreator (  )
-{
-    DEBUG_TRACE("CEntity * CFireSA::GetCreator (  )");
-    CEntity * creatorEntity = NULL;
-    CEntitySAInterface * createEntitySA = internalInterface->entityCreator;
-    CPoolsSA * pPools = ((CPoolsSA *)pGame->GetPools());
-    if ( pPools && createEntitySA )
+    switch( m_interface->m_creator->m_type )
     {
-        switch ( createEntitySA->nType )
-        {
-        case ENTITY_TYPE_PED:
-            creatorEntity = pPools->GetPed((DWORD *)createEntitySA);
-            break;
-        case ENTITY_TYPE_VEHICLE:
-            creatorEntity = pPools->GetVehicle((DWORD *)createEntitySA);
-            break;
-        default:
-            creatorEntity = NULL;
-        }
+    case ENTITY_TYPE_PED:       return pGame->GetPools()->GetPed( m_interface->m_creator );
+    case ENTITY_TYPE_VEHICLE:   return pGame->GetPools()->GetVehicle( m_interface->m_creator );
     }
-    return creatorEntity;
+
+    return NULL;
 }
 
-CEntity * CFireSA::GetEntityOnFire (  )
+CEntity* CFireSA::GetEntityOnFire() const
 {
-    DEBUG_TRACE("CEntity * CFireSA::GetEntityOnFire (  )");
-    CEntity * TargetEntity = NULL;
-    CEntitySAInterface * TargetEntitySA = internalInterface->entityTarget;
-    CPoolsSA * pPools = ((CPoolsSA *)pGame->GetPools());
-    if ( pPools && TargetEntitySA )
+    DEBUG_TRACE("CEntity* CFireSA::GetEntityOnFire() const");
+
+    switch( m_interface->m_target->m_type )
     {
-        switch ( TargetEntitySA->nType )
-        {
-        case ENTITY_TYPE_PED:
-            TargetEntity = pPools->GetPed((DWORD *)TargetEntitySA);
-            break;
-        case ENTITY_TYPE_VEHICLE:
-            TargetEntity = pPools->GetVehicle((DWORD *)TargetEntitySA);
-            break;
-        default:
-            TargetEntity = NULL;
-        }
+    case ENTITY_TYPE_PED:       return pGame->GetPools()->GetPed( m_interface->m_target );
+    case ENTITY_TYPE_VEHICLE:   return pGame->GetPools()->GetVehicle( m_interface->m_target );
     }
-    return TargetEntity;
+    return NULL;
 }
 
-VOID CFireSA::SetTarget ( CEntity * entity  )
+void CFireSA::SetTarget( CEntity *entity )
 {
-    DEBUG_TRACE("VOID CFireSA::SetTarget ( CEntity * entity  )");
+    DEBUG_TRACE("void CFireSA::SetTarget( CEntity *entity )");
 
-    if ( entity )
+    if ( !entity )
     {
-        CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( entity );
-        if ( pEntitySA )
-            internalInterface->entityTarget = pEntitySA->GetInterface();
+        m_interface->m_target = NULL;
+        return;
     }
-    else
-    {
-        internalInterface->entityTarget = NULL;
-    }
+
+    m_interface->m_target = dynamic_cast <CEntitySA*> ( entity )->GetInterface();
 }
 
-BOOL CFireSA::IsIgnited (  )
+void CFireSA::Ignite()
 {
-    DEBUG_TRACE("BOOL CFireSA::IsIgnited (  )");
-    return internalInterface->bActive;
-}
+    DEBUG_TRACE("void CFireSA::Ignite()");
 
-BOOL CFireSA::IsFree (  )
-{
-    DEBUG_TRACE("BOOL CFireSA::IsFree (  )");
-    if(!internalInterface->bActive && !internalInterface->bCreatedByScript)
-        return TRUE;
-    else
-        return FALSE;
-}
+    m_interface->m_active = TRUE;
 
-VOID CFireSA::SetSilent ( BOOL bSilent )
-{
-    DEBUG_TRACE("VOID CFireSA::SetSilent ( BOOL bSilent )");
-    internalInterface->bMakesNoise = !bSilent;
-}
-
-BOOL CFireSA::IsBeingExtinguished (  )
-{
-    DEBUG_TRACE("BOOL CFireSA::IsBeingExtinguished (  )");
-    return internalInterface->bBeingExtinguished;
-}
-
-VOID CFireSA::Ignite( )
-{
-    DEBUG_TRACE("VOID CFireSA::Ignite( )");
-    this->internalInterface->bActive = TRUE;
-
-    CVector * vecPosition = this->GetPosition();
+    const CVector& pos = GetPosition();
     DWORD dwFunc = FUNC_CreateFxSysForStrength;
-    DWORD dwThis = (DWORD)this->internalInterface;
+    DWORD dwThis = (DWORD)m_interface;
     _asm
     {
         mov     ecx, dwThis
         push    0
-        push    vecPosition
+        push    pos
         call    dwFunc
     }
 
-    this->internalInterface->bBeingExtinguished = 0;
-    this->internalInterface->bFirstGeneration = 1;
-    this->internalInterface->nNumGenerationsAllowed = 100;
-}
-
-FLOAT CFireSA::GetStrength (  )
-{
-    DEBUG_TRACE("FLOAT CFireSA::GetStrength (  )");
-    return this->internalInterface->Strength;
-}
-
-VOID CFireSA::SetStrength ( FLOAT fStrength )
-{
-    DEBUG_TRACE("VOID CFireSA::SetStrength ( FLOAT fStrength )");
-    this->internalInterface->Strength = fStrength;
-}
-
-
-VOID CFireSA::SetNumGenerationsAllowed ( char generations )
-{
-    DEBUG_TRACE("VOID CFireSA::SetNumGenerationsAllowed ( char generations )");
-    this->internalInterface->nNumGenerationsAllowed = generations;
+    m_interface->m_beingExtinguished = false;
+    m_interface->m_fresh = true;
+    m_interface->m_numGenerationsAllowed = 100;
 }

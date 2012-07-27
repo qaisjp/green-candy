@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CDeathmatchObject.cpp
 *  PURPOSE:     Object element interface
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -17,13 +18,12 @@ using std::list;
 
 extern CClientGame * g_pClientGame;
 
-CDeathmatchObject::CDeathmatchObject ( CClientManager* pManager, CMovingObjectsManager* pMovingObjectsManager, CObjectSync* pObjectSync, ElementID ID, unsigned short usModel ) : ClassInit ( this ), CClientObject ( pManager, ID, usModel )
+CDeathmatchObject::CDeathmatchObject ( CClientManager* pManager, LuaClass& root, bool system, CMovingObjectsManager* pMovingObjectsManager, CObjectSync* pObjectSync, ElementID ID, unsigned short usModel ) : CClientObject ( pManager, ID, root, system, usModel )
 {
     m_pMovingObjectsManager = pMovingObjectsManager;
     m_pObjectSync = pObjectSync;
     m_pMoveAnimation = NULL;
 }
-
 
 CDeathmatchObject::~CDeathmatchObject ( void )
 {
@@ -34,7 +34,6 @@ CDeathmatchObject::~CDeathmatchObject ( void )
         m_pObjectSync->RemoveObject ( this );
     }
 }
-
 
 void CDeathmatchObject::StartMovement ( const CPositionRotationAnimation& a_rMoveAnimation )
 {

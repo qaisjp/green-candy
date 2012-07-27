@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientCamera.cpp
@@ -9,21 +9,51 @@
 *               Christian Myhre Lundheim <>
 *               Jax <>
 *               Kevin Whiteside <kevuwk@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
 #include <StdInc.h>
-
-// Very hacky
-//#include "../deathmatch/logic/CClientGame.h"
 
 #define PI_2 6.283185307179586476925286766559f
 #ifndef PI
 #define PI 3.1415926535897932384626433832795f
 #endif
 
-CClientCamera::CClientCamera ( CClientManager* pManager ) : ClassInit ( this ), CClientEntity ( INVALID_ELEMENT_ID )
+static const luaL_Reg camera_interface[] =
 {
+    { NULL, NULL }
+};
+
+static int luaconstructor_camera( lua_State *L )
+{
+    CClientCamera *cam = (CClientCamera*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_CAMERA, cam );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, camera_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "camera", 6 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientCamera::CClientCamera ( CClientManager* pManager ) : CClientEntity ( INVALID_ELEMENT_ID, true, resMan )
+{
+    lua_State *L = resMan->GetVM();
+
+    // Setup Lua instance
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_camera, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     CClientEntityRefManager::AddEntityRefs ( ENTITY_REF_DEBUG ( this, "CClientCamera" ), &m_pFocusedPlayer, &m_pFocusedEntity, NULL );
 
     // Init

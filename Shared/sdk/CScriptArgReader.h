@@ -428,6 +428,8 @@ public:
 
         if ( iGotArgumentType == LUA_TLIGHTUSERDATA )
         {
+            //ISFX TODO
+
 	        // Get name of userdata type
             strGotArgumentType = GetUserDataClassName ( lua_touserdata ( m_luaVM, m_iErrorIndex ), m_luaVM );
             strGotArgumentValue = "";

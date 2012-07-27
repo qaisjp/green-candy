@@ -127,29 +127,29 @@ enum eLights
 class CDamageManager
 {
 public:
-    virtual unsigned char   GetEngineStatus() const = 0;
-    virtual void            SetEngineStatus( unsigned char status ) = 0;
+    virtual unsigned char       GetEngineStatus() const = 0;
+    virtual void                SetEngineStatus( unsigned char status ) = 0;
 
-    virtual unsigned char   GetDoorStatus( eDoors bDoor ) const = 0;
-    virtual void            SetDoorStatus( eDoors bDoor, unsigned char status ) = 0;
+    virtual unsigned char       GetDoorStatus( eDoors bDoor ) const = 0;
+    virtual void                SetDoorStatus( eDoors bDoor, unsigned char status ) = 0;
 
-    virtual unsigned char   GetWheelStatus( eWheels bTire ) const = 0;
-    virtual void            SetWheelStatus( eWheels bTire, unsigned char status ) = 0;
+    virtual unsigned char       GetWheelStatus( eWheels bTire ) const = 0;
+    virtual void                SetWheelStatus( eWheels bTire, unsigned char status ) = 0;
 
-    virtual unsigned char   GetPanelStatus( unsigned char panel ) const = 0;
-    virtual unsigned long   GetPanelStatus() const = 0;
-    virtual void            SetPanelStatus( unsigned char panel, unsigned char status ) = 0;
-    virtual void            SetPanelStatus( unsigned long ulStatus ) = 0;
+    virtual unsigned char       GetPanelStatus( unsigned char panel ) const = 0;
+    virtual unsigned long       GetPanelStatus() const = 0;
+    virtual void                SetPanelStatus( unsigned char panel, unsigned char status ) = 0;
+    virtual void                SetPanelStatus( unsigned long ulStatus ) = 0;
 
-    virtual unsigned char   GetLightStatus( unsigned char light ) const = 0;
-    virtual unsigned char   GetLightStatus() const = 0;
-    virtual void            SetLightStatus( unsigned char light, unsigned char status ) = 0;
-    virtual void            SetLightStatus( unsigned char ucStatus ) = 0;
+    virtual unsigned char       GetLightStatus( unsigned char light ) const = 0;
+    virtual unsigned char       GetLightStatus() const = 0;
+    virtual void                SetLightStatus( unsigned char light, unsigned char status ) = 0;
+    virtual void                SetLightStatus( unsigned char ucStatus ) = 0;
 
-    virtual unsigned char   GetAeroplaneCompStatus( unsigned char id ) const = 0;
-    virtual void            SetAeroplaneCompStatus( unsigned char id, unsigned char status ) = 0; //component ids begin at 12 - probably
+    virtual unsigned char       GetAeroplaneCompStatus( unsigned char id ) const = 0;
+    virtual void                SetAeroplaneCompStatus( unsigned char id, unsigned char status ) = 0; //component ids begin at 12 - probably
 
-    virtual void            FuckCarCompletely( bool keepWheels ) = 0;
+    virtual void                FuckCarCompletely( bool keepWheels ) = 0;
 };
 
 #endif

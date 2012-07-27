@@ -114,91 +114,91 @@ typedef void                    (__cdecl *RwPrefetch_t)                         
 /*****************************************************************************/
 
 // US Versions
-RwErrorGet_t                            RwErrorGet                              = (RwErrorGet_t)                            0xDEAD;
-RwAllocAligned_t                        RwAllocAligned                          = (RwAllocAligned_t)                        0xDEAD;
-RwFreeAligned_t                         RwFreeAligned                           = (RwFreeAligned_t)                         0xDEAD;
-RwCreateExtension_t                     RwCreateExtension                       = (RwCreateExtension_t)                     0xDEAD;
-RwStreamFindChunk_t                     RwStreamFindChunk                       = (RwStreamFindChunk_t)                     0xDEAD;
-RwStreamOpen_t                          RwStreamOpen                            = (RwStreamOpen_t)                          0xDEAD;
-RwStreamReadBlocks_t                    RwStreamReadBlocks                      = (RwStreamReadBlocks_t)                    0xDEAD;
-RwStreamReadTexture_t                   RwStreamReadTexture                     = (RwStreamReadTexture_t)                   0xDEAD;
-RwStreamClose_t                         RwStreamClose                           = (RwStreamClose_t)                         0xDEAD;
-RwFrameCreate_t                         RwFrameCreate                           = (RwFrameCreate_t)                         0xDEAD;
-RwFrameGetLTM_t                         RwFrameGetLTM                           = (RwFrameGetLTM_t)                         0xDEAD;
-RwFrameSetIdentity_t                    RwFrameSetIdentity                      = (RwFrameSetIdentity_t)                    0xDEAD;
-RwFrameTranslate_t                      RwFrameTranslate                        = (RwFrameTranslate_t)                      0xDEAD;
-RwFrameCloneHierarchy_t                 RwFrameCloneHierarchy                   = (RwFrameCloneHierarchy_t)                 0xDEAD;
-RwFrameAddChild_t                       RwFrameAddChild                         = (RwFrameAddChild_t)                       0xDEAD;
-RwFrameRemoveChild_t                    RwFrameRemoveChild                      = (RwFrameRemoveChild_t)                    0xDEAD;
-RwFrameScale_t                          RwFrameScale                            = (RwFrameScale_t)                          0xDEAD;
-RwFrameOrient_t                         RwFrameOrient                           = (RwFrameOrient_t)                         0xDEAD;
-RwCameraClone_t                         RwCameraClone                           = (RwCameraClone_t)                         0xDEAD;
-RpClumpClone_t                          RpClumpClone                            = (RpClumpClone_t)                          0xDEAD;
-RpClumpStreamRead_t                     RpClumpStreamRead                       = (RpClumpStreamRead_t)                     0xDEAD;
-RpClumpAddAtomic_t                      RpClumpAddAtomic                        = (RpClumpAddAtomic_t)                      0xDEAD;
-RpClumpRemoveAtomic_t                   RpClumpRemoveAtomic                     = (RpClumpRemoveAtomic_t)                   0xDEAD;
-RpClumpAddLight_t                       RpClumpAddLight                         = (RpClumpAddLight_t)                       0xDEAD;
-RpClumpGetBoneTransform_t               RpClumpGetBoneTransform                 = (RpClumpGetBoneTransform_t)               0xDEAD;
-RpClumpSetupFrameCallback_t             RpClumpSetupFrameCallback               = (RpClumpSetupFrameCallback_t)             0xDEAD;
-RpClumpDestroy_t                        RpClumpDestroy                          = (RpClumpDestroy_t)                        0xDEAD;
-RpClumpGetNumAtomics_t                  RpClumpGetNumAtomics                    = (RpClumpGetNumAtomics_t)                  0xDEAD;
-RwAnimationInit_t                       RwAnimationInit                         = (RwAnimationInit_t)                       0xDEAD;
-RwSkeletonUpdate_t                      RwSkeletonUpdate                        = (RwSkeletonUpdate_t)                      0xDEAD;
-RpAtomicCreate_t                        RpAtomicCreate                          = (RpAtomicCreate_t)                        0xDEAD;
-RpAtomicClone_t                         RpAtomicClone                           = (RpAtomicClone_t)                         0xDEAD;
-RpAtomicSetFrame_t                      RpAtomicSetFrame                        = (RpAtomicSetFrame_t)                      0xDEAD;
-RpAtomicSetupObjectPipeline_t           RpAtomicSetupObjectPipeline             = (RpAtomicSetupObjectPipeline_t)           0xDEAD;
-RpAtomicSetupVehiclePipeline_t          RpAtomicSetupVehiclePipeline            = (RpAtomicSetupVehiclePipeline_t)          0xDEAD;
-RpAtomicRender_t                        RpAtomicRender                          = (RpAtomicRender_t)                        0xDEAD;
-RpAtomicRenderEx_t                      RpAtomicRenderEx                        = (RpAtomicRenderEx_t)                      0xDEAD;
-RpAtomicSetGeometry_t                   RpAtomicSetGeometry                     = (RpAtomicSetGeometry_t)                   0xDEAD;
-RpAtomicDestroy_t                       RpAtomicDestroy                         = (RpAtomicDestroy_t)                       0xDEAD;
-RwObjectFrameRender_t                   RwObjectFrameRender                     = (RwObjectFrameRender_t)                   0xDEAD;
-RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 0xDEAD;
-RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             0xDEAD;
-RwTexDictionaryGetCurrent_t             RwTexDictionaryGetCurrent               = (RwTexDictionaryGetCurrent_t)             0xDEAD;
-RwTexDictionarySetCurrent_t             RwTexDictionarySetCurrent               = (RwTexDictionarySetCurrent_t)             0xDEAD;
-RwTexDictionaryForAllTextures_t         RwTexDictionaryForAllTextures           = (RwTexDictionaryForAllTextures_t)         0xDEAD;
-RwTexDictionaryFindNamedTexture_t       RwTexDictionaryFindNamedTexture         = (RwTexDictionaryFindNamedTexture_t)       0xDEAD;
-RwTexDictionaryAddTexture_t             RwTexDictionaryAddTexture               = (RwTexDictionaryAddTexture_t)             0xDEAD;
-RwTexDictionaryDestroy_t                RwTexDictionaryDestroy                  = (RwTexDictionaryDestroy_t)                0xDEAD;
-RwTextureCreate_t                       RwTextureCreate                         = (RwTextureCreate_t)                       0xDEAD;
-RwTextureUnlinkFromDictionary_t         RwTextureUnlinkFromDictionary           = (RwTextureUnlinkFromDictionary_t)         0xDEAD;
-RwTextureDestroy_t                      RwTextureDestroy                        = (RwTextureDestroy_t)                      0xDEAD;
-RpGeometryCreate_t                      RpGeometryCreate                        = (RpGeometryCreate_t)                      0xDEAD;
-RpGeometryGetAnimation_t                RpGeometryGetAnimation                  = (RpGeometryGetAnimation_t)                0xDEAD;
-RpGeometryTriangleSetVertexIndices_t    RpGeometryTriangleSetVertexIndices      = (RpGeometryTriangleSetVertexIndices_t)    0xDEAD;
-RpGeometryTriangleSetMaterial_t         RpGeometryTriangleSetMaterial           = (RpGeometryTriangleSetMaterial_t)         0xDEAD;
-RpGeometryUnlock_t                      RpGeometryUnlock                        = (RpGeometryUnlock_t)                      0xDEAD;
-RpGeometryLock_t                        RpGeometryLock                          = (RpGeometryLock_t)                        0xDEAD;
-RpGeometryTransform_t                   RpGeometryTransform                     = (RpGeometryTransform_t)                   0xDEAD;
-RpGeometryDestroy_t                     RpGeometryDestroy                       = (RpGeometryDestroy_t)                     0xDEAD;
-RwMatrixCreate_t                        RwMatrixCreate                          = (RwMatrixCreate_t)                        0xDEAD;
-RwMatrixInvert_t                        RwMatrixInvert                          = (RwMatrixInvert_t)                        0xDEAD;
-RwMatrixTranslate_t                     RwMatrixTranslate                       = (RwMatrixTranslate_t)                     0xDEAD;
-RwMatrixScale_t                         RwMatrixScale                           = (RwMatrixScale_t)                         0xDEAD;
-RwMatrixUnknown_t                       RwMatrixUnknown                         = (RwMatrixUnknown_t)                       0xDEAD;
-RpMaterialCreate_t                      RpMaterialCreate                        = (RpMaterialCreate_t)                      0xDEAD;
-RpMaterialDestroy_t                     RpMaterialDestroy                       = (RpMaterialDestroy_t)                     0xDEAD;
-RwV3dNormalize_t                        RwV3dNormalize                          = (RwV3dNormalize_t)                        0xDEAD;
-RwV3dTransformVector_t                  RwV3dTransformVector                    = (RwV3dTransformVector_t)                  0xDEAD;
-RwIm3DTransform_t                       RwIm3DTransform                         = (RwIm3DTransform_t)                       0xDEAD;
-RwIm3DRenderIndexedPrimitive_t          RwIm3DRenderIndexedPrimitive            = (RwIm3DRenderIndexedPrimitive_t)          0xDEAD;
-RwIm3DEnd_t                             RwIm3DEnd                               = (RwIm3DEnd_t)                             0xDEAD;
-RpLightCreate_t                         RpLightCreate                           = (RpLightCreate_t)                         0xDEAD;
-RpLightSetRadius_t                      RpLightSetRadius                        = (RpLightSetRadius_t)                      0xDEAD;
-RpLightSetColor_t                       RpLightSetColor                         = (RpLightSetColor_t)                       0xDEAD;
-RwRasterCreate_t                        RwRasterCreate                          = (RwRasterCreate_t)                        0xDEAD;
-RwRasterUnlock_t                        RwRasterUnlock                          = (RwRasterUnlock_t)                        0xDEAD;
-RwRasterLock_t                          RwRasterLock                            = (RwRasterLock_t)                          0xDEAD;
-RpWorldAddAtomic_t                      RpWorldAddAtomic                        = (RpWorldAddAtomic_t)                      0xDEAD;
-RpWorldAddLight_t                       RpWorldAddLight                         = (RpWorldAddLight_t)                       0xDEAD;
-RpWorldAddClump_t                       RpWorldAddClump                         = (RpWorldAddClump_t)                       0xDEAD;
-RpPrtStdGlobalDataSetStreamEmbedded_t   RpPrtStdGlobalDataSetStreamEmbedded     = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0xDEAD;
-RwPrefetch_t                            RwPrefetch                              = (RwPrefetch_t)                            0xDEAD;
+extern RwErrorGet_t                             RwErrorGet;
+extern RwAllocAligned_t                         RwAllocAligned;
+extern RwFreeAligned_t                          RwFreeAligned;
+extern RwCreateExtension_t                      RwCreateExtension;
+extern RwStreamFindChunk_t                      RwStreamFindChunk;
+extern RwStreamOpen_t                           RwStreamOpen;
+extern RwStreamReadBlocks_t                     RwStreamReadBlocks;
+extern RwStreamReadTexture_t                    RwStreamReadTexture;
+extern RwStreamClose_t                          RwStreamClose;
+extern RwFrameCreate_t                          RwFrameCreate;
+extern RwFrameGetLTM_t                          RwFrameGetLTM;
+extern RwFrameSetIdentity_t                     RwFrameSetIdentity;
+extern RwFrameTranslate_t                       RwFrameTranslate;
+extern RwFrameCloneHierarchy_t                  RwFrameCloneHierarchy;
+extern RwFrameAddChild_t                        RwFrameAddChild;
+extern RwFrameRemoveChild_t                     RwFrameRemoveChild;
+extern RwFrameScale_t                           RwFrameScale;
+extern RwFrameOrient_t                          RwFrameOrient;
+extern RwCameraClone_t                          RwCameraClone;
+extern RpClumpClone_t                           RpClumpClone;
+extern RpClumpStreamRead_t                      RpClumpStreamRead;
+extern RpClumpAddAtomic_t                       RpClumpAddAtomic;
+extern RpClumpRemoveAtomic_t                    RpClumpRemoveAtomic;
+extern RpClumpAddLight_t                        RpClumpAddLight;
+extern RpClumpGetBoneTransform_t                RpClumpGetBoneTransform;
+extern RpClumpSetupFrameCallback_t              RpClumpSetupFrameCallback;
+extern RpClumpDestroy_t                         RpClumpDestroy;
+extern RpClumpGetNumAtomics_t                   RpClumpGetNumAtomics;
+extern RwAnimationInit_t                        RwAnimationInit;
+extern RwSkeletonUpdate_t                       RwSkeletonUpdate;
+extern RpAtomicCreate_t                         RpAtomicCreate;
+extern RpAtomicClone_t                          RpAtomicClone;
+extern RpAtomicSetFrame_t                       RpAtomicSetFrame;
+extern RpAtomicSetupObjectPipeline_t            RpAtomicSetupObjectPipeline;
+extern RpAtomicSetupVehiclePipeline_t           RpAtomicSetupVehiclePipeline;
+extern RpAtomicRender_t                         RpAtomicRender;
+extern RpAtomicRenderEx_t                       RpAtomicRenderEx;
+extern RpAtomicSetGeometry_t                    RpAtomicSetGeometry;
+extern RpAtomicDestroy_t                        RpAtomicDestroy;
+extern RwObjectFrameRender_t                    RwObjectFrameRender;
+extern RwTexDictionaryCreate_t                  RwTexDictionaryCreate;
+extern RwTexDictionaryStreamRead_t              RwTexDictionaryStreamRead;
+extern RwTexDictionaryGetCurrent_t              RwTexDictionaryGetCurrent;
+extern RwTexDictionarySetCurrent_t              RwTexDictionarySetCurrent;
+extern RwTexDictionaryForAllTextures_t          RwTexDictionaryForAllTextures;
+extern RwTexDictionaryFindNamedTexture_t        RwTexDictionaryFindNamedTexture;
+extern RwTexDictionaryAddTexture_t              RwTexDictionaryAddTexture;
+extern RwTexDictionaryDestroy_t                 RwTexDictionaryDestroy;
+extern RwTextureCreate_t                        RwTextureCreate;
+extern RwTextureUnlinkFromDictionary_t          RwTextureUnlinkFromDictionary;
+extern RwTextureDestroy_t                       RwTextureDestroy;
+extern RpGeometryCreate_t                       RpGeometryCreate;
+extern RpGeometryGetAnimation_t                 RpGeometryGetAnimation;
+extern RpGeometryTriangleSetVertexIndices_t     RpGeometryTriangleSetVertexIndices;
+extern RpGeometryTriangleSetMaterial_t          RpGeometryTriangleSetMaterial;
+extern RpGeometryUnlock_t                       RpGeometryUnlock;
+extern RpGeometryLock_t                         RpGeometryLock;
+extern RpGeometryTransform_t                    RpGeometryTransform;
+extern RpGeometryDestroy_t                      RpGeometryDestroy;
+extern RwMatrixCreate_t                         RwMatrixCreate;
+extern RwMatrixInvert_t                         RwMatrixInvert;
+extern RwMatrixTranslate_t                      RwMatrixTranslate;
+extern RwMatrixScale_t                          RwMatrixScale;
+extern RwMatrixUnknown_t                        RwMatrixUnknown;
+extern RpMaterialCreate_t                       RpMaterialCreate;
+extern RpMaterialDestroy_t                      RpMaterialDestroy;
+extern RwV3dNormalize_t                         RwV3dNormalize;
+extern RwV3dTransformVector_t                   RwV3dTransformVector;
+extern RwIm3DTransform_t                        RwIm3DTransform;
+extern RwIm3DRenderIndexedPrimitive_t           RwIm3DRenderIndexedPrimitive;
+extern RwIm3DEnd_t                              RwIm3DEnd;
+extern RpLightCreate_t                          RpLightCreate;
+extern RpLightSetRadius_t                       RpLightSetRadius;
+extern RpLightSetColor_t                        RpLightSetColor;
+extern RwRasterCreate_t                         RwRasterCreate;
+extern RwRasterUnlock_t                         RwRasterUnlock;
+extern RwRasterLock_t                           RwRasterLock;
+extern RpWorldAddAtomic_t                       RpWorldAddAtomic;
+extern RpWorldAddLight_t                        RpWorldAddLight;
+extern RpWorldAddClump_t                        RpWorldAddClump;
+extern RpPrtStdGlobalDataSetStreamEmbedded_t    RpPrtStdGlobalDataSetStreamEmbedded;
+extern RwPrefetch_t                             RwPrefetch;
 
 /*****************************************************************************/
-/** GTA function definitions and mappings                                   **/
+/** GTA function definitions                                                **/
 /*****************************************************************************/
 
 typedef bool                (__cdecl *SetTextureDict_t)                 (unsigned short id);
@@ -214,25 +214,25 @@ typedef void                (__cdecl *CTxdStore_AddRef_t)               (unsigne
 typedef RwTexDictionary*    (__cdecl *CTxdStore_GetTxd_t)               (unsigned int id);
 typedef RwTexture*          (__cdecl *CClothesBuilder_CopyTexture_t)    (RwTexture *texture);
 
-SetTextureDict_t                SetTextureDict                  = (SetTextureDict_t)                0xDEAD;
-LoadClumpFile_t                 LoadClumpFile                   = (LoadClumpFile_t)                 0xDEAD;
-LoadModel_t                     LoadModel                       = (LoadModel_t)                     0xDEAD;
-LoadCollisionModel_t            LoadCollisionModel              = (LoadCollisionModel_t)            0xDEAD;
-LoadCollisionModelVer2_t        LoadCollisionModelVer2          = (LoadCollisionModelVer2_t)        0xDEAD;
-LoadCollisionModelVer3_t        LoadCollisionModelVer3          = (LoadCollisionModelVer3_t)        0xDEAD;
-CTxdStore_LoadTxd_t             CTxdStore_LoadTxd               = (CTxdStore_LoadTxd_t)             0xDEAD;
-CTxdStore_GetTxd_t              CTxdStore_GetTxd                = (CTxdStore_GetTxd_t)              0xDEAD;
-CTxdStore_RemoveTxd_t           CTxdStore_RemoveTxd             = (CTxdStore_RemoveTxd_t)           0xDEAD;
-CTxdStore_RemoveRef_t           CTxdStore_RemoveRef             = (CTxdStore_RemoveRef_t)           0xDEAD;
-CTxdStore_AddRef_t              CTxdStore_AddRef                = (CTxdStore_AddRef_t)              0xDEAD;
-CClothesBuilder_CopyTexture_t   CClothesBuilder_CopyTexture     = (CClothesBuilder_CopyTexture_t)   0xDEAD;
+extern SetTextureDict_t                 SetTextureDict;
+extern LoadClumpFile_t                  LoadClumpFile;
+extern LoadModel_t                      LoadModel;
+extern LoadCollisionModel_t             LoadCollisionModel;
+extern LoadCollisionModelVer2_t         LoadCollisionModelVer2;
+extern LoadCollisionModelVer3_t         LoadCollisionModelVer3;
+extern CTxdStore_LoadTxd_t              CTxdStore_LoadTxd;
+extern CTxdStore_GetTxd_t               CTxdStore_GetTxd;
+extern CTxdStore_RemoveTxd_t            CTxdStore_RemoveTxd;
+extern CTxdStore_RemoveRef_t            CTxdStore_RemoveRef;
+extern CTxdStore_AddRef_t               CTxdStore_AddRef;
+extern CClothesBuilder_CopyTexture_t    CClothesBuilder_CopyTexture;
 
 /*****************************************************************************/
 /** Function inlines                                                        **/
 /*****************************************************************************/
 
 // Matrix copying
-void RwFrameCopyMatrix( RwFrame * dst, RwFrame * src )
+static void RwFrameCopyMatrix( RwFrame * dst, RwFrame * src )
 {
     dst->m_modelling = src->m_modelling;
     dst->m_ltm = src->m_ltm;

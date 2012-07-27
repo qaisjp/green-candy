@@ -325,7 +325,7 @@ public:
     unsigned char                   m_fightStyle;               // 1837
     unsigned char                   m_fightStyleExtra;          // 1838
     BYTE                            m_pad15;                    // 1839
-    CFireInterface*                 m_fire;                     // 1840
+    CFireSAInterface*               m_fire;                     // 1840
     BYTE                            m_pad19[28];                // 1844
     unsigned int                    m_footBloodDensity;         // 1872
     BYTE                            m_pad16[72];                // 1876
@@ -347,16 +347,19 @@ public:
     inline CPedSAInterface*     GetInterface()                                              { return (CPedSAInterface*)m_pInterface; }
     inline const CPedSAInterface*   GetInterface() const                                    { return (const CPedSAInterface*)m_pInterface; }
 
-    CPedIntelligence*           GetPedIntelligence()                                        { return m_intelligence; }
-    CPedSound*                  GetPedSound()                                               { return m_sound; }
+    CPedIntelligenceSA*         GetPedIntelligence()                                        { return m_intelligence; }
+    const CPedIntelligenceSA*   GetPedIntelligence() const                                  { return m_intelligence; }
+    CPedSoundSA*                GetPedSound()                                               { return m_sound; }
+    const CPedSoundSA*          GetPedSound() const                                         { return m_sound; }
 
     unsigned char               GetType() const                                             { return m_type; }
     float                       GetHealth() const                                           { return GetInterface()->m_health; }
     float                       GetArmor() const                                            { return GetInterface()->m_armor; }
+    unsigned char               GetAlpha() const                                            { return m_alpha; }
     CVehicle*                   GetVehicle() const;
     float                       GetCurrentRotation() const                                  { return GetInterface()->m_pedRotation; }
     float                       GetTargetRotation() const                                   { return GetInterface()->m_targetRotation; }
-    eWeaponSlot                 GetCurrentWeaponSlot() const;
+    eWeaponSlot                 GetCurrentWeaponSlot() const                                { return (eWeaponSlot)GetInterface()->m_currentWeapon; }
     CTaskSA*                    GetPrimaryTask() const;
     eFightingStyle              GetFightingStyle() const                                    { return (eFightingStyle)GetInterface()->m_fightStyle; }
     unsigned char               GetRunState() const                                         { return GetInterface()->m_runState; }
@@ -382,10 +385,12 @@ public:
     bool                        IsBeingJacked() const;
     bool                        IsLeavingVehicle() const;
     bool                        IsGettingOutOfVehicle() const;
+    bool                        IsPlayingAnimation( const char *name ) const;
 
     void                        SetType( unsigned char type )                               { m_type = type; }
     void                        SetHealth( float fHealth )                                  { GetInterface()->m_health = fHealth; }
     void                        SetArmor( float fArmor )                                    { GetInterface()->m_armor = fArmor; }
+    void                        SetAlpha( unsigned char alpha )                             { m_alpha = alpha; }
     void                        SetCurrentRotation( float rot )                             { GetInterface()->m_pedRotation = rot; }
     void                        SetTargetRotation( float rot )                              { GetInterface()->m_targetRotation = rot; }
     void                        SetStealthAiming( bool enable );
@@ -439,7 +444,7 @@ protected:
 
     CWeaponSA*                  m_weapons[WEAPONSLOT_MAX];
     CPedIKSA*                   m_pPedIK;
-    CPedIntelligence*           m_intelligence;
+    CPedIntelligenceSA*         m_intelligence;
     CPedSoundSA*                m_sound;
 
     unsigned int                m_type;
@@ -447,6 +452,8 @@ protected:
     bool                        m_stealthAiming;
 
     unsigned int                m_poolIndex;
+
+    unsigned char               m_alpha;
 };
 
 #endif

@@ -123,6 +123,8 @@ public:
     */
     void    setDefaultResourceGroup(const String& resourceGroup)    { d_defaultResourceGroup = resourceGroup; }
 
+    inline String getDefaultResourceGroup()                         { return d_defaultResourceGroup; }
+
 protected:
     String  d_defaultResourceGroup;     //!< Default resource group identifier.
 };

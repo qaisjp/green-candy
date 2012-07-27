@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientObject.cpp
@@ -9,6 +9,7 @@
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -21,8 +22,40 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-CClientObject::CClientObject ( CClientManager* pManager, ElementID ID, unsigned short usModel ) : ClassInit ( this ), CClientStreamElement ( pManager->GetObjectStreamer (), ID )
+static const luaL_Reg object_interface[] =
 {
+    { NULL, NULL }
+};
+
+static int luaconstructor_object( lua_State *L )
+{
+    CClientObject *obj = (CClientObject*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_OBJECT, obj );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, object_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "object", 6 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientObject::CClientObject( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel ) : CClientStreamElement( pManager->GetObjectStreamer (), ID, root, system )
+{
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_object, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     // Init
     m_pManager = pManager;
     m_pObjectManager = pManager->GetObjectManager ();
@@ -47,7 +80,6 @@ CClientObject::CClientObject ( CClientManager* pManager, ElementID ID, unsigned 
     // Add this object to the list
     m_pObjectManager->AddToList ( this );
 }
-
 
 CClientObject::~CClientObject ( void )
 {

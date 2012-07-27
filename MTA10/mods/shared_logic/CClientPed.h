@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientPed.h
@@ -10,6 +10,7 @@
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -25,6 +26,8 @@ class CClientPed;
 #include <multiplayer/CMultiplayer.h>
 #include "net/Packets.h"
 #include "CClientPad.h"
+
+#define LUACLASS_PED    62
 
 class CClientCamera;
 class CClientManager;
@@ -112,14 +115,13 @@ class CClientObject;
 
 class CClientPed : public CClientStreamElement, public CAntiCheatModule
 {
-    DECLARE_CLASS( CClientPed, CClientStreamElement )
     friend class CClientCamera;
     friend class CClientPlayer;
     friend class CClientVehicle;
     friend class CClientPedManager;
 
 public:
-                                CClientPed( CClientManager* pManager, unsigned long ulModelID, ElementID ID );
+                                CClientPed( CClientManager* pManager, unsigned long ulModelID, ElementID ID, LuaClass& root, bool system );
                                 ~CClientPed();
 
     inline void                 Unlink()                                                    {};
@@ -417,8 +419,9 @@ public:
 
 protected:
     // This constructor is for peds managed by a player. These are unknown to the ped manager.
-                                CClientPed( CClientManager* pManager, unsigned long ulModelID, ElementID ID, bool bIsLocalPlayer );
+                                CClientPed( CClientManager* pManager, unsigned long ulModelID, ElementID ID, LuaClass& root, bool system, bool bIsLocalPlayer );
 
+    void                        InstanceLua( bool system );
     void                        Init( CClientManager* pManager, unsigned long ulModelID, bool bIsLocalPlayer );
 
     void                        Dump( FILE* pFile, bool bDumpDetails, unsigned int uiIndex );

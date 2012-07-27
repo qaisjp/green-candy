@@ -17,7 +17,7 @@ CEventGunShotSA::CEventGunShotSA ( CEntity * pEntity, CVector & vecOrigin, CVect
     m_pInterface = new CEventGunShotSAInterface;
 
     DWORD dwEntityInterface = 0;
-    if ( pEntity ) dwEntityInterface = (DWORD)pEntity->GetInterface ();
+    if ( pEntity ) dwEntityInterface = (DWORD)dynamic_cast <CEntitySA*> ( pEntity )->GetInterface ();
     float originX = vecOrigin.fX, originY = vecOrigin.fY, originZ = vecOrigin.fZ;
     float targetX = vecTarget.fX, targetY = vecTarget.fY, targetZ = vecTarget.fZ;
     DWORD dwThis = (DWORD)m_pInterface;

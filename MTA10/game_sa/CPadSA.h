@@ -24,9 +24,6 @@
 class CPadSAInterface
 {
 public:
-                        CPadSAInterface();
-                        ~CPadSAInterface();
-
     void                SetState( const CControllerState& cs );
     void                InjectCurrent( const CControllerState& cs );
     void                SetHornHistory( bool state );
@@ -73,6 +70,7 @@ class CPadSA : public CPad
 private:
     CPadSAInterface*            m_interface;
     CPadSAInterface             m_stored;
+
 public:
                                 CPadSA( CPadSAInterface *pad );
                                 ~CPadSA();
@@ -80,6 +78,7 @@ public:
     const CControllerState&     GetState();
     const CControllerState&     GetPreviousState();
     void                        SetState( const CControllerState& cs );
+    void                        InjectCurrent( const CControllerState& cs );
 
     void                        Store();
     void                        Restore();

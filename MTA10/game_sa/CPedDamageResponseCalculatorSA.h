@@ -33,15 +33,15 @@ public:
 class CPedDamageResponseCalculatorSA : public CPedDamageResponseCalculator
 {
 public:
-                    CPedDamageResponseCalculatorSA  ( CEntity * pEntity, float fDamage, eWeaponType weaponType, ePedPieceTypes bodyPart, bool b_1 );
-                    CPedDamageResponseCalculatorSA  ( CPedDamageResponseCalculatorSAInterface * pInterface );
-                    ~CPedDamageResponseCalculatorSA ( void );
+                    CPedDamageResponseCalculatorSA( CEntitySA* pEntity, float fDamage, eWeaponType weaponType, ePedPieceTypes bodyPart, bool b_1 );
+                    CPedDamageResponseCalculatorSA( CPedDamageResponseCalculatorSAInterface *pInterface );
+                    ~CPedDamageResponseCalculatorSA();
 
-    void            ComputeDamageResponse           ( CPed * pPed, CPedDamageResponse * pDamageResponse, bool bSpeak );
+    void            ComputeDamageResponse( CPed *pPed, CPedDamageResponse *pDamageResponse, bool bSpeak );
 
 private:
-    CPedDamageResponseCalculatorSAInterface *   m_pInterface;
-    bool            m_bDestroyInterface;
+    CPedDamageResponseCalculatorSAInterface*    m_pInterface;
+    bool                                        m_bDestroyInterface;
 };
 
 #endif

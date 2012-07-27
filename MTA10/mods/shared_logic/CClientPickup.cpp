@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientPickup.cpp
@@ -9,6 +9,7 @@
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -16,8 +17,40 @@
 
 extern CClientGame* g_pClientGame;
 
-CClientPickup::CClientPickup ( CClientManager* pManager, ElementID ID, unsigned short usModel, CVector vecPosition ) : ClassInit ( this ), CClientStreamElement ( pManager->GetPickupStreamer (), ID )
+static const luaL_Reg pickup_interface[] =
 {
+    { NULL, NULL }
+};
+
+static int luaconstructor_pickup( lua_State *L )
+{
+    CClientPickup *pickup = (CClientPickup*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_PICKUP, pickup );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, pickup_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "pickup", 6 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientPickup::CClientPickup( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel, CVector vecPosition ) : CClientStreamElement( pManager->GetPickupStreamer(), ID, root, system )
+{
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_pickup, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     // Initialize
     m_pManager = pManager;
     m_pPickupManager = pManager->GetPickupManager ();

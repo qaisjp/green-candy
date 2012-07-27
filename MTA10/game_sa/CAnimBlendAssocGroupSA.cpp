@@ -85,16 +85,13 @@ CAnimBlendStaticAssociation * CAnimBlendAssocGroupSA::GetAnimation ( unsigned in
     return pReturn;
 }
 
-
-bool CAnimBlendAssocGroupSA::IsLoaded ( void )
+bool CAnimBlendAssocGroupSA::IsLoaded()
 {
     if ( m_pInterface->pAnimBlock )
-    {
-        return m_pInterface->pAnimBlock->bLoaded;
-    }
+        return m_pInterface->pAnimBlock->m_loaded;
+
     return false;
 }
-
 
 void CAnimBlendAssocGroupSA::CreateAssociations ( const char * szBlockName )
 {

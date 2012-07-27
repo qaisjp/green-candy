@@ -23,7 +23,7 @@ class CObject : public virtual CPhysical
 public:
     virtual                         ~CObject() {};
 
-    virtual unsigned int            GetPoolIndex() const;
+    virtual unsigned int            GetPoolIndex() const = 0;
 
     virtual void                    Explode() = 0;
     virtual void                    Break() = 0;

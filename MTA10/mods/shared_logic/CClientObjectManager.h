@@ -35,8 +35,8 @@ public:
 
     void                                    DeleteAll                   ( void );
 
-    inline unsigned int                     Count                       ( void )                        { return static_cast < unsigned int > ( m_Objects.size () ); };
-    inline unsigned int                     CountCreatedObjects         ( void )                        { return static_cast < unsigned int > ( g_pGame->GetPools ()->GetObjectCount () ); };
+    inline unsigned int                     Count                       ( void )                        { return m_Objects.size(); };
+    inline unsigned int                     CountCreatedObjects         ( void )                        { return g_pGame->GetPools()->GetNumberOfUsedSpaces( OBJECT_POOL ); };
     static CClientObject*                   Get                         ( ElementID ID );
     CClientObject*                          Get                         ( CObject* pObject, bool bValidatePointer );
     CClientObject*                          GetSafe                     ( CEntity * pEntity );

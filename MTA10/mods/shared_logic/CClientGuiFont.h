@@ -12,7 +12,6 @@
 
 class CClientGuiFont : public CClientRenderElement
 {
-    DECLARE_CLASS( CClientGuiFont, CClientRenderElement )
 public:
                             CClientGuiFont          ( CClientManager* pManager, ElementID ID, CGuiFontItem* pFontItem );
                             ~CClientGuiFont         ( void );

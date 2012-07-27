@@ -194,7 +194,7 @@ CTaskSimpleStealthKill* CTasksSA::CreateTaskSimpleStealthKill ( bool bKiller, cl
 {
     DEBUG_TRACE("CTaskSimpleStealthKill* CTasksSA::CreateTaskSimpleStealthKill ( bool bKiller, class CPed * pPed, AnimationId anim )");
 
-    CTaskSimpleStealthKillSA * pTask = new CTaskSimpleStealthKillSA( bKiller, pPed, animGroup );
+    CTaskSimpleStealthKillSA * pTask = new CTaskSimpleStealthKillSA( bKiller, pPed, (AssocGroupId)animGroup );
     m_pTaskManagementSystem->AddTask ( pTask );
     return pTask;
 }

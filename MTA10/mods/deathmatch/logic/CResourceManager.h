@@ -46,5 +46,6 @@ public:
 };
 
 extern CFileTranslator *resFileRoot;
+extern CResourceManager *resMan;
 
 #endif

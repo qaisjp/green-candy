@@ -15,14 +15,6 @@
 
 #include "StdInc.h"
 
-CPadSAInterface::CPadSAInterface()
-{
-}
-
-CPadSAInterface::~CPadSAInterface()
-{
-}
-
 void CPadSAInterface::SetState( const CControllerState& cs )
 {
     m_prev = m_new;
@@ -30,7 +22,7 @@ void CPadSAInterface::SetState( const CControllerState& cs )
 }
 
 // Hack for hax
-void CPedSAInterface::InjectCurrent( const CControllerState& cs )
+void CPadSAInterface::InjectCurrent( const CControllerState& cs )
 {
     m_new = cs;
 }
@@ -40,6 +32,15 @@ void CPadSAInterface::SetHornHistory( bool state )
     m_numHorn = ( m_numHorn + 1 ) % MAX_HORN_HISTORY;
 
     m_hornHistory[m_numHorn] = state;
+}
+
+CPadSA::CPadSA( CPadSAInterface *pad )
+{
+    m_interface = pad;
+}
+
+CPadSA::~CPadSA()
+{
 }
 
 const CControllerState& CPadSA::GetState()
@@ -61,6 +62,13 @@ void CPadSA::SetState( const CControllerState& cs )
     DEBUG_TRACE("void CPadSA::SetState( const CControllerState& cs )");
     
     m_interface->SetState( cs );
+}
+
+void CPadSA::InjectCurrent( const CControllerState& cs )
+{
+    DEBUG_TRACE("void CPadSA::InjectCurrent( const CControllerState& cs )");
+
+    m_interface->InjectCurrent( cs );
 }
 
 void CPadSA::Store()

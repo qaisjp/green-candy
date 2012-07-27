@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CRadarSA.cpp
 *  PURPOSE:     Game radar
@@ -8,6 +8,7 @@
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -15,34 +16,33 @@
 
 #include "StdInc.h"
 
-CMarkerSA           * Markers[MAX_MARKERS];
+CMarkerSA* Markers[MAX_MARKERS];
 
-CRadarSA::CRadarSA (  )
+CRadarSA::CRadarSA()
 {
-    DEBUG_TRACE("CRadarSA::CRadarSA (  )");
-    for(int i = 0; i < MAX_MARKERS; i++)
+    DEBUG_TRACE("CRadarSA::CRadarSA()");
+
+    for ( unsigned int i = 0; i < MAX_MARKERS; i++ )
         Markers[i] = new CMarkerSA((CMarkerSAInterface *)(ARRAY_CMarker + i * sizeof(CMarkerSAInterface)));
-
-//  OutputDebugString("Markers inited");
 }
 
-CRadarSA::~CRadarSA ( )
+CRadarSA::~CRadarSA()
 {
-    for(int i = 0; i < MAX_MARKERS; i++)
-    {
-        if ( Markers[i] ) delete Markers[i];
-    }
+    for ( unsigned int i = 0; i < MAX_MARKERS; i++ )
+        if ( Markers[i] )
+            delete Markers[i];
 }
 
-CMarker * CRadarSA::CreateMarker(CVector * vecPosition)
+CMarker* CRadarSA::CreateMarker( const CVector& pos )
 {
-    DEBUG_TRACE("CMarker * CRadarSA::CreateMarker(CVector * vecPosition)");
-    CMarkerSA * marker;
-    marker = (CMarkerSA *)this->GetFreeMarker();
+    DEBUG_TRACE("CMarker* CRadarSA::CreateMarker( const CVector& pos )");
+
+    CMarkerSA *marker;
+    marker = (CMarkerSA*)GetFreeMarker();
     if ( marker )
     {
-        marker->Init ();
-        marker->SetPosition(vecPosition);
+        marker->Init();
+        marker->SetPosition( pos );
     }
 
 /*  DWORD dwFunc = FUNC_SetCoordBlip;
@@ -66,9 +66,9 @@ CMarker * CRadarSA::CreateMarker(CVector * vecPosition)
     return marker;
 }
 
-CMarker * CRadarSA::CreateMarker(CVehicle * vehicle)
+CMarker* CRadarSA::CreateMarker( CVehicle *vehicle )
 {
-    DEBUG_TRACE("CMarker * CRadarSA::CreateMarker(CVehicle * vehicle)");
+    DEBUG_TRACE("CMarker* CRadarSA::CreateMarker( CVehicle *vehicle )");
     CMarkerSA * marker;
     marker = (CMarkerSA *)this->GetFreeMarker();
 
@@ -81,11 +81,11 @@ CMarker * CRadarSA::CreateMarker(CVehicle * vehicle)
     return marker;
 }
 
-CMarker * CRadarSA::CreateMarker(CObject * object)
+CMarker* CRadarSA::CreateMarker( CObject *object )
 {
-    DEBUG_TRACE("CMarker * CRadarSA::CreateMarker(CObject * object)");
+    DEBUG_TRACE("CMarker* CRadarSA::CreateMarker( CObject *object )");
     CMarkerSA * marker;
-    marker = (CMarkerSA *)this->GetFreeMarker();
+    marker = (CMarkerSA *)GetFreeMarker();
 
     marker->SetEntity(object);
     marker->SetColor((eMarkerColor)MARKER_COLOR_YELLOW);
@@ -96,11 +96,11 @@ CMarker * CRadarSA::CreateMarker(CObject * object)
     return marker;
 }
 
-CMarker * CRadarSA::CreateMarker(CPed * ped)
+CMarker* CRadarSA::CreateMarker( CPed *ped )
 {
-    DEBUG_TRACE("CMarker * CRadarSA::CreateMarker(CPed * ped)");
+    DEBUG_TRACE("CMarker* CRadarSA::CreateMarker( CPed *ped )");
     CMarkerSA * marker;
-    marker = (CMarkerSA *)this->GetFreeMarker();
+    marker = (CMarkerSA *)GetFreeMarker();
 
     marker->SetEntity(ped);
     marker->SetColor((eMarkerColor)MARKER_COLOR_YELLOW);
@@ -111,30 +111,30 @@ CMarker * CRadarSA::CreateMarker(CPed * ped)
     return marker;
 }
 
-CMarker * CRadarSA::GetFreeMarker(  )
+CMarker* CRadarSA::GetFreeMarker()
 {
-    DEBUG_TRACE("CMarker * CRadarSA::GetFreeMarker(  )");
-    int Index;
-    Index = 0;
-    while ((Index < MAX_MARKERS) && (Markers[Index]->GetInterface()->bTrackingBlip))
-    {
+    DEBUG_TRACE("CMarker* CRadarSA::GetFreeMarker()");
+
+    unsigned int Index = 0;
+
+    while ((Index < MAX_MARKERS) && (Markers[Index]->GetInterface()->m_tracking))
         Index++;
-    }
+
     if ( Index >= MAX_MARKERS )
         return NULL;
-    else
-        return Markers[Index];
+
+    return Markers[Index];
 }
 
-CMarker * CRadarSA::GetMarker( DWORD dwMarkerID )
+CMarker* CRadarSA::GetMarker( unsigned short id )
 {
-    DEBUG_TRACE("CMarker * CRadarSA::GetMarker( DWORD dwMarkerID )");
-    return (CMarker *)Markers[dwMarkerID];
+    DEBUG_TRACE("CMarker* CRadarSA::GetMarker( unsigned short id )");
+    return Markers[id];
 }
 
-VOID CRadarSA::ClearMarkerForEntity(CVehicle * vehicle)
+void CRadarSA::ClearMarkerForEntity( CVehicle *vehicle )
 {
-    DEBUG_TRACE("VOID CRadarSA::ClearMarkerForEntity(CVehicle * vehicle)");
+    DEBUG_TRACE("void CRadarSA::ClearMarkerForEntity( CVehicle *vehicle )");
     CMarkerSA * marker;
 
     for(int i = 0; i < MAX_MARKERS; i++)
@@ -147,10 +147,9 @@ VOID CRadarSA::ClearMarkerForEntity(CVehicle * vehicle)
     }
 }
 
-
-VOID CRadarSA::ClearMarkerForEntity(CObject * object)
+void CRadarSA::ClearMarkerForEntity( CObject *object )
 {
-    DEBUG_TRACE("VOID CRadarSA::ClearMarkerForEntity(CObject * object)");
+    DEBUG_TRACE("void CRadarSA::ClearMarkerForEntity( CObject *object )");
     CMarkerSA * marker;
 
     for(int i = 0; i < MAX_MARKERS; i++)
@@ -163,9 +162,9 @@ VOID CRadarSA::ClearMarkerForEntity(CObject * object)
     }
 }
 
-VOID CRadarSA::ClearMarkerForEntity(CPed * ped)
+void CRadarSA::ClearMarkerForEntity( CPed *ped )
 {
-    DEBUG_TRACE("VOID CRadarSA::ClearMarkerForEntity(CPed * ped)");
+    DEBUG_TRACE("void CRadarSA::ClearMarkerForEntity( CPed *ped )");
     CMarkerSA * marker;
 
     for(int i = 0; i < MAX_MARKERS; i++)
@@ -178,7 +177,7 @@ VOID CRadarSA::ClearMarkerForEntity(CPed * ped)
     }
 }
 
-VOID CRadarSA::DrawAreaOnRadar(float fX1, float fY1, float fX2, float fY2, const SColor color )
+void CRadarSA::DrawAreaOnRadar( float fX1, float fY1, float fX2, float fY2, const SColor color )
 {
     // Convert color to required abgr at the last moment
     unsigned long abgr = color.A << 24 | color.B << 16 | color.G << 8 | color.R;

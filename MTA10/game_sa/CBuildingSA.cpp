@@ -168,20 +168,16 @@ CBuildingSA::CBuildingSA( DWORD dwModel )
     //this->internalInterface->bDontStream = true;
 }
 
-CBuildingSA::~CBuildingSA( )
+CBuildingSA::~CBuildingSA()
 {
-    DEBUG_TRACE("CBuildingSA::~CBuildingSA( )");
+    DEBUG_TRACE("CBuildingSA::~CBuildingSA()");
 
-    if (!this->BeingDeleted && DoNotRemoveFromGame == false)
-    {
-        DWORD dwInterface = (DWORD)this->GetInterface();
-        
-        CWorldSA * world = (CWorldSA *)pGame->GetWorld();
-        world->Remove(this->GetInterface());
+    if ( m_doNotRemoveFromGame )
+        return;
     
-        delete m_pInterface;
+    CWorldSA *world = pGame->GetWorld();
+    world->RemoveReferencesToDeletedObject( m_pInterface );
+    world->Remove( m_pInterface );
 
-        this->BeingDeleted = true;
-        //((CPoolsSA *)pGame->GetPools())->RemoveBuilding((CBuilding *)(CBuildingSA *)this);
-    }
+    delete m_pInterface;
 }

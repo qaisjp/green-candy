@@ -12,12 +12,12 @@
 
 #include "StdInc.h"
 
-CPedDamageResponseCalculatorSA::CPedDamageResponseCalculatorSA ( CEntity * pEntity, float fDamage, eWeaponType weaponType, ePedPieceTypes bodyPart, bool b_1 )
+CPedDamageResponseCalculatorSA::CPedDamageResponseCalculatorSA ( CEntitySA* pEntity, float fDamage, eWeaponType weaponType, ePedPieceTypes bodyPart, bool b_1 )
 {
     m_pInterface = new CPedDamageResponseCalculatorSAInterface;
     m_bDestroyInterface = true;
 
-    DWORD dwEntityInterface = (DWORD)pEntity->GetInterface ();
+    DWORD dwEntityInterface = (DWORD)pEntity->GetInterface();
     DWORD dwThis = (DWORD)m_pInterface;
     DWORD dwFunc = FUNC_CPedDamageResponseCalculator_Constructor;
     _asm
@@ -55,10 +55,9 @@ CPedDamageResponseCalculatorSA::~CPedDamageResponseCalculatorSA ( void )
     }
 }
 
-
-void CPedDamageResponseCalculatorSA::ComputeDamageResponse ( CPed * pPed, CPedDamageResponse * pDamageResponse, bool bSpeak )
+void CPedDamageResponseCalculatorSA::ComputeDamageResponse( CPed *pPed, CPedDamageResponse *pDamageResponse, bool bSpeak )
 {
-    DWORD dwPedInterface = ( DWORD ) pPed->GetInterface ();
+    DWORD dwPedInterface = ( DWORD )dynamic_cast <CPedSA*> ( pPed )->GetInterface ();
     DWORD dwResponseInterface = ( DWORD ) pDamageResponse->GetInterface ();
     DWORD dwThis = ( DWORD ) m_pInterface;
     DWORD dwFunc = FUNC_CPedDamageResponseCalculator_ComputeDamageResponse;

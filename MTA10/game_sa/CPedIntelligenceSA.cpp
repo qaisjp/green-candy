@@ -41,7 +41,7 @@ bool CPedIntelligenceSAInterface::TestForStealthKill( CPedSAInterface *ped, bool
     return bReturn;
 }
 
-CPedIntelligenceSA::CPedIntelligenceSA ( CPedIntelligenceSAInterface *intelligence, CPed *ped )
+CPedIntelligenceSA::CPedIntelligenceSA( CPedIntelligenceSAInterface *intelligence, CPedSA *ped )
 {
     m_interface = intelligence;
     m_ped = ped;
@@ -49,23 +49,18 @@ CPedIntelligenceSA::CPedIntelligenceSA ( CPedIntelligenceSAInterface *intelligen
     m_vehicleScanner = new CVehicleScannerSA( intelligence->m_vehicleScanner );
 }
 
-CPedIntelligenceSA::~CPedIntelligenceSA ()
+CPedIntelligenceSA::~CPedIntelligenceSA()
 {
     delete m_taskManager;
+    delete m_vehicleScanner;
 }
 
-CTaskManager * CPedIntelligenceSA::GetTaskManager( void )
-{
-    DEBUG_TRACE("CTaskManager * CPedSA::GetTaskManager( void )");
-    return m_taskManager;
-}
-
-CVehicleScanner * CPedIntelligenceSA::GetVehicleScanner( void )
+CVehicleScanner * CPedIntelligenceSA::GetVehicleScanner()
 {
     return m_vehicleScanner;
 }
 
-bool CPedIntelligenceSA::IsRespondingToEvent ( void )
+bool CPedIntelligenceSA::IsRespondingToEvent()
 {
     DWORD dwFunc = FUNC_IsRespondingToEvent;
 
@@ -73,11 +68,11 @@ bool CPedIntelligenceSA::IsRespondingToEvent ( void )
     return false;
 }
 
-int CPedIntelligenceSA::GetCurrentEventType ( void )
+int CPedIntelligenceSA::GetCurrentEventType()
 {
     DWORD dwFunc = FUNC_GetCurrentEventType;
     DWORD dwRet = 0;
-    DWORD dwThis = (DWORD)m_pInterface;
+    DWORD dwThis = (DWORD)m_interface;
 
     _asm
     {
@@ -88,7 +83,12 @@ int CPedIntelligenceSA::GetCurrentEventType ( void )
     return dwRet;
 }
 
-CEvent * CPedIntelligenceSA::GetCurrentEvent ( void )
+CEvent* CPedIntelligenceSA::GetCurrentEvent()
 {
     return NULL;
+}
+
+bool CPedIntelligenceSA::TestForStealthKill( CPed *ped, bool unk )
+{
+    return m_interface->TestForStealthKill( dynamic_cast <CPedSA*> ( ped )->GetInterface(), unk );
 }

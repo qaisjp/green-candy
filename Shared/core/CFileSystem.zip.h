@@ -13,6 +13,8 @@
 #ifndef _FILESYSTEM_ZIP_
 #define _FILESYSTEM_ZIP_
 
+#include <time.h>
+
 class CArchiveFileTranslator : public CSystemPathTranslator
 {
     friend class CFileSystem;

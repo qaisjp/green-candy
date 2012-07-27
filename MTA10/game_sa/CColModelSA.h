@@ -44,7 +44,8 @@ public:
     void*   operator new( size_t );
     void    operator delete( void *ptr );
 
-    BYTE                            pad [ 44 ];
+    CBoundingBox                    m_bounds;
+    BYTE                            m_pad[4];
     CColDataSA*                     pColData;
 };
 

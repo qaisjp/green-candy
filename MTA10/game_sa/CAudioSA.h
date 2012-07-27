@@ -39,34 +39,35 @@
 class CAudioSA : public CAudio
 {
 public:
-    CAudioSA ();
-    VOID PlayFrontEndSound(DWORD dwSound);
-    VOID PlayBeatTrack ( short iTrack );
-    VOID SetEffectsMasterVolume ( BYTE bVolume );
-    VOID SetMusicMasterVolume ( BYTE bVolume );
-    VOID ClearMissionAudio ( int slot = 1);
-    VOID PreloadMissionAudio ( unsigned short usAudioEvent, int slot = 1 );
-    unsigned char GetMissionAudioLoadingStatus ( int slot = 1 );
-    bool IsMissionAudioSampleFinished ( int slot = 1 );
-    VOID AttachMissionAudioToPhysical ( CPhysical * physical, int slot = 1 );
-    VOID SetMissionAudioPosition ( CVector * position, int slot = 1 );
-    bool PlayLoadedMissionAudio ( int slot = 1 );
-    VOID PauseAllSound ( bool bPaused );
-    VOID StopRadio();
-    VOID StartRadio( unsigned int station );
-    void PauseAmbientSounds ( bool bPaused );
-    void SetAmbientSoundEnabled ( eAmbientSoundType eType, bool bEnabled );
-    bool IsAmbientSoundEnabled ( eAmbientSoundType eType );
-    void ResetAmbientSounds ( void );
+                        CAudioSA();
 
-    void UpdateAmbientSoundSettings ( void );
+    void                PlayFrontEndSound( unsigned short id );
+    void                PlayBeatTrack( short iTrack );
+    void                SetEffectsMasterVolume( unsigned char volume ); // 64 = max volume
+    void                SetMusicMasterVolume( unsigned char volume );
+    void                ClearMissionAudio( int slot = 1 );
+    void                PreloadMissionAudio( unsigned short usAudioEvent, int slot = 1 );
+    unsigned char       GetMissionAudioLoadingStatus( int slot = 1 ) const;
+    bool                IsMissionAudioSampleFinished( int slot = 1 ) const;
+    void                AttachMissionAudioToPhysical( CPhysical *physical, int slot = 1 );
+    void                SetMissionAudioPosition( const CVector& pos, int slot = 1 );
+    bool                PlayLoadedMissionAudio( int slot = 1 );
+    void                PauseAllSound( bool bPaused );
+    void                StopRadio();
+    void                StartRadio( unsigned int station );
+    void                PauseAmbientSounds( bool bPaused );
+    void                SetAmbientSoundEnabled( eAmbientSoundType eType, bool bEnabled );
+    bool                IsAmbientSoundEnabled( eAmbientSoundType eType ) const;
+    void                ResetAmbientSounds();
 
-    bool            m_bRadioOn;
-    bool            m_bRadioMuted;
-    unsigned char   m_ucRadioChannel;
-    bool            m_bAmbientSoundsPaused;
-    bool            m_bAmbientGeneralEnabled;
-    bool            m_bAmbientGunfireEnabled;
+    void                UpdateAmbientSoundSettings();
+
+    bool                m_bRadioOn;
+    bool                m_bRadioMuted;
+    unsigned char       m_ucRadioChannel;
+    bool                m_bAmbientSoundsPaused;
+    bool                m_bAmbientGeneralEnabled;
+    bool                m_bAmbientGunfireEnabled;
 };
 
 #endif

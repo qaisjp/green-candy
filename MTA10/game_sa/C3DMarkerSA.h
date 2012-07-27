@@ -59,34 +59,35 @@ private:
     C3DMarkerSAInterface*           m_interface;
 
 public:
-    C3DMarkerSA( C3DMarkerSAInterface *marker )     { m_interface = marker; };
+    C3DMarkerSA( C3DMarkerSAInterface *marker )             { m_interface = marker; };
 
-    C3DMarkerSAInterface*   GetInterface()          { return m_interface; }
+    C3DMarkerSAInterface*   GetInterface()                  { return m_interface; }
+    const C3DMarkerSAInterface* GetInterface() const        { return m_interface; }
 
-    void            GetMatrix( RwMatrix& matrix );
+    void            GetMatrix( RwMatrix& matrix ) const;
     void            SetMatrix( const RwMatrix& matrix );
 
     void            SetPosition( const CVector& pos );
     const CVector&  GetPosition() const;
 
-    unsigned int    GetType(); // need enum?
+    unsigned int    GetType() const; // need enum?
     void            SetType( unsigned int type ); // doesn't work propperly (not virtualed)
-    bool            IsActive();
-    unsigned int    GetIdentifier();
+    bool            IsActive() const;
+    unsigned int    GetIdentifier() const;
 
-    SColor          GetColor();
+    SColor          GetColor() const;
     void            SetColor( const SColor color ); // actually BGRA
 
     void            SetRotateRate( short rate );
 
     void            SetPulsePeriod( unsigned short period);
     void            SetPulseFraction( float fraction ); // doesn't work propperly (not virtualed)
-    float           GetPulseFraction();
+    float           GetPulseFraction() const;
 
-    float           GetSize();
+    float           GetSize() const;
     void            SetSize( float size );
 
-    float           GetBrightness();
+    float           GetBrightness() const;
     void            SetBrightness( float brightness );
 
     void            SetCameraRange( float range );
@@ -94,7 +95,7 @@ public:
     void            Disable();
     void            DeleteMarkerObject();
     void            Reset();
-    void            SetActive()                     { m_interface->m_bIsUsed = true; };
+    void            SetActive()                             { m_interface->m_bIsUsed = true; };
 };
 
 #endif

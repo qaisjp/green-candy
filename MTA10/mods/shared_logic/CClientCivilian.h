@@ -22,9 +22,10 @@ class CClientCivilian;
 #include "CClientCommon.h"
 #include "CClientEntity.h"
 
+#define LUACLASS_CIVILIAN   43
+
 class CClientCivilian : public CClientEntity
 {
-    DECLARE_CLASS( CClientCivilian, CClientEntity )
     friend class CClientCivilianManager;
 
 public:

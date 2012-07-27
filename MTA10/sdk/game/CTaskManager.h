@@ -97,23 +97,21 @@ enum eTaskAbort
 class CTaskManager
 {
 public:
-    virtual void        RemoveTask( eTaskPriority priority ) = 0;
-//  virtual void        SetTask( CTaskSA* pTaskPrimary, int iTaskPriority, bool bForceNewTask = false ) = 0;
-    virtual CTask*      GetTask( eTaskPriority priority ) = 0;
-    virtual CTask*      GetActiveTask() = 0;
-    virtual CTask*      GetSimplestActiveTask() = 0;
-    virtual CTask*      GetSimplestTask( eTaskPriority priority ) = 0;
+    virtual void                RemoveTask( eTaskPriority priority ) = 0;
+    virtual CTask*              GetTask( eTaskPriority priority ) const = 0;
+    virtual CTask*              GetActiveTask() const = 0;
+    virtual CTask*              GetSimplestActiveTask() const = 0;
+    virtual CTask*              GetSimplestTask( eTaskPriority priority ) const = 0;
 
-    virtual CTask*      FindActiveTaskByType( int iTaskType ) = 0;
-    virtual CTask*      FindTaskByType( eTaskPriority priority, int iTaskType ) = 0;
+    virtual CTask*              FindActiveTaskByType( int iTaskType ) const = 0;
+    virtual CTask*              FindTaskByType( eTaskPriority priority, int iTaskType ) const = 0;
 
-    virtual void        RemoveTaskSecondary( eTaskPriority priority ) = 0;
-//  virtual void        SetTaskSecondary( CTask* pTaskSecondary, int iType ) = 0;
-    virtual CTask*      GetTaskSecondary( int iType ) = 0;
-    virtual bool        HasTaskSecondary( const CTask* pTaskSecondary ) = 0;
+    virtual void                RemoveTaskSecondary( eTaskPriority priority ) = 0;
+    virtual CTask*              GetTaskSecondary( int iType ) const = 0;
+    virtual bool                HasTaskSecondary( const CTask* pTaskSecondary ) const = 0;
 
-    virtual void        ClearTaskEventResponse() = 0;
-    virtual void        Flush( eTaskPriority priority ) = 0;
+    virtual void                ClearTaskEventResponse() = 0;
+    virtual void                Flush( eTaskPriority priority ) = 0;
 };
 
 #endif

@@ -59,34 +59,30 @@ public:
     virtual CBoat*                  AddBoat( unsigned short modelId ) = 0;
     virtual CVehicle*               AddVehicle( unsigned short modelId ) = 0;
     virtual CVehicle*               GetVehicle( void *entity ) const = 0;
-    virtual unsigned int            GetVehicleRef( CVehicle *veh ) const = 0;
     virtual CVehicle*               GetVehicleFromRef( unsigned int index ) const = 0;
     virtual void                    DeleteAllVehicles() = 0;
 
      // Objects pool
     virtual CObject*                AddObject( unsigned short modelID ) = 0;
     virtual CObject*                GetObject( void *entity ) const = 0;
-    virtual unsigned int            GetObjectRef( CObject *obj ) const = 0;
     virtual CObject*                GetObjectFromRef( unsigned int index ) const = 0;
     virtual void                    DeleteAllObjects() = 0;
 
     // Peds pool
     virtual CPed*                   AddPed( unsigned short modelID ) = 0;
     virtual CPed*                   GetPed( void *entity ) const = 0;
-    virtual unsigned int            GetPedRef( CPed *ped ) const = 0;
     virtual CPed*                   GetPedFromRef( unsigned int index ) const = 0;
     virtual void                    DeleteAllPeds() = 0;
 
     // Others
-    virtual CBuilding*              AddBuilding( DWORD dwModelID ) = 0;
-    virtual CVehicle*               AddTrain( CVector* vecPosition, DWORD dwModels[], int iSize, bool iDirection ) = 0;
-    virtual CEntity*                GetEntity( DWORD* pGameInterface ) = 0;
+    virtual CBuilding*              AddBuilding( unsigned short model ) = 0;
+    virtual CEntity*                GetEntity( void *entity ) const = 0;
 
-    virtual int             GetNumberOfUsedSpaces( ePools pool ) = 0;
-    virtual void            DumpPoolsStatus() = 0;
+    virtual unsigned int            GetNumberOfUsedSpaces( ePools pool ) const = 0;
+    virtual void                    DumpPoolsStatus() const = 0;
 
-    virtual unsigned int    GetPoolDefaultCapacity( ePools pool ) = 0;
-    virtual unsigned int    GetPoolCapacity( ePools pool ) = 0;
+    virtual unsigned int            GetPoolDefaultCapacity( ePools pool ) const = 0;
+    virtual unsigned int            GetPoolCapacity( ePools pool ) const = 0;
 };
 
 #endif

@@ -38,6 +38,8 @@ class CClientVehicle;
 #include "CVehicleUpgrades.h"
 #include "CClientTime.h"
 
+#define LUACLASS_VEHICLE    64
+
 #define INVALID_PASSENGER_SEAT 0xFF
 #define DEFAULT_VEHICLE_HEALTH 1000
 #define MAX_VEHICLE_HEALTH 10000
@@ -89,7 +91,6 @@ class CClientProjectile;
 
 class CClientVehicle : public CClientStreamElement
 {
-    DECLARE_CLASS( CClientVehicle, CClientStreamElement )
     friend class CClientCamera;
     friend class CClientPed;
     friend class CClientVehicleManager;
@@ -97,7 +98,8 @@ class CClientVehicle : public CClientStreamElement
 
 protected: // Use CDeathmatchVehicle constructor for now. Will get removed later when this class is
            // cleaned up.
-                                CClientVehicle( CClientManager* pManager, ElementID ID, unsigned short usModel );
+            // The_GTA: ^ lies ^
+                                CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel );
 
 public:
                                 ~CClientVehicle();

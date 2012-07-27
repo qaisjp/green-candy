@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CResourceManager.cpp
 *  PURPOSE:     Resource manager
@@ -10,6 +10,7 @@
 *               Jax <>
 *               Christian Myhre Lundheim <>
 *               Derek Abdine <>
+*               The_GTA <quiret@gmx.de>
 *               
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -18,6 +19,7 @@
 #include "StdInc.h"
 
 CFileTranslator *resFileRoot;
+CResourceManager *resMan = NULL;
 
 CResourceManager::CResourceManager() : ResourceManager( g_pClientGame->GetLuaManager()->GetVirtualMachine() )
 {
@@ -25,6 +27,9 @@ CResourceManager::CResourceManager() : ResourceManager( g_pClientGame->GetLuaMan
     modFileRoot->GetFullPath( "/resources/", false, resRoot );
 
     resFileRoot = g_pCore->GetFileSystem()->CreateTranslator( resRoot.c_str() );
+
+    // The one and only resource manager!
+    resMan = this;
 }
 
 CResourceManager::~CResourceManager()

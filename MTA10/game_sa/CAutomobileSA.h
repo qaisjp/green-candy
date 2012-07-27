@@ -92,10 +92,13 @@ enum eVehicleComponent
     NUM_VEHICLE_COMPONENTS = 25
 };
 
+#define AUTOMOBILE_TAXILIGHTS       0x0001
+
+
 class CAutomobileSAInterface : public CVehicleSAInterface   // size: 2440
 {
 public:
-                                CAutomobileSAInterface();
+                                CAutomobileSAInterface( bool unk, unsigned short model, unsigned char createdBy );
                                 ~CAutomobileSAInterface();
 
     void                        SetModelIndex( unsigned short id );
@@ -117,7 +120,7 @@ public:
     float                       m_rotorSpeed;                           // 2124
 
     BYTE                        m_pad20[24];                            // 2128
-    bool                        m_taxiLightOn;                          // 2152
+    unsigned char               m_autoFlags;                            // 2152
     BYTE                        m_pad22;                                // 2153
     unsigned short              m_unk5;                                 // 2154
 
@@ -164,8 +167,8 @@ public:
     unsigned short              GetAdjustablePropertyValue() const                      { return GetInterface()->m_adjustableProperty; }
     void                        SetAdjustablePropertyValue( unsigned short value )      { GetInterface()->m_adjustableProperty = value; }
 
-    void                        SetTaxiLightOn( bool on )                               { GetInterface()->m_taxiLightOn = on; }
-    bool                        IsTaxiLightOn() const                                   { return GetInterface()->m_taxiLightOn; }
+    void                        SetTaxiLightOn( bool on )                               { BOOL_FLAG( GetInterface()->m_autoFlags, AUTOMOBILE_TAXILIGHTS, on ); }
+    bool                        IsTaxiLightOn() const                                   { return IS_FLAG( GetInterface()->m_autoFlags, AUTOMOBILE_TAXILIGHTS ); }
 
     void                        GetTurretRotation( float& horizontal, float& vertical ) const;
     void                        SetTurretRotation( float horizontal, float vertical );

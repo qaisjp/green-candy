@@ -30,11 +30,11 @@ CPadSAInterface* CPadManagerSA::GetJoypad( unsigned int index )
     return (CPadSAInterface*)0x00B73458;
 }
 
-void CPadManagerSA::GetFootControl( const CControlInterface& states, CPedSA& ped, CControllerState& cs )
+void CPadManagerSA::GetFootControl( const CControlInterface& states, const CPedSA& ped, CControllerState& cs ) const
 {
-    bool detonator = ped->GetCurrentWeaponSlot() == 12;
+    bool detonator = ped.GetCurrentWeaponSlot() == 12;
     bool aimingWeapon = states.GetControlState( CONTROL_AIM_WEAPON );
-    bool enteringVehicle = ped->IsEnteringVehicle();
+    bool enteringVehicle = ped.IsEnteringVehicle();
 
     cs.m_action4 = DIGITAL_BUTTON( states.GetControlState( CONTROL_FIRE ) && !detonator );
     cs.m_rs2 = DIGITAL_BUTTON( states.GetControlState( CONTROL_NEXT_WEAPON ) || ( aimingWeapon && states.GetControlState( CONTROL_ZOOM_IN ) ) );
@@ -56,12 +56,12 @@ void CPadManagerSA::GetFootControl( const CControlInterface& states, CPedSA& ped
     cs.m_digitalDown = DIGITAL_BUTTON( states.GetControlState( CONTROL_GROUP_CONTROL_BACK ) );
 }
 
-void CPadManagerSA::GetVehicleControl( const CControlInterface& states, CPedSA& ped, CControllerState& cs )
+void CPadManagerSA::GetVehicleControl( const CControlInterface& states, CPedSA& ped, CControllerState& cs ) const
 {
     cs.m_action4 = DIGITAL_BUTTON( states.GetControlState( CONTROL_VEHICLE_FIRE ) );
     cs.m_ls1 = DIGITAL_BUTTON( states.GetControlState( CONTROL_VEHICLE_SECONDARY_FIRE ) );
     cs.m_leftAxisX = DIGITAL_AXIS( states.GetControlState( CONTROL_LEFT ), states.GetControlState( CONTROL_RIGHT ) );
-    cs.m_leftAxisY = DIGITAL_AXIS( states.GetControlState( CONTROL_STEER_FORWARDS ), states.GetControlState( CONTROL_STEER_BACK ) );
+    cs.m_leftAxisY = DIGITAL_AXIS( states.GetControlState( CONTROL_STEER_FORWARD ), states.GetControlState( CONTROL_STEER_BACK ) );
 
     cs.m_action3 = DIGITAL_BUTTON( states.GetControlState( CONTROL_ACCELERATE ) );
     cs.m_action1 = DIGITAL_BUTTON( states.GetControlState( CONTROL_BRAKE_REVERSE ) );
@@ -83,7 +83,7 @@ void CPadManagerSA::UpdateJoypad( const CControlInterface& states, CPedSA& ped )
     CPadSAInterface *pad = ped.GetInterface()->GetJoypad();
 
     // Retrive the current controls
-    CControllerState cs = { 0 };
+    CControllerState cs;
 
     if ( !ped.IsDead() )
     {
@@ -108,7 +108,7 @@ void CPadManagerSA::UpdateLocalJoypad( CPedSA& ped )
     CPadSAInterface *pad = ped.GetInterface()->GetJoypad();
 
     // Retrive the current controls
-    CControllerState cs = { 0 };
+    CControllerState cs;
 
     if ( !ped.IsDead() )
     {

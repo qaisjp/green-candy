@@ -15,7 +15,7 @@
 
 #include "StdInc.h"
 
-void C3DMarkerSA::GetMatrix( RwMatrix& mat )
+void C3DMarkerSA::GetMatrix( RwMatrix& mat ) const
 {
     mat = GetInterface()->m_mat;
 }
@@ -31,15 +31,15 @@ void C3DMarkerSA::SetPosition( const CVector& pos )
     GetInterface()->m_mat.pos = pos;
 }
 
-const CVector& C3DMarkerSA::GetPosition()
+const CVector& C3DMarkerSA::GetPosition() const
 {
-    DEBUG_TRACE("const CVector& C3DMarkerSA::GetPosition()");
+    DEBUG_TRACE("const CVector& C3DMarkerSA::GetPosition() const");
     return GetInterface()->m_mat.pos;
 }
 
-unsigned int C3DMarkerSA::GetType()
+unsigned int C3DMarkerSA::GetType() const
 {
-    DEBUG_TRACE("unsigned int C3DMarkerSA::GetType()");
+    DEBUG_TRACE("unsigned int C3DMarkerSA::GetType() const");
     return GetInterface()->m_nType;
 }
 
@@ -49,21 +49,21 @@ void C3DMarkerSA::SetType( unsigned int type )
     GetInterface()->m_nType = type;
 }
 
-bool C3DMarkerSA::IsActive()
+bool C3DMarkerSA::IsActive() const
 {
-    DEBUG_TRACE("BOOL C3DMarkerSA::IsActive()");
+    DEBUG_TRACE("bool C3DMarkerSA::IsActive() const");
     return GetInterface()->m_bIsUsed;
 }
 
-unsigned int C3DMarkerSA::GetIdentifier()
+unsigned int C3DMarkerSA::GetIdentifier() const
 {
-    DEBUG_TRACE("DWORD C3DMarkerSA::GetIdentifier()");
+    DEBUG_TRACE("unsigned int C3DMarkerSA::GetIdentifier() const");
     return GetInterface()->m_nIdentifier;
 }
 
-SColor C3DMarkerSA::GetColor()
+SColor C3DMarkerSA::GetColor() const
 {
-    DEBUG_TRACE("SColor C3DMarkerSA::GetColor()");
+    DEBUG_TRACE("SColor C3DMarkerSA::GetColor() const");
 
     // From ABGR
     unsigned long ulABGR = GetInterface()->rwColour;
@@ -93,9 +93,9 @@ void C3DMarkerSA::SetRotateRate( short rate )
     GetInterface()->m_nRotateRate = rate;
 }
 
-float C3DMarkerSA::GetSize()
+float C3DMarkerSA::GetSize() const
 {
-    DEBUG_TRACE("float C3DMarkerSA::GetSize()");
+    DEBUG_TRACE("float C3DMarkerSA::GetSize() const");
     return GetInterface()->m_fSize;
 }
 
@@ -105,9 +105,9 @@ void C3DMarkerSA::SetSize( float size )
     GetInterface()->m_fSize = size;
 }
 
-float C3DMarkerSA::GetBrightness()
+float C3DMarkerSA::GetBrightness() const
 {
-    DEBUG_TRACE("float C3DMarkerSA::GetBrightness()");
+    DEBUG_TRACE("float C3DMarkerSA::GetBrightness() const");
     return GetInterface()->m_fBrightness;
 }
 
@@ -129,9 +129,9 @@ void C3DMarkerSA::SetPulseFraction( float fraction )
     GetInterface()->m_fPulseFraction = fraction;
 }
 
-float C3DMarkerSA::GetPulseFraction()
+float C3DMarkerSA::GetPulseFraction() const
 {
-    DEBUG_TRACE("float C3DMarkerSA::GetPulseFraction()");
+    DEBUG_TRACE("float C3DMarkerSA::GetPulseFraction() const");
     return GetInterface()->m_fPulseFraction;
 }
 

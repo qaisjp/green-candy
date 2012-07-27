@@ -12,7 +12,6 @@
 
 class CClientDxFont : public CClientRenderElement
 {
-    DECLARE_CLASS( CClientDxFont, CClientRenderElement )
 public:
                             CClientDxFont           ( CClientManager* pManager, ElementID ID, CDxFontItem* pFontItem );
 

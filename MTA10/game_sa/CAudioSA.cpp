@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CAudioSA.cpp
 *  PURPOSE:     Audio manager
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -17,8 +18,7 @@
 DWORD RETURN_CAEAmbienceTrackManager_CheckForPause =        0x4D6E27;
 void HOOK_CAEAmbienceTrackManager_CheckForPause ();
 
-
-CAudioSA::CAudioSA ()
+CAudioSA::CAudioSA()
 {
     m_bRadioOn = false;
     m_bRadioMuted = false;
@@ -30,7 +30,7 @@ CAudioSA::CAudioSA ()
     HookInstall ( HOOKPOS_CAEAmbienceTrackManager_CheckForPause, (DWORD)HOOK_CAEAmbienceTrackManager_CheckForPause, 6 );
 }
 
-VOID CAudioSA::StopRadio()
+void CAudioSA::StopRadio()
 {
     m_bRadioOn = false;
 
@@ -69,7 +69,7 @@ VOID CAudioSA::StopRadio()
     }
 }
 
-VOID CAudioSA::StartRadio(unsigned int station)
+void CAudioSA::StartRadio( unsigned int station )
 {
     m_ucRadioChannel = station;
     m_bRadioOn = true;
@@ -132,18 +132,18 @@ VOID CAudioSA::StartRadio(unsigned int station)
 // 43 = race one
 // 32 = help
 // 13 = camera take picture
-VOID CAudioSA::PlayFrontEndSound(DWORD dwSound)
+void CAudioSA::PlayFrontEndSound( unsigned short sound )
 {
-    if  ( *(DWORD *)VAR_AudioEventVolumes != 0 && dwSound <= 101 ) // may prevent a crash
+    if  ( *(DWORD *)VAR_AudioEventVolumes != 0 && sound <= 101 ) // may prevent a crash
     {
-        DEBUG_TRACE("VOID CAudioSA::PlayFrontEndSound(DWORD dwSound)");
+        DEBUG_TRACE("void CAudioSA::PlayFrontEndSound( unsigned short sound )");
         DWORD dwFunc = FUNC_ReportFrontendAudioEvent;
         FLOAT fUnknown = 1.0f;
         _asm
         {
             push    fUnknown
             push    0
-            push    dwSound
+            push    sound
             mov     ecx, CLASS_CAudioEngine
             call    dwFunc
         }
@@ -169,10 +169,10 @@ VOID CAudioSA::PlayFrontEndSound(DWORD dwSound)
     }*/
 }
 
-VOID CAudioSA::SetEffectsMasterVolume ( BYTE bVolume )
+void CAudioSA::SetEffectsMasterVolume( unsigned char volume )
 {
     DWORD dwFunc = FUNC_SetEffectsMasterVolume;
-    DWORD dwVolume = bVolume;
+    DWORD dwVolume = volume;
     _asm
     {
         mov     ecx, CLASS_CAudioEngine
@@ -181,10 +181,10 @@ VOID CAudioSA::SetEffectsMasterVolume ( BYTE bVolume )
     }
 }
 
-VOID CAudioSA::SetMusicMasterVolume ( BYTE bVolume )
+void CAudioSA::SetMusicMasterVolume( unsigned char volume )
 {
     DWORD dwFunc = FUNC_SetMusicMasterVolume;
-    DWORD dwVolume = bVolume;
+    DWORD dwVolume = volume;
     _asm
     {
         mov     ecx, CLASS_CAudioEngine
@@ -196,7 +196,7 @@ VOID CAudioSA::SetMusicMasterVolume ( BYTE bVolume )
     // See if radio stream should be stopped/started
     //
 
-    bool bNewRadioMuted = bVolume < 1;
+    bool bNewRadioMuted = volume < 1;
     bool bRadioMutedChanged = m_bRadioMuted != bNewRadioMuted;
     m_bRadioMuted = bNewRadioMuted;
 
@@ -217,7 +217,7 @@ VOID CAudioSA::SetMusicMasterVolume ( BYTE bVolume )
     }
 }
 
-VOID CAudioSA::PlayBeatTrack ( short iTrack )
+void CAudioSA::PlayBeatTrack( short iTrack )
 {
     if  ( *(DWORD *)VAR_AudioEventVolumes != 0 ) // may prevent a crash
     {
@@ -241,7 +241,7 @@ VOID CAudioSA::PlayBeatTrack ( short iTrack )
     }
 }
 
-VOID CAudioSA::ClearMissionAudio ( int slot )
+void CAudioSA::ClearMissionAudio( int slot )
 {
     DWORD dwFunc = 0x5072F0; // CAudioEngine::ClearMissionAudio(unsigned char)
     _asm
@@ -252,7 +252,7 @@ VOID CAudioSA::ClearMissionAudio ( int slot )
     }
 }
 
-bool CAudioSA::IsMissionAudioSampleFinished ( int slot )
+bool CAudioSA::IsMissionAudioSampleFinished( int slot ) const
 {
     DWORD dwFunc = 0x5072C0; // CAudioEngine::IsMissionAudioSampleFinished
     bool cret = 0;
@@ -266,7 +266,7 @@ bool CAudioSA::IsMissionAudioSampleFinished ( int slot )
     return cret;
 }
 
-VOID CAudioSA::PreloadMissionAudio ( unsigned short usAudioEvent, int slot )
+void CAudioSA::PreloadMissionAudio( unsigned short usAudioEvent, int slot )
 {
     DWORD dwFunc = 0x507290; // CAudioEngine__PreloadMissionAudio
     DWORD AudioEvent = usAudioEvent;
@@ -279,7 +279,7 @@ VOID CAudioSA::PreloadMissionAudio ( unsigned short usAudioEvent, int slot )
     }
 }
 
-unsigned char CAudioSA::GetMissionAudioLoadingStatus ( int slot )
+unsigned char CAudioSA::GetMissionAudioLoadingStatus( int slot ) const
 {
     DWORD dwFunc = 0x5072A0; // get load status
     unsigned char cret = 0;
@@ -293,7 +293,7 @@ unsigned char CAudioSA::GetMissionAudioLoadingStatus ( int slot )
     return cret;
 }
 
-VOID CAudioSA::AttachMissionAudioToPhysical ( CPhysical * physical, int slot )
+void CAudioSA::AttachMissionAudioToPhysical( CPhysical *physical, int slot )
 {
     CEntitySAInterface * entity = NULL;
     if ( physical )
@@ -313,19 +313,19 @@ VOID CAudioSA::AttachMissionAudioToPhysical ( CPhysical * physical, int slot )
     }
 }
 
-VOID CAudioSA::SetMissionAudioPosition ( CVector * position, int slot )
+void CAudioSA::SetMissionAudioPosition( const CVector& pos, int slot )
 {
     DWORD dwFunc = 0x507300; // CAudioEngine__SetMissionAudioPosition
     _asm
     {
         mov     ecx, CLASS_CAudioEngine
-        push    position
+        push    pos
         push    slot
         call    dwFunc
     }
 }
 
-bool CAudioSA::PlayLoadedMissionAudio ( int slot )
+bool CAudioSA::PlayLoadedMissionAudio( int slot )
 {
     if ( GetMissionAudioLoadingStatus(slot) == 1 )
     {
@@ -341,7 +341,7 @@ bool CAudioSA::PlayLoadedMissionAudio ( int slot )
     return false;
 }
 
-VOID CAudioSA::PauseAllSound ( bool bPaused )
+void CAudioSA::PauseAllSound( bool bPaused )
 {
     if ( bPaused )
     {
@@ -363,13 +363,13 @@ VOID CAudioSA::PauseAllSound ( bool bPaused )
     }
 }
 
-VOID CAudioSA::PauseAmbientSounds ( bool bPaused )
+void CAudioSA::PauseAmbientSounds( bool bPaused )
 {
     m_bAmbientSoundsPaused = bPaused;
     UpdateAmbientSoundSettings ();
 }
 
-VOID CAudioSA::SetAmbientSoundEnabled ( eAmbientSoundType eType, bool bEnabled )
+void CAudioSA::SetAmbientSoundEnabled( eAmbientSoundType eType, bool bEnabled )
 {
     if ( eType == AMBIENT_SOUND_GENERAL )
     {
@@ -383,26 +383,26 @@ VOID CAudioSA::SetAmbientSoundEnabled ( eAmbientSoundType eType, bool bEnabled )
     UpdateAmbientSoundSettings ();
 }
 
-bool CAudioSA::IsAmbientSoundEnabled ( eAmbientSoundType eType )
+bool CAudioSA::IsAmbientSoundEnabled( eAmbientSoundType eType ) const
 {
     if ( m_bAmbientSoundsPaused )
         return false;
+
     if ( eType == AMBIENT_SOUND_GENERAL )
         return m_bAmbientGeneralEnabled;
-    else
-    if ( eType == AMBIENT_SOUND_GUNFIRE )
+    else if ( eType == AMBIENT_SOUND_GUNFIRE )
         return m_bAmbientGunfireEnabled;
-    else
-        return false;
+
+    return false;
 }
 
-VOID CAudioSA::ResetAmbientSounds ( void )
+void CAudioSA::ResetAmbientSounds()
 {
     SetAmbientSoundEnabled ( AMBIENT_SOUND_GENERAL, true );
     SetAmbientSoundEnabled ( AMBIENT_SOUND_GUNFIRE, true );
 }
 
-VOID CAudioSA::UpdateAmbientSoundSettings ( void )
+void CAudioSA::UpdateAmbientSoundSettings()
 {
     // Update gunfire setting
     if ( IsAmbientSoundEnabled ( AMBIENT_SOUND_GUNFIRE ) )
@@ -411,18 +411,13 @@ VOID CAudioSA::UpdateAmbientSoundSettings ( void )
         MemPut < BYTE > ( 0x507814, 0x33 );     // No gunfire
 }
 
-
-bool _cdecl IsAmbientSoundGeneralEnabled ( void )
+bool _cdecl IsAmbientSoundGeneralEnabled()
 {
-    if ( pGame )
-    {
-        return pGame->GetAudio ()->IsAmbientSoundEnabled ( AMBIENT_SOUND_GENERAL );
-    }
-    return false;
+    return pGame->GetAudio ()->IsAmbientSoundEnabled( AMBIENT_SOUND_GENERAL );
 }
 
 // Hook for manual ambient sound pause
-void _declspec(naked) HOOK_CAEAmbienceTrackManager_CheckForPause ()
+void _declspec(naked) HOOK_CAEAmbienceTrackManager_CheckForPause()
 {
     _asm
     {

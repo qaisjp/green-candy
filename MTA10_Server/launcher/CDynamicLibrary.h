@@ -13,7 +13,7 @@
 #ifndef __CDYNAMICLIBRARY_H
 #define __CDYNAMICLIBRARY_H
 
-#ifndef WIN32
+#ifdef WIN32
 #include <windows.h>
 #else
 #include <dlfcn.h>

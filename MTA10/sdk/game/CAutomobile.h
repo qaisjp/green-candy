@@ -22,36 +22,36 @@ class CAutomobile : public virtual CVehicle
 public:
     virtual                     ~CAutomobile()  {};
 
-    virtual CDoor*              GetDoor( unsigned char ucDoor );
-    virtual void                SetSwingingDoorsAllowed( bool bAllowed );
-    virtual bool                AreSwingingDoorsAllowed() const;
+    virtual CDoor*              GetDoor( unsigned char ucDoor ) = 0;
+    virtual void                SetSwingingDoorsAllowed( bool bAllowed ) = 0;
+    virtual bool                AreSwingingDoorsAllowed() const = 0;
 
-    virtual void                ExtinguishCarFire();
-    virtual void                PlaceOnRoadProperly();
+    virtual void                ExtinguishCarFire() = 0;
+    virtual void                PlaceOnRoadProperly() = 0;
 
-    virtual CDamageManager*     GetDamageManager();
+    virtual CDamageManager*     GetDamageManager() = 0;
 
-    virtual inline SColor       GetHeadLightColor() const;
-    virtual inline void         SetHeadLightColor( const SColor color );
+    virtual inline SColor       GetHeadLightColor() const = 0;
+    virtual inline void         SetHeadLightColor( const SColor color ) = 0;
 
-    virtual CObject*            SpawnFlyingComponent( int i_1, unsigned int ui_2 );
-    virtual void                SetWheelVisibility( eWheels wheel, bool bVisible );
-    virtual bool                GetWheelVisibility( eWheels wheel ) const;
+    virtual CObject*            SpawnFlyingComponent( int i_1, unsigned int ui_2 ) = 0;
+    virtual void                SetWheelVisibility( eWheels wheel, bool bVisible ) = 0;
+    virtual bool                GetWheelVisibility( eWheels wheel ) const = 0;
 
-    virtual unsigned short      GetAdjustablePropertyValue() const;
-    virtual void                SetAdjustablePropertyValue( unsigned short value );
+    virtual unsigned short      GetAdjustablePropertyValue() const = 0;
+    virtual void                SetAdjustablePropertyValue( unsigned short value ) = 0;
 
-    virtual void                SetTaxiLightOn( bool on );
-    virtual bool                IsTaxiLightOn() const;
+    virtual void                SetTaxiLightOn( bool on ) = 0;
+    virtual bool                IsTaxiLightOn() const = 0;
 
-    virtual void                GetTurretRotation( float& horizontal, float& vertical ) const;
-    virtual void                SetTurretRotation( float horizontal, float vertical );
+    virtual void                GetTurretRotation( float& horizontal, float& vertical ) const = 0;
+    virtual void                SetTurretRotation( float horizontal, float vertical ) = 0;
 
-    virtual void*               GetPrivateSuspensionLines();
+    virtual void*               GetPrivateSuspensionLines() = 0;
 
-    virtual void                RecalculateHandling();
-    virtual void                RecalculateSuspensionLines();
-    virtual bool                UpdateMovingCollision( float angle );
+    virtual void                RecalculateHandling() = 0;
+    virtual void                RecalculateSuspensionLines() = 0;
+    virtual bool                UpdateMovingCollision( float angle ) = 0;
 };
 
 #endif

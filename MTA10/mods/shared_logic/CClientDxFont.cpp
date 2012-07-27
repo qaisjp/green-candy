@@ -19,7 +19,7 @@
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientDxFont::CClientDxFont ( CClientManager* pManager, ElementID ID, CDxFontItem* pFontItem ) : ClassInit ( this ), CClientRenderElement ( pManager, ID )
+CClientDxFont::CClientDxFont ( CClientManager* pManager, ElementID ID, CDxFontItem* pFontItem ) : CClientRenderElement ( pManager, ID )
 {
     SetTypeName ( "dx-font" );
     m_pRenderItem = pFontItem;

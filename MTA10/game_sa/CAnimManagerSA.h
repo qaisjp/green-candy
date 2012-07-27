@@ -79,84 +79,85 @@ public:
 class CAnimManagerSA : public CAnimManager
 {
 public:
-                                CAnimManagerSA                          ( void );
-                                ~CAnimManagerSA                         ( void );
+                                CAnimManagerSA();
+                                ~CAnimManagerSA();
 
-    void                        Initialize                              ( void );
-    void                        Shutdown                                ( void );
+    void                        Initialize();
+    void                        Shutdown();
 
-    RwExtension*                CreateAnimation                         ( RpAnimHierarchy *animInfo );
+    RwExtension*                CreateAnimation( RpAnimHierarchy *animInfo );
 
-    unsigned int                GetNumAnimations                        ( void );
-    unsigned int                GetNumAnimBlocks                        ( void );
-    unsigned int                GetNumAnimAssocDefinitions              ( void );
+    unsigned int                GetNumAnimations() const;
+    unsigned int                GetNumAnimBlocks() const;
+    unsigned int                GetNumAnimAssocDefinitions() const;
 
-    CAnimBlendHierarchy*        GetAnimation                            ( int ID );
-    CAnimBlendHierarchy*        GetAnimation                            ( const char * szName, CAnimBlock * pBlock );
-    CAnimBlendHierarchy*        GetAnimation                            ( unsigned int uiIndex, CAnimBlock * pBlock );
+    CAnimBlendHierarchy*        GetAnimation( int ID );
+    CAnimBlendHierarchy*        GetAnimation( const char * szName, CAnimBlock * pBlock );
+    CAnimBlendHierarchy*        GetAnimation( unsigned int uiIndex, CAnimBlock * pBlock );
     
-    CAnimBlock*                 GetAnimationBlock                       ( int ID );
-    CAnimBlock*                 GetAnimationBlock                       ( const char * szName );
-    unsigned int                GetAnimationBlockIndex                  ( const char * szName );
-    unsigned int                RegisterAnimBlock                       ( const char * szName );
+    CAnimBlock*                 GetAnimationBlock( int ID );
+    CAnimBlock*                 GetAnimationBlock( const char * szName );
+    int                         GetAnimationBlockIndex( const char * szName );
+    int                         RegisterAnimBlock( const char * szName );
         
-    CAnimBlendAssocGroup*       GetAnimBlendAssoc                       ( AssocGroupId groupID );
-    AssocGroupId                GetFirstAssocGroup                      ( const char * szName );
+    CAnimBlendAssocGroup*       GetAnimBlendAssoc( AssocGroupId groupID );
+    AssocGroupId                GetFirstAssocGroup( const char * szName );
 
-    const char*                 GetAnimGroupName                        ( AssocGroupId groupID );
-    const char*                 GetAnimBlockName                        ( AssocGroupId groupID );
+    const char*                 GetAnimGroupName( AssocGroupId groupID );
+    const char*                 GetAnimBlockName( AssocGroupId groupID );
 
-    CAnimBlendAssociation*      CreateAnimAssociation                   ( AssocGroupId animGroup, AnimationId animID );
-    CAnimBlendAssociation*      GetAnimAssociation                      ( AssocGroupId animGroup, AnimationId animID );
-    CAnimBlendAssociation*      GetAnimAssociation                      ( AssocGroupId animGroup, const char * szAnimName );
-    CAnimBlendAssociation*      AddAnimation                            ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID );
-    CAnimBlendAssociation*      AddAnimation                            ( RpClump * pClump, CAnimBlendHierarchy *, int ID );
-    CAnimBlendAssociation*      AddAnimationAndSync                     ( RpClump * pClump, CAnimBlendAssociation * pAssociation, AssocGroupId animGroup, AnimationId animID );
-    CAnimBlendAssociation*      BlendAnimation                          ( RpClump * pClump, AssocGroupId animGroup, AnimationId animID, float fBlendDelta );
-    CAnimBlendAssociation*      BlendAnimation                          ( RpClump * pClump, CAnimBlendHierarchy * pHierarchy, int ID, float fBlendDelta );
+    CAnimBlendAssociation*      CreateAnimAssociation( AssocGroupId animGroup, AnimationId animID );
+    CAnimBlendAssociation*      GetAnimAssociation( AssocGroupId animGroup, AnimationId animID );
+    CAnimBlendAssociation*      GetAnimAssociation( AssocGroupId animGroup, const char * szAnimName );
+    CAnimBlendAssociation*      AddAnimation( RpClump * pClump, AssocGroupId animGroup, AnimationId animID );
+    CAnimBlendAssociation*      AddAnimation( RpClump * pClump, CAnimBlendHierarchy *, int ID );
+    CAnimBlendAssociation*      AddAnimationAndSync( RpClump * pClump, CAnimBlendAssociation * pAssociation, AssocGroupId animGroup, AnimationId animID );
+    CAnimBlendAssociation*      BlendAnimation( RpClump * pClump, AssocGroupId animGroup, AnimationId animID, float fBlendDelta );
+    CAnimBlendAssociation*      BlendAnimation( RpClump * pClump, CAnimBlendHierarchy * pHierarchy, int ID, float fBlendDelta );
+    CAnimBlendAssociation*      BlendAnimation( RpClump *clump, CAnimBlendHierarchySAInterface *hier, int id, float delta );
     
-    void                        AddAnimBlockRef                         ( int ID );
-    void                        RemoveAnimBlockRef                      ( int ID );
-    void                        RemoveAnimBlockRefWithoutDelete         ( int ID );
-    unsigned int                GetNumRefsToAnimBlock                   ( int ID );
-    void                        RemoveAnimBlock                         ( int ID );
-    CAnimBlockSAInterface*      GetAnimBlock                            ( unsigned short id );
-    CAnimBlockSAInterface*      GetAnimBlockByName                      ( const char *name );
-    unsigned int                GetAnimBlockIndex                       ( const char *name );
+    void                        AddAnimBlockRef( int ID );
+    void                        RemoveAnimBlockRef( int ID );
+    void                        RemoveAnimBlockRefWithoutDelete( int ID );
+    unsigned int                GetNumRefsToAnimBlock( int ID ) const;
+    void                        RemoveAnimBlock( int ID );
+    CAnimBlockSAInterface*      GetAnimBlock( unsigned short id );
+    CAnimBlockSAInterface*      GetAnimBlockByName( const char *name ) const;
+    int                         GetAnimBlockIndex( const char *name ) const;
     
-    AnimAssocDefinition*        AddAnimAssocDefinition                  ( const char * szBlockName, const char * szAnimName, AssocGroupId animGroup, AnimationId animID, AnimDescriptor * pDescriptor );
-    void                        ReadAnimAssociationDefinitions          ( void );
-    void                        CreateAnimAssocGroups                   ( void );
+    AnimAssocDefinition*        AddAnimAssocDefinition( const char * szBlockName, const char * szAnimName, AssocGroupId animGroup, AnimationId animID, AnimDescriptor * pDescriptor );
+    void                        ReadAnimAssociationDefinitions();
+    void                        CreateAnimAssocGroups();
 
-    void                        UncompressAnimation                     ( CAnimBlendHierarchy * pHierarchy );
-    void                        RemoveFromUncompressedCache             ( CAnimBlendHierarchy * pHierarchy );
+    void                        UncompressAnimation( CAnimBlendHierarchy * pHierarchy );
+    void                        RemoveFromUncompressedCache( CAnimBlendHierarchy * pHierarchy );
 
-    void                        LoadAnimFile                            ( const char * szFile );
-    void                        LoadAnimFile                            ( RwStream * pStream, bool b1, const char * sz1 );
-    void                        LoadAnimFiles                           ( void );
-    void                        RemoveLastAnimFile                      ( void );
+    void                        LoadAnimFile( const char * szFile );
+    void                        LoadAnimFile( RwStream * pStream, bool b1, const char * sz1 );
+    void                        LoadAnimFiles();
+    void                        RemoveLastAnimFile();
 
     // Non members
-    bool                        HasAnimGroupLoaded                      ( AssocGroupId groupID );
-    CAnimBlendAssociation*      RpAnimBlendClumpGetFirstAssociation     ( RpClump * pClump );
-    CAnimBlendAssociation*      RpAnimBlendClumpGetAssociation          ( RpClump * pClump, const char * szAnimName );
-    CAnimBlendAssociation*      RpAnimBlendClumpGetAssociation          ( RpClump * pClump, AnimationId animID );
-    CAnimBlendAssociation*      RpAnimBlendGetNextAssociation           ( CAnimBlendAssociation * pAssociation );
-    unsigned int                         RpAnimBlendClumpGetNumAssociations      ( RpClump * pClump );
-    void                        RpAnimBlendClumpUpdateAnimations        ( RpClump * pClump, float f1, bool b1 );
+    bool                        HasAnimGroupLoaded( AssocGroupId groupID );
+    CAnimBlendAssociationSA*    RpAnimBlendClumpGetFirstAssociation( RpClump *pClump );
+    CAnimBlendAssociationSA*    RpAnimBlendClumpGetAssociation( RpClump *pClump, const char *szAnimName );
+    CAnimBlendAssociationSA*    RpAnimBlendClumpGetAssociation( RpClump *pClump, AnimationId animID );
+    CAnimBlendAssociationSA*    RpAnimBlendGetNextAssociation( CAnimBlendAssociation *pAssociation );
+    unsigned int                RpAnimBlendClumpGetNumAssociations( RpClump *pClump ) const;
+    void                        RpAnimBlendClumpUpdateAnimations( RpClump *pClump, float f1, bool b1 );
 
     // MTA members
-    CAnimBlendAssociation*      GetAnimBlendAssociation                 ( CAnimBlendAssociationSAInterface * pInterface );
-    CAnimBlendAssocGroup*       GetAnimBlendAssocGroup                  ( CAnimBlendAssocGroupSAInterface * pInterface );
-    CAnimBlock*                 GetAnimBlock                            ( CAnimBlockSAInterface * pInterface );
-    CAnimBlendHierarchy*        GetAnimBlendHierarchy                   ( CAnimBlendHierarchySAInterface * pInterface );
+    CAnimBlendAssociationSA*    GetAnimBlendAssociation( CAnimBlendAssociationSAInterface *pInterface );
+    CAnimBlendAssocGroupSA*     GetAnimBlendAssocGroup( CAnimBlendAssocGroupSAInterface *pInterface );
+    CAnimBlockSA*               GetAnimBlock( CAnimBlockSAInterface *pInterface );
+    CAnimBlendHierarchySA*      GetAnimBlendHierarchy( CAnimBlendHierarchySAInterface *pInterface );
 
 private:
-    CAnimBlendAssocGroup*       m_pAnimAssocGroups[MAX_ANIM_GROUPS];
-    CAnimBlendHierarchy*        m_pAnimations[MAX_ANIMATIONS];
-    CAnimBlock*                 m_pAnimBlocks[MAX_ANIM_BLOCKS];
+    CAnimBlendAssocGroupSA*     m_pAnimAssocGroups[MAX_ANIM_GROUPS];
+    CAnimBlendHierarchySA*      m_pAnimations[MAX_ANIMATIONS];
+    CAnimBlockSA*               m_pAnimBlocks[MAX_ANIM_BLOCKS];
 
-    std::list <CAnimBlendAssociation*> m_Associations;
+    std::list <CAnimBlendAssociationSA*> m_Associations;
 };
 
 #endif

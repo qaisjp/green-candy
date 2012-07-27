@@ -28,7 +28,7 @@ struct SDefaultCommandBind
     char szArguments[20];
 };
 
-class CKeyBinds : public CKeyBindsInterface, public virtual CControlInterface
+class CKeyBinds : public CKeyBindsInterface
 {
 public:
                             CKeyBinds( class CCore* pCore );

@@ -24,9 +24,9 @@ public:
 
     CPadSAInterface*        GetJoypad( unsigned int index );
 
-    void                    GetFootControl( CPedSA& ped, CControllerState& cs );
-    void                    GetVehicleControl( const CControlInterface& states, CPedSA& ped, CControllerState& cs );
-    void                    UpdateLocalJoypad( const CControlInterface& states, CPedSA& ped );
+    void                    GetFootControl( const CControlInterface& states, const CPedSA& ped, CControllerState& cs ) const;
+    void                    GetVehicleControl( const CControlInterface& states, CPedSA& ped, CControllerState& cs ) const;
+    void                    UpdateLocalJoypad( CPedSA& ped );
     void                    UpdateJoypad( const CControlInterface& states, CPedSA& ped );
 
 private:

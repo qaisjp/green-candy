@@ -15,7 +15,6 @@
 
 class CClientColCuboid : public CClientColShape
 {
-    DECLARE_CLASS( CClientColCuboid, CClientColShape )
 public:
                             CClientColCuboid        ( CClientManager* pManager, ElementID ID, const CVector& vecPosition, const CVector& vecSize );
 

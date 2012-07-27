@@ -12,6 +12,10 @@
 #ifndef __CGAME_CAM
 #define __CGAME_CAM
 
+class CEntity;
+class CVehicle;
+class CPed;
+
 class CCam
 {
 public:

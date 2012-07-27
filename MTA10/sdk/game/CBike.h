@@ -19,7 +19,7 @@ class CBike : public virtual CVehicle
 public:
     virtual                     ~CBike()    {};
 
-    virtual unsigned char       GetBikeWheelStatus( unsigned char wheel ) = 0;
+    virtual unsigned char       GetBikeWheelStatus( unsigned char wheel ) const = 0;
     virtual void                SetBikeWheelStatus( unsigned char wheel, unsigned char status ) = 0;
 };
 

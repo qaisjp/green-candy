@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientDummy.h
 *  PURPOSE:     Dummy entity class
 *  DEVELOPERS:  Chris McArthur <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -15,11 +16,12 @@
 
 #include "CClientEntity.h"
 
+#define LUACLASS_DUMMY  45
+
 class CClientDummy : public CClientEntity
 {
-    DECLARE_CLASS( CClientDummy, CClientEntity )
 public:
-                                CClientDummy            ( class CClientManager* pManager, ElementID ID, const char * szTypeName );
+                                CClientDummy            ( class CClientManager* pManager, ElementID ID, const char *szTypeName, LuaClass& root, bool system );
                                 ~CClientDummy           ( void );
     
     void                        Unlink                  ( void );

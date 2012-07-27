@@ -12,7 +12,6 @@
 
 class CClientShader : public CClientMaterial
 {
-    DECLARE_CLASS( CClientShader, CClientMaterial )
 public:
                             CClientShader           ( CClientManager* pManager, ElementID ID, CShaderItem* pShaderItem );
 

@@ -13,6 +13,8 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
+CVehicleSeatPlacementPool **ppVehicleSeatPlacementPool = (CVehicleSeatPlacementPool**)0x00B4E680;
+
 struct _licensePlate
 {
     char text[8];
@@ -94,6 +96,35 @@ CVehicleModelInfoSAInterface::~CVehicleModelInfoSAInterface()
 eModelType CVehicleModelInfoSAInterface::GetModelType()
 {
     return MODEL_VEHICLE;
+}
+
+void CVehicleModelInfoSAInterface::Init()
+{
+    CClumpModelInfoSAInterface::Init();
+
+    m_vehicleType = (eVehicleType)0xFFFFFFFF;
+    m_wheelModel = 0xFFFF;
+    m_steerAngle = 1000.0f;
+}
+
+void CVehicleModelInfoSAInterface::DeleteRwObject()
+{
+    if ( m_seatPlacement )
+    {
+        delete m_seatPlacement;
+        m_seatPlacement = NULL;
+    }
+
+    CClumpModelInfoSAInterface::DeleteRwObject();
+}
+
+RpClump* CVehicleModelInfoSAInterface::CreateRwObject()
+{
+    RpClump *clump = CClumpModelInfoSAInterface::CreateRwObject();
+
+    // TODO
+
+    return clump;
 }
 
 void CVehicleModelInfoSAInterface::SetAnimFile( const char *name )
@@ -669,6 +700,17 @@ CVehicleSeatPlacementSAInterface::CVehicleSeatPlacementSAInterface()
 
     m_unknown4 = 0;
     m_usageFlags = 0;
+}
+
+CVehicleSeatPlacementSAInterface::~CVehicleSeatPlacementSAInterface()
+{
+    // Call the destructor (TODO: into C++!)
+    __asm
+    {
+        mov ecx,this
+        mov eax,0x004C7410
+        call eax
+    }
 }
 
 void* CVehicleSeatPlacementSAInterface::operator new( size_t )

@@ -61,24 +61,24 @@ public:
 class CTaskManagerSA : public CTaskManager
 {
 public:
-                CTaskManagerSA( CTaskManagerSAInterface *taskManager, CPed *ped );
+                                CTaskManagerSA( CTaskManagerSAInterface *taskManager, CPed *ped );
 
-    CTaskManagerSAInterface*    GetInterface() { return m_interface; }
+    CTaskManagerSAInterface*    GetInterface()                                      { return m_interface; }
 
     void                        RemoveTask( eTaskPriority priority );
     void                        SetTask( CTaskSA* pTaskPrimary, eTaskPriority priority, bool bForceNewTask = false );
-    CTaskSA*                    GetTask( eTaskPriority priority );
-    CTaskSA*                    GetActiveTask();
-    CTaskSA*                    GetSimplestActiveTask();
-    CTaskSA*                    GetSimplestTask( eTaskPriority priority );
+    CTaskSA*                    GetTask( eTaskPriority priority ) const;
+    CTaskSA*                    GetActiveTask() const;
+    CTaskSA*                    GetSimplestActiveTask() const;
+    CTaskSA*                    GetSimplestTask( eTaskPriority priority ) const;
 
-    CTaskSA*                    FindActiveTaskByType( int iTaskType );
-    CTaskSA*                    FindTaskByType( eTaskPriority priority, int iTaskType );
+    CTaskSA*                    FindActiveTaskByType( int iTaskType ) const;
+    CTaskSA*                    FindTaskByType( eTaskPriority priority, int iTaskType ) const;
 
     void                        RemoveTaskSecondary( eTaskPriority priority );
     void                        SetTaskSecondary( CTaskSA* pTaskSecondary, int iType );
-    CTaskSA*                    GetTaskSecondary( int iType ); // TODO
-    bool                        HasTaskSecondary( const CTask* pTaskSecondary ); // TODO
+    CTaskSA*                    GetTaskSecondary( int iType ) const; // TODO
+    bool                        HasTaskSecondary( const CTask* pTaskSecondary ) const; // TODO
 
     void                        ClearTaskEventResponse();
     void                        Flush( eTaskPriority priority );

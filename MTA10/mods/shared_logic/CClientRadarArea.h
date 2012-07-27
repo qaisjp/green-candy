@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientRadarArea.h
@@ -12,6 +12,7 @@
 *               Chris McArthur <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -21,43 +22,44 @@
 #include "CClientEntity.h"
 #include <gui/CGUI.h>
 
+#define LUACLASS_RADARAREA  49
+
 class CClientRadarAreaManager;
 
 class CClientRadarArea : public CClientEntity
 {
-    DECLARE_CLASS( CClientRadarArea, CClientEntity )
     friend class CClientRadarAreaManager;
 
 public:
-                                CClientRadarArea            ( class CClientManager* pManager, ElementID ID );
-                                ~CClientRadarArea           ( void );
+                                CClientRadarArea( class CClientManager* pManager, ElementID ID, LuaClass& root );
+                                ~CClientRadarArea( void );
 
-    void                        Unlink                      ( void );
+    void                        Unlink( void );
 
-    inline eClientEntityType    GetType                     ( void ) const                      { return CCLIENTRADARAREA; };
+    inline eClientEntityType    GetType( void ) const                                   { return CCLIENTRADARAREA; };
 
-    inline const CVector2D&     GetPosition                 ( void ) const                      { return m_vecPosition; };
-    inline void                 GetPosition                 ( CVector2D& vecBottomLeft ) const  { vecBottomLeft = m_vecPosition; };
-    inline void                 GetPosition                 ( CVector& vecBottomLeft ) const    { vecBottomLeft = CVector ( m_vecPosition.fX, m_vecPosition.fY, 0.0f ); };
-    inline void                 SetPosition                 ( const CVector2D& vecBottomLeft )  { m_vecPosition = vecBottomLeft; };
-    inline void                 SetPosition                 ( const CVector& vecBottomLeft )    { m_vecPosition = CVector2D ( vecBottomLeft.fX, vecBottomLeft.fY ); };
+    inline const CVector2D&     GetPosition( void ) const                               { return m_vecPosition; };
+    inline void                 GetPosition( CVector2D& vecBottomLeft ) const           { vecBottomLeft = m_vecPosition; };
+    inline void                 GetPosition( CVector& vecBottomLeft ) const             { vecBottomLeft = CVector ( m_vecPosition.fX, m_vecPosition.fY, 0.0f ); };
+    inline void                 SetPosition( const CVector2D& vecBottomLeft )           { m_vecPosition = vecBottomLeft; };
+    inline void                 SetPosition( const CVector& vecBottomLeft )             { m_vecPosition = CVector2D ( vecBottomLeft.fX, vecBottomLeft.fY ); };
 
-    inline const CVector2D&     GetSize                     ( void ) const                      { return m_vecSize; };
-    inline void                 GetSize                     ( CVector2D& vecSize )              { vecSize = m_vecSize; };
-    inline void                 SetSize                     ( const CVector2D& vecSize )        { m_vecSize = vecSize; };
+    inline const CVector2D&     GetSize( void ) const                                   { return m_vecSize; };
+    inline void                 GetSize( CVector2D& vecSize )                           { vecSize = m_vecSize; };
+    inline void                 SetSize( const CVector2D& vecSize )                     { m_vecSize = vecSize; };
 
-    inline SColor               GetColor                    ( void ) const                      { return m_Color; };
-    void                        SetColor                    ( const SColor color )              { m_Color = color; };
+    inline SColor               GetColor( void ) const                                  { return m_Color; };
+    void                        SetColor( const SColor color )                          { m_Color = color; };
 
-    inline bool                 IsFlashing                  ( void ) const                      { return m_bFlashing; };
-    inline void                 SetFlashing                 ( bool bFlashing )                  { m_bFlashing = bFlashing; };
+    inline bool                 IsFlashing( void ) const                                { return m_bFlashing; };
+    inline void                 SetFlashing( bool bFlashing )                           { m_bFlashing = bFlashing; };
 
-    void                        SetDimension                ( unsigned short usDimension );
-    void                        RelateDimension             ( unsigned short usDimension );
+    void                        SetDimension( unsigned short usDimension );
+    void                        RelateDimension( unsigned short usDimension );
 
 protected:
-    void                        DoPulse                     ( void );
-    void                        DoPulse                     ( bool bRender );
+    void                        DoPulse( void );
+    void                        DoPulse( bool bRender );
 
     CClientRadarAreaManager*    m_pRadarAreaManager;
 

@@ -18,16 +18,15 @@
 
 class CDeathmatchVehicle : public CClientVehicle
 {
-    DECLARE_CLASS( CDeathmatchVehicle, CClientVehicle )
 public:
-                                    CDeathmatchVehicle              ( CClientManager* pManager, class CUnoccupiedVehicleSync* pUnoccupiedVehicleSync, ElementID ID, unsigned short usVehicleModel  );
-                                    ~CDeathmatchVehicle             ( void );
+                                    CDeathmatchVehicle( CClientManager* pManager, LuaClass& root, bool system, class CUnoccupiedVehicleSync* pUnoccupiedVehicleSync, ElementID ID, unsigned short usVehicleModel );
+                                    ~CDeathmatchVehicle( void );
 
-    inline bool                     IsSyncing                       ( void )                    { return m_bIsSyncing; };
-    void                            SetIsSyncing                    ( bool bIsSyncing );
+    inline bool                     IsSyncing( void )                               { return m_bIsSyncing; };
+    void                            SetIsSyncing( bool bIsSyncing );
 
-    bool                            SyncDamageModel                 ( void );
-    void                            ResetDamageModelSync            ( void );
+    bool                            SyncDamageModel( void );
+    void                            ResetDamageModelSync( void );
 
 private:
     class CUnoccupiedVehicleSync*   m_pUnoccupiedVehicleSync;

@@ -524,7 +524,7 @@ typeError:
             if ( usModelID )
             {
                 std::vector < SString > nameList;
-                g_pGame->GetRenderWare ()->GetModelTextureNames ( nameList, usModelID );
+                g_pGame->GetTextureManager()->GetModelTextureNames ( nameList, usModelID );
 
                 lua_newtable ( L );
                 for ( uint i = 0 ; i < nameList.size () ; i++ )

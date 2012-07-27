@@ -47,17 +47,17 @@ public:
 class CPickupSA : public CPickup
 {
 private:
-    CPickupSAInterface  * internalInterface;
-    CObjectSA           * object;
+    CPickupSAInterface* internalInterface;
+    CObjectSA*          object;
     CBPickup            callback; // function to call when the pickup is picked up [not used yet/ever]
 public:
     // constructor  
                         CPickupSA(CPickupSAInterface * pickupInterface);
-    CPickupSAInterface  * GetInterface() { return internalInterface; }; // not to be exported
-    CObject             * GetObject() { return object; };
+    CPickupSAInterface* GetInterface() { return internalInterface; }; // not to be exported
+    CObject*            GetObject() { return object; };
 
     VOID                SetPosition (CVector * vecPosition);
-    CVector             * GetPosition (CVector * vecPosition);
+    CVector*            GetPosition (CVector * vecPosition);
     
     ePickupType         GetType();
     VOID                SetType(ePickupType type);

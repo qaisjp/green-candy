@@ -142,12 +142,12 @@ class CPed : public virtual CPhysical
 public:
     virtual                             ~CPed() {};
 
-    virtual void                        SetModelIndex( unsigned short modelId );
+    virtual void                        SetModelIndex( unsigned short modelId ) = 0;
 
     virtual unsigned int                GetPoolIndex() const = 0;
 
-    virtual CPedIntelligence*           GetPedIntelligence() const = 0;
-    virtual CPedSound*                  GetPedSound() const = 0;
+    virtual CPedIntelligence*           GetPedIntelligence() = 0;
+    virtual CPedSound*                  GetPedSound() = 0;
 
     virtual unsigned char               GetType() const = 0;
     virtual float                       GetHealth() const = 0;
@@ -181,6 +181,7 @@ public:
     virtual bool                        IsBeingJacked() const = 0;
     virtual bool                        IsLeavingVehicle() const = 0;
     virtual bool                        IsGettingOutOfVehicle() const = 0;
+    virtual bool                        IsPlayingAnimation( const char *name ) const = 0;
 
     virtual void                        SetType( unsigned char type ) = 0;
     virtual void                        SetHealth( float fHealth ) = 0;

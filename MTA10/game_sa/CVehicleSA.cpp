@@ -87,6 +87,10 @@ CVehicleControlSAInterface::CVehicleControlSAInterface()
     m_unk38 = NULL;
 }
 
+CVehicleControlSAInterface::~CVehicleControlSAInterface()
+{
+}
+
 CVehicleAudioSAInterface::CVehicleAudioSAInterface()
 {
     m_unk = NULL;
@@ -340,8 +344,6 @@ void CVehicleSA::Init()
         *((unsigned int*)VARS_CarCounts + i) = 0;
 
     BOOL_FLAG( GetInterface()->m_genericFlags, VEHGENERIC_TARGETABLE, true );
-
-    m_internalID = pGame->GetPools ()->GetVehicleRef( this );
 
     m_alpha = 255;
     m_vecGravity = CVector ( 0.0f, 0.0f, -1.0f );

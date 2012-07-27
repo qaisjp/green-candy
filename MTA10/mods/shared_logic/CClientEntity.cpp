@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientEntity.cpp
@@ -12,6 +12,9 @@
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -23,17 +26,92 @@ extern CClientGame* g_pClientGame;
 
 #pragma warning( disable : 4355 )   // warning C4355: 'this' : used in base member initializer list
 
-int CClientEntity::iCount = 0;
-
-CClientEntity::CClientEntity ( ElementID ID )
-        : ClassInit ( this )
-        , m_FromRootNode ( this )
-        , m_ChildrenNode ( this )
-        , m_Children ( &CClientEntity::m_ChildrenNode )
+static const luaL_Reg entity_interface[] =
 {
-    #ifdef MTA_DEBUG
-        ++iCount;
-    #endif
+    { NULL, NULL }
+};
+
+static int entity_constructor( lua_State *L )
+{
+    CClientEntity *entity = (CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_ENTITY, entity );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, entity_interface, 1 );
+
+    lua_pushlstring( L, "entity", 6 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+
+    lua_basicprotect( L );
+    return 0;
+}
+
+static int sysentity_index( lua_State *L )
+{
+    if ( lua_type( L, 2 ) == LUA_TSTRING )
+    {
+        std::string key = lua_getstring( L, 2 );
+
+        if ( key == "destroy" )
+            return 0;
+
+        if ( key == "setParent" )
+            return 0;
+    }
+
+    lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+    lua_insert( L, 1 );
+    lua_call( L, 2, 1 );
+    return 1;
+}
+
+static const luaL_Reg sysentity_interface[] =
+{
+    { "__index", sysentity_index },
+    { NULL, NULL }
+};
+
+static int sysentity_constructor( lua_State *L )
+{
+    CClientEntity *entity = (CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_SYSENTITY, entity );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, sysentity_interface, 1 );
+
+    lua_pushlstring( L, "sysentity", 9 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientEntity::CClientEntity( ElementID ID, bool system, LuaClass& root ) : LuaElement( root ),
+        m_FromRootNode( this ),
+        m_ChildrenNode( this ),
+        m_Children( &CClientEntity::m_ChildrenNode )
+{
+    lua_State *L = root.GetVM();
+
+    // Extend our entity instance
+    PushStack( root.GetVM() );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, entity_constructor, 1 );
+    luaJ_extend( L, -2, 0 );
+
+    if ( system )
+    {
+        lua_pushlightuserdata( L, this );
+        lua_pushcclosure( L, sysentity_constructor, 1 );
+        luaJ_extend( L, -2, 0 );
+    }
+    lua_pop( L, 1 );
+
+    m_bSystemEntity = system;
 
     // Init
     m_pManager = NULL;
@@ -78,10 +156,6 @@ CClientEntity::CClientEntity ( ElementID ID )
 
 CClientEntity::~CClientEntity ( void )
 {
-#ifdef MTA_DEBUG
-    --iCount;
-#endif
-
     // Make sure we won't get deleted later by the element deleter if we've been requested so
     if ( m_bBeingDeleted )
     {

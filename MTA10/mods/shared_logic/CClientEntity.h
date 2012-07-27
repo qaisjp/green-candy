@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientEntity.h
@@ -12,6 +12,9 @@
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -129,12 +132,13 @@ enum eCClientEntityClassTypes
     CLASS_CClientScreenSource,
 };
 
+#define LUACLASS_ENTITY     40
+#define LUACLASS_SYSENTITY  41
 
-class CClientEntity
+class CClientEntity : public LuaElement
 {
-    DECLARE_BASE_CLASS( CClientEntity )
 public:
-                                                CClientEntity( ElementID ID );
+                                                CClientEntity( ElementID ID, bool system, LuaClass& root );
     virtual                                     ~CClientEntity();
 
     virtual bool                                CanBeDeleted()                                  { return true; };
@@ -147,7 +151,6 @@ public:
     // System entity? A system entity means it can't be removed by the server
     // or the client scripts.
     inline bool                                 IsSystemEntity()                                { return m_bSystemEntity; };
-    inline void                                 MakeSystemEntity()                              { m_bSystemEntity = true; };
 
     virtual void                                Unlink() = 0;
 

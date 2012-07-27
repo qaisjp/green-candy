@@ -113,27 +113,29 @@ public:
                                     CEntitySAInterface();
                                     ~CEntitySAInterface();
 
-    virtual void __thiscall         AddRect( CRect rect );
-    virtual bool __thiscall         AddToWorld();
-    virtual void __thiscall         RemoveFromWorld();
-    virtual void __thiscall         SetStatic( bool enabled );
+    virtual void __thiscall         AddRect( CRect rect ) = 0;
+    virtual bool __thiscall         AddToWorld() = 0;
+    virtual void __thiscall         RemoveFromWorld() = 0;
+    virtual void __thiscall         SetStatic( bool enabled ) = 0;
     virtual void __thiscall         SetModelIndex( unsigned short id );
-    virtual void __thiscall         SetModelIndexNoCreate( unsigned short id );
-    virtual RwObject* __thiscall    CreateRwObject();
-    virtual void __thiscall         DeleteRwObject();
-    virtual void __thiscall         GetBoundingBox( CBoundingBox box );
-    virtual void __thiscall         ProcessControl();
-    virtual void __thiscall         ProcessCollision();
-    virtual void __thiscall         ProcessShift();
-    virtual bool __thiscall         TestCollision();
-    virtual void __thiscall         Teleport( float x, float y, float z, int unk );
-    virtual void __thiscall         PreFrame();
-    virtual bool __thiscall         Frame();
-    virtual void __thiscall         PreRender();
-    virtual void __thiscall         Render();
-    virtual void __thiscall         SetupLighting();
-    virtual void __thiscall         RemoveLighting();
-    virtual void __thiscall         Invalidate();
+    virtual void __thiscall         SetModelIndexNoCreate( unsigned short id ) = 0;
+    virtual RwObject* __thiscall    CreateRwObject() = 0;
+    virtual void __thiscall         DeleteRwObject() = 0;
+    virtual void __thiscall         GetBoundingBox( CBoundingBox box ) = 0;
+    virtual void __thiscall         ProcessControl() = 0;
+    virtual void __thiscall         ProcessCollision() = 0;
+    virtual void __thiscall         ProcessShift() = 0;
+    virtual bool __thiscall         TestCollision() = 0;
+    virtual void __thiscall         Teleport( float x, float y, float z, int unk ) = 0;
+    virtual void __thiscall         PreFrame() = 0;
+    virtual bool __thiscall         Frame() = 0;
+    virtual void __thiscall         PreRender() = 0;
+    virtual void __thiscall         Render() = 0;
+    virtual void __thiscall         SetupLighting() = 0;
+    virtual void __thiscall         RemoveLighting() = 0;
+    virtual void __thiscall         Invalidate() = 0;
+
+    void                            GetPosition( CVector& pos ) const;
 
     RwObject*               m_rwObject;         // 24
 
@@ -171,7 +173,6 @@ public:
     virtual                     ~CEntitySA();
 
     CEntitySAInterface*         m_pInterface;
-    unsigned int                m_internalID;
 
     inline CEntitySAInterface*  GetInterface()                                  { return m_pInterface; }
     inline const CEntitySAInterface*    GetInterface() const                    { return m_pInterface; }
@@ -197,8 +198,8 @@ public:
 
     bool                        IsOnScreen() const;
 
-    void                        SetUnderwater( bool bUnderwater );
-    bool                        GetUnderwater() const;
+    void                        SetUnderwater( bool bUnderwater )               { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_UNDERWATER, bUnderwater ); }
+    bool                        GetUnderwater() const                           { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_UNDERWATER ); }
 
     bool                        IsVisible() const                               { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_VISIBLE ); }
     void                        SetVisible( bool enabled )                      { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_VISIBLE, enabled ); }
@@ -208,9 +209,6 @@ public:
 
     void                        SetEntityStatus( eEntityStatus bStatus );
     eEntityStatus               GetEntityStatus() const;
-
-    RwFrame*                    GetFrameFromId( int id ) const;
-    RwMatrix*                   GetLTMFromId( int id ) const;
 
     RwObject*                   GetRwObject() const;
 
@@ -228,8 +226,6 @@ public:
     void                        MatrixConvertFromEulerAngles( float x, float y, float z, int unk );
     void                        MatrixConvertToEulerAngles( float& x, float& y, float& z, int unk ) const;
 
-    bool                        IsPlayingAnimation( const char *name ) const;
-
     void*                       GetStoredPointer() const                        { return m_pStoredPointer; };
     void                        SetStoredPointer( void *pointer )               { m_pStoredPointer = pointer; };
 
@@ -239,15 +235,10 @@ public:
     bool                        IsCollidableWith( CEntity *entity ) const;
     void                        SetCollidableWith( CEntity *entity, bool enable );
 
-    inline unsigned long        GetArrayID() const                              { return m_ulArrayID; }
-    inline void                 SetArrayID( unsigned long ulID )                { m_ulArrayID = ulID; }
-
 protected:
     void                        SetInterface( CEntitySAInterface *intf )        { m_pInterface = intf; };
 
     static unsigned long        FUNC_CClumpModelInfo__GetFrameFromId;
-
-    unsigned long               m_ulArrayID;
 
     void*                       m_pStoredPointer;
 
@@ -255,6 +246,8 @@ protected:
     disabledColl_t              m_disabledColl;
 
     bool                        m_beingDeleted; // to prevent it trying to delete twice
+
+public:
     bool                        m_doNotRemoveFromGame; // when deleted, if this is true, it won't be removed from the game
 };
 

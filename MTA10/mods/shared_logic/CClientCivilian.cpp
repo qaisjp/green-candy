@@ -1,19 +1,52 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientCivilian.cpp
 *  PURPOSE:     Civilian ped entity class
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
 #include <StdInc.h>
 
-CClientCivilian::CClientCivilian ( CClientManager* pManager, ElementID ID, int iModel ) : ClassInit ( this ), CClientEntity ( ID )
+static const luaL_Reg civilian_interface[] =
 {
+    { NULL, NULL }
+};
+
+static int luaconstructor_civilian( lua_State *L )
+{
+    CClientCivilian *cam = (CClientCivilian*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_CIVILIAN, cam );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, civilian_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "civilian", 8 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientCivilian::CClientCivilian ( CClientManager* pManager, ElementID ID, int iModel ) : CClientEntity ( ID, false, resMan )
+{
+    lua_State *L = resMan->GetVM();
+
+    // Lua boot
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_civilian, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     // Initialize members
     m_pManager = pManager;
     m_pCivilianManager = pManager->GetCivilianManager ();
@@ -29,7 +62,7 @@ CClientCivilian::CClientCivilian ( CClientManager* pManager, ElementID ID, int i
 }
 
 
-CClientCivilian::CClientCivilian ( CClientManager* pManager, ElementID ID, CCivilianPed * pCivilianPed ) : ClassInit ( this ), CClientEntity ( ID )
+CClientCivilian::CClientCivilian ( CClientManager* pManager, ElementID ID, CCivilianPed * pCivilianPed ) : CClientEntity ( ID, false, resMan )
 {
     // Initialize members
     m_pManager = pManager;

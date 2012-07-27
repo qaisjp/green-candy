@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientPickup.h
@@ -9,6 +9,7 @@
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -22,9 +23,10 @@ class CClientPickup;
 #include "CClientColShape.h"
 #include "CClientColCallback.h"
 
+#define LUACLASS_PICKUP     63
+
 class CClientPickup : public CClientStreamElement, private CClientColCallback
 {
-    DECLARE_CLASS( CClientPickup, CClientStreamElement )
     friend class CClientColShape;
 
 public:
@@ -93,41 +95,41 @@ public:
         WEAPON_INVALID = 0xFF,
     };
 
-                                CClientPickup               ( class CClientManager* pManager, ElementID ID, unsigned short usModel, CVector vecPosition = CVector ( 0, 0, 0 ) );
-                                ~CClientPickup              ( void );
+                                CClientPickup( class CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel, CVector vecPosition = CVector ( 0, 0, 0 ) );
+                                ~CClientPickup( void );
 
-    void                        Unlink                      ( void );
+    void                        Unlink( void );
 
-    inline eClientEntityType    GetType                     ( void ) const                      { return CCLIENTPICKUP; };
+    inline eClientEntityType    GetType( void ) const                                       { return CCLIENTPICKUP; };
 
-    inline unsigned short       GetModel                    ( void )                            { return m_usModel; };
+    inline unsigned short       GetModel( void )                                            { return m_usModel; };
 
-    inline CPickup *            GetGamePickup               ( void )                            { return m_pPickup; };
-    inline CObject *            GetGameObject               ( void )                            { return m_pObject; }
-    CEntity*                    GetGameEntity               ( void )                            { return m_pObject; }
-    const CEntity*              GetGameEntity               ( void ) const                      { return m_pObject; }
+    inline CPickup *            GetGamePickup( void )                                       { return m_pPickup; };
+    inline CObject *            GetGameObject( void )                                       { return m_pObject; }
+    CEntity*                    GetGameEntity( void )                                       { return m_pObject; }
+    const CEntity*              GetGameEntity( void ) const                                 { return m_pObject; }
 
-    inline const CVector&       GetPosition                 ( void )                            { return m_vecPosition; };
-    inline void                 GetPosition                 ( CVector& vecPosition ) const      { vecPosition = m_vecPosition; };
-    void                        SetPosition                 ( const CVector& vecPosition );
-    void                        SetModel                    ( unsigned short usModel );
+    inline const CVector&       GetPosition( void )                                         { return m_vecPosition; };
+    inline void                 GetPosition( CVector& vecPosition ) const                   { vecPosition = m_vecPosition; };
+    void                        SetPosition( const CVector& vecPosition );
+    void                        SetModel( unsigned short usModel );
 
-    inline bool                 IsVisible                   ( void )                            { return m_bVisible; };
-    void                        SetVisible                  ( bool bVisible );
+    inline bool                 IsVisible( void )                                           { return m_bVisible; };
+    void                        SetVisible( bool bVisible );
 
-    inline CClientColShape *    GetColShape                 ( void ) { return m_pCollision; }
+    inline CClientColShape *    GetColShape( void )                                         { return m_pCollision; }
 
-    void                        Callback_OnCollision        ( CClientColShape& Shape, CClientEntity& Entity );
-    void                        Callback_OnLeave            ( CClientColShape& Shape, CClientEntity& Entity );
+    void                        Callback_OnCollision( CClientColShape& Shape, CClientEntity& Entity );
+    void                        Callback_OnLeave( CClientColShape& Shape, CClientEntity& Entity );
 
 protected:
-    void                        StreamIn                    ( bool bInstantly );
-    void                        StreamOut                   ( void );
+    void                        StreamIn( bool bInstantly );
+    void                        StreamOut( void );
 
 private:
-    void                        Create                      ( void );
-    void                        Destroy                     ( void );
-    void                        ReCreate                    ( void );
+    void                        Create( void );
+    void                        Destroy( void );
+    void                        ReCreate( void );
 
     CClientPickupManager*       m_pPickupManager;
 

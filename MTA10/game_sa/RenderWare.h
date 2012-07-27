@@ -249,7 +249,7 @@ public:
     RwMatrix*               m_boneMatrices; // 12
     unsigned int            m_unknown3;     // 16
     void*                   m_unknown5;     // 20
-    RwV4d                   m_vertexInfo;   // 24
+    RwV4d*                  m_vertexInfo;   // 24
     unsigned int            m_unknown6;     // 28
     RpAnimation*            m_curAnim;      // 32, ???
     BYTE                    m_pad[28];      // 36
@@ -372,7 +372,19 @@ public:
     RwList <RwTexture>              textures;
     RwListEntry <RwTexDictionary>   globalTXDs;
 
-    bool                    ForAllTextures( bool (*callback)( RwTexture *tex, void *ud ), void *ud );
+    template <class type>
+    bool                    ForAllTextures( bool (*callback)( RwTexture *tex, type ud ), type ud )
+    {
+        RwListEntry <RwTexture> *child;
+
+        for ( child = textures.root.next; child != &textures.root; child = child->next )
+        {
+            if ( !callback( (RwTexture*)( (unsigned int)child - offsetof(RwTexture, TXDList) ), ud ) )
+                return false;
+        }
+
+        return true;
+    }
     RwTexture*              GetFirstTexture();
     RwTexture*              FindNamedTexture( const char *name );
 };

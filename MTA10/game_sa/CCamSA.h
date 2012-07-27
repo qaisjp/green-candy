@@ -167,8 +167,8 @@ public:
 
     CCamSAInterface*    GetInterface()                              { return m_pInterface; }
 
-    void                SetVehicleInterpolationSource( CVehicleSA *veh );
-    void                SetPedInterpolationSource( CPedSA *ped );
+    void                SetVehicleInterpolationSource( CVehicle *veh );
+    void                SetPedInterpolationSource( CPed *ped );
 
     CVector*            GetFront() const                            { return &m_pInterface->Front; }
     CVector*            GetUp() const                               { return &m_pInterface->Up; }

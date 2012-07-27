@@ -45,9 +45,9 @@ void CPedModelInfoSAInterface::DeleteRwObject()
     }
 }
 
-bool CPedModelInfoSAInterface::SetAnimFile( const char *name )
+void CPedModelInfoSAInterface::SetAnimFile( const char *name )
 {
-    return false;
+
 }
 
 void CPedModelInfoSAInterface::ConvertAnimFileIndex()
@@ -60,7 +60,7 @@ int CPedModelInfoSAInterface::GetAnimFileIndex()
     return -1;
 }
 
-CPedModelInfoSA::CPedModelInfoSA ( void ) : CModelInfoSA ()
+CPedModelInfoSA::CPedModelInfoSA() : CModelInfoSA ()
 {
     m_pPedModelInterface = new CPedModelInfoSAInterface;
 }

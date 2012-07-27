@@ -58,39 +58,39 @@ public:
 class CDamageManagerSA : public CDamageManager
 {
 private:
-    CDamageManagerSAInterface*          m_interface;;
-    class CVehicleSAInterface*          m_vehicle;
+    CDamageManagerSAInterface*          m_interface;
+    class CAutomobileSAInterface*       m_vehicle;
 
 public: 
-    CDamageManagerSA ( class CVehicleSAInterface *vehicle, CDamageManagerSAInterface *dmg )
+    CDamageManagerSA( class CAutomobileSAInterface *vehicle, CDamageManagerSAInterface *dmg )
     {
         m_interface = dmg;
         m_vehicle = vehicle;
     }
 
-    unsigned char   GetEngineStatus         ();
-    void            SetEngineStatus         ( unsigned char status );
+    unsigned char       GetEngineStatus() const;
+    void                SetEngineStatus( unsigned char status );
 
-    unsigned char   GetDoorStatus           ( eDoors bDoor );
-    void            SetDoorStatus           ( eDoors bDoor, unsigned char status );
+    unsigned char       GetDoorStatus( eDoors bDoor ) const;
+    void                SetDoorStatus( eDoors bDoor, unsigned char status );
 
-    unsigned char   GetWheelStatus          ( eWheels bWheel );
-    void            SetWheelStatus          ( eWheels bWheel, unsigned char status );
+    unsigned char       GetWheelStatus( eWheels bWheel ) const;
+    void                SetWheelStatus( eWheels bWheel, unsigned char status );
 
-    unsigned char   GetPanelStatus          ( unsigned char panel );
-    unsigned long   GetPanelStatus          ();
-    void            SetPanelStatus          ( unsigned char panel, unsigned char status );
-    void            SetPanelStatus          ( unsigned long ulStatus );
+    unsigned char       GetPanelStatus( unsigned char panel ) const;
+    unsigned long       GetPanelStatus() const;
+    void                SetPanelStatus( unsigned char panel, unsigned char status );
+    void                SetPanelStatus( unsigned long ulStatus );
 
-    unsigned char   GetLightStatus          ( unsigned char light );
-    unsigned char   GetLightStatus          ();
-    void            SetLightStatus          ( unsigned char light, unsigned char status );
-    void            SetLightStatus          ( unsigned char ucStatus );
+    unsigned char       GetLightStatus( unsigned char light ) const;
+    unsigned char       GetLightStatus() const;
+    void                SetLightStatus( unsigned char light, unsigned char status );
+    void                SetLightStatus( unsigned char ucStatus );
 
-    unsigned char   GetAeroplaneCompStatus  ( unsigned char id );
-    void            SetAeroplaneCompStatus  ( unsigned char id, unsigned char status );
+    unsigned char       GetAeroplaneCompStatus( unsigned char id ) const;
+    void                SetAeroplaneCompStatus( unsigned char id, unsigned char status );
 
-    void            FuckCarCompletely       ( bool keepWheels );
+    void                FuckCarCompletely( bool keepWheels );
 };
 
 #endif

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CFireSA.h
 *  PURPOSE:     Header file for fire class
@@ -9,6 +9,7 @@
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -26,51 +27,58 @@
 
 class FxSystem_c; // we don't actually define this anywhere
 
-class CFireSAInterface : public CFireInterface
+class CFireSAInterface
 {
 public:
-    BYTE                    bActive:1;
-    BYTE                    bCreatedByScript:1;
-    BYTE                    bMakesNoise:1;
-    BYTE                    bBeingExtinguished : 1;
-    BYTE                    bFirstGeneration : 1;
-    WORD                    ScriptReferenceIndex;
-    CVector                 vecPosition;
-    CEntitySAInterface      * entityTarget;
-    CEntitySAInterface      * entityCreator;
-    DWORD                   nTimeToBurn;
-    FLOAT                   Strength;
-    signed char             nNumGenerationsAllowed;
-    BYTE                    RemovalDist;
+    bool                    m_active : 1;
+    bool                    m_scripted : 1;
+    bool                    m_makeNoise : 1;
+    bool                    m_beingExtinguished : 1;
+    bool                    m_fresh : 1;
+    unsigned short          m_scriptReference;
+    CVector                 m_position;
+    CEntitySAInterface*     m_target;
+    CEntitySAInterface*     m_creator;
+    unsigned int            m_burnTime;
+    float                   m_strength;
+    char                    m_numGenerationsAllowed;
+    unsigned char           m_clipDistance;
 
-    FxSystem_c              * m_fxSysPtr;
+    FxSystem_c*             m_fxSysPtr;
 };
 
 class CFireSA : public CFire
 {
 private:
-    CFireSAInterface        * internalInterface;
+    CFireSAInterface*       m_interface;
 public:
     // constructor
-    CFireSA(CFireSAInterface * fireInterface) { this->internalInterface = fireInterface; }
+                                    CFireSA( CFireSAInterface *fire )               { m_interface = fire; }
 
-    VOID                    Extinguish (  );
-    CVector                 * GetPosition ( );
-    VOID                    SetPosition ( CVector & vecPosition );
-    VOID                    SetTimeToBurnOut ( DWORD dwTime );
-    DWORD                   GetTimeToBurnOut (  );
-    CEntity                 * GetCreator (  );
-    CEntity                 * GetEntityOnFire (  );
-    VOID                    SetTarget ( CEntity * entity );
-    BOOL                    IsIgnited (  );
-    BOOL                    IsFree (  );
-    VOID                    SetSilent ( BOOL bSilent );
-    BOOL                    IsBeingExtinguished ();
-    VOID                    Ignite( );
-    FLOAT                   GetStrength (  );
-    VOID                    SetStrength ( FLOAT fStrength );
-    VOID                    SetNumGenerationsAllowed ( char generations );
-    inline CFireInterface*  GetInterface ( ) { return this->internalInterface; }
+    CFireSAInterface*               GetInterface()                                  { return m_interface; }
+    const CFireSAInterface*         GetInterface() const                            { return m_interface; }
+
+    void                            SetPosition( const CVector& pos );
+    const CVector&                  GetPosition() const                             { return m_interface->m_position; }
+    CEntity*                        GetCreator() const;
+    CEntity*                        GetEntityOnFire() const;
+
+    void                            Extinguish();
+    void                            Ignite();
+    void                            SetTimeToBurnOut( unsigned int time )           { m_interface->m_burnTime = time; }
+    unsigned int                    GetTimeToBurnOut() const                        { return m_interface->m_burnTime; }
+
+    bool                            IsIgnited() const                               { return m_interface->m_active; }
+    bool                            IsFree() const                                  { return !m_interface->m_active && !m_interface->m_scripted; }
+    bool                            IsBeingExtinguished() const                     { return m_interface->m_beingExtinguished; }
+
+    void                            SetTarget( CEntity *entity );
+    void                            SetSilent( bool bSilent )                       { m_interface->m_makeNoise = !bSilent; }
+
+    float                           GetStrength() const                             { return m_interface->m_strength; }
+    void                            SetStrength( float fStrength )                  { m_interface->m_strength = fStrength; }
+
+    void                            SetNumGenerationsAllowed( char generations )    { m_interface->m_numGenerationsAllowed = generations; }
 };
 
 #endif

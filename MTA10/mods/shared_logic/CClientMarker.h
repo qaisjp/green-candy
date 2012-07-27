@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientMarker.h
@@ -9,6 +9,7 @@
 *               Christian Myhre Lundheim <>
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -25,9 +26,10 @@
 
 class CClientMarkerManager;
 
+#define LUACLASS_MARKER     59
+
 class CClientMarker : public CClientStreamElement, private CClientColCallback
 {
-    DECLARE_CLASS( CClientMarker, CClientStreamElement )
     friend class CClientMarkerManager;
     friend class CClientColShape;
 
@@ -42,7 +44,7 @@ public:
         MARKER_INVALID = 0xFF,
     };
 
-                                CClientMarker( class CClientManager* pManager, ElementID ID, int iMarkerType );
+                                CClientMarker( class CClientManager* pManager, ElementID ID, LuaClass& root, bool system, int iMarkerType );
                                 ~CClientMarker();
 
     void                        Unlink();

@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientProjectile.h
 *  PURPOSE:     Projectile entity class header
 *  DEVELOPERS:  Jax <>
 *               Ed Lyons <eai@opencoding.net>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -17,6 +18,8 @@ class CClientProjectile;
 
 #include "CClientEntity.h"
 #include "CClientCommon.h"
+
+#define LUACLASS_PROJECTILE     48
 
 class CProjectile;
 class CProjectileInfo;
@@ -49,7 +52,6 @@ public:
 
 class CClientProjectile : public CClientEntity
 {
-    DECLARE_CLASS( CClientProjectile, CClientEntity )
     friend class CClientProjectileManager;
     friend class CClientPed;
     friend class CClientVehicle;
@@ -63,7 +65,8 @@ public:
                                                            CVector * pvecOrigin,
                                                            CVector * pvecTarget,
                                                            float fForce,
-                                                           bool bLocal );
+                                                           bool bLocal,
+                                                           LuaClass& root );
                                         ~CClientProjectile();
 
     eClientEntityType                   GetType() const                                 { return CCLIENTPROJECTILE; }

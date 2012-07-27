@@ -19,22 +19,24 @@
 
 #include "StdInc.h"
 
+#define STEALTH_KILL_RANGE 2.5f
+
 bool CPlayerPedSAInterface::ShouldBeStealthAiming()
 {
     // Do we have a knife?
-    if ( GetCurrentWeaponType() != WEAPONTYPE_KNIFE )
+    if ( m_currentWeapon != WEAPONTYPE_KNIFE )
         return false;
 
-    CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds();
-    SBindableGTAControl* pAimControl = pKeyBinds->GetBindableFromIndex( CONTROL_AIM_WEAPON );
+    CKeyBindsInterface* pKeyBinds = core->GetKeyBinds();
+    SBindableGTAControl* pAimControl = pKeyBinds->GetBindable( CONTROL_AIM_WEAPON );
 
     if ( !pAimControl->bState )
         return false;
 
     // We need to be either crouched, walking or standing
-    SBindableGTAControl *pWalkControl = pKeyBinds->GetBindableFromIndex( CONTROL_WALK );
+    SBindableGTAControl *pWalkControl = pKeyBinds->GetBindable( CONTROL_WALK );
 
-    if ( m_pPlayerPed->GetRunState() != 1 && m_pPlayerPed->GetRunState() != 4 || !pWalkControl->bState )
+    if ( m_runState != 1 && m_runState != 4 || !pWalkControl->bState )
         return false;
 
     // Do we have a target ped?
@@ -44,7 +46,7 @@ bool CPlayerPedSAInterface::ShouldBeStealthAiming()
     // Are we close enough to the target?
     CVector pos, pos2;
     GetPosition( pos );
-    pTargetPed->GetPosition( pos2 );
+    m_target->GetPosition( pos2 );
 
     pos -= pos2;
 
@@ -56,7 +58,7 @@ bool CPlayerPedSAInterface::ShouldBeStealthAiming()
         return false;
 
     // GTA:SA checks for stealth killing
-    return m_pedIntelligence->TestForStealthKill( (CPedSAInterface*)m_target, false );
+    return m_intelligence->TestForStealthKill( (CPedSAInterface*)m_target, false );
 }
 
 void CPlayerPedSAInterface::OnFrame()
@@ -140,49 +142,41 @@ CWanted* CPlayerPedSA::GetWanted()
     return m_pWanted;
 }
 
-float CPlayerPedSA::GetSprintEnergy()
+void CPlayerPedSA::SetSprintEnergy( float energy )
+{
+    m_pData->m_fSprintEnergy = energy;
+}
+
+float CPlayerPedSA::GetSprintEnergy() const
 {
     return m_pData->m_fSprintEnergy;
 }
 
-void CPlayerPedSA::SetSprintEnergy( float fSprintEnergy )
-{
-    m_pData->m_fSprintEnergy = fSprintEnergy;
-}
-
 void CPlayerPedSA::SetInitialState()
 {
-    DWORD dwUnknown = 1;
     DWORD dwFunction = FUNC_SetInitialState;
     DWORD dwThis = (DWORD) m_pInterface;
     _asm
     {
-        push    dwUnknown
+        push    1
         mov     ecx, dwThis
         call    dwFunction
     }
 
     // Avoid direction locks for respawning after a jump
-    GetPlayerPedInterface ()->pedFlags.bIsLanding = false;
+    GetInterface()->m_pedFlags.bIsLanding = false;
     // Avoid direction locks for respawning after a sprint stop
-    GetPlayerPedInterface ()->fRotationSpeed = 7.5;
+    GetInterface()->m_rotationSpeed = 7.5;
     // This seems to also be causing some movement / direction locks
-    GetPlayerPedInterface()->pedFlags.bStayInSamePlace = false;
-}
-
-eMoveAnim CPlayerPedSA::GetMoveAnim()
-{
-    CPedSAInterface *pedInterface = ( CPedSAInterface * ) this->GetInterface();
-    return (eMoveAnim)pedInterface->iMoveAnimGroup;
+    SetStayInSamePlace( false );
 }
 
 void CPlayerPedSA::SetMoveAnim( eMoveAnim iAnimGroup )
 {
     // Set the the new move animation group
-    CPedSAInterface *pedInterface = ( CPedSAInterface * ) this->GetInterface();
-    pedInterface->iMoveAnimGroup = (int)iAnimGroup;
+    GetInterface()->m_moveAnimGroup = iAnimGroup;
 
-    DWORD dwThis = ( DWORD ) pedInterface;
+    DWORD dwThis = (DWORD)GetInterface();
     DWORD dwFunc = FUNC_CPlayerPed_ReApplyMoveAnims;
     _asm
     {
