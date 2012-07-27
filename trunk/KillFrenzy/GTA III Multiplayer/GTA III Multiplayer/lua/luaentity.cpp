@@ -163,6 +163,8 @@ CGameEntity::CGameEntity( LuaClass& root, bool system, CEntity& entity ) : m_ent
         lua_pushcclosure( L, sysentity_constructor, 1 );
         luaJ_extend( L, -2, 0 );
     }
+	
+	lua_pop( L, 1 );	// TODO: I forgot to add stack decrementors! FIXFIX
 
     m_system = system;
 }

@@ -630,7 +630,7 @@ public:
     bool                        CanPedJumpOutCar( CPed *ped ) const                     { return GetInterface()->CanPedJumpOut( dynamic_cast <CPedSA*> ( ped )->GetInterface() ); }
     bool                        CanPedLeanOut( CPed *ped ) const;
     bool                        CanPedStepOutCar( bool unk ) const                      { return GetInterface()->CanPedStepOut( unk ); }
-    bool                        CarHasRoof() const                                      { GetInterface()->IsRoofPresent(); }
+    bool                        CarHasRoof() const                                      { return GetInterface()->IsRoofPresent(); }
     bool                        GetTowBarPos( CVector& pos ) const                      { return GetInterface()->GetTowbarPosition( pos, 1, 0 ); }
     bool                        GetTowHitchPos( CVector& pos ) const                    { return GetInterface()->GetTowHitchPosition( pos, 1, 0 ); }
     bool                        SetTowLink( CVehicle *vehicle )                         { return GetInterface()->SetTowLink( dynamic_cast <CVehicleSA*> ( vehicle )->GetInterface(), 1 ); }
@@ -641,8 +641,8 @@ public:
     void                        BlowUpCutSceneNoExtras( unsigned int unk1, unsigned int unk2, unsigned int unk3, unsigned int unk4 )    { GetInterface()->BlowWithCutscene( unk1, unk2, unk3, unk4 ); }
     virtual void                RecalculateSuspensionLines()                            { GetInterface()->SetupSuspension(); }
 
-    CVehicleSA*                 GetTowedVehicle() const;
-    CVehicleSA*                 GetTowedByVehicle() const;
+    CVehicle*                   GetTowedVehicle() const;
+    CVehicle*                   GetTowedByVehicle() const;
 
     void                        SetExplodeTime( unsigned long ulTime )                  { GetInterface()->m_explodeTime = ulTime; }
     unsigned long               GetExplodeTime() const                                  { return GetInterface()->m_explodeTime; }
@@ -671,7 +671,7 @@ public:
     bool                        IsUpsideDown() const                                    { return GetInterface()->m_matrix->up.fZ <= -0.9; }
     void                        MakeDirty( CColPoint *point );
 
-    virtual void                PlaceOnRoadProperly();
+    virtual void                PlaceOnRoadProperly()                                   {}
 
     void                        SetRemap( int iRemap );
     int                         GetRemapIndex() const;

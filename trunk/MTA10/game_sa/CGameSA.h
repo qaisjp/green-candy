@@ -98,11 +98,11 @@ class CGameSA : public CGame
     friend class COffsets;
 
 private:
-    CWeaponInfo*        WeaponInfos[NUM_WeaponInfosTotal];
+    CWeaponInfoSA*      WeaponInfos[NUM_WeaponInfosTotal];
     CModelInfoSA        ModelInfo[MAX_MODELS];
 public:
-    CGameSA(); // constructor
-    ~CGameSA ();
+                                        CGameSA(); // constructor
+                                        ~CGameSA();
 
     inline CPoolsSA*                    GetPools()                      { return m_pPools; };
     inline CPlayerInfoSA*               GetPlayerInfo()                 { return m_pPlayerInfo; };

@@ -70,7 +70,7 @@ bool CAERadioTrackManagerSA::IsRadioOn()
     DEBUG_TRACE("bool CAERadioTrackManagerSA::IsRadioOn()");
 
     DWORD dwFunc = FUNC_IsRadioOn;
-    BYTE bReturn = 0;
+    bool bReturn;
 
     _asm
     {

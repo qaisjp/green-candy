@@ -33,20 +33,21 @@
 class CFireManagerSA : public CFireManager
 {
 private:
-    CFireSA                 * Fires[MAX_FIRES];
+    CFireSA*                Fires[MAX_FIRES];
+
 public:
     // constructor
     CFireManagerSA();
     ~CFireManagerSA ( void );
 
-    VOID                    ExtinguishPoint ( CVector & vecPosition, float fRadius );
-    CFire                   * StartFire ( CEntity * entityTarget, CEntity * entityCreator, float fSize );
-    CFire                   * StartFire ( CVector & vecPosition, float fSize );
-    VOID                    ExtinguishAllFires (  );
-    CFire                   * GetFire ( DWORD ID );
-    DWORD                   GetFireCount (  ); 
-    CFire                   * FindFreeFire (  );
-    CFire                   * GetFire ( CFireSAInterface * fire );
+    void                    ExtinguishPoint( CVector & vecPosition, float fRadius );
+    CFireSA*                StartFire( CEntity * entityTarget, CEntity * entityCreator, float fSize );
+    CFireSA*                StartFire( CVector & vecPosition, float fSize );
+    void                    ExtinguishAllFires();
+    CFireSA*                GetFire( DWORD ID );
+    unsigned int            GetFireCount(); 
+    CFireSA*                FindFreeFire();
+    CFireSA*                GetFire( CFireSAInterface * fire );
 };
 
 #endif

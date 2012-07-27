@@ -18,7 +18,7 @@ void CAtomicModelInfoSA::SetAtomic( RpAtomic *atomic )
     // TODO
 }
 
-void CAtomicModelInfoSA::SetupPipeline( RpAtomic *link )
+void CDamageAtomicModelInfoSA::SetupPipeline( RpAtomic *link )
 {
     m_atomicLink = link;
 

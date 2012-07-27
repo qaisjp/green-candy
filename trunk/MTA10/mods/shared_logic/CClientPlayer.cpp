@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientPlayer.cpp
@@ -12,13 +12,46 @@
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               Chris McArthur <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
 #include <StdInc.h>
 
-CClientPlayer::CClientPlayer ( CClientManager* pManager, ElementID ID, bool bIsLocalPlayer ) : ClassInit ( this ), CClientPed ( pManager, 0, ID, bIsLocalPlayer )
+static const luaL_Reg player_interface[] =
 {
+    { NULL, NULL }
+};
+
+static int luaconstructor_player( lua_State *L )
+{
+    CClientPlayer *player = (CClientPlayer*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_PLAYER, player );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, player_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "player", 6 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientPlayer::CClientPlayer( CClientManager* pManager, ElementID ID, bool bIsLocalPlayer ) : CClientPed( pManager, 0, ID, *resMan, true, bIsLocalPlayer )
+{
+    // Lua instancing
+    lua_State *L = resMan->GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_player, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     // Initialize
     m_pManager = pManager;
     m_bIsLocalPlayer = bIsLocalPlayer;

@@ -86,5 +86,5 @@ void COffsets::InitializeCommon10 ( void )
 
     CSettingsSA::FUNC_SetCurrentVideoMode =                     0x745C70; // may not be common?
 
-    CEntitySA::FUNC_CClumpModelInfo__GetFrameFromId = 0x4C53C0;
+    //CEntitySA::FUNC_CClumpModelInfo__GetFrameFromId = 0x4C53C0;
 }

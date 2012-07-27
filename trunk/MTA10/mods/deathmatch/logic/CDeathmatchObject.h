@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CDeathmatchObject.h
 *  PURPOSE:     Header for deathmatch object class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -18,32 +19,31 @@
 
 class CDeathmatchObject : public CClientObject
 {
-    DECLARE_CLASS( CDeathmatchObject, CClientObject )
 public:
-                                        CDeathmatchObject               ( CClientManager* pManager, class CMovingObjectsManager* pMovingObjectsManager, class CObjectSync* pObjectSync, ElementID ID, unsigned short usModel );
-                                        ~CDeathmatchObject              ( void );
+                                        CDeathmatchObject( CClientManager* pManager, LuaClass& root, bool system, class CMovingObjectsManager* pMovingObjectsManager, class CObjectSync* pObjectSync, ElementID ID, unsigned short usModel );
+                                        ~CDeathmatchObject( void );
 
     // CClientEntity interface
-    void                                SetPosition                     ( const CVector& vecPosition );
+    void                                SetPosition( const CVector& vecPosition );
 
     // CClientObject interface
-    void                                SetRotationRadians              ( const CVector& vecRotation );
-    void                                SetOrientation                  ( const CVector& vecPosition, const CVector& vecRotationRadians );
+    void                                SetRotationRadians( const CVector& vecRotation );
+    void                                SetOrientation( const CVector& vecPosition, const CVector& vecRotationRadians );
 
-    void                                StartMovement                   ( const CPositionRotationAnimation& a_rMoveAnimation ); 
-    void                                UpdateMovement                  ( void );
-    void                                StopMovement                    ( void );
+    void                                StartMovement( const CPositionRotationAnimation& a_rMoveAnimation ); 
+    void                                UpdateMovement( void );
+    void                                StopMovement( void );
     
-    inline bool                         IsMoving                        ( void )        { return m_pMoveAnimation != NULL; };
+    inline bool                         IsMoving( void )                                            { return m_pMoveAnimation != NULL; };
 
-    void                                UpdateContactingBegin           ( const CVector& vecPreviousPosition, const CVector& vecPreviousRotation );
-    void                                UpdateContacting                ( const CVector& vecCenterOfRotation, const CVector& vecFrameTranslation, const CVector& vecFrameRotation );
+    void                                UpdateContactingBegin( const CVector& vecPreviousPosition, const CVector& vecPreviousRotation );
+    void                                UpdateContacting( const CVector& vecCenterOfRotation, const CVector& vecFrameTranslation, const CVector& vecFrameRotation );
 
 protected:
     class CMovingObjectsManager*        m_pMovingObjectsManager;
     class CObjectSync*                  m_pObjectSync;
 
-    void                                _StopMovement                    ( bool a_bUnregister );
+    void                                _StopMovement( bool a_bUnregister );
    
     CPositionRotationAnimation*         m_pMoveAnimation;
 };

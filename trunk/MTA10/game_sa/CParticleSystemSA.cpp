@@ -21,6 +21,7 @@ static void InitParticleData( CEffectDataSAInterface *block )
 
 void CParticleSystemSAInterface::Init()
 {
+#if 0
     unsigned int n;
 
     new (&m_memory) CEffectStackSA();
@@ -34,11 +35,14 @@ void CParticleSystemSAInterface::Init()
     ForEachBlock(
         m_effects = (CParticleDataSAInterface*)m_particles.AllocateInt( sizeof( CParticleDataSAInterface ) * MAX_PARTICLE_DATA ), 
         MAX_PARTICLE_DATA, sizeof( CEffectDataSAInterface ), InitParticleData );
+#endif
 }
 
 void CParticleSystemSAInterface::Shutdown()
 {
+#if 0
     m_particles.~CAlignedStackSA();
+#endif
 }
 
 void CParticleSystemSAInterface::LoadDefinitions( const char *filename )
@@ -49,7 +53,7 @@ void CParticleSystemSAInterface::LoadDefinitions( const char *filename )
 CParticleSystemSA::CParticleSystemSA()
 {
     // Do not let GTA SA load particles
-    *(unsigned char*)FUNC_InitParticles = 0xC4;
+    //*(unsigned char*)FUNC_InitParticles = 0xC4;
 
     pParticleSystem->Init();
 }

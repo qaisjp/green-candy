@@ -22,7 +22,7 @@ CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()
 {
     DEBUG_TRACE("CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()");
 
-    return (CPlayerPed*)VAR_PlayerPed;
+    return (CPlayerPedSA*)VAR_PlayerPed;
 }
 
 CWantedSA* CPlayerInfoSA::GetWanted()
@@ -54,7 +54,7 @@ void CPlayerInfoSA::SetPlayerMoney( long value )
 {
     DEBUG_TRACE("void CPlayerInfoSA::SetPlayerMoney( long value )");
 
-    *(long)0xB7CE50 = value;
+    *(long*)0xB7CE50 = value;
 }
 
 void CPlayerInfoSA::GivePlayerParachute()
@@ -93,12 +93,12 @@ void CPlayerInfoSA::MakePlayerSafe( bool safe )
 
 void CPlayerInfoSA::CancelPlayerEnteringCars( CVehicleSA* veh )
 {
-    DEBUG_TRACE("void CPlayerInfoSA::CancelPlayerEnteringCars( CVehicle * vehicle )");
+    DEBUG_TRACE("void CPlayerInfoSA::CancelPlayerEnteringCars( CVehicle *veh )");
 
     DWORD dwFunction = FUNC_CancelPlayerEnteringCars;
     _asm
     {
-        push    vehicle
+        push    veh
         call    dwFunction
     }
 }
@@ -182,7 +182,7 @@ CVehicleSA* CPlayerInfoSA::GetRemoteVehicle()
 {
     DEBUG_TRACE("CVehicleSA* CPlayerInfoSA::GetRemoteVehicle()");
 
-    return pGame->GetPools()->GetVehicle( (CVehicleSAInterface*)VAR_PlayerRCCar );
+    return dynamic_cast <CVehicleSA*> ( pGame->GetPools()->GetVehicle( (CVehicleSAInterface*)VAR_PlayerRCCar ) );
 }
 
 float CPlayerInfoSA::GetFPSMoveHeading()

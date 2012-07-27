@@ -105,7 +105,6 @@ public:
     const SString&      GetTextureName              ( CD3DDUMMY* pD3DData );
 
 private:
-    static bool         StaticGetTextureCB          ( RwTexture* texture, std::vector < RwTexture* >* pTextureList );
     void                AddActiveTexture            ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData );
     void                RemoveTxdActiveTextures     ( ushort usTxdId );
     void                FindNewAssociationForTexInfo( STexInfo* pTexInfo );

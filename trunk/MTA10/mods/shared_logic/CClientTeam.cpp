@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientTeam.cpp
 *  PURPOSE:     Team entity class
 *  DEVELOPERS:  Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -13,8 +14,40 @@
 
 using std::list;
 
-CClientTeam::CClientTeam ( CClientManager* pManager, ElementID ID, char* szName, unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue ) : ClassInit ( this ), CClientEntity ( ID )
+static const luaL_Reg team_interface[] =
 {
+    { NULL, NULL }
+};
+
+static int luaconstructor_team( lua_State *L )
+{
+    CClientTeam *team = (CClientTeam*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_TEAM, team );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, team_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "team", 4 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientTeam::CClientTeam( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, char* szName, unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue ) : CClientEntity( ID, system, root )
+{
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_team, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     m_pManager = pManager;
     m_pTeamManager = pManager->GetTeamManager ();
 

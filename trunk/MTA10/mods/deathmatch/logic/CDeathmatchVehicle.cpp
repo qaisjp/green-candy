@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CDeathmatchVehicle.cpp
 *  PURPOSE:     Vehicle element interface
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -14,7 +15,7 @@
 #include "StdInc.h"
 #include "net/SyncStructures.h"
 
-CDeathmatchVehicle::CDeathmatchVehicle ( CClientManager* pManager, CUnoccupiedVehicleSync* pUnoccupiedVehicleSync, ElementID ID, unsigned short usVehicleModel ) : ClassInit ( this ), CClientVehicle ( pManager, ID, usVehicleModel )
+CDeathmatchVehicle::CDeathmatchVehicle( CClientManager* pManager, LuaClass& root, bool system, CUnoccupiedVehicleSync* pUnoccupiedVehicleSync, ElementID ID, unsigned short usVehicleModel ) : CClientVehicle( pManager, ID, root, system, usVehicleModel )
 {
     m_pUnoccupiedVehicleSync = pUnoccupiedVehicleSync;
     GetInitialDoorStates ( m_ucLastDoorStates );

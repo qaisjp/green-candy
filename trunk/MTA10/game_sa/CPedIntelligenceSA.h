@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CPedIntelligenceSA.h
 *  PURPOSE:     Header file for ped entity AI class
@@ -19,6 +19,8 @@
 #include "CEventSA.h"
 class CTaskManagerSA;
 class CVehicleScannerSA;
+class CPedSA;
+class CPedSAInterface;
 
 #include "CVehicleScannerSA.h"
 
@@ -61,17 +63,20 @@ public:
 class CPedIntelligenceSA : public CPedIntelligence
 {
 public:
-                                    CPedIntelligenceSA ( CPedIntelligenceSAInterface *intelligence, CPed *ped );
-                                    ~CPedIntelligenceSA ();
+                                    CPedIntelligenceSA( CPedIntelligenceSAInterface *intelligence, CPedSA *ped );
+                                    ~CPedIntelligenceSA();
 
-    CPedIntelligenceSAInterface*    GetInterface () { return m_interface; }
+    CPedIntelligenceSAInterface*    GetInterface()                          { return m_interface; }
 
-    bool                            IsRespondingToEvent ();
-    int                             GetCurrentEventType ();
-    CEvent*                         GetCurrentEvent ();
+    bool                            IsRespondingToEvent();
+    int                             GetCurrentEventType();
+    CEvent*                         GetCurrentEvent();
 
-    CTaskManager*                   GetTaskManager ();
-    CVehicleScanner*                GetVehicleScanner ();
+    CTaskManagerSA*                 GetTaskManager()                        { return m_taskManager; }
+    const CTaskManagerSA*           GetTaskManager() const                  { return m_taskManager; }
+    CVehicleScanner*                GetVehicleScanner();
+
+    bool                            TestForStealthKill( CPed *ped, bool unk );
 
 private:
     CPedIntelligenceSAInterface*    m_interface;

@@ -75,7 +75,7 @@ CGameSA::CGameSA()
     }
 
     // Set the model ids for all the CModelInfoSA instances
-    for ( int i = 0; i < MODELINFO_MAX; i++ )
+    for ( unsigned int i = 0; i < MAX_MODELS; i++ )
     {
         ModelInfo [i].SetModelID ( i );
     }
@@ -110,7 +110,7 @@ CGameSA::CGameSA()
     m_pControllerConfigManager  = new CControllerConfigManagerSA();
     m_pProjectileInfo           = new CProjectileInfoSA();
     m_pRenderWare               = new CRenderWareSA( version );
-    m_pExtensionManager         = new CRwExtensionManagerSA();
+    m_pRwExtensionManager       = new CRwExtensionManagerSA();
     m_pModelManager             = new CModelManagerSA();
     m_pTextureManager           = new CTextureManagerSA();
     m_pHandlingManager          = new CHandlingManagerSA ();
@@ -172,11 +172,6 @@ CGameSA::CGameSA()
     m_Cheats [ CHEAT_INFINITEHEALTH   ] = new SCheatSA((BYTE *)VAR_InfiniteHealth, false);
     m_Cheats [ CHEAT_NEVERWANTED      ] = new SCheatSA((BYTE *)VAR_NeverWanted, false);
     m_Cheats [ CHEAT_HEALTARMORMONEY  ] = new SCheatSA((BYTE *)VAR_HealthArmorMoney, false);
-
-    // Change pool sizes here
-    m_pPools->SetPoolCapacity ( TASK_POOL, 5000 );  // Default is 500
-    m_pPools->SetPoolCapacity ( OBJECT_POOL, 700 );  // Default is 350
-    m_pPools->SetPoolCapacity ( EVENT_POOL, 5000 );
 }
 
 CGameSA::~CGameSA()
@@ -278,7 +273,7 @@ bool CGameSA::IsInForeground()
     return *VAR_IsForegroundWindow;
 }
 
-CModelInfo* CGameSA::GetModelInfo( unsigned short model )
+CModelInfoSA* CGameSA::GetModelInfo( unsigned short model )
 { 
     DEBUG_TRACE("CModelInfo* CGameSA::GetModelInfo( unsigned short model )");
 
@@ -590,12 +585,12 @@ bool CGameSA::ProcessCollisionHandler( CEntitySAInterface *caller, CEntitySAInte
     // Check both elements appear in the cached map before doing extra processing
     cachedColl_t::iterator iter1 = m_cachedColl.find( caller );
 
-    if ( iter1 == m_CachedCollisionMap.end() )
+    if ( iter1 == m_cachedColl.end() )
         return true;
 
     cachedColl_t::iterator iter2 = m_cachedColl.find( colld );
 
-    if ( iter2 == m_CachedCollisionMap.end() )
+    if ( iter2 == m_cachedColl.end() )
         return true;
 
     if ( !iter1->second->IsCollidableWith( iter2->second ) )
@@ -733,6 +728,6 @@ void ForEachBlock( void *ptr, unsigned int count, size_t blockSize, void (*callb
     {
         callback( ptr );
 
-        (unsigned char*)ptr += blockSize;
+        ptr = (void*)( (const char*)ptr + blockSize );
     }
 }

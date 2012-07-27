@@ -201,7 +201,6 @@ public:
     void                                InitVoice                       ( bool bEnabled, unsigned int uiServerSampleRate, unsigned char ucQuality, unsigned int uiBitrate );
 
     // Accessors
-
     inline CVoiceRecorder*              GetVoiceRecorder                ( void )        { return m_pVoiceRecorder; };
     inline CClientManager*              GetManager                      ( void )        { return m_pManager; };
     inline CClientObjectManager*        GetObjectManager                ( void )        { return m_pObjectManager; };

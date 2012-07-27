@@ -39,8 +39,8 @@ CObjectSA::CObjectSA( CObjectSAInterface *obj )
 
     // Setup some flags
     m_doNotRemoveFromGame = false;
-    obj->m_unk = 6;
-    BOOL_FLAG( m_entityFlags, ENTITY_DISABLESTREAMING, true );
+    obj->m_unk40 = 6;
+    BOOL_FLAG( obj->m_entityFlags, ENTITY_DISABLESTREAMING, true );
     
     // TODO: Some old building code; figure out what to do with it
 #ifdef MTA_USE_BUILDINGS_AS_OBJECTS

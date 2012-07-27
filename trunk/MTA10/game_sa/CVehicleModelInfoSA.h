@@ -13,23 +13,6 @@
 #ifndef __CVehicleModelInfoSA_H
 #define __CVehicleModelInfoSA_H
 
-enum eVehicleType
-{
-    VEHICLE_CAR,
-    VEHICLE_UNKNOWN4,
-    VEHICLE_UNKNOWN3,
-    VEHICLE_HELI,
-    VEHICLE_PLANE,
-    VEHICLE_BOAT,
-    VEHICLE_TRAIN,
-    VEHICLE_UNKNOWN,
-    VEHICLE_FAKEPLANE,    // what is this?
-    VEHICLE_BIKE,
-    VEHICLE_BICYCLE,
-    VEHICLE_AUTOMOBILETRAILER,
-    FORCE_DWORD = 0xFFFFFFFF
-};
-
 #define MAX_SEATS               15
 #define MAX_PASSENGERS          8
 
@@ -45,6 +28,7 @@ class CVehicleSeatPlacementSAInterface
 {
 public:
                                     CVehicleSeatPlacementSAInterface();
+                                    ~CVehicleSeatPlacementSAInterface();
 
     void*   operator new( size_t );
     void    operator delete( void *ptr );

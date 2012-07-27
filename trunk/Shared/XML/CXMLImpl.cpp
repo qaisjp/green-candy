@@ -55,7 +55,7 @@ CXMLNode* CXMLImpl::CreateDummyNode ( void )
 
     if ( !xmlNode->IsValid( ) )
     {
-        delete xmlFile;
+        delete xmlNode;
 
         return NULL;
     }

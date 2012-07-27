@@ -39,9 +39,9 @@ CAutomobileSAInterface::CAutomobileSAInterface( bool unk, unsigned short model, 
     m_burningTime = 0;
 
     if ( *(bool*)0x00C1BFD0 )
-        m_unk4 |= 0x0001;
+        m_autoFlags |= AUTOMOBILE_TAXILIGHTS;
 
-    m_unk4 |= 0x0030;
+    m_autoFlags |= 0x0030;
 
     SetModelIndex( model );
 
@@ -68,7 +68,7 @@ void CAutomobileSAInterface::SetModelIndex( unsigned short index )
         m_components[n] = NULL;
 
     // Crashfix: Made sure models cannot assign atomics above maximum
-    GetRwObject()->ScanAtomicHierarchy( &m_components, (unsigned int)NUM_VEHICLE_COMPONENTS );
+    GetRwObject()->ScanAtomicHierarchy( m_components, (unsigned int)NUM_VEHICLE_COMPONENTS );
 }
 
 void CAutomobileSAInterface::AddUpgrade( unsigned short model )
@@ -102,7 +102,7 @@ bool CAutomobileSAInterface::UpdateComponentStatus( unsigned short model, unsign
 
         if ( m_audio.m_soundType == 0 )
             m_audio.m_soundType = 1;
-        else if ( m_sound.m_soundType == 2 )
+        else if ( m_audio.m_soundType == 2 )
             m_audio.m_soundType = 0;
 
         // Reset the bass
@@ -164,7 +164,7 @@ CAutomobileSA::CAutomobileSA( CAutomobileSAInterface *veh ) : CVehicleSA( veh ),
         m_doors[i] = new CDoorSA( &GetInterface()->m_doors[i] );
 
     // Privatise our suspension lines
-    CBaseModelInfoSAInterface *info = ppModelInfo[modelId];
+    CBaseModelInfoSAInterface *info = ppModelInfo[veh->m_model];
     CColDataSA *data = info->m_pColModel->pColData;
 
     m_suspensionLines = new char [data->ucNumWheels * 0x20];
@@ -295,7 +295,7 @@ void CAutomobileSA::RecalculateHandling()
     RecalculateSuspensionLines();
 
     // Put it in our interface
-    CVehicleSAInterface* pInt = GetVehicleInterface ();
+    CVehicleSAInterface* pInt = GetInterface ();
     unsigned int uiHandlingFlags = m_pHandlingData->GetInterface ()->uiHandlingFlags;
 
     // user error correction - NOS_INST = NOS Installed t/f
@@ -341,11 +341,11 @@ void CAutomobileSA::RecalculateHandling()
             m_pHandlingData->SetHandlingFlags( uiHandlingFlags );
         }
     }
-    pInt->dwHandlingFlags = uiHandlingFlags;
-    pInt->fMass = m_pHandlingData->GetInterface ()->fMass;
-    pInt->fTurnMass = m_pHandlingData->GetInterface ()->fTurnMass;// * pGame->GetHandlingManager()->GetTurnMassMultiplier();
-    pInt->vecCenterOfMass = &m_pHandlingData->GetInterface()->vecCenterOfMass;
-    pInt->fBuoyancyConstant = m_pHandlingData->GetInterface()->fUnknown2;
+    pInt->m_handlingFlags = uiHandlingFlags;
+    pInt->m_mass = m_pHandlingData->GetInterface ()->fMass;
+    pInt->m_turnMass = m_pHandlingData->GetInterface ()->fTurnMass;// * pGame->GetHandlingManager()->GetTurnMassMultiplier();
+    pInt->m_centerOfMass = m_pHandlingData->GetInterface()->vecCenterOfMass;
+    pInt->m_buoyancyConstant = m_pHandlingData->GetInterface()->fUnknown2;
     /*if (m_pHandlingData->GetInterface()->fDragCoeff >= pGame->GetHandlingManager()->GetBasicDragCoeff())
         GetVehicleInterface ()->fDragCoeff = pGame->GetHandlingManager()->GetBasicDragCoeff();
     else*/
@@ -368,6 +368,7 @@ bool CAutomobileSA::UpdateMovingCollision( float fAngle )
     // If we dont have a driver, use the local player for this function
     // It will check a few key-states which shouldn't make any difference as we've specified an angle.
     CAutomobileSAInterface *veh = GetInterface();
+    CPedSAInterface *driver = veh->m_driver;
 
     if ( !veh->m_driver )
         veh->m_driver = pGame->GetPlayerInfo()->GetPlayerPed()->GetInterface();
@@ -383,7 +384,6 @@ bool CAutomobileSA::UpdateMovingCollision( float fAngle )
     }
 
     // Restore our driver
-    vehicle->pDriver = pDriver;
-
+    veh->m_driver = driver;
     return bReturn;
 }

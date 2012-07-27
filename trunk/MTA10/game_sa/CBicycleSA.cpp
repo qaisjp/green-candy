@@ -18,6 +18,6 @@ CBicycleSA::CBicycleSA( CBicycleSAInterface *bike ) : CBikeSA( bike )
     DEBUG_TRACE("CBicycleSA::CBicycleSA( CBicycleSAInterface *bike )");
 }
 
-CBicylcleSA::~CBicycleSA()
+CBicycleSA::~CBicycleSA()
 {
 }

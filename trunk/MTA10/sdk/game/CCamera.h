@@ -105,46 +105,46 @@ public:
     // camMode 56 = heli chase, 14 = wheel cam
     // switchStyle 1 = smooth, 2 = cut
     virtual void                        TakeControl( CEntity *entity, eCamMode mode, int switchStyle ) = 0;
-    virtual void                        TakeControl( CVector& pos, int switchStyle ) = 0;
-    virtual void                        TakeControlAttachToEntity( CEntity *target, CEntity *attach, CVector& offset, CVector& lookAt, float tilt, int switchStyle ) = 0;
+    virtual void                        TakeControl( const CVector& pos, int switchStyle ) = 0;
+    virtual void                        TakeControlAttachToEntity( CEntity *target, CEntity *attach, const CVector& offset, const CVector& lookAt, float tilt, int switchStyle ) = 0;
 
     virtual void                        Restore() = 0;
     virtual void                        RestoreWithJumpCut() = 0;
 
-    virtual const RwMatrix&             GetMatrix() = 0;
+    virtual const RwMatrix&             GetMatrix() const = 0;
     virtual void                        SetMatrix( const RwMatrix& mat ) = 0;
 
-    virtual void                        SetCamPositionForFixedMode( CVector& pos, CVector& upOffset ) = 0;
-    virtual void                        Find3rdPersonCamTargetVector( float distance, CVector& gunMuzzle, CVector& source, CVector& target ) = 0;
-    virtual float                       Find3rdPersonQuickAimPitch() = 0;
+    virtual void                        SetCamPositionForFixedMode( const CVector& pos, const CVector& upOffset ) = 0;
+    virtual void                        Find3rdPersonCamTargetVector( float distance, const CVector& gunMuzzle, const CVector& source, CVector& target ) const = 0;
+    virtual float                       Find3rdPersonQuickAimPitch() const = 0;
 
-    virtual unsigned char               GetActiveCam() = 0;
+    virtual unsigned char               GetActiveCam() const = 0;
 
     virtual CCam*                       GetCam( unsigned char id ) = 0;
 
     virtual void                        SetWidescreen( bool wide ) = 0;
-    virtual bool                        GetWidescreen() = 0;
+    virtual bool                        GetWidescreen() const = 0;
 
-    virtual float                       GetCarZoom() = 0;
+    virtual float                       GetCarZoom() const = 0;
     virtual void                        SetCarZoom( float zoom ) = 0;
 
-    virtual bool                        TryToStartNewCamMode( unsigned short mode ) = 0;
-    virtual bool                        ConeCastCollisionResolve( CVector& pos, CVector& lookAt, CVector& dest, float rad, float minDist, float& dist ) = 0;
-    virtual void                        VectorTrackLinear( CVector& to, CVector& from, float time, bool smoothEnds ) = 0;
+    virtual bool                        TryToStartNewCamMode( unsigned char mode ) = 0;
+    virtual bool                        ConeCastCollisionResolve( const CVector& pos, const CVector& lookAt, const CVector& dest, float rad, float minDist, float& dist ) = 0;
+    virtual void                        VectorTrackLinear( const CVector& to, const CVector& from, float time, bool smoothEnds ) = 0;
 
-    virtual bool                        IsFading() = 0;
-    virtual int                         GetFadingDirection() = 0;
+    virtual bool                        IsFading() const = 0;
+    virtual int                         GetFadingDirection() const = 0;
     virtual void                        Fade( float fadeOutTime, int outOrIn ) = 0;
     virtual void                        SetFadeColor( unsigned char red, unsigned char green, unsigned char blue ) = 0;
 
-    virtual float                       GetCameraRotation() = 0;
-    virtual const RwMatrix&             GetLTM() = 0;
+    virtual float                       GetCameraRotation() const = 0;
+    virtual const RwMatrix&             GetLTM() const = 0;
 
-    virtual CEntity*                    GetTargetEntity() = 0;
+    virtual CEntity*                    GetTargetEntity() const = 0;
 
     virtual void                        SetCameraClip( bool ibjects, bool vehicles ) = 0;
-    virtual unsigned char               GetCameraViewMode() = 0;
-    virtual void                        SetCameraViewMode( unsigned short mode ) = 0;
+    virtual unsigned char               GetCameraViewMode() const = 0;
+    virtual void                        SetCameraViewMode( unsigned char mode ) = 0;
 };
 
 

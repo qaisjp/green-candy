@@ -19,7 +19,7 @@
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientGuiFont::CClientGuiFont ( CClientManager* pManager, ElementID ID, CGuiFontItem* pFontItem ) : ClassInit ( this ), CClientRenderElement ( pManager, ID )
+CClientGuiFont::CClientGuiFont ( CClientManager* pManager, ElementID ID, CGuiFontItem* pFontItem ) : CClientRenderElement ( pManager, ID )
 {
     SetTypeName ( "gui-font" );
     m_pRenderItem = pFontItem;

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientColShape.h
@@ -8,6 +8,7 @@
 *  DEVELOPERS:  Jax <>
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -15,6 +16,8 @@
 #define __CCLIENTCOLSHAPE_H
 
 #include "CClientEntity.h"
+
+#define LUACLASS_COLSHAPE   44
 
 class CClientColCallback;
 class CClientMarker;
@@ -32,45 +35,44 @@ enum eColShapeType
 
 class CClientColShape : public CClientEntity
 {
-    DECLARE_CLASS( CClientColShape, CClientEntity )
     friend class CClientMarker;
     friend class CClientPickup;
 public:
-                                        CClientColShape                 ( class CClientManager* pManager, ElementID ID );
-                                        ~CClientColShape                ( void );
+                                        CClientColShape( class CClientManager* pManager, ElementID ID, LuaClass& root, bool system );
+                                        ~CClientColShape( void );
 
-    void                                Unlink                          ( void );
+    void                                Unlink( void );
 
-    virtual eColShapeType               GetShapeType                    ( void ) = 0;
+    virtual eColShapeType               GetShapeType( void ) = 0;
 
-    void                                DoPulse                         ( void );
-    bool                                IsAttachable                    ( void );
+    void                                DoPulse( void );
+    bool                                IsAttachable( void );
 
-    inline eClientEntityType            GetType                         ( void ) const                          { return CCLIENTCOLSHAPE; }
+    inline eClientEntityType            GetType( void ) const                                               { return CCLIENTCOLSHAPE; }
 
-    virtual void                        GetPosition                     ( CVector& vecPosition ) const          { vecPosition = m_vecPosition; };
-    virtual void                        SetPosition                     ( const CVector& vecPosition );
+    virtual void                        GetPosition( CVector& vecPosition ) const                           { vecPosition = m_vecPosition; };
+    virtual void                        SetPosition( const CVector& vecPosition );
 
-    virtual bool                        DoHitDetection                  ( const CVector& vecNowPosition, float fRadius ) = 0;
+    virtual bool                        DoHitDetection( const CVector& vecNowPosition, float fRadius ) = 0;
 
-    inline bool                         IsEnabled                       ( void )                                            { return m_bIsEnabled; };
-    inline void                         SetEnabled                      ( bool bEnabled )                                   { m_bIsEnabled = bEnabled; };
+    inline bool                         IsEnabled( void )                                                   { return m_bIsEnabled; };
+    inline void                         SetEnabled( bool bEnabled )                                         { m_bIsEnabled = bEnabled; };
 
-    void                                CallHitCallback                 ( CClientEntity& Entity );
-    void                                CallLeaveCallback               ( CClientEntity& Entity );
-    inline CClientColCallback*          SetHitCallback                  ( CClientColCallback* pCallback )                   { return ( m_pCallback = pCallback ); };
+    void                                CallHitCallback( CClientEntity& Entity );
+    void                                CallLeaveCallback( CClientEntity& Entity );
+    inline CClientColCallback*          SetHitCallback( CClientColCallback* pCallback )                     { return ( m_pCallback = pCallback ); };
 
-    inline bool                         GetAutoCallEvent                ( void )                                            { return m_bAutoCallEvent; };
-    inline void                         SetAutoCallEvent                ( bool bAutoCallEvent )                             { m_bAutoCallEvent = bAutoCallEvent; };
+    inline bool                         GetAutoCallEvent( void )                                            { return m_bAutoCallEvent; };
+    inline void                         SetAutoCallEvent( bool bAutoCallEvent )                             { m_bAutoCallEvent = bAutoCallEvent; };
 
-    void                                AddCollider                     ( CClientEntity* pEntity )                          { m_Colliders.push_back ( pEntity ); }
-    void                                RemoveCollider                  ( CClientEntity* pEntity )                          { if ( !m_Colliders.empty() ) m_Colliders.remove ( pEntity ); }
-    bool                                ColliderExists                  ( CClientEntity* pEntity );
-    void                                RemoveAllColliders              ( bool bNotify );
-    std::list < CClientEntity* > ::iterator  CollidersBegin             ( void )                                            { return m_Colliders.begin (); }
-    std::list < CClientEntity* > ::iterator  CollidersEnd               ( void )                                            { return m_Colliders.end (); }
+    void                                AddCollider( CClientEntity* pEntity )                               { m_Colliders.push_back ( pEntity ); }
+    void                                RemoveCollider( CClientEntity* pEntity )                            { if ( !m_Colliders.empty() ) m_Colliders.remove ( pEntity ); }
+    bool                                ColliderExists( CClientEntity* pEntity );
+    void                                RemoveAllColliders( bool bNotify );
+    std::list < CClientEntity* > ::iterator  CollidersBegin( void )                                         { return m_Colliders.begin (); }
+    std::list < CClientEntity* > ::iterator  CollidersEnd( void )                                           { return m_Colliders.end (); }
 
-    void                                SizeChanged                     ( void );
+    void                                SizeChanged( void );
 protected:
     CVector                             m_vecPosition;
     CClientMarker *                     m_pOwningMarker;

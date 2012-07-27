@@ -37,8 +37,8 @@ CExplosionManagerSA::~CExplosionManagerSA()
 CExplosion * CExplosionManagerSA::AddExplosion ( CEntity * pExplodingEntity, CEntity * pOwner, eExplosionType explosionType, CVector & vecPosition, unsigned int uiActivationDelay, bool bMakeSound, float fCamShake, bool bNoDamage )
 {
     DEBUG_TRACE("CExplosion * CExplosionManagerSA::AddExplosion ( eExplosionType explosiontype, CVector * vecPosition, CEntity * creator = NULL)");
-    DWORD dwExplodingEntityInterface = ( pExplodingEntity ) ? ( DWORD ) pExplodingEntity->GetInterface () : 0;
-    DWORD dwOwnerInterface = ( pOwner ) ? ( DWORD ) pOwner->GetInterface () : 0;
+    DWORD dwExplodingEntityInterface = ( pExplodingEntity ) ? ( DWORD )dynamic_cast <CEntitySA*> ( pExplodingEntity )->GetInterface () : 0;
+    DWORD dwOwnerInterface = ( pOwner ) ? ( DWORD )dynamic_cast <CEntitySA*> ( pOwner )->GetInterface () : 0;
     float fX = vecPosition.fX, fY = vecPosition.fY, fZ = vecPosition.fZ;        
     CExplosion * explosion = CExplosionManagerSA::FindFreeExplosion();
     bool bReturn;   

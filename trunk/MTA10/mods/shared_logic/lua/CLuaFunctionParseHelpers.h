@@ -129,20 +129,6 @@ inline SString GetClassTypeName ( CEntity* )                { return "entity"; }
 
 
 //
-// CResource from userdata
-//
-template < class T >
-CResource* UserDataCast ( CResource*, void* ptr, lua_State* )
-{
-    CResource* pResource = (CResource*)ptr;
-    if ( !CLuaFunctionDefs::m_pResourceManager->Exists( pResource ) )
-        return NULL;
-
-    return pResource;
-}
-
-
-//
 // CXMLNode from userdata
 //
 template < class T >
@@ -150,39 +136,6 @@ CXMLNode* UserDataCast ( CXMLNode*, void* ptr, lua_State* )
 {
     return g_pCore->GetXML ()->GetNodeFromID ( reinterpret_cast < unsigned long > ( ptr ) );
 }
-
-
-
-//
-// CLuaTimer from userdata
-//
-template < class T >
-CLuaTimer* UserDataCast ( CLuaTimer*, void* ptr, lua_State* luaVM )
-{
-    CLuaMain* pLuaMain = CLuaFunctionDefs::lua_readcontext( luaVM );
-    if ( pLuaMain )
-    {
-        CLuaTimer* pLuaTimer = reinterpret_cast < CLuaTimer* > ( ptr );
-        if ( pLuaMain->GetTimerManager ().Exists ( pLuaTimer ) )
-            return pLuaTimer;
-    }
-    return NULL;
-}
-
-
-//
-// CClientEntity from userdata
-//
-template < class T >
-CClientEntity* UserDataCast ( CClientEntity*, void* ptr, lua_State* )
-{
-    ElementID ID = TO_ELEMENTID ( ptr );
-    CClientEntity* pEntity = CElementIDs::GetElement ( ID );
-    if ( !pEntity || pEntity->IsBeingDeleted () || !pEntity->IsA ( T::GetClassId () ) )
-        return NULL;
-    return pEntity;
-}
-
 
 //
 // CClientGUIElement ( CGUIElement )
@@ -197,36 +150,6 @@ bool CheckWrappedUserDataType ( CClientGUIElement*& pGuiElement, SString& strErr
     return false;
 }
 
-
-//
-// CEntity from userdata
-//
-template < class T >
-CEntity* UserDataCast ( CEntity*, void* ptr, lua_State* )
-{
-    // Get the client element
-    CClientEntity* pClientElement = UserDataCast < CClientEntity > ( (CClientEntity*)NULL, ptr, NULL );
-
-    // Get its game entity
-    CEntity* pEntity = NULL;
-    if ( pClientElement )
-    {
-        switch ( pClientElement->GetType () )
-        {
-            case CCLIENTPED:
-            case CCLIENTPLAYER:
-                pEntity = static_cast < CClientPed* > ( pClientElement )->GetGamePlayer ();
-                break;
-            case CCLIENTVEHICLE:
-                pEntity = static_cast < CClientVehicle* > ( pClientElement )->GetGameVehicle ();
-                break;
-            case CCLIENTOBJECT:
-                pEntity = static_cast < CClientObject* > ( pClientElement )->GetGameObject ();
-                break;
-        }
-    }
-    return pEntity;
-}
 
 SString GetUserDataClassName ( void* ptr, lua_State* luaVM );
 

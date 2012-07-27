@@ -35,11 +35,11 @@
 #include <net/packetenums.h>
 #include <game/CGame.h>
 #include <CVector.h>
-#include <CQuat.h>
 #include <CSphere.h>
 #include <CBox.h>
 #include <ijsify.h>
 #include <Common.h>
+#include <CQuat.h>
 #include "net/SyncStructures.h"
 
 // Shared logic includes

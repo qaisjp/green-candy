@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientProjectile.cpp
 *  PURPOSE:     Projectile entity class
 *  DEVELOPERS:  Jax <>
 *               Ed Lyons <eai@opencoding.net>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -14,12 +15,44 @@
 
 #define AIRBOMB_MAX_LIFETIME 60000
 
+static const luaL_Reg projectile_interface[] =
+{
+    { NULL, NULL }
+};
+
+static int luaconstructor_projectile( lua_State *L )
+{
+    CClientProjectile *proj = (CClientProjectile*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_PROJECTILE, proj );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, projectile_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "projectile", 10 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
 /* An instance of this class is created when GTA creates a projectile, it automatically
    destroys itself when GTA is finished with the projectile, this could/should eventually be
    used as a server created element and streamed.
 */
-CClientProjectile::CClientProjectile ( class CClientManager* pManager, CProjectile* pProjectile, CProjectileInfo* pProjectileInfo, CClientEntity * pCreator, CClientEntity * pTarget, eWeaponType weaponType, CVector * pvecOrigin, CVector * pvecTarget, float fForce, bool bLocal ) : ClassInit ( this ), CClientEntity ( INVALID_ELEMENT_ID )
+CClientProjectile::CClientProjectile( class CClientManager* pManager, CProjectile* pProjectile, CProjectileInfo* pProjectileInfo, CClientEntity * pCreator, CClientEntity * pTarget, eWeaponType weaponType, CVector * pvecOrigin, CVector * pvecTarget, float fForce, bool bLocal, LuaClass& root ) : CClientEntity( INVALID_ELEMENT_ID, false, root )
 {
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_projectile, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     CClientEntityRefManager::AddEntityRefs ( ENTITY_REF_DEBUG ( this, "CClientProjectile" ), &m_pCreator, &m_pTarget, NULL );
 
     m_pManager = pManager;
@@ -48,16 +81,16 @@ CClientProjectile::CClientProjectile ( class CClientManager* pManager, CProjecti
 
     if ( pCreator )
     {
-        switch ( pCreator->GetType () )
+        switch( pCreator->GetType() )
         {
-            case CCLIENTPLAYER:
-            case CCLIENTPED:               
-                static_cast < CClientPed * > ( pCreator )->AddProjectile ( this );
-                break;
-            case CCLIENTVEHICLE:
-                static_cast < CClientVehicle * > ( pCreator )->AddProjectile ( this );
-                break;
-            default: break;
+        case CCLIENTPLAYER:
+        case CCLIENTPED:               
+            static_cast < CClientPed * > ( pCreator )->AddProjectile ( this );
+            break;
+        case CCLIENTVEHICLE:
+            static_cast < CClientVehicle * > ( pCreator )->AddProjectile ( this );
+            break;
+        default: break;
         }
     }
 }

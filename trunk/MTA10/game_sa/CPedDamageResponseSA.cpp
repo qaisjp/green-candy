@@ -13,8 +13,8 @@
 #include "StdInc.h"
 
 
-void CPedDamageResponseSA::Calculate ( CEntity * pEntity, float fDamage, eWeaponType weaponType, ePedPieceTypes bodyPart, bool b_1, bool bSpeak )
+void CPedDamageResponseSA::Calculate ( CEntity *pEntity, float fDamage, eWeaponType weaponType, ePedPieceTypes bodyPart, bool b_1, bool bSpeak )
 {
-    CPedDamageResponseCalculatorSA calc ( pEntity, fDamage, weaponType, bodyPart, b_1 );
+    CPedDamageResponseCalculatorSA calc( dynamic_cast <CEntitySA*> ( pEntity ), fDamage, weaponType, bodyPart, b_1 );
     calc.ComputeDamageResponse ( dynamic_cast < CPed * > ( pEntity ), this, bSpeak );
 }

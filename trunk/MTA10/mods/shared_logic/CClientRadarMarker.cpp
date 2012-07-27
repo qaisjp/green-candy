@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientRadarMarker.cpp
@@ -12,6 +12,7 @@
 *               Derek Abdine <>
 *               Chris McArthur <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -19,8 +20,40 @@
 
 extern CCoreInterface *g_pCore;
 
-CClientRadarMarker::CClientRadarMarker ( CClientManager* pManager, ElementID ID, short sOrdering, unsigned short usVisibleDistance ) : ClassInit ( this ), CClientEntity ( ID )
+static const luaL_Reg blip_interface[] =
 {
+    { NULL, NULL }
+};
+
+static int luaconstructor_blip( lua_State *L )
+{
+    CClientRadarMarker *blip = (CClientRadarMarker*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_RADARMARKER, blip );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, blip_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "blip", 4 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientRadarMarker::CClientRadarMarker( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, short sOrdering, unsigned short usVisibleDistance ) : CClientEntity( ID, system, root )
+{
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_blip, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     // Init
     m_pManager = pManager;
     m_pRadarMarkerManager = pManager->GetRadarMarkerManager ();

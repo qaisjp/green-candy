@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientPed.cpp
@@ -31,8 +31,6 @@ extern CClientGame* g_pClientGame;
 #define PED_INTERPOLATION_WARP_THRESHOLD            5   // Minimal threshold
 #define PED_INTERPOLATION_WARP_THRESHOLD_FOR_SPEED  5   // Units to increment the threshold per speed unit
 
-#define STEALTH_KILL_RANGE 2.5f
-
 struct SBodyPartName { char szName [32]; };
 SBodyPartName BodyPartNames [10] =
 { {"Unknown"}, {"Unknown"}, {"Unknown"}, {"Torso"}, {"Ass"},
@@ -41,27 +39,61 @@ SBodyPartName BodyPartNames [10] =
 // HACK: saves unneccesary loading of clothes textures
 CClientPed* g_pLastRebuilt = NULL;
 
-CClientPed::CClientPed ( CClientManager* pManager, unsigned long ulModelID, ElementID ID ) : ClassInit ( this ), CClientStreamElement ( pManager->GetPlayerStreamer (), ID ), CAntiCheatModule ( pManager->GetAntiCheat () )
+static const luaL_Reg ped_interface[] =
 {
-    SetTypeName ( "ped" );
+    { NULL, NULL }
+};
 
-    // Init
-    Init ( pManager, ulModelID, false );
+static int luaconstructor_ped( lua_State *L )
+{
+    CClientPed *ped = (CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 
-    // Add it to our ped manager
-    pManager->GetPedManager ()->AddToList ( this );
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_PED, ped );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, ped_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "ped", 3 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
 }
 
-
-CClientPed::CClientPed ( CClientManager* pManager, unsigned long ulModelID, ElementID ID, bool bIsLocalPlayer ) : ClassInit ( this ), CClientStreamElement ( pManager->GetPlayerStreamer (), ID ), CAntiCheatModule ( pManager->GetAntiCheat () )
+void CClientPed::InstanceLua( bool system )
 {
+    PushStack( m_lua );
+    lua_pushlightuserdata( m_lua, this );
+    lua_pushcclosure( m_lua, luaconstructor_ped, 1 );
+    luaJ_extend( m_lua, -2, 0 );
+    lua_pop( m_lua, 1 );
+}
+
+CClientPed::CClientPed( CClientManager* pManager, unsigned long ulModelID, ElementID ID, LuaClass& root, bool system ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, root, system ), CAntiCheatModule( pManager->GetAntiCheat() )
+{
+    InstanceLua( system );
+
+    SetTypeName( "ped" );
+
+    // Init
+    Init( pManager, ulModelID, false );
+
+    // Add it to our ped manager
+    pManager->GetPedManager()->AddToList( this );
+}
+
+CClientPed::CClientPed( CClientManager* pManager, unsigned long ulModelID, ElementID ID, LuaClass& root, bool system, bool bIsLocalPlayer ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, root, system ), CAntiCheatModule( pManager->GetAntiCheat() )
+{
+    InstanceLua( system );
+
     // Init
     Init ( pManager, ulModelID, bIsLocalPlayer );
 
     // Add it to our ped manager
     pManager->GetPedManager ()->AddToList ( this );
 }
-
 
 void CClientPed::Init ( CClientManager* pManager, unsigned long ulModelID, bool bIsLocalPlayer )
 {
@@ -609,7 +641,9 @@ void CClientPed::Spawn( const CVector& vecPosition, float fRotation, unsigned sh
         m_fHealth = GetMaxHealth ();
         m_pPlayerPed->SetHealth ( m_fHealth );
         m_bUsesCollision = true;
-    } else {
+    }
+    else
+    {
         // Remote ped health/armor was locked during Kill, so make sure it's unlocked
         UnlockHealth ();
         UnlockArmor ();

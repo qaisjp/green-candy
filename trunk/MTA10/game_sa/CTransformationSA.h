@@ -19,6 +19,11 @@
 class CTransformSAInterface : public RwMatrix
 {
 public:
+    void operator =( const RwMatrix& mat )
+    {
+        RwMatrix::RwMatrix( mat );
+    }
+
     BYTE                                    m_pad[8];
     class CPlaceableSAInterface*            m_entity;
 
@@ -62,6 +67,6 @@ public:
 
 void Transformation_Init();
 
-extern CTransformationSAInterface *pTransformation;
+extern CTransformationSAInterface *pTransform;
 
 #endif //_CTransformationSA_

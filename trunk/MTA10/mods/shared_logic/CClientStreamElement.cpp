@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientStreamElement.cpp
@@ -8,6 +8,7 @@
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -15,9 +16,41 @@
 
 using std::list;
 
-CClientStreamElement::CClientStreamElement ( CClientStreamer * pStreamer, ElementID ID ) : ClassInit ( this ), CClientEntity ( ID )
+static const luaL_Reg stream_interface[] =
 {
-    m_pStreamer = pStreamer;    
+    { NULL, NULL }
+};
+
+static int luaconstructor_stream( lua_State *L )
+{
+    CClientStreamElement *stream = (CClientStreamElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_STREAMELEMENT, stream );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, stream_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "stream-element", 14 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientStreamElement::CClientStreamElement( CClientStreamer * pStreamer, ElementID ID, LuaClass& root, bool system ) : CClientEntity( ID, system, root )
+{
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_stream, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
+    m_pStreamer = pStreamer;
     m_pStreamRow = NULL;
     m_pStreamSector = NULL;
     m_fExpDistance = 0.0f;
@@ -31,12 +64,10 @@ CClientStreamElement::CClientStreamElement ( CClientStreamer * pStreamer, Elemen
     m_iCachedBoundingBoxCounter = 0;
 }
 
-
 CClientStreamElement::~CClientStreamElement ( void )
 {
     m_pStreamer->RemoveElement ( this );
 }
-
 
 void CClientStreamElement::UpdateStreamPosition ( const CVector & vecPosition )
 {

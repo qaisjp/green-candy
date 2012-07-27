@@ -35,11 +35,10 @@ public:
 class CClumpModelInfoSAInterface : public CBaseModelInfoSAInterface
 {
 public:
-    virtual CColModelSAInterface* __thiscall        GetCollision() = 0;
-    virtual void __thiscall                         SetClump( RpClump *clump ) = 0;
+    virtual CColModelSAInterface* __thiscall        GetCollision();
+    virtual void __thiscall                         SetClump( RpClump *clump );
 
     void                    Init();
-    void                    Shutdown();
     void                    DeleteRwObject();
     eRwType                 GetRwModelType();
     RpClump*                CreateRwObjectEx( int rwTag );

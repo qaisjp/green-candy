@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientObject.h
@@ -9,6 +9,7 @@
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -19,6 +20,8 @@ class CClientObject;
 
 #include "CClientStreamElement.h"
 
+#define LUACLASS_OBJECT     60
+
 struct SLastSyncedObjectData
 {
     CVector vecPosition;
@@ -28,80 +31,79 @@ struct SLastSyncedObjectData
 
 class CClientObject : public CClientStreamElement
 {
-    DECLARE_CLASS( CClientObject, CClientStreamElement )
     friend class CClientObjectManager;
     friend class CClientPed;
 
 public:
-                                    CClientObject           ( class CClientManager* pManager, ElementID ID, unsigned short usModel );
-                                    ~CClientObject          ( void );
+                                    CClientObject( class CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel );
+                                    ~CClientObject( void );
 
-    void                            Unlink                  ( void );
+    void                            Unlink( void );
     
-    inline eClientEntityType        GetType                 ( void ) const                      { return CCLIENTOBJECT; };
+    inline eClientEntityType        GetType( void ) const                                   { return CCLIENTOBJECT; };
 
-    inline CObject *                GetGameObject           ( void )                            { return m_pObject; }
-    inline CEntity *                GetGameEntity           ( void )                            { return m_pObject; }
-    inline const CEntity*           GetGameEntity           ( void ) const                      { return m_pObject; }
+    inline CObject *                GetGameObject( void )                                   { return m_pObject; }
+    inline CEntity *                GetGameEntity( void )                                   { return m_pObject; }
+    inline const CEntity*           GetGameEntity( void ) const                             { return m_pObject; }
 
-    void                            GetPosition             ( CVector& vecPosition ) const;
-    void                            SetPosition             ( const CVector& vecPosition );
-    virtual CSphere                 GetWorldBoundingSphere  ( void );
+    void                            GetPosition( CVector& vecPosition ) const;
+    void                            SetPosition( const CVector& vecPosition );
+    virtual CSphere                 GetWorldBoundingSphere( void );
 
-    void                            AttachTo                ( CClientEntity* pEntity );
+    void                            AttachTo( CClientEntity* pEntity );
 
-    void                            GetRotationDegrees      ( CVector& vecRotation ) const;
-    void                            GetRotationRadians      ( CVector& vecRotation ) const;
-    void                            SetRotationDegrees      ( const CVector& vecRotation );
-    virtual void                    SetRotationRadians      ( const CVector& vecRotation );
+    void                            GetRotationDegrees( CVector& vecRotation ) const;
+    void                            GetRotationRadians( CVector& vecRotation ) const;
+    void                            SetRotationDegrees( const CVector& vecRotation );
+    virtual void                    SetRotationRadians( const CVector& vecRotation );
 
-    void                            GetMoveSpeed            ( CVector& vecMoveSpeed ) const;
-    void                            SetMoveSpeed            ( const CVector& vecMoveSpeed );
+    void                            GetMoveSpeed( CVector& vecMoveSpeed ) const;
+    void                            SetMoveSpeed( const CVector& vecMoveSpeed );
 
-    void                            GetOrientation          ( CVector& vecPosition, CVector& vecRotationRadians );
-    virtual void                    SetOrientation          ( const CVector& vecPosition, const CVector& vecRotationRadians );
+    void                            GetOrientation( CVector& vecPosition, CVector& vecRotationRadians );
+    virtual void                    SetOrientation( const CVector& vecPosition, const CVector& vecRotationRadians );
 
-    void                            ModelRequestCallback    ( CModelInfo* pModelInfo );
+    void                            ModelRequestCallback( CModelInfo* pModelInfo );
 
-    float                           GetDistanceFromCentreOfMassToBaseOfModel ( void );
+    float                           GetDistanceFromCentreOfMassToBaseOfModel( void );
 
-    inline bool                     IsVisible               ( void )                            { return m_bIsVisible; };
-    void                            SetVisible              ( bool bVisible );
+    inline bool                     IsVisible( void )                                       { return m_bIsVisible; };
+    void                            SetVisible( bool bVisible );
 
-    inline unsigned short           GetModel                ( void ) const                      { return m_usModel; };
-    void                            SetModel                ( unsigned short usModel );
+    inline unsigned short           GetModel( void ) const                                  { return m_usModel; };
+    void                            SetModel( unsigned short usModel );
 
-    void                            Render                  ( void );
+    void                            Render( void );
 
-    inline bool                     IsStatic                ( void )                            { return m_bIsStatic; }
-    void                            SetStatic               ( bool bStatic );
+    inline bool                     IsStatic( void )                                        { return m_bIsStatic; }
+    void                            SetStatic( bool bStatic );
     
-    inline unsigned char            GetAlpha                ( void )                            { return m_ucAlpha; }   
-    void                            SetAlpha                ( unsigned char ucAlpha );
-    inline float                    GetScale                ( void )                            { return m_fScale; }
-    void                            SetScale                ( float fScale );
+    inline unsigned char            GetAlpha( void )                                        { return m_ucAlpha; }   
+    void                            SetAlpha( unsigned char ucAlpha );
+    inline float                    GetScale( void )                                        { return m_fScale; }
+    void                            SetScale( float fScale );
 
-    inline bool                     IsCollisionEnabled      ( void )                            { return m_bUsesCollision; };
-    void                            SetCollisionEnabled     ( bool bCollisionEnabled );
+    inline bool                     IsCollisionEnabled( void )                              { return m_bUsesCollision; };
+    void                            SetCollisionEnabled( bool bCollisionEnabled );
 
-    float                           GetHealth               ( void );
-    void                            SetHealth               ( float fHealth );
+    float                           GetHealth( void );
+    void                            SetHealth( float fHealth );
 
-    inline bool                     IsBreakable             ( void )                            { return m_pObjectManager->IsBreakableModel ( m_usModel ) && m_bBreakable; };
-    inline void                     SetBreakable            ( bool bBreakable )                 { m_bBreakable = bBreakable; };
+    inline bool                     IsBreakable( void )                                     { return m_pObjectManager->IsBreakableModel ( m_usModel ) && m_bBreakable; };
+    inline void                     SetBreakable( bool bBreakable )                         { m_bBreakable = bBreakable; };
 
-    void                            ReCreate                ( void );
+    void                            ReCreate( void );
 protected:
-    void                            StreamIn                ( bool bInstantly );
-    void                            StreamOut               ( void );
+    void                            StreamIn( bool bInstantly );
+    void                            StreamOut( void );
 
-    void                            Create                  ( void );
-    void                            Destroy                 ( void );
+    void                            Create( void );
+    void                            Destroy( void );
 
-    void                            NotifyCreate            ( void );
-    void                            NotifyDestroy           ( void );
+    void                            NotifyCreate( void );
+    void                            NotifyDestroy( void );
 
-    void                            StreamedInPulse         ( void );
+    void                            StreamedInPulse( void );
 
     class CClientObjectManager*         m_pObjectManager;
     class CClientModelRequestManager*   m_pModelRequester;

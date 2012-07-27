@@ -17,6 +17,23 @@
 #include "CColModel.h"
 class CPedModelInfo;
 
+enum eVehicleType
+{
+    VEHICLE_CAR,
+    VEHICLE_UNKNOWN4,
+    VEHICLE_UNKNOWN3,
+    VEHICLE_HELI,
+    VEHICLE_PLANE,
+    VEHICLE_BOAT,
+    VEHICLE_TRAIN,
+    VEHICLE_UNKNOWN,
+    VEHICLE_FAKEPLANE,    // what is this?
+    VEHICLE_BIKE,
+    VEHICLE_BICYCLE,
+    VEHICLE_AUTOMOBILETRAILER,
+    FORCE_DWORD = 0xFFFFFFFF
+};
+
 class CBoundingBox
 {
 public:
@@ -50,67 +67,64 @@ enum eVehicleUpgradePosn
 class CModelInfo
 {
 public:
-    virtual class CBaseModelInfoSAInterface *     GetInterface            ( void ) = 0;
+    virtual unsigned short                  GetModel() const = 0;
 
-    virtual unsigned short  GetModel                () = 0;
-    virtual bool            IsBoat                  () = 0;
-    virtual bool            IsCar                   () = 0;
-    virtual bool            IsTrain                 () = 0;
-    virtual bool            IsHeli                  () = 0;
-    virtual bool            IsPlane                 () = 0;
-    virtual bool            IsBike                  () = 0;
-    virtual bool            IsFakePlane             () = 0;
-    virtual bool            IsMonsterTruck          () = 0;
-    virtual bool            IsQuadBike              () = 0;
-    virtual bool            IsBmx                   () = 0;
-    virtual bool            IsTrailer               () = 0;
-    virtual bool            IsVehicle               () = 0;
+    virtual eVehicleType                    GetVehicleType() const = 0;
+    virtual bool                            IsBoat() const = 0;
+    virtual bool                            IsCar() const = 0;
+    virtual bool                            IsTrain() const = 0;
+    virtual bool                            IsHeli() const = 0;
+    virtual bool                            IsPlane() const = 0;
+    virtual bool                            IsBike() const = 0;
+    virtual bool                            IsBmx() const = 0;
+    virtual bool                            IsTrailer() const = 0;
+    virtual bool                            IsVehicle() const = 0;
+    virtual bool                            IsUpgrade() const = 0;
 
-    virtual char*           GetNameIfVehicle        () = 0;
+    virtual const char*                     GetNameIfVehicle() const = 0;
 
-    virtual VOID            Request                 ( bool bAndLoad = false, bool bWaitForLoad = false, bool bHighPriority = false ) = 0;
-    virtual VOID            Remove                  () = 0;
-    virtual BYTE            GetLevelFromPosition    ( CVector * vecPosition ) = 0;
-    virtual BOOL            IsLoaded                () = 0;
-    virtual BYTE            GetFlags                () = 0;
-    virtual CBoundingBox*   GetBoundingBox          () = 0;
-    virtual bool            IsValid                 () = 0;
-    virtual unsigned short  GetTextureDictionaryID  () = 0;
-    virtual float           GetLODDistance          () = 0;
-    virtual void            SetLODDistance          ( float fDistance ) = 0;
-    virtual void            RestreamIPL             () = 0;
+    virtual void                            Request( bool bAndLoad = false, bool bWaitForLoad = false, bool bHighPriority = false ) = 0;
+    virtual void                            Remove() = 0;
+    virtual unsigned char                   GetLevelFromPosition( const CVector& vecPosition ) const = 0;
+    virtual bool                            IsLoaded() const = 0;
+    virtual unsigned char                   GetFlags() const = 0;
+    virtual const CBoundingBox&             GetBoundingBox() const = 0;
+    virtual bool                            IsValid() const = 0;
+    virtual float                           GetDistanceFromCentreOfMassToBaseOfModel() const = 0;
+    virtual unsigned short                  GetTextureDictionaryID() const = 0;
+    virtual void                            SetTextureDictionaryID( unsigned short usID ) = 0;
+    virtual float                           GetLODDistance() const = 0;
+    virtual void                            SetLODDistance( float fDistance ) = 0;
+    virtual void                            RestreamIPL() = 0;
 
-    virtual void            AddRef                  ( bool bWaitForLoad, bool bHighPriority = false ) = 0;
-    virtual void            RemoveRef               ( bool bRemoveExtraGTARef = false ) = 0;
-    virtual int             GetRefCount             () = 0;
+    virtual void                            AddRef( bool bWaitForLoad, bool bHighPriority = false ) = 0;
+    virtual int                             GetRefCount() const = 0;
+    virtual void                            RemoveRef( bool bRemoveExtraGTARef = false ) = 0;
+    virtual void                            MaybeRemoveExtraGTARef() = 0;
+    virtual void                            DoRemoveExtraGTARef() = 0;
 
-    virtual float           GetDistanceFromCentreOfMassToBaseOfModel () = 0;
+    // CVehicleModelInfo specific
+    virtual short                           GetAvailableVehicleMod( unsigned short usSlot ) const = 0;
+    virtual bool                            IsUpgradeAvailable( eVehicleUpgradePosn posn ) const = 0;
+    virtual void                            SetCustomCarPlateText( const char *szText ) = 0;
+    virtual unsigned int                    GetNumRemaps() const = 0;
+    virtual void*                           GetVehicleSuspensionData() const = 0;
+    virtual void*                           SetVehicleSuspensionData( void *pSuspensionLines ) = 0;
 
-    // ONLY use for CVehicleModelInfos
-    virtual short           GetAvailableVehicleMod  ( unsigned short usSlot ) = 0;
-    virtual bool            IsUpgradeAvailable      ( eVehicleUpgradePosn posn ) = 0;
-    virtual void            SetCustomCarPlateText   ( const char * szText ) = 0;
-    virtual unsigned int    GetNumRemaps            ( void ) = 0;
-    virtual void*           GetVehicleSuspensionData( void ) = 0;
-    virtual void*           SetVehicleSuspensionData( void* pSuspensionLines ) = 0;
-
-    // ONLY use for upgrade models
-    virtual void            RequestVehicleUpgrade   ( void ) = 0;
+    // Upgrades only!
+    virtual void                            RequestVehicleUpgrade() = 0;
 
     // ONLY use for peds
-    virtual void            GetVoice                ( short* psVoiceType, short* psVoice ) = 0;
-    virtual void            GetVoice                ( const char** pszVoiceType, const char** szVoice ) = 0;
-    virtual void            SetVoice                ( short sVoiceType, short sVoice ) = 0;
-    virtual void            SetVoice                ( const char* szVoiceType, const char* szVoice ) = 0;
+    virtual void                            GetVoice( short* psVoiceType, short* psVoice ) const = 0;
+    virtual void                            GetVoice( const char** pszVoiceType, const char** szVoice ) const = 0;
+    virtual void                            SetVoice( short sVoiceType, short sVoice ) = 0;
+    virtual void                            SetVoice( const char* szVoiceType, const char* szVoice ) = 0;
 
     // Custom collision related functions
-    virtual void            SetCustomModel          ( RpClump* pClump ) = 0;
-    virtual void            RestoreOriginalModel    ( void ) = 0;
-    virtual void            SetColModel             ( CColModel* pColModel ) = 0;
-    virtual void            RestoreColModel         ( void ) = 0;
-
-    // Call this to make sure the custom vehicle models are being used after a load.
-    virtual void            MakeCustomModel         ( void ) = 0;
+    virtual void                            RestoreOriginalModel() = 0;
+    virtual void                            SetColModel( CColModel *pColModel ) = 0;
+    virtual void                            RestoreColModel() = 0;
+    virtual void                            MakeCustomModel() = 0;
 };
 
 #endif

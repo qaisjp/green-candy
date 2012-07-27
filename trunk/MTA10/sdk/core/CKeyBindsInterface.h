@@ -182,7 +182,7 @@ public:
     virtual bool                    GetControlState( eBindableControl control ) const = 0;
 };
 
-class CKeyBindsInterface
+class CKeyBindsInterface : public CControlInterface
 {
 public:
     virtual bool                    ProcessMessage( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam ) = 0;

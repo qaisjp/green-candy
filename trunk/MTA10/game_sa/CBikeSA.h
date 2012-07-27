@@ -37,17 +37,18 @@ public:
     BYTE                        m_pad22[15];                            // 2053
 };
 
-class CBikeSA : public virtual CBike, public virtual CVehicleSA
+class CBikeSA : public virtual CBike, public CVehicleSA
 {
 public:
                                     CBikeSA( CBikeSAInterface *bike );
                                     ~CBikeSA();
 
     inline CBikeSAInterface*        GetInterface()                          { return (CBikeSAInterface*)m_pInterface; }
+    inline const CBikeSAInterface*  GetInterface() const                    { return (const CBikeSAInterface*)m_pInterface; }
 
     void                            PlaceOnRoadProperly();
 
-    unsigned char                   GetBikeWheelStatus( unsigned char wheel );
+    unsigned char                   GetBikeWheelStatus( unsigned char wheel ) const;
     void                            SetBikeWheelStatus( unsigned char wheel, unsigned char status );
 };
 

@@ -22,13 +22,11 @@ public:
     // fill this
 };
 
-class CBoatSA : public virtual CBoat, public virtual CVehicleSA
+class CBoatSA : public virtual CBoat, public CVehicleSA
 {
 public:
                                 CBoatSA( CBoatSAInterface *boat );
-                                CBoatSA( unsigned short model );
-
-                                ~CBoatSA() {};
+                                ~CBoatSA();
 };
 
 #endif

@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientTeam.h
 *  PURPOSE:     Team entity class header
 *  DEVELOPERS:  Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -18,42 +19,43 @@ class CClientTeam;
 #include "CClientPlayer.h"
 #include "CClientTeamManager.h"
 
+#define LUACLASS_TEAM   56
+
 class CClientTeam : public CClientEntity
 {
-    DECLARE_CLASS( CClientTeam, CClientEntity )
     friend class CClientTeamManager;
 public:    
-                                CClientTeam         ( CClientManager* pManager, ElementID ID, char* szName = NULL, unsigned char ucRed = 0, unsigned char ucGreen = 0, unsigned char ucBlue = 0 );
-                                ~CClientTeam        ( void );
+                                CClientTeam( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, char* szName = NULL, unsigned char ucRed = 0, unsigned char ucGreen = 0, unsigned char ucBlue = 0 );
+                                ~CClientTeam( void );
 
-    eClientEntityType           GetType             ( void ) const              { return CCLIENTTEAM; }
+    eClientEntityType           GetType( void ) const                           { return CCLIENTTEAM; }
 
-    void                        Unlink              ( void );
+    void                        Unlink( void );
 
-    inline unsigned char        GetID               ( void )                    { return m_ucID; }
+    inline unsigned char        GetID( void )                                   { return m_ucID; }
 
-    inline char*                GetTeamName         ( void )                    { return m_szTeamName; }
-    void                        SetTeamName         ( char* szName );
+    inline char*                GetTeamName( void )                             { return m_szTeamName; }
+    void                        SetTeamName( char* szName );
 
-    void                        GetColor            ( unsigned char& ucRed, unsigned char& ucGreen, unsigned char& ucBlue );
-    void                        SetColor            ( unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue );
+    void                        GetColor( unsigned char& ucRed, unsigned char& ucGreen, unsigned char& ucBlue );
+    void                        SetColor( unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue );
 
-    inline bool                 GetFriendlyFire     ( void )                    { return m_bFriendlyFire; }
-    inline void                 SetFriendlyFire     ( bool bFriendlyFire )      { m_bFriendlyFire = bFriendlyFire; }
+    inline bool                 GetFriendlyFire( void )                         { return m_bFriendlyFire; }
+    inline void                 SetFriendlyFire( bool bFriendlyFire )           { m_bFriendlyFire = bFriendlyFire; }
 
-    void                        AddPlayer           ( CClientPlayer* pPlayer, bool bChangePlayer = false );
-    void                        RemovePlayer        ( CClientPlayer* pPlayer, bool bChangePlayer = false );
-    void                        RemoveAll           ( void );
+    void                        AddPlayer( CClientPlayer* pPlayer, bool bChangePlayer = false );
+    void                        RemovePlayer( CClientPlayer* pPlayer, bool bChangePlayer = false );
+    void                        RemoveAll( void );
 
-    bool                        Exists              ( CClientPlayer* pPlayer );
+    bool                        Exists( CClientPlayer* pPlayer );
 
-    std::list < CClientPlayer* > ::const_iterator IterBegin ( void )         { return m_List.begin (); }
-    std::list < CClientPlayer* > ::const_iterator IterEnd   ( void )         { return m_List.end (); }
+    std::list < CClientPlayer* > ::const_iterator IterBegin( void )             { return m_List.begin (); }
+    std::list < CClientPlayer* > ::const_iterator IterEnd( void )               { return m_List.end (); }
 
-    void                        GetPosition         ( CVector& vecPosition ) const  { vecPosition = m_vecPosition; }
-    void                        SetPosition         ( const CVector& vecPosition )  { m_vecPosition = vecPosition; }
+    void                        GetPosition( CVector& vecPosition ) const       { vecPosition = m_vecPosition; }
+    void                        SetPosition( const CVector& vecPosition )       { m_vecPosition = vecPosition; }
 
-    inline unsigned int         CountPlayers        ( void )            { return static_cast < unsigned int > ( m_List.size () ); }
+    inline unsigned int         CountPlayers( void )                            { return static_cast < unsigned int > ( m_List.size () ); }
 
 protected:                        
     CClientTeamManager*         m_pTeamManager;

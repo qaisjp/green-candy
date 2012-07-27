@@ -18,6 +18,8 @@
 #include "CClientCommon.h"
 #include "CClientEntity.h"
 
+#define LUACLASS_CAMERA     42
+
 class CClientEntity;
 class CClientManager;
 class CClientPlayer;
@@ -31,7 +33,6 @@ enum eClientCameraAttachMode
 
 class CClientCamera : public CClientEntity
 {
-    DECLARE_CLASS( CClientCamera, CClientEntity )
     friend class CClientManager;
 
 public:

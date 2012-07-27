@@ -41,25 +41,25 @@ public:
     bool                ShouldBeStealthAiming();
 };
 
-class CPlayerPedSA : public virtual CPlayerPed, public virtual CPedSA
+class CPlayerPedSA : public virtual CPlayerPed, public CPedSA
 {
 public:
                         CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, bool isLocal );
                         ~CPlayerPedSA();
 
-    inline CPlayerPedSAInterface* GetInterface()                { return (CPlayerPedSAInterface*)m_pInterface; }
-    inline const CPlayerPedSAInterface* GetInterface() const    { return (const CPlayerPedSAInterface*)m_pInterface; }
+    inline CPlayerPedSAInterface* GetInterface()                        { return (CPlayerPedSAInterface*)m_pInterface; }
+    inline const CPlayerPedSAInterface* GetInterface() const            { return (const CPlayerPedSAInterface*)m_pInterface; }
 
     void                OnFrame();
 
     CWanted*            GetWanted();
 
     float               GetSprintEnergy() const;
-    void                SetSprintEnergy( float fSprintEnergy );
+    void                SetSprintEnergy( float energy );
 
     void                SetInitialState();
 
-    eMoveAnim           GetMoveAnim() const;
+    eMoveAnim           GetMoveAnim() const                             { return (eMoveAnim)GetInterface()->m_moveAnimGroup; }
     void                SetMoveAnim( eMoveAnim iAnimGroup );
 
 private:

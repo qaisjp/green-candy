@@ -24,6 +24,10 @@ CPlaceableSAInterface::CPlaceableSAInterface()
     m_matrix = NULL;
 }
 
+CPlaceableSAInterface::~CPlaceableSAInterface()
+{
+}
+
 void CPlaceableSAInterface::AllocateMatrix()
 {
     CTransformSAInterface *trans;
@@ -31,17 +35,17 @@ void CPlaceableSAInterface::AllocateMatrix()
     if ( m_matrix )
     {
         // We already have a matrix, make sure its in the active list
-        LIST_REMOVE( m_matrix );
-        LIST_APPEND( pTransformation->m_activeList, m_matrix );
+        LIST_REMOVE( *m_matrix );
+        LIST_APPEND( pTransform->m_activeList, *m_matrix );
         return;
     }
 
     // Extend the matrix list
-    if ( !pTransformation->IsFreeMatrixAvailable() && !pTransformation->FreeUnimportantMatrix() )
-        pTransformation->NewMatrix();
+    if ( !pTransform->IsFreeMatrixAvailable() && !pTransform->FreeUnimportantMatrix() )
+        pTransform->NewMatrix();
 
     // Allocate it
-    trans = pTransformation->Allocate();
+    trans = pTransform->Allocate();
 
     trans->m_entity = this;
     m_matrix = trans;
@@ -59,8 +63,8 @@ void CPlaceableSAInterface::FreeMatrix()
     m_matrix = NULL;
     trans->m_entity = NULL;
 
-    LIST_REMOVE( m_matrix );
-    LIST_APPEND( pTransformation->m_freeList, trans );
+    LIST_REMOVE( *m_matrix );
+    LIST_APPEND( pTransform->m_freeList, *trans );
 }
 
 CEntitySAInterface::CEntitySAInterface()
@@ -76,7 +80,7 @@ CEntitySAInterface::CEntitySAInterface()
     m_iplIndex = 0;
     m_areaCode = 0;
 
-    m_randomSeek = rand();
+    m_randomSeed = rand();
 
     m_references = NULL;
     m_lastRenderedLink = NULL;
@@ -86,22 +90,36 @@ CEntitySAInterface::CEntitySAInterface()
     m_lod = NULL;
 }
 
+CEntitySAInterface::~CEntitySAInterface()
+{
+}
+
+void CEntitySAInterface::SetModelIndex( unsigned short id )
+{
+    // TODO
+}
+
+void CEntitySAInterface::GetPosition( CVector& pos ) const
+{
+    if ( !m_matrix )
+        pos = m_position;
+    else
+        pos = m_matrix->pos;
+}
+
 CEntitySA::CEntitySA()
 {
     // Set these variables to a constant state
     m_pInterface = NULL;
-    internalID = 0;
-    BeingDeleted = false;
-    DoNotRemoveFromGame = false;
+    m_doNotRemoveFromGame = false;
     m_pStoredPointer = NULL;
-    m_ulArrayID = 0;
 }
 
 CEntitySA::~CEntitySA()
 {
     // Unlink disabled-collisions
     while ( !m_disabledColl.empty() )
-        SetCollidableWith( m_disabledColl.begin()->first, true );
+        SetCollidableWith( pGame->GetPools()->GetEntity( m_disabledColl.begin()->first ), true );
 
     CWorldSA *world = pGame->GetWorld();
     world->Remove( m_pInterface );
@@ -117,7 +135,7 @@ void CEntitySA::SetPosition( float x, float y, float z )
 
     CVector *vecPos;
 
-    if ( m_pInterface->Placeable.matrix )
+    if ( m_pInterface->m_matrix )
         vecPos = &m_pInterface->m_matrix->pos;
     else
         vecPos = &m_pInterface->m_position;
@@ -204,9 +222,9 @@ void CEntitySA::SetOrientation( float x, float y, float z )
         // ChrML: I've switched the X and Z at this level because that's how the real rotation
         //        is. GTA has kinda swapped them in this function.
 
-        push    fZ
-        push    fY
-        push    fX
+        push    z
+        push    y
+        push    x
         mov     ecx, dwThis
         call    dwFunc
     }
@@ -336,33 +354,13 @@ float CEntitySA::GetBasingDistance() const
 void CEntitySA::SetEntityStatus( eEntityStatus bStatus )
 {
     DEBUG_TRACE("void CEntitySA::SetEntityStatus( eEntityStatus bStatus )");
-    m_pInterface->nStatus = bStatus;
+    m_pInterface->m_status = bStatus;
 }
 
 eEntityStatus CEntitySA::GetEntityStatus() const
 {
     DEBUG_TRACE("eEntityStatus CEntitySA::GetEntityStatus() const");
-    return (eEntityStatus) m_pInterface->nStatus;
-}
-
-RwFrame* CEntitySA::GetFrameFromId( int id ) const
-{
-    DWORD dwClump = (DWORD)m_pInterface->m_pRwObject;
-    DWORD dwReturn;
-    _asm
-    {
-        push    id
-        push    dwClump
-        call    FUNC_CClumpModelInfo__GetFrameFromId
-        add     esp, 8
-        mov     dwReturn, eax
-    }
-    return (RwFrame*)dwReturn;
-}
-
-RwMatrix* CEntitySA::GetLTMFromId( int id ) const
-{
-    return GetFrameFromId( id )->m_ltm;
+    return (eEntityStatus) m_pInterface->m_status;
 }
 
 void CEntitySA::SetAlpha( unsigned char alpha )
@@ -374,7 +372,7 @@ void CEntitySA::SetAlpha( unsigned char alpha )
     _asm
     {
         mov     ecx, dwThis
-        push    dwAlpha
+        push    alpha
         call    dwFunc
     }
 }
@@ -445,23 +443,6 @@ void CEntitySA::MatrixConvertToEulerAngles( float& x, float& y, float& z, int un
     }
 }
 
-bool CEntitySA::IsPlayingAnimation( const char *name ) const
-{
-    DWORD dwReturn = 0;
-    DWORD dwFunc = FUNC_RpAnimBlendClumpGetAssociation;
-    DWORD dwThis = (DWORD)m_pInterface->m_pRwObject;
-
-    _asm
-    {
-        push    name
-        push    dwThis
-        call    dwFunc
-        add     esp, 8
-        mov     dwReturn, eax
-    }
-    return dwReturn != 0;
-}
-
 bool CEntitySA::IsCollidableWith( CEntity *entity ) const
 {
     return !MapContains( m_disabledColl, dynamic_cast <CEntitySA*> ( entity )->GetInterface() );
@@ -500,14 +481,4 @@ unsigned char CEntitySA::GetAreaCode() const
 void CEntitySA::SetAreaCode( unsigned char area )
 {
     m_pInterface->m_areaCode = area;
-}
-
-void CEntitySA::SetUnderwater( bool bUnderwater )
-{
-    m_pInterface->bUnderwater = bUnderwater;
-}
-
-bool CEntitySA::GetUnderwater() const
-{
-    return m_pInterface->bUnderwater;
 }

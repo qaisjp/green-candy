@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientWater.cpp
 *  PURPOSE:     Water entity class
 *  DEVELOPERS:  arc_
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -13,8 +14,42 @@
 
 extern CGame* g_pGame;
 
-CClientWater::CClientWater ( CClientManager* pManager, ElementID ID, CVector& vecBL, CVector& vecBR, CVector& vecTL, CVector& vecTR, bool bShallow ) : ClassInit ( this ), CClientEntity ( ID )
+static const luaL_Reg water_interface[] =
 {
+    { NULL, NULL }
+};
+
+static int luaconstructor_water( lua_State *L )
+{
+    CClientWater *water = (CClientWater*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_WATER, water );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, water_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "water", 5 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+void CClientWater::InstanceLua( bool system )
+{
+    PushStack( m_lua );
+    lua_pushlightuserdata( m_lua, this );
+    lua_pushcclosure( m_lua, luaconstructor_water, 1 );
+    luaJ_extend( m_lua, -2, 0 );
+    lua_pop( m_lua, 1 );
+}
+
+CClientWater::CClientWater ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, CVector& vecBL, CVector& vecBR, CVector& vecTL, CVector& vecTR, bool bShallow ) : CClientEntity( ID, system, root )
+{
+    InstanceLua( system );
+
     m_pManager = pManager;
     m_pWaterManager = pManager->GetWaterManager ();
     m_pPoly = g_pGame->GetWaterManager ()->CreateQuad ( vecBL, vecBR, vecTL, vecTR, bShallow );
@@ -23,8 +58,10 @@ CClientWater::CClientWater ( CClientManager* pManager, ElementID ID, CVector& ve
     m_pWaterManager->AddToList ( this );
 }
 
-CClientWater::CClientWater ( CClientManager* pManager, ElementID ID, CVector& vecL, CVector& vecR, CVector& vecTB, bool bShallow ) : ClassInit ( this ), CClientEntity ( ID )
+CClientWater::CClientWater ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, CVector& vecL, CVector& vecR, CVector& vecTB, bool bShallow ) : CClientEntity( ID, system, root )
 {
+    InstanceLua( system );
+
     m_pManager = pManager;
     m_pWaterManager = pManager->GetWaterManager ();
     m_pPoly = g_pGame->GetWaterManager ()->CreateTriangle ( vecL, vecR, vecTB, bShallow );

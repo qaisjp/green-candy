@@ -41,7 +41,6 @@ public:
 
     void                            DoPulse                 ( void );
 
-    static bool                     IsTrainModel            ( unsigned long ulModel );
     static bool                     IsValidModel            ( unsigned long ulModel );
     static eClientVehicleType       GetVehicleType          ( unsigned long ulModel );
     static unsigned char            GetMaxPassengerCount    ( unsigned long ulModel );

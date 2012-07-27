@@ -11,6 +11,7 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+#include "gamesa_renderware.h"
 
 void CClumpModelInfoSAInterface::Init()
 {
@@ -69,10 +70,9 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObject()
     Reference();
 
     clump = RpClumpClone( m_rwClump );
+    atomic = clump->GetFirstAtomic();
 
-    atomic = RpClumpGetLastAtomic( clump );
-
-    if ( atomic && !( m_collFlags & COLL_NOSKELETON ) )
+    if ( atomic && !( m_renderFlags & RENDER_NOSKELETON ) )
     {
         if ( atomic->m_geometry->m_skeleton )
         {
@@ -87,7 +87,7 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObject()
         }
     }
 
-    if ( m_collFlags & COLL_STATIC )
+    if ( m_renderFlags & RENDER_STATIC )
     {
         CAnimBlendHierarchySAInterface *anim;
 
@@ -110,9 +110,9 @@ void CClumpModelInfoSAInterface::SetAnimFile( const char *name )
     if ( strcmp(name, "null") == 0 )
         return;
 
-    anim = malloc( strlen( name ) + 1 );
+    anim = (char*)malloc( strlen( name ) + 1 );
 
-    strcpy(anim, name);
+    strcpy( anim, name );
 
     // this is one nasty hack
     m_animBlock = (int)anim;
@@ -143,7 +143,7 @@ CColModelSAInterface* CClumpModelInfoSAInterface::GetCollision()
     return m_pColModel;
 }
 
-bool RwAtomicSetupAnimHierarchy( RpAtomic *child, void *data )
+bool RwAtomicSetupAnimHierarchy( RpAtomic *child, int )
 {
     child->m_anim = child->m_parent->GetAnimHierarchy();
     return true;
@@ -160,7 +160,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
 
     // Decrease effect count
     if ( effAtomic )
-        m_num2dfx -= effAtomic->m_2dfx->m_count;
+        m_num2dfx -= effAtomic->m_geometry->m_2dfx->m_count;
 
     m_rwClump = clump;
 
@@ -169,7 +169,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
         effAtomic = clump->Find2dfx();
 
         if ( effAtomic )
-            m_num2dfx += effAtomic->m_2dfx->m_count;
+            m_num2dfx += effAtomic->m_geometry->m_2dfx->m_count;
     }
 
     // Set some callbacks
@@ -187,13 +187,13 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
     if ( !atomic || !atomic->m_geometry )
         return;
 
-    if ( m_collFlags & COLL_NOSKELETON )
+    if ( m_renderFlags & RENDER_NOSKELETON )
     {
         clump->ForAllAtomics( RwAtomicSetupAnimHierarchy, 0 );
         return;
     }
 
-    atomic->m_geometry->m_dimension->m_scale *= 1.2;
+    atomic->m_geometry->m_dimension->m_scale *= 1.2f;
 
     // Get the animation
     hier = clump->GetAnimHierarchy();
@@ -204,7 +204,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
 
     for (n=0; n<atomic->m_geometry->m_verticeSize; n++)
     {
-        RwV4d *info = skel->m_vertexInfo[n];
+        RwV4d *info = &skel->m_vertexInfo[n];
         float sum = (*info)[0] + (*info)[1] + (*info)[2] + (*info)[3];
 
         //sum /= 1.0;

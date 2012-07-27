@@ -35,7 +35,7 @@ CPhysicalSAInterface::CPhysicalSAInterface()
     m_turnMass = 1;
     m_massUnk = 1;
     
-    m_physUnk = 0.1;
+    m_physUnk = 0.1f;
 
     m_link = NULL;
 
@@ -72,6 +72,10 @@ CPhysicalSAInterface::CPhysicalSAInterface()
     m_lighting = 0;
 }
 
+CPhysicalSAInterface::~CPhysicalSAInterface()
+{
+}
+
 CEntity* CPhysicalSA::GetDamageEntity() const
 {
     return pGame->GetPools()->GetEntity( GetInterface()->m_damageEntity );
@@ -79,7 +83,7 @@ CEntity* CPhysicalSA::GetDamageEntity() const
 
 void CPhysicalSA::SetDamageEntity( CEntity *entity )
 {
-    CEntitySA* pEntitySA = dynamic_cast <CEntitySA*> ( pEntity );
+    CEntitySA* pEntitySA = dynamic_cast <CEntitySA*> ( entity );
 
     if ( !pEntitySA )
         return;
@@ -87,7 +91,7 @@ void CPhysicalSA::SetDamageEntity( CEntity *entity )
     GetInterface()->m_damageEntity = pEntitySA->GetInterface();
 }
 
-void CPhysicalSA::ResetLastDamage() const
+void CPhysicalSA::ResetLastDamage()
 {
     GetInterface()->m_damageImpulseMagnitude = 0;
     GetInterface()->m_damageEntity = NULL;
@@ -102,7 +106,7 @@ void CPhysicalSA::AttachTo( CPhysical& Entity, const CVector& pos, const CVector
 {
     DEBUG_TRACE("void CPhysicalSA::AttachTo( CPhysical& Entity, const CVector& pos, const CVector& rot )");
 
-    InternalAttachTo( (DWORD)dynamic_cast <CPhysicalSA&> ( Entity ).GetInterface(), pos, rot );
+    InternalAttachTo( dynamic_cast <CPhysicalSA&> ( Entity ).GetInterface(), pos, rot );
 }
 
 void CPhysicalSA::DetachFrom( float fUnkX, float fUnkY, float fUnkZ, bool bUnk )

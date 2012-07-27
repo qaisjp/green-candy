@@ -18,7 +18,7 @@
 #define VALID_POSITION_LIMIT 100000
 
 extern CGameSA* pGame;
-extern CBaseModelInfoSAInterface *ppModelInfo;
+extern CBaseModelInfoSAInterface **ppModelInfo;
 
 enum eAnimGroups
 {    
@@ -56,21 +56,15 @@ CPadSAInterface* CPedSAInterface::GetJoypad()
 
 void CPedSAInterface::OnFrame()
 {
-    // Update our alpha
-    unsigned char ucAlpha = m_alpha;
-
-    // Are we in a different interior than the camera? set our alpha to 0
-    if ( m_areaCode != pGame->GetWorld()->GetCurrentArea() )
-        ucAlpha = 0;
-
-    pGame->GetVisibilityPlugins()->SetClumpAlpha( (RpClump*)m_rwObject, ucAlpha );
-
     // Update player information
-    CPedSA *ped = (CPedSA*)pGame->GetPools()->GetPed( this );
+    CPedSA *ped = mtaPeds[ (*ppPedPool)->GetIndex( this ) ];
 
     // Cannot fix if the ped is managed by GTA:SA internally
     if ( !ped )
         return;
+
+    // Update our alpha
+    pGame->GetVisibilityPlugins()->SetClumpAlpha( (RpClump*)m_rwObject, m_areaCode != pGame->GetWorld()->GetCurrentArea() ? 0 : ped->GetAlpha() );
 
     // Is the player stealth aiming?
     if ( ped->IsStealthAiming() )
@@ -104,6 +98,8 @@ CPedSA::CPedSA( CPedSAInterface *ped )
 
     m_poolIndex = (*ppPedPool)->GetIndex( ped );
     mtaPeds[m_poolIndex] = this;
+
+    m_alpha = 0xFF;
 
     m_pInterface = ped;
     m_intelligence = new CPedIntelligenceSA( GetInterface()->m_intelligence, this );
@@ -145,12 +141,7 @@ void CPedSA::SetModelIndex( unsigned short id )
     m_pInterface->SetModelIndex( id );
 
     // Also set the voice gender
-    CPedModelInfoSAInterface* info = (CPedModelInfoSAInterface*)ppModelInfo[id];
-
-    if ( !info )
-        return; // error
-
-    switch( info->m_pedType )
+    switch( ((CPedModelInfoSAInterface*)info)->m_pedType )
     {
     case PEDTYPE_CIVFEMALE:
     case PEDTYPE_PROSTITUTE:
@@ -231,7 +222,7 @@ void CPedSA::AttachPedToEntity( CEntitySAInterface *entity, const CVector& offse
 
     // Hack the CPed type to non-player so the camera doesn't get changed
     if ( !camChange )
-        GetInterface()->m_pedType = 2;
+        GetInterface()->m_pedType = PEDTYPE_PLAYER_NETWORK;
 
     _asm
     {
@@ -355,7 +346,7 @@ void CPedSA::SetStealthAiming( bool enable )
     if ( !enable )
     {
         // Do we have the aiming animation?
-        CAnimBlendAssociationSA *assoc = pGame->GetAnimManager()->RpAnimBlendClumpGetAssociation( (RpClump*)m_rwObject, ANIM_ID_STEALTH_AIM );
+        CAnimBlendAssociationSA *assoc = pGame->GetAnimManager()->RpAnimBlendClumpGetAssociation( (RpClump*)GetInterface()->m_rwObject, ANIM_ID_STEALTH_AIM );
 
         if ( assoc )
         {
@@ -369,7 +360,7 @@ void CPedSA::SetStealthAiming( bool enable )
 
 void CPedSA::SetAnimationProgress( const char *name, float progress )
 {
-    CAnimBlendAssociationSA *assoc = (CAnimBlendAssociationSA*)pGame->GetAnimManager()->RpAnimBlendClumpGetAssociation( (RpClump*)m_rwObject, name );
+    CAnimBlendAssociationSA *assoc = (CAnimBlendAssociationSA*)pGame->GetAnimManager()->RpAnimBlendClumpGetAssociation( (RpClump*)GetInterface()->m_rwObject, name );
     
     if ( !assoc )
         return;
@@ -377,7 +368,7 @@ void CPedSA::SetAnimationProgress( const char *name, float progress )
     assoc->SetCurrentProgress( progress );
 }
 
-void CPedSA::RemoveWeaponModel( int iModel )
+void CPedSA::RemoveWeaponModel( unsigned short iModel )
 {
     DWORD dwFunc = FUNC_RemoveWeaponModel;
     DWORD dwThis = (DWORD)GetInterface();
@@ -401,7 +392,7 @@ void CPedSA::ClearWeapon( eWeaponType weaponType )
     }
 }
 
-CWeapon* CPedSA::GiveWeapon( eWeaponType weaponType, unsigned int uiAmmo )
+CWeaponSA* CPedSA::GiveWeapon( eWeaponType weaponType, unsigned int uiAmmo )
 {
     if ( weaponType != WEAPONTYPE_UNARMED )
     {
@@ -442,7 +433,7 @@ CWeapon* CPedSA::GiveWeapon( eWeaponType weaponType, unsigned int uiAmmo )
     }
 
     // ryden: Hack to increase the sniper range
-    CWeapon *pWeapon = GetWeapon( (eWeaponSlot)dwReturn );
+    CWeaponSA *pWeapon = GetWeapon( (eWeaponSlot)dwReturn );
 
     if ( weaponType == WEAPONTYPE_SNIPERRIFLE )
     {
@@ -453,12 +444,12 @@ CWeapon* CPedSA::GiveWeapon( eWeaponType weaponType, unsigned int uiAmmo )
     return pWeapon;
 }
 
-CWeapon* CPedSA::GetWeapon( eWeaponType weaponType )
+CWeaponSA* CPedSA::GetWeapon( eWeaponType weaponType )
 {
     if ( weaponType > WEAPONTYPE_LAST_WEAPONTYPE-1 )
         return NULL;
 
-    CWeapon *pWeapon = GetWeapon( pGame->GetWeaponInfo( weaponType )->GetSlot() );
+    CWeaponSA *pWeapon = GetWeapon( pGame->GetWeaponInfo( weaponType )->GetSlot() );
 
     if ( pWeapon->GetType() != weaponType )
         return NULL;
@@ -466,12 +457,12 @@ CWeapon* CPedSA::GetWeapon( eWeaponType weaponType )
     return pWeapon;
 }
 
-CWeapon* CPedSA::GetWeapon( eWeaponSlot weaponSlot )
+CWeaponSA* CPedSA::GetWeapon( eWeaponSlot weaponSlot )
 {
     if ( weaponSlot > WEAPONSLOT_MAX-1 )
         return NULL;
 
-    return m_pWeapons[weaponSlot];
+    return m_weapons[weaponSlot];
 }
 
 void CPedSA::ClearWeapons()
@@ -506,7 +497,7 @@ void CPedSA::SetCurrentWeaponSlot( eWeaponSlot weaponSlot )
     CPedSAInterface *thisPed = (CPedSAInterface*)GetInterface();
  
     // set the new weapon slot
-    thisPed->bCurrentWeaponSlot = weaponSlot;
+    thisPed->m_currentWeapon = weaponSlot;
 
     // is the player the local player?
     CPlayerPedSA *localPlayer = pGame->GetPlayerInfo()->GetPlayerPed();
@@ -514,7 +505,7 @@ void CPedSA::SetCurrentWeaponSlot( eWeaponSlot weaponSlot )
 
     if ( localPlayer == (CPlayerPedSA*)this )
     {
-        pGame->GetPlayerInfo()->GetInterface()->PlayerPedData.m_nChosenWeapon = weaponSlot;
+        pGame->GetPlayerInfo()->GetInterface()->m_pedData.m_nChosenWeapon = weaponSlot;
 
         DWORD dwFunc = FUNC_MakeChangesForNewWeapon_Slot;
         _asm
@@ -565,9 +556,9 @@ void CPedSA::GetTransformedBonePosition( eBone bone, CVector& pos ) const
 
     // Clamp to a sane range as this function can occasionally return massive values,
     // which causes ProcessLineOfSight to effectively freeze
-    pos.fX = Clamp <float> ( -VALID_POSITION_LIMIT, vecPosition->fX, VALID_POSITION_LIMIT );
-    pos.fY = Clamp <float> ( -VALID_POSITION_LIMIT, vecPosition->fY, VALID_POSITION_LIMIT );
-    pos.fZ = Clamp <float> ( -VALID_POSITION_LIMIT, vecPosition->fZ, VALID_POSITION_LIMIT );
+    pos.fX = Clamp <float> ( -VALID_POSITION_LIMIT, pos.fX, VALID_POSITION_LIMIT );
+    pos.fY = Clamp <float> ( -VALID_POSITION_LIMIT, pos.fY, VALID_POSITION_LIMIT );
+    pos.fZ = Clamp <float> ( -VALID_POSITION_LIMIT, pos.fZ, VALID_POSITION_LIMIT );
 }
 
 CTaskSA* CPedSA::GetPrimaryTask() const
@@ -665,6 +656,23 @@ bool CPedSA::IsGettingOutOfVehicle() const
     return false;
 }
 
+bool CPedSA::IsPlayingAnimation( const char *name ) const
+{
+    DWORD dwReturn = 0;
+    DWORD dwFunc = FUNC_RpAnimBlendClumpGetAssociation;
+    DWORD dwThis = (DWORD)m_pInterface->m_rwObject;
+
+    _asm
+    {
+        push    name
+        push    dwThis
+        call    dwFunc
+        add     esp, 8
+        mov     dwReturn, eax
+    }
+    return dwReturn != 0;
+}
+
 bool CPedSA::IsDying() const
 {
     CTaskSA *task = GetPrimaryTask();
@@ -742,9 +750,9 @@ void CPedSA::SetClothesTextureAndModel( const char *tex, const char *model, shor
     _asm
     {
         mov     ecx, dwThis
-        push    textureType
-        push    szModel
-        push    szTexture
+        push    txd
+        push    model
+        push    tex
         call    dwFunc
     }
 }
@@ -807,7 +815,7 @@ CEntity* CPedSA::GetContactEntity() const
     return NULL;
 }
 
-CEntity* CPedSA::GetTargetedEntity()
+CEntity* CPedSA::GetTargetedEntity() const
 {
     CEntitySAInterface *pInterface = GetInterface()->m_target;
 
@@ -827,9 +835,9 @@ CEntity* CPedSA::GetTargetedEntity()
 void CPedSA::SetTargetedEntity( CEntity *entity )
 {
     CEntitySAInterface* pInterface = NULL;
-    if ( pEntity )
+    if ( entity )
     {
-        CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
+        CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( entity );
 
         if ( pEntitySA )
             pInterface = pEntitySA->GetInterface();
@@ -878,7 +886,7 @@ void CPedSA::SetOnFire( bool bOnFire )
         // Make sure that we have some attached fire
         if ( pInterface->m_fire != NULL )
         {
-            CFire* pFire = pGame->GetFireManager()->GetFire( (CFireSAInterface*)pInterface->pFireOnPed );
+            CFire *pFire = pGame->GetFireManager()->GetFire( pInterface->m_fire );
 
             if ( pFire )
                 pFire->Extinguish();
@@ -903,16 +911,16 @@ void CPedSA::SetOnFire( bool bOnFire )
     // Attach the fire only to the player, do not let it
     // create child fires when moving.
     pFire->SetNumGenerationsAllowed( 0 );
-    pInterface->pFireOnPed = pFire->GetInterface();
+    pInterface->m_fire = pFire->GetInterface();
 }
 
 void CPedSA::GetVoice( short *psVoiceType, short *psVoiceID ) const
 {
     if ( psVoiceType )
-        *psVoiceType = m_pPedSound->GetVoiceTypeID ();
+        *psVoiceType = m_sound->GetVoiceTypeID ();
 
     if ( psVoiceID )
-        *psVoiceID = m_pPedSound->GetVoiceID ();
+        *psVoiceID = m_sound->GetVoiceID ();
 }
 
 void CPedSA::GetVoice( const char **pszVoiceType, const char **pszVoice ) const
@@ -929,8 +937,8 @@ void CPedSA::GetVoice( const char **pszVoiceType, const char **pszVoice ) const
 
 void CPedSA::SetVoice( short sVoiceType, short sVoiceID )
 {
-    m_pPedSound->SetVoiceTypeID ( sVoiceType );
-    m_pPedSound->SetVoiceID ( sVoiceID );
+    m_sound->SetVoiceTypeID ( sVoiceType );
+    m_sound->SetVoiceID ( sVoiceID );
 }
 
 void CPedSA::SetVoice( const char *szVoiceType, const char *szVoice )

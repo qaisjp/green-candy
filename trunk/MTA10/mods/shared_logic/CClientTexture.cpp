@@ -1,25 +1,50 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientTexture.cpp
-*  PURPOSE:
-*  DEVELOPERS:  idiot
+*  PURPOSE:     Core texture management interface for deathmatch
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
 #include <StdInc.h>
 
-////////////////////////////////////////////////////////////////
-//
-// CClientTexture::CClientTexture
-//
-//
-//
-////////////////////////////////////////////////////////////////
-CClientTexture::CClientTexture ( CClientManager* pManager, ElementID ID, CTextureItem* pTextureItem ) : ClassInit ( this ), CClientMaterial ( pManager, ID )
+static const luaL_Reg texture_interface[] =
 {
+    { NULL, NULL }
+};
+
+static int luaconstructor_texture( lua_State *L )
+{
+    CClientTexture *tex = (CClientTexture*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_CORETEXTURE, tex );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, texture_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "core-texture", 8 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientTexture::CClientTexture( CClientManager* pManager, ElementID ID, LuaClass& root, CTextureItem* pTextureItem ) : CClientMaterial( pManager, ID, root )
+{
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_texture, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     SetTypeName ( "texture" );
     m_pRenderItem = pTextureItem;
 }

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientSound.cpp
@@ -8,14 +8,47 @@
 *  DEVELOPERS:  Stanislav Bobrov <lil_Toady@hotmail.com>
 *               arc_
 *               Florian Busse <flobu@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
 #include <StdInc.h>
 #include "CBassAudio.h"
 
-CClientSound::CClientSound ( CClientManager* pManager, ElementID ID ) : ClassInit ( this ), CClientEntity ( ID )
+static const luaL_Reg sound_interface[] =
 {
+    { NULL, NULL }
+};
+
+static int luaconstructor_sound( lua_State *L )
+{
+    CClientSound *sound = (CClientSound*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_SOUND, sound );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, sound_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "sound", 5 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientSound::CClientSound( CClientManager* pManager, ElementID ID, LuaClass& root ) : CClientEntity( ID, false, root )
+{
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_sound, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     m_pSoundManager = pManager->GetSoundManager();
     m_pAudio = NULL;
 

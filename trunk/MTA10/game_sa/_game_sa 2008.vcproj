@@ -573,10 +573,6 @@
 				>
 			</File>
 			<File
-				RelativePath="CMonsterTruckSA.cpp"
-				>
-			</File>
-			<File
 				RelativePath="CObjectSA.cpp"
 				>
 			</File>
@@ -686,10 +682,6 @@
 			</File>
 			<File
 				RelativePath=".\CPtrNodeSA.cpp"
-				>
-			</File>
-			<File
-				RelativePath="CQuadBikeSA.cpp"
 				>
 			</File>
 			<File
@@ -1158,10 +1150,6 @@
 				>
 			</File>
 			<File
-				RelativePath="CMonsterTruckSA.h"
-				>
-			</File>
-			<File
 				RelativePath="CObjectSA.h"
 				>
 			</File>
@@ -1275,10 +1263,6 @@
 			</File>
 			<File
 				RelativePath=".\CPtrNodeSA.h"
-				>
-			</File>
-			<File
-				RelativePath="CQuadBikeSA.h"
 				>
 			</File>
 			<File

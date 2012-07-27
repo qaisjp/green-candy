@@ -33,12 +33,12 @@ CEntity* CCamSA::GetTargetEntity() const
     return NULL;
 }
 
-void CCamSA::SetVehicleInterpolationSource( CVehicleSA *veh )
+void CCamSA::SetVehicleInterpolationSource( CVehicle *veh )
 {
-    m_pInterface->m_pLastCarEntered = veh->GetInterface();
+    m_pInterface->m_pLastCarEntered = mtaVehicles[veh->GetPoolIndex()]->GetInterface();
 }
 
-void CCamSA::SetPedInterpolationSource( CPedSA *ped )
+void CCamSA::SetPedInterpolationSource( CPed *ped )
 {
-    m_pInterface->m_pLastPedLookedAt = ped->GetInterface();
+    m_pInterface->m_pLastPedLookedAt = mtaPeds[ped->GetPoolIndex()]->GetInterface();
 }

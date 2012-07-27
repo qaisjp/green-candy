@@ -15,7 +15,6 @@
 
 class CClientColPolygon : public CClientColShape
 {
-    DECLARE_CLASS( CClientColPolygon, CClientColShape )
 public:
                                 CClientColPolygon   ( CClientManager* pManager, ElementID ID, const CVector& vecPosition );
 

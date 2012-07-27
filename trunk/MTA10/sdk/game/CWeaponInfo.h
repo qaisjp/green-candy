@@ -218,52 +218,52 @@ enum eWeaponModel
 class CWeaponInfo
 {
 public:
-    virtual eWeaponModel                GetModel() = 0;
-
-    virtual float                       GetWeaponRange() = 0;
-    virtual void                        SetWeaponRange( float range ) = 0;
-
-    virtual float                       GetTargetRange() = 0;
-    virtual void                        SetTargetRange( float range ) = 0;
-
-    virtual CVector*                    GetFireOffset() = 0;
-    virtual void                        SetFireOffset( CVector *offset ) = 0;
-
-    virtual short                       GetDamagePerHit() = 0;
-    virtual void                        SetDamagePerHit( short sDamagePerHit ) = 0;
-
-    virtual float                       GetAccuracy() = 0;
-    virtual void                        SetAccuracy( float acc ) = 0;
-    // projectile/areaeffect only
-    virtual float                       GetFiringSpeed() = 0;
-    virtual void                        SetFiringSpeed( float speed ) = 0;
-    // area effect only
-    virtual float                       GetRadius() = 0;
-    virtual void                        SetRadius( float radius ) = 0;
-
-    virtual float                       GetLifeSpan() = 0;
-    virtual void                        SetLifeSpan(float span ) = 0;
-
-    virtual float                       GetSpread() = 0;
-    virtual void                        SetSpread( float spread )=0;
-
-    virtual float                       GetAnimBreakoutTime() = 0;
-    virtual void                        SetAnimBreakoutTime( float time ) = 0;
-
-    virtual eWeaponSlot                 GetSlot() = 0;
-    virtual void                        SetSlot( eWeaponSlot dwSlot ) = 0;
-
-    virtual eWeaponSkill                GetSkill() = 0;
-    virtual void                        SetSkill( eWeaponSkill weaponSkill ) = 0;
-
-    virtual float                       GetRequiredStatLevel() = 0;
-    virtual void                        SetRequiredStatLevel( float level ) = 0;
+    virtual eWeaponModel                GetModel() const = 0;
 
     virtual void                        SetFlag( unsigned int flags ) = 0;
     virtual void                        ClearFlag( unsigned int flags ) = 0;
     virtual bool                        IsFlagSet( unsigned int flags ) = 0;
 
-    virtual eFireType                   GetFireType() = 0;
+    virtual float                       GetWeaponRange() const = 0;
+    virtual void                        SetWeaponRange( float range ) = 0;
+
+    virtual float                       GetTargetRange() const = 0;
+    virtual void                        SetTargetRange( float range ) = 0;
+
+    virtual const CVector&              GetFireOffset() const = 0;
+    virtual void                        SetFireOffset( const CVector& offset ) = 0;
+
+    virtual short                       GetDamagePerHit() const = 0;
+    virtual void                        SetDamagePerHit( short sDamagePerHit ) = 0;
+
+    virtual float                       GetAccuracy() const = 0;
+    virtual void                        SetAccuracy( float acc ) = 0;
+    // projectile/areaeffect only
+    virtual float                       GetFiringSpeed() const = 0;
+    virtual void                        SetFiringSpeed( float speed ) = 0;
+    // area effect only
+    virtual float                       GetRadius() const = 0;
+    virtual void                        SetRadius( float radius ) = 0;
+
+    virtual float                       GetLifeSpan() const = 0;
+    virtual void                        SetLifeSpan( float span ) = 0;
+
+    virtual float                       GetSpread() const = 0;
+    virtual void                        SetSpread( float spread )=0;
+
+    virtual float                       GetAnimBreakoutTime() const = 0;
+    virtual void                        SetAnimBreakoutTime( float time ) = 0;
+
+    virtual eWeaponSlot                 GetSlot() const = 0;
+    virtual void                        SetSlot( eWeaponSlot dwSlot ) = 0;
+
+    virtual eWeaponSkill                GetSkill() const = 0;
+    virtual void                        SetSkill( eWeaponSkill weaponSkill ) = 0;
+
+    virtual float                       GetRequiredStatLevel() const = 0;
+    virtual void                        SetRequiredStatLevel( float level ) = 0;
+
+    virtual eFireType                   GetFireType() const = 0;
 };
 
 #endif

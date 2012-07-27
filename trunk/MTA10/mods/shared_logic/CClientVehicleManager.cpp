@@ -199,25 +199,19 @@ bool CClientVehicleManager::IsValidModel ( unsigned long ulModel )
 
 eClientVehicleType CClientVehicleManager::GetVehicleType ( unsigned long ulModel )
 {
-    // Valid vehicle id?
-    if ( IsValidModel ( ulModel ) )
+    // Grab the model info for the current vehicle
+    CModelInfo* pModelInfo = g_pGame->GetModelInfo ( ulModel );
+    if ( pModelInfo )
     {
-        // Grab the model info for the current vehicle
-        CModelInfo* pModelInfo = g_pGame->GetModelInfo ( ulModel );
-        if ( pModelInfo )
-        {
-            // Return the appropriate type
-            if ( pModelInfo->IsCar () ) return CLIENTVEHICLE_CAR;
-            if ( pModelInfo->IsBike () ) return CLIENTVEHICLE_BIKE;
-            if ( pModelInfo->IsPlane () ) return CLIENTVEHICLE_PLANE;
-            if ( pModelInfo->IsHeli () ) return CLIENTVEHICLE_HELI;
-            if ( pModelInfo->IsBoat () ) return CLIENTVEHICLE_BOAT;
-            if ( pModelInfo->IsQuadBike () ) return CLIENTVEHICLE_QUADBIKE;
-            if ( pModelInfo->IsBmx () ) return CLIENTVEHICLE_BMX;
-            if ( pModelInfo->IsMonsterTruck () ) return CLIENTVEHICLE_MONSTERTRUCK;
-            if ( pModelInfo->IsTrailer () ) return CLIENTVEHICLE_TRAILER;
-            if ( pModelInfo->IsTrain () ) return CLIENTVEHICLE_TRAIN;
-        }
+        // Return the appropriate type
+        if ( pModelInfo->IsCar () ) return CLIENTVEHICLE_CAR;
+        if ( pModelInfo->IsBike () ) return CLIENTVEHICLE_BIKE;
+        if ( pModelInfo->IsPlane () ) return CLIENTVEHICLE_PLANE;
+        if ( pModelInfo->IsHeli () ) return CLIENTVEHICLE_HELI;
+        if ( pModelInfo->IsBoat () ) return CLIENTVEHICLE_BOAT;
+        if ( pModelInfo->IsBmx () ) return CLIENTVEHICLE_BMX;
+        if ( pModelInfo->IsTrailer () ) return CLIENTVEHICLE_TRAILER;
+        if ( pModelInfo->IsTrain () ) return CLIENTVEHICLE_TRAIN;
     }
 
     // Invalid vehicle id or some other error
@@ -449,14 +443,12 @@ bool CClientVehicleManager::Exists ( CClientVehicle* pVehicle )
     return false;
 }
 
-
-bool CClientVehicleManager::IsVehicleLimitReached ( void )
+bool CClientVehicleManager::IsVehicleLimitReached()
 {
     // GTA allows max 110 vehicles. We restrict ourselves to 64 for now
     // due to FPS issues and crashes around 100 vehicles.
-    return g_pGame->GetPools ()->GetVehicleCount () >= 64;
+    return g_pGame->GetPools()->GetVehicleCount() >= 64;
 }
-
 
 void CClientVehicleManager::OnCreation ( CClientVehicle * pVehicle )
 {

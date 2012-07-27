@@ -104,7 +104,7 @@ enum eGameVersion
 class __declspec(novtable) CGame 
 {
 public:
-    virtual                             ~CGame() = 0;
+    virtual                             ~CGame()    {};
 
     virtual CPools*                     GetPools() = 0;
     virtual CPlayerInfo*                GetPlayerInfo() = 0;

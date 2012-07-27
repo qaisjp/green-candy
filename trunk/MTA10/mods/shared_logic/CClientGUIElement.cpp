@@ -17,7 +17,30 @@ using std::list;
 
 extern CClientGame* g_pClientGame;
 
-CClientGUIElement::CClientGUIElement ( CClientManager * pManager, CLuaMain* pLuaMain, CGUIElement* pCGUIElement, ElementID ID ) : ClassInit ( this ), CClientEntity ( ID )
+static const luaL_Reg gui_interface[] =
+{
+    { NULL, NULL }
+};
+
+static int luaconstructor_gui( lua_State *L )
+{
+    CClientGUIElement *gui = (CClientGUIElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_GUIELEMENT, gui );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, gui_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushvalue( L, lua_upvalueindex( 2 ) );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientGUIElement::CClientGUIElement( CClientManager * pManager, CLuaMain* pLuaMain, CGUIElement* pCGUIElement, LuaClass& root, bool system, ElementID ID ) : CClientEntity( ID, system, root )
 {
     m_pManager = pManager;
     m_pGUIManager = pManager->GetGUIManager ();
@@ -32,57 +55,71 @@ CClientGUIElement::CClientGUIElement ( CClientManager * pManager, CLuaMain* pLua
     CGUI_SET_CCLIENTGUIELEMENT ( pCGUIElement, this );
 
     // Generate the CGUI type name variable
-    switch ( m_pCGUIElement->GetType () ) {
-        case CGUI_BUTTON:
-            m_szCGUITypeName = "button";
-            break;
-        case CGUI_CHECKBOX:
-            m_szCGUITypeName = "checkbox";
-            break;
-        case CGUI_EDIT:
-            m_szCGUITypeName = "edit";
-            break;
-        case CGUI_GRIDLIST:
-            m_szCGUITypeName = "gridlist";
-            break;
-        case CGUI_LABEL:
-            m_szCGUITypeName = "label";
-            break;
-        case CGUI_MEMO:
-            m_szCGUITypeName = "memo";
-            break;
-        case CGUI_PROGRESSBAR:
-            m_szCGUITypeName = "progressbar";
-            break;
-        case CGUI_RADIOBUTTON:
-            m_szCGUITypeName = "radiobutton";
-            break;
-        case CGUI_STATICIMAGE:
-            m_szCGUITypeName = "staticimage";
-            break;
-        case CGUI_TAB:
-            m_szCGUITypeName = "tab";
-            break;
-        case CGUI_TABPANEL:
-            m_szCGUITypeName = "tabpanel";
-            break;
-        case CGUI_WINDOW:
-            m_szCGUITypeName = "window";
-            break;
-        case CGUI_SCROLLPANE:
-            m_szCGUITypeName = "scrollpane";
-            break;
-        case CGUI_SCROLLBAR:
-            m_szCGUITypeName = "scrollbar";
-            break;
-        case CGUI_COMBOBOX:
-            m_szCGUITypeName = "combobox";
-            break;
-        default:
-            m_szCGUITypeName = "unknown";
-            break;
+    switch( m_pCGUIElement->GetType() )
+    {
+    case CGUI_BUTTON:
+        m_szCGUITypeName = "button";
+        break;
+    case CGUI_CHECKBOX:
+        m_szCGUITypeName = "checkbox";
+        break;
+    case CGUI_EDIT:
+        m_szCGUITypeName = "edit";
+        break;
+    case CGUI_GRIDLIST:
+        m_szCGUITypeName = "gridlist";
+        break;
+    case CGUI_LABEL:
+        m_szCGUITypeName = "label";
+        break;
+    case CGUI_MEMO:
+        m_szCGUITypeName = "memo";
+        break;
+    case CGUI_PROGRESSBAR:
+        m_szCGUITypeName = "progressbar";
+        break;
+    case CGUI_RADIOBUTTON:
+        m_szCGUITypeName = "radiobutton";
+        break;
+    case CGUI_STATICIMAGE:
+        m_szCGUITypeName = "staticimage";
+        break;
+    case CGUI_TAB:
+        m_szCGUITypeName = "tab";
+        break;
+    case CGUI_TABPANEL:
+        m_szCGUITypeName = "tabpanel";
+        break;
+    case CGUI_WINDOW:
+        m_szCGUITypeName = "window";
+        break;
+    case CGUI_SCROLLPANE:
+        m_szCGUITypeName = "scrollpane";
+        break;
+    case CGUI_SCROLLBAR:
+        m_szCGUITypeName = "scrollbar";
+        break;
+    case CGUI_COMBOBOX:
+        m_szCGUITypeName = "combobox";
+        break;
+    default:
+        m_szCGUITypeName = "unknown";
+        break;
     }
-    SetTypeName ( SString ( "gui-%s", m_szCGUITypeName ) );
+
+    SString typeName = SString( "gui-%s", m_szCGUITypeName );
+
+    SetTypeName( typeName );
+
+    // Advance the Lua interface
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushlstring( L, typeName.c_str(), typeName.size() );
+    lua_pushcclosure( L, luaconstructor_gui, 2 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
 
     // Add us to the list in the manager
     m_pGUIManager->Add ( this );

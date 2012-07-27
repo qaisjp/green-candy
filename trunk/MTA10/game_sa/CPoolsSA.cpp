@@ -345,7 +345,7 @@ CAutomobileTrailer* CPoolsSA::AddTrailer( unsigned short modelID )
     if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetModelType() != VEHICLE_AUTOMOBILETRAILER )
         return NULL;
 
-    return new CAutomobileTrailerSA( (CAutomobileTrailerSA*)CreateVehicle( modelID ) );
+    return new CAutomobileTrailerSA( (CAutomobileTrailerSAInterface*)CreateVehicle( modelID ) );
 }
 
 CAutomobile* CPoolsSA::AddAutomobile( unsigned short modelID )
@@ -429,7 +429,7 @@ CVehicle* CPoolsSA::AddVehicle( unsigned short modelID )
     return NULL;
 }
 
-CVehicle* CPoolsSA::GetVehicle( void *entity )
+CVehicle* CPoolsSA::GetVehicle( void *entity ) const
 {
     if ( m_getVehicleEnabled )
         return NULL;
@@ -437,9 +437,9 @@ CVehicle* CPoolsSA::GetVehicle( void *entity )
     return ((CVehicleSAInterface*)entity)->m_vehicle;
 }
 
-CVehicle* CPoolsSA::GetVehicleFromRef( unsigned int index )
+CVehicle* CPoolsSA::GetVehicleFromRef( unsigned int index ) const
 {
-    DEBUG_TRACE("CVehicle* CPoolsSA::GetVehicleFromRef( unsigned int index )");
+    DEBUG_TRACE("CVehicle* CPoolsSA::GetVehicleFromRef( unsigned int index ) const");
 
     if ( index > MAX_VEHICLES-1 )
         return NULL;
@@ -466,7 +466,7 @@ static inline CObjectSAInterface* CreateObject( unsigned short model )
     _asm
     {
         push    1
-        push    dwModel
+        push    model
         call    CObjectCreate
         add     esp, 8
         mov     obj, eax
@@ -488,7 +488,7 @@ CObject* CPoolsSA::AddObject( unsigned short modelId )
     return new CObjectSA( CreateObject( modelId ) );
 }
 
-CObject* CPoolsSA::GetObject( void *entity )
+CObject* CPoolsSA::GetObject( void *entity ) const
 {
     if ( !(*ppObjectPool)->IsValid( (CObjectSAInterface*)entity ) )
         return NULL;
@@ -496,9 +496,9 @@ CObject* CPoolsSA::GetObject( void *entity )
     return mtaObjects[ (*ppObjectPool)->GetIndex( (CObjectSAInterface*)entity ) ];
 }
 
-CObject* CPoolsSA::GetObjectFromRef( unsigned int index )
+CObject* CPoolsSA::GetObjectFromRef( unsigned int index ) const
 {
-    DEBUG_TRACE("CObject* CPoolsSA::GetObjectFromRef( unsigned int index )");
+    DEBUG_TRACE("CObject* CPoolsSA::GetObjectFromRef( unsigned int index ) const");
 
     if ( index > MAX_OBJECTS-1 )
         return NULL;
@@ -544,12 +544,12 @@ CPed* CPoolsSA::AddPed( unsigned short modelId )
         return NULL;
 
     if ( modelId > MAX_MODELS-1 )
-        return;
+        return NULL;
 
     CBaseModelInfoSAInterface *info = ppModelInfo[modelId];
 
     if ( !info || info->GetModelType() != MODEL_PED )
-        return;
+        return NULL;
 
     return new CPlayerPedSA( CreatePlayerPed(), modelId, false );
 }
@@ -569,7 +569,7 @@ inline static CCivilianPedSAInterface* CreateCivilianPed()
     }
 
     pGame->GetWorld()->Add( ped );
-    return ped:
+    return ped;
 }
 
 CPed* CPoolsSA::AddCivilianPed( unsigned short modelID )
@@ -586,10 +586,10 @@ CPed* CPoolsSA::AddCivilianPed( void *entity )
 {
     DEBUG_TRACE("CPed* CPoolsSA::AddCivilianPed( void *entity )");
 
-    return new CCivilianPedSA( (CCivilianPedSAInterface*)entity );
+    return new CCivilianPedSA( (CCivilianPedSAInterface*)entity, ((CCivilianPedSAInterface*)entity)->m_model );
 }
 
-CPed* CPoolSA::GetPed( void *entity )
+CPed* CPoolsSA::GetPed( void *entity ) const
 {
     if ( !(*ppPedPool)->IsValid( (CPedSAInterface*)entity ) )
         return NULL;
@@ -597,9 +597,9 @@ CPed* CPoolSA::GetPed( void *entity )
     return mtaPeds[ (*ppPedPool)->GetIndex( (CPedSAInterface*)entity ) ];
 }
 
-CPed* CPoolsSA::GetPedFromRef( unsigned int index )
+CPed* CPoolsSA::GetPedFromRef( unsigned int index ) const
 {
-    DEBUG_TRACE("CPed* CPoolsSA::GetPedFromRef( unsigned int index )");
+    DEBUG_TRACE("CPed* CPoolsSA::GetPedFromRef( unsigned int index ) const");
 
     if ( index > MAX_PEDS )
         return NULL;
@@ -614,7 +614,7 @@ void CPoolsSA::DeleteAllPeds()
     (*ppPedPool)->Clear();
 }
 
-CEntity* CPoolsSA::GetEntity( void *entity )
+CEntity* CPoolsSA::GetEntity( void *entity ) const
 {
     switch ( ((CEntitySAInterface*)entity)->m_type )
     {
@@ -641,7 +641,7 @@ CBuilding* CPoolsSA::AddBuilding( unsigned short modelID )
 
 char szOutput[1024];
 
-void CPoolsSA::DumpPoolsStatus ()
+void CPoolsSA::DumpPoolsStatus() const
 {
     char*  poolNames[] = {"Buildings", "Peds", "Objects", "Dummies", "Vehicles", "ColModels", 
         "Tasks", "Events", "TaskAllocators", "PedIntelligences", "PedAttractors", 
@@ -671,7 +671,7 @@ void CPoolsSA::DumpPoolsStatus ()
 #endif
 }
 
-int CPoolsSA::GetPoolDefaultCapacity( ePools pool )
+unsigned int CPoolsSA::GetPoolDefaultCapacity( ePools pool ) const
 {
     switch( pool )
     {
@@ -696,7 +696,7 @@ int CPoolsSA::GetPoolDefaultCapacity( ePools pool )
     return 0;
 }
 
-unsigned int CPoolsSA::GetNumberOfUsedSpaces( ePools pool )
+unsigned int CPoolsSA::GetNumberOfUsedSpaces( ePools pool ) const
 {
     switch( pool )
     {
@@ -739,7 +739,7 @@ unsigned int CPoolsSA::GetNumberOfUsedSpaces( ePools pool )
     return 0;
 }
 
-unsigned int CPoolsSA::GetPoolCapacity( ePools pool )
+unsigned int CPoolsSA::GetPoolCapacity( ePools pool ) const
 {
     switch( pool )
     {

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientVehicle.cpp
@@ -16,6 +16,7 @@
 *               Derek Abdine <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -25,7 +26,6 @@ using std::list;
 
 extern CClientGame* g_pClientGame;
 
-
 // To hide the ugly "pointer truncation from DWORD* to unsigned long warning
 #pragma warning(disable:4311)
 
@@ -34,8 +34,40 @@ extern CClientGame* g_pClientGame;
 #define VEHICLE_INTERPOLATION_WARP_THRESHOLD            15
 #define VEHICLE_INTERPOLATION_WARP_THRESHOLD_FOR_SPEED  1.8f
 
-CClientVehicle::CClientVehicle ( CClientManager* pManager, ElementID ID, unsigned short usModel ) : ClassInit ( this ), CClientStreamElement ( pManager->GetVehicleStreamer (), ID )
+static const luaL_Reg vehicle_interface[] =
 {
+    { NULL, NULL }
+};
+
+static int luaconstructor_vehicle( lua_State *L )
+{
+    CClientVehicle *veh = (CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_VEHICLE, veh );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, vehicle_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "vehicle", 7 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel ) : CClientStreamElement( pManager->GetVehicleStreamer(), ID, root, system )
+{
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_vehicle, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     CClientEntityRefManager::AddEntityRefs ( ENTITY_REF_DEBUG ( this, "CClientVehicle" ), &m_pDriver, &m_pOccupyingDriver, &m_pPreviousLink, &m_pNextLink, &m_pTowedVehicle, &m_pTowedByVehicle, &m_pPickedUpWinchEntity, &m_pLastSyncer, NULL );
 
     // Initialize members
@@ -2126,9 +2158,9 @@ void CClientVehicle::Create ( void )
     // If the vehicle doesn't exist
     if ( !m_pVehicle )
     {
-        #ifdef MTA_DEBUG
-            g_pCore->GetConsole ()->Printf ( "CClientVehicle::Create %d", GetModel() );
-        #endif
+#ifdef MTA_DEBUG
+        g_pCore->GetConsole ()->Printf ( "CClientVehicle::Create %d", GetModel() );
+#endif
 
         // Check again that the limit isn't reached. We are required to do so because
         // we load async. The streamer isn't always aware of our limits.
@@ -2342,7 +2374,6 @@ void CClientVehicle::Create ( void )
         for ( unsigned char i = 0; i < 6; ++i )
             SetDoorOpenRatio ( i, m_fDoorOpenRatio [ i ], 0, true );
 
-
         // Re-apply handling entry
         if ( m_pHandlingEntry )
         {
@@ -2351,6 +2382,7 @@ void CClientVehicle::Create ( void )
             if ( m_bHasCustomHandling )
                 ApplyHandling ();
         }
+
         // Re-add all the upgrades - Has to be applied after handling *shrugs*
         if ( m_pUpgrades )
             m_pUpgrades->ReAddAll ();
@@ -2366,9 +2398,9 @@ void CClientVehicle::Destroy ( void )
     // If the vehicle exists
     if ( m_pVehicle )
     {
-        #ifdef MTA_DEBUG
-            g_pCore->GetConsole ()->Printf ( "CClientVehicle::Destroy %d", GetModel() );
-        #endif
+#ifdef MTA_DEBUG
+        g_pCore->GetConsole ()->Printf ( "CClientVehicle::Destroy %d", GetModel() );
+#endif
 
         // Invalidate
         m_pManager->InvalidateEntity ( this );
@@ -2435,6 +2467,7 @@ void CClientVehicle::Destroy ( void )
                 m_pOccupyingDriver->RemoveFromVehicle ();
             }
         }
+
         for ( unsigned int i = 0; i < 8; i++ )
         {
             if ( m_pOccupyingPassengers [i] && m_pOccupyingPassengers [i]->m_pOccupyingVehicle == this )

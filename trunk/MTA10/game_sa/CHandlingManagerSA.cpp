@@ -33,56 +33,54 @@ void DumpHandlingData ( tHandlingDataSA* pData )
 {
     unsigned int iCounter = pData->iVehicleID;
 
-    core
+    CFile *file = core->GetMTARoot()->Open( "handling_dump.txt", "a+" );
 
-    FILE* pFile = fopen ( "C:/dumped.txt", "a+" );
+    file->Printf( "    m_OriginalHandlingData [%u].iVehicleID = %u;\n", iCounter, iCounter );
+    file->Printf( "    m_OriginalHandlingData [%u].fMass = %ff;\n", iCounter, pData->fMass );
+    file->Printf( "    m_OriginalHandlingData [%u].fTurnMass = %ff;\n", iCounter, pData->fTurnMass );
+    file->Printf( "    m_OriginalHandlingData [%u].fDragCoeff = %ff;\n", iCounter, pData->fDragCoeff );
+    file->Printf( "    m_OriginalHandlingData [%u].vecCenterOfMass = CVector ( %ff, %ff, %ff );\n", iCounter, pData->vecCenterOfMass.fX, pData->vecCenterOfMass.fY, pData->vecCenterOfMass.fZ );
+    file->Printf( "    m_OriginalHandlingData [%u].uiPercentSubmerged = %u;\n", iCounter, pData->uiPercentSubmerged );
+    file->Printf( "    m_OriginalHandlingData [%u].fTractionMultiplier = %ff;\n", iCounter, pData->fTractionMultiplier );
 
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].iVehicleID = %u;\n", iCounter, iCounter );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fMass = %ff;\n", iCounter, pData->fMass );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fTurnMass = %ff;\n", iCounter, pData->fTurnMass );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fDragCoeff = %ff;\n", iCounter, pData->fDragCoeff );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].vecCenterOfMass = CVector ( %ff, %ff, %ff );\n", iCounter, pData->vecCenterOfMass.fX, pData->vecCenterOfMass.fY, pData->vecCenterOfMass.fZ );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].uiPercentSubmerged = %u;\n", iCounter, pData->uiPercentSubmerged );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fTractionMultiplier = %ff;\n", iCounter, pData->fTractionMultiplier );
+    file->Printf( "    m_OriginalHandlingData [%u].Transmission.ucDriveType = '%c';\n", iCounter, pData->Transmission.ucDriveType );
+    file->Printf( "    m_OriginalHandlingData [%u].Transmission.ucEngineType = '%c';\n", iCounter, pData->Transmission.ucEngineType );
+    file->Printf( "    m_OriginalHandlingData [%u].Transmission.ucNumberOfGears = %u;\n", iCounter, pData->Transmission.ucNumberOfGears );
+    file->Printf( "    m_OriginalHandlingData [%u].Transmission.uiHandlingFlags = %u;\n", iCounter, pData->Transmission.uiHandlingFlags );
 
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].Transmission.ucDriveType = '%c';\n", iCounter, pData->Transmission.ucDriveType );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].Transmission.ucEngineType = '%c';\n", iCounter, pData->Transmission.ucEngineType );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].Transmission.ucNumberOfGears = %u;\n", iCounter, pData->Transmission.ucNumberOfGears );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].Transmission.uiHandlingFlags = %u;\n", iCounter, pData->Transmission.uiHandlingFlags );
+    file->Printf( "    m_OriginalHandlingData [%u].Transmission.fEngineAcceleration = %ff;\n", iCounter, pData->Transmission.fEngineAcceleration );
+    file->Printf( "    m_OriginalHandlingData [%u].Transmission.fEngineInertia = %ff;\n", iCounter, pData->Transmission.fEngineInertia );
+    file->Printf( "    m_OriginalHandlingData [%u].Transmission.fMaxVelocity = %ff;\n", iCounter, pData->Transmission.fMaxVelocity );
 
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].Transmission.fEngineAcceleration = %ff;\n", iCounter, pData->Transmission.fEngineAcceleration );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].Transmission.fEngineInertia = %ff;\n", iCounter, pData->Transmission.fEngineInertia );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].Transmission.fMaxVelocity = %ff;\n", iCounter, pData->Transmission.fMaxVelocity );
+    file->Printf( "    m_OriginalHandlingData [%u].fBrakeDeceleration = %ff;\n", iCounter, pData->fBrakeDeceleration );
+    file->Printf( "    m_OriginalHandlingData [%u].fBrakeBias = %ff;\n", iCounter, pData->fBrakeBias );
+    file->Printf( "    m_OriginalHandlingData [%u].bABS = false;\n", iCounter );
 
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fBrakeDeceleration = %ff;\n", iCounter, pData->fBrakeDeceleration );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fBrakeBias = %ff;\n", iCounter, pData->fBrakeBias );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].bABS = false;\n", iCounter );
+    file->Printf( "    m_OriginalHandlingData [%u].fSteeringLock = %ff;\n", iCounter, pData->fSteeringLock );
+    file->Printf( "    m_OriginalHandlingData [%u].fTractionLoss = %ff;\n", iCounter, pData->fTractionLoss );
+    file->Printf( "    m_OriginalHandlingData [%u].fTractionBias = %ff;\n", iCounter, pData->fTractionBias );
 
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fSteeringLock = %ff;\n", iCounter, pData->fSteeringLock );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fTractionLoss = %ff;\n", iCounter, pData->fTractionLoss );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fTractionBias = %ff;\n", iCounter, pData->fTractionBias );
+    file->Printf( "    m_OriginalHandlingData [%u].fSuspensionForceLevel = %ff;\n", iCounter, pData->fSuspensionForceLevel );
+    file->Printf( "    m_OriginalHandlingData [%u].fSuspensionDamping = %ff;\n", iCounter, pData->fSuspensionDamping );
+    file->Printf( "    m_OriginalHandlingData [%u].fSuspensionHighSpdDamping = %ff;\n", iCounter, pData->fSuspensionHighSpdDamping );
+    file->Printf( "    m_OriginalHandlingData [%u].fSuspensionUpperLimit = %ff;\n", iCounter, pData->fSuspensionUpperLimit );
+    file->Printf( "    m_OriginalHandlingData [%u].fSuspensionLowerLimit = %ff;\n", iCounter, pData->fSuspensionLowerLimit );
+    file->Printf( "    m_OriginalHandlingData [%u].fSuspensionFrontRearBias = %ff;\n", iCounter, pData->fSuspensionFrontRearBias );
+    file->Printf( "    m_OriginalHandlingData [%u].fSuspensionAntiDiveMultiplier = %ff;\n", iCounter, pData->fSuspensionAntiDiveMultiplier );
 
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fSuspensionForceLevel = %ff;\n", iCounter, pData->fSuspensionForceLevel );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fSuspensionDamping = %ff;\n", iCounter, pData->fSuspensionDamping );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fSuspensionHighSpdDamping = %ff;\n", iCounter, pData->fSuspensionHighSpdDamping );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fSuspensionUpperLimit = %ff;\n", iCounter, pData->fSuspensionUpperLimit );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fSuspensionLowerLimit = %ff;\n", iCounter, pData->fSuspensionLowerLimit );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fSuspensionFrontRearBias = %ff;\n", iCounter, pData->fSuspensionFrontRearBias );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fSuspensionAntiDiveMultiplier = %ff;\n", iCounter, pData->fSuspensionAntiDiveMultiplier );
+    file->Printf( "    m_OriginalHandlingData [%u].fCollisionDamageMultiplier = %ff;\n", iCounter, pData->fCollisionDamageMultiplier );
 
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fCollisionDamageMultiplier = %ff;\n", iCounter, pData->fCollisionDamageMultiplier );
+    file->Printf( "    m_OriginalHandlingData [%u].uiModelFlags = 0x%X;\n", iCounter, pData->uiModelFlags );
+    file->Printf( "    m_OriginalHandlingData [%u].uiHandlingFlags = 0x%X;\n", iCounter, pData->uiHandlingFlags );
+    file->Printf( "    m_OriginalHandlingData [%u].fSeatOffsetDistance = %ff;\n", iCounter, pData->fSeatOffsetDistance );
+    file->Printf( "    m_OriginalHandlingData [%u].uiMonetary = %u;\n", iCounter, pData->uiMonetary );
 
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].uiModelFlags = 0x%X;\n", iCounter, pData->uiModelFlags );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].uiHandlingFlags = 0x%X;\n", iCounter, pData->uiHandlingFlags );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].fSeatOffsetDistance = %ff;\n", iCounter, pData->fSeatOffsetDistance );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].uiMonetary = %u;\n", iCounter, pData->uiMonetary );
+    file->Printf( "    m_OriginalHandlingData [%u].ucHeadLight = %u;\n", iCounter, pData->ucHeadLight );
+    file->Printf( "    m_OriginalHandlingData [%u].ucTailLight = %u;\n", iCounter, pData->ucTailLight );
+    file->Printf( "    m_OriginalHandlingData [%u].ucAnimGroup = %u;\n", iCounter, pData->ucAnimGroup );
+    file->Printf( "\n" );
 
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].ucHeadLight = %u;\n", iCounter, pData->ucHeadLight );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].ucTailLight = %u;\n", iCounter, pData->ucTailLight );
-    fprintf ( pFile, "    m_OriginalHandlingData [%u].ucAnimGroup = %u;\n", iCounter, pData->ucAnimGroup );
-    fprintf ( pFile, "\n" );
-
-    fclose ( pFile );
+    delete file;
 }
 
 __declspec(naked) void Hook_Calculate ( void )

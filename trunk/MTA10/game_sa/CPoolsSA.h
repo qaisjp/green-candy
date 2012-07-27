@@ -170,7 +170,7 @@ typedef CPool <CBuildingSAInterface, MAX_BUILDINGS> CBuildingPool;
 typedef CPool <CDummySAInterface, 4000> CDummyPool;
 
 typedef CPool <CTaskSAInterface, 9001> CTaskPool;
-typedef CPool <CEventSAInterface, 1337> CEventPool;
+typedef CPool <CEventSAInterface, 5000> CEventPool;
 typedef CPool <CPointRouteSA, 64> CPointRoutePool;
 typedef CPool <CPatrolRouteSA, 32> CPatrolRoutePool;
 typedef CPool <CNodeRouteSA, 64> CNodeRoutePool;
@@ -240,33 +240,30 @@ public:
     CBoat*                  AddBoat( unsigned short modelId );
     CVehicle*               AddVehicle( unsigned short modelID );
     CVehicle*               GetVehicle( void *entity ) const;
-    unsigned int            GetVehicleRef( CVehicle *veh ) const;
     CVehicle*               GetVehicleFromRef( unsigned int index ) const;
     void                    DeleteAllVehicles();
 
     // Objects pool
     CObject*                AddObject( unsigned short modelID );
     CObject*                GetObject( void *entity ) const;
-    unsigned int            GetObjectRef( CObject *obj ) const;
     CObject*                GetObjectFromRef( unsigned int index ) const;
     void                    DeleteAllObjects();
 
     // Peds pool
     CPed*                   AddPed( unsigned short modelID );
     CPed*                   AddCivilianPed( unsigned short modelID );
-    CPed*                   AddCivilianPed( CCivilianPedSAInterface *ped );
+    CPed*                   AddCivilianPed( void *ped );
     CPed*                   GetPed( void *entity ) const;
-    unsigned int            GetPedRef( CPed *ped ) const;
     CPed*                   GetPedFromRef( unsigned int index ) const;
     void                    DeleteAllPeds();
 
-    CEntity*                GetEntity( void *entity );
+    CEntity*                GetEntity( void *entity ) const;
 
     // Others
     CBuilding*              AddBuilding( unsigned short modelID );
     void                    DeleteAllBuildings();
 
-    int                     GetNumberOfUsedSpaces( ePools pools ) const;
+    unsigned int            GetNumberOfUsedSpaces( ePools pools ) const;
     void                    DumpPoolsStatus() const;
 
     unsigned int            GetPoolDefaultCapacity( ePools pool ) const;

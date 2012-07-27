@@ -177,7 +177,7 @@ void CFxSA::TriggerWaterHydrant ( CVector & vecPosition )
 
 void CFxSA::TriggerGunshot ( CEntity * pEntity, CVector & vecPosition, CVector & vecDirection, bool bIncludeSparks )
 {
-    DWORD dwEntity = ( pEntity ) ? ( DWORD ) pEntity->GetInterface () : NULL;
+    DWORD dwEntity = ( pEntity ) ? ( DWORD )dynamic_cast <CEntitySA*> ( pEntity )->GetInterface () : NULL;
     CVector * pvecPosition = &vecPosition;
     CVector * pvecDirection = &vecDirection;
     DWORD dwThis = ( DWORD ) m_pInterface;

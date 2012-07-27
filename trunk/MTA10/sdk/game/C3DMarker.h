@@ -23,29 +23,29 @@ class C3DMarker
 public:
     virtual                 ~C3DMarker()    {};
 
-    virtual void            GetMatrix( RwMatrix& mat ) = 0;
+    virtual void            GetMatrix( RwMatrix& mat ) const = 0;
     virtual void            SetMatrix( const RwMatrix& mat ) = 0;
 
     virtual void            SetPosition( const CVector& pos ) = 0;
     virtual const CVector&  GetPosition() const = 0;
 
-    virtual unsigned int    GetType() = 0; // need enum?
-    virtual bool            IsActive() = 0;
-    virtual unsigned int    GetIdentifier() = 0;
+    virtual unsigned int    GetType() const = 0; // need enum?
+    virtual bool            IsActive() const = 0;
+    virtual unsigned int    GetIdentifier() const = 0;
 
-    virtual SColor          GetColor() = 0;
+    virtual SColor          GetColor() const = 0;
     virtual void            SetColor( const SColor color ) = 0;
 
     virtual void            SetRotateRate( short rate ) = 0;
 
     virtual void            SetPulsePeriod( unsigned short period ) = 0;
     virtual void            SetPulseFraction( float fraction ) = 0;
-    virtual float           GetPulseFraction() = 0;
+    virtual float           GetPulseFraction() const = 0;
 
-    virtual float           GetSize() = 0;
+    virtual float           GetSize() const = 0;
     virtual void            SetSize( float size ) = 0;
 
-    virtual float           GetBrightness() = 0;
+    virtual float           GetBrightness() const = 0;
     virtual void            SetBrightness( float brightness ) = 0;
 
     virtual void            SetCameraRange( float range ) = 0;

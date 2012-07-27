@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientMarker.cpp
@@ -9,6 +9,7 @@
 *               Christian Myhre Lundheim <>
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -20,10 +21,42 @@ extern CClientGame* g_pClientGame;
 #define M_PI 3.14159265358979323846
 #endif
 
+static const luaL_Reg marker_interface[] =
+{
+    { NULL, NULL }
+};
+
+static int luaconstructor_marker( lua_State *L )
+{
+    CClientMarker *marker = (CClientMarker*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_MARKER, marker );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, marker_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "marker", 6 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
 unsigned int CClientMarker::m_uiStreamedInMarkers = 0;
 
-CClientMarker::CClientMarker ( CClientManager* pManager, ElementID ID, int iMarkerType ) : ClassInit ( this ), CClientStreamElement ( pManager->GetMarkerStreamer (), ID )
+CClientMarker::CClientMarker ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, int iMarkerType ) : CClientStreamElement ( pManager->GetMarkerStreamer (), ID, root, system )
 {
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_marker, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     // Init
     m_pManager = pManager;
     m_pMarkerManager = pManager->GetMarkerManager ();

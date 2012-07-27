@@ -20,7 +20,7 @@ void* CEventSAInterface::operator new( size_t )
 
 void CEventSAInterface::operator delete( void *ptr )
 {
-    (*ppTaskPool)->Free( (CEventSAInterface*)ptr );
+    (*ppEventPool)->Free( (CEventSAInterface*)ptr );
 }
 
 eEventEntityType CEventSA::GetType (  )

@@ -23,7 +23,32 @@ CPlaneSA::~CPlaneSA()
 {
 }
 
-bool CPlaneSA::IsSmokeTrailEnabled()
+void CPlaneSA::SetLandingGearDown( bool bLandingGearDown )
+{
+    CPlaneSAInterface *plane = GetInterface();
+    float& fTimeStep = *(float*)0xB7CB5C;
+    
+    if ( IsLandingGearDown() == bLandingGearDown )
+        return;
+
+    // The following code toggles the landing gear direction
+    if ( plane->m_undercarriagePos == 0.0f )
+    {
+        for ( unsigned int n=0; n<MAX_WHEELS; n++ )
+            plane->m_damage.m_wheels[n] = 0x02;
+
+        plane->m_undercarriagePos += fTimeStep * 0.02f;
+    }
+    else
+    {
+        if ( plane->m_undercarriagePos != 1.0f )
+            plane->m_undercarriagePos *= -1.0f;
+        else
+            plane->m_undercarriagePos = fTimeStep * 0.02f - 1.0f;
+    }
+}
+
+bool CPlaneSA::IsSmokeTrailEnabled() const
 {
     return GetInterface()->m_smokeTrailEnabled;
 }

@@ -389,50 +389,51 @@ public:
                                 CCameraSA( CCameraSAInterface *cam );
                                 ~CCameraSA();
 
-    CCameraSAInterface*         GetInterface()                      { return m_interface; };
+    CCameraSAInterface*         GetInterface()                                          { return m_interface; }
+    const CCameraSAInterface*   GetInterface() const                                    { return m_interface; }
 
     void                        TakeControl( CEntity *entity, eCamMode mode, int switchStyle );
-    void                        TakeControl( CVector& pos, int switchStyle );
-    void                        TakeControlAttachToEntity( CEntity *target, CEntity *attach, CVector& offset, CVector& lookAt, float tilt, int switchStyle );
+    void                        TakeControl( const CVector& pos, int switchStyle );
+    void                        TakeControlAttachToEntity( CEntity *target, CEntity *attach, const CVector& offset, const CVector& lookAt, float tilt, int switchStyle );
 
     void                        Restore();
     void                        RestoreWithJumpCut();
 
-    const RwMatrix&             GetMatrix();
+    const RwMatrix&             GetMatrix() const;
     void                        SetMatrix( const RwMatrix& mat );
 
-    void                        SetCamPositionForFixedMode( CVector& pos, CVector& upOffset );
-    void                        Find3rdPersonCamTargetVector( float distance, CVector& gunMuzzle, CVector& source, CVector& target );
-    float                       Find3rdPersonQuickAimPitch();
+    void                        SetCamPositionForFixedMode( const CVector& pos, const CVector& upOffset );
+    void                        Find3rdPersonCamTargetVector( float distance, const CVector& gunMuzzle, const CVector& source, CVector& target ) const;
+    float                       Find3rdPersonQuickAimPitch() const;
 
-    unsigned char               GetActiveCam();
+    unsigned char               GetActiveCam() const;
 
     CCamSA*                     GetCam( unsigned char id );
     CCamSA*                     GetCam( CCamSAInterface *cam );
 
-    void                        SetWidescreen( bool wide );
-    bool                        GetWidescreen();
+    void                        SetWidescreen( bool wide )                              { m_interface->m_WideScreenOn = wide; }
+    bool                        GetWidescreen() const                                   { return m_interface->m_WideScreenOn; }
 
-    float                       GetCarZoom();
+    float                       GetCarZoom() const;
     void                        SetCarZoom( float zoom );
 
-    bool                        TryToStartNewCamMode( unsigned short mode );
-    bool                        ConeCastCollisionResolve( CVector& pos, CVector& lookAt, CVector& dest, float rad, float minDist, float& dist );
-    void                        VectorTrackLinear( CVector& to, CVector& from, float time, bool smoothEnds );
+    bool                        TryToStartNewCamMode( unsigned char mode );
+    bool                        ConeCastCollisionResolve( const CVector& pos, const CVector& lookAt, const CVector& dest, float rad, float minDist, float& dist );
+    void                        VectorTrackLinear( const CVector& to, const CVector& from, float time, bool smoothEnds );
 
-    bool                        IsFading();
-    int                         GetFadingDirection();
+    bool                        IsFading() const;
+    int                         GetFadingDirection() const;
     void                        Fade( float fadeOutTime, int outOrIn );
     void                        SetFadeColor( unsigned char red, unsigned char green, unsigned char blue );
 
-    float                       GetCameraRotation();
-    const RwMatrix&             GetLTM();
+    float                       GetCameraRotation() const;
+    const RwMatrix&             GetLTM() const;
 
-    CEntity*                    GetTargetEntity();
+    CEntity*                    GetTargetEntity() const;
 
     void                        SetCameraClip( bool ibjects, bool vehicles );
-    unsigned char               GetCameraViewMode();
-    void                        SetCameraViewMode( unsigned short mode );
+    unsigned char               GetCameraViewMode() const;
+    void                        SetCameraViewMode( unsigned char mode );
 };
 
 #endif

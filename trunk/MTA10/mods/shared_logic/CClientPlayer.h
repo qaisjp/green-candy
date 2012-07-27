@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientPlayer.h
@@ -12,6 +12,7 @@
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               Chris McArthur <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -26,6 +27,8 @@ class CClientPlayer;
 #include "CClientPed.h"
 #include "CClientPlayerVoice.h"
 
+#define LUACLASS_PLAYER     66
+
 #define NUM_PLAYER_STATS 343
 
 class CClientPlayerManager;
@@ -33,73 +36,72 @@ class CClientTeam;
 
 class CClientPlayer : public CClientPed
 {
-    DECLARE_CLASS( CClientPlayer, CClientPed )
     friend class CClientPlayerManager;
 
 public:
-                                    CClientPlayer           ( CClientManager* pManager, ElementID ID, bool bIsLocalPlayer = false );
-    virtual                         ~CClientPlayer          ( void );
+                                    CClientPlayer( CClientManager* pManager, ElementID ID, bool bIsLocalPlayer = false );
+    virtual                         ~CClientPlayer( void );
 
-    void                            Unlink                  ( void );
+    void                            Unlink( void );
 
-    eClientEntityType               GetType                 ( void ) const                          { return CCLIENTPLAYER; }
+    eClientEntityType               GetType( void ) const                                               { return CCLIENTPLAYER; }
 
-    const char*                     GetNick                 ( void ) const                          { return m_szNick; }
-    void                            SetNick                 ( const char* szNick );
+    const char*                     GetNick( void ) const                                               { return m_szNick; }
+    void                            SetNick( const char* szNick );
 
-    inline unsigned int             GetPing                 ( void )                                { return ( m_bIsLocalPlayer ) ? g_pNet->GetPing () : m_uiPing; }
-    inline void                     SetPing                 ( unsigned int uiPing )                 { m_uiPing = uiPing; }
+    inline unsigned int             GetPing( void )                                                     { return ( m_bIsLocalPlayer ) ? g_pNet->GetPing () : m_uiPing; }
+    inline void                     SetPing( unsigned int uiPing )                                      { m_uiPing = uiPing; }
 
-    void                            GetNametagColor         ( unsigned char& ucR, unsigned char& ucG, unsigned char& ucB );
-    void                            SetNametagOverrideColor ( unsigned char ucR, unsigned char ucG, unsigned char ucB );
-    void                            RemoveNametagOverrideColor  ( void );
-    inline bool                     IsNametagColorOverridden( void )                                { return m_bNametagColorOverridden; }
+    void                            GetNametagColor( unsigned char& ucR, unsigned char& ucG, unsigned char& ucB );
+    void                            SetNametagOverrideColor( unsigned char ucR, unsigned char ucG, unsigned char ucB );
+    void                            RemoveNametagOverrideColor( void );
+    inline bool                     IsNametagColorOverridden( void )                                    { return m_bNametagColorOverridden; }
 
-    inline const char*              GetNametagText          ( void )                                { return m_strNametag.c_str (); }
-    inline void                     SetNametagText          ( const char* szText );
-    inline bool                     IsNametagShowing        ( void )                                { return m_bNametagShowing; }
-    inline void                     SetNametagShowing       ( bool bShowing )                       { m_bNametagShowing = bShowing; }
-    inline CGUIStaticImage*         GetStatusIcon           ( void )                                { return m_pStatusIcon; }
-    inline unsigned long            GetLastNametagShow      ( void )                                { return m_ulLastNametagShow; }
-    inline void                     SetLastNametagShow      ( unsigned long ulTime )                { m_ulLastNametagShow = ulTime; }
+    inline const char*              GetNametagText( void )                                              { return m_strNametag.c_str (); }
+    inline void                     SetNametagText( const char* szText );
+    inline bool                     IsNametagShowing( void )                                            { return m_bNametagShowing; }
+    inline void                     SetNametagShowing( bool bShowing )                                  { m_bNametagShowing = bShowing; }
+    inline CGUIStaticImage*         GetStatusIcon( void )                                               { return m_pStatusIcon; }
+    inline unsigned long            GetLastNametagShow( void )                                          { return m_ulLastNametagShow; }
+    inline void                     SetLastNametagShow( unsigned long ulTime )                          { m_ulLastNametagShow = ulTime; }
 
-    inline void                     SetIsExtrapolatingAim   ( bool m_bExtrap )                      { m_bDoExtrapolatingAim = m_bExtrap; }
-    inline bool                     IsExtrapolatingAim      ( void )                                { return m_bDoExtrapolatingAim; }
-    void                            UpdateAimPosition       ( const CVector &vecAim );
+    inline void                     SetIsExtrapolatingAim( bool m_bExtrap )                             { m_bDoExtrapolatingAim = m_bExtrap; }
+    inline bool                     IsExtrapolatingAim( void )                                          { return m_bDoExtrapolatingAim; }
+    void                            UpdateAimPosition( const CVector &vecAim );
 
-    inline unsigned short           GetLatency              ( void )                                { return m_usLatency; }
-    inline void                     SetLatency              ( unsigned short usLatency )            { m_usLatency = (m_usLatency + usLatency) / 2; }
+    inline unsigned short           GetLatency( void )                                                  { return m_usLatency; }
+    inline void                     SetLatency( unsigned short usLatency )                              { m_usLatency = (m_usLatency + usLatency) / 2; }
 
-    inline unsigned long            GetLastPuresyncTime     ( void )                                { return m_ulLastPuresyncTime; }
-    inline void                     SetLastPuresyncTime     ( unsigned long ulLastPuresyncTime )    { m_ulLastPuresyncTime = ulLastPuresyncTime; }
-    inline const CVector&           GetLastPuresyncPosition ( void )                                { return m_vecLastPuresyncPosition; }
-    inline void                     SetLastPuresyncPosition ( const CVector& vecPosition )          { m_vecLastPuresyncPosition = vecPosition; }
-    inline bool                     HasConnectionTrouble    ( void )                                { return m_bHasConnectionTrouble; }
-    inline void                     SetHasConnectionTrouble ( bool bHasTrouble )                    { m_bHasConnectionTrouble = bHasTrouble; }
+    inline unsigned long            GetLastPuresyncTime( void )                                         { return m_ulLastPuresyncTime; }
+    inline void                     SetLastPuresyncTime( unsigned long ulLastPuresyncTime )             { m_ulLastPuresyncTime = ulLastPuresyncTime; }
+    inline const CVector&           GetLastPuresyncPosition( void )                                     { return m_vecLastPuresyncPosition; }
+    inline void                     SetLastPuresyncPosition( const CVector& vecPosition )               { m_vecLastPuresyncPosition = vecPosition; }
+    inline bool                     HasConnectionTrouble( void )                                        { return m_bHasConnectionTrouble; }
+    inline void                     SetHasConnectionTrouble( bool bHasTrouble )                         { m_bHasConnectionTrouble = bHasTrouble; }
 
-    inline void                     IncrementPlayerSync     ( void )                                { ++m_uiPlayerSyncCount; }
-    inline void                     IncrementKeySync        ( void )                                { ++m_uiKeySyncCount; }
-    inline void                     IncrementVehicleSync    ( void )                                { ++m_uiVehicleSyncCount; }
+    inline void                     IncrementPlayerSync( void )                                         { ++m_uiPlayerSyncCount; }
+    inline void                     IncrementKeySync( void )                                            { ++m_uiKeySyncCount; }
+    inline void                     IncrementVehicleSync( void )                                        { ++m_uiVehicleSyncCount; }
 
-    inline unsigned int             GetPlayerSyncCount      ( void )                                { return m_uiPlayerSyncCount; }
-    inline unsigned int             GetKeySyncCount         ( void )                                { return m_uiKeySyncCount; }
-    inline unsigned int             GetVehicleSyncCount     ( void )                                { return m_uiVehicleSyncCount; }
+    inline unsigned int             GetPlayerSyncCount( void )                                          { return m_uiPlayerSyncCount; }
+    inline unsigned int             GetKeySyncCount( void )                                             { return m_uiKeySyncCount; }
+    inline unsigned int             GetVehicleSyncCount( void )                                         { return m_uiVehicleSyncCount; }
     
-    inline CClientTeam*             GetTeam                 ( void )                                { return m_pTeam; }
-    void                            SetTeam                 ( CClientTeam* pTeam, bool bChangeTeam = false);
-    bool                            IsOnMyTeam              ( CClientPlayer* pPlayer );
+    inline CClientTeam*             GetTeam( void )                                                     { return m_pTeam; }
+    void                            SetTeam( CClientTeam* pTeam, bool bChangeTeam = false );
+    bool                            IsOnMyTeam( CClientPlayer* pPlayer );
 
-    CClientPlayerVoice*             GetVoice                ( void )                                { return m_voice; }
+    CClientPlayerVoice*             GetVoice( void )                                                    { return m_voice; }
 
-    inline float                    GetNametagDistance      ( void )                                { return m_fNametagDistance; }
-    inline void                     SetNametagDistance      ( float fDistance )                     { m_fNametagDistance = fDistance; }
+    inline float                    GetNametagDistance( void )                                          { return m_fNametagDistance; }
+    inline void                     SetNametagDistance( float fDistance )                               { m_fNametagDistance = fDistance; }
 
-    inline bool                     IsDeadOnNetwork         ( void )                                { return m_bNetworkDead; }
-    inline void                     SetDeadOnNetwork        ( bool bDead )                          { m_bNetworkDead = bDead; }
+    inline bool                     IsDeadOnNetwork( void )                                             { return m_bNetworkDead; }
+    inline void                     SetDeadOnNetwork( bool bDead )                                      { m_bNetworkDead = bDead; }
 
-    void                            Reset                   ( void );
+    void                            Reset( void );
 
-    inline CClientManager*          GetManager              ( void )                                { return m_pManager; }
+    inline CClientManager*          GetManager( void )                                                  { return m_pManager; }
 
 private:
     bool                            m_bIsLocalPlayer;
@@ -150,13 +152,14 @@ private:
     CClientPlayerVoice*             m_voice;
 
 #ifdef MTA_DEBUG
+
 private:
     bool                            m_bShowingWepdata;
 public:
-    inline void                     SetShowingWepdata       ( bool bState ) { m_bShowingWepdata = bState; }
-    inline bool                     IsShowingWepdata        ( ) const       { return m_bShowingWepdata; }
-#endif
+    inline void                     SetShowingWepdata( bool bState )                                    { m_bShowingWepdata = bState; }
+    inline bool                     IsShowingWepdata( ) const                                           { return m_bShowingWepdata; }
 
+#endif
 };
 
 #endif

@@ -33,20 +33,21 @@ public:
     // fill this
 };
 
-class CPlaneSA : public virtual CPlane, public virtual CAutomobileSA
+class CPlaneSA : public virtual CPlane, public CAutomobileSA
 {
 public:
                                 CPlaneSA( CPlaneSAInterface *plane );
                                 ~CPlaneSA();
 
-    inline CPlaneSAInterface*   GetInterface()                              { return (CPlaneSAInterface*)m_pInterface; }
+    inline CPlaneSAInterface*   GetInterface()                                      { return (CPlaneSAInterface*)m_pInterface; }
+    inline const CPlaneSAInterface* GetInterface() const                            { return (const CPlaneSAInterface*)m_pInterface; }
 
     void                        SetLandingGearDown( bool bLandingGearDown );
-    float                       GetLandingGearPosition();
-    void                        SetLandingGearPosition( float fPosition );
-    bool                        IsLandingGearDown();
+    float                       GetLandingGearPosition() const                      { return GetInterface()->m_undercarriagePos; }
+    void                        SetLandingGearPosition( float fPosition )           { GetInterface()->m_undercarriagePos = fPosition; }
+    bool                        IsLandingGearDown() const                           { return GetInterface()->m_undercarriagePos <= 0.0f; }
 
-    bool                        IsSmokeTrailEnabled();
+    bool                        IsSmokeTrailEnabled() const;
     void                        SetSmokeTrailEnabled( bool enabled );
 };
 

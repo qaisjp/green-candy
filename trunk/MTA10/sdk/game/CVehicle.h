@@ -35,7 +35,7 @@ class CVehicle : public virtual CPhysical
 public:
     virtual                     ~CVehicle() {};
 
-    virtual unsigned int        GetPoolIndex() const;
+    virtual unsigned int        GetPoolIndex() const = 0;
 
     virtual float               GetHealth() const = 0;
     virtual void                SetHealth( float fHealth ) = 0;

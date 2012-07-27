@@ -27,7 +27,16 @@ CModelSA::~CModelSA()
 
     RpClumpDestroy( m_clump );
 
-    pGame->GetModelManager()->m_models.remove( this );
+    CModelManagerSA::models_t::iterator iter = pGame->GetModelManager()->m_models.begin();
+
+    for ( ; iter != pGame->GetModelManager()->m_models.end(); iter++ )
+    {
+        if ( *iter == this )
+        {
+            pGame->GetModelManager()->m_models.erase( iter );
+            break;
+        }
+    }
 }
 
 const char* CModelSA::GetName() const
@@ -40,7 +49,7 @@ unsigned int CModelSA::GetHash() const
     return pGame->GetKeyGen()->GetUppercaseKey( m_clump->m_parent->m_nodeName );
 }
 
-std::vector <unsigned short> CModelSA::GetImportedList() const
+std::vector <unsigned short> CModelSA::GetImportList() const
 {
     std::vector <unsigned short> impList;
     importMap_t::const_iterator iter = m_imported.begin();

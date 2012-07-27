@@ -21,9 +21,12 @@ public:
     virtual                     ~CPlane()   {}
 
     virtual void                SetLandingGearDown( bool bLandingGearDown ) = 0;
-    virtual float               GetLandingGearPosition() = 0;
-    virtual bool                IsLandingGearDown() = 0;
+    virtual float               GetLandingGearPosition() const = 0;
+    virtual bool                IsLandingGearDown() const = 0;
     virtual void                SetLandingGearPosition( float fPosition ) = 0;
+
+    virtual bool                IsSmokeTrailEnabled() const = 0;
+    virtual void                SetSmokeTrailEnabled( bool enabled ) = 0;
 };
 
 #endif

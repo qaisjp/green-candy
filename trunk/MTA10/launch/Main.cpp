@@ -53,7 +53,7 @@ int WINAPI WinMain ( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     SString strLoaderDllFilename = "loader.dll";
 #endif
 
-    SString strLoaderDllPathFilename = PathJoin ( GetLaunchPath (), "mta", strLoaderDllFilename );
+    SString strLoaderDllPathFilename = GetLaunchPath() + "/mta/" + strLoaderDllFilename;
 
     // Load loader dll
     HMODULE hModule = LoadLibrary ( strLoaderDllPathFilename );

@@ -27,9 +27,8 @@ CTexDictionarySA::CTexDictionarySA( const char *name )
     m_tex->Reference();
 }
 
-static bool RwTexDictionaryAssign( RwTexture *tex, void *ud )
+static bool RwTexDictionaryAssign( RwTexture *tex, CTexDictionarySA *txd )
 {
-    CTexDictionarySA *txd = (CTexDictionarySA*)ud;
     txd->m_textures.push_back( new CTextureSA( txd, tex ) );
     return true;
 }
@@ -58,12 +57,11 @@ struct _rwAssign
     CTexDictionarySA *txd;
 };
 
-static bool RwTexDictionaryAssignNew( RwTexture *tex, void *ud )
+static bool RwTexDictionaryAssignNew( RwTexture *tex, _rwAssign *assign )
 {
-    _rwAssign& assign = *(_rwAssign*)ud;
-    assign.txd->m_textures.push_back( new CTextureSA( assign.txd, tex ) );
+    assign->txd->m_textures.push_back( new CTextureSA( assign->txd, tex ) );
 
-    if ( assign.filtering )
+    if ( assign->filtering )
         tex->flags = 0x1102;
 
     return true;

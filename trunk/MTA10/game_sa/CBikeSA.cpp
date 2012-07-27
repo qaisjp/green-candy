@@ -25,7 +25,7 @@ CBikeSA::~CBikeSA()
 void CBikeSA::PlaceOnRoadProperly()
 {
     DEBUG_TRACE("void CBikeSA::PlaceBikeOnRoadProperly()");
-    DWORD dwFunc = FUNC_Bike_PlaceOnRoadProperly;
+    DWORD dwFunc = FUNC_CBike_PlaceOnRoadProperly;
     DWORD dwBike = (DWORD)GetInterface();
 
     _asm
@@ -35,7 +35,7 @@ void CBikeSA::PlaceOnRoadProperly()
     }
 }
 
-unsigned char CVehicleSA::GetBikeWheelStatus( unsigned char id )
+unsigned char CBikeSA::GetBikeWheelStatus( unsigned char id ) const
 {
     if ( id > 1 )
         return 0;
@@ -43,7 +43,7 @@ unsigned char CVehicleSA::GetBikeWheelStatus( unsigned char id )
     return GetInterface()->m_wheelStatus[id];
 }
 
-void CVehicleSA::SetBikeWheelStatus( unsigned char id, unsigned char status )
+void CBikeSA::SetBikeWheelStatus( unsigned char id, unsigned char status )
 {
     if ( id > 1 )
         return;
