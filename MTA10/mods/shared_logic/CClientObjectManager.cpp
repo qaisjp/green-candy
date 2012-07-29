@@ -355,7 +355,7 @@ bool CClientObjectManager::IsObjectLimitReached ( void )
 
     // Allow max 250 objects at once for now.
     // TODO: The real limit is up to 350 but we're limited by other limits.
-    return g_pGame->GetPools ()->GetObjectCount () >= 500;
+    return g_pGame->GetPools()->GetNumberOfUsedSpaces( OBJECT_POOL ) >= 500;
 }
 
 

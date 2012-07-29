@@ -464,21 +464,19 @@ bool CStaticFunctionDefinitions::GetElementBoundingBox ( CClientEntity& Entity, 
 
     if ( pModelInfo )
     {
-        CBoundingBox* pBoundingBox = pModelInfo->GetBoundingBox ();
-        if ( pBoundingBox )
-        {
-            vecMin = pBoundingBox->vecBoundMin;
-            vecMin.fX += pBoundingBox->vecBoundOffset.fX;
-            vecMin.fY += pBoundingBox->vecBoundOffset.fY;
-            vecMin.fZ += pBoundingBox->vecBoundOffset.fZ;
+        const CBoundingBox& bounds = pModelInfo->GetBoundingBox();
 
-            vecMax = pBoundingBox->vecBoundMax;
-            vecMax.fX += pBoundingBox->vecBoundOffset.fX;
-            vecMax.fY += pBoundingBox->vecBoundOffset.fY;
-            vecMax.fZ += pBoundingBox->vecBoundOffset.fZ;
+        vecMin = bounds.vecBoundMin;
+        vecMin.fX += bounds.vecBoundOffset.fX;
+        vecMin.fY += bounds.vecBoundOffset.fY;
+        vecMin.fZ += bounds.vecBoundOffset.fZ;
 
-            return true;
-        }
+        vecMax = bounds.vecBoundMax;
+        vecMax.fX += bounds.vecBoundOffset.fX;
+        vecMax.fY += bounds.vecBoundOffset.fY;
+        vecMax.fZ += bounds.vecBoundOffset.fZ;
+
+        return true;
     }
 
     return false;
@@ -512,12 +510,10 @@ bool CStaticFunctionDefinitions::GetElementRadius ( CClientEntity& Entity, float
     }
     if ( pModelInfo )
     {
-        CBoundingBox* pBoundingBox = pModelInfo->GetBoundingBox ();
-        if ( pBoundingBox )
-        {
-            fRadius = pBoundingBox->fRadius;
-            return true;
-        }
+        const CBoundingBox& bounds = pModelInfo->GetBoundingBox ();
+
+        fRadius = bounds.fRadius;
+        return true;
     }
 
     return false;
@@ -1351,7 +1347,7 @@ bool CStaticFunctionDefinitions::SetElementModel ( CClientEntity& Entity, unsign
 }
 
 
-bool CStaticFunctionDefinitions::SetRadioChannel ( unsigned char& ucChannel )
+bool CStaticFunctionDefinitions::SetRadioChannel ( unsigned char ucChannel )
 {
     return m_pPlayerManager->GetLocalPlayer ()->SetCurrentRadioChannel ( ucChannel );
 }
@@ -2409,14 +2405,9 @@ bool CStaticFunctionDefinitions::SetVehicleLandingGearDown ( CClientEntity& Enti
     {
         CClientVehicle& Vehicle = static_cast < CClientVehicle& > ( Entity );
 
-        // Has landing gear and different than before?
-        if ( Vehicle.HasLandingGear () &&
-             bLandingGearDown != Vehicle.IsLandingGearDown () )
-        {
-            // Set the new state
-            Vehicle.SetLandingGearDown ( bLandingGearDown );
-            return true;
-        }
+        // Set the new state
+        Vehicle.SetLandingGearDown ( bLandingGearDown );
+        return true;
     }
 
     return false;

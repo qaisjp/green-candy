@@ -954,28 +954,17 @@ void CClientPed::SetCanBeKnockedOffBike ( bool bCanBeKnockedOffBike )
     m_bCanBeKnockedOffBike = bCanBeKnockedOffBike;
 }
 
-
-CVector* CClientPed::GetBonePosition ( eBone bone, CVector& vecPosition ) const
+void CClientPed::GetBonePosition ( eBone bone, CVector& vecPosition ) const
 {
     if ( m_pPlayerPed )
-    {
-        return m_pPlayerPed->GetBonePosition ( bone, &vecPosition );
-    }
-
-    return NULL;
+        return m_pPlayerPed->GetBonePosition ( bone, vecPosition );
 }
 
-
-CVector* CClientPed::GetTransformedBonePosition ( eBone bone, CVector& vecPosition ) const
+void CClientPed::GetTransformedBonePosition ( eBone bone, CVector& vecPosition ) const
 {
     if ( m_pPlayerPed )
-    {
-        return m_pPlayerPed->GetTransformedBonePosition ( bone, &vecPosition );
-    }
-
-    return NULL;
+        return m_pPlayerPed->GetTransformedBonePosition ( bone, vecPosition );
 }
-
 
 CClientVehicle* CClientPed::GetRealOccupiedVehicle ( void )
 {
@@ -993,7 +982,6 @@ CClientVehicle* CClientPed::GetRealOccupiedVehicle ( void )
     // No occupied vehicle
     return NULL;
 }
-
 
 CClientVehicle* CClientPed::GetClosestVehicleInRange ( bool bGetPositionFromClosestDoor, bool bCheckDriverDoor, bool bCheckPassengerDoors, bool bCheckStreamedOutVehicles, unsigned int* uiClosestDoor, CVector* pClosestDoorPosition, float fWithinRange )
 {
@@ -1360,7 +1348,7 @@ void CClientPed::WarpIntoVehicle ( CClientVehicle* pVehicle, unsigned int uiSeat
                     {
                         pInTask->SetIsWarpingPedIntoCar ();
                         pInTask->ProcessPed ( m_pPlayerPed );
-                        pInTask->Destroy ();
+                        delete pInTask;
                     }
                 }
             }
@@ -2161,7 +2149,7 @@ bool CClientPed::KillTask ( int iTaskPriority, bool bGracefully )
             if ( bGracefully )
             {
                 pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
-                pTask->Destroy ();                
+                delete pTask;                
             }
             m_pTaskManager->RemoveTask ( (eTaskPriority)iTaskPriority );
             return true;
@@ -2181,7 +2169,7 @@ bool CClientPed::KillTaskSecondary ( int iTaskPriority, bool bGracefully )
             if ( bGracefully )
             {
                 pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
-                pTask->Destroy ();
+                delete pTask;
             }
             m_pTaskManager->RemoveTaskSecondary ( (eTaskPriority)iTaskPriority );
             return true;
@@ -2686,7 +2674,7 @@ void CClientPed::StreamedInPulse ( void )
         if ( GetType() == CCLIENTPED )
         {
             // Update our controller state to match our scripted pad
-            g_pGame->GetPadManager()->UpdateJoypad( m_Pad, *(CPed*)GetGameEntity() );
+            g_pGame->GetPadManager()->UpdateJoypad( m_Pad, *m_pPlayerPed );
         }
 
         // Are we waiting on an unloaded anim-block?
@@ -3487,7 +3475,7 @@ void CClientPed::InternalWarpIntoVehicle ( CVehicle* pGameVehicle )
         {
             pInTask->SetIsWarpingPedIntoCar ();
             pInTask->ProcessPed ( m_pPlayerPed );
-            pInTask->Destroy ();
+            delete pInTask;
         }        
 
         // If we're a remote player, make sure we can't fall off
@@ -3515,7 +3503,7 @@ void CClientPed::InternalRemoveFromVehicle ( CVehicle* pGameVehicle )
 
             pOutTask->ProcessPed ( m_pPlayerPed );
             pOutTask->SetIsWarpingPedOutOfCar ();
-            pOutTask->Destroy ();
+            delete pOutTask;
         }
 
         m_pPlayerPed->GetPosition ( m_Matrix.pos );
@@ -3840,24 +3828,25 @@ bool CClientPed::SetHasJetPack ( bool bHasJetPack )
                 if ( pTask )
                 {
                     pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
-                    pTask->Destroy ();
+                    delete pTask;
                     m_pTaskManager->RemoveTask ( TASK_PRIORITY_PRIMARY );
-                    
                 }
+
                 // falling task    
                 pTask = m_pTaskManager->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_TEMP );
                 if ( pTask )
                 {
                     pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
-                    pTask->Destroy ();
+                    delete pTask;
                     m_pTaskManager->RemoveTask ( TASK_PRIORITY_EVENT_RESPONSE_TEMP );                    
                 }
+
                 // swimming task
                 pTask = m_pTaskManager->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
                 if ( pTask )
                 {
                     pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
-                    pTask->Destroy ();
+                    delete pTask;
                     m_pTaskManager->RemoveTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );                    
                 }
 
@@ -4377,7 +4366,7 @@ void CClientPed::Respawn ( CVector * pvecPosition, bool bRestoreState, bool bCam
             // Don't allow any camera movement if we're in fixed mode
             if ( m_pManager->GetCamera ()->IsInFixedMode () ) bCameraCut = false;
 
-            m_pPlayerPed->Respawn ( pvecPosition, bCameraCut );
+            m_pPlayerPed->Respawn ( *pvecPosition, bCameraCut );
             SetPosition ( *pvecPosition );
 
             if ( bRestoreState )
@@ -4854,7 +4843,7 @@ void CClientPed::KillAnimation()
             if ( iTaskType == TASK_SIMPLE_NAMED_ANIM || iTaskType == TASK_SIMPLE_ANIM )
             {                
                 pTask->MakeAbortable ( m_pPlayerPed, ABORT_PRIORITY_IMMEDIATE );
-                pTask->Destroy ();
+                delete pTask;
                 m_pTaskManager->RemoveTask ( TASK_PRIORITY_PRIMARY );
             }
         }
@@ -5057,12 +5046,10 @@ CSphere CClientPed::GetWorldBoundingSphere ( void )
     CModelInfo* pModelInfo = g_pGame->GetModelInfo ( GetModel () );
     if ( pModelInfo )
     {
-        CBoundingBox* pBoundingBox = pModelInfo->GetBoundingBox ();
-        if ( pBoundingBox )
-        {
-            sphere.vecPosition = pBoundingBox->vecBoundOffset;
-            sphere.fRadius = pBoundingBox->fRadius;
-        }
+        const CBoundingBox& bounds = pModelInfo->GetBoundingBox();
+
+        sphere.vecPosition = bounds.vecBoundOffset;
+        sphere.fRadius = bounds.fRadius;
     }
     sphere.vecPosition += GetStreamPosition ();
     return sphere;

@@ -36,7 +36,7 @@ namespace CLuaFunctionDefs
         CScriptArgReader argStream( L );
 
         if ( argStream.ReadClass( creator, LUACLASS_ENTITY ) )
-            entity->GetPosition( creator );
+            creator->GetPosition( origin );
         
         argStream.ReadNumber( weaponType );
         argStream.ReadVector( origin, origin );
@@ -44,14 +44,14 @@ namespace CLuaFunctionDefs
         argStream.ReadClass( target, NULL );
         bool gotRotation = argStream.ReadVector( rotation, CVector() );
         bool gotMoveSpeed = argStream.ReadVector( moveSpeed, CVector() );
-        argStream.ReadNumber( model );
+        bool gotModel = argStream.ReadNumber( model, 0 );
 
         if ( !argStream.HasErrors() )
         {
             CLuaMain* pLuaMain = lua_readcontext( L );
             CResource * pResource = pLuaMain->GetResource();
             CClientProjectile * pProjectile = CStaticFunctionDefinitions::CreateProjectile( *pResource, *creator, weaponType, origin, force, target,
-                gotRotation ? &rotation : NULL, gotMoveSpeed ? &moveSpeed, NULL, model );
+                gotRotation ? &rotation : NULL, gotMoveSpeed ? &moveSpeed : NULL, model );
 
             if ( pProjectile )
             {
@@ -75,7 +75,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getProjectileType )
     {
         // Verify the argument
-        if ( CClientProjectile *proj = lua_readclass( L, 1, LUACLASS_PROJECTILE ) )
+        if ( CClientProjectile *proj = lua_readclass <CClientProjectile> ( L, 1, LUACLASS_PROJECTILE ) )
         {
             lua_pushnumber( L, proj->GetWeaponType() );
             return 1;
@@ -90,7 +90,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getProjectileTarget )
     {
         // Verify the argument
-        if ( CClientProjectile *proj = lua_readclass( L, 1, LUACLASS_PROJECTILE ) )
+        if ( CClientProjectile *proj = lua_readclass <CClientProjectile> ( L, 1, LUACLASS_PROJECTILE ) )
         {
 		    if ( proj->GetWeaponType() == WEAPONTYPE_ROCKET_HS && proj->GetTargetEntity() )
 		    {
@@ -108,7 +108,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getProjectileCreator )
     {
         // Verify the argument
-        if ( CClientProjectile *proj = lua_readclass( L, 1, LUACLASS_PROJECTILE ) )
+        if ( CClientProjectile *proj = lua_readclass <CClientProjectile> ( L, 1, LUACLASS_PROJECTILE ) )
         {
             if ( proj->GetCreator() )
             {
@@ -126,7 +126,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getProjectileForce )
     {
         // Verify the argument
-        if ( CClientProjectile *proj = lua_readclass( L, 1, LUACLASS_PROJECTILE ) )
+        if ( CClientProjectile *proj = lua_readclass <CClientProjectile> ( L, 1, LUACLASS_PROJECTILE ) )
         {
 		    lua_pushnumber( L, proj->GetForce() );
             return 1;

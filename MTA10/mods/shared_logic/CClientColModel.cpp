@@ -14,7 +14,7 @@
 
 #include "StdInc.h"
 
-static const luaL_Ref colmodel_interface[] =
+static const luaL_Reg colmodel_interface[] =
 {
     { NULL, NULL }
 };

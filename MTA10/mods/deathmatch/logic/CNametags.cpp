@@ -122,7 +122,7 @@ void CNametags::DrawFromAim ( void )
                 {
                     // Grab the gun muzzle position
                     CWeaponInfo* pCurrentWeaponInfo = pPlayerWeapon->GetInfo ();
-                    CVector vecGunMuzzle = *pCurrentWeaponInfo->GetFireOffset ();
+                    CVector vecGunMuzzle = pCurrentWeaponInfo->GetFireOffset ();
                     pLocalPlayer->GetTransformedBonePosition ( BONE_RIGHTWRIST, vecGunMuzzle );
 
                     // Grab the target point

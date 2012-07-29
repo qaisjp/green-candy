@@ -92,9 +92,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( stopSound )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, CStaticFunctionDefinitions::StopSound ( *pSound ) );
+            lua_pushboolean( L, CStaticFunctionDefinitions::StopSound ( *sound ) );
             return 1;
         }
         lua_pushboolean ( L, false );
@@ -103,7 +103,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setSoundPosition )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
             lua_pushboolean( L, lua_istype( L, 2, LUA_TNUMBER ) && CStaticFunctionDefinitions::SetSoundPosition( *sound, lua_tonumber( L, 2 ) ) );
             return 1;
@@ -114,7 +114,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getSoundPosition )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
             lua_pushnumber( L, sound->GetPlayPosition() );
             return 1;
@@ -125,7 +125,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getSoundLength )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
             lua_pushnumber( L, sound->GetLength() );
             return 1;
@@ -136,9 +136,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setSoundPaused )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, lua_istype( L, 2, LUA_TBOOLEAN ) && CStaticFunctionDefinitions::SetSoundPaused( *pSound, lua_toboolean( L, 2 ) == 1 ) )
+            lua_pushboolean( L, lua_istype( L, 2, LUA_TBOOLEAN ) && CStaticFunctionDefinitions::SetSoundPaused( *sound, lua_toboolean( L, 2 ) == 1 ) );
             return 1;
         }
         lua_pushboolean ( L, false );
@@ -147,7 +147,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isSoundPaused )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
             lua_pushboolean( L, sound->IsPaused() );
             return 1;
@@ -158,9 +158,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setSoundVolume )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, lua_isnumber( L, 2 ) && CStaticFunctionDefinitions::SetSoundVolume( *pSound, lua_tonumber( L, 2 ) ) );
+            lua_pushboolean( L, lua_isnumber( L, 2 ) && CStaticFunctionDefinitions::SetSoundVolume( *sound, lua_tonumber( L, 2 ) ) );
             return 1;
         }
         lua_pushboolean ( L, false );
@@ -169,7 +169,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getSoundVolume )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
             lua_pushnumber( L, sound->GetVolume() );
             return 1;
@@ -180,10 +180,15 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setSoundSpeed )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, lua_isnumber( L, 2 ) && sound->SetPlaybackSpeed( lua_tonumber( L, 2 ) ) );
-            return 1;
+            if ( lua_isnumber( L, 2 ) )
+            {
+                sound->SetPlaybackSpeed( lua_tonumber( L, 2 ) );
+
+                lua_pushboolean( L, true );
+                return 1;
+            }
         }
         lua_pushboolean ( L, false );
         return 1;
@@ -191,7 +196,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getSoundSpeed )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
             lua_pushnumber( L, sound->GetPlaybackSpeed() );
             return 1;
@@ -202,10 +207,15 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setSoundMinDistance )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, lua_isnumber( L, 2 ) && sound->SetMinDistance( lua_tonumber( L, 2 ) ) );
-            return 1;
+            if ( lua_isnumber( L, 2 ) )
+            {
+                sound->SetMinDistance( lua_tonumber( L, 2 ) );
+
+                lua_pushboolean( L, true );
+                return 1;
+            }
         }
         lua_pushboolean ( L, false );
         return 1;
@@ -213,7 +223,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getSoundMinDistance )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
             lua_pushnumber( L, sound->GetMinDistance() );
             return 1;
@@ -224,10 +234,15 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setSoundMaxDistance )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, lua_isnumber( L, 2 ) && sound->SetMaxDistance( lua_tonumber( L, 2 ) ) );
-            return 1;
+            if ( lua_isnumber( L, 2 ) )
+            {
+                sound->SetMaxDistance( lua_tonumber( L, 2 ) );
+
+                lua_pushboolean( L, true );
+                return 1;
+            }
         }
         lua_pushboolean ( L, false );
         return 1;
@@ -235,7 +250,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getSoundMaxDistance )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
             lua_pushnumber( L, sound->GetMaxDistance() );
             return 1;
@@ -246,7 +261,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getSoundMetaTags )
     {
-        if ( CClientSound *pSound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *pSound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
             SString strMetaTags = "";
             if ( lua_istype ( L, 2, LUA_TSTRING ) )
@@ -351,9 +366,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setSoundEffectEnabled )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, lua_isstring( L, 2 ) && CStaticFunctionDefinitions::SetSoundEffectEnabled( *pSound, lua_tostring( L, 2 ), lua_toboolean( L, 3 ) == 1 ) );
+            lua_pushboolean( L, lua_isstring( L, 2 ) && CStaticFunctionDefinitions::SetSoundEffectEnabled( *sound, lua_tostring( L, 2 ), lua_toboolean( L, 3 ) == 1 ) );
             return 1;
         }
         lua_pushboolean ( L, false );
@@ -362,7 +377,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getSoundEffects )
     {
-        if ( CClientSound *sound = lua_readclass( L, 1, LUACLASS_SOUND ) )
+        if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
             std::map <std::string, int> iFxEffects = m_pManager->GetSoundManager()->GetFxEffects();
             lua_newtable( L );

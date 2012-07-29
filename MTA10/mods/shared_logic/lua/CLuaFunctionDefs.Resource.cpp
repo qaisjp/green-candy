@@ -31,74 +31,56 @@ namespace CLuaFunctionDefs
         if ( pThisResource )
         {
             // Typechecking
-            if ( lua_istype ( L, 1, LUA_TLIGHTUSERDATA ) &&
-                lua_istype ( L, 2, LUA_TSTRING ) )
+            if ( CResource* pResource = lua_readclass <CResource> ( L, 1, LUACLASS_RESOURCE ) )
             {
-                // Grab the resource
-                CResource* pResource = lua_toresource ( L, 1 );
-                if ( pResource )
+                //Get the target Lua VM
+                lua_State* targetL = *pResource->GetVM();
+
+                // The function name
+                const char* szFunctionName = lua_tostring ( L, 2 );
+
+                // Read out the vargs
+                CLuaArguments args;
+                args.ReadArguments ( L, 3 );
+                CLuaArguments returns;
+
+                //Lets grab the original hidden variables so we can restore them later
+                lua_getglobal ( targetL, "sourceResource" );
+                CLuaArgument OldResource ( L, -1 );
+                lua_pop( targetL, 1 );
+
+                lua_getglobal ( targetL, "sourceResourceRoot" );
+                CLuaArgument OldResourceRoot ( L, -1 );
+                lua_pop( targetL, 1 );
+
+                //Set the new values for the current sourceResource, and sourceResourceRoot
+                lua_pushresource ( targetL, pThisResource );
+                lua_setglobal ( targetL, "sourceResource" );
+
+                lua_pushelement ( targetL, pThisResource->GetResourceEntity() );
+                lua_setglobal ( targetL, "sourceResourceRoot" );
+
+                // Call the exported function with the given name and the args
+                bool rslt = pResource->CallExportedFunction ( szFunctionName, args, returns, *pThisResource );
+
+                //Restore the old variables
+                OldResource.Push ( targetL );
+                lua_setglobal ( targetL, "sourceResource" );
+
+                OldResourceRoot.Push ( targetL );
+                lua_setglobal ( targetL, "sourceResourceRoot" );
+
+                if ( rslt )
                 {
-                    //Get the target Lua VM
-                    lua_State* targetL = *pResource->GetVM();
-
-                    // The function name
-                    const char* szFunctionName = lua_tostring ( L, 2 );
-
-                    // Read out the vargs
-                    CLuaArguments args;
-                    args.ReadArguments ( L, 3 );
-                    CLuaArguments returns;
-
-                    //Lets grab the original hidden variables so we can restore them later
-                    lua_getglobal ( targetL, "sourceResource" );
-                    CLuaArgument OldResource ( L, -1 );
-                    lua_pop( targetL, 1 );
-
-                    lua_getglobal ( targetL, "sourceResourceRoot" );
-                    CLuaArgument OldResourceRoot ( L, -1 );
-                    lua_pop( targetL, 1 );
-
-                    //Set the new values for the current sourceResource, and sourceResourceRoot
-                    lua_pushresource ( targetL, pThisResource );
-                    lua_setglobal ( targetL, "sourceResource" );
-
-                    lua_pushelement ( targetL, pThisResource->GetResourceEntity() );
-                    lua_setglobal ( targetL, "sourceResourceRoot" );
-
-                    // Call the exported function with the given name and the args
-                    if ( pResource->CallExportedFunction ( szFunctionName, args, returns, *pThisResource ) )
-                    {
-                        // Push return arguments
-                        returns.PushArguments ( L );
-                        //Restore the old variables
-                        OldResource.Push ( targetL );
-                        lua_setglobal ( targetL, "sourceResource" );
-
-                        OldResourceRoot.Push ( targetL );
-                        lua_setglobal ( targetL, "sourceResourceRoot" );
-
-                        return returns.Count ();
-                    }
-                    else
-                    {
-                        //Restore the old variables
-                        OldResource.Push ( targetL );
-                        lua_setglobal ( targetL, "sourceResource" );
-
-                        OldResourceRoot.Push ( targetL );
-                        lua_setglobal ( targetL, "sourceResourceRoot" );
-                        m_pScriptDebugging->LogError( "call: failed to call '%s:%s'", pResource->GetName (), szFunctionName );
-                    }
+                    // Push return arguments
+                    returns.PushArguments ( L );
+                    return returns.Count ();
                 }
                 else
-                {
-                    m_pScriptDebugging->LogBadPointer( "call", "resource", 1 );
-                }
+                    m_pScriptDebugging->LogError( "call: failed to call '%s:%s'", pResource->GetName (), szFunctionName );
             }
             else
-            {
-                m_pScriptDebugging->LogBadType( "call" );
-            }
+                m_pScriptDebugging->LogBadPointer( "call", "resource", 1 );
         }
 
         // Failed
@@ -168,10 +150,10 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getResourceName )
     {
         // Verify arguments
-        if ( CResource *res = lua_readclass( L, 1, LUACLASS_RESOURCE ) )
+        if ( CResource *res = lua_readclass <CResource> ( L, 1, LUACLASS_RESOURCE ) )
         {
             // Grab its name and return it
-            lua_pushstring( L, pResource->GetName() );
+            lua_pushstring( L, res->GetName() );
             return 1;
         }
         else
@@ -194,7 +176,7 @@ namespace CLuaFunctionDefs
             CResource* pResource = (CResource*)m_pResourceManager->Get( szResource );
             if ( pResource )
             {
-                pResource->PushStack( L )
+                pResource->PushStack( L );
                 return 1;
             }
         }
@@ -212,7 +194,7 @@ namespace CLuaFunctionDefs
         CResource *pResource;
         if ( lua_istype( L, 1, LUA_TCLASS ) )
         {
-            pResource = lua_readclass( L, 1, LUACLASS_RESOURCE );
+            pResource = lua_readclass <CResource> ( L, 1, LUACLASS_RESOURCE );
 
             if ( !pResource )
                 goto error;
@@ -245,7 +227,7 @@ error:
         CResource *pResource;
         if ( lua_istype( L, 1, LUA_TCLASS ) )
         {
-            pResource = lua_readclass( L, 1, LUACLASS_RESOURCE );
+            pResource = lua_readclass <CResource> ( L, 1, LUACLASS_RESOURCE );
         }
 
         // No resource given, get this resource's root
@@ -268,7 +250,7 @@ error:
 
     LUA_DECLARE( getResourceDynamicElementRoot )
     {
-        if ( CResource *res = lua_readclass( L, 1, LUACLASS_RESOURCE ) )
+        if ( CResource *res = lua_readclass <CResource> ( L, 1, LUACLASS_RESOURCE ) )
         {
             CClientEntity *pEntity = res->GetResourceDynamicEntity();
             if ( pEntity )
@@ -277,7 +259,7 @@ error:
                 return 1;
             }
             else
-                m_pScriptDebugging->LogError( "getResourceDynamicElementRoot: Resource %s Is Not Currently Running", pResource->GetName() );
+                m_pScriptDebugging->LogError( "getResourceDynamicElementRoot: Resource %s Is Not Currently Running", res->GetName() );
         }
         else
             m_pScriptDebugging->LogBadPointer( "getResourceDynamicElementRoot", "resource", 1 );
@@ -292,7 +274,7 @@ error:
         
         // resource
         if ( lua_istype( L, 1, LUA_TCLASS ) )
-            resource = lua_readclass( L, 1, LUACLASS_RESOURCE );
+            resource = lua_readclass <CResource> ( L, 1, LUACLASS_RESOURCE );
         else if ( lua_istype( L, 1, LUA_TNONE ) )
         {
             CLuaMain* pLuaMain = lua_readcontext( L );

@@ -14,7 +14,7 @@
 #ifndef _GUI_RADIOBUTTON_
 #define _GUI_RADIOBUTTON_
 
-#define LUACLASS_RADIOBUTTON    78
+#define LUACLASS_GUIRADIOBUTTON    78
 
 int luaconstructor_guiradiobutton( lua_State *L );
 

@@ -103,7 +103,7 @@ error:
             bFilteringEnabled = ( lua_toboolean ( L, 2 ) ) ? true:false;
 
         // Grab the filename
-        SString strFile = lua_isstring( L, 1 ) ? lua_tostring( L, 1 ) : "" );
+        SString strFile = lua_isstring( L, 1 ) ? lua_tostring( L, 1 ) : "";
         
         filePath strPath;
         const char *meta;
@@ -144,8 +144,8 @@ error:
     LUA_DECLARE( engineReplaceCOL )
     {
         // Grab the DFF and model ID
-        CClientColModel* pCol = lua_readclass( L, 1, LUACLASS_COLMODEL );
-        unsigned short usModel = lua_isnumber( L, 2 ) ? ( static_cast < unsigned short > ( lua_tonumber ( L, 2 ) ) ) : 0 );
+        CClientColModel* pCol = lua_readclass <CClientColModel> ( L, 1, LUACLASS_COLMODEL );
+        unsigned short usModel = lua_isnumber( L, 2 ) ? ( static_cast < unsigned short > ( lua_tonumber ( L, 2 ) ) ) : 0;
 
         // Valid collision model?
         if ( pCol )
@@ -193,7 +193,7 @@ error:
 
     LUA_DECLARE( engineImportTXD )
     {
-        CClientTXD *txd = lua_readclass( L, 1, LUACLASS_TXD );
+        CClientTXD *txd = lua_readclass <CClientTXD> ( L, 1, LUACLASS_TXD );
         unsigned short usModelID = lua_isnumber( L, 2 ) ? lua_tointeger( L, 2 ) : 0;
 
         if ( txd )
@@ -218,7 +218,7 @@ error:
 
     LUA_DECLARE( engineReplaceModel )
     {
-        CClientDFF *dff = lua_readclass( L, 1, LUACLASS_DFF );
+        CClientDFF *dff = lua_readclass <CClientDFF> ( L, 1, LUACLASS_DFF );
 
         if ( dff )
         {

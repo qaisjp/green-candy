@@ -130,7 +130,7 @@ public:
 
     bool                        GetMatrix( RwMatrix& Matrix ) const;
     bool                        SetMatrix( const RwMatrix& Matrix );
-    virtual CSphere             GetWorldBoundingSphere();
+    virtual CSphere             GetWorldBoundingSphere() const;
 
     void                        GetMoveSpeed( CVector& vecMoveSpeed ) const;
     void                        GetMoveSpeedMeters( CVector& vecMoveSpeed ) const;
@@ -165,7 +165,7 @@ public:
     void                        Blow( bool bAllowMovement = false );
     inline bool                 IsVehicleBlown() const                                                  { return m_bBlown; };
 
-    CVehicleColor&              GetColor() const;
+    CVehicleColor&              GetColor();
     void                        SetColor( const CVehicleColor& color );
 
     void                        GetTurretRotation( float& fHorizontal, float& fVertical ) const;
@@ -193,7 +193,7 @@ public:
 
     bool                        IsBelowWater() const;
     bool                        IsDrowning() const;
-    bool                        IsDriven() const;
+    bool                        IsDriven();
     bool                        IsUpsideDown() const;
     bool                        IsBlown() const;
 

@@ -27,7 +27,7 @@ namespace CLuaFunctionDefs
         unsigned short ucModel = 0;
         if ( lua_type( L, 1 ) == LUA_TCLASS )
         {
-            CClientVehicle* pVehicle = lua_readclass( L, 1, LUACLASS_VEHICLE );
+            CClientVehicle* pVehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE );
             if ( pVehicle )
                 ucModel = pVehicle->GetModel();
         }
@@ -48,13 +48,12 @@ namespace CLuaFunctionDefs
             case VEHICLE_PLANE:             lua_pushlstring( L, "Plane", 5 ); break;
             case VEHICLE_BIKE:              lua_pushlstring( L, "Bike", 4 ); break;
             case VEHICLE_BICYCLE:           lua_pushlstring( L, "BMX", 3 ); break;
-            case VEHICLE_HELICOPTER:        lua_pushlstring( L, "Helicopter", 10 ); break;
+            case VEHICLE_HELI:              lua_pushlstring( L, "Helicopter", 10 ); break;
             case VEHICLE_BOAT:              lua_pushlstring( L, "Boat", 4 ); break;
             case VEHICLE_TRAIN:             lua_pushlstring( L, "Train", 5 ); break;
-            case VEHICLE_AUTOMBILETRAILER:  lua_pushlstring( L, "Trailer", 7 ); break;
+            case VEHICLE_AUTOMOBILETRAILER: lua_pushlstring( L, "Trailer", 7 ); break;
             case VEHICLE_QUADBIKE:          lua_pushlstring( L, "Quad", 4 ); break;
             case VEHICLE_MONSTERTRUCK:      lua_pushlstring( L, "Monster Truck", 13 ); break;
-            case VEHICLE_TRAIN:             lua_pushlstring( L, "Train", 5 ); break;
             default:
                 assert( 0 );
             }
@@ -67,11 +66,11 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isVehicleTaxiLightOn )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
-            if ( vehicle->GetModel() == 438 || pVehicle->GetModel() == 420 )
+            if ( vehicle->GetModel() == 438 || vehicle->GetModel() == 420 )
             {
-                lua_pushboolean( L, pVehicle->IsTaxiLightOn() );
+                lua_pushboolean( L, vehicle->IsTaxiLightOn() );
                 return 1;
             }
         }
@@ -115,14 +114,14 @@ namespace CLuaFunctionDefs
 
         CScriptArgReader argStream( L );
 
-        argStream.ReadClass( L, LUACLASS_VEHICLE );
+        argStream.ReadClass( vehicle, LUACLASS_VEHICLE );
         argStream.ReadBool( rgb, false );
 
         if ( !argStream.HasErrors() )
         {
             CVehicleColor& color = vehicle->GetColor();
 
-            if ( bRGB )
+            if ( rgb )
             {
                 for ( unsigned int i = 0; i < 4; i++ )
                 {
@@ -169,7 +168,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleLandingGearDown )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             // Return whether it has landing gears or not
             lua_pushboolean ( L, vehicle->IsLandingGearDown() );
@@ -190,7 +189,7 @@ namespace CLuaFunctionDefs
 
             if ( lua_type ( L, 1 ) == LUA_TCLASS )
             {
-                CClientVehicle* pVehicle = lua_readclass( L, 1, LUACLASS_VEHICLE );
+                CClientVehicle* pVehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE );
 
                 if ( pVehicle )
                     model = pVehicle->GetModel();
@@ -237,7 +236,7 @@ namespace CLuaFunctionDefs
             uiSeat = (unsigned int)lua_tonumber( L, 2 );
         }
 
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             CClientPed* pPed = vehicle->GetOccupant ( uiSeat );
             if ( pPed )
@@ -255,7 +254,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleOccupants )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             // Create a new table
             lua_newtable ( L );
@@ -292,7 +291,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleController )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             CClientPed *pPed = vehicle->GetControllingPlayer();
             if ( pPed )
@@ -310,13 +309,13 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleSirensOn )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ))
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ))
         {
             // Does the vehicle have Sirens?
-            if ( CClientVehicleManager::HasSirens ( pVehicle->GetModel () ) )
+            if ( CClientVehicleManager::HasSirens ( vehicle->GetModel () ) )
             {
                 // Return whether it has its Sirens on or not
-                lua_pushboolean( L, pVehicle->IsSirenOrAlarmActive() );
+                lua_pushboolean( L, vehicle->IsSirenOrAlarmActive() );
                 return 1;
             }
         }
@@ -329,7 +328,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleTurnVelocity )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             CVector vecTurnVelocity;
             vehicle->GetTurnSpeed ( vecTurnVelocity );
@@ -348,7 +347,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleTurretPosition )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             CVector2D vecPosition;
             vehicle->GetTurretRotation( vecPosition.fX, vecPosition.fY );
@@ -366,7 +365,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isVehicleLocked )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushboolean( L, vehicle->AreDoorsLocked() );
             return 1;
@@ -390,7 +389,7 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors() )
         {
-            CVehicleUpgrades* pUpgrades = pVehicle->GetUpgrades ();
+            CVehicleUpgrades* pUpgrades = vehicle->GetUpgrades ();
             if ( pUpgrades )
             {
                 lua_pushnumber ( L, (unsigned short)pUpgrades->GetSlotState( slot ) );
@@ -406,7 +405,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleUpgrades )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             CVehicleUpgrades* pUpgrades = vehicle->GetUpgrades ();
             if ( pUpgrades )
@@ -496,13 +495,13 @@ namespace CLuaFunctionDefs
                 {
                     if ( pUpgrades->IsUpgradeCompatible ( usUpgrade ) )
                     {
-                        if ( ucSlot != 0xFF )
+                        if ( slot != 0xFF )
                         {
                             unsigned char ucUpgradeSlot;
                             if ( !pUpgrades->GetSlotFromUpgrade ( usUpgrade, ucUpgradeSlot ) )
                                 continue;
 
-                            if ( ucUpgradeSlot != ucSlot )
+                            if ( ucUpgradeSlot != slot )
                                 continue;
                         }
 
@@ -524,7 +523,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleWheelStates )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             unsigned char ucFrontLeft = vehicle->GetWheelStatus ( FRONT_LEFT_WHEEL );
             unsigned char ucRearLeft = vehicle->GetWheelStatus ( REAR_LEFT_WHEEL );
@@ -612,9 +611,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleOverrideLights )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
-            lua_pushnumber ( L, pVehicle->GetOverrideLights() );
+            lua_pushnumber ( L, vehicle->GetOverrideLights() );
             return 1;
         }
         else
@@ -626,7 +625,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleTowedByVehicle )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             CClientVehicle *pTowedVehicle = vehicle->GetTowedVehicle();
             if ( pTowedVehicle )
@@ -644,7 +643,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleTowingVehicle )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             CClientVehicle* pTowedByVehicle = vehicle->GetTowedByVehicle();
             if ( pTowedByVehicle )
@@ -662,7 +661,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehiclePaintjob )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushnumber( L, vehicle->GetPaintjob() );
             return 1;
@@ -676,7 +675,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehiclePlateText )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             const char* szRegPlate = vehicle->GetRegPlate();
             if ( szRegPlate )
@@ -694,7 +693,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isVehicleDamageProof )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushboolean( L, !vehicle->GetScriptCanBeDamaged() );
             return 1;
@@ -708,7 +707,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isVehicleFuelTankExplodable )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushboolean ( L, vehicle->GetCanShootPetrolTank() );
             return 1;
@@ -722,7 +721,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isVehicleFrozen )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushboolean ( L, vehicle->IsFrozen() );
             return 1;
@@ -736,7 +735,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isVehicleOnGround )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushboolean ( L, vehicle->IsOnGround() );
             return 1;
@@ -750,7 +749,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleName )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             const char* szVehicleName = CVehicleNames::GetVehicleName( vehicle->GetModel() );
             if ( szVehicleName )
@@ -768,7 +767,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleAdjustableProperty )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             if ( CClientVehicleManager::HasAdjustableProperty( vehicle->GetModel() ) )
             {
@@ -785,7 +784,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getHelicopterRotorSpeed )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             float fSpeed;
             if ( CStaticFunctionDefinitions::GetHelicopterRotorSpeed( *vehicle, fSpeed ) )
@@ -803,7 +802,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isTrainDerailed )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushboolean( L, vehicle->IsDerailed() );
             return 1;
@@ -817,7 +816,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isTrainDerailable )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushboolean( L, vehicle->IsDerailable() );
             return 1;
@@ -831,7 +830,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getTrainDirection )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushboolean( L, vehicle->GetTrainDirection() );
             return 1;
@@ -845,7 +844,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getTrainSpeed )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             float fSpeed;
             if ( CStaticFunctionDefinitions::GetTrainSpeed( *vehicle, fSpeed ) )
@@ -863,7 +862,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleEngineState )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushboolean( L, vehicle->IsEngineOn() );
             return 1;
@@ -936,7 +935,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( fixVehicle )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             lua_pushboolean( L, CStaticFunctionDefinitions::FixVehicle( *entity ) );
             return 1;
@@ -951,7 +950,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( blowVehicle )
     {
         // Verify the element pointer argument
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             lua_pushboolean( L, CStaticFunctionDefinitions::BlowVehicle( *entity ) );
             return 1;
@@ -965,7 +964,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isVehicleBlown )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushboolean( L, vehicle->IsBlown() );
             return 1;
@@ -979,7 +978,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleHeadLightColor )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             SColor color = vehicle->GetHeadLightColor();
             lua_pushnumber( L, color.R );
@@ -996,7 +995,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleCurrentGear )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             lua_pushnumber( L, vehicle->GetCurrentGear() );
             return 1;
@@ -1048,7 +1047,7 @@ namespace CLuaFunctionDefs
 
         if  ( ( lua_type ( L, 1 ) == LUA_TCLASS ) && ( i == 3 || i == 4 || i == 6 || i == 9 || i == 12 ) )
         {
-            if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+            if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
             {
                 CVehicleColor color;
 
@@ -1330,7 +1329,7 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors() )
         {
-            if ( ucLights <= 2 )
+            if ( lights <= 2 )
             {
                 lua_pushboolean( L, CStaticFunctionDefinitions::SetVehicleOverrideLights( *entity, lights ) );
                 return 1;
@@ -1345,7 +1344,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( attachTrailerToVehicle )
     {
-        CClientVehicle *vehicle, trailer;
+        CClientVehicle *vehicle, *trailer;
 
         CScriptArgReader argStream( L );
 
@@ -1366,7 +1365,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( detachTrailerFromVehicle )
     {
-        CClientVehicle *vehicle, trailer;
+        CClientVehicle *vehicle, *trailer;
 
         CScriptArgReader argStream( L );
 
@@ -1705,7 +1704,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleGravity )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             CVector vecGravity;
             vehicle->GetGravity ( vecGravity );
@@ -1733,7 +1732,7 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors() )
         {
-            pVehicle->SetGravity( gravity );
+            vehicle->SetGravity( gravity );
             lua_pushboolean( L, true );
             return 1;
         }
@@ -1793,7 +1792,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleHandling )
     {
-        if ( CClientVehicle *vehicle = lua_readclass( L, 1, LUACLASS_VEHICLE ) )
+        if ( CClientVehicle *vehicle = lua_readclass <CClientVehicle> ( L, 1, LUACLASS_VEHICLE ) )
         {
             CHandlingEntry *pEntry = vehicle->GetHandlingData();
 
@@ -2115,9 +2114,9 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors() )
         {
-            if ( ucDoor <= 5 )
+            if ( door <= 5 )
             {
-                lua_pushnumber( L, pVehicle->GetDoorOpenRatio( ucDoor ) );
+                lua_pushnumber( L, vehicle->GetDoorOpenRatio( door ) );
                 return 1;
             }
         }

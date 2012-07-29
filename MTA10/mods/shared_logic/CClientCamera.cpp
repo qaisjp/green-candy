@@ -43,7 +43,7 @@ static int luaconstructor_camera( lua_State *L )
     return 0;
 }
 
-CClientCamera::CClientCamera ( CClientManager* pManager ) : CClientEntity ( INVALID_ELEMENT_ID, true, resMan )
+CClientCamera::CClientCamera ( CClientManager* pManager ) : CClientEntity ( INVALID_ELEMENT_ID, true, *resMan )
 {
     lua_State *L = resMan->GetVM();
 

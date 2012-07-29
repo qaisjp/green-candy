@@ -4222,11 +4222,9 @@ void CClientGame::SendExplosionSync ( const CVector& vecPosition, eExplosionType
 void CClientGame::SendFireSync ( CFire* pFire )
 {
 #ifdef MTA_DEBUG
-    CVector* vecPos = pFire->GetPosition ();
-    if ( vecPos )
-        g_pCore->GetConsole ()->Printf ( "we're sending fire: %f %f %f %f", pFire->GetStrength (), vecPos->fX, vecPos->fY, vecPos->fZ );
-    else
-        g_pCore->GetConsole ()->Printf ( "we're sending a fire!" );
+    const CVector& vecPos = pFire->GetPosition ();
+
+    g_pCore->GetConsole ()->Printf ( "we're sending fire: %f %f %f %f", pFire->GetStrength (), vecPos.fX, vecPos.fY, vecPos.fZ );
 #endif
 }
 

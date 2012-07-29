@@ -37,7 +37,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementID )
     {
         // Correct argument type specified?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             lua_pushstring( L, entity->GetName() );
             return 1;
@@ -62,7 +62,7 @@ namespace CLuaFunctionDefs
         if ( lua_isstring( L, 1 ) )
         {
             // Try to find the element with that ID. Return it
-            CClientEntity* pEntity = CStaticFunctionDefinitions::GetElementByID( lua_tosstring( L, 1 ), uiIndex );
+            CClientEntity* pEntity = CStaticFunctionDefinitions::GetElementByID( lua_tostring( L, 1 ), uiIndex );
             if ( pEntity )
             {
                 pEntity->PushStack( L );
@@ -144,7 +144,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementMatrix )
     {
         // Verify the argument
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Grab the position
             RwMatrix matrix;
@@ -215,7 +215,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementPosition )
     {
         // Verify the argument
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Grab the position
             CVector vecPosition;
@@ -237,7 +237,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementRotation )
     {
         // Verify the argument
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             const char* szRotationOrder = "default";
 
@@ -266,7 +266,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementVelocity )
     {
         // Verify the argument
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Grab the velocity
             CVector vecVelocity;
@@ -290,7 +290,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementType )
     {
         // Check the arg type
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Get its typename
             lua_pushstring( L, entity->GetTypeName() );
@@ -307,7 +307,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementChildren )
     {
         // Correct arg type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Create a new table
             lua_newtable ( L );
@@ -354,9 +354,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getElementChildrenCount )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
-            lua_pushnumber( L, pEntity->CountChildren() );
+            lua_pushnumber( L, entity->CountChildren() );
             return 1;
         }
         else
@@ -370,7 +370,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementParent )
     {
         // Correct arg type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Grab the parent and return it
             CClientEntity *pParent = entity->GetParent();
@@ -420,7 +420,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementInterior )
     {
         // Check arg types
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             lua_pushnumber( L, entity->GetInterior() );
             return 1;
@@ -485,7 +485,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementsWithinColShape )
     {
         // Correct arg type?
-        if ( CClientColShape *colShape = lua_readclass( L, 1, LUACLASS_COLSHAPE ) )
+        if ( CClientColShape *colShape = lua_readclass <CClientColShape> ( L, 1, LUACLASS_COLSHAPE ) )
         {
             // Grab optional type arg
             const char* szType = NULL;
@@ -528,7 +528,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementDimension )
     {
         // Correct type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Grab the dimension
             lua_pushnumber( L, entity->GetDimension() );
@@ -545,7 +545,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementBoundingBox )
     {
         // Correct type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Grab the bounding box and return it
             CVector vecMin, vecMax;
@@ -571,7 +571,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementRadius )
     {
         // Correct type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Grab its radius and return it
             float fRadius = 0.0f;
@@ -592,7 +592,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( isElementAttached )
     {
         // Correct type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             CClientEntity *pEntityAttachedTo = entity->GetAttachedTo();
 
@@ -610,7 +610,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementAttachedTo )
     {
         // Check types
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Grab the enity attached to it
             CClientEntity *pEntityAttachedTo = CStaticFunctionDefinitions::GetElementAttachedTo( *entity );
@@ -637,7 +637,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getAttachedElements )
     {
         // Correct type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Create a new table
             lua_newtable ( L );
@@ -668,7 +668,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementDistanceFromCentreOfMassToBaseOfModel )
     {
         // Valid types?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Grab the distance and return it
             float fDistance;
@@ -689,10 +689,10 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( isElementLocal )
     {
         // Check types
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Return whether it's local or not
-            lua_pushboolean( L, pEntity->IsLocalEntity() );
+            lua_pushboolean( L, entity->IsLocalEntity() );
             return 1;
         }
         else
@@ -705,7 +705,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getElementAttachedOffsets )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             CVector vecPosition, vecRotation;
 
@@ -731,11 +731,11 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementAlpha )
     {
         // Valid type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Grab its alpha level and return it
             unsigned char ucAlpha;
-            if ( CStaticFunctionDefinitions::GetElementAlpha( *pEntity, ucAlpha ) )
+            if ( CStaticFunctionDefinitions::GetElementAlpha( *entity, ucAlpha ) )
             {
                 lua_pushnumber( L, ucAlpha );
                 return 1;
@@ -752,7 +752,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementHealth )
     {
         // Same type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Grab the health and return it
             float fHealth;
@@ -773,7 +773,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getElementModel )
     {
         // Same type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             unsigned short usModel;
             if ( CStaticFunctionDefinitions::GetElementModel( *entity, usModel ) )
@@ -792,7 +792,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getElementColShape )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             CClientEntity* pColShape = CStaticFunctionDefinitions::GetElementColShape( entity );
             if ( pColShape )
@@ -811,7 +811,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isElementInWater )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             bool bInWater = false;
             if ( CStaticFunctionDefinitions::IsElementInWater( *entity, bInWater ) )
@@ -829,7 +829,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isElementSyncer )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             bool bIsSyncer = false;
             if ( CStaticFunctionDefinitions::IsElementSyncer( *entity, bIsSyncer ) )
@@ -873,7 +873,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isElementDoubleSided )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             lua_pushboolean( L, entity->IsDoubleSided() );
             return 1;
@@ -887,7 +887,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getElementCollisionsEnabled )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             lua_pushboolean( L, CStaticFunctionDefinitions::GetElementCollisionsEnabled( *entity ) );
             return 1;
@@ -901,7 +901,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isElementFrozen )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             bool bFrozen;
             if ( CStaticFunctionDefinitions::IsElementFrozen( *entity, bFrozen ) )
@@ -919,7 +919,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isElementStreamedIn )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Is this a streaming compatible class?
             if ( entity->IsStreamingCompatibleClass() )
@@ -947,7 +947,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( isElementStreamable )
     {
         // We have a correct parameter 1?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Is this a streaming compatible class?
             if ( entity->IsStreamingCompatibleClass() )
@@ -976,7 +976,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( isElementOnScreen )
     {
         // Valid type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Return whether we're on the screen or not
             bool bOnScreen;
@@ -1038,7 +1038,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( destroyElement )
     {
         // Correct type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Attempt destruction
             lua_pushboolean( L, CStaticFunctionDefinitions::DestroyElement( *entity ) );
@@ -1065,7 +1065,7 @@ namespace CLuaFunctionDefs
         // Correct type?
         if ( !argStream.HasErrors() )
         {
-            lua_pushboolean( L, CStaticFunctionDefinitions::SetElementID( *pEntity, id ) );
+            lua_pushboolean( L, CStaticFunctionDefinitions::SetElementID( *entity, id ) );
             return 1;
         }
         else
@@ -1288,7 +1288,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( attachElements )
     {
-        CClientEntity *entity, attachTo;
+        CClientEntity *entity, *attachTo;
         CVector offsetPos;
         CVector offsetRot;
 
@@ -1317,10 +1317,10 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( detachElements )
     {
         // Valid arg type?
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             // Try to detach
-            lua_pushboolean( L, CStaticFunctionDefinitions::DetachElements( *pEntity, lua_readclass( L, 2, LUACLASS_ENTITY ) ) );
+            lua_pushboolean( L, CStaticFunctionDefinitions::DetachElements( *entity, lua_readclass <CClientEntity> ( L, 2, LUACLASS_ENTITY ) ) );
             return 1;
         }
         else
@@ -1357,9 +1357,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setElementCollisionsEnabled )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
-            lua_pushboolean( L, CStaticFunctionDefinitions::SetElementCollisionsEnabled( *pEntity, lua_toboolean( L, 2 ) == 1 ) );
+            lua_pushboolean( L, CStaticFunctionDefinitions::SetElementCollisionsEnabled( *entity, lua_toboolean( L, 2 ) == 1 ) );
             return 1;
         }
         else

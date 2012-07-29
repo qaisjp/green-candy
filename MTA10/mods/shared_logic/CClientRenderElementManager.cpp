@@ -263,7 +263,7 @@ void CClientRenderElementManager::Remove ( CClientRenderElement* pElement )
     MapRemove ( m_ItemElementMap, pElement->GetRenderItem () );
 
     // Remove from auto texture map
-    if ( pElement->IsA ( CClientTexture::GetClassId () ) )
+    if ( pElement->IsTransmit( LUACLASS_CORETEXTURE ) )
     {
         for ( std::map < SString, CClientTexture* >::iterator iter = m_AutoTextureMap.begin () ; iter != m_AutoTextureMap.end () ; ++iter )
         {
@@ -276,22 +276,22 @@ void CClientRenderElementManager::Remove ( CClientRenderElement* pElement )
     }
 
     // Update stats
-    if ( pElement->IsA ( CClientDxFont::GetClassId () ) )
+    if ( pElement->IsTransmit( LUACLASS_DXFONT ) )
         m_uiStatsDxFontCount--;
     else
-    if ( pElement->IsA ( CClientGuiFont::GetClassId () ) )
+    if ( pElement->IsTransmit( LUACLASS_GUIFONT ) )
         m_uiStatsGuiFontCount--;
     else
-    if ( pElement->IsA ( CClientShader::GetClassId () ) )
+    if ( pElement->IsTransmit( LUACLASS_SHADER ) )
         m_uiStatsShaderCount--;
     else
-    if ( pElement->IsA ( CClientRenderTarget::GetClassId () ) )
+    if ( pElement->IsTransmit( LUACLASS_CORERENDERTARGET ) )
         m_uiStatsRenderTargetCount--;
     else
-    if ( pElement->IsA ( CClientScreenSource::GetClassId () ) )
+    if ( pElement->IsTransmit( LUACLASS_CORESCREENSOURCE ) )
         m_uiStatsScreenSourceCount--;
     else
-    if ( pElement->IsA ( CClientTexture::GetClassId () ) )
+    if ( pElement->IsTransmit( LUACLASS_CORETEXTURE ) )
         m_uiStatsTextureCount--;
 
     // Release render item

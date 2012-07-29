@@ -23,30 +23,31 @@ class CClientProjectileManager
 {
     friend class CClientProjectile;
 public:
-                                    CClientProjectileManager            ( CClientManager * pManager );
-                                    ~CClientProjectileManager           ( void );
+                                    CClientProjectileManager( CClientManager * pManager );
+                                    ~CClientProjectileManager( void );
 
-    void                            DoPulse                             ( void );
-    void                            RemoveAll                           ( void );
-    bool                            Exists                              ( CClientProjectile * pProjectile );
+    void                            DoPulse( void );
+    void                            RemoveAll( void );
+    bool                            Exists( CClientProjectile * pProjectile );
 
-    inline unsigned int             Count                               ( void )                                    { return static_cast < unsigned int > ( m_List.size () ); }
+    inline unsigned int             Count( void )                                                       { return static_cast < unsigned int > ( m_List.size () ); }
 
-    inline void                     SetInitiateHandler                  ( ProjectileInitiateHandler * pHandler )    { m_pInitiateHandler = pHandler; }
+    inline void                     SetInitiateHandler( ProjectileInitiateHandler * pHandler )          { m_pInitiateHandler = pHandler; }
 
     // * Game-layer wrapping *
     static bool                     Hook_StaticProjectileAllow          ( CEntity * pGameCreator, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * targetEntity );
     bool                            Hook_ProjectileAllow                ( CEntity * pGameCreator, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * targetEntity );
     static void                     Hook_StaticProjectileCreation       ( CEntity* pGameCreator, CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget );
     void                            Hook_ProjectileCreation             ( CEntity* pGameCreator, CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget );
-    CClientProjectile *             Create                              ( CClientEntity* pCreator, eWeaponType eWeapon, CVector & vecOrigin, float fForce, CVector * target, CClientEntity * pTargetEntity );
+    CClientProjectile *             Create                              ( CClientEntity* pCreator, eWeaponType eWeapon, const CVector & vecOrigin, float fForce, const CVector& target, CClientEntity * pTargetEntity );
 
 protected:
-    inline void                     AddToList                           ( CClientProjectile * pProjectile )         { m_List.push_back ( pProjectile ); }
-    void                            RemoveFromList                      ( CClientProjectile * pProjectile );
-    void                            OnInitiate                          ( CClientProjectile * pProjectile );
+    inline void                     AddToList( CClientProjectile * pProjectile )                        { m_List.push_back ( pProjectile ); }
+    void                            RemoveFromList( CClientProjectile * pProjectile );
+    void                            OnInitiate( CClientProjectile * pProjectile );
 
-    void                            TakeOutTheTrash                     ( void );
+    void                            TakeOutTheTrash( void );
+
 private:
     CClientManager *                    m_pManager;
     std::list < CClientProjectile* >    m_List;

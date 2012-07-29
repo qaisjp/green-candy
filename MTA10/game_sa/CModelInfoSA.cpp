@@ -226,6 +226,16 @@ bool CModelInfoSA::IsUpgrade() const
     return m_modelID >= 1000 && m_modelID <= 1193;
 }
 
+bool CModelInfoSA::IsPed() const
+{
+    CBaseModelInfoSAInterface *info = ppModelInfo[m_modelID];
+
+    if ( !info )
+        return false;
+
+    return info->GetModelType() == MODEL_PED;
+}
+
 const char* CModelInfoSA::GetNameIfVehicle() const
 {
     DEBUG_TRACE("const char* CModelInfoSA::GetNameIfVehicle() const");

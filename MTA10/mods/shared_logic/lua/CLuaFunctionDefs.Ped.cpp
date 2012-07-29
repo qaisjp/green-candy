@@ -25,7 +25,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedVoice )
     {
         // Right type?
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             if ( !ped->IsSpeechEnabled() )
             {
@@ -71,14 +71,14 @@ namespace CLuaFunctionDefs
         {
             if ( type == "PED_TYPE_DISABLED" )
             {
-                pPed->SetSpeechEnabled( false );
+                ped->SetSpeechEnabled( false );
                 lua_pushboolean( L, true );
                 return 1;
             }
             else if ( bank )
             {
-                pPed->SetSpeechEnabled( true );
-                pPed->SetVoice( type, bank );
+                ped->SetSpeechEnabled( true );
+                ped->SetVoice( type, bank );
                 lua_pushboolean( L, true );
                 return 1;
             }
@@ -97,7 +97,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedWeapon )
     {
         // Right type?
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Grab the slot if specified
             unsigned char ucSlot = 0xFF;
@@ -105,12 +105,12 @@ namespace CLuaFunctionDefs
                 ucSlot = (unsigned char)lua_tonumber( L, 2 );
 
             if ( ucSlot == 0xFF )
-                ucSlot = pPed->GetCurrentWeaponSlot();
+                ucSlot = ped->GetCurrentWeaponSlot();
 
-            CWeapon *pWeapon = pPed->GetWeapon( (eWeaponSlot)ucSlot );
+            CWeapon *pWeapon = ped->GetWeapon( (eWeaponSlot)ucSlot );
             if ( pWeapon )
             {
-                lua_pushnumber( L, (unsigned char)pWeapon->GetType( );
+                lua_pushnumber( L, (unsigned char)pWeapon->GetType() );
                 return 1;
             }
         }
@@ -125,9 +125,9 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedWeaponSlot )
     {
         // Right type?
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
-            lua_pushnumber ( L, pPed->GetCurrentWeaponSlot() );
+            lua_pushnumber ( L, ped->GetCurrentWeaponSlot() );
             return 1;
         }
         else
@@ -153,7 +153,7 @@ namespace CLuaFunctionDefs
             if ( slot == 0xFF )
                 slot = ped->GetCurrentWeaponSlot();
 
-            CWeapon *pWeapon = ped->GetWeapon( (eWeaponSlot)ucSlot );
+            CWeapon *pWeapon = ped->GetWeapon( (eWeaponSlot)slot );
             if ( pWeapon )
             {
                 lua_pushnumber( L, (unsigned short)pWeapon->GetAmmoInClip() );
@@ -184,7 +184,7 @@ namespace CLuaFunctionDefs
                 slot = ped->GetCurrentWeaponSlot();
 
             // Grab the ammo and return
-            CWeapon *pWeapon = ped->GetWeapon( (eWeaponSlot)ucSlot );
+            CWeapon *pWeapon = ped->GetWeapon( (eWeaponSlot)slot );
             if ( pWeapon )
             {
                 lua_pushnumber( L, (unsigned short)pWeapon->GetAmmoTotal() );
@@ -201,10 +201,10 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getPedWeaponMuzzlePosition )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             CVector vecMuzzlePos;
-            if ( CStaticFunctionDefinitions::GetPedWeaponMuzzlePosition( *pPed, vecMuzzlePos ) )
+            if ( CStaticFunctionDefinitions::GetPedWeaponMuzzlePosition( *ped, vecMuzzlePos ) )
             {
                 lua_pushnumber( L, vecMuzzlePos.fX );
                 lua_pushnumber( L, vecMuzzlePos.fY );
@@ -221,10 +221,10 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getPedOccupiedVehicle )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Grab his occupied vehicle
-            CClientVehicle *pVehicle = pPed->GetOccupiedVehicle();
+            CClientVehicle *pVehicle = ped->GetOccupiedVehicle();
             if ( pVehicle )
             {
                 pVehicle->PushStack( L );
@@ -278,7 +278,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedSimplestTask )
     {
         // Check types
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Grab his simplest task and return it
             const char *szTaskName = CStaticFunctionDefinitions::GetPedSimplestTask( *ped );
@@ -328,7 +328,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedTarget )
     {
         // Check types
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Grab his target element
             CClientEntity *pEntity = CStaticFunctionDefinitions::GetPedTarget( *ped );
@@ -349,7 +349,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedTargetStart )
     {
         // Check type
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Grab his start aim position and return it
             CVector vecStart;
@@ -371,11 +371,11 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedTargetEnd )
     {
         // Check types
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Grab the ped end target position and return it
             CVector vecEnd;
-            pPed->GetShotData ( NULL, &vecEnd );
+            ped->GetShotData ( NULL, &vecEnd );
 
             lua_pushnumber ( L, vecEnd.fX );
             lua_pushnumber ( L, vecEnd.fY );
@@ -393,7 +393,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedTargetRange )
     {
         // Check type
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // TODO: getPedTargetRange
         }
@@ -408,7 +408,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedTargetCollision )
     {
         // Check type
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Grab his target collision and return it
             CVector vecCollision;
@@ -431,7 +431,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedArmor )
     {
         // Check type
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Grab the armor and return it
             lua_pushnumber( L, ped->GetArmor() );
@@ -475,7 +475,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( isPedChoking )
     {
         // Check type
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Return whether he's choking or not
             lua_pushboolean( L, ped->IsChoking() );
@@ -492,7 +492,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( isPedDucked )
     {
         // Check type
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Grab his ducked state
             lua_pushboolean ( L, ped->IsDucked() );
@@ -509,7 +509,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( isPedInVehicle )
     {
         // Check type
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Return that state
             lua_pushboolean( L, ped->GetOccupiedVehicle() != NULL );
@@ -526,10 +526,10 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( doesPedHaveJetPack )
     {
         // Check type
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Find out whether he has a jetpack or not and return it
-            lua_pushboolean ( L, pPed->HasJetPack() );
+            lua_pushboolean ( L, ped->HasJetPack() );
             return 1;
         }
         else
@@ -543,10 +543,10 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( isPedOnGround )
     {
         // Check type
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             // Find out whether he's on the ground or not and return it
-            lua_pushboolean ( L, pPed->IsOnGround() );
+            lua_pushboolean ( L, ped->IsOnGround() );
             return 1;
         }
         else
@@ -559,9 +559,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getPedContactElement )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
-            CClientEntity *pEntity = pPed->GetContactEntity();
+            CClientEntity *pEntity = ped->GetContactEntity();
             if ( pEntity )
             {
                 pEntity->PushStack( L );
@@ -577,7 +577,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getPedRotation )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             lua_pushnumber( L, ConvertRadiansToDegrees( ped->GetCurrentRotation() ) );
             return 1;
@@ -591,7 +591,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( canPedBeKnockedOffBike )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             lua_pushboolean( L, ped->GetCanBeKnockedOffBike() );
             return 1;
@@ -694,7 +694,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedControlState )
     {
         CClientPed *ped;
-        unsigned char *control;
+        const char *control;
 
         CScriptArgReader argStream( L );
 
@@ -719,7 +719,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isPedDoingGangDriveby )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             lua_pushboolean( L, ped->IsDoingGangDriveby() );
             return 1;
@@ -733,7 +733,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getPedAnimation )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             char szBlockName [ 128 ], szAnimName [ 128 ];
             if ( CStaticFunctionDefinitions::GetPedAnimation ( *ped, szBlockName, szAnimName, 128 ))
@@ -752,7 +752,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getPedMoveState )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             std::string strMoveState;
             if ( CStaticFunctionDefinitions::GetPedMoveState( *ped, strMoveState ) )
@@ -770,7 +770,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getPedMoveAnim )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             lua_pushnumber( L, (unsigned int)ped->GetMoveAnim() );
             return 1;
@@ -784,7 +784,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isPedHeadless )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             lua_pushboolean( L, ped->IsHeadless() );
             return 1;
@@ -798,7 +798,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isPedFrozen )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             lua_pushboolean( L, ped->IsFrozen() );
             return 1;
@@ -812,7 +812,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isPedFootBloodEnabled )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             lua_pushboolean( L, ped->IsFootBloodEnabled() );
             return 1;
@@ -828,7 +828,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getPedCameraRotation )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             lua_pushnumber( L, RAD2DEG( ped->GetCameraRotation() ) );
             return 1;
@@ -842,7 +842,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isPedOnFire )
     {
-        if ( CClientPed *ped = lua_readclass( L, 1, LUACLASS_PED ) )
+        if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )
         {
             lua_pushboolean( L, ped->IsOnFire() );
             return 1;
@@ -856,7 +856,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setPedOnFire )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             lua_pushboolean( L, CStaticFunctionDefinitions::SetPedOnFire( *entity, lua_toboolean( L, 2 ) ) );
             return 1;
@@ -1238,7 +1238,7 @@ namespace CLuaFunctionDefs
         if ( !argStream.HasErrors() )
         {
             // Create it
-            CClientPed* pPed = CStaticFunctionDefinitions::CreatePed( *lua_readcontext( L )->GetResource(), ulModel, vecPosition, fRotation );
+            CClientPed* pPed = CStaticFunctionDefinitions::CreatePed( *lua_readcontext( L )->GetResource(), model, pos, rotation );
             if ( pPed )
             {
                 // Return it

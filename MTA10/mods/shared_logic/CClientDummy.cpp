@@ -13,7 +13,7 @@
 
 #include "StdInc.h"
 
-static int luaconstructordummy( lua_State *L )
+static int luaconstructor_dummy( lua_State *L )
 {
     CClientDummy *dummy = (CClientDummy*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 

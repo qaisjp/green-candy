@@ -151,7 +151,7 @@ void CClientProjectileManager::Hook_ProjectileCreation ( CEntity* pGameCreator, 
 }
 
 
-CClientProjectile * CClientProjectileManager::Create ( CClientEntity* pCreator, eWeaponType eWeapon, CVector & vecOrigin, float fForce, CVector * target, CClientEntity * pTargetEntity )
+CClientProjectile * CClientProjectileManager::Create ( CClientEntity* pCreator, eWeaponType eWeapon, const CVector & vecOrigin, float fForce, const CVector& target, CClientEntity * pTargetEntity )
 {
     m_bCreating = true;
     m_pLastCreated = NULL;

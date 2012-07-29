@@ -81,6 +81,8 @@ public:
     virtual bool                            IsVehicle() const = 0;
     virtual bool                            IsUpgrade() const = 0;
 
+    virtual bool                            IsPed() const = 0;
+
     virtual const char*                     GetNameIfVehicle() const = 0;
 
     virtual void                            Request( bool bAndLoad = false, bool bWaitForLoad = false, bool bHighPriority = false ) = 0;

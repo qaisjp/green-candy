@@ -171,40 +171,24 @@ CClientPlayer* CClientPlayerManager::Get ( CPlayerPed* pPlayer, bool bValidatePo
     return NULL;
 }
 
-
 bool CClientPlayerManager::Exists ( CClientPlayer* pPlayer )
 {
     return m_Players.Contains ( pPlayer );
 }
 
-
-bool CClientPlayerManager::IsPlayerLimitReached ( void )
+bool CClientPlayerManager::IsPlayerLimitReached()
 {
-    return g_pGame->GetPools ()->GetPedCount () >= 110;
-
-    return true;
+    return g_pGame->GetPools()->GetNumberOfUsedSpaces( PED_POOL ) >= 110;
 }
 
-
-bool CClientPlayerManager::IsValidModel ( unsigned long ulModel )
+bool CClientPlayerManager::IsValidModel( unsigned short model )
 {
-    return ( ulModel == 0 ||
-             ulModel == 1 ||
-             ulModel == 2 ||
-             ulModel == 7 ||
-             ulModel >= 9 &&
-             ulModel != 208 &&
-             ulModel != 149 &&
-             ulModel != 119 &&
-             ulModel != 86 &&
-             ulModel != 74 &&
-             ulModel != 65 &&
-             ulModel != 42 &&
-             ulModel <= 272 ||
-             ulModel >= 274 &&
-             ulModel <= 288 ||
-             ulModel >= 290 &&
-             ulModel <= 312 );
+    CModelInfo *info = g_pGame->GetModelInfo( model );
+
+    if ( !info )
+        return false;
+
+    return info->IsPed();
 }
 
 void CClientPlayerManager::ResetAll ( void )

@@ -213,7 +213,7 @@ namespace CLuaFunctionDefs
             CResource* pResource = pLuaMain->GetResource ();
 
             // Create it and return it
-            CClientColTube* pShape = CStaticFunctionDefinitions::CreateColTube ( *pResource, vecPosition, max( 0.1f, radius ), max( 0.1f, height ) );
+            CClientColTube* pShape = CStaticFunctionDefinitions::CreateColTube ( *pResource, pos, max( 0.1f, radius ), max( 0.1f, height ) );
             if ( pShape )
             {
                 CElementGroup * pGroup = pResource->GetElementGroup();

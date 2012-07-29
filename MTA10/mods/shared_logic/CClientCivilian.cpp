@@ -36,7 +36,7 @@ static int luaconstructor_civilian( lua_State *L )
     return 0;
 }
 
-CClientCivilian::CClientCivilian ( CClientManager* pManager, ElementID ID, int iModel ) : CClientEntity ( ID, false, resMan )
+CClientCivilian::CClientCivilian ( CClientManager* pManager, ElementID ID, int iModel ) : CClientEntity ( ID, false, *resMan )
 {
     lua_State *L = resMan->GetVM();
 
@@ -61,8 +61,7 @@ CClientCivilian::CClientCivilian ( CClientManager* pManager, ElementID ID, int i
     Create ();
 }
 
-
-CClientCivilian::CClientCivilian ( CClientManager* pManager, ElementID ID, CCivilianPed * pCivilianPed ) : CClientEntity ( ID, false, resMan )
+CClientCivilian::CClientCivilian ( CClientManager* pManager, ElementID ID, CCivilianPed * pCivilianPed ) : CClientEntity ( ID, false, *resMan )
 {
     // Initialize members
     m_pManager = pManager;

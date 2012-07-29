@@ -27,7 +27,7 @@ namespace CLuaFunctionDefs
         CVector pos;
         SString type;
         float size;
-        SColorRGBA color;
+        SColor color;
 
         CScriptArgReader argStream( L );
 
@@ -70,10 +70,10 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getMarkerType )
     {
-        if ( CClientMarker *marker = lua_readclass( L, 1, LUACLASS_MARKER ) )
+        if ( CClientMarker *marker = lua_readclass <CClientMarker> ( L, 1, LUACLASS_MARKER ) )
         {
             char szMarkerType [64];
-            if ( CClientMarker::TypeToString( pMarker->GetMarkerType(), szMarkerType ) )
+            if ( CClientMarker::TypeToString( marker->GetMarkerType(), szMarkerType ) )
             {
                 lua_pushstring( L, szMarkerType );
                 return 1;
@@ -88,9 +88,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getMarkerSize )
     {
-        if ( CClientMarker *marker = lua_readclass( L, 1, LUACLASS_MARKER ) )
+        if ( CClientMarker *marker = lua_readclass <CClientMarker> ( L, 1, LUACLASS_MARKER ) )
         {
-            lua_pushnumber( L, (float)pMarker->GetSize() );
+            lua_pushnumber( L, (float)marker->GetSize() );
             return 1;
         }
         else
@@ -102,9 +102,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getMarkerColor )
     {
-        if ( CClientMarker *marker = lua_readclass( L, 1, LUACLASS_MARKER ) )
+        if ( CClientMarker *marker = lua_readclass <CClientMarker> ( L, 1, LUACLASS_MARKER ) )
         {
-            SColor color = pMarker->GetColor();
+            SColor color = marker->GetColor();
             lua_pushnumber ( L, color.R );
             lua_pushnumber ( L, color.G );
             lua_pushnumber ( L, color.B );
@@ -120,10 +120,10 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getMarkerTarget )
     {
-        if ( CClientMarker *marker = lua_readclass( L, 1, LUACLASS_MARKER ) )
+        if ( CClientMarker *marker = lua_readclass <CClientMarker> ( L, 1, LUACLASS_MARKER ) )
         {
             CVector vecTarget;
-            if ( CStaticFunctionDefinitions::GetMarkerTarget( *pMarker, vecTarget ) )
+            if ( CStaticFunctionDefinitions::GetMarkerTarget( *marker, vecTarget ) )
             {
                 lua_pushnumber( L, vecTarget.fX );
                 lua_pushnumber( L, vecTarget.fY );
@@ -140,10 +140,10 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getMarkerIcon )
     {
-        if ( CClientMarker *marker = lua_readclass( L, 1, LUACLASS_MARKER ) )
+        if ( CClientMarker *marker = lua_readclass <CClientMarker> ( L, 1, LUACLASS_MARKER ) )
         {
             char szMarkerIcon [64];
-            CClientCheckpoint* pCheckpoint = pMarker->GetCheckpoint ();
+            CClientCheckpoint* pCheckpoint = marker->GetCheckpoint ();
             if ( pCheckpoint )
             {
                 CClientCheckpoint::IconToString ( pCheckpoint->GetIcon (), szMarkerIcon );

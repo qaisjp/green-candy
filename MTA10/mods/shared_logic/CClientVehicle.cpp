@@ -35,7 +35,7 @@ extern CClientGame* g_pClientGame;
 #define VEHICLE_INTERPOLATION_WARP_THRESHOLD_FOR_SPEED  1.8f
 
 static const luaL_Reg vehicle_interface[] =
-{1
+{
     { NULL, NULL }
 };
 
@@ -79,7 +79,6 @@ CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass
     m_eVehicleType = CClientVehicleManager::GetVehicleType ( usModel );
     m_pVehicle = NULL;
     m_pUpgrades = new CVehicleUpgrades ( this );
-    m_pClump = NULL;
     m_pOriginalHandlingEntry = g_pGame->GetHandlingManager ()->GetOriginalHandlingData ( static_cast < eVehicleTypes > ( usModel ) );
     m_pHandlingEntry = g_pGame->GetHandlingManager ()->CreateHandlingData ();
     m_pHandlingEntry->Assign ( m_pOriginalHandlingEntry );
@@ -273,7 +272,7 @@ void CClientVehicle::Unlink ( void )
     ListRemove( m_pVehicleManager->m_StreamedIn, this );
 }
 
-void CClientVehicle::GetName ( char* szBuf )
+void CClientVehicle::GetName ( char* szBuf ) const
 {
     // Get the name
     const char* szName = m_pModelInfo->GetNameIfVehicle ();
@@ -447,7 +446,7 @@ bool CClientVehicle::SetTaxiLightOn ( bool bLightOn )
     return false;
 }
 
-float CClientVehicle::GetDistanceFromCentreOfMassToBaseOfModel()
+float CClientVehicle::GetDistanceFromCentreOfMassToBaseOfModel() const
 {
     if ( m_pVehicle )
         return m_pVehicle->GetBasingDistance();
@@ -831,12 +830,12 @@ void CClientVehicle::Blow ( bool bAllowMovement )
     m_bBlown = true;
 }
 
-CVehicleColor& CClientVehicle::GetColor() const
+CVehicleColor& CClientVehicle::GetColor()
 {
     if ( m_pVehicle )
     {
         SColor colors[4];
-        m_pVehicle->GetColor ( &colors[0], &colors[1], &colors[2], &colors[3], 0 );
+        m_pVehicle->GetColor ( colors[0], colors[1], colors[2], colors[3], 0 );
         m_Color.SetRGBColors ( colors[0], colors[1], colors[2], colors[3] );
     }
 
@@ -853,7 +852,7 @@ void CClientVehicle::SetColor ( const CVehicleColor& color )
     m_bColorSaved = true;
 }
 
-void CClientVehicle::GetTurretRotation( float& fHorizontal, float& fVertical )
+void CClientVehicle::GetTurretRotation( float& fHorizontal, float& fVertical ) const
 {
     if ( m_pVehicle )
     {
@@ -1082,7 +1081,7 @@ bool CClientVehicle::IsDrowning() const
     return false;
 }
 
-bool CClientVehicle::IsDriven() const
+bool CClientVehicle::IsDriven()
 {
     if ( m_pVehicle )
         return m_pVehicle->IsBeingDriven();
@@ -1130,13 +1129,8 @@ float CClientVehicle::GetLandingGearPosition() const
 
 void CClientVehicle::SetLandingGearPosition ( float fPosition )
 {
-    if ( m_bHasLandingGear )
-    {
-        if ( m_pVehicle )
-        {
-            m_pVehicle->SetLandingGearPosition ( fPosition );
-        }
-    }
+    if ( m_plane )
+        m_plane->SetLandingGearPosition ( fPosition );
 }
 
 bool CClientVehicle::IsLandingGearDown() const
@@ -1204,7 +1198,7 @@ void CClientVehicle::_SetAdjustablePropertyValue ( unsigned short usValue )
     m_usAdjustablePropertyValue = usValue;
 }
 
-bool CClientVehicle::HasMovingCollision()
+bool CClientVehicle::HasMovingCollision() const
 {
     return ( m_usModel == VT_FORKLIFT || m_usModel == VT_FIRELA || m_usModel == VT_ANDROM ||
              m_usModel == VT_DUMPER || m_usModel == VT_DOZER || m_usModel == VT_PACKER );
@@ -1247,7 +1241,7 @@ unsigned char CClientVehicle::GetPanelStatus ( unsigned char ucPanel ) const
     if ( ucPanel < MAX_PANELS )
     {
         if ( m_automobile )
-            return m_pVehicle->GetDamageManager()->GetPanelStatus( ucPanel );
+            return m_automobile->GetDamageManager()->GetPanelStatus( ucPanel );
 
         return m_ucPanelStates [ ucPanel ];
     }
@@ -1260,7 +1254,7 @@ unsigned char CClientVehicle::GetLightStatus ( unsigned char ucLight ) const
     if ( ucLight < MAX_LIGHTS )
     {
         if ( m_automobile )
-            return m_pVehicle->GetDamageManager ()->GetLightStatus ( ucLight );
+            return m_automobile->GetDamageManager ()->GetLightStatus ( ucLight );
 
         return m_ucLightStates [ ucLight ];
     }
@@ -1503,9 +1497,7 @@ void CClientVehicle::WorldIgnore( bool bWorldIgnore )
 void CClientVehicle::FadeOut( bool bFadeOut )
 {
     if ( m_pVehicle )
-    {
-        m_pVehicle->FadeOut ( bFadeOut );
-    }
+        m_pVehicle->SetFadingOut( bFadeOut );
 }
 
 bool CClientVehicle::IsFadingOut() const
@@ -2098,7 +2090,7 @@ void CClientVehicle::Create()
         m_pVehicle->SetBodyDirtLevel( m_fDirtLevel );
         m_pVehicle->SetEngineOn( m_bEngineOn );
         m_pVehicle->SetAreaCode( m_ucInterior );
-        m_pVehicle->SetGravity( &m_vecGravity );
+        m_pVehicle->SetGravity( m_vecGravity );
 
         if ( m_heli )
         {
@@ -2563,7 +2555,7 @@ void CClientVehicle::SetDirtLevel( float fDirtLevel )
     m_fDirtLevel = fDirtLevel;
 }
 
-bool CClientVehicle::IsOnWater() bool
+bool CClientVehicle::IsOnWater() const
 {
     if ( m_pVehicle )
     {
@@ -2585,7 +2577,7 @@ bool CClientVehicle::IsOnWater() bool
 
 bool CClientVehicle::IsInWater() const
 {
-    CVector vecMin = m_pModelInfo->GetBoundingBox()->vecBoundMin;
+    CVector vecMin = m_pModelInfo->GetBoundingBox().vecBoundMin;
     CVector vecPosition, vecTemp;
     GetPosition( vecPosition );
 
@@ -2613,21 +2605,17 @@ bool CClientVehicle::IsOnGround() const
 {
     if ( m_pModelInfo )
     {
-        CBoundingBox* pBoundingBox = m_pModelInfo->GetBoundingBox ();
-        if ( pBoundingBox )
-        {
-            CVector vecMin = pBoundingBox->vecBoundMin;
-            CVector vecPosition;
-            GetPosition ( vecPosition );
-            vecMin += vecPosition;
-            float fGroundLevel = static_cast < float > (
-                g_pGame->GetWorld ()->FindGroundZFor3DPosition ( &vecPosition ) );
+        CVector vecMin = m_pModelInfo->GetBoundingBox().vecBoundMin;
+        CVector vecPosition;
+        GetPosition ( vecPosition );
+        vecMin += vecPosition;
+        float fGroundLevel = static_cast < float > (
+            g_pGame->GetWorld ()->FindGroundZFor3DPosition ( &vecPosition ) );
 
-            /* Is the lowest point of the bounding box lower than 0.5 above the floor,
-            or is the lowest point of the bounding box higher than 0.3 below the floor */
-            return ( ( fGroundLevel > vecMin.fZ && ( fGroundLevel - vecMin.fZ ) < 0.5f ) ||
-                ( vecMin.fZ > fGroundLevel && ( vecMin.fZ - fGroundLevel ) < 0.3f ) );
-        }
+        /* Is the lowest point of the bounding box lower than 0.5 above the floor,
+        or is the lowest point of the bounding box higher than 0.3 below the floor */
+        return ( ( fGroundLevel > vecMin.fZ && ( fGroundLevel - vecMin.fZ ) < 0.5f ) ||
+            ( vecMin.fZ > fGroundLevel && ( vecMin.fZ - fGroundLevel ) < 0.3f ) );
     }
     return m_bIsOnGround;
 }
@@ -2992,7 +2980,6 @@ bool CClientVehicle::IsEnterable() const
 {
     if ( !m_pVehicle || !IsSystemEntity() )
         return false;
-    {
 
     return !IsInWater() || (GetVehicleType() == CLIENTVEHICLE_BOAT || 
         m_usModel == 447 /* sea sparrow */|| m_usModel == 417 /* levithan */|| m_usModel == 460 /* skimmer */ );
@@ -3038,7 +3025,7 @@ void CClientVehicle::RemoveAllProjectiles()
 void CClientVehicle::SetGravity( const CVector& vecGravity )
 {
     if ( m_pVehicle )
-        m_pVehicle->SetGravity( &vecGravity );
+        m_pVehicle->SetGravity( vecGravity );
 
     m_vecGravity = vecGravity;
 }
