@@ -60,6 +60,8 @@ typedef void ( InRenderer ) ( void );
 #include "CPlane.h"
 #include "CHeli.h"
 #include "CAutomobileTrailer.h"
+#include "CQuadBike.h"
+#include "CMonsterTruck.h"
 #include "CBoat.h"
 #include "CTrain.h"
 #include "CBike.h"

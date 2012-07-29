@@ -126,7 +126,7 @@ public:
     static CClientEntity*               GetPedTarget                        ( CClientPed& Ped );
     static bool                         GetPedTargetCollision               ( CClientPed& Ped, CVector& vecOrigin );
     static bool                         GetPedTask                          ( CClientPed& Ped, bool bPrimary, unsigned int uiTaskType, std::vector < SString >& outTaskHierarchy );
-    static char*                        GetPedSimplestTask                  ( CClientPed& Ped );
+    static const char*                  GetPedSimplestTask                  ( CClientPed& Ped );
     static bool                         IsPedDoingTask                      ( CClientPed& Ped, const char* szTaskName, bool& bIsDoingTask );
     static bool                         GetPedBonePosition                  ( CClientPed& Ped, eBone bone, CVector & vecPosition );
     static bool                         GetPedClothes                       ( CClientPed& Ped, unsigned char ucType, char* szTextureReturn, char* szModelReturn );
@@ -149,7 +149,7 @@ public:
     static bool                         SetPedAnimation                     ( CClientEntity& Entity, const char * szBlockName, const char * szAnimName, int iTime, bool bLoop, bool bUpdatePosition, bool bInterruptable, bool bFreezeLastFrame );
     static bool                         SetPedAnimationProgress             ( CClientEntity& Entity, const char * szAnimName, float fProgress );
     static bool                         SetPedMoveAnim                      ( CClientEntity& Entity, unsigned int iMoveAnim );
-    static bool                         AddPedClothes                       ( CClientEntity& Entity, char* szTexture, char* szModel, unsigned char ucType );
+    static bool                         AddPedClothes                       ( CClientEntity& Entity, const char* szTexture, const char* szModel, unsigned char ucType );
     static bool                         RemovePedClothes                    ( CClientEntity& Entity, unsigned char ucType );
     static bool                         SetPedControlState                  ( CClientEntity& Entity, const char* szControl, bool bState );
     static bool                         SetPedDoingGangDriveby              ( CClientEntity& Entity, bool bGangDriveby );

@@ -15,6 +15,8 @@
 #ifndef __CCLIENTCOLMODEL_H
 #define __CCLIENTCOLMODEL_H
 
+#define LUACLASS_COLMODEL   85
+
 class CClientColModel : public LuaElement
 {
 public:

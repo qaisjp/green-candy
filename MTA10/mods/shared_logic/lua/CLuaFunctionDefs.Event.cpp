@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaFunctionDefs.Event.cpp
@@ -14,6 +14,7 @@
 *               Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -53,7 +54,7 @@ namespace CLuaFunctionDefs
 
         CScriptArgReader argStream ( L );
         argStream.ReadString ( strName );
-        argStream.ReadUserData ( pEntity );
+        argStream.ReadClass( pEntity, LUACLASS_ENTITY );
         argStream.ReadFunction ( iLuaFunction );
         argStream.ReadBool ( bPropagated, true );
         argStream.ReadFunctionComplete ();
@@ -90,7 +91,7 @@ namespace CLuaFunctionDefs
 
         CScriptArgReader argStream ( L );
         argStream.ReadString ( strName );
-        argStream.ReadUserData ( pEntity );
+        argStream.ReadClass( pEntity, LUACLASS_ENTITY );
         argStream.ReadFunction ( iLuaFunction );
         argStream.ReadFunctionComplete ();
 
@@ -116,7 +117,7 @@ namespace CLuaFunctionDefs
 
         CScriptArgReader argStream ( L );
         argStream.ReadString ( strName );
-        argStream.ReadUserData ( pEntity );
+        argStream.ReadClass( pEntity, LUACLASS_ENTITY );
         argStream.ReadLuaArguments ( Arguments );
 
         if ( !argStream.HasErrors () )
@@ -144,7 +145,7 @@ namespace CLuaFunctionDefs
 
         CScriptArgReader argStream ( L );
         argStream.ReadString ( strName );
-        argStream.ReadUserData ( pCallWithEntity );
+        argStream.ReadClass( pCallWithEntity, LUACLASS_ENTITY );
         argStream.ReadLuaArguments ( Arguments );
 
         if ( !argStream.HasErrors () )

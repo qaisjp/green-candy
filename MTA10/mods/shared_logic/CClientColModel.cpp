@@ -14,8 +14,40 @@
 
 #include "StdInc.h"
 
+static const luaL_Ref colmodel_interface[] =
+{
+    { NULL, NULL }
+};
+
+static int luaconstructor_colmodel( lua_State *L )
+{
+    CClientColModel *col = (CClientColModel*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_COLMODEL, col );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, colmodel_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "colmodel", 8 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
 CClientColModel::CClientColModel( LuaClass& root ) : LuaElement( root )
 {
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_colmodel, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     // Add us to DFF manager's list
     m_pColModelManager->AddToList ( this );
 }

@@ -108,7 +108,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getThisResource )
     {
-        lua_pushresource ( L, lua_readcontext( L )->GetResource() );
+        lua_readcontext( L )->GetResource()->PushStack( L );
         return 1;
     }
 
@@ -168,23 +168,14 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getResourceName )
     {
         // Verify arguments
-        if ( lua_istype ( L, 1, LUA_TLIGHTUSERDATA ) )
+        if ( CResource *res = lua_readclass( L, 1, LUACLASS_RESOURCE ) )
         {
-            // Grab the resource argument
-            CResource* pResource = lua_toresource ( L, 1 );
-            if ( pResource )
-            {
-                // Grab its name and return it
-                const char* szName = pResource->GetName ();
-
-                lua_pushstring ( L, szName );
-                return 1;
-            }
-            else
-                m_pScriptDebugging->LogBadPointer( "getResourceName", "resource", 1 );
+            // Grab its name and return it
+            lua_pushstring( L, pResource->GetName() );
+            return 1;
         }
         else
-            m_pScriptDebugging->LogBadType( "getResourceName" );
+            m_pScriptDebugging->LogBadPointer( "getResourceName", "resource", 1 );
 
         // Failed
         lua_pushboolean ( L, false );
@@ -194,7 +185,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getResourceFromName )
     {
         // Verify arguments
-        if ( lua_istype ( L, 1, LUA_TSTRING ) )
+        if ( lua_isstring( L, 1 ) )
         {
             // Grab the argument
             const char* szResource = lua_tostring ( L, 1 );
@@ -203,7 +194,7 @@ namespace CLuaFunctionDefs
             CResource* pResource = (CResource*)m_pResourceManager->Get( szResource );
             if ( pResource )
             {
-                lua_pushresource ( L, pResource );
+                pResource->PushStack( L )
                 return 1;
             }
         }
@@ -218,10 +209,13 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getResourceRootElement )
     {
         // Resource given?
-        CResource* pResource = NULL;
-        if ( lua_istype ( L, 1, LUA_TLIGHTUSERDATA ) )
+        CResource *pResource;
+        if ( lua_istype( L, 1, LUA_TCLASS ) )
         {
-            pResource = lua_toresource ( L, 1 );
+            pResource = lua_readclass( L, 1, LUACLASS_RESOURCE );
+
+            if ( !pResource )
+                goto error;
         }
 
         // No resource given, get this resource's root
@@ -232,34 +226,26 @@ namespace CLuaFunctionDefs
             pResource = pLuaMain->GetResource ();
         }
         else
-            m_pScriptDebugging->LogBadPointer( "getResourceRootElement", "resource", 1 );
-
-        // Did we find a resource?
-        if ( pResource )
         {
-            // Grab the root element of it and return it if it existed
-            CClientEntity* pEntity = pResource->GetResourceEntity ();
-            if ( pEntity )
-            {
-                lua_pushelement ( L, pEntity );
-                return 1;
-            }
-        }
-        else
-            m_pScriptDebugging->LogBadType( "getResourceRootElement" );
+error:
+            m_pScriptDebugging->LogBadPointer( __FUNCTION__, "resource", 1 );
 
-        // Failed
-        lua_pushboolean ( L, false );
+            lua_pushboolean( L, false );
+            return 1;
+        }
+
+        // Grab the root element of it and return it if it existed
+        pResource->GetResourceEntity()->PushStack( L );
         return 1;
     }
 
     LUA_DECLARE( getResourceGUIElement )
     {
         // Resource given?
-        CResource* pResource = NULL;
-        if ( lua_istype ( L, 1, LUA_TLIGHTUSERDATA ) )
+        CResource *pResource;
+        if ( lua_istype( L, 1, LUA_TCLASS ) )
         {
-            pResource = lua_toresource ( L, 1 );
+            pResource = lua_readclass( L, 1, LUACLASS_RESOURCE );
         }
 
         // No resource given, get this resource's root
@@ -270,48 +256,31 @@ namespace CLuaFunctionDefs
             pResource = pLuaMain->GetResource ();
         }
         else
-            m_pScriptDebugging->LogBadPointer( "getResourceGUIElement", "resource", 1 );
-
-        // Did we get a resource?
-        if ( pResource )
         {
-            // Grab the gui entity. If it exists, return it
-            CClientEntity* pEntity = pResource->GetResourceGUIEntity ();
-            if ( pEntity )
-            {
-                lua_pushelement ( L, pEntity );
-                return 1;
-            }
+            m_pScriptDebugging->LogBadPointer( __FUNCTION__, "resource", 1 );
+            lua_pushboolean( L, false );
+            return 1;
         }
-        else
-            m_pScriptDebugging->LogBadType( "getResourceGUIElement" );
 
-        // Failed
-        lua_pushboolean ( L, false );
+        pResource->GetResourceGUIEntity()->PushStack( L );
         return 1;
     }
 
     LUA_DECLARE( getResourceDynamicElementRoot )
     {
-        if ( lua_type ( L, 1 ) == LUA_TLIGHTUSERDATA )
+        if ( CResource *res = lua_readclass( L, 1, LUACLASS_RESOURCE ) )
         {
-            CResource* pResource = lua_toresource ( L, 1 );
-            if ( pResource )
+            CClientEntity *pEntity = res->GetResourceDynamicEntity();
+            if ( pEntity )
             {
-                CClientEntity* pEntity = pResource->GetResourceDynamicEntity();
-                if ( pEntity )
-                {
-                    lua_pushelement ( L, pEntity );
-                    return 1;
-                }
-                else
-                    m_pScriptDebugging->LogError( "getResourceDynamicElementRoot: Resource %s Is Not Currently Running", pResource->GetName() );
+                pEntity->PushStack( L );
+                return 1;
             }
             else
-                m_pScriptDebugging->LogBadPointer( "getResourceDynamicElementRoot", "resource", 1 );
+                m_pScriptDebugging->LogError( "getResourceDynamicElementRoot: Resource %s Is Not Currently Running", pResource->GetName() );
         }
         else
-            m_pScriptDebugging->LogBadType( "getResourceDynamicElementRoot" );
+            m_pScriptDebugging->LogBadPointer( "getResourceDynamicElementRoot", "resource", 1 );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -319,12 +288,12 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getResourceExportedFunctions )
     {
-        CResource* resource = NULL;
+        CResource *resource = NULL;
         
         // resource
-        if ( argtype ( 1, LUA_TLIGHTUSERDATA ) )
-            resource = lua_toresource ( L, 1 );
-        else if ( argtype ( 1, LUA_TNONE ) )
+        if ( lua_istype( L, 1, LUA_TCLASS ) )
+            resource = lua_readclass( L, 1, LUACLASS_RESOURCE );
+        else if ( lua_istype( L, 1, LUA_TNONE ) )
         {
             CLuaMain* pLuaMain = lua_readcontext( L );
             resource = pLuaMain->GetResource ();

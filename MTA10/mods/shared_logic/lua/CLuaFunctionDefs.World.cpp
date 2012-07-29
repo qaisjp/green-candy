@@ -141,7 +141,7 @@ namespace CLuaFunctionDefs
         argStream.ReadBool ( flags.bSeeThroughStuff, false );
         argStream.ReadBool ( flags.bIgnoreSomeObjectsForCamera, false );
         argStream.ReadBool ( flags.bShootThroughStuff, false );
-        argStream.ReadUserData ( pIgnoredEntity, NULL );
+        argStream.ReadClass( pIgnoredEntity, LUACLASS_ENTITY, NULL );
         argStream.ReadBool ( bIncludeBuildingInfo, false );
 
         if ( !argStream.HasErrors () )
@@ -251,7 +251,7 @@ namespace CLuaFunctionDefs
         argStream.ReadBool ( flags.bCheckDummies, true );
         argStream.ReadBool ( flags.bSeeThroughStuff, false );
         argStream.ReadBool ( flags.bIgnoreSomeObjectsForCamera, false );
-        argStream.ReadUserData ( pIgnoredEntity, NULL );
+        argStream.ReadClass( pIgnoredEntity, LUACLASS_ENTITY, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -352,7 +352,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getWaterLevel )
     {
         CScriptArgReader argStream ( L );
-        if ( !argStream.NextIsUserData () )
+        if ( !argStream.NextIsClass() )
         {
             // Call type 1
             //  float getWaterLevel ( float posX, float posY, float posZ [ , bool bCheckWaves = false ] )
@@ -380,7 +380,7 @@ namespace CLuaFunctionDefs
             //  float getWaterLevel ( water theWater )
             CClientWater* pWater;
 
-            argStream.ReadUserData ( pWater );
+            argStream.ReadClass( pWater, LUACLASS_WATER );
 
             if ( !argStream.HasErrors () )
             {
@@ -406,7 +406,7 @@ namespace CLuaFunctionDefs
         CClientWater* pWater; int iVertexIndex;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pWater );
+        argStream.ReadClass( pWater, LUACLASS_WATER );
         argStream.ReadNumber ( iVertexIndex);
 
         if ( !argStream.HasErrors () )
@@ -438,13 +438,13 @@ namespace CLuaFunctionDefs
         }
 
         CScriptArgReader argStream ( L );
-        if ( argStream.NextIsUserData () )
+        if ( argStream.NextIsClass() )
         {
             // Call type 1
             //  bool setWaterLevel ( [water theWater,] float level )
             CClientWater* pWater; float fLevel;
 
-            argStream.ReadUserData ( pWater );
+            argStream.ReadClass( pWater, LUACLASS_WATER );
             argStream.ReadNumber ( fLevel );
 
             if ( !argStream.HasErrors () )
@@ -507,7 +507,7 @@ namespace CLuaFunctionDefs
         CClientWater* pWater; int iVertexIndex; CVector vecPosition;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pWater );
+        argStream.ReadClass( pWater, LUACLASS_WATER );
         argStream.ReadNumber ( iVertexIndex);
         argStream.ReadNumber ( vecPosition.fX );
         argStream.ReadNumber ( vecPosition.fY );

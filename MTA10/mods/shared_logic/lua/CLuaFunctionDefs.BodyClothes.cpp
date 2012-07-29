@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaFunctionDefs.BodyClothes.cpp
@@ -14,6 +14,7 @@
 *               Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -23,8 +24,7 @@ namespace CLuaFunctionDefs
 {
     LUA_DECLARE( getBodyPartName )
     {
-        int iArgument1 = lua_type ( L, 1 );
-        if ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING )
+        if ( lua_isnumber( L, 1 ) )
         {
             unsigned char ucID = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
 
@@ -44,10 +44,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getClothesByTypeIndex )
     {
-        int iArgument1 = lua_type ( L, 1 );
-        int iArgument2 = lua_type ( L, 2 );
-        if ( ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING ) &&
-            ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) )
+        if ( lua_isnumber( L, 1 ) && lua_isnumber( L, 2 ) )
         {
             unsigned char ucType = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
             unsigned char ucIndex = static_cast < unsigned char > ( lua_tonumber ( L, 2 ) );
@@ -93,8 +90,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getClothesTypeName )
     {
-        int iArgument1 = lua_type ( L, 1 );
-        if ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING )
+        if ( lua_isnumber( L, 1 ) )
         {
             unsigned char ucType = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
 

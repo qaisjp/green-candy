@@ -1,22 +1,22 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        sdk/game/CMonsterTruck.h
 *  PURPOSE:     Monster truck vehicle entity interface
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
-#ifndef __CGAME_MONSTERTRUCK
-#define __CGAME_MONSTERTRUCK
+#ifndef _CMonsterTruck_H_
+#define _CMonsterTruck_H_
 
-#include "CVehicle.h"
-
-class CMonsterTruck : public CVehicle
+class CMonsterTruck : public virtual CAutomobile
 {
-
+public:
+    virtual                     ~CMonsterTruck()    {}
 };
 
-#endif
+#endif //_CMonsterTruck_H_

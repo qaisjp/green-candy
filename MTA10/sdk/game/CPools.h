@@ -55,6 +55,8 @@ public:
     virtual CPlane*                 AddPlane( unsigned short modelId ) = 0;
     virtual CTrain*                 AddTrain( unsigned short modelId, const CVector& pos, bool direction ) = 0;
     virtual CAutomobileTrailer*     AddTrailer( unsigned short modelId ) = 0;
+    virtual CQuadBike*              AddQuadBike( unsigned short modelId ) = 0;
+    virtual CMonsterTruck*          AddMonsterTruck( unsigned short modelId ) = 0;
     virtual CAutomobile*            AddAutomobile( unsigned short modelId ) = 0;
     virtual CBoat*                  AddBoat( unsigned short modelId ) = 0;
     virtual CVehicle*               AddVehicle( unsigned short modelId ) = 0;

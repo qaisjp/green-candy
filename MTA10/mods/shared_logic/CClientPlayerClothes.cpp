@@ -240,7 +240,7 @@ SPlayerClothing* CClientPlayerClothes::GetClothing ( unsigned char ucType )
 }
 
 
-void CClientPlayerClothes::AddClothes ( char* szTexture, char* szModel, unsigned char ucType, bool bAddToModel )
+void CClientPlayerClothes::AddClothes ( const char* szTexture, const char* szModel, unsigned char ucType, bool bAddToModel )
 {
     SPlayerClothing * pClothing = GetClothing ( szTexture, szModel, ucType );
     if ( pClothing && pClothing != m_Clothes [ ucType ] )
@@ -407,7 +407,7 @@ SPlayerClothing* CClientPlayerClothes::GetClothingGroup ( unsigned char ucType )
 }
 
 
-SPlayerClothing * CClientPlayerClothes::GetClothing ( char * szTexture, char * szModel, unsigned char ucType )
+SPlayerClothing * CClientPlayerClothes::GetClothing ( const char * szTexture, const char * szModel, unsigned char ucType )
 {
     if ( szTexture && szModel && ucType < PLAYER_CLOTHING_SLOTS )
     {

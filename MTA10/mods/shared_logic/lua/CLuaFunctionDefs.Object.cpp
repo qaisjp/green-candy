@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaFunctionDefs.Object.cpp
@@ -14,6 +14,7 @@
 *               Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -35,25 +36,23 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( vecRotation.fY, 0 );
         argStream.ReadNumber ( vecRotation.fZ, 0 );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            CLuaMain* pLuaMain = lua_readcontext( L );
-            CResource* pResource = pLuaMain->GetResource ();
-            CClientObject* pObject = CStaticFunctionDefinitions::CreateObject ( *pResource, iModelID, vecPosition, vecRotation );
+            CClientObject* pObject = CStaticFunctionDefinitions::CreateObject( *lua_readcontext( L )->GetResource(), iModelID, vecPosition, vecRotation );
             if ( pObject )
             {
                 CElementGroup * pGroup = pResource->GetElementGroup();
                 if ( pGroup )
                 {
-                    pGroup->Add ( ( CClientEntity* ) pObject );
+                    pGroup->Add( pObject );
                 }
 
-                lua_pushelement ( L, pObject );
+                pObject->PushStack( L );
                 return 1;
             }
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "createObject", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -65,16 +64,12 @@ namespace CLuaFunctionDefs
         CClientObject* pObject;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pObject );
+        argStream.ReadClass( pObject, LUACLASS_OBJECT );
 
         if ( !argStream.HasErrors () )
         {
-            bool bStatic;
-            if ( CStaticFunctionDefinitions::IsObjectStatic ( *pObject, bStatic ) )
-            {
-                lua_pushboolean ( L, bStatic );
-                return 1;
-            }
+            lua_pushboolean( L, pObject->IsStatic() );
+            return 1;
         }
         else
             m_pScriptDebugging->LogBadType( "isObjectStatic" );
@@ -86,22 +81,18 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getObjectScale )
     {
     //  float getObjectScale ( object theObject )
-        CClientObject* pObject;
+        CClientObject *pObject;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pObject );
+        argStream.ReadClass( pObject, LUACLASS_OBJECT );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            float fScale;
-            if ( CStaticFunctionDefinitions::GetObjectScale ( *pObject, fScale ) )
-            {
-                lua_pushnumber ( L, fScale );
-                return 1;
-            }
+            lua_pushnumber( L, pObject->GetScale() );
+            return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "getObjectScale", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -115,7 +106,7 @@ namespace CLuaFunctionDefs
         CEasingCurve::eType easingType; float fEasingPeriod; float fEasingAmplitude; float fEasingOvershoot;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pEntity );
+        argStream.ReadClass( pEntity, LUACLASS_ENTITY );
         argStream.ReadNumber ( iTime );
         argStream.ReadNumber ( vecTargetPosition.fX );
         argStream.ReadNumber ( vecTargetPosition.fY );
@@ -128,13 +119,10 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( fEasingAmplitude, 1.0f );
         argStream.ReadNumber ( fEasingOvershoot, 1.70158f );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            if ( CStaticFunctionDefinitions::MoveObject ( *pEntity, iTime, vecTargetPosition, vecTargetRotation, easingType, fEasingPeriod, fEasingAmplitude, fEasingOvershoot ) )
-            {
-                lua_pushboolean ( L, true );
-                return 1;
-            }
+            lua_pushboolean( L, CStaticFunctionDefinitions::MoveObject( *pEntity, iTime, vecTargetPosition, vecTargetRotation, easingType, fEasingPeriod, fEasingAmplitude, fEasingOvershoot ) );
+            return 1;
         }
         else
             m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "moveObject", *argStream.GetErrorMessage () ) );
@@ -146,21 +134,18 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( stopObject )
     {
     //  bool stopObject ( object theobject )
-        CClientEntity* pEntity;
+        CClientEntity *pEntity;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pEntity );
+        argStream.ReadClass( pEntity, LUACLASS_ENTITY );
 
         if ( !argStream.HasErrors () )
         {
-            if ( CStaticFunctionDefinitions::StopObject ( *pEntity ) )
-            {
-                lua_pushboolean ( L, true );
-                return 1;
-            }
+            lua_pusboolean( L, CStaticFunctionDefinitions::StopObject( *pEntity ) );
+            return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "stopObject", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -172,16 +157,13 @@ namespace CLuaFunctionDefs
         CClientEntity* pEntity; float fScale;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pEntity );
+        argStream.ReadClass( pEntity, LUACLASS_ENTITY );
         argStream.ReadNumber ( fScale );
 
         if ( !argStream.HasErrors () )
         {
-            if ( CStaticFunctionDefinitions::SetObjectScale ( *pEntity, fScale ) )
-            {
-                lua_pushboolean ( L, true );
-                return 1;
-            }
+            lua_pushboolean( L, CStaticFunctionDefinitions::SetObjectScale( *pEntity, fScale ) );
+            return 1;
         }
         else
             m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "setObjectScale", *argStream.GetErrorMessage () ) );
@@ -196,16 +178,13 @@ namespace CLuaFunctionDefs
         CClientEntity* pEntity; bool bStatic;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pEntity );
+        argStream.ReadClass( pEntity, LUACLASS_ENTITY );
         argStream.ReadBool ( bStatic );
 
         if ( !argStream.HasErrors () )
         {
-            if ( CStaticFunctionDefinitions::SetObjectStatic ( *pEntity, bStatic ) )
-            {
-                lua_pushboolean ( L, true );
-                return 1;
-            }
+            lua_pushboolean( L, CStaticFunctionDefinitions::SetObjectStatic( *pEntity, bStatic ) );
+            return 1;
         }
         else
             m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "setObjectStatic", *argStream.GetErrorMessage () ) );

@@ -517,6 +517,9 @@ public:
     int     GetTransmit();
     bool    IsTransmit( int type );
 
+    bool    IsDestroying();
+    bool    IsDestroyed();
+
     void    PushEnvironment( lua_State *L );
     void    PushOuterEnvironment( lua_State *L );
     void    PushChildAPI( lua_State *L );

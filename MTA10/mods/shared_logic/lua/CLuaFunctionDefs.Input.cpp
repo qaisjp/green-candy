@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaFunctionDefs.Input.cpp
@@ -15,6 +15,7 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Florian Busse <flobu@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -41,11 +42,12 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setCursorPosition )
     {
-        if ( lua_type ( L, 1 ) == LUA_TNUMBER )
-        {
-            if ( lua_type ( L, 2 ) == LUA_TNUMBER )
-            {
+        float x, y;
 
+        if ( lua_isnumber( L, 1 ) )
+        {
+            if ( lua_isnumber( L, 2 ) )
+            {
                 HWND hookedWindow = g_pCore->GetHookedWindow ();
 
                 tagPOINT windowPos = { 0 };
@@ -70,10 +72,11 @@ namespace CLuaFunctionDefs
                 return 1;
             }
             else
-                m_pScriptDebugging->LogBadPointer( "getMarkerColor", "integer", 2 );
+                m_pScriptDebugging->LogBadPointer( __FUNCTION__, "float", 2 );
         }
         else
-            m_pScriptDebugging->LogBadPointer( "getMarkerColor", "integer", 1 );
+            m_pScriptDebugging->LogBadPointer( __FUNCTION__, "float", 1 );
+
         lua_pushboolean ( L, false );
         return 1;
     }
@@ -144,7 +147,6 @@ namespace CLuaFunctionDefs
             }
             else
             { 
-                // Jax: grab our arguments first, luaM_toref pops the stack!
                 CLuaArguments Arguments;
                 Arguments.ReadArguments ( L, 4 );
                 LuaFunctionRef iLuaFunction = pLuaMain->CreateReference( 3 );            
@@ -180,9 +182,7 @@ namespace CLuaFunctionDefs
 
             if ( lua_type ( L, 3 ) == LUA_TSTRING )
             {
-                const char* szResource = pLuaMain->GetResource()->GetName();
-                const char* szCommand = lua_tostring ( L, 3 );
-                if ( CStaticFunctionDefinitions::UnbindKey ( szKey, szHitState, szCommand, szResource ) )
+                if ( CStaticFunctionDefinitions::UnbindKey ( szKey, szHitState, pLuaMain->GetResource()->GetName(), lua_tostring( L, 3 ) ) )
                 {
                     lua_pushboolean ( L, true );
                     return 1;

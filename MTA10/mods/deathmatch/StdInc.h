@@ -62,9 +62,11 @@
 #include <CClientDummy.h>
 #include <CClientEntity.h>
 #include <derived/include.h>    // DERIVED
+#include <CClientVehicle.h>
 #include <CClientSpatialDatabase.h>
 #include <CClientExplosionManager.h>
 #include <CClientPed.h>
+#include <CClientObject.h>
 #include <CClientPlayerClothes.h>
 #include <CClientPlayerVoice.h>
 #include <CClientProjectileManager.h>
@@ -109,8 +111,8 @@
 #include "logic/CClientGame.h"
 #include "net/Packets.h"
 #include "logic/CClientEntityRefManager.h"
-#include "logic/CClientPerfStatManager.h"
 #include "logic/CDeathmatchVehicle.h"
+#include "logic/CClientPerfStatManager.h"
 #include "logic/CResource.h"
 #include "logic/CStaticFunctionDefinitions.h"
 #include "../../version.h"

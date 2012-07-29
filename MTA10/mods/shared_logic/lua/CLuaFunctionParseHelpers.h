@@ -128,31 +128,6 @@ inline SString GetClassTypeName ( CLuaTimer* )              { return "lua-timer"
 inline SString GetClassTypeName ( CEntity* )                { return "entity"; }
 
 
-//
-// CXMLNode from userdata
-//
-template < class T >
-CXMLNode* UserDataCast ( CXMLNode*, void* ptr, lua_State* )
-{
-    return g_pCore->GetXML ()->GetNodeFromID ( reinterpret_cast < unsigned long > ( ptr ) );
-}
-
-//
-// CClientGUIElement ( CGUIElement )
-//
-// Returns true if T is the same class as the one wrapped by pGuiElement
-template < class T >
-bool CheckWrappedUserDataType ( CClientGUIElement*& pGuiElement, SString& strErrorExpectedType )
-{
-    if ( pGuiElement->GetCGUIElement ()->GetType () == GetClassType ( (T*)0 ) )
-        return true;
-    strErrorExpectedType = GetClassTypeName ( (T*)0 );
-    return false;
-}
-
-
-SString GetUserDataClassName ( void* ptr, lua_State* luaVM );
-
 
 //
 // Reading mixed types

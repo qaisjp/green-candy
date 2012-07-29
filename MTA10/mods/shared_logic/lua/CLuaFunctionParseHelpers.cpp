@@ -159,44 +159,6 @@ static inline CLuaMain* lua_readcontext( lua_State *L )
 }
 
 //
-// Get best guess at name of userdata type
-//
-SString GetUserDataClassName ( void* ptr, lua_State* luaVM )
-{
-    // Try element
-    if ( CClientEntity* pClientElement = UserDataCast < CClientEntity > ( (CClientEntity*)NULL, ptr, NULL ) )
-    {
-        // Try gui element
-        if ( CClientGUIElement* pGuiElement = DynamicCast < CClientGUIElement > ( pClientElement ) )
-        {
-            return EnumToString ( pGuiElement->GetCGUIElement ()->GetType () );
-        }
-        return pClientElement->GetTypeName ();
-    }
-
-    // Try xml node
-    if ( CXMLNode* pXMLNode = UserDataCast < CXMLNode > ( (CXMLNode*)NULL, ptr, NULL ) )
-    {
-        return GetClassTypeName ( pXMLNode );
-    }
-
-    // Try timer
-    if ( CLuaTimer* pLuaTimer = UserDataCast < CLuaTimer > ( (CLuaTimer*)NULL, ptr, luaVM ) )
-    {
-        return GetClassTypeName ( pLuaTimer );
-    }
-
-    // Try resource
-    if ( CResource* pResource = UserDataCast < CResource > ( (CResource*)NULL, ptr, NULL ) )
-    {
-        return GetClassTypeName ( pResource );
-    }
-
-    return "";
-}
-
-
-//
 // Reading mixed types
 //
 

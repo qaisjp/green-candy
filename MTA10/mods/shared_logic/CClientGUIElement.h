@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientGUIElement.h
@@ -8,6 +8,9 @@
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -19,6 +22,22 @@ class CClientGUIElement;
 #include "CClientGUIManager.h"
 #include "CClientEntity.h"
 #include <gui/CGUI.h>
+
+#include "gui/CClientGUIButton.h"
+#include "gui/CClientGUICheckbox.h"
+#include "gui/CClientGUICombobox.h"
+#include "gui/CClientGUIEdit.h"
+#include "gui/CClientGUIGridlist.h"
+#include "gui/CClientGUILabel.h"
+#include "gui/CClientGUIMemo.h"
+#include "gui/CClientGUIProgressbar.h"
+#include "gui/CClientGUIRadiobutton.h"
+#include "gui/CClientGUIScrollbar.h"
+#include "gui/CClientGUIScrollpane.h"
+#include "gui/CClientGUIStaticImage.h"
+#include "gui/CClientGUITab.h"
+#include "gui/CClientGUITabpanel.h"
+#include "gui/CClientGUIWindow.h"
 
 #define LUACLASS_GUIELEMENT     46
 

@@ -59,7 +59,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "createRadarArea", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -71,7 +71,7 @@ namespace CLuaFunctionDefs
         CClientRadarArea* pRadarArea;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pRadarArea );
+        argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
 
         if ( !argStream.HasErrors () )
         {
@@ -86,7 +86,7 @@ namespace CLuaFunctionDefs
             }
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "getRadarAreaColor", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -98,7 +98,7 @@ namespace CLuaFunctionDefs
         CClientRadarArea* pRadarArea;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pRadarArea );
+        argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
 
         if ( !argStream.HasErrors () )
         {
@@ -124,7 +124,7 @@ namespace CLuaFunctionDefs
         CClientRadarArea* pRadarArea;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pRadarArea );
+        argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
 
         if ( !argStream.HasErrors () )
         {
@@ -146,7 +146,7 @@ namespace CLuaFunctionDefs
         CClientRadarArea* pRadarArea; float dRed; float dGreen; float dBlue; float dAlpha;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pRadarArea );
+        argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
         argStream.ReadNumber ( dRed );
         argStream.ReadNumber ( dGreen );
         argStream.ReadNumber ( dBlue );
@@ -174,7 +174,7 @@ namespace CLuaFunctionDefs
         CClientRadarArea* pRadarArea; CVector2D vecSize;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pRadarArea );
+        argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
         argStream.ReadNumber ( vecSize.fX );
         argStream.ReadNumber ( vecSize.fY );
 
@@ -199,7 +199,7 @@ namespace CLuaFunctionDefs
         CClientRadarArea* pRadarArea; bool bFlash;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pRadarArea );
+        argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
         argStream.ReadBool ( bFlash );
 
         if ( !argStream.HasErrors () )
@@ -223,7 +223,7 @@ namespace CLuaFunctionDefs
         CClientRadarArea* pRadarArea; CVector2D vecPosition;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pRadarArea );
+        argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
         argStream.ReadNumber ( vecPosition.fX );
         argStream.ReadNumber ( vecPosition.fY );
 

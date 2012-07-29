@@ -18,7 +18,6 @@
 
 #include "CClientCommon.h"
 #include "CClientVehicle.h"
-#include <list>
 
 class CClientManager;
 class CClientVehicle;
@@ -41,7 +40,7 @@ public:
 
     void                            DoPulse                 ( void );
 
-    static bool                     IsValidModel            ( unsigned long ulModel );
+    static bool                     IsValidModel            ( unsigned short model );
     static eClientVehicleType       GetVehicleType          ( unsigned long ulModel );
     static unsigned char            GetMaxPassengerCount    ( unsigned long ulModel );
     static unsigned char            ConvertIndexToGameSeat  ( unsigned long ulModel, unsigned char ucIndex );
