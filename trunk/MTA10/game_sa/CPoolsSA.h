@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CPoolsSA.h
 *  PURPOSE:     Header file for game entity pools class
@@ -9,6 +9,7 @@
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -147,7 +148,7 @@ public:
 };
 
 // Rockstar's inheritance trick; keep these chains updated!
-#define MAX_VEHICLE_SIZE ( max(sizeof(CHeliSAInterface),max(sizeof(CTrainSAInterface),max(sizeof(CAutomobileSAInterface),max(sizeof(CBikeSAInterface),max(sizeof(CBicycleSAInterface),max(sizeof(CPlaneSAInterface),max(sizeof(CBoatSAInterface),sizeof(CAutomobileTrailerSAInterface)))))))) )
+#define MAX_VEHICLE_SIZE ( max(sizeof(CHeliSAInterface),max(sizeof(CTrainSAInterface),max(sizeof(CAutomobileSAInterface),max(sizeof(CBikeSAInterface),max(sizeof(CBicycleSAInterface),max(sizeof(CPlaneSAInterface),max(sizeof(CBoatSAInterface),max(sizeof(CAutomobileTrailerSAInterface),max(sizeof(CQuadBikeSAInterface,sizeof(CMonsterTruckSAInterface))))))))))) )
 
 #define MAX_PED_SIZE ( max(sizeof(CPedSAInterface),max(sizeof(CPlayerPedSAInterface),sizeof(CCivilianPedSAInterface))) )
 
@@ -208,7 +209,7 @@ extern CPedAttractorPool** ppPedAttractorPool;
 
 // MTA pools; lets use the trick ourselves, shall we? :P
 // Do not forget to extend this chain once new interfaces are spotted!
-#define MAX_MTA_VEHICLE_SIZE ( max(sizeof(CVehicleSA),max(sizeof(CTrainSA),max(sizeof(CPlaneSA),max(sizeof(CHeliSA),max(sizeof(CBikeSA),max(sizeof(CBicycleSA),max(sizeof(CAutomobileTrailerSA),sizeof(CBoatSA)))))))) )
+#define MAX_MTA_VEHICLE_SIZE ( max(sizeof(CVehicleSA),max(sizeof(CTrainSA),max(sizeof(CPlaneSA),max(sizeof(CHeliSA),max(sizeof(CBikeSA),max(sizeof(CBicycleSA),max(sizeof(CAutomobileTrailerSA),max(sizeof(CBoatSA),max(sizeof(CQuadBikeSA),sizeof(CMonsterTruckSA)))))))))) )
 
 #define MAX_MTA_PED_SIZE ( max(sizeof(CPedSA),max(sizeof(CPlayerPedSA),sizeof(CCivilianPedSA))) )
 
@@ -236,6 +237,8 @@ public:
     CPlane*                 AddPlane( unsigned short modelId );
     CTrain*                 AddTrain( unsigned short modelId, const CVector& pos, bool direction );
     CAutomobileTrailer*     AddTrailer( unsigned short modelId );
+    CQuadBike*              AddQuadBike( unsigned short modelId );
+    CMonsterTruck*          AddMonsterTruck( unsigned short modelId );
     CAutomobile*            AddAutomobile( unsigned short modelId );
     CBoat*                  AddBoat( unsigned short modelId );
     CVehicle*               AddVehicle( unsigned short modelID );

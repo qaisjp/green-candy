@@ -182,20 +182,15 @@ CClientVehicle* CClientVehicleManager::GetClosest ( CVector& vecPosition, float 
     return pClosest;
 }
 
-
-bool CClientVehicleManager::IsTrainModel ( unsigned long ulModel )
+bool CClientVehicleManager::IsValidModel ( unsigned short model )
 {
-    return ( ulModel == 449 || ulModel == 537 || 
-             ulModel == 538 || ulModel == 569 || 
-             ulModel == 590 || ulModel == 570 );
+    CModelInfo *info = g_pGame->GetModelInfo( model );
+
+    if ( !info )
+        return false;
+
+    return info->IsVehicle();
 }
-
-
-bool CClientVehicleManager::IsValidModel ( unsigned long ulModel )
-{
-    return ulModel >= 400 && ulModel <= 611 && ulModel != 570;
-}
-
 
 eClientVehicleType CClientVehicleManager::GetVehicleType ( unsigned long ulModel )
 {

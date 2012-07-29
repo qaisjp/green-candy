@@ -14,7 +14,6 @@
 #define __CPEDSYNC_H
 
 #include <CClientCommon.h>
-#include "CClientVehicle.h"
 
 class CPedSync
 {

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientGUIElement.cpp
@@ -8,6 +8,9 @@
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -35,13 +38,21 @@ static int luaconstructor_gui( lua_State *L )
 
     lua_basicprotect( L );
 
-    lua_pushvalue( L, lua_upvalueindex( 2 ) );
+    lua_pushlstring( L, "gui-element", 11 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;
 }
 
 CClientGUIElement::CClientGUIElement( CClientManager * pManager, CLuaMain* pLuaMain, CGUIElement* pCGUIElement, LuaClass& root, bool system, ElementID ID ) : CClientEntity( ID, system, root )
 {
+    // Advance the Lua interface
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_gui, 1 );
+    luaJ_extend( L, -2, 0 );
+
     m_pManager = pManager;
     m_pGUIManager = pManager->GetGUIManager ();
     m_pCGUIElement = pCGUIElement;
@@ -55,71 +66,81 @@ CClientGUIElement::CClientGUIElement( CClientManager * pManager, CLuaMain* pLuaM
     CGUI_SET_CCLIENTGUIELEMENT ( pCGUIElement, this );
 
     // Generate the CGUI type name variable
+    // Inherit a custom GUI interface, too
+    lua_pushlightuserdata( L, this );
+
     switch( m_pCGUIElement->GetType() )
     {
     case CGUI_BUTTON:
+        lua_pushcclosure( L, luaconstructor_guibutton, 1 );
         m_szCGUITypeName = "button";
         break;
     case CGUI_CHECKBOX:
+        lua_pushcclosure( L, luaconstructor_guicheckbox, 1 );
         m_szCGUITypeName = "checkbox";
         break;
     case CGUI_EDIT:
+        lua_pushcclosure( L, luaconstructor_guiedit, 1 );
         m_szCGUITypeName = "edit";
         break;
     case CGUI_GRIDLIST:
+        lua_pushcclosure( L, luaconstructor_guigridlist, 1 );
         m_szCGUITypeName = "gridlist";
         break;
     case CGUI_LABEL:
+        lua_pushcclosure( L, luaconstructor_guilabel, 1 );
         m_szCGUITypeName = "label";
         break;
     case CGUI_MEMO:
+        lua_pushcclosure( L, luaconstructor_guimemo, 1 );
         m_szCGUITypeName = "memo";
         break;
     case CGUI_PROGRESSBAR:
+        lua_pushcclosure( L, luaconstructor_guiprogressbar, 1 );
         m_szCGUITypeName = "progressbar";
         break;
     case CGUI_RADIOBUTTON:
+        lua_pushcclosure( L, luaconstructor_guiradiobutton, 1 );
         m_szCGUITypeName = "radiobutton";
         break;
     case CGUI_STATICIMAGE:
+        lua_pushcclosure( L, luaconstructor_guistaticimage, 1 );
         m_szCGUITypeName = "staticimage";
         break;
     case CGUI_TAB:
+        lua_pushcclosure( L, luaconstructor_guitab, 1 );
         m_szCGUITypeName = "tab";
         break;
     case CGUI_TABPANEL:
+        lua_pushcclosure( L, luaconstructor_guitabpanel, 1 );
         m_szCGUITypeName = "tabpanel";
         break;
     case CGUI_WINDOW:
+        lua_pushcclosure( L, luaconstructor_guiwindow, 1 );
         m_szCGUITypeName = "window";
         break;
     case CGUI_SCROLLPANE:
+        lua_pushcclosure( L, luaconstructor_guiscrollpane, 1 );
         m_szCGUITypeName = "scrollpane";
         break;
     case CGUI_SCROLLBAR:
+        lua_pushcclosure( L, luaconstructor_guiscrollbar, 1 );
         m_szCGUITypeName = "scrollbar";
         break;
     case CGUI_COMBOBOX:
+        lua_pushcclosure( L, luaconstructor_guicombobox, 1 );
         m_szCGUITypeName = "combobox";
         break;
     default:
-        m_szCGUITypeName = "unknown";
-        break;
+        assert( 0 );    // We cannot afford this
     }
+
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
 
     SString typeName = SString( "gui-%s", m_szCGUITypeName );
 
     SetTypeName( typeName );
-
-    // Advance the Lua interface
-    lua_State *L = root.GetVM();
-
-    PushStack( L );
-    lua_pushlightuserdata( L, this );
-    lua_pushlstring( L, typeName.c_str(), typeName.size() );
-    lua_pushcclosure( L, luaconstructor_gui, 2 );
-    luaJ_extend( L, -2, 0 );
-    lua_pop( L, 1 );
 
     // Add us to the list in the manager
     m_pGUIManager->Add ( this );

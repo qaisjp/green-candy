@@ -160,7 +160,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( height );
         argStream.ReadString ( text );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -190,7 +190,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( height );
         argStream.ReadString ( path );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -227,7 +227,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( height );
         argStream.ReadString ( text );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -256,7 +256,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( width );
         argStream.ReadNumber ( height );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -287,7 +287,7 @@ namespace CLuaFunctionDefs
         argStream.ReadString ( text );
         argStream.ReadBool ( selected );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadUserData( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -317,7 +317,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( height );
         argStream.ReadString ( text );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -347,7 +347,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( height );
         argStream.ReadString ( text );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -377,7 +377,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( height );
         argStream.ReadString ( text );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -406,7 +406,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( width );
         argStream.ReadNumber ( height );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -435,7 +435,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( width );
         argStream.ReadNumber ( height );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -465,7 +465,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( height );
         argStream.ReadBool ( horizontal );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -494,7 +494,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( width );
         argStream.ReadNumber ( height );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -518,8 +518,8 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theElement; SString filename;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( theElement );
-        argStream.ReadString ( filename );
+        argStream.ReadClass( theElement, LUACLASS_GUISTATICIMAGE );
+        argStream.ReadString( filename );
 
         if ( !argStream.HasErrors () )
         {
@@ -555,7 +555,7 @@ namespace CLuaFunctionDefs
 
         CScriptArgReader argStream ( L );
         argStream.ReadString ( text );
-        argStream.ReadUserData ( parent );
+        argStream.ReadClass( parent, LUACLASS_GUITABPANEL );
 
         if ( !argStream.HasErrors () )
         {
@@ -579,7 +579,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* tabPanel;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUITabPanel > ( tabPanel );
+        argStream.ReadClass( tabPanel, LUACLASS_GUITABPANEL );
 
         if ( !argStream.HasErrors () )
         {
@@ -600,8 +600,8 @@ namespace CLuaFunctionDefs
         CClientGUIElement* tabPanel; CClientGUIElement* theTab;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUITabPanel > ( tabPanel );
-        argStream.ReadUserData < CGUITab > ( theTab );
+        argStream.ReadClass( tabPanel, LUACLASS_GUITABPANEL );
+        argStream.ReadClass( theTab, LUACLASS_GUITAB );
 
         if ( !argStream.HasErrors () )
         {
@@ -624,8 +624,8 @@ namespace CLuaFunctionDefs
         CClientGUIElement* tabToDelete; CClientGUIElement* tabPanel;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUITab > ( tabToDelete );
-        argStream.ReadUserData < CGUITabPanel > ( tabPanel );
+        argStream.ReadClass( tabToDelete, LUACLASS_GUITAB );
+        argStream.ReadClass( tabPanel, LUACLASS_GUITABPANEL );
 
         if ( !argStream.HasErrors () )
         {
@@ -651,7 +651,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement; SString text;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
         argStream.ReadString ( text );
 
         if ( !argStream.HasErrors () )
@@ -674,7 +674,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement; SString strFontName; CClientGuiFont* pGuiFontElement;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
         MixedReadGuiFontString ( argStream, strFontName, "default-normal", pGuiFontElement );
 
         if ( !argStream.HasErrors () )
@@ -699,7 +699,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
 
         if ( !argStream.HasErrors () )
         {
@@ -723,7 +723,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
 
         if ( !argStream.HasErrors () )
         {
@@ -745,7 +745,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiRadioButton; bool state;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIRadioButton > ( guiRadioButton );
+        argStream.ReadUserData( guiRadioButton, LUACLASS_GUIELEMENT );
         argStream.ReadBool ( state );
 
         if ( !argStream.HasErrors () )
@@ -768,7 +768,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theCheckbox; bool state;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUICheckBox > ( theCheckbox );
+        argStream.ReadClass( theCheckbox, LUACLASS_GUICHECKBOX );
         argStream.ReadBool ( state );
 
         if ( !argStream.HasErrors () )
@@ -791,7 +791,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiRadioButton;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIRadioButton > ( guiRadioButton );
+        argStream.ReadUserData( guiRadioButton, LUACLASS_RADIOBUTTON );
 
         if ( !argStream.HasErrors () )
         {
@@ -813,7 +813,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theCheckbox;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUICheckBox > ( theCheckbox );
+        argStream.ReadClass( theCheckbox, LUACLASS_GUICHECKBOX );
 
         if ( !argStream.HasErrors () )
         {
@@ -835,7 +835,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theProgressbar; float progress;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIProgressBar > ( theProgressbar );
+        argStream.ReadClass( theProgressbar, LUACLASS_GUIPROGRESSBAR );
         argStream.ReadNumber ( progress );
 
         if ( !argStream.HasErrors () )
@@ -858,7 +858,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theScrollBar; float amount;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIScrollBar > ( theScrollBar );
+        argStream.ReadClass( theScrollBar, LUACLASS_GUISCROLLBAR );
         argStream.ReadNumber ( amount );
 
         if ( !argStream.HasErrors () )
@@ -881,7 +881,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theScrollPane; float amount;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIScrollPane > ( theScrollPane );
+        argStream.ReadClass( theScrollPane, LUACLASS_GUISCROLLBAR );
         argStream.ReadNumber ( amount );
 
         if ( !argStream.HasErrors () )
@@ -904,7 +904,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theScrollPane; float amount;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIScrollPane > ( theScrollPane );
+        argStream.ReadClass( theScrollPane, LUACLASS_GUISCROLLPANE );
         argStream.ReadNumber ( amount );
 
         if ( !argStream.HasErrors () )
@@ -927,7 +927,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theProgressbar;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIProgressBar > ( theProgressbar );
+        argStream.ReadUserData( theProgressbar, LUACLASS_GUIPROGRESSBAR );
 
         if ( !argStream.HasErrors () )
         {
@@ -949,7 +949,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theScrollPane;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIScrollPane > ( theScrollPane );
+        argStream.ReadClass( theScrollPane, LUACLASS_GUISCROLLPANE );
 
         if ( !argStream.HasErrors () )
         {
@@ -971,7 +971,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theScrollPane;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIScrollPane > ( theScrollPane );
+        argStream.ReadClass( theScrollPane, LUACLASS_GUISCROLLPANE );
 
         if ( !argStream.HasErrors () )
         {
@@ -993,7 +993,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theScrollBar;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIScrollBar > ( theScrollBar );
+        argStream.ReadClass( theScrollBar, LUACLASS_GUISCROLLBAR );
 
         if ( !argStream.HasErrors () )
         {
@@ -1015,7 +1015,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
 
         if ( !argStream.HasErrors () )
         {
@@ -1037,7 +1037,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
 
         if ( !argStream.HasErrors () )
         {
@@ -1065,7 +1065,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theElement; bool relative;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( theElement );
+        argStream.ReadClass( theElement, LUACLASS_GUIELEMENT );
         argStream.ReadBool ( relative );
 
         if ( !argStream.HasErrors () )
@@ -1100,7 +1100,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement; bool relative;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
         argStream.ReadBool ( relative );
 
         if ( !argStream.HasErrors () )
@@ -1126,7 +1126,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement; float alpha;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
         argStream.ReadNumber ( alpha );
 
         if ( !argStream.HasErrors () )
@@ -1148,7 +1148,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
 
         if ( !argStream.HasErrors () )
         {
@@ -1169,7 +1169,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement; bool state;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
         argStream.ReadBool ( state );
 
         if ( !argStream.HasErrors () )
@@ -1191,7 +1191,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement; bool enabled;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
         argStream.ReadBool ( enabled );
 
         if ( !argStream.HasErrors () )
@@ -1213,7 +1213,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement; SString property; SString value;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
         argStream.ReadString ( property );
         argStream.ReadString ( value );
 
@@ -1236,7 +1236,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
 
         if ( !argStream.HasErrors () )
         {
@@ -1257,7 +1257,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
 
         if ( !argStream.HasErrors () )
         {
@@ -1278,7 +1278,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement; SString property;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
         argStream.ReadString ( property );
 
         if ( !argStream.HasErrors () )
@@ -1300,7 +1300,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
 
         if ( !argStream.HasErrors () )
         {
@@ -1337,7 +1337,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement; float width; float height; bool relative;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
         argStream.ReadNumber ( width );
         argStream.ReadNumber ( height );
         argStream.ReadBool ( relative );
@@ -1362,7 +1362,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiElement; float x; float y; bool relative;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( guiElement );
+        argStream.ReadClass( guiElement, LUACLASS_GUIELEMENT );
         argStream.ReadNumber ( x );
         argStream.ReadNumber ( y );
         argStream.ReadBool ( relative );
@@ -1387,7 +1387,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; bool enabled;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridlist, LUACLASS_GUIGRIDLIST );
         argStream.ReadBool ( enabled );
 
         if ( !argStream.HasErrors () )
@@ -1410,7 +1410,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; SString title; float width;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadString ( title );
         argStream.ReadNumber ( width );
 
@@ -1434,7 +1434,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int columnIndex;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( columnIndex );
 
         if ( !argStream.HasErrors () )
@@ -1457,7 +1457,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int columnIndex; float width; bool relative;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( columnIndex );
         argStream.ReadNumber ( width );
         argStream.ReadBool ( relative );
@@ -1482,7 +1482,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
 
         if ( !argStream.HasErrors () )
         {
@@ -1508,7 +1508,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int rowIndex;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( rowIndex );
 
         if ( !argStream.HasErrors () )
@@ -1534,7 +1534,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int columnIndex;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( columnIndex );
 
         if ( !argStream.HasErrors () )
@@ -1557,7 +1557,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
 
         if ( !argStream.HasErrors () )
         {
@@ -1579,7 +1579,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int mode;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( mode );
 
         if ( !argStream.HasErrors () )
@@ -1602,7 +1602,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
 
         if ( !argStream.HasErrors () )
         {
@@ -1626,7 +1626,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
 
         if ( !argStream.HasErrors () )
         {
@@ -1673,7 +1673,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
 
         if ( !argStream.HasErrors () )
         {
@@ -1694,7 +1694,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int rowIndex; int columnIndex;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( rowIndex );
         argStream.ReadNumber ( columnIndex );
 
@@ -1718,7 +1718,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int rowIndex;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( rowIndex );
 
         if ( !argStream.HasErrors () )
@@ -1741,7 +1741,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int rowIndex; int columnIndex;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( rowIndex );
         argStream.ReadNumber ( columnIndex );
 
@@ -1768,7 +1768,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int rowIndex; int columnIndex;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( rowIndex );
         argStream.ReadNumber ( columnIndex );
 
@@ -1796,7 +1796,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int rowIndex; int columnIndex;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( rowIndex );
         argStream.ReadNumber ( columnIndex );
 
@@ -1825,7 +1825,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int rowIndex; int columnIndex; SString text; bool section; bool number;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( rowIndex );
         argStream.ReadNumber ( columnIndex );
         argStream.ReadString ( text );
@@ -1853,7 +1853,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int rowIndex; int columnIndex; CLuaArgument data;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( rowIndex );
         argStream.ReadNumber ( columnIndex );
         argStream.ReadLuaArgument ( data );
@@ -1879,7 +1879,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; int rowIndex; int columnIndex; int red; int green; int blue; int alpha;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber ( rowIndex );
         argStream.ReadNumber ( columnIndex );
         argStream.ReadNumber ( red );
@@ -1907,7 +1907,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist; bool horizontalBar; bool verticalBar;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
         argStream.ReadBool ( horizontalBar );
         argStream.ReadBool ( verticalBar );
 
@@ -1931,7 +1931,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* scrollPane; bool horizontalBar; bool verticalBar;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIScrollPane > ( scrollPane );
+        argStream.ReadClass( scrollPane, LUACLASS_GUISCROLLPANE );
         argStream.ReadBool ( horizontalBar );
         argStream.ReadBool ( verticalBar );
 
@@ -1955,7 +1955,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
 
         if ( !argStream.HasErrors () )
         {
@@ -1977,7 +1977,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* guiGridlist;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIGridList > ( guiGridlist );
+        argStream.ReadClass( guiGridList, LUACLASS_GUIGRIDLIST );
 
         if ( !argStream.HasErrors () )
         {
@@ -1999,7 +1999,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* editField; bool status;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIEdit > ( editField );
+        argStream.ReadClass( editField, LUACLASS_GUIEDIT );
         argStream.ReadBool ( status );
 
         if ( !argStream.HasErrors () )
@@ -2022,7 +2022,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theMemo; bool status;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIMemo > ( theMemo );
+        argStream.ReadClass( theMemo, LUACLASS_GUIMEMO );
         argStream.ReadBool ( status );
 
         if ( !argStream.HasErrors () )
@@ -2045,7 +2045,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theElement; bool status;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIEdit > ( theElement );
+        argStream.ReadClass( theElement, LUACLASS_GUIEDIT );
         argStream.ReadBool ( status );
 
         if ( !argStream.HasErrors () )
@@ -2068,7 +2068,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theElement; int length;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIEdit > ( theElement );
+        argStream.ReadClass( theElement, LUACLASS_GUIEDIT );
         argStream.ReadNumber ( length );
 
         if ( !argStream.HasErrors () )
@@ -2091,7 +2091,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theElement; int index;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIEdit > ( theElement );
+        argStream.ReadClass( theElement, LUACLASS_GUIEDIT );
         argStream.ReadNumber ( index );
 
         if ( !argStream.HasErrors () )
@@ -2114,7 +2114,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theMemo; int index;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIMemo > ( theMemo );
+        argStream.ReadClass( theMemo, LUACLASS_GUIMEMO );
         argStream.ReadNumber ( index );
 
         if ( !argStream.HasErrors () )
@@ -2137,7 +2137,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theElement; bool status;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIWindow > ( theElement );
+        argStream.ReadClass( theElement, LUACLASS_GUIWINDOW );
         argStream.ReadBool ( status );
 
         if ( !argStream.HasErrors () )
@@ -2160,7 +2160,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theElement; bool status;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIWindow > ( theElement );
+        argStream.ReadClass( theElement, LUACLASS_GUIWINDOW );
         argStream.ReadBool ( status );
 
         if ( !argStream.HasErrors () )
@@ -2183,7 +2183,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theLabel;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUILabel > ( theLabel );
+        argStream.ReadClass( theLabel, LUACLASS_GUILABEL );
 
         if ( !argStream.HasErrors () )
         {
@@ -2205,7 +2205,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theLabel;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUILabel > ( theLabel );
+        argStream.ReadClass( theLabel, LUACLASS_GUILABEL );
 
         if ( !argStream.HasErrors () )
         {
@@ -2227,7 +2227,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theElement; int red; int green; int blue;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUILabel > ( theElement );
+        argStream.ReadClass( theElement, LUACLASS_GUILABEL );
         argStream.ReadNumber ( red );
         argStream.ReadNumber ( green );
         argStream.ReadNumber ( blue );
@@ -2252,7 +2252,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theLabel; CGUIVerticalAlign align;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUILabel > ( theLabel );
+        argStream.ReadClass( theLabel, LUACLASS_GUILABEL );
         argStream.ReadEnumString ( align );
 
         if ( !argStream.HasErrors () )
@@ -2275,7 +2275,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* theLabel; CGUIHorizontalAlign align; bool wordwrap;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUILabel > ( theLabel );
+        argStream.ReadClass( theLabel, LUACLASS_GUILABEL );
         argStream.ReadEnumString ( align );
         argStream.ReadBool ( wordwrap, false );
 
@@ -2481,7 +2481,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( height );
         argStream.ReadString ( caption );
         argStream.ReadBool ( relative );
-        argStream.ReadUserData ( parent, NULL );
+        argStream.ReadClass( parent, LUACLASS_GUIELEMENT, NULL );
 
         if ( !argStream.HasErrors () )
         {
@@ -2505,7 +2505,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* comboBox; SString value;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIComboBox > ( comboBox );
+        argStream.ReadClass( comboBox, LUACLASS_GUICOMBOBOX );
         argStream.ReadString ( value );
 
         if ( !argStream.HasErrors () )
@@ -2528,7 +2528,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* comboBox; int itemId;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIComboBox > ( comboBox );
+        argStream.ReadClass( comboBox, LUACLASS_GUICOMBOBOX );
         argStream.ReadNumber ( itemId );
 
         if ( !argStream.HasErrors () )
@@ -2551,7 +2551,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* comboBox;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIComboBox > ( comboBox );
+        argStream.ReadClass( comboBox, LUACLASS_GUICOMBOBOX );
 
         if ( !argStream.HasErrors () )
         {
@@ -2572,7 +2572,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* comboBox;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIComboBox > ( comboBox );
+        argStream.ReadClass( comboBox, LUACLASS_GUICOMBOBOX );
 
         if ( !argStream.HasErrors () )
         {
@@ -2593,7 +2593,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* comboBox; int itemIndex;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIComboBox > ( comboBox );
+        argStream.ReadClass( comboBox, LUACLASS_GUICOMBOBOX );
         argStream.ReadNumber ( itemIndex );
 
         if ( !argStream.HasErrors () )
@@ -2615,7 +2615,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* comboBox; int itemId;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIComboBox > ( comboBox );
+        argStream.ReadClass( comboBox, LUACLASS_GUICOMBOBOX );
         argStream.ReadNumber ( itemId );
 
         if ( !argStream.HasErrors () )
@@ -2637,7 +2637,7 @@ namespace CLuaFunctionDefs
         CClientGUIElement* comboBox; int itemId; SString text;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData < CGUIComboBox > ( comboBox );
+        argStream.ReadClass( comboBox, LUACLASS_GUICOMBOBOX );
         argStream.ReadNumber ( itemId );
         argStream.ReadString ( text );
 

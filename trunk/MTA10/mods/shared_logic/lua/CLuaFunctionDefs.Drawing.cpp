@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaFunctionDefs.Drawing.cpp
@@ -14,6 +14,7 @@
 *               Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -23,51 +24,31 @@ namespace CLuaFunctionDefs
 {
     LUA_DECLARE( dxDrawLine )
     {
-        // dxDrawLine ( int x,int y,int x2,int y2,int color, [float width=1,bool postGUI=false] )
-        // Grab all argument types
-        int iArgument1 = lua_type ( L, 1 );
-        int iArgument2 = lua_type ( L, 2 );
-        int iArgument3 = lua_type ( L, 3 );
-        int iArgument4 = lua_type ( L, 4 );
-        int iArgument5 = lua_type ( L, 5 );
-        int iArgument6 = lua_type ( L, 6 );
-        int iArgument7 = lua_type ( L, 7 );
+        float x, y, toX, toY;
+        unsigned long color;
+        float width;
+        bool postGUI;
+
+        CScriptArgReader argStream;
+
+        argStream.ReadNumber( x );
+        argStream.ReadNumber( y );
+        argStream.ReadNumber( toX );
+        argStream.ReadNumber( toY );
+        argStream.ReadNumber( color );
+        argStream.ReadNumber( width, 1.0f );
+        argStream.ReadBool( postGUI, false );
 
         // Check required arguments. Should all be numbers.
-        if ( ( iArgument1 != LUA_TNUMBER && iArgument1 != LUA_TSTRING ) ||
-            ( iArgument2 != LUA_TNUMBER && iArgument2 != LUA_TSTRING ) || 
-            ( iArgument3 != LUA_TNUMBER && iArgument3 != LUA_TSTRING ) ||
-            ( iArgument4 != LUA_TNUMBER && iArgument4 != LUA_TSTRING ) ||
-            ( iArgument5 != LUA_TNUMBER && iArgument5 != LUA_TSTRING ) )
+        if ( argStream.HasErrors() )
         {
-            m_pScriptDebugging->LogBadType( "dxDrawLine" );
-            lua_pushboolean ( L, false );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '%s' [%s]", "dxDrawLine", *argStream.GetErrorMessage() ) );
+            lua_pushboolean( L, false );
             return 1;
-        }    
-
-        // Got a line width too?
-        float fWidth = 1.0f;
-        if ( iArgument6 == LUA_TNUMBER || iArgument6 == LUA_TSTRING )
-        {
-            fWidth = static_cast < float > ( lua_tonumber ( L, 6 ) );
         }
-
-        // Got a post gui specifier?
-        bool bPostGUI = false;
-        if ( iArgument7 == LUA_TBOOLEAN )
-        {
-            bPostGUI = ( lua_toboolean ( L, 7 ) ) ? true:false;
-        }
-
-        // Grab the arguments
-        float fX1 = static_cast < float > ( lua_tonumber ( L, 1 ) );
-        float fY1 = static_cast < float > ( lua_tonumber ( L, 2 ) );
-        float fX2 = static_cast < float > ( lua_tonumber ( L, 3 ) );
-        float fY2 = static_cast < float > ( lua_tonumber ( L, 4 ) );
-        unsigned long ulColor = static_cast < unsigned long > ( lua_tonumber ( L, 5 ) );
 
         // Draw it
-        g_pCore->GetGraphics ()->DrawLineQueued ( fX1, fY1, fX2, fY2,fWidth, ulColor, bPostGUI );
+        g_pCore->GetGraphics()->DrawLineQueued( x, y, toX, toY, width, color, postGUI );
 
         // Success
         lua_pushboolean ( L, true );
@@ -79,61 +60,31 @@ namespace CLuaFunctionDefs
     {
         // dxDrawLine3D ( float x,float y,float z,float x2,float y2,float z2,int color, [float width,bool postGUI,float zBuffer] )
 
-        // Grab all argument types
-        int iArgument1 = lua_type ( L, 1 ); // X1
-        int iArgument2 = lua_type ( L, 2 ); // Y1
-        int iArgument3 = lua_type ( L, 3 ); // Z1
-        int iArgument4 = lua_type ( L, 4 ); // X2
-        int iArgument5 = lua_type ( L, 5 ); // Y2
-        int iArgument6 = lua_type ( L, 6 ); // Z2
-        int iArgument7 = lua_type ( L, 7 ); // Color
-        int iArgument8 = lua_type ( L, 8 ); // Width
-        int iArgument9 = lua_type ( L, 9 ); // Reserved: Post GUI
-        int iArgument10 = lua_type ( L, 10 ); // Reserved: Z-buffer
+        CVector begin, end;
+        unsigned long color;
+        float width;
+        bool postGUI;
+
+        CScriptArgReader argStream;
+
+        argStream.ReadVector( begin );
+        argStream.ReadVector( end );
+        argStream.ReadNumber( color );
+        argStream.ReadNumber( width, 1 );
+        argStream.ReadBool( postGUI, false );
 
         // Check required arguments. Should all be numbers.
-        if ( ( iArgument1 != LUA_TNUMBER && iArgument1 != LUA_TSTRING ) ||
-            ( iArgument2 != LUA_TNUMBER && iArgument2 != LUA_TSTRING ) || 
-            ( iArgument3 != LUA_TNUMBER && iArgument3 != LUA_TSTRING ) ||
-            ( iArgument4 != LUA_TNUMBER && iArgument4 != LUA_TSTRING ) ||
-            ( iArgument5 != LUA_TNUMBER && iArgument5 != LUA_TSTRING ) ||
-            ( iArgument6 != LUA_TNUMBER && iArgument6 != LUA_TSTRING ) ||
-            ( iArgument7 != LUA_TNUMBER && iArgument7 != LUA_TSTRING ))
+        if ( argStream.HasErrors() )
         {
-            m_pScriptDebugging->LogBadType( "dxDrawLine3D" );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
             lua_pushboolean ( L, false );
             return 1;
         }
 
-        // Got a line width too?
-        float fWidth = 1.0f;
-        if ( iArgument8 == LUA_TNUMBER || iArgument8 == LUA_TSTRING )
-        {
-            fWidth = static_cast < float > ( lua_tonumber ( L, 8 ) );
-        }
-
-        // Got a post gui specifier?
-        bool bPostGUI = false;
-        if ( iArgument9 == LUA_TBOOLEAN )
-        {
-            bPostGUI = ( lua_toboolean ( L, 9 ) ) ? true : false;
-        }
-
-        // Grab the arguments
-        CVector vecBegin, vecEnd;
-        vecBegin.fX = static_cast < float > ( lua_tonumber ( L, 1 ) );
-        vecBegin.fY = static_cast < float > ( lua_tonumber ( L, 2 ) );
-        vecBegin.fZ = static_cast < float > ( lua_tonumber ( L, 3 ) );
-        vecEnd.fX = static_cast < float > ( lua_tonumber ( L, 4 ) );
-        vecEnd.fY = static_cast < float > ( lua_tonumber ( L, 5 ) );
-        vecEnd.fZ = static_cast < float > ( lua_tonumber ( L, 6 ) );
-        unsigned long ulColor = static_cast < unsigned long > ( lua_tonumber ( L, 7 ) );
-
         // Draw it
-        g_pCore->GetGraphics ()->DrawLine3DQueued ( vecBegin, vecEnd, fWidth, ulColor, bPostGUI );
+        g_pCore->GetGraphics()->DrawLine3DQueued( begin, end, width, color, postGUI );
 
-        // Success
-        lua_pushboolean ( L, true );
+        lua_pushboolean( L, true );
         return 1;
     }
 
@@ -180,7 +131,7 @@ namespace CLuaFunctionDefs
             return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxDrawText", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // Failed
         lua_pushboolean ( L, false );
@@ -191,51 +142,31 @@ namespace CLuaFunctionDefs
     {
         // dxDrawRectangle ( int x,int y,float width,float height,[int color=0xffffffff] )
 
-        // Grab all argument types
-        int iArgument1 = lua_type ( L, 1 );
-        int iArgument2 = lua_type ( L, 2 );
-        int iArgument3 = lua_type ( L, 3 );
-        int iArgument4 = lua_type ( L, 4 );
-        if ( ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING ) && 
-            ( iArgument2 == LUA_TNUMBER || iArgument2 == LUA_TSTRING ) && 
-            ( iArgument3 == LUA_TNUMBER || iArgument3 == LUA_TSTRING ) && 
-            ( iArgument4 == LUA_TNUMBER || iArgument4 == LUA_TSTRING ) )
+        int x, y;
+        float width, height;
+        unsigned long color;
+        bool postGUI;
+
+        CScriptArgReader argStream;
+        
+        argStream.ReadNumber( x );
+        argStream.ReadNumber( y );
+        argStream.ReadNumber( width );
+        argStream.ReadNumber( height );
+        argStream.ReadNumber( color, 0xFFFFFFFF );
+        argStream.ReadBool( postGUI, false );
+
+        if ( !argStream.HasErrors() )
         {
-            int iX = static_cast < int > ( lua_tonumber ( L, 1 ) );
-            int iY = static_cast < int > ( lua_tonumber ( L, 2 ) );
-            int iWidth = static_cast < int > ( lua_tonumber ( L, 3 ) );
-            int iHeight = static_cast < int > ( lua_tonumber ( L, 4 ) );
-            unsigned long ulColor = 0xFFFFFFFF;
-
-            int iArgument5 = lua_type ( L, 5 );
-            if ( ( iArgument5 == LUA_TNUMBER || iArgument5 == LUA_TSTRING ) )
-            {
-                ulColor = static_cast < unsigned long > ( lua_tonumber ( L, 5 ) );
-            }
-
-            // Got a post gui specifier?
-            bool bPostGUI = false;
-            int iArgument6 = lua_type ( L, 6 );
-            if ( iArgument6 == LUA_TBOOLEAN )
-            {
-                bPostGUI = ( lua_toboolean ( L, 6 ) ) ? true:false;
-            }
-
-            g_pCore->GetGraphics ()->DrawRectQueued ( static_cast < float > ( iX ),
-                                                      static_cast < float > ( iY ),
-                                                      static_cast < float > ( iWidth ),
-                                                      static_cast < float > ( iHeight ),
-                                                      ulColor, bPostGUI );
-
-            // Success
-            lua_pushboolean ( L, true );
+            g_pCore->GetGraphics()->DrawRectQueued( x, y, width, height, color, postGUI );
+            lua_pushboolean( L, true );
             return 1;
         }
         else
-            m_pScriptDebugging->LogBadType( "dxDrawRectangle" );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // Failed
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
@@ -267,10 +198,10 @@ namespace CLuaFunctionDefs
                 return 1;
             }
             else
-                m_pScriptDebugging->LogError( "dxDrawImage can't load file" );
+                m_pScriptDebugging->LogError( "dxDrawImage cannot resolve material" );
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxDrawImage", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // Failed
         lua_pushboolean ( L, false );
@@ -312,7 +243,7 @@ namespace CLuaFunctionDefs
                 m_pScriptDebugging->LogError( "dxDrawImageSection can't load file" );
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxDrawImageSection", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // Failed
         lua_pushboolean ( L, false );
@@ -350,7 +281,7 @@ namespace CLuaFunctionDefs
             return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxGetTextWidth", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // Failed
         lua_pushboolean ( L, false );
@@ -370,13 +301,12 @@ namespace CLuaFunctionDefs
         {
             ID3DXFont* pD3DXFont = CStaticFunctionDefinitions::ResolveD3DXFont ( strFontName, pDxFontElement );
 
-            float fHeight = g_pCore->GetGraphics ()->GetDXFontHeight ( fScale, pD3DXFont );
             // Success
-            lua_pushnumber ( L, fHeight );
+            lua_pushnumber ( L, g_pCore->GetGraphics ()->GetDXFontHeight ( fScale, pD3DXFont ) );
             return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxGetFontHeight", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // Failed
         lua_pushboolean ( L, false );
@@ -417,7 +347,7 @@ namespace CLuaFunctionDefs
                 m_pScriptDebugging->LogBadPointer( "dxCreateTexture", "file-path", 1 );
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxCreateTexture", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // error: bad arguments
         lua_pushboolean ( L, false );
@@ -471,7 +401,7 @@ namespace CLuaFunctionDefs
                 m_pScriptDebugging->LogCustom( SString ( "Bad file-path @ '%s' [%s]", "dxCreateShader", *strFilePath ) );
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxCreateShader", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // error: bad arguments
         lua_pushboolean ( L, false );
@@ -503,7 +433,7 @@ namespace CLuaFunctionDefs
             return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxCreateRenderTarget", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // error: bad arguments
         lua_pushboolean ( L, false );
@@ -547,7 +477,7 @@ namespace CLuaFunctionDefs
         CClientMaterial* pMaterial; SString strName;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pMaterial );
+        argStream.ReadClass( pMaterial, LUACLASS_RENDERELEMENT );
 
         if ( !argStream.HasErrors () )
         {
@@ -556,7 +486,7 @@ namespace CLuaFunctionDefs
             return 2;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxGetMaterialSize", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // error: bad arguments
         lua_pushboolean ( L, false );
@@ -569,27 +499,26 @@ namespace CLuaFunctionDefs
         CClientShader* pShader; SString strName;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pShader );
-        argStream.ReadString ( strName );
+        argStream.ReadClass( pShader, LUACLASS_SHADER );
+        argStream.ReadString( strName );
 
         if ( !argStream.HasErrors () )
         {
             // Try each mixed type in turn
             int iArgument = lua_type ( L, argStream.m_iIndex );
 
-            if ( iArgument == LUA_TLIGHTUSERDATA )
+            if ( iArgument == LUA_TCLASS )
             {
                 // Texture
                 CClientTexture* pTexture;
-                if ( argStream.ReadUserData ( pTexture ) )
+                if ( argStream.ReadClass( pTexture, LUACLASS_CORETEXTURE ) )
                 {
                     bool bResult = g_pCore->GetGraphics ()->GetRenderItemManager ()->SetShaderValue ( pShader->GetShaderItem (), strName, pTexture->GetTextureItem () );
                     lua_pushboolean ( L, bResult );
                     return 1;
                 }
             }
-            else
-            if ( iArgument == LUA_TBOOLEAN )
+            else if ( iArgument == LUA_TBOOLEAN )
             {
                 // bool
                 bool bValue;
@@ -600,8 +529,7 @@ namespace CLuaFunctionDefs
                     return 1;
                 }
             }
-            else
-            if ( iArgument == LUA_TNUMBER || iArgument == LUA_TSTRING )
+            else if ( lua_isnumber( L, argStream.m_iIndex ) )
             {
                 // float(s)
                 float fBuffer[16];
@@ -617,8 +545,7 @@ namespace CLuaFunctionDefs
                 lua_pushboolean ( L, bResult );
                 return 1;
             }
-            else
-            if ( iArgument == LUA_TTABLE )
+            else if ( iArgument == LUA_TTABLE )
             {
                 // table (of floats)
                 float fBuffer[16];
@@ -643,8 +570,8 @@ namespace CLuaFunctionDefs
         CClientRenderTarget* pRenderTarget; bool bClear;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pRenderTarget, NULL );
-        argStream.ReadBool ( bClear, false );
+        argStream.ReadClass( pRenderTarget, LUACLASS_CORETEXTURE );
+        argStream.ReadBool( bClear, false );
 
         if ( !argStream.HasErrors () )
         {
@@ -660,10 +587,10 @@ namespace CLuaFunctionDefs
                 return 1;
             }
             else
-                m_pScriptDebugging->LogCustom( SString ( "Bad usage @ '%s' [%s]", "dxSetRenderTarget", "dxSetRenderTarget can only be used inside certain events" ) );
+                m_pScriptDebugging->LogCustom( SString ( "Bad usage @ '%s' [%s]", "dxSetRenderTarget", "dxSetRenderTarget can only be used inside rendering events" ) );
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxSetRenderTarget", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // error: bad arguments
         lua_pushboolean ( L, false );
@@ -676,7 +603,7 @@ namespace CLuaFunctionDefs
         CClientScreenSource* pScreenSource;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pScreenSource );
+        argStream.ReadClass( pScreenSource, LUACLASS_CORESCREENSOURCE );
 
         if ( !argStream.HasErrors () )
         {
@@ -685,7 +612,7 @@ namespace CLuaFunctionDefs
             return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxUpdateScreenSource", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // error: bad arguments
         lua_pushboolean ( L, false );
@@ -729,7 +656,7 @@ namespace CLuaFunctionDefs
                 m_pScriptDebugging->LogBadPointer( "dxCreateFont", "file-path", 1 );
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxCreateFont", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // error: bad arguments
         lua_pushboolean ( L, false );
@@ -751,7 +678,7 @@ namespace CLuaFunctionDefs
             return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxTestMode", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // error: bad arguments
         lua_pushboolean ( L, false );
@@ -826,7 +753,7 @@ namespace CLuaFunctionDefs
             return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "dxGetStatus", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // error: bad arguments
         lua_pushboolean ( L, false );

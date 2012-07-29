@@ -25,7 +25,6 @@ CVehicle::CVehicle ( CVehicleManager* pVehicleManager, CElement* pParent, CXMLNo
 
     m_iType = CElement::VEHICLE;
     SetTypeName ( "vehicle" );
-    m_eVehicleType = CVehicleManager::GetVehicleType ( m_usModel );
     m_fHealth = DEFAULT_VEHICLE_HEALTH;
     m_ulHealthChangeTime = 0;
     m_ulBlowTime = 0;

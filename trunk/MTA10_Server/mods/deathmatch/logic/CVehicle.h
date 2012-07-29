@@ -99,21 +99,6 @@ enum eLights
     MAX_LIGHTS
 };
 
-enum eVehicleType
-{
-    VEHICLE_NONE = 0,
-    VEHICLE_CAR,
-    VEHICLE_BOAT,
-    VEHICLE_TRAIN,
-    VEHICLE_HELI,
-    VEHICLE_PLANE,
-    VEHICLE_BIKE,
-    VEHICLE_MONSTERTRUCK,
-    VEHICLE_QUADBIKE,
-    VEHICLE_BMX,
-    VEHICLE_TRAILER
-};
-
 class CVehicle : public CElement
 {
     friend class CPlayer;

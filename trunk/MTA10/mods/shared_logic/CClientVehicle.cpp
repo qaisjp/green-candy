@@ -35,7 +35,7 @@ extern CClientGame* g_pClientGame;
 #define VEHICLE_INTERPOLATION_WARP_THRESHOLD_FOR_SPEED  1.8f
 
 static const luaL_Reg vehicle_interface[] =
-{
+{1
     { NULL, NULL }
 };
 
@@ -77,7 +77,6 @@ CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass
     m_pModelRequester = pManager->GetModelRequestManager ();
     m_usModel = usModel;
     m_eVehicleType = CClientVehicleManager::GetVehicleType ( usModel );
-    m_bHasDamageModel = CClientVehicleManager::HasDamageModel ( m_eVehicleType );
     m_pVehicle = NULL;
     m_pUpgrades = new CVehicleUpgrades ( this );
     m_pClump = NULL;
@@ -179,16 +178,27 @@ CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass
     m_interp.pos.ulFinishTime = 0;
     ResetInterpolation ();
 
-    // Check if we have landing gears
-    m_bHasLandingGear = DoCheckHasLandingGear ();
-    m_bHasAdjustableProperty = CClientVehicleManager::HasAdjustableProperty ( m_usModel );
+    // Reset the interfaces
+    m_pVehicle = NULL;
+    m_train = NULL;
+    m_boat = NULL;
+    m_plane = NULL;
+    m_trailer = NULL;
+    m_quad = NULL;
+    m_monster = NULL;
+    m_bike = NULL;
+    m_bicycle = NULL;
+    m_heli = NULL;
+    m_automobile = NULL;
+
+    // Grab vehicle type for proper interfacing
+    m_vehModelType = m_pModelInfo->GetVehicleType();
 
     // Add this vehicle to the vehicle list
     m_pVehicleManager->AddToList ( this );
 }
 
-
-CClientVehicle::~CClientVehicle ( void )
+CClientVehicle::~CClientVehicle()
 {
     // Unreference us
     m_pManager->UnreferenceEntity ( this );    
@@ -256,14 +266,12 @@ CClientVehicle::~CClientVehicle ( void )
     CClientEntityRefManager::RemoveEntityRefs ( 0, &m_pDriver, &m_pOccupyingDriver, &m_pPreviousLink, &m_pNextLink, &m_pTowedVehicle, &m_pTowedByVehicle, &m_pPickedUpWinchEntity, &m_pLastSyncer, NULL );
 }
 
-
 void CClientVehicle::Unlink ( void )
 {
     m_pVehicleManager->RemoveFromList ( this );
     m_pVehicleManager->m_Attached.remove ( this );
     ListRemove( m_pVehicleManager->m_StreamedIn, this );
 }
-
 
 void CClientVehicle::GetName ( char* szBuf )
 {
@@ -279,7 +287,6 @@ void CClientVehicle::GetName ( char* szBuf )
         szBuf[0] = '\0';
     }
 }
-
 
 void CClientVehicle::GetPosition ( CVector& vecPosition ) const
 {
@@ -322,7 +329,6 @@ void CClientVehicle::GetPosition ( CVector& vecPosition ) const
         vecPosition = m_Matrix.pos;
     }
 }
-
 
 void CClientVehicle::SetPosition ( const CVector& vecPosition, bool bResetInterpolation )
 {
@@ -372,14 +378,12 @@ void CClientVehicle::SetPosition ( const CVector& vecPosition, bool bResetInterp
         RemoveTargetPosition ();
 }
 
-
 void CClientVehicle::GetRotationDegrees ( CVector& vecRotation ) const
 {
     // Grab our rotations in radians
     GetRotationRadians ( vecRotation );
     ConvertRadiansToDegrees ( vecRotation );
 }
-
 
 void CClientVehicle::GetRotationRadians ( CVector& vecRotation ) const
 {
@@ -395,7 +399,6 @@ void CClientVehicle::GetRotationRadians ( CVector& vecRotation ) const
     vecRotation.fZ = ( 2 * PI ) - vecRotation.fZ;
 }
 
-
 void CClientVehicle::SetRotationDegrees ( const CVector& vecRotation, bool bResetInterpolation )
 {
     // Convert from degrees to radians
@@ -407,7 +410,6 @@ void CClientVehicle::SetRotationDegrees ( const CVector& vecRotation, bool bRese
     // Set the rotation as radians
     SetRotationRadians ( vecTemp, bResetInterpolation );
 }
-
 
 void CClientVehicle::SetRotationRadians ( const CVector& vecRotation, bool bResetInterpolation )
 {
@@ -424,7 +426,6 @@ void CClientVehicle::SetRotationRadians ( const CVector& vecRotation, bool bRese
         RemoveTargetRotation ();
 }
 
-
 void CClientVehicle::ReportMissionAudioEvent ( unsigned short usSound )
 {
     if ( m_pVehicle )
@@ -436,20 +437,21 @@ void CClientVehicle::ReportMissionAudioEvent ( unsigned short usSound )
 bool CClientVehicle::SetTaxiLightOn ( bool bLightOn )
 {
     m_bTaxiLightOn = bLightOn;
-    if ( m_pVehicle )
+
+    if ( m_automobile )
     {
-        m_pVehicle->SetTaxiLightOn ( bLightOn );
+        m_automobile->SetTaxiLightOn ( bLightOn );
         return true;
     }
+
     return false;
 }
 
 float CClientVehicle::GetDistanceFromCentreOfMassToBaseOfModel()
 {
     if ( m_pVehicle )
-    {
         return m_pVehicle->GetBasingDistance();
-    }
+
     return 0.0f;
 }
 
@@ -474,7 +476,6 @@ bool CClientVehicle::GetMatrix ( RwMatrix& Matrix ) const
     return true;
 }
 
-
 bool CClientVehicle::SetMatrix ( const RwMatrix& Matrix )
 {
     if ( m_pVehicle )
@@ -482,17 +483,15 @@ bool CClientVehicle::SetMatrix ( const RwMatrix& Matrix )
         m_pVehicle->SetMatrix ( Matrix );
 
         // If it is a boat, we need to call FixBoatOrientation or it won't move/rotate properly
-        if ( m_eVehicleType == CLIENTVEHICLE_BOAT )
-        {
-            m_pVehicle->FixBoatOrientation ();
-        }
+        if ( m_vehModelType == VEHICLE_BOAT )
+            m_pVehicle->FixBoatOrientation();
     }
 
     // Have we moved to a different position?
     if ( m_Matrix.pos != Matrix.pos )
     {
         // Update our streaming position
-        UpdateStreamPosition ( Matrix.pos );
+        UpdateStreamPosition( Matrix.pos );
     }
 
     m_Matrix = Matrix;
@@ -512,100 +511,73 @@ bool CClientVehicle::SetMatrix ( const RwMatrix& Matrix )
     return true;
 }
 
-
 void CClientVehicle::GetMoveSpeed ( CVector& vecMoveSpeed ) const
 {
     if ( m_bIsFrozen )
-    {
-        vecMoveSpeed = CVector ( 0, 0, 0 );
-    }
+        vecMoveSpeed = CVector( 0, 0, 0 );
+    else if ( m_pVehicle )
+        m_pVehicle->GetMoveSpeed( vecMoveSpeed );
     else
-    {
-        if ( m_pVehicle )
-        {
-            m_pVehicle->GetMoveSpeed ( vecMoveSpeed );
-        }
-        else
-        {
-            vecMoveSpeed = m_vecMoveSpeed;
-        }
-    }
+        vecMoveSpeed = m_vecMoveSpeed;
 }
-
 
 void CClientVehicle::GetMoveSpeedMeters ( CVector& vecMoveSpeed ) const
 {
     if ( m_bIsFrozen )
-    {
         vecMoveSpeed = CVector ( 0, 0, 0 );     
-    }
     else
-    {
         vecMoveSpeed = m_vecMoveSpeedMeters;
-    }
 }
 
-
-void CClientVehicle::SetMoveSpeed ( const CVector& vecMoveSpeed )
+void CClientVehicle::SetMoveSpeed( const CVector& vecMoveSpeed )
 {
     if ( !m_bIsFrozen )
     {
         if ( m_pVehicle )
-        {
-            m_pVehicle->SetMoveSpeed ( vecMoveSpeed );
-        }
+            m_pVehicle->SetMoveSpeed( vecMoveSpeed );
+
         m_vecMoveSpeed = vecMoveSpeed;
     }
 }
-
 
 void CClientVehicle::GetTurnSpeed ( CVector& vecTurnSpeed ) const
 {
     if ( m_bIsFrozen )
     {
-        vecTurnSpeed = CVector ( 0, 0, 0 );
+        vecTurnSpeed = CVector( 0, 0, 0 );
+        return; 
     }
-    if ( m_pVehicle )
-    {
-        m_pVehicle->GetTurnSpeed ( vecTurnSpeed );
-    }
-    else
-    {
-        vecTurnSpeed = m_vecTurnSpeed;
-    }
-}
 
+    if ( m_pVehicle )
+        m_pVehicle->GetTurnSpeed( vecTurnSpeed );
+    else
+        vecTurnSpeed = m_vecTurnSpeed;
+}
 
 void CClientVehicle::SetTurnSpeed ( const CVector& vecTurnSpeed )
 {
     if ( !m_bIsFrozen )
     {
         if ( m_pVehicle )
-        {
             m_pVehicle->SetTurnSpeed ( vecTurnSpeed );
-        }
+
         m_vecTurnSpeed = vecTurnSpeed;
     }
 }
 
-
-bool CClientVehicle::IsVisible ( void )
+bool CClientVehicle::IsVisible() const
 {
     if ( m_pVehicle )
-    {
         return m_pVehicle->IsVisible ();
-    }
     
     return m_bVisible;
 }
 
-
 void CClientVehicle::SetVisible ( bool bVisible )
 {
     if ( m_pVehicle )
-    {
-        m_pVehicle->SetVisible ( bVisible );
-    }
+        m_pVehicle->SetVisible( bVisible );
+
     m_bVisible = bVisible;
 }
 
@@ -618,7 +590,7 @@ void CClientVehicle::SetDoorOpenRatioInterpolated ( unsigned char ucDoor, float 
     m_doorInterp.ulTargetTime [ ucDoor ] = ulTime + ulDelay;
 }
 
-void CClientVehicle::ResetDoorInterpolation ( )
+void CClientVehicle::ResetDoorInterpolation()
 {
     for ( unsigned char i = 0; i < 6; ++i )
     {
@@ -632,7 +604,6 @@ void CClientVehicle::CancelDoorInterpolation ( unsigned char ucDoor )
 {
     m_doorInterp.ulTargetTime [ ucDoor ] = 0;
 }
-
 
 void CClientVehicle::ProcessDoorInterpolation ()
 {
@@ -673,15 +644,15 @@ void CClientVehicle::SetDoorOpenRatio ( unsigned char ucDoor, float fRatio, unsi
         {
             switch ( ucDoor )
             {
-                case 2:
-                    bAllow = m_pOccupyingDriver == 0;
-                    break;
-                case 3:
-                case 4:
-                case 5:
-                    ucSeat = ucDoor - 2;
-                    bAllow = m_pOccupyingPassengers [ ucSeat ] == 0;
-                    break;
+            case 2:
+                bAllow = m_pOccupyingDriver == 0;
+                break;
+            case 3:
+            case 4:
+            case 5:
+                ucSeat = ucDoor - 2;
+                bAllow = m_pOccupyingPassengers [ ucSeat ] == 0;
+                break;
             }
         }
 
@@ -690,9 +661,8 @@ void CClientVehicle::SetDoorOpenRatio ( unsigned char ucDoor, float fRatio, unsi
             if ( ulDelay == 0UL )
             {
                 if ( m_pVehicle )
-                {
                     m_pVehicle->OpenDoor ( ucDoor, fRatio, false );
-                }
+
                 m_fDoorOpenRatio [ ucDoor ] = fRatio;
             }
             else
@@ -703,14 +673,13 @@ void CClientVehicle::SetDoorOpenRatio ( unsigned char ucDoor, float fRatio, unsi
     }
 }
 
-float CClientVehicle::GetDoorOpenRatio ( unsigned char ucDoor )
+float CClientVehicle::GetDoorOpenRatio ( unsigned char ucDoor ) const
 {
     if ( ucDoor <= 5 )
     {
         if ( m_pVehicle )
-        {
             return m_pVehicle->GetDoor ( ucDoor )->GetAngleOpenRatio ();
-        }
+
         return m_fDoorOpenRatio [ ucDoor ];
     }
     return 0.0f;
@@ -718,19 +687,17 @@ float CClientVehicle::GetDoorOpenRatio ( unsigned char ucDoor )
 
 void CClientVehicle::SetSwingingDoorsAllowed ( bool bAllowed )
 {
-    if ( m_pVehicle )
-    {
-        m_pVehicle->SetSwingingDoorsAllowed ( bAllowed );
-    }
+    if ( m_automobile )
+        m_automobile->SetSwingingDoorsAllowed ( bAllowed );
+
     m_bSwingingDoorsAllowed = bAllowed;
 }
 
-bool CClientVehicle::AreSwingingDoorsAllowed () const
+bool CClientVehicle::AreSwingingDoorsAllowed() const
 {
-    if ( m_pVehicle )
-    {
-        return m_pVehicle->AreSwingingDoorsAllowed ();
-    }
+    if ( m_automobile )
+        return m_automobile->AreSwingingDoorsAllowed();
+
     return m_bSwingingDoorsAllowed;
 }
 
@@ -740,61 +707,51 @@ void CClientVehicle::AllowDoorRatioSetting ( unsigned char ucDoor, bool bAllow )
     CancelDoorInterpolation ( ucDoor );
 }
 
-bool CClientVehicle::AreDoorsLocked ( void )
+bool CClientVehicle::AreDoorsLocked() const
 {
     if ( m_pVehicle )
-    {
-        return m_pVehicle->AreDoorsLocked ();
-    }
+        return m_pVehicle->AreDoorsLocked();
+
     return m_bDoorsLocked;
 }
-
 
 void CClientVehicle::SetDoorsLocked ( bool bLocked )
 {
     if ( m_pVehicle )
-    {
         m_pVehicle->LockDoors ( bLocked );
-    }
+
     m_bDoorsLocked = bLocked;
 }
 
-
-bool CClientVehicle::AreDoorsUndamageable ( void )
+bool CClientVehicle::AreDoorsUndamageable() const
 {
     if ( m_pVehicle )
-    {
-        return m_pVehicle->AreDoorsUndamageable ();
-    }
+        return m_pVehicle->AreDoorsUndamageable();
+
     return m_bDoorsUndamageable;
 }
 
-
-void CClientVehicle::SetDoorsUndamageable ( bool bUndamageable )
+void CClientVehicle::SetDoorsUndamageable( bool bUndamageable )
 {
     if ( m_pVehicle )
-    {
         m_pVehicle->SetDoorsUndamageable ( bUndamageable );
-    }
+
     m_bDoorsUndamageable = bUndamageable;
 }
 
-
-float CClientVehicle::GetHealth ( void ) const
+float CClientVehicle::GetHealth() const
 {
     // If we're blown, return 0
-    if ( m_bBlown ) return 0.0f;
+    if ( m_bBlown )
+        return 0.0f;
 
     if ( m_pVehicle )
-    {      
-        return m_pVehicle->GetHealth ();
-    }
+        return m_pVehicle->GetHealth();
 
     return m_fHealth;
 }
 
-
-void CClientVehicle::SetHealth ( float fHealth )
+void CClientVehicle::SetHealth( float fHealth )
 {
     if ( m_pVehicle )
     {
@@ -806,34 +763,33 @@ void CClientVehicle::SetHealth ( float fHealth )
             Create ();
         }
         else
-        {
-            m_pVehicle->SetHealth ( fHealth );
-        }
+            m_pVehicle->SetHealth( fHealth );
     }
+
     m_fHealth = fHealth;
 }
 
-void CClientVehicle::Fix ( void )
+void CClientVehicle::Fix()
 {
     m_bBlown = false;
     m_bBlowNextFrame = false;
+
     if ( m_pVehicle )
     {
-        m_pVehicle->Fix ();
+        m_pVehicle->Fix();
         // Make sure its visible, if its supposed to be
-        m_pVehicle->SetVisible ( m_bVisible );
+        m_pVehicle->SetVisible( m_bVisible );
     } 
 
     SetHealth ( DEFAULT_VEHICLE_HEALTH );
 
     unsigned char ucDoorStates [ MAX_DOORS ];
     GetInitialDoorStates ( ucDoorStates );
-    for ( int i = 0 ; i < MAX_DOORS ; i++ ) SetDoorStatus ( i, ucDoorStates [ i ] );
-    for ( int i = 0 ; i < MAX_PANELS ; i++ ) SetPanelStatus ( i, 0 );
-    for ( int i = 0 ; i < MAX_LIGHTS ; i++ ) SetLightStatus ( i, 0 );
-    for ( int i = 0 ; i < MAX_WHEELS ; i++ ) SetWheelStatus ( i, 0 );    
+    for ( unsigned int i = 0 ; i < MAX_DOORS ; i++ )    SetDoorStatus ( i, ucDoorStates [ i ] );
+    for ( unsigned int i = 0 ; i < MAX_PANELS ; i++ )   SetPanelStatus ( i, 0 );
+    for ( unsigned int i = 0 ; i < MAX_LIGHTS ; i++ )   SetLightStatus ( i, 0 );
+    for ( unsigned int i = 0 ; i < MAX_WHEELS ; i++ )   SetWheelStatus ( i, 0 );    
 }
-
 
 void CClientVehicle::Blow ( bool bAllowMovement )
 {
@@ -875,8 +831,7 @@ void CClientVehicle::Blow ( bool bAllowMovement )
     m_bBlown = true;
 }
 
-
-CVehicleColor& CClientVehicle::GetColor ( void )
+CVehicleColor& CClientVehicle::GetColor() const
 {
     if ( m_pVehicle )
     {
@@ -884,31 +839,27 @@ CVehicleColor& CClientVehicle::GetColor ( void )
         m_pVehicle->GetColor ( &colors[0], &colors[1], &colors[2], &colors[3], 0 );
         m_Color.SetRGBColors ( colors[0], colors[1], colors[2], colors[3] );
     }
+
     return m_Color;
 }
 
 void CClientVehicle::SetColor ( const CVehicleColor& color )
 {
     m_Color = color;
+
     if ( m_pVehicle )
-    {
         m_pVehicle->SetColor ( m_Color.GetRGBColor ( 0 ), m_Color.GetRGBColor ( 1 ), m_Color.GetRGBColor ( 2 ), m_Color.GetRGBColor ( 3 ), 0 );
-    }
+
     m_bColorSaved = true;
 }
 
-
-void CClientVehicle::GetTurretRotation ( float& fHorizontal, float& fVertical )
+void CClientVehicle::GetTurretRotation( float& fHorizontal, float& fVertical )
 {
     if ( m_pVehicle )
     {
         // Car, plane or quad?
-        if ( m_eVehicleType == CLIENTVEHICLE_CAR ||
-            m_eVehicleType == CLIENTVEHICLE_PLANE ||
-            m_eVehicleType == CLIENTVEHICLE_QUADBIKE )
-        {
-            m_pVehicle->GetTurretRotation ( &fHorizontal, &fVertical );
-        }
+        if ( m_automobile )
+            m_automobile->GetTurretRotation( fHorizontal, fVertical );
         else
         {
             fHorizontal = 0;
@@ -922,23 +873,14 @@ void CClientVehicle::GetTurretRotation ( float& fHorizontal, float& fVertical )
     }
 }
 
-
 void CClientVehicle::SetTurretRotation ( float fHorizontal, float fVertical )
 {
-    if ( m_pVehicle )
-    {
-        // Car, plane or quad?
-        if ( m_eVehicleType == CLIENTVEHICLE_CAR ||
-            m_eVehicleType == CLIENTVEHICLE_PLANE ||
-            m_eVehicleType == CLIENTVEHICLE_QUADBIKE )
-        {
-            m_pVehicle->SetTurretRotation ( fHorizontal, fVertical );
-        }
-    }
+    if ( m_automobile )
+        m_automobile->SetTurretRotation( fHorizontal, fVertical );
+
     m_fTurretHorizontal = fHorizontal;
     m_fTurretVertical = fVertical;
 }
-
 
 void CClientVehicle::SetModelBlocking ( unsigned short usModel, bool bLoadImmediately )
 {
@@ -947,9 +889,7 @@ void CClientVehicle::SetModelBlocking ( unsigned short usModel, bool bLoadImmedi
     {
         // Destroy the old vehicle if we have one
         if ( m_pVehicle )
-        {
             Destroy ();
-        }
 
         // Get rid of our upgrades, they might be incompatible
         if ( m_pUpgrades )
@@ -961,7 +901,6 @@ void CClientVehicle::SetModelBlocking ( unsigned short usModel, bool bLoadImmedi
         // Set the new vehicle id and type
         m_usModel = usModel;
         m_eVehicleType = CClientVehicleManager::GetVehicleType ( usModel );
-        m_bHasDamageModel = CClientVehicleManager::HasDamageModel ( m_eVehicleType );
 
         if ( bResetWheelAndDoorStates )
         {
@@ -969,14 +908,12 @@ void CClientVehicle::SetModelBlocking ( unsigned short usModel, bool bLoadImmedi
             memset ( m_ucWheelStates, 0, sizeof ( m_ucWheelStates ) );
         }
 
-        // Check if we have landing gears and adjustable properties
-        m_bHasLandingGear = DoCheckHasLandingGear ();
-        m_bHasAdjustableProperty = CClientVehicleManager::HasAdjustableProperty ( m_usModel );
-        m_usAdjustablePropertyValue = 0;
-
         // Grab the model info and the bounding box
         m_pModelInfo = g_pGame->GetModelInfo ( usModel );
         m_ucMaxPassengers = CClientVehicleManager::GetMaxPassengerCount ( usModel );
+
+        m_vehModelType = m_pModelInfo->GetVehicleType();
+        m_usAdjustablePropertyValue = 0;
 
         // Reset handling to fit the vehicle
         m_pOriginalHandlingEntry = g_pGame->GetHandlingManager()->GetOriginalHandlingData ( (eVehicleTypes)usModel );
@@ -984,13 +921,13 @@ void CClientVehicle::SetModelBlocking ( unsigned short usModel, bool bLoadImmedi
         ApplyHandling ();
 
         // Create the vehicle if we're streamed in
-        if ( IsStreamedIn () )
+        if ( IsStreamedIn() )
         {
             // Preload the model
-            if( !m_pModelInfo->IsLoaded () )
+            if ( !m_pModelInfo->IsLoaded() )
             {
-                m_pModelInfo->Request ( true, true );
-                m_pModelInfo->MakeCustomModel ();
+                m_pModelInfo->Request( true, true );
+                m_pModelInfo->MakeCustomModel();
             }
 
             // Create the vehicle now. Don't prerequest the model ID for this func.
@@ -999,17 +936,13 @@ void CClientVehicle::SetModelBlocking ( unsigned short usModel, bool bLoadImmedi
     }
 }
 
-
-bool CClientVehicle::IsEngineBroken ( void )
+bool CClientVehicle::IsEngineBroken() const
 {
     if ( m_pVehicle )
-    {
-        return m_pVehicle->IsEngineBroken ();
-    }
+        return m_pVehicle->IsEngineBroken();
 
     return m_bEngineBroken;
 }
-
 
 void CClientVehicle::SetEngineBroken ( bool bEngineBroken )
 {
@@ -1019,55 +952,43 @@ void CClientVehicle::SetEngineBroken ( bool bEngineBroken )
         m_pVehicle->SetEngineOn ( !bEngineBroken );
 
         // We need to recreate the vehicle if we're going from broken to unbroken
-        if ( !bEngineBroken && m_pVehicle->IsEngineBroken () )
-        {
-            ReCreate ();
-        }
+        if ( !bEngineBroken && m_pVehicle->IsEngineBroken() )
+            ReCreate();
     }
     m_bEngineBroken = bEngineBroken;
 }
 
-
-bool CClientVehicle::IsEngineOn ( void )
+bool CClientVehicle::IsEngineOn() const
 {
     if ( m_pVehicle )
-    {
-        return m_pVehicle->IsEngineOn ();
-    }
+        return m_pVehicle->IsEngineOn();
     
     return m_bEngineOn;
 }
 
-
-void CClientVehicle::SetEngineOn ( bool bEngineOn )
+void CClientVehicle::SetEngineOn( bool bEngineOn )
 {
     if ( m_pVehicle )
-    {
-        m_pVehicle->SetEngineOn ( bEngineOn );
-    }
+        m_pVehicle->SetEngineOn( bEngineOn );
 
     m_bEngineOn = bEngineOn;
 }
 
-
-bool CClientVehicle::CanBeDamaged ( void )
+bool CClientVehicle::CanBeDamaged() const
 {
     if ( m_pVehicle )
-    {
-        return m_pVehicle->GetCanBeDamaged ();
-    }
+        return m_pVehicle->GetCanBeDamaged();
 
     return m_bCanBeDamaged;
 }
 
-
 // This can be called frequently to ensure the correct setting gets to the SA vehicle
-void CClientVehicle::CalcAndUpdateCanBeDamagedFlag ( void )
+void CClientVehicle::CalcAndUpdateCanBeDamagedFlag()
 {
      bool bCanBeDamaged = false;
 
     // CanBeDamaged if local driver or syncing unoccupiedVehicle
-    if ( m_pDriver && m_pDriver->IsLocalPlayer () )
+    if ( m_pDriver && m_pDriver->IsLocalPlayer() )
         bCanBeDamaged = true;
 
     if ( m_bSyncUnoccupiedDamage )
@@ -1078,13 +999,10 @@ void CClientVehicle::CalcAndUpdateCanBeDamagedFlag ( void )
         bCanBeDamaged = false;
 
     if ( m_pVehicle )
-    {
         m_pVehicle->SetCanBeDamaged ( bCanBeDamaged );
-    }
 
     m_bCanBeDamaged = bCanBeDamaged;
 }
-
 
 void CClientVehicle::SetScriptCanBeDamaged ( bool bCanBeDamaged )
 {
@@ -1094,7 +1012,6 @@ void CClientVehicle::SetScriptCanBeDamaged ( bool bCanBeDamaged )
     CalcAndUpdateTyresCanBurstFlag ();
 }
 
-
 void CClientVehicle::SetSyncUnoccupiedDamage ( bool bCanBeDamaged )
 {
     m_bSyncUnoccupiedDamage = bCanBeDamaged;
@@ -1102,20 +1019,16 @@ void CClientVehicle::SetSyncUnoccupiedDamage ( bool bCanBeDamaged )
     CalcAndUpdateTyresCanBurstFlag ();
 }
 
-
-bool CClientVehicle::GetTyresCanBurst ( void )
+bool CClientVehicle::GetTyresCanBurst() const
 {
     if ( m_pVehicle )
-    {
-        return !m_pVehicle->GetTyresDontBurst ();
-    }
+        return !m_pVehicle->GetTyresDontBurst();
 
     return m_bTyresCanBurst;
 }
 
-
 // This can be called frequently to ensure the correct setting gets to the SA vehicle
-void CClientVehicle::CalcAndUpdateTyresCanBurstFlag ( void )
+void CClientVehicle::CalcAndUpdateTyresCanBurstFlag()
 {
      bool bTyresCanBurst = false;
 
@@ -1131,26 +1044,20 @@ void CClientVehicle::CalcAndUpdateTyresCanBurstFlag ( void )
         bTyresCanBurst = false;
 
     if ( m_pVehicle )
-    {
         m_pVehicle->SetTyresDontBurst ( !bTyresCanBurst );
-    }
 
     m_bTyresCanBurst = bTyresCanBurst;
 }
 
-
-float CClientVehicle::GetGasPedal ( void )
+float CClientVehicle::GetGasPedal() const
 {
     if ( m_pVehicle )
-    {
-        return m_pVehicle->GetGasPedal ();
-    }
+        return m_pVehicle->GetGasPedal();
 
     return m_fGasPedal;
 }
 
-
-bool CClientVehicle::IsBelowWater ( void ) const
+bool CClientVehicle::IsBelowWater() const
 {
     CVector vecPosition;
     GetPosition ( vecPosition );
@@ -1167,84 +1074,59 @@ bool CClientVehicle::IsBelowWater ( void ) const
     return false;
 }
 
-
-bool CClientVehicle::IsDrowning ( void ) const
+bool CClientVehicle::IsDrowning() const
 {
     if ( m_pVehicle )
-    {
-        return m_pVehicle->IsDrowning ();
-    }
+        return m_pVehicle->IsDrowning();
 
     return false;
 }
 
-
-bool CClientVehicle::IsDriven ( void ) const
+bool CClientVehicle::IsDriven() const
 {
     if ( m_pVehicle )
-    {
-        return m_pVehicle->IsBeingDriven () ? true:false;
-    }
-    else
-    {
-        return GetOccupant ( 0 ) != NULL;
-    }
+        return m_pVehicle->IsBeingDriven();
+
+    return GetOccupant( 0 ) != NULL;
 }
 
-
-bool CClientVehicle::IsUpsideDown ( void ) const
+bool CClientVehicle::IsUpsideDown() const
 {
     if ( m_pVehicle )
-    {
         return m_pVehicle->IsUpsideDown ();
-    }
 
-    // TODO: Figure out this using matrix?
-    return false;
+    return m_Matrix.pos.fZ <= -0.9f;
 }
 
-
-bool CClientVehicle::IsBlown ( void ) const
+bool CClientVehicle::IsBlown() const
 {
-    // Game layer functions aren't reliable
+    // Game layer functions are yet to be analized
     return m_bBlown;
 }
 
-
-bool CClientVehicle::IsSirenOrAlarmActive ( void )
+bool CClientVehicle::IsSirenOrAlarmActive() const
 {
     if ( m_pVehicle )
-    {
-        return m_pVehicle->IsSirenOrAlarmActive () ? true:false;
-    }
+        return m_pVehicle->IsSirenOrAlarmActive();
 
     return m_bSireneOrAlarmActive;
 }
 
-
 void CClientVehicle::SetSirenOrAlarmActive ( bool bActive )
 {
     if ( m_pVehicle )
-    {
-        m_pVehicle->SetSirenOrAlarmActive ( bActive );
-    }
+        m_pVehicle->SetSirenOrAlarmActive( bActive );
+
     m_bSireneOrAlarmActive = bActive;
 }
 
-
-float CClientVehicle::GetLandingGearPosition ( void )
+float CClientVehicle::GetLandingGearPosition() const
 {
-    if ( m_bHasLandingGear )
-    {
-        if ( m_pVehicle )
-        {
-            return m_pVehicle->GetLandingGearPosition ();
-        }
-    }
+    if ( m_plane )
+        return m_plane->GetLandingGearPosition();
 
     return 0.0f;
 }
-
 
 void CClientVehicle::SetLandingGearPosition ( float fPosition )
 {
@@ -1257,44 +1139,36 @@ void CClientVehicle::SetLandingGearPosition ( float fPosition )
     }
 }
 
-
-bool CClientVehicle::IsLandingGearDown ( void )
+bool CClientVehicle::IsLandingGearDown() const
 {
-    if ( m_bHasLandingGear )
-    {
-        if ( m_pVehicle )
-        {
-            return m_pVehicle->IsLandingGearDown ();
-        }
+    if ( m_vehModelType != VEHICLE_PLANE )
+        return false;
 
-        return m_bLandingGearDown;
-    }
+    if ( m_plane )
+        return m_plane->IsLandingGearDown();
 
-    return true;
+    return m_bLandingGearDown;
 }
 
-
-void CClientVehicle::SetLandingGearDown ( bool bLandingGearDown )
+void CClientVehicle::SetLandingGearDown( bool bLandingGearDown )
 {
-    if ( m_bHasLandingGear )
-    {
-        if ( m_pVehicle )
-        {
-            m_pVehicle->SetLandingGearDown ( bLandingGearDown );
-        }
-        m_bLandingGearDown = bLandingGearDown;
-    }
+    if ( m_plane )
+        m_plane->SetLandingGearDown( bLandingGearDown );
+
+    m_bLandingGearDown = bLandingGearDown;
 }
 
-
-unsigned short CClientVehicle::GetAdjustablePropertyValue ( void )
+unsigned short CClientVehicle::GetAdjustablePropertyValue() const
 {
     unsigned short usPropertyValue;
-    if ( m_pVehicle )
+
+    if ( m_automobile )
     {
-        usPropertyValue = m_pVehicle->GetAdjustablePropertyValue ();
+        usPropertyValue = m_automobile->GetAdjustablePropertyValue();
+
         // If it's a Hydra invert it with 5000 (as 0 is "forward"), so we can maintain a standard of 0 being "normal"
-        if ( m_usModel == VT_HYDRA ) usPropertyValue = 5000 - usPropertyValue;
+        if ( m_usModel == VT_HYDRA )
+            usPropertyValue = 5000 - usPropertyValue;
     }
     else
     {
@@ -1305,51 +1179,43 @@ unsigned short CClientVehicle::GetAdjustablePropertyValue ( void )
     return usPropertyValue;
 }
 
-
-void CClientVehicle::SetAdjustablePropertyValue ( unsigned short usValue )
+void CClientVehicle::SetAdjustablePropertyValue( unsigned short usValue )
 {
-    if ( m_usModel == VT_HYDRA ) usValue = 5000 - usValue;
+    if ( m_usModel == VT_HYDRA )
+        usValue = 5000 - usValue;
 
     _SetAdjustablePropertyValue ( usValue );
 }
 
-
 void CClientVehicle::_SetAdjustablePropertyValue ( unsigned short usValue )
 {
     // Set it
-    if ( m_pVehicle )
+    if ( m_automobile )
     {
-        if ( m_bHasAdjustableProperty )
+        m_automobile->SetAdjustablePropertyValue( usValue );
+        
+        // Update our collision for this adjustable?
+        if ( HasMovingCollision() )
         {
-            m_pVehicle->SetAdjustablePropertyValue ( usValue );
-            
-            // Update our collision for this adjustable?
-            if ( HasMovingCollision () )
-            {
-                float fAngle = ( float ) usValue / 2499.0f;
-                m_pVehicle->UpdateMovingCollision ( fAngle );
-            }
+            float fAngle = (float)usValue / 2499.0f;
+            m_automobile->UpdateMovingCollision( fAngle );
         }
     }
     m_usAdjustablePropertyValue = usValue;
 }
 
-
-bool CClientVehicle::HasMovingCollision ( void )
+bool CClientVehicle::HasMovingCollision()
 {
     return ( m_usModel == VT_FORKLIFT || m_usModel == VT_FIRELA || m_usModel == VT_ANDROM ||
              m_usModel == VT_DUMPER || m_usModel == VT_DOZER || m_usModel == VT_PACKER );
 }
 
-
-unsigned char CClientVehicle::GetDoorStatus ( unsigned char ucDoor )
+unsigned char CClientVehicle::GetDoorStatus ( unsigned char ucDoor ) const
 {
     if ( ucDoor < MAX_DOORS )
     {
-        if ( m_pVehicle && HasDamageModel () )
-        {
-            return m_pVehicle->GetDamageManager ()->GetDoorStatus ( static_cast < eDoors > ( ucDoor ) );
-        }
+        if ( m_automobile )
+            return m_automobile->GetDamageManager()->GetDoorStatus( (eDoors)ucDoor );
 
         return m_ucDoorStates [ucDoor];
     }
@@ -1357,21 +1223,18 @@ unsigned char CClientVehicle::GetDoorStatus ( unsigned char ucDoor )
     return 0;
 }
 
-
-unsigned char CClientVehicle::GetWheelStatus ( unsigned char ucWheel )
+unsigned char CClientVehicle::GetWheelStatus ( unsigned char ucWheel ) const
 {
     if ( ucWheel < MAX_WHEELS )
     {
         // Return our custom state?
-        if ( m_ucWheelStates [ucWheel] == DT_WHEEL_INTACT_COLLISIONLESS ) return DT_WHEEL_INTACT_COLLISIONLESS;
+        if ( m_ucWheelStates [ucWheel] == DT_WHEEL_INTACT_COLLISIONLESS )
+            return DT_WHEEL_INTACT_COLLISIONLESS;
 
-        if ( m_pVehicle )
-        {
-            if ( HasDamageModel () )
-                return m_pVehicle->GetDamageManager ()->GetWheelStatus ( static_cast < eWheels > ( ucWheel ) );
-            if ( m_eVehicleType == CLIENTVEHICLE_BIKE && ucWheel < 2 )
-                return m_pVehicle->GetBikeWheelStatus ( ucWheel );
-        }
+        if ( m_automobile )
+            return m_automobile->GetDamageManager()->GetWheelStatus ( static_cast < eWheels > ( ucWheel ) );
+        if ( m_bike && ucWheel < 2 )
+            return m_bike->GetBikeWheelStatus( ucWheel );
 
         return m_ucWheelStates [ucWheel];
     }
@@ -1379,15 +1242,12 @@ unsigned char CClientVehicle::GetWheelStatus ( unsigned char ucWheel )
     return 0;
 }
 
-
-unsigned char CClientVehicle::GetPanelStatus ( unsigned char ucPanel )
+unsigned char CClientVehicle::GetPanelStatus ( unsigned char ucPanel ) const
 {
     if ( ucPanel < MAX_PANELS )
     {
-        if ( m_pVehicle && HasDamageModel () )
-        {
-            return m_pVehicle->GetDamageManager ()->GetPanelStatus ( ucPanel );
-        }
+        if ( m_automobile )
+            return m_pVehicle->GetDamageManager()->GetPanelStatus( ucPanel );
 
         return m_ucPanelStates [ ucPanel ];
     }
@@ -1395,34 +1255,29 @@ unsigned char CClientVehicle::GetPanelStatus ( unsigned char ucPanel )
     return 0;
 }
 
-
-unsigned char CClientVehicle::GetLightStatus ( unsigned char ucLight )
+unsigned char CClientVehicle::GetLightStatus ( unsigned char ucLight ) const
 {
     if ( ucLight < MAX_LIGHTS )
     {
-        if ( m_pVehicle && HasDamageModel () )
-        {
+        if ( m_automobile )
             return m_pVehicle->GetDamageManager ()->GetLightStatus ( ucLight );
-        }
+
         return m_ucLightStates [ ucLight ];
     }
 
     return 0;
 }
 
-
 void CClientVehicle::SetDoorStatus ( unsigned char ucDoor, unsigned char ucStatus )
 {
     if ( ucDoor < MAX_DOORS )
     {
-        if ( m_pVehicle && HasDamageModel () )
-        {
-            m_pVehicle->GetDamageManager ()->SetDoorStatus ( static_cast < eDoors > ( ucDoor ), ucStatus );
-        }
+        if ( m_automobile )
+            m_automobile->GetDamageManager()->SetDoorStatus( (eDoors)ucDoor, ucStatus );
+
         m_ucDoorStates [ucDoor] = ucStatus;
     }
 }
-
 
 void CClientVehicle::SetWheelStatus ( unsigned char ucWheel, unsigned char ucStatus, bool bSilent )
 {
@@ -1431,110 +1286,95 @@ void CClientVehicle::SetWheelStatus ( unsigned char ucWheel, unsigned char ucSta
         if ( m_pVehicle )
         {
             // Is our new status a burst tyre? and do we need to call BurstTyre?
-            if ( ucStatus == DT_WHEEL_BURST && !bSilent ) m_pVehicle->BurstTyre ( ucWheel );  
+            if ( ucStatus == DT_WHEEL_BURST && !bSilent )
+                m_pVehicle->BurstTyre( ucWheel );  
 
             // Are we using our custom state?
             unsigned char ucGTAStatus = ucStatus;
-            if ( ucStatus == DT_WHEEL_INTACT_COLLISIONLESS ) ucGTAStatus = DT_WHEEL_MISSING;
+
+            if ( ucStatus == DT_WHEEL_INTACT_COLLISIONLESS )
+                ucGTAStatus = DT_WHEEL_MISSING;
 
             // Do we have a damage model?
-            if ( HasDamageModel () )
+            if ( m_automobile )
             {
-                m_pVehicle->GetDamageManager ()->SetWheelStatus ( ( eWheels ) ( ucWheel ), ucGTAStatus );
+                m_automobile->GetDamageManager()->SetWheelStatus( (eWheels)ucWheel, ucGTAStatus );
                 
                 // Update the wheel's visibility
-                m_pVehicle->SetWheelVisibility ( ( eWheels ) ucWheel, ( ucStatus != DT_WHEEL_MISSING ) );
+                m_automobile->SetWheelVisibility( (eWheels)ucWheel, ucStatus != DT_WHEEL_MISSING );
             }
-            else if ( m_eVehicleType == CLIENTVEHICLE_BIKE && ucWheel < 2 )
-                m_pVehicle->SetBikeWheelStatus ( ucWheel, ucGTAStatus );
+            else if ( m_bike && ucWheel < 2 )
+                m_bike->SetBikeWheelStatus( ucWheel, ucGTAStatus );
         }
         m_ucWheelStates [ucWheel] = ucStatus;
     }
 }
 
-
 void CClientVehicle::SetPanelStatus ( unsigned char ucPanel, unsigned char ucStatus )
 {
     if ( ucPanel < MAX_PANELS )
     {
-        if ( m_pVehicle && HasDamageModel () )
-        {
-            m_pVehicle->GetDamageManager ()->SetPanelStatus ( static_cast < ePanels > ( ucPanel ), ucStatus );
-        }
-        m_ucPanelStates [ ucPanel ] = ucStatus;
+        if ( m_automobile )
+            m_automobile->GetDamageManager()->SetPanelStatus( (ePanels)ucPanel, ucStatus );
+
+        m_ucPanelStates[ ucPanel ] = ucStatus;
     }
 }
-
 
 void CClientVehicle::SetLightStatus ( unsigned char ucLight, unsigned char ucStatus )
 {
     if ( ucLight < MAX_LIGHTS )
     {
-        if ( m_pVehicle && HasDamageModel () )
-        {
-            m_pVehicle->GetDamageManager ()->SetLightStatus ( static_cast < eLights > ( ucLight ), ucStatus );
-        }
-        m_ucLightStates [ ucLight ] = ucStatus;
+        if ( m_automobile )
+            m_automobile->GetDamageManager()->SetLightStatus( (eLights)ucLight, ucStatus );
+
+        m_ucLightStates[ ucLight ] = ucStatus;
     }
 }
 
-
-float CClientVehicle::GetHeliRotorSpeed ( void )
+float CClientVehicle::GetHeliRotorSpeed() const
 {
-    if ( m_pVehicle && m_eVehicleType == CLIENTVEHICLE_HELI )
-    {
-        return m_pVehicle->GetHeliRotorSpeed ();
-    }
+    if ( m_heli )
+        return m_heli->GetHeliRotorSpeed();
 
     return m_fHeliRotorSpeed;
 }
 
-
-void CClientVehicle::SetHeliRotorSpeed ( float fSpeed )
+void CClientVehicle::SetHeliRotorSpeed( float fSpeed )
 {
-    if ( m_pVehicle && m_eVehicleType == CLIENTVEHICLE_HELI )
-    {
-        m_pVehicle->SetHeliRotorSpeed ( fSpeed );
-    }
+    if ( m_heli )
+        m_heli->SetHeliRotorSpeed( fSpeed );
+
     m_fHeliRotorSpeed = fSpeed;
 }
 
-
-bool CClientVehicle::IsHeliSearchLightVisible ( void )
+bool CClientVehicle::IsHeliSearchLightVisible() const
 {
-    if ( m_pVehicle && m_eVehicleType == CLIENTVEHICLE_HELI )
-    {
-        return m_pVehicle->IsHeliSearchLightVisible ();
-    }
+    if ( m_heli )
+        return m_heli->IsHeliSearchLightVisible();
+
     return m_bHeliSearchLightVisible;
 }
 
-
 void CClientVehicle::SetHeliSearchLightVisible ( bool bVisible )
 {
-    if ( m_pVehicle && m_eVehicleType == CLIENTVEHICLE_HELI )
-    {
-        m_pVehicle->SetHeliSearchLightVisible ( bVisible );
-    }
+    if ( m_heli )
+        m_heli->SetHeliSearchLightVisible ( bVisible );
+
     m_bHeliSearchLightVisible = bVisible;
 }
 
-
 void CClientVehicle::SetCollisionEnabled ( bool bCollisionEnabled )
 {
-    if ( m_pVehicle )
+    if ( m_automobile )
     {
-        if ( m_bHasAdjustableProperty )
-        {
-            m_pVehicle->SetUsesCollision ( bCollisionEnabled );
-        }
+        m_automobile->SetUsesCollision( bCollisionEnabled );
     }
 
     m_bIsCollisionEnabled = bCollisionEnabled;
 }
 
-
-bool CClientVehicle::GetCanShootPetrolTank ( void )
+bool CClientVehicle::GetCanShootPetrolTank() const
 {
     if ( m_pVehicle )
     {
@@ -1543,7 +1383,6 @@ bool CClientVehicle::GetCanShootPetrolTank ( void )
 
     return m_bCanShootPetrolTank;
 }
-
 
 void CClientVehicle::SetCanShootPetrolTank ( bool bCanShoot )
 {
@@ -1554,8 +1393,7 @@ void CClientVehicle::SetCanShootPetrolTank ( bool bCanShoot )
     m_bCanShootPetrolTank = bCanShoot;
 }
 
-
-bool CClientVehicle::GetCanBeTargettedByHeatSeekingMissiles ( void )
+bool CClientVehicle::GetCanBeTargettedByHeatSeekingMissiles() const
 {
     if ( m_pVehicle )
     {
@@ -1565,7 +1403,6 @@ bool CClientVehicle::GetCanBeTargettedByHeatSeekingMissiles ( void )
     return m_bCanBeTargettedByHeatSeekingMissiles;
 }
 
-
 void CClientVehicle::SetCanBeTargettedByHeatSeekingMissiles ( bool bEnabled )
 {
     if ( m_pVehicle )
@@ -1574,7 +1411,6 @@ void CClientVehicle::SetCanBeTargettedByHeatSeekingMissiles ( bool bEnabled )
     }
     m_bCanBeTargettedByHeatSeekingMissiles = bEnabled;
 }
-
 
 void CClientVehicle::SetAlpha ( unsigned char ucAlpha )
 {
@@ -1589,8 +1425,7 @@ void CClientVehicle::SetAlpha ( unsigned char ucAlpha )
     }
 }
 
-
-CClientPed* CClientVehicle::GetOccupant ( int iSeat ) const
+CClientPed* CClientVehicle::GetOccupant( int iSeat )
 {
     // Return the driver if the seat is 0
     if ( iSeat == 0 )
@@ -1605,8 +1440,7 @@ CClientPed* CClientVehicle::GetOccupant ( int iSeat ) const
     return NULL;
 }
 
-
-CClientPed* CClientVehicle::GetControllingPlayer ( void )
+CClientPed* CClientVehicle::GetControllingPlayer()
 {
     CClientPed* pControllingPlayer = m_pDriver;
 
@@ -1628,8 +1462,7 @@ CClientPed* CClientVehicle::GetControllingPlayer ( void )
     return pControllingPlayer;
 }
 
-
-void CClientVehicle::ClearForOccupants ( void )
+void CClientVehicle::ClearForOccupants()
 {
     // TODO: Also check passenger seats for players
     // If there are people in the vehicle, remove them from the vehicle
@@ -1640,37 +1473,19 @@ void CClientVehicle::ClearForOccupants ( void )
     }
 }
 
-
-void CClientVehicle::PlaceProperlyOnGround ( void )
+void CClientVehicle::PlaceProperlyOnGround()
 {
     if ( m_pVehicle )
-    {
-        // Place it properly at the ground depending on what kind of vehicle it is
-        if ( m_eVehicleType == CLIENTVEHICLE_BMX || m_eVehicleType == CLIENTVEHICLE_BIKE )
-        {
-            m_pVehicle->PlaceBikeOnRoadProperly ();
-        }
-        else if ( m_eVehicleType != CLIENTVEHICLE_BOAT )
-        {
-            m_pVehicle->PlaceAutomobileOnRoadProperly ();
-        }
-    }
+        m_pVehicle->PlaceOnRoadProperly();
 }
 
-
-void CClientVehicle::FuckCarCompletely ( bool bKeepWheels )
+void CClientVehicle::FuckCarCompletely( bool bKeepWheels )
 {
-    if ( m_pVehicle )
-    {
-        if ( HasDamageModel () )
-        {
-            m_pVehicle->GetDamageManager()->FuckCarCompletely ( bKeepWheels );
-        }
-    }
+    if ( m_automobile )
+        m_automobile->GetDamageManager()->FuckCarCompletely( bKeepWheels );
 }
 
-
-void CClientVehicle::WorldIgnore ( bool bWorldIgnore )
+void CClientVehicle::WorldIgnore( bool bWorldIgnore )
 {
     if ( bWorldIgnore )
     {
@@ -1685,8 +1500,7 @@ void CClientVehicle::WorldIgnore ( bool bWorldIgnore )
     }
 }
 
-
-void CClientVehicle::FadeOut ( bool bFadeOut )
+void CClientVehicle::FadeOut( bool bFadeOut )
 {
     if ( m_pVehicle )
     {
@@ -1694,8 +1508,7 @@ void CClientVehicle::FadeOut ( bool bFadeOut )
     }
 }
 
-
-bool CClientVehicle::IsFadingOut ( void )
+bool CClientVehicle::IsFadingOut() const
 {
     if ( m_pVehicle )
     {
@@ -1704,7 +1517,6 @@ bool CClientVehicle::IsFadingOut ( void )
 
     return false;
 }
-
 
 void CClientVehicle::SetFrozen ( bool bFrozen )
 {
@@ -1748,12 +1560,10 @@ void CClientVehicle::SetFrozen ( bool bFrozen )
     }
 }
 
-
-bool CClientVehicle::IsFrozenWaitingForGroundToLoad ( void ) const
+bool CClientVehicle::IsFrozenWaitingForGroundToLoad() const
 {
     return m_bFrozenWaitingForGroundToLoad;
 }
-
 
 void CClientVehicle::SetFrozenWaitingForGroundToLoad ( bool bFrozen )
 {
@@ -1791,18 +1601,21 @@ void CClientVehicle::SetFrozenWaitingForGroundToLoad ( bool bFrozen )
     }
 }
 
-
-CClientVehicle* CClientVehicle::GetPreviousTrainCarriage ( void )
+CClientVehicle* CClientVehicle::GetPreviousTrainCarriage()
 {
-    return NULL;
+    if ( m_train )
+        return m_pVehicleManager->Get( m_train->GetPreviousTrainCarriage(), false );
+
+    return m_pPreviousLink;
 }
 
-
-CClientVehicle* CClientVehicle::GetNextTrainCarriage ( void )
+CClientVehicle* CClientVehicle::GetNextTrainCarriage()
 {
-    return NULL;
-}
+    if ( m_train )
+        return m_pVehicleManager->Get( m_train->GetNextTrainCarriage(), false );
 
+    return m_pNextLink;
+}
 
 void CClientVehicle::SetPreviousTrainCarriage ( CClientVehicle* pPrevious )
 {
@@ -1814,127 +1627,102 @@ void CClientVehicle::SetPreviousTrainCarriage ( CClientVehicle* pPrevious )
     }
 
     // If both vehicles are streamed in, do the link
-    if ( m_pVehicle && pPrevious->m_pVehicle )
-    {
-        m_pVehicle->SetPreviousTrainCarriage ( pPrevious->m_pVehicle );
-    }
+    if ( m_train && pPrevious->m_train )
+        m_train->SetPreviousTrainCarriage( pPrevious->m_train );
 }
 
-
-void CClientVehicle::SetNextTrainCarriage ( CClientVehicle* pNext )
+void CClientVehicle::SetNextTrainCarriage( CClientVehicle* pNext )
 {
     // Tell the given vehicle we're the previous link and save the given vehicle as the next link
     m_pNextLink = pNext;
     if ( pNext )
-    {
         pNext->m_pPreviousLink = this;
-    }
 
     // If both vehicles are streamed in, do the link
-    if ( m_pVehicle && pNext->m_pVehicle )
-    {
-        m_pVehicle->SetNextTrainCarriage ( pNext->m_pVehicle );
-    }
+    if ( m_train && pNext->m_train )
+        m_train->SetNextTrainCarriage( pNext->m_train );
 }
 
-
-bool CClientVehicle::IsDerailed ( void )
+bool CClientVehicle::IsDerailed() const
 {
-    if ( GetVehicleType() == CLIENTVEHICLE_TRAIN )
-    {
-        if ( m_pVehicle )
-        {
-            return m_pVehicle->IsDerailed ();
-        }
-        return m_bIsDerailed;
-    }
-    else
+    if ( m_vehModelType != VEHICLE_TRAIN )
         return false;
-}
 
+    if ( m_train )
+        return m_train->IsDerailed();
+ 
+    return m_bIsDerailed;
+}
 
 void CClientVehicle::SetDerailed ( bool bDerailed )
 {
-    if ( GetVehicleType() == CLIENTVEHICLE_TRAIN )
-    {
-        if ( m_pVehicle && bDerailed != IsDerailed () )
-        {
-            m_pVehicle->SetDerailed ( bDerailed );
-        }
-        m_bIsDerailed = bDerailed;
-    }
+    if ( m_train )
+        m_train->SetDerailed( bDerailed );
+
+    m_bIsDerailed = bDerailed;
 }
 
-bool CClientVehicle::IsDerailable ( void )
+bool CClientVehicle::IsDerailable() const
 {
-    if ( m_pVehicle )
+    if ( m_vehModelType != VEHICLE_TRAIN )
+        return false;
+
+    if ( m_train )
     {
-        return m_pVehicle->IsDerailable ();
+        return m_train->IsDerailable();
     }
     return m_bIsDerailable;
 }
 
 void CClientVehicle::SetDerailable ( bool bDerailable )
 {
-    if ( m_pVehicle )
-    {
-        m_pVehicle->SetDerailable ( bDerailable );
-    }
+    if ( m_train )
+        m_train->SetDerailable( bDerailable );
+
     m_bIsDerailable = bDerailable;
 }
 
-
-bool CClientVehicle::GetTrainDirection ( void )
+bool CClientVehicle::GetTrainDirection() const
 {
-    if ( m_pVehicle )
-    {
-        return m_pVehicle->GetTrainDirection ();
-    }
+    if ( m_train )
+        return m_train->GetTrainDirection();
+
     return m_bTrainDirection;
 }
 
-
-void CClientVehicle::SetTrainDirection ( bool bDirection )
+void CClientVehicle::SetTrainDirection( bool bDirection )
 {
-    if ( m_pVehicle && GetVehicleType() == CLIENTVEHICLE_TRAIN  )
-    {
-        m_pVehicle->SetTrainDirection ( bDirection );
-    }
+    if ( m_train )
+        m_train->SetTrainDirection( bDirection );
+
     m_bTrainDirection = bDirection;
 }
 
-
-float CClientVehicle::GetTrainSpeed ( void )
+float CClientVehicle::GetTrainSpeed() const
 {
-    if ( m_pVehicle )
-    {
-        return m_pVehicle->GetTrainSpeed ();
-    }
+    if ( m_train )
+        return m_train->GetTrainSpeed();
+
     return m_fTrainSpeed;
 }
 
-
-void CClientVehicle::SetTrainSpeed ( float fSpeed )
+void CClientVehicle::SetTrainSpeed( float fSpeed )
 {
-    if ( m_pVehicle && GetVehicleType() == CLIENTVEHICLE_TRAIN  )
-    {
-        m_pVehicle->SetTrainSpeed ( fSpeed );
-    }
+    if ( m_train )
+        m_train->SetTrainSpeed( fSpeed );
+
     m_fTrainSpeed = fSpeed;
 }
-
 
 void CClientVehicle::SetOverrideLights ( unsigned char ucOverrideLights )
 {
     if ( m_pVehicle )
-    {
-        m_pVehicle->SetOverrideLights ( static_cast < unsigned int > ( ucOverrideLights ) );
-    }
+        m_pVehicle->SetOverrideLights( ucOverrideLights );
+
     m_ucOverrideLights = ucOverrideLights;
 }
 
-
-void CClientVehicle::StreamedInPulse ( void )
+void CClientVehicle::StreamedInPulse()
 {
     // Make sure the vehicle doesn't go too far down
     if ( m_pVehicle )
@@ -2140,20 +1928,7 @@ void CClientVehicle::AttachTo ( CClientEntity* pEntity )
     CClientEntity::AttachTo ( pEntity );
 }
 
-
-bool CClientVehicle::DoCheckHasLandingGear ( void )
-{
-    return ( m_usModel == VT_ANDROM ||
-             m_usModel == VT_AT400 ||
-             m_usModel == VT_NEVADA ||
-             m_usModel == VT_RUSTLER ||
-             m_usModel == VT_SHAMAL ||
-             m_usModel == VT_HYDRA ||
-             m_usModel == VT_STUNT );
-}
-
-
-void CClientVehicle::Create ( void )
+void CClientVehicle::Create()
 {
     // If the vehicle doesn't exist
     if ( !m_pVehicle )
@@ -2181,24 +1956,67 @@ void CClientVehicle::Create ( void )
             m_pModelInfo->SetCustomCarPlateText ( m_strRegPlate.c_str () );
 
         // Create the vehicle
-        if ( CClientVehicleManager::IsTrainModel ( m_usModel ) )
+        switch( m_vehModelType )
         {
-            DWORD dwModels [1];
-            dwModels [0] = m_usModel;
-            m_pVehicle = g_pGame->GetPools ()->AddTrain ( &m_Matrix.pos, dwModels, 1, m_bTrainDirection );
-        }
-        else
-        {
-            m_pVehicle = g_pGame->GetPools ()->AddVehicle ( static_cast < eVehicleTypes > ( m_usModel ) );
+        case VEHICLE_PLANE:
+            m_plane = g_pGame->GetPools()->AddPlane( m_usModel );
+            m_automobile = m_plane;
+            m_pVehicle = m_plane;
+            break;
+        case VEHICLE_HELI:
+            m_heli = g_pGame->GetPools()->AddHeli( m_usModel );
+            m_automobile = m_heli;
+            m_pVehicle = m_heli;
+            break;
+        case VEHICLE_AUTOMOBILETRAILER:
+            m_trailer = g_pGame->GetPools()->AddTrailer( m_usModel );
+            m_automobile = m_trailer;
+            m_pVehicle = m_trailer;
+            break;
+        case VEHICLE_QUADBIKE:
+            m_quad = g_pGame->GetPools()->AddQuadBike( m_usModel );
+            m_automobile = m_quad;
+            m_pVehicle = m_quad;
+            break;
+        case VEHICLE_MONSTERTRUCK:
+            m_monster = g_pGame->GetPools()->AddMonsterTruck( m_usModel );
+            m_automobile = m_monster;
+            m_pVehicle = m_monster;
+            break;
+        case VEHICLE_CAR:
+            m_automobile = g_pGame->GetPools()->AddAutomobile( m_usModel );
+            m_pVehicle = m_automobile;
+            break;
+        case VEHICLE_BOAT:
+            m_boat = g_pGame->GetPools()->AddBoat( m_usModel );
+            m_pVehicle = m_boat;
+            break;
+        case VEHICLE_TRAIN:
+            m_train = g_pGame->GetPools()->AddTrain( m_usModel, CVector( 0, 0, 0 ), true );
+            m_pVehicle = m_train;
+            break;
+        case VEHICLE_BIKE:
+            m_bike = g_pGame->GetPools()->AddBike( m_usModel );
+            m_pVehicle = m_bike;
+            break;
+        case VEHICLE_BICYCLE:
+            m_bicycle = g_pGame->GetPools()->AddBicycle( m_usModel );
+            m_bike = m_bicycle;
+            m_pVehicle = m_bicycle;
+            break;
+        default:
+            // Add unknown vehicle type
+            m_pVehicle = g_pGame->GetPools()->AddVehicle( m_usModel );
+            break;
         }
 
         // Failed. Remove our reference to the vehicle model and return
         if ( !m_pVehicle )
         {
             // Tell the streamer we could not create it
-            NotifyUnableToCreate ();
+            NotifyUnableToCreate();
 
-            m_pModelInfo->RemoveRef ();
+            m_pModelInfo->RemoveRef();
             return;
         }
 
@@ -2228,109 +2046,106 @@ void CClientVehicle::Create ( void )
         m_pVehicle->SetUsesCollision ( m_bIsCollisionEnabled );
         m_pVehicle->SetEngineBroken ( m_bEngineBroken );
         m_pVehicle->SetSirenOrAlarmActive ( m_bSireneOrAlarmActive );
-        SetLandingGearDown ( m_bLandingGearDown );
-        _SetAdjustablePropertyValue ( m_usAdjustablePropertyValue );
-        m_pVehicle->SetSwingingDoorsAllowed ( m_bSwingingDoorsAllowed );
-        m_pVehicle->LockDoors ( m_bDoorsLocked );
-        m_pVehicle->SetDoorsUndamageable ( m_bDoorsUndamageable );
-        m_pVehicle->SetCanShootPetrolTank ( m_bCanShootPetrolTank );
-        m_pVehicle->SetTaxiLightOn ( m_bTaxiLightOn );
-        m_pVehicle->SetCanBeTargettedByHeatSeekingMissiles ( m_bCanBeTargettedByHeatSeekingMissiles );
-        CalcAndUpdateTyresCanBurstFlag ();
-        if ( GetVehicleType () == CLIENTVEHICLE_TRAIN )
+
+        if ( m_plane )
         {
-            m_pVehicle->SetDerailed ( m_bIsDerailed );
-            m_pVehicle->SetDerailable ( m_bIsDerailable );
-            m_pVehicle->SetTrainDirection ( m_bTrainDirection );
-            m_pVehicle->SetTrainSpeed ( m_fTrainSpeed );
+            m_plane->SetLandingGearDown( m_bLandingGearDown );
+            m_plane->SetSmokeTrailEnabled( m_bSmokeTrail );
+        }
+
+        if ( m_automobile )
+        {
+            m_automobile->SetAdjustablePropertyValue( m_usAdjustablePropertyValue );
+            m_automobile->SetTaxiLightOn( m_bTaxiLightOn );
+            m_automobile->SetSwingingDoorsAllowed( m_bSwingingDoorsAllowed );
+            m_automobile->SetHeadLightColor( m_HeadLightColor );
+            m_automobile->SetTurretRotation( m_fTurretHorizontal, m_fTurretVertical );
+
+            // Set the damage model doors
+            CDamageManager *pDamageManager = m_automobile->GetDamageManager();
+
+            for ( int i = 0; i < MAX_DOORS; i++ )
+                pDamageManager->SetDoorStatus( (eDoors)i, m_ucDoorStates[i] );            
+            for ( int i = 0; i < MAX_PANELS; i++ )
+                pDamageManager->SetPanelStatus( (ePanels)i, m_ucPanelStates[i] );
+            for ( int i = 0; i < MAX_LIGHTS; i++ )
+                pDamageManager->SetLightStatus( (eLights)i, m_ucLightStates[i] );
+        }
+
+        m_pVehicle->LockDoors( m_bDoorsLocked );
+        m_pVehicle->SetDoorsUndamageable( m_bDoorsUndamageable );
+        m_pVehicle->SetCanShootPetrolTank( m_bCanShootPetrolTank );
+        m_pVehicle->SetCanBeTargettedByHeatSeekingMissiles( m_bCanBeTargettedByHeatSeekingMissiles );
+        CalcAndUpdateTyresCanBurstFlag();
+
+        if ( m_train )
+        {
+            m_train->SetDerailed( m_bIsDerailed );
+            m_train->SetDerailable( m_bIsDerailable );
+            m_train->SetTrainDirection( m_bTrainDirection );
+            m_train->SetTrainSpeed( m_fTrainSpeed );
+
+            // Link us with stored next and previous vehicles
+            if ( m_pPreviousLink && m_pPreviousLink->m_train )
+                m_train->SetPreviousTrainCarriage( m_pPreviousLink->m_train );
+
+            if ( m_pNextLink && m_pNextLink->m_train )
+                m_train->SetNextTrainCarriage( m_pNextLink->m_train );
         }
 
         m_pVehicle->SetOverrideLights ( m_ucOverrideLights );
-        m_pVehicle->SetRemap ( static_cast < unsigned int > ( m_ucPaintjob ) );
-        m_pVehicle->SetBodyDirtLevel ( m_fDirtLevel );
-        m_pVehicle->SetEngineOn ( m_bEngineOn );
-        m_pVehicle->SetAreaCode ( m_ucInterior );
-        m_pVehicle->SetSmokeTrailEnabled ( m_bSmokeTrail );
-        m_pVehicle->SetGravity ( &m_vecGravity );
-        m_pVehicle->SetHeadLightColor ( m_HeadLightColor );
+        m_pVehicle->SetRemap( m_ucPaintjob );
+        m_pVehicle->SetBodyDirtLevel( m_fDirtLevel );
+        m_pVehicle->SetEngineOn( m_bEngineOn );
+        m_pVehicle->SetAreaCode( m_ucInterior );
+        m_pVehicle->SetGravity( &m_vecGravity );
 
-        if ( m_eVehicleType == CLIENTVEHICLE_HELI )
+        if ( m_heli )
         {
-            m_pVehicle->SetHeliRotorSpeed ( m_fHeliRotorSpeed );
-            m_pVehicle->SetHeliSearchLightVisible ( m_bHeliSearchLightVisible );
+            m_heli->SetHeliRotorSpeed( m_fHeliRotorSpeed );
+            m_heli->SetHeliSearchLightVisible( m_bHeliSearchLightVisible );
         }
 
-        m_pVehicle->SetUnderwater ( IsBelowWater () );
+        m_pVehicle->SetUnderwater( IsBelowWater() );
 
         // HACK: temp fix until windows are fixed using setAlpha
         if ( m_bAlphaChanged )
-            m_pVehicle->SetAlpha ( m_ucAlpha );
+            m_pVehicle->SetAlpha( m_ucAlpha );
 
-        m_pVehicle->SetHealth ( m_fHealth );
+        m_pVehicle->SetHealth( m_fHealth );
 
-        if ( m_bBlown || m_fHealth == 0.0f ) m_bBlowNextFrame = true;
+        if ( m_bBlown || m_fHealth == 0.0f )
+            m_bBlowNextFrame = true;
 
-        CalcAndUpdateCanBeDamagedFlag ();
+        CalcAndUpdateCanBeDamagedFlag();
 
         // Restore the color
         if ( m_bColorSaved )
         {
-            m_pVehicle->SetColor ( m_Color.GetRGBColor ( 0 ), m_Color.GetRGBColor ( 1 ), m_Color.GetRGBColor ( 2 ), m_Color.GetRGBColor ( 3 ), 0 );
+            m_pVehicle->SetColor( m_Color.GetRGBColor ( 0 ), m_Color.GetRGBColor ( 1 ), m_Color.GetRGBColor ( 2 ), m_Color.GetRGBColor ( 3 ), 0 );
         }
 
-        // Link us with stored next and previous vehicles
-        if ( m_pPreviousLink && m_pPreviousLink->m_pVehicle )
-        {
-            m_pVehicle->SetPreviousTrainCarriage ( m_pPreviousLink->m_pVehicle );
-        }
-
-        if ( m_pNextLink && m_pNextLink->m_pVehicle )
-        {
-            m_pVehicle->SetNextTrainCarriage ( m_pNextLink->m_pVehicle );
-        }
-
-        // Restore turret rotation
-        if ( m_eVehicleType == CLIENTVEHICLE_CAR ||
-            m_eVehicleType == CLIENTVEHICLE_PLANE ||
-            m_eVehicleType == CLIENTVEHICLE_QUADBIKE )
-        {
-            m_pVehicle->SetTurretRotation ( m_fTurretHorizontal, m_fTurretVertical );
-        }
-
-        // Does this car have a damage model?
-        if ( HasDamageModel () )
-        {
-            // Set the damage model doors
-            CDamageManager* pDamageManager = m_pVehicle->GetDamageManager ();
-
-            for ( int i = 0; i < MAX_DOORS; i++ )
-                pDamageManager->SetDoorStatus ( static_cast < eDoors > ( i ), m_ucDoorStates [i] );            
-            for ( int i = 0; i < MAX_PANELS; i++ )
-                pDamageManager->SetPanelStatus ( static_cast < ePanels > ( i ), m_ucPanelStates [i] );
-            for ( int i = 0; i < MAX_LIGHTS; i++ )
-                pDamageManager->SetLightStatus ( static_cast < eLights > ( i ), m_ucLightStates [i] );
-        }
         for ( int i = 0; i < MAX_WHEELS; i++ )
-            SetWheelStatus ( i, m_ucWheelStates [i], true );
+            SetWheelStatus( i, m_ucWheelStates [i], true );
 
         // Eventually warp driver back in
-        if ( m_pDriver ) m_pDriver->WarpIntoVehicle ( this, 0 );
+        if ( m_pDriver )
+            m_pDriver->WarpIntoVehicle( this, 0 );
 
         // Warp the passengers back in
         for ( unsigned int i = 0; i < 8; i++ )
         {
             if ( m_pPassengers [i] )
             {
-                m_pPassengers [i]->WarpIntoVehicle ( this, i + 1 );
-                if ( m_pPassengers [i] )
-                    m_pPassengers [i]->StreamIn ( true );
+                m_pPassengers[i]->WarpIntoVehicle( this, i + 1 );
+                m_pPassengers[i]->StreamIn( true );
             }
         }
 
         // Reattach a towed vehicle?
         if ( m_pTowedVehicle )
         {
-            CVehicle* pGameVehicle = m_pTowedVehicle->GetGameVehicle ();
+            CVehicle* pGameVehicle = m_pTowedVehicle->GetGameVehicle();
             if ( pGameVehicle )
                 pGameVehicle->SetTowLink ( m_pVehicle );
         }
@@ -2342,11 +2157,9 @@ void CClientVehicle::Create ( void )
             m_pTowedByVehicle->GetPosition ( vecTowedByPos );
             SetPosition ( vecTowedByPos );
 
-            CVehicle* pGameVehicle = m_pTowedByVehicle->GetGameVehicle ();
+            CVehicle* pGameVehicle = m_pTowedByVehicle->GetGameVehicle();
             if ( pGameVehicle )
-            {
                 m_pVehicle->SetTowLink ( pGameVehicle );
-            }
         }
 
         // Reattach to an entity + any entities attached to this
@@ -2377,23 +2190,22 @@ void CClientVehicle::Create ( void )
         // Re-apply handling entry
         if ( m_pHandlingEntry )
         {
-            m_pVehicle->SetHandlingData ( m_pHandlingEntry );
+            m_pVehicle->SetHandlingData( m_pHandlingEntry );
             
             if ( m_bHasCustomHandling )
-                ApplyHandling ();
+                ApplyHandling();
         }
 
         // Re-add all the upgrades - Has to be applied after handling *shrugs*
         if ( m_pUpgrades )
-            m_pUpgrades->ReAddAll ();
+            m_pUpgrades->ReAddAll();
 
         // Tell the streamer we've created this object
-        NotifyCreate ();
+        NotifyCreate();
     }
 }
 
-
-void CClientVehicle::Destroy ( void )
+void CClientVehicle::Destroy()
 {
     // If the vehicle exists
     if ( m_pVehicle )
@@ -2410,40 +2222,50 @@ void CClientVehicle::Destroy ( void )
         m_pVehicle->GetMoveSpeed ( m_vecMoveSpeed );
         m_pVehicle->GetTurnSpeed ( m_vecTurnSpeed );
         m_fHealth = GetHealth ();
-        m_bSireneOrAlarmActive = m_pVehicle->IsSirenOrAlarmActive () ? true:false;
-        m_bLandingGearDown = IsLandingGearDown ();
-        m_usAdjustablePropertyValue = m_pVehicle->GetAdjustablePropertyValue ();
-        m_bEngineOn = m_pVehicle->IsEngineOn ();
-        m_bIsOnGround = IsOnGround ();
-        m_bIsDerailed = IsDerailed ();
-        m_fHeliRotorSpeed = GetHeliRotorSpeed ();
-        m_bHeliSearchLightVisible = IsHeliSearchLightVisible ();
-        m_pHandlingEntry = m_pVehicle->GetHandlingData();
-        if ( m_eVehicleType == CLIENTVEHICLE_CAR ||
-            m_eVehicleType == CLIENTVEHICLE_PLANE ||
-            m_eVehicleType == CLIENTVEHICLE_QUADBIKE )
+        m_bSireneOrAlarmActive = m_pVehicle->IsSirenOrAlarmActive();
+
+        if ( m_plane )
         {
-            m_pVehicle->GetTurretRotation ( &m_fTurretHorizontal, &m_fTurretVertical );
+            m_bLandingGearDown = m_plane->IsLandingGearDown();
         }
 
-        // This vehicle has a damage model?
-        if ( HasDamageModel () )
+        if ( m_automobile )
         {
+            m_usAdjustablePropertyValue = m_automobile->GetAdjustablePropertyValue();
+            m_automobile->GetTurretRotation( m_fTurretHorizontal, m_fTurretVertical );
+
             // Grab the damage model
-            CDamageManager* pDamageManager = m_pVehicle->GetDamageManager ();
+            CDamageManager *pDamageManager = m_automobile->GetDamageManager();
 
-            for ( int i = 0; i < MAX_DOORS; i++ )
-                m_ucDoorStates [i] = pDamageManager->GetDoorStatus ( static_cast < eDoors > ( i ) );            
-            for ( int i = 0; i < MAX_PANELS; i++ )
-                m_ucPanelStates [i] = pDamageManager->GetPanelStatus ( static_cast < ePanels > ( i ) );
-            for ( int i = 0; i < MAX_LIGHTS; i++ )
-                m_ucLightStates [i] = pDamageManager->GetLightStatus ( static_cast < eLights > ( i ) );
+            for ( unsigned int i = 0; i < MAX_DOORS; i++ )
+                m_ucDoorStates [i] = pDamageManager->GetDoorStatus( (eDoors)i );            
+            for ( unsigned int i = 0; i < MAX_PANELS; i++ )
+                m_ucPanelStates [i] = pDamageManager->GetPanelStatus( (ePanels)i );
+            for ( unsigned int i = 0; i < MAX_LIGHTS; i++ )
+                m_ucLightStates [i] = pDamageManager->GetLightStatus( (eLights)i );
         }
-        for ( int i = 0; i < MAX_WHEELS; i++ )
-            m_ucWheelStates [i] = GetWheelStatus ( i );
+
+        m_bEngineOn = m_pVehicle->IsEngineOn();
+        m_bIsOnGround = IsOnGround();
+
+        if ( m_train )
+        {
+            m_bIsDerailed = m_train->IsDerailed();
+        }
+
+        if ( m_heli )
+        {
+            m_fHeliRotorSpeed = m_heli->GetHeliRotorSpeed();
+            m_bHeliSearchLightVisible = m_heli->IsHeliSearchLightVisible();
+        }
+
+        m_pHandlingEntry = m_pVehicle->GetHandlingData();
+
+        for ( unsigned int i = 0; i < MAX_WHEELS; i++ )
+            m_ucWheelStates [i] = GetWheelStatus( i );
 
         // Remove the driver from the vehicle
-        CClientPed* pPed = GetOccupant ( 0 );
+        CClientPed* pPed = GetOccupant( 0 );
         if ( pPed )
         {
             // Only remove him physically. Don't let the ped update us
@@ -2481,7 +2303,19 @@ void CClientVehicle::Destroy ( void )
 
         // Destroy the vehicle
         delete m_pVehicle;
+
+        // Reset the interfaces
         m_pVehicle = NULL;
+        m_train = NULL;
+        m_boat = NULL;
+        m_plane = NULL;
+        m_trailer = NULL;
+        m_quad = NULL;
+        m_monster = NULL;
+        m_bike = NULL;
+        m_bicycle = NULL;
+        m_heli = NULL;
+        m_automobile = NULL;
 
         // Remove reference to its model
         m_pModelInfo->RemoveRef ();
@@ -2490,8 +2324,7 @@ void CClientVehicle::Destroy ( void )
     }
 }
 
-
-void CClientVehicle::ReCreate ( void )
+void CClientVehicle::ReCreate()
 {
     // Recreate the vehicle if it exists
     if ( m_pVehicle )
@@ -2501,45 +2334,42 @@ void CClientVehicle::ReCreate ( void )
     }
 }
 
-
 void CClientVehicle::ModelRequestCallback ( CModelInfo* pModelInfo )
 {
     // Create the vehicle. The model is now loaded.
     Create ();
 }
 
-
-void CClientVehicle::NotifyCreate ( void )
+void CClientVehicle::NotifyCreate()
 {
     m_pVehicleManager->OnCreation ( this );
     CClientStreamElement::NotifyCreate ();
 }
 
-
-void CClientVehicle::NotifyDestroy ( void )
+void CClientVehicle::NotifyDestroy()
 {
     m_pVehicleManager->OnDestruction ( this );
 }
 
-
-CClientVehicle* CClientVehicle::GetTowedVehicle ( void )
+CClientVehicle* CClientVehicle::GetTowedVehicle()
 {
     if ( m_pVehicle )
     {
         CVehicle* pGameVehicle = m_pVehicle->GetTowedVehicle ();
-        if ( pGameVehicle ) return m_pVehicleManager->Get ( pGameVehicle, false );
+        if ( pGameVehicle )
+            return m_pVehicleManager->Get( pGameVehicle, false );
     }
     
     return m_pTowedVehicle;
 }
 
-
-CClientVehicle* CClientVehicle::GetRealTowedVehicle ( void )
+CClientVehicle* CClientVehicle::GetRealTowedVehicle()
 {
     if ( m_pVehicle )
     {
         CVehicle* pGameVehicle = m_pVehicle->GetTowedVehicle ();
-        if ( pGameVehicle ) return m_pVehicleManager->Get ( pGameVehicle, false );
+        if ( pGameVehicle )
+            return m_pVehicleManager->Get ( pGameVehicle, false );
 
         // This is the only difference from ::GetTowedVehicle
         return NULL;
@@ -2548,8 +2378,7 @@ CClientVehicle* CClientVehicle::GetRealTowedVehicle ( void )
     return m_pTowedVehicle;
 }
 
-
-bool CClientVehicle::SetTowedVehicle ( CClientVehicle* pVehicle )
+bool CClientVehicle::SetTowedVehicle ( CClientVehicle *pVehicle )
 {
     if ( pVehicle == m_pTowedVehicle )
         return true;
@@ -2558,9 +2387,11 @@ bool CClientVehicle::SetTowedVehicle ( CClientVehicle* pVehicle )
     if ( m_pTowedVehicle && pVehicle != m_pTowedVehicle )
     {
         // Remove it
-        CVehicle * pGameVehicle = m_pTowedVehicle->GetGameVehicle ();
+        CVehicle *pGameVehicle = m_pTowedVehicle->GetGameVehicle();
+
         if ( pGameVehicle && m_pVehicle )
-            pGameVehicle->BreakTowLink ();
+            pGameVehicle->BreakTowLink();
+
         m_pTowedVehicle->m_pTowedByVehicle = NULL;
         m_pTowedVehicle = NULL;
     }
@@ -2570,10 +2401,12 @@ bool CClientVehicle::SetTowedVehicle ( CClientVehicle* pVehicle )
     {
         // Are we trying to establish a circular loop? (this would freeze everything up)
         CClientVehicle* pCircTestVehicle = pVehicle;
+
         while ( pCircTestVehicle )
         {
             if ( pCircTestVehicle == this )
                 return false;
+
             pCircTestVehicle = pCircTestVehicle->m_pTowedVehicle;
         }
 
@@ -2582,13 +2415,13 @@ bool CClientVehicle::SetTowedVehicle ( CClientVehicle* pVehicle )
         // Add it
         if ( m_pVehicle )
         {
-            CVehicle * pGameVehicle = pVehicle->GetGameVehicle ();
+            CVehicle *pGameVehicle = pVehicle->GetGameVehicle();
 
             if ( pGameVehicle )
             {
                 // Both vehicles are streamed in
-                if ( m_pVehicle->GetTowedVehicle () != pGameVehicle )
-                    pGameVehicle->SetTowLink ( m_pVehicle );
+                if ( m_pVehicle->GetTowedVehicle() != pGameVehicle )
+                    pGameVehicle->SetTowLink( m_pVehicle );
             }
             else
             {
@@ -2612,207 +2445,134 @@ bool CClientVehicle::SetTowedVehicle ( CClientVehicle* pVehicle )
     return true;
 }
 
-
-bool CClientVehicle::SetWinchType ( eWinchType winchType )
+bool CClientVehicle::SetWinchType( eWinchType winchType )
 {
-    if ( GetModel () == 417 ) // Leviathan
-    {
-        if ( m_pVehicle )
-        {
-            if ( m_eWinchType == WINCH_NONE )
-            {
-                m_pVehicle->SetWinchType ( winchType );
-                m_eWinchType = winchType;
-            }
-            return true;
-        }
-        else
-        {
-            m_eWinchType = winchType;
-            return true;
-        }
-    }
+    m_eWinchType = winchType;
+    
+    if ( !m_heli )
+        return false;
 
-    return false;
+    if ( m_eWinchType != winchType )
+        m_heli->SetWinchType( winchType );
+
+    return true;
 }
 
-
-bool CClientVehicle::PickupEntityWithWinch ( CClientEntity* pEntity )
+bool CClientVehicle::PickupEntityWithWinch( CClientEntity* pEntity )
 {
-    if ( m_pVehicle )
-    {
-        if ( m_eWinchType != WINCH_NONE )
-        {
-            CEntity* pGameEntity = NULL;
-            eClientEntityType entityType = pEntity->GetType ();
-            switch ( entityType )
-            {
-                case CCLIENTOBJECT:
-                {
-                    CClientObject* pObject = static_cast < CClientObject* > ( pEntity );
-                    pGameEntity = pObject->GetGameObject ();
-                    break;
-                }
-                case CCLIENTPED:
-                case CCLIENTPLAYER:
-                {
-                    CClientPed* pModel = static_cast < CClientPed* > ( pEntity );
-                    pGameEntity = pModel->GetGameEntity ();
-                    break;
-                }
-                case CCLIENTVEHICLE:
-                {
-                    CClientVehicle* pVehicle = static_cast < CClientVehicle* > ( pEntity );
-                    pGameEntity = pVehicle->GetGameVehicle ();
-                    break;
-                }
-            }
+    if ( !m_heli )
+        return false;
 
-            if ( pGameEntity )
-            {
-                m_pVehicle->PickupEntityWithWinch ( pGameEntity );
-                m_pPickedUpWinchEntity = pEntity;
+    if ( m_eWinchType == WINCH_NONE )
+        return false;
 
-                return true;
-            }
-        }
-    }
+    CEntity* pGameEntity = pEntity->GetGameEntity();
 
-    return false;
+    if ( !pGameEntity )
+        return false;
+
+    m_heli->PickupEntityWithWinch( pGameEntity );
+    m_pPickedUpWinchEntity = pEntity;
+    return true;
 }
 
-
-bool CClientVehicle::ReleasePickedUpEntityWithWinch ( void )
+bool CClientVehicle::ReleasePickedUpEntityWithWinch()
 {
-    if ( m_pVehicle )
-    {
-        if ( m_pPickedUpWinchEntity )
-        {
-            m_pVehicle->ReleasePickedUpEntityWithWinch ();
-            m_pPickedUpWinchEntity = NULL;
-        
-            return true;
-        }
-    }
+    if ( !m_heli )
+        return false;
 
-    return false;
+    if ( !m_pPickedUpWinchEntity )
+        return false;
+
+    m_heli->ReleasePickedUpEntityWithWinch();
+    m_pPickedUpWinchEntity = NULL;
+    return true;
 }
 
-
-void CClientVehicle::SetRopeHeightForHeli ( float fRopeHeight )
+void CClientVehicle::SetRopeHeightForHeli( float fRopeHeight )
 {
-    if ( m_pVehicle )
-    {
-        m_pVehicle->SetRopeHeightForHeli ( fRopeHeight );
-    }
+    if ( m_heli )
+        m_heli->SetRopeHeightForHeli( fRopeHeight );
 }
 
-
-CClientEntity* CClientVehicle::GetPickedUpEntityWithWinch ( void )
+CClientEntity* CClientVehicle::GetPickedUpEntityWithWinch() const
 {
-    CClientEntity* pEntity = m_pPickedUpWinchEntity;
-    if ( m_pVehicle )
+    if ( !m_heli )
+        return NULL;
+
+    CClientEntity *pEntity = m_pPickedUpWinchEntity;
+    CPhysical *pPhysical = m_heli->QueryPickedUpEntityWithWinch();
+
+    if ( !pPhysical )
+        return pEntity;
+
+    switch( pPhysical->GetEntityType() )
     {
-        CPhysical* pPhysical = m_pVehicle->QueryPickedUpEntityWithWinch ();
-        if ( pPhysical )
-        {
-            eEntityType entityType = pPhysical->GetEntityType ();
-            switch ( entityType )
-            {
-                case ENTITY_TYPE_VEHICLE:
-                {
-                    CVehicle* pGameVehicle = dynamic_cast < CVehicle* > ( pPhysical );
-                    CClientVehicle* pVehicle = m_pVehicleManager->Get ( pGameVehicle, false );
-                    if ( pVehicle )
-                        pEntity = static_cast < CClientEntity* > ( pVehicle );
-                    break;
-                }
-                case ENTITY_TYPE_PED:
-                {
-                    CPlayerPed* pPlayerPed = dynamic_cast < CPlayerPed* > ( pPhysical );
-                    CClientPed* pModel = m_pManager->GetPedManager ()->Get ( pPlayerPed, false, false );
-                    if ( pModel )
-                        pEntity = static_cast < CClientEntity* > ( pModel );
-                    break;
-                }
-                case ENTITY_TYPE_OBJECT:
-                {
-                    CObject* pGameObject = dynamic_cast < CObject* > ( pPhysical );
-                    CClientObject* pObject = m_pManager->GetObjectManager ()->Get ( pGameObject, false );
-                    if ( pObject )
-                        pEntity = static_cast < CClientEntity* > ( pObject );
-                    break;
-                }
-            }
-        }
+    case ENTITY_TYPE_VEHICLE:
+        return m_pVehicleManager->Get( dynamic_cast <CVehicle*> ( pPhysical ), false );
+    case ENTITY_TYPE_PED:
+        return m_pManager->GetPedManager()->Get( dynamic_cast <CPlayerPed*> ( pPhysical ), false, false );
+    case ENTITY_TYPE_OBJECT:
+        return m_pManager->GetObjectManager()->Get( dynamic_cast <CObject*> ( pPhysical ), false );
     }
 
     return pEntity;
 }
 
-
-void CClientVehicle::SetRegPlate ( const char* szPlate )
+void CClientVehicle::SetRegPlate( const char *szPlate )
 {
-    if ( szPlate )
-    {
-        m_strRegPlate = szPlate;
-    }
+    m_strRegPlate = szPlate;
 }
 
-
-unsigned char CClientVehicle::GetPaintjob ( void )
+unsigned char CClientVehicle::GetPaintjob() const
 {
     if ( m_pVehicle )
     {
-        int iRemap = m_pVehicle->GetRemapIndex ();
+        int iRemap = m_pVehicle->GetRemapIndex();
         return (iRemap == -1) ? 3 : iRemap;
     }
     
     return m_ucPaintjob;
 }
 
-
-void CClientVehicle::SetPaintjob ( unsigned char ucPaintjob )
+void CClientVehicle::SetPaintjob( unsigned char ucPaintjob )
 {
-    if ( ucPaintjob != m_ucPaintjob && ucPaintjob <= 4 )
-    {
-        if ( m_pVehicle )
-        {
-            m_pVehicle->SetRemap ( static_cast < unsigned int > ( ucPaintjob ) );
-        }
-        m_ucPaintjob = ucPaintjob;
-        m_bColorSaved = false;
-    }
+    if ( ucPaintjob == m_ucPaintjob || ucPaintjob > 4 )
+        return;
+
+    if ( m_pVehicle )
+        m_pVehicle->SetRemap( ucPaintjob );
+
+    m_ucPaintjob = ucPaintjob;
+    m_bColorSaved = false;
 }
 
-
-float CClientVehicle::GetDirtLevel ( void )
+float CClientVehicle::GetDirtLevel() const
 {
     if ( m_pVehicle )
-    {
-        return m_pVehicle->GetBodyDirtLevel ();
-    }
+        return m_pVehicle->GetBodyDirtLevel();
 
     return m_fDirtLevel;
 }
 
-
-void CClientVehicle::SetDirtLevel ( float fDirtLevel )
+void CClientVehicle::SetDirtLevel( float fDirtLevel )
 {
     if ( m_pVehicle )
-    {
-        m_pVehicle->SetBodyDirtLevel ( fDirtLevel );
-    }
+        m_pVehicle->SetBodyDirtLevel( fDirtLevel );
+
     m_fDirtLevel = fDirtLevel;
 }
-bool CClientVehicle::IsOnWater ( void )
+
+bool CClientVehicle::IsOnWater() bool
 {
     if ( m_pVehicle )
     {
         float fWaterLevel;
         CVector vecPosition, vecTemp;
         GetPosition ( vecPosition );
+
         float fDistToBaseOfModel = vecPosition.fZ - m_pVehicle->GetBasingDistance();
+
         if ( g_pGame->GetWaterManager ()->GetWaterLevel ( vecPosition, &fWaterLevel, true, &vecTemp ) )
         {
             if (fDistToBaseOfModel <= fWaterLevel) {
@@ -2823,46 +2583,33 @@ bool CClientVehicle::IsOnWater ( void )
     return false;
 }
 
-bool CClientVehicle::IsInWater ( void )
+bool CClientVehicle::IsInWater() const
 {
-    if ( m_pModelInfo )
-    {
-        CBoundingBox* pBoundingBox = m_pModelInfo->GetBoundingBox ();
-        if ( pBoundingBox )
-        {
-            CVector vecMin = pBoundingBox->vecBoundMin;
-            CVector vecPosition, vecTemp;
-            GetPosition ( vecPosition );
-            vecMin += vecPosition;
-            float fWaterLevel;
-            if ( g_pGame->GetWaterManager ()->GetWaterLevel ( vecPosition, &fWaterLevel, true, &vecTemp ) )
-            {
-                if ( vecPosition.fZ <= fWaterLevel )
-                {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
+    CVector vecMin = m_pModelInfo->GetBoundingBox()->vecBoundMin;
+    CVector vecPosition, vecTemp;
+    GetPosition( vecPosition );
+
+    vecMin += vecPosition;
+
+    float fWaterLevel;
+
+    return g_pGame->GetWaterManager()->GetWaterLevel( vecPosition, &fWaterLevel, true, &vecTemp ) && vecPosition.fZ <= fWaterLevel;
 }
 
-
-float CClientVehicle::GetDistanceFromGround ( void )
+float CClientVehicle::GetDistanceFromGround() const
 {
     CVector vecPosition;
-    GetPosition ( vecPosition );
-    float fGroundLevel = static_cast < float > ( g_pGame->GetWorld ()->FindGroundZFor3DPosition ( &vecPosition ) );
+    GetPosition( vecPosition );
 
-    CBoundingBox* pBoundingBox = m_pModelInfo->GetBoundingBox ();
-    if ( pBoundingBox )
-        fGroundLevel -= pBoundingBox->vecBoundMin.fZ + pBoundingBox->vecBoundOffset.fZ;
+    float fGroundLevel = g_pGame->GetWorld()->FindGroundZFor3DPosition( &vecPosition );
 
-    return ( vecPosition.fZ - fGroundLevel );
+    const CBoundingBox& bounds = m_pModelInfo->GetBoundingBox();
+    fGroundLevel -= bounds.vecBoundMin.fZ + bounds.vecBoundOffset.fZ;
+
+    return vecPosition.fZ - fGroundLevel;
 }
 
-
-bool CClientVehicle::IsOnGround ( void )
+bool CClientVehicle::IsOnGround() const
 {
     if ( m_pModelInfo )
     {
@@ -2885,56 +2632,50 @@ bool CClientVehicle::IsOnGround ( void )
     return m_bIsOnGround;
 }
 
-
-void CClientVehicle::LockSteering ( bool bLock )
+void CClientVehicle::LockSteering( bool bLock )
 {
     // STATUS_TRAIN_MOVING or STATUS_PLAYER_DISABLED will do. STATUS_TRAIN_NOT_MOVING is neater but will screw up planes (turns off the engine).
-
-    eEntityStatus Status = m_pVehicle->GetEntityStatus ();
+    eEntityStatus Status = m_pVehicle->GetEntityStatus();
     
-    if ( bLock && Status != STATUS_TRAIN_MOVING ) {
+    if ( bLock && Status != STATUS_TRAIN_MOVING )
+    {
         m_NormalStatus = Status;
-        m_pVehicle->SetEntityStatus ( STATUS_TRAIN_MOVING );
-    } else if ( !bLock && Status == STATUS_TRAIN_MOVING ) {
-        m_pVehicle->SetEntityStatus ( m_NormalStatus );
+        m_pVehicle->SetEntityStatus( STATUS_TRAIN_MOVING );
     }
-
-    return;
+    else if ( !bLock && Status == STATUS_TRAIN_MOVING )
+    {
+        m_pVehicle->SetEntityStatus( m_NormalStatus );
+    }
 }
 
-
-bool CClientVehicle::IsSmokeTrailEnabled ( void )
+bool CClientVehicle::IsSmokeTrailEnabled() const
 {
-    if ( m_pVehicle )
-    {
-        return m_pVehicle->IsSmokeTrailEnabled ();
-    }
+    if ( m_plane )
+        return m_plane->IsSmokeTrailEnabled();
+
     return m_bSmokeTrail;
 }
 
-
-void CClientVehicle::SetSmokeTrailEnabled ( bool bEnabled )
+void CClientVehicle::SetSmokeTrailEnabled( bool bEnabled )
 {
-    if ( m_pVehicle )
-    {
-        m_pVehicle->SetSmokeTrailEnabled ( bEnabled );
-    }
+    if ( m_plane )
+        m_plane->SetSmokeTrailEnabled( bEnabled );
+
     m_bSmokeTrail = bEnabled;
 }
 
-
-void CClientVehicle::ResetInterpolation ( void )
+void CClientVehicle::ResetInterpolation()
 {
-    if ( HasTargetPosition () )
-        SetPosition ( m_interp.pos.vecTarget );
-    if ( HasTargetRotation () )
-        SetRotationDegrees ( m_interp.rot.vecTarget );
+    if ( HasTargetPosition() )
+        SetPosition( m_interp.pos.vecTarget );
+    if ( HasTargetRotation() )
+        SetRotationDegrees( m_interp.rot.vecTarget );
+
     m_interp.pos.ulFinishTime = 0;
     m_interp.rot.ulFinishTime = 0;
 }
 
-
-void CClientVehicle::AddMatrix ( RwMatrix& Matrix, double dTime, unsigned short usTickRate )
+void CClientVehicle::AddMatrix( RwMatrix& Matrix, double dTime, unsigned short usTickRate )
 {
     /*
     // See if we need an update yet (since the rotation could have a lower tick rate)
@@ -2961,14 +2702,12 @@ void CClientVehicle::AddMatrix ( RwMatrix& Matrix, double dTime, unsigned short 
     */
 }
 
-
-void CClientVehicle::AddVelocity ( CVector& vecVelocity )
+void CClientVehicle::AddVelocity( CVector& vecVelocity )
 {
     m_vecMoveSpeedInterpolate = vecVelocity;
 }
 
-
-void CClientVehicle::Interpolate ( void )
+void CClientVehicle::Interpolate()
 {
     // Interpolate it if: It has a driver and it's not local and we're not syncing it or
     //                    It has no driver and we're not syncing it.
@@ -2986,39 +2725,38 @@ void CClientVehicle::Interpolate ( void )
     }
 }
 
-
-void CClientVehicle::GetInitialDoorStates ( unsigned char * pucDoorStates )
+void CClientVehicle::GetInitialDoorStates( unsigned char * pucDoorStates ) const
 {
-    switch ( m_usModel )
+    switch( m_usModel )
     {
-        case VT_BAGGAGE:
-        case VT_BANDITO:
-        case VT_BFINJECT:
-        case VT_CADDY:
-        case VT_DOZER:
-        case VT_FORKLIFT:
-        case VT_KART:
-        case VT_MOWER:
-        case VT_QUAD:
-        case VT_RCBANDIT:
-        case VT_RCCAM:
-        case VT_RCGOBLIN:
-        case VT_RCRAIDER:
-        case VT_RCTIGER:
-        case VT_TRACTOR:
-        case VT_VORTEX:
-            memset ( pucDoorStates, DT_DOOR_MISSING, 6 );
+    case VT_BAGGAGE:
+    case VT_BANDITO:
+    case VT_BFINJECT:
+    case VT_CADDY:
+    case VT_DOZER:
+    case VT_FORKLIFT:
+    case VT_KART:
+    case VT_MOWER:
+    case VT_QUAD:
+    case VT_RCBANDIT:
+    case VT_RCCAM:
+    case VT_RCGOBLIN:
+    case VT_RCRAIDER:
+    case VT_RCTIGER:
+    case VT_TRACTOR:
+    case VT_VORTEX:
+        memset ( pucDoorStates, DT_DOOR_MISSING, 6 );
 
-            // Keep the bonet and boot intact
-            pucDoorStates [ 0 ] = pucDoorStates [ 1 ] = DT_DOOR_INTACT;
-            break;        
-        default:
-            memset ( pucDoorStates, DT_DOOR_INTACT, 6 );
+        // Keep the bonet and boot intact
+        pucDoorStates [ 0 ] = pucDoorStates [ 1 ] = DT_DOOR_INTACT;
+        break;        
+    default:
+        memset ( pucDoorStates, DT_DOOR_INTACT, 6 );
+        break;
     }
 }
 
-
-void CClientVehicle::SetTargetPosition ( CVector& vecPosition, unsigned long ulDelay, bool bValidVelocityZ, float fVelocityZ )
+void CClientVehicle::SetTargetPosition( CVector& vecPosition, unsigned long ulDelay, bool bValidVelocityZ, float fVelocityZ )
 {   
     // Are we streamed in?
     if ( m_pVehicle )
@@ -3027,19 +2765,20 @@ void CClientVehicle::SetTargetPosition ( CVector& vecPosition, unsigned long ulD
 
         unsigned long ulTime = CClientTime::GetTime ();
         CVector vecLocalPosition;
-        GetPosition ( vecLocalPosition );
+        GetPosition( vecLocalPosition );
 
         // Cars under road fix hack
-        if ( bValidVelocityZ && m_eVehicleType != CLIENTVEHICLE_HELI && m_eVehicleType != CLIENTVEHICLE_PLANE )
+        if ( bValidVelocityZ && m_vehModelType != VEHICLE_HELI && m_vehModelType != VEHICLE_PLANE )
         {
             // If remote z higher by too much and remote not doing any z movement, warp local z coord
             float fDeltaZ = vecPosition.fZ - vecLocalPosition.fZ;
+
             if ( fDeltaZ > 0.4f && fDeltaZ < 10.0f )
             {
                 if ( fabsf ( fVelocityZ ) < 0.01f )
                 {
                     vecLocalPosition.fZ = vecPosition.fZ;
-                    SetPosition ( vecLocalPosition );
+                    SetPosition( vecLocalPosition );
                 }
             }
         }
@@ -3064,18 +2803,16 @@ void CClientVehicle::SetTargetPosition ( CVector& vecPosition, unsigned long ulD
     else
     {
         // Update our position now
-        SetPosition ( vecPosition );
+        SetPosition( vecPosition );
     }
 }
 
-
-void CClientVehicle::RemoveTargetPosition ( void )
+void CClientVehicle::RemoveTargetPosition()
 {
     m_interp.pos.ulFinishTime = 0;
 }
 
-
-void CClientVehicle::SetTargetRotation ( CVector& vecRotation, unsigned long ulDelay )
+void CClientVehicle::SetTargetRotation( CVector& vecRotation, unsigned long ulDelay )
 {
     // Are we streamed in?
     if ( m_pVehicle )
@@ -3109,15 +2846,14 @@ void CClientVehicle::SetTargetRotation ( CVector& vecRotation, unsigned long ulD
     }
 }
 
-
-void CClientVehicle::RemoveTargetRotation ( void )
+void CClientVehicle::RemoveTargetRotation()
 {
     m_interp.rot.ulFinishTime = 0;
 }
 
-void CClientVehicle::UpdateTargetPosition ( void )
+void CClientVehicle::UpdateTargetPosition()
 {
-    if ( HasTargetPosition () )
+    if ( HasTargetPosition() )
     {
         // Grab the current game position
         CVector vecCurrentPosition;
@@ -3217,8 +2953,7 @@ void CClientVehicle::UpdateTargetPosition ( void )
     }
 }
 
-
-void CClientVehicle::UpdateTargetRotation ( void )
+void CClientVehicle::UpdateTargetRotation()
 {
     // Do we have a rotation to move towards? and are we streamed in?
     if ( HasTargetRotation () )
@@ -3253,106 +2988,84 @@ void CClientVehicle::UpdateTargetRotation ( void )
     }
 }
 
-
-bool CClientVehicle::IsEnterable ( void )
+bool CClientVehicle::IsEnterable() const
 {
-    if ( m_pVehicle )
+    if ( !m_pVehicle || !IsSystemEntity() )
+        return false;
     {
-        // Server vehicle?
-        if ( !IsLocalEntity () )
-        {
-            if ( GetHealth () > 0.0f )
-            {
-                if ( !IsInWater() || (GetVehicleType() == CLIENTVEHICLE_BOAT || 
-                    m_usModel == 447 /* sea sparrow */
-                    || m_usModel == 417 /* levithan */
-                    || m_usModel == 460 /* skimmer */ ) )
-                {
-                    return true;
-                }
-            }
-        }
+
+    return !IsInWater() || (GetVehicleType() == CLIENTVEHICLE_BOAT || 
+        m_usModel == 447 /* sea sparrow */|| m_usModel == 417 /* levithan */|| m_usModel == 460 /* skimmer */ );
+}
+
+bool CClientVehicle::HasRadio() const
+{
+    return m_vehModelType != VEHICLE_BICYCLE;
+}
+
+bool CClientVehicle::HasPoliceRadio() const
+{
+    switch( m_usModel )
+    {
+    case VT_COPCARLA:
+    case VT_COPCARSF:
+    case VT_COPCARVG:
+    case VT_COPCARRU:
+    case VT_POLMAV:
+    case VT_COPBIKE:
+    case VT_SWATVAN:
+        return true;
     }
     return false;
 }
 
-bool CClientVehicle::HasRadio ( void )
+void CClientVehicle::RemoveAllProjectiles()
 {
-    if ( m_eVehicleType != CLIENTVEHICLE_BMX ) return true;
-    return false;
-}
+    CClientProjectile *pProjectile;
+    std::list <CClientProjectile*> ::iterator iter = m_Projectiles.begin();
 
-
-bool CClientVehicle::HasPoliceRadio ( void )
-{
-    switch ( m_usModel )
-    {
-        case VT_COPCARLA:
-        case VT_COPCARSF:
-        case VT_COPCARVG:
-        case VT_COPCARRU:
-        case VT_POLMAV:
-        case VT_COPBIKE:
-        case VT_SWATVAN:
-            return true;
-            break;
-        default:
-            break;
-    }
-    return false;
-}
-
-void CClientVehicle::RemoveAllProjectiles ( void )
-{
-    CClientProjectile * pProjectile = NULL;
-    list < CClientProjectile* > ::iterator iter = m_Projectiles.begin ();
-    for ( ; iter != m_Projectiles.end () ; iter++ )
+    for ( ; iter != m_Projectiles.end(); iter++ )
     {
         pProjectile = *iter;
         pProjectile->m_pCreator = NULL;
-        g_pClientGame->GetElementDeleter ()->Delete ( pProjectile );        
+
+        g_pClientGame->GetElementDeleter()->Delete( pProjectile );        
     }
-    m_Projectiles.clear ();
+
+    m_Projectiles.clear();
 }
 
-void CClientVehicle::SetGravity ( const CVector& vecGravity )
+void CClientVehicle::SetGravity( const CVector& vecGravity )
 {
     if ( m_pVehicle )
-        m_pVehicle->SetGravity ( &vecGravity );
+        m_pVehicle->SetGravity( &vecGravity );
 
     m_vecGravity = vecGravity;
 }
 
-
-SColor CClientVehicle::GetHeadLightColor ( void )
+SColor CClientVehicle::GetHeadLightColor() const
 {
-    if ( m_pVehicle )
-    {
-        return m_pVehicle->GetHeadLightColor ();
-    }
+    if ( m_automobile )
+        return m_automobile->GetHeadLightColor();
+
     return m_HeadLightColor;
 }
 
-
-int CClientVehicle::GetCurrentGear ( void )
+int CClientVehicle::GetCurrentGear() const
 {
     if ( m_pVehicle )
-    {
         return m_pVehicle->GetCurrentGear ();
-    }
+
     return 0;
 }
 
-
-void CClientVehicle::SetHeadLightColor ( const SColor color )
+void CClientVehicle::SetHeadLightColor( const SColor color )
 {
-    if ( m_pVehicle )
-    {
-        m_pVehicle->SetHeadLightColor ( color );
-    }
+    if ( m_automobile )
+        m_automobile->SetHeadLightColor( color );
+
     m_HeadLightColor = color;
 }
-
 
 //
 // Below here is basically awful.
@@ -3371,6 +3084,7 @@ std::string GetPlayerName ( CClientPed* pClientPed )
 {
     if ( !pClientPed )
         return "null";
+
     if ( IS_PLAYER ( pClientPed ) )
     {
         CClientPlayer* pPlayer = static_cast < CClientPlayer * > ( pClientPed );
@@ -3383,7 +3097,7 @@ std::string GetPlayerName ( CClientPed* pClientPed )
 // Make a ped become an occupied driver/passenger
 // Static function
 //
-void CClientVehicle::SetPedOccupiedVehicle ( CClientPed* pClientPed, CClientVehicle* pVehicle, unsigned int uiSeat, unsigned char ucDoor )
+void CClientVehicle::SetPedOccupiedVehicle( CClientPed* pClientPed, CClientVehicle* pVehicle, unsigned int uiSeat, unsigned char ucDoor )
 {
     INFO (( "SetPedOccupiedVehicle:%s in vehicle:0x%08x  seat:%d  door:%u", GetPlayerName( pClientPed ).c_str (), pVehicle, uiSeat, ucDoor ));
 
@@ -3430,15 +3144,14 @@ void CClientVehicle::SetPedOccupiedVehicle ( CClientPed* pClientPed, CClientVehi
         pVehicle->AllowDoorRatioSetting ( ucDoor, true );
 
     // Checks
-    ValidatePedAndVehiclePair ( pClientPed, pVehicle );
+    ValidatePedAndVehiclePair( pClientPed, pVehicle );
 }
-
 
 //
 // Make a ped become an occupying driver/passenger
 // Static function
 //
-void CClientVehicle::SetPedOccupyingVehicle ( CClientPed* pClientPed, CClientVehicle* pVehicle, unsigned int uiSeat, unsigned char ucDoor )
+void CClientVehicle::SetPedOccupyingVehicle( CClientPed* pClientPed, CClientVehicle* pVehicle, unsigned int uiSeat, unsigned char ucDoor )
 {
     INFO (( "SetPedOccupyingVehicle:%s in vehicle:0x%08x  seat:%d  door:%u", GetPlayerName( pClientPed ).c_str (), pVehicle, uiSeat, ucDoor ));
 
@@ -3637,7 +3350,7 @@ void CClientVehicle::UnpairPedAndVehicle( CClientPed* pClientPed )
     }
 }
 
-void CClientVehicle::ApplyHandling ( void )
+void CClientVehicle::ApplyHandling()
 {
     if ( m_pVehicle )
         m_pVehicle->RecalculateHandling ();
@@ -3645,41 +3358,30 @@ void CClientVehicle::ApplyHandling ( void )
     m_bHasCustomHandling = true;
 }
 
-
-CHandlingEntry* CClientVehicle::GetHandlingData ( void )
+CHandlingEntry* CClientVehicle::GetHandlingData()
 {
     if ( m_pVehicle )
-    {
-        return m_pVehicle->GetHandlingData ();
-    }
+        return m_pVehicle->GetHandlingData();
     else if ( m_pHandlingEntry )
-    {
         return m_pHandlingEntry;
-    }
+
     return NULL;
 }
 
-
-CSphere CClientVehicle::GetWorldBoundingSphere ( void )
+CSphere CClientVehicle::GetWorldBoundingSphere() const
 {
     CSphere sphere;
-    CModelInfo* pModelInfo = g_pGame->GetModelInfo ( GetModel () );
-    if ( pModelInfo )
-    {
-        CBoundingBox* pBoundingBox = pModelInfo->GetBoundingBox ();
-        if ( pBoundingBox )
-        {
-            sphere.vecPosition = pBoundingBox->vecBoundOffset;
-            sphere.fRadius = pBoundingBox->fRadius;
-        }
-    }
-    sphere.vecPosition += GetStreamPosition ();
+    const CBoundingBox& bounds = m_pModelInfo->GetBoundingBox();
+
+    sphere.vecPosition = bounds.vecBoundOffset;
+    sphere.fRadius = bounds.fRadius;
+
+    sphere.vecPosition += GetStreamPosition();
     return sphere;
 }
 
-
 // Currently, this should only be called if the local player is, or was just in the vehicle
-void CClientVehicle::HandleWaitingForGroundToLoad ( void )
+void CClientVehicle::HandleWaitingForGroundToLoad()
 {
     // Check if near any MTA objects
     bool bNearObject = false;
@@ -3700,9 +3402,9 @@ void CClientVehicle::HandleWaitingForGroundToLoad ( void )
     {
         // If not near any MTA objects, then don't bother waiting
         SetFrozenWaitingForGroundToLoad ( false );
-        #ifdef ASYNC_LOADING_DEBUG_OUTPUTA
+#ifdef ASYNC_LOADING_DEBUG_OUTPUTA
             OutputDebugLine ( "  FreezeUntilCollisionLoaded - Early stop" );
-        #endif 
+#endif 
         return;
     }
 
@@ -3727,18 +3429,18 @@ void CClientVehicle::HandleWaitingForGroundToLoad ( void )
     bool bASync         = g_pGame->IsASyncLoadingEnabled ();
     bool bMTAObjLimit   = pObjectManager->IsObjectLimitReached ();
     bool bHasModel      = GetModelInfo () != NULL;
-    #ifndef ASYNC_LOADING_DEBUG_OUTPUTA
+#ifndef ASYNC_LOADING_DEBUG_OUTPUTA
         bool bMTALoaded = pObjectManager->ObjectsAroundPointLoaded ( vecPosition, fUseRadius, m_usDimension );
-    #else
+#else
         SString strAround;
         bool bMTALoaded = pObjectManager->ObjectsAroundPointLoaded ( vecPosition, fUseRadius, m_usDimension, &strAround );
-    #endif
+#endif
 
-    #ifdef ASYNC_LOADING_DEBUG_OUTPUTA
+#ifdef ASYNC_LOADING_DEBUG_OUTPUTA
         SString status = SString ( "%2.2f,%2.2f,%2.2f  bASync:%d   bHasModel:%d   bMTALoaded:%d   bMTAObjLimit:%d   m_fGroundCheckTolerance:%2.2f   m_fObjectsAroundTolerance:%2.2f  fUseRadius:%2.1f"
                                        ,vecPosition.fX, vecPosition.fY, vecPosition.fZ
                                        ,bASync, bHasModel, bMTALoaded, bMTAObjLimit, m_fGroundCheckTolerance, m_fObjectsAroundTolerance, fUseRadius );
-    #endif
+#endif
 
     // See if ground is ready
     if ( ( !bHasModel || !bMTALoaded ) && m_fObjectsAroundTolerance < 1.f )
@@ -3760,16 +3462,16 @@ void CClientVehicle::HandleWaitingForGroundToLoad ( void )
         if ( fUseDist > -0.2f && fUseDist < 1.5f )
             SetFrozenWaitingForGroundToLoad ( false );
 
-        #ifdef ASYNC_LOADING_DEBUG_OUTPUTA
+#ifdef ASYNC_LOADING_DEBUG_OUTPUTA
             status += ( SString ( "  GetDistanceFromGround:  fDist:%2.2f   fUseDist:%2.2f", fDist, fUseDist ) );
-        #endif
+#endif
 
         // Stop waiting after 3 frames, if the object limit has not been reached. (bASync should always be false here) 
         if ( m_fGroundCheckTolerance > 0.03f && !bMTAObjLimit && !bASync )
             SetFrozenWaitingForGroundToLoad ( false );
     }
 
-    #ifdef ASYNC_LOADING_DEBUG_OUTPUTA
+#ifdef ASYNC_LOADING_DEBUG_OUTPUTA
         OutputDebugLine ( status );
         g_pCore->GetGraphics ()->DrawText ( 10, 220, -1, 1, status );
 
@@ -3777,5 +3479,5 @@ void CClientVehicle::HandleWaitingForGroundToLoad ( void )
         strAround.Split ( "\n", lineList );
         for ( unsigned int i = 0 ; i < lineList.size () ; i++ )
             g_pCore->GetGraphics ()->DrawText ( 10, 230 + i * 10, -1, 1, lineList[i] );
-    #endif
+#endif
 }

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaFunctionDefs.Engine.cpp
@@ -14,6 +14,7 @@
 *               Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -28,7 +29,7 @@ namespace CLuaFunctionDefs
         CLuaMain* pLuaMain = lua_readcontext( L );
         CResource* pResource = pLuaMain->GetResource ();
 
-        CFile *file = m_pResourceManager->OpenStream( pResource, lua_istype ( L, 1, LUA_TSTRING ) ? lua_tostring ( L, 1 ) : "" , "rb" );
+        CFile *file = m_pResourceManager->OpenStream( pResource, lua_isstring( L, 1 ) ? lua_tostring ( L, 1 ) : "" , "rb" );
 
         if ( file )
         {
@@ -67,7 +68,7 @@ namespace CLuaFunctionDefs
         filePath strPath;
         const char *meta;
         // Is this a legal filepath?
-        if ( lua_istype ( L, 2, LUA_TNUMBER ) && m_pResourceManager->ParseResourceFullPath( (Resource*&)pResource, strFile, meta, strPath ) )
+        if ( lua_isnumber( L, 2 ) && m_pResourceManager->ParseResourceFullPath( (Resource*&)pResource, strFile, meta, strPath ) )
         {
             CModel *model = g_pGame->GetModelManager()->CreateModel( strPath.c_str(), lua_tointeger( L, 2 ) );
 
@@ -102,7 +103,7 @@ error:
             bFilteringEnabled = ( lua_toboolean ( L, 2 ) ) ? true:false;
 
         // Grab the filename
-        SString strFile = ( lua_istype( L, 1, LUA_TSTRING ) ? lua_tostring( L, 1 ) : "" );
+        SString strFile = lua_isstring( L, 1 ) ? lua_tostring( L, 1 ) : "" );
         
         filePath strPath;
         const char *meta;
@@ -143,8 +144,8 @@ error:
     LUA_DECLARE( engineReplaceCOL )
     {
         // Grab the DFF and model ID
-        CClientColModel* pCol = ( lua_istype ( L, 1, LUA_TLIGHTUSERDATA ) ? lua_tocolmodel ( L, 1 ) : NULL );
-        unsigned short usModel = ( lua_istype ( L, 2, LUA_TNUMBER ) ? ( static_cast < unsigned short > ( lua_tonumber ( L, 2 ) ) ) : 0 );
+        CClientColModel* pCol = lua_readclass( L, 1, LUACLASS_COLMODEL );
+        unsigned short usModel = lua_isnumber( L, 2 ) ? ( static_cast < unsigned short > ( lua_tonumber ( L, 2 ) ) ) : 0 );
 
         // Valid collision model?
         if ( pCol )
@@ -153,11 +154,8 @@ error:
             if ( CClientColModelManager::IsReplacableModel ( usModel ) )
             {
                 // Replace the colmodel
-                if ( pCol->Replace ( usModel ) )
-                {
-                    lua_pushboolean ( L, true );
-                    return 1;
-                }
+                lua_pushboolean( L, pCol->Replace( usModel ) );
+                return 1;
             }
             else
                 m_pScriptDebugging->LogBadPointer( "engineReplaceCOL", "number", 2 );
@@ -195,33 +193,24 @@ error:
 
     LUA_DECLARE( engineImportTXD )
     {
-        if ( lua_type( L, 1 ) != LUA_TCLASS )
-            goto typeError;
+        CClientTXD *txd = lua_readclass( L, 1, LUACLASS_TXD );
+        unsigned short usModelID = lua_isnumber( L, 2 ) ? lua_tointeger( L, 2 ) : 0;
 
-        ILuaClass& j = *lua_refclass( L, 1 );
-        CClientTXD *pTXD;
-
-        if ( !j.GetTransmit( LUACLASS_TXD, (void*&)pTXD ) )
-            goto typeError;
-
-        // Grab the TXD and the model ID
-        unsigned short usModelID = lua_istype( L, 2, LUA_TNUMBER ) ? lua_tointeger( L, 2 ) : 0;
-
-        // Try to import
-        if ( pTXD->Import( usModelID ) )
+        if ( txd )
         {
-            // Success
-            lua_pushboolean( L, true );
-            return 1;
+            // Try to import
+            if ( txd->Import( usModelID ) )
+            {
+                // Success
+                lua_pushboolean( L, true );
+                return 1;
+            }
+            else
+                m_pScriptDebugging->LogBadPointer( "engineImportTXD", "number", 2 );
         }
+        else
+            m_pScriptDebugging->LogBadPointer( "engineImportTXD", "txd", 1 );
 
-        m_pScriptDebugging->LogBadPointer( "engineImportTXD", "number", 2 );
-        goto error;
-
-typeError:
-        m_pScriptDebugging->LogBadPointer( "engineImportTXD", "txd", 1 );
-
-error:
         // Failed
         lua_pushboolean( L, false );
         return 1;
@@ -229,20 +218,15 @@ error:
 
     LUA_DECLARE( engineReplaceModel )
     {
-        if ( lua_type( L, 1 ) != LUA_TCLASS )
-            goto typeError;
+        CClientDFF *dff = lua_readclass( L, 1, LUACLASS_DFF );
 
-        ILuaClass& j = *lua_refclass( L, 1 );
-        CClientDFF *dff;
-
-        if ( !j.GetTransmit( LUACLASS_DFF, (void*&)dff ) )
-            goto typeError;
-
-        lua_pushboolean( L, dff->ReplaceModel( lua_istype( L, 2, LUA_TNUMBER ) ? lua_tointeger( L, 2 ) : 0 ) );
-        return 1;
-
-typeError:
-        m_pScriptDebugging->LogBadPointer( "engineReplaceModel", "dff", 1 );
+        if ( dff )
+        {
+            lua_pushboolean( L, dff->ReplaceModel( lua_istype( L, 2, LUA_TNUMBER ) ? lua_tointeger( L, 2 ) : 0 ) );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogBadPointer( "engineReplaceModel", "dff", 1 );
 
         // Failure
         lua_pushboolean( L, false );
@@ -417,7 +401,7 @@ typeError:
         CClientShader* pShader; SString strTextureNameMatch; float fOrderPriority;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pShader );
+        argStream.ReadClass( pShader, LUACLASS_SHADER );
         argStream.ReadString ( strTextureNameMatch );
         argStream.ReadNumber ( fOrderPriority, 0 );
 
@@ -441,7 +425,7 @@ typeError:
         CClientShader* pShader; SString strTextureNameMatch;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pShader );
+        argStream.ReadClass( pShader, LUACLASS_SHADER );
         argStream.ReadString ( strTextureNameMatch );
 
         if ( !argStream.HasErrors () )
@@ -535,10 +519,10 @@ typeError:
                 }
                 return 1;
             }
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "engineGetModelTextureNames", "Expected valid model ID or name at argument 1" ) );
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, "Expected valid model ID or name at argument 1" ) );
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "engineGetModelTextureNames", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
 
         // We failed
         lua_pushboolean ( L, false );
@@ -571,10 +555,10 @@ typeError:
                 }
                 return 1;
             }
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "engineGetVisibleTextureNames", "Expected valid model ID or name at argument 1" ) );
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, "Expected valid model ID or name at argument 1" ) );
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "engineGetVisibleTextureNames", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
 
         // We failed
         lua_pushboolean ( L, false );

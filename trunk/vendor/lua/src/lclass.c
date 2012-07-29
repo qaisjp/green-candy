@@ -205,6 +205,16 @@ bool Class::IsTransmit( int type )
     return trans.count( type ) == 1;
 }
 
+bool Class::IsDestroying()
+{
+    return destroying;
+}
+
+bool Class::IsDestroyed()
+{
+    return destroyed;
+}
+
 void Class::PushEnvironment( lua_State *L )
 {
     sethvalue( L, L->top++, env );

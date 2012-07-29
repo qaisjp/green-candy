@@ -26,6 +26,12 @@ static inline const char* lua_getclassdesc( int ctype )
         return "fileTranslator";
     case LUACLASS_TIMER:
         return "timer";
+    case LUACLASS_RESOURCE:
+        return "resource";
+    case LUACLASS_ROOT:
+        return "root";
+    case LUACLASS_ELEMENT:
+        return "element";
     }
 
     return "class";

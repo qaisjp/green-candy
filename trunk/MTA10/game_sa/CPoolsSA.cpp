@@ -348,6 +348,44 @@ CAutomobileTrailer* CPoolsSA::AddTrailer( unsigned short modelID )
     return new CAutomobileTrailerSA( (CAutomobileTrailerSAInterface*)CreateVehicle( modelID ) );
 }
 
+CQuadBike* CPoolsSA::AddQuadBike( unsigned short modelID )
+{
+    DEBUG_TRACE("CQuadBike* CPoolsSA::AddQuadBike( unsigned short modelID )");
+
+    if ( modelID > MAX_MODELS-1 )
+        return NULL;
+
+    // We do not wanna add when the pool is full
+    if ( (*ppVehiclePool)->Full() )
+        return NULL;
+
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetModelType() != VEHICLE_QUADBIKE )
+        return NULL;
+
+    return new CQuadBikeSA( (CQuadBikeSAInterface*)CreateVehicle( modelID ) );
+}
+
+CMonsterTruck* CPoolsSA::AddMonsterTruck( unsigned short modelID )
+{
+    DEBUG_TRACE("CMonsterTruck* CPoolsSA::AddMonsterTruck( unsigned short modelID )");
+
+    if ( modelID > MAX_MODELS-1 )
+        return NULL;
+
+    // We do not wanna add when the pool is full
+    if ( (*ppVehiclePool)->Full() )
+        return NULL;
+
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetModelType() != VEHICLE_MONSTERTRUCK )
+        return NULL;
+
+    return new CMonsterTruckSA( (CMonsterTruckSAInterface*)CreateVehicle( modelID ) );
+}
+
 CAutomobile* CPoolsSA::AddAutomobile( unsigned short modelID )
 {
     DEBUG_TRACE("CAutomobile* CPoolsSA::AddAutomobile( unsigned short modelID )");
@@ -374,6 +412,10 @@ CAutomobile* CPoolsSA::AddAutomobile( unsigned short modelID )
         return new CAutomobileSA( (CAutomobileSAInterface*)CreateVehicle( modelID ) );
     case VEHICLE_AUTOMOBILETRAILER:
         return AddTrailer( modelID );
+    case VEHICLE_QUADBIKE:
+        return AddQuadBike( modelID );
+    case VEHICLE_MONSTERTRUCK:
+        return AddMonsterTruck( modelID );
     }
 
     return NULL;
@@ -421,6 +463,8 @@ CVehicle* CPoolsSA::AddVehicle( unsigned short modelID )
     case VEHICLE_HELI:
     case VEHICLE_CAR:
     case VEHICLE_AUTOMOBILETRAILER:
+    case VEHICLE_QUADBIKE:
+    case VEHICLE_MONSTERTRUCK:
         return AddAutomobile( modelID );
     case VEHICLE_BOAT:
         return AddBoat( modelID );

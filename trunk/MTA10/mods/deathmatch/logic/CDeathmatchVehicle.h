@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CDeathmatchVehicle.h
 *  PURPOSE:     Header for deathmatch vehicle class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -15,6 +16,9 @@
 #define __CDEATHMATCHVEHICLE_H
 
 #include "CClientVehicle.h"
+
+// The_GTA: The problem with this class is that it directly inherits CClientVehicle. Therefor we are prohibited from direct inheritance of CClientVehicle.
+// I instead inherit from CDeathmatchVehicle, effectively mixing up deathmatch logic with shared logic. It cannot be helped if this stays this way!
 
 class CDeathmatchVehicle : public CClientVehicle
 {

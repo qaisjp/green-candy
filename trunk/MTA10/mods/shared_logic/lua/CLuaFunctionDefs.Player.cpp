@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaFunctionDefs.Player.cpp
@@ -15,6 +15,7 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -24,10 +25,7 @@ namespace CLuaFunctionDefs
 {
     LUA_DECLARE( getLocalPlayer )
     {
-        CClientPlayer* pPlayer = CStaticFunctionDefinitions::GetLocalPlayer ();
-
-        // Return the local player
-        lua_pushelement ( L, pPlayer );
+        CStaticFunctionDefinitions::GetLocalPlayer()->PushStack( L );
         return 1;
     }
 
@@ -37,7 +35,7 @@ namespace CLuaFunctionDefs
         CClientPlayer* pPlayer;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pPlayer );
+        argStream.ReadClass( pPlayer, LUACLASS_PLAYER );
 
         if ( !argStream.HasErrors () )
         {
@@ -90,7 +88,7 @@ namespace CLuaFunctionDefs
         CClientPlayer* pPlayer;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pPlayer );
+        argStream.ReadClass( pPlayer, LUACLASS_PLAYER );
 
         if ( !argStream.HasErrors () )
         {
@@ -116,7 +114,7 @@ namespace CLuaFunctionDefs
         CClientPlayer* pPlayer;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pPlayer );
+        argStream.ReadClass( pPlayer, LUACLASS_PLAYER );
 
         if ( !argStream.HasErrors () )
         {
@@ -143,7 +141,7 @@ namespace CLuaFunctionDefs
         CClientPlayer* pPlayer;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pPlayer );
+        argStream.ReadClass( pPlayer, LUACLASS_PLAYER );
 
         if ( !argStream.HasErrors () )
         {
@@ -164,7 +162,7 @@ namespace CLuaFunctionDefs
         CClientPlayer* pPlayer;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pPlayer );
+        argStream.ReadClass( pPlayer, LUACLASS_PLAYER );
 
         if ( !argStream.HasErrors () )
         {
@@ -187,7 +185,7 @@ namespace CLuaFunctionDefs
         CClientPlayer* pPlayer;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pPlayer );
+        argStream.ReadClass( pPlayer, LUACLASS_PLAYER );
 
         if ( !argStream.HasErrors () )
         {
@@ -213,7 +211,7 @@ namespace CLuaFunctionDefs
         CClientPlayer* pPlayer;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pPlayer );
+        argStream.ReadClass( pPlayer, LUACLASS_PLAYER );
 
         if ( !argStream.HasErrors () )
         {
@@ -237,7 +235,7 @@ namespace CLuaFunctionDefs
         {
             lua_pushnumber ( L, lMoney );
             return 1;
-        }            
+        }
 
         lua_pushboolean ( L, false );
         return 1;
@@ -355,7 +353,7 @@ namespace CLuaFunctionDefs
         CClientEntity* pPlayer; SString strText;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pPlayer );
+        argStream.ReadClass( pPlayer, LUACLASS_PLAYER );
         argStream.ReadString ( strText );
 
         if ( !argStream.HasErrors () )
@@ -382,7 +380,7 @@ namespace CLuaFunctionDefs
             //  bool setPlayerNametagColor ( player thePlayer, int r, int g, int b )
             CClientEntity* pPlayer; int iR; int iG; int iB;
 
-            argStream.ReadUserData ( pPlayer );
+            argStream.ReadClass( pPlayer, LUACLASS_PLAYER );
             argStream.ReadNumber ( iR );
             argStream.ReadNumber ( iG );
             argStream.ReadNumber ( iB );
@@ -402,7 +400,7 @@ namespace CLuaFunctionDefs
             //  bool setPlayerNametagColor ( player thePlayer, false )
             CClientEntity* pPlayer; bool bFalse;
 
-            argStream.ReadUserData ( pPlayer );
+            argStream.ReadClass( pPlayer, LUACLASS_PLAYER );
             argStream.ReadBool ( bFalse );
 
             if ( !argStream.HasErrors () )
@@ -431,7 +429,7 @@ namespace CLuaFunctionDefs
         CClientEntity* pPlayer; bool bShowing;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadUserData ( pPlayer );
+        argStream.ReadClass( pPlayer, LUACLASS_PLAYER );
         argStream.ReadBool ( bShowing );
 
         if ( !argStream.HasErrors () )

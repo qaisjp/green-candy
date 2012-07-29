@@ -261,9 +261,10 @@ LUA_API const char *lua_typename (lua_State *L, int t)
     return (t == LUA_TNONE) ? "no value" : luaT_typenames[t];
 }
 
-LUA_API int lua_iscfunction (lua_State *L, int idx) {
-  StkId o = index2adr(L, idx);
-  return iscfunction(o);
+LUA_API int lua_iscfunction (lua_State *L, int idx)
+{
+    StkId o = index2adr(L, idx);
+    return iscfunction(o);
 }
 
 LUA_API int lua_isnumber (lua_State *L, int idx) {

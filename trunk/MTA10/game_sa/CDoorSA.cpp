@@ -12,6 +12,8 @@
 
 #include "StdInc.h"
 
+// The_GTA: eAi is why we can have nice things (no joke)
+
 /**
  * \todo Find out what GetAngleOpenRatio actually does
  * @return FLOAT Not sure...

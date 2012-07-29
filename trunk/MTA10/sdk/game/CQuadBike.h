@@ -12,9 +12,7 @@
 #ifndef __CGAME_QUADBIKE
 #define __CGAME_QUADBIKE
 
-#include "CVehicle.h"
-
-class CQuadBike : public virtual CVehicle
+class CQuadBike : public virtual CAutomobile
 {
 public:
     virtual                 ~CQuadBike ( void ) {};

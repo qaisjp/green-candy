@@ -1,15 +1,81 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        CScriptArgReader.h    
-*  PURPOSE:
-*  DEVELOPERS:  Nobody knows
+*  PURPOSE:     Unified Lua script argumentation
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
+// If any new class is added, please update this!
+static inline const char* lua_gettransmittype( int transmit )
+{
+    switch( transmit )
+    {
+    case LUACLASS_CAMERA:                       return "camera";
+    case LUACLASS_CIVILIAN:                     return "civilian";
+    case LUACLASS_COLSHAPE:                     return "colshape";
+    case LUACLASS_DFF:                          return "clump";
+    case LUACLASS_DUMMY:                        return "dummy";
+    case LUACLASS_ENTITY:                       return "entity";
+    case LUACLASS_SYSENTITY:                    return "sysentity";
+    case LUACLASS_TEXTURE:                      return "game-texture";
+    case LUACLASS_GUIELEMENT:                   return "gui-element";
+    case LUACLASS_MARKER:                       return "marker"; 
+    case LUACLASS_OBJECT:                       return "object";
+    case LUACLASS_PATHNODE:                     return "pathnode";
+    case LUACLASS_PED:                          return "ped";
+    case LUACLASS_PICKUP:                       return "pickup";
+    case LUACLASS_PLAYER:                       return "player";
+    case LUACLASS_PROJECTILE:                   return "projectile";
+    case LUACLASS_RADARAREA:                    return "radararea";
+    case LUACLASS_RADARMARKER:                  return "blip";
+    case LUACLASS_RENDERELEMENT:                return "render-element";
+    case LUACLASS_SOUND:                        return "sound";
+    case LUACLASS_STREAMELEMENT:                return "stream-element";
+    case LUACLASS_TEAM:                         return "team";
+    case LUACLASS_CORETEXTURE:                  return "texture";
+    case LUACLASS_TXD:                          return "txd";
+    case LUACLASS_VEHICLE:                      return "vehicle";
+    case LUACLASS_WATER:                        return "water";
+    case LUACLASS_SHADER:                       return "shader";
+    case LUACLASS_GUIBUTTON:                    return "gui-button";
+    case LUACLASS_GUICHECKBOX:                  return "gui-checkbox";
+    case LUACLASS_GUICOMBOBOX:                  return "gui-combobox";
+    case LUACLASS_GUIEDIT:                      return "gui-edit";
+    case LUACLASS_GUIGRIDLIST:                  return "gui-gridlist";
+    case LUACLASS_GUILABEL:                     return "gui-label";
+    case LUACLASS_GUIMEMO:                      return "gui-memo";
+    case LUACLASS_GUIPROGRESSBAR:               return "gui-progressbar";
+    case LUACLASS_GUIRADIOBUTTON:               return "gui-radiobutton";
+    case LUACLASS_GUISCROLLBAR:                 return "gui-scrollbar";
+    case LUACLASS_GUISCROLLPANE:                return "gui-scrollpane";
+    case LUACLASS_GUISTATICIMAGE:               return "gui-staticimage";
+    case LUACLASS_GUITAB:                       return "gui-tab";
+    case LUACLASS_GUITABPANEL:                  return "gui-tabpanel";
+    case LUACLASS_GUIWINDOW:                    return "gui-window";
+    }
+
+    // Try to obtain a shared name
+    return lua_getclassdesc( transmit );
+}
+
+template <class type>
+inline static type* lua_readclass( lua_State *L, int idx, int transmit )
+{
+    if ( lua_type( L, idx ) != LUA_TCLASS )
+        return NULL;
+
+    type *ptr;
+
+    if ( !lua_refclass( L, idx )->GetTransmit( trasnmit, (void*&)ptr ) )
+        return NULL;
+
+    return ptr;
+}
 
 /////////////////////////////////////////////////////////////////////////
 //
@@ -44,8 +110,7 @@ public:
     template < class T >
     bool ReadNumber ( T& outValue )
     {
-        int iArgument = lua_type ( m_luaVM, m_iIndex );
-        if ( iArgument == LUA_TNUMBER || iArgument == LUA_TSTRING )
+        if ( lua_isnumber( L, m_iIndex ) )
         {
             outValue = static_cast < T > ( lua_tonumber ( m_luaVM, m_iIndex++ ) );
             return true;
@@ -130,7 +195,8 @@ public:
     //
     // Read next string, using default if needed
     //
-    bool ReadString ( SString& outValue, const char* defaultValue = NULL )
+    template <class stringType>
+    bool ReadString( stringType& outValue, const char* defaultValue = NULL )
     {
         int iArgument = lua_type ( m_luaVM, m_iIndex );
         if ( iArgument == LUA_TSTRING || iArgument == LUA_TNUMBER )
@@ -208,6 +274,99 @@ public:
         return false;
     }
 
+    // Read MTA:Lua type
+    template <class T>
+    bool ReadClass( T*& outValue, unsigned int transmit )
+    {
+        if ( lua_type( m_luaVM, m_iIndex ) != LUA_TCLASS || !lua_refclass( m_luaVM, m_iIndex )->GetTransmit( transmit, (void*&)outValue ) )
+        {
+            outValue = NULL;
+            SetTypeError( lua_gettransmittype( transmit ) );
+            m_iIndex++;
+            return false;
+        }
+
+        m_iIndex++;
+        return true;
+    }
+
+    // Read MTA:Lua type while accepting default
+    template <class T>
+    void ReadClass( T*& outValue, unsigned int transmit, T*& def )
+    {
+        if ( lua_type( m_luaVM, m_iIndex ) != LUA_TCLASS || !lua_refclass( m_luaVM, m_iIndex )->GetTransmit( transmit, (void*&)outValue ) )
+            outValue = def;
+
+        m_iIndex++;
+    }
+
+    // Vector unit for easy dispatch and performance
+    inline bool ReadVector( CVector& outValue )
+    {
+        return ReadNumber( outValue.fX ) && ReadNumber( outValue.fY ) && ReadNumber( outValue.fZ );
+    }
+
+    inline bool ReadVector( CVector& outValue, const CVector& defValue )
+    {
+        return ReadNumber( outValue.fX, defValue.fX ) && ReadNumber( outValue.fY, defValue.fY ) && ReadValue( outValue.fZ, defValue.fZ );
+    }
+
+    // Reads a color unit by unsigned char
+    bool ReadColor( unsigned char outValue )
+    {
+        double color;
+
+        if ( !ReadNumber( color ) )
+            return false;
+
+        if ( color < 0 || color > 255 )
+            return false;
+
+        outValue = (unsigned char)color;
+        return true;
+    }
+
+    // Reads a color unit by unsigned char with default value
+    bool ReadColor( unsigned char outValue, double defValue )
+    {
+        double color;
+        ReadNumber( color, defValue );
+
+        if ( color < 0 || color > 255 )
+            return false;
+
+        outValue = (unsigned char)color;
+        return true;
+    }
+
+    //
+    // Read next userdata, using default if needed
+    //
+    template < class T >
+    bool ReadUserData ( T*& outValue, T* defaultValue, bool bArgCanBeNil = false, bool bDefaultCanBeNil = false )
+    {
+        int iArgument = lua_type ( m_luaVM, m_iIndex );
+
+        if ( iArgument == LUA_TLIGHTUSERDATA )
+        {
+            // We cannot use insecure userdata interfaces
+            assert( 0 );
+        }
+        else if ( iArgument == LUA_TNONE || m_bIgnoreMismatchMatch || ( iArgument == LUA_TNIL && bArgCanBeNil ) )
+        {
+            if ( defaultValue != (T*)-1 )
+            {
+                outValue = defaultValue;
+                if ( outValue || bDefaultCanBeNil )
+                    return false;
+            }
+        }
+
+        outValue = NULL;
+        SetTypeError ( GetClassTypeName ( (T*)0 ) );
+        m_iIndex++;
+        return false;
+    }
 
     //
     // Read next userdata, using default if needed
@@ -271,6 +430,15 @@ public:
         return false;
     }
 
+
+    //
+    // Read next userdata, using NULL default or no default
+    //
+    template < class T >
+    bool ReadUserData ( T*& outValue, int defaultValue = -1 )
+    {
+        return ReadUserData ( outValue, (T*)defaultValue, defaultValue == 0, true );
+    }
 
     //
     // Read CLuaArguments
@@ -365,6 +533,7 @@ public:
     bool NextIsNil          ( int iOffset = 0 ) const  { return NextIs ( LUA_TNIL, iOffset ); }
     bool NextIsBool         ( int iOffset = 0 ) const  { return NextIs ( LUA_TBOOLEAN, iOffset ); }
     bool NextIsUserData     ( int iOffset = 0 ) const  { return NextIs ( LUA_TLIGHTUSERDATA, iOffset ); }
+    bool NextIsClass        ( int iOffset = 0 ) const  { return NextIs ( LUA_TCLASS, iOffset ); }
     bool NextIsNumber       ( int iOffset = 0 ) const  { return NextIs ( LUA_TNUMBER, iOffset ); }
     bool NextIsString       ( int iOffset = 0 ) const  { return NextIs ( LUA_TSTRING, iOffset ); }
     bool NextIsTable        ( int iOffset = 0 ) const  { return NextIs ( LUA_TTABLE, iOffset ); }
@@ -414,7 +583,7 @@ public:
     //
     // GetErrorMessage
     //
-    SString GetErrorMessage ( void ) const
+    SString GetErrorMessage() const
     {
         if ( !m_bError )
             return "No error";
@@ -426,13 +595,11 @@ public:
         // Compose error message
         SString strMessage ( "Expected %s at argument %d", *m_strErrorExpectedType, m_iErrorIndex );
 
-        if ( iGotArgumentType == LUA_TLIGHTUSERDATA )
+        if ( iGotArgumentType == LUA_TCLASS )
         {
-            //ISFX TODO
-
-	        // Get name of userdata type
-            strGotArgumentType = GetUserDataClassName ( lua_touserdata ( m_luaVM, m_iErrorIndex ), m_luaVM );
-            strGotArgumentValue = "";
+            lua_pushtype( m_luaVM, iErrorIndex );
+            strGotArgumentType = lua_getstring( L, -1 );
+            lua_pop( L, 1 );
         }
 
         if ( !strGotArgumentType.empty () )

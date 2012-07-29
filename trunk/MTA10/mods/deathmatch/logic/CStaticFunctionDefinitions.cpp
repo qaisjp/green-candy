@@ -815,9 +815,6 @@ bool CStaticFunctionDefinitions::IsElementFrozen ( CClientEntity& Entity, bool& 
 
 CClientDummy* CStaticFunctionDefinitions::CreateElement ( CResource& Resource, const char* szTypeName, const char* szID )
 {
-    assert ( szTypeName );
-    assert ( szID );
-
     // Long enough typename and not an internal one?
     if ( strlen ( szTypeName ) > 0 && CClientEntity::GetTypeID ( szTypeName ) == CCLIENTUNKNOWN )
     {
@@ -1559,7 +1556,7 @@ bool CStaticFunctionDefinitions::IsPedInVehicle ( CClientPed & Ped, bool & bInVe
     return true;
 }
 
-char* CStaticFunctionDefinitions::GetPedSimplestTask ( CClientPed& Ped )
+const char* CStaticFunctionDefinitions::GetPedSimplestTask ( CClientPed& Ped )
 {
     CTaskManager* pTaskManager = Ped.GetTaskManager ();
     if ( pTaskManager )
@@ -1592,8 +1589,6 @@ char* CStaticFunctionDefinitions::GetPedSimplestTask ( CClientPed& Ped )
 
 bool CStaticFunctionDefinitions::IsPedDoingTask ( CClientPed& Ped, const char* szTaskName, bool& bIsDoingTask )
 {
-    assert ( szTaskName );
-
     bIsDoingTask = false;
 
     CTaskManager* pTaskManager = Ped.GetTaskManager ();
@@ -1928,14 +1923,14 @@ bool CStaticFunctionDefinitions::SetPedMoveAnim ( CClientEntity& Entity, unsigne
 }
 
 
-bool CStaticFunctionDefinitions::AddPedClothes ( CClientEntity& Entity, char* szTexture, char* szModel, unsigned char ucType )
+bool CStaticFunctionDefinitions::AddPedClothes ( CClientEntity& Entity, const char* szTexture, const char* szModel, unsigned char ucType )
 {
     RUN_CHILDREN AddPedClothes ( **iter, szTexture, szModel, ucType );
     // Is he a player?
     if ( IS_PED ( &Entity ) )
     {
         CClientPed& Ped = static_cast < CClientPed& > ( Entity );
-        Ped.GetClothes()->AddClothes ( szTexture, szModel, ucType, false );
+        Ped.GetClothes()->AddClothes( szTexture, szModel, ucType, false );
         Ped.RebuildModel ( true );
         return true;
     }
@@ -5955,11 +5950,8 @@ void CStaticFunctionDefinitions::RefreshColShapeColliders ( CClientColShape * pC
     m_pColManager->DoHitDetection ( vecRootPosition, 0.0f, m_pRootEntity, pColShape, true );
 }
 
-
 CClientColShape* CStaticFunctionDefinitions::GetElementColShape ( CClientEntity* pEntity )
 {
-    assert ( pEntity );
-
     CClientColShape* pColShape = NULL;
     switch ( pEntity->GetType () )
     {
@@ -5972,7 +5964,6 @@ CClientColShape* CStaticFunctionDefinitions::GetElementColShape ( CClientEntity*
     }
     return pColShape;
 }
-
 
 bool CStaticFunctionDefinitions::GetWeaponNameFromID ( unsigned char ucID, char* szName, unsigned short len )
 {

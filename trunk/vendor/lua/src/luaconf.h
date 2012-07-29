@@ -741,6 +741,9 @@ public:
     virtual int     GetTransmit() = 0;
     virtual bool    IsTransmit( int type ) = 0;
 
+    virtual bool    IsDestroying() = 0;
+    virtual bool    IsDestroyed() = 0;
+
     virtual void    PushEnvironment( lua_State *L ) = 0;
     virtual void    PushOuterEnvironment( lua_State *L ) = 0;
     virtual void    PushChildAPI( lua_State *L ) = 0;
