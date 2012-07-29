@@ -192,6 +192,8 @@ public:
     bool                            IsVehicle() const;
     bool                            IsUpgrade() const;
 
+    bool                            IsPed() const;
+
     const char*                     GetNameIfVehicle() const;
 
     void                            Request( bool bAndLoad = false, bool bWaitForLoad = false, bool bHighPriority = false );

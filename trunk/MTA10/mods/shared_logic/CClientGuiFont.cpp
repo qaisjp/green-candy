@@ -1,38 +1,45 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientGuiFont.cpp
 *  PURPOSE:     Custom font bucket
-*  DEVELOPERS:  qwerty
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
 #include <StdInc.h>
 
+static const luaL_Reg guifont_interface[] =
+{
+    { NULL, NULL }
+};
 
-////////////////////////////////////////////////////////////////
-//
-// CClientGuiFont::CClientGuiFont
-//
-//
-//
-////////////////////////////////////////////////////////////////
+static int luaconstructor_guifont( lua_State *L )
+{
+    CClientGuiFont *font = (CClientGuiFont*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_GUIFONT, font );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, guifont_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "gui-font", 8 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
 CClientGuiFont::CClientGuiFont ( CClientManager* pManager, ElementID ID, CGuiFontItem* pFontItem ) : CClientRenderElement ( pManager, ID )
 {
     SetTypeName ( "gui-font" );
     m_pRenderItem = pFontItem;
 }
 
-
-////////////////////////////////////////////////////////////////
-//
-// CClientGuiFont::~CClientGuiFont
-//
-//
-//
-////////////////////////////////////////////////////////////////
 CClientGuiFont::~CClientGuiFont ( void )
 {
     Unlink ();

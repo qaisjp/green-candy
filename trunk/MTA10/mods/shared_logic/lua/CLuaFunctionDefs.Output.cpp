@@ -70,7 +70,7 @@ namespace CLuaFunctionDefs
         if ( lua_isstring( L, 1 ) )
         {
             // set to clip board
-            lua_pushboolean( L, CStaticFunctionDefinitions::SetClipboard( lua_getstring( L, 1 ) ) )
+            lua_pushboolean( L, CStaticFunctionDefinitions::SetClipboard( SString( lua_getstring( L, 1 ) ) ) );
             return 1;
         }
         else
@@ -125,7 +125,7 @@ namespace CLuaFunctionDefs
         if ( !argStream.HasErrors() )
         {
             // Output it
-            switch( uiLevel )
+            switch( level )
             {
             case 1:     m_pScriptDebugging->LogError( "%s", output ); break;
             case 2:     m_pScriptDebugging->LogWarning( "%s", output ); break;

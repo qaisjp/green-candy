@@ -100,7 +100,7 @@ public:
     static bool                         SetElementFrozen                    ( CClientEntity& Entity, bool bFrozen );
 
     // Radio funcs
-    static bool                         SetRadioChannel                     ( unsigned char& ucChannel );
+    static bool                         SetRadioChannel                     ( unsigned char ucChannel );
     static bool                         GetRadioChannel                     ( unsigned char& ucChannel );
 
     // Player get funcs

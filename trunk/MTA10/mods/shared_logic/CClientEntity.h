@@ -150,7 +150,7 @@ public:
 
     // System entity? A system entity means it can't be removed by the server
     // or the client scripts.
-    inline bool                                 IsSystemEntity()                                { return m_bSystemEntity; };
+    inline bool                                 IsSystemEntity() const                          { return m_bSystemEntity; };
 
     virtual void                                Unlink() = 0;
 

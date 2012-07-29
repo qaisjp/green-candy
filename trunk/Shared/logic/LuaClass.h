@@ -15,8 +15,16 @@
 
 class LuaClass
 {
+    inline ILuaClass& acqcinf( lua_State *L, int ridx )
+    {
+        PushStack( L );
+        ILuaClass& inf = *lua_refclass( L, ridx );
+        lua_pop( L, 1 );
+        return inf;
+    }
+
 public:
-    LuaClass( lua_State *lua, int ridx )
+    LuaClass( lua_State *lua, int ridx ) : m_class( acqcinf( lua, ridx ) )
     {
         m_lua = lua;
         m_ridx = ridx;
@@ -48,6 +56,11 @@ public:
         refs.push_back( ref );
     }
 
+    inline bool IsTransmit( int type )
+    {
+        return m_class.IsTransmit( type );
+    }
+
     inline lua_State* GetVM()
     {
         return m_lua;
@@ -69,6 +82,7 @@ public:
 protected:
     lua_State*              m_lua;
     int                     m_ridx;
+    ILuaClass&              m_class;
 };
 
 static inline void luaJ_extend( lua_State *L, int idx, int nargs )

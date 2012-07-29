@@ -44,7 +44,7 @@ namespace CLuaFunctionDefs
         {
             CLuaMain* pLuaMain = lua_readcontext( L );
             CResource* pResource = pLuaMain->GetResource();
-            CClientPickup* pPickup = CStaticFunctionDefinitions::CreatePickup( *pResource, vecPosition, type, weaponOrAmmo, respawnInterval, ammo );
+            CClientPickup* pPickup = CStaticFunctionDefinitions::CreatePickup( *pResource, pos, type, weaponOrAmmo, respawnInterval, ammo );
             if ( pPickup )
             {
                 CElementGroup * pGroup = pResource->GetElementGroup();
@@ -68,7 +68,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPickupType )
     {
         // Verify the argument
-        if ( CClientPickup *pickup = lua_readclass( L, 1, LUACLASS_PICKUP ) )
+        if ( CClientPickup *pickup = lua_readclass <CClientPickup> ( L, 1, LUACLASS_PICKUP ) )
         {
             lua_pushnumber( L, pickup->m_ucType );
             return 1;
@@ -83,7 +83,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPickupWeapon )
     {
         // Verify the argument
-        if ( CClientPickup *pickup = lua_readclass( L, 1, LUACLASS_PICKUP ) )
+        if ( CClientPickup *pickup = lua_readclass <CClientPickup> ( L, 1, LUACLASS_PICKUP ) )
         {
             lua_pushnumber( L, pickup->m_ucWeaponType );
             return 1;
@@ -98,7 +98,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPickupAmount )
     {
         // Verify the argument
-        if ( CClientPickup *pickup = lua_readclass( L, 1, LUACLASS_PICKUP ) )
+        if ( CClientPickup *pickup = lua_readclass <CClientPickup> ( L, 1, LUACLASS_PICKUP ) )
         {
             lua_pushnumber( L, pickup->m_fAmount );
             return 1;
@@ -113,7 +113,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPickupAmmo )
     {
         // Verify the argument
-        if ( CClientPickup *pickup = lua_readclass( L, 1, LUACLASS_PICKUP ) )
+        if ( CClientPickup *pickup = lua_readclass <CClientPickup> ( L, 1, LUACLASS_PICKUP ) )
         {
             lua_pushnumber ( L, pickup->m_usAmmo );
             return 1;

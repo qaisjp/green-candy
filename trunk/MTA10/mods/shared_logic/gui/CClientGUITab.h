@@ -14,7 +14,7 @@
 #ifndef _GUI_TAB_
 #define _GUI_TAB_
 
-#define LUACLASS_TAB    82
+#define LUACLASS_GUITAB    82
 
 int luaconstructor_guitab( lua_State *L );
 

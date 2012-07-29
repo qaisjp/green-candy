@@ -2753,21 +2753,15 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     bool bTaxiLightState    = bitStream.ReadBit ();
 
                     // If the vehicle has a landing gear, set landing gear state
-                    if ( CClientVehicleManager::HasLandingGears ( usModel ) )
-                    {
-                        pVehicle->SetLandingGearDown ( bLandingGearDown );
-                    }
+                    pVehicle->SetLandingGearDown ( bLandingGearDown );
 
                     // If the vehicle has sirens, set the siren state
                     if ( CClientVehicleManager::HasSirens ( usModel ) )
-                    {
                         pVehicle->SetSirenOrAlarmActive ( bSirenesActive );
-                    }
+
                     //Set the taxi light state
-                    if ( CClientVehicleManager::HasTaxiLight ( usModel ) )
-                    {
-                        pVehicle->SetTaxiLightOn ( bTaxiLightState );
-                    }
+                    pVehicle->SetTaxiLightOn ( bTaxiLightState );
+
                     // Set the general vehicle flags
                     pVehicle->SetCanShootPetrolTank ( bPetrolTankWeak );
                     pVehicle->SetEngineOn ( bEngineOn );
@@ -2775,12 +2769,9 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     pVehicle->SetDoorsUndamageable ( bDoorsUndamageable );
                     pVehicle->SetScriptCanBeDamaged ( !bDamageProof );
                     pVehicle->SetFrozen ( bFrozen );
-                    if ( CClientVehicleManager::IsTrainModel ( usModel ) )
-                    {
-                        pVehicle->SetDerailed ( bDerailed );
-                        pVehicle->SetDerailable ( bIsDerailable );
-                        pVehicle->SetTrainDirection ( bTrainDirection );
-                    }
+                    pVehicle->SetDerailed ( bDerailed );
+                    pVehicle->SetDerailable ( bIsDerailable );
+                    pVehicle->SetTrainDirection ( bTrainDirection );
 
                     // Read out and set alpha
                     SEntityAlphaSync alpha;

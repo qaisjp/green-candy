@@ -136,23 +136,19 @@ void CClientRadarMarker::DoPulse ( void )
     }
 }
 
-
 void CClientRadarMarker::SetPosition ( const CVector& vecPosition )
 {
     if ( m_pMarker )
-    {
-        m_pMarker->SetPosition ( const_cast < CVector* > ( &vecPosition ) );
-    }
+        m_pMarker->SetPosition( vecPosition );
 
     m_vecPosition = vecPosition;
 }
-
 
 void CClientRadarMarker::GetPosition ( CVector& vecPosition ) const
 {
     if ( m_pMarker )
     {
-        vecPosition = *m_pMarker->GetPosition ();
+        vecPosition = m_pMarker->GetPosition();
     }
     else
     {
@@ -290,7 +286,7 @@ void CClientRadarMarker::Destroy ( void )
 }
 
 
-void CClientRadarMarker::CreateMarker ( void )
+void CClientRadarMarker::CreateMarker()
 {
     // Not already got a marker?
     if ( !m_pMarker )
@@ -298,7 +294,7 @@ void CClientRadarMarker::CreateMarker ( void )
         if ( IsInVisibleDistance () )
         {
             // Create the marker
-            m_pMarker = g_pGame->GetRadar ()->CreateMarker ( &m_vecPosition );
+            m_pMarker = g_pGame->GetRadar ()->CreateMarker ( m_vecPosition );
             if ( m_pMarker )
             {
                 SColor color = m_Color;
@@ -313,7 +309,7 @@ void CClientRadarMarker::CreateMarker ( void )
                 }
 
                 // Set the properties
-                m_pMarker->SetPosition ( &m_vecPosition );
+                m_pMarker->SetPosition ( m_vecPosition );
                 m_pMarker->SetScale ( m_usScale );
                 m_pMarker->SetColor ( color );
                 m_pMarker->SetSprite ( static_cast < eMarkerSprite > ( m_ulSprite ) );

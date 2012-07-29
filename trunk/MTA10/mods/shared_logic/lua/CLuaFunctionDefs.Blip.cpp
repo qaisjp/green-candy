@@ -26,7 +26,7 @@ namespace CLuaFunctionDefs
     {
         CVector pos;
         unsigned char ucIcon, ucSize;
-        SColorRGBA color;
+        SColor color;
         short sOrdering;
         unsigned short usVisibleDistance;
 
@@ -46,7 +46,7 @@ namespace CLuaFunctionDefs
         {
             CLuaMain* pLuaMain = lua_readcontext( L );
             CResource* pResource = pLuaMain->GetResource ();
-            CClientRadarMarker* pMarker = CStaticFunctionDefinitions::CreateBlip ( *pResource, vecPosition, ucIcon, ucSize, color, sOrdering, usVisibleDistance );
+            CClientRadarMarker* pMarker = CStaticFunctionDefinitions::CreateBlip ( *pResource, pos, ucIcon, ucSize, color, sOrdering, usVisibleDistance );
             if ( pMarker )
             {
                 CElementGroup * pGroup = pResource->GetElementGroup();
@@ -70,7 +70,7 @@ namespace CLuaFunctionDefs
     {
         CClientEntity *entity;
         unsigned char ucIcon, ucSize;
-        SColorRGBA color;
+        SColor color;
         short sOrdering;
         unsigned short usVisibleDistance;
 
@@ -113,9 +113,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getBlipIcon )
     {
-        if ( CClientRadarMarker *marker = lua_readclass( L, 1, LUACLASS_RADARMARKER ) )
+        if ( CClientRadarMarker *marker = lua_readclass <CClientRadarMarker> ( L, 1, LUACLASS_RADARMARKER ) )
         {
-            lua_pushnumber ( L, (unsigned char)pMarker->GetSprite(); );
+            lua_pushnumber ( L, (unsigned char)marker->GetSprite() );
             return 1;
         }
         else
@@ -127,9 +127,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getBlipSize )
     {
-        if ( CClientRadarMarker *marker = lua_readclass( L, 1, LUACLASS_RADARMARKER ) )
+        if ( CClientRadarMarker *marker = lua_readclass <CClientRadarMarker> ( L, 1, LUACLASS_RADARMARKER ) )
         {
-            lua_pushnumber( L, (unsigned char)pMarker->GetScale() );
+            lua_pushnumber( L, (unsigned char)marker->GetScale() );
             return 1;
         }
         else
@@ -141,7 +141,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getBlipColor )
     {
-        if ( CClientRadarMarker *marker = lua_readclass( L, 1, LUACLASS_RADARMARKER ) )
+        if ( CClientRadarMarker *marker = lua_readclass <CClientRadarMarker> ( L, 1, LUACLASS_RADARMARKER ) )
         {
             SColor color = marker->GetColor();
             lua_pushnumber( L, color.R );
@@ -159,7 +159,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getBlipOrdering )
     {
-        if ( CClientRadarMarker *marker = lua_readclass( L, 1, LUACLASS_RADARMARKER ) )
+        if ( CClientRadarMarker *marker = lua_readclass <CClientRadarMarker> ( L, 1, LUACLASS_RADARMARKER ) )
         {
             lua_pushnumber( L, marker->GetOrdering() );
             return 1;
@@ -173,7 +173,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getBlipVisibleDistance )
     {
-        if ( CClientRadarMarker *marker = lua_readclass( L, 1, LUACLASS_RADARMARKER ) )
+        if ( CClientRadarMarker *marker = lua_readclass <CClientRadarMarker> ( L, 1, LUACLASS_RADARMARKER ) )
         {
             lua_pushnumber ( L, marker->GetVisibleDistance() );
             return 1;
@@ -187,9 +187,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setBlipIcon )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
-            lua_pushboolean( L, lua_isnumber( L, 2 ) &&  CStaticFunctionDefinitions::SetBlipIcon( *pEntity, (unsigned char)lua_tonumber( L, 2 ) ) );
+            lua_pushboolean( L, lua_isnumber( L, 2 ) &&  CStaticFunctionDefinitions::SetBlipIcon( *entity, (unsigned char)lua_tonumber( L, 2 ) ) );
             return 1;
         }
         else
@@ -201,9 +201,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setBlipSize )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
-            lua_pushboolean( L, lua_isnumber( L, 2 ) && CStaticFunctionDefinitions::SetBlipSize( *pEntity, (unsigned char)lua_tonumber( L, 2 ) ) );
+            lua_pushboolean( L, lua_isnumber( L, 2 ) && CStaticFunctionDefinitions::SetBlipSize( *entity, (unsigned char)lua_tonumber( L, 2 ) ) );
             return 1;
         }
         else
@@ -240,9 +240,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setBlipOrdering )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
-            lua_pushboolean( L, lua_isnumber( L, 2 ) && CStaticFunctionDefinitions::SetBlipOrdering( *pEntity, (unsigned short)lua_tonumber( L, 2 ) ) );
+            lua_pushboolean( L, lua_isnumber( L, 2 ) && CStaticFunctionDefinitions::SetBlipOrdering( *entity, (unsigned short)lua_tonumber( L, 2 ) ) );
             return 1;
         }
         else
@@ -254,9 +254,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setBlipVisibleDistance )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
-            lua_pushboolean( L, lua_isnumber( L, 2 ) && CStaticFunctionDefinitions::SetBlipVisibleDistance( *pEntity, (unsigned short)lua_tonumber( L, 2 ) ) );
+            lua_pushboolean( L, lua_isnumber( L, 2 ) && CStaticFunctionDefinitions::SetBlipVisibleDistance( *entity, (unsigned short)lua_tonumber( L, 2 ) ) );
             return 1;
         }
         else

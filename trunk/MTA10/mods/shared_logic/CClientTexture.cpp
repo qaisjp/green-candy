@@ -45,6 +45,79 @@ CClientTexture::CClientTexture( CClientManager* pManager, ElementID ID, LuaClass
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
 
-    SetTypeName ( "texture" );
-    m_pRenderItem = pTextureItem;
+    SetTypeName( "texture" );
+}
+
+static const luaL_Reg target_interface[] =
+{
+    { NULL, NULL }
+};
+
+static int luaconstructor_target( lua_State *L )
+{
+    CClientRenderTarget *tex = (CClientRenderTarget*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_CORERENDERTARGET, tex );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, target_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "rendertarget", 8 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientRenderTarget::CClientRenderTarget( CClientManager* pManager, ElementID ID, LuaClass& root, CRenderTargetItem* pRenderTargetItem ) : CClientTexture( pManager, ID, root, pRenderTargetItem )
+{
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_target, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
+    SetTypeName( "rendertarget" );
+}
+
+static const luaL_Reg screensource_interface[] =
+{
+    { NULL, NULL }
+};
+
+static int luaconstructor_screensource( lua_State *L )
+{
+    CClientScreenSource *tex = (CClientScreenSource*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_CORESCREENSOURCE, tex );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, screensource_interface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "screensource", 12 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CClientScreenSource::CClientScreenSource( CClientManager* pManager, ElementID ID, LuaClass& root, CScreenSourceItem* pScreenSourceItem ) : CClientTexture( pManager, ID, root, pScreenSourceItem )
+{
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_screensource, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
+    SetTypeName( "screensource" );
 }

@@ -12,7 +12,9 @@
 #ifndef _RENDER_TEXTURE_
 #define _RENDER_TEXTURE_
 
-#define LUACLASS_CORETEXTURE    67
+#define LUACLASS_CORETEXTURE        67
+#define LUACLASS_CORERENDERTARGET   88
+#define LUACLASS_CORESCREENSOURCE   89
 
 class CClientTexture : public CClientMaterial
 {
@@ -29,7 +31,7 @@ public:
 class CClientRenderTarget : public CClientTexture
 {
 public:
-                            CClientRenderTarget( CClientManager* pManager, ElementID ID, LuaClass& root, CRenderTargetItem* pRenderTargetItem ) : CClientTexture( pManager, ID, root, pRenderTargetItem )   {}
+                            CClientRenderTarget( CClientManager* pManager, ElementID ID, LuaClass& root, CRenderTargetItem* pRenderTargetItem );
 
     // CClientRenderTarget methods
     CRenderTargetItem*      GetRenderTargetItem( void )                         { return (CRenderTargetItem*)m_pRenderItem; }
@@ -38,7 +40,7 @@ public:
 class CClientScreenSource : public CClientTexture
 {
 public:
-                            CClientScreenSource( CClientManager* pManager, ElementID ID, LuaClass& root, CScreenSourceItem* pScreenSourceItem ) : CClientTexture ( pManager, ID, root, pScreenSourceItem )  {}
+                            CClientScreenSource( CClientManager* pManager, ElementID ID, LuaClass& root, CScreenSourceItem* pScreenSourceItem );
 
     // CClientScreenSource methods
     CScreenSourceItem*      GetScreenSourceItem( void )                         { return (CScreenSourceItem*)m_pRenderItem; }

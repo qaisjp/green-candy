@@ -38,10 +38,12 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors() )
         {
-            CClientObject* pObject = CStaticFunctionDefinitions::CreateObject( *lua_readcontext( L )->GetResource(), iModelID, vecPosition, vecRotation );
+            CResource *res = lua_readcontext( L )->GetResource();
+
+            CClientObject* pObject = CStaticFunctionDefinitions::CreateObject( *res, iModelID, vecPosition, vecRotation );
             if ( pObject )
             {
-                CElementGroup * pGroup = pResource->GetElementGroup();
+                CElementGroup * pGroup = res->GetElementGroup();
                 if ( pGroup )
                 {
                     pGroup->Add( pObject );
@@ -141,7 +143,7 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors () )
         {
-            lua_pusboolean( L, CStaticFunctionDefinitions::StopObject( *pEntity ) );
+            lua_pushboolean( L, CStaticFunctionDefinitions::StopObject( *pEntity ) );
             return 1;
         }
         else

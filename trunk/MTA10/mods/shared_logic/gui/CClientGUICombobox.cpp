@@ -28,7 +28,7 @@ static int luaconstructor_guicombobox( lua_State *L )
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     lua_pushlightuserdata( L, gui->GetCGUIElement() );
-    luaL_openlib( L, NULL, button_interface, 2 );
+    luaL_openlib( L, NULL, combobox_interface, 2 );
 
     lua_basicprotect( L );
 

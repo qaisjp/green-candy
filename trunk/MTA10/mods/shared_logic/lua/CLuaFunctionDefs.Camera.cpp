@@ -142,7 +142,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setCameraTarget )
     {
-        if ( CClientEntity *entity = lua_readclass( L, 1, LUACLASS_ENTITY ) )
+        if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
             lua_pushboolean( L, CStaticFunctionDefinitions::SetCameraTarget( entity ) );
             return 1;
@@ -177,7 +177,7 @@ namespace CLuaFunctionDefs
         unsigned char r, g, b;
 
         argStream.ReadBool( fadeIn );
-        argStream.ReadNumber( fadeIn, 1 );
+        argStream.ReadNumber( time, 1 );
         argStream.ReadNumber( r, 0 ); argStream.ReadNumber( g, 0 ); argStream.ReadNumber( b, 0 );
 
         if ( !argStream.HasErrors() )

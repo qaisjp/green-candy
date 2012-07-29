@@ -184,7 +184,7 @@ void CClientProjectile::Destroy ( void )
 {
     if ( m_pProjectile )
     {
-        m_pProjectile->Destroy ();
+        delete m_pProjectile;
         m_pProjectile = NULL;
     }
 }

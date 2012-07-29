@@ -30,7 +30,7 @@ public:
                                 ~CClientStreamElement( void );
 
     void                        UpdateStreamPosition( const CVector & vecPosition );
-    CVector                     GetStreamPosition( void )                                           { return m_vecStreamPosition; }
+    CVector                     GetStreamPosition( void ) const                                     { return m_vecStreamPosition; }
     CClientStreamSectorRow *    GetStreamRow( void )                                                { return m_pStreamRow; }
     CClientStreamSector *       GetStreamSector( void )                                             { return m_pStreamSector; }
     bool                        IsStreamedIn( void )                                                { return m_bStreamedIn; }

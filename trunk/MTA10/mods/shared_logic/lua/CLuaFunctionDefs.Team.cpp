@@ -42,9 +42,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getTeamName )
     {
-        if ( CClientTeam *team = lua_readclass( L, 1, LUACLASS_TEAM ) )
+        if ( CClientTeam *team = lua_readclass <CClientTeam> ( L, 1, LUACLASS_TEAM ) )
         {
-            const char *szName = pTeam->GetTeamName();
+            const char *szName = team->GetTeamName();
             if ( szName )
             {
                 lua_pushstring( L, szName );
@@ -60,7 +60,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getTeamColor )
     {
-        if ( CClientTeam *team = lua_readclass( L, 1, LUACLASS_TEAM ) )
+        if ( CClientTeam *team = lua_readclass <CClientTeam> ( L, 1, LUACLASS_TEAM ) )
         {
             unsigned char ucRed, ucGreen, ucBlue;
             team->GetColor( ucRed, ucGreen, ucBlue );
@@ -79,7 +79,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getTeamFriendlyFire )
     {
-        if ( CClientTeam *team = lua_readclass( L, 1, LUACLASS_TEAM ) )
+        if ( CClientTeam *team = lua_readclass <CClientTeam> ( L, 1, LUACLASS_TEAM ) )
         {
             lua_pushboolean( L, team->GetFriendlyFire() );
             return 1;
@@ -93,17 +93,17 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getPlayersInTeam )
     {
-        if ( CClientTeam *team = lua_readclass( L, 1, LUACLASS_TEAM ) )
+        if ( CClientTeam *team = lua_readclass <CClientTeam> ( L, 1, LUACLASS_TEAM ) )
         {
             lua_newtable ( L );
 
             unsigned int uiIndex = 0;
 
             std::list <CClientPlayer*>::const_iterator iter = team->IterBegin();
-            for ( ; iter != pTeam->IterEnd(); iter++ )
+            for ( ; iter != team->IterEnd(); iter++ )
             {
                 lua_pushnumber( L, ++uiIndex );
-                lua_pushelement( L, (*iter)->PushStack( L ) );
+                (*iter)->PushStack( L );
                 lua_settable( L, -3 );
             }
 
@@ -118,7 +118,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( countPlayersInTeam )
     {
-        if ( CClientTeam *team = lua_readclass( L, 1, LUACLASS_TEAM ) )
+        if ( CClientTeam *team = lua_readclass <CClientTeam> ( L, 1, LUACLASS_TEAM ) )
         {
             lua_pushnumber( L, team->CountPlayers() );
             return 1;

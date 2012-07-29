@@ -46,7 +46,7 @@ public:
     std::vector < CClientPlayer* > ::const_iterator IterBegin   ( void )                                                { return m_Players.begin (); };
     std::vector < CClientPlayer* > ::const_iterator IterEnd     ( void )                                                { return m_Players.end (); };
 
-    static bool                 IsValidModel                    ( unsigned long ulModel );
+    static bool                 IsValidModel                    ( unsigned short model );
 
     void                        ResetAll                        ( void );
 

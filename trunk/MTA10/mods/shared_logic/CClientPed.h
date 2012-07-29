@@ -258,8 +258,8 @@ public:
     bool                        KillTask( int iTaskPriority, bool bGracefully = true );
     bool                        KillTaskSecondary( int iTaskPriority, bool bGracefully = true );
 
-    CVector*                    GetBonePosition( eBone bone, CVector& vecPosition ) const;
-    CVector*                    GetTransformedBonePosition( eBone bone, CVector& vecPosition ) const;
+    void                        GetBonePosition( eBone bone, CVector& vecPosition ) const;
+    void                        GetTransformedBonePosition( eBone bone, CVector& vecPosition ) const;
 
     inline void                 GetAim( float& fDirectionX, float& fDirectionY )            { if ( m_shotSyncData ) { fDirectionX = m_shotSyncData->m_fArmDirectionX; fDirectionY = m_shotSyncData->m_fArmDirectionY; } };
     inline const CVector&       GetAimSource()                                              { return m_shotSyncData->m_vecShotOrigin; };

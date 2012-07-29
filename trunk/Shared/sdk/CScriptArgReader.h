@@ -71,7 +71,7 @@ inline static type* lua_readclass( lua_State *L, int idx, int transmit )
 
     type *ptr;
 
-    if ( !lua_refclass( L, idx )->GetTransmit( trasnmit, (void*&)ptr ) )
+    if ( !lua_refclass( L, idx )->GetTransmit( transmit, (void*&)ptr ) )
         return NULL;
 
     return ptr;
@@ -110,7 +110,7 @@ public:
     template < class T >
     bool ReadNumber ( T& outValue )
     {
-        if ( lua_isnumber( L, m_iIndex ) )
+        if ( lua_isnumber( m_luaVM, m_iIndex ) )
         {
             outValue = static_cast < T > ( lua_tonumber ( m_luaVM, m_iIndex++ ) );
             return true;
@@ -292,10 +292,20 @@ public:
 
     // Read MTA:Lua type while accepting default
     template <class T>
-    void ReadClass( T*& outValue, unsigned int transmit, T*& def )
+    void ReadClass( T*& outValue, unsigned int transmit, T *def )
     {
         if ( lua_type( m_luaVM, m_iIndex ) != LUA_TCLASS || !lua_refclass( m_luaVM, m_iIndex )->GetTransmit( transmit, (void*&)outValue ) )
             outValue = def;
+
+        m_iIndex++;
+    }
+
+        // Read MTA:Lua type while accepting default
+    template <class T>
+    void ReadClass( T*& outValue, unsigned int transmit, int )
+    {
+        if ( lua_type( m_luaVM, m_iIndex ) != LUA_TCLASS || !lua_refclass( m_luaVM, m_iIndex )->GetTransmit( transmit, (void*&)outValue ) )
+            outValue = NULL;
 
         m_iIndex++;
     }
@@ -308,11 +318,11 @@ public:
 
     inline bool ReadVector( CVector& outValue, const CVector& defValue )
     {
-        return ReadNumber( outValue.fX, defValue.fX ) && ReadNumber( outValue.fY, defValue.fY ) && ReadValue( outValue.fZ, defValue.fZ );
+        return ReadNumber( outValue.fX, defValue.fX ) && ReadNumber( outValue.fY, defValue.fY ) && ReadNumber( outValue.fZ, defValue.fZ );
     }
 
     // Reads a color unit by unsigned char
-    bool ReadColor( unsigned char outValue )
+    bool ReadColor( unsigned char& outValue )
     {
         double color;
 
@@ -327,7 +337,7 @@ public:
     }
 
     // Reads a color unit by unsigned char with default value
-    bool ReadColor( unsigned char outValue, double defValue )
+    bool ReadColor( unsigned char& outValue, double defValue )
     {
         double color;
         ReadNumber( color, defValue );
@@ -337,35 +347,6 @@ public:
 
         outValue = (unsigned char)color;
         return true;
-    }
-
-    //
-    // Read next userdata, using default if needed
-    //
-    template < class T >
-    bool ReadUserData ( T*& outValue, T* defaultValue, bool bArgCanBeNil = false, bool bDefaultCanBeNil = false )
-    {
-        int iArgument = lua_type ( m_luaVM, m_iIndex );
-
-        if ( iArgument == LUA_TLIGHTUSERDATA )
-        {
-            // We cannot use insecure userdata interfaces
-            assert( 0 );
-        }
-        else if ( iArgument == LUA_TNONE || m_bIgnoreMismatchMatch || ( iArgument == LUA_TNIL && bArgCanBeNil ) )
-        {
-            if ( defaultValue != (T*)-1 )
-            {
-                outValue = defaultValue;
-                if ( outValue || bDefaultCanBeNil )
-                    return false;
-            }
-        }
-
-        outValue = NULL;
-        SetTypeError ( GetClassTypeName ( (T*)0 ) );
-        m_iIndex++;
-        return false;
     }
 
     //
@@ -428,16 +409,6 @@ public:
             SetTypeError ( strErrorExpectedType, m_iIndex - 1 );
         }
         return false;
-    }
-
-
-    //
-    // Read next userdata, using NULL default or no default
-    //
-    template < class T >
-    bool ReadUserData ( T*& outValue, int defaultValue = -1 )
-    {
-        return ReadUserData ( outValue, (T*)defaultValue, defaultValue == 0, true );
     }
 
     //
@@ -597,9 +568,9 @@ public:
 
         if ( iGotArgumentType == LUA_TCLASS )
         {
-            lua_pushtype( m_luaVM, iErrorIndex );
-            strGotArgumentType = lua_getstring( L, -1 );
-            lua_pop( L, 1 );
+            lua_pushtype( m_luaVM, m_iErrorIndex );
+            strGotArgumentType = lua_getstring( m_luaVM, -1 );
+            lua_pop( m_luaVM, 1 );
         }
 
         if ( !strGotArgumentType.empty () )

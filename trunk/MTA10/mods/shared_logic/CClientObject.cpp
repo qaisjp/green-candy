@@ -573,12 +573,10 @@ CSphere CClientObject::GetWorldBoundingSphere ( void )
     CModelInfo* pModelInfo = g_pGame->GetModelInfo ( GetModel () );
     if ( pModelInfo )
     {
-        CBoundingBox* pBoundingBox = pModelInfo->GetBoundingBox ();
-        if ( pBoundingBox )
-        {
-            sphere.vecPosition = pBoundingBox->vecBoundOffset;
-            sphere.fRadius = pBoundingBox->fRadius;
-        }
+        const CBoundingBox& bounds = pModelInfo->GetBoundingBox();
+
+        sphere.vecPosition = bounds.vecBoundOffset;
+        sphere.fRadius = bounds.fRadius;
     }
     sphere.vecPosition += GetStreamPosition ();
     return sphere;

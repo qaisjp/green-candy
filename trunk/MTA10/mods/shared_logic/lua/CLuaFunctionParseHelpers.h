@@ -128,6 +128,14 @@ inline SString GetClassTypeName ( CLuaTimer* )              { return "lua-timer"
 inline SString GetClassTypeName ( CEntity* )                { return "entity"; }
 
 
+//
+// CXMLNode from userdata
+//
+template < class T >
+CXMLNode* UserDataCast ( CXMLNode*, void* ptr, lua_State* )
+{
+    return g_pCore->GetXML ()->GetNodeFromID ( reinterpret_cast < unsigned long > ( ptr ) );
+}
 
 //
 // Reading mixed types
