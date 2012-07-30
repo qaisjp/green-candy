@@ -273,9 +273,9 @@ public:
     void                            KillPlayer();
 
     // This does not make any sense here, no joke, CRemote?
-    CVehicleSA*                     GiveRemoteVehicle( unsigned short model, float x, float y, float z );
+    CVehicle*                       GiveRemoteVehicle( unsigned short model, float x, float y, float z );
     void                            StopRemoteControl();
-    CVehicleSA*                     GetRemoteVehicle();
+    CVehicle*                       GetRemoteVehicle();
 
     float                           GetFPSMoveHeading();
 

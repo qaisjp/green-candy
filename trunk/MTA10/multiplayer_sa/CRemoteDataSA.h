@@ -37,8 +37,8 @@ public:
         m_bProcessPlayerWeapon = false;
     }
 
-    inline CControllerState *   CurrentControllerState () { return &m_pad.NewState; }
-    inline CControllerState *   LastControllerState () { return &m_pad.OldState; }
+    inline CControllerState *   CurrentControllerState () { return &m_pad.m_new; }
+    inline CControllerState *   LastControllerState () { return &m_pad.m_prev; }
     inline CShotSyncData *      ShotSyncData        () { return &m_shotSyncData; }
     inline CStatsData *         Stats               () { return &m_stats; }
     inline void                 SetCameraRotation   ( float fCameraRotation ) { m_fCameraRotation = fCameraRotation; }

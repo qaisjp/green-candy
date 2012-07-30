@@ -9,11 +9,17 @@
 *
 *****************************************************************************/
 
+#ifndef _CLIENT_MATERIAL_
+#define _CLIENT_MATERIAL_
+
+#define LUACLASS_MATERIAL   89
 
 class CClientMaterial : public CClientRenderElement
 {
 public:
-                            CClientMaterial( CClientManager* pManager, ElementID ID, LuaClass& root ) : CClientRenderElement( pManager, ID, root )      {}
+                            CClientMaterial( CClientManager* pManager, ElementID ID, LuaClass& root );
 
     CMaterialItem*          GetMaterialItem( void )                             { return (CMaterialItem*)m_pRenderItem; }
 };
+
+#endif //_CLIENT_MATERIAL_

@@ -18,7 +18,7 @@ static const luaL_Reg scrollpane_interface[] =
     { NULL, NULL }
 };
 
-static int luaconstructor_guiscrollpane( lua_State *L )
+int luaconstructor_guiscrollpane( lua_State *L )
 {
     CClientGUIElement *gui = (CClientGUIElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 

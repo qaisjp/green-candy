@@ -171,7 +171,7 @@ void CClientPickup::Create ( void )
             m_pObject = m_pPickup->GetObject ();
 
             // Create our collision
-            m_pCollision = new CClientColSphere ( g_pClientGame->GetManager(), NULL, m_vecPosition, 1.0f );
+            m_pCollision = new CClientColSphere ( g_pClientGame->GetManager(), NULL, *this, IsSystemEntity(), m_vecPosition, 1.0f );
             m_pCollision->m_pOwningPickup = this;
             m_pCollision->SetHitCallback ( this );
 

@@ -12,3 +12,10 @@
 
 #include "StdInc.h"
 
+CMonsterTruckSA::CMonsterTruckSA( CMonsterTruckSAInterface *monster ) : CAutomobileSA( monster )
+{
+}
+
+CMonsterTruckSA::~CMonsterTruckSA()
+{
+}

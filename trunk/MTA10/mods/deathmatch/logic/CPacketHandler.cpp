@@ -2475,7 +2475,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                         }
 
                         // Create the object and put it at its position
-                        CDeathmatchObject* pObject = new CDeathmatchObject ( g_pClientGame->m_pManager, g_pClientGame->m_pMovingObjectsManager, g_pClientGame->m_pObjectSync, EntityID, usObjectID );
+                        CDeathmatchObject* pObject = new CDeathmatchObject ( g_pClientGame->m_pManager, *g_pClientGame->GetRootEntity(), true, g_pClientGame->m_pMovingObjectsManager, g_pClientGame->m_pObjectSync, EntityID, usObjectID );
                         pEntity = pObject;
                         if ( pObject )
                         {
@@ -2533,7 +2533,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                          bitStream.Read ( &pickupType ) )
                     {
                         // Create the pickup with the given position and model
-                        CClientPickup* pPickup = new CClientPickup ( g_pClientGame->m_pManager, EntityID, usModel, position.data.vecPosition );
+                        CClientPickup* pPickup = new CClientPickup ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, usModel, position.data.vecPosition );
                         pEntity = pPickup;
                         if ( !pPickup )
                         {
@@ -2653,7 +2653,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     }
 
                     // Create it
-                    CDeathmatchVehicle* pVehicle = new CDeathmatchVehicle ( g_pClientGame->m_pManager, g_pClientGame->m_pUnoccupiedVehicleSync, EntityID, usModel );
+                    CDeathmatchVehicle* pVehicle = new CDeathmatchVehicle ( g_pClientGame->m_pManager, *g_pClientGame->GetRootEntity(), true, g_pClientGame->m_pUnoccupiedVehicleSync, EntityID, usModel );
                     pEntity = pVehicle;
                     if ( !pVehicle )
                     {
@@ -2858,7 +2858,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                         if ( ucType < CClientMarker::MARKER_INVALID )
                         {
                             // Create it
-                            CClientMarker* pMarker = new CClientMarker ( g_pClientGame->m_pManager, EntityID, ucType );
+                            CClientMarker* pMarker = new CClientMarker ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, ucType );
                             pMarker->SetPosition ( position.data.vecPosition );
                             pMarker->SetSize ( fSize );
                             pMarker->SetColor ( color );
@@ -2914,7 +2914,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     bitStream.Read ( &visibleDistance );
 
                     // Make a blip with the given ID
-                    CClientRadarMarker* pBlip = new CClientRadarMarker ( g_pClientGame->m_pManager, EntityID, sOrdering, visibleDistance );
+                    CClientRadarMarker* pBlip = new CClientRadarMarker ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, sOrdering, visibleDistance );
                     pEntity = pBlip;
 
                     pBlip->SetPosition ( position.data.vecPosition );
@@ -2960,7 +2960,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                          bitStream.ReadBit ( bIsFlashing ) )
                     {
                         // Create the radar area
-                        CClientRadarArea* pArea = g_pClientGame->m_pRadarAreaManager->Create ( EntityID );
+                        CClientRadarArea* pArea = g_pClientGame->m_pRadarAreaManager->Create ( EntityID, *g_pClientGame->GetRootEntity(), true );
                         pEntity = pArea;
                         if ( pArea )
                         {
@@ -2991,7 +2991,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                          bitStream.Read ( NextNodeID ) )
                     {
                         CClientPathNode* pNode = new CClientPathNode ( g_pClientGame->m_pManager, vecPosition, vecRotation,
-                            iTime, EntityID, (CClientPathNode::ePathNodeStyle)ucStyle );
+                            iTime, EntityID, *g_pClientGame->GetRootEntity(), (CClientPathNode::ePathNodeStyle)ucStyle );
                         pEntity = pNode;
                         if ( pNode && NextNodeID != INVALID_ELEMENT_ID )
                         {
@@ -3024,7 +3024,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     bitStream.Read ( ucGreen );
                     bitStream.Read ( ucBlue );
 
-                    CClientTeam* pTeam = new CClientTeam ( g_pClientGame->GetManager (), EntityID, szTeamName, ucRed, ucGreen, ucBlue );
+                    CClientTeam* pTeam = new CClientTeam ( g_pClientGame->GetManager (), EntityID, *g_pClientGame->GetRootEntity(), true, szTeamName, ucRed, ucGreen, ucBlue );
                     pEntity = pTeam;
 
                     bool bFriendlyFire;
@@ -3082,7 +3082,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     bool bIsHeadless = bitStream.ReadBit ();
                     bool bIsFrozen = bitStream.ReadBit ();
 
-                    CClientPed* pPed = new CClientPed ( g_pClientGame->m_pManager, usModel, EntityID );
+                    CClientPed* pPed = new CClientPed ( g_pClientGame->m_pManager, usModel, EntityID, *g_pClientGame->GetRootEntity(), true );
                     pEntity = pPed;
 
                     pPed->SetPosition ( position.data.vecPosition );
@@ -3150,7 +3150,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     bitStream.Read ( szTypeName, usTypeNameLength );
                     szTypeName [ usTypeNameLength ] = 0;
 
-                    CClientDummy* pDummy = new CClientDummy ( g_pClientGame->m_pManager, EntityID, szTypeName );
+                    CClientDummy* pDummy = new CClientDummy ( g_pClientGame->m_pManager, EntityID, szTypeName, *g_pClientGame->GetRootEntity(), true );
                     pEntity = pDummy;
 
                     // Position
@@ -3201,7 +3201,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                         {
                             float fRadius;
                             bitStream.Read ( fRadius );
-                            CClientColCircle* pCircle = new CClientColCircle ( g_pClientGame->m_pManager, EntityID, position.data.vecPosition, fRadius );
+                            CClientColCircle* pCircle = new CClientColCircle ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition, fRadius );
                             pEntity = pShape = pCircle;
                             break;
                         }
@@ -3209,7 +3209,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                         {
                             SPositionSync size ( false );
                             bitStream.Read ( &size );
-                            CClientColCuboid* pCuboid = new CClientColCuboid ( g_pClientGame->m_pManager, EntityID, position.data.vecPosition, size.data.vecPosition );
+                            CClientColCuboid* pCuboid = new CClientColCuboid ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition, size.data.vecPosition );
                             pEntity = pShape = pCuboid;
                             break;
                         }
@@ -3217,7 +3217,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                         {
                             float fRadius;
                             bitStream.Read ( fRadius );
-                            CClientColSphere* pSphere = new CClientColSphere ( g_pClientGame->m_pManager, EntityID, position.data.vecPosition, fRadius );
+                            CClientColSphere* pSphere = new CClientColSphere ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition, fRadius );
                             pEntity = pShape = pSphere;
                             break;
                         }
@@ -3225,7 +3225,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                         {
                             SPosition2DSync size ( false );
                             bitStream.Read ( &size );
-                            CClientColRectangle* pRectangle = new CClientColRectangle ( g_pClientGame->m_pManager, EntityID, position.data.vecPosition, size.data.vecPosition );
+                            CClientColRectangle* pRectangle = new CClientColRectangle ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition, size.data.vecPosition );
                             pEntity = pShape = pRectangle;
                             break;
                         }
@@ -3234,7 +3234,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                             float fRadius, fHeight;
                             bitStream.Read ( fRadius );
                             bitStream.Read ( fHeight );
-                            CClientColTube* pTube = new CClientColTube ( g_pClientGame->m_pManager, EntityID, position.data.vecPosition, fRadius, fHeight );
+                            CClientColTube* pTube = new CClientColTube ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition, fRadius, fHeight );
                             pEntity = pShape = pTube;
                             break;
                         }
@@ -3243,7 +3243,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                             unsigned int uiPoints;
                             CVector2D vecPoint;
                             bitStream.ReadCompressed ( uiPoints );
-                            CClientColPolygon* pPolygon = new CClientColPolygon ( g_pClientGame->m_pManager, EntityID, position.data.vecPosition );
+                            CClientColPolygon* pPolygon = new CClientColPolygon ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition );
                             for ( unsigned int i = 0; i < uiPoints; i++ )
                             {
                                 SPosition2DSync vertex ( false );
@@ -3294,11 +3294,11 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     CClientWater* pWater = NULL;
                     if ( ucNumVertices == 3 )
                     {
-                        pWater = new CClientWater ( g_pClientGame->GetManager (), EntityID, vecVertices[0], vecVertices[1], vecVertices[2] );
+                        pWater = new CClientWater ( g_pClientGame->GetManager (), EntityID, *g_pClientGame->GetRootEntity(), true, vecVertices[0], vecVertices[1], vecVertices[2] );
                     }
                     else
                     {
-                        pWater = new CClientWater ( g_pClientGame->GetManager (), EntityID, vecVertices[0], vecVertices[1], vecVertices[2], vecVertices[3] );
+                        pWater = new CClientWater ( g_pClientGame->GetManager (), EntityID, *g_pClientGame->GetRootEntity(), true, vecVertices[0], vecVertices[1], vecVertices[2], vecVertices[3] );
                     }
                     if ( !pWater->Valid () )
                     {
@@ -3919,7 +3919,7 @@ void CPacketHandler::Packet_ProjectileSync ( NetBitStreamInterface& bitStream )
                 if ( pVehicle ) pCreator = pVehicle;
             }
             
-            CClientProjectile * pProjectile = g_pClientGame->m_pManager->GetProjectileManager ()->Create ( pCreator, weaponType, origin.data.vecPosition, fForce, NULL, pTargetEntity );
+            CClientProjectile * pProjectile = g_pClientGame->m_pManager->GetProjectileManager ()->Create ( pCreator, weaponType, origin.data.vecPosition, fForce, CVector(), pTargetEntity );
             if ( pProjectile )
             {
                 pProjectile->Initiate ( &origin.data.vecPosition, pvecRotation, pvecVelocity, 0 );

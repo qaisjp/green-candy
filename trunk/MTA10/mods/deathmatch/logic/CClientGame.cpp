@@ -143,8 +143,7 @@ CClientGame::CClientGame ( bool bLocalPlay )
     CClientEntity::StartupEntitiesFromRoot ();
 
     // Initialize our root entity with an invalid id, we dont know the true id until map-start
-    m_pRootEntity = new CClientDummy ( NULL, INVALID_ELEMENT_ID, "root" );
-    m_pRootEntity->MakeSystemEntity ();
+    m_pRootEntity = new CClientDummy ( NULL, INVALID_ELEMENT_ID, "root", *g_pClientGame->GetRootEntity(), true );
 
     // Movings objects manager
     m_pMovingObjectsManager = new CMovingObjectsManager ();
@@ -3048,7 +3047,7 @@ void CClientGame::UpdateMimics ( void )
 
                     if ( pMimicVehicle == NULL )
                     {
-                        pMimicVehicle = new CDeathmatchVehicle ( m_pManager, m_pUnoccupiedVehicleSync, INVALID_ELEMENT_ID, uiModel );
+                        pMimicVehicle = new CDeathmatchVehicle ( m_pManager, *g_pClientGame->GetRootEntity(), true, m_pUnoccupiedVehicleSync, INVALID_ELEMENT_ID, uiModel );
                         pMimicVehicle->SetPosition ( vecPosition );
 
                         unsigned short * usUpgrades = pVehicle->GetUpgrades ()->GetSlotStates ();
@@ -3103,7 +3102,7 @@ void CClientGame::UpdateMimics ( void )
 
                         if ( !pMimicTrailer )
                         {
-                            pMimicTrailer = new CDeathmatchVehicle ( m_pManager, m_pUnoccupiedVehicleSync, static_cast < ElementID > ( 450 + uiMimicIndex + uiTrailerLoop ), uiModel );
+                            pMimicTrailer = new CDeathmatchVehicle ( m_pManager, *g_pClientGame->GetRootEntity(), true, m_pUnoccupiedVehicleSync, static_cast < ElementID > ( 450 + uiMimicIndex + uiTrailerLoop ), uiModel );
                             pMimicVehicle->SetTowedVehicle ( pMimicTrailer );
                         }
 
@@ -3151,7 +3150,7 @@ void CClientGame::DoPaintballs ( void )
             paintBalls.pop_back ();
         }
 
-        CClientMarker* pCorona = new CClientMarker ( m_pManager, INVALID_ELEMENT_ID, CClientMarker::MARKER_CORONA );
+        CClientMarker* pCorona = new CClientMarker ( m_pManager, INVALID_ELEMENT_ID, *g_pClientGame->GetRootEntity(), true, CClientMarker::MARKER_CORONA );
         paintBalls.push_front ( pCorona );
         pCorona->SetSize ( 0.2f );
         if ( bCollision && pCollision )

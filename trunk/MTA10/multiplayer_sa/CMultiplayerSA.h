@@ -68,8 +68,10 @@ public:
     void                        SetPreWorldProcessHandler   ( PreWorldProcessHandler * pHandler );
     void                        SetPostWorldProcessHandler  ( PostWorldProcessHandler * pHandler );
     void                        SetIdleHandler              ( IdleHandler * pHandler );
+#if 0
     void                        SetAddAnimationHandler      ( AddAnimationHandler * pHandler );
     void                        SetBlendAnimationHandler    ( BlendAnimationHandler * pHandler );
+#endif
     void                        SetProcessCollisionHandler  ( ProcessCollisionHandler * pHandler );
 
     void                        AllowMouseMovement          ( bool bAllow );

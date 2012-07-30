@@ -25,13 +25,13 @@ public:
                             CClientRenderElementManager          ( CClientManager* pClientManager );
                             ~CClientRenderElementManager         ( void );
 
-    CClientDxFont*          CreateDxFont                ( const SString& strFullFilePath, uint uiSize, bool bBold );
-    CClientGuiFont*         CreateGuiFont               ( const SString& strFullFilePath, const SString& strUniqueName, uint uiSize );
-    CClientTexture*         CreateTexture               ( const SString& strFullFilePath );
-    CClientShader*          CreateShader                ( const SString& strFullFilePath, const SString& strRootPath, SString& strOutStatus, bool bDebug );
-    CClientRenderTarget*    CreateRenderTarget          ( uint uiSizeX, uint uiSizeY, bool bWithAlphaChannel );
-    CClientScreenSource*    CreateScreenSource          ( uint uiSizeX, uint uiSizeY );
-    CClientTexture*         FindAutoTexture             ( const SString& strFullFilePath, const SString& strUniqueName );
+    CClientDxFont*          CreateDxFont                ( const SString& strFullFilePath, uint uiSize, bool bBold, LuaClass& root );
+    CClientGuiFont*         CreateGuiFont               ( const SString& strFullFilePath, const SString& strUniqueName, uint uiSize, LuaClass& root );
+    CClientTexture*         CreateTexture               ( const SString& strFullFilePath, LuaClass& root );
+    CClientShader*          CreateShader                ( const SString& strFullFilePath, const SString& strRootPath, SString& strOutStatus, bool bDebug, LuaClass& root );
+    CClientRenderTarget*    CreateRenderTarget          ( uint uiSizeX, uint uiSizeY, bool bWithAlphaChannel, LuaClass& root );
+    CClientScreenSource*    CreateScreenSource          ( uint uiSizeX, uint uiSizeY, LuaClass& root );
+    CClientTexture*         FindAutoTexture             ( const SString& strFullFilePath, const SString& strUniqueName, LuaClass& root );
     void                    Remove                      ( CClientRenderElement* pElement );
 
     uint                    GetDxFontCount              ( void )    { return m_uiStatsDxFontCount; }

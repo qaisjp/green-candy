@@ -30,17 +30,15 @@ CClientRadarAreaManager::~CClientRadarAreaManager ( void )
     DeleteAll ();
 }
 
-
-CClientRadarArea* CClientRadarAreaManager::Create ( ElementID EntityID )
+CClientRadarArea* CClientRadarAreaManager::Create ( ElementID EntityID, LuaClass& root, bool system )
 {
     if ( !Get ( EntityID ) )
     {
-        return new CClientRadarArea ( m_pManager, EntityID );
+        return new CClientRadarArea ( m_pManager, EntityID, root, system );
     }
 
     return NULL;
 }
-
 
 void CClientRadarAreaManager::Delete ( CClientRadarArea* pRadarArea )
 {

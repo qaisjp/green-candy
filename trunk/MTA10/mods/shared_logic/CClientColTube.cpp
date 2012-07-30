@@ -12,14 +12,13 @@
 
 #include <StdInc.h>
 
-CClientColTube::CClientColTube ( CClientManager* pManager, ElementID ID, const CVector& vecPosition, float fRadius, float fHeight ) : CClientColShape ( pManager, ID )
+CClientColTube::CClientColTube ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, float fRadius, float fHeight ) : CClientColShape ( pManager, ID, root, system )
 {
     m_vecPosition = vecPosition;
     m_fRadius = fRadius;
     m_fHeight = fHeight;
     UpdateSpatialData ();
 }
-
 
 bool CClientColTube::DoHitDetection ( const CVector& vecNowPosition, float fRadius )
 {
@@ -30,7 +29,6 @@ bool CClientColTube::DoHitDetection ( const CVector& vecNowPosition, float fRadi
              vecNowPosition.fZ >= m_vecPosition.fZ &&
              vecNowPosition.fZ <= m_vecPosition.fZ + m_fHeight );
 }
-
 
 CSphere CClientColTube::GetWorldBoundingSphere ( void )
 {

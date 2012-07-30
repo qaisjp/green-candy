@@ -20,6 +20,35 @@
 #include <game/CPools.h>
 #include <google/dense_hash_map>
 
+#include "CModelInfoSA.h"
+#include "CClumpModelInfoSA.h"
+#include "CVehicleModelInfoSA.h"
+#include "CColModelSA.h"
+#include "CEntryInfoSA.h"
+#include "CTextureSA.h"
+#include "CTexDictionarySA.h"
+#include "CTextureManagerSA.h"
+#include "CEventSA.h"
+#include "CBuildingSA.h"
+#include "CDummySA.h"
+#include "CRouteSA.h"
+#include "CVehicleSA.h"
+#include "CAutomobileSA.h"
+#include "CHeliSA.h"
+#include "CBoatSA.h"
+#include "CBikeSA.h"
+#include "CBicycleSA.h"
+#include "CAutomobileTrailerSA.h"
+#include "CTrainSA.h"
+#include "CMonsterTruckSA.h"
+#include "CQuadBikeSA.h"
+#include "CPlaneSA.h"
+#include "CPedSA.h"
+#include "CPlayerPedSA.h"
+#include "CObjectSA.h"
+#include "CProjectileSA.h"
+#include "CTaskAllocatorSA.h"
+
 template <class type, int max, const size_t size = sizeof(type)>
 class CPool
 {
@@ -148,7 +177,7 @@ public:
 };
 
 // Rockstar's inheritance trick; keep these chains updated!
-#define MAX_VEHICLE_SIZE ( max(sizeof(CHeliSAInterface),max(sizeof(CTrainSAInterface),max(sizeof(CAutomobileSAInterface),max(sizeof(CBikeSAInterface),max(sizeof(CBicycleSAInterface),max(sizeof(CPlaneSAInterface),max(sizeof(CBoatSAInterface),max(sizeof(CAutomobileTrailerSAInterface),max(sizeof(CQuadBikeSAInterface,sizeof(CMonsterTruckSAInterface))))))))))) )
+#define MAX_VEHICLE_SIZE ( max(sizeof(CHeliSAInterface),max(sizeof(CTrainSAInterface),max(sizeof(CAutomobileSAInterface),max(sizeof(CBikeSAInterface),max(sizeof(CBicycleSAInterface),max(sizeof(CPlaneSAInterface),max(sizeof(CBoatSAInterface),max(sizeof(CAutomobileTrailerSAInterface),max(sizeof(CQuadBikeSAInterface),sizeof(CMonsterTruckSAInterface)))))))))) )
 
 #define MAX_PED_SIZE ( max(sizeof(CPedSAInterface),max(sizeof(CPlayerPedSAInterface),sizeof(CCivilianPedSAInterface))) )
 

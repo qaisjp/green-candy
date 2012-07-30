@@ -84,16 +84,16 @@ void CLuaMain::InitVM( int structure, int meta )
     LuaMain::InitVM( structure, meta );
 
     // Update global variables
-    lua_pushelement( m_lua, g_pClientGame->GetRootEntity() );
+    g_pClientGame->GetRootEntity()->PushStack( m_lua );
     lua_setglobal( m_lua, "root" );
 
-    lua_pushelement( m_lua, GetResource()->GetResourceEntity() );
+    GetResource()->GetResourceEntity()->PushStack( m_lua );
     lua_setglobal( m_lua, "resourceRoot" );
 
-    lua_pushelement( m_lua, GetResource()->GetResourceGUIEntity() );
+    GetResource()->GetResourceGUIEntity()->PushStack( m_lua );
     lua_setglobal( m_lua, "guiRoot" );
 
-    lua_pushelement( m_lua, g_pClientGame->GetLocalPlayer() );
+    g_pClientGame->GetLocalPlayer()->PushStack( m_lua );
     lua_setglobal( m_lua, "localPlayer" );
 
     // Load pre-loaded lua code

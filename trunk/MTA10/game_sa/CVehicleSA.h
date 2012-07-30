@@ -22,6 +22,7 @@
 
 #include "Common.h"
 #include "CPhysicalSA.h"
+#include "CHandlingEntrySA.h"
 #include "CHandlingManagerSA.h"
 #include "CDoorSA.h"
 

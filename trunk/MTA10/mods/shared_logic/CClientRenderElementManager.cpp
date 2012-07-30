@@ -52,7 +52,7 @@ CClientRenderElementManager::~CClientRenderElementManager ( void )
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientDxFont* CClientRenderElementManager::CreateDxFont ( const SString& strFullFilePath, uint uiSize, bool bBold )
+CClientDxFont* CClientRenderElementManager::CreateDxFont ( const SString& strFullFilePath, uint uiSize, bool bBold, LuaClass& root )
 {
     // Create the item
     CDxFontItem* pDxFontItem = m_pRenderItemManager->CreateDxFont ( strFullFilePath, uiSize, bBold );
@@ -62,7 +62,7 @@ CClientDxFont* CClientRenderElementManager::CreateDxFont ( const SString& strFul
         return NULL;
 
     // Create the element
-    CClientDxFont* pDxFontElement = new CClientDxFont ( m_pClientManager, INVALID_ELEMENT_ID, pDxFontItem );
+    CClientDxFont* pDxFontElement = new CClientDxFont ( m_pClientManager, INVALID_ELEMENT_ID, root, pDxFontItem );
 
     // Add to this manager's list
     MapSet ( m_ItemElementMap, pDxFontItem, pDxFontElement );
@@ -81,7 +81,7 @@ CClientDxFont* CClientRenderElementManager::CreateDxFont ( const SString& strFul
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientGuiFont* CClientRenderElementManager::CreateGuiFont ( const SString& strFullFilePath, const SString& strUniqueName, uint uiSize )
+CClientGuiFont* CClientRenderElementManager::CreateGuiFont ( const SString& strFullFilePath, const SString& strUniqueName, uint uiSize, LuaClass& root )
 {
     // Create the item
     CGuiFontItem* pGuiFontItem = m_pRenderItemManager->CreateGuiFont ( strFullFilePath, strUniqueName, uiSize );
@@ -91,7 +91,7 @@ CClientGuiFont* CClientRenderElementManager::CreateGuiFont ( const SString& strF
         return NULL;
 
     // Create the element
-    CClientGuiFont* pGuiFontElement = new CClientGuiFont ( m_pClientManager, INVALID_ELEMENT_ID, pGuiFontItem );
+    CClientGuiFont* pGuiFontElement = new CClientGuiFont ( m_pClientManager, INVALID_ELEMENT_ID, pGuiFontItem, root );
 
     // Add to this manager's list
     MapSet ( m_ItemElementMap, pGuiFontItem, pGuiFontElement );
@@ -110,7 +110,7 @@ CClientGuiFont* CClientRenderElementManager::CreateGuiFont ( const SString& strF
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientTexture* CClientRenderElementManager::CreateTexture ( const SString& strFullFilePath )
+CClientTexture* CClientRenderElementManager::CreateTexture ( const SString& strFullFilePath, LuaClass& root )
 {
     // Create the item
     CTextureItem* pTextureItem = m_pRenderItemManager->CreateTexture ( strFullFilePath );
@@ -120,7 +120,7 @@ CClientTexture* CClientRenderElementManager::CreateTexture ( const SString& strF
         return NULL;
 
     // Create the element
-    CClientTexture* pTextureElement = new CClientTexture ( m_pClientManager, INVALID_ELEMENT_ID, pTextureItem );
+    CClientTexture* pTextureElement = new CClientTexture ( m_pClientManager, INVALID_ELEMENT_ID, root, pTextureItem );
 
     // Add to this manager's list
     MapSet ( m_ItemElementMap, pTextureItem, pTextureElement );
@@ -139,7 +139,7 @@ CClientTexture* CClientRenderElementManager::CreateTexture ( const SString& strF
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientShader* CClientRenderElementManager::CreateShader ( const SString& strFullFilePath, const SString& strRootPath, SString& strOutStatus, bool bDebug )
+CClientShader* CClientRenderElementManager::CreateShader ( const SString& strFullFilePath, const SString& strRootPath, SString& strOutStatus, bool bDebug, LuaClass& root )
 {
     // Create the item
     CShaderItem* pShaderItem = m_pRenderItemManager->CreateShader ( strFullFilePath, strRootPath, strOutStatus, bDebug );
@@ -149,7 +149,7 @@ CClientShader* CClientRenderElementManager::CreateShader ( const SString& strFul
         return NULL;
 
     // Create the element
-    CClientShader* pShaderElement = new CClientShader ( m_pClientManager, INVALID_ELEMENT_ID, pShaderItem );
+    CClientShader* pShaderElement = new CClientShader ( m_pClientManager, INVALID_ELEMENT_ID, root, pShaderItem );
 
     // Add to this manager's list
     MapSet ( m_ItemElementMap, pShaderItem, pShaderElement );
@@ -168,7 +168,7 @@ CClientShader* CClientRenderElementManager::CreateShader ( const SString& strFul
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientRenderTarget* CClientRenderElementManager::CreateRenderTarget ( uint uiSizeX, uint uiSizeY, bool bWithAlphaChannel )
+CClientRenderTarget* CClientRenderElementManager::CreateRenderTarget ( uint uiSizeX, uint uiSizeY, bool bWithAlphaChannel, LuaClass& root )
 {
     // Create the item
     CRenderTargetItem* pRenderTargetItem = m_pRenderItemManager->CreateRenderTarget ( uiSizeX, uiSizeY, bWithAlphaChannel );
@@ -178,7 +178,7 @@ CClientRenderTarget* CClientRenderElementManager::CreateRenderTarget ( uint uiSi
         return NULL;
 
     // Create the element
-    CClientRenderTarget* pRenderTargetElement = new CClientRenderTarget ( m_pClientManager, INVALID_ELEMENT_ID, pRenderTargetItem );
+    CClientRenderTarget* pRenderTargetElement = new CClientRenderTarget ( m_pClientManager, INVALID_ELEMENT_ID, root, pRenderTargetItem );
 
     // Add to this manager's list
     MapSet ( m_ItemElementMap, pRenderTargetItem, pRenderTargetElement );
@@ -197,7 +197,7 @@ CClientRenderTarget* CClientRenderElementManager::CreateRenderTarget ( uint uiSi
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientScreenSource* CClientRenderElementManager::CreateScreenSource ( uint uiSizeX, uint uiSizeY )
+CClientScreenSource* CClientRenderElementManager::CreateScreenSource ( uint uiSizeX, uint uiSizeY, LuaClass& root )
 {
     // Create the item
     CScreenSourceItem* pScreenSourceItem = m_pRenderItemManager->CreateScreenSource ( uiSizeX, uiSizeY );
@@ -207,7 +207,7 @@ CClientScreenSource* CClientRenderElementManager::CreateScreenSource ( uint uiSi
         return NULL;
 
     // Create the element
-    CClientScreenSource* pScreenSourceElement = new CClientScreenSource ( m_pClientManager, INVALID_ELEMENT_ID, pScreenSourceItem );
+    CClientScreenSource* pScreenSourceElement = new CClientScreenSource ( m_pClientManager, INVALID_ELEMENT_ID, root, pScreenSourceItem );
 
     // Add to this manager's list
     MapSet ( m_ItemElementMap, pScreenSourceItem, pScreenSourceElement );
@@ -226,14 +226,14 @@ CClientScreenSource* CClientRenderElementManager::CreateScreenSource ( uint uiSi
 // Find texture by unique name. Create if not found.
 //
 ////////////////////////////////////////////////////////////////
-CClientTexture* CClientRenderElementManager::FindAutoTexture ( const SString& strFullFilePath, const SString& strUniqueName )
+CClientTexture* CClientRenderElementManager::FindAutoTexture ( const SString& strFullFilePath, const SString& strUniqueName, LuaClass& root )
 {
     // Check if we've already done this file
     CClientTexture** ppTextureElement = MapFind ( m_AutoTextureMap, strUniqueName );
     if ( !ppTextureElement )
     {
         // Try to create
-        CClientTexture* pNewTextureElement = CreateTexture ( strFullFilePath );
+        CClientTexture* pNewTextureElement = CreateTexture ( strFullFilePath, root );
         if ( !pNewTextureElement )
             return NULL;
 

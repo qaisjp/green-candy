@@ -301,7 +301,7 @@ CClientEntity* CClientEntity::SetParent ( CClientEntity* pParent )
 
     // Moving into FromRoot?
     if ( !bOldFromRoot && bNewFromRoot )
-            CClientEntity::AddEntityFromRoot ( m_uiTypeHash, this );
+        CClientEntity::AddEntityFromRoot ( m_uiTypeHash, this );
 
     // Return the new parent
     return pParent;
@@ -1042,7 +1042,7 @@ void CClientEntity::FindAllChildrenByTypeIndex ( unsigned int uiTypeHash, lua_St
         {
             // Add it to the table
             lua_pushnumber ( luaVM, ++uiIndex );
-            lua_pushelement ( luaVM, this );
+            PushStack( luaVM );
             lua_settable ( luaVM, -3 );
         }
     }
@@ -1067,7 +1067,7 @@ void CClientEntity::GetChildren ( lua_State* luaVM )
     {
         // Add it to the table
         lua_pushnumber ( luaVM, ++uiIndex );
-        lua_pushelement ( luaVM, *iter );
+        (*iter)->PushStack( luaVM );
         lua_settable ( luaVM, -3 );
     }
 }
@@ -1421,7 +1421,7 @@ void CClientEntity::GetEntitiesFromRoot ( unsigned int uiTypeHash, lua_State* lu
             {
                 // Add it to the table
                 lua_pushnumber ( luaVM, ++uiIndex );
-                lua_pushelement ( luaVM, pEntity );
+                pEntity->PushStack( luaVM );
                 lua_settable ( luaVM, -3 );
             }
         }

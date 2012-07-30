@@ -1,18 +1,19 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientColCircle.cpp
 *  PURPOSE:     Cuboid-shaped collision entity class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Kevin Whiteside <kevuwk@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
 #include <StdInc.h>
 
-CClientColCuboid::CClientColCuboid ( CClientManager* pManager, ElementID ID, const CVector& vecPosition, const CVector& vecSize ) : CClientColShape ( pManager, ID )
+CClientColCuboid::CClientColCuboid ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, const CVector& vecSize ) : CClientColShape ( pManager, ID, root, system )
 {
     m_pManager = pManager;
     m_vecPosition = vecPosition;
@@ -20,7 +21,6 @@ CClientColCuboid::CClientColCuboid ( CClientManager* pManager, ElementID ID, con
 
     UpdateSpatialData ();
 }
-
 
 bool CClientColCuboid::DoHitDetection  ( const CVector& vecNowPosition, float fRadius )
 {
@@ -34,7 +34,6 @@ bool CClientColCuboid::DoHitDetection  ( const CVector& vecNowPosition, float fR
              vecNowPosition.fZ >= m_vecPosition.fZ &&
              vecNowPosition.fZ <= m_vecPosition.fZ + m_vecSize.fZ );
 }
-
 
 CSphere CClientColCuboid::GetWorldBoundingSphere ( void )
 {

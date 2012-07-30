@@ -4018,7 +4018,7 @@ bool CClientPed::GetShotData ( CVector * pvecOrigin, CVector * pvecTarget, CVect
     float fRange = pCurrentWeaponInfo->GetWeaponRange ();
 
     // Grab the gun muzzle position
-    CVector vecFireOffset =*pCurrentWeaponInfo->GetFireOffset ();    
+    CVector vecFireOffset = pCurrentWeaponInfo->GetFireOffset ();    
     CVector vecGunMuzzle = vecFireOffset;
     GetTransformedBonePosition ( BONE_RIGHTWRIST, vecGunMuzzle );    
 

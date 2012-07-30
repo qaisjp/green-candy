@@ -75,6 +75,8 @@ public:
                                 CPadSA( CPadSAInterface *pad );
                                 ~CPadSA();
 
+    inline CPadSAInterface*     GetInterface()                  { return m_interface; }
+
     const CControllerState&     GetState();
     const CControllerState&     GetPreviousState();
     void                        SetState( const CControllerState& cs );

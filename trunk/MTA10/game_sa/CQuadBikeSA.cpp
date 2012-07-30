@@ -11,3 +11,11 @@
 *****************************************************************************/
 
 #include <StdInc.h>
+
+CQuadBikeSA::CQuadBikeSA( CQuadBikeSAInterface *bike ) : CAutomobileSA( bike )
+{
+}
+
+CQuadBikeSA::~CQuadBikeSA()
+{
+}

@@ -18,7 +18,7 @@ static const luaL_Reg gridlist_interface[] =
     { NULL, NULL }
 };
 
-static int luaconstructor_guigridlist( lua_State *L )
+int luaconstructor_guigridlist( lua_State *L )
 {
     CClientGUIElement *gui = (CClientGUIElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 

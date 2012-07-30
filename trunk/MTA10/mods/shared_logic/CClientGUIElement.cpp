@@ -43,10 +43,10 @@ static int luaconstructor_gui( lua_State *L )
     return 0;
 }
 
-CClientGUIElement::CClientGUIElement( CClientManager * pManager, CLuaMain* pLuaMain, CGUIElement* pCGUIElement, LuaClass& root, bool system, ElementID ID ) : CClientEntity( ID, system, root )
+CClientGUIElement::CClientGUIElement( CClientManager * pManager, CLuaMain* pLuaMain, CGUIElement* pCGUIElement, bool system, ElementID ID ) : CClientEntity( ID, system, *pLuaMain->GetResource()->GetResourceGUIEntity() )
 {
     // Advance the Lua interface
-    lua_State *L = root.GetVM();
+    lua_State *L = pLuaMain->GetResource()->GetResourceGUIEntity()->GetVM();
 
     PushStack( L );
     lua_pushlightuserdata( L, this );

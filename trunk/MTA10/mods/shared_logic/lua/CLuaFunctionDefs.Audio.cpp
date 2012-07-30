@@ -46,7 +46,7 @@ namespace CLuaFunctionDefs
             CClientSound* pSound = CStaticFunctionDefinitions::PlaySound ( pResource, strSound, bIsURL, bLoop );
             if ( pSound )
             {
-                lua_pushelement ( L, pSound );
+                pSound->PushStack( L );
                 return 1;
             }
         }

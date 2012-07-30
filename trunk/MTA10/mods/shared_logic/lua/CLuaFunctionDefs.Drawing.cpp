@@ -332,12 +332,12 @@ namespace CLuaFunctionDefs
             {
                 if ( pFileResource->FileExists( meta ) )
                 {
-                    CClientTexture* pTexture = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateTexture ( strPath.c_str() );
+                    CClientTexture* pTexture = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateTexture ( strPath.c_str(), *pParentResource->GetResourceDynamicEntity() );
 
                     // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
                     pTexture->SetParent ( pParentResource->GetResourceDynamicEntity () );
 
-                    lua_pushelement ( L, pTexture );
+                    pTexture->PushStack( L );
                     return 1;
                 }
                 else
@@ -376,12 +376,12 @@ namespace CLuaFunctionDefs
                 {
                     filePath strRootPath = filePath( strPath.c_str(), strPath.length() - strlen( meta ) );
                     SString strStatus;
-                    CClientShader* pShader = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateShader ( strPath, strRootPath, strStatus, bDebug );
+                    CClientShader* pShader = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateShader ( strPath, strRootPath, strStatus, bDebug, *pParentResource->GetResourceDynamicEntity() );
                     if ( pShader )
                     {
                         // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
                         pShader->SetParent ( pParentResource->GetResourceDynamicEntity () );
-                        lua_pushelement ( L, pShader );
+                        pShader->PushStack( L );
                         lua_pushstring ( L, strStatus );    // String containing name of technique being used.
                         return 2;
                     }
@@ -423,13 +423,14 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
             CResource* pParentResource = pLuaMain ? pLuaMain->GetResource () : NULL;
 
-            CClientRenderTarget* pRenderTarget = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateRenderTarget ( uiSizeX, uiSizeY, bWithAlphaChannel );
+            CClientRenderTarget* pRenderTarget = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateRenderTarget ( uiSizeX, uiSizeY, bWithAlphaChannel, *pParentResource->GetResourceDynamicEntity() );
             if ( pRenderTarget )
             {
+                pRenderTarget->PushStack( L );
+
                 // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
                 pRenderTarget->SetParent ( pParentResource->GetResourceDynamicEntity () );
             }
-            lua_pushelement ( L, pRenderTarget );
             return 1;
         }
         else
@@ -454,13 +455,14 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
             CResource* pParentResource = pLuaMain->GetResource ();
 
-            CClientScreenSource* pScreenSource = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateScreenSource ( uiSizeX, uiSizeY );
+            CClientScreenSource* pScreenSource = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateScreenSource ( uiSizeX, uiSizeY, *pParentResource->GetResourceDynamicEntity() );
             if ( pScreenSource )
             {
+                pScreenSource->PushStack( L );
+
                 // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
                 pScreenSource->SetParent ( pParentResource->GetResourceDynamicEntity () );
             }
-            lua_pushelement ( L, pScreenSource );
             return 1;
         }
         else
@@ -640,13 +642,14 @@ namespace CLuaFunctionDefs
             {
                 if ( pFileResource->FileExists( meta ) )
                 {
-                    CClientDxFont* pDxFont = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateDxFont ( strPath, iSize, bBold );
+                    CClientDxFont* pDxFont = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateDxFont ( strPath, iSize, bBold, *pParentResource->GetResourceDynamicEntity() );
                     if ( pDxFont )
                     {
+                        pDxFont->PushStack( L );
+
                         // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
                         pDxFont->SetParent ( pParentResource->GetResourceDynamicEntity () );
                     }
-                    lua_pushelement ( L, pDxFont );
                     return 1;
                 }
                 else

@@ -1,10 +1,11 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientColPolygon.cpp
 *  PURPOSE:     Polygon-shaped collision entity class
 *  DEVELOPERS:  Stanislav Bobrov <lil_Toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -12,7 +13,7 @@
 
 #include "StdInc.h"
 
-CClientColPolygon::CClientColPolygon ( CClientManager* pManager, ElementID ID, const CVector& vecPosition ) : CClientColShape ( pManager, ID )
+CClientColPolygon::CClientColPolygon ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition ) : CClientColShape ( pManager, ID, root, system )
 {
     m_pManager = pManager;
     m_vecPosition = vecPosition;
@@ -21,7 +22,6 @@ CClientColPolygon::CClientColPolygon ( CClientManager* pManager, ElementID ID, c
     // if the point is not even in the bounds
     m_fRadius = 0.0f;
 }
-
 
 bool CClientColPolygon::DoHitDetection  ( const CVector& vecNowPosition, float fRadius )
 {

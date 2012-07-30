@@ -20,6 +20,7 @@ public:
     virtual void                    RemoveAllProjectiles() = 0;
     virtual void                    RemoveProjectile( CProjectileInfo *info, CProjectile *proj ) = 0;
     virtual CProjectile*            GetProjectile( unsigned short id ) = 0;
+    virtual CProjectile*            GetProjectile( void *infoInt ) = 0;
     virtual CProjectileInfo*        GetProjectileInfo( unsigned short index ) = 0;
     virtual CProjectileInfo*        GetNextFreeProjectileInfo() = 0;
     virtual bool                    AddProjectile( CEntity *creator, eWeaponType eWeapon, const CVector& vecOrigin, float fForce, const CVector& targetPos, CEntity *target ) = 0;

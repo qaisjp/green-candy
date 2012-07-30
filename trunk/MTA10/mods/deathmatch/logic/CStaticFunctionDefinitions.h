@@ -477,7 +477,7 @@ public:
     static bool                         ToggleAllControls                   ( bool bGTAControls, bool bMTAControls, bool bEnabled );
 
     // Projectile functions
-    static CClientProjectile *          CreateProjectile                    ( CResource& Resource, CClientEntity& Creator, unsigned char ucWeaponType, CVector& vecOrigin, float fForce, CClientEntity* pTarget, CVector* pvecRotation = NULL, CVector* pvecVelocity = NULL, unsigned short usModel = 0 );
+    static CClientProjectile *          CreateProjectile                    ( CResource& Resource, CClientEntity& Creator, unsigned char ucWeaponType, const CVector& vecOrigin, float fForce, CClientEntity* pTarget, CVector* pvecRotation = NULL, CVector* pvecVelocity = NULL, unsigned short usModel = 0 );
 
     // Shape create funcs
     static CClientColCircle*            CreateColCircle                     ( CResource& Resource, const CVector& vecPosition, float fRadius );

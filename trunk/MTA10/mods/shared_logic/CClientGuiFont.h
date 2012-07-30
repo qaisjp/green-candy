@@ -17,7 +17,7 @@
 class CClientGuiFont : public CClientRenderElement
 {
 public:
-                            CClientGuiFont( CClientManager* pManager, ElementID ID, CGuiFontItem* pFontItem );
+                            CClientGuiFont( CClientManager* pManager, ElementID ID, CGuiFontItem* pFontItem, LuaClass& root );
                             ~CClientGuiFont( void );
 
     eClientEntityType       GetType( void ) const                               { return CCLIENTGUIFONT; }

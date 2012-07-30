@@ -18,7 +18,7 @@ static const luaL_Reg tabpanel_interface[] =
     { NULL, NULL }
 };
 
-static int luaconstructor_guitabpanel( lua_State *L )
+int luaconstructor_guitabpanel( lua_State *L )
 {
     CClientGUIElement *gui = (CClientGUIElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 

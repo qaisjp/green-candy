@@ -23,6 +23,8 @@
 #include "..\game_sa\CCameraSA.h"
 #include "..\game_sa\CEntitySA.h"
 #include "..\game_sa\CPedSA.h"
+#include "..\game_sa\CVehicleSA.h"
+#include "..\game_sa\CTrainSA.h"
 #include "..\game_sa\common.h"
 
 using namespace std;
@@ -336,8 +338,8 @@ Render3DStuffHandler * m_pRender3DStuffHandler = NULL;
 PreWorldProcessHandler * m_pPreWorldProcessHandler = NULL;
 PostWorldProcessHandler * m_pPostWorldProcessHandler = NULL;
 IdleHandler * m_pIdleHandler = NULL;
-AddAnimationHandler* m_pAddAnimationHandler = NULL;
-BlendAnimationHandler* m_pBlendAnimationHandler = NULL;
+void* m_pAddAnimationHandler = NULL;
+void* m_pBlendAnimationHandler = NULL;
 ProcessCollisionHandler* m_pProcessCollisionHandler = NULL;
 
 CEntitySAInterface * dwSavedPlayerPointer = 0;
@@ -1860,6 +1862,7 @@ void CMultiplayerSA::SetIdleHandler ( IdleHandler * pHandler )
     m_pIdleHandler = pHandler;
 }
 
+#if 0
 void CMultiplayerSA::SetAddAnimationHandler ( AddAnimationHandler * pHandler )
 {
     m_pAddAnimationHandler = pHandler;
@@ -1869,6 +1872,7 @@ void CMultiplayerSA::SetBlendAnimationHandler ( BlendAnimationHandler * pHandler
 {
     m_pBlendAnimationHandler = pHandler;
 }
+#endif
 
 void CMultiplayerSA::SetProcessCollisionHandler ( ProcessCollisionHandler * pHandler )
 {
@@ -2324,32 +2328,32 @@ bool CallExplosionHandler ( void )
     if ( pInterface )
     {
         // See what type it is and grab the SA interface depending on type
-        switch ( pInterface->nType )
+        switch ( pInterface->m_type )
         {
-            case ENTITY_TYPE_PED:
-            {
-                pExplosionCreator = pGameInterface->GetPools ()->GetPed ( (DWORD*) pInterface );
-                break;
-            }
+        case ENTITY_TYPE_PED:
+        {
+            pExplosionCreator = pGameInterface->GetPools ()->GetPed ( (DWORD*) pInterface );
+            break;
+        }
 
-            case ENTITY_TYPE_VEHICLE:
-            {
-                pExplosionCreator = pGameInterface->GetPools ()->GetVehicle ( (DWORD*) pInterface );
-                break;
-            }
+        case ENTITY_TYPE_VEHICLE:
+        {
+            pExplosionCreator = pGameInterface->GetPools ()->GetVehicle ( (DWORD*) pInterface );
+            break;
+        }
 
-            case ENTITY_TYPE_OBJECT:
-            {
-                pExplosionCreator = pGameInterface->GetPools ()->GetObject ( (DWORD*) pInterface );
-                break;
-            }
+        case ENTITY_TYPE_OBJECT:
+        {
+            pExplosionCreator = pGameInterface->GetPools ()->GetObject ( (DWORD*) pInterface );
+            break;
+        }
         }
     }
 
     if ( pExplodingEntityInterface )
     {
         // See what type it is and grab the SA interface depending on type
-        switch ( pExplodingEntityInterface->nType )
+        switch ( pExplodingEntityInterface->m_type )
         {
             case ENTITY_TYPE_PED:
             {
@@ -2471,15 +2475,16 @@ float * entityEdgeHeight;
 float edgeHeight;
 CVector * pedPosition;
 
-bool processGrab () {
-    if ( entity->nType == ENTITY_TYPE_OBJECT )
+bool processGrab ()
+{
+    if ( entity->m_type == ENTITY_TYPE_OBJECT )
     {
         //CObjectSA * object = (CObjectSA*)entity;
         //CModelInfo * info = pGameInterface->GetModelInfo(entity->m_nModelIndex);
-        if ( entity->Placeable.matrix )
-            edgeHeight = *entityEdgeHeight + entity->Placeable.matrix->vPos.fZ;
+        if ( entity->m_matrix )
+            edgeHeight = *entityEdgeHeight + entity->m_matrix->pos.fZ;
         else
-            edgeHeight = *entityEdgeHeight + entity->Placeable.m_transform.m_translate.fZ; 
+            edgeHeight = *entityEdgeHeight + entity->m_position.fZ; 
     }
     else
         edgeHeight = *entityEdgeHeight;
@@ -2616,6 +2621,20 @@ void _declspec(naked) HOOK_FxManager_DestroyFxSystem ()
         // Jump back to the rest of the function we hooked
         jmp         RETURN_FxManager_DestroyFxSystem
     }
+}
+
+// HAX
+CCamSA* CCameraSA::GetCam( CCamSAInterface *cam )
+{
+    for ( unsigned int i = 0; i < MAX_CAMS; i++ )
+    {
+        if ( m_cams[i] && m_cams[i]->GetInterface() == cam )
+        {
+            return m_cams[i];
+        }
+    }
+
+    return NULL;
 }
 
 
@@ -2894,7 +2913,7 @@ void _declspec(naked) HOOK_CRunningScript_Process()
     }
 }
 
-static CVehicleSAInterface* pDerailingTrain = NULL;
+static CTrainSAInterface* pDerailingTrain = NULL;
 void _declspec(naked) HOOK_CTrain_ProcessControl_Derail()
 {
     // If the train wouldn't derail, don't modify anything
@@ -2909,7 +2928,7 @@ train_would_derail:
     }
 
     // At this point we know that GTA wants to derail the train
-    if ( pDerailingTrain->m_pVehicle->IsDerailable () )
+    if ( dynamic_cast <CTrainSA*> ( pDerailingTrain->m_vehicle )->IsDerailable () )
     {
         // Go back to the derailment code
         _asm
@@ -2967,20 +2986,20 @@ static void SetEntityAlphaHooked ( DWORD dwEntity, DWORD dwCallback, DWORD dwAlp
 
 static RpMaterial* HOOK_GetAlphaValues ( RpMaterial* pMaterial, unsigned char ucAlpha )
 {
-    *pCurAlpha = pMaterial->color.a;
+    *pCurAlpha = pMaterial->m_color.a;
     pCurAlpha++;
 
     return pMaterial;
 }
 static RpMaterial* HOOK_SetAlphaValues ( RpMaterial* pMaterial, unsigned char ucAlpha )
 {
-    pMaterial->color.a = static_cast < unsigned char > ( (float)(pMaterial->color.a) * (float)ucAlpha / 255.0f );
+    pMaterial->m_color.a = static_cast < unsigned char > ( (float)(pMaterial->m_color.a) * (float)ucAlpha / 255.0f );
 
     return pMaterial;
 }
 static RpMaterial* HOOK_RestoreAlphaValues ( RpMaterial* pMaterial, unsigned char ucAlpha )
 {
-    pMaterial->color.a = *pCurAlpha;
+    pMaterial->m_color.a = *pCurAlpha;
     pCurAlpha++;
 
     return pMaterial;
@@ -3013,10 +3032,10 @@ static void RestoreAlphaValues ()
  **/
 static RpAtomic* CVehicle_EAEG ( RpAtomic* pAtomic, void* )
 {
-    RwFrame* pFrame = pAtomic->parent;
+    RwFrame* pFrame = pAtomic->m_parent;
     if ( pFrame )
     {
-        switch ( pFrame->szName[0] )
+        switch ( pFrame->m_nodeName[0] )
         {
         case '\0': case 'h': break;
         default:
@@ -3038,7 +3057,7 @@ static RpAtomic* CVehicle_EAEG ( RpAtomic* pAtomic, void* )
 static void SetVehicleAlpha ( )
 {
     CVehicleSAInterface* pInterface = ((CVehicleSAInterface *)dwAlphaEntity);
-    unsigned char ucAlpha = pInterface->m_pVehicle->GetAlpha ();
+    unsigned char ucAlpha = pInterface->m_vehicle->GetAlpha ();
 
     if ( ucAlpha < 255 )
         GetAlphaAndSetNewValues ( ucAlpha );
@@ -3466,7 +3485,7 @@ void CMultiplayerSA::ConvertEulerAnglesToMatrix ( RwMatrix& Matrix, float fX, fl
 
 void CMultiplayerSA::ConvertMatrixToEulerAngles ( const RwMatrix& Matrix, float& fX, float& fY, float& fZ )
 {
-    RwMatrix* pMatrix = &Matrix;
+    const RwMatrix* pMatrix = &Matrix;
     DWORD dwFunc = FUNC_CMatrix__ConvertToEulerAngles;
 
     float* pfX = &fX;
@@ -3695,7 +3714,7 @@ unsigned char ucDriveType = '4';
 void GetVehicleDriveType()
 {
     //Get the car drive type from the Vehicle interface
-    ucDriveType = static_cast<unsigned char> ( pHandlingDriveTypeVeh->m_pVehicle->GetHandlingData()->GetCarDriveType() );
+    ucDriveType = static_cast<unsigned char> ( pHandlingDriveTypeVeh->m_vehicle->GetHandlingData()->GetCarDriveType() );
 }
 
 void _declspec(naked) HOOK_isVehDriveTypeNotRWD ()
@@ -3805,10 +3824,10 @@ void _cdecl CPhysical_ApplyGravity ( DWORD dwThis )
             return;
 
         CVector vecGravity, vecMoveSpeed;
-        pVehicle->GetGravity ( &vecGravity );
-        pVehicle->GetMoveSpeed ( &vecMoveSpeed );
+        pVehicle->GetGravity ( vecGravity );
+        pVehicle->GetMoveSpeed ( vecMoveSpeed );
         vecMoveSpeed += vecGravity * fTimeStep * fGravity;
-        pVehicle->SetMoveSpeed ( &vecMoveSpeed );
+        pVehicle->SetMoveSpeed ( vecMoveSpeed );
     }
     else
     {
@@ -3841,22 +3860,22 @@ void GetMatrixForGravity( const CVector& vecGravity, RwMatrix& mat )
         if ( fabs( mat.up.fX ) > 0.0001f || fabs( mat.up.fZ ) > 0.0001f )
         {
             CVector y( 0.0f, 1.0f, 0.0f );
-            mat.front = vecGravity;
-            mat.front.CrossProduct( &y );
-            mat.front.CrossProduct( &vecGravity );
-            mat.front.Normalize();
+            mat.at = vecGravity;
+            mat.at.CrossProduct( &y );
+            mat.at.CrossProduct( &vecGravity );
+            mat.at.Normalize();
         }
         else
-            mat.vFront = CVector( 0.0f, 0.0f, vecGravity.fY );
+            mat.at = CVector( 0.0f, 0.0f, vecGravity.fY );
 
-        mat.right = mat.front;
+        mat.right = mat.at;
         mat.right.CrossProduct( &mat.up );
     }
     else
     {
         // No gravity, use default axes
         mat.right = CVector ( 1.0f, 0.0f, 0.0f );
-        mat.front = CVector ( 0.0f, 1.0f, 0.0f );
+        mat.at    = CVector ( 0.0f, 1.0f, 0.0f );
         mat.up    = CVector ( 0.0f, 0.0f, 1.0f );
     }
 }
@@ -3879,20 +3898,20 @@ bool _cdecl VehicleCamStart ( DWORD dwCam, DWORD pVehicleInterface )
         return false;
 
     CVector vecGravity;
-    pVehicle->GetGravity ( &vecGravity );
+    pVehicle->GetGravity ( vecGravity );
 
     GetMatrixForGravity ( vecGravity, gravcam_matGravity );
     gravcam_matInvertGravity = gravcam_matGravity;
     gravcam_matInvertGravity.Invert ();
 
-    pVehicle->GetMatrix ( &gravcam_matVehicleTransform );
+    pVehicle->GetMatrix ( gravcam_matVehicleTransform );
     RwMatrix matVehicleInverted = gravcam_matInvertGravity * gravcam_matVehicleTransform;
-    matVehicleInverted.vPos = gravcam_matVehicleTransform.vPos;
+    matVehicleInverted.pos = gravcam_matVehicleTransform.pos;
     pVehicle->SetMatrix ( matVehicleInverted );
 
-    pVehicle->GetMoveSpeed ( &gravcam_vecVehicleVelocity );
+    pVehicle->GetMoveSpeed ( gravcam_vecVehicleVelocity );
     CVector vecVelocityInverted = gravcam_matInvertGravity * gravcam_vecVehicleVelocity;
-    pVehicle->SetMoveSpeed ( &vecVelocityInverted );
+    pVehicle->SetMoveSpeed ( vecVelocityInverted );
     return true;
 }
 
@@ -3921,7 +3940,7 @@ fail:
 void _cdecl VehicleCamTargetZTweak ( CVector* pvecCamTarget, float fTargetZTweak )
 {
     // Replacement for "vecCamTarget = vecCarPosition + (0, 0, 1)*fZTweak"
-    *pvecCamTarget += gravcam_matGravity.vUp*fTargetZTweak;
+    *pvecCamTarget += gravcam_matGravity.up*fTargetZTweak;
 }
 
 void _declspec(naked) HOOK_VehicleCamTargetZTweak ()
@@ -3987,7 +4006,7 @@ bool _cdecl VehicleCamLookDir2 ( DWORD dwCam )
     float fPhi   = *(float *)(dwCam + 0xBC);
     float fTheta = *(float *)(dwCam + 0xAC);
 
-    MemPutFast < CVector > ( dwCam + 0x190, -gravcam_matGravity.vRight*cos(fPhi)*cos(fTheta) - gravcam_matGravity.vFront*sin(fPhi)*cos(fTheta) + gravcam_matGravity.vUp*sin(fTheta) );
+    MemPutFast < CVector > ( dwCam + 0x190, -gravcam_matGravity.right*cos(fPhi)*cos(fTheta) - gravcam_matGravity.at*sin(fPhi)*cos(fTheta) + gravcam_matGravity.up*sin(fTheta) );
 
     MemPutFast < float > ( 0x8CCEA8, fPhi );
     return true;
@@ -4013,7 +4032,7 @@ void _declspec(naked) HOOK_VehicleCamLookDir2 ()
 void _cdecl VehicleCamHistory ( DWORD dwCam, CVector* pvecTarget, float fTargetTheta, float fRadius, float fZoom )
 {
     float fPhi = *(float *)(dwCam + 0xBC);
-    CVector vecDir = -gravcam_matGravity.vRight*cos(fPhi)*cos(fTargetTheta) - gravcam_matGravity.vFront*sin(fPhi)*cos(fTargetTheta) + gravcam_matGravity.vUp*sin(fTargetTheta);
+    CVector vecDir = -gravcam_matGravity.right*cos(fPhi)*cos(fTargetTheta) - gravcam_matGravity.at*sin(fPhi)*cos(fTargetTheta) + gravcam_matGravity.up*sin(fTargetTheta);
     ((CVector *)(dwCam + 0x1D8))[0] = *pvecTarget - vecDir*fRadius;
     ((CVector *)(dwCam + 0x1D8))[1] = *pvecTarget - vecDir*fZoom;
 }
@@ -4046,7 +4065,7 @@ void _cdecl VehicleCamUp ( DWORD dwCam )
 
     pvecLookDir->Normalize ();
     *pvecUp = *pvecLookDir;
-    pvecUp->CrossProduct ( &gravcam_matGravity.vUp );
+    pvecUp->CrossProduct ( &gravcam_matGravity.up );
     pvecUp->CrossProduct ( pvecLookDir );
 }
 
@@ -4083,8 +4102,8 @@ void _cdecl VehicleCamEnd ( DWORD pVehicleInterface )
     if ( !pVehicle )
         return;
 
-    pVehicle->SetMatrix ( &gravcam_matVehicleTransform );
-    pVehicle->SetMoveSpeed ( &gravcam_vecVehicleVelocity );
+    pVehicle->SetMatrix ( gravcam_matVehicleTransform );
+    pVehicle->SetMoveSpeed ( gravcam_vecVehicleVelocity );
 }
 
 void _declspec(naked) HOOK_VehicleCamEnd ()
@@ -4107,7 +4126,7 @@ void _cdecl VehicleLookBehind ( DWORD dwCam, CVector* pvecEntityPos, float fDist
 {
     // Custom calculation of the camera position when looking behind while in
     // vehicle cam mode, taking in account custom gravity
-    MemPutFast < CVector > ( dwCam + 0x19C, *pvecEntityPos + (gravcam_matVehicleTransform.vFront + gravcam_matGravity.vUp*0.2f)*fDistance );
+    MemPutFast < CVector > ( dwCam + 0x19C, *pvecEntityPos + (gravcam_matVehicleTransform.at + gravcam_matGravity.up*0.2f)*fDistance );
 }
 
 void _declspec(naked) HOOK_VehicleLookBehind ()
@@ -4142,7 +4161,7 @@ void _cdecl VehicleLookAside ( DWORD dwCam, CVector* pvecEntityPos, float fDirec
 {
     // Custom calculation of the camera position when looking left/right while in
     // vehicle cam mode, taking in account custom gravity
-    MemPutFast < CVector > ( dwCam + 0x19C, *pvecEntityPos + (-gravcam_matVehicleTransform.vRight*fDirectionFactor + gravcam_matGravity.vUp*0.2f)*fDistance );
+    MemPutFast < CVector > ( dwCam + 0x19C, *pvecEntityPos + (-gravcam_matVehicleTransform.right*fDirectionFactor + gravcam_matGravity.up*0.2f)*fDistance );
 }
 
 void _declspec(naked) HOOK_VehicleLookAside ()
@@ -4176,7 +4195,7 @@ float _cdecl VehicleBurnCheck ( DWORD pVehicleInterface )
 
     CVector vecGravity;
     RwMatrix matVehicle;
-    pVehicle->GetGravity ( &vecGravity );
+    pVehicle->GetGravity ( vecGravity );
     pVehicle->GetMatrix ( matVehicle );
     vecGravity = -vecGravity;
     return matVehicle.up.DotProduct ( &vecGravity );
@@ -4217,10 +4236,10 @@ void _cdecl ApplyVehicleBlowHop ( DWORD pVehicleInterface )
         return;
 
     CVector vecGravity, vecVelocity;
-    pVehicle->GetGravity ( &vecGravity );
-    pVehicle->GetMoveSpeed ( &vecVelocity );
+    pVehicle->GetGravity ( vecGravity );
+    pVehicle->GetMoveSpeed ( vecVelocity );
     vecVelocity -= vecGravity * 0.13f;
-    pVehicle->SetMoveSpeed ( &vecVelocity );
+    pVehicle->SetMoveSpeed ( vecVelocity );
 }
 
 void _declspec(naked) HOOK_ApplyCarBlowHop ()
@@ -4368,7 +4387,7 @@ unsigned long ulHeadLightR = 0, ulHeadLightG = 0, ulHeadLightB = 0;
 void CVehicle_GetHeadLightColor ( CVehicleSAInterface * pInterface, float fR, float fG, float fB )
 {
     SColor color = SColorRGBA ( 255, 255, 255, 255 );
-    CVehicle * pVehicle = pGameInterface->GetPools ()->GetVehicle ( (DWORD *)pInterface );
+    CAutomobile * pVehicle = dynamic_cast <CAutomobile*> ( pGameInterface->GetPools ()->GetVehicle ( (DWORD *)pInterface ) );
     if ( pVehicle )
     {
         color = pVehicle->GetHeadLightColor ();
@@ -4753,16 +4772,18 @@ void _declspec(naked) HOOK_CAnimManager_AddAnimation ()
         mov     eax, [esp+4]
         mov     animationClump, eax
         mov     eax, [esp+8]
-        mov     animationGroup, eax
+        mov     animationGroup, ax
         mov     eax, [esp+12]
         mov     animationID, eax
         pushad
     }
     
+#if TODO
     if ( m_pAddAnimationHandler  )
     {
         m_pAddAnimationHandler ( animationClump, animationGroup, animationID );
     }
+#endif
 
     _asm
     {
@@ -4781,7 +4802,7 @@ void _declspec(naked) HOOK_CAnimManager_BlendAnimation ()
         mov     eax, [esp+4]
         mov     animationClump, eax
         mov     eax, [esp+8]
-        mov     animationGroup, eax
+        mov     animationGroup, ax
         mov     eax, [esp+12]
         mov     animationID, eax
         mov     eax, [esp+16]
@@ -4789,10 +4810,12 @@ void _declspec(naked) HOOK_CAnimManager_BlendAnimation ()
         pushad
     }
     
+#if TODO
     if ( m_pBlendAnimationHandler  )
     {
         m_pBlendAnimationHandler ( animationClump, animationGroup, animationID, animationBlendDelta );
     }
+#endif
 
     _asm
     {
@@ -5466,7 +5489,7 @@ void _cdecl SaveVehColors ( DWORD dwThis )
     CVehicle* pVehicle = pGameInterface->GetPools ()->GetVehicle ( (DWORD *)dwThis );
     if ( pVehicle )
     {
-        pVehicle->GetColor ( &vehColors[0], &vehColors[1], &vehColors[2], &vehColors[3], 0 );
+        pVehicle->GetColor ( vehColors[0], vehColors[1], vehColors[2], vehColors[3], 0 );
 
         // 0xFF00FF and 0x00FFFF both result in black for some reason
         for ( uint i = 0 ; i < NUMELMS( vehColors ) ; i++ )
@@ -5531,7 +5554,7 @@ static const DWORD dwSwingingRet1 = 0x6A9DB6;
 static const DWORD dwSwingingRet2 = 0x6AA1DA;
 static bool AllowSwingingDoors ()
 {
-    CVehicle* pVehicle = pGameInterface->GetPools ()->GetVehicle ( (DWORD *)dwSwingingDoorAutomobile );
+    CAutomobile* pVehicle = dynamic_cast <CAutomobile*> ( pGameInterface->GetPools ()->GetVehicle ( (DWORD *)dwSwingingDoorAutomobile ) );
     if ( pVehicle == 0 || pVehicle->AreSwingingDoorsAllowed() )
         return true;
     else
@@ -5569,14 +5592,14 @@ void* SetModelSuspensionLinesToVehiclePrivate ( CVehicleSAInterface* pVehicleInt
 {
     // Set the per-model suspension line data of the vehicle's model to the per-vehicle
     // suspension line data so that collision processing will use that instead.
-    CVehicle* pVehicle = pVehicleIntf->m_pVehicle;
+    CAutomobile* pVehicle = dynamic_cast <CAutomobile*> ( pVehicleIntf->m_vehicle );
     CModelInfo* pModelInfo = pGameInterface->GetModelInfo ( pVehicle->GetModelIndex () );
     return pModelInfo->SetVehicleSuspensionData ( pVehicle->GetPrivateSuspensionLines () );
 }
 
 void SetModelSuspensionLines ( CVehicleSAInterface* pVehicleIntf, void* pSuspensionLines )
 {
-    CModelInfo* pModelInfo = pGameInterface->GetModelInfo ( pVehicleIntf->m_pVehicle->GetModelIndex () );
+    CModelInfo* pModelInfo = pGameInterface->GetModelInfo ( pVehicleIntf->m_vehicle->GetModelIndex () );
     pModelInfo->SetVehicleSuspensionData ( pSuspensionLines );
 }
 
