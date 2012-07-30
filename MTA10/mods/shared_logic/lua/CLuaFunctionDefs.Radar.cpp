@@ -53,7 +53,7 @@ namespace CLuaFunctionDefs
                     {
                         pGroup->Add ( ( CClientEntity* ) pRadarArea );
                     }
-                    lua_pushelement ( L, pRadarArea );
+                    pRadarArea->PushStack( L );
                     return 1;
                 }
             }

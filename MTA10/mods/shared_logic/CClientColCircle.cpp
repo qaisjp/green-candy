@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientColCircle.cpp
@@ -8,6 +8,7 @@
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -15,13 +16,12 @@
 
 using namespace std;
 
-CClientColCircle::CClientColCircle ( CClientManager* pManager, ElementID ID, const CVector& vecPosition, float fRadius ) : CClientColShape ( pManager, ID )
+CClientColCircle::CClientColCircle ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, float fRadius ) : CClientColShape ( pManager, ID, root, system )
 {
     m_vecPosition = vecPosition;
     m_fRadius = fRadius;
     UpdateSpatialData ();
 }
-
 
 bool CClientColCircle::DoHitDetection ( const CVector& vecNowPosition, float fRadius )
 {

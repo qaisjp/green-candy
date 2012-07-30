@@ -16,18 +16,18 @@
 class CClientColTube : public CClientColShape
 {
 public:
-                            CClientColTube          ( CClientManager* pManager, ElementID ID, const CVector& vecPosition, float fRadius, float fHeight );
+                            CClientColTube( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, float fRadius, float fHeight );
 
-    virtual CSphere         GetWorldBoundingSphere  ( void );
+    virtual CSphere         GetWorldBoundingSphere( void );
 
-    eColShapeType           GetShapeType            ( void )            { return COLSHAPE_TUBE ; }
+    eColShapeType           GetShapeType( void )                        { return COLSHAPE_TUBE ; }
 
-    bool                    DoHitDetection          ( const CVector& vecNowPosition, float fRadius );
+    bool                    DoHitDetection( const CVector& vecNowPosition, float fRadius );
 
-    inline float            GetRadius               ( void )            { return m_fRadius; };
-    inline void             SetRadius               ( float fRadius )   { m_fRadius = fRadius; SizeChanged (); };
-    inline float            GetHeight               ( void )            { return m_fHeight; };
-    inline void             SetHeight               ( float fHeight )   { m_fHeight = fHeight; SizeChanged (); };
+    inline float            GetRadius( void )                           { return m_fRadius; };
+    inline void             SetRadius( float fRadius )                  { m_fRadius = fRadius; SizeChanged (); };
+    inline float            GetHeight( void )                           { return m_fHeight; };
+    inline void             SetHeight( float fHeight )                  { m_fHeight = fHeight; SizeChanged (); };
 
 protected:
     float                   m_fRadius;

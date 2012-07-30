@@ -24,7 +24,8 @@ public:
 class CMonsterTruckSA : public virtual CMonsterTruck, public CAutomobileSA
 {
 public:
-    
+                                CMonsterTruckSA( CMonsterTruckSAInterface *monster );
+                                ~CMonsterTruckSA();
 };
 
 #endif //_CMonsterTruckSA_H_

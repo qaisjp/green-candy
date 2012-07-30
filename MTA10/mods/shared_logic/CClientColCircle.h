@@ -17,16 +17,16 @@
 class CClientColCircle : public CClientColShape
 {
 public:
-                    CClientColCircle        ( CClientManager* pManager, ElementID ID, const CVector& vecPosition, float fRadius );
+                    CClientColCircle( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, float fRadius );
 
-    virtual CSphere GetWorldBoundingSphere  ( void );
+    virtual CSphere GetWorldBoundingSphere( void );
 
-    eColShapeType   GetShapeType            ( void )            { return COLSHAPE_CIRCLE; }
+    eColShapeType   GetShapeType( void )                            { return COLSHAPE_CIRCLE; }
 
-    bool            DoHitDetection          ( const CVector& vecNowPosition, float fRadius );
+    bool            DoHitDetection( const CVector& vecNowPosition, float fRadius );
 
-    float           GetRadius               ( void )            { return m_fRadius; };
-    void            SetRadius               ( float fRadius )   { m_fRadius = fRadius; SizeChanged (); }
+    float           GetRadius( void )                               { return m_fRadius; };
+    void            SetRadius( float fRadius )                      { m_fRadius = fRadius; SizeChanged (); }
 
 protected:
     float           m_fRadius;

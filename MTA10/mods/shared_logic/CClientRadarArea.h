@@ -31,7 +31,7 @@ class CClientRadarArea : public CClientEntity
     friend class CClientRadarAreaManager;
 
 public:
-                                CClientRadarArea( class CClientManager* pManager, ElementID ID, LuaClass& root );
+                                CClientRadarArea( class CClientManager* pManager, ElementID ID, LuaClass& root, bool system );
                                 ~CClientRadarArea( void );
 
     void                        Unlink( void );

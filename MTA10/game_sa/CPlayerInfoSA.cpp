@@ -140,7 +140,7 @@ void CPlayerInfoSA::KillPlayer()
  * @param vehicletype This is the type of vehicle to create
  * @return CVehicle * for the created remote controlled vehicle
  */
-CVehicleSA* CPlayerInfoSA::GiveRemoteVehicle( unsigned short model, float x, float y, float z )
+CVehicle* CPlayerInfoSA::GiveRemoteVehicle( unsigned short model, float x, float y, float z )
 {
     DEBUG_TRACE("CVehicleSA* CPlayerInfoSA::GivePlayerRemoteVehicle( unsigned short mode, float x, float y, float z )");
 
@@ -178,11 +178,11 @@ void CPlayerInfoSA::StopRemoteControl()
     }
 }
 
-CVehicleSA* CPlayerInfoSA::GetRemoteVehicle()
+CVehicle* CPlayerInfoSA::GetRemoteVehicle()
 {
     DEBUG_TRACE("CVehicleSA* CPlayerInfoSA::GetRemoteVehicle()");
 
-    return dynamic_cast <CVehicleSA*> ( pGame->GetPools()->GetVehicle( (CVehicleSAInterface*)VAR_PlayerRCCar ) );
+    return pGame->GetPools()->GetVehicle( (CVehicleSAInterface*)VAR_PlayerRCCar );
 }
 
 float CPlayerInfoSA::GetFPSMoveHeading()

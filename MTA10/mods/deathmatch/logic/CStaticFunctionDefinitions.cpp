@@ -814,7 +814,7 @@ CClientDummy* CStaticFunctionDefinitions::CreateElement ( CResource& Resource, c
     // Long enough typename and not an internal one?
     if ( strlen ( szTypeName ) > 0 && CClientEntity::GetTypeID ( szTypeName ) == CCLIENTUNKNOWN )
     {
-        CClientDummy* pDummy = new CClientDummy ( m_pManager, INVALID_ELEMENT_ID,  szTypeName );
+        CClientDummy* pDummy = new CClientDummy ( m_pManager, INVALID_ELEMENT_ID, szTypeName, *Resource.GetResourceDynamicEntity(), false );
         pDummy->SetName ( (char*) szID );
 
         pDummy->SetParent ( Resource.GetResourceDynamicEntity() );
@@ -2185,7 +2185,7 @@ CClientPed* CStaticFunctionDefinitions::CreatePed ( CResource& Resource, unsigne
         }
 
         // Create it
-        CClientPed* pPed = new CClientPed ( m_pManager, ulModel, INVALID_ELEMENT_ID );
+        CClientPed* pPed = new CClientPed ( m_pManager, ulModel, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false );
         pPed->SetParent ( Resource.GetResourceDynamicEntity() );
         pPed->SetPosition ( vecPosition );
         pPed->SetCurrentRotation ( fRotationRadians );
@@ -2311,7 +2311,7 @@ CClientVehicle* CStaticFunctionDefinitions::CreateVehicle ( CResource& Resource,
 {
     if ( CClientVehicleManager::IsValidModel ( usModel ) )
     {
-        CClientVehicle* pVehicle = new CDeathmatchVehicle ( m_pManager, NULL, INVALID_ELEMENT_ID, usModel );
+        CClientVehicle* pVehicle = new CDeathmatchVehicle ( m_pManager, *Resource.GetResourceDynamicEntity(), false, NULL, INVALID_ELEMENT_ID, usModel );
         if ( pVehicle )
         {
             pVehicle->SetParent ( Resource.GetResourceDynamicEntity() );
@@ -3053,7 +3053,7 @@ CClientObject* CStaticFunctionDefinitions::CreateObject ( CResource& Resource, u
 {
     if ( CClientObjectManager::IsValidModel ( usModelID ) )
     {
-        CClientObject* pObject = new CDeathmatchObject ( m_pManager, m_pMovingObjectsManager, m_pClientGame->GetObjectSync (), INVALID_ELEMENT_ID, usModelID );
+        CClientObject* pObject = new CDeathmatchObject ( m_pManager, *Resource.GetResourceDynamicEntity(), false, m_pMovingObjectsManager, m_pClientGame->GetObjectSync (), INVALID_ELEMENT_ID, usModelID );
         if ( pObject )
         {
             pObject->SetParent ( Resource.GetResourceDynamicEntity () );
@@ -3185,7 +3185,7 @@ bool CStaticFunctionDefinitions::SetObjectStatic ( CClientEntity& Entity, bool b
 CClientRadarArea* CStaticFunctionDefinitions::CreateRadarArea ( CResource& Resource, const CVector2D& vecPosition2D, const CVector2D& vecSize, const SColor color )
 {
     // Create it
-    CClientRadarArea* pRadarArea = new CClientRadarArea ( m_pManager, INVALID_ELEMENT_ID );
+    CClientRadarArea* pRadarArea = new CClientRadarArea ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false );
     if ( pRadarArea )
     {
         pRadarArea->SetParent ( Resource.GetResourceDynamicEntity () );
@@ -3303,7 +3303,7 @@ CClientPickup* CStaticFunctionDefinitions::CreatePickup ( CResource& Resource, c
         
             if ( dFive >= 0 && dFive <= 100 )
             {
-                pPickup = new CClientPickup ( m_pManager, INVALID_ELEMENT_ID, usModel, vecPosition );   
+                pPickup = new CClientPickup ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, usModel, vecPosition );   
                 pPickup->m_fAmount = static_cast < float > ( dFive );
             }
             break;
@@ -3322,7 +3322,7 @@ CClientPickup* CStaticFunctionDefinitions::CreatePickup ( CResource& Resource, c
                     usAmmo = 9999;
                 }
 
-                pPickup = new CClientPickup ( m_pManager, INVALID_ELEMENT_ID, usModel, vecPosition );
+                pPickup = new CClientPickup ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, usModel, vecPosition );
                 pPickup->m_ucWeaponType = ucWeaponID;
                 pPickup->m_usAmmo = usAmmo;
             }
@@ -3334,7 +3334,7 @@ CClientPickup* CStaticFunctionDefinitions::CreatePickup ( CResource& Resource, c
             usModel = static_cast < unsigned short > ( dFive );
             if ( CClientObjectManager::IsValidModel ( usModel ) )
             {
-                pPickup = new CClientPickup ( m_pManager, INVALID_ELEMENT_ID, usModel, vecPosition );
+                pPickup = new CClientPickup ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, usModel, vecPosition );
             }
             break;
         }
@@ -3499,7 +3499,7 @@ bool CStaticFunctionDefinitions::ResetAmbientSounds ( void )
 
 CClientRadarMarker* CStaticFunctionDefinitions::CreateBlip ( CResource& Resource, const CVector& vecPosition, unsigned char ucIcon, unsigned char ucSize, const SColor color, short sOrdering, unsigned short usVisibleDistance )
 {
-    CClientRadarMarker* pBlip = new CClientRadarMarker ( m_pManager, INVALID_ELEMENT_ID, sOrdering, usVisibleDistance );
+    CClientRadarMarker* pBlip = new CClientRadarMarker ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, sOrdering, usVisibleDistance );
     if ( pBlip )
     {
         pBlip->SetParent ( Resource.GetResourceDynamicEntity () );
@@ -3514,7 +3514,7 @@ CClientRadarMarker* CStaticFunctionDefinitions::CreateBlip ( CResource& Resource
 
 CClientRadarMarker* CStaticFunctionDefinitions::CreateBlipAttachedTo ( CResource& Resource, CClientEntity& Entity, unsigned char ucIcon, unsigned char ucSize, const SColor color, short sOrdering, unsigned short usVisibleDistance )
 {
-    CClientRadarMarker* pBlip = new CClientRadarMarker ( m_pManager, INVALID_ELEMENT_ID, sOrdering, usVisibleDistance );
+    CClientRadarMarker* pBlip = new CClientRadarMarker ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, sOrdering, usVisibleDistance );
     if ( pBlip )
     {
         pBlip->SetParent ( Resource.GetResourceDynamicEntity () );
@@ -3616,7 +3616,7 @@ CClientMarker* CStaticFunctionDefinitions::CreateMarker ( CResource& Resource, c
     if ( ucType != CClientMarker::MARKER_INVALID )
     {
         // Create the marker
-        CClientMarker* pMarker = new CClientMarker ( m_pManager, INVALID_ELEMENT_ID, ucType );
+        CClientMarker* pMarker = new CClientMarker ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, ucType );
 
         // Set its parent and its properties
         pMarker->SetParent ( Resource.GetResourceDynamicEntity() );
@@ -5077,9 +5077,9 @@ CClientWater* CStaticFunctionDefinitions::CreateWater ( CResource& resource, CVe
 {
     CClientWater* pWater;
     if ( pV4 )
-        pWater = new CClientWater ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID, *pV1, *pV2, *pV3, *pV4, bShallow );
+        pWater = new CClientWater ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID, *resource.GetResourceDynamicEntity(), false, *pV1, *pV2, *pV3, *pV4, bShallow );
     else
-        pWater = new CClientWater ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID, *pV1, *pV2, *pV3, bShallow );
+        pWater = new CClientWater ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID, *resource.GetResourceDynamicEntity(), false, *pV1, *pV2, *pV3, bShallow );
     if ( !pWater->Valid () ) {
         delete pWater;
         return NULL;
@@ -5828,7 +5828,7 @@ bool CStaticFunctionDefinitions::ToggleAllControls ( bool bGTAControls, bool bMT
 }
 
 
-CClientProjectile * CStaticFunctionDefinitions::CreateProjectile ( CResource& Resource, CClientEntity& Creator, unsigned char ucWeaponType, CVector& vecOrigin, float fForce, CClientEntity* pTarget, CVector* pvecRotation, CVector* pvecVelocity, unsigned short usModel )
+CClientProjectile * CStaticFunctionDefinitions::CreateProjectile ( CResource& Resource, CClientEntity& Creator, unsigned char ucWeaponType, const CVector& vecOrigin, float fForce, CClientEntity* pTarget, CVector* pvecRotation, CVector* pvecVelocity, unsigned short usModel )
 {
     // Do we have a rotation vector?
     if ( pvecRotation )
@@ -5857,11 +5857,11 @@ CClientProjectile * CStaticFunctionDefinitions::CreateProjectile ( CResource& Re
                 case WEAPONTYPE_FREEFALL_BOMB:
                 case WEAPONTYPE_REMOTE_SATCHEL_CHARGE:
                 {
-                    CClientProjectile * pProjectile = m_pProjectileManager->Create ( &Creator, weaponType, vecOrigin, fForce, NULL, pTarget );
+                    CClientProjectile * pProjectile = m_pProjectileManager->Create ( &Creator, weaponType, vecOrigin, fForce, CVector( 0, 0, 0 ), pTarget );
                     if ( pProjectile )
                     {
                         // Set our intiation data, which will be used on the next frame
-                        pProjectile->Initiate ( &vecOrigin, pvecRotation, pvecVelocity, usModel );
+                        pProjectile->Initiate ( &CVector( vecOrigin ), pvecRotation, pvecVelocity, usModel );
                         pProjectile->SetParent ( Resource.GetResourceDynamicEntity() );
                         return pProjectile;
                     }
@@ -5881,7 +5881,7 @@ CClientProjectile * CStaticFunctionDefinitions::CreateProjectile ( CResource& Re
 
 CClientColCircle* CStaticFunctionDefinitions::CreateColCircle ( CResource& Resource, const CVector& vecPosition, float fRadius )
 {
-    CClientColCircle* pShape = new CClientColCircle ( m_pManager, INVALID_ELEMENT_ID, vecPosition, fRadius );
+    CClientColCircle* pShape = new CClientColCircle ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, vecPosition, fRadius );
     pShape->SetParent ( Resource.GetResourceDynamicEntity () );
     //CStaticFunctionDefinitions::RefreshColShapeColliders ( pShape );   ** Not applied to maintain compatibility with existing scrips **
     return pShape;
@@ -5890,7 +5890,7 @@ CClientColCircle* CStaticFunctionDefinitions::CreateColCircle ( CResource& Resou
 
 CClientColCuboid* CStaticFunctionDefinitions::CreateColCuboid ( CResource& Resource, const CVector& vecPosition, const CVector& vecSize )
 {
-    CClientColCuboid* pShape = new CClientColCuboid ( m_pManager, INVALID_ELEMENT_ID, vecPosition, vecSize );
+    CClientColCuboid* pShape = new CClientColCuboid ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, vecPosition, vecSize );
     pShape->SetParent ( Resource.GetResourceDynamicEntity () );
     //CStaticFunctionDefinitions::RefreshColShapeColliders ( pShape );   ** Not applied to maintain compatibility with existing scrips **
     return pShape;
@@ -5899,7 +5899,7 @@ CClientColCuboid* CStaticFunctionDefinitions::CreateColCuboid ( CResource& Resou
 
 CClientColSphere* CStaticFunctionDefinitions::CreateColSphere ( CResource& Resource, const CVector& vecPosition, float fRadius )
 {
-    CClientColSphere* pShape = new CClientColSphere ( m_pManager, INVALID_ELEMENT_ID, vecPosition, fRadius );
+    CClientColSphere* pShape = new CClientColSphere ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, vecPosition, fRadius );
     pShape->SetParent ( Resource.GetResourceDynamicEntity () );
     //CStaticFunctionDefinitions::RefreshColShapeColliders ( pShape );   ** Not applied to maintain compatibility with existing scrips **
     return pShape;
@@ -5908,7 +5908,7 @@ CClientColSphere* CStaticFunctionDefinitions::CreateColSphere ( CResource& Resou
 
 CClientColRectangle* CStaticFunctionDefinitions::CreateColRectangle ( CResource& Resource, const CVector& vecPosition, const CVector2D& vecSize )
 {
-    CClientColRectangle* pShape = new CClientColRectangle ( m_pManager, INVALID_ELEMENT_ID, vecPosition, vecSize );
+    CClientColRectangle* pShape = new CClientColRectangle ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, vecPosition, vecSize );
     pShape->SetParent ( Resource.GetResourceDynamicEntity () );
     //CStaticFunctionDefinitions::RefreshColShapeColliders ( pShape );   ** Not applied to maintain compatibility with existing scrips **
     return pShape;
@@ -5917,7 +5917,7 @@ CClientColRectangle* CStaticFunctionDefinitions::CreateColRectangle ( CResource&
 
 CClientColPolygon* CStaticFunctionDefinitions::CreateColPolygon ( CResource& Resource, const CVector& vecPosition )
 {
-    CClientColPolygon * pShape = new CClientColPolygon ( m_pManager, INVALID_ELEMENT_ID, vecPosition );
+    CClientColPolygon * pShape = new CClientColPolygon ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, vecPosition );
     pShape->SetParent ( Resource.GetResourceDynamicEntity () );
     //CStaticFunctionDefinitions::RefreshColShapeColliders ( pShape );   ** Not applied to maintain compatibility with existing scrips **
     return pShape;
@@ -5926,7 +5926,7 @@ CClientColPolygon* CStaticFunctionDefinitions::CreateColPolygon ( CResource& Res
 
 CClientColTube* CStaticFunctionDefinitions::CreateColTube ( CResource& Resource, const CVector& vecPosition, float fRadius, float fHeight )
 {
-    CClientColTube* pShape = new CClientColTube ( m_pManager, INVALID_ELEMENT_ID, vecPosition, fRadius, fHeight );
+    CClientColTube* pShape = new CClientColTube ( m_pManager, INVALID_ELEMENT_ID, *Resource.GetResourceDynamicEntity(), false, vecPosition, fRadius, fHeight );
     pShape->SetParent ( Resource.GetResourceDynamicEntity () );
     //CStaticFunctionDefinitions::RefreshColShapeColliders ( pShape );   ** Not applied to maintain compatibility with existing scrips **
     return pShape;
@@ -6113,7 +6113,7 @@ bool CStaticFunctionDefinitions::FxAddFootSplash ( CVector & vecPosition )
 
 CClientSound* CStaticFunctionDefinitions::PlaySound ( CResource* pResource, const SString& strSound, bool bIsURL, bool bLoop )
 {
-    CClientSound* pSound = m_pSoundManager->PlaySound2D ( strSound, bIsURL, bLoop );
+    CClientSound* pSound = m_pSoundManager->PlaySound2D ( strSound, bIsURL, bLoop, *pResource->GetResourceDynamicEntity() );
     if ( pSound ) pSound->SetParent ( pResource->GetResourceDynamicEntity() );
     return pSound;
 }
@@ -6121,7 +6121,7 @@ CClientSound* CStaticFunctionDefinitions::PlaySound ( CResource* pResource, cons
 
 CClientSound* CStaticFunctionDefinitions::PlaySound3D ( CResource* pResource, const SString& strSound, bool bIsURL, const CVector& vecPosition, bool bLoop )
 {
-    CClientSound* pSound = m_pSoundManager->PlaySound3D ( strSound, bIsURL, vecPosition, bLoop );
+    CClientSound* pSound = m_pSoundManager->PlaySound3D ( strSound, bIsURL, vecPosition, bLoop, *pResource->GetResourceDynamicEntity() );
     if ( pSound ) pSound->SetParent ( pResource->GetResourceDynamicEntity() );
     return pSound;
 }

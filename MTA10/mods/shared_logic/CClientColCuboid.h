@@ -16,16 +16,16 @@
 class CClientColCuboid : public CClientColShape
 {
 public:
-                            CClientColCuboid        ( CClientManager* pManager, ElementID ID, const CVector& vecPosition, const CVector& vecSize );
+                            CClientColCuboid( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, const CVector& vecSize );
 
-    virtual CSphere         GetWorldBoundingSphere  ( void );
+    virtual CSphere         GetWorldBoundingSphere( void );
 
-    eColShapeType           GetShapeType            ( void )                    { return COLSHAPE_CUBOID; }
+    eColShapeType           GetShapeType( void )                    { return COLSHAPE_CUBOID; }
 
-    bool                    DoHitDetection          ( const CVector& vecNowPosition, float fRadius );
+    bool                    DoHitDetection( const CVector& vecNowPosition, float fRadius );
 
-    inline const CVector&   GetSize                 ( void )                    { return m_vecSize; };
-    inline void             SetSize                 ( const CVector& vecSize )  { m_vecSize = vecSize; SizeChanged (); }
+    inline const CVector&   GetSize( void )                    { return m_vecSize; };
+    inline void             SetSize( const CVector& vecSize )  { m_vecSize = vecSize; SizeChanged (); }
 
 protected:
     CVector                 m_vecSize;

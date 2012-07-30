@@ -14,8 +14,17 @@
 #include <multiplayer/CPopulationMP.h>
 
 // These includes need to be fixed!
+#include "../game_sa/RenderWare.h"
+#include "../game_sa/CRenderWareSA.h"
+#include "../game_sa/CTransformationSA.h"
+#include "../game_sa/CPtrNodeSA.h"
+#include "../game_sa/CTasksSA.h"
+#include "../game_sa/CTaskManagerSA.h"
+#include "../game_sa/CPadSA.h"
+#include "../game_sa/CPedIntelligenceSA.h"
 #include "../game_sa/CPedSA.h"
 #include "../game_sa/CCivilianPedSA.h"
+#include "../game_sa/CPadManagerSA.h"
 
 #include <list>
 

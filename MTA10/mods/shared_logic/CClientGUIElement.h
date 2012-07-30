@@ -73,7 +73,7 @@ class CClientGUIElement : public CClientEntity
     friend class CClientGUIManager;
 
 public:
-                                CClientGUIElement( CClientManager* pManager, CLuaMain* pLuaMain, CGUIElement* pCGUIElement, LuaClass& root, bool system = false, ElementID ID = INVALID_ELEMENT_ID );
+                                CClientGUIElement( CClientManager* pManager, CLuaMain* pLuaMain, CGUIElement* pCGUIElement, bool system = false, ElementID ID = INVALID_ELEMENT_ID );
                                 ~CClientGUIElement( void );
 
     void                        Unlink( void );

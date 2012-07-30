@@ -24,28 +24,28 @@ class CClientRadarAreaManager
     friend class CClientGame;
 
 public:
-                                                            CClientRadarAreaManager             ( CClientManager* pManager );
-                                                            ~CClientRadarAreaManager            ( void );
+                                                            CClientRadarAreaManager( CClientManager* pManager );
+                                                            ~CClientRadarAreaManager( void );
 
-    CClientRadarArea*                                       Create                              ( ElementID ID );
+    CClientRadarArea*                                       Create( ElementID ID, LuaClass& root, bool system );
 
-    void                                                    Delete                              ( CClientRadarArea* pRadarArea );
-    void                                                    DeleteAll                           ( void );
+    void                                                    Delete( CClientRadarArea* pRadarArea );
+    void                                                    DeleteAll( void );
 
-    inline std::list < CClientRadarArea* > ::const_iterator IterBegin                           ( void )                                { return m_List.begin (); };
-    inline std::list < CClientRadarArea* > ::const_iterator IterEnd                             ( void )                                { return m_List.end (); };
+    inline std::list < CClientRadarArea* > ::const_iterator IterBegin( void )                                   { return m_List.begin (); };
+    inline std::list < CClientRadarArea* > ::const_iterator IterEnd( void )                                     { return m_List.end (); };
 
-    static CClientRadarArea*                                Get                                 ( ElementID ID );
+    static CClientRadarArea*                                Get( ElementID ID );
 
-    unsigned short                                          GetDimension                        ( void )                                { return m_usDimension; };
-    void                                                    SetDimension                        ( unsigned short usDimension );
+    unsigned short                                          GetDimension( void )                                { return m_usDimension; };
+    void                                                    SetDimension( unsigned short usDimension );
 
 private:
-    void                                                    DoPulse                             ( void );
-    void                                                    DoPulse                             ( bool bRender );
+    void                                                    DoPulse( void );
+    void                                                    DoPulse( bool bRender );
 
-    inline void                                             AddToList                           ( CClientRadarArea* pRadarArea )        { m_List.push_back ( pRadarArea ); };
-    void                                                    RemoveFromList                      ( CClientRadarArea* pRadarArea );
+    inline void                                             AddToList( CClientRadarArea* pRadarArea )           { m_List.push_back ( pRadarArea ); };
+    void                                                    RemoveFromList( CClientRadarArea* pRadarArea );
 
 private:
     CClientManager*                                         m_pManager;

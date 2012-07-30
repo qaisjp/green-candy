@@ -102,9 +102,9 @@ void CClientSoundManager::SetDimension ( unsigned short usDimension )
     m_usDimension = usDimension;
 }
 
-CClientSound* CClientSoundManager::PlaySound2D ( const SString& strSound, bool bIsURL, bool bLoop )
+CClientSound* CClientSoundManager::PlaySound2D ( const SString& strSound, bool bIsURL, bool bLoop, LuaClass& root )
 {
-    CClientSound* pSound = new CClientSound ( m_pClientManager, INVALID_ELEMENT_ID );
+    CClientSound* pSound = new CClientSound ( m_pClientManager, INVALID_ELEMENT_ID, root );
     if ( bIsURL )
     {
         pSound->PlayStream ( strSound, bLoop );
@@ -118,9 +118,9 @@ CClientSound* CClientSoundManager::PlaySound2D ( const SString& strSound, bool b
     return NULL;
 }
 
-CClientSound* CClientSoundManager::PlaySound3D ( const SString& strSound, bool bIsURL, const CVector& vecPosition, bool bLoop )
+CClientSound* CClientSoundManager::PlaySound3D ( const SString& strSound, bool bIsURL, const CVector& vecPosition, bool bLoop, LuaClass& root )
 {
-    CClientSound* pSound = new CClientSound ( m_pClientManager, INVALID_ELEMENT_ID );
+    CClientSound* pSound = new CClientSound ( m_pClientManager, INVALID_ELEMENT_ID, root );
 
     if ( bIsURL )
     {
@@ -224,8 +224,10 @@ void CClientSoundManager::UpdateDistanceStreaming ( const CVector& vecListenerPo
         // Extract relevant types
         for ( CClientEntityResult::const_iterator iter = result.begin () ; iter != result.end (); ++iter )
         {
-            if ( CClientSound* pSound = DynamicCast < CClientSound > ( *iter ) )
+            if ( (*iter)->IsTransmit( LUACLASS_SOUND ) )
             {
+                CClientSound* pSound = (CClientSound*)*iter;
+
                 if ( pSound->IsSound3D() )
                 {
                     // Add to consider map

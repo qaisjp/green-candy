@@ -171,7 +171,7 @@ bool MixedReadDxFontString ( CScriptArgReader& argStream, SString& strFontName, 
     if ( argStream.NextIsString () || argStream.NextIsNone () )
         return argStream.ReadString ( strFontName, szDefaultFontName );
     else
-        return argStream.ReadUserData ( pDxFontElement );
+        return argStream.ReadClass( pDxFontElement, LUACLASS_DXFONT );
 }
 
 
@@ -184,7 +184,7 @@ bool MixedReadGuiFontString ( CScriptArgReader& argStream, SString& strFontName,
     if ( argStream.NextIsString () || argStream.NextIsNone () )
         return argStream.ReadString ( strFontName, szDefaultFontName );
     else
-        return argStream.ReadUserData ( pGuiFontElement );
+        return argStream.ReadClass( pGuiFontElement, LUACLASS_GUIFONT );
 }
 
 
@@ -195,7 +195,7 @@ bool MixedReadMaterialString ( CScriptArgReader& argStream, CClientMaterial*& pM
 {
     pMaterialElement = NULL;
     if ( !argStream.NextIsString () )
-        return argStream.ReadUserData ( pMaterialElement );
+        return argStream.ReadClass( pMaterialElement, LUACLASS_MATERIAL );
     else
     {
         SString strFilePath;
@@ -212,7 +212,7 @@ bool MixedReadMaterialString ( CScriptArgReader& argStream, CClientMaterial*& pM
             if ( g_pClientGame->GetResourceManager()->ParseResourceFullPath( (Resource*&)pFileResource, strFilePath, meta, strPath ) )
             {
                 SString strUniqueName = SString ( "%s*%s*%s", pParentResource->GetName (), pFileResource->GetName (), meta ).Replace ( "\\", "/" );
-                pMaterialElement = g_pClientGame->GetManager ()->GetRenderElementManager ()->FindAutoTexture ( strPath.c_str(), strUniqueName );
+                pMaterialElement = g_pClientGame->GetManager ()->GetRenderElementManager ()->FindAutoTexture ( strPath.c_str(), strUniqueName, *pParentResource->GetResourceDynamicEntity() );
 
                 // Check if brand new
                 if ( pMaterialElement && !pMaterialElement->GetParent () )

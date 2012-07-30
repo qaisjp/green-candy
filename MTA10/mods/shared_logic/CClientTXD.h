@@ -27,7 +27,6 @@ public:
     unsigned short                  GetID() const                   { return m_txd.GetID(); }
 
     bool                            LoadTXD( const char *path, bool filtering = true );
-    void                            UnloadTXD();
 
     bool                            Import( unsigned short usModelID );
     bool                            IsImported( unsigned short usModelID ) const;

@@ -137,7 +137,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateWindow ( *pLuaMain, x, y, width, height, titleBarText, relative );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -167,7 +167,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateLabel ( *pLuaMain, x, y, width, height, text, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -201,7 +201,7 @@ namespace CLuaFunctionDefs
             if ( m_pResourceManager->ParseResourceFullPath( (Resource*&)pResource, path, meta, strPath ) )
             {
                 CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateStaticImage ( *pLuaMain, x, y, width, height, strPath.c_str(), relative, parent );
-                lua_pushelement ( L, pGUIElement );
+                pGUIElement->PushStack( L );
                 return 1;
             }
             else
@@ -234,7 +234,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateButton ( *pLuaMain, x, y, width, height, text, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -263,7 +263,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateProgressBar ( *pLuaMain, x, y, width, height, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -294,7 +294,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateCheckBox ( *pLuaMain, x, y, width, height, text, selected, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -324,7 +324,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateRadioButton ( *pLuaMain, x, y, width, height, text, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -354,7 +354,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateEdit ( *pLuaMain, x, y, width, height, text, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -384,7 +384,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateMemo ( *pLuaMain, x, y, width, height, text, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -413,7 +413,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateGridList ( *pLuaMain, x, y, width, height, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -442,7 +442,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateScrollPane ( *pLuaMain, x, y, width, height, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -472,7 +472,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateScrollBar ( *pLuaMain, x, y, width, height, horizontal, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -501,7 +501,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateTabPanel ( *pLuaMain, x, y, width, height, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -562,7 +562,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateTab ( *pLuaMain, text, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -584,7 +584,7 @@ namespace CLuaFunctionDefs
         if ( !argStream.HasErrors () )
         {
             CClientGUIElement* pTab = CStaticFunctionDefinitions::GUIGetSelectedTab ( *tabPanel );
-            lua_pushelement ( L, pTab );
+            pTab->PushStack( L );
             return 1;
         }
         else
@@ -1048,7 +1048,8 @@ namespace CLuaFunctionDefs
                 lua_pushstring ( L, strFontName );
             else
                 lua_pushnil ( L );
-            lua_pushelement ( L, pGuiFontElement );
+
+            pGuiFontElement->PushStack( L );
             return 2;
         }
         else
@@ -2488,7 +2489,7 @@ namespace CLuaFunctionDefs
             CLuaMain* pLuaMain = lua_readcontext( L );
 
             CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateComboBox ( *pLuaMain, x, y, width, height, caption, relative, parent );
-            lua_pushelement ( L, pGUIElement );
+            pGUIElement->PushStack( L );
             return 1;
         }
         else
@@ -2676,13 +2677,13 @@ namespace CLuaFunctionDefs
                 if ( pParentResource->FileExists( meta ) )
                 {
                     SString strUniqueName = SString ( "%s*%s*%s", pParentResource->GetName (), pFileResource->GetName (), meta ).Replace ( "\\", "/" );
-                    CClientGuiFont* pGuiFont = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateGuiFont ( strPath.c_str(), strUniqueName, iSize );
+                    CClientGuiFont* pGuiFont = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateGuiFont ( strPath.c_str(), strUniqueName, iSize, *pParentResource->GetResourceDynamicEntity() );
                     if ( pGuiFont )
                     {
                         // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
                         pGuiFont->SetParent ( pParentResource->GetResourceDynamicEntity () );
                     }
-                    lua_pushelement ( L, pGuiFont );
+                    pGuiFont->PushStack( L );
                     return 1;
                 }
                 else

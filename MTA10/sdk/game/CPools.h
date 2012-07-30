@@ -72,6 +72,8 @@ public:
 
     // Peds pool
     virtual CPed*                   AddPed( unsigned short modelID ) = 0;
+    virtual CPed*                   AddCivilianPed( unsigned short modelID ) = 0;
+    virtual CPed*                   AddCivilianPed( void *ped ) = 0;
     virtual CPed*                   GetPed( void *entity ) const = 0;
     virtual CPed*                   GetPedFromRef( unsigned int index ) const = 0;
     virtual void                    DeleteAllPeds() = 0;

@@ -13,6 +13,7 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+#include "../game_sa/CPoolsSA.h"
 
 using std::list;
 
@@ -91,7 +92,7 @@ VOID CPopulationSA::RemovePed ( CCivilianPed * ped )
     if ( !pPedSA ) return;
 
     ped->SetDoNotRemoveFromGameWhenDeleted ( true );
-    pGameInterface->GetPools()->RemovePed ( (CPed*)ped );
+    delete ped;
     if ( !peds.empty () ) peds.remove ( pPedSA );
     dwPedCount--;
 }
@@ -105,7 +106,7 @@ VOID CPopulationSA::RemovePed ( CPedSAInterface * ped )
         {
             char szDebug[255] = {'\0'};
             sprintf ( szDebug, "Civ ped removed (%d)\n", dwPedCount - 1);
-            pGameInterface->GetPools()->RemovePed ( (CPed *)(CCivilianPed *)(*iter), false );
+            delete (CPed *)(CCivilianPed *)(*iter);
             //OutputDebugString ( szDebug );
             
             if ( m_pCivilianRemoveHandler )

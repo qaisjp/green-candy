@@ -137,7 +137,6 @@ void CClientProjectileManager::Hook_StaticProjectileCreation ( CEntity* pGameCre
     g_pProjectileManager->Hook_ProjectileCreation ( pGameCreator, pGameProjectile, pProjectileInfo, weaponType, origin, fForce, target, pGameTarget );
 }
 
-
 void CClientProjectileManager::Hook_ProjectileCreation ( CEntity* pGameCreator, CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget )
 {
     // Called on projectile construction (projectile doesn't actually exist until the next frame)
@@ -147,9 +146,8 @@ void CClientProjectileManager::Hook_ProjectileCreation ( CEntity* pGameCreator, 
     WEAPONTYPE_FLARE, WEAPONTYPE_FREEFALL_BOMB */
 
     CClientEntity * pTarget = m_pManager->FindEntity ( pGameTarget, true );
-    m_pLastCreated = new CClientProjectile ( m_pManager, pGameProjectile, pProjectileInfo, m_pCreator, pTarget, weaponType, origin, target, fForce, m_bIsLocal );
+    m_pLastCreated = new CClientProjectile ( m_pManager, pGameProjectile, pProjectileInfo, m_pCreator, pTarget, weaponType, origin, target, fForce, m_bIsLocal, *g_pClientGame->GetRootEntity() );
 }
-
 
 CClientProjectile * CClientProjectileManager::Create ( CClientEntity* pCreator, eWeaponType eWeapon, const CVector & vecOrigin, float fForce, const CVector& target, CClientEntity * pTargetEntity )
 {

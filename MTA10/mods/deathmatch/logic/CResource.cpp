@@ -37,17 +37,10 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
 
     // Create our root elements. We set their parents when we're loaded.
     // Make them system entities so nothing but us can delete them.
-    m_guiEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "guiroot" );
-    m_guiEntity->MakeSystemEntity();
-
-    m_colEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "colmodelroot" );
-    m_colEntity->MakeSystemEntity();
-
-    m_dffEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot" );
-    m_dffEntity->MakeSystemEntity();
-
-    m_txdEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot" );
-    m_txdEntity->MakeSystemEntity();
+    m_guiEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "guiroot", *m_dynamicEntity, true );
+    m_colEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "colmodelroot", *m_dynamicEntity, true );
+    m_dffEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot", *m_dynamicEntity, true );
+    m_txdEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot", *m_dynamicEntity, true );
 
     // Set up our private path
     filePath privPath;

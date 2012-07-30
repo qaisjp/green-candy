@@ -12,7 +12,7 @@
 
 #include <StdInc.h>
 
-CClientColSphere::CClientColSphere ( CClientManager* pManager, ElementID ID, const CVector& vecPosition, float fRadius ) : CClientColShape ( pManager, ID )
+CClientColSphere::CClientColSphere ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, float fRadius ) : CClientColShape ( pManager, ID, root, system )
 {
     m_vecPosition = vecPosition;
     m_fRadius = fRadius;

@@ -61,7 +61,7 @@ namespace CLuaFunctionDefs
         CClientEntity* pTarget = CStaticFunctionDefinitions::GetCameraTarget ();
         if ( pTarget )
         {
-            lua_pushelement ( L, pTarget );
+            pTarget->PushStack( L );
             return 1;
         }
 

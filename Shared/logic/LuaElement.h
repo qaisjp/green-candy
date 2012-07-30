@@ -23,7 +23,9 @@ public:
                             LuaElement( LuaClass& root );
                             ~LuaElement();
 
-    LuaClass&               m_root;
+    void                    SetRoot( LuaClass *root );
+
+    LuaClass*               m_root;
 };
 
 #endif //_BASE_LUA_ELEMENT_

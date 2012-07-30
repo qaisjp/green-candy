@@ -63,11 +63,11 @@ public:
     void                    RemoveAllProjectiles();
     void                    RemoveProjectile( CProjectileInfo *info, CProjectile *proj );
     CProjectile*            GetProjectile( unsigned short id );
+    CProjectile*            GetProjectile( void *projectilePointer );
     CProjectileInfo*        GetProjectileInfo( void *infoInt );
     CProjectileInfo*        GetProjectileInfo( unsigned short index );
     CProjectileInfo*        GetNextFreeProjectileInfo();
     bool                    AddProjectile( CEntity *creator, eWeaponType eWeapon, const CVector& vecOrigin, float fForce, const CVector& targetPos, CEntity *target );
-    CProjectile*            GetProjectile( void *projectilePointer );
 
     CEntity*                GetTarget() const;
     void                    SetTarget( CEntity *entity );

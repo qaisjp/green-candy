@@ -70,7 +70,7 @@ namespace CLuaFunctionDefs
             if ( pPlayer )
             {
                 // Return the player
-                lua_pushelement ( L, pPlayer );
+                pPlayer->PushStack( L );
                 return 1;
             }
         }
@@ -193,7 +193,7 @@ namespace CLuaFunctionDefs
             CClientTeam* pTeam = pPlayer->GetTeam ();
             if ( pTeam )
             {
-                lua_pushelement ( L, pTeam );
+                pTeam->PushStack( L );
                 return 1;
             }
         }

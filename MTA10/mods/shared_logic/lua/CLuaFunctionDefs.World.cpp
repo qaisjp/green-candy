@@ -181,7 +181,7 @@ namespace CLuaFunctionDefs
                     lua_pushnumber ( L, vecColPosition.fZ );
 
                     if ( pColEntity )
-                        lua_pushelement ( L, pColEntity );
+                        pColEntity->PushStack( L );
                     else
                         lua_pushnil ( L );
 
@@ -338,7 +338,7 @@ namespace CLuaFunctionDefs
                 else
                     pWaterElement = CStaticFunctionDefinitions::CreateWater ( *pResource, &v1, &v2, &v3, NULL, bShallow );
 
-                lua_pushelement ( L, pWaterElement );
+                pWaterElement->PushStack( L );
                 return 1;
             }
         }

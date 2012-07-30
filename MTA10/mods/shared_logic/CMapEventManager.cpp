@@ -279,16 +279,16 @@ bool CMapEventManager::Call ( const char* szName, const CLuaArguments& Arguments
                     lua_pop( pState, 1 );
 
                     // Init globals
-                    lua_pushelement ( pState, pSource );
+                    pSource->PushStack( pState );
                     lua_setglobal ( pState, "source" );
 
-                    lua_pushelement ( pState, pThis );
+                    pThis->PushStack( pState );
                     lua_setglobal ( pState, "this" );
 
-                    lua_pushresource ( pState, pMapEvent->GetVM()->GetResource() );
+                    pMapEvent->GetVM()->GetResource()->PushStack( pState );
                     lua_setglobal ( pState, "sourceResource" );
 
-                    lua_pushelement ( pState, pMapEvent->GetVM()->GetResource()->GetResourceDynamicEntity() );
+                    pMapEvent->GetVM()->GetResource()->GetResourceDynamicEntity()->PushStack( pState );
                     lua_setglobal ( pState, "sourceResourceRoot" );
 
                     lua_pushstring ( pState, szName );

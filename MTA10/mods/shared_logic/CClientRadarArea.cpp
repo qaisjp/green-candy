@@ -41,7 +41,7 @@ static int luaconstructor_radararea( lua_State *L )
     return 0;
 }
 
-CClientRadarArea::CClientRadarArea( class CClientManager* pManager, ElementID ID, LuaClass& root ) : CClientEntity( ID, false, root )
+CClientRadarArea::CClientRadarArea( class CClientManager* pManager, ElementID ID, LuaClass& root, bool system ) : CClientEntity( ID, system, root )
 {
     // Lua instancing
     lua_State *L = root.GetVM();

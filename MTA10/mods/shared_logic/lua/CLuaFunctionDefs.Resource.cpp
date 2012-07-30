@@ -54,10 +54,10 @@ namespace CLuaFunctionDefs
                 lua_pop( targetL, 1 );
 
                 //Set the new values for the current sourceResource, and sourceResourceRoot
-                lua_pushresource ( targetL, pThisResource );
+                pThisResource->PushStack( L );
                 lua_setglobal ( targetL, "sourceResource" );
 
-                lua_pushelement ( targetL, pThisResource->GetResourceEntity() );
+                pThisResource->GetResourceEntity()->PushStack( L );
                 lua_setglobal ( targetL, "sourceResourceRoot" );
 
                 // Call the exported function with the given name and the args

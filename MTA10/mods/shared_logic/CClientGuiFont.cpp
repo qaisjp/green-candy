@@ -34,8 +34,17 @@ static int luaconstructor_guifont( lua_State *L )
     return 0;
 }
 
-CClientGuiFont::CClientGuiFont ( CClientManager* pManager, ElementID ID, CGuiFontItem* pFontItem ) : CClientRenderElement ( pManager, ID )
+CClientGuiFont::CClientGuiFont ( CClientManager* pManager, ElementID ID, CGuiFontItem* pFontItem, LuaClass& root ) : CClientRenderElement ( pManager, ID, root )
 {
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_guifont, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
     SetTypeName ( "gui-font" );
     m_pRenderItem = pFontItem;
 }

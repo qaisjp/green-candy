@@ -18,7 +18,7 @@ static const luaL_Reg window_interface[] =
     { NULL, NULL }
 };
 
-static int luaconstructor_guiwindow( lua_State *L )
+int luaconstructor_guiwindow( lua_State *L )
 {
     CClientGUIElement *gui = (CClientGUIElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 

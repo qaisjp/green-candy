@@ -438,7 +438,7 @@ void CFoo::Test ( const char* szString )
 
     else if ( stricmp ( szString, "ped" ) == 0 )
     {
-        CClientPed* pPed = new CClientPed ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID, 9 );
+        CClientPed* pPed = new CClientPed ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID, 9, *g_pClientGame->GetRootEntity(), false );
         vecLocal.fX += 5.0f;
         pPed->SetPosition ( vecLocal );
     }

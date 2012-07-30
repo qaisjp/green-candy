@@ -20,7 +20,7 @@ static int element_setParent( lua_State *L )
 
     // Make sure that we stay in the resource tree!
     LuaElement& element = *(LuaElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
-    element.m_root.PushStack( L );
+    element.m_root->PushStack( L );
 
     ILuaClass& j = *lua_refclass( L, 1 );
     lua_pushvalue( L, 1 );
@@ -72,12 +72,15 @@ static int luaconstructor_element( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 2 ) );
     lua_call( L, 1, 0 );
 
+    // Register the element interface
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, element_interface, 1 );
 
+    // Put basic protection against modification from scripts
     lua_basicprotect( L );
 
+    // Define our type
     lua_pushlstring( L, "element", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;
@@ -92,10 +95,21 @@ static inline int _trefget( lua_State *L, LuaElement *el, LuaClass& root )
     return luaL_ref( L, LUA_REGISTRYINDEX );
 }
 
-LuaElement::LuaElement( LuaClass& root ) : LuaClass( root.GetVM(), _trefget( root.GetVM(), this, root ) ), m_root( root )
+LuaElement::LuaElement( LuaClass& root ) : LuaClass( root.GetVM(), _trefget( root.GetVM(), this, root ) )
 {
+    m_root = &root;
 }
 
 LuaElement::~LuaElement()
 {
+}
+
+void LuaElement::SetRoot( LuaClass *root )
+{
+    m_root = root;
+
+    // Reparent it so we are int the correct tree
+    m_class.PushMethod( m_lua, "setParent" );
+    root->PushStack( m_lua );
+    lua_call( m_lua, 1, 0 );
 }

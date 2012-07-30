@@ -22,5 +22,10 @@ public:
 };
 
 class CQuadBikeSA : public virtual CQuadBike, public CAutomobileSA
+{
+public:
+                                CQuadBikeSA( CQuadBikeSAInterface *bike );
+                                ~CQuadBikeSA();
+};
 
 #endif //_CQuadBikeSA_H_

@@ -216,35 +216,27 @@ namespace CLuaFunctionDefs
         // bool setPlayerTask ( ped thePed, taskinstance task )
         // returns true on success or false on failure
 
+        CClientPed *ped;
+
+        CScriptArgReader argStream( L );
+
+        argStream.ReadClass( ped, LUACLASS_PED );
+
         // Verify types
-        if ( argtype ( 1, LUA_TLIGHTUSERDATA ) &&
-             argtype ( 2, LUA_TTABLE ) )
+        if ( !argStream.HasErrors() )
         {
-            // Grab the player
-            // TODO: Support peds too
-            CClientEntity* pEntity = lua_toelement ( L, 1 );
-            if ( pEntity )
+            if ( lua_type( L, 2 ) == LUA_TTABLE )
             {
-                // Player?
-                if ( pEntity->GetType () == CCLIENTPLAYER )
-                {
-                    // Grab the player
-                    CClientPlayer* pPlayer = static_cast < CClientPlayer* > ( pEntity );
+                // Read out the task data
+                CClientTask Task( m_pManager );
 
-                    // Read out the task data
-                    CClientTask Task ( m_pManager );
-                    if ( Task.Read ( L, 2, true ) )
-                    {
-                        // Apply it on the player
-                        bool bSuccess = Task.ApplyTask ( *pPlayer );
-
-                        // Success
-                        lua_pushboolean ( L, bSuccess );
-                        return 1;
-                    }
-                }
+                // Apply it on the player
+                lua_pushboolean( L, Task.Read( L, 2, true ) && Task.ApplyTask( *ped ) );
+                return 1;
             }
         }
+        else
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // Failed
         lua_pushboolean ( L, false );

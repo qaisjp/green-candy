@@ -18,6 +18,7 @@
 #include <game/CAutomobile.h>
 
 #include "CDoorSA.h"
+#include "CDamageManagerSA.h"
 
 #define FUNC_CAutomobile_BurstTyre                  0x6A32B0
 #define FUNC_CAutomobile_BreakTowLink               0x6A4400

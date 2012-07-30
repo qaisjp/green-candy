@@ -44,7 +44,7 @@ CVector * projectileTarget = NULL;
 CEntitySAInterface * projectileTargetEntityInterface = 0;
 CEntity* projectileTargetEntity = 0;
 class CProjectileSAInterface * pProjectile = 0;
-DWORD dwProjectileInfoIndex;
+unsigned short dwProjectileInfoIndex;
 bool bWeaponFire = false;
 
 CColPointSAInterface ** ppInstantHitColPoint;
@@ -838,24 +838,24 @@ bool ProcessProjectileAdd ()
         CEntity * pOwner = NULL;
         if ( pProjectileOwner )
         {
-            switch ( pProjectileOwner->nType )
+            switch ( pProjectileOwner->m_type )
             {
-                case ENTITY_TYPE_VEHICLE:
-                    pOwner = pPools->GetVehicle ( (DWORD *)pProjectileOwner );
-                    break;
-                case ENTITY_TYPE_PED:
-                    pOwner = pPools->GetPed ( (DWORD *)pProjectileOwner );
-                    break;
-                case ENTITY_TYPE_OBJECT:
-                    //pPools->GetObject ( (DWORD *)event->inflictor );
-                default:
-                    pOwner = NULL;
+            case ENTITY_TYPE_VEHICLE:
+                pOwner = pPools->GetVehicle ( pProjectileOwner );
+                break;
+            case ENTITY_TYPE_PED:
+                pOwner = pPools->GetPed ( pProjectileOwner );
+                break;
+            case ENTITY_TYPE_OBJECT:
+                //pPools->GetObject ( (DWORD *)event->inflictor );
+            default:
+                pOwner = NULL;
             }
         }
     
         if ( projectileTargetEntityInterface )
         {
-            switch ( projectileTargetEntityInterface->nType )
+            switch ( projectileTargetEntityInterface->m_type )
             {
                 case ENTITY_TYPE_VEHICLE:
                     projectileTargetEntity = pPools->GetVehicle ( (DWORD *)projectileTargetEntityInterface );
@@ -883,7 +883,7 @@ void ProcessProjectile ( )
 
         if ( pProjectileOwner )
         {
-            switch ( pProjectileOwner->nType )
+            switch ( pProjectileOwner->m_type )
             {
             case ENTITY_TYPE_VEHICLE:
                 pOwner = pPools->GetVehicle ( (DWORD *)pProjectileOwner );
@@ -957,7 +957,7 @@ void _declspec(naked) HOOK_CProjectile__CProjectile()
 {
     _asm
     {
-        mov     dwProjectileInfoIndex, ebx // it happens to be in here, luckily
+        mov     dwProjectileInfoIndex, bx // it happens to be in here, luckily
         mov     pProjectile, ecx
         pushad
     }
@@ -980,7 +980,7 @@ static void CheckInVehicleDamage()
     if ( pPed && !IsLocalPlayer( pPed ) )
     {
         // Did he hit a vehicle?
-        if ( *ppInstantHitEntity && (*ppInstantHitEntity)->nType == ENTITY_TYPE_VEHICLE )
+        if ( *ppInstantHitEntity && (*ppInstantHitEntity)->m_type == ENTITY_TYPE_VEHICLE )
         {
             // Lets do a windscreen shooting check
             CWeapon * pWeapon = pPed->GetWeapon ( pPed->GetCurrentWeaponSlot () );

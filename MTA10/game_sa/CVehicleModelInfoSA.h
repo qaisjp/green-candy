@@ -16,6 +16,8 @@
 #define MAX_SEATS               15
 #define MAX_PASSENGERS          8
 
+#include <CQuat.h>
+
 class CVehicleSeatInfoSA
 {
 public:
