@@ -68,6 +68,7 @@ EXPORTS
   lua_getfield
   lua_gettable
   lua_insert
+  lua_pushtype
   lua_pushboolean
   lua_pushcclosure
   lua_pushinteger

@@ -28,6 +28,7 @@ public:
     void*   operator new( size_t );
     void    operator delete( void *ptr );
 
+    void            Allocate();
     bool            LoadTXD( const char *filename );
     unsigned short  InitParent();
     void            Reference();

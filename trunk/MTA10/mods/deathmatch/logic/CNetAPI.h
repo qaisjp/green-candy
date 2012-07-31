@@ -85,11 +85,14 @@ private:
     void                    ReadFullVehicleSpecific         ( CClientVehicle* pVehicle, NetBitStreamInterface& BitStream );
     void                    WriteFullVehicleSpecific        ( CClientVehicle* pVehicle, NetBitStreamInterface& BitStream );
 
+    void                    ReadLightweightSync             ( CClientPlayer* pPlayer, NetBitStreamInterface& BitStream );
+    void                    ReadVehicleResync               ( CClientVehicle* pVehicle, NetBitStreamInterface& BitStream );
+
 public:
     bool                    IsCameraSyncNeeded              ( void );
     void                    WriteCameraSync                 ( NetBitStreamInterface& BitStream );
 
-    void                    RPC                             ( eServerRPCFunctions ID, NetBitStreamInterface * pBitStream = NULL, NetPacketOrdering packetOrdering = PACKET_ORDERING_GAME );
+    void                    RPC                             ( eServerRPCFunctions ID, NetBitStreamInterface * pBitStream = NULL, ePacketOrdering packetOrdering = PACKET_ORDERING_DEFAULT );
 
 private:
     CClientManager*         m_pManager;

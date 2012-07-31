@@ -102,7 +102,12 @@ CCore::CCore()
 #if !defined(MTA_DEBUG) && !defined(MTA_ALLOW_DEBUG)
     AC_RestrictAccess ();
 #endif
-    
+
+#if 0
+    while ( !IsDebuggerPresent() )
+        Sleep( 1 );
+#endif
+
     m_pConfigFile = NULL;
 
     // Set our locale to the C locale, except for character handling which is the system's default
@@ -126,11 +131,17 @@ CCore::CCore()
     SString mtaRoot = GetMTASABaseDir();
 
     // Add important access zones here + extern them
-    tempFileRoot = m_fileSystem->CreateTranslator( GetMTATempPath() );
+    filePath tempRoot = GetMTATempPath();
+    CreateDirectory( tempRoot.c_str(), NULL );
+
+    filePath newsRoot = GetMTADataPath() + "news/";
+    CreateDirectory( newsRoot.c_str(), NULL );
+
+    tempFileRoot = m_fileSystem->CreateTranslator( tempRoot );
     mtaFileRoot = m_fileSystem->CreateTranslator( mtaRoot + "mta/" );
     dataFileRoot = m_fileSystem->CreateTranslator( GetMTADataPath() );
     modFileRoot = m_fileSystem->CreateTranslator( mtaRoot + "mods/" );
-    newsFileRoot = m_fileSystem->CreateTranslator( GetMTADataPath() + "news/" );
+    newsFileRoot = m_fileSystem->CreateTranslator( newsRoot );
     gameFileRoot = m_fileSystem->CreateTranslator( pathBuffer );
 
     if ( !gameFileRoot )
@@ -732,14 +743,6 @@ void LoadModule( CDynamicLibrary& m_Loader, const SString& strName, const filePa
 {
     WriteDebugEvent( "Loading " + strName.ToLower () );
 
-#ifdef MTA_DEBUG
-    // Make sure DllDirectory stays the same
-    filePath dllDir;
-    mtaFileRoot->GetFullPath( "", false, dllDir );
-
-    SetDllDirectory( dllDir.c_str() );
-#endif
-
     // Load appropriate compilation-specific library
 #ifdef MTA_DEBUG
     filePath strModuleFileName = modPath + "_d.dll";
@@ -852,6 +855,7 @@ void CCore::CreateGame()
 void CCore::CreateMultiplayer()
 {
     m_pMultiplayer = CreateModule <CMultiplayer> ( m_MultiplayerModule, "Multiplayer", "multiplayer_sa", "InitMultiplayerInterface", this );
+    m_pGame->RegisterMultiplayer( m_pMultiplayer );
 }
 
 void CCore::DeinitGUI()

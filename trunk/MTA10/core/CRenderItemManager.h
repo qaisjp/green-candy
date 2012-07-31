@@ -82,7 +82,7 @@ protected:
 
     // Shaders applied to world textures
     std::map < CD3DDUMMY*, CSHADERDUMMY* >      m_D3DDataShaderMap;
-    class CRenderWare*                          m_pRenderWare;
+    class CTextureManager*                      m_pTextureManager;
 
     eDxTestMode                                 m_TestMode;
     SString                                     m_strVideoCardName;

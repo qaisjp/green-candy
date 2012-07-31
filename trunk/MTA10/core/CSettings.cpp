@@ -2116,12 +2116,16 @@ void CSettings::LoadData ( void )
     std::string currentSkin;
     CVARS_GET("current_skin", currentSkin);
     unsigned int uiIndex = 0;
-    std::string strItemText = m_pInterfaceSkinSelector->GetItemText( uiIndex );
-    while ( strItemText != currentSkin )
+    const char *text = m_pInterfaceSkinSelector->GetItemText( uiIndex );
+    if ( text )
     {
-        strItemText = m_pInterfaceSkinSelector->GetItemText( ++uiIndex );
+        std::string strItemText = text;
+        while ( strItemText != currentSkin )
+        {
+            strItemText = m_pInterfaceSkinSelector->GetItemText( ++uiIndex );
+        }
+        m_pInterfaceSkinSelector->SetSelectedItemByIndex(uiIndex);
     }
-    m_pInterfaceSkinSelector->SetSelectedItemByIndex(uiIndex);
 
     // Async loading
     int iVar;

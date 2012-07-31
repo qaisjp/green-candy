@@ -20,9 +20,9 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CTxdPool**   ppTxdPool = (CTxdPool**)0x00C8800C;
 
-CTxdInstanceSA::CTxdInstanceSA(const char *name)
+CTxdInstanceSA::CTxdInstanceSA( const char *name )
 {
-    m_txd = RwTexDictionaryCreate();
+    m_txd = NULL;
     m_references = 0;
     m_parentTxd = 0xFFFF;
     m_hash = pGame->GetKeyGen()->GetUppercaseKey(name);
@@ -65,6 +65,14 @@ void CTxdInstanceSA::operator delete( void *ptr )
     (*ppTxdPool)->Free( (CTxdInstanceSA*)ptr );
 }
 
+void CTxdInstanceSA::Allocate()
+{
+    if ( m_txd )
+        return;
+
+    m_txd = RwTexDictionaryCreate();
+}
+
 bool CTxdInstanceSA::LoadTXD( const char *filename )
 {
     RwStream *stream = RwStreamOpen( STREAM_TYPE_FILENAME, STREAM_MODE_READ, filename );
@@ -82,6 +90,9 @@ bool CTxdInstanceSA::LoadTXD( const char *filename )
         RwStreamClose( stream, NULL );
         return false;
     }
+
+    // Make sure we are loaded
+    Allocate();
 
     while ( numTextures-- )
     {
@@ -145,32 +156,34 @@ void HOOK_CTxdStore_SetupTxdParent ();
 DWORD RETURN_CTxdStore_RemoveTxd =        0x731E96;
 void HOOK_CTxdStore_RemoveTxd ();
 
-CTextureManagerSA::CTextureManagerSA()
+static void Hook_InitTextureManager()
 {
-    unsigned int n;
-
-    // We init it ourselves
-    *(unsigned char*)FUNC_InitTextureManager = 0xC3;
-
-    *ppTxdPool = new CTxdPool;
-
     // Reserve 7 txds
-    for ( n=0; n<7; n++ )
-        CreateTxdEntry( "*" );
+    for ( unsigned int n=0; n<7; n++ )
+        pGame->GetTextureManager()->CreateTxdEntry( "*" );
 
     __asm
     {
         // Register some callbacks
-        mov edx,0x007F3510
+        mov edx,0x007F34D0
         push 0x00731720
         call edx
 
-        mov edx,0x007F3540
-        push 0x00731710
+        mov edx,0x007F3500
+        push 0x00731710 // callback which returns NULL
         call edx
 
         add esp,8
     }
+}
+
+CTextureManagerSA::CTextureManagerSA()
+{
+    // We init it ourselves
+    HookInstall( FUNC_InitTextureManager, (DWORD)Hook_InitTextureManager, 6 );
+
+    // We can initialize the pool here
+    *ppTxdPool = new CTxdPool;
 
     // Our stuff
     m_pfnWatchCallback = NULL;

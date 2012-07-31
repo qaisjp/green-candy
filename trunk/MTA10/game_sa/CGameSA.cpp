@@ -126,10 +126,6 @@ CGameSA::CGameSA()
     m_pFx                       = new CFxSA ( (CFxSAInterface *)CLASS_CFx );
     m_pWaterManager             = new CWaterManagerSA ();
 
-    // Extend multiplayer with internal extensions
-    multiplayer = core->GetMultiplayer();
-    multiplayer->SetProcessCollisionHandler( ProcessCollisions );
-
     // :D
     Transformation_Init();
 
@@ -225,6 +221,13 @@ CGameSA::~CGameSA()
 #ifdef DETECT_LEAKS    
     DumpUnfreed();
 #endif
+}
+
+void CGameSA::RegisterMultiplayer( CMultiplayer *mp )
+{
+    // Extend multiplayer with internal extensions
+    multiplayer = mp;
+    multiplayer->SetProcessCollisionHandler( ProcessCollisions );
 }
 
 CWeaponInfoSA* CGameSA::GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill )

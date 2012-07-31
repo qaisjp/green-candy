@@ -15,8 +15,8 @@
 
 void CWaterRPCs::LoadFunctions ( void )
 {
-    AddHandler ( SET_WATER_LEVEL, SetGTAWaterLevel, "SetWaterLevel" );
-    AddHandler ( SET_WATER_LEVEL, SetWaterElementLevel, "SetWaterLevel" );
+    AddHandler ( SET_WORLD_WATER_LEVEL, SetGTAWaterLevel, "SetWaterLevel" );
+    AddHandler ( SET_WORLD_WATER_LEVEL, SetWaterElementLevel, "SetWaterLevel" );
     AddHandler ( SET_WATER_VERTEX_POSITION, SetWaterVertexPosition, "SetWaterVertexPosition" );
     AddHandler ( SET_WATER_COLOR, SetWaterColor, "SetWaterColor" );
     AddHandler ( RESET_WATER_COLOR, ResetWaterColor, "ResetWaterColor" );

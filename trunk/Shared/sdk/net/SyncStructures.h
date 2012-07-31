@@ -195,6 +195,11 @@ struct SVehicleHealthSync : public SFloatAsBitsSync < 12 >
     SVehicleHealthSync () : SFloatAsBitsSync<12> ( 0.f, 2000.0f, true ) {}
 };
 
+struct SLowPrecisionVehicleHealthSync : public SFloatAsBitsSync < 8 >
+{
+    SLowPrecisionVehicleHealthSync () : SFloatAsBitsSync<8> ( 0.0f, 2000.0f, true ) {}
+};
+
 struct SObjectHealthSync : public SFloatAsBitsSync < 11 >
 {
     SObjectHealthSync () : SFloatAsBitsSync<11> ( 0.f, 1000.0f, true ) {}
@@ -318,6 +323,45 @@ private:
     bool m_bUseFloats;
 };
 
+// Low precision positions:
+// - Write X and Y components bound to [-8192, 8192], with a max error of 0.25 units.
+// - Write Z bound to [-110, 1938], with a max error of 1 unit.
+struct SLowPrecisionPositionSync : public ISyncStructure
+{
+    bool Read ( NetBitStreamInterface& bitStream )
+    {
+        unsigned short usX;
+        unsigned short usY;
+        unsigned short usZ;
+
+        if ( !bitStream.Read ( usX ) || !bitStream.Read ( usY ) || !bitStream.ReadBits ( reinterpret_cast<char *>(&usZ), 11 ) )
+            return false;
+        data.vecPosition.fX = 16384.0f * (usX / 65535.0f) - 8192.0f;
+        data.vecPosition.fY = 16384.0f * (usY / 65535.0f) - 8192.0f;
+        data.vecPosition.fZ = static_cast < float > ( usZ ) - 110.0f;
+        return true;
+    }
+
+    void Write ( NetBitStreamInterface& bitStream ) const
+    {
+        float fX = SharedUtil::Clamp ( -8192.0f, data.vecPosition.fX, 8192.0f );
+        float fY = SharedUtil::Clamp ( -8192.0f, data.vecPosition.fY, 8192.0f );
+        float fZ = SharedUtil::Clamp ( -110.0f, data.vecPosition.fZ, 2048.0f - 110.0f );
+
+        unsigned short usX = static_cast < unsigned short > ( ((fX + 8192.0f) / 16384.0f) * 65535.0f );
+        unsigned short usY = static_cast < unsigned short > ( ((fY + 8192.0f) / 16384.0f) * 65535.0f );
+        unsigned short usZ = static_cast < unsigned short > ( fZ + 110.0f );
+
+        bitStream.Write ( usX );
+        bitStream.Write ( usY );
+        bitStream.WriteBits ( reinterpret_cast<const char*>(&usZ), 11 );
+    }
+
+    struct
+    {
+        CVector vecPosition;
+    } data;
+};
 
 //////////////////////////////////////////
 //                                      //
@@ -816,13 +860,13 @@ struct SFullKeysyncSync : public ISyncStructure
 
     struct
     {
-        bool bm_ls1 : 1;
-        bool bm_rs1 : 1;
-        bool bm_action1 : 1;
-        bool bm_action3 : 1;
-        bool bm_action4 : 1;
-        bool bm_action2 : 1;
-        bool bm_action5 : 1;
+        bool bLeftShoulder1 : 1;
+        bool bRightShoulder1 : 1;
+        bool bButtonSquare : 1;
+        bool bButtonCross : 1;
+        bool bButtonCircle : 1;
+        bool bButtonTriangle : 1;
+        bool bShockButtonL : 1;
         bool bPedWalk : 1;
         short sLeftStickX;
         short sLeftStickY;
@@ -845,13 +889,13 @@ struct SSmallKeysyncSync : public ISyncStructure
 
     struct
     {
-        bool bm_ls1 : 1;
-        bool bm_rs1 : 1;
-        bool bm_action1 : 1;
-        bool bm_action3 : 1;
-        bool bm_action4 : 1;
-        bool bm_action2 : 1;
-        bool bm_action5 : 1;
+        bool bLeftShoulder1 : 1;
+        bool bRightShoulder1 : 1;
+        bool bButtonSquare : 1;
+        bool bButtonCross : 1;
+        bool bButtonCircle : 1;
+        bool bButtonTriangle : 1;
+        bool bShockButtonL : 1;
         bool bPedWalk : 1;
     } data;
 };
@@ -991,62 +1035,6 @@ struct IAmmoInClipSync : public virtual ISyncStructure
     virtual unsigned short GetAmmoInClip () const = 0;
 };
 
-template < unsigned int bitCount >
-struct SAmmoInClipSync : public IAmmoInClipSync
-{
-    SAmmoInClipSync ( unsigned short usAmmoInClip )
-    {
-        data.usAmmoInClip = usAmmoInClip;
-    }
-
-    bool Read ( NetBitStreamInterface& bitStream )
-    {
-        return bitStream.ReadBits ( (char *)&data, bitCount );
-    }
-
-    void Write ( NetBitStreamInterface& bitStream ) const
-    {
-        bitStream.WriteBits ( (const char* )&data, bitCount );
-    }
-
-    unsigned short GetAmmoInClip () const
-    {
-        return data.usAmmoInClip;
-    }
-
-    struct
-    {
-        unsigned short usAmmoInClip : bitCount;
-    } data;
-};
-
-
-// Declare specific weapon ammo in clip sync structures
-typedef SAmmoInClipSync < 6 >  SPistolAmmoInClipSync;
-typedef SAmmoInClipSync < 5 >  SSilencedAmmoInClipSync;
-typedef SAmmoInClipSync < 3 >  SDeagleAmmoInClipSync;
-typedef SAmmoInClipSync < 1 >  SShotgunAmmoInClipSync;
-typedef SAmmoInClipSync < 3 >  SSawnoffAmmoInClipSync;
-typedef SAmmoInClipSync < 3 >  SSpas12AmmoInClipSync;
-typedef SAmmoInClipSync < 7 >  SUziAmmoInClipSync;
-typedef SAmmoInClipSync < 5 >  SMp5AmmoInClipSync;
-typedef SAmmoInClipSync < 7 >  STec9AmmoInClipSync;
-typedef SAmmoInClipSync < 5 >  SAk47AmmoInClipSync;
-typedef SAmmoInClipSync < 6 >  SM4AmmoInClipSync;
-typedef SAmmoInClipSync < 1 >  SRifleAmmoInClipSync;
-typedef SAmmoInClipSync < 1 >  SSniperAmmoInClipSync;
-typedef SAmmoInClipSync < 1 >  SRLauncherAmmoInClipSync;
-typedef SAmmoInClipSync < 1 >  SRPGAmmoInClipSync;
-typedef SAmmoInClipSync < 6 >  SFThrowerAmmoInClipSync;
-typedef SAmmoInClipSync < 9 >  SMinigunAmmoInClipSync;
-typedef SAmmoInClipSync < 1 >  SGrenadeAmmoInClipSync;
-typedef SAmmoInClipSync < 1 >  STearGasAmmoInClipSync;
-typedef SAmmoInClipSync < 1 >  SMolotovAmmoInClipSync;
-typedef SAmmoInClipSync < 1 >  SSatchelAmmoInClipSync;
-typedef SAmmoInClipSync < 9 >  SSpraycanAmmoInClipSync;
-typedef SAmmoInClipSync < 9 >  SFireExtAmmoInClipSync;
-typedef SAmmoInClipSync < 6 >  SCameraAmmoInClipSync;
-
 
 struct SWeaponAmmoSync : public ISyncStructure
 {
@@ -1063,18 +1051,7 @@ struct SWeaponAmmoSync : public ISyncStructure
 
         if ( m_bSyncAmmoInClip && bStatus == true )
         {
-            char tmp [ 32 ];
-            IAmmoInClipSync* pAmmoInClipSync = GetBestAmmoInClipSyncForWeapon ( tmp );
-            if ( pAmmoInClipSync )
-            {
-                bStatus = bitStream.Read ( pAmmoInClipSync );
-                if ( bStatus )
-                    data.usAmmoInClip = pAmmoInClipSync->GetAmmoInClip ();
-                else
-                    data.usAmmoInClip = 0;
-            }
-            else
-                bStatus = false;
+            bStatus = bitStream.ReadCompressed ( data.usAmmoInClip );
         }
 
         return bStatus;
@@ -1086,12 +1063,7 @@ struct SWeaponAmmoSync : public ISyncStructure
             bitStream.WriteCompressed ( data.usTotalAmmo );
         if ( m_bSyncAmmoInClip )
         {
-            char tmp [ 32 ];
-            IAmmoInClipSync* pAmmoInClipSync = GetBestAmmoInClipSyncForWeapon ( tmp );
-            if ( pAmmoInClipSync )
-            {
-                bitStream.Write ( pAmmoInClipSync );
-            }
+            bitStream.WriteCompressed ( data.usAmmoInClip );
         }
     }
 
@@ -1105,42 +1077,6 @@ private:
     unsigned char   m_ucWeaponType;
     bool            m_bSyncTotalAmmo;
     bool            m_bSyncAmmoInClip;
-
-    IAmmoInClipSync* GetBestAmmoInClipSyncForWeapon ( void* ptr ) const
-    {
-        switch ( m_ucWeaponType )
-        {
-
-            case 22: return new(ptr) SPistolAmmoInClipSync ( data.usAmmoInClip );
-            case 23: return new(ptr) SSilencedAmmoInClipSync ( data.usAmmoInClip );
-            case 24: return new(ptr) SDeagleAmmoInClipSync ( data.usAmmoInClip );
-            case 25: return new(ptr) SShotgunAmmoInClipSync ( data.usAmmoInClip );
-            case 26: return new(ptr) SSawnoffAmmoInClipSync ( data.usAmmoInClip );
-            case 27: return new(ptr) SSpas12AmmoInClipSync ( data.usAmmoInClip );
-            case 28: return new(ptr) SUziAmmoInClipSync ( data.usAmmoInClip );
-            case 29: return new(ptr) SMp5AmmoInClipSync ( data.usAmmoInClip );
-            case 32: return new(ptr) STec9AmmoInClipSync ( data.usAmmoInClip );
-            case 30: return new(ptr) SAk47AmmoInClipSync ( data.usAmmoInClip );
-            case 31: return new(ptr) SM4AmmoInClipSync ( data.usAmmoInClip );
-            case 33: return new(ptr) SRifleAmmoInClipSync ( data.usAmmoInClip );
-            case 34: return new(ptr) SSniperAmmoInClipSync ( data.usAmmoInClip );
-            case 35: return new(ptr) SRLauncherAmmoInClipSync ( data.usAmmoInClip );
-            case 36: return new(ptr) SRPGAmmoInClipSync ( data.usAmmoInClip );
-            case 37: return new(ptr) SFThrowerAmmoInClipSync ( data.usAmmoInClip );
-            case 38: return new(ptr) SMinigunAmmoInClipSync ( data.usAmmoInClip );
-            case 16: return new(ptr) SGrenadeAmmoInClipSync ( data.usAmmoInClip );
-            case 17: return new(ptr) STearGasAmmoInClipSync ( data.usAmmoInClip );
-            case 18: return new(ptr) SMolotovAmmoInClipSync ( data.usAmmoInClip );
-            case 39: return new(ptr) SSatchelAmmoInClipSync ( data.usAmmoInClip );
-            case 41: return new(ptr) SSpraycanAmmoInClipSync ( data.usAmmoInClip );
-            case 42: return new(ptr) SFireExtAmmoInClipSync ( data.usAmmoInClip );
-            case 43: return new(ptr) SCameraAmmoInClipSync ( data.usAmmoInClip );
-            default:
-                // Melee
-                return NULL;
-                break;
-        }
-    }
 };
 
 struct SWeaponAimSync : public ISyncStructure
@@ -1646,7 +1582,7 @@ struct SMapInfoFlagsSync : public ISyncStructure
 //////////////////////////////////////////
 struct SFunBugsStateSync : public ISyncStructure
 {
-    enum { BITCOUNT = 4 };
+    enum { BITCOUNT = 5 };
 
     bool Read ( NetBitStreamInterface& bitStream )
     {
@@ -1659,6 +1595,7 @@ struct SFunBugsStateSync : public ISyncStructure
 
     struct
     {
+        bool bCloseRangeDamage : 1;
         bool bQuickReload : 1;
         bool bFastFire : 1;
         bool bFastMove : 1;
@@ -2037,6 +1974,83 @@ struct SHeatHazeSync : public ISyncStructure
     struct
     {
         SHeatHazeSettings settings;
+    } data;
+};
+
+//////////////////////////////////////////
+//                                      //
+//             Weapon Stats             //
+//                                      //
+//////////////////////////////////////////
+struct sWeaponPropertySync : public ISyncStructure
+{
+    bool Read ( NetBitStreamInterface& bitStream )
+    {
+        if (
+            bitStream.Read     ( data.weaponType ) &&
+            bitStream.Read     ( data.fTargetRange ) &&
+            bitStream.Read     ( data.fWeaponRange ) &&
+            bitStream.Read     ( data.nFlags ) &&
+            bitStream.Read     ( data.nAmmo ) &&
+            bitStream.Read     ( data.nDamage ) &&
+            bitStream.Read     ( data.fAccuracy ) &&
+            bitStream.Read     ( data.fMoveSpeed ) &&
+            bitStream.Read     ( data.anim_loop_start ) &&
+            bitStream.Read     ( data.anim_loop_stop ) &&
+            bitStream.Read     ( data.anim_loop_bullet_fire ) &&
+            bitStream.Read     ( data.anim2_loop_start ) &&
+            bitStream.Read     ( data.anim2_loop_stop ) &&
+            bitStream.Read     ( data.anim2_loop_bullet_fire ) &&
+            bitStream.Read     ( data.anim_breakout_time )
+            )
+            return true;
+
+        return false;
+    }
+
+    void Write ( NetBitStreamInterface& bitStream ) const
+    {
+        bitStream.Write    ( data.weaponType );
+        bitStream.Write    ( data.fTargetRange );
+        bitStream.Write    ( data.fWeaponRange );
+        bitStream.Write    ( data.nFlags );
+        bitStream.Write    ( data.nAmmo );
+        bitStream.Write    ( data.nDamage );
+        bitStream.Write    ( data.fAccuracy );
+        bitStream.Write    ( data.fMoveSpeed );
+        
+        bitStream.Write    ( data.anim_loop_start );
+        bitStream.Write    ( data.anim_loop_stop );
+        bitStream.Write    ( data.anim_loop_bullet_fire );
+        bitStream.Write    ( data.anim2_loop_start );
+        bitStream.Write    ( data.anim2_loop_stop );
+        bitStream.Write    ( data.anim2_loop_bullet_fire );
+        bitStream.Write    ( data.anim_breakout_time );
+    }
+
+    struct
+    {
+        int         weaponType;
+        FLOAT       fTargetRange;         // max targeting range
+        FLOAT       fWeaponRange;         // absolute gun range / default melee attack range
+
+        int         nFlags;               // flags defining characteristics
+
+        short       nAmmo;                // ammo in one clip
+        short       nDamage;              // damage inflicted per hit
+
+        FLOAT       fAccuracy;            // modify accuracy of weapon
+        FLOAT       fMoveSpeed;           // how fast can move with weapon
+        
+        FLOAT       anim_loop_start;        // start of animation loop
+        FLOAT       anim_loop_stop;          // end of animation loop
+        FLOAT       anim_loop_bullet_fire;         // time in animation when weapon should be fired
+
+        FLOAT       anim2_loop_start;       // start of animation2 loop
+        FLOAT       anim2_loop_stop;         // end of animation2 loop
+        FLOAT       anim2_loop_bullet_fire;        // time in animation2 when weapon should be fired
+
+        FLOAT       anim_breakout_time;     // time after which player can break out of attack and run off
     } data;
 };
 

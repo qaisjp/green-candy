@@ -268,7 +268,7 @@ void SwitchContext ( CPed* thePed )
                     eWeaponType currentWeapon = thePed->GetWeapon(thePed->GetCurrentWeaponSlot())->GetType();
                     CControllerState * cs = data->CurrentControllerState();
                     
-                    if ( cs->m_rs1 != 0 
+                    if ( cs->RightShoulder1 != 0 
                         && ( currentWeapon == WEAPONTYPE_SNIPERRIFLE || currentWeapon == WEAPONTYPE_ROCKETLAUNCHER
                         || currentWeapon == WEAPONTYPE_ROCKETLAUNCHER_HS || currentWeapon == WEAPONTYPE_CAMERA ) )
                     {
@@ -284,7 +284,7 @@ void SwitchContext ( CPed* thePed )
                     MemCpyFast ( pLocalPadInterface, &data->m_pad, sizeof ( CPadSAInterface ) );
 
                     // this is to fix the horn/siren
-                    pLocalPad->SetHornHistoryValue ( ( cs->m_action5 == 255 ) );
+                    pLocalPad->SetHornHistoryValue ( ( cs->ShockButtonL == 255 ) );
                     // disables the impatient actions on remote players (which cause desync)
                     pLocalPad->SetLastTimeTouched ( pGameInterface->GetSystemTime () );
 

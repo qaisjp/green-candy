@@ -49,7 +49,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../Shared/sdk"
+				AdditionalIncludeDirectories="./;../../Shared/;../../Shared/sdk;../../vendor/zlib/"
 				PreprocessorDefinitions="WIN32;_DEBUG;MTA_DEBUG;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				BasicRuntimeChecks="3"
@@ -79,10 +79,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib psapi.lib"
-				OutputFile="C:/Program Files/MTA San Andreas 1.2/mta/loader_d.dll"
+				AdditionalDependencies="DbgHelp.lib zlibd_2008.lib psapi.lib Shlwapi.lib"
+				OutputFile="D:/Program Files/MTA San Andreas 1.2/mta/loader_d.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="../../vendor/zlib/lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/Loader_d.pdb"
 				SubSystem="2"
@@ -151,7 +152,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../../Shared/sdk"
+				AdditionalIncludeDirectories="./;../../Shared/;../../Shared/sdk;../../vendor/zlib/"
 				PreprocessorDefinitions="WIN32;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -180,10 +181,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib psapi.lib"
-				OutputFile="c:\program files\MTA San Andreas 1.2\mta\loader.dll"
+				AdditionalDependencies="DbgHelp.lib zlib_2008.lib psapi.lib Shlwapi.lib"
+				OutputFile="D:\program files\MTA San Andreas 1.2\mta\loader.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="../../vendor/zlib/lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
 				GenerateMapFile="true"
@@ -257,7 +259,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../../Shared/sdk"
+				AdditionalIncludeDirectories="./;../../Shared/;../../Shared/sdk;../../vendor/zlib/"
 				PreprocessorDefinitions="WIN32;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -286,10 +288,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib psapi.lib"
+				AdditionalDependencies="DbgHelp.lib"
 				OutputFile="..\..\output\MTA San Andreas\mta\loader.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="../../vendor/zlib/lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
 				GenerateMapFile="true"
@@ -332,6 +335,14 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
+			<File
+				RelativePath="..\..\Shared\core\CFileSystem.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Shared\core\CFileSystem.zip.cpp"
+				>
+			</File>
 			<File
 				RelativePath=".\CInstallManager.cpp"
 				>
@@ -381,6 +392,18 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl"
 			>
+			<File
+				RelativePath="..\..\Shared\core\CFileSystem.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Shared\core\CFileSystem.zip.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Shared\core\CFileSystemInterface.h"
+				>
+			</File>
 			<File
 				RelativePath=".\CInstallManager.h"
 				>

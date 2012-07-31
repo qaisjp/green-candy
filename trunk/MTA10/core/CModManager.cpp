@@ -113,16 +113,9 @@ CClientBase* CModManager::Load( const char* szName, const char* szArguments )
         return NULL;
     }
 
-#ifdef MTA_DEBUG
-    // Make sure DllDirectory stays the same
-    filePath dllDir;
-    mtaFileRoot->GetFullPath( "", false, dllDir );
-
-    SetDllDirectory( dllDir.c_str() );
-#endif
-
     // Load the library and use the supplied path as an extra place to search for dependencies
     m_hClientDLL = LoadLibraryEx( itMod->second.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH );
+
     if ( !m_hClientDLL )
     {
         DWORD dwError = GetLastError ();
@@ -167,6 +160,8 @@ CClientBase* CModManager::Load( const char* szName, const char* szArguments )
     {
         CCore::GetSingleton().GetConsole()->Printf( "Unable to load %s's DLL (unable to init, bad version?)", szName );
         FreeLibrary( m_hClientDLL );
+
+        m_pClientBase = NULL;
         return NULL;
     }
 
@@ -581,7 +576,7 @@ void CModManager::InitializeModList ( const char* szModFolderPath )
     if ( !modFileRoot->GetFullPath( szModFolderPath, false, modPath ) )
         return;
 
-    SString strPathWildchars ( "%s*.*", modPath );
+    SString strPathWildchars ( "%s*.*", modPath.c_str() );
 
     // Create a search
     hFind = FindFirstFile ( strPathWildchars, &FindData );
@@ -613,11 +608,29 @@ void CModManager::VerifyAndAddEntry( const char* szModFolderPath, const char* sz
     HMODULE hDLL;
 
     // NOTE: We do not have to check for race anymore!
-    if ( strcmp ( szName, "." ) || strcmp ( szName, ".." ) )
+    if ( strcmp ( szName, "." ) == 0 || strcmp ( szName, ".." ) == 0 )
         return;
 
     // Paths given by the OS are always absolute
     modFileRoot->GetFullPath( szModFolderPath, true, modPath );
+    modPath += szName;
+    modPath += '/';
+
+    // Add the .dll's path to the environment variables
+    char pathBuffer[4096];
+    GetEnvironmentVariable( "PATH", pathBuffer, sizeof(pathBuffer) - 1 );
+
+    strcat( pathBuffer, ";" );
+    strcat( pathBuffer, modPath.c_str() );
+    strcat( pathBuffer, ";" );
+
+    SetEnvironmentVariable( "PATH", pathBuffer );
+
+#ifdef _DEBUG
+    modPath += "Client_d.dll";
+#else
+    modPath += "Client.dll";
+#endif
 
     // Attempt to load the primary client DLL
     hDLL = LoadLibraryEx( modPath.c_str(), NULL, DONT_RESOLVE_DLL_REFERENCES );

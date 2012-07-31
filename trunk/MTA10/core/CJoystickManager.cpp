@@ -444,23 +444,23 @@ void CJoystickManager::ApplyAxes ( CControllerState& cs, bool bInVehicle )
 
         int iValue = Round ( value * line.MaxValue );
 
-             if ( line.OutputAxisIndex == eLeftStickX )   cs.m_leftAxisX += iValue;
-        else if ( line.OutputAxisIndex == eLeftStickY )   cs.m_leftAxisY += iValue;
-        else if ( line.OutputAxisIndex == eRightStickX )  cs.m_rightAxisX += iValue;
-        else if ( line.OutputAxisIndex == eRightStickY )  cs.m_rightAxisY += iValue;
-        else if ( line.OutputAxisIndex == eAccelerate && bInVehicle )   cs.m_action3 += iValue;
-        else if ( line.OutputAxisIndex == eBrake && bInVehicle )        cs.m_action1 += iValue;
+             if ( line.OutputAxisIndex == eLeftStickX )   cs.LeftStickX += iValue;
+        else if ( line.OutputAxisIndex == eLeftStickY )   cs.LeftStickY += iValue;
+        else if ( line.OutputAxisIndex == eRightStickX )  cs.RightStickX += iValue;
+        else if ( line.OutputAxisIndex == eRightStickY )  cs.RightStickY += iValue;
+        else if ( line.OutputAxisIndex == eAccelerate && bInVehicle )   cs.ButtonCross += iValue;
+        else if ( line.OutputAxisIndex == eBrake && bInVehicle )        cs.ButtonSquare += iValue;
     }
 
 
     // Keep everything in range
-    cs.m_leftAxisX  = Clamp < const short > ( -128, cs.m_leftAxisX, 128 );
-    cs.m_leftAxisY  = Clamp < const short > ( -128, cs.m_leftAxisY, 128 );
-    cs.m_rightAxisX = Clamp < const short > ( -128, cs.m_rightAxisX, 128 );
-    cs.m_rightAxisY = Clamp < const short > ( -128, cs.m_rightAxisY, 128 );
+    cs.LeftStickX  = Clamp < const short > ( -128, cs.LeftStickX, 128 );
+    cs.LeftStickY  = Clamp < const short > ( -128, cs.LeftStickY, 128 );
+    cs.RightStickX = Clamp < const short > ( -128, cs.RightStickX, 128 );
+    cs.RightStickY = Clamp < const short > ( -128, cs.RightStickY, 128 );
     
-    cs.m_action3  = Clamp < const short > ( 0, cs.m_action3, 255 );
-    cs.m_action1 = Clamp < const short > ( 0, cs.m_action1, 255 );
+    cs.ButtonCross  = Clamp < const short > ( 0, cs.ButtonCross, 255 );
+    cs.ButtonSquare = Clamp < const short > ( 0, cs.ButtonSquare, 255 );
 
 
     // Debug output
