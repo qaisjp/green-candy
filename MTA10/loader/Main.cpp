@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        loader/Main.cpp
 *  PURPOSE:     MTA loader
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -15,8 +16,12 @@
 #include "StdInc.h"
 #include "direct.h"
 #include "SharedUtil.Tests.hpp"
+#include "SharedUtil.hpp"
 int DoLaunchGame ( LPSTR lpCmdLine );
 int LaunchGame ( LPSTR lpCmdLine );
+
+CFileTranslator *g_globalRoot;
+CFileTranslator *g_mtaRoot;
 
 HINSTANCE g_hInstance = NULL;
 
@@ -29,7 +34,7 @@ HINSTANCE g_hInstance = NULL;
 ///////////////////////////////////////////////////////////////
 int WINAPI WinMain ( HINSTANCE _hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow )
 {
-#if defined(_DEBUG) 
+#if defined(_DEBUG) && defined(__SHAREDUTIL_TESTING)
     SharedUtil_Tests ();
 #endif
 
@@ -384,7 +389,7 @@ int DoLaunchGame ( LPSTR lpCmdLine )
                               FALSE,
                               CREATE_SUSPENDED,
                               NULL,
-                              strDir,
+                              NULL,
                               &siLoadee,
                               &piLoadee ) )
     {
@@ -453,7 +458,7 @@ int DoLaunchGame ( LPSTR lpCmdLine )
     ResumeThread ( piLoadee.hThread );
 
     // Wait for game to exit
-    if ( piLoadee.hThread)
+    if ( piLoadee.hThread )
         WaitForObject ( piLoadee.hProcess, NULL, INFINITE, g_hMutex );
 
     // Get its exit code

@@ -18,7 +18,7 @@ static const luaL_Reg checkbox_interface[] =
     { NULL, NULL }
 };
 
-int luaconstructor_checkbox( lua_State *L )
+int luaconstructor_guicheckbox( lua_State *L )
 {
     CClientGUIElement *gui = (CClientGUIElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 

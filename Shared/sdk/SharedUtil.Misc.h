@@ -1243,6 +1243,46 @@ namespace SharedUtil
       }
       return !*wild;
     }
+	
+    ///////////////////////////////////////////////////////////////
+    //
+    // CRefCountable
+    //
+    // Thread safe reference counting base class
+    // Shared critical section is used for construction/destruction speed
+    //
+    ///////////////////////////////////////////////////////////////
+    class CRefCountable
+    {
+        int                     m_iRefCount;
+        CCriticalSection*       m_pCS;          // Use a pointer incase the static variable exists more than once
+        static CCriticalSection ms_CS;
+    protected:
+        virtual ~CRefCountable  ( void ) {}
+    public:
+
+        CRefCountable ( void ) : m_iRefCount ( 1 ), m_pCS ( &ms_CS ) {}
+
+        void AddRef ( void )
+        {
+            m_pCS->Lock ();
+            ++m_iRefCount;
+            m_pCS->Unlock ();
+        }
+
+        void Release ( void )
+        {
+            m_pCS->Lock ();
+            assert ( m_iRefCount > 0 );
+            bool bLastRef = --m_iRefCount == 0;
+            m_pCS->Unlock ();
+
+            if ( !bLastRef )
+                return;
+
+            delete this;
+        }
+    };
 
 };
 

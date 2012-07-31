@@ -104,6 +104,8 @@ public:
                                         CGameSA(); // constructor
                                         ~CGameSA();
 
+    void                                RegisterMultiplayer( CMultiplayer *mp );
+
     inline CPoolsSA*                    GetPools()                      { return m_pPools; };
     inline CPlayerInfoSA*               GetPlayerInfo()                 { return m_pPlayerInfo; };
     inline CProjectileInfoSA*           GetProjectileInfo()             { return m_pProjectileInfo; };

@@ -19,6 +19,8 @@
 //
 //
 
+#if 0
+
 #if MTASA_VERSION_TYPE >= VERSION_TYPE_UNSTABLE
     #ifndef _DECLARE_PROFILER_SECTION
         #error Test plugin missing
@@ -27,4 +29,6 @@
         _DECLARE_PROFILER_SECTION(__FILE__, tag)
 #else
     #define DECLARE_PROFILER_SECTION(tag)
+#endif
+
 #endif

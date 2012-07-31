@@ -78,6 +78,7 @@ LuaArgument* CLuaArguments::PushArgument( const LuaArgument& other )
     return arg;
 }
 
+#if 0
 LuaArgument* CLuaArguments::PushTable( const LuaArguments& table )
 {
     CLuaArgument *arg = new CLuaArgument();
@@ -85,6 +86,7 @@ LuaArgument* CLuaArguments::PushTable( const LuaArguments& table )
     m_args.push_back( arg );
     return arg;
 }
+#endif
 
 CLuaArgument* CLuaArguments::PushElement( CClientEntity* element )
 {

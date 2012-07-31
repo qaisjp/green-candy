@@ -16,7 +16,7 @@
 
 extern CClientGame* g_pClientGame;
 
-#define CGUI_ICON_NETWORK_TROUBLE       "mta\\cgui\\images\\16-message-warn.png"
+#define CGUI_ICON_NETWORK_TROUBLE       "cgui\\images\\16-message-warn.png"
 
 CClientManager::CClientManager ( void )
 {
@@ -37,6 +37,7 @@ CClientManager::CClientManager ( void )
     m_pVehicleStreamer = new CClientStreamer ( CClientVehicleManager::IsVehicleLimitReached, 250.0f );
     m_pModelRequestManager = new CClientModelRequestManager;
 
+    m_pResourceManager = new CResourceManager;
     m_pGUIManager = new CClientGUIManager;
     m_pMarkerManager = new CClientMarkerManager ( this );
     m_pObjectManager = new CClientObjectManager ( this );
@@ -53,7 +54,6 @@ CClientManager::CClientManager ( void )
     m_pCivilianManager = new CClientCivilianManager ( this );
     m_pCamera = new CClientCamera ( this );
     m_pPedManager = new CClientPedManager ( this );
-    m_pResourceManager = new CResourceManager;
     m_pColManager = new CClientColManager;
     m_pGroups = new CClientGroups;
     m_pProjectileManager = new CClientProjectileManager ( this );
@@ -74,9 +74,6 @@ CClientManager::~CClientManager ( void )
 
     delete m_pPacketRecorder;
     m_pPacketRecorder = NULL;
-
-    delete m_pResourceManager;
-    m_pResourceManager = NULL;
 
     // We need to call this after deleting resources but before deleting entities
     g_pClientGame->GetElementDeleter ()->DoDeleteAll ();
@@ -102,9 +99,6 @@ CClientManager::~CClientManager ( void )
 
     delete m_pPedManager;
     m_pPedManager = NULL;
-
-    delete m_pCamera;
-    m_pCamera = NULL;
 
     delete m_pCivilianManager;
     m_pCivilianManager = NULL;

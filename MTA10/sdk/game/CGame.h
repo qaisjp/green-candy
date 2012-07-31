@@ -108,6 +108,8 @@ class __declspec(novtable) CGame
 public:
     virtual                             ~CGame()    {};
 
+    virtual void                        RegisterMultiplayer( CMultiplayer *mp );
+
     virtual CPools*                     GetPools() = 0;
     virtual CPlayerInfo*                GetPlayerInfo() = 0;
     virtual CProjectileInfo*            GetProjectileInfo() = 0;

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="libcurl"
 	ProjectGUID="{2B98A079-89D3-4970-B0C2-39996636BAE6}"
 	RootNamespace="libcurl"
@@ -210,7 +210,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy /y ..\..\libcurl.dll &quot;C:\Program Files\MTA San Andreas 1.2\MTA\&quot; &amp;&amp; xcopy /y ..\..\libcurl.dll &quot;C:\Program Files\MTA San Andreas 1.2\server\&quot;"
+				CommandLine="xcopy /y ..\..\libcurl.dll &quot;D:\Program Files\MTA San Andreas 1.2\MTA\&quot; &amp;&amp; xcopy /y ..\..\libcurl.dll &quot;D:\Program Files\MTA San Andreas 1.2\server\&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -310,7 +310,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy /y ..\..\libcurld.dll &quot;C:\Program Files\MTA San Andreas 1.2\MTA\&quot; &amp;&amp; xcopy /y ..\..\libcurld.dll &quot;C:\Program Files\MTA San Andreas 1.2\server\&quot;"
+				CommandLine="xcopy /y ..\..\libcurld.dll &quot;D:\Program Files\MTA San Andreas 1.2\MTA\&quot; &amp;&amp; xcopy /y ..\..\libcurld.dll &quot;D:\Program Files\MTA San Andreas 1.2\server\&quot;"
 			/>
 		</Configuration>
 	</Configurations>

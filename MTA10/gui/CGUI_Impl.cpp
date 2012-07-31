@@ -33,6 +33,43 @@ CFileTranslator *guiRoot;
 CFileTranslator *fontRoot;
 CFileTranslator *skinRoot;
 
+using namespace CEGUI;
+
+class CEGUIResourceProvider : public CEGUI::ResourceProvider
+{
+public:
+    virtual void loadRawDataContainer( const String& path, RawDataContainer& output, const String& resourceGroup )
+    {
+        CFile *file = skinRoot->Open( path.c_str(), "rb" );
+
+        if ( !file )
+            file = guiRoot->Open( path.c_str(), "rb" );
+
+        if ( !file )
+            file = fontRoot->Open( path.c_str(), "rb" );
+
+        if ( !file )
+            throw std::exception( "failed to load .xml CEGUI file" );
+
+        size_t size = file->GetSize();
+        unsigned char *data = new unsigned char [ size ];
+
+        file->Read( data, 1, size );
+
+        delete file;
+
+        output.setData( data );
+        output.setSize( size );
+    }
+
+    virtual void unloadRawDataContainer( RawDataContainer& data )
+    {
+        delete data.getDataPtr();
+
+        data.setData( NULL );
+    }
+};
+
 CGUI_Impl::CGUI_Impl( IDirect3DDevice9* pDevice, CCoreInterface *coreInterface )
     : m_HasSchemeLoaded( false )
 {
@@ -52,7 +89,7 @@ CGUI_Impl::CGUI_Impl( IDirect3DDevice9* pDevice, CCoreInterface *coreInterface )
 
     // Create a GUI system and get the windowmanager
     m_pRenderer = new CEGUI::DirectX9Renderer( pDevice, 0 );
-    m_pSystem = new CEGUI::System( m_pRenderer );
+    m_pSystem = new CEGUI::System( m_pRenderer, new CEGUIResourceProvider() );
 
     // Get pointers to various stuff from CEGUI singletons
     m_pFontManager = CEGUI::FontManager::getSingletonPtr ();
@@ -73,7 +110,7 @@ CGUI_Impl::CGUI_Impl( IDirect3DDevice9* pDevice, CCoreInterface *coreInterface )
 
     // Load our fonts
     filePath fonts = SharedUtil::GetWindowsDirectory();
-    fonts += "fonts/";
+    fonts += "/fonts/";
 
     fontRoot = core->GetFileSystem()->CreateTranslator( fonts.c_str() );
 
@@ -113,6 +150,8 @@ CGUI_Impl::CGUI_Impl( IDirect3DDevice9* pDevice, CCoreInterface *coreInterface )
         SString strMessage = e.getMessage ().c_str();
         BrowseToSolution( "create-fonts", true, true, true, SString( "Error loading fonts!\n\n%s", *strMessage ) );
 	}
+
+    guiRoot->ChangeDirectory( "../ ");
 }
 
 CGUI_Impl::~CGUI_Impl()
@@ -137,12 +176,13 @@ void CGUI_Impl::SetSkin( const char* szName )
     if ( !skinRoot->Exists( dir.c_str() ) )
         return;
 
-    filePath skinDir;
-    skinRoot->GetFullPath( dir.c_str(), false, skinDir );
+    skinRoot->ChangeDirectory( dir.c_str() );
 
-    CEGUI::Scheme* scheme = CEGUI::SchemeManager::getSingleton().loadScheme( skinDir.c_str() );
+    CEGUI::Scheme* scheme = CEGUI::SchemeManager::getSingleton().loadScheme( "CGUI.xml" );
     m_CurrentSchemeName = scheme->getName().c_str();
     m_HasSchemeLoaded = true;
+
+    skinRoot->ChangeDirectory( "/" );
 
     CEGUI::System::getSingleton().setDefaultMouseCursor("CGUI-Images", "MouseArrow");
 

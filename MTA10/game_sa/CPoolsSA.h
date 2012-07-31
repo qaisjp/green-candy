@@ -75,7 +75,7 @@ public:
 
         for (n=0; n<m_max; n++)
         {
-            if ( !(m_flags[n] & 0x80) )
+            if ( m_flags[n] & 0x80 )
                 continue;
 
             delete &m_pool[n];
@@ -123,7 +123,7 @@ public:
 
     unsigned int    GetIndex( type *entity )
     {
-        return (unsigned int)(entity - m_pool) / size;
+        return ((unsigned int)entity - (unsigned int)m_pool) / size;
     }
 
     bool            IsValid( type *entity )
@@ -139,7 +139,7 @@ public:
         if ( m_flags[id] & 0x80 )
             return;
 
-        m_flags[id] |= 0x80;
+        m_flags[id] &= ~0x80;
         m_active--;
     }
 

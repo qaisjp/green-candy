@@ -139,11 +139,14 @@ CClientGame::CClientGame ( bool bLocalPlay )
     g_pCore->GetGUI ()->SetFocusLostHandler         ( INPUT_MOD, GUI_CALLBACK_FOCUS ( &CClientGame::OnFocusLoss, this ) );
     g_pCore->GetGUI ()->SelectInputHandlers         ( INPUT_MOD );
 
+    // Setup core Lua module
+    m_pLuaManager = new CLuaManager;
+    m_pScriptDebugging = &m_pLuaManager->GetDebug();
+    m_pScriptDebugging->SetLogfile ( "clientscript.log", 3 );
+    m_RegisteredCommands = new CRegisteredCommands( *m_pLuaManager );
+
     // Startup "entities from root" optimization for getElementsByType
     CClientEntity::StartupEntitiesFromRoot ();
-
-    // Initialize our root entity with an invalid id, we dont know the true id until map-start
-    m_pRootEntity = new CClientDummy ( NULL, INVALID_ELEMENT_ID, "root", *g_pClientGame->GetRootEntity(), true );
 
     // Movings objects manager
     m_pMovingObjectsManager = new CMovingObjectsManager ();
@@ -166,6 +169,9 @@ CClientGame::CClientGame ( bool bLocalPlay )
     m_pResourceManager = m_pManager->GetResourceManager ();
     m_pProjectileManager = m_pManager->GetProjectileManager ();
     m_pLocalServer = NULL;
+
+    // Initialize our root entity with an invalid id, we dont know the true id until map-start
+    m_pRootEntity = new CClientDummy ( NULL, INVALID_ELEMENT_ID, "root", *resMan, true );
 
     m_pZoneNames = new CZoneNames;
     m_pScriptKeyBinds = new CScriptKeyBinds;
@@ -232,11 +238,6 @@ CClientGame::CClientGame ( bool bLocalPlay )
     g_pCore->GetKeyBinds ()->SetKeyStrokeHandler ( CClientGame::StaticKeyStrokeHandler );
     g_pCore->GetKeyBinds ()->SetCharacterKeyHandler ( CClientGame::StaticCharacterKeyHandler );
     g_pNet->RegisterPacketHandler ( CClientGame::StaticProcessPacket );
-
-    m_pLuaManager = new CLuaManager;
-    m_pScriptDebugging = &m_pLuaManager->GetDebug();
-    m_pScriptDebugging->SetLogfile ( "clientscript.log", 3 );
-    m_RegisteredCommands = new CRegisteredCommands( *m_pLuaManager );
 
     CStaticFunctionDefinitions ( m_pLuaManager, &m_Events, g_pCore, g_pGame, this, m_pManager );
     CLuaFunctionDefs::Initialize ( this, m_pLuaManager, m_pScriptDebugging );
@@ -388,8 +389,6 @@ CClientGame::~CClientGame()
     delete m_RegisteredCommands;
     delete m_pLuaManager;
 
-    delete m_pRootEntity;
-
     delete m_pZoneNames;
     delete m_pScriptKeyBinds;    
 
@@ -518,7 +517,7 @@ bool CClientGame::StartGame ( const char* szNick, const char* szPassword )
                                         ,MTASA_VERSION_MAINTENANCE
                                         ,MTASA_VERSION_TYPE
                                         ,MTASA_VERSION_BUILD
-                                        ,g_pNet->GetNetRev ()
+                                        ,g_pNet->GetNetRev()
                                         );
             pBitStream->WriteString ( strPlayerVersion );
 
@@ -1072,28 +1071,28 @@ void CClientGame::DoPulses ( void )
                 SString strError;
                 switch ( ucError )
                 {
-                case ID_RSA_PUBLIC_KEY_MISMATCH:
+                case RID_RSA_PUBLIC_KEY_MISMATCH:
                     strError = "Disconnected: unknown protocol error.";  // encryption key mismatch
                     break;
-                case ID_REMOTE_DISCONNECTION_NOTIFICATION:
+                case RID_REMOTE_DISCONNECTION_NOTIFICATION:
                     strError = "Disconnected: disconnected remotely.";
                     break;
-                case ID_REMOTE_CONNECTION_LOST:
+                case RID_REMOTE_CONNECTION_LOST:
                     strError = "Disconnected: connection lost remotely.";
                     break;
-                case ID_CONNECTION_BANNED:
+                case RID_CONNECTION_BANNED:
                     strError = "Disconnected: you are banned from this server.";
                     break;
-                case ID_NO_FREE_INCOMING_CONNECTIONS:
+                case RID_NO_FREE_INCOMING_CONNECTIONS:
                     strError = "Disconnected: the server is currently full.";
                     break;
-                case ID_DISCONNECTION_NOTIFICATION:
+                case RID_DISCONNECTION_NOTIFICATION:
                     strError = "Disconnected: disconnected from the server.";
                     break;
-                case ID_CONNECTION_LOST:
+                case RID_CONNECTION_LOST:
                     strError = "Disconnected: connection to the server was lost.";
                     break;
-                case ID_INVALID_PASSWORD:
+                case RID_INVALID_PASSWORD:
                     strError = "Disconnected: invalid password specified.";
                     break;
                 default:
@@ -2776,16 +2775,16 @@ void CClientGame::DrawPlayerDetails ( CClientPlayer* pPlayer )
                         vecPosition.fX, vecPosition.fY, vecPosition.fZ,
                         fRotation, fCameraRotation,
                         fHealth,
-                        cs.m_ls1,
-                        cs.m_rs1,
-                        cs.m_action1,
-                        cs.m_action3,
-                        cs.m_action4,
-                        cs.m_action5,
-                        cs.m_pedWalk,
+                        cs.LeftShoulder1,
+                        cs.RightShoulder1,
+                        cs.ButtonSquare,
+                        cs.ButtonCross,
+                        cs.ButtonCircle,
+                        cs.ShockButtonL,
+                        cs.m_bPedWalk,
                         cs.m_vehicleMouseLook,
-                        cs.m_leftAxisX,
-                        cs.m_leftAxisY,
+                        cs.LeftStickX,
+                        cs.LeftStickY,
                         iPrimaryTask,
                         bIsDucked,
                         bWearingGoggles,
@@ -2961,7 +2960,7 @@ void CClientGame::UpdateMimics ( void )
                 pMimic->SetDoingGangDriveby ( bDoingDriveby );
                 pMimic->SetStealthAiming ( bStealthAiming );
 
-                Controller.m_action5 = 0;
+                Controller.ShockButtonL = 0;
 
                 if ( m_bMimicLag )
                 {

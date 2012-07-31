@@ -29,7 +29,7 @@ CFileTranslator *mtaFileRoot = NULL;
 int CClient::ClientInitialize ( const char* szArguments, CCoreInterface* pCore )
 {
     // Supported core version?
-    if ( pCore->GetVersion () != MTACORE_21 )
+    if ( pCore->GetVersion () != MTACORE_20 )
         return EXIT_FAILURE;
 
 #if defined(MTA_DM_EXPIRE_DAYS)

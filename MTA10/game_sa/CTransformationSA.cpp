@@ -35,6 +35,10 @@ CTransformationSAInterface::CTransformationSAInterface( unsigned int max )
     memset( m_stack + 1, 0, max * sizeof(CTransformSAInterface) );
 
     // Init the lists
+    LIST_CLEAR( m_usedList );
+    LIST_CLEAR( m_freeList );
+    LIST_CLEAR( m_activeList );
+
     LIST_APPEND( m_usedList, m_usedItem );
     LIST_APPEND( m_freeList, m_freeItem );
     LIST_APPEND( m_activeList, m_activeItem );

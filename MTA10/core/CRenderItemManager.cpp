@@ -49,8 +49,8 @@ void CRenderItemManager::OnDeviceCreate ( IDirect3DDevice9* pDevice, float fView
     m_uiDefaultViewportSizeX = fViewportSizeX;
     m_uiDefaultViewportSizeY = fViewportSizeY;
 
-    m_pRenderWare = CCore::GetSingleton ().GetGame ()->GetRenderWare ();
-    m_pRenderWare->InitWorldTextureWatch ( StaticWatchCallback );
+    m_pTextureManager = CCore::GetSingleton ().GetGame ()->GetTextureManager();
+    m_pTextureManager->InitWorldTextureWatch ( StaticWatchCallback );
 
     // Get some stats
     m_strVideoCardName = g_pDeviceState->AdapterState.Name;
@@ -374,7 +374,7 @@ bool CRenderItemManager::SetShaderValue ( CShaderItem* pShaderItem, const SStrin
 void CRenderItemManager::UpdateBackBufferCopy ( void )
 {
     // Do this here for now
-    m_pRenderWare->PulseWorldTextureWatch ();
+    m_pTextureManager->PulseWorldTextureWatch ();
 
     // and this
     m_PrevFrameTextureUsage = m_FrameTextureUsage;
@@ -623,7 +623,7 @@ void CRenderItemManager::GetVisibleTextureNames ( std::vector < SString >& outNa
     if ( usModelID )
     {
         std::vector < SString > modelTextureNameList;
-        m_pRenderWare->GetModelTextureNames ( modelTextureNameList, usModelID );
+        m_pTextureManager->GetModelTextureNames ( modelTextureNameList, usModelID );
         for ( std::vector < SString >::const_iterator iter = modelTextureNameList.begin () ; iter != modelTextureNameList.end () ; ++iter )
             modelTextureNameMap.insert ( (*iter).ToLower () );
     }
@@ -636,7 +636,7 @@ void CRenderItemManager::GetVisibleTextureNames ( std::vector < SString >& outNa
     for ( std::set < CD3DDUMMY* >::const_iterator iter = m_PrevFrameTextureUsage.begin () ; iter != m_PrevFrameTextureUsage.end () ; ++iter )
     {
         // Get the texture name
-        SString strTextureName = m_pRenderWare->GetTextureName ( *iter );
+        SString strTextureName = m_pTextureManager->GetTextureName ( *iter );
         SString strTextureNameLower = strTextureName.ToLower ();
 
         if ( strTextureName.empty () )
@@ -676,7 +676,7 @@ bool CRenderItemManager::ApplyShaderItemToWorldTexture ( CShaderItem* pShaderIte
     RemoveShaderItemFromWorldTexture ( pShaderItem, strTextureNameMatch );
 
     // Add new match at the end
-    return m_pRenderWare->AddWorldTextureWatch ( (CSHADERDUMMY*)pShaderItem, strTextureNameMatch, fOrderPriority );
+    return m_pTextureManager->AddWorldTextureWatch ( (CSHADERDUMMY*)pShaderItem, strTextureNameMatch, fOrderPriority );
 }
 
 
@@ -691,7 +691,7 @@ bool CRenderItemManager::RemoveShaderItemFromWorldTexture ( CShaderItem* pShader
 {
     assert ( pShaderItem );
 
-    m_pRenderWare->RemoveWorldTextureWatch ( (CSHADERDUMMY*)pShaderItem, strTextureNameMatch );
+    m_pTextureManager->RemoveWorldTextureWatch ( (CSHADERDUMMY*)pShaderItem, strTextureNameMatch );
     return true;
 }
 
@@ -708,7 +708,7 @@ void CRenderItemManager::RemoveShaderItemFromWatchLists ( CShaderItem* pShaderIt
     //
     // Remove shader item from all world textures
     //
-    m_pRenderWare->RemoveWorldTextureWatchByContext ( (CSHADERDUMMY*)pShaderItem );
+    m_pTextureManager->RemoveWorldTextureWatchByContext ( (CSHADERDUMMY*)pShaderItem );
 
     //
     // Remove shader item from D3DData map

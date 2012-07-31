@@ -766,7 +766,7 @@ bool CSystemFileTranslator::GetRelativePathTreeFromRoot( const char *path, dirTr
         if ( !_File_PathCharComp( path[0], m_root[0] ) )
             return false;   // drive mismatch
         
-        return _File_ParseRelativeTree( path, m_rootTree, tree, file );
+        return _File_ParseRelativeTree( path + 3, m_rootTree, tree, file );
     }
 
     return CSystemPathTranslator::GetRelativePathTreeFromRoot( path, tree, file );

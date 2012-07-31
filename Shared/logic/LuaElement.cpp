@@ -109,7 +109,7 @@ void LuaElement::SetRoot( LuaClass *root )
     m_root = root;
 
     // Reparent it so we are int the correct tree
-    m_class.PushMethod( m_lua, "setParent" );
+    m_class->PushMethod( m_lua, "setParent" );
     root->PushStack( m_lua );
     lua_call( m_lua, 1, 0 );
 }

@@ -2026,7 +2026,7 @@ eMovementState CClientPed::GetMovementState ( void )
             unsigned int iRunState = m_pPlayerPed->GetRunState();
 
             // Is he moving the contoller at all?
-            if ( iRunState == 1 && cs.m_leftAxisX == 0 && cs.m_leftAxisY == 0 )
+            if ( iRunState == 1 && cs.LeftStickX == 0 && cs.LeftStickY == 0 )
                 return MOVEMENTSTATE_STAND;
 
             //Is he either pressing the walk key, or has run state 1?
@@ -2042,7 +2042,7 @@ eMovementState CClientPed::GetMovementState ( void )
         else
         {
             // Is he moving the contoller at all?
-            if ( cs.m_leftAxisX == 0 && cs.m_leftAxisY == 0 )
+            if ( cs.LeftStickX == 0 && cs.LeftStickY == 0 )
                 return MOVEMENTSTATE_CROUCH;
         }
     }
@@ -2340,7 +2340,7 @@ void CClientPed::StreamedInPulse ( void )
             if ( !g_pClientGame->IsGlitchEnabled ( CClientGame::GLITCH_CROUCHBUG ) )
             {
                 if ( !Current.IsRightShoulder1Down() && !Current.IsLeftShoulder1Down() && !Current.IsCircleDown() )
-                    Current.m_action5 = 0;
+                    Current.ShockButtonL = 0;
             }
         }
         else
@@ -2354,7 +2354,7 @@ void CClientPed::StreamedInPulse ( void )
             if ( Current.IsRightShoulder1Down() && ( iCurrentWeapon == 29 || iCurrentWeapon == 24 || iCurrentWeapon == 23 || iCurrentWeapon == 41 || iCurrentWeapon == 42 ) )
             {
                 Current.SetCircleDown( false );
-                Current.m_ls1 = 0;
+                Current.LeftShoulder1 = 0;
             }
         }
 
@@ -2390,7 +2390,7 @@ void CClientPed::StreamedInPulse ( void )
                 }
                 //Disable the fire keys whilst crouching as well
                 Current.SetCircleDown( false );
-                Current.m_ls1 = 0;
+                Current.LeftShoulder1 = 0;
                 if ( m_ulLastTimeBeganCrouch >= ulNow - 400.0f*fSpeedRatio )
                 {
                     //Disable double crouching (another anim cut)
@@ -2422,7 +2422,7 @@ void CClientPed::StreamedInPulse ( void )
                 // Don't allow the aiming key (RightShoulder1)
                 // This fixes bug allowing you to run around in aim mode while
                 // entering a vehicle both locally and remotly.
-                Current.m_rs1 = 0;
+                Current.RightShoulder1 = 0;
             }
         }
         //Fix for reloading aborting
@@ -2442,8 +2442,8 @@ void CClientPed::StreamedInPulse ( void )
         //Fix for crouching the end of animation aborting reload
         CControllerState Previous;
         GetLastControllerState ( Previous );
-        if ( IsDucked() && ( Current.m_leftAxisX == 0 || Current.m_leftAxisY == 0 )) {
-            if (Previous.m_leftAxisX != 0 || Previous.m_leftAxisY != 0 ) 
+        if ( IsDucked() && ( Current.LeftStickX == 0 || Current.LeftStickY == 0 )) {
+            if (Previous.LeftStickX != 0 || Previous.LeftStickY != 0 ) 
                 m_ulLastTimeMovedWhileCrouched = ulNow;
         }
         // Is this the local player?
@@ -2463,7 +2463,7 @@ void CClientPed::StreamedInPulse ( void )
                     {
                         // Make sure our fire key isn't pressed
                         Current.SetCircleDown( false );
-                        Current.m_ls1 = 0;
+                        Current.LeftShoulder1 = 0;
                     }
                 }
             }
@@ -2513,10 +2513,10 @@ void CClientPed::StreamedInPulse ( void )
                 case 42:    // Fire Extinguisher
                 case 43:    // Camera
                     // See which way input wants to go
-                    const bool bInputRight = Current.m_leftAxisX >  6;
-                    const bool bInputLeft  = Current.m_leftAxisX < -6;
-                    const bool bInputFwd   = Current.m_leftAxisY < -6;
-                    const bool bInputBack  = Current.m_leftAxisY >  6;
+                    const bool bInputRight = Current.LeftStickX >  6;
+                    const bool bInputLeft  = Current.LeftStickX < -6;
+                    const bool bInputFwd   = Current.LeftStickY < -6;
+                    const bool bInputBack  = Current.LeftStickY >  6;
 
                     // See which way ped is currently going
                     CVector vecVelocity, vecRotationRadians;
@@ -2541,11 +2541,11 @@ void CClientPed::StreamedInPulse ( void )
                         sFixX = static_cast < short > ( UnlerpClamped ( -0.02f, vecVelocity.fY, 0.f ) * -64 );
 
                     // Apply pulse if bigger than existing input value
-                    if ( abs ( sFixY ) > abs ( Current.m_leftAxisY ) )
-                         Current.m_leftAxisX = sFixY;
+                    if ( abs ( sFixY ) > abs ( Current.LeftStickY ) )
+                         Current.LeftStickX = sFixY;
 
-                    if ( abs ( sFixX ) > abs ( Current.m_leftAxisX ) )
-                         Current.m_leftAxisX = sFixX;
+                    if ( abs ( sFixX ) > abs ( Current.LeftStickX ) )
+                         Current.LeftStickX = sFixX;
                 }
             }
         }
@@ -5003,7 +5003,7 @@ bool CClientPed::CanReloadWeapon()
     int iWeaponType = GetWeapon()->GetType();
     //Hes not Aiming, ducked or if he is ducked he is not currently moving and he hasn't moved while crouching in the last 300ms (sometimes the crouching move anim runs over and kills the reload animation)
     if ( !Current.IsRightShoulder1Down() && 
-        ( !IsDucked() || ( Current.m_leftAxisX == 0 && Current.m_leftAxisY == 0 ) )
+        ( !IsDucked() || ( Current.LeftStickX == 0 && Current.LeftStickY == 0 ) )
         && ulNow - m_ulLastTimeMovedWhileCrouched > 300) 
     {
         //Ignore certain weapons (anything without clip ammo)

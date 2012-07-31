@@ -49,7 +49,7 @@ SString SharedUtil::GetMTASABaseDir ( void )
             TerminateProcess ( GetCurrentProcess (), 9 );
         }
     }
-    return strInstallRoot;
+    return strInstallRoot + '\\';
 }
 
 //

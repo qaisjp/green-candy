@@ -25,28 +25,24 @@ MTAEXPORT CClientBase* __cdecl InitClient ( void )
     return g_pClient;
 }
 
-int WINAPI DllMain ( HINSTANCE hModule, DWORD dwReason, PVOID pvNothing )
+BOOL WINAPI DllMain ( HINSTANCE hModule, DWORD dwReason, LPVOID pvNothing )
 {
     switch ( dwReason )
     {
-        case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_ATTACH:
+        return TRUE;  
+
+    case DLL_PROCESS_DETACH:
+        // Make sure the client is destroyed upon destruction
+        if ( g_pClient )
         {
-            return TRUE;  
+            delete g_pClient;
+            g_pClient = NULL;
         }
 
-        case DLL_PROCESS_DETACH:
-        {
-            // Make sure the client is destroyed upon destruction
-            if ( g_pClient )
-            {
-                delete g_pClient;
-                g_pClient = NULL;
-            }
-
-            // Dump any memory leaks we might've had and return
-            DumpUnfreed ();
-            return TRUE;
-        }
+        // Dump any memory leaks we might've had and return
+        DumpUnfreed ();
+        return TRUE;
     }
 
     return FALSE;

@@ -967,24 +967,24 @@ void FindFilesRecursive ( const SString& strPathMatch, std::vector < SString >& 
     SString strPath, strMatch;
     strPathMatch.Split ( "\\", &strPath, &strMatch, -1 );
 
-    std::list < SString > toDoList;
+    std::list <filePath> toDoList;
     toDoList.push_back ( strPath );
     while ( toDoList.size () )
     {
-        SString strPathHere = toDoList.front ();
+        filePath strPathHere = toDoList.front ();
         toDoList.pop_front ();
 
-        std::vector < SString > fileListHere = FindFiles ( strPathHere + "\\" + strMatch, true, false );
-        std::vector < SString > dirListHere = FindFiles ( strPathHere + "\\" + strMatch, false, true );
+        std::vector <filePath> fileListHere = FindFiles ( strPathHere + "\\" + strMatch, true, false );
+        std::vector <filePath> dirListHere = FindFiles ( strPathHere + "\\" + strMatch, false, true );
 
         for ( unsigned int i = 0 ; i < fileListHere.size (); i++ )
         {
-            SString filePathName = strPathHere + "\\" + fileListHere[i];
+            filePath filePathName = strPathHere + "\\" + fileListHere[i];
             outFileList.push_back ( filePathName );
         }
         for ( unsigned int i = 0 ; i < dirListHere.size (); i++ )
         {
-            SString dirPathName = strPathHere + "\\" + dirListHere[i];
+            filePath dirPathName = strPathHere + "\\" + dirListHere[i];
             toDoList.push_back ( dirPathName );
         }
     }
@@ -998,9 +998,9 @@ void FindFilesRecursive ( const SString& strPathMatch, std::vector < SString >& 
 // Return a list of files and directories insode strPath, but not inside any dir in stopList
 //
 ///////////////////////////////////////////////////////////////
-void FindRelevantFiles ( const SString& strPath, std::vector < SString >& outFilePathList, std::vector < SString >& outDirPathList, const std::vector < SString >& stopList, unsigned int MaxFiles, unsigned int MaxDirs )
+void FindRelevantFiles ( const SString& strPath, std::vector <filePath>& outFilePathList, std::vector <filePath>& outDirPathList, const std::vector <filePath>& stopList, unsigned int MaxFiles, unsigned int MaxDirs )
 {
-    std::list < SString > toDoList;
+    std::list <filePath> toDoList;
     toDoList.push_back ( strPath );
     outDirPathList.push_back ( strPath );
     while ( toDoList.size () )
@@ -1013,26 +1013,26 @@ void FindRelevantFiles ( const SString& strPath, std::vector < SString >& outFil
                 return;
         }
 
-        SString strPathHere = toDoList.front ();
+        filePath strPathHere = toDoList.front ();
         toDoList.pop_front ();
 
-        std::vector < SString > fileListHere = FindFiles ( strPathHere + "\\*", true, false );
-        std::vector < SString > dirListHere = FindFiles ( strPathHere + "\\*", false, true );
+        std::vector <filePath> fileListHere = FindFiles ( strPathHere + "\\*", true, false );
+        std::vector <filePath> dirListHere = FindFiles ( strPathHere + "\\*", false, true );
 
         for ( unsigned int i = 0 ; i < fileListHere.size (); i++ )
         {
-            SString filePathName = strPathHere + "\\" + fileListHere[i];
+            filePath filePathName = strPathHere + "\\" + fileListHere[i];
             outFilePathList.push_back ( filePathName );
         }
         for ( unsigned int i = 0 ; i < dirListHere.size (); i++ )
         {
-            SString dirPathName = strPathHere + "\\" + dirListHere[i];
+            filePath dirPathName = strPathHere + "\\" + dirListHere[i];
             outDirPathList.push_back ( dirPathName );
 
             bool bTraverse = true;
             for ( unsigned int k = 0 ; k < stopList.size (); k++ )
                 if ( dirListHere[i].length () >= stopList[k].length () )
-                    if ( dirListHere[i].ToLower ().substr ( 0, stopList[k].length () ) == stopList[k] )
+                    if ( dirListHere[i].substr ( 0, stopList[k].length () ) == stopList[k] )
                         bTraverse = false;
             if ( bTraverse )
                 toDoList.push_back ( dirPathName );
@@ -1188,7 +1188,7 @@ HMODULE GetLibraryHandle ( const SString& strFilename )
         SString strLibPath = PathJoin ( GetLaunchPath (), "mta" );
         SString strLibPathFilename = PathJoin ( strLibPath, strFilename );
 
-        SString strPrevCurDir = GetCurrentWorkingDirectory ();
+        filePath strPrevCurDir = GetCurrentWorkingDirectory ();
         SetCurrentDirectory ( strLibPath );
         SetDllDirectory( strLibPath );
 
@@ -1467,11 +1467,11 @@ void CleanDownloadCache ( void )
     {
         // Get list of files & directories in this cache location
         const SString& strCacheLocation = cacheLocationList.front ();
-        const std::vector < SString > fileList = FindFiles ( PathJoin ( strCacheLocation, "\\*" ), true, true );
+        const std::vector <filePath> fileList = FindFiles ( PathJoin ( strCacheLocation, "\\*" ), true, true );
 
         for ( uint i = 0 ; i < fileList.size () ; i++ )
         {
-            const SString strPathFilename = PathJoin ( strCacheLocation, fileList[i] );
+            const filePath strPathFilename = PathJoin ( strCacheLocation, fileList[i] );
             // Check if over 7 days old
             if ( GetFileAge ( strPathFilename ) > uiCleanFileAge )
             {

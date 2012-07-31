@@ -80,9 +80,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="true"
 				AdditionalDependencies="strmiids.lib dbghelp.lib libv2.lib zlibd_2008.lib libpng2008d.lib odbc32.lib odbccp32.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9d.lib winmm.lib Imagehlp.lib ws2_32.lib gdi32.lib Userenv.lib"
 				ShowProgress="0"
-				OutputFile="C:\Program Files\MTA San Andreas 1.2\mta\core_d.dll"
+				OutputFile="D:\Program Files\MTA San Andreas 1.2\mta\core_d.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../../Shared/XML;../../vendor/libv2/lib;../../vendor/libpng/lib;../../vendor/zlib/lib;../../vendor/detours/lib"
@@ -93,7 +94,7 @@
 				MapFileName=""
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary=".\Debug/mta_blue_d.lib"
+				ImportLibrary="C:/LIB.LIB"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -183,8 +184,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="strmiids.lib dbghelp.lib libv2.lib zlib_2008.lib libpng2008.lib odbc32.lib odbccp32.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9.lib wsock32.lib winmm.lib Imagehlp.lib gdi32.lib Userenv.lib"
-				OutputFile="C:\Program Files\MTA San Andreas 1.2\MTA\core.dll"
+				LinkLibraryDependencies="true"
+				AdditionalDependencies="strmiids.lib dbghelp.lib libv2.lib zlib_2008.lib libpng2008.lib odbc32.lib odbccp32.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9.lib ws2_32.lib winmm.lib Imagehlp.lib gdi32.lib Userenv.lib"
+				OutputFile="D:\Program Files\MTA San Andreas 1.2\MTA\core.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../../Shared/XML;../../vendor/libv2/lib;../../vendor/libpng/lib;../../vendor/zlib/lib;../../vendor/detours/lib"
@@ -288,6 +290,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="strmiids.lib dbghelp.lib libv2.lib zlib_2008.lib libpng2008.lib odbc32.lib odbccp32.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9.lib wsock32.lib winmm.lib Imagehlp.lib gdi32.lib Userenv.lib"
 				OutputFile="..\..\output\MTA San Andreas\mta\core.dll"
 				LinkIncremental="1"

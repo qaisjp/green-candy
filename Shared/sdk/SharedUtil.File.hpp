@@ -44,7 +44,7 @@ filePath SharedUtil::GetSystemTempPath()
 filePath SharedUtil::GetMTADataPath()
 {
     filePath path = GetSystemCommonAppDataPath();
-    path += "MTA San Andreas All/";
+    path += "/MTA San Andreas All/";
     path += GetMajorVersionString();
     path += "/";
     return path;

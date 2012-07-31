@@ -20,11 +20,14 @@
 
 struct ISyncStructure;
 
-class NetBitStreamInterface
+class NetBitStreamInterface : public CRefCountable
 {
+    NetBitStreamInterface      ( const NetBitStreamInterface& );
+    const NetBitStreamInterface& operator= ( const NetBitStreamInterface& );
+protected:
+                        NetBitStreamInterface       ( void ) {}
+    virtual             ~NetBitStreamInterface      ( void ) {}
 public:
-    virtual             ~NetBitStreamInterface      ( void ) {};
-
     virtual int         GetReadOffsetAsBits         ( void ) = 0;
 
     virtual void        Reset                       ( void ) = 0;
@@ -198,6 +201,7 @@ public:
         // Read the characters
         return ReadStringCharacters ( result, usLength );
     }
+
 
     void WriteStringCompressed( const std::string& str )
     {

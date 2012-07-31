@@ -59,7 +59,9 @@ public:
     virtual LuaArgument*                                PushString( const std::string& str ) = 0;
     virtual LuaArgument*                                PushUserData( void *data ) = 0;
     virtual LuaArgument*                                PushArgument( const LuaArgument& argument ) = 0;
+#if 0
     virtual LuaArgument*                                PushTable( const LuaArguments& table ) = 0;
+#endif
 
     void                                                DeleteArguments();
     void                                                ValidateTableKeys();
