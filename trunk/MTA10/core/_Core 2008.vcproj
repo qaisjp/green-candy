@@ -83,7 +83,7 @@
 				LinkLibraryDependencies="true"
 				AdditionalDependencies="strmiids.lib dbghelp.lib libv2.lib zlibd_2008.lib libpng2008d.lib odbc32.lib odbccp32.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9d.lib winmm.lib Imagehlp.lib ws2_32.lib gdi32.lib Userenv.lib"
 				ShowProgress="0"
-				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\Program Files\MTA San Andreas 1.2\mta\core_d.dll"
+				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mta\core_d.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../../Shared/XML;../../vendor/libv2/lib;../../vendor/libpng/lib;../../vendor/zlib/lib;../../vendor/detours/lib"
