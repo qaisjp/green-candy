@@ -81,7 +81,7 @@
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
 				AdditionalDependencies="shlwapi.lib psapi.lib"
-				OutputFile="D:/Program Files/MTA San Andreas 1.2/Multi Theft Auto_d.exe"
+				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2/Multi Theft Auto_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
@@ -111,6 +111,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
@@ -183,7 +184,7 @@
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
 				AdditionalDependencies="shlwapi.lib psapi.lib"
-				OutputFile="D:\program files\MTA San Andreas 1.2\Multi Theft Auto.exe"
+				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\Multi Theft Auto.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"

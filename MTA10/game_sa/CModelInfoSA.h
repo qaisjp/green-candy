@@ -69,7 +69,7 @@ class CAtomicModelInfoSA;
 class CDamageAtomicModelInfoSA;
 class CLODAtomicModelInfoSA;
 
-enum eModelType
+enum eModelType : unsigned char
 {
     MODEL_VEHICLE = 6,
     MODEL_PED
@@ -202,7 +202,7 @@ public:
     bool                            IsLoaded() const;
     unsigned char                   GetFlags() const;
     const CBoundingBox&             GetBoundingBox() const;
-    bool                            IsValid() const;
+    bool                            IsValid();
     float                           GetDistanceFromCentreOfMassToBaseOfModel() const;
     unsigned short                  GetTextureDictionaryID() const;
     void                            SetTextureDictionaryID( unsigned short usID );

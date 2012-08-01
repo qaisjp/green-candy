@@ -378,9 +378,9 @@ const CBoundingBox& CModelInfoSA::GetBoundingBox() const
     return ppModelInfo[m_modelID]->m_pColModel->m_bounds;
 }
 
-bool CModelInfoSA::IsValid() const
+bool CModelInfoSA::IsValid()
 {
-    return ppModelInfo[m_modelID] != 0;
+    return( m_pInterface = ppModelInfo[m_modelID] ) != 0;
 }
 
 float CModelInfoSA::GetDistanceFromCentreOfMassToBaseOfModel() const
