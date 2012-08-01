@@ -44,6 +44,15 @@ class CLuaArguments : public LuaArguments
 public:
                                                         CLuaArguments( NetBitStreamInterface& stream );
 
+    void                                                ReadArgument( lua_State *L, int idx );
+
+    CLuaArgument*                                       PushNil();
+    CLuaArgument*                                       PushBoolean( bool b );
+    CLuaArgument*                                       PushNumber( double num );
+    CLuaArgument*                                       PushString( const std::string& str );
+    CLuaArgument*                                       PushUserData( void *data );
+    CLuaArgument*                                       PushArgument( const LuaArgument& argument );
+    CLuaArgument*                                       PushTable( const LuaArguments& table );
     CLuaArgument*                                       PushElement( CElement* pElement );
     CLuaArgument*                                       PushACL( CAccessControlList* pACL );
     CLuaArgument*                                       PushACLGroup( CAccessControlListGroup* pACLGroup );

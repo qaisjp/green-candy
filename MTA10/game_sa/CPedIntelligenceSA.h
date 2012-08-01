@@ -31,12 +31,12 @@ class CPedSAInterface;
 
 class CPed;
 
-class CFightManagerSAInterface
+class CFightManagerSAInterface : public CTaskSAInterface
 {
 public:
-    BYTE            m_pad1 [ 16 ];
+    BYTE            m_pad1[8];
     BYTE            m_unknownState;
-    BYTE            m_pad2 [ 3 ];
+    BYTE            m_pad2[3];
     float           m_strafeState;
     float           m_forwardBackwardState;
 };
@@ -51,10 +51,8 @@ public:
 
 // CEventHandlerHistory @ + 56
     CPedSAInterface*                m_ped;
-    CTaskManagerSAInterface*        m_taskManager;          // 4
-    BYTE                            m_pad[16];              // 8
-    CFightManagerSAInterface*       m_fightInterface;       // 24
-    BYTE                            m_pad2[184];            // 28
+    CTaskManagerSAInterface         m_taskManager;          // 4
+    BYTE                            m_pad2[160];            // 52
     CVehicleScannerSAInterface*     m_vehicleScanner;       // 212
 
     BYTE                            m_pad3[444];            // 216

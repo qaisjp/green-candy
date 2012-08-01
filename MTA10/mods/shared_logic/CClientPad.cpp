@@ -106,7 +106,7 @@ bool CClientPad::GetControlState( const char *name, CControllerState& state, boo
         case CONTROL_CHANGE_CAMERA: return false;
         case CONTROL_JUMP: return state.IsSquareDown();
         case CONTROL_SPRINT: return state.IsCrossDown();
-        case CONTROL_LOOK_BEHIND: return state.ShockButtonR = 255;
+        case CONTROL_LOOK_BEHIND: return state.ShockButtonR == 255;
         case CONTROL_CROUCH: return state.ShockButtonL == 255;
         case CONTROL_ACTION: return state.IsLeftShoulder1Down();
         case CONTROL_WALK: return state.m_bPedWalk > 0;

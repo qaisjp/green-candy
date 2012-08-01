@@ -42,7 +42,13 @@
 
 #define NUM_CHARS_IN_NAME                           34
 
-class CPedClothesDesc;
+class CPedClothesDesc
+{
+public:
+    unsigned int                            m_modelHash[9];                 // 0
+    DWORD                                   m_pad;                          // 36
+    unsigned int                            m_textureHash[10];              // 40
+};
 
 class CPlayerCrossHairSAInterface
 {

@@ -45,7 +45,7 @@ CPedIntelligenceSA::CPedIntelligenceSA( CPedIntelligenceSAInterface *intelligenc
 {
     m_interface = intelligence;
     m_ped = ped;
-    m_taskManager = new CTaskManagerSA( intelligence->m_taskManager, ped );
+    m_taskManager = new CTaskManagerSA( &intelligence->m_taskManager, ped );
     m_vehicleScanner = new CVehicleScannerSA( intelligence->m_vehicleScanner );
 }
 

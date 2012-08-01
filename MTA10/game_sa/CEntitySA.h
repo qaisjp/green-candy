@@ -113,27 +113,27 @@ public:
                                     CEntitySAInterface();
                                     ~CEntitySAInterface();
 
-    virtual void __thiscall         AddRect( CRect rect ) = 0;
-    virtual bool __thiscall         AddToWorld() = 0;
-    virtual void __thiscall         RemoveFromWorld() = 0;
-    virtual void __thiscall         SetStatic( bool enabled ) = 0;
-    virtual void __thiscall         SetModelIndex( unsigned short id );
-    virtual void __thiscall         SetModelIndexNoCreate( unsigned short id ) = 0;
-    virtual RwObject* __thiscall    CreateRwObject() = 0;
-    virtual void __thiscall         DeleteRwObject() = 0;
-    virtual void __thiscall         GetBoundingBox( CBoundingBox box ) = 0;
-    virtual void __thiscall         ProcessControl() = 0;
-    virtual void __thiscall         ProcessCollision() = 0;
-    virtual void __thiscall         ProcessShift() = 0;
-    virtual bool __thiscall         TestCollision() = 0;
-    virtual void __thiscall         Teleport( float x, float y, float z, int unk ) = 0;
-    virtual void __thiscall         PreFrame() = 0;
-    virtual bool __thiscall         Frame() = 0;
-    virtual void __thiscall         PreRender() = 0;
-    virtual void __thiscall         Render() = 0;
-    virtual void __thiscall         SetupLighting() = 0;
-    virtual void __thiscall         RemoveLighting() = 0;
-    virtual void __thiscall         Invalidate() = 0;
+    virtual void __thiscall         AddRect( CRect rect ) = 0;                              // 4
+    virtual bool __thiscall         AddToWorld() = 0;                                       // 8
+    virtual void __thiscall         RemoveFromWorld() = 0;                                  // 12
+    virtual void __thiscall         SetStatic( bool enabled ) = 0;                          // 16
+    virtual void __thiscall         SetModelIndex( unsigned short id );                     // 20
+    virtual void __thiscall         SetModelIndexNoCreate( unsigned short id ) = 0;         // 24
+    virtual RwObject* __thiscall    CreateRwObject() = 0;                                   // 28
+    virtual void __thiscall         DeleteRwObject() = 0;                                   // 32
+    virtual void __thiscall         GetBoundingBox( CBoundingBox box ) = 0;                 // 36
+    virtual void __thiscall         ProcessControl() = 0;                                   // 40
+    virtual void __thiscall         ProcessCollision() = 0;                                 // 44
+    virtual void __thiscall         ProcessShift() = 0;                                     // 48
+    virtual bool __thiscall         TestCollision() = 0;                                    // 52
+    virtual void __thiscall         Teleport( float x, float y, float z, int unk ) = 0;     // 56
+    virtual void __thiscall         PreFrame() = 0;                                         // 60
+    virtual bool __thiscall         Frame() = 0;                                            // 64
+    virtual void __thiscall         PreRender() = 0;                                        // 68
+    virtual void __thiscall         Render() = 0;                                           // 72
+    virtual void __thiscall         SetupLighting() = 0;                                    // 76
+    virtual void __thiscall         RemoveLighting() = 0;                                   // 80
+    virtual void __thiscall         Invalidate() = 0;                                       // 84
 
     void                            GetPosition( CVector& pos ) const;
 

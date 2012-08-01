@@ -196,7 +196,7 @@ CClientObject* CClientObjectManager::GetSafe ( CEntity * pEntity )
 }
 
 
-bool CClientObjectManager::IsValidModel ( unsigned long ulObjectModel )
+bool CClientObjectManager::IsValidModel ( unsigned short ulObjectModel )
 {
     bool bIsValid = false;
 

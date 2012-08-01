@@ -118,7 +118,7 @@ public:
 
     inline type*    Get( unsigned int id )
     {
-        return ( (id >= m_max) && !(m_flags[id] & 0x80) ) ? GetOffset( id ) : NULL;
+        return ( (id < m_max) && !(m_flags[id] & 0x80) ) ? GetOffset( id ) : NULL;
     }
 
     unsigned int    GetIndex( type *entity )

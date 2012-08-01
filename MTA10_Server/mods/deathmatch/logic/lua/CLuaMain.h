@@ -20,7 +20,6 @@ class CLuaMain;
 #ifndef __CLUAMAIN_H
 #define __CLUAMAIN_H
 
-#include "CLuaTimerManager.h"
 #include "CLuaModuleManager.h"
 #include "../CTextDisplay.h"
 

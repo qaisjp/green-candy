@@ -27,15 +27,26 @@ class CLuaArguments;
 class CLuaArgument : public LuaArgument
 {
 public:
+                            CLuaArgument( bool b ) : LuaArgument( b )   {}
+                            CLuaArgument( double d ) : LuaArgument( d ) {}
+                            CLuaArgument( const std::string& str ) : LuaArgument( str ) {}
+                            CLuaArgument( void *ud ) : LuaArgument( ud )    {}
+                            CLuaArgument( const LuaArgument& arg ) : LuaArgument( arg ) {}
+                            CLuaArgument( NetBitStreamInterface& bitStream ) : LuaArgument( bitStream ) {}
+                            CLuaArgument( lua_State *lua, int idx ) : LuaArgument( lua, idx )   {}
                             CLuaArgument( CElement* pElement );
                             ~CLuaArgument();
 
-    void                    Read( CElement* pElement );
+    LuaArgument*            Clone() const;
+
+    void                    ReadElement( CElement* pElement );
     CElement*               GetElement() const;
 
     bool                    WriteToBitStream( NetBitStreamInterface& bitStream ) const;
     json_object*            WriteToJSONObject( bool serialize = false );
     bool                    ReadFromJSONObject( json_object* object );
+
+    void                    LogUnableToPacketize( const char *msg ) const;
 
 protected:
     bool                    ReadTypeFromBitStream( NetBitStreamInterface& stream, int type );

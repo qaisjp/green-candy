@@ -29,7 +29,7 @@ public:
                                 ~CObjectManager                 ( void );
 
     CObject*                    Create                          ( CElement* pParent, CXMLNode* pNode = NULL );
-    CObject*                    CreateFromXML                   ( CElement* pParent, CXMLNode& Node, CLuaMain* pLuaMain, CEvents* pEvents );
+    CObject*                    CreateFromXML                   ( CElement* pParent, CXMLNode& Node, CLuaMain* pLuaMain, Events* pEvents );
     void                        DeleteAll                       ( void );
 
     inline unsigned int         Count                           ( void )                            { return static_cast < unsigned int > ( m_List.size () ); };

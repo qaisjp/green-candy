@@ -22,7 +22,7 @@ CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()
 {
     DEBUG_TRACE("CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()");
 
-    return (CPlayerPedSA*)VAR_PlayerPed;
+    return dynamic_cast <CPlayerPedSA*> ( pGame->GetPools()->GetPed( (*ppPedPool)->Get( 1 ) ) );
 }
 
 CWantedSA* CPlayerInfoSA::GetWanted()

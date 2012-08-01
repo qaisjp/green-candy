@@ -176,7 +176,7 @@ bool CStaticFunctionDefinitions::TriggerServerEvent ( const char* szName, CClien
             g_pNet->DeallocateNetBitStream ( pBitStream );
             return false;
         }
-        g_pNet->SendPacket ( PACKET_ID_LUA_EVENT, pBitStream );
+        g_pNet->SendPacket ( PACKET_ID_LUA_EVENT, pBitStream, PACKET_PRIORITY_MEDIUM, PACKET_RELIABILITY_RELIABLE );
         g_pNet->DeallocateNetBitStream ( pBitStream );
 
         return true;
@@ -2161,7 +2161,7 @@ bool CStaticFunctionDefinitions::GetClothesTypeName ( unsigned char ucType, char
 }
 
 
-CClientPed* CStaticFunctionDefinitions::CreatePed ( CResource& Resource, unsigned long ulModel, const CVector& vecPosition, float fRotation )
+CClientPed* CStaticFunctionDefinitions::CreatePed ( CResource& Resource, unsigned short ulModel, const CVector& vecPosition, float fRotation )
 {
     // Valid model?
     if ( CClientPlayerManager::IsValidModel ( ulModel ) )

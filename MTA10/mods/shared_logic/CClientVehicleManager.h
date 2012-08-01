@@ -41,20 +41,20 @@ public:
     void                            DoPulse                 ( void );
 
     static bool                     IsValidModel            ( unsigned short model );
-    static eClientVehicleType       GetVehicleType          ( unsigned long ulModel );
-    static unsigned char            GetMaxPassengerCount    ( unsigned long ulModel );
-    static unsigned char            ConvertIndexToGameSeat  ( unsigned long ulModel, unsigned char ucIndex );
+    static eClientVehicleType       GetVehicleType          ( unsigned short ulModel );
+    static unsigned char            GetMaxPassengerCount    ( unsigned short ulModel );
+    static unsigned char            ConvertIndexToGameSeat  ( unsigned short ulModel, unsigned char ucIndex );
 
-    static bool                     HasTurret               ( unsigned long ulModel );
-    static bool                     HasSirens               ( unsigned long ulModel );
-    static bool                     HasLandingGears         ( unsigned long ulModel );
-    static bool                     HasAdjustableProperty   ( unsigned long ulModel );
-    static bool                     HasSmokeTrail           ( unsigned long ulModel );
-    static bool                     HasTaxiLight            ( unsigned long ulModel );
-    static bool                     HasSearchLight          ( unsigned long ulModel );
-    static bool                     HasDamageModel          ( unsigned long ulModel );
+    static bool                     HasTurret               ( unsigned short ulModel );
+    static bool                     HasSirens               ( unsigned short ulModel );
+    static bool                     HasLandingGears         ( unsigned short ulModel );
+    static bool                     HasAdjustableProperty   ( unsigned short ulModel );
+    static bool                     HasSmokeTrail           ( unsigned short ulModel );
+    static bool                     HasTaxiLight            ( unsigned short ulModel );
+    static bool                     HasSearchLight          ( unsigned short ulModel );
+    static bool                     HasDamageModel          ( unsigned short ulModel );
     static bool                     HasDamageModel          ( enum eClientVehicleType Type );
-    static bool                     HasDoors                ( unsigned long ulModel );
+    static bool                     HasDoors                ( unsigned short ulModel );
 
     bool                            Exists                  ( CClientVehicle* pVehicle );
 

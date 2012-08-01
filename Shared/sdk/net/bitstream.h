@@ -175,6 +175,25 @@ public:
         }
         return true;
     }
+	
+    void WriteStringCompressed( const std::string& str )
+    {
+        unsigned short len = str.size();
+
+        WriteCompressed( len );
+
+        WriteStringCharacters( str, len );
+    }
+
+    bool ReadStringCompressed( std::string& buf )
+    {
+        unsigned short len;
+
+        if ( !ReadCompressed( len ) )
+            return false;
+
+        return ReadStringCharacters( buf, len );
+    }
 
 
     // Write a string (incl. ushort size header)
@@ -200,26 +219,6 @@ public:
 
         // Read the characters
         return ReadStringCharacters ( result, usLength );
-    }
-
-
-    void WriteStringCompressed( const std::string& str )
-    {
-        unsigned short len = str.size();
-
-        WriteCompressed( len );
-
-        WriteStringCharacters( str, len );
-    }
-
-    bool ReadStringCompressed( std::string& buf )
-    {
-        unsigned short len;
-
-        if ( !ReadCompressed( len ) )
-            return false;
-
-        return ReadStringCharacters( buf, len );
     }
 
     #ifdef MTA_CLIENT

@@ -89,11 +89,11 @@ namespace CommandlineTools
         return true;
     }
 
-    static inline void strsplit( const char *msg, std::vector <std::string>& out )
+    static inline void strsplit( const char *msg, std::vector <std::string>& out, const char seperator = ' ' )
     {
         std::string item;
 
-        while ( strgettok( msg, ' ', item ) )
+        while ( strgettok( msg, seperator, item ) )
         {
             if ( item.size() == 0 )
                 continue;

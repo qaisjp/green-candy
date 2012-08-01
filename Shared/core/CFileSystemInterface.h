@@ -78,12 +78,12 @@ public:
         return Write( &iInt, sizeof(int), 1 );
     }
 
-    virtual size_t          WriteShort( short iShort )
+    virtual size_t          WriteShort( unsigned short iShort )
     {
         return Write( &iShort, sizeof(short), 1 );
     }
 
-    virtual size_t          WriteByte( char cByte )
+    virtual size_t          WriteByte( unsigned char cByte )
     {
         return Write( &cByte, sizeof(char), 1 );
     }

@@ -121,7 +121,7 @@ public:
     static bool                         SetPlayerNametagShowing             ( CClientEntity& Entity, bool bShowing );
 
     // Ped funcs
-    static CClientPed*                  CreatePed                           ( CResource& Resource, unsigned long ulModel, const CVector& vecPosition, float fRotation );
+    static CClientPed*                  CreatePed                           ( CResource& Resource, unsigned short ulModel, const CVector& vecPosition, float fRotation );
 
     static CClientEntity*               GetPedTarget                        ( CClientPed& Ped );
     static bool                         GetPedTargetCollision               ( CClientPed& Ped, CVector& vecOrigin );

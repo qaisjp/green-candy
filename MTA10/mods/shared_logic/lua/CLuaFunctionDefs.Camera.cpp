@@ -194,7 +194,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setCameraClip )
     {
-        m_pManager->GetCamera()->SetCameraClip( lua_toboolean( L, 1 ), lua_toboolean( L, 2 ) );
+        m_pManager->GetCamera()->SetCameraClip( lua_toboolean( L, 1 ) == 1, lua_toboolean( L, 2 ) == 1 );
         lua_pushboolean( L, true );
         return 1;
     }

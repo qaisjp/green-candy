@@ -15,6 +15,7 @@
 #include "gamesa_renderware.h"
 
 #define FUNC_InitTextureManager         0x00731F20
+#define VAR_CPlayerTexDictionaries      0x00C88004
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
@@ -160,7 +161,7 @@ static void Hook_InitTextureManager()
 {
     // Reserve 7 txds
     for ( unsigned int n=0; n<7; n++ )
-        pGame->GetTextureManager()->CreateTxdEntry( "*" );
+        *(unsigned short*)( VAR_CPlayerTexDictionaries + n ) = pGame->GetTextureManager()->CreateTxdEntry( "*" );
 
     __asm
     {

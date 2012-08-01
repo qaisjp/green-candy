@@ -29,11 +29,11 @@ CThreadCommandQueue g_CommandQueue;
 MTAEXPORT int Run ( int iArgumentCount, char* szArguments [] )
 {
     // Create the server
-    #ifdef WIN32
-        CServerImpl Server ( &g_CommandQueue );
-    #else
-        CServerImpl Server;
-    #endif
+#ifdef WIN32
+    CServerImpl Server ( &g_CommandQueue );
+#else
+    CServerImpl Server;
+#endif
 
     // Run the main func
     int iReturn;

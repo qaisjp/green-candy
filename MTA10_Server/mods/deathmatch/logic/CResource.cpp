@@ -24,7 +24,7 @@
 #include <utime.h>
 #endif
 
-list < CResource* > CResource::m_StartedResources;
+std::list < CResource* > CResource::m_StartedResources;
 
 extern CServerInterface* g_pServerInterface;
 extern CGame* g_pGame;

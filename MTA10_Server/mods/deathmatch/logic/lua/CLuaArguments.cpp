@@ -32,6 +32,70 @@ CLuaArguments::CLuaArguments( NetBitStreamInterface& stream )
     ReadFromBitStream( stream );
 }
 
+void CLuaArguments::ReadArgument( lua_State *L, int idx )
+{
+    m_args.push_back( new CLuaArgument( L, idx ) );
+}
+
+LuaArgument* CLuaArguments::PushNil()
+{
+    CLuaArgument *arg = new CLuaArgument;
+    m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushBoolean( bool b )
+{
+    CLuaArgument *arg = new CLuaArgument( b );
+    m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushNumber( double d )
+{
+    CLuaArgument *arg = new CLuaArgument( d );
+    m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushString( const std::string& str )
+{
+    CLuaArgument *arg = new CLuaArgument( str );
+    m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushUserData( void *ud )
+{
+    CLuaArgument *arg = new CLuaArgument( ud );
+    m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushArgument( const LuaArgument& other )
+{
+    CLuaArgument *arg = (CLuaArgument*)other.Clone();
+    m_args.push_back( arg );
+    return arg;
+}
+
+#if 0
+LuaArgument* CLuaArguments::PushTable( const LuaArguments& table )
+{
+    CLuaArgument *arg = new CLuaArgument();
+    arg->Read( &table );
+    m_args.push_back( arg );
+    return arg;
+}
+#endif
+
+CLuaArgument* CLuaArguments::PushElement( CClientEntity* element )
+{
+    CLuaArgument *arg = new CLuaArgument( element );
+    m_args.push_back( arg );
+    return arg;
+}
+
 CLuaArgument* CLuaArguments::PushElement( CElement *element )
 {
     CLuaArgument *arg = new CLuaArgument( element );

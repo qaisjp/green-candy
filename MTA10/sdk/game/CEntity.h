@@ -13,7 +13,6 @@
 #define __CGAME_ENTITY
 
 #include "Common.h"
-#include <CMatrix.h>
 #include <CVector.h>
 
 enum eEntityType

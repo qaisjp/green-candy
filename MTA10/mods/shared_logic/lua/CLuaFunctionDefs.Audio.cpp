@@ -160,7 +160,7 @@ namespace CLuaFunctionDefs
     {
         if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, lua_isnumber( L, 2 ) && CStaticFunctionDefinitions::SetSoundVolume( *sound, lua_tonumber( L, 2 ) ) );
+            lua_pushboolean( L, lua_isnumber( L, 2 ) && CStaticFunctionDefinitions::SetSoundVolume( *sound, (float)lua_tonumber( L, 2 ) ) );
             return 1;
         }
         lua_pushboolean ( L, false );
@@ -184,7 +184,7 @@ namespace CLuaFunctionDefs
         {
             if ( lua_isnumber( L, 2 ) )
             {
-                sound->SetPlaybackSpeed( lua_tonumber( L, 2 ) );
+                sound->SetPlaybackSpeed( (float)lua_tonumber( L, 2 ) );
 
                 lua_pushboolean( L, true );
                 return 1;
@@ -211,7 +211,7 @@ namespace CLuaFunctionDefs
         {
             if ( lua_isnumber( L, 2 ) )
             {
-                sound->SetMinDistance( lua_tonumber( L, 2 ) );
+                sound->SetMinDistance( (float)lua_tonumber( L, 2 ) );
 
                 lua_pushboolean( L, true );
                 return 1;
@@ -238,7 +238,7 @@ namespace CLuaFunctionDefs
         {
             if ( lua_isnumber( L, 2 ) )
             {
-                sound->SetMaxDistance( lua_tonumber( L, 2 ) );
+                sound->SetMaxDistance( (float)lua_tonumber( L, 2 ) );
 
                 lua_pushboolean( L, true );
                 return 1;

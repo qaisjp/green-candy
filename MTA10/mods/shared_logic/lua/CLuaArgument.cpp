@@ -74,7 +74,7 @@ bool CLuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int typ
         if ( !stream.Read( id ) )
             return false;
 
-        Read( CElementIDs::GetElement( id ) );
+        ReadEntity( CElementIDs::GetElement( id ) );
         return true;
     }
     return LuaArgument::ReadTypeFromBitStream( stream, type );

@@ -78,7 +78,7 @@ void CPadManagerSA::GetVehicleControl( const CControlInterface& states, CPedSA& 
     cs.RightStickY = DIGITAL_AXIS( states.GetControlState( CONTROL_SPECIAL_CONTROL_DOWN ), states.GetControlState( CONTROL_SPECIAL_CONTROL_UP ) );
 }
 
-void CPadManagerSA::UpdateJoypad( const CControlInterface& states, CPedSA& ped )
+void CPadManagerSA::UpdateJoypadEx( const CControlInterface& states, CPedSA& ped )
 {
     CPadSAInterface *pad = ped.GetInterface()->GetJoypad();
 

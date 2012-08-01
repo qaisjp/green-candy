@@ -99,7 +99,7 @@ void CClientPlayerManager::DeleteAll ( void )
     vector < CClientPlayer* > ::const_iterator iter = m_Players.begin ();
     for ( ; iter != m_Players.end (); iter++ )
     {
-        delete *iter;
+        (*iter)->Destroy();
     }
 
     // Clear the list

@@ -192,7 +192,7 @@ bool CClientVehicleManager::IsValidModel ( unsigned short model )
     return info->IsVehicle();
 }
 
-eClientVehicleType CClientVehicleManager::GetVehicleType ( unsigned long ulModel )
+eClientVehicleType CClientVehicleManager::GetVehicleType ( unsigned short ulModel )
 {
     // Grab the model info for the current vehicle
     CModelInfo* pModelInfo = g_pGame->GetModelInfo ( ulModel );
@@ -214,7 +214,7 @@ eClientVehicleType CClientVehicleManager::GetVehicleType ( unsigned long ulModel
 }
 
 
-unsigned char CClientVehicleManager::GetMaxPassengerCount ( unsigned long ulModel )
+unsigned char CClientVehicleManager::GetMaxPassengerCount ( unsigned short ulModel )
 {
     // Valid model?
     if ( IsValidModel( ulModel ) )
@@ -227,7 +227,7 @@ unsigned char CClientVehicleManager::GetMaxPassengerCount ( unsigned long ulMode
 }
 
 
-unsigned char CClientVehicleManager::ConvertIndexToGameSeat ( unsigned long ulModel, unsigned char ucIndex )
+unsigned char CClientVehicleManager::ConvertIndexToGameSeat ( unsigned short ulModel, unsigned char ucIndex )
 {
     eClientVehicleType vehicleType = GetVehicleType ( ulModel );
                 
@@ -312,56 +312,56 @@ unsigned char CClientVehicleManager::ConvertIndexToGameSeat ( unsigned long ulMo
     return 0xFF;
 }
 
-bool CClientVehicleManager::HasTurret ( unsigned long ulModel )
+bool CClientVehicleManager::HasTurret ( unsigned short ulModel )
 {
     return ( IsValidModel ( ulModel ) &&
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_TURRENT ) );
 }
 
 
-bool CClientVehicleManager::HasSirens ( unsigned long ulModel )
+bool CClientVehicleManager::HasSirens ( unsigned short ulModel )
 {
     return ( IsValidModel ( ulModel ) &&
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_SIRENS ) );
 }
 
 
-bool CClientVehicleManager::HasTaxiLight ( unsigned long ulModel )
+bool CClientVehicleManager::HasTaxiLight ( unsigned short ulModel )
 {
     return ( IsValidModel ( ulModel ) &&
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_TAXI_LIGHTS ) );
 }
 
 
-bool CClientVehicleManager::HasSearchLight ( unsigned long ulModel )
+bool CClientVehicleManager::HasSearchLight ( unsigned short ulModel )
 {
     return ( IsValidModel ( ulModel ) &&
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_SEARCH_LIGHT ) );
 }
 
 
-bool CClientVehicleManager::HasLandingGears ( unsigned long ulModel )
+bool CClientVehicleManager::HasLandingGears ( unsigned short ulModel )
 {
     return ( IsValidModel ( ulModel ) &&
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_LANDING_GEARS ) );
 }
 
 
-bool CClientVehicleManager::HasAdjustableProperty ( unsigned long ulModel )
+bool CClientVehicleManager::HasAdjustableProperty ( unsigned short ulModel )
 {
     return ( IsValidModel ( ulModel ) &&
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_ADJUSTABLE_PROPERTY ) );
 }
 
 
-bool CClientVehicleManager::HasSmokeTrail ( unsigned long ulModel )
+bool CClientVehicleManager::HasSmokeTrail ( unsigned short ulModel )
 {
     return ( IsValidModel ( ulModel ) &&
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_SMOKE_TRAIL ) );
 }
 
 
-bool CClientVehicleManager::HasDamageModel ( unsigned long ulModel )
+bool CClientVehicleManager::HasDamageModel ( unsigned short ulModel )
 {
     return HasDamageModel ( GetVehicleType ( ulModel ) );
 }
@@ -383,7 +383,7 @@ bool CClientVehicleManager::HasDamageModel ( eClientVehicleType Type )
     }
 }
 
-bool CClientVehicleManager::HasDoors ( unsigned long ulModel )
+bool CClientVehicleManager::HasDoors ( unsigned short ulModel )
 {
     bool bHasDoors = false;
 

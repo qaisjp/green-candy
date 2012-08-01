@@ -21,7 +21,7 @@ CTaskManagerSA::CTaskManagerSA( CTaskManagerSAInterface *taskManager, CPed *ped 
 
     m_ped = ped;
     m_interface = taskManager;
-    m_pTaskManagementSystem = (CTaskManagementSystemSA *)(pGame->GetTaskManagementSystem());
+    m_pTaskManagementSystem = pGame->GetTaskManagementSystem();
 }
 
 void CTaskManagerSA::RemoveTask( eTaskPriority priority )

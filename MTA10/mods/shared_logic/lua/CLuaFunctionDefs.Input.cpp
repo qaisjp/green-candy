@@ -42,8 +42,6 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( setCursorPosition )
     {
-        float x, y;
-
         if ( lua_isnumber( L, 1 ) )
         {
             if ( lua_isnumber( L, 2 ) )

@@ -858,7 +858,7 @@ namespace CLuaFunctionDefs
     {
         if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
-            lua_pushboolean( L, CStaticFunctionDefinitions::SetPedOnFire( *entity, lua_toboolean( L, 2 ) ) );
+            lua_pushboolean( L, CStaticFunctionDefinitions::SetPedOnFire( *entity, lua_toboolean( L, 2 ) == 1 ) );
             return 1;
         }
         else

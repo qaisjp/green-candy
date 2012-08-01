@@ -1,8 +1,8 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        sdk/game/RenderWare_shared.h
+*  FILE:        sdk/RenderWare_shared.h
 *  PURPOSE:     Shared renderware definitions
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
@@ -14,7 +14,7 @@
 #define _RenderWare_Shared_H_
 
 // TODO: Remove the internal RW definitions, DIF
-#include <CMatrix.h>
+#include <CVector.h>
 
 // RenderWare primitive types
 struct RwV2d
@@ -51,7 +51,7 @@ struct RwColor
 
     operator unsigned int ()
     {
-        return ( a ) | ( (unsigned int)b >> 8 ) | ( (unsigned int)g >> 16 ) | ( (unsigned int)r >> 24 );
+        return ( a ) | ( (unsigned int)b << 8 ) | ( (unsigned int)g << 16 ) | ( (unsigned int)r << 24 );
     }
 };
 
@@ -74,14 +74,6 @@ public:
     RwMatrix()
     {
         Identity();
-    }
-
-    RwMatrix( const CMatrix& from )
-    {
-        right = from.right;
-        up = from.up;
-        at = from.at;
-        pos = from.pos;
     }
 
     RwMatrix( const RwMatrix& mat )

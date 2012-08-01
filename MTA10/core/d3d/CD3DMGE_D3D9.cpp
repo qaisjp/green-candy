@@ -959,9 +959,13 @@ bool CD3DMGEng::LoadFontTextureFromFile ( TCHAR *wszFileName )
     // Release any existing texture.
     SAFE_RELEASE( m_pFontTexture );
 
+    // Get an absolute path
+    filePath path;
+    mtaFileRoot->GetFullPath( wszFileName, true, path );
+
     //////////////////////////////////////////////////
     // Load the requested texture.from file.
-    if ( (D3D_OK != D3DXCreateTextureFromFile( m_pDevice, wszFileName, &m_pFontTexture )) )
+    if ( (D3D_OK != D3DXCreateTextureFromFile( m_pDevice, path.c_str(), &m_pFontTexture )) )
     {
         return false;
     }

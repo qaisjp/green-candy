@@ -26,7 +26,12 @@ CLuaArgument::CLuaArgument( CElement *element )
     Read( element );
 }
 
-void CLuaArgument::Read( CElement *element )
+void CLuaArgument::Clone() const
+{
+    return new CLuaArgument( *this );
+}
+
+void CLuaArgument::ReadElement( CElement *element )
 {
     m_string = "";
 

@@ -21,7 +21,6 @@ class CModManagerImpl;
 #include <core/CModManager.h>
 #include <core/CServerBase.h>
 
-#include "CDynamicLibrary.h"
 #include "CServerImpl.h"
 
 typedef CServerBase* (InitServer)();
@@ -29,29 +28,27 @@ typedef CServerBase* (InitServer)();
 class CModManagerImpl : public CModManager
 {
 public:
-                        CModManagerImpl         ( CServerImpl* pServer );
-                        ~CModManagerImpl        ();
+                        CModManagerImpl( CServerImpl* pServer );
+                        ~CModManagerImpl();
 
-    inline void         SetServerPath           ( const char* szServerPath )    { m_strServerPath = szServerPath; };
+    bool                RequestLoad( const char* szModName );
 
-    bool                RequestLoad             ( const char* szModName );
+    CFileTranslator*    GetModRoot()                                            { return m_modRoot; };
 
-    CFileTranslator*    GetModRoot              ()  { return m_modRoot; };
+    bool                IsModLoaded();
+    CServerBase*        GetCurrentMod();
 
-    bool                IsModLoaded             ();
-    CServerBase*        GetCurrentMod           ();
+    bool                Load( const char* szModName, int iArgumentCount, char* szArguments [] );
+    void                Unload();
 
-    bool                Load                    ( const char* szModName, int iArgumentCount, char* szArguments [] );
-    void                Unload                  ();
+    void                HandleInput( const char* szCommand );
+    void                GetTag( char* szInfoTag, int iInfoTag );
 
-    void                HandleInput             ( const char* szCommand );
-    void                GetTag                  ( char* szInfoTag, int iInfoTag );
+    void                DoPulse();
 
-    void                DoPulse                 ();
+    bool                IsFinished();
 
-    bool                IsFinished              ();
-
-    bool                PendingWorkToDo         ();
+    bool                PendingWorkToDo();
 
 private:
     CServerImpl*        m_pServer;

@@ -23,7 +23,6 @@
 #include <CVector.h>
 #include "CMapEventManager.h"
 #include "CCustomData.h"
-#include "CEvents.h"
 #include <assert.h>
 #include <list>
 #include <cstring>
@@ -123,7 +122,7 @@ public:
     void                                        DeleteEvents                ( CLuaMain* pLuaMain, bool bRecursive );
     void                                        DeleteAllEvents             ();
 
-    void                                        ReadCustomData              ( CLuaMain* pLuaMain, CEvents* pEvents );
+    void                                        ReadCustomData              ( CLuaMain* pLuaMain, Events* pEvents );
     inline CCustomData*                         GetCustomDataPointer        ()                    { return m_pCustomData; }
     CLuaArgument*                               GetCustomData               ( const char* szName, bool bInheritData, bool* pbIsSynced = NULL );
     CLuaArguments*                              GetAllCustomData            ( CLuaArguments * table );
@@ -154,7 +153,7 @@ public:
     inline const std::string&                   GetName                     ()                        { return m_strName; };
     inline void                                 SetName                     ( const std::string& strName )  { m_strName = strName; };
 
-    bool                                        LoadFromCustomData          ( CLuaMain* pLuaMain, CEvents* pEvents );
+    bool                                        LoadFromCustomData          ( CLuaMain* pLuaMain, Events* pEvents );
 
     void                                        OnSubtreeAdd                ( CElement* pElement );
     void                                        OnSubtreeRemove             ( CElement* pElement );

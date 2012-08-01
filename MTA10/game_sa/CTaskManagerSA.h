@@ -48,7 +48,6 @@ class CTaskSAInterface;
 #include "TaskPhysicalResponseSA.h"
 #include "TaskIKSA.h"
 
-// pointer for this at +1148+4? (see 0x568A20)
 class CTaskManagerSAInterface
 {
 public:

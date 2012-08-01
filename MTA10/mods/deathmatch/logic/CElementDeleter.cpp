@@ -93,7 +93,7 @@ void CElementDeleter::DoDeleteAll ( void )
         if ( pEntity->CanBeDeleted () )
         {
             // Delete the entity and put the next element in the list in the iterator
-            delete pEntity;
+            pEntity->Destroy();
             iter = m_List.erase ( iter );
         }
         else
