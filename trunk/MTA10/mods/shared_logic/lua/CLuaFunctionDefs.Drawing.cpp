@@ -142,7 +142,7 @@ namespace CLuaFunctionDefs
     {
         // dxDrawRectangle ( int x,int y,float width,float height,[int color=0xffffffff] )
 
-        int x, y;
+        float x, y;
         float width, height;
         unsigned long color;
         bool postGUI;

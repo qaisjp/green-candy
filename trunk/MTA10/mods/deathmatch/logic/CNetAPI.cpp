@@ -297,7 +297,7 @@ void CNetAPI::DoPulse ( void )
                         WriteVehiclePuresync ( pPlayer, pVehicle, *pBitStream );
 
                         // Send the packet and destroy it
-                        g_pNet->SendPacket( PACKET_ID_PLAYER_VEHICLE_PURESYNC, pBitStream, PACKET_PRIORITY_LOW, PACKET_RELIABILITY_UNRELIABLE_SEQUENCED, PACKET_ORDERING_DEFAULT );
+                        g_pNet->SendPacket( PACKET_ID_PLAYER_VEHICLE_PURESYNC, pBitStream, PACKET_PRIORITY_LOW, PACKET_RELIABILITY_UNRELIABLE_SEQUENCED, PACKET_ORDERING_GAME );
                         g_pNet->DeallocateNetBitStream ( pBitStream );
                     }
 
@@ -320,7 +320,7 @@ void CNetAPI::DoPulse ( void )
                             WritePlayerPuresync ( pPlayer, *pBitStream );
 
                             // Send the packet and destroy it
-                            g_pNet->SendPacket( PACKET_ID_PLAYER_PURESYNC, pBitStream, PACKET_PRIORITY_LOW, PACKET_RELIABILITY_UNRELIABLE_SEQUENCED, PACKET_ORDERING_DEFAULT );
+                            g_pNet->SendPacket( PACKET_ID_PLAYER_PURESYNC, pBitStream, PACKET_PRIORITY_LOW, PACKET_RELIABILITY_UNRELIABLE_SEQUENCED, PACKET_ORDERING_GAME );
                             g_pNet->DeallocateNetBitStream ( pBitStream );
                         }
                     }
@@ -402,7 +402,7 @@ void CNetAPI::DoPulse ( void )
                     WriteCameraSync ( *pBitStream );
 
                     // Send the packet and destroy it
-                    g_pNet->SendPacket ( PACKET_ID_CAMERA_SYNC, pBitStream, PACKET_PRIORITY_LOW, PACKET_RELIABILITY_RELIABLE_ORDERED, PACKET_ORDERING_DEFAULT );
+                    g_pNet->SendPacket ( PACKET_ID_CAMERA_SYNC, pBitStream, PACKET_PRIORITY_LOW, PACKET_RELIABILITY_RELIABLE_ORDERED, PACKET_ORDERING_GAME );
                     g_pNet->DeallocateNetBitStream ( pBitStream );
                 }
             }
@@ -549,7 +549,7 @@ void CNetAPI::ReadKeysync ( CClientPlayer* pPlayer, NetBitStreamInterface& BitSt
             {
                 ucCurrentWeaponType = pWeapon->GetType ();
                 float fSkill = pPlayer->GetStat ( g_pGame->GetStats ()->GetSkillStatIndex ( pWeapon->GetType () ) );
-                CWeaponInfo* pWeaponInfo = g_pGame->GetWeaponStatManager ( )->GetWeaponStatsFromSkillLevel ( pWeapon->GetType (), fSkill );
+                CWeaponStat* pWeaponInfo = g_pGame->GetWeaponStatManager ( )->GetWeaponStatsFromSkillLevel ( pWeapon->GetType (), fSkill );
                 fWeaponRange = pWeaponInfo->GetWeaponRange ();
             }
 #endif
@@ -714,7 +714,7 @@ void CNetAPI::WriteKeysync ( CClientPed* pPlayerModel, NetBitStreamInterface& Bi
                 ammo.data.usAmmoInClip = static_cast < unsigned short > ( pPlayerWeapon->GetAmmoInClip () );
                 BitStream.Write ( &ammo );
 
-#if TODO
+#if 0
                 // Write the aim data
                 float fSkill = pPlayerModel->GetStat ( g_pGame->GetStats ()->GetSkillStatIndex ( eWeapon ) );
                 CWeaponStat* pCurrentWeaponInfo = g_pGame->GetWeaponStatManager ( )->GetWeaponStatsFromSkillLevel ( eWeapon, fSkill );
@@ -863,7 +863,7 @@ void CNetAPI::ReadPlayerPuresync ( CClientPlayer* pPlayer, NetBitStreamInterface
      
             unsigned char ucCurrentWeapon = 0;
             float fWeaponRange = 0.01f;
-#if TODO
+#if 0
             if ( pWeapon )
             {
                 ucCurrentWeapon = pWeapon->GetType ();
@@ -936,7 +936,7 @@ void CNetAPI::ReadPlayerPuresync ( CClientPlayer* pPlayer, NetBitStreamInterface
          pPlayer->GetVehicleInOutState () == VEHICLE_INOUT_JACKING )
     {
         pPlayer->SetTargetPosition ( position.data.vecPosition, TICK_RATE, pContactEntity );
-        pPlayer->SetTargetRotation ( rotation.data.fRotation );
+        pPlayer->SetCurrentRotation ( rotation.data.fRotation );
     }
 
     // Set move speed, controller state and camera rotation + duck state
@@ -957,8 +957,7 @@ void CNetAPI::ReadPlayerPuresync ( CClientPlayer* pPlayer, NetBitStreamInterface
 void WriteCameraOrientation ( const CVector& vecPositionBase, NetBitStreamInterface& BitStream )
 {
     // Calc the camera position and rotation
-    const RwMatrix& camMatrix = g_pGame->GetCamera ()->GetMatrix ();
-    
+    RwMatrix camMatrix = g_pGame->GetCamera ()->GetMatrix();
     const CVector& vecCamPosition = camMatrix.pos;
     const CVector& vecCamFwd = camMatrix.at;
     float fCamRotZ = atan2 ( vecCamFwd.fX, vecCamFwd.fY );
@@ -1341,7 +1340,7 @@ void CNetAPI::ReadVehiclePuresync ( CClientPlayer* pPlayer, CClientVehicle* pVeh
 
             unsigned char ucCurrentWeapon = 0;
             float fWeaponRange = 0.01f;
-#if TODO
+#if 0
             if ( pWeapon )
             {
                 ucCurrentWeapon = pWeapon->GetType ();
@@ -1797,7 +1796,7 @@ void CNetAPI::WriteCameraSync ( NetBitStreamInterface& BitStream )
 }
 
 
-void CNetAPI::RPC ( eServerRPCFunctions ID, NetBitStreamInterface * pBitStream, ePacketOrdering packetOrdering )
+void CNetAPI::RPC ( eServerRPCFunctions ID, NetBitStreamInterface * pBitStream, NetPacketOrdering packetOrdering )
 {
     NetBitStreamInterface* pRPCBitStream = g_pNet->AllocateNetBitStream ();
     if ( pRPCBitStream )

@@ -68,8 +68,8 @@ public:
 
     bool                        Refresh( bool all = false );
     void                        Upgrade();
-    inline unsigned int         GetResourceLoadedCount()                { return m_uiResourceLoadedCount; }
-    inline unsigned int         GetResourceFailedCount()                { return m_uiResourceFailedCount; }
+    inline unsigned int         GetResourceLoadedCount()                { return m_loadedCount; }
+    inline unsigned int         GetResourceFailedCount()                { return m_failedCount; }
     void                        OnPlayerJoin( CPlayer& Player );
 
     bool                        StartResource( CResource *res, const resList_t *dependents = NULL, 

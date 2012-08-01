@@ -221,7 +221,10 @@ void CWorldSA::IgnoreEntity( CEntity * pEntity )
 {
     DEBUG_TRACE("VOID CWorldSA::IgnoreEntity(CEntity * entity)");
 
-    *(CEntitySAInterface**)VAR_IgnoredEntity = dynamic_cast < CEntitySA* > ( pEntity )->GetInterface();
+    if ( !pEntity )
+        *(CEntitySAInterface**)VAR_IgnoredEntity = NULL;
+    else
+        *(CEntitySAInterface**)VAR_IgnoredEntity = dynamic_cast < CEntitySA* > ( pEntity )->GetInterface();
 }
 
 // technically this is in CTheZones

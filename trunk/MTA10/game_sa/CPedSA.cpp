@@ -375,7 +375,8 @@ void CPedSA::RemoveWeaponModel( unsigned short iModel )
     _asm
     {
         mov     ecx, dwThis
-        push    iModel
+        movzx   eax,iModel
+        push    eax
         call    dwFunc
     }
 }
@@ -745,14 +746,19 @@ void CPedSA::SetGogglesState( bool wear )
 
 void CPedSA::SetClothesTextureAndModel( const char *tex, const char *model, short txd )
 {
+    // Seems to be a very easy function which hashes names and inserts them into the clothes class
+    // We should reven this TODO
     DWORD dwFunc = FUNC_CPedClothesDesc__SetTextureAndModel;
     DWORD dwThis = (DWORD)GetInterface()->m_playerData->m_pClothes;
+    DWORD texPtr = (DWORD)tex;
+    DWORD modelPtr = (DWORD)model;
+    DWORD txdStack = txd;
     _asm
     {
         mov     ecx, dwThis
-        push    txd
-        push    model
-        push    tex
+        push    txdStack
+        push    modelPtr
+        push    texPtr
         call    dwFunc
     }
 }
@@ -803,6 +809,9 @@ void CPedSA::SetFightingStyle( eFightingStyle style, unsigned char extra )
 CEntity* CPedSA::GetContactEntity() const
 {
     CEntitySAInterface* pInterface = GetInterface()->m_contactEntity;
+
+    if ( !pInterface )
+        return NULL;
 
     switch( pInterface->m_type )
     {

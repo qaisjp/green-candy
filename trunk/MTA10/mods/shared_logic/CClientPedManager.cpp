@@ -32,10 +32,10 @@ void CClientPedManager::DeleteAll ( void )
 {
     m_bRemoveFromList = false;
     vector < CClientPed* > ::iterator iter = m_List.begin ();
+
     for ( ; iter != m_List.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Destroy();
+
     m_List.clear ();
     m_bRemoveFromList = true;
 }

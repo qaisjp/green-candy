@@ -13,7 +13,7 @@
 #ifndef __RENDERWARE_COMPAT
 #define __RENDERWARE_COMPAT
 
-#include <../sdk/game/RenderWare_shared.h>
+#include <RenderWare_shared.h>
 
 /*****************************************************************************/
 /** RenderWare rendering types                                              **/
@@ -197,7 +197,7 @@ class RwStaticGeometry
 public:
     RwStaticGeometry();
 
-    unsigned int            m_unknown2;     // 0
+    RwObject*               m_unknown2;     // 0
     unsigned int            m_unknown;      // 4
     unsigned int            m_count;        // 8
     unsigned int            m_unknown3;     // 12

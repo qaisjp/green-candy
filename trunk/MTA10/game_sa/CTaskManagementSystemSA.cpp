@@ -16,10 +16,18 @@
 #include "StdInc.h"
 
 using namespace std;
+static CTaskSAInterface *pTmpInterface;
 
-VOID HOOK_CTask_Operator_Delete( CTaskSAInterface *task )
+void _declspec(naked) HOOK_CTask_Operator_Delete()
 {
-    ((CTaskManagementSystemSA *)(pGame->GetTaskManagementSystem()))->RemoveTask ( task );
+    __asm
+    {
+        mov eax,[esp+4]
+        mov pTmpInterface,eax
+        pushad
+    }
+
+    pGame->GetTaskManagementSystem()->RemoveTask ( pTmpInterface );
 
     // Continue on our merry way....
     _asm
@@ -75,8 +83,6 @@ void CTaskManagementSystemSA::RemoveTask ( CTaskSAInterface * pTaskInterface )
     // Stops crash on exit
     if ( m_TaskList.size () == 0 )
         return;
-
-    assert ( pTaskInterface );
 
     // Find it in our list
     STaskListItem* pItem;

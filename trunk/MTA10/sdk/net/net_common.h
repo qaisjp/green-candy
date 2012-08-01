@@ -45,6 +45,13 @@ enum NetPacketReliability
     PACKET_RELIABILITY_RELIABLE_SEQUENCED       //  Can drop packets
 };
 
+enum NetPacketOrdering
+{
+    PACKET_ORDERING_GAME = 0,
+    PACKET_ORDERING_CHAT,
+    PACKET_ORDERING_FILETRANSFER
+};
+
 enum NSPerSecondMetrics
 {
 	NS_USER_MESSAGE_BYTES_PUSHED,
@@ -82,17 +89,6 @@ struct NetStatistics
     float compressionRatio, decompressionRatio;
 
     int encryptionStatus;
-};
-
-enum ePacketOrdering
-{
-    PACKET_ORDERING_DEFAULT = 0,
-    PACKET_ORDERING_CHAT,
-    PACKET_ORDERING_FILETRANSFER,
-    PACKET_ORDERING_LUA,
-    PACKET_ORDERING_PURESYNC,
-    PACKET_ORDERING_LIGHTSYNC,
-    PACKET_ORDERING_OTHERSYNC
 };
 
 #endif

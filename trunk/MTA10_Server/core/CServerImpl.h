@@ -25,7 +25,6 @@ class CServerImpl;
 #include <core/CServerInterface.h>
 #include <net/CNetServer.h>
 
-#include "CDynamicLibrary.h"
 #include "CModManagerImpl.h"
 #include "sockets/CTCPImpl.h"
 #include "sockets/CTCPServerSocketImplManager.h"
@@ -49,40 +48,38 @@ class CServerImpl : public CServerInterface
 {
 public:
 #ifdef WIN32
-                        CServerImpl         ( CThreadCommandQueue* pThreadCommandQueue );
+                        CServerImpl( CThreadCommandQueue* pThreadCommandQueue );
 #else
-                        CServerImpl         ();
+                        CServerImpl();
 #endif
 
-                        ~CServerImpl        ();
+                        ~CServerImpl();
 
-    CNetServer*         GetNetwork          ();
-    CModManager*        GetModManager       ();
-    CTCP*               GetTCP              ();
-    CXML*               GetXML              ();
-    CFileSystem*        GetFileSystem       ();
+    CNetServer*         GetNetwork();
+    CModManager*        GetModManager();
+    CTCP*               GetTCP();
+    CXML*               GetXML();
+    CFileSystem*        GetFileSystem()                         { return m_fileSystem; }
 
-    const char*         GetAbsolutePath     ( const char* szRelative, char* szBuffer, unsigned int uiBufferSize );
+    void                Printf( const char* szText, ... );
 
-    void                Printf              ( const char* szText, ... );
-
-    int                 Run                 ( int iArgumentCount, char* szArguments [] );
+    int                 Run( int iArgumentCount, char* szArguments [] );
 #ifndef WIN32
-    void                Daemonize           () const;
+    void                Daemonize() const;
 #endif
 
 private:
-    void                MainLoop            ();
+    void                MainLoop();
 
-    bool                ParseArguments      ( int iArgumentCount, char* szArguments [] );
-    bool                IsKeyPressed        ( int iKey );
-    void                WaitForKey          ( int iKey );
+    bool                ParseArguments( int iArgumentCount, char* szArguments [] );
+    bool                IsKeyPressed( int iKey );
+    void                WaitForKey( int iKey );
 
-    void                ShowInfoTag         ( char *szTag );
-    void                HandleInput         ();
+    void                ShowInfoTag( char *szTag );
+    void                HandleInput();
 
-    void                SleepMs             ( unsigned long ulMs );
-    void                DestroyWindow       ();
+    void                SleepMs( unsigned long ulMs );
+    void                DestroyWindow();
 
     CDynamicLibrary     m_NetworkLibrary;
     CDynamicLibrary     m_XMLLibrary;

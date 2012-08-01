@@ -103,7 +103,7 @@ CCore::CCore()
     AC_RestrictAccess ();
 #endif
 
-#if 0
+#if defined(_DEBUG) && 0
     while ( !IsDebuggerPresent() )
         Sleep( 1 );
 #endif
@@ -173,7 +173,7 @@ CCore::CCore()
 
     // Create the mod manager
     m_pModManager               = new CModManager;
-    m_server                    = new CServer;
+    m_server                    = new CServer( mtaRoot );
 
     m_pfnMessageProcessor       = NULL;
     m_pMessageBox = NULL;

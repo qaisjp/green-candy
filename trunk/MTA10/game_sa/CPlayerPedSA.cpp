@@ -77,12 +77,13 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
     DEBUG_TRACE("CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, bool isLocal )");
     
     SetType( PLAYER_PED );
-    SetModelIndex( modelId );
 
     m_bIsLocal = isLocal;
 
     if ( !isLocal )
     {
+        SetModelIndex( modelId );
+
         // Allocate a player data struct and set it as the players
         m_pData = new CPlayerPedDataSAInterface;
 
@@ -93,15 +94,22 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
 
         // Replace the player ped data in our ped interface with the one we just created
         GetInterface()->m_playerData = m_pData;
+
+        // Set clothes pointer or we'll crash later (TODO: Wrap up with some cloth classes and make it unique per player)
+        m_pData->m_pClothes = pLocalClothes;
+        m_pData->m_Wanted = pLocalWanted;
+    }
+    else
+    {
+        m_pData = ped->m_playerData;
+
+        pLocalClothes = m_pData->m_pClothes;
+        pLocalWanted = m_pData->m_Wanted;
     }
 
     // Set default stuff
     m_pData->m_bRenderWeapon = true;
-    m_pData->m_Wanted = pLocalWanted;
     m_pData->m_fSprintEnergy = 1000.0f;
-
-    // Set clothes pointer or we'll crash later (TODO: Wrap up with some cloth classes and make it unique per player)
-    m_pData->m_pClothes = pLocalClothes;
 
     SetCanBeShotInVehicle( true );
     SetTestForShotInVehicle( true );

@@ -24,7 +24,24 @@
 #include <cstdio>
 #include <signal.h>
 #ifdef WIN32
-    #include <Mmsystem.h>
+#include <Mmsystem.h>
+#endif
+
+// File system access descriptors
+CFileTranslator *serverFileRoot;
+CFileTranslator *modFileRoot;
+
+#ifdef _WIN32
+
+// http://stackoverflow.com/questions/557081/how-do-i-get-the-hmodule-for-the-currently-executing-code?lq=1
+inline HMODULE GetCurrentModule()
+{
+    MEMORY_BASIC_INFORMATION mbi = {0};
+    ::VirtualQuery( GetCurrentModule, &mbi, sizeof(mbi) );
+
+    return reinterpret_cast<HMODULE>(mbi.AllocationBase);
+}
+
 #endif
 
 // Define libraries
@@ -60,8 +77,22 @@ CServerImpl::CServerImpl()
     // Filesystem initialization
     m_fileSystem = new CFileSystem();
 
+#ifdef _WIN32
+    // Acquire current instance path in Windows, as we can be launched from the client
+    // That would change the current directory to something we cannot handle
+    char dllDirectory[2048];
+    GetModuleFileNameA( GetCurrentModule(), dllDirectory, sizeof(dllDirectory)-1 );
+
+    serverFileRoot = m_fileSystem->CreateTranslator( dllDirectory );
+#else
+    serverFileRoot = fileRoot;
+#endif
+
+    filePath rootPath;
+    serverFileRoot->GetFullPath( "/", false, rootPath );
+
     // Create file access regions
-    modFileRoot = m_fileSystem->CreateTranslator( "mods/" );
+    modFileRoot = m_fileSystem->CreateTranslator( rootPath + "mods/" );
 
     // Init
     m_pNetwork = NULL;
@@ -161,8 +192,8 @@ int CServerImpl::Run( int iArgumentCount, char* szArguments [] )
         return 1;
 
     // Set our locale to the C locale, except for character handling which is the system's default
-    std::setlocale( LC_ALL,"C" );
-    std::setlocale( LC_CTYPE,"" );
+    std::setlocale( LC_ALL, "C" );
+    std::setlocale( LC_CTYPE, "" );
 
 #ifndef WIN32
     // Daemonize?
@@ -241,12 +272,13 @@ int CServerImpl::Run( int iArgumentCount, char* szArguments [] )
 
     // Welcome text
     if ( !g_bSilent )
-        Print( "MTA:BLUE Server for MTA:SA\r\n\r\n" );
+        Print( "MTA:GREEN Server for MTA:SA\r\n\r\n" );
 
     // Load the network DLL
-    char szBuffer [MAX_PATH];
+    filePath serverRoot;
+    serverFileRoot->GetFullPath( "/", true, serverRoot );
 
-    if ( !m_NetworkLibrary.Load ( GetAbsolutePath ( szNetworkLibName, szBuffer, MAX_PATH ) ) )
+    if ( !m_NetworkLibrary.Load( serverRoot + szNetworkLibName ) )
     {
         // Couldn't load it
         Print( "ERROR: Loading network library (%s) failed!\n", szNetworkLibName );
@@ -258,7 +290,7 @@ int CServerImpl::Run( int iArgumentCount, char* szArguments [] )
 
     // Network module compatibility check
     typedef unsigned long (*PFNCHECKCOMPATIBILITY) ( unsigned long );
-PFNCHECKCOMPATIBILITY pfnCheckCompatibility = reinterpret_cast< PFNCHECKCOMPATIBILITY > m_NetworkLibrary.GetProcedureAddress( "CheckCompatibility" );
+    PFNCHECKCOMPATIBILITY pfnCheckCompatibility = (PFNCHECKCOMPATIBILITY)m_NetworkLibrary.GetProcedureAddress( "CheckCompatibility" );
 
     if ( !pfnCheckCompatibility || !pfnCheckCompatibility( MTA_DM_SERVER_NET_MODULE_VERSION ) )
     {
@@ -272,7 +304,7 @@ PFNCHECKCOMPATIBILITY pfnCheckCompatibility = reinterpret_cast< PFNCHECKCOMPATIB
         return ERROR_NETWORK_LIBRARY_FAILED;
     }
 
-    if ( !m_XMLLibrary.Load( GetAbsolutePath( szXMLLibName, szBuffer, MAX_PATH ) ) )
+    if ( !m_XMLLibrary.Load( serverRoot + szXMLLibName ) )
     {
         // Couldn't load it
         Print ( "ERROR: Loading XML library (%s) failed!\n", szXMLLibName );
@@ -503,6 +535,7 @@ void CServerImpl::ShowInfoTag ( char* szTag )
 void CServerImpl::HandleInput()
 {
     wint_t iStdIn;
+    wchar_t szBuffer [255];
 
     // Get the STDIN input
 #ifdef WIN32
@@ -600,7 +633,6 @@ void CServerImpl::HandleInput()
         }
 
 #ifdef WIN32
-        wchar_t szBuffer [255];
         memset ( szBuffer, 0, sizeof ( szBuffer ) );
 
         m_uiInputCount--;
@@ -619,7 +651,6 @@ void CServerImpl::HandleInput()
             break;
 
 #ifdef WIN32
-        wchar_t szBuffer [255];
         memset ( szBuffer, 0, sizeof ( szBuffer ) );
 
         m_uiInputCount++;
@@ -701,7 +732,7 @@ bool CServerImpl::ParseArguments( int iArgumentCount, char *szArguments[] )
         case 'D':
         {
             // Set it as our current path.
-            m_strServerPath = szArguments [i];
+            serverFileRoot->ChangeDirectory( szArguments[i] );
             ucNext = 0;
             break;
         }

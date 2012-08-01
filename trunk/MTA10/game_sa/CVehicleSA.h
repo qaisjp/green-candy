@@ -168,7 +168,7 @@ public:
     void*                   m_vtbl;         // 0
 
     void*                   m_unk2;         // 4
-    BYTE                    m_pad[12];      // 8
+    BYTE                    m_pad[8];       // 8
 
     void*                   m_unk;          // 16
 
@@ -263,7 +263,7 @@ public:
     unsigned char           m_unk36;            // 79
     unsigned char           m_unk37;            // 80
 
-    BYTE                    m_pad14[12];        // 80
+    BYTE                    m_pad14[11];        // 81
     unsigned int            m_handlingFlags;    // 92
 
     BYTE                    m_pad4[8];          // 96
@@ -277,6 +277,8 @@ public:
     
     unsigned char           m_unk26;            // 148
     unsigned char           m_unk27;            // 149
+
+    BYTE                    m_padlast[2];       // 150
 };
 
 #define MAX_UPGRADES_ATTACHED       14
@@ -491,11 +493,11 @@ public:
     float                       m_brakePedal;                           // 1184, 0...1
 
     unsigned char               m_createdBy;                            // 1188, Contains information on whether this vehicle can be deleted 
-    unsigned short              m_extendedRemovalRange;                 // 1189
+    unsigned char               m_extendedRemovalRange;                 // 1189
 
     unsigned char               m_bombOnBoard : 3;                      // 1190, 0 = None. 1 = Timed. 2 = On ignition, 3 = remotely set ? 4 = Timed Bomb has been activated. 5 = On ignition has been activated.
-    unsigned char               m_overrideLights  : 2;                  // uses enum NO_CAR_LIGHT_OVERRIDE, FORCE_CAR_LIGHTS_OFF, FORCE_CAR_LIGHTS_ON
-    unsigned char               m_winchType: 3;                         // Does this vehicle use a winch?
+    unsigned char               m_overrideLights : 2;                   // uses enum NO_CAR_LIGHT_OVERRIDE, FORCE_CAR_LIGHTS_OFF, FORCE_CAR_LIGHTS_ON
+    unsigned char               m_winchType : 3;                        // Does this vehicle use a winch?
 
     unsigned char               m_gunsCycleIndex : 2;                   // 1191, Cycle through alternate gun hardpoints on planes/helis
     unsigned char               m_ordnanceCycleIndex : 6;               // Cycle through alternate ordnance hardpoints on planes/helis

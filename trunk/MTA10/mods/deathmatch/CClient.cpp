@@ -93,41 +93,40 @@ int CClient::ClientInitialize ( const char* szArguments, CCoreInterface* pCore )
 #ifdef MTA_DEBUG
     g_pCore->GetCommands ()->Add ( "showsync",          "show sync data",                                   COMMAND_ShowSyncData );
     //g_pCore->GetCommands ()->Add ( "dumpall",           "dump internals (comment)",                           COMMAND_DumpPlayers );
+
+    g_pCore->GetCommands ()->Add ( "foo",      "debug command for devs", COMMAND_Foo );
 #endif
-    #ifdef MTA_DEBUG
-        g_pCore->GetCommands ()->Add ( "foo",      "debug command for devs", COMMAND_Foo );
-    #endif
 
     // Debug commands
-    #if defined (MTA_DEBUG) || defined(MTA_BETA)
-        g_pCore->GetCommands ()->Add ( "showsyncing",       "shows syncing information",                        COMMAND_ShowSyncing );
-        g_pCore->GetCommands ()->Add ( "fakelag",           "enables fake lag",                                 COMMAND_FakeLag );
-    #endif
-
-#ifdef MTA_WEPSYNCDBG
-        pCore->GetCommands ()->Add ( "showwepdata",         "shows the given player weapon data (nick)",        COMMAND_ShowWepdata );
+#if defined (MTA_DEBUG) || defined(MTA_BETA)
+    g_pCore->GetCommands ()->Add ( "showsyncing",       "shows syncing information",                        COMMAND_ShowSyncing );
+    g_pCore->GetCommands ()->Add ( "fakelag",           "enables fake lag",                                 COMMAND_FakeLag );
 #endif
 
-    #if defined (MTA_DEBUG) || defined (MTA_DEBUG_COMMANDS)
-        pCore->GetCommands ()->Add ( "showwepdata",         "shows the given player weapon data (nick)",        COMMAND_ShowWepdata );
-        pCore->GetCommands ()->Add ( "showtasks",           "shows the local player tasks (nick)",              COMMAND_ShowTasks );
-        pCore->GetCommands ()->Add ( "showplayer",          "shows extended player information (nick)",         COMMAND_ShowPlayer );
-        pCore->GetCommands ()->Add ( "setmimic",            "enables player mimics (amount)",                   COMMAND_SetMimic );
-        pCore->GetCommands ()->Add ( "setmimiclag",         "enables player mimic lag (amount)",                COMMAND_SetMimicLag );
-        pCore->GetCommands ()->Add ( "paintballs",          "enables paintball mode",                           COMMAND_Paintballs );
-        pCore->GetCommands ()->Add ( "breakpoint",          "inserts breakpoint",                               COMMAND_Breakpoint );
-        pCore->GetCommands ()->Add ( "giveweapon",          "gives the player a weapon (id)",                   COMMAND_GiveWeapon );
-        pCore->GetCommands ()->Add ( "showrpcs",            "shows the remote prodecure calls",                 COMMAND_ShowRPCs );
-        pCore->GetCommands ()->Add ( "showinterpolation",   "shows information about the interpolation",        COMMAND_ShowInterpolation );
-        
-        pCore->GetCommands ()->Add ( "watch",               "enables wpm watch mode",                           COMMAND_Watch );
-        pCore->GetCommands ()->Add ( "modules",             "enables wpm module",                               COMMAND_Modules );
+#ifdef MTA_WEPSYNCDBG
+    pCore->GetCommands ()->Add ( "showwepdata",         "shows the given player weapon data (nick)",        COMMAND_ShowWepdata );
+#endif
 
-        pCore->GetCommands ()->Add ( "debug",               "debug function 1",                                 COMMAND_Debug );
-        pCore->GetCommands ()->Add ( "debug2",              "debug function 2",                                 COMMAND_Debug2 );
-        pCore->GetCommands ()->Add ( "debug3",              "debug function 3",                                 COMMAND_Debug3 );
-        pCore->GetCommands ()->Add ( "debug4",              "debug function 4",                                 COMMAND_Debug4 );
-    #endif
+#if defined (MTA_DEBUG) || defined (MTA_DEBUG_COMMANDS)
+    pCore->GetCommands ()->Add ( "showwepdata",         "shows the given player weapon data (nick)",        COMMAND_ShowWepdata );
+    pCore->GetCommands ()->Add ( "showtasks",           "shows the local player tasks (nick)",              COMMAND_ShowTasks );
+    pCore->GetCommands ()->Add ( "showplayer",          "shows extended player information (nick)",         COMMAND_ShowPlayer );
+    pCore->GetCommands ()->Add ( "setmimic",            "enables player mimics (amount)",                   COMMAND_SetMimic );
+    pCore->GetCommands ()->Add ( "setmimiclag",         "enables player mimic lag (amount)",                COMMAND_SetMimicLag );
+    pCore->GetCommands ()->Add ( "paintballs",          "enables paintball mode",                           COMMAND_Paintballs );
+    pCore->GetCommands ()->Add ( "breakpoint",          "inserts breakpoint",                               COMMAND_Breakpoint );
+    pCore->GetCommands ()->Add ( "giveweapon",          "gives the player a weapon (id)",                   COMMAND_GiveWeapon );
+    pCore->GetCommands ()->Add ( "showrpcs",            "shows the remote prodecure calls",                 COMMAND_ShowRPCs );
+    pCore->GetCommands ()->Add ( "showinterpolation",   "shows information about the interpolation",        COMMAND_ShowInterpolation );
+    
+    pCore->GetCommands ()->Add ( "watch",               "enables wpm watch mode",                           COMMAND_Watch );
+    pCore->GetCommands ()->Add ( "modules",             "enables wpm module",                               COMMAND_Modules );
+
+    pCore->GetCommands ()->Add ( "debug",               "debug function 1",                                 COMMAND_Debug );
+    pCore->GetCommands ()->Add ( "debug2",              "debug function 2",                                 COMMAND_Debug2 );
+    pCore->GetCommands ()->Add ( "debug3",              "debug function 3",                                 COMMAND_Debug3 );
+    pCore->GetCommands ()->Add ( "debug4",              "debug function 4",                                 COMMAND_Debug4 );
+#endif
 
     // Got any arguments?
     if ( szArguments && strlen ( szArguments ) > 0 )
@@ -142,7 +141,9 @@ int CClient::ClientInitialize ( const char* szArguments, CCoreInterface* pCore )
             g_pClientGame->StartPlayback ();
             g_pClientGame->StartGame ( "Playback", NULL );
 
-        } else {
+        }
+        else
+        {
             // Parse the arguments (format <nick> <[pass]>)
             char* szTemp = new char [ strlen ( szArguments ) + 1 ];
             strcpy ( szTemp, szArguments );

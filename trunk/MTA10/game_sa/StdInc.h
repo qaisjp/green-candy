@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-#include <game/RenderWare_shared.h>
+#include <RenderWare_shared.h>
 #include <CQuat.h>
 
 // SDK includes

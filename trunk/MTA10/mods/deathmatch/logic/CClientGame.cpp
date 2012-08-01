@@ -871,7 +871,7 @@ void CClientGame::DoPulses ( void )
                 NetBitStreamInterface* pBitStream = g_pNet->AllocateNetBitStream ();
                 pBitStream->Write ( uiLevel );
                 pBitStream->WriteString ( strMessageCombo );
-                g_pNet->SendPacket ( PACKET_ID_PLAYER_TRANSGRESSION, pBitStream );
+                g_pNet->SendPacket ( PACKET_ID_PLAYER_TRANSGRESSION, pBitStream, PACKET_PRIORITY_HIGH, PACKET_RELIABILITY_UNRELIABLE );
                 g_pNet->DeallocateNetBitStream ( pBitStream );
             }
             else
@@ -896,7 +896,7 @@ void CClientGame::DoPulses ( void )
             m_strLastDiagnosticStatus = strMessage;
             NetBitStreamInterface* pBitStream = g_pNet->AllocateNetBitStream ();
             pBitStream->WriteString ( strMessage );
-            g_pNet->SendPacket ( PACKET_ID_PLAYER_DIAGNOSTIC, pBitStream );
+            g_pNet->SendPacket ( PACKET_ID_PLAYER_DIAGNOSTIC, pBitStream, PACKET_PRIORITY_HIGH, PACKET_RELIABILITY_RELIABLE );
             g_pNet->DeallocateNetBitStream ( pBitStream );
         }
     }
@@ -1071,9 +1071,6 @@ void CClientGame::DoPulses ( void )
                 SString strError;
                 switch ( ucError )
                 {
-                case RID_RSA_PUBLIC_KEY_MISMATCH:
-                    strError = "Disconnected: unknown protocol error.";  // encryption key mismatch
-                    break;
                 case RID_REMOTE_DISCONNECTION_NOTIFICATION:
                     strError = "Disconnected: disconnected remotely.";
                     break;

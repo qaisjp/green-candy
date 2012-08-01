@@ -28,7 +28,6 @@ class CGame;
 
 #include <net/CNetServer.h>
 #include "CClient.h"
-#include "CEvents.h"
 #include "CCommandLineParser.h"
 #include "CConnectHistory.h"
 #include "CElementDeleter.h"

@@ -19,8 +19,6 @@ class CLuaManager;
 #ifndef __CLUAMANAGER_H
 #define __CLUAMANAGER_H
 
-#include <list>
-#include "../CEvents.h"
 #include "CLuaMain.h"
 #include "CLuaCFunctions.h"
 

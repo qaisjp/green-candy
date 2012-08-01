@@ -84,7 +84,7 @@ CClientPed::CClientPed( CClientManager* pManager, unsigned long ulModelID, Eleme
     pManager->GetPedManager()->AddToList( this );
 }
 
-CClientPed::CClientPed( CClientManager* pManager, unsigned long ulModelID, ElementID ID, LuaClass& root, bool system, bool bIsLocalPlayer ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, root, system ), CAntiCheatModule( pManager->GetAntiCheat() )
+CClientPed::CClientPed( CClientManager* pManager, unsigned short ulModelID, ElementID ID, LuaClass& root, bool system, bool bIsLocalPlayer ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, root, system ), CAntiCheatModule( pManager->GetAntiCheat() )
 {
     InstanceLua( system );
 
@@ -95,7 +95,7 @@ CClientPed::CClientPed( CClientManager* pManager, unsigned long ulModelID, Eleme
     pManager->GetPedManager ()->AddToList ( this );
 }
 
-void CClientPed::Init ( CClientManager* pManager, unsigned long ulModelID, bool bIsLocalPlayer )
+void CClientPed::Init ( CClientManager* pManager, unsigned short ulModelID, bool bIsLocalPlayer )
 {
     CClientEntityRefManager::AddEntityRefs ( ENTITY_REF_DEBUG ( this, "CClientPed" ), &m_pOccupiedVehicle, &m_pOccupyingVehicle, &m_pTargetedEntity, &m_pCurrentContactEntity, &m_pBulletImpactEntity, &m_interp.pTargetOriginSource, NULL );
 
@@ -903,7 +903,7 @@ void CClientPed::SetTargetTarget ( unsigned long ulDelay, const CVector& vecSour
 }
 
 
-bool CClientPed::SetModel ( unsigned long ulModel )
+bool CClientPed::SetModel ( unsigned short ulModel )
 {
     // Valid model?
     if ( CClientPlayerManager::IsValidModel ( ulModel ) )

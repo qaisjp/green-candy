@@ -69,15 +69,13 @@ public:
 
     inline void Destroy()
     {
-        PushStack( m_lua );
-
         // Prevent .lua referencing
-        ILuaClass& j = *lua_refclass( m_lua, lua_gettop( m_lua ) );
-        j.ClearReferences( m_lua );
+        m_class->ClearReferences( m_lua );
 
-        j.PushMethod( m_lua, "destroy" );
+        m_class->PushMethod( m_lua, "destroy" );
         lua_call( m_lua, 0, 0 );
-        lua_pop( m_lua, 1 );
+
+        // At this point the class may be destroyed; do not use it anymore!
     }
 
 protected:

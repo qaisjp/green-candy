@@ -143,7 +143,8 @@ void CAudioSA::PlayFrontEndSound( unsigned short sound )
         {
             push    fUnknown
             push    0
-            push    sound
+            movzx   eax,sound
+            push    eax
             mov     ecx, CLASS_CAudioEngine
             call    dwFunc
         }

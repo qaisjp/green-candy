@@ -41,7 +41,7 @@ public:
     CClientObject*                          Get                         ( CObject* pObject, bool bValidatePointer );
     CClientObject*                          GetSafe                     ( CEntity * pEntity );
 
-    static bool                             IsValidModel                ( unsigned long ulObjectModel );
+    static bool                             IsValidModel                ( unsigned short ulObjectModel );
     static bool                             IsBreakableModel            ( unsigned long ulObjectModel );
     bool                                    Exists                      ( CClientObject* pObject );
     bool                                    ObjectsAroundPointLoaded    ( const CVector& vecPosition, float fRadius, unsigned short usDimension, SString* pstrStatus = NULL );

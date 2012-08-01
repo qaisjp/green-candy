@@ -311,7 +311,7 @@ void CClientPlayerClothes::AddAllToModel ( void )
     {
         CPlayerPed* pPlayerPed = m_pPlayerModel->GetGamePlayer ();
         if ( pPlayerPed )
-        {         
+        {
             for ( unsigned char ucType = 0 ; ucType < PLAYER_CLOTHING_SLOTS ; ucType++ )
             {
                 SPlayerClothing* pPrevious = m_GlobalClothes [ ucType ];

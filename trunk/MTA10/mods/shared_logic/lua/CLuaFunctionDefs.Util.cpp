@@ -300,17 +300,15 @@ namespace CLuaFunctionDefs
         if ( g_pNet->GetNetworkStatistics ( &stats ) )
         {
             uint uiNumMessagesInSendBuffer = 0;
-            for ( int i = 0; i < PACKET_PRIORITY_COUNT; ++i )
-                uiNumMessagesInSendBuffer += stats.messageInSendBuffer[i];
 
             lua_createtable ( L, 0, 11 );
 
             lua_pushstring ( L, "bytesReceived" );
-            lua_pushnumber ( L, static_cast < double > ( stats.runningTotal [ NS_ACTUAL_BYTES_RECEIVED ] ) );
+            lua_pushnumber ( L, static_cast < double > ( 0 ) );
             lua_settable   ( L, -3 );
 
             lua_pushstring ( L, "bytesSent" );
-            lua_pushnumber ( L, static_cast < double > ( stats.runningTotal [ NS_ACTUAL_BYTES_SENT ] ) );
+            lua_pushnumber ( L, static_cast < double > ( 0 ) );
             lua_settable   ( L, -3 );
 
             lua_pushstring ( L, "packetsReceived" );

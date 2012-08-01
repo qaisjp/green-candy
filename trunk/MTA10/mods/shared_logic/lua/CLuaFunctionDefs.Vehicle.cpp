@@ -33,7 +33,7 @@ namespace CLuaFunctionDefs
         }
         else if ( lua_isnumber( L, 1 ) )
         {
-            ucModel = lua_tonumber( L, 1 );
+            ucModel = (unsigned short)lua_tonumber( L, 1 );
         }
         else
             m_pScriptDebugging->LogBadType( "getVehicleType" );
@@ -1189,7 +1189,7 @@ namespace CLuaFunctionDefs
                 }
             }
 
-            lua_pushboolean( L, CStaticFunctionDefinitions::AddVehicleUpgrade( *entity, lua_tonumber( L, 2 ) ) );
+            lua_pushboolean( L, CStaticFunctionDefinitions::AddVehicleUpgrade( *entity, (unsigned short)lua_tonumber( L, 2 ) ) );
             return 1;
         }
         else

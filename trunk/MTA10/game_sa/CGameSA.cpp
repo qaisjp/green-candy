@@ -81,6 +81,7 @@ CGameSA::CGameSA()
     }
 
     DEBUG_TRACE("CGameSA::CGameSA()");
+    m_pStreaming                = new CStreamingSA;
     m_pAudio                    = new CAudioSA();
     m_pWorld                    = new CWorldSA();
     m_pPools                    = new CPoolsSA();
@@ -95,6 +96,7 @@ CGameSA::CGameSA()
     m_pFireManager              = new CFireManagerSA();
     m_p3DMarkers                = new C3DMarkersSA();
     m_pPad                      = new CPadSA((CPadSAInterface *)CLASS_CPad);
+    m_pPadManager               = new CPadManagerSA();
     m_pTheCarGenerators         = new CTheCarGeneratorsSA();
     m_pCAERadioTrackManager     = new CAERadioTrackManagerSA();
     m_pWeather                  = new CWeatherSA();
@@ -118,7 +120,6 @@ CGameSA::CGameSA()
     m_pGarages                  = new CGaragesSA ( (CGaragesSAInterface *)CLASS_CGarages );
     m_pTasks                    = new CTasksSA ( (CTaskManagementSystemSA*)m_pTaskManagementSystem );
     m_pAnimManager              = new CAnimManagerSA;
-    m_pStreaming                = new CStreamingSA;
     m_pVisibilityPlugins        = new CVisibilityPluginsSA;
     m_pKeyGen                   = new CKeyGenSA;
     m_pRopes                    = new CRopesSA;
@@ -185,7 +186,6 @@ CGameSA::~CGameSA()
     delete m_pRopes;
     delete m_pKeyGen;
     delete m_pVisibilityPlugins;
-    delete m_pStreaming;
     delete m_pAnimManager;
     delete m_pTasks;
     delete m_pTextureManager;
@@ -202,6 +202,7 @@ CGameSA::~CGameSA()
     delete m_pWeather;
     delete m_pCAERadioTrackManager;
     delete m_pTheCarGenerators;
+    delete m_pPadManager;
     delete m_pPad;
     delete m_p3DMarkers;
     delete m_pFireManager;
@@ -216,6 +217,7 @@ CGameSA::~CGameSA()
     delete m_pPools;
     delete m_pWorld;
     delete m_pAudio;
+    delete m_pStreaming;
 
     // Dump any memory leaks if DETECT_LEAKS is defined
 #ifdef DETECT_LEAKS    
@@ -322,7 +324,12 @@ bool CGameSA::InitLocalPlayer()
 {
     DEBUG_TRACE("bool CGameSA::InitLocalPlayer()");
 
-    return GetPools()->GetPedFromRef( 1 ) != NULL;
+    if ( mtaPeds[1] )
+        return true;
+
+    new CPlayerPedSA( (CPlayerPedSAInterface*)(*ppPedPool)->Get( 1 ), 0, true );
+
+    return true;
 }
 
 float CGameSA::GetGravity()
@@ -433,11 +440,14 @@ void CGameSA::OnFrame()
     switch( GetSystemState() )
     {
     case GS_PLAYING_GAME:
-        // Update local player's control
-        GetPadManager()->UpdateLocalJoypad( *m_pPlayerInfo->GetPlayerPed() );
+        if ( CPlayerPedSA *player = m_pPlayerInfo->GetPlayerPed() )
+        {
+            // Update local player's control
+            GetPadManager()->UpdateLocalJoypad( *player );
 
-        // Frame the player's activity
-        m_pPlayerInfo->GetPlayerPed()->OnFrame();
+            // Frame the player's activity
+            player->OnFrame();
+        }
 
         // Pulse the peds
         unsigned int n;
@@ -657,6 +667,7 @@ bool CGameSA::IsASyncLoadingEnabled ( bool bIgnoreSuspend )
 
 void CGameSA::SetupSpecialCharacters ( void )
 {
+#if 0
     ModelInfo[1].MakePedModel ( "TRUTH" );
     ModelInfo[2].MakePedModel ( "MACCER" );
     //ModelInfo[190].MakePedModel ( "BARBARA" );
@@ -703,6 +714,7 @@ void CGameSA::SetupSpecialCharacters ( void )
     ModelInfo[316].MakePedModel ( "COPGRL2" );
     ModelInfo[317].MakePedModel ( "NURGRL2" );
     */
+#endif
 }
 
 // Well, has it?

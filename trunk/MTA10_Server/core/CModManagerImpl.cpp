@@ -77,7 +77,7 @@ bool CModManagerImpl::Load( const char *szModName, int iArgumentCount, char* szA
     }
 
     // Set mod file root
-    m_modFileRoot = m_pServer->GetFileSystem()->CreateTranslator( path.c_str() );
+    m_modRoot = m_pServer->GetFileSystem()->CreateTranslator( path.c_str() );
 
     // Grab the initialization procedure
     InitServer* pfnInitServer = (InitServer*)m_Library.GetProcedureAddress( "InitServer" );

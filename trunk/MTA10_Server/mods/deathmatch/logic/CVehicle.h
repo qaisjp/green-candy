@@ -21,8 +21,8 @@ class CVehicle;
 #include "CCommon.h"
 #include "packets/CPacket.h"
 #include "CElement.h"
-#include "CEvents.h"
 #include "CVehicleUpgrades.h"
+#include "CHandlingEntry.h"
 
 #define MAX_VEHICLE_SEATS 9
 #define DEFAULT_VEHICLE_HEALTH 1000
@@ -97,6 +97,21 @@ enum eLights
     LEFT_TAIL_LIGHT,
     RIGHT_TAIL_LIGHT,
     MAX_LIGHTS
+};
+
+enum eVehicleType
+{
+    VEHICLE_NONE = 0,
+    VEHICLE_CAR,
+    VEHICLE_BOAT,
+    VEHICLE_TRAIN,
+    VEHICLE_HELI,
+    VEHICLE_PLANE,
+    VEHICLE_BIKE,
+    VEHICLE_MONSTERTRUCK,
+    VEHICLE_QUADBIKE,
+    VEHICLE_BMX,
+    VEHICLE_TRAILER
 };
 
 class CVehicle : public CElement

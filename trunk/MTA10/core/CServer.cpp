@@ -39,7 +39,7 @@ char* szServerErrors[4] =
     "Error loading mod"
 };
 
-CServer::CServer()
+CServer::CServer( const filePath& mtaRoot )
 {
     // Initialize
     m_ready = false;
@@ -48,8 +48,7 @@ CServer::CServer()
     m_lastError = ERROR_NO_ERROR;
 
     // Create the server root translator
-    filePath rootPath;
-    fileRoot->GetFullPath( "/server/", false, rootPath );
+    filePath rootPath = mtaRoot + "server/";
 
     m_serverRoot = g_pCore->GetFileSystem()->CreateTranslator( rootPath.c_str() );
 }

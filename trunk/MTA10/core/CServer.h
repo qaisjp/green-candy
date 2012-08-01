@@ -18,7 +18,7 @@
 class CServer : public CServerInterface
 {
 public:
-                                CServer();
+                                CServer( const filePath& mtaRoot );
                                 ~CServer();
 
     void                        DoPulse();

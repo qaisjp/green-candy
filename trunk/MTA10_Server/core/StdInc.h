@@ -9,8 +9,15 @@
 *
 *****************************************************************************/
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+#include "SharedUtil.h"
+#include <sstream>
+#include <vector>
+
 #include <core/Common.h>
 
 #include "MTAPlatform.h"
-#include "SharedUtil.h"
 #include "../version.h"

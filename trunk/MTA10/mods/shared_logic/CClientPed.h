@@ -187,7 +187,7 @@ public:
     inline void                 SetVehicleInOutState( int iState )                          { m_iVehicleInOutState = iState; };
 
     inline unsigned short       GetModel()                                                  { return m_ulModel; };
-    bool                        SetModel( unsigned long ulModel );
+    bool                        SetModel( unsigned short ulModel );
 
     bool                        GetCanBeKnockedOffBike();
     void                        SetCanBeKnockedOffBike( bool bCanBeKnockedOffBike );
@@ -419,10 +419,10 @@ public:
 
 protected:
     // This constructor is for peds managed by a player. These are unknown to the ped manager.
-                                CClientPed( CClientManager* pManager, unsigned long ulModelID, ElementID ID, LuaClass& root, bool system, bool bIsLocalPlayer );
+                                CClientPed( CClientManager* pManager, unsigned short ulModelID, ElementID ID, LuaClass& root, bool system, bool bIsLocalPlayer );
 
     void                        InstanceLua( bool system );
-    void                        Init( CClientManager* pManager, unsigned long ulModelID, bool bIsLocalPlayer );
+    void                        Init( CClientManager* pManager, unsigned short ulModelID, bool bIsLocalPlayer );
 
     void                        Dump( FILE* pFile, bool bDumpDetails, unsigned int uiIndex );
     void                        StreamedInPulse();

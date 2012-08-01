@@ -63,21 +63,8 @@ public:
         m_strFunctionName = strFunctionName;
         m_bHTTPAccess = bHTTPAccess;
         m_bRestricted = bRestricted;
-        size_t leng = access.length ();
-        char szResourceName[MAX_RESOURCE_NAME_LENGTH] = {'\0'};
-        size_t s = 0;
 
-        for ( size_t i = 0; i < leng; i++ )
-        {
-            if ( access[i] != ',' )
-                szResourceName[s] = access[i];
-            else if ( strlen(szResourceName) != 0 )
-            {
-                m_accessList.push_back ( szResourceName );
-                szResourceName[0] = '\0';
-                s = 0;
-            }
-        }   
+        CommandlineTools::strsplit( access.c_str(), m_accessList, ',' );
     }
 
     inline eExportedFunctionType    GetType ( void ) { return m_ucType; }

@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../dependencies/mxml/include;../sdk;../../Shared;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
+				AdditionalIncludeDirectories="../dependencies/mxml/include;../sdk;../../Shared;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows;../../vendor/zlib/"
 				PreprocessorDefinitions="WIN32;_DEBUG;MTA_DEBUG;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				BasicRuntimeChecks="3"
@@ -74,11 +74,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib Imagehlp.lib Winmm.lib dbghelp.lib"
+				AdditionalDependencies="wsock32.lib Imagehlp.lib Winmm.lib dbghelp.lib zlibd_2008.lib"
 				OutputFile="C:\Program Files\MTA San Andreas 1.2\server\core_d.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../dependencies"
+				AdditionalLibraryDirectories="../dependencies;../../vendor/zlib/lib"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/core_d.pdb"
@@ -145,7 +145,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../dependencies/mxml/include;../sdk;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
+				AdditionalIncludeDirectories="../dependencies/mxml/include;../sdk;../../Shared;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows;../../vendor/zlib/"
 				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;WIN32;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -173,11 +173,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib Imagehlp.lib Winmm.lib dbghelp.lib"
+				AdditionalDependencies="wsock32.lib Imagehlp.lib Winmm.lib dbghelp.lib zlib_2008.lib"
 				OutputFile="C:\Program Files\MTA San Andreas 1.2\server\core.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../dependencies"
+				AdditionalLibraryDirectories="../dependencies;../../vendor/zlib/lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
 				GenerateMapFile="true"
@@ -248,7 +248,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../dependencies/mxml/include;../sdk;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
+				AdditionalIncludeDirectories="../dependencies/mxml/include;../sdk;../../Shared;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows;../../vendor/zlib/"
 				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;WIN32;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -280,7 +280,7 @@
 				OutputFile="..\..\output\MTA San Andreas\server\core.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../dependencies"
+				AdditionalLibraryDirectories="../dependencies;../../vendor/zlib/lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
 				GenerateMapFile="true"
@@ -330,10 +330,6 @@
 			</File>
 			<File
 				RelativePath=".\CCrashHandlerAPI.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CDynamicLibrary.cpp"
 				>
 			</File>
 			<File
@@ -408,7 +404,15 @@
 				Name="shared"
 				>
 				<File
+					RelativePath="..\..\Shared\core\CDynamicLibrary.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Shared\core\CFileSystem.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Shared\core\CFileSystem.zip.cpp"
 					>
 				</File>
 			</Filter>
@@ -423,10 +427,6 @@
 			</File>
 			<File
 				RelativePath=".\CCrashHandlerAPI.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CDynamicLibrary.h"
 				>
 			</File>
 			<File
@@ -577,7 +577,19 @@
 				Name="core"
 				>
 				<File
+					RelativePath="..\..\Shared\core\CDynamicLibrary.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Shared\core\CFileSystem.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Shared\core\CFileSystem.Utils.hxx"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Shared\core\CFileSystem.zip.h"
 					>
 				</File>
 				<File
