@@ -107,10 +107,14 @@ CServerIdManagerImpl::CServerIdManagerImpl()
 
     // Calc private dir root
     modFileRoot->GetFullPath( "/priv/", false, path );
+    CreateDirectory( path.c_str(), NULL );
+
     m_privateRoot = g_pCore->GetFileSystem()->CreateTranslator( path.c_str() );
 
     // Calc temp dir path incase of server id error
     path += "_error/";
+    CreateDirectory( path.c_str(), NULL );
+
     m_errorRoot = g_pCore->GetFileSystem()->CreateTranslator( path.c_str() );
 
     // If temp dir has been used, clean it
@@ -301,7 +305,11 @@ filePath CServerIdManagerImpl::GetConnectionPrivateDirectory()
 
     // Otherwise fetch the server unique dir
     const CServerIdInfo& info = GetServerIdInfo( strServerId );
-    m_privateRoot->GetFullPathFromRoot( info.strDir, false, path );
+
+    std::string idPath = info.strDir;
+    idPath += '/';
+
+    m_privateRoot->GetFullPathFromRoot( idPath.c_str(), false, path );
     return path;
 }
 

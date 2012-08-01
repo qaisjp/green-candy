@@ -87,12 +87,6 @@ void CLuaMain::InitVM( int structure, int meta )
     g_pClientGame->GetRootEntity()->PushStack( m_lua );
     lua_setglobal( m_lua, "root" );
 
-    GetResource()->GetResourceEntity()->PushStack( m_lua );
-    lua_setglobal( m_lua, "resourceRoot" );
-
-    GetResource()->GetResourceGUIEntity()->PushStack( m_lua );
-    lua_setglobal( m_lua, "guiRoot" );
-
     g_pClientGame->GetLocalPlayer()->PushStack( m_lua );
     lua_setglobal( m_lua, "localPlayer" );
 
