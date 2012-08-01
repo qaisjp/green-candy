@@ -42,6 +42,15 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
     m_dffEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot", *m_dynamicEntity, true );
     m_txdEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot", *m_dynamicEntity, true );
 
+    lua_State *L = *m_lua;
+
+    // Setup lua globals
+    entity->PushStack( L );
+    lua_setglobal( L, "resourceRoot" );
+
+    m_guiEntity->PushStack( L );
+    lua_setglobal( L, "guiRoot" );
+
     // Set up our private path
     filePath privPath;
     ResourceManager::resFileRoot->GetFullPath( CServerIdManager::GetSingleton()->GetConnectionPrivateDirectory() + name, false, privPath );

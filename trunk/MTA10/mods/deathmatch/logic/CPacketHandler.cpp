@@ -2424,9 +2424,6 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
         unsigned short usDimension;
         bool bCollisonsEnabled;
 
-        if ( EntityIndex == 48 )
-            __asm nop
-
         if ( bitStream.Read ( EntityID ) &&
              bitStream.Read ( ucEntityTypeID ) &&
              bitStream.Read ( ParentID ) &&
@@ -4326,7 +4323,7 @@ void CPacketHandler::Packet_ResourceStart ( NetBitStreamInterface& bitStream )
                             if ( !pDownloadableResource->DoesClientAndServerChecksumMatch () )
                             {
                                 // Combine the HTTP Download URL, the Resource Name and the Resource File
-                                SString strHTTPDownloadURLFull ( "%s/%s/%s", g_pClientGame->m_strHTTPDownloadURL.c_str (), pResource->GetName (), pDownloadableResource->GetShortName () );
+                                SString strHTTPDownloadURLFull ( "%s/%s/%s", g_pClientGame->m_strHTTPDownloadURL.c_str (), pResource->GetName ().c_str(), pDownloadableResource->GetShortName () );
 
                                 // Delete the file that already exists
                                 unlink ( pDownloadableResource->GetName () );
