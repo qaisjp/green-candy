@@ -1582,7 +1582,7 @@ struct SMapInfoFlagsSync : public ISyncStructure
 //////////////////////////////////////////
 struct SFunBugsStateSync : public ISyncStructure
 {
-    enum { BITCOUNT = 5 };
+    enum { BITCOUNT = 4 };
 
     bool Read ( NetBitStreamInterface& bitStream )
     {

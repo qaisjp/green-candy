@@ -91,7 +91,7 @@ public:
     virtual bool                            IsLoaded() const = 0;
     virtual unsigned char                   GetFlags() const = 0;
     virtual const CBoundingBox&             GetBoundingBox() const = 0;
-    virtual bool                            IsValid() const = 0;
+    virtual bool                            IsValid() = 0;
     virtual float                           GetDistanceFromCentreOfMassToBaseOfModel() const = 0;
     virtual unsigned short                  GetTextureDictionaryID() const = 0;
     virtual void                            SetTextureDictionaryID( unsigned short usID ) = 0;

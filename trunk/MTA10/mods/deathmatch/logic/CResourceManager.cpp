@@ -30,6 +30,8 @@ CResourceManager::CResourceManager() : ResourceManager( g_pClientGame->GetLuaMan
 
     // The one and only resource manager!
     resMan = this;
+
+    LuaManager::m_resMan = this;
 }
 
 CResourceManager::~CResourceManager()

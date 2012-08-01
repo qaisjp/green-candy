@@ -2424,6 +2424,9 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
         unsigned short usDimension;
         bool bCollisonsEnabled;
 
+        if ( EntityIndex == 48 )
+            __asm nop
+
         if ( bitStream.Read ( EntityID ) &&
              bitStream.Read ( ucEntityTypeID ) &&
              bitStream.Read ( ParentID ) &&

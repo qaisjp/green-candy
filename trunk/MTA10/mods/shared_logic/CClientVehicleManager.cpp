@@ -199,14 +199,19 @@ eClientVehicleType CClientVehicleManager::GetVehicleType ( unsigned short ulMode
     if ( pModelInfo )
     {
         // Return the appropriate type
-        if ( pModelInfo->IsCar () ) return CLIENTVEHICLE_CAR;
-        if ( pModelInfo->IsBike () ) return CLIENTVEHICLE_BIKE;
-        if ( pModelInfo->IsPlane () ) return CLIENTVEHICLE_PLANE;
-        if ( pModelInfo->IsHeli () ) return CLIENTVEHICLE_HELI;
-        if ( pModelInfo->IsBoat () ) return CLIENTVEHICLE_BOAT;
-        if ( pModelInfo->IsBmx () ) return CLIENTVEHICLE_BMX;
-        if ( pModelInfo->IsTrailer () ) return CLIENTVEHICLE_TRAILER;
-        if ( pModelInfo->IsTrain () ) return CLIENTVEHICLE_TRAIN;
+        switch( pModelInfo->GetVehicleType() )
+        {
+        case VEHICLE_CAR:                   return CLIENTVEHICLE_CAR;
+        case VEHICLE_PLANE:                 return CLIENTVEHICLE_PLANE;
+        case VEHICLE_HELI:                  return CLIENTVEHICLE_HELI;
+        case VEHICLE_AUTOMOBILETRAILER:     return CLIENTVEHICLE_TRAILER;
+        case VEHICLE_QUADBIKE:              return CLIENTVEHICLE_QUADBIKE;
+        case VEHICLE_MONSTERTRUCK:          return CLIENTVEHICLE_MONSTERTRUCK;
+        case VEHICLE_BOAT:                  return CLIENTVEHICLE_BOAT;
+        case VEHICLE_BICYCLE:               return CLIENTVEHICLE_BMX;
+        case VEHICLE_BIKE:                  return CLIENTVEHICLE_BIKE;
+        case VEHICLE_TRAIN:                 return CLIENTVEHICLE_TRAIN;
+        }
     }
 
     // Invalid vehicle id or some other error

@@ -80,7 +80,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="DbgHelp.lib zlibd_2008.lib psapi.lib Shlwapi.lib"
-				OutputFile="D:/Program Files/MTA San Andreas 1.2/mta/loader_d.dll"
+				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2/mta/loader_d.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../../vendor/zlib/lib"
@@ -182,7 +182,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="DbgHelp.lib zlib_2008.lib psapi.lib Shlwapi.lib"
-				OutputFile="D:\program files\MTA San Andreas 1.2\mta\loader.dll"
+				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mta\loader.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../../vendor/zlib/lib"
