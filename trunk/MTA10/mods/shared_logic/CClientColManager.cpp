@@ -476,9 +476,8 @@ void CClientColManager::DeleteAll ( void )
     vector < CClientColShape * > cloneList = m_List;
     vector < CClientColShape* > ::const_iterator iter = cloneList.begin ();
     for ( ; iter != cloneList.end (); ++iter )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
+
     m_List.clear ();
 }
 

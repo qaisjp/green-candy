@@ -50,6 +50,7 @@ class CClientExplosionManager;
 
 class CClientManager
 {
+    friend class CClientCamera;
 public:
                                         CClientManager              ( void );
                                         ~CClientManager             ( void );

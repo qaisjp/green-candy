@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CResource.cpp
 *  PURPOSE:     Resource object
@@ -9,6 +9,7 @@
 *               Jax <>
 *               Chris McArthur <>
 *               Ed Lyons <eai@opencoding.net>
+*               The_GTA <quiret@gmx.de>
 *               
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -35,6 +36,12 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
     m_resourceEntity = entity;
     m_dynamicEntity = dynamicEntity;
 
+    // Make sure we reference the dependencies!
+    m_resourceEntity->IncrementMethodStack();
+    m_dynamicEntity->IncrementMethodStack();
+
+    lua_State *L = *m_lua;
+
     // Create our root elements. We set their parents when we're loaded.
     // Make them system entities so nothing but us can delete them.
     m_guiEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "guiroot", *m_dynamicEntity, true );
@@ -42,7 +49,11 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
     m_dffEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot", *m_dynamicEntity, true );
     m_txdEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot", *m_dynamicEntity, true );
 
-    lua_State *L = *m_lua;
+    // Reference the entities so nothing can destroy them
+    m_guiEntity->IncrementMethodStack();
+    m_colEntity->IncrementMethodStack();
+    m_dffEntity->IncrementMethodStack();
+    m_txdEntity->IncrementMethodStack();
 
     // Setup lua globals
     entity->PushStack( L );
@@ -60,23 +71,32 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
 
 CResource::~CResource()
 {
+    // Notify the environment that we quit.
+    CLuaArguments args;
+    args.PushUserData( this );
+    m_resourceEntity->CallEvent( "onClientResourceStop", args, true );
+
     // Make sure we don't force the cursor on
     ShowCursor( false );
 
     // Do this before we delete our elements.
     m_rootEntity->CleanUpForVM( (CLuaMain*)&m_lua, true );
-    
-    g_pClientGame->GetLuaManager()->Remove( &m_lua );
 
     // Remove all keybinds on this VM
     g_pClientGame->GetScriptKeyBinds()->RemoveAllKeys( (CLuaMain*)&m_lua );
     g_pCore->GetKeyBinds()->SetAllCommandsActive( m_name.c_str(), false );
 
-    // Destroy all entities
-    g_pClientGame->GetElementDeleter()->DeleteRecursive( m_txdEntity );
-    g_pClientGame->GetElementDeleter()->DeleteRecursive( m_dffEntity );
-    g_pClientGame->GetElementDeleter()->DeleteRecursive( m_colEntity );
-    g_pClientGame->GetElementDeleter()->DeleteRecursive( m_guiEntity );
+    // Destroy all entities, since we do not need them anymore
+    // First flag for deletion, then destroy; otherway round might result in destruction prior to flagging due to other runtimes -> access violation
+    m_txdEntity->Delete(); m_txdEntity->DecrementMethodStack();
+    m_dffEntity->Delete(); m_dffEntity->DecrementMethodStack();
+    m_colEntity->Delete(); m_colEntity->DecrementMethodStack();
+    m_guiEntity->Delete(); m_guiEntity->DecrementMethodStack();
+    m_dynamicEntity->Delete(); m_dynamicEntity->DecrementMethodStack();     // We delete the map root with the resource
+    m_resourceEntity->Delete(); m_resourceEntity->DecrementMethodStack();
+
+    // All script dependencies should be gone by deleting the entities; we can safely terminate the thread!
+    g_pClientGame->GetLuaManager()->Remove( &m_lua );
 
     // Undo all changes to water
     g_pGame->GetWaterManager()->UndoChanges( this );
@@ -172,6 +192,18 @@ bool CResource::CallExportedFunction( const char *name, const CLuaArguments& arg
     return false;
 }
 
+void CResource::SetResourceEntity( CClientEntity *entity )
+{
+    // If there was a previous entity, HACKS
+    // Well, we unreference it so nothing breaks
+    if ( m_resourceEntity )
+        m_resourceEntity->DecrementMethodStack();
+
+    // Reference this important entity so it does not get lost!
+    entity->IncrementMethodStack();
+
+    m_resourceEntity = entity;
+}
 
 //
 // Quick integrity check of png, dff and txd files

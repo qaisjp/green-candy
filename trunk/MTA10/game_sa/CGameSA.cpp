@@ -181,6 +181,7 @@ CGameSA::~CGameSA()
         delete reinterpret_cast < CWeaponInfoSA* > ( WeaponInfos [i] );
     }
 
+    delete m_pPools;    // has to be first to delete using entities
     delete m_pFx;
     delete m_pParticleSystem;
     delete m_pRopes;
@@ -214,7 +215,6 @@ CGameSA::~CGameSA()
     delete m_pCamera;
     delete m_pRadar;
     delete m_pClock;
-    delete m_pPools;
     delete m_pWorld;
     delete m_pAudio;
     delete m_pStreaming;

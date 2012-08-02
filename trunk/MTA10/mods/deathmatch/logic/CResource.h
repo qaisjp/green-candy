@@ -68,7 +68,7 @@ public:
     exports_t::iterator         IterEndExportedFunctions()                          { return m_exports.end(); }
 
     class CClientEntity*        GetResourceEntity()                                 { return m_resourceEntity; }
-    void                        SetResourceEntity( CClientEntity *entity )          { m_resourceEntity = entity; }
+    void                        SetResourceEntity( CClientEntity *entity );
     class CClientEntity*        GetResourceDynamicEntity()                          { return m_dynamicEntity; }
     class CClientEntity*        GetResourceGUIEntity()                              { return m_guiEntity; }
     inline CClientEntity*       GetResourceCOLModelRoot()                           { return m_colEntity; };

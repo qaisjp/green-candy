@@ -35,11 +35,10 @@ void CClientGUIManager::DeleteAll ( void )
     m_bCanRemoveFromList = false;
 
     // Delete all the gui elements
-    list < CClientGUIElement* > ::const_iterator iter = m_Elements.begin ();
+    std::list < CClientGUIElement* > ::const_iterator iter = m_Elements.begin ();
+
     for ( ; iter != m_Elements.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
 
     // Clear the list
     m_Elements.clear ();

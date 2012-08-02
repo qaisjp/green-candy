@@ -114,7 +114,7 @@ CClientSound* CClientSoundManager::PlaySound2D ( const SString& strSound, bool b
         if ( pSound->Play ( strSound, bLoop ) )
             return pSound;
 
-    delete pSound;
+    pSound->Delete();
     return NULL;
 }
 
@@ -135,7 +135,7 @@ CClientSound* CClientSoundManager::PlaySound3D ( const SString& strSound, bool b
             return pSound;
         }
 
-    delete pSound;
+    pSound->Delete();
     return NULL;
 }
 

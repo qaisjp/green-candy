@@ -176,8 +176,8 @@ CBuildingSA::~CBuildingSA()
         return;
     
     CWorldSA *world = pGame->GetWorld();
-    world->RemoveReferencesToDeletedObject( m_pInterface );
     world->Remove( m_pInterface );
+    world->RemoveReferencesToDeletedObject( m_pInterface );
 
     delete m_pInterface;
 }

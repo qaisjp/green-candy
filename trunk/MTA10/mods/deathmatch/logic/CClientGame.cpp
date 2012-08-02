@@ -145,6 +145,8 @@ CClientGame::CClientGame ( bool bLocalPlay )
     m_pScriptDebugging->SetLogfile ( "clientscript.log", 3 );
     m_RegisteredCommands = new CRegisteredCommands( *m_pLuaManager );
 
+    lua_State *L = m_pLuaManager->GetVirtualMachine();
+
     // Startup "entities from root" optimization for getElementsByType
     CClientEntity::StartupEntitiesFromRoot ();
 
@@ -373,6 +375,8 @@ CClientGame::~CClientGame()
     SetCursorEventsEnabled ( false );   
 
     // Destroy our stuff
+    delete m_RegisteredCommands;
+    delete m_pLuaManager;
     delete m_pNametags;
     delete m_pSyncDebug;
     delete m_pNetworkStats;
@@ -386,8 +390,6 @@ CClientGame::~CClientGame()
     m_pBlendedWeather = NULL;
     delete m_pMovingObjectsManager;
     delete m_pRadarMap;
-    delete m_RegisteredCommands;
-    delete m_pLuaManager;
 
     delete m_pZoneNames;
     delete m_pScriptKeyBinds;    
@@ -3210,7 +3212,7 @@ void CClientGame::QuitPlayer ( CClientPlayer* pPlayer, eQuitReason Reason )
     }
 
     // Delete the player
-    delete pPlayer;
+    pPlayer->Delete();
 }
 
 
@@ -4941,5 +4943,5 @@ void CClientGame::InitVoice( bool bEnabled, unsigned int uiServerSampleRate, uns
     if ( m_pVoiceRecorder )
     {
         m_pVoiceRecorder -> Init ( bEnabled, uiServerSampleRate, ucQuality, uiBitrate );
-    }
+	}
 }

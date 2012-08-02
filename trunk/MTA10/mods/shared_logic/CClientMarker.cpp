@@ -83,7 +83,8 @@ CClientMarker::~CClientMarker ( void )
     m_pManager->UnreferenceEntity ( this );
 
     // Remove the colshape
-    if ( m_pCollision ) delete m_pCollision;
+    if ( m_pCollision )
+        m_pCollision->Delete();
 
     // Stream out first so the element counter is correct
     StreamOut ();
@@ -458,7 +459,11 @@ void CClientMarker::Callback_OnLeave ( CClientColShape& Shape, CClientEntity& En
 
 void CClientMarker::CreateOfType ( int iType )
 {
-    SAFE_DELETE ( m_pCollision )
+    if ( m_pCollision )
+    {
+        m_pCollision->Delete();
+        m_pCollision = NULL;
+    }
 
     CVector vecOrigin;
     GetPosition ( vecOrigin );    

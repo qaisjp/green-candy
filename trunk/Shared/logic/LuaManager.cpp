@@ -143,10 +143,7 @@ LuaManager::~LuaManager()
 {
     LuaCFunctions::RemoveAllFunctions();
 
-    std::list <LuaMain*>::const_iterator iter;
-
-    for ( iter = IterBegin(); iter != IterEnd(); iter++ )
-        delete *iter;
+    // TODO: analyze that every virtual machine really gets destroyed
 
     Shutdown();
 }
@@ -418,6 +415,9 @@ void LuaManager::Init( LuaMain *lua )
     ILuaState& api = lua_getstateapi( thread );
     api.SetMainThread( true );
 
+    // Reference the thread so it stays alive
+    lua->m_threadRef = luaL_ref( m_lua, LUA_REGISTRYINDEX );
+
     // Adjust for custom environment, so that resources do not collide
     lua_newenvironment( thread );
 
@@ -501,6 +501,9 @@ bool LuaManager::Remove( LuaMain *lua )
 {
     // Remove all events registered by it
     m_events.RemoveAll( lua );
+
+    // Unreference the threads
+    luaL_unref( m_lua, LUA_REGISTRYINDEX, lua->m_threadRef );
 
     delete lua;
 

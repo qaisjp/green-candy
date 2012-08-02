@@ -82,7 +82,13 @@ void CPedSAInterface::OnFrame()
             case ANIM_ID_IDLE_STANCE:
             case ANIM_ID_WEAPON_CROUCH:
             case ANIM_ID_STEALTH_AIM:
-                if ( pGame->GetAnimManager()->GetAnimationBlock( "KNIFE" )->IsLoaded() )
+                CAnimBlock *block = pGame->GetAnimManager()->GetAnimationBlock( "KNIFE" );
+
+                // The animations have to be loaded first!
+                if ( !block )
+                    break;
+
+                if ( block->IsLoaded() )
                 {
                     // Force the animation
                     pGame->GetAnimManager()->BlendAnimation( (RpClump*)m_rwObject, ANIM_GROUP_STEALTH_KN, ANIM_ID_STEALTH_AIM, 8.0f );

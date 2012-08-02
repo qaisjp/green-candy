@@ -106,7 +106,7 @@ VOID CPopulationSA::RemovePed ( CPedSAInterface * ped )
         {
             char szDebug[255] = {'\0'};
             sprintf ( szDebug, "Civ ped removed (%d)\n", dwPedCount - 1);
-            delete (CPed *)(CCivilianPed *)(*iter);
+            delete *iter;
             //OutputDebugString ( szDebug );
             
             if ( m_pCivilianRemoveHandler )

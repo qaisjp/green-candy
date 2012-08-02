@@ -201,7 +201,7 @@ public:
     unsigned char                   GetLevelFromPosition( const CVector& vecPosition ) const;
     bool                            IsLoaded() const;
     unsigned char                   GetFlags() const;
-    const CBoundingBox&             GetBoundingBox() const;
+    const CBoundingBox*             GetBoundingBox() const;
     bool                            IsValid();
     float                           GetDistanceFromCentreOfMassToBaseOfModel() const;
     unsigned short                  GetTextureDictionaryID() const;

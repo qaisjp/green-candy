@@ -43,12 +43,12 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
             info->m_flags |= 0x10;
         }
     }
-    else if ( info->m_eLoading == MODEL_UNAVAILABLE )
+    else if ( info->m_eLoading != MODEL_UNAVAILABLE )
     {
         flags &= ~0x10;
     }
 
-    info->m_flags |= flags;
+    info->m_flags |= (unsigned char)flags;
 
     // Refresh the model loading?
     if ( info->m_eLoading == MODEL_LOADED )
@@ -101,11 +101,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
     case MODEL_UNKNOWN:
         return;
     case MODEL_LOADED:
-        // If available, we reload the model
-        info->m_flags = flags;
-
-        info->m_eLoading = MODEL_LOADING;
-        return;
+        goto reload;
     }
 
     if ( id < DATA_TEXTURE_BLOCK )
@@ -129,7 +125,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
             return;
 
         // I think it loads textures, lol
-        if ( txd->m_parentTxd != -1 )
+        if ( txd->m_parentTxd != 0xFFFF )
             RequestModel( txd->m_parentTxd + DATA_TEXTURE_BLOCK, flags );
     }
 
@@ -137,7 +133,8 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
 
     __asm
     {
-        push dword ptr[0x008E4C58]
+        mov eax,ds:[0x008E4C58]
+        push eax
         mov ecx,info
         call dwFunc
     }
@@ -146,6 +143,12 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
 
     if ( flags & 0x10 )
         (*(DWORD*)0x008E4BA0)++;
+
+reload:
+    // If available, we reload the model
+    info->m_flags = flags;
+
+    info->m_eLoading = MODEL_LOADING;
 }
 
 void CStreamingSA::FreeModel( unsigned short id )

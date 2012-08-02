@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientGroups.cpp
 *  PURPOSE:     Dummy grouping class
 *  DEVELOPERS:  Chris McArthur <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -16,21 +17,16 @@ using std::list;
 
 void CClientGroups::DeleteAll ( void )
 {
+    // TODO
+    return; // We cannot afford to do this
+
     // Delete all the elements
     m_bDontRemoveFromList = true;
 
-    if ( !m_List.empty () )
-    {
-        for ( list < CClientDummy* >::iterator iter = m_List.begin () ; iter != m_List.end () ; ++iter )
-        {
-            CClientDummy* pDummy = *iter;
-            if ( pDummy )
-            {
-                delete pDummy;
-            }
-        }
-        m_List.clear ();
-    }
+    for ( list < CClientDummy* >::iterator iter = m_List.begin () ; iter != m_List.end () ; ++iter )
+        (*iter)->Delete();
+
+    m_List.clear ();
 
     m_bDontRemoveFromList = false;
 }

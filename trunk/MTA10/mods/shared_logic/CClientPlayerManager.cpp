@@ -91,22 +91,19 @@ void CClientPlayerManager::DoPulse ( void )
     }
 }
 
-
 void CClientPlayerManager::DeleteAll ( void )
 {
     // Delete all the players
     m_bCanRemoveFromList = false;
-    vector < CClientPlayer* > ::const_iterator iter = m_Players.begin ();
+    std::vector < CClientPlayer* > ::const_iterator iter = m_Players.begin ();
+
     for ( ; iter != m_Players.end (); iter++ )
-    {
-        (*iter)->Destroy();
-    }
+        (*iter)->Delete();
 
     // Clear the list
     m_Players.clear ();
     m_bCanRemoveFromList = true;
 }
-
 
 CClientPlayer* CClientPlayerManager::Get ( ElementID ID )
 {

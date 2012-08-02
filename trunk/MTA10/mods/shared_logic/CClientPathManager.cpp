@@ -36,11 +36,9 @@ void CClientPathManager::DeleteAll ( void )
     // Delete all nodes in the list
     m_bRemoveFromList = false;
 
-    list < CClientPathNode* > ::const_iterator iter = m_PathNodeList.begin ();
+    std::list < CClientPathNode* > ::const_iterator iter = m_PathNodeList.begin ();
     for ( ; iter != m_PathNodeList.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
 
     // Clear the list
     m_PathNodeList.clear ();

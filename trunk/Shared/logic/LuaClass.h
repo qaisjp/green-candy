@@ -57,6 +57,18 @@ public:
         refs.push_back( ref );
     }
 
+    inline void IncrementMethodStack()
+    {
+        m_class->IncrementMethodStack( m_lua );
+    }
+
+    inline void DecrementMethodStack()
+    {
+        m_class->DecrementMethodStack( m_lua );
+
+        // Warning: may be destroyed at this point!
+    }
+
     inline bool IsTransmit( int type )
     {
         return m_class->IsTransmit( type );
@@ -76,6 +88,11 @@ public:
         lua_call( m_lua, 0, 0 );
 
         // At this point the class may be destroyed; do not use it anymore!
+    }
+
+    inline void Delete()
+    {
+        Destroy();
     }
 
 protected:

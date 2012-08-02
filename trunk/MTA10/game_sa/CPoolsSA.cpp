@@ -108,12 +108,15 @@ CPoolsSA::~CPoolsSA()
     delete *ppPtrNodeDoublePool;
     delete *ppEntryInfoPool;
 
+    // Seems to be crashy
+#if TODO
     delete *ppVehiclePool;
     delete *ppPedPool;
     delete *ppBuildingPool;
     delete *ppObjectPool;
 
     delete *ppDummyPool;
+#endif
     delete *ppColModelPool;
 
     delete *ppTaskPool;
