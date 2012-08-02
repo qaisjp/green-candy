@@ -20,6 +20,9 @@ CEntity* CCamSA::GetTargetEntity() const
     CPoolsSA* pPools = (CPoolsSA*)pGame->GetPools();
     CEntity* pReturn = NULL;
 
+    if ( !m_pInterface->CamTargetEntity )
+        return NULL;
+
     switch( m_pInterface->CamTargetEntity->m_type )
     {
     case ENTITY_TYPE_PED:

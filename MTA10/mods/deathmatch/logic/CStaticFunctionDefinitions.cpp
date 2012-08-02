@@ -464,19 +464,19 @@ bool CStaticFunctionDefinitions::GetElementBoundingBox ( CClientEntity& Entity, 
 
     if ( pModelInfo )
     {
-        const CBoundingBox& bounds = pModelInfo->GetBoundingBox();
+        if ( const CBoundingBox *bounds = pModelInfo->GetBoundingBox() )
+        {
+            vecMin = bounds->vecBoundMin;
+            vecMin.fX += bounds->vecBoundOffset.fX;
+            vecMin.fY += bounds->vecBoundOffset.fY;
+            vecMin.fZ += bounds->vecBoundOffset.fZ;
 
-        vecMin = bounds.vecBoundMin;
-        vecMin.fX += bounds.vecBoundOffset.fX;
-        vecMin.fY += bounds.vecBoundOffset.fY;
-        vecMin.fZ += bounds.vecBoundOffset.fZ;
-
-        vecMax = bounds.vecBoundMax;
-        vecMax.fX += bounds.vecBoundOffset.fX;
-        vecMax.fY += bounds.vecBoundOffset.fY;
-        vecMax.fZ += bounds.vecBoundOffset.fZ;
-
-        return true;
+            vecMax = bounds->vecBoundMax;
+            vecMax.fX += bounds->vecBoundOffset.fX;
+            vecMax.fY += bounds->vecBoundOffset.fY;
+            vecMax.fZ += bounds->vecBoundOffset.fZ;
+            return true;
+        }
     }
 
     return false;
@@ -510,10 +510,11 @@ bool CStaticFunctionDefinitions::GetElementRadius ( CClientEntity& Entity, float
     }
     if ( pModelInfo )
     {
-        const CBoundingBox& bounds = pModelInfo->GetBoundingBox ();
-
-        fRadius = bounds.fRadius;
-        return true;
+        if ( const CBoundingBox *bounds = pModelInfo->GetBoundingBox() )
+        {
+            fRadius = bounds->fRadius;
+            return true;
+        }
     }
 
     return false;
@@ -3998,7 +3999,7 @@ CClientGUIElement* CStaticFunctionDefinitions::GUICreateStaticImage ( CLuaMain& 
         if ( !static_cast < CGUIStaticImage* > ( pElement ) -> LoadFromFile ( strPath ) ) {
             // If this fails, there's no reason to keep the widget (we don't have any IE-style "not found" icons yet)
             // So delete it and reset the pointer, so we return NULL
-            delete pGUIElement;
+            pGUIElement->Delete();
             pGUIElement = NULL;
         }
     }    
@@ -5080,8 +5081,9 @@ CClientWater* CStaticFunctionDefinitions::CreateWater ( CResource& resource, CVe
         pWater = new CClientWater ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID, *resource.GetResourceDynamicEntity(), false, *pV1, *pV2, *pV3, *pV4, bShallow );
     else
         pWater = new CClientWater ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID, *resource.GetResourceDynamicEntity(), false, *pV1, *pV2, *pV3, bShallow );
-    if ( !pWater->Valid () ) {
-        delete pWater;
+    if ( !pWater->Valid () )
+    {
+        pWater->Delete();
         return NULL;
     }
 

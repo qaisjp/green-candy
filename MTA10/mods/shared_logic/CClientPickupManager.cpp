@@ -57,11 +57,10 @@ void CClientPickupManager::DeleteAll ( void )
 {
     // Delete each pickup
     m_bDontRemoveFromList = true;
-    list < CClientPickup* > ::const_iterator iter = m_List.begin ();
+    std::list < CClientPickup* > ::const_iterator iter = m_List.begin ();
+
     for ( ; iter != m_List.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
 
     m_bDontRemoveFromList = false;
 

@@ -74,9 +74,10 @@ CClientCamera::CClientCamera ( CClientManager* pManager ) : CClientEntity ( INVA
     g_pMultiplayer->SetProcessCamHandler ( CClientCamera::ProcessFixedCamera );
 }
 
-
-CClientCamera::~CClientCamera ( void )
+CClientCamera::~CClientCamera ()
 {
+    m_pManager->m_pCamera = NULL;
+
     // We need to be ingame
     if ( g_pGame->GetSystemState () == 9 )
     {
@@ -85,7 +86,6 @@ CClientCamera::~CClientCamera ( void )
     }
     CClientEntityRefManager::RemoveEntityRefs ( 0, &m_pFocusedPlayer, &m_pFocusedEntity, NULL );
 }
-
 
 void CClientCamera::DoPulse ( void )
 {   

@@ -40,11 +40,10 @@ void CClientTeamManager::RemoveAll ( void )
 {
     m_bRemoveFromList = false;
 
-    list < CClientTeam* > ::const_iterator iter = m_List.begin ();
+    std::list < CClientTeam* > ::const_iterator iter = m_List.begin ();
     for ( ; iter != m_List.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
+
     m_List.clear ();
 
     m_bRemoveFromList = true;

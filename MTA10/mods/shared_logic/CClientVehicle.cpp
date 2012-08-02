@@ -2577,7 +2577,14 @@ bool CClientVehicle::IsOnWater() const
 
 bool CClientVehicle::IsInWater() const
 {
-    CVector vecMin = m_pModelInfo->GetBoundingBox().vecBoundMin;
+    CVector vecMin;
+    const CBoundingBox *bounds = m_pModelInfo->GetBoundingBox();
+
+    if ( bounds )
+        vecMin = bounds->vecBoundMin;
+    else
+        vecMin = CVector( EPSILON, EPSILON, EPSILON );
+
     CVector vecPosition, vecTemp;
     GetPosition( vecPosition );
 
@@ -2595,8 +2602,8 @@ float CClientVehicle::GetDistanceFromGround() const
 
     float fGroundLevel = g_pGame->GetWorld()->FindGroundZFor3DPosition( &vecPosition );
 
-    const CBoundingBox& bounds = m_pModelInfo->GetBoundingBox();
-    fGroundLevel -= bounds.vecBoundMin.fZ + bounds.vecBoundOffset.fZ;
+    const CBoundingBox *bounds = m_pModelInfo->GetBoundingBox();
+    fGroundLevel -= bounds->vecBoundMin.fZ + bounds->vecBoundOffset.fZ;
 
     return vecPosition.fZ - fGroundLevel;
 }
@@ -2605,7 +2612,7 @@ bool CClientVehicle::IsOnGround() const
 {
     if ( m_pModelInfo )
     {
-        CVector vecMin = m_pModelInfo->GetBoundingBox().vecBoundMin;
+        CVector vecMin = m_pModelInfo->GetBoundingBox()->vecBoundMin;
         CVector vecPosition;
         GetPosition ( vecPosition );
         vecMin += vecPosition;
@@ -3358,10 +3365,10 @@ CHandlingEntry* CClientVehicle::GetHandlingData()
 CSphere CClientVehicle::GetWorldBoundingSphere() const
 {
     CSphere sphere;
-    const CBoundingBox& bounds = m_pModelInfo->GetBoundingBox();
+    const CBoundingBox *bounds = m_pModelInfo->GetBoundingBox();
 
-    sphere.vecPosition = bounds.vecBoundOffset;
-    sphere.fRadius = bounds.fRadius;
+    sphere.vecPosition = bounds->vecBoundOffset;
+    sphere.fRadius = bounds->fRadius;
 
     sphere.vecPosition += GetStreamPosition();
     return sphere;

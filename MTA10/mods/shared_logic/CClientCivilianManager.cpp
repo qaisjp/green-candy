@@ -47,9 +47,7 @@ void CClientCivilianManager::DeleteAll ( void )
     m_bCanRemoveFromList = false;
     list < CClientCivilian* > ::const_iterator iter = m_Civilians.begin ();
     for ( ; iter != m_Civilians.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
 
     // Clear the list
     m_Civilians.clear ();

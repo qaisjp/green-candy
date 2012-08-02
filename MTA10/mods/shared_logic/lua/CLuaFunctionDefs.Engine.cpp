@@ -131,7 +131,7 @@ error:
             }
 
             // Delete it again
-            delete pTXD;
+            pTXD->Delete();
         }
         else
             m_pScriptDebugging->LogBadPointer( "engineLoadTXD", "string", 1 );

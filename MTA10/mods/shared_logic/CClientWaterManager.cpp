@@ -43,11 +43,10 @@ void CClientWaterManager::DeleteAll ( void )
 {
     // Delete each water poly
     m_bDontRemoveFromList = true;
-    list < CClientWater* > ::const_iterator iter = m_List.begin ();
+    std::list < CClientWater* > ::const_iterator iter = m_List.begin ();
+
     for ( ; iter != m_List.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
 
     m_bDontRemoveFromList = false;
 

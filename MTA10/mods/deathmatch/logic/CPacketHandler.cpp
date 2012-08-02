@@ -2786,7 +2786,6 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                         return;
                     }
 
-
                     // Set the health, color and paintjob
                     pVehicle->SetHealth ( health.data.fValue );
                     pVehicle->SetPaintjob ( paintjob.data.ucPaintjob );
@@ -4299,21 +4298,15 @@ void CPacketHandler::Packet_ResourceStart ( NetBitStreamInterface& bitStream )
                         CDownloadableResource* pDownloadableResource = NULL;
                         switch ( ucChunkSubType )
                         {
-                            case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_FILE:
-                                pDownloadableResource = pResource->QueueFile ( CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_FILE, szChunkData, chunkChecksum );
-
-                                break;
-                            case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_SCRIPT:
-                                pDownloadableResource = pResource->QueueFile ( CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_SCRIPT, szChunkData, chunkChecksum );
-
-                                break;
-                            case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_CONFIG:
-                                pDownloadableResource = pResource->AddConfigFile ( szChunkData, chunkChecksum );
-
-                                break;
-                            default:
-
-                                break;
+                        case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_FILE:
+                            pDownloadableResource = pResource->QueueFile ( CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_FILE, szChunkData, chunkChecksum );
+                            break;
+                        case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_SCRIPT:
+                            pDownloadableResource = pResource->QueueFile ( CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_SCRIPT, szChunkData, chunkChecksum );
+                            break;
+                        case CDownloadableResource::RESOURCE_FILE_TYPE_CLIENT_CONFIG:
+                            pDownloadableResource = pResource->AddConfigFile ( szChunkData, chunkChecksum );
+                            break;
                         }
 
                         // Is it a valid downloadable resource?

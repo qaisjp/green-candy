@@ -73,9 +73,7 @@ void CClientMarkerManager::DeleteAll ( void )
     m_bCanRemoveFromList = false;
     list < CClientMarker* > ::const_iterator iter = m_Markers.begin ();
     for ( ; iter != m_Markers.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
 
     m_bCanRemoveFromList = true;
 

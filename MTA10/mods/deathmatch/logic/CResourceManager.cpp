@@ -26,7 +26,11 @@ CResourceManager::CResourceManager() : ResourceManager( g_pClientGame->GetLuaMan
     filePath resRoot;
     modFileRoot->GetFullPath( "/resources/", false, resRoot );
 
-    resFileRoot = g_pCore->GetFileSystem()->CreateTranslator( resRoot.c_str() );
+    // It has to exist :3
+    modFileRoot->CreateDir( resRoot.c_str() );
+
+    ResourceManager::resFileRoot = g_pCore->GetFileSystem()->CreateTranslator( resRoot.c_str() );
+    ::resFileRoot = ResourceManager::resFileRoot;
 
     // The one and only resource manager!
     resMan = this;
@@ -36,17 +40,7 @@ CResourceManager::CResourceManager() : ResourceManager( g_pClientGame->GetLuaMan
 
 CResourceManager::~CResourceManager()
 {
-    while ( !m_resources.empty() )
-    {
-        CResource *res = (CResource*)m_resources.back();
-
-        CLuaArguments args;
-        args.PushUserData( res );
-        res->GetResourceEntity()->CallEvent( "onClientResourceStop", args, true );
-        delete res;
-
-        m_resources.pop_back();
-    }
+    m_resources.clear();    // Lua takes care of deletion, since everything lives in the VM
 }
 
 CResource* CResourceManager::Add( unsigned short id, const char *name, CClientEntity *resEntity, CClientEntity *dynamicEntity )

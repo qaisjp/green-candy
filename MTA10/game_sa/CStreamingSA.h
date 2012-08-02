@@ -53,18 +53,18 @@ enum eLoadingState
     FIX_DWORD = 0xFFFFFFFF
 };
 
-class CModelLoadInfoSA
+class CModelLoadInfoSA  // size: 20
 {
 public:
-    unsigned short  m_lodModelID;
-    unsigned short  m_unknown4;
-    unsigned short  m_unknown5;
-    unsigned char   m_flags;
-    unsigned char   m_unknown7;
-    unsigned short  m_id;
-    unsigned short  m_unknown8;
-    unsigned int    m_unknown3;
-    eLoadingState   m_eLoading;
+    unsigned short  m_lodModelID;       // 0
+    unsigned short  m_unknown4;         // 2
+    unsigned short  m_unknown5;         // 4
+    unsigned char   m_flags;            // 6
+    unsigned char   m_unknown7;         // 7
+    unsigned short  m_id;               // 8
+    unsigned short  m_unknown8;         // 10
+    unsigned int    m_unknown3;         // 12
+    eLoadingState   m_eLoading;         // 16
 };
 
 #endif

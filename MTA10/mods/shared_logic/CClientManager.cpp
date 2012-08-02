@@ -251,7 +251,6 @@ void CClientManager::RestoreEntity ( CClientEntity* pEntity )
     }
 }
 
-
 void CClientManager::UnreferenceEntity ( CClientEntity* pEntity )
 {
     if ( m_pCamera )
@@ -259,7 +258,6 @@ void CClientManager::UnreferenceEntity ( CClientEntity* pEntity )
         m_pCamera->UnreferenceEntity ( pEntity );
     }
 }
-
 
 CClientEntity * CClientManager::FindEntity ( CEntity * pGameEntity, bool bValidatePointer )
 {

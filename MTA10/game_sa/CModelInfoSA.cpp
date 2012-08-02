@@ -373,9 +373,17 @@ unsigned char CModelInfoSA::GetFlags() const
     return bFlags;
 }
 
-const CBoundingBox& CModelInfoSA::GetBoundingBox() const
+const CBoundingBox* CModelInfoSA::GetBoundingBox() const
 {
-    return ppModelInfo[m_modelID]->m_pColModel->m_bounds;
+    CBaseModelInfoSAInterface *info = ppModelInfo[m_modelID];
+
+    if ( !info )
+        return NULL;
+
+    if ( info->m_pColModel )
+        return NULL;
+
+    return &ppModelInfo[m_modelID]->m_pColModel->m_bounds;
 }
 
 bool CModelInfoSA::IsValid()

@@ -15,8 +15,11 @@
 
 #define api_checkvalidindex(L, i)	api_check(L, (i) != luaO_nilobject)
 
+#if 0
 #define api_incr_top(L)   {api_check(L, L->top < L->ci->top); L->top++;}
-
+#else
+#define api_incr_top(L)   { if ( L->top >= L->ci->top ) { __asm { int 3 }; } L->top++;}
+#endif
 
 LUAI_FUNC void luaA_pushobject (lua_State *L, const TValue *o);
 

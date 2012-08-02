@@ -65,23 +65,18 @@ CClientVehicleManager::CClientVehicleManager ( CClientManager* pManager )
     m_bCanRemoveFromList = true;
 }
 
-
 CClientVehicleManager::~CClientVehicleManager ( void )
 {
-    // Destroy all vehicles
-    DeleteAll ();
 }
-
 
 void CClientVehicleManager::DeleteAll ( void )
 {
     // Delete all the vehicles
     m_bCanRemoveFromList = false;
-    vector < CClientVehicle* > ::const_iterator iter = m_List.begin ();
+    std::vector < CClientVehicle* > ::const_iterator iter = m_List.begin ();
+
     for ( ; iter != m_List.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
 
     // Clear the list
     m_List.clear ();

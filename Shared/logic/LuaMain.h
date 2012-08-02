@@ -94,6 +94,8 @@ protected:
     int                             m_structure;
     int                             m_meta;
 
+    int                             m_threadRef;
+
     Resource*                       m_resource;
 
     lua_State*                      m_lua;

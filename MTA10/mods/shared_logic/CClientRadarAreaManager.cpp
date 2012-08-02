@@ -42,7 +42,7 @@ CClientRadarArea* CClientRadarAreaManager::Create ( ElementID EntityID, LuaClass
 
 void CClientRadarAreaManager::Delete ( CClientRadarArea* pRadarArea )
 {
-    delete pRadarArea;
+    pRadarArea->Delete();
 }
 
 
@@ -51,10 +51,10 @@ void CClientRadarAreaManager::DeleteAll ( void )
     // Delete all the radar areas
     m_bDontRemoveFromList = true;
     list < CClientRadarArea* > ::const_iterator iter = m_List.begin ();
+
     for ( ; iter != m_List.end (); iter++ )
-    {
-        delete *iter;
-    }
+        Delete( *iter );
+
     m_bDontRemoveFromList = false;
 
     // Clear the list

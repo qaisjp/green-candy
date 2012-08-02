@@ -66,7 +66,7 @@ void CElementDeleter::DeleteRecursive ( class CClientEntity* pElement )
 
     // At this point we're sure that this element has no more children left.
     // Add it to our list over deleting objects
-    if ( !pElement->IsBeingDeleted () )
+    if ( !IsBeingDeleted ( pElement ) )
     {
         m_List.push_back ( pElement );
     }
@@ -93,7 +93,7 @@ void CElementDeleter::DoDeleteAll ( void )
         if ( pEntity->CanBeDeleted () )
         {
             // Delete the entity and put the next element in the list in the iterator
-            pEntity->Destroy();
+            pEntity->Delete();
             iter = m_List.erase ( iter );
         }
         else

@@ -35,9 +35,7 @@ void CClientColModelManager::RemoveAll ( void )
     // Delete all the items
     std::list < CClientColModel* > ::iterator iter = m_List.begin ();
     for ( ; iter != m_List.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
 
     // Clear the list
     m_List.clear ();

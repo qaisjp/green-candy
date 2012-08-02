@@ -52,11 +52,10 @@ void CClientRadarMarkerManager::DeleteAll ( void )
 {
     // Delete all the markers in our list
     m_bCanRemoveFromList = false;
-    list < CClientRadarMarker* > ::const_iterator iter = m_Markers.begin ();
+    std::list < CClientRadarMarker* > ::const_iterator iter = m_Markers.begin ();
+
     for ( ; iter != m_Markers.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
 
     // Clear the list
     m_Markers.clear ();

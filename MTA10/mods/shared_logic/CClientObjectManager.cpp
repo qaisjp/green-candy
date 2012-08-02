@@ -131,11 +131,10 @@ void CClientObjectManager::DeleteAll ( void )
 {
     // Delete all the objects
     m_bCanRemoveFromList = false;
-    list < CClientObject* > ::const_iterator iter = m_Objects.begin ();
+    std::list < CClientObject* > ::const_iterator iter = m_Objects.begin ();
+
     for ( ; iter != m_Objects.end (); iter++ )
-    {
-        delete *iter;
-    }
+        (*iter)->Delete();
 
     // Clear the list
     m_Objects.clear ();
