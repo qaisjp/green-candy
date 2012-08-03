@@ -45,10 +45,16 @@ CResourceManager::~CResourceManager()
 
 CResource* CResourceManager::Add( unsigned short id, const char *name, CClientEntity *resEntity, CClientEntity *dynamicEntity )
 {
+    std::string extName = name;
+    extName += '/';
+
     filePath resPath;
 
-    if ( !resFileRoot->GetFullPathFromRoot( name, false, resPath ) )
+    if ( !resFileRoot->GetFullPathFromRoot( extName.c_str(), false, resPath ) )
         return NULL;
+
+    // Create the folder if it does not exist
+    resFileRoot->CreateDir( extName.c_str() );
 
     CFileTranslator *root = g_pCore->GetFileSystem()->CreateTranslator( resPath.c_str() );
 

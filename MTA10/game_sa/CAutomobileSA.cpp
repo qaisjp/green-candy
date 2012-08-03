@@ -169,9 +169,6 @@ CAutomobileSA::CAutomobileSA( CAutomobileSAInterface *veh ) : CVehicleSA( veh ),
 
     m_suspensionLines = new char [data->ucNumWheels * 0x20];
     memcpy( m_suspensionLines, data->pSuspensionLines, data->ucNumWheels * 0x20 );
-
-    size_t h = sizeof(CVehicleSAInterface);
-    size_t z = offsetof(CAutomobileSAInterface, m_adjustableProperty);
 }
 
 CAutomobileSA::~CAutomobileSA()

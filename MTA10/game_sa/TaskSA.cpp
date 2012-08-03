@@ -128,10 +128,6 @@ void CTaskSA::DestroyJustThis()
 {
     DEBUG_TRACE("void CTaskSA::DestroyJustThis()");
 
-    if ( m_beingDestroyed ) // we want to make sure we don't delete this twice or we get crashes :)
-        return;              // our hook in CTaskManagementSystem will try to delete this otherwise
-
-    m_beingDestroyed = true;
     delete this;
 }
 
