@@ -152,23 +152,6 @@ enum eSystemState
     GS_PLAYING_GAME
 };
 
-/**
- * Used to store the state of controls
- */
-typedef struct eControlStatesSA
-{
-    DWORD dwFrontPad;
-    WORD wKeys1[19];
-    DWORD dwFrontPad2;
-    WORD wKeys2[19];
-    WORD wTurnLeftRightAnalog[10];
-    BYTE bytePadding1[138];
-    BYTE byteCrouchAnalog[5];
-    BYTE byteIncrementer;
-    BYTE bytePadding2[15];
-    DWORD dwKeyHeld;
-} eControlStatesSA;
-
 enum eVehicleTypes
 {
     VT_LANDSTAL = 400,

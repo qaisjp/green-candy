@@ -196,8 +196,6 @@ CTextureManagerSA::CTextureManagerSA()
 
 CTextureManagerSA::~CTextureManagerSA()
 {
-    (*ppTxdPool)->Clear();
-
     delete *ppTxdPool;
 }
 
@@ -327,16 +325,12 @@ ushort CTextureManagerSA::GetTXDIDForModelID ( ushort usModelID )
         // Get global TXD ID instead
         return usModelID - 20000;
     }
-    else
-    {
-        // Get the CModelInfo's TXD ID
 
-        // Ensure valid
-        if ( usModelID >= 20000 || !((CBaseModelInfoSAInterface**)ARRAY_ModelInfo)[usModelID] )
-            return 0;
+    // Ensure valid
+    if ( usModelID >= 20000 || !ppModelInfo[usModelID] )
+        return 0;
 
-        return ppModelInfo[usModelID]->m_textureDictionary;
-    }
+    return ppModelInfo[usModelID]->m_textureDictionary;
 }
 
 ////////////////////////////////////////////////////////////////

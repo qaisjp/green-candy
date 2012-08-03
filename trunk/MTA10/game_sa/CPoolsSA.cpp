@@ -164,7 +164,8 @@ static inline CVehicleSAInterface* CreateVehicle( unsigned short modelId )
         push    0
         push    0
         push    0           // spawn at 0,0,0
-        push    modelId  
+        movzx   eax,modelId
+        push    eax
         call    dwFunc
         add     esp, 0x14
         mov     veh, eax
@@ -345,7 +346,7 @@ CAutomobileTrailer* CPoolsSA::AddTrailer( unsigned short modelID )
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
 
-    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetModelType() != VEHICLE_AUTOMOBILETRAILER )
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_AUTOMOBILETRAILER )
         return NULL;
 
     return new CAutomobileTrailerSA( (CAutomobileTrailerSAInterface*)CreateVehicle( modelID ) );
@@ -364,7 +365,7 @@ CQuadBike* CPoolsSA::AddQuadBike( unsigned short modelID )
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
 
-    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetModelType() != VEHICLE_QUADBIKE )
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_QUADBIKE )
         return NULL;
 
     return new CQuadBikeSA( (CQuadBikeSAInterface*)CreateVehicle( modelID ) );
@@ -383,7 +384,7 @@ CMonsterTruck* CPoolsSA::AddMonsterTruck( unsigned short modelID )
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
 
-    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetModelType() != VEHICLE_MONSTERTRUCK )
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_MONSTERTRUCK )
         return NULL;
 
     return new CMonsterTruckSA( (CMonsterTruckSAInterface*)CreateVehicle( modelID ) );
@@ -513,7 +514,8 @@ static inline CObjectSAInterface* CreateObject( unsigned short model )
     _asm
     {
         push    1
-        push    model
+        movzx   eax,model
+        push    eax
         call    CObjectCreate
         add     esp, 8
         mov     obj, eax

@@ -45,6 +45,9 @@ public:
                                 CObjectSA( CObjectSAInterface *obj );
                                 ~CObjectSA();
 
+    void* operator new ( size_t );
+    void operator delete ( void *ptr );
+
     inline CObjectSAInterface*  GetInterface()                                  { return (CObjectSAInterface*)m_pInterface; }
     inline const CObjectSAInterface*    GetInterface() const                    { return (const CObjectSAInterface*)m_pInterface; }
 

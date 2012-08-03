@@ -277,24 +277,21 @@ void CClientModelRequestManager::DoPulse ( void )
             pEntry = *iter;
 
             // Is it loaded?
-            if ( !pEntry->pModel->IsLoaded () )
-                continue;
+            if ( pEntry->pModel->IsLoaded () )
+            {
+                // Make sure custom things are replaced
+                pEntry->pModel->MakeCustomModel ();
 
-            // Make sure custom things are replaced
-            pEntry->pModel->MakeCustomModel ();
+                // Call the callback
+                pEntry->pEntity->ModelRequestCallback ( pEntry->pModel );
 
-            // Call the callback
-            pEntry->pEntity->ModelRequestCallback ( pEntry->pModel );
+                // Unreference us from the model (callback should've added a reference!)
+                pEntry->pModel->RemoveRef ();
 
-            // Unreference us from the model (callback should've added a reference!)
-            pEntry->pModel->RemoveRef ();
-
-            // Delete the request entry. Remove from the list and continue from after it
-            delete *iter;
-            iter = m_Requests.erase ( iter );
-
-            // If you rerequest a model, there is nothing new associated with it
-#if _redundant
+                // Delete the request entry. Remove from the list and continue from after it
+                delete *iter;
+                iter = m_Requests.erase ( iter );
+            }
             else
             {
                 // Been more than 2 seconds since we requested it? Request it again.
@@ -314,7 +311,6 @@ void CClientModelRequestManager::DoPulse ( void )
                 // Increment iterator
                 ++iter;
             }
-#endif
         }
 
         // No longer doing the pulse

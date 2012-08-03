@@ -15,19 +15,50 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
+//#define CUSTOM_STREAMER
+
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
 #define ARRAY_PEDSPECMODEL      0x008E4C00
 #define VAR_PEDSPECMODEL        0x008E4BB0
-#define VAR_SPECPTR             0x008E4CB4
+#define VAR_MEMORYUSAGE         0x008E4CB4
 #define VAR_NUMMODELS           0x008E4CB8
+#define VAR_NUMPRIOMODELS       0x008E4BA0
 #define ARRAY_pLODModelLoaded   0x009654B4
 
 #define ARRAY_MODELIDS          0x008E4A60
 #define ARRAY_LODMODELIDS       0x008E4AF8
 
+#define FLAG_PRIORITY           0x10
+
+#ifdef CUSTOM_STREAMER
+static void __cdecl HOOK_CStreaming__RequestModel( unsigned int model, unsigned int flags )
+{
+    pGame->GetStreaming()->RequestModel( model, flags );
+}
+
+static void __cdecl HOOK_CStreaming__FreeModel( unsigned int model )
+{
+    pGame->GetStreaming()->FreeModel( model );
+}
+#endif
+
+CStreamingSA::CStreamingSA()
+{
+#ifdef CUSTOM_STREAMER
+    // Hook the model requested
+    HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
+    HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
+#endif
+}
+
+CStreamingSA::~CStreamingSA()
+{
+}
+
 void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
 {
+#ifdef CUSTOM_STREAMER
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
     DWORD dwFunc;
 
@@ -38,14 +69,14 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
     {
         if ( flags & 0x10 && !(info->m_flags & 0x10) )
         {
-            (*(DWORD*)0x008E4BA0)++;
+            (*(DWORD*)VAR_NUMPRIOMODELS)++;
 
-            info->m_flags |= 0x10;
+            info->m_flags |= FLAG_PRIORITY;
         }
     }
     else if ( info->m_eLoading != MODEL_UNAVAILABLE )
     {
-        flags &= ~0x10;
+        flags &= ~FLAG_PRIORITY;
     }
 
     info->m_flags |= (unsigned char)flags;
@@ -58,18 +89,18 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
         if ( info->m_lodModelID == 0xFFFF )
             return;
 
+        // Unfold loaded model
         lodInfo = (CModelLoadInfoSA*)*(DWORD*)ARRAY_pLODModelLoaded + info->m_lodModelID;
         lodInfo->m_unknown4 = info->m_unknown4;
+        lodInfo = (CModelLoadInfoSA*)*(DWORD*)ARRAY_pLODModelLoaded + info->m_unknown4;
         lodInfo->m_lodModelID = info->m_lodModelID;
 
         info->m_unknown4 = 0xFFFF;
-        info->m_unknown4 = 0xFFFF;
+        info->m_lodModelID = 0xFFFF;
 
         if ( id < DATA_TEXTURE_BLOCK )
         {
             CBaseModelInfoSAInterface *model = ppModelInfo[id];
-
-            dwFunc = 0x00407480;
 
             switch( model->GetModelType() )
             {
@@ -77,17 +108,19 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
             case MODEL_PED:
                 return;
             }
+        }
 
-            if ( info->m_flags & (0x02 | 0x04) )
-                return;
+        if ( info->m_flags & (0x02 | 0x04) )
+            return;
 
-            __asm
-            {
-                mov eax,dword ptr [0x008E4C60]
-                push eax
-                mov eax,info
-                call dwFunc
-            }
+        dwFunc = 0x00407480;
+
+        __asm
+        {
+            mov eax,ds:[0x008E4C60]
+            push eax
+            mov ecx,info
+            call dwFunc
         }
 
         return;
@@ -98,7 +131,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
     {
     case MODEL_LOADING:
     case MODEL_LOD:
-    case MODEL_UNKNOWN:
+    case MODEL_RELOAD:
         return;
     case MODEL_LOADED:
         goto reload;
@@ -124,6 +157,10 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
         if ( !txd )
             return;
 
+#ifdef MTA_DEBUG
+        OutputDebugString( SString( "loaded texDictionary %u\n", id - DATA_TEXTURE_BLOCK ) );
+#endif
+
         // I think it loads textures, lol
         if ( txd->m_parentTxd != 0xFFFF )
             RequestModel( txd->m_parentTxd + DATA_TEXTURE_BLOCK, flags );
@@ -142,17 +179,30 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
     (*(DWORD*)VAR_NUMMODELS)++;
 
     if ( flags & 0x10 )
-        (*(DWORD*)0x008E4BA0)++;
+        (*(DWORD*)VAR_NUMPRIOMODELS)++;
 
 reload:
     // If available, we reload the model
     info->m_flags = flags;
 
     info->m_eLoading = MODEL_LOADING;
+#else
+    __asm
+    {
+        mov eax,flags
+        push eax
+        movzx eax,id
+        push eax
+        mov ebx,0x004087E0
+        call ebx
+        add esp,8
+    }
+#endif
 }
 
 void CStreamingSA::FreeModel( unsigned short id )
 {
+#ifdef CUSTOM_STREAMER
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
     CBaseModelInfoSAInterface *model;
     DWORD dwFunc;
@@ -163,119 +213,130 @@ void CStreamingSA::FreeModel( unsigned short id )
     if ( info->m_eLoading == MODEL_UNAVAILABLE )
         return;
 
-    if ( id < DATA_TEXTURE_BLOCK )
+    if ( info->m_eLoading == MODEL_LOADED )
     {
-        int unk;
-        unsigned int *unk2;
-
-        model = ppModelInfo[id];
-
-        model->DeleteRwObject();
-
-        switch( model->GetModelType() )
+        if ( id < DATA_TEXTURE_BLOCK )
         {
-        case MODEL_PED:
-            unk = *(int*)VAR_PEDSPECMODEL;
-            unk2 = (unsigned int*)ARRAY_PEDSPECMODEL;
+            int unk;
+            unsigned int *unk2;
 
-            while ( unk2 < (unsigned int*)ARRAY_PEDSPECMODEL + 5 )
+            model = ppModelInfo[id];
+
+            model->DeleteRwObject();
+
+            switch( model->GetModelType() )
             {
-                if (*unk2 == id)
+            case MODEL_PED:
+                unk = *(int*)VAR_PEDSPECMODEL;
+                unk2 = (unsigned int*)ARRAY_PEDSPECMODEL;
+
+                while ( unk2 < (unsigned int*)ARRAY_PEDSPECMODEL + 5 )
                 {
-                    *unk2 = 0xFFFFFFFF;
+                    if (*unk2 == id)
+                    {
+                        *unk2 = 0xFFFFFFFF;
 
-                    unk--;
+                        unk--;
+                    }
                 }
+
+                *(int*)VAR_PEDSPECMODEL = unk;
+
+                break;
+            case MODEL_VEHICLE:
+#ifdef MTA_DEBUG
+                OutputDebugString( SString( "deleted vehicle model %u\n", id ) );
+#endif
+
+                dwFunc = 0x004080F0;
+
+                __asm
+                {
+                    movzx eax,id
+                    push eax
+                    call dwFunc
+                    pop eax
+                }
+
+                break;
             }
+        }
+        else if ( id < 25000 )
+        {
+#ifdef MTA_DEBUG
+            OutputDebugString( SString( "Deleted texDictionary %u\n", id - DATA_TEXTURE_BLOCK ) );
+#endif
 
-            *(int*)VAR_PEDSPECMODEL = unk;
+            // Remove texture reference?
+            pGame->GetTextureManager()->RemoveTxdEntry( id - DATA_TEXTURE_BLOCK );
+        }
+        else if ( id < 25255 )
+        {
+            dwFunc = 0x00410730;
 
-            break;
-        case MODEL_VEHICLE:
-            dwFunc = 0x004080F0;
-
+            // Something to do with ped models?
             __asm
             {
-                movsx eax,id
+                movzx eax,id
+                sub eax,25000
+
                 push eax
                 call dwFunc
                 pop eax
             }
-
-            break;
         }
-    }
-    else if ( id < 25000 )
-    {
-        // Remove texture reference?
-        pGame->GetTextureManager()->RemoveTxdEntry( id - DATA_TEXTURE_BLOCK );
-    }
-    else if ( id < 25255 )
-    {
-        dwFunc = 0x00410730;
-
-        // Something to do with ped models?
-        __asm
+        else if ( id < 25511 )
         {
-            movsx eax,id
-            sub eax,25000
+            dwFunc = 0x00404B20;
 
-            push eax
-            call dwFunc
-            pop eax
+            __asm
+            {
+                movsx eax,id
+                sub eax,25255
+
+                push eax
+                call dwFunc
+                pop eax
+            }
         }
-    }
-    else if ( id < 25511 )
-    {
-        dwFunc = 0x00404B20;
-
-        __asm
+        else if ( id < DATA_ANIM_BLOCK )    // path finding...?
         {
-            movsx eax,id
-            sub eax,25255
+            DWORD dwFunc = 0x0044D0F0;
 
-            push eax
-            call dwFunc
-            pop eax
+            __asm
+            {
+                movzx eax,id
+                sub eax,25511
+
+                push eax
+                mov ecx,CLASS_CPathFind
+                call dwFunc
+            }
         }
-    }
-    else if ( id < DATA_ANIM_BLOCK )
-    {
-        DWORD dwFunc = 0x0044D0F0;
-
-        __asm
+        else if ( id < 25755 )
         {
-            movsx eax,id
-            sub eax,25511
-
-            push eax
-            call dwFunc
-            pop eax
+            // Animations...?
+            pGame->GetAnimManager()->RemoveAnimBlock( id - DATA_ANIM_BLOCK );
         }
-    }
-    else if ( id < 25755 )
-    {
-        // Animations...?
-        pGame->GetAnimManager()->RemoveAnimBlock( id - DATA_ANIM_BLOCK );
-    }
-    else if ( id >= 26230 )
-    {
-        dwFunc = 0x004708E0;
-
-        __asm
+        else if ( id >= 26230 )
         {
-            movsx eax,id
-            sub eax,26230
+            dwFunc = 0x004708E0;
 
-            mov ecx,0x00A47B60
-            push eax
-            call dwFunc
+            __asm
+            {
+                movsx eax,id
+                sub eax,26230
+
+                mov ecx,0x00A47B60
+                push eax
+                call dwFunc
+            }
         }
+
+        *(DWORD*)VAR_MEMORYUSAGE -= info->m_blockCount * 2048;
     }
 
-    *(DWORD*)VAR_SPECPTR -= info->m_unknown3 << 11;
-
-    if ( info->m_lodModelID != 0xFFFFFFFF )
+    if ( info->m_lodModelID != 0xFFFF )
     {
         CModelLoadInfoSA *lodInfo = (CModelLoadInfoSA*)(*(DWORD*)ARRAY_pLODModelLoaded) + info->m_lodModelID;
 
@@ -283,11 +344,11 @@ void CStreamingSA::FreeModel( unsigned short id )
         {
             (*(DWORD*)VAR_NUMMODELS)--;
 
-            if ( info->m_flags & 0x10 )
+            if ( info->m_flags & FLAG_PRIORITY )
             {
-                info->m_flags &= ~0x10;
+                info->m_flags &= ~FLAG_PRIORITY;
 
-                (*(DWORD*)0x008E4BA0)--;
+                (*(DWORD*)VAR_NUMPRIOMODELS)--;
             }
         }
 
@@ -301,24 +362,42 @@ void CStreamingSA::FreeModel( unsigned short id )
     {
         unsigned int n;
 
-        for (n=0; n<30; n++)
+        for ( n=0; n<30; n++ )
         {
-            if (*((int*)ARRAY_MODELIDS + n) == id)
+            if (*((int*)ARRAY_MODELIDS + n) == (int)id)
                 *((int*)ARRAY_MODELIDS + n) = -1;
 
-            if (*((int*)ARRAY_LODMODELIDS + n) == id)
+            if (*((int*)ARRAY_LODMODELIDS + n) == (int)id)
                 *((int*)ARRAY_LODMODELIDS + n) = -1;
         }
     }
-    else if ( info->m_eLoading == MODEL_UNKNOWN )
+    else if ( info->m_eLoading == MODEL_RELOAD )
     {
-        // What the... Its removal all over again, I think this is a bug.
-        // 00408B98
-
-        assert ( 0 );
+        if ( id < DATA_TEXTURE_BLOCK )
+            RwFlushLoader();
+        else if ( id < 25000 )
+            pGame->GetTextureManager()->RemoveTxdEntry( id - DATA_TEXTURE_BLOCK );
+        else if ( id < 25255 )
+            ( (void (*)( unsigned int model ))0x00410730 )( id - 25000 );
+        else if ( id < 25511 )
+            ( (void (*)( unsigned int model ))0x00404B20 )( id - 25255 );
+        else if ( id >= DATA_ANIM_BLOCK && id < 25755 )
+            pGame->GetAnimManager()->RemoveAnimBlock( id - DATA_ANIM_BLOCK );
+        else if ( id >= 26230 )
+            ( (void (__stdcall*)( unsigned int model ))0x004708E0 )( id - 26230 );
     }
 
     info->m_eLoading = MODEL_UNAVAILABLE;
+#else
+    __asm
+    {
+        movzx eax,id
+        push eax
+        mov ebx,0x004089A0
+        call ebx
+        pop eax
+    }
+#endif
 }
 
 void CStreamingSA::LoadAllRequestedModels ( BOOL bOnlyPriorityModels )

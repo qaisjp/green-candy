@@ -169,6 +169,9 @@ CAutomobileSA::CAutomobileSA( CAutomobileSAInterface *veh ) : CVehicleSA( veh ),
 
     m_suspensionLines = new char [data->ucNumWheels * 0x20];
     memcpy( m_suspensionLines, data->pSuspensionLines, data->ucNumWheels * 0x20 );
+
+    size_t h = sizeof(CVehicleSAInterface);
+    size_t z = offsetof(CAutomobileSAInterface, m_adjustableProperty);
 }
 
 CAutomobileSA::~CAutomobileSA()
@@ -236,6 +239,8 @@ void CAutomobileSA::SetTurretRotation( float horizontal, float vertical )
 {
     DEBUG_TRACE("void CAutomobileSA::SetTurretRotation( float horizontal, float vertical )");
 
+    return;
+
     GetInterface()->m_turretHorizontal = horizontal;
     GetInterface()->m_turretVertical = vertical;
 }
@@ -262,6 +267,8 @@ CObject* CAutomobileSA::SpawnFlyingComponent( int i_1, unsigned int ui_2 )
 
 void CAutomobileSA::SetWheelVisibility( eWheels wheel, bool vis )
 {    
+    return;
+    
     switch( wheel )
     {        
     case FRONT_LEFT_WHEEL:      GetInterface()->m_components[VEHICLE_COMP_WHEEL_FL]->SetVisible( vis ); return;
@@ -288,6 +295,8 @@ void CAutomobileSA::RecalculateHandling()
 {
     if ( !m_pHandlingData )
         return;
+
+    return;
 
     m_pHandlingData->Recalculate();
     
@@ -354,6 +363,8 @@ void CAutomobileSA::RecalculateHandling()
 
 void CAutomobileSA::RecalculateSuspensionLines()
 {
+    return;
+
     CColDataSA *data = ppModelInfo[GetInterface()->m_model]->m_pColModel->pColData;
 
 	// Calculate them
@@ -365,6 +376,8 @@ void CAutomobileSA::RecalculateSuspensionLines()
 
 bool CAutomobileSA::UpdateMovingCollision( float fAngle )
 {
+    return true;
+
     // If we dont have a driver, use the local player for this function
     // It will check a few key-states which shouldn't make any difference as we've specified an angle.
     CAutomobileSAInterface *veh = GetInterface();

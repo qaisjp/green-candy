@@ -491,7 +491,7 @@ void CClientStreamer::OnEnterSector ( CClientStreamSector * pSector )
 {
     CClientStreamElement * pElement = NULL;
     if ( m_pSector )
-    {                
+    {
         // Grab the unwanted sectors
         list < CClientStreamSector * > common, uncommon;
         pSector->CompareSurroundings ( m_pSector, &common, &uncommon, true );
@@ -504,7 +504,7 @@ void CClientStreamer::OnEnterSector ( CClientStreamSector * pSector )
             pTempSector = *iter;
             // Make sure we dont unload our new sector
             if ( pTempSector != pSector )
-            {            
+            {
                 if ( pTempSector->IsActivated () )
                 {
                     list < CClientStreamElement * > ::iterator iter = pTempSector->Begin ();

@@ -601,6 +601,9 @@ public:
                                 CVehicleSA( CVehicleSAInterface *vehicle );
                                 ~CVehicleSA();
 
+    void* operator new ( size_t );
+    void operator delete ( void *ptr );
+
     inline CVehicleSAInterface* GetInterface()                                          { return (CVehicleSAInterface*)m_pInterface; }
     inline const CVehicleSAInterface*   GetInterface() const                            { return (const CVehicleSAInterface*)m_pInterface; }
 

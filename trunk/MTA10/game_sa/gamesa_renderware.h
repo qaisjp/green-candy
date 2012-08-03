@@ -108,6 +108,7 @@ typedef RpWorld *               (__cdecl *RpWorldAddLight_t)                    
 typedef void                    (__cdecl *RpPrtStdGlobalDataSetStreamEmbedded_t)(CBaseModelInfoSAInterface *info);
 typedef RwError*                (__cdecl *RwErrorGet_t)                         (RwError *code);
 typedef void                    (__cdecl *RwPrefetch_t)                         ();
+typedef void                    (__cdecl *RwFlushLoader_t)                      ();
 
 /*****************************************************************************/
 /** Renderware function mappings                                            **/
@@ -196,6 +197,7 @@ extern RpWorldAddLight_t                        RpWorldAddLight;
 extern RpWorldAddClump_t                        RpWorldAddClump;
 extern RpPrtStdGlobalDataSetStreamEmbedded_t    RpPrtStdGlobalDataSetStreamEmbedded;
 extern RwPrefetch_t                             RwPrefetch;
+extern RwFlushLoader_t                          RwFlushLoader;
 
 /*****************************************************************************/
 /** GTA function definitions                                                **/

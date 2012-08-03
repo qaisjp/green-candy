@@ -340,6 +340,9 @@ public:
                                 CPedSA( CPedSAInterface *ped );
                                 ~CPedSA();
 
+    void* operator new ( size_t );
+    void operator delete ( void *ptr );
+
     void                        SetModelIndex( unsigned short id ); // override for voice update
 
     unsigned int                GetPoolIndex() const                                        { return m_poolIndex; }

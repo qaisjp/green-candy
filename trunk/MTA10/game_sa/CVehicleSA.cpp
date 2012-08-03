@@ -333,10 +333,10 @@ CVehicleSA::CVehicleSA( CVehicleSAInterface *veh ) : m_alpha( 255 ), m_vecGravit
 void CVehicleSA::Init()
 {
     // We take care of the streaming, so disable GTA:SA control
-    BOOL_FLAG( GetInterface()->m_entityFlags, ENTITY_DISABLESTREAMING, true );
-    BOOL_FLAG( GetInterface()->m_entityFlags, ENTITY_NOSTREAM, true );
+    BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_DISABLESTREAMING, true );
+    BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_NOSTREAM, true );
 
-    // Store our CVehicleSA pointer in the vehicle's time of creation member (as it won't get modified later and as far as I know it isn't used for something important)
+    // Store our CVehicleSA pointer in the vehicle's time of creation member (as it won't get modified later and as far as I know it isn't used for anything important)
     GetInterface()->m_vehicle = this;
 
     // Reset the car counts to 0 so that this vehicle doesn't affect the population vehicles
@@ -364,6 +364,16 @@ CVehicleSA::~CVehicleSA()
     mtaVehicles[m_poolIndex] = NULL;
 }
 
+void* CVehicleSA::operator new ( size_t )
+{
+    return mtaVehiclePool->Allocate();
+}
+
+void CVehicleSA::operator delete ( void *ptr )
+{
+    return mtaVehiclePool->Free( (CVehicleSA*)ptr );
+}
+
 void CVehicleSA::SetColor( SColor color1, SColor color2, SColor color3, SColor color4, int )
 {
     m_RGBColors[0] = color1;
@@ -382,6 +392,7 @@ void CVehicleSA::GetColor( SColor& color1, SColor& color2, SColor& color3, SColo
 
 void CVehicleSA::SetHealth( float health )
 {
+    return;
     GetInterface()->m_health = health;
 
     if ( health >= 250.0f )
@@ -443,6 +454,8 @@ bool CVehicleSA::AreDoorsLocked() const
 
 void CVehicleSA::LockDoors( bool bLocked )
 {
+    return;
+
     bool bAreDoorsLocked = AreDoorsLocked();
     bool bAreDoorsUndamageable = AreDoorsUndamageable();
 
@@ -464,6 +477,8 @@ void CVehicleSA::LockDoors( bool bLocked )
 
 void CVehicleSA::SetDoorsUndamageable( bool bUndamageable )
 {
+    return;
+
     bool bAreDoorsLocked = AreDoorsLocked();
     bool bAreDoorsUndamageable = AreDoorsUndamageable();
 
@@ -613,6 +628,8 @@ void CVehicleSA::SetEngineOn( bool bEngineOn )
 {
     DEBUG_TRACE("void CVehicleSA::SetEngineOn( bool bEngineOn )");
 
+    return;
+
     if ( IsEngineBroken() )
     {
         GetInterface()->SetEngineOn( false );
@@ -675,6 +692,8 @@ CVehicle* CVehicleSA::GetTowedByVehicle() const
 
 void CVehicleSA::SetRemapTexDictionary( int txd )
 {
+    return;
+
     if ( txd == GetInterface()->m_paintjobTxd )
         return;
 
@@ -694,6 +713,7 @@ void CVehicleSA::SetRemapTexDictionary( int txd )
 
 void CVehicleSA::SetRemap( int iRemap )
 {
+    return;
     if ( iRemap == -1 )
     {
         unsigned short paintjobId = GetInterface()->m_paintjobTxd;
@@ -732,6 +752,9 @@ void CVehicleSA::SetHandlingData( CHandlingEntry *handling )
 {
     // Store the handling and recalculate it
     m_pHandlingData = (CHandlingEntrySA*)handling;
+
+    return;
+
     GetInterface()->m_handling = m_pHandlingData->GetInterface();
 
     RecalculateHandling();
@@ -775,6 +798,7 @@ void GetMatrixForGravity( const CVector& vecGravity, RwMatrix& mat )
 
 void CVehicleSA::SetGravity( const CVector& grav )
 {
+    return;
     if ( pGame->GetPlayerInfo()->GetPlayerPed()->GetVehicle() == this )
     {
         // If this is the local player's vehicle, adjust the camera's position history.

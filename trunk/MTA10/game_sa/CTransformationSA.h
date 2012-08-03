@@ -21,7 +21,7 @@ class CTransformSAInterface : public RwMatrix
 public:
     void operator =( const RwMatrix& mat )
     {
-        RwMatrix::RwMatrix( mat );
+        assign( mat );
     }
 
     BYTE                                    m_pad[8];
