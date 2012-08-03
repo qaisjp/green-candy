@@ -40,16 +40,17 @@ class CEGUIResourceProvider : public CEGUI::ResourceProvider
 public:
     virtual void loadRawDataContainer( const String& path, RawDataContainer& output, const String& resourceGroup )
     {
-        CFile *file = skinRoot->Open( path.c_str(), "rb" );
+        const char *filename = path.c_str();
+        CFile *file = skinRoot->Open( filename, "rb" );
 
         if ( !file )
-            file = guiRoot->Open( path.c_str(), "rb" );
+            file = guiRoot->Open( filename, "rb" );
 
         if ( !file )
-            file = fontRoot->Open( path.c_str(), "rb" );
+            file = fontRoot->Open( filename, "rb" );
 
         if ( !file )
-            throw std::exception( "failed to load .xml CEGUI file" );
+            throw std::exception( SString( "failed to load CEGUI file: %s", filename ) );
 
         size_t size = file->GetSize();
         unsigned char *data = new unsigned char [ size ];
@@ -116,34 +117,17 @@ CGUI_Impl::CGUI_Impl( IDirect3DDevice9* pDevice, CCoreInterface *coreInterface )
 
 	try
 	{
-        filePath defaultFont;
-        filePath defaultBold;
-        filePath clearFont;
-        filePath headerFont;
-        filePath gothicFont;
-        filePath sansFont;
-        filePath substituteFont;
+        m_pFontManager->setSubstituteFont( CGUI_MTA_SUBSTITUTE_FONT, 9 );
 
-        // Prepare font definitions
-        fontRoot->GetFullPath( CGUI_MTA_DEFAULT_FONT, true, defaultFont );
-        fontRoot->GetFullPath( CGUI_MTA_DEFAULT_FONT_BOLD, true, defaultBold );
-        fontRoot->GetFullPath( CGUI_MTA_CLEAR_FONT, true, clearFont );
-        guiRoot->GetFullPath( CGUI_SA_HEADER_FONT, true, headerFont );
-        guiRoot->GetFullPath( CGUI_SA_GOTHIC_FONT, true, gothicFont );
-        guiRoot->GetFullPath( CGUI_MTA_SANS_FONT, true, sansFont );
-        guiRoot->GetFullPath( CGUI_MTA_SUBSTITUTE_FONT, true, substituteFont );
+        m_pDefaultFont = (CGUIFont_Impl*)CreateFnt( "default-normal", CGUI_MTA_DEFAULT_FONT, 9, 0 );
+        m_pSmallFont = (CGUIFont_Impl*)CreateFnt( "default-small", CGUI_MTA_DEFAULT_FONT, 7, 0 );
 
-        m_pFontManager->setSubstituteFont( substituteFont.c_str(), 9 );
+        m_pBoldFont = (CGUIFont_Impl*)CreateFnt( "default-bold-small", CGUI_MTA_DEFAULT_FONT_BOLD, 8, 0 );
 
-        m_pDefaultFont = (CGUIFont_Impl*)CreateFnt( "default-normal", defaultFont.c_str(), 9, 0 );
-        m_pSmallFont = (CGUIFont_Impl*)CreateFnt( "default-small", defaultFont.c_str(), 7, 0 );
-
-        m_pBoldFont = (CGUIFont_Impl*)CreateFnt( "default-bold-small", defaultBold.c_str(), 8, 0 );
-
-        m_pClearFont = (CGUIFont_Impl*)CreateFnt( "clear-normal", clearFont.c_str(), 9 );
-        m_pSAHeaderFont = (CGUIFont_Impl*)CreateFnt( "sa-header", headerFont.c_str(), CGUI_SA_HEADER_SIZE, 0, true );
-        m_pSAGothicFont = (CGUIFont_Impl*)CreateFnt( "sa-gothic", gothicFont.c_str(), CGUI_SA_GOTHIC_SIZE, 0, true );
-        m_pSansFont = (CGUIFont_Impl*)CreateFnt( "sans", sansFont.c_str(), CGUI_MTA_SANS_FONT_SIZE, 0, false );
+        m_pClearFont = (CGUIFont_Impl*)CreateFnt( "clear-normal", CGUI_MTA_CLEAR_FONT, 9 );
+        m_pSAHeaderFont = (CGUIFont_Impl*)CreateFnt( "sa-header", CGUI_SA_HEADER_FONT, CGUI_SA_HEADER_SIZE, 0, true );
+        m_pSAGothicFont = (CGUIFont_Impl*)CreateFnt( "sa-gothic", CGUI_SA_GOTHIC_FONT, CGUI_SA_GOTHIC_SIZE, 0, true );
+        m_pSansFont = (CGUIFont_Impl*)CreateFnt( "sans", CGUI_MTA_SANS_FONT, CGUI_MTA_SANS_FONT_SIZE, 0, false );
 	}
 	catch( CEGUI::InvalidRequestException e )
 	{
@@ -413,12 +397,7 @@ CGUIEdit* CGUI_Impl::_CreateEdit( CGUIElement_Impl* pParent, const char* szText 
 
 CGUIFont* CGUI_Impl::CreateFnt( const char* szFontName, const char* szFontFile, unsigned int uSize, unsigned int uFlags, bool bAutoScale )
 {
-    filePath path;
-
-    if ( !fontRoot->Exists( szFontFile ) || !fontRoot->GetFullPath( szFontFile, true, path ) )
-        return NULL;
-
-    return new CGUIFont_Impl( this, szFontName, path, uSize, uFlags, bAutoScale );
+    return new CGUIFont_Impl( this, szFontName, szFontFile, uSize, uFlags, bAutoScale );
 }
 
 CGUIGridList* CGUI_Impl::_CreateGridList( CGUIElement_Impl* pParent, bool bFrame )

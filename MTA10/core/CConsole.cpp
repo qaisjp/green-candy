@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CConsole.cpp
 *  PURPOSE:     In-game console implementation
@@ -8,6 +8,7 @@
 *               Christian Myhre Lundheim <>
 *               Derek Abdine <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -63,7 +64,6 @@ CConsole::~CConsole ( void )
     // Delete our history
     delete m_pConsoleHistory;
 }
-
 
 void CConsole::Echo ( const char* szText )
 {
@@ -122,12 +122,10 @@ void CConsole::Clear ( void )
     }
 }
 
-
-bool CConsole::IsEnabled ( void )
+bool CConsole::IsEnabled ()
 {
     return m_bIsEnabled;
 }
-
 
 void CConsole::SetEnabled ( bool bEnabled )
 {
@@ -148,12 +146,10 @@ void CConsole::SetEnabled ( bool bEnabled )
     }
 }
 
-
-bool CConsole::IsVisible ( void )
+bool CConsole::IsVisible ()
 {
     return m_pWindow->IsVisible ();
 }
-
 
 void CConsole::SetVisible ( bool bVisible )
 {
@@ -177,20 +173,17 @@ void CConsole::SetVisible ( bool bVisible )
     }
 }
 
-
-void CConsole::Show ( void )
+void CConsole::Show ()
 {
     SetVisible ( true );
 }
 
-
-void CConsole::Hide ( void )
+void CConsole::Hide ()
 {
     SetVisible ( false );
 }
 
-
-void CConsole::ActivateInput ( void )
+void CConsole::ActivateInput ()
 {
     m_pInput->Activate ();
 }

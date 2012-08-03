@@ -426,12 +426,25 @@ size_t CClosure::Propagate( global_State *g )
     return sizeCclosure( nupvalues );
 }
 
+static void markmt( lua_State *L )
+{
+    int i;
+
+    for ( i=0; i<NUM_TAGS; i++ )
+    {
+        if ( L->mt[i] )
+            markobject( G(L), L->mt[i] );
+    }
+}
+
 size_t lua_State::Propagate( global_State *g )
 {
     gclist = g->grayagain;
     g->grayagain = this;
 
     black2gray( this );
+
+    markmt( this );
 
     traversestack( g, this );
     return sizeof(lua_State) + sizeof(TValue) * stacksize + sizeof(CallInfo) * size_ci;
@@ -612,17 +625,6 @@ void luaC_freeall (lua_State *L) {
   sweepwholelist(L, &g->rootgc);
   for (i = 0; i < g->strt.size; i++)  /* free all string lists */
     sweepwholelist(L, &g->strt.hash[i]);
-}
-
-static void markmt( lua_State *L )
-{
-    int i;
-
-    for ( i=0; i<NUM_TAGS; i++ )
-    {
-        if ( L->mt[i] )
-            markobject( G(L), L->mt[i] );
-    }
 }
 
 /* mark root set */
