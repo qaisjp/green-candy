@@ -35,6 +35,8 @@ private:
     CRemoteDataSA               * RemoteData;
     CPopulationSA               * Population;
 public:
+    ZERO_ON_NEW
+
     CMultiplayerSA();
     void                        InitHooks();
     CRemoteDataStorage *        CreateRemoteDataStorage     ();
@@ -54,6 +56,7 @@ public:
     void                        DisableZoneNames            ( bool bDisabled );
     void                        DisableBirds                ( bool bDisabled );
     void                        DisableQuickReload          ( bool bDisable );
+    void                        DisableCloseRangeDamage     ( bool bDisable );
 
     bool                        GetExplosionsDisabled       ();
     void                        DisableExplosions           ( bool bDisabled );
@@ -162,12 +165,26 @@ public:
     void                        AllowCreatedObjectsInVerticalLineTest ( bool bOn );
     void                        DeleteAndDisableGangTags    ();
     
+    CLimits*                    GetLimits () { return &m_limits; }
+
+    void                        SetSuspensionEnabled        ( bool bEnabled );
+    bool                        IsSuspensionEnabled         ( void )                    { return m_bSuspensionEnabled; };
+
+    //virtual void                SetFastClothesLoading       ( EFastClothesLoading fastClothesLoading );
+    virtual void                SetLODSystemEnabled         ( bool bEnable );
+    virtual void                SetAltWaterOrderEnabled     ( bool bEnable );
+
     CVector                     m_vecAkimboTarget;
     bool                        m_bAkimboTargetUp;
-
-    CLimits*                    GetLimits () { return &m_limits; }
+    static char*                ms_PlayerImgCachePtr;
 private:
+    bool                        m_bSuspensionEnabled;
+    std::vector < char >        m_PlayerImgCache;
+    //EFastClothesLoading         m_FastClothesLoading;
     CLimitsSA                   m_limits;
+    bool                        m_bEnabledLODSystem;
+    bool                        m_bEnabledAltWaterOrder;
+
 
 /*  VOID                        SetPlayerShotVectors(CPlayerPed* player, Vector3D * vecTarget, Vector3D * vecStart);
     VOID                        SetPlayerCameraVectors(CPlayerPed* player, Vector3D * vecSource, Vector3D * vecFront);

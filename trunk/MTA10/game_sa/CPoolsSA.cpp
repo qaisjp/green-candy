@@ -479,7 +479,7 @@ CVehicle* CPoolsSA::AddVehicle( unsigned short modelID )
 
 CVehicle* CPoolsSA::GetVehicle( void *entity ) const
 {
-    if ( m_getVehicleEnabled )
+    if ( !m_getVehicleEnabled )
         return NULL;
 
     return ((CVehicleSAInterface*)entity)->m_vehicle;

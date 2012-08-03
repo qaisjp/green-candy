@@ -454,8 +454,6 @@ bool CVehicleSA::AreDoorsLocked() const
 
 void CVehicleSA::LockDoors( bool bLocked )
 {
-    return;
-
     bool bAreDoorsLocked = AreDoorsLocked();
     bool bAreDoorsUndamageable = AreDoorsUndamageable();
 
@@ -477,8 +475,6 @@ void CVehicleSA::LockDoors( bool bLocked )
 
 void CVehicleSA::SetDoorsUndamageable( bool bUndamageable )
 {
-    return;
-
     bool bAreDoorsLocked = AreDoorsLocked();
     bool bAreDoorsUndamageable = AreDoorsUndamageable();
 
@@ -628,8 +624,6 @@ void CVehicleSA::SetEngineOn( bool bEngineOn )
 {
     DEBUG_TRACE("void CVehicleSA::SetEngineOn( bool bEngineOn )");
 
-    return;
-
     if ( IsEngineBroken() )
     {
         GetInterface()->SetEngineOn( false );
@@ -692,8 +686,6 @@ CVehicle* CVehicleSA::GetTowedByVehicle() const
 
 void CVehicleSA::SetRemapTexDictionary( int txd )
 {
-    return;
-
     if ( txd == GetInterface()->m_paintjobTxd )
         return;
 
@@ -713,7 +705,6 @@ void CVehicleSA::SetRemapTexDictionary( int txd )
 
 void CVehicleSA::SetRemap( int iRemap )
 {
-    return;
     if ( iRemap == -1 )
     {
         unsigned short paintjobId = GetInterface()->m_paintjobTxd;
@@ -752,8 +743,6 @@ void CVehicleSA::SetHandlingData( CHandlingEntry *handling )
 {
     // Store the handling and recalculate it
     m_pHandlingData = (CHandlingEntrySA*)handling;
-
-    return;
 
     GetInterface()->m_handling = m_pHandlingData->GetInterface();
 
@@ -798,7 +787,6 @@ void GetMatrixForGravity( const CVector& vecGravity, RwMatrix& mat )
 
 void CVehicleSA::SetGravity( const CVector& grav )
 {
-    return;
     if ( pGame->GetPlayerInfo()->GetPlayerPed()->GetVehicle() == this )
     {
         // If this is the local player's vehicle, adjust the camera's position history.

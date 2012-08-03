@@ -67,7 +67,7 @@ VOID InitKeysyncHooks()
     HookInstallMethod(VTBL_CBoat__ProcessControl,           (DWORD)HOOK_CBoat__ProcessControl);
     HookInstallMethod(VTBL_CBike__ProcessControl,           (DWORD)HOOK_CBike__ProcessControl);
     HookInstallMethod(VTBL_CHeli__ProcessControl,           (DWORD)HOOK_CHeli__ProcessControl);
-//  HookInstallMethod(VTBL_CHeli__ProcessControl,           (DWORD)HOOK_CHeli__ProcessControl);
+    HookInstallMethod(VTBL_CHeli__ProcessControl,           (DWORD)HOOK_CHeli__ProcessControl);
     
     // not strictly for keysync, to make CPlayerPed::GetPlayerInfoForThisPlayerPed always return the local playerinfo
     //00609FF2     EB 1F          JMP SHORT gta_sa_u.0060A013
@@ -171,6 +171,23 @@ void PostContextSwitch ( void )
         bRadioHackInstalled = FALSE;
     }
 
+    /*
+    // ChrML: Force as high stats as we can go before screwing up. Players can't have different
+    // stats or guns don't work. We can't have dual guns either due to some screwups.
+    // Dual gun screwup: Sync code needs update and the gun pointing up needs to.
+    localStatsData.StatTypesFloat [ 69 ] = 500.0f;
+    localStatsData.StatTypesFloat [ 70 ] = 999.0f;
+    localStatsData.StatTypesFloat [ 71 ] = 999.0f;
+    localStatsData.StatTypesFloat [ 72 ] = 999.0f;
+    localStatsData.StatTypesFloat [ 73 ] = 500.0f;
+    localStatsData.StatTypesFloat [ 74 ] = 999.0f;
+    localStatsData.StatTypesFloat [ 75 ] = 500.0f;
+    localStatsData.StatTypesFloat [ 76 ] = 999.0f;
+    localStatsData.StatTypesFloat [ 77 ] = 999.0f;
+    localStatsData.StatTypesFloat [ 78 ] = 999.0f;
+    localStatsData.StatTypesFloat [ 79 ] = 999.0f;
+    */
+
     // ChrML: This causes the aiming issues
     // Restore the local player stats    
     MemCpyFast ( (void *)0xb79380, &localStatsData.StatTypesFloat, sizeof(float) * MAX_FLOAT_STATS );
@@ -264,13 +281,24 @@ void SwitchContext ( CPed* thePed )
                 CRemoteDataStorageSA * data = CRemoteDataSA::GetRemoteDataStorage ( thePlayerPed );
                 if ( data )
                 {
+                    assert( 0 );
+
+#if 0
                     // We want the player to be seen as in targeting mode if they are right clicking and with weapons 
-                    eWeaponType currentWeapon = thePed->GetWeapon(thePed->GetCurrentWeaponSlot())->GetType();
+                    CWeapon* pWeapon = thePed->GetWeapon(thePed->GetCurrentWeaponSlot());
+                    eWeaponType currentWeapon = pWeapon->GetType();
                     CControllerState * cs = data->CurrentControllerState();
-                    
+                    CWeaponStat * pWeaponStat = NULL;
+                    if ( currentWeapon >= WEAPONTYPE_PISTOL && currentWeapon <= WEAPONTYPE_TEC9 )
+                    {
+                        float fValue = data->m_stats.StatTypesFloat [ pGameInterface->GetStats ()->GetSkillStatIndex ( currentWeapon ) ];
+                        pWeaponStat = pGameInterface->GetWeaponStatManager ( )->GetWeaponStatsFromSkillLevel ( currentWeapon, fValue );
+                    }
+                    else
+                        pWeaponStat = pGameInterface->GetWeaponStatManager ( )->GetWeaponStats ( currentWeapon );
+
                     if ( cs->RightShoulder1 != 0 
-                        && ( currentWeapon == WEAPONTYPE_SNIPERRIFLE || currentWeapon == WEAPONTYPE_ROCKETLAUNCHER
-                        || currentWeapon == WEAPONTYPE_ROCKETLAUNCHER_HS || currentWeapon == WEAPONTYPE_CAMERA ) )
+                        && ( pWeaponStat && pWeaponStat->IsFlagSet ( WEAPONTYPE_FIRSTPERSON ) ) )
                     {
                         b1stPersonWeaponModeHackInPlace = true;
                         
@@ -299,16 +327,12 @@ void SwitchContext ( CPed* thePed )
                     // Only disable mouselook if they're not holding a 1st-person weapon
                     // And if they're not under-water
                     bool bDisableMouseLook = true;
-                    CWeapon* pWeapon = thePed->GetWeapon ( thePed->GetCurrentWeaponSlot () );
                     if ( pWeapon )
                     {
                         eWeaponType weaponType = pWeapon->GetType ();
-                        switch ( weaponType )
+                        if ( pWeaponStat->IsFlagSet ( WEAPONTYPE_FIRSTPERSON ) )
                         {
-                            case WEAPONTYPE_SNIPERRIFLE:
-                            case WEAPONTYPE_ROCKETLAUNCHER:
-                            case WEAPONTYPE_ROCKETLAUNCHER_HS:
-                                bDisableMouseLook = false;
+                            bDisableMouseLook = false;
                         }
                     }
                     bMouseLookEnabled = *(bool *)0xB6EC2E;
@@ -400,6 +424,8 @@ void SwitchContext ( CPed* thePed )
                         if ( pPlayerPed )
                             m_pPreContextSwitchHandler ( pPlayerPed );
                     }
+
+#endif
                 }
             }
         }
@@ -490,13 +516,12 @@ void SwitchContext ( CVehicle* pVehicle )
 void SwitchContext ( CVehicleSAInterface* pVehicleInterface )
 {   
     // Grab the CVehicle for the given vehicle interface
-    CPools* pool = pGameInterface->GetPools ();
+    CPoolsSA* pool = (CPoolsSA*) pGameInterface->GetPools ();
     CVehicle* pVehicle = pool->GetVehicle ( (DWORD *)pVehicleInterface );
-
-    if ( !pVehicle )
-        return;
-
-    SwitchContext ( pVehicle );
+    if ( pVehicle )
+    {
+        SwitchContext ( pVehicle );
+    }
 }
 
 /************************** ACTUAL HOOK FUNCTIONS BELOW THIS LINE *******************************/

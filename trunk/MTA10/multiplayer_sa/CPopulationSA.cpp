@@ -13,7 +13,6 @@
 *****************************************************************************/
 
 #include "StdInc.h"
-#include "../game_sa/CPoolsSA.h"
 
 using std::list;
 

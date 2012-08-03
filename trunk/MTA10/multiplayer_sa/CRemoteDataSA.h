@@ -22,6 +22,7 @@
 
 // These includes have to be fixed!
 #include "../game_sa/CPadSA.h"
+#include "../game_sa/CPadManagerSA.h"
 #include "../game_sa/common.h"
 
 class CRemoteDataStorageSA : public CRemoteDataStorage

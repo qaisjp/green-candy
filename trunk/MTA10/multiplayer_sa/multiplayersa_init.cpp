@@ -60,3 +60,10 @@ void OnPreHUDRender ( void )
 {
     g_pCore->OnPreHUDRender ();  
 }
+
+void OnCrashAverted ( uint uiId )
+{
+#if 0
+    g_pCore->OnCrashAverted ( uiId );
+#endif
+}

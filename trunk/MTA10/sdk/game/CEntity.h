@@ -81,6 +81,7 @@ public:
 
     virtual void                        SetDoNotRemoveFromGameWhenDeleted( bool bDoNotRemoveFromGame ) = 0;
 
+    virtual bool                        IsUsingCollision() const = 0;
     virtual void                        SetUsesCollision( bool enabled ) = 0;
     virtual bool                        IsBackfaceCulled() const = 0;
     virtual void                        SetBackfaceCulled( bool enabled ) = 0;

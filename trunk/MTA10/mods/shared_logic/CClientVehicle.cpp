@@ -1350,22 +1350,28 @@ bool CClientVehicle::IsHeliSearchLightVisible() const
     return m_bHeliSearchLightVisible;
 }
 
-void CClientVehicle::SetHeliSearchLightVisible ( bool bVisible )
+void CClientVehicle::SetHeliSearchLightVisible( bool bVisible )
 {
     if ( m_heli )
-        m_heli->SetHeliSearchLightVisible ( bVisible );
+        m_heli->SetHeliSearchLightVisible( bVisible );
 
     m_bHeliSearchLightVisible = bVisible;
 }
 
-void CClientVehicle::SetCollisionEnabled ( bool bCollisionEnabled )
+void CClientVehicle::SetCollisionEnabled( bool bCollisionEnabled )
 {
     if ( m_automobile )
-    {
         m_automobile->SetUsesCollision( bCollisionEnabled );
-    }
 
     m_bIsCollisionEnabled = bCollisionEnabled;
+}
+
+bool CClientVehicle::IsCollisionEnabled() const
+{
+    if ( m_automobile )
+        return m_automobile->IsUsingCollision();
+
+    return m_bIsCollisionEnabled;
 }
 
 bool CClientVehicle::GetCanShootPetrolTank() const

@@ -14,6 +14,10 @@
 #ifndef __MULTIPLAYERSA_INIT
 #define __MULTIPLAYERSA_INIT
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include "Common.h"
+
 #include <game/CGame.h>
 
 #include "multiplayer_keysync.h"
