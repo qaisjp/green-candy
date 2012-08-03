@@ -38,7 +38,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getResourceName );
     LUA_DECLARE( getResourceFromName );
     LUA_DECLARE( getResourceRootElement );
-    LUA_DECLARE( getResourceguiElement );
+    LUA_DECLARE( getResourceGUIElement );
     LUA_DECLARE( getResourceDynamicElementRoot );
     LUA_DECLARE( getResourceExportedFunctions );
 
@@ -101,7 +101,6 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( isElementWithinMarker );
     LUA_DECLARE( getElementsWithinColShape );
     LUA_DECLARE( getElementDimension );
-    LUA_DECLARE( getElementZoneName );
     LUA_DECLARE( getElementBoundingBox );
     LUA_DECLARE( getElementRadius );
     LUA_DECLARE( isElementAttached );
@@ -209,7 +208,6 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getPedBonePosition );
     LUA_DECLARE( getPedClothes );
     LUA_DECLARE( getPedControlState );
-    LUA_DECLARE( isPedSunbathing );
     LUA_DECLARE( isPedDoingGangDriveby );
     LUA_DECLARE( getPedAnimation );
     LUA_DECLARE( getPedMoveState );
@@ -229,7 +227,6 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( addPedClothes );
     LUA_DECLARE( removePedClothes );
     LUA_DECLARE( setPedControlState );
-    LUA_DECLARE( setPedSunbathing );
     LUA_DECLARE( setPedDoingGangDriveby );
     LUA_DECLARE( setPedLookAt );
     LUA_DECLARE( setPedHeadless );
@@ -250,14 +247,12 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getVehicleType );
     LUA_DECLARE( getVehicleColor );
-    LUA_DECLARE( getModel );
     LUA_DECLARE( getVehicleModelFromName );
     LUA_DECLARE( getVehicleLandingGearDown );
     LUA_DECLARE( getVehicleMaxPassengers );
     LUA_DECLARE( getVehicleOccupant );
     LUA_DECLARE( getVehicleOccupants );
     LUA_DECLARE( getVehicleController );
-    LUA_DECLARE( getVehicleRotation );
     LUA_DECLARE( getVehicleSirensOn );
     LUA_DECLARE( getVehicleTurnVelocity );
     LUA_DECLARE( getVehicleTurretPosition );
@@ -299,12 +294,10 @@ namespace CLuaFunctionDefs
     // Vehicle set functions
     LUA_DECLARE( fixVehicle );
     LUA_DECLARE( blowVehicle );
-    LUA_DECLARE( setVehicleRotation );
     LUA_DECLARE( setVehicleTurnVelocity );
     LUA_DECLARE( setVehicleColor );
     LUA_DECLARE( setVehicleLandingGearDown );
     LUA_DECLARE( setVehicleLocked );
-    LUA_DECLARE( setVehicleModel );
     LUA_DECLARE( setVehicleDoorsUndamageable );
     LUA_DECLARE( setVehicleSirensOn );
     LUA_DECLARE( addVehicleUpgrade );
@@ -313,13 +306,6 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( setVehicleWheelStates );
     LUA_DECLARE( setVehicleLightState );
     LUA_DECLARE( setVehiclePanelState );
-    LUA_DECLARE( toggleVehicleRespawn );
-    LUA_DECLARE( setVehicleRespawnDelay );
-    LUA_DECLARE( setVehicleIdleRespawnDelay );
-    LUA_DECLARE( setVehicleRespawnPosition );
-    LUA_DECLARE( resetVehicleExplosionTime );
-    LUA_DECLARE( resetVehicleIdleTime );
-    LUA_DECLARE( respawnVehicle );
     LUA_DECLARE( setVehicleOverrideLights );
     LUA_DECLARE( setVehicleTaxiLightOn );
     LUA_DECLARE( isVehicleTaxiLightOn );
@@ -346,15 +332,12 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( createObject );
     
     // Object get funcs
-    LUA_DECLARE( isObjectextern );
     LUA_DECLARE( getObjectScale );
 
     // Object set funcs
-    LUA_DECLARE( setObjectRotation );
     LUA_DECLARE( moveObject );
     LUA_DECLARE( stopObject );
     LUA_DECLARE( setObjectScale );
-    LUA_DECLARE( setObjectextern );
 
     // Explosion functions
     LUA_DECLARE( createExplosion );
@@ -501,12 +484,12 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( guiGetInputMode );
     LUA_DECLARE( guiSetInputEnabled );
     LUA_DECLARE( guiSetInputMode );
-    LUA_DECLARE( guiIsChatBoxInputActive );
-    LUA_DECLARE( guiIsConsoleActive );
-    LUA_DECLARE( guiIsDebugViewActive );
-    LUA_DECLARE( guiIsMainMenuActive );
-    LUA_DECLARE( guiIsMTAWindowActive );
-    LUA_DECLARE( guiIsTransferBoxActive );
+    LUA_DECLARE( isChatBoxInputActive );
+    LUA_DECLARE( isConsoleActive );
+    LUA_DECLARE( isDebugViewActive );
+    LUA_DECLARE( isMainMenuActive );
+    LUA_DECLARE( isMTAWindowActive );
+    LUA_DECLARE( isTransferBoxActive );
     LUA_DECLARE( guiCreateWindow );
     LUA_DECLARE( guiCreateLabel );
     LUA_DECLARE( guiCreateButton );
@@ -520,9 +503,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( guiCreateProgressBar );
     LUA_DECLARE( guiCreateCheckBox );
     LUA_DECLARE( guiCreateRadioButton );
-    LUA_DECLARE( guiCreateexternImage );
     LUA_DECLARE( guiCreateFont );
-    LUA_DECLARE( guiexternImageLoadImage );
     LUA_DECLARE( guiGetSelectedTab );
     LUA_DECLARE( guiSetSelectedTab );
     LUA_DECLARE( guiDeleteTab );
@@ -556,7 +537,6 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( guiScrollPaneGetHorizontalScrollPosition );
     LUA_DECLARE( guiScrollPaneSetVerticalScrollPosition );
     LUA_DECLARE( guiScrollPaneGetVerticalScrollPosition );
-    LUA_DECLARE( guiDestroyElement );
     LUA_DECLARE( guiSetEnabled );
     LUA_DECLARE( guiSetText );
     LUA_DECLARE( guiSetFont );
@@ -591,10 +571,6 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( guiMemoSetCaratIndex );
     LUA_DECLARE( guiWindowSetMovable );
     LUA_DECLARE( guiWindowSetSizable );
-    LUA_DECLARE( guiWindowGetMovable );
-    LUA_DECLARE( guiWindowGetSizable );
-    LUA_DECLARE( guiWindowGetCloseButtonEnabled );
-    LUA_DECLARE( guiWindowGetTitleBarEnabled );
     LUA_DECLARE( guiLabelSetColor );
     LUA_DECLARE( guiLabelSetVerticalAlign );
     LUA_DECLARE( guiLabelSetHorizontalAlign );

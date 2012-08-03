@@ -3541,16 +3541,8 @@ void CPacketHandler::Packet_EntityRemove ( NetBitStreamInterface& bitStream )
                 g_pClientGame->ResetVehicleInOut ();
             }
 
-            // Delete its clientside children
-            pEntity->DeleteClientChildren ();
-
-            // Is this not a system entity?
-            if ( !pEntity->IsSystemEntity () )
-            {
-                // Should be safe to delete this element...
-                // We might call Delete on this element twice but the code won't delete it twice.
-                g_pClientGame->m_ElementDeleter.Delete ( pEntity );
-            }
+            // Delete the entity
+            pEntity->Delete();
         }
     }
 }
@@ -4178,10 +4170,10 @@ void CPacketHandler::Packet_LuaEvent ( NetBitStreamInterface& bitStream )
                     }
                 }
                 else
-                    g_pClientGame->m_pScriptDebugging->LogError ( NULL, "Server triggered clientside event %s, but event is not marked as remotly triggerable", szName );
+                    g_pClientGame->m_pScriptDebugging->LogError( "Server triggered clientside event %s, but event is not marked as remotly triggerable", szName );
             }
             else
-                g_pClientGame->m_pScriptDebugging->LogError ( NULL, "Server triggered clientside event %s, but event is not added clientside", szName );
+                g_pClientGame->m_pScriptDebugging->LogError( "Server triggered clientside event %s, but event is not added clientside", szName );
         }
 
         // Delete event name again

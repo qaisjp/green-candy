@@ -534,6 +534,14 @@ public:
             return E_FAIL;
         }
 
+        if ( buffer.size() == 0 )
+        {
+            SString msg( "[CIncludeManager: Empty file %s]", *path );
+            m_strReport += msg;
+            OutputDebugLine( msg );
+            return E_FAIL;
+        }
+
         // Allocate memory for file contents
         BYTE* pData = (BYTE*)malloc( buffer.size() );
         memcpy( pData, &buffer[0], buffer.size() );
@@ -651,7 +659,7 @@ void CEffectWrapImpl::CreateUnderlyingData ( const SString& strFilename, const S
     SString strMetaPath = strFilename.Right ( strFilename.length () - strRootPath.length () );
     CIncludeManager IncludeManager ( strRootPath, ExtractPath ( strMetaPath ) );
     LPD3DXBUFFER pBufferErrors = NULL;
-    HRESULT hr = D3DXCreateEffectFromFile( m_pDevice, ExtractFilename ( strMetaPath ), NULL, &IncludeManager, dwFlags, NULL, &m_pD3DEffect, &pBufferErrors );            
+    HRESULT hr = D3DXCreateEffectFromFile( m_pDevice, strRootPath.c_str(), NULL, &IncludeManager, dwFlags, NULL, &m_pD3DEffect, &pBufferErrors );            
 
     // Handle compile errors
     strOutStatus = "";

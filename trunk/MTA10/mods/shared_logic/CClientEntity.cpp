@@ -1224,36 +1224,6 @@ unsigned int CClientEntity::GetTypeID ( const char* szTypeName )
         return CCLIENTUNKNOWN;
 }
 
-
-void CClientEntity::DeleteClientChildren ( void )
-{
-    // Gather a list over children (we can't use the list as it changes)
-    std::list < CClientEntity* > Children;
-    CChildListType ::const_iterator iterCopy = m_Children.begin ();
-    for ( ; iterCopy != m_Children.end (); iterCopy++ )
-    {
-        Children.push_back ( *iterCopy );
-    }
-
-    // Call ourselves on each child of this to go as deep as possible and start deleting there
-    std::list < CClientEntity* > ::const_iterator iter = Children.begin ();
-    for ( ; iter != Children.end (); iter++ )
-    {
-        (*iter)->DeleteClientChildren ();
-    }
-
-    // We have no children at this point if we're locally created. Client elements can only be children
-    // of server elements, not vice versa.
-    
-    // Are we a client element?
-    if ( IsLocalEntity () && !IsSystemEntity () )
-    {
-        // Delete us
-        g_pClientGame->GetElementDeleter ()->Delete ( this );
-    }
-}
-
-
 bool CClientEntity::IsStatic ( void )
 {
     CEntity * pEntity = GetGameEntity ();

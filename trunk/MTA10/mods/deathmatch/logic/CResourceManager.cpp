@@ -77,9 +77,6 @@ void CResourceManager::LoadUnavailableResources( CClientEntity *root )
 
 void CResourceManager::Remove( Resource *res )
 {
-    // Delete all the resource's locally created children (the server won't do that)
-    ((CResource*)res)->DeleteClientChildren();
-
     ResourceManager::Remove( res );
 }
 

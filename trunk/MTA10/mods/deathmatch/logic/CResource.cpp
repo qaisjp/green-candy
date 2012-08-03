@@ -341,12 +341,6 @@ void CResource::Load( CClientEntity *root )
     m_resourceEntity->CallEvent( "onClientResourceStart", args, true );
 }
 
-
-void CResource::DeleteClientChildren()
-{
-    m_resourceEntity->DeleteClientChildren();
-}
-
 void CResource::ShowCursor( bool bShow, bool bToggleControls )
 {
     // Different cursor showing state than earlier?

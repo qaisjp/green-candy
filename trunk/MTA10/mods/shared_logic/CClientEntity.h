@@ -266,8 +266,6 @@ public:
 
     CMapEventManager*                           GetEventManager()                               { return m_pEventManager; };
 
-    void                                        DeleteClientChildren();
-
     // Returns true if this class is inherited by CClientStreamElement
     virtual bool                                IsStreamingCompatibleClass()                    { return false; };
 
