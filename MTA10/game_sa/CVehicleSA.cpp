@@ -660,6 +660,16 @@ CPed* CVehicleSA::GetPassenger( unsigned char ucSlot ) const
     return pGame->GetPools()->GetPed( ped );
 }
 
+void CVehicleSA::BlowUp( CEntity *creator, unsigned long unk )
+{
+    CEntitySA *entity = dynamic_cast <CEntitySA*> ( creator );
+
+    if ( !entity )
+        GetInterface()->Blow( NULL, unk );
+    else
+        GetInterface()->Blow( entity->GetInterface(), unk );
+}
+
 CVehicle* CVehicleSA::GetTowedVehicle() const
 {
     DEBUG_TRACE("CVehicle* CVehicleSA::GetTowedVehicle() const");
