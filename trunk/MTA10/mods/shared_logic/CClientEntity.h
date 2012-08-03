@@ -146,7 +146,7 @@ public:
     static inline int                           GetInstanceCount()                              { return iCount; };
 
     virtual eClientEntityType                   GetType() const = 0;
-    inline bool                                 IsLocalEntity()                                 { return m_ID >= MAX_SERVER_ELEMENTS; };
+    inline bool                                 IsLocalEntity() const                           { return m_ID >= MAX_SERVER_ELEMENTS; };
 
     // System entity? A system entity means it can't be removed by the server
     // or the client scripts.

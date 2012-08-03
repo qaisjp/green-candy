@@ -2991,7 +2991,7 @@ void CClientVehicle::UpdateTargetRotation()
 
 bool CClientVehicle::IsEnterable() const
 {
-    if ( !m_pVehicle || !IsSystemEntity() )
+    if ( !m_pVehicle || IsLocalEntity() )
         return false;
 
     return !IsInWater() || (GetVehicleType() == CLIENTVEHICLE_BOAT || 

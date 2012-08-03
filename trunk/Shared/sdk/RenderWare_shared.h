@@ -364,9 +364,9 @@ public:
 
     CVector         right;
     unsigned int    a;
-    CVector         up;
-    unsigned int    b;
     CVector         at;
+    unsigned int    b;
+    CVector         up;
     unsigned int    c;
     CVector         pos;
     unsigned int    d;
