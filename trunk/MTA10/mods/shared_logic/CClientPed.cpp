@@ -5037,7 +5037,10 @@ bool CClientPed::ReloadWeapon ( void )
 
 void CClientPed::SetStealthAiming ( bool bAiming )
 {
-    m_pPlayerPed->SetStealthAiming( bAiming );
+    if ( m_pPlayerPed )
+        m_pPlayerPed->SetStealthAiming( bAiming );
+
+    m_bStealthAiming = bAiming;
 }
 
 CSphere CClientPed::GetWorldBoundingSphere ( void )

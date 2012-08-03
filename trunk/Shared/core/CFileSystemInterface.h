@@ -112,7 +112,7 @@ public:
 
     void                    GetString( std::string& output )
     {
-        for (;;)
+        while ( !IsEOF() )
         {
             unsigned char c = ReadByte();
 
