@@ -338,15 +338,10 @@ void CClientObjectManager::UpdateLimitInfo ( void )
 
 bool CClientObjectManager::IsObjectLimitReached ( void )
 {
-    // Make sure we haven't run out of entry node info's, single link nodes or double link nodes
-    #define MAX_ENTRYINFONODES          3500    // Real limit is 4096
-    #define MAX_POINTERNODESINGLELINK   65000   // Real limit is 70000
-    #define MAX_POINTERNODESDOUBLELINK  3600    // Real limit is 4000
-
     // If we've run out of either of these limit, don't allow more objects
-    if ( m_iEntryInfoNodeEntries >= MAX_ENTRYINFONODES ||
-         m_iPointerNodeSingleLinkEntries >= MAX_POINTERNODESINGLELINK ||
-         m_iPointerNodeDoubleLinkEntries >= MAX_POINTERNODESDOUBLELINK )
+    if ( m_iEntryInfoNodeEntries >= g_pGame->GetPools()->GetPoolCapacity( ENTRY_INFO_NODE_POOL ) ||
+         m_iPointerNodeSingleLinkEntries >= g_pGame->GetPools()->GetPoolCapacity( POINTER_SINGLE_LINK_POOL ) ||
+         m_iPointerNodeDoubleLinkEntries >= g_pGame->GetPools()->GetPoolCapacity( POINTER_DOUBLE_LINK_POOL ) )
     {
         // Limit reached
         return true;
@@ -354,7 +349,7 @@ bool CClientObjectManager::IsObjectLimitReached ( void )
 
     // Allow max 250 objects at once for now.
     // TODO: The real limit is up to 350 but we're limited by other limits.
-    return g_pGame->GetPools()->GetNumberOfUsedSpaces( OBJECT_POOL ) >= 500;
+    return g_pGame->GetPools()->GetNumberOfUsedSpaces( OBJECT_POOL ) >= g_pGame->GetPools()->GetPoolCapacity( OBJECT_POOL );
 }
 
 
