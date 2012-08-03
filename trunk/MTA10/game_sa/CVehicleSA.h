@@ -643,7 +643,7 @@ public:
     bool                        BreakTowLink()                                          { return GetInterface()->BreakTowLink(); }
     float                       GetHeightAboveRoad() const                              { return GetInterface()->GetModelOffset(); }
     void                        Fix()                                                   { GetInterface()->Fix(); }
-    void                        BlowUp( CEntity *creator, unsigned long unk )           { GetInterface()->Blow( dynamic_cast <CEntitySA*> ( creator )->GetInterface(), unk ); }
+    void                        BlowUp( CEntity *creator, unsigned long unk );
     void                        BlowUpCutSceneNoExtras( unsigned int unk1, unsigned int unk2, unsigned int unk3, unsigned int unk4 )    { GetInterface()->BlowWithCutscene( unk1, unk2, unk3, unk4 ); }
     virtual void                RecalculateSuspensionLines()                            { GetInterface()->SetupSuspension(); }
 
