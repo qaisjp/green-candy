@@ -28,7 +28,7 @@ public:
     void    operator delete( void *ptr );
 };
 
-class CBuildingSA : public virtual CBuilding, public virtual CEntitySA
+class CBuildingSA : public virtual CBuilding, public CEntitySA
 {
 private:
     CBuildingSAInterface        * internalInterface;

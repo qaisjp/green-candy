@@ -53,7 +53,13 @@ CTxdInstanceSA::~CTxdInstanceSA()
     }
 
     if ( m_parentTxd != 0xFFFF )
-        (*ppTxdPool)->Get( m_parentTxd )->Dereference();
+    {
+        // Bugfix for resource termination
+        CTxdInstanceSA *parentTxd = (*ppTxdPool)->Get( m_parentTxd );
+
+        if ( parentTxd )
+            parentTxd->Dereference();
+    }
 }
 
 void* CTxdInstanceSA::operator new( size_t )

@@ -129,15 +129,6 @@ CObjectSA::~CObjectSA()
 
     mtaObjects[m_poolIndex] = NULL;
 
-    if ( m_doNotRemoveFromGame )
-        return;
-
-    CWorldSA *world = pGame->GetWorld();
-    world->Remove( GetInterface() );
-    world->RemoveReferencesToDeletedObject( GetInterface() );
-
-    delete m_pInterface;
-
 #ifdef MTA_USE_BUILDINGS_AS_OBJECTS
     DWORD dwModelID = this->internalInterface->m_nModelIndex;
     // REMOVE ref to colstore thingy

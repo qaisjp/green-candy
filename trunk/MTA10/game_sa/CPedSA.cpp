@@ -520,7 +520,7 @@ void CPedSA::SetCurrentWeaponSlot( eWeaponSlot weaponSlot )
     CPlayerPedSA *localPlayer = pGame->GetPlayerInfo()->GetPlayerPed();
     DWORD dwThis = (DWORD)GetInterface();
 
-    if ( localPlayer == (CPlayerPedSA*)this )
+    if ( localPlayer == dynamic_cast <CPlayerPedSA*> ( this ) )
     {
         pGame->GetPlayerInfo()->GetInterface()->m_pedData.m_nChosenWeapon = weaponSlot;
 

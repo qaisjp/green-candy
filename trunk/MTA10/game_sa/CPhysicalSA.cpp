@@ -88,11 +88,15 @@ void CPhysicalSA::SetDamageEntity( CEntity *entity )
     if ( !pEntitySA )
         return;
 
+    return;
+
     GetInterface()->m_damageEntity = pEntitySA->GetInterface();
 }
 
 void CPhysicalSA::ResetLastDamage()
 {
+    return;
+
     GetInterface()->m_damageImpulseMagnitude = 0;
     GetInterface()->m_damageEntity = NULL;
 }

@@ -121,6 +121,9 @@ CEntitySA::~CEntitySA()
     while ( !m_disabledColl.empty() )
         SetCollidableWith( pGame->GetPools()->GetEntity( m_disabledColl.begin()->first ), true );
 
+    if ( m_doNotRemoveFromGame )
+        return;
+
     CWorldSA *world = pGame->GetWorld();
     world->Remove( m_pInterface );
     world->RemoveReferencesToDeletedObject( m_pInterface );
