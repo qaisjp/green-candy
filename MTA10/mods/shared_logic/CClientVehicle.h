@@ -231,7 +231,7 @@ public:
 
     void                        ReportMissionAudioEvent( unsigned short usSound );
 
-    inline bool                 IsCollisionEnabled() const                                              { return m_bIsCollisionEnabled; };
+    bool                        IsCollisionEnabled() const;
     void                        SetCollisionEnabled( bool bCollisionEnabled );
 
     bool                        GetCanShootPetrolTank() const;

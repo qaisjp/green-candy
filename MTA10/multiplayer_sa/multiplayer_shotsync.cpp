@@ -44,7 +44,7 @@ CVector * projectileTarget = NULL;
 CEntitySAInterface * projectileTargetEntityInterface = 0;
 CEntity* projectileTargetEntity = 0;
 class CProjectileSAInterface * pProjectile = 0;
-unsigned short dwProjectileInfoIndex;
+DWORD dwProjectileInfoIndex;
 bool bWeaponFire = false;
 
 CColPointSAInterface ** ppInstantHitColPoint;
@@ -667,7 +667,7 @@ bool ProcessDamageEvent ( CEventDamageSAInterface * event, CPedSAInterface * aff
 {
     if ( m_pDamageHandler && event )
     {
-        CPools * pPools = pGameInterface->GetPools();
+        CPoolsSA * pPools = (CPoolsSA*)pGameInterface->GetPools();
         CPed * pPed = pPools->GetPed ( (DWORD *)affectsPed );
         CEntity * pInflictor = NULL;
 
@@ -840,16 +840,16 @@ bool ProcessProjectileAdd ()
         {
             switch ( pProjectileOwner->m_type )
             {
-            case ENTITY_TYPE_VEHICLE:
-                pOwner = pPools->GetVehicle ( pProjectileOwner );
-                break;
-            case ENTITY_TYPE_PED:
-                pOwner = pPools->GetPed ( pProjectileOwner );
-                break;
-            case ENTITY_TYPE_OBJECT:
-                //pPools->GetObject ( (DWORD *)event->inflictor );
-            default:
-                pOwner = NULL;
+                case ENTITY_TYPE_VEHICLE:
+                    pOwner = pPools->GetVehicle ( (DWORD *)pProjectileOwner );
+                    break;
+                case ENTITY_TYPE_PED:
+                    pOwner = pPools->GetPed ( (DWORD *)pProjectileOwner );
+                    break;
+                case ENTITY_TYPE_OBJECT:
+                    //pPools->GetObject ( (DWORD *)event->inflictor );
+                default:
+                    pOwner = NULL;
             }
         }
     
@@ -878,23 +878,22 @@ void ProcessProjectile ( )
 {
     if ( m_pProjectileHandler != NULL )
     {
-        CPools * pPools = pGameInterface->GetPools();
+        CPoolsSA * pPools = (CPoolsSA*)pGameInterface->GetPools();
         CEntity * pOwner = NULL;
-
         if ( pProjectileOwner )
         {
             switch ( pProjectileOwner->m_type )
             {
-            case ENTITY_TYPE_VEHICLE:
-                pOwner = pPools->GetVehicle ( (DWORD *)pProjectileOwner );
-                break;
-            case ENTITY_TYPE_PED:
-                pOwner = pPools->GetPed ( (DWORD *)pProjectileOwner );
-                break;
-            case ENTITY_TYPE_OBJECT:
-                //pPools->GetObject ( (DWORD *)event->inflictor );
-            default:
-                pOwner = NULL;
+                case ENTITY_TYPE_VEHICLE:
+                    pOwner = pPools->GetVehicle ( (DWORD *)pProjectileOwner );
+                    break;
+                case ENTITY_TYPE_PED:
+                    pOwner = pPools->GetPed ( (DWORD *)pProjectileOwner );
+                    break;
+                case ENTITY_TYPE_OBJECT:
+                    //pPools->GetObject ( (DWORD *)event->inflictor );
+                default:
+                    pOwner = NULL;
             }
         }
 
@@ -957,7 +956,7 @@ void _declspec(naked) HOOK_CProjectile__CProjectile()
 {
     _asm
     {
-        mov     dwProjectileInfoIndex, bx // it happens to be in here, luckily
+        mov     dwProjectileInfoIndex, ebx // it happens to be in here, luckily
         mov     pProjectile, ecx
         pushad
     }

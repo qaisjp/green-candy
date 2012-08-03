@@ -215,11 +215,13 @@ public:
     void                        SetDoNotRemoveFromGameWhenDeleted( bool b )     { m_doNotRemoveFromGame = b; };
 
     bool                        IsStatic() const                                { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC ); }
-    void                        SetStatic( bool enabled )                       { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC, enabled ); };
-    void                        SetUsesCollision( bool enabled )                { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_COLLISION, enabled ); };
+    void                        SetStatic( bool enabled )                       { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_STATIC, enabled ); }
+    bool                        IsUsingCollision() const                        { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_COLLISION ); }
+    void                        SetUsesCollision( bool enabled )                { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_COLLISION, enabled ); }
 
-    bool                        IsBackfaceCulled() const                        { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL ); };
-    void                        SetBackfaceCulled( bool enabled )               { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL, enabled ); };
+    bool                        IsBackfaceCulled() const                        { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL ); }
+    void                        SetBackfaceCulled( bool enabled )               { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL, enabled ); }
+
 
     void                        SetAlpha( unsigned char alpha );
 

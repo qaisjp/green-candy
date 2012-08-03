@@ -208,7 +208,7 @@ void CFoo::Test ( const char* szString )
 
     else if ( stricmp ( szString, "choke" ) == 0 )
     {
-        g_pClientGame->GetLocalPlayer ()->SetChoking ( true );
+        g_pClientGame->GetLocalPlayer ()->SetChoking ( !g_pClientGame->GetLocalPlayer()->IsChoking() );
     }
 
 
@@ -242,6 +242,23 @@ void CFoo::Test ( const char* szString )
         {
             pVehicle->GetGameVehicle ()->SetMass ( atof ( szString + 8 ) );
             g_pCore->ChatPrintf ( "Set mass to %f", false, pVehicle->GetGameVehicle ()->GetMass () );
+        }
+    }
+
+    else if ( strnicmp( szString, "massall", 7 ) == 0 )
+    {
+        std::vector <CClientVehicle*>::const_iterator iter = pVehicleManager->IterBegin();
+
+        for ( ; iter != pVehicleManager->IterEnd(); iter++ )
+        {
+            CVehicle *veh = (*iter)->GetGameVehicle();
+
+            if ( !veh )
+                continue;
+
+            veh->SetMass( 100000 );
+
+            veh->SetGravity( CVector( 0, 0, 1 ) );
         }
     }
 
