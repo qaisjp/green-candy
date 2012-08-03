@@ -71,7 +71,7 @@ void CClientPed::InstanceLua( bool system )
     lua_pop( m_lua, 1 );
 }
 
-CClientPed::CClientPed( CClientManager* pManager, unsigned long ulModelID, ElementID ID, LuaClass& root, bool system ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, root, system ), CAntiCheatModule( pManager->GetAntiCheat() )
+CClientPed::CClientPed( CClientManager* pManager, unsigned short ulModelID, ElementID ID, LuaClass& root, bool system ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, root, system ), CAntiCheatModule( pManager->GetAntiCheat() )
 {
     InstanceLua( system );
 

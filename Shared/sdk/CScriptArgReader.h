@@ -477,7 +477,7 @@ public:
             return true;
 
         assert ( m_pPendingFunctionIndex != -1 );
-        *m_pPendingFunctionOutValue = lua_readuserdata <CLuaMain, LUA_REGISTRYINDEX, 2> ( m_luaVM )->CreateReference( m_pPendingFunctionIndex );
+        *m_pPendingFunctionOutValue = lua_readuserdata <CLuaMain, LUA_STORAGEINDEX, 2> ( m_luaVM )->CreateReference( m_pPendingFunctionIndex );
         if ( VERIFY_FUNCTION( *m_pPendingFunctionOutValue ) )
         {
             m_pPendingFunctionIndex = -1;

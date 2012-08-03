@@ -121,7 +121,7 @@ class CClientPed : public CClientStreamElement, public CAntiCheatModule
     friend class CClientPedManager;
 
 public:
-                                CClientPed( CClientManager* pManager, unsigned long ulModelID, ElementID ID, LuaClass& root, bool system );
+                                CClientPed( CClientManager* pManager, unsigned short ulModelID, ElementID ID, LuaClass& root, bool system );
                                 ~CClientPed();
 
     inline void                 Unlink()                                                    {};

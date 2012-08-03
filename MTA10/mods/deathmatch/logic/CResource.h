@@ -75,9 +75,6 @@ public:
     inline CClientEntity*       GetResourceDFFRoot()                                { return m_dffEntity; };
     inline CClientEntity*       GetResourceTXDRoot()                                { return m_txdEntity; };
 
-    // This is to delete all the elements created in this resource that are created locally in this client
-    void                        DeleteClientChildren();
-
     // Use this for cursor showing/hiding
     void                        ShowCursor( bool bShow, bool bToggleControls = true );
 
