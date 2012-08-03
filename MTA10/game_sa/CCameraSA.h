@@ -89,107 +89,109 @@ class CCameraSAInterface : public CPlaceableSAInterface
 {
 public:
     //move these out the class, have decided to set up a mirrored enumerated type thingy at the top
-    bool    m_bAboveGroundTrainNodesLoaded;                 // 24
-    bool    m_bBelowGroundTrainNodesLoaded;                 // 25
-    bool    m_bCamDirectlyBehind;                           // 26
-    bool    m_bCamDirectlyInFront;                          // 27
-    bool    m_bCameraJustRestored;                          // 28
-    bool    m_bcutsceneFinished;                            // 29
-    bool    m_bCullZoneChecksOn;                            // 30
-    bool    m_bFirstPersonBeingUsed;                        // 31, To indicate if the m_bFirstPersonBeingUsed viewer is being used.
-    bool    m_bJustJumpedOutOf1stPersonBecauseOfTarget;     // 32
-    bool    m_bIdleOn;                                      // 33
-    bool    m_bInATunnelAndABigVehicle;                     // 34
-    bool    m_bInitialNodeFound;                            // 35
-    bool    m_bInitialNoNodeStaticsSet;                     // 36
-    bool    m_bIgnoreFadingStuffForMusic;                   // 37
-    bool    m_bPlayerIsInGarage;                            // 38
-    bool    m_bPlayerWasOnBike;                             // 39
-    bool    m_bJustCameOutOfGarage;                         // 40
-    bool    m_bJustInitalised;                              // 41, Just so the speed thingy doesn't go mad right at the start
-    unsigned char   m_bJust_Switched;                       // 42, Variable to indicate that we have jumped somewhere, Raymond needs this for the audio engine
-    bool    m_bLookingAtPlayer;                             // 43
-    bool    m_bLookingAtVector;                             // 44
-    bool    m_bMoveCamToAvoidGeom;                          // 45
-    bool    m_bObbeCinematicPedCamOn;                       // 46
-    bool    m_bObbeCinematicCarCamOn;                       // 47
-    bool    m_bRestoreByJumpCut;                            // 48
-    bool    m_bUseNearClipScript;                           // 49
-    bool    m_bStartInterScript;                            // 50
-    unsigned char   m_bStartingSpline;                      // 51
-    bool    m_bTargetJustBeenOnTrain;                       // 52, this variable is needed to be able to restore the camera
-    bool    m_bTargetJustCameOffTrain;                      // 53
-    bool    m_bUseSpecialFovTrain;                          // 54
-    bool    m_bUseTransitionBeta;                           // 55
-    bool    m_bUseScriptZoomValuePed;                       // 56
-    bool    m_bUseScriptZoomValueCar;                       // 57
-    bool    m_bWaitForInterpolToFinish;                     // 58
-    bool    m_bItsOkToLookJustAtThePlayer;                  // 59, Used when interpolating
-    bool    m_bWantsToSwitchWidescreenOff;                  // 60
-    bool    m_WideScreenOn;                                 // 61
-    bool    m_1rstPersonRunCloseToAWall;                    // 62
-    bool    m_bHeadBob;                                     // 63
-    bool    m_bVehicleSuspenHigh;                           // 64
-    bool    m_bEnable1rstPersonCamCntrlsScript;             // 65
-    bool    m_bAllow1rstPersonWeaponsCamera;                // 66
-    bool    m_bCooperativeCamMode;                          // 67
-    bool    m_bAllowShootingWith2PlayersInCar;              // 68
-    bool    m_bDisableFirstPersonInCar;                     // 69
+#if 0
+    bool    m_bAboveGroundTrainNodesLoaded;                 // 20
+    bool    m_bBelowGroundTrainNodesLoaded;                 // 21
+    bool    m_bCamDirectlyBehind;                           // 22
+    bool    m_bCamDirectlyInFront;                          // 23
+#endif
+    bool    m_bCameraJustRestored;                          // 24
+    bool    m_bcutsceneFinished;                            // 25
+    bool    m_bCullZoneChecksOn;                            // 26
+    bool    m_bFirstPersonBeingUsed;                        // 27, To indicate if the m_bFirstPersonBeingUsed viewer is being used.
+    bool    m_bJustJumpedOutOf1stPersonBecauseOfTarget;     // 28
+    bool    m_bIdleOn;                                      // 29
+    bool    m_bInATunnelAndABigVehicle;                     // 30
+    bool    m_bInitialNodeFound;                            // 31
+    bool    m_bInitialNoNodeStaticsSet;                     // 32
+    bool    m_bIgnoreFadingStuffForMusic;                   // 33
+    bool    m_bPlayerIsInGarage;                            // 34
+    bool    m_bPlayerWasOnBike;                             // 35
+    bool    m_bJustCameOutOfGarage;                         // 36
+    bool    m_bJustInitalised;                              // 37, Just so the speed thingy doesn't go mad right at the start
+    unsigned char   m_bJust_Switched;                       // 38, Variable to indicate that we have jumped somewhere, Raymond needs this for the audio engine
+    bool    m_bLookingAtPlayer;                             // 39
+    bool    m_bLookingAtVector;                             // 40
+    bool    m_bMoveCamToAvoidGeom;                          // 41
+    bool    m_bObbeCinematicPedCamOn;                       // 42
+    bool    m_bObbeCinematicCarCamOn;                       // 43
+    bool    m_bRestoreByJumpCut;                            // 44
+    bool    m_bUseNearClipScript;                           // 45
+    bool    m_bStartInterScript;                            // 46
+    unsigned char   m_bStartingSpline;                      // 47
+    bool    m_bTargetJustBeenOnTrain;                       // 48, this variable is needed to be able to restore the camera
+    bool    m_bTargetJustCameOffTrain;                      // 49
+    bool    m_bUseSpecialFovTrain;                          // 50
+    bool    m_bUseTransitionBeta;                           // 51
+    bool    m_bUseScriptZoomValuePed;                       // 52
+    bool    m_bUseScriptZoomValueCar;                       // 53
+    bool    m_bWaitForInterpolToFinish;                     // 54
+    bool    m_bItsOkToLookJustAtThePlayer;                  // 55, Used when interpolating
+    bool    m_bWantsToSwitchWidescreenOff;                  // 56
+    bool    m_WideScreenOn;                                 // 57
+    bool    m_1rstPersonRunCloseToAWall;                    // 58
+    bool    m_bHeadBob;                                     // 59
+    bool    m_bVehicleSuspenHigh;                           // 60
+    bool    m_bEnable1rstPersonCamCntrlsScript;             // 61
+    bool    m_bAllow1rstPersonWeaponsCamera;                // 62
+    bool    m_bCooperativeCamMode;                          // 63
+    bool    m_bAllowShootingWith2PlayersInCar;              // 64
+    bool    m_bDisableFirstPersonInCar;                     // 65
     static bool m_bUseMouse3rdPerson;
-    bool    bStaticFrustum;                                 // 70
+    bool    bStaticFrustum;                                 // 66
 
     // for debug keyboard stuff
-    unsigned char display_kbd_debug;                        // 71
-    float kbd_fov_value;                                    // 72
+    unsigned char display_kbd_debug;                        // 67
+    float kbd_fov_value;                                    // 68
 
     // The following fields allow the level designers to specify the camera for 2 player games.
-    short   m_ModeForTwoPlayersSeparateCars;                // 76
-    short   m_ModeForTwoPlayersSameCarShootingAllowed;      // 78
-    short   m_ModeForTwoPlayersSameCarShootingNotAllowed;   // 80
-    short   m_ModeForTwoPlayersNotBothInCar;                // 82
+    short   m_ModeForTwoPlayersSeparateCars;                // 72
+    short   m_ModeForTwoPlayersSameCarShootingAllowed;      // 74
+    short   m_ModeForTwoPlayersSameCarShootingNotAllowed;   // 76
+    short   m_ModeForTwoPlayersNotBothInCar;                // 78
 
-    bool    m_bGarageFixedCamPositionSet;                   // 84
-    bool    m_vecDoingSpecialInterPolation;                 // 85
-    bool    m_bScriptParametersSetForInterPol;              // 86
-
-    
-    bool    m_bFading;                                      // 87, to indicate that we are fading 
-    bool    m_bMusicFading;                                 // 88
-    bool    m_bMusicFadedOut;                               // 89
-
-    bool    m_bFailedCullZoneTestPreviously;                // 90
-    bool    m_FadeTargetIsSplashScreen;                     // 91, used as hack for fading 
-    bool    WorldViewerBeingUsed;                           // 92, To indicate if the world viewer is being used.                                      
+    bool    m_bGarageFixedCamPositionSet;                   // 80
+    bool    m_vecDoingSpecialInterPolation;                 // 81
+    bool    m_bScriptParametersSetForInterPol;              // 82
 
     
-    unsigned char   m_uiTransitionJUSTStarted;              // 93, This is the first frame of a transition.
-    unsigned char   m_uiTransitionState;                    // 94, 0:one mode 1:transition
-    unsigned char   ActiveCam;                              // 95, Which one at the moment (0 or 1)
+    bool    m_bFading;                                      // 83, to indicate that we are fading 
+    bool    m_bMusicFading;                                 // 84
+    bool    m_bMusicFadedOut;                               // 85
+
+    bool    m_bFailedCullZoneTestPreviously;                // 86
+    bool    m_FadeTargetIsSplashScreen;                     // 87, used as hack for fading 
+    bool    WorldViewerBeingUsed;                           // 88, To indicate if the world viewer is being used.                                      
+
+    
+    unsigned char   m_uiTransitionJUSTStarted;              // 89, This is the first frame of a transition.
+    unsigned char   m_uiTransitionState;                    // 90, 0:one mode 1:transition
+    unsigned char   ActiveCam;                              // 91, Which one at the moment (0 or 1)
                                                             // Their is a fudge at the end when the renderware matrix will receive either
                                                             // the active camera or the worldviewer camera
-    unsigned int    m_uiCamShakeStart;                      // 96, When did the camera shake start.
-    unsigned int    m_uiFirstPersonCamLastInputTime;        // 100
-    unsigned int    m_uiLongestTimeInMill;                  // 104
-    unsigned int    m_uiNumberOfTrainCamNodes;              // 108
-    unsigned int    m_uiTimeLastChange;                     // 112
-    unsigned int    m_uiTimeWeLeftIdle_StillNoInput;        // 116
-    unsigned int  m_uiTimeWeEnteredIdle;                    // 120
-    unsigned int    m_uiTimeTransitionStart;                // 124, When was the transition started ?
-    unsigned int    m_uiTransitionDuration;                 // 128, How long does the transition take ?
-    unsigned int    m_uiTransitionDurationTargetCoors;      // 132
-    int     m_BlurBlue;                                     // 136
-    int     m_BlurGreen;                                    // 140
-    int     m_BlurRed;                                      // 144
-    int     m_BlurType;                                     // 148
-    int     m_iWorkOutSpeedThisNumFrames;                   // 152, duh  
-    int     m_iNumFramesSoFar;                              // 156, counter
-    int     m_iCurrentTrainCamNode;                         // 160, variable indicating which camera node we are at for the train
-    int     m_motionBlur;                                   // 164, to indicate that we are fading
+    unsigned int    m_uiCamShakeStart;                      // 92, When did the camera shake start.
+    unsigned int    m_uiFirstPersonCamLastInputTime;        // 96
+    unsigned int    m_uiLongestTimeInMill;                  // 100
+    unsigned int    m_uiNumberOfTrainCamNodes;              // 104
+    unsigned int    m_uiTimeLastChange;                     // 108
+    unsigned int    m_uiTimeWeLeftIdle_StillNoInput;        // 112
+    unsigned int  m_uiTimeWeEnteredIdle;                    // 116
+    unsigned int    m_uiTimeTransitionStart;                // 120, When was the transition started ?
+    unsigned int    m_uiTransitionDuration;                 // 124, How long does the transition take ?
+    unsigned int    m_uiTransitionDurationTargetCoors;      // 128
+    int     m_BlurBlue;                                     // 132
+    int     m_BlurGreen;                                    // 136
+    int     m_BlurRed;                                      // 140
+    int     m_BlurType;                                     // 144
+    int     m_iWorkOutSpeedThisNumFrames;                   // 148, duh  
+    int     m_iNumFramesSoFar;                              // 152, counter
+    int     m_iCurrentTrainCamNode;                         // 156, variable indicating which camera node we are at for the train
+    int     m_motionBlur;                                   // 160, to indicate that we are fading
 
-    int     m_imotionBlurAddAlpha;                          // 168
-    int     m_iCheckCullZoneThisNumFrames;                  // 172
-    int     m_iZoneCullFrameNumWereAt;                      // 176
-    int     WhoIsInControlOfTheCamera;                      // 180, to discern between obbe and scripts
+    int     m_imotionBlurAddAlpha;                          // 164
+    int     m_iCheckCullZoneThisNumFrames;                  // 168
+    int     m_iZoneCullFrameNumWereAt;                      // 172
+    int     WhoIsInControlOfTheCamera;                      // 176, to discern between obbe and scripts
 
 //  float   CarZoomIndicator;
 //  float   CarZoomValue;
@@ -199,68 +201,68 @@ public:
 //  float   m_fPedZoomValue;
 //  float   m_fPedZoomValueSmooth;
 //  float   m_fPedZoomValueScript;
-    int     m_nCarZoom;                                     // 184, store zoom index
-    float   m_fCarZoomBase;                                 // 188, store base zoom distance from index
-    float   m_fCarZoomTotal;                                // 192, store total zoom after modded by camera modes
-    float   m_fCarZoomSmoothed;                             // 196, buffered version of the var above
-    float   m_fCarZoomValueScript;                          // 200
-    int     m_nPedZoom;                                     // 204, store zoom index
-    float   m_fPedZoomBase;                                 // 208, store base zoom distance from index
-    float   m_fPedZoomTotal;                                // 212, store total zoom after modded by camera modes
-    float   m_fPedZoomSmoothed;                             // 216, buffered version of the var above
-    float   m_fPedZoomValueScript;                          // 220
+    int     m_nCarZoom;                                     // 180, store zoom index
+    float   m_fCarZoomBase;                                 // 184, store base zoom distance from index
+    float   m_fCarZoomTotal;                                // 198, store total zoom after modded by camera modes
+    float   m_fCarZoomSmoothed;                             // 192, buffered version of the var above
+    float   m_fCarZoomValueScript;                          // 196
+    int     m_nPedZoom;                                     // 200, store zoom index
+    float   m_fPedZoomBase;                                 // 204, store base zoom distance from index
+    float   m_fPedZoomTotal;                                // 208, store total zoom after modded by camera modes
+    float   m_fPedZoomSmoothed;                             // 212, buffered version of the var above
+    float   m_fPedZoomValueScript;                          // 216
 
 
-    float   CamFrontXNorm, CamFrontYNorm;                   // 224
-    float   DistanceToWater;                                // 228
-    float   HeightOfNearestWater;                           // 232
-    float   FOVDuringInter;                                 // 236
-    float   LODDistMultiplier;                              // 240, This takes into account the FOV and the standard LOD multiplier Smaller aperture->bigger LOD multipliers.
-    float   GenerationDistMultiplier;                       // 244, This takes into account the FOV but noy the standard LOD multiplier
+    float   CamFrontXNorm, CamFrontYNorm;                   // 220
+    float   DistanceToWater;                                // 224
+    float   HeightOfNearestWater;                           // 228
+    float   FOVDuringInter;                                 // 232
+    float   LODDistMultiplier;                              // 236, This takes into account the FOV and the standard LOD multiplier Smaller aperture->bigger LOD multipliers.
+    float   GenerationDistMultiplier;                       // 240, This takes into account the FOV but noy the standard LOD multiplier
 
-    float   m_fAlphaSpeedAtStartInter;                      // 248
-    float   m_fAlphaWhenInterPol;                           // 252
-    float   m_fAlphaDuringInterPol;                         // 256
-    float   m_fBetaDuringInterPol;                          // 260
-    float   m_fBetaSpeedAtStartInter;                       // 264
-    float   m_fBetaWhenInterPol;                            // 268
-    float   m_fFOVWhenInterPol;                             // 272
-    float   m_fFOVSpeedAtStartInter;                        // 276
-    float   m_fStartingBetaForInterPol;                     // 280
-    float   m_fStartingAlphaForInterPol;                    // 284
-    float   m_PedOrientForBehindOrInFront;                  // 288
+    float   m_fAlphaSpeedAtStartInter;                      // 244
+    float   m_fAlphaWhenInterPol;                           // 248
+    float   m_fAlphaDuringInterPol;                         // 252
+    float   m_fBetaDuringInterPol;                          // 256
+    float   m_fBetaSpeedAtStartInter;                       // 260
+    float   m_fBetaWhenInterPol;                            // 264
+    float   m_fFOVWhenInterPol;                             // 268
+    float   m_fFOVSpeedAtStartInter;                        // 272
+    float   m_fStartingBetaForInterPol;                     // 276
+    float   m_fStartingAlphaForInterPol;                    // 280
+    float   m_PedOrientForBehindOrInFront;                  // 284
 
-    float   m_CameraAverageSpeed;                           // 292, this is an average depending on how many frames we work it out
-    float   m_CameraSpeedSoFar;                             // 296, this is a running total
-    float   m_fCamShakeForce;                               // 300, How severe is the camera shake.
-    float   m_fFovForTrain;                                 // 304
-    float   m_fFOV_Wide_Screen;                             // 308
+    float   m_CameraAverageSpeed;                           // 288, this is an average depending on how many frames we work it out
+    float   m_CameraSpeedSoFar;                             // 292, this is a running total
+    float   m_fCamShakeForce;                               // 296, How severe is the camera shake.
+    float   m_fFovForTrain;                                 // 300
+    float   m_fFOV_Wide_Screen;                             // 304
 
-    float   m_fNearClipScript;                              // 312
-    float   m_fOldBetaDiff;                                 // 316, Needed for interpolation between 2 modes
-    float   m_fPositionAlongSpline;                         // 320, Variable used to indicate how far along the spline we are 0-1 for started to completed respectively
-    float   m_ScreenReductionPercentage;                    // 324
-    float   m_ScreenReductionSpeed;                         // 328
-    float   m_AlphaForPlayerAnim1rstPerson;                 // 332
+    float   m_fNearClipScript;                              // 308
+    float   m_fOldBetaDiff;                                 // 312, Needed for interpolation between 2 modes
+    float   m_fPositionAlongSpline;                         // 316, Variable used to indicate how far along the spline we are 0-1 for started to completed respectively
+    float   m_ScreenReductionPercentage;                    // 320
+    float   m_ScreenReductionSpeed;                         // 324
+    float   m_AlphaForPlayerAnim1rstPerson;                 // 328
     
-    float   Orientation;                                    // 336, The orientation of the camera. Used for peds walking.
-    float   PlayerExhaustion;                               // 340, How tired is player (inaccurate sniping) 0.0f-1.0f
+    float   Orientation;                                    // 332, The orientation of the camera. Used for peds walking.
+    float   PlayerExhaustion;                               // 336, How tired is player (inaccurate sniping) 0.0f-1.0f
 
     // The following things are used by the sound code to
     // play reverb depending on the surroundings. From a point
     // in front of the camera the disance is measured to the
     // nearest obstacle (building)
-    float   SoundDistUp;                                    // 344, SoundDistLeft, SoundDistRight;     // These ones are buffered and should be used by the audio
-    float   SoundDistUpAsRead;                              // 348, SoundDistLeftAsRead, SoundDistRightAsRead;
-    float   SoundDistUpAsReadOld;                           // 352, SoundDistLeftAsReadOld, SoundDistRightAsReadOld;
+    float   SoundDistUp;                                    // 340, SoundDistLeft, SoundDistRight;     // These ones are buffered and should be used by the audio
+    float   SoundDistUpAsRead;                              // 344, SoundDistLeftAsRead, SoundDistRightAsRead;
+    float   SoundDistUpAsReadOld;                           // 348, SoundDistLeftAsReadOld, SoundDistRightAsReadOld;
     // Very rough distance to the nearest water for the sound to use
     // Front vector X&Y normalised to 1. Used by loads of stuff.
     
-    float   m_fAvoidTheGeometryProbsTimer;                  // 356
-    short   m_nAvoidTheGeometryProbsDirn;                   // 360
+    float   m_fAvoidTheGeometryProbsTimer;                  // 352
+    short   m_nAvoidTheGeometryProbsDirn;                   // 356
     
-    float   m_fWideScreenReductionAmount;                   // 362, 0 for not reduced 1 for fully reduced (Variable for Les)
-    float   m_fStartingFOVForInterPol;                      // 366
+    float   m_fWideScreenReductionAmount;                   // 358, 0 for not reduced 1 for fully reduced (Variable for Les)
+    float   m_fStartingFOVForInterPol;                      // 362
     
     // These ones are static so that they don't get cleared in CCamera::Init()
     static  float m_fMouseAccelHorzntl;// acceleration multiplier for 1st person controls
@@ -268,7 +270,7 @@ public:
     static  float m_f3rdPersonCHairMultX;
     static  float m_f3rdPersonCHairMultY;
 
-    CCamSAInterface m_cams[3];                              // 370
+    CCamSAInterface m_cams[3];                              // 366
     // The actual cameras (usually only one of the two is active)
     // And to complicate this we have a third camera, this camera is 
     // used for debugging when we want to have a look at the world.

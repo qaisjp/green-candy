@@ -31,6 +31,9 @@
 class CStreamingSA : public CStreaming
 {
 public:
+                    CStreamingSA();
+                    ~CStreamingSA();
+
     void            RequestModel                    ( unsigned short id, unsigned int flags );
     void            FreeModel                       ( unsigned short id );
     void            LoadAllRequestedModels          ( BOOL bOnlyPriorityModels = 0 );
@@ -49,7 +52,7 @@ enum eLoadingState
     MODEL_LOADED,
     MODEL_LOADING,
     MODEL_LOD,    // Perhaps
-    MODEL_UNKNOWN,
+    MODEL_RELOAD,
     FIX_DWORD = 0xFFFFFFFF
 };
 
@@ -60,10 +63,9 @@ public:
     unsigned short  m_unknown4;         // 2
     unsigned short  m_unknown5;         // 4
     unsigned char   m_flags;            // 6
-    unsigned char   m_unknown7;         // 7
-    unsigned short  m_id;               // 8
-    unsigned short  m_unknown8;         // 10
-    unsigned int    m_unknown3;         // 12
+    unsigned char   m_imgID;            // 7
+    unsigned int    m_blockOffset;      // 8
+    unsigned int    m_blockCount;       // 12
     eLoadingState   m_eLoading;         // 16
 };
 

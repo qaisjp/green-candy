@@ -5593,8 +5593,12 @@ void* SetModelSuspensionLinesToVehiclePrivate ( CVehicleSAInterface* pVehicleInt
     // Set the per-model suspension line data of the vehicle's model to the per-vehicle
     // suspension line data so that collision processing will use that instead.
     CAutomobile* pVehicle = dynamic_cast <CAutomobile*> ( pVehicleIntf->m_vehicle );
-    CModelInfo* pModelInfo = pGameInterface->GetModelInfo ( pVehicle->GetModelIndex () );
-    return pModelInfo->SetVehicleSuspensionData ( pVehicle->GetPrivateSuspensionLines () );
+    CModelInfo* pModelInfo = pGameInterface->GetModelInfo ( pVehicleIntf->m_model );
+
+    if ( pVehicle )
+        return pModelInfo->SetVehicleSuspensionData ( pVehicle->GetPrivateSuspensionLines () );
+
+    return pModelInfo->GetVehicleSuspensionData();
 }
 
 void SetModelSuspensionLines ( CVehicleSAInterface* pVehicleIntf, void* pSuspensionLines )

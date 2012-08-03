@@ -2610,7 +2610,7 @@ float CClientVehicle::GetDistanceFromGround() const
 
 bool CClientVehicle::IsOnGround() const
 {
-    if ( m_pModelInfo )
+    if ( m_pModelInfo && m_pModelInfo->GetBoundingBox() )
     {
         CVector vecMin = m_pModelInfo->GetBoundingBox()->vecBoundMin;
         CVector vecPosition;

@@ -76,12 +76,17 @@ public:
         Identity();
     }
 
-    RwMatrix( const RwMatrix& mat )
+    inline void assign( const RwMatrix& mat )
     {
         right = mat.right;
         up = mat.up;
         at = mat.at;
         pos = mat.pos;
+    }
+
+    RwMatrix( const RwMatrix& mat )
+    {
+        assign( mat );
     }
 
     RwMatrix operator + ( const RwMatrix& mat )

@@ -103,6 +103,7 @@ RpWorldAddLight_t                       RpWorldAddLight                         
 RpWorldAddClump_t                       RpWorldAddClump                         = (RpWorldAddClump_t)                       0xDEAD;
 RpPrtStdGlobalDataSetStreamEmbedded_t   RpPrtStdGlobalDataSetStreamEmbedded     = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0xDEAD;
 RwPrefetch_t                            RwPrefetch                              = (RwPrefetch_t)                            0xDEAD;
+RwFlushLoader_t                         RwFlushLoader                           = (RwFlushLoader_t)                         0xDEAD;
 
 /*****************************************************************************/
 /** GTA:SA function mappings                                                **/
@@ -446,6 +447,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RpWorldAddAtomic                    = (RpWorldAddAtomic_t)                      0x00750F90;
         RwCameraClone                       = (RwCameraClone_t)                         0x007EF3B0;
         RwPrefetch                          = (RwPrefetch_t)                            0x0072F480;
+        RwFlushLoader                       = (RwFlushLoader_t)                         0x0072E700;
 
         SetTextureDict                      = (SetTextureDict_t)                        0x007319C0;
         LoadClumpFile                       = (LoadClumpFile_t)                         0x005371F0;

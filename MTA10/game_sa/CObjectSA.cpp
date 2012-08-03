@@ -155,6 +155,16 @@ CObjectSA::~CObjectSA()
 #endif
 }
 
+void* CObjectSA::operator new ( size_t )
+{
+    return mtaObjectPool->Allocate();
+}
+
+void CObjectSA::operator delete ( void *ptr )
+{
+    return mtaObjectPool->Free( (CObjectSA*)ptr );
+}
+
 void CObjectSA::Explode()
 {
     DWORD dwFunc = FUNC_CObject_Explode;

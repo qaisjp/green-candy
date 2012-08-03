@@ -128,6 +128,16 @@ CPedSA::~CPedSA()
     mtaPeds[m_poolIndex] = NULL;
 }
 
+void* CPedSA::operator new ( size_t )
+{
+    return mtaPedPool->Allocate();
+}
+
+void CPedSA::operator delete ( void *ptr )
+{
+    return mtaPedPool->Free( (CPedSA*)ptr );
+}
+
 /**
  * \todo Reimplement weapons and PedIK for SA
  */

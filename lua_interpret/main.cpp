@@ -219,8 +219,47 @@ struct testStruct
 
 typedef NetworkSyncStruct <testStruct, ETSIZE(testStructDef)> test_network;
 
+struct bitshit
+{
+    bitshit()
+    {
+        a = false; b = false; c = false; d = false;
+        e = false; f = false; g = false; h = false;
+    }
+
+    bool a : 1;
+    bool b : 1;
+    bool c : 1;
+    bool d : 1;
+    bool e : 1;
+    bool f : 1;
+    bool g : 1;
+    bool h : 1;
+};
+
+#define FIELD_A     0x01
+#define FIELD_B     0x02
+#define FIELD_C     0x04
+#define FIELD_D     0x08
+#define FIELD_E     0x10
+#define FIELD_F     0x20
+#define FIELD_G     0x40
+#define FIELD_H     0x80
+
 int main( int argc, char *argv[] )
 {
+    bitshit z;
+    size_t s = sizeof(z);
+
+    z.a = 1;
+    z.d = 1;
+    z.e = 1;
+    z.g = 1;
+    z.h = 1;
+
+    unsigned char u = *(unsigned char*)&z;
+    bool o = ( u & FIELD_B ) != 0;
+
     test_network instance( testStructDef );
     testStruct a;
     testStruct b;
