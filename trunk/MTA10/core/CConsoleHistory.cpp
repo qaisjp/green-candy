@@ -79,7 +79,9 @@ void CConsoleHistory::Add ( const char* szLine )
     if ( m_History.size() != 0 && m_History.front() == szLine )
         return;
 
-    m_History.push_front( std::string( szLine ) );
+    std::string line( szLine );
+
+    m_History.push_front( line );
 
     // Is the list too big? Remove the last item
     if ( m_History.size () > m_uiHistoryLength )
@@ -91,13 +93,10 @@ void CConsoleHistory::Add ( const char* szLine )
 
     delete m_file;
 
-    m_file = mtaFileRoot->Open( m_strFilename.c_str(), "w+" );
+    m_file = mtaFileRoot->Open( m_strFilename.c_str(), "a+" );
 
-    // Write the history, one per line
-    history_t::iterator iter = m_History.begin ();
-
-    for ( ; iter != m_History.end (); iter++ )
-        m_file->Printf( "%s\n", *iter );
+    // Append our line
+    m_file->Write( line.c_str(), 1, line.size() );
 
     // Flush it into the file
     m_file->Flush();
