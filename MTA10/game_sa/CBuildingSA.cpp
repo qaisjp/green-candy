@@ -171,13 +171,4 @@ CBuildingSA::CBuildingSA( DWORD dwModel )
 CBuildingSA::~CBuildingSA()
 {
     DEBUG_TRACE("CBuildingSA::~CBuildingSA()");
-
-    if ( m_doNotRemoveFromGame )
-        return;
-    
-    CWorldSA *world = pGame->GetWorld();
-    world->Remove( m_pInterface );
-    world->RemoveReferencesToDeletedObject( m_pInterface );
-
-    delete m_pInterface;
 }

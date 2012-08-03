@@ -31,10 +31,4 @@ CCivilianPedSA::CCivilianPedSA( CCivilianPedSAInterface *ped, unsigned short mod
 CCivilianPedSA::~CCivilianPedSA()
 {
     DEBUG_TRACE("CCivilianPedSA::~CCivilianPedSA()");
-
-    CWorldSA *world = pGame->GetWorld();
-    world->Remove( m_pInterface );
-    world->RemoveReferencesToDeletedObject( m_pInterface );
-
-    delete m_pInterface;
 }

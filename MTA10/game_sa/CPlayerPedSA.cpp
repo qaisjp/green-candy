@@ -105,6 +105,8 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
 
         pLocalClothes = m_pData->m_pClothes;
         pLocalWanted = m_pData->m_Wanted;
+
+        m_doNotRemoveFromGame = true;
     }
 
     // Set default stuff
@@ -125,12 +127,6 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
 CPlayerPedSA::~CPlayerPedSA()
 {
     DEBUG_TRACE("CPlayerPedSA::~CPlayerPedSA()");
-
-    CWorldSA *world = pGame->GetWorld();
-    world->Remove( m_pInterface );
-    world->RemoveReferencesToDeletedObject( m_pInterface );
-
-    delete m_pInterface;
 
     // Delete the player data
     if ( !m_bIsLocal )

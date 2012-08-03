@@ -139,7 +139,7 @@ public:
         if ( m_flags[id] & 0x80 )
             return;
 
-        m_flags[id] &= ~0x80;
+        m_flags[id] |= 0x80;
         m_active--;
     }
 
