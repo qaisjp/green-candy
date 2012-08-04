@@ -158,7 +158,7 @@ bool CEventDamageSA::GetAnimAdded ( void )
 void CEventDamageSA::ComputeDeathAnim( CPed *ped, bool bUnk )
 {
     DWORD dwThis = ( DWORD ) m_pInterface;    
-    DWORD dwPed = (DWORD)mtaPeds[ped->GetPoolIndex()];
+    DWORD dwPed = (DWORD)mtaPeds[ped->GetPoolIndex()]->GetInterface();
     DWORD dwFunc = FUNC_CEventDamage_ComputeDeathAnim;
     _asm
     {
@@ -172,7 +172,7 @@ void CEventDamageSA::ComputeDeathAnim( CPed *ped, bool bUnk )
 void CEventDamageSA::ComputeDamageAnim( CPed *ped, bool bUnk )
 {
     DWORD dwThis = ( DWORD ) m_pInterface;    
-    DWORD dwPed = ( DWORD )mtaPeds[ped->GetPoolIndex()];
+    DWORD dwPed = (DWORD)mtaPeds[ped->GetPoolIndex()]->GetInterface();
     DWORD dwFunc = FUNC_CEventDamage_ComputeDamageAnim;
     _asm
     {
@@ -186,8 +186,8 @@ void CEventDamageSA::ComputeDamageAnim( CPed *ped, bool bUnk )
 bool CEventDamageSA::AffectsPed( CPed *ped )
 {
     bool bReturn;
-    DWORD dwPedInterface = (DWORD)mtaPeds[ped->GetPoolIndex()];
-    DWORD dwThis = ( DWORD ) m_pInterface;
+    DWORD dwPedInterface = (DWORD)mtaPeds[ped->GetPoolIndex()]->GetInterface();
+    DWORD dwThis = (DWORD)m_pInterface;
     DWORD dwFunc = FUNC_CEventDamage_AffectsPed;
     _asm
     {

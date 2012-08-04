@@ -477,12 +477,15 @@ CVehicle* CPoolsSA::AddVehicle( unsigned short modelID )
     return NULL;
 }
 
+// Safe retrieval of our instance
 CVehicle* CPoolsSA::GetVehicle( void *entity ) const
 {
-    if ( !m_getVehicleEnabled )
+    unsigned int id = (*ppVehiclePool)->GetIndex( (CVehicleSAInterface*)entity );
+    
+    if ( id > MAX_VEHICLES-1 )
         return NULL;
 
-    return ((CVehicleSAInterface*)entity)->m_vehicle;
+    return mtaVehicles[id];
 }
 
 CVehicle* CPoolsSA::GetVehicleFromRef( unsigned int index ) const
@@ -539,10 +542,12 @@ CObject* CPoolsSA::AddObject( unsigned short modelId )
 
 CObject* CPoolsSA::GetObject( void *entity ) const
 {
-    if ( !(*ppObjectPool)->IsValid( (CObjectSAInterface*)entity ) )
+    unsigned int id = (*ppObjectPool)->GetIndex( (CObjectSAInterface*)entity );
+
+    if ( id > MAX_OBJECTS-1 )
         return NULL;
 
-    return mtaObjects[ (*ppObjectPool)->GetIndex( (CObjectSAInterface*)entity ) ];
+    return mtaObjects[ id ];
 }
 
 CObject* CPoolsSA::GetObjectFromRef( unsigned int index ) const
@@ -640,10 +645,12 @@ CPed* CPoolsSA::AddCivilianPed( void *entity )
 
 CPed* CPoolsSA::GetPed( void *entity ) const
 {
-    if ( !(*ppPedPool)->IsValid( (CPedSAInterface*)entity ) )
+    unsigned int id = (*ppPedPool)->GetIndex( (CPedSAInterface*)entity );
+
+    if ( id >= MAX_PEDS )
         return NULL;
 
-    return mtaPeds[ (*ppPedPool)->GetIndex( (CPedSAInterface*)entity ) ];
+    return mtaPeds[ id ];
 }
 
 CPed* CPoolsSA::GetPedFromRef( unsigned int index ) const
