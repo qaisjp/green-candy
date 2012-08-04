@@ -262,26 +262,33 @@ CObject* CAutomobileSA::SpawnFlyingComponent( int i_1, unsigned int ui_2 )
 
 void CAutomobileSA::SetWheelVisibility( eWheels wheel, bool vis )
 {
+    RwObject *obj;
+
     switch( wheel )
     {        
-    case FRONT_LEFT_WHEEL:      GetInterface()->m_components[VEHICLE_COMP_WHEEL_FL]->SetVisible( vis ); return;
-    case REAR_LEFT_WHEEL:       GetInterface()->m_components[VEHICLE_COMP_WHEEL_RL]->SetVisible( vis ); return;
-    case FRONT_RIGHT_WHEEL:     GetInterface()->m_components[VEHICLE_COMP_WHEEL_FR]->SetVisible( vis ); return;
-    case REAR_RIGHT_WHEEL:      GetInterface()->m_components[VEHICLE_COMP_WHEEL_RR]->SetVisible( vis ); return;
+    case FRONT_LEFT_WHEEL:      obj = GetInterface()->m_components[VEHICLE_COMP_WHEEL_FL]->GetFirstObject(); break;
+    case REAR_LEFT_WHEEL:       obj = GetInterface()->m_components[VEHICLE_COMP_WHEEL_RL]->GetFirstObject(); break;
+    case FRONT_RIGHT_WHEEL:     obj = GetInterface()->m_components[VEHICLE_COMP_WHEEL_FR]->GetFirstObject(); break;
+    case REAR_RIGHT_WHEEL:      obj = GetInterface()->m_components[VEHICLE_COMP_WHEEL_RR]->GetFirstObject(); break;
     }
+
+    if ( obj )
+        obj->SetVisible( vis );
 }
 
 bool CAutomobileSA::GetWheelVisibility( eWheels wheel ) const
 {
+    RwObject *obj;
+
     switch( wheel )
     {        
-    case FRONT_LEFT_WHEEL:      return GetInterface()->m_components[VEHICLE_COMP_WHEEL_FL]->IsVisible();
-    case REAR_LEFT_WHEEL:       return GetInterface()->m_components[VEHICLE_COMP_WHEEL_RL]->IsVisible();
-    case FRONT_RIGHT_WHEEL:     return GetInterface()->m_components[VEHICLE_COMP_WHEEL_FR]->IsVisible();
-    case REAR_RIGHT_WHEEL:      return GetInterface()->m_components[VEHICLE_COMP_WHEEL_RR]->IsVisible();
+    case FRONT_LEFT_WHEEL:      obj = GetInterface()->m_components[VEHICLE_COMP_WHEEL_FL]->GetFirstObject(); break;
+    case REAR_LEFT_WHEEL:       obj = GetInterface()->m_components[VEHICLE_COMP_WHEEL_RL]->GetFirstObject(); break;
+    case FRONT_RIGHT_WHEEL:     obj = GetInterface()->m_components[VEHICLE_COMP_WHEEL_FR]->GetFirstObject(); break;
+    case REAR_RIGHT_WHEEL:      obj = GetInterface()->m_components[VEHICLE_COMP_WHEEL_RR]->GetFirstObject(); break;
     }
 
-    return false;
+    return obj && obj->IsVisible();
 }
 
 void CAutomobileSA::RecalculateHandling()

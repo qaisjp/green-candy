@@ -22,7 +22,8 @@ public:
     CLuaMain*                       Create( const std::string& name, CFileTranslator& fileRoot );
     bool                            Remove( LuaMain *lua );
 
-    inline CScriptDebugging&        GetDebug()  { return (CScriptDebugging&)m_debug; }
+    inline CScriptDebugging&        GetDebug()          { return m_debug; }
+    inline CRegisteredCommands&     GetCommands()       { return m_commands; }
 
     const CLuaMain*                 GetStatus( int *line, std::string *src, std::string *proto_name )    { return (const CLuaMain*)LuaManager::GetStatus( line, src, proto_name ); }
 

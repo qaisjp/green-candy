@@ -721,6 +721,11 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( isPlayerMapVisible );
     LUA_DECLARE( getPlayerMapBoundingBox );
 
+    // Commands
+    LUA_DECLARE( addCommandHandler );
+    LUA_DECLARE( executeCommandHandler );
+    LUA_DECLARE( removeCommandHandler );
+
     // Utility
     LUA_DECLARE( getNetworkUsageData );
     LUA_DECLARE( getNetworkStats );

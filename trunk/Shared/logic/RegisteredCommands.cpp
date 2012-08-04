@@ -16,6 +16,9 @@ static LUA_DECLARE( luacmd_destroy )
 {
     Command& cmd = *(Command*)lua_touserdata( L, lua_upvalueindex( 1 ) );
     cmd.manager.m_commands.remove( &cmd );
+
+    delete &cmd;
+
     return 0;
 }
 
@@ -40,7 +43,7 @@ bool Command::Execute( const argList_t& args )
     lua_State *L = **lua;
 
     lua->PushReference( ref );
-    
+
     argList_t::const_iterator iter = args.begin();
 
     for ( ; iter != args.end(); iter++ )

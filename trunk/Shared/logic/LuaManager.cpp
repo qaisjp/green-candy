@@ -351,6 +351,27 @@ static int LoadCFunctions( LuaMain *L )
     LUA_REGISTER( L, fileRename );
     LUA_REGISTER( L, fileCopy );
 
+#ifndef _KILLFRENZY
+    // XML Functions
+    LUA_REGISTER( L, xmlNodeFindChild );
+    LUA_REGISTER( L, xmlNodeGetChildren );
+    LUA_REGISTER( L, xmlNodeGetValue );
+    LUA_REGISTER( L, xmlNodeSetValue );
+    LUA_REGISTER( L, xmlNodeGetAttributes );
+    LUA_REGISTER( L, xmlNodeGetAttribute );
+    LUA_REGISTER( L, xmlNodeSetAttribute );
+    LUA_REGISTER( L, xmlNodeGetParent );
+    LUA_REGISTER( L, xmlLoadFile );
+    LUA_REGISTER( L, xmlCreateFile );
+    LUA_REGISTER( L, xmlUnloadFile );
+    LUA_REGISTER( L, xmlSaveFile );
+    LUA_REGISTER( L, xmlCreateChild );
+    LUA_REGISTER( L, xmlDestroyNode );
+    LUA_REGISTER( L, xmlCopyFile );
+    LUA_REGISTER( L, xmlNodeGetName );
+    LUA_REGISTER( L, xmlNodeSetName );
+#endif //_KILLFRENZY
+
     LUA_REGISTER( L, utfLen );
     LUA_REGISTER( L, utfSeek );
     LUA_REGISTER( L, utfSub );

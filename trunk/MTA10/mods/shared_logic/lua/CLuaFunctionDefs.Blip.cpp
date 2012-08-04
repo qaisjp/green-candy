@@ -30,7 +30,7 @@ namespace CLuaFunctionDefs
         short sOrdering;
         unsigned short usVisibleDistance;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
 
         argStream.ReadNumber( pos.fX ); argStream.ReadNumber( pos.fY ); argStream.ReadNumber( pos.fZ );
         argStream.ReadNumber( ucIcon, 0 );
@@ -74,7 +74,7 @@ namespace CLuaFunctionDefs
         short sOrdering;
         unsigned short usVisibleDistance;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
 
         argStream.ReadClass( entity, LUACLASS_ENTITY );
         argStream.ReadNumber( ucIcon, 0 );
@@ -218,7 +218,7 @@ namespace CLuaFunctionDefs
         CClientEntity *entity;
         SColor color;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
         
         argStream.ReadClass( entity, LUACLASS_ENTITY );
         argStream.ReadNumber( color.R );

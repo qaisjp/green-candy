@@ -170,7 +170,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( fadeCamera )
     {
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
 
         bool fadeIn;
         float time;

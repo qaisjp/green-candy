@@ -19,12 +19,16 @@
 class CTransformSAInterface : public RwMatrix
 {
 public:
+                            CTransformSAInterface();
+                            ~CTransformSAInterface();
+
     void operator =( const RwMatrix& mat )
     {
         assign( mat );
     }
 
-    BYTE                                    m_pad[8];
+    CTransformSAInterface*                  m_unk;  // I do not know what these are
+    CTransformSAInterface*                  m_unk2;
     class CPlaceableSAInterface*            m_entity;
 
     CTransformSAInterface*                  next;

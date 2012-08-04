@@ -57,6 +57,16 @@ static inline void luaL_checktyperange( lua_State *L, int idx, int t, int r )
 
 namespace LuaFunctionDefs
 {
+    static inline LuaMain* lua_readcontext( lua_State *L )
+    {
+        return lua_readuserdata <LuaMain, LUA_STORAGEINDEX, 2> ( L );
+    }
+
+    static inline Resource* lua_readresource( lua_State *L )
+    {
+        return lua_readcontext( L )->GetResource();
+    }
+
     extern ScriptDebugging *debug;
     extern RegisteredCommands *cmds;
     extern ResourceManager *resManager;
@@ -93,23 +103,23 @@ namespace LuaFunctionDefs
 
 #ifndef _KILLFRENZY
     // XML Functions
-    LUA_DECLARE( XMLNodeFindChild );
-    LUA_DECLARE( XMLNodeGetChildren );
-    LUA_DECLARE( XMLNodeGetValue );
-    LUA_DECLARE( XMLNodeSetValue );
-    LUA_DECLARE( XMLNodeGetAttributes );
-    LUA_DECLARE( XMLNodeGetAttribute );
-    LUA_DECLARE( XMLNodeSetAttribute );
-    LUA_DECLARE( XMLNodeGetParent );
-    LUA_DECLARE( XMLLoadFile );
-    LUA_DECLARE( XMLCreateFile );
-    LUA_DECLARE( XMLUnloadFile );
-    LUA_DECLARE( XMLSaveFile );
-    LUA_DECLARE( XMLCreateChild );
-    LUA_DECLARE( XMLDestroyNode );
-    LUA_DECLARE( XMLCopyFile );
-    LUA_DECLARE( XMLNodeGetName );
-    LUA_DECLARE( XMLNodeSetName );
+    LUA_DECLARE( xmlNodeFindChild );
+    LUA_DECLARE( xmlNodeGetChildren );
+    LUA_DECLARE( xmlNodeGetValue );
+    LUA_DECLARE( xmlNodeSetValue );
+    LUA_DECLARE( xmlNodeGetAttributes );
+    LUA_DECLARE( xmlNodeGetAttribute );
+    LUA_DECLARE( xmlNodeSetAttribute );
+    LUA_DECLARE( xmlNodeGetParent );
+    LUA_DECLARE( xmlLoadFile );
+    LUA_DECLARE( xmlCreateFile );
+    LUA_DECLARE( xmlUnloadFile );
+    LUA_DECLARE( xmlSaveFile );
+    LUA_DECLARE( xmlCreateChild );
+    LUA_DECLARE( xmlDestroyNode );
+    LUA_DECLARE( xmlCopyFile );
+    LUA_DECLARE( xmlNodeGetName );
+    LUA_DECLARE( xmlNodeSetName );
 #endif //_KILLFRENZY
 
     // JSON functions

@@ -143,9 +143,7 @@ CClientGame::CClientGame ( bool bLocalPlay )
     m_pLuaManager = new CLuaManager;
     m_pScriptDebugging = &m_pLuaManager->GetDebug();
     m_pScriptDebugging->SetLogfile ( "clientscript.log", 3 );
-    m_RegisteredCommands = new CRegisteredCommands( *m_pLuaManager );
-
-    lua_State *L = m_pLuaManager->GetVirtualMachine();
+    m_RegisteredCommands = &m_pLuaManager->GetCommands();
 
     // Startup "entities from root" optimization for getElementsByType
     CClientEntity::StartupEntitiesFromRoot ();
@@ -375,7 +373,8 @@ CClientGame::~CClientGame()
     SetCursorEventsEnabled ( false );   
 
     // Destroy our stuff
-    delete m_RegisteredCommands;
+    m_pLuaManager->Shutdown();  // We need to unbind dependencies before destroying their location at CLuaManager
+
     delete m_pLuaManager;
     delete m_pNametags;
     delete m_pSyncDebug;

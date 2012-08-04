@@ -63,8 +63,8 @@ public:
     inline void Identity()
     {
         right.fX = 1; right.fY = 0; right.fZ = 0;
-        up.fX = 0; up.fY = 1; up.fZ = 0;
-        at.fX = 0; at.fY = 0; at.fZ = 1;
+        at.fX = 0; at.fY = 1; at.fZ = 0;
+        up.fX = 0; up.fY = 0; up.fZ = 1;
 
         pos.fX = (float)(1.15 * -0.25);
         pos.fY = 0;
@@ -189,13 +189,13 @@ public:
         right.fY = 0;
         right.fZ = 0;
 
-        up.fX = 0;
-        up.fY = c;
-        up.fZ = -s;
-
         at.fX = 0;
-        at.fY = s;
-        at.fZ = c;
+        at.fY = c;
+        at.fZ = -s;
+
+        up.fX = 0;
+        up.fY = s;
+        up.fZ = c;
     }
 
     inline void rotY( float radians )
@@ -207,13 +207,13 @@ public:
         right.fY = 0;
         right.fZ = s;
 
-        up.fX = 0;
-        up.fY = 1;
-        up.fZ = 0;
+        at.fX = 0;
+        at.fY = 1;
+        at.fZ = 0;
 
-        at.fX = -s;
-        at.fY = 0;
-        at.fZ = c;
+        up.fX = -s;
+        up.fY = 0;
+        up.fZ = c;
     }
 
     inline void rotZ( float radians )
@@ -225,13 +225,13 @@ public:
         right.fY = -s;
         right.fZ = 0;
 
-        up.fX = s;
-        up.fY = c;
-        up.fZ = 0;
+        at.fX = s;
+        at.fY = c;
+        at.fZ = 0;
 
-        at.fX = 0;
-        at.fY = 0;
-        at.fZ = 1;
+        up.fX = 0;
+        up.fY = 0;
+        up.fZ = 1;
     }
 
     // I hope this works :3

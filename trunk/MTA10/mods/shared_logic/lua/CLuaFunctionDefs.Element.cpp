@@ -82,7 +82,7 @@ namespace CLuaFunctionDefs
         SString type;
         unsigned int index;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
 
         argStream.ReadString( type );
         argStream.ReadNumber( index );
@@ -329,7 +329,7 @@ namespace CLuaFunctionDefs
         CClientEntity *entity;
         unsigned int index;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
         
         argStream.ReadClass( entity, LUACLASS_ENTITY );
         argStream.ReadNumber( index );
@@ -395,7 +395,7 @@ namespace CLuaFunctionDefs
         CClientEntity *root;
         bool streamedIn;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
 
         argStream.ReadString( typeName );
         argStream.ReadClass( root, LUACLASS_ENTITY, m_pRootEntity );
@@ -438,7 +438,7 @@ namespace CLuaFunctionDefs
         CClientEntity *entity;
         CClientColShape *colShape;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
 
         argStream.ReadClass( entity, LUACLASS_ENTITY );
         argStream.ReadClass( colShape, LUACLASS_COLSHAPE );
@@ -462,7 +462,7 @@ namespace CLuaFunctionDefs
         CClientEntity *entity;
         CClientMarker *marker;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
 
         argStream.ReadClass( entity, LUACLASS_ENTITY );
         argStream.ReadClass( marker, LUACLASS_MARKER );
@@ -850,7 +850,7 @@ namespace CLuaFunctionDefs
         CClientEntity *entity;
         CClientEntity *collideWith;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
 
         argStream.ReadClass( entity, LUACLASS_ENTITY );
         argStream.ReadClass( collideWith, LUACLASS_ENTITY );
@@ -1000,7 +1000,7 @@ namespace CLuaFunctionDefs
 
         SString typeName, id;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
 
         argStream.ReadString( typeName );
         argStream.ReadString( id, "" );

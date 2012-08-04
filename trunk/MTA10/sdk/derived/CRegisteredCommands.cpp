@@ -28,6 +28,12 @@ CCommand::~CCommand()
 {
 }
 
+bool CCommand::Execute( const std::vector <std::string>& args )
+{
+    lua_pushlstring( **lua, key.c_str(), key.size() );
+    return Command::Execute( args );
+}
+
 CRegisteredCommands::CRegisteredCommands( CLuaManager& manager ) : RegisteredCommands( manager )
 {
 }

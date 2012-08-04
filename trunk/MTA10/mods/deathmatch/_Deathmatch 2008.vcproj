@@ -1017,6 +1017,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\shared_logic\lua\CLuaFunctionDefs.Commands.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\shared_logic\lua\CLuaFunctionDefs.cpp"
 						>
 					</File>
@@ -1102,10 +1106,6 @@
 					</File>
 					<File
 						RelativePath="..\shared_logic\lua\CLuaFunctionDefs.World.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\shared_logic\lua\CLuaFunctionDefs.XML.cpp"
 						>
 					</File>
 					<File
@@ -1702,6 +1702,10 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.Resources.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaFunctionDefs.XML.cpp"
 						>
 					</File>
 					<File

@@ -709,6 +709,11 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, isPlayerMapVisible );
     LUA_REGISTER( L, getPlayerMapBoundingBox );
 
+    // Commands
+    LUA_REGISTER( L, addCommandHandler );
+    LUA_REGISTER( L, executeCommandHandler );
+    LUA_REGISTER( L, removeCommandHandler );
+
     // Utility
     LUA_REGISTER( L, getNetworkUsageData );
     LUA_REGISTER( L, getNetworkStats );
