@@ -133,6 +133,14 @@ CPlayerPedSA::~CPlayerPedSA()
         delete m_pData;
 }
 
+CPadSAInterface& CPlayerPedSA::GetJoypad()
+{
+    if ( m_bIsLocal )
+        return *GetInterface()->GetJoypad();
+
+    return CPedSA::GetJoypad();
+}
+
 void CPlayerPedSA::OnFrame()
 {
     // Update our stealth status

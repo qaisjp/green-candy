@@ -92,4 +92,6 @@ public:
     CTaskComplexWanderStandardSA ( const int iMoveState, const unsigned char iDir, const bool bWanderSensibly=true );
 };
 
+#define MAX_GOTO_TASK_SIZE ( max(sizeof(CTaskComplexWanderSA),sizeof(CTaskComplexWanderStandardSA)) )
+
 #endif

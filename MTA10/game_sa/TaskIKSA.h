@@ -186,4 +186,6 @@ public:
                                  int priority=3 );
 };
 
+#define MAX_IK_TASK_SIZE ( max(sizeof(CTaskSimpleIKChainSA),max(sizeof(CTaskSimpleIKLookAtSA),max(sizeof(CTaskSimpleIKManagerSA),sizeof(CTaskSimpleTriggerLookAtSA)))) )
+
 #endif

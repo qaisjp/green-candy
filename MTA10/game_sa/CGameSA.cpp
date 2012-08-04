@@ -430,7 +430,7 @@ void CGameSA::OnPreFrame()
     {
     case GS_PLAYING_GAME:
         // Update control with current pad
-        m_pPad->SetState( m_pPad->GetState() );
+        //m_pPad->SetState( m_pPad->GetState() );
         break;
     }
 }

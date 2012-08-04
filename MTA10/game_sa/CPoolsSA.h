@@ -201,7 +201,7 @@ typedef CPool <CObjectSAInterface, MAX_OBJECTS, MAX_OBJECT_SIZE> CObjectPool;
 typedef CPool <CBuildingSAInterface, MAX_BUILDINGS> CBuildingPool;
 typedef CPool <CDummySAInterface, 4000> CDummyPool;
 
-typedef CPool <CTaskSAInterface, 9001> CTaskPool;
+typedef CPool <CTaskSAInterface, MAX_TASKS> CTaskPool;
 typedef CPool <CEventSAInterface, 5000> CEventPool;
 typedef CPool <CPointRouteSA, 64> CPointRoutePool;
 typedef CPool <CPatrolRouteSA, 32> CPatrolRoutePool;
@@ -246,13 +246,18 @@ extern CPedAttractorPool** ppPedAttractorPool;
 
 #define MAX_MTA_OBJECT_SIZE ( max(sizeof(CObjectSA),sizeof(CProjectileSA)) )
 
+// this thing doesnt work! compiler error
+//#define MAX_MTA_TASK_SIZE ( max(MAX_PHYSICAL_TASK_SIZE, max(MAX_CAR_TASK_SIZE, max(MAX_CAR_UTIL_TASK_SIZE, max(MAX_GOTO_TASK_SIZE, max(MAX_ACTION_TASK_SIZE, max(sizeof(CTaskSimpleDuckSA), max(sizeof(CTaskSimpleSA), max(sizeof(CTaskComplexSA), max(MAX_BASIC_TASK_SIZE, MAX_ATTACK_TASK_SIZE))))))))) )
+
 typedef CPool <CVehicleSA, MAX_VEHICLES, MAX_MTA_VEHICLE_SIZE> CMTAVehiclePool;
 typedef CPool <CPedSA, MAX_PEDS, MAX_MTA_PED_SIZE> CMTAPedPool;
 typedef CPool <CObjectSA, MAX_OBJECTS, MAX_MTA_OBJECT_SIZE> CMTAObjectPool;
+typedef CPool <CTaskSA, MAX_TASKS, 128> CMTATaskPool; // we align the tasks, please keep this size-value up-to-date!
 
 extern CMTAVehiclePool *mtaVehiclePool;
 extern CMTAPedPool *mtaPedPool;
 extern CMTAObjectPool *mtaObjectPool;
+extern CMTATaskPool *mtaTaskPool;
 
 class CPoolsSA : public CPools
 {

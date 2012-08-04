@@ -281,13 +281,11 @@ void SwitchContext ( CPed* thePed )
                 CRemoteDataStorageSA * data = CRemoteDataSA::GetRemoteDataStorage ( thePlayerPed );
                 if ( data )
                 {
-                    assert( 0 );
-
-#if 0
                     // We want the player to be seen as in targeting mode if they are right clicking and with weapons 
                     CWeapon* pWeapon = thePed->GetWeapon(thePed->GetCurrentWeaponSlot());
                     eWeaponType currentWeapon = pWeapon->GetType();
                     CControllerState * cs = data->CurrentControllerState();
+#if 0
                     CWeaponStat * pWeaponStat = NULL;
                     if ( currentWeapon >= WEAPONTYPE_PISTOL && currentWeapon <= WEAPONTYPE_TEC9 )
                     {
@@ -307,6 +305,7 @@ void SwitchContext ( CPed* thePed )
                         MemPutFast < BYTE > ( 0x50BFF1, 0x01 );
                         MemPutFast < BYTE > ( 0x50BFF2, 0xC3 );
                     }
+#endif
 
                     // Change the local player's pad to the remote player's
                     MemCpyFast ( pLocalPadInterface, &data->m_pad, sizeof ( CPadSAInterface ) );
@@ -327,6 +326,7 @@ void SwitchContext ( CPed* thePed )
                     // Only disable mouselook if they're not holding a 1st-person weapon
                     // And if they're not under-water
                     bool bDisableMouseLook = true;
+#if 0
                     if ( pWeapon )
                     {
                         eWeaponType weaponType = pWeapon->GetType ();
@@ -335,6 +335,7 @@ void SwitchContext ( CPed* thePed )
                             bDisableMouseLook = false;
                         }
                     }
+#endif
                     bMouseLookEnabled = *(bool *)0xB6EC2E;
                     if ( bDisableMouseLook ) *(bool *)0xB6EC2E = false;
 
@@ -424,8 +425,6 @@ void SwitchContext ( CPed* thePed )
                         if ( pPlayerPed )
                             m_pPreContextSwitchHandler ( pPlayerPed );
                     }
-
-#endif
                 }
             }
         }

@@ -80,7 +80,7 @@ void CPadManagerSA::GetVehicleControl( const CControlInterface& states, CPedSA& 
 
 void CPadManagerSA::UpdateJoypadEx( const CControlInterface& states, CPedSA& ped )
 {
-    CPadSAInterface *pad = ped.GetInterface()->GetJoypad();
+    CPadSAInterface& pad = ped.GetJoypad();
 
     // Retrive the current controls
     CControllerState cs;
@@ -96,16 +96,16 @@ void CPadManagerSA::UpdateJoypadEx( const CControlInterface& states, CPedSA& ped
         cs.ButtonTriangle = DIGITAL_BUTTON( states.GetControlState( CONTROL_ENTER_EXIT ) );
         cs.m_select = DIGITAL_BUTTON( states.GetControlState( CONTROL_CHANGE_CAMERA ) );  
     }
-    pad->SetState( cs );
+    pad.SetState( cs );
 
     // Sirens
-    pad->SetHornHistory( cs.ShockButtonL == 255 );
+    pad.SetHornHistory( cs.ShockButtonL == 255 );
 }
 
 void CPadManagerSA::UpdateLocalJoypad( CPedSA& ped )
 {
     bool inVehicle = ped.GetVehicle() != NULL;
-    CPadSAInterface *pad = ped.GetInterface()->GetJoypad();
+    CPadSAInterface& pad = ped.GetJoypad();
 
     // Retrive the current controls
     CControllerState cs;
@@ -123,8 +123,8 @@ void CPadManagerSA::UpdateLocalJoypad( CPedSA& ped )
 
         core->GetJoystickManager()->ApplyAxes( cs, inVehicle );
     }
-    pad->SetState( cs );
+    pad.SetState( cs );
 
     // Sirens
-    pad->SetHornHistory( cs.ShockButtonL == 255 );
+    pad.SetHornHistory( cs.ShockButtonL == 255 );
 }

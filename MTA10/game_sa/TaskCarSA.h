@@ -191,4 +191,7 @@ public:
 };
 
 
+#define MAX_CAR_TASK_SIZE ( max(sizeof(CTaskComplexEnterBoatAsDriverSA),max(sizeof(CTaskComplexEnterCarAsDriverSA),max(sizeof(CTaskComplexEnterCarAsPassengerSA),max(sizeof(CTaskComplexEnterCarSA),sizeof(CTaskComplexLeaveCarSA))))) )
+
+
 #endif

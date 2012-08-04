@@ -91,6 +91,9 @@ void CConsoleHistory::Add ( const char* szLine )
     if ( !m_file )
         return;
 
+    // Add a newline character so every line is an actual line
+    line += '\n';
+
     delete m_file;
 
     m_file = mtaFileRoot->Open( m_strFilename.c_str(), "a+" );

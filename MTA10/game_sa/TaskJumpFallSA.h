@@ -111,4 +111,6 @@ public:
     CTaskSimpleJetPackSA ( const CVector *pVecTargetPos, float fCruiseHeight = 10.0f, int nHoverTime = 0 );
 };
 
+#define MAX_ACTION_TASK_SIZE ( max(sizeof(CTaskSimpleClimbSA),sizeof(CTaskSimpleJetPackSA)) )
+
 #endif
