@@ -143,7 +143,7 @@ void CLuaMain::SaveXML( CXMLNode *root )
 
 bool CLuaMain::ParseRelative( const char *in, filePath& out ) const
 {
-    return m_fileRoot.GetRelativePath( in, true, out );
+    return resFileRoot->GetRelativePath( in, true, out );
 }
 
 unsigned long CLuaMain::GetElementCount()

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaFunctionDefs.Commands.cpp
@@ -14,6 +14,7 @@
 *               Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*		        The_GTA <quiret@gmx.de>
 *
 *****************************************************************************/
 
@@ -34,17 +35,9 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors () )
         {
-            // Grab our VM
-            CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( L );
-            if ( pLuaMain )
-            {
-                // Add them to our list over command handlers
-                if ( m_pRegisteredCommands->AddCommand ( pLuaMain, strKey, iLuaFunction, bCaseSensitive ) )
-                {
-                    lua_pushboolean ( L, true );
-                    return 1;
-                }
-            }
+            // Add them to our list over command handlers
+            lua_pushboolean( L, m_pRegisteredCommands->Add( *lua_readcontext( L ), strKey, iLuaFunction, bCaseSensitive ) );
+            return 1;
         }
         else
             m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "addCommandHandler", *argStream.GetErrorMessage () ) );
@@ -63,17 +56,9 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors () )
         {
-            // Grab our VM
-            CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( L );
-            if ( pLuaMain )
-            {
-                // Remove it from our list
-                if ( m_pRegisteredCommands->RemoveCommand ( pLuaMain, strKey ) )
-                {
-                    lua_pushboolean ( L, true );
-                    return 1;
-                }
-            }
+            // Remove it from our list
+            lua_pushboolean( L, m_pRegisteredCommands->Remove( lua_readcontext( L ), strKey ) );
+            return 1;
         }
         else
             m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "removeCommandHandler", *argStream.GetErrorMessage () ) );
@@ -93,17 +78,16 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors () )
         {
+            Command *cmd = m_pRegisteredCommands->Get( strKey.c_str() );
 
-            // Grab our VM
-            CLuaMain* pLuaMain = m_pLuaManager->GetVirtualMachine ( L );
-            if ( pLuaMain )
+            if ( cmd )
             {
-                // Call it
-                if ( m_pRegisteredCommands->ProcessCommand ( strKey, strArgs ) )
-                {
-                    lua_pushboolean ( L, true );
-                    return 1;
-                }
+                std::vector <std::string> args;
+
+                CommandlineTools::strsplit( strArgs.c_str(), args );
+
+                lua_pushboolean( L, cmd->Execute( args ) );
+                return 1;
             }
         }
         else

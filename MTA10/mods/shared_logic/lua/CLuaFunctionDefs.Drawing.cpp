@@ -29,7 +29,7 @@ namespace CLuaFunctionDefs
         float width;
         bool postGUI;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
 
         argStream.ReadNumber( x );
         argStream.ReadNumber( y );
@@ -65,7 +65,7 @@ namespace CLuaFunctionDefs
         float width;
         bool postGUI;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
 
         argStream.ReadVector( begin );
         argStream.ReadVector( end );
@@ -147,7 +147,7 @@ namespace CLuaFunctionDefs
         unsigned long color;
         bool postGUI;
 
-        CScriptArgReader argStream;
+        CScriptArgReader argStream( L );
         
         argStream.ReadNumber( x );
         argStream.ReadNumber( y );

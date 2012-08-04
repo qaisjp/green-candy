@@ -18,6 +18,8 @@ class CCommand : public Command
 public:
     CCommand( lua_State *L, class CRegisteredCommands& cmds );
     ~CCommand();
+
+    bool Execute( const std::vector <std::string>& args );
 };
 
 class CRegisteredCommands : public RegisteredCommands

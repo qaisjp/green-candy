@@ -52,5 +52,9 @@ namespace CLuaFunctionDefs
         m_pPickupManager = m_pManager->GetPickupManager ();
         m_pColModelManager = m_pManager->GetColModelManager ();
         m_pRegisteredCommands = game->GetRegisteredCommands ();
+
+        LuaFunctionDefs::SetResourceManager( *m_pResourceManager );
+        LuaFunctionDefs::SetRegisteredCommands( *m_pRegisteredCommands );
+        LuaFunctionDefs::SetDebugging( *m_pScriptDebugging );
     }
 }

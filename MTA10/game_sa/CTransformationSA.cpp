@@ -23,16 +23,27 @@ void Transformation_Init()
     new (pTransform) CTransformationSAInterface( 65536 );
 }
 
+CTransformSAInterface::CTransformSAInterface()
+{
+    m_unk = NULL;
+    m_unk2 = NULL;
+    m_entity = NULL;
+}
+
+CTransformSAInterface::~CTransformSAInterface()
+{
+    LIST_REMOVE( *this );
+}
+
 CTransformationSAInterface::CTransformationSAInterface( unsigned int max )
 {
     CAllocatedTransformSAInterface *trans = (CAllocatedTransformSAInterface*)malloc( max * sizeof(CTransformSAInterface) + sizeof(CAllocatedTransformSAInterface) );
+    CTransformSAInterface *mat;
 
     // Store the count
     trans->m_count = max;
 
-    m_stack = trans->Get( 0 );
-
-    memset( m_stack + 1, 0, max * sizeof(CTransformSAInterface) );
+    m_stack = mat = trans->Get( 0 );
 
     // Init the lists
     LIST_CLEAR( m_usedList );
@@ -44,7 +55,12 @@ CTransformationSAInterface::CTransformationSAInterface( unsigned int max )
     LIST_APPEND( m_activeList, m_activeItem );
 
     while ( max-- )
-        LIST_APPEND( m_freeList, *( m_stack + max ) );
+    {
+        new (mat) CTransformSAInterface();
+
+        LIST_APPEND( m_freeList, *mat );
+        mat++;
+    }
 }
 
 CTransformSAInterface* CTransformationSAInterface::Allocate()

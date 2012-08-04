@@ -12,16 +12,6 @@
 
 #include <StdInc.h>
 
-static inline LuaMain* lua_readcontext( lua_State *L )
-{
-    return lua_readuserdata <LuaMain, LUA_STORAGEINDEX, 2> ( L );
-}
-
-static inline Resource* lua_readresource( lua_State *L )
-{
-    return lua_readcontext( L )->GetResource();
-}
-
 namespace LuaFunctionDefs
 {
     ScriptDebugging *debug;
@@ -499,8 +489,8 @@ namespace LuaFunctionDefs
         luaL_checktype( L, 3, LUA_TNUMBER );
 
         LuaMain& main = *lua_readcontext( L );
-        unsigned int count = (unsigned int)lua_tonumber( L, 2 );
-        double interval = lua_tonumber( L, 3 );
+        unsigned int count = (unsigned int)lua_tonumber( L, 3 );
+        double interval = lua_tonumber( L, 2 );
 
         // Check for the minimum interval
         if ( interval < LUA_TIMER_MIN_INTERVAL )

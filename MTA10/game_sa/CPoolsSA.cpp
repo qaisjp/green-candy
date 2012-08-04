@@ -670,16 +670,15 @@ void CPoolsSA::DeleteAllPeds()
     (*ppPedPool)->Clear();
 }
 
+// This function is insecure, because it accesses the entity prior to validation
+// Has to stay this way for optimization purposes; usage only in 100% secure scenarios!
 CEntity* CPoolsSA::GetEntity( void *entity ) const
 {
-    switch ( ((CEntitySAInterface*)entity)->m_type )
+    switch( ((CEntitySAInterface*)entity)->m_type )
     {
-    case ENTITY_TYPE_PED:
-        return GetPed( entity );
-    case ENTITY_TYPE_VEHICLE:
-        return GetVehicle( entity );
-    case ENTITY_TYPE_OBJECT:
-        return GetObject( entity );
+    case ENTITY_TYPE_PED:       return GetPed( entity );
+    case ENTITY_TYPE_VEHICLE:   return GetVehicle( entity );
+    case ENTITY_TYPE_OBJECT:    return GetObject( entity );
     }
 
     return NULL;
@@ -704,7 +703,6 @@ void CPoolsSA::DumpPoolsStatus() const
         "EntryInfoNodes", "NodeRoutes", "PatrolRoutes", "PointRoutes", 
         "PointerNodeDoubleLinks", "PointerNodeSingleLinks" };
 
-    int poolSizes[] = {13000,140,350,2500,110,10150,500,200,16,140,64,500,64,32,64,3200,70000};
     int iPosition = 0;
     char percent = '%';
 
@@ -713,7 +711,7 @@ void CPoolsSA::DumpPoolsStatus() const
     for ( int i = 0; i < MAX_POOLS; i++ )
     {
         int usedSpaces = GetNumberOfUsedSpaces ( (ePools)i );
-        iPosition += snprintf ( szOutput + iPosition, 1024 - iPosition, 
+        iPosition += snprintf( szOutput + iPosition, 1024 - iPosition, 
             "%s: %d (%d) (%.2f%c)\n", 
             poolNames[i], 
             usedSpaces, 
@@ -756,40 +754,23 @@ unsigned int CPoolsSA::GetNumberOfUsedSpaces( ePools pool ) const
 {
     switch( pool )
     {
-    case BUILDING_POOL:
-        return (*ppBuildingPool)->GetCount();
-    case PED_POOL:
-        return (*ppPedPool)->GetCount();
-    case OBJECT_POOL:
-        return (*ppObjectPool)->GetCount();
-    case DUMMY_POOL:
-        return (*ppDummyPool)->GetCount();
-    case VEHICLE_POOL:
-        return (*ppVehiclePool)->GetCount();
-    case COL_MODEL_POOL:
-        return (*ppColModelPool)->GetCount();
-    case TASK_POOL:
-        return (*ppTaskPool)->GetCount();
-    case EVENT_POOL:
-        return (*ppEventPool)->GetCount();
-    case TASK_ALLOCATOR_POOL:
-        return (*ppTaskAllocatorPool)->GetCount();
-    case PED_INTELLIGENCE_POOL:
-        return (*ppPedIntelligencePool)->GetCount();
-    case PED_ATTRACTOR_POOL:
-        return (*ppPedAttractorPool)->GetCount();
-    case ENTRY_INFO_NODE_POOL:
-        return (*ppEntryInfoPool)->GetCount();
-    case NODE_ROUTE_POOL:
-        return (*ppNodeRoutePool)->GetCount();
-    case PATROL_ROUTE_POOL:
-        return (*ppPatrolRoutePool)->GetCount();
-    case POINT_ROUTE_POOL:
-        return (*ppPointRoutePool)->GetCount();
-    case POINTER_DOUBLE_LINK_POOL:
-        return (*ppPtrNodeDoublePool)->GetCount();
-    case POINTER_SINGLE_LINK_POOL:
-        return (*ppPtrNodeSinglePool)->GetCount();
+    case BUILDING_POOL:             return (*ppBuildingPool)->GetCount();
+    case PED_POOL:                  return (*ppPedPool)->GetCount();
+    case OBJECT_POOL:               return (*ppObjectPool)->GetCount();
+    case DUMMY_POOL:                return (*ppDummyPool)->GetCount();
+    case VEHICLE_POOL:              return (*ppVehiclePool)->GetCount();
+    case COL_MODEL_POOL:            return (*ppColModelPool)->GetCount();
+    case TASK_POOL:                 return (*ppTaskPool)->GetCount();
+    case EVENT_POOL:                return (*ppEventPool)->GetCount();
+    case TASK_ALLOCATOR_POOL:       return (*ppTaskAllocatorPool)->GetCount();
+    case PED_INTELLIGENCE_POOL:     return (*ppPedIntelligencePool)->GetCount();
+    case PED_ATTRACTOR_POOL:        return (*ppPedAttractorPool)->GetCount();
+    case ENTRY_INFO_NODE_POOL:      return (*ppEntryInfoPool)->GetCount();
+    case NODE_ROUTE_POOL:           return (*ppNodeRoutePool)->GetCount();
+    case PATROL_ROUTE_POOL:         return (*ppPatrolRoutePool)->GetCount();
+    case POINT_ROUTE_POOL:          return (*ppPointRoutePool)->GetCount();
+    case POINTER_DOUBLE_LINK_POOL:  return (*ppPtrNodeDoublePool)->GetCount();
+    case POINTER_SINGLE_LINK_POOL:  return (*ppPtrNodeSinglePool)->GetCount();
     }
 
     return 0;
@@ -799,40 +780,23 @@ unsigned int CPoolsSA::GetPoolCapacity( ePools pool ) const
 {
     switch( pool )
     {
-    case BUILDING_POOL:
-        return (*ppBuildingPool)->m_max;
-    case PED_POOL:
-        return (*ppPedPool)->m_max;
-    case OBJECT_POOL:
-        return (*ppObjectPool)->m_max;
-    case DUMMY_POOL:
-        return (*ppDummyPool)->m_max;
-    case VEHICLE_POOL:
-        return (*ppVehiclePool)->m_max;
-    case COL_MODEL_POOL:
-        return (*ppColModelPool)->m_max;
-    case TASK_POOL:
-        return (*ppTaskPool)->m_max;
-    case EVENT_POOL:
-        return (*ppEventPool)->m_max;
-    case TASK_ALLOCATOR_POOL:
-        return (*ppTaskAllocatorPool)->m_max;
-    case PED_INTELLIGENCE_POOL:
-        return (*ppPedIntelligencePool)->m_max;
-    case PED_ATTRACTOR_POOL:
-        return (*ppPedAttractorPool)->m_max;
-    case ENTRY_INFO_NODE_POOL:
-        return (*ppEntryInfoPool)->m_max;
-    case NODE_ROUTE_POOL:
-        return (*ppNodeRoutePool)->m_max;
-    case PATROL_ROUTE_POOL:
-        return (*ppPatrolRoutePool)->m_max;
-    case POINT_ROUTE_POOL:
-        return (*ppPointRoutePool)->m_max;
-    case POINTER_DOUBLE_LINK_POOL:
-        return (*ppPtrNodeDoublePool)->m_max;
-    case POINTER_SINGLE_LINK_POOL:
-        return (*ppPtrNodeSinglePool)->m_max;
+    case BUILDING_POOL:                 return (*ppBuildingPool)->m_max;
+    case PED_POOL:                      return (*ppPedPool)->m_max;
+    case OBJECT_POOL:                   return (*ppObjectPool)->m_max;
+    case DUMMY_POOL:                    return (*ppDummyPool)->m_max;
+    case VEHICLE_POOL:                  return (*ppVehiclePool)->m_max;
+    case COL_MODEL_POOL:                return (*ppColModelPool)->m_max;
+    case TASK_POOL:                     return (*ppTaskPool)->m_max;
+    case EVENT_POOL:                    return (*ppEventPool)->m_max;
+    case TASK_ALLOCATOR_POOL:           return (*ppTaskAllocatorPool)->m_max;
+    case PED_INTELLIGENCE_POOL:         return (*ppPedIntelligencePool)->m_max;
+    case PED_ATTRACTOR_POOL:            return (*ppPedAttractorPool)->m_max;
+    case ENTRY_INFO_NODE_POOL:          return (*ppEntryInfoPool)->m_max;
+    case NODE_ROUTE_POOL:               return (*ppNodeRoutePool)->m_max;
+    case PATROL_ROUTE_POOL:             return (*ppPatrolRoutePool)->m_max;
+    case POINT_ROUTE_POOL:              return (*ppPointRoutePool)->m_max;
+    case POINTER_DOUBLE_LINK_POOL:      return (*ppPtrNodeDoublePool)->m_max;
+    case POINTER_SINGLE_LINK_POOL:      return (*ppPtrNodeSinglePool)->m_max;
     }
 
     return 0;
