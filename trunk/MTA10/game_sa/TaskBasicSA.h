@@ -245,4 +245,8 @@ public:
     CTaskComplexFacialSA ( void );
 };
 
+#define MAX_BASIC_TASK_SIZE ( max(sizeof(CTaskComplexDieSA), max(sizeof(CTaskComplexFacialSA), max(sizeof(CTaskComplexSunbatheSA), \
+    max(sizeof(CTaskComplexUseMobilePhoneSA), max(sizeof(CTaskSimpleAnimSA), max(sizeof(CTaskSimpleDeadSA), max(sizeof(CTaskSimplePlayerOnFootSA), \
+    max(sizeof(CTaskSimpleRunAnimSA), max(sizeof(CTaskSimpleRunNamedAnimSA), sizeof(CTaskSimpleStealthKillSA)))))))))) )
+
 #endif

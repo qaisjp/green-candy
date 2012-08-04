@@ -128,5 +128,6 @@ public:
     CTaskSimpleCarSetPedOutSAInterface* GetInterface() { return (CTaskSimpleCarSetPedOutSAInterface*)m_interface; }
 };
 
+#define MAX_CAR_UTIL_TASK_SIZE ( max(sizeof(CTaskSimpleCarSetPedInAsDriverSA),max(sizeof(CTaskSimpleCarSetPedInAsPassengerSA),sizeof(CTaskSimpleCarSetPedOutSA))) )
 
 #endif

@@ -167,7 +167,9 @@ CTaskComplexLeaveCarSA::CTaskComplexLeaveCarSA( CVehicle* pTargetVehicle, const 
             call    dwFunc
             pop     ebx
         }
-    } else {
+    }
+    else
+    {
         DEBUG_TRACE("pTargetVehicleSA was invalid!");
     }
 }

@@ -22,7 +22,8 @@ class CTaskManagementSystemSA;
 #include "TaskCarAccessoriesSA.h"
 #include "TaskCarSA.h"
 #include <game/CTaskManagementSystem.h>
-#include <list>
+
+#define MAX_TASKS   9001
 
 #define FUNC_CTask_Operator_Delete          0x61A5B0
 
@@ -32,19 +33,10 @@ public:
                                 CTaskManagementSystemSA();
                                 ~CTaskManagementSystemSA();
 
-    CTaskSA*                    AddTask( CTaskSA *task );
-    void                        RemoveTask( CTaskSAInterface *task );
     CTaskSA*                    GetTask( CTaskSAInterface *task );
     CTaskSA*                    CreateAppropriateTask( CTaskSAInterface *task, int iTaskType );
-
-private:
-    struct STaskListItem
-    {
-        CTaskSAInterface*   taskInterface;
-        CTaskSA*            pTaskSA;
-    };
-
-    std::list < STaskListItem* >     m_TaskList;
 };
+
+extern CTaskSA *mtaTasks[MAX_TASKS];
 
 #endif

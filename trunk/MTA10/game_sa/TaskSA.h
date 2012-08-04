@@ -73,11 +73,15 @@ class CTaskSA : public virtual CTask
 protected:
     CTaskSAInterface*           m_interface;
     CTaskSA*                    m_parent;
-    bool                        m_beingDestroyed;
 
 public:
                         CTaskSA();
                         ~CTaskSA();
+
+    void* operator new ( size_t );
+    void operator delete ( void *ptr );
+
+    unsigned int        GetPoolIndex() const                                { return m_poolIndex; }
 
     CTask*              Clone();
     void                SetParent( CTask *parent );
@@ -99,11 +103,12 @@ public:
 
     void                SetAsPedTask( CPed *ped, int iTaskPriority, bool bForceNewTask = false );
     void                SetAsSecondaryPedTask( CPed *ped, int iType );
-    void                Destroy();
     void                DestroyJustThis();
 
 private:
-    void                SetInterface( CTaskSAInterface *pInterface )        { m_interface = pInterface; };
+    void                SetInterface( CTaskSAInterface *pInterface );
+
+    unsigned int        m_poolIndex;
 };
 
 class CTaskSimpleSA : public CTaskSA, public virtual CTaskSimple

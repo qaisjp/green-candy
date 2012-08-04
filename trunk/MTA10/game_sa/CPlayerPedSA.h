@@ -44,23 +44,25 @@ public:
 class CPlayerPedSA : public virtual CPlayerPed, public CPedSA
 {
 public:
-                        CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, bool isLocal );
-                        ~CPlayerPedSA();
+                                CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, bool isLocal );
+                                ~CPlayerPedSA();
 
     inline CPlayerPedSAInterface* GetInterface()                        { return (CPlayerPedSAInterface*)m_pInterface; }
     inline const CPlayerPedSAInterface* GetInterface() const            { return (const CPlayerPedSAInterface*)m_pInterface; }
 
-    void                OnFrame();
+    CPadSAInterface&            GetJoypad();
 
-    CWanted*            GetWanted();
+    void                        OnFrame();
 
-    float               GetSprintEnergy() const;
-    void                SetSprintEnergy( float energy );
+    CWanted*                    GetWanted();
 
-    void                SetInitialState();
+    float                       GetSprintEnergy() const;
+    void                        SetSprintEnergy( float energy );
 
-    eMoveAnim           GetMoveAnim() const                             { return (eMoveAnim)GetInterface()->m_moveAnimGroup; }
-    void                SetMoveAnim( eMoveAnim iAnimGroup );
+    void                        SetInitialState();
+
+    eMoveAnim                   GetMoveAnim() const                             { return (eMoveAnim)GetInterface()->m_moveAnimGroup; }
+    void                        SetMoveAnim( eMoveAnim iAnimGroup );
 
 private:
     bool                                m_bIsLocal;

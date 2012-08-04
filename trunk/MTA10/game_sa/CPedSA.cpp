@@ -169,6 +169,11 @@ void CPedSA::SetModelIndex( unsigned short id )
     }
 }
 
+CPadSAInterface& CPedSA::GetJoypad()
+{
+    return m_pad;
+}
+
 bool CPedSA::IsInWater() const
 {
     DEBUG_TRACE("bool CPedSA::IsInWater() const");

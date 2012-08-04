@@ -134,7 +134,7 @@ void CTaskSimpleIKManagerSA::RemoveIKChainTask ( int slotID )
     
     assert( task ); //TODO: Debug
 
-    task->Destroy ();
+    delete task;
     pInterface->m_pIKChainTasks[slotID] = NULL;
 }
 

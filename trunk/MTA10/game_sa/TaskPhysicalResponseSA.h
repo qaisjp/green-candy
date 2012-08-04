@@ -45,4 +45,6 @@ public:
     void                UpdateChoke             ( CPed* pPed, CPed* pAttacker, bool bIsTearGas );
 };
 
+#define MAX_PHYSICAL_TASK_SIZE ( sizeof(CTaskSimpleChokingSA) )
+
 #endif

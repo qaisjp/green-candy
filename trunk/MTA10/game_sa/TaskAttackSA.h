@@ -146,4 +146,6 @@ public:
     CTaskSimpleFightSA ( CEntity *pTargetEntity, int nCommand, unsigned int nIdlePeriod = 10000 );
 };
 
+#define MAX_ATTACK_TASK_SIZE ( max(sizeof(CTaskSimpleFightSA), max(sizeof(CTaskSimpleGangDriveBySA), sizeof(CTaskSimpleUseGunSA))) )
+
 #endif

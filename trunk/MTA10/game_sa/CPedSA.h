@@ -136,9 +136,9 @@ public:
     unsigned int bInVehicle : 1; // is in a vehicle
     unsigned int bIsInTheAir : 1; // is in the air
     unsigned int bIsLanding : 1; // is landing after being in the air
-    unsigned int bHitSomethingLastFrame : 1; // has been in a collision last fram
-    unsigned int bIsNearCar : 1; // has been in a collision last fram
-    unsigned int bRenderPedInCar : 1; // has been in a collision last fram
+    unsigned int bHitSomethingLastFrame : 1; // has been in a collision last frame
+    unsigned int bIsNearCar : 1; // has been in a collision last frame
+    unsigned int bRenderPedInCar : 1; // has been in a collision last frame
     unsigned int bUpdateAnimHeading : 1; // update ped heading due to heading change during anim sequence
     unsigned int bRemoveHead : 1; // waiting on AntiSpazTimer to remove head
 
@@ -345,6 +345,8 @@ public:
 
     void                        SetModelIndex( unsigned short id ); // override for voice update
 
+    virtual CPadSAInterface&    GetJoypad();
+
     unsigned int                GetPoolIndex() const                                        { return m_poolIndex; }
 
     inline CPedSAInterface*     GetInterface()                                              { return (CPedSAInterface*)m_pInterface; }
@@ -457,6 +459,8 @@ protected:
     unsigned int                m_poolIndex;
 
     unsigned char               m_alpha;
+
+    CPadSAInterface             m_pad;
 };
 
 #endif

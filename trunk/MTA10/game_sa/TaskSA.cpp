@@ -16,9 +16,6 @@
 
 #include "StdInc.h"
 
-DWORD dwTasksAlive = 0;
-DWORD dwTasksCreatedTotal = 0;
-
 void* CTaskSAInterface::operator new( size_t )
 {
     return (*ppTaskPool)->Allocate();
@@ -65,29 +62,60 @@ CTaskSA::CTaskSA()
 
     m_parent = NULL;;
     m_interface = NULL;
-    dwTasksCreatedTotal ++;
-    dwTasksAlive++;
-    m_beingDestroyed = false;
 }
 
 CTaskSA::~CTaskSA()
 {
     DEBUG_TRACE("CTaskSA::~CTaskSA()");
 
-    dwTasksAlive--;
+    if ( m_interface )
+    {
+        delete m_interface;
+
+        mtaTasks[m_poolIndex] = NULL;
+    }
 }
 
-// allocate memory for the task (ammount nSize)
+void* CTaskSA::operator new ( size_t )
+{
+    return mtaTaskPool->Allocate();
+}
+
+void CTaskSA::operator delete ( void *ptr )
+{
+    mtaTaskPool->Free( (CTaskSA*)ptr );
+}
+
+// allocate memory for the task
 void CTaskSA::CreateTaskInterface()
 {
     DEBUG_TRACE("void CTaskSA::CreateTaskInterface()");
 
-    m_interface = new CTaskSAInterface(); // :3
+    SetInterface( new CTaskSAInterface ); // :3
     m_parent = NULL;
+}
+
+void CTaskSA::SetInterface( CTaskSAInterface *task )
+{
+    if ( m_interface )
+        mtaTasks[m_poolIndex] = NULL;
+
+    if ( !task )
+    {
+        m_interface = NULL;
+        return;
+    }
+
+    m_poolIndex = (*ppTaskPool)->GetIndex( task );
+    mtaTasks[m_poolIndex] = this;
+
+    m_interface = task;
 }
 
 CTask* CTaskSA::Clone() 
 {
+    assert( 0 );
+
     // This will crash! >:D
     return (CTask*)m_interface->Clone();
 }
@@ -115,18 +143,16 @@ bool CTaskSA::MakeAbortable( CPed *ped, int iPriority )
     return m_interface->MakeAbortable( dynamic_cast <CPedSA*> ( ped )->GetInterface(), iPriority, NULL );
 }
 
-void CTaskSA::Destroy()
-{
-    DEBUG_TRACE("void CTaskSA::Destroy()");
-
-    delete m_interface;
-
-    delete this;
-}
-
 void CTaskSA::DestroyJustThis()
 {
     DEBUG_TRACE("void CTaskSA::DestroyJustThis()");
+
+    if ( m_interface )
+    {
+        mtaTasks[m_poolIndex] = NULL;
+
+        m_interface = NULL;
+    }
 
     delete this;
 }
