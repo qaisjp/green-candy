@@ -39,6 +39,9 @@ CTaskManagementSystemSA::CTaskManagementSystemSA()
 
     // Initiate our task pool
     mtaTaskPool = new CMTATaskPool;
+
+    // Zero is all out
+    memset( mtaTasks, 0, sizeof(mtaTasks) );
 }
 
 CTaskManagementSystemSA::~CTaskManagementSystemSA()
