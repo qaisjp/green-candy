@@ -130,7 +130,9 @@ static DWORD __stdcall luaE_threadEntryPoint( void *ud )
 
     try
     {
+#ifdef _WIN32
         WaitForSingleObject( L->signalBegin, INFINITE );
+#endif
 
         lua_call( L, lua_gettop( L ) - 1, LUA_MULTRET );
 
@@ -165,7 +167,9 @@ static DWORD __stdcall luaE_threadEntryPoint( void *ud )
         lua_settop( L, 0 );
     }
 
+#ifdef _WIN32
     SetEvent( L->signalWait );
+#endif
     return L->status;
 }
 
@@ -196,11 +200,9 @@ lua_Thread* luaE_newthread( lua_State *L )
     for ( n=0; n<NUM_TAGS; n++ )
         L1->mt[n] = L->mt[n];
 
+    // Allocate the OS resources only if necessary!
 #ifdef _WIN32
-    L1->threadHandle = CreateThread( NULL, 0, luaE_threadEntryPoint, L1, 0, NULL );
-
-    if ( !L1->threadHandle )
-        throw lua_exception( L, LUA_ERRRUN, "cannot allocate thread" );
+    L1->threadHandle = NULL;
 #endif
 
     lua_assert(iswhite(L1));
@@ -225,6 +227,9 @@ void luaE_terminate( lua_Thread *L )
     lua_assert(L->openupval == NULL);
 
 #ifdef _WIN32
+    if ( !L->threadHandle )
+        return;
+
     DWORD status;
     GetExitCodeThread( L->threadHandle, &status );
 
@@ -248,6 +253,17 @@ void luaE_terminate( lua_Thread *L )
 #endif
 }
 
+bool lua_Thread::AllocateRuntime()
+{
+#ifdef _WIN32
+    if ( threadHandle )
+        return true;
+
+    threadHandle = CreateThread( NULL, 0, luaE_threadEntryPoint, this, 0, NULL );
+    return threadHandle != NULL;
+#endif
+}
+
 lua_State::~lua_State()
 {
 }
@@ -258,7 +274,9 @@ lua_Thread::~lua_Thread()
     luai_userstatefree( this );
 
 #ifdef _WIN32
-    CloseHandle( threadHandle );
+    if ( threadHandle )
+        CloseHandle( threadHandle );
+
     CloseHandle( signalBegin );
     CloseHandle( signalWait );
 #endif //_WIN32

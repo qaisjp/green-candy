@@ -30,8 +30,6 @@ int luaconstructor_guiscrollbar( lua_State *L )
     lua_pushlightuserdata( L, gui->GetCGUIElement() );
     luaL_openlib( L, NULL, scrollbar_interface, 2 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "gui-scrollbar", 13 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

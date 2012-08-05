@@ -20,11 +20,6 @@
 
 #include "StdInc.h"
 
-#ifndef VERIFY_ENTITY
-#define VERIFY_ENTITY(entity) (CStaticFunctionDefinitions::GetRootElement()->IsMyChild(entity,true)&&!entity->IsBeingDeleted())
-#endif
-
-
 LuaArguments::LuaArguments()
 {
 }

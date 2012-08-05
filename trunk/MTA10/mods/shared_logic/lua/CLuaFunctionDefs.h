@@ -707,11 +707,6 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getWeaponIDFromName );
     LUA_DECLARE( getSlotFromWeapon );
 
-    // Command funcs
-    LUA_DECLARE( addCommandHandler );
-    LUA_DECLARE( removeCommandHandler );
-    LUA_DECLARE( executeCommandHandler );
-
     // Community funcs
     LUA_DECLARE( getPlayerUserName );
     LUA_DECLARE( getPlayerSerial );
@@ -723,6 +718,7 @@ namespace CLuaFunctionDefs
 
     // Commands
     LUA_DECLARE( addCommandHandler );
+    LUA_DECLARE( getCommandHandler );
     LUA_DECLARE( executeCommandHandler );
     LUA_DECLARE( removeCommandHandler );
 

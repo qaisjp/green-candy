@@ -3456,7 +3456,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     pEntity->SetAttachedOffsets ( attachedPosition.data.vecPosition, vecRotationRadians );
                 }
                 pEntity->SetSyncTimeContext ( ucSyncTimeContext );
-                pEntity->GetCustomDataPointer ()->Copy ( pCustomData );
+                pEntity->ApplyCustomData( pCustomData );
 
                 // Save any entity-dependant stuff for later
                 SEntityDependantStuff* pStuff = new SEntityDependantStuff;

@@ -27,8 +27,6 @@ static int luaconstructor_shader( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, shader_interface, 1 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "shader", 6 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

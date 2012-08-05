@@ -81,7 +81,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
-				AdditionalDependencies="strmiids.lib dbghelp.lib libv2.lib zlibd_2008.lib libpng2008d.lib odbc32.lib odbccp32.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9d.lib winmm.lib Imagehlp.lib ws2_32.lib gdi32.lib Userenv.lib"
+				AdditionalDependencies="strmiids.lib dbghelp.lib zlibd_2008.lib libpng2008d.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9d.lib winmm.lib ws2_32.lib Userenv.lib"
 				ShowProgress="0"
 				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mta\core_d.dll"
 				LinkIncremental="2"
@@ -185,7 +185,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
-				AdditionalDependencies="strmiids.lib dbghelp.lib libv2.lib zlib_2008.lib libpng2008.lib odbc32.lib odbccp32.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9.lib ws2_32.lib winmm.lib Imagehlp.lib gdi32.lib Userenv.lib"
+				AdditionalDependencies="strmiids.lib dbghelp.lib zlib_2008.lib libpng2008.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9.lib ws2_32.lib gdi32.lib Userenv.lib winmm.lib"
 				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\MTA\core.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

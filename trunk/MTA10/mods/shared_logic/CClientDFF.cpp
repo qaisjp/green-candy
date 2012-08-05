@@ -46,8 +46,6 @@ static int luaconstructor_dff( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, dff_interface, 1 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "dff", 5 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

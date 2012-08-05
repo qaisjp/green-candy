@@ -229,21 +229,6 @@ void AttachedMatrix ( const RwMatrix& matrix, RwMatrix& returnMatrix, CVector ve
     g_pMultiplayer->ConvertEulerAnglesToMatrix ( returnMatrix, vecMatRotation );
 }
 
-void LongToDottedIP ( unsigned long ulIP, char* szDottedIP )
-{
-    in_addr in;
-    in.s_addr = ulIP;;
-    char* szTemp = inet_ntoa ( in );
-    if ( szTemp )
-    {
-        strncpy ( szDottedIP, szTemp, 22 );
-    }
-    else
-    {
-        szDottedIP [0] = 0;
-    }
-}
-
 float GetRandomFloat ( void )
 {
     return static_cast < float > ( rand () ) / ( static_cast < float > ( RAND_MAX ) + 1.0f );

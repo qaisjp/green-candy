@@ -30,8 +30,6 @@ int luaconstructor_guitabpanel( lua_State *L )
     lua_pushlightuserdata( L, gui->GetCGUIElement() );
     luaL_openlib( L, NULL, tabpanel_interface, 2 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "gui-tabpanel", 11 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

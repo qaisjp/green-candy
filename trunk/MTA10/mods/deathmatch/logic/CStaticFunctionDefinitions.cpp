@@ -825,39 +825,6 @@ CClientDummy* CStaticFunctionDefinitions::CreateElement ( CResource& Resource, c
     return NULL;
 }
 
-
-bool CStaticFunctionDefinitions::DestroyElement ( CClientEntity& Entity )
-{
-    // Run us on all its children
-    CChildListType ::const_iterator iter = Entity.IterBegin ();
-    while ( iter != Entity.IterEnd () )
-    {
-        if ( DestroyElement ( **iter ) )
-            iter = Entity.IterBegin ();
-        else
-            ++iter;
-    }
-
-    // Are we already being deleted?
-    if ( Entity.IsBeingDeleted () )
-        return false;
-
-    // We can't delete our root
-    if ( &Entity == m_pRootEntity )
-        return false;
-
-    
-    // Use the element deleter to delete it if it's local and not system
-    if ( Entity.IsLocalEntity () && !Entity.IsSystemEntity () )
-    {
-        m_pClientGame->GetElementDeleter ()->Delete ( &Entity );
-        return true;
-    }
-
-    return false;
-}
-
-
 bool CStaticFunctionDefinitions::SetElementID ( CClientEntity& Entity, const char* szID )
 {
     assert ( szID );
@@ -4270,7 +4237,8 @@ bool CStaticFunctionDefinitions::GUISetSelectedTab ( CClientEntity& Element, CCl
 
 bool CStaticFunctionDefinitions::GUIDeleteTab ( CLuaMain& LuaMain, CClientGUIElement* pTab, CClientGUIElement* pParent )
 {
-    if ( !pParent || !pTab ) return false;
+    if ( !pParent || !pTab )
+        return false;
 
     CGUIElement *pGUIParent = pParent->GetCGUIElement ();
     static_cast < CGUITabPanel* > ( pGUIParent ) ->DeleteTab ( reinterpret_cast < CGUITab* > ( pTab->GetCGUIElement() ) );
@@ -6127,98 +6095,6 @@ CClientSound* CStaticFunctionDefinitions::PlaySound3D ( CResource* pResource, co
     if ( pSound ) pSound->SetParent ( pResource->GetResourceDynamicEntity() );
     return pSound;
 }
-
-
-bool CStaticFunctionDefinitions::StopSound ( CClientSound& Sound )
-{
-    g_pClientGame->GetElementDeleter()->Delete ( &Sound );
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::SetSoundPosition ( CClientSound& Sound, double dPosition )
-{
-    Sound.SetPlayPosition ( dPosition );
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::GetSoundPosition ( CClientSound& Sound, double& dPosition )
-{
-    dPosition = Sound.GetPlayPosition ();
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::GetSoundLength ( CClientSound& Sound, double& dLength )
-{
-    dLength = Sound.GetLength ();
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::SetSoundPaused ( CClientSound& Sound, bool bPaused )
-{
-    Sound.SetPaused ( bPaused );
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::IsSoundPaused ( CClientSound& Sound, bool& bPaused )
-{
-    bPaused = Sound.IsPaused ();
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::SetSoundVolume ( CClientSound& Sound, float fVolume )
-{
-    Sound.SetVolume ( fVolume );
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::GetSoundVolume ( CClientSound& Sound, float& fVolume )
-{
-    fVolume = Sound.GetVolume ();
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::SetSoundSpeed ( CClientSound& Sound, float fSpeed )
-{
-    Sound.SetPlaybackSpeed ( fSpeed );
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::GetSoundSpeed ( CClientSound& Sound, float& fSpeed )
-{
-    fSpeed = Sound.GetPlaybackSpeed ();
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::SetSoundMinDistance ( CClientSound& Sound, float fDistance )
-{
-    Sound.SetMinDistance ( fDistance );
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::GetSoundMinDistance ( CClientSound& Sound, float& fDistance )
-{
-    fDistance = Sound.GetMinDistance ();
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::SetSoundMaxDistance ( CClientSound& Sound, float fDistance )
-{
-    Sound.SetMaxDistance ( fDistance );
-    return true;
-}
-
 
 bool CStaticFunctionDefinitions::GetSoundMaxDistance ( CClientSound& Sound, float& fDistance )
 {

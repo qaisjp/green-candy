@@ -161,6 +161,9 @@ public:
     void    SetMainThread( bool enable )        { isMain = enable; }
     bool    IsThread()                          { return !isMain; }
 
+    bool    AllocateRuntime();
+    bool    IsRuntimeAllocated() const          { return threadHandle != NULL; }
+
     void    SetYieldDisabled( bool disable )    { yieldDisabled = disable; }
     bool    IsYieldDisabled()                   { return yieldDisabled; }
 

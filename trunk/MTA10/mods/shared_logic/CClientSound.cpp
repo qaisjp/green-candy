@@ -31,8 +31,6 @@ static int luaconstructor_sound( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, sound_interface, 1 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "sound", 5 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

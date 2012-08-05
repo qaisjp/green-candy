@@ -48,6 +48,9 @@ static int methodenv_index( lua_State *L )
 {
     Class *c = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
 
+    if ( c->destroyed )
+        throw lua_exception( L, LUA_ERRRUN, "attempt to index the environment of a destroyed class" );
+
     lua_pushvalue( L, 2 );
     lua_pushvalue( L, 2 );
 
@@ -138,8 +141,11 @@ void Class::CheckDestruction( lua_State *L )
     // Yes, exceptions will not hinder the requested destruction of a class.
 
     // The new lua thread architecture preserves class referencing!
-    // Now there is no more issue with keeping a coroutine state to save a class
+    // Now there is no issue with keeping a coroutine state to save a class
     // from destruction. Hahaha!
+    // For this reason, be sure to prevent yield-deadlocks by using lua_yield_shield
+    // because the Lua environment is coroutine-safe. A halted coroutine in a class callback
+    // handler runtime will prevent the class' destruction!
     if ( reqDestruction && inMethod == 0 )
     {
         lua_yield_shield _ref( L ); // prevent destructor yielding
@@ -264,7 +270,7 @@ public:
     MethodStackAllocation( lua_State *thread, Class *myClass, const TValue& val )
     {
         if ( myClass->destroyed )
-            throw lua_exception( thread, LUA_ERRRUN, "attempted to access a destroyed class' method" );
+            throw lua_exception( thread, LUA_ERRRUN, "attempt to access a destroyed class' method" );
 
         TValue *superMethod = myClass->GetSuperMethod( thread );
 
@@ -346,8 +352,30 @@ static int classmethod_forceSuper( lua_State *L )
     return 0;
 }
 
+static int classmethod_fsFSCCHandler( lua_State *L )
+{
+    if ( lua_isnil( L, 1 ) )
+        lua_pushcclosure( L, classmethod_forceSuperRoot, 2 );
+    else
+        lua_pushcclosure( L, classmethod_forceSuper, 3 );
+
+    return 1;
+}
+
+// Register future method definitions for the Forced Super Calling Convention (FSCC)
 static int classmethod_registerForcedSuper( lua_State *L )
 {
+    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
+
+    if ( j.destroyed )
+        throw lua_exception( L, LUA_ERRRUN, "attempt to register a forced-super declaration inheritance for a destroyed class" );
+
+    luaL_checktype( L, 1, LUA_TSTRING );
+
+    lua_pushcclosure( L, classmethod_fsFSCCHandler, 0 );
+    setclvalue( L, luaH_setstr( L, j.forceSuper, tsvalue( L->base ) ), clvalue( L->top - 1 ) );
+
+    luaC_objbarriert( L, j.forceSuper, tsvalue( L->top - 1 ) );
     return 0;
 }
 
@@ -385,7 +413,7 @@ static int classmethod_fsDestroyRoot( lua_State *L )
     }
 
     if ( j.destroyed )
-        throw lua_exception( L, LUA_ERRRUN, "attempted to destroy a destroyed class!" );
+        throw lua_exception( L, LUA_ERRRUN, "attempt to destroy a destroyed class" );
 
     // I think we do not need to check for a destroyed class here
     if ( !class_preDestructor( L, j ) )
@@ -512,6 +540,9 @@ static int childapi_destroy( lua_State *L )
 
     parent.children.erase( std::remove( parent.children.begin(), parent.children.end(), &child ), parent.children.end() );
 
+    // Tell this event to any possible registree
+    // We use a seperate function so we can post this message after unlinking from
+    // the parent's children!
     lua_getfield( L, LUA_ENVIRONINDEX, "notifyDestroy" );
     lua_call( L, 0, 0 );
     return 0;
@@ -526,6 +557,14 @@ static const luaL_Reg childapi_interface[] =
 
 static int childapi_constructor( lua_State *L )
 {
+    // The destruction has to be notified to every registree
+    // Overwriting the method would otherwise bug the class children runtime
+    // since parents want to be notified about their child's unlink event
+    // so they can safely destroy themselves
+    lua_getfield( L, LUA_ENVIRONINDEX, "registerForcedSuper" );
+    lua_pushlstring( L, "notifyDestroy", 13 );
+    lua_call( L, 1, 0 );
+
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     lua_pushvalue( L, lua_upvalueindex( 2 ) );
@@ -663,9 +702,14 @@ static const luaL_Reg classmethods[] =
 
 static int methodenv_newindex( lua_State *L )
 {
+    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
+
+    // If the class leaked it's environment, outer range code might try to modify the class during obscure scenarios
+    if ( j.destroyed )
+        throw lua_exception( L, LUA_ERRRUN, "attempt to modify a destroyed class" );
+
     if ( lua_type( L, 2 ) == LUA_TSTRING )
     {
-        Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
         int t = lua_type( L, 3 );
 
         if ( t == LUA_TFUNCTION )
@@ -945,7 +989,10 @@ static int protect_index( lua_State *L )
     if ( len > 1 && *(unsigned short*)str == 0x5f5f )
         return 0;
 
-    lua_gettable( L, LUA_ENVIRONINDEX );
+    lua_getfield( L, LUA_ENVIRONINDEX, "this" );
+    lua_refclass( L, 3 )->PushOuterEnvironment( L );
+    lua_pushvalue( L, 2 );
+    lua_gettable( L, 4 );
     return 1;
 }
 

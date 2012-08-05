@@ -353,7 +353,7 @@ static int LoadCFunctions( LuaMain *L )
 
 #ifndef _KILLFRENZY
     // XML Functions
-    LUA_REGISTER( L, xmlNodeFindChild );
+    LUA_REGISTER( L, xmlFindChild );
     LUA_REGISTER( L, xmlNodeGetChildren );
     LUA_REGISTER( L, xmlNodeGetValue );
     LUA_REGISTER( L, xmlNodeSetValue );

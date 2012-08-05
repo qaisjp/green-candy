@@ -34,8 +34,6 @@ static int luaconstructor_radararea( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, radararea_interface, 1 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "radararea", 9 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

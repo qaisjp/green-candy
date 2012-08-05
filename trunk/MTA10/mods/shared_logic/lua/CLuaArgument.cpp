@@ -17,10 +17,6 @@
 #include "StdInc.h"
 #include "net/SyncStructures.h"
 
-#ifndef VERIFY_ENTITY
-#define VERIFY_ENTITY(entity) (CStaticFunctionDefinitions::GetRootElement()->IsMyChild(entity,true)&&!entity->IsBeingDeleted())
-#endif
-
 extern CClientGame* g_pClientGame;
 
 // Prevent the warning issued when doing unsigned short -> void*
