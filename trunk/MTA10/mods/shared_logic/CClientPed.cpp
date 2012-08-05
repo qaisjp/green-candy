@@ -3974,9 +3974,8 @@ bool CClientPed::SetCurrentRadioChannel ( unsigned char ucChannel )
     {
         if ( m_ucRadioChannel != ucChannel )
         {
-            CLuaArguments Arguments;
-            Arguments.PushNumber ( ucChannel );
-            if ( !CallEvent ( "onClientPlayerRadioSwitch", Arguments, true ) )
+            lua_pushnumber( m_lua, ucChannel );
+            if ( !CallEvent( "onClientPlayerRadioSwitch", m_lua, 1 ) )
             {
                 // if we cancel the radio channel setting at 12 then when they go through previous it will get to 0, then the next time it is used set to 13 in preperation to set to 12 but if it is cancelled it stays at 13.
                 // Issue 6113 - Caz
@@ -4194,12 +4193,11 @@ void CClientPed::DestroySatchelCharges ( bool bBlow, bool bDestroy )
             {                
                 pProjectile->GetPosition ( vecPosition );
 
-                CLuaArguments Arguments;
-                Arguments.PushNumber ( vecPosition.fX );
-                Arguments.PushNumber ( vecPosition.fY );
-                Arguments.PushNumber ( vecPosition.fZ );
-                Arguments.PushNumber ( EXP_TYPE_GRENADE );
-                bool bCancelExplosion = !CallEvent ( "onClientExplosion", Arguments, true );
+                lua_pushnumber( m_lua, vecPosition.fX );
+                lua_pushnumber( m_lua, vecPosition.fY );
+                lua_pushnumber( m_lua, vecPosition.fZ );
+                lua_pushnumber( m_lua, EXP_TYPE_GRENADE );
+                bool bCancelExplosion = !CallEvent( "onClientExplosion", m_lua, 4 );
                 
                 if ( !bCancelExplosion )
                     m_pManager->GetExplosionManager ()->Create ( EXP_TYPE_GRENADE, vecPosition, this, true, -1.0f, false, WEAPONTYPE_REMOTE_SATCHEL_CHARGE );

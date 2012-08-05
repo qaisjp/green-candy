@@ -63,12 +63,13 @@ namespace CLuaFunctionDefs
         {
             // Grab our virtual machine
             CLuaMain* pLuaMain = lua_readcontext( L );
+            CMapEvent *mapEvent = pEntity->GetEventManager()->Get( strName );
 
             // Check if the handle is in use
-            if ( pEntity->GetEventManager()->HandleExists ( pLuaMain, strName, iLuaFunction ) )
+            if ( mapEvent && mapEvent->GetLuaFunction() == iLuaFunction )
             {
                 m_pScriptDebugging->LogCustom( 255, 0, 0, "addEventHandler: '%s' with this function is already handled", *strName );
-                lua_pushboolean ( L, false );
+                lua_pushboolean( L, false );
                 return 1;
             }
 
@@ -113,25 +114,19 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( triggerEvent )
     {
     //  bool triggerEvent ( string eventName, element baseElement, [ var argument1, ... ] )
-        SString strName; CClientEntity* pEntity; CLuaArguments Arguments;
+        SString strName; CClientEntity* pEntity;
 
-        CScriptArgReader argStream ( L );
-        argStream.ReadString ( strName );
+        CScriptArgReader argStream( L );
+        argStream.ReadString( strName );
         argStream.ReadClass( pEntity, LUACLASS_ENTITY );
-        argStream.ReadLuaArguments ( Arguments );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            // Trigger it
-            bool bWasCancelled;
-            if ( CStaticFunctionDefinitions::TriggerEvent ( strName, *pEntity, Arguments, bWasCancelled ) )
-            {
-                lua_pushboolean ( L, !bWasCancelled );
-                return 1;
-            }
+            lua_pushboolean( L, pEntity->CallEvent( strName.c_str(), L, lua_gettop( L ) - 2, false ) );
+            return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "triggerEvent", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // Error
         lua_pushnil ( L );

@@ -76,7 +76,15 @@ void CElementRPCs::SetElementData ( CClientEntity* pSource, NetBitStreamInterfac
         CLuaArgument Argument;
         if ( bitStream.ReadStringCharacters ( strName, usNameLength ) && Argument.ReadFromBitStream ( bitStream ) )
         {
-            pSource->SetCustomData ( strName, Argument, NULL );
+            lua_State *L = pSource->GetVM();
+
+            pSource->PushStack( L );
+            lua_getfield( L, -1, "data" );
+            lua_pushlstring( L, strName.c_str(), strName.size() );
+            Argument.Push( L );
+            lua_settable( L, -3 );
+
+            lua_pop( L, 2 );
         }
     }
 }

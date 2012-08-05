@@ -120,7 +120,7 @@ void Events::PrePulse()
 void Events::PostPulse()
 {
     m_wasCancelled = m_eventCancelled;
-    m_eventCancelled = m_cancelList.back() != NULL;
+    m_eventCancelled = m_cancelList.back();
 
     m_cancelList.pop_back();
 }

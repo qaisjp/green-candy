@@ -428,32 +428,27 @@ void CClientMarker::StreamOut ( void )
     }
 }
 
-
 void CClientMarker::Callback_OnCollision ( CClientColShape& Shape, CClientEntity& Entity )
 {
-    if ( IS_PLAYER ( &Entity ) )
+    if ( Entity.IsTransmit( LUACLASS_PLAYER ) )
     {
         // Call the marker hit event
-        CLuaArguments Arguments;
-        Arguments.PushElement ( &Entity );            // player that hit it
-        Arguments.PushBoolean ( ( GetDimension () == Entity.GetDimension () ) ); // matching dimension?
-        CallEvent ( "onClientMarkerHit", Arguments, true );
+        Entity.PushStack( m_lua );                                              // player that hit it
+        lua_pushboolean( m_lua, GetDimension() == Entity.GetDimension() );      // matching dimension?
+        CallEvent( "onClientMarkerHit", m_lua, 2 );
     }
 }
-
 
 void CClientMarker::Callback_OnLeave ( CClientColShape& Shape, CClientEntity& Entity )
 {
-    if ( IS_PLAYER ( &Entity ) )
+    if ( Entity.IsTransmit( LUACLASS_PLAYER ) )
     {
         // Call the marker hit event
-        CLuaArguments Arguments;
-        Arguments.PushElement ( &Entity );            // player that hit it
-        Arguments.PushBoolean ( ( Shape.GetDimension () == Entity.GetDimension () ) ); // matching dimension?
-        CallEvent ( "onClientMarkerLeave", Arguments, true );
+        Entity.PushStack( m_lua );            // player that hit it
+        lua_pushboolean( m_lua, Shape.GetDimension() == Entity.GetDimension() ); // matching dimension?
+        CallEvent( "onClientMarkerLeave", m_lua, 2 );
     }
 }
-
 
 void CClientMarker::CreateOfType ( int iType )
 {

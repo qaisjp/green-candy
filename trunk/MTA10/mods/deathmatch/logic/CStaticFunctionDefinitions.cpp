@@ -87,16 +87,12 @@ CStaticFunctionDefinitions::CStaticFunctionDefinitions (
     m_pSoundManager = pManager->GetSoundManager ();
 }
 
-
 CStaticFunctionDefinitions::~CStaticFunctionDefinitions ( void )
 {
 }
 
-
 bool CStaticFunctionDefinitions::AddEvent ( CLuaMain& LuaMain, const char* szName, bool bAllowRemoteTrigger )
 {
-    assert ( szName );
-
     // Valid name?
     if ( strlen ( szName ) > 0 )
     {
@@ -107,11 +103,8 @@ bool CStaticFunctionDefinitions::AddEvent ( CLuaMain& LuaMain, const char* szNam
     return false;
 }
 
-
 bool CStaticFunctionDefinitions::AddEventHandler ( CLuaMain& LuaMain, const char* szName, CClientEntity& Entity, const LuaFunctionRef& iLuaFunction, bool bPropagated )
 {
-    assert ( szName );
-
     // We got an event with that name?
     if ( m_pEvents->Exists ( szName ) )
     {
@@ -123,16 +116,12 @@ bool CStaticFunctionDefinitions::AddEventHandler ( CLuaMain& LuaMain, const char
     return false;
 }
 
-
 bool CStaticFunctionDefinitions::RemoveEventHandler ( CLuaMain& LuaMain, const char* szName, CClientEntity& Entity, const LuaFunctionRef& iLuaFunction )
 {
-    assert ( szName );
-
     // We got an event and handler with that name?
     if ( m_pEvents->Exists ( szName ) )
     {
-        // ACHTUNG: CHECK WHETHER THE LUA FUNCTION REF IS CORRECTLY FOUND
-        if ( Entity.DeleteEvent ( &LuaMain, szName, iLuaFunction ) )
+        if ( Entity.DeleteEvent( &LuaMain, szName, &iLuaFunction ) )
         {
             return true;
         }
@@ -140,22 +129,6 @@ bool CStaticFunctionDefinitions::RemoveEventHandler ( CLuaMain& LuaMain, const c
 
     return false;
 }
-
-
-bool CStaticFunctionDefinitions::TriggerEvent ( const char* szName, CClientEntity& Entity, const CLuaArguments& Arguments, bool& bWasCancelled )
-{
-    // There is such event?
-    if ( m_pEvents->Exists ( szName ) )
-    {
-        // Call the event
-        Entity.CallEvent ( szName, Arguments, true );
-        bWasCancelled = m_pEvents->WasCancelled ();
-        return true;
-    }
-
-    return false;
-}
-
 
 bool CStaticFunctionDefinitions::TriggerServerEvent ( const char* szName, CClientEntity& CallWithEntity, CLuaArguments& Arguments )
 {
@@ -206,12 +179,12 @@ bool CStaticFunctionDefinitions::OutputConsole ( const char* szText )
 
 bool CStaticFunctionDefinitions::OutputChatBox ( const char* szText, unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue, bool bColorCoded )
 {
-    CLuaArguments Arguments;
-    Arguments.PushString ( szText );
-    Arguments.PushNumber ( ucRed );
-    Arguments.PushNumber ( ucGreen );
-    Arguments.PushNumber ( ucBlue );
-    g_pClientGame->GetRootEntity()->CallEvent ( "onClientChatMessage", Arguments, false );
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+    lua_pushstring( L, szText );
+    lua_pushnumber( L, ucRed );
+    lua_pushnumber( L, ucGreen );
+    lua_pushnumber( L, ucBlue );
+    g_pClientGame->GetRootEntity()->CallEvent( "onClientChatMessage", L, 4 );
 
     m_pCore->ChatPrintfColor ( "%s", bColorCoded, ucRed, ucGreen, ucBlue, szText );
     return true;
@@ -841,58 +814,11 @@ bool CStaticFunctionDefinitions::SetElementID ( CClientEntity& Entity, const cha
     return false;
 }
 
-
-bool CStaticFunctionDefinitions::SetElementData ( CClientEntity& Entity, const char* szName, CLuaArgument& Variable, CLuaMain& LuaMain, bool bSynchronize )
-{
-    assert ( szName );
-    assert ( strlen ( szName ) <= MAX_CUSTOMDATA_NAME_LENGTH );
-
-    CLuaArgument * pCurrentVariable = Entity.GetCustomData ( szName, false );
-    if ( !pCurrentVariable || Variable != *pCurrentVariable )
-    {
-        if ( bSynchronize )
-        {
-            // Allocate a bitstream
-            NetBitStreamInterface* pBitStream = g_pNet->AllocateNetBitStream ();
-            if ( pBitStream )
-            {
-                // Write element ID, name length and the name. Also write the variable.
-                pBitStream->Write ( Entity.GetID () );
-                unsigned short usNameLength = static_cast < unsigned short > ( strlen ( szName ) );
-                pBitStream->WriteCompressed ( usNameLength );
-                pBitStream->Write ( szName, usNameLength );
-                Variable.WriteToBitStream ( *pBitStream );
-
-                // Send the packet and deallocate
-                g_pNet->SendPacket ( PACKET_ID_CUSTOM_DATA, pBitStream, PACKET_PRIORITY_LOW, PACKET_RELIABILITY_RELIABLE, PACKET_ORDERING_CHAT );
-                g_pNet->DeallocateNetBitStream ( pBitStream );
-
-                // Set its custom data
-                Entity.SetCustomData ( szName, Variable, &LuaMain );
-
-                return true;
-            }
-        }
-        else
-        {
-            // Set its custom data
-            Entity.SetCustomData ( szName, Variable, &LuaMain );
-
-            return true;
-        }
-    }
-
-    return false;
-}
-
-
 bool CStaticFunctionDefinitions::RemoveElementData ( CClientEntity& Entity, const char* szName )
 {
     // TODO
     return false;
 }
-
-
 
 bool CStaticFunctionDefinitions::SetElementPosition ( CClientEntity& Entity, const CVector& vecPosition, bool bWarp )
 {

@@ -421,8 +421,8 @@ void CPacketHandler::Packet_ServerJoined ( NetBitStreamInterface& bitStream )
     g_pClientGame->GetNetAPI ()->RPC ( INITIAL_DATA_STREAM );
 
     // Call the onClientPlayerJoin event for ourselves
-    CLuaArguments Arguments;
-    g_pClientGame->m_pLocalPlayer->CallEvent ( "onClientPlayerJoin", Arguments, true );
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+    g_pClientGame->m_pLocalPlayer->CallEvent( "onClientPlayerJoin", L, 0 );
 
     g_pCore->UpdateRecentlyPlayed();
 
@@ -743,8 +743,8 @@ void CPacketHandler::Packet_PlayerList ( NetBitStreamInterface& bitStream )
             if ( bJustJoined )
             {
                 // Call the onClientPlayerJoin event
-                CLuaArguments Arguments;
-                pPlayer->CallEvent ( "onClientPlayerJoin", Arguments, true );
+                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                pPlayer->CallEvent( "onClientPlayerJoin", L, 0 );
             }
         }
         else
@@ -932,12 +932,14 @@ void CPacketHandler::Packet_PlayerSpawn ( NetBitStreamInterface& bitStream )
         }
 
         // Call the onClientPlayerSpawn lua event
-        CLuaArguments Arguments;
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
         if ( pTeam )
-            Arguments.PushElement ( pTeam );
+            pTeam->PushStack( L );
         else
-            Arguments.PushBoolean ( false );
-        pPlayer->CallEvent ( "onClientPlayerSpawn", Arguments, true );
+            lua_pushboolean( L, false );
+
+        pPlayer->CallEvent( "onClientPlayerSpawn", L, 1 );
     }
 }
 
@@ -986,18 +988,29 @@ void CPacketHandler::Packet_PlayerWasted ( NetBitStreamInterface& bitStream )
                          bStealth, false, animGroup, animID );
 
             // Call the onClientPlayerWasted event
-            CLuaArguments Arguments;
-            if ( pKiller ) Arguments.PushElement ( pKiller );
-            else Arguments.PushBoolean ( false );
-            if ( weapon.data.ucWeaponType != 0xFF ) Arguments.PushNumber ( weapon.data.ucWeaponType );
-            else Arguments.PushBoolean ( false );
-            if ( bodyPart.data.uiBodypart != 0xFF ) Arguments.PushNumber ( bodyPart.data.uiBodypart );
-            else Arguments.PushBoolean ( false );
-            Arguments.PushBoolean ( bStealth );
-            if ( IS_PLAYER ( pPed ) )
-                pPed->CallEvent ( "onClientPlayerWasted", Arguments, true );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+            if ( pKiller )
+                pKiller->PushStack( L );
             else
-                pPed->CallEvent ( "onClientPedWasted", Arguments, true );
+                lua_pushboolean( L, false );
+
+            if ( weapon.data.ucWeaponType != 0xFF )
+                lua_pushnumber( L, weapon.data.ucWeaponType );
+            else
+                lua_pushboolean( L, false );
+
+            if ( bodyPart.data.uiBodypart != 0xFF )
+                lua_pushnumber( L, bodyPart.data.uiBodypart );
+            else
+                lua_pushboolean( L, false );
+
+            lua_pushboolean( L, bStealth );
+
+            if ( pPed->IsTransmit( LUACLASS_PLAYER ) )
+                pPed->CallEvent( "onClientPlayerWasted", L, 4 );
+            else
+                pPed->CallEvent( "onClientPedWasted", L, 4 );
         }
     }
     else
@@ -1095,17 +1108,19 @@ void CPacketHandler::Packet_PlayerChangeNick ( NetBitStreamInterface& bitStream 
      * Call the lua function callback 'onClientPlayerChangeNick'
      * to notify client scripts.
      */
-    CLuaArguments Arguments;
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
     if ( szOldNickCopy )
     {
-        Arguments.PushString ( szOldNickCopy );
-        Arguments.PushString ( szNewNick );
+        lua_pushstring( L, szOldNickCopy );
+        lua_pushstring( L, szNewNick );
     }
     else
     {
-        Arguments.PushBoolean ( false );
+        lua_pushboolean( L, false );
+        lua_pushnil( L );
     }
-    pPlayer->CallEvent ( "onClientPlayerChangeNick", Arguments, true );
+    pPlayer->CallEvent( "onClientPlayerChangeNick", L, 2 );
 
     /*
      * Cleanup.
@@ -1147,12 +1162,12 @@ void CPacketHandler::Packet_ChatEcho ( NetBitStreamInterface& bitStream )
                 StripControlCodes ( szMessage, ' ' );
 
                 // Call an event
-                CLuaArguments Arguments;
-                Arguments.PushString ( szMessage );
-                Arguments.PushNumber ( ucRed );
-                Arguments.PushNumber ( ucGreen );
-                Arguments.PushNumber ( ucBlue );
-                g_pClientGame->GetRootEntity()->CallEvent ( "onClientChatMessage", Arguments, false );
+                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                lua_pushstring( L, szMessage );
+                lua_pushnumber( L, ucRed );
+                lua_pushnumber( L, ucGreen );
+                lua_pushnumber( L, ucBlue );
+                g_pClientGame->GetRootEntity()->CallEvent( "onClientChatMessage", L, 4 );
 
                 // Echo it
                 g_pCore->ChatEchoColor ( szMessage, ucRed, ucGreen, ucBlue, ucColorCoded );
@@ -1348,11 +1363,10 @@ void CPacketHandler::Packet_VehicleSpawn ( NetBitStreamInterface& bitStream )
         pVehicle->AttachTo ( NULL );
 
         // Call the onClientVehicleRespawn event
-        CLuaArguments Arguments;
-        pVehicle->CallEvent ( "onClientVehicleRespawn", Arguments, true );
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        pVehicle->CallEvent( "onClientVehicleRespawn", L, 0, true );
     }
 }
-
 
 void CPacketHandler::Packet_VehicleDamageSync ( NetBitStreamInterface& bitStream )
 {
@@ -1471,11 +1485,11 @@ void CPacketHandler::Packet_Vehicle_InOut ( NetBitStreamInterface& bitStream )
                         pVehicle->CalcAndUpdateTyresCanBurstFlag ();
 
                         // Call the onClientVehicleStartEnter event
-                        CLuaArguments Arguments;
-                        Arguments.PushElement ( pPlayer );     // player
-                        Arguments.PushNumber ( ucSeat );        // seat
-                        Arguments.PushNumber ( ucDoor );        // Door
-                        pVehicle->CallEvent ( "onClientVehicleStartEnter", Arguments, true );
+                        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                        pPlayer->PushStack( L );                // player
+                        lua_pushnumber( L, ucSeat );            // seat
+                        lua_pushnumber( L, ucDoor );            // Door
+                        pVehicle->CallEvent( "onClientVehicleStartEnter", L, 3 );
                         break;
                     }
 
@@ -1496,16 +1510,15 @@ void CPacketHandler::Packet_Vehicle_InOut ( NetBitStreamInterface& bitStream )
                             g_pClientGame->m_bNoNewVehicleTask = false;
 
                         // Call the onClientPlayerEnterVehicle event
-                        CLuaArguments Arguments;
-                        Arguments.PushElement ( pVehicle );        // vehicle
-                        Arguments.PushNumber ( ucSeat );            // seat
-                        pPlayer->CallEvent ( "onClientPlayerVehicleEnter", Arguments, true );
+                        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                        pVehicle->PushStack( L );               // vehicle
+                        lua_pushnumber( L, ucSeat );            // seat
+                        pPlayer->CallEvent( "onClientPlayerVehicleEnter", L, 2 );
 
                         // Call the onClientVehicleEnter event
-                        CLuaArguments Arguments2;
-                        Arguments2.PushElement ( pPlayer );        // player
-                        Arguments2.PushNumber ( ucSeat );           // seat
-                        pVehicle->CallEvent ( "onClientVehicleEnter", Arguments2, true );
+                        pPlayer->PushStack( L );                // player
+                        lua_pushnumber( L, ucSeat );            // seat
+                        pVehicle->CallEvent( "onClientVehicleEnter", L, 2 );
                         break;
                     }
 
@@ -1572,11 +1585,11 @@ void CPacketHandler::Packet_Vehicle_InOut ( NetBitStreamInterface& bitStream )
                         // Remember that this player is working on leaving a vehicle
                         pPlayer->SetVehicleInOutState ( VEHICLE_INOUT_GETTING_OUT );
 
-                        CLuaArguments Arguments;
-                        Arguments.PushElement ( pPlayer );         // player
-                        Arguments.PushNumber ( ucSeat );           // seat
-                        Arguments.PushNumber ( ucDoor );           // door being used
-                        pVehicle->CallEvent ( "onClientVehicleStartExit", Arguments, true );
+                        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                        pPlayer->PushStack( L );                    // player
+                        lua_pushnumber( L, ucSeat );                // seat
+                        lua_pushnumber( L, ucDoor );                // door being used
+                        pVehicle->CallEvent( "onClientVehicleStartExit", L, 3 );
                         break;
                     }
 
@@ -1597,18 +1610,17 @@ void CPacketHandler::Packet_Vehicle_InOut ( NetBitStreamInterface& bitStream )
                         pPlayer->SetVehicleInOutState ( VEHICLE_INOUT_NONE );
 
                         // Call the onClientPlayerExitVehicle event
-                        CLuaArguments Arguments;
-                        Arguments.PushElement ( pVehicle );        // vehicle
-                        Arguments.PushNumber ( ucSeat );            // seat
-                        Arguments.PushBoolean ( false );            // jacker
-                        pPlayer->CallEvent ( "onClientPlayerVehicleExit", Arguments, true );
+                        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                        pVehicle->PushStack( L );                   // vehicle
+                        lua_pushnumber( L, ucSeat );                // seat
+                        lua_pushboolean( L, false );                // jacker
+                        pPlayer->CallEvent( "onClientPlayerVehicleExit", L, 3 );
 
                         // Call the onClientVehicleExit event
-                        CLuaArguments Arguments2;
-                        Arguments2.PushElement ( pPlayer );         // player
-                        Arguments2.PushNumber ( ucSeat );           // seat
-                        Arguments2.PushBoolean ( false );            // jacker
-                        pVehicle->CallEvent ( "onClientVehicleExit", Arguments2, true );
+                        pPlayer->PushStack( L );                    // player
+                        lua_pushnumber( L, ucSeat );                // seat
+                        lua_pushboolean( L, false );                // jacker
+                        pVehicle->CallEvent( "onClientVehicleExit", L, 3 );
                         break;
                     }
 
@@ -1641,18 +1653,18 @@ void CPacketHandler::Packet_Vehicle_InOut ( NetBitStreamInterface& bitStream )
                         if ( ucSeat == 0 )
                             pVehicle->RemoveTargetPosition ();
 
-                        CLuaArguments Arguments;
-                        Arguments.PushElement ( pVehicle );        // vehicle
-                        Arguments.PushNumber ( ucSeat );            // seat
-                        Arguments.PushBoolean ( false );            // jacker
-                        pPlayer->CallEvent ( "onClientPlayerVehicleExit", Arguments, true );
+                        // Call the onClientPlayerExitVehicle event
+                        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                        pVehicle->PushStack( L );                   // vehicle
+                        lua_pushnumber( L, ucSeat );                // seat
+                        lua_pushboolean( L, false );                // jacker
+                        pPlayer->CallEvent( "onClientPlayerVehicleExit", L, 3 );
 
                         // Call the onClientVehicleExit event
-                        CLuaArguments Arguments2;
-                        Arguments2.PushElement ( pPlayer );         // player
-                        Arguments2.PushNumber ( ucSeat );           // seat
-                        Arguments2.PushBoolean ( false );            // jacker
-                        pVehicle->CallEvent ( "onClientVehicleExit", Arguments2, true );
+                        pPlayer->PushStack( L );                    // player
+                        lua_pushnumber( L, ucSeat );                // seat
+                        lua_pushboolean( L, false );                // jacker
+                        pVehicle->CallEvent( "onClientVehicleExit", L, 3 );
                         break;
                     }
 
@@ -1692,17 +1704,16 @@ void CPacketHandler::Packet_Vehicle_InOut ( NetBitStreamInterface& bitStream )
                         pPlayer->SetVehicleInOutState ( VEHICLE_INOUT_JACKING );
 
                         // Call the onClientVehicleStartEnter event
-                        CLuaArguments Arguments;
-                        Arguments.PushElement ( pPlayer );      // player
-                        Arguments.PushNumber ( ucSeat );        // seat
-                        Arguments.PushNumber ( ucDoor );        // Door
-                        pVehicle->CallEvent ( "onClientVehicleStartEnter", Arguments, true );
+                        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                        pPlayer->PushStack( L );;               // player
+                        lua_pushnumber( L, ucSeat );            // seat
+                        lua_pushnumber( L, ucDoor );            // Door
+                        pVehicle->CallEvent( "onClientVehicleStartEnter", L, 3 );
 
-                        CLuaArguments Arguments2;
-                        Arguments2.PushElement ( pJacked );         // player
-                        Arguments2.PushNumber ( ucSeat );           // seat
-                        Arguments2.PushNumber ( ucDoor );           // door
-                        pVehicle->CallEvent ( "onClientVehicleStartExit", Arguments2, true );
+                        pJacked->PushStack( L );                // player
+                        lua_pushnumber( L, ucSeat );            // seat
+                        lua_pushnumber( L, ucDoor );            // door
+                        pVehicle->CallEvent( "onClientVehicleStartExit", L, 3 );
                         break;
                     }
 
@@ -1762,26 +1773,23 @@ void CPacketHandler::Packet_Vehicle_InOut ( NetBitStreamInterface& bitStream )
                                 }
 
                                 // Call the onClientVehicleStartEnter event
-                                CLuaArguments Arguments;
-                                Arguments.PushElement ( pInsidePlayer ); // player
-                                Arguments.PushNumber ( ucSeat );         // seat
-                                pVehicle->CallEvent ( "onClientVehicleEnter", Arguments, true );
+                                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                                pInsidePlayer->PushStack( L );              // player
+                                lua_pushnumber( L, ucSeat );                // seat
+                                pVehicle->CallEvent( "onClientVehicleEnter", L, 2 );
 
-                                CLuaArguments Arguments2;
-                                Arguments2.PushElement ( pOutsidePlayer );   // player
-                                Arguments2.PushNumber ( ucSeat );            // seat
-                                pVehicle->CallEvent ( "onClientVehicleExit", Arguments2, true );
+                                pOutsidePlayer->PushStack( L );             // player
+                                lua_pushnumber( L, ucSeat );                // seat
+                                pVehicle->CallEvent( "onClientVehicleExit", L, 2 );
 
-                                CLuaArguments Arguments3;
-                                Arguments3.PushElement ( pVehicle );        // vehicle
-                                Arguments3.PushNumber ( ucSeat );           // seat
-                                Arguments3.PushElement ( pInsidePlayer );   // jacker
-                                pOutsidePlayer->CallEvent ( "onClientPlayerVehicleExit", Arguments3, true );
+                                pVehicle->PushStack( L );                   // vehicle
+                                lua_pushnumber( L, ucSeat );                // seat
+                                pInsidePlayer->PushStack( L );              // jacker
+                                pOutsidePlayer->CallEvent( "onClientPlayerVehicleExit", L, 2 );
 
-                                CLuaArguments Arguments4;
-                                Arguments4.PushElement ( pVehicle );        // vehicle
-                                Arguments4.PushNumber ( ucSeat );            // seat
-                                pInsidePlayer->CallEvent ( "onClientPlayerVehicleEnter", Arguments4, true );
+                                pVehicle->PushStack( L );                   // vehicle
+                                lua_pushnumber( L, ucSeat );                // seat
+                                pInsidePlayer->CallEvent( "onClientPlayerVehicleEnter", L, 2 );
                             }
                         }
 
@@ -1863,33 +1871,32 @@ void CPacketHandler::Packet_VehicleTrailer ( NetBitStreamInterface& bitStream )
         CClientVehicle* pTrailer = g_pClientGame->m_pVehicleManager->Get ( TrailerID );
         if ( pVehicle && pTrailer )
         {
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
             if ( bAttached )
             {
                 pTrailer->SetPosition ( position.data.vecPosition );
                 pTrailer->SetRotationDegrees ( rotation.data.vecRotation );
                 pTrailer->SetTurnSpeed ( turn.data.vecVelocity );
-
-                #ifdef MTA_DEBUG
-                    g_pCore->GetConsole ()->Printf ( "Packet_VehicleTrailer: attaching trailer %d to vehicle %d", TrailerID, ID );
-                #endif
+#ifdef MTA_DEBUG
+                g_pCore->GetConsole ()->Printf ( "Packet_VehicleTrailer: attaching trailer %d to vehicle %d", TrailerID, ID );
+#endif
                 pVehicle->SetTowedVehicle ( pTrailer );
 
                 // Call the onClientTrailerAttach
-                CLuaArguments Arguments;
-                Arguments.PushElement ( pVehicle );
-                pTrailer->CallEvent ( "onClientTrailerAttach", Arguments, true );
+                pVehicle->PushStack( L );
+                pTrailer->CallEvent( "onClientTrailerAttach", L, 1 );
             }
             else
             {
-                #ifdef MTA_DEBUG
-                    g_pCore->GetConsole ()->Printf ( "Packet_VehicleTrailer: detaching trailer %d from vehicle %d", TrailerID, ID );
-                #endif
+#ifdef MTA_DEBUG
+                g_pCore->GetConsole ()->Printf ( "Packet_VehicleTrailer: detaching trailer %d from vehicle %d", TrailerID, ID );
+#endif
                 pVehicle->SetTowedVehicle ( NULL );
 
                 // Call the onClientTrailerDetach
-                CLuaArguments Arguments;
-                Arguments.PushElement ( pVehicle );
-                pTrailer->CallEvent ( "onClientTrailerDetach", Arguments, true );
+                pVehicle->PushStack( L );
+                pTrailer->CallEvent( "onClientTrailerDetach", L, 1 );
             }
         }
         else
@@ -3838,19 +3845,16 @@ void CPacketHandler::Packet_ExplosionSync ( NetBitStreamInterface& bitStream )
     // Hop the event if we have already cancelled earlier.
     if ( bCancelExplosion == false )
     {
-        CLuaArguments Arguments;
-        Arguments.PushNumber ( position.data.vecPosition.fX );
-        Arguments.PushNumber ( position.data.vecPosition.fY );
-        Arguments.PushNumber ( position.data.vecPosition.fZ );
-        Arguments.PushNumber ( Type );
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        lua_pushnumber( L, position.data.vecPosition.fX );
+        lua_pushnumber( L, position.data.vecPosition.fY );
+        lua_pushnumber( L, position.data.vecPosition.fZ );
+        lua_pushnumber( L, Type );
+
         if ( pCreator )
-        {
-            bCancelExplosion = !pCreator->CallEvent ( "onClientExplosion", Arguments, true );
-        }
+            bCancelExplosion = !pCreator->CallEvent( "onClientExplosion", L, 4 );
         else
-        {
-            bCancelExplosion = !g_pClientGame->GetRootEntity ()->CallEvent ( "onClientExplosion", Arguments, false );
-        }
+            bCancelExplosion = !g_pClientGame->GetRootEntity()->CallEvent( "onClientExplosion", L, 4 );
     }
 
     // Is it a vehicle explosion?
@@ -3858,29 +3862,28 @@ void CPacketHandler::Packet_ExplosionSync ( NetBitStreamInterface& bitStream )
     {
         switch ( Type )
         {
-            case EXP_TYPE_BOAT:
-            case EXP_TYPE_CAR:
-            case EXP_TYPE_CAR_QUICK:
-            case EXP_TYPE_HELI:
-            {
-                // Make sure the vehicle's blown
-                CClientVehicle * pExplodingVehicle = static_cast < CClientVehicle * > ( pOrigin );
-                pExplodingVehicle->Blow ( false );
-                
-                // Call onClientVehicleExplode
-                CLuaArguments Arguments;
-                pExplodingVehicle->CallEvent ( "onClientVehicleExplode", Arguments, true );
+        case EXP_TYPE_BOAT:
+        case EXP_TYPE_CAR:
+        case EXP_TYPE_CAR_QUICK:
+        case EXP_TYPE_HELI:
+        {
+            // Make sure the vehicle's blown
+            CClientVehicle * pExplodingVehicle = static_cast < CClientVehicle * > ( pOrigin );
+            pExplodingVehicle->Blow ( false );
+            
+            // Call onClientVehicleExplode
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            pExplodingVehicle->CallEvent( "onClientVehicleExplode", L, 0 );
 
-                if ( !bCancelExplosion )
-                    g_pClientGame->m_pManager->GetExplosionManager ()->Create ( EXP_TYPE_GRENADE, position.data.vecPosition, pCreator, true, -1.0f, false, WEAPONTYPE_EXPLOSION );
-                break;
-            }
-            default:
-            {
-                if ( !bCancelExplosion )
-                    g_pClientGame->m_pManager->GetExplosionManager ()->Create ( Type, position.data.vecPosition, pCreator );       
-                break;
-            }
+            if ( !bCancelExplosion )
+                g_pClientGame->m_pManager->GetExplosionManager ()->Create ( EXP_TYPE_GRENADE, position.data.vecPosition, pCreator, true, -1.0f, false, WEAPONTYPE_EXPLOSION );
+            break;
+        }
+        default:
+            if ( !bCancelExplosion )
+                g_pClientGame->m_pManager->GetExplosionManager ()->Create ( Type, position.data.vecPosition, pCreator );       
+
+            break;
         }
     }
     else
@@ -4154,7 +4157,7 @@ void CPacketHandler::Packet_LuaEvent ( NetBitStreamInterface& bitStream )
             szName [ usNameLength ] = 0;
 
             // Read out the arguments aswell
-            CLuaArguments Arguments ( bitStream );
+            CLuaArguments Arguments( bitStream );
 
             // Grab the event. Does it exist and is it remotly triggerable?
             Event* pEvent = g_pClientGame->m_Events.Get ( szName );
@@ -4166,7 +4169,9 @@ void CPacketHandler::Packet_LuaEvent ( NetBitStreamInterface& bitStream )
                     CClientEntity* pEntity = CElementIDs::GetElement ( EntityID );
                     if ( pEntity )
                     {
-                        pEntity->CallEvent ( szName, Arguments, true );
+                        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                        Arguments.PushArguments( L );
+                        pEntity->CallEvent( szName, L, Arguments.Count() );
                     }
                 }
                 else
@@ -4371,22 +4376,11 @@ void CPacketHandler::Packet_ResourceStop ( NetBitStreamInterface& bitStream )
         CResource* pResource = (CResource*)g_pClientGame->m_pResourceManager->Get( usID );
         if ( pResource )
         {
-            // Grab the resource entity
-            CClientEntity* pResourceEntity = pResource->GetResourceEntity ();
-            if ( pResourceEntity )
-            {
-                // Call our lua event
-                CLuaArguments Arguments;
-                Arguments.PushUserData ( pResource );
-                pResourceEntity->CallEvent ( "onClientResourceStop", Arguments, true );
-            }
-
             // Delete the resource
             g_pClientGame->m_pResourceManager->Remove( usID );
         }
     }
 }
-
 
 void CPacketHandler::Packet_DetonateSatchels ( NetBitStreamInterface& bitStream )
 {

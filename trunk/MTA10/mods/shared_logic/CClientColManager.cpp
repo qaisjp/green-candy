@@ -414,15 +414,14 @@ void CClientColManager::HandleHitDetectionResult ( bool bHit, CClientColShape* p
                 if ( pShape->GetAutoCallEvent () )
                 {
                     // Call the event
-                    CLuaArguments Arguments;
-                    Arguments.PushElement ( pEntity );
-                    Arguments.PushBoolean ( ( pShape->GetDimension () == pEntity->GetDimension () ) );
-                    pShape->CallEvent ( "onClientColShapeHit", Arguments, true );
+                    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                    pEntity->PushStack( L );
+                    lua_pushboolean( L, pShape->GetDimension() == pEntity->GetDimension() );
+                    pShape->CallEvent( "onClientColShapeHit", L, 2 );
 
-                    CLuaArguments Arguments2;
-                    Arguments2.PushElement ( pShape );
-                    Arguments2.PushBoolean ( ( pShape->GetDimension () == pEntity->GetDimension () ) );
-                    pEntity->CallEvent ( "onClientElementColShapeHit", Arguments2, true );
+                    pShape->PushStack( L );
+                    lua_pushboolean( L, pShape->GetDimension() == pEntity->GetDimension() );
+                    pEntity->CallEvent( "onClientElementColShapeHit", L, 2 );
                 }
 
                 // Run whatever callback the collision item might have attached
@@ -446,17 +445,16 @@ void CClientColManager::HandleHitDetectionResult ( bool bHit, CClientColShape* p
                 pEntity->RemoveCollision ( pShape );
 
                 // Call the event
-                CLuaArguments Arguments;
-                Arguments.PushElement ( pEntity );
-                Arguments.PushBoolean ( ( pShape->GetDimension () == pEntity->GetDimension () ) );
-                pShape->CallEvent ( "onClientColShapeLeave", Arguments, true );
+                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                pEntity->PushStack( L );
+                lua_pushboolean( L, pShape->GetDimension() == pEntity->GetDimension() );
+                pShape->CallEvent( "onClientColShapeLeave", L, 2 );
 
-                CLuaArguments Arguments2;
-                Arguments2.PushElement ( pShape );
-                Arguments2.PushBoolean ( ( pShape->GetDimension () == pEntity->GetDimension () ) );
-                pEntity->CallEvent ( "onClientElementColShapeLeave", Arguments2, true );
+                pShape->PushStack( L );
+                lua_pushboolean( L, pShape->GetDimension() == pEntity->GetDimension() );
+                pEntity->CallEvent( "onClientElementColShapeLeave", L, 2 );
 
-                pShape->CallLeaveCallback ( *pEntity );
+                pShape->CallLeaveCallback( *pEntity );
             }
         }
     }

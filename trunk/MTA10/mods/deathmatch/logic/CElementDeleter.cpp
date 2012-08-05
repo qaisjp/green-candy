@@ -26,7 +26,6 @@ void CElementDeleter::Delete( class CClientEntity* pElement )
     pElement->Delete();
 
     // Flag it as being deleted and unlink it from the tree/managers
-    pElement->ClearChildren();
     pElement->SetParent( NULL );
     pElement->Unlink();
 }

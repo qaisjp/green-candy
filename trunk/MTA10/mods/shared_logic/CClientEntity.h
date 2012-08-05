@@ -223,11 +223,15 @@ public:
     virtual bool                                IsAttachToable();
     virtual void                                DoAttaching();
 
-    bool                                        AddEvent( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction, bool bPropagated );
-    bool                                        CallEvent( const char* szName, const CLuaArguments& Arguments, bool bCallOnChildren );
-    void                                        CallEventNoParent( const char* szName, const CLuaArguments& Arguments, CClientEntity* pSource );
-    void                                        CallParentEvent( const char* szName, const CLuaArguments& Arguments, CClientEntity* pSource );
-    bool                                        DeleteEvent( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction );
+    bool                                        AddEvent( CLuaMain *main, const char *name, const LuaFunctionRef& ref, bool propagated );
+    bool                                        CallEvent( const char *name, lua_State *callee, unsigned int argCount, bool childCall = false ); // NOTE: do not use childCall anymore
+
+private:
+    void                                        CallEventNoParent( lua_State *callee, unsigned int argCount, const char *name, CClientEntity *source );
+    void                                        CallParentEvent( lua_State *callee, unsigned int argCount, const char *name, CClientEntity *source );
+
+public:
+    bool                                        DeleteEvent( CLuaMain *main, const char *name = NULL, const LuaFunctionRef *ref = NULL );
     void                                        DeleteEvents( CLuaMain* pLuaMain, bool bRecursive );
     void                                        DeleteAllEvents();
 

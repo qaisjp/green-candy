@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CMapEvent.h
@@ -8,41 +8,40 @@
 *  DEVELOPERS:  Jax <>
 *               Oliver Brown <>
 *               Kevin Whiteside <kevuwk@gmail.com>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #ifndef __CMAPEVENT_H
 #define __CMAPEVENT_H
 
+#define LUACLASS_MAPEVENT   90
+
 #define MAPEVENT_MAX_LENGTH_NAME 100
 
-#include <string>
+class CMapEventManager;
 
-class CMapEvent
+class CMapEvent : public LuaElement
 {
     friend class CMapEventManager;
 
 public:
-    inline class CLuaMain*  GetVM               ( void )                                { return m_pMain; };
-    inline const char*      GetName             ( void )                                { return m_szName; };
-    inline LuaFunctionRef  GetLuaFunction      ( void )                                { return m_iLuaFunction; };
-    inline bool             IsBeingDestroyed    ( void )                                { return m_bBeingDestroyed; }
-    inline bool             IsPropagated        ( void )                                { return m_bPropagated; }
-
-    void                    Call                ( const class CLuaArguments& Arguments );
+    inline class CLuaMain*  GetVM()                                             { return m_main; }
+    inline const char*      GetName() const                                     { return m_name; }
+    inline LuaFunctionRef   GetLuaFunction()                                    { return m_funcRef; }
+    inline bool             IsPropagated() const                                { return m_propagated; }
 
 private:
-                            CMapEvent           ( class CLuaMain* pMain, const char* szName, const LuaFunctionRef& iLuaFunction, bool bPropagated );
-                            ~CMapEvent          ( void );
+                            CMapEvent( LuaClass& root, class CLuaMain* main, CMapEventManager& manager, const char *name, const LuaFunctionRef& funcRef, bool propagated );
+                            ~CMapEvent();
 
-    inline void             SetBeingDestroyed   ( bool bBeingDestroyed )                { m_bBeingDestroyed = bBeingDestroyed; }
-
-    class CLuaMain*         m_pMain;
-    LuaFunctionRef         m_iLuaFunction;
-    char                    m_szName [MAPEVENT_MAX_LENGTH_NAME + 1];
-    bool                    m_bDestroyFunction;
-    bool                    m_bPropagated;
-    bool                    m_bBeingDestroyed;
+    class CLuaMain*         m_main;
+    LuaFunctionRef          m_funcRef;
+    char                    m_name[MAPEVENT_MAX_LENGTH_NAME + 1];
+    bool                    m_propagated;
+    CMapEventManager&       m_system;
 };
 
 #endif

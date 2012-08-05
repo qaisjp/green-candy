@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CMapEvent.cpp
@@ -8,30 +8,57 @@
 *  DEVELOPERS:  Jax <>
 *               Oliver Brown <>
 *               Kevin Whiteside <kevuwk@gmail.com>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #include <StdInc.h>
 
-CMapEvent::CMapEvent( CLuaMain* pMain, const char* szName, const LuaFunctionRef& iLuaFunction, bool bPropagated )
+static const luaL_Reg mapevent_interface[] =
 {
-    // Init
-    m_pMain = pMain;
-    m_bDestroyFunction = false;
-    m_iLuaFunction = iLuaFunction;
-    m_bPropagated = bPropagated;
-    m_bBeingDestroyed = false;
+    { NULL, NULL }
+};
 
-    strncpy ( m_szName, szName, MAPEVENT_MAX_LENGTH_NAME );
-    m_szName [ MAPEVENT_MAX_LENGTH_NAME ] = '\0';
+static int luaconstructor_mapevent( lua_State *L )
+{
+    CMapEvent *evt = (CMapEvent*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    ILuaClass& j = *lua_refclass( L, 1 );
+    j.SetTransmit( LUACLASS_MAPEVENT, evt );
+
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, mapevent_interface, 1 );
+
+    lua_pushlstring( L, "mapevent", 8 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
+    return 0;
+}
+
+CMapEvent::CMapEvent( LuaClass& root, CLuaMain *main, CMapEventManager& manager, const char *name, const LuaFunctionRef& funcRef, bool propagated ) : LuaElement( root ), m_system( manager )
+{
+    // Lua instancing
+    lua_State *L = root.GetVM();
+
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_mapevent, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
+
+    // Init
+    m_main = main;
+    m_funcRef = funcRef;
+    m_propagated = propagated;
+
+    strncpy( m_name, name, MAPEVENT_MAX_LENGTH_NAME );
+    m_name[ MAPEVENT_MAX_LENGTH_NAME ] = '\0';
 }
 
 CMapEvent::~CMapEvent()
 {
-}
-
-void CMapEvent::Call( const CLuaArguments& args )
-{
-    // Call our function with the given arguments
-    args.Call( m_pMain, m_iLuaFunction );
+    // Clean up after ourself
+    m_system.m_Events.remove( this );
 }

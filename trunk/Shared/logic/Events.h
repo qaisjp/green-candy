@@ -57,7 +57,7 @@ public:
 private:
     eventList_t                 m_events;
 
-    std::vector <int>           m_cancelList;
+    std::vector <bool>          m_cancelList;
     bool                        m_eventCancelled;
     bool                        m_wasCancelled;
 

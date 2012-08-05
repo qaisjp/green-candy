@@ -49,8 +49,6 @@ bool COMMAND_Executed ( const char* szCommand, const char* szArguments, bool bHa
     if ( !bHandled )
     {
         //char szBuffer [256];
-        CLuaArguments Arguments;
-
         const char* szCommandBufferPointer = szCommand;
 
         if ( !bHandleRemotely )
@@ -74,12 +72,13 @@ bool COMMAND_Executed ( const char* szCommand, const char* szArguments, bool bHa
 
         luaexecute( szCommandBufferPointer, szArguments );
 
-        // Call the onClientConsole event
-        Arguments.PushString ( strClumpedCommand );
-
         // Call the event on the local player's onClientConsole first
-        if ( g_pClientGame->GetLocalPlayer () )
-            g_pClientGame->GetLocalPlayer ()->CallEvent ( "onClientConsole", Arguments, true );
+        if ( g_pClientGame->GetLocalPlayer() )
+        {
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            lua_pushlstring( L, strClumpedCommand.c_str(), strClumpedCommand.size() );
+            g_pClientGame->GetLocalPlayer()->CallEvent( "onClientConsole", L, 1 );
+        }
 
         // Write the chatlength and the content
         NetBitStreamInterface* pBitStream = g_pNet->AllocateNetBitStream ();

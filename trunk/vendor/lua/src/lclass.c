@@ -102,7 +102,7 @@ static inline bool class_preDestructor( lua_State *L, Class& j )
     bool reqWorthy = false;
     size_t size = j.children.size();
 
-    for ( ; n<size; n++ )
+    for ( ; n<size; )
     {
         Class& c = *j.children[n];
         c.PushMethod( L, "destroy" );
@@ -375,7 +375,7 @@ static int classmethod_registerForcedSuper( lua_State *L )
     lua_pushcclosure( L, classmethod_fsFSCCHandler, 0 );
     setclvalue( L, luaH_setstr( L, j.forceSuper, tsvalue( L->base ) ), clvalue( L->top - 1 ) );
 
-    luaC_objbarriert( L, j.forceSuper, tsvalue( L->top - 1 ) );
+    luaC_objbarriert( L, j.forceSuper, clvalue( L->top - 1 ) );
     return 0;
 }
 
@@ -587,7 +587,7 @@ static int classmethod_setParent( lua_State *L )
 
     Class& c = *jvalue( L->base );
 
-    if ( &c == &j || c.destroying )
+    if ( &c == &j || c.destroying || c.destroyed )
     {
         setbvalue( L->top++, false );
         return 1;
@@ -663,7 +663,6 @@ static int classmethod_destructor( lua_State *L )
 {
     Class *j = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
 
-    //TODO: children support
     if ( j->parent )
     {
         j->childAPI->DecrementMethodStack( L );
