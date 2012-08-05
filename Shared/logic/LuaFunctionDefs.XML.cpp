@@ -26,7 +26,7 @@
 
 namespace LuaFunctionDefs
 {
-    LUA_DECLARE( xmlNodeFindChild )
+    LUA_DECLARE( xmlFindChild )
     {
         // xmlNode*, node name, index
         if ( lua_type ( L, 1 ) != LUA_TLIGHTUSERDATA ||

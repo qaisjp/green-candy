@@ -456,10 +456,14 @@ LUA_API int lua_resume (lua_State *L, int nargs)
     if ( L->nCcalls >= LUAI_MAXCCALLS )
         return resume_error(L, "C stack overflow");
 
-    luai_userstateresume(L, nargs);
+    // Allocate OS resources
+    if ( !((lua_Thread*)L)->AllocateRuntime() )
+        return resume_error( L, "failed to allocate OS resources (too many coroutines running?)" );
+
+    luai_userstateresume( L, nargs );
     lua_pushthreadex( G(L)->mainthread, L );
     lua_callevent( G(L)->mainthread, LUA_EVENT_THREAD_CONTEXT_PUSH, 1 );
-    lua_assert(L->errfunc == 0);
+    lua_assert( L->errfunc == 0 );
 
     callstack_ref ref( *L );
     
@@ -477,6 +481,12 @@ LUA_API int lua_yield( lua_State *L, int nresults )
 
     if ( L->IsYieldDisabled() )
         throw lua_exception( L, LUA_ERRRUN, "cannot yield at current runtime" );
+
+    // TODO: I really have to decide here whether code execution without prior runtime
+    // resumation should be possible. Imagine that the user runs code on a coroutine
+    // which suddenly yields. If there is no previous Lua thread to take the OS yield-back
+    // query, Lua will deadlock. This is prevented by the simple rule that only main threads
+    // may execute code in such a way. Otherwise it is the programmer's mistake.
 
     luai_userstateyield(L, nresults);
     lua_lock(L);

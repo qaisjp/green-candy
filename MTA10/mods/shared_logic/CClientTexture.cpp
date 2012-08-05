@@ -27,8 +27,6 @@ static int luaconstructor_texture( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, texture_interface, 1 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "core-texture", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;
@@ -64,8 +62,6 @@ static int luaconstructor_target( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, target_interface, 1 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "rendertarget", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;
@@ -100,8 +96,6 @@ static int luaconstructor_screensource( lua_State *L )
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, screensource_interface, 1 );
-
-    lua_basicprotect( L );
 
     lua_pushlstring( L, "screensource", 12 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

@@ -50,8 +50,6 @@ static int luaconstructor_vehicle( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, vehicle_interface, 1 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "vehicle", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;
@@ -3029,7 +3027,7 @@ void CClientVehicle::RemoveAllProjectiles()
         pProjectile = *iter;
         pProjectile->m_pCreator = NULL;
 
-        g_pClientGame->GetElementDeleter()->Delete( pProjectile );        
+        pProjectile->Delete();
     }
 
     m_Projectiles.clear();

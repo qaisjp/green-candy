@@ -79,7 +79,6 @@ public:
 
     // Element set funcs
     static CClientDummy*                CreateElement                       ( CResource& Resource, const char* szTypeName, const char* szID );
-    static bool                         DestroyElement                      ( CClientEntity& Entity );
     static bool                         SetElementID                        ( CClientEntity& Entity, const char* szID );
     static bool                         SetElementData                      ( CClientEntity& Entity, const char* szName, CLuaArgument& Variable, CLuaMain& LuaMain, bool bSynchronize );
     static bool                         RemoveElementData                   ( CClientEntity& Entity, const char* szName );

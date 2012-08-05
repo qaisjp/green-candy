@@ -103,7 +103,7 @@ namespace LuaFunctionDefs
 
 #ifndef _KILLFRENZY
     // XML Functions
-    LUA_DECLARE( xmlNodeFindChild );
+    LUA_DECLARE( xmlFindChild );
     LUA_DECLARE( xmlNodeGetChildren );
     LUA_DECLARE( xmlNodeGetValue );
     LUA_DECLARE( xmlNodeSetValue );

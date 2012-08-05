@@ -172,11 +172,8 @@ public:
     void                                        SetTypeName( const char* szName );
 
     inline CClientEntity*                       GetParent()                                     { return m_pParent; };
-    CClientEntity*                              SetParent( CClientEntity* pParent );
-    CClientEntity*                              AddChild( CClientEntity* pChild );
+    bool                                        SetParent( CClientEntity* pParent );
     bool                                        IsMyChild( CClientEntity* pEntity, bool bRecursive );
-    inline bool                                 IsBeingDeleted()                                { return m_bBeingDeleted; }
-    inline void                                 SetBeingDeleted( bool bBeingDeleted )           { m_bBeingDeleted = bBeingDeleted; }
     void                                        ClearChildren();
 
     CChildListType ::const_iterator             IterBegin()                                     { return m_Children.begin (); }
@@ -185,15 +182,13 @@ public:
     inline ElementID                            GetID()                                         { return m_ID; };
     void                                        SetID( ElementID ID );
 
-    inline CCustomData*                         GetCustomDataPointer()                          { return m_pCustomData; }
-    CLuaArgument*                               GetCustomData( const char* szName, bool bInheritData );
+    void                                        ApplyCustomData( CCustomData *data );
+    void                                        PushCustomData( lua_State *L, const char *key, bool inherit );
     bool                                        GetCustomDataString( const char * szKey, SString& strOut, bool bInheritData );
     bool                                        GetCustomDataFloat( const char * szKey, float& fOut, bool bInheritData );
     bool                                        GetCustomDataInt( const char * szKey, int& iOut, bool bInheritData );
     bool                                        GetCustomDataBool( const char * szKey, bool& bOut, bool bInheritData );
-    void                                        SetCustomData( const char* szName, const CLuaArgument& Variable, CLuaMain* pLuaMain );
     bool                                        DeleteCustomData( const char* szName, bool bRecursive );
-    void                                        DeleteAllCustomData( CLuaMain* pLuaMain, bool bRecursive );
 
     virtual bool                                GetMatrix( RwMatrix& matrix ) const;
     virtual bool                                SetMatrix( const RwMatrix& matrix );
@@ -329,7 +324,6 @@ protected:
     CVector                                     m_vecAttachedRotation;
     attachments_t                               m_AttachedEntities;
 
-    bool                                        m_bBeingDeleted;
     bool                                        m_bSystemEntity;
     CMapEventManager*                           m_pEventManager;
     CModelInfo*                                 m_pModelInfo;

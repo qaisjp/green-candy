@@ -29,19 +29,21 @@ class CCustomData
 {
 public:
 
-    void                    Copy                ( CCustomData* pCustomData );
+    void                    Copy( CCustomData* pCustomData );
 
-    SCustomData*            Get                 ( const char* szName );
-    void                    Set                 ( const char* szName, const CLuaArgument& Variable, class CLuaMain* pLuaMain );
+    SCustomData*            Get( const char* szName );
+    void                    Set( const char* szName, const CLuaArgument& Variable, class CLuaMain* pLuaMain );
 
-    bool                    Delete              ( const char* szName );
-    void                    DeleteAll           ( class CLuaMain* pLuaMain );
-    void                    DeleteAll           ( void );
+    bool                    Delete( const char* szName );
+    void                    DeleteAll( class CLuaMain* pLuaMain );
+    void                    DeleteAll();
 
-    inline unsigned int     Count               ( void )                           { return static_cast < unsigned int > ( m_Data.size () ); }
+    inline unsigned int     Count()             { return m_Data.size(); }
 
-    std::map < std::string, SCustomData > :: const_iterator IterBegin   ( void )   { return m_Data.begin (); }
-    std::map < std::string, SCustomData > :: const_iterator IterEnd     ( void )   { return m_Data.end (); }
+    typedef std::map <std::string, SCustomData> itemList_t;
+
+    itemList_t::const_iterator  IterBegin()     { return m_Data.begin(); }
+    itemList_t::const_iterator  IterEnd()       { return m_Data.end(); }
 
 private:
     std::map < std::string, SCustomData >       m_Data;

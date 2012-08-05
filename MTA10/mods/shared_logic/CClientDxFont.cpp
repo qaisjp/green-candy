@@ -27,8 +27,6 @@ static int luaconstructor_dxfont( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, dxfont_interface, 1 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "dx-font", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

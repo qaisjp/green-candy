@@ -30,8 +30,6 @@ int luaconstructor_guiscrollpane( lua_State *L )
     lua_pushlightuserdata( L, gui->GetCGUIElement() );
     luaL_openlib( L, NULL, scrollpane_interface, 2 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "gui-scrollpane", 14 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

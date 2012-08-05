@@ -26,14 +26,12 @@ extern CClientGame * g_pClientGame;
 
 CElementGroup::~CElementGroup()
 {
-    CElementDeleter * deleter = g_pClientGame->GetElementDeleter();
-
     list < CClientEntity* > ::iterator iter = m_elements.begin ();
     for ( ; iter != m_elements.end (); iter++ )
     {
-        ( *iter )->SetElementGroup ( NULL );
-        ( *iter )->DeleteAllEvents ();
-        deleter->Delete ( *iter );
+        (*iter)->SetElementGroup ( NULL );
+        (*iter)->DeleteAllEvents ();
+        (*iter)->Delete();
     }
 }
 

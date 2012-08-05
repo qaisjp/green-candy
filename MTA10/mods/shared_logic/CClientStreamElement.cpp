@@ -32,8 +32,6 @@ static int luaconstructor_stream( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, stream_interface, 1 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "stream-element", 14 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

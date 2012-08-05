@@ -299,8 +299,8 @@ void CClientColManager::DoHitDetection ( const CVector& vecNowPosition, float fR
 //
 void CClientColManager::DoHitDetectionForColShape ( CClientColShape* pShape )
 {
-    // Ensure colshape is enabled and not being deleted
-    if ( pShape->IsBeingDeleted () || !pShape->IsEnabled () )
+    // Ensure colshape is enabled
+    if ( !pShape->IsEnabled () )
         return;
 
     std::map < CClientEntity*, int > entityList;
@@ -379,8 +379,8 @@ void CClientColManager::DoHitDetectionForEntity ( const CVector& vecNowPosition,
     {
         CClientColShape* pShape = it->first;
 
-        // Enabled and not being deleted?
-        if ( !pShape->IsBeingDeleted () && pShape->IsEnabled () )
+        // Enabled?
+        if ( pShape->IsEnabled () )
         {
             // Collided?
             bool bHit = pShape->DoHitDetection ( vecNowPosition, fRadius );

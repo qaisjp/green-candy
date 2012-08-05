@@ -67,6 +67,30 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( getCommandHandler )
+    {
+        SString strKey;
+
+        CScriptArgReader argStream ( L );
+        argStream.ReadString ( strKey );
+
+        if ( !argStream.HasErrors () )
+        {
+            Command *cmd = m_pRegisteredCommands->Get( strKey.c_str(), lua_readcontext( L ) );
+
+            if ( cmd )
+            {
+                cmd->PushStack( L );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
     LUA_DECLARE( executeCommandHandler )
     {
     //  bool executeCommandHandler ( string commandName, [ string args ] )

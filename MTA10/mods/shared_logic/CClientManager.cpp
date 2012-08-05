@@ -76,7 +76,6 @@ CClientManager::~CClientManager ( void )
     m_pPacketRecorder = NULL;
 
     // We need to call this after deleting resources but before deleting entities
-    g_pClientGame->GetElementDeleter ()->DoDeleteAll ();
     g_pCore->GetGUI ()->CleanDeadPool ();
 
     delete m_pExplosionManager;

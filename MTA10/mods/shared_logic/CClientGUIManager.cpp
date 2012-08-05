@@ -122,7 +122,7 @@ void CClientGUIManager::FlushQueuedUpdates ()
     for ( ; iter != m_QueuedGridListUpdates.end () ; ++iter )
     {
         CClientEntity* pEntity = CElementIDs::GetElement ( iter->first );
-        if ( pEntity && !pEntity->IsBeingDeleted () && pEntity->GetType () == CCLIENTGUI )
+        if ( pEntity && pEntity->GetType () == CCLIENTGUI )
         {
             CClientGUIElement* pGUIElement = static_cast < CClientGUIElement* > ( pEntity );
             if ( pGUIElement && IS_CGUIELEMENT_GRIDLIST ( pGUIElement ) )

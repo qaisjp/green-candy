@@ -1040,9 +1040,15 @@ namespace CLuaFunctionDefs
         // Correct type?
         if ( CClientEntity *entity = lua_readclass <CClientEntity> ( L, 1, LUACLASS_ENTITY ) )
         {
-            // Attempt destruction
-            lua_pushboolean( L, CStaticFunctionDefinitions::DestroyElement( *entity ) );
-            return 1;
+            if ( !entity->IsSystemEntity() )
+            {
+                // Attempt destruction
+                entity->PushMethod( L, "destroy" );
+                lua_call( L, 0, 0 );
+
+                lua_pushboolean( L, true );
+                return 1;
+            }
         }
         else
             m_pScriptDebugging->LogBadPointer( "destroyElement", "element", 1 );

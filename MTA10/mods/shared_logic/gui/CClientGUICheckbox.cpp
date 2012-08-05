@@ -30,8 +30,6 @@ int luaconstructor_guicheckbox( lua_State *L )
     lua_pushlightuserdata( L, gui->GetCGUIElement() );
     luaL_openlib( L, NULL, checkbox_interface, 2 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "gui-checkbox", 11 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

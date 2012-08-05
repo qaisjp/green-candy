@@ -990,9 +990,6 @@ void CClientGame::DoPulses ( void )
         // Pulse some stuff
         m_pMovingObjectsManager->DoPulse ();        
 
-        // Get rid of our deleted elements
-        m_ElementDeleter.DoDeleteAll ();
-
         // Get rid of deleted GUI elements
         g_pCore->GetGUI ()->CleanDeadPool ();
 

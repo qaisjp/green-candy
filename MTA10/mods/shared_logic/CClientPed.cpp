@@ -55,8 +55,6 @@ static int luaconstructor_ped( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, ped_interface, 1 );
 
-    lua_basicprotect( L );
-
     lua_pushlstring( L, "ped", 3 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

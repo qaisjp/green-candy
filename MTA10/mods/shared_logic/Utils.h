@@ -220,8 +220,6 @@ bool            XMLColorToInt               ( const char* szColor, unsigned long
 bool            XMLColorToInt               ( const char* szColor, unsigned char& ucRed, unsigned char& ucGreen, unsigned char& ucBlue, unsigned char& ucAlpha );
 
 // Utility network functions
-void            LongToDottedIP              ( unsigned long ulIP, char* szDottedIP );
-
 bool            BitStreamReadUsString       ( class NetBitStreamInterface& bitStream, SString& strOut );
 
 // Maths utility functions

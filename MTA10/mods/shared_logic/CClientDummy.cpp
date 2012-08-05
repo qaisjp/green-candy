@@ -20,9 +20,6 @@ static int luaconstructor_dummy( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_DUMMY, dummy );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_basicprotect( L );
-
     lua_pushvalue( L, lua_upvalueindex( 2 ) );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;

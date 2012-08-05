@@ -42,6 +42,11 @@ public:
         lua_rawgeti( L, LUA_REGISTRYINDEX, m_ridx );
     }
 
+    inline void PushMethod( lua_State *L, const char *name )
+    {
+        m_class->PushMethod( L, name );
+    }
+
     inline void Reference( lua_class_reference& ref )
     {
         PushStack( m_lua );

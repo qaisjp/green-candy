@@ -711,6 +711,7 @@ static void LoadCFunctions( lua_State *L )
 
     // Commands
     LUA_REGISTER( L, addCommandHandler );
+    LUA_REGISTER( L, getCommandHandler );
     LUA_REGISTER( L, executeCommandHandler );
     LUA_REGISTER( L, removeCommandHandler );
 

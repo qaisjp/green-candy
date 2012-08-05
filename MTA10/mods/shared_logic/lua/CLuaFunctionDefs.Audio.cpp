@@ -94,7 +94,9 @@ namespace CLuaFunctionDefs
     {
         if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, CStaticFunctionDefinitions::StopSound ( *sound ) );
+            sound->Delete();
+
+            lua_pushboolean( L, true );
             return 1;
         }
         lua_pushboolean ( L, false );
@@ -105,8 +107,12 @@ namespace CLuaFunctionDefs
     {
         if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, lua_istype( L, 2, LUA_TNUMBER ) && CStaticFunctionDefinitions::SetSoundPosition( *sound, lua_tonumber( L, 2 ) ) );
-            return 1;
+            if ( lua_isnumber( L, 2 ) )
+            {
+                sound->SetPlayPosition( lua_tonumber( L, 2 ) );
+                lua_pushboolean( L, true );
+                return 1;
+            }
         }
         lua_pushboolean ( L, false );
         return 1;
@@ -138,8 +144,12 @@ namespace CLuaFunctionDefs
     {
         if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, lua_istype( L, 2, LUA_TBOOLEAN ) && CStaticFunctionDefinitions::SetSoundPaused( *sound, lua_toboolean( L, 2 ) == 1 ) );
-            return 1;
+            if ( lua_istype( L, 2, LUA_TBOOLEAN ) )
+            {
+                sound->SetPaused( lua_toboolean( L, 2 ) == 1 );
+                lua_pushboolean( L, true );
+                return 1;
+            }
         }
         lua_pushboolean ( L, false );
         return 1;
@@ -160,8 +170,12 @@ namespace CLuaFunctionDefs
     {
         if ( CClientSound *sound = lua_readclass <CClientSound> ( L, 1, LUACLASS_SOUND ) )
         {
-            lua_pushboolean( L, lua_isnumber( L, 2 ) && CStaticFunctionDefinitions::SetSoundVolume( *sound, (float)lua_tonumber( L, 2 ) ) );
-            return 1;
+            if ( lua_isnumber( L, 2 ) )
+            {
+                sound->SetVolume( (float)lua_tonumber( L, 2 ) );
+                lua_pushboolean( L, true );
+                return 1;
+            }
         }
         lua_pushboolean ( L, false );
         return 1;

@@ -622,7 +622,6 @@ void CModManager::VerifyAndAddEntry( const char* szModFolderPath, const char* sz
 
     strcat( pathBuffer, ";" );
     strcat( pathBuffer, modPath.c_str() );
-    strcat( pathBuffer, ";" );
 
     SetEnvironmentVariable( "PATH", pathBuffer );
 
