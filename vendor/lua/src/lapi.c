@@ -114,26 +114,46 @@ LUA_API int lua_checkstack (lua_State *L, int size) {
   return res;
 }
 
+LUA_API void lua_xmove (lua_State *from, lua_State *to, int n)
+{
+    int i;
 
-LUA_API void lua_xmove (lua_State *from, lua_State *to, int n) {
-  int i;
-  if (from == to) return;
-  lua_lock(to);
-  api_checknelems(from, n);
-  api_check(from, G(from) == G(to));
-  api_check(from, to->ci->top - to->top >= n);
-  from->top -= n;
-  for (i = 0; i < n; i++) {
-    setobj2s(to, to->top++, from->top + i);
-  }
-  lua_unlock(to);
+    if ( from == to )
+        return;
+
+    lua_lock(to);
+    api_checknelems(from, n);
+    api_check(from, G(from) == G(to));
+    api_check(from, to->ci->top - to->top >= n);
+    from->top -= n;
+
+    for (i = 0; i < n; i++)
+        setobj2s( to, to->top++, from->top + i );
+
+    lua_unlock(to);
 }
 
+LUA_API void lua_xcopy( lua_State *from, lua_State *to, int n )
+{
+    int i;
+
+    if ( from == to )
+        return;
+
+    lua_lock(to);
+    api_checknelems(from, n);
+    api_check(from, G(from) == G(to));
+    api_check(from, to->ci->top - to->top >= n);
+
+    for ( i = 0; i < n; i++ )
+        setobj2s( to, to->top++, from->top + i );
+
+    lua_unlock(to);
+}
 
 LUA_API void lua_setlevel (lua_State *from, lua_State *to) {
   to->nCcalls = from->nCcalls;
 }
-
 
 LUA_API lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf) {
   lua_CFunction old;

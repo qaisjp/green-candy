@@ -22,10 +22,10 @@ static int element_setParent( lua_State *L )
     LuaElement& element = *(LuaElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
     element.m_root->PushStack( L );
 
-    ILuaClass& j = *lua_refclass( L, 1 );
+    ILuaClass *j = lua_refclass( L, 1 );
     lua_pushvalue( L, 1 );
 
-    while ( lua_type( L, 3 ) == LUA_TCLASS && j.IsTransmit( LUACLASS_ELEMENT ) )
+    while ( lua_type( L, 3 ) == LUA_TCLASS && j->IsTransmit( LUACLASS_ELEMENT ) )
     {
         if ( lua_equal( L, 2, 3 ) )
         {
@@ -35,8 +35,8 @@ static int element_setParent( lua_State *L )
             return 1;
         }
 
-        j = *lua_refclass( L, 3 );
-        j.PushParent( L );
+        j->PushParent( L );
+        j = lua_refclass( L, 4 );
 
         lua_remove( L, 3 );
     }

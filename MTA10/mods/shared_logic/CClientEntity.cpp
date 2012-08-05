@@ -36,13 +36,19 @@ static const luaL_Reg entity_interface[] =
     { NULL, NULL }
 };
 
+static int customdata_index( lua_State *L )
+{
+    lua_rawget( L, lua_upvalueindex( 1 ) );
+    return 1;
+}
+
 static int customdata_newindex( lua_State *L )
 {
     if ( lua_type( L, 2 ) != LUA_TSTRING )
-        throw lua_exception( SString( "found %s at customdata key, string required", luaL_typename( L, 2 ) ) );
+        throw lua_exception( L, LUA_ERRRUN, SString( "found %s at customdata key, string required", luaL_typename( L, 2 ) ) );
 
     if ( lua_objlen( L, 2 ) > MAX_CUSTOMDATA_NAME_LENGTH )
-        throw lua_exception( "customdata name too long" );
+        throw lua_exception( L, LUA_ERRRUN, "customdata name too long" );
 
     lua_pushvalue( L, 2 );
     lua_rawget( L, 1 );
@@ -52,14 +58,31 @@ static int customdata_newindex( lua_State *L )
 
     lua_pushvalue( L, 2 );
     lua_pushvalue( L, 3 );
-    lua_rawset( L, 1 );
+    lua_rawset( L, lua_upvalueindex( 1 ) );
 
     // Trigger the onClientElementDataChange event on us
-    CLuaArguments Arguments;
-    Arguments.ReadArgument( L, 2 );
-    Arguments.ReadArgument( L, 4 );
-    Arguments.ReadArgument( L, 3 );
-    ((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->CallEvent( "onClientElementDataChange", Arguments, true );
+    lua_pushvalue( L, 2 );
+    lua_pushvalue( L, 4 );
+    lua_pushvalue( L, 3 );
+    ((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->CallEvent( "onClientElementDataChange", L, 3 );
+    return 0;
+}
+
+static const luaL_Reg customdata_interface[] =
+{
+    { "__index", customdata_index },
+    { "__newindex", customdata_newindex },
+    { NULL, NULL }
+};
+
+static int customdata_constructor( lua_State *L )
+{
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_newtable( L );
+    luaL_openlib( L, NULL, customdata_interface, 1 );
+
+    lua_pushlstring( L, "customdata", 10 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;
 }
 
@@ -76,7 +99,7 @@ static int entity_constructor( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, entity_interface, 1 );
 
-    // Allocate table for custom data
+    // Allocate customdata class
     lua_newtable( L );
     lua_newtable( L ); // metatable
 
@@ -179,7 +202,7 @@ CClientEntity::CClientEntity( ElementID ID, bool system, LuaClass& root ) : LuaE
     CElementIDs::SetElement ( ID, this );
 
     m_pCustomData = new CCustomData;
-    m_pEventManager = new CMapEventManager;
+    m_pEventManager = new CMapEventManager( this );
 
     m_pAttachedToEntity = NULL;
 
@@ -198,12 +221,10 @@ CClientEntity::CClientEntity( ElementID ID, bool system, LuaClass& root ) : LuaE
 CClientEntity::~CClientEntity()
 {
     // Before we do anything, fire the on-destroy event
-    CLuaArguments Arguments;
-    CallEvent( "onClientElementDestroy", Arguments, true );
+    CallEvent( "onClientElementDestroy", m_lua, 0 );
 
     // Remove from parent
-    ClearChildren ();
-    SetParent ( NULL );
+    SetParent( NULL );
 
     // Reset our index in the element array
     if ( m_ID != INVALID_ELEMENT_ID )
@@ -305,16 +326,19 @@ bool CClientEntity::CanUpdateSync ( unsigned char ucRemote )
 
 bool CClientEntity::SetParent ( CClientEntity* pParent )
 {
-    // Lua is top priority, so update it first
-    PushMethod( m_lua, "setParent" );
-    pParent->PushStack( m_lua );
-    lua_call( m_lua, 1, 1 );
+    if ( pParent )
+    {
+        // Lua is top priority, so update it first
+        PushMethod( m_lua, "setParent" );
+        pParent->PushStack( m_lua );
+        lua_call( m_lua, 1, 1 );
 
-    bool rslt = lua_toboolean( m_lua, -1 );
-    lua_pop( L, 1 );
+        bool rslt = lua_toboolean( m_lua, -1 );
+        lua_pop( m_lua, 1 );
 
-    if ( !rslt )
-        return false;
+        if ( !rslt )
+            return false;
+    }
 
     // Get into/out-of FromRoot info
     bool bOldFromRoot = CClientEntity::IsFromRoot( m_pParent );
@@ -363,13 +387,6 @@ bool CClientEntity::IsMyChild ( CClientEntity* pEntity, bool bRecursive )
     return false;
 }
 
-void CClientEntity::ClearChildren()
-{
-    // Process our children - Move up to our parent
-    while ( m_Children.size() )
-        (*m_Children.begin())->SetParent ( m_pParent );
-}
-
 void CClientEntity::SetID ( ElementID ID )
 {
     // Eventually reset what we have at the old ID
@@ -405,10 +422,10 @@ void CClientEntity::ApplyCustomData( CCustomData *data )
         lua_pushlstring( m_lua, (*iter).first.c_str(), (*iter).first.size() );
         (*iter).second.Variable.Push( m_lua );
 
-        lua_settable( L, -3 );
+        lua_settable( m_lua, -3 );
     }
 
-    lua_pop( L, 2 );
+    lua_pop( m_lua, 2 );
 }
 
 void CClientEntity::PushCustomData( lua_State *L, const char *key, bool inherit )
@@ -472,20 +489,20 @@ bool CClientEntity::GetCustomDataBool ( const char* szName, bool& bOut, bool bIn
     switch( lua_type( m_lua, -1 ) )
     {
     case LUA_TSTRING:
-        bOut = lua_getstring( L, -1 ) == "true";
+        bOut = lua_getstring( m_lua, -1 ) == "true";
         break;
     case LUA_TNUMBER:
-        bOut = lua_tonumber( L, -1 ) != 0;
+        bOut = lua_tonumber( m_lua, -1 ) != 0;
         break;
     case LUA_TBOOLEAN:
-        bOut = lua_toboolean( L, -1 );
+        bOut = lua_toboolean( m_lua, -1 );
         break;
     default:
-        lua_pop( L, 1 );
+        lua_pop( m_lua, 1 );
         return false;
     }
 
-    lua_pop( L, 1 );
+    lua_pop( m_lua, 1 );
     return true;
 }
 
@@ -646,111 +663,111 @@ void CClientEntity::SetAttachedOffsets ( CVector & vecPosition, CVector & vecRot
     m_vecAttachedRotation = vecRotation;
 }
 
-bool CClientEntity::AddEvent ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction, bool bPropagated )
+bool CClientEntity::AddEvent( CLuaMain *main, const char *name, const LuaFunctionRef& ref, bool propagated )
 {
-    return m_pEventManager->Add ( pLuaMain, szName, iLuaFunction, bPropagated );
+    return m_pEventManager->Add( main, name, ref, propagated );
 }
 
-bool CClientEntity::CallEvent ( const char* szName, const CLuaArguments& Arguments, bool bCallOnChildren )
-{
-    CEvents* pEvents = g_pClientGame->GetEvents();
-
-    // Make sure our event-manager knows we're about to call an event
-    pEvents->PrePulse();
-
-    // Call the event on our parents/us first
-    CallParentEvent ( szName, Arguments, this );
-
-    if ( bCallOnChildren )
-    {
-        // Call it on all our children
-        CallEventNoParent ( szName, Arguments, this );
-    }
-
-    // Tell the event manager that we're done calling the event
-    pEvents->PostPulse();
-
-    // Return whether it got cancelled or not
-    return ( !pEvents->WasCancelled () );
-}
-
-void CClientEntity::CallEventNoParent ( const char* szName, const CLuaArguments& Arguments, CClientEntity* pSource )
+// The_GTA: use childCall sparringly, because in GREEN it's use does not make sense.
+bool CClientEntity::CallEvent( const char *name, lua_State *callee, unsigned int argCount, bool childCall )
 {
     // Reference ourselves so we cannot be deleted during eventcalls
     lua_class_reference ref;
     Reference( ref );
 
+    CEvents *pEvents = g_pClientGame->GetEvents();
+
+    // Make sure our event-manager knows we're about to call an event
+    pEvents->PrePulse();
+
+    // Call the event on our parents/us
+    CallParentEvent( callee, argCount, name, this );
+
+    if ( childCall )
+        CallEventNoParent( callee, argCount, name, this );
+
+    // Remove the arguments from the stack
+    lua_pop( callee, argCount );
+
+    // Tell the event manager that we're done calling the event
+    pEvents->PostPulse();
+
+    // Return whether it got cancelled or not
+    return !pEvents->WasCancelled();
+}
+
+// This _thing_ has to be abolished
+void CClientEntity::CallEventNoParent( lua_State *callee, unsigned int argCount, const char *name, CClientEntity *source )
+{
+    // We do not have to reference ourselves, because we are referenced through CallEvent already
+
     // Call it on us if this isn't the same class it was raised on
-    //TODO not sure why the null check is necessary (eAi)
-    if ( pSource != this && m_pEventManager != NULL )
-    {
-        m_pEventManager->Call ( szName, Arguments, pSource, this );
-    }
+    if ( source != this )
+        m_pEventManager->Call( callee, argCount, name, source );
+
+    if ( m_Children.empty() )
+        return;
 
     // Call it on all our children
-    if ( !m_Children.empty () )
-    {
-        CChildListType ::const_iterator iter = m_Children.begin ();
+    luaRefs refs;
+    CChildListType::const_iterator iter = m_Children.begin();
 
-        for ( ; iter != m_Children.end (); iter++ )
-            (*iter)->CallEventNoParent ( szName, Arguments, pSource );
+    for ( ; iter != m_Children.end(); iter++ )
+    {
+        (*iter)->Reference( refs );
+        (*iter)->CallEventNoParent( callee, argCount, name, source );
     }
 }
 
-void CClientEntity::CallParentEvent ( const char* szName, const CLuaArguments& Arguments, CClientEntity* pSource )
+void CClientEntity::CallParentEvent( lua_State *callee, unsigned int argCount, const char *name, CClientEntity *source )
 {
+    // Lua takes care of logical referencing here
+
     // Call the event on us
-    if ( m_pEventManager )
-    {
-        m_pEventManager->Call ( szName, Arguments, pSource, this );
-    }
+    m_pEventManager->Call( callee, argCount, name, source );
 
     // Call parent's handler
     if ( m_pParent )
-    {
-        m_pParent->CallParentEvent ( szName, Arguments, pSource );
-    }
+        m_pParent->CallParentEvent( callee, argCount, name, source );
 }
 
-bool CClientEntity::DeleteEvent ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction )
+bool CClientEntity::DeleteEvent( CLuaMain *main, const char *name, const LuaFunctionRef *ref )
 {
-    return m_pEventManager->Delete ( pLuaMain, szName, iLuaFunction );
+    return m_pEventManager->Delete( main, name, ref );
 }
 
-void CClientEntity::DeleteEvents ( CLuaMain* pLuaMain, bool bRecursive )
+void CClientEntity::DeleteEvents( CLuaMain *main, bool recursive )
 {
     // Delete it from our events
-    m_pEventManager->Delete ( pLuaMain );
+    m_pEventManager->Delete( main );
 
     // Delete it from all our children's events
-    if ( bRecursive )
+    if ( recursive )
     {
-        CChildListType ::const_iterator iter = m_Children.begin ();
-        for ( ; iter != m_Children.end (); iter++ )
-        {
-            (*iter)->DeleteEvents ( pLuaMain, true );
-        }
+        CChildListType::const_iterator iter = m_Children.begin();
+
+        for ( ; iter != m_Children.end(); iter++ )
+            (*iter)->DeleteEvents( main, true );
     }
 }
 
-void CClientEntity::DeleteAllEvents ( void )
+void CClientEntity::DeleteAllEvents()
 {
-    m_pEventManager->DeleteAll ();
+    m_pEventManager->DeleteAll();
 }
 
-void CClientEntity::CleanUpForVM ( CLuaMain* pLuaMain, bool bRecursive )
+void CClientEntity::CleanUpForVM( CLuaMain *main, bool recursive )
 {
-    // Delete all our events and custom datas attached to that VM
-    DeleteEvents ( pLuaMain, false );
+    // Delete all attached invalid events
+    DeleteEvents( main, false );
 
     // If recursive, do it on our children too
-    if ( bRecursive )
+    if ( recursive )
     {
-        CChildListType ::const_iterator iter = m_Children.begin ();
-        for ( ; iter != m_Children.end (); iter++ )
-        {
-            (*iter)->CleanUpForVM ( pLuaMain, true );
-        }
+        CChildListType::const_iterator iter = m_Children.begin();
+
+        for ( ; iter != m_Children.end(); iter++ )
+            (*iter)->CleanUpForVM( main, true );
     }
 }
 

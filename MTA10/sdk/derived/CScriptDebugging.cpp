@@ -24,24 +24,24 @@ void CScriptDebugging::NotifySystem( unsigned int level, const filePath& filenam
         m_triggerCall = true;
 
         // Prepare onDebugMessage
-        CLuaArguments Arguments;
-        Arguments.PushString( msg.c_str() );
-        Arguments.PushNumber( 1 );
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        lua_pushlstring( L, msg.c_str(), msg.size() );
+        lua_pushnumber( L, 1 );
 
         // Push the file name (if any)
         if ( !filename.empty() )
-            Arguments.PushString( filename.c_str() );
+            lua_pushlstring( L, filename.c_str(), filename.size() );
         else
-            Arguments.PushNil();
+            lua_pushnil( L );
 
         // Push the line (if any)
         if ( line != -1 )
-            Arguments.PushNumber( line );
+            lua_pushnumber( L, line );
         else
-            Arguments.PushNil();
+            lua_pushnil( L );
         
         // Call onDebugMessage
-        g_pClientGame->GetRootEntity()->CallEvent( "onClientDebugMessage", Arguments, false );
+        g_pClientGame->GetRootEntity()->CallEvent( "onClientDebugMessage", L, 4 );
 
         m_triggerCall = false;
     }

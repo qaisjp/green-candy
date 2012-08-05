@@ -173,23 +173,21 @@ void CClientGUIElement::SetEvents ( const char* szFunc1, const char* szFunc2 )
         strncpy ( &_szCallbackFunc2[0], szFunc2, strlen ( szFunc2 ) );    
 }
 
-
 bool CClientGUIElement::_CallbackEvent1 ( CGUIElement* pCGUIElement )
 {
-    CLuaArguments Arg;
     if ( pCGUIElement )
     {
         CClientGUIElement* pElement = m_pGUIManager->Get ( pCGUIElement );
         if ( pElement )
         {
-            Arg.PushElement ( pElement );
-            pElement->CallEvent ( _szCallbackFunc1, Arg, true );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            pElement->PushStack( L );
+            pElement->CallEvent( _szCallbackFunc1, L, 1 );
             return true;
         }
     }
     return false;
 }
-
 
 bool CClientGUIElement::_CallbackEvent2 ( CGUIElement* pCGUIElement )
 {
@@ -199,14 +197,14 @@ bool CClientGUIElement::_CallbackEvent2 ( CGUIElement* pCGUIElement )
         CClientGUIElement* pElement = m_pGUIManager->Get ( pCGUIElement );
         if ( pElement )
         {
-            Arg.PushElement ( pElement );
-            pElement->CallEvent ( _szCallbackFunc2, Arg, true );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            pElement->PushStack( L );
+            pElement->CallEvent( _szCallbackFunc2, L, 1 );
             return true;
         }
     }
     return false;
 }
-
 
 //
 // Get which font name and font element we are using now

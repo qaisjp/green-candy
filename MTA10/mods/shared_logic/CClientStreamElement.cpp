@@ -115,8 +115,7 @@ void CClientStreamElement::InternalStreamOut ( void )
             }
         }
 
-        CLuaArguments Arguments;
-        CallEvent ( "onClientElementStreamOut", Arguments, true );
+        CallEvent( "onClientElementStreamOut", m_lua, 0 );
     }
 }
 
@@ -125,14 +124,14 @@ void CClientStreamElement::NotifyCreate ( void )
 {
     // Update common atrributes
     if ( !m_bDoubleSidedInit )
-        m_bDoubleSided = IsDoubleSided ();
+        m_bDoubleSided = IsDoubleSided();
+
     SetDoubleSided ( m_bDoubleSided );
 
     m_bStreamedIn = true;
     m_bAttemptingToStreamIn = false;
 
-    CLuaArguments Arguments;
-    CallEvent ( "onClientElementStreamIn", Arguments, true );
+    CallEvent( "onClientElementStreamIn", m_lua, 0 );
 }
 
 

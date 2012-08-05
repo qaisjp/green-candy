@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CMapEventManager.h
@@ -10,42 +10,39 @@
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Chris McArthur <>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #ifndef __CMAPEVENTMANAGER_H
 #define __CMAPEVENTMANAGER_H
 
-#include "lua/CLuaArguments.h"
 #include "CMapEvent.h"
-#include <list>
+
+class CClientEntity;
 
 class CMapEventManager
 {
+    friend class CMapEvent;
 public:
-                            CMapEventManager                ( void );
-                            ~CMapEventManager               ( void );
+                            CMapEventManager( CClientEntity *owner );
+                            ~CMapEventManager();
 
-    bool                    Add                             ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction, bool bPropagated );
-    bool                    Delete                          ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction = LuaFunctionRef () );
-    void                    Delete                          ( CMapEvent* pEvent );
-    void                    Delete                          ( CLuaMain* pLuaMain );
-    void                    DeleteAll                       ( void );
+    bool                    Add( CLuaMain *main, const char *name, const LuaFunctionRef& ref, bool propagated );
+    bool                    Delete( CLuaMain *main, const char *name = NULL, const LuaFunctionRef *ref = NULL );
+    void                    DeleteAll();
 
-    inline bool             Exists                          ( const char* szName )  { return Get ( szName ) != NULL; };
-    bool                    Exists                          ( CMapEvent* pEvent );
-    bool                    HandleExists                    ( CLuaMain* pLuaMain, const char* szName, const LuaFunctionRef& iLuaFunction );
-    CMapEvent*              Get                             ( const char* szName );
-    CMapEvent*              GetFromXML                      ( const char* szName );
+    CMapEvent*              Get( const char *name );
 
-    bool                    Call                            ( const char* szName, const CLuaArguments& Arguments, class CClientEntity* pSource, class CClientEntity* pThis );
+    bool                    Call( lua_State *callee, unsigned int argCount, const char *name, class CClientEntity *source );
 
 private:
-    void                        TakeOutTheTrash                 ( void );
+    typedef std::list <CMapEvent*> events_t;
 
-    std::list < CMapEvent* >    m_Events;
-    std::list < CMapEvent* >    m_TrashCan;
-    bool                        m_bIteratingList;
+    events_t                    m_Events;
+    CClientEntity*              m_owner;
 };
 
 #endif

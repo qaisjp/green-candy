@@ -224,16 +224,15 @@ void CPedRPCs::WarpPedIntoVehicle ( CClientEntity* pSource, NetBitStreamInterfac
                 pVehicle->CalcAndUpdateTyresCanBurstFlag ();
 
                 // Call the onClientPlayerEnterVehicle event
-                CLuaArguments Arguments;
-                Arguments.PushElement ( pVehicle );        // vehicle
-                Arguments.PushNumber ( ucSeat );            // seat
-                pPed->CallEvent ( "onClientPlayerVehicleEnter", Arguments, true );
+                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                pVehicle->PushStack( L );
+                lua_pushnumber( L, ucSeat );
+                pPed->CallEvent( "onClientPlayerVehicleEnter", L, 2 );
 
                 // Call the onClientVehicleEnter event
-                CLuaArguments Arguments2;
-                Arguments2.PushElement ( pPed );        // player
-                Arguments2.PushNumber ( ucSeat );           // seat
-                pVehicle->CallEvent ( "onClientVehicleEnter", Arguments2, true );
+                pPed->PushStack( L );
+                lua_pushnumber( L, ucSeat );
+                pVehicle->CallEvent( "onClientVehicleEnter", L, 2 );
             }
         }
     }
@@ -281,17 +280,16 @@ void CPedRPCs::RemovePedFromVehicle ( CClientEntity* pSource, NetBitStreamInterf
                 }
 
                 // Call onClientPlayerVehicleExit
-                CLuaArguments Arguments;
-                Arguments.PushElement ( pVehicle ); // vehicle
-                Arguments.PushNumber ( uiSeat );    // seat
-                Arguments.PushBoolean ( false );    // jacker
-                pPed->CallEvent ( "onClientPlayerVehicleExit", Arguments, true );
+                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                pVehicle->PushStack( L );           // vehicle
+                lua_pushnumber( L, uiSeat );        // seat
+                lua_pushboolean( L, false );        // jacker
+                pPed->CallEvent( "onClientPlayerVehicleExit", L, 3 );
 
                 // Call onClientVehicleExit
-                CLuaArguments Arguments2;
-                Arguments2.PushElement ( pPed );   // player
-                Arguments2.PushNumber ( uiSeat );  // seat
-                pVehicle->CallEvent ( "onClientVehicleExit", Arguments2, true );
+                pPed->PushStack( L );               // player
+                lua_pushnumber( L, uiSeat );        // seat
+                pVehicle->CallEvent( "onClientVehicleExit", L, 2 );
             }
         }
     }

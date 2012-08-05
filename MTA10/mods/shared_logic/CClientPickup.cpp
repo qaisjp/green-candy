@@ -214,28 +214,24 @@ void CClientPickup::ReCreate ( void )
     }
 }
 
-
 void CClientPickup::Callback_OnCollision ( CClientColShape& Shape, CClientEntity& Entity )
 {
-    if ( IS_PLAYER ( &Entity ) )
+    if ( Entity.IsTransmit( LUACLASS_PLAYER ) )
     {
         // Call the pickup hit event
-        CLuaArguments Arguments;
-        Arguments.PushElement ( &Entity );            // player that hit it
-        Arguments.PushBoolean ( ( GetDimension () == Entity.GetDimension () ) ); // matching dimension?
-        CallEvent ( "onClientPickupHit", Arguments, true );
+        Entity.PushStack( m_lua );            // player that hit it
+        lua_pushboolean( m_lua, GetDimension() == Entity.GetDimension() ); // matching dimension?
+        CallEvent( "onClientPickupHit", m_lua, 2 );
     }
 }
 
-
 void CClientPickup::Callback_OnLeave ( CClientColShape& Shape, CClientEntity& Entity )
 {
-    if ( IS_PLAYER ( &Entity ) )
+    if ( Entity.IsTransmit( LUACLASS_PLAYER ) )
     {
         // Call the pickup leave event
-        CLuaArguments Arguments;
-        Arguments.PushElement ( &Entity );            // player that hit it
-        Arguments.PushBoolean ( ( GetDimension () == Entity.GetDimension () ) ); // matching dimension?
-        CallEvent ( "onClientPickupLeave", Arguments, true );
+        Entity.PushStack( m_lua );            // player that hit it
+        lua_pushboolean( m_lua, GetDimension() == Entity.GetDimension() ); // matching dimension?
+        CallEvent( "onClientPickupLeave", m_lua, 2 );
     }
 }

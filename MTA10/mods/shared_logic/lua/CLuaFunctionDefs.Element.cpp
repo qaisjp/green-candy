@@ -119,19 +119,16 @@ namespace CLuaFunctionDefs
         {
             CLuaMain* pLuaMain = lua_readcontext( L );
 
-            if ( strKey.length () > MAX_CUSTOMDATA_NAME_LENGTH )
+            if ( strKey.length() > MAX_CUSTOMDATA_NAME_LENGTH )
             {
                 // Warn and truncate if key is too long
                 m_pScriptDebugging->LogCustom( SString ( "Truncated argument @ '%s' [%s]", "getElementData", *SString ( "string length reduced to %d characters at argument 2", MAX_CUSTOMDATA_NAME_LENGTH ) ) );
                 strKey = strKey.Left ( MAX_CUSTOMDATA_NAME_LENGTH );
             }
 
-            CLuaArgument* pVariable = pEntity->GetCustomData ( strKey, bInherit );
-            if ( pVariable )
-            {
-                pVariable->Push ( L );
-                return 1;
-            }
+            lua_getfield( L, 1, "data" );
+            lua_getfield( L, -1, strKey.c_str() );
+            return 1;
         }
         else
             m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "getElementData", *argStream.GetErrorMessage () ) );
@@ -1101,7 +1098,42 @@ namespace CLuaFunctionDefs
                 strKey = strKey.Left ( MAX_CUSTOMDATA_NAME_LENGTH );
             }
 
-            lua_pushboolean( L, CStaticFunctionDefinitions::SetElementData( *pEntity, strKey, value, *lua_readcontext( L ), bSynchronize ) );
+            lua_getfield( L, 1, "data" );
+            lua_getfield( L, -1, strKey.c_str() );
+
+            if ( lua_isnil( L, 3 ) || !lua_equal( L, -1, 3 ) )
+            {
+                if ( bSynchronize )
+                {
+                    // Allocate a bitstream
+                    NetBitStreamInterface* pBitStream = g_pNet->AllocateNetBitStream();
+                    if ( pBitStream )
+                    {
+                        // Write element ID, name length and the name. Also write the variable.
+                        pBitStream->Write( pEntity->GetID () );
+                        pBitStream->WriteStringCompressed( strKey );
+                        value.WriteToBitStream( *pBitStream );
+
+                        // Send the packet and deallocate
+                        g_pNet->SendPacket( PACKET_ID_CUSTOM_DATA, pBitStream, PACKET_PRIORITY_LOW, PACKET_RELIABILITY_RELIABLE, PACKET_ORDERING_CHAT );
+                        g_pNet->DeallocateNetBitStream( pBitStream );
+
+                        // Set its custom data
+                        lua_setfield( L, -2, strKey.c_str() );
+                        lua_pushboolean( L, true );
+                        return 1;
+                    }
+                }
+                else
+                {
+                    // Set its custom data
+                    lua_setfield( L, -2, strKey.c_str() );
+                    lua_pushboolean( L, true );
+                    return 1;
+                }
+            }
+
+            lua_pushboolean( L, false );
             return 1;
         }
         else

@@ -221,13 +221,12 @@ void CVoiceRecorder::UpdatePTTState( unsigned int uiState )
             if ( g_pClientGame->GetLocalPlayer () )
             {
                 m_CS.Unlock ();
-                CLuaArguments Arguments;
-                bool bEventTriggered = g_pClientGame->GetLocalPlayer ()->CallEvent ( "onClientPlayerVoiceStart", Arguments, true );
 
-                if ( !bEventTriggered )
-                {
+                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+                if ( !g_pClientGame->GetLocalPlayer()->CallEvent( "onClientPlayerVoiceStart", L, 0 ) )
                     return;
-                }
+
                 m_CS.Lock ();
                 m_VoiceState = VOICESTATE_RECORDING;
             }
@@ -243,8 +242,10 @@ void CVoiceRecorder::UpdatePTTState( unsigned int uiState )
             if ( g_pClientGame->GetLocalPlayer () )
             {
                 m_CS.Unlock ();
-                CLuaArguments Arguments;
-                g_pClientGame->GetLocalPlayer ()->CallEvent ( "onClientPlayerVoiceStop", Arguments, true );
+
+                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                g_pClientGame->GetLocalPlayer()->CallEvent( "onClientPlayerVoiceStop", L, 0 );
+
                 m_CS.Lock ();
             }
         }

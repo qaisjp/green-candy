@@ -95,8 +95,7 @@ void CClientSound::DistanceStreamIn ( void )
         m_pSoundManager->OnDistanceStreamIn ( this );
 
         // Call Stream In event
-        CLuaArguments Arguments;
-        CallEvent ( "onClientElementStreamIn", Arguments, true );
+        CallEvent( "onClientElementStreamIn", m_lua, 0 );
     }
 }
 
@@ -116,8 +115,7 @@ void CClientSound::DistanceStreamOut ( void )
         Destroy ();
 
         // Call Stream Out event
-        CLuaArguments Arguments;
-        CallEvent ( "onClientElementStreamOut", Arguments, true );
+        CallEvent( "onClientElementStreamOut", m_lua, 0 );
     }
 }
 
@@ -514,29 +512,28 @@ void CClientSound::Process3D ( const CVector& vecPlayerPosition, const CVector& 
     {
         if ( eventInfo.type == SOUND_EVENT_FINISHED_DOWNLOAD )
         {
-            CLuaArguments Arguments;
-            Arguments.PushNumber ( eventInfo.dNumber );
-            CallEvent ( "onClientSoundFinishedDownload", Arguments, true );
+            lua_pushnumber( m_lua, eventInfo.dNumber );
+            CallEvent( "onClientSoundFinishedDownload", m_lua, 1 );
             OutputDebugLine ( SString ( "onClientSoundFinishedDownload %f", eventInfo.dNumber ) );
         }
-        else
-        if ( eventInfo.type == SOUND_EVENT_CHANGED_META )
+        else if ( eventInfo.type == SOUND_EVENT_CHANGED_META )
         {
-            CLuaArguments Arguments;
-            Arguments.PushString ( eventInfo.strString );
-            CallEvent ( "onClientSoundChangedMeta", Arguments, true );
+            lua_pushlstring( m_lua, eventInfo.strString.c_str(), eventInfo.strString.size() );
+            CallEvent( "onClientSoundChangedMeta", m_lua, 1 );
             OutputDebugLine ( SString ( "onClientSoundChangedMeta %s", *eventInfo.strString ) );
         }
-        else
-        if ( eventInfo.type == SOUND_EVENT_STREAM_RESULT )
+        else if ( eventInfo.type == SOUND_EVENT_STREAM_RESULT )
         {
             // Call onClientSoundStream LUA event
-            CLuaArguments Arguments;
-            Arguments.PushBoolean ( eventInfo.bBool );
-            Arguments.PushNumber ( eventInfo.dNumber );
-            if ( !eventInfo.strString.empty () )
-                Arguments.PushString ( eventInfo.strString );
-            CallEvent ( "onClientSoundStream", Arguments, true );
+            lua_pushboolean( m_lua, eventInfo.bBool );
+            lua_pushnumber( m_lua, eventInfo.dNumber );
+
+            if ( !eventInfo.strString.empty() )
+                lua_pushlstring( m_lua, eventInfo.strString.c_str(), eventInfo.strString.size() );
+            else
+                lua_pushnil( m_lua );
+
+            CallEvent( "onClientSoundStream", m_lua, 3 );
             OutputDebugLine ( SString ( "onClientSoundStream %d %f %s", eventInfo.bBool, eventInfo.dNumber, *eventInfo.strString ) );
         }
     }

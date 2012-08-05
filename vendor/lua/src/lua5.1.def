@@ -88,6 +88,7 @@ EXPORTS
   lua_settable
   lua_settop
   lua_xmove
+  lua_xcopy
   lua_newuserdata
   lua_setallocf
   luaL_prepbuffer

@@ -39,7 +39,6 @@ public:
     static bool                         AddEvent                            ( CLuaMain& LuaMain, const char* szName, bool bAllowRemoteTrigger );
     static bool                         AddEventHandler                     ( CLuaMain& LuaMain, const char* szName, CClientEntity& Entity, const LuaFunctionRef& iLuaFunction, bool bPropagated );
     static bool                         RemoveEventHandler                  ( CLuaMain& LuaMain, const char* szName, CClientEntity& Entity, const LuaFunctionRef& iLuaFunction );
-    static bool                         TriggerEvent                        ( const char* szName, CClientEntity& Entity, const CLuaArguments& Arguments, bool& bWasCancelled );
     static bool                         TriggerServerEvent                  ( const char* szName, CClientEntity& CallWithEntity, CLuaArguments& Arguments );
     static bool                         CancelEvent                         ( bool bCancel );
     static bool                         WasEventCancelled                   ( void );
@@ -80,7 +79,6 @@ public:
     // Element set funcs
     static CClientDummy*                CreateElement                       ( CResource& Resource, const char* szTypeName, const char* szID );
     static bool                         SetElementID                        ( CClientEntity& Entity, const char* szID );
-    static bool                         SetElementData                      ( CClientEntity& Entity, const char* szName, CLuaArgument& Variable, CLuaMain& LuaMain, bool bSynchronize );
     static bool                         RemoveElementData                   ( CClientEntity& Entity, const char* szName );
     static bool                         SetElementPosition                  ( CClientEntity& Entity, const CVector& vecPosition, bool bWarp = true );
     static bool                         SetElementRotation                  ( CClientEntity& Entity, const CVector& vecRotation, const char* szRotationOrder );

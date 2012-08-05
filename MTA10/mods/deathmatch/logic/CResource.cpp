@@ -72,9 +72,9 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
 CResource::~CResource()
 {
     // Notify the environment that we quit.
-    CLuaArguments args;
-    args.PushUserData( this );
-    m_resourceEntity->CallEvent( "onClientResourceStop", args, true );
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+    PushStack( L );
+    m_resourceEntity->CallEvent( "onClientResourceStop", L, 1, true );
 
     // Make sure we don't force the cursor on
     ShowCursor( false );
@@ -336,9 +336,9 @@ void CResource::Load( CClientEntity *root )
     m_active = true;
 
     // Call the Lua "onClientResourceStart" event
-    CLuaArguments args;
-    args.PushUserData( this );
-    m_resourceEntity->CallEvent( "onClientResourceStart", args, true );
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+    PushStack( L );
+    m_resourceEntity->CallEvent( "onClientResourceStart", L, 1 );
 }
 
 void CResource::ShowCursor( bool bShow, bool bToggleControls )

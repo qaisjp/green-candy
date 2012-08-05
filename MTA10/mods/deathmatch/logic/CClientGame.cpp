@@ -634,18 +634,18 @@ void CClientGame::DoPulsePreHUDRender ( bool bDidUnminimize, bool bDidRecreateRe
     // Allow scripted dxSetRenderTarget
     g_pCore->GetGraphics ()->EnableSetRenderTarget ( true );
 
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
     // If appropriate, call onClientRestore
     if ( bDidUnminimize )
     {
-        CLuaArguments Arguments;
-        Arguments.PushBoolean ( bDidRecreateRenderTargets );
-        m_pRootEntity->CallEvent ( "onClientRestore", Arguments, false );
+        lua_pushboolean( L, bDidRecreateRenderTargets );
+        m_pRootEntity->CallEvent( "onClientRestore", L, 1 );
         m_bWasMinimized = false;
     }
 
     // Call onClientHUDRender LUA event
-    CLuaArguments Arguments;
-    m_pRootEntity->CallEvent ( "onClientHUDRender", Arguments, false );
+    m_pRootEntity->CallEvent( "onClientHUDRender", L, 0 );
 
     // Disallow scripted dxSetRenderTarget
     g_pCore->GetGraphics ()->EnableSetRenderTarget ( false );
@@ -997,8 +997,8 @@ void CClientGame::DoPulses ( void )
         g_pCore->GetGraphics ()->EnableSetRenderTarget ( true );
 
         // Call onClientRender LUA event
-        CLuaArguments Arguments;
-        m_pRootEntity->CallEvent ( "onClientRender", Arguments, false );
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        m_pRootEntity->CallEvent( "onClientRender", L, 0 );
 
         // Disallow scripted dxSetRenderTarget
         g_pCore->GetGraphics ()->EnableSetRenderTarget ( false );
@@ -1700,12 +1700,13 @@ void CClientGame::UpdatePlayerTarget ( void )
         m_pNetAPI->RPC ( PLAYER_TARGET, bitStream.pBitStream );
 
         // Call our onClientPlayerTarget event
-        CLuaArguments Arguments;
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
         if ( m_pTargetedEntity )
-            Arguments.PushElement ( m_pTargetedEntity );
+            m_pTargetedEntity->PushStack( L );
         else
-            Arguments.PushBoolean ( false );
-        m_pLocalPlayer->CallEvent ( "onClientPlayerTarget", Arguments, true );
+            lua_pushboolean( L, false );
+
+        m_pLocalPlayer->CallEvent( "onClientPlayerTarget", L, 1 );
     }
 }
 
@@ -1716,10 +1717,10 @@ void CClientGame::UpdatePlayerWeapons ( void )
     eWeaponSlot currentSlot = m_pLocalPlayer->GetCurrentWeaponSlot ();
     if ( currentSlot != m_lastWeaponSlot )
     {
-        CLuaArguments Arguments;
-        Arguments.PushNumber ( m_lastWeaponSlot );
-        Arguments.PushNumber ( currentSlot );
-        bool bCancelled = !m_pLocalPlayer->CallEvent ( "onClientPlayerWeaponSwitch", Arguments, true );
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        lua_pushnumber( L, m_lastWeaponSlot );
+        lua_pushnumber( L, currentSlot );
+        bool bCancelled = !m_pLocalPlayer->CallEvent( "onClientPlayerWeaponSwitch", L, 2 );
 
         if ( bCancelled )
         {
@@ -1903,9 +1904,10 @@ void CClientGame::UpdateFireKey ( void )
 
                                 // Change the state back to false so this press doesn't do anything else
                                 pControl->bState = false;
-                                CLuaArguments Arguments;
-                                Arguments.PushElement ( pTargetPed );
-                                if ( m_pLocalPlayer->CallEvent ( "onClientPlayerStealthKill", Arguments, false ) ) 
+
+                                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                                pTargetPed->PushStack( L );
+                                if ( m_pLocalPlayer->CallEvent( "onClientPlayerStealthKill", L, 1 ) )
                                 {
                                     // Lets request a stealth kill
                                     CBitStream bitStream;
@@ -1925,32 +1927,30 @@ void CClientGame::UpdateFireKey ( void )
     }
 }
 
-
 void CClientGame::UpdateStunts ( void )
 {
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
     // * Two wheeler *
     static unsigned long ulLastCarTwoWheelCounter = 0;
     static float fLastCarTwoWheelDist = 0.0f;
     unsigned long ulTemp = g_pGame->GetPlayerInfo ()->GetCarTwoWheelCounter ();
+
     // Did we start a stunt?
     if ( ulLastCarTwoWheelCounter == 0 && ulTemp != 0 )
     {
         // Call our stunt event
-        CLuaArguments Arguments;
-        Arguments.PushString ( "2wheeler" );
-        m_pLocalPlayer->CallEvent ( "onClientPlayerStuntStart", Arguments, true );
+        lua_pushlstring( L, "2wheeler", 8 );
+        m_pLocalPlayer->CallEvent( "onClientPlayerStuntStart", L, 1 );
     }
     // Did we finish a stunt?
     else if ( ulLastCarTwoWheelCounter != 0 && ulTemp == 0 )
     {
-        float fDistance = g_pGame->GetPlayerInfo ()->GetCarTwoWheelDist ();
-        
         // Call our stunt event
-        CLuaArguments Arguments;
-        Arguments.PushString ( "2wheeler" );
-        Arguments.PushNumber ( ulLastCarTwoWheelCounter );
-        Arguments.PushNumber ( fDistance );
-        m_pLocalPlayer->CallEvent ( "onClientPlayerStuntFinish", Arguments, true );
+        lua_pushlstring( L, "2wheeler", 8 );
+        lua_pushnumber( L, ulLastCarTwoWheelCounter );
+        lua_pushnumber( L, g_pGame->GetPlayerInfo()->GetCarTwoWheelDist() );
+        m_pLocalPlayer->CallEvent( "onClientPlayerStuntFinish", L, 3 );
     }
     ulLastCarTwoWheelCounter = ulTemp;
     fLastCarTwoWheelDist = g_pGame->GetPlayerInfo ()->GetCarTwoWheelDist ();
@@ -1959,26 +1959,24 @@ void CClientGame::UpdateStunts ( void )
     static unsigned long ulLastBikeRearWheelCounter = 0;
     static float fLastBikeRearWheelDist = 0.0f;
     ulTemp = g_pGame->GetPlayerInfo ()->GetBikeRearWheelCounter ();
+
     // Did we start a stunt?
     if ( ulLastBikeRearWheelCounter == 0 && ulTemp != 0 )
     {
         // Call our stunt event
-        CLuaArguments Arguments;
-        Arguments.PushString ( "wheelie" );
-        m_pLocalPlayer->CallEvent ( "onClientPlayerStuntStart", Arguments, true );
+        lua_pushlstring( L, "wheelie", 7 );
+        m_pLocalPlayer->CallEvent( "onClientPlayerStuntStart", L, 1 );
     }
     // Did we finish a stunt?
     else if ( ulLastBikeRearWheelCounter != 0 && ulTemp == 0 )
     {
-        float fDistance = g_pGame->GetPlayerInfo ()->GetBikeRearWheelDist ();
-        
         // Call our stunt event
-        CLuaArguments Arguments;
-        Arguments.PushString ( "wheelie" );
-        Arguments.PushNumber ( ulLastBikeRearWheelCounter );
-        Arguments.PushNumber ( fDistance );
-        m_pLocalPlayer->CallEvent ( "onClientPlayerStuntFinish", Arguments, true );
+        lua_pushlstring( L, "wheelie", 7 );
+        lua_pushnumber( L, ulLastBikeRearWheelCounter );
+        lua_pushnumber( L, g_pGame->GetPlayerInfo()->GetBikeRearWheelDist() );
+        m_pLocalPlayer->CallEvent( "onClientPlayerStuntFinish", L, 3 );
     }
+
     ulLastBikeRearWheelCounter = ulTemp;
     fLastBikeRearWheelDist = g_pGame->GetPlayerInfo ()->GetBikeRearWheelDist ();
 
@@ -1986,25 +1984,22 @@ void CClientGame::UpdateStunts ( void )
     static unsigned long ulLastBikeFrontWheelCounter = 0;
     static float fLastBikeFrontWheelDist = 0.0f;
     ulTemp = g_pGame->GetPlayerInfo ()->GetBikeFrontWheelCounter ();
+
     // Did we start a stunt?
     if ( ulLastBikeFrontWheelCounter == 0 && ulTemp != 0 )
     {
         // Call our stunt event
-        CLuaArguments Arguments;
-        Arguments.PushString ( "stoppie" );
-        m_pLocalPlayer->CallEvent ( "onClientPlayerStuntStart", Arguments, true );
+        lua_pushlstring( L, "stoppie", 7 );
+        m_pLocalPlayer->CallEvent( "onClientPlayerStuntStart", L, 1 );
     }
     // Did we finish a stunt?
     else if ( ulLastBikeFrontWheelCounter != 0 && ulTemp == 0 )
     {
-        float fDistance = g_pGame->GetPlayerInfo ()->GetBikeFrontWheelDist ();
-        
         // Call our stunt event
-        CLuaArguments Arguments;
-        Arguments.PushString ( "stoppie" );
-        Arguments.PushNumber ( ulLastBikeFrontWheelCounter );
-        Arguments.PushNumber ( fDistance );
-        m_pLocalPlayer->CallEvent ( "onClientPlayerStuntFinish", Arguments, true );
+        lua_pushlstring( L, "stoppie", 7 );
+        lua_pushnumber( L, ulLastBikeFrontWheelCounter );
+        lua_pushnumber( L, g_pGame->GetPlayerInfo()->GetBikeFrontWheelDist() );
+        m_pLocalPlayer->CallEvent( "onClientPlayerStuntFinish", L, 3 );
     }
     ulLastBikeFrontWheelCounter = ulTemp;
     fLastBikeFrontWheelDist = g_pGame->GetPlayerInfo ()->GetBikeFrontWheelDist ();
@@ -2103,14 +2098,14 @@ void CClientGame::StaticKeyStrokeHandler ( const SBindableKey * pKey, bool bStat
 void CClientGame::KeyStrokeHandler ( const SBindableKey * pKey, bool bState )
 {
     // Do we have a root yet?
-    if ( m_pRootEntity )
-    {
-        // Call our key-stroke event
-        CLuaArguments Arguments;
-        Arguments.PushString ( pKey->szKey );
-        Arguments.PushBoolean ( bState );
-        m_pRootEntity->CallEvent ( "onClientKey", Arguments, false );
-    }
+    if ( !m_pRootEntity )
+        return;
+
+    // Call our key-stroke event
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+    lua_pushstring( L, pKey->szKey );
+    lua_pushboolean( L, bState );
+    m_pRootEntity->CallEvent( "onClientKey", L, 2 );
 }
 
 
@@ -2131,9 +2126,9 @@ bool CClientGame::CharacterKeyHandler ( WPARAM wChar )
             char szCharacter [ 2 ] = { wChar, 0 };
 
             // Call our character event
-            CLuaArguments Arguments;
-            Arguments.PushString ( szCharacter );
-            m_pRootEntity->CallEvent ( "onClientCharacter", Arguments, false );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            lua_pushlstring( L, szCharacter, 1 );
+            m_pRootEntity->CallEvent( "onClientCharacter", L, 1 );
         }
     }
 
@@ -2317,19 +2312,20 @@ bool CClientGame::ProcessMessageForCursorEvents ( HWND hwnd, UINT uMsg, WPARAM w
                         if ( _isnan( vecCollision.fZ ) ) vecCollision.fZ = 0;
 
                         // Call the event for the client
-                        CLuaArguments Arguments;
-                        Arguments.PushString ( szButton );
-                        Arguments.PushString ( szState );
-                        Arguments.PushNumber ( vecCursorPosition.fX );
-                        Arguments.PushNumber ( vecCursorPosition.fY );
-                        Arguments.PushNumber ( vecCollision.fX );
-                        Arguments.PushNumber ( vecCollision.fY );
-                        Arguments.PushNumber ( vecCollision.fZ );
+                        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                        lua_pushstring( L, szButton );
+                        lua_pushstring( L, szState );
+                        lua_pushnumber( L, vecCursorPosition.fX );
+                        lua_pushnumber( L, vecCursorPosition.fY );
+                        lua_pushnumber( L, vecCollision.fX );
+                        lua_pushnumber( L, vecCollision.fY );
+                        lua_pushnumber( L, vecCollision.fZ );
                         if ( pCollisionEntity )
-                            Arguments.PushElement ( pCollisionEntity );
+                            pCollisionEntity->PushStack( L );
                         else
-                            Arguments.PushBoolean ( false );
-                        m_pRootEntity->CallEvent ( "onClientClick", Arguments, false );
+                            lua_pushboolean( L, false );
+
+                        m_pRootEntity->CallEvent( "onClientClick", L, 8 );
 
                         // Send the button, cursor position, 3d position and the entity collided with
                         CBitStream bitStream;
@@ -2363,18 +2359,19 @@ bool CClientGame::ProcessMessageForCursorEvents ( HWND hwnd, UINT uMsg, WPARAM w
                                     vecDelta.Length() <= DOUBLECLICK_MOVE_THRESHOLD )
                             {
                                 // Call the event for the client
-                                CLuaArguments DoubleClickArguments;
-                                DoubleClickArguments.PushString ( szButton );
-                                DoubleClickArguments.PushNumber ( vecCursorPosition.fX );
-                                DoubleClickArguments.PushNumber ( vecCursorPosition.fY );
-                                DoubleClickArguments.PushNumber ( vecCollision.fX );
-                                DoubleClickArguments.PushNumber ( vecCollision.fY );
-                                DoubleClickArguments.PushNumber ( vecCollision.fZ );
+                                lua_pushstring( L, szButton );
+                                lua_pushstring( L, szState );
+                                lua_pushnumber( L, vecCursorPosition.fX );
+                                lua_pushnumber( L, vecCursorPosition.fY );
+                                lua_pushnumber( L, vecCollision.fX );
+                                lua_pushnumber( L, vecCollision.fY );
+                                lua_pushnumber( L, vecCollision.fZ );
                                 if ( pCollisionEntity )
-                                    DoubleClickArguments.PushElement ( pCollisionEntity );
+                                    pCollisionEntity->PushStack( L );
                                 else
-                                    DoubleClickArguments.PushBoolean ( false );
-                                m_pRootEntity->CallEvent ( "onClientDoubleClick", DoubleClickArguments, false );
+                                    lua_pushboolean( L, false );
+
+                                m_pRootEntity->CallEvent( "onClientDoubleClick", L, 8 );
                             }
 
                             m_ulLastClickTick = GetTickCount32();
@@ -2405,15 +2402,15 @@ bool CClientGame::ProcessMessageForCursorEvents ( HWND hwnd, UINT uMsg, WPARAM w
                 g_pCore->GetGraphics ()->CalcWorldCoors ( &vecScreen, &vecTarget );
 
                 // Call the onClientCursorMove event
-                CLuaArguments Arguments;
-                Arguments.PushNumber ( ( double ) vecCursorPosition.fX );
-                Arguments.PushNumber ( ( double ) vecCursorPosition.fY );
-                Arguments.PushNumber ( ( double ) iX );
-                Arguments.PushNumber ( ( double ) iY );
-                Arguments.PushNumber ( ( double ) vecTarget.fX );
-                Arguments.PushNumber ( ( double ) vecTarget.fY );
-                Arguments.PushNumber ( ( double ) vecTarget.fZ );
-                m_pRootEntity->CallEvent ( "onClientCursorMove", Arguments, false );
+                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                lua_pushnumber( L, vecCursorPosition.fX );
+                lua_pushnumber( L, vecCursorPosition.fY );
+                lua_pushnumber( L, iX );
+                lua_pushnumber( L, iY );
+                lua_pushnumber( L, vecTarget.fX );
+                lua_pushnumber( L, vecTarget.fY );
+                lua_pushnumber( L, vecTarget.fZ );
+                m_pRootEntity->CallEvent( "onClientCursorMove", L, 7 );
             }
             break;
         }
@@ -3192,9 +3189,9 @@ void CClientGame::QuitPlayer ( CClientPlayer* pPlayer, eQuitReason Reason )
 #endif
 
     // Call our onClientPlayerQuit event
-    CLuaArguments Arguments;
-    Arguments.PushString ( szReason );
-    pPlayer->CallEvent ( "onClientPlayerQuit", Arguments, true );
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+    lua_pushstring( L, szReason );
+    pPlayer->CallEvent( "onClientPlayerQuit", L, 1 );
 
     // Detach the camera from this player if we're watching them
     m_pManager->GetCamera ()->UnreferencePlayer ( pPlayer );
@@ -3421,9 +3418,13 @@ void CClientGame::ProjectileInitiateHandler ( CClientProjectile * pProjectile )
     pProjectile->SetParent ( m_pRootEntity );
 
     // Call our creation event
-    CLuaArguments Arguments;
-    Arguments.PushElement ( pProjectile->GetCreator () );
-    pProjectile->CallEvent ( "onClientProjectileCreation", Arguments, true );
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+    if ( pProjectile->GetCreator() )
+        pProjectile->GetCreator()->PushStack( L );
+    else
+        lua_pushboolean( L, false );
+
+    pProjectile->CallEvent( "onClientProjectileCreation", L, 1 );
 }
 
 
@@ -3448,9 +3449,9 @@ void CClientGame::PostWorldProcessHandler ( void )
         m_dwFrameTimeSlice = dwCurrentTick - m_dwLastFrameTick;
 
         // Call onClientPreRender LUA event
-        CLuaArguments Arguments;
-        Arguments.PushNumber ( m_dwFrameTimeSlice );
-        m_pRootEntity->CallEvent ( "onClientPreRender", Arguments, false );
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        lua_pushnumber( L, m_dwFrameTimeSlice );
+        m_pRootEntity->CallEvent( "onClientPreRender", L, 1 );
     }
     m_dwLastFrameTick = dwCurrentTick;
 }
@@ -3464,9 +3465,10 @@ void CClientGame::IdleHandler ( void )
         if ( !m_bWasMinimized )
         {
             m_bWasMinimized = true;
+
             // Call onClientMinimize LUA event
-            CLuaArguments Arguments;
-            m_pRootEntity->CallEvent ( "onClientMinimize", Arguments, false );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            m_pRootEntity->CallEvent( "onClientMinimize", L, 0 );
         }
         m_pRadarMap->DoRender ();
         m_pManager->DoRender ();
@@ -3479,9 +3481,10 @@ bool CClientGame::ChokingHandler ( unsigned char ucWeaponType )
 {
     if ( !m_pLocalPlayer )
         return true;
-    CLuaArguments Arguments;
-    Arguments.PushNumber ( ucWeaponType );
-    return m_pLocalPlayer->CallEvent ( "onClientPlayerChoke", Arguments, true );
+
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+    lua_pushnumber( L, ucWeaponType );
+    return m_pLocalPlayer->CallEvent( "onClientPlayerChoke", L, 1 );
 }
 
 void CClientGame::DownloadFiles ( void )
@@ -3645,15 +3648,19 @@ bool CClientGame::DamageHandler ( CPed* pDamagePed, CEventDamage * pEvent )
         // Have we taken any damage here?
         if ( ( fPreviousHealth != fCurrentHealth || fPreviousArmor != fCurrentArmor ) && fDamage != 0.0f )
         {
-            CLuaArguments Arguments;
-            if ( pInflictingEntity ) Arguments.PushElement ( pInflictingEntity );
-            else Arguments.PushBoolean ( false );
-            Arguments.PushNumber ( static_cast < unsigned char > ( weaponUsed ) );
-            Arguments.PushNumber ( static_cast < unsigned char > ( hitZone ) );
-            Arguments.PushNumber ( fDamage );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+            if ( pInflictingEntity )
+                pInflictingEntity->PushStack( L );
+            else
+                lua_pushboolean( L, false );
+
+            lua_pushnumber( L, weaponUsed );
+            lua_pushnumber( L, hitZone );
+            lua_pushnumber( L, fDamage );
 
             // Call our event
-            if ( ( IS_PLAYER ( pDamagedPed ) && !pDamagedPed->CallEvent ( "onClientPlayerDamage", Arguments, true ) ) || ( !IS_PLAYER ( pDamagedPed ) && !pDamagedPed->CallEvent ( "onClientPedDamage", Arguments, true ) ) )
+            if ( ( pDamagedPed->IsTransmit( LUACLASS_PLAYER ) && !pDamagedPed->CallEvent( "onClientPlayerDamage", L, 4 ) ) || ( !pDamagedPed->IsTransmit( LUACLASS_PLAYER ) && !pDamagedPed->CallEvent( "onClientPedDamage", L, 4 ) ) )
             {
                 // Stop here if they cancelEvent it
                 if ( pDamagedPed->IsLocalPlayer () )
@@ -3733,7 +3740,17 @@ bool CClientGame::DamageHandler ( CPed* pDamagePed, CEventDamage * pEvent )
                 {
                     if ( pDamagedPed->IsLocalEntity () && fPreviousHealth > 0.0f )
                     {
-                        pDamagedPed->CallEvent ( "onClientPedWasted", Arguments, true );
+                        if ( pInflictingEntity )
+                            pInflictingEntity->PushStack( L );
+                        else
+                            lua_pushboolean( L, false );
+
+                        lua_pushnumber( L, weaponUsed );
+                        lua_pushnumber( L, hitZone );
+                        lua_pushnumber( L, fDamage );
+
+                        pDamagedPed->CallEvent( "onClientPedWasted", L, 4 );
+
                         pEvent->ComputeDeathAnim ( pDamagePed, true );
                         AssocGroupId animGroup = pEvent->GetAnimGroup ();
                         AnimationId animID = pEvent->GetAnimId ();
@@ -4055,21 +4072,23 @@ void CClientGame::PostWeaponFire ( void )
                 }
 
                 // Call our lua event
-                CLuaArguments Arguments;
-                Arguments.PushNumber ( ( double ) pWeapon->GetType () );
-                Arguments.PushNumber ( ( double ) pWeapon->GetAmmoTotal () );
-                Arguments.PushNumber ( ( double ) pWeapon->GetAmmoInClip () );
-                Arguments.PushNumber ( ( double ) vecCollision.fX );
-                Arguments.PushNumber ( ( double ) vecCollision.fY );
-                Arguments.PushNumber ( ( double ) vecCollision.fZ );
+                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                lua_pushnumber( L, pWeapon->GetType() );
+                lua_pushnumber( L, pWeapon->GetAmmoTotal() );
+                lua_pushnumber( L, pWeapon->GetAmmoInClip() );
+                lua_pushnumber( L, vecCollision.fX );
+                lua_pushnumber( L, vecCollision.fY );
+                lua_pushnumber( L, vecCollision.fZ );
+
                 if ( pCollisionEntity )
-                    Arguments.PushElement ( pCollisionEntity );
+                    pCollisionEntity->PushStack( L );
                 else
-                    Arguments.PushNil ();
-                if (IS_PLAYER(pPed))
-                    pPed->CallEvent ( "onClientPlayerWeaponFire", Arguments, true );
+                    lua_pushnil( L );
+
+                if ( pPed->IsTransmit( LUACLASS_PLAYER ) )
+                    pPed->CallEvent( "onClientPlayerWeaponFire", L, 7 );
                 else
-                    pPed->CallEvent ( "onClientPedWeaponFire", Arguments, true );
+                    pPed->CallEvent( "onClientPedWeaponFire", L, 7 );
             }
             pPed->PostWeaponFire();
 #ifdef MTA_DEBUG
@@ -4499,15 +4518,26 @@ void CClientGame::DoWastedCheck ( ElementID damagerID, unsigned char ucWeapon, u
 
             // Call the onClientPlayerWasted event
             CClientEntity * pKiller = ( damagerID != INVALID_ELEMENT_ID ) ? CElementIDs::GetElement ( damagerID ) : NULL;
-            CLuaArguments Arguments;
-            if ( pKiller ) Arguments.PushElement ( pKiller );
-            else Arguments.PushBoolean ( false );
-            if ( ucWeapon != 0xFF ) Arguments.PushNumber ( ucWeapon );
-            else Arguments.PushBoolean ( false );
-            if ( ucBodyPiece != 0xFF ) Arguments.PushNumber ( ucBodyPiece );
-            else Arguments.PushBoolean ( false );
-            Arguments.PushBoolean ( false );
-            m_pLocalPlayer->CallEvent ( "onClientPlayerWasted", Arguments, true );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+            if ( pKiller )
+                pKiller->PushStack( L );
+            else
+                lua_pushboolean( L, false );
+
+            if ( ucWeapon != 0xFF )
+                lua_pushnumber( L, ucWeapon );
+            else
+                lua_pushboolean( L, false );
+
+            if ( ucBodyPiece != 0xFF )
+                lua_pushnumber( L, ucBodyPiece );
+            else
+                lua_pushboolean( L, false );
+
+            lua_pushboolean( L, false );
+
+            m_pLocalPlayer->CallEvent( "onClientPlayerWasted", L, 4 );
 
             // Write some death info
             pBitStream->WriteCompressed ( animGroup );
@@ -4552,7 +4582,8 @@ bool CClientGame::OnKeyDown ( CGUIKeyEventArgs Args )
 
 bool CClientGame::OnMouseClick ( CGUIMouseEventArgs Args )
 {
-    if ( !Args.pWindow ) return false;
+    if ( !Args.pWindow )
+        return false;
 
     char* szButton = NULL;
     char* szState = NULL;
@@ -4576,17 +4607,18 @@ bool CClientGame::OnMouseClick ( CGUIMouseEventArgs Args )
     bool bHandled = g_pCore->OnMouseClick ( Args );
 
     // Only pass on to lua if we haven't handled it yet
-    if ( !bHandled && szButton ) {
-        CLuaArguments Arguments;
-        Arguments.PushString ( szButton );
-        Arguments.PushString ( szState );
-        Arguments.PushNumber ( Args.position.fX );
-        Arguments.PushNumber ( Args.position.fY );
-
-        CClientGUIElement * pGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pWindow );
-        if ( GetGUIManager ()->Exists ( pGUIElement ) )
+    if ( !bHandled && szButton )
+    {
+        CClientGUIElement *pGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pWindow );
+        if ( GetGUIManager()->Exists( pGUIElement ) )
         {
-            pGUIElement->CallEvent ( "onClientGUIClick", Arguments, true );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            lua_pushstring( L, szButton );
+            lua_pushstring( L, szState );
+            lua_pushnumber( L, Args.position.fX );
+            lua_pushnumber( L, Args.position.fY );
+
+            pGUIElement->CallEvent( "onClientGUIClick", L, 4 );
         }
     }
 
@@ -4620,17 +4652,18 @@ bool CClientGame::OnMouseDoubleClick ( CGUIMouseEventArgs Args )
     bool bHandled = g_pCore->OnMouseDoubleClick ( Args );
 
     // Only pass on to lua if we haven't handled it yet
-    if ( !bHandled && szButton ) {
-        CLuaArguments Arguments;
-        Arguments.PushString ( szButton );
-        Arguments.PushString ( szState );
-        Arguments.PushNumber ( Args.position.fX );
-        Arguments.PushNumber ( Args.position.fY );
-
+    if ( !bHandled && szButton )
+    {
         CClientGUIElement * pGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pWindow );
         if ( GetGUIManager ()->Exists ( pGUIElement ) )
         {
-            pGUIElement->CallEvent ( "onClientGUIDoubleClick", Arguments, true );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            lua_pushstring( L, szButton );
+            lua_pushstring( L, szState );
+            lua_pushnumber( L, Args.position.fX );
+            lua_pushnumber( L, Args.position.fY );
+
+            pGUIElement->CallEvent( "onClientGUIDoubleClick", L, 4 );
         }
     }
 
@@ -4658,15 +4691,15 @@ bool CClientGame::OnMouseButtonDown ( CGUIMouseEventArgs Args )
 
     if ( szButton )
     {
-        CLuaArguments Arguments;
-        Arguments.PushString ( szButton );
-        Arguments.PushNumber ( Args.position.fX );
-        Arguments.PushNumber ( Args.position.fY );
-
         CClientGUIElement * pGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pWindow );
         if ( GetGUIManager ()->Exists ( pGUIElement ) )
         {
-            pGUIElement->CallEvent ( "onClientGUIMouseDown", Arguments, true );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            lua_pushstring( L, szButton );
+            lua_pushnumber( L, Args.position.fX );
+            lua_pushnumber( L, Args.position.fY );
+
+            pGUIElement->CallEvent( "onClientGUIMouseDown", L, 3 );
         }
     }
 
@@ -4695,15 +4728,15 @@ bool CClientGame::OnMouseButtonUp ( CGUIMouseEventArgs Args )
 
     if ( szButton )
     {
-        CLuaArguments Arguments;
-        Arguments.PushString ( szButton );
-        Arguments.PushNumber ( Args.position.fX );
-        Arguments.PushNumber ( Args.position.fY );
-
         CClientGUIElement * pGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pWindow );
         if ( GetGUIManager ()->Exists ( pGUIElement ) )
         {
-            pGUIElement->CallEvent ( "onClientGUIMouseUp", Arguments, true );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            lua_pushstring( L, szButton );
+            lua_pushnumber( L, Args.position.fX );
+            lua_pushnumber( L, Args.position.fY );
+
+            pGUIElement->CallEvent( "onClientGUIMouseUp", L, 3 );
         }
     }
 
@@ -4712,44 +4745,53 @@ bool CClientGame::OnMouseButtonUp ( CGUIMouseEventArgs Args )
 
 bool CClientGame::OnMouseMove ( CGUIMouseEventArgs Args )
 {
-    if ( !Args.pWindow ) return false;
-
-    CLuaArguments Arguments;
-    Arguments.PushNumber ( Args.position.fX );
-    Arguments.PushNumber ( Args.position.fY );
+    if ( !Args.pWindow )
+        return false;
 
     CClientGUIElement * pGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pWindow );
-    if ( GetGUIManager ()->Exists ( pGUIElement ) ) pGUIElement->CallEvent ( "onClientMouseMove", Arguments, true );
+    if ( GetGUIManager ()->Exists ( pGUIElement ) )
+    {
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        lua_pushnumber( L, Args.position.fX );
+        lua_pushnumber( L, Args.position.fY );
+
+        pGUIElement->CallEvent( "onClientMouseMove", L, 2 );
+    }
 
     return true;
 }
-
 
 bool CClientGame::OnMouseEnter ( CGUIMouseEventArgs Args )
 {
     if ( !Args.pWindow ) return false;
 
-    CLuaArguments Arguments;
-    Arguments.PushNumber ( Args.position.fX );
-    Arguments.PushNumber ( Args.position.fY );
-
     CClientGUIElement * pGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pWindow );
-    if ( GetGUIManager ()->Exists ( pGUIElement ) ) pGUIElement->CallEvent ( "onClientMouseEnter", Arguments, true );
+    if ( GetGUIManager ()->Exists ( pGUIElement ) )
+    {
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        lua_pushnumber( L, Args.position.fX );
+        lua_pushnumber( L, Args.position.fY );
+
+        pGUIElement->CallEvent( "onClientMouseEnter", L, 2 );
+    }
 
     return true;
 }
 
-
 bool CClientGame::OnMouseLeave ( CGUIMouseEventArgs Args )
 {
-    if ( !Args.pWindow ) return false;
-
-    CLuaArguments Arguments;
-    Arguments.PushNumber ( Args.position.fX );
-    Arguments.PushNumber ( Args.position.fY );
+    if ( !Args.pWindow )
+        return false;
 
     CClientGUIElement * pGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pWindow );
-    if ( GetGUIManager ()->Exists ( pGUIElement ) ) pGUIElement->CallEvent ( "onClientMouseLeave", Arguments, true );
+    if ( GetGUIManager ()->Exists ( pGUIElement ) )
+    {
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        lua_pushnumber( L, Args.position.fX );
+        lua_pushnumber( L, Args.position.fY );
+
+        pGUIElement->CallEvent( "onClientMouseLeave", L, 2 );
+    }
 
     return true;
 }
@@ -4759,11 +4801,14 @@ bool CClientGame::OnMouseWheel ( CGUIMouseEventArgs Args )
 {
     if ( !Args.pWindow ) return false;
 
-    CLuaArguments Arguments;
-    Arguments.PushNumber ( Args.wheelChange );
-
     CClientGUIElement * pGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pWindow );
-    if ( GetGUIManager ()->Exists ( pGUIElement ) ) pGUIElement->CallEvent ( "onClientMouseWheel", Arguments, true );
+    if ( GetGUIManager ()->Exists ( pGUIElement ) )
+    {
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        lua_pushnumber( L, Args.wheelChange );
+
+        pGUIElement->CallEvent( "onClientMouseWheel", L, 1 );
+    }
 
     return true;
 }
@@ -4771,12 +4816,16 @@ bool CClientGame::OnMouseWheel ( CGUIMouseEventArgs Args )
 
 bool CClientGame::OnMove ( CGUIElement * pElement )
 {
-    if ( !pElement ) return false;
-
-    CLuaArguments Arguments;
+    if ( !pElement )
+        return false;
 
     CClientGUIElement * pGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( pElement );
-    if ( pGUIElement && GetGUIManager()->Exists ( pGUIElement ) ) pGUIElement->CallEvent ( "onClientGUIMove", Arguments, true );
+    if ( pGUIElement && GetGUIManager()->Exists ( pGUIElement ) )
+    {
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+        pGUIElement->CallEvent( "onClientGUIMove", L, 0, true );
+    }
 
     return true;
 }
@@ -4786,10 +4835,13 @@ bool CClientGame::OnSize ( CGUIElement * pElement )
 {
     if ( !pElement ) return false;
 
-    CLuaArguments Arguments;
-
     CClientGUIElement * pGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( pElement );
-    if ( GetGUIManager ()->Exists ( pGUIElement ) ) pGUIElement->CallEvent ( "onClientGUISize", Arguments, true );
+    if ( GetGUIManager ()->Exists ( pGUIElement ) )
+    {
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+        pGUIElement->CallEvent( "onClientGUISize", L, 0 );
+    }
 
     return true;
 }
@@ -4798,26 +4850,28 @@ bool CClientGame::OnFocusGain ( CGUIFocusEventArgs Args )
 {
     if ( !Args.pActivatedWindow ) return false;
 
-    CLuaArguments Arguments;
-
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
     CClientGUIElement * pActivatedGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pActivatedWindow );
     
     if ( Args.pDeactivatedWindow )
     {
         CClientGUIElement * pDeactivatedGUIElement = pDeactivatedGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pDeactivatedWindow );
-        if ( GetGUIManager ()->Exists ( pDeactivatedGUIElement ) ) pDeactivatedGUIElement->CallEvent ( "onClientGUIBlur", Arguments, true );
+        if ( GetGUIManager ()->Exists ( pDeactivatedGUIElement ) )
+        {
+            pDeactivatedGUIElement->CallEvent( "onClientGUIBlur", L, 0, true );
+        }
     }
 
-    if ( GetGUIManager ()->Exists ( pActivatedGUIElement ) ) pActivatedGUIElement->CallEvent ( "onClientGUIFocus", Arguments, true );
+    if ( GetGUIManager ()->Exists ( pActivatedGUIElement ) )
+        pActivatedGUIElement->CallEvent( "onClientGUIFocus", L, 0, true );
 
     return true;
 }
 
 bool CClientGame::OnFocusLoss ( CGUIFocusEventArgs Args )
 {
-    if ( !Args.pDeactivatedWindow ) return false;
-
-    CLuaArguments Arguments;
+    if ( !Args.pDeactivatedWindow )
+        return false;
 
     if ( Args.pActivatedWindow )
     {
@@ -4826,7 +4880,12 @@ bool CClientGame::OnFocusLoss ( CGUIFocusEventArgs Args )
     }
     
     CClientGUIElement * pDeactivatedGUIElement = CGUI_GET_CCLIENTGUIELEMENT ( Args.pDeactivatedWindow );
-    if ( GetGUIManager ()->Exists ( pDeactivatedGUIElement ) ) pDeactivatedGUIElement->CallEvent ( "onClientGUIBlur", Arguments, true );
+    if ( GetGUIManager ()->Exists ( pDeactivatedGUIElement ) )
+    {
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+        pDeactivatedGUIElement->CallEvent( "onClientGUIBlur", L, 0 );
+    }
 
     return true;
 }

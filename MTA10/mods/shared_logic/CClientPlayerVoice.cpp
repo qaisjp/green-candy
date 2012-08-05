@@ -280,12 +280,14 @@ void CClientPlayerVoice::ReceiveFrame( void* outputBuffer )
 void CClientPlayerVoice::DecodeAndBuffer(char* pBuffer, unsigned int bytesWritten )
 {
     m_CS.Lock ();
-    CLuaArguments Arguments;
+
     if ( !m_bVoiceActive )
     {
         m_CS.Unlock ();
-        ServiceEventQueue ();
-        if ( !m_pPlayer->CallEvent ( "onClientPlayerVoiceStart", Arguments, true ) )
+        
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+        if ( !m_pPlayer->CallEvent( "onClientPlayerVoiceStart", L, 0 ) )
             return;
 
         m_CS.Lock ();
@@ -349,8 +351,8 @@ void CClientPlayerVoice::ServiceEventQueue ( void )
 
         m_CS.Unlock ();
 
-        CLuaArguments Arguments;
-        m_pPlayer->CallEvent ( strEvent, Arguments, true );
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        m_pPlayer->CallEvent( strEvent, L, 0 );
 
         m_CS.Lock ();
     }
