@@ -127,10 +127,10 @@ namespace CLuaFunctionDefs
             // Output it
             switch( level )
             {
-            case 1:     m_pScriptDebugging->LogError( "%s", output ); break;
-            case 2:     m_pScriptDebugging->LogWarning( "%s", output ); break;
-            case 3:     m_pScriptDebugging->LogInformation( "%s", output ); break;
-            case 0:     m_pScriptDebugging->LogCustom( r, g, b, "%s", output ); break;
+            case 1:     m_pScriptDebugging->LogError( "%s", output.c_str() ); break;
+            case 2:     m_pScriptDebugging->LogWarning( "%s", output.c_str() ); break;
+            case 3:     m_pScriptDebugging->LogInformation( "%s", output.c_str() ); break;
+            case 0:     m_pScriptDebugging->LogCustom( r, g, b, "%s", output.c_str() ); break;
             default:
                 m_pScriptDebugging->LogWarning( "Bad level argument sent to outputDebugString (0-3)" );
 

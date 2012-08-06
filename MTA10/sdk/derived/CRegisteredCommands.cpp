@@ -28,9 +28,9 @@ CCommand::~CCommand()
 {
 }
 
-bool CCommand::Execute( const std::vector <std::string>& args )
+bool CCommand::Execute( std::vector <std::string>& args )
 {
-    lua_pushlstring( **lua, key.c_str(), key.size() );
+    args.push_back( key );
     return Command::Execute( args );
 }
 

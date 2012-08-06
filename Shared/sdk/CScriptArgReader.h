@@ -198,14 +198,12 @@ public:
     template <class stringType>
     bool ReadString( stringType& outValue, const char* defaultValue = NULL )
     {
-        int iArgument = lua_type ( m_luaVM, m_iIndex );
-        if ( iArgument == LUA_TSTRING || iArgument == LUA_TNUMBER )
+        if ( lua_isstring( m_luaVM, m_iIndex ) )
         {
             outValue = lua_tostring ( m_luaVM, m_iIndex++ );
             return true;
         }
-        else
-        if ( iArgument == LUA_TNONE || iArgument == LUA_TNIL || m_bIgnoreMismatchMatch )
+        else if ( lua_isnil( m_luaVM, m_iIndex ) || m_bIgnoreMismatchMatch )
         {
             if ( defaultValue )
             {

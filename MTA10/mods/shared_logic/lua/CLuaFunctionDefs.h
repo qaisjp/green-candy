@@ -75,6 +75,7 @@ namespace CLuaFunctionDefs
     // Output functions
     LUA_DECLARE( outputConsole );
     LUA_DECLARE( outputChatBox );
+    LUA_DECLARE( outputDebugString );
     LUA_DECLARE( showChat );
     LUA_DECLARE( setClipboard );
     LUA_DECLARE( getClipboard );
@@ -478,6 +479,9 @@ namespace CLuaFunctionDefs
 
     // Pfft utils
     LUA_DECLARE( tocolor );
+    LUA_DECLARE( getColorFromString );
+    LUA_DECLARE( gettok );
+    LUA_DECLARE( split );
     
     // gui funcs
     LUA_DECLARE( guiGetInputEnabled );
@@ -498,6 +502,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( guiCreateGridList );
     LUA_DECLARE( guiCreateScrollBar );
     LUA_DECLARE( guiCreateScrollPane );
+    LUA_DECLARE( guiCreateStaticImage );
     LUA_DECLARE( guiCreateTabPanel );
     LUA_DECLARE( guiCreateTab );
     LUA_DECLARE( guiCreateProgressBar );
@@ -537,6 +542,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( guiScrollPaneGetHorizontalScrollPosition );
     LUA_DECLARE( guiScrollPaneSetVerticalScrollPosition );
     LUA_DECLARE( guiScrollPaneGetVerticalScrollPosition );
+    LUA_DECLARE( guiStaticImageLoadImage );
     LUA_DECLARE( guiSetEnabled );
     LUA_DECLARE( guiSetText );
     LUA_DECLARE( guiSetFont );

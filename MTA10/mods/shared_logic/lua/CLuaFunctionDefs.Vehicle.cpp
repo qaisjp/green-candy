@@ -904,7 +904,7 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber( model );
         argStream.ReadVector( pos );
         argStream.ReadVector( rotation, rotation );
-        argStream.ReadString( regPlate, NULL );
+        argStream.ReadString( regPlate, "" );
 
         // Verify the parameters
         if ( !argStream.HasErrors() )

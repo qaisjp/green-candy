@@ -69,9 +69,9 @@ private:
 
     void                                    UpdateLimitInfo             ( void );
 
-    static int                              m_iEntryInfoNodeEntries;
-    static int                              m_iPointerNodeSingleLinkEntries;
-    static int                              m_iPointerNodeDoubleLinkEntries;
+    static unsigned int                     m_iEntryInfoNodeEntries;
+    static unsigned int                     m_iPointerNodeSingleLinkEntries;
+    static unsigned int                     m_iPointerNodeDoubleLinkEntries;
 
     class CClientManager*                   m_pManager;
     bool                                    m_bCanRemoveFromList;

@@ -72,9 +72,8 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
 CResource::~CResource()
 {
     // Notify the environment that we quit.
-    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
-    PushStack( L );
-    m_resourceEntity->CallEvent( "onClientResourceStop", L, 1, true );
+    PushStack( *m_lua );
+    m_resourceEntity->CallEvent( "onClientResourceStop", *m_lua, 1, true );
 
     // Make sure we don't force the cursor on
     ShowCursor( false );
