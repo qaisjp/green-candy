@@ -334,8 +334,7 @@ namespace CLuaFunctionDefs
                 {
                     CClientTexture* pTexture = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateTexture ( strPath.c_str(), *pParentResource->GetResourceDynamicEntity() );
 
-                    // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
-                    pTexture->SetParent ( pParentResource->GetResourceDynamicEntity () );
+                    // ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
 
                     pTexture->PushStack( L );
                     return 1;
@@ -379,8 +378,7 @@ namespace CLuaFunctionDefs
                     CClientShader* pShader = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateShader ( strPath, strRootPath, strStatus, bDebug, *pParentResource->GetResourceDynamicEntity() );
                     if ( pShader )
                     {
-                        // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
-                        pShader->SetParent ( pParentResource->GetResourceDynamicEntity () );
+                        // ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
                         pShader->PushStack( L );
                         lua_pushstring ( L, strStatus );    // String containing name of technique being used.
                         return 2;
@@ -428,8 +426,7 @@ namespace CLuaFunctionDefs
             {
                 pRenderTarget->PushStack( L );
 
-                // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
-                pRenderTarget->SetParent ( pParentResource->GetResourceDynamicEntity () );
+                // ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
             }
             return 1;
         }
@@ -460,8 +457,7 @@ namespace CLuaFunctionDefs
             {
                 pScreenSource->PushStack( L );
 
-                // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
-                pScreenSource->SetParent ( pParentResource->GetResourceDynamicEntity () );
+                // ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
             }
             return 1;
         }
@@ -647,8 +643,7 @@ namespace CLuaFunctionDefs
                     {
                         pDxFont->PushStack( L );
 
-                        // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
-                        pDxFont->SetParent ( pParentResource->GetResourceDynamicEntity () );
+                        // ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
                     }
                     return 1;
                 }

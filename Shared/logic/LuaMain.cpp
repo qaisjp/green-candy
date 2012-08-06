@@ -94,7 +94,7 @@ void LuaMain::Dereference( const LuaFunctionRef& ref )
         // Remove on last unuse
         lua_unref( m_lua, iref->idx );
 
-        MapRemove( m_refStore, iref );
+        MapRemove( m_refStore, ref.m_call );
         MapRemove( m_tagStore, ref.m_ref );
     }
 }
@@ -104,7 +104,10 @@ void LuaMain::PushReference( const LuaFunctionRef& ref )
     CRefInfo *iref = MapFind( m_refStore, ref.m_call );
 
     if ( !iref )
+    {
+        lua_pushnil( m_lua );
         return;
+    }
 
     m_system.PushReference( m_lua, ref );
 }

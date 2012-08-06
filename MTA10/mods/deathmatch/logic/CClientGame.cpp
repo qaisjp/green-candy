@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CClientGame.cpp
 *  PURPOSE:     Client game manager
@@ -17,6 +17,7 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
 *               Cazomino05 <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -3253,9 +3254,6 @@ void CClientGame::Event_OnIngame ( void )
     m_pLocalPlayer = new CClientPlayer ( m_pManager, m_LocalID, true );
     if ( m_pLocalPlayer )
     {
-        // Set our parent the root entity
-        m_pLocalPlayer->SetParent ( m_pRootEntity );
-
         // Give the local player our nickname
         m_pLocalPlayer->SetNick ( m_szLocalNick );
 
@@ -3413,9 +3411,6 @@ void CClientGame::ProjectileInitiateHandler ( CClientProjectile * pProjectile )
         pProjectile->SetInterior ( pProjectile->GetCreator()->GetInterior() );
         pProjectile->SetDimension ( pProjectile->GetCreator()->GetDimension() );
     }
-
-    // Validate the projectile for our element tree
-    pProjectile->SetParent ( m_pRootEntity );
 
     // Call our creation event
     lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
@@ -4164,7 +4159,7 @@ void CClientGame::Event_OnTransferComplete ( void )
     if ( m_bTransferResource )  /*** in-game transfer ***/
     {
         // Load our ("unavailable"-flagged) resources, and make them available
-        m_pResourceManager->LoadUnavailableResources ( m_pRootEntity );
+        m_pResourceManager->LoadUnavailableResources();
 
         // Disable m_bTransferResource (and hide the transfer box), if there are no more files in the autopatch query (to prevent "simulatenous" transfer fuck-ups)
         if ( !g_pNet->GetHTTPDownloadManager ()->IsDownloading () )

@@ -44,7 +44,7 @@ public:
                                 CResource( unsigned short id, const filePath& name, CFileTranslator& root, CClientEntity *entity, CClientEntity *dynamicEntity );
                                 ~CResource();
 
-    void                        Load( CClientEntity *root );
+    void                        Load();
 
     bool                        InDownloadQueue()                                   { return m_inDownQueue; };
     bool                        SetInDownloadQueue( bool in )                       { m_inDownQueue = in; };

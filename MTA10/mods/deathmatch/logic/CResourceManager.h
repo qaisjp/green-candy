@@ -34,7 +34,7 @@ public:
     void                    Remove( unsigned short id )                     { return ResourceManager::Remove( id ); }
     void                    StopAll();
 
-    void                    LoadUnavailableResources( CClientEntity *root );
+    void                    LoadUnavailableResources();
 
     bool                    ParseResourcePath( Resource*& res, const char *path, std::string& meta );
     CFile*                  OpenStream( Resource *res, const char *path, const char *mode );

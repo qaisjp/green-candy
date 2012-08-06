@@ -143,8 +143,6 @@ public:
 
     virtual bool                                CanBeDeleted()                                  { return true; };
 
-    static inline int                           GetInstanceCount()                              { return iCount; };
-
     virtual eClientEntityType                   GetType() const = 0;
     inline bool                                 IsLocalEntity() const                           { return m_ID >= MAX_SERVER_ELEMENTS; };
 
@@ -339,11 +337,8 @@ protected:
     bool                                        m_bDoubleSided;
     bool                                        m_bDoubleSidedInit;
 
-private:
-    static int                                  iCount;
-
-    // Optimization for getElementsByType starting at root
 public:
+    // Optimization for getElementsByType starting at root
     static void                     StartupEntitiesFromRoot();
 
 private:

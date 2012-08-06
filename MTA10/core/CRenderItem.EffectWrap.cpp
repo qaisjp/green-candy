@@ -515,7 +515,7 @@ public:
         filePath path;
 
         // We need a static path
-        if ( !mtaFileRoot->GetFullPath( pFileName, true, path ) )
+        if ( !modFileRoot->GetRelativePath( pFileName, true, path ) )
         {
             SString msg( "[CIncludeManager: Invalid path '%s'", pFileName );
             m_strReport += msg;
@@ -526,7 +526,7 @@ public:
         // Load file
         std::vector <char> buffer;
 
-        if ( !mtaFileRoot->ReadToBuffer( pFileName, buffer ) )
+        if ( !modFileRoot->ReadToBuffer( *path, buffer ) )
         {
             SString strMsg ( "[CIncludeManager: Can't find %s]", *path );
             m_strReport += strMsg;
@@ -659,7 +659,7 @@ void CEffectWrapImpl::CreateUnderlyingData ( const SString& strFilename, const S
     SString strMetaPath = strFilename.Right ( strFilename.length () - strRootPath.length () );
     CIncludeManager IncludeManager ( strRootPath, ExtractPath ( strMetaPath ) );
     LPD3DXBUFFER pBufferErrors = NULL;
-    HRESULT hr = D3DXCreateEffectFromFile( m_pDevice, strRootPath.c_str(), NULL, &IncludeManager, dwFlags, NULL, &m_pD3DEffect, &pBufferErrors );            
+    HRESULT hr = D3DXCreateEffectFromFile( m_pDevice, strFilename.c_str(), NULL, &IncludeManager, dwFlags, NULL, &m_pD3DEffect, &pBufferErrors );            
 
     // Handle compile errors
     strOutStatus = "";

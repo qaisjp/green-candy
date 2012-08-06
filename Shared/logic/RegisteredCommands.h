@@ -17,12 +17,14 @@ class LuaMain;
 class LuaManager;
 class RegisteredCommands;
 
-class Command : public LuaClass
+class Command : public LuaElement
 {
 public:
-    Command( lua_State *L, RegisteredCommands& cmds, int ridx ) : manager( cmds ), LuaClass( L, ridx )
+    Command( RegisteredCommands& cmds, LuaClass& root ) : manager( cmds ), LuaElement( root )
     {
     }
+
+    ~Command();
 
     virtual bool Execute( std::vector <std::string>& args );
 

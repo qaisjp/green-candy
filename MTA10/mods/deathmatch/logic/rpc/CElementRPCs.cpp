@@ -37,7 +37,6 @@ void CElementRPCs::LoadFunctions ( void )
     AddHandler ( SET_ELEMENT_FROZEN,             SetElementFrozen,            "SetElementFrozen" );
 }
 
-
 void CElementRPCs::SetElementParent ( CClientEntity* pSource, NetBitStreamInterface& bitStream )
 {
     // Read out the entity id and parent id
@@ -49,17 +48,8 @@ void CElementRPCs::SetElementParent ( CClientEntity* pSource, NetBitStreamInterf
         {
             pSource->SetParent ( pParent );
         }
-        else
-        {
-            // TODO: raise an error
-        }
-    }
-    else
-    {
-        // TODO: raise an error
     }
 }
-
 
 void CElementRPCs::SetElementData ( CClientEntity* pSource, NetBitStreamInterface& bitStream )
 {

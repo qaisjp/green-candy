@@ -2680,8 +2680,7 @@ namespace CLuaFunctionDefs
                     CClientGuiFont* pGuiFont = g_pClientGame->GetManager ()->GetRenderElementManager ()->CreateGuiFont ( strPath.c_str(), strUniqueName, iSize, *pParentResource->GetResourceDynamicEntity() );
                     if ( pGuiFont )
                     {
-                        // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
-                        pGuiFont->SetParent ( pParentResource->GetResourceDynamicEntity () );
+                        // ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
                     }
                     pGuiFont->PushStack( L );
                     return 1;

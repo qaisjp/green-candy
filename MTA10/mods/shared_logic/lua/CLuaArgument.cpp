@@ -84,29 +84,33 @@ bool CLuaArgument::WriteToBitStream( NetBitStreamInterface& stream ) const
     {
     // Element packet
     case LUA_TLIGHTUSERDATA:
-        CClientEntity *element = (CClientEntity*)m_lightUD;
-
-        if ( !element )
         {
-            // Write a nil though so other side won't get out of sync
-            type.data.ucType = LUA_TNIL;
-            stream.Write( &type );
-            return false;
-        }
+            CClientEntity *element = (CClientEntity*)m_lightUD;
 
-        // Clientside element?
-        if ( element->IsLocalEntity() )
-        {
-            // Write a nil though so other side won't get out of sync
-            type.data.ucType = LUA_TNIL;
-            stream.Write( &type );
-            return false;
-        }
+            if ( !element )
+            {
+                // Write a nil though so other side won't get out of sync
+                type.data.ucType = LUA_TNIL;
+                stream.Write( &type );
+                return false;
+            }
 
-        type.data.ucType = LUA_TLIGHTUSERDATA;
-        stream.Write( &type );
-        stream.Write( element->GetID() );
+            // Clientside element?
+            if ( element->IsLocalEntity() )
+            {
+                // Write a nil though so other side won't get out of sync
+                type.data.ucType = LUA_TNIL;
+                stream.Write( &type );
+                return false;
+            }
+
+            type.data.ucType = LUA_TLIGHTUSERDATA;
+            stream.Write( &type );
+            stream.Write( element->GetID() );
+        }
         return true;
+    case LUA_TCLASS:
+        assert( 0 );
     }
 
     return LuaArgument::WriteToBitStream( stream );

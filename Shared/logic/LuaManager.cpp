@@ -62,9 +62,6 @@ static int lua_popstackthread( lua_State *lua )
     return 0;
 }
 
-#define lua_getglobalproxy( L ) (lua_rawseti( L, LUA_REGISTRYINDEX, 2 ))
-#define lua_getaccessinterface( L ) (lua_rawseti( L, LUA_REGISTRYINDEX, 3))
-
 static void InstructionCountHook( lua_State *lua, lua_Debug *debug )
 {
     lua_readmanager( lua )->InstructionCountHook( lua, debug );
@@ -230,7 +227,7 @@ void LuaManager::CallStackResult( int argc, LuaArguments& args )
 static inline bool lua_protectedcall( LuaManager& man, lua_State *L, int argc, int retc )
 {
     if ( lua_type( L, -argc - 1 ) != LUA_TFUNCTION )
-        throw lua_exception( L, LUA_ERRSYNTAX, "expected function at LuaManager::CallStack!" );
+        throw lua_exception( L, LUA_ERRSYNTAX, "expected function at LuaManager::CallStack" );
 
     lua_Debug debug;
 
@@ -293,7 +290,8 @@ static int luamain_index( lua_State *lua )
 // ARGS: table, key
 int LuaManager::AccessGlobal()
 {
-    lua_getaccessinterface( m_lua );
+    assert( 0 );
+
     lua_pushvalue( m_lua, -2 );
     lua_gettable( m_lua, -2 );
 
