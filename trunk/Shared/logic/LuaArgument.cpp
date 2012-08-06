@@ -254,6 +254,17 @@ void LuaArgument::Read( lua_State *lua, int idx )
         ReadUserData( lua_touserdata( lua, idx ) );
         return;
 
+    case LUA_TCLASS:
+        {
+            LuaElement *elem = lua_readclass <LuaElement> ( lua, idx, LUACLASS_ELEMENT );
+
+            if ( elem )
+                ReadUserData( elem );
+            else
+                Read( false );
+        }
+        return;
+
     case LUA_TNUMBER:
         Read( lua_tonumber( lua, idx ) );
         return;

@@ -26,7 +26,7 @@ extern CClientGame* g_pClientGame;
 
 static int entity_isValidChild( lua_State *L )
 {
-    lua_pushboolean( L, lua_type( L, 1 ) == LUA_TCLASS && lua_refclass( L, 1 )->IsTransmit( LUACLASS_ENTITY ) );
+    lua_pushboolean( L, lua_type( L, 1 ) == LUA_TCLASS && lua_refclass( L, 1 )->IsTransmit( LUACLASS_ELEMENT ) );
     return 1;
 }
 

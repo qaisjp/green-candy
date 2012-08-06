@@ -64,14 +64,14 @@ CResource* CResourceManager::Add( unsigned short id, const char *name, CClientEn
     return res;
 }
 
-void CResourceManager::LoadUnavailableResources( CClientEntity *root )
+void CResourceManager::LoadUnavailableResources()
 {
     resourceList_t::const_iterator iter = m_resources.begin();
 
     for ( ; iter != m_resources.end(); iter++ )
     {
         if ( !( (*iter)->GetActive() ) )
-            ((CResource*)*iter)->Load( root );
+            ((CResource*)*iter)->Load();
     }
 }
 

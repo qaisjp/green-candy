@@ -22,12 +22,6 @@
 
 //#pragma message(__LOC__"Use RTTI/dynamic_casting here for safety?")
 
-
-static inline CLuaMain& lua_readcontext( lua_State *L )
-{
-    return *lua_readuserdata <CLuaMain, LUA_REGISTRYINDEX, 2> ( L );
-}
-
 CXMLNode* lua_toxmlnode( lua_State *L, int arg )
 {
     return g_pCore->GetXML()->GetNodeFromID( (unsigned long)lua_touserdata( L, arg ) );

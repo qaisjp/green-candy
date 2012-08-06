@@ -36,7 +36,7 @@ bool CMapEventManager::Add( CLuaMain *main, const char *name, const LuaFunctionR
         return false;
 
     // Make a new event
-    CMapEvent *pEvent = new CMapEvent( *resMan, main, *this, name, ref, propagated );
+    CMapEvent *pEvent = new CMapEvent( *main->GetResource(), main, *this, name, ref, propagated );
     m_Events.push_back( pEvent );
     return true;
 }
@@ -138,8 +138,8 @@ bool CMapEventManager::Call( lua_State *callee, unsigned int argCount, const cha
                 // Init globals
                 source->PushStack( L );                                                             lua_setglobal( L, "source" );
                 m_owner->PushStack( L );                                                            lua_setglobal( L, "this" );
-                pMapEvent->GetVM()->GetResource()->PushStack( L );                                  lua_setglobal( L, "sourceResource" );
-                pMapEvent->GetVM()->GetResource()->GetResourceDynamicEntity()->PushStack( L );      lua_setglobal( L, "sourceResourceRoot" );
+                main->GetResource()->PushStack( L );                                                lua_setglobal( L, "sourceResource" );
+                main->GetResource()->GetResourceDynamicEntity()->PushStack( L );                    lua_setglobal( L, "sourceResourceRoot" );
                 lua_pushstring( L, name );                                                          lua_setglobal( L, "eventName" );
 
                 // Reference it to prevent destruction

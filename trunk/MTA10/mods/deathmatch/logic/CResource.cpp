@@ -49,6 +49,14 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
     m_dffEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot", *m_dynamicEntity, true );
     m_txdEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot", *m_dynamicEntity, true );
 
+    // Register them to our resource
+    PushEnvironment( L );
+    m_guiEntity->PushStack( L ); lua_setfield( L, -2, "guiRoot" );
+    m_colEntity->PushStack( L ); lua_setfield( L, -2, "colRoot" );
+    m_dffEntity->PushStack( L ); lua_setfield( L, -2, "dffRoot" );
+    m_txdEntity->PushStack( L ); lua_setfield( L, -2, "txdRoot" );
+    lua_pop( L, 1 );
+
     // Reference the entities so nothing can destroy them
     m_guiEntity->IncrementMethodStack();
     m_colEntity->IncrementMethodStack();
@@ -272,16 +280,8 @@ static bool CheckFileForCorruption( std::string strPath )
     return bIsBad;
 }
 
-void CResource::Load( CClientEntity *root )
+void CResource::Load()
 {
-    m_rootEntity = root;
-
-    // Set the GUI parent to the resource root entity
-    m_colEntity->SetParent( root );
-    m_dffEntity->SetParent( root );
-    m_guiEntity->SetParent( root );
-    m_txdEntity->SetParent( root );
-
     CLogger::LogPrintf( "> Starting resource '%s'\n", m_name.c_str() );
 
     configList_t::iterator iterc = m_configFiles.begin();

@@ -47,6 +47,11 @@ public:
         m_class->PushMethod( L, name );
     }
 
+    inline void PushEnvironment( lua_State *L )
+    {
+        m_class->PushEnvironment( L );
+    }
+
     inline void Reference( lua_class_reference& ref )
     {
         PushStack( m_lua );

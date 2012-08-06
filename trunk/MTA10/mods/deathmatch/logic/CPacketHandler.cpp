@@ -672,7 +672,6 @@ void CPacketHandler::Packet_PlayerList ( NetBitStreamInterface& bitStream )
         {
             // Set its parent the root entity
             pPlayer->SetSyncTimeContext ( ucTimeContext );
-            pPlayer->SetParent ( g_pClientGame->m_pRootEntity );
 
             // Store the nick and if he's dead
             pPlayer->SetNick ( szNickBuffer );
@@ -3294,7 +3293,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     if ( bitStream.ReadBit ( bHasPosition ) && bHasPosition )
                         bitStream.Read ( &position );
 
-                    if (pDummy)
+                    if ( pDummy )
                     {
                         if ( bHasPosition )
                             pDummy->SetPosition ( position.data.vecPosition );
@@ -3498,7 +3497,19 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
         if ( TempParent != INVALID_ELEMENT_ID )
         {
             CClientEntity* pParent = CElementIDs::GetElement ( TempParent );
-            pTempEntity->SetParent ( pParent );
+
+            // Set the root to the map if it exists
+            CClientEntity *pTemp = pParent;
+            while ( pTemp )
+            {
+                const char *szTypeName = pTemp->GetTypeName();
+                if ( szTypeName && strcmp( szTypeName, "map" ) == 0 )
+                    pTempEntity->SetRoot( pTemp );
+
+                pTemp = pTemp->GetParent();
+            }
+
+            pTempEntity->SetParent( pParent );
         }
 
         if ( TempAttachedToID != INVALID_ELEMENT_ID && pTempEntity->GetType () != CCLIENTPLAYER )
@@ -4241,7 +4252,6 @@ void CPacketHandler::Packet_ResourceStart ( NetBitStreamInterface& bitStream )
     CResource* pResource = g_pClientGame->m_pResourceManager->Add ( usResourceID, szResourceName, pResourceEntity, pResourceDynamicEntity );
     if ( pResource )
     {
-
         // Resource Chunk Type (F = Resource File, E = Exported Function)
         unsigned char ucChunkType;
         // Resource Chunk Size
@@ -4343,8 +4353,7 @@ void CPacketHandler::Packet_ResourceStart ( NetBitStreamInterface& bitStream )
         }
 
         // Are there any resources to be downloaded? Does it not transfer?
-        if ( usResourcesToBeDownloaded > 0 ||
-             g_pClientGame->m_bTransferResource )
+        if ( usResourcesToBeDownloaded > 0 || g_pClientGame->m_bTransferResource )
         {
             if ( !pHTTP->IsDownloading () )
             {
@@ -4359,7 +4368,7 @@ void CPacketHandler::Packet_ResourceStart ( NetBitStreamInterface& bitStream )
         {
             // Load the resource now
             if ( !pResource->GetActive() )
-                pResource->Load ( g_pClientGame->m_pRootEntity );
+                pResource->Load();
         }
     }
 
@@ -4377,7 +4386,7 @@ void CPacketHandler::Packet_ResourceStop ( NetBitStreamInterface& bitStream )
         if ( pResource )
         {
             // Delete the resource
-            g_pClientGame->m_pResourceManager->Remove( usID );
+            pResource->Delete();
         }
     }
 }

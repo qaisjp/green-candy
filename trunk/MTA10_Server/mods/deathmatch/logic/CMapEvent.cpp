@@ -30,12 +30,3 @@ CMapEvent::CMapEvent( CLuaMain* pMain, const char* szName, const CLuaFunctionRef
 CMapEvent::~CMapEvent()
 {
 }
-
-void CMapEvent::Call( const CLuaArguments& Arguments )
-{
-    // Reference this event to prevent destruction
-    lua_class_reference ref;
-    Reference( ref );
-
-
-}

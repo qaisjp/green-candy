@@ -152,12 +152,6 @@ IMPLEMENT_ENUM_BEGIN( eDxTestMode )
     ADD_ENUM ( DX_TEST_MODE_NO_SHADER,      "no_shader" )
 IMPLEMENT_ENUM_END( "dx-test-mode" )
 
-
-static inline CLuaMain* lua_readcontext( lua_State *L )
-{
-    return lua_readuserdata <CLuaMain, LUA_REGISTRYINDEX, 2> ( L );
-}
-
 //
 // Reading mixed types
 //
@@ -202,7 +196,7 @@ bool MixedReadMaterialString ( CScriptArgReader& argStream, CClientMaterial*& pM
         argStream.ReadString ( strFilePath );
 
         // If no element, auto find/create one
-        CLuaMain* pLuaMain = lua_readcontext( argStream.m_luaVM );
+        CLuaMain* pLuaMain = lua_readuserdata <CLuaMain, LUA_STORAGEINDEX, 2> ( argStream.m_luaVM );
         CResource* pParentResource = pLuaMain ? pLuaMain->GetResource () : NULL;
         if ( pParentResource )
         {
@@ -214,12 +208,7 @@ bool MixedReadMaterialString ( CScriptArgReader& argStream, CClientMaterial*& pM
                 SString strUniqueName = SString ( "%s*%s*%s", pParentResource->GetName (), pFileResource->GetName (), meta ).Replace ( "\\", "/" );
                 pMaterialElement = g_pClientGame->GetManager ()->GetRenderElementManager ()->FindAutoTexture ( strPath.c_str(), strUniqueName, *pParentResource->GetResourceDynamicEntity() );
 
-                // Check if brand new
-                if ( pMaterialElement && !pMaterialElement->GetParent () )
-                {
-                    // Make it a child of the resource's file root ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
-                    pMaterialElement->SetParent ( pParentResource->GetResourceDynamicEntity() );
-                }
+                // ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
             }
         }
         return pMaterialElement != NULL;

@@ -12,19 +12,8 @@
 
 #include <StdInc.h>
 
-static LUA_DECLARE( luacmd_destroy )
-{
-    Command& cmd = *(Command*)lua_touserdata( L, lua_upvalueindex( 1 ) );
-    cmd.manager.m_commands.remove( &cmd );
-
-    delete &cmd;
-
-    return 0;
-}
-
 static const luaL_Reg cmdInterface[] =
 {
-    { "destroy", luacmd_destroy },
     { NULL, NULL }
 };
 
@@ -33,10 +22,20 @@ int RegisteredCommands::luaconstructor_command( lua_State *L )
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, cmdInterface, 1 );
+
+    lua_basicprotect( L );
+
+    lua_pushlstring( L, "command", 7 );
+    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;
 }
 
 typedef std::vector <std::string> argList_t;
+
+Command::~Command()
+{
+    manager.m_commands.remove( this );
+}
 
 bool Command::Execute( argList_t& args )
 {
