@@ -38,7 +38,7 @@ int RegisteredCommands::luaconstructor_command( lua_State *L )
 
 typedef std::vector <std::string> argList_t;
 
-bool Command::Execute( const argList_t& args )
+bool Command::Execute( argList_t& args )
 {
     lua_State *L = **lua;
 

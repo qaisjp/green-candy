@@ -21,7 +21,7 @@
 
 namespace CLuaFunctionDefs
 {
-    LUA_DECLARE( getTok )
+    LUA_DECLARE( gettok )
     {
         if ( ( lua_type ( L, 1 ) != LUA_TSTRING ) || ( lua_type ( L, 2 ) != LUA_TNUMBER ) || ( lua_type ( L, 3 ) != LUA_TNUMBER ) && ( lua_type ( L, 3 ) != LUA_TSTRING ) )
         {
@@ -159,33 +159,6 @@ namespace CLuaFunctionDefs
         // Make it black so funcs dont break
         unsigned long ulColor = COLOR_RGBA ( 0, 0, 0, 255 );
         lua_pushnumber ( L, static_cast < lua_Number > ( ulColor ) );
-        return 1;
-    }
-
-    LUA_DECLARE( reference )
-    {
-        int iArgument1 = lua_type ( L, 1 );
-        if ( iArgument1 == LUA_TTABLE || iArgument1 == LUA_TFUNCTION ||
-            iArgument1 == LUA_TUSERDATA || iArgument1 == LUA_TTHREAD ||
-            iArgument1 == LUA_TLIGHTUSERDATA )
-        {
-            int iPointer = lua_ref ( L, 1 );
-            lua_pushnumber ( L, iPointer );
-            return 1;
-        }
-        lua_pushboolean ( L, false );
-        return 1;
-    }
-
-    LUA_DECLARE( dereference )
-    {
-        if ( lua_type ( L, 1 ) == LUA_TNUMBER )
-        {
-            int iPointer = static_cast < int > ( lua_tonumber ( L, 1 ) );
-            lua_getref ( L, iPointer );
-            return 1;
-        }
-        lua_pushboolean ( L, false );
         return 1;
     }
 

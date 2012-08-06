@@ -68,6 +68,7 @@ static void LoadCFunctions( lua_State *L )
     // Output functions
     LUA_REGISTER( L, outputConsole );
     LUA_REGISTER( L, outputChatBox );
+    LUA_REGISTER( L, outputDebugString );
     LUA_REGISTER( L, showChat );
     LUA_REGISTER( L, setClipboard );
     LUA_REGISTER( L, getClipboard );
@@ -471,7 +472,10 @@ static void LoadCFunctions( lua_State *L )
 
     // Pfft utils
     LUA_REGISTER( L, tocolor );
-    
+    LUA_REGISTER( L, getColorFromString );
+    LUA_REGISTER( L, gettok );
+    LUA_REGISTER( L, split );
+
     // gui funcs
     LUA_REGISTER( L, guiGetInputEnabled );
     LUA_REGISTER( L, guiGetInputMode );
@@ -491,6 +495,7 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, guiCreateGridList );
     LUA_REGISTER( L, guiCreateScrollBar );
     LUA_REGISTER( L, guiCreateScrollPane );
+    LUA_REGISTER( L, guiCreateStaticImage );
     LUA_REGISTER( L, guiCreateTabPanel );
     LUA_REGISTER( L, guiCreateTab );
     LUA_REGISTER( L, guiCreateProgressBar );
@@ -530,6 +535,7 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, guiScrollPaneGetHorizontalScrollPosition );
     LUA_REGISTER( L, guiScrollPaneSetVerticalScrollPosition );
     LUA_REGISTER( L, guiScrollPaneGetVerticalScrollPosition );
+    LUA_REGISTER( L, guiStaticImageLoadImage );
     LUA_REGISTER( L, guiSetEnabled );
     LUA_REGISTER( L, guiSetText );
     LUA_REGISTER( L, guiSetFont );

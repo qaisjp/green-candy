@@ -91,9 +91,9 @@ static unsigned short g_usBreakableModelList[] = {
 };
 
 
-int CClientObjectManager::m_iEntryInfoNodeEntries = 0;
-int CClientObjectManager::m_iPointerNodeSingleLinkEntries = 0;
-int CClientObjectManager::m_iPointerNodeDoubleLinkEntries = 0;
+unsigned int CClientObjectManager::m_iEntryInfoNodeEntries = 0;
+unsigned int CClientObjectManager::m_iPointerNodeSingleLinkEntries = 0;
+unsigned int CClientObjectManager::m_iPointerNodeDoubleLinkEntries = 0;
 
 CClientObjectManager::CClientObjectManager ( CClientManager* pManager )
 {
@@ -231,42 +231,6 @@ bool CClientObjectManager::IsBreakableModel ( unsigned long ulObjectModel )
     return breakableModelMap.find ( (unsigned short)ulObjectModel ) != breakableModelMap.end ();
 }
 
-
-/*
-void CClientObjectManager::LoadObjectsAroundPoint ( const CVector& vecPosition, float fRadius )
-{
-    // Look for objects closer than that in our list
-    CClientObject* pObject;
-    CVector vecObjectPosition;
-    CBoundingBox* pBoundingBox = NULL;
-    list < CClientObject* > ::const_iterator iter = m_Objects.begin ();
-    for ( ; iter != m_Objects.end (); iter++ )
-    {
-        // Grab the object
-        pObject = *iter;
-
-        if ( pObject->GetDimension () == m_pManager->GetObjectStreamer ()->GetDimension () )
-        {
-            // Grab the object radius
-            float fObjectRadius = 0;
-            pBoundingBox = g_pGame->GetModelInfo ( pObject->GetModel () )->GetBoundingBox ();
-            if ( pBoundingBox )
-            {
-                fObjectRadius = pBoundingBox->fRadius;
-            }
-
-            // Is it close enough?
-            pObject->GetPosition ( vecObjectPosition );
-            if ( IsPointNearPoint3D ( vecObjectPosition, vecPosition, fRadius - fObjectRadius ) )
-            {
-                pObject->Create ();
-            }
-        }
-    }
-}
-*/
-
-
 bool CClientObjectManager::ObjectsAroundPointLoaded ( const CVector& vecPosition, float fRadius, unsigned short usDimension, SString* pstrStatus )
 {
     // Get list of objects that may be intersecting the sphere
@@ -349,7 +313,7 @@ bool CClientObjectManager::IsObjectLimitReached ( void )
 
     // Allow max 250 objects at once for now.
     // TODO: The real limit is up to 350 but we're limited by other limits.
-    return g_pGame->GetPools()->GetNumberOfUsedSpaces( OBJECT_POOL ) >= g_pGame->GetPools()->GetPoolCapacity( OBJECT_POOL );
+    return g_pGame->GetPools()->GetNumberOfUsedSpaces( OBJECT_POOL ) == g_pGame->GetPools()->GetPoolCapacity( OBJECT_POOL );
 }
 
 

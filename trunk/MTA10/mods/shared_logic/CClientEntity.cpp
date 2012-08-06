@@ -51,7 +51,7 @@ static int customdata_newindex( lua_State *L )
         throw lua_exception( L, LUA_ERRRUN, "customdata name too long" );
 
     lua_pushvalue( L, 2 );
-    lua_rawget( L, 1 );
+    lua_rawget( L, lua_upvalueindex( 1 ) );
 
     if ( !lua_equal( L, 3, 4 ) )
         return 0;
@@ -100,17 +100,8 @@ static int entity_constructor( lua_State *L )
     luaL_openlib( L, NULL, entity_interface, 1 );
 
     // Allocate customdata class
-    lua_newtable( L );
-    lua_newtable( L ); // metatable
-
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushcclosure( L, customdata_newindex, 1 );
-    lua_setfield( L, 4, "__newindex" );
-    
-    lua_pushboolean( L, false );
-    lua_setfield( L, 4, "__metatable" );
-    
-    lua_setmetatable( L, 3 );
+    lua_pushcclosure( L, customdata_constructor, 0 );
+    lua_newclass( L );
     lua_setfield( L, LUA_ENVIRONINDEX, "data" );
 
     lua_pushlstring( L, "entity", 6 );
@@ -333,7 +324,7 @@ bool CClientEntity::SetParent ( CClientEntity* pParent )
         pParent->PushStack( m_lua );
         lua_call( m_lua, 1, 1 );
 
-        bool rslt = lua_toboolean( m_lua, -1 );
+        bool rslt = lua_toboolean( m_lua, -1 ) == 1;
         lua_pop( m_lua, 1 );
 
         if ( !rslt )
@@ -464,7 +455,7 @@ bool CClientEntity::GetCustomDataInt ( const char* szName, int& iOut, bool bInhe
     PushCustomData( m_lua, szName, bInheritData );
 
     if ( success = ( lua_isnumber( m_lua, -1 ) == 1 ) )
-        iOut = lua_tonumber( m_lua, -1 );
+        iOut = (int)lua_tonumber( m_lua, -1 );
 
     lua_pop( m_lua, 1 );
     return success;
@@ -476,7 +467,7 @@ bool CClientEntity::GetCustomDataFloat ( const char* szName, float& fOut, bool b
     PushCustomData( m_lua, szName, bInheritData );
 
     if ( success = ( lua_isnumber( m_lua, -1 ) == 1 ) )
-        fOut = lua_tonumber( m_lua, -1 );
+        fOut = (float)lua_tonumber( m_lua, -1 );
 
     lua_pop( m_lua, 1 );
     return success;
@@ -495,7 +486,7 @@ bool CClientEntity::GetCustomDataBool ( const char* szName, bool& bOut, bool bIn
         bOut = lua_tonumber( m_lua, -1 ) != 0;
         break;
     case LUA_TBOOLEAN:
-        bOut = lua_toboolean( m_lua, -1 );
+        bOut = lua_toboolean( m_lua, -1 ) == 1;
         break;
     default:
         lua_pop( m_lua, 1 );
@@ -687,7 +678,7 @@ bool CClientEntity::CallEvent( const char *name, lua_State *callee, unsigned int
         CallEventNoParent( callee, argCount, name, this );
 
     // Remove the arguments from the stack
-    lua_pop( callee, argCount );
+    lua_pop( callee, (int)argCount );
 
     // Tell the event manager that we're done calling the event
     pEvents->PostPulse();

@@ -145,8 +145,10 @@ LUA_API void lua_xcopy( lua_State *from, lua_State *to, int n )
     api_check(from, G(from) == G(to));
     api_check(from, to->ci->top - to->top >= n);
 
+    StkId top = from->top - n;
+
     for ( i = 0; i < n; i++ )
-        setobj2s( to, to->top++, from->top + i );
+        setobj2s( to, to->top++, top + i );
 
     lua_unlock(to);
 }

@@ -1785,7 +1785,7 @@ void CPacketHandler::Packet_Vehicle_InOut ( NetBitStreamInterface& bitStream )
                                 pVehicle->PushStack( L );                   // vehicle
                                 lua_pushnumber( L, ucSeat );                // seat
                                 pInsidePlayer->PushStack( L );              // jacker
-                                pOutsidePlayer->CallEvent( "onClientPlayerVehicleExit", L, 2 );
+                                pOutsidePlayer->CallEvent( "onClientPlayerVehicleExit", L, 3 );
 
                                 pVehicle->PushStack( L );                   // vehicle
                                 lua_pushnumber( L, ucSeat );                // seat
