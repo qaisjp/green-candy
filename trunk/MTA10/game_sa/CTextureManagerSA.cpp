@@ -21,6 +21,10 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CTxdPool**   ppTxdPool = (CTxdPool**)0x00C8800C;
 
+// Events
+void _cdecl OnAddTxd( unsigned short id );
+void _cdecl OnRemoveTxd( unsigned short id );
+
 CTxdInstanceSA::CTxdInstanceSA( const char *name )
 {
     m_txd = NULL;
@@ -66,6 +70,8 @@ void CTxdInstanceSA::Allocate()
 
 void CTxdInstanceSA::Deallocate()
 {
+    OnRemoveTxd( (*ppTxdPool)->GetIndex( this ) );
+
     if ( m_txd )
     {
         m_txd->ForAllTextures( Txd_DeleteAll, 0 );
@@ -125,6 +131,8 @@ bool CTxdInstanceSA::LoadTXD( const char *filename )
 
 void CTxdInstanceSA::InitParent()
 {
+    OnAddTxd( (*ppTxdPool)->GetIndex( this ) );
+
     CTxdInstanceSA *parent = (*ppTxdPool)->Get( m_parentTxd );
 
     if ( !parent )
@@ -803,8 +811,6 @@ void _cdecl OnAddTxd( unsigned short id )
 // called from streaming on TXD create
 void __cdecl HOOK_CTxdStore_SetupTxdParent( unsigned short id )
 {
-    OnAddTxd( id );
-
     (*ppTxdPool)->Get( id )->InitParent();
 }
 
@@ -819,8 +825,6 @@ void _cdecl OnRemoveTxd( unsigned short id )
 // called from streaming on TXD destroy
 void __cdecl HOOK_CTxdStore_RemoveTxd( unsigned short id )
 {
-    OnRemoveTxd( id );
-
     (*ppTxdPool)->Get( id )->Deallocate();
 }
 
