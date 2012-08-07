@@ -348,9 +348,11 @@ void CStreamingSA::FreeModel( unsigned short id )
     }
     else if ( info->m_eLoading == MODEL_RELOAD )
     {
+        assert( 0 );
+        
         if ( id < DATA_TEXTURE_BLOCK )
             RwFlushLoader();
-        else if ( id < 25000 )
+        else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
             (*ppTxdPool)->Get( id - DATA_TEXTURE_BLOCK )->Deallocate();
         else if ( id < 25255 )
             ( (void (*)( unsigned int model ))0x00410730 )( id - 25000 );
