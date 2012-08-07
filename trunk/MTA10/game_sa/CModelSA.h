@@ -34,12 +34,7 @@ public:
 protected:
     RpClump*        m_clump;
 
-    struct import
-    {
-        RpClump *original;
-    };
-
-    typedef std::map <unsigned short, import> importMap_t;
+    typedef std::map <unsigned short, bool> importMap_t;
     importMap_t     m_imported;
 };
 

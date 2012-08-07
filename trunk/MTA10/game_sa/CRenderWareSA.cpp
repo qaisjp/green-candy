@@ -21,6 +21,7 @@
 /*****************************************************************************/
 
 // US Versions
+RwRenderSystemFigureAffairs_t           RwRenderSystemFigureAffairs             = (RwRenderSystemFigureAffairs_t)           0xDEAD;
 RwErrorGet_t                            RwErrorGet                              = (RwErrorGet_t)                            0xDEAD;
 RwAllocAligned_t                        RwAllocAligned                          = (RwAllocAligned_t)                        0xDEAD;
 RwFreeAligned_t                         RwFreeAligned                           = (RwFreeAligned_t)                         0xDEAD;
@@ -62,6 +63,7 @@ RpAtomicSetGeometry_t                   RpAtomicSetGeometry                     
 RpAtomicDestroy_t                       RpAtomicDestroy                         = (RpAtomicDestroy_t)                       0xDEAD;
 RwObjectFrameRender_t                   RwObjectFrameRender                     = (RwObjectFrameRender_t)                   0xDEAD;
 RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 0xDEAD;
+RwTexDictionaryFinalizer_t              RwTexDictionaryFinalizer                = (RwTexDictionaryFinalizer_t)              0xDEAD;
 RwTexDictionaryRegister_t               RwTexDictionaryRegister                 = (RwTexDictionaryRegister_t)               0xDEAD;
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             0xDEAD;
 RwTexDictionaryGetCurrent_t             RwTexDictionaryGetCurrent               = (RwTexDictionaryGetCurrent_t)             0xDEAD;
@@ -289,6 +291,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
     {
     // VERSION 1.0 EU ADDRESSES
     case VERSION_EU_10:
+        RwRenderSystemFigureAffairs         = (RwRenderSystemFigureAffairs_t)           0x007F2AF0;
         RwErrorGet                          = (RwErrorGet_t)                            0x008088C0;
         RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECF30;
         RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED310;
@@ -316,6 +319,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D90;
         RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749E10;
         RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
+        RwTexDictionaryFinalizer            = (RwTexDictionaryFinalizer_t)              0x007F3980;
         RwTexDictionaryRegister             = (RwTexDictionaryRegister_t)               0x00808720;
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70;
         RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3AD0;
@@ -371,9 +375,11 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
 
     // VERSION 1.0 US ADDRESSES
     case VERSION_US_10:
+        RwRenderSystemFigureAffairs         = (RwRenderSystemFigureAffairs_t)           0x007F2AB0;
         RwAllocAligned                      = (RwAllocAligned_t)                        0x0072F4C0;
         RwFreeAligned                       = (RwFreeAligned_t)                         0x0072F4F0;
         RwCreateExtension                   = (RwCreateExtension_t)                     0x007CCE80;
+        RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007EC9D0;
         RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED2D0;
         RwErrorGet                          = (RwErrorGet_t)                            0x00808880;
         RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECEF0;
@@ -408,6 +414,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749C50;
         RwObjectFrameRender                 = (RwObjectFrameRender_t)                   0x00805750;
         RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3600;
+        RwTexDictionaryFinalizer            = (RwTexDictionaryFinalizer_t)              0x008089C0;
         RwTexDictionaryRegister             = (RwTexDictionaryRegister_t)               0x008086E0;
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C30;
         RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3A90;

@@ -485,7 +485,7 @@ public:
 
     unsigned char               m_specialColModel;                      // 1163
     CEntitySAInterface*         m_entityVisibilityCheck;                // 1164
-    CFire*                      m_fire;                                 // 1168
+    CFireSAInterface*           m_fire;                                 // 1168
 
     float                       m_steerAngle;                           // 1172
     float                       m_secondarySteerAngle;                  // 1176, used for steering 2nd set of wheels or elevators etc..

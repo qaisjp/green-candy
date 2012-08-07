@@ -21,6 +21,8 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CTxdPool**   ppTxdPool = (CTxdPool**)0x00C8800C;
 
+dictImportList_t    g_dictImports[MAX_TXD];
+
 // Events
 void _cdecl OnAddTxd( unsigned short id );
 void _cdecl OnRemoveTxd( unsigned short id );
@@ -70,7 +72,15 @@ void CTxdInstanceSA::Allocate()
 
 void CTxdInstanceSA::Deallocate()
 {
-    OnRemoveTxd( (*ppTxdPool)->GetIndex( this ) );
+    // Notify our textures that they should detach from the txd
+    unsigned short id = (*ppTxdPool)->GetIndex( this );
+    dictImportList_t& list = g_dictImports[id];
+
+    for ( dictImportList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
+        (*iter)->OnTxdInvalidate( *m_txd, id );
+
+    // Notify the shader system
+    OnRemoveTxd( id );
 
     if ( m_txd )
     {
@@ -91,47 +101,56 @@ void CTxdInstanceSA::Deallocate()
     }
 }
 
+static bool RwTexDictionaryClear( RwTexture *tex, int )
+{
+    RwTextureDestroy( tex );
+    return true;
+}
+
 bool CTxdInstanceSA::LoadTXD( const char *filename )
 {
     RwStream *stream = RwStreamOpen( STREAM_TYPE_FILENAME, STREAM_MODE_READ, filename );
-    unsigned int size;
-    unsigned int version;
-    unsigned int numTextures;
 
     if ( !stream ) 
         return false;
 
-    if (!RwStreamFindChunk( stream, 0x16, NULL, NULL ) || 
-        !RwStreamFindChunk( stream, 1, &size, &version ) || 
-        RwStreamReadBlocks( stream, &numTextures, size ) != size )
+    if (!RwStreamFindChunk( stream, 0x16, NULL, NULL ))
     {
         RwStreamClose( stream, NULL );
         return false;
     }
 
-    // Make sure we are loaded
-    Allocate();
-
-    while ( numTextures-- )
-    {
-        RwTexture *texture = RwStreamReadTexture( stream );
-
-        if ( !texture )
-        {
-            RwStreamClose( stream, NULL );
-            return false;
-        }
-
-        texture->AddToDictionary( m_txd );
-    }
+    RwTexDictionary *txd = RwTexDictionaryStreamRead( stream );
 
     RwStreamClose( stream, NULL );
+
+    if ( !txd )
+        return false;
+
+    Allocate();
+
+    // Transfer all textures to our txd and destroy the other one
+    while ( RwTexture *tex = txd->GetFirstTexture() )
+    {
+        tex->RemoveFromDictionary();
+        tex->AddToDictionary( m_txd );
+    }
+
+    RwTexDictionaryDestroy( txd );
     return true;
 }
 
 void CTxdInstanceSA::InitParent()
 {
-    OnAddTxd( (*ppTxdPool)->GetIndex( this ) );
+    // Assign texture imports
+    unsigned short id = (*ppTxdPool)->GetIndex( this );
+    dictImportList_t& list = g_dictImports[id];
+    
+    for ( dictImportList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
+        (*iter)->OnTxdLoad( *m_txd, id );
+
+    // Notify the shader system
+    OnAddTxd( id );
 
     CTxdInstanceSA *parent = (*ppTxdPool)->Get( m_parentTxd );
 
@@ -264,6 +283,7 @@ RwTexDictionary* CTextureManagerSA::RwCreateTexDictionary()
     txd->m_privateFlags = 0;
     txd->m_parent = NULL;
 
+    LIST_CLEAR( txd->textures.root );
     LIST_APPEND( pRwInterface->m_textureManager.m_globalTxd.root, txd->globalTXDs );
 
     // Register the txd I guess
@@ -829,3 +849,55 @@ void __cdecl HOOK_CTxdStore_RemoveTxd( unsigned short id )
 }
 
 /////////////////////////////////////////
+
+// TXD loading code - TODO
+#if 0
+|| !RwStreamFindChunk( stream, 1, &size, &version ))
+    {
+        RwStreamClose( stream, NULL );
+        return false;
+    }
+
+    if ( version > 0x34000 && version < 0x36003 )
+    {
+        unsigned int size;
+        unsigned int numTextures;
+
+        if ( RwStreamReadBlocks( stream, &numTextures, size ) != size )
+        {
+            RwStreamClose( stream, NULL );
+            return false;
+        }
+
+        unsigned int rendStatus;
+
+        RwRenderSystemFigureAffairs( pRwInterface->m_renderSystem, 0x16, rendStatus, 0, 0 );
+
+        unsigned short unk = numTextures << 16;
+
+        if ( !(rendStatus & 0xFF) || unk && unk == (rendStatus & 0xFF) )
+        {
+            // Make sure we are loaded
+            Allocate();
+
+            while ( numTextures-- )
+            {
+                RwTexture *texture = RwStreamReadTexture( stream );
+
+                if ( !texture )
+                {
+                    RwStreamClose( stream, NULL );
+                    return false;
+                }
+
+                texture->AddToDictionary( m_txd );
+            }
+
+            if ( !RwTexDictionaryFinalizer( (void*)0x008E23E4, stream, m_txd ) )
+            {
+                
+            }
+
+        }
+    }
+#endif

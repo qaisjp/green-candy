@@ -26,6 +26,7 @@ class CColModelSAInterface;
 /*****************************************************************************/
 
 /* RenderWare function defines */
+typedef void                    (__cdecl *RwRenderSystemFigureAffairs_t)        (RwRenderSystem& rend, int objectID, unsigned int& result, int, int);
 typedef void*                   (__cdecl *RwAllocAligned_t)                     (size_t size, unsigned int align);
 typedef void                    (__cdecl *RwFreeAligned_t)                      (void *ptr);
 typedef RwExtension*            (__cdecl *RwCreateExtension_t)                  (unsigned int id, unsigned int count, size_t size, int unk3);
@@ -87,6 +88,7 @@ typedef float                   (__cdecl *RwMatrixUnknown_t)                    
 typedef RpMaterial *            (__cdecl *RpMaterialCreate_t)                   ();
 typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial * mat);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryCreate_t)              ();
+typedef unsigned int            (__cdecl *RwTexDictionaryFinalizer_t)           (void *unk, RwStream *stream, RwTexDictionary *txd);
 typedef void                    (__cdecl *RwTexDictionaryRegister_t)            (void *unk, RwTexDictionary *txd);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryStreamRead_t)          (RwStream *stream);
 typedef RwTexDictionary *       (__cdecl *RwTexDictionarySetCurrent_t)          (RwTexDictionary * dict);
@@ -116,6 +118,7 @@ typedef void                    (__cdecl *RwFlushLoader_t)                      
 /*****************************************************************************/
 
 // US Versions
+extern RwRenderSystemFigureAffairs_t            RwRenderSystemFigureAffairs;
 extern RwErrorGet_t                             RwErrorGet;
 extern RwAllocAligned_t                         RwAllocAligned;
 extern RwFreeAligned_t                          RwFreeAligned;
@@ -157,6 +160,7 @@ extern RpAtomicSetGeometry_t                    RpAtomicSetGeometry;
 extern RpAtomicDestroy_t                        RpAtomicDestroy;
 extern RwObjectFrameRender_t                    RwObjectFrameRender;
 extern RwTexDictionaryCreate_t                  RwTexDictionaryCreate;
+extern RwTexDictionaryFinalizer_t               RwTexDictionaryFinalizer;
 extern RwTexDictionaryRegister_t                RwTexDictionaryRegister;
 extern RwTexDictionaryStreamRead_t              RwTexDictionaryStreamRead;
 extern RwTexDictionaryGetCurrent_t              RwTexDictionaryGetCurrent;

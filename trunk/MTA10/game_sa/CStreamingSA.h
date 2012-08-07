@@ -69,4 +69,6 @@ public:
     eLoadingState   m_eLoading;         // 16
 };
 
+extern RwObject* g_modelReplacement[DATA_TEXTURE_BLOCK];
+
 #endif

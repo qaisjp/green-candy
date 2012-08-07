@@ -72,6 +72,29 @@ bool CTextureSA::IsImportedTXD( unsigned short id ) const
     return m_imported.count( id ) != 0;
 }
 
+void CTextureSA::OnTxdLoad( RwTexDictionary& txd, unsigned short id )
+{
+    import& imp = (*m_imported.find( id )).second;
+    imp.original = txd.FindNamedTexture( m_texture->name );
+    
+    if ( imp.original )
+        imp.original->RemoveFromDictionary();
+
+    imp.copy->AddToDictionary( &txd );
+}
+
+void CTextureSA::OnTxdInvalidate( RwTexDictionary& txd, unsigned short id )
+{
+    import& imp = (*m_imported.find( id )).second;
+    imp.copy->RemoveFromDictionary();
+
+    if ( imp.original )
+    {
+        RwTextureDestroy( imp.original );
+        imp.original = NULL;
+    }
+}
+
 bool CTextureSA::Import( unsigned short id )
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[id];
@@ -98,12 +121,21 @@ bool CTextureSA::ImportTXD( unsigned short id )
 
     import imp;
     imp.copy = RwTextureCreate( m_texture->raster );
-    imp.original = txd->m_txd->FindNamedTexture( m_texture->name );
 
-    if ( imp.original )
-        imp.original->RemoveFromDictionary();
+    if ( RwTexDictionary *rtxd = txd->m_txd )
+    {
+        imp.original = rtxd->FindNamedTexture( m_texture->name );
 
-    imp.copy->AddToDictionary( txd->m_txd );
+        if ( imp.original )
+            imp.original->RemoveFromDictionary();
+
+        imp.copy->AddToDictionary( rtxd );
+    }
+    else
+        imp.original = NULL;    // flag that we have not been imported; wait for TXD load
+
+    if ( m_imported.empty() )
+        g_dictImports[id].push_back( this );
     
     m_imported[id] = imp;
     return true;
@@ -133,17 +165,21 @@ bool CTextureSA::RemoveTXD( unsigned short id )
     RwTexDictionary *txd = imp.copy->txd;
     imp.copy->RemoveFromDictionary();
 
+    RwTextureDestroy( imp.copy );
+
     if ( imp.original )
         imp.original->AddToDictionary( txd );
     
     m_imported.erase( iter );
+
+    if ( m_imported.empty() )
+        g_dictImports[id].remove( this );
+
     return true;
 }
 
 void CTextureSA::ClearImports()
 {
-    importMap_t::iterator iter = m_imported.begin();
-
-    for ( ; iter != m_imported.end(); iter++ )
-        RemoveTXD( (*iter).first );
+    while ( !m_imported.empty() )
+        RemoveTXD( (*m_imported.begin()).first );
 }

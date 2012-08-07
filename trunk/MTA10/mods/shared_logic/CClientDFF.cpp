@@ -59,6 +59,7 @@ CClientDFF::CClientDFF( LuaClass& root, CModel& model ) : LuaElement( root ), m_
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_dff, 1 );
     luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
 }
 
 CClientDFF::~CClientDFF()

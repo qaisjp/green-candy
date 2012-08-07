@@ -77,6 +77,7 @@ CClientTXD::CClientTXD( LuaClass& root, CTexDictionary& txd ) : LuaElement( root
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_txd, 1 );
     luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
 }
 
 CClientTXD::~CClientTXD()
