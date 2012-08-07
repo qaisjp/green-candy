@@ -17,6 +17,8 @@
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
+RwObject* g_modelReplacement[DATA_TEXTURE_BLOCK]; // Holds active RwObjects for model instances
+
 #define ARRAY_PEDSPECMODEL      0x008E4C00
 #define VAR_PEDSPECMODEL        0x008E4BB0
 #define VAR_MEMORYUSAGE         0x008E4CB4
@@ -41,6 +43,9 @@ static void __cdecl HOOK_CStreaming__FreeModel( unsigned int model )
 
 CStreamingSA::CStreamingSA()
 {
+    // Initiate our model replacement array
+    memset( g_modelReplacement, 0, sizeof(g_modelReplacement) );
+
     // Hook the model requested
     HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
     HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
@@ -58,18 +63,52 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
     if ( id > MAX_MODELS-1 )
         return;
 
-    if ( info->m_eLoading == MODEL_LOADING )
+    switch( info->m_eLoading )
     {
+    case MODEL_LOADING:
         if ( flags & 0x10 && !(info->m_flags & 0x10) )
         {
             (*(DWORD*)VAR_NUMPRIOMODELS)++;
 
             info->m_flags |= FLAG_PRIORITY;
         }
-    }
-    else if ( info->m_eLoading != MODEL_UNAVAILABLE )
-    {
+        break;
+    case MODEL_UNAVAILABLE:
+        // Model support fix: quick load a model if we already have it for replacement; prevents memory leak and boosts speed
+        if ( id < DATA_TEXTURE_BLOCK )
+        {
+            if ( RwObject *obj = g_modelReplacement[id] )
+            {
+                CBaseModelInfoSAInterface *minfo = ppModelInfo[id];
+
+                switch( minfo->GetRwModelType() )
+                {
+                case RW_ATOMIC:
+                    ((CAtomicModelInfoSA*)minfo)->SetAtomic( RpAtomicClone( (RpAtomic*)obj ) ); // making a copy is essential for model instance isolation
+                    break;
+                case RW_CLUMP:
+                    ((CClumpModelInfoSAInterface*)minfo)->SetClump( RpClumpClone( (RpClump*)obj ) );
+                    break;
+                default:
+                    assert( 0 );    // I doubt that could happen; make sure anyway
+                }
+
+                // Load texture and animation
+                RequestModel( minfo->m_textureDictionary + DATA_TEXTURE_BLOCK, flags );
+                
+                int animIndex = minfo->GetAnimFileIndex();
+
+                if ( animIndex != 0xFFFF )
+                    RequestModel( animIndex + DATA_ANIM_BLOCK, flags );
+
+                info->m_eLoading = MODEL_LOADED;
+                return;
+            }
+        }
+        break;
+    default:
         flags &= ~FLAG_PRIORITY;
+        break;
     }
 
     info->m_flags |= (unsigned char)flags;
@@ -80,6 +119,10 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
         CModelLoadInfoSA *lodInfo;
 
         if ( info->m_lodModelID == 0xFFFF )
+            return;
+
+        // Model support patch: do not allow reloading of active models; it is not required ;)
+        if ( id < DATA_TEXTURE_BLOCK && g_modelReplacement[id] )
             return;
 
         // Unfold loaded model
@@ -138,7 +181,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
         // Accelerate our textures, yay
         RequestModel( model->m_textureDictionary + DATA_TEXTURE_BLOCK, flags );
 
-        // Get textures if necessary
+        // Get animation if necessary
         if ( animIndex != -1 )
             RequestModel( animIndex + DATA_ANIM_BLOCK, 0x08 );
     }
@@ -307,7 +350,10 @@ void CStreamingSA::FreeModel( unsigned short id )
             }
         }
 
-        *(DWORD*)VAR_MEMORYUSAGE -= info->m_blockCount * 2048;
+        // Model support fix: we do not mess with the streaming memory if we replaced a model loaded by
+        // a different/our system.
+        if ( id > DATA_TEXTURE_BLOCK || !g_modelReplacement[id] )
+            *(DWORD*)VAR_MEMORYUSAGE -= info->m_blockCount * 2048;
     }
 
     if ( info->m_lodModelID != 0xFFFF )
@@ -348,8 +394,7 @@ void CStreamingSA::FreeModel( unsigned short id )
     }
     else if ( info->m_eLoading == MODEL_RELOAD )
     {
-        assert( 0 );
-        
+        // This appears to be a very rare scenario, probably an exception handling system
         if ( id < DATA_TEXTURE_BLOCK )
             RwFlushLoader();
         else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
@@ -398,7 +443,7 @@ bool CStreamingSA::HasModelLoaded ( unsigned int id )
 
 bool CStreamingSA::IsModelLoading ( unsigned int id )
 {
-    return ((CModelLoadInfoSA*)(ARRAY_CModelLoadInfo) + id)->m_eLoading == MODEL_LOADING;
+    return ((CModelLoadInfoSA*)(ARRAY_CModelLoadInfo) + id)->m_eLoading > MODEL_LOADED;
 }
 
 void CStreamingSA::WaitForModel ( unsigned int id )

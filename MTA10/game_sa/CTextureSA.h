@@ -28,6 +28,9 @@ public:
     const char*             GetName() const;
     unsigned int            GetHash() const;
 
+    void                    OnTxdLoad( RwTexDictionary& txd, unsigned short id );
+    void                    OnTxdInvalidate( RwTexDictionary& txd, unsigned short id );
+
     bool                    Import( unsigned short id );
     bool                    ImportTXD( unsigned short id );
     bool                    Remove( unsigned short id );

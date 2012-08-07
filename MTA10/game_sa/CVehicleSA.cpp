@@ -392,7 +392,6 @@ void CVehicleSA::GetColor( SColor& color1, SColor& color2, SColor& color3, SColo
 
 void CVehicleSA::SetHealth( float health )
 {
-    return;
     GetInterface()->m_health = health;
 
     if ( health >= 250.0f )

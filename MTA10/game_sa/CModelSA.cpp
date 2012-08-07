@@ -64,7 +64,7 @@ bool CModelSA::Replace( unsigned short id )
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[id];
 
-    if ( id > MAX_MODELS-1 )
+    if ( id > DATA_TEXTURE_BLOCK-1 )
         return false;
 
     if ( !info )
@@ -81,12 +81,26 @@ bool CModelSA::Replace( unsigned short id )
 
     CClumpModelInfoSAInterface *cinfo = (CClumpModelInfoSAInterface*)info;
 
-    import imp;
-    imp.original = cinfo->CreateRwObject();
+    CStreamingSA *streaming = pGame->GetStreaming();
 
-    cinfo->SetClump( m_clump );
+    if ( streaming->IsModelLoading( id ) )
+    {
+        // We need to flag it priority and finish the loading process
+        // Worst case scenario would be otherwise that there is a thread loading the model and
+        // replacing our model with it; we do not want that (memory leak prevention and model bugfix)
+        streaming->RequestModel( id, 0x10 );
+        streaming->LoadAllRequestedModels( true );
+    }
 
-    m_imported[id] = imp;
+    if ( cinfo->m_rwClump ) // Only inject if we are loaded! otherwise we screw up loading mechanics -> memory leaks
+    {
+        cinfo->DeleteRwObject();
+        cinfo->SetClump( RpClumpClone( m_clump ) );
+    }
+
+    g_modelReplacement[id] = m_clump;
+
+    m_imported[id] = true;
     return true;
 }
 
@@ -99,7 +113,7 @@ bool CModelSA::Restore( unsigned short id )
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[id];
 
-    if ( id > MAX_MODELS-1 )
+    if ( id > DATA_TEXTURE_BLOCK-1 )
         return false;
 
     importMap_t::iterator iter = m_imported.find( id );
@@ -110,15 +124,23 @@ bool CModelSA::Restore( unsigned short id )
     if ( !info || info->GetRwModelType() != RW_CLUMP )
     {
         // This should not happen, but if it does, prepare for the worst
-        RpClumpDestroy( (*iter).second.original );
-
         m_imported.erase( iter );
         return false;
     }
 
     CClumpModelInfoSAInterface *cinfo = (CClumpModelInfoSAInterface*)info;
 
-    cinfo->SetClump( (*iter).second.original );
+    // We can only restore if the model is actively loaded
+    if ( cinfo->m_rwClump )
+    {
+        CStreamingSA *streaming = pGame->GetStreaming();
+        streaming->FreeModel( id );
+        streaming->RequestModel( id, 0x10 );
+
+        streaming->LoadAllRequestedModels( true );
+    }
+
+    g_modelReplacement[id] = NULL;
 
     m_imported.erase( iter );
     return true;

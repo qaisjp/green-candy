@@ -721,10 +721,18 @@ public:
     RwScanTexDictionaryStack_t      m_findInstance;                         // 20
     RwScanTexDictionaryStack_t      m_findInstanceSecondary;                // 24
 };
+class RwRenderSystem    // TODO
+{
+public:
+    void*                   m_unkStruct;                                    // 0
+};
 class RwInterface   // size: 1456
 {
 public:
-    BYTE                    m_pad[188];
+    BYTE                    m_pad8[16];                                     // 0
+    RwRenderSystem          m_renderSystem;                                 // 16
+
+    BYTE                    m_pad[168];                                     // 20
 
     RwList <RwFrame>        m_nodeRoot;                                     // 188
 
