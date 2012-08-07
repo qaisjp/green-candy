@@ -29,8 +29,9 @@ public:
     void    operator delete( void *ptr );
 
     void            Allocate();
+    void            Deallocate();
     bool            LoadTXD( const char *filename );
-    unsigned short  InitParent();
+    void            InitParent();
     void            Reference();
     void            Dereference();
 
@@ -85,6 +86,8 @@ public:
     int                 FindTxdEntry( const char *name ) const;
     int                 CreateTxdEntry( const char *name );
 
+    RwTexDictionary*    RwCreateTexDictionary();
+
     CTexDictionarySA*   CreateTxd( const char *name );
     CTexDictionarySA*   CreateTxd( const char *name, unsigned short txdId );
 
@@ -93,6 +96,7 @@ public:
 
     bool                SetCurrentTexture( unsigned short id );
 
+    void                DeallocateTxdEntry( unsigned short id );
     void                RemoveTxdEntry( unsigned short id );
 
     ushort              GetTXDIDForModelID          ( ushort usModelID );

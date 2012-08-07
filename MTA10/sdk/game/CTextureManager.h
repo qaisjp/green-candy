@@ -31,6 +31,7 @@ public:
 
     virtual bool                    SetCurrentTexture( unsigned short id ) = 0;
 
+    virtual void                    DeallocateTxdEntry( unsigned short id ) = 0;
     virtual void                    RemoveTxdEntry( unsigned short id ) = 0;
 
     virtual unsigned short          GetTXDIDForModelID( unsigned short model ) = 0;
