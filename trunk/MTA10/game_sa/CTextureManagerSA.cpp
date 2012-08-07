@@ -43,23 +43,7 @@ bool Txd_DeleteAll( RwTexture *tex, int )
 
 CTxdInstanceSA::~CTxdInstanceSA()
 {
-    if ( m_txd )
-    {
-        m_txd->ForAllTextures( Txd_DeleteAll, 0 );
-
-        RwTexDictionaryDestroy( m_txd );
-
-        m_txd = NULL;
-    }
-
-    if ( m_parentTxd != 0xFFFF )
-    {
-        // Bugfix for resource termination
-        CTxdInstanceSA *parentTxd = (*ppTxdPool)->Get( m_parentTxd );
-
-        if ( parentTxd )
-            parentTxd->Dereference();
-    }
+    Deallocate();
 }
 
 void* CTxdInstanceSA::operator new( size_t )
@@ -77,7 +61,28 @@ void CTxdInstanceSA::Allocate()
     if ( m_txd )
         return;
 
-    m_txd = RwTexDictionaryCreate();
+    m_txd = pGame->GetTextureManager()->RwCreateTexDictionary();
+}
+
+void CTxdInstanceSA::Deallocate()
+{
+    if ( m_txd )
+    {
+        m_txd->ForAllTextures( Txd_DeleteAll, 0 );
+
+        RwTexDictionaryDestroy( m_txd );
+
+        m_txd = NULL;
+    }
+
+    if ( m_parentTxd != 0xFFFF )
+    {
+        // Bugfix for resource termination
+        CTxdInstanceSA *parentTxd = (*ppTxdPool)->Get( m_parentTxd );
+
+        if ( parentTxd )
+            parentTxd->Dereference();
+    }
 }
 
 bool CTxdInstanceSA::LoadTXD( const char *filename )
@@ -118,19 +123,16 @@ bool CTxdInstanceSA::LoadTXD( const char *filename )
     return true;
 }
 
-unsigned short CTxdInstanceSA::InitParent()
+void CTxdInstanceSA::InitParent()
 {
     CTxdInstanceSA *parent = (*ppTxdPool)->Get( m_parentTxd );
-    CTxdInstanceSA *affectTxd;
 
     if ( !parent )
-        return 0xFFFF;
+        return;
 
-    affectTxd = ((CTxdInstanceSA*)(*(unsigned int**)0x00C88018 + (unsigned int)this));
-    affectTxd->m_txd = m_txd;
+    m_txd->m_parentTxd = parent->m_txd;
 
     parent->Reference();
-    return m_parentTxd;
 }
 
 void CTxdInstanceSA::Reference()
@@ -149,19 +151,36 @@ void CTxdInstanceSA::Dereference()
 
 void CTxdInstanceSA::SetCurrent()
 {
-    RwTexDictionarySetCurrent( m_txd );
+    pRwInterface->m_textureManager.m_current = m_txd;
 }
 
 //
 // Hooks for creating txd create and destroy events
 //
-#define HOOKPOS_CTxdStore_SetupTxdParent       0x731D55
-DWORD RETURN_CTxdStore_SetupTxdParent =        0x731D5B;
-void HOOK_CTxdStore_SetupTxdParent ();
+#define HOOKPOS_CTxdStore_SetupTxdParent       0x00731D50
+void __cdecl HOOK_CTxdStore_SetupTxdParent( unsigned short id );
 
 #define HOOKPOS_CTxdStore_RemoveTxd       0x731E90
-DWORD RETURN_CTxdStore_RemoveTxd =        0x731E96;
-void HOOK_CTxdStore_RemoveTxd ();
+void __cdecl HOOK_CTxdStore_RemoveTxd( unsigned short id );
+
+static RwTexture* __cdecl RwTexDictionaryFindFromStack( const char *name )
+{
+    RwTexDictionary *tex = pRwInterface->m_textureManager.m_current;
+
+    do
+    {
+        if ( RwTexture *inst = tex->FindNamedTexture( name ) )
+            return inst;
+    }
+    while ( tex = tex->m_parentTxd );
+
+    return NULL;
+}
+
+static RwTexture* __cdecl RwTexDictionaryFindFromStackSecondary( const char *name )
+{
+    return NULL;
+}
 
 static void Hook_InitTextureManager()
 {
@@ -169,19 +188,9 @@ static void Hook_InitTextureManager()
     for ( unsigned int n=0; n<7; n++ )
         *(unsigned short*)( VAR_CPlayerTexDictionaries + n ) = pGame->GetTextureManager()->CreateTxdEntry( "*" );
 
-    __asm
-    {
-        // Register some callbacks
-        mov edx,0x007F34D0
-        push 0x00731720
-        call edx
-
-        mov edx,0x007F3500
-        push 0x00731710 // callback which returns NULL
-        call edx
-
-        add esp,8
-    }
+    // Register some callbacks
+    pRwInterface->m_textureManager.m_findInstance = RwTexDictionaryFindFromStack;
+    pRwInterface->m_textureManager.m_findInstanceSecondary = RwTexDictionaryFindFromStackSecondary;
 }
 
 CTextureManagerSA::CTextureManagerSA()
@@ -196,8 +205,8 @@ CTextureManagerSA::CTextureManagerSA()
     m_pfnWatchCallback = NULL;
 
     // Hook runtime
-    HookInstall ( HOOKPOS_CTxdStore_SetupTxdParent, (DWORD)HOOK_CTxdStore_SetupTxdParent, 6 );
-    HookInstall ( HOOKPOS_CTxdStore_RemoveTxd, (DWORD)HOOK_CTxdStore_RemoveTxd, 6 );
+    HookInstall( HOOKPOS_CTxdStore_SetupTxdParent, (DWORD)HOOK_CTxdStore_SetupTxdParent, 6 );
+    HookInstall( HOOKPOS_CTxdStore_RemoveTxd, (DWORD)HOOK_CTxdStore_RemoveTxd, 6 );
 }
 
 CTextureManagerSA::~CTextureManagerSA()
@@ -232,6 +241,26 @@ int CTextureManagerSA::CreateTxdEntry( const char *name )
         return -1;
 
     return (*ppTxdPool)->GetIndex(inst);
+}
+
+RwTexDictionary* CTextureManagerSA::RwCreateTexDictionary()
+{
+    RwTexDictionary *txd = (RwTexDictionary*)pRwInterface->m_allocStruct( pRwInterface->m_textureManager.m_txdStruct, 0x30016 );
+
+    if ( !txd )
+        return NULL;
+
+    txd->m_type = RW_TXD;
+    txd->m_subtype = 0;
+    txd->m_flags = 0;
+    txd->m_privateFlags = 0;
+    txd->m_parent = NULL;
+
+    LIST_APPEND( pRwInterface->m_textureManager.m_globalTxd.root, txd->globalTXDs );
+
+    // Register the txd I guess
+    RwTexDictionaryRegister( (void*)0x008E23E4, txd );
+    return txd;
 }
 
 CTexDictionarySA* CTextureManagerSA::CreateTxd( const char *name )
@@ -280,7 +309,6 @@ int CTextureManagerSA::LoadDictionaryEx( const char *name, const char *filename 
     }
 
     txd->InitParent();
-
     return id;
 }
 
@@ -293,6 +321,16 @@ bool CTextureManagerSA::SetCurrentTexture( unsigned short id )
 
     txd->SetCurrent();
     return true;
+}
+
+void CTextureManagerSA::DeallocateTxdEntry( unsigned short id )
+{
+    CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
+
+    if ( !txd )
+        return;
+
+    txd->Deallocate();
 }
 
 void CTextureManagerSA::RemoveTxdEntry( unsigned short id )
@@ -324,16 +362,16 @@ std::vector < STxdAction > ms_txdActionList;
 // Get a TXD ID associated with the model ID
 //
 ////////////////////////////////////////////////////////////////
-ushort CTextureManagerSA::GetTXDIDForModelID ( ushort usModelID )
+ushort CTextureManagerSA::GetTXDIDForModelID ( unsigned short usModelID )
 {
-    if ( usModelID >= 20000 && usModelID < 25000 )
+    if ( usModelID >= DATA_TEXTURE_BLOCK && usModelID < DATA_TEXTURE_BLOCK + MAX_TXD )
     {
         // Get global TXD ID instead
         return usModelID - 20000;
     }
 
     // Ensure valid
-    if ( usModelID >= 20000 || !ppModelInfo[usModelID] )
+    if ( usModelID >= DATA_TEXTURE_BLOCK || !ppModelInfo[usModelID] )
         return 0;
 
     return ppModelInfo[usModelID]->m_textureDictionary;
@@ -500,7 +538,7 @@ void CTextureManagerSA::RemoveWorldTextureWatchByContext ( CSHADERDUMMY* pShader
 ////////////////////////////////////////////////////////////////
 void CTextureManagerSA::PulseWorldTextureWatch()
 {
-    // Got through ms_txdActionList
+    // Go through ms_txdActionList
     for ( std::vector < STxdAction >::const_iterator iter = ms_txdActionList.begin () ; iter != ms_txdActionList.end () ; ++iter )
     {
         const STxdAction& action = *iter;
@@ -563,7 +601,7 @@ STexInfo* CTextureManagerSA::CreateTexInfo ( ushort usTxdId, const SString& strT
 
     // Add to lookup maps
     SString strUniqueKey ( "%d_%s", pTexInfo->usTxdId, *pTexInfo->strTextureName );
-    assert ( !MapContains ( m_UniqueTexInfoMap, strUniqueKey ) );
+    //assert ( !MapContains ( m_UniqueTexInfoMap, strUniqueKey ) );
     MapSet ( m_UniqueTexInfoMap, strUniqueKey, pTexInfo );
 
 	// This assert fails when using engine txd replace functions - TODO find out why
@@ -695,22 +733,15 @@ void CTextureManagerSA::RemoveTxdActiveTextures ( ushort usTxdId )
 // Get list of texture names associated with the model
 //
 ////////////////////////////////////////////////////////////////
-void CTextureManagerSA::GetModelTextureNames ( std::vector < SString >& outNameList, ushort usModelID )
+static bool StaticGetTxdTextureNames( RwTexture *tex, std::vector <SString> *names )
 {
-    outNameList.empty ();
+    names->push_back( tex->name );
+    return true;
+}
 
-    ushort usTxdId = GetTXDIDForModelID ( usModelID );
-
-    if ( usTxdId == 0 )
-        return;
-
-    std::vector < RwTexture* > textureList;
-    GetTxdTextures ( textureList, usTxdId );
-
-    for ( std::vector < RwTexture* > ::iterator iter = textureList.begin () ; iter != textureList.end () ; iter++ )
-    {
-        outNameList.push_back ( (*iter)->name );
-    }
+void CTextureManagerSA::GetModelTextureNames ( std::vector < SString >& outNameList, unsigned short usModelID )
+{
+    (*ppTxdPool)->Get( GetTXDIDForModelID( usModelID ) )->m_txd->ForAllTextures( StaticGetTxdTextureNames, &outNameList );
 }
 
 
@@ -730,15 +761,15 @@ void CTextureManagerSA::GetTxdTextures ( std::vector < RwTexture* >& outTextureL
     if ( usTxdId == 0 )
         return;
 
-    // Get the TXD corresponding to this ID
-    SetTextureDict ( usTxdId );
+    CTxdInstanceSA *txd = (*ppTxdPool)->Get( usTxdId );
 
-    RwTexDictionary* pTXD = CTxdStore_GetTxd ( usTxdId );
+    if ( !txd )
+        return;
 
-    if ( pTXD )
-    {
-        pTXD->ForAllTextures( StaticGetTextureCB, &outTextureList );
-    }
+    if ( !txd->m_txd )
+        return;
+
+    txd->m_txd->ForAllTextures( StaticGetTextureCB, &outTextureList );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -761,60 +792,36 @@ const SString& CTextureManagerSA::GetTextureName ( CD3DDUMMY* pD3DData )
 //
 ////////////////////////////////////////////////////////////////
 
-void _cdecl OnAddTxd( DWORD dwTxdId )
+void _cdecl OnAddTxd( unsigned short id )
 {
     STxdAction action;
     action.bAdd = true;
-    action.usTxdId = (ushort)dwTxdId;
+    action.usTxdId = id;
     ms_txdActionList.push_back ( action );
 }
 
 // called from streaming on TXD create
-void _declspec(naked) HOOK_CTxdStore_SetupTxdParent()
+void __cdecl HOOK_CTxdStore_SetupTxdParent( unsigned short id )
 {
-    _asm
-    {
-        // Hooked from 731D55  6 bytes
+    OnAddTxd( id );
 
-        // eax - txd id
-        pushad
-        push eax
-        call OnAddTxd
-        add esp, 4
-        popad
-
-        // orig
-        mov     esi, ds:00C8800Ch 
-        jmp     RETURN_CTxdStore_SetupTxdParent  // 731D5B
-    }
+    (*ppTxdPool)->Get( id )->InitParent();
 }
 
-void _cdecl OnRemoveTxd( DWORD dwTxdId )
+void _cdecl OnRemoveTxd( unsigned short id )
 {
     STxdAction action;
     action.bAdd = false;
-    action.usTxdId = (ushort)dwTxdId - 20000;
+    action.usTxdId = id;
     ms_txdActionList.push_back ( action );
 }
 
 // called from streaming on TXD destroy
-void _declspec(naked) HOOK_CTxdStore_RemoveTxd()
+void __cdecl HOOK_CTxdStore_RemoveTxd( unsigned short id )
 {
-    _asm
-    {
-        // Hooked from 731E90  6 bytes
+    OnRemoveTxd( id );
 
-        // esi - txd id + 20000
-        pushad
-        push esi
-        call OnRemoveTxd
-        add esp, 4
-        popad
-
-        // orig
-        mov     ecx, ds:00C8800Ch
-        jmp     RETURN_CTxdStore_RemoveTxd      // 731E96
-    }
+    (*ppTxdPool)->Get( id )->Deallocate();
 }
 
 /////////////////////////////////////////

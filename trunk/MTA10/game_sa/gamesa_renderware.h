@@ -87,6 +87,7 @@ typedef float                   (__cdecl *RwMatrixUnknown_t)                    
 typedef RpMaterial *            (__cdecl *RpMaterialCreate_t)                   ();
 typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial * mat);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryCreate_t)              ();
+typedef void                    (__cdecl *RwTexDictionaryRegister_t)            (void *unk, RwTexDictionary *txd);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryStreamRead_t)          (RwStream *stream);
 typedef RwTexDictionary *       (__cdecl *RwTexDictionarySetCurrent_t)          (RwTexDictionary * dict);
 typedef const RwTexDictionary * (__cdecl *RwTexDictionaryForAllTextures_t)      (const RwTexDictionary * dict, int (*callback)( RwTexture *texture, void *data ), void * data);
@@ -156,6 +157,7 @@ extern RpAtomicSetGeometry_t                    RpAtomicSetGeometry;
 extern RpAtomicDestroy_t                        RpAtomicDestroy;
 extern RwObjectFrameRender_t                    RwObjectFrameRender;
 extern RwTexDictionaryCreate_t                  RwTexDictionaryCreate;
+extern RwTexDictionaryRegister_t                RwTexDictionaryRegister;
 extern RwTexDictionaryStreamRead_t              RwTexDictionaryStreamRead;
 extern RwTexDictionaryGetCurrent_t              RwTexDictionaryGetCurrent;
 extern RwTexDictionarySetCurrent_t              RwTexDictionarySetCurrent;

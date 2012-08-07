@@ -62,6 +62,7 @@ RpAtomicSetGeometry_t                   RpAtomicSetGeometry                     
 RpAtomicDestroy_t                       RpAtomicDestroy                         = (RpAtomicDestroy_t)                       0xDEAD;
 RwObjectFrameRender_t                   RwObjectFrameRender                     = (RwObjectFrameRender_t)                   0xDEAD;
 RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 0xDEAD;
+RwTexDictionaryRegister_t               RwTexDictionaryRegister                 = (RwTexDictionaryRegister_t)               0xDEAD;
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             0xDEAD;
 RwTexDictionaryGetCurrent_t             RwTexDictionaryGetCurrent               = (RwTexDictionaryGetCurrent_t)             0xDEAD;
 RwTexDictionarySetCurrent_t             RwTexDictionarySetCurrent               = (RwTexDictionarySetCurrent_t)             0xDEAD;
@@ -314,6 +315,8 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
         RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D90;
         RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749E10;
+        RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
+        RwTexDictionaryRegister             = (RwTexDictionaryRegister_t)               0x00808720;
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70;
         RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3AD0;
         RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3AB0;
@@ -404,7 +407,8 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RpAtomicClone                       = (RpAtomicClone_t)                         0x00749E60;
         RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749C50;
         RwObjectFrameRender                 = (RwObjectFrameRender_t)                   0x00805750;
-        RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
+        RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3600;
+        RwTexDictionaryRegister             = (RwTexDictionaryRegister_t)               0x008086E0;
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C30;
         RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3A90;
         RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3A70;

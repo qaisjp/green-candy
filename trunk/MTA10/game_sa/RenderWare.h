@@ -371,6 +371,7 @@ class RwTexDictionary : public RwObject
 public:
     RwList <RwTexture>              textures;
     RwListEntry <RwTexDictionary>   globalTXDs;
+    RwTexDictionary*                m_parentTxd;
 
     template <class type>
     bool                    ForAllTextures( bool (*callback)( RwTexture *tex, type ud ), type ud )
@@ -403,7 +404,7 @@ public:
     unsigned char   format;
     unsigned char*  origPixels;
     int             origWidth, origHeight, origDepth;
-    void*           renderResource;
+    void*           renderResource;         // Direct3D texture resource
 };
 class RwTexture
 {
@@ -707,6 +708,19 @@ class RwStructInfo
 public:
     size_t                  m_size;
 };
+
+typedef RwTexture* (__cdecl *RwScanTexDictionaryStack_t) ( const char *name );
+
+class RwTextureManager
+{
+public:
+    RwList <RwTexDictionary>        m_globalTxd;                            // 0
+    void*                           m_pad;                                  // 8
+    RwStructInfo*                   m_txdStruct;                            // 12
+    RwTexDictionary*                m_current;                              // 16
+    RwScanTexDictionaryStack_t      m_findInstance;                         // 20
+    RwScanTexDictionaryStack_t      m_findInstanceSecondary;                // 24
+};
 class RwInterface   // size: 1456
 {
 public:
@@ -742,7 +756,10 @@ public:
 
     float                   m_unknown3;                                     // 680
     
-    BYTE                    m_pad5[172];                                    // 936
+    BYTE                    m_pad5[120];                                    // 936
+
+    RwTextureManager        m_textureManager;                               // 1056
+    BYTE                    m_pad7[24];                                     // 1084
 
     RwRender*               m_renderData;                                   // 1108
     BYTE                    m_pad4[344];                                    // 1112

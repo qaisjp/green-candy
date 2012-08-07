@@ -15,8 +15,6 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-//#define CUSTOM_STREAMER
-
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
 #define ARRAY_PEDSPECMODEL      0x008E4C00
@@ -31,7 +29,6 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 #define FLAG_PRIORITY           0x10
 
-#ifdef CUSTOM_STREAMER
 static void __cdecl HOOK_CStreaming__RequestModel( unsigned int model, unsigned int flags )
 {
     pGame->GetStreaming()->RequestModel( model, flags );
@@ -41,15 +38,12 @@ static void __cdecl HOOK_CStreaming__FreeModel( unsigned int model )
 {
     pGame->GetStreaming()->FreeModel( model );
 }
-#endif
 
 CStreamingSA::CStreamingSA()
 {
-#ifdef CUSTOM_STREAMER
     // Hook the model requested
     HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
     HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
-#endif
 }
 
 CStreamingSA::~CStreamingSA()
@@ -58,7 +52,6 @@ CStreamingSA::~CStreamingSA()
 
 void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
 {
-#ifdef CUSTOM_STREAMER
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
     DWORD dwFunc;
 
@@ -149,7 +142,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
         if ( animIndex != -1 )
             RequestModel( animIndex + DATA_ANIM_BLOCK, 0x08 );
     }
-    else if ( id < 25000 )
+    else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
     {
         CTxdInstanceSA *txd = (*ppTxdPool)->Get( id - DATA_TEXTURE_BLOCK );
 
@@ -186,23 +179,10 @@ reload:
     info->m_flags = flags;
 
     info->m_eLoading = MODEL_LOADING;
-#else
-    __asm
-    {
-        mov eax,flags
-        push eax
-        movzx eax,id
-        push eax
-        mov ebx,0x004087E0
-        call ebx
-        add esp,8
-    }
-#endif
 }
 
 void CStreamingSA::FreeModel( unsigned short id )
 {
-#ifdef CUSTOM_STREAMER
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
     CBaseModelInfoSAInterface *model;
     DWORD dwFunc;
@@ -238,6 +218,8 @@ void CStreamingSA::FreeModel( unsigned short id )
 
                         unk--;
                     }
+
+                    unk2++;
                 }
 
                 *(int*)VAR_PEDSPECMODEL = unk;
@@ -248,27 +230,19 @@ void CStreamingSA::FreeModel( unsigned short id )
                 OutputDebugString( SString( "deleted vehicle model %u\n", id ) );
 #endif
 
-                dwFunc = 0x004080F0;
-
-                __asm
-                {
-                    movzx eax,id
-                    push eax
-                    call dwFunc
-                    pop eax
-                }
+                ((void (__cdecl*)( unsigned int ))0x004080F0)( id );
 
                 break;
             }
         }
-        else if ( id < 25000 )
+        else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
         {
 #ifdef MTA_DEBUG
             OutputDebugString( SString( "Deleted texDictionary %u\n", id - DATA_TEXTURE_BLOCK ) );
 #endif
 
             // Remove texture reference?
-            pGame->GetTextureManager()->RemoveTxdEntry( id - DATA_TEXTURE_BLOCK );
+            (*ppTxdPool)->Get( id - DATA_TEXTURE_BLOCK )->Deallocate();
         }
         else if ( id < 25255 )
         {
@@ -291,7 +265,7 @@ void CStreamingSA::FreeModel( unsigned short id )
 
             __asm
             {
-                movsx eax,id
+                movzx eax,id
                 sub eax,25255
 
                 push eax
@@ -324,7 +298,7 @@ void CStreamingSA::FreeModel( unsigned short id )
 
             __asm
             {
-                movsx eax,id
+                movzx eax,id
                 sub eax,26230
 
                 mov ecx,0x00A47B60
@@ -338,8 +312,6 @@ void CStreamingSA::FreeModel( unsigned short id )
 
     if ( info->m_lodModelID != 0xFFFF )
     {
-        CModelLoadInfoSA *lodInfo = (CModelLoadInfoSA*)(*(DWORD*)ARRAY_pLODModelLoaded) + info->m_lodModelID;
-
         if ( info->m_eLoading == MODEL_LOADING )
         {
             (*(DWORD*)VAR_NUMMODELS)--;
@@ -352,7 +324,10 @@ void CStreamingSA::FreeModel( unsigned short id )
             }
         }
 
+        CModelLoadInfoSA *lodInfo = (CModelLoadInfoSA*)(*(DWORD*)ARRAY_pLODModelLoaded) + info->m_lodModelID;
         lodInfo->m_unknown4 = info->m_unknown4;
+
+        lodInfo = (CModelLoadInfoSA*)(*(DWORD*)ARRAY_pLODModelLoaded) + info->m_unknown4;
         lodInfo->m_lodModelID = info->m_lodModelID;
 
         info->m_unknown4 = 0xFFFF;
@@ -376,7 +351,7 @@ void CStreamingSA::FreeModel( unsigned short id )
         if ( id < DATA_TEXTURE_BLOCK )
             RwFlushLoader();
         else if ( id < 25000 )
-            pGame->GetTextureManager()->RemoveTxdEntry( id - DATA_TEXTURE_BLOCK );
+            (*ppTxdPool)->Get( id - DATA_TEXTURE_BLOCK )->Deallocate();
         else if ( id < 25255 )
             ( (void (*)( unsigned int model ))0x00410730 )( id - 25000 );
         else if ( id < 25511 )
@@ -388,16 +363,6 @@ void CStreamingSA::FreeModel( unsigned short id )
     }
 
     info->m_eLoading = MODEL_UNAVAILABLE;
-#else
-    __asm
-    {
-        movzx eax,id
-        push eax
-        mov ebx,0x004089A0
-        call ebx
-        pop eax
-    }
-#endif
 }
 
 void CStreamingSA::LoadAllRequestedModels ( BOOL bOnlyPriorityModels )
