@@ -477,7 +477,6 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
 }
 
 // Reads and parses a DFF file specified by a path (szDFF) into a CModelInfo identified by the object id (usModelID)
-// usModelID == 0 means no collisions will be loaded (be careful! seems crashy!)
 RpClump* CRenderWareSA::ReadDFF( const char *path, unsigned short id )
 {
     if ( id > DATA_TEXTURE_BLOCK )
@@ -503,8 +502,13 @@ RpClump* CRenderWareSA::ReadDFF( const char *path, unsigned short id )
     RpPrtStdGlobalDataSetStreamEmbedded( model );
 
     // We do not have to preload the model if it already is; NULL out the model info here
-    if ( info->m_eLoading == MODEL_LOADED )
+    switch( info->m_eLoading )
+    {
+    case MODEL_LOADED:
+    case MODEL_LOD:
         model = NULL;
+        break;
+    }
 
     // The_GTA: Clumps and atomics load their requirements while being read in this rwStream
     // We therefor have to prepare all resources so it can retrive them; textures and animations!
@@ -512,26 +516,8 @@ RpClump* CRenderWareSA::ReadDFF( const char *path, unsigned short id )
     {
         CStreamingSA *streamer = pGame->GetStreaming();
 
-        // Load texture and animation
-        streamer->RequestModel( model->m_textureDictionary + DATA_TEXTURE_BLOCK, 0x10 );
-        
-        int animIndex = model->GetAnimFileIndex();
-
-        if ( animIndex != -1 )
-            streamer->RequestModel( animIndex + DATA_ANIM_BLOCK, 0x10 );
-
         // Load all requirements
-        DWORD dwFunc = 0x00407480;
-        __asm
-        {
-            mov eax,ds:[0x008E4C58]
-            push eax
-            mov ecx,info
-            call dwFunc
-        }
-
-        info->m_eLoading = MODEL_LOADING;
-
+        streamer->RequestModel( id, 0x10 );
         streamer->LoadAllRequestedModels( true );
 
         // We delete the RenderWare associations in this clump to free resources since GTA:SA loaded the 
@@ -539,6 +525,10 @@ RpClump* CRenderWareSA::ReadDFF( const char *path, unsigned short id )
         // The only thing we need is the reference to the texture container and possibly the collision
         txd = (*ppTxdPool)->Get( model->m_textureDictionary );
         txd->Reference();
+
+        // HACK: temp reference fix, I have to find the issue
+        if ( txd->m_references < 2 )
+            txd->Reference();
 
         col = model->m_pColModel;
         model->m_pColModel = NULL;

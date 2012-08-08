@@ -94,9 +94,11 @@ bool CModelSA::Replace( unsigned short id )
         streaming->LoadAllRequestedModels( false );
     }
 
+    g_colReplacement[id] = m_col;
+
     if ( cinfo->m_rwClump )  // Only inject if we are loaded! otherwise we screw up loading mechanics -> memory leaks
     {
-        CColModelSAInterface *col = g_colReplacement[id];
+        CColModelSAInterface *col = m_col;
 
         if ( col )
             cinfo->m_pColModel = NULL;
@@ -109,7 +111,6 @@ bool CModelSA::Replace( unsigned short id )
     }
 
     g_modelReplacement[id] = m_clump;
-    g_colReplacement[id] = m_col;
 
     m_imported[id] = true;
     return true;
@@ -145,6 +146,10 @@ bool CModelSA::Restore( unsigned short id )
     // We can only restore if the model is actively loaded
     if ( cinfo->m_rwClump )
     {
+        // Do not allow destruction of collision if it belongs to us
+        if ( g_colReplacement[id] )
+            cinfo->m_pColModel = NULL;
+
         streaming->FreeModel( id );
         streaming->RequestModel( id, 0x10 );
 
