@@ -26,7 +26,7 @@ public:
                             ~CTexDictionarySA();
 
     bool                    Load( const char *filename, bool filtering );
-    std::vector <CTexture*> GetTextures()                   { return (std::vector <CTexture*>&)m_textures; }
+    std::list <CTexture*>&  GetTextures()                   { return (std::list <CTexture*>&)m_textures; }
     void                    Clear();
 
     const char*             GetName() const                 { return m_name.c_str(); }
@@ -43,12 +43,11 @@ public:
     bool                    IsImported( unsigned short id ) const;
     bool                    IsImportedTXD( unsigned short id ) const;
 
-    const std::vector <unsigned short>& GetImportedList() const     { return (const std::vector <unsigned short>&)m_imported; }
+    const importList_t&     GetImportedList() const         { return m_imported; }
 
 protected:
     std::string             m_name;
 
-    typedef std::list <unsigned short> importList_t;
     importList_t            m_imported;
 
 public:

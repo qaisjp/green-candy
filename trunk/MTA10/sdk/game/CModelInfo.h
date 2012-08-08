@@ -123,7 +123,6 @@ public:
     virtual void                            SetVoice( const char* szVoiceType, const char* szVoice ) = 0;
 
     // Custom collision related functions
-    virtual void                            RestoreOriginalModel() = 0;
     virtual void                            SetColModel( CColModel *pColModel ) = 0;
     virtual void                            RestoreColModel() = 0;
     virtual void                            MakeCustomModel() = 0;

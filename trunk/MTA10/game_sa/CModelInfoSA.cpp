@@ -94,7 +94,7 @@ void CBaseModelInfoSAInterface::DeleteCollision()
 
 void CBaseModelInfoSAInterface::DeleteTextures()
 {
-    if ( m_textureDictionary == -1)
+    if ( m_textureDictionary == -1 )
         return;
 
     CTxdStore_RemoveRef( m_textureDictionary );
@@ -112,14 +112,14 @@ void CBaseModelInfoSAInterface::Reference()
 {
     m_numberOfRefs++;
 
-    CTxdStore_AddRef( m_textureDictionary );
+    (*ppTxdPool)->Get( m_textureDictionary )->Reference();
 }
 
 void CBaseModelInfoSAInterface::Dereference()
 {
     m_numberOfRefs--;
 
-    CTxdStore_RemoveRef( m_textureDictionary );
+    (*ppTxdPool)->Get( m_textureDictionary )->Dereference();
 }
 
 unsigned short CBaseModelInfoSAInterface::GetFlags()
@@ -133,7 +133,6 @@ CModelInfoSA::CModelInfoSA()
     m_modelID = 0xFFFF;
     m_dwReferences = 0;
     m_pOriginalColModelInterface = NULL;
-    m_pCustomClump = NULL;
     m_pCustomColModel = NULL;
 }
 
@@ -143,7 +142,6 @@ CModelInfoSA::CModelInfoSA( unsigned short id )
     m_pInterface = ppModelInfo [ id ];
     m_dwReferences = 0;
     m_pOriginalColModelInterface = NULL;
-    m_pCustomClump = NULL;
     m_pCustomColModel = NULL;
 }
 
@@ -763,33 +761,16 @@ void CModelInfoSA::RequestVehicleUpgrade()
 
 void CModelInfoSA::SetCustomModel( RpClump *pClump )
 {
-    // Store the custom clump
-    m_pCustomClump = pClump;
-
     // Replace the vehicle model if we're loaded.
     if ( IsLoaded() )
     {
         // Are we a vehicle?
-        if ( IsVehicle() )
-        {
-            pGame->GetRenderWare()->ReplaceVehicleModel( pClump, m_modelID );
-        }
-        else
+        if ( !IsVehicle() )
         {
             // We are an object.
             pGame->GetRenderWare()->ReplaceAllAtomicsInModel( pClump, m_modelID );
         }
     }
-}
-
-void CModelInfoSA::RestoreOriginalModel()
-{
-    // Are we loaded?
-    if ( IsLoaded() )
-        pGame->GetStreaming()->FreeModel( m_modelID );
-
-    // Reset the stored custom vehicle clump
-    m_pCustomClump = NULL;
 }
 
 void CModelInfoSA::SetColModel( CColModel* pColModel )
@@ -809,7 +790,7 @@ void CModelInfoSA::SetColModel( CColModel* pColModel )
             m_pOriginalColModelInterface = m_pInterface->m_pColModel;
 
         // Apply some low-level hacks
-        MemPutFast < BYTE > ( (BYTE*) pInterface + 40, 0xA9 );
+        //MemPutFast < BYTE > ( (BYTE*) pInterface + 40, 0xA9 );
 
         // Call SetColModel
         DWORD dwFunc = FUNC_SetColModel;
@@ -825,13 +806,14 @@ void CModelInfoSA::SetColModel( CColModel* pColModel )
 
         // public: static void __cdecl CColAccel::addCacheCol(int, class CColModel const &)
         DWORD func = 0x5B2C20;
-        __asm {
+        __asm
+        {
             push    pInterface
             push    ModelID
             call    func
             add     esp, 8
         }
-        #pragma message(__LOC__ "(IJs) Document this function some time.")
+#pragma message(__LOC__ "(IJs) Document this function some time.")
     }
 }
 
@@ -875,12 +857,6 @@ void CModelInfoSA::RestoreColModel()
 
 void CModelInfoSA::MakeCustomModel()
 {
-    // We have a custom model?
-    if ( m_pCustomClump )
-    {
-        SetCustomModel( m_pCustomClump );
-    }
-
     // Custom collision model is not NULL and it's different from the original?
     if ( m_pCustomColModel )
     {
@@ -892,6 +868,7 @@ void CModelInfoSA::GetVoice( short* psVoiceType, short* psVoiceID ) const
 {
     if ( psVoiceType )
         *psVoiceType = GetPedModelInfoInterface ()->m_sVoiceType;
+
     if ( psVoiceID )
         *psVoiceID = GetPedModelInfoInterface ()->m_sFirstVoice;
 }
@@ -900,8 +877,10 @@ void CModelInfoSA::GetVoice( const char** pszVoiceType, const char** pszVoice ) 
 {
     short sVoiceType, sVoiceID;
     GetVoice ( &sVoiceType, &sVoiceID );
+
     if ( pszVoiceType )
         *pszVoiceType = CPedSoundSA::GetVoiceTypeNameFromID ( sVoiceType );
+
     if ( pszVoice )
         *pszVoice = CPedSoundSA::GetVoiceNameFromID ( sVoiceType, sVoiceID );
 }
@@ -919,9 +898,11 @@ void CModelInfoSA::SetVoice( const char* szVoiceType, const char* szVoice )
     short sVoiceType = CPedSoundSA::GetVoiceTypeIDFromName ( szVoiceType );
     if ( sVoiceType < 0 )
         return;
+
     short sVoiceID = CPedSoundSA::GetVoiceIDFromName ( sVoiceType, szVoice );
     if ( sVoiceID < 0 )
         return;
+
     SetVoice ( sVoiceType, sVoiceID );
 }
 
@@ -929,7 +910,7 @@ void CModelInfoSA::MakePedModel( const char *szTexture )
 {
     // Create a new CPedModelInfo
     CPedModelInfoSA pedModelInfo;
-    ppModelInfo[m_modelID] = (CBaseModelInfoSAInterface*)pedModelInfo.GetPedModelInfoInterface();
+    ppModelInfo[m_modelID] = pedModelInfo.GetPedModelInfoInterface();
 
     // Load our texture
     pGame->GetStreaming ()->RequestSpecialModel ( m_modelID, szTexture, 0 );

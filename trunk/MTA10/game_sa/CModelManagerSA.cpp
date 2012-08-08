@@ -34,7 +34,7 @@ CModelSA* CModelManagerSA::CreateModel( const char *path, unsigned short id )
     if ( !clump )
         return NULL;
 
-    CModelSA *model = new CModelSA( clump );
+    CModelSA *model = new CModelSA( clump, ppModelInfo[id]->m_pColModel );
 
     m_models.push_back( model );
     return model;

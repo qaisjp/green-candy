@@ -47,7 +47,7 @@ void CParticleSystemSAInterface::Shutdown()
 
 void CParticleSystemSAInterface::LoadDefinitions( const char *filename )
 {
-    char buffer[256];
+    //char buffer[256];
 }
 
 CParticleSystemSA::CParticleSystemSA()

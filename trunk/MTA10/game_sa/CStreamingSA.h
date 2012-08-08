@@ -70,5 +70,6 @@ public:
 };
 
 extern RwObject* g_modelReplacement[DATA_TEXTURE_BLOCK];
+extern CColModelSAInterface* g_colReplacement[DATA_TEXTURE_BLOCK];
 
 #endif

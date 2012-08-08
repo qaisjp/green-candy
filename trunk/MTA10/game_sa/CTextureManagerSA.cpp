@@ -18,6 +18,7 @@
 #define VAR_CPlayerTexDictionaries      0x00C88004
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
+RwTexDictionary *g_textureEmitter = NULL;
 
 CTxdPool**   ppTxdPool = (CTxdPool**)0x00C8800C;
 
@@ -84,6 +85,10 @@ void CTxdInstanceSA::Deallocate()
 
     if ( m_txd )
     {
+        // HACK: detach the global texture emitter if present
+        if ( g_textureEmitter == m_txd )
+            g_textureEmitter = NULL;
+
         m_txd->ForAllTextures( Txd_DeleteAll, 0 );
 
         RwTexDictionaryDestroy( m_txd );
@@ -136,6 +141,10 @@ bool CTxdInstanceSA::LoadTXD( const char *filename )
         tex->AddToDictionary( m_txd );
     }
 
+    // HACK: set the global texture emitter so loading the txd is the only requirement for model textures
+    // (BACKWARDS COMPATIBILITY WITH MTA:BLUE)
+    g_textureEmitter = m_txd;
+
     RwTexDictionaryDestroy( txd );
     return true;
 }
@@ -145,7 +154,7 @@ void CTxdInstanceSA::InitParent()
     // Assign texture imports
     unsigned short id = (*ppTxdPool)->GetIndex( this );
     dictImportList_t& list = g_dictImports[id];
-    
+
     for ( dictImportList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
         (*iter)->OnTxdLoad( *m_txd, id );
 
@@ -206,6 +215,10 @@ static RwTexture* __cdecl RwTexDictionaryFindFromStack( const char *name )
 
 static RwTexture* __cdecl RwTexDictionaryFindFromStackSecondary( const char *name )
 {
+    // HACK: apply a global texture emitter
+    if ( g_textureEmitter )
+        return g_textureEmitter->FindNamedTexture( name );
+
     return NULL;
 }
 

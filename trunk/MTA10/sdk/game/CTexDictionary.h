@@ -19,7 +19,7 @@ public:
     virtual                         ~CTexDictionary()   {};
 
     virtual bool                    Load( const char *filename, bool filtering ) = 0;
-    virtual std::vector <CTexture*> GetTextures() = 0;
+    virtual std::list <CTexture*>&  GetTextures() = 0;
     virtual void                    Clear() = 0;
 
     virtual const char*             GetName() const = 0;
@@ -36,7 +36,9 @@ public:
     virtual bool                    IsImported( unsigned short id ) const = 0;
     virtual bool                    IsImportedTXD( unsigned short id ) const = 0;
 
-    virtual const std::vector <unsigned short>& GetImportedList() const = 0;
+    typedef std::list <unsigned short> importList_t;
+
+    virtual const importList_t&     GetImportedList() const = 0;
 };
 
 #endif //_CTexDictionary_

@@ -13,7 +13,7 @@
 
 #include <StdInc.h>
 
-typedef std::vector <unsigned short> imports_t;
+typedef std::list <unsigned short> imports_t;
 
 static int txd_getName( lua_State *L )
 {
@@ -44,7 +44,7 @@ static const luaL_Reg txd_interface[] =
     { NULL, NULL }
 };
 
-typedef std::vector <CTexture*> textures_t;
+typedef std::list <CTexture*> textures_t;
 
 static int luaconstructor_txd( lua_State *L )
 {
@@ -54,7 +54,7 @@ static int luaconstructor_txd( lua_State *L )
     j.SetTransmit( LUACLASS_TXD, txd );
 
     // Create game textures
-    textures_t tex = txd->m_txd.GetTextures();
+    textures_t& tex = txd->m_txd.GetTextures();
     textures_t::iterator iter = tex.begin();
 
     for ( ; iter != tex.end(); iter++ )
