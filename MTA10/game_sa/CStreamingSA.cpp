@@ -18,6 +18,7 @@
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
 RwObject* g_modelReplacement[DATA_TEXTURE_BLOCK]; // Holds active RwObjects for model instances
+CColModelSAInterface* g_colReplacement[DATA_TEXTURE_BLOCK];
 
 #define ARRAY_PEDSPECMODEL      0x008E4C00
 #define VAR_PEDSPECMODEL        0x008E4BB0
@@ -45,6 +46,7 @@ CStreamingSA::CStreamingSA()
 {
     // Initiate our model replacement array
     memset( g_modelReplacement, 0, sizeof(g_modelReplacement) );
+    memset( g_colReplacement, 0, sizeof(g_colReplacement) );
 
     // Hook the model requested
     HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
@@ -81,6 +83,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
             {
                 CBaseModelInfoSAInterface *minfo = ppModelInfo[id];
 
+                // Apply the model
                 switch( minfo->GetRwModelType() )
                 {
                 case RW_ATOMIC:
@@ -93,13 +96,8 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
                     assert( 0 );    // I doubt that could happen; make sure anyway
                 }
 
-                // Load texture and animation
-                RequestModel( minfo->m_textureDictionary + DATA_TEXTURE_BLOCK, flags );
-                
-                int animIndex = minfo->GetAnimFileIndex();
-
-                if ( animIndex != 0xFFFF )
-                    RequestModel( animIndex + DATA_ANIM_BLOCK, flags );
+                // Load collision
+                minfo->m_pColModel = g_colReplacement[id];
 
                 info->m_eLoading = MODEL_LOADED;
                 return;
@@ -119,10 +117,6 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
         CModelLoadInfoSA *lodInfo;
 
         if ( info->m_lodModelID == 0xFFFF )
-            return;
-
-        // Model support patch: do not allow reloading of active models; it is not required ;)
-        if ( id < DATA_TEXTURE_BLOCK && g_modelReplacement[id] )
             return;
 
         // Unfold loaded model
@@ -245,6 +239,11 @@ void CStreamingSA::FreeModel( unsigned short id )
 
             model = ppModelInfo[id];
 
+            // Model management fix: we unlink the collision so GTA:SA does not destroy it during
+            // RwObject destruction
+            if ( g_colReplacement[id] && model->GetRwModelType() == RW_CLUMP )
+                model->m_pColModel = NULL;
+
             model->DeleteRwObject();
 
             switch( model->GetModelType() )
@@ -276,6 +275,14 @@ void CStreamingSA::FreeModel( unsigned short id )
                 ((void (__cdecl*)( unsigned int ))0x004080F0)( id );
 
                 break;
+            }
+
+            // Model support bugfix: if we have a replacement for this model, we should not
+            // bother about management in the CStreaming class, so quit here
+            if ( g_modelReplacement[id] )
+            {
+                info->m_eLoading = MODEL_UNAVAILABLE;
+                return;
             }
         }
         else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
@@ -350,10 +357,7 @@ void CStreamingSA::FreeModel( unsigned short id )
             }
         }
 
-        // Model support fix: we do not mess with the streaming memory if we replaced a model loaded by
-        // a different/our system.
-        if ( id > DATA_TEXTURE_BLOCK || !g_modelReplacement[id] )
-            *(DWORD*)VAR_MEMORYUSAGE -= info->m_blockCount * 2048;
+        *(DWORD*)VAR_MEMORYUSAGE -= info->m_blockCount * 2048;
     }
 
     if ( info->m_lodModelID != 0xFFFF )
@@ -443,7 +447,7 @@ bool CStreamingSA::HasModelLoaded ( unsigned int id )
 
 bool CStreamingSA::IsModelLoading ( unsigned int id )
 {
-    return ((CModelLoadInfoSA*)(ARRAY_CModelLoadInfo) + id)->m_eLoading > MODEL_LOADED;
+    return ((CModelLoadInfoSA*)(ARRAY_CModelLoadInfo) + id)->m_eLoading == MODEL_LOADING;
 }
 
 void CStreamingSA::WaitForModel ( unsigned int id )

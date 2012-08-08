@@ -17,7 +17,7 @@
 class CModelSA : public CModel
 {
 public:
-                            CModelSA( RpClump *clump );
+                            CModelSA( RpClump *clump, CColModelSAInterface *col );
                             ~CModelSA();
 
     const char*             GetName() const;
@@ -33,6 +33,7 @@ public:
 
 protected:
     RpClump*        m_clump;
+    CColModelSAInterface*   m_col;
 
     typedef std::map <unsigned short, bool> importMap_t;
     importMap_t     m_imported;

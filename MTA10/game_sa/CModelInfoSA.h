@@ -167,7 +167,6 @@ protected:
     DWORD                           m_dwReferences;
     CColModel*                      m_pCustomColModel;
     CColModelSAInterface*           m_pOriginalColModelInterface;
-    RpClump*                        m_pCustomClump;
     static std::map <unsigned short, int> ms_RestreamTxdIDMap;
 
 public:
@@ -236,7 +235,6 @@ public:
 
     // Custom collision related functions
     void                            SetCustomModel( RpClump* pClump );
-    void                            RestoreOriginalModel();
     void                            SetColModel( CColModel* pColModel );
     void                            RestoreColModel();
     void                            MakeCustomModel();

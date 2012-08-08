@@ -76,6 +76,8 @@ void CTextureSA::OnTxdLoad( RwTexDictionary& txd, unsigned short id )
 {
     import& imp = (*m_imported.find( id )).second;
     imp.original = txd.FindNamedTexture( m_texture->name );
+
+    OutputDebugString( SString( "TXHOOK ON: %s\n", m_texture->name ) );
     
     if ( imp.original )
         imp.original->RemoveFromDictionary();
@@ -87,6 +89,8 @@ void CTextureSA::OnTxdInvalidate( RwTexDictionary& txd, unsigned short id )
 {
     import& imp = (*m_imported.find( id )).second;
     imp.copy->RemoveFromDictionary();
+
+    OutputDebugString( SString( "TXHOOK OFF: %s\n", m_texture->name ) );
 
     if ( imp.original )
     {
@@ -121,6 +125,13 @@ bool CTextureSA::ImportTXD( unsigned short id )
 
     import imp;
     imp.copy = RwTextureCreate( m_texture->raster );
+
+    // We need to traverse the name, too
+    memcpy( imp.copy->name, m_texture->name, 32 );
+    memcpy( imp.copy->mask, m_texture->mask, 32 );
+
+    imp.copy->flags = m_texture->flags;
+    imp.copy->refs = 1;
 
     if ( RwTexDictionary *rtxd = txd->m_txd )
     {

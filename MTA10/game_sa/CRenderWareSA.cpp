@@ -480,6 +480,9 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
 // usModelID == 0 means no collisions will be loaded (be careful! seems crashy!)
 RpClump* CRenderWareSA::ReadDFF( const char *path, unsigned short id )
 {
+    if ( id > DATA_TEXTURE_BLOCK )
+        return NULL;
+
     // open the stream
     RwStream *streamModel = RwStreamOpen( STREAM_TYPE_FILENAME, STREAM_MODE_READ, path );
 
@@ -491,17 +494,83 @@ RpClump* CRenderWareSA::ReadDFF( const char *path, unsigned short id )
     if ( !RwStreamFindChunk( streamModel, 0x10, NULL, NULL ) )
         return NULL;
 
+    CBaseModelInfoSAInterface *model = ppModelInfo[id];
+    CTxdInstanceSA *txd;
+    CColModelSAInterface *col;
+    CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
+
     // rockstar's collision hack: set the global particle emitter to the modelinfo pointer of this model
-    //#pragma message(__LOC__ "(IJs) RpPrtStdGlobalDataSetStreamEmbedded R* hack is unstable. Seems to work when forced to packer vehicle id (443).")
-    if ( id != 0 )
-        RpPrtStdGlobalDataSetStreamEmbedded( ppModelInfo[id] );
+    RpPrtStdGlobalDataSetStreamEmbedded( model );
+
+    // We do not have to preload the model if it already is; NULL out the model info here
+    if ( info->m_eLoading == MODEL_LOADED )
+        model = NULL;
+
+    // The_GTA: Clumps and atomics load their requirements while being read in this rwStream
+    // We therefor have to prepare all resources so it can retrive them; textures and animations!
+    if ( model )
+    {
+        CStreamingSA *streamer = pGame->GetStreaming();
+
+        // Load texture and animation
+        streamer->RequestModel( model->m_textureDictionary + DATA_TEXTURE_BLOCK, 0x10 );
+        
+        int animIndex = model->GetAnimFileIndex();
+
+        if ( animIndex != -1 )
+            streamer->RequestModel( animIndex + DATA_ANIM_BLOCK, 0x10 );
+
+        // Load all requirements
+        DWORD dwFunc = 0x00407480;
+        __asm
+        {
+            mov eax,ds:[0x008E4C58]
+            push eax
+            mov ecx,info
+            call dwFunc
+        }
+
+        info->m_eLoading = MODEL_LOADING;
+
+        streamer->LoadAllRequestedModels( true );
+
+        // We delete the RenderWare associations in this clump to free resources since GTA:SA loaded the 
+        // actual model's dff by now, which we do not need
+        // The only thing we need is the reference to the texture container and possibly the collision
+        txd = (*ppTxdPool)->Get( model->m_textureDictionary );
+        txd->Reference();
+
+        col = model->m_pColModel;
+        model->m_pColModel = NULL;
+
+        // TODO: make sure that atomic model infos do not delete the associated collision.
+        // Otherwise we have to preserve it here! Last time I checked it did not happen.
+
+        // Tell GTA:SA to unload the resources, to cleanup associations
+        streamer->FreeModel( id );
+    }
 
     // read the clump with all its extensions
     RpClump *pClump = RpClumpStreamRead( streamModel );
 
-    // reset collision hack
-    if ( id != 0 )
-        RpPrtStdGlobalDataSetStreamEmbedded( NULL );
+    // reset model shemantic loader
+    RpPrtStdGlobalDataSetStreamEmbedded( NULL );
+
+    if ( model )
+    {
+        // Unreference the texture again, as we do not need it anymore
+        txd->Dereference();
+
+        // If there is no collision in our model information by now, the clump did not provide one
+        // We should restore to the original collision then
+        if ( !model->m_pColModel )
+            model->m_pColModel = col;
+        else
+        {
+            // Otherwise we can safely delete it
+            delete col;
+        }
+    }
 
     // close the stream
     RwStreamClose( streamModel, NULL );

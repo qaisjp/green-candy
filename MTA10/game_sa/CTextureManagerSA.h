@@ -138,5 +138,6 @@ private:
 
 typedef std::list <CTextureSA*> dictImportList_t;
 extern dictImportList_t g_dictImports[MAX_TXD];
+extern RwTexDictionary *g_textureEmitter;
 
 #endif
