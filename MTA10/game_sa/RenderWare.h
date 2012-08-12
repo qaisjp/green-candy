@@ -100,13 +100,6 @@ enum RpLightFlags
     LIGHT_ILLUMINATES_GEOMETRY = 2,
     LIGHT_FLAGS_LAST = RW_STRUCT_ALIGN
 };
-enum eRwType
-{
-    RW_NULL,
-    RW_ATOMIC,
-    RW_CLUMP,
-    RW_TXD = 6
-};
 
 #define RW_OBJ_REGISTERED           0x02
 #define RW_OBJ_VISIBLE              0x04
@@ -134,6 +127,7 @@ struct RwVertex
 };
 
 // Macros used by RW, taken from SGU :)
+#define LIST_VALIDATE(item) ( assert( (item).next->prev == &(item) && (item).prev->next == &(item) ) )
 #define LIST_APPEND(link, item) ( (item).next = &(link), (item).prev = (link).prev, (item).prev->next = &(item), (item).next->prev = &(item) )
 #define LIST_INSERT(link, item) ( (item).next = (link).next, (item).prev = &(link), (item).prev->next = &(item), (item).next->prev = &(item) )
 #define LIST_REMOVE(link) ( (link).prev->next = (link).next, (link).next->prev = (link).prev )
@@ -275,6 +269,9 @@ class RwObjectFrame : public RwObject
 public:
     RwListEntry <RwObjectFrame>     m_lFrame;
     void*                           m_callback;
+
+    void                    AddToFrame( RwFrame *frame );
+    void                    RemoveFromFrame();
 };
 class RwFrame : public RwObject
 {
@@ -373,6 +370,19 @@ public:
     RwListEntry <RwTexDictionary>   globalTXDs;
     RwTexDictionary*                m_parentTxd;
 
+#ifdef _DEBUG
+    inline bool             Validate()
+    {
+        RwListEntry <RwTexture> *child;
+
+        for ( child = textures.root.next; child != &textures.root; child = child->next )
+            if ( child->next->prev != child || child->prev->next != child )
+                return false;
+
+        return true;
+    }
+#endif
+
     template <class type>
     bool                    ForAllTextures( bool (*callback)( RwTexture *tex, type ud ), type ud )
     {
@@ -380,12 +390,43 @@ public:
 
         for ( child = textures.root.next; child != &textures.root; child = child->next )
         {
+#ifdef _DEBUG
+            LIST_VALIDATE( *child );
+#endif
+
             if ( !callback( (RwTexture*)( (unsigned int)child - offsetof(RwTexture, TXDList) ), ud ) )
                 return false;
         }
 
         return true;
     }
+
+    template <class type>
+    bool                    ForAllTexturesSafe( bool (*callback)( RwTexture *tex, type ud ), type ud )
+    {
+        RwListEntry <RwTexture> *child = textures.root.next;
+
+#ifdef _DEBUG
+        Validate();
+#endif
+
+        while ( child != &textures.root )
+        {
+            RwListEntry <RwTexture> *nchild = child->next;
+
+#ifdef _DEBUG
+            LIST_VALIDATE( *child );
+#endif
+
+            if ( !callback( (RwTexture*)( (unsigned int)child - offsetof(RwTexture, TXDList) ), ud ) )
+                return false;
+
+            child = nchild;
+        }
+
+        return true;
+    }
+
     RwTexture*              GetFirstTexture();
     RwTexture*              FindNamedTexture( const char *name );
 };
@@ -528,6 +569,9 @@ public:
 
     bool                    IsNight();
 
+    void                    AddToClump( RpClump *clump );
+    void                    RemoveFromClump();
+
     void                    SetRenderCallback( RpAtomicCallback callback );
 
     void                    ApplyVisibilityFlags( unsigned short flags );
@@ -631,10 +675,26 @@ struct RpTriangle
     unsigned short v1, v2, v3;
     unsigned short materialId;
 };
+struct RwEffect //size: 64
+{
+    BYTE                    m_pad[36];              // 0
+    RwTexture*              m_primary;              // 36
+    RwTexture*              m_secondary;            // 40
+    BYTE                    m_pad2[20];             // 44
+};
 class Rw2dfx
 {
 public:
     unsigned int            m_count;
+    BYTE                    m_pad[12];
+
+    inline RwEffect*        GetEffect( unsigned int idx )
+    {
+        if ( idx >= m_count )
+            return NULL;
+
+        return ( (RwEffect*)( this + 1 ) + idx );
+    }
 };
 class RwGeomDimension
 {
@@ -702,6 +762,7 @@ public:
         return true;
     }
     bool                    IsAlpha();
+    void                    UnlinkFX();
 };
 class RwStructInfo
 {
@@ -781,10 +842,10 @@ extern RwInterface **ppRwInterface;
 /*****************************************************************************/
 
 // RenderWare type definitions
-typedef int          (* RwIOCallbackClose) (void *data);
-typedef unsigned int (* RwIOCallbackRead)  (void *data, void *buffer, unsigned int length);
-typedef int          (* RwIOCallbackWrite) (void *data, const void *buffer, unsigned int length);
-typedef int          (* RwIOCallbackOther) (void *data, unsigned int offset);
+typedef int             (* RwIOCallbackClose) (void *data);
+typedef size_t          (* RwIOCallbackRead)  (void *data, void *buffer, size_t length);
+typedef size_t          (* RwIOCallbackWrite) (void *data, const void *buffer, size_t length);
+typedef int             (* RwIOCallbackSeek)  (void *data, unsigned int offset);
 
 // RenderWare enumerations
 enum RwStreamType
@@ -813,20 +874,23 @@ struct RwBuffer
 };
 union RwStreamTypeData
 {
-    struct {
-        unsigned int      position;
-        unsigned int      size;
-        void              *ptr_file;
+    struct
+    {
+        unsigned int        position;
+        unsigned int        size;
+        void*               ptr_file;
     };
-    struct {
-        void              *file;
+    struct
+    {
+        void*               file;
     };
-    struct {
-        RwIOCallbackClose callbackClose;
-        RwIOCallbackRead  callbackRead;
-        RwIOCallbackWrite callbackWrite;
-        RwIOCallbackOther callbackOther;
-        void              *ptr_callback;
+    struct
+    {
+        RwIOCallbackClose   callbackClose;
+        RwIOCallbackRead    callbackRead;
+        RwIOCallbackWrite   callbackWrite;
+        RwIOCallbackSeek    callbackSeek;
+        void*               ptr_callback;
     };
 };
 struct RwStream

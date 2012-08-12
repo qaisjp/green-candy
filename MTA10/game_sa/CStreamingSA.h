@@ -1,10 +1,11 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CStreamingSA.h
 *  PURPOSE:     Header file for data streamer class
 *  DEVELOPERS:  Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -19,14 +20,16 @@
 #define DATA_TEXTURE_BLOCK      20000
 #define DATA_ANIM_BLOCK         25575
 
-#define FUNC_CStreaming__RequestModel                    0x4087E0
-#define FUNC_LoadAllRequestedModels                      0x40EA10
-#define FUNC_CStreaming__HasVehicleUpgradeLoaded         0x407820
-#define FUNC_CStreaming_RequestAnimations                0x407120
-#define FUNC_CStreaming_RequestSpecialModel              0x409d10
+#define FUNC_CStreaming__RequestModel                       0x4087E0
+#define FUNC_LoadAllRequestedModels                         0x40EA10
+#define FUNC_CStreaming__HasVehicleUpgradeLoaded            0x407820
+#define FUNC_CStreaming_RequestAnimations                   0x407120
+#define FUNC_CStreaming_RequestSpecialModel                 0x409d10
 
-#define MAX_MODELS                                       28835
-#define ARRAY_CModelLoadInfo                             0x8E4CC0
+#define MAX_MODELS                                          28835
+#define ARRAY_CModelLoadInfo                                0x8E4CC0
+
+#define VAR_StreamerThreadHandle                            0x008E4008
 
 class CStreamingSA : public CStreaming
 {
@@ -46,30 +49,50 @@ public:
     void            RequestSpecialModel ( DWORD model, const char * szTexture, DWORD channel );
 };
 
-enum eLoadingState
-{
-    MODEL_UNAVAILABLE,
-    MODEL_LOADED,
-    MODEL_LOADING,
-    MODEL_LOD,    // Perhaps
-    MODEL_RELOAD,
-    FIX_DWORD = 0xFFFFFFFF
-};
-
-class CModelLoadInfoSA  // size: 20
+class CIPLFileSA
 {
 public:
-    unsigned short  m_lodModelID;       // 0
-    unsigned short  m_unknown4;         // 2
-    unsigned short  m_unknown5;         // 4
-    unsigned char   m_flags;            // 6
-    unsigned char   m_imgID;            // 7
-    unsigned int    m_blockOffset;      // 8
-    unsigned int    m_blockCount;       // 12
-    eLoadingState   m_eLoading;         // 16
+    CIPLFileSA() : m_vecMin( MAX_REGION, -MAX_REGION ), m_vecMax( -MAX_REGION, MAX_REGION )
+    {
+        m_unk1 = HEIGHT_BOUND;
+        m_unk2 = -HEIGHT_BOUND;
+
+        m_unk3 = HEIGHT_BOUND;
+        m_unk4 = -HEIGHT_BOUND;
+
+        m_unk5 = 0xFFFF;
+
+        m_unk6 = m_unk7 = m_unk8 = false;
+        m_unk9 = true;
+
+        m_unk10 = m_unk11 = false;
+    }
+
+    void* operator new ( size_t );
+    void operator delete ( void *ptr );
+
+    CVector2D       m_vecMin, m_vecMax;     // 0
+    char            m_name[18];             // 16
+
+    short           m_unk1;                 // 34
+    short           m_unk2;                 // 36
+
+    short           m_unk3;                 // 38
+    short           m_unk4;                 // 40
+
+    unsigned short  m_unk5;                 // 42
+
+    bool            m_unk6;                 // 44
+    bool            m_unk7;                 // 45
+    bool            m_unk8;                 // 46
+    bool            m_unk9;                 // 47, 1
+    bool            m_unk10;                // 48
+    bool            m_unk11;                // 49
+
+    WORD            m_pad;                  // 50
 };
 
-extern RwObject* g_modelReplacement[DATA_TEXTURE_BLOCK];
-extern CColModelSAInterface* g_colReplacement[DATA_TEXTURE_BLOCK];
+extern class CRwObjectSA *g_replObjectNative[DATA_TEXTURE_BLOCK];
+extern class CColModelSA *g_colReplacement[DATA_TEXTURE_BLOCK];
 
 #endif

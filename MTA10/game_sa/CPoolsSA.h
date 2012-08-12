@@ -25,8 +25,7 @@
 #include "CVehicleModelInfoSA.h"
 #include "CColModelSA.h"
 #include "CEntryInfoSA.h"
-#include "CTextureSA.h"
-#include "CTexDictionarySA.h"
+#include "RenderWare/include.h"
 #include "CTextureManagerSA.h"
 #include "CEventSA.h"
 #include "CBuildingSA.h"
@@ -178,6 +177,9 @@ public:
     BYTE            m_pad[196];
 };
 
+#define MAX_DUMMIES     4000
+#define MAX_IPL         256
+
 // Rockstar's inheritance trick; keep these chains updated!
 #define MAX_VEHICLE_SIZE ( max(sizeof(CHeliSAInterface),max(sizeof(CTrainSAInterface),max(sizeof(CAutomobileSAInterface),max(sizeof(CBikeSAInterface),max(sizeof(CBicycleSAInterface),max(sizeof(CPlaneSAInterface),max(sizeof(CBoatSAInterface),max(sizeof(CAutomobileTrailerSAInterface),max(sizeof(CQuadBikeSAInterface),sizeof(CMonsterTruckSAInterface)))))))))) )
 
@@ -190,7 +192,7 @@ typedef CPool <CColModelSAInterface, 20000> CColModelPool;
 
 typedef CPool <CPtrNodeSingleSA, 100000> CPtrNodeSinglePool;
 typedef CPool <CPtrNodeDoubleSA, 5000> CPtrNodeDoublePool;
-typedef CPool <CEntryInfoSA, 500> CEntryInfoPool;
+typedef CPool <CEntryInfoSA, MAX_VEHICLES + MAX_PEDS + MAX_OBJECTS + MAX_DUMMIES> CEntryInfoPool; // info for every entity in the world
 
 typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
 
@@ -199,7 +201,7 @@ typedef CPool <CPedSAInterface, MAX_PEDS, MAX_PED_SIZE> CPedPool;
 typedef CPool <CObjectSAInterface, MAX_OBJECTS, MAX_OBJECT_SIZE> CObjectPool;
 
 typedef CPool <CBuildingSAInterface, MAX_BUILDINGS> CBuildingPool;
-typedef CPool <CDummySAInterface, 4000> CDummyPool;
+typedef CPool <CDummySAInterface, MAX_DUMMIES> CDummyPool;
 
 typedef CPool <CTaskSAInterface, MAX_TASKS> CTaskPool;
 typedef CPool <CEventSAInterface, 5000> CEventPool;
@@ -210,6 +212,9 @@ typedef CPool <CTaskAllocatorSA, 16> CTaskAllocatorPool;
 
 typedef CPool <CPedIntelligenceSAInterface, MAX_PEDS> CPedIntelligencePool;
 typedef CPool <CPedAttractorSA, 64> CPedAttractorPool;
+
+typedef CPool <CColFileSA, 255> CColFilePool;
+typedef CPool <CIPLFileSA, MAX_IPL> CIPLFilePool;
 
 // They have to be defined somewhere!
 extern CVehicleSeatPlacementPool** ppVehicleSeatPlacementPool;
@@ -237,6 +242,9 @@ extern CTaskAllocatorPool** ppTaskAllocatorPool;
 
 extern CPedIntelligencePool** ppPedIntelligencePool;
 extern CPedAttractorPool** ppPedAttractorPool;
+
+extern CColFilePool** ppColFilePool;
+extern CIPLFilePool** ppIPLFilePool;
 
 // MTA pools; lets use the trick ourselves, shall we? :P
 // Do not forget to extend this chain once new interfaces are spotted!
@@ -351,6 +359,8 @@ extern CObjectSA *mtaObjects[MAX_OBJECTS];
 #define CLASS_CPointRoutePool               0xb744b0
 #define CLASS_CPtrNodeDoubleLinkPool        0xB74488
 #define CLASS_CPtrNodeSingleLinkPool        0xB74484
+#define CLASS_CColFilePool                  0x965560
+#define CLASS_CIPLFilePool                  0x8E3FB0
 
 
 #define FUNC_CBuildingPool_GetNoOfUsedSpaces                0x550620

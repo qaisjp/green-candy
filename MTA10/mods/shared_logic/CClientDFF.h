@@ -21,7 +21,6 @@ class CClientDFF;
 
 class CClientDFF : public LuaElement
 {
-    friend class CClientDFFManager;
 public:
                                     CClientDFF( LuaClass& root, CModel& model );
                                     ~CClientDFF();

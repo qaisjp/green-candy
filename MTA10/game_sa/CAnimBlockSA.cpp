@@ -16,18 +16,18 @@ CAnimBlendHierarchySAInterface*     CAnimBlockSAInterface::GetAnimation( unsigne
 {
     unsigned int n;
 
-    for (n=0; n<m_count; n++)
+    for ( n=0; n<m_count; n++ )
     {
         CAnimBlendHierarchySAInterface *anim = (CAnimBlendHierarchySAInterface*)ARRAY_CAnimManager_Animations + m_animationIndex + n;
 
-        if (anim->m_hash == hash)
+        if ( anim->m_hash == hash )
             return anim;
     }
 
     return NULL;
 }
 
-int CAnimBlockSAInterface::GetIndex ( void )
+int CAnimBlockSAInterface::GetIndex()
 {
-    return (((long)this - ARRAY_CAnimManager_AnimBlocks) / sizeof(this));
+    return (((long)this - ARRAY_CAnimManager_AnimBlocks) / sizeof(*this));
 }

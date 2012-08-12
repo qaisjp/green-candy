@@ -54,6 +54,13 @@ struct RwColor
         return ( a ) | ( (unsigned int)b << 8 ) | ( (unsigned int)g << 16 ) | ( (unsigned int)r << 24 );
     }
 };
+enum eRwType
+{
+    RW_NULL,
+    RW_ATOMIC,
+    RW_CLUMP,
+    RW_TXD = 6
+};
 
 static const float negOne = -1.0f;
 

@@ -29,4 +29,8 @@ public:
     unsigned int        GetNumExtensions();
 };
 
+RwStream*   RwStreamCreateTranslated( CFile *file );
+RwStream*   RwStreamCreateIsoTranslated( CFile *file );
+RwStream*   RwStreamOpenTranslated( const char *path, RwStreamType type );
+
 #endif

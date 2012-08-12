@@ -36,7 +36,7 @@ typedef unsigned int            (__cdecl *RwStreamReadBlocks_t)                 
 typedef RwTexture*              (__cdecl *RwStreamReadTexture_t)                (RwStream *stream);
 typedef int                     (__cdecl *RwStreamClose_t)                      (RwStream *stream, void *pData);
 typedef RpAtomic *              (__cdecl *RpAtomicCreate_t)                     ();
-typedef RpAtomic *              (__cdecl *RpAtomicClone_t)                      (RpAtomic * atomic);
+typedef RpAtomic *              (__cdecl *RpAtomicClone_t)                      (const RpAtomic * atomic);
 typedef RpAtomic *              (__cdecl *RpAtomicSetGeometry_t)                (RpAtomic * atomic, RpGeometry * geometry, unsigned int flags);
 typedef RpAtomic *              (__cdecl *RpAtomicSetFrame_t)                   (RpAtomic * atomic, RwFrame * frame);
 typedef void                    (__cdecl *RpAtomicSetupObjectPipeline_t)        (RpAtomic *atomic);

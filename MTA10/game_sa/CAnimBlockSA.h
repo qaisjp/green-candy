@@ -19,7 +19,7 @@
 
 class CAnimBlendAssocGroupSA;
 
-#define ARRAY_AnimBlock             0x00B5D4C0
+#define ARRAY_AnimBlock             0x00B5D4A0
 
 class CAnimBlockSAInterface // 32 bytes
 {
@@ -30,7 +30,7 @@ public:
     unsigned short      m_references;       // 18
     unsigned int        m_animationIndex;   // 20
     unsigned int        m_count;            // 24
-    BYTE                m_pad2[4];          // 28
+    unsigned int        m_animInfoIndex;    // 28
 
     int                                 GetIndex();
 

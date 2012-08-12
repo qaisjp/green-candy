@@ -26,7 +26,7 @@ public:
     unsigned int                    GetHash() const                 { return m_txd.GetHash(); }
     unsigned short                  GetID() const                   { return m_txd.GetID(); }
 
-    bool                            LoadTXD( const char *path, bool filtering = true );
+    bool                            LoadTXD( CFile *file, bool filtering = true );
 
     bool                            Import( unsigned short usModelID );
     bool                            IsImported( unsigned short usModelID ) const;

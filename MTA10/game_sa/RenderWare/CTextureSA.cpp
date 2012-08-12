@@ -2,7 +2,7 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        game_sa/CStreamingSA.cpp
+*  FILE:        game_sa/RenderWare/CStreamingSA.cpp
 *  PURPOSE:     RenderWare texture extension
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
@@ -14,6 +14,8 @@
 #include "gamesa_renderware.h"
 
 extern CBaseModelInfoSAInterface** ppModelInfo;
+
+#define DEBUG_TEXTURES
 
 CTextureSA::CTextureSA( RwTexture *tex )
 {
@@ -77,7 +79,9 @@ void CTextureSA::OnTxdLoad( RwTexDictionary& txd, unsigned short id )
     import& imp = (*m_imported.find( id )).second;
     imp.original = txd.FindNamedTexture( m_texture->name );
 
+#ifdef DEBUG_TEXTURES
     OutputDebugString( SString( "TXHOOK ON: %s\n", m_texture->name ) );
+#endif
     
     if ( imp.original )
         imp.original->RemoveFromDictionary();
@@ -90,7 +94,9 @@ void CTextureSA::OnTxdInvalidate( RwTexDictionary& txd, unsigned short id )
     import& imp = (*m_imported.find( id )).second;
     imp.copy->RemoveFromDictionary();
 
+#ifdef DEBUG_TEXTURES
     OutputDebugString( SString( "TXHOOK OFF: %s\n", m_texture->name ) );
+#endif
 
     if ( imp.original )
     {
@@ -174,9 +180,9 @@ bool CTextureSA::RemoveTXD( unsigned short id )
 
     import& imp = ( *iter ).second;
     RwTexDictionary *txd = imp.copy->txd;
-    imp.copy->RemoveFromDictionary();
 
     RwTextureDestroy( imp.copy );
+    imp.copy->RemoveFromDictionary();
 
     if ( imp.original )
         imp.original->AddToDictionary( txd );

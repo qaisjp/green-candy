@@ -85,9 +85,9 @@ CClientTXD::~CClientTXD()
     delete &m_txd;
 }
 
-bool CClientTXD::LoadTXD( const char *path, bool filtering )
+bool CClientTXD::LoadTXD( CFile *file, bool filtering )
 {
-    if ( !m_txd.Load( path, filtering ) )
+    if ( !m_txd.Load( file, filtering ) )
         return false;
 
     imports_t imports = m_txd.GetImportedList();

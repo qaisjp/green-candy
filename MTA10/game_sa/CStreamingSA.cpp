@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CStreamingSA.cpp
 *  PURPOSE:     Data streamer
@@ -15,10 +15,11 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
+CIPLFilePool **ppIPLFilePool = (CIPLFilePool**)CLASS_CIPLFilePool;
+
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
-RwObject* g_modelReplacement[DATA_TEXTURE_BLOCK]; // Holds active RwObjects for model instances
-CColModelSAInterface* g_colReplacement[DATA_TEXTURE_BLOCK];
+CColModelSA *g_colReplacement[DATA_TEXTURE_BLOCK];
 
 #define ARRAY_PEDSPECMODEL      0x008E4C00
 #define VAR_PEDSPECMODEL        0x008E4BB0
@@ -42,15 +43,381 @@ static void __cdecl HOOK_CStreaming__FreeModel( unsigned int model )
     pGame->GetStreaming()->FreeModel( model );
 }
 
+class CMissingModelInfoSA : public CSimpleItemStack <char[32]>
+{
+public:
+    CMissingModelInfoSA( unsigned int max ) : CSimpleItemStack( max )
+    {
+    }
+
+    inline void Add( const char *name )
+    {
+        char *alloc = *Allocate();
+
+        if ( !alloc )
+        {
+            OutputDebugString( "Too many objects without modelinfo structures\n" );
+            return;
+        }
+
+        memcpy( alloc, name, 32 );
+    }
+};
+
+static HANDLE *const VAR_UnkFileHandle = (HANDLE*)0x008E4010;
+static size_t *const VAR_NumResourceEntries = (size_t*)0x008E4C68;
+static unsigned short *const VAR_BiggestPrimaryBlockOffset = (unsigned short*)0x008E4CA8;
+static unsigned int *const VAR_LastModelScanIndex = (unsigned int*)0x00AAE948;
+static CModelLoadInfoSA *const VAR_ModelLoadInfo = (CModelLoadInfoSA*)0x008E4CC0;
+static CMissingModelInfoSA *const *VAR_MissingModelInfo = (CMissingModelInfoSA**)0x008E48D0;
+
+static bool __cdecl CStreaming__GetModelByHash( unsigned int hash, unsigned int *id )
+{
+    unsigned int n = *VAR_LastModelScanIndex;
+
+    for ( ; n < DATA_TEXTURE_BLOCK; n++ )
+    {
+        CBaseModelInfoSAInterface *model = ppModelInfo[n];
+
+        if ( model && model->m_hash == hash )
+            goto success;
+    }
+
+    n = *VAR_LastModelScanIndex;
+
+    for ( ; n < DATA_TEXTURE_BLOCK; n-- )
+    {
+        CBaseModelInfoSAInterface *model = ppModelInfo[n];
+
+        if ( model && model->m_hash == hash )
+            goto success;
+    }
+
+    return false;
+
+success:
+    if ( id )
+        *id = n;
+
+    *VAR_LastModelScanIndex = n;
+    return true;
+}
+
+static CBaseModelInfoSAInterface* CStreaming__GetModelInfoByName( const char *name, unsigned short startId, unsigned short endId )
+{
+    unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( name );
+
+    for ( unsigned short n = startId; n < endId; n++ )
+    {
+        CBaseModelInfoSAInterface *info = ppModelInfo[n];
+
+        if ( info && info->m_hash == hash )
+            return info;
+    }
+
+    return NULL;
+}
+
+static void __cdecl TxdAssignVehiclePaintjob( const char *name, unsigned int id )
+{
+    unsigned char len = (unsigned char)strlen( name ) - 1;
+    unsigned char lastchr = name[len];
+
+    if ( !isdigit( name[len] ) )
+        return;
+
+    // Filter out the numbers
+    char buf[24];
+
+    // Bugfix: if a name consists of numbers entirely, we reject it
+    for (;;)
+    {
+        if ( !( --len ) )
+            return;
+
+        if ( !isdigit( name[len] ) )
+            break;
+    }
+
+    // Store the result
+    strncpy( buf, name, ++len );
+    buf[len] = '\0';
+
+    CBaseModelInfoSAInterface *info = CStreaming__GetModelInfoByName( buf, 400, 630 );
+
+    if ( !info || info->GetModelType() != MODEL_VEHICLE )
+        return;
+
+    // Put the paintjob into our modelinfo
+    ((CVehicleModelInfoSAInterface*)info)->AssignPaintjob( id );
+}
+
+/*
+    SECUmadness chapter 2: CStreaming__RegisterCollision
+
+    While the previous secuROM encounter with OpenImgFile had been a mad ride, this function
+    appears to have less protective measures. The annoying thing about reading it is the constant
+    anti-trace methods considering that this function is nowhere worthy of such security.
+
+    Apparrently this is one of the many routines which add complexity to other code-areas by referencing
+    chunks of bytes as dword-values, while in reality there dword-value are parts of routines themselves!
+    Luckily all pointers are within secuROM borders.
+
+    But I have learned from my jonders: Spectating two versions of GTA:SA at a time, utilizing different
+    obfuscation methods, is very helpful..!
+*/
+
+static unsigned int __cdecl CStreaming__RegisterCollision( const char *name )
+{
+    CColFileSA *col = new CColFileSA;
+
+    if ( stricmp( name, "procobj" ) == 0 || stricmp( name, "proc_int" ) == 0 || stricmp( name, "proc_int2" ) == 0 )
+        col->m_isProcedural = true;
+
+    if ( strnicmp( name, "int_la", 6 ) == 0 ||
+         strnicmp( name, "int_sf", 6 ) == 0 ||
+         strnicmp( name, "int_veg", 7 ) == 0 ||
+         strnicmp( name, "int_cont", 8 ) == 0 ||
+         strnicmp( name, "gen_int1", 8 ) == 0 ||
+         strnicmp( name, "gen_int2", 8 ) == 0 ||
+         strnicmp( name, "gen_int3", 8 ) == 0 ||
+         strnicmp( name, "gen_int4", 8 ) == 0 ||
+         strnicmp( name, "gen_int5", 8 ) == 0 ||
+         strnicmp( name, "gen_intb", 8 ) == 0 ||
+         strnicmp( name, "savehous", 8 ) == 0 ||
+         stricmp( name, "props" ) == 0 ||
+         stricmp( name, "props2" ) == 0 ||   // Okay, I am unsure whether I caught all of the namechecking due to secuROM obfuscation
+                                                // If there is a filename missing, feel free to append it here!
+         strnicmp( name, "levelmap", 8 ) == 0 ||
+         strnicmp( name, "stadint", 7 ) == 0 )
+        col->m_isInterior = true;
+
+    return (*ppColFilePool)->GetIndex( col );
+}
+
+void* CIPLFileSA::operator new ( size_t )
+{
+    return (*ppIPLFilePool)->Allocate();
+}
+
+void CIPLFileSA::operator delete ( void *ptr )
+{
+    (*ppIPLFilePool)->Free( (CIPLFileSA*)ptr );
+}
+
+static unsigned int __cdecl CStreaming__FindIPLFile( const char *name )
+{
+    unsigned int n;
+
+    for ( n=0; n<MAX_IPL; n++ )
+    {
+        CIPLFileSA *ipl = (*ppIPLFilePool)->Get( n );
+
+        if ( ipl && stricmp( ipl->m_name, name ) == 0 )
+            return n;
+    }
+
+    return 0xFFFFFFFF;
+}
+
+static unsigned int __cdecl CStreaming__RegisterIPLFile( const char *name )
+{
+    CIPLFileSA *ipl = new CIPLFileSA;
+
+    strcpy( ipl->m_name, name );
+
+    return (*ppIPLFilePool)->GetIndex( ipl );
+}
+
+struct fileHeader
+{
+    size_t              offset;                         // 0
+    unsigned short      primaryBlockOffset;             // 4
+    unsigned short      secondaryBlockOffset;           // 6
+    char                name[24];                       // 8
+};
+
+static void __cdecl CStreaming__LoadArchive( IMGFile& archive, unsigned int imgID )
+{
+    CFile *file = OpenGlobalStream( archive.name, "rb" );
+
+    if ( !file )
+        return;
+
+    unsigned int lastID = 0xFFFFFFFF;
+    char version[4];    // has to be 'VER2'
+    unsigned int numFiles;
+
+    file->Read( version, 1, 4 );
+    numFiles = file->ReadInt();
+
+    while ( numFiles-- )
+    {
+        fileHeader header;
+
+        file->Read( &header, 1, sizeof(header) );
+
+        if ( *VAR_BiggestPrimaryBlockOffset < header.primaryBlockOffset )
+            *VAR_BiggestPrimaryBlockOffset = header.primaryBlockOffset;
+
+        // Zero terminated for safety
+        header.name[ sizeof(header.name) - 1 ] = '\0';
+
+        char *dot = strchr( header.name, '.' );
+
+        if ( !dot )
+        {
+            lastID = 0xFFFFFFFF;
+            continue;
+        }
+
+        const char *ext = dot + 1;
+
+        if ( (size_t)( ext - header.name ) > 20 )
+        {
+            lastID = 0xFFFFFFFF;
+            continue;
+        }
+
+        *dot = '\0';
+
+        unsigned int id;
+
+        if ( strnicmp( ext, "DFF", 3 ) == 0 )
+        {
+            bool found = CStreaming__GetModelByHash( pGame->GetKeyGen()->GetUppercaseKey( header.name ), &id );
+
+            if ( !found )
+            {
+                header.offset |= imgID << 24;
+
+                // Some sort of debug container
+                (*VAR_MissingModelInfo)->Add( header.name );
+                
+                lastID = 0xFFFFFFFF;
+                continue;
+            }
+        }
+        else if ( strnicmp( ext, "TXD", 3 ) == 0 )
+        {
+            id = (unsigned int)pGame->GetTextureManager()->FindTxdEntry( header.name );
+
+            if ( id == 0xFFFFFFFF )
+            {
+                id = pGame->GetTextureManager()->CreateTxdEntry( header.name );
+
+                // Assign the txd to a vehicle if found a valid one
+                TxdAssignVehiclePaintjob( header.name, id );
+            }
+
+            id += DATA_TEXTURE_BLOCK;
+        }
+        else if ( strnicmp( ext, "COL", 3 ) == 0 )
+        {
+            id = 25000 + CStreaming__RegisterCollision( header.name );
+        }
+        else if ( strnicmp( ext, "IPL", 3 ) == 0 )
+        {
+            id = CStreaming__FindIPLFile( header.name );
+
+            if ( id == 0xFFFFFFFF )
+            {
+                id = CStreaming__RegisterIPLFile( header.name );
+            }
+
+            id += 25255;
+        }
+        else if ( strnicmp( ext, "DAT", 3 ) == 0 )
+        {
+            sscanf( header.name + 5, "%d", &id );
+            
+            id += 25511;
+        }
+        else if ( strnicmp( ext, "IFP", 3 ) == 0 )
+        {
+            id = 25575 + pGame->GetAnimManager()->RegisterAnimBlock( header.name );
+        }
+        else if ( strnicmp( ext, "RRR", 3 ) == 0 )
+        {
+            id = 25755 + pGame->GetRecordings()->Register( header.name );
+        }
+        else if ( strnicmp( ext, "SCM", 3 ) == 0 )
+        {
+            OutputDebugString( "found unsupported SCM file: " );
+            OutputDebugString( header.name );
+            OutputDebugString( "\n" );
+            continue;
+        }
+        else
+        {
+            *dot = '.';
+            lastID = 0xFFFFFFFF;
+            continue;
+        }
+
+        unsigned int offset, count;
+
+        if ( VAR_ModelLoadInfo[id].GetOffset( offset, count ) )
+            continue;
+
+        CModelLoadInfoSA& info = VAR_ModelLoadInfo[id];
+        info.m_imgID = imgID;
+
+        if ( header.secondaryBlockOffset != 0 )
+            header.primaryBlockOffset = header.secondaryBlockOffset;
+
+        info.SetOffset( header.offset, header.primaryBlockOffset );
+        info.m_flags = 0;
+
+        if ( lastID != 0xFFFFFFFF )
+            VAR_ModelLoadInfo[lastID].m_lastID = id;
+
+        lastID = id;
+    }
+
+    delete file;
+}
+
+static void __cdecl HOOK_CStreaming__LoadArchives()
+{
+    *(unsigned int*)0x008E4C90 = 0xFFFFFFFF;
+    *(unsigned int*)0x008E4C94 = 0xFFFFFFFF;
+    *(unsigned int*)0x008E4C98 = 0xFFFFFFFF;
+    *(unsigned int*)0x008E4C9C = 0xFFFFFFFF;
+
+    *(unsigned int*)0x008E4C8C = 0;
+
+    *(unsigned int*)0x008E4CA0 = 0xFFFFFFFF;
+
+    *VAR_NumResourceEntries = GetFileSize( *VAR_UnkFileHandle, NULL );
+
+    for ( unsigned int n = 0; n < MAX_GTA_IMG_ARCHIVES; n++ )
+    {
+        IMGFile& file = imgArchives[n];
+
+        if ( file.name[0] == '\0' )
+            break;
+
+        if ( !file.isNotPlayerImg )
+            continue;
+
+        //CStreaming__LoadArchive( file, n );
+        ((void (__cdecl*)( const char *, unsigned int ))0x005B6170)( file.name, n );
+    }
+
+    *(unsigned int*)0x008E4C64 = 0;
+    *VAR_NumResourceEntries = *VAR_NumResourceEntries / 2048;
+}
+
 CStreamingSA::CStreamingSA()
 {
-    // Initiate our model replacement array
-    memset( g_modelReplacement, 0, sizeof(g_modelReplacement) );
+    // Initialize the accelerated streaming structures
     memset( g_colReplacement, 0, sizeof(g_colReplacement) );
 
     // Hook the model requested
     HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
     HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
+    HookInstall( 0x005B82C0, (DWORD)HOOK_CStreaming__LoadArchives, 5 );
 }
 
 CStreamingSA::~CStreamingSA()
@@ -79,25 +446,28 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
         // Model support fix: quick load a model if we already have it for replacement; prevents memory leak and boosts speed
         if ( id < DATA_TEXTURE_BLOCK )
         {
-            if ( RwObject *obj = g_modelReplacement[id] )
-            {
-                CBaseModelInfoSAInterface *minfo = ppModelInfo[id];
+            CBaseModelInfoSAInterface *minfo = ppModelInfo[id];
 
+            // Fix for invalid model requests
+            if ( !minfo )
+                return;
+
+            if ( CRwObjectSA *obj = g_replObjectNative[id] )
+            {
                 // Apply the model
                 switch( minfo->GetRwModelType() )
                 {
                 case RW_ATOMIC:
-                    ((CAtomicModelInfoSA*)minfo)->SetAtomic( RpAtomicClone( (RpAtomic*)obj ) ); // making a copy is essential for model instance isolation
+                    ((CAtomicModelInfoSA*)minfo)->SetAtomic( ((CRpAtomicSA*)obj)->CreateInstance( id ) ); // making a copy is essential for model instance isolation
                     break;
                 case RW_CLUMP:
-                    ((CClumpModelInfoSAInterface*)minfo)->SetClump( RpClumpClone( (RpClump*)obj ) );
+                    ((CClumpModelInfoSAInterface*)minfo)->SetClump( RpClumpClone( (RpClump*)obj->GetObject() ) );
                     break;
-                default:
-                    assert( 0 );    // I doubt that could happen; make sure anyway
                 }
 
-                // Load collision
-                minfo->m_pColModel = g_colReplacement[id];
+                // Apply the collision
+                if ( g_colReplacement[id] )
+                    minfo->m_pColModel = g_colReplacement[id]->GetInterface();
 
                 info->m_eLoading = MODEL_LOADED;
                 return;
@@ -244,10 +614,30 @@ void CStreamingSA::FreeModel( unsigned short id )
             if ( g_colReplacement[id] && model->GetRwModelType() == RW_CLUMP )
                 model->m_pColModel = NULL;
 
+            // GTA:SA engine bugfix: atomics do not increase any texture references. Apparrently this has
+            // not caused problems during the development for the game, so they did not encounter this bug.
+            // We basically have to unlink any effect or texture from the atomic before deleting it. Otherwise
+            // the engine tries to delete already deleted textures, which may result in crashing if the texture is
+            // reused (it's reference count goes WEE-WEE).
+            // Additionally, we reference our atomic's geometry, so we do not want to delete the textures from an
+            // already referenced geometry!
+            if ( model->GetRwModelType() == RW_ATOMIC )
+            {
+                RpGeometry *geom = model->GetAtomicModelInfo()->m_rpAtomic->m_geometry;
+
+                if ( geom->m_refs == 1 )
+                    model->GetAtomicModelInfo()->m_rpAtomic->m_geometry->UnlinkFX();
+            }
+
             model->DeleteRwObject();
 
             switch( model->GetModelType() )
             {
+            case MODEL_ATOMIC:
+#ifdef _DEBUG
+                OutputDebugString( SString( "deleted mesh-type model %u\n", id ) );
+#endif
+                break;
             case MODEL_PED:
                 unk = *(int*)VAR_PEDSPECMODEL;
                 unk2 = (unsigned int*)ARRAY_PEDSPECMODEL;
@@ -279,7 +669,7 @@ void CStreamingSA::FreeModel( unsigned short id )
 
             // Model support bugfix: if we have a replacement for this model, we should not
             // bother about management in the CStreaming class, so quit here
-            if ( g_modelReplacement[id] )
+            if ( g_replObjectNative[id] )
             {
                 info->m_eLoading = MODEL_UNAVAILABLE;
                 return;

@@ -57,7 +57,6 @@ CClientManager::CClientManager ( void )
     m_pColManager = new CClientColManager;
     m_pGroups = new CClientGroups;
     m_pProjectileManager = new CClientProjectileManager ( this );
-    m_pColModelManager = new CClientColModelManager ( this );
     m_pExplosionManager = new CClientExplosionManager ( this );
     m_pWaterManager = new CClientWaterManager ( this );
 
@@ -80,9 +79,6 @@ CClientManager::~CClientManager ( void )
 
     delete m_pExplosionManager;
     m_pExplosionManager = NULL;
-
-    delete m_pColModelManager;
-    m_pColModelManager = NULL;
 
     delete m_pProjectileManager;
     m_pProjectileManager = NULL;

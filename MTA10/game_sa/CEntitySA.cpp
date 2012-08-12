@@ -107,6 +107,33 @@ void CEntitySAInterface::GetPosition( CVector& pos ) const
         pos = m_matrix->pos;
 }
 
+static bool RpMaterialSetAlpha( RpMaterial *mat, unsigned char alpha )
+{
+    mat->m_color.a = alpha;
+    return true;
+}
+
+static bool RpAtomicMaterialSetAlpha( RpAtomic *atom, unsigned char alpha )
+{
+    atom->m_geometry->ForAllMateria( RpMaterialSetAlpha, alpha );
+    return true;
+}
+
+void CEntitySAInterface::SetAlpha( unsigned char alpha )
+{
+    if ( !m_rwObject )
+        return;
+
+    if ( m_rwObject->m_type == RW_ATOMIC )
+    {
+        RpAtomicMaterialSetAlpha( (RpAtomic*)m_rwObject, alpha );
+    }
+    else if ( m_rwObject->m_type == RW_CLUMP )
+    {
+        ((RpClump*)m_rwObject)->ForAllAtomics( RpAtomicMaterialSetAlpha, alpha );
+    }
+}
+
 CEntitySA::CEntitySA()
 {
     // Set these variables to a constant state

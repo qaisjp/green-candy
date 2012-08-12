@@ -2,7 +2,7 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        game_sa/CTexDictionarySA.h
+*  FILE:        game_sa/RenderWare/CTexDictionarySA.h
 *  PURPOSE:     Internal texture dictionary handler
 *               RenderWare extension
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
@@ -25,7 +25,7 @@ public:
                             CTexDictionarySA( const char *name, CTxdInstanceSA *txd );
                             ~CTexDictionarySA();
 
-    bool                    Load( const char *filename, bool filtering );
+    bool                    Load( CFile *file, bool filtering );
     std::list <CTexture*>&  GetTextures()                   { return (std::list <CTexture*>&)m_textures; }
     void                    Clear();
 

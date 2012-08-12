@@ -922,10 +922,7 @@ void CClientVehicle::SetModelBlocking ( unsigned short usModel, bool bLoadImmedi
         {
             // Preload the model
             if ( !m_pModelInfo->IsLoaded() )
-            {
                 m_pModelInfo->Request( true, true );
-                m_pModelInfo->MakeCustomModel();
-            }
 
             // Create the vehicle now. Don't prerequest the model ID for this func.
             Create ();

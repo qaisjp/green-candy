@@ -2,7 +2,7 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        sdk/game/CModel.h
+*  FILE:        sdk/game/RenderWare/CModel.h
 *  PURPOSE:     RenderWare Model entity export
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
@@ -13,13 +13,10 @@
 #ifndef _MODEL_ENTITY_EXPORT_
 #define _MODEL_ENTITY_EXPORT_
 
-class CModel
+class CModel : public virtual CRwObject
 {
 public:
     virtual                         ~CModel()   {}
-
-    virtual const char*             GetName() const = 0;
-    virtual unsigned int            GetHash() const = 0;
 
     virtual std::vector <unsigned short>    GetImportList() const = 0;
 

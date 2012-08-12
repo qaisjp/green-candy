@@ -16,7 +16,12 @@
 
 #include <game/Common.h>
 
-template < size_t heapSize >
+#define DECL_ST __declspec(noalias)
+
+#define MAX_REGION          1000000
+#define HEIGHT_BOUND        0x7FFF
+
+template <size_t heapSize>
 class CAlignedStackSA
 {
 public:
@@ -34,10 +39,9 @@ public:
         pRwInterface->m_free( m_data );
     }
 
-    void*   Allocate( size_t size, size_t align )
+    inline void*    Allocate( size_t size, size_t align )
     {
-        size_t remains = m_offset % elementSize;
-        void *alloc;
+        size_t remains = m_offset % align;
 
         // Realign the offset
         if ( remains )
@@ -47,7 +51,7 @@ public:
         if ( m_offset + size > m_size )
             return NULL;
 
-        alloc = (void*)((unsigned char*)m_data + m_offset);
+        void *alloc = (void*)((unsigned char*)m_data + m_offset);
         m_offset += size;
 
         return alloc;
@@ -55,12 +59,44 @@ public:
 
     void*   AllocateInt( size_t size )
     {
-        return Push( size, sizeof(int) );
+        return Allocate( size, sizeof(int) );
     }
 
     void*                                   m_data;
     size_t                                  m_size;
     size_t                                  m_offset;
+};
+
+template <class itemType>
+class CSimpleItemStack
+{
+public:
+    CSimpleItemStack( unsigned int max )
+    {
+        m_max = max;
+        m_stack = (itemType*)malloc( sizeof(itemType) * max );
+        m_count = 0;
+
+        m_active = true;
+    }
+
+    ~CSimpleItemStack()
+    {
+        free( m_stack );
+    }
+
+    itemType*   Allocate()
+    {
+        if ( m_count >= m_max )
+            return 0;
+
+        return m_stack + m_count++;
+    }
+
+    itemType*       m_stack;
+    unsigned int    m_max;
+    unsigned int    m_count;
+    bool            m_active;
 };
 
 class CSimpleList

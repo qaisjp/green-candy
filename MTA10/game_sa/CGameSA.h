@@ -146,6 +146,7 @@ public:
     inline CTextureManagerSA*           GetTextureManager()             { return m_pTextureManager; };
     inline CHandlingManagerSA*          GetHandlingManager()            { return m_pHandlingManager; };
     inline CAnimManagerSA*              GetAnimManager()                { return m_pAnimManager; }
+    inline CRecordingsSA*               GetRecordings()                 { return m_recordings; }
     inline CStreamingSA*                GetStreaming()                  { return m_pStreaming; }
     inline CVisibilityPluginsSA*        GetVisibilityPlugins()          { return m_pVisibilityPlugins; }
     inline CKeyGenSA*                   GetKeyGen()                     { return m_pKeyGen; }
@@ -254,6 +255,7 @@ private:
     CTextureManagerSA*          m_pTextureManager;
     CHandlingManagerSA*         m_pHandlingManager;
     CAnimManagerSA*             m_pAnimManager;
+    CRecordingsSA*              m_recordings;
     CStreamingSA*               m_pStreaming;
     CVisibilityPluginsSA*       m_pVisibilityPlugins;
     CKeyGenSA*                  m_pKeyGen;
@@ -316,8 +318,11 @@ private:
     std::map <std::string, SCheatSA*> m_Cheats;
 };
 
+extern CFileTranslator *gameFileRoot;
+
 // Utility functions
-void ForEachBlock( void *ptr, unsigned int count, size_t blockSize, void (*callback)( void *block ) );
+void    ForEachBlock( void *ptr, unsigned int count, size_t blockSize, void (*callback)( void *block ) );
+CFile*  OpenGlobalStream( const char *filename, const char *mode );
 
 #endif
 

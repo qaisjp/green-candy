@@ -538,7 +538,7 @@ static int childapi_destroy( lua_State *L )
     Class& parent = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
     Class& child = *jvalue( index2adr( L, lua_upvalueindex( 2 ) ) );
 
-    parent.children.erase( std::remove( parent.children.begin(), parent.children.end(), &child ), parent.children.end() );
+    parent.children.erase( std::remove( parent.children.begin(), parent.children.end(), &child ) );
 
     // Tell this event to any possible registree
     // We use a seperate function so we can post this message after unlinking from

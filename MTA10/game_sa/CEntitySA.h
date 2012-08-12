@@ -137,6 +137,8 @@ public:
 
     void                            GetPosition( CVector& pos ) const;
 
+    void                            SetAlpha( unsigned char alpha );
+
     RwObject*               m_rwObject;         // 24
 
     unsigned int            m_entityFlags;      // 28

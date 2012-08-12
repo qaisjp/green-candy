@@ -441,8 +441,6 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineRestoreCOL );
     LUA_DECLARE( engineReplaceModel );
     LUA_DECLARE( engineRestoreModel );
-    LUA_DECLARE( engineReplaceMatchingAtomics );
-    LUA_DECLARE( engineReplaceWheelAtomics );
     LUA_DECLARE( enginePositionAtomic );
     LUA_DECLARE( enginePositionSeats );
     LUA_DECLARE( engineAddAllAtomics );
@@ -753,8 +751,6 @@ namespace CLuaFunctionDefs
     extern CRenderWare*                 m_pRenderWare;
     extern CClientMarkerManager*        m_pMarkerManager;
     extern CClientPickupManager*        m_pPickupManager;
-    extern CClientDFFManager*           m_pDFFManager;
-    extern CClientColModelManager*      m_pColModelManager;
     extern CRegisteredCommands*         m_pRegisteredCommands;
 };
 

@@ -20,93 +20,98 @@
 /** Renderware function mappings                                            **/
 /*****************************************************************************/
 
+static void __declspec(naked)    invalid_ptr()
+{
+    __asm int 3;
+}
+
 // US Versions
-RwRenderSystemFigureAffairs_t           RwRenderSystemFigureAffairs             = (RwRenderSystemFigureAffairs_t)           0xDEAD;
-RwErrorGet_t                            RwErrorGet                              = (RwErrorGet_t)                            0xDEAD;
-RwAllocAligned_t                        RwAllocAligned                          = (RwAllocAligned_t)                        0xDEAD;
-RwFreeAligned_t                         RwFreeAligned                           = (RwFreeAligned_t)                         0xDEAD;
-RwCreateExtension_t                     RwCreateExtension                       = (RwCreateExtension_t)                     0xDEAD;
-RwStreamFindChunk_t                     RwStreamFindChunk                       = (RwStreamFindChunk_t)                     0xDEAD;
-RwStreamOpen_t                          RwStreamOpen                            = (RwStreamOpen_t)                          0xDEAD;
-RwStreamReadBlocks_t                    RwStreamReadBlocks                      = (RwStreamReadBlocks_t)                    0xDEAD;
-RwStreamReadTexture_t                   RwStreamReadTexture                     = (RwStreamReadTexture_t)                   0xDEAD;
-RwStreamClose_t                         RwStreamClose                           = (RwStreamClose_t)                         0xDEAD;
-RwFrameCreate_t                         RwFrameCreate                           = (RwFrameCreate_t)                         0xDEAD;
-RwFrameGetLTM_t                         RwFrameGetLTM                           = (RwFrameGetLTM_t)                         0xDEAD;
-RwFrameSetIdentity_t                    RwFrameSetIdentity                      = (RwFrameSetIdentity_t)                    0xDEAD;
-RwFrameTranslate_t                      RwFrameTranslate                        = (RwFrameTranslate_t)                      0xDEAD;
-RwFrameCloneHierarchy_t                 RwFrameCloneHierarchy                   = (RwFrameCloneHierarchy_t)                 0xDEAD;
-RwFrameAddChild_t                       RwFrameAddChild                         = (RwFrameAddChild_t)                       0xDEAD;
-RwFrameRemoveChild_t                    RwFrameRemoveChild                      = (RwFrameRemoveChild_t)                    0xDEAD;
-RwFrameScale_t                          RwFrameScale                            = (RwFrameScale_t)                          0xDEAD;
-RwFrameOrient_t                         RwFrameOrient                           = (RwFrameOrient_t)                         0xDEAD;
-RwCameraClone_t                         RwCameraClone                           = (RwCameraClone_t)                         0xDEAD;
-RpClumpClone_t                          RpClumpClone                            = (RpClumpClone_t)                          0xDEAD;
-RpClumpStreamRead_t                     RpClumpStreamRead                       = (RpClumpStreamRead_t)                     0xDEAD;
-RpClumpAddAtomic_t                      RpClumpAddAtomic                        = (RpClumpAddAtomic_t)                      0xDEAD;
-RpClumpRemoveAtomic_t                   RpClumpRemoveAtomic                     = (RpClumpRemoveAtomic_t)                   0xDEAD;
-RpClumpAddLight_t                       RpClumpAddLight                         = (RpClumpAddLight_t)                       0xDEAD;
-RpClumpGetBoneTransform_t               RpClumpGetBoneTransform                 = (RpClumpGetBoneTransform_t)               0xDEAD;
-RpClumpSetupFrameCallback_t             RpClumpSetupFrameCallback               = (RpClumpSetupFrameCallback_t)             0xDEAD;
-RpClumpDestroy_t                        RpClumpDestroy                          = (RpClumpDestroy_t)                        0xDEAD;
-RpClumpGetNumAtomics_t                  RpClumpGetNumAtomics                    = (RpClumpGetNumAtomics_t)                  0xDEAD;
-RwAnimationInit_t                       RwAnimationInit                         = (RwAnimationInit_t)                       0xDEAD;
-RwSkeletonUpdate_t                      RwSkeletonUpdate                        = (RwSkeletonUpdate_t)                      0xDEAD;
-RpAtomicCreate_t                        RpAtomicCreate                          = (RpAtomicCreate_t)                        0xDEAD;
-RpAtomicClone_t                         RpAtomicClone                           = (RpAtomicClone_t)                         0xDEAD;
-RpAtomicSetFrame_t                      RpAtomicSetFrame                        = (RpAtomicSetFrame_t)                      0xDEAD;
-RpAtomicSetupObjectPipeline_t           RpAtomicSetupObjectPipeline             = (RpAtomicSetupObjectPipeline_t)           0xDEAD;
-RpAtomicSetupVehiclePipeline_t          RpAtomicSetupVehiclePipeline            = (RpAtomicSetupVehiclePipeline_t)          0xDEAD;
-RpAtomicRender_t                        RpAtomicRender                          = (RpAtomicRender_t)                        0xDEAD;
-RpAtomicRenderEx_t                      RpAtomicRenderEx                        = (RpAtomicRenderEx_t)                      0xDEAD;
-RpAtomicSetGeometry_t                   RpAtomicSetGeometry                     = (RpAtomicSetGeometry_t)                   0xDEAD;
-RpAtomicDestroy_t                       RpAtomicDestroy                         = (RpAtomicDestroy_t)                       0xDEAD;
-RwObjectFrameRender_t                   RwObjectFrameRender                     = (RwObjectFrameRender_t)                   0xDEAD;
-RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 0xDEAD;
-RwTexDictionaryFinalizer_t              RwTexDictionaryFinalizer                = (RwTexDictionaryFinalizer_t)              0xDEAD;
-RwTexDictionaryRegister_t               RwTexDictionaryRegister                 = (RwTexDictionaryRegister_t)               0xDEAD;
-RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             0xDEAD;
-RwTexDictionaryGetCurrent_t             RwTexDictionaryGetCurrent               = (RwTexDictionaryGetCurrent_t)             0xDEAD;
-RwTexDictionarySetCurrent_t             RwTexDictionarySetCurrent               = (RwTexDictionarySetCurrent_t)             0xDEAD;
-RwTexDictionaryForAllTextures_t         RwTexDictionaryForAllTextures           = (RwTexDictionaryForAllTextures_t)         0xDEAD;
-RwTexDictionaryFindNamedTexture_t       RwTexDictionaryFindNamedTexture         = (RwTexDictionaryFindNamedTexture_t)       0xDEAD;
-RwTexDictionaryAddTexture_t             RwTexDictionaryAddTexture               = (RwTexDictionaryAddTexture_t)             0xDEAD;
-RwTexDictionaryDestroy_t                RwTexDictionaryDestroy                  = (RwTexDictionaryDestroy_t)                0xDEAD;
-RwTextureCreate_t                       RwTextureCreate                         = (RwTextureCreate_t)                       0xDEAD;
-RwTextureUnlinkFromDictionary_t         RwTextureUnlinkFromDictionary           = (RwTextureUnlinkFromDictionary_t)         0xDEAD;
-RwTextureDestroy_t                      RwTextureDestroy                        = (RwTextureDestroy_t)                      0xDEAD;
-RpGeometryCreate_t                      RpGeometryCreate                        = (RpGeometryCreate_t)                      0xDEAD;
-RpGeometryGetAnimation_t                RpGeometryGetAnimation                  = (RpGeometryGetAnimation_t)                0xDEAD;
-RpGeometryTriangleSetVertexIndices_t    RpGeometryTriangleSetVertexIndices      = (RpGeometryTriangleSetVertexIndices_t)    0xDEAD;
-RpGeometryTriangleSetMaterial_t         RpGeometryTriangleSetMaterial           = (RpGeometryTriangleSetMaterial_t)         0xDEAD;
-RpGeometryUnlock_t                      RpGeometryUnlock                        = (RpGeometryUnlock_t)                      0xDEAD;
-RpGeometryLock_t                        RpGeometryLock                          = (RpGeometryLock_t)                        0xDEAD;
-RpGeometryTransform_t                   RpGeometryTransform                     = (RpGeometryTransform_t)                   0xDEAD;
-RpGeometryDestroy_t                     RpGeometryDestroy                       = (RpGeometryDestroy_t)                     0xDEAD;
-RwMatrixCreate_t                        RwMatrixCreate                          = (RwMatrixCreate_t)                        0xDEAD;
-RwMatrixInvert_t                        RwMatrixInvert                          = (RwMatrixInvert_t)                        0xDEAD;
-RwMatrixTranslate_t                     RwMatrixTranslate                       = (RwMatrixTranslate_t)                     0xDEAD;
-RwMatrixScale_t                         RwMatrixScale                           = (RwMatrixScale_t)                         0xDEAD;
-RwMatrixUnknown_t                       RwMatrixUnknown                         = (RwMatrixUnknown_t)                       0xDEAD;
-RpMaterialCreate_t                      RpMaterialCreate                        = (RpMaterialCreate_t)                      0xDEAD;
-RpMaterialDestroy_t                     RpMaterialDestroy                       = (RpMaterialDestroy_t)                     0xDEAD;
-RwV3dNormalize_t                        RwV3dNormalize                          = (RwV3dNormalize_t)                        0xDEAD;
-RwV3dTransformVector_t                  RwV3dTransformVector                    = (RwV3dTransformVector_t)                  0xDEAD;
-RwIm3DTransform_t                       RwIm3DTransform                         = (RwIm3DTransform_t)                       0xDEAD;
-RwIm3DRenderIndexedPrimitive_t          RwIm3DRenderIndexedPrimitive            = (RwIm3DRenderIndexedPrimitive_t)          0xDEAD;
-RwIm3DEnd_t                             RwIm3DEnd                               = (RwIm3DEnd_t)                             0xDEAD;
-RpLightCreate_t                         RpLightCreate                           = (RpLightCreate_t)                         0xDEAD;
-RpLightSetRadius_t                      RpLightSetRadius                        = (RpLightSetRadius_t)                      0xDEAD;
-RpLightSetColor_t                       RpLightSetColor                         = (RpLightSetColor_t)                       0xDEAD;
-RwRasterCreate_t                        RwRasterCreate                          = (RwRasterCreate_t)                        0xDEAD;
-RwRasterUnlock_t                        RwRasterUnlock                          = (RwRasterUnlock_t)                        0xDEAD;
-RwRasterLock_t                          RwRasterLock                            = (RwRasterLock_t)                          0xDEAD;
-RpWorldAddAtomic_t                      RpWorldAddAtomic                        = (RpWorldAddAtomic_t)                      0xDEAD;
-RpWorldAddLight_t                       RpWorldAddLight                         = (RpWorldAddLight_t)                       0xDEAD;
-RpWorldAddClump_t                       RpWorldAddClump                         = (RpWorldAddClump_t)                       0xDEAD;
-RpPrtStdGlobalDataSetStreamEmbedded_t   RpPrtStdGlobalDataSetStreamEmbedded     = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0xDEAD;
-RwPrefetch_t                            RwPrefetch                              = (RwPrefetch_t)                            0xDEAD;
-RwFlushLoader_t                         RwFlushLoader                           = (RwFlushLoader_t)                         0xDEAD;
+RwRenderSystemFigureAffairs_t           RwRenderSystemFigureAffairs             = (RwRenderSystemFigureAffairs_t)           invalid_ptr;
+RwErrorGet_t                            RwErrorGet                              = (RwErrorGet_t)                            invalid_ptr;
+RwAllocAligned_t                        RwAllocAligned                          = (RwAllocAligned_t)                        invalid_ptr;
+RwFreeAligned_t                         RwFreeAligned                           = (RwFreeAligned_t)                         invalid_ptr;
+RwCreateExtension_t                     RwCreateExtension                       = (RwCreateExtension_t)                     invalid_ptr;
+RwStreamFindChunk_t                     RwStreamFindChunk                       = (RwStreamFindChunk_t)                     invalid_ptr;
+RwStreamOpen_t                          RwStreamOpen                            = (RwStreamOpen_t)                          invalid_ptr;
+RwStreamReadBlocks_t                    RwStreamReadBlocks                      = (RwStreamReadBlocks_t)                    invalid_ptr;
+RwStreamReadTexture_t                   RwStreamReadTexture                     = (RwStreamReadTexture_t)                   invalid_ptr;
+RwStreamClose_t                         RwStreamClose                           = (RwStreamClose_t)                         invalid_ptr;
+RwFrameCreate_t                         RwFrameCreate                           = (RwFrameCreate_t)                         invalid_ptr;
+RwFrameGetLTM_t                         RwFrameGetLTM                           = (RwFrameGetLTM_t)                         invalid_ptr;
+RwFrameSetIdentity_t                    RwFrameSetIdentity                      = (RwFrameSetIdentity_t)                    invalid_ptr;
+RwFrameTranslate_t                      RwFrameTranslate                        = (RwFrameTranslate_t)                      invalid_ptr;
+RwFrameCloneHierarchy_t                 RwFrameCloneHierarchy                   = (RwFrameCloneHierarchy_t)                 invalid_ptr;
+RwFrameAddChild_t                       RwFrameAddChild                         = (RwFrameAddChild_t)                       invalid_ptr;
+RwFrameRemoveChild_t                    RwFrameRemoveChild                      = (RwFrameRemoveChild_t)                    invalid_ptr;
+RwFrameScale_t                          RwFrameScale                            = (RwFrameScale_t)                          invalid_ptr;
+RwFrameOrient_t                         RwFrameOrient                           = (RwFrameOrient_t)                         invalid_ptr;
+RwCameraClone_t                         RwCameraClone                           = (RwCameraClone_t)                         invalid_ptr;
+RpClumpClone_t                          RpClumpClone                            = (RpClumpClone_t)                          invalid_ptr;
+RpClumpStreamRead_t                     RpClumpStreamRead                       = (RpClumpStreamRead_t)                     invalid_ptr;
+RpClumpAddAtomic_t                      RpClumpAddAtomic                        = (RpClumpAddAtomic_t)                      invalid_ptr;
+RpClumpRemoveAtomic_t                   RpClumpRemoveAtomic                     = (RpClumpRemoveAtomic_t)                   invalid_ptr;
+RpClumpAddLight_t                       RpClumpAddLight                         = (RpClumpAddLight_t)                       invalid_ptr;
+RpClumpGetBoneTransform_t               RpClumpGetBoneTransform                 = (RpClumpGetBoneTransform_t)               invalid_ptr;
+RpClumpSetupFrameCallback_t             RpClumpSetupFrameCallback               = (RpClumpSetupFrameCallback_t)             invalid_ptr;
+RpClumpDestroy_t                        RpClumpDestroy                          = (RpClumpDestroy_t)                        invalid_ptr;
+RpClumpGetNumAtomics_t                  RpClumpGetNumAtomics                    = (RpClumpGetNumAtomics_t)                  invalid_ptr;
+RwAnimationInit_t                       RwAnimationInit                         = (RwAnimationInit_t)                       invalid_ptr;
+RwSkeletonUpdate_t                      RwSkeletonUpdate                        = (RwSkeletonUpdate_t)                      invalid_ptr;
+RpAtomicCreate_t                        RpAtomicCreate                          = (RpAtomicCreate_t)                        invalid_ptr;
+RpAtomicClone_t                         RpAtomicClone                           = (RpAtomicClone_t)                         invalid_ptr;
+RpAtomicSetFrame_t                      RpAtomicSetFrame                        = (RpAtomicSetFrame_t)                      invalid_ptr;
+RpAtomicSetupObjectPipeline_t           RpAtomicSetupObjectPipeline             = (RpAtomicSetupObjectPipeline_t)           invalid_ptr;
+RpAtomicSetupVehiclePipeline_t          RpAtomicSetupVehiclePipeline            = (RpAtomicSetupVehiclePipeline_t)          invalid_ptr;
+RpAtomicRender_t                        RpAtomicRender                          = (RpAtomicRender_t)                        invalid_ptr;
+RpAtomicRenderEx_t                      RpAtomicRenderEx                        = (RpAtomicRenderEx_t)                      invalid_ptr;
+RpAtomicSetGeometry_t                   RpAtomicSetGeometry                     = (RpAtomicSetGeometry_t)                   invalid_ptr;
+RpAtomicDestroy_t                       RpAtomicDestroy                         = (RpAtomicDestroy_t)                       invalid_ptr;
+RwObjectFrameRender_t                   RwObjectFrameRender                     = (RwObjectFrameRender_t)                   invalid_ptr;
+RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 invalid_ptr;
+RwTexDictionaryFinalizer_t              RwTexDictionaryFinalizer                = (RwTexDictionaryFinalizer_t)              invalid_ptr;
+RwTexDictionaryRegister_t               RwTexDictionaryRegister                 = (RwTexDictionaryRegister_t)               invalid_ptr;
+RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             invalid_ptr;
+RwTexDictionaryGetCurrent_t             RwTexDictionaryGetCurrent               = (RwTexDictionaryGetCurrent_t)             invalid_ptr;
+RwTexDictionarySetCurrent_t             RwTexDictionarySetCurrent               = (RwTexDictionarySetCurrent_t)             invalid_ptr;
+RwTexDictionaryForAllTextures_t         RwTexDictionaryForAllTextures           = (RwTexDictionaryForAllTextures_t)         invalid_ptr;
+RwTexDictionaryFindNamedTexture_t       RwTexDictionaryFindNamedTexture         = (RwTexDictionaryFindNamedTexture_t)       invalid_ptr;
+RwTexDictionaryAddTexture_t             RwTexDictionaryAddTexture               = (RwTexDictionaryAddTexture_t)             invalid_ptr;
+RwTexDictionaryDestroy_t                RwTexDictionaryDestroy                  = (RwTexDictionaryDestroy_t)                invalid_ptr;
+RwTextureCreate_t                       RwTextureCreate                         = (RwTextureCreate_t)                       invalid_ptr;
+RwTextureUnlinkFromDictionary_t         RwTextureUnlinkFromDictionary           = (RwTextureUnlinkFromDictionary_t)         invalid_ptr;
+RwTextureDestroy_t                      RwTextureDestroy                        = (RwTextureDestroy_t)                      invalid_ptr;
+RpGeometryCreate_t                      RpGeometryCreate                        = (RpGeometryCreate_t)                      invalid_ptr;
+RpGeometryGetAnimation_t                RpGeometryGetAnimation                  = (RpGeometryGetAnimation_t)                invalid_ptr;
+RpGeometryTriangleSetVertexIndices_t    RpGeometryTriangleSetVertexIndices      = (RpGeometryTriangleSetVertexIndices_t)    invalid_ptr;
+RpGeometryTriangleSetMaterial_t         RpGeometryTriangleSetMaterial           = (RpGeometryTriangleSetMaterial_t)         invalid_ptr;
+RpGeometryUnlock_t                      RpGeometryUnlock                        = (RpGeometryUnlock_t)                      invalid_ptr;
+RpGeometryLock_t                        RpGeometryLock                          = (RpGeometryLock_t)                        invalid_ptr;
+RpGeometryTransform_t                   RpGeometryTransform                     = (RpGeometryTransform_t)                   invalid_ptr;
+RpGeometryDestroy_t                     RpGeometryDestroy                       = (RpGeometryDestroy_t)                     invalid_ptr;
+RwMatrixCreate_t                        RwMatrixCreate                          = (RwMatrixCreate_t)                        invalid_ptr;
+RwMatrixInvert_t                        RwMatrixInvert                          = (RwMatrixInvert_t)                        invalid_ptr;
+RwMatrixTranslate_t                     RwMatrixTranslate                       = (RwMatrixTranslate_t)                     invalid_ptr;
+RwMatrixScale_t                         RwMatrixScale                           = (RwMatrixScale_t)                         invalid_ptr;
+RwMatrixUnknown_t                       RwMatrixUnknown                         = (RwMatrixUnknown_t)                       invalid_ptr;
+RpMaterialCreate_t                      RpMaterialCreate                        = (RpMaterialCreate_t)                      invalid_ptr;
+RpMaterialDestroy_t                     RpMaterialDestroy                       = (RpMaterialDestroy_t)                     invalid_ptr;
+RwV3dNormalize_t                        RwV3dNormalize                          = (RwV3dNormalize_t)                        invalid_ptr;
+RwV3dTransformVector_t                  RwV3dTransformVector                    = (RwV3dTransformVector_t)                  invalid_ptr;
+RwIm3DTransform_t                       RwIm3DTransform                         = (RwIm3DTransform_t)                       invalid_ptr;
+RwIm3DRenderIndexedPrimitive_t          RwIm3DRenderIndexedPrimitive            = (RwIm3DRenderIndexedPrimitive_t)          invalid_ptr;
+RwIm3DEnd_t                             RwIm3DEnd                               = (RwIm3DEnd_t)                             invalid_ptr;
+RpLightCreate_t                         RpLightCreate                           = (RpLightCreate_t)                         invalid_ptr;
+RpLightSetRadius_t                      RpLightSetRadius                        = (RpLightSetRadius_t)                      invalid_ptr;
+RpLightSetColor_t                       RpLightSetColor                         = (RpLightSetColor_t)                       invalid_ptr;
+RwRasterCreate_t                        RwRasterCreate                          = (RwRasterCreate_t)                        invalid_ptr;
+RwRasterUnlock_t                        RwRasterUnlock                          = (RwRasterUnlock_t)                        invalid_ptr;
+RwRasterLock_t                          RwRasterLock                            = (RwRasterLock_t)                          invalid_ptr;
+RpWorldAddAtomic_t                      RpWorldAddAtomic                        = (RpWorldAddAtomic_t)                      invalid_ptr;
+RpWorldAddLight_t                       RpWorldAddLight                         = (RpWorldAddLight_t)                       invalid_ptr;
+RpWorldAddClump_t                       RpWorldAddClump                         = (RpWorldAddClump_t)                       invalid_ptr;
+RpPrtStdGlobalDataSetStreamEmbedded_t   RpPrtStdGlobalDataSetStreamEmbedded     = (RpPrtStdGlobalDataSetStreamEmbedded_t)   invalid_ptr;
+RwPrefetch_t                            RwPrefetch                              = (RwPrefetch_t)                            invalid_ptr;
+RwFlushLoader_t                         RwFlushLoader                           = (RwFlushLoader_t)                         invalid_ptr;
 
 /*****************************************************************************/
 /** GTA:SA function mappings                                                **/
@@ -317,6 +322,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RpAtomicClone                       = (RpAtomicClone_t)                         0x00749EB0;
         RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
         RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D90;
+        RpAtomicRender                      = (RpAtomicRender_t)                        0x00749210;
         RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749E10;
         RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
         RwTexDictionaryFinalizer            = (RwTexDictionaryFinalizer_t)              0x007F3980;
@@ -408,9 +414,8 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF20;
         RpAtomicSetupObjectPipeline         = (RpAtomicSetupObjectPipeline_t)           0x005D7F00;
         RpAtomicSetupVehiclePipeline        = (RpAtomicSetupVehiclePipeline_t)          0x005D5B20;
-        RpAtomicRender                      = (RpAtomicRender_t)                        0x00749210;
-        RpAtomicRenderEx                    = (RpAtomicRenderEx_t)                      0x00732480;
         RpAtomicClone                       = (RpAtomicClone_t)                         0x00749E60;
+        RpAtomicRender                      = (RpAtomicRender_t)                        0x007491C0;
         RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749C50;
         RwObjectFrameRender                 = (RwObjectFrameRender_t)                   0x00805750;
         RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3600;
@@ -474,16 +479,19 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
         break;
     }
+
+    // SHARED
+    RpAtomicRenderEx                        = (RpAtomicRenderEx_t)                      0x00732480;
 }
 
-// Reads and parses a DFF file specified by a path (szDFF) into a CModelInfo identified by the object id (usModelID)
-RpClump* CRenderWareSA::ReadDFF( const char *path, unsigned short id )
+// Reads and parses a DFF file specified by a path into a CModelInfo identified by the object id
+RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& colOut )
 {
-    if ( id > DATA_TEXTURE_BLOCK )
+    if ( id > DATA_TEXTURE_BLOCK-1 )
         return NULL;
 
     // open the stream
-    RwStream *streamModel = RwStreamOpen( STREAM_TYPE_FILENAME, STREAM_MODE_READ, path );
+    RwStream *streamModel = RwStreamCreateTranslated( file );
 
     if ( streamModel == NULL )
         return NULL;
@@ -501,94 +509,88 @@ RpClump* CRenderWareSA::ReadDFF( const char *path, unsigned short id )
     // rockstar's collision hack: set the global particle emitter to the modelinfo pointer of this model
     RpPrtStdGlobalDataSetStreamEmbedded( model );
 
-    // We do not have to preload the model if it already is; NULL out the model info here
-    switch( info->m_eLoading )
-    {
-    case MODEL_LOADED:
-    case MODEL_LOD:
-        model = NULL;
-        break;
-    }
-
     // The_GTA: Clumps and atomics load their requirements while being read in this rwStream
     // We therefor have to prepare all resources so it can retrive them; textures and animations!
     if ( model )
     {
-        CStreamingSA *streamer = pGame->GetStreaming();
-
-        // Load all requirements
-        streamer->RequestModel( id, 0x10 );
-        streamer->LoadAllRequestedModels( true );
-
-        // We delete the RenderWare associations in this clump to free resources since GTA:SA loaded the 
-        // actual model's dff by now, which we do not need
-        // The only thing we need is the reference to the texture container and possibly the collision
-        txd = (*ppTxdPool)->Get( model->m_textureDictionary );
-        txd->Reference();
-
-        // HACK: temp reference fix, I have to find the issue
-        if ( txd->m_references < 2 )
-            txd->Reference();
-
         col = model->m_pColModel;
         model->m_pColModel = NULL;
 
-        // TODO: make sure that atomic model infos do not delete the associated collision.
-        // Otherwise we have to preserve it here! Last time I checked it did not happen.
+        txd = (*ppTxdPool)->Get( model->m_textureDictionary );
 
-        // Tell GTA:SA to unload the resources, to cleanup associations
-        streamer->FreeModel( id );
+        if ( !txd->m_txd )
+        {
+            CStreamingSA *streamer = pGame->GetStreaming();
+
+            // VERY IMPORTANT: find a way to load the texDictionary and animation ourselves here!
+            // We need to isolate this process from CStreaming, because CStreaming includes the model replacement fix
+            // If you try to load a dff with a replaced model, the collision might crash you if you delete
+            // a model which uses the same collision; the crash does not happen if all DFFs have a own collision
+            // A fix would be to clone the collision somehow, but loading resources ourselves is required too!
+            // Eventually: custom clump, txd and col async loading function in Lua
+
+            // Load all requirements
+            streamer->RequestModel( id, 0x10 );
+            streamer->LoadAllRequestedModels( true );
+
+            // We delete the RenderWare associations in this clump to free resources since GTA:SA loaded the 
+            // actual model's dff by now, which we do not need
+            // The only thing we need is the reference to the texture container and possibly the collision (?)
+            txd->Reference();
+
+            // TODO: make sure that atomic model infos do not delete the associated collision.
+            // Otherwise we have to preserve it here! Last time I checked it did not happen.
+
+            // Tell GTA:SA to unload the resources, to cleanup associations
+            streamer->FreeModel( id );
+        }
+        else
+            txd->Reference();
+
+        // For atomics we have to set the current texture container so it loads from it properly
+        if ( model->GetRwModelType() == RW_ATOMIC )
+            txd->SetCurrent();
     }
 
     // read the clump with all its extensions
     RpClump *pClump = RpClumpStreamRead( streamModel );
 
-    // reset model shemantic loader
+    // reset model schemantic loader
     RpPrtStdGlobalDataSetStreamEmbedded( NULL );
 
     if ( model )
     {
-        // Unreference the texture again, as we do not need it anymore
-        txd->Dereference();
+        // The TXD container has to be preserved for the clump's lifetime!
+        // So this function leaves a reference for the TXD which has to be resolved once the associated
+        // model destroys itself.
 
         // If there is no collision in our model information by now, the clump did not provide one
         // We should restore to the original collision then
         if ( !model->m_pColModel )
+        {
             model->m_pColModel = col;
+
+            colOut = new CColModelSA( col, false );
+        }
         else
         {
-            // Otherwise we can safely delete it
-            delete col;
+            colOut = new CColModelSA( model->m_pColModel, true );
+
+            // If we loaded an atomic model and there is a custom collision, which should be very rare,
+            // we keep the original collision once we want to restore our the model
+            // GTA:SA never deletes object models
+            if ( model->GetRwModelType() == RW_ATOMIC )
+                colOut->SetOriginal( col );
+            else
+                delete col;
         }
     }
+    else
+        colOut = NULL;
 
     // close the stream
     RwStreamClose( streamModel, NULL );
     return pClump;
-}
-
-// Replaces a vehicle model
-void CRenderWareSA::ReplaceVehicleModel( RpClump * pNew, unsigned short usModelID )
-{
-    // get the modelinfo array
-    CBaseModelInfoSAInterface *pModel = ppModelInfo[usModelID];
-
-    if ( !pModel )
-        return;
-
-    if ( pModel->GetModelType() != MODEL_VEHICLE )
-        return;
-
-    CClumpModelInfoSAInterface *info = (CClumpModelInfoSAInterface*)pModel;
-
-    if ( pNew != info->m_rwClump )
-    {
-        // Delete the old clump
-        info->DeleteRwObject();
-
-        // Load a new model association
-        info->SetClump( pNew );
-    }
 }
 
 // Reads and parses a COL3 file
@@ -681,7 +683,7 @@ static void RwAtomicInsertClump( unsigned short modelID, RpAtomic *atomic )
     RpAtomic *newatom = RpAtomicClone( atomic );
 
     // This possibly adds the reference to the texture, we should reven this
-    ((void (*)(const char*, void*&, bool&))0x005370A0)( atomic->m_parent->m_nodeName, unk2, unk );
+    ((void (__cdecl*)(const char*, void*&, bool&))0x005370A0)( atomic->m_parent->m_nodeName, unk2, unk );
 
     newatom->SetRenderCallback( NULL );
 
@@ -779,24 +781,6 @@ bool CRenderWareSA::ReplacePartModels ( RpClump * pClump, RpAtomicContainer * pA
     return true;
 }
 
-// Replaces a CColModel for a specific object identified by the object id (usModelID)
-void CRenderWareSA::ReplaceCollisions ( CColModel* pCol, unsigned short usModelID )
-{
-    DWORD *pPool = (DWORD *) ARRAY_ModelInfo;
-    CColModelSA * pColModel = (CColModelSA*) pCol;
-    CModelInfoSA * pModelInfoSA = (CModelInfoSA*)(pGame->GetModelInfo ( usModelID ));
-
-    // Apply some low-level hacks (copies the old col area and sets a flag)
-    DWORD pColModelInterface = (DWORD)pColModel->GetInterface ();
-    DWORD pOldColModelInterface = *((DWORD *) pPool [ usModelID ] + 20);
-    MemOrFast < BYTE > ( pPool [usModelID ] + 0x13, 8 );
-    MemPutFast < BYTE > ( pColModelInterface + 40, *((BYTE *)( pOldColModelInterface + 40 )) );
-
-    // TODO: It seems that on entering the game, when this function is executed, the modelinfo array for this
-    // model is still zero, leading to a crash!
-    pModelInfoSA->IsLoaded ();
-}
-
 /*****************************************************************************
 *
 *   RenderWare Functions
@@ -809,6 +793,28 @@ RwAtomicRenderChainInterface *rwRenderChains = (RwAtomicRenderChainInterface*)0x
 RwMatrix* CRenderWareSA::AllocateMatrix()
 {
     return new ( pRwInterface->m_allocStruct( pRwInterface->m_matrixInfo, 0x3000D ) ) RwMatrix();
+}
+
+void RwObjectFrame::AddToFrame( RwFrame *frame )
+{
+    RemoveFromFrame();
+
+    m_parent = frame;
+
+    if ( !frame )
+        return;
+
+    LIST_INSERT( frame->m_objects.root, m_lFrame );
+}
+
+void RwObjectFrame::RemoveFromFrame()
+{
+    if ( !m_parent )
+        return;
+
+    LIST_REMOVE( m_lFrame );
+
+    m_parent = NULL;
 }
 
 static bool RwFrameGetChildCount( RwFrame *child, unsigned int *count )
@@ -1105,6 +1111,8 @@ struct _rwTexDictFind
 
 static bool RwTexDictionaryFindTexture( RwTexture *tex, _rwTexDictFind *find )
 {
+    assert( tex->txd );
+
     if ( stricmp( tex->name, find->name ) != 0 )
         return true;
 
@@ -1128,7 +1136,7 @@ void RwTexture::AddToDictionary( RwTexDictionary *_txd )
     if ( txd )
         LIST_REMOVE( TXDList );
 
-    LIST_APPEND( _txd->textures.root, TXDList );
+    LIST_INSERT( _txd->textures.root, TXDList );
 
     txd = _txd;
 }
@@ -1167,6 +1175,26 @@ bool RpAtomic::IsNight()
         return false;
 
     return m_geometry->m_nightColor && m_geometry->m_colors != NULL;
+}
+
+void RpAtomic::AddToClump( RpClump *clump )
+{
+    if ( m_clump )
+        RemoveFromClump();
+
+    m_clump = clump;
+
+    LIST_INSERT( clump->m_atomics.root, m_atomics );
+}
+
+void RpAtomic::RemoveFromClump()
+{
+    if ( !m_clump )
+        return;
+
+    LIST_REMOVE( m_atomics );
+
+    m_clump = NULL;
 }
 
 void RpAtomic::SetRenderCallback( RpAtomicCallback callback )
@@ -1524,6 +1552,25 @@ bool RwMaterialAlphaCheck( RpMaterial *mat, int )
 bool RpGeometry::IsAlpha()
 {
     return !ForAllMateria( RwMaterialAlphaCheck, 0 );
+}
+
+bool RpMaterialTextureUnlink( RpMaterial *mat, int )
+{
+    mat->m_texture = NULL;
+    return true;
+}
+
+void RpGeometry::UnlinkFX()
+{
+    // Clean all texture links
+    ForAllMateria( RpMaterialTextureUnlink, 0 );
+
+    if ( m_2dfx )
+    {
+        // Clean the 2dfx structure
+        pRwInterface->m_free( m_2dfx );
+        m_2dfx = NULL;
+    }
 }
 
 bool RwAtomicRenderChainInterface::PushRender( RwAtomicZBufferEntry *level )

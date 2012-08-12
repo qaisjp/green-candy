@@ -2,7 +2,7 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        sdk/game/CTexDictionary.h
+*  FILE:        sdk/game/RenderWare/CTexDictionary.h
 *  PURPOSE:     Texture Dictionary GTA:SA export
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
@@ -18,7 +18,7 @@ class CTexDictionary abstract
 public:
     virtual                         ~CTexDictionary()   {};
 
-    virtual bool                    Load( const char *filename, bool filtering ) = 0;
+    virtual bool                    Load( CFile *file, bool filtering ) = 0;
     virtual std::list <CTexture*>&  GetTextures() = 0;
     virtual void                    Clear() = 0;
 

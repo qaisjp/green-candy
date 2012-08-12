@@ -30,9 +30,8 @@ class CRenderWareSA : public CRenderWare
     RwMatrix*           AllocateMatrix              ();
 
     // uiModelID == 0 means no collisions will be loaded
-    RpClump *           ReadDFF                     ( const char * szDFF, unsigned short usModelID );
+    RpClump*            ReadDFF                     ( CFile *file, unsigned short usModelID, CColModelSA*& colOut );
     CColModel*          ReadCOL                     ( CFile *file );
-    void                ReplaceCollisions           ( CColModel * pColModel, unsigned short usModelID );
 
     // Positions the front seat by reading out the vector from the 'ped_frontseat' atomic in the clump (RpClump*)
     // and changing the vector in the CModelInfo class identified by the model id (usModelID)
@@ -43,7 +42,6 @@ class CRenderWareSA : public CRenderWare
     void                ReplaceWheels               ( RpClump * pClump, RpAtomicContainer * pAtomics, unsigned int uiAtomics, const char * szWheel = "wheel" );
     void                RepositionAtomic            ( RpClump * pDst, RpClump * pSrc, const char * szName );
     void                AddAllAtomics               ( RpClump * pDst, RpClump * pSrc );
-    void                ReplaceVehicleModel         ( RpClump * pNew, unsigned short usModelID );
 
     // szName should be without the part suffix (e.g. 'door_lf' or 'door_rf', and not 'door_lf_dummy')
     bool                ReplacePartModels           ( RpClump * pClump, RpAtomicContainer * pAtomics, unsigned int uiAtomics, const char * szName );

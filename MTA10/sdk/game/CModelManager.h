@@ -16,9 +16,10 @@
 class CModelManager
 {
 public:
-    virtual CModel*                     CreateModel( const char *path, unsigned short model ) = 0;
+    virtual CModel*                     CreateModel( CFile *file, unsigned short model ) = 0;
 
     virtual bool                        RestoreModel( unsigned short id ) = 0;
+    virtual bool                        RestoreCollision( unsigned short id ) = 0;
 };
 
 #endif //_MODEL_MANAGER_EXPORT_

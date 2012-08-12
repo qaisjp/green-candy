@@ -3004,8 +3004,6 @@ bool CStaticFunctionDefinitions::RemovePedClothes ( CElement* pElement, unsigned
 
 bool CStaticFunctionDefinitions::GivePedJetPack ( CElement* pElement )
 {
-    assert ( pElement );
-
     RUN_CHILDREN GivePedJetPack ( *iter );
 
     if ( IS_PED ( pElement ) )

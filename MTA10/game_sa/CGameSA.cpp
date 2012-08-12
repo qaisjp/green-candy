@@ -36,6 +36,8 @@ unsigned long* CGameSA::VAR_Framelimiter;
 
 static CMultiplayer* multiplayer;
 
+CFileTranslator *gameFileRoot;
+
 static bool ProcessCollisions( CEntitySAInterface *caller, CEntitySAInterface *colld )
 {
     return pGame->ProcessCollisionHandler( caller, colld );
@@ -53,6 +55,11 @@ static void BlendAnimation( RpClump *clump, AssocGroupId animGroup, AnimationId 
 
 CGameSA::CGameSA()
 {
+    pGame = this;
+    
+    // Setup the global game file root, which has to be our current directory
+    gameFileRoot = core->GetFileSystem()->CreateTranslator( "/" );
+
     m_bAsyncSettingsDontUse = false;
     m_bAsyncSettingsEnabled = false;
     m_bAsyncScriptEnabled = false;
@@ -79,6 +86,8 @@ CGameSA::CGameSA()
     {
         ModelInfo [i].SetModelID ( i );
     }
+
+    IMG_Initialize();
 
     DEBUG_TRACE("CGameSA::CGameSA()");
     m_pStreaming                = new CStreamingSA;
@@ -117,14 +126,15 @@ CGameSA::CGameSA()
     m_pTextureManager           = new CTextureManagerSA();
     m_pHandlingManager          = new CHandlingManagerSA ();
     m_pEventList                = new CEventListSA();
-    m_pGarages                  = new CGaragesSA ( (CGaragesSAInterface *)CLASS_CGarages );
-    m_pTasks                    = new CTasksSA ( (CTaskManagementSystemSA*)m_pTaskManagementSystem );
+    m_pGarages                  = new CGaragesSA( (CGaragesSAInterface *)CLASS_CGarages );
+    m_pTasks                    = new CTasksSA( (CTaskManagementSystemSA*)m_pTaskManagementSystem );
     m_pAnimManager              = new CAnimManagerSA;
+    m_recordings                = new CRecordingsSA;
     m_pVisibilityPlugins        = new CVisibilityPluginsSA;
     m_pKeyGen                   = new CKeyGenSA;
     m_pRopes                    = new CRopesSA;
     m_pParticleSystem           = new CParticleSystemSA();
-    m_pFx                       = new CFxSA ( (CFxSAInterface *)CLASS_CFx );
+    m_pFx                       = new CFxSA( (CFxSAInterface *)CLASS_CFx );
     m_pWaterManager             = new CWaterManagerSA ();
 
     // :D
@@ -188,6 +198,7 @@ CGameSA::~CGameSA()
     delete m_pKeyGen;
     delete m_pVisibilityPlugins;
     delete m_pAnimManager;
+    delete m_recordings;
     delete m_pTasks;
     delete m_pTextureManager;
     delete m_pModelManager;
@@ -218,6 +229,8 @@ CGameSA::~CGameSA()
     delete m_pWorld;
     delete m_pAudio;
     delete m_pStreaming;
+
+    IMG_Shutdown();
 
     // Dump any memory leaks if DETECT_LEAKS is defined
 #ifdef DETECT_LEAKS    
@@ -745,4 +758,21 @@ void ForEachBlock( void *ptr, unsigned int count, size_t blockSize, void (*callb
 
         ptr = (void*)( (const char*)ptr + blockSize );
     }
+}
+
+CFile* OpenGlobalStream( const char *filename, const char *mode )
+{
+    CFile *file;
+
+    if ( file = core->GetModRoot()->Open( filename, mode ) )
+        return file;
+
+    if ( file = core->GetMTARoot()->Open( filename, mode ) )
+        return file;
+
+    if ( file = gameFileRoot->Open( filename, mode ) )
+        return file;
+
+    // TODO: accept read-only access to the game directory
+    return NULL;
 }

@@ -39,6 +39,8 @@ void CWorldSA::Add ( CEntity * pEntity )
 void CWorldSA::Add ( CEntitySAInterface * entityInterface )
 {
     DEBUG_TRACE("void CWorldSA::Add ( CEntitySAInterface * entityInterface )");
+
+
     DWORD dwFunction = FUNC_Add;
     _asm
     {

@@ -678,10 +678,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CClientColModelManager.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CClientColPolygon.cpp"
 					>
 				</File>
@@ -2273,10 +2269,6 @@
 				</File>
 				<File
 					RelativePath="..\shared_logic\CClientColModel.h"
-					>
-				</File>
-				<File
-					RelativePath="..\shared_logic\CClientColModelManager.h"
 					>
 				</File>
 				<File

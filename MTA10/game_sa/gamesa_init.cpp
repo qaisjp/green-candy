@@ -33,7 +33,7 @@ CGame* GetGameInterface( CCoreInterface* pCore )
 
     core = pCore;
 
-    pGame = new CGameSA;
+    new CGameSA;
 
     return (CGame *)pGame;
 }
