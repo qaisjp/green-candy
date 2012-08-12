@@ -71,6 +71,7 @@ class CLODAtomicModelInfoSA;
 
 enum eModelType : unsigned char
 {
+    MODEL_ATOMIC = 1,
     MODEL_VEHICLE = 6,
     MODEL_PED
 };
@@ -232,12 +233,6 @@ public:
     void                            GetVoice( const char** pszVoiceType, const char** szVoice ) const;
     void                            SetVoice( short sVoiceType, short sVoice );
     void                            SetVoice( const char* szVoiceType, const char* szVoice );
-
-    // Custom collision related functions
-    void                            SetCustomModel( RpClump* pClump );
-    void                            SetColModel( CColModel* pColModel );
-    void                            RestoreColModel();
-    void                            MakeCustomModel();
 
     inline void                     SetModelID( unsigned short id )         { m_modelID = id; }
 

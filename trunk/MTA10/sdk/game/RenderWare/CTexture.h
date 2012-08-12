@@ -2,7 +2,7 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        sdk/game/CTexture.h
+*  FILE:        sdk/game/RenderWare/CTexture.h
 *  PURPOSE:     RenderWare Texture GTA:SA export
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *

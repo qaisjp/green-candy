@@ -67,7 +67,8 @@ public:
     void                            SetupMateria();
     void                            InitNameplate();
 
-    unsigned short                  GetNumberOfValidPaintjobs();
+    void                            AssignPaintjob( unsigned short txdId );
+    unsigned short                  GetNumberOfValidPaintjobs() const;
 
     RpMaterial*                     m_plateMaterial;        // 36
     BYTE                            m_pad2[9];              // 40

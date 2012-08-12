@@ -15,6 +15,8 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"

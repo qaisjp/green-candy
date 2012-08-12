@@ -434,8 +434,6 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineRestoreCOL );
     LUA_REGISTER( L, engineReplaceModel );
     LUA_REGISTER( L, engineRestoreModel );
-    LUA_REGISTER( L, engineReplaceMatchingAtomics );
-    LUA_REGISTER( L, engineReplaceWheelAtomics );
     LUA_REGISTER( L, enginePositionAtomic );
     LUA_REGISTER( L, enginePositionSeats );
     LUA_REGISTER( L, engineAddAllAtomics );

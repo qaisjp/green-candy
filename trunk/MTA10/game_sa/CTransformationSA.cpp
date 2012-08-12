@@ -20,7 +20,7 @@ void Transformation_Init()
     *(unsigned char*)FUNC_InitTransformation = 0xC3;
 
     // Allocate enough matrices for everybody
-    new (pTransform) CTransformationSAInterface( 65536 );
+    new (pTransform) CTransformationSAInterface( 255636 );
 }
 
 CTransformSAInterface::CTransformSAInterface()

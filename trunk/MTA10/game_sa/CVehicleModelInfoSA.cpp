@@ -63,7 +63,13 @@ void    VehicleModels_Init()
     txdEntry = (*ppTxdPool)->Get( pGame->GetTextureManager()->FindTxdEntry( "vehicle" ) );
 
     if ( txdEntry )
-        txdEntry->LoadTXD( "MODELS\\GENERIC\\VEHICLE.TXD" );
+    {
+        CFile *file = OpenGlobalStream( "MODELS\\GENERIC\\VEHICLE.TXD", "rb" );
+
+        txdEntry->LoadTXD( file );
+
+        delete file;
+    }
     else
         txdEntry = (*ppTxdPool)->Get( pGame->GetTextureManager()->LoadDictionaryEx( "vehicle", "MODELS\\GENERIC\\VEHICLE.TXD" ) );
 
@@ -1042,12 +1048,21 @@ void CVehicleModelInfoSAInterface::InitNameplate()
         m_plateMaterial = plate.plate;
 }
 
-unsigned short CVehicleModelInfoSAInterface::GetNumberOfValidPaintjobs()
+void CVehicleModelInfoSAInterface::AssignPaintjob( unsigned short txdId )
+{
+    unsigned char n = 0;
+
+    while ( m_paintjobTypes[n] != 0xFFFF && n++ < 4 );
+
+    m_paintjobTypes[n] = txdId;
+}
+
+unsigned short CVehicleModelInfoSAInterface::GetNumberOfValidPaintjobs() const
 {
     unsigned int n;
 
     for ( n = 0; n < 4; n++ )
-        if ( m_paintjobTypes[n] = 0xFFFF )
+        if ( m_paintjobTypes[n] == 0xFFFF )
             break;
     
     return n;

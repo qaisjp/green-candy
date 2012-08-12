@@ -55,7 +55,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../sdk;../../Shared/;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
+				AdditionalIncludeDirectories="./;../sdk;../../Shared/;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
 				PreprocessorDefinitions="WIN32;GAME_SA_EXPORTS;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -155,7 +155,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../sdk;../../Shared/;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
+				AdditionalIncludeDirectories="./;../sdk;../../Shared/;../../Shared/sdk;../../vendor/sparsehash/current/src;../../vendor/sparsehash/current/src/windows"
 				PreprocessorDefinitions="WIN32;_DEBUG;MTA_DEBUG;GAME_SA_EXPORTS;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				BasicRuntimeChecks="3"
@@ -545,6 +545,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CIMGManagerSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CKeyGenSA.cpp"
 				>
 			</File>
@@ -562,10 +566,6 @@
 			</File>
 			<File
 				RelativePath=".\CModelManagerSA.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CModelSA.cpp"
 				>
 			</File>
 			<File
@@ -693,6 +693,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CRecordingsSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CRegisteredCoronaSA.cpp"
 				>
 			</File>
@@ -749,19 +753,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CTexDictionarySA.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\CTextSA.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\CTextureManagerSA.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CTextureSA.cpp"
 				>
 			</File>
 			<File
@@ -908,6 +904,66 @@
 				RelativePath=".\TaskSecondarySA.cpp"
 				>
 			</File>
+		</Filter>
+		<Filter
+			Name="RenderWare"
+			>
+			<File
+				RelativePath=".\RenderWare\CModelSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\CRpAtomicSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\CRwFrameSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\CRwObjectSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\CTexDictionarySA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\CTextureSA.cpp"
+				>
+			</File>
+			<Filter
+				Name="Include"
+				>
+				<File
+					RelativePath=".\RenderWare\CModelSA.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\CRpAtomicSA.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\CRwFrameSA.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\CRwObjectSA.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\CTexDictionarySA.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\CTextureSA.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\include.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -1126,6 +1182,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CIMGManagerSA.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CKeyGenSA.h"
 				>
 			</File>
@@ -1143,10 +1203,6 @@
 			</File>
 			<File
 				RelativePath=".\CModelManagerSA.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CModelSA.h"
 				>
 			</File>
 			<File
@@ -1278,6 +1334,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CRecordingsSA.h"
+				>
+			</File>
+			<File
 				RelativePath="CRegisteredCoronaSA.h"
 				>
 			</File>
@@ -1330,23 +1390,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CTasksSA.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CTexDictionarySA.h"
-				>
-			</File>
-			<File
 				RelativePath=".\CTextSA.h"
 				>
 			</File>
 			<File
 				RelativePath=".\CTextureManagerSA.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CTextureSA.h"
 				>
 			</File>
 			<File

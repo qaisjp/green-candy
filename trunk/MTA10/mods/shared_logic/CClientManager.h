@@ -20,7 +20,6 @@ class CClientManager;
 #include "CAntiCheat.h"
 #include "CClientCamera.h"
 #include "CClientCivilianManager.h"
-#include "CClientColModelManager.h"
 #include "CClientEntity.h"
 #include "CClientGUIManager.h"
 #include "CClientMarkerManager.h"
@@ -62,7 +61,6 @@ public:
     inline CAntiCheat&                  GetAntiCheat                ( void )        { return m_AntiCheat; }
     inline CClientCamera*               GetCamera                   ( void )        { return m_pCamera; }
     inline CClientCivilianManager*      GetCivilianManager          ( void )        { return m_pCivilianManager; }
-    inline CClientColModelManager*      GetColModelManager          ( void )        { return m_pColModelManager; }
     inline CClientGUIManager*           GetGUIManager               ( void )        { return m_pGUIManager; }
     inline CClientMarkerManager*        GetMarkerManager            ( void )        { return m_pMarkerManager; }
     inline CClientStreamer*             GetMarkerStreamer           ( void )        { return m_pMarkerStreamer; }
@@ -111,7 +109,6 @@ private:
     CAntiCheat                          m_AntiCheat;
     CClientCamera*                      m_pCamera;
     CClientCivilianManager*             m_pCivilianManager;
-    CClientColModelManager*             m_pColModelManager;
     CClientGUIManager*                  m_pGUIManager;
     CClientMarkerManager*               m_pMarkerManager;
     CClientStreamer*                    m_pMarkerStreamer;

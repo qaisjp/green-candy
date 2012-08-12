@@ -27,18 +27,13 @@ public:
     inline bool                     IsLoaded() const                { return m_pColModel != NULL; };
 
     bool                            Replace( unsigned short usModel );
-    void                            Restore( unsigned short usModel );
+    bool                            HasReplaced( unsigned short usModel ) const;
+    bool                            Restore( unsigned short usModel );
     void                            RestoreAll();
 
-    bool                            HasReplaced( unsigned short usModel ) const;
-
 private:
-    void                            InternalRestore( unsigned short usModel );
-
-    class CClientColModelManager*   m_pColModelManager;
-    
     CColModel*                      m_pColModel;
-    std::list < unsigned short >    m_Replaced;
+    std::list <unsigned short>      m_Replaced;
 };
 
 #endif

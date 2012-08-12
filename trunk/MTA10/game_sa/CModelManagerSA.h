@@ -21,9 +21,10 @@ public:
                                 CModelManagerSA();
                                 ~CModelManagerSA();
 
-    CModelSA*                   CreateModel( const char *path, unsigned short model );
+    CModelSA*                   CreateModel( CFile *file, unsigned short model );
 
     bool                        RestoreModel( unsigned short id );
+    bool                        RestoreCollision( unsigned short id );
 
 protected:
     typedef std::vector <CModelSA*> models_t;

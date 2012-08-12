@@ -29,7 +29,6 @@ namespace CLuaFunctionDefs
     CRenderWare                 *m_pRenderWare = NULL;
     CClientMarkerManager        *m_pMarkerManager = NULL;
     CClientPickupManager        *m_pPickupManager = NULL;
-    CClientColModelManager      *m_pColModelManager = NULL;
     CRegisteredCommands         *m_pRegisteredCommands = NULL;
 
     void Initialize( CClientGame *game, CLuaManager *manager, CScriptDebugging *debug )
@@ -50,7 +49,6 @@ namespace CLuaFunctionDefs
         m_pRenderWare = g_pGame->GetRenderWare ();
         m_pMarkerManager = m_pManager->GetMarkerManager ();
         m_pPickupManager = m_pManager->GetPickupManager ();
-        m_pColModelManager = m_pManager->GetColModelManager ();
         m_pRegisteredCommands = game->GetRegisteredCommands ();
 
         LuaFunctionDefs::SetResourceManager( *m_pResourceManager );

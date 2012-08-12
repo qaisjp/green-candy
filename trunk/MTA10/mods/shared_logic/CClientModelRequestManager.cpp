@@ -112,8 +112,7 @@ bool CClientModelRequestManager::RequestBlocking ( unsigned short usModelID )
     CModelInfo* pInfo = g_pGame->GetModelInfo ( usModelID );
     if ( pInfo )
     {
-        pInfo->Request ( TRUE, TRUE );
-        pInfo->MakeCustomModel ();
+        pInfo->Request( TRUE, TRUE );
         return true;
     }
 
@@ -155,8 +154,6 @@ bool CClientModelRequestManager::Request ( unsigned short usModelID, CClientEnti
                     // Delete it, remove the it from the list and return true.
                     delete pEntry;
                     m_Requests.erase ( iter );
-
-                    pInfo->MakeCustomModel ();
                     return true;
                 }
                 else
@@ -178,11 +175,7 @@ bool CClientModelRequestManager::Request ( unsigned short usModelID, CClientEnti
         {
             // Already loaded? Don't bother adding to the list.
             if ( pInfo->IsLoaded () )
-            {
-                pInfo->MakeCustomModel ();
-
                 return true;
-            }
 
             // Boost loading priority if the object is close to the local player
             bool bHighPriority = false;
@@ -279,9 +272,6 @@ void CClientModelRequestManager::DoPulse ( void )
             // Is it loaded?
             if ( pEntry->pModel->IsLoaded () )
             {
-                // Make sure custom things are replaced
-                pEntry->pModel->MakeCustomModel ();
-
                 // Call the callback
                 pEntry->pEntity->ModelRequestCallback ( pEntry->pModel );
 

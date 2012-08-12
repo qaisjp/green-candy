@@ -158,7 +158,7 @@ CClientEntity::CClientEntity( ElementID ID, bool system, LuaClass& root ) : LuaE
     lua_State *L = root.GetVM();
 
     // Extend our entity instance
-    PushStack( root.GetVM() );
+    PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, entity_constructor, 1 );
     luaJ_extend( L, -2, 0 );

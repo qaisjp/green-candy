@@ -30,7 +30,7 @@ public:
 
     void            Allocate();
     void            Deallocate();
-    bool            LoadTXD( const char *filename );
+    bool            LoadTXD( CFile *file );
     void            InitParent();
     void            Reference();
     void            Dereference();

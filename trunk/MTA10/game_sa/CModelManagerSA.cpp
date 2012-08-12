@@ -16,8 +16,12 @@
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
+CRwObjectSA *g_replObjectNative[DATA_TEXTURE_BLOCK];
+
 CModelManagerSA::CModelManagerSA()
 {
+    // Reset information structs
+    memset( g_replObjectNative, 0, sizeof(g_replObjectNative) );
 }
 
 CModelManagerSA::~CModelManagerSA()
@@ -27,14 +31,15 @@ CModelManagerSA::~CModelManagerSA()
         delete *m_models.begin();
 }
 
-CModelSA* CModelManagerSA::CreateModel( const char *path, unsigned short id )
+CModelSA* CModelManagerSA::CreateModel( CFile *file, unsigned short id )
 {
-    RpClump *clump = pGame->GetRenderWare()->ReadDFF( path, id );
+    CColModelSA *col = NULL;
+    RpClump *clump = pGame->GetRenderWare()->ReadDFF( file, id, col );
 
     if ( !clump )
         return NULL;
 
-    CModelSA *model = new CModelSA( clump, ppModelInfo[id]->m_pColModel );
+    CModelSA *model = new CModelSA( clump, col, ppModelInfo[id]->m_textureDictionary );
 
     m_models.push_back( model );
     return model;
@@ -42,21 +47,36 @@ CModelSA* CModelManagerSA::CreateModel( const char *path, unsigned short id )
 
 bool CModelManagerSA::RestoreModel( unsigned short id )
 {
-    CBaseModelInfoSAInterface *info = ppModelInfo[id];
-
-    if ( id > MAX_MODELS-1 )
+    if ( id > DATA_TEXTURE_BLOCK-1 )
         return false;
 
-    if ( !info )
+    CRwObjectSA *obj = g_replObjectNative[id];
+
+    if ( !obj )
         return false;
 
-    if ( info->GetRwModelType() != RW_CLUMP )
-        return false;
-
-    models_t::iterator iter = m_models.begin();
-
-    for ( ; iter != m_models.end(); iter++ )
-        (*iter)->Restore( id );
+    switch( obj->GetType() )
+    {
+    case RW_CLUMP:
+        ((CModelSA*)obj)->Restore( id );
+        break;
+    case RW_ATOMIC:
+        ((CRpAtomicSA*)obj)->Restore( id );
+        break;
+    }
 
     return true;
+}
+
+bool CModelManagerSA::RestoreCollision( unsigned short id )
+{
+    if ( id > DATA_TEXTURE_BLOCK-1 )
+        return false;
+
+    CColModelSA *col = g_colReplacement[id];
+
+    if ( !col )
+        return false;
+
+    return col->Restore( id );
 }

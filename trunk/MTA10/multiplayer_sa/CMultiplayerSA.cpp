@@ -422,7 +422,6 @@ void HOOK_CCustomRoadsignMgr__RenderRoadsignAtomic();
 void HOOK_Trailer_BreakTowLink();
 void HOOK_CRadar__DrawRadarGangOverlay();
 void HOOK_CTaskComplexJump__CreateSubTask();
-void HOOK_CBike_ProcessRiderAnims();
 void HOOK_FxManager_CreateFxSystem ();
 void HOOK_FxManager_DestroyFxSystem ();
 void HOOK_CCam_ProcessFixed ();
@@ -696,7 +695,6 @@ void CMultiplayerSA::InitHooks()
     HookInstall(HOOKPOS_CHandlingData_isNotRWD, (DWORD)HOOK_isVehDriveTypeNotRWD, 7 );
     HookInstall(HOOKPOS_CHandlingData_isNotFWD, (DWORD)HOOK_isVehDriveTypeNotFWD, 7 );
 
-    HookInstallCall ( CALL_CBike_ProcessRiderAnims, (DWORD)HOOK_CBike_ProcessRiderAnims );
     HookInstallCall ( CALL_Render3DStuff, (DWORD)HOOK_Render3DStuff );
     HookInstallCall ( CALL_VehicleCamUp, (DWORD)HOOK_VehicleCamUp );
     HookInstallCall ( CALL_VehicleLookBehindUp, (DWORD)HOOK_VehicleCamUp );
@@ -1104,15 +1102,6 @@ void CMultiplayerSA::InitHooks()
     // DISABLE weapon pickups
     MemPut < BYTE > ( 0x5B47B0, 0xC3 );
 
-    // INCREASE CEntyInfoNode pool size
-    //00550FB9   68 F4010000      PUSH 1F4
-    /*
-    MemPut < BYTE > ( 0x550FBA, 0xE8 );
-    MemPut < BYTE > ( 0x550FBB, 0x03 );
-    */
-    MemPut < BYTE > ( 0x550FBA, 0x00 );
-    MemPut < BYTE > ( 0x550FBB, 0x10 );
-
     
     /*
     MemPut < BYTE > ( 0x469F00, 0xC3 );
@@ -1381,9 +1370,6 @@ void CMultiplayerSA::InitHooks()
     // Disable CStreaming::StreamVehiclesAndPeds_Always
     MemPut < BYTE > ( 0x40B650, 0xC3 );
 
-    // Double the size of CPlaceable matrix array to fix a crash after RwMatrixLinkList::AddToList1
-    MemPut < int > ( 0x54F3A1, 1800 );
-
     SetSuspensionEnabled ( false );
 }
 
@@ -1572,6 +1558,7 @@ void CMultiplayerSA::DisableQuickReload ( bool bDisabled )
     else
         MemPut < WORD > ( 0x60B4F6, 0x027C );
 }
+
 void CMultiplayerSA::DisableCloseRangeDamage ( bool bDisabled )
 {
     if ( bDisabled )
@@ -2409,37 +2396,6 @@ bool ProcessRiderAnims ( CPedSAInterface * pPedInterface )
     return false;
 }
 
-
-CPedSAInterface * pRiderPed = NULL;
-void _declspec(naked) HOOK_CBike_ProcessRiderAnims ()
-{    
-    // This hook is no longer needed
-    _asm jmp    FUNC_CBike_ProcessRiderAnims
-
-    _asm
-    {
-        mov     pRiderPed, eax
-        pushad
-    }
-
-    if ( ProcessRiderAnims ( pRiderPed ) )
-    {
-        _asm
-        {
-            popad
-            jmp    FUNC_CBike_ProcessRiderAnims
-        }
-    }
-    else
-    {
-        _asm
-        {
-            popad
-            ret
-        }
-    }
-}
-
 eExplosionType explosionType;
 CVector vecExplosionLocation;
 DWORD explosionCreator = 0;
@@ -2562,13 +2518,11 @@ void _declspec(naked) HOOK_CExplosion_AddExplosion()
         _asm    popad
         _asm    retn // if they return false from the handler, they don't want the explosion to show
     }
-    else
-    {
-        _asm popad
-    }
 
     _asm
     {
+        popad
+
         noexplosionhandler:
 
         // Replaced code
@@ -2640,7 +2594,8 @@ void _declspec(naked) HOOK_CTaskComplexJump__CreateSubTask()
 
     if ( processGrab() )
     {
-        _asm {
+        _asm
+        {
             popad
             mov     eax, 0x67DAD6
             jmp     eax
@@ -2648,7 +2603,8 @@ void _declspec(naked) HOOK_CTaskComplexJump__CreateSubTask()
     }
     else
     {
-        _asm {
+        _asm
+        {
             popad
             mov     eax, 0x67DAD1
             jmp     eax
@@ -2990,35 +2946,7 @@ void CRunningScript_Process ( void )
             call    dwFunc
             add     esp, 4
         }
-
-        dwFunc = 0x61A5A0; // CTask::operator new
-        _asm
-        {
-            push    28
-            call    dwFunc
-            add     esp, 4
-        }
-
-        dwFunc = 0x685750; // CTaskSimplePlayerOnFoot::CTaskSimplePlayerOnFoot
-        _asm
-        {
-            mov     ecx, eax
-            call    dwFunc
-        }
-
-        dwFunc = 0x681AF0; // set task
-        _asm
-        {
-            mov     edi, 0xB7CD98
-            mov     edi, [edi]
-            mov     ecx, [edi+0x47C]
-            add     ecx, 4
-            push    0
-            push    4   
-            push    eax
-            call    dwFunc
-        }*/
-
+        */
         
         bHasProcessedScript = true;
     }
@@ -3250,6 +3178,7 @@ void _declspec(naked) HOOK_CVehicle_ResetAfterRender ()
  ** Objects
  **/
 static bool bObjectIsAGangTag = false;
+
 static void SetObjectAlpha ()
 {
     bEntityHasAlpha = false;
@@ -3372,7 +3301,7 @@ void _declspec(naked) HOOK_EndWorldColors ()
 // This hook modifies the code in CWorld::ProcessVerticalLineSectorList to
 // force it to also check the world objects, so we can get a reliable ground
 // position on custom object maps. This will make getGroundPosition, jetpacks
-// and molotovs to work.
+// and molotovs work.
 static DWORD dwObjectsChecked = 0;
 static DWORD dwProcessVerticalKeepLooping = 0x5632D1;
 static DWORD dwProcessVerticalEndLooping = 0x56335F;
@@ -3431,10 +3360,6 @@ dont_choke:
         jmp     dwChokingDontchoke
     }
 }
-
-
-
-
 
 void CMultiplayerSA::DisableEnterExitVehicleKey( bool bDisabled )
 {
@@ -3913,7 +3838,7 @@ void CMultiplayerSA::SetTrafficLightsLocked ( bool bLocked )
     bTrafficLightsBlocked = bLocked;
 }
 
-// Allowing a created object into the vertical line test makes getGroundPosition, jetpacks and molotovs to work.
+// Allowing a created object into the vertical line test makes getGroundPosition, jetpacks and molotovs work.
 // Not allowing a created object into the vertical line test makes the breakable animation work.
 void CMultiplayerSA::AllowCreatedObjectsInVerticalLineTest ( bool bOn )
 {

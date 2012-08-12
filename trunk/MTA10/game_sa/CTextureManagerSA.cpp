@@ -38,11 +38,10 @@ CTxdInstanceSA::CTxdInstanceSA( const char *name )
 
 bool Txd_DeleteAll( RwTexture *tex, int )
 {
-    if ( tex->refs < 2 )
+    if ( tex->refs > 1 )
     {
-        tex->RemoveFromDictionary();
-
         RwTextureDestroy( tex );
+        tex->RemoveFromDictionary();
     }
 
     return true;
@@ -73,23 +72,24 @@ void CTxdInstanceSA::Allocate()
 
 void CTxdInstanceSA::Deallocate()
 {
-    // Notify our textures that they should detach from the txd
     unsigned short id = (*ppTxdPool)->GetIndex( this );
-    dictImportList_t& list = g_dictImports[id];
-
-    for ( dictImportList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
-        (*iter)->OnTxdInvalidate( *m_txd, id );
 
     // Notify the shader system
     OnRemoveTxd( id );
 
     if ( m_txd )
     {
+        // Notify our textures that they should detach from the txd
+        dictImportList_t& list = g_dictImports[id];
+
+        for ( dictImportList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
+            (*iter)->OnTxdInvalidate( *m_txd, id );
+
         // HACK: detach the global texture emitter if present
         if ( g_textureEmitter == m_txd )
             g_textureEmitter = NULL;
 
-        m_txd->ForAllTextures( Txd_DeleteAll, 0 );
+        m_txd->ForAllTexturesSafe( Txd_DeleteAll, 0 );
 
         RwTexDictionaryDestroy( m_txd );
 
@@ -112,40 +112,38 @@ static bool RwTexDictionaryClear( RwTexture *tex, int )
     return true;
 }
 
-bool CTxdInstanceSA::LoadTXD( const char *filename )
+bool CTxdInstanceSA::LoadTXD( CFile *file )
 {
-    RwStream *stream = RwStreamOpen( STREAM_TYPE_FILENAME, STREAM_MODE_READ, filename );
+    if ( m_txd )
+        return false;
+
+    RwStream *stream = RwStreamCreateTranslated( file );
 
     if ( !stream ) 
         return false;
 
-    if (!RwStreamFindChunk( stream, 0x16, NULL, NULL ))
+    if ( !RwStreamFindChunk( stream, 0x16, NULL, NULL ) )
     {
         RwStreamClose( stream, NULL );
         return false;
     }
 
-    RwTexDictionary *txd = RwTexDictionaryStreamRead( stream );
+    m_txd = RwTexDictionaryStreamRead( stream );
 
     RwStreamClose( stream, NULL );
 
-    if ( !txd )
+    if ( !m_txd )
         return false;
-
-    Allocate();
-
-    // Transfer all textures to our txd and destroy the other one
-    while ( RwTexture *tex = txd->GetFirstTexture() )
-    {
-        tex->RemoveFromDictionary();
-        tex->AddToDictionary( m_txd );
-    }
 
     // HACK: set the global texture emitter so loading the txd is the only requirement for model textures
     // (BACKWARDS COMPATIBILITY WITH MTA:BLUE)
     g_textureEmitter = m_txd;
+    return true;
+}
 
-    RwTexDictionaryDestroy( txd );
+static bool RwTexDictionaryGetCount( RwTexture *tex, unsigned int *cnt )
+{
+    (*cnt)++;
     return true;
 }
 
@@ -187,6 +185,7 @@ void CTxdInstanceSA::Dereference()
 
 void CTxdInstanceSA::SetCurrent()
 {
+    // The_GTA: tex dictionaries seem to invalidate at times; if they do; we do not want them set for texture indexing
     pRwInterface->m_textureManager.m_current = m_txd;
 }
 
@@ -210,15 +209,14 @@ static RwTexture* __cdecl RwTexDictionaryFindFromStack( const char *name )
     }
     while ( tex = tex->m_parentTxd );
 
+    if ( g_textureEmitter )
+        return g_textureEmitter->FindNamedTexture( name );
+
     return NULL;
 }
 
 static RwTexture* __cdecl RwTexDictionaryFindFromStackSecondary( const char *name )
 {
-    // HACK: apply a global texture emitter
-    if ( g_textureEmitter )
-        return g_textureEmitter->FindNamedTexture( name );
-
     return NULL;
 }
 
@@ -233,10 +231,37 @@ static void Hook_InitTextureManager()
     pRwInterface->m_textureManager.m_findInstanceSecondary = RwTexDictionaryFindFromStackSecondary;
 }
 
+RwTexture *tmp;
+
+#ifdef DEBUG_TEXTURES_EXCPT
+void __cdecl texdum()
+{
+    assert( tmp->refs != 0 );
+}
+
+void __declspec(naked) HOOK_RwTextureDestroy()
+{
+    __asm
+    {
+        push esi
+        mov esi,[esp+8]
+
+        mov tmp,esi
+        call texdum
+
+        mov edx,0x007F3865
+        jmp edx
+    }
+}
+#endif //DEBUG_TEXTURES_EXCEPT
+
 CTextureManagerSA::CTextureManagerSA()
 {
     // We init it ourselves
     HookInstall( FUNC_InitTextureManager, (DWORD)Hook_InitTextureManager, 6 );
+#ifdef DEBUG_TEXTURES_EXCPT
+    HookInstall( (DWORD)0x007F3860, (DWORD)HOOK_RwTextureDestroy, 5 );
+#endif //DEBUG_TEXTURES_EXCPT
 
     // We can initialize the pool here
     *ppTxdPool = new CTxdPool;
@@ -259,11 +284,11 @@ int CTextureManagerSA::FindTxdEntry( const char *name ) const
     unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey(name);
     unsigned int n;
 
-    for (n=0; n<MAX_TXD; n++)
+    for ( n=0; n<MAX_TXD; n++ )
     {
         CTxdInstanceSA *txd = (*ppTxdPool)->Get(n);
 
-        if (!txd || txd->m_hash != hash)
+        if ( !txd || txd->m_hash != hash )
             continue;
 
         return n;
@@ -330,7 +355,7 @@ CTexDictionarySA* CTextureManagerSA::CreateTxd( const char *name, unsigned short
 
 int CTextureManagerSA::LoadDictionary( const char *filename )
 {
-    return LoadDictionaryEx( ExtractFilename( filename ), filename);
+    return LoadDictionaryEx( ExtractFilename( filename ), filename );
 }
 
 int CTextureManagerSA::LoadDictionaryEx( const char *name, const char *filename )
@@ -342,7 +367,13 @@ int CTextureManagerSA::LoadDictionaryEx( const char *name, const char *filename 
 
     CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
 
-    if ( !txd->LoadTXD( filename ) )
+    CFile *file = OpenGlobalStream( filename, "rb" );
+
+    bool success = txd->LoadTXD( file );
+
+    delete file;
+
+    if ( success )
     {
         delete txd;
 

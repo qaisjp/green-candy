@@ -59,6 +59,7 @@
 #include <CClientColTube.h>
 #include <CClientCorona.h>
 #include <CClientDFF.h>
+#include <CClientColModel.h>
 #include <CClientDummy.h>
 #include <CClientEntity.h>
 #include <derived/include.h>    // DERIVED

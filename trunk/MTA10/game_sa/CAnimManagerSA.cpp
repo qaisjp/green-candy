@@ -15,15 +15,27 @@
 
 using std::list;
 
-CAnimManagerSA::CAnimManagerSA ( void )
+struct animInfo
 {
-    MemSetFast ( m_pAnimAssocGroups, 0, sizeof ( m_pAnimAssocGroups ) );
-    MemSetFast ( m_pAnimations, 0, sizeof ( m_pAnimations ) );
-    MemSetFast ( m_pAnimBlocks, 0, sizeof ( m_pAnimBlocks ) );
+    char            name[16];   // 0
+    unsigned int    unk1;       // 16
+    unsigned int    unk2;       // 20
+    const char**    animNames;  // 24
+    void*           unk3;       // 28
+    char            assoc[16];  // 32
+};
+
+static animInfo *const VAR_AnimInfoArray = (animInfo*)0x008AA5B8; 
+#define ANIM_INFO_ARRAY_SIZE    119
+
+CAnimManagerSA::CAnimManagerSA()
+{
+    memset( m_pAnimAssocGroups, 0, sizeof ( m_pAnimAssocGroups ) );
+    memset( m_pAnimations, 0, sizeof ( m_pAnimations ) );
+    memset( m_pAnimBlocks, 0, sizeof ( m_pAnimBlocks ) );
 }
 
-
-CAnimManagerSA::~CAnimManagerSA ( void )
+CAnimManagerSA::~CAnimManagerSA()
 {
     for ( unsigned int i = 0 ; i < MAX_ANIM_GROUPS ; i++ )
         if ( m_pAnimAssocGroups [ i ] ) delete m_pAnimAssocGroups [ i ];
@@ -33,8 +45,7 @@ CAnimManagerSA::~CAnimManagerSA ( void )
         if ( m_pAnimBlocks [ i ] ) delete m_pAnimBlocks [ i ];
 }
 
-
-void CAnimManagerSA::Initialize ( void )
+void CAnimManagerSA::Initialize ()
 {
     DWORD dwFunc = FUNC_CAnimManager_Initialize;
     _asm
@@ -43,8 +54,7 @@ void CAnimManagerSA::Initialize ( void )
     }
 }
 
-
-void CAnimManagerSA::Shutdown ( void )
+void CAnimManagerSA::Shutdown()
 {
     DWORD dwFunc = FUNC_CAnimManager_Shutdown;
     _asm
@@ -177,18 +187,22 @@ int CAnimManagerSA::GetAnimationBlockIndex( const char *szName )
     return iReturn;
 }
 
-int CAnimManagerSA::RegisterAnimBlock( const char * szName )
+static unsigned int *const VAR_NumAnimBlocks = (unsigned int*)VAR_CAnimManager_NumAnimBlocks;
+
+unsigned short CAnimManagerSA::RegisterAnimBlock( const char *name )
 {
-    int iReturn;
-    DWORD dwFunc = FUNC_CAnimManager_RegisterAnimBlock;
-    _asm
-    {
-        push    szName
-        call    dwFunc
-        mov     iReturn, eax
-        add     esp, 0x4
-    }
-    return iReturn;
+    CAnimBlockSAInterface *anim = GetAnimBlockByName( name );
+
+    if ( anim )
+        return anim->GetIndex();
+
+    unsigned int index = (*VAR_NumAnimBlocks)++;
+    CAnimBlockSAInterface& block = *( (CAnimBlockSAInterface*)ARRAY_AnimBlock + index );
+
+    strncpy( block.m_name, name, 15 );
+    block.m_count = 0;
+    block.m_animInfoIndex = GetFirstAssocGroup( name );
+    return index;
 }
 
 CAnimBlendAssocGroup * CAnimManagerSA::GetAnimBlendAssoc ( AssocGroupId groupID )
@@ -205,18 +219,17 @@ CAnimBlendAssocGroup * CAnimManagerSA::GetAnimBlendAssoc ( AssocGroupId groupID 
     return GetAnimBlendAssocGroup ( pInterface );
 }
 
-AssocGroupId CAnimManagerSA::GetFirstAssocGroup ( const char * szName )
+unsigned short CAnimManagerSA::GetFirstAssocGroup( const char *name ) const
 {
-    DWORD groupReturn;
-    DWORD dwFunc = FUNC_CAnimManager_GetFirstAssocGroup;
-    _asm
+    unsigned short n;
+
+    for ( n=0; n<ANIM_INFO_ARRAY_SIZE; n++ )
     {
-        push    szName
-        call    dwFunc
-        mov     groupReturn, eax
-        add     esp, 0x4
+        if ( stricmp( VAR_AnimInfoArray[n].name, name ) == 0 )
+            return n;
     }
-    return (AssocGroupId)groupReturn;
+
+    return ANIM_INFO_ARRAY_SIZE - 1;
 }
 
 const char * CAnimManagerSA::GetAnimGroupName ( AssocGroupId groupID )
@@ -462,7 +475,7 @@ CAnimBlockSAInterface* CAnimManagerSA::GetAnimBlockByName( const char *name ) co
 {
     unsigned int n;
     
-    for (n=0; n<GetNumAnimBlocks(); n++)
+    for ( n=0; n<GetNumAnimBlocks(); n++ )
     {
         CAnimBlockSAInterface *anim = (CAnimBlockSAInterface*)ARRAY_AnimBlock + n;
 

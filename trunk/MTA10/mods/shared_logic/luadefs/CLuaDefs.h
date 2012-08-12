@@ -14,8 +14,6 @@
 #define __CLUADEFS_H
 
 class CClientColManager;
-class CClientColModelManager;
-class CClientDFFManager;
 class CClientEntity;
 class CClientGame;
 class CClientGUIManager;
@@ -65,8 +63,6 @@ namespace CLuaFunctionDefs
     extern CRenderWare*                 m_pRenderWare;
     extern CClientMarkerManager*        m_pMarkerManager;
     extern CClientPickupManager*        m_pPickupManager;
-    extern CClientDFFManager*           m_pDFFManager;
-    extern CClientColModelManager*      m_pColModelManager;
     extern CRegisteredCommands*         m_pRegisteredCommands;  
 }
 

@@ -897,7 +897,7 @@ void ProcessProjectile ( )
             }
         }
 
-        CProjectileInfo * projectileInfo = pGameInterface->GetProjectileInfo()->GetProjectileInfo(dwProjectileInfoIndex);
+        CProjectileInfo * projectileInfo = pGameInterface->GetProjectileInfo()->GetProjectileInfo((unsigned short)dwProjectileInfoIndex);
         CProjectile* projectile = pGameInterface->GetProjectileInfo()->GetProjectile(pProjectile);
         projectile->SetProjectileInfo ( projectileInfo );
         m_pProjectileHandler ( pOwner, projectile, projectileInfo, projectileWeaponType, projectileOrigin, projectileForce, projectileTarget, projectileTargetEntity );

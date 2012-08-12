@@ -2,7 +2,7 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        game_sa/CTexDictionarySA.cpp
+*  FILE:        game_sa/RenderWare/CTexDictionarySA.cpp
 *  PURPOSE:     Internal texture dictionary handler
 *               RenderWare extension
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
@@ -12,7 +12,6 @@
 *****************************************************************************/
 
 #include "StdInc.h"
-#include "gamesa_renderware.h"
 
 extern CBaseModelInfoSAInterface** ppModelInfo;
 
@@ -72,10 +71,10 @@ unsigned int CTexDictionarySA::GetHash() const
     return m_tex->m_hash;
 }
 
-bool CTexDictionarySA::Load( const char *filename, bool filtering )
+bool CTexDictionarySA::Load( CFile *file, bool filtering )
 {
     // Try to load it
-    if ( !m_tex->LoadTXD( filename ) )
+    if ( !m_tex->LoadTXD( file ) )
         return false;
 
     // Virtualize all textures

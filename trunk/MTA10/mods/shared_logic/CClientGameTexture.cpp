@@ -61,6 +61,7 @@ CClientGameTexture::CClientGameTexture( LuaClass& root, CTexture& tex ) : LuaEle
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_texture, 1 );
     luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
 }
 
 CClientGameTexture::~CClientGameTexture()

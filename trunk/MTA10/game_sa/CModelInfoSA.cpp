@@ -112,14 +112,14 @@ void CBaseModelInfoSAInterface::Reference()
 {
     m_numberOfRefs++;
 
-    (*ppTxdPool)->Get( m_textureDictionary )->Reference();
+    //(*ppTxdPool)->Get( m_textureDictionary )->Reference();
 }
 
 void CBaseModelInfoSAInterface::Dereference()
 {
     m_numberOfRefs--;
 
-    (*ppTxdPool)->Get( m_textureDictionary )->Dereference();
+    //(*ppTxdPool)->Get( m_textureDictionary )->Dereference();
 }
 
 unsigned short CBaseModelInfoSAInterface::GetFlags()
@@ -322,9 +322,6 @@ VOID CModelInfoSA::Remove ( )
     // No references left?
     if ( m_pInterface->m_numberOfRefs == 0 )
     {  
-        // Make our collision model original again before we unload.
-        RestoreColModel ();
-
         // Remove the model
         pGame->GetStreaming()->FreeModel( m_modelID );
     }
@@ -558,7 +555,7 @@ void CModelInfoSA::AddRef( bool bWaitForLoad, bool bHighPriority )
     {
         m_pInterface = ppModelInfo [ m_modelID ];
 
-        m_pInterface->m_numberOfRefs++;
+        m_pInterface->Reference();
     }
 
     m_dwReferences++;
@@ -759,6 +756,7 @@ void CModelInfoSA::RequestVehicleUpgrade()
     }
 }
 
+#if 0
 void CModelInfoSA::SetCustomModel( RpClump *pClump )
 {
     // Replace the vehicle model if we're loaded.
@@ -772,97 +770,7 @@ void CModelInfoSA::SetCustomModel( RpClump *pClump )
         }
     }
 }
-
-void CModelInfoSA::SetColModel( CColModel* pColModel )
-{
-    // Grab the interfaces
-    CColModelSAInterface* pInterface = pColModel->GetInterface();
-
-    // Store the col model we set
-    m_pCustomColModel = pColModel;
-
-    // Do the following only if we're loaded
-    m_pInterface = ppModelInfo [ m_modelID ];
-    if ( m_pInterface )
-    {
-        // If no collision model has been set before, store the original in case we want to restore it
-        if ( !m_pOriginalColModelInterface )
-            m_pOriginalColModelInterface = m_pInterface->m_pColModel;
-
-        // Apply some low-level hacks
-        //MemPutFast < BYTE > ( (BYTE*) pInterface + 40, 0xA9 );
-
-        // Call SetColModel
-        DWORD dwFunc = FUNC_SetColModel;
-        DWORD ModelID = m_modelID;
-        _asm
-        {
-            mov     ecx, ModelID
-            mov     ecx, ARRAY_ModelInfo[ecx*4]
-            push    1
-            push    pInterface
-            call    dwFunc
-        }
-
-        // public: static void __cdecl CColAccel::addCacheCol(int, class CColModel const &)
-        DWORD func = 0x5B2C20;
-        __asm
-        {
-            push    pInterface
-            push    ModelID
-            call    func
-            add     esp, 8
-        }
-#pragma message(__LOC__ "(IJs) Document this function some time.")
-    }
-}
-
-void CModelInfoSA::RestoreColModel()
-{
-    // Are we loaded?
-    m_pInterface = ppModelInfo [ m_modelID ];
-    if ( m_pInterface )
-    {
-        // We only have to store if the collision model was set
-        // Also only if we have a col model set
-        if ( m_pOriginalColModelInterface && m_pCustomColModel )
-        {
-            DWORD dwFunc = FUNC_SetColModel;
-            DWORD dwOriginalColModelInterface = (DWORD)m_pOriginalColModelInterface;
-            DWORD ModelID = m_modelID;
-            _asm
-            {
-                mov     ecx, ModelID
-                mov     ecx, ARRAY_ModelInfo[ecx*4]
-                push    1
-                push    dwOriginalColModelInterface
-                call    dwFunc
-            }
-
-            // public: static void __cdecl CColAccel::addCacheCol(int, class CColModel const &)
-            DWORD func = 0x5B2C20;
-            __asm {
-                push    dwOriginalColModelInterface
-                push    ModelID
-                call    func
-                add     esp, 8
-            }
-            #pragma message(__LOC__ "(IJs) Document this function some time.")
-        }
-    }
-
-    // We currently have no custom model loaded
-    m_pCustomColModel = NULL;
-}
-
-void CModelInfoSA::MakeCustomModel()
-{
-    // Custom collision model is not NULL and it's different from the original?
-    if ( m_pCustomColModel )
-    {
-        SetColModel( m_pCustomColModel );
-    }
-}
+#endif
 
 void CModelInfoSA::GetVoice( short* psVoiceType, short* psVoiceID ) const
 {

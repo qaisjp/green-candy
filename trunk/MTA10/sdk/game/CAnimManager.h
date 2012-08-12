@@ -40,17 +40,16 @@ public:
     virtual unsigned int                GetNumAnimBlocks() const = 0;
     virtual unsigned int                GetNumAnimAssocDefinitions() const = 0;
 
-    virtual CAnimBlendHierarchy *       GetAnimation( int ID ) = 0;
-    virtual CAnimBlendHierarchy *       GetAnimation( const char * szName, CAnimBlock * pBlock ) = 0;
-    virtual CAnimBlendHierarchy *       GetAnimation( unsigned int uiIndex, CAnimBlock * pBlock ) = 0;
+    virtual CAnimBlendHierarchy*        GetAnimation( int ID ) = 0;
+    virtual CAnimBlendHierarchy*        GetAnimation( const char * szName, CAnimBlock * pBlock ) = 0;
+    virtual CAnimBlendHierarchy*        GetAnimation( unsigned int uiIndex, CAnimBlock * pBlock ) = 0;
     
-    virtual CAnimBlock *                GetAnimationBlock( int ID ) = 0;
-    virtual CAnimBlock *                GetAnimationBlock( const char * szName ) = 0;
+    virtual CAnimBlock*                 GetAnimationBlock( int ID ) = 0;
+    virtual CAnimBlock*                 GetAnimationBlock( const char * szName ) = 0;
     virtual int                         GetAnimationBlockIndex( const char * szName ) = 0;
-    virtual int                         RegisterAnimBlock( const char * szName ) = 0;
         
-    virtual CAnimBlendAssocGroup *      GetAnimBlendAssoc( AssocGroupId groupID ) = 0;
-    virtual AssocGroupId                GetFirstAssocGroup( const char * szName ) = 0;
+    virtual CAnimBlendAssocGroup*       GetAnimBlendAssoc( AssocGroupId groupID ) = 0;
+    virtual unsigned short              GetFirstAssocGroup( const char * szName ) const = 0;
 
     virtual const char*                 GetAnimGroupName( AssocGroupId groupID ) = 0;
     virtual const char*                 GetAnimBlockName( AssocGroupId groupID ) = 0;

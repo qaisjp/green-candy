@@ -35,7 +35,7 @@ void CTaskManagerSA::RemoveTask( eTaskPriority priority )
 
 void CTaskManagerSA::SetTask( CTaskSA* pTaskPrimary, eTaskPriority priority, bool bForceNewTask )
 {
-    DEBUG_TRACE("void CTaskManagerSA::SetTask(CTask* pTaskPrimary, const int iTaskPriority, const bool bForceNewTask)");
+    DEBUG_TRACE("void CTaskManagerSA::SetTask( CTaskSA* pTaskPrimary, eTaskPriority priority, bool bForceNewTask )");
     
     DWORD dwFunc = FUNC_SetTask;
     DWORD dwInterface = (DWORD)m_interface;

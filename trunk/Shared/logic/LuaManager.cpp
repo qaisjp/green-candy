@@ -455,7 +455,7 @@ void LuaManager::Init( LuaMain *lua )
     luaopen_math( thread );
     luaopen_string( thread );
     luaopen_table( thread );
-#ifdef _DEBUG
+#if 1 //_DEBUG
     luaopen_debug( thread ); // WARNING: CREATE OUR OWN DEBUG LIB!!!
 #endif
     luaopen_class( thread );
