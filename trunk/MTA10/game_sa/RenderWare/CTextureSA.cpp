@@ -151,8 +151,7 @@ bool CTextureSA::ImportTXD( unsigned short id )
     else
         imp.original = NULL;    // flag that we have not been imported; wait for TXD load
 
-    if ( m_imported.empty() )
-        g_dictImports[id].push_back( this );
+    g_dictImports[id].push_back( this );
     
     m_imported[id] = imp;
     return true;
@@ -189,8 +188,7 @@ bool CTextureSA::RemoveTXD( unsigned short id )
     
     m_imported.erase( iter );
 
-    if ( m_imported.empty() )
-        g_dictImports[id].remove( this );
+    g_dictImports[id].remove( this );
 
     return true;
 }
