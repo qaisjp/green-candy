@@ -86,18 +86,16 @@ void CClientStreamElement::UpdateStreamPosition ( const CVector & vecPosition )
     }
 }
 
-
-void CClientStreamElement::InternalStreamIn ( bool bInstantly )
+void CClientStreamElement::InternalStreamIn( bool bInstantly )
 {
     if ( !m_bStreamedIn && !m_bAttemptingToStreamIn )
     {
         m_bAttemptingToStreamIn = true;
-        StreamIn ( bInstantly );        
+        StreamIn( bInstantly );
     }
 }
 
-
-void CClientStreamElement::InternalStreamOut ( void )
+void CClientStreamElement::InternalStreamOut()
 {
     if ( m_bStreamedIn )
     {
@@ -105,7 +103,7 @@ void CClientStreamElement::InternalStreamOut ( void )
         m_bStreamedIn = false;
 
         // Stream out attached elements
-        list < CClientEntity* >::iterator i = m_AttachedEntities.begin();
+        list <CClientEntity*>::iterator i = m_AttachedEntities.begin();
         for (; i != m_AttachedEntities.end(); i++)
         {
             CClientStreamElement* attachedElement = dynamic_cast< CClientStreamElement* > (*i);
@@ -119,8 +117,7 @@ void CClientStreamElement::InternalStreamOut ( void )
     }
 }
 
-
-void CClientStreamElement::NotifyCreate ( void )
+void CClientStreamElement::NotifyCreate()
 {
     // Update common atrributes
     if ( !m_bDoubleSidedInit )
@@ -131,17 +128,28 @@ void CClientStreamElement::NotifyCreate ( void )
     m_bStreamedIn = true;
     m_bAttemptingToStreamIn = false;
 
+    CEntity *entity = GetGameEntity();
+
+    // Set up the collision properties
+    for ( collisionEntities_t::const_iterator iter = m_collidableWith.begin(); iter != m_collidableWith.end(); iter++ )
+    {
+        CEntity *gameTarget = (*iter)->GetGameEntity();
+
+        if ( !gameTarget )
+            continue;
+
+        entity->SetCollidableWith( gameTarget, true );
+    }
+
     CallEvent( "onClientElementStreamIn", m_lua, 0 );
 }
 
-
-void CClientStreamElement::NotifyUnableToCreate ( void )
+void CClientStreamElement::NotifyUnableToCreate()
 {
     m_bAttemptingToStreamIn = false;
 }
 
-
-void CClientStreamElement::AddStreamReference ( bool bScript )
+void CClientStreamElement::AddStreamReference( bool bScript )
 {
     unsigned short * pRefs = ( bScript ) ? &m_usStreamReferencesScript : &m_usStreamReferences;
     if ( (*pRefs) < 0xFFFF ) (*pRefs)++;
@@ -152,7 +160,6 @@ void CClientStreamElement::AddStreamReference ( bool bScript )
         m_pStreamer->OnElementForceStreamIn ( this );
     }
 }
-
 
 void CClientStreamElement::RemoveStreamReference ( bool bScript )
 {

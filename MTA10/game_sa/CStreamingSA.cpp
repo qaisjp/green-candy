@@ -409,6 +409,44 @@ static void __cdecl HOOK_CStreaming__LoadArchives()
     *VAR_NumResourceEntries = *VAR_NumResourceEntries / 2048;
 }
 
+DWORD d_eax, d_ebx, d_ecx, d_edx, d_ebp;
+
+static void __cdecl prot_call( DWORD cval, DWORD func )
+{
+    __try
+    {
+        __asm
+        {
+            push dword ptr [d_eax]
+            mov ecx,cval
+            call func
+        }
+    }
+    __except( 1 )
+    {
+        __asm int 3
+    }
+}
+
+static void __declspec(naked) HOOK_CrashDebug()
+{
+    __asm
+    {
+        mov d_eax,eax
+        mov d_ebx,ebx
+        mov d_ecx,ecx
+        mov d_edx,edx
+        mov d_ebp,ebp
+
+        push dword ptr [edx+0x24]
+        push esi
+        call prot_call
+        add esp,8
+        mov ecx,0x0070A6DC
+        jmp ecx
+    }
+}
+
 CStreamingSA::CStreamingSA()
 {
     // Initialize the accelerated streaming structures
@@ -418,6 +456,10 @@ CStreamingSA::CStreamingSA()
     HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
     HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
     HookInstall( 0x005B82C0, (DWORD)HOOK_CStreaming__LoadArchives, 5 );
+
+#ifdef _DEBUG
+    HookInstall( 0x0070A6D6, (DWORD)HOOK_CrashDebug, 5 );
+#endif
 }
 
 CStreamingSA::~CStreamingSA()

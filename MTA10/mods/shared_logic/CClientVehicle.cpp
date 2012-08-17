@@ -387,13 +387,13 @@ void CClientVehicle::GetRotationRadians ( CVector& vecRotation ) const
     // Grab the rotation in radians from the matrix
     RwMatrix matTemp;
     GetMatrix ( matTemp );
-    g_pMultiplayer->ConvertMatrixToEulerAngles ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+    matTemp.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
 
     // ChrML: We flip the actual rotation direction so that the rotation is consistent with
     //        objects and players.
-    vecRotation.fX = ( 2 * PI ) - vecRotation.fX;
-    vecRotation.fY = ( 2 * PI ) - vecRotation.fY;
-    vecRotation.fZ = ( 2 * PI ) - vecRotation.fZ;
+    vecRotation.fX = (float)( ( 2 * PI ) - vecRotation.fX );
+    vecRotation.fY = (float)( ( 2 * PI ) - vecRotation.fY );
+    vecRotation.fZ = (float)( ( 2 * PI ) - vecRotation.fZ );
 }
 
 void CClientVehicle::SetRotationDegrees ( const CVector& vecRotation, bool bResetInterpolation )
@@ -415,7 +415,7 @@ void CClientVehicle::SetRotationRadians ( const CVector& vecRotation, bool bRese
     //        objects and players.
     RwMatrix matTemp;
     GetMatrix ( matTemp );
-    g_pMultiplayer->ConvertEulerAnglesToMatrix ( matTemp, ( 2 * PI ) - vecRotation.fX, ( 2 * PI ) - vecRotation.fY, ( 2 * PI ) - vecRotation.fZ );
+    matTemp.SetRotationRad( (float)( ( 2 * PI ) - vecRotation.fX ), (float)( ( 2 * PI ) - vecRotation.fY ), (float)( ( 2 * PI ) - vecRotation.fZ ) );
     SetMatrix ( matTemp );
 
     // Reset target rotatin
@@ -2027,7 +2027,7 @@ void CClientVehicle::Create()
         {
             CVector vecTemp = m_interp.rot.vecTarget;
             ConvertDegreesToRadians ( vecTemp );
-            g_pMultiplayer->ConvertEulerAnglesToMatrix ( m_Matrix, ( 2 * PI ) - vecTemp.fX, ( 2 * PI ) - vecTemp.fY, ( 2 * PI ) - vecTemp.fZ );
+            m_Matrix.SetRotationRad( (float)( ( 2 * PI ) - vecTemp.fX ), (float)( ( 2 * PI ) - vecTemp.fY ), (float)( ( 2 * PI ) - vecTemp.fZ ) );
         }
 
         // Got any settings to restore?

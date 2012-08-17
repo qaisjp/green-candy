@@ -219,15 +219,15 @@ bool CClientProjectile::GetMatrix ( RwMatrix& matrix )
 
 bool CClientProjectile::SetMatrix ( const RwMatrix& matrix_ )
 {
-    RwMatrix matrix ( matrix_ );
+    RwMatrix matrix( matrix_ );
 
     // Jax: If the creator is a ped, we need to invert X and Y on Direction and Was for CMultiplayer::ConvertEulerAnglesToMatrix
-    if ( m_pCreator && IS_PED ( m_pCreator ) )
+    if ( m_pCreator && IS_PED( m_pCreator ) )
     {        
-        matrix.at.fX = 0.0f - matrix.at.fX;
-        matrix.at.fY = 0.0f - matrix.at.fY;
-        matrix.up.fX = 0.0f - matrix.up.fX;
-        matrix.up.fY = 0.0f - matrix.up.fY;
+        matrix.at.fX = -matrix.at.fX;
+        matrix.at.fY = -matrix.at.fY;
+        matrix.up.fX = -matrix.up.fX;
+        matrix.up.fY = -matrix.up.fY;
     }
 
     m_pProjectile->SetMatrix( matrix );
@@ -248,7 +248,7 @@ void CClientProjectile::GetRotation ( CVector & vecRotation )
 {
     RwMatrix matrix;
     GetMatrix ( matrix );
-    g_pMultiplayer->ConvertMatrixToEulerAngles ( matrix, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+    matrix.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
 }
 
 void CClientProjectile::GetRotationDegrees ( CVector & vecRotation )
@@ -261,7 +261,7 @@ void CClientProjectile::SetRotation( const CVector& vecRotation )
 {
     RwMatrix matrix;
     GetPosition ( matrix.pos );
-    g_pMultiplayer->ConvertEulerAnglesToMatrix ( matrix, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+    matrix.SetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
     SetMatrix ( matrix );
 }
 

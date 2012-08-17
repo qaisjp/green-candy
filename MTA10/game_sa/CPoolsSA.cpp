@@ -89,8 +89,6 @@ CPoolsSA::CPoolsSA()
     memset( mtaVehicles, 0, sizeof(mtaVehicles) );
     memset( mtaPeds, 0, sizeof(mtaPeds) );
     memset( mtaObjects, 0, sizeof(mtaObjects) );
-
-    m_getVehicleEnabled = true;
 }
 
 CPoolsSA::~CPoolsSA()
@@ -286,9 +284,6 @@ CTrain* CPoolsSA::AddTrain( unsigned short modelID, const CVector& pos, bool dir
     float fY = pos.fY;
     float fZ = pos.fZ;
 
-    // Disable GetVehicle because CreateMissionTrain calls it before our CVehicleSA instance is inited
-    m_getVehicleEnabled = false;
-
     DWORD dwFunc = FUNC_CTrain_CreateMissionTrain;
     _asm
     {
@@ -307,9 +302,6 @@ CTrain* CPoolsSA::AddTrain( unsigned short modelID, const CVector& pos, bool dir
         call    dwFunc
         add     esp, 0x28
     }
-
-    // Enable GetVehicle
-    m_getVehicleEnabled = true;
 
     CTrainSA *trainHead = new CTrainSA( trainBeginning );
 #if 0

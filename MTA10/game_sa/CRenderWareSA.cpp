@@ -1556,7 +1556,14 @@ bool RpGeometry::IsAlpha()
 
 bool RpMaterialTextureUnlink( RpMaterial *mat, int )
 {
-    mat->m_texture = NULL;
+    if ( RwTexture *tex = mat->m_texture )
+    {
+        if ( !tex->txd )
+            __asm nop
+
+        mat->m_texture = NULL;
+    }
+
     return true;
 }
 

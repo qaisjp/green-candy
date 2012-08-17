@@ -96,7 +96,7 @@ void CConsoleHistory::Add ( const char* szLine )
 
     delete m_file;
 
-    m_file = mtaFileRoot->Open( m_strFilename.c_str(), "a+" );
+    m_file = mtaFileRoot->Open( m_strFilename.c_str(), "a" );
 
     // Append our line
     m_file->Write( line.c_str(), 1, line.size() );

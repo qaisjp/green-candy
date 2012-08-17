@@ -87,7 +87,7 @@ class CLuaArgument;
 class CLuaArguments;
 class CLuaMain;
 class CMapEventManager;
-typedef CIntrusiveList < class CClientEntity > CChildListType;
+typedef std::list <class CClientEntity*> CChildListType;
 
 enum eCClientEntityClassTypes
 {
@@ -140,6 +140,10 @@ class CClientEntity : public LuaElement
 public:
                                                 CClientEntity( ElementID ID, bool system, LuaClass& root );
     virtual                                     ~CClientEntity();
+
+    // Static functions for Lua interfacing
+    static LUA_DECLARE( entitychildAPI_notifyDestroy );
+    static LUA_DECLARE( entity_setChild );
 
     virtual bool                                CanBeDeleted()                                  { return true; };
 
@@ -298,8 +302,6 @@ public:
     CIntrusiveListNode < CClientEntity >        m_FromRootNode;     // Our node entry in the 'EntitiesFromRoot' list
 
 protected:
-    CIntrusiveListNode < CClientEntity >        m_ChildrenNode;     // Our node entry in the parent object m_Children list
-
     CClientManager*                             m_pManager;
     CClientEntity*                              m_pParent;
     CChildListType                              m_Children;
@@ -336,6 +338,9 @@ protected:
     unsigned char                               m_ucInterior;
     bool                                        m_bDoubleSided;
     bool                                        m_bDoubleSidedInit;
+
+    typedef std::vector <CClientEntity*> collisionEntities_t;
+    collisionEntities_t                         m_collidableWith;
 
 public:
     // Optimization for getElementsByType starting at root

@@ -94,8 +94,8 @@ void CClientCamera::DoPulse ( void )
         CVector vecRotation;
         RwMatrix matTemp;
         GetMatrix( matTemp );
-        g_pMultiplayer->ConvertMatrixToEulerAngles ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );    
-        g_pMultiplayer->SetCenterOfWorld ( NULL, &m_vecFixedPosition, 3.1415926535897932384626433832795f - vecRotation.fZ );
+        matTemp.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );    
+        g_pMultiplayer->SetCenterOfWorld ( NULL, &m_vecFixedPosition, (float)M_PI - vecRotation.fZ );
     }
     else
     {
@@ -177,7 +177,7 @@ void CClientCamera::SetPosition( const CVector& vecPosition )
     CVector vecRotation;
     RwMatrix matTemp;
     GetMatrix( matTemp );
-    g_pMultiplayer->ConvertMatrixToEulerAngles ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+    matTemp.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
     CVector v = vecPosition;
     g_pMultiplayer->SetCenterOfWorld ( NULL, &v, PI - vecRotation.fZ );
 
@@ -188,8 +188,7 @@ void CClientCamera::SetPosition( const CVector& vecPosition )
 void CClientCamera::GetRotation( CVector& vecRotation ) const
 {
     CCam* pCam = m_pCamera->GetCam ( m_pCamera->GetActiveCam () );
-    g_pMultiplayer->ConvertMatrixToEulerAngles ( m_pCamera->GetMatrix(), vecRotation.fX, vecRotation.fY, vecRotation.fZ );
-    ConvertRadiansToDegrees ( vecRotation );
+    m_pCamera->GetMatrix().GetRotation( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
     vecRotation += CVector ( 180.0f, 180.0f, 180.0f );
     if ( vecRotation.fX > 360.0f ) vecRotation.fX -= 360.0f;
     if ( vecRotation.fY > 360.0f ) vecRotation.fY -= 360.0f;

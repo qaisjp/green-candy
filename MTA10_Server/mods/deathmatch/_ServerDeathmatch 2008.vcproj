@@ -1480,6 +1480,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\Shared\logic\LuaMatrix.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\Shared\logic\LuaTimer.cpp"
 						>
 					</File>
@@ -2514,6 +2518,10 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\LuaManager.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\Shared\logic\LuaMatrix.h"
 						>
 					</File>
 					<File

@@ -19,23 +19,6 @@
 
 using namespace std;
 
-
-bool DoesFileExist ( const char* szFilename )
-{
-    // Check that the file exists
-    WIN32_FIND_DATA wFind;
-    HANDLE hFind = FindFirstFile ( szFilename, &wFind );
-    if ( hFind == INVALID_HANDLE_VALUE )
-    {
-        return false;
-    }
-
-    // Clean up
-    FindClose ( hFind );
-    return true;
-}
-
-
 char* ReplaceAnyStringOccurrence ( char* szBuffer, const char* szWhat, const char* szWith, size_t sizeMax )
 {
     // TODO: Check for max size
@@ -131,24 +114,6 @@ bool IsControlCode ( unsigned char c )
     return c < 32;
 }
 
-
-bool IsValidFilePath ( const char *szDir )
-{
-    if ( szDir == NULL ) return false;
-
-    unsigned int uiLen = strlen ( szDir );
-    unsigned char c, c_d;
-    
-    // iterate through the char array
-    for ( unsigned int i = 0; i < uiLen; i++ ) {
-        c = szDir[i];                                       // current character
-        c_d = ( i < ( uiLen - 1 ) ) ? szDir[i+1] : 0;       // one character ahead, if any
-        if ( !IsWantedCharacter ( c ) || c == ':' || ( c == '.' && c_d == '.' ) || ( c == '\\' && c_d == '\\' ) )
-            return false;
-    }
-    return true;
-}
-
 void ReplaceOccurrencesInString ( std::string &s, const char *a, const char *b )
 {
     int idx = 0;
@@ -219,14 +184,14 @@ void RotateVector ( CVector& vecLine, const CVector& vecRotation )
 void AttachedMatrix ( const RwMatrix& matrix, RwMatrix& returnMatrix, CVector vecDirection, CVector vecRotation )
 {    
     CVector vecMatRotation;
-    g_pMultiplayer->ConvertMatrixToEulerAngles ( matrix, vecMatRotation );
+    matrix.GetRotationRad( vecMatRotation[0], vecMatRotation[1], vecMatRotation[2] );
 
     RotateVector ( vecDirection, vecMatRotation );
 
     returnMatrix.pos = matrix.pos + vecDirection;
    
     vecMatRotation += vecRotation;
-    g_pMultiplayer->ConvertEulerAnglesToMatrix ( returnMatrix, vecMatRotation );
+    returnMatrix.SetRotationRad( vecMatRotation[0], vecMatRotation[1], vecMatRotation[2] );
 }
 
 float GetRandomFloat ( void )
@@ -683,7 +648,7 @@ eEulerRotationOrder	EulerRotationOrderFromString(const char* szString)
 // | c(y)*s(z)                              s(x)*s(y)*s(z)+c(x)*c(z)        c(x)*s(y)*s(z)-s(x)*c(z)    |
 // | -s(y)                                      s(x)*c(y)                               c(x)*c(y)       |
 
-CVector euler_ZXY_to_ZYX(const CVector& a_vZXY)
+CVector euler_ZXY_to_ZYX( const CVector& a_vZXY )
 {
     CVector vZXY(a_vZXY);
     ConvertDegreesToRadiansNoWrap(vZXY); //NoWrap for this conversion since it's used for cos/sin only
@@ -715,7 +680,7 @@ CVector euler_ZXY_to_ZYX(const CVector& a_vZXY)
     return vZYX;
 }
 
-CVector euler_ZYX_to_ZXY(const CVector& a_vZYX)
+CVector euler_ZYX_to_ZXY( const CVector& a_vZYX )
 {
     CVector vZYX(a_vZYX);
     ConvertDegreesToRadiansNoWrap(vZYX); //NoWrap for this conversion since it's used for cos/sin only
@@ -746,7 +711,7 @@ CVector euler_ZYX_to_ZXY(const CVector& a_vZYX)
     return  vZXY;
 }
 
-CVector    ConvertEulerRotationOrder    ( const CVector& a_vRotation, eEulerRotationOrder a_eSrcOrder, eEulerRotationOrder a_eDstOrder)
+CVector    ConvertEulerRotationOrder( const CVector& a_vRotation, eEulerRotationOrder a_eSrcOrder, eEulerRotationOrder a_eDstOrder)
 {
     if (a_eSrcOrder == a_eDstOrder      ||
         a_eSrcOrder == EULER_DEFAULT    ||

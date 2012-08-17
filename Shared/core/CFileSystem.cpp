@@ -1139,7 +1139,7 @@ size_t CFileSystem::Size( const char *path )
 bool CFileSystem::ReadToBuffer( const char *path, std::vector <char>& output )
 {
 #ifdef _WIN32
-    HANDLE file = CreateFile( path, GENERIC_READ, 0, NULL, OPEN_ALWAYS, 0, NULL );
+    HANDLE file = CreateFile( path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL );
     size_t size;
     DWORD _pf;
 

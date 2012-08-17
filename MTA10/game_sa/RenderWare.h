@@ -471,26 +471,26 @@ struct RwCameraFrustum
     unsigned char x,y,z;
     unsigned char unknown1;
 };
-class RwCamera : public RwObjectFrame
+class RwCamera : public RwObjectFrame   //size: 368
 {
 public:
-    RwCameraType            type;
-    RwCameraPreCallback     preCallback;
-    RwCameraPostCallback    postCallback;
-    RwMatrix                matrix;
-    RwRaster*               bufferColor;
-    RwRaster*               bufferDepth;
-    RwV2d                   screen;
-    RwV2d                   screenInverse;
-    RwV2d                   screenOffset;
-    float                   nearplane;
-    float                   farplane;
-    float                   fog;
-    float                   unknown1;
-    float                   unknown2;
-    RwCameraFrustum         frustum4D[6];
-    RwBBox                  viewBBox;
-    RwV3d                   frustum3D[8];
+    RwCameraType            type;               // 0
+    RwCameraPreCallback     preCallback;        // 4
+    RwCameraPostCallback    postCallback;       // 8
+    RwMatrix                matrix;             // 12
+    RwRaster*               bufferColor;        // 76
+    RwRaster*               bufferDepth;        // 80
+    RwV2d                   screen;             // 84
+    RwV2d                   screenInverse;      // 92
+    RwV2d                   screenOffset;       // 100
+    float                   nearplane;          // 108
+    float                   farplane;           // 112
+    float                   fog;                // 116
+    float                   unknown1;           // 120
+    float                   unknown2;           // 124
+    RwCameraFrustum         frustum4D[6];       // 128
+    RwBBox                  viewBBox;           // 248
+    RwV3d                   frustum3D[8];       // 272
 };
 class RwRender
 {

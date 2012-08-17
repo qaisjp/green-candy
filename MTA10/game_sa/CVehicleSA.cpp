@@ -416,7 +416,8 @@ void CVehicleSA::AddVehicleUpgrade( unsigned short model )
     _asm
     {
         mov     ecx, dwThis
-        push    model
+        movzx   eax,model
+        push    eax
         call    dwFunc
     }
 }
@@ -431,7 +432,8 @@ void CVehicleSA::RemoveVehicleUpgrade( unsigned short model )
     _asm
     {
         mov     ecx, dwThis
-        push    model
+        movzx   eax,model
+        push    eax
         call    dwFunc
     }
 }

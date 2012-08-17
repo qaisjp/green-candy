@@ -17,6 +17,9 @@
 
 #define FUNC_CTrain__GetDoorAngleOpenRatio      0x6F59C0
 
+//006F6BD0  int GetTrainNodeNearPoint(float x, float y, float z, int* pTrackID) places track ID in *pTrackID and returns node ID
+#define FUNC_GetTrainNodeNearPoint              0x6F6BD0
+
 class CTrainSAInterface : public CVehicleSAInterface
 {
 public:

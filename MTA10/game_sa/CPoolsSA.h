@@ -191,7 +191,7 @@ typedef CPool <CVehicleSeatPlacementSAInterface, 500> CVehicleSeatPlacementPool;
 typedef CPool <CColModelSAInterface, 20000> CColModelPool;
 
 typedef CPool <CPtrNodeSingleSA, 100000> CPtrNodeSinglePool;
-typedef CPool <CPtrNodeDoubleSA, 5000> CPtrNodeDoublePool;
+typedef CPool <CPtrNodeDoubleSA, 200000> CPtrNodeDoublePool;
 typedef CPool <CEntryInfoSA, MAX_VEHICLES + MAX_PEDS + MAX_OBJECTS + MAX_DUMMIES> CEntryInfoPool; // info for every entity in the world
 
 typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
@@ -315,9 +315,6 @@ public:
 
     unsigned int            GetPoolDefaultCapacity( ePools pool ) const;
     unsigned int            GetPoolCapacity( ePools pool ) const;
-
-private:
-    bool                    m_getVehicleEnabled;
 };
 
 // Global linkage between internal interfaces and MTA
