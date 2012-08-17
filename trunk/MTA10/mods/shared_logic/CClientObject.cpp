@@ -163,7 +163,7 @@ void CClientObject::GetRotationRadians ( CVector& vecRotation ) const
         //  (eg: physics/attaching), the code below returns wrong values, see #2732
         RwMatrix matTemp;
         m_pObject->GetMatrix ( matTemp );
-        g_pMultiplayer->ConvertMatrixToEulerAngles ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+        matTemp.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
     }
     else
     {

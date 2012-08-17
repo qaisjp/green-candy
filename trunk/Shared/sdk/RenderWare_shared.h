@@ -13,6 +13,9 @@
 #ifndef _RenderWare_Shared_H_
 #define _RenderWare_Shared_H_
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 // TODO: Remove the internal RW definitions, DIF
 #include <CVector.h>
 
@@ -187,58 +190,96 @@ public:
         );
     }
 
-    inline void rotX( float radians )
+#define DEG2RAD(x)  ( M_PI * x / 180 )
+#define RAD2DEG(x)  ( x / M_PI * 180 )
+
+    // I have done the homework for MTA
+    inline void rotXY( float x, float y )
     {
-        float c = cos( radians );
-        float s = sin( radians );
+        double ch = cos( x );
+        double sh = sin( x );
+        double cb = cos( y );
+        double sb = sin( y );
 
-        right.fX = 1;
-        right.fY = 0;
-        right.fZ = 0;
+        right[0] = (float)( cb );
+        right[1] = 0;
+        right[2] = (float)( sb );
 
-        at.fX = 0;
-        at.fY = c;
-        at.fZ = -s;
+        at[0] = (float)( sb * sh );
+        at[1] = (float)( ch );
+        at[2] = (float)( -sh * cb );
 
-        up.fX = 0;
-        up.fY = s;
-        up.fZ = c;
+        up[0] = (float)( -sb * ch );
+        up[1] = (float)( sh );
+        up[2] = (float)( cb * ch );
     }
 
-    inline void rotY( float radians )
+    inline void SetRotationRad( float x, float y, float z )
     {
-        float c = cos( radians );
-        float s = sin( radians );
+        double ch = cos( x );
+        double sh = sin( x );
+        double cb = cos( y );
+        double sb = sin( y );
+        double ca = cos( z );
+        double sa = sin( z );
 
-        right.fX = c;
-        right.fY = 0;
-        right.fZ = s;
+        right[0] = (float)( ca * cb );
+        right[1] = (float)( -sa * cb );
+        right[2] = (float)( sb );
 
-        at.fX = 0;
-        at.fY = 1;
-        at.fZ = 0;
+        at[0] = (float)( ca * sb * sh + sa * ch );
+        at[1] = (float)( ca * ch - sa * sb * sh );
+        at[2] = (float)( -sh * cb );
 
-        up.fX = -s;
-        up.fY = 0;
-        up.fZ = c;
+        up[0] = (float)( sa * sh - ca * sb * ch );
+        up[1] = (float)( sa * sb * ch + ca * sh );
+        up[2] = (float)( ch * cb );
     }
 
-    inline void rotZ( float radians )
+    inline void SetRotation( float x, float y, float z )
     {
-        float c = cos( radians );
-        float s = sin( radians );
+        SetRotationRad( (float)DEG2RAD( x ), (float)DEG2RAD( y ), (float)DEG2RAD( z ) );
+    }
 
-        right.fX = c;
-        right.fY = -s;
-        right.fZ = 0;
+    inline void GetRotationRad( float& x, float& y, float& z ) const
+    {
+        if ( right[2] == 1 )
+        {
+            y = (float)( M_PI / 2 );
 
-        at.fX = s;
-        at.fY = c;
-        at.fZ = 0;
+            x = 0;
+            z = (float)atan2( right[0], right[1] );
+        }
+        else if ( right[2] == -1 )
+        {
+            y = -(float)( M_PI / 2 );
 
-        up.fX = 0;
-        up.fY = 0;
-        up.fZ = 1;
+            x = -0;
+            z = (float)atan2( right[0], right[1] );
+        }
+        else
+        {
+            y = asin( right[2] );
+
+            x = (float)atan2( -at[2], up[2] );
+            z = (float)atan2( -right[1], right[0] );
+        }
+    }
+
+    inline void GetRotation( float& x, float& y, float& z ) const
+    {
+        GetRotationRad( x, y, z );
+
+        x = (float)RAD2DEG( x );
+        y = (float)RAD2DEG( y );
+        z = (float)RAD2DEG( z );
+    }
+
+    inline void GetOffset( const CVector& offset, CVector& outPos ) const
+    {
+        outPos[0] = right.DotProduct( offset ) + pos[0];
+        outPos[1] = at.DotProduct( offset ) + pos[1];
+        outPos[2] = up.DotProduct( offset ) + pos[2];
     }
 
     // I hope this works :3
@@ -361,11 +402,17 @@ public:
 
     float& operator [] ( unsigned int i )
     {
+#ifdef _DEBUG
+        assert( i < 0x10 );
+#endif
         return ((float*)(this))[i];
     }
 
     float operator [] ( unsigned int i ) const
     {
+#ifdef _DEBUG
+        assert( i < 0x10 );
+#endif
         return ((float*)(this))[i];
     }
 

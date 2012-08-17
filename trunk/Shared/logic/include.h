@@ -30,6 +30,7 @@
 #include "LuaArgument.h"
 #include "LuaArguments.h"
 #include "LuaTimer.h"
+#include "LuaMatrix.h"
 #include "LuaTimerManager.h"
 #include "LuaMain.h"
 #include "LuaManager.h"

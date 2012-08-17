@@ -154,9 +154,6 @@ void CFoo::Test ( const char* szString )
         pCamera->SetFocusToLocalPlayer ();
         pCamera->FadeIn ( 0.0f );
     }
-    
-
-
 
 
     // Player load crash
@@ -184,6 +181,46 @@ void CFoo::Test ( const char* szString )
 
             static_cast < CDeathmatchVehicle* > ( pVehicle )->SetIsSyncing ( false );
         }
+    }
+
+
+    else if ( strnicmp( szString, "rot", 3 ) == 0 )
+    {
+        std::vector <std::string> args;
+        CommandlineTools::strsplit( szString + 4, args );
+
+        if ( args.size() > 2 )
+        {
+            RwMatrix mat;
+            //mat.SetRotation( atof( args[0].c_str() ), atof( args[1].c_str() ), atof (args[2].c_str() ) );
+            g_pMultiplayer->ConvertEulerAnglesToMatrix( mat, DEG2RAD( atof( args[0].c_str() ) ), DEG2RAD( atof( args[1].c_str() ) ), DEG2RAD( atof ( args[2].c_str() ) ) );
+
+            float x, y, z;
+
+            g_pMultiplayer->ConvertMatrixToEulerAngles( mat, x, y, z );
+
+            float rx, ry, rz;
+            
+            mat.GetRotationRad( rx, ry, rz );
+
+            g_pCore->GetConsole()->Printf( "%f, %f, %f -> %f, %f, %f\n", RAD2DEG( x ), RAD2DEG( y ), RAD2DEG( z ), RAD2DEG( rx ), RAD2DEG( ry ), RAD2DEG( rz ) );
+        }
+    }
+
+
+    else if ( strnicmp( szString, "setrot", 6 ) == 0 )
+    {
+        CVehicle *veh = g_pGame->GetPools()->GetPedFromRef( 1 )->GetVehicle();
+
+        RwMatrix mat;
+        veh->GetMatrix( mat );
+
+        float x, y, z;
+        mat.GetRotationRad( x, y, z );
+
+        mat.SetRotationRad( x, y, z );
+
+        veh->SetMatrix( mat );
     }
 
 

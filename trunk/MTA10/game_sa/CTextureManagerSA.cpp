@@ -14,6 +14,8 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
+#define DEBUG_TEXTURES_EXCPT
+
 #define FUNC_InitTextureManager         0x00731F20
 #define VAR_CPlayerTexDictionaries      0x00C88004
 

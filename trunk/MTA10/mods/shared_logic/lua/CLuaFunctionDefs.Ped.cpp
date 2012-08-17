@@ -824,8 +824,6 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
-#define RAD2DEG(x)  ( x * PI * 2 )
-
     LUA_DECLARE( getPedCameraRotation )
     {
         if ( CClientPed *ped = lua_readclass <CClientPed> ( L, 1, LUACLASS_PED ) )

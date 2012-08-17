@@ -78,6 +78,21 @@ void Class::IncrementMethodStack( lua_State *lua )
     inMethod++;
 }
 
+inline static void class_unlinkParent( lua_State *L, Class& j )
+{
+    // Unlink us from our parent, if present
+    if ( !j.parent )
+        return;
+
+    j.childAPI->DecrementMethodStack( L );
+
+    j.childAPI->PushMethod( L, "destroy" );
+    lua_call( L, 0, 0 );
+
+    j.childAPI = NULL;
+    j.parent = NULL;
+}
+
 static int childapi_notifyDestroy( lua_State *L )
 {
     Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
@@ -85,12 +100,14 @@ static int childapi_notifyDestroy( lua_State *L )
     if ( j.children.size() != 0 )
         return 0;
 
+    class_unlinkParent( L, j );
+
     setobj( L, L->top++, &j.destructor );
     lua_call( L, 0, 0 );
     return 0;
 }
 
-static inline bool class_preDestructor( lua_State *L, Class& j )
+inline static bool class_preDestructor( lua_State *L, Class& j )
 {
     if ( j.destroying )
         return false;
@@ -125,6 +142,9 @@ static inline bool class_preDestructor( lua_State *L, Class& j )
         else
             size--;
     }
+
+    if ( !reqWorthy )
+        class_unlinkParent( L, j );
 
     return !reqWorthy;
 }
@@ -662,17 +682,6 @@ static int classmethod_getParent( lua_State *L )
 static int classmethod_destructor( lua_State *L )
 {
     Class *j = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
-
-    if ( j->parent )
-    {
-        j->childAPI->DecrementMethodStack( L );
-
-        j->childAPI->PushMethod( L, "destroy" );
-        lua_call( L, 0, 0 );
-
-        j->childAPI = NULL;
-        j->parent = NULL;
-    }
  
     j->env->metatable = NULL;
     j->env = NULL;

@@ -91,9 +91,6 @@ class CPedSAInterface;
 //006F6CC0  public: void __thiscall CVehicle::RecalcOnRailDistance(void)
 #define FUNC_CVehicle_RecalcOnRailDistance           0x6F6CC0
 
-//006F6BD0  int GetTrainNodeNearPoint(float x, float y, float z, int* pTrackID) places track ID in *pTrackID and returns node ID
-#define FUNC_GetTrainNodeNearPoint              0x6F6BD0
-
 #define FUNC_CVehicle_QueryPickedUpEntityWithWinch              0x6d3cf0
 #define FUNC_CVehicle_PickUpEntityWithWinch                     0x6d3cd0
 #define FUNC_CVehicle_ReleasePickedUpEntityWithWinch            0x6d3cb0
@@ -104,16 +101,6 @@ class CPedSAInterface;
 #define FUNC_CVehicle__SetRemap                                 0x6D0C00
 
 #define FUNC_Automobile_PlaceOnRoadProperly     0x6AF420
-
-// from CPlane
-#define FUNC_CPlane__SetGearUp                  0x6CAC20
-#define FUNC_CPlane__SetGearDown                0x6CAC70
-
-// from CHeli
-#define FUNC_CHeli__Fix                         0x6C4530
-
-// from CQuadBike
-#define FUNC_CQuadBike__Fix                     0x6CE2B0
 
 #define VARS_CarCounts                          0x969094 // 5 values for each vehicle type
 

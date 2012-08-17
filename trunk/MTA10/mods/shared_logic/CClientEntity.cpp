@@ -24,15 +24,131 @@ using std::list;
 
 extern CClientGame* g_pClientGame;
 
+static int entity_setPosition( lua_State *L )
+{
+    CVector pos;
+   
+    CScriptArgReader argStream( L );
+    argStream.ReadVector( pos );
+
+    if ( argStream.HasErrors() )
+        throw lua_exception( L, LUA_ERRRUN, SString( "Bad argument @ 'setPosition' [%s]", *argStream.GetErrorMessage() ) );
+
+    ((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetPosition( pos );
+    return 0;
+}
+
+static int entity_getPosition( lua_State *L )
+{
+    CVector pos;
+    ((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetPosition( pos );
+
+    lua_pushnumber( L, pos[0] );
+    lua_pushnumber( L, pos[1] );
+    lua_pushnumber( L, pos[2] );
+    return 3;
+}
+
+static int entity_setMatrix( lua_State *L )
+{
+    RwMatrix *mat = lua_readclass <RwMatrix> ( L, 1, LUACLASS_MATRIX );
+
+    if ( !mat )
+        throw lua_exception( L, LUA_ERRRUN, "wrong type at 'setMatrix'; expected matrix" );
+
+    ((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetMatrix( *mat );
+    return 0;
+}
+
+static int entity_getMatrix( lua_State *L )
+{
+    RwMatrix mat;
+    
+    if ( !((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetMatrix( mat ) )
+    {
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    lua_creatematrix( L, mat );
+    return 1;
+}
+
 static int entity_isValidChild( lua_State *L )
 {
     lua_pushboolean( L, lua_type( L, 1 ) == LUA_TCLASS && lua_refclass( L, 1 )->IsTransmit( LUACLASS_ELEMENT ) );
     return 1;
 }
 
+int CClientEntity::entitychildAPI_notifyDestroy( lua_State *L )
+{
+    // Remove the child from the parent's children list
+    CClientEntity *child = (CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+    CClientEntity *parent = child->m_pParent;
+
+    parent->m_Children.remove( child );
+
+    // Moving out of FromRoot?
+    if ( IsFromRoot( parent ) )
+        RemoveEntityFromRoot( child->m_uiTypeHash, child );
+
+    return 0;
+}
+
+static luaL_Reg entitychildAPI_interface[] =
+{
+    { "notifyDestroy", CClientEntity::entitychildAPI_notifyDestroy },
+    { NULL, NULL }
+};
+
+static int entitychildAPI_constructor( lua_State *L )
+{
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, entitychildAPI_interface, 1 );
+    return 0;
+}
+
+int CClientEntity::entity_setChild( lua_State *L )
+{
+    ILuaClass *childC = lua_refclass( L, 1 );
+    CClientEntity *child;
+    bool isEntity = childC->GetTransmit( LUACLASS_ENTITY, (void*&)child );
+
+    CClientEntity *entity = (CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+    lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+    lua_pushvalue( L, 1 );
+    lua_call( L, 1, 1 );
+
+    if ( isEntity )
+    {
+        // Set the new parent
+        child->m_pParent = entity;
+
+        // Extend the childAPI
+        lua_pushlightuserdata( L, child );
+        lua_pushcclosure( L, entitychildAPI_constructor, 1 );
+        luaJ_extend( L, 2, 0 );
+
+        // Add us to the new parent's children list
+        entity->m_Children.push_back( child );
+
+        // Moving into FromRoot?
+        if ( IsFromRoot( entity ) )
+            AddEntityFromRoot( child->m_uiTypeHash, child );
+    }
+
+    return 1;
+}
+
 static const luaL_Reg entity_interface[] =
 {
+    { "setPosition", entity_setPosition },
+    { "getPosition", entity_getPosition },
+    { "setMatrix", entity_setMatrix },
+    { "getMatrix", entity_getMatrix },
     { "isValidChild", entity_isValidChild },
+    { "setChild", CClientEntity::entity_setChild },
     { NULL, NULL }
 };
 
@@ -53,7 +169,8 @@ static int customdata_newindex( lua_State *L )
     lua_pushvalue( L, 2 );
     lua_rawget( L, lua_upvalueindex( 1 ) );
 
-    if ( !lua_equal( L, 3, 4 ) )
+    // If the data is equal, do not sync redundant changes
+    if ( lua_equal( L, 3, 4 ) )
         return 0;
 
     lua_pushvalue( L, 2 );
@@ -64,7 +181,7 @@ static int customdata_newindex( lua_State *L )
     lua_pushvalue( L, 2 );
     lua_pushvalue( L, 4 );
     lua_pushvalue( L, 3 );
-    ((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->CallEvent( "onClientElementDataChange", L, 3 );
+    ((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 2 ) ) )->CallEvent( "onClientElementDataChange", L, 3 );
     return 0;
 }
 
@@ -79,7 +196,8 @@ static int customdata_constructor( lua_State *L )
 {
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_newtable( L );
-    luaL_openlib( L, NULL, customdata_interface, 1 );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, customdata_interface, 2 );
 
     lua_pushlstring( L, "customdata", 10 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
@@ -100,7 +218,8 @@ static int entity_constructor( lua_State *L )
     luaL_openlib( L, NULL, entity_interface, 1 );
 
     // Allocate customdata class
-    lua_pushcclosure( L, customdata_constructor, 0 );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    lua_pushcclosure( L, customdata_constructor, 1 );
     lua_newclass( L );
     lua_setfield( L, LUA_ENVIRONINDEX, "data" );
 
@@ -151,9 +270,7 @@ static int sysentity_constructor( lua_State *L )
 }
 
 CClientEntity::CClientEntity( ElementID ID, bool system, LuaClass& root ) : LuaElement( root ),
-        m_FromRootNode( this ),
-        m_ChildrenNode( this ),
-        m_Children( &CClientEntity::m_ChildrenNode )
+        m_FromRootNode( this )
 {
     lua_State *L = root.GetVM();
 
@@ -200,8 +317,6 @@ CClientEntity::CClientEntity( ElementID ID, bool system, LuaClass& root ) : LuaE
     strncpy ( m_szTypeName, "unknown", MAX_TYPENAME_LENGTH );
     m_szTypeName [MAX_TYPENAME_LENGTH] = 0;
     m_uiTypeHash = HashString ( m_szTypeName );
-    if ( IsFromRoot ( m_pParent ) )
-        CClientEntity::AddEntityFromRoot ( m_uiTypeHash, this );
 
     m_szName [0] = 0;
 
@@ -214,8 +329,9 @@ CClientEntity::~CClientEntity()
     // Before we do anything, fire the on-destroy event
     CallEvent( "onClientElementDestroy", m_lua, 0 );
 
-    // Remove from parent
-    SetParent( NULL );
+    // Remove collision properties
+    while ( !m_collidableWith.empty() )
+        SetCollidableWith( m_collidableWith.front(), false );
 
     // Reset our index in the element array
     if ( m_ID != INVALID_ELEMENT_ID )
@@ -292,7 +408,6 @@ CClientEntity::~CClientEntity()
 
     // Ensure intrusive list nodes have been isolated
     assert ( m_FromRootNode.m_pOuterItem == this && !m_FromRootNode.m_pPrev && !m_FromRootNode.m_pNext );
-    assert ( m_ChildrenNode.m_pOuterItem == this && !m_ChildrenNode.m_pPrev && !m_ChildrenNode.m_pNext );
 
     if ( !g_pClientGame->IsBeingDeleted () )
         CClientEntityRefManager::OnEntityDelete ( this );
@@ -317,44 +432,18 @@ bool CClientEntity::CanUpdateSync ( unsigned char ucRemote )
 
 bool CClientEntity::SetParent ( CClientEntity* pParent )
 {
-    if ( pParent )
-    {
-        // Lua is top priority, so update it first
-        PushMethod( m_lua, "setParent" );
-        pParent->PushStack( m_lua );
-        lua_call( m_lua, 1, 1 );
+    if ( !pParent )
+        return false;
 
-        bool rslt = lua_toboolean( m_lua, -1 ) == 1;
-        lua_pop( m_lua, 1 );
+    // Lua is top priority, so update it first
+    PushMethod( m_lua, "setParent" );
+    pParent->PushStack( m_lua );
+    lua_call( m_lua, 1, 1 );
 
-        if ( !rslt )
-            return false;
-    }
+    bool rslt = lua_toboolean( m_lua, -1 ) == 1;
+    lua_pop( m_lua, 1 );
 
-    // Get into/out-of FromRoot info
-    bool bOldFromRoot = CClientEntity::IsFromRoot( m_pParent );
-    bool bNewFromRoot = CClientEntity::IsFromRoot( pParent );
-
-    // Remove us from previous parent's children list
-    if ( m_pParent )
-        m_pParent->m_Children.remove ( this );
-
-    // Set the new parent
-    m_pParent = pParent;
-
-    // Add us to the new parent's children list
-    if ( pParent )
-        pParent->m_Children.push_back ( this );
-
-    // Moving out of FromRoot?
-    if ( bOldFromRoot && !bNewFromRoot )
-        CClientEntity::RemoveEntityFromRoot ( m_uiTypeHash, this );
-
-    // Moving into FromRoot?
-    if ( !bOldFromRoot && bNewFromRoot )
-        CClientEntity::AddEntityFromRoot ( m_uiTypeHash, this );
-
-    return true;
+    return rslt;
 }
 
 bool CClientEntity::IsMyChild ( CClientEntity* pEntity, bool bRecursive )
@@ -1313,15 +1402,34 @@ void CClientEntity::_GetEntitiesFromRoot ( unsigned int uiTypeHash, std::map < C
 
 #endif
 
-// TODO: fix crash if game entity is not present
 bool CClientEntity::IsCollidableWith( CClientEntity *entity ) const
 {
-    return GetGameEntity()->IsCollidableWith( entity->GetGameEntity() );
+    return std::find( m_collidableWith.begin(), m_collidableWith.end(), entity ) != m_collidableWith.end();
 }
 
 void CClientEntity::SetCollidableWith( CClientEntity *entity, bool enable )
 {
-    GetGameEntity()->SetCollidableWith( entity->GetGameEntity(), enable );
+    CEntity *g_entity = GetGameEntity();
+    CEntity *collision = entity->GetGameEntity();
+
+    if ( g_entity && collision )
+    {
+        g_entity->SetCollidableWith( collision, enable );
+    }
+
+    collisionEntities_t::iterator iter = std::find( m_collidableWith.begin(), m_collidableWith.end(), entity );
+
+    if ( enable && iter == m_collidableWith.end() )
+    {
+        // Set it for the entities
+        m_collidableWith.push_back( entity );
+        entity->m_collidableWith.push_back( this );
+    }
+    else if ( !enable && iter != m_collidableWith.end() )
+    {
+        m_collidableWith.erase( iter );
+        entity->m_collidableWith.erase( std::find( entity->m_collidableWith.begin(), entity->m_collidableWith.end(), this ) );
+    }
 }
 
 CSphere CClientEntity::GetWorldBoundingSphere()

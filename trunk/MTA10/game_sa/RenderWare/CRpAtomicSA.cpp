@@ -46,6 +46,7 @@ CRpAtomic* CRpAtomicSA::Clone() const
 
 RpAtomic* CRpAtomicSA::CreateInstance( unsigned short id ) const
 {
+    const RpAtomic *a = GetObject();
     RpAtomic *atom = RpAtomicClone( GetObject() );
     CAtomicModelInfoSA *ainfo = ppModelInfo[id]->GetAtomicModelInfo();
     bool unk;
@@ -64,9 +65,6 @@ RpAtomic* CRpAtomicSA::CreateInstance( unsigned short id ) const
     RpAtomicSetFrame( atom, RwFrameCreate() );
     
     atom->SetExtendedRenderFlags( id );
-
-    // We should reference our geometry, as it is taken from the original atomic
-    atom->m_geometry->m_refs++;
     return atom;
 }
 

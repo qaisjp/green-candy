@@ -128,6 +128,9 @@ bool CMapEventManager::Call( lua_State *callee, unsigned int argCount, const cha
 
                 TIMEUS startTime = GetTimeUs();
 
+                // Make sure our stack has got enough size
+                lua_checkstack( L, 6 + argCount );
+
                 // Store globals
                 lua_getfield( L, LUA_GLOBALSINDEX, "source" );
                 lua_getfield( L, LUA_GLOBALSINDEX, "this" );

@@ -17,6 +17,9 @@
 
 #include <game/CPlane.h>
 
+#define FUNC_CPlane__SetGearUp                  0x6CAC20
+#define FUNC_CPlane__SetGearDown                0x6CAC70
+
 class CPlaneSAInterface : public CAutomobileSAInterface // size: 2564
 {
 public:

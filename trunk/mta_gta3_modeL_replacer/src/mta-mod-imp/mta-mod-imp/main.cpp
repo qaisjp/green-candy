@@ -54,7 +54,7 @@ short usZoffset=500;
 #define MODEL_STATIC 2
 #define MODEL_METHOD MODEL_TABLE
 
-#define LUA_DOCOMPILE TRUE
+#define LUA_DOCOMPILE FALSE
 
 inline void luaBegin( FILE *file )
 {

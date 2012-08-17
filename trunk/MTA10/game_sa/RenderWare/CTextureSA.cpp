@@ -100,7 +100,7 @@ void CTextureSA::OnTxdInvalidate( RwTexDictionary& txd, unsigned short id )
 
     if ( imp.original )
     {
-        RwTextureDestroy( imp.original );
+        imp.original->AddToDictionary( &txd );
         imp.original = NULL;
     }
 }
@@ -180,8 +180,8 @@ bool CTextureSA::RemoveTXD( unsigned short id )
     import& imp = ( *iter ).second;
     RwTexDictionary *txd = imp.copy->txd;
 
-    RwTextureDestroy( imp.copy );
     imp.copy->RemoveFromDictionary();
+    RwTextureDestroy( imp.copy );
 
     if ( imp.original )
         imp.original->AddToDictionary( txd );
@@ -189,7 +189,6 @@ bool CTextureSA::RemoveTXD( unsigned short id )
     m_imported.erase( iter );
 
     g_dictImports[id].remove( this );
-
     return true;
 }
 

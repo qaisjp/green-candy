@@ -188,6 +188,16 @@ public:
                  ( fabs ( fY - param.fY ) >= FLOAT_EPSILON ) ||
                  ( fabs ( fZ - param.fZ ) >= FLOAT_EPSILON ) );
     }
+
+    inline float operator [] ( unsigned int idx ) const
+    {
+        return ((float*)this)[idx];
+    }
+
+    inline float& operator [] ( unsigned int idx )
+    {
+        return ((float*)this)[idx];
+    }
 };
 
 #endif

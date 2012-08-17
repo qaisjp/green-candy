@@ -112,14 +112,14 @@ void CBaseModelInfoSAInterface::Reference()
 {
     m_numberOfRefs++;
 
-    //(*ppTxdPool)->Get( m_textureDictionary )->Reference();
+    (*ppTxdPool)->Get( m_textureDictionary )->Reference();
 }
 
 void CBaseModelInfoSAInterface::Dereference()
 {
     m_numberOfRefs--;
 
-    //(*ppTxdPool)->Get( m_textureDictionary )->Dereference();
+    (*ppTxdPool)->Get( m_textureDictionary )->Dereference();
 }
 
 unsigned short CBaseModelInfoSAInterface::GetFlags()

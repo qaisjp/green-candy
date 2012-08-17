@@ -14,14 +14,13 @@ class CQuat;
 #ifndef __CQUAT_H
 #define __CQUAT_H
 
-#include <math.h>
 #include <float.h>
 #include "SharedUtil.h"
 
 #define EPSILON         0.001f
 
 #ifndef PI
-#define PI (float)3.14159265358979323846264338327950
+#define PI 3.14159265358979323846264338327950f
 #endif
 
 class CQuat

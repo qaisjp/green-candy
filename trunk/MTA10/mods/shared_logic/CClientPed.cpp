@@ -580,7 +580,7 @@ void CClientPed::GetRotationRadians( CVector& vecRotation ) const
 {
     RwMatrix matTemp;
     GetMatrix ( matTemp );
-    g_pMultiplayer->ConvertMatrixToEulerAngles ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+    matTemp.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
 }
 
 void CClientPed::SetRotationDegrees( const CVector& vecRotation )
@@ -605,7 +605,7 @@ void CClientPed::SetRotationRadians( const CVector& vecRotation )
     // Grab the matrix, apply the rotation to it and set it again
     RwMatrix matTemp;
     GetMatrix ( matTemp );
-    g_pMultiplayer->ConvertEulerAnglesToMatrix ( matTemp, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+    matTemp.SetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
     SetMatrix ( matTemp );
 }
 

@@ -219,14 +219,12 @@ void LuaArgument::Read( lua_State *lua, int idx )
 
     DeleteTableData();
 
-    size_t len;
-    const char *buf;
-
     // Read out the content depending on the type
     switch( lua_type( lua, idx ) )
     {
     case LUA_TNONE:
     case LUA_TNIL:
+        ReadNil();
         return;
 
     case LUA_TBOOLEAN:
@@ -270,10 +268,7 @@ void LuaArgument::Read( lua_State *lua, int idx )
         return;
 
     case LUA_TSTRING:
-        buf = lua_tolstring( lua, idx, &len );
-
-        // Set our string
-        m_string.assign( buf, len );
+        Read( lua_getstring( lua, idx ) );
         return;
 
     case LUA_TFUNCTION:
