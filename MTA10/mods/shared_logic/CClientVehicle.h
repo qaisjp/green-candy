@@ -38,7 +38,7 @@ class CClientVehicle;
 #include "CVehicleUpgrades.h"
 #include "CClientTime.h"
 
-#define LUACLASS_VEHICLE    64
+#include "luadefs/luavehicle.h"
 
 #define INVALID_PASSENGER_SEAT 0xFF
 #define DEFAULT_VEHICLE_HEALTH 1000
@@ -163,7 +163,6 @@ public:
     void                        SetHealth( float fHealth );
     void                        Fix();
     void                        Blow( bool bAllowMovement = false );
-    inline bool                 IsVehicleBlown() const                                                  { return m_bBlown; };
 
     CVehicleColor&              GetColor();
     void                        SetColor( const CVehicleColor& color );
@@ -297,9 +296,10 @@ public:
 
     eWinchType                  GetWinchType() const                                                    { return m_eWinchType; }
     bool                        SetWinchType( eWinchType winchType );
-    bool                        PickupEntityWithWinch( CClientEntity* pEntity );
+    bool                        PickupEntityWithWinch( CClientEntity *entity );
     bool                        ReleasePickedUpEntityWithWinch();
-    void                        SetRopeHeightForHeli( float fRopeHeight );
+    void                        SetRopeHeightForHeli( float height );
+    float                       GetRopeHeightForHeli() const;
     CClientEntity*              GetPickedUpEntityWithWinch() const;
 
     inline const char*          GetRegPlate() const                                                     { return m_strRegPlate.empty () ? NULL : m_strRegPlate.c_str (); }
@@ -502,6 +502,7 @@ protected:
     bool                        m_bIsOnGround;
     bool                        m_bHeliSearchLightVisible;
     float                       m_fHeliRotorSpeed;
+    float                       m_heliRopeHeight;
     const CHandlingEntry*       m_pOriginalHandlingEntry;
     CHandlingEntry*             m_pHandlingEntry;
 

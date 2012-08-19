@@ -1069,7 +1069,8 @@ namespace CLuaFunctionDefs
                         g_pNet->DeallocateNetBitStream( pBitStream );
 
                         // Set its custom data
-                        lua_setfield( L, -2, strKey.c_str() );
+                        lua_pushvalue( L, 3 );
+                        lua_setfield( L, -3, strKey.c_str() );
                         lua_pushboolean( L, true );
                         return 1;
                     }
@@ -1077,7 +1078,8 @@ namespace CLuaFunctionDefs
                 else
                 {
                     // Set its custom data
-                    lua_setfield( L, -2, strKey.c_str() );
+                    lua_pushvalue( L, 3 );
+                    lua_setfield( L, -3, strKey.c_str() );
                     lua_pushboolean( L, true );
                     return 1;
                 }

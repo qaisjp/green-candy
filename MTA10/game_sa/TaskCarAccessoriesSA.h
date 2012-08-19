@@ -51,7 +51,7 @@ public:
     unsigned char                       m_numGettingInClear;
 };
 
-class CTaskSimpleCarSetPedInAsDriverSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleCarSetPedInAsDriver
+class CTaskSimpleCarSetPedInAsDriverSA : public CTaskSimpleSA, public virtual CTaskSimpleCarSetPedInAsDriver
 {
 public:
     CTaskSimpleCarSetPedInAsDriverSA () {};
@@ -82,7 +82,7 @@ public:
     unsigned char                       m_numGettingInClear;
 };
 
-class CTaskSimpleCarSetPedInAsPassengerSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleCarSetPedInAsPassenger
+class CTaskSimpleCarSetPedInAsPassengerSA : public CTaskSimpleSA, public virtual CTaskSimpleCarSetPedInAsPassenger
 {
 public:
     CTaskSimpleCarSetPedInAsPassengerSA () {};
@@ -113,7 +113,7 @@ public:
     unsigned char                       m_numGettingInClear;
 };
 
-class CTaskSimpleCarSetPedOutSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleCarSetPedOut
+class CTaskSimpleCarSetPedOutSA : public CTaskSimpleSA, public virtual CTaskSimpleCarSetPedOut
 {
 public:
     CTaskSimpleCarSetPedOutSA () {};

@@ -51,7 +51,7 @@ public:
     CAnimBlendAssociation* m_pAnim;
 };
 
-class CTaskSimpleClimbSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleClimb
+class CTaskSimpleClimbSA : public CTaskSimpleSA, public virtual CTaskSimpleClimb
 {
 public:
     CTaskSimpleClimbSA ( void ) {};
@@ -104,7 +104,7 @@ public:
     float m_fxKeyTime;
 };
 
-class CTaskSimpleJetPackSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleJetPack
+class CTaskSimpleJetPackSA : public CTaskSimpleSA, public virtual CTaskSimpleJetPack
 {
 public:
     CTaskSimpleJetPackSA ( void ) {};

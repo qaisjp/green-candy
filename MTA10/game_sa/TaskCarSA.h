@@ -63,7 +63,7 @@ public:
     int m_iEnterCarStartTime;
 };
 
-class CTaskComplexEnterCarSA : public virtual CTaskComplexSA
+class CTaskComplexEnterCarSA : public CTaskComplexSA
 {
 public:
     CTaskComplexEnterCarSA ( void ) {};
@@ -98,7 +98,7 @@ public:
 
 };
 
-class CTaskComplexEnterCarAsDriverSA : public virtual CTaskComplexEnterCarSA, public virtual CTaskComplexEnterCarAsDriver
+class CTaskComplexEnterCarAsDriverSA : public CTaskComplexEnterCarSA, public virtual CTaskComplexEnterCarAsDriver
 {
 public:
     CTaskComplexEnterCarAsDriverSA ( void ) {};
@@ -121,7 +121,7 @@ public:
 
 };
 
-class CTaskComplexEnterCarAsPassengerSA : public virtual CTaskComplexEnterCarSA, public virtual CTaskComplexEnterCarAsPassenger
+class CTaskComplexEnterCarAsPassengerSA : public CTaskComplexEnterCarSA, public virtual CTaskComplexEnterCarAsPassenger
 {
 public:
     CTaskComplexEnterCarAsPassengerSA ( void ) {};
@@ -144,7 +144,7 @@ public:
 
 };
 
-class CTaskComplexEnterBoatAsDriverSA : public virtual CTaskComplexSA, public virtual CTaskComplexEnterBoatAsDriver
+class CTaskComplexEnterBoatAsDriverSA : public CTaskComplexSA, public virtual CTaskComplexEnterBoatAsDriver
 {
 public:
     CTaskComplexEnterBoatAsDriverSA ( void ) {};
@@ -177,7 +177,7 @@ public:
     unsigned char m_bIsInAir;
 };
 
-class CTaskComplexLeaveCarSA : public virtual CTaskComplexSA, public virtual CTaskComplexLeaveCar
+class CTaskComplexLeaveCarSA : public CTaskComplexSA, public virtual CTaskComplexLeaveCar
 {
 public:
     CTaskComplexLeaveCarSA ( void ) {};

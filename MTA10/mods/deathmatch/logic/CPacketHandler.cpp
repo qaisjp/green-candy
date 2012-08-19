@@ -950,7 +950,7 @@ void CPacketHandler::Packet_PlayerWasted ( NetBitStreamInterface& bitStream )
     SBodypartSync bodyPart;
     bool bStealth;
     unsigned char ucTimeContext;
-    AssocGroupId animGroup;
+    unsigned long animGroup;
     AnimationId animID;
 
     if ( bitStream.Read ( ID ) &&
@@ -984,7 +984,7 @@ void CPacketHandler::Packet_PlayerWasted ( NetBitStreamInterface& bitStream )
             // Kill our ped in the correct way
             pPed->Kill ( ( eWeaponType ) weapon.data.ucWeaponType,
                          bodyPart.data.uiBodypart,
-                         bStealth, false, animGroup, animID );
+                         bStealth, false, (unsigned short)animGroup, animID );
 
             // Call the onClientPlayerWasted event
             lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();

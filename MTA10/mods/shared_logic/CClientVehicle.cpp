@@ -18,6 +18,8 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -33,27 +35,6 @@ extern CClientGame* g_pClientGame;
 // before we disable interpolation and warp to the position instead
 #define VEHICLE_INTERPOLATION_WARP_THRESHOLD            15
 #define VEHICLE_INTERPOLATION_WARP_THRESHOLD_FOR_SPEED  1.8f
-
-static const luaL_Reg vehicle_interface[] =
-{
-    { NULL, NULL }
-};
-
-static int luaconstructor_vehicle( lua_State *L )
-{
-    CClientVehicle *veh = (CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) );
-
-    ILuaClass& j = *lua_refclass( L, 1 );
-    j.SetTransmit( LUACLASS_VEHICLE, veh );
-
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, vehicle_interface, 1 );
-
-    lua_pushlstring( L, "vehicle", 7 );
-    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
-    return 0;
-}
 
 CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel ) : CClientStreamElement( pManager->GetVehicleStreamer(), ID, root, system )
 {
@@ -1612,7 +1593,11 @@ CClientVehicle* CClientVehicle::GetNextTrainCarriage()
 
 void CClientVehicle::SetPreviousTrainCarriage ( CClientVehicle* pPrevious )
 {
-     // Tell the given vehicle we're the previous link and save the given vehicle as the next link
+    // Unlink the previous carriage
+    if ( m_pPreviousLink )
+        m_pPreviousLink->SetNextTrainCarriage( NULL );
+
+    // Tell the given vehicle we're the previous link and save the given vehicle as the next link
     m_pPreviousLink = pPrevious;
     if ( pPrevious )
     {
@@ -1626,6 +1611,10 @@ void CClientVehicle::SetPreviousTrainCarriage ( CClientVehicle* pPrevious )
 
 void CClientVehicle::SetNextTrainCarriage( CClientVehicle* pNext )
 {
+    // Unlink the previous carriage
+    if ( m_pNextLink )
+        m_pNextLink->SetPreviousTrainCarriage( NULL );
+
     // Tell the given vehicle we're the previous link and save the given vehicle as the next link
     m_pNextLink = pNext;
     if ( pNext )
@@ -1985,7 +1974,7 @@ void CClientVehicle::Create()
             m_pVehicle = m_boat;
             break;
         case VEHICLE_TRAIN:
-            m_train = g_pGame->GetPools()->AddTrain( m_usModel, CVector( 0, 0, 0 ), true );
+            m_train = g_pGame->GetPools()->AddTrain( m_usModel, m_Matrix.pos, m_bTrainDirection );
             m_pVehicle = m_train;
             break;
         case VEHICLE_BIKE:
@@ -2075,7 +2064,6 @@ void CClientVehicle::Create()
         {
             m_train->SetDerailed( m_bIsDerailed );
             m_train->SetDerailable( m_bIsDerailable );
-            m_train->SetTrainDirection( m_bTrainDirection );
             m_train->SetTrainSpeed( m_fTrainSpeed );
 
             // Link us with stored next and previous vehicles
@@ -2482,10 +2470,17 @@ bool CClientVehicle::ReleasePickedUpEntityWithWinch()
     return true;
 }
 
-void CClientVehicle::SetRopeHeightForHeli( float fRopeHeight )
+void CClientVehicle::SetRopeHeightForHeli( float height )
 {
     if ( m_heli )
-        m_heli->SetRopeHeightForHeli( fRopeHeight );
+        m_heli->SetRopeHeightForHeli( height );
+
+    m_heliRopeHeight = height;
+}
+
+float CClientVehicle::GetRopeHeightForHeli() const
+{
+    return m_heliRopeHeight;
 }
 
 CClientEntity* CClientVehicle::GetPickedUpEntityWithWinch() const

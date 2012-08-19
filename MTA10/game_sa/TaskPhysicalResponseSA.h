@@ -30,7 +30,7 @@ public:
     bool                        m_bIsFinished;
 };
 
-class CTaskSimpleChokingSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleChoking
+class CTaskSimpleChokingSA : public CTaskSimpleSA, public virtual CTaskSimpleChoking
 {
 public:
                         CTaskSimpleChokingSA    () {};

@@ -59,7 +59,7 @@ public:
     unsigned char m_bAllNodesBlocked    :1;
 };
 
-class CTaskComplexWanderSA : public virtual CTaskComplexSA, public virtual CTaskComplexWander
+class CTaskComplexWanderSA : public CTaskComplexSA, public virtual CTaskComplexWander
 {
 public:
     CTaskComplexWanderSA () {};
@@ -85,7 +85,7 @@ public:
     int m_iMinNextScanTime;
 };
 
-class CTaskComplexWanderStandardSA : public virtual CTaskComplexWanderSA, public virtual CTaskComplexWanderStandard
+class CTaskComplexWanderStandardSA : public CTaskComplexWanderSA, public virtual CTaskComplexWanderStandard
 {
 public:
     CTaskComplexWanderStandardSA ( void ) {};

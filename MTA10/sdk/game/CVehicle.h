@@ -23,7 +23,8 @@ enum eWinchType
 {
     WINCH_NONE = 0,
     WINCH_BIG_MAGNET,
-    WINCH_SMALL_MAGNET = 3
+    WINCH_SMALL_MAGNET = 3,
+    NUM_WINCH_TYPE
 };
 
 class CPed;

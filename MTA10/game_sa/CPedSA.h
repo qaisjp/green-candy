@@ -365,7 +365,8 @@ public:
     float                       GetCurrentRotation() const                                  { return GetInterface()->m_pedRotation; }
     float                       GetTargetRotation() const                                   { return GetInterface()->m_targetRotation; }
     eWeaponSlot                 GetCurrentWeaponSlot() const                                { return (eWeaponSlot)GetInterface()->m_currentWeapon; }
-    CTaskSA*                    GetPrimaryTask() const;
+    CTaskSA*                    GetPrimaryTaskInternal() const;
+    CTask*                      GetPrimaryTask() const;
     eFightingStyle              GetFightingStyle() const                                    { return (eFightingStyle)GetInterface()->m_fightStyle; }
     unsigned char               GetRunState() const                                         { return GetInterface()->m_runState; }
     CEntity*                    GetContactEntity() const;
