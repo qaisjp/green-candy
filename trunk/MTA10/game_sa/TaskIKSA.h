@@ -58,7 +58,7 @@ public:
 #endif
 };
 
-class CTaskSimpleIKChainSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleIKChain
+class CTaskSimpleIKChainSA : public CTaskSimpleSA, public virtual CTaskSimpleIKChain
 {
 public:
                 CTaskSimpleIKChainSA ( void ) {};
@@ -87,7 +87,7 @@ public:
     char     m_priority;
 };
 
-class CTaskSimpleIKLookAtSA : public virtual CTaskSimpleIKChainSA, public virtual CTaskSimpleIKLookAt
+class CTaskSimpleIKLookAtSA : public CTaskSimpleIKChainSA, public virtual CTaskSimpleIKLookAt
 {
 public:
     CTaskSimpleIKLookAtSA ( void ) {};
@@ -117,7 +117,7 @@ public:
 
 class CTaskManagementSystemSA;
 
-class CTaskSimpleIKManagerSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleIKManager
+class CTaskSimpleIKManagerSA : public CTaskSimpleSA, public virtual CTaskSimpleIKManager
 {
 private:
     CTaskManagementSystemSA *   m_pTaskManagementSystem;
@@ -172,7 +172,7 @@ public:
     char        m_priority;
 };
 
-class CTaskSimpleTriggerLookAtSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleTriggerLookAt
+class CTaskSimpleTriggerLookAtSA : public CTaskSimpleSA, public virtual CTaskSimpleTriggerLookAt
 {
 public:
     CTaskSimpleTriggerLookAtSA ( void ) {};

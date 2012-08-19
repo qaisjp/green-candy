@@ -1168,6 +1168,10 @@
 						RelativePath="..\..\..\lua_interpret\luafile.cpp"
 						>
 					</File>
+					<File
+						RelativePath="..\shared_logic\luadefs\luavehicle.cpp"
+						>
+					</File>
 				</Filter>
 			</Filter>
 			<Filter
@@ -2652,6 +2656,10 @@
 					</File>
 					<File
 						RelativePath="..\shared_logic\luadefs\CLuaTaskDefs.h"
+						>
+					</File>
+					<File
+						RelativePath="..\shared_logic\luadefs\luavehicle.h"
 						>
 					</File>
 				</Filter>

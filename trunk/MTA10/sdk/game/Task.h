@@ -49,21 +49,21 @@ public:
 class CTaskSimple : public virtual CTask
 {
 public:
-    virtual      ~CTaskSimple ( void ) {};
+    virtual                     ~CTaskSimple() {}
 
-    virtual bool ProcessPed(CPed* pPed)=0;
-    virtual bool SetPedPosition(CPed *pPed)=0;
+    virtual bool                ProcessPed( CPed *ped ) = 0;
+    virtual bool                SetPedPosition( CPed *ped ) = 0;
 };
 
 class CTaskComplex : public virtual CTask
 {
 public:
-    virtual      ~CTaskComplex ( void ) {};
+    virtual                     ~CTaskComplex() {};
 
-    virtual void SetSubTask(CTask* pSubTask)=0;
-    virtual CTask * CreateNextSubTask(CPed* pPed)=0;
-    virtual CTask * CreateFirstSubTask(CPed* pPed)=0;
-    virtual CTask * ControlSubTask(CPed* pPed)=0;
+    virtual void                SetSubTask( CTask *subTask ) = 0;
+    virtual CTask*              CreateNextSubTask( CPed *ped ) = 0;
+    virtual CTask*              CreateFirstSubTask( CPed *ped ) = 0;
+    virtual CTask*              ControlSubTask( CPed *ped ) = 0;
 };
 
 #endif

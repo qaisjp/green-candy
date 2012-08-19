@@ -44,7 +44,7 @@ public:
 };
 
 
-class CTaskComplexUseMobilePhoneSA : public virtual CTaskComplexSA, public virtual CTaskComplexUseMobilePhone
+class CTaskComplexUseMobilePhoneSA : public CTaskComplexSA, public virtual CTaskComplexUseMobilePhone
 {
 public:
     CTaskComplexUseMobilePhoneSA ( void ) {};
@@ -75,18 +75,13 @@ public:
     char                        m_bOffsetAvailable  :1;
 };
 
-
-
-class CTaskSimpleAnimSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleAnim
+class CTaskSimpleAnimSA : public CTaskSimpleSA, public virtual CTaskSimpleAnim
 {
 public:
     CTaskSimpleAnimSA ( void ) {};
 };
 
-
-
-
-class CTaskSimpleRunAnimSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleRunAnim
+class CTaskSimpleRunAnimSA : public CTaskSimpleSA, public virtual CTaskSimpleRunAnim
 {
 public:
     CTaskSimpleRunAnimSA ( void ) {};
@@ -118,7 +113,7 @@ public:
     short                   m_animID;   
 };
 
-class CTaskSimpleRunNamedAnimSA : public virtual CTaskSimpleAnimSA, public virtual CTaskSimpleRunNamedAnim
+class CTaskSimpleRunNamedAnimSA : public CTaskSimpleAnimSA, public virtual CTaskSimpleRunNamedAnim
 {
 public:
     CTaskSimpleRunNamedAnimSA ( void ) {};
@@ -138,7 +133,7 @@ class CTaskComplexDieSAInterface : public CTaskComplexSAInterface
 public:
 };
 
-class CTaskComplexDieSA : public virtual CTaskComplexSA, public virtual CTaskComplexDie
+class CTaskComplexDieSA : public CTaskComplexSA, public virtual CTaskComplexDie
 {
 public:
     CTaskComplexDieSA ( void ) {};
@@ -158,7 +153,7 @@ class CTaskSimpleStealthKillInterface : public CTaskSimpleSAInterface
 public:
 };
 
-class CTaskSimpleStealthKillSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleStealthKill
+class CTaskSimpleStealthKillSA : public CTaskSimpleSA, public virtual CTaskSimpleStealthKill
 {
 public:
     CTaskSimpleStealthKillSA ( void ) {};
@@ -174,7 +169,7 @@ public:
     bool            bUnk2;
 };
 
-class CTaskSimpleDeadSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleDead
+class CTaskSimpleDeadSA : public CTaskSimpleSA, public virtual CTaskSimpleDead
 {
 public:
     CTaskSimpleDeadSA ( void ) {};
@@ -202,7 +197,7 @@ public:
     CObject*            m_pTowel;
 };
 
-class CTaskComplexSunbatheSA : public virtual CTaskComplexSA, public virtual CTaskComplexSunbathe
+class CTaskComplexSunbatheSA : public CTaskComplexSA, public virtual CTaskComplexSunbathe
 {
 public:
                         CTaskComplexSunbatheSA ( void ) {};
@@ -223,7 +218,7 @@ public:
     BYTE m_Pad[28];
 };
 
-class CTaskSimplePlayerOnFootSA : public virtual CTaskSimpleSA, public virtual CTaskSimplePlayerOnFoot
+class CTaskSimplePlayerOnFootSA : public CTaskSimpleSA, public virtual CTaskSimplePlayerOnFoot
 {
 public:
     CTaskSimplePlayerOnFootSA ( void );
@@ -239,7 +234,7 @@ public:
     BYTE m_Pad[32];
 };
 
-class CTaskComplexFacialSA : public virtual CTaskComplexSA, public virtual CTaskComplexFacial
+class CTaskComplexFacialSA : public CTaskComplexSA, public virtual CTaskComplexFacial
 {
 public:
     CTaskComplexFacialSA ( void );

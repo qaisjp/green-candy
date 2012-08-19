@@ -3875,70 +3875,55 @@ void CClientGame::ProcessVehicleInOutKey ( bool bPassenger )
                 // Make sure we don't have any other primary tasks running, otherwise our 'enter-vehicle'
                 // task will replace it and fuck it up!
                 // 
-                if ( !m_pLocalPlayer->GetCurrentPrimaryTask ( ) )
+                if ( m_pLocalPlayer->GetCurrentPrimaryTask() )
+                    return;
+
+                // Are we not holding the aim_weapon key?
+                SBindableGTAControl* pBind = g_pCore->GetKeyBinds ()->GetBindableFromControl ( "aim_weapon" );
+
+                if ( pBind && pBind->bState || m_pLocalPlayer->IsClimbing() || m_pLocalPlayer->HasJetPack() || m_pLocalPlayer->IsUsingGun() || m_pLocalPlayer->IsRunningAnimation() )
+                    return;
+
+                // Grab the closest vehicle
+                unsigned int uiDoor = 0;
+                CClientVehicle* pVehicle = m_pLocalPlayer->GetClosestVehicleInRange ( true, !bPassenger, bPassenger, false, &uiDoor, NULL, 20.0f );
+                unsigned int uiSeat = uiDoor;
+
+                // Make sure the door is not 0 if we're going for passenger, or 0 if we're going for driver
+                if ( bPassenger && uiDoor == 0 ) uiSeat = 1;
+                else if ( !bPassenger ) uiSeat = 0;
+
+                if ( pVehicle && pVehicle->IsEnterable() )
                 {
-                    // Are we not holding the aim_weapon key?
-                    SBindableGTAControl* pBind = g_pCore->GetKeyBinds ()->GetBindableFromControl ( "aim_weapon" );
-                    if ( !pBind || !pBind->bState )
+                    // If the vehicle's a boat, make sure we're standing on it (we need a dif task to enter boats properly)
+                    if ( pVehicle->GetVehicleType () != CLIENTVEHICLE_BOAT || m_pLocalPlayer->GetContactEntity () == pVehicle )
                     {
-                        // Is he climbing?
-                        if ( !m_pLocalPlayer->IsClimbing () )
+                        // Send an in request
+                        NetBitStreamInterface* pBitStream = g_pNet->AllocateNetBitStream ();
+                        if ( pBitStream )
                         {
-                            // Make sure he doesn't have a jetpack
-                            if ( !m_pLocalPlayer->HasJetPack () )
-                            {
-                                // Make sure we arent using a gun (have the gun task active) - we stop it in UpdatePlayerTasks anyway
-                                if ( !m_pLocalPlayer->IsUsingGun () )
-                                {
-                                    // Make sure we arent running an animation
-                                    if ( !m_pLocalPlayer->IsRunningAnimation () )
-                                    {
-                                        // Grab the closest vehicle
-                                        unsigned int uiDoor = 0;
-                                        CClientVehicle* pVehicle = m_pLocalPlayer->GetClosestVehicleInRange ( true, !bPassenger, bPassenger, false, &uiDoor, NULL, 20.0f );
-                                        unsigned int uiSeat = uiDoor;
+                            // Write the vehicle id to it and that we're requesting to get into it
+                            pBitStream->Write ( pVehicle->GetID () );
+                            unsigned char ucAction = static_cast < unsigned char > ( VEHICLE_REQUEST_IN );
+                            unsigned char ucSeat = static_cast < unsigned char > ( uiSeat );
+                            bool bIsOnWater = pVehicle->IsOnWater ();
+                            unsigned char ucDoor = static_cast < unsigned char > ( uiDoor );
+                            pBitStream->WriteBits ( &ucAction, 4 );
+                            pBitStream->WriteBits ( &ucSeat, 3 );
+                            pBitStream->WriteBit ( bIsOnWater );
+                            pBitStream->WriteBits ( &ucDoor, 3 );
 
-                                        // Make sure the door is not 0 if we're going for passenger, or 0 if we're going for driver
-                                        if ( bPassenger && uiDoor == 0 ) uiSeat = 1;
-                                        else if ( !bPassenger ) uiSeat = 0;
+                            // Send and destroy it
+                            g_pNet->SendPacket ( PACKET_ID_VEHICLE_INOUT, pBitStream, PACKET_PRIORITY_HIGH, PACKET_RELIABILITY_RELIABLE_ORDERED );
+                            g_pNet->DeallocateNetBitStream ( pBitStream );
 
-                                        if ( pVehicle && pVehicle->IsEnterable () )
-                                        {
-                                            // If the vehicle's a boat, make sure we're standing on it (we need a dif task to enter boats properly)
-                                            if ( pVehicle->GetVehicleType () != CLIENTVEHICLE_BOAT || m_pLocalPlayer->GetContactEntity () == pVehicle )
-                                            {
-                                                // Send an in request
-                                                NetBitStreamInterface* pBitStream = g_pNet->AllocateNetBitStream ();
-                                                if ( pBitStream )
-                                                {
-                                                    // Write the vehicle id to it and that we're requesting to get into it
-                                                    pBitStream->Write ( pVehicle->GetID () );
-                                                    unsigned char ucAction = static_cast < unsigned char > ( VEHICLE_REQUEST_IN );
-                                                    unsigned char ucSeat = static_cast < unsigned char > ( uiSeat );
-                                                    bool bIsOnWater = pVehicle->IsOnWater ();
-                                                    unsigned char ucDoor = static_cast < unsigned char > ( uiDoor );
-                                                    pBitStream->WriteBits ( &ucAction, 4 );
-                                                    pBitStream->WriteBits ( &ucSeat, 3 );
-                                                    pBitStream->WriteBit ( bIsOnWater );
-                                                    pBitStream->WriteBits ( &ucDoor, 3 );
-
-                                                    // Send and destroy it
-                                                    g_pNet->SendPacket ( PACKET_ID_VEHICLE_INOUT, pBitStream, PACKET_PRIORITY_HIGH, PACKET_RELIABILITY_RELIABLE_ORDERED );
-                                                    g_pNet->DeallocateNetBitStream ( pBitStream );
-
-                                                    // We're now entering a vehicle
-                                                    m_bIsGettingIntoVehicle = true;
-                                                    m_ulLastVehicleInOutTime = CClientTime::GetTime ();
+                            // We're now entering a vehicle
+                            m_bIsGettingIntoVehicle = true;
+                            m_ulLastVehicleInOutTime = CClientTime::GetTime ();
 
 #ifdef MTA_DEBUG
-                                                    g_pCore->GetConsole ()->Printf ( "* Sent_InOut: vehicle_request_in" );
+                            g_pCore->GetConsole ()->Printf ( "* Sent_InOut: vehicle_request_in" );
 #endif
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 }

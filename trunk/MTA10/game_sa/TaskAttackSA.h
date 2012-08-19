@@ -66,7 +66,7 @@ public:
     CVector m_vecCoords;
 };
 
-class CTaskSimpleGangDriveBySA : public virtual CTaskSimpleSA, public virtual CTaskSimpleGangDriveBy
+class CTaskSimpleGangDriveBySA : public CTaskSimpleSA, public virtual CTaskSimpleGangDriveBy
 {
 public:
     CTaskSimpleGangDriveBySA ( void ) {};
@@ -104,7 +104,7 @@ public:
     unsigned char m_bAimImmediate;
 };
 
-class CTaskSimpleUseGunSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleUseGun
+class CTaskSimpleUseGunSA : public CTaskSimpleSA, public virtual CTaskSimpleUseGun
 {
 public:
                 CTaskSimpleUseGunSA ( void ) {};
@@ -139,7 +139,7 @@ public:
     char m_nLastCommand;
 };
 
-class CTaskSimpleFightSA : public virtual CTaskSimpleSA, public virtual CTaskSimpleFight
+class CTaskSimpleFightSA : public CTaskSimpleSA, public virtual CTaskSimpleFight
 {
 public:
     CTaskSimpleFightSA ( void ) {};

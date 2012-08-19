@@ -90,6 +90,9 @@ void CLuaMain::InitVM( int structure, int meta )
     g_pClientGame->GetLocalPlayer()->PushStack( m_lua );
     lua_setglobal( m_lua, "localPlayer" );
 
+    g_pClientGame->GetManager()->GetCamera()->PushStack( m_lua );
+    lua_setglobal( m_lua, "camera" );
+
     // Load pre-loaded lua code
     LoadScript( szPreloadedScript );
 }

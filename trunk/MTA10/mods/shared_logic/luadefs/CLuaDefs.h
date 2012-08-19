@@ -66,4 +66,32 @@ namespace CLuaFunctionDefs
     extern CRegisteredCommands*         m_pRegisteredCommands;  
 }
 
+//#define LUA_EXCEPTION_SAFETY
+
+#define LUA_METHOD(x)       { #x, x }
+#define LUA_ARGS_BEGIN      CScriptArgReader argStream( L )
+
+#ifndef LUA_EXCEPTION_SAFETY
+#define LUA_ARGS_END        if ( argStream.HasErrors() ) \
+                                throw lua_exception( L, LUA_ERRRUN, SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+#define LUA_ASSERT(x, msg)  if ( !(x) ) \
+                                throw lua_exception( L, LUA_ERRRUN, (msg) );
+#define LUA_SUCCESS         return 0;
+#else
+#define LUA_ARGS_END        if ( argStream.HasErrors() ) \
+                            { \
+                                g_pClientGame->GetScriptDebugging()->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) ); \
+                                lua_pushboolean( L, false ); \
+                                return 1; \
+                            }
+#define LUA_ASSERT(x, msg)  if ( !(x) ) \
+                            { \
+                                g_pClientGame->GetScriptDebugging()->LogCustom( (msg) ); \
+                                lua_pushboolean( L, false ); \
+                                return 1; \
+                            }
+#define LUA_SUCCESS         lua_pushboolean( L, true ); \
+                            return 1;
+#endif
+
 #endif

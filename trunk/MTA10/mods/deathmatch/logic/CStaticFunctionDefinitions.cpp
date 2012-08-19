@@ -2216,25 +2216,6 @@ bool CStaticFunctionDefinitions::BlowVehicle ( CClientEntity& Entity )
 
     return false;
 }
-bool CStaticFunctionDefinitions::IsVehicleBlown ( CClientVehicle& Vehicle, bool& bBlown )
-{
-    bBlown = Vehicle.IsVehicleBlown();
-    return true;
-}
-
-
-bool CStaticFunctionDefinitions::GetVehicleHeadLightColor ( CClientVehicle& Vehicle, SColor& outColor )
-{
-    outColor = Vehicle.GetHeadLightColor ();
-    return true;
-}
-
-bool CStaticFunctionDefinitions::GetVehicleCurrentGear ( CClientVehicle& Vehicle, unsigned short& currentGear )
-{
-    currentGear = Vehicle.GetCurrentGear();
-    return true;
-}
-
 
 bool CStaticFunctionDefinitions::SetVehicleColor ( CClientEntity& Entity, const CVehicleColor& color )
 {

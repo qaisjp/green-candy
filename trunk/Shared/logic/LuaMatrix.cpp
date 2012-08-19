@@ -56,6 +56,24 @@ static int matrix_index( lua_State *L )
     return 1;
 }
 
+static int matrix_setPosition( lua_State *L )
+{
+    luaL_checktyperange( L, 1, LUA_TNUMBER, 3 );
+
+    ((RwMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->pos = CVector( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) );
+    return 0;
+}
+
+static int matrix_getPosition( lua_State *L )
+{
+    CVector& pos = ((RwMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->pos;
+
+    lua_pushnumber( L, pos[0] );
+    lua_pushnumber( L, pos[1] );
+    lua_pushnumber( L, pos[2] );
+    return 3;
+}
+
 static int matrix_setEulerAngles( lua_State *L )
 {
     luaL_checktyperange( L, 1, LUA_TNUMBER, 3 );
@@ -119,6 +137,8 @@ static int matrix_destroy( lua_State *L )
 static const luaL_Reg matrix_interface[] =
 {
     { "__index", matrix_index },
+    { "setPosition", matrix_setPosition },
+    { "getPosition", matrix_getPosition },
     { "setEulerAngles", matrix_setEulerAngles },
     { "setEulerAnglesRad", matrix_setEulerAnglesRad },
     { "getEulerAngles", matrix_getEulerAngles },

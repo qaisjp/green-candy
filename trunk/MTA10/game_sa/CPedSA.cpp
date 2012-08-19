@@ -583,14 +583,19 @@ void CPedSA::GetTransformedBonePosition( eBone bone, CVector& pos ) const
     pos.fZ = Clamp <float> ( -VALID_POSITION_LIMIT, pos.fZ, VALID_POSITION_LIMIT );
 }
 
-CTaskSA* CPedSA::GetPrimaryTask() const
+CTaskSA* CPedSA::GetPrimaryTaskInternal() const
 {
     return GetPedIntelligence()->GetTaskManager()->GetTask( TASK_PRIORITY_PRIMARY );
 }
 
+CTask* CPedSA::GetPrimaryTask() const
+{
+    return GetPrimaryTaskInternal();
+}
+
 bool CPedSA::IsEnteringVehicle() const
 {
-    CTaskSA *task = GetPrimaryTask();
+    CTaskSA *task = GetPrimaryTaskInternal();
 
     if ( !task )
         return false;
@@ -610,7 +615,7 @@ bool CPedSA::IsGettingIntoVehicle() const
     if ( !IsEnteringVehicle() )
         return false;
 
-    switch( GetPrimaryTask()->GetSubTask()->GetTaskType() )
+    switch( GetPrimaryTaskInternal()->GetSubTask()->GetTaskType() )
     {
     case TASK_SIMPLE_CAR_GET_IN:
     case TASK_SIMPLE_CAR_CLOSE_DOOR_FROM_INSIDE:
@@ -624,7 +629,7 @@ bool CPedSA::IsGettingIntoVehicle() const
 
 bool CPedSA::IsBeingJacked() const
 {
-    CTaskSA *task = GetPrimaryTask();
+    CTaskSA *task = GetPrimaryTaskInternal();
 
     if ( !task )
         return false;
@@ -641,7 +646,7 @@ bool CPedSA::IsBeingJacked() const
 
 bool CPedSA::IsLeavingVehicle() const
 {
-    CTaskSA *task = GetPrimaryTask();
+    CTaskSA *task = GetPrimaryTaskInternal();
 
     if ( !task )
         return false;
@@ -668,7 +673,7 @@ bool CPedSA::IsGettingOutOfVehicle() const
     if ( !IsLeavingVehicle() )
         return false;
 
-    switch( GetPrimaryTask()->GetSubTask()->GetTaskType() )
+    switch( GetPrimaryTaskInternal()->GetSubTask()->GetTaskType() )
     {
     case TASK_SIMPLE_CAR_GET_OUT:
     case TASK_SIMPLE_CAR_CLOSE_DOOR_FROM_OUTSIDE:
@@ -697,7 +702,7 @@ bool CPedSA::IsPlayingAnimation( const char *name ) const
 
 bool CPedSA::IsDying() const
 {
-    CTaskSA *task = GetPrimaryTask();
+    CTaskSA *task = GetPrimaryTaskInternal();
 
     if ( !task )
         return false;
@@ -718,7 +723,7 @@ bool CPedSA::IsDying() const
 
 bool CPedSA::IsDead() const
 {
-    CTaskSA *task = GetPrimaryTask();
+    CTaskSA *task = GetPrimaryTaskInternal();
 
     return task && task->GetTaskType() == TASK_SIMPLE_DEAD;
 }
