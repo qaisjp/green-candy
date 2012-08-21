@@ -81,10 +81,17 @@ CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass
     m_MatrixLast = m_Matrix;
     m_dLastRotationTime = 0;
     m_fHealth = DEFAULT_VEHICLE_HEALTH;
+    m_explodeTime = 0;
+    m_burningTime = 0.0f;
     m_fTurretHorizontal = 0.0f;
     m_fTurretVertical = 0.0f;
+    m_brakePedal = 0.0f;
     m_fGasPedal = 0.0f;
+    m_steerAngle = 0.0f;
+    m_secSteerAngle = 0.0f;
+    m_nitrousFuel = 1.0f;
     m_bVisible = true;
+    m_armored = false;
     m_bIsCollisionEnabled = true;
     m_bEngineOn = false;
     m_bEngineBroken = false;
@@ -106,6 +113,7 @@ CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass
     m_bCanShootPetrolTank = true;
     m_bCanBeTargettedByHeatSeekingMissiles = true;
     m_bColorSaved = false;
+    m_handbrake = false;
     m_bIsFrozen = false;
     m_bScriptFrozen = false;
     m_bFrozenWaitingForGroundToLoad = false;
@@ -809,6 +817,38 @@ void CClientVehicle::Blow ( bool bAllowMovement )
     m_bBlown = true;
 }
 
+void CClientVehicle::SetExplodeTime( unsigned long time )
+{
+    if ( m_pVehicle )
+        m_pVehicle->SetExplodeTime( time );
+
+    m_explodeTime = time;
+}
+
+unsigned long CClientVehicle::GetExplodeTime() const
+{
+    if ( m_pVehicle )
+        return m_pVehicle->GetExplodeTime();
+
+    return m_explodeTime;
+}
+
+void CClientVehicle::SetBurningTime( float time )
+{
+    if ( m_automobile )
+        m_automobile->SetBurningTime( time );
+    
+    m_burningTime = time;
+}
+
+float CClientVehicle::GetBurningTime() const
+{
+    if ( m_automobile )
+        return m_automobile->GetBurningTime();
+
+    return m_burningTime;
+}
+
 CVehicleColor& CClientVehicle::GetColor()
 {
     if ( m_pVehicle )
@@ -1024,12 +1064,69 @@ void CClientVehicle::CalcAndUpdateTyresCanBurstFlag()
     m_bTyresCanBurst = bTyresCanBurst;
 }
 
-float CClientVehicle::GetGasPedal() const
+void CClientVehicle::SetBrakePedal( float percent )
 {
     if ( m_pVehicle )
-        return m_pVehicle->GetGasPedal();
+        m_pVehicle->SetBrakePedal( percent );
+    
+    m_brakePedal = percent;
+}
 
-    return m_fGasPedal;
+void CClientVehicle::SetGasPedal( float percent )
+{
+    if ( m_pVehicle )
+        m_pVehicle->SetGasPedal( percent );
+
+    m_fGasPedal = percent;
+}
+
+void CClientVehicle::SetSteerAngle( float rad )
+{
+    if ( m_pVehicle )
+        m_pVehicle->SetSteerAngle( rad );
+
+    m_steerAngle = rad;
+}
+
+void CClientVehicle::SetSecSteerAngle( float rad )
+{
+    if ( m_pVehicle )
+        m_pVehicle->SetSecSteerAngle( rad );
+
+    m_secSteerAngle = rad;
+}
+
+float CClientVehicle::GetBrakePedal() const
+{
+    return m_pVehicle ? m_pVehicle->GetBrakePedal() : m_brakePedal;
+}
+
+float CClientVehicle::GetGasPedal() const
+{
+    return m_pVehicle ? m_pVehicle->GetGasPedal() : m_fGasPedal;
+}
+
+float CClientVehicle::GetSteerAngle() const
+{
+    return m_pVehicle ? m_pVehicle->GetSteerAngle() : m_steerAngle;
+}
+
+float CClientVehicle::GetSecSteerAngle() const
+{
+    return m_pVehicle ? m_pVehicle->GetSecSteerAngle() : m_secSteerAngle;
+}
+
+void CClientVehicle::SetNitrousFuel( float val )
+{
+    if ( m_automobile )
+        m_automobile->SetNitrousFuel( val );
+
+    m_nitrousFuel = val;
+}
+
+float CClientVehicle::GetNitrousFuel() const
+{
+    return m_automobile ? m_automobile->GetNitrousFuel() : m_nitrousFuel;
 }
 
 bool CClientVehicle::IsBelowWater() const
@@ -1093,6 +1190,22 @@ void CClientVehicle::SetSirenOrAlarmActive ( bool bActive )
         m_pVehicle->SetSirenOrAlarmActive( bActive );
 
     m_bSireneOrAlarmActive = bActive;
+}
+
+bool CClientVehicle::IsHandbrakeOn() const
+{
+    if ( m_pVehicle )
+        return m_pVehicle->IsHandbrakeOn();
+    
+    return m_handbrake;
+}
+
+void CClientVehicle::SetHandbrakeOn( bool enable )
+{
+    if ( m_pVehicle )
+        m_pVehicle->SetHandbrakeOn( enable );
+
+    m_handbrake = enable;
 }
 
 float CClientVehicle::GetLandingGearPosition() const
@@ -1408,9 +1521,9 @@ CClientPed* CClientVehicle::GetOccupant( int iSeat )
     {
         return m_pDriver;
     }
-    else if ( iSeat <= (sizeof(m_pPassengers)/sizeof(CClientPed*)) )
+    else if ( iSeat < 8 + 1 )
     {
-        return m_pPassengers [iSeat - 1];
+        return m_pPassengers[iSeat - 1];
     }
 
     return NULL;
@@ -2003,31 +2116,37 @@ void CClientVehicle::Create()
         }
 
         // Put our pointer in its custom data
-        m_pVehicle->SetStoredPointer ( this );
+        m_pVehicle->SetStoredPointer( this );
         
         // Jump straight to the target position if we have one
-        if ( HasTargetPosition () )
+        if ( HasTargetPosition() )
         {
-            GetTargetPosition ( m_Matrix.pos );
+            GetTargetPosition( m_Matrix.pos );
         }
 
         // Jump straight to the target rotation if we have one
-        if ( HasTargetRotation () )
+        if ( HasTargetRotation() )
         {
             CVector vecTemp = m_interp.rot.vecTarget;
-            ConvertDegreesToRadians ( vecTemp );
+            ConvertDegreesToRadians( vecTemp );
             m_Matrix.SetRotationRad( (float)( ( 2 * PI ) - vecTemp.fX ), (float)( ( 2 * PI ) - vecTemp.fY ), (float)( ( 2 * PI ) - vecTemp.fZ ) );
         }
 
         // Got any settings to restore?
-        m_pVehicle->SetMatrix ( m_Matrix );
+        m_pVehicle->SetMatrix( m_Matrix );
         m_matFrozen = m_Matrix;
-        m_pVehicle->SetMoveSpeed ( m_vecMoveSpeed );
-        m_pVehicle->SetTurnSpeed ( m_vecTurnSpeed );
-        m_pVehicle->SetVisible ( m_bVisible );
-        m_pVehicle->SetUsesCollision ( m_bIsCollisionEnabled );
-        m_pVehicle->SetEngineBroken ( m_bEngineBroken );
-        m_pVehicle->SetSirenOrAlarmActive ( m_bSireneOrAlarmActive );
+        m_pVehicle->SetMoveSpeed( m_vecMoveSpeed );
+        m_pVehicle->SetTurnSpeed( m_vecTurnSpeed );
+        m_pVehicle->SetVisible( m_bVisible );
+        m_pVehicle->SetTakeLessDamage( m_armored );
+        m_pVehicle->SetUsesCollision( m_bIsCollisionEnabled );
+        m_pVehicle->SetEngineBroken( m_bEngineBroken );
+        m_pVehicle->SetSirenOrAlarmActive( m_bSireneOrAlarmActive );
+        m_pVehicle->SetHandbrakeOn( m_handbrake );
+        m_pVehicle->SetBrakePedal( m_brakePedal );
+        m_pVehicle->SetGasPedal( m_fGasPedal );
+        m_pVehicle->SetSteerAngle( m_steerAngle );
+        m_pVehicle->SetSecSteerAngle( m_secSteerAngle );
 
         if ( m_plane )
         {
@@ -2042,6 +2161,8 @@ void CClientVehicle::Create()
             m_automobile->SetSwingingDoorsAllowed( m_bSwingingDoorsAllowed );
             m_automobile->SetHeadLightColor( m_HeadLightColor );
             m_automobile->SetTurretRotation( m_fTurretHorizontal, m_fTurretVertical );
+            m_automobile->SetBurningTime( m_burningTime );
+            m_automobile->SetNitrousFuel( m_nitrousFuel );
 
             // Set the damage model doors
             CDamageManager *pDamageManager = m_automobile->GetDamageManager();
@@ -2094,6 +2215,7 @@ void CClientVehicle::Create()
             m_pVehicle->SetAlpha( m_ucAlpha );
 
         m_pVehicle->SetHealth( m_fHealth );
+        m_pVehicle->SetExplodeTime( m_explodeTime );
 
         if ( m_bBlown || m_fHealth == 0.0f )
             m_bBlowNextFrame = true;
@@ -2192,21 +2314,28 @@ void CClientVehicle::Destroy()
     if ( m_pVehicle )
     {
 #ifdef MTA_DEBUG
-        g_pCore->GetConsole ()->Printf ( "CClientVehicle::Destroy %d", GetModel() );
+        g_pCore->GetConsole()->Printf ( "CClientVehicle::Destroy %d", GetModel() );
 #endif
 
         // Invalidate
-        m_pManager->InvalidateEntity ( this );
+        m_pManager->InvalidateEntity( this );
 
         // Store anything we allow GTA to change
-        m_pVehicle->GetMatrix ( m_Matrix );
-        m_pVehicle->GetMoveSpeed ( m_vecMoveSpeed );
-        m_pVehicle->GetTurnSpeed ( m_vecTurnSpeed );
-        m_fHealth = GetHealth ();
+        m_pVehicle->GetMatrix( m_Matrix );
+        m_pVehicle->GetMoveSpeed( m_vecMoveSpeed );
+        m_pVehicle->GetTurnSpeed( m_vecTurnSpeed );
+        m_fHealth = GetHealth();
+        m_explodeTime = m_pVehicle->GetExplodeTime();
         m_bSireneOrAlarmActive = m_pVehicle->IsSirenOrAlarmActive();
+        m_handbrake = m_pVehicle->IsHandbrakeOn();
+        m_brakePedal = m_pVehicle->GetBrakePedal();
+        m_fGasPedal = m_pVehicle->GetGasPedal();
+        m_steerAngle = m_pVehicle->GetSteerAngle();
+        m_secSteerAngle = m_pVehicle->GetSecSteerAngle();
 
         if ( m_plane )
         {
+            m_bSmokeTrail = m_plane->IsSmokeTrailEnabled();
             m_bLandingGearDown = m_plane->IsLandingGearDown();
         }
 
@@ -2214,6 +2343,8 @@ void CClientVehicle::Destroy()
         {
             m_usAdjustablePropertyValue = m_automobile->GetAdjustablePropertyValue();
             m_automobile->GetTurretRotation( m_fTurretHorizontal, m_fTurretVertical );
+            m_nitrousFuel = m_automobile->GetNitrousFuel();
+            m_burningTime = m_automobile->GetBurningTime();
 
             // Grab the damage model
             CDamageManager *pDamageManager = m_automobile->GetDamageManager();

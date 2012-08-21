@@ -31,8 +31,14 @@ public:
 
     virtual CDamageManager*     GetDamageManager() = 0;
 
-    virtual inline SColor       GetHeadLightColor() const = 0;
-    virtual inline void         SetHeadLightColor( const SColor color ) = 0;
+    virtual float               GetBurningTime() const = 0;
+    virtual void                SetBurningTime( float time ) = 0;
+
+    virtual float               GetNitrousFuel() const = 0;
+    virtual void                SetNitrousFuel( float val ) = 0;
+
+    virtual SColor              GetHeadLightColor() const = 0;
+    virtual void                SetHeadLightColor( const SColor color ) = 0;
 
     virtual CObject*            SpawnFlyingComponent( int i_1, unsigned int ui_2 ) = 0;
     virtual void                SetWheelVisibility( eWheels wheel, bool bVisible ) = 0;

@@ -161,8 +161,14 @@ public:
 
     float                       GetHealth() const;
     void                        SetHealth( float fHealth );
+    void                        SetArmored( bool enable );
+    bool                        IsArmored() const;
     void                        Fix();
     void                        Blow( bool bAllowMovement = false );
+    void                        SetExplodeTime( unsigned long time );
+    unsigned long               GetExplodeTime() const;
+    void                        SetBurningTime( float time );
+    float                       GetBurningTime() const;
 
     CVehicleColor&              GetColor();
     void                        SetColor( const CVehicleColor& color );
@@ -188,7 +194,18 @@ public:
     bool                        GetTyresCanBurst() const;
     void                        CalcAndUpdateTyresCanBurstFlag();
 
+    void                        SetBrakePedal( float percent );
+    void                        SetGasPedal( float percent );
+    void                        SetSteerAngle( float rad );
+    void                        SetSecSteerAngle( float rad );
+
+    float                       GetBrakePedal() const;
     float                       GetGasPedal() const;
+    float                       GetSteerAngle() const;
+    float                       GetSecSteerAngle() const;
+
+    void                        SetNitrousFuel( float val );
+    float                       GetNitrousFuel() const;
 
     bool                        IsBelowWater() const;
     bool                        IsDrowning() const;
@@ -198,6 +215,8 @@ public:
 
     bool                        IsSirenOrAlarmActive() const;
     void                        SetSirenOrAlarmActive( bool bActive );
+    bool                        IsHandbrakeOn() const;
+    void                        SetHandbrakeOn( bool enable );
 
     float                       GetLandingGearPosition() const;
     void                        SetLandingGearPosition( float fPosition );
@@ -377,8 +396,8 @@ public:
 
     typedef std::list <CClientProjectile*> projectiles_t;
 
-    inline void                 AddProjectile( CClientProjectile * pProjectile )                        { m_Projectiles.push_back ( pProjectile ); }
-    inline void                 RemoveProjectile( CClientProjectile * pProjectile )                     { m_Projectiles.remove ( pProjectile ); }
+    inline void                 AddProjectile( CClientProjectile *projectile )                          { m_Projectiles.push_back( projectile ); }
+    inline void                 RemoveProjectile( CClientProjectile *projectile )                       { m_Projectiles.remove( projectile ); }
     projectiles_t::iterator     ProjectilesBegin()                                                      { return m_Projectiles.begin (); }
     projectiles_t::iterator     ProjectilesEnd()                                                        { return m_Projectiles.end (); }
 
@@ -426,9 +445,9 @@ protected:
     CHeli*                      m_heli;
     CAutomobile*                m_automobile;
     CClientPed*                 m_pDriver;
-    CClientPed*                 m_pPassengers [8];
+    CClientPed*                 m_pPassengers[8];
     CClientPed*                 m_pOccupyingDriver;
-    CClientPed*                 m_pOccupyingPassengers [8];
+    CClientPed*                 m_pOccupyingPassengers[8];
     short                       m_usRemoveTimer;
 
     CClientVehicle*             m_pPreviousLink;
@@ -441,10 +460,17 @@ protected:
     CVector                     m_vecMoveSpeed;
     CVector                     m_vecTurnSpeed;
     float                       m_fHealth;
+    unsigned long               m_explodeTime;
+    float                       m_burningTime;
     float                       m_fTurretHorizontal;
     float                       m_fTurretVertical;
+    float                       m_brakePedal;
     float                       m_fGasPedal;
+    float                       m_steerAngle;
+    float                       m_secSteerAngle;
+    float                       m_nitrousFuel;
     bool                        m_bVisible;
+    bool                        m_armored;
     bool                        m_bIsCollisionEnabled;
     bool                        m_bEngineOn;
     bool                        m_bEngineBroken;
@@ -471,14 +497,15 @@ protected:
     bool                        m_bScriptCanBeDamaged;
     bool                        m_bSyncUnoccupiedDamage;
     bool                        m_bTyresCanBurst;
-    unsigned char               m_ucDoorStates [MAX_DOORS];
-    unsigned char               m_ucWheelStates [MAX_WHEELS];
-    unsigned char               m_ucPanelStates [MAX_PANELS];
-    unsigned char               m_ucLightStates [MAX_LIGHTS];
+    unsigned char               m_ucDoorStates[MAX_DOORS];
+    unsigned char               m_ucWheelStates[MAX_WHEELS];
+    unsigned char               m_ucPanelStates[MAX_PANELS];
+    unsigned char               m_ucLightStates[MAX_LIGHTS];
     bool                        m_bJustBlewUp;
     eEntityStatus               m_NormalStatus;
     bool                        m_bColorSaved;
     CVehicleColor               m_Color;
+    bool                        m_handbrake;
     bool                        m_bIsFrozen;
     bool                        m_bScriptFrozen;
     bool                        m_bFrozenWaitingForGroundToLoad;
@@ -554,9 +581,9 @@ protected:
     bool                        m_bHasCustomHandling;
 
 public:
-    CClientPlayer *             m_pLastSyncer;
+    CClientPlayer*              m_pLastSyncer;
     unsigned long               m_ulLastSyncTime;
-    char *                      m_szLastSyncType;
+    char*                       m_szLastSyncType;
     SLastSyncedVehData*         m_LastSyncedData;
 };
 

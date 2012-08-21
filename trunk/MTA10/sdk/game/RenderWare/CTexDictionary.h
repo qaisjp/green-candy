@@ -18,7 +18,7 @@ class CTexDictionary abstract
 public:
     virtual                         ~CTexDictionary()   {};
 
-    virtual bool                    Load( CFile *file, bool filtering ) = 0;
+    virtual bool                    Load( CFile *file, bool filtering, std::list <CTexture*> *newEntries = NULL ) = 0;
     virtual std::list <CTexture*>&  GetTextures() = 0;
     virtual void                    Clear() = 0;
 

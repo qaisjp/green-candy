@@ -98,8 +98,6 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( engineLoadTXD )
     {
-        return 0;
-
         const char *path;
         bool filtering;
 
@@ -186,8 +184,6 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( engineImportTXD )
     {
-        return 0;
-
         CClientTXD *txd = lua_readclass <CClientTXD> ( L, 1, LUACLASS_TXD );
         unsigned short usModelID = lua_tointeger( L, 2 );
 

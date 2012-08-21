@@ -69,6 +69,11 @@ namespace CLuaFunctionDefs
 //#define LUA_EXCEPTION_SAFETY
 
 #define LUA_METHOD(x)       { #x, x }
+#define LUA_CHECK(x)        if ( !(x) ) \
+                            { \
+                                lua_pushboolean( L, false ); \
+                                return 1; \
+                            }
 #define LUA_ARGS_BEGIN      CScriptArgReader argStream( L )
 
 #ifndef LUA_EXCEPTION_SAFETY

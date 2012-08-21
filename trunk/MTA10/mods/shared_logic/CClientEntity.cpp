@@ -166,6 +166,16 @@ static int customdata_newindex( lua_State *L )
     if ( lua_objlen( L, 2 ) > MAX_CUSTOMDATA_NAME_LENGTH )
         throw lua_exception( L, LUA_ERRRUN, "customdata name too long" );
 
+    switch( lua_type( L, 3 ) )
+    {
+    case LUA_TCLASS:
+        if ( lua_refclass( L, 3 )->IsTransmit( LUACLASS_ENTITY ) )
+            break;
+    case LUA_TFUNCTION:
+        lua_pushtype( L, 3 );
+        throw lua_exception( L, LUA_ERRRUN, ( std::string( "attempt to assign invalid type to customdata: " ) + lua_getstring( L, 4 ) ).c_str() );
+    }
+
     lua_pushvalue( L, 2 );
     lua_rawget( L, lua_upvalueindex( 1 ) );
 

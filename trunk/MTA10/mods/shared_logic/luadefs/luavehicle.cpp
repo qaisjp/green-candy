@@ -73,6 +73,42 @@ static LUA_DECLARE( isBlown )
     return 1;
 }
 
+static LUA_DECLARE( setExplodeTime )
+{
+    unsigned long time;
+    
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( time );
+    LUA_ARGS_END;
+
+    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetExplodeTime( time );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getExplodeTime )
+{
+    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetExplodeTime() );
+    return 1;
+}
+
+static LUA_DECLARE( setBurningTime )
+{
+    float time;
+    
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( time );
+    LUA_ARGS_END;
+
+    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetBurningTime( time );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getBurningTime )
+{
+    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetBurningTime() );
+    return 1;
+}
+
 static LUA_DECLARE( addUpgrade )
 {
     CVehicleUpgrades *upgrades = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetUpgrades();
@@ -182,9 +218,10 @@ static LUA_DECLARE( getOccupants )
 
     lua_settop( L, 0 );
 
-    lua_createtable( L, 8, 0 );
+    // Get all passengers + the driver
+    lua_createtable( L, 9, 0 );
 
-    for ( unsigned char n=0; n<8; n++ )
+    for ( unsigned char n=0; n<9; n++ )
     {
         CClientPed *ped = veh->GetOccupant( n );
 
@@ -350,6 +387,39 @@ static LUA_DECLARE( detachTrailer )
     return 0;
 }
 
+inline static void lua_pushvector( lua_State *L, const CVector& vec )
+{
+    lua_pushnumber( L, vec[0] );
+    lua_pushnumber( L, vec[1] );
+    lua_pushnumber( L, vec[2] );
+}
+
+static LUA_DECLARE( getTowBarPos )
+{
+    CVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGameVehicle();
+
+    LUA_CHECK( veh );
+
+    CVector pos;
+    veh->GetTowBarPos( pos );
+
+    lua_pushvector( L, pos );
+    return 3;
+}
+
+static LUA_DECLARE( getTowHitchPos )
+{
+    CVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGameVehicle();
+
+    LUA_CHECK( veh );
+
+    CVector pos;
+    veh->GetTowHitchPos( pos );
+
+    lua_pushvector( L, pos );
+    return 3;
+}
+
 static LUA_DECLARE( setAdjustableProperty )
 {
     unsigned short prop;
@@ -378,13 +448,6 @@ static LUA_DECLARE( setGravity )
 
     ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetGravity( grav );
     LUA_SUCCESS;
-}
-
-inline static void lua_pushvector( lua_State *L, const CVector& vec )
-{
-    lua_pushnumber( L, vec[0] );
-    lua_pushnumber( L, vec[1] );
-    lua_pushnumber( L, vec[2] );
 }
 
 static LUA_DECLARE( getGravity )
@@ -519,6 +582,24 @@ static LUA_DECLARE( getEngineState )
     return 1;
 }
 
+static LUA_DECLARE( setHandbrakeOn )
+{
+    bool state;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadBool( state );
+    LUA_ARGS_END;
+
+    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetHandbrakeOn( state );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( isHandbrakeOn )
+{
+    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsHandbrakeOn() );
+    return 1;
+}
+
 static LUA_DECLARE( setLandingGearDown )
 {
     bool state;
@@ -555,15 +636,99 @@ static LUA_DECLARE( getLandingGearPosition )
     return 1;
 }
 
+static LUA_DECLARE( setBrakePedal )
+{
+    float percent;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( percent );
+    LUA_ARGS_END;
+
+    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetBrakePedal( percent );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( setGasPedal )
+{
+    float percent;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( percent );
+    LUA_ARGS_END;
+
+    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetGasPedal( percent );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( setSteerAngle )
+{
+    float rad;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( rad );
+    LUA_ARGS_END;
+
+    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetSteerAngle( rad );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( setSecSteerAngle )
+{
+    float rad;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( rad );
+    LUA_ARGS_END;
+
+    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetSecSteerAngle( rad );
+    LUA_SUCCESS;
+}
+
 static LUA_DECLARE( getCurrentGear )
 {
     lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetCurrentGear() );
     return 1;
 }
 
+static LUA_DECLARE( getBrakePedal )
+{
+    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetBrakePedal() );
+    return 1;
+}
+
 static LUA_DECLARE( getGasPedal )
 {
     lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGasPedal() );
+    return 1;
+}
+
+static LUA_DECLARE( getSteerAngle )
+{
+    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetSteerAngle() );
+    return 1;
+}
+
+static LUA_DECLARE( getSecSteerAngle )
+{
+    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetSecSteerAngle() );
+    return 1;
+}
+
+static LUA_DECLARE( setNitrousFuel )
+{
+    float fuel;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( fuel );
+    LUA_ARGS_END;
+
+    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetNitrousFuel( fuel );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getNitrousFuel )
+{
+    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetNitrousFuel() );
     return 1;
 }
 
@@ -1085,6 +1250,10 @@ static const luaL_Reg vehicle_interface[] =
     LUA_METHOD( fix ),
     LUA_METHOD( blow ),
     LUA_METHOD( isBlown ),
+    LUA_METHOD( setExplodeTime ),
+    LUA_METHOD( getExplodeTime ),
+    LUA_METHOD( setBurningTime ),
+    LUA_METHOD( getBurningTime ),
     LUA_METHOD( addUpgrade ),
     LUA_METHOD( getUpgradeOnSlot ),
     LUA_METHOD( getUpgrades ),
@@ -1106,6 +1275,8 @@ static const luaL_Reg vehicle_interface[] =
     LUA_METHOD( getHeadLightColor ),
     LUA_METHOD( attachTrailer ),
     LUA_METHOD( detachTrailer ),
+    LUA_METHOD( getTowBarPos ),
+    LUA_METHOD( getTowHitchPos ),
     LUA_METHOD( setAdjustableProperty ),
     LUA_METHOD( getAdjustableProperty ),
     LUA_METHOD( setGravity ),
@@ -1120,12 +1291,23 @@ static const luaL_Reg vehicle_interface[] =
     LUA_METHOD( getWheelStates ),
     LUA_METHOD( setEngineState ),
     LUA_METHOD( getEngineState ),
+    LUA_METHOD( setHandbrakeOn ),
+    LUA_METHOD( isHandbrakeOn ),
     LUA_METHOD( setLandingGearDown ),
     LUA_METHOD( getLandingGearDown ),
     LUA_METHOD( setLandingGearPosition ),
     LUA_METHOD( getLandingGearPosition ),
+    LUA_METHOD( setBrakePedal ),
+    LUA_METHOD( setGasPedal ),
+    LUA_METHOD( setSteerAngle ),
+    LUA_METHOD( setSecSteerAngle ),
     LUA_METHOD( getCurrentGear ),
+    LUA_METHOD( getBrakePedal ),
     LUA_METHOD( getGasPedal ),
+    LUA_METHOD( getSteerAngle ),
+    LUA_METHOD( getSecSteerAngle ),
+    LUA_METHOD( setNitrousFuel ),
+    LUA_METHOD( getNitrousFuel ),
     LUA_METHOD( setPaintjob ),
     LUA_METHOD( getPaintjob ),
     LUA_METHOD( getPlateText ),

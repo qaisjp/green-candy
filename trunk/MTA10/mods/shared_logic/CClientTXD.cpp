@@ -87,7 +87,9 @@ CClientTXD::~CClientTXD()
 
 bool CClientTXD::LoadTXD( CFile *file, bool filtering )
 {
-    if ( !m_txd.Load( file, filtering ) )
+    textures_t newEntries;
+
+    if ( !m_txd.Load( file, filtering, &newEntries ) )
         return false;
 
     imports_t imports = m_txd.GetImportedList();
@@ -95,6 +97,12 @@ bool CClientTXD::LoadTXD( CFile *file, bool filtering )
 
     for ( ; iter != imports.end(); iter++ )
         g_pClientGame->GetManager()->Restream( *iter );
+
+    // Update our game textures
+    textures_t::iterator itert = newEntries.begin();
+
+    for ( ; itert != newEntries.end(); itert++ )
+        new CClientGameTexture( *this, **itert );
 
     return true;
 }

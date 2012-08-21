@@ -258,9 +258,7 @@ void CConsole::SetNextHistoryText ( void )
 {
     // Next index
     if ( m_iHistoryIndex == CONSOLE_HISTORY_LENGTH )
-    {        
         return;
-    }
 
     // Index too low?
     if ( m_iHistoryIndex < 0 )
@@ -270,14 +268,6 @@ void CConsole::SetNextHistoryText ( void )
     else
     {
         ++m_iHistoryIndex;
-    }
-
-    if ( m_iHistoryIndex == 0 )
-    {
-        // Get the text object from our input window.
-        string strInput = m_pInput->GetText ();
-        // Add our current text to the console history
-        m_pConsoleHistory->Add ( strInput.c_str () );
     }
 
     // Grab the item and set the input text to it
@@ -327,14 +317,12 @@ void CConsole::SetPreviousHistoryText ( void )
     }
 }
 
-
-void CConsole::ResetAutoCompleteMatch ( void )
+void CConsole::ResetAutoCompleteMatch()
 {
     m_iAutoCompleteIndex = -1;
 }
 
-
-void CConsole::SetNextAutoCompleteMatch ( void )
+void CConsole::SetNextAutoCompleteMatch()
 {
     // Update match list if required
     if( m_iAutoCompleteIndex == -1 )
@@ -386,7 +374,6 @@ void CConsole::SetNextAutoCompleteMatch ( void )
     }
 }
 
-
 void CConsole::CreateElements ( CGUIElement* pParent )
 {
     // Adjust window size to resolution
@@ -428,15 +415,13 @@ void CConsole::CreateElements ( CGUIElement* pParent )
     m_pInput->SetHeight ( m_fInputHeight );
 }
 
-
-void CConsole::DestroyElements ( void )
+void CConsole::DestroyElements()
 {
     if ( m_pWindow )
         delete m_pWindow;
 }
 
-
-CVector2D CConsole::GetPosition ( void )
+CVector2D CConsole::GetPosition()
 {
     if ( m_pWindow )
     {
@@ -444,7 +429,6 @@ CVector2D CConsole::GetPosition ( void )
     }
     return CVector2D ();
 }
-
 
 void CConsole::SetPosition ( CVector2D& vecPosition )
 {
@@ -454,8 +438,7 @@ void CConsole::SetPosition ( CVector2D& vecPosition )
     }
 }
 
-
-CVector2D CConsole::GetSize ( void )
+CVector2D CConsole::GetSize()
 {
     if ( m_pWindow )
     {
@@ -463,7 +446,6 @@ CVector2D CConsole::GetSize ( void )
     }
     return CVector2D ();
 }
-
 
 void CConsole::SetSize ( CVector2D& vecSize )
 {
@@ -473,7 +455,6 @@ void CConsole::SetSize ( CVector2D& vecSize )
         m_pWindow->SetSize ( vecSize );
     }
 }
-
 
 bool CConsole::OnWindowSize ( CGUIElement* pElement )
 {
