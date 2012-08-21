@@ -251,7 +251,8 @@ void __declspec(naked) HOOK_RwTextureDestroy()
         mov tmp,esi
         call texdum
 
-        mov edx,0x007F3865
+        mov edx,RwTextureDestroy
+        add edx,5
         jmp edx
     }
 }
@@ -262,7 +263,7 @@ CTextureManagerSA::CTextureManagerSA()
     // We init it ourselves
     HookInstall( FUNC_InitTextureManager, (DWORD)Hook_InitTextureManager, 6 );
 #ifdef DEBUG_TEXTURES_EXCPT
-    HookInstall( (DWORD)0x007F3860, (DWORD)HOOK_RwTextureDestroy, 5 );
+    HookInstall( (DWORD)RwTextureDestroy, (DWORD)HOOK_RwTextureDestroy, 5 );
 #endif //DEBUG_TEXTURES_EXCPT
 
     // We can initialize the pool here
