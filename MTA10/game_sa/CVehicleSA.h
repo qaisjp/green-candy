@@ -479,7 +479,7 @@ public:
     float                       m_gasPedal;                             // 1180, 0...1
     float                       m_brakePedal;                           // 1184, 0...1
 
-    unsigned char               m_createdBy;                            // 1188, Contains information on whether this vehicle can be deleted 
+    unsigned char               m_createdBy;                            // 1188, Contains information on whether this vehicle should be deleted 
     unsigned char               m_extendedRemovalRange;                 // 1189
 
     unsigned char               m_bombOnBoard : 3;                      // 1190, 0 = None. 1 = Timed. 2 = On ignition, 3 = remotely set ? 4 = Timed Bomb has been activated. 5 = On ignition has been activated.
@@ -643,9 +643,16 @@ public:
     bool                        IsOnItsSide() const;
     bool                        IsLawEnforcementVehicle() const;
 
+    void                        SetGasPedal( float percentage )                         { GetInterface()->m_gasPedal = percentage; }
+    void                        SetBrakePedal( float percentage )                       { GetInterface()->m_brakePedal = percentage; }
+    void                        SetSteerAngle( float rad )                              { GetInterface()->m_steerAngle = rad; }
+    void                        SetSecSteerAngle( float rad )                           { GetInterface()->m_secondarySteerAngle = rad; }
+
     unsigned char               GetCurrentGear() const                                  { return GetInterface()->m_currentGear; }
     float                       GetGasPedal() const                                     { return GetInterface()->m_gasPedal; }
+    float                       GetBrakePedal() const                                   { return GetInterface()->m_brakePedal; }
     float                       GetSteerAngle() const                                   { return GetInterface()->m_steerAngle; }
+    float                       GetSecSteerAngle() const                                { return GetInterface()->m_secondarySteerAngle; }
 
     bool                        AddProjectile( eWeaponType eWeapon, const CVector& vecOrigin, float fForce, const CVector& targetPos, CEntity *target );
     void                        AddVehicleUpgrade( unsigned short model );

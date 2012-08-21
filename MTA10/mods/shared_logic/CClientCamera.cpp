@@ -66,6 +66,8 @@ CClientCamera::CClientCamera ( CClientManager* pManager ) : CClientEntity ( INVA
     m_fRoll = 0.0f;
     m_fFOV = 70.0f;
 
+    SetTypeName( "camera" );
+
     m_pCamera = g_pGame->GetCamera ();
 
     // Hook handler for the fixed camera

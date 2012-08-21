@@ -42,7 +42,6 @@ CCommands::~CCommands ( void )
     DeleteAll ();
 }
 
-
 void CCommands::Add ( const char* szCommand, const char* szDescription, PFNCOMMANDHANDLER pfnHandler, bool bModCommand )
 {
     COMMANDENTRY* pCommand = new COMMANDENTRY;
@@ -67,12 +66,10 @@ void CCommands::Add ( const char* szCommand, const char* szDescription, PFNCOMMA
     m_CommandList.push_back ( pCommand );
 }
 
-
 unsigned int CCommands::Count ( void )
 {
     return static_cast < unsigned int > ( m_CommandList.size () );
 }
-
 
 bool CCommands::Exists ( const char* szCommand )
 {
@@ -89,7 +86,6 @@ bool CCommands::Execute ( const char* szCommandLine )
 
     return Execute ( strCmd.c_str (), strCmdLine.c_str () );
 }
-
 
 bool CCommands::Execute ( const char* szCommand, const char* szParametersIn, bool bHandleRemotely )
 {

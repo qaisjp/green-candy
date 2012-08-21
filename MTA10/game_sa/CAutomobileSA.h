@@ -158,6 +158,12 @@ public:
 
     CDamageManagerSA*           GetDamageManager()                                      { return m_damageManager; }
 
+    inline float                GetBurningTime() const                                  { return GetInterface()->m_burningTime; }
+    inline void                 SetBurningTime( float time )                            { GetInterface()->m_burningTime = time; }
+
+    inline float                GetNitrousFuel() const                                  { return GetInterface()->m_nitrousFuel; }
+    inline void                 SetNitrousFuel( float val )                             { GetInterface()->m_nitrousFuel = val; }
+
     inline SColor               GetHeadLightColor() const                               { return m_HeadLightColor; }
     inline void                 SetHeadLightColor( const SColor color )                 { m_HeadLightColor = color; }
 

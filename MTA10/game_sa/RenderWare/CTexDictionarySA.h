@@ -25,7 +25,7 @@ public:
                             CTexDictionarySA( const char *name, CTxdInstanceSA *txd );
                             ~CTexDictionarySA();
 
-    bool                    Load( CFile *file, bool filtering );
+    bool                    Load( CFile *file, bool filtering, std::list <CTexture*> *newEntries = NULL );
     std::list <CTexture*>&  GetTextures()                   { return (std::list <CTexture*>&)m_textures; }
     void                    Clear();
 

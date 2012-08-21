@@ -30,7 +30,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( isElement )
     {
-        lua_pushboolean( L, lua_type( L, 1 ) == LUA_TCLASS && lua_refclass( L, 1 )->IsTransmit( LUACLASS_ELEMENT ) );
+        lua_pushboolean( L, lua_type( L, 1 ) == LUA_TCLASS && lua_refclass( L, 1 )->IsTransmit( LUACLASS_ENTITY ) );
         return 1;
     }
 

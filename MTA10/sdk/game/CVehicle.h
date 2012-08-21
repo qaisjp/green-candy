@@ -83,9 +83,16 @@ public:
     virtual bool                IsOnItsSide() const = 0;
     virtual bool                IsLawEnforcementVehicle() const = 0;
 
+    virtual void                SetGasPedal( float percent ) = 0;
+    virtual void                SetBrakePedal( float percent ) = 0;
+    virtual void                SetSteerAngle( float rad ) = 0;
+    virtual void                SetSecSteerAngle( float rad ) = 0;
+
     virtual unsigned char       GetCurrentGear() const = 0;
     virtual float               GetGasPedal() const = 0;
+    virtual float               GetBrakePedal() const = 0;
     virtual float               GetSteerAngle() const = 0;
+    virtual float               GetSecSteerAngle() const = 0;
 
     virtual bool                AddProjectile( eWeaponType eWeapon, const CVector& vecOrigin, float fForce, const CVector& targetPos, CEntity *target ) = 0;
     virtual void                AddVehicleUpgrade( unsigned short model ) = 0;

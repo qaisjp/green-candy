@@ -54,11 +54,17 @@ struct _rwAssign
 {
     bool filtering;
     CTexDictionarySA *txd;
+    std::list <CTexture*> *newEntries;
 };
 
 static bool RwTexDictionaryAssignNew( RwTexture *tex, _rwAssign *assign )
 {
-    assign->txd->m_textures.push_back( new CTextureSA( assign->txd, tex ) );
+    CTextureSA *t = new CTextureSA( assign->txd, tex );
+        
+    assign->txd->m_textures.push_back( t );
+
+    if ( assign->newEntries )
+        assign->newEntries->push_back( t );
 
     if ( assign->filtering )
         tex->flags = 0x1102;
@@ -71,7 +77,7 @@ unsigned int CTexDictionarySA::GetHash() const
     return m_tex->m_hash;
 }
 
-bool CTexDictionarySA::Load( CFile *file, bool filtering )
+bool CTexDictionarySA::Load( CFile *file, bool filtering, std::list <CTexture*> *newEntries )
 {
     // Try to load it
     if ( !m_tex->LoadTXD( file ) )
@@ -81,6 +87,7 @@ bool CTexDictionarySA::Load( CFile *file, bool filtering )
     _rwAssign assign;
     assign.filtering = filtering;
     assign.txd = this;
+    assign.newEntries = newEntries;
 
     m_tex->m_txd->ForAllTextures( RwTexDictionaryAssignNew, &assign );
 
