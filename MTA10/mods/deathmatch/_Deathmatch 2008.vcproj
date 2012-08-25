@@ -1169,6 +1169,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\shared_logic\luadefs\luaped.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\shared_logic\luadefs\luavehicle.cpp"
 						>
 					</File>
@@ -2656,6 +2660,10 @@
 					</File>
 					<File
 						RelativePath="..\shared_logic\luadefs\CLuaTaskDefs.h"
+						>
+					</File>
+					<File
+						RelativePath="..\shared_logic\luadefs\luaped.h"
 						>
 					</File>
 					<File

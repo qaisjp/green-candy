@@ -27,7 +27,7 @@ class CClientPed;
 #include "net/Packets.h"
 #include "CClientPad.h"
 
-#define LUACLASS_PED    62
+#include "luadefs/luaped.h"
 
 class CClientCamera;
 class CClientManager;
