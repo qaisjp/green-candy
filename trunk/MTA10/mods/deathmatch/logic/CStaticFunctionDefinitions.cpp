@@ -1718,7 +1718,6 @@ bool CStaticFunctionDefinitions::SetPedCanBeKnockedOffBike ( CClientEntity& Enti
     return false;
 }
 
-
 bool CStaticFunctionDefinitions::SetPedAnimation ( CClientEntity& Entity, const char * szBlockName, const char * szAnimName, int iTime, bool bLoop, bool bUpdatePosition, bool bInterruptable, bool bFreezeLastFrame )
 {    
     RUN_CHILDREN SetPedAnimation ( **iter, szBlockName, szAnimName, iTime, bLoop, bUpdatePosition, bInterruptable, bFreezeLastFrame );
@@ -1745,7 +1744,6 @@ bool CStaticFunctionDefinitions::SetPedAnimation ( CClientEntity& Entity, const 
     return false;
 }
 
-
 bool CStaticFunctionDefinitions::SetPedAnimationProgress ( CClientEntity& Entity, const char * szAnimName, float fProgress )
 {    
     RUN_CHILDREN SetPedAnimationProgress ( **iter, szAnimName, fProgress );
@@ -1756,7 +1754,6 @@ bool CStaticFunctionDefinitions::SetPedAnimationProgress ( CClientEntity& Entity
     ((CClientPed&)Entity).SetAnimationProgress( szAnimName, fProgress );
     return true;
 }
-
 
 bool CStaticFunctionDefinitions::SetPedMoveAnim ( CClientEntity& Entity, unsigned int iMoveAnim )
 {    
@@ -1776,7 +1773,6 @@ bool CStaticFunctionDefinitions::SetPedMoveAnim ( CClientEntity& Entity, unsigne
     return false;
 }
 
-
 bool CStaticFunctionDefinitions::AddPedClothes ( CClientEntity& Entity, const char* szTexture, const char* szModel, unsigned char ucType )
 {
     RUN_CHILDREN AddPedClothes ( **iter, szTexture, szModel, ucType );
@@ -1791,7 +1787,6 @@ bool CStaticFunctionDefinitions::AddPedClothes ( CClientEntity& Entity, const ch
 
     return false;
 }
-
 
 bool CStaticFunctionDefinitions::RemovePedClothes ( CClientEntity& Entity, unsigned char ucType )
 {

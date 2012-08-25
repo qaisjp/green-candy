@@ -39,27 +39,6 @@ SBodyPartName BodyPartNames [10] =
 // HACK: saves unneccesary loading of clothes textures
 CClientPed* g_pLastRebuilt = NULL;
 
-static const luaL_Reg ped_interface[] =
-{
-    { NULL, NULL }
-};
-
-static int luaconstructor_ped( lua_State *L )
-{
-    CClientPed *ped = (CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 ) );
-
-    ILuaClass& j = *lua_refclass( L, 1 );
-    j.SetTransmit( LUACLASS_PED, ped );
-
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, ped_interface, 1 );
-
-    lua_pushlstring( L, "ped", 3 );
-    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
-    return 0;
-}
-
 void CClientPed::InstanceLua( bool system )
 {
     PushStack( m_lua );
@@ -1522,7 +1501,6 @@ float CClientPed::GetMaxHealth ( void )
     return fMaxHealth;
 }
 
-
 float CClientPed::GetHealth ( void )
 {
     if ( m_bHealthLocked ) return m_fHealth;
@@ -1534,16 +1512,15 @@ float CClientPed::GetHealth ( void )
     return m_fHealth;
 }
 
-
 void CClientPed::SetHealth ( float fHealth )
 {
     // If our health is locked, dont allow any change
-    if ( m_bHealthLocked ) return;
+    if ( m_bHealthLocked )
+        return;
 
-    InternalSetHealth ( fHealth );
+    InternalSetHealth( fHealth );
     m_fHealth = fHealth;
 }
-
 
 void CClientPed::InternalSetHealth ( float fHealth )
 {

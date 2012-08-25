@@ -32,18 +32,16 @@ namespace CLuaFunctionDefs
                 lua_pushstring ( L, "PED_TYPE_DISABLED" );
                 return 1;
             }
-            else
-            {
-                const char *szVoiceType = NULL;
-                const char *szVoiceBank = NULL;
-                ped->GetVoice( &szVoiceType, &szVoiceBank );
 
-                if ( szVoiceType && szVoiceBank )
-                {
-                    lua_pushstring ( L, szVoiceType );
-                    lua_pushstring ( L, szVoiceBank );
-                    return 2;
-                }
+            const char *szVoiceType = NULL;
+            const char *szVoiceBank = NULL;
+            ped->GetVoice( &szVoiceType, &szVoiceBank );
+
+            if ( szVoiceType && szVoiceBank )
+            {
+                lua_pushstring ( L, szVoiceType );
+                lua_pushstring ( L, szVoiceBank );
+                return 2;
             }
         }
         else
