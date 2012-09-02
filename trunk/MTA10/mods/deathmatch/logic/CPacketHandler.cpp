@@ -4181,14 +4181,11 @@ void CPacketHandler::Packet_LuaEvent ( NetBitStreamInterface& bitStream )
             {
                 if ( pEvent->allowRemote )
                 {
-                    // Grab the element we trigger it on
                     CClientEntity* pEntity = CElementIDs::GetElement ( EntityID );
-                    if ( pEntity )
-                    {
-                        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
-                        Arguments.PushArguments( L );
-                        pEntity->CallEvent( szName, L, Arguments.Count() );
-                    }
+                    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+                    Arguments.PushArguments( L );
+                    pEntity->CallEvent( szName, L, Arguments.Count() );
                 }
                 else
                     g_pClientGame->m_pScriptDebugging->LogError( "Server triggered clientside event %s, but event is not marked as remotly triggerable", szName );

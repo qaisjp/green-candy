@@ -319,7 +319,6 @@ CClientEntity::CClientEntity( ElementID ID, bool system, LuaClass& root ) : LuaE
     m_ID = ID;
     CElementIDs::SetElement ( ID, this );
 
-    m_pCustomData = new CCustomData;
     m_pEventManager = new CMapEventManager( this );
 
     m_pAttachedToEntity = NULL;
@@ -353,12 +352,6 @@ CClientEntity::~CClientEntity()
         {
             CElementIDs::PushClientID ( m_ID );
         }
-    }
-
-    // Remove our custom data
-    if ( m_pCustomData )
-    {
-        delete m_pCustomData;
     }
 
     if ( m_pAttachedToEntity )

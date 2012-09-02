@@ -12,7 +12,6 @@
 #ifndef __CRENDERWARE
 #define __CRENDERWARE
 
-#include <list>
 #include "RenderWare_shared.h"
 
 class CD3DDUMMY;

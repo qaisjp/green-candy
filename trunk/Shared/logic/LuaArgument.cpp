@@ -25,30 +25,40 @@ LuaArgument::LuaArgument()
 {
     m_table = NULL;
     ReadNil();
+
+    m_parent = NULL;
 }
 
 LuaArgument::LuaArgument( bool b )
 {
     m_table = NULL;
     Read( b );
+
+    m_parent = NULL;
 }
 
 LuaArgument::LuaArgument( double d )
 {
     m_table = NULL;
     Read( d );
+
+    m_parent = NULL;
 }
 
 LuaArgument::LuaArgument( const std::string& str )
 {
     m_table = NULL;
     Read( str );
+
+    m_parent = NULL;
 }
 
 LuaArgument::LuaArgument( void *ud )
 {
     m_table = NULL;
     ReadUserData( ud );
+
+    m_parent = NULL;
 }
 
 LuaArgument::LuaArgument( const LuaArgument& arg )
@@ -56,21 +66,28 @@ LuaArgument::LuaArgument( const LuaArgument& arg )
     // Initialize and call our = on the argument
     m_table = NULL;
     CopyRecursive( arg );
+
+    m_parent = NULL;
 }
 
 #ifndef _KILLFRENZY
-LuaArgument::LuaArgument( NetBitStreamInterface& bitStream )
+LuaArgument::LuaArgument( LuaArguments *parent, NetBitStreamInterface& bitStream )
 {
+    // We depend on a parent
+    m_parent = parent;
+
     m_table = NULL;
-    ReadFromBitStream( bitStream );
 }
 #endif //_KILLFRENZY
 
-LuaArgument::LuaArgument( lua_State *lua, int idx )
+LuaArgument::LuaArgument( LuaArguments *parent, lua_State *lua, int idx, luaArgRep_t *cached )
 {
+    // We depend on a parent
+    m_parent = parent;
+
     // Read the argument out of the lua VM
     m_table = NULL;
-    Read( lua, idx );
+    Read( lua, idx, cached );
 }
 
 LuaArgument::~LuaArgument()
@@ -196,7 +213,7 @@ bool LuaArgument::CompareRecursive( const LuaArgument& arg )
     return false;
 }
 
-void LuaArgument::Read( lua_State *lua, int idx )
+void LuaArgument::Read( lua_State *lua, int idx, luaArgRep_t *cached )
 {
     // Store debug data for later retrieval
     lua_Debug debugInfo;
@@ -232,20 +249,29 @@ void LuaArgument::Read( lua_State *lua, int idx )
         return;
 
     case LUA_TTABLE:
-#ifdef _TODO
-        const void* pTable = lua_topointer ( luaVM, iArgument );
-        if ( pKnownTables && pKnownTables->find ( pTable ) != pKnownTables->end () )
+        m_type = LUA_TTABLE;
+
+        if ( cached )
         {
-            m_pTableData = pKnownTables->find ( pTable )->second;
-            m_bWeakTableRef = true;
+            const void *ptr = lua_topointer( lua, idx );
+            luaArgRep_t::const_iterator iter = cached->find( ptr );
+            if ( iter != cached->end() )
+            {
+                m_table = m_parent->GetCachedTable( (*iter).second );
+            }
+            else
+            {
+                m_table = new CLuaArguments;
+                (*cached)[ptr] = m_parent->AddCachedTable( m_table );
+
+                m_table->ReadTable( lua, idx, cached );
+            }
         }
         else
         {
-            m_pTableData = new CLuaArguments ();
-            m_pTableData->ReadTable ( luaVM, iArgument, pKnownTables );
-            m_bWeakTableRef = false;
+            m_table = new CLuaArguments;
+            m_table->ReadTable( lua, idx, NULL );
         }
-#endif //_TODO
         return;
 
     case LUA_TLIGHTUSERDATA:
@@ -342,19 +368,7 @@ void LuaArgument::Push( lua_State *lua ) const
         return;
 
     case LUA_TTABLE:
-#ifdef _TODO
-        if ( pKnownTables && pKnownTables->find ( m_pTableData ) != pKnownTables->end () )
-        {
-            lua_getfield ( luaVM, LUA_REGISTRYINDEX, "cache" );
-			lua_pushnumber ( luaVM, pKnownTables->find ( m_pTableData )->second );
-			lua_gettable ( luaVM, -2 );
-			lua_remove ( luaVM, -2 );
-        }
-        else
-        {
-            m_pTableData->PushAsTable ( luaVM, pKnownTables );
-        }
-#endif //_TODO
+        m_table->PushAsTable( lua );
         return;
 
     case LUA_TSTRING:
@@ -397,44 +411,31 @@ bool LuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int type
 
         return true;
 
-    case LUA_TTABLE:
-#ifdef _TODO
-        m_pTableData = new CLuaArguments( stream, pKnownTables );
-        m_bWeakTableRef = false;
-        m_iType = LUA_TTABLE;
-        m_pTableData->ValidateTableKeys();
+    case LUA_TSTRING:
+        {
+            // Read out the string length
+            std::string buf;
+
+            if ( !stream.ReadStringCompressed( buf ) )
+            {
+                Read( std::string() );
+                return true;
+            }
+
+            Read( buf );
+        }
         return true;
-#endif //_TODO
-        return false;
 
     // Table reference (self-referencing tables)
     case LUA_TTABLEREF:
-#ifdef _TODO
-        unsigned long ulTableRef;
-        if ( bitStream.ReadCompressed ( ulTableRef ) )
         {
-            if ( pKnownTables && ulTableRef < pKnownTables->size() )
+            unsigned int ref;
+            if ( stream.ReadCompressed( ref ) )
             {
-                m_pTableData = pKnownTables->at( ulTableRef );
-                m_bWeakTableRef = true;
-                m_iType = LUA_TTABLE;
+                m_table = m_parent->GetCachedTable( ref );
+                m_type = LUA_TTABLE;
             }
         }
-        return true;
-#endif //_TODO
-        return false;
-
-    case LUA_TSTRING:
-        // Read out the string length
-        std::string buf;
-
-        if ( !stream.ReadStringCompressed( buf ) )
-        {
-            Read( std::string() );
-            return true;
-        }
-
-        Read( buf );
         return true;
     }
 
@@ -454,7 +455,7 @@ bool LuaArgument::ReadFromBitStream( NetBitStreamInterface& bitStream )
     return ReadTypeFromBitStream( bitStream, type.data.ucType );
 }
 
-bool LuaArgument::WriteToBitStream( NetBitStreamInterface& bitStream ) const
+bool LuaArgument::WriteToBitStream( NetBitStreamInterface& bitStream, argRep_t *cached ) const
 {
     SLuaTypeSync type;
 
@@ -472,23 +473,24 @@ bool LuaArgument::WriteToBitStream( NetBitStreamInterface& bitStream ) const
         return true;
 
     case LUA_TTABLE:
-#ifdef _TODO
-        if ( pKnownTables && pKnownTables->find ( m_pTableData ) != pKnownTables->end () )
+        if ( std::find( cached->begin(), cached->end(), m_table ) != cached->end() )
         {
             // Self-referencing table
             type.data.ucType = LUA_TTABLEREF;
-            bitStream.Write ( &type );
-            bitStream.WriteCompressed ( pKnownTables->find ( m_pTableData )->second );
+            bitStream.Write( &type );
+            bitStream.WriteCompressed( m_table->m_cachedID );
         }
         else
         {
             type.data.ucType = LUA_TTABLE;
-            bitStream.Write ( &type );
+            bitStream.Write( &type );
 
             // Write the subtable to the bitstream
-            m_pTableData->WriteToBitStream ( bitStream, pKnownTables );
+            m_table->WriteToBitStream( bitStream );
+
+            // Remember us
+            cached->push_back( m_table );
         }
-#endif //_TODO
         return true;
 
     case LUA_TNUMBER:
@@ -547,7 +549,7 @@ void LuaArgument::DeleteTableData()
     if ( !m_table )
         return;
 
-    if ( !m_weakRef )
+    if ( !m_parent )
         delete m_table;
 
     m_table = NULL;

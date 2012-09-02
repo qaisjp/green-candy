@@ -20,6 +20,9 @@
 
 class LuaArguments;
 
+typedef std::vector <LuaArguments*> argRep_t;
+typedef std::map <const void*, unsigned int> luaArgRep_t;
+
 class LuaArgument abstract
 {
     friend class LuaArguments;
@@ -31,9 +34,9 @@ public:
                                 LuaArgument( void *ud );
                                 LuaArgument( const LuaArgument& arg );
 #ifndef _KILLFRENZY
-                                LuaArgument( NetBitStreamInterface& bitStream );
+                                LuaArgument( LuaArguments *parent, NetBitStreamInterface& bitStream );
 #endif //_KILLFRENZY
-                                LuaArgument( lua_State *lua, int idx );
+                                LuaArgument( LuaArguments *parent, lua_State *lua, int idx, luaArgRep_t *cached );
     virtual                     ~LuaArgument();
 
     const LuaArgument&          operator = ( const LuaArgument& arg );
@@ -43,7 +46,7 @@ public:
     virtual LuaArgument*        Clone() const = 0;
 
     void                        ReadNil();
-    void                        Read( lua_State *lua, int idx );
+    void                        Read( lua_State *lua, int idx, luaArgRep_t *cached = NULL );
     void                        Read( bool b );
     void                        Read( double d );
     void                        Read( const std::string& str );
@@ -61,7 +64,7 @@ public:
 
 #ifndef _KILLFRENZY
     bool                        ReadFromBitStream( NetBitStreamInterface& bitStream );
-    virtual bool                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
+    virtual bool                WriteToBitStream( NetBitStreamInterface& bitStream, argRep_t *cached ) const;
 #endif //_KILLFRENZY
 
 protected:
@@ -81,7 +84,8 @@ protected:
     lua_Number                  m_num;
     std::string                 m_string;
     void*                       m_lightUD;
-    bool                        m_weakRef;
+
+    LuaArguments*               m_parent;
 
     filePath                    m_path;
     int                         m_line;

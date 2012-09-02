@@ -137,8 +137,7 @@ LUA_API void lua_xcopy( lua_State *from, lua_State *to, int n )
 {
     int i;
 
-    if ( from == to )
-        return;
+    // Copying implies that we need another copy nevertheless the from == to match!
 
     lua_lock(to);
     api_checknelems(from, n);
@@ -189,11 +188,9 @@ LUA_API void lua_newenvironment( lua_State *L )
 ** basic stack manipulation
 */
 
-
 LUA_API int lua_gettop (lua_State *L) {
   return cast_int(L->top - L->base);
 }
-
 
 LUA_API void lua_settop (lua_State *L, int idx) {
   lua_lock(L);
@@ -210,7 +207,6 @@ LUA_API void lua_settop (lua_State *L, int idx) {
   lua_unlock(L);
 }
 
-
 LUA_API void lua_remove (lua_State *L, int idx) {
   StkId p;
   lua_lock(L);
@@ -220,7 +216,6 @@ LUA_API void lua_remove (lua_State *L, int idx) {
   L->top--;
   lua_unlock(L);
 }
-
 
 LUA_API void lua_insert (lua_State *L, int idx) {
   StkId p;
@@ -233,37 +228,47 @@ LUA_API void lua_insert (lua_State *L, int idx) {
   lua_unlock(L);
 }
 
+LUA_API void lua_replace (lua_State *L, int idx)
+{
+    StkId o;
+    lua_lock(L);
 
-LUA_API void lua_replace (lua_State *L, int idx) {
-  StkId o;
-  lua_lock(L);
-  /* explicit test for incompatible code */
-  if (idx == LUA_ENVIRONINDEX && L->ci == L->base_ci)
-    luaG_runerror(L, "no calling environment");
-  api_checknelems(L, 1);
-  o = index2adr(L, idx);
-  api_checkvalidindex(L, o);
-  if (idx == LUA_ENVIRONINDEX) {
-    Closure *func = curr_func(L);
-    api_check(L, ttistable(L->top - 1)); 
-    func->env = hvalue(L->top - 1);
-    luaC_barrier(L, func, L->top - 1);
-  }
-  else {
-    setobj(L, o, L->top - 1);
-    if (idx < LUA_GLOBALSINDEX)  /* function upvalue? */
-      luaC_barrier(L, curr_func(L), L->top - 1);
-  }
-  L->top--;
-  lua_unlock(L);
+    /* explicit test for incompatible code */
+    if ( idx == LUA_ENVIRONINDEX && L->ci == L->base_ci )
+        luaG_runerror(L, "no calling environment");
+
+    api_checknelems(L, 1);
+
+    if ( idx == LUA_ENVIRONINDEX )
+    {
+        Closure *func = curr_func(L);
+
+        api_check(L, ttistable(L->top - 1)); 
+
+        func->env = hvalue(L->top - 1);
+        luaC_barrier(L, func, L->top - 1);
+    }
+    else if ( idx != LUA_STORAGEINDEX )
+    {
+        o = index2adr(L, idx);
+        api_checkvalidindex(L, o);
+
+        setobj( L, o, L->top - 1 );
+
+        if ( idx < LUA_GLOBALSINDEX )  /* function upvalue? */
+            luaC_barrier(L, curr_func(L), L->top - 1);
+    }
+
+    L->top--;
+    lua_unlock(L);
 }
 
-
-LUA_API void lua_pushvalue (lua_State *L, int idx) {
-  lua_lock(L);
-  setobj2s(L, L->top, index2adr(L, idx));
-  api_incr_top(L);
-  lua_unlock(L);
+LUA_API void lua_pushvalue (lua_State *L, int idx)
+{
+    lua_lock(L);
+    setobj2s(L, L->top, index2adr(L, idx));
+    api_incr_top(L);
+    lua_unlock(L);
 }
 
 

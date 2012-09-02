@@ -20,6 +20,7 @@ class CModelSA : public virtual CModel, public CRwObjectSA
     friend class CStreamingSA;
 public:
                                     CModelSA( RpClump *clump, CColModelSA *col, unsigned short txdID );
+                                    CModelSA( RpClump *clump );
                                     ~CModelSA();
 
     inline RpClump*                 GetObject()                     { return (RpClump*)m_object; }
@@ -40,8 +41,6 @@ public:
 
     void                            RestoreAll();
 
-    typedef std::list <CRpAtomic*> atomicList_t;
-
     const atomicList_t&             GetAtomics() const              { return m_atomics; }
 
     // Static accessors
@@ -50,6 +49,7 @@ public:
 protected:
     CColModelSA*                    m_col;
     unsigned short                  m_txdID;
+    bool                            m_readOnly;
 
     typedef std::map <unsigned short, bool> importMap_t;
     importMap_t                     m_imported;

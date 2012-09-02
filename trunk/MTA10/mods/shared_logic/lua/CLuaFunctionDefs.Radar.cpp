@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaFunctionDefs.Radar.cpp
@@ -14,6 +14,7 @@
 *               Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -26,38 +27,33 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( createRadarArea )
     {
     //  radararea createRadarArea ( float leftX, float bottomY, float sizeX, float sizeY, [ int r = 255, int g = 0, int b = 0, int a = 255, element visibleTo = getRootElement() ] )
-        CVector2D vecPosition; CVector2D vecSize; float dRed; float dGreen; float dBlue; float dAlpha;
+        CVector2D vecPosition; CVector2D vecSize; unsigned char r, g, b, a;
 
-        CScriptArgReader argStream ( L );
-        argStream.ReadNumber ( vecPosition.fX );
-        argStream.ReadNumber ( vecPosition.fY );
-        argStream.ReadNumber ( vecSize.fX );
-        argStream.ReadNumber ( vecSize.fY );
-        argStream.ReadNumber ( dRed, 255 );
-        argStream.ReadNumber ( dGreen, 0 );
-        argStream.ReadNumber ( dBlue, 0 );
-        argStream.ReadNumber ( dAlpha, 255 );
+        CScriptArgReader argStream( L );
+        argStream.ReadNumber( vecPosition.fX );
+        argStream.ReadNumber( vecPosition.fY );
+        argStream.ReadNumber( vecSize.fX );
+        argStream.ReadNumber( vecSize.fY );
+        argStream.ReadColor( r, 255 );
+        argStream.ReadColor( g, 0 );
+        argStream.ReadColor( b, 0 );
+        argStream.ReadColor( a, 255 );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            CLuaMain* pLuaMain = lua_readcontext( L );
-            CResource* pResource = pLuaMain ? pLuaMain->GetResource () : NULL;
-            if ( pResource )
-            {
-                SColorARGB color ( dAlpha, dRed, dGreen, dBlue );
+            CResource *res = lua_readcontext( L )->GetResource();
 
-                // Create it
-                CClientRadarArea* pRadarArea = CStaticFunctionDefinitions::CreateRadarArea ( *pResource, vecPosition, vecSize, color );
-                if ( pRadarArea )
-                {
-                    CElementGroup * pGroup = pResource->GetElementGroup();
-                    if ( pGroup )
-                    {
-                        pGroup->Add ( ( CClientEntity* ) pRadarArea );
-                    }
-                    pRadarArea->PushStack( L );
-                    return 1;
-                }
+            // Create it
+            CClientRadarArea *pRadarArea = CStaticFunctionDefinitions::CreateRadarArea( *res, vecPosition, vecSize, SColorARGB( a, r, g, b ) );
+            if ( pRadarArea )
+            {
+                CElementGroup *pGroup = res->GetElementGroup();
+
+                if ( pGroup )
+                    pGroup->Add( pRadarArea );
+
+                pRadarArea->PushStack( L );
+                return 1;
             }
         }
         else
@@ -69,23 +65,21 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getRadarAreaColor )
     {
-    //  int, int, int, int getRadarAreaColor ( radararea theRadararea )
-        CClientRadarArea* pRadarArea;
+    //  int, int, int, int getRadarAreaColor( radararea theRadararea )
+        CClientRadarArea *pRadarArea;
 
-        CScriptArgReader argStream ( L );
+        CScriptArgReader argStream( L );
         argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            SColor color;
-            if ( CStaticFunctionDefinitions::GetRadarAreaColor ( pRadarArea, color ) )
-            {
-                lua_pushnumber ( L, static_cast < lua_Number > ( color.R ) );
-                lua_pushnumber ( L, static_cast < lua_Number > ( color.G ) );
-                lua_pushnumber ( L, static_cast < lua_Number > ( color.B ) );
-                lua_pushnumber ( L, static_cast < lua_Number > ( color.A ) );
-                return 4;
-            }
+            SColor color = pRadarArea->GetColor();
+
+            lua_pushnumber( L, color.R );
+            lua_pushnumber( L, color.G );
+            lua_pushnumber( L, color.B );
+            lua_pushnumber( L, color.A );
+            return 4;
         }
         else
             m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
@@ -96,21 +90,19 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getRadarAreaSize )
     {
-    //  float, float getRadarAreaSize ( radararea theRadararea )
+    //  float, float getRadarAreaSize( radararea theRadararea )
         CClientRadarArea* pRadarArea;
 
-        CScriptArgReader argStream ( L );
+        CScriptArgReader argStream( L );
         argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            CVector2D vecSize;
-            if ( CStaticFunctionDefinitions::GetRadarAreaSize ( pRadarArea, vecSize ) )
-            {
-                lua_pushnumber ( L, static_cast < lua_Number > ( vecSize.fX ) );
-                lua_pushnumber ( L, static_cast < lua_Number > ( vecSize.fY ) );
-                return 2;
-            }
+            const CVector2D& vecSize = pRadarArea->GetSize();
+
+            lua_pushnumber( L, vecSize.fX );
+            lua_pushnumber( L, vecSize.fY );
+            return 2;
         }
         else
             m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "getRadarAreaSize", *argStream.GetErrorMessage () ) );
@@ -125,18 +117,16 @@ namespace CLuaFunctionDefs
     //  bool isRadarAreaFlashing ( radararea theRadararea )
         CClientRadarArea* pRadarArea;
 
-        CScriptArgReader argStream ( L );
+        CScriptArgReader argStream( L );
         argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            bool bFlashing = false;
-            CStaticFunctionDefinitions::IsRadarAreaFlashing ( pRadarArea, bFlashing );
-            lua_pushboolean ( L, bFlashing );
+            lua_pushboolean( L, pRadarArea->IsFlashing() );
             return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "isRadarAreaFlashing", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '%s' [%s]", "isRadarAreaFlashing", *argStream.GetErrorMessage() ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -145,51 +135,48 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( setRadarAreaColor )
     {
     //  bool setRadarAreaColor ( radararea theRadarArea, int r, int g, int b, int a )
-        CClientRadarArea* pRadarArea; float dRed; float dGreen; float dBlue; float dAlpha;
+        CClientRadarArea* pRadarArea; unsigned char r, g, b, a;
 
-        CScriptArgReader argStream ( L );
+        CScriptArgReader argStream( L );
         argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
-        argStream.ReadNumber ( dRed );
-        argStream.ReadNumber ( dGreen );
-        argStream.ReadNumber ( dBlue );
-        argStream.ReadNumber ( dAlpha, 255 );
+        argStream.ReadColor( r );
+        argStream.ReadColor( g );
+        argStream.ReadColor( b );
+        argStream.ReadColor( a, 255 );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            SColorRGBA color ( dRed, dGreen, dBlue, dAlpha );
-            if ( CStaticFunctionDefinitions::SetRadarAreaColor ( pRadarArea, color ) )
-            {
-                lua_pushboolean ( L, true );
-                return 1;
-            }
+            pRadarArea->SetColor( SColorRGBA( r, g, b, a ) );
+
+            lua_pushboolean( L, true );
+            return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "setRadarAreaColor", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '%s' [%s]", "setRadarAreaColor", *argStream.GetErrorMessage() ) );
 
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
     LUA_DECLARE( setRadarAreaSize )
     {
     //  bool setRadarAreaSize ( radararea theRadararea, float x, float y )
-        CClientRadarArea* pRadarArea; CVector2D vecSize;
+        CClientRadarArea *pRadarArea; CVector2D vecSize;
 
         CScriptArgReader argStream ( L );
         argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
-        argStream.ReadNumber ( vecSize.fX );
-        argStream.ReadNumber ( vecSize.fY );
+        argStream.ReadNumber( vecSize.fX );
+        argStream.ReadNumber( vecSize.fY );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            if ( CStaticFunctionDefinitions::SetRadarAreaSize ( pRadarArea, vecSize ) )
-            {
-                lua_pushboolean ( L, true );
-                return 1;
-            }
+            pRadarArea->SetSize( vecSize );
+
+            lua_pushboolean( L, true );
+            return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "setRadarAreaSize", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '%s' [%s]", "setRadarAreaSize", *argStream.GetErrorMessage() ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -198,22 +185,21 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( setRadarAreaFlashing )
     {
     //  bool setRadarAreaFlashing ( radararea theRadarArea, bool flash )
-        CClientRadarArea* pRadarArea; bool bFlash;
+        CClientRadarArea *pRadarArea; bool bFlash;
 
-        CScriptArgReader argStream ( L );
+        CScriptArgReader argStream( L );
         argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
-        argStream.ReadBool ( bFlash );
+        argStream.ReadBool( bFlash );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            if ( CStaticFunctionDefinitions::SetRadarAreaFlashing ( pRadarArea, bFlash ) )
-            {
-                lua_pushboolean ( L, true );
-                return 1;
-            }
+            pRadarArea->SetFlashing( bFlash );
+
+            lua_pushboolean( L, true );
+            return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "setRadarAreaFlashing", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '%s' [%s]", "setRadarAreaFlashing", *argStream.GetErrorMessage() ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -222,21 +208,20 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( isInsideRadarArea )
     {
     //  bool isInsideRadarArea ( radararea theArea, float posX, float posY )
-        CClientRadarArea* pRadarArea; CVector2D vecPosition;
+        CClientRadarArea *pRadarArea; CVector2D vecPosition;
 
-        CScriptArgReader argStream ( L );
+        CScriptArgReader argStream( L );
         argStream.ReadClass( pRadarArea, LUACLASS_RADARAREA );
-        argStream.ReadNumber ( vecPosition.fX );
-        argStream.ReadNumber ( vecPosition.fY );
+        argStream.ReadNumber( vecPosition.fX );
+        argStream.ReadNumber( vecPosition.fY );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            bool bInside = false;
-            if ( CStaticFunctionDefinitions::IsInsideRadarArea ( pRadarArea, vecPosition, bInside ) )
-            {
-                lua_pushboolean ( L, bInside );
-                return 1;
-            }
+            bool bInside;
+            CStaticFunctionDefinitions::IsInsideRadarArea( pRadarArea, vecPosition, bInside );
+
+            lua_pushboolean( L, bInside );
+            return 1;
         }
         else
             m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "isInsideRadarArea", *argStream.GetErrorMessage () ) );

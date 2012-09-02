@@ -31,14 +31,16 @@ CLuaArguments::CLuaArguments( NetBitStreamInterface& stream )
     ReadFromBitStream( stream );
 }
 
-void CLuaArguments::ReadArgument( lua_State *L, int idx )
+void CLuaArguments::ReadArgument( lua_State *L, int idx, luaArgRep_t *cached )
 {
-    m_args.push_back( new CLuaArgument( L, idx ) );
+    m_args.push_back( new CLuaArgument( this, L, idx, cached ) );
 }
 
 LuaArgument* CLuaArguments::PushNil()
 {
     CLuaArgument *arg = new CLuaArgument;
+    arg->m_parent = this;
+
     m_args.push_back( arg );
     return arg;
 }
@@ -46,6 +48,8 @@ LuaArgument* CLuaArguments::PushNil()
 LuaArgument* CLuaArguments::PushBoolean( bool b )
 {
     CLuaArgument *arg = new CLuaArgument( b );
+    arg->m_parent = this;
+
     m_args.push_back( arg );
     return arg;
 }
@@ -53,6 +57,8 @@ LuaArgument* CLuaArguments::PushBoolean( bool b )
 LuaArgument* CLuaArguments::PushNumber( double d )
 {
     CLuaArgument *arg = new CLuaArgument( d );
+    arg->m_parent = this;
+
     m_args.push_back( arg );
     return arg;
 }
@@ -60,13 +66,27 @@ LuaArgument* CLuaArguments::PushNumber( double d )
 LuaArgument* CLuaArguments::PushString( const std::string& str )
 {
     CLuaArgument *arg = new CLuaArgument( str );
+    arg->m_parent = this;
+
     m_args.push_back( arg );
+    return arg;
+}
+
+LuaArgument* CLuaArguments::PushTableRef( unsigned int idx )
+{
+    CLuaArgument *arg = new CLuaArgument;
+    arg->m_parent = this;
+
+    arg->m_type = LUA_TTABLEREF;
+    arg->m_table = m_cachedTables.at( idx );
     return arg;
 }
 
 LuaArgument* CLuaArguments::PushUserData( void *ud )
 {
     CLuaArgument *arg = new CLuaArgument( ud );
+    arg->m_parent = this;
+
     m_args.push_back( arg );
     return arg;
 }
@@ -74,6 +94,8 @@ LuaArgument* CLuaArguments::PushUserData( void *ud )
 LuaArgument* CLuaArguments::PushArgument( const LuaArgument& other )
 {
     CLuaArgument *arg = (CLuaArgument*)other.Clone();
+    arg->m_parent = this;
+
     m_args.push_back( arg );
     return arg;
 }
@@ -91,6 +113,8 @@ LuaArgument* CLuaArguments::PushTable( const LuaArguments& table )
 CLuaArgument* CLuaArguments::PushElement( CClientEntity* element )
 {
     CLuaArgument *arg = new CLuaArgument( element );
+    arg->m_parent = this;
+
     m_args.push_back( arg );
     return arg;
 }
@@ -103,22 +127,7 @@ bool CLuaArguments::ReadFromBitStream( NetBitStreamInterface& bitStream )
         return true;
 
     while ( usNumArgs-- )
-        m_args.push_back( new CLuaArgument( bitStream ) );
-
-    return true;
-}
-
-bool CLuaArguments::WriteToBitStream( NetBitStreamInterface& bitStream ) const
-{
-    std::vector <LuaArgument*>::const_iterator iter = m_args.begin();
-
-    bitStream.WriteCompressed( (unsigned short)m_args.size() );
-
-    for ( ; iter != m_args.end(); iter++ )
-    {
-        if ( !(*iter)->WriteToBitStream( bitStream ) )
-            return false;
-    }
+        m_args.push_back( new CLuaArgument( this, bitStream ) );
 
     return true;
 }

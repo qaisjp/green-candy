@@ -22,12 +22,15 @@
 
 LuaArguments::LuaArguments()
 {
+    m_parent = NULL;
 }
 
 LuaArguments::LuaArguments( const LuaArguments& args )
 {
     // Copy all the arguments
     CopyRecursive( args );
+
+    m_parent = NULL;
 }
 
 LuaArguments::~LuaArguments()
@@ -72,17 +75,15 @@ void LuaArguments::ReadArguments( lua_State *L, int indexStart )
     // Tidy up setup :)
     DeleteArguments();
 
+    luaArgRep_t refMap;
+
     // Start reading arguments until there are none left
     while ( lua_type( L, indexStart ) != LUA_TNONE )
-        ReadArgument( L, indexStart++ );
+        ReadArgument( L, indexStart++, &refMap );
 }
 
-void LuaArguments::ReadTable( lua_State *luaVM, int indexStart )
+void LuaArguments::ReadTable( lua_State *luaVM, int indexStart, luaArgRep_t *cached )
 {
-#ifdef _TODO
-    tables.insert( std::make_pair( lua_topointer( luaVM, indexStart ), this ) );
-#endif
-
     // Tidy up
     DeleteArguments();
 
@@ -96,8 +97,8 @@ void LuaArguments::ReadTable( lua_State *luaVM, int indexStart )
     // The_GTA: Google for lua table iteration
     while ( lua_next( luaVM, indexStart ) != 0 )
     {
-        ReadArgument( luaVM, -2 );
-        ReadArgument( luaVM, -1 );
+        ReadArgument( luaVM, -2, cached );
+        ReadArgument( luaVM, -1, cached );
        
         lua_pop( luaVM, 1 );
     }
@@ -112,20 +113,20 @@ void LuaArguments::PushArguments( lua_State *luaVM ) const
         (*iter)->Push( luaVM );
 }
 
-void LuaArguments::PushAsTable( lua_State *luaVM )
+void LuaArguments::PushAsTable( lua_State *L )
 {
     // Ensure there is enough space on the Lua stack
-    LUA_CHECKSTACK( luaVM, 4 );
+    LUA_CHECKSTACK( L, 4 );
 
-    lua_newtable( luaVM );
+    lua_newtable( L );
 
 	// construct the table
     vector <LuaArgument*>::const_iterator iter = m_args.begin();
     for ( ; iter != m_args.end() && (iter+1) != m_args.end(); iter++ )
     {
-        (*iter++)->Push( luaVM ); // index
-        (*iter)->Push( luaVM ); // value
-        lua_settable( luaVM, -3 );
+        (*iter++)->Push( L ); // index
+        (*iter)->Push( L ); // value
+        lua_settable( L, -3 );
     }
 }
 
@@ -176,16 +177,51 @@ bool LuaArguments::IsIndexedArray()
     return true;
 }
 
+unsigned int LuaArguments::AddCachedTable( LuaArguments *table )
+{
+    if ( m_parent )
+        return m_parent->AddCachedTable( table );
+
+    table->m_parent = this;
+
+    unsigned int id = m_cachedTables.size();
+
+    // Register the table
+    m_cachedTables.push_back( table );
+    table->m_cachedID = id;
+    return id;
+}
+
+LuaArguments* LuaArguments::GetCachedTable( unsigned int idx )
+{
+    if ( m_parent )
+        return m_parent->GetCachedTable( idx );
+
+    if ( idx >= m_cachedTables.size() )
+        return NULL;
+
+    return m_cachedTables.at( idx );
+}
+
 void LuaArguments::DeleteArguments()
 {
     // Delete each item
-    std::vector <LuaArgument*>::iterator iter = m_args.begin();
+    argList_t::iterator iter = m_args.begin();
 
     for ( ; iter != m_args.end(); iter++ )
         delete *iter;
 
     // Clear the vector
     m_args.clear();
+
+    // Clear cached tables
+    if ( !m_parent )
+    {
+        for ( cached_t::iterator iterc = m_cachedTables.begin(); iterc != m_cachedTables.end(); iterc++ )
+            delete *iterc;
+
+        m_cachedTables.clear();
+    }
 }
 
 void LuaArguments::ValidateTableKeys()
@@ -227,3 +263,29 @@ void LuaArguments::ValidateTableKeys()
         }
     }
 }
+
+#ifndef _KILLFRENZY
+
+bool LuaArguments::WriteToBitStream( NetBitStreamInterface& bitStream, argRep_t *cached ) const
+{
+    bool success = true;
+    std::vector <LuaArgument*>::const_iterator iter = m_args.begin();
+
+    bitStream.WriteCompressed( (unsigned short)m_args.size() );
+
+    if ( !m_parent )
+        cached = new argRep_t;
+
+    for ( ; iter != m_args.end(); iter++ )
+    {
+        if ( !(*iter)->WriteToBitStream( bitStream, cached ) )
+            success = false;
+    }
+
+    if ( !m_parent )
+        delete cached;
+
+    return success;
+}
+
+#endif

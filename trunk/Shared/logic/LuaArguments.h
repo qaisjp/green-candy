@@ -29,9 +29,9 @@
     #define LUA_CHECKSTACK(vm,space) lua_checkstack(vm, (space)*2 )
 #endif
 
-
 class LuaArguments
 {
+    friend class LuaArgument;
 public:
                                                         LuaArguments();
                                                         LuaArguments( const LuaArguments& args );
@@ -42,13 +42,13 @@ public:
     const LuaArguments&                                 operator = ( const LuaArguments& args );
     LuaArgument*                                        operator [] ( unsigned int pos ) const;
 
-    virtual void                                        ReadArgument( lua_State *lua, signed int index ) = 0;
+    virtual void                                        ReadArgument( lua_State *lua, signed int index, luaArgRep_t *cached ) = 0;
     void                                                ReadArguments( lua_State *lua, signed int indexStart = 1 );
     void                                                PushArguments( lua_State *lua ) const;
     void                                                PushArguments( LuaArguments& args );
     virtual bool                                        Call( class LuaMain *lua, const LuaFunctionRef& ref, LuaArguments *res = NULL ) const;
 
-    void                                                ReadTable( lua_State *L, int indexStart );
+    void                                                ReadTable( lua_State *L, int indexStart, luaArgRep_t *cached );
     void                                                PushAsTable( lua_State *L );
 
     bool                                                IsIndexedArray();
@@ -57,11 +57,15 @@ public:
     virtual LuaArgument*                                PushBoolean( bool b ) = 0;
     virtual LuaArgument*                                PushNumber( double num ) = 0;
     virtual LuaArgument*                                PushString( const std::string& str ) = 0;
+    virtual LuaArgument*                                PushTableRef( unsigned int idx ) = 0;
     virtual LuaArgument*                                PushUserData( void *data ) = 0;
     virtual LuaArgument*                                PushArgument( const LuaArgument& argument ) = 0;
 #if 0
     virtual LuaArgument*                                PushTable( const LuaArguments& table ) = 0;
 #endif
+
+    unsigned int                                        AddCachedTable( LuaArguments *table );
+    LuaArguments*                                       GetCachedTable( unsigned int idx );
 
     void                                                DeleteArguments();
     void                                                ValidateTableKeys();
@@ -73,15 +77,17 @@ public:
     argList_t::const_iterator                           IterEnd() const             { return m_args.end(); };
 
 #ifndef _KILLFRENZY
-    bool                                                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
+    bool                                                WriteToBitStream( NetBitStreamInterface& bitStream, argRep_t *cached = NULL ) const;
 #endif
 
 protected:
-    void                                                SetParent( LuaArguments *parent );
+    typedef std::vector <LuaArguments*> cached_t;
 
     argList_t                           m_args;
-    std::vector <LuaArguments*>         m_cachedTables;
+    cached_t                            m_cachedTables;
+
     LuaArguments*                       m_parent;   // LuaArguments is a table!
+    unsigned int                        m_cachedID; // registered index in the root
 };
 
 #endif //_BASE_LUA_ARGUMENTS_

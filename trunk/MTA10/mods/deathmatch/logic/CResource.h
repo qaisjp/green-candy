@@ -60,12 +60,11 @@ public:
     CElementGroup*              GetElementGroup()                                   { return m_defaultGroup; }
 
     void                        AddExportedFunction( const char *name );
-    bool                        CallExportedFunction( const char *name, const CLuaArguments& args, CLuaArguments& returns, CResource& caller );
 
     typedef std::list <CExportedFunction*> exports_t;
 
-    exports_t::iterator         IterBeginExportedFunctions()                        { return m_exports.begin(); }
-    exports_t::iterator         IterEndExportedFunctions()                          { return m_exports.end(); }
+    exports_t::iterator         IterBeginExports()                                  { return m_exports.begin(); }
+    exports_t::iterator         IterEndExports()                                    { return m_exports.end(); }
 
     class CClientEntity*        GetResourceEntity()                                 { return m_resourceEntity; }
     void                        SetResourceEntity( CClientEntity *entity );

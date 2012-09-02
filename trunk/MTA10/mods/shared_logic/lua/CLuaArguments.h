@@ -37,19 +37,19 @@ public:
                                                         CLuaArguments();
                                                         CLuaArguments( NetBitStreamInterface& stream );
 
-    void                                                ReadArgument( lua_State *L, int idx );
+    void                                                ReadArgument( lua_State *L, int idx, luaArgRep_t *cached );
 
     LuaArgument*                                        PushNil();
     LuaArgument*                                        PushBoolean( bool b );
     LuaArgument*                                        PushNumber( double num );
     LuaArgument*                                        PushString( const std::string& str );
+    LuaArgument*                                        PushTableRef( unsigned int idx );
     LuaArgument*                                        PushUserData( void *data );
     LuaArgument*                                        PushArgument( const LuaArgument& argument );
     LuaArgument*                                        PushTable( const LuaArguments& table );
     CLuaArgument*                                       PushElement( CClientEntity *element );
 
     bool                                                ReadFromBitStream( NetBitStreamInterface& bitStream );
-    bool                                                WriteToBitStream( NetBitStreamInterface& bitStream ) const;
 };
 
 #endif

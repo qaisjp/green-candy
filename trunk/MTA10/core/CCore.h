@@ -78,6 +78,7 @@ class CCore;
 
 extern CFileTranslator *tempFileRoot;
 extern CFileTranslator *mtaFileRoot;
+extern CFileTranslator *screenFileRoot;
 extern CFileTranslator *dataFileRoot;
 extern CFileTranslator *modFileRoot;
 extern CFileTranslator *newsFileRoot;

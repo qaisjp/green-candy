@@ -59,6 +59,7 @@ static int luaconstructor_timer( lua_State *L )
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_basicprotect( L );
+
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, timer_methods, 1 );
     return 0;
@@ -92,11 +93,8 @@ void LuaTimer::ObtainArguments( lua_State *L, int idx )
     lua_pop( L, 1 );
 
     int top = lua_gettop( L );
-    int sidx = idx;
-    idx++;
 
-    while ( top-- > idx )
-        luaL_ref( L, sidx );
+    lua_stack2table( L, idx, top - idx );
 
     lua_settop( L, top );
 }

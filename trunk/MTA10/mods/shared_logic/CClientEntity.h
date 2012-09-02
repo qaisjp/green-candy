@@ -89,49 +89,6 @@ class CLuaMain;
 class CMapEventManager;
 typedef std::list <class CClientEntity*> CChildListType;
 
-enum eCClientEntityClassTypes
-{
-    CLASS_CClientEntity,
-    CLASS_CClientCamera,
-    CLASS_CClientCivilian,
-    CLASS_CClientColModel,
-    CLASS_CClientDFF,
-    CLASS_CClientGUIElement,
-    CLASS_CClientStreamElement,
-    CLASS_CClientColShape,
-    CLASS_CClientMarker,
-    CLASS_CClientPathNode,
-    CLASS_CClientPickup,
-    CLASS_CClientRadarArea,
-    CLASS_CClientRadarMarker,
-    CLASS_CClientPed,
-    CLASS_CClientPlayer,
-    CLASS_CClientTeam,
-    CLASS_CClientSound,
-    CLASS_CClientVehicle,
-    CLASS_CClientDummy,
-    CLASS_CClientWater,
-    CLASS_CClientColCircle,
-    CLASS_CClientColCuboid,
-    CLASS_CClientColSphere,
-    CLASS_CClientColRectangle,
-    CLASS_CClientColPolygon,
-    CLASS_CClientColTube,
-    CLASS_CClientProjectile,
-    CLASS_CClientTXD,
-    CLASS_CClientObject,
-    CLASS_CDeathmatchObject,
-    CLASS_CDeathmatchVehicle,
-    CLASS_CClientRenderElement,
-    CLASS_CClientDxFont,
-    CLASS_CClientGuiFont,
-    CLASS_CClientMaterial,
-    CLASS_CClientTexture,
-    CLASS_CClientShader,
-    CLASS_CClientRenderTarget,
-    CLASS_CClientScreenSource,
-};
-
 #define LUACLASS_ENTITY     40
 #define LUACLASS_SYSENTITY  41
 
@@ -144,8 +101,6 @@ public:
     // Static functions for Lua interfacing
     static LUA_DECLARE( entitychildAPI_notifyDestroy );
     static LUA_DECLARE( entity_setChild );
-
-    virtual bool                                CanBeDeleted()                                  { return true; };
 
     virtual eClientEntityType                   GetType() const = 0;
     inline bool                                 IsLocalEntity() const                           { return m_ID >= MAX_SERVER_ELEMENTS; };
@@ -306,14 +261,10 @@ protected:
     CClientEntity*                              m_pParent;
     CChildListType                              m_Children;
 
-    CCustomData*                                m_pCustomData;
-
     ElementID                                   m_ID;
     CVector                                     m_vecRelativePosition;
 
     unsigned short                              m_usDimension;
-
-    unsigned int                                m_uiLine;
 
 private:
     unsigned int                                m_uiTypeHash;

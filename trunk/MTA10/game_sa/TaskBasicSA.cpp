@@ -32,15 +32,9 @@ CTaskComplexUseMobilePhoneSA::CTaskComplexUseMobilePhoneSA ( const int iDuration
     }
 }
 
-
-CTaskSimpleRunAnimSA::CTaskSimpleRunAnimSA (    const AssocGroupId animGroup,
-                                                const AnimationId animID, 
-                                                const float fBlendDelta, 
-                                                const int iTaskType,
-                                                const char* pTaskName,
-                                                const bool bHoldLastFrame )
+CTaskSimpleRunAnimSA::CTaskSimpleRunAnimSA( AssocGroupId animGroup, AnimationId animID, float fBlendDelta, int iTaskType, const char *pTaskName, bool bHoldLastFrame )
 {
-    DEBUG_TRACE("CTaskSimpleRunAnim::CTaskSimpleRunAnim (  const AssocGroupId animGroup, const AnimationId animID, const float fBlendDelta, const int iTaskType, const char* pTaskName, const bool bHoldLastFrame );");
+    DEBUG_TRACE("CTaskSimpleRunAnimSA::CTaskSimpleRunAnimSA( AssocGroupId animGroup, AnimationId animID, float fBlendDelta, int iTaskType, const char *pTaskName, bool bHoldLastFrame )");
 
     CreateTaskInterface ();
 
@@ -61,17 +55,9 @@ CTaskSimpleRunAnimSA::CTaskSimpleRunAnimSA (    const AssocGroupId animGroup,
     }
 }
 
-CTaskSimpleRunNamedAnimSA::CTaskSimpleRunNamedAnimSA (  const char* pAnimName,
-                                                        const char* pAnimGroupName,
-                                                        const int flags,
-                                                        const float fBlendDelta,
-                                                        const int iTime,
-                                                        const bool bDontInterrupt,
-                                                        const bool bRunInSequence,
-                                                        const bool bOffsetPed,
-                                                        const bool bHoldLastFrame )
+CTaskSimpleRunNamedAnimSA::CTaskSimpleRunNamedAnimSA( const char *pAnimName, const char *pAnimGroupName, int flags, float fBlendDelta, int iTime, bool bDontInterrupt, bool bRunInSequence, bool bOffsetPed, bool bHoldLastFrame )
 {
-    DEBUG_TRACE("CTaskSimpleRunNamedAnimSA::CTaskSimpleRunNamedAnimSA( const char* pAnimName, const char* pAnimGroupName, const int flags, const float fBlendDelta, const int iTime = -1, const bool bDontInterrupt = false, const bool bRunInSequence = false, const bool bOffsetPed = false, const bool bHoldLastFrame = false )");
+    DEBUG_TRACE("CTaskSimpleRunNamedAnimSA::CTaskSimpleRunNamedAnimSA( const char *pAnimName, const char *pAnimGroupName, int flags, float fBlendDelta, int iTime, bool bDontInterrupt, bool bRunInSequence, bool bOffsetPed, bool bHoldLastFrame )");
 
     // TODO: Find out the real size
     CreateTaskInterface();
@@ -95,7 +81,6 @@ CTaskSimpleRunNamedAnimSA::CTaskSimpleRunNamedAnimSA (  const char* pAnimName,
         call    dwFunc
     }
 }
-
 
 CTaskComplexDieSA::CTaskComplexDieSA ( const eWeaponType eMeansOfDeath,
                                        const AssocGroupId animGroup,
@@ -128,13 +113,12 @@ CTaskComplexDieSA::CTaskComplexDieSA ( const eWeaponType eMeansOfDeath,
         push    fAnimSpeed
         push    fBlendDelta
         push    anim
-        push    animGroup
+        movzx   eax,animGroup
+        push    eax
         push    eMeansOfDeath
         call    dwFunc
     }
 }
-
-
 
 CTaskSimpleStealthKillSA::CTaskSimpleStealthKillSA ( bool bKiller, CPed * pPed, const AssocGroupId animGroup )
 {
@@ -155,7 +139,8 @@ CTaskSimpleStealthKillSA::CTaskSimpleStealthKillSA ( bool bKiller, CPed * pPed, 
     _asm
     {
         mov     ecx, dwThisInterface
-        push    animGroup
+        movzx   eax,animGroup
+        push    eax
         push    dwPedInterface
         push    bKiller
         call    dwFunc
@@ -182,7 +167,6 @@ CTaskSimpleDeadSA::CTaskSimpleDeadSA ( unsigned int uiDeathTimeMS, bool bUnk2 )
         call    dwFunc
     }
 }
-
 
 CTaskComplexSunbatheSA::CTaskComplexSunbatheSA ( CObject* pTowel, bool bStartStanding )
 {

@@ -11,6 +11,8 @@
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
@@ -97,7 +99,7 @@ void CClientCamera::DoPulse ( void )
         RwMatrix matTemp;
         GetMatrix( matTemp );
         matTemp.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );    
-        g_pMultiplayer->SetCenterOfWorld ( NULL, &m_vecFixedPosition, (float)M_PI - vecRotation.fZ );
+        g_pMultiplayer->SetCenterOfWorld ( NULL, &m_matrix.pos, (float)M_PI - vecRotation.fZ );
     }
     else
     {
@@ -159,6 +161,12 @@ void CClientCamera::DoPulse ( void )
     }
 }
 
+bool CClientCamera::SetMatrix( const RwMatrix& mat )
+{
+    m_matrix = mat;
+    return true;
+}
+
 bool CClientCamera::GetMatrix( RwMatrix& Matrix ) const
 {
     Matrix = m_pCamera->GetMatrix();
@@ -168,13 +176,16 @@ bool CClientCamera::GetMatrix( RwMatrix& Matrix ) const
 void CClientCamera::GetPosition( CVector& vecPosition ) const
 {
     if ( m_bFixed )
-        vecPosition = m_vecFixedPosition;
+        vecPosition = m_matrix.pos;
     else
         vecPosition = m_pCamera->GetMatrix().pos;
 }
 
 void CClientCamera::SetPosition( const CVector& vecPosition )
 {
+    if ( !IsInFixedMode() )
+        ToggleCameraFixedMode( true );
+
     // Make sure that's where the world center is
     CVector vecRotation;
     RwMatrix matTemp;
@@ -184,7 +195,7 @@ void CClientCamera::SetPosition( const CVector& vecPosition )
     g_pMultiplayer->SetCenterOfWorld ( NULL, &v, PI - vecRotation.fZ );
 
     // Store the position so it can be updated from our hook
-    m_vecFixedPosition = vecPosition;
+    m_matrix.pos = vecPosition;
 }
 
 void CClientCamera::GetRotation( CVector& vecRotation ) const
@@ -192,11 +203,11 @@ void CClientCamera::GetRotation( CVector& vecRotation ) const
     CCam* pCam = m_pCamera->GetCam ( m_pCamera->GetActiveCam () );
     m_pCamera->GetMatrix().GetRotation( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
     vecRotation += CVector ( 180.0f, 180.0f, 180.0f );
+
     if ( vecRotation.fX > 360.0f ) vecRotation.fX -= 360.0f;
     if ( vecRotation.fY > 360.0f ) vecRotation.fY -= 360.0f;
     if ( vecRotation.fZ > 360.0f ) vecRotation.fZ -= 360.0f;
 }
-
 
 void CClientCamera::SetRotation ( const CVector& vecRotation )
 {
@@ -215,37 +226,52 @@ void CClientCamera::SetRotation ( const CVector& vecRotation )
     SetTarget ( vecPosition );
 }
 
-
 void CClientCamera::GetTarget ( CVector & vecTarget ) const
 {
-    if ( m_bFixed ) vecTarget = m_vecFixedTarget;
+    CCam* pCam = m_pCamera->GetCam( m_pCamera->GetActiveCam() );
+    vecTarget = m_pCamera->GetMatrix().pos + *pCam->GetFront();
+}
+
+void CClientCamera::SetTarget( const CVector& vecTarget )
+{
+    // Calculate the front vector, target - position. If its length is 0 we'll get problems
+    // (i.e. if position and target are the same), so make a new vector when looking horizontally
+    m_matrix.at = vecTarget - m_matrix.pos;
+    if ( m_matrix.at.Length() < FLOAT_EPSILON )
+        m_matrix.at = CVector( 0.0, 1.0f, 0.0f );
     else
+        m_matrix.at.Normalize();
+
+    // Grab the right vector
+    m_matrix.right = CVector( m_matrix.at.fY, -m_matrix.at.fX, 0 );
+    if ( m_matrix.right.Length() < FLOAT_EPSILON )
+        m_matrix.right = CVector( 1.0f, 0.0f, 0.0f );
+    else
+        m_matrix.right.Normalize();
+
+    // Calculate the up vector from this
+    m_matrix.up = m_matrix.right;
+    m_matrix.up.CrossProduct( &m_matrix.at );
+    m_matrix.up.Normalize();
+
+    // Apply roll if needed
+    if ( m_fRoll != 0.0f )
     {
-        CCam* pCam = m_pCamera->GetCam ( m_pCamera->GetActiveCam () );
-        vecTarget = m_pCamera->GetMatrix().pos + *pCam->GetFront ();
+        float fRoll = ConvertDegreesToRadiansNoWrap( m_fRoll );
+        m_matrix.up = m_matrix.up * cos( fRoll ) - m_matrix.right * sin( fRoll );
     }
 }
 
-
-void CClientCamera::SetTarget ( const CVector& vecPosition )
-{
-    // Store the target so it can be updated from our hook
-    m_vecFixedTarget = vecPosition;
-}
-
-
-void CClientCamera::FadeIn ( float fTime )
+void CClientCamera::FadeIn( float fTime )
 {
     m_pCamera->Fade ( fTime, FADE_IN );
 }
 
-
-void CClientCamera::FadeOut ( float fTime, unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue )
+void CClientCamera::FadeOut( float fTime, unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue )
 {
-    m_pCamera->SetFadeColor ( ucRed, ucGreen, ucBlue );
-    m_pCamera->Fade ( fTime, FADE_OUT );
+    m_pCamera->SetFadeColor( ucRed, ucGreen, ucBlue );
+    m_pCamera->Fade( fTime, FADE_OUT );
 }
-
 
 void CClientCamera::SetFocus ( CClientEntity* pEntity, eCamMode eMode, bool bSmoothTransition )
 {
@@ -297,7 +323,6 @@ void CClientCamera::SetFocus ( CClientEntity* pEntity, eCamMode eMode, bool bSmo
     m_fFOV = 70.0f;
 }
 
-
 void CClientCamera::SetFocus ( CClientPlayer* pPlayer, eCamMode eMode, bool bSmoothTransition )
 {
     // Should we attach to a player, or set the camera to free?
@@ -327,7 +352,6 @@ void CClientCamera::SetFocus ( CClientPlayer* pPlayer, eCamMode eMode, bool bSmo
     m_bFixed = false;
 }
 
-
 void CClientCamera::SetFocus ( CVector& vecTarget, bool bSmoothTransition )
 {
     // Grab the camera
@@ -345,8 +369,7 @@ void CClientCamera::SetFocus ( CVector& vecTarget, bool bSmoothTransition )
     }
 }
 
-
-void CClientCamera::SetFocusToLocalPlayer ( void )
+void CClientCamera::SetFocusToLocalPlayer()
 {
     // Restore the camera
     SetFocusToLocalPlayerImpl ();
@@ -364,16 +387,14 @@ void CClientCamera::SetFocusToLocalPlayer ( void )
     m_fFOV = 70.0f;
 }
 
-
-void CClientCamera::SetFocusToLocalPlayerImpl ( void )
+void CClientCamera::SetFocusToLocalPlayerImpl()
 {
     // Restore the camera
     m_pCamera->RestoreWithJumpCut ();
     g_pMultiplayer->SetCenterOfWorld ( NULL, NULL, NULL );
 }
 
-
-void CClientCamera::UnreferenceEntity ( CClientEntity* pEntity )
+void CClientCamera::UnreferenceEntity( CClientEntity* pEntity )
 {
     if ( m_pFocusedEntity == pEntity )
     {
@@ -389,8 +410,7 @@ void CClientCamera::UnreferenceEntity ( CClientEntity* pEntity )
     }
 }
 
-
-void CClientCamera::UnreferencePlayer ( CClientPlayer* pPlayer )
+void CClientCamera::UnreferencePlayer( CClientPlayer* pPlayer )
 {
     if ( m_pFocusedPlayer == pPlayer )
     {
@@ -398,7 +418,6 @@ void CClientCamera::UnreferencePlayer ( CClientPlayer* pPlayer )
         m_pFocusedPlayer = NULL;
     }
 }
-
 
 void CClientCamera::InvalidateEntity ( CClientEntity* pEntity )
 {
@@ -412,7 +431,6 @@ void CClientCamera::InvalidateEntity ( CClientEntity* pEntity )
     }
 }
 
-
 void CClientCamera::RestoreEntity ( CClientEntity* pEntity )
 {
     if ( m_bInvalidated )
@@ -425,7 +443,6 @@ void CClientCamera::RestoreEntity ( CClientEntity* pEntity )
     }
 }
 
-
 void CClientCamera::SetCameraViewMode ( eVehicleCamMode eMode )
 {
     m_pCamera->SetCameraViewMode ( eMode );
@@ -435,7 +452,6 @@ eVehicleCamMode CClientCamera::GetCameraViewMode ()
 {
     return (eVehicleCamMode)m_pCamera->GetCameraViewMode();
 }
-
 
 void CClientCamera::SetCameraClip ( bool bObjects, bool bVehicles )
 {
@@ -465,7 +481,7 @@ void CClientCamera::ToggleCameraFixedMode ( bool bEnabled )
             SetFocus ( pLocalPlayer, MODE_FIXED, false );
 
         // Set the target position
-        SetFocus ( m_vecFixedPosition, false );
+        SetFocus( m_matrix.pos, false );
     }
     else
     {
@@ -477,8 +493,7 @@ void CClientCamera::ToggleCameraFixedMode ( bool bEnabled )
     }
 }
 
-
-CClientEntity * CClientCamera::GetTargetEntity ( void )
+CClientEntity* CClientCamera::GetTargetEntity()
 {
     CClientEntity* pReturn = NULL;
     if ( m_pCamera )
@@ -493,13 +508,10 @@ CClientEntity * CClientCamera::GetTargetEntity ( void )
     return pReturn;
 }
 
-
-bool CClientCamera::ProcessFixedCamera ( CCam* pCam )
+bool CClientCamera::ProcessFixedCamera( CCam* pCam )
 {
-    assert ( pCam );
     // The purpose of this handler function is changing the Source, Front and Up vectors in CCam
     // when called by GTA. This is called when we are in fixed camera mode.
-
     CClientCamera* pThis = g_pClientGame->GetManager ()->GetCamera ();
 
     // Make sure we actually want to apply our custom camera position/lookat
@@ -507,45 +519,12 @@ bool CClientCamera::ProcessFixedCamera ( CCam* pCam )
     if ( !pThis->m_bFixed )
         return false;
 
-    const CVector& vecPosition = pThis->m_vecFixedPosition;
-    const CVector& vecTarget = pThis->m_vecFixedTarget;
-
-    // Set the position in the CCam interface
-    *pCam->GetSource () = vecPosition;
-
-    // Calculate the front vector, target - position. If its length is 0 we'll get problems
-    // (i.e. if position and target are the same), so make a new vector then looking horizontally
-    CVector vecFront = vecTarget - vecPosition;
-    if ( vecFront.Length () < FLOAT_EPSILON )
-        vecFront = CVector ( 0.0, 1.0f, 0.0f );
-    else
-        vecFront.Normalize ();
-
-    *pCam->GetFront () = vecFront;
-
-    // Grab the right vector
-    CVector vecRight = CVector ( vecFront.fY, -vecFront.fX, 0 );
-    if ( vecRight.Length () < FLOAT_EPSILON )
-        vecRight = CVector ( 1.0f, 0.0f, 0.0f );
-    else
-        vecRight.Normalize ();
-
-    // Calculate the up vector from this
-    CVector vecUp = vecRight;
-    vecUp.CrossProduct ( &vecFront );
-    vecUp.Normalize ();
-
-    // Apply roll if needed
-    if ( pThis->m_fRoll != 0.0f )
-    {
-        float fRoll = ConvertDegreesToRadiansNoWrap ( pThis->m_fRoll );
-        vecUp = vecUp*cos(fRoll) - vecRight*sin(fRoll);
-    }
-
-    *pCam->GetUp () = vecUp;
+    // Update the display parameters
+    *pCam->GetSource() = pThis->m_matrix.pos;
+    *pCam->GetFront() = pThis->m_matrix.at;
+    *pCam->GetUp() = pThis->m_matrix.up;
 
     // Set the zoom
-    pCam->SetFOV ( pThis->m_fFOV );
-
+    pCam->SetFOV( pThis->m_fFOV );
     return true;
 }

@@ -666,6 +666,9 @@ void CPoolsSA::DeleteAllPeds()
 // Has to stay this way for optimization purposes; usage only in 100% secure scenarios!
 CEntity* CPoolsSA::GetEntity( void *entity ) const
 {
+    if ( !entity )
+        return NULL;
+
     switch( ((CEntitySAInterface*)entity)->m_type )
     {
     case ENTITY_TYPE_PED:       return GetPed( entity );

@@ -202,12 +202,12 @@ void CCameraSA::TakeControlAttachToEntity( CEntity *target, CEntity *attach, con
 
 const RwMatrix& CCameraSA::GetMatrix() const
 {
-    return GetInterface()->m_cameraMatrix; // ->Placeable.matrix;
+    return m_interface->m_cameraMatrix; // ->Placeable.matrix;
 }
 
 void CCameraSA::SetMatrix( const RwMatrix& mat )
 {
-    GetInterface()->m_cameraMatrix = mat;
+    m_interface->m_cameraMatrixOld = mat;
 }
 
 void CCameraSA::SetCamPositionForFixedMode( const CVector& pos, const CVector& upOffset )

@@ -27,6 +27,7 @@ class CLuaArguments;
 
 class CLuaArgument : public LuaArgument
 {
+    friend class CLuaArguments;
 public:
     CLuaArgument() : LuaArgument()
     {
@@ -48,11 +49,12 @@ public:
     {
     }
 
-    CLuaArgument( NetBitStreamInterface& stream ) : LuaArgument( stream )
+    CLuaArgument( LuaArguments *parent, NetBitStreamInterface& stream ) : LuaArgument( parent, stream )
     {
+        ReadFromBitStream( stream );
     }
 
-    CLuaArgument( lua_State *L, int idx ) : LuaArgument( L, idx )
+    CLuaArgument( LuaArguments *parent, lua_State *L, int idx, luaArgRep_t *cached ) : LuaArgument( parent, L, idx, cached )
     {
     }
 
@@ -64,11 +66,10 @@ public:
     void                    ReadEntity( CClientEntity *element );
     CClientEntity*          GetElement() const;
 
-    bool                    WriteToBitStream( NetBitStreamInterface& bitStream ) const;
-
-protected:
+    bool                    WriteToBitStream( NetBitStreamInterface& bitStream, argRep_t *cached = NULL ) const;
     bool                    ReadTypeFromBitStream( NetBitStreamInterface& stream, int type );
 
+protected:
     void                    LogUnableToPacketize( const char *msg ) const;
 };
 
