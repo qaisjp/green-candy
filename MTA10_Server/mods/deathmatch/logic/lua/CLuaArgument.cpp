@@ -58,12 +58,14 @@ bool CLuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int typ
     {
     // Element type
     case LUA_TLIGHTUSERDATA:
-        ElementID id;
+        {
+            ElementID id;
 
-        if ( !bitStream.Read( id ) )
-            return false;
+            if ( !bitStream.Read( id ) )
+                return false;
 
-        Read( CElementIDs::GetElement( id ) );
+            Read( CElementIDs::GetElement( id ) );
+        }
         return true;
     }
     return LuaArgument::ReadTypeFromBitStream( stream, type );

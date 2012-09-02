@@ -412,7 +412,7 @@ public:
     //
     // Read CLuaArguments
     //
-    bool ReadLuaArguments ( CLuaArguments& outValue )
+    bool ReadNetworkArguments ( CLuaArguments& outValue )
     {
         outValue.ReadArguments ( m_luaVM, m_iIndex );
         m_iIndex += outValue.Count();

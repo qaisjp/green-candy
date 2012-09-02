@@ -34,6 +34,7 @@ CLuaArgument::~CLuaArgument()
 
 LuaArgument* CLuaArgument::Clone() const
 {
+    // TODO: improve if we want to use this class
     return new CLuaArgument( *this );
 }
 
@@ -63,6 +64,13 @@ bool CLuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int typ
 {
     switch( type )
     {
+    case LUA_TTABLE:
+        m_table = new CLuaArguments( stream );
+        m_table->AddCachedTable( m_table );
+        m_type = LUA_TTABLE;
+        m_table->ValidateTableKeys();
+        return true;
+
     // Element type
     case LUA_TLIGHTUSERDATA:
         ElementID id;
@@ -76,7 +84,7 @@ bool CLuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int typ
     return LuaArgument::ReadTypeFromBitStream( stream, type );
 }
 
-bool CLuaArgument::WriteToBitStream( NetBitStreamInterface& stream ) const
+bool CLuaArgument::WriteToBitStream( NetBitStreamInterface& stream, argRep_t *cached ) const
 {
     SLuaTypeSync type;
 
@@ -113,7 +121,7 @@ bool CLuaArgument::WriteToBitStream( NetBitStreamInterface& stream ) const
         assert( 0 );
     }
 
-    return LuaArgument::WriteToBitStream( stream );
+    return LuaArgument::WriteToBitStream( stream, cached );
 }
 
 void CLuaArgument::LogUnableToPacketize( const char *msg ) const

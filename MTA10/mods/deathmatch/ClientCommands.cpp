@@ -37,7 +37,8 @@ static inline void luaexecute( const char *name, const char *cmdArgs )
     {
         std::vector <std::string> args;
 
-        strsplit( cmdArgs, args );
+        if ( cmdArgs )
+            strsplit( cmdArgs, args );
 
         cmd->Execute( args );
     }

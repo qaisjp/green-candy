@@ -37,6 +37,7 @@ DWORD g_dwTable = 0;
 // File access zones
 CFileTranslator *tempFileRoot;
 CFileTranslator *mtaFileRoot;
+CFileTranslator *screenFileRoot;
 CFileTranslator *dataFileRoot;
 CFileTranslator *modFileRoot;
 CFileTranslator *newsFileRoot;
@@ -137,8 +138,12 @@ CCore::CCore()
     filePath newsRoot = GetMTADataPath() + "news/";
     CreateDirectory( newsRoot.c_str(), NULL );
 
+    filePath screenRoot = mtaRoot + "screenshots/";
+    CreateDirectory( screenRoot.c_str(), NULL );
+
     tempFileRoot = m_fileSystem->CreateTranslator( tempRoot );
     mtaFileRoot = m_fileSystem->CreateTranslator( mtaRoot + "mta/" );
+    screenFileRoot = m_fileSystem->CreateTranslator( screenRoot );
     dataFileRoot = m_fileSystem->CreateTranslator( GetMTADataPath() );
     modFileRoot = m_fileSystem->CreateTranslator( mtaRoot + "mods/" );
     newsFileRoot = m_fileSystem->CreateTranslator( newsRoot );

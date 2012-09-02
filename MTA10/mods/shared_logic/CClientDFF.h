@@ -19,14 +19,12 @@ class CClientDFF;
 
 #define LUACLASS_DFF    23
 
-class CClientDFF : public LuaElement
+class CClientDFF : public CClientRwObject
 {
+    friend class CClientAtomic;
 public:
                                     CClientDFF( LuaClass& root, CModel& model );
                                     ~CClientDFF();
-
-    const char*                     GetName() const         { return m_model.GetName(); }
-    unsigned int                    GetHash() const         { return m_model.GetHash(); }
 
     bool                            ReplaceModel( unsigned short id );
     bool                            HasReplaced( unsigned short id );
@@ -36,7 +34,12 @@ public:
 protected:
     void                            RestreamAll() const;
 
+public:
     CModel&                         m_model;
+
+    typedef std::list <CClientAtomic*> atomics_t;
+
+    atomics_t                       m_atomics;
 };
 
 #endif

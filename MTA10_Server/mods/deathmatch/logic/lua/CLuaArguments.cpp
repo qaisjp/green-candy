@@ -32,9 +32,9 @@ CLuaArguments::CLuaArguments( NetBitStreamInterface& stream )
     ReadFromBitStream( stream );
 }
 
-void CLuaArguments::ReadArgument( lua_State *L, int idx )
+void CLuaArguments::ReadArgument( lua_State *L, int idx, luaArgRep_t *cached )
 {
-    m_args.push_back( new CLuaArgument( L, idx ) );
+    m_args.push_back( new CLuaArgument( L, idx, cached ) );
 }
 
 LuaArgument* CLuaArguments::PushNil()

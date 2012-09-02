@@ -3012,7 +3012,6 @@ bool CStaticFunctionDefinitions::SetObjectStatic ( CClientEntity& Entity, bool b
     return false;
 }
 
-
 CClientRadarArea* CStaticFunctionDefinitions::CreateRadarArea ( CResource& Resource, const CVector2D& vecPosition2D, const CVector2D& vecSize, const SColor color )
 {
     // Create it
@@ -3029,93 +3028,21 @@ CClientRadarArea* CStaticFunctionDefinitions::CreateRadarArea ( CResource& Resou
     return NULL;
 }
 
-
-bool CStaticFunctionDefinitions::GetRadarAreaColor ( CClientRadarArea* RadarArea, SColor& outColor )
-{
-    if ( RadarArea )
-    {
-        outColor = RadarArea->GetColor ();
-        return true;
-    }
-    return false;
-}
-
-
-bool CStaticFunctionDefinitions::GetRadarAreaSize ( CClientRadarArea* RadarArea, CVector2D& vecSize )
-{
-    if ( RadarArea )
-    {
-        vecSize = RadarArea->GetSize();
-        return true;
-    }
-    return false;
-}
-
-
-bool CStaticFunctionDefinitions::IsRadarAreaFlashing ( CClientRadarArea* RadarArea, bool &flashing )
-{
-    if ( RadarArea )
-    {
-        flashing = RadarArea->IsFlashing();
-        return true;
-    }
-    return false;
-}
-
-
-bool CStaticFunctionDefinitions::SetRadarAreaColor ( CClientRadarArea* RadarArea, const SColor color )
-{
-    if ( RadarArea )
-    {
-        RadarArea->SetColor ( color );
-        return true;
-    }
-    return false;
-}
-
-
-bool CStaticFunctionDefinitions::SetRadarAreaSize ( CClientRadarArea* RadarArea, CVector2D vecSize )
-{
-    if ( RadarArea )
-    {
-        RadarArea->SetSize ( vecSize );
-        return true;
-    }
-    return false;
-}
-
-
-bool CStaticFunctionDefinitions::SetRadarAreaFlashing ( CClientRadarArea* RadarArea, bool flashing )
-{
-    if ( RadarArea )
-    {
-        RadarArea->SetFlashing ( flashing );
-        return true;
-    }
-    return false;
-}
-
-
 bool CStaticFunctionDefinitions::IsInsideRadarArea ( CClientRadarArea* RadarArea, CVector2D vecPosition, bool& inside )
 {
-    if ( RadarArea )
+    CVector2D vecRadarPos = RadarArea->GetPosition();
+    CVector2D vecRadarSize = RadarArea->GetSize();
+    float fMaxX = vecRadarPos.fX + vecRadarSize.fX;
+    float fMaxY = vecRadarPos.fY + vecRadarSize.fY;
+    if ( vecPosition.fX >= vecRadarPos.fX && vecPosition.fX <= fMaxX )
     {
-        CVector2D vecRadarPos = RadarArea->GetPosition();
-        CVector2D vecRadarSize = RadarArea->GetSize();
-        float fMaxX = vecRadarPos.fX + vecRadarSize.fX;
-        float fMaxY = vecRadarPos.fY + vecRadarSize.fY;
-        if ( vecPosition.fX >= vecRadarPos.fX && vecPosition.fX <= fMaxX )
+        if ( vecPosition.fY >= vecRadarPos.fY && vecPosition.fY <= fMaxY )
         {
-            if ( vecPosition.fY >= vecRadarPos.fY && vecPosition.fY <= fMaxY )
-            {
-                inside = true;
-            }
+            inside = true;
         }
-        return true;
     }
-    return false;
+    return true;
 }
-
 
 CClientPickup* CStaticFunctionDefinitions::CreatePickup ( CResource& Resource, const CVector& vecPosition, unsigned char ucType, double dFive, unsigned long ulRespawnInterval, double dSix )
 {
@@ -3617,11 +3544,6 @@ bool CStaticFunctionDefinitions::GetCameraInterior ( unsigned char & ucInterior 
 
 bool CStaticFunctionDefinitions::SetCameraMatrix ( CVector& vecPosition, CVector* pvecLookAt, float fRoll, float fFOV )
 {
-    if ( !m_pCamera->IsInFixedMode () )        
-    {
-        m_pCamera->ToggleCameraFixedMode ( true );
-    }
-
     // Put the camera there
     m_pCamera->SetPosition ( vecPosition );
     if ( pvecLookAt )

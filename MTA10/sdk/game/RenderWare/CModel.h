@@ -25,6 +25,10 @@ public:
     virtual bool                    Restore( unsigned short id ) = 0;
 
     virtual void                    RestoreAll() = 0;
+
+    typedef std::list <CRpAtomic*> atomicList_t;
+
+    virtual const atomicList_t&     GetAtomics() const = 0;
 };
 
 #endif //_MODEL_ENTITY_EXPORT_

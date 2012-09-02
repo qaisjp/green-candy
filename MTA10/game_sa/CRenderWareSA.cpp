@@ -504,86 +504,95 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
     CBaseModelInfoSAInterface *model = ppModelInfo[id];
     CTxdInstanceSA *txd;
     CColModelSAInterface *col;
-    CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
-    // rockstar's collision hack: set the global particle emitter to the modelinfo pointer of this model
-    RpPrtStdGlobalDataSetStreamEmbedded( model );
-
-    // The_GTA: Clumps and atomics load their requirements while being read in this rwStream
-    // We therefor have to prepare all resources so it can retrive them; textures and animations!
-    if ( model )
+    if ( id != 0 )
     {
-        col = model->m_pColModel;
-        model->m_pColModel = NULL;
+        CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
-        txd = (*ppTxdPool)->Get( model->m_textureDictionary );
+        // rockstar's collision hack: set the global particle emitter to the modelinfo pointer of this model
+        RpPrtStdGlobalDataSetStreamEmbedded( model );
 
-        if ( !txd->m_txd )
+        // The_GTA: Clumps and atomics load their requirements while being read in this rwStream
+        // We therefor have to prepare all resources so it can retrive them; textures and animations!
+        if ( model )
         {
-            CStreamingSA *streamer = pGame->GetStreaming();
+            col = model->m_pColModel;
+            model->m_pColModel = NULL;
 
-            // VERY IMPORTANT: find a way to load the texDictionary and animation ourselves here!
-            // We need to isolate this process from CStreaming, because CStreaming includes the model replacement fix
-            // If you try to load a dff with a replaced model, the collision might crash you if you delete
-            // a model which uses the same collision; the crash does not happen if all DFFs have a own collision
-            // A fix would be to clone the collision somehow, but loading resources ourselves is required too!
-            // Eventually: custom clump, txd and col async loading function in Lua
+            txd = (*ppTxdPool)->Get( model->m_textureDictionary );
 
-            // Load all requirements
-            streamer->RequestModel( id, 0x10 );
-            streamer->LoadAllRequestedModels( true );
+            if ( !txd->m_txd )
+            {
+                CStreamingSA *streamer = pGame->GetStreaming();
 
-            // We delete the RenderWare associations in this clump to free resources since GTA:SA loaded the 
-            // actual model's dff by now, which we do not need
-            // The only thing we need is the reference to the texture container and possibly the collision (?)
-            txd->Reference();
+                // VERY IMPORTANT: find a way to load the texDictionary and animation ourselves here!
+                // We need to isolate this process from CStreaming, because CStreaming includes the model replacement fix
+                // If you try to load a dff with a replaced model, the collision might crash you if you delete
+                // a model which uses the same collision; the crash does not happen if all DFFs have a own collision
+                // A fix would be to clone the collision somehow, but loading resources ourselves is required too!
+                // Eventually: custom clump, txd and col async loading function in Lua
 
-            // TODO: make sure that atomic model infos do not delete the associated collision.
-            // Otherwise we have to preserve it here! Last time I checked it did not happen.
+                // Load all requirements
+                streamer->RequestModel( id, 0x10 );
+                streamer->LoadAllRequestedModels( true );
 
-            // Tell GTA:SA to unload the resources, to cleanup associations
-            streamer->FreeModel( id );
+                // We delete the RenderWare associations in this clump to free resources since GTA:SA loaded the 
+                // actual model's dff by now, which we do not need
+                // The only thing we need is the reference to the texture container and possibly the collision (?)
+                txd->Reference();
+
+                // TODO: make sure that atomic model infos do not delete the associated collision.
+                // Otherwise we have to preserve it here! Last time I checked it did not happen.
+
+                // Tell GTA:SA to unload the resources, to cleanup associations
+                streamer->FreeModel( id );
+            }
+            else
+                txd->Reference();
+
+            // For atomics we have to set the current texture container so it loads from it properly
+            if ( model->GetRwModelType() == RW_ATOMIC )
+                txd->SetCurrent();
         }
-        else
-            txd->Reference();
-
-        // For atomics we have to set the current texture container so it loads from it properly
-        if ( model->GetRwModelType() == RW_ATOMIC )
-            txd->SetCurrent();
     }
 
     // read the clump with all its extensions
     RpClump *pClump = RpClumpStreamRead( streamModel );
 
-    // reset model schemantic loader
-    RpPrtStdGlobalDataSetStreamEmbedded( NULL );
-
-    if ( model )
+    if ( id != 0 )
     {
-        // The TXD container has to be preserved for the clump's lifetime!
-        // So this function leaves a reference for the TXD which has to be resolved once the associated
-        // model destroys itself.
+        // reset model schemantic loader
+        RpPrtStdGlobalDataSetStreamEmbedded( NULL );
 
-        // If there is no collision in our model information by now, the clump did not provide one
-        // We should restore to the original collision then
-        if ( !model->m_pColModel )
+        if ( model )
         {
-            model->m_pColModel = col;
+            // The TXD container has to be preserved for the clump's lifetime!
+            // So this function leaves a reference for the TXD which has to be resolved once the associated
+            // model destroys itself.
 
-            colOut = new CColModelSA( col, false );
+            // If there is no collision in our model information by now, the clump did not provide one
+            // We should restore to the original collision then
+            if ( !model->m_pColModel )
+            {
+                model->m_pColModel = col;
+
+                colOut = new CColModelSA( col, false );
+            }
+            else
+            {
+                colOut = new CColModelSA( model->m_pColModel, true );
+
+                // If we loaded an atomic model and there is a custom collision, which should be very rare,
+                // we keep the original collision once we want to restore our the model
+                // GTA:SA never deletes object models
+                if ( model->GetRwModelType() == RW_ATOMIC )
+                    colOut->SetOriginal( col );
+                else
+                    delete col;
+            }
         }
         else
-        {
-            colOut = new CColModelSA( model->m_pColModel, true );
-
-            // If we loaded an atomic model and there is a custom collision, which should be very rare,
-            // we keep the original collision once we want to restore our the model
-            // GTA:SA never deletes object models
-            if ( model->GetRwModelType() == RW_ATOMIC )
-                colOut->SetOriginal( col );
-            else
-                delete col;
-        }
+            colOut = NULL;
     }
     else
         colOut = NULL;

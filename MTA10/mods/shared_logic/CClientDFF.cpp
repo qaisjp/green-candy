@@ -14,24 +14,8 @@
 
 #include "StdInc.h"
 
-static int dff_getName( lua_State *L )
-{
-    const std::string& name = ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetName();
-
-    lua_pushlstring( L, name.c_str(), name.size() );
-    return 1;
-}
-
-static int dff_getHash( lua_State *L )
-{
-    lua_pushnumber( L, ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetHash() );
-    return 1;
-}
-
 static const luaL_Reg dff_interface[] =
 {
-    { "getName", dff_getName },
-    { "getHash", dff_getHash },
     { NULL, NULL }
 };
 
@@ -42,16 +26,23 @@ static int luaconstructor_dff( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_DFF, dff );
 
+    // Obtain all atomics
+    const CModel::atomicList_t& atoms = dff->m_model.GetAtomics();
+    CModel::atomicList_t::const_iterator iter = atoms.begin();
+
+    for ( ; iter != atoms.end(); iter++ )
+        new CClientAtomic( *dff, dff, **iter );
+
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, dff_interface, 1 );
 
-    lua_pushlstring( L, "dff", 5 );
+    lua_pushlstring( L, "dff", 3 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;
 }
 
-CClientDFF::CClientDFF( LuaClass& root, CModel& model ) : LuaElement( root ), m_model( model )
+CClientDFF::CClientDFF( LuaClass& root, CModel& model ) : CClientRwObject( root, model ), m_model( model )
 {
     lua_State *L = root.GetVM();
 
@@ -65,8 +56,6 @@ CClientDFF::CClientDFF( LuaClass& root, CModel& model ) : LuaElement( root ), m_
 CClientDFF::~CClientDFF()
 {
     RestreamAll();
-
-    delete &m_model;
 }
 
 bool CClientDFF::ReplaceModel( unsigned short id )

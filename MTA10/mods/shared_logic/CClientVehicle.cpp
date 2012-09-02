@@ -900,6 +900,11 @@ void CClientVehicle::SetTurretRotation ( float fHorizontal, float fVertical )
     m_fTurretVertical = fVertical;
 }
 
+CClientDFF* CClientVehicle::GetModelInstance()
+{
+    return NULL;
+}
+
 void CClientVehicle::SetModelBlocking ( unsigned short usModel, bool bLoadImmediately )
 {
     // Different vehicle ID than we have now?

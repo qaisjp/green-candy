@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaFunctionDefs.Resource.cpp
@@ -14,6 +14,9 @@
 *               Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -23,68 +26,88 @@ namespace CLuaFunctionDefs
 {
     LUA_DECLARE( call )
     {
-        // Grab our VM
-        CLuaMain* pLuaMain = lua_readcontext( L );
+        CLuaMain *pLuaMain = lua_readcontext( L );
+        CResource *pThisResource = pLuaMain->GetResource();
 
-        // Grab this resource
-        CResource* pThisResource = pLuaMain->GetResource ();
-        if ( pThisResource )
+        if ( CResource *res = lua_readclass <CResource> ( L, 1, LUACLASS_RESOURCE ) )
         {
-            // Typechecking
-            if ( CResource* pResource = lua_readclass <CResource> ( L, 1, LUACLASS_RESOURCE ) )
+            // Get the target Lua VM
+            LuaMain& t_main = res->GetVM();
+            lua_State *targetL = *t_main;
+            lua_State *preserve = m_pLuaManager->GetVirtualMachine();
+            int argc = lua_gettop( L ) - 2;
+
+            std::string name = lua_getstring( L, 2 );
+
+            // Allocate enough stack size
+            lua_checkstack( targetL, max( 2, argc ) );
+            lua_checkstack( preserve, 2 );  // allocate stack size to allow call-stacking
+
+            // Store globals
+            lua_getglobal( targetL, "sourceResource" );
+            lua_getglobal( targetL, "sourceResourceRoot" );
+
+            // Set globals
+            pThisResource->PushStack( L );                              lua_setglobal( targetL, "sourceResource" );
+            pThisResource->GetResourceEntity()->PushStack( L );         lua_setglobal( targetL, "sourceResourceRoot" );
+
+            int top = lua_gettop( targetL );
+
+            // Call the exported function with the given name and the args
+            bool rslt;
+            CResource::exports_t::iterator iter = res->IterBeginExports();
+
+            for ( ; iter != res->IterEndExports(); iter++ )
             {
-                //Get the target Lua VM
-                lua_State* targetL = *pResource->GetVM();
-
-                // The function name
-                const char* szFunctionName = lua_tostring ( L, 2 );
-
-                // Read out the vargs
-                CLuaArguments args;
-                args.ReadArguments ( L, 3 );
-                CLuaArguments returns;
-
-                //Lets grab the original hidden variables so we can restore them later
-                lua_getglobal ( targetL, "sourceResource" );
-                CLuaArgument OldResource ( L, -1 );
-                lua_pop( targetL, 1 );
-
-                lua_getglobal ( targetL, "sourceResourceRoot" );
-                CLuaArgument OldResourceRoot ( L, -1 );
-                lua_pop( targetL, 1 );
-
-                //Set the new values for the current sourceResource, and sourceResourceRoot
-                pThisResource->PushStack( L );
-                lua_setglobal ( targetL, "sourceResource" );
-
-                pThisResource->GetResourceEntity()->PushStack( L );
-                lua_setglobal ( targetL, "sourceResourceRoot" );
-
-                // Call the exported function with the given name and the args
-                bool rslt = pResource->CallExportedFunction ( szFunctionName, args, returns, *pThisResource );
-
-                //Restore the old variables
-                OldResource.Push ( targetL );
-                lua_setglobal ( targetL, "sourceResource" );
-
-                OldResourceRoot.Push ( targetL );
-                lua_setglobal ( targetL, "sourceResourceRoot" );
-
-                if ( rslt )
+                if ( (*iter)->GetFunctionName() == name )
                 {
-                    // Push return arguments
-                    returns.PushArguments ( L );
-                    return returns.Count ();
+                    lua_getfield( L, LUA_GLOBALSINDEX, name.c_str() );
+
+                    if ( lua_type( L, -1 ) == LUA_TNIL )
+                    {
+                        lua_pop( L, 1 );
+                        break;
+                    }
+
+                    // Move the arguments over to the target env
+                    if ( targetL != L )
+                        lua_xmove( L, targetL, argc );
+                    else
+                    {
+                        // Insert the function at the start of the arguments
+                        lua_insert( L, 3 );
+                    }
+                    
+                    rslt = t_main.PCallStack( argc );
+                    goto success;
                 }
-                else
-                    m_pScriptDebugging->LogError( "call: failed to call '%s:%s'", pResource->GetName (), szFunctionName );
+            }
+
+            // We failed to call a function
+            rslt = false;
+
+success:
+            // Restore globals
+            lua_setglobal( targetL, "sourceResourceRoot" );
+            lua_setglobal( targetL, "sourceResource" );
+
+            if ( rslt )
+            {
+                int retCount = lua_gettop( targetL ) - top;
+
+                if ( L != targetL && retCount )
+                    lua_xmove( targetL, L, retCount );
+
+                return retCount;
             }
             else
-                m_pScriptDebugging->LogBadPointer( "call", "resource", 1 );
+                m_pScriptDebugging->LogError( "call: failed to call '%s:%s'", res->GetName().c_str(), name.c_str() );
         }
+        else
+            m_pScriptDebugging->LogBadPointer( "call", "resource", 1 );
 
         // Failed
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
@@ -278,25 +301,28 @@ error:
         else if ( lua_istype( L, 1, LUA_TNONE ) )
         {
             CLuaMain* pLuaMain = lua_readcontext( L );
-            resource = pLuaMain->GetResource ();
+            resource = pLuaMain->GetResource();
         }
 
         if ( resource )
         {
-            lua_newtable ( L );
-            unsigned int uiIndex = 0;
-            CResource::exports_t::iterator iterd = resource->IterBeginExportedFunctions();
-            for ( ; iterd != resource->IterEndExportedFunctions(); iterd++ )
+            lua_newtable( L );
+
+            unsigned int n = 1;
+            CResource::exports_t::iterator iterd = resource->IterBeginExports();
+
+            for ( ; iterd != resource->IterEndExports(); iterd++, n++ )
             {
-                lua_pushnumber ( L, ++uiIndex );
-                lua_pushstring ( L, (*iterd)->GetFunctionName().c_str() );
-                lua_settable ( L, -3 );
+                lua_pushnumber( L, n );
+                lua_pushstring( L, (*iterd)->GetFunctionName().c_str() );
+                lua_settable( L, -3 );
             }
+
             return 1;
         }
-        
         m_pScriptDebugging->LogBadType( "getResourceExportedFunctions" );
-        lua_pushboolean ( L, false );
+
+        lua_pushboolean( L, false );
         return 1;
     }
 }

@@ -141,7 +141,7 @@ namespace CLuaFunctionDefs
         CScriptArgReader argStream ( L );
         argStream.ReadString ( strName );
         argStream.ReadClass( pCallWithEntity, LUACLASS_ENTITY );
-        argStream.ReadLuaArguments ( Arguments );
+        argStream.ReadNetworkArguments ( Arguments );
 
         if ( !argStream.HasErrors () )
         {

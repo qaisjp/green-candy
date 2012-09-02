@@ -1855,9 +1855,9 @@ namespace CLuaFunctionDefs
 
         CScriptArgReader argStream ( L );
         argStream.ReadClass( guiGridlist, LUACLASS_GUIGRIDLIST );
-        argStream.ReadNumber ( rowIndex );
-        argStream.ReadNumber ( columnIndex );
-        argStream.ReadLuaArgument ( data );
+        argStream.ReadNumber( rowIndex );
+        argStream.ReadNumber( columnIndex );
+        argStream.ReadLuaArgument( data );
 
         if ( !argStream.HasErrors () )
         {

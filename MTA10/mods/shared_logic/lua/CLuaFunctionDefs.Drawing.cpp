@@ -16,6 +16,8 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -54,7 +56,6 @@ namespace CLuaFunctionDefs
         lua_pushboolean ( L, true );
         return 1;
     }
-
 
     LUA_DECLARE( dxDrawLine3D )
     {

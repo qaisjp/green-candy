@@ -84,16 +84,9 @@ public:
 class CTaskSimpleRunAnimSA : public CTaskSimpleSA, public virtual CTaskSimpleRunAnim
 {
 public:
-    CTaskSimpleRunAnimSA ( void ) {};
-    CTaskSimpleRunAnimSA ( const AssocGroupId animGroup,
-                           const AnimationId animID, 
-                           const float fBlendDelta, 
-                           const int iTaskType,
-                           const char* pTaskName,
-                           const bool bHoldLastFrame = false );
+    CTaskSimpleRunAnimSA()  {}
+    CTaskSimpleRunAnimSA( AssocGroupId animGroup, AnimationId animID, float fBlendDelta, int iTaskType, const char *pTaskName, bool bHoldLastFrame = false );
 };
-
-
 
 #define ANIM_NAMELEN 24
 #define ANIMBLOCK_NAMELEN 16
@@ -109,23 +102,23 @@ public:
     int                     m_iTime;
     CTaskTimer              m_timer;
     CVector                 m_offsetAtEnd;
-    int                   m_flags;    
+    int                     m_flags;    
     short                   m_animID;   
 };
 
 class CTaskSimpleRunNamedAnimSA : public CTaskSimpleAnimSA, public virtual CTaskSimpleRunNamedAnim
 {
 public:
-    CTaskSimpleRunNamedAnimSA ( void ) {};
-    CTaskSimpleRunNamedAnimSA ( const char* pAnimName,
-                                const char* pAnimGroupName,
-                                const int flags,
-                                const float fBlendDelta,
-                                const int iTime = -1,
-                                const bool bDontInterrupt = false,
-                                const bool bRunInSequence = false,
-                                const bool bOffsetPed = false,
-                                const bool bHoldLastFrame = false );
+    CTaskSimpleRunNamedAnimSA() {};
+    CTaskSimpleRunNamedAnimSA( const char *pAnimName,
+                               const char *pAnimGroupName,
+                               int flags,
+                               float fBlendDelta,
+                               int iTime = -1,
+                               bool bDontInterrupt = false,
+                               bool bRunInSequence = false,
+                               bool bOffsetPed = false,
+                               bool bHoldLastFrame = false );
 };
 
 class CTaskComplexDieSAInterface : public CTaskComplexSAInterface

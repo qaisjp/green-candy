@@ -42,6 +42,7 @@ public:
 
     inline eClientEntityType    GetType() const                                 { return CCLIENTCAMERA; };
 
+    bool                        SetMatrix( const RwMatrix& mat );
     bool                        GetMatrix( RwMatrix& mat ) const;
     void                        GetPosition( CVector& pos ) const;
     void                        GetRotation( CVector& rot ) const;
@@ -96,9 +97,9 @@ private:
     CEntity*                    m_pFocusedGameEntity;
     bool                        m_bInvalidated;
 
+    RwMatrix                    m_matrix;
+
     bool                        m_bFixed;
-    CVector                     m_vecFixedPosition;
-    CVector                     m_vecFixedTarget;
     float                       m_fRoll;
     float                       m_fFOV;
 

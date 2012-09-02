@@ -543,23 +543,3 @@ void LuaManager::DoPulse()
     for ( iter = IterBegin(); iter != IterEnd(); iter++ )
         (*iter)->DoPulse();
 }
-
-#ifndef _KILLFRENZY
-
-bool LuaArguments::WriteToBitStream( NetBitStreamInterface& bitStream ) const
-{
-    bool success = true;
-    std::vector <LuaArgument*>::const_iterator iter = m_args.begin();
-
-    bitStream.WriteCompressed( (unsigned short)m_args.size() );
-
-    for ( ; iter != m_args.end(); iter++ )
-    {
-        if ( !(*iter)->WriteToBitStream( bitStream ) )
-            success = false;
-    }
-
-    return success;
-}
-
-#endif

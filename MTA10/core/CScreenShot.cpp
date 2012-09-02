@@ -127,12 +127,12 @@ SString CScreenShot::GetScreenShotPath ( int iNumber )
 
 static void Png_Writer( png_struct *png, char *data, size_t size )
 {
-    ((CFile*)png->io_ptr)->Write( data, size, 1 );
+    ((CFile*)png_get_io_ptr( png ))->Write( data, size, 1 );
 }
 
 static void Png_Flusher( png_struct *png )
 {
-    ((CFile*)png->io_ptr)->Flush();
+    ((CFile*)png_get_io_ptr( png ))->Flush();
 }
 
 // Callback for threaded save
@@ -159,18 +159,18 @@ DWORD CScreenShot::ThreadProc ( LPVOID lpdwThreadParam )
         }
     }
 
-    CFile *file = mtaFileRoot->Open( ms_strFileName, "wb" );
+    CFile *file = screenFileRoot->Open( ms_strFileName, "wb" );
 
     // Do the .png logic
-    png_struct* png_ptr = png_create_write_struct ( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
-    png_info* info_ptr = png_create_info_struct ( png_ptr );
+    png_struct* png_ptr = png_create_write_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
+    png_info* info_ptr = png_create_info_struct( png_ptr );
     png_set_write_fn( png_ptr, file, (png_rw_ptr)Png_Writer, (png_flush_ptr)Png_Flusher );
-    png_set_filter ( png_ptr, 0, PNG_FILTER_NONE );
-    png_set_compression_level ( png_ptr, 1 );
-    png_set_IHDR ( png_ptr, info_ptr, ulScreenWidth, ulScreenHeight, 8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT );
-    png_set_rows ( png_ptr, info_ptr, ppScreenData );
-    png_write_png ( png_ptr, info_ptr, PNG_TRANSFORM_BGR | PNG_TRANSFORM_STRIP_ALPHA, NULL );
-    png_write_end ( png_ptr, info_ptr );
+    png_set_filter( png_ptr, 0, PNG_FILTER_NONE );
+    png_set_compression_level( png_ptr, 1 );
+    png_set_IHDR( png_ptr, info_ptr, ulScreenWidth, ulScreenHeight, 8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT );
+    png_set_rows( png_ptr, info_ptr, ppScreenData );
+    png_write_png( png_ptr, info_ptr, PNG_TRANSFORM_BGR | PNG_TRANSFORM_STRIP_ALPHA, NULL );
+    png_write_end( png_ptr, info_ptr );
     png_destroy_write_struct ( &png_ptr, &info_ptr );
 
     delete file;

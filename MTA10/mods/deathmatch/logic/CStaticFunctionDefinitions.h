@@ -232,12 +232,6 @@ public:
     
     // Radar-area get funcs
     static CClientRadarArea*            CreateRadarArea                     ( CResource& Resource, const CVector2D& vecPosition2D, const CVector2D& vecSize, const SColor color );
-    static bool                         GetRadarAreaColor                   ( CClientRadarArea* RadarArea, SColor& outColor );
-    static bool                         GetRadarAreaSize                    ( CClientRadarArea* RadarArea, CVector2D& vecSize );
-    static bool                         IsRadarAreaFlashing                 ( CClientRadarArea* RadarArea, bool& flashing );
-    static bool                         SetRadarAreaColor                   ( CClientRadarArea* RadarArea, const SColor color );
-    static bool                         SetRadarAreaSize                    ( CClientRadarArea* RadarArea, CVector2D vecSize );
-    static bool                         SetRadarAreaFlashing                ( CClientRadarArea* RadarArea, bool flashing );
     static bool                         IsInsideRadarArea                   ( CClientRadarArea* RadarArea, CVector2D vecPosition, bool& inside );
 
 

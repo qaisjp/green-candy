@@ -171,34 +171,6 @@ void CResource::AddExportedFunction( const char *name )
     m_exports.push_back( new CExportedFunction( name ) );
 }
 
-bool CResource::CallExportedFunction( const char *name, const CLuaArguments& args, CLuaArguments& returns, CResource& caller )
-{
-    exports_t::iterator iter = m_exports.begin();
-    for ( ; iter != m_exports.end(); iter++ )
-    {
-        if ( (*iter)->GetFunctionName() == name )
-        {
-            lua_State *L = *m_lua;
-
-            lua_getfield( L, LUA_GLOBALSINDEX, name );
-
-            if ( lua_type( L, -1 ) == LUA_TNIL )
-            {
-                lua_pop( L, 1 );
-                return false;
-            }
-            
-            LuaArguments::argList_t::const_iterator iter = args.IterBegin();
-
-            for ( ; iter != args.IterEnd(); iter++ )
-                (*iter)->Push( L );
-
-            return m_lua.PCallStackResult( args.Count(), returns );
-        }
-    }
-    return false;
-}
-
 void CResource::SetResourceEntity( CClientEntity *entity )
 {
     // If there was a previous entity, HACKS

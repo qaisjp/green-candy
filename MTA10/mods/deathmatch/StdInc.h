@@ -58,6 +58,8 @@
 #include <CClientColPolygon.h>
 #include <CClientColTube.h>
 #include <CClientCorona.h>
+#include <CClientRwObject.h>
+#include <CClientAtomic.h>
 #include <CClientDFF.h>
 #include <CClientColModel.h>
 #include <CClientDummy.h>

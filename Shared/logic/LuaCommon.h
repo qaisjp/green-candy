@@ -54,4 +54,10 @@ static inline void lua_unpack( lua_State *L )
     lua_remove( L, idx );
 }
 
+static inline void lua_stack2table( lua_State *L, int tidx, int n )
+{
+    while ( n )
+        lua_rawseti( L, tidx, n-- + 1 );
+}
+
 #endif //_BASE_LUA_COMMON
