@@ -179,7 +179,6 @@ public:
     void                        SetTurretRotation( float fHorizontal, float fVertical );
 
     inline unsigned short       GetModel() const                                                        { return m_usModel; };
-    CClientDFF*                 GetModelInstance();
     void                        SetModelBlocking( unsigned short usModel, bool bLoadImmediately = false );
 
     bool                        IsEngineBroken() const;
@@ -452,7 +451,6 @@ protected:
     CClientPed*                 m_pOccupyingDriver;
     CClientPed*                 m_pOccupyingPassengers[8];
     short                       m_usRemoveTimer;
-    CClientDFF*                 m_model;
 
     CClientVehicle*             m_pPreviousLink;
     CClientVehicle*             m_pNextLink;

@@ -13,8 +13,114 @@
 
 #include "StdInc.h"
 
+static LUA_DECLARE( setLTM )
+{
+    RwMatrix *mat;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadClass( mat, LUACLASS_MATRIX );
+    LUA_ARGS_END;
+
+    ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomic.GetFrame()->SetLTM( *mat );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getLTM )
+{
+    lua_creatematrix( L, ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomic.GetFrame()->GetLTM() );
+    return 1;
+}
+
+static LUA_DECLARE( setModelling )
+{
+    RwMatrix *mat;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadClass( mat, LUACLASS_MATRIX );
+    LUA_ARGS_END;
+
+    ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomic.GetFrame()->SetModelling( *mat );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getModelling )
+{
+    lua_creatematrix( L, ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomic.GetFrame()->GetModelling() );
+    return 1;
+}
+
+static LUA_DECLARE( replaceModel )
+{
+    unsigned short model;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( model );
+    LUA_ARGS_END;
+
+    lua_pushboolean( L, ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->ReplaceModel( model ) );
+    return 1;
+}
+
+static LUA_DECLARE( isReplaced )
+{
+    unsigned short model;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( model );
+    LUA_ARGS_END;
+
+    lua_pushboolean( L, ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->HasReplaced( model ) );
+    return 1;
+}
+
+static LUA_DECLARE( getReplaced )
+{
+    lua_settop( L, 0 );
+
+    const CRpAtomic::imports_t& impList = ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomic.GetImportList();
+    CRpAtomic::imports_t::const_iterator iter = impList.begin();
+    int n = 1;
+
+    lua_createtable( L, impList.size(), 0 );
+
+    for ( ; iter != impList.end(); iter++ )
+    {
+        lua_pushnumber( L, *iter );
+        lua_rawseti( L, 1, n++ );
+    }
+
+    return 1;
+}
+
+static LUA_DECLARE( restoreModel )
+{
+    unsigned short model;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( model );
+    LUA_ARGS_END;
+
+    ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->RestoreModel( model );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( restoreAll )
+{
+    ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->RestoreModels();
+    return 0;
+}
+
 static luaL_Reg atomic_interface[] =
 {
+    LUA_METHOD( setLTM ),
+    LUA_METHOD( getLTM ),
+    LUA_METHOD( setModelling ),
+    LUA_METHOD( getModelling ),
+    LUA_METHOD( replaceModel ),
+    LUA_METHOD( isReplaced ),
+    LUA_METHOD( getReplaced ),
+    LUA_METHOD( restoreModel ),
+    LUA_METHOD( restoreAll ),
     { NULL, NULL }
 };
 
@@ -52,4 +158,42 @@ CClientAtomic::~CClientAtomic()
 {
     if ( m_clump )
         m_clump->m_atomics.remove( this );
+}
+
+bool CClientAtomic::ReplaceModel( unsigned short id )
+{
+    if ( !m_atomic.Replace( id ) )
+        return false;
+
+    g_pClientGame->GetManager()->Restream( id );
+    return true;
+}
+
+bool CClientAtomic::HasReplaced( unsigned short id )
+{
+    return m_atomic.IsReplaced( id );
+}
+
+void CClientAtomic::RestoreModel( unsigned short id )
+{
+    if ( !m_atomic.Restore( id ) )
+        return;
+
+    g_pClientGame->GetManager()->Restream( id );
+}
+
+void CClientAtomic::RestoreModels()
+{
+    RestreamAll();
+
+    m_atomic.RestoreAll();
+}
+
+void CClientAtomic::RestreamAll() const
+{
+    std::vector <unsigned short> impList = m_atomic.GetImportList();
+    std::vector <unsigned short>::iterator iter = impList.begin();
+
+    for ( ; iter != impList.end(); iter++ )
+        g_pClientGame->GetManager()->Restream( *iter );
 }

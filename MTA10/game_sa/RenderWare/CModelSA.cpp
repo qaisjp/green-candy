@@ -117,14 +117,15 @@ bool CModelSA::Replace( unsigned short id )
     if ( cinfo->m_rwClump )  // Only inject if we are loaded! otherwise we screw up loading mechanics -> memory leaks
     {
         // If we store this collision model, we have to prevent it's destruction
-        if ( m_col->GetOriginal() )
+        if ( m_col && m_col->GetOriginal() )
             cinfo->m_pColModel = NULL;
 
         cinfo->DeleteRwObject();
         cinfo->SetClump( RpClumpClone( GetObject() ) );
     }
 
-    m_col->Replace( id );
+    if ( m_col )
+        m_col->Replace( id );
     g_replObjectNative[id] = this;
 
     m_imported[id] = true;
@@ -167,7 +168,8 @@ bool CModelSA::Restore( unsigned short id )
     CClumpModelInfoSAInterface *cinfo = (CClumpModelInfoSAInterface*)info;
     CStreamingSA *streaming = pGame->GetStreaming();
 
-    m_col->Restore( id );
+    if ( m_col )
+        m_col->Restore( id );
     g_replObjectNative[id] = NULL;
 
     // We can only restore if the model is actively loaded

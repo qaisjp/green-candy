@@ -29,6 +29,7 @@ public:
     virtual bool                    Replace( unsigned short id ) = 0;
     virtual bool                    IsReplaced( unsigned short id ) const = 0;
     virtual bool                    Restore( unsigned short id ) = 0;
+    virtual void                    RestoreAll() = 0;
 
     typedef std::vector <unsigned short> imports_t;
 

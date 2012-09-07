@@ -20,14 +20,20 @@ public:
                                     CRwFrameSA( RwFrame *obj );
                                     ~CRwFrameSA();
 
-    inline RwFrame*                 GetObject()                     { return (RwFrame*)m_object; }
-    inline const RwFrame*           GetObject() const               { return (const RwFrame*)m_object; }
+    inline RwFrame*                 GetObject()                         { return (RwFrame*)m_object; }
+    inline const RwFrame*           GetObject() const                   { return (const RwFrame*)m_object; }
 
-    void                            SetName( const char *name )     { strncpy( GetObject()->m_nodeName, name, 31 ); }
-    const char*                     GetName() const                 { return GetObject()->m_nodeName; }
-    eRwType                         GetType() const                 { return RW_NULL; }
+    void                            SetName( const char *name )         { strncpy( GetObject()->m_nodeName, name, 31 ); }
+    const char*                     GetName() const                     { return GetObject()->m_nodeName; }
+    eRwType                         GetType() const                     { return RW_NULL; }
 
-    const objectList_t&             GetObjects() const              { return m_objects; }
+    const objectList_t&             GetObjects() const                  { return m_objects; }
+
+    void                            SetLTM( const RwMatrix& mat )       { GetObject()->m_ltm = mat; }
+    const RwMatrix&                 GetLTM() const                      { return GetObject()->m_ltm; }
+
+    void                            SetModelling( const RwMatrix& mat ) { GetObject()->m_modelling = mat; }
+    const RwMatrix&                 GetModelling() const                { return GetObject()->m_modelling; }
 
 private:
     objectList_t                    m_objects;

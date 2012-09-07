@@ -14,8 +14,74 @@
 
 #include "StdInc.h"
 
+static LUA_DECLARE( replaceModel )
+{
+    unsigned short model;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( model );
+    LUA_ARGS_END;
+
+    lua_pushboolean( L, ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->ReplaceModel( model ) );
+    return 1;
+}
+
+static LUA_DECLARE( isReplaced )
+{
+    unsigned short model;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( model );
+    LUA_ARGS_END;
+
+    lua_pushboolean( L, ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->HasReplaced( model ) );
+    return 1;
+}
+
+static LUA_DECLARE( getReplaced )
+{
+    lua_settop( L, 0 );
+
+    std::vector <unsigned short> impList = ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_model.GetImportList();
+    std::vector <unsigned short>::const_iterator iter = impList.begin();
+    int n = 1;
+
+    lua_createtable( L, impList.size(), 0 );
+
+    for ( ; iter != impList.end(); iter++ )
+    {
+        lua_pushnumber( L, *iter );
+        lua_rawseti( L, 1, n++ );
+    }
+
+    return 1;
+}
+
+static LUA_DECLARE( restoreModel )
+{
+    unsigned short model;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( model );
+    LUA_ARGS_END;
+
+    ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->RestoreModel( model );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( restoreAll )
+{
+    ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->RestoreModels();
+    return 0;
+}
+
 static const luaL_Reg dff_interface[] =
 {
+    LUA_METHOD( replaceModel ),
+    LUA_METHOD( isReplaced ),
+    LUA_METHOD( getReplaced ),
+    LUA_METHOD( restoreModel ),
+    LUA_METHOD( restoreAll ),
     { NULL, NULL }
 };
 

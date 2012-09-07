@@ -26,6 +26,12 @@ public:
     typedef std::list <CRwObject*> objectList_t;
 
     virtual const objectList_t&     GetObjects() const = 0;
+
+    virtual void                    SetLTM( const RwMatrix& mat ) = 0;
+    virtual const RwMatrix&         GetLTM() const = 0;
+
+    virtual void                    SetModelling( const RwMatrix& mat ) = 0;
+    virtual const RwMatrix&         GetModelling() const = 0;
 };
 
 #endif //_RW_FRAME_

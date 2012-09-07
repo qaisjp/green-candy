@@ -574,8 +574,6 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
             // We should restore to the original collision then
             if ( !model->m_pColModel )
             {
-                model->m_pColModel = col;
-
                 colOut = new CColModelSA( col, false );
             }
             else
@@ -583,13 +581,14 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
                 colOut = new CColModelSA( model->m_pColModel, true );
 
                 // If we loaded an atomic model and there is a custom collision, which should be very rare,
-                // we keep the original collision once we want to restore our the model
+                // we keep the original collision once we want to restore our model
                 // GTA:SA never deletes object models
                 if ( model->GetRwModelType() == RW_ATOMIC )
                     colOut->SetOriginal( col );
-                else
-                    delete col;
             }
+
+            // Restore the original colmodel as we have not requested the custom model yet
+            model->m_pColModel = col;
         }
         else
             colOut = NULL;
