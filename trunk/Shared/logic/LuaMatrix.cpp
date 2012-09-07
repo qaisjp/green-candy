@@ -166,7 +166,7 @@ static int luaconstructor_matrix( lua_State *L )
     return 0;
 }
 
-void lua_creatematrix( lua_State *L, RwMatrix& matrix )
+void lua_creatematrix( lua_State *L, const RwMatrix& matrix )
 {
     lua_pushlightuserdata( L, new RwMatrix( matrix ) );
     lua_pushcclosure( L, luaconstructor_matrix, 1 );

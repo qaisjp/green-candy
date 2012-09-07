@@ -15,6 +15,6 @@
 
 #define LUACLASS_MATRIX     24
 
-void lua_creatematrix( lua_State *L, RwMatrix& matrix );
+void lua_creatematrix( lua_State *L, const RwMatrix& matrix );
 
 #endif //_LUA_MATRIX_
