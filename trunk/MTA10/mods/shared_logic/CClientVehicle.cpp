@@ -123,6 +123,10 @@ CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass
     memset ( m_ucWheelStates, 0, sizeof ( m_ucWheelStates ) );
     memset ( m_ucPanelStates, 0, sizeof ( m_ucPanelStates ) );
     memset ( m_ucLightStates, 0, sizeof ( m_ucLightStates ) );
+
+    for ( unsigned int n = 0; n < NUM_VEHICLE_COMPONENTS; n++ )
+        m_components[n] = NULL;
+
     m_bCanBeDamaged = true;
     m_bSyncUnoccupiedDamage = false;
     m_bScriptCanBeDamaged = true;
@@ -1415,6 +1419,34 @@ void CClientVehicle::SetLightStatus ( unsigned char ucLight, unsigned char ucSta
     }
 }
 
+void CClientVehicle::SetComponent( unsigned int idx, CClientAtomic *atom )
+{
+    if ( m_pVehicle )
+        m_pVehicle->SetComponent( idx, &atom->m_atomic );
+}
+
+CClientVehicleComponent* CClientVehicle::GetComponent( unsigned int idx )
+{
+    if ( !m_pVehicle )
+        return NULL;
+
+    if ( idx > NUM_VEHICLE_COMPONENTS-1 )
+        return NULL;
+
+    CClientVehicleComponent *ccomp;
+
+    if ( ccomp = m_components[idx] )
+        return ccomp;
+
+    CVehicleComponent *comp = m_pVehicle->GetComponent( idx );
+
+    if ( !comp )
+        return NULL;
+
+    m_components[idx] = ccomp = new CClientVehicleComponent( this, idx, comp );
+    return ccomp;
+}
+
 float CClientVehicle::GetHeliRotorSpeed() const
 {
     if ( m_heli )
@@ -2411,6 +2443,13 @@ void CClientVehicle::Destroy()
                     m_pOccupyingPassengers [i]->RemoveFromVehicle ();
                 }
             }
+        }
+
+        // Destroy the components
+        for ( unsigned int n = 0; n < NUM_VEHICLE_COMPONENTS; n++ )
+        {
+            if ( CClientVehicleComponent *comp = m_components[n] )
+                comp->Delete();
         }
 
         // Destroy the vehicle

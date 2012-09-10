@@ -8,6 +8,8 @@
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"

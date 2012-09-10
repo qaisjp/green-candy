@@ -26,6 +26,11 @@ CRwObjectSA::~CRwObjectSA()
         SetFrame( NULL );
 }
 
+void CRwObjectSA::SetName( const char *name )
+{
+    m_frame->SetName( name );
+}
+
 const char* CRwObjectSA::GetName() const
 {
     return m_frame->GetName();

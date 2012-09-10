@@ -564,6 +564,38 @@ static LUA_DECLARE( getWheelStates )
     return 4;
 }
 
+static LUA_DECLARE( setComponent )
+{
+    unsigned int idx;
+    CClientAtomic *atom;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( idx );
+    argStream.ReadClass( atom, LUACLASS_ATOMIC );
+    LUA_ARGS_END;
+
+    LUA_ASSERT( idx < NUM_VEHICLE_COMPONENTS-1, "invalid component index" );
+
+    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetComponent( idx, atom );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getComponent )
+{
+    unsigned int idx;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( idx );
+    LUA_ARGS_END;
+
+    CClientVehicleComponent *comp = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetComponent( idx );
+
+    LUA_ASSERT( comp, "invalid component index" );
+
+    comp->PushStack( L );
+    return 1;
+}
+
 static LUA_DECLARE( setEngineState )
 {
     bool state;
@@ -1289,6 +1321,8 @@ static const luaL_Reg vehicle_interface[] =
     LUA_METHOD( getPanelState ),
     LUA_METHOD( setWheelStates ),
     LUA_METHOD( getWheelStates ),
+    LUA_METHOD( setComponent ),
+    LUA_METHOD( getComponent ),
     LUA_METHOD( setEngineState ),
     LUA_METHOD( getEngineState ),
     LUA_METHOD( setHandbrakeOn ),

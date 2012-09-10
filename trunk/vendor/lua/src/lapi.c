@@ -728,17 +728,33 @@ LUA_API void lua_settable (lua_State *L, int idx)
 }
 
 
-LUA_API void lua_setfield (lua_State *L, int idx, const char *k) {
-  StkId t;
-  TValue key;
-  lua_lock(L);
-  api_checknelems(L, 1);
-  t = index2adr(L, idx);
-  api_checkvalidindex(L, t);
-  setsvalue(L, &key, luaS_new(L, k));
-  luaV_settable(L, t, &key, L->top - 1);
-  L->top--;  /* pop value */
-  lua_unlock(L);
+LUA_API void lua_setfield (lua_State *L, int idx, const char *k)
+{
+    StkId t;
+    TValue key;
+    lua_lock(L);
+    api_checknelems(L, 1);
+    t = index2adr(L, idx);
+    api_checkvalidindex(L, t);
+    setsvalue(L, &key, luaS_new(L, k));
+    luaV_settable(L, t, &key, L->top - 1);
+    L->top--;  /* pop value */
+    lua_unlock(L);
+}
+
+
+LUA_API void lua_setfieldl( lua_State *L, int idx, const char *k, size_t l )
+{
+    StkId t;
+    TValue key;
+    lua_lock(L);
+    api_checknelems(L, 1);
+    t = index2adr(L, idx);
+    api_checkvalidindex(L, t);
+    setsvalue(L, &key, luaS_newlstr(L, k, l));
+    luaV_settable(L, t, &key, L->top - 1);
+    L->top--;  /* pop value */
+    lua_unlock(L);
 }
 
 

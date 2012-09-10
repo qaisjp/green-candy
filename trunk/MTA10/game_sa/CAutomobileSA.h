@@ -67,32 +67,6 @@ public:
     BYTE                        m_pad[30];                              // 2
 };
 
-enum eVehicleComponent
-{
-    VEHICLE_COMP_NULL,
-    VEHICLE_COMP_CHASIS,
-
-    VEHICLE_COMP_WHEEL_FR,
-    VEHICLE_COMP_WHEEL_RR = 4,
-    VEHICLE_COMP_WHEEL_FL,
-    VEHICLE_COMP_WHEEL_RL = 7,
-
-    VEHICLE_COMP_DOOR_DRIVER,
-    VEHICLE_COMP_DOOR_2,
-    VEHICLE_COMP_DOOR_3,
-    VEHICLE_COMP_DOOR_4,
-
-    VEHICLE_COMP_BUMPER_FRONT,
-    VEHICLE_COMP_BUMPER_REAR,
-
-    VEHICLE_COMP_BONNET = 16,
-    VEHICLE_COMP_BOOT,
-    VEHICLE_COMP_WINDSCREEN,
-    VEHICLE_COMP_EXHAUST,
-
-    NUM_VEHICLE_COMPONENTS = 25
-};
-
 #define AUTOMOBILE_TAXILIGHTS       0x0001
 
 
@@ -171,6 +145,9 @@ public:
     void                        SetWheelVisibility( eWheels wheel, bool bVisible );
     bool                        GetWheelVisibility( eWheels wheel ) const;
 
+    void                        SetComponent( unsigned int idx, CRpAtomic *atom );
+    CVehicleComponent*          GetComponent( unsigned int idx );
+
     unsigned short              GetAdjustablePropertyValue() const                      { return GetInterface()->m_adjustableProperty; }
     void                        SetAdjustablePropertyValue( unsigned short value )      { GetInterface()->m_adjustableProperty = value; }
 
@@ -192,6 +169,8 @@ private:
     bool                        m_swingingDoorsAllowed;
     void*                       m_suspensionLines;
     CDoorSA*                    m_doors[MAX_DOORS];
+
+    CVehicleComponentSA*        m_components[NUM_VEHICLE_COMPONENTS];
 };
 
 #endif

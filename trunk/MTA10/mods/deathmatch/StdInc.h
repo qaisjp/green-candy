@@ -65,6 +65,7 @@
 #include <CClientDummy.h>
 #include <CClientEntity.h>
 #include <derived/include.h>    // DERIVED
+#include <CClientVehicleComponent.h>
 #include <CClientVehicle.h>
 #include <CClientSpatialDatabase.h>
 #include <CClientExplosionManager.h>

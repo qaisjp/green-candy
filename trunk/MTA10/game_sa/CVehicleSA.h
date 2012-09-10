@@ -584,6 +584,7 @@ public:
 class CVehicleSA : public virtual CVehicle, public CPhysicalSA
 {
     friend class CPoolsSA;
+    friend class CVehicleComponentSA;
 public:
                                 CVehicleSA( CVehicleSAInterface *vehicle );
                                 ~CVehicleSA();
@@ -616,6 +617,9 @@ public:
     inline unsigned char        GetAlpha() const                                        { return m_alpha; }
     void                        SetColor( SColor color1, SColor color2, SColor color3, SColor color4, int );
     void                        GetColor( SColor& color1, SColor& color2, SColor& color3, SColor& color4, int ) const;
+
+    virtual void                SetComponent( unsigned int idx, CRpAtomic *atomic )     {}
+    virtual CVehicleComponent*  GetComponent( unsigned int idx )                    { return NULL; }
 
     // Virtually internal shared functions
     void                        BurstTyre( unsigned char tyre )                         { GetInterface()->BurstTyre( tyre, 1 ); }

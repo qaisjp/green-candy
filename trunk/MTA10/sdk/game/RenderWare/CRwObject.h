@@ -20,6 +20,7 @@ class CRwObject abstract
 public:
     virtual                         ~CRwObject()    {}
 
+    virtual void                    SetName( const char *name ) = 0;
     virtual const char*             GetName() const = 0;
     virtual unsigned int            GetHash() const = 0;
 

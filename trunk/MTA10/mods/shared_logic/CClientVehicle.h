@@ -90,6 +90,7 @@ struct SLastSyncedVehData
 };
 
 class CClientProjectile;
+class CClientAtomic;
 
 class CClientVehicle : public CClientStreamElement
 {
@@ -97,6 +98,7 @@ class CClientVehicle : public CClientStreamElement
     friend class CClientPed;
     friend class CClientVehicleManager;
     friend class CClientGame; // TEMP HACK
+    friend class CClientVehicleComponent;
 
 protected: // Use CDeathmatchVehicle constructor for now. Will get removed later when this class is
            // cleaned up.
@@ -242,6 +244,9 @@ public:
     void                        SetPanelStatus( unsigned char ucPanel, unsigned char ucStatus );
     void                        SetLightStatus( unsigned char ucLight, unsigned char ucStatus );
 
+    void                        SetComponent( unsigned int idx, CClientAtomic *atom );
+    CClientVehicleComponent*    GetComponent( unsigned int idx );
+
     // TODO: Make the class remember on virtualization
     float                       GetHeliRotorSpeed() const;
     void                        SetHeliRotorSpeed( float fSpeed );
@@ -260,7 +265,7 @@ public:
     bool                        GetCanBeTargettedByHeatSeekingMissiles() const;
     void                        SetCanBeTargettedByHeatSeekingMissiles( bool bEnabled );
 
-    inline unsigned char        GetAlpha() const                                                       { return m_ucAlpha; }
+    inline unsigned char        GetAlpha() const                                                        { return m_ucAlpha; }
     void                        SetAlpha( unsigned char ucAlpha );
 
     CClientPed*                 GetOccupant( int iSeat = 0 );
@@ -503,6 +508,7 @@ protected:
     unsigned char               m_ucWheelStates[MAX_WHEELS];
     unsigned char               m_ucPanelStates[MAX_PANELS];
     unsigned char               m_ucLightStates[MAX_LIGHTS];
+    CClientVehicleComponent*    m_components[NUM_VEHICLE_COMPONENTS];
     bool                        m_bJustBlewUp;
     eEntityStatus               m_NormalStatus;
     bool                        m_bColorSaved;
