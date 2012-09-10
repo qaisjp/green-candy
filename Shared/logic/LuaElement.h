@@ -19,6 +19,8 @@ class Resource;
 
 class LuaElement : public LuaClass
 {
+                            // Do not allow copy
+                            LuaElement( const LuaElement& elem );
 public:
                             LuaElement( LuaClass& root );
                             ~LuaElement();

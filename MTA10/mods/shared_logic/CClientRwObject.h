@@ -16,17 +16,18 @@
 
 #define LUACLASS_RWOBJECT   97
 
-class CClientRwObject : public LuaElement
+class CClientRwObject abstract : public LuaElement
 {
 public:
                                     CClientRwObject( LuaClass& root, CRwObject& object );
                                     ~CClientRwObject();
 
-    CRwObject&                      GetObject()             { return m_object; }
-    const CRwObject&                GetObject() const       { return m_object; }
+    CRwObject&                      GetObject()                     { return m_object; }
+    const CRwObject&                GetObject() const               { return m_object; }
 
-    const char*                     GetName() const         { return m_object.GetName(); }
-    unsigned int                    GetHash() const         { return m_object.GetHash(); }
+    void                            SetName( const char *name )     { m_object.SetName( name ); }
+    const char*                     GetName() const                 { return m_object.GetName(); }
+    unsigned int                    GetHash() const                 { return m_object.GetHash(); }
 
 protected:
     CRwObject&  m_object;

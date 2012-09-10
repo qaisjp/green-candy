@@ -13,7 +13,19 @@
 
 #include "StdInc.h"
 
-static int object_getName( lua_State *L )
+static LUA_DECLARE( setName )
+{
+    const char *name;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadString( name );
+    LUA_ARGS_END;
+
+    ((CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetName( name );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getName )
 {
     const std::string& name = ((CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetName();
 
@@ -21,7 +33,7 @@ static int object_getName( lua_State *L )
     return 1;
 }
 
-static int object_getHash( lua_State *L )
+static LUA_DECLARE( getHash )
 {
     lua_pushnumber( L, ((CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetHash() );
     return 1;
@@ -29,8 +41,9 @@ static int object_getHash( lua_State *L )
 
 static luaL_Reg object_interface[] =
 {
-    { "getName", object_getName },
-    { "getHash", object_getHash },
+    LUA_METHOD( setName ),
+    LUA_METHOD( getName ),
+    LUA_METHOD( getHash ),
     { NULL, NULL }
 };
 

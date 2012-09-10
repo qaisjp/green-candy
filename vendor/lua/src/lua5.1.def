@@ -85,6 +85,7 @@ EXPORTS
   lua_remove
   lua_replace
   lua_setfield
+  lua_setfieldl
   lua_settable
   lua_settop
   lua_xmove

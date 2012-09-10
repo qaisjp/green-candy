@@ -72,6 +72,7 @@
 #include "CPlayerPedSA.h"
 #include "CCivilianPedSA.h"
 #include "CHandlingEntrySA.h"
+#include "CVehicleComponentSA.h"
 #include "CVehicleSA.h"
 #include "CAutomobileSA.h"
 #include "CQuadBikeSA.h"

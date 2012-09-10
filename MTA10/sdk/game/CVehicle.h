@@ -18,6 +18,7 @@
 #include "CHandlingManager.h"
 #include "CDoor.h"
 #include "CWeaponInfo.h"
+#include "CVehicleComponent.h"
 
 enum eWinchType
 {
@@ -30,6 +31,7 @@ enum eWinchType
 class CPed;
 class CObject;
 class CColModel;
+class CRpAtomic;
 
 class CVehicle : public virtual CPhysical
 {
@@ -56,6 +58,9 @@ public:
     virtual unsigned char       GetAlpha() const = 0;
     virtual void                SetColor( SColor color1, SColor color2, SColor color3, SColor color4, int ) = 0;
     virtual void                GetColor( SColor& color1, SColor& color2, SColor& color3, SColor& color4, int ) const = 0;
+
+    virtual void                SetComponent( unsigned int idx, CRpAtomic *atom ) = 0;
+    virtual CVehicleComponent*  GetComponent( unsigned int idx ) = 0;
 
     // Virtually internal shared functions
     virtual void                BurstTyre( unsigned char tyre ) = 0;
