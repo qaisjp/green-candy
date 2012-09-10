@@ -13,10 +13,14 @@
 #ifndef _VEHICLE_COMPONENT_
 #define _VEHICLE_COMPONENT_
 
+class CRpAtomic;
+
 class CVehicleComponent abstract
 {
 public:
     virtual                     ~CVehicleComponent()    {}
+
+    virtual const char*         GetName() const = 0;
 
     virtual void                SetMatrix( const RwMatrix& mat ) = 0;
     virtual const RwMatrix&     GetMatrix() const = 0;
@@ -25,6 +29,11 @@ public:
     virtual void                SetPosition( const CVector& pos ) = 0;
     virtual const CVector&      GetPosition() const = 0;
     virtual const CVector&      GetWorldPosition() const = 0;
+
+    virtual void                SetActive( bool active ) = 0;
+    virtual bool                IsActive() const = 0;
+
+    virtual CRpAtomic*          CloneAtomic() const = 0;
 };
 
 #endif //_VEHICLE_COMPONENT_

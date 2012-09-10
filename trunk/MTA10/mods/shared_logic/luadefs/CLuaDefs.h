@@ -74,6 +74,12 @@ namespace CLuaFunctionDefs
                                 lua_pushboolean( L, false ); \
                                 return 1; \
                             }
+#define LUA_CHECK_S(x, msg) if ( !(x) ) \
+                            { \
+                                g_pClientGame->GetScriptDebugging()->LogCustom( (msg) ); \
+                                lua_pushboolean( L, false ); \
+                                return 1; \
+                            }
 #define LUA_ARGS_BEGIN      CScriptArgReader argStream( L )
 
 #ifndef LUA_EXCEPTION_SAFETY

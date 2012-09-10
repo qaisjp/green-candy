@@ -344,7 +344,7 @@ CVehicleComponent* CAutomobileSA::GetComponent( unsigned int idx )
     if ( !atomic )
         return NULL;
 
-    m_components[idx] = comp = new CVehicleComponentSA( m_components[idx], atomic );
+    m_components[idx] = comp = new CVehicleComponentSA( m_components[idx], atomic, ppModelInfo[GetInterface()->m_model]->m_textureDictionary );
     return comp;
 }
 
