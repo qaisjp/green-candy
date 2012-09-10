@@ -24,7 +24,7 @@ public:
                                 CClientVehicleComponent( CClientVehicle *veh, unsigned int idx, CVehicleComponent *atomic );
                                 ~CClientVehicleComponent();
 
-    CClientVehicle*             GetVehicle()                { return &(CClientVehicle&)m_root; }
+    CClientVehicle*             GetVehicle()                { return (CClientVehicle*)m_root; }
 
     CVehicleComponent*          m_component;
 

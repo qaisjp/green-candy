@@ -13,9 +13,10 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-CVehicleComponentSA::CVehicleComponentSA( CVehicleComponentSA*& slot, RpAtomic *atomic ) : m_compSlot( slot )
+CVehicleComponentSA::CVehicleComponentSA( CVehicleComponentSA*& slot, RpAtomic *atomic, unsigned short txdID ) : m_compSlot( slot )
 {
     m_atomic = atomic;
+    m_txdID = txdID;
 }
 
 CVehicleComponentSA::~CVehicleComponentSA()
@@ -26,6 +27,11 @@ CVehicleComponentSA::~CVehicleComponentSA()
     m_atomic->RemoveFromFrame();
     m_atomic->RemoveFromClump();
     RpAtomicDestroy( m_atomic );
+}
+
+const char* CVehicleComponentSA::GetName() const
+{
+    return m_atomic->m_parent->m_nodeName;
 }
 
 void CVehicleComponentSA::SetMatrix( const RwMatrix& mat )
@@ -56,4 +62,35 @@ const CVector& CVehicleComponentSA::GetPosition() const
 const CVector& CVehicleComponentSA::GetWorldPosition() const
 {
     return m_atomic->m_parent->m_ltm.pos;
+}
+
+void CVehicleComponentSA::SetActive( bool active )
+{
+    m_atomic->SetVisible( active );
+}
+
+bool CVehicleComponentSA::IsActive() const
+{
+    return m_atomic->IsVisible();
+}
+
+CRpAtomic* CVehicleComponentSA::CloneAtomic() const
+{
+    RpAtomic *inst = RpAtomicClone( m_atomic );
+
+    // Copy important credentials
+    RwFrame *frame = RwFrameCreate();
+
+    memcpy( frame->m_nodeName, m_atomic->m_parent->m_nodeName, 0x10 );
+
+    RpAtomicSetFrame( inst, frame );
+
+    CRpAtomicSA *atom = new CRpAtomicSA( inst );
+
+    // We may not lose the loaded textures, so reference them
+    (*ppTxdPool)->Get( m_txdID )->Reference();
+
+    atom->ReferenceTXD( m_txdID );
+
+    return atom;
 }

@@ -574,7 +574,7 @@ static LUA_DECLARE( setComponent )
     argStream.ReadClass( atom, LUACLASS_ATOMIC );
     LUA_ARGS_END;
 
-    LUA_ASSERT( idx < NUM_VEHICLE_COMPONENTS-1, "invalid component index" );
+    LUA_CHECK_S( idx < NUM_VEHICLE_COMPONENTS-1, "invalid component index" );
 
     ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetComponent( idx, atom );
     LUA_SUCCESS;
@@ -590,7 +590,7 @@ static LUA_DECLARE( getComponent )
 
     CClientVehicleComponent *comp = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetComponent( idx );
 
-    LUA_ASSERT( comp, "invalid component index" );
+    LUA_CHECK_S( comp, "invalid component index" );
 
     comp->PushStack( L );
     return 1;

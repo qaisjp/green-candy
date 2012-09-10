@@ -13,6 +13,12 @@
 
 #include "StdInc.h"
 
+static LUA_DECLARE( getName )
+{
+    lua_pushstring( L, ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->GetName() );
+    return 1;
+}
+
 static LUA_DECLARE( setPosition )
 {
     CVector pos;
@@ -69,14 +75,44 @@ static LUA_DECLARE( getWorldMatrix )
     return 1;
 }
 
+static LUA_DECLARE( setActive )
+{
+    bool active;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadBool( active );
+    LUA_ARGS_END;
+
+    ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->SetActive( active );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( isActive )
+{
+    lua_pushboolean( L, ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->IsActive() );
+    return 1;
+}
+
+static LUA_DECLARE( cloneAtomic )
+{
+    CClientAtomic *atom = new CClientAtomic( *g_pClientGame->GetRootEntity(), NULL, *((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->CloneAtomic() );
+
+    atom->PushStack( L );
+    return 1;
+}
+
 static luaL_Reg component_interface[] =
 {
+    LUA_METHOD( getName ),
     LUA_METHOD( setPosition ),
     LUA_METHOD( getPosition ),
     LUA_METHOD( getWorldPosition ),
     LUA_METHOD( setMatrix ),
     LUA_METHOD( getMatrix ),
     LUA_METHOD( getWorldMatrix ),
+    LUA_METHOD( setActive ),
+    LUA_METHOD( isActive ),
+    LUA_METHOD( cloneAtomic ),
     { NULL, NULL }
 };
 

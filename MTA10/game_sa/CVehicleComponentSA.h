@@ -16,8 +16,10 @@
 class CVehicleComponentSA : public CVehicleComponent
 {
 public:
-                                CVehicleComponentSA( CVehicleComponentSA*& slot, RpAtomic *atomic );
+                                CVehicleComponentSA( CVehicleComponentSA*& slot, RpAtomic *atomic, unsigned short txdID );
                                 ~CVehicleComponentSA();
+
+    const char*                 GetName() const;
 
     void                        SetMatrix( const RwMatrix& mat );
     const RwMatrix&             GetMatrix() const;
@@ -27,8 +29,16 @@ public:
     const CVector&              GetPosition() const;
     const CVector&              GetWorldPosition() const;
 
+    void                        SetActive( bool active );
+    bool                        IsActive() const;
+
+    CRpAtomic*                  CloneAtomic() const;
+
     RpAtomic*                   m_atomic;
     CVehicleComponentSA*&       m_compSlot;
+    
+protected:
+    unsigned short              m_txdID;
 };
 
 #endif //_VEHICLE_COMPONENT_SA_

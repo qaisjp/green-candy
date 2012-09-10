@@ -34,7 +34,9 @@ CRpAtomicSA::~CRpAtomicSA()
 
     // We have to unlink textures, because they do not belong to us
     RpAtomic *atom = GetObject();
-    atom->m_geometry->UnlinkFX();
+
+    if ( atom->m_geometry->m_refs == 1 )
+        atom->m_geometry->UnlinkFX();
 
     RpAtomicDestroy( atom );
 }
