@@ -29,7 +29,7 @@ CCommand::~CCommand()
 
 bool CCommand::Execute( std::vector <std::string>& args )
 {
-    args.push_back( key );
+    args.insert( args.begin(), key );
     return Command::Execute( args );
 }
 
