@@ -170,17 +170,13 @@ CAutomobileSA::CAutomobileSA( CAutomobileSAInterface *veh ) : CVehicleSA( veh ),
 
     m_suspensionLines = new char [data->ucNumWheels * 0x20];
     memcpy( m_suspensionLines, data->pSuspensionLines, data->ucNumWheels * 0x20 );
-
-    // Only create component interfaces if necessary
-    for ( unsigned int n = 0; n < NUM_VEHICLE_COMPONENTS; n++ )
-        m_components[n] = NULL;
 }
 
 CAutomobileSA::~CAutomobileSA()
 {
     // Destroy available components
-    for ( unsigned int n = 0; n < NUM_VEHICLE_COMPONENTS; n++ )
-        delete m_components[n];
+    while ( !m_compContainer.empty() )
+        delete m_compContainer.begin()->second;
 
     delete m_damageManager;
     delete m_suspensionLines;
@@ -298,54 +294,6 @@ bool CAutomobileSA::GetWheelVisibility( eWheels wheel ) const
     }
 
     return obj && obj->IsVisible();
-}
-
-void CAutomobileSA::SetComponent( unsigned int idx, CRpAtomic *atom )
-{
-    if ( idx > NUM_VEHICLE_COMPONENTS-1 )
-        return;
-
-    RpAtomic *atomic = RpAtomicClone( dynamic_cast <CRpAtomicSA*> ( atom )->GetObject() );
-
-    if ( CVehicleComponentSA *comp = m_components[idx] )
-        comp->m_atomic = atomic;
-
-    RwFrame *frame = GetInterface()->m_components[idx];
-
-    if ( RpAtomic *existing = (RpAtomic*)frame->GetFirstObject() )
-    {
-        existing->RemoveFromFrame();
-        existing->RemoveFromClump();
-        RpAtomicDestroy( existing );
-    }
-
-    atomic->AddToFrame( frame );
-    atomic->AddToClump( (RpClump*)GetInterface()->m_rwObject );
-}
-
-CVehicleComponent* CAutomobileSA::GetComponent( unsigned int idx )
-{
-    if ( idx > NUM_VEHICLE_COMPONENTS-1 )
-        return NULL;
-
-    CVehicleComponentSA *comp;
-
-    // Cache the component
-    if ( comp = m_components[idx] )
-        return comp;
-
-    RwFrame *frame = GetInterface()->m_components[idx];
-
-    if ( !frame )
-        return NULL;
-
-    RpAtomic *atomic = (RpAtomic*)frame->GetFirstObject();
-
-    if ( !atomic )
-        return NULL;
-
-    m_components[idx] = comp = new CVehicleComponentSA( m_components[idx], atomic, ppModelInfo[GetInterface()->m_model]->m_textureDictionary );
-    return comp;
 }
 
 void CAutomobileSA::RecalculateHandling()

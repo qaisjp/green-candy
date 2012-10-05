@@ -11,6 +11,8 @@
 *               Jax <>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 class CClientObject;
@@ -33,22 +35,21 @@ class CClientObject : public CClientStreamElement
 {
     friend class CClientObjectManager;
     friend class CClientPed;
-
 public:
-                                    CClientObject( class CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel );
-                                    ~CClientObject( void );
+                                    CClientObject( class CClientManager *pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel );
+                                    ~CClientObject();
 
-    void                            Unlink( void );
+    void                            Unlink();
     
-    inline eClientEntityType        GetType( void ) const                                   { return CCLIENTOBJECT; };
+    inline eClientEntityType        GetType() const                                         { return CCLIENTOBJECT; }
 
-    inline CObject *                GetGameObject( void )                                   { return m_pObject; }
-    inline CEntity *                GetGameEntity( void )                                   { return m_pObject; }
-    inline const CEntity*           GetGameEntity( void ) const                             { return m_pObject; }
+    inline CObject*                 GetGameObject()                                         { return m_pObject; }
+    inline CEntity*                 GetGameEntity()                                         { return m_pObject; }
+    inline const CEntity*           GetGameEntity() const                                   { return m_pObject; }
 
     void                            GetPosition( CVector& vecPosition ) const;
     void                            SetPosition( const CVector& vecPosition );
-    virtual CSphere                 GetWorldBoundingSphere( void );
+    virtual CSphere                 GetWorldBoundingSphere();
 
     void                            AttachTo( CClientEntity* pEntity );
 
@@ -65,45 +66,45 @@ public:
 
     void                            ModelRequestCallback( CModelInfo* pModelInfo );
 
-    float                           GetDistanceFromCentreOfMassToBaseOfModel( void );
+    float                           GetDistanceFromCentreOfMassToBaseOfModel();
 
-    inline bool                     IsVisible( void )                                       { return m_bIsVisible; };
+    inline bool                     IsVisible()                                             { return m_bIsVisible; }
     void                            SetVisible( bool bVisible );
 
-    inline unsigned short           GetModel( void ) const                                  { return m_usModel; };
+    inline unsigned short           GetModel() const                                        { return m_usModel; }
     void                            SetModel( unsigned short usModel );
 
-    void                            Render( void );
+    void                            Render();
 
-    inline bool                     IsStatic( void )                                        { return m_bIsStatic; }
+    inline bool                     IsStatic()                                              { return m_bIsStatic; }
     void                            SetStatic( bool bStatic );
     
-    inline unsigned char            GetAlpha( void )                                        { return m_ucAlpha; }   
+    inline unsigned char            GetAlpha()                                              { return m_ucAlpha; }   
     void                            SetAlpha( unsigned char ucAlpha );
-    inline float                    GetScale( void )                                        { return m_fScale; }
+    inline float                    GetScale()                                              { return m_fScale; }
     void                            SetScale( float fScale );
 
-    inline bool                     IsCollisionEnabled( void )                              { return m_bUsesCollision; };
+    inline bool                     IsCollisionEnabled()                                    { return m_bUsesCollision; }
     void                            SetCollisionEnabled( bool bCollisionEnabled );
 
-    float                           GetHealth( void );
+    float                           GetHealth();
     void                            SetHealth( float fHealth );
 
-    inline bool                     IsBreakable( void )                                     { return m_pObjectManager->IsBreakableModel ( m_usModel ) && m_bBreakable; };
-    inline void                     SetBreakable( bool bBreakable )                         { m_bBreakable = bBreakable; };
+    inline bool                     IsBreakable()                                           { return m_pObjectManager->IsBreakableModel( m_usModel ) && m_bBreakable; }
+    inline void                     SetBreakable( bool bBreakable )                         { m_bBreakable = bBreakable; }
 
-    void                            ReCreate( void );
+    void                            ReCreate();
 protected:
     void                            StreamIn( bool bInstantly );
-    void                            StreamOut( void );
+    void                            StreamOut();
 
-    void                            Create( void );
-    void                            Destroy( void );
+    void                            Create();
+    void                            Destroy();
 
-    void                            NotifyCreate( void );
-    void                            NotifyDestroy( void );
+    void                            NotifyCreate();
+    void                            NotifyDestroy();
 
-    void                            StreamedInPulse( void );
+    void                            StreamedInPulse();
 
     class CClientObjectManager*         m_pObjectManager;
     class CClientModelRequestManager*   m_pModelRequester;

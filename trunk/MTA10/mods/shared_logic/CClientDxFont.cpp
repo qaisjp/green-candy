@@ -1,11 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientDxFont.cpp
 *  PURPOSE:     Custom font bucket
-*  DEVELOPERS:  qwerty
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -32,11 +34,9 @@ static int luaconstructor_dxfont( lua_State *L )
     return 0;
 }
 
-CClientDxFont::CClientDxFont ( CClientManager* pManager, ElementID ID, LuaClass& root, CDxFontItem* pFontItem ) : CClientRenderElement ( pManager, ID, root )
+CClientDxFont::CClientDxFont( CClientManager *pManager, ElementID ID, lua_State *L, CDxFontItem *pFontItem ) : CClientRenderElement( pManager, ID, L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_dxfont, 1 );

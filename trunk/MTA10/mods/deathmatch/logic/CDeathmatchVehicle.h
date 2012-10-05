@@ -17,29 +17,26 @@
 
 #include "CClientVehicle.h"
 
-// The_GTA: The problem with this class is that it directly inherits CClientVehicle. Therefor we are prohibited from direct inheritance of CClientVehicle.
-// I instead inherit from CDeathmatchVehicle, effectively mixing up deathmatch logic with shared logic. It cannot be helped if this stays this way!
-
 class CDeathmatchVehicle : public CClientVehicle
 {
 public:
-                                    CDeathmatchVehicle( CClientManager* pManager, LuaClass& root, bool system, class CUnoccupiedVehicleSync* pUnoccupiedVehicleSync, ElementID ID, unsigned short usVehicleModel );
-                                    ~CDeathmatchVehicle( void );
+                                    CDeathmatchVehicle( CClientManager *pManager, lua_State *L, bool system, class CUnoccupiedVehicleSync* pUnoccupiedVehicleSync, ElementID ID, unsigned short usVehicleModel );
+                                    ~CDeathmatchVehicle();
 
-    inline bool                     IsSyncing( void )                               { return m_bIsSyncing; };
+    inline bool                     IsSyncing()                                     { return m_bIsSyncing; }
     void                            SetIsSyncing( bool bIsSyncing );
 
-    bool                            SyncDamageModel( void );
-    void                            ResetDamageModelSync( void );
+    bool                            SyncDamageModel();
+    void                            ResetDamageModelSync();
 
 private:
     class CUnoccupiedVehicleSync*   m_pUnoccupiedVehicleSync;
     bool                            m_bIsSyncing;
 
-    unsigned char                   m_ucLastDoorStates [MAX_DOORS];
-    unsigned char                   m_ucLastWheelStates [MAX_WHEELS];
-    unsigned char                   m_ucLastPanelStates [MAX_PANELS];
-    unsigned char                   m_ucLastLightStates [MAX_LIGHTS];
+    unsigned char                   m_ucLastDoorStates[MAX_DOORS];
+    unsigned char                   m_ucLastWheelStates[MAX_WHEELS];
+    unsigned char                   m_ucLastPanelStates[MAX_PANELS];
+    unsigned char                   m_ucLastLightStates[MAX_LIGHTS];
 };
 
 #endif

@@ -13,10 +13,12 @@
 #ifndef _VEHICLE_COMPONENT_SA_
 #define _VEHICLE_COMPONENT_SA_
 
+typedef std::map <std::string, class CVehicleComponentSA*> vehComponents_t;
+
 class CVehicleComponentSA : public CVehicleComponent
 {
 public:
-                                CVehicleComponentSA( CVehicleComponentSA*& slot, RpAtomic *atomic, unsigned short txdID );
+                                CVehicleComponentSA( vehComponents_t& container, RpClump *clump, RwFrame *item, unsigned short txdID );
                                 ~CVehicleComponentSA();
 
     const char*                 GetName() const;
@@ -32,10 +34,15 @@ public:
     void                        SetActive( bool active );
     bool                        IsActive() const;
 
-    CRpAtomic*                  CloneAtomic() const;
+    unsigned int                AddAtomic( CRpAtomic *atomic );
+    CRpAtomic*                  CloneAtomic( unsigned int idx ) const;
+    unsigned int                GetAtomicCount() const;
+    bool                        RemoveAtomic( unsigned int idx );
 
-    RpAtomic*                   m_atomic;
-    CVehicleComponentSA*&       m_compSlot;
+    RpClump*                    m_clump;
+    RwFrame*                    m_frame;
+    
+    vehComponents_t&            m_container;
     
 protected:
     unsigned short              m_txdID;

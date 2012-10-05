@@ -21,7 +21,7 @@ class CClientTXD;
 class CClientGameTexture : public LuaElement
 {
 public:
-                                    CClientGameTexture( LuaClass& root, CTexture& tex );
+                                    CClientGameTexture( lua_State *L, CTexture& tex );
                                     ~CClientGameTexture();
 
     const std::string               GetName()               { return m_tex.GetName(); }

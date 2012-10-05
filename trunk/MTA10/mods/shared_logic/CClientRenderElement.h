@@ -19,15 +19,15 @@
 class CClientRenderElement : public CClientEntity
 {
 public:
-                            CClientRenderElement( CClientManager* pManager, ElementID ID, LuaClass& root );
-                            ~CClientRenderElement( void );
+                            CClientRenderElement( CClientManager* pManager, ElementID ID, lua_State *L );
+                            ~CClientRenderElement();
 
-    void                    Unlink( void );
+    void                    Unlink();
     void                    GetPosition( CVector& vecPosition ) const           { vecPosition = CVector(); }
     void                    SetPosition( const CVector& vecPosition )           {}
 
     // CClientRenderElement methods
-    CRenderItem*            GetRenderItem( void )                               { return m_pRenderItem; }
+    CRenderItem*            GetRenderItem()                                     { return m_pRenderItem; }
 
 protected:
     bool                            bDoneUnlink;

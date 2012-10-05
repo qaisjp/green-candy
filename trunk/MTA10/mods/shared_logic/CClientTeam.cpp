@@ -8,6 +8,8 @@
 *  DEVELOPERS:  Jax <>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -35,11 +37,9 @@ static int luaconstructor_team( lua_State *L )
     return 0;
 }
 
-CClientTeam::CClientTeam( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, char* szName, unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue ) : CClientEntity( ID, system, root )
+CClientTeam::CClientTeam( CClientManager* pManager, ElementID ID, lua_State *L, bool system, char* szName, unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue ) : CClientEntity( ID, system, L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_team, 1 );
@@ -51,62 +51,59 @@ CClientTeam::CClientTeam( CClientManager* pManager, ElementID ID, LuaClass& root
 
     m_szTeamName = NULL;
 
-    SetTypeName ( "team" );
+    SetTypeName( "team" );
 
-    SetTeamName ( szName );
-    SetColor ( ucRed, ucGreen, ucBlue );
-    SetFriendlyFire ( true );
+    SetTeamName( szName );
+    SetColor( ucRed, ucGreen, ucBlue );
+    SetFriendlyFire( true );
 
-    m_pTeamManager->AddToList ( this );
+    m_pTeamManager->AddToList( this );
 }
 
-
-CClientTeam::~CClientTeam ( void )
+CClientTeam::~CClientTeam()
 {
-    RemoveAll ();
-    Unlink ();
+    RemoveAll();
+    Unlink();
     delete [] m_szTeamName;
 }
 
-
-void CClientTeam::Unlink ( void )
+void CClientTeam::Unlink()
 {
-    m_pTeamManager->RemoveFromList ( this );
+    m_pTeamManager->RemoveFromList( this );
 }
 
-
-void CClientTeam::AddPlayer ( CClientPlayer* pPlayer, bool bChangePlayer )
+void CClientTeam::AddPlayer( CClientPlayer *pPlayer, bool bChangePlayer )
 {
-    m_List.push_back ( pPlayer );
-    if ( bChangePlayer )
-        pPlayer->SetTeam ( this, false );
-}
-
-
-void CClientTeam::RemovePlayer ( CClientPlayer* pPlayer, bool bChangePlayer )
-{
-    if ( !m_List.empty() ) m_List.remove ( pPlayer );
+    m_List.push_back( pPlayer );
 
     if ( bChangePlayer )
-        pPlayer->SetTeam ( NULL, false );
+        pPlayer->SetTeam( this, false );
 }
 
-
-void CClientTeam::RemoveAll ( void )
+void CClientTeam::RemovePlayer( CClientPlayer *pPlayer, bool bChangePlayer )
 {
-    list < CClientPlayer* > ::const_iterator iter = m_List.begin ();
-    for ( ; iter != m_List.end (); iter++ )
-    {
-        (*iter)->SetTeam ( NULL, false );
-    }
-    m_List.clear ();
+    if ( !m_List.empty() )
+        m_List.remove( pPlayer );
+
+    if ( bChangePlayer )
+        pPlayer->SetTeam( NULL, false );
 }
 
-
-bool CClientTeam::Exists ( CClientPlayer* pPlayer )
+void CClientTeam::RemoveAll()
 {
-    list < CClientPlayer* > ::const_iterator iter = m_List.begin ();
-    for ( ; iter != m_List.end (); iter++ )
+    players_t::const_iterator iter = m_List.begin();
+
+    for ( ; iter != m_List.end(); iter++ )
+        (*iter)->SetTeam( NULL, false );
+
+    m_List.clear();
+}
+
+bool CClientTeam::Exists( CClientPlayer *pPlayer )
+{
+    players_t::const_iterator iter = m_List.begin();
+
+    for ( ; iter != m_List.end(); iter++ )
     {
         if ( *iter == pPlayer )
             return true;
@@ -115,31 +112,28 @@ bool CClientTeam::Exists ( CClientPlayer* pPlayer )
     return false;
 }
 
-
-void CClientTeam::SetTeamName ( char* szName )
+void CClientTeam::SetTeamName( const char *szName )
 {
     delete [] m_szTeamName;
     m_szTeamName = NULL;
 
     if ( szName )
     {
-        m_szTeamName = new char [ strlen ( szName ) + 1 ];
-        strcpy ( m_szTeamName, szName );
+        m_szTeamName = new char [ strlen( szName ) + 1 ];
+        strcpy( m_szTeamName, szName );
     }
 }
 
-
-void CClientTeam::GetColor ( unsigned char& ucRed, unsigned char& ucGreen, unsigned char& ucBlue )
+void CClientTeam::GetColor( unsigned char& r, unsigned char& g, unsigned char& b ) const
 {
-    ucRed = m_ucRed;
-    ucGreen = m_ucGreen;
-    ucBlue = m_ucBlue;
+    r = m_ucRed;
+    g = m_ucGreen;
+    b = m_ucBlue;
 }
 
-
-void CClientTeam::SetColor ( unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue )
+void CClientTeam::SetColor( unsigned char r, unsigned char g, unsigned char b )
 {
-    m_ucRed = ucRed;
-    m_ucGreen = ucGreen;
-    m_ucBlue = ucBlue;
+    m_ucRed = r;
+    m_ucGreen = g;
+    m_ucBlue = b;
 }

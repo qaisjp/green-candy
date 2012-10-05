@@ -4123,19 +4123,21 @@ void _declspec(naked) HOOK_VehicleCamHistory ()
 
 // ---------------------------------------------------
 
-void _cdecl VehicleCamUp ( DWORD dwCam )
+void _cdecl VehicleCamUp( DWORD dwCam )
 {
     // Calculates the up vector for the vehicle camera.
-    CVector* pvecUp = (CVector *)(dwCam + 0x1B4);
-    CVector* pvecLookDir = (CVector *)(dwCam + 0x190);
+    CVector& vecUp = *(CVector*)(dwCam + 0x1B4);
+    CVector& vecLookDir = *(CVector*)(dwCam + 0x190);
 
-    pvecLookDir->Normalize ();
-    *pvecUp = *pvecLookDir;
-    pvecUp->CrossProduct ( &gravcam_matGravity.up );
-    pvecUp->CrossProduct ( pvecLookDir );
+    vecLookDir->Normalize();
+    vecUp = vecLookDir;
+
+    vecUp.CrossProduct( &gravcam_matGravity.up );
+    vecUp.CrossProduct( pvecLookDir );
+    vecUp.Normalize();
 }
 
-void _declspec(naked) HOOK_VehicleCamUp ()
+void _declspec(naked) HOOK_VehicleCamUp()
 {
     _asm
     {

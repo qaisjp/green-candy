@@ -8,7 +8,7 @@
 *       GTA:SA's way of loading resources from files. We want to create an indepedent
 *       loader so that we do not encounter limitations of the old system, since it has
 *       been optimized for gameplay. The problem is that TXD seem to turn corrupted if
-*       loaded frequently.
+*       loaded frequently due to the restricted resource share management of GTA:SA.
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *  INSPIRATION: fastman92 <http://fastman92.tk>
 *
@@ -36,7 +36,7 @@ streamName gtaStreamNames[MAX_GTA_STREAM_HANDLES];
 
     Due to the applied protective-layer, we are restricted to 128 streamHandles. Do not wonder
     why fastman92 has raised the limit to that exact value! Here we go, ladies and gentlemen,
-    the cleaned-up version of 0x0015649F0..!
+    the cleaned-up version of 0x015649F0..!
 */
 
 static unsigned int __cdecl OpenStream_protected( const char *path )
@@ -208,7 +208,7 @@ void DECL_ST IMG_Initialize()
     HookInstall( 0x00406C28, (DWORD)HOOK_DisableGTAIMGCheck, 5 );
 
     // 'Lazy' patches, for now (even though they are combined with important routines..!)
-    // Let's make sure we analyze then at some point ;)
+    // Let's make sure we analyze them at some point ;)
     *(unsigned int*)0x00409D5A = *(unsigned int*)0x00408FDC = *(unsigned int*)0x0040CC54 = *(unsigned int*)0x0040CCC7 =
     *(unsigned int*)0x01560E68 =
         (unsigned int)imgArchives + offsetof(IMGFile, handle);
@@ -226,4 +226,5 @@ void DECL_ST IMG_Initialize()
 
 void IMG_Shutdown()
 {
+    // Should we terminate resources here?
 }

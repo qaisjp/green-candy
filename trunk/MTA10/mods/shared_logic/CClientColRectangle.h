@@ -9,6 +9,8 @@
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #ifndef __CCLIENTCOLRECTANGLE_H
@@ -17,16 +19,16 @@
 class CClientColRectangle : public CClientColShape
 {
 public:
-                            CClientColRectangle( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, const CVector2D& vecSize );
+                            CClientColRectangle( CClientManager* pManager, ElementID ID, lua_State *L, bool system, const CVector& vecPosition, const CVector2D& vecSize );
 
-    virtual CSphere         GetWorldBoundingSphere( void );
+    virtual CSphere         GetWorldBoundingSphere();
 
-    eColShapeType           GetShapeType( void )                            { return COLSHAPE_RECTANGLE; }
+    eColShapeType           GetShapeType()                                  { return COLSHAPE_RECTANGLE; }
 
     bool                    DoHitDetection( const CVector& vecNowPosition, float fRadius );
 
-    inline const CVector2D& GetSize( void )                                 { return m_vecSize; };
-    inline void             SetSize( const CVector2D& vecSize )             { m_vecSize = vecSize; SizeChanged (); };
+    inline const CVector2D& GetSize()                                       { return m_vecSize; }
+    inline void             SetSize( const CVector2D& vecSize )             { m_vecSize = vecSize; SizeChanged (); }
 
 protected:
     CVector2D               m_vecSize;

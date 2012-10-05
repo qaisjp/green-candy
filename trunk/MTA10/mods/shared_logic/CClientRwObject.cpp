@@ -63,11 +63,9 @@ static LUA_DECLARE( luaconstructor_object )
     return 0;
 }
 
-CClientRwObject::CClientRwObject( LuaClass& root, CRwObject& object ) : LuaElement( root ), m_object( object )
+CClientRwObject::CClientRwObject( lua_State *L, CRwObject& object ) : LuaElement( L ), m_object( object )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_object, 1 );

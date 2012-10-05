@@ -9,6 +9,8 @@
 *               Cecill Etheredge <ijsf@gmx.net>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #ifndef __CCLIENTTXD_H
@@ -19,7 +21,7 @@
 class CClientTXD : public LuaElement
 {
 public:
-                                    CClientTXD( LuaClass& root, CTexDictionary& txd );
+                                    CClientTXD( lua_State *L, CTexDictionary& txd );
                                     ~CClientTXD();
 
     const std::string               GetName() const                 { return m_txd.GetName(); }

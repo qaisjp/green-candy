@@ -34,7 +34,7 @@ public:
     inline bool             IsPropagated() const                                { return m_propagated; }
 
 private:
-                            CMapEvent( LuaClass& root, class CLuaMain* main, CMapEventManager& manager, const char *name, const LuaFunctionRef& funcRef, bool propagated );
+                            CMapEvent( class CLuaMain* main, CMapEventManager& manager, const char *name, const LuaFunctionRef& funcRef, bool propagated );
                             ~CMapEvent();
 
     class CLuaMain*         m_main;

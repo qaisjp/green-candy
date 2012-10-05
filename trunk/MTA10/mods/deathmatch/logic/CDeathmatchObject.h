@@ -20,8 +20,8 @@
 class CDeathmatchObject : public CClientObject
 {
 public:
-                                        CDeathmatchObject( CClientManager* pManager, LuaClass& root, bool system, class CMovingObjectsManager* pMovingObjectsManager, class CObjectSync* pObjectSync, ElementID ID, unsigned short usModel );
-                                        ~CDeathmatchObject( void );
+                                        CDeathmatchObject( CClientManager* pManager, lua_State *L, bool system, class CMovingObjectsManager* pMovingObjectsManager, class CObjectSync* pObjectSync, ElementID ID, unsigned short usModel );
+                                        ~CDeathmatchObject();
 
     // CClientEntity interface
     void                                SetPosition( const CVector& vecPosition );
@@ -31,10 +31,10 @@ public:
     void                                SetOrientation( const CVector& vecPosition, const CVector& vecRotationRadians );
 
     void                                StartMovement( const CPositionRotationAnimation& a_rMoveAnimation ); 
-    void                                UpdateMovement( void );
-    void                                StopMovement( void );
+    void                                UpdateMovement();
+    void                                StopMovement();
     
-    inline bool                         IsMoving( void )                                            { return m_pMoveAnimation != NULL; };
+    inline bool                         IsMoving()                                                  { return m_pMoveAnimation != NULL; };
 
     void                                UpdateContactingBegin( const CVector& vecPreviousPosition, const CVector& vecPreviousRotation );
     void                                UpdateContacting( const CVector& vecCenterOfRotation, const CVector& vecFrameTranslation, const CVector& vecFrameRotation );

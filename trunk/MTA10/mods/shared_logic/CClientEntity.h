@@ -95,7 +95,7 @@ typedef std::list <class CClientEntity*> CChildListType;
 class CClientEntity : public LuaElement
 {
 public:
-                                                CClientEntity( ElementID ID, bool system, LuaClass& root );
+                                                CClientEntity( ElementID ID, bool system, lua_State *L );
     virtual                                     ~CClientEntity();
 
     // Static functions for Lua interfacing

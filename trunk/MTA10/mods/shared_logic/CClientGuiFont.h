@@ -7,6 +7,8 @@
 *  PURPOSE:     Custom font bucket
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #ifndef _CLIENT_GUI_FONT_
@@ -17,20 +19,20 @@
 class CClientGuiFont : public CClientRenderElement
 {
 public:
-                            CClientGuiFont( CClientManager* pManager, ElementID ID, CGuiFontItem* pFontItem, LuaClass& root );
-                            ~CClientGuiFont( void );
+                                    CClientGuiFont( CClientManager *pManager, ElementID ID, CGuiFontItem *pFontItem, lua_State *L );
+                                    ~CClientGuiFont();
 
-    eClientEntityType       GetType( void ) const                               { return CCLIENTGUIFONT; }
-    void                    Unlink( void );
+    eClientEntityType               GetType() const                                     { return CCLIENTGUIFONT; }
+    void                            Unlink();
 
     // CClientGuiFont methods
-    CGuiFontItem*           GetGuiFontItem( void )                              { return (CGuiFontItem*)m_pRenderItem; }
-    const SString&          GetCEGUIFontName( void );
-    void                    NotifyGUIElementAttach( CClientGUIElement* pGUIElement );
-    void                    NotifyGUIElementDetach( CClientGUIElement* pGUIElement );
+    CGuiFontItem*                   GetGuiFontItem()                                    { return (CGuiFontItem*)m_pRenderItem; }
+    const SString&                  GetCEGUIFontName();
+    void                            NotifyGUIElementAttach( CClientGUIElement* pGUIElement );
+    void                            NotifyGUIElementDetach( CClientGUIElement* pGUIElement );
 
 protected:
-    std::set < CClientGUIElement* > m_GUIElementUserList;
+    std::set <CClientGUIElement*>   m_GUIElementUserList;
 };
 
 #endif //_CLIENT_GUI_FONT_

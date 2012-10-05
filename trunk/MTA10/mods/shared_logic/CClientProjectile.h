@@ -56,17 +56,17 @@ class CClientProjectile : public CClientEntity
     friend class CClientPed;
     friend class CClientVehicle;
 public:
-                                        CClientProjectile( class CClientManager* pManager,
-                                                           CProjectile* pProjectile,
-                                                           CProjectileInfo* pProjectileInfo,
-                                                           CClientEntity * pCreator,
-                                                           CClientEntity * pTarget,
+                                        CClientProjectile( class CClientManager *manager,
+                                                           CProjectile *proj,
+                                                           CProjectileInfo *info,
+                                                           CClientEntity *creator,
+                                                           CClientEntity *target,
                                                            eWeaponType weaponType,
-                                                           CVector * pvecOrigin,
-                                                           CVector * pvecTarget,
-                                                           float fForce,
-                                                           bool bLocal,
-                                                           LuaClass& root );
+                                                           CVector *origin,
+                                                           CVector *vecTarget,
+                                                           float force,
+                                                           bool local,
+                                                           lua_State *L );
                                         ~CClientProjectile();
 
     eClientEntityType                   GetType() const                                 { return CCLIENTPROJECTILE; }
@@ -76,48 +76,48 @@ public:
 
 
     void                                DoPulse();
-    void                                Initiate( CVector * pvecPosition, CVector * pvecRotation, CVector * pvecVelocity, unsigned short usModel );
+    void                                Initiate( CVector *pvecPosition, CVector *pvecRotation, CVector *pvecVelocity, unsigned short usModel );
     void                                Destroy();
 
-    bool                                IsActive();
-    bool                                GetMatrix( RwMatrix& matrix );
+    bool                                IsActive() const;
+    bool                                GetMatrix( RwMatrix& matrix ) const;
     bool                                SetMatrix( const RwMatrix& matrix );
-    void                                GetPosition( CVector& vecPosition ) const;
-    void                                SetPosition( const CVector& vecPosition );
-    void                                GetRotation( CVector& vecRotation );
-    void                                GetRotationDegrees( CVector& vecRotation );
-    void                                SetRotation( const CVector& vecRotation );
-    void                                SetRotationDegrees( const CVector& vecRotation );
-    void                                GetVelocity( CVector& vecVelocity );
-    void                                SetVelocity( CVector& vecVelocity );
+    void                                GetPosition( CVector& pos ) const;
+    void                                SetPosition( const CVector& pos );
+    void                                GetRotation( CVector& rot ) const;
+    void                                GetRotationDegrees( CVector& rot ) const;
+    void                                SetRotation( const CVector& rot );
+    void                                SetRotationDegrees( const CVector& rot );
+    void                                GetVelocity( CVector& vel ) const;
+    void                                SetVelocity( CVector& vel );
     void                                SetModel( unsigned short usModel );
 
-    inline CClientEntity *              GetCreator()                                    { return m_pCreator; }
-    inline CClientEntity *              GetTargetEntity()                               { return m_pTarget; }
-    inline eWeaponType                  GetWeaponType()                                 { return m_weaponType; }
-    inline CVector *                    GetOrigin()                                     { return m_pvecOrigin; }
-    inline CVector *                    GetTarget()                                     { return m_pvecTarget; }
-    inline float                        GetForce()                                      { return m_fForce; }
-    inline bool                         IsLocal()                                       { return m_bLocal; }
+    inline CClientEntity*               GetCreator()                                    { return m_pCreator; }
+    inline CClientEntity*               GetTargetEntity()                               { return m_pTarget; }
+    inline eWeaponType                  GetWeaponType() const                           { return m_weaponType; }
+    inline const CVector*               GetOrigin() const                               { return m_pvecOrigin; }
+    inline const CVector*               GetTarget() const                               { return m_pvecTarget; }
+    inline float                        GetForce() const                                { return m_fForce; }
+    inline bool                         IsLocal() const                                 { return m_bLocal; }
     
 protected:
     CClientProjectileManager*           m_pProjectileManager;
     bool                                m_bLinked;
 
-    CProjectile *                       m_pProjectile;
-    CProjectileInfo *                   m_pProjectileInfo;
+    CProjectile*                        m_pProjectile;
+    CProjectileInfo*                    m_pProjectileInfo;
 
-    CClientEntity *                     m_pCreator;
-    CClientEntity *                     m_pTarget;
+    CClientEntity*                      m_pCreator;
+    CClientEntity*                      m_pTarget;
     eWeaponType                         m_weaponType;
-    CVector *                           m_pvecOrigin;
-    CVector *                           m_pvecTarget;
+    CVector*                            m_pvecOrigin;
+    CVector*                            m_pvecTarget;
     float                               m_fForce;
     bool                                m_bLocal;
     long long                           m_llCreationTime;
 
     bool                                m_bInitiate;
-    CProjectileInitiateData *           m_pInitiateData;
+    CProjectileInitiateData*            m_pInitiateData;
 };
 
 #endif

@@ -10,6 +10,8 @@
 *               Florian Busse <flobu@gmx.net>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
@@ -36,11 +38,9 @@ static int luaconstructor_sound( lua_State *L )
     return 0;
 }
 
-CClientSound::CClientSound( CClientManager* pManager, ElementID ID, LuaClass& root ) : CClientEntity( ID, false, root )
+CClientSound::CClientSound( CClientManager* pManager, ElementID ID, lua_State *L ) : CClientEntity( ID, false, L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_sound, 1 );
@@ -50,9 +50,9 @@ CClientSound::CClientSound( CClientManager* pManager, ElementID ID, LuaClass& ro
     m_pSoundManager = pManager->GetSoundManager();
     m_pAudio = NULL;
 
-    SetTypeName ( "sound" );
+    SetTypeName( "sound" );
 
-    m_pSoundManager->AddToList ( this );
+    m_pSoundManager->AddToList( this );
 
     m_fVolume = 1.0f;
     m_fMinDistance = 5.0f;
@@ -213,16 +213,16 @@ void CClientSound::BeginSimulationOfPlayPosition ( void )
 //
 //
 ////////////////////////////////////////////////////////////
-void CClientSound::EndSimulationOfPlayPositionAndApply ( void )
+
+void CClientSound::EndSimulationOfPlayPositionAndApply()
 {
-    if ( m_SimulatedPlayPosition.IsValid () )
+    if ( m_SimulatedPlayPosition.IsValid() )
     {
-        m_SimulatedPlayPosition.SetLength ( m_dLength );
-        m_pAudio->SetPlayPosition ( m_SimulatedPlayPosition.GetPlayPositionNow () );
-        m_SimulatedPlayPosition.SetValid ( false );
+        m_SimulatedPlayPosition.SetLength( m_dLength );
+        m_pAudio->SetPlayPosition( m_SimulatedPlayPosition.GetPlayPositionNow() );
+        m_SimulatedPlayPosition.SetValid( false );
     }
 }
-
 
 ////////////////////////////////////////////////////////////
 //
@@ -231,10 +231,9 @@ void CClientSound::EndSimulationOfPlayPositionAndApply ( void )
 //
 //
 ////////////////////////////////////////////////////////////
+
 bool CClientSound::Play ( const SString& strPath, bool bLoop )
 {
-    assert ( m_strPath.empty () );
-
     m_bStream = false;
     m_b3D = false;
     m_strPath = strPath;
@@ -244,11 +243,8 @@ bool CClientSound::Play ( const SString& strPath, bool bLoop )
     return Create ();
 }
 
-
 bool CClientSound::Play3D ( const SString& strPath, bool bLoop )
 {
-    assert ( m_strPath.empty () );
-
     m_bStream = false;
     m_b3D = true;
     m_strPath = strPath;
@@ -259,11 +255,8 @@ bool CClientSound::Play3D ( const SString& strPath, bool bLoop )
     return true;
 }
 
-
 void CClientSound::PlayStream ( const SString& strURL, bool bLoop, bool b3D )
 {
-    assert ( m_strPath.empty () );
-
     m_bStream = true;
     m_b3D = b3D;
     m_strPath = strURL;
@@ -274,15 +267,7 @@ void CClientSound::PlayStream ( const SString& strURL, bool bLoop, bool b3D )
         Create ();
 }
 
-
-////////////////////////////////////////////////////////////
-//
-// CClientSound:: Sea of sets 'n' gets
-//
-//
-//
-////////////////////////////////////////////////////////////
-void CClientSound::SetPlayPosition ( double dPosition )
+void CClientSound::SetPlayPosition( double dPosition )
 {
     if ( m_pAudio )
     {
@@ -296,52 +281,52 @@ void CClientSound::SetPlayPosition ( double dPosition )
     }
 }
 
-double CClientSound::GetPlayPosition ( void )
+double CClientSound::GetPlayPosition() const
 {
     if ( m_pAudio )
     {
         // Use actual audio if active
-        return m_pAudio->GetPlayPosition ();
+        return m_pAudio->GetPlayPosition();
     }
-    else
-    if ( m_SimulatedPlayPosition.IsValid () )
+    else if ( m_SimulatedPlayPosition.IsValid() )
     {
         // Use simulation if not active
-        return m_SimulatedPlayPosition.GetPlayPositionNow ();
+        return m_SimulatedPlayPosition.GetPlayPositionNow();
     }
+
     return 0;
 }
 
-double CClientSound::GetLength ( void )
+double CClientSound::GetLength()
 {
     if ( !m_bDoneCreate && !m_bStream )
     {
         // If never loaded, do a create and destroy to get the length
-        Create ();
-        Destroy ();
+        Create();
+        Destroy();
     }
     return m_dLength;
 }
 
-float CClientSound::GetVolume ( void )
+float CClientSound::GetVolume() const
 {
     return m_fVolume;
 }
 
-void CClientSound::SetVolume ( float fVolume, bool bStore )
+void CClientSound::SetVolume( float fVolume, bool bStore )
 {
    m_fVolume = fVolume;
 
     if ( m_pAudio )
-        m_pAudio->SetVolume ( m_fVolume );
+        m_pAudio->SetVolume( m_fVolume );
 }
 
-float CClientSound::GetPlaybackSpeed ( void )
+float CClientSound::GetPlaybackSpeed() const
 {
     return m_fPlaybackSpeed;
 }
 
-void CClientSound::SetPlaybackSpeed ( float fSpeed )
+void CClientSound::SetPlaybackSpeed( float fSpeed )
 {
     m_fPlaybackSpeed = fSpeed;
     m_SimulatedPlayPosition.SetPlaybackSpeed( fSpeed );
@@ -350,75 +335,75 @@ void CClientSound::SetPlaybackSpeed ( float fSpeed )
         m_pAudio->SetPlaybackSpeed ( m_fPlaybackSpeed );
 }
 
-void CClientSound::SetPosition ( const CVector& vecPosition )
+void CClientSound::SetPosition( const CVector& vecPosition )
 {
     m_vecPosition = vecPosition;
-    UpdateSpatialData ();
+    UpdateSpatialData();
+
     if ( m_pAudio )
-        m_pAudio->SetPosition ( m_vecPosition );
+        m_pAudio->SetPosition( m_vecPosition );
 }
 
-void CClientSound::GetPosition ( CVector& vecPosition ) const
+void CClientSound::GetPosition( CVector& vecPosition ) const
 {
     vecPosition = m_vecPosition;
 }
 
-void CClientSound::SetVelocity ( const CVector& vecVelocity )
+void CClientSound::SetVelocity( const CVector& vecVelocity )
 {
     m_vecVelocity = vecVelocity;
     if ( m_pAudio )
-        m_pAudio->SetVelocity ( m_vecVelocity );
+        m_pAudio->SetVelocity( m_vecVelocity );
 }
 
-void CClientSound::GetVelocity ( CVector& vecVelocity )
+void CClientSound::GetVelocity( CVector& vecVelocity ) const
 {
     vecVelocity = m_vecVelocity;
 }
 
-void CClientSound::SetPaused ( bool bPaused )
+void CClientSound::SetPaused( bool bPaused )
 {
     m_bPaused = bPaused;
 
     m_SimulatedPlayPosition.SetPaused ( bPaused );
 
     if ( m_pAudio )
-        m_pAudio->SetPaused ( m_bPaused );
+        m_pAudio->SetPaused( m_bPaused );
 }
 
-bool CClientSound::IsPaused ( void )
+bool CClientSound::IsPaused() const
 {
     return m_bPaused;
 }
 
-void CClientSound::SetMinDistance ( float fDistance )
+void CClientSound::SetMinDistance( float fDistance )
 {
     m_fMinDistance = fDistance;
     if ( m_pAudio )
         m_pAudio->SetMinDistance ( m_fMinDistance );
 }
 
-float CClientSound::GetMinDistance ( void )
+float CClientSound::GetMinDistance() const
 {
     return m_fMinDistance;
 }
 
-void CClientSound::SetMaxDistance ( float fDistance )
+void CClientSound::SetMaxDistance( float fDistance )
 {
     bool bChanged = m_fMaxDistance != fDistance;
 
     m_fMaxDistance = fDistance;
     if ( m_pAudio )
-        m_pAudio->SetMaxDistance ( m_fMaxDistance );
+        m_pAudio->SetMaxDistance( m_fMaxDistance );
 
     if ( bChanged )
         UpdateSpatialData ();
 }
 
-float CClientSound::GetMaxDistance ( void )
+float CClientSound::GetMaxDistance() const
 {
     return m_fMaxDistance;
 }
-
 
 ////////////////////////////////////////////////////////////
 //
@@ -427,25 +412,26 @@ float CClientSound::GetMaxDistance ( void )
 // If the stream is not active, this may not work correctly
 //
 ////////////////////////////////////////////////////////////
+
 SString CClientSound::GetMetaTags( const SString& strFormat )
 {
     SString strMetaTags = "";
+
     if ( m_pAudio )
     {
-        strMetaTags = m_pAudio->GetMetaTags ( strFormat );
+        strMetaTags = m_pAudio->GetMetaTags( strFormat );
         m_SavedTags[ strFormat ] = strMetaTags;
     }
     else
     {
         // Search previously found tags for this stream when it is not active
         // This may not be such a good idea btw
-        if ( SString* pstrMetaTags = MapFind ( m_SavedTags, strFormat ) )
+        if ( SString* pstrMetaTags = MapFind( m_SavedTags, strFormat ) )
             strMetaTags = *pstrMetaTags;
     }
 
     return strMetaTags;
 }
-
 
 ////////////////////////////////////////////////////////////
 //
@@ -454,7 +440,8 @@ SString CClientSound::GetMetaTags( const SString& strFormat )
 // TODO and test
 //
 ////////////////////////////////////////////////////////////
-bool CClientSound::SetFxEffect ( uint uiFxEffect, bool bEnable )
+
+bool CClientSound::SetFxEffect( uint uiFxEffect, bool bEnable )
 {
     if ( uiFxEffect >= NUMELMS( m_EnabledEffects ) )
         return false;
@@ -467,13 +454,13 @@ bool CClientSound::SetFxEffect ( uint uiFxEffect, bool bEnable )
     return true;
 }
 
-bool CClientSound::IsFxEffectEnabled ( uint uiFxEffect )
+bool CClientSound::IsFxEffectEnabled( uint uiFxEffect ) const
 {
     if ( uiFxEffect >= NUMELMS( m_EnabledEffects ) )
         return false;
+
     return m_EnabledEffects[uiFxEffect] ? true : false;
 }
-
 
 ////////////////////////////////////////////////////////////
 //
@@ -483,7 +470,7 @@ bool CClientSound::IsFxEffectEnabled ( uint uiFxEffect )
 // m_pAudio->DoPulse needs to be called for non-3D sounds also.
 //
 ////////////////////////////////////////////////////////////
-void CClientSound::Process3D ( const CVector& vecPlayerPosition, const CVector& vecCameraPosition, const CVector& vecLookAt )
+void CClientSound::Process3D( const CVector& vecPlayerPosition, const CVector& vecCameraPosition, const CVector& vecLookAt )
 {
     // If the sound isn't active, we don't need to process it
     if ( !m_pAudio )
@@ -505,9 +492,9 @@ void CClientSound::Process3D ( const CVector& vecPlayerPosition, const CVector& 
 
     m_pAudio->DoPulse ( vecPlayerPosition, vecCameraPosition, vecLookAt );
 
-
     // Trigger script events for things
     SSoundEventInfo eventInfo;
+
     while ( m_pAudio->GetQueuedEvent ( eventInfo ) )
     {
         if ( eventInfo.type == SOUND_EVENT_FINISHED_DOWNLOAD )

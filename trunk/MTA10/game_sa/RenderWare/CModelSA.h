@@ -44,7 +44,7 @@ public:
     const atomicList_t&             GetAtomics() const              { return m_atomics; }
 
     // Static accessors
-    static bool RpClumpAssignNewAtomic( RpAtomic *atom, CModelSA *model );
+    static void RpClumpAssignObjects( CRwObjectSA *obj, CModelSA *model );
 
 protected:
     CColModelSA*                    m_col;

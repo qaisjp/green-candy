@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientTXD.cpp
@@ -8,6 +8,9 @@
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               arc_
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -58,7 +61,7 @@ static int luaconstructor_txd( lua_State *L )
     textures_t::iterator iter = tex.begin();
 
     for ( ; iter != tex.end(); iter++ )
-        new CClientGameTexture( *txd, **iter );
+        ( new CClientGameTexture( L, **iter ) )->SetRoot( txd );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -69,10 +72,8 @@ static int luaconstructor_txd( lua_State *L )
     return 0;
 }
 
-CClientTXD::CClientTXD( LuaClass& root, CTexDictionary& txd ) : LuaElement( root ), m_txd( txd )
+CClientTXD::CClientTXD( lua_State *L, CTexDictionary& txd ) : LuaElement( L ), m_txd( txd )
 {
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_txd, 1 );
@@ -102,7 +103,7 @@ bool CClientTXD::LoadTXD( CFile *file, bool filtering )
     textures_t::iterator itert = newEntries.begin();
 
     for ( ; itert != newEntries.end(); itert++ )
-        new CClientGameTexture( *this, **itert );
+        ( new CClientGameTexture( m_lua, **itert ) )->SetRoot( this );
 
     return true;
 }

@@ -73,32 +73,32 @@ class CClientGUIElement : public CClientEntity
     friend class CClientGUIManager;
 
 public:
-                                CClientGUIElement( CClientManager* pManager, CLuaMain* pLuaMain, CGUIElement* pCGUIElement, bool system = false, ElementID ID = INVALID_ELEMENT_ID );
-                                ~CClientGUIElement( void );
+                                CClientGUIElement( CClientManager *pManager, CLuaMain *pLuaMain, CGUIElement *pCGUIElement, bool system = false, ElementID ID = INVALID_ELEMENT_ID );
+                                ~CClientGUIElement();
 
-    void                        Unlink( void );
+    void                        Unlink();
 
-    inline eClientEntityType    GetType( void ) const                               { return CCLIENTGUI; };
-    inline eCGUIType            GetCGUIType( void ) const                           { return m_pCGUIElement->GetType (); };
-    inline const char*          GetCGUITypeName( void ) const                       { return m_szCGUITypeName; };
+    inline eClientEntityType    GetType() const                                     { return CCLIENTGUI; }
+    inline eCGUIType            GetCGUIType() const                                 { return m_pCGUIElement->GetType(); }
+    inline const char*          GetCGUITypeName() const                             { return m_szCGUITypeName; }
 
-    inline GUI_CALLBACK         GetCallback1( void )                                { return GUI_CALLBACK ( &CClientGUIElement::_CallbackEvent1, this ); };
-    inline GUI_CALLBACK         GetCallback2( void )                                { return GUI_CALLBACK ( &CClientGUIElement::_CallbackEvent2, this ); };
+    inline GUI_CALLBACK         GetCallback1()                                      { return GUI_CALLBACK( &CClientGUIElement::_CallbackEvent1, this ); }
+    inline GUI_CALLBACK         GetCallback2()                                      { return GUI_CALLBACK( &CClientGUIElement::_CallbackEvent2, this ); }
 
-    void                        SetEvents( const char* szFunc1, const char* szFunc2 = NULL );
+    void                        SetEvents( const char *szFunc1, const char *szFunc2 = NULL );
 
-    inline CLuaMain*            GetVirtualMachine( void )                           { return m_pLuaMain; }
+    inline CLuaMain*            GetVirtualMachine()                                 { return m_pLuaMain; }
 
     // dummy overrides
-    inline void                 SetPosition( const CVector& vecDummy )              {};
-    inline void                 GetPosition( CVector& vecDummy ) const              {};
+    inline void                 SetPosition( const CVector& vecDummy )              {}
+    inline void                 GetPosition( CVector& vecDummy ) const              {}
 
     // cgui element access
-    inline CGUIElement*         GetCGUIElement( void )                              { return m_pCGUIElement; };
-    inline void                 SetCGUIElement( CGUIElement *pCGUIElement )         { m_pCGUIElement = pCGUIElement; };
+    inline CGUIElement*         GetCGUIElement()                                    { return m_pCGUIElement; }
+    inline void                 SetCGUIElement( CGUIElement *pCGUIElement )         { m_pCGUIElement = pCGUIElement; }
 
-    SString                     GetFont( class CClientGuiFont** ppFontElement );
-    bool                        SetFont( const SString& strFontName, CClientGuiFont* pFontElement );
+    SString                     GetFont( class CClientGuiFont **ppFontElement );
+    bool                        SetFont( const SString& strFontName, CClientGuiFont *pFontElement );
 
 private:
     bool                        _CallbackEvent1( CGUIElement *pCGUIElement );

@@ -42,12 +42,18 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
 
     lua_State *L = *m_lua;
 
-    // Create our root elements. We set their parents when we're loaded.
+    // Create our root elements.
     // Make them system entities so nothing but us can delete them.
-    m_guiEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "guiroot", *m_dynamicEntity, true );
-    m_colEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "colmodelroot", *m_dynamicEntity, true );
-    m_dffEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot", *m_dynamicEntity, true );
-    m_txdEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot", *m_dynamicEntity, true );
+    m_guiEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "guiroot", L, true );
+    m_colEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "colmodelroot", L, true );
+    m_dffEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "dffroot", L, true );
+    m_txdEntity = new CClientDummy( g_pClientGame->GetManager(), INVALID_ELEMENT_ID, "txdroot", L, true );
+
+    // Parent them to the dynamic entity
+    m_guiEntity->SetRoot( m_dynamicEntity );
+    m_colEntity->SetRoot( m_dynamicEntity );
+    m_dffEntity->SetRoot( m_dynamicEntity );
+    m_txdEntity->SetRoot( m_dynamicEntity );
 
     // Register them to our resource
     PushEnvironment( L );

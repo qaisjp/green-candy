@@ -1,10 +1,11 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CCheckpointsSA.h
 *  PURPOSE:     Header file for checkpoint entity manager class
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,7 +14,6 @@
 #ifndef __CGAMESA_CHECKPOINTS
 #define __CGAMESA_CHECKPOINTS
 
-//00722c40      public: static class CCheckpoint * __cdecl CCheckpoints::PlaceMarker(unsigned int,unsigned short,class CVector &,class CVector &,float,unsigned char,unsigned char,unsigned char,unsigned char,unsigned short,float,short)
 #define FUNC_CCheckpoints__PlaceMarker  0x722c40 // ##SA##
 
 #define MAX_CHECKPOINTS         32
@@ -27,15 +27,15 @@ class CCheckpointSA;
 
 class CCheckpointsSA : public CCheckpoints
 {
-private:
-    CCheckpointSA       * Checkpoints[MAX_CHECKPOINTS];
 public: 
-    // constructor
-    CCheckpointsSA();
-    ~CCheckpointsSA ( void );
+                                CCheckpointsSA();
+                                ~CCheckpointsSA();
 
-    CCheckpoint         * CreateCheckpoint(DWORD Identifier, WORD wType, CVector * vecPosition, CVector * vecPointDir, FLOAT fSize, FLOAT fPulseFraction, const SColor color);
-    CCheckpoint         * FindFreeMarker();
+    CCheckpointSA*              CreateCheckpoint( unsigned int id, unsigned short type, const CVector& pos, const CVector& dir, float size, float pulseFraction, const SColor color );
+    CCheckpointSA*              FindFreeMarker();
+
+private:
+    CCheckpointSA*              m_checkpoints[MAX_CHECKPOINTS];
 };
 
 #endif

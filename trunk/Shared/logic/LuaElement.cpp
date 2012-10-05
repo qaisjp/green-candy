@@ -69,11 +69,6 @@ static int luaconstructor_element( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_ELEMENT, element );
 
-    // Set our parent
-    j.PushMethod( L, "setParent" );
-    lua_pushvalue( L, lua_upvalueindex( 2 ) );
-    lua_call( L, 1, 0 );
-
     // Register the element interface
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -88,18 +83,18 @@ static int luaconstructor_element( lua_State *L )
     return 0;
 }
 
-static inline int _trefget( lua_State *L, LuaElement *el, LuaClass& root )
+static inline int _trefget( lua_State *L, LuaElement *el )
 {
     lua_pushlightuserdata( L, el );
-    root.PushStack( L );
-    lua_pushcclosure( L, luaconstructor_element, 2 );
+    lua_pushcclosure( L, luaconstructor_element, 1 );
     lua_newclass( L );
     return luaL_ref( L, LUA_REGISTRYINDEX );
 }
 
-LuaElement::LuaElement( LuaClass& root ) : LuaClass( root.GetVM(), _trefget( root.GetVM(), this, root ) )
+LuaElement::LuaElement( lua_State *L ) : LuaClass( L, _trefget( L, this ) )
 {
-    m_root = &root;
+    // Root has to be initialized after the object's construction
+    m_root = NULL;
 }
 
 LuaElement::~LuaElement()

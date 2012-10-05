@@ -45,6 +45,7 @@ RwFrameAddChild_t                       RwFrameAddChild                         
 RwFrameRemoveChild_t                    RwFrameRemoveChild                      = (RwFrameRemoveChild_t)                    invalid_ptr;
 RwFrameScale_t                          RwFrameScale                            = (RwFrameScale_t)                          invalid_ptr;
 RwFrameOrient_t                         RwFrameOrient                           = (RwFrameOrient_t)                         invalid_ptr;
+RwFrameDestroy_t                        RwFrameDestroy                          = (RwFrameDestroy_t)                        invalid_ptr;
 RwCameraClone_t                         RwCameraClone                           = (RwCameraClone_t)                         invalid_ptr;
 RpClumpClone_t                          RpClumpClone                            = (RpClumpClone_t)                          invalid_ptr;
 RpClumpStreamRead_t                     RpClumpStreamRead                       = (RpClumpStreamRead_t)                     invalid_ptr;
@@ -81,6 +82,7 @@ RwTextureCreate_t                       RwTextureCreate                         
 RwTextureUnlinkFromDictionary_t         RwTextureUnlinkFromDictionary           = (RwTextureUnlinkFromDictionary_t)         invalid_ptr;
 RwTextureDestroy_t                      RwTextureDestroy                        = (RwTextureDestroy_t)                      invalid_ptr;
 RpGeometryCreate_t                      RpGeometryCreate                        = (RpGeometryCreate_t)                      invalid_ptr;
+RpGeometryAddRef_t                      RpGeometryAddRef                        = (RpGeometryAddRef_t)                      invalid_ptr;
 RpGeometryGetAnimation_t                RpGeometryGetAnimation                  = (RpGeometryGetAnimation_t)                invalid_ptr;
 RpGeometryTriangleSetVertexIndices_t    RpGeometryTriangleSetVertexIndices      = (RpGeometryTriangleSetVertexIndices_t)    invalid_ptr;
 RpGeometryTriangleSetMaterial_t         RpGeometryTriangleSetMaterial           = (RpGeometryTriangleSetMaterial_t)         invalid_ptr;
@@ -289,8 +291,6 @@ static bool LoadAtomicsCB( RpAtomic * atomic, SLoadAtomics *data )
 
 CRenderWareSA::CRenderWareSA ( eGameVersion version )
 {
-    //m_pfnWatchCallback = NULL;
-
     // Version dependant addresses
     switch ( version )
     {
@@ -310,6 +310,8 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwFrameRemoveChild                  = (RwFrameRemoveChild_t)                    0x007F0D10;
         RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E70;
         RwFrameScale                        = (RwFrameScale_t)                          0x007F0F10;
+        RwFrameCloneHierarchy               = (RwFrameCloneHierarchy_t)                 0x007F0290;
+        RwFrameDestroy                      = (RwFrameDestroy_t)                        0x007F04B0;
         RwCameraClone                       = (RwCameraClone_t)                         0x007EF3F0;
         RpClumpClone                        = (RpClumpClone_t)                          0x00749FC0;
         RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A4E0;
@@ -407,8 +409,9 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B00;
         RwFrameRemoveChild                  = (RwFrameRemoveChild_t)                    0x007F0CD0;
         RwFrameSetIdentity                  = (RwFrameSetIdentity_t)                    0x007F10B0;
-        RwFrameCloneHierarchy               = (RwFrameCloneHierarchy_t)                 0x007F05E0;
+        RwFrameCloneHierarchy               = (RwFrameCloneHierarchy_t)                 0x007f0250;
         RwFrameOrient                       = (RwFrameOrient_t)                         0x007F2010;
+        RwFrameDestroy                      = (RwFrameDestroy_t)                        0x007F05A0;
         RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749DC0;
         RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D40;
         RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF20;
@@ -825,6 +828,64 @@ void RwObjectFrame::RemoveFromFrame()
     m_parent = NULL;
 }
 
+void RwFrame::Link( RwFrame *frame )
+{
+    // Unlink previous relationship of new child
+    frame->Unlink();    // interesting side effect: cached if usage of parent
+
+    // Insert the new child at the beginning
+    frame->m_next = m_child;
+    m_child = frame;
+
+    frame->m_parent = this;
+
+    frame->SetRootForHierarchy( m_root );
+    frame->UnregisterRoot();
+
+    // Mark the main root as independent
+    m_root->RegisterRoot();
+}
+
+void RwFrame::Unlink()
+{
+    if ( !m_parent )
+        return;
+
+    if ( m_parent->m_child == this )
+        m_parent->m_child = m_next;
+    else
+    {
+        RwFrame *prev = m_next;
+
+        while ( prev->m_next != this )
+            prev = prev->m_next;
+
+        prev->m_next = m_next;
+    }
+
+    m_parent = NULL;
+    m_next = NULL;
+
+    SetRootForHierarchy( this );
+
+    // Mark as independent
+    RegisterRoot();
+}
+
+void RwFrame::SetRootForHierarchy( RwFrame *root )
+{
+    m_root = root;
+
+    RwFrame *child = m_child;
+
+    while ( child )
+    {
+        child->SetRootForHierarchy( root );
+
+        child = child->m_next;
+    }
+}
+
 static bool RwFrameGetChildCount( RwFrame *child, unsigned int *count )
 {
     child->ForAllChildren( RwFrameGetChildCount, count );
@@ -959,6 +1020,89 @@ RwObject* RwFrame::GetFirstObject()
     return obj;
 }
 
+struct _rwFindObjectType
+{
+    unsigned char type;
+    RwObject *rslt;
+};
+
+static bool RwObjectGetByType( RwObject *child, _rwFindObjectType *info )
+{
+    if ( child->m_type != info->type )
+        return true;
+
+    info->rslt = child;
+    return false;
+}
+
+RwObject* RwFrame::GetFirstObject( unsigned char type )
+{
+    _rwFindObjectType info;
+    info.type = type;
+
+    return ForAllObjects( RwObjectGetByType, &info ) ? NULL : info.rslt;
+}
+
+struct _rwObjectByIndex
+{
+    unsigned char type;
+    unsigned int idx;
+    unsigned int curIdx;
+    RwObject *rslt;
+};
+
+static bool RwObjectGetByIndex( RwObject *obj, _rwObjectByIndex *info )
+{
+    if ( obj->m_type != info->type )
+        return true;
+
+    if ( info->idx != info->curIdx )
+    {
+        info->curIdx++;
+        return true;
+    }
+
+    info->rslt = obj;
+    return false;
+}
+
+RwObject* RwFrame::GetObjectByIndex( unsigned char type, unsigned int idx )
+{
+    _rwObjectByIndex info;
+    info.type = type;
+    info.idx = idx;
+    info.curIdx = 0;
+    
+    if ( ForAllObjects( RwObjectGetByIndex, &info ) )
+        return NULL;
+
+    return info.rslt;
+}
+
+struct _rwObjCntByType
+{
+    unsigned char type;
+    unsigned int cnt;
+};
+
+static bool RwFrameCountObjectsByType( RwObject *obj, _rwObjCntByType *info )
+{
+    if ( obj->m_type == info->type )
+        info->cnt++;
+
+    return true;
+}
+
+unsigned int RwFrame::CountObjectsByType( unsigned char type )
+{
+    _rwObjCntByType info;
+    info.type = type;
+    info.cnt = 0;
+
+    ForAllObjects( RwFrameCountObjectsByType, &info );
+    return info.cnt;
+}
+
 static bool RwFrameObjectGetLast( RwObject *obj, RwObject **dst )
 {
     *dst = obj;
@@ -1022,22 +1166,6 @@ static bool RwFrameAtomicBaseRoot( RpAtomic *atomic, RwFrame *root )
     return true;
 }
 
-static bool RwFrameBaseAtomicHierarchy( RwFrame *child, RwFrame *root )
-{
-    child->ForAllChildren( RwFrameBaseAtomicHierarchy, root );
-
-    // Set all atomics to root
-    child->ForAllAtomics( RwFrameAtomicBaseRoot, root );
-
-    RwFrameCloneHierarchy( child );
-    return true;
-}
-
-void RwFrame::BaseAtomicHierarchy()
-{
-    ForAllChildren( RwFrameBaseAtomicHierarchy, this );
-}
-
 struct _rwFrameVisibilityAtomics
 {
     RpAtomic **primary;
@@ -1093,6 +1221,16 @@ void RwFrame::RegisterRoot()
     }
 
     m_privateFlags |= RW_OBJ_REGISTERED | RW_OBJ_HIERARCHY_CACHED;
+}
+
+void RwFrame::UnregisterRoot()
+{
+    if ( !(m_root->m_privateFlags & ( RW_OBJ_REGISTERED | 0x01 ) ) )
+        return;
+
+    LIST_REMOVE( m_nodeRoot );
+
+    m_privateFlags &= ~(RW_OBJ_REGISTERED | 1);
 }
 
 static bool RwTexDictionaryGetFirstTexture( RwTexture *tex, RwTexture **rslt )
@@ -1157,6 +1295,26 @@ void RwTexture::RemoveFromDictionary()
     LIST_REMOVE( TXDList );
 
     txd = NULL;
+}
+
+void RwCamera::AddToClump( RpClump *clump )
+{
+    // Bugfix: remove from previous clump
+    RemoveFromClump();
+
+    LIST_INSERT( clump->m_cameras.root, m_clumpCameras );
+
+    m_clump = clump;
+}
+
+void RwCamera::RemoveFromClump()
+{
+    if ( !m_clump )
+        return;
+
+    LIST_REMOVE( m_clumpCameras );
+
+    m_clump = NULL;
 }
 
 RwStaticGeometry::RwStaticGeometry()
@@ -1286,6 +1444,26 @@ RwLinkedMaterial* RwLinkedMateria::Get( unsigned int index )
         return NULL;
 
     return (RwLinkedMaterial*)(this + 1) + index;
+}
+
+void RpLight::AddToClump( RpClump *clump )
+{
+    // Bugfix: remove from previous clump
+    RemoveFromClump();
+
+    LIST_INSERT( clump->m_lights.root, m_clumpLights );
+
+    m_clump = clump;
+}
+
+void RpLight::RemoveFromClump()
+{
+    if ( !m_clump )
+        return;
+
+    LIST_REMOVE( m_clumpLights );
+
+    m_clump = NULL;
 }
 
 static bool RwAssignRenderLink( RwFrame *child, RwRenderLink **link )
@@ -1432,6 +1610,29 @@ RpAtomic* RpClump::GetFirstAtomic()
 
     ForAllAtomics( RwGetAtomic, &atomic );
     return atomic;
+}
+
+struct _rwFindAtomicNamed
+{
+    const char *name;
+    RpAtomic *rslt;
+};
+
+static bool RpClumpFindNamedAtomic( RpAtomic *atom, _rwFindAtomicNamed *info )
+{
+    if ( strcmp( atom->m_parent->m_nodeName, info->name ) != 0 )
+        return true;
+
+    info->rslt = atom;
+    return false;
+}
+
+RpAtomic* RpClump::FindNamedAtomic( const char *name )
+{
+    _rwFindAtomicNamed info;
+    info.name = name;
+
+    return ForAllAtomics( RpClumpFindNamedAtomic, &info ) ? NULL : info.rslt;
 }
 
 static bool RwAtomicGet2dfx( RpAtomic *child, RpAtomic **atomic )

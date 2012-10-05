@@ -1,9 +1,10 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        sdk/game/CCheckpoint.h
 *  PURPOSE:     Checkpoint entity interface
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -11,9 +12,6 @@
 
 #ifndef __CGAME_CHECKPOINT
 #define __CGAME_CHECKPOINT
-
-#include <CVector.h>
-#include "Common.h"
 
 /**
  * \todo fix SetColor/GetColor, the format is actually BGRA (strange)
@@ -36,22 +34,29 @@ enum
 class CCheckpoint
 {
 public:
-    virtual VOID            SetPosition(CVector * vecPosition)=0;
-    virtual CVector     * GetPosition()=0;
-    virtual VOID            SetPointDirection(CVector * vecPointDirection)=0;
-    virtual CVector     * GetPointDirection()=0;
-    virtual DWORD           GetType()=0; // need enum?
-    virtual BOOL            IsActive()=0;
-    virtual DWORD           GetIdentifier()=0;
-    virtual SColor          GetColor()=0;
-    virtual VOID            SetColor(const SColor color)=0;
-    virtual VOID            SetPulsePeriod(WORD wPulsePeriod)=0;
-    virtual VOID            SetRotateRate(short RotateRate)=0;
-    virtual FLOAT           GetSize()=0;
-    virtual VOID            SetSize(FLOAT fSize)=0;
-    virtual VOID            SetCameraRange(FLOAT fCameraRange)=0;
-    virtual FLOAT           GetPulseFraction()=0;
-    virtual VOID            Remove()=0;
+    virtual void                SetPosition( const CVector& pos ) = 0;
+    virtual const CVector&      GetPosition() const = 0;
+
+    virtual void                SetPointDirection( const CVector& dir ) = 0;
+    virtual const CVector&      GetPointDirection() const = 0;
+
+    virtual unsigned int        GetType() const = 0;
+    virtual bool                IsActive() const = 0;
+    virtual unsigned int        GetIdentifier() const = 0;
+
+    virtual SColor              GetColor() const = 0;
+    virtual void                SetColor( SColor color ) = 0;
+
+    virtual void                SetPulsePeriod( unsigned short period ) = 0;
+    virtual void                SetRotateRate( short rate ) = 0;
+
+    virtual float               GetSize() const = 0;
+    virtual void                SetSize( float size ) = 0;
+
+    virtual void                SetCameraRange( float range ) = 0;
+    virtual float               GetPulseFraction() const = 0;
+
+    virtual void                Remove() = 0;
 };
 
 #endif

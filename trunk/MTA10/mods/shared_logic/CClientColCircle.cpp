@@ -10,26 +10,28 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
 
 using namespace std;
 
-CClientColCircle::CClientColCircle ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, float fRadius ) : CClientColShape ( pManager, ID, root, system )
+CClientColCircle::CClientColCircle( CClientManager *manager, ElementID ID, lua_State *L, bool system, const CVector& pos, float fRadius ) : CClientColShape( manager, ID, L, system )
 {
-    m_vecPosition = vecPosition;
+    m_vecPosition = pos;
     m_fRadius = fRadius;
-    UpdateSpatialData ();
+    UpdateSpatialData();
 }
 
-bool CClientColCircle::DoHitDetection ( const CVector& vecNowPosition, float fRadius )
+bool CClientColCircle::DoHitDetection( const CVector& pos, float fRadius )
 {
     // Do a simple distance check between now position and our position 
-    return IsPointNearPoint2D ( vecNowPosition, m_vecPosition, fRadius + m_fRadius );
+    return IsPointNearPoint2D( pos, m_vecPosition, fRadius + m_fRadius );
 }
 
-CSphere CClientColCircle::GetWorldBoundingSphere ( void )
+CSphere CClientColCircle::GetWorldBoundingSphere()
 {
     CSphere sphere;
     sphere.vecPosition.fX = m_vecPosition.fX;

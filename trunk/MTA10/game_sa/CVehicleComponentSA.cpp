@@ -13,79 +13,119 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-CVehicleComponentSA::CVehicleComponentSA( CVehicleComponentSA*& slot, RpAtomic *atomic, unsigned short txdID ) : m_compSlot( slot )
+CVehicleComponentSA::CVehicleComponentSA( vehComponents_t& container, RpClump *clump, RwFrame *item, unsigned short txdID ) : m_container( container )
 {
-    m_atomic = atomic;
+    m_clump = clump;
+    m_frame = item;
     m_txdID = txdID;
+
+    container[item->m_nodeName] = this;
+}
+
+static bool RwObjectDestroyAll( RwObject *obj, int )
+{
+    if ( obj->m_type == RW_ATOMIC )
+    {
+        ((RpAtomic*)obj)->RemoveFromClump();
+        RpAtomicDestroy( (RpAtomic*)obj );
+    }
+
+    return true;
 }
 
 CVehicleComponentSA::~CVehicleComponentSA()
 {
-    // Clear ourselves from the vehicle
-    m_compSlot = NULL;
+    // Clear ourselves from the container
+    m_container.erase( GetName() );
 
-    m_atomic->RemoveFromFrame();
-    m_atomic->RemoveFromClump();
-    RpAtomicDestroy( m_atomic );
+    // Clear all objects
+    m_frame->ForAllObjects( RwObjectDestroyAll, 0 );
+    LIST_CLEAR( m_frame->m_objects.root );
 }
 
 const char* CVehicleComponentSA::GetName() const
 {
-    return m_atomic->m_parent->m_nodeName;
+    return m_frame->m_nodeName;
 }
 
 void CVehicleComponentSA::SetMatrix( const RwMatrix& mat )
 {
-    m_atomic->m_parent->m_modelling = mat;
+    m_frame->m_modelling = mat;
 }
 
 const RwMatrix& CVehicleComponentSA::GetMatrix() const
 {
-    return m_atomic->m_parent->m_modelling;
+    return m_frame->m_modelling;
 }
 
 const RwMatrix& CVehicleComponentSA::GetWorldMatrix() const
 {
-    return m_atomic->m_parent->m_ltm;
+    return m_frame->m_ltm;
 }
 
 void CVehicleComponentSA::SetPosition( const CVector& pos )
 {
-    m_atomic->m_parent->m_modelling.pos = pos;
+    m_frame->m_modelling.pos = pos;
 }
 
 const CVector& CVehicleComponentSA::GetPosition() const
 {
-    return m_atomic->m_parent->m_modelling.pos;
+    return m_frame->m_modelling.pos;
 }
 
 const CVector& CVehicleComponentSA::GetWorldPosition() const
 {
-    return m_atomic->m_parent->m_ltm.pos;
+    return m_frame->m_ltm.pos;
+}
+
+static bool RwObjectSetActive( RwObject *obj, bool visible )
+{
+    obj->SetVisible( visible );
+    return true;
 }
 
 void CVehicleComponentSA::SetActive( bool active )
 {
-    m_atomic->SetVisible( active );
+    m_frame->ForAllObjects( RwObjectSetActive, active );
 }
 
 bool CVehicleComponentSA::IsActive() const
 {
-    return m_atomic->IsVisible();
+    RwObject *obj;
+
+    return ( obj = m_frame->GetFirstObject( RW_ATOMIC ) ) && obj->IsVisible();
 }
 
-CRpAtomic* CVehicleComponentSA::CloneAtomic() const
+// Add an atomic to this component
+// As long as the atomic is being used, the origin has to stay intact
+unsigned int CVehicleComponentSA::AddAtomic( CRpAtomic *atomic )
 {
-    RpAtomic *inst = RpAtomicClone( m_atomic );
+    RpAtomic *clone = RpAtomicClone( dynamic_cast <CRpAtomicSA*> ( atomic )->GetObject() );
+    
+    unsigned int idx = m_frame->CountObjectsByType( RW_ATOMIC );
+
+    clone->AddToFrame( m_frame );
+    clone->AddToClump( m_clump );
+    return idx;
+}
+
+CRpAtomic* CVehicleComponentSA::CloneAtomic( unsigned int idx ) const
+{
+    RpAtomic *clAtom = (RpAtomic*)m_frame->GetObjectByIndex( RW_ATOMIC, idx );
+
+    if ( !clAtom )
+        return NULL;
+
+    RpAtomic *inst = RpAtomicClone( clAtom );
 
     // Copy important credentials
     RwFrame *frame = RwFrameCreate();
-
-    memcpy( frame->m_nodeName, m_atomic->m_parent->m_nodeName, 0x10 );
+    memcpy( frame->m_nodeName, m_frame->m_nodeName, 0x10 );
 
     RpAtomicSetFrame( inst, frame );
 
     CRpAtomicSA *atom = new CRpAtomicSA( inst );
+    atom->SetFrame( new CRwFrameSA( frame ) );    // Assign a frame to it
 
     // We may not lose the loaded textures, so reference them
     (*ppTxdPool)->Get( m_txdID )->Reference();
@@ -93,4 +133,23 @@ CRpAtomic* CVehicleComponentSA::CloneAtomic() const
     atom->ReferenceTXD( m_txdID );
 
     return atom;
+}
+
+unsigned int CVehicleComponentSA::GetAtomicCount() const
+{
+    return m_frame->CountObjectsByType( RW_ATOMIC );
+}
+
+bool CVehicleComponentSA::RemoveAtomic( unsigned int idx )
+{
+    RpAtomic *atom = (RpAtomic*)m_frame->GetObjectByIndex( RW_ATOMIC, idx );
+
+    if ( !atom )
+        return false;
+
+    atom->RemoveFromClump();
+    atom->RemoveFromFrame();
+
+    RpAtomicDestroy( atom );
+    return true;
 }

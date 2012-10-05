@@ -95,7 +95,18 @@ static LUA_DECLARE( isActive )
 
 static LUA_DECLARE( cloneAtomic )
 {
-    CClientAtomic *atom = new CClientAtomic( *g_pClientGame->GetRootEntity(), NULL, *((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->CloneAtomic() );
+    unsigned int idx;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( idx, 0 );
+    LUA_ARGS_END;
+
+    CRpAtomic *inst = ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->CloneAtomic( idx );
+
+    LUA_CHECK( inst );
+
+    CClientAtomic *atom = new CClientAtomic( L, NULL, *inst );
+    atom->SetRoot( g_pClientGame->GetRootEntity() );
 
     atom->PushStack( L );
     return 1;
@@ -132,7 +143,7 @@ static LUA_DECLARE( luaconstructor_component )
     return 0;
 }
 
-CClientVehicleComponent::CClientVehicleComponent( CClientVehicle *veh, unsigned int idx, CVehicleComponent *comp ) : LuaElement( *(LuaClass*)veh )
+CClientVehicleComponent::CClientVehicleComponent( CClientVehicle *veh, CVehicleComponent *comp ) : LuaElement( veh->GetVM() )
 {
     // Lua instancing
     lua_State *L = veh->GetVM();
@@ -143,14 +154,44 @@ CClientVehicleComponent::CClientVehicleComponent( CClientVehicle *veh, unsigned 
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
 
-    m_idx = idx;
+    m_vehicle = veh;
     m_component = comp;
+
+    // Link to vehicle
+    veh->m_compContainer[comp->GetName()] = this;
 }
 
 CClientVehicleComponent::~CClientVehicleComponent()
 {
     // Unlink from vehicle
-    GetVehicle()->m_components[m_idx] = NULL;
+    GetVehicle()->m_compContainer.erase( m_component->GetName() );
 
     delete m_component;
+
+    // Clear resources
+    for ( atomics_t::const_iterator iter = m_atomics.begin(); iter != m_atomics.end(); iter++ )
+        (*iter)->DecrementMethodStack();
+}
+
+unsigned int CClientVehicleComponent::AddAtomic( CClientAtomic *atom )
+{
+    unsigned int idx = m_component->AddAtomic( &atom->m_atomic );
+
+    // CClientAtomic is a template structure for any cloned atomics
+    // We have to reference it, so that resources associated with the atomic will not
+    // get corrupted by destruction (textures, mainly).
+    atom->IncrementMethodStack();
+    
+    m_atomics.push_back( atom );
+    return idx;
+}
+
+unsigned int CClientVehicleComponent::GetAtomicCount() const
+{
+    return m_component->GetAtomicCount();
+}
+
+bool CClientVehicleComponent::RemoveAtomic( unsigned int idx )
+{
+    
 }

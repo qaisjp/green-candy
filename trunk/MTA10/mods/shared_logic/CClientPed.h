@@ -12,6 +12,8 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 class CClientPed;
@@ -119,12 +121,11 @@ class CClientPed : public CClientStreamElement, public CAntiCheatModule
     friend class CClientPlayer;
     friend class CClientVehicle;
     friend class CClientPedManager;
-
 public:
-                                CClientPed( CClientManager* pManager, unsigned short ulModelID, ElementID ID, LuaClass& root, bool system );
+                                CClientPed( CClientManager *pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system );
                                 ~CClientPed();
 
-    inline void                 Unlink()                                                    {};
+    inline void                 Unlink()                                                    {}
 
     virtual eClientEntityType   GetType() const                                             { return CCLIENTPED; }
     
@@ -139,7 +140,7 @@ public:
     virtual CSphere             GetWorldBoundingSphere();
 
     void                        GetPosition( CVector& vecPosition ) const;
-    void                        SetPosition( const CVector& vecPosition )                   { SetPosition ( vecPosition, true ); }
+    void                        SetPosition( const CVector& vecPosition )                   { SetPosition( vecPosition, true ); }
     void                        SetPosition( const CVector& vecPosition, bool bResetInterpolation );
 
     void                        SetInterior( unsigned char ucInterior );
@@ -183,19 +184,19 @@ public:
 
     void                        SetTargetTarget( unsigned long ulDelay, const CVector& vecSource, const CVector& vecTarget );
 
-    inline int                  GetVehicleInOutState()                                      { return m_iVehicleInOutState; };
-    inline void                 SetVehicleInOutState( int iState )                          { m_iVehicleInOutState = iState; };
+    inline int                  GetVehicleInOutState()                                      { return m_iVehicleInOutState; }
+    inline void                 SetVehicleInOutState( int iState )                          { m_iVehicleInOutState = iState; }
 
-    inline unsigned short       GetModel()                                                  { return m_ulModel; };
+    inline unsigned short       GetModel()                                                  { return m_ulModel; }
     bool                        SetModel( unsigned short ulModel );
 
     bool                        GetCanBeKnockedOffBike();
     void                        SetCanBeKnockedOffBike( bool bCanBeKnockedOffBike );
 
-    inline bool                 IsInVehicle()                                               { return GetOccupiedVehicle () != NULL; };
-    inline CClientVehicle*      GetOccupiedVehicle()                                        { return m_pOccupiedVehicle; };
-    inline unsigned int         GetOccupiedVehicleSeat()                                    { return m_uiOccupiedVehicleSeat; };
-    inline CClientVehicle*      GetOccupyingVehicle()                                       { return m_pOccupyingVehicle; };
+    inline bool                 IsInVehicle()                                               { return GetOccupiedVehicle() != NULL; }
+    inline CClientVehicle*      GetOccupiedVehicle()                                        { return m_pOccupiedVehicle; }
+    inline unsigned int         GetOccupiedVehicleSeat()                                    { return m_uiOccupiedVehicleSeat; }
+    inline CClientVehicle*      GetOccupyingVehicle()                                       { return m_pOccupyingVehicle; }
 
     CClientVehicle*             GetRealOccupiedVehicle();
     CClientVehicle*             GetClosestVehicleInRange( bool bGetPositionFromClosestDoor, bool bCheckDriverDoor, bool bCheckPassengerDoors, bool bCheckStreamedOutVehicles, unsigned int* uiClosestDoor = NULL, CVector* pClosestDoorPosition = NULL, float fWithinRange = 6000.0f );
@@ -221,18 +222,18 @@ public:
 
     void                        LockHealth( float fHealth );
     void                        LockArmor( float fArmor );
-    inline void                 UnlockHealth()                                              { m_bHealthLocked = false; };
-    inline void                 UnlockArmor()                                               { m_bArmorLocked = false; };
-    inline bool                 IsHealthLocked() const                                      { return m_bHealthLocked; };
-    inline bool                 IsArmorLocked() const                                       { return m_bArmorLocked; };
+    inline void                 UnlockHealth()                                              { m_bHealthLocked = false; }
+    inline void                 UnlockArmor()                                               { m_bArmorLocked = false; }
+    inline bool                 IsHealthLocked() const                                      { return m_bHealthLocked; }
+    inline bool                 IsArmorLocked() const                                       { return m_bArmorLocked; }
 
     bool                        IsDying();
     bool                        IsDead();
     void                        Kill( eWeaponType weaponType, unsigned char ucBodypart, bool bStealth = false, bool bSetDirectlyDead = false, AssocGroupId animGroup = 0, AnimationId animID = 15 );
     void                        StealthKill( CClientPed * pPed );
 
-    inline int                  GetRespawnState()                                           { return m_pRespawnState; };
-    inline void                 SetRespawnState( int iRespawnState )                        { m_pRespawnState = iRespawnState; };
+    inline int                  GetRespawnState()                                           { return m_pRespawnState; }
+    inline void                 SetRespawnState( int iRespawnState )                        { m_pRespawnState = iRespawnState; }
 
     CWeapon*                    GiveWeapon( eWeaponType weaponType, unsigned int uiAmmo );
     bool                        SetCurrentWeaponSlot( eWeaponSlot weaponSlot );
@@ -261,10 +262,10 @@ public:
     void                        GetBonePosition( eBone bone, CVector& vecPosition ) const;
     void                        GetTransformedBonePosition( eBone bone, CVector& vecPosition ) const;
 
-    inline void                 GetAim( float& fDirectionX, float& fDirectionY )            { if ( m_shotSyncData ) { fDirectionX = m_shotSyncData->m_fArmDirectionX; fDirectionY = m_shotSyncData->m_fArmDirectionY; } };
-    inline const CVector&       GetAimSource()                                              { return m_shotSyncData->m_vecShotOrigin; };
-    inline const CVector&       GetAimTarget()                                              { return m_shotSyncData->m_vecShotTarget; };
-    inline unsigned char        GetVehicleAimAnim()                                         { return m_shotSyncData->m_cInVehicleAimDirection; };
+    inline void                 GetAim( float& fDirectionX, float& fDirectionY )            { if ( m_shotSyncData ) { fDirectionX = m_shotSyncData->m_fArmDirectionX; fDirectionY = m_shotSyncData->m_fArmDirectionY; } }
+    inline const CVector&       GetAimSource()                                              { return m_shotSyncData->m_vecShotOrigin; }
+    inline const CVector&       GetAimTarget()                                              { return m_shotSyncData->m_vecShotTarget; }
+    inline unsigned char        GetVehicleAimAnim()                                         { return m_shotSyncData->m_cInVehicleAimDirection; }
     void                        SetAim( float fArmDirectionX, float fArmDirectionY, unsigned char cInVehicleAimAnim );
     void                        SetAimInterpolated( unsigned long ulDelay, float fArmDirectionX, float fArmDirectionY, bool bAkimboAimUp, unsigned char cInVehicleAimAnim );
     void                        SetAimingData( unsigned long ulDelay, const CVector& vecTargetPosition, float fArmDirectionX, float fArmDirectionY, char cInVehicleAimAnim, CVector* pSource, bool bInterpolateAim );
@@ -304,11 +305,11 @@ public:
     bool                        IsOnGround();
 
     bool                        IsClimbing();
-    bool                        IsRadioOn()                                                 { return m_bRadioOn; };
+    bool                        IsRadioOn()                                                 { return m_bRadioOn; }
     void                        NextRadioChannel();
     void                        PreviousRadioChannel();
     bool                        SetCurrentRadioChannel( unsigned char ucChannel );
-    inline unsigned char        GetCurrentRadioChannel()                                    { return m_ucRadioChannel; };
+    inline unsigned char        GetCurrentRadioChannel()                                    { return m_ucRadioChannel; }
 
     inline CTaskManager*        GetTaskManager()                                            { return m_pTaskManager; }
 
@@ -322,10 +323,10 @@ public:
 
     typedef std::list <CClientProjectile*> projectileList_t;
 
-    inline void                 AddProjectile( CClientProjectile * pProjectile )            { m_Projectiles.push_back ( pProjectile ); }
-    inline void                 RemoveProjectile( CClientProjectile * pProjectile )         { m_Projectiles.remove ( pProjectile ); }
-    projectileList_t::iterator  ProjectilesBegin()                                          { return m_Projectiles.begin (); }
-    projectileList_t::iterator  ProjectilesEnd()                                            { return m_Projectiles.end (); }
+    inline void                 AddProjectile( CClientProjectile * pProjectile )            { m_Projectiles.push_back( pProjectile ); }
+    inline void                 RemoveProjectile( CClientProjectile * pProjectile )         { m_Projectiles.remove( pProjectile ); }
+    projectileList_t::iterator  ProjectilesBegin()                                          { return m_Projectiles.begin(); }
+    projectileList_t::iterator  ProjectilesEnd()                                            { return m_Projectiles.end(); }
     unsigned int                CountProjectiles( eWeaponType weaponType = WEAPONTYPE_UNARMED );
 
     void                        RemoveAllProjectiles();
@@ -349,17 +350,17 @@ public:
     void                        SetAlpha( unsigned char ucAlpha );
 
     inline bool                 HasTargetPosition()                                         { return ( m_interp.pos.ulFinishTime != 0 ); }
-    inline CClientEntity *      GetTargetOriginSource()                                     { return m_interp.pTargetOriginSource; }
-    void                        GetTargetPosition( CVector & vecPosition );
-    void                        SetTargetPosition( const CVector& vecPosition, unsigned long ulDelay, CClientEntity* pTargetOriginSource = NULL );
+    inline CClientEntity*       GetTargetOriginSource()                                     { return m_interp.pTargetOriginSource; }
+    void                        GetTargetPosition( CVector& vecPosition );
+    void                        SetTargetPosition( const CVector& vecPosition, unsigned long ulDelay, CClientEntity *pTargetOriginSource = NULL );
     void                        RemoveTargetPosition();
     void                        UpdateTargetPosition();
 
     CClientEntity*              GetTargetedEntity();    
     CClientPed*                 GetTargetedPed();
 
-    inline CClientEntity *      GetCurrentContactEntity()                                   { return m_pCurrentContactEntity; }
-    inline void                 SetCurrentContactEntity( CClientEntity * pEntity )          { m_pCurrentContactEntity = pEntity; }
+    inline CClientEntity*       GetCurrentContactEntity()                                   { return m_pCurrentContactEntity; }
+    inline void                 SetCurrentContactEntity( CClientEntity *pEntity )           { m_pCurrentContactEntity = pEntity; }
 
     bool                        IsSunbathing();
     void                        SetSunbathing( bool bSunbathing, bool bStartStanding = true );
@@ -375,15 +376,15 @@ public:
 
     bool                        IsRunningAnimation();
     void                        RunAnimation( AssocGroupId animGroup, AnimationId animID );
-    void                        RunNamedAnimation( CAnimBlock * pBlock, const char * szAnimName, int iTime = -1, bool bLoop = true, bool bUpdatePosition = true, bool bInterruptable = false, bool bFreezeLastFrame = true, bool bRunInSequence = false, bool bOffsetPed = false, bool bHoldLastFrame = false );
+    void                        RunNamedAnimation( CAnimBlock *pBlock, const char *szAnimName, int iTime = -1, bool bLoop = true, bool bUpdatePosition = true, bool bInterruptable = false, bool bFreezeLastFrame = true, bool bRunInSequence = false, bool bOffsetPed = false, bool bHoldLastFrame = false );
     void                        KillAnimation();
-    inline CAnimBlock *         GetAnimationBlock()                                         { return m_pAnimationBlock; }
-    inline char *               GetAnimationName()                                          { return m_szAnimationName; }
+    inline CAnimBlock*          GetAnimationBlock()                                         { return m_pAnimationBlock; }
+    inline const char*          GetAnimationName() const                                    { return m_szAnimationName; }
     void                        SetAnimationProgress( const char *name, float progress );
 
     bool                        IsUsingGun();
 
-    inline bool                 IsHeadless()                                                { return m_bHeadless; }
+    inline bool                 IsHeadless() const                                          { return m_bHeadless; }
     void                        SetHeadless( bool bHeadless );
 
     inline bool                 IsFrozen() const                                            { return m_bFrozen; }
@@ -394,7 +395,7 @@ public:
     bool                        IsFootBloodEnabled();
     void                        SetFootBloodEnabled( bool bHasFootBlood );
 
-    inline bool                 IsOnFire()                                                  { return m_bIsOnFire; }
+    inline bool                 IsOnFire() const                                            { return m_bIsOnFire; }
     void                        SetOnFire( bool bOnFire );
 
     void                        GetVoice( short* psVoiceType, short* psVoiceID );
@@ -414,12 +415,12 @@ public:
     bool                        ReloadWeapon();
 
     bool                        ShouldBeStealthAiming();
-    inline bool                 IsStealthAiming()                                           { return m_bStealthAiming; }
+    inline bool                 IsStealthAiming() const                                     { return m_bStealthAiming; }
     void                        SetStealthAiming( bool bAiming );
 
 protected:
     // This constructor is for peds managed by a player. These are unknown to the ped manager.
-                                CClientPed( CClientManager* pManager, unsigned short ulModelID, ElementID ID, LuaClass& root, bool system, bool bIsLocalPlayer );
+                                CClientPed( CClientManager *pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system, bool bIsLocalPlayer );
 
     void                        InstanceLua( bool system );
     void                        Init( CClientManager* pManager, unsigned short ulModelID, bool bIsLocalPlayer );
@@ -475,7 +476,6 @@ public:
     unsigned long               m_ulLastOnScreenTime;
     CClientVehicle*             m_pOccupiedVehicle;
     CClientVehicle*             m_pOccupyingVehicle;
-    //unsigned int                m_uiOccupyingSeat;
     unsigned int                m_uiOccupiedVehicleSeat;
     bool                        m_bForceGettingIn;
     bool                        m_bForceGettingOut;
@@ -514,7 +514,7 @@ public:
     CVector                     m_vecTargetTargetAngle;
     CVector                     m_vecTargetInterpolateAngle;
     CClientEntity*              m_pTargetedEntity;
-    std::list < SDelayedSyncData* >  m_SyncBuffer;
+    std::list <SDelayedSyncData*>   m_SyncBuffer;
     bool                        m_bDucked;
     bool                        m_bWasDucked; //For knowing when to register standing up
     bool                        m_bIsChoking;
@@ -536,18 +536,18 @@ public:
     CClientPlayerClothes*       m_pClothes;
     eFightingStyle              m_FightingStyle;
     eMoveAnim                   m_MoveAnim;
-    std::list < CClientProjectile* > m_Projectiles;
+    std::list <CClientProjectile*>  m_Projectiles;
     unsigned char               m_ucAlpha;
     float                       m_fTargetRotation;
     int                         m_iVehicleInOutState;
     bool                        m_bRecreatingModel;
-    CClientEntity *             m_pCurrentContactEntity;
+    CClientEntity*              m_pCurrentContactEntity;
     bool                        m_bSunbathing;
     CClientPad                  m_Pad;
     bool                        m_bDestroyingSatchels;
     bool                        m_bDoingGangDriveby;
-    CAnimBlock *                m_pAnimationBlock;
-    char *                      m_szAnimationName;
+    CAnimBlock*                 m_pAnimationBlock;
+    char*                       m_szAnimationName;
     bool                        m_bRequestedAnimation;
     int                         m_iTimeAnimation;
     bool                        m_bLoopAnimation;

@@ -9,6 +9,8 @@
 *               Jax <>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -25,10 +27,8 @@ static int luaconstructor_dummy( lua_State *L )
     return 0;
 }
 
-CClientDummy::CClientDummy ( CClientManager* pManager, ElementID ID, const char * szTypeName, LuaClass& root, bool system ) : CClientEntity ( ID, system, root )
+CClientDummy::CClientDummy ( CClientManager* pManager, ElementID ID, const char *szTypeName, lua_State *L, bool system ) : CClientEntity( ID, system, L )
 {
-    lua_State *L = root.GetVM();
-    
     // Basic lua business
     PushStack( L );
     lua_pushlightuserdata( L, this );
@@ -37,35 +37,22 @@ CClientDummy::CClientDummy ( CClientManager* pManager, ElementID ID, const char 
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
 
-    SetTypeName ( szTypeName );
+    SetTypeName( szTypeName );
 
     m_pManager = pManager;
-    if ( pManager )
-    {
-        m_pGroups = pManager->GetGroups ();
+    m_pGroups = pManager->GetGroups();
 
-        if ( m_pGroups )
-        {
-            m_pGroups->AddToList ( this );
-        }
-    }
-    else
-    {
-        m_pGroups = NULL;
-    }
-}
-
-CClientDummy::~CClientDummy ( void )
-{
-    Unlink ();
-}
-
-
-void CClientDummy::Unlink ( void )
-{
     if ( m_pGroups )
-    {
-        m_pGroups->RemoveFromList ( this );
-    }
+        m_pGroups->AddToList( this );
+}
+
+CClientDummy::~CClientDummy()
+{
+    Unlink();
+}
+
+void CClientDummy::Unlink()
+{
+    m_pGroups->RemoveFromList( this );
 }
 

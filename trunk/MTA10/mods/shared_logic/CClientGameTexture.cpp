@@ -53,10 +53,8 @@ static int luaconstructor_texture( lua_State *L )
     return 0;
 }
 
-CClientGameTexture::CClientGameTexture( LuaClass& root, CTexture& tex ) : LuaElement( root ), m_tex( tex )
+CClientGameTexture::CClientGameTexture( lua_State *L, CTexture& tex ) : LuaElement( L ), m_tex( tex )
 {
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_texture, 1 );

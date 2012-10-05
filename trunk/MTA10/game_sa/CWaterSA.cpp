@@ -1,10 +1,11 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CWaterSA.cpp
 *  PURPOSE:     Control the lakes and seas
 *  DEVELOPERS:  arc_
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -17,24 +18,25 @@ extern CWaterManagerSA* g_pWaterManager;
 // -----------------------------------------------------
 // Vertices
 
-WORD CWaterVertexSA::GetID ()
+unsigned short CWaterVertexSA::GetID() const
 {
     if ( !m_pInterface )
         return ~0;
-    return (WORD)(m_pInterface - g_pWaterManager->m_VertexPool);
+
+    return (unsigned short)( m_pInterface - g_pWaterManager->m_VertexPool );
 }
 
-void CWaterVertexSA::GetPosition ( CVector& vec )
+void CWaterVertexSA::GetPosition( CVector& vec ) const
 {
     vec.fX = (float)m_pInterface->m_sX;
     vec.fY = (float)m_pInterface->m_sY;
     vec.fZ = m_pInterface->m_fZ;
 }
 
-bool CWaterVertexSA::SetPosition ( CVector& vec, void* pChangeSource )
+bool CWaterVertexSA::SetPosition( const CVector& vec, void *pChangeSource )
 {
     if ( pChangeSource )
-        g_pWaterManager->AddChange ( pChangeSource, this, new CWaterChangeVertexMove ( this ) );
+        g_pWaterManager->AddChange( pChangeSource, this, new CWaterChangeVertexMove( this ) );
     
     m_pInterface->m_sX = ((short)vec.fX) & ~1;
     m_pInterface->m_sY = ((short)vec.fY) & ~1;
@@ -45,34 +47,34 @@ bool CWaterVertexSA::SetPosition ( CVector& vec, void* pChangeSource )
 // -----------------------------------------------------
 // Polygons
 
-void CWaterQuadSA::SetInterface ( CWaterPolySAInterface* pInterface )
+void CWaterQuadSA::SetInterface( CWaterPolySAInterface *intf )
 {
-    m_pInterface = pInterface;
-    m_wID = (WORD)(pInterface - g_pWaterManager->m_QuadPool);
+    m_pInterface = intf;
+    m_wID = (unsigned short)( intf - g_pWaterManager->m_QuadPool );
 }
 
-void CWaterTriangleSA::SetInterface ( CWaterPolySAInterface* pInterface )
+void CWaterTriangleSA::SetInterface( CWaterPolySAInterface *intf )
 {
-    m_pInterface = pInterface;
-    m_wID = (WORD)(pInterface - g_pWaterManager->m_TrianglePool);
+    m_pInterface = intf;
+    m_wID = (unsigned short)( intf - g_pWaterManager->m_TrianglePool );
 }
 
-CWaterVertex* CWaterPolySA::GetVertex ( int index )
+CWaterVertex* CWaterPolySA::GetVertex( unsigned int index )
 {
-    if ( index < 0 || index >= GetNumVertices () )
+    if ( index >= GetNumVertices() )
         return NULL;
 
-    return &g_pWaterManager->m_Vertices [
-        GetType () == WATER_POLY_QUAD ? ((CWaterQuadSA *)this)->GetInterface ()->m_wVertexIDs[index]
-                                  : ((CWaterTriangleSA *)this)->GetInterface ()->m_wVertexIDs[index]
+    return &g_pWaterManager->m_Vertices[
+        GetType() == WATER_POLY_QUAD ? ((CWaterQuadSA*)this)->GetInterface()->m_wVertexIDs[index]
+                                 : ((CWaterTriangleSA*)this)->GetInterface()->m_wVertexIDs[index]
     ];
 }
 
-bool CWaterPolySA::ContainsPoint ( float fX, float fY )
+bool CWaterPolySA::ContainsPoint( float fX, float fY ) const
 {
     bool bInside = false;
     int numVertices = GetNumVertices ();
-    WORD* pwVertexIDs =
+    unsigned short *pwVertexIDs =
         GetType () == WATER_POLY_QUAD ? ((CWaterQuadSA *)this)->GetInterface ()->m_wVertexIDs
                                   : ((CWaterTriangleSA *)this)->GetInterface ()->m_wVertexIDs;
     

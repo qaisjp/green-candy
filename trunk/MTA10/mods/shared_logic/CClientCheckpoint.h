@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientCheckpoint.h
@@ -8,6 +8,9 @@
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -15,14 +18,12 @@
 #define __CCLIENTCHECKPOINT_H
 
 #include "CClientMarkerCommon.h"
-#include <list>
 
 class CClientMarker;
 
 class CClientCheckpoint : public CClientMarkerCommon
 {
     friend class CClientMarkerManager;
-
 public:
     enum
     {
@@ -38,70 +39,70 @@ public:
         ICON_FINISH,
     };
 
-                                    CClientCheckpoint( CClientMarker * pThis );
+                                    CClientCheckpoint( CClientMarker *pThis );
                                     ~CClientCheckpoint();
 
-    inline unsigned int             GetMarkerType() const                                   { return CClientMarkerCommon::CLASS_CHECKPOINT; };
+    inline unsigned int             GetMarkerType() const                                   { return CLASS_CHECKPOINT; }
 
     unsigned long                   GetCheckpointType() const;
-    void                            SetCheckpointType( unsigned long ulType );
+    void                            SetCheckpointType( unsigned long type );
 
-    bool                            IsHit( const CVector& vecPosition ) const;
+    bool                            IsHit( const CVector& pos ) const;
     
-    inline void                     GetPosition( CVector& vecPosition ) const               { vecPosition = m_Matrix.pos; };
-    void                            SetPosition( const CVector& vecPosition );
-    void                            SetDirection( const CVector& vecDirection );
-    void                            SetNextPosition( const CVector& vecPosition );
+    inline void                     GetPosition( CVector& pos ) const                       { pos = m_Matrix.pos; }
+    void                            SetPosition( const CVector& pos );
+    void                            SetDirection( const CVector& dir );
+    void                            SetNextPosition( const CVector& pos );
 
-    void                            GetMatrix( RwMatrix& mat );
+    void                            GetMatrix( RwMatrix& mat ) const;
     void                            SetMatrix( const RwMatrix& mat );
 
-    inline bool                     IsVisible() const                                       { return m_bVisible; }
+    inline bool                     IsVisible() const                                       { return m_visible; }
     void                            SetVisible( bool bVisible );
 
-    inline unsigned int             GetIcon() const                                         { return m_uiIcon; }
+    inline unsigned int             GetIcon() const                                         { return m_icon; }
     void                            SetIcon( unsigned int uiIcon );
     
-    inline SColor                   GetColor() const                                        { return m_Color; }
+    inline SColor                   GetColor() const                                        { return m_color; }
     void                            SetColor( const SColor color );
 
-    inline float                    GetSize() const                                         { return m_fSize; };
+    inline float                    GetSize() const                                         { return m_size; }
     void                            SetSize( float fSize );
 
-    inline bool                     HasTarget()                                             { return m_bHasTarget; }
-    inline void                     SetHasTarget( bool bHasTarget )                         { m_bHasTarget = bHasTarget; }
-    inline void                     GetTarget( CVector& vecTarget )                         { vecTarget = m_vecTarget; }
-    inline void                     SetTarget( const CVector& vecTarget )                   { m_vecTarget = vecTarget; }
+    inline bool                     HasTarget() const                                       { return m_hasTarget; }
+    inline void                     SetHasTarget( bool has )                                { m_hasTarget = has; }
+    inline void                     GetTarget( CVector& target ) const                      { target = m_target; }
+    inline void                     SetTarget( const CVector& target )                      { m_target = target; }
 
-    static unsigned char            StringToIcon( const char* szString );
-    static bool                     IconToString( unsigned char ucIcon, char* szString );
+    static unsigned char            StringToIcon( const char *str );
+    static bool                     IconToString( unsigned char ucIcon, char *str );
     void                            ReCreateWithSameIdentifier();
 
 protected:
-    bool                            IsStreamedIn()                                          { return m_bStreamedIn; };
+    bool                            IsStreamedIn() const                                    { return m_streamedIn; }
     void                            StreamIn();
     void                            StreamOut();
 
 private:
-    void                            Create( unsigned long ulIdentifier = 0 );
+    void                            Create( unsigned int id = 0 );
     void                            Destroy();
     void                            ReCreate();
 
     CClientMarker*                  m_pThis;
-    bool                            m_bStreamedIn;
+    bool                            m_streamedIn;
     RwMatrix                        m_Matrix;
-    CVector                         m_vecDirection;
-    CVector                         m_vecTargetPosition;
-    bool                            m_bVisible;
-    unsigned int                    m_uiIcon;
-    DWORD                           m_dwType;
-    float                           m_fSize;
-    SColor                          m_Color;
-    CCheckpoint*                    m_pCheckpoint;
+    CVector                         m_dir;
+    CVector                         m_targetPosition;
+    bool                            m_visible;
+    unsigned int                    m_icon;
+    unsigned int                    m_type;
+    float                           m_size;
+    SColor                          m_color;
+    CCheckpoint*                    m_checkpoint;
 
-    DWORD                           m_dwIdentifier;    
-    bool                            m_bHasTarget;
-    CVector                         m_vecTarget;
+    unsigned int                    m_id;    
+    bool                            m_hasTarget;
+    CVector                         m_target;
 };
 
 #endif

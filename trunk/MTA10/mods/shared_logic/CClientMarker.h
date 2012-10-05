@@ -11,6 +11,8 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #ifndef __CCLIENTMARKER_H
@@ -32,7 +34,6 @@ class CClientMarker : public CClientStreamElement, private CClientColCallback
 {
     friend class CClientMarkerManager;
     friend class CClientColShape;
-
 public:
     enum eMarkerType
     {
@@ -44,7 +45,7 @@ public:
         MARKER_INVALID = 0xFF,
     };
 
-                                CClientMarker( class CClientManager* pManager, ElementID ID, LuaClass& root, bool system, int iMarkerType );
+                                CClientMarker( class CClientManager* pManager, ElementID ID, lua_State *L, bool system, int iMarkerType );
                                 ~CClientMarker();
 
     void                        Unlink();

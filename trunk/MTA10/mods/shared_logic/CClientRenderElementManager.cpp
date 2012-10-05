@@ -37,7 +37,7 @@ CClientRenderElementManager::CClientRenderElementManager ( CClientManager* pClie
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientRenderElementManager::~CClientRenderElementManager ( void )
+CClientRenderElementManager::~CClientRenderElementManager()
 {
     // Remove any existing
     while ( m_ItemElementMap.size () )
@@ -52,7 +52,7 @@ CClientRenderElementManager::~CClientRenderElementManager ( void )
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientDxFont* CClientRenderElementManager::CreateDxFont ( const SString& strFullFilePath, uint uiSize, bool bBold, LuaClass& root )
+CClientDxFont* CClientRenderElementManager::CreateDxFont( const SString& strFullFilePath, uint uiSize, bool bBold, LuaClass& root )
 {
     // Create the item
     CDxFontItem* pDxFontItem = m_pRenderItemManager->CreateDxFont ( strFullFilePath, uiSize, bBold );
@@ -62,7 +62,8 @@ CClientDxFont* CClientRenderElementManager::CreateDxFont ( const SString& strFul
         return NULL;
 
     // Create the element
-    CClientDxFont* pDxFontElement = new CClientDxFont ( m_pClientManager, INVALID_ELEMENT_ID, root, pDxFontItem );
+    CClientDxFont *pDxFontElement = new CClientDxFont( m_pClientManager, INVALID_ELEMENT_ID, root.GetVM(), pDxFontItem );
+    pDxFontElement->SetRoot( &root );
 
     // Add to this manager's list
     MapSet ( m_ItemElementMap, pDxFontItem, pDxFontElement );
@@ -73,7 +74,6 @@ CClientDxFont* CClientRenderElementManager::CreateDxFont ( const SString& strFul
     return pDxFontElement;
 }
 
-
 ////////////////////////////////////////////////////////////////
 //
 // CClientRenderElementManager::CreateGuiFont
@@ -81,17 +81,18 @@ CClientDxFont* CClientRenderElementManager::CreateDxFont ( const SString& strFul
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientGuiFont* CClientRenderElementManager::CreateGuiFont ( const SString& strFullFilePath, const SString& strUniqueName, uint uiSize, LuaClass& root )
+CClientGuiFont* CClientRenderElementManager::CreateGuiFont( const SString& strFullFilePath, const SString& strUniqueName, uint uiSize, LuaClass& root )
 {
     // Create the item
-    CGuiFontItem* pGuiFontItem = m_pRenderItemManager->CreateGuiFont ( strFullFilePath, strUniqueName, uiSize );
+    CGuiFontItem* pGuiFontItem = m_pRenderItemManager->CreateGuiFont( strFullFilePath, strUniqueName, uiSize );
 
     // Check create worked
     if ( !pGuiFontItem )
         return NULL;
 
     // Create the element
-    CClientGuiFont* pGuiFontElement = new CClientGuiFont ( m_pClientManager, INVALID_ELEMENT_ID, pGuiFontItem, root );
+    CClientGuiFont* pGuiFontElement = new CClientGuiFont( m_pClientManager, INVALID_ELEMENT_ID, pGuiFontItem, root.GetVM() );
+    pGuiFontElement->SetRoot( &root );
 
     // Add to this manager's list
     MapSet ( m_ItemElementMap, pGuiFontItem, pGuiFontElement );
@@ -101,7 +102,6 @@ CClientGuiFont* CClientRenderElementManager::CreateGuiFont ( const SString& strF
 
     return pGuiFontElement;
 }
-
 
 ////////////////////////////////////////////////////////////////
 //
@@ -113,17 +113,18 @@ CClientGuiFont* CClientRenderElementManager::CreateGuiFont ( const SString& strF
 CClientTexture* CClientRenderElementManager::CreateTexture ( const SString& strFullFilePath, LuaClass& root )
 {
     // Create the item
-    CTextureItem* pTextureItem = m_pRenderItemManager->CreateTexture ( strFullFilePath );
+    CTextureItem* pTextureItem = m_pRenderItemManager->CreateTexture( strFullFilePath );
 
     // Check create worked
     if ( !pTextureItem )
         return NULL;
 
     // Create the element
-    CClientTexture* pTextureElement = new CClientTexture ( m_pClientManager, INVALID_ELEMENT_ID, root, pTextureItem );
+    CClientTexture *pTextureElement = new CClientTexture( m_pClientManager, INVALID_ELEMENT_ID, root.GetVM(), pTextureItem );
+    pTextureElement->SetRoot( &root );
 
     // Add to this manager's list
-    MapSet ( m_ItemElementMap, pTextureItem, pTextureElement );
+    MapSet( m_ItemElementMap, pTextureItem, pTextureElement );
 
     // Update stats
     m_uiStatsTextureCount++;
@@ -149,10 +150,11 @@ CClientShader* CClientRenderElementManager::CreateShader ( const SString& strFul
         return NULL;
 
     // Create the element
-    CClientShader* pShaderElement = new CClientShader ( m_pClientManager, INVALID_ELEMENT_ID, root, pShaderItem );
+    CClientShader* pShaderElement = new CClientShader( m_pClientManager, INVALID_ELEMENT_ID, root.GetVM(), pShaderItem );
+    pShaderElement->SetRoot( &root );
 
     // Add to this manager's list
-    MapSet ( m_ItemElementMap, pShaderItem, pShaderElement );
+    MapSet( m_ItemElementMap, pShaderItem, pShaderElement );
 
     // Update stats
     m_uiStatsShaderCount++;
@@ -178,7 +180,8 @@ CClientRenderTarget* CClientRenderElementManager::CreateRenderTarget ( uint uiSi
         return NULL;
 
     // Create the element
-    CClientRenderTarget* pRenderTargetElement = new CClientRenderTarget ( m_pClientManager, INVALID_ELEMENT_ID, root, pRenderTargetItem );
+    CClientRenderTarget* pRenderTargetElement = new CClientRenderTarget ( m_pClientManager, INVALID_ELEMENT_ID, root.GetVM(), pRenderTargetItem );
+    pRenderTargetElement->SetRoot( &root );
 
     // Add to this manager's list
     MapSet ( m_ItemElementMap, pRenderTargetItem, pRenderTargetElement );
@@ -189,7 +192,6 @@ CClientRenderTarget* CClientRenderElementManager::CreateRenderTarget ( uint uiSi
     return pRenderTargetElement;
 }
 
-
 ////////////////////////////////////////////////////////////////
 //
 // CClientRenderElementManager::CreateScreenSource
@@ -197,27 +199,27 @@ CClientRenderTarget* CClientRenderElementManager::CreateRenderTarget ( uint uiSi
 //
 //
 ////////////////////////////////////////////////////////////////
-CClientScreenSource* CClientRenderElementManager::CreateScreenSource ( uint uiSizeX, uint uiSizeY, LuaClass& root )
+CClientScreenSource* CClientRenderElementManager::CreateScreenSource( uint uiSizeX, uint uiSizeY, LuaClass& root )
 {
     // Create the item
-    CScreenSourceItem* pScreenSourceItem = m_pRenderItemManager->CreateScreenSource ( uiSizeX, uiSizeY );
+    CScreenSourceItem *pScreenSourceItem = m_pRenderItemManager->CreateScreenSource( uiSizeX, uiSizeY );
 
     // Check create worked
     if ( !pScreenSourceItem )
         return NULL;
 
     // Create the element
-    CClientScreenSource* pScreenSourceElement = new CClientScreenSource ( m_pClientManager, INVALID_ELEMENT_ID, root, pScreenSourceItem );
+    CClientScreenSource *pScreenSourceElement = new CClientScreenSource( m_pClientManager, INVALID_ELEMENT_ID, root.GetVM(), pScreenSourceItem );
+    pScreenSourceElement->SetRoot( &root );
 
     // Add to this manager's list
-    MapSet ( m_ItemElementMap, pScreenSourceItem, pScreenSourceElement );
+    MapSet( m_ItemElementMap, pScreenSourceItem, pScreenSourceElement );
 
     // Update stats
     m_uiStatsScreenSourceCount++;
 
     return pScreenSourceElement;
 }
-
 
 ////////////////////////////////////////////////////////////////
 //

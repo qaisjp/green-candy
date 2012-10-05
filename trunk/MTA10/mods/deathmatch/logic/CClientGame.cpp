@@ -172,7 +172,7 @@ CClientGame::CClientGame ( bool bLocalPlay )
     m_pLocalServer = NULL;
 
     // Initialize our root entity with an invalid id, we dont know the true id until map-start
-    m_pRootEntity = new CClientDummy ( NULL, INVALID_ELEMENT_ID, "root", *resMan, true );
+    m_pRootEntity = new CClientDummy( NULL, INVALID_ELEMENT_ID, "root", m_pLuaManager->GetVirtualMachine(), true ); m_pRootEntity->SetRoot( resMan );
 
     m_pZoneNames = new CZoneNames;
     m_pScriptKeyBinds = new CScriptKeyBinds;
@@ -3240,7 +3240,7 @@ void CClientGame::Event_OnIngame ( void )
     g_pGame->GetStats()->ModifyStat ( CITIES_PASSED, 2.0 );
 
     // This is to prevent the 'white arrows in checkpoints' bug (#274)
-    g_pGame->Get3DMarkers()->CreateMarker ( 87654, (e3DMarkerType)5, &vecs[4], 1, 0.2f, 0, 0, 0, 0 );
+    g_pGame->Get3DMarkers()->CreateMarker( 87654, (e3DMarkerType)5, vecs[4], 1, 0.2f, SColorRGBA( 0, 0, 0, 0 ) );
 
     // Stop us getting 4 stars if we visit the SF or LV
     //g_pGame->GetPlayerInfo()->GetWanted()->SetMaximumWantedLevel ( 0 );

@@ -12,10 +12,8 @@
 
 #include <StdInc.h>
 
-CCommand::CCommand( CRegisteredCommands& cmds, LuaClass& root ) : Command( cmds, root )
+CCommand::CCommand( CRegisteredCommands& cmds, lua_State *L ) : Command( cmds, L )
 {
-    lua_State *L = root.GetVM();
-    
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, RegisteredCommands::luaconstructor_command, 1 );
@@ -46,7 +44,8 @@ bool CRegisteredCommands::Add( LuaMain& lua, const std::string& key, const LuaFu
     if ( key.size() == 0 )
         return false;
 
-    Command& cmd = *new CCommand( *this, *lua.GetResource() );
+    Command& cmd = *new CCommand( *this, *lua );
+    cmd.SetRoot( lua.GetResource() );
     cmd.lua = &lua;
     cmd.key = key;
     cmd.ref = ref;

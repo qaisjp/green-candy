@@ -7,6 +7,8 @@
 *  PURPOSE:     Deathmatch render material management
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #ifndef _CLIENT_MATERIAL_
@@ -17,9 +19,9 @@
 class CClientMaterial : public CClientRenderElement
 {
 public:
-                            CClientMaterial( CClientManager* pManager, ElementID ID, LuaClass& root );
+                            CClientMaterial( CClientManager* pManager, ElementID ID, lua_State *L );
 
-    CMaterialItem*          GetMaterialItem( void )                             { return (CMaterialItem*)m_pRenderItem; }
+    CMaterialItem*          GetMaterialItem()                                   { return (CMaterialItem*)m_pRenderItem; }
 };
 
 #endif //_CLIENT_MATERIAL_

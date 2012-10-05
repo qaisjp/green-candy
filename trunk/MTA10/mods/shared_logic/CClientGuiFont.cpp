@@ -7,6 +7,8 @@
 *  PURPOSE:     Custom font bucket
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
@@ -32,26 +34,23 @@ static int luaconstructor_guifont( lua_State *L )
     return 0;
 }
 
-CClientGuiFont::CClientGuiFont ( CClientManager* pManager, ElementID ID, CGuiFontItem* pFontItem, LuaClass& root ) : CClientRenderElement ( pManager, ID, root )
+CClientGuiFont::CClientGuiFont( CClientManager *pManager, ElementID ID, CGuiFontItem *pFontItem, lua_State *L ) : CClientRenderElement( pManager, ID, L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_guifont, 1 );
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
 
-    SetTypeName ( "gui-font" );
+    SetTypeName( "gui-font" );
     m_pRenderItem = pFontItem;
 }
 
-CClientGuiFont::~CClientGuiFont ( void )
+CClientGuiFont::~CClientGuiFont()
 {
     Unlink ();
 }
-
 
 ////////////////////////////////////////////////////////////////
 //
@@ -63,10 +62,10 @@ CClientGuiFont::~CClientGuiFont ( void )
 void CClientGuiFont::Unlink ( void )
 {
     // Make sure GUI elements are not using us
-    while ( m_GUIElementUserList.size () )
-        (*m_GUIElementUserList.begin ())->SetFont ( "", NULL );
+    while ( m_GUIElementUserList.size() )
+        (*m_GUIElementUserList.begin())->SetFont( "", NULL );
 
-    CClientRenderElement::Unlink ();
+    CClientRenderElement::Unlink();
 }
 
 
@@ -77,11 +76,10 @@ void CClientGuiFont::Unlink ( void )
 // Get name CEGUI uses for this custom font
 //
 ////////////////////////////////////////////////////////////////
-const SString& CClientGuiFont::GetCEGUIFontName ( void )
+const SString& CClientGuiFont::GetCEGUIFontName()
 {
-    return GetGuiFontItem ()->m_strCEGUIFontName;
+    return GetGuiFontItem()->m_strCEGUIFontName;
 }
-
 
 ////////////////////////////////////////////////////////////////
 //
@@ -90,12 +88,11 @@ const SString& CClientGuiFont::GetCEGUIFontName ( void )
 // Keep track of GUI elements using this font
 //
 ////////////////////////////////////////////////////////////////
-void CClientGuiFont::NotifyGUIElementAttach ( CClientGUIElement* pGUIElement )
+void CClientGuiFont::NotifyGUIElementAttach( CClientGUIElement *pGUIElement )
 {
-    assert ( !MapContains ( m_GUIElementUserList, pGUIElement ) );
-    MapInsert ( m_GUIElementUserList, pGUIElement );
+    assert( !MapContains( m_GUIElementUserList, pGUIElement ) );
+    MapInsert( m_GUIElementUserList, pGUIElement );
 }
-
 
 ////////////////////////////////////////////////////////////////
 //
@@ -104,8 +101,8 @@ void CClientGuiFont::NotifyGUIElementAttach ( CClientGUIElement* pGUIElement )
 // Keep track of GUI elements using this font
 //
 ////////////////////////////////////////////////////////////////
-void CClientGuiFont::NotifyGUIElementDetach ( CClientGUIElement* pGUIElement )
+void CClientGuiFont::NotifyGUIElementDetach( CClientGUIElement *pGUIElement )
 {
-    assert ( MapContains ( m_GUIElementUserList, pGUIElement ) );
-    MapRemove ( m_GUIElementUserList, pGUIElement );
+    assert( MapContains( m_GUIElementUserList, pGUIElement ) );
+    MapRemove( m_GUIElementUserList, pGUIElement );
 }

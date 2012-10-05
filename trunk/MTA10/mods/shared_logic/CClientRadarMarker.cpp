@@ -14,6 +14,8 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -41,11 +43,9 @@ static int luaconstructor_blip( lua_State *L )
     return 0;
 }
 
-CClientRadarMarker::CClientRadarMarker( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, short sOrdering, unsigned short usVisibleDistance ) : CClientEntity( ID, system, root )
+CClientRadarMarker::CClientRadarMarker( CClientManager* pManager, ElementID ID, lua_State *L, bool system, short sOrdering, unsigned short usVisibleDistance ) : CClientEntity( ID, system, L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_blip, 1 );
@@ -54,9 +54,9 @@ CClientRadarMarker::CClientRadarMarker( CClientManager* pManager, ElementID ID, 
 
     // Init
     m_pManager = pManager;
-    m_pRadarMarkerManager = pManager->GetRadarMarkerManager ();
+    m_pRadarMarkerManager = pManager->GetRadarMarkerManager();
 
-    SetTypeName ( "blip" );
+    SetTypeName( "blip" );
 
     m_bIsVisible = true;
     m_pMarker = NULL;
@@ -69,57 +69,54 @@ CClientRadarMarker::CClientRadarMarker( CClientManager* pManager, ElementID ID, 
     m_usVisibleDistance = usVisibleDistance;
 
     // Add us to the radar marker manager list
-    m_pRadarMarkerManager->AddToList ( this );
+    m_pRadarMarkerManager->AddToList( this );
 
     // Try to create it
-    Create ();
+    Create();
 }
 
-
-CClientRadarMarker::~CClientRadarMarker ( void )
+CClientRadarMarker::~CClientRadarMarker()
 {
     // Try to destroy it
-    Destroy ();
+    Destroy();
 
     // Remove us from the marker manager
-    Unlink ();
+    Unlink();
 }
 
-
-void CClientRadarMarker::Unlink ( void )
+void CClientRadarMarker::Unlink()
 {
-    m_pRadarMarkerManager->RemoveFromList ( this );
+    m_pRadarMarkerManager->RemoveFromList( this );
 }
 
-
-void CClientRadarMarker::DoPulse ( void )
+void CClientRadarMarker::DoPulse()
 {    
     // Are we attached to something?
     if ( m_pAttachedToEntity )
     {
         CVector vecPosition;
-        m_pAttachedToEntity->GetPosition ( vecPosition );        
+        m_pAttachedToEntity->GetPosition( vecPosition );        
         vecPosition += m_vecAttachedPosition;
-        SetPosition ( vecPosition );
+        SetPosition( vecPosition );
 
         // TODO: move to ::SetElementDimension
-        if ( m_usDimension != m_pAttachedToEntity->GetDimension () )
+        if ( m_usDimension != m_pAttachedToEntity->GetDimension() )
         {
-            SetDimension ( m_pAttachedToEntity->GetDimension () );
+            SetDimension( m_pAttachedToEntity->GetDimension() );
         }
     }
 
     // Are we in a visible distance?
-    if ( IsInVisibleDistance () )
+    if ( IsInVisibleDistance() )
     {
         // Are we not created?
         if ( !m_pMarker )
         {
             // Are we visible and in the right dimension?
-            if ( m_bIsVisible && m_usDimension == m_pManager->GetRadarMarkerManager ()->GetDimension () )
+            if ( m_bIsVisible && m_usDimension == m_pManager->GetRadarMarkerManager()->GetDimension() )
             {
                 // Recreate our marker
-                CreateMarker ();
+                CreateMarker();
             }
         }
     }
@@ -129,12 +126,12 @@ void CClientRadarMarker::DoPulse ( void )
         if ( m_pMarker )
         {
             // Destroy our marker
-            DestroyMarker ();
+            DestroyMarker();
         }
     }
 }
 
-void CClientRadarMarker::SetPosition ( const CVector& vecPosition )
+void CClientRadarMarker::SetPosition( const CVector& vecPosition )
 {
     if ( m_pMarker )
         m_pMarker->SetPosition( vecPosition );
@@ -142,7 +139,7 @@ void CClientRadarMarker::SetPosition ( const CVector& vecPosition )
     m_vecPosition = vecPosition;
 }
 
-void CClientRadarMarker::GetPosition ( CVector& vecPosition ) const
+void CClientRadarMarker::GetPosition( CVector& vecPosition ) const
 {
     if ( m_pMarker )
     {
@@ -154,19 +151,17 @@ void CClientRadarMarker::GetPosition ( CVector& vecPosition ) const
     }
 }
 
-
-void CClientRadarMarker::SetScale ( unsigned short usScale )
+void CClientRadarMarker::SetScale( unsigned short usScale )
 {
     m_usScale = usScale;
 
     if ( m_pMarker )
     {
-        m_pMarker->SetScale ( usScale );
+        m_pMarker->SetScale( usScale );
     }
 }
 
-
-void CClientRadarMarker::SetColor ( const SColor color )
+void CClientRadarMarker::SetColor( const SColor color )
 {
     // Store the color
     m_Color = color;
@@ -176,29 +171,26 @@ void CClientRadarMarker::SetColor ( const SColor color )
     {
         // Supposed to be black? Make it almost black as entirely black
         // might make us hit some reserved colors. Which'd be unexpected.
-        if ( m_Color.R == 0 &&
-             m_Color.G == 0 &&
-             m_Color.B == 0 )
+        if ( m_Color.R == 0 && m_Color.G == 0 && m_Color.B == 0 )
         {
-            m_pMarker->SetColor ( SColorRGBA ( 1, 1, 1, m_Color.A ) );
+            m_pMarker->SetColor( SColorRGBA ( 1, 1, 1, m_Color.A ) );
         }
         else
         {
-            m_pMarker->SetColor ( m_Color );
+            m_pMarker->SetColor( m_Color );
         }
     }
 
-    SetMapMarkerState ( m_eMapMarkerState );
+    SetMapMarkerState( m_eMapMarkerState );
 }
 
-
-void CClientRadarMarker::SetSprite ( unsigned long ulSprite )
+void CClientRadarMarker::SetSprite( unsigned long ulSprite )
 {
     m_ulSprite = ulSprite;
 
     if ( m_pMarker )
     {
-        m_pMarker->SetSprite ( static_cast < eMarkerSprite > ( ulSprite ) );
+        m_pMarker->SetSprite( (eMarkerSprite)ulSprite );
     }
     if ( ulSprite == 0 )
     {
@@ -208,7 +200,7 @@ void CClientRadarMarker::SetSprite ( unsigned long ulSprite )
             m_pMapMarkerImage = NULL;
         }
 
-        SetMapMarkerState ( MAP_MARKER_SQUARE );
+        SetMapMarkerState( MAP_MARKER_SQUARE );
     }
     else if ( ulSprite <= RADAR_MARKER_LIMIT )
     {
@@ -227,22 +219,21 @@ void CClientRadarMarker::SetSprite ( unsigned long ulSprite )
     }
 }
 
-
-void CClientRadarMarker::SetVisible ( bool bVisible )
+void CClientRadarMarker::SetVisible( bool bVisible )
 {
     // Are we in the right dimension?
-    if ( m_usDimension == m_pManager->GetRadarMarkerManager ()->GetDimension () )
+    if ( m_usDimension == m_pManager->GetRadarMarkerManager()->GetDimension() )
     {
         // Visible now but weren't last time?
         if ( bVisible && !m_bIsVisible )
         {
-            Create ();
+            Create();
         }
 
         // Invisible now but weren't last time? Destroy it
         else if ( !bVisible && m_bIsVisible )
         {
-            Destroy ();
+            Destroy();
         }
     }
 
@@ -250,16 +241,14 @@ void CClientRadarMarker::SetVisible ( bool bVisible )
     m_bIsVisible = bVisible;
 }
 
-
-bool CClientRadarMarker::Create ( void )
+bool CClientRadarMarker::Create()
 {
-    m_pManager->GetRadarMarkerManager ()->m_bOrderOnPulse = true;
+    m_pManager->GetRadarMarkerManager()->m_bOrderOnPulse = true;
 
     return true;
 }
 
-
-void CClientRadarMarker::InternalCreate ( void )
+void CClientRadarMarker::InternalCreate()
 {
     // Not already got a marker?
     if ( !m_pMarker )
@@ -271,10 +260,9 @@ void CClientRadarMarker::InternalCreate ( void )
     }
 }
 
-
-void CClientRadarMarker::Destroy ( void )
+void CClientRadarMarker::Destroy()
 {
-    DestroyMarker ();
+    DestroyMarker();
 
     if ( m_pMapMarkerImage )
     {
@@ -283,51 +271,46 @@ void CClientRadarMarker::Destroy ( void )
     }
 }
 
-
 void CClientRadarMarker::CreateMarker()
 {
     // Not already got a marker?
     if ( !m_pMarker )
     {
-        if ( IsInVisibleDistance () )
+        if ( IsInVisibleDistance() )
         {
             // Create the marker
-            m_pMarker = g_pGame->GetRadar ()->CreateMarker ( m_vecPosition );
+            m_pMarker = g_pGame->GetRadar()->CreateMarker( m_vecPosition );
             if ( m_pMarker )
             {
                 SColor color = m_Color;
 
                 // Supposed to be black? Make it almost black as entirely black
                 // might make us hit some reserved colors. Which'd be unexpected.
-                if ( color.R == 0 &&
-                     color.G == 0 &&
-                     color.B == 0 )
+                if ( color.R == 0 && color.G == 0 && color.B == 0 )
                 {
-                    color = SColorRGBA ( 1, 1, 1, color.A );
+                    color = SColorRGBA( 1, 1, 1, color.A );
                 }
 
                 // Set the properties
-                m_pMarker->SetPosition ( m_vecPosition );
-                m_pMarker->SetScale ( m_usScale );
-                m_pMarker->SetColor ( color );
-                m_pMarker->SetSprite ( static_cast < eMarkerSprite > ( m_ulSprite ) );
+                m_pMarker->SetPosition( m_vecPosition );
+                m_pMarker->SetScale( m_usScale );
+                m_pMarker->SetColor( color );
+                m_pMarker->SetSprite( (eMarkerSprite)m_ulSprite );
             }
         }
     }
 }
 
-
-void CClientRadarMarker::DestroyMarker ( void )
+void CClientRadarMarker::DestroyMarker()
 {
     if ( m_pMarker )
     {
-        m_pMarker->Remove ();
+        m_pMarker->Remove();
         m_pMarker = NULL;
     }
 }
 
-
-void CClientRadarMarker::SetMapMarkerState ( EMapMarkerState eMapMarkerState )
+void CClientRadarMarker::SetMapMarkerState( EMapMarkerState eMapMarkerState )
 {
     m_eMapMarkerState = eMapMarkerState;
 
@@ -366,47 +349,42 @@ void CClientRadarMarker::SetMapMarkerState ( EMapMarkerState eMapMarkerState )
     }
 }
 
-
 void CClientRadarMarker::SetDimension ( unsigned short usDimension )
 {
     m_usDimension = usDimension;
     RelateDimension ( m_pManager->GetRadarMarkerManager ()->GetDimension () );
 }
 
-
-void CClientRadarMarker::RelateDimension ( unsigned short usDimension )
+void CClientRadarMarker::RelateDimension( unsigned short usDimension )
 {
     // Are we visible?
     if ( m_bIsVisible )
     {
         if ( usDimension == m_usDimension )
         {
-            Create ();
+            Create();
         }
         else
         {
-            Destroy ();
+            Destroy();
         }
     }
 }
 
-
-void CClientRadarMarker::SetOrdering ( short sOrdering )
+void CClientRadarMarker::SetOrdering( short sOrdering )
 {
     if ( sOrdering != m_sOrdering )
     {
         m_sOrdering = sOrdering;
-        m_pManager->GetRadarMarkerManager ()->m_bOrderOnPulse = true;
+        m_pManager->GetRadarMarkerManager()->m_bOrderOnPulse = true;
     }
 }
 
-
-bool CClientRadarMarker::IsInVisibleDistance ( void )
+bool CClientRadarMarker::IsInVisibleDistance() const
 {
     float fDistance = DistanceBetweenPoints3D ( m_vecPosition, m_pRadarMarkerManager->m_vecCameraPosition );
     return ( fDistance <= m_usVisibleDistance );
 }
-
 
 void CClientRadarMarker::GetSquareTexture ( DWORD dwBitMap[] )
 {

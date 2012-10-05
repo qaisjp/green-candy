@@ -22,7 +22,7 @@ class LuaElement : public LuaClass
                             // Do not allow copy
                             LuaElement( const LuaElement& elem );
 public:
-                            LuaElement( LuaClass& root );
+                            LuaElement( lua_State *L );
                             ~LuaElement();
 
     void                    SetRoot( LuaClass *root );

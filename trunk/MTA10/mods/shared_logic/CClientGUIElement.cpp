@@ -41,27 +41,30 @@ static int luaconstructor_gui( lua_State *L )
     return 0;
 }
 
-CClientGUIElement::CClientGUIElement( CClientManager * pManager, CLuaMain* pLuaMain, CGUIElement* pCGUIElement, bool system, ElementID ID ) : CClientEntity( ID, system, *pLuaMain->GetResource()->GetResourceGUIEntity() )
+CClientGUIElement::CClientGUIElement( CClientManager *pManager, CLuaMain *pLuaMain, CGUIElement *pCGUIElement, bool system, ElementID ID ) : CClientEntity( ID, system, pLuaMain->GetVirtualMachine() )
 {
     // Advance the Lua interface
-    lua_State *L = pLuaMain->GetResource()->GetResourceGUIEntity()->GetVM();
+    lua_State *L = pLuaMain->GetVirtualMachine();
 
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_gui, 1 );
     luaJ_extend( L, -2, 0 );
 
+    // Set root entity
+    SetRoot( pLuaMain->GetResource()->GetResourceGUIEntity() );
+
     m_pManager = pManager;
-    m_pGUIManager = pManager->GetGUIManager ();
+    m_pGUIManager = pManager->GetGUIManager();
     m_pCGUIElement = pCGUIElement;
     m_pLuaMain = pLuaMain;
     m_pFontElement = NULL;
 
-    memset ( &_szCallbackFunc1[0], NULL, sizeof ( _szCallbackFunc1 ) );
-    memset ( &_szCallbackFunc2[0], NULL, sizeof ( _szCallbackFunc2 ) );
+    memset( &_szCallbackFunc1[0], NULL, sizeof( _szCallbackFunc1 ) );
+    memset( &_szCallbackFunc2[0], NULL, sizeof( _szCallbackFunc2 ) );
 
     // Store the this-pointer in the userdata variable
-    CGUI_SET_CCLIENTGUIELEMENT ( pCGUIElement, this );
+    CGUI_SET_CCLIENTGUIELEMENT( pCGUIElement, this );
 
     // Generate the CGUI type name variable
     // Inherit a custom GUI interface, too
@@ -144,40 +147,37 @@ CClientGUIElement::CClientGUIElement( CClientManager * pManager, CLuaMain* pLuaM
     m_pGUIManager->Add ( this );
 }
 
-
-CClientGUIElement::~CClientGUIElement ( void )
+CClientGUIElement::~CClientGUIElement()
 {
     // Remove us from the list in the manager
-    Unlink ();
+    Unlink();
 
-    if ( m_pCGUIElement )
-        delete m_pCGUIElement;
+    delete m_pCGUIElement;
 }
 
-void CClientGUIElement::Unlink ( void )
+void CClientGUIElement::Unlink()
 {
     // Detach from any custom font
     if ( m_pFontElement )
         SetFont( "", NULL );
 
-    m_pGUIManager->Remove ( this );
+    m_pGUIManager->Remove( this );
 }
 
-
-void CClientGUIElement::SetEvents ( const char* szFunc1, const char* szFunc2 )
+void CClientGUIElement::SetEvents( const char *szFunc1, const char *szFunc2 )
 {
-    if ( szFunc1 && strlen ( szFunc1 ) < MAX_EVENT_NAME )
-        strncpy ( &_szCallbackFunc1[0], szFunc1, strlen ( szFunc1 ) );
+    if ( szFunc1 && strlen( szFunc1 ) < MAX_EVENT_NAME )
+        strncpy( &_szCallbackFunc1[0], szFunc1, strlen ( szFunc1 ) );
 
-    if ( szFunc2 && strlen ( szFunc2 ) < MAX_EVENT_NAME )
-        strncpy ( &_szCallbackFunc2[0], szFunc2, strlen ( szFunc2 ) );    
+    if ( szFunc2 && strlen( szFunc2 ) < MAX_EVENT_NAME )
+        strncpy( &_szCallbackFunc2[0], szFunc2, strlen ( szFunc2 ) );    
 }
 
-bool CClientGUIElement::_CallbackEvent1 ( CGUIElement* pCGUIElement )
+bool CClientGUIElement::_CallbackEvent1( CGUIElement *pCGUIElement )
 {
     if ( pCGUIElement )
     {
-        CClientGUIElement* pElement = m_pGUIManager->Get ( pCGUIElement );
+        CClientGUIElement *pElement = m_pGUIManager->Get( pCGUIElement );
         if ( pElement )
         {
             lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
@@ -189,7 +189,7 @@ bool CClientGUIElement::_CallbackEvent1 ( CGUIElement* pCGUIElement )
     return false;
 }
 
-bool CClientGUIElement::_CallbackEvent2 ( CGUIElement* pCGUIElement )
+bool CClientGUIElement::_CallbackEvent2( CGUIElement *pCGUIElement )
 {
     CLuaArguments Arg;
     if ( pCGUIElement )
@@ -209,32 +209,36 @@ bool CClientGUIElement::_CallbackEvent2 ( CGUIElement* pCGUIElement )
 //
 // Get which font name and font element we are using now
 //
-SString CClientGUIElement::GetFont ( CClientGuiFont** ppFontElement )
+SString CClientGUIElement::GetFont( CClientGuiFont** ppFontElement )
 {
     *ppFontElement = m_pFontElement;
-    return GetCGUIElement ()->GetFont ();
+    return GetCGUIElement()->GetFont();
 }
 
 //
 // Change font
 //
-bool CClientGUIElement::SetFont ( const SString& strInFontName, CClientGuiFont* pFontElement )
+bool CClientGUIElement::SetFont( const SString& strInFontName, CClientGuiFont* pFontElement )
 {
     SString strFontName = strInFontName;
 
     if ( pFontElement )
-        strFontName = pFontElement->GetCEGUIFontName ();
+        strFontName = pFontElement->GetCEGUIFontName();
     else
-    if ( strFontName.empty () )
+    if ( strFontName.empty() )
         strFontName = "default-normal";
 
-    if ( GetCGUIElement ()->SetFont ( strFontName ) )
+    if ( GetCGUIElement ()->SetFont( strFontName ) )
     {
-        if ( m_pFontElement )   m_pFontElement->NotifyGUIElementDetach ( this );
+        if ( m_pFontElement )
+            m_pFontElement->NotifyGUIElementDetach( this );
+
         m_pFontElement = pFontElement;
-        if ( m_pFontElement )   m_pFontElement->NotifyGUIElementAttach ( this );
+
+        if ( m_pFontElement )
+            m_pFontElement->NotifyGUIElementAttach( this );
+
         return true;
     }
     return false;
 }
-

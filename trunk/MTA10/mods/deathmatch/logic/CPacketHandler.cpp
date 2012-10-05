@@ -2414,6 +2414,9 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
     // HACK: store new entities and link up anything depending on other entities after
     list < SEntityDependantStuff* > newEntitiesStuff;
 
+    // Lua management integration and initialization
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
     unsigned int NumEntities = 0;
     if ( !bitStream.ReadCompressed ( NumEntities ) || NumEntities == 0 )
     {
@@ -2476,12 +2479,12 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     }
                     else
                     {
-                        #ifdef MTA_DEBUG
-                            char buf[1024] = {0};
-                            bitStream.Read ( buf, (ucNameLength > 1024) ? 1024 : ucNameLength );
-                            // Raise a special assert, as we have to try and figure out this error.
-                            assert ( 0 );
-                        #endif
+#ifdef MTA_DEBUG
+                        char buf[1024] = {0};
+                        bitStream.Read ( buf, (ucNameLength > 1024) ? 1024 : ucNameLength );
+                        // Raise a special assert, as we have to try and figure out this error.
+                        assert ( 0 );
+#endif
 
                         delete pCustomData;
                         pCustomData = NULL;
@@ -2492,11 +2495,11 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                 }
                 else
                 {
-                    #ifdef MTA_DEBUG
-                        // Jax: had this with a colshape (ucNameLength=109,us=0,usNumData=4)
-                        // Raise a special assert, as we have to try and figure out this error.
-                        assert ( 0 );
-                    #endif
+#ifdef MTA_DEBUG
+                    // Jax: had this with a colshape (ucNameLength=109,us=0,usNumData=4)
+                    // Raise a special assert, as we have to try and figure out this error.
+                    assert ( 0 );
+#endif
 
                     delete pCustomData;
                     pCustomData = NULL;
@@ -2557,928 +2560,924 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
             // Handle the rest depending on what entity type it is
             switch ( ucEntityTypeID )
             {
-                case CClientGame::PLAYER:
-                {
-                    // We get entity data for players here, but player data is handled in Packet_PlayerList
-                    break;
-                }
-                case CClientGame::OBJECT:
-                {
-                    unsigned short usObjectID;
-                    SEntityAlphaSync alpha;
-                    SRotationRadiansSync rotationRadians ( false );
+            case CClientGame::PLAYER:
+            {
+                // We get entity data for players here, but player data is handled in Packet_PlayerList
+                break;
+            }
+            case CClientGame::OBJECT:
+            {
+                unsigned short usObjectID;
+                SEntityAlphaSync alpha;
+                SRotationRadiansSync rotationRadians ( false );
 
-                    // Read out the position, rotation, object ID and alpha value
-                    if ( bitStream.Read ( &position ) &&
-                         bitStream.Read ( &rotationRadians ) &&
-                         bitStream.ReadCompressed ( usObjectID ) &&
-                         bitStream.Read ( &alpha ) )
+                // Read out the position, rotation, object ID and alpha value
+                if ( bitStream.Read ( &position ) &&
+                     bitStream.Read ( &rotationRadians ) &&
+                     bitStream.ReadCompressed ( usObjectID ) &&
+                     bitStream.Read ( &alpha ) )
+                {
+                    // Valid object id?
+                    if ( !CClientObjectManager::IsValidModel ( usObjectID ) )
                     {
-                        // Valid object id?
-                        if ( !CClientObjectManager::IsValidModel ( usObjectID ) )
-                        {
-                            usObjectID = 1700;
-                        }
-
-                        // Low LOD stuff
-                        bool bIsLowLod;
-                        bitStream.ReadBit ( bIsLowLod );
-                        bitStream.Read ( LowLodObjectID );
-
-                        // TODO: LOW LOD OBJECTS
-
-                        // Create the object and put it at its position
-#ifdef WITH_OBJECT_SYNC
-                        CDeathmatchObject* pObject = new CDeathmatchObject ( g_pClientGame->m_pManager, g_pClientGame->m_pMovingObjectsManager, g_pClientGame->m_pObjectSync, EntityID, usObjectID );
-#else
-                        CDeathmatchObject* pObject = new CDeathmatchObject ( g_pClientGame->m_pManager, *g_pClientGame->GetRootEntity(), true, g_pClientGame->m_pMovingObjectsManager, g_pClientGame->m_pObjectSync, EntityID, usObjectID );
-#endif
-                        pEntity = pObject;
-                        if ( pObject )
-                        {
-                            pObject->SetOrientation ( position.data.vecPosition, rotationRadians.data.vecRotation );
-                            pObject->SetAlpha ( alpha.data.ucAlpha );
-                        }
-                        else
-                        {
-                            RaiseFatalError ( 9 );
-                            return;
-                        }
-
-                        if ( bitStream.ReadBit () )
-                            pObject->SetDoubleSided ( true );
-
-                        bool bIsMoving;
-                        if ( bitStream.ReadBit ( bIsMoving ) && bIsMoving )
-                        {
-                            CPositionRotationAnimation* pAnimation = CPositionRotationAnimation::FromBitStream ( bitStream );
-                            if ( pAnimation != NULL )
-                            {
-                                pObject->StartMovement ( *pAnimation );
-                                delete pAnimation;
-                            }
-                        }
-
-                        float fScale;
-                        if ( bitStream.Read ( fScale ) )
-                            pObject->SetScale ( fScale );
-
-                        bool bStatic;
-                        if ( bitStream.ReadBit ( bStatic ) )
-                            pObject->SetStatic ( bStatic );
-
-                        SObjectHealthSync health;
-                        if ( bitStream.Read ( &health ) )
-                            pObject->SetHealth ( health.data.fValue );
-
-                        pObject->SetCollisionEnabled ( bCollisonsEnabled );
+                        usObjectID = 1700;
                     }
 
-                    break;
+                    // Low LOD stuff
+                    bool bIsLowLod;
+                    bitStream.ReadBit ( bIsLowLod );
+                    bitStream.Read ( LowLodObjectID );
+
+                    // TODO: LOW LOD OBJECTS
+
+                    // Create the object and put it at its position
+#ifdef WITH_OBJECT_SYNC
+                    CDeathmatchObject* pObject = new CDeathmatchObject ( g_pClientGame->m_pManager, g_pClientGame->m_pMovingObjectsManager, g_pClientGame->m_pObjectSync, EntityID, usObjectID );
+#else
+                    CDeathmatchObject* pObject = new CDeathmatchObject( g_pClientGame->m_pManager, L, true, g_pClientGame->m_pMovingObjectsManager, g_pClientGame->m_pObjectSync, EntityID, usObjectID );
+#endif
+                    pEntity = pObject;
+
+                    if ( !pObject )
+                    {
+                        RaiseFatalError( 9 );
+                        return;
+                    }
+
+                    pObject->SetOrientation( position.data.vecPosition, rotationRadians.data.vecRotation );
+                    pObject->SetAlpha( alpha.data.ucAlpha );
+
+                    if ( bitStream.ReadBit() )
+                        pObject->SetDoubleSided( true );
+
+                    bool bIsMoving;
+                    if ( bitStream.ReadBit ( bIsMoving ) && bIsMoving )
+                    {
+                        CPositionRotationAnimation* pAnimation = CPositionRotationAnimation::FromBitStream ( bitStream );
+                        if ( pAnimation != NULL )
+                        {
+                            pObject->StartMovement ( *pAnimation );
+                            delete pAnimation;
+                        }
+                    }
+
+                    float fScale;
+                    if ( bitStream.Read ( fScale ) )
+                        pObject->SetScale ( fScale );
+
+                    bool bStatic;
+                    if ( bitStream.ReadBit ( bStatic ) )
+                        pObject->SetStatic ( bStatic );
+
+                    SObjectHealthSync health;
+                    if ( bitStream.Read ( &health ) )
+                        pObject->SetHealth ( health.data.fValue );
+
+                    pObject->SetCollisionEnabled ( bCollisonsEnabled );
                 }
 
-                case CClientGame::PICKUP:
+                break;
+            }
+
+            case CClientGame::PICKUP:
+            {
+                // Read out the pickup data
+                unsigned short usModel;
+                bool bIsVisible;
+                SPickupTypeSync pickupType;
+
+                if ( bitStream.Read ( &position ) &&
+                     bitStream.ReadCompressed ( usModel ) &&
+                     bitStream.ReadBit ( bIsVisible ) &&
+                     bitStream.Read ( &pickupType ) )
                 {
-                    // Read out the pickup data
-                    unsigned short usModel;
-                    bool bIsVisible;
-                    SPickupTypeSync pickupType;
-
-                    if ( bitStream.Read ( &position ) &&
-                         bitStream.ReadCompressed ( usModel ) &&
-                         bitStream.ReadBit ( bIsVisible ) &&
-                         bitStream.Read ( &pickupType ) )
+                    // Create the pickup with the given position and model
+                    CClientPickup* pPickup = new CClientPickup( g_pClientGame->m_pManager, EntityID, L, true, usModel, position.data.vecPosition );
+                    pEntity = pPickup;
+                    if ( !pPickup )
                     {
-                        // Create the pickup with the given position and model
-                        CClientPickup* pPickup = new CClientPickup ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, usModel, position.data.vecPosition );
-                        pEntity = pPickup;
-                        if ( !pPickup )
-                        {
-                            RaiseFatalError ( 10 );
-                            return;
-                        }
+                        RaiseFatalError( 10 );
+                        return;
+                    }
 
-                        pPickup->m_ucType = pickupType.data.ucType;
-                        switch ( pickupType.data.ucType )
+                    pPickup->m_ucType = pickupType.data.ucType;
+                    switch ( pickupType.data.ucType )
+                    {
+                    case CClientPickup::ARMOR:
+                    {
+                        SPlayerHealthSync health;
+                        if ( bitStream.Read ( &health ) )
+                            pPickup->m_fAmount = health.data.fValue;
+                        break;
+                    }
+                    case CClientPickup::HEALTH:
+                    {
+                        SPlayerArmorSync armor;
+                        if ( bitStream.Read ( &armor )  )
+                            pPickup->m_fAmount = armor.data.fValue;
+                        break;
+                    }
+                    case CClientPickup::WEAPON:
+                    {
+                        SWeaponTypeSync weaponType;
+                        if ( bitStream.Read ( &weaponType ) )
                         {
-                            case CClientPickup::ARMOR:
+                            pPickup->m_ucWeaponType = weaponType.data.ucWeaponType;
+
+                            SWeaponAmmoSync ammo ( weaponType.data.ucWeaponType, true, false );
+                            if ( bitStream.Read ( &ammo ) )
+                                pPickup->m_usAmmo = ammo.data.usTotalAmmo;
+                        }
+                        break;
+                    }
+                    }
+
+                    // Set its visible status
+                    pPickup->SetVisible ( bIsVisible );
+                }
+                else
+                {
+                    RaiseProtocolError ( 38 );
+                    return;
+                }
+
+                break;
+            }
+
+            case CClientGame::VEHICLE:
+            {
+                // Read out the position
+                bitStream.Read ( &position );
+
+                // Read out the rotation in degrees
+                SRotationDegreesSync rotationDegrees ( false );
+                bitStream.Read ( &rotationDegrees );
+
+                // Read out the vehicle value as a char, then convert
+                unsigned char ucModel = 0xFF;
+                bitStream.Read ( ucModel );
+
+                // The server appears to subtract 400 from the vehicle id before
+                // sending it to us, as to allow the value to fit into an unsigned
+                // char.
+                //
+                // Too bad this was never documented.
+                //
+                // --slush
+                unsigned short usModel = ucModel + 400;
+                if ( !CClientVehicleManager::IsValidModel ( usModel ) )
+                {
+                    RaiseProtocolError ( 39 );
+                    return;
+                }
+
+                // Read out the health
+                SVehicleHealthSync health;
+                if ( !bitStream.Read ( &health ) )
+                {
+                    RaiseProtocolError ( 40 );
+                    return;
+                }
+
+                // Read out the color
+                CVehicleColor vehColor;
+                uchar ucNumColors = 0;
+                if ( !bitStream.ReadBits ( &ucNumColors, 2 ) )
+                    return RaiseProtocolError ( 41 );
+
+                for ( uint i = 0 ; i <= ucNumColors ; i++ )
+                {
+                    SColor RGBColor = 0;
+                    if ( !bitStream.Read ( RGBColor.R ) ||
+                         !bitStream.Read ( RGBColor.G ) ||
+                         !bitStream.Read ( RGBColor.B ) )
+                    {
+                        return RaiseProtocolError ( 41 );
+                    }
+                    vehColor.SetRGBColor ( i, RGBColor );
+                }
+
+                // Read out the paintjob
+                SPaintjobSync paintjob;
+                if ( !bitStream.Read ( &paintjob ) )
+                    return RaiseProtocolError ( 41 );
+
+                // Read out the vehicle damage sync model
+                SVehicleDamageSync damage ( true, true, true, true, false );
+                if ( !bitStream.Read ( &damage ) )
+                {
+                    RaiseProtocolError ( 42 );
+                    return;
+                }
+
+                unsigned char ucVariant = 5;
+                if ( !bitStream.Read ( ucVariant ) )
+                {
+                    RaiseProtocolError ( 42 );
+                    return;
+                }
+
+                unsigned char ucVariant2 = 5;
+                if ( !bitStream.Read ( ucVariant2 ) )
+                {
+                    RaiseProtocolError ( 42 );
+                    return;
+                }
+
+                // Create it
+                CDeathmatchVehicle *pVehicle = new CDeathmatchVehicle( g_pClientGame->m_pManager, L, true, g_pClientGame->m_pUnoccupiedVehicleSync, EntityID, usModel );
+                pEntity = pVehicle;
+                if ( !pVehicle )
+                {
+                    RaiseFatalError ( 11 );
+                    return;
+                }
+
+                // Set the health, color and paintjob
+                pVehicle->SetHealth ( health.data.fValue );
+                pVehicle->SetPaintjob ( paintjob.data.ucPaintjob );
+                pVehicle->SetColor ( vehColor );
+
+                // Setup our damage model
+                for ( int i = 0 ; i < MAX_DOORS ; i++ ) pVehicle->SetDoorStatus ( i, damage.data.ucDoorStates [ i ] );
+                for ( int i = 0 ; i < MAX_WHEELS ; i++ ) pVehicle->SetWheelStatus ( i, damage.data.ucWheelStates [ i ] );
+                for ( int i = 0 ; i < MAX_PANELS ; i++ ) pVehicle->SetPanelStatus ( i, damage.data.ucPanelStates [ i ] );
+                for ( int i = 0 ; i < MAX_LIGHTS ; i++ ) pVehicle->SetLightStatus ( i, damage.data.ucLightStates [ i ] );
+                pVehicle->ResetDamageModelSync ();
+
+                // If the vehicle has a turret, read out its position
+                if ( CClientVehicleManager::HasTurret ( usModel ) )
+                {
+                    SVehicleTurretSync specific;
+                    bitStream.Read ( &specific );
+                    pVehicle->SetTurretRotation ( specific.data.fTurretX, specific.data.fTurretY );
+                }
+
+                // If the vehicle has an adjustable property, read out its value
+                if ( CClientVehicleManager::HasAdjustableProperty ( usModel ) )
+                {
+                    unsigned short usAdjustableProperty;
+                    bitStream.ReadCompressed ( usAdjustableProperty );
+                    pVehicle->SetAdjustablePropertyValue ( usAdjustableProperty );
+                }
+
+                // If the vehicle has doors, read out the open angle ratio.
+                if ( CClientVehicleManager::HasDoors ( usModel ) )
+                {
+                    SDoorOpenRatioSync door;
+                    for ( unsigned char i = 0; i < 6; ++i )
+                    {
+                        bitStream.Read ( &door );
+                        pVehicle->SetDoorOpenRatio ( i, door.data.fRatio, 0, true );
+                    }
+                }
+
+                // Read out the upgrades
+                CVehicleUpgrades* pUpgrades = pVehicle->GetUpgrades ();
+                unsigned char ucNumUpgrades;
+                bitStream.Read ( ucNumUpgrades );
+
+                if ( ucNumUpgrades > 0 )
+                {
+                    unsigned char uc = 0;
+                    for ( ; uc < ucNumUpgrades ; uc++ )
+                    {
+                        unsigned char ucUpgrade;
+                        bitStream.Read ( ucUpgrade );
+
+                        /*
+                        * Dumb.  We're adjusting the number the server sent us,
+                        * because it is apparently '1000' less than the actual number.
+                        * Why this wasn't put in the CVehicleUpgrades class itself
+                        * is beyond me...
+                        *
+                        * --slush
+                        */
+                        if (pUpgrades)
+                            pUpgrades->AddUpgrade ( ucUpgrade + 1000 );
+                    }
+                }
+
+                // Read out the reg plate
+                char szRegPlate [9];
+                szRegPlate [8] = 0;
+                bitStream.Read ( szRegPlate, 8 );
+                pVehicle->SetRegPlate ( szRegPlate );
+
+                // Read the light override
+                SOverrideLightsSync overrideLights;
+                bitStream.Read ( &overrideLights );
+                pVehicle->SetOverrideLights ( overrideLights.data.ucOverride );
+
+                // Read the flag bools
+                bool bLandingGearDown   = bitStream.ReadBit ();
+                bool bSirenesActive     = bitStream.ReadBit ();
+                bool bPetrolTankWeak    = bitStream.ReadBit ();
+                bool bEngineOn          = bitStream.ReadBit ();
+                bool bLocked            = bitStream.ReadBit ();
+                bool bDoorsUndamageable = bitStream.ReadBit ();
+                bool bDamageProof       = bitStream.ReadBit ();
+                bool bFrozen            = bitStream.ReadBit ();
+                bool bDerailed          = bitStream.ReadBit ();
+                bool bIsDerailable      = bitStream.ReadBit ();
+                bool bTrainDirection    = bitStream.ReadBit ();
+                bool bTaxiLightState    = bitStream.ReadBit ();
+
+                // If the vehicle has a landing gear, set landing gear state
+                if ( CClientVehicleManager::HasLandingGears ( usModel ) )
+                {
+                    pVehicle->SetLandingGearDown ( bLandingGearDown );
+                }
+
+                // If the vehicle has sirens, set the siren state
+                if ( CClientVehicleManager::HasSirens ( usModel ) )
+                {
+                    pVehicle->SetSirenOrAlarmActive ( bSirenesActive );
+                }
+                //Set the taxi light state
+                if ( CClientVehicleManager::HasTaxiLight ( usModel ) )
+                {
+                    pVehicle->SetTaxiLightOn ( bTaxiLightState );
+                }
+                // Set the general vehicle flags
+                pVehicle->SetCanShootPetrolTank ( bPetrolTankWeak );
+                pVehicle->SetEngineOn ( bEngineOn );
+                pVehicle->SetDoorsLocked ( bLocked );
+                pVehicle->SetDoorsUndamageable ( bDoorsUndamageable );
+                pVehicle->SetScriptCanBeDamaged ( !bDamageProof );
+                pVehicle->SetFrozen ( bFrozen );
+                pVehicle->SetDerailed ( bDerailed );
+                pVehicle->SetDerailable ( bIsDerailable );
+                pVehicle->SetTrainDirection ( bTrainDirection );
+
+                // Read out and set alpha
+                SEntityAlphaSync alpha;
+                bitStream.Read ( &alpha );
+                pVehicle->SetAlpha ( alpha.data.ucAlpha );  
+
+                // Read our headlight color
+                SColorRGBA color ( 255, 255, 255, 255 );
+                if ( bitStream.ReadBit () == true )
+                {
+                    bitStream.Read ( color.R );
+                    bitStream.Read ( color.G );
+                    bitStream.Read ( color.B );
+                }
+                pVehicle->SetHeadLightColor ( color );
+
+                // Read out and set handling
+                if ( bitStream.ReadBit () == true )
+                {
+                    SVehicleHandlingSync handling;
+                    bitStream.Read ( &handling );
+                    CHandlingEntry* pEntry = pVehicle->GetHandlingData ();
+                    pEntry->SetMass ( handling.data.fMass );
+                    pEntry->SetTurnMass ( handling.data.fTurnMass );
+                    pEntry->SetDragCoeff ( handling.data.fDragCoeff );
+                    pEntry->SetCenterOfMass ( handling.data.vecCenterOfMass );
+                    pEntry->SetPercentSubmerged ( handling.data.ucPercentSubmerged );
+                    pEntry->SetTractionMultiplier ( handling.data.fTractionMultiplier );
+                    pEntry->SetCarDriveType ( (CHandlingEntry::eDriveType)handling.data.ucDriveType );
+                    pEntry->SetCarEngineType ( (CHandlingEntry::eEngineType)handling.data.ucEngineType );
+                    pEntry->SetNumberOfGears ( handling.data.ucNumberOfGears );
+                    pEntry->SetEngineAcceleration ( handling.data.fEngineAcceleration );
+                    pEntry->SetEngineInertia ( handling.data.fEngineInertia );
+                    pEntry->SetMaxVelocity ( handling.data.fMaxVelocity );
+                    pEntry->SetBrakeDeceleration ( handling.data.fBrakeDeceleration );
+                    pEntry->SetBrakeBias ( handling.data.fBrakeBias );
+                    pEntry->SetABS ( handling.data.bABS );
+                    pEntry->SetSteeringLock ( handling.data.fSteeringLock );
+                    pEntry->SetTractionLoss ( handling.data.fTractionLoss );
+                    pEntry->SetTractionBias ( handling.data.fTractionBias );
+                    pEntry->SetSuspensionForceLevel ( handling.data.fSuspensionForceLevel );
+                    pEntry->SetSuspensionDamping ( handling.data.fSuspensionDamping );
+                    pEntry->SetSuspensionHighSpeedDamping ( handling.data.fSuspensionHighSpdDamping );
+                    pEntry->SetSuspensionUpperLimit ( handling.data.fSuspensionUpperLimit );
+                    pEntry->SetSuspensionLowerLimit ( handling.data.fSuspensionLowerLimit );
+                    pEntry->SetSuspensionFrontRearBias ( handling.data.fSuspensionFrontRearBias );
+                    pEntry->SetSuspensionAntiDiveMultiplier ( handling.data.fSuspensionAntiDiveMultiplier );
+                    pEntry->SetCollisionDamageMultiplier ( handling.data.fCollisionDamageMultiplier );
+                    pEntry->SetModelFlags ( handling.data.uiModelFlags );
+                    pEntry->SetHandlingFlags ( handling.data.uiHandlingFlags );
+                    pEntry->SetSeatOffsetDistance ( handling.data.fSeatOffsetDistance );
+                    //pEntry->SetMonetary ( handling.data.uiMonetary );
+                    //pEntry->SetHeadLight ( (CHandlingEntry::eLightType)handling.data.ucHeadLight );
+                    //pEntry->SetTailLight ( (CHandlingEntry::eLightType)handling.data.ucTailLight );
+                    //pEntry->SetAnimGroup ( handling.data.ucAnimGroup );
+                    pVehicle->ApplyHandling();
+                }
+             
+                // Set the matrix
+                pVehicle->SetPosition ( position.data.vecPosition );
+                pVehicle->SetRotationDegrees ( rotationDegrees.data.vecRotation );
+
+                // Set collidable state
+                pVehicle->SetCollisionEnabled ( bCollisonsEnabled );
+
+                break;
+            }
+
+            case CClientGame::MARKER:
+            {
+                // Read out the common data for all kinds of markers
+                SMarkerTypeSync markerType;
+                float fSize;
+                SColorSync color;
+
+                if ( bitStream.Read ( &position ) &&
+                     bitStream.Read ( &markerType ) &&
+                     bitStream.Read ( fSize ) &&
+                     bitStream.Read ( &color ) )
+                {
+                    unsigned char ucType = markerType.data.ucType;
+
+                    // Valid type?
+                    if ( ucType < CClientMarker::MARKER_INVALID )
+                    {
+                        // Create it
+                        CClientMarker* pMarker = new CClientMarker ( g_pClientGame->m_pManager, EntityID, L, true, ucType );
+                        pMarker->SetPosition ( position.data.vecPosition );
+                        pMarker->SetSize ( fSize );
+                        pMarker->SetColor ( color );
+
+                        // Entity is this
+                        pEntity = pMarker;
+
+                        // More properties if it's a checkpoint or a ring
+                        if ( ucType == CClientGame::MARKER_CHECKPOINT ||
+                             ucType == CClientGame::MARKER_RING )
+                        {
+                            // Grab the checkpoint
+                            CClientCheckpoint* pCheckpoint = pMarker->GetCheckpoint ();
+                            bool bTarget = bitStream.ReadBit ();
+
+                            // Have a target?
+                            if ( bTarget )
                             {
-                                SPlayerHealthSync health;
-                                if ( bitStream.Read ( &health ) )
-                                    pPickup->m_fAmount = health.data.fValue;
-                                break;
-                            }
-                            case CClientPickup::HEALTH:
-                            {
-                                SPlayerArmorSync armor;
-                                if ( bitStream.Read ( &armor )  )
-                                    pPickup->m_fAmount = armor.data.fValue;
-                                break;
-                            }
-                            case CClientPickup::WEAPON:
-                            {
-                                SWeaponTypeSync weaponType;
-                                if ( bitStream.Read ( &weaponType ) )
+                                // Read out the target position
+                                if ( bitStream.Read ( &position ) )
                                 {
-                                    pPickup->m_ucWeaponType = weaponType.data.ucWeaponType;
-
-                                    SWeaponAmmoSync ammo ( weaponType.data.ucWeaponType, true, false );
-                                    if ( bitStream.Read ( &ammo ) )
-                                        pPickup->m_usAmmo = ammo.data.usTotalAmmo;
+                                    // Set the next position and the icon
+                                    pCheckpoint->SetNextPosition ( position.data.vecPosition );
+                                    pCheckpoint->SetIcon ( CClientCheckpoint::ICON_ARROW );
                                 }
-                                break;
                             }
-                            default: break;
                         }
-
-                        // Set its visible status
-                        pPickup->SetVisible ( bIsVisible );
                     }
                     else
                     {
-                        RaiseProtocolError ( 38 );
-                        return;
+                        RaiseProtocolError ( 123 );
                     }
-
-                    break;
+                }
+                else
+                {
+                    RaiseProtocolError ( 44 );
                 }
 
-                case CClientGame::VEHICLE:
+                break;
+            }
+
+            case CClientGame::BLIP:
+            {         
+                // Read out the position
+                bitStream.Read ( &position );
+
+                // Read out the ordering id
+                short sOrdering;
+                bitStream.ReadCompressed ( sOrdering );
+
+                // Read out the visible distance
+                SIntegerSync < unsigned short, 14 > visibleDistance;
+                bitStream.Read ( &visibleDistance );
+
+                // Make a blip with the given ID
+                CClientRadarMarker *pBlip = new CClientRadarMarker( g_pClientGame->m_pManager, EntityID, g_pClientGame->GetLuaManager()->GetVirtualMachine(), true, sOrdering, visibleDistance );
+                pBlip->SetRoot( g_pClientGame->GetRootEntity() );
+                pEntity = pBlip;
+
+                pBlip->SetPosition ( position.data.vecPosition );
+
+                // Read out the icon
+                SIntegerSync < unsigned char, 6 > icon;
+                bitStream.Read ( &icon );                    
+
+                // Set the icon if it's valid
+                if ( icon <= RADAR_MARKER_LIMIT ) pBlip->SetSprite ( icon );
+
+                // Read out size and color if there's no icon
+                if ( icon == 0 )
                 {
-                    // Read out the position
-                    bitStream.Read ( &position );
-
-                    // Read out the rotation in degrees
-                    SRotationDegreesSync rotationDegrees ( false );
-                    bitStream.Read ( &rotationDegrees );
-
-                    // Read out the vehicle value as a char, then convert
-                    unsigned char ucModel = 0xFF;
-                    bitStream.Read ( ucModel );
-
-                    // The server appears to subtract 400 from the vehicle id before
-                    // sending it to us, as to allow the value to fit into an unsigned
-                    // char.
-                    //
-                    // Too bad this was never documented.
-                    //
-                    // --slush
-                    unsigned short usModel = ucModel + 400;
-                    if ( !CClientVehicleManager::IsValidModel ( usModel ) )
-                    {
-                        RaiseProtocolError ( 39 );
-                        return;
-                    }
-
-                    // Read out the health
-                    SVehicleHealthSync health;
-                    if ( !bitStream.Read ( &health ) )
-                    {
-                        RaiseProtocolError ( 40 );
-                        return;
-                    }
+                    // Read out the size
+                    SIntegerSync < unsigned char, 5 > size;
+                    bitStream.Read ( &size );
 
                     // Read out the color
-                    CVehicleColor vehColor;
-                    uchar ucNumColors = 0;
-                    if ( !bitStream.ReadBits ( &ucNumColors, 2 ) )
-                        return RaiseProtocolError ( 41 );
-
-                    for ( uint i = 0 ; i <= ucNumColors ; i++ )
-                    {
-                        SColor RGBColor = 0;
-                        if ( !bitStream.Read ( RGBColor.R ) ||
-                             !bitStream.Read ( RGBColor.G ) ||
-                             !bitStream.Read ( RGBColor.B ) )
-                        {
-                            return RaiseProtocolError ( 41 );
-                        }
-                        vehColor.SetRGBColor ( i, RGBColor );
-                    }
-
-                    // Read out the paintjob
-                    SPaintjobSync paintjob;
-                    if ( !bitStream.Read ( &paintjob ) )
-                        return RaiseProtocolError ( 41 );
-
-                    // Read out the vehicle damage sync model
-                    SVehicleDamageSync damage ( true, true, true, true, false );
-                    if ( !bitStream.Read ( &damage ) )
-                    {
-                        RaiseProtocolError ( 42 );
-                        return;
-                    }
-
-                    unsigned char ucVariant = 5;
-                    if ( !bitStream.Read ( ucVariant ) )
-                    {
-                        RaiseProtocolError ( 42 );
-                        return;
-                    }
-
-                    unsigned char ucVariant2 = 5;
-                    if ( !bitStream.Read ( ucVariant2 ) )
-                    {
-                        RaiseProtocolError ( 42 );
-                        return;
-                    }
-
-                    // Create it
-                    CDeathmatchVehicle* pVehicle = new CDeathmatchVehicle ( g_pClientGame->m_pManager, *g_pClientGame->GetRootEntity(), true, g_pClientGame->m_pUnoccupiedVehicleSync, EntityID, usModel );
-                    pEntity = pVehicle;
-                    if ( !pVehicle )
-                    {
-                        RaiseFatalError ( 11 );
-                        return;
-                    }
-
-                    // Set the health, color and paintjob
-                    pVehicle->SetHealth ( health.data.fValue );
-                    pVehicle->SetPaintjob ( paintjob.data.ucPaintjob );
-                    pVehicle->SetColor ( vehColor );
-
-                    // Setup our damage model
-                    for ( int i = 0 ; i < MAX_DOORS ; i++ ) pVehicle->SetDoorStatus ( i, damage.data.ucDoorStates [ i ] );
-                    for ( int i = 0 ; i < MAX_WHEELS ; i++ ) pVehicle->SetWheelStatus ( i, damage.data.ucWheelStates [ i ] );
-                    for ( int i = 0 ; i < MAX_PANELS ; i++ ) pVehicle->SetPanelStatus ( i, damage.data.ucPanelStates [ i ] );
-                    for ( int i = 0 ; i < MAX_LIGHTS ; i++ ) pVehicle->SetLightStatus ( i, damage.data.ucLightStates [ i ] );
-                    pVehicle->ResetDamageModelSync ();
-
-                    // If the vehicle has a turret, read out its position
-                    if ( CClientVehicleManager::HasTurret ( usModel ) )
-                    {
-                        SVehicleTurretSync specific;
-                        bitStream.Read ( &specific );
-                        pVehicle->SetTurretRotation ( specific.data.fTurretX, specific.data.fTurretY );
-                    }
-
-                    // If the vehicle has an adjustable property, read out its value
-                    if ( CClientVehicleManager::HasAdjustableProperty ( usModel ) )
-                    {
-                        unsigned short usAdjustableProperty;
-                        bitStream.ReadCompressed ( usAdjustableProperty );
-                        pVehicle->SetAdjustablePropertyValue ( usAdjustableProperty );
-                    }
-
-                    // If the vehicle has doors, read out the open angle ratio.
-                    if ( CClientVehicleManager::HasDoors ( usModel ) )
-                    {
-                        SDoorOpenRatioSync door;
-                        for ( unsigned char i = 0; i < 6; ++i )
-                        {
-                            bitStream.Read ( &door );
-                            pVehicle->SetDoorOpenRatio ( i, door.data.fRatio, 0, true );
-                        }
-                    }
-
-                    // Read out the upgrades
-                    CVehicleUpgrades* pUpgrades = pVehicle->GetUpgrades ();
-                    unsigned char ucNumUpgrades;
-                    bitStream.Read ( ucNumUpgrades );
-
-                    if ( ucNumUpgrades > 0 )
-                    {
-                        unsigned char uc = 0;
-                        for ( ; uc < ucNumUpgrades ; uc++ )
-                        {
-                            unsigned char ucUpgrade;
-                            bitStream.Read ( ucUpgrade );
-
-                            /*
-                            * Dumb.  We're adjusting the number the server sent us,
-                            * because it is apparently '1000' less than the actual number.
-                            * Why this wasn't put in the CVehicleUpgrades class itself
-                            * is beyond me...
-                            *
-                            * --slush
-                            */
-                            if (pUpgrades)
-                                pUpgrades->AddUpgrade ( ucUpgrade + 1000 );
-                        }
-                    }
-
-                    // Read out the reg plate
-                    char szRegPlate [9];
-                    szRegPlate [8] = 0;
-                    bitStream.Read ( szRegPlate, 8 );
-                    pVehicle->SetRegPlate ( szRegPlate );
-
-                    // Read the light override
-                    SOverrideLightsSync overrideLights;
-                    bitStream.Read ( &overrideLights );
-                    pVehicle->SetOverrideLights ( overrideLights.data.ucOverride );
-
-                    // Read the flag bools
-                    bool bLandingGearDown   = bitStream.ReadBit ();
-                    bool bSirenesActive     = bitStream.ReadBit ();
-                    bool bPetrolTankWeak    = bitStream.ReadBit ();
-                    bool bEngineOn          = bitStream.ReadBit ();
-                    bool bLocked            = bitStream.ReadBit ();
-                    bool bDoorsUndamageable = bitStream.ReadBit ();
-                    bool bDamageProof       = bitStream.ReadBit ();
-                    bool bFrozen            = bitStream.ReadBit ();
-                    bool bDerailed          = bitStream.ReadBit ();
-                    bool bIsDerailable      = bitStream.ReadBit ();
-                    bool bTrainDirection    = bitStream.ReadBit ();
-                    bool bTaxiLightState    = bitStream.ReadBit ();
-
-                    // If the vehicle has a landing gear, set landing gear state
-                    if ( CClientVehicleManager::HasLandingGears ( usModel ) )
-                    {
-                        pVehicle->SetLandingGearDown ( bLandingGearDown );
-                    }
-
-                    // If the vehicle has sirens, set the siren state
-                    if ( CClientVehicleManager::HasSirens ( usModel ) )
-                    {
-                        pVehicle->SetSirenOrAlarmActive ( bSirenesActive );
-                    }
-                    //Set the taxi light state
-                    if ( CClientVehicleManager::HasTaxiLight ( usModel ) )
-                    {
-                        pVehicle->SetTaxiLightOn ( bTaxiLightState );
-                    }
-                    // Set the general vehicle flags
-                    pVehicle->SetCanShootPetrolTank ( bPetrolTankWeak );
-                    pVehicle->SetEngineOn ( bEngineOn );
-                    pVehicle->SetDoorsLocked ( bLocked );
-                    pVehicle->SetDoorsUndamageable ( bDoorsUndamageable );
-                    pVehicle->SetScriptCanBeDamaged ( !bDamageProof );
-                    pVehicle->SetFrozen ( bFrozen );
-                    pVehicle->SetDerailed ( bDerailed );
-                    pVehicle->SetDerailable ( bIsDerailable );
-                    pVehicle->SetTrainDirection ( bTrainDirection );
-
-                    // Read out and set alpha
-                    SEntityAlphaSync alpha;
-                    bitStream.Read ( &alpha );
-                    pVehicle->SetAlpha ( alpha.data.ucAlpha );  
-
-                    // Read our headlight color
-                    SColorRGBA color ( 255, 255, 255, 255 );
-                    if ( bitStream.ReadBit () == true )
-                    {
-                        bitStream.Read ( color.R );
-                        bitStream.Read ( color.G );
-                        bitStream.Read ( color.B );
-                    }
-                    pVehicle->SetHeadLightColor ( color );
-
-                    // Read out and set handling
-                    if ( bitStream.ReadBit () == true )
-                    {
-                        SVehicleHandlingSync handling;
-                        bitStream.Read ( &handling );
-                        CHandlingEntry* pEntry = pVehicle->GetHandlingData ();
-                        pEntry->SetMass ( handling.data.fMass );
-                        pEntry->SetTurnMass ( handling.data.fTurnMass );
-                        pEntry->SetDragCoeff ( handling.data.fDragCoeff );
-                        pEntry->SetCenterOfMass ( handling.data.vecCenterOfMass );
-                        pEntry->SetPercentSubmerged ( handling.data.ucPercentSubmerged );
-                        pEntry->SetTractionMultiplier ( handling.data.fTractionMultiplier );
-                        pEntry->SetCarDriveType ( (CHandlingEntry::eDriveType)handling.data.ucDriveType );
-                        pEntry->SetCarEngineType ( (CHandlingEntry::eEngineType)handling.data.ucEngineType );
-                        pEntry->SetNumberOfGears ( handling.data.ucNumberOfGears );
-                        pEntry->SetEngineAcceleration ( handling.data.fEngineAcceleration );
-                        pEntry->SetEngineInertia ( handling.data.fEngineInertia );
-                        pEntry->SetMaxVelocity ( handling.data.fMaxVelocity );
-                        pEntry->SetBrakeDeceleration ( handling.data.fBrakeDeceleration );
-                        pEntry->SetBrakeBias ( handling.data.fBrakeBias );
-                        pEntry->SetABS ( handling.data.bABS );
-                        pEntry->SetSteeringLock ( handling.data.fSteeringLock );
-                        pEntry->SetTractionLoss ( handling.data.fTractionLoss );
-                        pEntry->SetTractionBias ( handling.data.fTractionBias );
-                        pEntry->SetSuspensionForceLevel ( handling.data.fSuspensionForceLevel );
-                        pEntry->SetSuspensionDamping ( handling.data.fSuspensionDamping );
-                        pEntry->SetSuspensionHighSpeedDamping ( handling.data.fSuspensionHighSpdDamping );
-                        pEntry->SetSuspensionUpperLimit ( handling.data.fSuspensionUpperLimit );
-                        pEntry->SetSuspensionLowerLimit ( handling.data.fSuspensionLowerLimit );
-                        pEntry->SetSuspensionFrontRearBias ( handling.data.fSuspensionFrontRearBias );
-                        pEntry->SetSuspensionAntiDiveMultiplier ( handling.data.fSuspensionAntiDiveMultiplier );
-                        pEntry->SetCollisionDamageMultiplier ( handling.data.fCollisionDamageMultiplier );
-                        pEntry->SetModelFlags ( handling.data.uiModelFlags );
-                        pEntry->SetHandlingFlags ( handling.data.uiHandlingFlags );
-                        pEntry->SetSeatOffsetDistance ( handling.data.fSeatOffsetDistance );
-                        //pEntry->SetMonetary ( handling.data.uiMonetary );
-                        //pEntry->SetHeadLight ( (CHandlingEntry::eLightType)handling.data.ucHeadLight );
-                        //pEntry->SetTailLight ( (CHandlingEntry::eLightType)handling.data.ucTailLight );
-                        //pEntry->SetAnimGroup ( handling.data.ucAnimGroup );
-                        pVehicle->ApplyHandling();
-                    }
-                 
-                    // Set the matrix
-                    pVehicle->SetPosition ( position.data.vecPosition );
-                    pVehicle->SetRotationDegrees ( rotationDegrees.data.vecRotation );
-
-                    // Set collidable state
-                    pVehicle->SetCollisionEnabled ( bCollisonsEnabled );
-
-                    break;
-                }
-
-                case CClientGame::MARKER:
-                {
-                    // Read out the common data for all kinds of markers
-                    SMarkerTypeSync markerType;
-                    float fSize;
                     SColorSync color;
+                    bitStream.Read ( &color );
 
-                    if ( bitStream.Read ( &position ) &&
-                         bitStream.Read ( &markerType ) &&
-                         bitStream.Read ( fSize ) &&
-                         bitStream.Read ( &color ) )
-                    {
-                        unsigned char ucType = markerType.data.ucType;
+                    pBlip->SetScale ( size );
+                    pBlip->SetColor ( color );
+                }                    
 
-                        // Valid type?
-                        if ( ucType < CClientMarker::MARKER_INVALID )
-                        {
-                            // Create it
-                            CClientMarker* pMarker = new CClientMarker ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, ucType );
-                            pMarker->SetPosition ( position.data.vecPosition );
-                            pMarker->SetSize ( fSize );
-                            pMarker->SetColor ( color );
-
-                            // Entity is this
-                            pEntity = pMarker;
-
-                            // More properties if it's a checkpoint or a ring
-                            if ( ucType == CClientGame::MARKER_CHECKPOINT ||
-                                 ucType == CClientGame::MARKER_RING )
-                            {
-                                // Grab the checkpoint
-                                CClientCheckpoint* pCheckpoint = pMarker->GetCheckpoint ();
-                                bool bTarget = bitStream.ReadBit ();
-
-                                // Have a target?
-                                if ( bTarget )
-                                {
-                                    // Read out the target position
-                                    if ( bitStream.Read ( &position ) )
-                                    {
-                                        // Set the next position and the icon
-                                        pCheckpoint->SetNextPosition ( position.data.vecPosition );
-                                        pCheckpoint->SetIcon ( CClientCheckpoint::ICON_ARROW );
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            RaiseProtocolError ( 123 );
-                        }
-                    }
-                    else
-                    {
-                        RaiseProtocolError ( 44 );
-                    }
-
-                    break;
-                }
-
-                case CClientGame::BLIP:
-                {         
-                    // Read out the position
-                    bitStream.Read ( &position );
-
-                    // Read out the ordering id
-                    short sOrdering;
-                    bitStream.ReadCompressed ( sOrdering );
-
-                    // Read out the visible distance
-                    SIntegerSync < unsigned short, 14 > visibleDistance;
-                    bitStream.Read ( &visibleDistance );
-
-                    // Make a blip with the given ID
-                    CClientRadarMarker* pBlip = new CClientRadarMarker ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, sOrdering, visibleDistance );
-                    pEntity = pBlip;
-
-                    pBlip->SetPosition ( position.data.vecPosition );
-
-                    // Read out the icon
-                    SIntegerSync < unsigned char, 6 > icon;
-                    bitStream.Read ( &icon );                    
-
-                    // Set the icon if it's valid
-                    if ( icon <= RADAR_MARKER_LIMIT ) pBlip->SetSprite ( icon );
-
-                    // Read out size and color if there's no icon
-                    if ( icon == 0 )
-                    {
-                        // Read out the size
-                        SIntegerSync < unsigned char, 5 > size;
-                        bitStream.Read ( &size );
-
-                        // Read out the color
-                        SColorSync color;
-                        bitStream.Read ( &color );
-
-                        pBlip->SetScale ( size );
-                        pBlip->SetColor ( color );
-                    }                    
-
-                    break;
-                }
-
-                case CClientGame::RADAR_AREA:
-                {
-                    // Read out the radar area id, position, size and color
-                    SPosition2DSync position2D ( false );
-                    SPosition2DSync size2D ( false );
-                    SColor color;
-                    bool bIsFlashing;
-                    if ( bitStream.Read ( &position2D ) &&
-                         bitStream.Read ( &size2D ) &&
-                         bitStream.Read ( color.R ) &&
-                         bitStream.Read ( color.G ) &&
-                         bitStream.Read ( color.B ) &&
-                         bitStream.Read ( color.A ) &&
-                         bitStream.ReadBit ( bIsFlashing ) )
-                    {
-                        // Create the radar area
-                        CClientRadarArea* pArea = g_pClientGame->m_pRadarAreaManager->Create ( EntityID, *g_pClientGame->GetRootEntity(), true );
-                        pEntity = pArea;
-                        if ( pArea )
-                        {
-                            // Set the position, size and color
-                            pArea->SetPosition ( position2D.data.vecPosition );
-                            pArea->SetSize ( size2D.data.vecPosition );
-                            pArea->SetColor ( color );
-                            pArea->SetFlashing ( bIsFlashing );
-                        }
-                    }
-
-                    break;
-                }
-                case CClientGame::PATH_NODE:
-                {
-                    int iTime;
-                    unsigned char ucStyle;
-                    ElementID NextNodeID;
-                    // Read out the nodes position, rotation, time, style and next node
-                    if ( bitStream.Read ( vecPosition.fX ) &&
-                         bitStream.Read ( vecPosition.fY ) &&
-                         bitStream.Read ( vecPosition.fZ ) &&
-                         bitStream.Read ( vecRotation.fX ) &&
-                         bitStream.Read ( vecRotation.fY ) &&
-                         bitStream.Read ( vecRotation.fZ ) &&
-                         bitStream.Read ( iTime ) &&
-                         bitStream.Read ( ucStyle ) &&
-                         bitStream.Read ( NextNodeID ) )
-                    {
-                        CClientPathNode* pNode = new CClientPathNode ( g_pClientGame->m_pManager, vecPosition, vecRotation, iTime, EntityID, *g_pClientGame->GetRootEntity(), (CClientPathNode::ePathNodeStyle)ucStyle );
-                        pEntity = pNode;
-                        if ( pNode && NextNodeID != INVALID_ELEMENT_ID )
-                        {
-                            pNode->SetNextNodeID ( NextNodeID );
-                        }
-                    }
-
-                    break;
-                }
-
-                case CClientGame::WORLD_MESH:
-                    break;
-
-                case CClientGame::TEAM:
-                {
-                    unsigned short usNameLength;
-                    bitStream.ReadCompressed ( usNameLength );
-                    if (usNameLength > 255)
-                    {
-                        RaiseFatalError ( 12 );
-                        return;
-                    }
-
-                    char* szTeamName = new char [ usNameLength + 1 ];
-                    bitStream.Read ( szTeamName, usNameLength );
-                    szTeamName [ usNameLength ] = 0;
-
-                    unsigned char ucRed, ucGreen, ucBlue;
-                    bitStream.Read ( ucRed );
-                    bitStream.Read ( ucGreen );
-                    bitStream.Read ( ucBlue );
-
-                    CClientTeam* pTeam = new CClientTeam ( g_pClientGame->GetManager (), EntityID, *g_pClientGame->GetRootEntity(), true, szTeamName, ucRed, ucGreen, ucBlue );
-                    pEntity = pTeam;
-
-                    bool bFriendlyFire;
-                    bitStream.ReadBit ( bFriendlyFire );
-                    pTeam->SetFriendlyFire ( bFriendlyFire );
-
-                    delete [] szTeamName;
-                    break;
-                }
-
-                case CClientGame::PED:
-                {
-                    // Read out position
-                    bitStream.Read ( &position );
-
-                    // Read out the model
-                    unsigned short usModel;
-                    bitStream.ReadCompressed ( usModel );
-                    if ( !CClientPlayerManager::IsValidModel ( usModel ) )
-                    {
-                        RaiseProtocolError ( 51 );
-                        return;
-                    }
-
-                    // Read out the rotation
-                    SPedRotationSync pedRotation;
-                    bitStream.Read ( &pedRotation );
-
-                    // Read out the health
-                    SPlayerHealthSync health;
-                    bitStream.Read ( &health );
-
-                    // Read out the armor
-                    SPlayerArmorSync armor;
-                    bitStream.Read ( &armor );
-
-                    // Read out the vehicle id
-                    ElementID VehicleID = INVALID_ELEMENT_ID;
-                    unsigned char ucSeat = 0xFF;
-                    CClientVehicle * pVehicle = NULL;
-
-                    if ( bitStream.ReadBit () == true )
-                    {
-                        bitStream.Read ( VehicleID );
-                        pVehicle = g_pClientGame->m_pVehicleManager->Get ( VehicleID );
-
-                        SOccupiedSeatSync seat;
-                        bitStream.Read ( &seat );
-                        ucSeat = seat.data.ucSeat;
-                    }
-
-                    // Flags
-                    bool bHasJetPack = bitStream.ReadBit ();
-                    bool bSynced = bitStream.ReadBit ();
-                    bool bIsHeadless = bitStream.ReadBit ();
-                    bool bIsFrozen = bitStream.ReadBit ();
-
-                    CClientPed* pPed = new CClientPed ( g_pClientGame->m_pManager, usModel, EntityID, *g_pClientGame->GetRootEntity(), true );
-                    pEntity = pPed;
-
-                    pPed->SetPosition ( position.data.vecPosition );
-                    pPed->SetCurrentRotation ( pedRotation.data.fRotation, true );
-                    pPed->SetCameraRotation ( pedRotation.data.fRotation );
-                    pPed->SetHealth ( health.data.fValue );
-                    pPed->SetArmor ( armor.data.fValue );
-                    if ( bSynced )
-                    {
-                        pPed->LockHealth ( health.data.fValue );
-                        pPed->LockArmor ( armor.data.fValue );
-                    }
-                    if ( pVehicle ) pPed->WarpIntoVehicle ( pVehicle, ucSeat );
-                    pPed->SetHasJetPack ( bHasJetPack );
-                    pPed->SetHeadless ( bIsHeadless );
-                    pPed->SetFrozen ( bIsFrozen );
-
-                    // Alpha
-                    SEntityAlphaSync alpha;
-                    bitStream.Read ( &alpha );
-                    pPed->SetAlpha ( alpha.data.ucAlpha );
-
-                    // clothes
-                    unsigned char ucNumClothes, ucTextureLength, ucModelLength, ucType;
-                    if ( bitStream.Read ( ucNumClothes ) )
-                    {
-                        if ( ucNumClothes > 0 )
-                        {
-                            for ( unsigned short uc = 0 ; uc < ucNumClothes ; uc++ )
-                            {
-                                // Read out the texture
-                                bitStream.Read ( ucTextureLength );
-                                char* szTexture = new char [ ucTextureLength + 1 ]; szTexture [ ucTextureLength ] = 0;
-                                bitStream.Read ( szTexture, ucTextureLength );
-
-                                // Read out the model
-                                bitStream.Read ( ucModelLength );
-                                char* szModel = new char [ ucModelLength + 1 ]; szModel [ ucModelLength ] = 0;
-                                bitStream.Read ( szModel, ucModelLength );
-
-                                // Read out the type
-                                bitStream.Read ( ucType );
-                                pPed->GetClothes ()->AddClothes ( szTexture, szModel, ucType, false );
-
-                                // Clean up
-                                delete [] szModel;
-                                delete [] szTexture;
-                            }
-                            pPed->RebuildModel ( true );
-                        }
-                    }
-
-                    // Collisions
-                    pPed->SetUsesCollision ( bCollisonsEnabled );
-                    
-                    break;
-                }
-
-                case CClientGame::DUMMY:
-                {
-                    // Type Name
-                    unsigned short usTypeNameLength;
-                    bitStream.ReadCompressed ( usTypeNameLength );
-                    char* szTypeName = new char [ usTypeNameLength + 1 ];
-                    bitStream.Read ( szTypeName, usTypeNameLength );
-                    szTypeName [ usTypeNameLength ] = 0;
-
-                    CClientDummy* pDummy = new CClientDummy ( g_pClientGame->m_pManager, EntityID, szTypeName, *g_pClientGame->GetRootEntity(), true );
-                    pEntity = pDummy;
-
-                    // Position
-                    bool bHasPosition;
-                    if ( bitStream.ReadBit ( bHasPosition ) && bHasPosition )
-                        bitStream.Read ( &position );
-
-                    if ( pDummy )
-                    {
-                        if ( bHasPosition )
-                            pDummy->SetPosition ( position.data.vecPosition );
-                        if ( strcmp ( szTypeName, "resource" ) == 0 )
-                        {
-                            CResource* pResource = (CResource*)g_pClientGame->m_pResourceManager->Get( szName );
-                            if ( pResource )
-                                pResource->SetResourceEntity ( pDummy ); // problem with resource starting without this entity
-                        }
-                    }
-
-                    delete [] szTypeName;
-                    break;
-                }
-
-                case CClientGame::COLSHAPE:
-                {
-                    // Type
-                    SColshapeTypeSync colType;
-                    bitStream.Read ( &colType );
-
-                    // Position
-                    bitStream.Read ( &position );
-
-                    // Enabled?
-                    bool bEnabled;
-                    bitStream.ReadBit ( bEnabled );
-
-                    // AutoCallEvent?
-                    bool bAutoCallEvent;
-                    bitStream.ReadBit ( bAutoCallEvent );
-
-                    CClientColShape* pShape = NULL;
-
-                    // Type-dependant stuff
-                    switch ( colType.data.ucType )
-                    {
-                        case COLSHAPE_CIRCLE:
-                        {
-                            float fRadius;
-                            bitStream.Read ( fRadius );
-                            CClientColCircle* pCircle = new CClientColCircle ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition, fRadius );
-                            pEntity = pShape = pCircle;
-                            break;
-                        }
-                        case COLSHAPE_CUBOID:
-                        {
-                            SPositionSync size ( false );
-                            bitStream.Read ( &size );
-                            CClientColCuboid* pCuboid = new CClientColCuboid ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition, size.data.vecPosition );
-                            pEntity = pShape = pCuboid;
-                            break;
-                        }
-                        case COLSHAPE_SPHERE:
-                        {
-                            float fRadius;
-                            bitStream.Read ( fRadius );
-                            CClientColSphere* pSphere = new CClientColSphere ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition, fRadius );
-                            pEntity = pShape = pSphere;
-                            break;
-                        }
-                        case COLSHAPE_RECTANGLE:
-                        {
-                            SPosition2DSync size ( false );
-                            bitStream.Read ( &size );
-                            CClientColRectangle* pRectangle = new CClientColRectangle ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition, size.data.vecPosition );
-                            pEntity = pShape = pRectangle;
-                            break;
-                        }
-                        case COLSHAPE_TUBE:
-                        {
-                            float fRadius, fHeight;
-                            bitStream.Read ( fRadius );
-                            bitStream.Read ( fHeight );
-                            CClientColTube* pTube = new CClientColTube ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition, fRadius, fHeight );
-                            pEntity = pShape = pTube;
-                            break;
-                        }
-                        case COLSHAPE_POLYGON:
-                        {
-                            unsigned int uiPoints;
-                            CVector2D vecPoint;
-                            bitStream.ReadCompressed ( uiPoints );
-                            CClientColPolygon* pPolygon = new CClientColPolygon ( g_pClientGame->m_pManager, EntityID, *g_pClientGame->GetRootEntity(), true, position.data.vecPosition );
-                            for ( unsigned int i = 0; i < uiPoints; i++ )
-                            {
-                                SPosition2DSync vertex ( false );
-                                bitStream.Read ( &vertex );
-                                pPolygon->AddPoint ( vertex.data.vecPosition );
-                            }
-                            pEntity = pShape = pPolygon;
-                            break;
-                        }
-                        default:
-                        {
-                            RaiseProtocolError ( 54 );
-                            break;
-                        }
-                    }
-                    assert ( pShape );
-                    if ( pShape )
-                    {
-                        pShape->SetEnabled ( bEnabled );
-                        pShape->SetAutoCallEvent ( bAutoCallEvent );
-                    }
-
-                    break;
-                }
-
-                case CClientGame::SCRIPTFILE:
-                {
-                    break;
-                }
-
-                case CClientGame::WATER:
-                {
-                    BYTE ucNumVertices;
-                    short sX;
-                    short sY;
-                    bitStream.Read ( ucNumVertices );
-                    assert ( ucNumVertices == 3 || ucNumVertices == 4 );
-
-                    CVector vecVertices[4];
-                    for ( int i = 0; i < ucNumVertices; i++ )
-                    {
-                        bitStream.Read ( sX );
-                        bitStream.Read ( sY );
-                        bitStream.Read ( vecVertices[i].fZ );
-                        vecVertices[i].fX = sX;
-                        vecVertices[i].fY = sY;
-                    }
-                    CClientWater* pWater = NULL;
-                    if ( ucNumVertices == 3 )
-                    {
-                        pWater = new CClientWater ( g_pClientGame->GetManager (), EntityID, *g_pClientGame->GetRootEntity(), true, vecVertices[0], vecVertices[1], vecVertices[2] );
-                    }
-                    else
-                    {
-                        pWater = new CClientWater ( g_pClientGame->GetManager (), EntityID, *g_pClientGame->GetRootEntity(), true, vecVertices[0], vecVertices[1], vecVertices[2], vecVertices[3] );
-                    }
-                    if ( !pWater->Valid () )
-                    {
-                        delete pWater;
-                        pWater = NULL;
-                    }
-                    pEntity = pWater;
-                    break;
-                }
-
-                default:
-                {
-                    assert ( 0 );
-                    break;
-                }
+                break;
             }
 
-            if ( pEntity )
+            case CClientGame::RADAR_AREA:
             {
-                pEntity->SetName ( szName );
-                pEntity->SetInterior ( ucInterior );
-                pEntity->SetDimension ( usDimension );
-                if ( bIsAttached )
+                // Read out the radar area id, position, size and color
+                SPosition2DSync position2D ( false );
+                SPosition2DSync size2D ( false );
+                SColor color;
+                bool bIsFlashing;
+                if ( bitStream.Read ( &position2D ) &&
+                     bitStream.Read ( &size2D ) &&
+                     bitStream.Read ( color.R ) &&
+                     bitStream.Read ( color.G ) &&
+                     bitStream.Read ( color.B ) &&
+                     bitStream.Read ( color.A ) &&
+                     bitStream.ReadBit ( bIsFlashing ) )
                 {
-                    CVector vecRotationRadians = attachedRotation.data.vecRotation;
-                    ConvertDegreesToRadians ( vecRotationRadians );
-                    pEntity->SetAttachedOffsets ( attachedPosition.data.vecPosition, vecRotationRadians );
+                    // Create the radar area
+                    CClientRadarArea* pArea = g_pClientGame->m_pRadarAreaManager->Create( EntityID, L, true );
+                    pEntity = pArea;
+                    if ( pArea )
+                    {
+                        // Set the position, size and color
+                        pArea->SetPosition ( position2D.data.vecPosition );
+                        pArea->SetSize ( size2D.data.vecPosition );
+                        pArea->SetColor ( color );
+                        pArea->SetFlashing ( bIsFlashing );
+                    }
                 }
-                pEntity->SetSyncTimeContext ( ucSyncTimeContext );
-                pEntity->ApplyCustomData( pCustomData );
 
-                // Save any entity-dependant stuff for later
-                SEntityDependantStuff* pStuff = new SEntityDependantStuff;
-                pStuff->pEntity = pEntity;
-                pStuff->Parent = ParentID;
-                pStuff->LowLodObjectID = LowLodObjectID;
-                if ( bIsAttached )
-                    pStuff->AttachedToID = EntityAttachedToID;
-                else
-                    pStuff->AttachedToID = INVALID_ELEMENT_ID;
-                newEntitiesStuff.push_back ( pStuff );
+                break;
+            }
+            case CClientGame::PATH_NODE:
+            {
+                int iTime;
+                unsigned char ucStyle;
+                ElementID NextNodeID;
+                // Read out the nodes position, rotation, time, style and next node
+                if ( bitStream.Read ( vecPosition.fX ) &&
+                     bitStream.Read ( vecPosition.fY ) &&
+                     bitStream.Read ( vecPosition.fZ ) &&
+                     bitStream.Read ( vecRotation.fX ) &&
+                     bitStream.Read ( vecRotation.fY ) &&
+                     bitStream.Read ( vecRotation.fZ ) &&
+                     bitStream.Read ( iTime ) &&
+                     bitStream.Read ( ucStyle ) &&
+                     bitStream.Read ( NextNodeID ) )
+                {
+                    CClientPathNode *pNode = new CClientPathNode( g_pClientGame->m_pManager, vecPosition, vecRotation, iTime, EntityID, L, (CClientPathNode::ePathNodeStyle)ucStyle );
+                    pEntity = pNode;
+
+                    if ( pNode && NextNodeID != INVALID_ELEMENT_ID )
+                        pNode->SetNextNodeID ( NextNodeID );
+                }
+
+                break;
             }
 
-            delete [] szName;
-            delete pCustomData;
+            case CClientGame::WORLD_MESH:
+                break;
+
+            case CClientGame::TEAM:
+            {
+                unsigned short usNameLength;
+                bitStream.ReadCompressed ( usNameLength );
+                if (usNameLength > 255)
+                {
+                    RaiseFatalError ( 12 );
+                    return;
+                }
+
+                char* szTeamName = new char [ usNameLength + 1 ];
+                bitStream.Read ( szTeamName, usNameLength );
+                szTeamName [ usNameLength ] = 0;
+
+                unsigned char ucRed, ucGreen, ucBlue;
+                bitStream.Read ( ucRed );
+                bitStream.Read ( ucGreen );
+                bitStream.Read ( ucBlue );
+
+                CClientTeam* pTeam = new CClientTeam( g_pClientGame->GetManager(), EntityID, L, true, szTeamName, ucRed, ucGreen, ucBlue );
+                pEntity = pTeam;
+
+                bool bFriendlyFire;
+                bitStream.ReadBit ( bFriendlyFire );
+                pTeam->SetFriendlyFire ( bFriendlyFire );
+
+                delete [] szTeamName;
+                break;
+            }
+
+            case CClientGame::PED:
+            {
+                // Read out position
+                bitStream.Read ( &position );
+
+                // Read out the model
+                unsigned short usModel;
+                bitStream.ReadCompressed ( usModel );
+                if ( !CClientPlayerManager::IsValidModel ( usModel ) )
+                {
+                    RaiseProtocolError ( 51 );
+                    return;
+                }
+
+                // Read out the rotation
+                SPedRotationSync pedRotation;
+                bitStream.Read ( &pedRotation );
+
+                // Read out the health
+                SPlayerHealthSync health;
+                bitStream.Read ( &health );
+
+                // Read out the armor
+                SPlayerArmorSync armor;
+                bitStream.Read ( &armor );
+
+                // Read out the vehicle id
+                ElementID VehicleID = INVALID_ELEMENT_ID;
+                unsigned char ucSeat = 0xFF;
+                CClientVehicle * pVehicle = NULL;
+
+                if ( bitStream.ReadBit () == true )
+                {
+                    bitStream.Read ( VehicleID );
+                    pVehicle = g_pClientGame->m_pVehicleManager->Get ( VehicleID );
+
+                    SOccupiedSeatSync seat;
+                    bitStream.Read ( &seat );
+                    ucSeat = seat.data.ucSeat;
+                }
+
+                // Flags
+                bool bHasJetPack = bitStream.ReadBit ();
+                bool bSynced = bitStream.ReadBit ();
+                bool bIsHeadless = bitStream.ReadBit ();
+                bool bIsFrozen = bitStream.ReadBit ();
+
+                CClientPed *pPed = new CClientPed( g_pClientGame->m_pManager, usModel, EntityID, L, true );
+                pEntity = pPed;
+
+                pPed->SetPosition ( position.data.vecPosition );
+                pPed->SetCurrentRotation ( pedRotation.data.fRotation, true );
+                pPed->SetCameraRotation ( pedRotation.data.fRotation );
+                pPed->SetHealth ( health.data.fValue );
+                pPed->SetArmor ( armor.data.fValue );
+                if ( bSynced )
+                {
+                    pPed->LockHealth ( health.data.fValue );
+                    pPed->LockArmor ( armor.data.fValue );
+                }
+                if ( pVehicle ) pPed->WarpIntoVehicle ( pVehicle, ucSeat );
+                pPed->SetHasJetPack ( bHasJetPack );
+                pPed->SetHeadless ( bIsHeadless );
+                pPed->SetFrozen ( bIsFrozen );
+
+                // Alpha
+                SEntityAlphaSync alpha;
+                bitStream.Read ( &alpha );
+                pPed->SetAlpha ( alpha.data.ucAlpha );
+
+                // clothes
+                unsigned char ucNumClothes, ucTextureLength, ucModelLength, ucType;
+                if ( bitStream.Read ( ucNumClothes ) )
+                {
+                    if ( ucNumClothes > 0 )
+                    {
+                        for ( unsigned short uc = 0 ; uc < ucNumClothes ; uc++ )
+                        {
+                            // Read out the texture
+                            bitStream.Read ( ucTextureLength );
+                            char* szTexture = new char [ ucTextureLength + 1 ]; szTexture [ ucTextureLength ] = 0;
+                            bitStream.Read ( szTexture, ucTextureLength );
+
+                            // Read out the model
+                            bitStream.Read ( ucModelLength );
+                            char* szModel = new char [ ucModelLength + 1 ]; szModel [ ucModelLength ] = 0;
+                            bitStream.Read ( szModel, ucModelLength );
+
+                            // Read out the type
+                            bitStream.Read ( ucType );
+                            pPed->GetClothes ()->AddClothes ( szTexture, szModel, ucType, false );
+
+                            // Clean up
+                            delete [] szModel;
+                            delete [] szTexture;
+                        }
+                        pPed->RebuildModel ( true );
+                    }
+                }
+
+                // Collisions
+                pPed->SetUsesCollision ( bCollisonsEnabled );
+                
+                break;
+            }
+
+            case CClientGame::DUMMY:
+            {
+                // Type Name
+                unsigned short usTypeNameLength;
+                bitStream.ReadCompressed ( usTypeNameLength );
+                char* szTypeName = new char [ usTypeNameLength + 1 ];
+                bitStream.Read ( szTypeName, usTypeNameLength );
+                szTypeName [ usTypeNameLength ] = 0;
+
+                CClientDummy* pDummy = new CClientDummy ( g_pClientGame->m_pManager, EntityID, szTypeName, L, true );
+                pEntity = pDummy;
+
+                // Position
+                bool bHasPosition;
+                if ( bitStream.ReadBit ( bHasPosition ) && bHasPosition )
+                    bitStream.Read ( &position );
+
+                if ( pDummy )
+                {
+                    if ( bHasPosition )
+                        pDummy->SetPosition ( position.data.vecPosition );
+                    if ( strcmp ( szTypeName, "resource" ) == 0 )
+                    {
+                        CResource* pResource = (CResource*)g_pClientGame->m_pResourceManager->Get( szName );
+                        if ( pResource )
+                            pResource->SetResourceEntity ( pDummy ); // problem with resource starting without this entity
+                    }
+                }
+
+                delete [] szTypeName;
+                break;
+            }
+
+            case CClientGame::COLSHAPE:
+            {
+                // Type
+                SColshapeTypeSync colType;
+                bitStream.Read ( &colType );
+
+                // Position
+                bitStream.Read ( &position );
+
+                // Enabled?
+                bool bEnabled;
+                bitStream.ReadBit ( bEnabled );
+
+                // AutoCallEvent?
+                bool bAutoCallEvent;
+                bitStream.ReadBit ( bAutoCallEvent );
+
+                CClientColShape* pShape = NULL;
+
+                // Type-dependant stuff
+                switch ( colType.data.ucType )
+                {
+                    case COLSHAPE_CIRCLE:
+                    {
+                        float fRadius;
+                        bitStream.Read( fRadius );
+                        pEntity = pShape = new CClientColCircle( g_pClientGame->m_pManager, EntityID, g_pClientGame->GetLuaManager()->GetVirtualMachine(), true, position.data.vecPosition, fRadius );
+                        break;
+                    }
+                    case COLSHAPE_CUBOID:
+                    {
+                        SPositionSync size( false );
+                        bitStream.Read( &size );
+                        pEntity = pShape = new CClientColCuboid( g_pClientGame->m_pManager, EntityID, g_pClientGame->GetLuaManager()->GetVirtualMachine(), true, position.data.vecPosition, size.data.vecPosition );
+                        break;
+                    }
+                    case COLSHAPE_SPHERE:
+                    {
+                        float fRadius;
+                        bitStream.Read( fRadius );
+                        pEntity = pShape = new CClientColSphere( g_pClientGame->m_pManager, EntityID, g_pClientGame->GetLuaManager()->GetVirtualMachine(), true, position.data.vecPosition, fRadius );
+                        break;
+                    }
+                    case COLSHAPE_RECTANGLE:
+                    {
+                        SPosition2DSync size( false );
+                        bitStream.Read( &size );
+                        pEntity = pShape = new CClientColRectangle( g_pClientGame->m_pManager, EntityID, g_pClientGame->GetLuaManager()->GetVirtualMachine(), true, position.data.vecPosition, size.data.vecPosition );
+                        break;
+                    }
+                    case COLSHAPE_TUBE:
+                    {
+                        float fRadius, fHeight;
+                        bitStream.Read( fRadius );
+                        bitStream.Read( fHeight );
+                        pEntity = pShape = new CClientColTube( g_pClientGame->m_pManager, EntityID, g_pClientGame->GetLuaManager()->GetVirtualMachine(), true, position.data.vecPosition, fRadius, fHeight );
+                        break;
+                    }
+                    case COLSHAPE_POLYGON:
+                    {
+                        unsigned int uiPoints;
+                        CVector2D vecPoint;
+                        bitStream.ReadCompressed( uiPoints );
+                        CClientColPolygon *pPolygon = new CClientColPolygon( g_pClientGame->m_pManager, EntityID, g_pClientGame->GetLuaManager()->GetVirtualMachine(), true, position.data.vecPosition );
+                        for ( unsigned int i = 0; i < uiPoints; i++ )
+                        {
+                            SPosition2DSync vertex( false );
+                            bitStream.Read( &vertex );
+                            pPolygon->AddPoint( vertex.data.vecPosition );
+                        }
+                        pEntity = pShape = pPolygon;
+                        break;
+                    }
+                    default:
+                    {
+                        RaiseProtocolError( 54 );
+                        break;
+                    }
+                }
+
+                if ( pShape )
+                {
+                    pShape->SetRoot( g_pClientGame->GetRootEntity() );
+
+                    pShape->SetEnabled( bEnabled );
+                    pShape->SetAutoCallEvent( bAutoCallEvent );
+                }
+
+                break;
+            }
+
+            case CClientGame::SCRIPTFILE:
+            {
+                break;
+            }
+
+            case CClientGame::WATER:
+            {
+                BYTE ucNumVertices;
+                short sX;
+                short sY;
+                bitStream.Read ( ucNumVertices );
+                assert ( ucNumVertices == 3 || ucNumVertices == 4 );
+
+                CVector vecVertices[4];
+                for ( int i = 0; i < ucNumVertices; i++ )
+                {
+                    bitStream.Read ( sX );
+                    bitStream.Read ( sY );
+                    bitStream.Read ( vecVertices[i].fZ );
+                    vecVertices[i].fX = sX;
+                    vecVertices[i].fY = sY;
+                }
+                CClientWater *pWater = NULL;
+
+                if ( ucNumVertices == 3 )
+                    pWater = new CClientWater( g_pClientGame->GetManager(), EntityID, L, true, vecVertices[0], vecVertices[1], vecVertices[2] );
+                else
+                    pWater = new CClientWater( g_pClientGame->GetManager(), EntityID, L, true, vecVertices[0], vecVertices[1], vecVertices[2], vecVertices[3] );
+
+                pWater->SetRoot( g_pClientGame->GetRootEntity() );
+
+                if ( !pWater->Valid() )
+                {
+                    delete pWater;
+                    pWater = NULL;
+                }
+                pEntity = pWater;
+                break;
+            }
+
+            default:
+            {
+                assert ( 0 );
+                break;
+            }
         }
+
+        if ( pEntity )
+        {
+            pEntity->SetRoot( g_pClientGame->GetRootEntity() );
+            pEntity->SetName ( szName );
+            pEntity->SetInterior ( ucInterior );
+            pEntity->SetDimension ( usDimension );
+            if ( bIsAttached )
+            {
+                CVector vecRotationRadians = attachedRotation.data.vecRotation;
+                ConvertDegreesToRadians ( vecRotationRadians );
+                pEntity->SetAttachedOffsets ( attachedPosition.data.vecPosition, vecRotationRadians );
+            }
+            pEntity->SetSyncTimeContext ( ucSyncTimeContext );
+            pEntity->ApplyCustomData( pCustomData );
+
+            // Save any entity-dependant stuff for later
+            SEntityDependantStuff* pStuff = new SEntityDependantStuff;
+            pStuff->pEntity = pEntity;
+            pStuff->Parent = ParentID;
+            pStuff->LowLodObjectID = LowLodObjectID;
+            if ( bIsAttached )
+                pStuff->AttachedToID = EntityAttachedToID;
+            else
+                pStuff->AttachedToID = INVALID_ELEMENT_ID;
+            newEntitiesStuff.push_back ( pStuff );
+        }
+
+        delete [] szName;
+        delete pCustomData;
+    }
     }
 
     // Link our path nodes

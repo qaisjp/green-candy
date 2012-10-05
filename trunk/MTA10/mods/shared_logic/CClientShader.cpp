@@ -7,6 +7,8 @@
 *  PURPOSE:     Core shader rendering management for deathmatch
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
@@ -32,11 +34,9 @@ static int luaconstructor_shader( lua_State *L )
     return 0;
 }
 
-CClientShader::CClientShader ( CClientManager* pManager, ElementID ID, LuaClass& root, CShaderItem* pShaderItem ) : CClientMaterial( pManager, ID, root )
+CClientShader::CClientShader( CClientManager* pManager, ElementID ID, lua_State *L, CShaderItem* pShaderItem ) : CClientMaterial( pManager, ID, L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_shader, 1 );

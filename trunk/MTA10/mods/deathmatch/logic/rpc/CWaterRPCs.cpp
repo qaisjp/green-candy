@@ -60,7 +60,7 @@ void CWaterRPCs::SetWaterElementLevel ( CClientEntity* pSource, NetBitStreamInte
         if ( pWater )
         {
             CVector vecVertexPos;
-            for ( int i = 0; i < pWater->GetNumVertices (); i++ )
+            for ( unsigned int i = 0; i < pWater->GetNumVertices(); i++ )
             {
                 pWater->GetVertexPosition ( i, vecVertexPos );
                 vecVertexPos.fZ = fLevel;

@@ -36,7 +36,9 @@ bool CMapEventManager::Add( CLuaMain *main, const char *name, const LuaFunctionR
         return false;
 
     // Make a new event
-    CMapEvent *pEvent = new CMapEvent( *main->GetResource(), main, *this, name, ref, propagated );
+    CMapEvent *pEvent = new CMapEvent( main, *this, name, ref, propagated );
+    pEvent->SetRoot( main->GetResource() );
+
     m_Events.push_back( pEvent );
     return true;
 }

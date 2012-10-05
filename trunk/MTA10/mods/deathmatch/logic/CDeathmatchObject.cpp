@@ -16,43 +16,41 @@
 
 using std::list;
 
-extern CClientGame * g_pClientGame;
+extern CClientGame *g_pClientGame;
 
-CDeathmatchObject::CDeathmatchObject ( CClientManager* pManager, LuaClass& root, bool system, CMovingObjectsManager* pMovingObjectsManager, CObjectSync* pObjectSync, ElementID ID, unsigned short usModel ) : CClientObject ( pManager, ID, root, system, usModel )
+CDeathmatchObject::CDeathmatchObject( CClientManager* pManager, lua_State *L, bool system, CMovingObjectsManager* pMovingObjectsManager, CObjectSync* pObjectSync, ElementID ID, unsigned short usModel ) : CClientObject( pManager, ID, L, system, usModel )
 {
     m_pMovingObjectsManager = pMovingObjectsManager;
     m_pObjectSync = pObjectSync;
     m_pMoveAnimation = NULL;
 }
 
-CDeathmatchObject::~CDeathmatchObject ( void )
+CDeathmatchObject::~CDeathmatchObject()
 {
-    _StopMovement ( true );
+    _StopMovement( true );
 
     if ( m_pObjectSync )
-    {
-        m_pObjectSync->RemoveObject ( this );
-    }
+        m_pObjectSync->RemoveObject( this );
 }
 
-void CDeathmatchObject::StartMovement ( const CPositionRotationAnimation& a_rMoveAnimation )
+void CDeathmatchObject::StartMovement( const CPositionRotationAnimation& a_rMoveAnimation )
 {
     if ( m_pMoveAnimation != NULL )
     {
-        _StopMovement ( true );
+        _StopMovement( true );
     }
 
-    if ( a_rMoveAnimation.IsRunning () )
+    if ( a_rMoveAnimation.IsRunning() )
     {
         // Add us to the moving object's manager
-        m_pMovingObjectsManager->Add ( this );
-        m_pMoveAnimation = new CPositionRotationAnimation ( a_rMoveAnimation );
+        m_pMovingObjectsManager->Add( this );
+        m_pMoveAnimation = new CPositionRotationAnimation( a_rMoveAnimation );
     }
     else
     {
         SPositionRotation positionRotation;
-        a_rMoveAnimation.GetFinalValue ( positionRotation );
-        SetOrientation ( positionRotation.m_vecPosition, positionRotation.m_vecRotation );
+        a_rMoveAnimation.GetFinalValue( positionRotation );
+        SetOrientation( positionRotation.m_vecPosition, positionRotation.m_vecRotation );
     }
 }
 

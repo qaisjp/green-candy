@@ -34,11 +34,9 @@ static int luaconstructor_render( lua_State *L )
     return 0;
 }
 
-CClientRenderElement::CClientRenderElement( CClientManager* pManager, ElementID ID, LuaClass& root ) : CClientEntity( ID, false, root )
+CClientRenderElement::CClientRenderElement( CClientManager* pManager, ElementID ID, lua_State *L ) : CClientEntity( ID, false, L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_render, 1 );

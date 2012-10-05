@@ -35,10 +35,10 @@ public:
     const CRwFrame*                 GetFrame() const;
     void                            SetFrame( CRwFrame *frame );
 
+    CRwFrameSA*         m_frame;
+
 protected:
     RwObject*           m_object;
-
-    CRwFrameSA*         m_frame;
 };
 
 #endif //_RW_OBJECT_SA_

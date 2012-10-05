@@ -1,10 +1,11 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CWaterSA.h
 *  PURPOSE:     Control the lakes and seas
 *  DEVELOPERS:  arc_
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -22,33 +23,33 @@
 class CWaterVertexSAInterface
 {
 public:
-    short m_sX;
-    short m_sY;
-    float m_fZ;
-    float m_fUnknown;
-    float m_fHeight;
-    char m_cFlowX;
-    char m_cFlowY;
-    WORD m_wPadding;   
+    short           m_sX;
+    short           m_sY;
+    float           m_fZ;
+    float           m_fUnknown;
+    float           m_fHeight;
+    char            m_cFlowX;
+    char            m_cFlowY;
+    WORD            m_pad;   
 };
 
 class CWaterPolySAInterface
 {
 public:
-    WORD m_wVertexIDs[3];
+    unsigned short  m_wVertexIDs[3];
 };
 
 class CWaterQuadSAInterface : public CWaterPolySAInterface
 {
 public:
-    WORD m_wFourthVertexIDDummy;
-    WORD m_wFlags;
+    unsigned short  m_wFourthVertexIDDummy;
+    unsigned short  m_wFlags;
 };
 
 class CWaterTriangleSAInterface : public CWaterPolySAInterface
 {
 public:
-    WORD m_wFlags;
+    unsigned short  m_wFlags;
 };
 
 #pragma pack(pop)
@@ -59,62 +60,71 @@ public:
 class CWaterVertexSA : public CWaterVertex
 {
 public:
-                                     CWaterVertexSA    () { m_pInterface = NULL; }
-                                     CWaterVertexSA    ( CWaterVertexSAInterface* pInterface ) { m_pInterface = pInterface; }
+                                        CWaterVertexSA()                                        { m_pInterface = NULL; }
+                                        CWaterVertexSA( CWaterVertexSAInterface *intf )         { m_pInterface = intf; }
 
-    CWaterVertexSAInterface*         GetInterface      () { return m_pInterface; }
-    void                             SetInterface      ( CWaterVertexSAInterface* pInterface ) { m_pInterface = pInterface; }
+    CWaterVertexSAInterface*            GetInterface()                                          { return m_pInterface; }
+    const CWaterVertexSAInterface*      GetInterface() const                                    { return m_pInterface; }
 
-    WORD                             GetID             ();
+    void                                SetInterface( CWaterVertexSAInterface *intf )           { m_pInterface = intf; }
 
-    void                             GetPosition       ( CVector& vec );
-    bool                             SetPosition       ( CVector& vec, void* pChangeSource = NULL );
+    unsigned short                      GetID() const;
+
+    void                                GetPosition( CVector& vec ) const;
+    bool                                SetPosition( const CVector& vec, void *pChangeSource = NULL );
 
 protected:
-    CWaterVertexSAInterface*         m_pInterface;
+    CWaterVertexSAInterface*            m_pInterface;
 };
 
 class CWaterPolySA : public CWaterPoly
 {
 public:
-    CWaterPolySAInterface*           GetInterface      () { return m_pInterface; }
-    virtual void                     SetInterface      ( CWaterPolySAInterface* pInterface ) = 0;
+    CWaterPolySAInterface*              GetInterface()                                          { return m_pInterface; }
+    const CWaterPolySAInterface*        GetInterface() const                                    { return m_pInterface; }
 
-    virtual EWaterPolyType           GetType           () = 0;
-    virtual int                      GetNumVertices    () = 0;
-    WORD                             GetID             () { return m_wID; }
-    CWaterVertex*                    GetVertex         ( int index );
-    bool                             ContainsPoint     ( float fX, float fY );
+    virtual void                        SetInterface( CWaterPolySAInterface *intf ) = 0;
+
+    virtual EWaterPolyType              GetType() const = 0;
+    virtual size_t                      GetNumVertices() const = 0;
+
+    unsigned short                      GetID() const                                           { return m_wID; }
+    CWaterVertex*                       GetVertex( unsigned int index );
+    bool                                ContainsPoint( float x, float y ) const;
 
 protected:
-    CWaterPolySAInterface*           m_pInterface;
-    WORD                             m_wID;
+    CWaterPolySAInterface*              m_pInterface;
+    unsigned short                      m_wID;
 };
 
 class CWaterQuadSA : public CWaterPolySA
 {
 public:
-                                     CWaterQuadSA      () { m_pInterface = NULL; m_wID = ~0; }
-                                     CWaterQuadSA      ( CWaterPolySAInterface* pInterface ) { SetInterface ( pInterface ); }
+                                        CWaterQuadSA()                                          { m_pInterface = NULL; m_wID = ~0; }
+                                        CWaterQuadSA( CWaterPolySAInterface *intf )             { SetInterface( intf ); }
 
-    CWaterQuadSAInterface*           GetInterface      () { return (CWaterQuadSAInterface *)m_pInterface; }
-    void                             SetInterface      ( CWaterPolySAInterface* pInterface );
+    CWaterQuadSAInterface*              GetInterface()                                          { return (CWaterQuadSAInterface*)m_pInterface; }
+    const CWaterQuadSAInterface*        GetInterface() const                                    { return (CWaterQuadSAInterface*)m_pInterface; }
 
-    EWaterPolyType                   GetType           () { return WATER_POLY_QUAD; }
-    int                              GetNumVertices    () { return 4; }
+    void                                SetInterface( CWaterPolySAInterface *intf );
+
+    EWaterPolyType                      GetType() const                                         { return WATER_POLY_QUAD; }
+    size_t                              GetNumVertices() const                                  { return 4; }
 };
 
 class CWaterTriangleSA : public CWaterPolySA
 {
 public:
-                                     CWaterTriangleSA  () { m_pInterface = NULL; m_wID = ~0; }
-                                     CWaterTriangleSA  ( CWaterPolySAInterface* pInterface ) { SetInterface ( pInterface ); }
+                                        CWaterTriangleSA()                                      { m_pInterface = NULL; m_wID = ~0; }
+                                        CWaterTriangleSA( CWaterPolySAInterface *intf )         { SetInterface( intf ); }
 
-    CWaterTriangleSAInterface*       GetInterface      () { return (CWaterTriangleSAInterface *)m_pInterface; }
-    void                             SetInterface      ( CWaterPolySAInterface* pInterface );
+    CWaterTriangleSAInterface*          GetInterface()                                          { return (CWaterTriangleSAInterface*)m_pInterface; }
+    const CWaterTriangleSAInterface*    GetInterface() const                                    { return (CWaterTriangleSAInterface*)m_pInterface; }
 
-    EWaterPolyType                   GetType           () { return WATER_POLY_TRIANGLE; }
-    int                              GetNumVertices    () { return 3; }
+    void                                SetInterface( CWaterPolySAInterface *intf );
+
+    EWaterPolyType                      GetType() const                                         { return WATER_POLY_TRIANGLE; }
+    size_t                              GetNumVertices() const                                  { return 3; }
 };
 
 #endif

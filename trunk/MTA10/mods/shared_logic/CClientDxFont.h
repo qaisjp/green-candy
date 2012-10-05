@@ -7,6 +7,8 @@
 *  PURPOSE:     Custom font bucket
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #ifndef _CLIENT_DX_FONT_
@@ -17,13 +19,13 @@
 class CClientDxFont : public CClientRenderElement
 {
 public:
-                            CClientDxFont( CClientManager* pManager, ElementID ID, LuaClass& root, CDxFontItem* pFontItem );
+                                    CClientDxFont( CClientManager* pManager, ElementID ID, lua_State *L, CDxFontItem* pFontItem );
 
-    eClientEntityType       GetType( void ) const                               { return CCLIENTDXFONT; }
+    eClientEntityType               GetType() const                                 { return CCLIENTDXFONT; }
 
     // CClientDxFont methods
-    CDxFontItem*            GetDxFontItem( void )                               { return (CDxFontItem*)m_pRenderItem; }
-    ID3DXFont*              GetD3DXFont( void );
+    CDxFontItem*                    GetDxFontItem()                                 { return (CDxFontItem*)m_pRenderItem; }
+    ID3DXFont*                      GetD3DXFont();
 };
 
 #endif //_CLIENT_DX_FONT_

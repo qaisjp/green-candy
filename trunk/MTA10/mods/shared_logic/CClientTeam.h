@@ -8,6 +8,8 @@
 *  DEVELOPERS:  Jax <>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 class CClientTeam;
@@ -25,37 +27,39 @@ class CClientTeam : public CClientEntity
 {
     friend class CClientTeamManager;
 public:    
-                                CClientTeam( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, char* szName = NULL, unsigned char ucRed = 0, unsigned char ucGreen = 0, unsigned char ucBlue = 0 );
-                                ~CClientTeam( void );
+                                CClientTeam( CClientManager* pManager, ElementID ID, lua_State *L, bool system, char* szName = NULL, unsigned char ucRed = 0, unsigned char ucGreen = 0, unsigned char ucBlue = 0 );
+                                ~CClientTeam();
 
-    eClientEntityType           GetType( void ) const                           { return CCLIENTTEAM; }
+    eClientEntityType           GetType() const                                 { return CCLIENTTEAM; }
 
-    void                        Unlink( void );
+    void                        Unlink();
 
-    inline unsigned char        GetID( void )                                   { return m_ucID; }
+    inline unsigned char        GetID() const                                   { return m_ucID; }
 
-    inline char*                GetTeamName( void )                             { return m_szTeamName; }
-    void                        SetTeamName( char* szName );
+    inline const char*          GetTeamName() const                             { return m_szTeamName; }
+    void                        SetTeamName( const char *szName );
 
-    void                        GetColor( unsigned char& ucRed, unsigned char& ucGreen, unsigned char& ucBlue );
+    void                        GetColor( unsigned char& ucRed, unsigned char& ucGreen, unsigned char& ucBlue ) const;
     void                        SetColor( unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue );
 
-    inline bool                 GetFriendlyFire( void )                         { return m_bFriendlyFire; }
+    inline bool                 GetFriendlyFire() const                         { return m_bFriendlyFire; }
     inline void                 SetFriendlyFire( bool bFriendlyFire )           { m_bFriendlyFire = bFriendlyFire; }
 
     void                        AddPlayer( CClientPlayer* pPlayer, bool bChangePlayer = false );
     void                        RemovePlayer( CClientPlayer* pPlayer, bool bChangePlayer = false );
-    void                        RemoveAll( void );
+    void                        RemoveAll();
 
     bool                        Exists( CClientPlayer* pPlayer );
 
-    std::list < CClientPlayer* > ::const_iterator IterBegin( void )             { return m_List.begin (); }
-    std::list < CClientPlayer* > ::const_iterator IterEnd( void )               { return m_List.end (); }
+    typedef std::list <CClientPlayer*> players_t;
 
-    void                        GetPosition( CVector& vecPosition ) const       { vecPosition = m_vecPosition; }
-    void                        SetPosition( const CVector& vecPosition )       { m_vecPosition = vecPosition; }
+    players_t::const_iterator   IterBegin() const                               { return m_List.begin(); }
+    players_t::const_iterator   IterEnd() const                                 { return m_List.end(); }
 
-    inline unsigned int         CountPlayers( void )                            { return static_cast < unsigned int > ( m_List.size () ); }
+    void                        GetPosition( CVector& pos ) const               { pos = m_vecPosition; }
+    void                        SetPosition( const CVector& pos )               { m_vecPosition = pos; }
+
+    inline unsigned int         CountPlayers() const                            { return m_List.size(); }
 
 protected:                        
     CClientTeamManager*         m_pTeamManager;
@@ -69,7 +73,7 @@ protected:
 
     bool                        m_bFriendlyFire;
 
-    std::list < CClientPlayer* > m_List;  
+    players_t                   m_List;  
 
     CVector                     m_vecPosition;
 };

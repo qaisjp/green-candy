@@ -16,13 +16,40 @@
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
-bool CModelSA::RpClumpAssignNewAtomic( RpAtomic *atom, CModelSA *model )
+void CModelSA::RpClumpAssignObjects( CRwObjectSA *obj, CModelSA *model )
 {
-    CRpAtomicSA *atomInst = new CRpAtomicSA( atom );
-    atomInst->m_model = model;
+    eRwType type = obj->GetType();
 
-    model->m_atomics.push_back( atomInst );
-    return true;
+    if ( type == RW_ATOMIC )
+    {
+        CRpAtomicSA *atom = (CRpAtomicSA*)obj;
+
+        atom->m_model = model;
+        model->m_atomics.push_back( atom );
+        return;
+    }
+    
+    // TODO: add remaining ones (light, camera)
+    assert( 0 );
+}
+
+static void RpClumpObjectAssociation( CRwFrameSA *frame, CModelSA *model )
+{
+    // Proceed through children
+    {
+        const CRwFrameSA::childList_t& list = frame->GetChildren();
+
+        for ( CRwFrameSA::childList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
+            RpClumpObjectAssociation( dynamic_cast <CRwFrameSA*> ( *iter ), model );
+    }
+
+    // Proceed through objects
+    {
+        const CRwFrameSA::objectList_t& list = frame->GetObjects();
+
+        for ( CRwFrameSA::objectList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
+            CModelSA::RpClumpAssignObjects( dynamic_cast <CRwObjectSA*> ( *iter ), model );
+    }
 }
 
 CModelSA::CModelSA( RpClump *clump, CColModelSA *col, unsigned short txdID ) : CRwObjectSA( clump )
@@ -30,15 +57,18 @@ CModelSA::CModelSA( RpClump *clump, CColModelSA *col, unsigned short txdID ) : C
     m_col = col;
     m_txdID = txdID;
 
+    // Assign the frame hierarchy
+    m_frame = new CRwFrameSA( clump->m_parent );
+
     // Register all atomics to us
-    clump->ForAllAtomics( RpClumpAssignNewAtomic, this );
+    RpClumpObjectAssociation( m_frame, this );
 }
 
 CModelSA::~CModelSA()
 {
     RestoreAll();
 
-    // Destroy all assigned atomics
+    // Destroy all assigned atomics (if present)
     while ( !m_atomics.empty() )
         delete m_atomics.front();
 
@@ -126,6 +156,7 @@ bool CModelSA::Replace( unsigned short id )
 
     if ( m_col )
         m_col->Replace( id );
+
     g_replObjectNative[id] = this;
 
     m_imported[id] = true;

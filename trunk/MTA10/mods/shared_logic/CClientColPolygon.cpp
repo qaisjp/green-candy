@@ -13,7 +13,7 @@
 
 #include "StdInc.h"
 
-CClientColPolygon::CClientColPolygon ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition ) : CClientColShape ( pManager, ID, root, system )
+CClientColPolygon::CClientColPolygon( CClientManager* pManager, ElementID ID, lua_State *L, bool system, const CVector& vecPosition ) : CClientColShape( pManager, ID, L, system )
 {
     m_pManager = pManager;
     m_vecPosition = vecPosition;
@@ -23,7 +23,7 @@ CClientColPolygon::CClientColPolygon ( CClientManager* pManager, ElementID ID, L
     m_fRadius = 0.0f;
 }
 
-bool CClientColPolygon::DoHitDetection  ( const CVector& vecNowPosition, float fRadius )
+bool CClientColPolygon::DoHitDetection( const CVector& vecNowPosition, float fRadius )
 {
     if ( !IsInBounds ( vecNowPosition ) )
         return false;

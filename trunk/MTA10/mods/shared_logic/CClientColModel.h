@@ -20,7 +20,7 @@
 class CClientColModel : public LuaElement
 {
 public:
-                                    CClientColModel( LuaClass& root );
+                                    CClientColModel( lua_State *L );
                                     ~CClientColModel();
 
     bool                            LoadCol( CFile *file );
