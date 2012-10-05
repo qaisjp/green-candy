@@ -276,29 +276,30 @@ public:
 class RwFrame : public RwObject
 {
 public:
-    RwListEntry <RwFrame>   m_nodeRoot;     // 8
-    RwMatrix                m_modelling;    // 16
-    RwMatrix                m_ltm;          // 80
-    RwList <RwObjectFrame>  m_objects;      // 144
-    RwFrame*                m_child;        // 152
-    RwFrame*                m_next;         // 156
-    RwFrame*                m_root;         // 160
+    RwListEntry <RwFrame>   m_nodeRoot;         // 8
+    RwMatrix                m_modelling;        // 16
+    RwMatrix                m_ltm;              // 80
+    RwList <RwObjectFrame>  m_objects;          // 144
+    RwFrame*                m_child;            // 152
+    RwFrame*                m_next;             // 156
+    RwFrame*                m_root;             // 160
 
     // Rockstar Frame extension (0x253F2FE) (24 bytes)
     RpAnimHierarchy*        m_anim;             // 164
     BYTE                    m_pluginData[4];    // 168
     char                    m_nodeName[16];     // 172
 
-    BYTE                    m_pad3[8];      // 188
-    unsigned int            m_hierarchyId;  // 196
+    BYTE                    m_pad3[8];          // 188
+    unsigned int            m_hierarchyId;      // 196
 
+    void                    Link( RwFrame *frame );
+    void                    Unlink();
+    void                    SetRootForHierarchy( RwFrame *root );
     unsigned int            CountChildren();
     template <class type>
     bool                    ForAllChildren( bool (*callback)( RwFrame *frame, type *data ), type *data )
     {
-        RwFrame *child;
-
-        for ( child = m_child; child; child = child->m_next )
+        for ( RwFrame *child = m_child; child; child = child->m_next )
         {
             if ( !callback( child, data ) )
                 return false;
@@ -312,7 +313,7 @@ public:
     RwFrame*                FindChildByHierarchy( unsigned int id );
 
     template <class type>
-    bool                    ForAllObjects( bool (*callback)( RwObject *object, type *data ), type *data )
+    bool                    ForAllObjects( bool (*callback)( RwObject *object, type data ), type data )
     {
         RwListEntry <RwObjectFrame> *child;
 
@@ -325,6 +326,9 @@ public:
         return true;
     }
     RwObject*               GetFirstObject();
+    RwObject*               GetFirstObject( unsigned char type );
+    RwObject*               GetObjectByIndex( unsigned char type, unsigned int idx );
+    unsigned int            CountObjectsByType( unsigned char type );
     RwObject*               GetLastVisibleObject();
     RwObject*               GetLastObject();
 
@@ -357,11 +361,11 @@ public:
     }
     RpAtomic*               GetFirstAtomic();
     void                    SetAtomicVisibility( unsigned short flags );
-    void                    BaseAtomicHierarchy();
     void                    FindVisibilityAtomics( RpAtomic **primary, RpAtomic **secondary );
 
     RpAnimHierarchy*        GetAnimHierarchy();
     void                    RegisterRoot();
+    void                    UnregisterRoot();
 };
 class RwTexDictionary : public RwObject
 {
@@ -471,26 +475,32 @@ struct RwCameraFrustum
     unsigned char x,y,z;
     unsigned char unknown1;
 };
-class RwCamera : public RwObjectFrame   //size: 368
+class RwCamera : public RwObjectFrame   //size: 428
 {
 public:
-    RwCameraType            type;               // 0
-    RwCameraPreCallback     preCallback;        // 4
-    RwCameraPostCallback    postCallback;       // 8
-    RwMatrix                matrix;             // 12
-    RwRaster*               bufferColor;        // 76
-    RwRaster*               bufferDepth;        // 80
-    RwV2d                   screen;             // 84
-    RwV2d                   screenInverse;      // 92
-    RwV2d                   screenOffset;       // 100
-    float                   nearplane;          // 108
-    float                   farplane;           // 112
-    float                   fog;                // 116
-    float                   unknown1;           // 120
-    float                   unknown2;           // 124
-    RwCameraFrustum         frustum4D[6];       // 128
-    RwBBox                  viewBBox;           // 248
-    RwV3d                   frustum3D[8];       // 272
+    RwCameraType            type;               // 20
+    RwCameraPreCallback     preCallback;        // 24
+    RwCameraPostCallback    postCallback;       // 28
+    RwMatrix                matrix;             // 32
+    RwRaster*               bufferColor;        // 96
+    RwRaster*               bufferDepth;        // 100
+    RwV2d                   screen;             // 104
+    RwV2d                   screenInverse;      // 112
+    RwV2d                   screenOffset;       // 120
+    float                   nearplane;          // 128
+    float                   farplane;           // 132
+    float                   fog;                // 136
+    float                   unknown1;           // 140
+    float                   unknown2;           // 144
+    RwCameraFrustum         frustum4D[6];       // 148
+    RwBBox                  viewBBox;           // 268
+    RwV3d                   frustum3D[8];       // 292
+    BYTE                    m_unk[28];          // 388
+    RpClump*                m_clump;            // 416
+    RwListEntry <RwCamera>  m_clumpCameras;     // 420
+
+    void                    AddToClump( RpClump *clump );
+    void                    RemoveFromClump();
 };
 class RwRender
 {
@@ -616,13 +626,19 @@ struct RpAtomicContainer
 class RpLight : public RwObjectFrame
 {
 public:
-    float                   radius;
-    RwColorFloat            color;
-    float                   unknown1;
-    RwList <void>           sectors;
-    RwListEntry <RpLight>   globalLights;
-    unsigned short          frame;
-    unsigned short          unknown2;
+    float                   radius;             // 20
+    RwColorFloat            color;              // 24
+    float                   unknown1;           // 40
+    RwList <void>           sectors;            // 44
+    RwListEntry <RpLight>   globalLights;       // 52
+    unsigned short          frame;              // 60
+    unsigned short          unknown2;           // 62
+    float                   m_unk[2];           // 64
+    RpClump*                m_clump;            // 72
+    RwListEntry <RpLight>   m_clumpLights;      // 76
+
+    void                    AddToClump( RpClump *clump );
+    void                    RemoveFromClump();
 };
 class RpClump : public RwObject
 {   // RenderWare (plugin) Clump (used by GTA)
@@ -648,6 +664,7 @@ public:
     void                    ScanAtomicHierarchy( RwFrame **atomics, size_t max );
 
     RpAtomic*               GetFirstAtomic();
+    RpAtomic*               FindNamedAtomic( const char *name );
     RpAtomic*               Find2dfx();
 
     void                    SetupAtomicRender();
@@ -655,17 +672,17 @@ public:
     void                    FetchMateria( RpMaterials& mats );
 
     template <class type>
-    RpClump*                ForAllAtomics( bool (*callback)( RpAtomic *child, type data ), type data )
+    bool                    ForAllAtomics( bool (*callback)( RpAtomic *child, type data ), type data )
     {
         RwListEntry <RpAtomic> *child = m_atomics.root.next;
 
         for ( ; child != &m_atomics.root; child = child->next )
         {
             if ( !callback( (RpAtomic*)( (unsigned int)child - offsetof(RpAtomic, m_atomics)), data ) )
-                return NULL;
+                return false;
         }
 
-        return this;
+        return true;
     }
 
     void                    GetBoneTransform( CVector *offset );

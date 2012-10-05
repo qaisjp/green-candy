@@ -11,6 +11,8 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
@@ -38,11 +40,9 @@ static int luaconstructor_pickup( lua_State *L )
     return 0;
 }
 
-CClientPickup::CClientPickup( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel, CVector vecPosition ) : CClientStreamElement( pManager->GetPickupStreamer(), ID, root, system )
+CClientPickup::CClientPickup( CClientManager *pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel, CVector vecPosition ) : CClientStreamElement( pManager->GetPickupStreamer(), ID, L, system )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_pickup, 1 );
@@ -51,7 +51,7 @@ CClientPickup::CClientPickup( CClientManager* pManager, ElementID ID, LuaClass& 
 
     // Initialize
     m_pManager = pManager;
-    m_pPickupManager = pManager->GetPickupManager ();
+    m_pPickupManager = pManager->GetPickupManager();
     m_usModel = usModel;    
     m_bVisible = true;
     m_pPickup = NULL;
@@ -59,9 +59,9 @@ CClientPickup::CClientPickup( CClientManager* pManager, ElementID ID, LuaClass& 
     m_pCollision = NULL;
 
     // Add us to pickup manager's list
-    m_pPickupManager->m_List.push_back ( this );
+    m_pPickupManager->m_List.push_back( this );
 
-    SetTypeName ( "pickup" );
+    SetTypeName( "pickup" );
     m_ucType = CClientPickup::WEAPON;
     m_ucWeaponType = CClientPickup::WEAPON_BRASSKNUCKLE;
     m_fAmount = 0.0f;
@@ -71,26 +71,23 @@ CClientPickup::CClientPickup( CClientManager* pManager, ElementID ID, LuaClass& 
     UpdateStreamPosition ( m_vecPosition = vecPosition );
 }
 
-
-CClientPickup::~CClientPickup ( void )
+CClientPickup::~CClientPickup()
 {
-    AttachTo ( NULL );
+    AttachTo( NULL );
 
     // Make sure our pickup is destroyed
-    Destroy ();
+    Destroy();
 
     // Remove us from the pickup manager's list
-    Unlink ();
+    Unlink();
 }
 
-
-void CClientPickup::Unlink ( void )
+void CClientPickup::Unlink()
 {
-    m_pPickupManager->RemoveFromList ( this );
+    m_pPickupManager->RemoveFromList( this );
 }
 
-
-void CClientPickup::SetPosition ( const CVector& vecPosition )
+void CClientPickup::SetPosition( const CVector& vecPosition )
 {
     // Different from our current position?
     if ( m_vecPosition != vecPosition )
@@ -100,101 +97,101 @@ void CClientPickup::SetPosition ( const CVector& vecPosition )
         ReCreate ();
 
         // Update our streaming position
-        UpdateStreamPosition ( vecPosition );
+        UpdateStreamPosition( vecPosition );
     }
 }
 
-
-void CClientPickup::SetModel ( unsigned short usModel )
+void CClientPickup::SetModel( unsigned short usModel )
 {
     // Different from our current id?
     if ( m_usModel != usModel )
     {
         // Set the model and recreate the pickup
         m_usModel = usModel;
-        UpdateSpatialData ();
-        ReCreate ();
+        UpdateSpatialData();
+        ReCreate();
     }
 }
 
-
-void CClientPickup::SetVisible ( bool bVisible )
+void CClientPickup::SetVisible( bool bVisible )
 {
     // Only update visible state if we're streamed in
-    if ( IsStreamedIn () )
+    if ( IsStreamedIn() )
     {
-        if ( bVisible ) Create ();
-        else Destroy ();
+        if ( bVisible )
+            Create();
+        else
+            Destroy();
     }
 
     // Update the flag
     m_bVisible = bVisible;
 }
 
-
-void CClientPickup::StreamIn ( bool bInstantly )
+void CClientPickup::StreamIn( bool bInstantly )
 {
     // Create it
-    Create ();
+    Create();
 
     // Notify the streamer we've created it
-    NotifyCreate ();
+    NotifyCreate();
 }
 
-
-void CClientPickup::StreamOut ( void )
+void CClientPickup::StreamOut()
 {
     // Destroy it
-    Destroy ();
+    Destroy();
 }
 
-
-void CClientPickup::Create ( void )
+void CClientPickup::Create()
 {
     if ( !m_pPickup )
     {
         // Create the pickup
-        m_pPickup = g_pGame->GetPickups ()->CreatePickup ( &m_vecPosition, m_usModel, PICKUP_ONCE );
-        if ( m_pPickup )
-        {
-            // Grab the attributes from the MTA interface for this pickup
-            m_pObject = NULL;
-            unsigned char ucAreaCode = GetInterior ();
-            unsigned short usDimension = GetDimension ();
+        m_pPickup = g_pGame->GetPickups()->CreatePickup( &m_vecPosition, m_usModel, PICKUP_ONCE );
 
-            // Make sure we have an object
-            if ( !m_pPickup->GetObject () ) m_pPickup->GiveUsAPickUpObject ();
+        if ( !m_pPickup )
+            return;
 
-            // Store our pickup's object
-            m_pObject = m_pPickup->GetObject ();
+        // Grab the attributes from the MTA interface for this pickup
+        m_pObject = NULL;
+        unsigned char ucAreaCode = GetInterior();
+        unsigned short usDimension = GetDimension();
 
-            // Create our collision
-            m_pCollision = new CClientColSphere ( g_pClientGame->GetManager(), NULL, *this, IsSystemEntity(), m_vecPosition, 1.0f );
-            m_pCollision->m_pOwningPickup = this;
-            m_pCollision->SetHitCallback ( this );
+        // Make sure we have an object
+        if ( !m_pPickup->GetObject() )
+            m_pPickup->GiveUsAPickUpObject();
 
-            // Increment pickup counter
-            ++m_pPickupManager->m_uiPickupCount;
+        // Store our pickup's object
+        m_pObject = m_pPickup->GetObject();
 
-            // Restore the attributes
-            SetInterior ( ucAreaCode );
-            SetDimension ( usDimension );
-        }
+        // Create our collision
+        m_pCollision = new CClientColSphere( g_pClientGame->GetManager(), NULL, m_lua, IsSystemEntity(), m_vecPosition, 1.0f );
+        m_pCollision->m_pOwningPickup = this;
+        m_pCollision->SetHitCallback( this );
+        m_pCollision->SetRoot( this );
+
+        // Increment pickup counter
+        ++m_pPickupManager->m_uiPickupCount;
+
+        // Restore the attributes
+        SetInterior( ucAreaCode );
+        SetDimension( usDimension );
     }
 }
 
-
-void CClientPickup::Destroy ( void )
+void CClientPickup::Destroy()
 {
     if ( m_pCollision )
     {
         delete m_pCollision;
         m_pCollision = NULL;
     }
+
     if ( m_pPickup )
     {
         // Delete the pickup
-        m_pPickup->Remove ();
+        m_pPickup->Remove();
         m_pPickup = NULL;
         m_pObject = NULL;
 
@@ -203,18 +200,17 @@ void CClientPickup::Destroy ( void )
     }
 }
 
-
-void CClientPickup::ReCreate ( void )
+void CClientPickup::ReCreate()
 {
     // If we had a pickup, destroy and recreate it
     if ( m_pPickup )
     {
-        Destroy ();
-        Create ();
+        Destroy();
+        Create();
     }
 }
 
-void CClientPickup::Callback_OnCollision ( CClientColShape& Shape, CClientEntity& Entity )
+void CClientPickup::Callback_OnCollision( CClientColShape& Shape, CClientEntity& Entity )
 {
     if ( Entity.IsTransmit( LUACLASS_PLAYER ) )
     {
@@ -225,7 +221,7 @@ void CClientPickup::Callback_OnCollision ( CClientColShape& Shape, CClientEntity
     }
 }
 
-void CClientPickup::Callback_OnLeave ( CClientColShape& Shape, CClientEntity& Entity )
+void CClientPickup::Callback_OnLeave( CClientColShape& Shape, CClientEntity& Entity )
 {
     if ( Entity.IsTransmit( LUACLASS_PLAYER ) )
     {

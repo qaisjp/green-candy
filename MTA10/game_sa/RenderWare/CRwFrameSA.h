@@ -27,13 +27,22 @@ public:
     const char*                     GetName() const                     { return GetObject()->m_nodeName; }
     eRwType                         GetType() const                     { return RW_NULL; }
 
+    void                            Link( CRwFrame *child );
+    void                            Unlink();
+
     const objectList_t&             GetObjects() const                  { return m_objects; }
+    const childList_t&              GetChildren() const                 { return m_children; }
 
     void                            SetLTM( const RwMatrix& mat )       { GetObject()->m_ltm = mat; }
     const RwMatrix&                 GetLTM() const                      { return GetObject()->m_ltm; }
 
     void                            SetModelling( const RwMatrix& mat ) { GetObject()->m_modelling = mat; }
     const RwMatrix&                 GetModelling() const                { return GetObject()->m_modelling; }
+
+    childList_t                     m_children;
+
+    // Static accessors
+    static bool RwFrameObjectAssign( RwObject *obj, CRwFrameSA *parent );
 
 private:
     objectList_t                    m_objects;

@@ -564,35 +564,45 @@ static LUA_DECLARE( getWheelStates )
     return 4;
 }
 
-static LUA_DECLARE( setComponent )
-{
-    unsigned int idx;
-    CClientAtomic *atom;
-
-    LUA_ARGS_BEGIN;
-    argStream.ReadNumber( idx );
-    argStream.ReadClass( atom, LUACLASS_ATOMIC );
-    LUA_ARGS_END;
-
-    LUA_CHECK_S( idx < NUM_VEHICLE_COMPONENTS-1, "invalid component index" );
-
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetComponent( idx, atom );
-    LUA_SUCCESS;
-}
-
 static LUA_DECLARE( getComponent )
 {
-    unsigned int idx;
+    const char *name;
 
     LUA_ARGS_BEGIN;
-    argStream.ReadNumber( idx );
+    argStream.ReadString( name );
     LUA_ARGS_END;
 
-    CClientVehicleComponent *comp = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetComponent( idx );
+    CClientVehicleComponent *comp = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetComponent( name );
 
-    LUA_CHECK_S( comp, "invalid component index" );
+    LUA_CHECK( comp );
 
     comp->PushStack( L );
+    return 1;
+}
+
+static LUA_DECLARE( getComponentNames )
+{
+    CVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGameVehicle();
+
+    LUA_CHECK( veh );
+
+    std::vector <std::string> names;
+    veh->GetComponentNameList( names );
+
+    int num = names.size();
+
+    // Clear the stack and put table on first slot
+    lua_settop( L, 0 );
+    lua_createtable( L, num, 0 );
+
+    for ( int n = 0; n < num; n++ )
+    {
+        const std::string& id = names[n];
+
+        lua_pushlstring( L, id.c_str(), id.size() );
+        lua_rawseti( L, 1, n + 1 );
+    }
+
     return 1;
 }
 
@@ -1321,8 +1331,8 @@ static const luaL_Reg vehicle_interface[] =
     LUA_METHOD( getPanelState ),
     LUA_METHOD( setWheelStates ),
     LUA_METHOD( getWheelStates ),
-    LUA_METHOD( setComponent ),
     LUA_METHOD( getComponent ),
+    LUA_METHOD( getComponentNames ),
     LUA_METHOD( setEngineState ),
     LUA_METHOD( getEngineState ),
     LUA_METHOD( setHandbrakeOn ),

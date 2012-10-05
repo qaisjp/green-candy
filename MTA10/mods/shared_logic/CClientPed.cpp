@@ -13,6 +13,8 @@
 *               Fedor Sinev <fedorsinev@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -48,7 +50,7 @@ void CClientPed::InstanceLua( bool system )
     lua_pop( m_lua, 1 );
 }
 
-CClientPed::CClientPed( CClientManager* pManager, unsigned short ulModelID, ElementID ID, LuaClass& root, bool system ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, root, system ), CAntiCheatModule( pManager->GetAntiCheat() )
+CClientPed::CClientPed( CClientManager* pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, L, system ), CAntiCheatModule( pManager->GetAntiCheat() )
 {
     InstanceLua( system );
 
@@ -61,20 +63,20 @@ CClientPed::CClientPed( CClientManager* pManager, unsigned short ulModelID, Elem
     pManager->GetPedManager()->AddToList( this );
 }
 
-CClientPed::CClientPed( CClientManager* pManager, unsigned short ulModelID, ElementID ID, LuaClass& root, bool system, bool bIsLocalPlayer ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, root, system ), CAntiCheatModule( pManager->GetAntiCheat() )
+CClientPed::CClientPed( CClientManager *pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system, bool bIsLocalPlayer ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, L, system ), CAntiCheatModule( pManager->GetAntiCheat() )
 {
     InstanceLua( system );
 
     // Init
-    Init ( pManager, ulModelID, bIsLocalPlayer );
+    Init( pManager, ulModelID, bIsLocalPlayer );
 
     // Add it to our ped manager
-    pManager->GetPedManager ()->AddToList ( this );
+    pManager->GetPedManager()->AddToList( this );
 }
 
-void CClientPed::Init ( CClientManager* pManager, unsigned short ulModelID, bool bIsLocalPlayer )
+void CClientPed::Init( CClientManager *pManager, unsigned short ulModelID, bool bIsLocalPlayer )
 {
-    CClientEntityRefManager::AddEntityRefs ( ENTITY_REF_DEBUG ( this, "CClientPed" ), &m_pOccupiedVehicle, &m_pOccupyingVehicle, &m_pTargetedEntity, &m_pCurrentContactEntity, &m_pBulletImpactEntity, &m_interp.pTargetOriginSource, NULL );
+    CClientEntityRefManager::AddEntityRefs( ENTITY_REF_DEBUG( this, "CClientPed" ), &m_pOccupiedVehicle, &m_pOccupyingVehicle, &m_pTargetedEntity, &m_pCurrentContactEntity, &m_pBulletImpactEntity, &m_interp.pTargetOriginSource, NULL );
 
     // Init members
     m_pManager = pManager;

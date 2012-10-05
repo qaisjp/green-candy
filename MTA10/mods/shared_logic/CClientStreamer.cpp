@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientStreamer.cpp
@@ -10,6 +10,9 @@
 *               Ed Lyons <eai@opencoding.net>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -117,47 +120,6 @@ void CClientStreamer::ConnectRow ( CClientStreamSectorRow * pRow )
 extern CClientGame* g_pClientGame;
 void CClientStreamer::DoPulse ( CVector & vecPosition )
 {   
-    /* Debug code
-    CClientStreamSector * pSector;
-    list < CClientStreamSector * > ::iterator iterSector;
-    list < CClientStreamSectorRow * > ::iterator iterRow = m_WorldRows.begin ();
-    for ( ; iterRow != m_WorldRows.end () ; iterRow++ )
-    {
-        iterSector = (*iterRow)->Begin ();
-        for ( ; iterSector != (*iterRow)->End () ; iterSector++ )
-        {
-            pSector = *iterSector;
-            if ( !pSector->m_pArea )
-            {
-                pSector->m_pArea = new CClientRadarArea ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID );
-                pSector->m_pArea->SetPosition ( pSector->m_vecBottomLeft );
-                CVector2D vecSize ( pSector->m_vecTopRight.fX - pSector->m_vecBottomLeft.fX, pSector->m_vecTopRight.fY - pSector->m_vecBottomLeft.fY );
-                pSector->m_pArea->SetSize ( vecSize );
-                pSector->m_pArea->SetColor ( 255, 0, 0, 50 );
-            }
-            pSector->m_pArea->SetColor ( 255, 0, 0, 50 );
-        }
-    }
-    iterRow = m_ExtraRows.begin ();    
-    for ( ; iterRow != m_ExtraRows.end () ; iterRow++ )
-    {
-        iterSector = (*iterRow)->Begin ();
-        for ( ; iterSector != (*iterRow)->End () ; iterSector++ )
-        {
-            pSector = *iterSector;
-            if ( !pSector->m_pArea )
-            {
-                pSector->m_pArea = new CClientRadarArea ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID );
-                pSector->m_pArea->SetPosition ( pSector->m_vecBottomLeft );
-                CVector2D vecSize ( pSector->m_vecTopRight.fX - pSector->m_vecBottomLeft.fX, pSector->m_vecTopRight.fY - pSector->m_vecBottomLeft.fY );
-                pSector->m_pArea->SetSize ( vecSize );
-                pSector->m_pArea->SetColor ( 255, 0, 0, 50 );
-            }
-            pSector->m_pArea->SetColor ( 255, 0, 0, 50 );
-        }
-    }
-    */
-
     // Has our position changed?
     if ( vecPosition != m_vecPosition )
     {

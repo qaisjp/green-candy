@@ -30,7 +30,7 @@ public:
 
     ///////////////////////////////////////////////////////
     // Validity
-    bool IsValid ( void ) const
+    bool IsValid() const
     {
         return m_bValid;
     }
@@ -84,7 +84,7 @@ public:
 
     ///////////////////////////////////////////////////////
     // Get the simulated play position
-    double GetPlayPositionNow ( void )
+    double GetPlayPositionNow() const
     {
         // If paused, then no time compensation is needed
         if ( m_bPaused )
@@ -100,13 +100,10 @@ public:
             dUseLength = DEFAULT_SOUND_LENGTH;
 
         if ( m_bLoop )
-            dNewPosition = mod ( dNewPosition, dUseLength );
+            dNewPosition = fmod ( dNewPosition, dUseLength );
         else
             dNewPosition = Clamp ( 0.0, dNewPosition, dUseLength );
 
         return dNewPosition;
     }
-
-    // Magical code from the internete
-    double mod(double x, double y) { return x - y * floor(x / y); }
 };

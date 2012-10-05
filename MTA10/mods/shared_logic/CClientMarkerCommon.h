@@ -50,7 +50,7 @@ public:
     virtual void                GetPosition( CVector& vecPosition ) const = 0;
     virtual void                SetPosition( const CVector& vecPosition ) = 0;
 
-    virtual void                GetMatrix( RwMatrix& matrix ) = 0;
+    virtual void                GetMatrix( RwMatrix& matrix ) const = 0;
     virtual void                SetMatrix( const RwMatrix& matrix ) = 0;
 
     virtual float               GetSize() const = 0;

@@ -35,11 +35,9 @@ static int luaconstructor_colmodel( lua_State *L )
     return 0;
 }
 
-CClientColModel::CClientColModel( LuaClass& root ) : LuaElement( root )
+CClientColModel::CClientColModel( lua_State *L ) : LuaElement( L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_colmodel, 1 );

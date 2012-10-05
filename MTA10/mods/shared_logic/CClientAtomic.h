@@ -21,14 +21,14 @@ class CClientDFF;
 class CClientAtomic : public CClientRwObject
 {
 public:
-                                    CClientAtomic( LuaClass& root, CClientDFF *model, CRpAtomic& atom );
+                                    CClientAtomic( lua_State *L, CClientDFF *model, CRpAtomic& atom );
                                     ~CClientAtomic();
 
     const char*                     GetName() const         { return m_atomic.GetName(); }
     unsigned int                    GetHash() const         { return m_atomic.GetHash(); }
 
     bool                            ReplaceModel( unsigned short id );
-    bool                            HasReplaced( unsigned short id );
+    bool                            HasReplaced( unsigned short id ) const;
     void                            RestoreModel( unsigned short id );
     void                            RestoreModels();
 

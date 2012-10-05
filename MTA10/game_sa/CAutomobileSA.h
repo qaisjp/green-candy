@@ -145,9 +145,6 @@ public:
     void                        SetWheelVisibility( eWheels wheel, bool bVisible );
     bool                        GetWheelVisibility( eWheels wheel ) const;
 
-    void                        SetComponent( unsigned int idx, CRpAtomic *atom );
-    CVehicleComponent*          GetComponent( unsigned int idx );
-
     unsigned short              GetAdjustablePropertyValue() const                      { return GetInterface()->m_adjustableProperty; }
     void                        SetAdjustablePropertyValue( unsigned short value )      { GetInterface()->m_adjustableProperty = value; }
 
@@ -169,8 +166,6 @@ private:
     bool                        m_swingingDoorsAllowed;
     void*                       m_suspensionLines;
     CDoorSA*                    m_doors[MAX_DOORS];
-
-    CVehicleComponentSA*        m_components[NUM_VEHICLE_COMPONENTS];
 };
 
 #endif

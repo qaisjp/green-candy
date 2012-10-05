@@ -7,6 +7,8 @@
 *  PURPOSE:
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
@@ -32,11 +34,9 @@ static int luaconstructor_material( lua_State *L )
     return 0;
 }
 
-CClientMaterial::CClientMaterial( CClientManager* pManager, ElementID ID, LuaClass& root ) : CClientRenderElement( pManager, ID, root )
+CClientMaterial::CClientMaterial( CClientManager *pManager, ElementID ID, lua_State *L ) : CClientRenderElement( pManager, ID, L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_material, 1 );

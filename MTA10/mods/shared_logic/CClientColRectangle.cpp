@@ -9,21 +9,22 @@
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
 
-CClientColRectangle::CClientColRectangle ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, const CVector2D& vecSize ) : CClientColShape ( pManager, ID, root, system )
+CClientColRectangle::CClientColRectangle( CClientManager* pManager, ElementID ID, lua_State *L, bool system, const CVector& vecPosition, const CVector2D& vecSize ) : CClientColShape( pManager, ID, L, system )
 {
     m_pManager = pManager;
     m_vecPosition = vecPosition;
     m_vecSize = vecSize;
 
-    UpdateSpatialData ();
+    UpdateSpatialData();
 }
 
-
-bool CClientColRectangle::DoHitDetection ( const CVector& vecNowPosition, float fRadius )
+bool CClientColRectangle::DoHitDetection( const CVector& vecNowPosition, float fRadius )
 {
     // FIXME: What about radius?
 
@@ -34,8 +35,7 @@ bool CClientColRectangle::DoHitDetection ( const CVector& vecNowPosition, float 
              vecNowPosition.fY <= m_vecPosition.fY + m_vecSize.fY );
 }
 
-
-CSphere CClientColRectangle::GetWorldBoundingSphere ( void )
+CSphere CClientColRectangle::GetWorldBoundingSphere()
 {
     CSphere sphere;
     sphere.vecPosition.fX = m_vecPosition.fX + m_vecSize.fX * 0.5f;

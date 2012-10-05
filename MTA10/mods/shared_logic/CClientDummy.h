@@ -9,6 +9,8 @@
 *               Jax <>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #ifndef CClientDummy_H
@@ -21,15 +23,15 @@
 class CClientDummy : public CClientEntity
 {
 public:
-                                CClientDummy            ( class CClientManager* pManager, ElementID ID, const char *szTypeName, LuaClass& root, bool system );
-                                ~CClientDummy           ( void );
+                                CClientDummy( class CClientManager* pManager, ElementID ID, const char *szTypeName, lua_State *L, bool system );
+                                ~CClientDummy();
     
-    void                        Unlink                  ( void );
+    void                        Unlink();
 
-    inline eClientEntityType    GetType                 ( void ) const                       { return CCLIENTDUMMY; }
-    inline const CVector&       GetPosition             ( void )                             { return m_vecPosition; };
-    inline void                 GetPosition             ( CVector& vecPosition ) const       { vecPosition = m_vecPosition; };
-    inline void                 SetPosition             ( const CVector& vecPosition )       { m_vecPosition = vecPosition; };
+    inline eClientEntityType    GetType() const                                 { return CCLIENTDUMMY; }
+    inline const CVector&       GetPosition()                                   { return m_vecPosition; }
+    inline void                 GetPosition( CVector& vecPosition ) const       { vecPosition = m_vecPosition; }
+    inline void                 SetPosition( const CVector& vecPosition )       { m_vecPosition = vecPosition; }
 
 private:
     class CClientGroups*        m_pGroups;

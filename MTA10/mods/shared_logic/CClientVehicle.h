@@ -89,6 +89,8 @@ struct SLastSyncedVehData
     ElementID           Trailer;
 };
 
+typedef std::map <std::string, class CClientVehicleComponent*> vehComponents_t;
+
 class CClientProjectile;
 class CClientAtomic;
 
@@ -97,24 +99,24 @@ class CClientVehicle : public CClientStreamElement
     friend class CClientCamera;
     friend class CClientPed;
     friend class CClientVehicleManager;
-    friend class CClientGame; // TEMP HACK
+    friend class CClientGame;
     friend class CClientVehicleComponent;
 
 protected: // Use CDeathmatchVehicle constructor for now. Will get removed later when this class is
            // cleaned up.
             // The_GTA: ^ lies ^
-                                CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel );
+                                CClientVehicle( CClientManager* pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel );
 
 public:
                                 ~CClientVehicle();
     
     void                        Unlink();
 
-    inline eClientEntityType    GetType() const                                                         { return CCLIENTVEHICLE; };
+    inline eClientEntityType    GetType() const                                                         { return CCLIENTVEHICLE; }
 
-    void                        GetName( char* szBuf ) const;
-    inline const char*          GetNamePointer() const                                                  { return m_pModelInfo->GetNameIfVehicle (); };
-    inline eClientVehicleType   GetVehicleType() const                                                  { return m_eVehicleType; };
+    void                        GetName( char *szBuf ) const;
+    inline const char*          GetNamePointer() const                                                  { return m_pModelInfo->GetNameIfVehicle(); }
+    inline eClientVehicleType   GetVehicleType() const                                                  { return m_eVehicleType; }
     inline eVehicleType         GetModelType() const                                                    { return m_vehModelType; }
 
     void                        GetPosition( CVector& vecPosition ) const;
@@ -180,7 +182,7 @@ public:
     void                        GetTurretRotation( float& fHorizontal, float& fVertical ) const;
     void                        SetTurretRotation( float fHorizontal, float fVertical );
 
-    inline unsigned short       GetModel() const                                                        { return m_usModel; };
+    inline unsigned short       GetModel() const                                                        { return m_usModel; }
     void                        SetModelBlocking( unsigned short usModel, bool bLoadImmediately = false );
 
     bool                        IsEngineBroken() const;
@@ -193,7 +195,7 @@ public:
     void                        CalcAndUpdateCanBeDamagedFlag();
     void                        SetScriptCanBeDamaged( bool bCanBeDamaged );
     void                        SetSyncUnoccupiedDamage( bool bCanBeDamaged );
-    bool                        GetScriptCanBeDamaged() const                                           { return m_bScriptCanBeDamaged; };
+    bool                        GetScriptCanBeDamaged() const                                           { return m_bScriptCanBeDamaged; }
 
     bool                        GetTyresCanBurst() const;
     void                        CalcAndUpdateTyresCanBurstFlag();
@@ -244,8 +246,7 @@ public:
     void                        SetPanelStatus( unsigned char ucPanel, unsigned char ucStatus );
     void                        SetLightStatus( unsigned char ucLight, unsigned char ucStatus );
 
-    void                        SetComponent( unsigned int idx, CClientAtomic *atom );
-    CClientVehicleComponent*    GetComponent( unsigned int idx );
+    CClientVehicleComponent*    GetComponent( const char *name );
 
     // TODO: Make the class remember on virtualization
     float                       GetHeliRotorSpeed() const;
@@ -278,14 +279,14 @@ public:
 
     void                        WorldIgnore( bool bWorldIgnore );
 
-    inline bool                 IsVirtual() const                                                       { return m_pVehicle == NULL; };
+    inline bool                 IsVirtual() const                                                       { return m_pVehicle == NULL; }
 
     void                        FadeOut( bool bFadeOut );
     bool                        IsFadingOut() const;
 
-    inline bool                 IsFrozen() const                                                        { return m_bIsFrozen; };
+    inline bool                 IsFrozen() const                                                        { return m_bIsFrozen; }
     void                        SetFrozen( bool bFrozen );
-    void                        SetScriptFrozen( bool bFrozen )                                         { m_bScriptFrozen = bFrozen; };
+    void                        SetScriptFrozen( bool bFrozen )                                         { m_bScriptFrozen = bFrozen; }
     bool                        IsFrozenWaitingForGroundToLoad() const;
     void                        SetFrozenWaitingForGroundToLoad( bool bFrozen );
 
@@ -410,11 +411,11 @@ public:
 
     void                        RemoveAllProjectiles();
 
-    static void                 SetPedOccupiedVehicle( CClientPed* pClientPed, CClientVehicle* pVehicle, unsigned int uiSeat, unsigned char ucDoor );
-    static void                 SetPedOccupyingVehicle( CClientPed* pClientPed, CClientVehicle* pVehicle, unsigned int uiSeat, unsigned char ucDoor );
-    static void                 ValidatePedAndVehiclePair( CClientPed* pClientPed, CClientVehicle* pVehicle );
-    static void                 UnpairPedAndVehicle( CClientPed* pClientPed, CClientVehicle* pVehicle );
-    static void                 UnpairPedAndVehicle( CClientPed* pClientPed );
+    static void                 SetPedOccupiedVehicle( CClientPed *pClientPed, CClientVehicle *pVehicle, unsigned int uiSeat, unsigned char ucDoor );
+    static void                 SetPedOccupyingVehicle( CClientPed *pClientPed, CClientVehicle *pVehicle, unsigned int uiSeat, unsigned char ucDoor );
+    static void                 ValidatePedAndVehiclePair( CClientPed *pClientPed, CClientVehicle *pVehicle );
+    static void                 UnpairPedAndVehicle( CClientPed *pClientPed, CClientVehicle *pVehicle );
+    static void                 UnpairPedAndVehicle( CClientPed *pClientPed );
     
     void                        ApplyHandling();
     CHandlingEntry*             GetHandlingData();
@@ -508,7 +509,7 @@ protected:
     unsigned char               m_ucWheelStates[MAX_WHEELS];
     unsigned char               m_ucPanelStates[MAX_PANELS];
     unsigned char               m_ucLightStates[MAX_LIGHTS];
-    CClientVehicleComponent*    m_components[NUM_VEHICLE_COMPONENTS];
+    vehComponents_t             m_compContainer;
     bool                        m_bJustBlewUp;
     eEntityStatus               m_NormalStatus;
     bool                        m_bColorSaved;

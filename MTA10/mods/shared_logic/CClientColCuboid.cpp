@@ -9,20 +9,22 @@
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
 
-CClientColCuboid::CClientColCuboid ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, const CVector& vecSize ) : CClientColShape ( pManager, ID, root, system )
+CClientColCuboid::CClientColCuboid( CClientManager* pManager, ElementID ID, lua_State *L, bool system, const CVector& vecPosition, const CVector& vecSize ) : CClientColShape( pManager, ID, L, system )
 {
     m_pManager = pManager;
     m_vecPosition = vecPosition;
     m_vecSize = vecSize;
 
-    UpdateSpatialData ();
+    UpdateSpatialData();
 }
 
-bool CClientColCuboid::DoHitDetection  ( const CVector& vecNowPosition, float fRadius )
+bool CClientColCuboid::DoHitDetection( const CVector& vecNowPosition, float fRadius )
 {
     // FIXME: What about radius?
 

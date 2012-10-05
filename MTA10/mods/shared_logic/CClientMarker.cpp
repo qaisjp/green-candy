@@ -11,15 +11,13 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
 
 extern CClientGame* g_pClientGame;
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 static const luaL_Reg marker_interface[] =
 {
@@ -44,11 +42,9 @@ static int luaconstructor_marker( lua_State *L )
 
 unsigned int CClientMarker::m_uiStreamedInMarkers = 0;
 
-CClientMarker::CClientMarker ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, int iMarkerType ) : CClientStreamElement ( pManager->GetMarkerStreamer (), ID, root, system )
+CClientMarker::CClientMarker( CClientManager *pManager, ElementID ID, lua_State *L, bool system, int iMarkerType ) : CClientStreamElement( pManager->GetMarkerStreamer(), ID, L, system )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_marker, 1 );
@@ -145,11 +141,12 @@ void CClientMarker::DoPulse()
 }
 
 
-CClientMarker::eMarkerType CClientMarker::GetMarkerType ( void ) const
+CClientMarker::eMarkerType CClientMarker::GetMarkerType() const
 {
     // Grab the marker class type
-    unsigned int uiMarkerType = m_pMarker->GetMarkerType ();
-    switch ( uiMarkerType )
+    unsigned int uiMarkerType = m_pMarker->GetMarkerType();
+
+    switch( uiMarkerType )
     {
         // If it's a checkpoint, it can be either a checkpoint or a ring
         case CClientMarkerCommon::CLASS_CHECKPOINT:
@@ -459,65 +456,56 @@ void CClientMarker::CreateOfType ( int iType )
     }
 
     CVector vecOrigin;
-    GetPosition ( vecOrigin );    
-    switch ( iType )
+    GetPosition( vecOrigin );
+
+    switch( iType )
     {
-        case MARKER_CHECKPOINT:
-        {
-            CClientCheckpoint* pCheckpoint = new CClientCheckpoint ( this );
-            pCheckpoint->SetCheckpointType ( CClientCheckpoint::TYPE_NORMAL );
-            m_pMarker = pCheckpoint;
-            m_pCollision = new CClientColCircle ( g_pClientGame->GetManager(), NULL, *this, IsSystemEntity(), vecOrigin, GetSize() );
-            m_pCollision->m_pOwningMarker = this;
-            m_pCollision->SetHitCallback ( this );
-            break;
-        }
-
-        case MARKER_RING:
-        {
-            CClientCheckpoint* pCheckpoint = new CClientCheckpoint ( this );
-            pCheckpoint->SetCheckpointType ( CClientCheckpoint::TYPE_RING );
-            m_pMarker = pCheckpoint;
-            m_pCollision = new CClientColSphere ( g_pClientGame->GetManager(), NULL, *this, IsSystemEntity(), vecOrigin, GetSize() );
-            m_pCollision->m_pOwningMarker = this;
-            m_pCollision->SetHitCallback ( this );
-            break;
-        }
-
-        case MARKER_CYLINDER:
-        {
-            CClient3DMarker* p3DMarker = new CClient3DMarker ( this );
-            p3DMarker->Set3DMarkerType ( CClient3DMarker::TYPE_CYLINDER );
-            m_pMarker = p3DMarker;
-            m_pCollision = new CClientColCircle ( g_pClientGame->GetManager(), NULL, *this, IsSystemEntity(), vecOrigin, GetSize() );
-            m_pCollision->m_pOwningMarker = this;
-            m_pCollision->SetHitCallback ( this );
-            break;
-        }
-
-        case MARKER_ARROW:
-        {
-            CClient3DMarker* p3DMarker = new CClient3DMarker ( this );
-            p3DMarker->Set3DMarkerType ( CClient3DMarker::TYPE_ARROW );
-            m_pMarker = p3DMarker;
-            m_pCollision = new CClientColSphere ( g_pClientGame->GetManager(), NULL, *this, IsSystemEntity(), vecOrigin, GetSize() );
-            m_pCollision->m_pOwningMarker = this;
-            m_pCollision->SetHitCallback ( this );
-            break;
-        }
-
-        case MARKER_CORONA:
-        {
-            m_pMarker = new CClientCorona ( this );
-            m_pCollision = new CClientColSphere ( g_pClientGame->GetManager(), NULL, *this, IsSystemEntity(), vecOrigin, GetSize() );
-            m_pCollision->m_pOwningMarker = this;
-            m_pCollision->SetHitCallback ( this );
-            break;
-        }
-        
-        default:
-            break;
+    case MARKER_CHECKPOINT:
+    {
+        CClientCheckpoint *pt = new CClientCheckpoint( this );
+        pt->SetCheckpointType( CClientCheckpoint::TYPE_NORMAL );
+        m_pMarker = pt;
+        m_pCollision = new CClientColCircle( g_pClientGame->GetManager(), NULL, m_lua, IsSystemEntity(), vecOrigin, GetSize() );
+        break;
     }
+    case MARKER_RING:
+    {
+        CClientCheckpoint *pt = new CClientCheckpoint( this );
+        pt->SetCheckpointType( CClientCheckpoint::TYPE_RING );
+        m_pMarker = pt;
+        m_pCollision = new CClientColSphere( g_pClientGame->GetManager(), NULL, m_lua, IsSystemEntity(), vecOrigin, GetSize() );
+        break;
+    }
+    case MARKER_CYLINDER:
+    {
+        CClient3DMarker *p3DMarker = new CClient3DMarker( this );
+        p3DMarker->Set3DMarkerType( CClient3DMarker::TYPE_CYLINDER );
+        m_pMarker = p3DMarker;
+        m_pCollision = new CClientColCircle( g_pClientGame->GetManager(), NULL, m_lua, IsSystemEntity(), vecOrigin, GetSize() );
+        break;
+    }
+    case MARKER_ARROW:
+    {
+        CClient3DMarker *p3DMarker = new CClient3DMarker( this );
+        p3DMarker->Set3DMarkerType( CClient3DMarker::TYPE_ARROW );
+        m_pMarker = p3DMarker;
+        m_pCollision = new CClientColSphere( g_pClientGame->GetManager(), NULL, m_lua, IsSystemEntity(), vecOrigin, GetSize() );
+        break;
+    }
+    case MARKER_CORONA:
+    {
+        m_pMarker = new CClientCorona( this );
+        m_pCollision = new CClientColSphere( g_pClientGame->GetManager(), NULL, m_lua, IsSystemEntity(), vecOrigin, GetSize() );
+        break;
+    }
+    default:
+        return;
+    }
+
+    m_pCollision->m_pOwningMarker = this;
+    m_pCollision->SetHitCallback( this );
+
+    m_pCollision->SetRoot( this );
 }
 
 

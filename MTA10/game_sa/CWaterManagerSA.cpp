@@ -682,7 +682,7 @@ bool CWaterManagerSA::SetWaterLevel ( CVector* pvecPosition, float fLevel, void*
 bool CWaterManagerSA::SetWaterLevel ( CWaterPoly* pPoly, float fLevel, void* pChangeSource )
 {
     CVector vecVertexPos;
-    for ( int i = 0; i < pPoly->GetNumVertices (); i++ )
+    for ( unsigned int i = 0; i < pPoly->GetNumVertices (); i++ )
     {
         pPoly->GetVertex ( i )->GetPosition ( vecVertexPos );
         vecVertexPos.fZ = fLevel;

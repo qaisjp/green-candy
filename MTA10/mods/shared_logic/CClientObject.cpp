@@ -11,16 +11,14 @@
 *               Jax <>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
 
 #define MTA_BUILDINGS
 #define CCLIENTOBJECT_MAX 250
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 static const luaL_Reg object_interface[] =
 {
@@ -43,11 +41,9 @@ static int luaconstructor_object( lua_State *L )
     return 0;
 }
 
-CClientObject::CClientObject( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel ) : CClientStreamElement( pManager->GetObjectStreamer (), ID, root, system )
+CClientObject::CClientObject( CClientManager* pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel ) : CClientStreamElement( pManager->GetObjectStreamer(), ID, L, system )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_object, 1 );

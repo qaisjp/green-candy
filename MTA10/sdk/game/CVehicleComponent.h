@@ -33,7 +33,10 @@ public:
     virtual void                SetActive( bool active ) = 0;
     virtual bool                IsActive() const = 0;
 
-    virtual CRpAtomic*          CloneAtomic() const = 0;
+    virtual unsigned int        AddAtomic( CRpAtomic *atomic ) = 0;
+    virtual CRpAtomic*          CloneAtomic( unsigned int idx ) const = 0;
+    virtual unsigned int        GetAtomicCount() const = 0;
+    virtual bool                RemoveAtomic( unsigned int idx ) = 0;
 };
 
 #endif //_VEHICLE_COMPONENT_

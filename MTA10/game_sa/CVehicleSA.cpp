@@ -390,6 +390,36 @@ void CVehicleSA::GetColor( SColor& color1, SColor& color2, SColor& color3, SColo
     color4 = m_RGBColors[3];
 }
 
+CVehicleComponent* CVehicleSA::GetComponent( const char *name )
+{
+    CVehicleComponentSA *comp;
+
+    // Cache the component
+    if ( comp = m_compContainer[name] )
+        return comp;
+
+    RpClump *clump = (RpClump*)GetInterface()->m_rwObject;
+    RwFrame *frame = clump->m_parent->FindChildByName( name );
+
+    if ( !frame )
+        return NULL;
+
+    return new CVehicleComponentSA( m_compContainer, clump, frame, ppModelInfo[GetInterface()->m_model]->m_textureDictionary );
+}
+
+static bool RwFrameListNames( RwFrame *child, std::vector <std::string> *list )
+{
+    child->ForAllChildren( RwFrameListNames, list );
+
+    list->push_back( child->m_nodeName );
+    return true;
+}
+
+void CVehicleSA::GetComponentNameList( std::vector <std::string>& list )
+{
+    GetInterface()->m_rwObject->m_parent->ForAllChildren( RwFrameListNames, &list );
+}
+
 void CVehicleSA::SetHealth( float health )
 {
     GetInterface()->m_health = health;

@@ -50,9 +50,22 @@ struct RwColorFloat
 };
 struct RwColor
 {
+    RwColor()
+    {
+        r = g = b = a = 0;
+    }
+    
+    RwColor( unsigned int color )
+    {
+        r = color >> 24;
+        g = color >> 16;
+        b = color >> 8;
+        a = color;
+    }
+
     unsigned char r, g, b, a;
 
-    operator unsigned int ()
+    operator unsigned int () const
     {
         return ( a ) | ( (unsigned int)b << 8 ) | ( (unsigned int)g << 16 ) | ( (unsigned int)r << 24 );
     }

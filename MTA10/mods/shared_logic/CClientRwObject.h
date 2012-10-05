@@ -19,7 +19,7 @@
 class CClientRwObject abstract : public LuaElement
 {
 public:
-                                    CClientRwObject( LuaClass& root, CRwObject& object );
+                                    CClientRwObject( lua_State *L, CRwObject& object );
                                     ~CClientRwObject();
 
     CRwObject&                      GetObject()                     { return m_object; }

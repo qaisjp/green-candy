@@ -14,6 +14,8 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
@@ -39,11 +41,9 @@ static int luaconstructor_radararea( lua_State *L )
     return 0;
 }
 
-CClientRadarArea::CClientRadarArea( class CClientManager* pManager, ElementID ID, LuaClass& root, bool system ) : CClientEntity( ID, system, root )
+CClientRadarArea::CClientRadarArea( class CClientManager* pManager, ElementID ID, lua_State *L, bool system ) : CClientEntity( ID, system, L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_radararea, 1 );
@@ -52,19 +52,19 @@ CClientRadarArea::CClientRadarArea( class CClientManager* pManager, ElementID ID
 
     // Init
     m_pManager = pManager;
-    m_pRadarAreaManager = pManager->GetRadarAreaManager ();
-    m_Color = SColorRGBA ( 255, 255, 255, 255 );
+    m_pRadarAreaManager = pManager->GetRadarAreaManager();
+    m_Color = SColorRGBA( 255, 255, 255, 255 );
     m_bFlashing = false;
     m_ulFlashCycleStart = 0;
     m_bStreamedIn = true;
 
-    SetTypeName ( "radararea" );
+    SetTypeName( "radararea" );
 
     // Make sure we're visible/invisible according to our dimension
-    RelateDimension ( m_pRadarAreaManager->GetDimension () );
+    RelateDimension( m_pRadarAreaManager->GetDimension() );
 
     // Add us to the manager's list
-    m_pRadarAreaManager->AddToList ( this );
+    m_pRadarAreaManager->AddToList( this );
 }
 
 CClientRadarArea::~CClientRadarArea ( void )

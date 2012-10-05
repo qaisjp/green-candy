@@ -10,6 +10,8 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -37,11 +39,9 @@ static int luaconstructor_stream( lua_State *L )
     return 0;
 }
 
-CClientStreamElement::CClientStreamElement( CClientStreamer * pStreamer, ElementID ID, LuaClass& root, bool system ) : CClientEntity( ID, system, root )
+CClientStreamElement::CClientStreamElement( CClientStreamer *pStreamer, ElementID ID, lua_State *L, bool system ) : CClientEntity( ID, system, L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_stream, 1 );

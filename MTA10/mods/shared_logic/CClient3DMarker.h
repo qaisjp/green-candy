@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClient3DMarker.h
@@ -8,6 +8,9 @@
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -27,51 +30,51 @@ public:
         TYPE_INVALID,
     };
 
-                                    CClient3DMarker                     ( CClientMarker * pThis );
-                                    ~CClient3DMarker                    ( void );
+                                    CClient3DMarker( CClientMarker *pThis );
+                                    ~CClient3DMarker();
 
-    inline unsigned int             GetMarkerType                       ( void ) const                      { return CClientMarkerCommon::CLASS_3DMARKER; };
+    inline unsigned int             GetMarkerType() const                               { return CClientMarkerCommon::CLASS_3DMARKER; }
 
-    unsigned long                   Get3DMarkerType                     ( void );
-    void                            Set3DMarkerType                     ( unsigned long ulType );
+    unsigned long                   Get3DMarkerType() const;
+    void                            Set3DMarkerType( unsigned long type );
 
-    bool                            IsHit                               ( const CVector& vecPosition ) const;
+    bool                            IsHit( const CVector& pos ) const;
 
-    inline void                     GetPosition                         ( CVector& vecPosition ) const      { vecPosition = m_Matrix.pos; };
-    inline void                     SetPosition                         ( const CVector& vecPosition )      { m_Matrix.pos = vecPosition; };
+    inline void                     GetPosition( CVector& pos ) const                   { pos = m_Matrix.pos; }
+    inline void                     SetPosition( const CVector& pos )                   { m_Matrix.pos = pos; }
 
-    inline void                     GetMatrix                           ( RwMatrix& mat )                   { mat = m_Matrix; };
-    inline void                     SetMatrix                           ( const RwMatrix& mat )             { m_Matrix = mat; };
+    inline void                     GetMatrix( RwMatrix& mat ) const                    { mat = m_Matrix; }
+    inline void                     SetMatrix( const RwMatrix& mat )                    { m_Matrix = mat; }
 
-    inline bool                     IsVisible                           ( void ) const                      { return m_bVisible; };
-    inline void                     SetVisible                          ( bool bVisible )                   { m_bVisible = bVisible; };
+    inline bool                     IsVisible() const                                   { return m_visible; }
+    inline void                     SetVisible( bool bVisible )                         { m_visible = bVisible; }
 
-    inline SColor                   GetColor                            ( void ) const                      { return m_Color; }
-    inline void                     SetColor                            ( const SColor color )              { m_Color = color; }
+    inline SColor                   GetColor() const                                    { return m_color; }
+    inline void                     SetColor( const SColor color )                      { m_color = color; }
 
-    inline float                    GetSize                             ( void ) const                      { return m_fSize; };
-    inline void                     SetSize                             ( float fSize )                     { m_fSize = fSize; };
+    inline float                    GetSize() const                                     { return m_size; }
+    inline void                     SetSize( float fSize )                              { m_size = fSize; }
 
-    inline float                    GetPulseFraction                    ( void )                            { return static_cast < float > ( m_pMarker->GetPulseFraction() ); };
-    void                            SetPulseFraction                    ( float fFraction )                 { m_pMarker->SetPulseFraction ( fFraction ); };
+    inline float                    GetPulseFraction() const                            { return m_pMarker->GetPulseFraction(); }
+    void                            SetPulseFraction( float fFraction )                 { m_pMarker->SetPulseFraction( fFraction ); }
 
 protected:
-    void                            StreamIn                            ( void );
-    void                            StreamOut                           ( void );
+    void                            StreamIn();
+    void                            StreamOut();
 
-    void                            DoPulse                             ( void );
+    void                            DoPulse();
 
 private:
-    CClientMarker *                 m_pThis;
+    CClientMarker*                  m_pThis;
     RwMatrix                        m_Matrix;
 
-    bool                            m_bVisible;
-    DWORD                           m_dwType;
-    float                           m_fSize;
-    SColor                          m_Color;
+    bool                            m_visible;
+    e3DMarkerType                   m_type;
+    float                           m_size;
+    SColor                          m_color;
     C3DMarker*                      m_pMarker;
-    unsigned int                    m_ulIdentifier;
-    bool                            m_bMarkerStreamedIn;
+    unsigned int                    m_id;
+    bool                            m_streamedIn;
 };
 
 #endif

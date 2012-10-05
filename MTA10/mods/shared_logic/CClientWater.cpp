@@ -8,6 +8,8 @@
 *  DEVELOPERS:  arc_
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -44,108 +46,114 @@ void CClientWater::InstanceLua( bool system )
     lua_pop( m_lua, 1 );
 }
 
-CClientWater::CClientWater ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, CVector& vecBL, CVector& vecBR, CVector& vecTL, CVector& vecTR, bool bShallow ) : CClientEntity( ID, system, root )
+CClientWater::CClientWater( CClientManager *pManager, ElementID ID, lua_State *L, bool system, CVector& vecBL, CVector& vecBR, CVector& vecTL, CVector& vecTR, bool bShallow ) : CClientEntity( ID, system, L )
 {
     InstanceLua( system );
 
     m_pManager = pManager;
-    m_pWaterManager = pManager->GetWaterManager ();
-    m_pPoly = g_pGame->GetWaterManager ()->CreateQuad ( vecBL, vecBR, vecTL, vecTR, bShallow );
-    SetTypeName ( "water" );
+    m_pWaterManager = pManager->GetWaterManager();
+    m_pPoly = g_pGame->GetWaterManager()->CreateQuad( vecBL, vecBR, vecTL, vecTR, bShallow );
+    SetTypeName( "water" );
 
-    m_pWaterManager->AddToList ( this );
+    m_pWaterManager->AddToList( this );
 }
 
-CClientWater::CClientWater ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, CVector& vecL, CVector& vecR, CVector& vecTB, bool bShallow ) : CClientEntity( ID, system, root )
+CClientWater::CClientWater( CClientManager *pManager, ElementID ID, lua_State *L, bool system, CVector& vecL, CVector& vecR, CVector& vecTB, bool bShallow ) : CClientEntity( ID, system, L )
 {
     InstanceLua( system );
 
     m_pManager = pManager;
-    m_pWaterManager = pManager->GetWaterManager ();
-    m_pPoly = g_pGame->GetWaterManager ()->CreateTriangle ( vecL, vecR, vecTB, bShallow );
-    SetTypeName ( "water" );
+    m_pWaterManager = pManager->GetWaterManager();
+    m_pPoly = g_pGame->GetWaterManager()->CreateTriangle( vecL, vecR, vecTB, bShallow );
+    SetTypeName( "water" );
 
-    m_pWaterManager->AddToList ( this );
+    m_pWaterManager->AddToList( this );
 }
 
-CClientWater::~CClientWater ()
+CClientWater::~CClientWater()
 {
-    Unlink ();
+    Unlink();
+
     if ( m_pPoly )
-        g_pGame->GetWaterManager ()->DeletePoly ( m_pPoly );
+        g_pGame->GetWaterManager()->DeletePoly( m_pPoly );
 }
 
-int CClientWater::GetNumVertices () const
+size_t CClientWater::GetNumVertices() const
 {
     if ( !m_pPoly )
         return 0;
     
-    return m_pPoly->GetNumVertices ();
+    return m_pPoly->GetNumVertices();
 }
 
-void CClientWater::GetPosition ( CVector& vecPosition ) const
+void CClientWater::GetPosition( CVector& vecPosition ) const
 {
     // Calculate the average of the vertex positions
     vecPosition.fX = 0.0f;
     vecPosition.fY = 0.0f;
     vecPosition.fZ = 0.0f;
+
     if ( !m_pPoly )
         return;
 
     CVector vecVertexPos;
-    for ( int i = 0; i < GetNumVertices (); i++ )
+    for ( unsigned int i = 0; i < GetNumVertices(); i++ )
     {
-        m_pPoly->GetVertex ( i )->GetPosition ( vecVertexPos );
+        m_pPoly->GetVertex( i )->GetPosition( vecVertexPos );
         vecPosition += vecVertexPos;
     }
-    vecPosition /= static_cast < float > ( m_pPoly->GetNumVertices () );
+    vecPosition /= (float)m_pPoly->GetNumVertices();
 }
 
-bool CClientWater::GetVertexPosition ( int iVertexIndex, CVector& vecPosition )
+bool CClientWater::GetVertexPosition( unsigned int idx, CVector& pos ) const
 {
     if ( !m_pPoly )
         return false;
 
-    CWaterVertex* pVertex = m_pPoly->GetVertex ( iVertexIndex );
+    CWaterVertex *pVertex = m_pPoly->GetVertex( idx );
+
     if ( !pVertex )
         return false;
 
-    pVertex->GetPosition ( vecPosition );
+    pVertex->GetPosition( pos );
     return true;
 }
 
-void CClientWater::SetPosition ( const CVector& vecPosition )
+void CClientWater::SetPosition( const CVector& pos )
 {
     if ( !m_pPoly )
         return;
 
     CVector vecCurrentPosition;
-    GetPosition ( vecCurrentPosition );
-    CVector vecDelta = vecPosition - vecCurrentPosition;
+    GetPosition( vecCurrentPosition );
+    CVector vecDelta = pos - vecCurrentPosition;
 
     CVector vecVertexPos;
-    for ( int i = 0; i < GetNumVertices (); i++ )
+
+    for ( unsigned int i = 0; i < GetNumVertices(); i++ )
     {
-        m_pPoly->GetVertex ( i )->GetPosition ( vecVertexPos );
+        m_pPoly->GetVertex( i )->GetPosition( vecVertexPos );
         vecVertexPos += vecDelta;
-        m_pPoly->GetVertex ( i )->SetPosition ( vecVertexPos );
+        m_pPoly->GetVertex( i )->SetPosition( vecVertexPos );
     }
-    g_pGame->GetWaterManager ()->RebuildIndex ();
+
+    g_pGame->GetWaterManager()->RebuildIndex();
 }
 
-bool CClientWater::SetVertexPosition ( int iVertexIndex, CVector& vecPosition, void* pChangeSource )
+bool CClientWater::SetVertexPosition( unsigned int idx, const CVector& pos, void *pChangeSource )
 {
     if ( !m_pPoly )
         return false;
 
-    CWaterVertex* pVertex = m_pPoly->GetVertex ( iVertexIndex );
+    CWaterVertex *pVertex = m_pPoly->GetVertex( idx );
+
     if ( !pVertex )
         return false;
 
-    return pVertex->SetPosition ( vecPosition, pChangeSource );
+    return pVertex->SetPosition( pos, pChangeSource );
 }
 
-void CClientWater::Unlink ()
+void CClientWater::Unlink()
 {
-    m_pWaterManager->RemoveFromList ( this );
+    m_pWaterManager->RemoveFromList( this );
 }

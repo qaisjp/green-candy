@@ -11,6 +11,8 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 class CClientPickup;
@@ -95,41 +97,41 @@ public:
         WEAPON_INVALID = 0xFF,
     };
 
-                                CClientPickup( class CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel, CVector vecPosition = CVector ( 0, 0, 0 ) );
-                                ~CClientPickup( void );
+                                CClientPickup( class CClientManager* pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel, CVector vecPosition = CVector( 0, 0, 0 ) );
+                                ~CClientPickup();
 
-    void                        Unlink( void );
+    void                        Unlink();
 
-    inline eClientEntityType    GetType( void ) const                                       { return CCLIENTPICKUP; };
+    inline eClientEntityType    GetType() const                                             { return CCLIENTPICKUP; };
 
-    inline unsigned short       GetModel( void )                                            { return m_usModel; };
+    inline unsigned short       GetModel()                                                  { return m_usModel; };
 
-    inline CPickup *            GetGamePickup( void )                                       { return m_pPickup; };
-    inline CObject *            GetGameObject( void )                                       { return m_pObject; }
-    CEntity*                    GetGameEntity( void )                                       { return m_pObject; }
-    const CEntity*              GetGameEntity( void ) const                                 { return m_pObject; }
+    inline CPickup *            GetGamePickup()                                             { return m_pPickup; };
+    inline CObject *            GetGameObject()                                             { return m_pObject; }
+    CEntity*                    GetGameEntity()                                             { return m_pObject; }
+    const CEntity*              GetGameEntity() const                                       { return m_pObject; }
 
-    inline const CVector&       GetPosition( void )                                         { return m_vecPosition; };
+    inline const CVector&       GetPosition()                                               { return m_vecPosition; };
     inline void                 GetPosition( CVector& vecPosition ) const                   { vecPosition = m_vecPosition; };
     void                        SetPosition( const CVector& vecPosition );
     void                        SetModel( unsigned short usModel );
 
-    inline bool                 IsVisible( void )                                           { return m_bVisible; };
+    inline bool                 IsVisible()                                                 { return m_bVisible; };
     void                        SetVisible( bool bVisible );
 
-    inline CClientColShape *    GetColShape( void )                                         { return m_pCollision; }
+    inline CClientColShape *    GetColShape()                                               { return m_pCollision; }
 
     void                        Callback_OnCollision( CClientColShape& Shape, CClientEntity& Entity );
     void                        Callback_OnLeave( CClientColShape& Shape, CClientEntity& Entity );
 
 protected:
     void                        StreamIn( bool bInstantly );
-    void                        StreamOut( void );
+    void                        StreamOut();
 
 private:
-    void                        Create( void );
-    void                        Destroy( void );
-    void                        ReCreate( void );
+    void                        Create();
+    void                        Destroy();
+    void                        ReCreate();
 
     CClientPickupManager*       m_pPickupManager;
 

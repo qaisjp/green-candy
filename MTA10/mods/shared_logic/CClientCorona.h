@@ -29,7 +29,7 @@ public:
     inline void                     GetPosition( CVector& vecPosition ) const       { vecPosition = m_Matrix.pos; }
     inline void                     SetPosition( const CVector& vecPosition )       { m_Matrix.pos = vecPosition; }
 
-    inline void                     GetMatrix( RwMatrix& mat )                      { mat = m_Matrix; }
+    inline void                     GetMatrix( RwMatrix& mat ) const                { mat = m_Matrix; }
     inline void                     SetMatrix( const RwMatrix& mat )                { m_Matrix = mat; }
 
     inline bool                     IsVisible() const                               { return m_bVisible; };
@@ -42,21 +42,21 @@ public:
     inline void                     SetSize( float fSize )                          { m_fSize = fSize; };
 
 protected:
-    bool                            IsStreamedIn()                                  { return m_bStreamedIn; };
+    bool                            IsStreamedIn() const                            { return m_bStreamedIn; };
     void                            StreamIn();
     void                            StreamOut();
 
     void                            DoPulse();
 
 private:
-    CClientMarker *                 m_pThis;
+    CClientMarker*                  m_pThis;
     bool                            m_bStreamedIn;
     unsigned long                   m_ulIdentifier;
     RwMatrix                        m_Matrix;
     bool                            m_bVisible;
     float                           m_fSize;
     SColor                          m_Color;
-    CCoronas *                      m_pCoronas;
+    CCoronas*                       m_pCoronas;
 };
 
 #endif

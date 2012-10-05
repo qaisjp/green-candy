@@ -43,7 +43,7 @@ static int luaconstructor_camera( lua_State *L )
     return 0;
 }
 
-CClientCamera::CClientCamera ( CClientManager* pManager ) : CClientEntity ( INVALID_ELEMENT_ID, true, *resMan )
+CClientCamera::CClientCamera( CClientManager* pManager ) : CClientEntity( INVALID_ELEMENT_ID, true, resMan->GetVM() )
 {
     lua_State *L = resMan->GetVM();
 
@@ -53,6 +53,9 @@ CClientCamera::CClientCamera ( CClientManager* pManager ) : CClientEntity ( INVA
     lua_pushcclosure( L, luaconstructor_camera, 1 );
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
+
+    // Set our parent
+    SetRoot( resMan );
 
     CClientEntityRefManager::AddEntityRefs ( ENTITY_REF_DEBUG ( this, "CClientCamera" ), &m_pFocusedPlayer, &m_pFocusedEntity, NULL );
 

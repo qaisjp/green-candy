@@ -827,7 +827,7 @@ void CVehicleModelInfoSAInterface::Setup()
             RpAtomic *primary = NULL;
             RpAtomic *secondary = NULL;
 
-            hier->BaseAtomicHierarchy();
+            hier->SetRootForHierarchy( hier );
 
             hier->RegisterRoot();
 
@@ -879,7 +879,7 @@ void CVehicleModelInfoSAInterface::Setup()
                 continue;
             }
 
-            hier->BaseAtomicHierarchy();
+            hier->SetRootForHierarchy( hier );
 
             hier->RegisterRoot();
 

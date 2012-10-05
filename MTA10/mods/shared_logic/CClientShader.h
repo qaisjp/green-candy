@@ -7,6 +7,8 @@
 *  PURPOSE:     Core shader rendering management for deathmatch
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #ifndef _CLIENT_SHADER_
@@ -17,12 +19,12 @@
 class CClientShader : public CClientMaterial
 {
 public:
-                            CClientShader( CClientManager* pManager, ElementID ID, LuaClass& root, CShaderItem* pShaderItem );
+                            CClientShader( CClientManager *pManager, ElementID ID, lua_State *L, CShaderItem *pShaderItem );
 
-    eClientEntityType       GetType( void ) const                               { return CCLIENTSHADER; }
+    eClientEntityType       GetType() const                                     { return CCLIENTSHADER; }
 
     // CClientShader methods
-    CShaderItem*            GetShaderItem( void )                               { return (CShaderItem*)m_pRenderItem; }
+    CShaderItem*            GetShaderItem()                                     { return (CShaderItem*)m_pRenderItem; }
 
 };
 

@@ -7,6 +7,8 @@
 *  PURPOSE:     Core texture interface for deathmatch
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #ifndef _RENDER_TEXTURE_
@@ -19,31 +21,31 @@
 class CClientTexture : public CClientMaterial
 {
 public:
-                            CClientTexture( CClientManager* pManager, ElementID ID, LuaClass& root, CTextureItem* pTextureItem );
+                            CClientTexture( CClientManager *pManager, ElementID ID, lua_State *L, CTextureItem *pTextureItem );
 
-    eClientEntityType       GetType( void ) const                               { return CCLIENTTEXTURE; }
+    eClientEntityType       GetType() const                                     { return CCLIENTTEXTURE; }
 
     // CClientTexture methods
-    CTextureItem*           GetTextureItem( void )                              { return (CTextureItem*)m_pRenderItem; }
+    CTextureItem*           GetTextureItem()                                    { return (CTextureItem*)m_pRenderItem; }
 
 };
 
 class CClientRenderTarget : public CClientTexture
 {
 public:
-                            CClientRenderTarget( CClientManager* pManager, ElementID ID, LuaClass& root, CRenderTargetItem* pRenderTargetItem );
+                            CClientRenderTarget( CClientManager *pManager, ElementID ID, lua_State *L, CRenderTargetItem *pRenderTargetItem );
 
     // CClientRenderTarget methods
-    CRenderTargetItem*      GetRenderTargetItem( void )                         { return (CRenderTargetItem*)m_pRenderItem; }
+    CRenderTargetItem*      GetRenderTargetItem()                               { return (CRenderTargetItem*)m_pRenderItem; }
 };
 
 class CClientScreenSource : public CClientTexture
 {
 public:
-                            CClientScreenSource( CClientManager* pManager, ElementID ID, LuaClass& root, CScreenSourceItem* pScreenSourceItem );
+                            CClientScreenSource( CClientManager *pManager, ElementID ID, lua_State *L, CScreenSourceItem *pScreenSourceItem );
 
     // CClientScreenSource methods
-    CScreenSourceItem*      GetScreenSourceItem( void )                         { return (CScreenSourceItem*)m_pRenderItem; }
+    CScreenSourceItem*      GetScreenSourceItem()                               { return (CScreenSourceItem*)m_pRenderItem; }
 };
 
 #endif //_RENDER_TEXTURE_

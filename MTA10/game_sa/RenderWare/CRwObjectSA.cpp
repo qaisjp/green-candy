@@ -16,8 +16,8 @@ CRwObjectSA::CRwObjectSA( RwObject *obj )
 {
     m_object = obj;
 
-    // Most things have frames for identification purposes, such as bone names or vehicle parts
-    m_frame = obj->m_parent ? new CRwFrameSA( obj->m_parent ) : NULL;
+    // Parent frames have to be assigned during runtime
+    m_frame = NULL;
 }
 
 CRwObjectSA::~CRwObjectSA()

@@ -26,7 +26,7 @@
 
 using std::list;
 
-extern CClientGame* g_pClientGame;
+extern CClientGame *g_pClientGame;
 
 // To hide the ugly "pointer truncation from DWORD* to unsigned long warning
 #pragma warning(disable:4311)
@@ -36,43 +36,41 @@ extern CClientGame* g_pClientGame;
 #define VEHICLE_INTERPOLATION_WARP_THRESHOLD            15
 #define VEHICLE_INTERPOLATION_WARP_THRESHOLD_FOR_SPEED  1.8f
 
-CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, unsigned short usModel ) : CClientStreamElement( pManager->GetVehicleStreamer(), ID, root, system )
+CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel ) : CClientStreamElement( pManager->GetVehicleStreamer(), ID, L, system )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_vehicle, 1 );
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
 
-    CClientEntityRefManager::AddEntityRefs ( ENTITY_REF_DEBUG ( this, "CClientVehicle" ), &m_pDriver, &m_pOccupyingDriver, &m_pPreviousLink, &m_pNextLink, &m_pTowedVehicle, &m_pTowedByVehicle, &m_pPickedUpWinchEntity, &m_pLastSyncer, NULL );
+    CClientEntityRefManager::AddEntityRefs( ENTITY_REF_DEBUG( this, "CClientVehicle" ), &m_pDriver, &m_pOccupyingDriver, &m_pPreviousLink, &m_pNextLink, &m_pTowedVehicle, &m_pTowedByVehicle, &m_pPickedUpWinchEntity, &m_pLastSyncer, NULL );
 
     // Initialize members
     m_pManager = pManager;
-    m_pObjectManager = m_pManager->GetObjectManager ();
-    m_pVehicleManager = pManager->GetVehicleManager ();
-    m_pModelRequester = pManager->GetModelRequestManager ();
+    m_pObjectManager = m_pManager->GetObjectManager();
+    m_pVehicleManager = pManager->GetVehicleManager();
+    m_pModelRequester = pManager->GetModelRequestManager();
     m_usModel = usModel;
-    m_eVehicleType = CClientVehicleManager::GetVehicleType ( usModel );
+    m_eVehicleType = CClientVehicleManager::GetVehicleType( usModel );
     m_pVehicle = NULL;
-    m_pUpgrades = new CVehicleUpgrades ( this );
-    m_pOriginalHandlingEntry = g_pGame->GetHandlingManager ()->GetOriginalHandlingData ( static_cast < eVehicleTypes > ( usModel ) );
-    m_pHandlingEntry = g_pGame->GetHandlingManager ()->CreateHandlingData ();
-    m_pHandlingEntry->Assign ( m_pOriginalHandlingEntry );
+    m_pUpgrades = new CVehicleUpgrades( this );
+    m_pOriginalHandlingEntry = g_pGame->GetHandlingManager()->GetOriginalHandlingData( (eVehicleTypes)usModel );
+    m_pHandlingEntry = g_pGame->GetHandlingManager()->CreateHandlingData();
+    m_pHandlingEntry->Assign( m_pOriginalHandlingEntry );
 
-    SetTypeName ( "vehicle" );
+    SetTypeName( "vehicle" );
 
     // Grab the model info and the bounding box
-    m_pModelInfo = g_pGame->GetModelInfo ( usModel );
-    m_ucMaxPassengers = CClientVehicleManager::GetMaxPassengerCount ( usModel );
+    m_pModelInfo = g_pGame->GetModelInfo( usModel );
+    m_ucMaxPassengers = CClientVehicleManager::GetMaxPassengerCount( usModel );
 
     // Set our default properties
     m_pDriver = NULL;
     m_pOccupyingDriver = NULL;
-    memset ( m_pPassengers, 0, sizeof ( m_pPassengers ) );
-    memset ( m_pOccupyingPassengers, 0, sizeof ( m_pOccupyingPassengers ) );
+    memset( m_pPassengers, 0, sizeof( m_pPassengers ) );
+    memset( m_pOccupyingPassengers, 0, sizeof( m_pOccupyingPassengers ) );
     m_pPreviousLink = NULL;
     m_pNextLink = NULL;
     m_Matrix.at.fY = 1.0f;
@@ -100,12 +98,12 @@ CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass
     m_usAdjustablePropertyValue = 0;
     for ( unsigned int i = 0; i < 6; ++i )
     {
-        m_bAllowDoorRatioSetting [ i ] = true;
-        m_fDoorOpenRatio [ i ] = 0.0f;
-        m_doorInterp.fStart [ i ] = 0.0f;
-        m_doorInterp.fTarget [ i ] = 0.0f;
-        m_doorInterp.ulStartTime [ i ] = 0UL;
-        m_doorInterp.ulTargetTime [ i ] = 0UL;
+        m_bAllowDoorRatioSetting[i] = true;
+        m_fDoorOpenRatio[i] = 0.0f;
+        m_doorInterp.fStart[i] = 0.0f;
+        m_doorInterp.fTarget[i] = 0.0f;
+        m_doorInterp.ulStartTime[i] = 0UL;
+        m_doorInterp.ulTargetTime[i] = 0UL;
     }
     m_bSwingingDoorsAllowed = false;
     m_bDoorsLocked = false;
@@ -119,14 +117,10 @@ CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass
     m_bFrozenWaitingForGroundToLoad = false;
     m_fGroundCheckTolerance = 0.f;
     m_fObjectsAroundTolerance = 0.f;
-    GetInitialDoorStates ( m_ucDoorStates );
-    memset ( m_ucWheelStates, 0, sizeof ( m_ucWheelStates ) );
-    memset ( m_ucPanelStates, 0, sizeof ( m_ucPanelStates ) );
-    memset ( m_ucLightStates, 0, sizeof ( m_ucLightStates ) );
-
-    for ( unsigned int n = 0; n < NUM_VEHICLE_COMPONENTS; n++ )
-        m_components[n] = NULL;
-
+    GetInitialDoorStates( m_ucDoorStates );
+    memset( m_ucWheelStates, 0, sizeof( m_ucWheelStates ) );
+    memset( m_ucPanelStates, 0, sizeof( m_ucPanelStates ) );
+    memset( m_ucLightStates, 0, sizeof( m_ucLightStates ) );
     m_bCanBeDamaged = true;
     m_bSyncUnoccupiedDamage = false;
     m_bScriptCanBeDamaged = true;
@@ -152,8 +146,8 @@ CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass
     m_bTrainDirection = false;
     m_fTrainSpeed = 0.0f;
     m_bTaxiLightOn = false;
-    m_vecGravity = CVector ( 0.0f, 0.0f, -1.0f );
-    m_HeadLightColor = SColorRGBA ( 255, 255, 255, 255 );
+    m_vecGravity = CVector( 0.0f, 0.0f, -1.0f );
+    m_HeadLightColor = SColorRGBA( 255, 255, 255, 255 );
     m_bHeliSearchLightVisible = false;
     m_fHeliRotorSpeed = 0.0f;
     m_bHasCustomHandling = false;
@@ -185,43 +179,44 @@ CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, LuaClass
     m_vehModelType = m_pModelInfo->GetVehicleType();
 
     // Add this vehicle to the vehicle list
-    m_pVehicleManager->AddToList ( this );
+    m_pVehicleManager->AddToList( this );
 }
 
 CClientVehicle::~CClientVehicle()
 {
     // Unreference us
-    m_pManager->UnreferenceEntity ( this );    
+    m_pManager->UnreferenceEntity( this );    
 
     // Unlink any towing attachments
     if ( m_pTowedVehicle )
         m_pTowedVehicle->m_pTowedByVehicle = NULL;
+
     if ( m_pTowedByVehicle )
         m_pTowedByVehicle->m_pTowedVehicle = NULL;
 
-    AttachTo ( NULL );
+    AttachTo( NULL );
 
     // Remove all our projectiles
-    RemoveAllProjectiles ();
+    RemoveAllProjectiles();
 
     // Destroy the vehicle
-    Destroy ();
+    Destroy();
 
     // Make sure we haven't requested any model that will make us crash
     // when it's done loading.
-    m_pModelRequester->Cancel ( this, false );
+    m_pModelRequester->Cancel( this, false );
 
     // Unreference us from the driving player model (if any)
     if ( m_pDriver )
     {
-        m_pDriver->SetVehicleInOutState ( VEHICLE_INOUT_NONE );
+        m_pDriver->SetVehicleInOutState( VEHICLE_INOUT_NONE );
         UnpairPedAndVehicle( m_pDriver, this );
     }
 
     // And the occupying ones eventually
     if ( m_pOccupyingDriver )
     {
-        m_pOccupyingDriver->SetVehicleInOutState ( VEHICLE_INOUT_NONE );
+        m_pOccupyingDriver->SetVehicleInOutState( VEHICLE_INOUT_NONE );
         UnpairPedAndVehicle( m_pOccupyingDriver, this );
     }
 
@@ -229,31 +224,31 @@ CClientVehicle::~CClientVehicle()
     int i;
     for ( i = 0; i < (sizeof(m_pPassengers)/sizeof(CClientPed*)); i++ )
     {
-        if ( m_pPassengers [i] )
+        if ( m_pPassengers[i] )
         {
-            m_pPassengers [i]->m_uiOccupiedVehicleSeat = 0;
-            m_pPassengers [i]->SetVehicleInOutState ( VEHICLE_INOUT_NONE );
-            UnpairPedAndVehicle( m_pPassengers [i], this );
+            m_pPassengers[i]->m_uiOccupiedVehicleSeat = 0;
+            m_pPassengers[i]->SetVehicleInOutState( VEHICLE_INOUT_NONE );
+            UnpairPedAndVehicle( m_pPassengers[i], this );
         }
     }
 
     // Occupying passenger models
     for ( i = 0; i < (sizeof(m_pOccupyingPassengers)/sizeof(CClientPed*)); i++ )
     {
-        if ( m_pOccupyingPassengers [i] )
+        if ( m_pOccupyingPassengers[i] )
         {
-            m_pOccupyingPassengers [i]->m_uiOccupiedVehicleSeat = 0;
-            m_pOccupyingPassengers [i]->SetVehicleInOutState ( VEHICLE_INOUT_NONE );
-            UnpairPedAndVehicle( m_pOccupyingPassengers [i], this );
+            m_pOccupyingPassengers[i]->m_uiOccupiedVehicleSeat = 0;
+            m_pOccupyingPassengers[i]->SetVehicleInOutState( VEHICLE_INOUT_NONE );
+            UnpairPedAndVehicle( m_pOccupyingPassengers[i], this );
         }
     }
 
     // Remove us from the vehicle list
-    Unlink ();
+    Unlink();
 
     delete m_pUpgrades;
     delete m_pHandlingEntry;
-    CClientEntityRefManager::RemoveEntityRefs ( 0, &m_pDriver, &m_pOccupyingDriver, &m_pPreviousLink, &m_pNextLink, &m_pTowedVehicle, &m_pTowedByVehicle, &m_pPickedUpWinchEntity, &m_pLastSyncer, NULL );
+    CClientEntityRefManager::RemoveEntityRefs( 0, &m_pDriver, &m_pOccupyingDriver, &m_pPreviousLink, &m_pNextLink, &m_pTowedVehicle, &m_pTowedByVehicle, &m_pPickedUpWinchEntity, &m_pLastSyncer, NULL );
 }
 
 void CClientVehicle::Unlink ( void )
@@ -1419,32 +1414,22 @@ void CClientVehicle::SetLightStatus ( unsigned char ucLight, unsigned char ucSta
     }
 }
 
-void CClientVehicle::SetComponent( unsigned int idx, CClientAtomic *atom )
-{
-    if ( m_pVehicle )
-        m_pVehicle->SetComponent( idx, &atom->m_atomic );
-}
-
-CClientVehicleComponent* CClientVehicle::GetComponent( unsigned int idx )
+CClientVehicleComponent* CClientVehicle::GetComponent( const char *name )
 {
     if ( !m_pVehicle )
         return NULL;
 
-    if ( idx > NUM_VEHICLE_COMPONENTS-1 )
-        return NULL;
+    vehComponents_t::const_iterator iter;
 
-    CClientVehicleComponent *ccomp;
+    if ( ( iter = m_compContainer.find( name ) ) != m_compContainer.end() )
+        return iter->second;
 
-    if ( ccomp = m_components[idx] )
-        return ccomp;
-
-    CVehicleComponent *comp = m_pVehicle->GetComponent( idx );
+    CVehicleComponent *comp = m_pVehicle->GetComponent( name );
 
     if ( !comp )
         return NULL;
 
-    m_components[idx] = ccomp = new CClientVehicleComponent( this, idx, comp );
-    return ccomp;
+    return new CClientVehicleComponent( this, comp );
 }
 
 float CClientVehicle::GetHeliRotorSpeed() const
@@ -2446,11 +2431,8 @@ void CClientVehicle::Destroy()
         }
 
         // Destroy the components
-        for ( unsigned int n = 0; n < NUM_VEHICLE_COMPONENTS; n++ )
-        {
-            if ( CClientVehicleComponent *comp = m_components[n] )
-                comp->Delete();
-        }
+        while ( !m_compContainer.empty() )
+            m_compContainer.begin()->second->Destroy();
 
         // Destroy the vehicle
         delete m_pVehicle;

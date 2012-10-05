@@ -97,30 +97,33 @@ void CClientSoundManager::DoPulse ( void )
     }
 }
 
-void CClientSoundManager::SetDimension ( unsigned short usDimension )
+void CClientSoundManager::SetDimension( unsigned short usDimension )
 {
     m_usDimension = usDimension;
 }
 
-CClientSound* CClientSoundManager::PlaySound2D ( const SString& strSound, bool bIsURL, bool bLoop, LuaClass& root )
+CClientSound* CClientSoundManager::PlaySound2D( const SString& strSound, bool bIsURL, bool bLoop, LuaClass& root )
 {
-    CClientSound* pSound = new CClientSound ( m_pClientManager, INVALID_ELEMENT_ID, root );
+    CClientSound *pSound = new CClientSound( m_pClientManager, INVALID_ELEMENT_ID, root.GetVM() );
+    pSound->SetRoot( &root );
+
     if ( bIsURL )
     {
-        pSound->PlayStream ( strSound, bLoop );
+        pSound->PlayStream( strSound, bLoop );
         return pSound;
     }
     else
-        if ( pSound->Play ( strSound, bLoop ) )
+        if ( pSound->Play( strSound, bLoop ) )
             return pSound;
 
     pSound->Delete();
     return NULL;
 }
 
-CClientSound* CClientSoundManager::PlaySound3D ( const SString& strSound, bool bIsURL, const CVector& vecPosition, bool bLoop, LuaClass& root )
+CClientSound* CClientSoundManager::PlaySound3D( const SString& strSound, bool bIsURL, const CVector& vecPosition, bool bLoop, LuaClass& root )
 {
-    CClientSound* pSound = new CClientSound ( m_pClientManager, INVALID_ELEMENT_ID, root );
+    CClientSound *pSound = new CClientSound( m_pClientManager, INVALID_ELEMENT_ID, root.GetVM() );
+    pSound->SetRoot( &root );
 
     if ( bIsURL )
     {

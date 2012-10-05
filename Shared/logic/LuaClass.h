@@ -26,7 +26,7 @@ class LuaClass
 public:
     LuaClass( lua_State *lua, int ridx )
     {
-        m_lua = lua;
+        m_lua = lua_getmainstate( lua );    // for security reasons; main state will always be preserved
         m_ridx = ridx;
         m_class = acqcinf( lua, ridx );
     }

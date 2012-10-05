@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/C3DMarkersSA.cpp
 *  PURPOSE:     3D Marker entity manager
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -14,115 +15,86 @@
 
 #include "StdInc.h"
 
+inline static unsigned int GetMarkerIndex( C3DMarkerSAInterface *intf )
+{
+    return ( (C3DMarkerSAInterface*)ARRAY_3D_MARKERS - intf );
+}
+
 C3DMarkersSA::C3DMarkersSA()
 {
     DEBUG_TRACE("C3DMarkersSA::C3DMarkersSA()");
-    for(int i = 0;i< MAX_3D_MARKERS;i++)
-    {
-        this->Markers[i] = new C3DMarkerSA((C3DMarkerSAInterface *)(ARRAY_3D_MARKERS + i * sizeof(C3DMarkerSAInterface)));
-    }
+
+    for ( unsigned int i = 0; i < MAX_3D_MARKERS; i++ )
+        m_markers[i] = new C3DMarkerSA( (C3DMarkerSAInterface*)( ARRAY_3D_MARKERS + i * sizeof(C3DMarkerSAInterface) ) );
 }
 
-
-C3DMarkersSA::~C3DMarkersSA ()
+C3DMarkersSA::~C3DMarkersSA()
 {
-    for ( int i = 0; i < MAX_3D_MARKERS; i++ )
-    {
-        delete Markers [i];
-    }
+    for ( unsigned int i = 0; i < MAX_3D_MARKERS; i++ )
+        delete m_markers[i];
 }
 
-
-C3DMarker * C3DMarkersSA::CreateMarker(DWORD Identifier, e3DMarkerType dwType, CVector * vecPosition, FLOAT fSize, FLOAT fPulseFraction, BYTE r, BYTE g, BYTE b, BYTE a )
+C3DMarkerSA* C3DMarkersSA::CreateMarker( unsigned int id, e3DMarkerType eType, const CVector& pos, float fSize, float pulseFraction, SColor color )
 {
-    DEBUG_TRACE("C3DMarkersSA::CreateMarker(DWORD Identifier, e3DMarkerType dwType, CVector * vecPosition, FLOAT fSize, FLOAT fPulseFraction)");
-    /*
-    static C3dMarker *PlaceMarker(unsigned int nIdentifier, unsigned short nType, 
-    CVector &vecPosition, float fSize, unsigned char r, unsigned char g, unsigned char b, unsigned char a, 
-    unsigned short nPeriod, float fPulseFrac, short nRotRate, float normalX = 0.0f, 
-    float normalY = 0.0f, float normalZ = 0.0f, bool zCheck = FALSE);
-    */
-    WORD wType = dwType;
-    dwType = (e3DMarkerType)wType;
-    bool bZCheck = true;
+    DEBUG_TRACE("C3DMarker* C3DMarkersSA::CreateMarker( unsigned int id, e3DMarkerType type, const CVector& pos, float fSize, float pulseFraction, SColor color )");
+
+    unsigned char r, g, b, a;
+    r = color.A;
+    g = color.G;
+    b = color.B;
+    a = color.A;
 
     DWORD dwFunc = FUNC_PlaceMarker;
-    DWORD dwReturn = 0;
+    C3DMarkerSAInterface *intf;
     _asm
     {
-        push    bZCheck     // zCheck  ##SA##
+        push    1           // zCheck  ##SA##
         push    0           // normalZ ##SA##
         push    0           // normalY ##SA##
         push    0           // normalX ##SA##
         push    0           // rotate rate
-        push    fPulseFraction      // pulse
+        push    pulseFraction       // pulse
         push    0           // period
         push    a           // alpha
         push    b           // blue
         push    g           // green
         push    r           // red
         push    fSize       // size
-        push    vecPosition // position
-        push    dwType      // type
-        push    Identifier  // identifier
+        push    pos         // position
+        movzx   eax,eType
+        push    eax         // type
+        push    id          // identifier
         call    dwFunc
-        mov     dwReturn, eax
+        mov     intf, eax
         add     esp, 0x3C
     }
-/*
-    DWORD dwFunc = 0x0726D40;
-    DWORD dwReturn = 0;
-    _asm
-    {
-        push    0           // uses collision
-        push    5           // rotate rate
-        push    0x3F800000  // pulse (1.0)
-        push    1024        // period
-        push    255         // alpha
-        push    0           // blue
-        push    255         // green
-        push    255         // red
-        push    0x40000000      // size (2.0)
-        push    vecPosition // position
-        push    Identifier  // identifier
-        call    dwFunc
-        mov     dwReturn, eax
-        add     esp, 0x2C
-    }
-    */
-    if(dwReturn)
-    {
-        for(int i = 0; i < MAX_3D_MARKERS; i++)
-        {
-            if(Markers[i]->GetInterface() == (C3DMarkerSAInterface *)dwReturn)
-            {
-                //Markers[i]->Reset(); // debug stuff
-                return Markers[i];
-            }
-        }
-    }
 
-    return NULL;
+    if ( !intf )
+        return NULL;
+
+    return m_markers[GetMarkerIndex( intf )];
 }
 
-C3DMarker * C3DMarkersSA::FindFreeMarker()
+C3DMarkerSA* C3DMarkersSA::FindFreeMarker()
 {
-    DEBUG_TRACE("C3DMarker * C3DMarkersSA::FindFreeMarker()");
-    for(int i = 0; i<MAX_3D_MARKERS;i++)
+    DEBUG_TRACE("C3DMarkerSA* C3DMarkersSA::FindFreeMarker()");
+
+    for( unsigned int i = 0; i < MAX_3D_MARKERS; i++ )
     {
-        if(!Markers[i]->IsActive()) 
-            return Markers[i];
+        if ( !m_markers[i]->IsActive() ) 
+            return m_markers[i];
     }
     return NULL;
 }
 
-C3DMarker * C3DMarkersSA::FindMarker( DWORD Identifier )
+C3DMarkerSA* C3DMarkersSA::FindMarker( unsigned int id )
 {
-    DEBUG_TRACE("C3DMarker * C3DMarkersSA::FindMarker( DWORD Identifier )");
-    for(int i = 0; i<MAX_3D_MARKERS;i++)
+    DEBUG_TRACE("C3DMarkerSA* C3DMarkersSA::FindMarker( unsigned int idx )");
+
+    for ( unsigned int i = 0; i < MAX_3D_MARKERS; i++ )
     {
-        if(Markers[i]->GetIdentifier() == Identifier) 
-            return Markers[i];
+        if ( m_markers[i]->GetIdentifier() == id ) 
+            return m_markers[i];
     }
     return NULL;
 }

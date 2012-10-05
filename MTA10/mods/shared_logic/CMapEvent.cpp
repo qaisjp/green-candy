@@ -37,10 +37,10 @@ static int luaconstructor_mapevent( lua_State *L )
     return 0;
 }
 
-CMapEvent::CMapEvent( LuaClass& root, CLuaMain *main, CMapEventManager& manager, const char *name, const LuaFunctionRef& funcRef, bool propagated ) : LuaElement( root ), m_system( manager )
+CMapEvent::CMapEvent( CLuaMain *main, CMapEventManager& manager, const char *name, const LuaFunctionRef& funcRef, bool propagated ) : LuaElement( **main ), m_system( manager )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
+    lua_State *L = **main;
 
     PushStack( L );
     lua_pushlightuserdata( L, this );

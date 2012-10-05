@@ -14,6 +14,8 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 class CClientRadarMarker;
@@ -38,7 +40,6 @@ class CClientRadarMarker;
 class CClientRadarMarker : public CClientEntity
 {
     friend class CClientRadarMarkerManager;
-
 public:
     enum EMapMarkerState
     {
@@ -49,46 +50,46 @@ public:
     };
 
 public:
-                                        CClientRadarMarker( class CClientManager* pManager, ElementID ID, LuaClass& root, bool system, short usOrdering = 0, unsigned short usVisibleDistance = 16383 );
-                                        ~CClientRadarMarker( void );
+                                        CClientRadarMarker( class CClientManager *pManager, ElementID ID, lua_State *L, bool system, short usOrdering = 0, unsigned short usVisibleDistance = 16383 );
+                                        ~CClientRadarMarker();
 
-    void                                Unlink( void );
+    void                                Unlink();
 
-    inline eClientEntityType            GetType( void ) const                                       { return CCLIENTRADARMARKER; };
+    inline eClientEntityType            GetType() const                                             { return CCLIENTRADARMARKER; };
 
-    void                                DoPulse( void );
+    void                                DoPulse();
 
-    inline bool                         IsVisible( void )                                           { return m_bIsVisible; }
+    inline bool                         IsVisible() const                                           { return m_bIsVisible; }
 
     void                                SetPosition( const CVector& vecPosition );
     void                                GetPosition( CVector& vecPosition ) const;
 
-    inline unsigned short               GetScale( void )                                            { return m_usScale; };
+    inline unsigned short               GetScale() const                                            { return m_usScale; }
     void                                SetScale( unsigned short usScale );
 
-    inline SColor                       GetColor( void ) const                                      { return m_Color; }
+    inline SColor                       GetColor() const                                            { return m_Color; }
     void                                SetColor( const SColor color );
 
-    inline unsigned long                GetSprite( void ) const                                     { return m_ulSprite; };
+    inline unsigned long                GetSprite() const                                           { return m_ulSprite; }
     void                                SetSprite( unsigned long ulSprite );
 
-    inline bool                         IsVisible( void ) const                                     { return  m_pMarker != NULL; };
+//  inline bool                         IsVisible() const                                           { return m_pMarker != NULL; }
     void                                SetVisible( bool bVisible );
 
-    inline IDirect3DTexture9*           GetMapMarkerImage( void )                                   { return m_pMapMarkerImage; };
-    inline EMapMarkerState              GetMapMarkerState( void )                                   { return m_eMapMarkerState; };
+    inline IDirect3DTexture9*           GetMapMarkerImage()                                         { return m_pMapMarkerImage; }
+    inline EMapMarkerState              GetMapMarkerState() const                                   { return m_eMapMarkerState; }
     void                                SetMapMarkerState( EMapMarkerState eMapMarkerState );
 
     void                                SetDimension( unsigned short usDimension );
     void                                RelateDimension( unsigned short usDimension );
 
-    inline short                        GetOrdering( void )                                         { return m_sOrdering; }
+    inline short                        GetOrdering() const                                         { return m_sOrdering; }
     void                                SetOrdering( short sOrdering );
 
-    inline unsigned short               GetVisibleDistance( void )                                  { return m_usVisibleDistance; }
+    inline unsigned short               GetVisibleDistance() const                                  { return m_usVisibleDistance; }
     inline void                         SetVisibleDistance( unsigned short usVisibleDistance )      { m_usVisibleDistance = usVisibleDistance; }
 
-    bool                                IsInVisibleDistance( void );
+    bool                                IsInVisibleDistance() const;
 
 private:
     void                                GetSquareTexture( DWORD dwBitMap[] );
@@ -96,12 +97,12 @@ private:
     void                                GetDownTriangleTexture( DWORD dwBitMap[] );
 
 private:
-    bool                                Create( void );
-    void                                InternalCreate( void );
-    void                                Destroy( void );    
+    bool                                Create();
+    void                                InternalCreate();
+    void                                Destroy();    
 
-    void                                CreateMarker( void );
-    void                                DestroyMarker( void );
+    void                                CreateMarker();
+    void                                DestroyMarker();
 
     class CClientRadarMarkerManager*    m_pRadarMarkerManager;
     CMarker*                            m_pMarker;

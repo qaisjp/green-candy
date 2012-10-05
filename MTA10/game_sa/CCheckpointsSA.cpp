@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CCheckpointsSA.cpp
 *  PURPOSE:     Checkpoint entity manager
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,90 +14,51 @@
 
 #include "StdInc.h"
 
-// constructor
 CCheckpointsSA::CCheckpointsSA()
 {
     DEBUG_TRACE("CCheckpointsSA::CCheckpointsSA()");
-    for(int i = 0;i< MAX_CHECKPOINTS;i++)
-        this->Checkpoints[i] = new CCheckpointSA((CCheckpointSAInterface *)(ARRAY_CHECKPOINTS + i * sizeof(CCheckpointSAInterface)));
+
+    for( unsigned int i = 0; i < MAX_CHECKPOINTS; i++ )
+        m_checkpoints[i] = new CCheckpointSA( (CCheckpointSAInterface*)( ARRAY_CHECKPOINTS + i * sizeof(CCheckpointSAInterface) ) );
 }
 
-CCheckpointsSA::~CCheckpointsSA ( void )
+CCheckpointsSA::~CCheckpointsSA()
 {
-    for ( int i = 0; i < MAX_CHECKPOINTS; i++ )
-    {
-        delete Checkpoints [i];
-    }
+    for ( unsigned int i = 0; i < MAX_CHECKPOINTS; i++ )
+        delete m_checkpoints[i];
 }
 
-/**
- * \todo Update default color to SA's orange instead of VC's pink
- */
-CCheckpoint * CCheckpointsSA::CreateCheckpoint(DWORD Identifier, WORD wType, CVector * vecPosition, CVector * vecPointDir, FLOAT fSize, FLOAT fPulseFraction, const SColor color)
+CCheckpointSA* CCheckpointsSA::CreateCheckpoint( unsigned int id, unsigned short type, const CVector& pos, const CVector& dir, float size, float pulseFraction, const SColor color )
 {
-    DEBUG_TRACE("CCheckpoint * CCheckpointsSA::CreateCheckpoint(DWORD Identifier, DWORD wType, CVector * vecPosition, CVector * vecPointDir, FLOAT fSize, FLOAT fPulseFraction, RGBA Color)");
-    /*
-    static CCheckpoint  *PlaceMarker(unsigned int nIdentifier, unsigned short nType, CVector &vecPosition, CVector &pointDir,
-    float fSize, unsigned char r, unsigned char g, unsigned char b, unsigned char a, unsigned short nPeriod, float fPulseFrac, short nRotRate);
-    */
+    DEBUG_TRACE("CCheckpointSA* CCheckpointsSA::CreateCheckpoint( unsigned int id, unsigned short type, const CVector& pos, const CVector& dir, float size, float pulseFraction, const SColor color )");
 
-    CCheckpoint * Checkpoint = FindFreeMarker();
-    if(Checkpoint)
-    {
-        ((CCheckpointSA *)(Checkpoint))->SetIdentifier ( Identifier );
-        ((CCheckpointSA *)(Checkpoint))->Activate();
-        ((CCheckpointSA *)(Checkpoint))->SetType(wType);
-        Checkpoint->SetPosition(vecPosition);
-        Checkpoint->SetPointDirection(vecPointDir);
-        Checkpoint->SetSize(fSize);
-        Checkpoint->SetColor(color);
-        Checkpoint->SetPulsePeriod(1024);
-        ((CCheckpointSA *)(Checkpoint))->SetPulseFraction(fPulseFraction);
-        Checkpoint->SetRotateRate(1);
+    CCheckpointSA *pt = FindFreeMarker();
 
-        return Checkpoint;
-    }
+    if ( !pt )
+        return NULL;
 
-/*  DWORD dwFunc = FUNC_CCheckpoints__PlaceMarker;
-    DWORD dwReturn = 0;
-    _asm
-    {
-        push    1               // rotate rate
-        push    fPulseFraction  // pulse
-        push    1024            // period
-        push    255             // alpha
-        push    0               // blue
-        push    0               // green
-        push    255             // red
-        push    fSize           // size
-        push    vecPointDir     // point direction
-        push    vecPosition     // position
-        push    dwType          // type
-        push    Identifier      // identifier
-        call    dwFunc
-        mov     dwReturn, eax
-        add     esp, 0x30
-    }
-    
-    if(dwReturn)
-    {
-        for(int i = 0; i < MAX_CHECKPOINTS; i++)
-        {
-            if(Checkpoints[i]->GetInterface() == (CCheckpointSAInterface *)dwReturn)
-                return Checkpoints[i];
-        }
-    }*/
-
-    return NULL;
+    pt->SetIdentifier( id );
+    pt->Activate();
+    pt->SetType( type );
+    pt->SetPosition( pos );
+    pt->SetPointDirection( dir );
+    pt->SetSize( size );
+    pt->SetColor( color );
+    pt->SetPulsePeriod( 1024 );
+    pt->SetPulseFraction( pulseFraction );
+    pt->SetRotateRate( 1 );
+    return pt;
 }
 
-CCheckpoint * CCheckpointsSA::FindFreeMarker()
+CCheckpointSA* CCheckpointsSA::FindFreeMarker()
 {
-    DEBUG_TRACE("CCheckpoint * CCheckpointsSA::FindFreeMarker()");
-    for(int i = 0; i<MAX_CHECKPOINTS;i++)
+    DEBUG_TRACE("CCheckpointSA* CCheckpointsSA::FindFreeMarker()");
+
+    for ( unsigned int i = 0; i < MAX_CHECKPOINTS; i++ )
     {
-        if(!Checkpoints[i]->IsActive()) 
-            return Checkpoints[i];
+        if ( !m_checkpoints[i]->IsActive() ) 
+            return m_checkpoints[i];
     }
+
     return NULL;
 }

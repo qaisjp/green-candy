@@ -15,36 +15,35 @@
 #include "StdInc.h"
 #include "net/SyncStructures.h"
 
-CDeathmatchVehicle::CDeathmatchVehicle( CClientManager* pManager, LuaClass& root, bool system, CUnoccupiedVehicleSync* pUnoccupiedVehicleSync, ElementID ID, unsigned short usVehicleModel ) : CClientVehicle( pManager, ID, root, system, usVehicleModel )
+CDeathmatchVehicle::CDeathmatchVehicle( CClientManager* pManager, lua_State *L, bool system, CUnoccupiedVehicleSync* pUnoccupiedVehicleSync, ElementID ID, unsigned short usVehicleModel ) : CClientVehicle( pManager, ID, L, system, usVehicleModel )
 {
     m_pUnoccupiedVehicleSync = pUnoccupiedVehicleSync;
-    GetInitialDoorStates ( m_ucLastDoorStates );
-    memset ( m_ucLastWheelStates, 0, sizeof ( m_ucLastWheelStates ) );
-    memset ( m_ucLastPanelStates, 0, sizeof ( m_ucLastPanelStates ) );
-    memset ( m_ucLastLightStates, 0, sizeof ( m_ucLastLightStates ) );
+    GetInitialDoorStates( m_ucLastDoorStates );
+
+    memset( m_ucLastWheelStates, 0, sizeof( m_ucLastWheelStates ) );
+    memset( m_ucLastPanelStates, 0, sizeof( m_ucLastPanelStates ) );
+    memset( m_ucLastLightStates, 0, sizeof( m_ucLastLightStates ) );
+
     m_bIsSyncing = false;
 
-    SetIsSyncing ( false );
+    SetIsSyncing( false );
 }
 
-
-CDeathmatchVehicle::~CDeathmatchVehicle ( void )
+CDeathmatchVehicle::~CDeathmatchVehicle()
 {
     if ( m_bIsSyncing && m_pUnoccupiedVehicleSync )
     {
-        m_pUnoccupiedVehicleSync->RemoveVehicle ( this );
+        m_pUnoccupiedVehicleSync->RemoveVehicle( this );
     }
 }
 
-
-void CDeathmatchVehicle::SetIsSyncing ( bool bIsSyncing )
+void CDeathmatchVehicle::SetIsSyncing( bool bIsSyncing )
 {
     m_bIsSyncing = bIsSyncing;
     SetSyncUnoccupiedDamage( m_bIsSyncing );
 }
 
-
-bool CDeathmatchVehicle::SyncDamageModel ( void )
+bool CDeathmatchVehicle::SyncDamageModel()
 {
     SVehicleDamageSync damage ( true, true, true, true, true );
     bool bChanges = false;
@@ -126,11 +125,10 @@ bool CDeathmatchVehicle::SyncDamageModel ( void )
     return false;
 }
 
-
-void CDeathmatchVehicle::ResetDamageModelSync ( void )
+void CDeathmatchVehicle::ResetDamageModelSync()
 {
-    for ( int i = 0; i < MAX_DOORS; i++ ) m_ucLastDoorStates [i] = GetDoorStatus ( i );
-    for ( int i = 0; i < MAX_WHEELS; i++ ) m_ucLastWheelStates [i] = GetWheelStatus ( i );
-    for ( int i = 0; i < MAX_PANELS; i++ ) m_ucLastPanelStates [i] = GetPanelStatus ( i );
-    for ( int i = 0; i < MAX_LIGHTS; i++ ) m_ucLastLightStates [i] = GetLightStatus ( i );
+    for ( int i = 0; i < MAX_DOORS; i++ ) m_ucLastDoorStates[i] = GetDoorStatus( i );
+    for ( int i = 0; i < MAX_WHEELS; i++ ) m_ucLastWheelStates[i] = GetWheelStatus( i );
+    for ( int i = 0; i < MAX_PANELS; i++ ) m_ucLastPanelStates[i] = GetPanelStatus( i );
+    for ( int i = 0; i < MAX_LIGHTS; i++ ) m_ucLastLightStates[i] = GetLightStatus( i );
 }

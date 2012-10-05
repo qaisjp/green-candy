@@ -20,7 +20,7 @@ class RegisteredCommands;
 class Command : public LuaElement
 {
 public:
-    Command( RegisteredCommands& cmds, LuaClass& root ) : manager( cmds ), LuaElement( root )
+    Command( RegisteredCommands& cmds, lua_State *L ) : LuaElement( L ), manager( cmds )
     {
     }
 

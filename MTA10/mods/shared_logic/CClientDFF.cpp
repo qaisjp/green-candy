@@ -97,7 +97,7 @@ static int luaconstructor_dff( lua_State *L )
     CModel::atomicList_t::const_iterator iter = atoms.begin();
 
     for ( ; iter != atoms.end(); iter++ )
-        new CClientAtomic( *dff, dff, **iter );
+        ( new CClientAtomic( L, dff, **iter ) )->SetRoot( dff );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -108,10 +108,9 @@ static int luaconstructor_dff( lua_State *L )
     return 0;
 }
 
-CClientDFF::CClientDFF( LuaClass& root, CModel& model ) : CClientRwObject( root, model ), m_model( model )
+CClientDFF::CClientDFF( lua_State *L, CModel& model ) : CClientRwObject( L, model ), m_model( model )
 {
-    lua_State *L = root.GetVM();
-
+    // Lua instancing
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_dff, 1 );
@@ -133,7 +132,7 @@ bool CClientDFF::ReplaceModel( unsigned short id )
     return true;
 }
 
-bool CClientDFF::HasReplaced( unsigned short id )
+bool CClientDFF::HasReplaced( unsigned short id ) const
 {
     return m_model.IsReplaced( id );
 }

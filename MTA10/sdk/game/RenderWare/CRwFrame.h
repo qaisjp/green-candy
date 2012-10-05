@@ -23,9 +23,14 @@ public:
     virtual void                    SetName( const char *name ) = 0;
     virtual const char*             GetName() const = 0;
 
+    virtual void                    Link( CRwFrame *child ) = 0;
+    virtual void                    Unlink() = 0;
+
     typedef std::list <CRwObject*> objectList_t;
+    typedef std::list <CRwFrame*> childList_t;
 
     virtual const objectList_t&     GetObjects() const = 0;
+    virtual const childList_t&      GetChildren() const = 0;
 
     virtual void                    SetLTM( const RwMatrix& mat ) = 0;
     virtual const RwMatrix&         GetLTM() const = 0;

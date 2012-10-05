@@ -21,15 +21,22 @@ class CClientVehicle;
 class CClientVehicleComponent : public LuaElement
 {
 public:
-                                CClientVehicleComponent( CClientVehicle *veh, unsigned int idx, CVehicleComponent *atomic );
+                                CClientVehicleComponent( CClientVehicle *veh, CVehicleComponent *atomic );
                                 ~CClientVehicleComponent();
 
-    CClientVehicle*             GetVehicle()                { return (CClientVehicle*)m_root; }
+    CClientVehicle*             GetVehicle()                        { return (CClientVehicle*)m_root; }
 
+    unsigned int                AddAtomic( CClientAtomic *atom );
+    unsigned int                GetAtomicCount() const;
+    bool                        RemoveAtomic( unsigned int idx );
+
+    CClientVehicle*             m_vehicle;
     CVehicleComponent*          m_component;
 
 protected:
-    unsigned int                m_idx;
+    typedef std::vector <CClientAtomic*> atomics_t;
+
+    atomics_t                   m_atomics;   // Kinda: Special modelinfo structures
 };
 
 #endif //_VEHICLE_COMPONENT_INTERFACE_

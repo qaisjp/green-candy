@@ -35,6 +35,7 @@
 #include "CPedSA.h"
 #include "CPlayerPedSA.h"
 #include "CCivilianPedSA.h"
+#include "CVehicleComponentSA.h"
 #include "CVehicleSA.h"
 #include "CAutomobileSA.h"
 #include "CHeliSA.h"

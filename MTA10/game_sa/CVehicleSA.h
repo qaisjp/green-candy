@@ -618,8 +618,8 @@ public:
     void                        SetColor( SColor color1, SColor color2, SColor color3, SColor color4, int );
     void                        GetColor( SColor& color1, SColor& color2, SColor& color3, SColor& color4, int ) const;
 
-    virtual void                SetComponent( unsigned int idx, CRpAtomic *atomic )     {}
-    virtual CVehicleComponent*  GetComponent( unsigned int idx )                    { return NULL; }
+    CVehicleComponent*          GetComponent( const char *name );
+    void                        GetComponentNameList( std::vector <std::string>& list );
 
     // Virtually internal shared functions
     void                        BurstTyre( unsigned char tyre )                         { GetInterface()->BurstTyre( tyre, 1 ); }
@@ -736,6 +736,8 @@ protected:
     CVector                     m_vecGravity;
     SColor                      m_RGBColors[4];
     unsigned int                m_poolIndex;
+
+    vehComponents_t             m_compContainer;
 };
 
 #endif

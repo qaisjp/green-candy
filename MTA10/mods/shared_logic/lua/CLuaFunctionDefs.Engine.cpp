@@ -35,7 +35,8 @@ namespace CLuaFunctionDefs
         if ( file )
         {
             // Create the col model
-            CClientColModel *pCol = new CClientColModel( *res->GetResourceCOLModelRoot() );
+            CClientColModel *pCol = new CClientColModel( L );
+            pCol->SetRoot( res->GetResourceCOLModelRoot() );
 
             // Attempt loading the file
             if ( pCol->LoadCol( file ) )
@@ -81,7 +82,8 @@ namespace CLuaFunctionDefs
             if ( model )
             {
                 // Create a DFF element
-                CClientDFF *dff = new CClientDFF( *res->GetResourceDFFRoot(), *model );
+                CClientDFF *dff = new CClientDFF( L, *model );
+                dff->SetRoot( res->GetResourceDFFRoot() );
                 dff->PushStack( L );
                 return 1;
             }
@@ -119,7 +121,8 @@ namespace CLuaFunctionDefs
             }
 
             // Create a TXD element
-            CClientTXD *pTXD = new CClientTXD( *res->GetResourceTXDRoot(), *dict );
+            CClientTXD *pTXD = new CClientTXD( L, *dict );
+            pTXD->SetRoot( res->GetResourceTXDRoot() );
 
             // Open a new fileStream
             CFile *file = res->OpenStream( path, "rb" );

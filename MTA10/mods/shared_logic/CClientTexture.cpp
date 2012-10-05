@@ -7,6 +7,8 @@
 *  PURPOSE:     Core texture management interface for deathmatch
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
@@ -32,11 +34,9 @@ static int luaconstructor_texture( lua_State *L )
     return 0;
 }
 
-CClientTexture::CClientTexture( CClientManager* pManager, ElementID ID, LuaClass& root, CTextureItem* pTextureItem ) : CClientMaterial( pManager, ID, root )
+CClientTexture::CClientTexture( CClientManager *pManager, ElementID ID, lua_State *L, CTextureItem *pTextureItem ) : CClientMaterial( pManager, ID, L )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_texture, 1 );
@@ -67,11 +67,9 @@ static int luaconstructor_target( lua_State *L )
     return 0;
 }
 
-CClientRenderTarget::CClientRenderTarget( CClientManager* pManager, ElementID ID, LuaClass& root, CRenderTargetItem* pRenderTargetItem ) : CClientTexture( pManager, ID, root, pRenderTargetItem )
+CClientRenderTarget::CClientRenderTarget( CClientManager* pManager, ElementID ID, lua_State *L, CRenderTargetItem* pRenderTargetItem ) : CClientTexture( pManager, ID, L, pRenderTargetItem )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_target, 1 );
@@ -102,11 +100,9 @@ static int luaconstructor_screensource( lua_State *L )
     return 0;
 }
 
-CClientScreenSource::CClientScreenSource( CClientManager* pManager, ElementID ID, LuaClass& root, CScreenSourceItem* pScreenSourceItem ) : CClientTexture( pManager, ID, root, pScreenSourceItem )
+CClientScreenSource::CClientScreenSource( CClientManager* pManager, ElementID ID, lua_State *L, CScreenSourceItem* pScreenSourceItem ) : CClientTexture( pManager, ID, L, pScreenSourceItem )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_screensource, 1 );

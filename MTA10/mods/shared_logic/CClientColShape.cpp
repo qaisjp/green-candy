@@ -10,6 +10,8 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -37,10 +39,8 @@ static int luaconstructor_colshape( lua_State *L )
     return 0;
 }
 
-CClientColShape::CClientColShape ( CClientManager* pManager, ElementID ID, LuaClass& root, bool system ) : CClientEntity ( ID, system, root )
+CClientColShape::CClientColShape( CClientManager* pManager, ElementID ID, lua_State *L, bool system ) : CClientEntity( ID, system, L )
 {
-    lua_State *L = root.GetVM();
-
     // Setup Lua
     PushStack( L );
     lua_pushlightuserdata( L, this );
@@ -48,7 +48,7 @@ CClientColShape::CClientColShape ( CClientManager* pManager, ElementID ID, LuaCl
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
 
-    CClientEntityRefManager::AddEntityRefs ( ENTITY_REF_DEBUG ( this, "CClientColShape" ), &m_pOwningMarker, &m_pOwningPickup, NULL );
+    CClientEntityRefManager::AddEntityRefs( ENTITY_REF_DEBUG( this, "CClientColShape" ), &m_pOwningMarker, &m_pOwningPickup, NULL );
 
     // Init
     m_pManager = pManager;
@@ -58,118 +58,103 @@ CClientColShape::CClientColShape ( CClientManager* pManager, ElementID ID, LuaCl
     m_pOwningMarker = NULL;
     m_pOwningPickup = NULL;
 
-    SetTypeName ( "colshape" );
+    SetTypeName( "colshape" );
 
     // Add it to our manager's list
-    m_pColManager = pManager->GetColManager ();
-    m_pColManager->AddToList ( this );
+    m_pColManager = pManager->GetColManager();
+    m_pColManager->AddToList( this );
 }
 
-
-
-CClientColShape::~CClientColShape ( void )
+CClientColShape::~CClientColShape()
 {
     if ( m_pOwningMarker && m_pOwningMarker->m_pCollision == this )
         m_pOwningMarker->m_pCollision = NULL;
     else if ( m_pOwningPickup && m_pOwningPickup->m_pCollision == this )
         m_pOwningPickup->m_pCollision = NULL;
 
-    RemoveAllColliders ( true );
-    Unlink ();
-    CClientEntityRefManager::RemoveEntityRefs ( 0, &m_pOwningMarker, &m_pOwningPickup, NULL );
+    RemoveAllColliders( true );
+    Unlink();
+    CClientEntityRefManager::RemoveEntityRefs( 0, &m_pOwningMarker, &m_pOwningPickup, NULL );
 }
 
-
-void CClientColShape::Unlink ( void )
+void CClientColShape::Unlink()
 {
-    m_pColManager->RemoveFromList ( this );
+    m_pColManager->RemoveFromList( this );
 }
 
-
-void CClientColShape::SizeChanged ( void )
+void CClientColShape::SizeChanged()
 {
-    UpdateSpatialData ();
+    UpdateSpatialData();
     // Maybe queue RefreshColliders for v1.1
 }
 
-void CClientColShape::DoPulse ( void )
+void CClientColShape::DoPulse()
 {
     // Update our position/rotation if we're attached
-    DoAttaching ();
-    #ifdef SPATIAL_DATABASE_TESTS
-        if ( !GetClientSpatialDatabase ()->IsEntityPresent ( this ) )
-        {
-            CSphere sphere = GetWorldBoundingSphere ();
-            CLogger::ErrorPrintf ( "Spatial problem - ColShape %08x Type %d not in new  sphere: %2.2f,%2.2f,%2.2f   %2.2f"
-                                                ,this
-                                                ,this->GetShapeType ()
-                                                ,sphere.vecPosition.fX
-                                                ,sphere.vecPosition.fY
-                                                ,sphere.vecPosition.fZ
-                                                ,sphere.fRadius
-                                                );
-        }
-    #endif
+    DoAttaching();
+
+#ifdef SPATIAL_DATABASE_TESTS
+    if ( !GetClientSpatialDatabase ()->IsEntityPresent ( this ) )
+    {
+        CSphere sphere = GetWorldBoundingSphere ();
+        CLogger::ErrorPrintf ( "Spatial problem - ColShape %08x Type %d not in new  sphere: %2.2f,%2.2f,%2.2f   %2.2f"
+                                            ,this
+                                            ,this->GetShapeType ()
+                                            ,sphere.vecPosition.fX
+                                            ,sphere.vecPosition.fY
+                                            ,sphere.vecPosition.fZ
+                                            ,sphere.fRadius
+                                            );
+    }
+#endif
 }
 
-
-bool CClientColShape::IsAttachable ( void )
+bool CClientColShape::IsAttachable() const
 {
     return ( !m_pOwningPickup && !m_pOwningMarker );
 }
 
-
-void CClientColShape::SetPosition ( const CVector& vecPosition )
+void CClientColShape::SetPosition( const CVector& vecPosition )
 {
     m_vecPosition = vecPosition;
-    UpdateSpatialData ();
-    CStaticFunctionDefinitions::RefreshColShapeColliders ( this );
+    UpdateSpatialData();
+    CStaticFunctionDefinitions::RefreshColShapeColliders( this );
 };
 
-
-void CClientColShape::CallHitCallback ( CClientEntity& Entity )
+void CClientColShape::CallHitCallback( CClientEntity& Entity )
 {
     // Call the callback with us as the shape if it exists
     if ( m_pCallback )
-    {
-        m_pCallback->Callback_OnCollision ( *this, Entity );
-    }
+        m_pCallback->Callback_OnCollision( *this, Entity );
 }
 
-
-void CClientColShape::CallLeaveCallback ( CClientEntity& Entity )
+void CClientColShape::CallLeaveCallback( CClientEntity& Entity )
 {
     // Call the callback with us as the shape if it exists
     if ( m_pCallback )
-    {
-        m_pCallback->Callback_OnLeave ( *this, Entity );
-    }
+        m_pCallback->Callback_OnLeave( *this, Entity );
 }
 
-
-bool CClientColShape::ColliderExists ( CClientEntity* pEntity )
+bool CClientColShape::ColliderExists( CClientEntity *pEntity ) const
 {
-    list < CClientEntity* > ::iterator iter = m_Colliders.begin ();
-    for ( ; iter != m_Colliders.end () ; iter++ )
+    entities_t::const_iterator iter = m_Colliders.begin();
+
+    for ( ; iter != m_Colliders.end(); iter++ )
     {
         if ( *iter == pEntity )
-        {
             return true;
-        }
     }    
     return false;
 }
 
-
-void CClientColShape::RemoveAllColliders ( bool bNotify )
+void CClientColShape::RemoveAllColliders( bool bNotify )
 {
     if ( bNotify )
     {
-        list < CClientEntity* > ::iterator iter = m_Colliders.begin ();
-        for ( ; iter != m_Colliders.end () ; iter++ )
-        {
-            (*iter)->RemoveCollision ( this );
-        }
+        entities_t::iterator iter = m_Colliders.begin();
+
+        for ( ; iter != m_Colliders.end(); iter++ )
+            (*iter)->RemoveCollision( this );
     }
-    m_Colliders.clear ();
+    m_Colliders.clear();
 }

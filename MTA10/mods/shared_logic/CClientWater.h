@@ -8,6 +8,8 @@
 *  DEVELOPERS:  arc_
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #ifndef __CCLIENTWATER_H
@@ -18,18 +20,18 @@
 class CClientWater : public CClientEntity
 {
 public:
-                                CClientWater( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, CVector& vecBL, CVector& vecBR, CVector& vecTL, CVector& vecTR, bool bShallow = false );
-                                CClientWater( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, CVector& vecL, CVector& vecR, CVector& vecTB, bool bShallow = false );
+                                CClientWater( CClientManager *pManager, ElementID ID, lua_State *L, bool system, CVector& vecBL, CVector& vecBR, CVector& vecTL, CVector& vecTR, bool bShallow = false );
+                                CClientWater( CClientManager *pManager, ElementID ID, lua_State *L, bool system, CVector& vecL, CVector& vecR, CVector& vecTB, bool bShallow = false );
                                 ~CClientWater();
 
-    bool                        Valid()                                          { return m_pPoly != NULL; }
+    bool                        Valid() const                                    { return m_pPoly != NULL; }
 
     eClientEntityType           GetType() const                                  { return CCLIENTWATER; }
-    int                         GetNumVertices() const;
+    size_t                      GetNumVertices() const;
     void                        GetPosition( CVector& vecPosition ) const;
-    bool                        GetVertexPosition( int iVertexIndex, CVector& vecPosition );
-    void                        SetPosition( const CVector& vecPosition );
-    bool                        SetVertexPosition( int iVertexIndex, CVector& vecPosition, void* pChangeSource = NULL );
+    bool                        GetVertexPosition( unsigned int idx, CVector& vecPosition ) const;
+    void                        SetPosition( const CVector& pos );
+    bool                        SetVertexPosition( unsigned int idx, const CVector& pos, void *pChangeSource = NULL );
     void                        Unlink();
 
 private:

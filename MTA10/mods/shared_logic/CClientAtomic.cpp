@@ -140,11 +140,9 @@ static int luaconstructor_atomic( lua_State *L )
     return 0;
 }
 
-CClientAtomic::CClientAtomic( LuaClass& root, CClientDFF *model, CRpAtomic& atom ) : CClientRwObject( root, atom ), m_atomic( atom )
+CClientAtomic::CClientAtomic( lua_State *L, CClientDFF *model, CRpAtomic& atom ) : CClientRwObject( L, atom ), m_atomic( atom )
 {
     // Lua instancing
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_atomic, 1 );
@@ -169,7 +167,7 @@ bool CClientAtomic::ReplaceModel( unsigned short id )
     return true;
 }
 
-bool CClientAtomic::HasReplaced( unsigned short id )
+bool CClientAtomic::HasReplaced( unsigned short id ) const
 {
     return m_atomic.IsReplaced( id );
 }

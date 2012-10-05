@@ -279,11 +279,8 @@ static int sysentity_constructor( lua_State *L )
     return 0;
 }
 
-CClientEntity::CClientEntity( ElementID ID, bool system, LuaClass& root ) : LuaElement( root ),
-        m_FromRootNode( this )
+CClientEntity::CClientEntity( ElementID ID, bool system, lua_State *L ) : LuaElement( L ), m_FromRootNode( this )
 {
-    lua_State *L = root.GetVM();
-
     // Extend our entity instance
     PushStack( L );
     lua_pushlightuserdata( L, this );

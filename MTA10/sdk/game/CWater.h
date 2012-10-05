@@ -1,9 +1,10 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        sdk/game/CWater.h
 *  PURPOSE:     Water interface
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -14,31 +15,31 @@
 
 enum EWaterPolyType
 {
-    WATER_POLY_NONE       = 0,
-    WATER_POLY_QUAD       = 1,
-    WATER_POLY_TRIANGLE   = 2,
-    WATER_POLY_LIST       = 3
+    WATER_POLY_NONE,
+    WATER_POLY_QUAD,
+    WATER_POLY_TRIANGLE,
+    WATER_POLY_LIST
 };
 
 #define WATER_VISIBLE 1
 #define WATER_SHALLOW 2
 
-class CWaterVertex
+class CWaterVertex abstract
 {
 public:
-    virtual WORD                GetID             () = 0;
-    virtual void                GetPosition       ( CVector& vec ) = 0;
-    virtual bool                SetPosition       ( CVector& vec, void* pChangeSource = NULL ) = 0;
+    virtual unsigned short      GetID() const = 0;
+    virtual void                GetPosition( CVector& vec ) const = 0;
+    virtual bool                SetPosition( const CVector& vec, void *pChangeSource = NULL ) = 0;
 };
 
-class CWaterPoly
+class CWaterPoly abstract
 {
 public:
-    virtual EWaterPolyType      GetType           () = 0;
-    virtual WORD                GetID             () = 0;
-    virtual int                 GetNumVertices    () = 0;
-    virtual CWaterVertex*       GetVertex         ( int index ) = 0;
-    virtual bool                ContainsPoint     ( float fX, float fY ) = 0;
+    virtual EWaterPolyType      GetType() const = 0;
+    virtual unsigned short      GetID() const = 0;
+    virtual size_t              GetNumVertices() const = 0;
+    virtual CWaterVertex*       GetVertex( unsigned int idx ) = 0;
+    virtual bool                ContainsPoint( float x, float y ) const = 0;
 };
 
 #endif

@@ -23,11 +23,11 @@ class CClientDFF : public CClientRwObject
 {
     friend class CClientAtomic;
 public:
-                                    CClientDFF( LuaClass& root, CModel& model );
+                                    CClientDFF( lua_State *L, CModel& model );
                                     ~CClientDFF();
 
     bool                            ReplaceModel( unsigned short id );
-    bool                            HasReplaced( unsigned short id );
+    bool                            HasReplaced( unsigned short id ) const;
     void                            RestoreModel( unsigned short id );
     void                            RestoreModels();
 

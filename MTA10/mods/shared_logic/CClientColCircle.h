@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientColCircle.h
@@ -8,6 +8,9 @@
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -17,19 +20,19 @@
 class CClientColCircle : public CClientColShape
 {
 public:
-                    CClientColCircle( CClientManager* pManager, ElementID ID, LuaClass& root, bool system, const CVector& vecPosition, float fRadius );
+                            CClientColCircle( CClientManager *manager, ElementID ID, lua_State *L, bool system, const CVector& pos, float fRadius );
 
-    virtual CSphere GetWorldBoundingSphere( void );
+    virtual CSphere         GetWorldBoundingSphere();
 
-    eColShapeType   GetShapeType( void )                            { return COLSHAPE_CIRCLE; }
+    eColShapeType           GetShapeType()                                  { return COLSHAPE_CIRCLE; }
 
-    bool            DoHitDetection( const CVector& vecNowPosition, float fRadius );
+    bool                    DoHitDetection( const CVector& pos, float radius );
 
-    float           GetRadius( void )                               { return m_fRadius; };
-    void            SetRadius( float fRadius )                      { m_fRadius = fRadius; SizeChanged (); }
+    float                   GetRadius() const                               { return m_fRadius; }
+    void                    SetRadius( float fRadius )                      { m_fRadius = fRadius; SizeChanged(); }
 
 protected:
-    float           m_fRadius;
+    float                   m_fRadius;
 };
 
 #endif
