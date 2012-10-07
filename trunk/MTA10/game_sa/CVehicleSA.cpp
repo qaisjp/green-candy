@@ -396,7 +396,6 @@ void CVehicleSA::GetColor( SColor& color1, SColor& color2, SColor& color3, SColo
 
 CVehicleComponent* CVehicleSA::GetComponent( const char *name )
 {
-    CVehicleComponentSA *comp;
     vehComponents_t::iterator iter;
 
     // Cache the component

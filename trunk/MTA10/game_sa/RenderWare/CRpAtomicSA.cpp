@@ -32,6 +32,9 @@ CRpAtomicSA::~CRpAtomicSA()
     // Detach from the clump and destroy
     RemoveFromModel();
 
+    // Detach from the frame, too
+    SetFrame( NULL );
+
     // We have to unlink textures, because they do not belong to us
     RpAtomic *atom = GetObject();
 
@@ -81,9 +84,6 @@ void CRpAtomicSA::AddToModel( CModel *model )
 
     m_model->m_atomics.push_back( this );
     GetObject()->AddToClump( m_model->GetObject() );
-
-    // Parent us to the other frame
-    GetFrame()->SetFrame( m_model->m_frame );
 }
 
 CModel* CRpAtomicSA::GetModel()
@@ -95,9 +95,6 @@ void CRpAtomicSA::RemoveFromModel()
 {
     if ( !m_model )
         return;
-
-    // Remove our frame from the parent
-    GetFrame()->SetFrame( NULL );
 
     GetObject()->RemoveFromClump();
 

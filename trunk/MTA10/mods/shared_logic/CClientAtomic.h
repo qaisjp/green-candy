@@ -24,8 +24,7 @@ public:
                                     CClientAtomic( lua_State *L, CClientDFF *model, CRpAtomic& atom );
                                     ~CClientAtomic();
 
-    const char*                     GetName() const         { return m_atomic.GetName(); }
-    unsigned int                    GetHash() const         { return m_atomic.GetHash(); }
+    void                            SetModel( CClientDFF *model );
 
     bool                            ReplaceModel( unsigned short id );
     bool                            HasReplaced( unsigned short id ) const;

@@ -31,8 +31,8 @@ public:
     void                            Link( CRwFrame *child );
     void                            Unlink();
 
-    const objectList_t&             GetObjects() const                  { return m_objects; }
-    const childList_t&              GetChildren() const                 { return m_children; }
+    objectList_t&                   GetObjects()                        { return m_objects; }
+    childList_t&                    GetChildren()                       { return m_children; }
 
     void                            SetLTM( const RwMatrix& mat )       { GetObject()->m_ltm = mat; }
     const RwMatrix&                 GetLTM() const                      { return GetObject()->m_ltm; }
