@@ -24,7 +24,7 @@ public:
                                 CClientVehicleComponent( CClientVehicle *veh, CVehicleComponent *atomic );
                                 ~CClientVehicleComponent();
 
-    CClientVehicle*             GetVehicle()                        { return (CClientVehicle*)m_root; }
+    CClientVehicle*             GetVehicle()                        { return m_vehicle; }
 
     unsigned int                AddAtomic( CClientAtomic *atom );
     unsigned int                GetAtomicCount() const;
@@ -34,7 +34,15 @@ public:
     CVehicleComponent*          m_component;
 
 protected:
-    typedef std::vector <CClientAtomic*> atomics_t;
+    struct atomicInfo
+    {
+        CClientAtomic *atomic;
+        unsigned int idx;
+    };
+
+    void                        OffsetIndex( unsigned int start, int off );
+
+    typedef std::vector <atomicInfo> atomics_t;
 
     atomics_t                   m_atomics;   // Kinda: Special modelinfo structures
 };

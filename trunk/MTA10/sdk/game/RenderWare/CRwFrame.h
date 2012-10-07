@@ -22,12 +22,16 @@ public:
 
     virtual void                    SetName( const char *name ) = 0;
     virtual const char*             GetName() const = 0;
+    virtual unsigned int            GetHash() const = 0;
 
     virtual void                    Link( CRwFrame *child ) = 0;
     virtual void                    Unlink() = 0;
 
     typedef std::list <CRwObject*> objectList_t;
     typedef std::list <CRwFrame*> childList_t;
+
+    virtual void                    Link( CRwFrame *child );
+    virtual void                    Unlink();
 
     virtual const objectList_t&     GetObjects() const = 0;
     virtual const childList_t&      GetChildren() const = 0;

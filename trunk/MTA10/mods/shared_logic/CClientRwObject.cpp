@@ -13,37 +13,17 @@
 
 #include "StdInc.h"
 
-static LUA_DECLARE( setName )
+static LUA_DECLARE( isValidChild )
 {
-    const char *name;
-
-    LUA_ARGS_BEGIN;
-    argStream.ReadString( name );
-    LUA_ARGS_END;
-
-    ((CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetName( name );
-    LUA_SUCCESS;
-}
-
-static LUA_DECLARE( getName )
-{
-    const std::string& name = ((CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetName();
-
-    lua_pushlstring( L, name.c_str(), name.size() );
-    return 1;
-}
-
-static LUA_DECLARE( getHash )
-{
-    lua_pushnumber( L, ((CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetHash() );
-    return 1;
+    // RenderWare objects have a different type of hierarchy.
+    // Some objects - like RpClump - establish special connections using the parenthood.
+    // By default, objects cannot have children; objects should be cast at their parent frame
+    return 0;
 }
 
 static luaL_Reg object_interface[] =
 {
-    LUA_METHOD( setName ),
-    LUA_METHOD( getName ),
-    LUA_METHOD( getHash ),
+    LUA_METHOD( isValidChild ),
     { NULL, NULL }
 };
 

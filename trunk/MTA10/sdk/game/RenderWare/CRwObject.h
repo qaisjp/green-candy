@@ -20,10 +20,7 @@ class CRwObject abstract
 public:
     virtual                         ~CRwObject()    {}
 
-    virtual void                    SetName( const char *name ) = 0;
-    virtual const char*             GetName() const = 0;
-    virtual unsigned int            GetHash() const = 0;
-
+    virtual eRwType                 GetType() const = 0;
     virtual bool                    IsFrameExtension() const = 0;
 
     virtual CRwFrame*               GetFrame() = 0;

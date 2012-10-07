@@ -1308,6 +1308,7 @@ void CClientGame::SetMimic ( unsigned int uiMimicCount )
     while ( m_Mimics.size () < uiMimicCount )
     {
         CClientPlayer* pPlayer = new CClientPlayer ( m_pManager, static_cast < ElementID > ( MAX_NET_PLAYERS_REAL + (int)m_Mimics.size () ) );
+        pPlayer->SetRoot( g_pClientGame->GetRootEntity() );
         pPlayer->SetNick ( "Mimic" );
         m_Mimics.push_back ( pPlayer );
     }
@@ -3039,8 +3040,9 @@ void CClientGame::UpdateMimics ( void )
 
                     if ( pMimicVehicle == NULL )
                     {
-                        pMimicVehicle = new CDeathmatchVehicle ( m_pManager, *g_pClientGame->GetRootEntity(), true, m_pUnoccupiedVehicleSync, INVALID_ELEMENT_ID, uiModel );
+                        pMimicVehicle = new CDeathmatchVehicle ( m_pManager, g_pClientGame->GetLuaManager()->GetVirtualMachine(), true, m_pUnoccupiedVehicleSync, INVALID_ELEMENT_ID, uiModel );
                         pMimicVehicle->SetPosition ( vecPosition );
+                        pMimicVehicle->SetRoot( g_pClientGame->GetRootEntity() );
 
                         unsigned short * usUpgrades = pVehicle->GetUpgrades ()->GetSlotStates ();
                         for ( unsigned char uc = 0 ; uc < VEHICLE_UPGRADE_SLOTS ; uc++ )
@@ -3094,7 +3096,8 @@ void CClientGame::UpdateMimics ( void )
 
                         if ( !pMimicTrailer )
                         {
-                            pMimicTrailer = new CDeathmatchVehicle ( m_pManager, *g_pClientGame->GetRootEntity(), true, m_pUnoccupiedVehicleSync, static_cast < ElementID > ( 450 + uiMimicIndex + uiTrailerLoop ), uiModel );
+                            pMimicTrailer = new CDeathmatchVehicle( m_pManager, g_pClientGame->GetLuaManager()->GetVirtualMachine(), true, m_pUnoccupiedVehicleSync, static_cast < ElementID > ( 450 + uiMimicIndex + uiTrailerLoop ), uiModel );
+                            pMimicTrailer->SetRoot( g_pClientGame->GetRootEntity() );
                             pMimicVehicle->SetTowedVehicle ( pMimicTrailer );
                         }
 
@@ -3142,7 +3145,8 @@ void CClientGame::DoPaintballs ( void )
             paintBalls.pop_back ();
         }
 
-        CClientMarker* pCorona = new CClientMarker ( m_pManager, INVALID_ELEMENT_ID, *g_pClientGame->GetRootEntity(), true, CClientMarker::MARKER_CORONA );
+        CClientMarker* pCorona = new CClientMarker ( m_pManager, INVALID_ELEMENT_ID, g_pClientGame->GetLuaManager()->GetVirtualMachine(), true, CClientMarker::MARKER_CORONA );
+        pCorona->SetRoot( g_pClientGame->GetRootEntity() );
         paintBalls.push_front ( pCorona );
         pCorona->SetSize ( 0.2f );
         if ( bCollision && pCollision )
@@ -3251,33 +3255,31 @@ void CClientGame::Event_OnIngame ( void )
     g_pGame->GetWaterManager ()->Reset ();      // Deletes all custom water elements, ResetMapInfo only reverts changes to water level
 
     // Create a local player for us
-    m_pLocalPlayer = new CClientPlayer ( m_pManager, m_LocalID, true );
-    if ( m_pLocalPlayer )
-    {
-        // Give the local player our nickname
-        m_pLocalPlayer->SetNick ( m_szLocalNick );
+    m_pLocalPlayer = new CClientPlayer( m_pManager, m_LocalID, true );
 
-        // Freeze the player at some location we won't see
-        m_pLocalPlayer->SetHealth ( 100 );
-        m_pLocalPlayer->SetPosition ( CVector ( 0, 0, 0 ) );
-        m_pLocalPlayer->SetFrozen ( true );
-        m_pLocalPlayer->ResetInterpolation ();
+    if ( !m_pLocalPlayer )
+        RaiseFatalError( 2 );
 
-        // Reset him
-        m_pLocalPlayer->ResetStats ();
-    }
-    else
-    {
-        RaiseFatalError ( 2 );
-    }
+    m_pLocalPlayer->SetRoot( g_pClientGame->GetRootEntity() );
+
+    // Give the local player our nickname
+    m_pLocalPlayer->SetNick( m_szLocalNick );
+
+    // Freeze the player at some location we won't see
+    m_pLocalPlayer->SetHealth( 100 );
+    m_pLocalPlayer->SetPosition( CVector( 0, 0, 0 ) );
+    m_pLocalPlayer->SetFrozen( true );
+    m_pLocalPlayer->ResetInterpolation();
+
+    // Reset him
+    m_pLocalPlayer->ResetStats();
 
     // Make sure we never get tired
-    g_pGame->GetPlayerInfo ()->SetDoesNotGetTired ( true );
+    g_pGame->GetPlayerInfo()->SetDoesNotGetTired( true );
 
     // Tell doggy we got the game running
-    WatchDogCompletedSection ( "L1" );
+    WatchDogCompletedSection( "L1" );
 }
-
 
 void CClientGame::Event_OnIngameAndReady ( void )
 {

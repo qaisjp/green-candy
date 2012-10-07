@@ -85,19 +85,49 @@ static const luaL_Reg dff_interface[] =
     { NULL, NULL }
 };
 
+static void RwFrameObjectAcquire( CClientRwObject *obj, CClientDFF *model )
+{
+    eRwType type = obj->GetObject().GetType();
+
+    if ( type == RW_ATOMIC )
+    {
+        CClientAtomic *atom = (CClientAtomic*)obj;
+
+        atom->m_clump = model;
+        atom->SetRoot( model->m_parent );
+
+        model->m_atomics.insert( model->m_atomics.begin(), atom );
+        return;
+    }
+
+    assert( 0 );
+}
+
+static void RwFrameInspect( CClientRwFrame *frame, CClientDFF *model )
+{
+    // Inspect all children...
+    {
+        const CClientRwFrame::children_t& list = frame->m_children;
+
+        for ( CClientRwFrame::children_t::iterator iter = list.begin(); iter != list.end(); iter++ )
+            RwFrameInspect( *iter, model );
+    }
+
+    // ... and objects (just like in game-layer)
+    {
+        const CClientRwFrame::objects_t& list = frame->m_objects;
+
+        for ( CClientRwFrame::objects_t::iterator iter = list.begin(); iter != list.end(); iter++ )
+            RwFrameObjectAcquire( *iter, model );
+    }
+}
+
 static int luaconstructor_dff( lua_State *L )
 {
     CClientDFF *dff = (CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_DFF, dff );
-
-    // Obtain all atomics
-    const CModel::atomicList_t& atoms = dff->m_model.GetAtomics();
-    CModel::atomicList_t::const_iterator iter = atoms.begin();
-
-    for ( ; iter != atoms.end(); iter++ )
-        ( new CClientAtomic( L, dff, **iter ) )->SetRoot( dff );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -116,11 +146,20 @@ CClientDFF::CClientDFF( lua_State *L, CModel& model ) : CClientRwObject( L, mode
     lua_pushcclosure( L, luaconstructor_dff, 1 );
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
+
+    RwFrameInspect( m_parent = new CClientRwFrame( L, *model.GetFrame() ), this );
+    m_parent->IncrementMethodStack();
+    // I do not know whether we can let the Lua runtime destroy the frame
+    // For security reasons I disable this possibility
+    // Feel free to discuss about this with me (The_GTA)
 }
 
 CClientDFF::~CClientDFF()
 {
     RestreamAll();
+
+    // Delete our hierarchy
+    m_parent->Delete(); m_parent->DecrementMethodStack();
 }
 
 bool CClientDFF::ReplaceModel( unsigned short id )

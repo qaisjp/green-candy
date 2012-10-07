@@ -24,8 +24,12 @@ void CModelSA::RpClumpAssignObjects( CRwObjectSA *obj, CModelSA *model )
     {
         CRpAtomicSA *atom = (CRpAtomicSA*)obj;
 
-        atom->m_model = model;
-        model->m_atomics.push_back( atom );
+        if ( atom->GetObject()->m_clump == model->GetObject() )
+        {
+            atom->m_model = model;
+            model->m_atomics.push_back( atom );
+        }
+
         return;
     }
     

@@ -94,7 +94,7 @@ namespace CLuaFunctionDefs
             m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // We failed
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 

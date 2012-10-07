@@ -76,12 +76,17 @@ public:
         return DotProduct( *param );
     }
 
-    inline void CrossProduct ( const CVector *param ) 
-    { 
+    inline void CrossProduct( const CVector& param )
+    {
         float _fX = fX, _fY = fY, _fZ = fZ;
-        fX = _fY * param->fZ - param->fY * _fZ;
-        fY = _fZ * param->fX - param->fZ * _fX;
-        fZ = _fX * param->fY - param->fX * _fY;
+        fX = _fY * param.fZ - param.fY * _fZ;
+        fY = _fZ * param.fX - param.fZ * _fX;
+        fZ = _fX * param.fY - param.fX * _fY;
+    }
+
+    inline void CrossProduct( const CVector *param ) 
+    { 
+        CrossProduct( *param );
     }
 
     inline void Divide( float right )
