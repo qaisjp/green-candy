@@ -59,6 +59,7 @@
 #include <CClientColTube.h>
 #include <CClientCorona.h>
 #include <CClientRwObject.h>
+#include <CClientRwFrame.h>
 #include <CClientAtomic.h>
 #include <CClientDFF.h>
 #include <CClientColModel.h>

@@ -4129,11 +4129,11 @@ void _cdecl VehicleCamUp( DWORD dwCam )
     CVector& vecUp = *(CVector*)(dwCam + 0x1B4);
     CVector& vecLookDir = *(CVector*)(dwCam + 0x190);
 
-    vecLookDir->Normalize();
+    vecLookDir.Normalize();
     vecUp = vecLookDir;
 
-    vecUp.CrossProduct( &gravcam_matGravity.up );
-    vecUp.CrossProduct( pvecLookDir );
+    vecUp.CrossProduct( gravcam_matGravity.up );
+    vecUp.CrossProduct( vecLookDir );
     vecUp.Normalize();
 }
 

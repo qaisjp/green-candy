@@ -741,9 +741,6 @@ CLuaMain* CLuaManager::Create( const std::string& name, CFileTranslator& fileRoo
 
 bool CLuaManager::Remove( LuaMain *lua )
 {
-    if ( !LuaManager::Remove( lua ) )
-        return false;
-
     m_commands.CleanUp( lua );
-    return true;
+    return LuaManager::Remove( lua );
 }

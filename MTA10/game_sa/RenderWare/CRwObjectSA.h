@@ -27,10 +27,6 @@ public:
     virtual eRwType                 GetType() const = 0;
     virtual bool                    IsFrameExtension() const            { return false; }
 
-    virtual void                    SetName( const char *name );
-    virtual const char*             GetName() const;
-    virtual unsigned int            GetHash() const;
-
     CRwFrame*                       GetFrame();
     const CRwFrame*                 GetFrame() const;
     void                            SetFrame( CRwFrame *frame );

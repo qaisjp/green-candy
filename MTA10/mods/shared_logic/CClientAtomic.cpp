@@ -13,39 +13,46 @@
 
 #include "StdInc.h"
 
-static LUA_DECLARE( setLTM )
+static LUA_DECLARE( setClump )
 {
-    RwMatrix *mat;
+    CClientDFF *model;
 
     LUA_ARGS_BEGIN;
-    argStream.ReadClass( mat, LUACLASS_MATRIX );
+    argStream.ReadClass( model, LUACLASS_DFF, NULL );
     LUA_ARGS_END;
 
-    ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomic.GetFrame()->SetLTM( *mat );
+    CClientAtomic *atom = (CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    // Force the atomic into the clump's hierarchy
+    // If model is nil, we remove the connection
+    if ( model )
+    {
+        atom->m_clump = model;
+        atom->m_atomic.AddToModel( &model->m_model );   // do the internal magic :)
+
+        atom->SetRoot( model->m_parent );
+        model->m_atomics.insert( model->m_atomics.begin(), atom );
+    }
+    else if ( atom->m_clump )
+    {
+        atom->m_clump->m_atomics.remove( atom );
+        atom->SetRoot( NULL );
+
+        atom->m_atomic.RemoveFromModel();
+        atom->m_clump = NULL;
+    }
+
     LUA_SUCCESS;
 }
 
-static LUA_DECLARE( getLTM )
+static LUA_DECLARE( getClump )
 {
-    lua_creatematrix( L, ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomic.GetFrame()->GetLTM() );
-    return 1;
-}
+    CClientDFF *model = ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_clump;
 
-static LUA_DECLARE( setModelling )
-{
-    RwMatrix *mat;
+    if ( !model )
+        return 0;
 
-    LUA_ARGS_BEGIN;
-    argStream.ReadClass( mat, LUACLASS_MATRIX );
-    LUA_ARGS_END;
-
-    ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomic.GetFrame()->SetModelling( *mat );
-    LUA_SUCCESS;
-}
-
-static LUA_DECLARE( getModelling )
-{
-    lua_creatematrix( L, ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomic.GetFrame()->GetModelling() );
+    model->PushStack( L );
     return 1;
 }
 
@@ -112,10 +119,8 @@ static LUA_DECLARE( restoreAll )
 
 static luaL_Reg atomic_interface[] =
 {
-    LUA_METHOD( setLTM ),
-    LUA_METHOD( getLTM ),
-    LUA_METHOD( setModelling ),
-    LUA_METHOD( getModelling ),
+    LUA_METHOD( setClump ),
+    LUA_METHOD( getClump ),
     LUA_METHOD( replaceModel ),
     LUA_METHOD( isReplaced ),
     LUA_METHOD( getReplaced ),
@@ -150,6 +155,9 @@ CClientAtomic::CClientAtomic( lua_State *L, CClientDFF *model, CRpAtomic& atom )
     lua_pop( L, 1 );
 
     m_clump = model;
+
+    if ( model )
+        model->m_atomics.push_back( this );
 }
 
 CClientAtomic::~CClientAtomic()

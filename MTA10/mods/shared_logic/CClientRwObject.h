@@ -16,8 +16,11 @@
 
 #define LUACLASS_RWOBJECT   97
 
+class CClientRwFrame;
+
 class CClientRwObject abstract : public LuaElement
 {
+    friend class CClientRwFrame;
 public:
                                     CClientRwObject( lua_State *L, CRwObject& object );
                                     ~CClientRwObject();
@@ -25,12 +28,11 @@ public:
     CRwObject&                      GetObject()                     { return m_object; }
     const CRwObject&                GetObject() const               { return m_object; }
 
-    void                            SetName( const char *name )     { m_object.SetName( name ); }
-    const char*                     GetName() const                 { return m_object.GetName(); }
-    unsigned int                    GetHash() const                 { return m_object.GetHash(); }
-
 protected:
-    CRwObject&  m_object;
+    CRwObject&          m_object;
+
+public:
+    CClientRwFrame*     m_parent;
 };
 
 #endif //_CLIENT_RWOBJECT_

@@ -602,6 +602,21 @@ static int classmethod_setParent( lua_State *L )
         return 1;
     }
 
+    if ( lua_type( L, 1 ) != LUA_TCLASS )
+    {
+        // If we have not been passed a valid argument, i.e nil, remove our parent
+        if ( j.parent )
+        {
+            j.childAPI->DecrementMethodStack( L );
+
+            j.childAPI->PushMethod( L, "destroy" );
+            lua_call( L, 0, 0 );
+        }
+
+        lua_pushboolean( L, true );
+        return 1;
+    }
+
     luaL_checktype( L, 1, LUA_TCLASS );
     lua_settop( L, 1 );
 

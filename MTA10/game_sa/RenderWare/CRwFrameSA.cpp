@@ -37,10 +37,6 @@ static bool RwFrameChildAssign( RwFrame *child, CRwFrameSA *parent )
 {
     CRwFrameSA *frame = new CRwFrameSA( child );
 
-    // Allocate the children and objects
-    child->ForAllChildren( RwFrameChildAssign, parent );
-    child->ForAllObjects( CRwFrameSA::RwFrameObjectAssign, parent );
-    
     // Link it into our hierarchy
     frame->m_frame = parent;
 
@@ -52,6 +48,7 @@ CRwFrameSA::CRwFrameSA( RwFrame *obj ) : CRwObjectSA( obj )
 {
     // Load all frames into the hierarchy
     obj->ForAllChildren( RwFrameChildAssign, this );
+    obj->ForAllObjects( RwFrameObjectAssign, this );
 }
 
 CRwFrameSA::~CRwFrameSA()
@@ -64,6 +61,11 @@ CRwFrameSA::~CRwFrameSA()
         delete m_children.front();
 
     RwFrameDestroy( GetObject() );
+}
+
+unsigned int CRwFrameSA::GetHash() const
+{
+    return pGame->GetKeyGen()->GetKey( GetObject()->m_nodeName );
 }
 
 void CRwFrameSA::Link( CRwFrame *child )

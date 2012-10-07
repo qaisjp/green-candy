@@ -20,6 +20,16 @@ static int element_setParent( lua_State *L )
 
     // Make sure that we stay in the resource tree!
     LuaElement& element = *(LuaElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    // We can stay without a root
+    if ( !element.m_root )
+    {
+        lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+        lua_pushvalue( L, 1 );
+        lua_call( L, 1, 1 );
+        return 1;
+    }
+
     element.m_root->PushStack( L );
 
     lua_pushvalue( L, 1 );
@@ -103,7 +113,10 @@ LuaElement::~LuaElement()
 
 void LuaElement::SetRoot( LuaClass *root )
 {
-    m_root = root;
+    // We can also have no root
+    // It is unnecessary to remove the parent if no more root
+    if ( !( m_root = root ) )
+        return
 
     // Reparent it so we are int the correct tree
     m_class->PushMethod( m_lua, "setParent" );

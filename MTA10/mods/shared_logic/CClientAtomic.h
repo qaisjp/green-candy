@@ -35,9 +35,9 @@ public:
 protected:
     void                            RestreamAll() const;
 
+public:
     CClientDFF* m_clump;
 
-public:
     CRpAtomic&  m_atomic;
 };
 

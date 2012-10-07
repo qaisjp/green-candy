@@ -1429,7 +1429,9 @@ CClientVehicleComponent* CClientVehicle::GetComponent( const char *name )
     if ( !comp )
         return NULL;
 
-    return new CClientVehicleComponent( this, comp );
+    CClientVehicleComponent *item = new CClientVehicleComponent( this, comp );
+    item->SetRoot( this );
+    return item;
 }
 
 float CClientVehicle::GetHeliRotorSpeed() const

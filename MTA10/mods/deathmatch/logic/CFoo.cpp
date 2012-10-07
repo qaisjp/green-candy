@@ -45,6 +45,7 @@ void CFoo::DoPulse ( void )
             if ( !pPed )
             {
                 pPed = new CClientPlayer ( pManager, 50 );
+                pPed->SetRoot( g_pClientGame->GetRootEntity() );
 
                 CVector vecLocal;
                 pPlayerManager->GetLocalPlayer ()->GetPosition ( vecLocal );
@@ -103,8 +104,7 @@ void CFoo::Test ( const char* szString )
     CVector vecLocal;
     pLocal->GetPosition ( vecLocal );
     CClientCamera* pCamera = pManager->GetCamera ();
-
-
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
 
     // ChrML: Trying to reproduce mantis issue #2760
     if ( stricmp ( szString, "2760" ) == 0 )
@@ -115,6 +115,7 @@ void CFoo::Test ( const char* szString )
         {
             vecLocal.fX += 5.0f;
             CClientPlayer* pPlayer = new CClientPlayer ( pManager, i + 50 );
+            pPlayer->SetRoot( g_pClientGame->GetRootEntity() );
             pPlayer->SetDeadOnNetwork ( false );
             pPlayer->SetModel ( 168 + i );
             pPlayer->AttachTo ( NULL );
@@ -492,7 +493,8 @@ void CFoo::Test ( const char* szString )
 
     else if ( stricmp ( szString, "ped" ) == 0 )
     {
-        CClientPed* pPed = new CClientPed ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID, 9, *g_pClientGame->GetRootEntity(), false );
+        CClientPed* pPed = new CClientPed ( g_pClientGame->GetManager (), INVALID_ELEMENT_ID, 9, L, false );
+        pPed->SetRoot( g_pClientGame->GetRootEntity() );
         vecLocal.fX += 5.0f;
         pPed->SetPosition ( vecLocal );
     }

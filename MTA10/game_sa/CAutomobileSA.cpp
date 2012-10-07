@@ -174,10 +174,6 @@ CAutomobileSA::CAutomobileSA( CAutomobileSAInterface *veh ) : CVehicleSA( veh ),
 
 CAutomobileSA::~CAutomobileSA()
 {
-    // Destroy available components
-    while ( !m_compContainer.empty() )
-        delete m_compContainer.begin()->second;
-
     delete m_damageManager;
     delete m_suspensionLines;
 

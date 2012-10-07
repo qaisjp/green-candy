@@ -332,6 +332,10 @@ CVehicleSA::CVehicleSA( CVehicleSAInterface *veh ) : m_alpha( 255 ), m_vecGravit
 
 void CVehicleSA::Init()
 {
+    // Destroy available components
+    while ( !m_compContainer.empty() )
+        delete m_compContainer.begin()->second;
+
     // We take care of the streaming, so disable GTA:SA control
     BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_DISABLESTREAMING, true );
     BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_NOSTREAM, true );
@@ -393,10 +397,11 @@ void CVehicleSA::GetColor( SColor& color1, SColor& color2, SColor& color3, SColo
 CVehicleComponent* CVehicleSA::GetComponent( const char *name )
 {
     CVehicleComponentSA *comp;
+    vehComponents_t::iterator iter;
 
     // Cache the component
-    if ( comp = m_compContainer[name] )
-        return comp;
+    if ( ( iter = m_compContainer.find( name ) ) != m_compContainer.end() )
+        return iter->second;
 
     RpClump *clump = (RpClump*)GetInterface()->m_rwObject;
     RwFrame *frame = clump->m_parent->FindChildByName( name );

@@ -40,10 +40,14 @@ CClientDummy::CClientDummy ( CClientManager* pManager, ElementID ID, const char 
     SetTypeName( szTypeName );
 
     m_pManager = pManager;
-    m_pGroups = pManager->GetGroups();
 
-    if ( m_pGroups )
+    if ( m_pManager )
+    {
+        m_pGroups = pManager->GetGroups();
         m_pGroups->AddToList( this );
+    }
+    else
+        m_pGroups = NULL;
 }
 
 CClientDummy::~CClientDummy()
@@ -53,6 +57,7 @@ CClientDummy::~CClientDummy()
 
 void CClientDummy::Unlink()
 {
-    m_pGroups->RemoveFromList( this );
+    if ( m_pGroups )
+        m_pGroups->RemoveFromList( this );
 }
 

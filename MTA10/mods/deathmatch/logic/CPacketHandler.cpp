@@ -667,88 +667,87 @@ void CPacketHandler::Packet_PlayerList ( NetBitStreamInterface& bitStream )
         }
 
         // Create the player
-        CClientPlayer* pPlayer = new CClientPlayer ( g_pClientGame->m_pManager, PlayerID );
-        if ( pPlayer )
+        CClientPlayer *pPlayer = new CClientPlayer( g_pClientGame->m_pManager, PlayerID );
+
+        if ( !pPlayer )
+            RaiseFatalError( 5 );
+
+        pPlayer->SetRoot( g_pClientGame->GetRootEntity() );
+
+        // Set its parent the root entity
+        pPlayer->SetSyncTimeContext ( ucTimeContext );
+
+        // Store the nick and if he's dead
+        pPlayer->SetNick ( szNickBuffer );
+        pPlayer->SetDeadOnNetwork ( false );
+
+        if ( szNametagText [ 0 ] )
+            pPlayer->SetNametagText ( szNametagText );
+
+        // Set the nametag override color if it's overridden
+        if ( bHasNametagColorOverridden )
         {
-            // Set its parent the root entity
-            pPlayer->SetSyncTimeContext ( ucTimeContext );
+            pPlayer->SetNametagOverrideColor ( ucNametagR, ucNametagG, ucNametagB );
+        }
 
-            // Store the nick and if he's dead
-            pPlayer->SetNick ( szNickBuffer );
-            pPlayer->SetDeadOnNetwork ( false );
+        pPlayer->SetNametagShowing ( bNametagShowing );
 
-            if ( szNametagText [ 0 ] )
-                pPlayer->SetNametagText ( szNametagText );
+        CClientTeam* pTeam = NULL;
+        if ( TeamID != INVALID_ELEMENT_ID )
+            pTeam = g_pClientGame->m_pTeamManager->GetTeam ( TeamID );
 
-            // Set the nametag override color if it's overridden
-            if ( bHasNametagColorOverridden )
+        if ( pTeam )
+            pPlayer->SetTeam ( pTeam, true );
+
+        // If the player has spawned
+        if ( bIsSpawned )
+        {
+            // Give him the correct skin
+            pPlayer->SetModel ( usPlayerModelID );
+
+            // Not in a vehicle?
+            if ( ID == INVALID_ELEMENT_ID )
             {
-                pPlayer->SetNametagOverrideColor ( ucNametagR, ucNametagG, ucNametagB );
+                pPlayer->SetPosition ( position.data.vecPosition );
+                pPlayer->SetCurrentRotation ( rotation.data.fRotation );
+                pPlayer->SetCameraRotation ( rotation.data.fRotation );
+                pPlayer->ResetInterpolation ();
+                pPlayer->SetHasJetPack ( bHasJetPack );
             }
-
-            pPlayer->SetNametagShowing ( bNametagShowing );
-
-            CClientTeam* pTeam = NULL;
-            if ( TeamID != INVALID_ELEMENT_ID )
-                pTeam = g_pClientGame->m_pTeamManager->GetTeam ( TeamID );
-
-            if ( pTeam )
-                pPlayer->SetTeam ( pTeam, true );
-
-            // If the player has spawned
-            if ( bIsSpawned )
+            else        // In a vehicle
             {
-                // Give him the correct skin
-                pPlayer->SetModel ( usPlayerModelID );
-
-                // Not in a vehicle?
-                if ( ID == INVALID_ELEMENT_ID )
+                // Grab the vehicle and warp him into it
+                CClientVehicle* pVehicle = g_pClientGame->m_pVehicleManager->Get ( ID );
+                if ( pVehicle )
                 {
-                    pPlayer->SetPosition ( position.data.vecPosition );
-                    pPlayer->SetCurrentRotation ( rotation.data.fRotation );
-                    pPlayer->SetCameraRotation ( rotation.data.fRotation );
-                    pPlayer->ResetInterpolation ();
-                    pPlayer->SetHasJetPack ( bHasJetPack );
-                }
-                else        // In a vehicle
-                {
-                    // Grab the vehicle and warp him into it
-                    CClientVehicle* pVehicle = g_pClientGame->m_pVehicleManager->Get ( ID );
-                    if ( pVehicle )
-                    {
-                        pPlayer->WarpIntoVehicle ( pVehicle, ucVehicleSeat );
-                    }
-                }
-                pPlayer->SetHeadless ( bIsHeadless );
-                pPlayer->SetFrozen ( bIsFrozen );
-                pPlayer->SetDimension ( usDimension );
-                pPlayer->SetFightingStyle ( ( eFightingStyle ) ucFightingStyle );
-                pPlayer->SetAlpha ( alpha.data.ucAlpha );
-                pPlayer->SetInterior ( ucInterior );
-
-                // Read the weapon slots
-                for ( unsigned int i = 0; i < 16; ++i )
-                {
-                    if ( bitStream.ReadBit () == true )
-                    {
-                        SWeaponTypeSync weaponType;
-                        bitStream.Read ( &weaponType );
-                        pPlayer->GiveWeapon ( static_cast < eWeaponType > ( weaponType.data.ucWeaponType ), 1 );
-                    }
+                    pPlayer->WarpIntoVehicle ( pVehicle, ucVehicleSeat );
                 }
             }
+            pPlayer->SetHeadless ( bIsHeadless );
+            pPlayer->SetFrozen ( bIsFrozen );
+            pPlayer->SetDimension ( usDimension );
+            pPlayer->SetFightingStyle ( ( eFightingStyle ) ucFightingStyle );
+            pPlayer->SetAlpha ( alpha.data.ucAlpha );
+            pPlayer->SetInterior ( ucInterior );
 
-            // Print the join message in the chat
-            if ( bJustJoined )
+            // Read the weapon slots
+            for ( unsigned int i = 0; i < 16; ++i )
             {
-                // Call the onClientPlayerJoin event
-                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
-                pPlayer->CallEvent( "onClientPlayerJoin", L, 0 );
+                if ( bitStream.ReadBit () == true )
+                {
+                    SWeaponTypeSync weaponType;
+                    bitStream.Read ( &weaponType );
+                    pPlayer->GiveWeapon ( static_cast < eWeaponType > ( weaponType.data.ucWeaponType ), 1 );
+                }
             }
         }
-        else
+
+        // Print the join message in the chat
+        if ( bJustJoined )
         {
-            RaiseFatalError ( 5 );
+            // Call the onClientPlayerJoin event
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            pPlayer->CallEvent( "onClientPlayerJoin", L, 0 );
         }
     }
 }

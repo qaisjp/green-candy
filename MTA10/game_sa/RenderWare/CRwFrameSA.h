@@ -25,6 +25,7 @@ public:
 
     void                            SetName( const char *name )         { strncpy( GetObject()->m_nodeName, name, 31 ); }
     const char*                     GetName() const                     { return GetObject()->m_nodeName; }
+    unsigned int                    GetHash() const;
     eRwType                         GetType() const                     { return RW_NULL; }
 
     void                            Link( CRwFrame *child );
