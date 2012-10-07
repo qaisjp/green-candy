@@ -26,23 +26,13 @@ CRwObjectSA::~CRwObjectSA()
         SetFrame( NULL );
 }
 
-void CRwObjectSA::SetName( const char *name )
-{
-    m_frame->SetName( name );
-}
-
-const char* CRwObjectSA::GetName() const
-{
-    return m_frame->GetName();
-}
-
-unsigned int CRwObjectSA::GetHash() const
-{
-    return pGame->GetKeyGen()->GetUppercaseKey( GetName() );
-}
-
 void CRwObjectSA::SetFrame( CRwFrame *frame )
 {
+    CRwFrameSA *parent = dynamic_cast <CRwFrameSA*> ( frame );
+
+    if ( m_frame == parent )
+        return;
+
     // If we are a frame extension and were at a previous frame, unregister us
     if ( m_frame && IsFrameExtension() )
     {
@@ -51,7 +41,7 @@ void CRwObjectSA::SetFrame( CRwFrame *frame )
         ((RwObjectFrame*)GetObject())->RemoveFromFrame();
     }
 
-    m_frame = dynamic_cast <CRwFrameSA*> ( frame );
+    m_frame = parent;
 
     if ( !m_frame )
         return;

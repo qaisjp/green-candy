@@ -73,6 +73,42 @@ static LUA_DECLARE( getModelling )
     return 1;
 }
 
+static LUA_DECLARE( getObjects )
+{
+    CClientRwFrame::objects_t& list = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_objects;
+
+    lua_settop( L, 0 );
+    lua_createtable( L, list.size(), 0 );
+
+    unsigned int n = 1;
+
+    for ( CClientRwFrame::objects_t::iterator iter = list.begin(); iter != list.end(); iter++, n++ )
+    {
+        (*iter)->PushStack( L );
+        lua_rawseti( L, 1, n );
+    }
+
+    return 1;
+}
+
+static LUA_DECLARE( getLinkedFrames )
+{
+    CClientRwFrame::children_t& list = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_children;
+
+    lua_settop( L, 0 );
+    lua_createtable( L, list.size(), 0 );
+
+    unsigned int n = 1;
+
+    for ( CClientRwFrame::children_t::iterator iter = list.begin(); iter != list.end(); iter++, n++ )
+    {
+        (*iter)->PushStack( L );
+        lua_rawseti( L, 1, n );
+    }
+
+    return 1;
+}
+
 static LUA_DECLARE( isValidChild )
 {
     if ( lua_type( L, 1 ) != LUA_TCLASS )
@@ -88,7 +124,7 @@ static LUA_DECLARE( isValidChild )
 
     CClientRwObject *obj;
 
-    lua_pushboolean( L, j.GetTransmit( LUACLASS_RWOBJECT, obj ) && obj->GetObject().IsFrameExtension() );
+    lua_pushboolean( L, j.GetTransmit( LUACLASS_RWOBJECT, (void*&)obj ) && obj->GetObject().IsFrameExtension() );
     return 1;
 }
 
@@ -121,12 +157,14 @@ LUA_DECLARE( CClientRwFrame::setChild )
 
     // Make sure we end up with child(1), childAPI(2) stack values!
     lua_settop( L, 1 );
-    lua_pushvalue( L, 1 );
 
     // Grab the childAPI; this will check the first argument for class validity
     lua_getfield( L, LUA_ENVIRONINDEX, "super" );
     lua_pushvalue( L, 1 );
     lua_call( L, 1, 1 );
+
+    // Get the childAPI's environment
+    lua_refclass( L, 2 )->PushEnvironment( L );
 
     union
     {
@@ -134,7 +172,7 @@ LUA_DECLARE( CClientRwFrame::setChild )
         CClientRwObject *obj;
     };
 
-    if ( j.GetTransmit( LUACLASS_RWFRAME, child ) )
+    if ( j.GetTransmit( LUACLASS_RWFRAME, (void*&)child ) )
     {
         // frame holds child (CClientRwFrame -> CClientRwFrame)
         frame->m_children.insert( frame->m_children.begin(), child );
@@ -144,7 +182,7 @@ LUA_DECLARE( CClientRwFrame::setChild )
         lua_pushlightuserdata( L, child );
         lua_pushcclosure( L, unlinkParentFrame, 2 );
     }
-    else if ( j.GetTransmit( LUACLASS_RWOBJECT, obj ) )
+    else if ( j.GetTransmit( LUACLASS_RWOBJECT, (void*&)obj ) )
     {
         // frame holds obj (CClientRwFrame -> CClientRwObjectEx)
         frame->m_objects.insert( frame->m_objects.begin(), obj );
@@ -158,7 +196,8 @@ LUA_DECLARE( CClientRwFrame::setChild )
         assert( 0 );
 
     // A disconnector has to be provided above
-    lua_setfield( L, 2, "notifyDestroy" );
+    lua_setfield( L, 3, "notifyDestroy" );
+    lua_settop( L, 2 );
 
     // <3 unions are lovely!
     obj->m_parent = frame;
@@ -174,8 +213,10 @@ static const luaL_Reg rwframe_interface[] =
     LUA_METHOD( getLTM ),
     LUA_METHOD( setModelling ),
     LUA_METHOD( getModelling ),
+    LUA_METHOD( getObjects ),
+    LUA_METHOD( getLinkedFrames ),
     LUA_METHOD( isValidChild ),
-    LUA_METHOD( setChild ),
+    { "setChild", CClientRwFrame::setChild },
     { NULL, NULL }
 };
 
@@ -200,7 +241,7 @@ static inline void RwFrameAssignObject( CRwObject *obj, CClientRwFrame *parent )
 {
     if ( obj->GetType() == RW_ATOMIC )
     {
-        CClientAtomic *atom = new CClientAtomic( parent->GetVM(), NULL, *(CRpAtomic*)obj );
+        CClientAtomic *atom = new CClientAtomic( parent->GetVM(), NULL, *dynamic_cast <CRpAtomic*> ( obj ) );
 
         atom->SetRoot( parent );
         return;
@@ -220,7 +261,7 @@ static inline void RwFrameAssignChild( CRwFrame *child, CClientRwFrame *parent )
     lua_call( L, 1, 0 );
 }
 
-CClientRwFrame::CClientRwFrame( lua_State *L, CRwFrame& frame ) : CClientRwObject( L, frame )
+CClientRwFrame::CClientRwFrame( lua_State *L, CRwFrame& frame ) : CClientRwObject( L, frame ), m_frame( frame )
 {
     // Lua instancing
     PushStack( L );
@@ -231,7 +272,7 @@ CClientRwFrame::CClientRwFrame( lua_State *L, CRwFrame& frame ) : CClientRwObjec
 
     // Obtain all children...
     {
-        const CRwFrame::childList_t& list = frame.GetChildren();
+        CRwFrame::childList_t& list = frame.GetChildren();
 
         for ( CRwFrame::childList_t::iterator iter = list.begin(); iter != list.end(); iter++ )
             RwFrameAssignChild( *iter, this );
@@ -239,9 +280,9 @@ CClientRwFrame::CClientRwFrame( lua_State *L, CRwFrame& frame ) : CClientRwObjec
 
     // ... and objects
     {
-        const CRwFrame::objectList_t& list = frame.GetObjects();
+        CRwFrame::objectList_t& list = frame.GetObjects();
 
-        for ( CRwFrame::childList_t::iterator iter = list.begin(); iter != list.end(); iter++ )
+        for ( CRwFrame::objectList_t::iterator iter = list.begin(); iter != list.end(); iter++ )
             RwFrameAssignObject( *iter, this );
     }
 }

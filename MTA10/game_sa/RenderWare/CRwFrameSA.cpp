@@ -60,6 +60,9 @@ CRwFrameSA::~CRwFrameSA()
     while ( !m_children.empty() )
         delete m_children.front();
 
+    // Let us not forget to unlink ourselves :3
+    Unlink();
+
     RwFrameDestroy( GetObject() );
 }
 
@@ -72,6 +75,9 @@ void CRwFrameSA::Link( CRwFrame *child )
 {
     CRwFrameSA *frame = dynamic_cast <CRwFrameSA*> ( child );
 
+    if ( frame->m_frame == this )
+        return;
+
     // Unlink previous connection
     frame->Unlink();
 
@@ -80,6 +86,7 @@ void CRwFrameSA::Link( CRwFrame *child )
 
     // Specify the new root
     frame->m_frame = this;
+    m_children.insert( m_children.begin(), frame );
 }
 
 void CRwFrameSA::Unlink()
@@ -89,5 +96,6 @@ void CRwFrameSA::Unlink()
 
     GetObject()->Unlink();
 
+    m_frame->m_children.remove( this );
     m_frame = NULL;
 }

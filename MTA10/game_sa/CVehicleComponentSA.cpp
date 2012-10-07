@@ -102,11 +102,9 @@ unsigned int CVehicleComponentSA::AddAtomic( CRpAtomic *atomic )
 {
     RpAtomic *clone = RpAtomicClone( dynamic_cast <CRpAtomicSA*> ( atomic )->GetObject() );
     
-    unsigned int idx = m_frame->CountObjectsByType( RW_ATOMIC );
-
     clone->AddToFrame( m_frame );
     clone->AddToClump( m_clump );
-    return idx;
+    return 0;
 }
 
 CRpAtomic* CVehicleComponentSA::CloneAtomic( unsigned int idx ) const

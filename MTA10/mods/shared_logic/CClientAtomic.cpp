@@ -27,7 +27,7 @@ static LUA_DECLARE( setClump )
     // If model is nil, we remove the connection
     if ( model )
     {
-        atom->m_clump = model;
+        atom->SetModel( model );
         atom->m_atomic.AddToModel( &model->m_model );   // do the internal magic :)
 
         atom->SetRoot( model->m_parent );
@@ -39,7 +39,7 @@ static LUA_DECLARE( setClump )
         atom->SetRoot( NULL );
 
         atom->m_atomic.RemoveFromModel();
-        atom->m_clump = NULL;
+        atom->SetModel( NULL );
     }
 
     LUA_SUCCESS;
@@ -154,16 +154,31 @@ CClientAtomic::CClientAtomic( lua_State *L, CClientDFF *model, CRpAtomic& atom )
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
 
-    m_clump = model;
+    m_clump = NULL;
 
-    if ( model )
-        model->m_atomics.push_back( this );
+    // Maybe assign us to a model
+    SetModel( model );
 }
 
 CClientAtomic::~CClientAtomic()
 {
+    SetModel( NULL );
+}
+
+void CClientAtomic::SetModel( CClientDFF *model )
+{
+    if ( model == m_clump )
+        return;
+
     if ( m_clump )
         m_clump->m_atomics.remove( this );
+
+    m_clump = model;
+
+    if ( !model )
+        return;
+
+    model->m_atomics.insert( model->m_atomics.begin(), this );
 }
 
 bool CClientAtomic::ReplaceModel( unsigned short id )

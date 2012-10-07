@@ -855,7 +855,7 @@ void RwFrame::Unlink()
         m_parent->m_child = m_next;
     else
     {
-        RwFrame *prev = m_next;
+        RwFrame *prev = m_parent->m_child;
 
         while ( prev->m_next != this )
             prev = prev->m_next;

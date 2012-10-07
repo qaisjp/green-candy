@@ -13,6 +13,17 @@
 
 #include "StdInc.h"
 
+static LUA_DECLARE( getFrame )
+{
+    CClientRwFrame *frame = ((CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_parent;
+
+    if ( !frame )
+        return 0;
+
+    frame->PushStack( L );
+    return 1;
+}
+
 static LUA_DECLARE( isValidChild )
 {
     // RenderWare objects have a different type of hierarchy.
@@ -23,6 +34,7 @@ static LUA_DECLARE( isValidChild )
 
 static luaL_Reg object_interface[] =
 {
+    LUA_METHOD( getFrame ),
     LUA_METHOD( isValidChild ),
     { NULL, NULL }
 };
@@ -51,6 +63,8 @@ CClientRwObject::CClientRwObject( lua_State *L, CRwObject& object ) : LuaElement
     lua_pushcclosure( L, luaconstructor_object, 1 );
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
+
+    m_parent = NULL;
 }
 
 CClientRwObject::~CClientRwObject()

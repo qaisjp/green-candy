@@ -30,11 +30,8 @@ public:
     typedef std::list <CRwObject*> objectList_t;
     typedef std::list <CRwFrame*> childList_t;
 
-    virtual void                    Link( CRwFrame *child );
-    virtual void                    Unlink();
-
-    virtual const objectList_t&     GetObjects() const = 0;
-    virtual const childList_t&      GetChildren() const = 0;
+    virtual objectList_t&           GetObjects() = 0;
+    virtual childList_t&            GetChildren() = 0;
 
     virtual void                    SetLTM( const RwMatrix& mat ) = 0;
     virtual const RwMatrix&         GetLTM() const = 0;

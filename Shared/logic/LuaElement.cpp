@@ -116,9 +116,30 @@ void LuaElement::SetRoot( LuaClass *root )
     // We can also have no root
     // It is unnecessary to remove the parent if no more root
     if ( !( m_root = root ) )
-        return
+        return;
 
-    // Reparent it so we are int the correct tree
+    // Check whether we are in the root already
+    // If so, we do not need to be reparented
+    root->PushStack( m_lua );
+    m_class->PushParent( m_lua );
+
+    while ( lua_type( m_lua, -1 ) == LUA_TCLASS )
+    {
+        if ( lua_equal( m_lua, -2, -1 ) )
+        {
+            lua_pop( m_lua, 2 );
+            return;
+        }
+
+        ILuaClass *parent = lua_refclass( m_lua, -1 );
+        lua_pop( m_lua, 1 );
+
+        parent->PushParent( m_lua );
+    }
+
+    lua_pop( m_lua, 2 );
+
+    // Reparent it so we are in the correct tree
     m_class->PushMethod( m_lua, "setParent" );
     root->PushStack( m_lua );
     lua_call( m_lua, 1, 0 );

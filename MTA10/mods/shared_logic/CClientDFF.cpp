@@ -14,6 +14,24 @@
 
 #include "StdInc.h"
 
+static LUA_DECLARE( getAtomics )
+{
+    CClientDFF::atomics_t& list = ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomics;
+
+    lua_settop( L, 0 );
+    lua_createtable( L, list.size(), 0 );
+
+    unsigned int n = 1;
+
+    for ( CClientDFF::atomics_t::iterator iter = list.begin(); iter != list.end(); iter++, n++ )
+    {
+        (*iter)->PushStack( L );
+        lua_rawseti( L, 1, n );
+    }
+
+    return 1;
+}
+
 static LUA_DECLARE( replaceModel )
 {
     unsigned short model;
@@ -22,7 +40,7 @@ static LUA_DECLARE( replaceModel )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->ReplaceModel( model ) );
+    lua_pushboolean( L, ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->ReplaceModel( model ) );
     return 1;
 }
 
@@ -77,6 +95,7 @@ static LUA_DECLARE( restoreAll )
 
 static const luaL_Reg dff_interface[] =
 {
+    LUA_METHOD( getAtomics ),
     LUA_METHOD( replaceModel ),
     LUA_METHOD( isReplaced ),
     LUA_METHOD( getReplaced ),
@@ -107,7 +126,7 @@ static void RwFrameInspect( CClientRwFrame *frame, CClientDFF *model )
 {
     // Inspect all children...
     {
-        const CClientRwFrame::children_t& list = frame->m_children;
+        CClientRwFrame::children_t& list = frame->m_children;
 
         for ( CClientRwFrame::children_t::iterator iter = list.begin(); iter != list.end(); iter++ )
             RwFrameInspect( *iter, model );
@@ -115,7 +134,7 @@ static void RwFrameInspect( CClientRwFrame *frame, CClientDFF *model )
 
     // ... and objects (just like in game-layer)
     {
-        const CClientRwFrame::objects_t& list = frame->m_objects;
+        CClientRwFrame::objects_t& list = frame->m_objects;
 
         for ( CClientRwFrame::objects_t::iterator iter = list.begin(); iter != list.end(); iter++ )
             RwFrameObjectAcquire( *iter, model );
