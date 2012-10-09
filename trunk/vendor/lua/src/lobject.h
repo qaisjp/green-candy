@@ -517,6 +517,8 @@ public:
     int     GetTransmit();
     bool    IsTransmit( int type );
 
+    void    RegisterMethod( lua_State *L, const char *name );
+
     bool    IsDestroying();
     bool    IsDestroyed();
 

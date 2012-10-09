@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        sdk/core/CClientBase.h
 *  PURPOSE:     Client base interface
@@ -18,17 +18,19 @@
 class CClientBase 
 {
 public:
-    virtual int     ClientInitialize            ( const char* szArguments, CCoreInterface* pCoreInterface ) = 0;
-    virtual void    ClientShutdown              ( void ) = 0;  
+    virtual int             ClientInitialize( const char* szArguments, CCoreInterface* pCoreInterface ) = 0;
+    virtual void            ClientShutdown() = 0;
 
-    virtual void    PreFrameExecutionHandler    ( void ) = 0;
-    virtual void    PreHUDRenderExecutionHandler ( bool bDidUnminimize, bool bDidRecreateRenderTargets ) = 0;
-    virtual void    PostFrameExecutionHandler   ( void ) = 0;
+    virtual void            BeginGUI() = 0;
+    virtual void            EndGUI() = 0;
 
-    virtual bool    ProcessCommand              ( const char* szCommandLine ) = 0;
-    //virtual bool    ProcessInput                ( CInputMessage* pInputMessage ) = 0  *TODO*
+    virtual void            PreFrameExecutionHandler() = 0;
+    virtual void            PreHUDRenderExecutionHandler( bool bDidUnminimize, bool bDidRecreateRenderTargets ) = 0;
+    virtual void            PostFrameExecutionHandler() = 0;
 
-    virtual bool    HandleException             ( CExceptionInformation* pExceptionInformation ) = 0;
+    virtual bool            ProcessCommand( const char *szCommandLine ) = 0;
+
+    virtual bool            HandleException( CExceptionInformation* pExceptionInformation ) = 0;
 };
 
 #endif

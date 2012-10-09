@@ -177,7 +177,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( setObjectStatic )
     {
     //  bool setObjectStatic ( object theObject, bool toggle )
-        CClientEntity* pEntity; bool bStatic;
+        CClientEntity *pEntity; bool bStatic;
 
         CScriptArgReader argStream ( L );
         argStream.ReadClass( pEntity, LUACLASS_ENTITY );
@@ -189,7 +189,7 @@ namespace CLuaFunctionDefs
             return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "setObjectStatic", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '%s' [%s]", "setObjectStatic", *argStream.GetErrorMessage () ) );
 
         lua_pushboolean ( L, false );
         return 1;

@@ -193,6 +193,7 @@ public:
     bool                            IsUpgrade() const;
 
     bool                            IsPed() const;
+    bool                            IsObject() const;
 
     const char*                     GetNameIfVehicle() const;
 

@@ -433,6 +433,7 @@ bool LuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int type
             if ( stream.ReadCompressed( ref ) )
             {
                 m_table = m_parent->GetCachedTable( ref );
+                assert( m_table );
                 m_type = LUA_TTABLE;
             }
         }

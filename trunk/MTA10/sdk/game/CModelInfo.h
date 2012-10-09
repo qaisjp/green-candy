@@ -82,6 +82,7 @@ public:
     virtual bool                            IsUpgrade() const = 0;
 
     virtual bool                            IsPed() const = 0;
+    virtual bool                            IsObject() const = 0;
 
     virtual const char*                     GetNameIfVehicle() const = 0;
 

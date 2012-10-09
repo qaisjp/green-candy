@@ -234,6 +234,16 @@ bool CModelInfoSA::IsPed() const
     return info->GetModelType() == MODEL_PED;
 }
 
+bool CModelInfoSA::IsObject() const
+{
+    CBaseModelInfoSAInterface *info = ppModelInfo[m_modelID];
+
+    if ( !info )
+        return false;
+
+    return info->GetRwModelType() == RW_ATOMIC;
+}
+
 const char* CModelInfoSA::GetNameIfVehicle() const
 {
     DEBUG_TRACE("const char* CModelInfoSA::GetNameIfVehicle() const");

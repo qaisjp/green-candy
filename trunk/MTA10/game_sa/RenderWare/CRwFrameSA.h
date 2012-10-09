@@ -40,6 +40,9 @@ public:
     void                            SetModelling( const RwMatrix& mat ) { GetObject()->m_modelling = mat; }
     const RwMatrix&                 GetModelling() const                { return GetObject()->m_modelling; }
 
+    void                            SetPosition( const CVector& pos )   { GetObject()->m_modelling.pos = pos; }
+    const CVector&                  GetPosition() const                 { return GetObject()->m_modelling.pos; }
+
     childList_t                     m_children;
 
     // Static accessors

@@ -110,7 +110,12 @@ protected:
                     *src = info.short_src;
 
                 if ( proto_name )
-                    *proto_name = info.name;
+                {
+                    if ( !info.name )
+                        proto_name->clear();
+                    else
+                        *proto_name = info.name;
+                }
             }
             else if ( line )
                 *line = -1;

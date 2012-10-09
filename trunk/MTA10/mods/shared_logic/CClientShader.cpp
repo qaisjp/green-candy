@@ -44,5 +44,6 @@ CClientShader::CClientShader( CClientManager* pManager, ElementID ID, lua_State 
     lua_pop( L, 1 );
 
     SetTypeName( "shader" );
+
     m_pRenderItem = pShaderItem;
 }

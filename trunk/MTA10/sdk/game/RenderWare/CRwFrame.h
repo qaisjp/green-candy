@@ -38,6 +38,9 @@ public:
 
     virtual void                    SetModelling( const RwMatrix& mat ) = 0;
     virtual const RwMatrix&         GetModelling() const = 0;
+
+    virtual void                    SetPosition( const CVector& pos ) = 0;
+    virtual const CVector&          GetPosition() const = 0;
 };
 
 #endif //_RW_FRAME_

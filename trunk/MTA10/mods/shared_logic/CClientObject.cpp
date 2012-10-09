@@ -20,27 +20,6 @@
 #define MTA_BUILDINGS
 #define CCLIENTOBJECT_MAX 250
 
-static const luaL_Reg object_interface[] =
-{
-    { NULL, NULL }
-};
-
-static int luaconstructor_object( lua_State *L )
-{
-    CClientObject *obj = (CClientObject*)lua_touserdata( L, lua_upvalueindex( 1 ) );
-
-    ILuaClass& j = *lua_refclass( L, 1 );
-    j.SetTransmit( LUACLASS_OBJECT, obj );
-
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, object_interface, 1 );
-
-    lua_pushlstring( L, "object", 6 );
-    lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
-    return 0;
-}
-
 CClientObject::CClientObject( CClientManager* pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel ) : CClientStreamElement( pManager->GetObjectStreamer(), ID, L, system )
 {
     // Lua instancing
@@ -75,31 +54,29 @@ CClientObject::CClientObject( CClientManager* pManager, ElementID ID, lua_State 
     m_pObjectManager->AddToList ( this );
 }
 
-CClientObject::~CClientObject ( void )
+CClientObject::~CClientObject()
 {
     // Unrequest whatever we've requested or we'll crash in unlucky situations
-    m_pModelRequester->Cancel ( this, false );  
+    m_pModelRequester->Cancel( this, false );  
 
     // Detach us from anything
-    AttachTo ( NULL );
+    AttachTo( NULL );
 
     // Destroy the object
-    Destroy ();
+    Destroy();
 
     // Remove us from the list
-    Unlink ();
+    Unlink();
 }
 
-
-void CClientObject::Unlink ( void )
+void CClientObject::Unlink()
 {
-    m_pObjectManager->RemoveFromList ( this );
-    m_pObjectManager->m_Attached.remove ( this );
-    ListRemove ( m_pObjectManager->m_StreamedIn, this );
+    m_pObjectManager->RemoveFromList( this );
+    m_pObjectManager->m_Attached.remove( this );
+    ListRemove( m_pObjectManager->m_StreamedIn, this );
 }
 
-
-void CClientObject::GetPosition ( CVector& vecPosition ) const
+void CClientObject::GetPosition( CVector& vecPosition ) const
 {
     if ( m_pObject )
     {
@@ -116,41 +93,38 @@ void CClientObject::GetPosition ( CVector& vecPosition ) const
     }
 }
 
-
-void CClientObject::SetPosition ( const CVector& vecPosition )
+void CClientObject::SetPosition( const CVector& pos )
 {   
     // Move the object
     if ( m_pObject )
     {
         CVector vecRot;
-        GetRotationRadians ( vecRot );
-        m_pObject->Teleport ( vecPosition.fX, vecPosition.fY, vecPosition.fZ );
+        GetRotationRadians( vecRot );
+        m_pObject->Teleport( pos.fX, pos.fY, pos.fZ );
 #ifndef MTA_BUILDINGS
-        m_pObject->ProcessCollision ();
+        m_pObject->ProcessCollision();
 #endif
-        m_pObject->SetupLighting ();
-        SetRotationRadians ( vecRot );
+        m_pObject->SetupLighting();
+        SetRotationRadians( vecRot );
     }
 
-    if ( m_vecPosition != vecPosition )
+    if ( m_vecPosition != pos )
     {
         // Store the position in our datastruct
-        m_vecPosition = vecPosition;
+        m_vecPosition = pos;
 
         // Update our streaming position
-        UpdateStreamPosition ( vecPosition );
+        UpdateStreamPosition( pos );
     }
 }
 
-
-void CClientObject::GetRotationDegrees ( CVector& vecRotation ) const
+void CClientObject::GetRotationDegrees( CVector& vecRotation ) const
 {
-    GetRotationRadians ( vecRotation );
-    ConvertRadiansToDegrees ( vecRotation );
+    GetRotationRadians( vecRotation );
+    ConvertRadiansToDegrees( vecRotation );
 }
 
-
-void CClientObject::GetRotationRadians ( CVector& vecRotation ) const
+void CClientObject::GetRotationRadians( CVector& vecRotation ) const
 {
     if ( m_pObject && m_pAttachedToEntity )// Temp fix for static objects->
     {
@@ -158,7 +132,7 @@ void CClientObject::GetRotationRadians ( CVector& vecRotation ) const
         //   but we need to get the real rotation for when the game moves the objects..
         //  (eg: physics/attaching), the code below returns wrong values, see #2732
         RwMatrix matTemp;
-        m_pObject->GetMatrix ( matTemp );
+        m_pObject->GetMatrix( matTemp );
         matTemp.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
     }
     else
@@ -167,69 +141,64 @@ void CClientObject::GetRotationRadians ( CVector& vecRotation ) const
     }
 }
 
-
-void CClientObject::SetRotationDegrees ( const CVector & vecRotation )
+void CClientObject::SetRotationDegrees( const CVector & vecRotation )
 {
     // Convert from degrees to radians
     CVector vecTemp;
-    vecTemp.fX = vecRotation.fX * 3.1415926535897932384626433832795f / 180.0f;
-    vecTemp.fY = vecRotation.fY * 3.1415926535897932384626433832795f / 180.0f;
-    vecTemp.fZ = vecRotation.fZ * 3.1415926535897932384626433832795f / 180.0f;
+    vecTemp.fX = vecRotation.fX * M_PI / 180.0f;
+    vecTemp.fY = vecRotation.fY * M_PI / 180.0f;
+    vecTemp.fZ = vecRotation.fZ * M_PI / 180.0f;
 
-    SetRotationRadians ( vecTemp );
+    SetRotationRadians( vecTemp );
 }
 
-
-void CClientObject::SetRotationRadians ( const CVector& vecRotation )
+void CClientObject::SetRotationRadians( const CVector& rot )
 {
     if ( m_pObject )
     {
-        m_pObject->SetOrientation ( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+        m_pObject->SetOrientation( rot.fX, rot.fY, rot.fZ );
 #ifndef MTA_BUILDINGS
-        m_pObject->ProcessCollision ();
+        m_pObject->ProcessCollision();
 #endif
-        m_pObject->SetupLighting ();
+        m_pObject->SetupLighting();
     }
 
     // Store it in our datastruct
-    m_vecRotation = vecRotation;
+    m_vecRotation = rot;
 }
 
-
-void CClientObject::GetOrientation ( CVector& vecPosition, CVector& vecRotationRadians )
+void CClientObject::GetOrientation( CVector& pos, CVector& rotRadians ) const
 {
-    GetPosition ( vecPosition );
-    GetRotationRadians ( vecRotationRadians );
+    GetPosition( pos );
+    GetRotationRadians( rotRadians );
 }
 
-
-void CClientObject::SetOrientation ( const CVector& vecPosition, const CVector& vecRotationRadians )
+void CClientObject::SetOrientation( const CVector& pos, const CVector& rotRadians )
 {
-    if ( m_vecPosition != vecPosition )
+    if ( m_vecPosition != pos )
     {
         // Store the position in our datastruct
-        m_vecPosition = vecPosition;
+        m_vecPosition = pos;
 
         // Update our streaming position
-        UpdateStreamPosition ( vecPosition );
+        UpdateStreamPosition( pos );
     }
 
     // Update our internal data
-    m_vecPosition = vecPosition;
-    m_vecRotation = vecRotationRadians;
+    m_vecPosition = pos;
+    m_vecRotation = rotRadians;
 
     // Eventually move the object
     if ( m_pObject )
     {
-        m_pObject->Teleport ( vecPosition.fX, vecPosition.fY, vecPosition.fZ );
-        m_pObject->SetOrientation ( vecRotationRadians.fX, vecRotationRadians.fY, vecRotationRadians.fZ );
+        m_pObject->Teleport( pos.fX, pos.fY, pos.fZ );
+        m_pObject->SetOrientation( rotRadians.fX, rotRadians.fY, rotRadians.fZ );
 #ifndef MTA_BUILDINGS
-        m_pObject->ProcessCollision ();
+        m_pObject->ProcessCollision();
 #endif
-        m_pObject->SetupLighting ();
+        m_pObject->SetupLighting();
     }
 }
-
 
 void CClientObject::ModelRequestCallback ( CModelInfo* pModelInfo )
 {
@@ -237,21 +206,15 @@ void CClientObject::ModelRequestCallback ( CModelInfo* pModelInfo )
     Create ();
 }
 
-
-float CClientObject::GetDistanceFromCentreOfMassToBaseOfModel ( void )
+float CClientObject::GetDistanceFromCentreOfMassToBaseOfModel() const
 {
     if ( m_pObject )
-    {
         return m_pObject->GetBasingDistance();
-    }
-    else
-    {
-        return 0;
-    }
+
+    return 0;
 }
 
-
-void CClientObject::SetVisible ( bool bVisible )
+void CClientObject::SetVisible( bool bVisible )
 {
     if ( m_pObject )
     {
@@ -261,318 +224,288 @@ void CClientObject::SetVisible ( bool bVisible )
     m_bIsVisible = bVisible;
 }
 
-
-void CClientObject::SetModel ( unsigned short usModel )
+void CClientObject::SetModel( unsigned short usModel )
 {
     // Valid model ID?
-    if ( CClientObjectManager::IsValidModel ( usModel ) )
+    if ( !CClientObjectManager::IsValidModel( usModel ) )
+        return;
+
+    // Destroy current model
+    Destroy();
+
+    // Set the new model ID and recreate the model
+    m_usModel = usModel;
+    m_pModelInfo = g_pGame->GetModelInfo( usModel );
+    UpdateSpatialData();
+
+    // Request the new model so we can recreate when it's done
+    if ( m_pModelRequester->Request( usModel, this ) )
     {
-        // Destroy current model
-        Destroy ();
-
-        // Set the new model ID and recreate the model
-        m_usModel = usModel;
-        m_pModelInfo = g_pGame->GetModelInfo ( usModel );
-        UpdateSpatialData ();
-
-        // Request the new model so we can recreate when it's done
-        if ( m_pModelRequester->Request ( usModel, this ) )
-        {
-            Create ();
-        }
+        Create();
     }
 }
 
-
-void CClientObject::Render ( void )
+void CClientObject::Render()
 {
     if ( m_pObject )
-    {
-        m_pObject->Render ();
-    }
+        m_pObject->Render();
 }
 
-
-void CClientObject::SetStatic ( bool bStatic )
+void CClientObject::SetStatic( bool bStatic )
 {
     m_bIsStatic = bStatic;
-    StreamOutForABit ( );
+    StreamOutForABit();
 }
 
-
-void CClientObject::SetAlpha ( unsigned char ucAlpha )
+void CClientObject::SetAlpha( unsigned char ucAlpha )
 {
     if ( m_pObject )
-    {
-        m_pObject->SetAlpha ( ucAlpha );
-    }
+        m_pObject->SetAlpha( ucAlpha );
+
     m_ucAlpha = ucAlpha;
 }
 
-
-void CClientObject::SetScale ( float fScale )
+void CClientObject::SetScale( float fScale )
 {
     if ( m_pObject )
-    {
-        m_pObject->SetScale ( fScale );
-    }
+        m_pObject->SetScale( fScale );
 
     m_fScale = fScale;
 }
 
-
-void CClientObject::SetCollisionEnabled ( bool bCollisionEnabled )
+void CClientObject::SetCollisionEnabled( bool bCollisionEnabled )
 {
     if ( m_pObject )
-    {
-        m_pObject->SetUsesCollision ( bCollisionEnabled );
-    }
+        m_pObject->SetUsesCollision( bCollisionEnabled );
 
     m_bUsesCollision = bCollisionEnabled;
 }
 
-
-float CClientObject::GetHealth ( void )
+float CClientObject::GetHealth() const
 {
     if ( m_pObject )
-    {
-        return m_pObject->GetHealth ();
-    }
+        return m_pObject->GetHealth();
 
     return m_fHealth;
 }
 
-
-void CClientObject::SetHealth ( float fHealth )
+void CClientObject::SetHealth( float fHealth )
 {
     if ( m_pObject )
-    {
-        m_pObject->SetHealth ( fHealth );
-    }
+        m_pObject->SetHealth( fHealth );
 
     m_fHealth = fHealth;
 }
 
-
-void CClientObject::StreamIn ( bool bInstantly )
+void CClientObject::StreamIn( bool bInstantly )
 {
     // We need to load now?
     if ( bInstantly )
     {
         // Request the model blocking
-        if ( m_pModelRequester->RequestBlocking ( m_usModel ) )
+        if ( m_pModelRequester->RequestBlocking( m_usModel ) )
         {
             // Create us
-            Create ();
+            Create();
         }
-        else NotifyUnableToCreate ();
+        else
+            NotifyUnableToCreate();
     }
     else
     {
         // Request the model async
-        if ( m_pModelRequester->Request ( m_usModel, this ) )
+        if ( m_pModelRequester->Request( m_usModel, this ) )
         {
             // Create us now if we already had it loaded
-            Create ();
+            Create();
         }
-        else NotifyUnableToCreate ();
+        else
+            NotifyUnableToCreate();
     }
 }
 
-
-void CClientObject::StreamOut ( void )
+void CClientObject::StreamOut()
 {
     // Save the health
     if ( m_pObject )
-    {
-        m_fHealth = m_pObject->GetHealth ();
-    }
+        m_fHealth = m_pObject->GetHealth();
 
     // Destroy the object.
-    Destroy ();
+    Destroy();
 
     // Cancel anything we might've requested.
-    m_pModelRequester->Cancel ( this, true );
+    m_pModelRequester->Cancel( this, true );
 }
 
-
-void CClientObject::ReCreate ( void )
+void CClientObject::ReCreate()
 {
     if ( m_pObject )
     {
-        Destroy ();
-        Create ();
+        Destroy();
+        Create();
     }
 }
 
-
-void CClientObject::Create ( void )
+void CClientObject::Create()
 {
     // Not already created an object?
     if ( !m_pObject )
     {
         // Check again that the limit isn't reached. We are required to do so because
         // we load async. The streamer isn't always aware of our limits.
-        if ( !CClientObjectManager::IsObjectLimitReached () )
+        if ( !CClientObjectManager::IsObjectLimitReached() )
         {
             // Add a reference to the object
-            m_pModelInfo->AddRef ( true );
+            m_pModelInfo->AddRef( true );
 
             // If the new object is not breakable, allow it into the vertical line test
-            g_pMultiplayer->AllowCreatedObjectsInVerticalLineTest ( !CClientObjectManager::IsBreakableModel ( m_usModel ) );
+            g_pMultiplayer->AllowCreatedObjectsInVerticalLineTest( !CClientObjectManager::IsBreakableModel( m_usModel ) );
 
             // Create the object
-            m_pObject = g_pGame->GetPools ()->AddObject ( m_usModel );
+            m_pObject = g_pGame->GetPools()->AddObject( m_usModel );
 
             // Restore default behaviour
-            g_pMultiplayer->AllowCreatedObjectsInVerticalLineTest ( false );
+            g_pMultiplayer->AllowCreatedObjectsInVerticalLineTest( false );
 
-            if ( m_pObject )
-            {                
-                // Put our pointer in its stored pointer
-                m_pObject->SetStoredPointer ( this );
-
-                // If set to true,this has the effect of forcing the object to be static at all times
-                m_pObject->SetStaticWaitingForCollision ( m_bIsStatic );
-
-                // Apply our data to the object
-                m_pObject->Teleport ( m_vecPosition.fX, m_vecPosition.fY, m_vecPosition.fZ );
-                m_pObject->SetOrientation ( m_vecRotation.fX, m_vecRotation.fY, m_vecRotation.fZ );
-                #ifndef MTA_BUILDINGS
-                m_pObject->ProcessCollision ();
-                #endif
-                m_pObject->SetupLighting ();
-
-                if ( !m_bIsVisible ) SetVisible ( false );
-                if ( !m_bUsesCollision ) SetCollisionEnabled ( false );
-                if ( m_fScale != 1.0f ) SetScale ( m_fScale );
-                m_pObject->SetAreaCode ( m_ucInterior );
-                SetAlpha ( m_ucAlpha );
-                m_pObject->SetHealth ( m_fHealth );
-
-                // Reattach to an entity + any entities attached to this
-                ReattachEntities ();
-
-                // Validate this entity again
-                m_pManager->RestoreEntity ( this );
-
-                // Tell the streamer we've created this object
-                NotifyCreate ();
-
-                // Done
-                return;
-            }
-            else
+            if ( !m_pObject )
             {
                 // Remove our reference to the object again
-                m_pModelInfo->RemoveRef ();
+                m_pModelInfo->RemoveRef();
+                goto failed;
             }
+            // Put our pointer in its stored pointer
+            m_pObject->SetStoredPointer( this );
+
+            // If set to true,this has the effect of forcing the object to be static at all times
+            m_pObject->SetStaticWaitingForCollision( m_bIsStatic );
+
+            // Apply our data to the object
+            m_pObject->Teleport( m_vecPosition.fX, m_vecPosition.fY, m_vecPosition.fZ );
+            m_pObject->SetOrientation( m_vecRotation.fX, m_vecRotation.fY, m_vecRotation.fZ );
+#ifndef MTA_BUILDINGS
+            m_pObject->ProcessCollision();
+#endif
+            m_pObject->SetupLighting();
+
+            if ( !m_bIsVisible )
+                SetVisible( false );
+            if ( !m_bUsesCollision )
+                SetCollisionEnabled( false );
+            if ( m_fScale != 1.0f )
+                SetScale( m_fScale );
+
+            m_pObject->SetAreaCode( m_ucInterior );
+            SetAlpha( m_ucAlpha );
+            m_pObject->SetHealth( m_fHealth );
+
+            // Reattach to an entity + any entities attached to this
+            ReattachEntities();
+
+            // Validate this entity again
+            m_pManager->RestoreEntity( this );
+
+            // Tell the streamer we've created this object
+            NotifyCreate();
+            return;
         }
 
+failed:
         // Tell the streamer we could not create it
-        NotifyUnableToCreate ();
+        NotifyUnableToCreate();
     }
 }
 
-
-void CClientObject::Destroy ( void )
+void CClientObject::Destroy()
 {
     // If the object exists
     if ( m_pObject )
     {
         // Invalidate
-        m_pManager->InvalidateEntity ( this );
+        m_pManager->InvalidateEntity( this );
 
         // Destroy the object
         delete m_pObject;
         m_pObject = NULL;
 
         // Remove our reference to its model
-        m_pModelInfo->RemoveRef ();
+        m_pModelInfo->RemoveRef();
 
-        NotifyDestroy ();
+        NotifyDestroy();
     }
 }
 
-
-void CClientObject::NotifyCreate ( void )
+void CClientObject::NotifyCreate()
 {
-    m_pObjectManager->OnCreation ( this );
-    CClientStreamElement::NotifyCreate ();
+    m_pObjectManager->OnCreation( this );
+    CClientStreamElement::NotifyCreate();
 }
 
-
-void CClientObject::NotifyDestroy ( void )
+void CClientObject::NotifyDestroy()
 {
-    m_pObjectManager->OnDestruction ( this );
+    m_pObjectManager->OnDestruction( this );
 }
 
-void CClientObject::StreamedInPulse ( void )
+void CClientObject::StreamedInPulse()
 {
     // Are we not a static object (allowed to move by physics)
     if ( !m_bIsStatic )
     {
         // Grab our actual position (as GTA moves it too)
-        CVector vecPosition;
-        m_pObject->GetPosition ( vecPosition );
+        CVector pos;
+        m_pObject->GetPosition( pos );
 
         // Has it moved without MTA knowing?
-        if ( vecPosition != m_vecPosition )
+        if ( pos != m_vecPosition )
         {
-            m_vecPosition = vecPosition;
+            m_vecPosition = pos;
 
             // Update our streaming position
-            UpdateStreamPosition ( m_vecPosition );
+            UpdateStreamPosition( pos );
         }
     }
 }
 
-
-void CClientObject::AttachTo ( CClientEntity* pEntity )
+void CClientObject::AttachTo( CClientEntity* pEntity )
 {
     // Add/remove us to/from our managers attached list
-    if ( m_pAttachedToEntity && !pEntity ) m_pObjectManager->m_Attached.remove ( this );
-    else if ( !m_pAttachedToEntity && pEntity ) m_pObjectManager->m_Attached.push_back ( this );
+    if ( m_pAttachedToEntity && !pEntity )
+        m_pObjectManager->m_Attached.remove( this );
+    else if ( !m_pAttachedToEntity && pEntity )
+        m_pObjectManager->m_Attached.push_back( this );
 
-    CClientEntity::AttachTo ( pEntity );
+    CClientEntity::AttachTo( pEntity );
 }
 
-
-void CClientObject::GetMoveSpeed ( CVector& vecMoveSpeed ) const
+void CClientObject::GetMoveSpeed( CVector& vecMoveSpeed ) const
 {
     if ( m_pObject )
     {
-        m_pObject->GetMoveSpeed ( vecMoveSpeed );
+        m_pObject->GetMoveSpeed( vecMoveSpeed );
+        return;
     }
-    else
-    {
-        vecMoveSpeed = m_vecMoveSpeed;
-    }
+
+    vecMoveSpeed = m_vecMoveSpeed;
 }
 
-
-void CClientObject::SetMoveSpeed ( const CVector& vecMoveSpeed )
+void CClientObject::SetMoveSpeed( const CVector& speed )
 {
     if ( m_pObject )
-    {
-        m_pObject->SetMoveSpeed ( vecMoveSpeed );
-    }
-    m_vecMoveSpeed = vecMoveSpeed;
+        m_pObject->SetMoveSpeed( speed );
+
+    m_vecMoveSpeed = speed;
 }
 
-
-CSphere CClientObject::GetWorldBoundingSphere ( void )
+CSphere CClientObject::GetWorldBoundingSphere() const
 {
     CSphere sphere;
-    CModelInfo* pModelInfo = g_pGame->GetModelInfo ( GetModel () );
-    if ( pModelInfo )
+    CModelInfo *pModelInfo = g_pGame->GetModelInfo( GetModel() );
+
+    if ( const CBoundingBox *bounds = pModelInfo->GetBoundingBox() )
     {
-        if ( const CBoundingBox *bounds = pModelInfo->GetBoundingBox() )
-        {
-            sphere.vecPosition = bounds->vecBoundOffset;
-            sphere.fRadius = bounds->fRadius;
-        }
+        sphere.vecPosition = bounds->vecBoundOffset;
+        sphere.fRadius = bounds->fRadius;
     }
-    sphere.vecPosition += GetStreamPosition ();
+
+    sphere.vecPosition += GetStreamPosition();
     return sphere;
 }

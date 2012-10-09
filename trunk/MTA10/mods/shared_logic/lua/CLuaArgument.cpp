@@ -12,6 +12,8 @@
 *               Christian Myhre Lundheim <>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -65,8 +67,10 @@ bool CLuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int typ
     switch( type )
     {
     case LUA_TTABLE:
-        m_table = new CLuaArguments( stream );
-        m_table->AddCachedTable( m_table );
+        m_table = new CLuaArguments;
+        m_table->m_parent = m_parent;
+        ((CLuaArguments*)m_table)->ReadFromBitStream( stream );
+        m_parent->AddCachedTable( m_table );
         m_type = LUA_TTABLE;
         m_table->ValidateTableKeys();
         return true;

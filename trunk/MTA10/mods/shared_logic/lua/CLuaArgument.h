@@ -12,13 +12,14 @@
 *               Christian Myhre Lundheim <>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #ifndef __CLUAARGUMENT_H
 #define __CLUAARGUMENT_H
 
 #include <net/bitstream.h>
-#include <string>
 
 class CClientEntity;
 class CLuaArguments;

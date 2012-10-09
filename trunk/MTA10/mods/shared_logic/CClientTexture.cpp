@@ -44,6 +44,8 @@ CClientTexture::CClientTexture( CClientManager *pManager, ElementID ID, lua_Stat
     lua_pop( L, 1 );
 
     SetTypeName( "texture" );
+    
+    m_pRenderItem = pTextureItem;
 }
 
 static const luaL_Reg target_interface[] =

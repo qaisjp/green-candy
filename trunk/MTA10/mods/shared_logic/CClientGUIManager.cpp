@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientGUIManager.cpp
@@ -8,6 +8,9 @@
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -16,107 +19,86 @@
 using std::list;
 using std::map;
 
-CClientGUIManager::CClientGUIManager ( void )
+
+CClientGUIManager::CClientGUIManager()
 {
-    m_bCanRemoveFromList = true;
 }
 
-
-CClientGUIManager::~CClientGUIManager ( void )
+CClientGUIManager::~CClientGUIManager()
 {
-    // Destroy all objects
-    DeleteAll ();
 }
 
-
-void CClientGUIManager::DeleteAll ( void )
+void CClientGUIManager::Begin()
 {
-    // We must make sure the gui elements don't interrupt our list
-    m_bCanRemoveFromList = false;
+    m_safeKeep = new luaRefs;
 
-    // Delete all the gui elements
-    std::list < CClientGUIElement* > ::const_iterator iter = m_Elements.begin ();
-
-    for ( ; iter != m_Elements.end (); iter++ )
-        (*iter)->Delete();
-
-    // Clear the list
-    m_Elements.clear ();
-    m_bCanRemoveFromList = true;
+    // Reference all GUI entities
+    for ( elements_t::iterator iter = m_Elements.begin(); iter != m_Elements.end(); iter++ )
+        (*iter)->Reference( *m_safeKeep );
 }
 
-
-bool CClientGUIManager::Exists ( CClientGUIElement* pGUIElement )
+void CClientGUIManager::End()
 {
-    return m_Elements.Contains ( pGUIElement );
+    delete m_safeKeep;
 }
 
-
-bool CClientGUIManager::Exists ( CGUIElement* pCGUIElement )
+bool CClientGUIManager::Exists( CClientGUIElement *element ) const
 {
-    if ( pCGUIElement ) {
-        // Find the object in the list
-        list < CClientGUIElement* > ::const_iterator iter = m_Elements.begin ();
-        for ( ; iter != m_Elements.end (); iter++ )
-        {
-            if ( (*iter)->GetCGUIElement () == pCGUIElement )
-            {
-                return true;
-            }
-        }
+    return std::find( m_Elements.begin(), m_Elements.end(), element ) != m_Elements.end();
+}
+
+bool CClientGUIManager::Exists( CGUIElement *element ) const
+{
+    // Find the object in the list
+    elements_t::const_iterator iter = m_Elements.begin();
+
+    for ( ; iter != m_Elements.end(); iter++ )
+    {
+        if ( (*iter)->GetCGUIElement() == element )
+            return true;
     }
 
-    // Doesn't exist
     return false;
 }
 
-
-CClientGUIElement* CClientGUIManager::Get ( CGUIElement* pCGUIElement )
+CClientGUIElement* CClientGUIManager::Get( CGUIElement* pCGUIElement )
 {
-    if ( pCGUIElement ) {
-        // Find the object in the list
-        list < CClientGUIElement* > ::const_iterator iter = m_Elements.begin ();
-        for ( ; iter != m_Elements.end (); iter++ )
-        {
-            if ( (*iter)->GetCGUIElement () == pCGUIElement )
-            {
-                return *iter;
-            }
-        }
+    // Find the object in the list
+    elements_t::const_iterator iter = m_Elements.begin();
+
+    for ( ; iter != m_Elements.end(); iter++ )
+    {
+        if ( (*iter)->GetCGUIElement() == pCGUIElement )
+            return *iter;
     }
 
-    // Doesn't exist
     return NULL;
 }
 
-
-void CClientGUIManager::Add ( CClientGUIElement* pElement )
+void CClientGUIManager::Add( CClientGUIElement *element )
 {
-    m_Elements.push_back ( pElement );
+    m_Elements.push_back( element );
 }
 
-
-void CClientGUIManager::Remove ( CClientGUIElement* pGUIElement )
+void CClientGUIManager::Remove( CClientGUIElement *element )
 {
-    if ( m_bCanRemoveFromList )
-    {
-        m_Elements.remove ( pGUIElement );
-    }
+    m_Elements.remove( element );
 }
 
-void CClientGUIManager::DoPulse ( void )
+void CClientGUIManager::DoPulse()
 {
-    FlushQueuedUpdates ();
+    FlushQueuedUpdates();
 }
 
-void CClientGUIManager::QueueGridListUpdate ( CClientGUIElement *pGUIElement )
+void CClientGUIManager::QueueGridListUpdate( CClientGUIElement *element )
 {
-    ElementID ID = pGUIElement->GetID ();
-    if ( m_QueuedGridListUpdates.find ( ID ) == m_QueuedGridListUpdates.end () )
-        m_QueuedGridListUpdates[ ID ] = true;
+    ElementID ID = element->GetID();
+
+    if ( m_QueuedGridListUpdates.find( ID ) == m_QueuedGridListUpdates.end() )
+        m_QueuedGridListUpdates[ID] = true;
 }
 
-void CClientGUIManager::FlushQueuedUpdates ()
+void CClientGUIManager::FlushQueuedUpdates()
 {
     map < ElementID, bool >::iterator iter = m_QueuedGridListUpdates.begin ();
     for ( ; iter != m_QueuedGridListUpdates.end () ; ++iter )
@@ -132,5 +114,5 @@ void CClientGUIManager::FlushQueuedUpdates ()
             }
         }
     }
-    m_QueuedGridListUpdates.clear ();
+    m_QueuedGridListUpdates.clear();
 }

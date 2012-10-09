@@ -73,6 +73,28 @@ static LUA_DECLARE( getModelling )
     return 1;
 }
 
+static LUA_DECLARE( setPosition )
+{
+    CVector pos;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadVector( pos );
+    LUA_ARGS_END;
+
+    ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetObject().SetPosition( pos );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getPosition )
+{
+    const CVector& pos = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetObject().GetPosition();
+
+    lua_pushnumber( L, pos[0] );
+    lua_pushnumber( L, pos[1] );
+    lua_pushnumber( L, pos[2] );
+    return 3;
+}
+
 static LUA_DECLARE( getObjects )
 {
     CClientRwFrame::objects_t& list = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_objects;
@@ -89,6 +111,57 @@ static LUA_DECLARE( getObjects )
     }
 
     return 1;
+}
+
+static inline CClientRwFrame* RwFrameFindChildHierarchy( CClientRwFrame *frame, const std::string& name )
+{
+    if ( name == frame->GetName() )
+        return frame;
+
+    // Check the children
+    for ( CClientRwFrame::children_t::iterator iter = frame->m_children.begin(); iter != frame->m_children.end(); iter++ )
+        if ( CClientRwFrame *rslt = RwFrameFindChildHierarchy( *iter, name ) )
+            return rslt;
+
+    return NULL;
+}
+
+static LUA_DECLARE( findFrame )
+{
+    std::string name;
+    bool checkHierarchy;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadString( name );
+    argStream.ReadBool( checkHierarchy, true );
+    LUA_ARGS_END;
+
+    CClientRwFrame *frame = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )));
+
+    if ( checkHierarchy )
+    {
+        for ( CClientRwFrame::children_t::iterator iter = frame->m_children.begin(); iter != frame->m_children.end(); iter++ )
+        {
+            if ( CClientRwFrame *rslt = RwFrameFindChildHierarchy( *iter, name ) )
+            {
+                rslt->PushStack( L );
+                return 1;
+            }
+        }
+    }
+    else
+    {
+        for ( CClientRwFrame::children_t::iterator iter = frame->m_children.begin(); iter != frame->m_children.end(); iter++ )
+        {
+            if ( (*iter)->GetName() != name )
+                continue;
+
+            (*iter)->PushStack( L );
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 static LUA_DECLARE( getLinkedFrames )
@@ -213,7 +286,10 @@ static const luaL_Reg rwframe_interface[] =
     LUA_METHOD( getLTM ),
     LUA_METHOD( setModelling ),
     LUA_METHOD( getModelling ),
+    LUA_METHOD( setPosition ),
+    LUA_METHOD( getPosition ),
     LUA_METHOD( getObjects ),
+    LUA_METHOD( findFrame ),
     LUA_METHOD( getLinkedFrames ),
     LUA_METHOD( isValidChild ),
     { "setChild", CClientRwFrame::setChild },
