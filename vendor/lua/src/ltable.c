@@ -454,7 +454,7 @@ const TValue *luaH_getnum (Table *t, int key) {
 /*
 ** search function for strings
 */
-const TValue *luaH_getstr (Table *t, TString *key) {
+const TValue *luaH_getstr (Table *t, const TString *key) {
   Node *n = hashstr(t, key);
   do {  /* check whether `key' is somewhere in the chain */
     if (ttisstring(gkey(n)) && rawtsvalue(gkey(n)) == key)

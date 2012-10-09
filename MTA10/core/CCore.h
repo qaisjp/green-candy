@@ -99,7 +99,7 @@ public:
     CGame*                  GetGame();
     CGUI*                   GetGUI();
     CGraphicsInterface*     GetGraphics();
-    CModManagerInterface*   GetModManager();
+    CModManager*            GetModManager();
     CServer*                GetServer()                                                         { return m_server; }
     CMultiplayer*           GetMultiplayer();
     CNet*                   GetNetwork();

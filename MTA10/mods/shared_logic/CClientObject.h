@@ -22,14 +22,14 @@ class CClientObject;
 
 #include "CClientStreamElement.h"
 
-#define LUACLASS_OBJECT     60
-
 struct SLastSyncedObjectData
 {
     CVector vecPosition;
     CVector vecRotation;
     float   fHealth;
 };
+
+#include "luadefs/luaobject.h"
 
 class CClientObject : public CClientStreamElement
 {
@@ -47,50 +47,50 @@ public:
     inline CEntity*                 GetGameEntity()                                         { return m_pObject; }
     inline const CEntity*           GetGameEntity() const                                   { return m_pObject; }
 
-    void                            GetPosition( CVector& vecPosition ) const;
-    void                            SetPosition( const CVector& vecPosition );
-    virtual CSphere                 GetWorldBoundingSphere();
+    void                            GetPosition( CVector& pos ) const;
+    void                            SetPosition( const CVector& pos );
+    virtual CSphere                 GetWorldBoundingSphere() const;
 
-    void                            AttachTo( CClientEntity* pEntity );
+    void                            AttachTo( CClientEntity *entity );
 
-    void                            GetRotationDegrees( CVector& vecRotation ) const;
-    void                            GetRotationRadians( CVector& vecRotation ) const;
-    void                            SetRotationDegrees( const CVector& vecRotation );
-    virtual void                    SetRotationRadians( const CVector& vecRotation );
+    void                            GetRotationDegrees( CVector& rot ) const;
+    void                            GetRotationRadians( CVector& rot ) const;
+    void                            SetRotationDegrees( const CVector& rot );
+    virtual void                    SetRotationRadians( const CVector& rot );
 
-    void                            GetMoveSpeed( CVector& vecMoveSpeed ) const;
-    void                            SetMoveSpeed( const CVector& vecMoveSpeed );
+    void                            GetMoveSpeed( CVector& speed ) const;
+    void                            SetMoveSpeed( const CVector& speed );
 
-    void                            GetOrientation( CVector& vecPosition, CVector& vecRotationRadians );
-    virtual void                    SetOrientation( const CVector& vecPosition, const CVector& vecRotationRadians );
+    void                            GetOrientation( CVector& pos, CVector& rotRadians ) const;
+    virtual void                    SetOrientation( const CVector& pos, const CVector& rotRadians );
 
-    void                            ModelRequestCallback( CModelInfo* pModelInfo );
+    void                            ModelRequestCallback( CModelInfo *modelInfo );
 
-    float                           GetDistanceFromCentreOfMassToBaseOfModel();
+    float                           GetDistanceFromCentreOfMassToBaseOfModel() const;
 
-    inline bool                     IsVisible()                                             { return m_bIsVisible; }
-    void                            SetVisible( bool bVisible );
+    inline bool                     IsVisible() const                                       { return m_bIsVisible; }
+    void                            SetVisible( bool visible );
 
     inline unsigned short           GetModel() const                                        { return m_usModel; }
     void                            SetModel( unsigned short usModel );
 
     void                            Render();
 
-    inline bool                     IsStatic()                                              { return m_bIsStatic; }
+    inline bool                     IsStatic() const                                        { return m_bIsStatic; }
     void                            SetStatic( bool bStatic );
     
-    inline unsigned char            GetAlpha()                                              { return m_ucAlpha; }   
+    inline unsigned char            GetAlpha() const                                        { return m_ucAlpha; }   
     void                            SetAlpha( unsigned char ucAlpha );
-    inline float                    GetScale()                                              { return m_fScale; }
+    inline float                    GetScale() const                                        { return m_fScale; }
     void                            SetScale( float fScale );
 
-    inline bool                     IsCollisionEnabled()                                    { return m_bUsesCollision; }
+    inline bool                     IsCollisionEnabled() const                              { return m_bUsesCollision; }
     void                            SetCollisionEnabled( bool bCollisionEnabled );
 
-    float                           GetHealth();
+    float                           GetHealth() const;
     void                            SetHealth( float fHealth );
 
-    inline bool                     IsBreakable()                                           { return m_pObjectManager->IsBreakableModel( m_usModel ) && m_bBreakable; }
+    inline bool                     IsBreakable() const                                     { return m_pObjectManager->IsBreakableModel( m_usModel ) && m_bBreakable; }
     inline void                     SetBreakable( bool bBreakable )                         { m_bBreakable = bBreakable; }
 
     void                            ReCreate();

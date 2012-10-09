@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientGUIManager.h
@@ -8,6 +8,9 @@
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -17,7 +20,6 @@ struct SGUIManagerListEntry;
 #ifndef __CCLIENTGUIMANAGER_H
 #define __CCLIENTGUIMANAGER_H
 
-#include <list>
 #include "CClientManager.h"
 #include "CClientGUIElement.h"
 #include <gui/CGUI.h>
@@ -28,29 +30,33 @@ class CClientGUIManager
     friend class CClientGUIElement;
 
 public:
-                                            CClientGUIManager       ( void );
-                                            ~CClientGUIManager      ( void );
+                                            CClientGUIManager();
+                                            ~CClientGUIManager();
 
-    void                                    DeleteAll               ( void );
+    void                                    Begin();
+    void                                    End();
 
-    bool                                    Exists                  ( CClientGUIElement* pGUIElement );
-    bool                                    Exists                  ( CGUIElement* pCGUIElement );
-    inline unsigned int                     Count                   ( void )                                    { return static_cast < unsigned int > ( m_Elements.size () ); };
+    bool                                    Exists( CClientGUIElement *element ) const;
+    bool                                    Exists( CGUIElement *element ) const;
+    inline unsigned int                     Count() const                               { return m_Elements.size(); }
 
-    CClientGUIElement*                      Get                     ( CGUIElement* pCGUIElement );
+    CClientGUIElement*                      Get( CGUIElement *element );
 
-    void                                    DoPulse                 ( void );
-    void                                    QueueGridListUpdate     ( CClientGUIElement *pGUIElement );
-
-private:
-    void                                    Add                     ( CClientGUIElement* pGUIElement );
-    void                                    Remove                  ( CClientGUIElement* pGUIElement );
-    void                                    FlushQueuedUpdates      ( void );
+    void                                    DoPulse();
+    void                                    QueueGridListUpdate( CClientGUIElement *element );
 
 private:
-    bool                                    m_bCanRemoveFromList;
-    CMappedList < CClientGUIElement* >      m_Elements;
-    std::map < ElementID, bool >            m_QueuedGridListUpdates;
+    void                                    Add( CClientGUIElement *element );
+    void                                    Remove( CClientGUIElement *element );
+    void                                    FlushQueuedUpdates();
+
+private:
+    typedef std::list <CClientGUIElement*> elements_t;
+
+    luaRefs*                                m_safeKeep;
+
+    elements_t                              m_Elements;
+    std::map <ElementID, bool>              m_QueuedGridListUpdates;
 };
 
 #endif

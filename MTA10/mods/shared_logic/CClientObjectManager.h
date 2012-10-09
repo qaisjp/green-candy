@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientObjectManager.h
@@ -10,6 +10,9 @@
 *               Jax <>
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Kevin Whiteside <kevuwk@gmail.com>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -19,7 +22,6 @@ class CClientObjectManager;
 #define __CCLIENTOBJECTMANAGER_H
 
 #include "CClientCommon.h"
-#include <list>
 
 class CClientManager;
 class CClientObject;
@@ -31,43 +33,44 @@ class CClientObjectManager
     friend class CClientObject;
 
 public:
-    void                                    DoPulse                     ( void );
+    void                                    DoPulse();
 
-    void                                    DeleteAll                   ( void );
+    void                                    DeleteAll();
 
-    inline unsigned int                     Count                       ( void )                        { return m_Objects.size(); };
-    inline unsigned int                     CountCreatedObjects         ( void )                        { return g_pGame->GetPools()->GetNumberOfUsedSpaces( OBJECT_POOL ); };
-    static CClientObject*                   Get                         ( ElementID ID );
-    CClientObject*                          Get                         ( CObject* pObject, bool bValidatePointer );
-    CClientObject*                          GetSafe                     ( CEntity * pEntity );
+    inline unsigned int                     Count() const                                               { return m_Objects.size(); }
+    inline unsigned int                     CountCreatedObjects() const                                 { return g_pGame->GetPools()->GetNumberOfUsedSpaces( OBJECT_POOL ); }
+    static CClientObject*                   Get( ElementID ID );
+    CClientObject*                          Get( CObject *object, bool bValidatePointer );
+    CClientObject*                          GetSafe( CEntity *entity );
 
-    static bool                             IsValidModel                ( unsigned short ulObjectModel );
-    static bool                             IsBreakableModel            ( unsigned long ulObjectModel );
-    bool                                    Exists                      ( CClientObject* pObject );
-    bool                                    ObjectsAroundPointLoaded    ( const CVector& vecPosition, float fRadius, unsigned short usDimension, SString* pstrStatus = NULL );
+    static bool                             IsValidModel( unsigned short id );
+    static bool                             IsBreakableModel( unsigned short id );
+    bool                                    Exists( CClientObject *object ) const;
+    bool                                    ObjectsAroundPointLoaded( const CVector& pos, float radius, unsigned short dimension, SString *pstrStatus = NULL );
 
-    static bool                             IsObjectLimitReached        ( void );
+    static bool                             IsObjectLimitReached();
 
-    void                                    RestreamObjects             ( unsigned short usModel );
+    void                                    RestreamObjects( unsigned short id );
 
-    std::list < CClientObject* > ::const_iterator           IterGet             ( CClientObject* pObject );
-    std::list < CClientObject* > ::const_reverse_iterator   IterGetReverse      ( CClientObject* pObject );
-    std::list < CClientObject* > ::const_iterator           IterBegin           ( void )                        { return m_Objects.begin (); };
-    std::list < CClientObject* > ::const_iterator           IterEnd             ( void )                        { return m_Objects.end (); };
-    std::list < CClientObject* > ::const_reverse_iterator   IterReverseBegin    ( void )                        { return m_Objects.rbegin (); };
-    std::list < CClientObject* > ::const_reverse_iterator   IterReverseEnd      ( void )                        { return m_Objects.rend (); };
+    typedef std::list <CClientObject*> objects_t;
+
+    objects_t::const_iterator               IterGet( CClientObject *object ) const;
+    objects_t::const_reverse_iterator       IterGetReverse( CClientObject *object ) const;
+    objects_t::const_iterator               IterBegin() const                                           { return m_Objects.begin (); }
+    objects_t::const_iterator               IterEnd() const                                             { return m_Objects.end (); }
+    objects_t::const_reverse_iterator       IterReverseEnd() const                                      { return m_Objects.rend (); }
 
 private:
-                                            CClientObjectManager        ( class CClientManager* pManager );
-                                            ~CClientObjectManager       ( void );
+                                            CClientObjectManager( class CClientManager *manager );
+                                            ~CClientObjectManager();
 
-    inline void                             AddToList                   ( CClientObject* pObject )      { m_Objects.push_back ( pObject ); };
-    void                                    RemoveFromList              ( CClientObject* pObject );
+    inline void                             AddToList( CClientObject* pObject )                         { m_Objects.push_back ( pObject ); }
+    void                                    RemoveFromList( CClientObject* pObject );
 
-    void                                    OnCreation                  ( CClientObject * pObject );
-    void                                    OnDestruction               ( CClientObject * pObject );
+    void                                    OnCreation( CClientObject * pObject );
+    void                                    OnDestruction( CClientObject * pObject );
 
-    void                                    UpdateLimitInfo             ( void );
+    void                                    UpdateLimitInfo();
 
     static unsigned int                     m_iEntryInfoNodeEntries;
     static unsigned int                     m_iPointerNodeSingleLinkEntries;
@@ -75,9 +78,9 @@ private:
 
     class CClientManager*                   m_pManager;
     bool                                    m_bCanRemoveFromList;
-    std::list < CClientObject* >            m_Objects;
-    std::vector < CClientObject* >          m_StreamedIn;
-    std::list < CClientObject* >            m_Attached;
+    objects_t                               m_Objects;
+    std::vector <CClientObject*>            m_StreamedIn;
+    objects_t                               m_Attached;
 };
 
 #endif

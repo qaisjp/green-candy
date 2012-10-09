@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/CClient.h
 *  PURPOSE:     Header file for Client class
@@ -10,6 +10,7 @@
 *               Oliver Brown <>
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *               
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -23,17 +24,20 @@
 class CClient : public CClientBase
 {
 public:
-    int         ClientInitialize                ( const char* szArguments, CCoreInterface* pCore );
-    void        ClientShutdown                  ( void );  
+    int                 ClientInitialize( const char* szArguments, CCoreInterface* pCore );
+    void                ClientShutdown();
 
-    void        PreFrameExecutionHandler        ( void );
-    void        PreHUDRenderExecutionHandler    ( bool bDidUnminimize, bool bDidRecreateRenderTargets );
-    void        PostFrameExecutionHandler       ( void );
+    // Protective measures for Lua scripting
+    void                BeginGUI();
+    void                EndGUI();
 
-    bool        ProcessCommand                  ( const char* szCommandLine );
-    //bool        ProcessInput                    ( CInputMessage* pInputMessage );
+    void                PreFrameExecutionHandler();
+    void                PreHUDRenderExecutionHandler( bool bDidUnminimize, bool bDidRecreateRenderTargets );
+    void                PostFrameExecutionHandler();
 
-    bool        HandleException                 ( CExceptionInformation* pExceptionInformation );
+    bool                ProcessCommand( const char *szCommandLine );
+
+    bool                HandleException( CExceptionInformation* pExceptionInformation );
 };
 
 extern CFileTranslator *modFileRoot;

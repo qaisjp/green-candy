@@ -48,16 +48,16 @@ CClientRenderElement::CClientRenderElement( CClientManager* pManager, ElementID 
     m_pRenderItem = NULL;
 }
 
-CClientRenderElement::~CClientRenderElement ( void )
+CClientRenderElement::~CClientRenderElement()
 {
-    Unlink ();
+    Unlink();
 }
 
-void CClientRenderElement::Unlink ( void )
+void CClientRenderElement::Unlink()
 {
     if ( !bDoneUnlink )
     {
         bDoneUnlink = true;
-        m_pRenderElementManager->Remove ( this );
+        m_pRenderElementManager->Remove( this );
     }
 }

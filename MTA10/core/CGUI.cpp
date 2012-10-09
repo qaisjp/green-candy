@@ -16,6 +16,8 @@
 
 using std::string;
 
+extern CCore *g_pCore;
+
 template<> CLocalGUI * CSingleton < CLocalGUI >::m_pSingleton = NULL;
 
 #ifndef HIWORD
@@ -587,81 +589,107 @@ bool CLocalGUI::ProcessMessage ( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
     CGUI* pGUI = CCore::GetSingleton ().GetGUI ();
 
     // If we have the focus, we handle the message
-    if ( InputGoesToGUI () )
+    if ( InputGoesToGUI() )
     {
+        class protectGUI
+        {
+        public:
+            protectGUI()
+            {
+                mod = g_pCore->GetModManager()->GetCurrentMod();
+
+                if ( !mod )
+                    return;
+
+                mod->BeginGUI();
+            }
+
+            ~protectGUI()
+            {
+                if ( !mod )
+                    return;
+
+                mod->EndGUI();
+            }
+
+            CClientBase *mod;
+        };
+
+        protectGUI prot;
+
         // Pass the message to the GUI manager
         // ACHTUNG: fix the CEGUI ones!
         switch ( uMsg )
         {
-            case WM_MOUSEWHEEL:
-                if ( GET_WHEEL_DELTA_WPARAM ( wParam ) > 0 )  
-                    pGUI->ProcessMouseInput ( CGUI_MI_MOUSEWHEEL, 1, NULL );
-                else
-                    pGUI->ProcessMouseInput ( CGUI_MI_MOUSEWHEEL, 0, NULL );
-                return true;
+        case WM_MOUSEWHEEL:
+            if ( GET_WHEEL_DELTA_WPARAM ( wParam ) > 0 )  
+                pGUI->ProcessMouseInput ( CGUI_MI_MOUSEWHEEL, 1, NULL );
+            else
+                pGUI->ProcessMouseInput ( CGUI_MI_MOUSEWHEEL, 0, NULL );
+            return true;
 
-            case WM_MOUSEMOVE:
-                pGUI->ProcessMouseInput ( CGUI_MI_MOUSEPOS, LOWORD ( lParam ), HIWORD ( lParam ) );
-                return true;
+        case WM_MOUSEMOVE:
+            pGUI->ProcessMouseInput ( CGUI_MI_MOUSEPOS, LOWORD ( lParam ), HIWORD ( lParam ) );
+            return true;
 
-            case WM_LBUTTONDOWN:
-                pGUI->ProcessMouseInput ( CGUI_MI_MOUSEDOWN, 0, 0, LeftButton );
-                return true;
+        case WM_LBUTTONDOWN:
+            pGUI->ProcessMouseInput ( CGUI_MI_MOUSEDOWN, 0, 0, LeftButton );
+            return true;
 
-            case WM_RBUTTONDOWN:
-                pGUI->ProcessMouseInput ( CGUI_MI_MOUSEDOWN, 0, 0, RightButton );
-                return true;
+        case WM_RBUTTONDOWN:
+            pGUI->ProcessMouseInput ( CGUI_MI_MOUSEDOWN, 0, 0, RightButton );
+            return true;
 
-            case WM_MBUTTONDOWN:
-                pGUI->ProcessMouseInput ( CGUI_MI_MOUSEDOWN, 0, 0, MiddleButton );
-                return true;
+        case WM_MBUTTONDOWN:
+            pGUI->ProcessMouseInput ( CGUI_MI_MOUSEDOWN, 0, 0, MiddleButton );
+            return true;
 
-            case WM_LBUTTONUP:
-                pGUI->ProcessMouseInput ( CGUI_MI_MOUSEUP, 0, 0, LeftButton );
-                return true;
+        case WM_LBUTTONUP:
+            pGUI->ProcessMouseInput ( CGUI_MI_MOUSEUP, 0, 0, LeftButton );
+            return true;
 
-            case WM_RBUTTONUP:
-                pGUI->ProcessMouseInput ( CGUI_MI_MOUSEUP, 0, 0, RightButton );
-                return true;
+        case WM_RBUTTONUP:
+            pGUI->ProcessMouseInput ( CGUI_MI_MOUSEUP, 0, 0, RightButton );
+            return true;
 
-            case WM_MBUTTONUP:
-                pGUI->ProcessMouseInput ( CGUI_MI_MOUSEUP, 0, 0, MiddleButton );
-                return true;
+        case WM_MBUTTONUP:
+            pGUI->ProcessMouseInput ( CGUI_MI_MOUSEUP, 0, 0, MiddleButton );
+            return true;
 #ifdef WM_XBUTTONDOWN
-            case WM_XBUTTONDOWN:
-                pGUI->ProcessMouseInput ( CGUI_MI_MOUSEDOWN, 0, 0, X1Button );
-                return true;
+        case WM_XBUTTONDOWN:
+            pGUI->ProcessMouseInput ( CGUI_MI_MOUSEDOWN, 0, 0, X1Button );
+            return true;
 
-            case WM_XBUTTONUP:
-                pGUI->ProcessMouseInput ( CGUI_MI_MOUSEUP, 0, 0, X1Button );
-                return true;
+        case WM_XBUTTONUP:
+            pGUI->ProcessMouseInput ( CGUI_MI_MOUSEUP, 0, 0, X1Button );
+            return true;
 #endif
-            case WM_KEYDOWN:
+        case WM_KEYDOWN:
+        {
+            DWORD dwTemp = TranslateScanCodeToGUIKey ( wParam );
+            if ( dwTemp > 0 )
             {
-                DWORD dwTemp = TranslateScanCodeToGUIKey ( wParam );
-                if ( dwTemp > 0 )
-                {
-                    pGUI->ProcessKeyboardInput ( dwTemp, true );
-                    return true;
-                }
-
+                pGUI->ProcessKeyboardInput ( dwTemp, true );
                 return true;
             }
 
-            case WM_KEYUP:
-            {
-                DWORD dwTemp = TranslateScanCodeToGUIKey ( wParam );
-                if ( dwTemp > 0 )
-                {
-                    pGUI->ProcessKeyboardInput ( dwTemp, false );
-                }
+            return true;
+        }
 
-                return false;
+        case WM_KEYUP:
+        {
+            DWORD dwTemp = TranslateScanCodeToGUIKey ( wParam );
+            if ( dwTemp > 0 )
+            {
+                pGUI->ProcessKeyboardInput ( dwTemp, false );
             }
 
-            case WM_CHAR:
-                pGUI->ProcessCharacter ( wParam );
-                return true;
+            return false;
+        }
+
+        case WM_CHAR:
+            pGUI->ProcessCharacter ( wParam );
+            return true;
         }
     }
 

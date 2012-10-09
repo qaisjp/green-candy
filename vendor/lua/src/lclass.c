@@ -84,10 +84,10 @@ inline static void class_unlinkParent( lua_State *L, Class& j )
     if ( !j.parent )
         return;
 
-    j.childAPI->DecrementMethodStack( L );
-
     j.childAPI->PushMethod( L, "destroy" );
     lua_call( L, 0, 0 );
+
+    j.childAPI->DecrementMethodStack( L );
 
     j.childAPI = NULL;
     j.parent = NULL;
@@ -96,6 +96,10 @@ inline static void class_unlinkParent( lua_State *L, Class& j )
 static int childapi_notifyDestroy( lua_State *L )
 {
     Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
+
+    // First let all other handlers finish
+    lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+    lua_call( L, 0, 0 );
 
     if ( j.children.size() != 0 )
         return 0;
@@ -130,11 +134,9 @@ inline static bool class_preDestructor( lua_State *L, Class& j )
 
         if ( !c.destroyed )
         {
-            c.childAPI->PushEnvironment( L );
             setjvalue( L, L->top++, &j );
             lua_pushcclosure( L, childapi_notifyDestroy, 1 );
-            lua_setfield( L, -2, "notifyDestroy" );
-            L->top--;
+            c.childAPI->RegisterMethod( L, "notifyDestroy" );
 
             n++;
             reqWorthy = true;
@@ -501,6 +503,68 @@ static int classmethod_fsDestroyHandler( lua_State *L )
     return 1;
 }
 
+void Class::RegisterMethod( lua_State *L, const char *name )
+{
+    Table *methTable;
+    TString *methName = luaS_new( L, name );
+    const TValue *val = luaH_getstr( internStorage, methName );
+    bool isPrevMethod;
+
+    // Apply the environment to the new method
+    clvalue( L->top - 1 )->env = env;
+
+    if ( val->tt == LUA_TFUNCTION )
+    {
+        setobj( L, L->top++, val );
+
+        methTable = internStorage;
+        isPrevMethod = true;
+    }
+    else
+    {
+        const TValue *val2 = luaH_getstr( methods, methName );
+
+        if ( isPrevMethod = ( val2->tt == LUA_TFUNCTION ) )
+            setobj( L, L->top++, val2 );
+
+        methTable = methods;
+    }
+
+    setjvalue( L, L->top++, this );
+
+    if ( isPrevMethod )
+    {    
+        lua_pushvalue( L, -3 );
+        lua_pushcclosure( L, classmethod_super, 3 );
+    }
+    else
+    {
+        lua_pushvalue( L, -2 );
+        lua_pushcclosure( L, classmethod_root, 2 );
+    }
+
+    // Speedup for not using Lua stack
+    Closure *method = clvalue( L->top - 1 );
+    bool methWhite = iswhite( method ) != 0;
+
+    // Cache it in the environment
+    if ( val == luaO_nilobject )
+    {
+        setclvalue( L, luaH_setstr( L, storage, methName ), method );
+        
+        if ( methWhite && isblack( storage ) )
+            luaC_barrierback( L, storage );
+    }
+    
+    setclvalue( L, luaH_setstr( L, methTable, methName ), method );
+
+    if ( methWhite && isblack( methTable ) )
+        luaC_barrierback( L, methTable );
+
+    // Pop the raw function and the method
+    L->top -= 2;
+}
+
 static int classmethod_reference( lua_State *L )
 {
     Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
@@ -728,6 +792,7 @@ static int methodenv_newindex( lua_State *L )
     Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
 
     // If the class leaked it's environment, outer range code might try to modify the class during obscure scenarios
+    // We do not want that, as modification of a destroyed class is obscure!
     if ( j.destroyed )
         throw lua_exception( L, LUA_ERRRUN, "attempt to modify a destroyed class" );
 
@@ -788,8 +853,8 @@ static int methodenv_newindex( lua_State *L )
             Closure *method = clvalue( L->top - 1 );
             bool methWhite = iswhite( method ) != 0;
 
-            // Apply the class environment
-            method->env = j.env;
+            // Apply the class environment to the new method
+            clvalue( L->base + 2 )->env = j.env;
 
             // We have to put it into the environment, too (caching <3)
             if ( val == luaO_nilobject )

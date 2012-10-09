@@ -569,13 +569,13 @@ namespace CLuaFunctionDefs
         CClientRenderTarget* pRenderTarget; bool bClear;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadClass( pRenderTarget, LUACLASS_CORETEXTURE );
+        argStream.ReadClass( pRenderTarget, LUACLASS_CORETEXTURE, NULL );
         argStream.ReadBool( bClear, false );
 
         if ( !argStream.HasErrors () )
         {
             bool bResult;
-            if ( pRenderTarget)
+            if ( pRenderTarget )
                 bResult = g_pCore->GetGraphics ()->GetRenderItemManager ()->SetRenderTarget ( pRenderTarget->GetRenderTargetItem (), bClear );
             else
                 bResult = g_pCore->GetGraphics ()->GetRenderItemManager ()->RestoreDefaultRenderTarget ();

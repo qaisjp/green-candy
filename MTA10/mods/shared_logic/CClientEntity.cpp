@@ -87,6 +87,7 @@ int CClientEntity::entitychildAPI_notifyDestroy( lua_State *L )
     CClientEntity *parent = child->m_pParent;
 
     parent->m_Children.remove( child );
+    child->m_pParent = NULL;
 
     // Moving out of FromRoot?
     if ( IsFromRoot( parent ) )

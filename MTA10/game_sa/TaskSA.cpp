@@ -172,16 +172,16 @@ void CTaskSA::SetAsSecondaryPedTask( CPed *ped, int iType )
 // ## CTaskSimple Functions
 // ####################################################################
 
-bool CTaskSimpleSA::ProcessPed( CPed* ped )
+bool CTaskSimpleSA::ProcessPed( CPed *ped )
 {
-    DEBUG_TRACE("bool CTaskSimpleSA::ProcessPed( CPed* ped )");
+    DEBUG_TRACE("bool CTaskSimpleSA::ProcessPed( CPed *ped )");
 
     return GetInterface()->ProcessPed( dynamic_cast <CPedSA*> ( ped )->GetInterface() );
 }
 
-bool CTaskSimpleSA::SetPedPosition( CPed* ped )
+bool CTaskSimpleSA::SetPedPosition( CPed *ped )
 {
-    DEBUG_TRACE("bool CTaskSimpleSA::SetPedPosition( CPed* ped )");
+    DEBUG_TRACE("bool CTaskSimpleSA::SetPedPosition( CPed *ped )");
 
     return GetInterface()->SetPedPosition( dynamic_cast <CPedSA*> ( ped )->GetInterface() );
 }

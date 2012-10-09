@@ -741,6 +741,8 @@ public:
     virtual int     GetTransmit() = 0;
     virtual bool    IsTransmit( int type ) = 0;
 
+    virtual void    RegisterMethod( lua_State *L, const char *name ) = 0;
+
     virtual bool    IsDestroying() = 0;
     virtual bool    IsDestroyed() = 0;
 

@@ -37,6 +37,24 @@ static LUA_DECLARE( isDead )
     return 1;
 }
 
+static LUA_DECLARE( setModel )
+{
+    unsigned short model;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( model );
+    LUA_ARGS_END;
+
+    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetModel( model );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getModel )
+{
+    lua_pushnumber( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetModel() );
+    return 1;
+}
+
 static LUA_DECLARE( addClothes )
 {
     const char *texture, *model;
@@ -433,6 +451,8 @@ static const luaL_Reg ped_interface[] =
     LUA_METHOD( setHealth ),
     LUA_METHOD( getHealth ),
     LUA_METHOD( isDead ),
+    LUA_METHOD( setModel ),
+    LUA_METHOD( getModel ),
     LUA_METHOD( addClothes ),
     LUA_METHOD( getClothes ),
     LUA_METHOD( removeClothes ),

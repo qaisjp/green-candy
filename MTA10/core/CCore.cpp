@@ -312,7 +312,7 @@ CGraphicsInterface* CCore::GetGraphics()
     return m_pGraphics;
 }
 
-CModManagerInterface* CCore::GetModManager()
+CModManager* CCore::GetModManager()
 {
     return m_pModManager;
 }

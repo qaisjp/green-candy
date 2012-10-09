@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/CClient.cpp
 *  PURPOSE:     Main client module class
@@ -10,6 +10,7 @@
 *               Oliver Brown <>
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
+*               The_GTA <quiret@gmx.de>
 *               
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -202,12 +203,11 @@ int CClient::ClientInitialize ( const char* szArguments, CCoreInterface* pCore )
     return 0;
 }
 
-
-void CClient::ClientShutdown ( void )
+void CClient::ClientShutdown()
 {
     // Unbind our radio controls
-    g_pCore->GetKeyBinds ()->RemoveControlFunction ( "radio_next", CClientGame::HandleRadioNext );
-    g_pCore->GetKeyBinds ()->RemoveControlFunction ( "radio_previous", CClientGame::HandleRadioPrevious );
+    g_pCore->GetKeyBinds()->RemoveControlFunction( "radio_next", CClientGame::HandleRadioNext );
+    g_pCore->GetKeyBinds()->RemoveControlFunction( "radio_previous", CClientGame::HandleRadioPrevious );
 
     // If the client modification is loaded, delete it
     if ( g_pClientGame )
@@ -217,41 +217,49 @@ void CClient::ClientShutdown ( void )
     }
 }
 
+// CEGUI is a framework which we cannot completely control.
+// During it's execution scripts may destroy elements and crash the runtime.
+// Therefor we have to reference all Lua-internalized GUI entities!
+void CClient::BeginGUI()
+{
+    if ( !g_pClientGame )
+        return;
 
-void CClient::PreFrameExecutionHandler ( void )
+    g_pClientGame->GetGUIManager()->Begin();
+}
+
+void CClient::EndGUI()
+{
+    if ( !g_pClientGame )
+        return;
+
+    g_pClientGame->GetGUIManager()->End();
+}
+
+void CClient::PreFrameExecutionHandler()
 {
     // If the client modification is loaded, pulse it
     if ( g_pClientGame )
-    {
-        g_pClientGame->DoPulsePreFrame ();
-    }
+        g_pClientGame->DoPulsePreFrame();
 }
 
-
-void CClient::PreHUDRenderExecutionHandler ( bool bDidUnminimize, bool bDidRecreateRenderTargets )
+void CClient::PreHUDRenderExecutionHandler( bool bDidUnminimize, bool bDidRecreateRenderTargets )
 {
     if ( g_pClientGame )
-    {
-        g_pClientGame->DoPulsePreHUDRender ( bDidUnminimize, bDidRecreateRenderTargets );
-    }
+        g_pClientGame->DoPulsePreHUDRender( bDidUnminimize, bDidRecreateRenderTargets );
 }
 
-
-void CClient::PostFrameExecutionHandler ( void )
+void CClient::PostFrameExecutionHandler()
 {
     // If the client modification is loaded, pulse it
     if ( g_pClientGame )
-    {
-        g_pClientGame->DoPulsePostFrame ();
-    }
+        g_pClientGame->DoPulsePostFrame();
 }
 
-
-bool CClient::ProcessCommand ( const char* szCommandLine )
+bool CClient::ProcessCommand( const char* szCommandLine )
 {
     return false;
 }
-
 
 bool CClient::HandleException ( CExceptionInformation* pExceptionInformation )
 {

@@ -86,6 +86,7 @@ protected:
     argList_t                           m_args;
     cached_t                            m_cachedTables;
 
+public:
     LuaArguments*                       m_parent;   // LuaArguments is a table!
     unsigned int                        m_cachedID; // registered index in the root
 };
