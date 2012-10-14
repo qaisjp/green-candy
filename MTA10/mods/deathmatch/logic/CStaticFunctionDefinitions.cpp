@@ -5297,198 +5297,171 @@ bool CStaticFunctionDefinitions::SetWorldSpecialPropertyEnabled ( const char* sz
 {
     return g_pGame->SetCheatEnabled ( szPropName, bEnabled );
 }
+
 bool CStaticFunctionDefinitions::SetCloudsEnabled ( bool bEnabled )
 {
     g_pMultiplayer->SetCloudsEnabled ( bEnabled );
     g_pClientGame->SetCloudsEnabled ( bEnabled );
     return true;
 }
-bool CStaticFunctionDefinitions::GetCloudsEnabled ( )
+
+bool CStaticFunctionDefinitions::GetCloudsEnabled()
 {
-    return g_pClientGame->GetCloudsEnabled ();
+    return g_pClientGame->GetCloudsEnabled();
 }
 
-
-bool CStaticFunctionDefinitions::BindKey ( const char* szKey, const char* szHitState, CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, CLuaArguments& Arguments )
+// This thing cannot be static... It has to have deep ties to Lua code.
+bool CStaticFunctionDefinitions::BindKey( const char *key, const char *hitState, CLuaMain *lua, int argCount, CScriptKeyBind*& rslt )
 {
-    assert ( szKey );
-    assert ( szHitState );
-    assert ( pLuaMain );
+    // Decide about the bind type
+    eBindStateType bindType;
+
+    if ( !m_pScriptKeyBinds->GetBindTypeFromName( hitState, bindType ) )
+    {
+        lua_pop( **lua, argCount + 1 ); // We have to pop for function attribute universality
+        return false;
+    }
+
+    CKeyBindsInterface *pKeyBinds = g_pCore->GetKeyBinds();
+
+    const SBindableKey *pKey = pKeyBinds->GetBindableFromKey( key );
+    SBindableGTAControl *pControl;
+
+    // Bind on deathmatch
+    if ( pKey )
+        rslt = m_pScriptKeyBinds->AddKeyFunction( m_pScriptKeyBinds->GetBindableFromKey( key ), bindType, lua, argCount );
+    else if ( pControl = pKeyBinds->GetBindableFromControl( key ) )
+        rslt = m_pScriptKeyBinds->AddControlFunction( m_pScriptKeyBinds->GetBindableFromControl( key ), bindType, lua, argCount );
+    else
+    {
+        lua_pop( **lua, argCount + 1 );
+        return false;
+    }
+
+    // Bind on core
+    if ( bindType == STATE_DOWN || bindType == STATE_BOTH )
+    {
+        if ( pKey && !pKeyBinds->FunctionExists( pKey, CClientGame::StaticProcessClientKeyBind, true, true ) )
+            pKeyBinds->AddFunction( pKey, CClientGame::StaticProcessClientKeyBind, true, false );
+        else if ( !pKeyBinds->ControlFunctionExists( pControl, CClientGame::StaticProcessClientControlBind, true, true ) )
+            pKeyBinds->AddControlFunction( pControl, CClientGame::StaticProcessClientControlBind, true );
+    }
+    if ( bindType == STATE_UP || bindType == STATE_BOTH )
+    {
+        if ( pKey && !pKeyBinds->FunctionExists( pKey, CClientGame::StaticProcessClientKeyBind, true, false ) )
+            pKeyBinds->AddFunction( pKey, CClientGame::StaticProcessClientKeyBind, false, false );
+        else if ( !pKeyBinds->ControlFunctionExists( pControl, CClientGame::StaticProcessClientControlBind, true, false ) )
+            pKeyBinds->AddControlFunction( pControl, CClientGame::StaticProcessClientControlBind, false );
+    }
+
+    return true;
+}
+
+bool CStaticFunctionDefinitions::BindKey( const char *key, const char *hitState, const char *cmd, const char *args, const char *res )
+{
+    CKeyBindsInterface *pKeyBinds = g_pCore->GetKeyBinds();
+
+    if ( !pKeyBinds->IsKey( key ) )
+        return false;
 
     bool bSuccess = false;
 
-    CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds ();
-    const SBindableKey* pKey = pKeyBinds->GetBindableFromKey ( szKey );
-    SScriptBindableKey* pScriptKey = NULL;
-    if ( pKey )
-        pScriptKey = m_pScriptKeyBinds->GetBindableFromKey ( szKey );
-    SBindableGTAControl* pControl = pKeyBinds->GetBindableFromControl ( szKey );
-    SScriptBindableGTAControl* pScriptControl = NULL;
-    if ( pControl )
-        pScriptControl = m_pScriptKeyBinds->GetBindableFromControl ( szKey );
+    // Activate all keys for this command
+    pKeyBinds->SetAllCommandsActive( res, true, cmd, true, args, true );
 
-    bool bHitState = true;
-    if ( !stricmp ( szHitState, "down" ) || !stricmp ( szHitState, "both" ) )
-    {
-        if ( ( pKey &&
-               m_pScriptKeyBinds->AddKeyFunction ( pScriptKey, bHitState, pLuaMain, iLuaFunction, Arguments ) &&
-               ( pKeyBinds->FunctionExists ( pKey, CClientGame::StaticProcessClientKeyBind, true, bHitState ) || pKeyBinds->AddFunction ( pKey, CClientGame::StaticProcessClientKeyBind, bHitState, false ) ) ) ||
-             ( pControl &&
-               m_pScriptKeyBinds->AddControlFunction ( pScriptControl, bHitState, pLuaMain, iLuaFunction, Arguments ) &&
-               ( pKeyBinds->ControlFunctionExists ( pControl, CClientGame::StaticProcessClientControlBind, true, bHitState ) || pKeyBinds->AddControlFunction ( pControl, CClientGame::StaticProcessClientControlBind, bHitState ) ) ) )
-        {
-            bSuccess = true;
-        }
-    }
-    bHitState = false;
-    if ( !stricmp ( szHitState, "up" ) || !stricmp ( szHitState, "both" ) )
-    {
-        if ( ( pKey &&
-               m_pScriptKeyBinds->AddKeyFunction ( pScriptKey, bHitState, pLuaMain, iLuaFunction, Arguments ) &&
-               ( pKeyBinds->FunctionExists ( pKey, CClientGame::StaticProcessClientKeyBind, true, bHitState ) || pKeyBinds->AddFunction ( pKey, CClientGame::StaticProcessClientKeyBind, bHitState, false ) ) ) ||
-             ( pControl &&
-               m_pScriptKeyBinds->AddControlFunction ( pScriptControl, bHitState, pLuaMain, iLuaFunction, Arguments ) &&
-               ( pKeyBinds->ControlFunctionExists ( pControl, CClientGame::StaticProcessClientControlBind, true, bHitState ) || pKeyBinds->AddControlFunction ( pControl, CClientGame::StaticProcessClientControlBind, bHitState ) ) ) )
-        {
-            bSuccess = true;
-        }
-    }
-
-    return bSuccess;
-}
-
-bool CStaticFunctionDefinitions::BindKey ( const char* szKey, const char* szHitState, const char* szCommandName, const char* szArguments, const char* szResource )
-{
-    assert ( szKey );
-    assert ( szHitState );
-
-    bool bSuccess = false;
-
-    CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds ();
-    bool bKey = pKeyBinds->IsKey ( szKey );
-    if ( bKey )
-    {
-        bool bHitState = true;
-        //Activate all keys for this command
-        pKeyBinds->SetAllCommandsActive ( szResource, true, szCommandName, bHitState, szArguments, true );
-        //Check if its binded already (dont rebind)
-        if ( pKeyBinds->CommandExists ( szKey, szCommandName, true, bHitState, szArguments, szResource ) )
-            return true;
-
-        if ( ( !stricmp ( szHitState, "down" ) || !stricmp ( szHitState, "both" ) ) &&
-             pKeyBinds->AddCommand ( szKey, szCommandName, szArguments, bHitState, szResource ) )
-        {
-            pKeyBinds->SetCommandActive ( szKey, szCommandName, bHitState, szArguments, szResource, true, true );
-            bSuccess = true;
-        }
-
-        bHitState = false;
-        pKeyBinds->SetAllCommandsActive ( szResource, true, szCommandName, bHitState, szArguments, true );
-        if ( pKeyBinds->CommandExists ( szKey, szCommandName, true, bHitState, szArguments, szResource ) )
-            return true;
-
-        if ( ( !stricmp ( szHitState, "up" ) || !stricmp ( szHitState, "both" ) ) &&
-             pKeyBinds->AddCommand ( szKey, szCommandName, szArguments, bHitState, szResource ) )
-        {
-            pKeyBinds->SetCommandActive ( szKey, szCommandName, bHitState, szArguments, szResource, true, true  );
-            bSuccess = true;
-        }
-    }
-    return bSuccess;
-}
-
-bool CStaticFunctionDefinitions::UnbindKey ( const char* szKey, CLuaMain* pLuaMain, const char* szHitState, const LuaFunctionRef& iLuaFunction )
-{
-    assert ( szKey );
-    assert ( pLuaMain );
-
-    CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds ();
-    const SBindableKey* pKey = pKeyBinds->GetBindableFromKey ( szKey );
-    SScriptBindableKey* pScriptKey = NULL;
-    if ( pKey )
-        pScriptKey = m_pScriptKeyBinds->GetBindableFromKey ( szKey );
-    SBindableGTAControl* pControl = pKeyBinds->GetBindableFromControl ( szKey );
-    SScriptBindableGTAControl* pScriptControl = NULL;
-    if ( pControl )
-        pScriptControl = m_pScriptKeyBinds->GetBindableFromControl ( szKey );
-
-    bool bCheckHitState = false, bHitState = true;
-    if ( szHitState )
-    {
-        if ( stricmp ( szHitState, "down" ) == 0 )
-        {
-            bCheckHitState = true, bHitState = true;
-        }
-        else if ( stricmp ( szHitState, "up" ) == 0 )
-        {
-            bCheckHitState = true, bHitState = false;
-        }
-    }
-
-    if (
-         (
-           pKey &&
-           ( m_pScriptKeyBinds->RemoveKeyFunction ( pScriptKey, pLuaMain, bCheckHitState, bHitState, iLuaFunction ) ||
-             pKeyBinds->RemoveFunction ( pKey, CClientGame::StaticProcessClientKeyBind, bCheckHitState, bHitState ) )
-         )
-         ||
-         (
-           pControl &&
-           ( m_pScriptKeyBinds->RemoveControlFunction ( pScriptControl, pLuaMain, bCheckHitState, bHitState, iLuaFunction ) ||
-             pKeyBinds->RemoveControlFunction ( pControl, CClientGame::StaticProcessClientControlBind, true, bHitState ) )
-         )
-       )
-    {
+    // Check if its binded already (dont rebind)
+    if ( pKeyBinds->GetCommandBind( key, cmd, true, true, args, res ) )
         return true;
+
+    if ( ( stricmp( hitState, "down" ) == 0 || stricmp( hitState, "both" ) == 0 ) &&
+         pKeyBinds->AddCommand( key, cmd, args, true, res ) )
+    {
+        pKeyBinds->SetCommandActive( key, cmd, true, args, res, true, true );
+        bSuccess = true;
     }
 
-    return false;
+    pKeyBinds->SetAllCommandsActive( res, true, cmd, false, args, true );
+
+    if ( pKeyBinds->GetCommandBind( key, cmd, true, false, args, res ) )
+        return true;
+
+    if ( ( stricmp( hitState, "up" ) == 0 || stricmp( hitState, "both" ) == 0 ) &&
+         pKeyBinds->AddCommand( key, cmd, args, false, res ) )
+    {
+        pKeyBinds->SetCommandActive( key, cmd, false, args, res, true, true );
+        bSuccess = true;
+    }
+
+    return bSuccess;
 }
 
-bool CStaticFunctionDefinitions::UnbindKey ( const char* szKey, const char* szHitState, const char* szCommandName, const char* szResource )
+bool CStaticFunctionDefinitions::UnbindKey( const char *key, CLuaMain *lua, const char *hitState, const void *routine )
 {
-    assert ( szKey );
-    assert ( szHitState );
+    CKeyBindsInterface *pKeyBinds = g_pCore->GetKeyBinds();
+    eBindStateType bindType;
+    
+    if ( !m_pScriptKeyBinds->GetBindTypeFromName( hitState, bindType ) )
+        return false;
+
+    const SBindableKey *pKey = pKeyBinds->GetBindableFromKey( key );
+    SBindableGTAControl *pControl = pKeyBinds->GetBindableFromControl( key );
+
+    // Delete the associated deathmatch bind
+    CScriptKeyBind *bind;
+
+    if ( pKey )
+        bind = m_pScriptKeyBinds->GetKeyFunction( m_pScriptKeyBinds->GetBindableFromKey( key ), lua, bindType, routine );
+    else if ( pControl )
+        bind = m_pScriptKeyBinds->GetControlFunction( m_pScriptKeyBinds->GetBindableFromControl( key ), lua, bindType, routine );
+    else
+        return false;
+
+    if ( bind )
+        bind->Delete();
+
+    bool bCheckHitState = ( bindType != STATE_BOTH );
+    bool bHitState = ( bindType != STATE_UP );
+
+    // Remove things internally
+    return  pKey && pKeyBinds->RemoveFunction( pKey, CClientGame::StaticProcessClientKeyBind, bCheckHitState, bHitState ) ||
+            pControl && pKeyBinds->RemoveControlFunction( pControl, CClientGame::StaticProcessClientControlBind, true, bHitState ) ||
+            bind != NULL;
+}
+
+bool CStaticFunctionDefinitions::UnbindKey( const char *key, const char *hitState, const char *cmd, const char *res )
+{
+    CKeyBindsInterface *pKeyBinds = g_pCore->GetKeyBinds();
+
+    if ( !pKeyBinds->IsKey( key ) )
+        return false;
+
+    eBindStateType bindType;
+    
+    if ( !m_pScriptKeyBinds->GetBindTypeFromName( hitState, bindType ) )
+        return false;
 
     bool bSuccess = false;
+    bool checkHitState = ( bindType != STATE_BOTH );
 
-    CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds ();
-    bool bKey = pKeyBinds->IsKey ( szKey );
-    if ( bKey )
+    // either STATE_DOWN or STATE_BOTH
+    if ( bindType != STATE_UP && pKeyBinds->SetCommandActive( key, cmd, true, NULL, res, false, checkHitState ) )
     {
-        bool bCheckHitState = false, bHitState = true;
-        if ( szHitState )
-        {
-            if ( stricmp ( szHitState, "down" ) == 0 )
-            {
-                bCheckHitState = true, bHitState = true;
-            }
-            else if ( stricmp ( szHitState, "up" ) == 0 )
-            {
-                bCheckHitState = true, bHitState = false;
-            }
-        }
-        if ( ( !stricmp ( szHitState, "down" ) || !stricmp ( szHitState, "both" ) ) &&
-             pKeyBinds->SetCommandActive ( szKey, szCommandName, bHitState, NULL, szResource, false, true  ) )
-        {
-            pKeyBinds->SetAllCommandsActive ( szResource, false, szCommandName, bHitState, NULL, true );
-            bSuccess = true;
-        }
-        bHitState = false;
-        if ( ( !stricmp ( szHitState, "up" ) || !stricmp ( szHitState, "both" ) ) &&
-             pKeyBinds->SetCommandActive ( szKey, szCommandName, bHitState, NULL, szResource, false, true  ) )
-        {
-            pKeyBinds->SetAllCommandsActive ( szResource, false, szCommandName, bHitState, NULL, true );
-            bSuccess = true;
-        }
+        pKeyBinds->SetAllCommandsActive( res, false, cmd, true, NULL, true );
+        bSuccess = true;
     }
+
+    // either STATE_UP or STATE_BOTH
+    if ( bindType != STATE_DOWN && pKeyBinds->SetCommandActive( key, cmd, false, NULL, res, false, checkHitState ) )
+    {
+        pKeyBinds->SetAllCommandsActive( res, false, cmd, false, NULL, true );
+        bSuccess = true;
+    }
+
     return bSuccess;
 }
 
 bool CStaticFunctionDefinitions::GetKeyState ( const char* szKey, bool& bState )
 {
-    assert ( szKey );
-    
     CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds ();
     const SBindableKey* pKey = pKeyBinds->GetBindableFromKey ( szKey );
     if ( pKey )
@@ -5505,11 +5478,8 @@ bool CStaticFunctionDefinitions::GetKeyState ( const char* szKey, bool& bState )
     return false;
 }
 
-
 bool CStaticFunctionDefinitions::GetControlState ( const char* szControl, bool& bState )
 {
-    assert ( szControl );
-    
     CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds ();
     SBindableGTAControl* pControl = pKeyBinds->GetBindableFromControl ( szControl );
     if ( pControl )
@@ -5535,11 +5505,8 @@ bool CStaticFunctionDefinitions::GetAnalogControlState ( const char * szControl,
     return false;
 }
 
-
 bool CStaticFunctionDefinitions::IsControlEnabled ( const char* szControl, bool& bEnabled )
 {
-    assert ( szControl );
-
     CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds ();
     SBindableGTAControl* pControl = pKeyBinds->GetBindableFromControl ( szControl );
     if ( pControl )

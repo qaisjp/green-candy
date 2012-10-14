@@ -1526,7 +1526,7 @@ void CSettings::ProcessKeyBinds ( void )
                     CCommandBind* pUpBind = pKeyBinds->GetBindFromCommand ( szCommand, NULL, true, pPriKey->szKey, true, false );
                     if ( pUpBind )
                     {
-                        pKeyBinds->AddCommand ( pSecKeys[k]->szKey, szCommand, pUpBind->szArguments, false, pUpBind->szResource, true );
+                        pKeyBinds->AddCommand ( pSecKeys[k]->szKey, szCommand, pUpBind->m_args.c_str(), false, pUpBind->GetResource(), true );
                     }
                 }
             }
@@ -1737,9 +1737,9 @@ void CSettings::Initialize ( void )
                 {
                     SListedCommand* pListedCommand = &listedCommands [ i ];
                     CCommandBind* pListedBind = pListedCommand->pBind;
-                    if ( !strcmp ( pListedBind->szCommand, pCommandBind->szCommand ) )
+                    if ( pListedBind->m_cmd != pCommandBind->m_cmd )
                     {
-                        if ( !pListedBind->szArguments || ( pCommandBind->szArguments && !strcmp ( pListedBind->szArguments, pCommandBind->szArguments ) ) )
+                        if ( pListedBind->m_args != pCommandBind->m_args )
                         {
                             // If we found a 1st match, add it to the secondary section
                             bFoundMatches = true;
@@ -1761,11 +1761,11 @@ void CSettings::Initialize ( void )
                     // Combine command and arguments
                     SString strDescription;
                     bool bSkip = false;
-                    if ( pCommandBind->szResource )
+                    if ( pCommandBind->m_res )
                     {
                         if ( pCommandBind->bActive )
                         {
-                            const char* szResource = pCommandBind->szResource;
+                            const char *szResource = pCommandBind->GetResource();
                             std::string strResource = szResource;
                             if ( iResourceItems.count(strResource) == 0 )
                             {
@@ -1783,14 +1783,14 @@ void CSettings::Initialize ( void )
                         else
                             continue;
                     }
-                    if ( pCommandBind->szArguments && pCommandBind->szArguments[0] != '\0' )
+                    if ( pCommandBind->m_args.c_str()[0] != '\0' )
                     {
-                        strDescription.Format ( "%s: %s", pCommandBind->szCommand, pCommandBind->szArguments );
+                        strDescription.Format( "%s: %s", pCommandBind->m_cmd.c_str(), pCommandBind->m_args.c_str() );
                         iMultiplayerRowCount++;
                     }
                     else
                     {
-                        strDescription = pCommandBind->szCommand;
+                        strDescription = pCommandBind->m_cmd;
                         iMultiplayerRowCount++;
                     }
 

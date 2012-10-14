@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CScriptKeyBinds.cpp
 *  PURPOSE:     Key binds manager
@@ -8,14 +8,13 @@
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Derek Abdine <>
 *               Chris McArthur <>
+*               The_GTA <quiret@gmx.de>
 *               
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #include "StdInc.h"
-
-using std::list;
 
 SScriptBindableKey g_bkKeys [ NUMBER_OF_KEYS ] = 
 { 
@@ -37,7 +36,6 @@ SScriptBindableKey g_bkKeys [ NUMBER_OF_KEYS ] =
     { "" }
 };
 
-
 SScriptBindableGTAControl g_bcControls[] =
 {
     { "fire" }, { "next_weapon" }, { "previous_weapon" }, { "forwards" }, { "backwards" },
@@ -54,490 +52,197 @@ SScriptBindableGTAControl g_bcControls[] =
     { "group_control_back" }, { "" }
 };
 
-
-CScriptKeyBinds::~CScriptKeyBinds ( void )
+CScriptKeyFunctionBind::CScriptKeyFunctionBind( CLuaMain *lua, SScriptBindableKey *key ) : CScriptKeyBind( lua )
 {
-    Clear ();
+    m_key = key;
+
+    g_pClientGame->GetScriptKeyBinds()->m_keyBinds.push_back( this );
 }
 
-
-SScriptBindableKey* CScriptKeyBinds::GetBindableFromKey ( const char* szKey )
+CScriptKeyFunctionBind::~CScriptKeyFunctionBind()
 {
-    for ( int i = 0 ; *g_bkKeys [ i ].szKey != NULL ; i++ )
+    g_pClientGame->GetScriptKeyBinds()->m_keyBinds.remove( this );
+}
+
+CScriptControlFunctionBind::CScriptControlFunctionBind( CLuaMain *lua, SScriptBindableGTAControl *control ) : CScriptKeyBind( lua )
+{
+    m_control = control;
+
+    g_pClientGame->GetScriptKeyBinds()->m_controlBinds.push_back( this );
+}
+
+CScriptControlFunctionBind::~CScriptControlFunctionBind()
+{
+    g_pClientGame->GetScriptKeyBinds()->m_controlBinds.remove( this );
+}
+
+CScriptKeyBinds::CScriptKeyBinds()
+{
+}
+
+CScriptKeyBinds::~CScriptKeyBinds()
+{
+    Clear();
+}
+
+SScriptBindableKey* CScriptKeyBinds::GetBindableFromKey( const char *key )
+{
+    for ( unsigned int i = 0; *g_bkKeys[i].szKey != NULL; i++ )
     {
-        SScriptBindableKey* temp = &g_bkKeys [ i ];
-        if ( !stricmp ( temp->szKey, szKey ) )
-        {
+        SScriptBindableKey *temp = &g_bkKeys[i];
+
+        if ( stricmp( temp->szKey, key ) == 0 )
             return temp;
-        }
     }
 
     return NULL;
 }
 
-
-SScriptBindableGTAControl* CScriptKeyBinds::GetBindableFromControl ( const char* szControl )
+SScriptBindableGTAControl* CScriptKeyBinds::GetBindableFromControl( const char *control )
 {
-    for ( int i = 0 ; *g_bcControls [ i ].szControl != NULL ; i++ )
+    for ( unsigned int i = 0 ; *g_bcControls[i].szControl != NULL; i++ )
     {
-        SScriptBindableGTAControl* temp = &g_bcControls [ i ];
-        if ( !stricmp ( temp->szControl, szControl ) )
-        {
+        SScriptBindableGTAControl *temp = &g_bcControls[i];
+
+        if ( stricmp( temp->szControl, control ) == 0 )
             return temp;
-        }
     }
 
     return NULL;
 }
 
-
-void CScriptKeyBinds::Add ( CScriptKeyBind* pKeyBind )
+bool CScriptKeyBinds::GetBindTypeFromName( const char *type, eBindStateType& bindType )
 {
-    if ( pKeyBind )
+    if ( stricmp( type, "down" ) == 0 )
+        bindType = STATE_DOWN;
+    else if ( stricmp( type, "up" ) == 0 )
+        bindType = STATE_UP;
+    else if ( stricmp( type, "both" ) == 0 )
+        bindType = STATE_BOTH;
+    else
+        return false;
+
+    return true;
+}
+
+void CScriptKeyBinds::Clear( eScriptKeyBindType bindType )
+{
+    binds_t::iterator iter = m_List.begin();
+
+    while ( iter != m_List.end() )
     {
-        m_List.push_back ( pKeyBind );
+        CScriptKeyBind *keyBind = *iter++;
+
+        if ( bindType == SCRIPT_KEY_BIND_UNDEFINED || keyBind->GetType() == bindType )
+            keyBind->Delete();
     }
 }
 
-
-void CScriptKeyBinds::Clear ( eScriptKeyBindType bindType )
+bool CScriptKeyBinds::ProcessKey( const char *key, bool state, eScriptKeyBindType type )
 {
-    list < CScriptKeyBind* > ::iterator iter = m_List.begin ();
-    while ( iter != m_List.end () )
+    bool executed = false;
+
+    if ( type == SCRIPT_KEY_BIND_FUNCTION )
     {
-        if ( !(*iter)->IsBeingDeleted () && bindType == SCRIPT_KEY_BIND_UNDEFINED || (*iter)->GetType () == bindType )
-        {
-            if ( m_bProcessingKey ) (*iter)->beingDeleted = true;
-            else
-            {
-                delete *iter;
-                iter = m_List.erase ( iter );
-                continue;
-            }
-        }
-        iter++;
-    }
-}
+        SScriptBindableKey *info = GetBindableFromKey( key );
 
-
-void CScriptKeyBinds::Call ( CScriptKeyBind* pKeyBind )
-{
-    if ( pKeyBind && !pKeyBind->IsBeingDeleted () )
-    {
-        switch ( pKeyBind->GetType () )
-        {
-            case SCRIPT_KEY_BIND_FUNCTION:
-            {
-                CScriptKeyFunctionBind* pBind = static_cast < CScriptKeyFunctionBind* > ( pKeyBind );
-                if ( pBind->luaMain && VERIFY_FUNCTION( pBind->m_iLuaFunction ) )
-                {
-                    CLuaArguments Arguments;
-                    Arguments.PushString ( pBind->boundKey->szKey );
-                    Arguments.PushString ( ( pBind->bHitState ) ? "down" : "up" );
-                    Arguments.PushArguments ( pBind->m_Arguments );
-                    Arguments.Call ( pBind->luaMain, pBind->m_iLuaFunction );
-                }
-                break;
-            }
-            case SCRIPT_KEY_BIND_CONTROL_FUNCTION:
-            {
-                CScriptControlFunctionBind* pBind = static_cast < CScriptControlFunctionBind* > ( pKeyBind );
-                if ( pBind->luaMain && VERIFY_FUNCTION( pBind->m_iLuaFunction ) )
-                {
-                    CLuaArguments Arguments;
-                    Arguments.PushString ( pBind->boundControl->szControl );
-                    Arguments.PushString ( ( pBind->bHitState ) ? "down" : "up" );
-                    Arguments.PushArguments ( pBind->m_Arguments );
-                    Arguments.Call ( pBind->luaMain, pBind->m_iLuaFunction );
-                }
-                break;
-            }
-        }
-    }
-}
-
-
-bool CScriptKeyBinds::ProcessKey ( const char* szKey, bool bHitState, eScriptKeyBindType bindType )
-{
-    m_bProcessingKey = true;
-    SScriptBindableKey * pKey = NULL;
-    SScriptBindableGTAControl * pControl = NULL;
-    if ( bindType == SCRIPT_KEY_BIND_FUNCTION )
-    {
-        pKey = GetBindableFromKey ( szKey );
-        if ( !pKey )
+        if ( !info )
             return false;
-    }
-    else if ( bindType == SCRIPT_KEY_BIND_CONTROL_FUNCTION )
-    {
-        pControl = GetBindableFromControl ( szKey );
-        if ( !pControl )
-            return false;
-    }
 
-    bool bFound = false;
-    CScriptKeyBind * pKeyBind = NULL;
-    list < CScriptKeyBind* > cloneList = m_List;
-    list < CScriptKeyBind* > ::iterator iter = cloneList.begin ();
-    for ( ; iter != cloneList.end () ; ++iter )
-    {
-        pKeyBind = *iter;
-        if ( !pKeyBind->IsBeingDeleted () && pKeyBind->GetType () == bindType )
+        for ( keyBinds_t::iterator iter = m_keyBinds.begin(); iter != m_keyBinds.end(); iter++ )
         {
-            switch ( bindType )
-            {
-                case SCRIPT_KEY_BIND_FUNCTION:
-                {
-                    CScriptKeyFunctionBind* pBind = static_cast < CScriptKeyFunctionBind* > ( pKeyBind );
-                    if ( pBind->boundKey == pKey )
-                    {
-                        if ( pBind->bHitState == bHitState )
-                        {
-                            Call ( pBind );
-                            bFound = true;
-                        }
-                    }
-
-                    break;
-                }
-                case SCRIPT_KEY_BIND_CONTROL_FUNCTION:
-                {
-                    CScriptControlFunctionBind* pBind = static_cast < CScriptControlFunctionBind* > ( pKeyBind );
-                    if ( pBind->boundControl == pControl )
-                    {
-                        if ( pBind->bHitState == bHitState )
-                        {
-                            Call ( pBind );                            
-                            bFound = true;
-                        }
-                    }
-
-                    break;
-                }
-            }
-        }
-    }
-    m_bProcessingKey = false;
-    RemoveDeletedBinds ();
-    return bFound;
-}
-
-
-bool CScriptKeyBinds::AddKeyFunction ( const char* szKey, bool bHitState, CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, CLuaArguments& Arguments )
-{
-    if ( szKey == NULL )
-        return false;
-
-    SScriptBindableKey* pKey = GetBindableFromKey ( szKey );
-    if ( pKey )
-    {
-        CScriptKeyFunctionBind* pBind = new CScriptKeyFunctionBind;
-        pBind->boundKey = pKey;
-        pBind->bHitState = bHitState;
-        pBind->luaMain = pLuaMain;        
-        pBind->m_iLuaFunction = iLuaFunction;
-        pBind->m_Arguments = Arguments;
-
-        m_List.push_back ( pBind );
-
-        return true;
-    }
-    return false;
-}
-
-
-bool CScriptKeyBinds::AddKeyFunction ( SScriptBindableKey* pKey, bool bHitState, CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, CLuaArguments& Arguments )
-{
-    if ( pKey )
-    {
-        CScriptKeyFunctionBind* pBind = new CScriptKeyFunctionBind;
-        pBind->boundKey = pKey;
-        pBind->bHitState = bHitState;
-        pBind->luaMain = pLuaMain;        
-        pBind->m_iLuaFunction = iLuaFunction;
-        pBind->m_Arguments = Arguments;
-
-        m_List.push_back ( pBind );
-
-        return true;
-    }
-    return false;
-}
-
-
-bool CScriptKeyBinds::RemoveKeyFunction ( const char* szKey, CLuaMain* pLuaMain, bool bCheckHitState, bool bHitState, const LuaFunctionRef& iLuaFunction )
-{
-    SScriptBindableKey * pKey = GetBindableFromKey ( szKey );
-    if ( pKey )
-    {
-        return RemoveKeyFunction ( pKey, pLuaMain, bCheckHitState, bHitState, iLuaFunction );
-    }
-    return false;
-}
-
-
-bool CScriptKeyBinds::RemoveKeyFunction ( SScriptBindableKey* pKey, CLuaMain* pLuaMain, bool bCheckHitState, bool bHitState, const LuaFunctionRef& iLuaFunction )
-{
-    bool bFound = false;
-    CScriptKeyFunctionBind* pBind = NULL;
-    list < CScriptKeyBind * > cloneList = m_List;
-    list < CScriptKeyBind* > ::iterator iter = cloneList.begin ();
-    while ( iter != cloneList.end () )
-    {
-        if ( !(*iter)->IsBeingDeleted () && (*iter)->GetType () == SCRIPT_KEY_BIND_FUNCTION )
-        {
-            pBind = static_cast < CScriptKeyFunctionBind* > ( *iter );
-            if ( pKey == pBind->boundKey )
-            {
-                if ( pBind->luaMain == pLuaMain )
-                {
-                    if ( !bCheckHitState || pBind->bHitState == bHitState )
-                    {
-                        if ( IS_REFNIL ( iLuaFunction ) || pBind->m_iLuaFunction == iLuaFunction )
-                        {
-                            bFound = true;
-
-                            if ( m_bProcessingKey ) pBind->beingDeleted = true;
-                            else
-                            {
-                                m_List.remove ( pBind );
-                                delete pBind;
-                                iter = cloneList.erase ( iter );
-                                continue;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        iter++;
-    }
-    return bFound;
-}
-
-
-bool CScriptKeyBinds::KeyFunctionExists ( const char* szKey, CLuaMain* pLuaMain, bool bCheckHitState, bool bHitState, const LuaFunctionRef& iLuaFunction )
-{
-    SScriptBindableKey * pKey = GetBindableFromKey ( szKey );
-    if ( pKey )
-    {
-        return KeyFunctionExists ( pKey, pLuaMain, bCheckHitState, bHitState, iLuaFunction );
-    }
-    return false;
-}
-
-
-bool CScriptKeyBinds::KeyFunctionExists ( SScriptBindableKey* pKey, CLuaMain* pLuaMain, bool bCheckHitState, bool bHitState, const LuaFunctionRef& iLuaFunction )
-{
-    bool bFound = false;
-    list < CScriptKeyBind* > cloneList = m_List;
-    list < CScriptKeyBind* > ::iterator iter = cloneList.begin ();
-    for ( ; iter != cloneList.end () ; ++iter )
-    {
-        if ( !(*iter)->IsBeingDeleted () && (*iter)->GetType () == SCRIPT_KEY_BIND_FUNCTION )
-        {
-            CScriptKeyFunctionBind* pBind = static_cast < CScriptKeyFunctionBind* > ( *iter );
-            if ( pKey == pBind->boundKey )
-            {
-                if ( pLuaMain == NULL || pBind->luaMain == pLuaMain )
-                {
-                    if ( !bCheckHitState || pBind->bHitState == bHitState )
-                    {
-                        if ( IS_REFNIL( iLuaFunction ) || pBind->m_iLuaFunction == iLuaFunction )
-                        {
-                            bFound = true;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return bFound;
-}
-
-
-void CScriptKeyBinds::RemoveAllKeys ( CLuaMain* pLuaMain )
-{
-    CScriptKeyBind * pBind = NULL;
-    list < CScriptKeyBind * > cloneList = m_List;
-    list < CScriptKeyBind* > ::iterator iter = cloneList.begin ();
-    while ( iter != cloneList.end () )
-    {
-        pBind = *iter;
-        if ( !pBind->IsBeingDeleted () && pBind->luaMain == pLuaMain )
-        {
-            if ( m_bProcessingKey ) pBind->beingDeleted = true;
-            else
-            {
-                m_List.remove ( pBind );
-                delete pBind;
-                iter = cloneList.erase ( iter );
+            if ( (*iter)->m_key != info )
                 continue;
-            }
+
+            if ( !(*iter)->CanCaptureState( state ) )
+                continue;
+
+            (*iter)->Execute( state );
+
+            executed = true;
         }
-        ++iter;
     }
-}
-
-
-bool CScriptKeyBinds::AddControlFunction ( const char* szControl, bool bHitState, CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, CLuaArguments& Arguments )
-{
-    if ( szControl == NULL )
-        return false;
-
-    SScriptBindableGTAControl* pControl = GetBindableFromControl ( szControl );
-    if ( pControl )
+    else if ( type == SCRIPT_KEY_BIND_CONTROL_FUNCTION )
     {
-        CScriptControlFunctionBind* pBind = new CScriptControlFunctionBind;
-        pBind->boundKey = NULL;
-        pBind->boundControl = pControl;
-        pBind->bHitState = bHitState;
-        pBind->luaMain = pLuaMain;
-        pBind->m_iLuaFunction = iLuaFunction;
-        pBind->m_Arguments = Arguments;
+        SScriptBindableGTAControl *info = GetBindableFromControl( key );
 
-        m_List.push_back ( pBind );
+        if ( !info )
+            return false;
 
-        return true;
-    }
-    return false;
-}
-
-
-bool CScriptKeyBinds::AddControlFunction ( SScriptBindableGTAControl* pControl, bool bHitState, CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, CLuaArguments& Arguments )
-{
-    if ( pControl )
-    {
-        CScriptControlFunctionBind* pBind = new CScriptControlFunctionBind;
-        pBind->boundKey = NULL;
-        pBind->boundControl = pControl;
-        pBind->bHitState = bHitState;
-        pBind->luaMain = pLuaMain;
-        pBind->m_iLuaFunction = iLuaFunction;
-        pBind->m_Arguments = Arguments;
-
-        m_List.push_back ( pBind );
-
-        return true;
-    }
-    return false;
-}
-
-
-bool CScriptKeyBinds::RemoveControlFunction ( const char* szControl, CLuaMain* pLuaMain, bool bCheckHitState, bool bHitState, const LuaFunctionRef& iLuaFunction )
-{
-    SScriptBindableGTAControl * pControl = GetBindableFromControl ( szControl );
-    if ( pControl )
-    {
-        return RemoveControlFunction ( pControl, pLuaMain, bCheckHitState, bHitState, iLuaFunction );
-    }
-    return false;
-}
-
-
-bool CScriptKeyBinds::RemoveControlFunction ( SScriptBindableGTAControl* pControl, CLuaMain* pLuaMain, bool bCheckHitState, bool bHitState, const LuaFunctionRef& iLuaFunction )
-{
-    bool bFound = false;
-    CScriptControlFunctionBind* pBind = NULL;
-    list < CScriptKeyBind * > cloneList = m_List;
-    list < CScriptKeyBind* > ::iterator iter = cloneList.begin ();
-    while ( iter != cloneList.end () )
-    {
-        if ( !(*iter)->IsBeingDeleted () && (*iter)->GetType () == SCRIPT_KEY_BIND_CONTROL_FUNCTION )
+        for ( controlBinds_t::iterator iter = m_controlBinds.begin(); iter != m_controlBinds.end(); iter++ )
         {
-            pBind = static_cast < CScriptControlFunctionBind* > ( *iter );
-            if ( pControl == pBind->boundControl )
-            {
-                if ( pBind->luaMain == pLuaMain )
-                {
-                    if ( !bCheckHitState || pBind->bHitState == bHitState )
-                    {
-                        if ( IS_REFNIL ( iLuaFunction ) || pBind->m_iLuaFunction == iLuaFunction )
-                        {
-                            bFound = true;
-                            if ( m_bProcessingKey ) (*iter)->beingDeleted = true;
-                            else
-                            {
-                                m_List.remove ( *iter );
-                                delete *iter;
-                                iter = cloneList.erase ( iter );
-                                continue;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        ++iter;
-    }
-    return bFound;
-}
+            if ( (*iter)->m_control != info )
+                continue;
 
+            if ( !(*iter)->CanCaptureState( state ) )
+                continue;
 
-bool CScriptKeyBinds::ControlFunctionExists ( const char* szControl, CLuaMain* pLuaMain, bool bCheckHitState, bool bHitState, const LuaFunctionRef& iLuaFunction )
-{
-    SScriptBindableGTAControl * pControl = GetBindableFromControl ( szControl );
-    if ( pControl )
-    {
-        return ControlFunctionExists ( pControl, pLuaMain, bCheckHitState, bHitState, iLuaFunction );
-    }
-    return false;
-}
+            (*iter)->Execute( state );
 
-
-bool CScriptKeyBinds::ControlFunctionExists ( SScriptBindableGTAControl* pControl, CLuaMain* pLuaMain, bool bCheckHitState, bool bHitState, const LuaFunctionRef& iLuaFunction )
-{
-    bool bFound = false;
-    list < CScriptKeyBind* > cloneList = m_List;
-    list < CScriptKeyBind* > ::iterator iter = cloneList.begin ();
-    for ( ; iter != cloneList.end () ; ++iter )
-    {
-        if ( !(*iter)->IsBeingDeleted () && (*iter)->GetType () == SCRIPT_KEY_BIND_CONTROL_FUNCTION )
-        {
-            CScriptControlFunctionBind* pBind = static_cast < CScriptControlFunctionBind* > ( *iter );
-            if ( pControl == pBind->boundControl )
-            {
-                if ( pLuaMain == NULL || pBind->luaMain == pLuaMain )
-                {
-                    if ( !bCheckHitState || pBind->bHitState == bHitState )
-                    {                    
-                        if ( IS_REFNIL ( iLuaFunction ) || pBind->m_iLuaFunction == iLuaFunction )
-                        {
-                            bFound = true;
-                        }
-                    }
-                }
-            }
+            executed = true;
         }
     }
-    return bFound;
+
+    return executed;
 }
 
-
-void CScriptKeyBinds::RemoveDeletedBinds ( void )
+CScriptKeyBind* CScriptKeyBinds::AddKeyFunction( SScriptBindableKey *key, eBindStateType bindType, CLuaMain *lua, int argCount )
 {
-    list < CScriptKeyBind* > ::iterator iter = m_List.begin ();
-    while ( iter != m_List.end () )
+    CScriptKeyFunctionBind *keyBind = new CScriptKeyFunctionBind( lua, key );
+    keyBind->m_bindType = bindType;
+    keyBind->m_ref = lua->CreateReference( -argCount - 1 );
+    keyBind->AcquireArguments( **lua, argCount );
+    lua_pop( **lua, 1 );
+    return keyBind;
+}
+
+CScriptKeyBind* CScriptKeyBinds::AddControlFunction( SScriptBindableGTAControl *control, eBindStateType bindType, CLuaMain *lua, int argCount )
+{
+    CScriptControlFunctionBind *ctrlBind = new CScriptControlFunctionBind( lua, control );
+    ctrlBind->m_bindType = bindType;
+    ctrlBind->m_ref = lua->CreateReference( -argCount - 1 );
+    ctrlBind->AcquireArguments( **lua, argCount );
+    lua_pop( **lua, 1 );
+    return ctrlBind;
+}
+
+CScriptKeyBind* CScriptKeyBinds::GetKeyFunction( SScriptBindableKey *key, CLuaMain *lua, eBindStateType bindType, const void *routine )
+{
+    for ( keyBinds_t::iterator iter = m_keyBinds.begin(); iter != m_keyBinds.end(); iter++ )
     {
-        if ( (*iter)->IsBeingDeleted () )
-        {
-            delete *iter;
-            iter = m_List.erase ( iter );
-        }
-        else
-            ++iter;
+        CScriptKeyFunctionBind *bind = *iter;
+
+        if ( bind->m_key == key && bind->m_lua == lua && bind->m_bindType == bindType && bind->m_ref.GetPointer() == routine )
+            return bind;
     }
+
+    return NULL;
 }
 
-bool CScriptKeyBinds::IsMouse ( SScriptBindableKey* pKey )
+CScriptKeyBind* CScriptKeyBinds::GetControlFunction( SScriptBindableGTAControl *control, CLuaMain *lua, eBindStateType bindType, const void *routine )
 {
-    if ( !pKey )
-        return false;
+    for ( controlBinds_t::iterator iter = m_controlBinds.begin(); iter != m_controlBinds.end(); iter++ )
+    {
+        CScriptControlFunctionBind *bind = *iter;
 
-    const char * pKeyName = pKey->szKey;
-    return ( pKeyName[0] == 'm' &&
-             pKeyName[1] == 'o' &&
-             pKeyName[2] == 'u' &&
-             pKeyName[3] == 's' &&
-             pKeyName[4] == 'e');
+        if ( bind->m_control == control && bind->m_lua == lua && bind->m_bindType == bindType && bind->m_ref.GetPointer() == routine )
+            return bind;
+    }
+
+    return NULL;
+}
+
+void CScriptKeyBinds::RemoveAllKeys( CLuaMain *lua )
+{
+    binds_t::iterator iter = m_List.begin();
+
+    while ( iter != m_List.end() )
+    {
+        CScriptKeyBind *keyBind = *iter++;
+
+        if ( keyBind->m_lua != lua )
+            continue;
+
+        keyBind->Delete();
+    }
 }

@@ -24,7 +24,8 @@
 class CClientEntity;
 class CLuaArguments;
 
-#define LUA_TTABLEREF 9
+#define LUA_TTABLEREF   9
+#define LUA_TENTITYREF  10
 
 class CLuaArgument : public LuaArgument
 {
@@ -66,6 +67,8 @@ public:
 
     void                    ReadEntity( CClientEntity *element );
     CClientEntity*          GetElement() const;
+
+    void                    Push( lua_State *L ) const;
 
     bool                    WriteToBitStream( NetBitStreamInterface& bitStream, argRep_t *cached = NULL ) const;
     bool                    ReadTypeFromBitStream( NetBitStreamInterface& stream, int type );

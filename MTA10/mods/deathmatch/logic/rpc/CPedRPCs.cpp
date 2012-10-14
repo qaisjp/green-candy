@@ -16,8 +16,6 @@
 #include "CPedRPCs.h"
 #include "net/SyncStructures.h"
 
-class CLuaArguments;
-
 void CPedRPCs::LoadFunctions ( void )
 {
     AddHandler ( SET_PED_ARMOR, SetPedArmor, "SetPedArmor" );

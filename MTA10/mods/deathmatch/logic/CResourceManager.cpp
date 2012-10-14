@@ -89,7 +89,10 @@ void CResourceManager::StopAll()
 bool CResourceManager::ParseResourcePath( Resource*& res, const char *path, std::string& meta )
 {
     if ( path[0] == '@' )
+    {
         meta = '@';
+        path++;
+    }
 
     if ( !ResourceManager::ParseResourcePath( res, path, path ) )
         return false;

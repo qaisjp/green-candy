@@ -376,6 +376,7 @@ static int LoadCFunctions( LuaMain *L )
     LUA_REGISTER( L, utfChar );
     LUA_REGISTER( L, utfCode );
 
+    LUA_REGISTER( L, md5 );
     LUA_REGISTER( L, getTickCount );
     LUA_REGISTER( L, getCTime );
     LUA_REGISTER( L, setTimer );
@@ -386,8 +387,8 @@ static int LoadCFunctions( LuaMain *L )
     LUA_REGISTER( L, getTimerDetails );
     LUA_REGISTER( L, print );
 
-    LUA_REGISTER( L, getDistance2D );
-    LUA_REGISTER( L, getDistance3D );
+    LUA_REGISTER( L, getDistanceBetweenPoints2D );
+    LUA_REGISTER( L, getDistanceBetweenPoints3D );
 
     LUA_REGISTER( L, getResources );
 

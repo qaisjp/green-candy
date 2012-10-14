@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CScriptKeyBinds.h
 *  PURPOSE:     Header for script key binds class
@@ -8,6 +8,7 @@
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Derek Abdine <>
 *               Chris McArthur <>
+*               The_GTA <quiret@gmx.de>
 *               
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -16,17 +17,9 @@
 #ifndef __CScriptKeyBinds_H
 #define __CScriptKeyBinds_H
 
-#include "../../shared_logic/lua/CLuaMain.h"
-#include <list>
-
 #define NUMBER_OF_KEYS 123
 
-enum eScriptKeyBindType
-{
-    SCRIPT_KEY_BIND_FUNCTION = 0,
-    SCRIPT_KEY_BIND_CONTROL_FUNCTION,
-    SCRIPT_KEY_BIND_UNDEFINED,
-};
+#include "luadefs/luakeybind.h"
 
 struct SScriptBindableKey
 {
@@ -38,90 +31,65 @@ struct SScriptBindableGTAControl
     char szControl[25];
 };
 
-class CScriptKeyBind
+class CScriptKeyFunctionBind : public CScriptKeyBind
 {
 public:
-                                CScriptKeyBind      ( void ) : boundKey ( NULL ), luaMain ( NULL ), beingDeleted ( false ) {}
-    virtual                     ~CScriptKeyBind     ( void ) {}
-    bool                        IsBeingDeleted      ( void ) { return beingDeleted; }
-    SScriptBindableKey*         boundKey;
-    CLuaMain*                   luaMain;
-    bool                        beingDeleted;
-    virtual eScriptKeyBindType  GetType             ( void ) = 0;
+                                    CScriptKeyFunctionBind( CLuaMain *lua, SScriptBindableKey *key );
+                                    ~CScriptKeyFunctionBind();
+
+    inline eScriptKeyBindType       GetType() const                                         { return SCRIPT_KEY_BIND_FUNCTION; }
+
+    const char*                     GetKeyName() const                                      { return m_key->szKey; }
+
+    SScriptBindableKey*             m_key;
 };
 
-class CScriptKeyBindWithState: public CScriptKeyBind
+class CScriptControlFunctionBind : public CScriptKeyBind
 {
 public:
-                            CScriptKeyBindWithState ( void ) { bHitState = true; }
-    bool                    bHitState;
-};
+                                    CScriptControlFunctionBind( CLuaMain *lua, SScriptBindableGTAControl *control );
+                                    ~CScriptControlFunctionBind();
 
-class CScriptFunctionBind
-{
-public:
-    LuaFunctionRef         m_iLuaFunction;
-    CLuaArguments           m_Arguments;
-};
+    inline eScriptKeyBindType       GetType() const                                         { return SCRIPT_KEY_BIND_CONTROL_FUNCTION; }
 
-class CScriptKeyFunctionBind: public CScriptKeyBindWithState, public CScriptFunctionBind
-{
-public:
-    inline eScriptKeyBindType     GetType               ( void )        { return SCRIPT_KEY_BIND_FUNCTION; }
-    
-};
+    const char*                     GetKeyName() const                                      { return m_control->szControl; }
 
-class CScriptControlFunctionBind: public CScriptKeyBindWithState, public CScriptFunctionBind
-{
-public:
-    inline eScriptKeyBindType     GetType              ( void )    { return SCRIPT_KEY_BIND_CONTROL_FUNCTION; }
-    SScriptBindableGTAControl*    boundControl;
+    SScriptBindableGTAControl*      m_control;
 };
 
 class CScriptKeyBinds
 {
+    friend class CScriptKeyBind;
+    friend class CScriptKeyFunctionBind;
+    friend class CScriptControlFunctionBind;
 public:
-    inline                      CScriptKeyBinds         ( void ) : m_bProcessingKey ( false )
-    {
-    }
-                                ~CScriptKeyBinds        ( void );
+                                    CScriptKeyBinds();
+                                    ~CScriptKeyBinds();
 
-    static SScriptBindableKey*        GetBindableFromKey      ( const char* szKey );
-    static SScriptBindableGTAControl* GetBindableFromControl  ( const char* szControl );
+    // Shared functions for inline function access
+    static SScriptBindableKey*          GetBindableFromKey( const char *key );
+    static SScriptBindableGTAControl*   GetBindableFromControl( const char *control );
+    static bool                         GetBindTypeFromName( const char *type, eBindStateType& bindType );
 
     // Basic funcs
-    void                        Add                     ( CScriptKeyBind* pKeyBind );
-    void                        Clear                   ( eScriptKeyBindType bindType = SCRIPT_KEY_BIND_UNDEFINED );
-    void                        Call                    ( CScriptKeyBind* pKeyBind );
-    bool                        ProcessKey              ( const char* szKey, bool bHitState, eScriptKeyBindType bindTypeconst );
+    void                            Clear( eScriptKeyBindType bindType = SCRIPT_KEY_BIND_UNDEFINED );
+    bool                            ProcessKey( const char *key, bool state, eScriptKeyBindType type );
 
-    std::list < CScriptKeyBind* > ::iterator IterBegin  ( void )            { return m_List.begin (); }
-    std::list < CScriptKeyBind* > ::iterator IterEnd    ( void )            { return m_List.end (); }
+    typedef std::list <CScriptKeyBind*> binds_t;
+    typedef std::list <CScriptKeyFunctionBind*> keyBinds_t;
+    typedef std::list <CScriptControlFunctionBind*> controlBinds_t;
 
-    // Key-function bind funcs
-    bool                        AddKeyFunction          ( const char* szKey, bool bHitState, CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, CLuaArguments& Arguments );
-    bool                        AddKeyFunction          ( SScriptBindableKey* pKey, bool bHitState, CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, CLuaArguments& Arguments );
-    bool                        RemoveKeyFunction       ( const char* szKey, CLuaMain* pLuaMain, bool bCheckHitState = false, bool bHitState = true, const LuaFunctionRef& iLuaFunction = LuaFunctionRef () );
-    bool                        RemoveKeyFunction       ( SScriptBindableKey* pKey, CLuaMain* pLuaMain, bool bCheckHitState = false, bool bHitState = true, const LuaFunctionRef& iLuaFunction = LuaFunctionRef () );
-    bool                        KeyFunctionExists       ( const char* szKey, CLuaMain* pLuaMain = NULL, bool bCheckHitState = false, bool bHitState = true, const LuaFunctionRef& iLuaFunction = LuaFunctionRef () );
-    bool                        KeyFunctionExists       ( SScriptBindableKey* pKey, CLuaMain* pLuaMain = NULL, bool bCheckHitState = false, bool bHitState = true, const LuaFunctionRef& iLuaFunction = LuaFunctionRef () );
+    CScriptKeyBind*                 AddKeyFunction( SScriptBindableKey *key, eBindStateType bindType, CLuaMain *lua, int argCount );
+    CScriptKeyBind*                 AddControlFunction( SScriptBindableGTAControl *control, eBindStateType bindType, CLuaMain *lua, int argCount );
 
-    // Control-function bind funcs
-    bool                        AddControlFunction      ( const char* szControl, bool bHitState, CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, CLuaArguments& Arguments );
-    bool                        AddControlFunction      ( SScriptBindableGTAControl* pControl, bool bHitState, CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, CLuaArguments& Arguments );
-    bool                        RemoveControlFunction   ( const char* szControl, CLuaMain* pLuaMain, bool bCheckHitState = false, bool bHitState = true, const LuaFunctionRef& iLuaFunction = LuaFunctionRef () );
-    bool                        RemoveControlFunction   ( SScriptBindableGTAControl* pControl, CLuaMain* pLuaMain, bool bCheckHitState = false, bool bHitState = true, const LuaFunctionRef& iLuaFunction = LuaFunctionRef () );
-    bool                        ControlFunctionExists   ( const char* szControl, CLuaMain* pLuaMain = NULL, bool bCheckHitState = false, bool bHitState = true, const LuaFunctionRef& iLuaFunction = LuaFunctionRef () );
-    bool                        ControlFunctionExists   ( SScriptBindableGTAControl* pControl, CLuaMain* pLuaMain = NULL, bool bCheckHitState = false, bool bHitState = true, const LuaFunctionRef& iLuaFunction = LuaFunctionRef () );
+    CScriptKeyBind*                 GetKeyFunction( SScriptBindableKey *key, CLuaMain *lua, eBindStateType bindType, const void *routine );
+    CScriptKeyBind*                 GetControlFunction( SScriptBindableGTAControl *control, CLuaMain *lua, eBindStateType bindType, const void *routine );
 
-    void                        RemoveAllKeys           ( CLuaMain* pLuaMain );
+    void                            RemoveAllKeys( CLuaMain *lua );
 
-    static bool                 IsMouse                 ( SScriptBindableKey* pKey );
-    void                        RemoveDeletedBinds      ( void );
-
-protected:
-    std::list < CScriptKeyBind* >   m_List;
-    bool                            m_bProcessingKey;
+    binds_t                         m_List;
+    keyBinds_t                      m_keyBinds;
+    controlBinds_t                  m_controlBinds;
 };
 
 #endif

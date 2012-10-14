@@ -7396,8 +7396,6 @@ bool CStaticFunctionDefinitions::PlaySoundFrontEnd ( CElement* pElement, unsigne
 
 bool CStaticFunctionDefinitions::PlayMissionAudio ( CElement* pElement, CVector* vecPosition, unsigned short usSlot )
 {
-    assert ( pElement );
-
     RUN_CHILDREN PlayMissionAudio ( *iter, vecPosition, usSlot );
 
     if ( IS_PLAYER ( pElement ) )
@@ -7415,11 +7413,8 @@ bool CStaticFunctionDefinitions::PlayMissionAudio ( CElement* pElement, CVector*
     return true;
 }
 
-
 bool CStaticFunctionDefinitions::PreloadMissionAudio ( CElement* pElement, unsigned short usSound, unsigned short usSlot )
 {
-    assert ( pElement );
-
     RUN_CHILDREN PreloadMissionAudio ( *iter, usSound, usSlot );
 
     if ( IS_PLAYER ( pElement ) )
@@ -7438,14 +7433,8 @@ bool CStaticFunctionDefinitions::PreloadMissionAudio ( CElement* pElement, unsig
     return true;
 }
 
-
 bool CStaticFunctionDefinitions::BindKey ( CPlayer* pPlayer, const char* szKey, const char* szHitState, CLuaMain* pLuaMain, const CLuaFunctionRef& iLuaFunction, CLuaArguments& Arguments )
 {
-    assert ( pPlayer );
-    assert ( szKey );
-    assert ( szHitState );
-    assert ( pLuaMain );
-
     bool bSuccess = false;
 
     CKeyBinds* pKeyBinds = pPlayer->GetKeyBinds ();
@@ -7492,12 +7481,6 @@ bool CStaticFunctionDefinitions::BindKey ( CPlayer* pPlayer, const char* szKey, 
 
 bool CStaticFunctionDefinitions::BindKey ( CPlayer* pPlayer, const char* szKey, const char* szHitState, const char* szCommandName, const char* szArguments, const char* szResource )
 {
-    assert ( pPlayer );
-    assert ( szKey );
-    assert ( szHitState );
-    assert ( szCommandName );
-    assert ( szResource );
-
     CKeyBinds* pKeyBinds = pPlayer->GetKeyBinds ();
     SBindableKey* pKey = pKeyBinds->GetBindableFromKey ( szKey );
     szArguments = szArguments ? szArguments : "";

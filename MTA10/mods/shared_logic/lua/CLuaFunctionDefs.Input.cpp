@@ -17,6 +17,8 @@
 *               Florian Busse <flobu@gmx.net>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -123,95 +125,79 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( bindKey )
     {
-        CLuaMain* pLuaMain = lua_readcontext( L );
+        CLuaMain *pLuaMain = lua_readcontext( L );
+        const char *key, *hitState;
 
-        if ( lua_type ( L, 1 ) == LUA_TSTRING && lua_type ( L, 2 ) == LUA_TSTRING )
+        CScriptArgReader argStream( L );
+
+        argStream.ReadString( key );
+        argStream.ReadString( hitState );
+
+        if ( argStream.HasErrors() )
         {
-            const char* szKey = lua_tostring ( L, 1 );
-            const char* szHitState = lua_tostring ( L, 2 );
-
-            if ( lua_type ( L, 3 ) == LUA_TSTRING )
-            {
-                const char* szResource = pLuaMain->GetResource()->GetName();
-                const char* szCommand = lua_tostring ( L, 3 );
-                const char* szArguments = "";
-                if  ( lua_type ( L, 4 ) == LUA_TSTRING )
-                    szArguments = lua_tostring ( L, 4 );
-                if ( CStaticFunctionDefinitions::BindKey ( szKey, szHitState, szCommand, szArguments, szResource ) )
-                {
-                    lua_pushboolean ( L, true );
-                    return 1;
-                }  
-            }
-            else
-            { 
-                CLuaArguments Arguments;
-                Arguments.ReadArguments ( L, 4 );
-                LuaFunctionRef iLuaFunction = pLuaMain->CreateReference( 3 );            
-
-                if ( VERIFY_FUNCTION ( iLuaFunction ) )
-                {
-                    if ( CStaticFunctionDefinitions::BindKey ( szKey, szHitState, pLuaMain, iLuaFunction, Arguments ) )
-                    {
-                        lua_pushboolean ( L, true );
-                        return 1;
-                    }
-                }
-                else
-                    m_pScriptDebugging->LogBadPointer( "bindKey", "function", 3 );
-            }
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+            
+            lua_pushboolean( L, false );
+            return 1;
         }
 
-        lua_pushboolean ( L, false );
+        if ( argStream.NextIsString() )
+        {
+            const char *cmd, *args;
+
+            argStream.ReadString( cmd );
+            argStream.ReadString( args, "" );
+
+            lua_pushboolean( L, CStaticFunctionDefinitions::BindKey( key, hitState, cmd, args, pLuaMain->GetResource()->GetName() ) );
+            return 1;
+        }
+        else if ( argStream.NextIsFunction() )
+        { 
+            CScriptKeyBind *bind;
+
+            if ( CStaticFunctionDefinitions::BindKey( key, hitState, pLuaMain, lua_gettop( L ) - 3, bind ) )
+            {
+                lua_pushboolean( L, true );
+                bind->PushStack( L );
+                return 2;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( "Bad argument @ 'bindKey' [requiring either command-string or function]" );
+
+        lua_pushboolean( L, false );
         return 1;
     }
 
     LUA_DECLARE( unbindKey )
     {
-        CLuaMain* pLuaMain = lua_readcontext( L );
+        CLuaMain *pLuaMain = lua_readcontext( L );
 
-        if ( lua_type ( L, 1 ) == LUA_TSTRING )
+        if ( lua_type( L, 1 ) == LUA_TSTRING )
         {
-            const char* szKey = lua_tostring ( L, 1 );
-            const char* szHitState = NULL;
+            const char *szKey = lua_tostring( L, 1 );
+            const char *szHitState = NULL;
 
-            if ( lua_type ( L, 2 ) )
+            if ( lua_type( L, 2 ) )
                 szHitState = lua_tostring ( L, 2 );
 
-            if ( lua_type ( L, 3 ) == LUA_TSTRING )
+            if ( lua_type( L, 3 ) == LUA_TSTRING )
             {
-                if ( CStaticFunctionDefinitions::UnbindKey ( szKey, szHitState, pLuaMain->GetResource()->GetName(), lua_tostring( L, 3 ) ) )
-                {
-                    lua_pushboolean ( L, true );
-                    return 1;
-                }
+                lua_pushboolean( L, CStaticFunctionDefinitions::UnbindKey( szKey, szHitState, pLuaMain->GetResource()->GetName(), lua_tostring( L, 3 ) ) );
+                return 1;
+            }
+            else if ( lua_type( L, 3 ) == LUA_TFUNCTION )
+            {   
+                lua_pushboolean( L, CStaticFunctionDefinitions::UnbindKey( szKey, pLuaMain, szHitState, lua_topointer( L, 3 ) ) );
+                return 1;
             }
             else
-            {   
-                LuaFunctionRef iLuaFunction;
-                if ( lua_type ( L, 3 ) == LUA_TFUNCTION )
-                    iLuaFunction = pLuaMain->CreateReference( 3 );
-
-                if ( IS_REFNIL ( iLuaFunction ) || VERIFY_FUNCTION ( iLuaFunction ) )
-                {
-                    if ( CStaticFunctionDefinitions::UnbindKey ( szKey, pLuaMain, szHitState, iLuaFunction ) )
-                    {
-                        lua_pushboolean ( L, true );
-                        return 1;
-                    }
-                }
-                else
-                {
-                    m_pScriptDebugging->LogBadType( "unbindKey" );
-                }
-            }
+                m_pScriptDebugging->LogBadType( "unbindKey" );
         }
         else
-        {
             m_pScriptDebugging->LogBadType( "unbindKey" );
-        }
 
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
@@ -347,9 +333,9 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getFunctionsBoundToKey )
     {
-        CLuaMain* pLuaMain = lua_readcontext( L );
+        CLuaMain *pLuaMain = lua_readcontext( L );
 
-        if ( lua_type ( L, 1 ) == LUA_TSTRING )
+        if ( lua_type( L, 1 ) == LUA_TSTRING )
         {
             const char* szKey = lua_tostring ( L, 1 );
             const char* szHitState = NULL;
@@ -368,50 +354,23 @@ namespace CLuaFunctionDefs
             }
 
             // Create a new table
-            lua_newtable ( L );
+            lua_newtable( L );
 
             // Add all the bound functions to it
             unsigned int uiIndex = 0;
-            list < CScriptKeyBind* > ::const_iterator iter = m_pClientGame->GetScriptKeyBinds ()->IterBegin ();
-            for ( ; iter != m_pClientGame->GetScriptKeyBinds ()->IterEnd (); iter++ )
+            CScriptKeyBinds::binds_t& list = m_pClientGame->GetScriptKeyBinds()->m_List;
+            CScriptKeyBinds::binds_t::const_iterator iter = list.begin();
+
+            for ( ; iter != list.end(); iter++ )
             {
-                CScriptKeyBind* pScriptKeyBind = *iter;
-                if ( !pScriptKeyBind->IsBeingDeleted () )
-                {
-                    switch ( pScriptKeyBind->GetType () )
-                    {
-                        case SCRIPT_KEY_BIND_FUNCTION:
-                        {
-                            CScriptKeyFunctionBind* pBind = static_cast < CScriptKeyFunctionBind* > ( pScriptKeyBind );
-                            if ( !bCheckHitState || pBind->bHitState == bHitState )
-                            {
-                                if ( strcmp ( szKey, pBind->boundKey->szKey ) == 0 )
-                                {
-                                    lua_pushnumber ( L, ++uiIndex );
-                                    lua_rawgeti ( L, LUA_REGISTRYINDEX, pBind->m_iLuaFunction.ToInt () );
-                                    lua_settable ( L, -3 );
-                                }
-                            }
-                            break;
-                        }
-                        case SCRIPT_KEY_BIND_CONTROL_FUNCTION:
-                        {
-                            CScriptControlFunctionBind* pBind = static_cast < CScriptControlFunctionBind* > ( pScriptKeyBind );
-                            if ( !bCheckHitState || pBind->bHitState == bHitState )
-                            {
-                                if ( strcmp ( szKey, pBind->boundControl->szControl ) == 0 )
-                                {
-                                    lua_pushnumber ( L, ++uiIndex );
-                                    lua_rawgeti ( L, LUA_REGISTRYINDEX, pBind->m_iLuaFunction.ToInt () );
-                                    lua_settable ( L, -3 );
-                                }
-                            }
-                            break;
-                        }
-                        default:
-                            break;
-                    }
-                }
+                CScriptKeyBind *bind = *iter;
+
+                if ( bCheckHitState && bind->CanCaptureState( bHitState ) || strcmp( szKey, bind->GetKeyName() ) != 0 )
+                    continue;
+
+                lua_pushnumber( L, ++uiIndex );
+                pLuaMain->PushReference( bind->m_ref );
+                lua_settable( L, -3 );
             }
             return 1;
         }
@@ -424,60 +383,36 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getKeyBoundToFunction )
     {
-        CLuaMain* pLuaMain = lua_readcontext( L );
+        CLuaMain *pLuaMain = lua_readcontext( L );
 
-        if ( lua_type ( L, 1 ) == LUA_TFUNCTION || lua_type ( L, 1 ) == LUA_TSTRING )
+        if ( lua_type( L, 1 ) == LUA_TFUNCTION )
         {
-            LuaFunctionRef iLuaFunction = pLuaMain->CreateReference( 1 );
-            // get the key
-            list < CScriptKeyBind* > ::const_iterator iter =  m_pClientGame->GetScriptKeyBinds ()->IterBegin ();
-            for ( ; iter !=  m_pClientGame->GetScriptKeyBinds ()->IterEnd (); iter++ )
+            const void *ref = lua_topointer( L, 1 );
+
+            CScriptKeyBinds::binds_t& list = m_pClientGame->GetScriptKeyBinds()->m_List;
+            CScriptKeyBinds::binds_t::const_iterator iter = list.begin();
+
+            for ( ; iter != list.end(); iter++ )
             {
-                CScriptKeyBind* pScriptKeyBind = *iter;
-                if ( !pScriptKeyBind->IsBeingDeleted () )
-                {
-                    switch ( pScriptKeyBind->GetType () )
-                    {
-                        case SCRIPT_KEY_BIND_FUNCTION:
-                        {
-                            CScriptKeyFunctionBind* pBind = static_cast < CScriptKeyFunctionBind* > ( pScriptKeyBind );
-                            // ACHTUNG: DOES IT FIND THE CORRECT LUA REF HERE?
-                            if ( iLuaFunction == pBind->m_iLuaFunction )
-                            {
-                                lua_pushstring ( L, pBind->boundKey->szKey );
-                                return 1;
-                            }
-                            break;
-                        }
-                        case SCRIPT_KEY_BIND_CONTROL_FUNCTION:
-                        {
-                            CScriptControlFunctionBind* pBind = static_cast < CScriptControlFunctionBind* > ( pScriptKeyBind );
-                            // ACHTUNG: DOES IT FIND THE CORRECT LUA REF HERE?
-                            if ( iLuaFunction == pBind->m_iLuaFunction )
-                            {
-                                lua_pushstring ( L, pBind->boundKey->szKey );
-                                return 1;
-                            }
-                            break;
-                        }
-                        default:
-                            break;
-                    }
-                }
+                CScriptKeyBind *bind = *iter;
+
+                if ( ref != bind->m_ref.GetPointer() )
+                    continue;
+
+                lua_pushstring( L, bind->GetKeyName() );
+                return 1;
             }
-            lua_pushboolean ( L, false );
-            return 1;
         }
         else
             m_pScriptDebugging->LogBadType( "getKeyBoundToFunction" );
 
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
     LUA_DECLARE( getCommandsBoundToKey )
     {
-        CLuaMain* pLuaMain = lua_readcontext( L );
+        CLuaMain *pLuaMain = lua_readcontext( L );
 
         if ( lua_type ( L, 1 ) == LUA_TSTRING )
         {
@@ -511,11 +446,11 @@ namespace CLuaFunctionDefs
                     CCommandBind* pBind = static_cast < CCommandBind* > ( pKeyBind );
                     if ( !bCheckHitState || pBind->bHitState == bHitState )
                     {
-                        if ( strcmp ( szKey, pBind->boundKey->szKey ) == 0 )
+                        if ( strcmp( szKey, pBind->boundKey->szKey ) == 0 )
                         {
-                            lua_pushstring ( L, pBind->szCommand );
-                            lua_pushstring ( L, pBind->szArguments );
-                            lua_settable ( L, -3 );
+                            lua_pushlstring( L, pBind->m_cmd.c_str(), pBind->m_cmd.size() );
+                            lua_pushlstring( L, pBind->m_args.c_str(), pBind->m_args.size() );
+                            lua_settable( L, -3 );
                         }
                     }
                 }
@@ -543,10 +478,10 @@ namespace CLuaFunctionDefs
                 CKeyBind* pKeyBind = *iter;
                 if ( !pKeyBind->IsBeingDeleted () )
                 {
-                    if ( pKeyBind->GetType () == KEY_BIND_COMMAND )
+                    if ( pKeyBind->GetType() == KEY_BIND_COMMAND )
                     {
-                        CCommandBind* pBind = static_cast < CCommandBind* > ( pKeyBind );
-                        if ( strcmp ( szCommand, pBind->szCommand ) == 0 )
+                        CCommandBind *pBind = static_cast < CCommandBind* > ( pKeyBind );
+                        if ( pBind->m_cmd == szCommand )
                         {
                             lua_pushstring ( L, pBind->boundKey->szKey );
                             return 1;
