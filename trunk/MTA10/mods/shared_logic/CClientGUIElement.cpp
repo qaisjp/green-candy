@@ -175,34 +175,29 @@ void CClientGUIElement::SetEvents( const char *szFunc1, const char *szFunc2 )
 
 bool CClientGUIElement::_CallbackEvent1( CGUIElement *pCGUIElement )
 {
-    if ( pCGUIElement )
+    CClientGUIElement *pElement = m_pGUIManager->Get( pCGUIElement );
+    if ( pElement )
     {
-        CClientGUIElement *pElement = m_pGUIManager->Get( pCGUIElement );
-        if ( pElement )
-        {
-            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
-            pElement->PushStack( L );
-            pElement->CallEvent( _szCallbackFunc1, L, 1 );
-            return true;
-        }
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        pElement->PushStack( L );
+        pElement->CallEvent( _szCallbackFunc1, L, 1 );
+        return true;
     }
+
     return false;
 }
 
 bool CClientGUIElement::_CallbackEvent2( CGUIElement *pCGUIElement )
 {
-    CLuaArguments Arg;
-    if ( pCGUIElement )
+    CClientGUIElement* pElement = m_pGUIManager->Get ( pCGUIElement );
+    if ( pElement )
     {
-        CClientGUIElement* pElement = m_pGUIManager->Get ( pCGUIElement );
-        if ( pElement )
-        {
-            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
-            pElement->PushStack( L );
-            pElement->CallEvent( _szCallbackFunc2, L, 1 );
-            return true;
-        }
+        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+        pElement->PushStack( L );
+        pElement->CallEvent( _szCallbackFunc2, L, 1 );
+        return true;
     }
+
     return false;
 }
 
@@ -224,8 +219,7 @@ bool CClientGUIElement::SetFont( const SString& strInFontName, CClientGuiFont* p
 
     if ( pFontElement )
         strFontName = pFontElement->GetCEGUIFontName();
-    else
-    if ( strFontName.empty() )
+    else if ( strFontName.empty() )
         strFontName = "default-normal";
 
     if ( GetCGUIElement ()->SetFont( strFontName ) )

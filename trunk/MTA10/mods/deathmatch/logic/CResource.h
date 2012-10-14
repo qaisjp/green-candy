@@ -77,6 +77,14 @@ public:
     // Use this for cursor showing/hiding
     void                        ShowCursor( bool bShow, bool bToggleControls = true );
 
+    bool                        GetFullMetaPath( const char *path, filePath& absPath );
+    CFile*                      OpenStream( const char *path, const char *mode );
+    bool                        FileCopy( const char *src, const char *dst );
+    bool                        FileRename( const char *src, const char *dst );
+    size_t                      FileSize( const char *path ) const;
+    bool                        FileExists( const char *path ) const;
+    bool                        FileDelete( const char *path );
+
 private:
     CLuaManager*                m_luaManager;
     CClientEntity*              m_rootEntity;

@@ -83,8 +83,6 @@ class CClientColShape;
 class CClientPed;
 class CCustomData;
 class CElementGroup;
-class CLuaArgument;
-class CLuaArguments;
 class CLuaMain;
 class CMapEventManager;
 typedef std::list <class CClientEntity*> CChildListType;

@@ -454,10 +454,10 @@ public:
     static bool                         SetAircraftMaxHeight                ( float fHeight );
 
     // Input functions
-    static bool                         BindKey                             ( const char* szKey, const char* szHitState, CLuaMain* pLuaMain, const LuaFunctionRef& iLuaFunction, CLuaArguments& Arguments );
-    static bool                         BindKey                             ( const char* szKey, const char* szHitState, const char* szCommandName, const char* szArguments, const char* szResource );
-    static bool                         UnbindKey                           ( const char* szKey, CLuaMain* pLuaMain, const char* szHitState = 0, const LuaFunctionRef& iLuaFunction = LuaFunctionRef () );
-    static bool                         UnbindKey                           ( const char* szKey, const char* szHitState, const char* szCommandName, const char* szResource );
+    static bool                         BindKey                             ( const char *key, const char *state, CLuaMain *lua, int argCount, CScriptKeyBind*& rslt );
+    static bool                         BindKey                             ( const char *key, const char *hitState, const char *cmd, const char *args, const char *res );
+    static bool                         UnbindKey                           ( const char *key, CLuaMain *lua, const char *hitState, const void *routine );
+    static bool                         UnbindKey                           ( const char *key, const char *hitState, const char *cmd, const char *res );
     static bool                         GetKeyState                         ( const char* szKey, bool& bState );
     static bool                         GetControlState                     ( const char* szControl, bool& bState );
     static bool                         GetAnalogControlState               ( const char* szControl, float& fState );

@@ -621,6 +621,14 @@
 						>
 					</File>
 				</Filter>
+				<Filter
+					Name="luadefs"
+					>
+					<File
+						RelativePath=".\logic\luadefs\luakeybind.cpp"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="shared_logic"
@@ -2120,6 +2128,14 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\sdk\net\rpc_enums.h"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="luadefs"
+					>
+					<File
+						RelativePath=".\logic\luadefs\luakeybind.h"
 						>
 					</File>
 				</Filter>

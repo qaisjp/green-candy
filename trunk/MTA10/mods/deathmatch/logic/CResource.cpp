@@ -57,17 +57,11 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
 
     // Register them to our resource
     PushEnvironment( L );
-    m_guiEntity->PushStack( L ); lua_setfield( L, -2, "guiRoot" );
-    m_colEntity->PushStack( L ); lua_setfield( L, -2, "colRoot" );
-    m_dffEntity->PushStack( L ); lua_setfield( L, -2, "dffRoot" );
-    m_txdEntity->PushStack( L ); lua_setfield( L, -2, "txdRoot" );
+    m_guiEntity->PushStack( L ); lua_setfield( L, -2, "guiRoot" ); m_guiEntity->IncrementMethodStack();
+    m_colEntity->PushStack( L ); lua_setfield( L, -2, "colRoot" ); m_colEntity->IncrementMethodStack();
+    m_dffEntity->PushStack( L ); lua_setfield( L, -2, "dffRoot" ); m_dffEntity->IncrementMethodStack();
+    m_txdEntity->PushStack( L ); lua_setfield( L, -2, "txdRoot" ); m_txdEntity->IncrementMethodStack();
     lua_pop( L, 1 );
-
-    // Reference the entities so nothing can destroy them
-    m_guiEntity->IncrementMethodStack();
-    m_colEntity->IncrementMethodStack();
-    m_dffEntity->IncrementMethodStack();
-    m_txdEntity->IncrementMethodStack();
 
     // Setup lua globals
     entity->PushStack( L );
@@ -78,7 +72,9 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
 
     // Set up our private path
     filePath privPath;
-    ResourceManager::resFileRoot->GetFullPath( CServerIdManager::GetSingleton()->GetConnectionPrivateDirectory() + name, false, privPath );
+    modFileRoot->GetFullPath( CServerIdManager::GetSingleton()->GetConnectionPrivateDirectory() + name + '/', false, privPath );
+
+    modFileRoot->CreateDir( privPath.c_str() );
 
     m_privateRoot = g_pCore->GetFileSystem()->CreateTranslator( privPath.c_str() );
 }
@@ -138,6 +134,8 @@ CResource::~CResource()
     exports_t::iterator iterex = m_exports.begin();
     for ( ; iterex != m_exports.end(); iterex++ )
         delete *iterex;
+
+    delete m_privateRoot;
 }
 
 CDownloadableResource* CResource::QueueFile ( CDownloadableResource::eResourceType resourceType, const char *szFileName, CChecksum serverChecksum )
@@ -331,7 +329,6 @@ void CResource::ShowCursor( bool bShow, bool bToggleControls )
         }
         else
         {
-
             // Decrease the cursor ref count
             m_refShowCursor--;
         }
@@ -343,4 +340,98 @@ void CResource::ShowCursor( bool bShow, bool bToggleControls )
         g_pCore->ForceCursorVisible ( m_refShowCursor != 0, bToggleControls );
         g_pClientGame->SetCursorEventsEnabled ( m_refShowCursor != 0 );
     }
+}
+
+bool CResource::GetFullMetaPath( const char *path, filePath& absPath )
+{
+    if ( path[0] == '@' )
+        return m_privateRoot->GetFullPathFromRoot( path + 1, true, absPath );
+
+    return Resource::GetFullMetaPath( path, absPath );
+}
+
+CFile* CResource::OpenStream( const char *path, const char *mode )
+{
+    if ( path[0] == '@' )
+        return m_privateRoot->Open( path + 1, mode );
+
+    return Resource::OpenStream( path, mode );
+}
+
+bool CResource::FileCopy( const char *src, const char *dst )
+{
+    filePath srcPath;
+    filePath dstPath;
+
+    if ( src[0] == '@' )
+    {
+        if ( dst[0] == '@' )
+            return m_privateRoot->Copy( src + 1, dst + 1 );
+
+        m_privateRoot->GetFullPathFromRoot( src + 1, true, srcPath );
+        m_fileRoot.GetFullPathFromRoot( dst, true, dstPath );
+    }
+    else if ( dst[0] == '@' )
+    {
+        if ( src[0] == '@' )
+            return m_privateRoot->Copy( src + 1, dst + 1 );
+
+        m_fileRoot.GetFullPathFromRoot( src, true, srcPath );
+        m_privateRoot->GetFullPathFromRoot( dst + 1, true, dstPath );
+    }
+    else
+        return Resource::FileCopy( src, dst );
+
+    return modFileRoot->Copy( srcPath.c_str(), dstPath.c_str() );
+}
+
+bool CResource::FileRename( const char *src, const char *dst )
+{
+    filePath srcPath;
+    filePath dstPath;
+
+    if ( src[0] == '@' )
+    {
+        if ( dst[0] == '@' )
+            return m_privateRoot->Rename( src + 1, dst + 1 );
+
+        m_privateRoot->GetFullPathFromRoot( src + 1, true, srcPath );
+        m_fileRoot.GetFullPathFromRoot( dst, true, dstPath );
+    }
+    else if ( dst[0] == '@' )
+    {
+        if ( src[0] == '@' )
+            return m_privateRoot->Rename( src + 1, dst + 1 );
+
+        m_fileRoot.GetFullPathFromRoot( src, true, srcPath );
+        m_privateRoot->GetFullPathFromRoot( dst + 1, true, dstPath );
+    }
+    else
+        return Resource::FileRename( src, dst );
+
+    return modFileRoot->Rename( srcPath.c_str(), dstPath.c_str() );
+}
+
+size_t CResource::FileSize( const char *path ) const
+{
+    if ( path[0] == '@' )
+        return m_privateRoot->Size( path + 1 );
+
+    return Resource::FileSize( path );
+}
+
+bool CResource::FileExists( const char *path ) const
+{
+    if ( path[0] == '@' )
+        return m_privateRoot->Exists( path + 1 );
+
+    return Resource::FileExists( path );
+}
+
+bool CResource::FileDelete( const char *path )
+{
+    if ( path[0] == '@' )
+        return m_privateRoot->Delete( path );
+
+    return Resource::FileDelete( path );
 }

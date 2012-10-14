@@ -196,8 +196,8 @@ enum eControllerAction
 class CControllerConfigManager
 {
 public:
-    virtual void                SetControllerKeyAssociatedWithAction( eControllerAction action, int iKey, eControllerType controllerType )=0;
-    virtual int                 GetControllerKeyAssociatedWithAction( eControllerAction action, eControllerType controllerType )=0;
+    virtual void                SetControllerKeyAssociatedWithAction( eControllerAction action, int iKey, eControllerType controllerType ) = 0;
+    virtual int                 GetControllerKeyAssociatedWithAction( eControllerAction action, eControllerType controllerType ) = 0;
     virtual unsigned char       GetInputType() = 0;
     virtual void                SetInputType( unsigned char ucInputType ) = 0;
     virtual bool                IsMouseInverted() = 0;

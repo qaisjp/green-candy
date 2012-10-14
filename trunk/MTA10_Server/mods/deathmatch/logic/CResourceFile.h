@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CResourceFile.h
 *  PURPOSE:     Resource server-side file item class
@@ -8,6 +8,7 @@
 *               Jax <>
 *               Chris McArthur <>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -25,7 +26,7 @@ class CResourceFile;
 #define CRESOURCEFILE_H
 #include "ehs/ehs.h"
 
-class CResourceFile
+class CResourceFile abstract
 {
 public:
     enum eResourceType
@@ -59,16 +60,18 @@ public:
     virtual bool                Start() = 0;
     virtual bool                Stop() = 0;
 
-    inline eResourceType        GetType() const { return m_type; }
-    inline const char *         GetName() { return m_name.c_str(); }
+    inline eResourceType        GetType() const                                     { return m_type; }
+    inline const char*          GetName() const                                     { return m_name.c_str(); }
 
-    inline CChecksum            GetLastChecksum() { return m_checksum; }
-    void                        SetLastChecksum( CChecksum checksum ) { m_checksum = checksum; }
+    inline const filePath&      GetPath() const                                     { return m_path; }
+
+    inline CChecksum            GetLastChecksum() const                             { return m_checksum; }
+    void                        SetLastChecksum( const CChecksum& checksum )        { m_checksum = checksum; }
 
     virtual void                OutputHTMLEntry( std::string& buf );
 
     double                      GetApproxSize();    // Only used by download counters
-    string                      GetMetaFileAttribute( const string& key ) { return m_attributeMap[key]; }
+    string                      GetMetaFileAttribute( const string& key )           { return m_attributeMap[key]; }
 };
 
 #endif

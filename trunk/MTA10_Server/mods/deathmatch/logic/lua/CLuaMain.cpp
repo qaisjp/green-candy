@@ -155,18 +155,17 @@ CXMLFile* CLuaMain::CreateXML( const char *filename )
 
 void CLuaMain::SaveXML( CXMLNode *root )
 {
-    xmlFiles_t::iterator iter;
-
-    for ( iter = m_XMLFiles.begin(); iter != m_XMLFiles.end(); iter++ )
+    for ( xmlFiles_t::iterator iter = m_XMLFiles.begin(); iter != m_XMLFiles.end(); iter++ )
     {
-        CXMLFile * file = (*iter);
-        if ( file )
+        CXMLFile *file = *iter;
+
+        if ( file->GetRootNode() == root )
         {
-            if ( file->GetRootNode() == root )
-            {
-                file->Write();
-                break;
-            }
+            // Create the directory if it does not exist
+            resFileRoot->CreateDir( file->GetFilename() );
+
+            file->Write();
+            break;
         }
     }
 
@@ -188,7 +187,10 @@ void CLuaMain::SaveXML( CXMLNode *root )
 
         if ( xmlFile )
         {
-            xmlFile->>Write();
+            // Directory has to exist
+            resFileRoot->CreateDir( file->GetPath().c_str() );
+
+            xmlFile->Write();
         }
         break;
     }

@@ -145,9 +145,9 @@ void CClientObject::SetRotationDegrees( const CVector & vecRotation )
 {
     // Convert from degrees to radians
     CVector vecTemp;
-    vecTemp.fX = vecRotation.fX * M_PI / 180.0f;
-    vecTemp.fY = vecRotation.fY * M_PI / 180.0f;
-    vecTemp.fZ = vecRotation.fZ * M_PI / 180.0f;
+    vecTemp.fX = vecRotation.fX * (float)M_PI / 180.0f;
+    vecTemp.fY = vecRotation.fY * (float)M_PI / 180.0f;
+    vecTemp.fZ = vecRotation.fZ * (float)M_PI / 180.0f;
 
     SetRotationRadians( vecTemp );
 }

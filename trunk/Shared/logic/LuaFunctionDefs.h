@@ -143,8 +143,8 @@ namespace LuaFunctionDefs
     LUA_DECLARE( outputDebugString );
     LUA_DECLARE( print );
 
-    LUA_DECLARE( getDistance2D );
-    LUA_DECLARE( getDistance3D );
+    LUA_DECLARE( getDistanceBetweenPoints2D );
+    LUA_DECLARE( getDistanceBetweenPoints3D );
 };
 
 #endif //_LUA_BASE_DEFS_

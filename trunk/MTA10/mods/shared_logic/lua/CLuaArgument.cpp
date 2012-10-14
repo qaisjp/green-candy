@@ -52,7 +52,7 @@ void CLuaArgument::ReadEntity( CClientEntity *element )
 
     m_string.clear();
 
-    m_type = LUA_TLIGHTUSERDATA;
+    m_type = LUA_TENTITYREF;
     m_lightUD = (void*)element->GetID().Value();
 }
 
@@ -62,6 +62,19 @@ CClientEntity* CLuaArgument::GetElement() const
     return CElementIDs::GetElement( ID );
 }
 
+void CLuaArgument::Push( lua_State *L ) const
+{
+    lua_checkstack( L, 1 );
+
+    if ( m_type == LUA_TENTITYREF )
+    {
+        GetElement()->PushStack( L );
+        return;
+    }
+
+    LuaArgument::Push( L );
+}
+
 bool CLuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int type )
 {
     switch( type )
@@ -69,8 +82,8 @@ bool CLuaArgument::ReadTypeFromBitStream( NetBitStreamInterface& stream, int typ
     case LUA_TTABLE:
         m_table = new CLuaArguments;
         m_table->m_parent = m_parent;
-        ((CLuaArguments*)m_table)->ReadFromBitStream( stream );
         m_parent->AddCachedTable( m_table );
+        ((CLuaArguments*)m_table)->ReadFromBitStream( stream );
         m_type = LUA_TTABLE;
         m_table->ValidateTableKeys();
         return true;

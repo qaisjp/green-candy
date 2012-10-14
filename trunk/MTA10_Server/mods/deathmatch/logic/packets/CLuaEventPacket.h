@@ -20,22 +20,23 @@
 class CLuaEventPacket : public CPacket
 {
 public:
-                            CLuaEventPacket             ( void );
-                            CLuaEventPacket             ( const char* szName, ElementID ID, CLuaArguments& Arguments );
+                                    CLuaEventPacket();
+                                    CLuaEventPacket( const char* szName, ElementID ID, CLuaArguments& Arguments );
 
-    inline ePacketID        GetPacketID                 ( void ) const              { return PACKET_ID_LUA_EVENT; };
-    inline unsigned long    GetFlags                    ( void ) const              { return PACKET_RELIABLE | PACKET_SEQUENCED; };
+    inline ePacketID                GetPacketID() const                                 { return PACKET_ID_LUA_EVENT; }
+    inline unsigned long            GetFlags() const                                    { return PACKET_RELIABLE | PACKET_SEQUENCED; }
 
-    bool                    Read                        ( NetBitStreamInterface& BitStream );
-    bool                    Write                       ( NetBitStreamInterface& BitStream ) const;
+    bool                            Read( NetBitStreamInterface& BitStream );
+    bool                            Write( NetBitStreamInterface& BitStream ) const;
 
-    inline char*            GetName                     ( void )                    { return m_szName; }
-    inline ElementID        GetElementID                ( void )                    { return m_ElementID; }
-    inline CLuaArguments&   GetArguments                ( void )                    { return m_Arguments; }
+    inline const char*              GetName() const                                     { return m_szName; }
+    inline ElementID                GetElementID() const                                { return m_ElementID; }
+    inline CLuaArguments&           GetArguments()                                      { return m_Arguments; }
+
 private:
-    char                    m_szName [ MAX_EVENT_NAME_LENGTH ];
-    ElementID               m_ElementID;
-    CLuaArguments           m_Arguments;
+    char                            m_szName[MAX_EVENT_NAME_LENGTH];
+    ElementID                       m_ElementID;
+    CLuaArguments                   m_Arguments;
 };
 
 #endif

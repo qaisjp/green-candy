@@ -16,16 +16,12 @@
 class CLuaTimer : public LuaTimer
 {
 public:
-    CLuaTimer( const LuaFunctionRef& ref, const LuaArguments& args )
+    CLuaTimer( lua_State *L, LuaTimerManager *manager, const LuaFunctionRef& ref ) : LuaTimer( L, manager, ref );
     {
-        LuaTimer( ref );
-
-        m_args = new CLuaArguments( args );
     }
 
     ~CLuaTimer()
     {
-        delete m_args;
     }
 };
 

@@ -53,7 +53,7 @@ public:
     void                        Read( const class LuaArguments *table );
     void                        ReadUserData( void *ud );
 
-    void                        Push( lua_State* lua ) const;
+    virtual void                Push( lua_State* lua ) const;
 
     inline int                  GetType() const      { return m_type; };
 

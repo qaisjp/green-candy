@@ -41,6 +41,31 @@ namespace LuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( md5 )
+    {
+        std::string buf;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadString( buf );
+
+        if ( !argStream.HasErrors() )
+        {
+            MD5 md5bytes;
+            char szResult[33];
+            CMD5Hasher hasher;
+
+            hasher.Calculate( buf.c_str(), buf.size(), md5bytes );
+            hasher.ConvertToHex( md5bytes, szResult );
+            lua_pushstring( L, szResult );
+            return 1;
+        }
+        else
+            debug->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
     LUA_DECLARE( fileCreate )
     {
         luaL_checktype( L, 1, LUA_TSTRING );
@@ -278,7 +303,7 @@ namespace LuaFunctionDefs
         return 1;
     }
 
-    LUA_DECLARE( getDistance2D )
+    LUA_DECLARE( getDistanceBetweenPoints2D )
     {
         luaL_checktyperange( L, 1, LUA_TNUMBER, 4 );
 
@@ -290,7 +315,7 @@ namespace LuaFunctionDefs
         return 1;
     }
 
-    LUA_DECLARE( getDistance3D )
+    LUA_DECLARE( getDistanceBetweenPoints3D )
     {
         luaL_checktyperange( L, 1, LUA_TNUMBER, 6 );
 
