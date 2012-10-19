@@ -34,6 +34,17 @@ static inline type* lua_readuserdata( lua_State *L )
     return ud;
 }
 
+template <class type, int t, int idx>
+static inline type* lua_readuserdata_assert( lua_State *L )
+{
+    type *data = lua_readuserdata <type, t, idx> ( L );
+
+    if ( !data )
+        throw lua_exception( L, LUA_ERRRUN, "attempted to browse a destroyed resource environment" );
+
+    return data;
+}
+
 static inline std::string lua_getstring( lua_State *L, int idx )
 {
     size_t len;

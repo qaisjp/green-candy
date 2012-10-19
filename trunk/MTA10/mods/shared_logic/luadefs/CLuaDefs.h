@@ -42,7 +42,7 @@ namespace CLuaFunctionDefs
 
     static inline CLuaMain* lua_readcontext( lua_State *L )
     {
-        return lua_readuserdata <CLuaMain, LUA_STORAGEINDEX, 2> ( L );
+        return lua_readuserdata_assert <CLuaMain, LUA_STORAGEINDEX, 2> ( L );
     }
 
     // This is just for the LUA funcs. Please don't public this and use it other

@@ -382,7 +382,7 @@ public:
                          cast(int, sizeof(TValue)*((n)-1)))
 
 #define sizeLclosure(n)	(cast(int, sizeof(LClosure)) + \
-                         cast(int, sizeof(TValue *)*((n)-1)))
+                         cast(int, sizeof(TValue*)*((n)-1)))
 
 class Closure : public GrayObject
 {
@@ -421,6 +421,7 @@ public:
     }
 
     lua_CFunction f;
+    TValue accessor; // Usually the storage of the thread
     TValue upvalue[1];
 };
 

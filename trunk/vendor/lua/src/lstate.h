@@ -114,11 +114,11 @@ public:
     ~lua_State();
 
     // lua_State is always the main thread
-    virtual void    SetMainThread( bool enabled )  {}
-    virtual bool    IsThread()                     { return false; }
+    virtual void    SetMainThread( bool enabled )       {}
+    virtual bool    IsThread()                          { return false; }
 
     virtual void    SetYieldDisabled( bool disable )    {}
-    virtual bool    IsYieldDisabled()              { return true; }
+    virtual bool    IsYieldDisabled()                   { return true; }
 
     size_t Propagate( global_State *g );
 

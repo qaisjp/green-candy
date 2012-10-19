@@ -36,6 +36,14 @@ const char lua_ident[] =
   "$Authors: " LUA_AUTHORS " $\n"
   "$URL: www.lua.org $\n";
 
+static Table *getcurrenv( lua_State *L )
+{
+    if ( L->ci == L->base_ci )  /* no enclosing function? */
+        return hvalue(gt(L));  /* use global table as environment */
+
+    return curr_func( L )->env;
+}
+
 TValue* index2adr( lua_State *L, int idx )
 {
     if ( idx > 0 )
@@ -57,10 +65,10 @@ TValue* index2adr( lua_State *L, int idx )
     switch( idx )
     {  /* pseudo-indices */
     case LUA_STORAGEINDEX:
-        return &L->storage;
+        return luaF_getcurraccessor( L );
     case LUA_REGISTRYINDEX:
         return registry(L);
-    case LUA_ENVIRONINDEX:
+    case LUA_ENVIRONINDEX:  // essentially getcurrenv( L );
     {
         if ( L->nCcalls )
         {
@@ -82,17 +90,6 @@ TValue* index2adr( lua_State *L, int idx )
     }
     }
 }
-
-
-static Table *getcurrenv (lua_State *L) {
-  if (L->ci == L->base_ci)  /* no enclosing function? */
-    return hvalue(gt(L));  /* use global table as environment */
-  else {
-    Closure *func = curr_func(L);
-    return func->env;
-  }
-}
-
 
 void luaA_pushobject (lua_State *L, const TValue *o) {
   setobj2s(L, L->top, o);

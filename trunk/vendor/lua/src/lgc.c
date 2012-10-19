@@ -370,6 +370,8 @@ int CClosure::TraverseGC( global_State *g )
     for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
         markvalue( g, &upvalue[i] );
 
+    markvalue( g, &accessor );
+
     return Closure::TraverseGC( g );
 }
 

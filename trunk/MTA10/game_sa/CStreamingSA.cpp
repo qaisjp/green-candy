@@ -848,19 +848,19 @@ void CStreamingSA::FreeModel( unsigned short id )
     info->m_eLoading = MODEL_UNAVAILABLE;
 }
 
-void CStreamingSA::LoadAllRequestedModels ( BOOL bOnlyPriorityModels )
+void CStreamingSA::LoadAllRequestedModels( bool onlyPriority )
 {
     DWORD dwFunction = FUNC_LoadAllRequestedModels;
-    DWORD dwOnlyPriorityModels = bOnlyPriorityModels;
     _asm
     {
-        push    dwOnlyPriorityModels
+        movzx   eax,onlyPriority
+        push    eax
         call    dwFunction
         add     esp, 4
     }
 }
 
-bool CStreamingSA::HasModelLoaded ( unsigned int id )
+bool CStreamingSA::HasModelLoaded( unsigned int id )
 {
     DWORD dwFunc = FUNC_CStreaming__HasModelLoaded;
     bool bReturn;
@@ -877,32 +877,32 @@ bool CStreamingSA::HasModelLoaded ( unsigned int id )
     return bReturn;
 }
 
-bool CStreamingSA::IsModelLoading ( unsigned int id )
+bool CStreamingSA::IsModelLoading( unsigned int id )
 {
     return ((CModelLoadInfoSA*)(ARRAY_CModelLoadInfo) + id)->m_eLoading == MODEL_LOADING;
 }
 
-void CStreamingSA::WaitForModel ( unsigned int id )
+void CStreamingSA::WaitForModel( unsigned int id )
 {
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
-    if (id > MAX_MODELS-1)
+    if ( id > MAX_MODELS-1 )
         return;
 }
 
-void CStreamingSA::RequestAnimations ( int iAnimationLibraryBlock, DWORD dwFlags )
+void CStreamingSA::RequestAnimations( int idx, unsigned int flags )
 {
-    iAnimationLibraryBlock += DATA_ANIM_BLOCK;
-    RequestModel( iAnimationLibraryBlock, dwFlags );
+    idx += DATA_ANIM_BLOCK;
+    RequestModel( idx, flags );
 }
 
-BOOL CStreamingSA::HaveAnimationsLoaded ( int iAnimationLibraryBlock )
+bool CStreamingSA::HaveAnimationsLoaded( int idx )
 {
-    iAnimationLibraryBlock += DATA_ANIM_BLOCK;
-    return HasModelLoaded( iAnimationLibraryBlock );
+    idx += DATA_ANIM_BLOCK;
+    return HasModelLoaded( idx );
 }
 
-bool CStreamingSA::HasVehicleUpgradeLoaded ( int model )
+bool CStreamingSA::HasVehicleUpgradeLoaded( int model )
 {
     bool bReturn;
     DWORD dwFunc = FUNC_CStreaming__HasVehicleUpgradeLoaded;
@@ -916,13 +916,14 @@ bool CStreamingSA::HasVehicleUpgradeLoaded ( int model )
     return bReturn;
 }
 
-void CStreamingSA::RequestSpecialModel ( DWORD model, const char * szTexture, DWORD channel )
+void CStreamingSA::RequestSpecialModel( unsigned short model, const char *tex, unsigned int channel )
 {
     DWORD dwFunc = FUNC_CStreaming_RequestSpecialModel;
     _asm
     {
-        push    channel
-        push    szTexture
+        movzx   eax,channel
+        push    eax
+        push    tex
         push    model
         call    dwFunc
         add     esp, 0xC

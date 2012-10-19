@@ -38,15 +38,15 @@ public:
     void                    DeleteAll( class CLuaMain* pLuaMain );
     void                    DeleteAll();
 
-    inline unsigned int     Count()             { return m_Data.size(); }
+    inline unsigned int     Count() const               { return m_Data.size(); }
 
     typedef std::map <std::string, SCustomData> itemList_t;
 
-    itemList_t::const_iterator  IterBegin()     { return m_Data.begin(); }
-    itemList_t::const_iterator  IterEnd()       { return m_Data.end(); }
+    itemList_t::const_iterator  IterBegin()             { return m_Data.begin(); }
+    itemList_t::const_iterator  IterEnd()               { return m_Data.end(); }
 
 private:
-    std::map < std::string, SCustomData >       m_Data;
+    itemList_t              m_Data;
 };
 
 #endif

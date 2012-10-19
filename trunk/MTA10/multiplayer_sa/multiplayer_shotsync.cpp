@@ -854,21 +854,8 @@ bool ProcessProjectileAdd ()
         }
     
         if ( projectileTargetEntityInterface )
-        {
-            switch ( projectileTargetEntityInterface->m_type )
-            {
-                case ENTITY_TYPE_VEHICLE:
-                    projectileTargetEntity = pPools->GetVehicle ( (DWORD *)projectileTargetEntityInterface );
-                    break;
-                case ENTITY_TYPE_PED:
-                    projectileTargetEntity = pPools->GetPed ( (DWORD *)projectileTargetEntityInterface );
-                    break;
-                case ENTITY_TYPE_OBJECT:
-                    //pPools->GetObject ( (DWORD *)event->inflictor );
-                default:
-                    projectileTargetEntity = NULL;
-            }
-        }
+            projectileTargetEntity = pPools->GetEntity( projectileTargetEntityInterface );
+
         return m_pProjectileStopHandler ( pOwner, projectileWeaponType, projectileOrigin, projectileForce, projectileTarget, projectileTargetEntity );
     }
     return true;

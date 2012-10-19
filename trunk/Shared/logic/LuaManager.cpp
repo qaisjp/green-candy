@@ -31,7 +31,7 @@ ResourceManager* LuaManager::m_resMan = NULL;
 
 static LuaManager* lua_readmanager( lua_State *L )
 {
-    return lua_readuserdata <LuaManager, LUA_REGISTRYINDEX, 1> ( L );
+    return lua_readuserdata_assert <LuaManager, LUA_STORAGEINDEX, 1> ( L );
 }
 
 static int lua_cocreatethread( lua_State *L )
@@ -487,11 +487,10 @@ void LuaManager::Init( LuaMain *lua )
 #endif
 
     // Reference the manager and the context
-    lua_pushlightuserdata( thread, lua );
     lua_pushlightuserdata( thread, this );
-
-    luaL_ref( thread, LUA_STORAGEINDEX );
-    luaL_ref( thread, LUA_STORAGEINDEX );
+    lua_rawseti( thread, LUA_STORAGEINDEX, 1 );
+    lua_pushlightuserdata( thread, lua );
+    lua_rawseti( thread, LUA_STORAGEINDEX, 2 );
 
     // Notify the VM
     lua->InitVM( 1, 2 );
@@ -519,6 +518,14 @@ LuaMain* LuaManager::Get( lua_State *lua )
 //TODO: Runtime unwinding
 bool LuaManager::Remove( LuaMain *lua )
 {
+    lua_State *L = **lua;
+
+    // Remove the storage qualifiers
+    lua_pushnil( L );
+    lua_rawseti( L, LUA_STORAGEINDEX, 1 );
+    lua_pushnil( L );
+    lua_rawseti( L, LUA_STORAGEINDEX, 2 );
+
     // Remove all events registered by it
     m_events.RemoveAll( lua );
 

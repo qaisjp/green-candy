@@ -19,6 +19,17 @@
 #include "lstate.h"
 
 
+TValue* luaF_getcurraccessor( lua_State *L )
+{
+    if ( L->ci == L->base_ci )
+        return &L->storage;
+
+    if ( CClosure *cl = curr_func( L )->GetCClosure() )
+        return &cl->accessor;
+
+    return &L->storage;
+}
+
 CClosure *luaF_newCclosure (lua_State *L, int nelems, Table *e)
 {
     CClosure *c = new (L, nelems) CClosure;
@@ -27,6 +38,8 @@ CClosure *luaF_newCclosure (lua_State *L, int nelems, Table *e)
     c->isC = 1;
     c->env = e;
     c->nupvalues = cast_byte(nelems);
+    setobj( L, &c->accessor, luaF_getcurraccessor( L ) );
+
     return c;
 }
 
