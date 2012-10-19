@@ -1,12 +1,15 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientColManager.cpp
 *  PURPOSE:     Collision entity manager class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -16,20 +19,20 @@ using std::list;
 using std::vector;
 
 //
-// This is now a mess due to backward compatabilty.
+// This is now a mess due to backward compatibilty.
 // ** Review before v1.1 release **
 //
 
-CClientColManager::~CClientColManager ( void )
+CClientColManager::~CClientColManager()
 {
-    DeleteAll ();
 }
 
-
-void CClientColManager::DoPulse ( void )
+void CClientColManager::DoPulse()
 {
-    vector < CClientColShape* > ::const_iterator iter = m_List.begin ();
-    for ( ; iter != m_List.end (); ++iter ) (*iter)->DoPulse ();
+    colshapes_t::const_iterator iter = m_List.begin();
+
+    for ( ; iter != m_List.end(); ++iter )
+        (*iter)->DoPulse();
 }
 
 #ifdef SPATIAL_DATABASE_TESTS
@@ -300,7 +303,7 @@ void CClientColManager::DoHitDetection ( const CVector& vecNowPosition, float fR
 void CClientColManager::DoHitDetectionForColShape ( CClientColShape* pShape )
 {
     // Ensure colshape is enabled
-    if ( !pShape->IsEnabled () )
+    if ( !pShape->IsEnabled() )
         return;
 
     std::map < CClientEntity*, int > entityList;
@@ -311,33 +314,35 @@ void CClientColManager::DoHitDetectionForColShape ( CClientColShape* pShape )
     GetClientSpatialDatabase()->SphereQuery ( result, querySphere );
  
     // Extract relevant types
-    for ( CClientEntityResult::const_iterator it = result.begin () ; it != result.end (); ++it )
+    for ( CClientEntityResult::const_iterator it = result.begin(); it != result.end(); ++it )
     {
-        CClientEntity* pEntity = *it;
-        switch ( pEntity->GetType () )
+        CClientEntity *pEntity = *it;
+        switch( pEntity->GetType() )
         {
-            case CCLIENTRADARMARKER:
-            case CCLIENTRADARAREA:
-            case CCLIENTTEAM:
-            case CCLIENTGUI:
-            case CCLIENTCOLSHAPE:
-            case CCLIENTDUMMY:
-            case SCRIPTFILE:
-            case CCLIENTDFF:
-            case CCLIENTCOL:
-            case CCLIENTTXD:
-            case CCLIENTSOUND:
-                break;
-            default:
-                if ( pEntity->GetParent () )
-                    entityList[ pEntity ] = 1;
+        case CCLIENTRADARMARKER:
+        case CCLIENTRADARAREA:
+        case CCLIENTTEAM:
+        case CCLIENTGUI:
+        case CCLIENTCOLSHAPE:
+        case CCLIENTDUMMY:
+        case SCRIPTFILE:
+        case CCLIENTDFF:
+        case CCLIENTCOL:
+        case CCLIENTTXD:
+        case CCLIENTSOUND:
+            break;
+        default:
+            if ( pEntity->GetParent() )
+                entityList[ pEntity ] = 1;
+
+            break;
         }
     }
 
     // Add existing colliders, so they can be disconnected if required
     for ( list < CClientEntity* > ::const_iterator it = pShape->CollidersBegin () ; it != pShape->CollidersEnd (); ++it )
     {
-       entityList[ *it ] = 1;
+        entityList[ *it ] = 1;
     }
 
     // Test each entity against the colshape
@@ -460,27 +465,13 @@ void CClientColManager::HandleHitDetectionResult ( bool bHit, CClientColShape* p
     }
 }
 
-
-bool CClientColManager::Exists ( CClientColShape* pShape )
+bool CClientColManager::Exists( CClientColShape* pShape )
 {
     // Return true if it exists
-    return ListContains ( m_List, pShape );
+    return ListContains( m_List, pShape );
 }
 
-
-void CClientColManager::DeleteAll ( void )
+void CClientColManager::RemoveFromList( CClientColShape* pShape )
 {
-    // Delete all of them
-    vector < CClientColShape * > cloneList = m_List;
-    vector < CClientColShape* > ::const_iterator iter = cloneList.begin ();
-    for ( ; iter != cloneList.end (); ++iter )
-        (*iter)->Delete();
-
-    m_List.clear ();
-}
-
-
-void CClientColManager::RemoveFromList ( CClientColShape* pShape )
-{
-    ListRemove ( m_List, pShape );
+    ListRemove( m_List, pShape );
 }

@@ -196,7 +196,7 @@ bool MixedReadMaterialString ( CScriptArgReader& argStream, CClientMaterial*& pM
         argStream.ReadString ( strFilePath );
 
         // If no element, auto find/create one
-        CLuaMain* pLuaMain = lua_readuserdata <CLuaMain, LUA_STORAGEINDEX, 2> ( argStream.m_luaVM );
+        CLuaMain* pLuaMain = CLuaFunctionDefs::lua_readcontext ( argStream.m_luaVM );
         CResource* pParentResource = pLuaMain ? pLuaMain->GetResource () : NULL;
         if ( pParentResource )
         {

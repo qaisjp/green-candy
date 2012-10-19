@@ -524,10 +524,10 @@ CMultiplayerSA::CMultiplayerSA()
     eGameVersion version = pGameInterface->GetGameVersion ();
     switch ( version )
     {
-        case VERSION_EU_10: COffsetsMP::Initialize10EU (); break;
-        case VERSION_US_10: COffsetsMP::Initialize10US (); break;
-        case VERSION_11:    COffsetsMP::Initialize11 (); break;
-        case VERSION_20:    COffsetsMP::Initialize20 (); break;
+    case VERSION_EU_10: COffsetsMP::Initialize10EU (); break;
+    case VERSION_US_10: COffsetsMP::Initialize10US (); break;
+    case VERSION_11:    COffsetsMP::Initialize11 (); break;
+    case VERSION_20:    COffsetsMP::Initialize20 (); break;
     }
 
     Population = new CPopulationSA;
@@ -2411,56 +2411,12 @@ bool CallExplosionHandler ( void )
     CEntitySAInterface* pExplodingEntityInterface = (CEntitySAInterface*) explosionEntity;
 
     if ( pInterface )
-    {
-        // See what type it is and grab the SA interface depending on type
-        switch ( pInterface->m_type )
-        {
-            case ENTITY_TYPE_PED:
-            {
-                pExplosionCreator = pGameInterface->GetPools ()->GetPed ( (DWORD*) pInterface );
-                break;
-            }
-
-            case ENTITY_TYPE_VEHICLE:
-            {
-                pExplosionCreator = pGameInterface->GetPools ()->GetVehicle ( (DWORD*) pInterface );
-                break;
-            }
-
-            case ENTITY_TYPE_OBJECT:
-            {
-                pExplosionCreator = pGameInterface->GetPools ()->GetObject ( (DWORD*) pInterface );
-                break;
-            }
-        }
-    }
+        pExplosionCreator = pGameInterface->GetPools()->GetEntity( pInterface );
 
     if ( pExplodingEntityInterface )
-    {
-        // See what type it is and grab the SA interface depending on type
-        switch ( pExplodingEntityInterface->m_type )
-        {
-            case ENTITY_TYPE_PED:
-            {
-                pExplodingEntity = dynamic_cast < CEntity * > ( pGameInterface->GetPools ()->GetPed ( (DWORD *) pExplodingEntityInterface ) );
-                break;
-            }
+        pExplodingEntity = pGameInterface->GetPools()->GetEntity( pExplodingEntityInterface );
 
-            case ENTITY_TYPE_VEHICLE:
-            {
-                pExplodingEntity = dynamic_cast < CEntity * > ( pGameInterface->GetPools ()->GetVehicle ( (DWORD *) pExplodingEntityInterface ) );
-                break;
-            }
-
-            case ENTITY_TYPE_OBJECT:
-            {
-                pExplodingEntity = pGameInterface->GetPools ()->GetObject ( (DWORD*) pExplodingEntityInterface );
-                break;
-            }
-        }
-    }
-
-    return m_pExplosionHandler ( pExplodingEntity, pExplosionCreator, vecExplosionLocation, explosionType );
+    return m_pExplosionHandler( pExplodingEntity, pExplosionCreator, vecExplosionLocation, explosionType );
 }
 
 void _declspec(naked) HOOK_CExplosion_AddExplosion()
@@ -2781,7 +2737,8 @@ void _declspec(naked) HOOK_Render3DStuff ()
 CPedSAInterface * pProcessPlayerWeaponPed = NULL;
 bool ProcessPlayerWeapon ()
 {
-    if ( IsLocalPlayer ( pProcessPlayerWeaponPed ) ) return true;
+    if ( IsLocalPlayer ( pProcessPlayerWeaponPed ) )
+        return true;
 
     CPlayerPed * pPed = dynamic_cast < CPlayerPed * > ( pGameInterface->GetPools ()->GetPed ( ( DWORD * ) pProcessPlayerWeaponPed ) );
     if ( pPed )
@@ -3110,15 +3067,14 @@ static RpAtomic* CVehicle_EAEG ( RpAtomic* pAtomic, void* )
     return pAtomic;
 }
 
-static void SetVehicleAlpha ( )
+static void SetVehicleAlpha()
 {
     CAutomobile *car = dynamic_cast <CAutomobileSA*> ( ((CVehicleSAInterface*)dwAlphaEntity)->m_vehicle );
 
     if ( !car )
         return;
 
-
-    unsigned char ucAlpha = car->GetAlpha ();
+    unsigned char ucAlpha = car->GetAlpha();
 
     if ( ucAlpha < 255 )
         GetAlphaAndSetNewValues ( ucAlpha );
@@ -4194,7 +4150,7 @@ void _cdecl VehicleLookBehind ( DWORD dwCam, CVector* pvecEntityPos, float fDist
 {
     // Custom calculation of the camera position when looking behind while in
     // vehicle cam mode, taking in account custom gravity
-    MemPutFast < CVector > ( dwCam + 0x19C, *pvecEntityPos + (gravcam_matVehicleTransform.at + gravcam_matGravity.up*0.2f)*fDistance );
+    *(CVector*)( dwCam + 0x19C ) = *pvecEntityPos + (gravcam_matVehicleTransform.at + gravcam_matGravity.up*0.2f)*fDistance;
 }
 
 void _declspec(naked) HOOK_VehicleLookBehind ()
@@ -4255,7 +4211,7 @@ void _declspec(naked) HOOK_VehicleLookAside ()
 float _cdecl VehicleBurnCheck ( DWORD pVehicleInterface )
 {
     // To check if a vehicle is lying upside down on its roof, SA checks if the z coordinate
-    // of the vehicle's up vector is negative. We replace this z by the dot product of the up vector
+    // of the vehicle's up vector is smaller than -0.9. We replace this z by the dot product of the up vector
     // and the negated gravity vector.
     CVehicle* pVehicle = pGameInterface->GetPools ()->GetVehicle ( (DWORD *)pVehicleInterface );
     if ( !pVehicle )
@@ -4266,7 +4222,7 @@ float _cdecl VehicleBurnCheck ( DWORD pVehicleInterface )
     pVehicle->GetGravity ( vecGravity );
     pVehicle->GetMatrix ( matVehicle );
     vecGravity = -vecGravity;
-    return matVehicle.up.DotProduct ( &vecGravity );
+    return matVehicle.up.DotProduct( vecGravity );
 }
 
 void _declspec(naked) HOOK_OccupiedVehicleBurnCheck ()
@@ -4338,7 +4294,8 @@ void _declspec(naked) HOOK_CGame_Process ()
         pushad
     }
 
-    if ( m_pPreWorldProcessHandler ) m_pPreWorldProcessHandler ();
+    if ( m_pPreWorldProcessHandler )
+        m_pPreWorldProcessHandler ();
 
     _asm
     {
@@ -4367,7 +4324,8 @@ void _declspec(naked) HOOK_Idle ()
         pushad
     }
 
-    if ( m_pIdleHandler ) m_pIdleHandler ();
+    if ( m_pIdleHandler )
+        m_pIdleHandler ();
 
     _asm
     {
@@ -5936,6 +5894,7 @@ void SetModelSuspensionLines ( CVehicleSAInterface* pVehicleIntf, void* pSuspens
     CModelInfo* pModelInfo = pGameInterface->GetModelInfo ( pVehicleIntf->m_vehicle->GetModelIndex () );
     pModelInfo->SetVehicleSuspensionData ( pSuspensionLines );
 }
+
 // Some variables.
 DWORD dwSuspensionChangedJump = 0x4185C0;
 bool bSuspensionChanged = false;
@@ -6105,7 +6064,7 @@ void CMultiplayerSA::SetFastClothesLoading ( EFastClothesLoading fastClothesLoad
 // Skip loading the directory data from player.img if it has already been loaded.
 // Speeds up clothes a bit, but is only part of a solution - The actual files from inside player.img are still loaded each time
 //
-bool _cdecl IsPlayerImgDirLoaded ( void )
+bool _cdecl IsPlayerImgDirLoaded()
 {
     // When player.img dir is loaded, it looks this this:
     // 0x00BC12C0  00bbcdc8 00000226
@@ -6249,10 +6208,7 @@ bool _cdecl ShouldSkipLoadRequestedModels ( DWORD calledFrom )
     //      CClothesBuilder::ConstructGeometryArray      5A55A0 - 5A56B6
     //      CClothesBuilder::LoadAndPutOnClothes         5A5F70 - 5A6039
     //      CClothesBuilder::ConstructTextures           5A6040 - 5A6520
-    if ( calledFrom > 0x5A55A0 && calledFrom < 0x5A6520 )
-        return true;
-
-    return false;
+    return calledFrom > 0x5A55A0 && calledFrom < 0x5A6520;
 }
 
 

@@ -70,7 +70,7 @@ void CResourceManager::LoadUnavailableResources()
 
     for ( ; iter != m_resources.end(); iter++ )
     {
-        if ( !( (*iter)->GetActive() ) )
+        if ( !(*iter)->GetActive() )
             ((CResource*)*iter)->Load();
     }
 }

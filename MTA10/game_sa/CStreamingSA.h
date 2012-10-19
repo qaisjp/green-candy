@@ -37,16 +37,16 @@ public:
                     CStreamingSA();
                     ~CStreamingSA();
 
-    void            RequestModel                    ( unsigned short id, unsigned int flags );
-    void            FreeModel                       ( unsigned short id );
-    void            LoadAllRequestedModels          ( BOOL bOnlyPriorityModels = 0 );
-    bool            HasModelLoaded                  ( unsigned int id );
-    bool            IsModelLoading                  ( unsigned int id );
-    void            WaitForModel                    ( unsigned int id );
-    void            RequestAnimations               ( int iAnimationLibraryBlock, DWORD dwFlags );
-    BOOL            HaveAnimationsLoaded            ( int iAnimationLibraryBlock );
-    bool            HasVehicleUpgradeLoaded         ( int model );
-    void            RequestSpecialModel ( DWORD model, const char * szTexture, DWORD channel );
+    void            RequestModel( unsigned short id, unsigned int flags );
+    void            FreeModel( unsigned short id );
+    void            LoadAllRequestedModels( bool onlyPriority = false );
+    bool            HasModelLoaded( unsigned int id );
+    bool            IsModelLoading( unsigned int id );
+    void            WaitForModel( unsigned int id );
+    void            RequestAnimations( int idx, unsigned int flags );
+    bool            HaveAnimationsLoaded( int idx );
+    bool            HasVehicleUpgradeLoaded( int model );
+    void            RequestSpecialModel( unsigned short model, const char *tex, unsigned int channel );
 };
 
 class CIPLFileSA

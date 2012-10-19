@@ -59,7 +59,7 @@ namespace LuaFunctionDefs
 {
     static inline LuaMain* lua_readcontext( lua_State *L )
     {
-        return lua_readuserdata <LuaMain, LUA_STORAGEINDEX, 2> ( L );
+        return lua_readuserdata_assert <LuaMain, LUA_STORAGEINDEX, 2> ( L );
     }
 
     static inline Resource* lua_readresource( lua_State *L )

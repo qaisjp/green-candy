@@ -359,14 +359,21 @@ static int classmethod_forceSuper( lua_State *L )
     Class *j = jvalue( index2adr( L, lua_upvalueindex( 2 ) ) );
     MethodStackAllocation member( L, j, boolFalse );
     int top = lua_gettop( L );
-    int n;
 
-    for ( n=0; n<top; n++ )
-        lua_pushvalue( L, n+1 );
+    if ( top )
+    {
+        for ( int n=0; n<top; n++ )
+            lua_pushvalue( L, n+1 );
 
-    lua_pushvalue( L, lua_upvalueindex( 3 ) );
-    lua_insert( L, 1 );
-    lua_call( L, top, 0 );
+        lua_pushvalue( L, lua_upvalueindex( 3 ) );
+        lua_insert( L, top + 1 );
+        lua_call( L, top, 0 );
+    }
+    else
+    {
+        lua_pushvalue( L, lua_upvalueindex( 3 ) );
+        lua_call( L, 0, 0 );
+    }
 
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     lua_insert( L, 1 );

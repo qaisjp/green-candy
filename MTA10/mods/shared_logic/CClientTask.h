@@ -12,7 +12,6 @@
 #ifndef __CCLIENTTASK_H
 #define __CCLIENTTASK_H
 
-#include <list>
 #include "lua/LuaCommon.h"
 #include "CClientEntity.h"
 

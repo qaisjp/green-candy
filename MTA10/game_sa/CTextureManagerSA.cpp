@@ -76,8 +76,10 @@ void CTxdInstanceSA::Deallocate()
 {
     unsigned short id = (*ppTxdPool)->GetIndex( this );
 
+#if 0
     // Notify the shader system
     OnRemoveTxd( id );
+#endif
 
     if ( m_txd )
     {
@@ -158,8 +160,10 @@ void CTxdInstanceSA::InitParent()
     for ( dictImportList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
         (*iter)->OnTxdLoad( *m_txd, id );
 
+#if 0
     // Notify the shader system
     OnAddTxd( id );
+#endif
 
     CTxdInstanceSA *parent = (*ppTxdPool)->Get( m_parentTxd );
 

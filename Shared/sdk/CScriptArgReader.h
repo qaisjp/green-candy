@@ -466,7 +466,7 @@ public:
     //
     // Call after other arguments have been read
     //
-    bool ReadFunctionComplete ( void )
+    bool ReadFunctionComplete()
     {
         if ( !m_pPendingFunctionOutValue )
             return true;
