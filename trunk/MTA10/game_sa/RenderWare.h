@@ -126,27 +126,6 @@ struct RwVertex
     float        u,v;
 };
 
-// Macros used by RW, taken from SGU :)
-#define LIST_VALIDATE(item) ( assert( (item).next->prev == &(item) && (item).prev->next == &(item) ) )
-#define LIST_APPEND(link, item) ( (item).next = &(link), (item).prev = (link).prev, (item).prev->next = &(item), (item).next->prev = &(item) )
-#define LIST_INSERT(link, item) ( (item).next = (link).next, (item).prev = &(link), (item).prev->next = &(item), (item).next->prev = &(item) )
-#define LIST_REMOVE(link) ( (link).prev->next = (link).next, (link).next->prev = (link).prev )
-#define LIST_CLEAR(link) ( (link).prev = &(link), (link).next = &(link) )
-#define LIST_EMPTY(link) ( (link).prev == &(link) && (link).next == &(link) )
-#define LIST_GETITEM(type, item, node) ( (type*)( (unsigned int)(item) - offsetof(type, node) ) )
-#define LIST_FOREACH_BEGIN(type, root, node, list, iter) for ( iter = root.next; iter != &root; iter = iter->next ) { type *item = LIST_GETITEM(type, iter, node);
-#define LIST_FOREACH_END }
-
-template < class type >
-struct RwListEntry
-{
-    RwListEntry <type> *next, *prev;
-};
-template < class type >
-struct RwList
-{
-    RwListEntry <type> root;
-};
 class RwExtensionInterface
 {
 public:
@@ -678,7 +657,7 @@ public:
 
         for ( ; child != &m_atomics.root; child = child->next )
         {
-            if ( !callback( (RpAtomic*)( (unsigned int)child - offsetof(RpAtomic, m_atomics)), data ) )
+            if ( !callback( LIST_GETITEM( RpAtomic, child, m_atomics ), data ) )
                 return false;
         }
 

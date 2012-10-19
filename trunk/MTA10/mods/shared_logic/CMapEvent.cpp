@@ -60,5 +60,5 @@ CMapEvent::CMapEvent( CLuaMain *main, CMapEventManager& manager, const char *nam
 CMapEvent::~CMapEvent()
 {
     // Clean up after ourself
-    m_system.m_Events.remove( this );
+    LIST_REMOVE( m_node );
 }

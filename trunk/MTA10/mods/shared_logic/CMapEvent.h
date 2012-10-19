@@ -26,7 +26,6 @@ class CMapEventManager;
 class CMapEvent : public LuaElement
 {
     friend class CMapEventManager;
-
 public:
     inline class CLuaMain*  GetVM()                                             { return m_main; }
     inline const char*      GetName() const                                     { return m_name; }
@@ -42,6 +41,8 @@ private:
     char                    m_name[MAPEVENT_MAX_LENGTH_NAME + 1];
     bool                    m_propagated;
     CMapEventManager&       m_system;
+
+    RwListEntry <CMapEvent> m_node;
 };
 
 #endif

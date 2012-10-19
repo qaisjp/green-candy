@@ -46,7 +46,6 @@
 #include "CEvents.h"
 #include "CResourceManager.h"
 #include "CScriptKeyBinds.h"
-#include "CElementDeleter.h"
 #include "CFoo.h"
 #include "../../shared_logic/CClientGUIElement.h"
 #include "CVariableBuffer.h"
@@ -234,8 +233,6 @@ public:
     inline CUnoccupiedVehicleSync*      GetUnoccupiedVehicleSync        ( void )        { return m_pUnoccupiedVehicleSync; }
     inline CPedSync*                    GetPedSync                      ( void )        { return m_pPedSync; }
     inline CObjectSync*                 GetObjectSync                   ( void )        { return m_pObjectSync; }
-
-    inline CElementDeleter*             GetElementDeleter               ( void )        { return &m_ElementDeleter; }
 
     // Status toggles
     void                                ShowNetstat                     ( bool bShow );
@@ -475,7 +472,6 @@ private:
     CTransferBox*                       m_pTransferBox;
     CResourceManager*                   m_pResourceManager;
     CScriptKeyBinds*                    m_pScriptKeyBinds;
-    CElementDeleter                     m_ElementDeleter;
     CZoneNames*                         m_pZoneNames;
     CPacketHandler*                     m_pPacketHandler;
     CLocalServer*                       m_pLocalServer;

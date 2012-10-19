@@ -24,10 +24,6 @@ using std::vector;
 
 extern CClientGame* g_pClientGame;
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 #define INVALID_VALUE   0xFFFFFFFF
 
 #define PED_INTERPOLATION_WARP_THRESHOLD            5   // Minimal threshold
@@ -50,7 +46,7 @@ void CClientPed::InstanceLua( bool system )
     lua_pop( m_lua, 1 );
 }
 
-CClientPed::CClientPed( CClientManager* pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, L, system ), CAntiCheatModule( pManager->GetAntiCheat() )
+CClientPed::CClientPed( CClientManager *pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, L, system ), CAntiCheatModule( pManager->GetAntiCheat() )
 {
     InstanceLua( system );
 
@@ -3099,8 +3095,7 @@ void CClientPed::_CreateModel()
     }
 }
 
-
-void CClientPed::_CreateLocalModel ( void )
+void CClientPed::_CreateLocalModel()
 {
     // Init the local player and grab the pointers
     g_pGame->InitLocalPlayer ();
@@ -3108,82 +3103,78 @@ void CClientPed::_CreateLocalModel ( void )
     
     if ( m_pPlayerPed )
     {
-        m_pTaskManager = m_pPlayerPed->GetPedIntelligence ()->GetTaskManager ();
+        m_pTaskManager = m_pPlayerPed->GetPedIntelligence()->GetTaskManager();
 
         // Put our pointer in its stored pointer
-        m_pPlayerPed->SetStoredPointer ( this );
+        m_pPlayerPed->SetStoredPointer( this );
 
         // Add a reference to the model we're using
         m_pLoadedModelInfo = m_pModelInfo;
-        m_pLoadedModelInfo->AddRef ( true );
+        m_pLoadedModelInfo->AddRef( true );
 
         // Make sure we are CJ
-        if ( m_pPlayerPed->GetModelIndex () != m_ulModel )
-        {
-            m_pPlayerPed->SetModelIndex ( m_ulModel );
-        }
+        if ( m_pPlayerPed->GetModelIndex() != m_ulModel )
+            m_pPlayerPed->SetModelIndex( m_ulModel );
 
         // Give him the default fighting style
-        m_pPlayerPed->SetFightingStyle ( m_FightingStyle, 6 );
-        m_pPlayerPed->SetMoveAnim ( m_MoveAnim );
-        SetHasJetPack ( m_bHasJetPack );
+        m_pPlayerPed->SetFightingStyle( m_FightingStyle, 6 );
+        m_pPlayerPed->SetMoveAnim( m_MoveAnim );
+        SetHasJetPack( m_bHasJetPack );
 
         // Rebuild him so he gets his clothes
-        RebuildModel ();
+        RebuildModel();
 
         // Validate
-        m_pManager->RestoreEntity ( this );
+        m_pManager->RestoreEntity( this );
 
         // Tell the streamer we created the player
-        NotifyCreate ();
+        NotifyCreate();
     }
 }
 
-
-void CClientPed::_DestroyModel ()
+void CClientPed::_DestroyModel()
 {
     // Remove our linked contact entity
     if ( m_pCurrentContactEntity )
     {
-        m_pCurrentContactEntity->RemoveContact ( this );
+        m_pCurrentContactEntity->RemoveContact( this );
         m_pCurrentContactEntity = NULL;
     }
 
     // Remember the player position
-    m_pPlayerPed->GetPosition ( m_Matrix.pos );
+    m_pPlayerPed->GetPosition( m_Matrix.pos );
 
-    m_fCurrentRotation = m_pPlayerPed->GetCurrentRotation ();
-    m_pPlayerPed->GetMoveSpeed ( m_vecMoveSpeed );
-    m_pPlayerPed->GetTurnSpeed ( m_vecTurnSpeed );
-    m_bDucked = IsDucked ();
-    m_bWearingGoggles = IsWearingGoggles ();
-    m_pPlayerPed->SetOnFire ( false );
-    m_fLighting = m_pPlayerPed->GetLighting ();
+    m_fCurrentRotation = m_pPlayerPed->GetCurrentRotation();
+    m_pPlayerPed->GetMoveSpeed( m_vecMoveSpeed );
+    m_pPlayerPed->GetTurnSpeed( m_vecTurnSpeed );
+    m_bDucked = IsDucked();
+    m_bWearingGoggles = IsWearingGoggles();
+    m_pPlayerPed->SetOnFire( false );
+    m_fLighting = m_pPlayerPed->GetLighting();
 
     /* Eventually remove from vehicle
         MUST use internal-func, to save the the occupied-vehicle (streaming) */
-    CClientVehicle* pVehicle = GetRealOccupiedVehicle ();
+    CClientVehicle* pVehicle = GetRealOccupiedVehicle();
     if ( !pVehicle )
     {
-        pVehicle = GetOccupiedVehicle ();
+        pVehicle = GetOccupiedVehicle();
+
         if ( !pVehicle )
-        {
             pVehicle = m_pOccupyingVehicle;
-        }
     }
+
     if ( pVehicle )
     {
-        CVehicle* pGameVehicle = pVehicle->GetGameVehicle ();
+        CVehicle *pGameVehicle = pVehicle->GetGameVehicle();
+
         if ( pGameVehicle )
-        {
-            InternalRemoveFromVehicle ( pGameVehicle );
-        }
+            InternalRemoveFromVehicle( pGameVehicle );
     }
 
-    g_pMultiplayer->RemoveRemoteDataStorage ( m_pPlayerPed );
+    g_pMultiplayer->RemoveRemoteDataStorage( m_pPlayerPed );
 
     // Invalidate
-    m_pManager->InvalidateEntity ( this );
+    m_pManager->InvalidateEntity( this );
 
     // Remove the ped from the world
     delete m_pPlayerPed;
@@ -3191,33 +3182,32 @@ void CClientPed::_DestroyModel ()
     m_pTaskManager = NULL;
 
     // Remove the reference to its model
-    m_pLoadedModelInfo->RemoveRef ();
+    m_pLoadedModelInfo->RemoveRef();
     m_pLoadedModelInfo = NULL;
 
-    NotifyDestroy ();
+    NotifyDestroy();
 }
 
-
-void CClientPed::_DestroyLocalModel ()
+void CClientPed::_DestroyLocalModel()
 {
     /* Eventually remove from vehicle
         MUST use internal-func, to save the the occupied-vehicle (streaming) */
-    CClientVehicle* pVehicle = GetRealOccupiedVehicle ();
+    CClientVehicle* pVehicle = GetRealOccupiedVehicle();
+
     if ( !pVehicle )
     {
-        pVehicle = GetOccupiedVehicle ();
+        pVehicle = GetOccupiedVehicle();
+
         if ( !pVehicle )
-        {
             pVehicle = m_pOccupyingVehicle;
-        }
     }
+
     if ( pVehicle )
     {           
-        CVehicle* pGameVehicle = pVehicle->GetGameVehicle ();
+        CVehicle* pGameVehicle = pVehicle->GetGameVehicle();
+
         if ( pGameVehicle )
-        {
-            InternalRemoveFromVehicle ( pGameVehicle );
-        }
+            InternalRemoveFromVehicle( pGameVehicle );
 
         pVehicle->RemoveStreamReference ();
     }
@@ -3226,13 +3216,11 @@ void CClientPed::_DestroyLocalModel ()
     m_pManager->InvalidateEntity ( this );
 
     // Make sure we are CJ again
-    if ( m_pPlayerPed->GetModelIndex () != 0 )
-    {
-        m_pPlayerPed->SetModelIndex ( 0 );
-    }
+    if ( m_pPlayerPed->GetModelIndex() != 0 )
+        m_pPlayerPed->SetModelIndex( 0 );
 
     // Remove reference to our previous model
-    m_pLoadedModelInfo->RemoveRef ();
+    m_pLoadedModelInfo->RemoveRef();
     m_pLoadedModelInfo = NULL;
 
     // NULL our pointers, we don't destroy the local player
@@ -3240,14 +3228,13 @@ void CClientPed::_DestroyLocalModel ()
     m_pTaskManager = NULL;
 }
 
-
-void CClientPed::_ChangeModel ( void )
+void CClientPed::_ChangeModel()
 {
     // Different model than before?
-    if ( m_pPlayerPed->GetModelIndex () != m_ulModel )
+    if ( m_pPlayerPed->GetModelIndex() != m_ulModel )
     {
         // We need to reset visual stats when changing from CJ model
-        if ( m_pPlayerPed->GetModelIndex () == 0 )
+        if ( m_pPlayerPed->GetModelIndex() == 0 )
         {
             // Reset visual stats
             SetStat ( 21, 0.0f );
@@ -3260,14 +3247,15 @@ void CClientPed::_ChangeModel ( void )
             //       all the places that to context saving/restoring.
 
             // Save the vehicle he's in
-            CClientVehicle* pVehicle = GetOccupiedVehicle ();
-            unsigned int uiSeat = GetOccupiedVehicleSeat ();
+            CClientVehicle* pVehicle = GetOccupiedVehicle();
+            unsigned int uiSeat = GetOccupiedVehicleSeat();
 
             // Are we leaving it? Don't warp him back into anything
             if ( pVehicle )
             {
                 // Are we leaving it? Don't warp back into it.
-                if ( IsLeavingVehicle () ) pVehicle = NULL;
+                if ( IsLeavingVehicle() )
+                    pVehicle = NULL;
 
                 // Remove him from the vehicle
                 RemoveFromVehicle ();
@@ -3276,23 +3264,23 @@ void CClientPed::_ChangeModel ( void )
             m_pPlayerPed->GetFightingStyle ();
 
             // Takes care of clothes/task issues
-            Respawn ( NULL, true, false );
+            Respawn( NULL, true, false );
 
             // Remember the model we had loaded and store the new model we're going to load
             CModelInfo* pLoadedModel = m_pLoadedModelInfo;
             m_pLoadedModelInfo = m_pModelInfo;
 
             // Add reference to the model
-            m_pLoadedModelInfo->AddRef ( true );
+            m_pLoadedModelInfo->AddRef( true );
 
             // Set the new player model and restore the interior
-            m_pPlayerPed->SetModelIndex ( m_ulModel );
+            m_pPlayerPed->SetModelIndex( m_ulModel );
 
             // Rebuild the player after a skin change
             RebuildModel ();
 
             // Remove reference to the old model we used (Flag extra GTA reference to be removed as well)
-            pLoadedModel->RemoveRef ( true );
+            pLoadedModel->RemoveRef( true );
             pLoadedModel = NULL;
 
             // Warp into it again
@@ -3323,16 +3311,15 @@ void CClientPed::_ChangeModel ( void )
             // ChrML: Changing the skin in certain cases causes player sliding. So we recreate instead.
 
             // Kill the old player
-            _DestroyModel ();
+            _DestroyModel();
 
             // Create the new with the new skin
-            _CreateModel ();
+            _CreateModel();
         }
     }
 }
 
-
-void CClientPed::ReCreateModel ( void )
+void CClientPed::ReCreateModel()
 {
     // We can only recreate if we're not the local player and if we have a player model
     if ( !m_bIsLocalPlayer && m_pPlayerPed )
@@ -3341,7 +3328,7 @@ void CClientPed::ReCreateModel ( void )
         bool bSameModel = ( m_pLoadedModelInfo == m_pModelInfo );
         if ( bSameModel )
         {
-            m_pLoadedModelInfo->AddRef ( true );
+            m_pLoadedModelInfo->AddRef( true );
         }
 
         // Destroy the old model
@@ -3352,30 +3339,26 @@ void CClientPed::ReCreateModel ( void )
 
         // Remove the reference we temporarily added again
         if ( bSameModel )
-        {
-            m_pLoadedModelInfo->RemoveRef ();
-        }
+            m_pLoadedModelInfo->RemoveRef();
     }
 }
 
-
-void CClientPed::ModelRequestCallback ( CModelInfo* pModelInfo )
+void CClientPed::ModelRequestCallback( CModelInfo* pModelInfo )
 {
     // If we have a player loaded
     if ( m_pPlayerPed )
     {
         // Change its skin
-        _ChangeModel ();
+        _ChangeModel();
     }
     else
     {
         // If we don't have a player loaded, load it
-        _CreateModel ();
+        _CreateModel();
     }
 }
 
-
-void CClientPed::RebuildModel ( bool bForceClothes )
+void CClientPed::RebuildModel( bool bForceClothes )
 {
     // We have a player
     if ( m_pPlayerPed )
@@ -3387,92 +3370,83 @@ void CClientPed::RebuildModel ( bool bForceClothes )
             if ( g_pLastRebuilt != this || bForceClothes )
             {
                 // Adds only the neccesary textures
-                m_pClothes->AddAllToModel ();
+                m_pClothes->AddAllToModel();
 
                 g_pLastRebuilt = this;
             }
 
             if ( m_bIsLocalPlayer )
-            {
-                m_pPlayerPed->RebuildPlayer ();
-            }
+                m_pPlayerPed->RebuildPlayer();
             else
-            {
-                g_pMultiplayer->RebuildMultiplayerPlayer ( m_pPlayerPed );            
-            }
+                g_pMultiplayer->RebuildMultiplayerPlayer( m_pPlayerPed );            
         }
     }    
 }
 
-
-void CClientPed::StreamIn ( bool bInstantly )
+void CClientPed::StreamIn( bool bInstantly )
 {
     if ( m_bIsLocalPlayer )
     {
-        NotifyCreate ();
+        NotifyCreate();
         return;
     }
 
     // Request it
-    if ( !m_pPlayerPed && m_pRequester->Request ( static_cast < unsigned short > ( m_ulModel ), this ) )
+    if ( !m_pPlayerPed && m_pRequester->Request( m_ulModel, this ) )
     {
         // If it was loaded, create it immediately.
-        _CreateModel ();
+        _CreateModel();
     }
-    else NotifyUnableToCreate ();
+    else
+        NotifyUnableToCreate();
 }
 
-
-void CClientPed::StreamOut ( void )
+void CClientPed::StreamOut()
 {
     // Make sure we have a player ped and that we're not
     // the local player
     if ( m_pPlayerPed && !m_bIsLocalPlayer )
     {
         // Destroy us
-        _DestroyModel ();
+        _DestroyModel();
 
         // Make sure no model loading is pending. This would recreate
         // us very soon.
-        m_pRequester->Cancel ( this, true );
+        m_pRequester->Cancel( this, true );
     }
 }
 
-
-void CClientPed::InternalWarpIntoVehicle ( CVehicle* pGameVehicle )
+void CClientPed::InternalWarpIntoVehicle( CVehicle* pGameVehicle )
 {
     if ( m_pPlayerPed )
     {
         // Reset whatever task
-        m_pTaskManager->RemoveTask ( TASK_PRIORITY_PRIMARY );
+        m_pTaskManager->RemoveTask( TASK_PRIORITY_PRIMARY );
 
         // Create a task to warp the player in and execute it
-        CTaskSimpleCarSetPedInAsDriver* pInTask = g_pGame->GetTasks ()->CreateTaskSimpleCarSetPedInAsDriver ( pGameVehicle );
+        CTaskSimpleCarSetPedInAsDriver *pInTask = g_pGame->GetTasks()->CreateTaskSimpleCarSetPedInAsDriver( pGameVehicle );
         if ( pInTask )
         {
-            pInTask->SetIsWarpingPedIntoCar ();
-            pInTask->ProcessPed ( m_pPlayerPed );
+            pInTask->SetIsWarpingPedIntoCar();
+            pInTask->ProcessPed( m_pPlayerPed );
             delete pInTask;
         }        
 
         // If we're a remote player, make sure we can't fall off
         if ( !m_bIsLocalPlayer )
-        {
-            SetCanBeKnockedOffBike ( false );
-        }
+            SetCanBeKnockedOffBike( false );
     }
 }
-
 
 void CClientPed::InternalRemoveFromVehicle ( CVehicle* pGameVehicle )
 {
     if ( m_pPlayerPed && m_pTaskManager )
     {
         // Reset whatever task
-        m_pTaskManager->RemoveTask ( TASK_PRIORITY_PRIMARY );
+        m_pTaskManager->RemoveTask( TASK_PRIORITY_PRIMARY );
 
         // Create a task to warp the player in and execute it
-        CTaskSimpleCarSetPedOut* pOutTask = g_pGame->GetTasks ()->CreateTaskSimpleCarSetPedOut ( pGameVehicle, 1, false );
+        CTaskSimpleCarSetPedOut* pOutTask = g_pGame->GetTasks()->CreateTaskSimpleCarSetPedOut( pGameVehicle, 1, false );
         if ( pOutTask )
         {
             // May seem illogical, but it'll crash without this
@@ -3483,19 +3457,18 @@ void CClientPed::InternalRemoveFromVehicle ( CVehicle* pGameVehicle )
             delete pOutTask;
         }
 
-        m_pPlayerPed->GetPosition ( m_Matrix.pos );
+        m_pPlayerPed->GetPosition( m_Matrix.pos );
 
         // Local player?
         if ( m_bIsLocalPlayer )
         {
             // Turn off the radio
-            StopRadio ();
+            StopRadio();
         }
     }
 }
 
-
-bool CClientPed::PerformChecks ( void )
+bool CClientPed::PerformChecks()
 {
     // Must be streamed in
     if ( m_pPlayerPed )
@@ -3506,27 +3479,27 @@ bool CClientPed::PerformChecks ( void )
             // Is GTA's health/armor less than or equal to our health/armor?
             // The player should not be able to gain any health/armor without us knowing..
             // meaning all health/armor giving must go through SetHealth/SetArmor.
-            if ( ( m_fHealth > 0.0f && m_pPlayerPed->GetHealth () > m_fHealth + FLOAT_EPSILON ) ||
-                 ( m_fArmor < 100.0f && m_pPlayerPed->GetArmor () > m_fArmor + FLOAT_EPSILON ) )
+            if ( ( m_fHealth > 0.0f && m_pPlayerPed->GetHealth() > m_fHealth + FLOAT_EPSILON ) ||
+                 ( m_fArmor < 100.0f && m_pPlayerPed->GetArmor() > m_fArmor + FLOAT_EPSILON ) )
             {
-                g_pCore->GetConsole ()->Printf ( "healthCheck: %f %f", m_pPlayerPed->GetHealth (), m_fHealth );
-                g_pCore->GetConsole ()->Printf ( "armorCheck: %f %f", m_pPlayerPed->GetArmor (), m_fArmor );
+                g_pCore->GetConsole()->Printf( "healthCheck: %f %f", m_pPlayerPed->GetHealth(), m_fHealth );
+                g_pCore->GetConsole()->Printf( "armorCheck: %f %f", m_pPlayerPed->GetArmor(), m_fArmor );
                 return false;
             }
+
             //Perform the checks in CGame
-            if ( !g_pGame->PerformChecks() ) {
+            if ( !g_pGame->PerformChecks() )
+            {
                 return false;
             }
         }
     }
 
-
     // Player is not a cheater yet
     return true;
 }
 
-
-void CClientPed::StartRadio ( void )
+void CClientPed::StartRadio()
 {
     // We use this to avoid radio lags sometimes. Also make sure
     // it's not already on
@@ -3534,26 +3507,24 @@ void CClientPed::StartRadio ( void )
     {
         // Turn it on if we're not on channel none
         if ( m_ucRadioChannel != 0 )
-            g_pGame->GetAudio ()->StartRadio ( m_ucRadioChannel );
+            g_pGame->GetAudio()->StartRadio( m_ucRadioChannel );
 
         m_bRadioOn = true;
     }
 }
 
-
-void CClientPed::StopRadio ( void )
+void CClientPed::StopRadio()
 {
     // We use this to avoid radio lags sometimes
     if ( !m_bDontChangeRadio )
     {
         // Stop the radio and mark it as off
-        g_pGame->GetAudio ()->StopRadio ();
+        g_pGame->GetAudio()->StopRadio ();
         m_bRadioOn = false;
     }
 }
 
-
-void CClientPed::Duck ( bool bDuck )
+void CClientPed::Duck( bool bDuck )
 {
     if ( m_pPlayerPed )
     {
@@ -3565,39 +3536,37 @@ void CClientPed::Duck ( bool bDuck )
             {
                 // DUCK_TASK_CONTROLLED means we can move around while ducked, I think
                 pTaskDuck = g_pGame->GetTasks ()->CreateTaskSimpleDuck ( DUCK_TASK_CONTROLLED );
+
                 if ( pTaskDuck )
-                {
                     pTaskDuck->SetAsSecondaryPedTask ( m_pPlayerPed, TASK_SECONDARY_DUCK );
-                }
             }
         }
         else
         {
-            //Reset ducking
+            // Reset ducking
             m_ulLastTimeBeganCrouch = 0;
+
             // Jax: lets give this a whirl (it seems to cancel the task automatically)
-            m_pPlayerPed->SetDucking ( false );
+            m_pPlayerPed->SetDucking( false );
         }
     }
     m_bDucked = bDuck;
 }
 
-bool CClientPed::IsDucked ( void )
+bool CClientPed::IsDucked()
 {
     if ( m_pPlayerPed )
     {
-        CTask * pTaskDuck = m_pTaskManager->GetTaskSecondary ( TASK_SECONDARY_DUCK );
+        CTask *pTaskDuck = m_pTaskManager->GetTaskSecondary( TASK_SECONDARY_DUCK );
+
         if ( pTaskDuck )
-        {
             return true;
-        }
     }
     
     return m_bDucked;
 }
 
-
-void CClientPed::SetChoking ( bool bChoking )
+void CClientPed::SetChoking( bool bChoking )
 {
     // Remember the choking state
     m_bIsChoking = bChoking;
@@ -3631,8 +3600,7 @@ void CClientPed::SetChoking ( bool bChoking )
     }
 }
 
-
-bool CClientPed::IsChoking ( void )
+bool CClientPed::IsChoking()
 {
     // We have a task manager?
     if ( m_pTaskManager )
@@ -3648,39 +3616,36 @@ bool CClientPed::IsChoking ( void )
     }
 }
 
-
 void CClientPed::SetWearingGoggles ( bool bWearing )
 {
     if ( m_pPlayerPed )
     {
-        if ( bWearing != IsWearingGoggles () )
+        if ( bWearing != IsWearingGoggles() )
         {
             // Make him wear goggles
-            m_pPlayerPed->SetGogglesState ( bWearing );
+            m_pPlayerPed->SetGogglesState( bWearing );
         }
     }
     m_bWearingGoggles = bWearing;
 }
 
-
-bool CClientPed::IsWearingGoggles ( bool bCheckMoving )
+bool CClientPed::IsWearingGoggles( bool bCheckMoving )
 {
     if ( m_pPlayerPed )
     {
         if ( bCheckMoving )
         {
             bool bPuttingOn;
-            if ( IsMovingGoggles ( bPuttingOn ) )
+            if ( IsMovingGoggles( bPuttingOn ) )
                 return bPuttingOn;
         }
 
-        return m_pPlayerPed->IsWearingGoggles ();
+        return m_pPlayerPed->IsWearingGoggles();
     }
     return m_bWearingGoggles;
 }
 
-
-bool CClientPed::IsMovingGoggles ( bool& bPuttingOn )
+bool CClientPed::IsMovingGoggles( bool& bPuttingOn )
 {
     if ( m_pPlayerPed )
     {
@@ -3705,7 +3670,6 @@ bool CClientPed::IsMovingGoggles ( bool& bPuttingOn )
     }
     return false;
 }
-
 
 void CClientPed::_GetIntoVehicle ( CClientVehicle* pVehicle, unsigned int uiSeat, unsigned char ucDoor )
 {
@@ -3791,7 +3755,6 @@ void CClientPed::_GetIntoVehicle ( CClientVehicle* pVehicle, unsigned int uiSeat
     }
 }
 
-
 bool CClientPed::SetHasJetPack ( bool bHasJetPack )
 {
     if ( m_pPlayerPed )
@@ -3853,61 +3816,53 @@ bool CClientPed::SetHasJetPack ( bool bHasJetPack )
     return true;
 }
 
-
-bool CClientPed::HasJetPack ( void )
+bool CClientPed::HasJetPack()
 {
     if ( m_pPlayerPed )
     {
-        CTask * pPrimaryTask = m_pTaskManager->GetSimplestActiveTask ( );
-        if ( pPrimaryTask && pPrimaryTask->GetTaskType() == TASK_SIMPLE_JETPACK )
-        {
-            return true;
-        }
-        return false;
+        CTask *pPrimaryTask = m_pTaskManager->GetSimplestActiveTask();
+
+        return pPrimaryTask && pPrimaryTask->GetTaskType() == TASK_SIMPLE_JETPACK;
     }
     return m_bHasJetPack;
 }
 
-
-bool CClientPed::IsInWater ( void )
+bool CClientPed::IsInWater()
 {
     if ( m_pPlayerPed )
     {
-        CTask * pTask = m_pTaskManager->GetTask ( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
+        CTask *pTask = m_pTaskManager->GetTask( TASK_PRIORITY_EVENT_RESPONSE_NONTEMP );
+
         if ( pTask )
         {
             if ( pTask->GetTaskType () == TASK_COMPLEX_IN_WATER )
-            {
                 return true;
-            }
         }
     }
     return false;
 }
 
-
-float CClientPed::GetDistanceFromGround ( void )
+float CClientPed::GetDistanceFromGround()
 {
-    CVector vecPosition;
-    GetPosition ( vecPosition );
-    float fGroundLevel = static_cast < float > (
-        g_pGame->GetWorld ()->FindGroundZFor3DPosition ( &vecPosition ) );
+    CVector pos;
+    GetPosition( pos );
 
-    return ( vecPosition.fZ - fGroundLevel );
+    float fGroundLevel = g_pGame->GetWorld()->FindGroundZFor3DPosition( &pos );
+
+    return pos.fZ - fGroundLevel;
 }
 
-
-bool CClientPed::IsOnGround ( void )
+bool CClientPed::IsOnGround()
 {
-    CVector vecPosition;
-    GetPosition ( vecPosition );
-    float fGroundLevel = static_cast < float > (
-        g_pGame->GetWorld ()->FindGroundZFor3DPosition ( &vecPosition ) );
-    return ( vecPosition.fZ > fGroundLevel && ( vecPosition.fZ - fGroundLevel ) <= 1.0f );
+    CVector pos;
+    GetPosition( pos );
+
+    float fGroundLevel = g_pGame->GetWorld()->FindGroundZFor3DPosition( &pos );
+
+    return ( pos.fZ > fGroundLevel && ( pos.fZ - fGroundLevel ) <= 1.0f );
 }
 
-
-bool CClientPed::IsClimbing ( void )
+bool CClientPed::IsClimbing()
 {
     if ( m_pPlayerPed )
     {
@@ -3920,33 +3875,26 @@ bool CClientPed::IsClimbing ( void )
     return false;
 }
 
-
-void CClientPed::NextRadioChannel ( void )
+void CClientPed::NextRadioChannel()
 {
     // Is our radio on?
     if ( m_bRadioOn )
-    {
-        SetCurrentRadioChannel ( ( m_ucRadioChannel + 1 ) % 13 );
-    }
+        SetCurrentRadioChannel( (m_ucRadioChannel + 1) % 13 );
 }
 
-
-void CClientPed::PreviousRadioChannel ( void )
+void CClientPed::PreviousRadioChannel()
 {
     // Is our radio on?
     if ( m_bRadioOn )
     {
         if ( m_ucRadioChannel == 0 )
-        {
             m_ucRadioChannel = 13;
-        }
 
-        SetCurrentRadioChannel ( m_ucRadioChannel - 1 );
+        SetCurrentRadioChannel( m_ucRadioChannel - 1 );
     }
 }
 
-
-bool CClientPed::SetCurrentRadioChannel ( unsigned char ucChannel )
+bool CClientPed::SetCurrentRadioChannel( unsigned char ucChannel )
 {
     // Local player?
     if ( m_bIsLocalPlayer && ucChannel >= 0 && ucChannel <= 12 )
@@ -3967,19 +3915,20 @@ bool CClientPed::SetCurrentRadioChannel ( unsigned char ucChannel )
 
         m_ucRadioChannel = ucChannel;
 
-        g_pGame->GetAudio ()->StartRadio ( m_ucRadioChannel );
+        g_pGame->GetAudio()->StartRadio( m_ucRadioChannel );
+
         if ( m_ucRadioChannel == 0 )
-            g_pGame->GetAudio ()->StopRadio ();
+            g_pGame->GetAudio()->StopRadio();
 
         return true;
     }
     return false;
 }
 
-
-bool CClientPed::GetShotData ( CVector * pvecOrigin, CVector * pvecTarget, CVector * pvecGunMuzzle, CVector * pvecFireOffset, float* fAimX, float* fAimY )
+bool CClientPed::GetShotData( CVector * pvecOrigin, CVector * pvecTarget, CVector * pvecGunMuzzle, CVector * pvecFireOffset, float* fAimX, float* fAimY )
 {
-    CWeapon* pWeapon = GetWeapon ( GetCurrentWeaponSlot () );
+    CWeapon *pWeapon = GetWeapon( GetCurrentWeaponSlot() );
+
     if ( !pWeapon )
         return false;
 
@@ -4079,80 +4028,70 @@ bool CClientPed::GetShotData ( CVector * pvecOrigin, CVector * pvecTarget, CVect
     if ( pvecGunMuzzle ) *pvecGunMuzzle = vecGunMuzzle;    
     if ( fAimX ) *fAimX = m_shotSyncData->m_fArmDirectionX;
     if ( fAimY ) *fAimY = m_shotSyncData->m_fArmDirectionY;
+
     return true;
 }
 
-
-eFightingStyle CClientPed::GetFightingStyle ( void )
+eFightingStyle CClientPed::GetFightingStyle()
 {
     if ( m_pPlayerPed )
-    {
-        return m_pPlayerPed->GetFightingStyle ();
-    }
+        return m_pPlayerPed->GetFightingStyle();
+
     return m_FightingStyle;
 }
 
-
-void CClientPed::SetFightingStyle ( eFightingStyle style )
+void CClientPed::SetFightingStyle( eFightingStyle style )
 {
     if ( m_pPlayerPed )
-    {
-        m_pPlayerPed->SetFightingStyle ( style, 6 );
-    }
+        m_pPlayerPed->SetFightingStyle( style, 6 );
+
     m_FightingStyle = style;
 }
 
-
-eMoveAnim CClientPed::GetMoveAnim ( void )
+eMoveAnim CClientPed::GetMoveAnim()
 {
     if ( m_pPlayerPed )
-    {
-        return m_pPlayerPed->GetMoveAnim ();
-    }
+        return m_pPlayerPed->GetMoveAnim();
+
     return m_MoveAnim;
 }
-
 
 void CClientPed::SetMoveAnim ( eMoveAnim iAnim )
 {
     if ( m_pPlayerPed )
-    {
         m_pPlayerPed->SetMoveAnim ( iAnim );
-    }
+
     m_MoveAnim = iAnim;
 }
 
 unsigned int CClientPed::CountProjectiles ( eWeaponType weaponType )
 {
     if ( weaponType == WEAPONTYPE_UNARMED )
-        return static_cast < unsigned int > ( m_Projectiles.size () );
+        return m_Projectiles.size();
 
     unsigned int uiCount = 0;
-    list < CClientProjectile* > ::iterator iter = m_Projectiles.begin ();
-    for ( ; iter != m_Projectiles.end () ; iter++ )
+    projectileList_t::iterator iter = m_Projectiles.begin();
+
+    for ( ; iter != m_Projectiles.end(); iter++ )
     {
-        if ( (*iter)->GetWeaponType () == weaponType )
-        {
+        if ( (*iter)->GetWeaponType() == weaponType )
             uiCount++;
-        }
     }
+
     return uiCount;
 }
 
-
-void CClientPed::RemoveAllProjectiles ( void )
+void CClientPed::RemoveAllProjectiles()
 {
-    CClientProjectile * pProjectile = NULL;
-    list < CClientProjectile* > ::iterator iter = m_Projectiles.begin ();
-    for ( ; iter != m_Projectiles.end () ; iter++ )
-    {
-        pProjectile = *iter;
-        pProjectile->m_pCreator = NULL;
-        g_pClientGame->GetElementDeleter ()->Delete ( pProjectile );        
-    }
-    m_Projectiles.clear ();
-}
+    projectileList_t::iterator iter = m_Projectiles.begin();
 
+    for ( ; iter != m_Projectiles.end(); iter++ )
+    {
+        (*iter)->m_pCreator = NULL;
+        (*iter)->Delete();  
+    }
+    m_Projectiles.clear();
+}
 
 void CClientPed::DestroySatchelCharges ( bool bBlow, bool bDestroy )
 {

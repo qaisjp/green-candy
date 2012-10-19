@@ -410,10 +410,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\logic\CElementDeleter.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\logic\CElementGroup.cpp"
 					>
 				</File>
@@ -1941,10 +1937,6 @@
 				</File>
 				<File
 					RelativePath=".\logic\CDownloadableResource.h"
-					>
-				</File>
-				<File
-					RelativePath=".\logic\CElementDeleter.h"
 					>
 				</File>
 				<File

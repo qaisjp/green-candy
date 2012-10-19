@@ -573,7 +573,7 @@ inline static CPlayerPedSAInterface* CreatePlayerPed()
     _asm
     {
         mov     ecx, player
-        push    0 // set to 0 and they'll behave like AI peds
+        push    1 // set to 0 and they'll behave like AI peds
         push    1
         call    CPlayerPedConstructor
     }

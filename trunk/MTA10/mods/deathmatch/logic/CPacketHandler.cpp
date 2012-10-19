@@ -2547,8 +2547,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                 pEntity->SetID ( INVALID_ELEMENT_ID );
 
                 // Clean up the overridden entity nicely
-                g_pClientGame->m_ElementDeleter.Delete ( pEntity );
-                pEntity = NULL;
+                pEntity->Delete();
 
                 // And set the CElementArray entry to NULL as like it never existed
                 CElementIDs::SetElement ( EntityID, NULL );

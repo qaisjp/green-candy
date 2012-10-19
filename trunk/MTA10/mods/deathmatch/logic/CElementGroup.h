@@ -16,7 +16,6 @@ class CElementGroup;
 #ifndef CELEMENTGROUP_H
 #define CELEMENTGROUP_H
 
-#include <list>
 #include "../../shared_logic/CClientEntity.h"
 
 class CElementGroup

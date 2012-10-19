@@ -69,9 +69,14 @@ inline static type* lua_readclass( lua_State *L, int idx, int transmit )
     if ( lua_type( L, idx ) != LUA_TCLASS )
         return NULL;
 
+    ILuaClass& j = *lua_refclass( L, idx );
+
+    if ( j.IsDestroyed() )
+        return NULL;
+
     type *ptr;
 
-    if ( !lua_refclass( L, idx )->GetTransmit( transmit, (void*&)ptr ) )
+    if ( !j.GetTransmit( transmit, (void*&)ptr ) )
         return NULL;
 
     return ptr;
@@ -276,35 +281,57 @@ public:
     template <class T>
     bool ReadClass( T*& outValue, unsigned int transmit )
     {
-        if ( lua_type( m_luaVM, m_iIndex ) != LUA_TCLASS || !lua_refclass( m_luaVM, m_iIndex )->GetTransmit( transmit, (void*&)outValue ) )
-        {
-            outValue = NULL;
-            SetTypeError( lua_gettransmittype( transmit ) );
-            m_iIndex++;
-            return false;
-        }
+        if ( lua_type( m_luaVM, m_iIndex ) != LUA_TCLASS )
+            goto fail;
+
+        ILuaClass& j = *lua_refclass( m_luaVM, m_iIndex );
+
+        if ( j.IsDestroyed() || !j.GetTransmit( transmit, (void*&)outValue ) )
+            goto fail;
 
         m_iIndex++;
         return true;
+
+fail:
+        outValue = NULL;
+        SetTypeError( lua_gettransmittype( transmit ) );
+        m_iIndex++;
+        return false;
     }
 
     // Read MTA:Lua type while accepting default
     template <class T>
     void ReadClass( T*& outValue, unsigned int transmit, T *def )
     {
-        if ( lua_type( m_luaVM, m_iIndex ) != LUA_TCLASS || !lua_refclass( m_luaVM, m_iIndex )->GetTransmit( transmit, (void*&)outValue ) )
-            outValue = def;
+        if ( lua_type( m_luaVM, m_iIndex ) != LUA_TCLASS )
+            goto pass;
 
+        ILuaClass& j = *lua_refclass( m_luaVM, m_iIndex );
+
+        if ( j.IsDestroyed() || !j.GetTransmit( transmit, (void*&)outValue ) )
+            goto pass;
+
+        return;
+pass:
+        outValue = def;
         m_iIndex++;
     }
 
-        // Read MTA:Lua type while accepting default
+    // Read MTA:Lua type while accepting default
     template <class T>
     void ReadClass( T*& outValue, unsigned int transmit, int )
     {
-        if ( lua_type( m_luaVM, m_iIndex ) != LUA_TCLASS || !lua_refclass( m_luaVM, m_iIndex )->GetTransmit( transmit, (void*&)outValue ) )
-            outValue = NULL;
+        if ( lua_type( m_luaVM, m_iIndex ) != LUA_TCLASS )
+            goto pass;
 
+        ILuaClass& j = *lua_refclass( m_luaVM, m_iIndex );
+
+        if ( j.IsDestroyed() || !j.GetTransmit( transmit, (void*&)outValue ) )
+            goto pass;
+
+        return;
+pass:
+        outValue = NULL;
         m_iIndex++;
     }
 

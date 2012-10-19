@@ -39,9 +39,7 @@ public:
     bool                    Call( lua_State *callee, unsigned int argCount, const char *name, class CClientEntity *source );
 
 private:
-    typedef std::list <CMapEvent*> events_t;
-
-    events_t                    m_Events;
+    RwList <CMapEvent>          m_list;
     CClientEntity*              m_owner;
 };
 
