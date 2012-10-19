@@ -46,6 +46,9 @@ static inline ILuaClass& lua_classobtain( lua_State *L, int idx, int ctype )
     if ( !j->IsTransmit( ctype ) )
         throw lua_exception( L, LUA_ERRRUN, SString( "expected class type '%s'", lua_getclassdesc( ctype ) ) );
 
+    if ( j->IsDestroyed() )
+        throw lua_exception( L, LUA_ERRRUN, "attempted to obtain destroyed class" );
+
     return *j;
 }
 

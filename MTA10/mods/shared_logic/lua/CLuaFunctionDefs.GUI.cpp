@@ -586,7 +586,7 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors () )
         {
-            CClientGUIElement* pTab = CStaticFunctionDefinitions::GUIGetSelectedTab ( *tabPanel );
+            CClientGUIElement *pTab = CStaticFunctionDefinitions::GUIGetSelectedTab ( *tabPanel );
             pTab->PushStack( L );
             return 1;
         }
@@ -626,25 +626,20 @@ namespace CLuaFunctionDefs
     //  bool guiDeleteTab ( element tabToDelete, element tabPanel )
         CClientGUIElement* tabToDelete; CClientGUIElement* tabPanel;
 
-        CScriptArgReader argStream ( L );
+        CScriptArgReader argStream( L );
         argStream.ReadClass( tabToDelete, LUACLASS_GUITAB );
         argStream.ReadClass( tabPanel, LUACLASS_GUITABPANEL );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            CLuaMain* pLuaMain = lua_readcontext( L );
-
-            if ( CStaticFunctionDefinitions::GUIDeleteTab ( *pLuaMain, tabToDelete, tabPanel ) )
-            {
-                lua_pushboolean ( L, true );
-                return 1;
-            }
+            lua_pushboolean( L, CStaticFunctionDefinitions::GUIDeleteTab( *lua_readcontext( L ), tabToDelete, tabPanel ) );
+            return 1;
         }
         else
-            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "guiDeleteTab", *argStream.GetErrorMessage () ) );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '%s' [%s]", "guiDeleteTab", *argStream.GetErrorMessage() ) );
 
         // error: bad arguments
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 

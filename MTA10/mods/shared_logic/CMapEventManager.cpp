@@ -21,12 +21,14 @@
 CMapEventManager::CMapEventManager( CClientEntity *owner )
 {
     m_owner = owner;
+
+    LIST_CLEAR( m_list.root );
 }
 
 CMapEventManager::~CMapEventManager()
 {
     // Delete all eventhandlers
-    DeleteAll ();
+    DeleteAll();
 }
 
 bool CMapEventManager::Add( CLuaMain *main, const char *name, const LuaFunctionRef& ref, bool propagated )
@@ -39,7 +41,7 @@ bool CMapEventManager::Add( CLuaMain *main, const char *name, const LuaFunctionR
     CMapEvent *pEvent = new CMapEvent( main, *this, name, ref, propagated );
     pEvent->SetRoot( main->GetResource() );
 
-    m_Events.push_back( pEvent );
+    LIST_APPEND( m_list.root, pEvent->m_node );
     return true;
 }
 
@@ -48,11 +50,11 @@ bool CMapEventManager::Delete( CLuaMain *main, const char *name, const LuaFuncti
     luaRefs refs;
 
     bool bRemovedSomeone = false;
-    events_t::iterator iter = m_Events.begin();
+    RwListEntry <CMapEvent> *iter = m_list.root.next;
 
-    for ( ; iter != m_Events.end(); iter++ )
+    for ( ; iter != &m_list.root; iter = iter->next )
     {
-        CMapEvent *pMapEvent = *iter;
+        CMapEvent *pMapEvent = LIST_GETITEM( CMapEvent, iter, m_node );
 
         if ( main != pMapEvent->GetVM() )
             continue;
@@ -81,26 +83,20 @@ void CMapEventManager::DeleteAll()
     luaRefs refs;
 
     // Delete all the events
-    events_t::iterator iter = m_Events.begin();
-    
-    for ( ; iter != m_Events.end(); iter++ )
-    {
-        (*iter)->Reference( refs );
-        (*iter)->Delete();
-    }
+    LIST_FOREACH_BEGIN( CMapEvent, m_list.root, m_node )
+        item->Reference( refs );
+        item->Delete();
+    LIST_FOREACH_END
 }
 
 CMapEvent* CMapEventManager::Get( const char *name )
 {
     // Return it if we find it in the list
-    events_t::const_iterator iter = m_Events.begin();
-
-    for ( ; iter != m_Events.end(); iter++ )
-    {
+    LIST_FOREACH_BEGIN( CMapEvent, m_list.root, m_node )
         // Compare the names
-        if ( strcmp( (*iter)->GetName(), name ) == 0 )
-            return *iter;
-    }
+        if ( strcmp( item->GetName(), name ) == 0 )
+            return item;
+    LIST_FOREACH_END
 
     return NULL;
 }
@@ -111,20 +107,16 @@ bool CMapEventManager::Call( lua_State *callee, unsigned int argCount, const cha
 
     // Call all the events with matching names
     bool bCalled = false;
-    events_t::const_iterator iter = m_Events.begin();
 
-    for ( ; iter != m_Events.end(); iter++ )
-    {
-        CMapEvent *pMapEvent = *iter;
-
+    LIST_FOREACH_BEGIN( CMapEvent, m_list.root, m_node )
         // Compare the names
-        if ( strcmp( pMapEvent->GetName(), name ) == 0 )
+        if ( strcmp( item->GetName(), name ) == 0 )
         {
             // Call if propagated?
-            if ( source == m_owner || pMapEvent->IsPropagated() )
+            if ( source == m_owner || item->IsPropagated() )
             {
                 // Grab the event's executive environment
-                CLuaMain *main = pMapEvent->GetVM();
+                CLuaMain *main = item->GetVM();
                 lua_State *L = **main;
                 int top = lua_gettop( L );
 
@@ -148,10 +140,10 @@ bool CMapEventManager::Call( lua_State *callee, unsigned int argCount, const cha
                 lua_pushstring( L, name );                                                          lua_setglobal( L, "eventName" );
 
                 // Reference it to prevent destruction
-                pMapEvent->Reference( refs );
+                item->Reference( refs );
 
                 // Get it's function
-                main->PushReference( pMapEvent->m_funcRef );
+                main->PushReference( item->m_funcRef );
 
                 // Grab the arguments
                 if ( callee != L )
@@ -183,7 +175,7 @@ bool CMapEventManager::Call( lua_State *callee, unsigned int argCount, const cha
                 CClientPerfStatLuaTiming::GetSingleton()->UpdateLuaTiming( main, name, GetTimeUs() - startTime );
             }
         }
-    }
+    LIST_FOREACH_END
 
     // Return whether we called atleast one func or not
     return bCalled;

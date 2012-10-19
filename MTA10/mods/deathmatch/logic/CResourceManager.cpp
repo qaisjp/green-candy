@@ -60,6 +60,7 @@ CResource* CResourceManager::Add( unsigned short id, const char *name, CClientEn
 
     CResource *res = new CResource( id, name, *root, resEntity, dynamicEntity );
 
+    m_resByName[name] = res;
     m_resources.push_back( res );
     return res;
 }

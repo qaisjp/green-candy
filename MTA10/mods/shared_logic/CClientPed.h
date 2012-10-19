@@ -536,7 +536,7 @@ public:
     CClientPlayerClothes*       m_pClothes;
     eFightingStyle              m_FightingStyle;
     eMoveAnim                   m_MoveAnim;
-    std::list <CClientProjectile*>  m_Projectiles;
+    projectileList_t            m_Projectiles;
     unsigned char               m_ucAlpha;
     float                       m_fTargetRotation;
     int                         m_iVehicleInOutState;

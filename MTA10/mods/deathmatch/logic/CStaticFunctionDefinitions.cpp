@@ -4028,16 +4028,14 @@ bool CStaticFunctionDefinitions::GUISetSelectedTab ( CClientEntity& Element, CCl
     return false;
 }
 
-
-bool CStaticFunctionDefinitions::GUIDeleteTab ( CLuaMain& LuaMain, CClientGUIElement* pTab, CClientGUIElement* pParent )
+bool CStaticFunctionDefinitions::GUIDeleteTab( CLuaMain& LuaMain, CClientGUIElement* pTab, CClientGUIElement* pParent )
 {
     if ( !pParent || !pTab )
         return false;
 
-    CGUIElement *pGUIParent = pParent->GetCGUIElement ();
-    static_cast < CGUITabPanel* > ( pGUIParent ) ->DeleteTab ( reinterpret_cast < CGUITab* > ( pTab->GetCGUIElement() ) );
-    g_pClientGame->GetElementDeleter ()->Delete ( pTab );
+    ((CGUITabPanel*)pParent->GetCGUIElement())->DeleteTab( (CGUITab*)pTab->GetCGUIElement() );
 
+    pTab->Delete();
     return true;
 }
 
@@ -4048,7 +4046,6 @@ CClientGUIElement* CStaticFunctionDefinitions::GUICreateComboBox ( CLuaMain& Lua
     pElement->SetSize ( CVector2D ( fWidth, fHeight ), bRelative );
     
     // Disable editing of the box...
-    //CClientGUIElement& GUIElement = static_cast < CClientGUIElement& > ( pElement );
     static_cast < CGUIComboBox* > ( pElement ) -> SetReadOnly ( true );
 
     // register to the gui manager
