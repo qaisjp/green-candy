@@ -5321,8 +5321,13 @@ bool CStaticFunctionDefinitions::BindKey( const char *key, const char *hitState,
 
     CKeyBindsInterface *pKeyBinds = g_pCore->GetKeyBinds();
 
-    const SBindableKey *pKey = pKeyBinds->GetBindableFromKey( key );
-    SBindableGTAControl *pControl;
+    union
+    {
+        const SBindableKey *pKey;
+        SBindableGTAControl *pControl;
+    };
+
+    pKey = pKeyBinds->GetBindableFromKey( key );
 
     // Bind on deathmatch
     if ( pKey )
@@ -5338,15 +5343,21 @@ bool CStaticFunctionDefinitions::BindKey( const char *key, const char *hitState,
     // Bind on core
     if ( bindType == STATE_DOWN || bindType == STATE_BOTH )
     {
-        if ( pKey && !pKeyBinds->FunctionExists( pKey, CClientGame::StaticProcessClientKeyBind, true, true ) )
-            pKeyBinds->AddFunction( pKey, CClientGame::StaticProcessClientKeyBind, true, false );
+        if ( pKey )
+        {
+            if ( !pKeyBinds->FunctionExists( pKey, CClientGame::StaticProcessClientKeyBind, true, true ) )
+                pKeyBinds->AddFunction( pKey, CClientGame::StaticProcessClientKeyBind, true, false );
+        }
         else if ( !pKeyBinds->ControlFunctionExists( pControl, CClientGame::StaticProcessClientControlBind, true, true ) )
             pKeyBinds->AddControlFunction( pControl, CClientGame::StaticProcessClientControlBind, true );
     }
     if ( bindType == STATE_UP || bindType == STATE_BOTH )
     {
-        if ( pKey && !pKeyBinds->FunctionExists( pKey, CClientGame::StaticProcessClientKeyBind, true, false ) )
-            pKeyBinds->AddFunction( pKey, CClientGame::StaticProcessClientKeyBind, false, false );
+        if ( pKey )
+        {
+            if ( !pKeyBinds->FunctionExists( pKey, CClientGame::StaticProcessClientKeyBind, true, false ) )
+                pKeyBinds->AddFunction( pKey, CClientGame::StaticProcessClientKeyBind, false, false );
+        }
         else if ( !pKeyBinds->ControlFunctionExists( pControl, CClientGame::StaticProcessClientControlBind, true, false ) )
             pKeyBinds->AddControlFunction( pControl, CClientGame::StaticProcessClientControlBind, false );
     }

@@ -28,10 +28,15 @@ LuaMain::~LuaMain()
     // TODO: Think about removing LuaMain out of the hyperstructure management!
 }
 
-// Custom Lua 'stack argument'->'reference' routine
 LuaFunctionRef LuaMain::CreateReference( int stack )
 {
-    const void *ptr = lua_topointer( m_lua, stack );
+    return CreateReference( m_lua, stack );
+}
+
+// Custom Lua 'stack argument'->'reference' routine
+LuaFunctionRef LuaMain::CreateReference( lua_State *L, int stack )
+{
+    const void *ptr = lua_topointer( L, stack );
     CRefInfo *e_info;
 
     if ( !m_refStore.empty() && ( e_info = MapFind( m_refStore, ptr ) ) )
@@ -42,8 +47,8 @@ LuaFunctionRef LuaMain::CreateReference( int stack )
     }
 
     // Get a lua ref
-    lua_pushvalue( m_lua, stack );
-    int ref = luaL_ref( m_lua, LUA_REGISTRYINDEX );
+    lua_pushvalue( L, stack );
+    int ref = luaL_ref( L, LUA_REGISTRYINDEX );
 
     // Save ref info
     CRefInfo info;

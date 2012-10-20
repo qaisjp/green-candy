@@ -214,6 +214,9 @@ void Class::SetTransmit( int type, void *entity )
 
 bool Class::GetTransmit( int type, void*& entity )
 {
+    if ( destroyed )
+        return false;
+   
     transMap_t::iterator iter = trans.find( type );
 
     if ( iter == trans.end() )
@@ -631,6 +634,8 @@ static int childapi_destroy( lua_State *L )
 
     parent.children.erase( std::remove( parent.children.begin(), parent.children.end(), &child ) );
 
+    // We do not have to remove the childAPI from internStorage. Shall we?
+
     // Tell this event to any possible registree
     // We use a seperate function so we can post this message after unlinking from
     // the parent's children!
@@ -660,6 +665,8 @@ static int childapi_constructor( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     lua_pushvalue( L, lua_upvalueindex( 2 ) );
     luaL_openlib( L, NULL, childapi_interface, 2 );
+
+    luaJ_basicextend( L );
     return 0;
 }
 
@@ -739,6 +746,11 @@ static int classmethod_setParent( lua_State *L )
     j.parent = &c;
     j.childAPI = jvalue( L->top - 1 );
     j.childAPI->IncrementMethodStack( L );
+
+    // Allow internal storage access to it
+    TValue *stm = luaH_setstr( L, j.internStorage, luaS_new( L, "childAPI" ) );
+    setjvalue( L, stm, j.childAPI );
+    luaC_objbarriert( L, j.internStorage, j.childAPI );
 
     setobj( L, L->top++, luaH_getstr( c.internStorage, luaS_new( L, "setChild" ) ) );
     setjvalue( L, L->top++, &j );

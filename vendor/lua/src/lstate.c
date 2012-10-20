@@ -82,7 +82,6 @@ static inline void preinit_state (lua_State *L, global_State *g)
     G(L) = g;
     L->stack = NULL;
     L->stacksize = 0;
-    L->errorJmp = NULL;
     L->hook = NULL;
     L->hookmask = 0;
     L->basehookcount = 0;
@@ -345,7 +344,9 @@ LUAI_FUNC lua_State *lua_newstate (lua_Alloc f, void *ud)
     for ( i=0; i<NUM_TAGS; i++ )
         L->mt[i] = NULL;
 
-    if ( luaD_rawrunprotected( L, f_luaopen, NULL ) != 0 )
+    std::string errMsg;
+
+    if ( luaD_rawrunprotected( L, f_luaopen, NULL, errMsg, NULL ) != 0 )
     {
         /* memory allocation error: free partial state */
         close_state(L);
@@ -371,12 +372,14 @@ LUA_API void lua_close (lua_State *L)
     luaC_separatefinalization(L, 1);  /* separate udata that have GC metamethods */
     L->errfunc = 0;  /* no error function during GC metamethods */
 
+    std::string errMsg;
+
     do
     {  /* repeat until no more errors */
         L->ci = L->base_ci;
         L->base = L->top = L->ci->base;
         L->nCcalls = 0;
-    } while (luaD_rawrunprotected(L, callallgcTM, NULL) != 0);
+    } while (luaD_rawrunprotected(L, callallgcTM, NULL, errMsg, NULL) != 0);
 
     lua_assert(G(L)->tmudata == NULL);
     luai_userstateclose(L);

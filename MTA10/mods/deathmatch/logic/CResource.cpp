@@ -136,6 +136,9 @@ CResource::~CResource()
         delete *iterex;
 
     delete m_privateRoot;
+
+    // Remove ourselves
+    g_pClientGame->GetResourceManager()->Remove( this );
 }
 
 CDownloadableResource* CResource::QueueFile ( CDownloadableResource::eResourceType resourceType, const char *szFileName, CChecksum serverChecksum )

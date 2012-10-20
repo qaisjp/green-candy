@@ -48,10 +48,11 @@ namespace CLuaFunctionDefs
             lua_getglobal( targetL, "sourceResourceRoot" );
 
             // Set globals
-            pThisResource->PushStack( L );                              lua_setglobal( targetL, "sourceResource" );
-            pThisResource->GetResourceEntity()->PushStack( L );         lua_setglobal( targetL, "sourceResourceRoot" );
+            pThisResource->PushStack( targetL );                            lua_setglobal( targetL, "sourceResource" );
+            pThisResource->GetResourceEntity()->PushStack( targetL );       lua_setglobal( targetL, "sourceResourceRoot" );
 
             int top = lua_gettop( targetL );
+            int rcount;
 
             // Call the exported function with the given name and the args
             bool rslt;
@@ -61,11 +62,11 @@ namespace CLuaFunctionDefs
             {
                 if ( (*iter)->GetFunctionName() == name )
                 {
-                    lua_getfield( L, LUA_GLOBALSINDEX, name.c_str() );
+                    lua_getfield( targetL, LUA_GLOBALSINDEX, name.c_str() );
 
-                    if ( lua_type( L, -1 ) == LUA_TNIL )
+                    if ( lua_type( targetL, -1 ) == LUA_TNIL )
                     {
-                        lua_pop( L, 1 );
+                        lua_pop( targetL, 1 );
                         break;
                     }
 
@@ -79,6 +80,16 @@ namespace CLuaFunctionDefs
                     }
                     
                     rslt = t_main.PCallStack( argc );
+                    rcount = lua_gettop( targetL ) - top;
+
+                    if ( targetL != L )
+                        lua_xmove( targetL, L, rcount );
+                    else
+                    {
+                        lua_checkstack( m_pLuaManager->GetVirtualMachine(), rcount );
+                        lua_xmove( targetL, m_pLuaManager->GetVirtualMachine(), rcount );
+                    }
+
                     goto success;
                 }
             }
@@ -93,12 +104,10 @@ success:
 
             if ( rslt )
             {
-                int retCount = lua_gettop( targetL ) - top;
+                if ( L == targetL && rcount )
+                    lua_xmove( m_pLuaManager->GetVirtualMachine(), L, rcount );
 
-                if ( L != targetL && retCount )
-                    lua_xmove( targetL, L, retCount );
-
-                return retCount;
+                return rcount;
             }
             else
                 m_pScriptDebugging->LogError( "call: failed to call '%s:%s'", res->GetName().c_str(), name.c_str() );

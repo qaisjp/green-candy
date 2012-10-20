@@ -19,10 +19,6 @@
 #include "lzio.h"
 
 
-
-struct lua_longjmp;  /* defined in ldo.c */
-
-
 /* table of globals */
 #define gt(L)	(&L->l_gt)
 
@@ -146,7 +142,6 @@ public:
     TValue l_gt;  /* table of globals */
     TValue env;  /* temporary place for environments */
     GCObject *openupval;  /* list of open upvalues in this stack */
-    struct lua_longjmp *errorJmp;  /* current error recover point */
     ptrdiff_t errfunc;  /* current error handling function (stack index) */
     TValue storage;
     Table *mt[NUM_TAGS];  /* metatables for basic types */

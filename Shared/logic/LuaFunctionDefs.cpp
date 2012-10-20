@@ -521,7 +521,7 @@ namespace LuaFunctionDefs
         if ( interval < LUA_TIMER_MIN_INTERVAL )
             throw lua_exception( L, LUA_ERRRUN, "interval is below 50" );
 
-        LuaFunctionRef ref = main.CreateReference( 1 );
+        LuaFunctionRef ref = main.CreateReference( L, 1 );
 
         LuaTimer& timer = *main.GetTimerManager().AddTimer( L, ref, CTickCount( interval ), count );
         timer.ObtainArguments( L, 4 );

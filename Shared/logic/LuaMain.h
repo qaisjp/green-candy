@@ -41,6 +41,7 @@ public:
     };
 
     LuaFunctionRef                  CreateReference( int stack );
+    LuaFunctionRef                  CreateReference( lua_State *L, int stack );
     bool                            GetReference( int stack, LuaFunctionRef& ref );
     void                            Reference( const LuaFunctionRef& ref );
     void                            Dereference( const LuaFunctionRef& ref );

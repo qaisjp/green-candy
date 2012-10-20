@@ -48,8 +48,6 @@ bool CMapEventManager::Add( CLuaMain *main, const char *name, const LuaFunctionR
 bool CMapEventManager::Delete( CLuaMain *main, const char *name, const LuaFunctionRef *ref )
 {
     luaRefs refs;
-
-    bool bRemovedSomeone = false;
     RwListEntry <CMapEvent> *iter = m_list.root.next;
 
     for ( ; iter != &m_list.root; iter = iter->next )
@@ -66,27 +64,24 @@ bool CMapEventManager::Delete( CLuaMain *main, const char *name, const LuaFuncti
         if ( ref && *ref != pMapEvent->GetLuaFunction() )
             continue;
 
-        // Delete it
+        // Reference and mark it for deletion
         pMapEvent->Reference( refs );
         pMapEvent->Delete();
-
-        // Remember that we deleted something
-        bRemovedSomeone = true;
     }
 
     // Return whether we actually destroyed someone or not
-    return bRemovedSomeone;
+    return !refs.empty();
 }
 
 void CMapEventManager::DeleteAll()
 {
-    luaRefs refs;
-
     // Delete all the events
-    LIST_FOREACH_BEGIN( CMapEvent, m_list.root, m_node )
-        item->Reference( refs );
-        item->Delete();
-    LIST_FOREACH_END
+    // We should not be referencing the event here
+    // Otherwise the freeze is expected
+    RwListEntry <CMapEvent> *iter;
+
+    while ( ( iter = m_list.root.next ) != &m_list.root )
+        LIST_GETITEM( CMapEvent, iter, m_node )->Delete();
 }
 
 CMapEvent* CMapEventManager::Get( const char *name )
@@ -106,8 +101,6 @@ bool CMapEventManager::Call( lua_State *callee, unsigned int argCount, const cha
     luaRefs refs;
 
     // Call all the events with matching names
-    bool bCalled = false;
-
     LIST_FOREACH_BEGIN( CMapEvent, m_list.root, m_node )
         // Compare the names
         if ( strcmp( item->GetName(), name ) == 0 )
@@ -159,7 +152,6 @@ bool CMapEventManager::Call( lua_State *callee, unsigned int argCount, const cha
 
                 // Call it
                 main->PCallStackVoid( argCount );
-                bCalled = true;
 
                 // Reset globals
                 lua_setfield( L, LUA_GLOBALSINDEX, "eventName" );
@@ -178,5 +170,5 @@ bool CMapEventManager::Call( lua_State *callee, unsigned int argCount, const cha
     LIST_FOREACH_END
 
     // Return whether we called atleast one func or not
-    return bCalled;
+    return !refs.empty();
 }

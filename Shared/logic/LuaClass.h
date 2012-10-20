@@ -89,6 +89,11 @@ public:
         return m_lua;
     }
 
+    inline bool IsDestroying() const
+    {
+        return m_class->IsDestroying();
+    }
+
     inline void Destroy()
     {
         // Prevent .lua referencing
