@@ -205,8 +205,8 @@ bool MixedReadMaterialString ( CScriptArgReader& argStream, CClientMaterial*& pM
             const char *meta;
             if ( g_pClientGame->GetResourceManager()->ParseResourceFullPath( (Resource*&)pFileResource, strFilePath, meta, strPath ) )
             {
-                SString strUniqueName = SString ( "%s*%s*%s", pParentResource->GetName (), pFileResource->GetName (), meta ).Replace ( "\\", "/" );
-                pMaterialElement = g_pClientGame->GetManager ()->GetRenderElementManager ()->FindAutoTexture ( strPath.c_str(), strUniqueName, *pParentResource->GetResourceDynamicEntity() );
+                SString strUniqueName = SString( "%s*%s*%s", pParentResource->GetName().c_str(), pFileResource->GetName().c_str(), meta ).Replace ( "\\", "/" );
+                pMaterialElement = g_pClientGame->GetManager()->GetRenderElementManager()->FindAutoTexture( strPath.c_str(), strUniqueName, *pParentResource->GetResourceDynamicEntity() );
 
                 // ** CHECK  Should parent be pFileResource, and element added to pParentResource's ElementGroup? **
             }

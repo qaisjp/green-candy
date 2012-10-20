@@ -20,8 +20,31 @@
 
 #include <StdInc.h>
 
+// TODO: The server is acting unexpected, as it reparents the players to resource dynamic root elements.
+// This behaviour does not match the MTA:GREEN system, so we have to temporarily fix it here.
+// We must write our own server!
+static LUA_DECLARE( setParent )
+{
+    luaL_checktype( L, 1, LUA_TCLASS );
+
+    CClientEntity *entity;
+
+    if ( !lua_refclass( L, 1 )->GetTransmit( LUACLASS_ENTITY, (void*&)entity ) || entity != g_pClientGame->GetRootEntity() )
+    {
+        // Make sure we only accept the root element as parent!
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+    lua_pushvalue( L, 1 );
+    lua_call( L, 1, 1 );
+    return 1;
+}
+
 static const luaL_Reg player_interface[] =
 {
+    LUA_METHOD( setParent ),
     { NULL, NULL }
 };
 
@@ -231,13 +254,7 @@ void CClientPlayer::SetTeam( CClientTeam *pTeam, bool bChangeTeam )
 
 bool CClientPlayer::IsOnMyTeam( CClientPlayer *player ) const
 {
-    if ( m_pTeam )
-    {
-        if ( m_pTeam == player->GetTeam() )
-            return true;
-    }
-
-    return false;
+    return m_pTeam && m_pTeam == player->GetTeam();
 }
 
 void CClientPlayer::Reset()
@@ -246,13 +263,9 @@ void CClientPlayer::Reset()
     for ( unsigned short us = 0; us <= NUM_PLAYER_STATS; us++ )
     {
         if ( us == MAX_HEALTH )
-        {
             SetStat( us, 569.0f );
-        }
         else
-        {
             SetStat( us, 0.0f );
-        }
     }
 
     // model

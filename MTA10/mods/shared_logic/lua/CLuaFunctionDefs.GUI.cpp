@@ -204,8 +204,12 @@ namespace CLuaFunctionDefs
             if ( m_pResourceManager->ParseResourceFullPath( (Resource*&)pResource, path, meta, strPath ) )
             {
                 CClientGUIElement* pGUIElement = CStaticFunctionDefinitions::GUICreateStaticImage ( *pLuaMain, x, y, width, height, strPath.c_str(), relative, parent );
-                pGUIElement->PushStack( L );
-                return 1;
+
+                if ( pGUIElement )
+                {
+                    pGUIElement->PushStack( L );
+                    return 1;
+                }
             }
             else
                 m_pScriptDebugging->LogCustom( SString ( "Bad file path @ '%s' [%s]", "guiStaticImage", *strPath ) );

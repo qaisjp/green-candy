@@ -50,7 +50,7 @@ public:
             file = fontRoot->Open( filename, "rb" );
 
         if ( !file )
-            throw std::exception( SString( "failed to load CEGUI file: %s", filename ) );
+            throw InvalidRequestException( SString( "failed to load CEGUI file: %s", filename ) );
 
         size_t size = file->GetSize();
         unsigned char *data = new unsigned char [ size ];
