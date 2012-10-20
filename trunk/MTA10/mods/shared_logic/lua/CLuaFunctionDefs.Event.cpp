@@ -61,7 +61,7 @@ namespace CLuaFunctionDefs
         argStream.ReadBool ( bPropagated, true );
         argStream.ReadFunctionComplete ();
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
             // Grab our virtual machine
             CLuaMain* pLuaMain = lua_readcontext( L );

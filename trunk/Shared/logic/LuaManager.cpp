@@ -232,7 +232,7 @@ static inline bool lua_protectedcall( LuaManager& man, lua_State *L, int argc, i
     lua_Debug debug;
 
     // We could theoretically protect it ourselves
-    switch( int ret = lua_pcallex( L, argc, retc, 0, &debug ) )
+    switch( lua_pcallex( L, argc, retc, 0, &debug ) )
     {
     case LUA_ERRRUN:
     case LUA_ERRMEM:
@@ -247,7 +247,7 @@ static inline bool lua_protectedcall( LuaManager& man, lua_State *L, int argc, i
         }
 
         // Clean the stack
-        lua_settop( L, -2 );
+        lua_pop( L, 1 );
         return false;
     }
 

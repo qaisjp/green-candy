@@ -311,6 +311,7 @@ fail:
         if ( j.IsDestroyed() || !j.GetTransmit( transmit, (void*&)outValue ) )
             goto pass;
 
+        m_iIndex++;
         return;
 pass:
         outValue = def;
@@ -329,6 +330,7 @@ pass:
         if ( j.IsDestroyed() || !j.GetTransmit( transmit, (void*&)outValue ) )
             goto pass;
 
+        m_iIndex++;
         return;
 pass:
         outValue = NULL;
@@ -470,8 +472,6 @@ pass:
     //
     bool ReadFunction ( LuaFunctionRef& outValue, int defaultValue = -2 )
     {
-        assert ( !m_pPendingFunctionOutValue );
-
         int iArgument = lua_type ( m_luaVM, m_iIndex );
         if ( iArgument == LUA_TFUNCTION )
         {
@@ -498,8 +498,7 @@ pass:
         if ( !m_pPendingFunctionOutValue )
             return true;
 
-        assert ( m_pPendingFunctionIndex != -1 );
-        *m_pPendingFunctionOutValue = lua_readuserdata <CLuaMain, LUA_STORAGEINDEX, 2> ( m_luaVM )->CreateReference( m_pPendingFunctionIndex );
+        *m_pPendingFunctionOutValue = lua_readuserdata_assert <CLuaMain, LUA_STORAGEINDEX, 2> ( m_luaVM )->CreateReference( m_luaVM, m_pPendingFunctionIndex );
         if ( VERIFY_FUNCTION( *m_pPendingFunctionOutValue ) )
         {
             m_pPendingFunctionIndex = -1;

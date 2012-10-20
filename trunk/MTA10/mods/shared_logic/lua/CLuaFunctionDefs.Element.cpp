@@ -337,7 +337,6 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
-
     LUA_DECLARE( getElementsByType )
     {
         SString typeName;

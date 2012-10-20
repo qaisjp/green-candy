@@ -37,7 +37,8 @@ LuaFunctionRef::LuaFunctionRef( const LuaFunctionRef& other )
 
 LuaFunctionRef::~LuaFunctionRef()
 {
-    m_lua->Dereference( *this );
+    if ( m_lua )
+        m_lua->Dereference( *this );
 }
 
 LuaFunctionRef& LuaFunctionRef::operator = ( const LuaFunctionRef& other )

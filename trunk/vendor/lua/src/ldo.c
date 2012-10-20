@@ -37,14 +37,6 @@
 */
 
 
-/* chain list of long jump buffers */
-struct lua_longjmp {
-  struct lua_longjmp *previous;
-  luai_jmpbuf b;
-  volatile int status;  /* error code */
-};
-
-
 void luaD_seterrorobj (lua_State *L, int errcode, StkId oldtop) {
   switch (errcode) {
     case LUA_ERRMEM: {
@@ -83,46 +75,10 @@ static void resetstack (lua_State *L, int status) {
   L->allowhook = 1;
   restore_stack_limit(L);
   L->errfunc = 0;
-  L->errorJmp = NULL;
 }
 
-
-void luaD_throw (lua_State *L, int errcode) {
-  if (L->errorJmp) {
-    L->errorJmp->status = errcode;
-    LUAI_THROW(L, L->errorJmp);
-  }
-  else {
-    L->status = cast_byte(errcode);
-    if (G(L)->panic) {
-      resetstack(L, errcode);
-      lua_unlock(L);
-      G(L)->panic(L);
-    }
-    exit(EXIT_FAILURE);
-  }
-}
-
-
-int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud)
+int luaD_rawrunprotected( lua_State *L, Pfunc f, void *ud, std::string& err, lua_Debug *debug )
 {
-    struct lua_longjmp lj;
-    lj.status = 0;
-    lj.previous = L->errorJmp;  /* chain new error handler */
-    L->errorJmp = &lj;
-    LUAI_TRY(L, &lj,
-        (*f)(L, ud);
-    );
-    L->errorJmp = lj.previous;  /* restore old error handler */
-    return lj.status;
-}
-
-int luaD_rawrunprotectedEx( lua_State *L, Pfunc f, void *ud, std::string& err, lua_Debug *debug )
-{
-    struct lua_longjmp lj;
-    lj.status = 0;
-    lj.previous = L->errorJmp;  /* chain new error handler */
-    L->errorJmp = &lj;
     try
     {
         (*f)(L, ud);
@@ -141,8 +97,7 @@ int luaD_rawrunprotectedEx( lua_State *L, Pfunc f, void *ud, std::string& err, l
             L->status = -1;
         throw;
     }
-    L->errorJmp = lj.previous;  /* restore old error handler */
-    return lj.status;
+    return 0;
 }
 
 /* }====================================================== */
@@ -193,7 +148,7 @@ void luaD_growstack (lua_State *L, int n) {
 
 static CallInfo *growCI (lua_State *L) {
   if (L->size_ci > LUAI_MAXCALLS)  /* overflow while handling overflow? */
-    luaD_throw(L, LUA_ERRERR);
+    throw lua_exception( L, LUA_ERRERR, "failed to grow stack" );
   else {
     luaD_reallocCI(L, 2*L->size_ci);
     if (L->size_ci > LUAI_MAXCALLS)
@@ -510,7 +465,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t 
   ptrdiff_t old_errfunc = L->errfunc;
   std::string errmsg;
   L->errfunc = ef;
-  status = luaD_rawrunprotectedEx(L, func, u, errmsg, debug);
+  status = luaD_rawrunprotected(L, func, u, errmsg, debug);
   if (status != 0) {  /* an error occurred? */
     StkId oldtop = restorestack(L, old_top);
     luaF_close(L, oldtop);  /* close eventual pending closures */

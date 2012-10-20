@@ -41,7 +41,7 @@ const char szPreloadedScript [] = ""\
     "function rescallMT:__index(k)\n" \
     "        if type(k) ~= 'string' then k = tostring(k) end\n" \
     "        self[k] = function(resExportTable, ...)\n" \
-    "                if type(self.res) == 'userdata' and getResourceRootElement(self.res) then\n" \
+    "                if type(self.res) == 'resource' and getResourceRootElement(self.res) then\n" \
     "                        return call(self.res, k, ...)\n" \
     "                else\n" \
     "                        return nil\n" \
@@ -51,7 +51,7 @@ const char szPreloadedScript [] = ""\
     "end\n" \
     "local exportsMT = {}\n" \
     "function exportsMT:__index(k)\n" \
-    "        if type(k) == 'userdata' and getResourceRootElement(k) then\n" \
+    "        if type(k) == 'resource' and getResourceRootElement(k) then\n" \
     "                return setmetatable({ res = k }, rescallMT)\n" \
     "        elseif type(k) ~= 'string' then\n" \
     "                k = tostring(k)\n" \

@@ -666,7 +666,13 @@ public:
         m_thread = L;
 
         if ( !lua_getstack( L, 0, &m_debug ) )
+        {
+            // We are not inside a function
+            m_debug.currentline = -1;
+            m_debug.source = "[=C]";
+            strcpy( m_debug.short_src, "[=C]" );
             return;
+        }
 
         lua_getinfo( L, "nlS", &m_debug );
 
