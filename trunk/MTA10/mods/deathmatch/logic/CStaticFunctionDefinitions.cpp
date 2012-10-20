@@ -3729,17 +3729,14 @@ CClientGUIElement* CStaticFunctionDefinitions::GUICreateStaticImage ( CLuaMain& 
     if ( pParent )
         pGUIElement->SetParent( pParent );
 
-    // Check for a valid (and sane) file path
-    if ( strPath )
+    // Load the image
+    if ( !static_cast < CGUIStaticImage* > ( pElement ) -> LoadFromFile ( strPath ) )
     {
-        // Load the image
-        if ( !static_cast < CGUIStaticImage* > ( pElement ) -> LoadFromFile ( strPath ) ) {
-            // If this fails, there's no reason to keep the widget (we don't have any IE-style "not found" icons yet)
-            // So delete it and reset the pointer, so we return NULL
-            pGUIElement->Delete();
-            pGUIElement = NULL;
-        }
-    }    
+        // If this fails, there's no reason to keep the widget (we don't have any IE-style "not found" icons yet)
+        // So delete it and reset the pointer, so we return NULL
+        pGUIElement->Delete();
+        pGUIElement = NULL;
+    }
 
     return pGUIElement;
 }

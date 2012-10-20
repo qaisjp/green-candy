@@ -2753,7 +2753,9 @@ float CClientVehicle::GetDistanceFromGround() const
     float fGroundLevel = g_pGame->GetWorld()->FindGroundZFor3DPosition( &vecPosition );
 
     const CBoundingBox *bounds = m_pModelInfo->GetBoundingBox();
-    fGroundLevel -= bounds->vecBoundMin.fZ + bounds->vecBoundOffset.fZ;
+
+    if ( bounds )
+        fGroundLevel -= bounds->vecBoundMin.fZ + bounds->vecBoundOffset.fZ;
 
     return vecPosition.fZ - fGroundLevel;
 }
@@ -2766,8 +2768,7 @@ bool CClientVehicle::IsOnGround() const
         CVector vecPosition;
         GetPosition ( vecPosition );
         vecMin += vecPosition;
-        float fGroundLevel = static_cast < float > (
-            g_pGame->GetWorld ()->FindGroundZFor3DPosition ( &vecPosition ) );
+        float fGroundLevel = g_pGame->GetWorld()->FindGroundZFor3DPosition( &vecPosition );
 
         /* Is the lowest point of the bounding box lower than 0.5 above the floor,
         or is the lowest point of the bounding box higher than 0.3 below the floor */

@@ -345,17 +345,26 @@ void CClientColManager::DoHitDetectionForColShape ( CClientColShape* pShape )
         entityList[ *it ] = 1;
     }
 
+    // We wanna reference our collider
+    pShape->IncrementMethodStack();
+
     // Test each entity against the colshape
     for ( std::map < CClientEntity*, int > ::const_iterator it = entityList.begin () ; it != entityList.end (); ++it )
     {
-        CClientEntity* pEntity = it->first;
+        CClientEntity *pEntity = it->first;
         CVector vecPosition;
-        pEntity->GetPosition ( vecPosition );
+        pEntity->GetPosition( vecPosition );
 
-        // Collided?
-        bool bHit = pShape->DoHitDetection ( vecPosition, 0.0f );
-        HandleHitDetectionResult ( bHit, pShape, pEntity );
+        // Reference as we will extensively use it
+        pEntity->IncrementMethodStack();
+
+        HandleHitDetectionResult( pShape->DoHitDetection( vecPosition, 0.0f ), pShape, pEntity );
+
+        // The entity can be destroyed
+        pEntity->DecrementMethodStack();
     }
+
+    pShape->DecrementMethodStack();
 }
 
 
@@ -379,19 +388,26 @@ void CClientColManager::DoHitDetectionForEntity ( const CVector& vecNowPosition,
     for ( list < CClientColShape* > ::const_iterator it = pEntity->CollisionsBegin () ; it != pEntity->CollisionsEnd (); ++it )
         shortList[ *it ] = 1;
 
+    // Keep the entity alive
+    pEntity->IncrementMethodStack();
+
     // Test each colshape against the entity
     for ( std::map < CClientColShape*, int > ::const_iterator it = shortList.begin () ; it != shortList.end (); ++it )
     {
         CClientColShape* pShape = it->first;
 
         // Enabled?
-        if ( pShape->IsEnabled () )
-        {
-            // Collided?
-            bool bHit = pShape->DoHitDetection ( vecNowPosition, fRadius );
-            HandleHitDetectionResult ( bHit, pShape, pEntity );
-        }
+        if ( !pShape->IsEnabled() )
+            continue;
+
+        pShape->IncrementMethodStack();
+
+        HandleHitDetectionResult( pShape->DoHitDetection( vecNowPosition, fRadius ), pShape, pEntity );
+
+        pShape->DecrementMethodStack();
     }
+
+    pEntity->DecrementMethodStack();
 }
 
 
@@ -404,8 +420,7 @@ void CClientColManager::HandleHitDetectionResult ( bool bHit, CClientColShape* p
     {              
         // If they havn't collided yet
         if ( !pEntity->CollisionExists ( pShape ) )
-        {    
-  
+        {
 #ifdef SPATIAL_DATABASE_TESTS
             testResult.newWay.onList.push_back ( CTestSet::CTestResult::CEntityPair ( pShape, pEntity ) );
             if ( !testResult.bCountOnly )

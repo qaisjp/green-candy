@@ -62,28 +62,36 @@ CClientStreamElement::CClientStreamElement( CClientStreamer *pStreamer, ElementI
     m_iCachedBoundingBoxCounter = 0;
 }
 
-CClientStreamElement::~CClientStreamElement ( void )
+CClientStreamElement::~CClientStreamElement()
 {
-    m_pStreamer->RemoveElement ( this );
+    m_pStreamer->RemoveElement( this );
 }
 
-void CClientStreamElement::UpdateStreamPosition ( const CVector & vecPosition )
+void CClientStreamElement::UpdateStreamPosition( const CVector & vecPosition )
 {
+    IncrementMethodStack();
+    
     m_vecStreamPosition = vecPosition;    
-    UpdateSpatialData ();
-    m_pStreamer->OnUpdateStreamPosition ( this );
-    m_pManager->OnUpdateStreamPosition ( this );
+    UpdateSpatialData();
+    m_pStreamer->OnUpdateStreamPosition( this );
+    m_pManager->OnUpdateStreamPosition( this );
 
     // Update attached elements stream position
-    list < CClientEntity* >::iterator i = m_AttachedEntities.begin();
-    for (; i != m_AttachedEntities.end(); i++)
+    luaRefs refs;
+    attachments_t::iterator i = m_AttachedEntities.begin();
+
+    for ( ; i != m_AttachedEntities.end(); i++ )
     {
-        CClientStreamElement* attachedElement = dynamic_cast< CClientStreamElement* > (*i);
-        if ( attachedElement )
-        {
-            attachedElement->UpdateStreamPosition( vecPosition + attachedElement->m_vecAttachedPosition );
-        }
+        if ( !(*i)->IsStreamingCompatibleClass() )
+            continue;
+
+        CClientStreamElement *attachedElement = (CClientStreamElement*)*i;
+        attachedElement->Reference( refs ); // Make sure the system does not destroy us
+
+        attachedElement->UpdateStreamPosition( vecPosition + attachedElement->m_vecAttachedPosition );
     }
+
+    DecrementMethodStack();
 }
 
 void CClientStreamElement::InternalStreamIn( bool bInstantly )
