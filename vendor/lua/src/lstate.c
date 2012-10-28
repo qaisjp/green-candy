@@ -289,9 +289,7 @@ LUAI_FUNC void luaE_newenvironment( lua_State *L )
     sethvalue( L, gt(L), g );
     luaC_objbarrier( L, g, L );
 
-    unsigned int n;
-
-    for ( n=0; n<NUM_TAGS; n++ )
+    for ( unsigned int n = 0; n < NUM_TAGS; n++ )
         L->mt[n] = NULL;
 }
 
@@ -321,22 +319,22 @@ LUAI_FUNC lua_State *lua_newstate (lua_Alloc f, void *ud)
     g->strt.size = 0;
     g->strt.nuse = 0;
     g->strt.hash = NULL;
-    preinit_state(L, g);
-    setnilvalue(registry(L));
-    luaZ_initbuffer(L, &g->buff);
-    g->panic = NULL;
     g->gcstate = GCSpause;
     g->rootgc = L;
     g->sweepstrgc = 0;
     g->sweepgc = &g->rootgc;
     g->gray = NULL;
     g->grayagain = NULL;
-    g->weak = NULL;
-    g->tmudata = NULL;
     g->totalbytes = sizeof(LG);
     g->gcpause = LUAI_GCPAUSE;
     g->gcstepmul = LUAI_GCMUL;
     g->gcdept = 0;
+    preinit_state(L, g);
+    setnilvalue(registry(L));
+    luaZ_initbuffer(L, &g->buff);
+    g->panic = NULL;
+    g->weak = NULL;
+    g->tmudata = NULL;
 
     for ( i=0; i<LUA_NUM_EVENTS; i++ )
         g->events[i] = NULL;

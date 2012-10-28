@@ -261,6 +261,8 @@ bool LuaMain::LoadScript( const char *buf )
     case LUA_ERRRUN:
     case LUA_ERRMEM:
         m_system.GetDebug().LogError( "Executing in-line script failed: %s", lua_tostring( m_lua, -1 ) );
+
+        lua_pop( m_lua, 1 );
         return false;
     }
 

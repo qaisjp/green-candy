@@ -644,6 +644,12 @@ bool CSystemFileTranslator::Exists( const char *path ) const
     if ( !GetFullPath( path, true, output ) )
         return false;
 
+    // The C API cannot cope with trailing slashes
+    size_t outSize = output.size();
+
+    if ( outSize && output[--outSize] == '/' )
+        output.resize( outSize );
+
     return stat( output.c_str(), &tmp ) == 0;
 }
 

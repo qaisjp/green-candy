@@ -88,9 +88,11 @@ int Class::TraverseGC( global_State *g )
         markobject( g, childAPI );
     }
 
-    childList_t::iterator iter = children.begin();
+    LIST_FOREACH_BEGIN( Class, children.root, child_iter )
+        markobject( g, item );
+    LIST_FOREACH_END
 
-    for ( ; iter != children.end(); iter++ )
+    for ( envList_t::const_iterator iter = envInherit.begin(); iter != envInherit.end(); iter++ )
         markobject( g, *iter );
 
     stringmark( superCached );
@@ -232,8 +234,7 @@ size_t luaC_separatefinalization( lua_State *L, int all )
 
             // Call it's destructor
             setobj( L, L->top, &j->destructor );
-            L->top++;
-            luaD_call( L, L->top - 1, 0 );
+            luaD_call( L, L->top++, 0 );
 
             L->allowhook = oldah;
             g->GCthreshold = oldt;

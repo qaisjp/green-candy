@@ -12,6 +12,7 @@
 #include <stdarg.h>
 #include <vector>
 #include <map>
+#include <rwlist.hpp>
 
 #include "llimits.h"
 #include "lua.h"
@@ -519,6 +520,8 @@ public:
     bool    IsTransmit( int type );
 
     void    RegisterMethod( lua_State *L, const char *name );
+    void    EnvPutFront( lua_State *L );
+    void    EnvPutBack( lua_State *L );
 
     bool    IsDestroying();
     bool    IsDestroyed();
@@ -555,8 +558,12 @@ public:
     transMap_t trans;
     int transRecent;
 
-    typedef std::vector <Class*> childList_t;
-    childList_t children;
+    RwList <Class> children;
+    size_t childCount;
+    RwListEntry <Class> child_iter;
+
+    typedef std::vector <Table*> envList_t;
+    envList_t envInherit;
 
     // Cached values
     TValue destructor;

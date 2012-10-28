@@ -36,13 +36,12 @@ class callstack_ref
 public:
     callstack_ref( lua_State& L ) : m_lua( L )
     {
-        if ( ++L.nCcalls >= LUAI_MAXCCALLS )
-        {
-            if ( L.nCcalls == LUAI_MAXCCALLS )
-                luaG_runerror( &L, "C stack overflow" );
-            else if ( L.nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)) )
-                throw lua_exception( &L, LUA_ERRERR, "stack handling error" );
-        }
+        if ( L.nCcalls == LUAI_MAXCCALLS )
+            throw lua_exception( &L, LUA_ERRRUN, "C stack overflow" );
+        else if ( L.nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)) )
+            throw lua_exception( &L, LUA_ERRERR, "stack handling error" );
+
+        L.nCcalls++;
     }
 
     ~callstack_ref()

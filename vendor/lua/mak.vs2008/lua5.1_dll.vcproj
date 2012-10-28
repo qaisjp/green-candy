@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include"
+				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include;../../../Shared/sdk"
 				PreprocessorDefinitions="LUA_USE_APICHECK"
 				StringPooling="true"
 				MinimalRebuild="true"
@@ -129,7 +129,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include"
+				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include;../../../Shared/sdk"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -218,7 +218,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include"
+				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include;../../../Shared/sdk"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
