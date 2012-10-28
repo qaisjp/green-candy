@@ -627,6 +627,8 @@ static int luaB_cowrap (lua_State *L) {
 
 static int luaB_term( lua_State *L )
 {
+    luaL_checktype( L, 1, LUA_TTHREAD );
+
     lua_State *co = lua_tothread( L, 1 );
 
     if ( !co->IsThread() )
@@ -643,6 +645,13 @@ static int luaB_term( lua_State *L )
     return 1;
 }
 
+static int luaB_newenv( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TTHREAD );
+    luaE_newenvironment( lua_tothread( L, 1 ) );
+    return 0;
+}
+
 static int luaB_yield (lua_State *L) {
   return lua_yield(L, lua_gettop(L));
 }
@@ -655,15 +664,17 @@ static int luaB_corunning (lua_State *L) {
 }
 
 
-static const luaL_Reg co_funcs[] = {
-  {"create", luaB_cocreate},
-  {"resume", luaB_coresume},
-  {"running", luaB_corunning},
-  {"status", luaB_costatus},
-  {"wrap", luaB_cowrap},
-  {"term", luaB_term},
-  {"yield", luaB_yield},
-  {NULL, NULL}
+static const luaL_Reg co_funcs[] =
+{
+    { "create", luaB_cocreate },
+    { "resume", luaB_coresume },
+    { "running", luaB_corunning },
+    { "status", luaB_costatus },
+    { "wrap", luaB_cowrap },
+    { "term", luaB_term },
+    { "newenv", luaB_newenv },
+    { "yield", luaB_yield },
+    { NULL, NULL }
 };
 
 /* }====================================================== */

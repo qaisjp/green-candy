@@ -137,143 +137,8 @@ void signal_handler( int sig )
     exit( EXIT_SUCCESS );
 }
 
-#include "../Shared/logic/networking/NetworkStruct.h"
-
-using namespace Networking;
-
-static const NetworkDataType testStructDef[] =
-{
-    { NETWORK_BOOL, "testBool" },
-    { NETWORK_BYTE, "testByte" },
-    { NETWORK_WORD, "testWord" },
-    { NETWORK_DWORD, "testDWord" },
-    { NETWORK_FLOAT, "testFloat" },
-    { NETWORK_DOUBLE, "testDouble" }
-};
-
-enum eTestStruct
-{
-    TEST_BOOL,
-    TEST_BYTE,
-    TEST_WORD,
-    TEST_DWORD,
-    TEST_FLOAT,
-    TEST_DOUBLE
-};
-
-struct testStruct
-{
-    bool tbool;
-    char tbyte;
-    short tword;
-    int tint;
-    float tfloat;
-    double tdouble;
-
-#pragma warning(push)
-#pragma warning(disable: 4800)
-#pragma warning(disable: 4244)
-    template <class type>
-    inline type NetworkRead( const unsigned char id ) const
-    {
-        switch( id )
-        {
-        case TEST_BOOL:     return tbool;
-        case TEST_BYTE:     return tbyte;
-        case TEST_WORD:     return tword;
-        case TEST_DWORD:    return tint;
-        case TEST_FLOAT:    return tfloat;
-        case TEST_DOUBLE:   return tdouble;
-        }
-
-        return 0;
-    }
-
-    template <>
-    inline CVector NetworkRead <CVector> ( const unsigned char id ) const
-    {
-        return CVector();
-    }
-
-    template <class type>
-    inline void NetworkWrite( const unsigned char id, const type val )
-    {
-        switch( id )
-        {
-        case TEST_BOOL:     tbool = val; return;
-        case TEST_BYTE:     tbyte = val; return;
-        case TEST_WORD:     tword = val; return;
-        case TEST_DWORD:    tint = val; return;
-        case TEST_FLOAT:    tfloat = val; return;
-        case TEST_DOUBLE:   tdouble = val; return;
-        }
-    }
-
-    template <>
-    inline void NetworkWrite <CVector> ( const unsigned char id, const CVector val )
-    {
-        
-    }
-#pragma warning(pop)
-};
-
-typedef NetworkSyncStruct <testStruct, ETSIZE(testStructDef)> test_network;
-
-struct bitshit
-{
-    bitshit()
-    {
-        a = false; b = false; c = false; d = false;
-        e = false; f = false; g = false; h = false;
-    }
-
-    bool a : 1;
-    bool b : 1;
-    bool c : 1;
-    bool d : 1;
-    bool e : 1;
-    bool f : 1;
-    bool g : 1;
-    bool h : 1;
-};
-
-#define FIELD_A     0x01
-#define FIELD_B     0x02
-#define FIELD_C     0x04
-#define FIELD_D     0x08
-#define FIELD_E     0x10
-#define FIELD_F     0x20
-#define FIELD_G     0x40
-#define FIELD_H     0x80
-
 int main( int argc, char *argv[] )
 {
-    bitshit z;
-    size_t s = sizeof(z);
-
-    z.a = 1;
-    z.d = 1;
-    z.e = 1;
-    z.g = 1;
-    z.h = 1;
-
-    unsigned char u = *(unsigned char*)&z;
-    bool o = ( u & FIELD_B ) != 0;
-
-    test_network instance( testStructDef );
-    testStruct a;
-    testStruct b;
-
-    test_network::streamType stream( testStructDef );
-
-    instance.Set( b );
-
-    a.tbool = true;
-    b.tdouble = 5.0;
-
-    instance.Write( b, stream );
-    
-
     std::string script;
 
     state = lua_open();
@@ -292,12 +157,15 @@ int main( int argc, char *argv[] )
     luafilesystem_open( state );
     lua_setfield( state, -2, "file" );
 
-    // Include everything from /luabench/
-    cout << "starting luaBench files...\n";
+    if ( fileRoot->Exists( "/luabench/" ) )
+    {
+        // Include everything from /luabench/
+        cout << "starting luaBench files...\n";
 
-    fileRoot->ScanDirectory( "/luabench/", "*.lua", false, NULL, loadBenchFile, NULL );
+        fileRoot->ScanDirectory( "/luabench/", "*.lua", false, NULL, loadBenchFile, NULL );
 
-    cout << "\n";
+        cout << "\n";
+    }
 
     try
     {

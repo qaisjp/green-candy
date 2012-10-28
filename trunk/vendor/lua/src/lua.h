@@ -9,6 +9,10 @@
 #ifndef lua_h
 #define lua_h
 
+#ifndef _WIN32
+#error Lua: Windows only build!
+#endif
+
 #include <stdarg.h>
 #include <stddef.h>
 

@@ -272,15 +272,6 @@ static void adjust_assign (LexState *ls, int nvars, int nexps, expdesc *e) {
 }
 
 
-static void enterlevel (LexState *ls) {
-  if (++ls->L->nCcalls > LUAI_MAXCCALLS)
-	luaX_lexerror(ls, "chunk has too many syntax levels", 0);
-}
-
-
-#define leavelevel(ls)	((ls)->L->nCcalls--)
-
-
 static void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isbreakable) {
   bl->breaklist = NO_JUMP;
   bl->isbreakable = isbreakable;
@@ -827,7 +818,7 @@ static const struct {
 static BinOpr subexpr (LexState *ls, expdesc *v, unsigned int limit) {
   BinOpr op;
   UnOpr uop;
-  enterlevel(ls);
+  callstack_ref cref( *ls->L );
   uop = getunopr(ls->t.token);
   if (uop != OPR_NOUNOPR) {
     luaX_next(ls);
@@ -847,7 +838,6 @@ static BinOpr subexpr (LexState *ls, expdesc *v, unsigned int limit) {
     luaK_posfix(ls->fs, op, v, &v2);
     op = nextop;
   }
-  leavelevel(ls);
   return op;  /* return first untreated operator */
 }
 
@@ -937,8 +927,7 @@ static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
     primaryexp(ls, &nv.v);
     if (nv.v.k == VLOCAL)
       check_conflict(ls, lh, &nv.v);
-    luaY_checklimit(ls->fs, nvars, LUAI_MAXCCALLS - ls->L->nCcalls,
-                    "variables in assignment");
+    luaY_checklimit(ls->fs, nvars, LUAI_MAXCCALLS - ls->L->nCcalls, "variables in assignment");
     assignment(ls, &nv, nvars+1);
   }
   else {  /* assignment -> `=' explist1 */
@@ -1324,7 +1313,7 @@ static int statement (LexState *ls) {
 static void chunk (LexState *ls) {
   /* chunk -> { stat [`;'] } */
   int islast = 0;
-  enterlevel(ls);
+  callstack_ref cref( *ls->L );
   while (!islast && !block_follow(ls->t.token)) {
     islast = statement(ls);
     testnext(ls, ';');
@@ -1332,7 +1321,6 @@ static void chunk (LexState *ls) {
                ls->fs->freereg >= ls->fs->nactvar);
     ls->fs->freereg = ls->fs->nactvar;  /* free registers */
   }
-  leavelevel(ls);
 }
 
 /* }====================================================================== */

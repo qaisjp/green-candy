@@ -601,15 +601,6 @@ union luai_Cast { double l_d; long l_l; };
 #endif
 
 
-/*
-@@ LUAI_THROW/LUAI_TRY define how Lua does exception handling.
-** CHANGE them if you prefer to use longjmp/setjmp even with C++
-** or if want/don't to use _longjmp/_setjmp instead of regular
-** longjmp/setjmp. By default, Lua handles errors with exceptions when
-** compiling as C++ code, with _longjmp/_setjmp when asked to use them,
-** and with longjmp/setjmp otherwise.
-*/
-#if defined(__cplusplus)
 #include <string>
 /* C++ exceptions */
 #include <exception>
@@ -716,13 +707,6 @@ private:
     lua_Debug           m_debug;
 };
 
-#define LUAI_THROW(L,c)	throw lua_exception( L, (c)->status, "internal lua error" )
-#define LUAI_TRY(L,c,a)	try { a } catch( lua_exception& e ) \
-    { (c)->status = e.status(); } \
-    catch(...) \
-	{ if ((c)->status == 0) (c)->status = -1; }
-#define luai_jmpbuf	int  /* dummy variable */
-
 class ILuaState abstract
 {
 public:
@@ -748,6 +732,8 @@ public:
     virtual bool    IsTransmit( int type ) = 0;
 
     virtual void    RegisterMethod( lua_State *L, const char *name ) = 0;
+    virtual void    EnvPutFront( lua_State *L ) = 0;
+    virtual void    EnvPutBack( lua_State *L ) = 0;
 
     virtual bool    IsDestroying() = 0;
     virtual bool    IsDestroyed() = 0;
@@ -759,20 +745,6 @@ public:
 
     virtual void    RequestDestruction() = 0;
 };
-
-#elif defined(LUA_USE_ULONGJMP)
-/* in Unix, try _longjmp/_setjmp (more efficient) */
-#define LUAI_THROW(L,c)	_longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)	if (_setjmp((c)->b) == 0) { a }
-#define luai_jmpbuf	jmp_buf
-
-#else
-/* default handling with long jumps */
-#define LUAI_THROW(L,c)	longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)	if (setjmp((c)->b) == 0) { a }
-#define luai_jmpbuf	jmp_buf
-
-#endif
 
 
 /*

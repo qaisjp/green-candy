@@ -41,7 +41,6 @@ namespace CLuaFunctionDefs
 
             // Allocate enough stack size
             lua_checkstack( targetL, max( 2, argc ) );
-            lua_checkstack( preserve, 2 );  // allocate stack size to allow call-stacking
 
             // Store globals
             lua_getglobal( targetL, "sourceResource" );
@@ -86,8 +85,8 @@ namespace CLuaFunctionDefs
                         lua_xmove( targetL, L, rcount );
                     else
                     {
-                        lua_checkstack( m_pLuaManager->GetVirtualMachine(), rcount );
-                        lua_xmove( targetL, m_pLuaManager->GetVirtualMachine(), rcount );
+                        lua_checkstack( preserve, rcount );
+                        lua_xmove( targetL, preserve, rcount );
                     }
 
                     goto success;
@@ -105,7 +104,7 @@ success:
             if ( rslt )
             {
                 if ( L == targetL && rcount )
-                    lua_xmove( m_pLuaManager->GetVirtualMachine(), L, rcount );
+                    lua_xmove( preserve, L, rcount );
 
                 return rcount;
             }
