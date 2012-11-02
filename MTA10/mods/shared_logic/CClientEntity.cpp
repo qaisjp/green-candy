@@ -491,24 +491,6 @@ void CClientEntity::SetID ( ElementID ID )
     }
 }
 
-void CClientEntity::ApplyCustomData( CCustomData *data )
-{
-    CCustomData::itemList_t::const_iterator iter = data->IterBegin();
-
-    PushStack( m_lua );
-    lua_getfield( m_lua, -1, "data" );
-
-    for ( ; iter != data->IterEnd(); iter++ )
-    {
-        lua_pushlstring( m_lua, (*iter).first.c_str(), (*iter).first.size() );
-        (*iter).second.Variable.Push( m_lua );
-
-        lua_settable( m_lua, -3 );
-    }
-
-    lua_pop( m_lua, 2 );
-}
-
 void CClientEntity::PushCustomData( lua_State *L, const char *key, bool inherit )
 {
     // Try our data first

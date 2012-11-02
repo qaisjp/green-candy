@@ -51,10 +51,8 @@ public:
 
     void							CallStack( int args );
     void							CallStackVoid( int args );
-    void					        CallStackResult( int argc, LuaArguments& args );
     bool                            PCallStack( int args );
     bool                            PCallStackVoid( int args );
-    bool                            PCallStackResult( int argc, LuaArguments& args );
     //TODO: Function reference calling
 
     bool                            LoadScriptFromBuffer( const char *buf, size_t size, const char *path, bool utf8 );

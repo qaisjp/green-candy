@@ -236,22 +236,22 @@ bool Class::GetTransmit( int type, void*& entity )
     return true;
 }
 
-int Class::GetTransmit()
+int Class::GetTransmit() const
 {
     return transRecent;
 }
 
-bool Class::IsTransmit( int type )
+bool Class::IsTransmit( int type ) const
 {
     return trans.count( type ) == 1;
 }
 
-bool Class::IsDestroying()
+bool Class::IsDestroying() const
 {
     return destroying;
 }
 
-bool Class::IsDestroyed()
+bool Class::IsDestroyed() const
 {
     return destroyed;
 }
@@ -437,6 +437,19 @@ static int classmethod_envPutBack( lua_State *L )
     return 0;
 }
 
+static int classmethod_envAcquireDispatcher( lua_State *L )
+{
+    Table *env;
+
+    if ( lua_type( L, 1 ) == LUA_TTABLE )
+        env = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->AcquireEnvDispatcherEx( L, hvalue( L->base ) );
+    else
+        env = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->AcquireEnvDispatcher( L );
+
+    sethvalue( L, L->top++, env );
+    return 1;
+}
+
 static int classmethod_setChild( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TCLASS );
@@ -458,6 +471,7 @@ static const luaL_Reg internStorage_interface[] =
     { "registerForcedSuper", classmethod_registerForcedSuper },
     { "envPutFront", classmethod_envPutFront },
     { "envPutBack", classmethod_envPutBack },
+    { "envAcquireDispatcher", classmethod_envAcquireDispatcher },
     { "setChild", classmethod_setChild },
     { NULL, NULL }
 };
@@ -541,6 +555,70 @@ static int classmethod_fsDestroyHandler( lua_State *L )
     return 1;
 }
 
+static int dispatcher_index( lua_State *L )
+{
+    lua_pushvalue( L, 2 );
+
+    lua_gettable( L, lua_upvalueindex( 1 ) );
+
+    if ( lua_type( L, 3 ) != LUA_TNIL )
+        return 1;
+
+    L->top--;
+
+    lua_gettable( L, lua_upvalueindex( 2 ) );
+    return 1;
+}
+
+static int dispatcher_newindex( lua_State *L )
+{
+    lua_settable( L, lua_upvalueindex( 1 ) );
+    return 0;
+}
+
+static luaL_Reg dispatcher_interface[] =
+{
+    { "__index", dispatcher_index },
+    { "__newindex", dispatcher_newindex },
+    { NULL, NULL }
+};
+
+Table* Class::AcquireEnvDispatcherEx( lua_State *L, Table *curEnv )
+{
+    // If the environment matches any of the inherited ones, we skip creating a dispatcher
+    if ( curEnv == env )
+        return env;
+
+    for ( envList_t::const_iterator iter = envInherit.begin(); iter != envInherit.end(); iter++ )
+    {
+        if ( curEnv == *iter )
+            return env;
+    }
+
+    // Create the dispatcher which accesses class env first then this current one
+    Table *dispatch = luaH_new( L, 0, 0 );
+    Table *metaDispatch = luaH_new( L, 0, 0 );
+
+    dispatch->metatable = metaDispatch;
+
+    sethvalue( L, L->top++, metaDispatch );
+
+    lua_pushboolean( L, false );
+    lua_setfield( L, -2, "__metatable" );
+
+    sethvalue( L, L->top++, env );
+    sethvalue( L, L->top++, curEnv );
+    luaL_openlib( L, NULL, dispatcher_interface, 2 );
+
+    L->top--;
+    return dispatch;
+}
+
+Table* Class::AcquireEnvDispatcher( lua_State *L )
+{
+    return AcquireEnvDispatcherEx( L, hvalue( index2adr( L, LUA_ENVIRONINDEX ) ) );
+}
+
 void Class::RegisterMethod( lua_State *L, const char *name )
 {
     Table *methTable;
@@ -549,7 +627,7 @@ void Class::RegisterMethod( lua_State *L, const char *name )
     bool isPrevMethod;
 
     // Apply the environment to the new method
-    clvalue( L->top - 1 )->env = env;
+    clvalue( L->top - 1 )->env = AcquireEnvDispatcher( L );
 
     if ( val->tt == LUA_TFUNCTION )
     {
@@ -909,7 +987,7 @@ static int methodenv_newindex( lua_State *L )
             bool methWhite = iswhite( method ) != 0;
 
             // Apply the class environment to the new method
-            clvalue( L->base + 2 )->env = j.env;
+            clvalue( L->base + 2 )->env = j.AcquireEnvDispatcher( L );
 
             // We have to put it into the environment, too (caching <3)
             if ( val == luaO_nilobject )

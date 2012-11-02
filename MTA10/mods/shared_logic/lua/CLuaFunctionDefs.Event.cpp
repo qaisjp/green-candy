@@ -138,27 +138,47 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( triggerServerEvent )
     {
     //  bool triggerServerEvent ( string event, element theElement, [arguments...] )
-        SString strName; CClientEntity* pCallWithEntity; CLuaArguments Arguments;
+        SString strName; CClientEntity *entity;
 
         CScriptArgReader argStream ( L );
-        argStream.ReadString ( strName );
-        argStream.ReadClass( pCallWithEntity, LUACLASS_ENTITY );
-        argStream.ReadNetworkArguments ( Arguments );
+        argStream.ReadString( strName );
+        argStream.ReadClass( entity, LUACLASS_ENTITY );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            // Trigger it
-            if ( CStaticFunctionDefinitions::TriggerServerEvent ( strName, *pCallWithEntity, Arguments ) )
+            if ( entity->IsLocalEntity() )
+                goto fail;
+
+            NetBitStreamInterface *pBitStream = g_pNet->AllocateNetBitStream();
+
+            if ( !pBitStream )
+                goto fail;
+
+            pBitStream->WriteStringCompressed( strName );
+            pBitStream->Write( entity->GetID() );
+
+            try
             {
-                lua_pushboolean ( L, true );
-                return 1;
+                RakNet_WriteArguments( *pBitStream, L, 3, lua_gettop( L ) - 2 );
             }
+            catch( ... )
+            {
+                g_pNet->DeallocateNetBitStream( pBitStream );
+                throw;
+            }
+
+            g_pNet->SendPacket( PACKET_ID_LUA_EVENT, pBitStream, PACKET_PRIORITY_MEDIUM, PACKET_RELIABILITY_RELIABLE );
+            g_pNet->DeallocateNetBitStream( pBitStream );
+
+            lua_pushboolean( L, true );
+            return 1;
         }
         else
             m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "triggerServerEvent", *argStream.GetErrorMessage () ) );
 
+fail:
         // Failed
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 

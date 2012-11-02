@@ -89,10 +89,8 @@ private:
 protected:
     void                            CallStack( int args );
     void                            CallStackVoid( int args );
-    void                            CallStackResult( int argc, LuaArguments& args );
     bool                            PCallStack( int args );
     bool                            PCallStackVoid( int args );
-    bool                            PCallStackResult( int argc, LuaArguments& args );
 
     class env_status
     {
@@ -219,11 +217,6 @@ protected:
             m_system.CallStack( args );
         }
 
-        inline void CallStackResult( int argc, LuaArguments& args )
-        {
-            return m_system.CallStackResult( argc, args );
-        }
-
         inline bool PCallStack( int args )
         {
             return m_system.PCallStack( args );
@@ -232,11 +225,6 @@ protected:
         inline bool PCallStackVoid( int args )
         {
             return m_system.PCallStackVoid( args );
-        }
-
-        inline bool PCallStackResult( int argc, LuaArguments& args )
-        {
-            return m_system.PCallStackResult( argc, args );
         }
     };
 

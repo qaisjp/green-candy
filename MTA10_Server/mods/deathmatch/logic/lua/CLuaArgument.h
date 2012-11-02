@@ -22,8 +22,6 @@
 class CElement;
 class CLuaArguments;
 
-#define LUA_TTABLEREF 9
-
 class CLuaArgument : public LuaArgument
 {
 public:

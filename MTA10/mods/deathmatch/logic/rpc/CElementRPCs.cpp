@@ -63,16 +63,18 @@ void CElementRPCs::SetElementData ( CClientEntity* pSource, NetBitStreamInterfac
             return;
         }
         SString strName;
-        CLuaArgument Argument;
-        if ( bitStream.ReadStringCharacters ( strName, usNameLength ) && Argument.ReadFromBitStream ( bitStream ) )
-        {
-            lua_State *L = pSource->GetVM();
+        lua_State *L = pSource->GetVM();
 
+        if ( bitStream.ReadStringCharacters ( strName, usNameLength ) )
+        {
             pSource->PushStack( L );
             lua_getfield( L, -1, "data" );
             lua_pushlstring( L, strName.c_str(), strName.size() );
-            Argument.Push( L );
-            lua_settable( L, -3 );
+
+            if ( RakNet_ReadArgument( bitStream, L ) )
+                lua_settable( L, -3 );
+            else
+                lua_pop( L, 1 );
 
             lua_pop( L, 2 );
         }

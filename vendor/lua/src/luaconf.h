@@ -728,15 +728,15 @@ public:
 
     virtual void    SetTransmit( int type, void *entity ) = 0;
     virtual bool    GetTransmit( int type, void*& entity ) = 0;
-    virtual int     GetTransmit() = 0;
-    virtual bool    IsTransmit( int type ) = 0;
+    virtual int     GetTransmit() const = 0;
+    virtual bool    IsTransmit( int type ) const = 0;
 
     virtual void    RegisterMethod( lua_State *L, const char *name ) = 0;
     virtual void    EnvPutFront( lua_State *L ) = 0;
     virtual void    EnvPutBack( lua_State *L ) = 0;
 
-    virtual bool    IsDestroying() = 0;
-    virtual bool    IsDestroyed() = 0;
+    virtual bool    IsDestroying() const = 0;
+    virtual bool    IsDestroyed() const = 0;
 
     virtual void    PushEnvironment( lua_State *L ) = 0;
     virtual void    PushOuterEnvironment( lua_State *L ) = 0;

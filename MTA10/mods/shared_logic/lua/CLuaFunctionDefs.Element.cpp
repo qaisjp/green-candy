@@ -1032,17 +1032,15 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( setElementData )
     {
     //  bool setElementData ( element theElement, string key, var value, [bool synchronize = true] )
-        CClientEntity* pEntity; SString strKey; CLuaArgument value; bool bSynchronize;
+        CClientEntity* pEntity; SString strKey;
 
         CScriptArgReader argStream ( L );
         argStream.ReadClass( pEntity, LUACLASS_ENTITY );
-        argStream.ReadString ( strKey );
-        argStream.ReadLuaArgument ( value );
-        argStream.ReadBool ( bSynchronize, true );
+        argStream.ReadString( strKey );
 
         if ( !argStream.HasErrors() )
         {
-            if ( strKey.length () > MAX_CUSTOMDATA_NAME_LENGTH )
+            if ( strKey.length() > MAX_CUSTOMDATA_NAME_LENGTH )
             {
                 // Warn and truncate if key is too long
                 m_pScriptDebugging->LogCustom( SString ( "Truncated argument @ '%s' [%s]", "setElementData", *SString ( "string length reduced to %d characters at argument 2", MAX_CUSTOMDATA_NAME_LENGTH ) ) );
@@ -1054,16 +1052,17 @@ namespace CLuaFunctionDefs
 
             if ( lua_isnil( L, 3 ) || !lua_equal( L, -1, 3 ) )
             {
-                if ( bSynchronize )
+                // Should we synchronize?
+                if ( lua_toboolean( L, 4 ) )
                 {
                     // Allocate a bitstream
-                    NetBitStreamInterface* pBitStream = g_pNet->AllocateNetBitStream();
+                    NetBitStreamInterface *pBitStream = g_pNet->AllocateNetBitStream();
                     if ( pBitStream )
                     {
                         // Write element ID, name length and the name. Also write the variable.
                         pBitStream->Write( pEntity->GetID () );
                         pBitStream->WriteStringCompressed( strKey );
-                        value.WriteToBitStream( *pBitStream );
+                        RakNet_WriteArgument( *pBitStream, L, 3 );
 
                         // Send the packet and deallocate
                         g_pNet->SendPacket( PACKET_ID_CUSTOM_DATA, pBitStream, PACKET_PRIORITY_LOW, PACKET_RELIABILITY_RELIABLE, PACKET_ORDERING_CHAT );

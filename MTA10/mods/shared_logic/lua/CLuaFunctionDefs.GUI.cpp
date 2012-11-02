@@ -1775,14 +1775,15 @@ namespace CLuaFunctionDefs
         argStream.ReadNumber ( rowIndex );
         argStream.ReadNumber ( columnIndex );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            void* pData = static_cast < CGUIGridList* > ( guiGridlist->GetCGUIElement () ) -> GetItemData ( rowIndex, columnIndex );
-            CLuaArgument* pVariable = reinterpret_cast < CLuaArgument* > ( pData );
-            if ( pVariable )
-                pVariable->Push(L);
+            LuaTypeExport *exp = (LuaTypeExport*)((CGUIGridList*)guiGridlist->GetCGUIElement())->GetItemData( rowIndex, columnIndex );
+
+            if ( exp )
+                exp->Push( L );
             else
-                lua_pushnil ( L );
+                lua_pushnil( L );
+
             return 1;
         }
         else
@@ -1853,20 +1854,23 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( guiGridListSetItemData )
     {
     //  bool guiGridListSetItemData ( element gridList, int rowIndex, int columnIndex, string data )
-        CClientGUIElement* guiGridlist; int rowIndex; int columnIndex; CLuaArgument data;
+        CClientGUIElement* guiGridlist; int rowIndex; int columnIndex;
 
         CScriptArgReader argStream ( L );
         argStream.ReadClass( guiGridlist, LUACLASS_GUIGRIDLIST );
         argStream.ReadNumber( rowIndex );
         argStream.ReadNumber( columnIndex );
-        argStream.ReadLuaArgument( data );
 
-        if ( !argStream.HasErrors () )
+        if ( !argStream.HasErrors() )
         {
-            CLuaArgument* pData = new CLuaArgument ( data );
-            CStaticFunctionDefinitions::GUIGridListSetItemData ( *guiGridlist, rowIndex, columnIndex, pData );
-            lua_pushboolean ( L, true );
-            return 1;
+            LuaTypeExport *exp;
+
+            if ( Lua_ReadExportType( L, 4, exp ) )
+            {
+                CStaticFunctionDefinitions::GUIGridListSetItemData( *guiGridlist, rowIndex, columnIndex, exp );
+                lua_pushboolean( L, true );
+                return 1;
+            }
         }
         else
             m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "guiGridListSetItemData", *argStream.GetErrorMessage () ) );

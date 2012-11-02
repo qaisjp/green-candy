@@ -9,6 +9,10 @@
 *
 *****************************************************************************/
 
+// The_GTA: This class needs a complete overhaul, because it is slow in performance and defeats it's purpose!
+
+#if 0
+
 #ifndef __CCLIENTTASK_H
 #define __CCLIENTTASK_H
 
@@ -51,7 +55,7 @@ public:
     inline const std::list < ElementID >&   GetElements     ( void )    { return m_Elements; };
 
     inline const std::list <std::string>&   GetKeys         ( void )    { return m_Keys; };
-    inline const std::list <CLuaArgument>&  GetValues       ( void )    { return m_Values; };
+    inline const std::list <LuaTypeExport*>&  GetValues     ( void )    { return m_Values; };
     void                        SetParameter                ( const char* szKey, const CLuaArgument& Value );
     void                        SetParameters               ( const std::list <std::string>& Keys, const std::list <CLuaArgument>& Values );
     void                        ClearParameters             ( void );
@@ -75,9 +79,11 @@ private:
 
     std::list < ElementID >     m_Elements;
     std::list < std::string >   m_Keys;
-    std::list < CLuaArgument >  m_Values;
+    std::list < LuaTypeExport* >    m_Values;
 
     static unsigned long        m_ulLastUniqueIdentifier;
 };
 
 #endif
+
+#endif //0

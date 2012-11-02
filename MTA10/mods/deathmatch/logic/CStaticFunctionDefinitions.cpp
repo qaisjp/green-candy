@@ -130,35 +130,6 @@ bool CStaticFunctionDefinitions::RemoveEventHandler ( CLuaMain& LuaMain, const c
     return false;
 }
 
-bool CStaticFunctionDefinitions::TriggerServerEvent ( const char* szName, CClientEntity& CallWithEntity, CLuaArguments& Arguments )
-{
-    assert ( szName );
-
-    if ( CallWithEntity.IsLocalEntity ()  )
-        return false;
-
-    NetBitStreamInterface* pBitStream = g_pNet->AllocateNetBitStream ();
-    if ( pBitStream )
-    {
-        unsigned short usNameLength = static_cast < unsigned short > ( strlen ( szName ) );
-        pBitStream->WriteCompressed ( usNameLength );
-        pBitStream->Write ( const_cast < char* > ( szName ), usNameLength );
-        pBitStream->Write ( CallWithEntity.GetID () );
-        if ( !Arguments.WriteToBitStream ( *pBitStream ) )
-        {
-            g_pNet->DeallocateNetBitStream ( pBitStream );
-            return false;
-        }
-        g_pNet->SendPacket ( PACKET_ID_LUA_EVENT, pBitStream, PACKET_PRIORITY_MEDIUM, PACKET_RELIABILITY_RELIABLE );
-        g_pNet->DeallocateNetBitStream ( pBitStream );
-
-        return true;
-    }
-
-    return false;
-}
-
-
 bool CStaticFunctionDefinitions::CancelEvent ( bool bCancel )
 {
     m_pEvents->Cancel( bCancel );
@@ -4635,32 +4606,21 @@ void CStaticFunctionDefinitions::GUIGridListClear ( CClientEntity& Entity )
     }
 }
 
-void CStaticFunctionDefinitions::GUIGridListSetItemData ( CClientGUIElement& GUIElement, int iRow, int iColumn, CLuaArgument* Variable )
+static void GUIItemDataDestroyCallback( void *data )
 {
-    //Delete any old data we might have
-    CLuaArgument* pVariable = reinterpret_cast < CLuaArgument* > (
-        static_cast < CGUIGridList* > ( GUIElement.GetCGUIElement () ) -> GetItemData (
-            iRow, 
-            iColumn
-        )
-    );
-    if ( pVariable )
-        delete pVariable;
-
-    static_cast < CGUIGridList* > ( GUIElement.GetCGUIElement () ) -> SetItemData ( 
-        iRow, 
-        iColumn, 
-        (void*)Variable, 
-        CGUICallback<void,void*>( &CStaticFunctionDefinitions::GUIItemDataDestroyCallback )
-    ); 
+    delete (LuaTypeExport*)data;
 }
 
-
-void CStaticFunctionDefinitions::GUIItemDataDestroyCallback ( void* data )
+void CStaticFunctionDefinitions::GUIGridListSetItemData ( CClientGUIElement& GUIElement, int row, int col, LuaTypeExport *exp )
 {
-    delete (CLuaArgument*)(data);
-}
+    // Delete any old data we might have
+    LuaTypeExport *prev = (LuaTypeExport*)(((CGUIGridList*)GUIElement.GetCGUIElement())->GetItemData( row, col ));
 
+    if ( prev )
+        delete prev;
+
+    ((CGUIGridList*)GUIElement.GetCGUIElement())->SetItemData( row, col, exp, CGUICallback<void,void*>( &GUIItemDataDestroyCallback ) ); 
+}
 
 void CStaticFunctionDefinitions::GUIGridListSetSelectionMode ( CClientEntity& Entity, unsigned int uiMode )
 {

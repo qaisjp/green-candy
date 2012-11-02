@@ -137,7 +137,6 @@ public:
     inline ElementID                            GetID()                                         { return m_ID; };
     void                                        SetID( ElementID ID );
 
-    void                                        ApplyCustomData( CCustomData *data );
     void                                        PushCustomData( lua_State *L, const char *key, bool inherit );
     bool                                        GetCustomDataString( const char * szKey, SString& strOut, bool bInheritData );
     bool                                        GetCustomDataFloat( const char * szKey, float& fOut, bool bInheritData );

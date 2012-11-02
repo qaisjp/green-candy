@@ -374,7 +374,7 @@ LUA_API lua_Integer lua_tointegerW (lua_State *L, int idx)
     return (int)nvalue(o);
 }
 
-LUA_API int lua_toboolean (lua_State *L, int idx) {
+LUA_API bool lua_toboolean (lua_State *L, int idx) {
   const TValue *o = index2adr(L, idx);
   return !l_isfalse(o);
 }
@@ -1111,23 +1111,26 @@ LUA_API int lua_error (lua_State *L) {
   return 0;  /* to avoid warnings */
 }
 
+LUA_API bool lua_next( lua_State *L, int idx )
+{
+    StkId t;
+    lua_lock(L);
 
-LUA_API int lua_next (lua_State *L, int idx) {
-  StkId t;
-  int more;
-  lua_lock(L);
-  t = index2adr(L, idx);
-  api_check(L, ttistable(t));
-  more = luaH_next(L, hvalue(t), L->top - 1);
-  if (more) {
-    api_incr_top(L);
-  }
-  else  /* no more elements */
-    L->top -= 1;  /* remove key */
-  lua_unlock(L);
-  return more;
+    t = index2adr(L, idx);
+    api_check(L, ttistable(t));
+
+    bool more = luaH_next(L, hvalue(t), L->top - 1);
+
+    if ( more )
+    {
+        api_incr_top(L);
+    }
+    else  /* no more elements */
+        L->top -= 1;  /* remove key */
+
+    lua_unlock(L);
+    return more;
 }
-
 
 LUA_API void lua_concat (lua_State *L, int n) {
   lua_lock(L);

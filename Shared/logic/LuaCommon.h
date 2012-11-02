@@ -71,4 +71,153 @@ static inline void lua_stack2table( lua_State *L, int tidx, int n )
         lua_rawseti( L, tidx, n-- + 1 );
 }
 
+// Inline class for saving basic types
+class LuaTypeExport abstract
+{
+public:
+    LuaTypeExport( int type )
+    {
+        m_type = type;
+    }
+
+    virtual ~LuaTypeExport()    {}
+
+    int GetType() const         { return m_type; }
+
+    virtual lua_Number GetNumber() const = 0;
+    virtual bool GetBoolean() const = 0;
+    virtual void GetString( std::string& buf ) const = 0;
+
+    virtual void Push( lua_State *L ) const = 0;
+
+private:
+    int m_type;
+};
+
+class LuaTypeBoolean : public LuaTypeExport
+{
+public:
+    LuaTypeBoolean( bool boolean ) : LuaTypeExport( LUA_TBOOLEAN )
+    {
+        m_boolean = boolean;
+    }
+
+    lua_Number GetNumber() const
+    {
+        return m_boolean ? 1.0 : 0.0;
+    }
+
+    bool GetBoolean() const
+    {
+        return m_boolean;
+    }
+
+    void GetString( std::string& buf ) const
+    {
+        buf = m_boolean ? "true" : "false";
+    }
+
+    void Push( lua_State *L ) const
+    {
+        lua_pushboolean( L, m_boolean );
+    }
+
+private:
+    bool m_boolean;
+};
+
+class LuaTypeNumber : public LuaTypeExport
+{
+public:
+    LuaTypeNumber( lua_Number num ) : LuaTypeExport( LUA_TNUMBER )
+    {
+        m_num = num;
+    }
+
+    lua_Number GetNumber() const        { return m_num; }
+
+    bool GetBoolean() const
+    {
+        return m_num != 0;
+    }
+
+    void GetString( std::string& buf ) const
+    {
+        std::stringstream stream;
+
+        stream.precision( 16 );
+        stream << m_num;
+
+        buf = stream.str();
+    }
+
+    void Push( lua_State *L ) const
+    {
+        lua_pushnumber( L, m_num );
+    }
+
+private:
+    lua_Number m_num;
+};
+
+class LuaTypeString : public LuaTypeExport
+{
+public:
+    LuaTypeString( const std::string& string ) : LuaTypeExport( LUA_TSTRING )
+    {
+        m_string = string;
+    }
+
+    lua_Number GetNumber() const
+    {
+        std::stringstream stream( m_string );
+
+        stream.precision( 16 );
+        
+        double num;
+        stream >> num;
+
+        return num;
+    }
+
+    bool GetBoolean() const
+    {
+        if ( m_string == "true" )
+            return true;
+        
+        return GetNumber() != 0;
+    }
+
+    void GetString( std::string& buf ) const
+    {
+        buf = m_string;
+    }
+
+    void Push( lua_State *L ) const
+    {
+        lua_pushlstring( L, m_string.c_str(), m_string.size() );
+    }
+
+private:
+    std::string m_string;
+};
+
+static inline bool Lua_ReadExportType( lua_State *L, int idx, LuaTypeExport*& exp )
+{
+    switch( lua_type( L, idx ) )
+    {
+    case LUA_TBOOLEAN:
+        exp = new LuaTypeBoolean( lua_toboolean( L, idx ) );
+        return true;
+    case LUA_TNUMBER:
+        exp = new LuaTypeNumber( lua_tonumber( L, idx ) );
+        return true;
+    case LUA_TSTRING:
+        exp = new LuaTypeString( lua_getstring( L, idx ) );
+        return true;
+    }
+
+    return false;
+}
+
 #endif //_BASE_LUA_COMMON

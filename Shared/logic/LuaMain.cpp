@@ -133,11 +133,6 @@ void LuaMain::CallStackVoid( int args )
     m_system.AcquireContext( *this ).CallStackVoid( args );
 }
 
-void LuaMain::CallStackResult( int argc, LuaArguments& args )
-{
-    m_system.AcquireContext( *this ).CallStackResult( argc, args );
-}
-
 bool LuaMain::PCallStack( int argc )
 {
     return m_system.AcquireContext( *this ).PCallStack( argc );
@@ -146,11 +141,6 @@ bool LuaMain::PCallStack( int argc )
 bool LuaMain::PCallStackVoid( int argc )
 {
     return m_system.AcquireContext( *this ).PCallStackVoid( argc );
-}
-
-bool LuaMain::PCallStackResult( int argc, LuaArguments& args )
-{
-    return m_system.AcquireContext( *this ).PCallStackResult( argc, args );
 }
 
 void LuaMain::InitSecurity()

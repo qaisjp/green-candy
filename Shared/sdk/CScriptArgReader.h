@@ -438,34 +438,6 @@ pass:
         return false;
     }
 
-    //
-    // Read CLuaArguments
-    //
-    bool ReadNetworkArguments ( CLuaArguments& outValue )
-    {
-        outValue.ReadArguments ( m_luaVM, m_iIndex );
-        m_iIndex += outValue.Count();
-        return true;
-    }
-
-
-    //
-    // Read one CLuaArgument
-    //
-    bool ReadLuaArgument ( CLuaArgument& outValue )
-    {
-        int iArgument = lua_type ( m_luaVM, m_iIndex );
-        if ( iArgument != LUA_TNONE )
-        {
-            outValue.Read( m_luaVM, m_iIndex++ );
-            return true;
-        }
-
-        SetTypeError ( "argument" );
-        m_iIndex++;
-        return false;
-    }
-
 
     //
     // Read a function, but don't do it yet due to Lua stack issues
