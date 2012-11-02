@@ -212,18 +212,6 @@ void LuaManager::CallStackVoid( int args )
     lua_call( L, args, 0 );
 }
 
-void LuaManager::CallStackResult( int argc, LuaArguments& args )
-{
-    lua_State *L = GetThread();
-    int top = lua_gettop( L );
-
-    CallStack( argc );
-
-    args.ReadArguments( L, top );
-
-    lua_settop( L, top - argc - 1 );
-}
-
 static inline bool lua_protectedcall( LuaManager& man, lua_State *L, int argc, int retc )
 {
     if ( lua_type( L, -argc - 1 ) != LUA_TFUNCTION )
@@ -262,18 +250,6 @@ bool LuaManager::PCallStack( int argc )
 bool LuaManager::PCallStackVoid( int argc )
 {
     return lua_protectedcall( *this, GetThread(), argc, 0 );
-}
-
-bool LuaManager::PCallStackResult( int argc, LuaArguments& args )
-{
-    lua_State *L = GetThread();
-    int top = lua_gettop( L );
-
-    if ( !lua_protectedcall( *this, L, argc, LUA_MULTRET ) )
-        return false;
-
-    args.ReadArguments( L, top );
-    return true;
 }
 
 static int luamain_index( lua_State *lua )

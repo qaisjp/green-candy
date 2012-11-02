@@ -32,6 +32,8 @@ namespace CLuaFunctionDefs
         */
     }
 
+#if 0
+
     LUA_DECLARE( createTaskInstance )
     {
         // taskinstance createTaskInstance ( string taskname, table parameters )
@@ -103,6 +105,7 @@ namespace CLuaFunctionDefs
                 // Read out the key string
                 const char* szKey = lua_tostring ( L, 2 );
 
+#if 0
                 // Grab the parameter
                 CLuaArgument* pValue = Task.GetParameter ( szKey );
                 if ( pValue )
@@ -111,6 +114,7 @@ namespace CLuaFunctionDefs
                     pValue->Push ( L );
                     return 1;
                 }
+#endif
             }
         }
 
@@ -242,4 +246,6 @@ namespace CLuaFunctionDefs
         lua_pushboolean ( L, false );
         return 1;
     }
+
+#endif //0
 }

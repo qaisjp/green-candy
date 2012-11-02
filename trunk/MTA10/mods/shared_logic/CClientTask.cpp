@@ -11,6 +11,8 @@
 
 #include "StdInc.h"
 
+#if 0
+
 using std::list;
 
 unsigned long CClientTask::m_ulLastUniqueIdentifier = 0;
@@ -710,3 +712,5 @@ CTask* CClientTask::CreateTask ( bool& bTaskPrimary, int& iTaskPriority )
     // No such task
     return NULL;
 }
+
+#endif //0

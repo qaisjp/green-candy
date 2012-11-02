@@ -516,15 +516,17 @@ public:
 
     void    SetTransmit( int type, void *entity );
     bool    GetTransmit( int type, void*& entity );
-    int     GetTransmit();
-    bool    IsTransmit( int type );
+    int     GetTransmit() const;
+    bool    IsTransmit( int type ) const;
 
+    Table*  AcquireEnvDispatcher( lua_State *L );
+    Table*  AcquireEnvDispatcherEx( lua_State *L, Table *env );
     void    RegisterMethod( lua_State *L, const char *name );
     void    EnvPutFront( lua_State *L );
     void    EnvPutBack( lua_State *L );
 
-    bool    IsDestroying();
-    bool    IsDestroyed();
+    bool    IsDestroying() const;
+    bool    IsDestroyed() const;
 
     void    PushEnvironment( lua_State *L );
     void    PushOuterEnvironment( lua_State *L );

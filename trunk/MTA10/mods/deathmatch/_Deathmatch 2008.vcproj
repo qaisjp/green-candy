@@ -958,10 +958,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CCustomData.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CElementArray.cpp"
 					>
 				</File>
@@ -1004,10 +1000,6 @@
 				<Filter
 					Name="lua"
 					>
-					<File
-						RelativePath="..\shared_logic\lua\CLuaArgument.cpp"
-						>
-					</File>
 					<File
 						RelativePath="..\shared_logic\lua\CLuaArguments.cpp"
 						>
@@ -1706,14 +1698,6 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\Logger.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\Shared\logic\LuaArgument.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\Shared\logic\LuaArguments.cpp"
 						>
 					</File>
 					<File
@@ -2596,10 +2580,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared_logic\CCustomData.h"
-					>
-				</File>
-				<File
 					RelativePath="..\shared_logic\CElementArray.h"
 					>
 				</File>
@@ -2650,10 +2630,6 @@
 				<Filter
 					Name="lua"
 					>
-					<File
-						RelativePath="..\shared_logic\lua\CLuaArgument.h"
-						>
-					</File>
 					<File
 						RelativePath="..\shared_logic\lua\CLuaArguments.h"
 						>
@@ -2748,14 +2724,6 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\Logger.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\Shared\logic\LuaArgument.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\Shared\logic\LuaArguments.h"
 						>
 					</File>
 					<File

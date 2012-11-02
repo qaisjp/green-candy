@@ -2451,15 +2451,17 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
             bitStream.ReadBit ( bCollisonsEnabled );
 
             // Read custom data
-            CCustomData* pCustomData = new CCustomData;
+            lua_newtable( L );
+
             unsigned short usNumData = 0;
-            bitStream.ReadCompressed ( usNumData );
-            for ( unsigned short us = 0 ; us < usNumData ; us++ )
+            bitStream.ReadCompressed( usNumData );
+
+            for ( unsigned short us = 0; us < usNumData; us++ )
             {
-                unsigned char ucNameLength = 0;
+                unsigned char ucNameLength;
 
                 // Read the custom data name length
-                if ( bitStream.Read ( ucNameLength ) )
+                if ( bitStream.Read( ucNameLength ) )
                 {
                     // Was a valid custom data name length found?
                     if ( ucNameLength <= MAX_CUSTOMDATA_NAME_LENGTH )
@@ -2468,12 +2470,11 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                         if ( ucNameLength > 0 )
                         {
                             SString strName;
-                            bitStream.ReadStringCharacters ( strName, ucNameLength );
+                            bitStream.ReadStringCharacters( strName, ucNameLength );
 
-                            CLuaArgument Argument;
-                            Argument.ReadFromBitStream ( bitStream );
-
-                            pCustomData->Set ( strName, Argument, NULL );
+                            lua_pushlstring( L, strName.c_str(), strName.size() );
+                            RakNet_ReadArgument( bitStream, L );
+                            lua_rawset( L, -3 );
                         }
                     }
                     else
@@ -2484,11 +2485,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                         // Raise a special assert, as we have to try and figure out this error.
                         assert ( 0 );
 #endif
-
-                        delete pCustomData;
-                        pCustomData = NULL;
-
-                        RaiseFatalError ( 6 );
+                        RaiseFatalError( 6 );
                         return;
                     }
                 }
@@ -2499,11 +2496,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                     // Raise a special assert, as we have to try and figure out this error.
                     assert ( 0 );
 #endif
-
-                    delete pCustomData;
-                    pCustomData = NULL;
-
-                    RaiseFatalError ( 7 );
+                    RaiseFatalError( 7 );
                     return;
                 }
             }
@@ -3459,7 +3452,24 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                 pEntity->SetAttachedOffsets ( attachedPosition.data.vecPosition, vecRotationRadians );
             }
             pEntity->SetSyncTimeContext ( ucSyncTimeContext );
-            pEntity->ApplyCustomData( pCustomData );
+
+            // Apply the custom data
+            pEntity->PushStack( L );
+            lua_getfield( L, -1, "data" );
+
+            lua_pushnil( L );
+
+            while ( lua_next( L, -4 ) )
+            {
+                lua_pushvalue( L, -2 ); // We need both to set them to our custom data
+                lua_pushvalue( L, -2 );
+
+                lua_settable( L, -5 );
+
+                lua_pop( L, 1 );
+            }
+
+            lua_pop( L, 2 );
 
             // Save any entity-dependant stuff for later
             SEntityDependantStuff* pStuff = new SEntityDependantStuff;
@@ -3473,8 +3483,9 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
             newEntitiesStuff.push_back ( pStuff );
         }
 
+        lua_pop( L, 1 );
+
         delete [] szName;
-        delete pCustomData;
     }
     }
 
@@ -4162,33 +4173,40 @@ void CPacketHandler::Packet_LuaEvent ( NetBitStreamInterface& bitStream )
         }
 
         // Read out the name and the entity id
-        char* szName = new char [ usNameLength + 1 ];
+        char *szName = new char [ usNameLength + 1 ];
         ElementID EntityID;
+
         if ( bitStream.Read ( szName, usNameLength ) && bitStream.Read ( EntityID ) )
         {
             // Null-terminate it
             szName [ usNameLength ] = 0;
 
-            // Read out the arguments aswell
-            CLuaArguments Arguments( bitStream );
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            unsigned short count = 0;
 
-            // Grab the event. Does it exist and is it remotly triggerable?
-            Event* pEvent = g_pClientGame->m_Events.Get ( szName );
+            // Read out the arguments aswell
+            RakNet_ReadArguments( bitStream, L, count );
+
+            // Grab the event. Does it exist and is it remotely triggerable?
+            Event *pEvent = g_pClientGame->m_Events.Get( szName );
+
             if ( pEvent )
             {
                 if ( pEvent->allowRemote )
-                {
-                    CClientEntity* pEntity = CElementIDs::GetElement ( EntityID );
-                    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
-
-                    Arguments.PushArguments( L );
-                    pEntity->CallEvent( szName, L, Arguments.Count() );
-                }
+                    CElementIDs::GetElement( EntityID )->CallEvent( szName, L, count );
                 else
-                    g_pClientGame->m_pScriptDebugging->LogError( "Server triggered clientside event %s, but event is not marked as remotly triggerable", szName );
+                {
+                    g_pClientGame->m_pScriptDebugging->LogError( "Server triggered clientside event %s, but event is not marked as remotely triggerable", szName );
+
+                    lua_pop( L, count );
+                }
             }
             else
+            {
                 g_pClientGame->m_pScriptDebugging->LogError( "Server triggered clientside event %s, but event is not added clientside", szName );
+
+                lua_pop( L, count );
+            }
         }
 
         // Delete event name again

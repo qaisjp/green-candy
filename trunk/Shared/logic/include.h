@@ -16,7 +16,7 @@
 #include "networking/NetworkStruct.h"
 #ifndef _KILLFRENZY
 #include "networking/NetworkRakNet.h"
-#endif
+#endif //_KILLFRENZY
 #include "LuaCommon.h"
 #include <luafile.h>
 #include <luafilesystem.h>
@@ -27,8 +27,6 @@
 #include "LuaElement.h"
 #include "RegisteredCommands.h"
 #include "Events.h"
-#include "LuaArgument.h"
-#include "LuaArguments.h"
 #include "LuaTimer.h"
 #include "LuaMatrix.h"
 #include "LuaTimerManager.h"

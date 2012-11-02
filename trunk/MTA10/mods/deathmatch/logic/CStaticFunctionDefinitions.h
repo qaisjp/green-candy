@@ -39,7 +39,6 @@ public:
     static bool                         AddEvent                            ( CLuaMain& LuaMain, const char* szName, bool bAllowRemoteTrigger );
     static bool                         AddEventHandler                     ( CLuaMain& LuaMain, const char* szName, CClientEntity& Entity, const LuaFunctionRef& iLuaFunction, bool bPropagated );
     static bool                         RemoveEventHandler                  ( CLuaMain& LuaMain, const char* szName, CClientEntity& Entity, const LuaFunctionRef& iLuaFunction );
-    static bool                         TriggerServerEvent                  ( const char* szName, CClientEntity& CallWithEntity, CLuaArguments& Arguments );
     static bool                         CancelEvent                         ( bool bCancel );
     static bool                         WasEventCancelled                   ( void );
 
@@ -373,8 +372,7 @@ public:
     static inline void                  GUIGridListAutoSizeColumn           ( CClientGUIElement& GUIElement, unsigned int uiColumn )                                    { static_cast < CGUIGridList* > ( GUIElement.GetCGUIElement () ) -> AutoSizeColumn ( uiColumn ); };
     static void                         GUIGridListClear                    ( CClientEntity& Element );
     static inline void                  GUIGridListSetItemText              ( CClientGUIElement& GUIElement, int iRow, int iColumn, const char *szText, bool bSection, bool bNumber, bool bFast )   { static_cast < CGUIGridList* > ( GUIElement.GetCGUIElement () ) -> SetItemText ( iRow, iColumn, szText, bNumber, bSection, bFast ); };
-    static void                         GUIGridListSetItemData              ( CClientGUIElement& GUIElement, int iRow, int iColumn, CLuaArgument* Variable );
-    static void                         GUIItemDataDestroyCallback          ( void* m_data );
+    static void                         GUIGridListSetItemData              ( CClientGUIElement& GUIElement, int iRow, int iColumn, LuaTypeExport *exp );
     static void                         GUIGridListSetSelectionMode         ( CClientEntity& Element, unsigned int uiMode );
     static inline void                  GUIGridListSetSelectedItem          ( CClientGUIElement& GUIElement, int iRow, int iColumn, bool bReset )                       { static_cast < CGUIGridList* > ( GUIElement.GetCGUIElement () ) -> SetSelectedItem ( iRow, iColumn, bReset ); };
     static inline void                  GUIGridListSetItemColor             ( CClientGUIElement& GUIElement, int iRow, int iColumn, int iRed, int iGreen, int iBlue, int iAlpha )       { static_cast < CGUIGridList* > ( GUIElement.GetCGUIElement () ) -> SetItemColor ( iRow, iColumn, iRed, iGreen, iBlue, iAlpha ); };

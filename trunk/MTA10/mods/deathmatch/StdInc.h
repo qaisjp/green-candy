@@ -87,7 +87,6 @@
 #include <CClientGameTexture.h>
 #include <CClientTexture.h>
 #include <CClientShader.h>
-#include <CCustomData.h>
 #include <CElementArray.h>
 #include <CMapEventManager.h>
 #include <CModelNames.h>

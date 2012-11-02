@@ -1444,14 +1444,6 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\Shared\logic\LuaArgument.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\Shared\logic\LuaArguments.cpp"
-						>
-					</File>
-					<File
 						RelativePath="..\..\..\Shared\logic\LuaCFunctions.cpp"
 						>
 					</File>
@@ -2474,14 +2466,6 @@
 					</File>
 					<File
 						RelativePath="..\..\..\Shared\logic\Logger.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\Shared\logic\LuaArgument.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\Shared\logic\LuaArguments.h"
 						>
 					</File>
 					<File

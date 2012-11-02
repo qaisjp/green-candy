@@ -196,7 +196,7 @@ LUA_API int            (lua_lessthan) (lua_State *L, int idx1, int idx2);
 LUA_API lua_Number      (lua_tonumber) (lua_State *L, int idx);
 LUA_API lua_Integer     (lua_tointeger) (lua_State *L, int idx);
 LUA_API lua_Integer     (lua_tointegerW) (lua_State *L, int idx);   // MTA Specific
-LUA_API int             (lua_toboolean) (lua_State *L, int idx);
+LUA_API bool            (lua_toboolean) (lua_State *L, int idx);
 LUA_API const char     *(lua_tolstring) (lua_State *L, int idx, size_t *len);
 LUA_API size_t          (lua_objlen) (lua_State *L, int idx);
 LUA_API lua_CFunction   (lua_tocfunction) (lua_State *L, int idx);
@@ -292,7 +292,7 @@ LUA_API void    (lua_pushtype) (lua_State *L, int idx);
 
 LUA_API int     (lua_error) (lua_State *L);
 
-LUA_API int     (lua_next) (lua_State *L, int idx);
+LUA_API bool    (lua_next) (lua_State *L, int idx);
 
 LUA_API void    (lua_concat) (lua_State *L, int n);
 
