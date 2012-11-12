@@ -134,7 +134,7 @@ CGameSA::CGameSA()
     m_pKeyGen                   = new CKeyGenSA;
     m_pRopes                    = new CRopesSA;
     m_pParticleSystem           = new CParticleSystemSA();
-    m_pFx                       = new CFxSA( (CFxSAInterface *)CLASS_CFx );
+    m_pFx                       = new CFxSA( (CFxSAInterface*)CLASS_CFx );
     m_pWaterManager             = new CWaterManagerSA ();
 
     // :D

@@ -81,6 +81,8 @@ void CTxdInstanceSA::Deallocate()
     OnRemoveTxd( id );
 #endif
 
+    assert( m_references == 0 );
+
     if ( m_txd )
     {
         // Notify our textures that they should detach from the txd
@@ -96,6 +98,8 @@ void CTxdInstanceSA::Deallocate()
         m_txd->ForAllTexturesSafe( Txd_DeleteAll, 0 );
 
         RwTexDictionaryDestroy( m_txd );
+
+        assert( (*ppRwInterface)->m_textureManager.m_current != m_txd );
 
         m_txd = NULL;
     }
@@ -204,7 +208,12 @@ void __cdecl HOOK_CTxdStore_SetupTxdParent( unsigned short id );
 #define HOOKPOS_CTxdStore_RemoveTxd       0x731E90
 void __cdecl HOOK_CTxdStore_RemoveTxd( unsigned short id );
 
-static RwTexture* __cdecl RwTexDictionaryFindFromStack( const char *name )
+static RwTexture* __cdecl RwTexDictionaryFindFromStack( const char *name, const char *secName )
+{
+    return NULL;
+}
+
+static RwTexture* __cdecl RwTexDictionaryFindFromStackRef( const char *name )
 {
     RwTexDictionary *tex = pRwInterface->m_textureManager.m_current;
 
@@ -215,15 +224,7 @@ static RwTexture* __cdecl RwTexDictionaryFindFromStack( const char *name )
     }
     while ( tex = tex->m_parentTxd );
 
-    if ( g_textureEmitter )
-        return g_textureEmitter->FindNamedTexture( name );
-
-    return NULL;
-}
-
-static RwTexture* __cdecl RwTexDictionaryFindFromStackSecondary( const char *name )
-{
-    return NULL;
+    return ( g_textureEmitter ) ? g_textureEmitter->FindNamedTexture( name ) : NULL;
 }
 
 static void Hook_InitTextureManager()
@@ -234,7 +235,7 @@ static void Hook_InitTextureManager()
 
     // Register some callbacks
     pRwInterface->m_textureManager.m_findInstance = RwTexDictionaryFindFromStack;
-    pRwInterface->m_textureManager.m_findInstanceSecondary = RwTexDictionaryFindFromStackSecondary;
+    pRwInterface->m_textureManager.m_findInstanceRef = RwTexDictionaryFindFromStackRef;
 }
 
 RwTexture *tmp;

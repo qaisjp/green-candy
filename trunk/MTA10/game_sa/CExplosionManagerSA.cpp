@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CExplosionManagerSA.cpp
 *  PURPOSE:     Explosion manager
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -17,44 +18,43 @@
 CExplosionManagerSA::CExplosionManagerSA()
 {
     DEBUG_TRACE("CExplosionManagerSA::CExplosionManagerSA()");
-    for(int i = 0; i<MAX_EXPLOSIONS;i++)
-        Explosions[i] = new CExplosionSA((CExplosionSAInterface *)(ARRAY_Explosions + i * sizeof(CExplosionSAInterface)));
-}
 
+    for( unsigned int i = 0; i < MAX_EXPLOSIONS; i++ )
+        m_explosions[i] = new CExplosionSA( (CExplosionSAInterface*)ARRAY_Explosions + i );
+}
 
 CExplosionManagerSA::~CExplosionManagerSA()
 {
-    for ( int i = 0; i < MAX_EXPLOSIONS; i++ )
-    {
-        delete Explosions [i];
-    }
+    for ( unsigned int i = 0; i < MAX_EXPLOSIONS; i++ )
+        delete m_explosions[i];
 }
-
 
 /**
  * \todo Test this, replace with CExplosion::AddExplosion code if possible in order to ensure correct pointer
  */
-CExplosion * CExplosionManagerSA::AddExplosion ( CEntity * pExplodingEntity, CEntity * pOwner, eExplosionType explosionType, CVector & vecPosition, unsigned int uiActivationDelay, bool bMakeSound, float fCamShake, bool bNoDamage )
+CExplosion* CExplosionManagerSA::AddExplosion( CEntity *entity, CEntity *owner, eExplosionType eType, const CVector& pos, unsigned int actDelay, bool makeSound, float camShake, bool noDamage )
 {
-    DEBUG_TRACE("CExplosion * CExplosionManagerSA::AddExplosion ( eExplosionType explosiontype, CVector * vecPosition, CEntity * creator = NULL)");
-    DWORD dwExplodingEntityInterface = ( pExplodingEntity ) ? ( DWORD )dynamic_cast <CEntitySA*> ( pExplodingEntity )->GetInterface () : 0;
-    DWORD dwOwnerInterface = ( pOwner ) ? ( DWORD )dynamic_cast <CEntitySA*> ( pOwner )->GetInterface () : 0;
-    float fX = vecPosition.fX, fY = vecPosition.fY, fZ = vecPosition.fZ;        
-    CExplosion * explosion = CExplosionManagerSA::FindFreeExplosion();
-    bool bReturn;   
+    DEBUG_TRACE("CExplosion* CExplosionManagerSA::AddExplosion( CEntity *entity, CEntity *owner, eExplosionType eType, const CVector& pos, unsigned int actDelay, bool makeSound, float camShake, bool noDamage )");
+
+    CEntitySAInterface *entInt = entity ? dynamic_cast <CEntitySA*> ( entity )->GetInterface() : NULL;
+    CEntitySAInterface *ownInt = owner ? dynamic_cast <CEntitySA*> ( owner )->GetInterface() : NULL;
+
+    float fX = pos.fX, fY = pos.fY, fZ = pos.fZ;        
+    CExplosion *explosion = CExplosionManagerSA::FindFreeExplosion();
+    bool bReturn;
     DWORD dwFunc = FUNC_CExplosion_AddExplosion;
     _asm
     {
-        push    bNoDamage
-        push    fCamShake
-        push    bMakeSound
-        push    uiActivationDelay
+        push    noDamage
+        push    camShake
+        push    makeSound
+        push    actDelay
         push    fZ
         push    fY
         push    fX
-        push    explosionType
-        push    dwOwnerInterface
-        push    dwExplodingEntityInterface
+        push    eType
+        push    ownInt
+        push    entInt
 
         // OUR CALL
         push    returnhere // simulate a call, by pusing our return address
@@ -71,17 +71,16 @@ returnhere:
         add     esp, 0x28
         mov     bReturn, al
     }
-    if ( bReturn ) return explosion;
 
-    return NULL;
+    return bReturn ? explosion : NULL;
 }
 
 /**
  * \todo Need to simulate this manually (loop and IsNear...)
  */
-VOID CExplosionManagerSA::RemoveAllExplosionsInArea ( CVector * vecPosition, FLOAT fRadius )
+void CExplosionManagerSA::RemoveAllExplosionsInArea( const CVector& pos, float radius )
 {
-    DEBUG_TRACE("VOID CExplosionManagerSA::RemoveAllExplosionsInArea ( CVector * vecPosition, FLOAT fRadius )");
+    DEBUG_TRACE("void CExplosionManagerSA::RemoveAllExplosionsInArea( const CVector& pos, float radius )");
     
 /*  DWORD dwFunction = FUNC_RemoveAllExplosionsInArea;
     CVector * vecPos = (CVector *)vecPosition;
@@ -100,23 +99,36 @@ VOID CExplosionManagerSA::RemoveAllExplosionsInArea ( CVector * vecPosition, FLO
     }*/
 }
 
-VOID CExplosionManagerSA::RemoveAllExplosions (  )
+void CExplosionManagerSA::RemoveAllExplosions()
 {
-    DEBUG_TRACE("VOID CExplosionManagerSA::RemoveAllExplosions (  )");
-    for(int i = 0; i < MAX_EXPLOSIONS; i++)
-        if(Explosions[i]->IsActive()) Explosions[i]->Remove();
+    DEBUG_TRACE("void CExplosionManagerSA::RemoveAllExplosions()");
+
+    for( unsigned int i = 0; i < MAX_EXPLOSIONS; i++ )
+    {
+        if( m_explosions[i]->IsActive() )
+            m_explosions[i]->Remove();
+    }
 }
 
-CExplosion * CExplosionManagerSA::GetExplosion ( DWORD ID )
+CExplosion* CExplosionManagerSA::GetExplosion( unsigned int id )
 {
-    DEBUG_TRACE("CExplosion * CExplosionManagerSA::GetExplosion ( DWORD ID )");
-    return Explosions[ID];
+    DEBUG_TRACE("CExplosion* CExplosionManagerSA::GetExplosion( unsigned int id )");
+
+    if ( id > MAX_EXPLOSIONS-1 )
+        return NULL;
+
+    return m_explosions[id];
 }
 
-CExplosion * CExplosionManagerSA::FindFreeExplosion (  )
+CExplosion* CExplosionManagerSA::FindFreeExplosion()
 {
-    DEBUG_TRACE("CExplosion * CExplosionManagerSA::FindFreeExplosion (  )");
-    for(int i = 0; i < MAX_EXPLOSIONS; i++)
-        if(!Explosions[i]->IsActive()) return Explosions[i];
+    DEBUG_TRACE("CExplosion* CExplosionManagerSA::FindFreeExplosion()");
+
+    for( unsigned int i = 0; i < MAX_EXPLOSIONS; i++ )
+    {
+        if( !m_explosions[i]->IsActive() )
+            return m_explosions[i];
+    }
+
     return NULL;
 }

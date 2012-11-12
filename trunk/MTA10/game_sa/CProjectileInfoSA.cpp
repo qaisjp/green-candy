@@ -56,6 +56,25 @@ CProjectileInfo* CProjectileInfoSA::GetProjectileInfo( void *info )
     return m_info[((DWORD)info - ARRAY_CProjectileInfo) / sizeof(CProjectileInfoSAInterface)];
 }
 
+static void RemoveProjectile( CProjectileInfoSAInterface *info, CProjectileSAInterface *intf )
+{
+    switch( info->m_type )
+    {
+    case WEAPONTYPE_GRENADE:
+        pGame->GetExplosionManager()->AddExplosion(
+            NULL, pGame->GetPools()->GetEntity( info->m_owner ), EXP_TYPE_GRENADE, intf->m_matrix ? intf->m_matrix->pos : intf->m_position, 0, true, -1, false );
+        break;
+    case WEAPONTYPE_MOLOTOV:
+        pGame->GetExplosionManager()->AddExplosion(
+            NULL, pGame->GetPools()->GetEntity( info->m_owner ), EXP_TYPE_MOLOTOV, intf->m_matrix ? intf->m_matrix->pos : intf->m_position, 0, true, -1, false );
+
+        pGame->GetAudio()->PushEntityAudio( intf );
+        break;
+    }
+
+    info->m_active = false;
+}
+
 void CProjectileInfoSA::RemoveProjectile ( CProjectileInfo * pProjectileInfo, CProjectile * pProjectile )
 {
     DWORD dwFunc = FUNC_RemoveProjectile;
@@ -66,21 +85,15 @@ void CProjectileInfoSA::RemoveProjectile ( CProjectileInfo * pProjectileInfo, CP
 
     CEntitySAInterface * projectileInterface = pProjectileSA->GetInterface();
 
-    // Check that this infact is a CProjectile
-    // This is perhaps the fix for a crash where it jumps to 0x42480000
-    // The proper cause should be figured out instead though as this is a rather unsafe fix.
-    if ( *(DWORD*) projectileInterface == VTBL_CProjectile )
+    // Has it not already been removed by GTA?
+    if ( pProjectileInfo->IsActive () )
     {
-        // Has it not already been removed by GTA?
-        if ( pProjectileInfo->IsActive () )
+        _asm
         {
-            _asm
-            {
-                push    projectileInterface
-                push    projectileInfoInterface
-                call    dwFunc
-                add     esp, 8
-            }
+            push    projectileInterface
+            push    projectileInfoInterface
+            call    dwFunc
+            add     esp, 8
         }
     }
 }
@@ -89,7 +102,7 @@ CProjectileInfo* CProjectileInfoSA::GetNextFreeProjectileInfo()
 {
     for ( int i = 0; i < PROJECTILE_INFO_COUNT; i++ )
     {
-        if ( m_info[i]->m_interface->dwProjectileType == 0 )
+        if ( m_info[i]->m_interface->m_type == 0 )
             return m_info[i];
     }
     return NULL;
@@ -162,7 +175,7 @@ bool CProjectileInfoSA::AddProjectile( CEntity *creator, eWeaponType eWeapon, co
 
 CEntity* CProjectileInfoSA::GetTarget() const
 {
-    CEntitySAInterface* pTargetInterface = m_interface->pEntProjectileTarget;
+    CEntitySAInterface* pTargetInterface = m_interface->m_target;
     CEntity* pTarget = NULL;
 
     if ( !pTargetInterface )
@@ -182,10 +195,10 @@ void CProjectileInfoSA::SetTarget ( CEntity* pEntity )
 {
     CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
     if ( pEntitySA )
-        m_interface->pEntProjectileTarget = pEntitySA->GetInterface();
+        m_interface->m_target = pEntitySA->GetInterface();
 }
 
 bool CProjectileInfoSA::IsActive() const
 {
-    return ( m_interface->bProjectileActive == 1 );
+    return m_interface->m_active;
 }

@@ -285,12 +285,12 @@ void _cdecl MaybeAlterFxQualityValue ( DWORD dwAddrCalledFrom )
         // These vehicles seem to have problems with volumetric shadows, so force blob shadows
         switch ( usCallingForVehicleModel )
         {
-            case 460:   // Skimmer
-            case 511:   // Beagle
-            case 572:   // Mower
-            case 590:   // Box Freight
-            case 592:   // Andromada
-                dwFxQualityValue = 0;
+        case 460:   // Skimmer
+        case 511:   // Beagle
+        case 572:   // Mower
+        case 590:   // Box Freight
+        case 592:   // Andromada
+            dwFxQualityValue = 0;
         }
         usCallingForVehicleModel = 0;
     }

@@ -4185,7 +4185,11 @@ void CPacketHandler::Packet_LuaEvent ( NetBitStreamInterface& bitStream )
             unsigned short count = 0;
 
             // Read out the arguments aswell
-            RakNet_ReadArguments( bitStream, L, count );
+            if ( !RakNet_ReadArguments( bitStream, L, count ) )
+            {
+                RaiseProtocolError( 13 );
+                return;
+            }
 
             // Grab the event. Does it exist and is it remotely triggerable?
             Event *pEvent = g_pClientGame->m_Events.Get( szName );
@@ -4198,14 +4202,14 @@ void CPacketHandler::Packet_LuaEvent ( NetBitStreamInterface& bitStream )
                 {
                     g_pClientGame->m_pScriptDebugging->LogError( "Server triggered clientside event %s, but event is not marked as remotely triggerable", szName );
 
-                    lua_pop( L, count );
+                    lua_pop( L, (int)count );
                 }
             }
             else
             {
                 g_pClientGame->m_pScriptDebugging->LogError( "Server triggered clientside event %s, but event is not added clientside", szName );
 
-                lua_pop( L, count );
+                lua_pop( L, (int)count );
             }
         }
 

@@ -35,14 +35,14 @@
 class CProjectileInfoSAInterface
 {
 public:
-    eWeaponType                 dwProjectileType;
-    CEntitySAInterface*         pEntProjectileOwner;
-    CEntitySAInterface*         pEntProjectileTarget;
-    DWORD                       dwCounter;
-    BYTE                        bProjectileActive;
-    BYTE                        bPad [ 3 ];
-    CVector                     OldCoors;
-    DWORD                       dwUnk;
+    eWeaponType                     m_type;         // 0
+    CEntitySAInterface*             m_owner;        // 4
+    CEntitySAInterface*             m_target;       // 8
+    unsigned int                    m_count;        // 12
+    bool                            m_active;       // 16
+    BYTE                            m_pad[3];       // 17
+    CVector                         m_oldPos;       // 20
+    unsigned int                    m_unk;          // 32, particle effect ptr
 };
 
 class CProjectileInfoSA : public CProjectileInfo

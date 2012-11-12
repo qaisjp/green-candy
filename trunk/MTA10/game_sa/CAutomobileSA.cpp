@@ -72,8 +72,40 @@ void CAutomobileSAInterface::SetModelIndex( unsigned short index )
     GetRwObject()->ScanAtomicHierarchy( m_components, (unsigned int)NUM_VEHICLE_COMPONENTS );
 }
 
+struct assocModelStore
+{
+    unsigned short primary[30];
+    unsigned short secondary[30];
+
+    unsigned int m_count;
+};
+
+unsigned short FindModelAssociation( assocModelStore& store, unsigned short model )
+{
+    for ( unsigned char n = 0; n < store.m_count; n++ )
+    {
+        if ( store.primary[n] == model )
+            return store.secondary[n];
+        if ( store.secondary[n] == model )
+            return store.primary[n];
+    }
+
+    return 0xFFFF;
+}
+
+static assocModelStore *upgStore = (assocModelStore*)0x00B4E6D8;
+
 void CAutomobileSAInterface::AddUpgrade( unsigned short model )
 {
+    unsigned short special;
+    CBaseModelInfoSAInterface *info = ppModelInfo[model];
+
+    if ( !UpdateComponentStatus( model, info->m_collFlags, &special ) )
+    {
+        unsigned short assoc = FindModelAssociation( *upgStore, model );
+
+        
+    }
 
 }
 
