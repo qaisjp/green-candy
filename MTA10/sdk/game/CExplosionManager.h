@@ -1,9 +1,10 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        sdk/game/CExplosionManager.h
 *  PURPOSE:     Explosion manager interface
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -12,19 +13,17 @@
 #ifndef __CGAME_EXPLOSIONMANAGER
 #define __CGAME_EXPLOSIONMANAGER
 
-#include <CVector.h>
 #include "CExplosion.h"
 #include "Common.h"
-#include "CEntity.h"
 
 class CExplosionManager
 {
 public:
-    virtual CExplosion *        AddExplosion                ( CEntity * pExplodingEntity, CEntity * pOwner, eExplosionType explosionType, CVector & vecPosition, unsigned int uiActivationDelay = 0, bool bMakeSound = true, float fCamShake = -1.0f, bool bNoDamage = false ) = 0;
-    virtual VOID                RemoveAllExplosionsInArea   ( CVector * vecPosition, FLOAT fRadius ) = 0;
-    virtual VOID                RemoveAllExplosions         ( void ) = 0;
-    virtual CExplosion *        GetExplosion                ( DWORD ID ) = 0;
-    virtual CExplosion *        FindFreeExplosion           ( void ) = 0;
+    virtual CExplosion*         AddExplosion( CEntity *entity, CEntity *owner, eExplosionType type, const CVector& pos, unsigned int actDelay = 0, bool makeSound = true, float camShake = -1.0f, bool noDamage = false ) = 0;
+    virtual void                RemoveAllExplosionsInArea( const CVector& pos, float radius ) = 0;
+    virtual void                RemoveAllExplosions() = 0;
+    virtual CExplosion*         GetExplosion( unsigned int id ) = 0;
+    virtual CExplosion*         FindFreeExplosion() = 0;
 };
 
 #endif

@@ -766,7 +766,8 @@ public:
     size_t                  m_size;
 };
 
-typedef RwTexture* (__cdecl *RwScanTexDictionaryStack_t) ( const char *name );
+typedef RwTexture* (__cdecl *RwScanTexDictionaryStack_t) ( const char *name, const char *secName );
+typedef RwTexture* (__cdecl *RwScanTexDictionaryStackRef_t) ( const char *name );
 
 class RwTextureManager
 {
@@ -776,12 +777,17 @@ public:
     RwStructInfo*                   m_txdStruct;                            // 12
     RwTexDictionary*                m_current;                              // 16
     RwScanTexDictionaryStack_t      m_findInstance;                         // 20
-    RwScanTexDictionaryStack_t      m_findInstanceSecondary;                // 24
+    RwScanTexDictionaryStackRef_t   m_findInstanceRef;                      // 24
 };
 class RwRenderSystem    // TODO
 {
 public:
     void*                   m_unkStruct;                                    // 0
+};
+struct RwError
+{
+    int err1;
+    unsigned int err2;
 };
 class RwInterface   // size: 1456
 {
@@ -802,8 +808,10 @@ public:
     void*                   (*m_allocStruct)( RwStructInfo *info, unsigned int flags ); // 324
     void*                   m_callback2;                                    // 328
 
-    BYTE                    m_pad2[24];                                     // 332
+    BYTE                    m_pad2[12];                                     // 332
+    RwError                 m_errorInfo;                                    // 344
 
+    BYTE                    m_pad9[4];                                      // 352
     void*                   m_callback3;                                    // 356
     void*                   m_callback4;                                    // 360
     void                    (*m_matrixTransform3)( CVector *dst, const CVector *point, unsigned int count, const RwMatrix *matrices );  // 364
@@ -832,6 +840,29 @@ public:
 
 extern RwInterface **ppRwInterface;
 #define pRwInterface (*ppRwInterface)
+
+/*****************************************************************************/
+/** RenderWare Helper Classes                                               **/
+/*****************************************************************************/
+
+// Swap the current txd with another
+class RwTxdStack
+{
+public:
+    RwTxdStack( RwTexDictionary *txd )
+    {
+        m_txd = (*ppRwInterface)->m_textureManager.m_current;
+        (*ppRwInterface)->m_textureManager.m_current = txd;
+    }
+
+    ~RwTxdStack()
+    {
+        (*ppRwInterface)->m_textureManager.m_current = m_txd;
+    }
+
+private:
+    RwTexDictionary*    m_txd;
+};
 
 /*****************************************************************************/
 /** RenderWare I/O                                                          **/
@@ -896,10 +927,6 @@ struct RwStream
     int                 pos;
     RwStreamTypeData    data;
     int                 id;
-};
-struct RwError
-{
-    int err1,err2;
 };
 
 #endif

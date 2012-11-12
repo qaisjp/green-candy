@@ -176,11 +176,7 @@ void CClientProjectile::Initiate( CVector *pvecPosition, CVector *pvecRotation, 
 
 void CClientProjectile::Destroy()
 {
-    if ( m_pProjectile )
-    {
-        delete m_pProjectile;
-        m_pProjectile = NULL;
-    }
+    delete m_pProjectile;
 }
 
 bool CClientProjectile::IsActive() const

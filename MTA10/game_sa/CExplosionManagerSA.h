@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CExplosionManagerSA.h
 *  PURPOSE:     Header file for explosion manager class
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -27,17 +28,17 @@
 class CExplosionManagerSA : public CExplosionManager
 {
 public:
-                        CExplosionManagerSA         ( void );
-                        ~CExplosionManagerSA        ( void );
+                        CExplosionManagerSA();
+                        ~CExplosionManagerSA();
 
-    CExplosion *        AddExplosion                ( CEntity * pExplodingEntity, CEntity * pOwner, eExplosionType explosionType, CVector & vecPosition, unsigned int uiActivationDelay = 0, bool bMakeSound = true, float fCamShake = -1.0f, bool bNoDamage = false );
-    VOID                RemoveAllExplosionsInArea   ( CVector * vecPosition, FLOAT fRadius );
-    VOID                RemoveAllExplosions         ( void );
-    CExplosion *        GetExplosion                ( DWORD ID );
-    CExplosion *        FindFreeExplosion           ( void );
+    CExplosion*         AddExplosion( CEntity *entity, CEntity *owner, eExplosionType type, const CVector& pos, unsigned int actDelay = 0, bool makeSound = true, float camShake = -1.0f, bool noDamage = false );
+    void                RemoveAllExplosionsInArea( const CVector& pos, float radius );
+    void                RemoveAllExplosions();
+    CExplosion*         GetExplosion( unsigned int id );
+    CExplosion*         FindFreeExplosion();
 
 private:
-    CExplosionSA *      Explosions[MAX_EXPLOSIONS];
+    CExplosionSA*       m_explosions[MAX_EXPLOSIONS];
 };
 
 #endif

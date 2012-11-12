@@ -651,12 +651,12 @@ LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar);
 class lua_exception : public std::exception
 {
 public:
-    lua_exception( lua_State *L, unsigned int status, const char *msg ) : std::exception( msg )
+    lua_exception( lua_State *L, unsigned int status, const char *msg, int startLevel = 0 ) : std::exception( msg )
     {
         m_status = status;
         m_thread = L;
 
-        if ( !lua_getstack( L, 0, &m_debug ) )
+        if ( !lua_getstack( L, startLevel, &m_debug ) )
         {
             // We are not inside a function
             m_debug.currentline = -1;
@@ -671,10 +671,11 @@ public:
             return;
 
         // Script debug has higher priority, scan for it
-        unsigned int n = 1;
         lua_Debug debug;
 
-        while ( lua_getstack( L, n++, &debug ) )
+        startLevel++;
+
+        while ( lua_getstack( L, startLevel++, &debug ) )
         {
             lua_getinfo( L, "nlS", &debug );
 

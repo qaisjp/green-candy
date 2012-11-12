@@ -18,11 +18,11 @@
 class CParticleObjectSAInterface
 {
 public:
-                                                CParticleObjectSAInterface();
-                                                ~CParticleObjectSAInterface();
+                                CParticleObjectSAInterface();
+                                ~CParticleObjectSAInterface();
 
-    void                                        Stop();
-    void                                        DestroyParticles();
+    void                        Stop();
+    void                        DestroyParticles();
 
     BYTE                        m_pad3[76];             // 4
     unsigned char               m_unk;                  // 80

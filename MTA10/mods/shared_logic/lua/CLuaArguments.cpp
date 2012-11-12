@@ -20,7 +20,7 @@ static inline bool RakNet_ReadArgumentByType( NetBitStreamInterface& stream, lua
     union
     {
         bool boolean;
-        double number;
+        float number;
         int iNumber;
         CClientEntity *entity;
     };
@@ -209,7 +209,7 @@ static inline bool RakNet_ReadTable( NetBitStreamInterface& stream, lua_State *L
     int top = lua_gettop( L );
 
     // The table we save things at
-    lua_newtable( L );
+    lua_createtable( L, 2, 0 );
 
     cb.start( L, top + 1 );
 
@@ -291,7 +291,7 @@ bool RakNet_ReadArguments( NetBitStreamInterface& stream, lua_State *L, unsigned
 static inline bool RakNet_WriteArgumentByType( NetBitStreamInterface& stream, lua_State *L, int idx, int luaType )
 {
     SLuaTypeSync type;
-    double num;
+    float num;
     int iNum;
 
     switch( luaType )

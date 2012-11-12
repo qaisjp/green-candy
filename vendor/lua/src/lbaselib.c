@@ -79,24 +79,12 @@ static int luaB_tonumber (lua_State *L) {
   return 1;
 }
 
-
 static int luaB_error (lua_State *L)
 {
-#if 0
-    int level = luaL_optint(L, 2, 1);
-    lua_settop(L, 1);
-    if (lua_isstring(L, 1) && level > 0)
-    {  /* add extra information? */
-        luaL_where(L, level);
-        lua_pushvalue(L, 1);
-        lua_concat(L, 2);
-    }
-#else
-    lua_settop( L, 1 );
-#endif
-    return lua_error(L);
-}
+    throw lua_exception( L, LUA_ERRRUN, lua_tostring( L, 1 ), lua_tonumber( L, 2 ) );
 
+    return 0;
+}
 
 static int luaB_getmetatable (lua_State *L)
 {
@@ -232,7 +220,6 @@ static int luaB_collectgarbage (lua_State *L) {
   }
 }
 
-
 static int luaB_type (lua_State *L)
 {
     luaL_checkany(L, 1);
@@ -240,6 +227,12 @@ static int luaB_type (lua_State *L)
     return 1;
 }
 
+static int luaB_rawtype( lua_State *L )
+{
+    luaL_checkany( L, 1 );
+    lua_pushstring( L, lua_typename( L, lua_type( L, 1 ) ) );
+    return 1;
+}
 
 static int luaB_next (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
@@ -491,6 +484,7 @@ static const luaL_Reg base_funcs[] = {
   {"tonumber", luaB_tonumber},
   {"tostring", luaB_tostring},
   {"type", luaB_type},
+  {"rawtype", luaB_rawtype},
   {"unpack", luaB_unpack},
   {"xpcall", luaB_xpcall},
   {NULL, NULL}

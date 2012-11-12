@@ -123,6 +123,27 @@ public:
         }
     }
 
+    void                    GetString( char *buf, const size_t max )
+    {
+        size_t n = 0;
+
+        if ( max == 0 )
+            return;
+
+        while ( !IsEOF() )
+        {
+            unsigned char c = ReadByte();
+
+            if ( !c || c == '\n' )
+                return;
+
+            buf[n++] = c;
+
+            if ( n == max )
+                return;
+        }
+    }
+
     template <class type>
     bool    ReadStruct( type& buf )
     {

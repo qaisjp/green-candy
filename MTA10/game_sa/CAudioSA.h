@@ -45,6 +45,8 @@ public:
     void                PlayBeatTrack( short iTrack );
     void                SetEffectsMasterVolume( unsigned char volume ); // 64 = max volume
     void                SetMusicMasterVolume( unsigned char volume );
+
+    void                PushEntityAudio( CEntitySAInterface *entity );
     void                ClearMissionAudio( int slot = 1 );
     void                PreloadMissionAudio( unsigned short usAudioEvent, int slot = 1 );
     unsigned char       GetMissionAudioLoadingStatus( int slot = 1 ) const;

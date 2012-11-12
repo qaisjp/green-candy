@@ -242,10 +242,22 @@ void CAudioSA::PlayBeatTrack( short iTrack )
     }
 }
 
+void CAudioSA::PushEntityAudio( CEntitySAInterface *entity )
+{
+    DWORD dwFunc = 0x00506ED0;
+
+    __asm
+    {
+        mov ecx,CLASS_CAudioEngine
+        push entity
+        call dwFunc
+    }
+}
+
 void CAudioSA::ClearMissionAudio( int slot )
 {
     DWORD dwFunc = 0x5072F0; // CAudioEngine::ClearMissionAudio(unsigned char)
-    _asm
+    __asm
     {
         mov     ecx, CLASS_CAudioEngine
         push    slot // sound bank slot?
@@ -257,7 +269,7 @@ bool CAudioSA::IsMissionAudioSampleFinished( int slot ) const
 {
     DWORD dwFunc = 0x5072C0; // CAudioEngine::IsMissionAudioSampleFinished
     bool cret = 0;
-    _asm
+    __asm
     {
         mov     ecx, CLASS_CAudioEngine
         push    slot
@@ -271,7 +283,7 @@ void CAudioSA::PreloadMissionAudio( unsigned short usAudioEvent, int slot )
 {
     DWORD dwFunc = 0x507290; // CAudioEngine__PreloadMissionAudio
     DWORD AudioEvent = usAudioEvent;
-    _asm
+    __asm
     {
         mov     ecx, CLASS_CAudioEngine
         push    AudioEvent
@@ -284,7 +296,7 @@ unsigned char CAudioSA::GetMissionAudioLoadingStatus( int slot ) const
 {
     DWORD dwFunc = 0x5072A0; // get load status
     unsigned char cret = 0;
-    _asm
+    __asm
     {
         mov     ecx, CLASS_CAudioEngine
         push    slot
@@ -296,13 +308,8 @@ unsigned char CAudioSA::GetMissionAudioLoadingStatus( int slot ) const
 
 void CAudioSA::AttachMissionAudioToPhysical( CPhysical *physical, int slot )
 {
-    CEntitySAInterface * entity = NULL;
-    if ( physical )
-    {
-        CPhysicalSA* pPhysical = dynamic_cast < CPhysicalSA* > ( physical );
-        if ( pPhysical )
-            entity = pPhysical->GetInterface ();
-    }
+    CPhysicalSA *pPhysical = dynamic_cast <CPhysicalSA*> ( physical );
+    CEntitySAInterface *entity = pPhysical ? pPhysical->GetInterface() : NULL;
     
     DWORD dwFunc = 0x507330; // AttachMissionAudioToPhysical
     _asm

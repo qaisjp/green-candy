@@ -1766,12 +1766,7 @@ bool RpGeometry::IsAlpha()
 bool RpMaterialTextureUnlink( RpMaterial *mat, int )
 {
     if ( RwTexture *tex = mat->m_texture )
-    {
-        if ( !tex->txd )
-            __asm nop
-
         mat->m_texture = NULL;
-    }
 
     return true;
 }
@@ -1811,4 +1806,53 @@ bool RwAtomicRenderChainInterface::PushRender( RwAtomicZBufferEntry *level )
     LIST_REMOVE( progr->list );
     LIST_INSERT( iter->list, progr->list );
     return true;
+}
+
+RwTexture* RwFindTexture( const char *name, const char *secName )
+{
+    RwTexture *tex = pRwInterface->m_textureManager.m_findInstanceRef( name );
+
+    // The global store will reference textures
+    if ( tex )
+    {
+        tex->refs++;
+        return tex;
+    }
+
+    if ( !( tex = pRwInterface->m_textureManager.m_findInstance( name, secName ) ) )
+    {
+        // If we have not found anything, we tell the system about an error
+        RwError err;
+        err.err1 = 0x01;
+        err.err2 = 0x16;
+
+        // Actually, there is a missing texture handler; it is void though
+        RwSetError( &err );
+        return NULL;
+    }
+
+    if ( RwTexDictionary *txd = pRwInterface->m_textureManager.m_current )
+    {
+        tex->RemoveFromDictionary();
+        tex->AddToDictionary( txd );
+    }
+
+    return tex;
+}
+
+RwError* RwSetError( RwError *info )
+{
+    if ( pRwInterface->m_errorInfo.err1 )
+        return info;
+
+    if ( pRwInterface->m_errorInfo.err2 != 0x80000000 )
+        return info;
+
+    if ( info->err1 & 0x80000000 )
+        pRwInterface->m_errorInfo.err1 = 0;
+    else
+        pRwInterface->m_errorInfo.err1 = info->err1;
+
+    pRwInterface->m_errorInfo.err2 = info->err2;
+    return info;
 }

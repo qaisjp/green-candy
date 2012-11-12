@@ -17,25 +17,37 @@
 
 #define CLASS_CParticleSystem           0x00A9AE80
 
+#define FUNC_InitParticles              0x0049EA90
+
 typedef CAlignedStackSA <0x100000> CEffectStackSA;
 
-class CEffectDataSA;
+class CEffectDataSAInterface;
+class CEffectDefSAInterface;
 
 class CParticleSystemSAInterface
 {
 public:
     void                                    Init();
     void                                    Shutdown();
-    void                                    LoadDefinitions( const char *filename );
+    bool                                    LoadDefinitions( const char *filename );
 
-    BYTE                                    m_pad[24];      // 0
-    CEffectDataSA*                          m_effects;      // 24
+    void                                    SetGlobalAssociatives( const CVector *windVelocity, const float *unk );
+
+    CSimpleList                             m_defList;      // 0
+    BYTE                                    m_pad[12];      // 12
+    CEffectDataSAInterface*                 m_effects;      // 24
     CSimpleList                             m_effectList;   // 28
 
-    BYTE                                    m_pad2[96];     // 40
+    int                                     m_txdID;        // 40
+    const CVector*                          m_windVelocity; // 44
+    const float*                            m_unk;          // 48
+    BYTE                                    m_pad2[84];     // 52
     unsigned int                            m_count;        // 136
     RwMatrix*                               m_matrices[8];  // 140
     CEffectStackSA                          m_memory;       // 172
+
+private:
+    CEffectDefSAInterface*                  ParseFXDataDef( const char *filename, CFile *file );
 };
 
 class CParticleSystemSA
@@ -45,6 +57,6 @@ public:
                                             ~CParticleSystemSA();
 };
 
-extern CParticleSystemSAInterface *pParticleSystem;
+extern CParticleSystemSAInterface *const pParticleSystem;
 
 #endif //_CParticleSystemSA_

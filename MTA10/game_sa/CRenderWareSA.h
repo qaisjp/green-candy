@@ -50,4 +50,8 @@ class CRenderWareSA : public CRenderWare
 // MTA RenderWare extensions
 void        RpAtomicCloneIsolated( const RpAtomic *atom );
 
+// Internal RenderWare functions
+RwTexture*  RwFindTexture( const char *name, const char *secName );     // US exe: 0x007F3AC0
+RwError*    RwSetError( RwError *info );                                // US exe: 0x00808820
+
 #endif
