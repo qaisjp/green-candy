@@ -68,7 +68,7 @@ static inline void lua_unpack( lua_State *L )
 static inline void lua_stack2table( lua_State *L, int tidx, int n )
 {
     while ( n )
-        lua_rawseti( L, tidx, n-- + 1 );
+        lua_rawseti( L, tidx, n-- );
 }
 
 // Inline class for saving basic types

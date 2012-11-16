@@ -81,7 +81,7 @@ static int luaB_tonumber (lua_State *L) {
 
 static int luaB_error (lua_State *L)
 {
-    throw lua_exception( L, LUA_ERRRUN, lua_tostring( L, 1 ), lua_tonumber( L, 2 ) );
+    throw lua_exception( L, LUA_ERRRUN, lua_tostring( L, 1 ), lua_tointeger( L, 2 ) );
 
     return 0;
 }

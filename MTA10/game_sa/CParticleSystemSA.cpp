@@ -119,12 +119,12 @@ void CParticleSystemSAInterface::SetGlobalAssociatives( const CVector *windVeloc
 CParticleSystemSA::CParticleSystemSA()
 {
     // Do not let GTA SA load particles
-    *(unsigned char*)FUNC_InitParticles = 0xC4;
+    //*(unsigned char*)FUNC_InitParticles = 0xC4;
 
-    pParticleSystem->Init();
+    //pParticleSystem->Init();
 }
 
 CParticleSystemSA::~CParticleSystemSA()
 {
-    pParticleSystem->Shutdown();
+    //pParticleSystem->Shutdown();
 }

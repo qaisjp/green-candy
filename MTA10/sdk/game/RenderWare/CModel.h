@@ -18,6 +18,8 @@ class CModel : public virtual CRwObject
 public:
     virtual                         ~CModel()   {}
 
+    virtual void                    Render() = 0;
+
     virtual std::vector <unsigned short>    GetImportList() const = 0;
 
     virtual bool                    Replace( unsigned short id ) = 0;
@@ -27,8 +29,12 @@ public:
     virtual void                    RestoreAll() = 0;
 
     typedef std::list <CRpAtomic*> atomicList_t;
+    typedef std::list <CRpLight*> lightList_t;
+    typedef std::list <CRwCamera*> cameraList_t;
 
     virtual const atomicList_t&     GetAtomics() const = 0;
+    virtual const lightList_t&      GetLights() const = 0;
+    virtual const cameraList_t&     GetCameras() const = 0;
 };
 
 #endif //_MODEL_ENTITY_EXPORT_

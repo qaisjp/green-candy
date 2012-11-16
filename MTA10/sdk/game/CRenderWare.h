@@ -1,9 +1,10 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        sdk/game/CRenderWare.h
 *  PURPOSE:     RenderWare engine interface
+*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -25,6 +26,12 @@ typedef void (*PFN_WATCH_CALLBACK) ( CSHADERDUMMY* pContext, CD3DDUMMY* pD3DData
 class CRenderWare
 {
 public:
+    virtual class CRpLight*         CreateLight( RpLightType type ) = 0;
+    virtual class CRwFrame*         CreateFrame() = 0;
+    virtual class CRwCamera*        CreateCamera( int width, int height ) = 0;
+
+    virtual bool                    IsRendering() const = 0;
+
     virtual CColModel*              ReadCOL( CFile *file ) = 0;
 };
 

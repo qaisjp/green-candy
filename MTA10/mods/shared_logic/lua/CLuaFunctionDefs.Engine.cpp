@@ -150,6 +150,76 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( engineCreateLight )
+    {
+        RpLightType type;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadEnumString( type );
+
+        if ( !argStream.HasErrors() )
+        {
+            CRpLight *light = g_pGame->GetRenderWare()->CreateLight( type );
+
+            if ( light )
+            {
+                ( new CClientLight( L, NULL, *light ) )->PushStack( L );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineCreateFrame )
+    {
+        CRwFrame *frame = g_pGame->GetRenderWare()->CreateFrame();
+
+        if ( !frame )
+        {
+            lua_pushboolean( L, false );
+            return 1;
+        }
+
+        ( new CClientRwFrame( L, *frame ) )->PushStack( L );
+        return 1;
+    }
+
+    LUA_DECLARE( engineCreateCamera )
+    {
+        int width, height;
+
+        CScriptArgReader argStream( L );
+
+        argStream.ReadNumber( width );
+        argStream.ReadNumber( height );
+
+        if ( !argStream.HasErrors() )
+        {
+            CRwCamera *cam = g_pGame->GetRenderWare()->CreateCamera( width, height );
+
+            if ( cam )
+            {
+                ( new CClientRwCamera( L, *cam ) )->PushStack( L );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineIsRendering )
+    {
+        lua_pushboolean( L, g_pGame->GetRenderWare()->IsRendering() );
+        return 1;
+    }
+
     LUA_DECLARE( engineReplaceCOL )
     {
         // Grab the COL and model ID

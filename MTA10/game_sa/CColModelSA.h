@@ -74,8 +74,8 @@ class CColModelSAInterface
 public:
                                     ~CColModelSAInterface();
 
-    void*   operator new( size_t );
-    void    operator delete( void *ptr );
+    void*   operator new ( size_t );
+    void    operator delete ( void *ptr );
 
     CBoundingBox                    m_bounds;
     BYTE                            m_pad[4];

@@ -12,12 +12,12 @@
 
 #include "StdInc.h"
 
-void* CBuildingSAInterface::operator new( size_t )
+void* CBuildingSAInterface::operator new ( size_t )
 {
     return (*ppBuildingPool)->Allocate();
 }
 
-void CBuildingSAInterface::operator delete( void *ptr )
+void CBuildingSAInterface::operator delete ( void *ptr )
 {
     (*ppBuildingPool)->Free( (CBuildingSAInterface*)ptr );
 }

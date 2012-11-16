@@ -50,32 +50,32 @@ const char* CVehicleComponentSA::GetName() const
 
 void CVehicleComponentSA::SetMatrix( const RwMatrix& mat )
 {
-    m_frame->m_modelling = mat;
+    m_frame->SetModelling( mat );
 }
 
 const RwMatrix& CVehicleComponentSA::GetMatrix() const
 {
-    return m_frame->m_modelling;
+    return m_frame->GetModelling();
 }
 
 const RwMatrix& CVehicleComponentSA::GetWorldMatrix() const
 {
-    return m_frame->m_ltm;
+    return m_frame->GetLTM();
 }
 
 void CVehicleComponentSA::SetPosition( const CVector& pos )
 {
-    m_frame->m_modelling.pos = pos;
+    m_frame->SetPosition( pos );
 }
 
 const CVector& CVehicleComponentSA::GetPosition() const
 {
-    return m_frame->m_modelling.pos;
+    return m_frame->GetPosition();
 }
 
 const CVector& CVehicleComponentSA::GetWorldPosition() const
 {
-    return m_frame->m_ltm.pos;
+    return m_frame->GetLTM().pos;
 }
 
 static bool RwObjectSetActive( RwObject *obj, bool visible )

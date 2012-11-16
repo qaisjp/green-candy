@@ -124,6 +124,12 @@ void handleError( const lua_exception& e )
         break;
     }
 
+    lua_Debug debug;
+    e.getDebug( debug );
+
+    if ( debug.currentline != -1 )
+        cout << debug.short_src << ' ';
+
     cout << e.what();
     cout << "\n";
 }

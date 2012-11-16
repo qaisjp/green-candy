@@ -14,7 +14,7 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-#define DEBUG_TEXTURES_EXCPT
+//#define DEBUG_TEXTURES_EXCPT
 
 #define FUNC_InitTextureManager         0x00731F20
 #define VAR_CPlayerTexDictionaries      0x00C88004
@@ -80,8 +80,6 @@ void CTxdInstanceSA::Deallocate()
     // Notify the shader system
     OnRemoveTxd( id );
 #endif
-
-    assert( m_references == 0 );
 
     if ( m_txd )
     {
@@ -333,7 +331,7 @@ RwTexDictionary* CTextureManagerSA::RwCreateTexDictionary()
     LIST_APPEND( pRwInterface->m_textureManager.m_globalTxd.root, txd->globalTXDs );
 
     // Register the txd I guess
-    RwTexDictionaryRegister( (void*)0x008E23E4, txd );
+    RwObjectRegister( (void*)0x008E23E4, txd );
     return txd;
 }
 

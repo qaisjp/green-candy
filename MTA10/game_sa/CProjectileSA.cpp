@@ -18,7 +18,7 @@
 CProjectileSA::CProjectileSA( CProjectileSAInterface *proj ) : CObjectSA( proj )
 {
     m_info = NULL;
-    m_doNotRemoveFromGame = false;
+    m_doNotRemoveFromGame = true;
 
     BOOL_FLAG( proj->m_entityFlags, ENTITY_PROC_OBJECT, false );  // removal from world prevention (?)
 }              

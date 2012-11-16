@@ -28,6 +28,8 @@ public:
     CRpAtomic*                      Clone() const;
     RpAtomic*                       CreateInstance( unsigned short id ) const;
 
+    void                            Render();
+
     eRwType                         GetType() const                 { return RW_ATOMIC; }
     bool                            IsFrameExtension() const        { return true; }
 

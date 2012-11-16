@@ -16,6 +16,8 @@
 #include "CRwObject.h"
 #include "CRwFrame.h"
 #include "CRpAtomic.h"
+#include "CRpLight.h"
+#include "CRwCamera.h"
 #include "CModel.h"
 #include "CTexture.h"
 #include "CTexDictionary.h"

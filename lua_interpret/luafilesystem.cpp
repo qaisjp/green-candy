@@ -203,7 +203,7 @@ static int filesystem_scanDir( lua_State *lua )
         wildcard = lua_tostring( lua, 2 );
 
         if ( top > 2 )
-            recursive = lua_toboolean( lua, 3 ) == 1;
+            recursive = lua_toboolean( lua, 3 );
         else
             recursive = false;
     }
@@ -234,7 +234,7 @@ static int filesystem_getFiles( lua_State *lua )
         wildcard = lua_tostring( lua, 2 );
 
         if ( top > 2 )
-            recursive = lua_toboolean( lua, 3 ) == 1;
+            recursive = lua_toboolean( lua, 3 );
         else
             recursive = false;
     }
@@ -258,7 +258,7 @@ static int filesystem_getDirs( lua_State *lua )
     bool recursive;
 
     if ( lua_gettop( lua ) > 1 )
-        recursive = lua_toboolean( lua, 2 ) == 1;
+        recursive = lua_toboolean( lua, 2 );
     else
         recursive = false;
 
@@ -288,13 +288,12 @@ static int filesystem_scanDirEx( lua_State *lua )
 {
     luaL_checktype( lua, 1, LUA_TSTRING );
     luaL_checktype( lua, 2, LUA_TSTRING );
-    luaL_checktype( lua, 3, LUA_TFUNCTION );
 
     ((CFileTranslator*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ScanDirectory( 
         lua_tostring( lua, 1 ), 
         lua_tostring( lua, 2 ), 
-        lua_toboolean( lua, 5 ) == 1, 
-        filesystem_exdircb, 
+        lua_toboolean( lua, 5 ), 
+        lua_type( lua, 3 ) == LUA_TFUNCTION ? filesystem_exdircb : NULL, 
         lua_type( lua, 4 ) == LUA_TFUNCTION ? filesystem_exfilecb : NULL, lua );
 
     return 0;
@@ -442,11 +441,10 @@ int luafsys_createArchiveTranslator( lua_State *L )
     luafsys_pushroot( L, root );
 
     // Extend the fileTranslator class
-    lua_getfield( L, 3, "extend" );
     lua_pushvalue( L, 1 );
     lua_pushlightuserdata( L, root );
     lua_pushcclosure( L, archive_constructor, 2 );
-    lua_call( L, 1, 0 );
+    luaJ_extend( L, 3, 0 );
     return 1;
 }
 

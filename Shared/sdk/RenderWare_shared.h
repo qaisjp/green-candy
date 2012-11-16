@@ -71,12 +71,25 @@ struct RwColor
         return ( a ) | ( (unsigned int)b << 8 ) | ( (unsigned int)g << 16 ) | ( (unsigned int)r << 24 );
     }
 };
-enum eRwType
+enum eRwType : unsigned char
 {
     RW_NULL,
     RW_ATOMIC,
     RW_CLUMP,
+    RW_LIGHT,
+    RW_CAMERA,
     RW_TXD = 6
+};
+enum RpLightType : unsigned int
+{
+    LIGHT_TYPE_NULL = 0,
+    
+    LIGHT_TYPE_DIRECTIONAL = 1,
+    LIGHT_TYPE_AMBIENT = 2,
+    
+    LIGHT_TYPE_POINT = 0x80,
+    LIGHT_TYPE_SPOT_1 = 0x81,
+    LIGHT_TYPE_SPOT_2 = 0x82
 };
 
 static const float negOne = -1.0f;

@@ -17,6 +17,8 @@
 class CModelSA : public virtual CModel, public CRwObjectSA
 {
     friend class CRpAtomicSA;
+    friend class CRpLightSA;
+    friend class CRwCameraSA;
     friend class CStreamingSA;
 public:
                                     CModelSA( RpClump *clump, CColModelSA *col, unsigned short txdID );
@@ -33,6 +35,8 @@ public:
     const char*                     GetName() const;
     unsigned int                    GetHash() const;
 
+    void                            Render();
+
     std::vector <unsigned short>    GetImportList() const;
 
     bool                            Replace( unsigned short id );
@@ -42,6 +46,8 @@ public:
     void                            RestoreAll();
 
     const atomicList_t&             GetAtomics() const              { return m_atomics; }
+    const lightList_t&              GetLights() const               { return m_lights; }
+    const cameraList_t&             GetCameras() const              { return m_cameras; }
 
     // Static accessors
     static void RpClumpAssignObjects( CRwObjectSA *obj, CModelSA *model );
@@ -55,6 +61,8 @@ protected:
     importMap_t                     m_imported;
 
     atomicList_t                    m_atomics;
+    lightList_t                     m_lights;
+    cameraList_t                    m_cameras;
 };
 
 #endif //_MODEL_RW_

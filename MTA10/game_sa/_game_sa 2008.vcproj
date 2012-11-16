@@ -921,6 +921,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RenderWare\CRpLightSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\CRwCameraSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RenderWare\CRwFrameSA.cpp"
 				>
 			</File>
@@ -945,6 +953,14 @@
 				</File>
 				<File
 					RelativePath=".\RenderWare\CRpAtomicSA.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\CRpLightSA.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\CRwCameraSA.h"
 					>
 				</File>
 				<File
