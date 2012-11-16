@@ -654,7 +654,7 @@ void CClientGame::DoPulsePreHUDRender ( bool bDidUnminimize, bool bDidRecreateRe
 
 void CClientGame::DoPulsePostFrame ( void )
 {
-    #ifdef DEBUG_KEYSTATES
+#ifdef DEBUG_KEYSTATES
         // Get the controller state
         CControllerState cs;
         g_pGame->GetPad ()->GetCurrentControllerState ( &cs );
@@ -709,7 +709,7 @@ void CClientGame::DoPulsePostFrame ( void )
                                    cs.RightStickY );
 
         g_pCore->GetGraphics ()->DrawTextTTF ( 300, 320, 1280, 800, 0xFFFFFFFF, strBuffer, 1.0f, 0 );
-    #endif
+#endif
 
     if ( m_pManager->IsGameLoaded () )
     {
@@ -769,7 +769,7 @@ void CClientGame::DoPulsePostFrame ( void )
 
 
         // If we're in debug mode and are supposed to show task data, do it
-        #ifdef MTA_DEBUG
+#ifdef MTA_DEBUG
         if ( m_pShowPlayerTasks )
         {
             DrawTasks ( m_pShowPlayerTasks );
@@ -787,9 +787,9 @@ void CClientGame::DoPulsePostFrame ( void )
             if ( pPlayer->IsStreamedIn () && pPlayer->IsShowingWepdata () )
                 DrawWeaponsyncData ( pPlayer );
         }
-        #endif
+#endif
 
-        #if defined (MTA_DEBUG) || defined (MTA_BETA)
+#if defined (MTA_DEBUG) || defined (MTA_BETA)
         if ( m_bShowSyncingInfo )
         {
             // Draw the header boxz
@@ -809,7 +809,7 @@ void CClientGame::DoPulsePostFrame ( void )
                 m_pDisplayManager->DrawText2D ( strBuffer, vecPosition, 1.0f, 0xFFFFFFFF );
             }
         }
-        #endif
+#endif
 
         CClientPerfStatManager::GetSingleton ()->DoPulse ();
     }
@@ -2565,6 +2565,7 @@ void CClientGame::AddBuiltInEvents()
     m_Events.Add( "onClientRender", "", NULL, false );
     m_Events.Add( "onClientMinimize", "", NULL, false );
     m_Events.Add( "onClientRestore", "", NULL, false );
+    m_Events.Add( "onClientGameRender", "", NULL, false );
 
     // Cursor events
     m_Events.Add( "onClientClick", "button, state, screenX, screenY, worldX, worldY, worldZ, gui_clicked", NULL, false );
@@ -3424,12 +3425,10 @@ void CClientGame::ProjectileInitiateHandler ( CClientProjectile * pProjectile )
     pProjectile->CallEvent( "onClientProjectileCreation", L, 1 );
 }
 
-
-void CClientGame::Render3DStuffHandler ( void )
+void CClientGame::Render3DStuffHandler ()
 {
-
+    g_pClientGame->GetRootEntity()->CallEvent( "onClientGameRender", g_pClientGame->GetLuaManager()->GetVirtualMachine(), 0 );
 }
-
 
 void CClientGame::PreWorldProcessHandler ( void )
 {

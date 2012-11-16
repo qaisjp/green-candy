@@ -56,6 +56,12 @@ static LUA_DECLARE( getClump )
     return 1;
 }
 
+static LUA_DECLARE( render )
+{
+    ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_atomic.Render();
+    return 0;
+}
+
 static LUA_DECLARE( replaceModel )
 {
     unsigned short model;
@@ -121,6 +127,7 @@ static luaL_Reg atomic_interface[] =
 {
     LUA_METHOD( setClump ),
     LUA_METHOD( getClump ),
+    LUA_METHOD( render ),
     LUA_METHOD( replaceModel ),
     LUA_METHOD( isReplaced ),
     LUA_METHOD( getReplaced ),

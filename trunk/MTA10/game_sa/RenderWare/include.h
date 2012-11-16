@@ -18,6 +18,8 @@
 #include "CTexDictionarySA.h"
 #include "CRwFrameSA.h"
 #include "CRpAtomicSA.h"
+#include "CRpLightSA.h"
+#include "CRwCameraSA.h"
 #include "CModelSA.h"
 
 #endif //_RENDERWARE_INTERFACE_

@@ -697,7 +697,7 @@ public:
         return m_thread;
     }
 
-    void getDebug( lua_Debug& debug )
+    void getDebug( lua_Debug& debug ) const
     {
         debug = m_debug;
     }

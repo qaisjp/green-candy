@@ -20,9 +20,10 @@ DECLARE_ENUM( TrafficLight::EColor );
 DECLARE_ENUM( TrafficLight::EState );
 DECLARE_ENUM( eAccessType );
 DECLARE_ENUM( CEasingCurve::eType );
-DECLARE_ENUM( eAmbientSoundType )
+DECLARE_ENUM( eAmbientSoundType );
 DECLARE_ENUM( eCGUIType );
-DECLARE_ENUM( eDxTestMode )
+DECLARE_ENUM( eDxTestMode );
+DECLARE_ENUM( RpLightType );
 
 enum eDXHorizontalAlign
 {

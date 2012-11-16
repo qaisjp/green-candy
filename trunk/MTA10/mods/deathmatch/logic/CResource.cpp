@@ -85,9 +85,6 @@ CResource::~CResource()
     PushStack( *m_lua );
     m_resourceEntity->CallEvent( "onClientResourceStop", *m_lua, 1, true );
 
-    // Make sure we don't force the cursor on
-    ShowCursor( false );
-
     // Do this before we delete our elements.
     m_rootEntity->CleanUpForVM( (CLuaMain*)&m_lua, true );
 
@@ -136,6 +133,9 @@ CResource::~CResource()
         delete *iterex;
 
     delete m_privateRoot;
+
+    // Make sure we don't force the cursor on
+    ShowCursor( false );
 
     // Remove ourselves
     g_pClientGame->GetResourceManager()->Remove( this );
@@ -322,27 +322,27 @@ void CResource::Load()
 void CResource::ShowCursor( bool bShow, bool bToggleControls )
 {
     // Different cursor showing state than earlier?
-    if ( bShow != m_showCursor )
+    if ( bShow == m_showCursor )
+        return;
+
+    // Going to show the cursor?
+    if ( bShow )
     {
-        // Going to show the cursor?
-        if ( bShow )
-        {
-            // Increase the cursor ref count
-            m_refShowCursor++;
-        }
-        else
-        {
-            // Decrease the cursor ref count
-            m_refShowCursor--;
-        }
-
-        // Update our showing cursor state
-        m_showCursor = bShow;
-
-        // Show cursor if more than 0 resources wanting the cursor on
-        g_pCore->ForceCursorVisible ( m_refShowCursor != 0, bToggleControls );
-        g_pClientGame->SetCursorEventsEnabled ( m_refShowCursor != 0 );
+        // Increase the cursor ref count
+        m_refShowCursor++;
     }
+    else
+    {
+        // Decrease the cursor ref count
+        m_refShowCursor--;
+    }
+
+    // Update our showing cursor state
+    m_showCursor = bShow;
+
+    // Show cursor if more than 0 resources wanting the cursor on
+    g_pCore->ForceCursorVisible( m_refShowCursor != 0, bToggleControls );
+    g_pClientGame->SetCursorEventsEnabled( m_refShowCursor != 0 );
 }
 
 bool CResource::GetFullMetaPath( const char *path, filePath& absPath )

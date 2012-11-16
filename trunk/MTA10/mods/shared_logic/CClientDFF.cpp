@@ -14,6 +14,12 @@
 
 #include "StdInc.h"
 
+static LUA_DECLARE( render )
+{
+    ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_model.Render();
+    return 0;
+}
+
 static LUA_DECLARE( getAtomics )
 {
     CClientDFF::atomics_t& list = ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomics;
@@ -24,6 +30,42 @@ static LUA_DECLARE( getAtomics )
     unsigned int n = 1;
 
     for ( CClientDFF::atomics_t::iterator iter = list.begin(); iter != list.end(); iter++, n++ )
+    {
+        (*iter)->PushStack( L );
+        lua_rawseti( L, 1, n );
+    }
+
+    return 1;
+}
+
+static LUA_DECLARE( getLights )
+{
+    CClientDFF::lights_t& list = ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_lights;
+
+    lua_settop( L, 0 );
+    lua_createtable( L, list.size(), 0 );
+
+    unsigned int n = 1;
+
+    for ( CClientDFF::lights_t::iterator iter = list.begin(); iter != list.end(); iter++, n++ )
+    {
+        (*iter)->PushStack( L );
+        lua_rawseti( L, 1, n );
+    }
+
+    return 1;
+}
+
+static LUA_DECLARE( getCameras )
+{
+    CClientDFF::cameras_t& list = ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_cameras;
+
+    lua_settop( L, 0 );
+    lua_createtable( L, list.size(), 0 );
+
+    unsigned int n = 1;
+
+    for ( CClientDFF::cameras_t::iterator iter = list.begin(); iter != list.end(); iter++, n++ )
     {
         (*iter)->PushStack( L );
         lua_rawseti( L, 1, n );
@@ -95,7 +137,9 @@ static LUA_DECLARE( restoreAll )
 
 static const luaL_Reg dff_interface[] =
 {
+    LUA_METHOD( render ),
     LUA_METHOD( getAtomics ),
+    LUA_METHOD( getLights ),
     LUA_METHOD( replaceModel ),
     LUA_METHOD( isReplaced ),
     LUA_METHOD( getReplaced ),
@@ -108,18 +152,37 @@ static void RwFrameObjectAcquire( CClientRwObject *obj, CClientDFF *model )
 {
     eRwType type = obj->GetObject().GetType();
 
-    if ( type == RW_ATOMIC )
+    union
     {
-        CClientAtomic *atom = (CClientAtomic*)obj;
+        CClientRwObject *rwobj;
+        CClientAtomic *atom;
+        CClientLight *light;
+        CClientRwCamera *cam;
+    };
 
+    switch( type )
+    {
+    case RW_ATOMIC:
+        atom = (CClientAtomic*)obj;
         atom->m_clump = model;
-        atom->SetRoot( model->m_parent );
 
         model->m_atomics.insert( model->m_atomics.begin(), atom );
-        return;
+        break;
+    case RW_LIGHT:
+        light = (CClientLight*)obj;
+        light->m_clump = model;
+
+        model->m_lights.insert( model->m_lights.begin(), light );
+        break;
+    case RW_CAMERA:
+        cam = (CClientRwCamera*)obj;
+        cam->m_clump = model;
+
+        model->m_cameras.insert( model->m_cameras.begin(), cam );
+        break;
     }
 
-    assert( 0 );
+    rwobj->SetRoot( model->m_parent );
 }
 
 static void RwFrameInspect( CClientRwFrame *frame, CClientDFF *model )

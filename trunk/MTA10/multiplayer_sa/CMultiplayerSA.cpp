@@ -696,6 +696,7 @@ void CMultiplayerSA::InitHooks()
     HookInstall(HOOKPOS_CHandlingData_isNotRWD, (DWORD)HOOK_isVehDriveTypeNotRWD, 7 );
     HookInstall(HOOKPOS_CHandlingData_isNotFWD, (DWORD)HOOK_isVehDriveTypeNotFWD, 7 );
 
+
     HookInstallCall ( CALL_Render3DStuff, (DWORD)HOOK_Render3DStuff );
     HookInstallCall ( CALL_VehicleCamUp, (DWORD)HOOK_VehicleCamUp );
     HookInstallCall ( CALL_VehicleLookBehindUp, (DWORD)HOOK_VehicleCamUp );

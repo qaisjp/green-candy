@@ -38,8 +38,12 @@ public:
     CModel&                         m_model;
 
     typedef std::list <CClientAtomic*> atomics_t;
+    typedef std::list <CClientLight*> lights_t;
+    typedef std::list <CClientRwCamera*> cameras_t;
 
     atomics_t                       m_atomics;
+    lights_t                        m_lights;
+    cameras_t                       m_cameras;
 };
 
 #endif

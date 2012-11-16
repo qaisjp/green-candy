@@ -10,6 +10,10 @@
 *
 *****************************************************************************/
 
+// The_GTA: This code is not yet complete. The information descriptors (CEffectObjectInfo::CreateInfoStruct)
+// have to be reverse engineered, too. I cut it out of the MTA:GREEN build due to time constraints.
+// I hope other people will pick up my job. As guideline for reven, take my uploaded IDA 5.0 Pro databases (US and EU).
+
 #include "StdInc.h"
 
 CEffectDataSAInterface::CEffectDataSAInterface()
@@ -270,16 +274,23 @@ bool CEffectObjectInfo::Parse( CFile *file, int ver )
         sscanf( buffer, "%s", token );
 
         // Pretty much all of the effect object properties or abilities
-             if ( strcmp( token, "FX_INFO_EMRATE_DATA:" ) == 0 )        info = CreateInfoStruct( 4097 );
-        else if ( strcmp( token, "FX_INFO_EMSIZE_DATA:" ) == 0 )        info = CreateInfoStruct( 4100 );
-        else if ( strcmp( token, "FX_INFO_EMSPEED_DATA:" ) == 0 )       info = CreateInfoStruct( 4104 );
-        else if ( strcmp( token, "FX_INFO_EMDIR_DATA:" ) == 0 )         info = CreateInfoStruct( 4112 );
-        else if ( strcmp( token, "FX_INFO_EMANGLE_DATA:" ) == 0 )       info = CreateInfoStruct( 4128 );
-        else if ( strcmp( token, "FX_INFO_EMLIFE_DATA:" ) == 0 )        info = CreateInfoStruct( 4160 );
+             if ( strcmp( token, "FX_INFO_EMRATE_DATA:" ) == 0 )        info = CreateInfoStruct( 0x1001 );
+        else if ( strcmp( token, "FX_INFO_EMSIZE_DATA:" ) == 0 )        info = CreateInfoStruct( 0x1004 );
+        else if ( strcmp( token, "FX_INFO_EMSPEED_DATA:" ) == 0 )       info = CreateInfoStruct( 0x1008 );
+        else if ( strcmp( token, "FX_INFO_EMDIR_DATA:" ) == 0 )         info = CreateInfoStruct( 0x1010 );
+        else if ( strcmp( token, "FX_INFO_EMANGLE_DATA:" ) == 0 )       info = CreateInfoStruct( 0x1020 );
+        else if ( strcmp( token, "FX_INFO_EMLIFE_DATA:" ) == 0 )        info = CreateInfoStruct( 0x1040 );
         else if ( strcmp( token, "FX_INFO_EMPOS_DATA:" ) == 0 )         info = CreateInfoStruct( 0x1080 );
         else if ( strcmp( token, "FX_INFO_EMWEATHER_DATA:" ) == 0 )     info = CreateInfoStruct( 0x1100 );
         else if ( strcmp( token, "FX_INFO_EMROTATION_DATA:" ) == 0 )    info = CreateInfoStruct( 0x1200 );
-        else if ( strcmp( token, "FX_INFO_NOISE_DATA:" ) == 0 )         TIMEMODE_PARAM( 0x2080 )
+        else if ( strcmp( token, "FX_INFO_NOISE_DATA:" ) == 0 )         TIMEMODE_PARAM( 0x2001 )
+        else if ( strcmp( token, "FX_INFO_FORCE_DATA:" ) == 0 )         TIMEMODE_PARAM( 0x2002 )
+        else if ( strcmp( token, "FX_INFO_FRICTION_DATA:" ) == 0 )      TIMEMODE_PARAM( 0x2004 )
+        else if ( strcmp( token, "FX_INFO_ATTRACTPT_DATA:" ) == 0 )     TIMEMODE_PARAM( 0x2008 )
+        else if ( strcmp( token, "FX_INFO_ATTRACTLINE_DATA:" ) == 0 )   TIMEMODE_PARAM( 0x2010 )
+        else if ( strcmp( token, "FX_INFO_GROUNDCOLLIDE_DATA:" ) == 0 ) TIMEMODE_PARAM( 0x2020 )
+        else if ( strcmp( token, "FX_INFO_WIND_DATA:" ) == 0 )          TIMEMODE_PARAM( 0x2040 )
+        else if ( strcmp( token, "FX_INFO_JITTER_DATA:" ) == 0 )        TIMEMODE_PARAM( 0x2080 )
         else if ( strcmp( token, "FX_INFO_ROTSPEED_DATA:" ) == 0 )      TIMEMODE_PARAM( 0x2100 )
         else if ( strcmp( token, "FX_INFO_FLOAT_DATA:" ) == 0 )         TIMEMODE_PARAM( 0x2200 )
         else if ( strcmp( token, "FX_INFO_UNDERWATER_DATA:" ) == 0 )    TIMEMODE_PARAM( 0x2400 )
@@ -294,7 +305,7 @@ bool CEffectObjectInfo::Parse( CFile *file, int ver )
         else if ( strcmp( token, "FX_INFO_COLOURRANGE_DATA:" ) == 0 )   TIMEMODE_PARAM( 0x4100 )
         else if ( strcmp( token, "FX_INFO_SELFLIT_DATA:" ) == 0 )       TIMEMODE_PARAM( 0x4200 )
         else if ( strcmp( token, "FX_INFO_COLOURBRIGHT_DATA:" ) == 0 )  TIMEMODE_PARAM( 0x4400 )
-        else if ( strcmp( token, "FX_INFO_SMOKE_DATA:" ) == 0 )         TIMEMODE_PARAM( 0x8001 )
+        else if ( strcmp( token, "FX_INFO_SMOKE_DATA:" ) == 0 )         TIMEMODE_PARAM( 0x8001 )    // It's over 8000!!!11
 
         m_entries[n] = info;
 

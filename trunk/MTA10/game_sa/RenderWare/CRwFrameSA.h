@@ -37,11 +37,11 @@ public:
     void                            SetLTM( const RwMatrix& mat )       { GetObject()->m_ltm = mat; }
     const RwMatrix&                 GetLTM() const                      { return GetObject()->m_ltm; }
 
-    void                            SetModelling( const RwMatrix& mat ) { GetObject()->m_modelling = mat; }
-    const RwMatrix&                 GetModelling() const                { return GetObject()->m_modelling; }
+    void                            SetModelling( const RwMatrix& mat ) { GetObject()->SetModelling( mat ); }
+    const RwMatrix&                 GetModelling() const                { return GetObject()->GetModelling(); }
 
-    void                            SetPosition( const CVector& pos )   { GetObject()->m_modelling.pos = pos; }
-    const CVector&                  GetPosition() const                 { return GetObject()->m_modelling.pos; }
+    void                            SetPosition( const CVector& pos )   { GetObject()->SetPosition( pos ); }
+    const CVector&                  GetPosition() const                 { return GetObject()->GetPosition(); }
 
     childList_t                     m_children;
 

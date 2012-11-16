@@ -22,9 +22,12 @@ bool CRwFrameSA::RwFrameObjectAssign( RwObject *obj, CRwFrameSA *parent )
     case RW_ATOMIC:
         inst = new CRpAtomicSA( (RpAtomic*)obj );
         break;
-    default:
-        // TODO: Add the remaining objects (light, camera)
-        assert( 0 );
+    case RW_LIGHT:
+        inst = new CRpLightSA( (RpLight*)obj );
+        break;
+    case RW_CAMERA:
+        inst = new CRwCameraSA( (RwCamera*)obj );
+        break;
     }
     parent->m_objects.push_back( inst );
 

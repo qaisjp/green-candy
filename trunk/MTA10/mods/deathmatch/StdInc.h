@@ -61,6 +61,8 @@
 #include <CClientRwObject.h>
 #include <CClientRwFrame.h>
 #include <CClientAtomic.h>
+#include <CClientLight.h>
+#include <CClientRwCamera.h>
 #include <CClientDFF.h>
 #include <CClientColModel.h>
 #include <CClientDummy.h>

@@ -23,35 +23,31 @@
 
 class CRenderWareSA : public CRenderWare
 {
-    public:
-                        CRenderWareSA               ( enum eGameVersion version );
-                        ~CRenderWareSA              () {};
+public:
+                        CRenderWareSA( enum eGameVersion version );
+                        ~CRenderWareSA()    {}
 
-    RwMatrix*           AllocateMatrix              ();
+    RwMatrix*           AllocateMatrix();
+    CRpLight*           CreateLight( RpLightType type );
+    CRwFrame*           CreateFrame();
+    CRwCamera*          CreateCamera( int width, int height );
+
+    bool                IsRendering() const;
 
     // uiModelID == 0 means no collisions will be loaded
-    RpClump*            ReadDFF                     ( CFile *file, unsigned short usModelID, CColModelSA*& colOut );
-    CColModel*          ReadCOL                     ( CFile *file );
+    RpClump*            ReadDFF( CFile *file, unsigned short usModelID, CColModelSA*& colOut );
+    CColModel*          ReadCOL( CFile *file );
 
     // Positions the front seat by reading out the vector from the 'ped_frontseat' atomic in the clump (RpClump*)
     // and changing the vector in the CModelInfo class identified by the model id (usModelID)
-    bool                PositionFrontSeat           ( RpClump * pClump, unsigned short usModelID );
-    unsigned int        LoadAtomics                 ( RpClump * pClump, RpAtomicContainer * pAtomics );
-    void                ReplaceAllAtomicsInModel    ( RpClump * pSrc, unsigned short usModelID );
-    void                ReplaceAllAtomicsInClump    ( RpClump * pDst, RpAtomicContainer * pAtomics, unsigned int uiAtomics );
-    void                ReplaceWheels               ( RpClump * pClump, RpAtomicContainer * pAtomics, unsigned int uiAtomics, const char * szWheel = "wheel" );
-    void                RepositionAtomic            ( RpClump * pDst, RpClump * pSrc, const char * szName );
-    void                AddAllAtomics               ( RpClump * pDst, RpClump * pSrc );
-
-    // szName should be without the part suffix (e.g. 'door_lf' or 'door_rf', and not 'door_lf_dummy')
-    bool                ReplacePartModels           ( RpClump * pClump, RpAtomicContainer * pAtomics, unsigned int uiAtomics, const char * szName );
+    bool                PositionFrontSeat( RpClump *clump, unsigned short usModelID );
 };
-
-// MTA RenderWare extensions
-void        RpAtomicCloneIsolated( const RpAtomic *atom );
 
 // Internal RenderWare functions
 RwTexture*  RwFindTexture( const char *name, const char *secName );     // US exe: 0x007F3AC0
 RwError*    RwSetError( RwError *info );                                // US exe: 0x00808820
+RpLight*    RpLightCreate( unsigned char type );                        // US exe: 0x00752110
+RpClump*    RpClumpCreate();                                            // US exe: 0x0074A290
+RwCamera*   RwCameraCreate();                                           // US exe: 0x007EE4F0
 
 #endif

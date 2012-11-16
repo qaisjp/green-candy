@@ -35,13 +35,7 @@ CRpAtomicSA::~CRpAtomicSA()
     // Detach from the frame, too
     SetFrame( NULL );
 
-    // We have to unlink textures, because they do not belong to us
-    RpAtomic *atom = GetObject();
-
-    if ( atom->m_geometry->m_refs == 1 )
-        atom->m_geometry->UnlinkFX();
-
-    RpAtomicDestroy( atom );
+    RpAtomicDestroy( GetObject() );
 }
 
 CRpAtomic* CRpAtomicSA::Clone() const
@@ -71,6 +65,16 @@ RpAtomic* CRpAtomicSA::CreateInstance( unsigned short id ) const
     
     atom->SetExtendedRenderFlags( id );
     return atom;
+}
+
+void CRpAtomicSA::Render()
+{
+    // Test function ;)
+    if ( !m_frame || !pRwInterface->m_renderCam )
+        return;
+
+    m_frame->GetObject()->GetLTM();  // Possible update the world position
+    GetObject()->m_renderCallback( GetObject() );
 }
 
 void CRpAtomicSA::AddToModel( CModel *model )
@@ -161,8 +165,6 @@ bool CRpAtomicSA::Replace( unsigned short id )
     // We should inject directly if we are loaded; otherwise CStreaming takes the cake
     if ( ainfo->m_rpAtomic )
     {
-        ainfo->m_rpAtomic->m_geometry->UnlinkFX();
-
         info->DeleteRwObject();
         ainfo->SetAtomic( CreateInstance( id ) );
 

@@ -757,7 +757,7 @@ void CVehicleModelInfoSAInterface::Setup()
                 m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ] = (CVector)hier->m_parent->m_ltm.pos;
 
                 while ( ( parent = parent->m_parent ) && parent->m_parent )
-                    pRwInterface->m_matrixTransform3( &m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], &m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], 1, &parent->m_parent->m_modelling );
+                    pRwInterface->m_matrixTransform3( &m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], &m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], 1, &parent->m_parent->GetModelling() );
 
                 RwFrameCloneHierarchy( hier );
             }
@@ -765,7 +765,7 @@ void CVehicleModelInfoSAInterface::Setup()
             {
                  CVehicleSeatInfoSA *seat = &m_seatPlacement->m_info[ info->m_frameHierarchy ];
 
-                 seat->m_offset = (CVector)hier->m_modelling.pos;
+                 seat->m_offset = hier->GetPosition();
 
                  // Calculate the quat for rotation
                  seat->m_quat = CQuat( hier->m_modelling );

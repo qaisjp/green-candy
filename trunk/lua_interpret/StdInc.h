@@ -30,6 +30,24 @@
 #include "luafile.h"
 #include "luafilesystem.h"
 
+static inline void luaJ_extend( lua_State *L, int idx, int nargs )
+{
+    ILuaClass& j = *lua_refclass( L, idx );
+
+    int offcl = -nargs - 1;
+
+    // Make it class root
+    j.PushEnvironment( L );
+    lua_setfenv( L, offcl - 1 );
+
+    lua_pushvalue( L, idx );
+
+    if ( offcl != -1 )
+        lua_insert( L, offcl );
+
+    lua_call( L, nargs + 1, 0 );
+}
+
 extern CFileSystem *fileSystem;
 
 #endif //_MAIN_

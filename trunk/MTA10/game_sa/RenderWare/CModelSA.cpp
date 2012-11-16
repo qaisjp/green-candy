@@ -27,14 +27,29 @@ void CModelSA::RpClumpAssignObjects( CRwObjectSA *obj, CModelSA *model )
         if ( atom->GetObject()->m_clump == model->GetObject() )
         {
             atom->m_model = model;
-            model->m_atomics.push_back( atom );
+            model->m_atomics.push_front( atom );
         }
-
-        return;
     }
-    
-    // TODO: add remaining ones (light, camera)
-    assert( 0 );
+    else if ( type == RW_LIGHT )
+    {
+        CRpLightSA *light = (CRpLightSA*)obj;
+
+        if ( light->GetObject()->m_clump == model->GetObject() )
+        {
+            light->m_model = model;
+            model->m_lights.push_front( light );
+        }
+    }
+    else if ( type == RW_CAMERA )
+    {
+        CRwCameraSA *cam = (CRwCameraSA*)obj;
+
+        if ( cam->GetObject()->m_clump == model->GetObjectA() )
+        {
+            cam->m_model = model;
+            model->m_cameras.push_front( cam );
+        }
+    }
 }
 
 static void RpClumpObjectAssociation( CRwFrameSA *frame, CModelSA *model )
@@ -72,6 +87,14 @@ CModelSA::~CModelSA()
 {
     RestoreAll();
 
+    // Destroy all assigned cameras (if present)
+    while ( !m_cameras.empty() )
+        delete m_cameras.front();
+
+    // Destroy all assigned lights (if present)
+    while ( !m_lights.empty() )
+        delete m_lights.front();
+
     // Destroy all assigned atomics (if present)
     while ( !m_atomics.empty() )
         delete m_atomics.front();
@@ -96,6 +119,15 @@ const char* CModelSA::GetName() const
 unsigned int CModelSA::GetHash() const
 {
     return pGame->GetKeyGen()->GetUppercaseKey( GetName() );
+}
+
+void CModelSA::Render()
+{
+    // No point in rendering if no camera is set
+    if ( !pRwInterface->m_renderCam )
+        return;
+
+    GetObject()->Render();
 }
 
 std::vector <unsigned short> CModelSA::GetImportList() const

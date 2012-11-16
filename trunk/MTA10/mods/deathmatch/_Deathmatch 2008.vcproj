@@ -758,6 +758,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\shared_logic\CClientLight.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\shared_logic\CClientManager.cpp"
 					>
 				</File>
@@ -867,6 +871,10 @@
 				</File>
 				<File
 					RelativePath="..\shared_logic\CClientRenderElementManager.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\shared_logic\CClientRwCamera.cpp"
 					>
 				</File>
 				<File
@@ -2376,6 +2384,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\shared_logic\CClientLight.h"
+					>
+				</File>
+				<File
 					RelativePath="..\shared_logic\CClientManager.h"
 					>
 				</File>
@@ -2489,6 +2501,10 @@
 				</File>
 				<File
 					RelativePath="..\shared_logic\CClientRenderElementManager.h"
+					>
+				</File>
+				<File
+					RelativePath="..\shared_logic\CClientRwCamera.h"
 					>
 				</File>
 				<File

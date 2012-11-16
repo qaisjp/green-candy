@@ -127,7 +127,7 @@ void CClientSound::DistanceStreamOut ( void )
 // Create underlying audio
 //
 ////////////////////////////////////////////////////////////
-bool CClientSound::Create ( void )
+bool CClientSound::Create()
 {
     if ( m_pAudio )
         return false;
@@ -171,12 +171,12 @@ bool CClientSound::Create ( void )
 // Destroy underlying audio
 //
 ////////////////////////////////////////////////////////////
-void CClientSound::Destroy ( void )
+void CClientSound::Destroy()
 {
     if ( !m_pAudio )
         return;
 
-    BeginSimulationOfPlayPosition ();
+    BeginSimulationOfPlayPosition();
 
     delete m_pAudio;
     m_pAudio = NULL;
@@ -190,7 +190,7 @@ void CClientSound::Destroy ( void )
 //
 //
 ////////////////////////////////////////////////////////////
-void CClientSound::BeginSimulationOfPlayPosition ( void )
+void CClientSound::BeginSimulationOfPlayPosition()
 {
     // Only 3d sounds will be distance streamed in and out. Also streams can't be seeked.
     // So only non-streamed 3D sounds need the play position simulated.

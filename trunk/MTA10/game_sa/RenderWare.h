@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/RenderWare.h
 *  PURPOSE:     RenderWare definitions
@@ -31,7 +31,7 @@
 #define RW_EXTENSION_HANIM  0x253F2FB
 
 // Yet to analyze
-typedef void   RpWorld;
+class RwScene;
 class RwCamera;
 class RpAtomic;
 class RpClump;
@@ -44,61 +44,48 @@ typedef bool        (*RpAtomicCallback) (RpAtomic * atomic);
 typedef RpClump*    (*RpClumpCallback) (RpClump * clump, void *data);
 
 // RenderWare enumerations
-enum RwPrimitiveType
+enum RwPrimitiveType : unsigned int
 {
-    PRIMITIVE_NULL = 0,
-    PRIMITIVE_LINE_SEGMENT = 1,
-    PRIMITIVE_LINE_SEGMENT_CONNECTED = 2,
-    PRIMITIVE_TRIANGLE = 3,
-    PRIMITIVE_TRIANGLE_STRIP = 4,
-    PRIMITIVE_TRIANGLE_FAN = 5,
-    PRIMITIVE_POINT = 6,
-    PRIMITIVE_LAST = RW_STRUCT_ALIGN
+    PRIMITIVE_NULL,
+    PRIMITIVE_LINE_SEGMENT,
+    PRIMITIVE_LINE_SEGMENT_CONNECTED,
+    PRIMITIVE_TRIANGLE,
+    PRIMITIVE_TRIANGLE_STRIP,
+    PRIMITIVE_TRIANGLE_FAN,
+    PRIMITIVE_POINT
 };
-enum RwCameraType
+enum RwCameraType : unsigned int
 {
     RW_CAMERA_NULL = 0,
     RW_CAMERA_PERSPECTIVE = 1,
-    RW_CAMERA_ORTHOGRAPHIC = 2,
-    RW_CAMERA_LAST = RW_STRUCT_ALIGN
+    RW_CAMERA_ORTHOGRAPHIC = 2
 };
-enum RpAtomicFlags
+enum RpAtomicFlags : unsigned int
 {
     ATOMIC_COLLISION = 1,
-    ATOMIC_VISIBLE = 4,
-    ATOMIC_LAST = RW_STRUCT_ALIGN
+    ATOMIC_VISIBLE = 4
 };
-enum RwRasterLockFlags
+enum RwRasterLockFlags : unsigned int
 {
     RASTER_LOCK_WRITE = 1,
-    RASTER_LOCK_READ = 2,
-    RASTER_LOCK_LAST = RW_STRUCT_ALIGN
+    RASTER_LOCK_READ = 2
 };
-enum RwTransformOrder
+enum RwTransformOrder : unsigned int
 {
     TRANSFORM_INITIAL = 0,
     TRANSFORM_BEFORE = 1,
-    TRANSFORM_AFTER = 2,
-    TRANSFORM_LAST = RW_STRUCT_ALIGN
+    TRANSFORM_AFTER = 2
 };
-enum RpLightType
-{
-    LIGHT_TYPE_NULL = 0,
-    
-    LIGHT_TYPE_DIRECTIONAL = 1,
-    LIGHT_TYPE_AMBIENT = 2,
-    
-    LIGHT_TYPE_POINT = 0x80,
-    LIGHT_TYPE_SPOT_1 = 0x81,
-    LIGHT_TYPE_SPOT_2 = 0x82,
-
-    LIGHT_TYPE_LAST = RW_STRUCT_ALIGN
-};
-enum RpLightFlags
+enum RpLightFlags : unsigned int
 {
     LIGHT_ILLUMINATES_ATOMICS = 1,
-    LIGHT_ILLUMINATES_GEOMETRY = 2,
-    LIGHT_FLAGS_LAST = RW_STRUCT_ALIGN
+    LIGHT_ILLUMINATES_GEOMETRY = 2
+};
+enum RwRasterType : unsigned int
+{
+    RASTER_DEPTHBUFFER = 1,
+    RASTER_RENDERTARGET,
+    RASTER_TEXTURE = 4
 };
 
 #define RW_OBJ_REGISTERED           0x02
@@ -252,6 +239,10 @@ public:
     void                    AddToFrame( RwFrame *frame );
     void                    RemoveFromFrame();
 };
+
+// Private flags
+#define RW_FRAME_DIRTY  0x01
+
 class RwFrame : public RwObject
 {
 public:
@@ -270,6 +261,13 @@ public:
 
     BYTE                    m_pad3[8];          // 188
     unsigned int            m_hierarchyId;      // 196
+
+    void                    SetModelling( const RwMatrix& mat );
+    const RwMatrix&         GetModelling() const        { return m_modelling; }
+    void                    SetPosition( const CVector& pos );
+    const CVector&          GetPosition() const         { return m_modelling.pos; }
+
+    const RwMatrix&         GetLTM() const;
 
     void                    Link( RwFrame *frame );
     void                    Unlink();
@@ -353,19 +351,6 @@ public:
     RwListEntry <RwTexDictionary>   globalTXDs;
     RwTexDictionary*                m_parentTxd;
 
-#ifdef _DEBUG
-    inline bool             Validate()
-    {
-        RwListEntry <RwTexture> *child;
-
-        for ( child = textures.root.next; child != &textures.root; child = child->next )
-            if ( child->next->prev != child || child->prev->next != child )
-                return false;
-
-        return true;
-    }
-#endif
-
     template <class type>
     bool                    ForAllTextures( bool (*callback)( RwTexture *tex, type ud ), type ud )
     {
@@ -373,10 +358,6 @@ public:
 
         for ( child = textures.root.next; child != &textures.root; child = child->next )
         {
-#ifdef _DEBUG
-            LIST_VALIDATE( *child );
-#endif
-
             if ( !callback( (RwTexture*)( (unsigned int)child - offsetof(RwTexture, TXDList) ), ud ) )
                 return false;
         }
@@ -389,17 +370,9 @@ public:
     {
         RwListEntry <RwTexture> *child = textures.root.next;
 
-#ifdef _DEBUG
-        Validate();
-#endif
-
         while ( child != &textures.root )
         {
             RwListEntry <RwTexture> *nchild = child->next;
-
-#ifdef _DEBUG
-            LIST_VALIDATE( *child );
-#endif
 
             if ( !callback( (RwTexture*)( (unsigned int)child - offsetof(RwTexture, TXDList) ), ud ) )
                 return false;
@@ -457,26 +430,29 @@ struct RwCameraFrustum
 class RwCamera : public RwObjectFrame   //size: 428
 {
 public:
-    RwCameraType            type;               // 20
-    RwCameraPreCallback     preCallback;        // 24
-    RwCameraPostCallback    postCallback;       // 28
-    RwMatrix                matrix;             // 32
-    RwRaster*               bufferColor;        // 96
-    RwRaster*               bufferDepth;        // 100
-    RwV2d                   screen;             // 104
-    RwV2d                   screenInverse;      // 112
-    RwV2d                   screenOffset;       // 120
-    float                   nearplane;          // 128
-    float                   farplane;           // 132
-    float                   fog;                // 136
-    float                   unknown1;           // 140
-    float                   unknown2;           // 144
-    RwCameraFrustum         frustum4D[6];       // 148
-    RwBBox                  viewBBox;           // 268
-    RwV3d                   frustum3D[8];       // 292
+    RwCameraType            m_camType;          // 20
+    RwCameraPreCallback     m_preCallback;      // 24
+    RwCameraPostCallback    m_postCallback;     // 28
+    RwMatrix                m_matrix;           // 32
+    RwRaster*               m_rendertarget;     // 96
+    RwRaster*               m_bufferDepth;      // 100
+    RwV2d                   m_screen;           // 104
+    RwV2d                   m_screenInverse;    // 112
+    RwV2d                   m_screenOffset;     // 120
+    float                   m_nearplane;        // 128
+    float                   m_farplane;         // 132
+    float                   m_fog;              // 136
+    float                   m_unknown1;         // 140
+    float                   m_unknown2;         // 144
+    RwCameraFrustum         m_frustum4D[6];     // 148
+    RwBBox                  m_viewBBox;         // 268
+    RwV3d                   m_frustum3D[8];     // 292
     BYTE                    m_unk[28];          // 388
     RpClump*                m_clump;            // 416
     RwListEntry <RwCamera>  m_clumpCameras;     // 420
+
+    void                    BeginUpdate();
+    void                    EndUpdate();
 
     void                    AddToClump( RpClump *clump );
     void                    RemoveFromClump();
@@ -545,8 +521,9 @@ public:
     unsigned short          unknown7;           // 98
     RwList <void>           sectors;            // 100
     void*                   render;             // 108
+    RwScene*                m_scene;            // 112
 
-    BYTE                    m_pad[8];           // 112
+    BYTE                    m_pad[4];           // 116
     RpAnimHierarchy*        m_anim;             // 120
 
     unsigned char           m_visibility;       // 124
@@ -605,12 +582,12 @@ struct RpAtomicContainer
 class RpLight : public RwObjectFrame
 {
 public:
-    float                   radius;             // 20
-    RwColorFloat            color;              // 24
+    float                   m_radius;           // 20
+    RwColorFloat            m_color;            // 24
     float                   unknown1;           // 40
-    RwList <void>           sectors;            // 44
+    RwList <void>           m_sectors;          // 44
     RwListEntry <RpLight>   globalLights;       // 52
-    unsigned short          frame;              // 60
+    unsigned short          m_frame;            // 60
     unsigned short          unknown2;           // 62
     float                   m_unk[2];           // 64
     RpClump*                m_clump;            // 72
@@ -618,6 +595,8 @@ public:
 
     void                    AddToClump( RpClump *clump );
     void                    RemoveFromClump();
+
+    void                    SetColor( const RwColorFloat& color );
 };
 class RpClump : public RwObject
 {   // RenderWare (plugin) Clump (used by GTA)
@@ -633,6 +612,8 @@ public:
     BYTE                    m_pad2[4];          // 56
 
     RwStaticGeometry*       m_static;           // 60
+
+    void                    Render();
 
     void                    InitStaticSkeleton();
     RwStaticGeometry*       CreateStaticGeometry();
@@ -765,6 +746,11 @@ class RwStructInfo
 public:
     size_t                  m_size;
 };
+class RwScene
+{
+public:
+
+};
 
 typedef RwTexture* (__cdecl *RwScanTexDictionaryStack_t) ( const char *name, const char *secName );
 typedef RwTexture* (__cdecl *RwScanTexDictionaryStackRef_t) ( const char *name );
@@ -792,7 +778,11 @@ struct RwError
 class RwInterface   // size: 1456
 {
 public:
-    BYTE                    m_pad8[16];                                     // 0
+    RwCamera*               m_renderCam;                                    // 0
+    BYTE                    m_pad8[6];                                      // 4
+    unsigned short          m_frame;                                        // 10
+    
+    BYTE                    m_pad11[4];                                     // 12
     RwRenderSystem          m_renderSystem;                                 // 16
 
     BYTE                    m_pad[168];                                     // 20
@@ -822,8 +812,10 @@ public:
 
     void*                   m_callback7;                                    // 380
 
-    BYTE                    m_pad3[36];                                     // 384
+    BYTE                    m_pad3[24];                                     // 384
+    RwStructInfo*           m_cameraInfo;                                   // 408
 
+    BYTE                    m_pad12[8];                                     // 412
     char                    m_charTable[256];                               // 420
     char                    m_charTable2[256];                              // 676
 
@@ -835,7 +827,14 @@ public:
     BYTE                    m_pad7[24];                                     // 1084
 
     RwRender*               m_renderData;                                   // 1108
-    BYTE                    m_pad4[344];                                    // 1112
+    BYTE                    m_pad4[308];                                    // 1112
+
+    RwStructInfo*           m_clumpInfo;                                    // 1420
+    void*                   m_unk2;                                         // 1424
+    RwStructInfo*           m_lightInfo;                                    // 1428
+    void*                   m_unk;                                          // 1432
+    RwList <void>           m_unkList;                                      // 1436
+    BYTE                    m_pad10[16];                                    // 1440
 };
 
 extern RwInterface **ppRwInterface;

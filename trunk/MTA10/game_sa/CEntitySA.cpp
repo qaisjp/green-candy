@@ -482,6 +482,9 @@ void CEntitySA::SetCollidableWith( CEntity *entity, bool enabled )
 {
     CEntitySA *intEnt = dynamic_cast <CEntitySA*> ( entity );
 
+    if ( intEnt == this )
+        return;
+
     // quit if no change
     if ( MapContains( m_disabledColl, intEnt->GetInterface() ) != enabled )
         return;

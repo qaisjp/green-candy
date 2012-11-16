@@ -315,15 +315,28 @@ static LUA_DECLARE( luaconstructor_rwframe )
 
 static inline void RwFrameAssignObject( CRwObject *obj, CClientRwFrame *parent )
 {
-    if ( obj->GetType() == RW_ATOMIC )
+    union
     {
-        CClientAtomic *atom = new CClientAtomic( parent->GetVM(), NULL, *dynamic_cast <CRpAtomic*> ( obj ) );
+        CClientRwObject *rwobj;
+        CClientAtomic *atom;
+        CClientLight *light;
+        CClientRwCamera *cam;
+    };
 
-        atom->SetRoot( parent );
-        return;
+    switch( obj->GetType() )
+    {
+    case RW_ATOMIC:
+        atom = new CClientAtomic( parent->GetVM(), NULL, *dynamic_cast <CRpAtomic*> ( obj ) );
+        break;
+    case RW_LIGHT:
+        light = new CClientLight( parent->GetVM(), NULL, *dynamic_cast <CRpLight*> ( obj ) );
+        break;
+    case RW_CAMERA:
+        cam = new CClientRwCamera( parent->GetVM(), *dynamic_cast <CRwCamera*> ( obj ) );
+        break;
     }
 
-    assert( 0 );
+    rwobj->SetRoot( parent );
 }
 
 static inline void RwFrameAssignChild( CRwFrame *child, CClientRwFrame *parent )

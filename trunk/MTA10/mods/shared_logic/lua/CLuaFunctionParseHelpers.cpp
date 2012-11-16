@@ -152,6 +152,14 @@ IMPLEMENT_ENUM_BEGIN( eDxTestMode )
     ADD_ENUM ( DX_TEST_MODE_NO_SHADER,      "no_shader" )
 IMPLEMENT_ENUM_END( "dx-test-mode" )
 
+IMPLEMENT_ENUM_BEGIN( RpLightType )
+    ADD_ENUM( LIGHT_TYPE_DIRECTIONAL,   "directional" )
+    ADD_ENUM( LIGHT_TYPE_AMBIENT,       "ambient" )
+    ADD_ENUM( LIGHT_TYPE_POINT,         "point" )
+    ADD_ENUM( LIGHT_TYPE_SPOT_1,        "spot" )
+    ADD_ENUM( LIGHT_TYPE_SPOT_2,        "spot_soft" )
+IMPLEMENT_ENUM_END( "rwlight-type" )
+
 //
 // Reading mixed types
 //

@@ -550,16 +550,16 @@ void CArchiveFileTranslator::GetFiles( const char *path, const char *wildcard, b
 
 struct zip_mapped_rdircheck
 {
-    inline unsigned short operator() ( const char map[1024], long& off ) const
+    inline unsigned short operator() ( const char map[1024], size_t count, long& off ) const
     {
-        unsigned short n = 1021;
-        const char *cur = map + 1021;
+        unsigned short n = (unsigned int)count + 1;
+        const char *cur = map + n;
 
         while ( n )
         {
-            if ( *(unsigned int*)cur-- == ZIP_SIGNATURE )
+            if ( *(unsigned int*)--cur == ZIP_SIGNATURE )
             {
-                off = n + 4;
+                off = n + 3;
                 return true;
             }
 

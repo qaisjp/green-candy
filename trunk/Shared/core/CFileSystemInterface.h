@@ -224,15 +224,15 @@ namespace FileSystem
 
         do
         {
-            file.Read( &buf, 1, sizeof( buf ) );
+            size_t readCount = file.Read( &buf, 1, sizeof( buf ) );
 
-            if ( f( buf, off ) )
+            if ( f( buf, readCount, off ) )
             {
-                file.Seek( -(long)sizeof( buf ) + off, SEEK_CUR );
+                file.Seek( -(long)readCount + off, SEEK_CUR );
                 return true;
             }
 
-        } while ( file.Seek( -(long)sizeof( buf ) * 2, SEEK_CUR ) != 0 );
+        } while ( file.Seek( -(long)sizeof( buf ) * 2 + (long)sizeof( buf ) / 2, SEEK_CUR ) == 0 );
 
         return false;
     }

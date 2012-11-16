@@ -74,12 +74,7 @@ void CWorldSA::Remove ( CEntitySAInterface * entityInterface )
     {
         push    entityInterface
         call    dwFunction
-        add     esp, 4
-
-    /*  mov     ecx, entityInterface
-        mov     esi, [ecx]
-        push    1
-        call    dword ptr [esi+8]*/             
+        add     esp, 4          
     }
 }
 

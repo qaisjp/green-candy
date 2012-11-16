@@ -15,12 +15,14 @@
 
 class CModel;
 
-class CRpAtomic : public virtual CRwObject
+class CRpAtomic abstract : public virtual CRwObject
 {
 public:
     virtual                         ~CRpAtomic()    {}
 
     virtual CRpAtomic*              Clone() const = 0;
+
+    virtual void                    Render() = 0;
 
     virtual void                    AddToModel( CModel *model ) = 0;
     virtual CModel*                 GetModel() = 0;

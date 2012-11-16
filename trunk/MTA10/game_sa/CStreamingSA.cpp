@@ -457,7 +457,7 @@ CStreamingSA::CStreamingSA()
     HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
     HookInstall( 0x005B82C0, (DWORD)HOOK_CStreaming__LoadArchives, 5 );
 
-#ifdef _DEBUG
+#ifdef W_C_DEBUG
     HookInstall( 0x0070A6D6, (DWORD)HOOK_CrashDebug, 5 );
 #endif
 }
@@ -655,21 +655,6 @@ void CStreamingSA::FreeModel( unsigned short id )
             // RwObject destruction
             if ( g_colReplacement[id] && model->GetRwModelType() == RW_CLUMP )
                 model->m_pColModel = NULL;
-
-            // GTA:SA engine bugfix: atomics do not increase any texture references. Apparrently this has
-            // not caused problems during the development for the game, so they did not encounter this bug.
-            // We basically have to unlink any effect or texture from the atomic before deleting it. Otherwise
-            // the engine tries to delete already deleted textures, which may result in crashing if the texture is
-            // reused (it's reference count goes WEE-WEE).
-            // Additionally, we reference our atomic's geometry, so we do not want to delete the textures from an
-            // already referenced geometry!
-            if ( model->GetRwModelType() == RW_ATOMIC )
-            {
-                RpGeometry *geom = model->GetAtomicModelInfo()->m_rpAtomic->m_geometry;
-
-                if ( geom->m_refs == 1 )
-                    model->GetAtomicModelInfo()->m_rpAtomic->m_geometry->UnlinkFX();
-            }
 
             model->DeleteRwObject();
 

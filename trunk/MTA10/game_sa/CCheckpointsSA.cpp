@@ -19,7 +19,7 @@ CCheckpointsSA::CCheckpointsSA()
     DEBUG_TRACE("CCheckpointsSA::CCheckpointsSA()");
 
     for( unsigned int i = 0; i < MAX_CHECKPOINTS; i++ )
-        m_checkpoints[i] = new CCheckpointSA( (CCheckpointSAInterface*)( ARRAY_CHECKPOINTS + i * sizeof(CCheckpointSAInterface) ) );
+        m_checkpoints[i] = new CCheckpointSA( (CCheckpointSAInterface*)ARRAY_CHECKPOINTS + i );
 }
 
 CCheckpointsSA::~CCheckpointsSA()

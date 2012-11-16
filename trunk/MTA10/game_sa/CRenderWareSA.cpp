@@ -31,6 +31,7 @@ RwErrorGet_t                            RwErrorGet                              
 RwAllocAligned_t                        RwAllocAligned                          = (RwAllocAligned_t)                        invalid_ptr;
 RwFreeAligned_t                         RwFreeAligned                           = (RwFreeAligned_t)                         invalid_ptr;
 RwCreateExtension_t                     RwCreateExtension                       = (RwCreateExtension_t)                     invalid_ptr;
+RwObjectRegister_t                      RwObjectRegister                        = (RwObjectRegister_t)                      invalid_ptr;
 RwStreamFindChunk_t                     RwStreamFindChunk                       = (RwStreamFindChunk_t)                     invalid_ptr;
 RwStreamOpen_t                          RwStreamOpen                            = (RwStreamOpen_t)                          invalid_ptr;
 RwStreamReadBlocks_t                    RwStreamReadBlocks                      = (RwStreamReadBlocks_t)                    invalid_ptr;
@@ -47,6 +48,7 @@ RwFrameScale_t                          RwFrameScale                            
 RwFrameOrient_t                         RwFrameOrient                           = (RwFrameOrient_t)                         invalid_ptr;
 RwFrameDestroy_t                        RwFrameDestroy                          = (RwFrameDestroy_t)                        invalid_ptr;
 RwCameraClone_t                         RwCameraClone                           = (RwCameraClone_t)                         invalid_ptr;
+RwCameraDestroy_t                       RwCameraDestroy                         = (RwCameraDestroy_t)                       invalid_ptr;
 RpClumpClone_t                          RpClumpClone                            = (RpClumpClone_t)                          invalid_ptr;
 RpClumpStreamRead_t                     RpClumpStreamRead                       = (RpClumpStreamRead_t)                     invalid_ptr;
 RpClumpAddAtomic_t                      RpClumpAddAtomic                        = (RpClumpAddAtomic_t)                      invalid_ptr;
@@ -70,7 +72,6 @@ RpAtomicDestroy_t                       RpAtomicDestroy                         
 RwObjectFrameRender_t                   RwObjectFrameRender                     = (RwObjectFrameRender_t)                   invalid_ptr;
 RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 invalid_ptr;
 RwTexDictionaryFinalizer_t              RwTexDictionaryFinalizer                = (RwTexDictionaryFinalizer_t)              invalid_ptr;
-RwTexDictionaryRegister_t               RwTexDictionaryRegister                 = (RwTexDictionaryRegister_t)               invalid_ptr;
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             invalid_ptr;
 RwTexDictionaryGetCurrent_t             RwTexDictionaryGetCurrent               = (RwTexDictionaryGetCurrent_t)             invalid_ptr;
 RwTexDictionarySetCurrent_t             RwTexDictionarySetCurrent               = (RwTexDictionarySetCurrent_t)             invalid_ptr;
@@ -102,15 +103,15 @@ RwV3dTransformVector_t                  RwV3dTransformVector                    
 RwIm3DTransform_t                       RwIm3DTransform                         = (RwIm3DTransform_t)                       invalid_ptr;
 RwIm3DRenderIndexedPrimitive_t          RwIm3DRenderIndexedPrimitive            = (RwIm3DRenderIndexedPrimitive_t)          invalid_ptr;
 RwIm3DEnd_t                             RwIm3DEnd                               = (RwIm3DEnd_t)                             invalid_ptr;
-RpLightCreate_t                         RpLightCreate                           = (RpLightCreate_t)                         invalid_ptr;
 RpLightSetRadius_t                      RpLightSetRadius                        = (RpLightSetRadius_t)                      invalid_ptr;
-RpLightSetColor_t                       RpLightSetColor                         = (RpLightSetColor_t)                       invalid_ptr;
+RpLightDestroy_t                        RpLightDestroy                          = (RpLightDestroy_t)                        invalid_ptr;
 RwRasterCreate_t                        RwRasterCreate                          = (RwRasterCreate_t)                        invalid_ptr;
 RwRasterUnlock_t                        RwRasterUnlock                          = (RwRasterUnlock_t)                        invalid_ptr;
 RwRasterLock_t                          RwRasterLock                            = (RwRasterLock_t)                          invalid_ptr;
-RpWorldAddAtomic_t                      RpWorldAddAtomic                        = (RpWorldAddAtomic_t)                      invalid_ptr;
-RpWorldAddLight_t                       RpWorldAddLight                         = (RpWorldAddLight_t)                       invalid_ptr;
-RpWorldAddClump_t                       RpWorldAddClump                         = (RpWorldAddClump_t)                       invalid_ptr;
+RwRasterDestroy_t                       RwRasterDestroy                         = (RwRasterDestroy_t)                       invalid_ptr;
+RwSceneAddAtomic_t                      RwSceneAddAtomic                        = (RwSceneAddAtomic_t)                      invalid_ptr;
+RwSceneAddLight_t                       RwSceneAddLight                         = (RwSceneAddLight_t)                       invalid_ptr;
+RwSceneAddClump_t                       RwSceneAddClump                         = (RwSceneAddClump_t)                       invalid_ptr;
 RpPrtStdGlobalDataSetStreamEmbedded_t   RpPrtStdGlobalDataSetStreamEmbedded     = (RpPrtStdGlobalDataSetStreamEmbedded_t)   invalid_ptr;
 RwPrefetch_t                            RwPrefetch                              = (RwPrefetch_t)                            invalid_ptr;
 RwFlushLoader_t                         RwFlushLoader                           = (RwFlushLoader_t)                         invalid_ptr;
@@ -119,18 +120,18 @@ RwFlushLoader_t                         RwFlushLoader                           
 /** GTA:SA function mappings                                                **/
 /*****************************************************************************/
 
-SetTextureDict_t                SetTextureDict                  = (SetTextureDict_t)                0xDEAD;
-LoadClumpFile_t                 LoadClumpFile                   = (LoadClumpFile_t)                 0xDEAD;
-LoadModel_t                     LoadModel                       = (LoadModel_t)                     0xDEAD;
-LoadCollisionModel_t            LoadCollisionModel              = (LoadCollisionModel_t)            0xDEAD;
-LoadCollisionModelVer2_t        LoadCollisionModelVer2          = (LoadCollisionModelVer2_t)        0xDEAD;
-LoadCollisionModelVer3_t        LoadCollisionModelVer3          = (LoadCollisionModelVer3_t)        0xDEAD;
-CTxdStore_LoadTxd_t             CTxdStore_LoadTxd               = (CTxdStore_LoadTxd_t)             0xDEAD;
-CTxdStore_GetTxd_t              CTxdStore_GetTxd                = (CTxdStore_GetTxd_t)              0xDEAD;
-CTxdStore_RemoveTxd_t           CTxdStore_RemoveTxd             = (CTxdStore_RemoveTxd_t)           0xDEAD;
-CTxdStore_RemoveRef_t           CTxdStore_RemoveRef             = (CTxdStore_RemoveRef_t)           0xDEAD;
-CTxdStore_AddRef_t              CTxdStore_AddRef                = (CTxdStore_AddRef_t)              0xDEAD;
-CClothesBuilder_CopyTexture_t   CClothesBuilder_CopyTexture     = (CClothesBuilder_CopyTexture_t)   0xDEAD;
+SetTextureDict_t                SetTextureDict                  = (SetTextureDict_t)                invalid_ptr;
+LoadClumpFile_t                 LoadClumpFile                   = (LoadClumpFile_t)                 invalid_ptr;
+LoadModel_t                     LoadModel                       = (LoadModel_t)                     invalid_ptr;
+LoadCollisionModel_t            LoadCollisionModel              = (LoadCollisionModel_t)            invalid_ptr;
+LoadCollisionModelVer2_t        LoadCollisionModelVer2          = (LoadCollisionModelVer2_t)        invalid_ptr;
+LoadCollisionModelVer3_t        LoadCollisionModelVer3          = (LoadCollisionModelVer3_t)        invalid_ptr;
+CTxdStore_LoadTxd_t             CTxdStore_LoadTxd               = (CTxdStore_LoadTxd_t)             invalid_ptr;
+CTxdStore_GetTxd_t              CTxdStore_GetTxd                = (CTxdStore_GetTxd_t)              invalid_ptr;
+CTxdStore_RemoveTxd_t           CTxdStore_RemoveTxd             = (CTxdStore_RemoveTxd_t)           invalid_ptr;
+CTxdStore_RemoveRef_t           CTxdStore_RemoveRef             = (CTxdStore_RemoveRef_t)           invalid_ptr;
+CTxdStore_AddRef_t              CTxdStore_AddRef                = (CTxdStore_AddRef_t)              invalid_ptr;
+CClothesBuilder_CopyTexture_t   CClothesBuilder_CopyTexture     = (CClothesBuilder_CopyTexture_t)   invalid_ptr;
 
 extern CGameSA * pGame;
 extern CBaseModelInfoSAInterface **ppModelInfo;
@@ -138,165 +139,15 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 RwInterface **ppRwInterface = (RwInterface**)0x00C97B24;
 
 
-// RwFrameForAllObjects struct and callback used to replace dynamic vehicle parts
-struct SReplaceParts
-{
-    const char *szName;                         // name of the part you want to replace (e.g. 'door_lf' or 'door_rf')
-    unsigned char ucIndex;                      // index counter for internal usage (0 is the 'ok' part model, 1 is the 'dam' part model)
-    RpAtomicContainer *pReplacements;           // replacement atomics
-    unsigned int uiReplacements;                // number of replacements
-};
-static bool ReplacePartsCB( RwObject * object, SReplaceParts *data )
-{
-    RpAtomic * Atomic = (RpAtomic*) object;
-    char szAtomicName[16] = {0};
-
-    // iterate through our loaded atomics
-    for ( unsigned int i = 0; i < data->uiReplacements; i++ )
-    {
-        // get the correct atomic name based on the object # in our parent frame
-        if ( data->ucIndex == 0 )
-            snprintf ( &szAtomicName[0], 16, "%s_ok", data->szName );
-        else
-            snprintf ( &szAtomicName[0], 16, "%s_dam", data->szName );
-
-        // see if we have such an atomic in our replacement atomics array
-        if ( strncmp ( &data->pReplacements[i].szName[0], &szAtomicName[0], 16 ) == 0 )
-        {
-            // if so, override the geometry
-            RpAtomicSetGeometry( Atomic, data->pReplacements[i].atomic->m_geometry, 0 );
-
-            // and copy the matrices
-            RwFrameCopyMatrix( Atomic->m_parent, data->pReplacements[i].atomic->m_parent );
-
-            object = (RwObject*)data->pReplacements[i].atomic;
-            data->ucIndex++;
-        }
-    }
-
-    return true;
-}
-
-// RpClumpForAllAtomicsPointer callback used to add atomics to a vehicle
-static bool AddAllAtomicsCB( RpAtomic * atomic, RpClump *data )
-{
-    RwFrame * pFrame = data->m_parent;
-
-    // add the atomic to the frame
-    RpAtomicSetFrame ( atomic, pFrame );
-    RpClumpAddAtomic ( data, atomic );
-    return true;
-}
-
-// RpClumpForAllAtomicsPointer struct and callback used to replace all wheels with a given wheel model
-struct SReplaceWheels
-{
-    const char *szName;                         // name of the new wheel model
-    RpClump *pClump;                            // the vehicle's clump
-    RpAtomicContainer *pReplacements;           // replacement atomics
-    unsigned int uiReplacements;                // number of replacements
-};
-static bool ReplaceWheelsCB( RpAtomic * atomic, SReplaceWheels *data )
-{
-    RwFrame * Frame = atomic->m_parent;
-
-    // find our wheel atomics
-    if ( strncmp( Frame->m_nodeName, "wheel_lf_dummy", 16 ) == 0 || strncmp( Frame->m_nodeName, "wheel_rf_dummy", 16 ) == 0 || 
-         strncmp( Frame->m_nodeName, "wheel_lm_dummy", 16 ) == 0 || strncmp( Frame->m_nodeName, "wheel_rm_dummy", 16 ) == 0 || 
-         strncmp( Frame->m_nodeName, "wheel_lb_dummy", 16 ) == 0 || strncmp( Frame->m_nodeName, "wheel_rb_dummy", 16 ) == 0 )
-    {
-        // find a replacement atomic
-        for ( unsigned int i = 0; i < data->uiReplacements; i++ ) {
-            // see if it's name is equal to the specified wheel
-            if ( strncmp ( &data->pReplacements[i].szName[0], data->szName, 16 ) == 0 ) {
-                // clone our wheel atomic
-                RpAtomic * WheelAtomic = RpAtomicClone ( data->pReplacements[i].atomic );
-                RpAtomicSetFrame ( WheelAtomic, Frame );
-
-                // add it to the clump
-                RpClumpAddAtomic ( data->pClump, WheelAtomic );
-
-                // delete the current atomic
-                RpClumpRemoveAtomic ( data->pClump, atomic );
-            }
-        }
-    }
-
-    return true;
-}
-
-// RpClumpForAllAtomicsPointer struct and callback used to replace all atomics for a vehicle
-struct SReplaceAll
-{
-    RpClump *pClump;                            // the vehicle's clump
-    RpAtomicContainer *pReplacements;           // replacement atomics
-    unsigned int uiReplacements;                // number of replacements
-};
-static bool ReplaceAllCB( RpAtomic * atomic, SReplaceAll *data )
-{
-    RwFrame *frame = atomic->m_parent;
-
-    if ( frame == NULL )
-        return true;
-
-    // find a replacement atomic
-    for ( unsigned int i = 0; i < data->uiReplacements; i++ )
-    {
-        // see if we can find an atomic with the same name
-        if ( strncmp( &data->pReplacements[i].szName[0], frame->m_nodeName, 16 ) == 0 )
-        {
-            // copy the matrices
-            RwFrameCopyMatrix( frame, data->pReplacements[i].atomic->m_parent );
-
-            // set the new atomic's frame to the current one
-            RpAtomicSetFrame( data->pReplacements[i].atomic, frame );
-
-            // override all engine and material related callbacks and pointers
-            data->pReplacements[i].atomic->m_renderCallback     = atomic->m_renderCallback;
-            data->pReplacements[i].atomic->m_parent             = atomic->m_parent;
-            data->pReplacements[i].atomic->render               = atomic->render;
-            data->pReplacements[i].atomic->interpolation        = atomic->interpolation;
-            data->pReplacements[i].atomic->m_info               = atomic->m_info;
-
-            // add the new atomic to the vehicle clump
-            RpClumpAddAtomic( data->pClump, data->pReplacements[i].atomic );
-
-            // remove the current atomic
-            RpClumpRemoveAtomic( data->pClump, atomic );
-        }
-    }
-
-    return true;
-}
-
-// RpClumpForAllAtomicsPointer struct and callback used to load the atomics from a specific clump into a container
-struct SLoadAtomics
-{
-    RpAtomicContainer *pReplacements;           // replacement atomics
-    unsigned int uiReplacements;                // number of replacements
-};
-static bool LoadAtomicsCB( RpAtomic * atomic, SLoadAtomics *data )
-{
-    RwFrame *Frame = atomic->m_parent;
-
-    // add the atomic to the container
-    data->pReplacements [ data->uiReplacements ].atomic = atomic;
-    strncpy ( data->pReplacements [ data->uiReplacements ].szName, Frame->m_nodeName, 16 );
-
-    // and increment the counter
-    data->uiReplacements++;
-
-    return true;
-}
-
 CRenderWareSA::CRenderWareSA ( eGameVersion version )
 {
     // Version dependant addresses
-    switch ( version )
+    switch( version )
     {
     // VERSION 1.0 EU ADDRESSES
     case VERSION_EU_10:
         RwRenderSystemFigureAffairs         = (RwRenderSystemFigureAffairs_t)           0x007F2AF0;
+        RwObjectRegister                    = (RwObjectRegister_t)                      0x00808720;
         RwErrorGet                          = (RwErrorGet_t)                            0x008088C0;
         RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECF30;
         RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED310;
@@ -313,6 +164,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwFrameCloneHierarchy               = (RwFrameCloneHierarchy_t)                 0x007F0290;
         RwFrameDestroy                      = (RwFrameDestroy_t)                        0x007F04B0;
         RwCameraClone                       = (RwCameraClone_t)                         0x007EF3F0;
+        RwCameraDestroy                     = (RwCameraDestroy_t)                       0x007EE4F0;
         RpClumpClone                        = (RpClumpClone_t)                          0x00749FC0;
         RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A4E0;
         RpClumpRemoveAtomic                 = (RpClumpRemoveAtomic_t)                   0x0074A510;
@@ -328,7 +180,6 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749E10;
         RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
         RwTexDictionaryFinalizer            = (RwTexDictionaryFinalizer_t)              0x007F3980;
-        RwTexDictionaryRegister             = (RwTexDictionaryRegister_t)               0x00808720;
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70;
         RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3AD0;
         RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3AB0;
@@ -356,15 +207,15 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwIm3DTransform                     = (RwIm3DTransform_t)                       0x007EF490; 
         RwIm3DRenderIndexedPrimitive        = (RwIm3DRenderIndexedPrimitive_t)          0x007EF590;
         RwIm3DEnd                           = (RwIm3DEnd_t)                             0x007EF560;
-        RpLightCreate                       = (RpLightCreate_t)                         0x00752160;
         RpLightSetRadius                    = (RpLightSetRadius_t)                      0x00751AC0;
-        RpLightSetColor                     = (RpLightSetColor_t)                       0x00751AE0;
+        RpLightDestroy                      = (RpLightDestroy_t)                        0x00752120;
         RwRasterUnlock                      = (RwRasterUnlock_t)                        0x007FAF00;
         RwRasterLock                        = (RwRasterLock_t)                          0x007FB310; 
         RwRasterCreate                      = (RwRasterCreate_t)                        0x007FB270;
-        RpWorldAddAtomic                    = (RpWorldAddAtomic_t)                      0x00750FE0;
-        RpWorldAddClump                     = (RpWorldAddClump_t)                       0x00751350;
-        RpWorldAddLight                     = (RpWorldAddLight_t)                       0x00751960;
+        RwRasterDestroy                     = (RwRasterDestroy_t)                       0x007FB060;
+        RwSceneAddAtomic                    = (RwSceneAddAtomic_t)                      0x00750FE0;
+        RwSceneAddClump                     = (RwSceneAddClump_t)                       0x00751350;
+        RwSceneAddLight                     = (RwSceneAddLight_t)                       0x00751960;
         RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
 
         SetTextureDict                      = (SetTextureDict_t)                        0x007319C0;
@@ -387,11 +238,14 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwAllocAligned                      = (RwAllocAligned_t)                        0x0072F4C0;
         RwFreeAligned                       = (RwFreeAligned_t)                         0x0072F4F0;
         RwCreateExtension                   = (RwCreateExtension_t)                     0x007CCE80;
+        RwObjectRegister                    = (RwObjectRegister_t)                      0x008086E0;
         RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007EC9D0;
         RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED2D0;
         RwErrorGet                          = (RwErrorGet_t)                            0x00808880;
         RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECEF0;
         RwStreamClose                       = (RwStreamClose_t)                         0x007ECE20;
+        RwCameraClone                       = (RwCameraClone_t)                         0x007EF3B0;
+        RwCameraDestroy                     = (RwCameraDestroy_t)                       0x007EE4B0;
         RpClumpClone                        = (RpClumpClone_t)                          0x00749F70;
         RpClumpAddLight                     = (RpClumpAddLight_t)                       0x0074A4F0;
         RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B420;
@@ -404,6 +258,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwAnimationInit                     = (RwAnimationInit_t)                       0x007CD5E0;
         RwSkeletonUpdate                    = (RwSkeletonUpdate_t)                      0x007C5210;
         RwFrameCreate                       = (RwFrameCreate_t)                         0x007F0410;
+        RwFrameGetLTM                       = (RwFrameGetLTM_t)                         0x007F0990;
         RwFrameScale                        = (RwFrameScale_t)                          0x007F0ED0;
         RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E30;
         RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B00;
@@ -423,7 +278,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwObjectFrameRender                 = (RwObjectFrameRender_t)                   0x00805750;
         RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3600;
         RwTexDictionaryFinalizer            = (RwTexDictionaryFinalizer_t)              0x008089C0;
-        RwTexDictionaryRegister             = (RwTexDictionaryRegister_t)               0x008086E0;
+
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C30;
         RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3A90;
         RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3A70;
@@ -435,6 +290,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwRasterUnlock                      = (RwRasterUnlock_t)                        0x007FAEC0;
         RwRasterLock                        = (RwRasterLock_t)                          0x007FB2D0;
         RwRasterCreate                      = (RwRasterCreate_t)                        0x007FB230;
+        RwRasterDestroy                     = (RwRasterDestroy_t)                       0x007FB020;
         RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
         RwTexDictionaryFindNamedTexture     = (RwTexDictionaryFindNamedTexture_t)       0x007F39F0;
         RpGeometryCreate                    = (RpGeometryCreate_t)                      0x0074CA90;
@@ -458,13 +314,11 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwIm3DTransform                     = (RwIm3DTransform_t)                       0x007EF450;
         RwIm3DRenderIndexedPrimitive        = (RwIm3DRenderIndexedPrimitive_t)          0x007EF550;
         RwIm3DEnd                           = (RwIm3DEnd_t)                             0x007EF520;
-        RpLightCreate                       = (RpLightCreate_t)                         0x00752110;
         RpLightSetRadius                    = (RpLightSetRadius_t)                      0x00751A70;
-        RpLightSetColor                     = (RpLightSetColor_t)                       0x00751A90;
-        RpWorldAddClump                     = (RpWorldAddClump_t)                       0x00751300;
-        RpWorldAddLight                     = (RpWorldAddLight_t)                       0x00751910;
-        RpWorldAddAtomic                    = (RpWorldAddAtomic_t)                      0x00750F90;
-        RwCameraClone                       = (RwCameraClone_t)                         0x007EF3B0;
+        RpLightDestroy                      = (RpLightDestroy_t)                        0x007520D0;
+        RwSceneAddClump                     = (RwSceneAddClump_t)                       0x00751300;
+        RwSceneAddLight                     = (RwSceneAddLight_t)                       0x00751910;
+        RwSceneAddAtomic                    = (RwSceneAddAtomic_t)                      0x00750F90;
         RwPrefetch                          = (RwPrefetch_t)                            0x0072F480;
         RwFlushLoader                       = (RwFlushLoader_t)                         0x0072E700;
 
@@ -663,18 +517,6 @@ bool CRenderWareSA::PositionFrontSeat( RpClump *pClump, unsigned short usModelID
     return true;
 }
 
-// Loads all atomics from a clump into a container struct and returns the number of atomics it loaded
-unsigned int CRenderWareSA::LoadAtomics ( RpClump * pClump, RpAtomicContainer * pAtomics )
-{
-    // iterate through all atomics in the clump
-    SLoadAtomics data = {0};
-    data.pReplacements = pAtomics;
-    pClump->ForAllAtomics( LoadAtomicsCB, &data );
-    
-    // return the number of atomics that were added to the container
-    return data.uiReplacements;
-}
-
 // Replaces all atomics for a specific model
 typedef struct
 {
@@ -722,76 +564,6 @@ static bool AtomicsReplacer( RpAtomic* pAtomic, SAtomicsReplacer *data )
     return true;
 }
 
-void CRenderWareSA::ReplaceAllAtomicsInModel( RpClump *src, unsigned short id )
-{
-    // Replace the atomics
-    SAtomicsReplacer data;
-    data.usTxdID = ppModelInfo[id]->m_textureDictionary;
-    data.modelID = id;
-
-    src->ForAllAtomics( AtomicsReplacer, &data );
-}
-
-// Replaces all atomics in a vehicle
-void CRenderWareSA::ReplaceAllAtomicsInClump ( RpClump * pDst, RpAtomicContainer * pAtomics, unsigned int uiAtomics )
-{
-    SReplaceAll data;
-    data.pClump = pDst;
-    data.pReplacements = pAtomics;
-    data.uiReplacements = uiAtomics;
-    pDst->ForAllAtomics( ReplaceAllCB, &data );
-}
-
-// Replaces the wheels in a vehicle
-void CRenderWareSA::ReplaceWheels ( RpClump * pClump, RpAtomicContainer * pAtomics, unsigned int uiAtomics, const char * szWheel )
-{
-    // get the clump's frame
-    RwFrame *pFrame = pClump->m_parent;
-
-    SReplaceWheels data;
-    data.pClump = pClump;
-    data.pReplacements = pAtomics;
-    data.uiReplacements = uiAtomics;
-    data.szName = szWheel;
-    pClump->ForAllAtomics( ReplaceWheelsCB, &data );
-}
-
-// Repositions an atomic
-void CRenderWareSA::RepositionAtomic ( RpClump * pDst, RpClump * pSrc, const char * szName )
-{
-    RwFrameCopyMatrix( pDst->m_parent->FindChildByName( szName ), pSrc->m_parent->FindChildByName( szName ) );
-}
-
-// Adds the atomics from a source clump (pSrc) to a destination clump (pDst)
-void CRenderWareSA::AddAllAtomics ( RpClump * pDst, RpClump * pSrc )
-{
-    pSrc->ForAllAtomics( AddAllAtomicsCB, pDst );
-}
-
-// Replaces dynamic parts of the vehicle (models that have two different versions: 'ok' and 'dam'), such as doors
-// szName should be without the part suffix (e.g. 'door_lf' or 'door_rf', and not 'door_lf_dummy')
-bool CRenderWareSA::ReplacePartModels ( RpClump * pClump, RpAtomicContainer * pAtomics, unsigned int uiAtomics, const char * szName )
-{
-    // get the part's dummy name
-    char szDummyName[16] = {0};
-    snprintf ( &szDummyName[0], 16, "%s_dummy", szName );
-
-    // get the part's dummy frame
-    RwFrame * pPart = pClump->m_parent->FindChildByName( szDummyName );
-
-    if ( pPart == NULL )
-        return false;
-
-    // now replace all the objects in the frame
-    SReplaceParts data = {0};
-    data.pReplacements = pAtomics;
-    data.uiReplacements = uiAtomics;
-    data.szName = szName;
-    pPart->ForAllObjects( ReplacePartsCB, &data );
-
-    return true;
-}
-
 /*****************************************************************************
 *
 *   RenderWare Functions
@@ -804,6 +576,34 @@ RwAtomicRenderChainInterface *rwRenderChains = (RwAtomicRenderChainInterface*)0x
 RwMatrix* CRenderWareSA::AllocateMatrix()
 {
     return new ( pRwInterface->m_allocStruct( pRwInterface->m_matrixInfo, 0x3000D ) ) RwMatrix();
+}
+
+CRpLight* CRenderWareSA::CreateLight( RpLightType type )
+{
+    return new CRpLightSA( RpLightCreate( type ) );
+}
+
+CRwFrame* CRenderWareSA::CreateFrame()
+{
+    RwFrame *frame = RwFrameCreate();
+    frame->RegisterRoot();  // We belong to RenderWare directly
+
+    return new CRwFrameSA( frame );
+}
+
+CRwCamera* CRenderWareSA::CreateCamera( int width, int height )
+{
+    if ( width == 0 || height == 0 )
+        return NULL;
+
+    CRwCameraSA *cam = new CRwCameraSA( RwCameraCreate() );
+    cam->SetRenderSize( width, height );
+    return cam;
+}
+
+bool CRenderWareSA::IsRendering() const
+{
+    return pRwInterface->m_renderCam != NULL;
 }
 
 void RwObjectFrame::AddToFrame( RwFrame *frame )
@@ -826,6 +626,28 @@ void RwObjectFrame::RemoveFromFrame()
     LIST_REMOVE( m_lFrame );
 
     m_parent = NULL;
+}
+
+void RwFrame::SetModelling( const RwMatrix& mat )
+{
+    m_modelling = mat;
+
+    // Set the frame to dirty
+    m_privateFlags |= RW_FRAME_DIRTY;
+}
+
+void RwFrame::SetPosition( const CVector& pos )
+{
+    m_modelling.pos = pos;
+
+    // Set the frame to dirty
+    m_privateFlags |= RW_FRAME_DIRTY;
+}
+
+const RwMatrix& RwFrame::GetLTM() const
+{
+    // This function will recalculate the LTM if frame is dirty
+    return *RwFrameGetLTM( this );
 }
 
 void RwFrame::Link( RwFrame *frame )
@@ -1212,12 +1034,12 @@ RpAnimHierarchy* RwFrame::GetAnimHierarchy()
 
 void RwFrame::RegisterRoot()
 {
-    if ( !(m_root->m_privateFlags & ( RW_OBJ_REGISTERED | 0x01 ) ) )
+    if ( !(m_root->m_privateFlags & ( RW_OBJ_REGISTERED | RW_FRAME_DIRTY ) ) )
     {
         // Add it to the internal list
         LIST_INSERT( pRwInterface->m_nodeRoot.root, m_nodeRoot );
 
-        m_root->m_privateFlags |= RW_OBJ_REGISTERED | 0x01;
+        m_root->m_privateFlags |= RW_OBJ_REGISTERED | RW_FRAME_DIRTY;
     }
 
     m_privateFlags |= RW_OBJ_REGISTERED | RW_OBJ_HIERARCHY_CACHED;
@@ -1295,6 +1117,53 @@ void RwTexture::RemoveFromDictionary()
     LIST_REMOVE( TXDList );
 
     txd = NULL;
+}
+
+RwCamera* RwCameraCreate()
+{
+    RwCamera *cam = (RwCamera*)pRwInterface->m_allocStruct( pRwInterface->m_cameraInfo, 0x30005 );
+
+    if ( !cam )
+        return NULL;
+
+    cam->m_type = RW_CAMERA;
+    cam->m_subtype = 0;
+    cam->m_flags = 0;
+    cam->m_privateFlags = 0;
+    cam->m_parent = NULL;
+
+    cam->m_callback = (void*)0x007EE5A0;
+    cam->m_preCallback = (RwCameraPreCallback)0x007EF370;
+    cam->m_postCallback = (RwCameraPostCallback)0x007EF340;
+
+    cam->m_screen.x = cam->m_screen.y = cam->m_screenInverse.x = cam->m_screenInverse.y = 1;
+    cam->m_screenOffset.x = cam->m_screenOffset.y = 0;
+
+    cam->m_nearplane = 0.05f;
+    cam->m_farplane = 10;
+    cam->m_fog = 5;
+
+    cam->m_rendertarget = NULL;
+    cam->m_bufferDepth = NULL;
+    cam->m_camType = RW_CAMERA_PERSPECTIVE;
+
+    // Do some plane shifting
+    ((void (__cdecl*)( RwCamera* ))0x007EE200)( cam );
+
+    cam->m_matrix.a = 0;
+
+    RwObjectRegister( (void*)0x008E222C, cam );
+    return cam;
+}
+
+void RwCamera::BeginUpdate()
+{
+    m_preCallback( this );
+}
+
+void RwCamera::EndUpdate()
+{
+    m_postCallback( this );
 }
 
 void RwCamera::AddToClump( RpClump *clump )
@@ -1466,6 +1335,17 @@ void RpLight::RemoveFromClump()
     m_clump = NULL;
 }
 
+void RpClump::Render()
+{
+    LIST_FOREACH_BEGIN( RpAtomic, m_atomics.root, m_atomics )
+        if ( item->IsVisible() )
+        {
+            item->m_parent->GetLTM();   // Possibly update it's world position
+            item->m_renderCallback( item );
+        }
+    LIST_FOREACH_END
+}
+
 static bool RwAssignRenderLink( RwFrame *child, RwRenderLink **link )
 {
     (*link)->m_context = child;
@@ -1481,7 +1361,7 @@ static void RwRenderLinkInit( RwRenderLink *link, void *data )
 
     link->m_flags = 0;
 
-    link->m_position = frame->m_modelling.pos;
+    link->m_position = frame->GetPosition();
 
     link->m_id = -1;
 }
@@ -1855,4 +1735,81 @@ RwError* RwSetError( RwError *info )
 
     pRwInterface->m_errorInfo.err2 = info->err2;
     return info;
+}
+
+static void* _lightCallback( void *ptr )
+{
+    return ptr;
+}
+
+RpLight* RpLightCreate( unsigned char type )
+{
+    RpLight *light = (RpLight*)pRwInterface->m_allocStruct( pRwInterface->m_lightInfo, 0x30012 );
+
+    if ( !light )
+        return NULL;
+
+    light->m_type = RW_LIGHT;
+    light->m_subtype = type;
+    light->m_color.a = 0;
+    light->m_color.r = 0;
+    light->m_color.g = 0;
+    light->m_color.b = 0;
+
+    light->m_callback = (void*)_lightCallback;
+    light->m_flags = 0;
+    light->m_parent = NULL;
+
+    light->m_radius = 0;
+    light->unknown1 = 0;
+    light->m_privateFlags = 0;
+
+    // Clear the list awareness
+    LIST_CLEAR( light->m_sectors.root );
+    LIST_INITNODE( light->m_clumpLights );
+
+    light->m_flags = 3; // why write it again? R* hack?
+    light->m_frame = pRwInterface->m_frame;
+
+    RwObjectRegister( (void*)0x008D62F8, light );
+    return light;
+}
+
+void RpLight::SetColor( const RwColorFloat& color )
+{
+    m_color = color;
+    
+    // Check whether we are brightness only
+    m_privateFlags = ( m_color.r == m_color.g && m_color.r == m_color.b );
+}
+
+static RpClump* _clumpCallback( RpClump *clump, void *data )
+{
+    return clump;
+}
+
+RpClump* RwClumpCreate()
+{
+    RpClump *clump = (RpClump*)pRwInterface->m_allocStruct( pRwInterface->m_clumpInfo, 0x30010 );
+
+    if ( !clump )
+        return NULL;
+
+    clump->m_type = RW_CLUMP;
+
+    LIST_CLEAR( clump->m_atomics.root );
+    LIST_CLEAR( clump->m_lights.root );
+    LIST_CLEAR( clump->m_cameras.root );
+
+    clump->m_subtype = 0;
+    clump->m_flags = 0;
+    clump->m_privateFlags = 0;
+    clump->m_parent = NULL;
+
+    LIST_INITNODE( clump->m_globalClumps );
+
+    clump->m_callback = _clumpCallback;
+
+    RwObjectRegister( (void*)0x008D6264, clump );
+    return clump;
 }
