@@ -13,6 +13,12 @@
 
 #include "StdInc.h"
 
+static LUA_DECLARE( clone )
+{
+    ( new CClientAtomic( L, NULL, *((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_atomic.Clone() ) )->PushStack( L );
+    return 1;
+}
+
 static LUA_DECLARE( setClump )
 {
     CClientDFF *model;
@@ -125,6 +131,7 @@ static LUA_DECLARE( restoreAll )
 
 static luaL_Reg atomic_interface[] =
 {
+    LUA_METHOD( clone ),
     LUA_METHOD( setClump ),
     LUA_METHOD( getClump ),
     LUA_METHOD( render ),

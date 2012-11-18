@@ -124,12 +124,6 @@ CRpAtomic* CVehicleComponentSA::CloneAtomic( unsigned int idx ) const
 
     CRpAtomicSA *atom = new CRpAtomicSA( inst );
     atom->SetFrame( new CRwFrameSA( frame ) );    // Assign a frame to it
-
-    // We may not lose the loaded textures, so reference them
-    (*ppTxdPool)->Get( m_txdID )->Reference();
-
-    atom->ReferenceTXD( m_txdID );
-
     return atom;
 }
 

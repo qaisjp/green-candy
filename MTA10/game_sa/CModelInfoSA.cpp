@@ -23,6 +23,34 @@ CBaseModelInfoSAInterface** ppModelInfo = (CBaseModelInfoSAInterface**) ARRAY_Mo
 
 std::map < unsigned short, int > CModelInfoSA::ms_RestreamTxdIDMap;
 
+struct timeInfo
+{
+    BYTE                m_pad[2];
+    unsigned short      m_model;
+};
+
+void CBaseModelInfoSAInterface::SetColModel( CColModelSAInterface *col, bool putTimed )
+{
+    SetCollision( col, putTimed );
+}
+
+void CBaseModelInfoSAInterface::UnsetColModel()
+{
+    DeleteCollision();
+}
+
+void ModelInfo_Init()
+{
+    // Install some fixed
+    HookInstall( 0x004C4BC0, h_memFunc( &CBaseModelInfoSAInterface::SetColModel ), 5 );
+    HookInstall( 0x004C4C40, h_memFunc( &CBaseModelInfoSAInterface::UnsetColModel ), 5 );
+}
+
+void ModelInfo_Shutdown()
+{
+
+}
+
 
 CBaseModelInfoSAInterface::CBaseModelInfoSAInterface()
 {
@@ -82,14 +110,29 @@ unsigned int CBaseModelInfoSAInterface::GetTimeInfo()
     return 0;
 }
 
+void CBaseModelInfoSAInterface::SetCollision( CColModelSAInterface *col, bool putTimed )
+{
+    m_pColModel = col;
+
+    if ( putTimed )
+    {
+        m_renderFlags |= RENDER_COLMODEL;
+
+        timeInfo *timed = (timeInfo*)GetTimeInfo();
+
+        if ( timed && timed->m_model != 0xFFFF )
+            ppModelInfo[timed->m_model]->SetCollision( col, false );
+    }
+    else
+        m_renderFlags &= ~RENDER_COLMODEL;
+}
+
 void CBaseModelInfoSAInterface::DeleteCollision()
 {
     if ( m_pColModel && ( m_renderFlags & RENDER_COLMODEL ) )
-    {
         delete m_pColModel;
 
-        m_pColModel = NULL;
-    }
+    m_pColModel = NULL;
 }
 
 void CBaseModelInfoSAInterface::DeleteTextures()
@@ -488,7 +531,7 @@ void CModelInfoSA::StaticFlushPendingRestreamIPL()
         DWORD* pSectorEntry = ((DWORD **)ARRAY_StreamSectors) [ i ];
         while ( pSectorEntry )
         {
-            CEntitySAInterface* pEntity = (CEntitySAInterface *)pSectorEntry [ 0 ];
+            CEntitySAInterface *pEntity = (CEntitySAInterface*)pSectorEntry[0];
 
 #ifdef _todo
             // Possible bug - pEntity seems to be invalid here occasionally

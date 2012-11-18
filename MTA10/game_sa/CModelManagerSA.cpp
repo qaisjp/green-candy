@@ -39,7 +39,7 @@ CModelSA* CModelManagerSA::CreateModel( CFile *file, unsigned short id )
     if ( !clump )
         return NULL;
 
-    CModelSA *model = new CModelSA( clump, col, ppModelInfo[id]->m_textureDictionary );
+    CModelSA *model = new CModelSA( clump, col );
 
     m_models.push_back( model );
     return model;

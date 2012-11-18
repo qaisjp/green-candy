@@ -14,12 +14,24 @@
 
 static int element_setParent( lua_State *L )
 {
-    luaL_checktype( L, 1, LUA_TCLASS );
-
-    lua_settop( L, 1 );
-
     // Make sure that we stay in the resource tree!
     LuaElement& element = *(LuaElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    if ( lua_type( L, 1 ) != LUA_TCLASS )
+    {
+        if ( element.m_root )
+        {
+            lua_pushboolean( L, false );
+            return 1;
+        }
+
+        lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+        lua_pushnil( L );
+        lua_call( L, 1, 1 );
+        return 1;
+    }
+
+    lua_settop( L, 1 );
 
     // We can stay without a root
     if ( !element.m_root )

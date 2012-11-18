@@ -737,6 +737,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CStreamerSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CStreamingSA.cpp"
 				>
 			</File>
@@ -1395,6 +1399,10 @@
 			</File>
 			<File
 				RelativePath=".\CStatsSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamerSA.h"
 				>
 			</File>
 			<File

@@ -26,6 +26,8 @@ public:
     virtual unsigned int            GetHash() const = 0;
     virtual unsigned short          GetID() const = 0;
 
+    virtual void                    SetGlobalEmitter() = 0;
+
     virtual bool                    Import( unsigned short id ) = 0;
     virtual bool                    ImportTXD( unsigned short id ) = 0;
     virtual bool                    Remove( unsigned short id ) = 0;

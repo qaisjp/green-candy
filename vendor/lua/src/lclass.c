@@ -744,10 +744,14 @@ static int childapi_notiDestroy( lua_State *L )
 
 static int childapi_destroy( lua_State *L )
 {
-    LIST_REMOVE( jvalue( index2adr( L, lua_upvalueindex( 2 ) ) )->child_iter ); // Child
+    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 2 ) ) );
+
+    LIST_REMOVE( j.child_iter ); // Child
     jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->childCount--;  // Parent
 
     // We do not have to remove the childAPI from internStorage. Shall we?
+    // Remove the parent link
+    j.parent = NULL;
 
     // Tell this event to any possible registree
     // We use a seperate function so we can post this message after unlinking from
@@ -798,10 +802,10 @@ static int classmethod_setParent( lua_State *L )
         // If we have not been passed a valid argument, i.e nil, remove our parent
         if ( j.parent )
         {
-            j.childAPI->DecrementMethodStack( L );
-
             j.childAPI->PushMethod( L, "destroy" );
             lua_call( L, 0, 0 );
+
+            j.childAPI->DecrementMethodStack( L );
         }
 
         lua_pushboolean( L, true );

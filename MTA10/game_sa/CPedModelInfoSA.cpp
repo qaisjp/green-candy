@@ -37,7 +37,7 @@ void CPedModelInfoSAInterface::DeleteRwObject()
 {
     CClumpModelInfoSAInterface::DeleteRwObject();
 
-    if (m_pColModel)
+    if ( m_pColModel )
     {
         delete m_pColModel;
 

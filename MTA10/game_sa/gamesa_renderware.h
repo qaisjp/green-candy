@@ -47,7 +47,7 @@ typedef bool                    (__cdecl *RpAtomicRenderEx_t)                   
 typedef int                     (__cdecl *RpAtomicDestroy_t)                    (RpAtomic *atomic);
 typedef RwCamera*               (__cdecl *RwCameraClone_t)                      (RwCamera *camera);
 typedef void                    (__cdecl *RwCameraDestroy_t)                    (RwCamera *camera);
-typedef RpClump*                (__cdecl *RpClumpClone_t)                       (RpClump *clone);
+typedef RpClump*                (__cdecl *RpClumpClone_t)                       (const RpClump *clone);
 typedef RpClump*                (__cdecl *RpClumpStreamRead_t)                  (RwStream *stream);
 typedef RpClump*                (__cdecl *RpClumpAddAtomic_t)                   (RpClump *clump, RpAtomic *atomic);
 typedef RpClump*                (__cdecl *RpClumpAddLight_t)                    (RpClump *clump, RpLight *light);

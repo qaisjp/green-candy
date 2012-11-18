@@ -76,6 +76,14 @@ enum eModelType : unsigned char
     MODEL_PED
 };
 
+// Helpful compiler hacking tool :)
+template <class funcType>
+DWORD h_memFunc( funcType func )
+{
+    funcType f = func;
+    return (DWORD)*(void**)&f;
+}
+
 class CBaseModelInfoSA abstract
 {
 public:
@@ -96,6 +104,9 @@ public:
     virtual void __thiscall                             ConvertAnimFileIndex() = 0;             // 52
     virtual int __thiscall                              GetAnimFileIndex() = 0;                 // 56
 };
+
+void    ModelInfo_Init();
+void    ModelInfo_Shutdown();
 
 #define RENDER_PRERENDERED          0x0001
 #define RENDER_LAST                 0x0002
@@ -126,11 +137,15 @@ public:
     CLODAtomicModelInfoSA*      GetLODAtomicModelInfo();
     void                        Init();
     void                        Shutdown();
-    void                        DeleteCollision();
+    void __thiscall             SetCollision( CColModelSAInterface *col, bool putTimed );
+    void __thiscall             DeleteCollision();
     void                        DeleteTextures();
     unsigned int                GetTimeInfo();
     void                        Reference();
     void                        Dereference();
+
+    void __thiscall             SetColModel( CColModelSAInterface *col, bool putTimed );
+    void __thiscall             UnsetColModel();
 
     unsigned short              GetFlags();
 

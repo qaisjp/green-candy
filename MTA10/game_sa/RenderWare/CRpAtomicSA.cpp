@@ -18,16 +18,12 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 CRpAtomicSA::CRpAtomicSA( RpAtomic *atom ) : CRwObjectSA( atom )
 {
     m_model = NULL;
-    m_txdID = 0xFFFF;
 }
 
 CRpAtomicSA::~CRpAtomicSA()
 {
     // Restore all models
     RestoreAll();
-
-    // Dereference our textures
-    DereferenceTXD();
 
     // Detach from the clump and destroy
     RemoveFromModel();
@@ -45,21 +41,9 @@ CRpAtomic* CRpAtomicSA::Clone() const
 
 RpAtomic* CRpAtomicSA::CreateInstance( unsigned short id ) const
 {
-    const RpAtomic *a = GetObject();
     RpAtomic *atom = RpAtomicClone( GetObject() );
-    CAtomicModelInfoSA *ainfo = ppModelInfo[id]->GetAtomicModelInfo();
-    bool unk;
-    char name[24];
-
-    // This possibly adds the reference to the texture, we should reven this
-    ((void (__cdecl*)(const char*, char*, bool&))0x005370A0)( GetObject()->m_parent->m_nodeName, name, unk );
 
     atom->SetRenderCallback( NULL );
-
-    if ( unk )
-        ainfo->GetDamageAtomicModelInfo()->SetupPipeline( atom );
-    else
-        ainfo->SetAtomic( atom );
 
     RpAtomicSetFrame( atom, RwFrameCreate() );
     
@@ -106,25 +90,6 @@ void CRpAtomicSA::RemoveFromModel()
     m_model = NULL;
 }
 
-// Referencing texture containers in case the atomic becomes stand-alone; it takes the textures from a container without
-// copying them! We therefor have to preserve the TXD.
-void CRpAtomicSA::ReferenceTXD( unsigned short id )
-{
-    DereferenceTXD();
-
-    m_txdID = id;
-}
-
-void CRpAtomicSA::DereferenceTXD()
-{
-    if ( m_txdID == 0xFFFF )
-        return;
-
-    (*ppTxdPool)->Get( m_txdID )->Dereference();
-
-    m_txdID = 0xFFFF;
-}
-
 bool CRpAtomicSA::Replace( unsigned short id )
 {
     CAtomicModelInfoSA *info = (CAtomicModelInfoSA*)ppModelInfo[id];
@@ -145,7 +110,6 @@ bool CRpAtomicSA::Replace( unsigned short id )
     pGame->GetModelManager()->RestoreModel( id );
 
     CAtomicModelInfoSA *ainfo = (CAtomicModelInfoSA*)info;
-
     CStreamingSA *streaming = pGame->GetStreaming();
 
     if ( streaming->IsModelLoading( id ) )
@@ -157,11 +121,6 @@ bool CRpAtomicSA::Replace( unsigned short id )
         streaming->LoadAllRequestedModels( true );
     }
 
-    // We acquire a texture reference to make us stand-alone
-    (*ppTxdPool)->Get( ainfo->m_textureDictionary )->Reference();   // we assume here that our textures are loaded already. Is this correct?
-
-    ReferenceTXD( ainfo->m_textureDictionary );
-
     // We should inject directly if we are loaded; otherwise CStreaming takes the cake
     if ( ainfo->m_rpAtomic )
     {
@@ -169,7 +128,7 @@ bool CRpAtomicSA::Replace( unsigned short id )
         ainfo->SetAtomic( CreateInstance( id ) );
 
         if ( g_colReplacement[id] )
-            ainfo->m_pColModel = g_colReplacement[id]->GetInterface();
+            ainfo->SetCollision( g_colReplacement[id]->GetInterface(), false );
     }
 
     g_replObjectNative[id] = this;
@@ -202,9 +161,6 @@ bool CRpAtomicSA::Restore( unsigned short id )
     CStreamingSA *streaming = pGame->GetStreaming();
 
     g_replObjectNative[id] = NULL;
-
-    // We do not need the textures anymore
-    DereferenceTXD();
 
     // Restore if loaded
     if ( info->m_rpAtomic )

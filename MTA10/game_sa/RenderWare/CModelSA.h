@@ -21,13 +21,13 @@ class CModelSA : public virtual CModel, public CRwObjectSA
     friend class CRwCameraSA;
     friend class CStreamingSA;
 public:
-                                    CModelSA( RpClump *clump, CColModelSA *col, unsigned short txdID );
-                                    CModelSA( RpClump *clump );
+                                    CModelSA( RpClump *clump, CColModelSA *col );
                                     ~CModelSA();
 
     inline RpClump*                 GetObject()                     { return (RpClump*)m_object; }
     inline const RpClump*           GetObject() const               { return (const RpClump*)m_object; }
 
+    void                            SetCollision( CColModelSA* col );
     inline CColModelSA*             GetCollision()                  { return m_col; }
 
     eRwType                         GetType() const                 { return RW_CLUMP; }
@@ -35,6 +35,7 @@ public:
     const char*                     GetName() const;
     unsigned int                    GetHash() const;
 
+    CModel*                         Clone() const;
     void                            Render();
 
     std::vector <unsigned short>    GetImportList() const;
@@ -54,7 +55,6 @@ public:
 
 protected:
     CColModelSA*                    m_col;
-    unsigned short                  m_txdID;
     bool                            m_readOnly;
 
     typedef std::map <unsigned short, bool> importMap_t;

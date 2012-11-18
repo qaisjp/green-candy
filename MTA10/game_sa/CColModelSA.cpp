@@ -98,7 +98,7 @@ bool CColModelSA::Replace( unsigned short id )
     
     // Replace only if we are loaded
     if ( info->m_eLoading == MODEL_LOADED )
-        model->m_pColModel = m_pInterface;
+        model->SetCollision( m_pInterface, false );
 
     g_colReplacement[id] = this;
     SetCachedCollision( id, m_pInterface );
@@ -122,7 +122,7 @@ bool CColModelSA::Restore( unsigned short id )
     // Restore the original colmodel no matter what
     if ( m_original )
     {
-        ppModelInfo[id]->m_pColModel = m_original;
+        ppModelInfo[id]->SetCollision( m_original, false );
         SetCachedCollision( id, m_original );
     }
 

@@ -114,6 +114,7 @@
 #include "CAnimManagerSA.h"
 #include "CIMGManagerSA.h"
 #include "CStreamingSA.h"
+#include "CStreamerSA.h"
 #include "CVisibilityPluginsSA.h"
 #include "CKeyGenSA.h"
 #include "CRopesSA.h"

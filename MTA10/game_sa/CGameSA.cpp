@@ -139,6 +139,8 @@ CGameSA::CGameSA()
 
     // :D
     Transformation_Init();
+    Streamer_Init();
+    ModelInfo_Init();
 
     // Normal weapon types (WEAPONSKILL_STD)
     for ( int i = 0; i < NUM_WeaponInfosStdSkill; i++)
@@ -190,6 +192,9 @@ CGameSA::~CGameSA()
     {
         delete reinterpret_cast < CWeaponInfoSA* > ( WeaponInfos [i] );
     }
+
+    ModelInfo_Shutdown();
+    Streamer_Shutdown();
 
     delete m_pPools;    // has to be first to delete using entities
     delete m_pFx;

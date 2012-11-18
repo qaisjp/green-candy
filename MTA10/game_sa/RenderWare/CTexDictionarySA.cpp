@@ -130,6 +130,12 @@ bool CTexDictionarySA::IsImportedTXD( unsigned short id ) const
     return false;
 }
 
+void CTexDictionarySA::SetGlobalEmitter()
+{
+    // Hook ourselves into the loading schemantics
+    g_textureEmitter = m_tex->m_txd;
+}
+
 bool CTexDictionarySA::Import( unsigned short id )
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[id];
