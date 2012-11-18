@@ -172,13 +172,6 @@ static void __declspec(naked) HOOK_DisableGTAIMGCheck()
     }
 }
 
-template <class funcType>
-DWORD h_memFunc( funcType func )
-{
-    funcType f = func;
-    return (DWORD)*(void**)&f;
-}
-
 // Let us decipher the ImgManagement, shall we?
 void DECL_ST IMG_Initialize()
 {

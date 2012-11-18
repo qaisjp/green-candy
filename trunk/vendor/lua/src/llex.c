@@ -100,12 +100,16 @@ static const char *txtToken (LexState *ls, int token) {
 
 void luaX_lexerror (LexState *ls, const char *msg, int token)
 {
-    const char *orig = msg;
+    const char *src = getstr( ls->source );
+
+    // Create basic debug information
+    if ( src[0] == '@' )
+        src++;
 
     if ( !token )
-        lua_pushstring( ls->L, msg );
+        luaO_pushfstring( ls->L, "%s:%d: %s", src, ls->linenumber, msg );
     else
-        luaO_pushfstring( ls->L, "%s near " LUA_QS, msg, txtToken(ls, token) );
+        luaO_pushfstring( ls->L, "%s:%d: %s near " LUA_QS, src, ls->linenumber, msg, txtToken(ls, token) );
 
     throw lua_exception( ls->L, LUA_ERRSYNTAX, lua_tostring( ls->L, -1 ) );
 }

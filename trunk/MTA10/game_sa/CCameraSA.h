@@ -85,9 +85,12 @@ public:
 
 /*** END PURE R* CLASSES ***/
 
-class CCameraSAInterface : public CPlaceableSAInterface
+class CCameraSAInterface
 {
 public:
+    BYTE    m_padpad[20];
+    unsigned int    m_lastRenderCount;
+
     //move these out the class, have decided to set up a mirrored enumerated type thingy at the top
 #if 0
     bool    m_bAboveGroundTrainNodesLoaded;                 // 20

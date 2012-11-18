@@ -18,7 +18,7 @@
 
 typedef std::list <unsigned short> imports_t;
 
-static int txd_getName( lua_State *L )
+static LUA_DECLARE( getName )
 {
     CClientTXD *txd = (CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) );
     const std::string& name = txd->GetName();
@@ -27,23 +27,30 @@ static int txd_getName( lua_State *L )
     return 1;
 }
 
-static int txd_getHash( lua_State *L )
+static LUA_DECLARE( getHash )
 {
     lua_pushnumber( L, ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetHash() );
     return 1;
 }
 
-static int txd_getID( lua_State *L )
+static LUA_DECLARE( getID )
 {
     lua_pushnumber( L, ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetID() );
     return 1;
 }
 
+static LUA_DECLARE( setGlobalEmitter )
+{
+    ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_txd.SetGlobalEmitter();
+    return 0;
+}
+
 static const luaL_Reg txd_interface[] =
 {
-    { "getName", txd_getName },
-    { "getHash", txd_getHash },
-    { "getID", txd_getID },
+    LUA_METHOD( getName ),
+    LUA_METHOD( getHash ),
+    LUA_METHOD( getID ),
+    LUA_METHOD( setGlobalEmitter ),
     { NULL, NULL }
 };
 

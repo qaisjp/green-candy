@@ -511,11 +511,26 @@ static void f_parser (lua_State *L, void *ud) {
 
 int luaD_protectedparser (lua_State *L, ZIO *z, const char *name)
 {
-  struct SParser p;
-  int status;
-  p.z = z; p.name = name;
-  luaZ_initbuffer(L, &p.buff);
-  status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc, NULL);
-  luaZ_freebuffer(L, &p.buff);
-  return status;
+    struct SParser p;
+    int status;
+    p.z = z; p.name = name;
+    luaZ_initbuffer(L, &p.buff);
+
+    lua_Debug deb;
+
+    status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc, &deb);
+
+    if ( status != 0 && deb.currentline != -1 )
+    {
+        lua_pushstring( L, deb.short_src );
+        lua_pushlstring( L, ":", 1 );
+        lua_pushnumber( L, deb.currentline );
+        lua_pushlstring( L, ": ", 2 );
+        lua_concat( L, 4 );
+        lua_insert( L, -2 );
+        lua_concat( L, 2 );
+    }
+
+    luaZ_freebuffer(L, &p.buff);
+    return status;
 }

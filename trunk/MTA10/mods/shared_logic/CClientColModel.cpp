@@ -14,8 +14,54 @@
 
 #include "StdInc.h"
 
+static LUA_DECLARE( replace )
+{
+    unsigned short model;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( model );
+    LUA_ARGS_END;
+
+    lua_pushboolean( L, ((CClientColModel*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Replace( model ) );
+    return 1;
+}
+
+static LUA_DECLARE( isReplaced )
+{
+    unsigned short model;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( model );
+    LUA_ARGS_END;
+
+    lua_pushboolean( L, ((CClientColModel*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->HasReplaced( model ) );
+    return 1;
+}
+
+static LUA_DECLARE( restore )
+{
+    unsigned short model;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( model );
+    LUA_ARGS_END;
+
+    lua_pushboolean( L, ((CClientColModel*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Restore( model ) );
+    return 1;
+}
+
+static LUA_DECLARE( restoreAll )
+{
+    ((CClientColModel*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->RestoreAll();
+    return 0;
+}
+
 static const luaL_Reg colmodel_interface[] =
 {
+    LUA_METHOD( replace ),
+    LUA_METHOD( isReplaced ),
+    LUA_METHOD( restore ),
+    LUA_METHOD( restoreAll ),
     { NULL, NULL }
 };
 

@@ -215,12 +215,13 @@ static RwTexture* __cdecl RwTexDictionaryFindFromStackRef( const char *name )
 {
     RwTexDictionary *tex = pRwInterface->m_textureManager.m_current;
 
-    do
+    while ( tex )
     {
         if ( RwTexture *inst = tex->FindNamedTexture( name ) )
             return inst;
+
+        tex = tex->m_parentTxd;
     }
-    while ( tex = tex->m_parentTxd );
 
     return ( g_textureEmitter ) ? g_textureEmitter->FindNamedTexture( name ) : NULL;
 }

@@ -33,6 +33,8 @@ public:
     unsigned int            GetHash() const;
     unsigned short          GetID() const;
 
+    void                    SetGlobalEmitter();
+
     bool                    Import( unsigned short id );
     bool                    ImportTXD( unsigned short id );
     bool                    Remove( unsigned short id );

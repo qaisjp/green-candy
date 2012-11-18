@@ -18,6 +18,7 @@ class CModel : public virtual CRwObject
 public:
     virtual                         ~CModel()   {}
 
+    virtual CModel*                 Clone() const = 0;
     virtual void                    Render() = 0;
 
     virtual std::vector <unsigned short>    GetImportList() const = 0;

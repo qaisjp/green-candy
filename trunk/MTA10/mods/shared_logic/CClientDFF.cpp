@@ -14,6 +14,12 @@
 
 #include "StdInc.h"
 
+static LUA_DECLARE( clone )
+{
+    ( new CClientDFF( L, *((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_model.Clone() ) )->PushStack( L );
+    return 1;
+}
+
 static LUA_DECLARE( render )
 {
     ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_model.Render();
@@ -137,6 +143,7 @@ static LUA_DECLARE( restoreAll )
 
 static const luaL_Reg dff_interface[] =
 {
+    LUA_METHOD( clone ),
     LUA_METHOD( render ),
     LUA_METHOD( getAtomics ),
     LUA_METHOD( getLights ),

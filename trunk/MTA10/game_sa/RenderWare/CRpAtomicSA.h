@@ -37,9 +37,6 @@ public:
     CModel*                         GetModel();
     void                            RemoveFromModel();
 
-    void                            ReferenceTXD( unsigned short id );
-    void                            DereferenceTXD();
-
     bool                            Replace( unsigned short id );
     bool                            IsReplaced( unsigned short id ) const;
     bool                            Restore( unsigned short id );
@@ -49,8 +46,6 @@ public:
 
 private:
     CModelSA*                       m_model;
-    unsigned short                  m_txdID;
-
     imports_t                       m_imported;
 };
 

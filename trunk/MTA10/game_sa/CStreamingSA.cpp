@@ -409,44 +409,6 @@ static void __cdecl HOOK_CStreaming__LoadArchives()
     *VAR_NumResourceEntries = *VAR_NumResourceEntries / 2048;
 }
 
-DWORD d_eax, d_ebx, d_ecx, d_edx, d_ebp;
-
-static void __cdecl prot_call( DWORD cval, DWORD func )
-{
-    __try
-    {
-        __asm
-        {
-            push dword ptr [d_eax]
-            mov ecx,cval
-            call func
-        }
-    }
-    __except( 1 )
-    {
-        __asm int 3
-    }
-}
-
-static void __declspec(naked) HOOK_CrashDebug()
-{
-    __asm
-    {
-        mov d_eax,eax
-        mov d_ebx,ebx
-        mov d_ecx,ecx
-        mov d_edx,edx
-        mov d_ebp,ebp
-
-        push dword ptr [edx+0x24]
-        push esi
-        call prot_call
-        add esp,8
-        mov ecx,0x0070A6DC
-        jmp ecx
-    }
-}
-
 CStreamingSA::CStreamingSA()
 {
     // Initialize the accelerated streaming structures
@@ -456,10 +418,6 @@ CStreamingSA::CStreamingSA()
     HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
     HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
     HookInstall( 0x005B82C0, (DWORD)HOOK_CStreaming__LoadArchives, 5 );
-
-#ifdef W_C_DEBUG
-    HookInstall( 0x0070A6D6, (DWORD)HOOK_CrashDebug, 5 );
-#endif
 }
 
 CStreamingSA::~CStreamingSA()
@@ -509,7 +467,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
 
                 // Apply the collision
                 if ( g_colReplacement[id] )
-                    minfo->m_pColModel = g_colReplacement[id]->GetInterface();
+                    minfo->SetCollision( g_colReplacement[id]->GetInterface(), false );
 
                 info->m_eLoading = MODEL_LOADED;
                 return;
@@ -654,7 +612,7 @@ void CStreamingSA::FreeModel( unsigned short id )
             // Model management fix: we unlink the collision so GTA:SA does not destroy it during
             // RwObject destruction
             if ( g_colReplacement[id] && model->GetRwModelType() == RW_CLUMP )
-                model->m_pColModel = NULL;
+                model->m_renderFlags &= ~RENDER_COLMODEL;
 
             model->DeleteRwObject();
 
@@ -730,6 +688,7 @@ void CStreamingSA::FreeModel( unsigned short id )
         {
             dwFunc = 0x00404B20;
 
+            // This function destroys buildings/IPLs!
             __asm
             {
                 movzx eax,id

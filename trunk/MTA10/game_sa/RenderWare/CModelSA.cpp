@@ -71,10 +71,9 @@ static void RpClumpObjectAssociation( CRwFrameSA *frame, CModelSA *model )
     }
 }
 
-CModelSA::CModelSA( RpClump *clump, CColModelSA *col, unsigned short txdID ) : CRwObjectSA( clump )
+CModelSA::CModelSA( RpClump *clump, CColModelSA *col ) : CRwObjectSA( clump )
 {
     m_col = col;
-    m_txdID = txdID;
 
     // Assign the frame hierarchy
     m_frame = new CRwFrameSA( clump->m_parent );
@@ -102,9 +101,6 @@ CModelSA::~CModelSA()
     RpClumpDestroy( GetObject() );
     delete m_col;
 
-    // Remove our texture reference
-    (*ppTxdPool)->Get( m_txdID )->Dereference();
-
     CModelManagerSA::models_t& models = pGame->GetModelManager()->m_models;
 
     // Remove ourself from the list
@@ -119,6 +115,11 @@ const char* CModelSA::GetName() const
 unsigned int CModelSA::GetHash() const
 {
     return pGame->GetKeyGen()->GetUppercaseKey( GetName() );
+}
+
+CModel* CModelSA::Clone() const
+{
+    return new CModelSA( RpClumpClone( GetObject() ), m_col );
 }
 
 void CModelSA::Render()
@@ -168,7 +169,6 @@ bool CModelSA::Replace( unsigned short id )
     pGame->GetModelManager()->RestoreModel( id );
 
     CClumpModelInfoSAInterface *cinfo = (CClumpModelInfoSAInterface*)info;
-
     CStreamingSA *streaming = pGame->GetStreaming();
 
     if ( streaming->IsModelLoading( id ) )

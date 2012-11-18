@@ -31,6 +31,31 @@ static LUA_DECLARE( getHealth )
     return 1;
 }
 
+static LUA_DECLARE( setRotation )
+{
+    float rx, ry, rz;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( rx );
+    argStream.ReadNumber( ry );
+    argStream.ReadNumber( rz );
+    LUA_ARGS_END;
+
+    ((CClientObject*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetRotationDegrees( CVector( rx, ry, rz ) );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getRotation )
+{
+    CVector rot;
+    ((CClientObject*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetRotationDegrees( rot );
+
+    lua_pushnumber( L, rot[0] );
+    lua_pushnumber( L, rot[1] );
+    lua_pushnumber( L, rot[2] );
+    return 3;
+}
+
 static LUA_DECLARE( setModel )
 {
     unsigned short model;
@@ -91,6 +116,8 @@ static const luaL_Reg object_interface[] =
 {
     LUA_METHOD( setHealth ),
     LUA_METHOD( getHealth ),
+    LUA_METHOD( setRotation ),
+    LUA_METHOD( getRotation ),
     LUA_METHOD( setModel ),
     LUA_METHOD( getModel ),
     LUA_METHOD( setObjectStatic ),

@@ -1,12 +1,13 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CRenderWareSA.cpp
 *  PURPOSE:     RenderWare mapping to Grand Theft Auto: San Andreas
 *               and miscellaneous rendering functions
 *  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
 *               arc_
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *  RenderWare is © Criterion Software
@@ -138,9 +139,41 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 RwInterface **ppRwInterface = (RwInterface**)0x00C97B24;
 
+static RwObject* __cdecl TrollMonitor( CEntitySAInterface *intf )
+{
+    if ( *(DWORD*)intf == 0x00863C40 )
+        return NULL;
+
+    __try
+    {
+        return intf->CreateRwObject();
+    }
+    __except( 1 )
+    {
+#ifdef _DEBUG
+        __asm int 3
+#endif
+        return NULL;
+    }
+}
+
+static const DWORD pft = 0x00554221;
+
+static void __declspec(naked) _CrashMonitor()
+{
+    __asm
+    {
+        push esi
+        call TrollMonitor
+        pop esi
+        jmp pft
+    }
+}
 
 CRenderWareSA::CRenderWareSA ( eGameVersion version )
 {
+    HookInstall( 0x0055421A, (DWORD)_CrashMonitor, 5 );
+
     // Version dependant addresses
     switch( version )
     {
@@ -361,6 +394,7 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
     CBaseModelInfoSAInterface *model = ppModelInfo[id];
     CTxdInstanceSA *txd;
     CColModelSAInterface *col;
+    bool txdReference;
 
     if ( id != 0 )
     {
@@ -397,6 +431,7 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
                 // actual model's dff by now, which we do not need
                 // The only thing we need is the reference to the texture container and possibly the collision (?)
                 txd->Reference();
+                txdReference = true;
 
                 // TODO: make sure that atomic model infos do not delete the associated collision.
                 // Otherwise we have to preserve it here! Last time I checked it did not happen.
@@ -405,7 +440,7 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
                 streamer->FreeModel( id );
             }
             else
-                txd->Reference();
+                txdReference = false;
 
             // For atomics we have to set the current texture container so it loads from it properly
             if ( model->GetRwModelType() == RW_ATOMIC )
@@ -423,9 +458,10 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
 
         if ( model )
         {
-            // The TXD container has to be preserved for the clump's lifetime!
-            // So this function leaves a reference for the TXD which has to be resolved once the associated
-            // model destroys itself.
+            // We do not have to preserve the texture container, as RenderWare is smart enough to hold references
+            // to textures itself
+            if ( txdReference )
+                txd->Dereference();
 
             // If there is no collision in our model information by now, the clump did not provide one
             // We should restore to the original collision then
