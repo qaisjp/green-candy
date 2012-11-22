@@ -618,6 +618,7 @@ public:
     void                        SetColor( SColor color1, SColor color2, SColor color3, SColor color4, int );
     void                        GetColor( SColor& color1, SColor& color2, SColor& color3, SColor& color4, int ) const;
 
+    CModel*                     CloneClump() const;
     CVehicleComponent*          GetComponent( const char *name );
     void                        GetComponentNameList( std::vector <std::string>& list );
 

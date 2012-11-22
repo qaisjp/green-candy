@@ -86,6 +86,7 @@ static LUA_DECLARE( update )
 
     try
     {
+        lua_yield_shield protect( L );  // we may not yield here for security reasons
         lua_call( L, 0, 0 );
     }
     catch( ... )

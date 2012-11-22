@@ -32,6 +32,8 @@ public:
     virtual float                   GetHealth() const = 0;
     virtual void                    SetModelIndex( unsigned short ulModel ) = 0;
 
+    virtual CRpAtomic*              CloneAtomic() const = 0;
+
     virtual void                    SetAlpha( unsigned char ucAlpha ) = 0;
     virtual unsigned char           GetAlpha() const = 0;
 

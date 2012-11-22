@@ -22,6 +22,10 @@ public:
                                 ~CModelManagerSA();
 
     CModelSA*                   CreateModel( CFile *file, unsigned short model );
+    CModelSA*                   CloneClump( unsigned short model );
+    CRpAtomicSA*                CloneAtomic( unsigned short model );
+
+    bool                        GetRwModelType( unsigned short model, eRwType& type ) const;
 
     bool                        RestoreModel( unsigned short id );
     bool                        RestoreCollision( unsigned short id );

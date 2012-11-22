@@ -118,7 +118,7 @@ public:
 		char*		m_name;
 
 	private:
-		typedef list <Setting*> settingList_t;
+		typedef std::list <Setting*> settingList_t;
 
 		settingList_t settings;
 	};
@@ -130,7 +130,7 @@ public:
 	double			GetFloat(const char *entry, const char *key);
 
 private:
-	typedef list <Entry*> entryList_t;
+	typedef std::list <Entry*> entryList_t;
 
 	entryList_t		entries;
 };

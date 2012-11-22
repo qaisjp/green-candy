@@ -45,6 +45,52 @@ CModelSA* CModelManagerSA::CreateModel( CFile *file, unsigned short id )
     return model;
 }
 
+CModelSA* CModelManagerSA::CloneClump( unsigned short model )
+{
+    if ( model > DATA_TEXTURE_BLOCK-1 )
+        return NULL;
+
+    CClumpModelInfoSAInterface *info = (CClumpModelInfoSAInterface*)ppModelInfo[model];
+
+    if ( !info || info->GetRwModelType() != RW_CLUMP )
+        return NULL;
+
+    if ( !info->m_rwClump )
+        return NULL;
+
+    return new CModelSA( RpClumpClone( info->m_rwClump ), NULL );
+}
+
+CRpAtomicSA* CModelManagerSA::CloneAtomic( unsigned short model )
+{
+    if ( model > DATA_TEXTURE_BLOCK-1 )
+        return NULL;
+
+    CAtomicModelInfoSA *info = (CAtomicModelInfoSA*)ppModelInfo[model];
+
+    if ( !info || info->GetRwModelType() != RW_ATOMIC )
+        return NULL;
+
+    if ( !info->m_rpAtomic )
+        return NULL;
+
+    return new CRpAtomicSA( RpAtomicClone( info->m_rpAtomic ) );
+}
+
+bool CModelManagerSA::GetRwModelType( unsigned short model, eRwType& type ) const
+{
+    if ( model > MAX_MODELS-1 )
+        return false;
+
+    CBaseModelInfoSAInterface *info = (CBaseModelInfoSAInterface*)ppModelInfo[model];
+
+    if ( !info )
+        return false;
+
+    type = info->GetRwModelType();
+    return true;
+}
+
 bool CModelManagerSA::RestoreModel( unsigned short id )
 {
     if ( id > DATA_TEXTURE_BLOCK-1 )

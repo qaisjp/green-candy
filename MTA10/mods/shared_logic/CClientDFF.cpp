@@ -147,6 +147,7 @@ static const luaL_Reg dff_interface[] =
     LUA_METHOD( render ),
     LUA_METHOD( getAtomics ),
     LUA_METHOD( getLights ),
+    LUA_METHOD( getCameras ),
     LUA_METHOD( replaceModel ),
     LUA_METHOD( isReplaced ),
     LUA_METHOD( getReplaced ),

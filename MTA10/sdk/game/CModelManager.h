@@ -17,6 +17,10 @@ class CModelManager
 {
 public:
     virtual CModel*                     CreateModel( CFile *file, unsigned short model ) = 0;
+    virtual CModel*                     CloneClump( unsigned short model ) = 0;
+    virtual CRpAtomic*                  CloneAtomic( unsigned short model ) = 0;
+
+    virtual bool                        GetRwModelType( unsigned short model, eRwType& type ) const = 0;
 
     virtual bool                        RestoreModel( unsigned short id ) = 0;
     virtual bool                        RestoreCollision( unsigned short id ) = 0;

@@ -394,6 +394,11 @@ void CVehicleSA::GetColor( SColor& color1, SColor& color2, SColor& color3, SColo
     color4 = m_RGBColors[3];
 }
 
+CModel* CVehicleSA::CloneClump() const
+{
+    return new CModelSA( RpClumpClone( (RpClump*)GetInterface()->m_rwObject ), NULL );
+}
+
 CVehicleComponent* CVehicleSA::GetComponent( const char *name )
 {
     vehComponents_t::iterator iter;

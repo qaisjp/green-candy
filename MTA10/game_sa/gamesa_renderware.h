@@ -43,7 +43,6 @@ typedef RpAtomic*               (__cdecl *RpAtomicSetFrame_t)                   
 typedef void                    (__cdecl *RpAtomicSetupObjectPipeline_t)        (RpAtomic *atomic);
 typedef void                    (__cdecl *RpAtomicSetupVehiclePipeline_t)       (RpAtomic *atomic);
 typedef bool                    (__cdecl *RpAtomicRender_t)                     (RpAtomic *atomic);
-typedef bool                    (__cdecl *RpAtomicRenderEx_t)                   (RpAtomic *atomic, unsigned int flags);
 typedef int                     (__cdecl *RpAtomicDestroy_t)                    (RpAtomic *atomic);
 typedef RwCamera*               (__cdecl *RwCameraClone_t)                      (RwCamera *camera);
 typedef void                    (__cdecl *RwCameraDestroy_t)                    (RwCamera *camera);
@@ -164,7 +163,6 @@ extern RpAtomicSetFrame_t                       RpAtomicSetFrame;
 extern RpAtomicSetupObjectPipeline_t            RpAtomicSetupObjectPipeline;
 extern RpAtomicSetupVehiclePipeline_t           RpAtomicSetupVehiclePipeline;
 extern RpAtomicRender_t                         RpAtomicRender;
-extern RpAtomicRenderEx_t                       RpAtomicRenderEx;
 extern RpAtomicSetGeometry_t                    RpAtomicSetGeometry;
 extern RpAtomicDestroy_t                        RpAtomicDestroy;
 extern RwObjectFrameRender_t                    RwObjectFrameRender;

@@ -40,11 +40,9 @@ static int lua_cocreatethread( lua_State *L )
     lua_State *thread = lua_tothread( L, 1 );
     lua_rawgeti( L, LUA_STORAGEINDEX, 1 );
     lua_rawgeti( L, LUA_STORAGEINDEX, 2 );
-    lua_rawgeti( L, LUA_STORAGEINDEX, 3 );
 
     lua_xmove( L, thread, 3 );
 
-    lua_rawseti( L, LUA_STORAGEINDEX, 3 );
     lua_rawseti( L, LUA_STORAGEINDEX, 2 );
     lua_rawseti( L, LUA_STORAGEINDEX, 1 );
     return 0;

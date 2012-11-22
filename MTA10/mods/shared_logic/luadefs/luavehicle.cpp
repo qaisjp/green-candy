@@ -564,6 +564,17 @@ static LUA_DECLARE( getWheelStates )
     return 4;
 }
 
+static LUA_DECLARE( cloneClump )
+{
+    CVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGameVehicle();
+
+    if ( !veh )
+        return 0;
+
+    ( new CClientDFF( L, *veh->CloneClump() ) )->PushStack( L );
+    return 1;
+}
+
 static LUA_DECLARE( getComponent )
 {
     const char *name;
@@ -1331,6 +1342,7 @@ static const luaL_Reg vehicle_interface[] =
     LUA_METHOD( getPanelState ),
     LUA_METHOD( setWheelStates ),
     LUA_METHOD( getWheelStates ),
+    LUA_METHOD( cloneClump ),
     LUA_METHOD( getComponent ),
     LUA_METHOD( getComponentNames ),
     LUA_METHOD( setEngineState ),

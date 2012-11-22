@@ -65,9 +65,32 @@ CClientRwObject::CClientRwObject( lua_State *L, CRwObject& object ) : LuaElement
     lua_pop( L, 1 );
 
     m_parent = NULL;
+    m_owner = NULL;
 }
 
 CClientRwObject::~CClientRwObject()
 {
     delete &m_object;
+}
+
+void CClientRwObject::UnlinkOwner()
+{
+    if ( !m_owner )
+        return;
+
+    LIST_REMOVE( m_ownerObjects );
+
+    m_owner = NULL;
+}
+
+void CClientRwObject::SetOwner( CResource *res )
+{
+    UnlinkOwner();
+
+    if ( !res )
+        return;
+
+    m_owner = res;
+
+    LIST_INSERT( res->m_rwObjects.root, m_ownerObjects );
 }

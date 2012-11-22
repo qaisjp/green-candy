@@ -4,6 +4,12 @@
     <Filter Include="Include">
       <UniqueIdentifier>{cd00ad52-25c1-4e16-9bb1-371a35a74d67}</UniqueIdentifier>
     </Filter>
+    <Filter Include="green">
+      <UniqueIdentifier>{3ecc7463-d533-4172-82ff-a3dc8885721f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="blue">
+      <UniqueIdentifier>{182093a6-f092-4c2c-9b12-34c7bc1fbb10}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="csv.h">
@@ -24,6 +30,12 @@
     <ClInclude Include="syntax.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="blue\main_blue.h">
+      <Filter>blue</Filter>
+    </ClInclude>
+    <ClInclude Include="green\main_green.h">
+      <Filter>green</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="csv.cpp" />
@@ -32,5 +44,11 @@
     <ClCompile Include="ide.cpp" />
     <ClCompile Include="ini.cpp" />
     <ClCompile Include="syntax.cpp" />
+    <ClCompile Include="blue\main_blue.cpp">
+      <Filter>blue</Filter>
+    </ClCompile>
+    <ClCompile Include="green\main_green.cpp">
+      <Filter>green</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

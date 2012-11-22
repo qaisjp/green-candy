@@ -436,6 +436,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineLoadDFF );
     LUA_DECLARE( engineLoadTXD );
     LUA_DECLARE( engineLoadCOL );
+    LUA_DECLARE( engineModelInfoCloneObject );
     LUA_DECLARE( engineCreateLight );
     LUA_DECLARE( engineCreateFrame );
     LUA_DECLARE( engineCreateCamera );

@@ -267,7 +267,7 @@ static bool RwAtomicRenderBoatLOD( RpAtomic *atomic )
 
     if ( atomic->m_clump->m_renderFlags & 0xFF )
     {
-        RpAtomicRenderEx( atomic, atomic->m_clump->m_renderFlags );
+        RpAtomicRenderAlpha( atomic, atomic->m_clump->m_renderFlags );
         return true;
     }
 
@@ -324,7 +324,7 @@ static bool RwAtomicRenderHeliLOD( RpAtomic *atomic )
 
     if ( atomic->m_clump->m_renderFlags & 0xFF )
     {
-        RpAtomicRenderEx( atomic, atomic->m_clump->m_renderFlags );
+        RpAtomicRenderAlpha( atomic, atomic->m_clump->m_renderFlags );
         return true;
     }
 

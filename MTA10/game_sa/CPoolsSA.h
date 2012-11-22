@@ -69,6 +69,11 @@ public:
         m_active = 0;
     }
 
+    inline type*    GetOffset( unsigned int id )
+    {
+        return (type*)( (unsigned int)m_pool + size * id );
+    }
+
     // This function expects the entities to free themselves from this;
     // so do not decrease the count here!
     void    Clear()
@@ -80,7 +85,7 @@ public:
             if ( m_flags[n] & 0x80 )
                 continue;
 
-            delete &m_pool[n];
+            delete GetOffset( n );
         }
     }
 
@@ -90,11 +95,6 @@ public:
 
         free(m_pool);
         free(m_flags);
-    }
-
-    inline type*    GetOffset( unsigned int id )
-    {
-        return (type*)( (unsigned int)m_pool + size * id );
     }
 
     inline type*    Allocate()
@@ -193,7 +193,7 @@ typedef CPool <CColModelSAInterface, 20000> CColModelPool;
 
 typedef CPool <CPtrNodeSingleSA, 100000> CPtrNodeSinglePool;
 typedef CPool <CPtrNodeDoubleSA, 200000> CPtrNodeDoublePool;
-typedef CPool <CEntryInfoSA, MAX_VEHICLES + MAX_PEDS + MAX_OBJECTS + MAX_DUMMIES> CEntryInfoPool; // info for every entity in the world
+typedef CPool <CEntryInfoSA, 100000> CEntryInfoPool; // info for every entity in the world
 
 typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
 
@@ -204,7 +204,7 @@ typedef CPool <CObjectSAInterface, MAX_OBJECTS, MAX_OBJECT_SIZE> CObjectPool;
 typedef CPool <CBuildingSAInterface, MAX_BUILDINGS> CBuildingPool;
 typedef CPool <CDummySAInterface, MAX_DUMMIES> CDummyPool;
 
-typedef CPool <CTaskSAInterface, MAX_TASKS> CTaskPool;
+typedef CPool <CTaskSAInterface, MAX_TASKS, 128> CTaskPool;
 typedef CPool <CEventSAInterface, 5000> CEventPool;
 typedef CPool <CPointRouteSA, 64> CPointRoutePool;
 typedef CPool <CPatrolRouteSA, 32> CPatrolRoutePool;

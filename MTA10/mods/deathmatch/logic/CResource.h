@@ -39,7 +39,8 @@ private:
 class CClientEntity;
 
 class CResource : public Resource
-{  
+{
+    friend class CClientRwObject;
 public:
                                 CResource( unsigned short id, const filePath& name, CFileTranslator& root, CClientEntity *entity, CClientEntity *dynamicEntity );
                                 ~CResource();
@@ -101,6 +102,8 @@ private:
     bool                        m_showCursor;
 
     CFileTranslator*            m_privateRoot;  // server id private directory
+
+    RwList <CClientRwObject>    m_rwObjects;
 
     typedef std::list <class CResourceFile*> fileList_t;
     typedef std::list <CElementGroup*> groupList_t;

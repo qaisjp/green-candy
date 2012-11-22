@@ -76,6 +76,17 @@ static LUA_DECLARE( getModel )
     return 1;
 }
 
+static LUA_DECLARE( cloneAtomic )
+{
+    CObject *obj = ((CClientObject*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetGameObject();
+
+    if ( !obj )
+        return 0;
+
+    ( new CClientAtomic( L, NULL, *obj->CloneAtomic() ) )->PushStack( L );
+    return 1;
+}
+
 static LUA_DECLARE( setObjectStatic )
 {
     bool enabled;
@@ -120,6 +131,7 @@ static const luaL_Reg object_interface[] =
     LUA_METHOD( getRotation ),
     LUA_METHOD( setModel ),
     LUA_METHOD( getModel ),
+    LUA_METHOD( cloneAtomic ),
     LUA_METHOD( setObjectStatic ),
     LUA_METHOD( isObjectStatic ),
     LUA_METHOD( setObjectScale ),

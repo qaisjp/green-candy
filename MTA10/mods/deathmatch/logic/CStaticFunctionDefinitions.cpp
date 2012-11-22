@@ -919,7 +919,7 @@ bool CStaticFunctionDefinitions::SetElementVelocity ( CClientEntity& Entity, con
 
 bool CStaticFunctionDefinitions::SetElementParent ( CClientEntity& Entity, CClientEntity& Parent, CLuaMain* pLuaMain )
 {
-    if ( &Entity != &Parent && !Entity.IsMyChild ( &Parent, true ) && Entity.IsLocalEntity() )
+    if ( &Entity != &Parent && Entity.IsLocalEntity() )
     {
         // Set the new parent
         return Entity.SetParent( &Parent );

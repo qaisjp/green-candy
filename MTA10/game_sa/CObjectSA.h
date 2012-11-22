@@ -61,6 +61,8 @@ public:
     float                       GetHealth() const                               { return GetInterface()->m_health; }
     void                        SetModelIndex( unsigned short ulModel );
 
+    CRpAtomicSA*                CloneAtomic() const;
+
     inline void                 SetAlpha( unsigned char ucAlpha )               { m_ucAlpha = ucAlpha; }
     inline unsigned char        GetAlpha() const                                { return m_ucAlpha; }
 

@@ -172,7 +172,7 @@ CClientGame::CClientGame ( bool bLocalPlay )
     m_pLocalServer = NULL;
 
     // Initialize our root entity with an invalid id, we dont know the true id until map-start
-    m_pRootEntity = new CClientDummy( NULL, INVALID_ELEMENT_ID, "root", m_pLuaManager->GetVirtualMachine(), true ); m_pRootEntity->SetRoot( resMan );
+    m_pRootEntity = new CClientDummy( NULL, INVALID_ELEMENT_ID, "root", m_pLuaManager->GetVirtualMachine(), true );
 
     m_pZoneNames = new CZoneNames;
     m_pScriptKeyBinds = new CScriptKeyBinds;

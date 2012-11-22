@@ -81,7 +81,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="blue\main_blue.h" />
     <ClInclude Include="csv.h" />
+    <ClInclude Include="green\main_green.h" />
     <ClInclude Include="ide.h" />
     <ClInclude Include="ini.h" />
     <ClInclude Include="ipl.h" />
@@ -89,7 +91,9 @@
     <ClInclude Include="syntax.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="blue\main_blue.cpp" />
     <ClCompile Include="csv.cpp" />
+    <ClCompile Include="green\main_green.cpp" />
     <ClCompile Include="ide.cpp" />
     <ClCompile Include="ini.cpp" />
     <ClCompile Include="ipl.cpp" />

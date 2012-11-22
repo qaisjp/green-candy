@@ -44,7 +44,7 @@ public:
 	unsigned short	m_realModelID;
 };
 
-typedef list <CObject*> objectList_t;
+typedef std::list <CObject*> objectList_t;
 
 class CIDE
 {

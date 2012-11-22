@@ -30,8 +30,7 @@ public:
     bool                            m_stopped;
 };
 
-// I see what you did there, R*
-class __declspec(align(128)) CTaskSAInterface
+class CTaskSAInterface
 {
 public:
     virtual                                     ~CTaskSAInterface() {}
