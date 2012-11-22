@@ -29,9 +29,9 @@ typedef BOOL (WINAPI *MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hF
 void CCrashHandler::Init ( void )
 {
     // Set a global filter
-    #ifdef WIN32
+#ifdef WIN32
     SetCrashHandlerFilter ( HandleExceptionGlobal );
-    #endif
+#endif
 }
 
 #ifdef WIN32

@@ -22,6 +22,9 @@ void CWorldSA::Add ( CEntity * pEntity )
 
     CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
 
+__try
+{
+
     if ( pEntitySA )
     {
         DWORD dwEntity = (DWORD) pEntitySA->GetInterface();
@@ -33,13 +36,18 @@ void CWorldSA::Add ( CEntity * pEntity )
             add     esp, 4
         }
     }
+
+}
+__except(1)
+{
+    __asm int 3
+}
 }
 
 
 void CWorldSA::Add ( CEntitySAInterface * entityInterface )
 {
     DEBUG_TRACE("void CWorldSA::Add ( CEntitySAInterface * entityInterface )");
-
 
     DWORD dwFunction = FUNC_Add;
     _asm

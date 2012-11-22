@@ -441,31 +441,10 @@ bool CClientEntity::SetParent ( CClientEntity* pParent )
     pParent->PushStack( m_lua );
     lua_call( m_lua, 1, 1 );
 
-    bool rslt = lua_toboolean( m_lua, -1 ) == 1;
+    bool rslt = lua_toboolean( m_lua, -1 );
     lua_pop( m_lua, 1 );
 
     return rslt;
-}
-
-bool CClientEntity::IsMyChild ( CClientEntity* pEntity, bool bRecursive )
-{
-    // Is he us?
-    if ( pEntity == this )
-        return true;
-
-    // Is he our child directly?
-    CChildListType ::const_iterator iter = m_Children.begin();
-
-    for ( ; iter != m_Children.end (); iter++ )
-    {
-        // Return true if this is our child. If not check if he's one of our children's children if we were asked to do a recursive search.
-        if ( *iter == pEntity )
-            return true;
-        else if ( bRecursive && (*iter)->IsMyChild ( pEntity, true ) )
-            return true;
-    }
-
-    return false;
 }
 
 void CClientEntity::SetID ( ElementID ID )

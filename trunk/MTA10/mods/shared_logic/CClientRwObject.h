@@ -28,8 +28,16 @@ public:
     CRwObject&                      GetObject()                     { return m_object; }
     const CRwObject&                GetObject() const               { return m_object; }
 
+    void                            SetOwner( CResource *res );
+    CResource*                      GetOwner() const                { return m_owner; }
+
 protected:
+    void                            UnlinkOwner();
+
     CRwObject&          m_object;
+
+    CResource*          m_owner;
+    RwListEntry <CClientRwObject>   m_ownerObjects;
 
 public:
     CClientRwFrame*     m_parent;

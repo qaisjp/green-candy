@@ -32,6 +32,7 @@ class CPed;
 class CObject;
 class CColModel;
 class CRpAtomic;
+class CModel;
 
 class CVehicle : public virtual CPhysical
 {
@@ -59,6 +60,7 @@ public:
     virtual void                SetColor( SColor color1, SColor color2, SColor color3, SColor color4, int ) = 0;
     virtual void                GetColor( SColor& color1, SColor& color2, SColor& color3, SColor& color4, int ) const = 0;
 
+    virtual CModel*             CloneClump() const = 0;
     virtual CVehicleComponent*  GetComponent( const char *name ) = 0;
     virtual void                GetComponentNameList( std::vector <std::string>& list ) = 0;
 

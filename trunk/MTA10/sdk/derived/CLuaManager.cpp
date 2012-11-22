@@ -429,6 +429,7 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineLoadDFF );
     LUA_REGISTER( L, engineLoadTXD );
     LUA_REGISTER( L, engineLoadCOL );
+    LUA_REGISTER( L, engineModelInfoCloneObject );
     LUA_REGISTER( L, engineCreateLight );
     LUA_REGISTER( L, engineCreateFrame );
     LUA_REGISTER( L, engineCreateCamera );

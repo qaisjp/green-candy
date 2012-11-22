@@ -128,7 +128,6 @@ public:
 
     inline CClientEntity*                       GetParent()                                     { return m_pParent; };
     bool                                        SetParent( CClientEntity* pParent );
-    bool                                        IsMyChild( CClientEntity* pEntity, bool bRecursive );
     void                                        ClearChildren();
 
     CChildListType ::const_iterator             IterBegin()                                     { return m_Children.begin (); }

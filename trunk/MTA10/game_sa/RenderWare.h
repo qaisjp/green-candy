@@ -775,6 +775,11 @@ struct RwError
     int err1;
     unsigned int err2;
 };
+
+typedef void*               (__cdecl*RwFileOpen_t) ( const char *path, const char *mode );
+typedef void                (__cdecl*RwFileClose_t) ( void *fp );
+typedef long                (__cdecl*RwFileSeek_t) ( void *fp, long offset, int origin );
+
 class RwInterface   // size: 1456
 {
 public:
@@ -789,7 +794,13 @@ public:
 
     RwList <RwFrame>        m_nodeRoot;                                     // 188
 
-    BYTE                    m_pad6[112];                                    // 196
+    BYTE                    m_pad6[24];                                     // 196
+    
+    RwFileOpen_t            m_fileOpen;                                     // 220
+    RwFileClose_t           m_fileClose;                                    // 224
+    RwFileSeek_t            m_fileSeek;                                     // 228
+
+    BYTE                    m_pad13[76];                                    // 232
 
     void*                   (*m_malloc)( size_t size );                     // 308
     void                    (*m_free)( void *data );                        // 312
@@ -844,6 +855,12 @@ extern RwInterface **ppRwInterface;
 /** RenderWare Helper Classes                                               **/
 /*****************************************************************************/
 
+// RenderWare type definitions
+typedef int             (* RwIOCallbackClose) (void *data);
+typedef size_t          (* RwIOCallbackRead)  (void *data, void *buffer, size_t length);
+typedef size_t          (* RwIOCallbackWrite) (void *data, const void *buffer, size_t length);
+typedef void*           (* RwIOCallbackSeek)  (void *data, unsigned int offset);
+
 // Swap the current txd with another
 class RwTxdStack
 {
@@ -866,12 +883,6 @@ private:
 /*****************************************************************************/
 /** RenderWare I/O                                                          **/
 /*****************************************************************************/
-
-// RenderWare type definitions
-typedef int             (* RwIOCallbackClose) (void *data);
-typedef size_t          (* RwIOCallbackRead)  (void *data, void *buffer, size_t length);
-typedef size_t          (* RwIOCallbackWrite) (void *data, const void *buffer, size_t length);
-typedef int             (* RwIOCallbackSeek)  (void *data, unsigned int offset);
 
 // RenderWare enumerations
 enum RwStreamType

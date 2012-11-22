@@ -79,7 +79,7 @@ CTaskSimpleCarSetPedInAsPassengerSA::CTaskSimpleCarSetPedInAsPassengerSA(CVehicl
 
     CreateTaskInterface();
 
-    if ( !IsValid () )
+    if ( !IsValid() )
         return;
 
     CVehicleSA* pTargetVehicleSA = dynamic_cast < CVehicleSA* > ( pTargetVehicle );
@@ -91,9 +91,9 @@ CTaskSimpleCarSetPedInAsPassengerSA::CTaskSimpleCarSetPedInAsPassengerSA(CVehicl
     DWORD dwVehiclePtr = (DWORD)pTargetVehicleSA->GetInterface();
     DWORD dwThisInterface = (DWORD)m_interface;
 
-    _asm
+    __asm
     {
-        mov     ecx, dwThisInterface
+        mov     ecx,dwThisInterface
         push    pUtility
         push    iTargetDoor
         push    dwVehiclePtr

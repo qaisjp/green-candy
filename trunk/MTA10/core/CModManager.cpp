@@ -40,7 +40,7 @@ CModManager::CModManager ( void )
     InitializeModList("");
 
     // Set up our exception handler
-#ifndef MTA_DEBUG
+#ifdef MTA_DEBUG
     SetCrashHandlerFilter ( HandleExceptionGlobal );
 #endif
 }

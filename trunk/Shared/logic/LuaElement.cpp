@@ -12,21 +12,21 @@
 
 #include <StdInc.h>
 
-static int element_setParent( lua_State *L )
+static LUA_DECLARE( setParent )
 {
     // Make sure that we stay in the resource tree!
     LuaElement& element = *(LuaElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 
     if ( lua_type( L, 1 ) != LUA_TCLASS )
     {
-        if ( element.m_root )
-        {
-            lua_pushboolean( L, false );
-            return 1;
-        }
-
         lua_getfield( L, LUA_ENVIRONINDEX, "super" );
-        lua_pushnil( L );
+
+        // If we have a root, we want to reparent to it
+        if ( element.m_root )
+            element.m_root->PushStack( L );
+        else
+            lua_pushnil( L );
+
         lua_call( L, 1, 1 );
         return 1;
     }
@@ -70,7 +70,18 @@ static int element_setParent( lua_State *L )
     return 1;
 }
 
-static int element_destroy( lua_State *L )
+static LUA_DECLARE( getRoot )
+{
+    LuaClass *root = ((LuaElement*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_root;
+
+    if ( !root )
+        return 0;
+
+    root->PushStack( L );
+    return 1;
+}
+
+static LUA_DECLARE( destroy )
 {
     delete (LuaElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 
@@ -79,8 +90,9 @@ static int element_destroy( lua_State *L )
 
 static const luaL_Reg element_interface[] =
 {
-    { "setParent", element_setParent },
-    { "destroy", element_destroy },
+    LUA_METHOD( setParent ),
+    LUA_METHOD( getRoot ),
+    LUA_METHOD( destroy ),
     { NULL, NULL }
 };
 
@@ -127,8 +139,11 @@ void LuaElement::SetRoot( LuaClass *root )
 {
     // We can also have no root
     // It is unnecessary to remove the parent if no more root
-    if ( !( m_root = root ) )
+    if ( !root )
+    {
+        m_root = NULL;
         return;
+    }
 
     // Check whether we are in the root already
     // If so, we do not need to be reparented
@@ -154,5 +169,11 @@ void LuaElement::SetRoot( LuaClass *root )
     // Reparent it so we are in the correct tree
     m_class->PushMethod( m_lua, "setParent" );
     root->PushStack( m_lua );
-    lua_call( m_lua, 1, 0 );
+    lua_call( m_lua, 1, 1 );
+
+    // Only set if it worked!
+    if ( lua_toboolean( m_lua, -1 ) )
+        m_root = root;
+
+    lua_pop( m_lua, 1 );
 }

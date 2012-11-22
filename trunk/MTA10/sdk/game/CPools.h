@@ -12,9 +12,9 @@
 #ifndef __CGAME_POOLS
 #define __CGAME_POOLS
 
-#define MAX_VEHICLES        110
-#define MAX_PEDS            140
-#define MAX_OBJECTS         1000
+#define MAX_VEHICLES        250
+#define MAX_PEDS            200
+#define MAX_OBJECTS         2000
 #define MAX_BUILDINGS       13000
 
 #include "Common.h"

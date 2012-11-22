@@ -19,9 +19,46 @@ RwExtensionInterface **ppExtInterface = (RwExtensionInterface**)0x00C9B920;
 unsigned int *m_pNumRwExtensions = (unsigned int*)0x00C97900;
 #define m_numRwExtensions   (*m_pNumRwExtensions)
 
+void RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha )
+{
+    // Fix to overcome material limit of 152 (yes, we actually reached that in GTA:United)
+    RpGeometry *geom = atom->m_geometry;
+    unsigned int _flags = geom->flags;
+    unsigned int n;
+
+    geom->flags |= 0x40;
+
+    RpMaterials& mats = geom->m_materials;
+    char *alphaVals = new char [mats.m_entries];
+
+    // Store the atomic alpha values
+    for ( n = 0; n < mats.m_entries; n++ )
+    {
+        RpMaterial& mat = *mats.m_data[n];
+        unsigned char a = mat.m_color.a;
+
+        alphaVals[n] = a;
+
+        if ( a > alpha )
+            mat.m_color.a = alpha;
+    }
+
+    // Render it
+    RpAtomicRender( atom );
+
+    // Restore values
+    while ( n-- )
+        mats.m_data[n]->m_color.a = alphaVals[n];
+
+    delete alphaVals;
+
+    geom->flags = _flags;
+}
+
 CRwExtensionManagerSA::CRwExtensionManagerSA()
 {
-
+    // Patch some fixes
+    HookInstall( 0x00732480, (DWORD)RpAtomicRenderAlpha, 5 );
 }
 
 CRwExtensionManagerSA::~CRwExtensionManagerSA()
@@ -95,9 +132,15 @@ static size_t RwTranslatedStreamWrite( void *file, const void *buffer, size_t le
     return ((CFile*)file)->Write( buffer, 1, length );
 }
 
-static int RwTranslatedStreamSeek( void *file, unsigned int offset )
+static void* RwTranslatedStreamSeek( void *file, unsigned int offset )
 {
-    return ((CFile*)file)->Seek( offset, SEEK_SET );
+    size_t endOff = ((CFile*)file)->GetSize() - (size_t)((CFile*)file)->Tell();
+    unsigned int roff = min( offset, endOff );
+
+    if ( roff == 0 )
+        return NULL;
+
+    return ( ((CFile*)file)->Seek( roff, SEEK_CUR ) == 0 ) ? file : NULL;
 }
 
 RwStream* RwStreamCreateTranslated( CFile *file )

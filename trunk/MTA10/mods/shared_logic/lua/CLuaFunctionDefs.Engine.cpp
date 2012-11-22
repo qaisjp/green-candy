@@ -150,6 +150,56 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( engineModelInfoCloneObject )
+    {
+        unsigned short model;
+
+        CScriptArgReader argStream( L );
+        
+        argStream.ReadNumber( model );
+
+        if ( !argStream.HasErrors() )
+        {
+            eRwType type;
+
+            union
+            {
+                CModel *clump;
+                CRpAtomic *atom;
+            };
+
+            if ( g_pGame->GetModelManager()->GetRwModelType( model, type ) )
+            {
+                switch( type )
+                {
+                case RW_CLUMP:
+                    clump = g_pGame->GetModelManager()->CloneClump( model );
+
+                    if ( clump )
+                    {
+                        ( new CClientDFF( L, *clump ) )->PushStack( L );
+                        return 1;
+                    }
+                    break;
+                case RW_ATOMIC:
+                    atom = g_pGame->GetModelManager()->CloneAtomic( model );
+
+                    if ( atom )
+                    {
+                        ( new CClientAtomic( L, NULL, *atom ) )->PushStack( L );
+                        return 1;
+                    }
+                    break;
+                }
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
     LUA_DECLARE( engineCreateLight )
     {
         RpLightType type;

@@ -67,7 +67,6 @@ RpAtomicSetFrame_t                      RpAtomicSetFrame                        
 RpAtomicSetupObjectPipeline_t           RpAtomicSetupObjectPipeline             = (RpAtomicSetupObjectPipeline_t)           invalid_ptr;
 RpAtomicSetupVehiclePipeline_t          RpAtomicSetupVehiclePipeline            = (RpAtomicSetupVehiclePipeline_t)          invalid_ptr;
 RpAtomicRender_t                        RpAtomicRender                          = (RpAtomicRender_t)                        invalid_ptr;
-RpAtomicRenderEx_t                      RpAtomicRenderEx                        = (RpAtomicRenderEx_t)                      invalid_ptr;
 RpAtomicSetGeometry_t                   RpAtomicSetGeometry                     = (RpAtomicSetGeometry_t)                   invalid_ptr;
 RpAtomicDestroy_t                       RpAtomicDestroy                         = (RpAtomicDestroy_t)                       invalid_ptr;
 RwObjectFrameRender_t                   RwObjectFrameRender                     = (RwObjectFrameRender_t)                   invalid_ptr;
@@ -139,41 +138,8 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 RwInterface **ppRwInterface = (RwInterface**)0x00C97B24;
 
-static RwObject* __cdecl TrollMonitor( CEntitySAInterface *intf )
-{
-    if ( *(DWORD*)intf == 0x00863C40 )
-        return NULL;
-
-    __try
-    {
-        return intf->CreateRwObject();
-    }
-    __except( 1 )
-    {
-#ifdef _DEBUG
-        __asm int 3
-#endif
-        return NULL;
-    }
-}
-
-static const DWORD pft = 0x00554221;
-
-static void __declspec(naked) _CrashMonitor()
-{
-    __asm
-    {
-        push esi
-        call TrollMonitor
-        pop esi
-        jmp pft
-    }
-}
-
 CRenderWareSA::CRenderWareSA ( eGameVersion version )
 {
-    HookInstall( 0x0055421A, (DWORD)_CrashMonitor, 5 );
-
     // Version dependant addresses
     switch( version )
     {
@@ -369,9 +335,6 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
         break;
     }
-
-    // SHARED
-    RpAtomicRenderEx                        = (RpAtomicRenderEx_t)                      0x00732480;
 }
 
 // Reads and parses a DFF file specified by a path into a CModelInfo identified by the object id
