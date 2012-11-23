@@ -801,7 +801,12 @@ void CVehicleSA::SetHandlingData( CHandlingEntry *handling )
 
 void CVehicleSA::RecalculateHandling()
 {
-    // todo?
+    if ( !m_pHandlingData )
+        return;
+
+    m_pHandlingData->Recalculate();
+
+    RecalculateSuspensionLines();
 }
 
 void GetMatrixForGravity( const CVector& vecGravity, RwMatrix& mat )

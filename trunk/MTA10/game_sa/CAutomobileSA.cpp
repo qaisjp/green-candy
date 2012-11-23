@@ -326,13 +326,7 @@ bool CAutomobileSA::GetWheelVisibility( eWheels wheel ) const
 
 void CAutomobileSA::RecalculateHandling()
 {
-    if ( !m_pHandlingData )
-        return;
-
-    m_pHandlingData->Recalculate();
-    
-    // Recalculate the suspension lines
-    RecalculateSuspensionLines();
+    CVehicleSA::RecalculateHandling();
 
     // Put it in our interface
     CVehicleSAInterface* pInt = GetInterface ();
