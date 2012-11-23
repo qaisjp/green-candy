@@ -620,10 +620,20 @@ void CModManager::VerifyAndAddEntry( const char* szModFolderPath, const char* sz
     char pathBuffer[4096];
     GetEnvironmentVariable( "PATH", pathBuffer, sizeof(pathBuffer) - 1 );
 
-    strcat( pathBuffer, ";" );
-    strcat( pathBuffer, modPath.c_str() );
+    size_t sEnv = strlen( pathBuffer );
+    size_t extSize = modPath.size() + 1;
 
-    SetEnvironmentVariable( "PATH", pathBuffer );
+    if ( sEnv + extSize < sizeof(pathBuffer) )
+    {
+        // We insert the path, so it has highest priority
+        memcpy( pathBuffer + extSize, pathBuffer, modPath.size() );
+        pathBuffer[modPath.size()] = ';';
+
+        // Insert our manly path
+        memcpy( pathBuffer, modPath.c_str(), modPath.size() );
+
+        SetEnvironmentVariable( "PATH", pathBuffer );
+    }
 
 #ifdef _DEBUG
     modPath += "Client_d.dll";
