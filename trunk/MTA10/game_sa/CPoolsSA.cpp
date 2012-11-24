@@ -573,12 +573,11 @@ inline static CPlayerPedSAInterface* CreatePlayerPed()
     _asm
     {
         mov     ecx, player
-        push    1 // set to 0 and they'll behave like AI peds
+        push    0 // set to 0 and they'll behave like AI peds
         push    1
         call    CPlayerPedConstructor
     }
 
-    pGame->GetWorld()->Add( player );
     return player;
 }
 

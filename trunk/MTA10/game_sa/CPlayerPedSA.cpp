@@ -98,6 +98,10 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
         // Set clothes pointer or we'll crash later (TODO: Wrap up with some cloth classes and make it unique per player)
         m_pData->m_pClothes = pLocalClothes;
         m_pData->m_Wanted = pLocalWanted;
+
+        // We do not want this guy to be streamed
+        BOOL_FLAG( GetInterface()->m_entityFlags, ENTITY_DISABLESTREAMING, true );
+        BOOL_FLAG( GetInterface()->m_entityFlags, ENTITY_NOSTREAM, true );
     }
     else
     {
@@ -120,8 +124,11 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
     GetInterface()->m_pedFlags.bIsLanding = false;
     GetInterface()->m_rotationSpeed = 7.5;
 
-    BOOL_FLAG( GetInterface()->m_entityFlags, ENTITY_DISABLESTREAMING, true );
-    BOOL_FLAG( GetInterface()->m_entityFlags, ENTITY_NOSTREAM, true );
+    if ( !isLocal )
+    {
+        // Add it to the world now
+        pGame->GetWorld()->Add( ped );
+    }
 }
 
 CPlayerPedSA::~CPlayerPedSA()
