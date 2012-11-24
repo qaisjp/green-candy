@@ -60,13 +60,13 @@ public:
 
 typedef struct
 {
-    DWORD                           pad0;
-    WORD                            pad1;
-    BYTE                            ucNumWheels;
-    BYTE                            pad2;
-    DWORD                           pad3;
-    DWORD                           pad4;
-    void*                           pSuspensionLines;
+    DWORD                           pad0;               // 0
+    WORD                            pad1;               // 4
+    BYTE                            ucNumWheels;        // 6
+    BYTE                            pad2;               // 7
+    DWORD                           pad3;               // 8
+    DWORD                           pad4;               // 12
+    void*                           pSuspensionLines;   // 16
 } CColDataSA;
 
 class CColModelSAInterface
@@ -77,9 +77,9 @@ public:
     void*   operator new ( size_t );
     void    operator delete ( void *ptr );
 
-    CBoundingBox                    m_bounds;
-    BYTE                            m_pad[4];
-    CColDataSA*                     pColData;
+    CBoundingBox                    m_bounds;           // 0
+    BYTE                            m_pad[4];           // 40
+    CColDataSA*                     pColData;           // 44
 };
 
 class CColModelSA : public CColModel

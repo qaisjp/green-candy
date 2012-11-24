@@ -69,7 +69,7 @@ local function loadModel(txd_name, dff_name)
 		outputDebugString("corrupted dff file - " .. dff_name, 1);
 	end
 	
-	return false; -- 1653.52734375 [number], 601.4052734375 [number], 353.1953125 [number]
+	return false;
 end
 
 function loadModels()
