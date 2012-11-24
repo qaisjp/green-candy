@@ -76,6 +76,8 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
 {
     DEBUG_TRACE("CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, bool isLocal )");
     
+    size_t off = offsetof( CPlayerPedDataSAInterface, m_PlayerGroup );
+
     SetType( PLAYER_PED );
 
     m_bIsLocal = isLocal;
