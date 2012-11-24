@@ -104,7 +104,7 @@ CCore::CCore()
     AC_RestrictAccess ();
 #endif
 
-#if defined(_DEBUG) && 1
+#if defined(_DEBUG) && 0
     while ( !IsDebuggerPresent() )
         Sleep( 1 );
 #endif
