@@ -157,6 +157,8 @@ CEntitySA::~CEntitySA()
 
     // Clever little trick, eh
     delete m_pInterface;
+
+    OnInterfaceDestruction();
 }
 
 void CEntitySA::SetPosition( float x, float y, float z )
