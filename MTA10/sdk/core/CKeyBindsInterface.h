@@ -144,6 +144,7 @@ public:
     CKeyBindWithState( const SBindableKey *key ) : CKeyBind( key )
     {
         bState = false;
+        bHitState = false;
     }
 
     bool            bState;
@@ -231,6 +232,8 @@ public:
     CGTAControlBind( const SBindableKey *key, SBindableGTAControl *ctrl ) : CKeyBind( key )
     {
         control = ctrl;
+        bState = false;
+        bEnabled = true;
     }
 
     eKeyBindType    GetType() const                 { return KEY_BIND_GTA_CONTROL; }
