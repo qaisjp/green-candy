@@ -50,6 +50,8 @@ public:
     inline CPlayerPedSAInterface* GetInterface()                        { return (CPlayerPedSAInterface*)m_pInterface; }
     inline const CPlayerPedSAInterface* GetInterface() const            { return (const CPlayerPedSAInterface*)m_pInterface; }
 
+    void                        OnInterfaceDestruction();
+
     CPadSAInterface&            GetJoypad();
 
     void                        OnFrame();

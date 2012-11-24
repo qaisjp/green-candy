@@ -76,8 +76,6 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
 {
     DEBUG_TRACE("CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, bool isLocal )");
     
-    size_t off = offsetof( CPlayerPedDataSAInterface, m_PlayerGroup );
-
     SetType( PLAYER_PED );
 
     m_bIsLocal = isLocal;
@@ -92,7 +90,10 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
         // Copy the local player data so we're defaulted to something good
         CPlayerPedSA *localPlayer = pGame->GetPlayerInfo()->GetPlayerPed();
         if ( localPlayer != this )
-            memcpy( m_pData, localPlayer->GetInterface()->m_playerData, sizeof(CPlayerPedDataSAInterface) );
+            *m_pData = *localPlayer->GetInterface()->m_playerData;
+
+        // Serialize the data
+        m_pData->Serialize();
 
         // Replace the player ped data in our ped interface with the one we just created
         GetInterface()->m_playerData = m_pData;
@@ -136,7 +137,10 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
 CPlayerPedSA::~CPlayerPedSA()
 {
     DEBUG_TRACE("CPlayerPedSA::~CPlayerPedSA()");
+}
 
+void CPlayerPedSA::OnInterfaceDestruction()
+{
     // Delete the player data
     if ( !m_bIsLocal )
         delete m_pData;

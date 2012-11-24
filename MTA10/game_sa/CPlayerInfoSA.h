@@ -61,6 +61,10 @@ public:
 class CPlayerPedDataSAInterface
 {
 public:
+                            CPlayerPedDataSAInterface();
+
+    void                    Serialize();
+
     CWantedSAInterface*     m_Wanted;                           // 0
     CPedClothesDesc*        m_pClothes;                         // 4
 
@@ -102,11 +106,14 @@ public:
     unsigned char           m_nScriptLimitToGangSize;           // 63
     
     float                   m_fBreath;                          // 64, for holding breath (ie underwater)
+    BYTE                    m_pad2[4];                          // 68
 
-    unsigned int            m_meleeAnimRef;                     // 68
-    unsigned int            m_meleeAnimExtraRef;                // 72
+    unsigned int            m_meleeAnimRef;                     // 72
+    unsigned int            m_meleeAnimExtraRef;                // 76
 
+#if 0
     float                   m_fFPSMoveHeading;                  // 76
+#endif
     float                   m_fLookPitch;                       // 80
     float                   m_fSkateBoardSpeed;                 // 84
     float                   m_fSkateBoardLean;                  // 88

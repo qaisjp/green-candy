@@ -18,6 +18,18 @@
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
+CPlayerPedDataSAInterface::CPlayerPedDataSAInterface()
+{
+    Serialize();
+}
+
+void CPlayerPedDataSAInterface::Serialize()
+{
+    // Remote players have their data serialized, because they do not own references or allocations
+    m_meleeAnimRef = 0;
+    m_meleeAnimExtraRef = 0;
+}
+
 CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()
 {
     DEBUG_TRACE("CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()");
@@ -187,7 +199,7 @@ CVehicle* CPlayerInfoSA::GetRemoteVehicle()
 
 float CPlayerInfoSA::GetFPSMoveHeading()
 {
-    return m_interface->m_pedData.m_fFPSMoveHeading;
+    return 0;//m_interface->m_pedData.m_fFPSMoveHeading;
 }
 
 bool CPlayerInfoSA::GetDoesNotGetTired()

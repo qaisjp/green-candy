@@ -179,6 +179,8 @@ public:
     inline CEntitySAInterface*  GetInterface()                                  { return m_pInterface; }
     inline const CEntitySAInterface*    GetInterface() const                    { return m_pInterface; }
 
+    virtual void                OnInterfaceDestruction()                        {}
+
     void                        SetPosition( float x, float y, float z );
     void                        SetPosition( const CVector& pos );
     void                        GetPosition( CVector& pos ) const;
