@@ -72,76 +72,75 @@ public:
     //float                 m_fSprintControlCounter;            // Removed arbitatrily to aligned next byte, should be here really
     unsigned char           m_nChosenWeapon;                    // 28
     unsigned char           m_nCarDangerCounter;                // 29
-    long                    m_nStandStillTimer;                 // 30
-    unsigned int            m_nHitAnimDelayTimer;               // 34
-    float                   m_fAttackButtonCounter;             // 38
-    CVehicleSAInterface*    m_pDangerCar;                       // 42
+    BYTE                    m_pad[2];                           // 30
+    long                    m_nStandStillTimer;                 // 32
+    unsigned int            m_nHitAnimDelayTimer;               // 36
+    float                   m_fAttackButtonCounter;             // 40
+    CVehicleSAInterface*    m_pDangerCar;                       // 44
 
-    unsigned char           m_bStoppedMoving : 1;               // 46
-    unsigned char           m_bAdrenaline : 1;
-    unsigned char           m_bHaveTargetSelected : 1;          // Needed to work out whether we lost target this frame
-    unsigned char           m_bFreeAiming : 1;
-    unsigned char           m_bCanBeDamaged : 1;
-    unsigned char           m_bAllMeleeAttackPtsBlocked : 1;    // if all of m_pMeleeAttackers[] is blocked by collision, just attack straight ahead
-    unsigned char           m_JustBeenSnacking : 1;             // If this bit is true we have just bought something from a vending machine
-    unsigned char           m_bRequireHandleBreath : 1;
+    unsigned int            m_bStoppedMoving : 1;               // 48
+    unsigned int            m_bAdrenaline : 1;
+    unsigned int            m_bHaveTargetSelected : 1;          // Needed to work out whether we lost target this frame
+    unsigned int            m_bFreeAiming : 1;
+    unsigned int            m_bCanBeDamaged : 1;
+    unsigned int            m_bAllMeleeAttackPtsBlocked : 1;    // if all of m_pMeleeAttackers[] is blocked by collision, just attack straight ahead
+    unsigned int            m_JustBeenSnacking : 1;             // If this bit is true we have just bought something from a vending machine
+    unsigned int            m_bRequireHandleBreath : 1;
        
-    unsigned char           m_GroupStuffDisabled : 1;           // 47, if this is true the player can't recrout or give his group commands.
-    unsigned char           m_GroupAlwaysFollow : 1;            // The group is told to always follow the player (used for girlfriend missions)
-    unsigned char           m_GroupNeverFollow : 1;             // The group is told to always follow the player (used for girlfriend missions)
-    unsigned char           m_bInVehicleDontAllowWeaponChange : 1; // stop weapon change once driveby weapon has been given
-    unsigned char           m_bRenderWeapon : 1;                //  set to false during cutscenes so that knuckledusters are not rendered
+    unsigned int            m_GroupStuffDisabled : 1;           // 47, if this is true the player can't recrout or give his group commands.
+    unsigned int            m_GroupAlwaysFollow : 1;            // The group is told to always follow the player (used for girlfriend missions)
+    unsigned int            m_GroupNeverFollow : 1;             // The group is told to always follow the player (used for girlfriend missions)
+    unsigned int            m_bInVehicleDontAllowWeaponChange : 1; // stop weapon change once driveby weapon has been given
+    unsigned int            m_bRenderWeapon : 1;                //  set to false during cutscenes so that knuckledusters are not rendered
 
-    long                    m_PlayerGroup;                      // 48
+    long                    m_PlayerGroup;                      // 52
 
-    unsigned int            m_AdrenalineEndTime;                // 52
-    unsigned char           m_nDrunkenness;                     // 56
-    bool                    m_bFadeDrunkenness;                 // 57
-    unsigned char           m_nDrugLevel;                       // 58
-    unsigned char           m_nScriptLimitToGangSize;           // 59
+    unsigned int            m_AdrenalineEndTime;                // 56
+    unsigned char           m_nDrunkenness;                     // 60
+    bool                    m_bFadeDrunkenness;                 // 61
+    unsigned char           m_nDrugLevel;                       // 62
+    unsigned char           m_nScriptLimitToGangSize;           // 63
     
-    float                   m_fBreath;                          // 60, for holding breath (ie underwater)
+    float                   m_fBreath;                          // 64, for holding breath (ie underwater)
 
-    unsigned int            m_meleeAnimRef;                     // 64
-    unsigned int            m_meleeAnimExtraRef;                // 68
+    unsigned int            m_meleeAnimRef;                     // 68
+    unsigned int            m_meleeAnimExtraRef;                // 72
 
-    float                   m_fFPSMoveHeading;                  // 72
-    float                   m_fLookPitch;                       // 76
-    float                   m_fSkateBoardSpeed;                 // 80
-    float                   m_fSkateBoardLean;                  // 84
+    float                   m_fFPSMoveHeading;                  // 76
+    float                   m_fLookPitch;                       // 80
+    float                   m_fSkateBoardSpeed;                 // 84
+    float                   m_fSkateBoardLean;                  // 88
     
-    RpAtomic*               m_pSpecialAtomic;                   // 88
-    float                   m_fGunSpinSpeed;                    // 92
-    float                   m_fGunSpinAngle;                    // 96
+    RpAtomic*               m_pSpecialAtomic;                   // 92
+    float                   m_fGunSpinSpeed;                    // 96
+    float                   m_fGunSpinAngle;                    // 100
 
-    unsigned int            m_LastTimeFiring;                   // 100
-    unsigned int            m_nTargetBone;                      // 104
-    CVector                 m_vecTargetBoneOffset;              // 108
+    unsigned int            m_LastTimeFiring;                   // 104
+    unsigned int            m_nTargetBone;                      // 108
+    CVector                 m_vecTargetBoneOffset;              // 112
     
-    unsigned int            m_busFaresCollected;                // 120
-    bool                    m_bPlayerSprintDisabled;            // 124
-    bool                    m_bDontAllowWeaponChange;           // 125
-    bool                    m_bForceInteriorLighting;           // 126
-    unsigned short          m_DPadDownPressedInMilliseconds;    // 127
-    unsigned short          m_DPadUpPressedInMilliseconds;      // 129
+    unsigned int            m_busFaresCollected;                // 124
+    bool                    m_bPlayerSprintDisabled;            // 128
+    bool                    m_bDontAllowWeaponChange;           // 129
+    bool                    m_bForceInteriorLighting;           // 130
+    unsigned short          m_DPadDownPressedInMilliseconds;    // 131
+    unsigned short          m_DPadUpPressedInMilliseconds;      // 133
         
-    unsigned char           m_wetness;                          // 131
-    unsigned char           m_playersGangActive;                // 132
-    unsigned char           m_waterCoverPerc;                   // 133
-    float                   m_waterHeight;                      // 134
+    unsigned char           m_wetness;                          // 135
+    unsigned char           m_playersGangActive;                // 136
+    unsigned char           m_waterCoverPerc;                   // 137
+    float                   m_waterHeight;                      // 138
 
-    unsigned int            m_heatseekAimTime;                  // 138
-    CEntitySAInterface*     m_heatseekTarget;                   // 142
+    unsigned int            m_heatseekAimTime;                  // 142
+    CEntitySAInterface*     m_heatseekTarget;                   // 146
     
-    long                    m_shotBuilding;                     // 146
+    long                    m_shotBuilding;                     // 150
     
-    unsigned int            m_heatseekLockOnTime    :31;        // 150
+    unsigned int            m_heatseekLockOnTime    :31;        // 154
     unsigned int            m_heakseekLockOn        :1;
     
-    CPedSAInterface*        m_currentHooker;                    // 154
-    CPedSAInterface*        m_lastHooker;                       // 158
-
-    DWORD                   m_pad;                              // 162
+    CPedSAInterface*        m_currentHooker;                    // 158
+    CPedSAInterface*        m_lastHooker;                       // 162
 };
 
 enum ePlayerState
