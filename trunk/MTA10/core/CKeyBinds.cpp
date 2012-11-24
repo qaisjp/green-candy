@@ -402,7 +402,6 @@ bool CKeyBinds::ProcessKeyStroke( const SBindableKey * pKey, bool bState )
                     m_pChatBoxBind = pCommandBind;
                 else
                 {
-                    bool bAlreadyProcessed = false;
                     cmdBinds_t::iterator iter = processedList.begin();
 
                     for ( ; iter != processedList.end(); iter++ )
@@ -412,21 +411,16 @@ bool CKeyBinds::ProcessKeyStroke( const SBindableKey * pKey, bool bState )
                             if ( (*iter)->bHitState == pCommandBind->bHitState )
                             {
                                 if ( pCommandBind->m_args == (*iter)->m_args )
-                                {
-                                    bAlreadyProcessed = true;
-                                    break;
-                                }
+                                    goto alreadyProcessed;
                             }
                         }
                     }
 
                     //don't fire if its already fired
-                    if ( !bAlreadyProcessed )
-                    {
-                        Call( pCommandBind );
-                        processedList.push_back( pCommandBind );
-                    }
+                    Call( pCommandBind );
+                    processedList.push_back( pCommandBind );
                 }
+alreadyProcessed:
                 break;
             }
             case KEY_BIND_FUNCTION:
@@ -879,13 +873,13 @@ void CKeyBinds::CallGTAControlBind( CGTAControlBind* pBind, bool bState )
     // Set this binds state
     pBind->bState = bState;
 
+    // If this control is enabled
+    if ( pBind->control->bEnabled )
+        pBind->control->bState = bState;
+
     // If its keydown, or there isnt another bind for this control down
     if ( bState || !GetMultiGTAControlState( pBind ) )
     {
-        // If this control is enabled
-        if ( pBind->control->bEnabled )
-            pBind->control->bState = bState;
-
         // Do we have a function bound to this control?
         binds_t::const_iterator iter = m_list.begin();
 
@@ -947,16 +941,9 @@ bool CKeyBinds::GetMultiGTAControlState( CGTAControlBind *pBind )
 
         CGTAControlBind *pTemp = (CGTAControlBind*)*iter;
 
-        // If the controller action is the same
-        if ( pTemp->control->action != action )
-            continue;
-
-        // Is it a different bind for the same action?
-        if ( pTemp == pBind )
-            continue;
-
-        // If its pressed, we have a multicontrolstate
-        if ( pTemp->bState )
+        if ( pTemp->control->action == action &&
+             pTemp == pBind &&
+             pTemp->bState )
             return true;
     }
 
@@ -1006,12 +993,12 @@ void CKeyBinds::SetAllControlsEnabled ( bool bGameControls, bool bMTAControls, b
     {
         for ( int i = 0 ; *g_bcControls [ i ].szControl != NULL ; i++ )
         {
-            SBindableGTAControl* temp = &g_bcControls [ i ];
+            SBindableGTAControl& temp = g_bcControls [ i ];
 
-            temp->bEnabled = bEnabled;
+            temp.bEnabled = bEnabled;
 
             if ( !bEnabled )
-                temp->bState = false;
+                temp.bState = false;
         }
         if ( bEnabled )
             ResetAllGTAControlStates ();
@@ -1579,7 +1566,7 @@ const SBindableKey* CKeyBinds::GetBindableFromMessage ( UINT uMsg, WPARAM wParam
 
 bool CKeyBinds::GetControlState( eBindableControl control ) const
 {
-    if ( control > MAX_CONTROLS )
+    if ( control > MAX_CONTROLS-1 )
         return false;
 
     return g_bcControls[control].bState;
@@ -1803,7 +1790,7 @@ void CKeyBinds::DoPostFramePulse()
                 {
                     if ( pBind->bState )
                     {
-                        CallGTAControlBind ( pBind, ( bool ) false );
+                        CallGTAControlBind ( pBind, false );
                     }
                 }
             }
