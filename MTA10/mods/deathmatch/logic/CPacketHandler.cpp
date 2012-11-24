@@ -372,28 +372,22 @@ void CPacketHandler::Packet_ServerJoined ( NetBitStreamInterface& bitStream )
     // Depending on the HTTP Download Type, read more data
     switch ( g_pClientGame->m_ucHTTPDownloadType )
     {
-        case HTTP_DOWNLOAD_DISABLED:
-        {
-            RaiseFatalError ( 3 );
-            break;
-        }
-        case HTTP_DOWNLOAD_ENABLED_PORT:
-        {
-            bitStream.Read ( g_pClientGame->m_usHTTPDownloadPort );
-            // TODO: Set m_szHTTPDownloadURL to the appropriate path based off of server ip / port
-            unsigned long ulHTTPDownloadPort = g_pClientGame->m_usHTTPDownloadPort;
-            g_pClientGame->m_strHTTPDownloadURL = SString ( "http://%s:%d", g_pNet->GetConnectedServer(), ulHTTPDownloadPort );
+    case HTTP_DOWNLOAD_DISABLED:
+        RaiseFatalError ( 3 );
+        break;
+    case HTTP_DOWNLOAD_ENABLED_PORT:
+    {
+        bitStream.Read ( g_pClientGame->m_usHTTPDownloadPort );
+        // TODO: Set m_szHTTPDownloadURL to the appropriate path based off of server ip / port
+        unsigned long ulHTTPDownloadPort = g_pClientGame->m_usHTTPDownloadPort;
+        g_pClientGame->m_strHTTPDownloadURL = SString ( "http://%s:%d", g_pNet->GetConnectedServer(), ulHTTPDownloadPort );
 
-            // We are downloading from the internal HTTP Server, therefore disable multiple downloads
-            iHTTPMaxConnectionsPerClient = 1;
-            break;
-        }
-        case HTTP_DOWNLOAD_ENABLED_URL:
-        {
-            BitStreamReadUsString( bitStream, g_pClientGame->m_strHTTPDownloadURL );
-            break;
-        }
-    default:
+        // We are downloading from the internal HTTP Server, therefore disable multiple downloads
+        iHTTPMaxConnectionsPerClient = 1;
+        break;
+    }
+    case HTTP_DOWNLOAD_ENABLED_URL:
+        BitStreamReadUsString( bitStream, g_pClientGame->m_strHTTPDownloadURL );
         break;
     }
 
