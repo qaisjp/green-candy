@@ -84,13 +84,8 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
     {
         SetModelIndex( modelId );
 
-        // Allocate a player data struct and set it as the players
-        m_pData = new CPlayerPedDataSAInterface;
-
         // Copy the local player data so we're defaulted to something good
-        CPlayerPedSA *localPlayer = pGame->GetPlayerInfo()->GetPlayerPed();
-        if ( localPlayer != this )
-            *m_pData = *localPlayer->GetInterface()->m_playerData;
+        m_pData = new CPlayerPedDataSAInterface( *pGame->GetPlayerInfo()->GetPlayerPed()->GetInterface()->m_playerData );
 
         // Serialize the data
         m_pData->Serialize();
