@@ -34,11 +34,16 @@ RwFreeAligned_t                         RwFreeAligned                           
 RwCreateExtension_t                     RwCreateExtension                       = (RwCreateExtension_t)                     invalid_ptr;
 RwObjectRegister_t                      RwObjectRegister                        = (RwObjectRegister_t)                      invalid_ptr;
 RwStreamFindChunk_t                     RwStreamFindChunk                       = (RwStreamFindChunk_t)                     invalid_ptr;
+RwStreamInitialize_t                    RwStreamInitialize                      = (RwStreamInitialize_t)                    invalid_ptr;
 RwStreamOpen_t                          RwStreamOpen                            = (RwStreamOpen_t)                          invalid_ptr;
+RwStreamReadChunkHeaderInfo_t           RwStreamReadChunkHeaderInfo             = (RwStreamReadChunkHeaderInfo_t)           invalid_ptr;
 RwStreamReadBlocks_t                    RwStreamReadBlocks                      = (RwStreamReadBlocks_t)                    invalid_ptr;
 RwStreamReadTexture_t                   RwStreamReadTexture                     = (RwStreamReadTexture_t)                   invalid_ptr;
 RwStreamClose_t                         RwStreamClose                           = (RwStreamClose_t)                         invalid_ptr;
+RtDictSchemaStreamReadDict_t            RtDictSchemaStreamReadDict              = (RtDictSchemaStreamReadDict_t)            invalid_ptr;
+RtDictDestroy_t                         RtDictDestroy                           = (RtDictDestroy_t)                         invalid_ptr;
 RwFrameCreate_t                         RwFrameCreate                           = (RwFrameCreate_t)                         invalid_ptr;
+RwFrameCloneRecursive_t                 RwFrameCloneRecursive                   = (RwFrameCloneRecursive_t)                 invalid_ptr;
 RwFrameGetLTM_t                         RwFrameGetLTM                           = (RwFrameGetLTM_t)                         invalid_ptr;
 RwFrameSetIdentity_t                    RwFrameSetIdentity                      = (RwFrameSetIdentity_t)                    invalid_ptr;
 RwFrameTranslate_t                      RwFrameTranslate                        = (RwFrameTranslate_t)                      invalid_ptr;
@@ -120,27 +125,19 @@ RwFlushLoader_t                         RwFlushLoader                           
 /** GTA:SA function mappings                                                **/
 /*****************************************************************************/
 
-SetTextureDict_t                SetTextureDict                  = (SetTextureDict_t)                invalid_ptr;
-LoadClumpFile_t                 LoadClumpFile                   = (LoadClumpFile_t)                 invalid_ptr;
-LoadModel_t                     LoadModel                       = (LoadModel_t)                     invalid_ptr;
 LoadCollisionModel_t            LoadCollisionModel              = (LoadCollisionModel_t)            invalid_ptr;
 LoadCollisionModelVer2_t        LoadCollisionModelVer2          = (LoadCollisionModelVer2_t)        invalid_ptr;
 LoadCollisionModelVer3_t        LoadCollisionModelVer3          = (LoadCollisionModelVer3_t)        invalid_ptr;
-CTxdStore_LoadTxd_t             CTxdStore_LoadTxd               = (CTxdStore_LoadTxd_t)             invalid_ptr;
-CTxdStore_GetTxd_t              CTxdStore_GetTxd                = (CTxdStore_GetTxd_t)              invalid_ptr;
-CTxdStore_RemoveTxd_t           CTxdStore_RemoveTxd             = (CTxdStore_RemoveTxd_t)           invalid_ptr;
-CTxdStore_RemoveRef_t           CTxdStore_RemoveRef             = (CTxdStore_RemoveRef_t)           invalid_ptr;
-CTxdStore_AddRef_t              CTxdStore_AddRef                = (CTxdStore_AddRef_t)              invalid_ptr;
 CClothesBuilder_CopyTexture_t   CClothesBuilder_CopyTexture     = (CClothesBuilder_CopyTexture_t)   invalid_ptr;
 
-extern CGameSA * pGame;
+extern CGameSA *pGame;
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
 RwInterface **ppRwInterface = (RwInterface**)0x00C97B24;
 
-CRenderWareSA::CRenderWareSA ( eGameVersion version )
+CRenderWareSA::CRenderWareSA( eGameVersion version )
 {
-    // Version dependant addresses
+    // Version dependant addresse
     switch( version )
     {
     // VERSION 1.0 EU ADDRESSES
@@ -148,12 +145,19 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwRenderSystemFigureAffairs         = (RwRenderSystemFigureAffairs_t)           0x007F2AF0;
         RwObjectRegister                    = (RwObjectRegister_t)                      0x00808720;
         RwErrorGet                          = (RwErrorGet_t)                            0x008088C0;
+        RwStreamInitialize                  = (RwStreamInitialize_t)                    0x007EC850;
         RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECF30;
+        RwStreamReadChunkHeaderInfo         = (RwStreamReadChunkHeaderInfo_t)           0x007ED5D0;
         RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED310;
         RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007ECA10;
-        RwStreamReadTexture                 = (RwStreamReadTexture_t)                   0x00730E60;
+        RwStreamReadTexture                 = (RwStreamReadTexture_t)                   0x00730EA0;
         RwStreamClose                       = (RwStreamClose_t)                         0x007ECE60;
+        RtDictSchemaStreamReadDict          = (RtDictSchemaStreamReadDict_t)            0x007CF280;
+        RtDictDestroy                       = (RtDictDestroy_t)                         0x007CF170;
+        RwCameraClone                       = (RwCameraClone_t)                         0x007EF3F0;
+        RwCameraDestroy                     = (RwCameraDestroy_t)                       0x007EE4F0;
         RwFrameCreate                       = (RwFrameCreate_t)                         0x007F0450;
+        RwFrameCloneRecursive               = (RwFrameCloneRecursive_t)                 0x007F0090;
         RwFrameGetLTM                       = (RwFrameGetLTM_t)                         0x007F09D0;
         RwFrameSetIdentity                  = (RwFrameSetIdentity_t)                    0x007F10F0;
         RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B40;
@@ -217,17 +221,9 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwSceneAddLight                     = (RwSceneAddLight_t)                       0x00751960;
         RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
 
-        SetTextureDict                      = (SetTextureDict_t)                        0x007319C0;
-        LoadClumpFile                       = (LoadClumpFile_t)                         0x005371F0;
-        LoadModel                           = (LoadModel_t)                             0x0040C6B0;
         LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
         LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
         LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
-        CTxdStore_LoadTxd                   = (CTxdStore_LoadTxd_t)                     0x00731DD0;
-        CTxdStore_GetTxd                    = (CTxdStore_GetTxd_t)                      0x00408340;
-        CTxdStore_RemoveTxd                 = (CTxdStore_RemoveTxd_t)                   0x00731E90;
-        CTxdStore_RemoveRef                 = (CTxdStore_RemoveRef_t)                   0x00731A30;
-        CTxdStore_AddRef                    = (CTxdStore_AddRef_t)                      0x00731A00; 
         CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
         break; 
 
@@ -239,10 +235,15 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwCreateExtension                   = (RwCreateExtension_t)                     0x007CCE80;
         RwObjectRegister                    = (RwObjectRegister_t)                      0x008086E0;
         RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007EC9D0;
+        RwStreamReadTexture                 = (RwStreamReadTexture_t)                   0x00730E60;
         RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED2D0;
         RwErrorGet                          = (RwErrorGet_t)                            0x00808880;
+        RwStreamInitialize                  = (RwStreamInitialize_t)                    0x007EC810;
         RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECEF0;
+        RwStreamReadChunkHeaderInfo         = (RwStreamReadChunkHeaderInfo_t)           0x007ED590;
         RwStreamClose                       = (RwStreamClose_t)                         0x007ECE20;
+        RtDictSchemaStreamReadDict          = (RtDictSchemaStreamReadDict_t)            0x007CF240;
+        RtDictDestroy                       = (RtDictDestroy_t)                         0x007CF130;
         RwCameraClone                       = (RwCameraClone_t)                         0x007EF3B0;
         RwCameraDestroy                     = (RwCameraDestroy_t)                       0x007EE4B0;
         RpClumpClone                        = (RpClumpClone_t)                          0x00749F70;
@@ -257,6 +258,7 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwAnimationInit                     = (RwAnimationInit_t)                       0x007CD5E0;
         RwSkeletonUpdate                    = (RwSkeletonUpdate_t)                      0x007C5210;
         RwFrameCreate                       = (RwFrameCreate_t)                         0x007F0410;
+        RwFrameCloneRecursive               = (RwFrameCloneRecursive_t)                 0x007F0050;
         RwFrameGetLTM                       = (RwFrameGetLTM_t)                         0x007F0990;
         RwFrameScale                        = (RwFrameScale_t)                          0x007F0ED0;
         RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E30;
@@ -321,17 +323,9 @@ CRenderWareSA::CRenderWareSA ( eGameVersion version )
         RwPrefetch                          = (RwPrefetch_t)                            0x0072F480;
         RwFlushLoader                       = (RwFlushLoader_t)                         0x0072E700;
 
-        SetTextureDict                      = (SetTextureDict_t)                        0x007319C0;
-        LoadClumpFile                       = (LoadClumpFile_t)                         0x005371F0;
-        LoadModel                           = (LoadModel_t)                             0x0040C6B0;
         LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
         LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
         LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
-        CTxdStore_LoadTxd                   = (CTxdStore_LoadTxd_t)                     0x00731DD0;
-        CTxdStore_GetTxd                    = (CTxdStore_GetTxd_t)                      0x00408340;
-        CTxdStore_RemoveTxd                 = (CTxdStore_RemoveTxd_t)                   0x00731E90;
-        CTxdStore_RemoveRef                 = (CTxdStore_RemoveRef_t)                   0x00731A30;
-        CTxdStore_AddRef                    = (CTxdStore_AddRef_t)                      0x00731A00;
         CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
         break;
     }
@@ -516,53 +510,6 @@ bool CRenderWareSA::PositionFrontSeat( RpClump *pClump, unsigned short usModelID
     return true;
 }
 
-// Replaces all atomics for a specific model
-typedef struct
-{
-    unsigned short usTxdID;
-    unsigned short modelID;
-} SAtomicsReplacer;
-
-// Based on FUNC_AtomicsReplacer
-static void RwAtomicInsertClump( unsigned short modelID, RpAtomic *atomic )
-{
-    CBaseModelInfoSAInterface *info = ppModelInfo[modelID];
-    CAtomicModelInfoSA *ainfo = info->GetAtomicModelInfo();
-    bool unk;
-    void *unk2;
-
-    // MTA: we create a copy of the atomic
-    RpAtomic *newatom = RpAtomicClone( atomic );
-
-    // This possibly adds the reference to the texture, we should reven this
-    ((void (__cdecl*)(const char*, void*&, bool&))0x005370A0)( atomic->m_parent->m_nodeName, unk2, unk );
-
-    newatom->SetRenderCallback( NULL );
-
-    if ( !unk )
-        ainfo->GetDamageAtomicModelInfo()->SetupPipeline( newatom );
-    else
-        ainfo->SetAtomic( newatom );
-
-#if 0
-    RpClumpRemoveAtomic( clump, atomic );
-#endif
-
-    RpAtomicSetFrame( newatom, RwFrameCreate() );
-    
-    newatom->SetExtendedRenderFlags( modelID );
-}
-
-// TODO: identify this runtime; it might be better to assign single atomics!
-static bool AtomicsReplacer( RpAtomic* pAtomic, SAtomicsReplacer *data )
-{
-    RwAtomicInsertClump( data->modelID, pAtomic );
-
-    // The above function adds a reference to the model's TXD. Remove it again.
-    (*ppTxdPool)->Get( data->usTxdID )->Dereference();
-    return true;
-}
-
 /*****************************************************************************
 *
 *   RenderWare Functions
@@ -723,20 +670,9 @@ unsigned int RwFrame::CountChildren()
     return count;
 }
 
-static bool RwFrameGetChild( RwFrame *child, RwFrame **frame )
-{
-    *frame = child;
-    return false;
-}
-
 RwFrame* RwFrame::GetFirstChild()
 {
-    RwFrame *child;
-
-    if ( ForAllChildren( RwFrameGetChild, &child ) )
-        return NULL;
-
-    return child;
+    return m_child;
 }
 
 struct _rwFrameFindName
@@ -812,6 +748,18 @@ RwFrame* RwFrame::FindChildByHierarchy( unsigned int id )
         return NULL;
 
     return info.result;
+}
+
+RwFrame* RwFrame::CloneRecursive() const
+{
+    RwFrame *cloned = RwFrameCloneRecursive( this, NULL );
+
+    if ( !cloned )
+        return NULL;
+
+    cloned->m_privateFlags &= ~( RW_OBJ_REGISTERED | RW_FRAME_DIRTY );
+    cloned->RegisterRoot();
+    return cloned;
 }
 
 static bool RwFrameGetAnimHierarchy( RwFrame *frame, RpAnimHierarchy **rslt )
@@ -1477,18 +1425,20 @@ void RpClump::ScanAtomicHierarchy( RwFrame **atomics, size_t max )
     m_parent->ForAllChildren( RwFrameGetAssignedHierarchy, &info );
 }
 
-static bool RwGetAtomic( RpAtomic *child, RpAtomic **obj )
-{
-    *obj = child;
-    return false;
-}
-
 RpAtomic* RpClump::GetFirstAtomic()
 {
-    RpAtomic *atomic = NULL;
+    if ( LIST_EMPTY( m_atomics.root ) )
+        return NULL;
 
-    ForAllAtomics( RwGetAtomic, &atomic );
-    return atomic;
+    return LIST_GETITEM( RpAtomic, m_atomics.root.next, m_atomics );
+}
+
+RpAtomic* RpClump::GetLastAtomic()
+{
+    if ( LIST_EMPTY( m_atomics.root ) )
+        return NULL;
+
+    return LIST_GETITEM( RpAtomic, m_atomics.root.prev, m_atomics );
 }
 
 struct _rwFindAtomicNamed
@@ -1787,7 +1737,7 @@ static RpClump* _clumpCallback( RpClump *clump, void *data )
     return clump;
 }
 
-RpClump* RwClumpCreate()
+RpClump* RpClumpCreate()
 {
     RpClump *clump = (RpClump*)pRwInterface->m_allocStruct( pRwInterface->m_clumpInfo, 0x30010 );
 

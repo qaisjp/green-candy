@@ -38,7 +38,7 @@ public:
 
         m_upperBound = 0x7FFF;
         m_lowerBound = 0x8000;
-        m_basis = 0;
+        m_refs = 0;
     }
 
     void* operator new ( size_t );
@@ -50,7 +50,7 @@ public:
 
     short                           m_upperBound;       // 34
     unsigned short                  m_lowerBound;       // 36
-    short                           m_basis;            // 38
+    unsigned short                  m_refs;             // 38
 
     bool                            m_unk1;             // 40
     bool                            m_unk2;             // 41
@@ -78,7 +78,8 @@ public:
     void    operator delete ( void *ptr );
 
     CBoundingBox                    m_bounds;           // 0
-    BYTE                            m_pad[4];           // 40
+    unsigned char                   m_colPoolIndex;     // 40
+    BYTE                            m_pad[3];           // 41
     CColDataSA*                     pColData;           // 44
 };
 

@@ -72,6 +72,11 @@ public:
         m_class->IncrementMethodStack( m_lua );
     }
 
+    inline unsigned int GetRefCount() const
+    {
+        return m_class->GetRefCount();
+    }
+
     inline void DecrementMethodStack()
     {
         m_class->DecrementMethodStack( m_lua );

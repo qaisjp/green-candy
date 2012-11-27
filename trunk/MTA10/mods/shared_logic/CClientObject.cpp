@@ -20,7 +20,7 @@
 #define MTA_BUILDINGS
 #define CCLIENTOBJECT_MAX 250
 
-CClientObject::CClientObject( CClientManager* pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel ) : CClientStreamElement( pManager->GetObjectStreamer(), ID, L, system )
+CClientObject::CClientObject( CClientManager* pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel ) : CClientGameEntity( pManager->GetObjectStreamer(), ID, L, system )
 {
     // Lua instancing
     PushStack( L );
@@ -382,9 +382,6 @@ void CClientObject::Create()
             // Apply our data to the object
             m_pObject->Teleport( m_vecPosition.fX, m_vecPosition.fY, m_vecPosition.fZ );
             m_pObject->SetOrientation( m_vecRotation.fX, m_vecRotation.fY, m_vecRotation.fZ );
-#ifndef MTA_BUILDINGS
-            m_pObject->ProcessCollision();
-#endif
             m_pObject->SetupLighting();
 
             if ( !m_bIsVisible )
@@ -437,7 +434,7 @@ void CClientObject::Destroy()
 void CClientObject::NotifyCreate()
 {
     m_pObjectManager->OnCreation( this );
-    CClientStreamElement::NotifyCreate();
+    CClientGameEntity::NotifyCreate();
 }
 
 void CClientObject::NotifyDestroy()

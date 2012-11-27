@@ -20,7 +20,7 @@ class CClientObject;
 #ifndef __CCLIENTOBJECT_H
 #define __CCLIENTOBJECT_H
 
-#include "CClientStreamElement.h"
+#include "CClientGameEntity.h"
 
 struct SLastSyncedObjectData
 {
@@ -31,7 +31,7 @@ struct SLastSyncedObjectData
 
 #include "luadefs/luaobject.h"
 
-class CClientObject : public CClientStreamElement
+class CClientObject : public CClientGameEntity
 {
     friend class CClientObjectManager;
     friend class CClientPed;

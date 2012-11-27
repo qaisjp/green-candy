@@ -27,12 +27,16 @@ public:
         assign( mat );
     }
 
-    CTransformSAInterface*                  m_unk;  // I do not know what these are
-    CTransformSAInterface*                  m_unk2;
-    class CPlaceableSAInterface*            m_entity;
+    CTransformSAInterface*                  m_unk;          // 64, I do not know what these are
+    CTransformSAInterface*                  m_unk2;         // 68
+    union
+    {
+        class CPlaceableSAInterface*        m_entity;       // 72
+        float                               m_unkFloat;     // 72
+    };
 
-    CTransformSAInterface*                  next;
-    CTransformSAInterface*                  prev;
+    CTransformSAInterface*                  next;           // 76
+    CTransformSAInterface*                  prev;           // 80
 };
 
 class CAllocatedTransformSAInterface
@@ -60,17 +64,17 @@ public:
     bool                                    FreeUnimportantMatrix();
     void                                    NewMatrix();
 
-    CTransformSAInterface                   m_usedList;
-    CTransformSAInterface                   m_usedItem;
-    CTransformSAInterface                   m_activeList;
-    CTransformSAInterface                   m_activeItem;
-    CTransformSAInterface                   m_freeList;
-    CTransformSAInterface                   m_freeItem;
-    CTransformSAInterface*                  m_stack;
+    CTransformSAInterface                   m_usedList;         // 0
+    CTransformSAInterface                   m_usedItem;         // 84
+    CTransformSAInterface                   m_activeList;       // 168
+    CTransformSAInterface                   m_activeItem;       // 252
+    CTransformSAInterface                   m_freeList;         // 336
+    CTransformSAInterface                   m_freeItem;         // 420
+    CTransformSAInterface*                  m_stack;            // 504
 };
 
 void Transformation_Init();
 
-extern CTransformationSAInterface *pTransform;
+extern CTransformationSAInterface *const pTransform;
 
 #endif //_CTransformationSA_

@@ -97,4 +97,9 @@ public:
     int                             m_animFileIndex;        // 772
 };
 
+extern RwTexDictionary *g_vehicleTxd;
+
+void    VehicleModels_Init();
+void    VehicleModels_Shutdown();
+
 #endif

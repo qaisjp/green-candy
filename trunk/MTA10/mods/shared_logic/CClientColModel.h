@@ -31,8 +31,9 @@ public:
     bool                            Restore( unsigned short usModel );
     void                            RestoreAll();
 
-private:
     CColModel*                      m_pColModel;
+
+private:
     std::list <unsigned short>      m_Replaced;
 };
 

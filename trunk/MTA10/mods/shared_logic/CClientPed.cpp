@@ -46,7 +46,7 @@ void CClientPed::InstanceLua( bool system )
     lua_pop( m_lua, 1 );
 }
 
-CClientPed::CClientPed( CClientManager *pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, L, system ), CAntiCheatModule( pManager->GetAntiCheat() )
+CClientPed::CClientPed( CClientManager *pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system ) : CClientGameEntity( pManager->GetPlayerStreamer(), ID, L, system ), CAntiCheatModule( pManager->GetAntiCheat() )
 {
     InstanceLua( system );
 
@@ -59,7 +59,7 @@ CClientPed::CClientPed( CClientManager *pManager, unsigned short ulModelID, Elem
     pManager->GetPedManager()->AddToList( this );
 }
 
-CClientPed::CClientPed( CClientManager *pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system, bool bIsLocalPlayer ) : CClientStreamElement( pManager->GetPlayerStreamer(), ID, L, system ), CAntiCheatModule( pManager->GetAntiCheat() )
+CClientPed::CClientPed( CClientManager *pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system, bool bIsLocalPlayer ) : CClientGameEntity( pManager->GetPlayerStreamer(), ID, L, system ), CAntiCheatModule( pManager->GetAntiCheat() )
 {
     InstanceLua( system );
 
@@ -4499,7 +4499,7 @@ CClientPed * CClientPed::GetTargetedPed ( void )
 void CClientPed::NotifyCreate ( void )
 {
     m_pManager->GetPedManager ()->OnCreation ( this );
-    CClientStreamElement::NotifyCreate ();
+    CClientGameEntity::NotifyCreate();
 }
 
 

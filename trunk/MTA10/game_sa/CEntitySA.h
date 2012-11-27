@@ -56,14 +56,20 @@ public:
                                     CPlaceableSAInterface();
     virtual                         ~CPlaceableSAInterface();
 
-    void                            AllocateMatrix();
-    void                            FreeMatrix();
+    void __thiscall                 AllocateMatrix();
+    void __thiscall                 AcquaintMatrix();
+    void __thiscall                 RestoreMatrix();
+    void __thiscall                 FreeMatrix();
 
     // Transformed parameters
     CVector                         m_position;
     float                           m_heading;
     CTransformSAInterface*          m_matrix;
 };
+
+// Special instance improvement for more quality
+void Placeable_Init();
+void Placeable_Shutdown();
 
 struct CRect {
     float fX1, fY1, fX2, fY2;
@@ -138,6 +144,9 @@ public:
     void                            GetPosition( CVector& pos ) const;
 
     void                            SetAlpha( unsigned char alpha );
+    CColModelSAInterface* __thiscall    GetColModel() const;
+
+    bool __thiscall                 IsOnScreen() const;
 
     RwObject*               m_rwObject;         // 24
 
@@ -166,6 +175,9 @@ public:
 
     /* IMPORTANT: Do not mess with interfaces. */
 };
+
+void Entity_Init();
+void Entity_Shutdown();
 
 class CEntitySA : public virtual CEntity
 {
@@ -223,6 +235,9 @@ public:
     bool                        IsUsingCollision() const                        { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_COLLISION ); }
     void                        SetUsesCollision( bool enabled )                { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_COLLISION, enabled ); }
 
+    void                        SetColModel( CColModel *col )                   { m_colModel = (CColModelSA*)col; };
+    CColModelSA*                GetColModel()                                   { return m_colModel; }
+
     bool                        IsBackfaceCulled() const                        { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL ); }
     void                        SetBackfaceCulled( bool enabled )               { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL, enabled ); }
 
@@ -251,7 +266,7 @@ protected:
     typedef std::map <CEntitySAInterface*, bool> disabledColl_t;
     disabledColl_t              m_disabledColl;
 
-    bool                        m_beingDeleted; // to prevent it trying to delete twice
+    CColModelSA*                m_colModel;
 
 public:
     bool                        m_doNotRemoveFromGame; // when deleted, if this is true, it won't be removed from the game

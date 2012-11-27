@@ -745,6 +745,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CStreamingSA.utils.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CTaskAllocatorSA.cpp"
 				>
 			</File>
@@ -1407,6 +1411,10 @@
 			</File>
 			<File
 				RelativePath=".\CStreamingSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.utils.h"
 				>
 			</File>
 			<File

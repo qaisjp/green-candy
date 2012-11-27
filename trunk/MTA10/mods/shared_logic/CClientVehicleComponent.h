@@ -34,17 +34,7 @@ public:
     CVehicleComponent*          m_component;
 
 protected:
-    struct atomicInfo
-    {
-        CClientAtomic *atomic;
-        unsigned int idx;
-    };
-
     void                        OffsetIndex( unsigned int start, int off );
-
-    typedef std::vector <atomicInfo> atomics_t;
-
-    atomics_t                   m_atomics;   // Kinda: Special modelinfo structures
 };
 
 #endif //_VEHICLE_COMPONENT_INTERFACE_

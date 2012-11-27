@@ -13,18 +13,13 @@
 #ifndef _CTexDictionary_
 #define _CTexDictionary_
 
-class CTexDictionary abstract
+class CTexDictionary abstract : public virtual CRwObject
 {
 public:
     virtual                         ~CTexDictionary()   {};
 
-    virtual bool                    Load( CFile *file, bool filtering, std::list <CTexture*> *newEntries = NULL ) = 0;
     virtual std::list <CTexture*>&  GetTextures() = 0;
     virtual void                    Clear() = 0;
-
-    virtual const char*             GetName() const = 0;
-    virtual unsigned int            GetHash() const = 0;
-    virtual unsigned short          GetID() const = 0;
 
     virtual void                    SetGlobalEmitter() = 0;
 

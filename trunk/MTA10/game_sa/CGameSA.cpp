@@ -139,8 +139,12 @@ CGameSA::CGameSA()
 
     // :D
     Transformation_Init();
+    Placeable_Init();
+    Entity_Init();
+    Physical_Init();
     Streamer_Init();
     ModelInfo_Init();
+    VehicleModels_Init();
 
     // Normal weapon types (WEAPONSKILL_STD)
     for ( int i = 0; i < NUM_WeaponInfosStdSkill; i++)
@@ -193,8 +197,12 @@ CGameSA::~CGameSA()
         delete reinterpret_cast < CWeaponInfoSA* > ( WeaponInfos [i] );
     }
 
+    VehicleModels_Shutdown();
     ModelInfo_Shutdown();
     Streamer_Shutdown();
+    Physical_Shutdown();
+    Entity_Shutdown();
+    Placeable_Shutdown();
 
     delete m_pPools;    // has to be first to delete using entities
     delete m_pFx;

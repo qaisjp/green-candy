@@ -189,10 +189,8 @@ void CClientAtomic::SetModel( CClientDFF *model )
 
     m_clump = model;
 
-    if ( !model )
-        return;
-
-    model->m_atomics.insert( model->m_atomics.begin(), this );
+    if ( model )
+        model->m_atomics.insert( model->m_atomics.begin(), this );
 }
 
 bool CClientAtomic::ReplaceModel( unsigned short id )

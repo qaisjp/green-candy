@@ -18,27 +18,6 @@
 
 typedef std::list <unsigned short> imports_t;
 
-static LUA_DECLARE( getName )
-{
-    CClientTXD *txd = (CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) );
-    const std::string& name = txd->GetName();
-    
-    lua_pushlstring( L, name.c_str(), name.size() );
-    return 1;
-}
-
-static LUA_DECLARE( getHash )
-{
-    lua_pushnumber( L, ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetHash() );
-    return 1;
-}
-
-static LUA_DECLARE( getID )
-{
-    lua_pushnumber( L, ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetID() );
-    return 1;
-}
-
 static LUA_DECLARE( setGlobalEmitter )
 {
     ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_txd.SetGlobalEmitter();
@@ -47,9 +26,6 @@ static LUA_DECLARE( setGlobalEmitter )
 
 static const luaL_Reg txd_interface[] =
 {
-    LUA_METHOD( getName ),
-    LUA_METHOD( getHash ),
-    LUA_METHOD( getID ),
     LUA_METHOD( setGlobalEmitter ),
     { NULL, NULL }
 };
@@ -68,7 +44,7 @@ static int luaconstructor_txd( lua_State *L )
     textures_t::iterator iter = tex.begin();
 
     for ( ; iter != tex.end(); iter++ )
-        ( new CClientGameTexture( L, **iter ) )->SetRoot( txd );
+        ( new CClientGameTexture( L, **iter ) )->SetTXD( txd );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -79,8 +55,9 @@ static int luaconstructor_txd( lua_State *L )
     return 0;
 }
 
-CClientTXD::CClientTXD( lua_State *L, CTexDictionary& txd ) : LuaElement( L ), m_txd( txd )
+CClientTXD::CClientTXD( lua_State *L, CTexDictionary& txd ) : CClientRwObject( L, txd ), m_txd( txd )
 {
+    // Lua instancing
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_txd, 1 );
@@ -90,29 +67,17 @@ CClientTXD::CClientTXD( lua_State *L, CTexDictionary& txd ) : LuaElement( L ), m
 
 CClientTXD::~CClientTXD()
 {
+    while ( !LIST_EMPTY( m_textures.root ) )
+    {
+        CClientGameTexture *item = LIST_GETITEM( CClientGameTexture, m_textures.root.next, m_textures );
+
+        if ( item->GetRefCount() != 0 )
+            item->RemoveFromTXD();  // The texture might be used somewhere, so we unlink it
+        else
+            item->Destroy();
+    }
+
     delete &m_txd;
-}
-
-bool CClientTXD::LoadTXD( CFile *file, bool filtering )
-{
-    textures_t newEntries;
-
-    if ( !m_txd.Load( file, filtering, &newEntries ) )
-        return false;
-
-    imports_t imports = m_txd.GetImportedList();
-    imports_t::const_iterator iter = imports.begin();
-
-    for ( ; iter != imports.end(); iter++ )
-        g_pClientGame->GetManager()->Restream( *iter );
-
-    // Update our game textures
-    textures_t::iterator itert = newEntries.begin();
-
-    for ( ; itert != newEntries.end(); itert++ )
-        ( new CClientGameTexture( m_lua, **itert ) )->SetRoot( this );
-
-    return true;
 }
 
 bool CClientTXD::Import( unsigned short id )

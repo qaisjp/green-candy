@@ -276,39 +276,39 @@ public:
 
 public:
     // Vehicles pool
-    CBicycle*               AddBicycle( unsigned short modelId );
-    CBike*                  AddBike( unsigned short modelId );
-    CHeli*                  AddHeli( unsigned short modelId );
-    CPlane*                 AddPlane( unsigned short modelId );
-    CTrain*                 AddTrain( unsigned short modelId, const CVector& pos, bool direction );
-    CAutomobileTrailer*     AddTrailer( unsigned short modelId );
-    CQuadBike*              AddQuadBike( unsigned short modelId );
-    CMonsterTruck*          AddMonsterTruck( unsigned short modelId );
-    CAutomobile*            AddAutomobile( unsigned short modelId );
-    CBoat*                  AddBoat( unsigned short modelId );
-    CVehicle*               AddVehicle( unsigned short modelID );
-    CVehicle*               GetVehicle( void *entity ) const;
-    CVehicle*               GetVehicleFromRef( unsigned int index ) const;
+    CBicycleSA*             AddBicycle( unsigned short modelId );
+    CBikeSA*                AddBike( unsigned short modelId );
+    CHeliSA*                AddHeli( unsigned short modelId );
+    CPlaneSA*               AddPlane( unsigned short modelId );
+    CTrainSA*               AddTrain( unsigned short modelId, const CVector& pos, bool direction );
+    CAutomobileTrailerSA*   AddTrailer( unsigned short modelId );
+    CQuadBikeSA*            AddQuadBike( unsigned short modelId );
+    CMonsterTruckSA*        AddMonsterTruck( unsigned short modelId );
+    CAutomobileSA*          AddAutomobile( unsigned short modelId );
+    CBoatSA*                AddBoat( unsigned short modelId );
+    CVehicleSA*             AddVehicle( unsigned short modelID );
+    CVehicleSA*             GetVehicle( void *entity ) const;
+    CVehicleSA*             GetVehicleFromRef( unsigned int index ) const;
     void                    DeleteAllVehicles();
 
     // Objects pool
-    CObject*                AddObject( unsigned short modelID );
-    CObject*                GetObject( void *entity ) const;
-    CObject*                GetObjectFromRef( unsigned int index ) const;
+    CObjectSA*              AddObject( unsigned short modelID );
+    CObjectSA*              GetObject( void *entity ) const;
+    CObjectSA*              GetObjectFromRef( unsigned int index ) const;
     void                    DeleteAllObjects();
 
     // Peds pool
-    CPed*                   AddPed( unsigned short modelID );
-    CPed*                   AddCivilianPed( unsigned short modelID );
-    CPed*                   AddCivilianPed( void *ped );
-    CPed*                   GetPed( void *entity ) const;
-    CPed*                   GetPedFromRef( unsigned int index ) const;
+    CPedSA*                 AddPed( unsigned short modelID );
+    CPedSA*                 AddCivilianPed( unsigned short modelID );
+    CPedSA*                 AddCivilianPed( void *ped );
+    CPedSA*                 GetPed( void *entity ) const;
+    CPedSA*                 GetPedFromRef( unsigned int index ) const;
     void                    DeleteAllPeds();
 
-    CEntity*                GetEntity( void *entity ) const;
+    CEntitySA*              GetEntity( void *entity ) const;
 
     // Others
-    CBuilding*              AddBuilding( unsigned short modelID );
+    CBuildingSA*            AddBuilding( unsigned short modelID );
     void                    DeleteAllBuildings();
 
     unsigned int            GetNumberOfUsedSpaces( ePools pools ) const;

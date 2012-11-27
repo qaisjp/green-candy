@@ -17,21 +17,20 @@
 class CTextureSA;
 class CTxdInstanceSA;
 
-class CTexDictionarySA : public CTexDictionary
+class CTexDictionarySA : public virtual CTexDictionary, public CRwObjectSA
 {
     friend class CTextureManagerSA;
 public:
-                            CTexDictionarySA( const char *name );
-                            CTexDictionarySA( const char *name, CTxdInstanceSA *txd );
+                            CTexDictionarySA( RwTexDictionary *txd );
                             ~CTexDictionarySA();
 
-    bool                    Load( CFile *file, bool filtering, std::list <CTexture*> *newEntries = NULL );
+    RwTexDictionary*        GetObject()                     { return (RwTexDictionary*)m_object; }
+    const RwTexDictionary*  GetObject() const               { return (const RwTexDictionary*)m_object; }
+
+    eRwType                 GetType() const                 { return RW_TXD; }
+
     std::list <CTexture*>&  GetTextures()                   { return (std::list <CTexture*>&)m_textures; }
     void                    Clear();
-
-    const char*             GetName() const                 { return m_name.c_str(); }
-    unsigned int            GetHash() const;
-    unsigned short          GetID() const;
 
     void                    SetGlobalEmitter();
 
@@ -48,15 +47,15 @@ public:
     const importList_t&     GetImportedList() const         { return m_imported; }
 
 protected:
-    std::string             m_name;
-
     importList_t            m_imported;
 
 public:
     typedef std::list <CTextureSA*> textureList_t;
 
-    CTxdInstanceSA*         m_tex;
+    RwTexDictionary*        m_txd;
     textureList_t           m_textures;
+
+    RwListEntry <CTexDictionarySA>  m_dicts;
 };
 
 #endif //_CTexDictionarySA_H_

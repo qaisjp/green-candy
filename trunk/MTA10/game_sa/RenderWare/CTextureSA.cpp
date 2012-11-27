@@ -15,34 +15,27 @@
 
 extern CBaseModelInfoSAInterface** ppModelInfo;
 
-#define DEBUG_TEXTURES
-
 CTextureSA::CTextureSA( RwTexture *tex )
 {
     m_texture = tex;
     m_dictionary = NULL;
-
-    m_texture->refs++;
 }
 
 CTextureSA::CTextureSA( CTexDictionarySA *dict, RwTexture *tex )
 {
-    m_texture = tex;
-    m_dictionary = dict;
+    CTextureSA::CTextureSA( tex );
 
-    m_texture->refs++;
+    SetTXD( dict );
 }
 
 CTextureSA::~CTextureSA()
 {
     ClearImports();
 
-    m_texture->refs--;
+    // Remove us from the dictionary
+    RemoveFromTXD();
 
-    if ( m_dictionary )
-        m_dictionary->m_textures.remove( this );
-
-    m_texture->RemoveFromDictionary();
+    // Destroy ourselves
     RwTextureDestroy( m_texture );
 }
 
@@ -54,6 +47,40 @@ const char* CTextureSA::GetName() const
 unsigned int CTextureSA::GetHash() const
 {
     return pGame->GetKeyGen()->GetUppercaseKey( m_texture->name );
+}
+
+void CTextureSA::SetTXD( CTexDictionary *_txd )
+{
+    CTexDictionarySA *txd = dynamic_cast <CTexDictionarySA*> ( _txd );
+
+    if ( txd == m_dictionary )
+        return;
+    
+    RemoveFromTXD();
+
+    m_dictionary = txd;
+
+    if ( txd )
+    {
+        m_dictionary->m_textures.push_front( this );
+        m_texture->AddToDictionary( m_dictionary->m_txd );
+    }
+}
+
+void CTextureSA::RemoveFromTXD()
+{
+    if ( !m_dictionary )
+        return;
+
+    m_texture->RemoveFromDictionary();
+    m_dictionary->m_textures.remove( this );
+
+    m_dictionary = NULL;
+}
+
+CTexDictionary* CTextureSA::GetTXD()
+{
+    return m_dictionary;
 }
 
 bool CTextureSA::IsImported( unsigned short id ) const
@@ -78,10 +105,6 @@ void CTextureSA::OnTxdLoad( RwTexDictionary& txd, unsigned short id )
 {
     import& imp = (*m_imported.find( id )).second;
     imp.original = txd.FindNamedTexture( m_texture->name );
-
-#ifdef DEBUG_TEXTURES
-    OutputDebugString( SString( "TXHOOK ON: %s\n", m_texture->name ) );
-#endif
     
     if ( imp.original )
         imp.original->RemoveFromDictionary();
@@ -93,10 +116,6 @@ void CTextureSA::OnTxdInvalidate( RwTexDictionary& txd, unsigned short id )
 {
     import& imp = (*m_imported.find( id )).second;
     imp.copy->RemoveFromDictionary();
-
-#ifdef DEBUG_TEXTURES
-    OutputDebugString( SString( "TXHOOK OFF: %s\n", m_texture->name ) );
-#endif
 
     if ( imp.original )
     {

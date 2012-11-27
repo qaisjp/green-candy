@@ -31,11 +31,15 @@ typedef void*                   (__cdecl *RwAllocAligned_t)                     
 typedef void                    (__cdecl *RwFreeAligned_t)                      (void *ptr);
 typedef RwExtension*            (__cdecl *RwCreateExtension_t)                  (unsigned int id, unsigned int count, size_t size, int unk3);
 typedef void                    (__cdecl *RwObjectRegister_t)                   (void *group, RwObject *obj);
+typedef RwStream*               (__cdecl *RwStreamInitialize_t)                 (void *unk, unsigned int unk2, unsigned int unk3, unsigned int unk4, RwBuffer *buf);
 typedef RwStream*               (__cdecl *RwStreamOpen_t)                       (RwStreamType type, RwStreamMode mode, const void *pData);
+typedef RwStream*               (__cdecl *RwStreamReadChunkHeaderInfo_t)        (RwStream *stream, RwChunkHeader& header);
 typedef int                     (__cdecl *RwStreamFindChunk_t)                  (RwStream *stream, unsigned int type, unsigned int *lengthOut, unsigned int *versionOut);
-typedef unsigned int            (__cdecl *RwStreamReadBlocks_t)                 (RwStream *stream, unsigned int *numBlocks, unsigned int size);
+typedef unsigned int            (__cdecl *RwStreamReadBlocks_t)                 (RwStream *stream, RwBlocksInfo& info, unsigned int size);
 typedef RwTexture*              (__cdecl *RwStreamReadTexture_t)                (RwStream *stream);
 typedef int                     (__cdecl *RwStreamClose_t)                      (RwStream *stream, void *pData);
+typedef RtDict*                 (__cdecl *RtDictSchemaStreamReadDict_t)         (RtDictSchema *schema, RwStream *stream);
+typedef void                    (__cdecl *RtDictDestroy_t)                      (RtDict *dict);
 typedef RpAtomic*               (__cdecl *RpAtomicCreate_t)                     ();
 typedef RpAtomic*               (__cdecl *RpAtomicClone_t)                      (const RpAtomic *atomic);
 typedef RpAtomic*               (__cdecl *RpAtomicSetGeometry_t)                (RpAtomic *atomic, RpGeometry *geometry, unsigned int flags);
@@ -59,6 +63,7 @@ typedef int                     (__cdecl *RpClumpDestroy_t)                     
 typedef bool                    (__cdecl *RwAnimationInit_t)                    (RpAnimation *anim, RwExtension *ext);
 typedef bool                    (__cdecl *RwSkeletonUpdate_t)                   (RpSkeleton *skel);
 typedef RwFrame*                (__cdecl *RwFrameCreate_t)                      ();
+typedef RwFrame*                (__cdecl *RwFrameCloneRecursive_t)              (const RwFrame *frame, const RwFrame *root);
 typedef const RwMatrix*         (__cdecl *RwFrameGetLTM_t)                      (const RwFrame *frame);
 typedef RwFrame*                (__cdecl *RwFrameAddChild_t)                    (RwFrame *parent, RwFrame *child);
 typedef RwFrame*                (__cdecl *RwFrameRemoveChild_t)                 (RwFrame *child);
@@ -130,11 +135,16 @@ extern RwFreeAligned_t                          RwFreeAligned;
 extern RwCreateExtension_t                      RwCreateExtension;
 extern RwObjectRegister_t                       RwObjectRegister;
 extern RwStreamFindChunk_t                      RwStreamFindChunk;
+extern RwStreamInitialize_t                     RwStreamInitialize;
 extern RwStreamOpen_t                           RwStreamOpen;
+extern RwStreamReadChunkHeaderInfo_t            RwStreamReadChunkHeaderInfo;
 extern RwStreamReadBlocks_t                     RwStreamReadBlocks;
 extern RwStreamReadTexture_t                    RwStreamReadTexture;
 extern RwStreamClose_t                          RwStreamClose;
+extern RtDictSchemaStreamReadDict_t             RtDictSchemaStreamReadDict;
+extern RtDictDestroy_t                          RtDictDestroy;
 extern RwFrameCreate_t                          RwFrameCreate;
+extern RwFrameCloneRecursive_t                  RwFrameCloneRecursive;
 extern RwFrameGetLTM_t                          RwFrameGetLTM;
 extern RwFrameSetIdentity_t                     RwFrameSetIdentity;
 extern RwFrameTranslate_t                       RwFrameTranslate;
@@ -216,30 +226,14 @@ extern RwFlushLoader_t                          RwFlushLoader;
 /** GTA function definitions                                                **/
 /*****************************************************************************/
 
-typedef bool                (__cdecl *SetTextureDict_t)                 (unsigned short id);
-typedef bool                (__cdecl *LoadClumpFile_t)                  (RwStream *stream, unsigned int id);        // (stream, model id)
-typedef bool                (__cdecl *LoadModel_t)                      (RwBuffer *filename, unsigned int id);      // (memory chunk, model id)
 typedef void                (__cdecl *LoadCollisionModel_t)             (unsigned char*, CColModelSAInterface*, const char*);
 typedef void                (__cdecl *LoadCollisionModelVer2_t)         (unsigned char*, unsigned int, CColModelSAInterface*, const char*);
 typedef void                (__cdecl *LoadCollisionModelVer3_t)         (unsigned char*, unsigned int, CColModelSAInterface*, const char*); // buf, bufsize, ccolmodel&, keyname
-typedef bool                (__cdecl *CTxdStore_LoadTxd_t)              (unsigned int id, RwStream *filename);
-typedef void                (__cdecl *CTxdStore_RemoveTxd_t)            (unsigned int id);
-typedef void                (__cdecl *CTxdStore_RemoveRef_t)            (unsigned int id);
-typedef void                (__cdecl *CTxdStore_AddRef_t)               (unsigned int id);
-typedef RwTexDictionary*    (__cdecl *CTxdStore_GetTxd_t)               (unsigned int id);
 typedef RwTexture*          (__cdecl *CClothesBuilder_CopyTexture_t)    (RwTexture *texture);
 
-extern SetTextureDict_t                 SetTextureDict;
-extern LoadClumpFile_t                  LoadClumpFile;
-extern LoadModel_t                      LoadModel;
 extern LoadCollisionModel_t             LoadCollisionModel;
 extern LoadCollisionModelVer2_t         LoadCollisionModelVer2;
 extern LoadCollisionModelVer3_t         LoadCollisionModelVer3;
-extern CTxdStore_LoadTxd_t              CTxdStore_LoadTxd;
-extern CTxdStore_GetTxd_t               CTxdStore_GetTxd;
-extern CTxdStore_RemoveTxd_t            CTxdStore_RemoveTxd;
-extern CTxdStore_RemoveRef_t            CTxdStore_RemoveRef;
-extern CTxdStore_AddRef_t               CTxdStore_AddRef;
 extern CClothesBuilder_CopyTexture_t    CClothesBuilder_CopyTexture;
 
 /*****************************************************************************/

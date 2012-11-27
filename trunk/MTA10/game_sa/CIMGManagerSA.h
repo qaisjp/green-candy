@@ -23,8 +23,7 @@ enum eLoadingState
     MODEL_LOADED,
     MODEL_LOADING,
     MODEL_LOD,    // Perhaps
-    MODEL_RELOAD,
-    FIX_DWORD = 0xFFFFFFFF
+    MODEL_RELOAD
 };
 
 class CModelLoadInfoSA  // size: 20

@@ -14,8 +14,6 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-//#define DEBUG_TEXTURES_EXCPT
-
 #define FUNC_InitTextureManager         0x00731F20
 #define VAR_CPlayerTexDictionaries      0x00C88004
 
@@ -118,6 +116,22 @@ static bool RwTexDictionaryClear( RwTexture *tex, int )
     return true;
 }
 
+bool CTxdInstanceSA::LoadTXD( RwStream *stream )
+{
+    if ( !RwStreamFindChunk( stream, 0x16, NULL, NULL ) )
+        return false;
+
+    m_txd = RwTexDictionaryStreamRead( stream );
+
+    if ( !m_txd )
+        return false;
+
+    // HACK: set the global texture emitter so loading the txd is the only requirement for model textures
+    // (BACKWARDS COMPATIBILITY WITH MTA:BLUE)
+    g_textureEmitter = m_txd;
+    return true;
+}
+
 bool CTxdInstanceSA::LoadTXD( CFile *file )
 {
     if ( m_txd )
@@ -128,23 +142,10 @@ bool CTxdInstanceSA::LoadTXD( CFile *file )
     if ( !stream ) 
         return false;
 
-    if ( !RwStreamFindChunk( stream, 0x16, NULL, NULL ) )
-    {
-        RwStreamClose( stream, NULL );
-        return false;
-    }
-
-    m_txd = RwTexDictionaryStreamRead( stream );
+    bool success = LoadTXD( stream );
 
     RwStreamClose( stream, NULL );
-
-    if ( !m_txd )
-        return false;
-
-    // HACK: set the global texture emitter so loading the txd is the only requirement for model textures
-    // (BACKWARDS COMPATIBILITY WITH MTA:BLUE)
-    g_textureEmitter = m_txd;
-    return true;
+    return success;
 }
 
 static bool RwTexDictionaryGetCount( RwTexture *tex, unsigned int *cnt )
@@ -186,14 +187,19 @@ void CTxdInstanceSA::Dereference()
 {
     m_references--;
 
-    // We unload ourselves
+    // We unload ourselves if not used anymore
     if ( m_references == 0 )
         pGame->GetStreaming()->FreeModel( DATA_TEXTURE_BLOCK + (*ppTxdPool)->GetIndex( this ) );
 }
 
+void CTxdInstanceSA::DereferenceNoDestroy()
+{
+    // Used by streaming
+    m_references--;
+}
+
 void CTxdInstanceSA::SetCurrent()
 {
-    // The_GTA: tex dictionaries seem to invalidate at times; if they do; we do not want them set for texture indexing
     pRwInterface->m_textureManager.m_current = m_txd;
 }
 
@@ -279,6 +285,9 @@ CTextureManagerSA::CTextureManagerSA()
     // Hook runtime
     HookInstall( HOOKPOS_CTxdStore_SetupTxdParent, (DWORD)HOOK_CTxdStore_SetupTxdParent, 6 );
     HookInstall( HOOKPOS_CTxdStore_RemoveTxd, (DWORD)HOOK_CTxdStore_RemoveTxd, 6 );
+
+    // Initialize the dictionary list
+    LIST_CLEAR( m_txdList.root );
 }
 
 CTextureManagerSA::~CTextureManagerSA()
@@ -336,27 +345,26 @@ RwTexDictionary* CTextureManagerSA::RwCreateTexDictionary()
     return txd;
 }
 
-CTexDictionarySA* CTextureManagerSA::CreateTxd( const char *name )
+CTexDictionarySA* CTextureManagerSA::CreateTxd( CFile *file )
 {
-    CTexDictionarySA *txd = new CTexDictionarySA( name );
+    RwStream *stream = RwStreamCreateTranslated( file );
 
-    m_texDicts.push_back( txd );
-    return txd;
-}
-
-CTexDictionarySA* CTextureManagerSA::CreateTxd( const char *name, unsigned short id )
-{
-    CTxdInstanceSA *itxd = (*ppTxdPool)->Get( id );
-
-    if ( !itxd )
+    if ( !stream )
         return NULL;
 
-    CTexDictionarySA *txd = new CTexDictionarySA( name, itxd );
+    RwTexDictionary *dict = RwTexDictionaryStreamRead( stream );
+    CTexDictionarySA *txd;
 
-    if ( !txd )
-        return NULL;
+    if ( dict )
+    {
+        txd = new CTexDictionarySA( dict );
 
-    m_texDicts.push_back( txd );
+        LIST_INSERT( m_txdList.root, txd->m_dicts );    // We keep track of all tex dictionaries
+    }
+    else
+        txd = NULL;
+
+    RwStreamClose( stream, NULL );
     return txd;
 }
 

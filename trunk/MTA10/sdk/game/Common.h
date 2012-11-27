@@ -12,7 +12,7 @@
 #ifndef __GAME_COMMON
 #define __GAME_COMMON
 
-#define IS_FLAG( mem, flag ) ( ( (mem) & (flag) ) != 0 )
+#define IS_FLAG( mem, flag ) ( ( (mem) & (flag) ) == flag )
 #define BOOL_FLAG( mem, flag, b ) ( (mem) = (b) ? (mem) | (flag) : (mem) & ~(flag) )
 
 /**

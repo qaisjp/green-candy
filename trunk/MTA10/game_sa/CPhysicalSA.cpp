@@ -16,6 +16,9 @@
 
 #include "StdInc.h"
 
+typedef void    (__cdecl*CollideColModels_t)    ( const RwMatrix& mat, CColModelSAInterface *colModel, const RwMatrix& withMat, CColModelSAInterface *withColModel );
+CollideColModels_t      CollideColModels =      (CollideColModels_t)0x004185C0;
+
 CPhysicalSAInterface::CPhysicalSAInterface()
 {
     m_unk2 = 0;
@@ -76,6 +79,14 @@ CPhysicalSAInterface::~CPhysicalSAInterface()
 {
 }
 
+void Physical_Init()
+{
+}
+
+void Physical_Shutdown()
+{
+}
+
 CEntity* CPhysicalSA::GetDamageEntity() const
 {
     return pGame->GetPools()->GetEntity( GetInterface()->m_damageEntity );
@@ -88,15 +99,11 @@ void CPhysicalSA::SetDamageEntity( CEntity *entity )
     if ( !pEntitySA )
         return;
 
-    return;
-
     GetInterface()->m_damageEntity = pEntitySA->GetInterface();
 }
 
 void CPhysicalSA::ResetLastDamage()
 {
-    return;
-
     GetInterface()->m_damageImpulseMagnitude = 0;
     GetInterface()->m_damageEntity = NULL;
 }

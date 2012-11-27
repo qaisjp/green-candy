@@ -18,17 +18,14 @@
 
 #define LUACLASS_TXD    20
 
-class CClientTXD : public LuaElement
+class CClientGameTexture;
+
+class CClientTXD : public CClientRwObject
 {
+    friend class CClientGameTexture;
 public:
                                     CClientTXD( lua_State *L, CTexDictionary& txd );
                                     ~CClientTXD();
-
-    const std::string               GetName() const                 { return m_txd.GetName(); }
-    unsigned int                    GetHash() const                 { return m_txd.GetHash(); }
-    unsigned short                  GetID() const                   { return m_txd.GetID(); }
-
-    bool                            LoadTXD( CFile *file, bool filtering = true );
 
     bool                            Import( unsigned short usModelID );
     bool                            IsImported( unsigned short usModelID ) const;
@@ -37,6 +34,9 @@ public:
     void                            RemoveAll();
 
     CTexDictionary&         m_txd;
+
+protected:
+    RwList <CClientGameTexture>     m_textures;
 };
 
 #endif

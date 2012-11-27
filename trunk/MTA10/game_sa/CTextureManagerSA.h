@@ -30,10 +30,12 @@ public:
 
     void            Allocate();
     void            Deallocate();
+    bool            LoadTXD( RwStream *stream );
     bool            LoadTXD( CFile *file );
     void            InitParent();
     void            Reference();
     void            Dereference();
+    void            DereferenceNoDestroy();
 
     void            SetCurrent();
 
@@ -88,8 +90,7 @@ public:
 
     RwTexDictionary*    RwCreateTexDictionary();
 
-    CTexDictionarySA*   CreateTxd( const char *name );
-    CTexDictionarySA*   CreateTxd( const char *name, unsigned short txdId );
+    CTexDictionarySA*   CreateTxd( CFile *stream );
 
     int                 LoadDictionary( const char *filename );
     int                 LoadDictionaryEx( const char *name, const char *filename );
@@ -121,8 +122,7 @@ private:
     void                BreakAssociation            ( SShadInfo* pShadInfo, STexInfo* pTexInfo );
 
     // Managed textures
-    typedef std::list <CTexDictionarySA*> txdList_t;
-    txdList_t                               m_texDicts;
+    RwList <CTexDictionarySA>               m_txdList;
 
     // Watched world textures
     std::list < SShadInfo >                 m_ShadInfoList;

@@ -15,7 +15,7 @@
 
 typedef std::vector <unsigned short> imports_t;
 
-static int texture_getName( lua_State *L )
+static LUA_DECLARE( getName )
 {
     CClientGameTexture *tex = (CClientGameTexture*)lua_touserdata( L, lua_upvalueindex( 1 ) );
     const std::string& name = tex->GetName();
@@ -24,16 +24,41 @@ static int texture_getName( lua_State *L )
     return 1;
 }
 
-static int texture_getHash( lua_State *L )
+static LUA_DECLARE( getHash )
 {
     lua_pushnumber( L, ((CClientGameTexture*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetHash() );
     return 1;
 }
 
+static LUA_DECLARE( setTXD )
+{
+    CClientTXD *txd;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadClass( txd, LUACLASS_TXD );
+    LUA_ARGS_END;
+
+    ((CClientGameTexture*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetTXD( txd );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getTXD )
+{
+    CClientTXD *txd = ((CClientGameTexture*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetTXD();
+
+    if ( !txd )
+        return 0;
+
+    txd->PushStack( L );
+    return 1;
+}
+
 static const luaL_Reg texture_interface[] =
 {
-    { "getName", texture_getName },
-    { "getHash", texture_getHash },
+    LUA_METHOD( getName ),
+    LUA_METHOD( getHash ),
+    LUA_METHOD( setTXD ),
+    LUA_METHOD( getTXD ),
     { NULL, NULL }
 };
 
@@ -55,16 +80,48 @@ static int luaconstructor_texture( lua_State *L )
 
 CClientGameTexture::CClientGameTexture( lua_State *L, CTexture& tex ) : LuaElement( L ), m_tex( tex )
 {
+    // Lua instancing
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, luaconstructor_texture, 1 );
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
+
+    // Set up our members
+    m_txd = NULL;
+    LIST_INITNODE( m_textures );
 }
 
 CClientGameTexture::~CClientGameTexture()
 {
+    // Unlink ourselves
+    RemoveFromTXD();
+
     delete &m_tex;
+}
+
+void CClientGameTexture::SetTXD( CClientTXD *txd )
+{
+    if ( m_txd == txd )
+        return;
+
+    RemoveFromTXD();
+
+    m_txd = txd;
+
+    if ( txd )
+    {
+        LIST_INSERT( txd->m_textures.root, m_textures );
+    }
+}
+
+void CClientGameTexture::RemoveFromTXD()
+{
+    if ( !m_txd )
+        return;
+
+    LIST_REMOVE( m_textures );
+    m_txd = NULL;
 }
 
 bool CClientGameTexture::Import( unsigned short id )

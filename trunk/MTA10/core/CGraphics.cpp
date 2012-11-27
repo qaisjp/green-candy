@@ -186,13 +186,8 @@ void CGraphics::DrawText3DA ( float fX, float fY, float fZ, unsigned long ulColo
     BeginSingleDrawing ( );
 
     // Draw this text.
-    m_pGUI->GetRenderingLibrary ( )->DrawText3D ( fX,
-                                                  fY,
-                                                  fZ,
-                                                  &ViewMatrix,
-                                                  ulColor, 
-                                                  szBuffer, 
-                                                  fScale );
+    m_pGUI->GetRenderingLibrary ( )->DrawText3D ( fX, fY, fZ, &ViewMatrix, ulColor, szBuffer, fScale );
+
     // End drawing
     EndSingleDrawing ( );
 }

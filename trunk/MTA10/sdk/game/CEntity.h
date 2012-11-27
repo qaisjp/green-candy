@@ -44,6 +44,8 @@ enum eEntityStatus
     STATUS_SIMPLE_TRAILER
 };
 
+class CColModel;
+
 class CEntity
 {
 public:
@@ -85,6 +87,9 @@ public:
     virtual void                        SetUsesCollision( bool enabled ) = 0;
     virtual bool                        IsBackfaceCulled() const = 0;
     virtual void                        SetBackfaceCulled( bool enabled ) = 0;
+
+    virtual void                        SetColModel( CColModel *col ) = 0;
+    virtual CColModel*                  GetColModel() = 0;
 
     virtual bool                        IsStatic() const = 0;
     virtual void                        SetStatic( bool enabled ) = 0;
