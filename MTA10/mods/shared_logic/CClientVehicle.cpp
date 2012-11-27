@@ -36,7 +36,7 @@ extern CClientGame *g_pClientGame;
 #define VEHICLE_INTERPOLATION_WARP_THRESHOLD            15
 #define VEHICLE_INTERPOLATION_WARP_THRESHOLD_FOR_SPEED  1.8f
 
-CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel ) : CClientStreamElement( pManager->GetVehicleStreamer(), ID, L, system )
+CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel ) : CClientGameEntity( pManager->GetVehicleStreamer(), ID, L, system )
 {
     // Lua instancing
     PushStack( L );
@@ -2479,7 +2479,7 @@ void CClientVehicle::ModelRequestCallback ( CModelInfo* pModelInfo )
 void CClientVehicle::NotifyCreate()
 {
     m_pVehicleManager->OnCreation ( this );
-    CClientStreamElement::NotifyCreate ();
+    CClientGameEntity::NotifyCreate ();
 }
 
 void CClientVehicle::NotifyDestroy()
@@ -3140,7 +3140,7 @@ bool CClientVehicle::IsEnterable() const
     if ( !m_pVehicle || IsLocalEntity() )
         return false;
 
-    return !IsInWater() || (GetVehicleType() == CLIENTVEHICLE_BOAT || 
+    return !IsInWater() || ( GetVehicleType() == CLIENTVEHICLE_BOAT || 
         m_usModel == 447 /* sea sparrow */|| m_usModel == 417 /* levithan */|| m_usModel == 460 /* skimmer */ );
 }
 

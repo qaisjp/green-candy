@@ -289,6 +289,8 @@ public:
     RwFrame*                FindChildByName( const char *name );
     RwFrame*                FindChildByHierarchy( unsigned int id );
 
+    RwFrame*                CloneRecursive() const;
+
     template <class type>
     bool                    ForAllObjects( bool (*callback)( RwObject *object, type data ), type data )
     {
@@ -624,6 +626,7 @@ public:
     void                    ScanAtomicHierarchy( RwFrame **atomics, size_t max );
 
     RpAtomic*               GetFirstAtomic();
+    RpAtomic*               GetLastAtomic();
     RpAtomic*               FindNamedAtomic( const char *name );
     RpAtomic*               Find2dfx();
 
@@ -751,6 +754,32 @@ class RwScene
 public:
 
 };
+class RtDict
+{
+public:
+
+};
+class RtDictSchema
+{
+public:
+    const char*             m_name;                             // 0
+    unsigned int            m_id;                               // 4
+
+    unsigned int            m_unk;                              // 8
+    unsigned int            m_flags;                            // 12
+
+    void*                   m_child;                            // 16
+    RtDict*                 m_current;                          // 20
+
+    void                    (*m_reference)( void *item );       // 24
+    bool                    (*m_dereference)( void *item );     // 28
+    void*                   (*m_get)( void *item );             // 32
+    void                    (*m_unkCallback)( void *item );     // 36
+    void                    (*m_unkCallback1)( void *item );    // 40
+    void                    (*m_unkCallback2)( void *item );    // 44
+    void                    (*m_unkCallback3)( void *item, unsigned int unk );  // 48
+};
+
 
 typedef RwTexture* (__cdecl *RwScanTexDictionaryStack_t) ( const char *name, const char *secName );
 typedef RwTexture* (__cdecl *RwScanTexDictionaryStackRef_t) ( const char *name );
@@ -885,22 +914,20 @@ private:
 /*****************************************************************************/
 
 // RenderWare enumerations
-enum RwStreamType
+enum RwStreamType : unsigned int
 {
     STREAM_TYPE_NULL = 0,
     STREAM_TYPE_FILE = 1,
     STREAM_TYPE_FILENAME = 2,
     STREAM_TYPE_BUFFER = 3,
-    STREAM_TYPE_CALLBACK = 4,
-    STREAM_TYPE_LAST = RW_STRUCT_ALIGN
+    STREAM_TYPE_CALLBACK = 4
 };
-enum RwStreamMode
+enum RwStreamMode : unsigned int
 {
     STREAM_MODE_NULL = 0,
     STREAM_MODE_READ = 1,
     STREAM_MODE_WRITE = 2,
-    STREAM_MODE_APPEND = 3,
-    STREAM_MODE_LAST = RW_STRUCT_ALIGN
+    STREAM_MODE_APPEND = 3
 };
 
 // RenderWare base types
@@ -937,6 +964,19 @@ struct RwStream
     int                 pos;
     RwStreamTypeData    data;
     int                 id;
+};
+struct RwBlocksInfo
+{
+    unsigned short      count;
+    unsigned short      unk;
+};
+struct RwChunkHeader
+{
+    unsigned int        id;
+    size_t              size;
+    unsigned int        unk2;
+    unsigned int        unk3;
+    unsigned int        isComplex;
 };
 
 #endif

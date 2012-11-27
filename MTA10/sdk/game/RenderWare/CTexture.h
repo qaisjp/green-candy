@@ -13,6 +13,8 @@
 #ifndef _CTexture_
 #define _CTexture_
 
+class CTexDictionary;
+
 class CTexture
 {
 public:
@@ -20,6 +22,13 @@ public:
 
     virtual const char*             GetName() const = 0;
     virtual unsigned int            GetHash() const = 0;
+
+    virtual void                    SetFiltering( bool filter ) = 0;
+    virtual bool                    IsFiltering() const = 0;
+
+    virtual void                    SetTXD( CTexDictionary *txd ) = 0;
+    virtual void                    RemoveFromTXD() = 0;
+    virtual CTexDictionary*         GetTXD() = 0;
 
     virtual bool                    Import( unsigned short id ) = 0;
     virtual bool                    ImportTXD( unsigned short id ) = 0;

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CEntitySA.cpp
 *  PURPOSE:     Base entity
@@ -9,6 +9,7 @@
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
 *               Christian Myhre Lundheim <>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -17,6 +18,7 @@
 #include "StdInc.h"
 
 extern CGameSA *pGame;
+extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CPlaceableSAInterface::CPlaceableSAInterface()
 {
@@ -26,12 +28,15 @@ CPlaceableSAInterface::CPlaceableSAInterface()
 
 CPlaceableSAInterface::~CPlaceableSAInterface()
 {
+    FreeMatrix();
+
+    (*(unsigned int*)0x00B74238)--;
+
+    //m_matrix = &transformIdentity;
 }
 
 void CPlaceableSAInterface::AllocateMatrix()
 {
-    CTransformSAInterface *trans;
-
     if ( m_matrix )
     {
         // We already have a matrix, make sure its in the active list
@@ -45,10 +50,29 @@ void CPlaceableSAInterface::AllocateMatrix()
         pTransform->NewMatrix();
 
     // Allocate it
-    trans = pTransform->Allocate();
+    m_matrix = pTransform->Allocate();
+    m_matrix->m_entity = this;
+}
 
-    trans->m_entity = this;
-    m_matrix = trans;
+void CPlaceableSAInterface::AcquaintMatrix()
+{
+    if ( m_matrix )
+        return;
+
+    // Extend the matrix list
+    if ( !pTransform->IsFreeMatrixAvailable() && !pTransform->FreeUnimportantMatrix() )
+        pTransform->NewMatrix();
+
+    // Allocate it
+    m_matrix = pTransform->Allocate();
+    m_matrix->m_entity = this;
+}
+
+void CPlaceableSAInterface::RestoreMatrix()
+{
+    // Optimized
+    m_matrix->pos = m_position;
+    m_matrix->FromHeading( m_heading );
 }
 
 void CPlaceableSAInterface::FreeMatrix()
@@ -63,8 +87,20 @@ void CPlaceableSAInterface::FreeMatrix()
     m_matrix = NULL;
     trans->m_entity = NULL;
 
-    LIST_REMOVE( *m_matrix );
+    LIST_REMOVE( *trans );
     LIST_APPEND( pTransform->m_freeList, *trans );
+}
+
+void Placeable_Init()
+{
+    HookInstall( 0x0054F560, h_memFunc( &CPlaceableSAInterface::AcquaintMatrix ), 5 );
+    HookInstall( 0x0054F4C0, h_memFunc( &CPlaceableSAInterface::AllocateMatrix ), 5 );
+    HookInstall( 0x0054F3B0, h_memFunc( &CPlaceableSAInterface::FreeMatrix ), 5 );
+}
+
+void Placeable_Shutdown()
+{
+
 }
 
 CEntitySAInterface::CEntitySAInterface()
@@ -134,12 +170,75 @@ void CEntitySAInterface::SetAlpha( unsigned char alpha )
     }
 }
 
+CColModelSAInterface* CEntitySAInterface::GetColModel() const
+{
+    CEntitySA *entity = (CEntitySA*)pGame->GetPools()->GetEntity( const_cast <CEntitySAInterface*> ( this ) );
+
+    if ( entity )
+    {
+        CColModelSA *col = entity->GetColModel();
+
+        if ( col )
+            return col->GetInterface();
+    }
+
+    if ( m_type == ENTITY_TYPE_VEHICLE )
+    {
+        CVehicleSAInterface *veh = (CVehicleSAInterface*)this;
+        unsigned char n = veh->m_specialColModel;
+
+        if ( n != 0xFF )
+            return (CColModelSAInterface*)VAR_CVehicle_SpecialColModels + n;
+    }
+
+    return ppModelInfo[m_model]->m_pColModel;
+}
+
+bool CEntitySAInterface::IsOnScreen() const
+{
+    CColModelSAInterface *col = GetColModel();
+    CVector pos;
+
+    DWORD dwFunc = 0x005334F0;
+
+    __asm
+    {
+        mov eax,col
+        add eax,24
+        push eax
+        lea eax,pos
+        push eax
+        mov ecx,this
+        call dwFunc
+    }
+
+    if ( pGame->GetCamera()->GetInterface()->IsSphereVisible( pos, col->m_bounds.fRadius, (void*)0x00B6FA74 ) )
+        return true;
+
+    if ( *(unsigned char*)0x00B6F998 )
+        return pGame->GetCamera()->GetInterface()->IsSphereVisible( pos, col->m_bounds.fRadius, (void*)0x00B6FABC );
+
+    return false;
+}
+
+void Entity_Init()
+{
+    HookInstall( 0x00535300, h_memFunc( &CEntitySAInterface::GetColModel ), 5 );
+    HookInstall( 0x00534540, h_memFunc( &CEntitySAInterface::IsOnScreen ), 5 );
+}
+
+void Entity_Shutdown()
+{
+
+}
+
 CEntitySA::CEntitySA()
 {
     // Set these variables to a constant state
     m_pInterface = NULL;
     m_doNotRemoveFromGame = false;
     m_pStoredPointer = NULL;
+    m_colModel = NULL;
 }
 
 CEntitySA::~CEntitySA()
@@ -411,25 +510,7 @@ void CEntitySA::SetAlpha( unsigned char alpha )
 
 bool CEntitySA::IsOnScreen() const
 {
-    /**(BYTE *)0x534540 = 0x83;
-    MemPut < BYTE > ( 0x534541, 0xEC );
-    MemPut < BYTE > ( 0x534542, 0x10 );
-*/
-    DWORD dwFunc = FUNC_IsVisible; //FUNC_IsOnScreen;
-    DWORD dwThis = (DWORD) m_pInterface;
-    bool bReturn = false;
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunc
-        mov     bReturn, al
-    }
-/*
-    MemPut < BYTE > ( 0x534540, 0xB0 );
-    MemPut < BYTE > ( 0x534541, 0x01 );
-    MemPut < BYTE > ( 0x534542, 0xC3 );
-*/
-    return bReturn;
+    return GetInterface()->IsOnScreen();
 }
 
 void CEntitySA::MatrixConvertFromEulerAngles( float x, float y, float z, int unk )

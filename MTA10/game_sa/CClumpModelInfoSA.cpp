@@ -175,7 +175,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
     // Set some callbacks
     RpClumpSetupFrameCallback( clump, (int)this );
 
-    CTxdStore_AddRef( m_textureDictionary );
+    (*ppTxdPool)->Get( m_textureDictionary )->Reference();
 
     anim = GetAnimFileIndex();
 

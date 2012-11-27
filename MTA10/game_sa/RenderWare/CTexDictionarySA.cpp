@@ -12,19 +12,9 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+#include "gamesa_renderware.h"
 
 extern CBaseModelInfoSAInterface** ppModelInfo;
-
-CTexDictionarySA::CTexDictionarySA( const char *name )
-{
-    m_name = name;
-    m_tex = (*ppTxdPool)->Get( pGame->GetTextureManager()->CreateTxdEntry( name ) );
-
-    if ( !m_tex )
-        throw std::exception( "could not allocate texture dictionary" );
-
-    m_tex->Reference();
-}
 
 static bool RwTexDictionaryAssign( RwTexture *tex, CTexDictionarySA *txd )
 {
@@ -32,67 +22,26 @@ static bool RwTexDictionaryAssign( RwTexture *tex, CTexDictionarySA *txd )
     return true;
 }
 
-CTexDictionarySA::CTexDictionarySA( const char *name, CTxdInstanceSA *txd )
+CTexDictionarySA::CTexDictionarySA( RwTexDictionary *txd ) : CRwObjectSA( txd )
 {
-    m_name = name;
-    m_tex = txd;
+    // Assign all textures to us
+    txd->ForAllTextures( RwTexDictionaryAssign, this );
 
-    // Virtualize all instances found
-    txd->m_txd->ForAllTextures( RwTexDictionaryAssign, this );
+    // The texture manager (or whatever management environment) sets up the list node
 }
 
 CTexDictionarySA::~CTexDictionarySA()
 {
+    // Make sure we unlink from the global emitter (if assigned)
+    if ( g_textureEmitter == m_txd )
+        g_textureEmitter = NULL;
+
     Clear();
 
-    m_tex->Dereference();
+    LIST_REMOVE( m_dicts ); // unlink us from the texture manager
 
-    pGame->GetTextureManager()->m_texDicts.remove( this );
-}
-
-struct _rwAssign
-{
-    bool filtering;
-    CTexDictionarySA *txd;
-    std::list <CTexture*> *newEntries;
-};
-
-static bool RwTexDictionaryAssignNew( RwTexture *tex, _rwAssign *assign )
-{
-    CTextureSA *t = new CTextureSA( assign->txd, tex );
-        
-    assign->txd->m_textures.push_back( t );
-
-    if ( assign->newEntries )
-        assign->newEntries->push_back( t );
-
-    if ( assign->filtering )
-        tex->flags = 0x1102;
-
-    return true;
-}
-
-unsigned int CTexDictionarySA::GetHash() const
-{
-    return m_tex->m_hash;
-}
-
-bool CTexDictionarySA::Load( CFile *file, bool filtering, std::list <CTexture*> *newEntries )
-{
-    // Try to load it
-    if ( !m_tex->LoadTXD( file ) )
-        return false;
-
-    // Virtualize all textures
-    _rwAssign assign;
-    assign.filtering = filtering;
-    assign.txd = this;
-    assign.newEntries = newEntries;
-
-    m_tex->m_txd->ForAllTextures( RwTexDictionaryAssignNew, &assign );
-
-    // We succeeded if we got any textures
-    return m_textures.size() != 0;
+    // Destroy our txd
+    RwTexDictionaryDestroy( m_txd );
 }
 
 void CTexDictionarySA::Clear()
@@ -102,11 +51,6 @@ void CTexDictionarySA::Clear()
         delete *m_textures.begin();
 
     m_imported.clear();
-}
-
-unsigned short CTexDictionarySA::GetID() const
-{
-    return (*ppTxdPool)->GetIndex( m_tex );
 }
 
 bool CTexDictionarySA::IsImported( unsigned short id ) const
@@ -133,7 +77,7 @@ bool CTexDictionarySA::IsImportedTXD( unsigned short id ) const
 void CTexDictionarySA::SetGlobalEmitter()
 {
     // Hook ourselves into the loading schemantics
-    g_textureEmitter = m_tex->m_txd;
+    g_textureEmitter = m_txd;
 }
 
 bool CTexDictionarySA::Import( unsigned short id )

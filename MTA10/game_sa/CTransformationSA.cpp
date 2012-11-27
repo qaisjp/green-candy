@@ -12,7 +12,7 @@
 
 #include "StdInc.h"
 
-CTransformationSAInterface *pTransform = (CTransformationSAInterface*)CLASS_CTransformation;
+CTransformationSAInterface *const pTransform = (CTransformationSAInterface*)CLASS_CTransformation;
 
 void Transformation_Init()
 {
@@ -20,7 +20,7 @@ void Transformation_Init()
     *(unsigned char*)FUNC_InitTransformation = 0xC3;
 
     // Allocate enough matrices for everybody
-    new (pTransform) CTransformationSAInterface( 255636 );
+    new (pTransform) CTransformationSAInterface( 2000 );
 }
 
 CTransformSAInterface::CTransformSAInterface()

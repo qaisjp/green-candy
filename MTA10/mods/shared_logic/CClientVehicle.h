@@ -35,7 +35,7 @@ class CClientVehicle;
 #include "CClientCamera.h"
 #include "CClientModelRequestManager.h"
 #include "CClientPed.h"
-#include "CClientStreamElement.h"
+#include "CClientGameEntity.h"
 #include "CClientVehicleManager.h"
 #include "CVehicleUpgrades.h"
 #include "CClientTime.h"
@@ -89,12 +89,13 @@ struct SLastSyncedVehData
     ElementID           Trailer;
 };
 
+// We should get rid of this
 typedef std::map <std::string, class CClientVehicleComponent*> vehComponents_t;
 
 class CClientProjectile;
 class CClientAtomic;
 
-class CClientVehicle : public CClientStreamElement
+class CClientVehicle : public CClientGameEntity
 {
     friend class CClientCamera;
     friend class CClientPed;
@@ -104,7 +105,6 @@ class CClientVehicle : public CClientStreamElement
 
 protected: // Use CDeathmatchVehicle constructor for now. Will get removed later when this class is
            // cleaned up.
-            // The_GTA: ^ lies ^
                                 CClientVehicle( CClientManager* pManager, ElementID ID, lua_State *L, bool system, unsigned short usModel );
 
 public:
@@ -292,8 +292,8 @@ public:
 
     CClientVehicle*             GetPreviousTrainCarriage();
     CClientVehicle*             GetNextTrainCarriage();
-    void                        SetPreviousTrainCarriage( CClientVehicle* pPrevious );
-    void                        SetNextTrainCarriage( CClientVehicle* pNext );
+    void                        SetPreviousTrainCarriage( CClientVehicle *previous );
+    void                        SetNextTrainCarriage( CClientVehicle *next );
 
     bool                        IsDerailed() const;
     void                        SetDerailed( bool bDerailed );

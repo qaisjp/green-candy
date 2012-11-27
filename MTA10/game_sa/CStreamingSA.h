@@ -49,6 +49,8 @@ public:
     void            RequestSpecialModel( unsigned short model, const char *tex, unsigned int channel );
 };
 
+#include "CStreamingSA.utils.h"
+
 class CIPLFileSA
 {
 public:

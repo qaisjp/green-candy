@@ -23,8 +23,7 @@ public:
     virtual int                     FindTxdEntry( const char *name ) const = 0;
     virtual int                     CreateTxdEntry( const char *name ) = 0;
 
-    virtual CTexDictionary*         CreateTxd( const char *name ) = 0;
-    virtual CTexDictionary*         CreateTxd( const char *name, unsigned short txdId ) = 0;
+    virtual CTexDictionary*         CreateTxd( CFile *stream ) = 0;
 
     virtual int                     LoadDictionary( const char *filename ) = 0;
     virtual int                     LoadDictionaryEx( const char *name, const char *filename ) = 0;

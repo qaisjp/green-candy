@@ -506,6 +506,8 @@ public:
 
     Class*  GetClass()   { return this; }
 
+    unsigned int    GetRefCount() const     { return inMethod; }
+
     void    IncrementMethodStack( lua_State *lua );
     void    DecrementMethodStack( lua_State *lua );
     void    ClearReferences( lua_State *lua );

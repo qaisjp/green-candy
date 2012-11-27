@@ -721,6 +721,8 @@ public:
 class ILuaClass abstract
 {
 public:
+    virtual unsigned int    GetRefCount() const = 0;
+
     virtual void    IncrementMethodStack( lua_State *L ) = 0;
     virtual void    DecrementMethodStack( lua_State *L ) = 0;
     virtual void    ClearReferences( lua_State *L ) = 0;

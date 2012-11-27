@@ -23,7 +23,7 @@ class CClientPed;
 
 #include "CAntiCheatModule.h"
 #include "CClientCommon.h"
-#include "CClientStreamElement.h"
+#include "CClientGameEntity.h"
 
 #include <multiplayer/CMultiplayer.h>
 #include "net/Packets.h"
@@ -115,7 +115,7 @@ class CClientObject;
 // To hide the ugly "pointer truncation from DWORD* to unsigned long warning
 #pragma warning(disable:4311)
 
-class CClientPed : public CClientStreamElement, public CAntiCheatModule
+class CClientPed : public CClientGameEntity, public CAntiCheatModule
 {
     friend class CClientCamera;
     friend class CClientPlayer;

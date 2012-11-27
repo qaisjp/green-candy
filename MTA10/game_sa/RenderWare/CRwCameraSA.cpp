@@ -21,6 +21,10 @@ CRwCameraSA::CRwCameraSA( RwCamera *cam ) : CRwObjectSA( cam )
 
 CRwCameraSA::~CRwCameraSA()
 {
+    // If we are still rendering, unset
+    if ( IsRendering() )
+        EndUpdate();
+
     // Remove from clump
     RemoveFromModel();
 

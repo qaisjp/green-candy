@@ -123,10 +123,7 @@ static LUA_DECLARE( cloneAtomic )
 
     LUA_CHECK( inst );
 
-    CClientAtomic *atom = new CClientAtomic( L, NULL, *inst );
-    atom->SetRoot( g_pClientGame->GetRootEntity() );
-
-    atom->PushStack( L );
+    ( new CClientAtomic( L, NULL, *inst ) )->PushStack( L );
     return 1;
 }
 
@@ -200,32 +197,11 @@ CClientVehicleComponent::~CClientVehicleComponent()
     GetVehicle()->m_compContainer.erase( m_component->GetName() );
 
     delete m_component;
-
-    // Clear resources
-    for ( atomics_t::const_iterator iter = m_atomics.begin(); iter != m_atomics.end(); iter++ )
-        (*iter).atomic->DecrementMethodStack();
 }
 
 unsigned int CClientVehicleComponent::AddAtomic( CClientAtomic *atom )
 {
-    unsigned int idx = m_component->AddAtomic( &atom->m_atomic );
-
-    // CClientAtomic is a template structure for any cloned atomics
-    // We have to reference it, so that resources associated with the atomic will not
-    // get corrupted by destruction (textures, mainly).
-    atom->IncrementMethodStack();
-
-    // Atomics usually are inserted at the front of the clump and frames
-    // We should update the indices; this should not break the other case though
-    OffsetIndex( idx, 1 );
-
-    atomicInfo info;
-    info.atomic = atom;
-    info.idx = idx;
-    
-    // Sort the list correctly
-    m_atomics.insert( m_atomics.begin() + min( m_atomics.size(), idx ), info );
-    return idx;
+    return m_component->AddAtomic( &atom->m_atomic );
 }
 
 unsigned int CClientVehicleComponent::GetAtomicCount() const
@@ -235,44 +211,5 @@ unsigned int CClientVehicleComponent::GetAtomicCount() const
 
 bool CClientVehicleComponent::RemoveAtomic( unsigned int idx )
 {
-    if ( !m_component->RemoveAtomic( idx ) )
-        return false;
-
-    atomics_t::iterator iter = m_atomics.begin();
-
-    for ( ; iter != m_atomics.end(); iter++ )
-    {
-        if ( (*iter).idx != idx )
-            continue;
-
-        // Dereference the residing atomic
-        (*iter).atomic->DecrementMethodStack();
-
-        m_atomics.erase( iter );
-        goto success;
-    }
-    return true;
-
-success:
-    // Update the indices; this relies on a properly sorted list
-    for ( ; iter != m_atomics.end(); iter++ )
-    {
-        if ( (*iter).idx < idx )
-            continue;
-
-        (*iter).idx--;
-    }
-
-    return true;
-}
-
-void CClientVehicleComponent::OffsetIndex( unsigned int start, int offset )
-{
-    for ( atomics_t::iterator iter = m_atomics.begin(); iter != m_atomics.end(); iter++ )
-    {
-        if ( (*iter).idx < start )
-            continue;
-
-        (*iter).idx += offset;
-    }
+    return m_component->RemoveAtomic( idx );
 }

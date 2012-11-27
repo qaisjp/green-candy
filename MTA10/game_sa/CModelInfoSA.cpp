@@ -140,7 +140,7 @@ void CBaseModelInfoSAInterface::DeleteTextures()
     if ( m_textureDictionary == -1 )
         return;
 
-    CTxdStore_RemoveRef( m_textureDictionary );
+    (*ppTxdPool)->Get( m_textureDictionary )->Dereference();
 
     m_textureDictionary = -1;
 

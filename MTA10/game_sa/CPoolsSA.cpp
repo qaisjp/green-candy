@@ -172,7 +172,7 @@ static inline CVehicleSAInterface* CreateVehicle( unsigned short modelId )
     return veh;
 }
 
-CBicycle* CPoolsSA::AddBicycle( unsigned short modelID )
+CBicycleSA* CPoolsSA::AddBicycle( unsigned short modelID )
 {
     DEBUG_TRACE("CBicycle* CPoolsSA::AddBicycle( unsigned short modelID )");
 
@@ -191,7 +191,7 @@ CBicycle* CPoolsSA::AddBicycle( unsigned short modelID )
     return new CBicycleSA( (CBicycleSAInterface*)CreateVehicle( modelID ) );
 }
 
-CBike* CPoolsSA::AddBike( unsigned short modelID )
+CBikeSA* CPoolsSA::AddBike( unsigned short modelID )
 {
     DEBUG_TRACE("CBike* CPoolsSA::AddBike( unsigned short modelID )");
 
@@ -218,7 +218,7 @@ CBike* CPoolsSA::AddBike( unsigned short modelID )
     return NULL;
 }
 
-CHeli* CPoolsSA::AddHeli( unsigned short modelID )
+CHeliSA* CPoolsSA::AddHeli( unsigned short modelID )
 {
     DEBUG_TRACE("CHeli* CPoolsSA::AddHeli( unsigned short modelID )");
 
@@ -237,7 +237,7 @@ CHeli* CPoolsSA::AddHeli( unsigned short modelID )
     return new CHeliSA( (CHeliSAInterface*)CreateVehicle( modelID ) );
 }
 
-CPlane* CPoolsSA::AddPlane( unsigned short modelID )
+CPlaneSA* CPoolsSA::AddPlane( unsigned short modelID )
 {
     DEBUG_TRACE("CPlane* CPoolsSA::AddPlane( unsigned short modelID )");
 
@@ -256,7 +256,7 @@ CPlane* CPoolsSA::AddPlane( unsigned short modelID )
     return new CPlaneSA( (CPlaneSAInterface*)CreateVehicle( modelID ) );
 }
 
-CTrain* CPoolsSA::AddTrain( unsigned short modelID, const CVector& pos, bool direction )
+CTrainSA* CPoolsSA::AddTrain( unsigned short modelID, const CVector& pos, bool direction )
 {
     DEBUG_TRACE("CTrain* CPoolsSA::AddTrain( unsigned short modelID, const CVector& pos, bool direction )");
 
@@ -325,7 +325,7 @@ CTrain* CPoolsSA::AddTrain( unsigned short modelID, const CVector& pos, bool dir
     return trainHead;
 }
 
-CAutomobileTrailer* CPoolsSA::AddTrailer( unsigned short modelID )
+CAutomobileTrailerSA* CPoolsSA::AddTrailer( unsigned short modelID )
 {
     DEBUG_TRACE("CAutomobileTrailer* CPoolsSA::AddTrailer( unsigned short modelID )");
 
@@ -344,7 +344,7 @@ CAutomobileTrailer* CPoolsSA::AddTrailer( unsigned short modelID )
     return new CAutomobileTrailerSA( (CAutomobileTrailerSAInterface*)CreateVehicle( modelID ) );
 }
 
-CQuadBike* CPoolsSA::AddQuadBike( unsigned short modelID )
+CQuadBikeSA* CPoolsSA::AddQuadBike( unsigned short modelID )
 {
     DEBUG_TRACE("CQuadBike* CPoolsSA::AddQuadBike( unsigned short modelID )");
 
@@ -363,7 +363,7 @@ CQuadBike* CPoolsSA::AddQuadBike( unsigned short modelID )
     return new CQuadBikeSA( (CQuadBikeSAInterface*)CreateVehicle( modelID ) );
 }
 
-CMonsterTruck* CPoolsSA::AddMonsterTruck( unsigned short modelID )
+CMonsterTruckSA* CPoolsSA::AddMonsterTruck( unsigned short modelID )
 {
     DEBUG_TRACE("CMonsterTruck* CPoolsSA::AddMonsterTruck( unsigned short modelID )");
 
@@ -382,7 +382,7 @@ CMonsterTruck* CPoolsSA::AddMonsterTruck( unsigned short modelID )
     return new CMonsterTruckSA( (CMonsterTruckSAInterface*)CreateVehicle( modelID ) );
 }
 
-CAutomobile* CPoolsSA::AddAutomobile( unsigned short modelID )
+CAutomobileSA* CPoolsSA::AddAutomobile( unsigned short modelID )
 {
     DEBUG_TRACE("CAutomobile* CPoolsSA::AddAutomobile( unsigned short modelID )");
 
@@ -417,7 +417,7 @@ CAutomobile* CPoolsSA::AddAutomobile( unsigned short modelID )
     return NULL;
 }
 
-CBoat* CPoolsSA::AddBoat( unsigned short modelID )
+CBoatSA* CPoolsSA::AddBoat( unsigned short modelID )
 {
     DEBUG_TRACE("CBoat* CPoolsSA::AddBoat( unsigned short modelID )");
 
@@ -436,7 +436,7 @@ CBoat* CPoolsSA::AddBoat( unsigned short modelID )
     return new CBoatSA( (CBoatSAInterface*)CreateVehicle( modelID ) );
 }
 
-CVehicle* CPoolsSA::AddVehicle( unsigned short modelID )
+CVehicleSA* CPoolsSA::AddVehicle( unsigned short modelID )
 {
     DEBUG_TRACE("CVehicle* CPoolsSA::AddVehicle( unsigned short modelID )");
 
@@ -470,7 +470,7 @@ CVehicle* CPoolsSA::AddVehicle( unsigned short modelID )
 }
 
 // Safe retrieval of our instance
-CVehicle* CPoolsSA::GetVehicle( void *entity ) const
+CVehicleSA* CPoolsSA::GetVehicle( void *entity ) const
 {
     unsigned int id = (*ppVehiclePool)->GetIndex( (CVehicleSAInterface*)entity );
     
@@ -480,7 +480,7 @@ CVehicle* CPoolsSA::GetVehicle( void *entity ) const
     return mtaVehicles[id];
 }
 
-CVehicle* CPoolsSA::GetVehicleFromRef( unsigned int index ) const
+CVehicleSA* CPoolsSA::GetVehicleFromRef( unsigned int index ) const
 {
     DEBUG_TRACE("CVehicle* CPoolsSA::GetVehicleFromRef( unsigned int index ) const");
 
@@ -520,7 +520,7 @@ static inline CObjectSAInterface* CreateObject( unsigned short model )
     return obj;
 }
 
-CObject* CPoolsSA::AddObject( unsigned short modelId )
+CObjectSA* CPoolsSA::AddObject( unsigned short modelId )
 {
     DEBUG_TRACE("CObject* CPoolsSA::AddObject( unsigned short modelId )");
 
@@ -532,7 +532,7 @@ CObject* CPoolsSA::AddObject( unsigned short modelId )
     return new CObjectSA( CreateObject( modelId ) );
 }
 
-CObject* CPoolsSA::GetObject( void *entity ) const
+CObjectSA* CPoolsSA::GetObject( void *entity ) const
 {
     unsigned int id = (*ppObjectPool)->GetIndex( (CObjectSAInterface*)entity );
 
@@ -542,7 +542,7 @@ CObject* CPoolsSA::GetObject( void *entity ) const
     return mtaObjects[ id ];
 }
 
-CObject* CPoolsSA::GetObjectFromRef( unsigned int index ) const
+CObjectSA* CPoolsSA::GetObjectFromRef( unsigned int index ) const
 {
     DEBUG_TRACE("CObject* CPoolsSA::GetObjectFromRef( unsigned int index ) const");
 
@@ -581,7 +581,7 @@ inline static CPlayerPedSAInterface* CreatePlayerPed()
     return player;
 }
 
-CPed* CPoolsSA::AddPed( unsigned short modelId )
+CPedSA* CPoolsSA::AddPed( unsigned short modelId )
 {
     DEBUG_TRACE("CPed* CPoolsSA::AddPed( unsigned short modelId )");
 
@@ -617,7 +617,7 @@ inline static CCivilianPedSAInterface* CreateCivilianPed()
     return ped;
 }
 
-CPed* CPoolsSA::AddCivilianPed( unsigned short modelID )
+CPedSA* CPoolsSA::AddCivilianPed( unsigned short modelID )
 {
     DEBUG_TRACE("CPed* CPoolsSA::AddCivilianPed( unsigned short modelID )");
 
@@ -627,14 +627,14 @@ CPed* CPoolsSA::AddCivilianPed( unsigned short modelID )
     return new CCivilianPedSA( CreateCivilianPed(), modelID );
 }
 
-CPed* CPoolsSA::AddCivilianPed( void *entity )
+CPedSA* CPoolsSA::AddCivilianPed( void *entity )
 {
     DEBUG_TRACE("CPed* CPoolsSA::AddCivilianPed( void *entity )");
 
     return new CCivilianPedSA( (CCivilianPedSAInterface*)entity, ((CCivilianPedSAInterface*)entity)->m_model );
 }
 
-CPed* CPoolsSA::GetPed( void *entity ) const
+CPedSA* CPoolsSA::GetPed( void *entity ) const
 {
     unsigned int id = (*ppPedPool)->GetIndex( (CPedSAInterface*)entity );
 
@@ -644,7 +644,7 @@ CPed* CPoolsSA::GetPed( void *entity ) const
     return mtaPeds[ id ];
 }
 
-CPed* CPoolsSA::GetPedFromRef( unsigned int index ) const
+CPedSA* CPoolsSA::GetPedFromRef( unsigned int index ) const
 {
     DEBUG_TRACE("CPed* CPoolsSA::GetPedFromRef( unsigned int index ) const");
 
@@ -663,7 +663,7 @@ void CPoolsSA::DeleteAllPeds()
 
 // This function is insecure, because it accesses the entity prior to validation
 // Has to stay this way for optimization purposes; usage only in 100% secure scenarios!
-CEntity* CPoolsSA::GetEntity( void *entity ) const
+CEntitySA* CPoolsSA::GetEntity( void *entity ) const
 {
     if ( !entity )
         return NULL;
@@ -678,7 +678,7 @@ CEntity* CPoolsSA::GetEntity( void *entity ) const
     return NULL;
 }
 
-CBuilding* CPoolsSA::AddBuilding( unsigned short modelID )
+CBuildingSA* CPoolsSA::AddBuilding( unsigned short modelID )
 {
     DEBUG_TRACE("CBuilding* CPoolsSA::AddBuilding( unsigned short modelID )");
 

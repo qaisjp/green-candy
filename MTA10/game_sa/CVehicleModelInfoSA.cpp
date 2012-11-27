@@ -41,26 +41,22 @@ static float planeLODDistance = 45000;      // same as train
 static float vehicleLODDistance = 9800;     // same as boat
 static float highDetailDistance = 4050;
 
-void    VehicleModels_Init()
+RwTexDictionary *g_vehicleTxd = NULL;
+
+static void _VehicleModels_Init()
 {
-    DWORD dwFunc;
-    CTxdInstanceSA *txdEntry;
-
-    // Do not execute it
-    *(unsigned char*)FUNC_InitVehicleData = 0xC3;
-
     __asm
     {
-        mov dwFunc,FUNC_LoadVehicleColors
-        call dwFunc
-        mov dwFunc,FUNC_LoadCarMods
-        call dwFunc
-        mov dwFunc,FUNC_LoadVehicleParticles
-        call dwFunc
+        mov eax,FUNC_LoadVehicleColors
+        call eax
+        mov eax,FUNC_LoadCarMods
+        call eax
+        mov eax,FUNC_LoadVehicleParticles
+        call eax
     }
 
     // Load the generic vehicle textures
-    txdEntry = (*ppTxdPool)->Get( pGame->GetTextureManager()->FindTxdEntry( "vehicle" ) );
+    CTxdInstanceSA *txdEntry = (*ppTxdPool)->Get( pGame->GetTextureManager()->FindTxdEntry( "vehicle" ) );
 
     if ( txdEntry )
     {
@@ -76,8 +72,11 @@ void    VehicleModels_Init()
     // Reference it
     txdEntry->Reference();
 
-    *(RwTexture**)0x00B4E68C = txdEntry->m_txd->FindNamedTexture( "vehiclelights128" );
-    *(RwTexture**)0x00B4E690 = txdEntry->m_txd->FindNamedTexture( "vehiclelightson128" );
+    if ( txdEntry )
+        g_vehicleTxd = txdEntry->m_txd;
+
+    *(RwTexture**)0x00B4E68C = g_vehicleTxd->FindNamedTexture( "vehiclelights128" );
+    *(RwTexture**)0x00B4E690 = g_vehicleTxd->FindNamedTexture( "vehiclelightson128" );
 
     // Allocate the seat placement pool
     *ppVehicleSeatPlacementPool = new CVehicleSeatPlacementPool;
@@ -87,6 +86,15 @@ void    VehicleModels_Init()
         mov ecx,0x005D5BC0
         call ecx
     }
+}
+
+void    VehicleModels_Init()
+{
+    HookInstall( FUNC_InitVehicleData, (DWORD)_VehicleModels_Init, 5 );
+}
+
+void    VehicleModels_Shutdown()
+{
 }
 
 CVehicleModelInfoSAInterface::CVehicleModelInfoSAInterface()

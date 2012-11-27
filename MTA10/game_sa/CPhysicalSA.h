@@ -35,7 +35,7 @@ public:
                                     CPhysicalSAInterface();
                                     ~CPhysicalSAInterface();
 
-    virtual void __thiscall         ProcessEntityCollisions() = 0;
+    virtual void* __thiscall        ProcessEntityCollisions( CEntitySAInterface *entity ) = 0;
 
     float                   m_unk13;                    // 56
 
@@ -92,6 +92,9 @@ public:
     float                   m_lighting2;                // 304, added to col lighting in CPhysical::GetTotalLighting
     float                   m_lighting3;                // 308
 };
+
+void Physical_Init();
+void Physical_Shutdown();
 
 class CPhysicalSA : public virtual CPhysical, public CEntitySA
 {

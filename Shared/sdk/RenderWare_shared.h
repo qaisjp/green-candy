@@ -220,6 +220,16 @@ public:
 #define DEG2RAD(x)  ( M_PI * x / 180 )
 #define RAD2DEG(x)  ( x / M_PI * 180 )
 
+    inline void FromHeading( float heading )
+    {
+        float ch = cos( heading );
+        float sh = sin( heading );
+
+        right[0] = ch;  right[1] = sh;  right[2] = 0;
+        at[0] = -sh;    at[1] = ch;     at[2] = 0;
+        up[0] = 0;      up[1] = 0;      up[2] = 1.0f;
+    }
+
     // I have done the homework for MTA
     inline void rotXY( float x, float y )
     {

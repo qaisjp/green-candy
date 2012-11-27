@@ -38,6 +38,7 @@ function bundle()
 	-- Include special directories
 	relDir.scanDirEx("mta/cgui/", "*", nil, includeFile, true);
 	relDir.scanDirEx("skins/", "*", nil, includeFile, true);
+	relDir.scanDirEx("server/", "*", nil, includeFile, true);
 	
 	local zip_stream = relDir.open(relDir.absPath() .. "green_alpha.zip", "rb+");
 
@@ -47,6 +48,12 @@ function bundle()
 	
 	local zip = file.createArchiveTranslator(zip_stream);
 	local count = 0;
+	
+	if not (zip) then
+		zip_stream.destroy();	-- free the file stream resource
+	
+		error("-- loading of .zip archive failed in '" .. relDir.absPath() .. "'");
+	end
 	
 	-- Grab all files, write them into the .zip
 	for m,n in ipairs(impFiles) do

@@ -738,6 +738,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\shared_logic\CClientGameEntity.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\shared_logic\CClientGameTexture.cpp"
 					>
 				</File>
@@ -2361,6 +2365,10 @@
 				</File>
 				<File
 					RelativePath="..\shared_logic\CClientExplosionManager.h"
+					>
+				</File>
+				<File
+					RelativePath="..\shared_logic\CClientGameEntity.h"
 					>
 				</File>
 				<File

@@ -20,6 +20,7 @@ class CClientTXD;
 
 class CClientGameTexture : public LuaElement
 {
+    friend class CClientGameTexture;
 public:
                                     CClientGameTexture( lua_State *L, CTexture& tex );
                                     ~CClientGameTexture();
@@ -27,12 +28,19 @@ public:
     const std::string               GetName()               { return m_tex.GetName(); }
     unsigned int                    GetHash()               { return m_tex.GetHash(); }
 
+    void                            SetTXD( CClientTXD *txd );
+    void                            RemoveFromTXD();
+    CClientTXD*                     GetTXD()                { return m_txd; }
+
     bool                            Import( unsigned short id );
     bool                            IsImported( unsigned short id ) const;
     void                            Remove( unsigned short id );
 
 public:
     CTexture&               m_tex;
+
+    CClientTXD*             m_txd;
+    RwListEntry <CClientGameTexture>    m_textures;
 };
 
 #endif //_CLIENT_GAME_TEXTURE_

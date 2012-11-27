@@ -311,7 +311,7 @@ static inline bool RakNet_WriteArgumentByType( NetBitStreamInterface& stream, lu
         type.data.ucType = LUA_TNUMBER;
         stream.Write( &type );
 
-        num = lua_tonumber( L, idx );
+        num = (float)lua_tonumber( L, idx );
         iNum = (int)num;
 
         if ( num == iNum )

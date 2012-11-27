@@ -110,7 +110,7 @@ void CTrainSA::SetDerailed( bool bDerailed )
     DWORD dwFunc = FUNC_CVehicle_RecalcOnRailDistance;
     _asm
     {
-        mov     ecx, dwThis
+        mov     ecx,dwThis
         call    dwFunc
     }
 

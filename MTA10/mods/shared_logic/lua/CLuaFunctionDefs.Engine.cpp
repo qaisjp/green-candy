@@ -112,35 +112,23 @@ namespace CLuaFunctionDefs
         {
             CResource *res = lua_readcontext( L )->GetResource();
 
-            CTexDictionary *dict = g_pGame->GetTextureManager()->CreateTxd( ExtractFilename( path ).c_str() );
-
-            if ( !dict )
-            {
-                lua_pushboolean( L, false );
-                return 1;
-            }
-
-            // Create a TXD element
-            CClientTXD *pTXD = new CClientTXD( L, *dict );
-            pTXD->SetRoot( res->GetResourceTXDRoot() );
-
-            // Open a new fileStream
             CFile *file = res->OpenStream( path, "rb" );
 
-            // Try to load the TXD file
-            bool success = pTXD->LoadTXD( file, filtering );
+            CTexDictionary *dict = g_pGame->GetTextureManager()->CreateTxd( file );
 
             delete file;
 
-            if ( success )
+            if ( dict )
             {
-                // Return the TXD
-                pTXD->PushStack( L );
+                // Stupid filtering :P
+                std::list <CTexture*>& list = dict->GetTextures();
+
+                for ( std::list <CTexture*>::const_iterator iter = list.begin(); iter != list.end(); iter++ )
+                    (*iter)->SetFiltering( filtering );
+
+                ( new CClientTXD( L, *dict ) )->PushStack( L );
                 return 1;
             }
-
-            // Delete it again
-            pTXD->Delete();
         }
         else
             m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );

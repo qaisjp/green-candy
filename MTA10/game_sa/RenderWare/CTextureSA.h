@@ -28,6 +28,13 @@ public:
     const char*             GetName() const;
     unsigned int            GetHash() const;
 
+    void                    SetFiltering( bool filter )                     { BOOL_FLAG( m_texture->flags, 0x1102, filter ); }
+    bool                    IsFiltering() const                             { return IS_FLAG( m_texture->flags, 0x1102 ); }
+
+    void                    SetTXD( CTexDictionary *txd );
+    void                    RemoveFromTXD();
+    CTexDictionary*         GetTXD();
+
     void                    OnTxdLoad( RwTexDictionary& txd, unsigned short id );
     void                    OnTxdInvalidate( RwTexDictionary& txd, unsigned short id );
 

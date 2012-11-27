@@ -418,6 +418,7 @@ CStreamingSA::CStreamingSA()
     HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
     HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
     HookInstall( 0x005B82C0, (DWORD)HOOK_CStreaming__LoadArchives, 5 );
+    HookInstall( 0x0040C6B0, (DWORD)LoadModel, 5 );
 }
 
 CStreamingSA::~CStreamingSA()

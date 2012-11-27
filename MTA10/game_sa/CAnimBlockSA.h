@@ -32,6 +32,11 @@ public:
     unsigned int        m_count;            // 24
     unsigned int        m_animInfoIndex;    // 28
 
+    void    Reference()
+    {
+        m_references++;
+    }
+
     int                                 GetIndex();
 
     CAnimBlendHierarchySAInterface*     GetAnimation( unsigned int hash );
