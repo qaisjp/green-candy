@@ -43,6 +43,12 @@ public:
     float   fRadius;
 };
 
+struct CBounds2D
+{
+    CVector2D   m_min;
+    CVector2D   m_max;
+};
+
 enum eVehicleUpgradePosn
 {
     VEHICLE_UPGRADE_POSN_BONET = 0,

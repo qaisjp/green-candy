@@ -53,12 +53,32 @@ static LUA_DECLARE( getTXD )
     return 1;
 }
 
+static LUA_DECLARE( setFiltering )
+{
+    bool filter;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadBool( filter );
+    LUA_ARGS_END;
+
+    ((CClientGameTexture*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_tex.SetFiltering( filter );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( isFiltering )
+{
+    lua_pushboolean( L, ((CClientGameTexture*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_tex.IsFiltering() );
+    return 1;
+}
+
 static const luaL_Reg texture_interface[] =
 {
     LUA_METHOD( getName ),
     LUA_METHOD( getHash ),
     LUA_METHOD( setTXD ),
     LUA_METHOD( getTXD ),
+    LUA_METHOD( setFiltering ),
+    LUA_METHOD( isFiltering ),
     { NULL, NULL }
 };
 

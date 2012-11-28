@@ -117,6 +117,7 @@ typedef RwScene*                (__cdecl *RwSceneRender_t)                      
 typedef RwScene*                (__cdecl *RwSceneAddAtomic_t)                   (RwScene *scene, RpAtomic *atomic);
 typedef RwScene*                (__cdecl *RwSceneAddClump_t)                    (RwScene *scene, RpClump *clump);
 typedef RwScene*                (__cdecl *RwSceneAddLight_t)                    (RwScene *scene, RpLight *light);
+typedef void                    (__cdecl *RwSceneRemoveLight_t)                 (RwScene *scene, RpLight *light);
 typedef void                    (__cdecl *RwSceneDestroy_t)                     (RwScene *scene);
 typedef void                    (__cdecl *RpPrtStdGlobalDataSetStreamEmbedded_t)(CBaseModelInfoSAInterface *info);
 typedef RwError*                (__cdecl *RwErrorGet_t)                         (RwError *code);
@@ -218,6 +219,7 @@ extern RwRasterDestroy_t                        RwRasterDestroy;
 extern RwSceneAddAtomic_t                       RwSceneAddAtomic;
 extern RwSceneAddLight_t                        RwSceneAddLight;
 extern RwSceneAddClump_t                        RwSceneAddClump;
+extern RwSceneRemoveLight_t                     RwSceneRemoveLight;
 extern RpPrtStdGlobalDataSetStreamEmbedded_t    RpPrtStdGlobalDataSetStreamEmbedded;
 extern RwPrefetch_t                             RwPrefetch;
 extern RwFlushLoader_t                          RwFlushLoader;

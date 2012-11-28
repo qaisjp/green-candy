@@ -91,6 +91,24 @@ void CPlaceableSAInterface::FreeMatrix()
     LIST_APPEND( pTransform->m_freeList, *trans );
 }
 
+void CPlaceableSAInterface::GetOffsetByHeading( CVector& out, const CVector& in ) const
+{
+    float ch = cos( m_heading );
+    float sh = sin( m_heading );
+
+    out[0] = ch * in[0] - sh * in[1] + m_position[0];
+    out[1] = sh * in[0] + ch * in[1] + m_position[1];
+    out[2] = in[2] + m_position[2];
+}
+
+void CPlaceableSAInterface::GetOffset( CVector& out, const CVector& in ) const
+{
+    if ( m_matrix )
+        m_matrix->GetOffset( in, out );
+    else
+        GetOffsetByHeading( out, in );
+}
+
 void Placeable_Init()
 {
     HookInstall( 0x0054F560, h_memFunc( &CPlaceableSAInterface::AcquaintMatrix ), 5 );
@@ -194,23 +212,34 @@ CColModelSAInterface* CEntitySAInterface::GetColModel() const
     return ppModelInfo[m_model]->m_pColModel;
 }
 
+const CVector& CEntitySAInterface::GetCollisionOffset( CVector& out ) const
+{
+    GetOffset( out, GetColModel()->m_bounds.vecBoundOffset );
+    return out;
+}
+
+const CBounds2D& CEntitySAInterface::_GetBoundingBox( CBounds2D& out ) const
+{
+    CColModelSAInterface *col = GetColModel();
+    CVector pos;
+    
+    GetOffset( pos, col->m_bounds.vecBoundOffset );
+
+    float radius = col->m_bounds.fRadius;
+
+    out.m_min.fX = pos[0] - radius;
+    out.m_min.fY = pos[1] + radius;
+    out.m_max.fX = pos[0] + radius;
+    out.m_max.fY = pos[1] - radius;
+    return out;
+}
+
 bool CEntitySAInterface::IsOnScreen() const
 {
     CColModelSAInterface *col = GetColModel();
     CVector pos;
 
-    DWORD dwFunc = 0x005334F0;
-
-    __asm
-    {
-        mov eax,col
-        add eax,24
-        push eax
-        lea eax,pos
-        push eax
-        mov ecx,this
-        call dwFunc
-    }
+    GetOffset( pos, col->m_bounds.vecBoundOffset );
 
     if ( pGame->GetCamera()->GetInterface()->IsSphereVisible( pos, col->m_bounds.fRadius, (void*)0x00B6FA74 ) )
         return true;
@@ -225,6 +254,8 @@ void Entity_Init()
 {
     HookInstall( 0x00535300, h_memFunc( &CEntitySAInterface::GetColModel ), 5 );
     HookInstall( 0x00534540, h_memFunc( &CEntitySAInterface::IsOnScreen ), 5 );
+    HookInstall( 0x00534250, h_memFunc( &CEntitySAInterface::GetCollisionOffset ), 5 );
+    HookInstall( 0x005449B0, h_memFunc( &CEntitySAInterface::_GetBoundingBox ), 5 );
 }
 
 void Entity_Shutdown()
@@ -511,49 +542,6 @@ void CEntitySA::SetAlpha( unsigned char alpha )
 bool CEntitySA::IsOnScreen() const
 {
     return GetInterface()->IsOnScreen();
-}
-
-void CEntitySA::MatrixConvertFromEulerAngles( float x, float y, float z, int unk )
-{
-    if ( !m_pInterface->m_matrix )
-        m_pInterface->AllocateMatrix();
-
-    DWORD matint = (DWORD)m_pInterface->m_matrix;
-
-    DWORD dwFunc = FUNC_CMatrix__ConvertFromEulerAngles;
-    _asm
-    {
-        push    unk
-        push    z
-        push    y
-        push    x
-        mov     ecx,matint
-        call    dwFunc
-    }
-}
-
-void CEntitySA::MatrixConvertToEulerAngles( float& x, float& y, float& z, int unk ) const
-{
-    if ( !m_pInterface->m_matrix )
-    {
-        x = 0;
-        y = 0;
-        z = 0;
-        return;
-    }
-
-    DWORD matint = (DWORD)m_pInterface->m_matrix;
-
-    DWORD dwFunc = FUNC_CMatrix__ConvertToEulerAngles;
-    _asm
-    {
-        push    unk
-        push    z
-        push    y
-        push    x
-        mov     ecx,matint
-        call    dwFunc
-    }
 }
 
 bool CEntitySA::IsCollidableWith( CEntity *entity ) const

@@ -62,7 +62,7 @@ static bool RpClumpAtomicActivator( RpAtomic *atom, unsigned int replacerId )
 
     atom->RemoveFromClump();
 
-    RpAtomicSetFrame( atom, RwFrameCreate() );
+    atom->AddToFrame( RwFrameCreate() );
     
     atom->SetExtendedRenderFlags( replacerId );
     return true;

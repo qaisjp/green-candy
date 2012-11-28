@@ -352,6 +352,12 @@ CTexDictionarySA* CTextureManagerSA::CreateTxd( CFile *file )
     if ( !stream )
         return NULL;
 
+    if ( !RwStreamFindChunk( stream, 0x16, NULL, NULL ) )
+    {
+        RwStreamClose( stream, NULL );
+        return NULL;
+    }
+
     RwTexDictionary *dict = RwTexDictionaryStreamRead( stream );
     CTexDictionarySA *txd;
 

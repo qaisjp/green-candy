@@ -61,6 +61,9 @@ public:
     void __thiscall                 RestoreMatrix();
     void __thiscall                 FreeMatrix();
 
+    void                            GetOffsetByHeading( CVector& out, const CVector& in ) const;
+    void                            GetOffset( CVector& out, const CVector& in ) const;
+
     // Transformed parameters
     CVector                         m_position;
     float                           m_heading;
@@ -145,6 +148,8 @@ public:
 
     void                            SetAlpha( unsigned char alpha );
     CColModelSAInterface* __thiscall    GetColModel() const;
+    const CVector& __thiscall       GetCollisionOffset( CVector& out ) const;
+    const CBounds2D& __thiscall     _GetBoundingBox( CBounds2D& out ) const;
 
     bool __thiscall                 IsOnScreen() const;
 

@@ -96,9 +96,6 @@ public:
 
     virtual void                        SetAlpha( unsigned char alpha ) = 0;
 
-    virtual void                        MatrixConvertFromEulerAngles( float x, float y, float z, int unk ) = 0;
-    virtual void                        MatrixConvertToEulerAngles( float& x, float& y, float& z, int unk ) const = 0;
-
     virtual void*                       GetStoredPointer() const = 0;
     virtual void                        SetStoredPointer( void *pointer ) = 0;
 

@@ -96,7 +96,7 @@ enum RwRasterType : unsigned int
 class RwObject
 {
 public:
-    unsigned char   m_type;
+    eRwType         m_type;
     unsigned char   m_subtype;
     unsigned char   m_flags;
     unsigned char   m_privateFlags;
@@ -588,15 +588,19 @@ public:
     RwColorFloat            m_color;            // 24
     float                   unknown1;           // 40
     RwList <void>           m_sectors;          // 44
-    RwListEntry <RpLight>   globalLights;       // 52
+    RwListEntry <RpLight>   m_sceneLights;      // 52
     unsigned short          m_frame;            // 60
     unsigned short          unknown2;           // 62
-    float                   m_unk[2];           // 64
+    RwScene*                m_scene;            // 64
+    float                   m_unk;              // 68
     RpClump*                m_clump;            // 72
     RwListEntry <RpLight>   m_clumpLights;      // 76
 
     void                    AddToClump( RpClump *clump );
     void                    RemoveFromClump();
+
+    void                    AddToScene( RwScene *scene );
+    void                    RemoveFromScene();
 
     void                    SetColor( const RwColorFloat& color );
 };
@@ -749,10 +753,12 @@ class RwStructInfo
 public:
     size_t                  m_size;
 };
-class RwScene
+class RwScene : public RwObject
 {
 public:
-
+    BYTE                    m_pad[44];                          // 8
+    RwList <RpLight>        m_activeLights;                     // 52
+    RwList <RpLight>        m_lights;                           // 60
 };
 class RtDict
 {
@@ -819,8 +825,10 @@ public:
     BYTE                    m_pad11[4];                                     // 12
     RwRenderSystem          m_renderSystem;                                 // 16
 
-    BYTE                    m_pad[168];                                     // 20
+    BYTE                    m_pad[92];                                      // 20
+    RwStructInfo*           m_sceneInfo;                                    // 112
 
+    BYTE                    m_pad14[72];                                    // 116
     RwList <RwFrame>        m_nodeRoot;                                     // 188
 
     BYTE                    m_pad6[24];                                     // 196

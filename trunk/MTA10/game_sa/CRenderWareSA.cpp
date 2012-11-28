@@ -117,6 +117,7 @@ RwRasterDestroy_t                       RwRasterDestroy                         
 RwSceneAddAtomic_t                      RwSceneAddAtomic                        = (RwSceneAddAtomic_t)                      invalid_ptr;
 RwSceneAddLight_t                       RwSceneAddLight                         = (RwSceneAddLight_t)                       invalid_ptr;
 RwSceneAddClump_t                       RwSceneAddClump                         = (RwSceneAddClump_t)                       invalid_ptr;
+RwSceneRemoveLight_t                    RwSceneRemoveLight                      = (RwSceneRemoveLight_t)                    invalid_ptr;
 RpPrtStdGlobalDataSetStreamEmbedded_t   RpPrtStdGlobalDataSetStreamEmbedded     = (RpPrtStdGlobalDataSetStreamEmbedded_t)   invalid_ptr;
 RwPrefetch_t                            RwPrefetch                              = (RwPrefetch_t)                            invalid_ptr;
 RwFlushLoader_t                         RwFlushLoader                           = (RwFlushLoader_t)                         invalid_ptr;
@@ -219,6 +220,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwSceneAddAtomic                    = (RwSceneAddAtomic_t)                      0x00750FE0;
         RwSceneAddClump                     = (RwSceneAddClump_t)                       0x00751350;
         RwSceneAddLight                     = (RwSceneAddLight_t)                       0x00751960;
+        RwSceneRemoveLight                  = (RwSceneRemoveLight_t)                    0x007519A0;
         RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
 
         LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
@@ -320,6 +322,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwSceneAddClump                     = (RwSceneAddClump_t)                       0x00751300;
         RwSceneAddLight                     = (RwSceneAddLight_t)                       0x00751910;
         RwSceneAddAtomic                    = (RwSceneAddAtomic_t)                      0x00750F90;
+        RwSceneRemoveLight                  = (RwSceneRemoveLight_t)                    0x00751960;
         RwPrefetch                          = (RwPrefetch_t)                            0x0072F480;
         RwFlushLoader                       = (RwFlushLoader_t)                         0x0072E700;
 
@@ -517,6 +520,7 @@ bool CRenderWareSA::PositionFrontSeat( RpClump *pClump, unsigned short usModelID
 *****************************************************************************/
 
 RwAtomicRenderChainInterface *rwRenderChains = (RwAtomicRenderChainInterface*)0x00C88070;
+RwScene *const *p_gtaScene = (RwScene**)0x00C17038;
 
 
 RwMatrix* CRenderWareSA::AllocateMatrix()
@@ -1161,8 +1165,7 @@ bool RpAtomic::IsNight()
 
 void RpAtomic::AddToClump( RpClump *clump )
 {
-    if ( m_clump )
-        RemoveFromClump();
+    RemoveFromClump();
 
     m_clump = clump;
 
@@ -1280,6 +1283,31 @@ void RpLight::RemoveFromClump()
     LIST_REMOVE( m_clumpLights );
 
     m_clump = NULL;
+}
+
+void RpLight::AddToScene( RwScene *scene )
+{
+    RemoveFromScene();
+
+    m_scene = scene;
+
+    if ( scene->m_flags < 0x80 )
+        LIST_INSERT( scene->m_lights.root, m_sceneLights );
+    else
+    {
+        if ( scene->m_parent )
+            scene->m_parent->RegisterRoot();
+
+        LIST_INSERT( scene->m_activeLights.root, m_sceneLights );
+    }
+}
+
+void RpLight::RemoveFromScene()
+{
+    if ( !m_scene )
+        return;
+
+    RwSceneRemoveLight( m_scene, this );
 }
 
 void RpClump::Render()

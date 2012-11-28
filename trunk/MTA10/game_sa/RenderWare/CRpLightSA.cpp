@@ -15,11 +15,14 @@
 
 CRpLightSA::CRpLightSA( RpLight *light ) : CRwObjectSA( light )
 {
+    light->AddToScene( *p_gtaScene );
     m_model = NULL;
 }
 
 CRpLightSA::~CRpLightSA()
 {
+    GetObject()->RemoveFromScene();
+
     // Unlink from the clump
     RemoveFromModel();
 
