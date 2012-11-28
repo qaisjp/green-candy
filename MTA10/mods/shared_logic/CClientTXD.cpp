@@ -18,6 +18,24 @@
 
 typedef std::list <unsigned short> imports_t;
 
+static LUA_DECLARE( getTextures )
+{
+    CClientTXD *txd = ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ));
+    RwList <CClientGameTexture>& list = txd->m_textures;
+
+    lua_settop( L, 0 );
+    lua_newtable( L );
+
+    unsigned int n = 1;
+
+    LIST_FOREACH_BEGIN( CClientGameTexture, list.root, m_textures )
+        item->PushStack( L );
+        lua_rawseti( L, 1, n++ );
+    LIST_FOREACH_END
+
+    return 1;
+}
+
 static LUA_DECLARE( setGlobalEmitter )
 {
     ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_txd.SetGlobalEmitter();
@@ -26,6 +44,7 @@ static LUA_DECLARE( setGlobalEmitter )
 
 static const luaL_Reg txd_interface[] =
 {
+    LUA_METHOD( getTextures ),
     LUA_METHOD( setGlobalEmitter ),
     { NULL, NULL }
 };
@@ -38,13 +57,6 @@ static int luaconstructor_txd( lua_State *L )
 
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_TXD, txd );
-
-    // Create game textures
-    textures_t& tex = txd->m_txd.GetTextures();
-    textures_t::iterator iter = tex.begin();
-
-    for ( ; iter != tex.end(); iter++ )
-        ( new CClientGameTexture( L, **iter ) )->SetTXD( txd );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -63,6 +75,15 @@ CClientTXD::CClientTXD( lua_State *L, CTexDictionary& txd ) : CClientRwObject( L
     lua_pushcclosure( L, luaconstructor_txd, 1 );
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
+
+    LIST_CLEAR( m_textures.root );
+
+    // Create game textures
+    textures_t& tex = txd.GetTextures();
+    textures_t::iterator iter = tex.begin();
+
+    for ( ; iter != tex.end(); iter++ )
+        ( new CClientGameTexture( L, **iter ) )->SetTXD( this );
 }
 
 CClientTXD::~CClientTXD()

@@ -43,6 +43,8 @@ public:
     bool                PositionFrontSeat( RpClump *clump, unsigned short usModelID );
 };
 
+extern RwScene *const *p_gtaScene;
+
 // Internal RenderWare functions
 RwTexture*  RwFindTexture( const char *name, const char *secName );     // US exe: 0x007F3AC0
 RwError*    RwSetError( RwError *info );                                // US exe: 0x00808820

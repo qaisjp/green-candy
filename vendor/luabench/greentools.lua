@@ -38,7 +38,6 @@ function bundle()
 	-- Include special directories
 	relDir.scanDirEx("mta/cgui/", "*", nil, includeFile, true);
 	relDir.scanDirEx("skins/", "*", nil, includeFile, true);
-	relDir.scanDirEx("server/", "*", nil, includeFile, true);
 	
 	local zip_stream = relDir.open(relDir.absPath() .. "green_alpha.zip", "rb+");
 

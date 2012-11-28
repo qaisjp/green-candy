@@ -18,14 +18,14 @@ extern CBaseModelInfoSAInterface** ppModelInfo;
 
 static bool RwTexDictionaryAssign( RwTexture *tex, CTexDictionarySA *txd )
 {
-    txd->m_textures.push_back( new CTextureSA( txd, tex ) );
+    new CTextureSA( txd, tex );
     return true;
 }
 
 CTexDictionarySA::CTexDictionarySA( RwTexDictionary *txd ) : CRwObjectSA( txd )
 {
     // Assign all textures to us
-    txd->ForAllTextures( RwTexDictionaryAssign, this );
+    txd->ForAllTexturesSafe( RwTexDictionaryAssign, this );
 
     // The texture manager (or whatever management environment) sets up the list node
 }
@@ -33,7 +33,7 @@ CTexDictionarySA::CTexDictionarySA( RwTexDictionary *txd ) : CRwObjectSA( txd )
 CTexDictionarySA::~CTexDictionarySA()
 {
     // Make sure we unlink from the global emitter (if assigned)
-    if ( g_textureEmitter == m_txd )
+    if ( g_textureEmitter == GetObject() )
         g_textureEmitter = NULL;
 
     Clear();
@@ -41,7 +41,7 @@ CTexDictionarySA::~CTexDictionarySA()
     LIST_REMOVE( m_dicts ); // unlink us from the texture manager
 
     // Destroy our txd
-    RwTexDictionaryDestroy( m_txd );
+    RwTexDictionaryDestroy( GetObject() );
 }
 
 void CTexDictionarySA::Clear()
@@ -77,7 +77,7 @@ bool CTexDictionarySA::IsImportedTXD( unsigned short id ) const
 void CTexDictionarySA::SetGlobalEmitter()
 {
     // Hook ourselves into the loading schemantics
-    g_textureEmitter = m_txd;
+    g_textureEmitter = GetObject();
 }
 
 bool CTexDictionarySA::Import( unsigned short id )

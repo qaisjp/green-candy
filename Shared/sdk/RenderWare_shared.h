@@ -78,7 +78,8 @@ enum eRwType : unsigned char
     RW_CLUMP,
     RW_LIGHT,
     RW_CAMERA,
-    RW_TXD = 6
+    RW_TXD = 6,
+    RW_SCENE
 };
 enum RpLightType : unsigned int
 {
@@ -314,9 +315,9 @@ public:
 
     inline void GetOffset( const CVector& offset, CVector& outPos ) const
     {
-        outPos[0] = right.DotProduct( offset ) + pos[0];
-        outPos[1] = at.DotProduct( offset ) + pos[1];
-        outPos[2] = up.DotProduct( offset ) + pos[2];
+        outPos[0] = offset[0] * right[0] + offset[1] * at[0] + offset[2] * up[0] + pos[0];
+        outPos[1] = offset[0] * right[1] + offset[1] * at[1] + offset[2] * up[1] + pos[1];
+        outPos[2] = offset[0] * right[2] + offset[1] * at[2] + offset[2] * up[2] + pos[2];
     }
 
     // I hope this works :3

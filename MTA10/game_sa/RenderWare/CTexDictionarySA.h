@@ -52,7 +52,6 @@ protected:
 public:
     typedef std::list <CTextureSA*> textureList_t;
 
-    RwTexDictionary*        m_txd;
     textureList_t           m_textures;
 
     RwListEntry <CTexDictionarySA>  m_dicts;

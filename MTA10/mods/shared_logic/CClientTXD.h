@@ -34,8 +34,6 @@ public:
     void                            RemoveAll();
 
     CTexDictionary&         m_txd;
-
-protected:
     RwList <CClientGameTexture>     m_textures;
 };
 

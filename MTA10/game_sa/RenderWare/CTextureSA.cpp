@@ -23,7 +23,8 @@ CTextureSA::CTextureSA( RwTexture *tex )
 
 CTextureSA::CTextureSA( CTexDictionarySA *dict, RwTexture *tex )
 {
-    CTextureSA::CTextureSA( tex );
+    m_texture = tex;
+    m_dictionary = NULL;
 
     SetTXD( dict );
 }
@@ -63,7 +64,7 @@ void CTextureSA::SetTXD( CTexDictionary *_txd )
     if ( txd )
     {
         m_dictionary->m_textures.push_front( this );
-        m_texture->AddToDictionary( m_dictionary->m_txd );
+        m_texture->AddToDictionary( m_dictionary->GetObject() );
     }
 }
 
