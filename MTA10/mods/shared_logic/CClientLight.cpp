@@ -100,6 +100,26 @@ static LUA_DECLARE( getColor )
     return 4;
 }
 
+static LUA_DECLARE( setLightIndex )
+{
+    unsigned int idx;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( idx );
+    LUA_ARGS_END;
+
+    LUA_CHECK( idx < 8 );
+
+    ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.SetLightIndex( idx );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getLightIndex )
+{
+    lua_pushnumber( L, ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.GetLightIndex() );
+    return 1;
+}
+
 static luaL_Reg light_interface[] =
 {
     LUA_METHOD( setClump ),
@@ -108,6 +128,8 @@ static luaL_Reg light_interface[] =
     LUA_METHOD( getRadius ),
     LUA_METHOD( setColor ),
     LUA_METHOD( getColor ),
+    LUA_METHOD( setLightIndex ),
+    LUA_METHOD( getLightIndex ),
     { NULL, NULL }
 };
 

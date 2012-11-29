@@ -63,9 +63,26 @@ static bool RpClumpAtomicActivator( RpAtomic *atom, unsigned int replacerId )
     atom->RemoveFromClump();
 
     atom->AddToFrame( RwFrameCreate() );
+
+    // Dyn Lighting fix: Apply the scene
+    atom->m_scene = *p_gtaScene;
+    atom->m_geometry->flags |= 0x20;
     
     atom->SetExtendedRenderFlags( replacerId );
     return true;
+}
+
+// Dynamic Lighting fix
+static void _initClumpScene( RpClump *clump )
+{
+    LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
+        item->m_scene = *p_gtaScene;
+        item->m_geometry->flags |= 0x20;
+    LIST_FOREACH_END
+
+    LIST_FOREACH_BEGIN( RpLight, clump->m_lights.root, m_clumpLights )
+        item->AddToScene( *p_gtaScene );
+    LIST_FOREACH_END
 }
 
 static bool __cdecl LoadClumpFile( RwStream *stream, unsigned int model )
@@ -149,6 +166,8 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
             RpClumpDestroy( item );
         }
 
+        _initClumpScene( clump );
+
         info->SetClump( clump );
         return true;
     }
@@ -172,6 +191,8 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
 
     if ( !clump )
         return false;
+
+    _initClumpScene( clump );
 
     info->SetClump( clump );
 

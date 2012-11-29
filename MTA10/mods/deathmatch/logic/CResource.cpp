@@ -83,7 +83,7 @@ CResource::~CResource()
 {
     // Notify the environment that we quit.
     PushStack( *m_lua );
-    m_resourceEntity->CallEvent( "onClientResourceStop", *m_lua, 1, true );
+    m_dynamicEntity->CallEvent( "onClientResourceStop", *m_lua, 1, true );
 
     // Do this before we delete our elements.
     m_rootEntity->CleanUpForVM( (CLuaMain*)&m_lua, true );

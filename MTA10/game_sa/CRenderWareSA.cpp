@@ -1030,8 +1030,6 @@ struct _rwTexDictFind
 
 static bool RwTexDictionaryFindTexture( RwTexture *tex, _rwTexDictFind *find )
 {
-    assert( tex->txd );
-
     if ( stricmp( tex->name, find->name ) != 0 )
         return true;
 
@@ -1265,6 +1263,11 @@ RwLinkedMaterial* RwLinkedMateria::Get( unsigned int index )
     return (RwLinkedMaterial*)(this + 1) + index;
 }
 
+void RpLight::SetLightIndex( unsigned int idx )
+{
+    m_lightIndex = min( idx, 8 );
+}
+
 void RpLight::AddToClump( RpClump *clump )
 {
     // Bugfix: remove from previous clump
@@ -1285,21 +1288,33 @@ void RpLight::RemoveFromClump()
     m_clump = NULL;
 }
 
-void RpLight::AddToScene( RwScene *scene )
+void RpLight::AddToScene_Global( RwScene *scene )
 {
     RemoveFromScene();
 
     m_scene = scene;
 
-    if ( scene->m_flags < 0x80 )
-        LIST_INSERT( scene->m_lights.root, m_sceneLights );
-    else
-    {
-        if ( scene->m_parent )
-            scene->m_parent->RegisterRoot();
+    LIST_INSERT( scene->m_globalLights.root, m_sceneLights );
+}
 
-        LIST_INSERT( scene->m_activeLights.root, m_sceneLights );
-    }
+void RpLight::AddToScene_Local( RwScene *scene )
+{
+    RemoveFromScene();
+
+    m_scene = scene;
+
+    if ( scene->m_parent )
+        scene->m_parent->RegisterRoot();
+
+    LIST_INSERT( scene->m_localLights.root, m_sceneLights );
+}
+
+void RpLight::AddToScene( RwScene *scene )
+{
+    if ( m_subtype < 0x80 )
+        AddToScene_Global( scene );
+    else
+        AddToScene_Local( scene );
 }
 
 void RpLight::RemoveFromScene()

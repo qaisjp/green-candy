@@ -55,10 +55,17 @@ void RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha )
     geom->flags = _flags;
 }
 
+static RpAtomic* __cdecl _worldAtomicSceneCopyConstructor( RpAtomic *atom, RpAtomic *src )
+{
+    atom->m_scene = src->m_scene;
+    return atom;
+}
+
 CRwExtensionManagerSA::CRwExtensionManagerSA()
 {
     // Patch some fixes
     HookInstall( 0x00732480, (DWORD)RpAtomicRenderAlpha, 5 );
+    HookInstall( 0x007509A0, (DWORD)_worldAtomicSceneCopyConstructor, 5 );
 }
 
 CRwExtensionManagerSA::~CRwExtensionManagerSA()
