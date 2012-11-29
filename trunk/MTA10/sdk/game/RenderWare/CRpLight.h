@@ -18,6 +18,9 @@ class CRpLight abstract : public virtual CRwObject
 public:
     virtual                         ~CRpLight() {}
 
+    virtual void                    SetLightIndex( unsigned int idx ) = 0;
+    virtual unsigned int            GetLightIndex() const = 0;
+
     virtual void                    AddToModel( CModel *model ) = 0;
     virtual CModel*                 GetModel() = 0;
     virtual void                    RemoveFromModel() = 0;

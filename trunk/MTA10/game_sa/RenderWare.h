@@ -523,9 +523,10 @@ public:
     unsigned short          unknown7;           // 98
     RwList <void>           sectors;            // 100
     void*                   render;             // 108
-    RwScene*                m_scene;            // 112
 
-    BYTE                    m_pad[4];           // 116
+    RwScene*                m_scene;            // 112
+    RpAtomic*               (*m_syncCallback)( RpAtomic *atom );    // 116
+
     RpAnimHierarchy*        m_anim;             // 120
 
     unsigned char           m_visibility;       // 124
@@ -596,8 +597,18 @@ public:
     RpClump*                m_clump;            // 72
     RwListEntry <RpLight>   m_clumpLights;      // 76
 
+    // Start of D3D9Light plugin
+    unsigned int            m_lightIndex;       // 84, may be 0-7
+    CVector                 m_attenuation;      // 88
+
+    void                    SetLightIndex( unsigned int idx );
+    unsigned int            GetLightIndex() const           { return m_lightIndex; }
+
     void                    AddToClump( RpClump *clump );
     void                    RemoveFromClump();
+
+    void                    AddToScene_Local( RwScene *scene );
+    void                    AddToScene_Global( RwScene *scene );
 
     void                    AddToScene( RwScene *scene );
     void                    RemoveFromScene();
@@ -757,8 +768,8 @@ class RwScene : public RwObject
 {
 public:
     BYTE                    m_pad[44];                          // 8
-    RwList <RpLight>        m_activeLights;                     // 52
-    RwList <RpLight>        m_lights;                           // 60
+    RwList <RpLight>        m_localLights;                      // 52
+    RwList <RpLight>        m_globalLights;                     // 60
 };
 class RtDict
 {
@@ -819,7 +830,8 @@ class RwInterface   // size: 1456
 {
 public:
     RwCamera*               m_renderCam;                                    // 0
-    BYTE                    m_pad8[6];                                      // 4
+    RwScene*                m_currentScene;                                 // 4
+    BYTE                    m_pad8[2];                                      // 6
     unsigned short          m_frame;                                        // 10
     
     BYTE                    m_pad11[4];                                     // 12

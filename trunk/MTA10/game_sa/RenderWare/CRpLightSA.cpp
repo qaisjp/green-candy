@@ -15,6 +15,7 @@
 
 CRpLightSA::CRpLightSA( RpLight *light ) : CRwObjectSA( light )
 {
+    light->m_attenuation = CVector( 0, 0.001f, 0 );
     light->AddToScene( *p_gtaScene );
     m_model = NULL;
 }

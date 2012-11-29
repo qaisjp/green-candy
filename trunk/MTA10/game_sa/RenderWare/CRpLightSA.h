@@ -28,6 +28,9 @@ public:
     eRwType                         GetType() const                             { return RW_LIGHT; }
     bool                            IsFrameExtension() const                    { return true; }
 
+    void                            SetLightIndex( unsigned int idx )           { GetObject()->SetLightIndex( idx ); }
+    unsigned int                    GetLightIndex() const                       { return GetObject()->GetLightIndex(); }
+
     void                            AddToModel( CModel *model );
     CModel*                         GetModel();
     void                            RemoveFromModel();
