@@ -21,6 +21,9 @@ public:
     virtual void                    SetLightIndex( unsigned int idx ) = 0;
     virtual unsigned int            GetLightIndex() const = 0;
 
+    virtual void                    SetAttenuation( const CVector& atten ) = 0;
+    virtual const CVector&          GetAttenuation() const = 0;
+
     virtual void                    AddToModel( CModel *model ) = 0;
     virtual CModel*                 GetModel() = 0;
     virtual void                    RemoveFromModel() = 0;

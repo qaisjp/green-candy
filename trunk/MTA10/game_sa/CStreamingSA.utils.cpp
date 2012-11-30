@@ -55,6 +55,10 @@ static bool RpClumpAtomicActivator( RpAtomic *atom, unsigned int replacerId )
 
     atom->SetRenderCallback( NULL );
 
+    // Dyn Lighting fix: Apply the scene
+    atom->m_scene = *p_gtaScene;
+    atom->m_geometry->flags |= 0x20;
+
     if ( unk )
         atomInfo->GetDamageAtomicModelInfo()->SetupPipeline( atom );
     else
@@ -63,10 +67,6 @@ static bool RpClumpAtomicActivator( RpAtomic *atom, unsigned int replacerId )
     atom->RemoveFromClump();
 
     atom->AddToFrame( RwFrameCreate() );
-
-    // Dyn Lighting fix: Apply the scene
-    atom->m_scene = *p_gtaScene;
-    atom->m_geometry->flags |= 0x20;
     
     atom->SetExtendedRenderFlags( replacerId );
     return true;
