@@ -100,6 +100,28 @@ static LUA_DECLARE( getColor )
     return 4;
 }
 
+static LUA_DECLARE( setAttenuation )
+{
+    CVector atten;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadVector( atten );
+    LUA_ARGS_END;
+
+    ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.SetAttenuation( atten );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getAttenuation )
+{
+    const CVector& atten = ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.GetAttenuation();
+
+    lua_pushnumber( L, atten[0] );
+    lua_pushnumber( L, atten[1] );
+    lua_pushnumber( L, atten[2] );
+    return 3;
+}
+
 static LUA_DECLARE( setLightIndex )
 {
     unsigned int idx;
@@ -128,6 +150,8 @@ static luaL_Reg light_interface[] =
     LUA_METHOD( getRadius ),
     LUA_METHOD( setColor ),
     LUA_METHOD( getColor ),
+    LUA_METHOD( setAttenuation ),
+    LUA_METHOD( getAttenuation ),
     LUA_METHOD( setLightIndex ),
     LUA_METHOD( getLightIndex ),
     { NULL, NULL }

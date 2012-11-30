@@ -31,6 +31,9 @@ public:
     void                            SetLightIndex( unsigned int idx )           { GetObject()->SetLightIndex( idx ); }
     unsigned int                    GetLightIndex() const                       { return GetObject()->GetLightIndex(); }
 
+    void                            SetAttenuation( const CVector& atten )      { GetObject()->m_attenuation = atten; }
+    const CVector&                  GetAttenuation() const                      { return GetObject()->m_attenuation; }
+
     void                            AddToModel( CModel *model );
     CModel*                         GetModel();
     void                            RemoveFromModel();
