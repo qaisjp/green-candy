@@ -17,6 +17,8 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CRpAtomicSA::CRpAtomicSA( RpAtomic *atom ) : CRwObjectSA( atom )
 {
+    atom->m_geometry->flags |= RW_GEOMETRY_GLOBALLIGHT;
+    atom->m_scene = *p_gtaScene;
     m_model = NULL;
 }
 
@@ -47,18 +49,19 @@ RpAtomic* CRpAtomicSA::CreateInstance( unsigned short id ) const
 
     RpAtomicSetFrame( atom, RwFrameCreate() );
     
-    atom->SetExtendedRenderFlags( id );
+    atom->m_modelId = id;
     return atom;
 }
 
 void CRpAtomicSA::Render()
 {
-    // Test function ;)
     if ( !m_frame || !pRwInterface->m_renderCam )
         return;
 
+    RpAtomic *atom = GetObject();
+
     m_frame->GetObject()->GetLTM();  // Possible update the world position
-    GetObject()->m_renderCallback( GetObject() );
+    atom->m_renderCallback( atom );
 }
 
 void CRpAtomicSA::AddToModel( CModel *model )

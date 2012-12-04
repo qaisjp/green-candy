@@ -1356,7 +1356,7 @@ static void RwRenderLinkInit( RwRenderLink *link, void *data )
     link->m_id = -1;
 }
 
-static void RwAnimatedRenderLinkInit( RwRenderLink *link, void *data )
+static void RwAnimatedRenderLinkInit( RwRenderLink *link, int )
 {
     link->m_flags = 0;
 }
@@ -1418,7 +1418,7 @@ void RpClump::InitStaticSkeleton()
         }
     }
 
-    geom->ForAllLinks( RwAnimatedRenderLinkInit, (void*)NULL );
+    geom->ForAllLinks( RwAnimatedRenderLinkInit, 0 );
 
     // Flag the first render link, root bone?
     geom->m_link->m_flags |= BONE_ROOT;

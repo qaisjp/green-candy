@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CPedModelInfoSA.cpp
 *  PURPOSE:     Vehicle model info
@@ -33,7 +33,7 @@ HandleVehicleBackNameplate_t    HandleVehicleBackNameplate          = ( HandleVe
 #define FUNC_LoadCarMods                    0x005B65A0
 #define FUNC_LoadVehicleParticles           0x004C8780
 
-static float trainLODDistance = 45000;      // In RenderWare render units
+static float trainLODDistance = 45000;
 static float boatLODDistance = 9800;
 static float heliLODDistance = 9800;        // same as boat
 static float heliRotorRenderDistance = 45000;   // same as train
@@ -582,12 +582,13 @@ static bool RwAtomicSetupVehicleDamaged( RpAtomic *child )
     {
         child->m_flags = 0;
 
-        child->m_visibility = 2;
+        //child->m_visibility = 2;
         return true;
     }
 
     if ( strstr(child->m_parent->m_nodeName, "_ok") )
-        child->m_visibility = 1;
+        //child->m_visibility = 1;
+        return true;
 
     return true;
 }
@@ -993,7 +994,7 @@ void CVehicleModelInfoSAInterface::SetupMateria()
 #define RANDCHAR    (char)( RAND * 0.23 )
 #define RANDNUM     (char)( RAND * -9 )
 
-bool GetRandomNameplateText( char *buffer, size_t max )
+static bool GetRandomNameplateText( char *buffer, size_t max )
 {
     unsigned int n;
 

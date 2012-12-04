@@ -97,8 +97,6 @@ CClientTXD::~CClientTXD()
         else
             item->Destroy();
     }
-
-    delete &m_txd;
 }
 
 bool CClientTXD::Import( unsigned short id )

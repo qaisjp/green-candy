@@ -42,7 +42,7 @@ struct RwBBox
 };
 struct RwSphere
 {
-    RwV3d position;
+    CVector pos;
     float radius;
 };
 struct RwColorFloat
@@ -79,7 +79,8 @@ enum eRwType : unsigned char
     RW_LIGHT,
     RW_CAMERA,
     RW_TXD = 6,
-    RW_SCENE
+    RW_SCENE,
+    RW_GEOMETRY
 };
 enum RpLightType : unsigned int
 {

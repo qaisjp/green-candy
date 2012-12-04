@@ -165,7 +165,7 @@ public:
 
     RwRenderLink*           AllocateLink( unsigned int count );
     template <class type>
-    void                    ForAllLinks( void (*callback)( RwRenderLink *link, type *data ), type *data )
+    void                    ForAllLinks( void (*callback)( RwRenderLink *link, type data ), type data )
     {
         RwRenderLink *link = m_link;
         unsigned int n;
@@ -497,7 +497,24 @@ struct RpInterpolation
     unsigned int     unknown2;
     float            unknown3;
     float            unknown4;
-    float            unknown5;
+};
+class RwPipeline
+{
+public:
+
+};
+
+typedef unsigned int    (__cdecl*RpAtomicInstanceCallback_t)( RpAtomic *atom, RwObject *unk, void *unk2 );
+typedef bool            (__cdecl*RpAtomicReinstanceCallback_t)( RpAtomic *atom, RwObject *unk, void *unk2 );
+typedef void*           (__cdecl*RpAtomicLightingCallback_t)( RpAtomic *atom );
+typedef void            (__cdecl*RpAtomicRenderCallback_t)( RpAtomic *atom );
+
+struct RpAtomicPipelineInfo
+{
+    RpAtomicInstanceCallback_t      m_instance;
+    RpAtomicReinstanceCallback_t    m_reinstance;
+    RpAtomicLightingCallback_t      m_lighting;
+    RpAtomicRenderCallback_t        m_render;
 };
 
 #define RW_ATOMIC_RENDER_REFLECTIVE         0x53F20098
@@ -507,7 +524,7 @@ struct RpInterpolation
 class RpAtomic : public RwObjectFrame
 {
 public:
-    void*                   m_info;             // 20
+    RpAtomicPipelineInfo*   m_info;             // 20
 
     RpGeometry*             m_geometry;         // 24
     RwSphere                bsphereLocal;       // 28
@@ -519,21 +536,24 @@ public:
     RpAtomicCallback        m_renderCallback;   // 72
     RpInterpolation         interpolation;      // 76
 
+    unsigned short          m_normalOffset;     // 92
+    BYTE                    m_pad4[2];          // 94
+
     unsigned short          frame;              // 96
     unsigned short          unknown7;           // 98
     RwList <void>           sectors;            // 100
-    void*                   render;             // 108
+    RwPipeline*             m_pipelineInst;     // 108
 
     RwScene*                m_scene;            // 112
     RpAtomic*               (*m_syncCallback)( RpAtomic *atom );    // 116
 
     RpAnimHierarchy*        m_anim;             // 120
 
-    unsigned char           m_visibility;       // 124
-    BYTE                    m_pad2;             // 125
-    unsigned char           m_matrixFlags;      // 126
-    unsigned char           m_renderFlags;      // 127
-    BYTE                    m_pad3[8];          // 128
+    unsigned short          m_modelId;          // 124
+    unsigned short          m_structureId;      // 126, used for components (ok/dam)
+    unsigned char           m_matrixFlags;      // 128
+    unsigned char           m_renderFlags;      // 129
+    BYTE                    m_pad3[6];          // 130
     unsigned int            m_pipeline;         // 136
 
     bool                    IsNight();
@@ -691,16 +711,17 @@ public:
         return ( (RwEffect*)( this + 1 ) + idx );
     }
 };
-class RwGeomDimension
+class RpGeomMesh
 {
 public:
-    BYTE                    m_pad[16];
-    float                   m_scale;                            // 16
+    CVector*                m_vertice;                          // 0
+    RwSphere                m_bounds;                           // 4
+    CVector*                m_positions;                        // 20               
+    CVector*                m_normals;                          // 24
 };
 class RwLinkedMaterial
 {
     // Appended to RwLinkedMateria per m_count
-
 public:
     void*                   m_unknown;
     unsigned int            m_pad;
@@ -718,6 +739,11 @@ public:
 
     // dynamic class
 };
+
+#define RW_GEOMETRY_NO_SKIN         0x00000001
+#define RW_GEOMETRY_NORMALS         0x00000010
+#define RW_GEOMETRY_GLOBALLIGHT     0x00000020
+
 class RpGeometry : public RwObject
 {
 public:
@@ -727,7 +753,7 @@ public:
 
     unsigned int            m_triangleSize;                     // 16
     unsigned int            m_verticeSize;                      // 20
-    unsigned int            m_normalSize;                       // 24
+    unsigned int            m_numMeshes;                        // 24
     unsigned int            m_texcoordSize;                     // 28
 
     RpMaterials             m_materials;                        // 32
@@ -736,10 +762,10 @@ public:
     RwTextureCoordinates*   m_texcoords[RW_MAX_TEXTURE_COORDS]; // 52
     RwLinkedMateria*        m_linkedMateria;                    // 84
     void*                   info;                               // 88
-    RwGeomDimension*        m_dimension;                        // 92
+    RpGeomMesh*             m_meshes;                           // 92, allocated by count in array
     unsigned int            m_usageFlag;                        // 96
     RpSkeleton*             m_skeleton;                         // 100
-    RwColor                 m_nightColor;                       // 104
+    RwColor*                m_nightColor;                       // 104
     BYTE                    m_pad[12];                          // 108
     Rw2dfx*                 m_2dfx;                             // 120
 
@@ -886,8 +912,15 @@ public:
     RwTextureManager        m_textureManager;                               // 1056
     BYTE                    m_pad7[24];                                     // 1084
 
+    // Render extension
     RwRender*               m_renderData;                                   // 1108
-    BYTE                    m_pad4[308];                                    // 1112
+    BYTE                    m_pad4[56];                                     // 1112
+
+    RwPipeline*             m_defaultAtomicPipeline;                        // 1168
+    BYTE                    m_pad15[20];                                    // 1172
+
+    RwPipeline*             m_atomicPipeline;                               // 1192
+    BYTE                    m_pad16[224];                                   // 1196
 
     RwStructInfo*           m_clumpInfo;                                    // 1420
     void*                   m_unk2;                                         // 1424

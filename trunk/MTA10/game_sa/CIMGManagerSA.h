@@ -17,7 +17,7 @@
 void IMG_Initialize();
 void IMG_Shutdown();
 
-enum eLoadingState
+enum eLoadingState : unsigned char
 {
     MODEL_UNAVAILABLE,
     MODEL_LOADED,
@@ -37,6 +37,8 @@ public:
     unsigned int    m_blockOffset;      // 8
     unsigned int    m_blockCount;       // 12
     eLoadingState   m_eLoading;         // 16
+
+    BYTE            m_pad[3];           // 17
 
     bool __thiscall             GetOffset( unsigned int& offset, unsigned int& blockCount );
     void __thiscall             SetOffset( unsigned int offset, unsigned int blockCount );
