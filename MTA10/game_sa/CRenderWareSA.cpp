@@ -144,6 +144,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
     // VERSION 1.0 EU ADDRESSES
     case VERSION_EU_10:
         RwRenderSystemFigureAffairs         = (RwRenderSystemFigureAffairs_t)           0x007F2AF0;
+        RwAllocAligned                      = (RwAllocAligned_t)                        0x0072F4C0;
         RwObjectRegister                    = (RwObjectRegister_t)                      0x00808720;
         RwErrorGet                          = (RwErrorGet_t)                            0x008088C0;
         RwStreamInitialize                  = (RwStreamInitialize_t)                    0x007EC850;
@@ -151,7 +152,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwStreamReadChunkHeaderInfo         = (RwStreamReadChunkHeaderInfo_t)           0x007ED5D0;
         RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED310;
         RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007ECA10;
-        RwStreamReadTexture                 = (RwStreamReadTexture_t)                   0x00730EA0;
+        RwStreamReadTexture                 = (RwStreamReadTexture_t)                   0x00730E60;
         RwStreamClose                       = (RwStreamClose_t)                         0x007ECE60;
         RtDictSchemaStreamReadDict          = (RtDictSchemaStreamReadDict_t)            0x007CF280;
         RtDictDestroy                       = (RtDictDestroy_t)                         0x007CF170;

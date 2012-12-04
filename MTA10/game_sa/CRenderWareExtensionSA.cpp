@@ -65,7 +65,16 @@ CRwExtensionManagerSA::CRwExtensionManagerSA()
 {
     // Patch some fixes
     HookInstall( 0x00732480, (DWORD)RpAtomicRenderAlpha, 5 );
-    HookInstall( 0x007509A0, (DWORD)_worldAtomicSceneCopyConstructor, 5 );
+
+    switch( pGame->GetGameVersion() )
+    {
+    case VERSION_EU_10:
+        HookInstall( 0x007509F0, (DWORD)_worldAtomicSceneCopyConstructor, 5 );
+        break;
+    case VERSION_US_10:
+        HookInstall( 0x007509A0, (DWORD)_worldAtomicSceneCopyConstructor, 5 );
+        break;
+    }
 }
 
 CRwExtensionManagerSA::~CRwExtensionManagerSA()
