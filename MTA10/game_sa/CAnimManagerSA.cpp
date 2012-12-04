@@ -465,10 +465,10 @@ void CAnimManagerSA::RemoveAnimBlock ( int ID )
 
 CAnimBlockSAInterface* CAnimManagerSA::GetAnimBlock( unsigned short id )
 {
-    if ( id > MAX_ANIM_BLOCKS-2 || id == 0 )
+    if ( id > MAX_ANIM_BLOCKS-1 )
         return NULL;
 
-    return (CAnimBlockSAInterface*)ARRAY_AnimBlock + (id - 1);
+    return (CAnimBlockSAInterface*)ARRAY_AnimBlock + id;
 }
 
 CAnimBlockSAInterface* CAnimManagerSA::GetAnimBlockByName( const char *name ) const

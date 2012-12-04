@@ -58,11 +58,6 @@ void RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha )
 static RpAtomic* __cdecl _worldAtomicSceneCopyConstructor( RpAtomic *atom, RpAtomic *src )
 {
     atom->m_scene = src->m_scene;
-
-    // HAX:
-    if ( src->m_geometry->flags & 0x20 )
-        atom->m_geometry->flags |= 0x20;
-
     return atom;
 }
 

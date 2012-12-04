@@ -43,7 +43,63 @@ static void UnapplyRemapTextureScan()
     prevStackScan = NULL;
 }
 
-static bool RpClumpAtomicActivator( RpAtomic *atom, unsigned int replacerId )
+static inline CVector* _RpGeometryAllocateNormals( RpGeometry *geom, RpGeomMesh *mesh )
+{
+    CVector *normals = (CVector*)RwAllocAligned( sizeof(CVector) * geom->m_verticeSize, 0x10 );
+
+    for ( unsigned int n = 0; n < geom->m_verticeSize; n++ )
+    {
+        CVector& norm = normals[n];
+        norm.fX = 0; norm.fY = 0; norm.fZ = 0;
+
+        for ( unsigned int i = 0; i < geom->m_triangleSize; i++ )
+        {
+            const RpTriangle& tri = geom->m_triangles[i];
+
+            if ( tri.v1 == n || tri.v2 == n || tri.v3 == n )
+            {
+                const CVector& origin = mesh->m_positions[tri.v1];
+                CVector v1 = mesh->m_positions[tri.v2] - origin;
+                const CVector v2 = mesh->m_positions[tri.v3] - origin;
+                v1.CrossProduct( v2 );
+                v1.Normalize();
+
+                norm += v1;
+            }
+        }
+
+        norm.Normalize();
+    }
+
+    return normals;
+}
+
+static void _initAtomScene( RpAtomic *atom )
+{
+    atom->m_scene = *p_gtaScene;
+
+    RpGeometry& geom = *atom->m_geometry;
+    geom.flags |= RW_GEOMETRY_GLOBALLIGHT;
+
+    if ( !( geom.flags & RW_GEOMETRY_NORMALS ) )
+    {
+        // Allocate normals for every mesh
+        for ( unsigned int n = 0; n < geom.m_numMeshes; n++ )
+        {
+            RpGeomMesh& mesh = geom.m_meshes[n];
+
+            if ( !mesh.m_normals )
+                mesh.m_normals = _RpGeometryAllocateNormals( &geom, &mesh );
+        }
+
+        if ( !geom.m_skeleton )
+            geom.flags |= RW_GEOMETRY_NO_SKIN;
+
+        geom.flags |= RW_GEOMETRY_NORMALS;
+    }
+}
+
+static void RpClumpAtomicActivator( RpAtomic *atom, unsigned int replacerId )
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[replacerId];
     CAtomicModelInfoSA *atomInfo = info->GetAtomicModelInfo();
@@ -55,9 +111,7 @@ static bool RpClumpAtomicActivator( RpAtomic *atom, unsigned int replacerId )
 
     atom->SetRenderCallback( NULL );
 
-    // Dyn Lighting fix: Apply the scene
-    atom->m_scene = *p_gtaScene;
-    atom->m_geometry->flags |= 0x20;
+    _initAtomScene( atom );
 
     if ( unk )
         atomInfo->GetDamageAtomicModelInfo()->SetupPipeline( atom );
@@ -68,20 +122,14 @@ static bool RpClumpAtomicActivator( RpAtomic *atom, unsigned int replacerId )
 
     atom->AddToFrame( RwFrameCreate() );
     
-    atom->SetExtendedRenderFlags( replacerId );
-    return true;
+    atom->m_modelId = replacerId;
 }
 
 // Dynamic Lighting fix
 static void _initClumpScene( RpClump *clump )
 {
     LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
-        item->m_scene = *p_gtaScene;
-        item->m_geometry->flags |= 0x20;
-    LIST_FOREACH_END
-
-    LIST_FOREACH_BEGIN( RpLight, clump->m_lights.root, m_clumpLights )
-        item->AddToScene( *p_gtaScene );
+        _initAtomScene( item );
     LIST_FOREACH_END
 }
 
@@ -109,7 +157,8 @@ static bool __cdecl LoadClumpFile( RwStream *stream, unsigned int model )
         if ( !clump )
             goto fail;
 
-        clump->ForAllAtomics( RpClumpAtomicActivator, model );
+        while ( !LIST_EMPTY( clump->m_atomics.root ) )
+            RpClumpAtomicActivator( LIST_GETITEM( RpAtomic, clump->m_atomics.root.next, m_atomics ), model );
 
         RpClumpDestroy( clump );
 
@@ -121,15 +170,6 @@ fail:
         UnapplyRemapTextureScan();
 
     return result;
-}
-
-static bool RpClumpAtomicRegisterWithOwner( RpAtomic *_atom, RpClump *owner )
-{
-    RpAtomic *atom = RpAtomicClone( _atom );
-
-    atom->AddToFrame( _atom->m_parent->m_root );
-    atom->AddToClump( owner );
-    return true;
 }
 
 static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
@@ -161,12 +201,19 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
             RwFrame *clonedParent = item->m_parent->CloneRecursive();
 
             frame->Link( clonedParent );
-            item->ForAllAtomics( RpClumpAtomicRegisterWithOwner, clump );
+            
+            while ( !LIST_EMPTY( item->m_atomics.root ) )
+            {
+                RpAtomic *atom = LIST_GETITEM( RpAtomic, item->m_atomics.root.next, m_atomics );
+
+                atom->AddToFrame( atom->m_parent->m_root );
+                atom->AddToClump( clump );
+
+                _initAtomScene( atom );
+            }
 
             RpClumpDestroy( item );
         }
-
-        _initClumpScene( clump );
 
         info->SetClump( clump );
         return true;

@@ -428,7 +428,6 @@ CStreamingSA::~CStreamingSA()
 void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
 {
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
-    DWORD dwFunc;
 
     if ( id > MAX_MODELS-1 )
         return;
@@ -514,14 +513,13 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
         if ( info->m_flags & (0x02 | 0x04) )
             return;
 
-        dwFunc = 0x00407480;
-
         __asm
         {
             mov eax,ds:[0x008E4C60]
             push eax
             mov ecx,info
-            call dwFunc
+            mov eax,0x00407480
+            call eax
         }
 
         return;
@@ -534,8 +532,10 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
     case MODEL_LOD:
     case MODEL_RELOAD:
         return;
-    case MODEL_LOADED:
+    default:
         goto reload;
+    case MODEL_UNAVAILABLE:
+        break;
     }
 
     if ( id < DATA_TEXTURE_BLOCK )
@@ -567,14 +567,13 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
             RequestModel( txd->m_parentTxd + DATA_TEXTURE_BLOCK, flags );
     }
 
-    dwFunc = 0x00407480;
-
     __asm
     {
         mov eax,ds:[0x008E4C58]
         push eax
         mov ecx,info
-        call dwFunc
+        mov eax,0x00407480
+        call eax
     }
 
     (*(DWORD*)VAR_NUMMODELS)++;

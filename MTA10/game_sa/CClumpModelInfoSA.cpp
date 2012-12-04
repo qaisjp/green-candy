@@ -193,7 +193,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
         return;
     }
 
-    atomic->m_geometry->m_dimension->m_scale *= 1.2f;
+    atomic->m_geometry->m_meshes[0].m_bounds.radius *= 1.2f;
 
     // Get the animation
     hier = clump->GetAnimHierarchy();
@@ -204,15 +204,15 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
 
     for (n=0; n<atomic->m_geometry->m_verticeSize; n++)
     {
-        RwV4d *info = &skel->m_vertexInfo[n];
-        float sum = (*info)[0] + (*info)[1] + (*info)[2] + (*info)[3];
+        RwV4d& info = skel->m_vertexInfo[n];
+        float sum = info[0] + info[1] + info[2] + info[3];
 
         //sum /= 1.0;
 
-        (*info)[0] *= sum;
-        (*info)[1] *= sum;
-        (*info)[2] *= sum;
-        (*info)[3] *= sum;
+        info[0] *= sum;
+        info[1] *= sum;
+        info[2] *= sum;
+        info[3] *= sum;
     }
 
     // Set flag

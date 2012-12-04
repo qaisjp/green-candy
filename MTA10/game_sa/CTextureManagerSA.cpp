@@ -243,38 +243,10 @@ static void Hook_InitTextureManager()
     pRwInterface->m_textureManager.m_findInstanceRef = RwTexDictionaryFindFromStackRef;
 }
 
-RwTexture *tmp;
-
-#ifdef DEBUG_TEXTURES_EXCPT
-void __cdecl texdum()
-{
-    assert( tmp->refs != 0 );
-}
-
-void __declspec(naked) HOOK_RwTextureDestroy()
-{
-    __asm
-    {
-        push esi
-        mov esi,[esp+8]
-
-        mov tmp,esi
-        call texdum
-
-        mov edx,RwTextureDestroy
-        add edx,5
-        jmp edx
-    }
-}
-#endif //DEBUG_TEXTURES_EXCEPT
-
 CTextureManagerSA::CTextureManagerSA()
 {
     // We init it ourselves
     HookInstall( FUNC_InitTextureManager, (DWORD)Hook_InitTextureManager, 6 );
-#ifdef DEBUG_TEXTURES_EXCPT
-    HookInstall( (DWORD)RwTextureDestroy, (DWORD)HOOK_RwTextureDestroy, 5 );
-#endif //DEBUG_TEXTURES_EXCPT
 
     // We can initialize the pool here
     *ppTxdPool = new CTxdPool;
