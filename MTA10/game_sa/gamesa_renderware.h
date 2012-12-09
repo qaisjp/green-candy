@@ -15,8 +15,6 @@
 #ifndef __GAMESA_RENDERWARE
 #define __GAMESA_RENDERWARE
 
-#define WIN32_LEAN_AND_MEAN
-
 #include "RenderWare.h"
 
 class CColModelSAInterface;
@@ -82,11 +80,13 @@ typedef RpGeometry*             (__cdecl *RpGeometryUnlock_t)                   
 typedef RpGeometry*             (__cdecl *RpGeometryLock_t)                     (RpGeometry *geo, int lockmode);
 typedef RpGeometry*             (__cdecl *RpGeometryTransform_t)                (RpGeometry *geo, const RwMatrix *matrix);
 typedef RpGeometry*             (__cdecl *RpGeometryTriangleSetMaterial_t)      (RpGeometry *geo, RpTriangle *tri, RpMaterial *mat);
+typedef size_t                  (__cdecl *RpGeometryRegisterPlugin_t)           (size_t size, unsigned int id, RpGeometryPluginConstructor constructor, RpGeometryPluginDestructor destructor, RpGeometryPluginCopyConstructor copyConstr );
 typedef int                     (__cdecl *RpGeometryDestroy_t)                  (RpGeometry *geo);
 typedef void*                   (__cdecl *RwIm3DTransform_t)                    (RwVertex *pVerts, unsigned int numVerts, RwMatrix *ltm, unsigned int flags);
 typedef int                     (__cdecl *RwIm3DRenderIndexedPrimitive_t)       (RwPrimitiveType primType, unsigned short *indices, int numIndices);
 typedef int                     (__cdecl *RwIm3DEnd_t)                          ();
 typedef RpLight*                (__cdecl *RpLightSetRadius_t)                   (RpLight *light, float radius);
+typedef float                   (__cdecl *RpLightGetConeAngle_t)                (const RpLight *light);
 typedef void                    (__cdecl *RpLightDestroy_t)                     (RpLight *light);
 typedef RwMatrix*               (__cdecl *RwMatrixCreate_t)                     ();
 typedef RwMatrix*               (__cdecl *RwMatrixInvert_t)                     (RwMatrix *dst, const RwMatrix *src);
@@ -128,7 +128,6 @@ typedef void                    (__cdecl *RwFlushLoader_t)                      
 /** Renderware function mappings                                            **/
 /*****************************************************************************/
 
-// US Versions
 extern RwRenderSystemFigureAffairs_t            RwRenderSystemFigureAffairs;
 extern RwErrorGet_t                             RwErrorGet;
 extern RwAllocAligned_t                         RwAllocAligned;
@@ -197,6 +196,7 @@ extern RpGeometryTriangleSetMaterial_t          RpGeometryTriangleSetMaterial;
 extern RpGeometryUnlock_t                       RpGeometryUnlock;
 extern RpGeometryLock_t                         RpGeometryLock;
 extern RpGeometryTransform_t                    RpGeometryTransform;
+extern RpGeometryRegisterPlugin_t               RpGeometryRegisterPlugin;
 extern RpGeometryDestroy_t                      RpGeometryDestroy;
 extern RwMatrixCreate_t                         RwMatrixCreate;
 extern RwMatrixInvert_t                         RwMatrixInvert;
@@ -211,6 +211,7 @@ extern RwIm3DTransform_t                        RwIm3DTransform;
 extern RwIm3DRenderIndexedPrimitive_t           RwIm3DRenderIndexedPrimitive;
 extern RwIm3DEnd_t                              RwIm3DEnd;
 extern RpLightSetRadius_t                       RpLightSetRadius;
+extern RpLightGetConeAngle_t                    RpLightGetConeAngle;
 extern RpLightDestroy_t                         RpLightDestroy;
 extern RwRasterCreate_t                         RwRasterCreate;
 extern RwRasterUnlock_t                         RwRasterUnlock;
@@ -237,9 +238,5 @@ extern LoadCollisionModel_t             LoadCollisionModel;
 extern LoadCollisionModelVer2_t         LoadCollisionModelVer2;
 extern LoadCollisionModelVer3_t         LoadCollisionModelVer3;
 extern CClothesBuilder_CopyTexture_t    CClothesBuilder_CopyTexture;
-
-/*****************************************************************************/
-/** Function inlines                                                        **/
-/*****************************************************************************/
 
 #endif //__GAMESA_RENDERWARE

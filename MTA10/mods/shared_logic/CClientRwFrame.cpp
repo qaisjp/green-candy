@@ -206,6 +206,9 @@ LUA_DECLARE( CClientRwFrame::unlinkParentFrame )
     CClientRwFrame::children_t& list = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_children;
     CClientRwFrame *child = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 2 ) ));
 
+    // Remove the frame connection
+    child->m_parent = NULL;
+
     // Untie internally and in our API
     child->m_frame.Unlink();
     list.erase( std::find( list.begin(), list.end(), child ) );
@@ -216,6 +219,9 @@ LUA_DECLARE( CClientRwFrame::unlinkParentObject )
 {
     CClientRwFrame::objects_t& list = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_objects;
     CClientRwObject *obj = (CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 2 ) );
+
+    // Remove the frame connection
+    obj->m_parent = NULL;
 
     // Untie stuff
     obj->GetObject().SetFrame( NULL );

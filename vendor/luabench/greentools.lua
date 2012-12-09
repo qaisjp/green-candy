@@ -74,9 +74,11 @@ function bundle()
 		end
 	end
 	
-	print("finished writing " .. count .. " files");
+	print("writing to .zip file... (do not close!)");
 	
 	zip.save();
 	zip.destroy();
 	zip_stream.destroy();
+	
+	print("finished writing " .. count .. " files");
 end

@@ -13,6 +13,14 @@
 
 #include "StdInc.h"
 
+static LUA_DECLARE( getLightType )
+{
+    const std::string& typeName = EnumToString( ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.GetLightType() );
+
+    lua_pushlstring( L, typeName.c_str(), typeName.size() );
+    return 1;
+}
+
 static LUA_DECLARE( setClump )
 {
     CClientDFF *model;
@@ -74,6 +82,24 @@ static LUA_DECLARE( getRadius )
     return 1;
 }
 
+static LUA_DECLARE( setConeAngle )
+{
+    float angle;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( angle );
+    LUA_ARGS_END;
+
+    ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.SetConeAngle( angle );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getConeAngle )
+{
+    lua_pushnumber( L, ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.GetConeAngle() );
+    return 1;
+}
+
 static LUA_DECLARE( setColor )
 {
     RwColorFloat color;
@@ -130,7 +156,7 @@ static LUA_DECLARE( setLightIndex )
     argStream.ReadNumber( idx );
     LUA_ARGS_END;
 
-    LUA_CHECK( idx < 8 );
+    LUA_ASSERT( idx < 8, "invalid light index" );
 
     ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.SetLightIndex( idx );
     LUA_SUCCESS;
@@ -144,10 +170,13 @@ static LUA_DECLARE( getLightIndex )
 
 static luaL_Reg light_interface[] =
 {
+    LUA_METHOD( getLightType ),
     LUA_METHOD( setClump ),
     LUA_METHOD( getClump ),
     LUA_METHOD( setRadius ),
     LUA_METHOD( getRadius ),
+    LUA_METHOD( setConeAngle ),
+    LUA_METHOD( getConeAngle ),
     LUA_METHOD( setColor ),
     LUA_METHOD( getColor ),
     LUA_METHOD( setAttenuation ),

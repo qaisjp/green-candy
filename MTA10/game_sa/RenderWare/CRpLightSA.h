@@ -31,6 +31,8 @@ public:
     void                            SetLightIndex( unsigned int idx )           { GetObject()->SetLightIndex( idx ); }
     unsigned int                    GetLightIndex() const                       { return GetObject()->GetLightIndex(); }
 
+    inline RpLightType              GetLightType() const                        { return (RpLightType)GetObject()->m_subtype; }
+
     void                            SetAttenuation( const CVector& atten )      { GetObject()->m_attenuation = atten; }
     const CVector&                  GetAttenuation() const                      { return GetObject()->m_attenuation; }
 
@@ -43,6 +45,9 @@ public:
 
     void                            SetRadius( float radius );
     float                           GetRadius() const                           { return GetObject()->m_radius; }
+
+    void                            SetConeAngle( float radians );
+    float                           GetConeAngle() const;
 
 private:
     CModelSA*   m_model;

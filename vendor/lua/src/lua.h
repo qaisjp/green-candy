@@ -144,8 +144,6 @@ LUA_API void       (lua_close) (lua_State *L);
 LUA_API lua_State *(lua_newthread) (lua_State *L);
 LUA_API void       (lua_newenvironment) (lua_State *L);
 
-LUA_API lua_CFunction (lua_atpanic) (lua_State *L, lua_CFunction panicf);
-
 // MTA Specific functions.
 // ChrML: Added function to get the main state from a lua state that is a coroutine
 LUA_API lua_State* (lua_getmainstate) (lua_State *L);

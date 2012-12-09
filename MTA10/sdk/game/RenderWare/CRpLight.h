@@ -21,6 +21,8 @@ public:
     virtual void                    SetLightIndex( unsigned int idx ) = 0;
     virtual unsigned int            GetLightIndex() const = 0;
 
+    virtual RpLightType             GetLightType() const = 0;
+
     virtual void                    SetAttenuation( const CVector& atten ) = 0;
     virtual const CVector&          GetAttenuation() const = 0;
 
@@ -33,6 +35,9 @@ public:
 
     virtual void                    SetRadius( float radius ) = 0;
     virtual float                   GetRadius() const = 0;
+
+    virtual void                    SetConeAngle( float radians ) = 0;
+    virtual float                   GetConeAngle() const = 0;
 };
 
 #endif //_RW_LIGHT_

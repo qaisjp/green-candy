@@ -67,14 +67,15 @@ static void restore_stack_limit (lua_State *L) {
 }
 
 
-static void resetstack (lua_State *L, int status) {
-  L->ci = L->base_ci;
-  L->base = L->ci->base;
-  luaF_close(L, L->base);  /* close eventual pending closures */
-  luaD_seterrorobj(L, status, L->base);
-  L->allowhook = 1;
-  restore_stack_limit(L);
-  L->errfunc = 0;
+static void resetstack (lua_State *L, int status)
+{
+    L->ci = L->base_ci;
+    L->base = L->ci->base;
+    luaF_close(L, L->base);  /* close eventual pending closures */
+    luaD_seterrorobj(L, status, L->base);
+    L->allowhook = true;
+    restore_stack_limit(L);
+    L->errfunc = 0;
 }
 
 int luaD_rawrunprotected( lua_State *L, Pfunc f, void *ud, std::string& err, lua_Debug *debug )
@@ -158,30 +159,41 @@ static CallInfo *growCI (lua_State *L) {
 }
 
 
-void luaD_callhook (lua_State *L, int event, int line) {
-  lua_Hook hook = L->hook;
-  if (hook && L->allowhook) {
+void luaD_callhook (lua_State *L, int event, int line)
+{
+    lua_Hook hook = L->hook;
+
+    if ( !hook || !L->allowhook )
+        return;
+
     ptrdiff_t top = savestack(L, L->top);
     ptrdiff_t ci_top = savestack(L, L->ci->top);
     lua_Debug ar;
+
     ar.event = event;
     ar.currentline = line;
-    if (event == LUA_HOOKTAILRET)
-      ar.i_ci = 0;  /* tail call; no debug information about it */
+
+    if ( event == LUA_HOOKTAILRET )
+        ar.i_ci = 0;  /* tail call; no debug information about it */
     else
-      ar.i_ci = cast_int(L->ci - L->base_ci);
+        ar.i_ci = cast_int(L->ci - L->base_ci);
+
     luaD_checkstack(L, LUA_MINSTACK);  /* ensure minimum stack size */
+
     L->ci->top = L->top + LUA_MINSTACK;
     lua_assert(L->ci->top <= L->stack_last);
-    L->allowhook = 0;  /* cannot call hooks inside a hook */
-    lua_unlock(L);
-    (*hook)(L, &ar);
-    lua_lock(L);
-    lua_assert(!L->allowhook);
-    L->allowhook = 1;
+
+    // Protect from more hook triggers
+    {
+        debughook_shield shield( *L );
+
+        lua_unlock(L);
+        (*hook)(L, &ar);
+        lua_lock(L);
+    }
+
     L->ci->top = restorestack(L, ci_top);
     L->top = restorestack(L, top);
-  }
 }
 
 
@@ -415,17 +427,23 @@ LUA_API int lua_resume (lua_State *L, int nargs)
     if ( !((lua_Thread*)L)->AllocateRuntime() )
         return resume_error( L, "failed to allocate OS resources (too many coroutines running?)" );
 
+    lua_State *main = G(L)->mainthread;
+
+    lua_checkstack( main, 2 );
+
     luai_userstateresume( L, nargs );
-    lua_pushthreadex( G(L)->mainthread, L );
-    lua_callevent( G(L)->mainthread, LUA_EVENT_THREAD_CONTEXT_PUSH, 1 );
-    lua_assert( L->errfunc == 0 );
+    lua_pushthreadex( main, L );
+    lua_callevent( main, LUA_EVENT_THREAD_CONTEXT_PUSH, 1 );
 
     callstack_ref ref( *L );
     
     // The OS thread is saved on it's position
     ((lua_Thread*)L)->resume();
 
+    lua_callevent( main, LUA_EVENT_THREAD_CONTEXT_POP, 0 );
+
     lua_unlock(L);
+    luai_userstateyield(L, nresults);
     return L->status;
 }
 
@@ -443,12 +461,10 @@ LUA_API int lua_yield( lua_State *L, int nresults )
     // query, Lua will deadlock. This is prevented by the simple rule that only main threads
     // may execute code in such a way. Otherwise it is the programmer's mistake.
 
-    luai_userstateyield(L, nresults);
     lua_lock(L);
 
     L->base = L->top - nresults;  /* protect stack slots below */
     L->status = LUA_YIELD;
-    lua_callevent( G(L)->mainthread, LUA_EVENT_THREAD_CONTEXT_POP, 0 );
 
     // Give back control to the previous thread
     ((lua_Thread*)L)->yield();
@@ -461,19 +477,18 @@ LUA_API int lua_yield( lua_State *L, int nresults )
 int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t ef, lua_Debug *debug)
 {
   int status;
-  lu_byte old_allowhooks = L->allowhook;
   ptrdiff_t old_errfunc = L->errfunc;
   std::string errmsg;
   L->errfunc = ef;
   status = luaD_rawrunprotected(L, func, u, errmsg, debug);
-  if (status != 0) {  /* an error occurred? */
+  if (status != 0)
+  {  /* an error occurred? */
     StkId oldtop = restorestack(L, old_top);
     luaF_close(L, oldtop);  /* close eventual pending closures */
     L->top = oldtop;
     lua_pushlstring( L, errmsg.c_str(), errmsg.size() );
     L->base = L->ci->base;
     L->savedpc = L->ci->savedpc;
-    L->allowhook = old_allowhooks;
     restore_stack_limit(L);
   }
   L->errfunc = old_errfunc;

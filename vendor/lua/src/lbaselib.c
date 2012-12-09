@@ -634,7 +634,7 @@ static int luaB_term( lua_State *L )
         return 1;
     }
 
-    luaE_terminate( (lua_Thread*)L );
+    luaE_terminate( (lua_Thread*)co );
     lua_pushboolean( L, true );
     return 1;
 }
