@@ -607,7 +607,7 @@ class RpLight : public RwObjectFrame
 public:
     float                   m_radius;           // 20
     RwColorFloat            m_color;            // 24
-    float                   unknown1;           // 40
+    float                   m_coneAngle;        // 40
     RwList <void>           m_sectors;          // 44
     RwListEntry <RpLight>   m_sceneLights;      // 52
     unsigned short          m_frame;            // 60
@@ -740,6 +740,15 @@ public:
     // dynamic class
 };
 
+#define RW_STREAMLINE_TASK_INIT_NORMALS         0x00000001
+
+// MTA extensions
+struct RpGeomStreamline
+{
+    unsigned int                m_tasks;
+    RwListEntry <RpGeometry>    m_managerNode;
+};
+
 #define RW_GEOMETRY_NO_SKIN         0x00000001
 #define RW_GEOMETRY_NORMALS         0x00000010
 #define RW_GEOMETRY_GLOBALLIGHT     0x00000020
@@ -768,6 +777,9 @@ public:
     RwColor*                m_nightColor;                       // 104
     BYTE                    m_pad[12];                          // 108
     Rw2dfx*                 m_2dfx;                             // 120
+
+    // Our own extension
+    RpGeomStreamline        m_streamline;                       // 124
 
     template <class type>
     bool                    ForAllMateria( bool (*callback)( RpMaterial *mat, type data ), type data )
@@ -1031,5 +1043,10 @@ struct RwChunkHeader
     unsigned int        unk3;
     unsigned int        isComplex;
 };
+
+// Plugin functionss
+typedef RpGeometry*     (__cdecl*RpGeometryPluginConstructor)( RpGeometry *geom, size_t offset );
+typedef void            (__cdecl*RpGeometryPluginDestructor)( RpGeometry *geom, size_t offset );
+typedef RpGeometry*     (__cdecl*RpGeometryPluginCopyConstructor)( RpGeometry *dst, RpGeometry *src, size_t offset );
 
 #endif

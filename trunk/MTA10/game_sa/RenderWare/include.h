@@ -22,4 +22,6 @@
 #include "CRwCameraSA.h"
 #include "CModelSA.h"
 
+#include "RpGeometryStreamline.h"
+
 #endif //_RENDERWARE_INTERFACE_

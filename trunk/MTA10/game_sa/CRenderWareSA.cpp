@@ -95,6 +95,7 @@ RpGeometryTriangleSetMaterial_t         RpGeometryTriangleSetMaterial           
 RpGeometryUnlock_t                      RpGeometryUnlock                        = (RpGeometryUnlock_t)                      invalid_ptr;
 RpGeometryLock_t                        RpGeometryLock                          = (RpGeometryLock_t)                        invalid_ptr;
 RpGeometryTransform_t                   RpGeometryTransform                     = (RpGeometryTransform_t)                   invalid_ptr;
+RpGeometryRegisterPlugin_t              RpGeometryRegisterPlugin                = (RpGeometryRegisterPlugin_t)              invalid_ptr;
 RpGeometryDestroy_t                     RpGeometryDestroy                       = (RpGeometryDestroy_t)                     invalid_ptr;
 RwMatrixCreate_t                        RwMatrixCreate                          = (RwMatrixCreate_t)                        invalid_ptr;
 RwMatrixInvert_t                        RwMatrixInvert                          = (RwMatrixInvert_t)                        invalid_ptr;
@@ -109,6 +110,7 @@ RwIm3DTransform_t                       RwIm3DTransform                         
 RwIm3DRenderIndexedPrimitive_t          RwIm3DRenderIndexedPrimitive            = (RwIm3DRenderIndexedPrimitive_t)          invalid_ptr;
 RwIm3DEnd_t                             RwIm3DEnd                               = (RwIm3DEnd_t)                             invalid_ptr;
 RpLightSetRadius_t                      RpLightSetRadius                        = (RpLightSetRadius_t)                      invalid_ptr;
+RpLightGetConeAngle_t                   RpLightGetConeAngle                     = (RpLightGetConeAngle_t)                   invalid_ptr;
 RpLightDestroy_t                        RpLightDestroy                          = (RpLightDestroy_t)                        invalid_ptr;
 RwRasterCreate_t                        RwRasterCreate                          = (RwRasterCreate_t)                        invalid_ptr;
 RwRasterUnlock_t                        RwRasterUnlock                          = (RwRasterUnlock_t)                        invalid_ptr;
@@ -200,6 +202,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpGeometryUnlock                    = (RpGeometryUnlock_t)                      0x0074C850;
         RpGeometryLock                      = (RpGeometryLock_t)                        0x0074C820;
         RpGeometryTransform                 = (RpGeometryTransform_t)                   0x0074C030;
+        RpGeometryRegisterPlugin            = (RpGeometryRegisterPlugin_t)              0x0074CDC0;
         RpGeometryDestroy                   = (RpGeometryDestroy_t)                     0x0074CD10;
         RwMatrixCreate                      = (RwMatrixCreate_t)                        0x007F2A90;
         RwMatrixInvert                      = (RwMatrixInvert_t)                        0x007F20B0;
@@ -213,6 +216,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwIm3DRenderIndexedPrimitive        = (RwIm3DRenderIndexedPrimitive_t)          0x007EF590;
         RwIm3DEnd                           = (RwIm3DEnd_t)                             0x007EF560;
         RpLightSetRadius                    = (RpLightSetRadius_t)                      0x00751AC0;
+        RpLightGetConeAngle                 = (RpLightGetConeAngle_t)                   0x00751B30;
         RpLightDestroy                      = (RpLightDestroy_t)                        0x00752120;
         RwRasterUnlock                      = (RwRasterUnlock_t)                        0x007FAF00;
         RwRasterLock                        = (RwRasterLock_t)                          0x007FB310; 
@@ -305,6 +309,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpGeometryUnlock                    = (RpGeometryUnlock_t)                      0x0074C800;
         RpGeometryLock                      = (RpGeometryLock_t)                        0x0074C7D0;
         RpGeometryTriangleSetMaterial       = (RpGeometryTriangleSetMaterial_t)         0x0074C6C0;
+        RpGeometryRegisterPlugin            = (RpGeometryRegisterPlugin_t)              0x0074CD70;
         RpGeometryDestroy                   = (RpGeometryDestroy_t)                     0x0074CCC0;
         RwMatrixCreate                      = (RwMatrixCreate_t)                        0x007F2A50;
         RwMatrixInvert                      = (RwMatrixInvert_t)                        0x007F2070;
@@ -319,6 +324,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwIm3DRenderIndexedPrimitive        = (RwIm3DRenderIndexedPrimitive_t)          0x007EF550;
         RwIm3DEnd                           = (RwIm3DEnd_t)                             0x007EF520;
         RpLightSetRadius                    = (RpLightSetRadius_t)                      0x00751A70;
+        RpLightGetConeAngle                 = (RpLightGetConeAngle_t)                   0x00751AE0;
         RpLightDestroy                      = (RpLightDestroy_t)                        0x007520D0;
         RwSceneAddClump                     = (RwSceneAddClump_t)                       0x00751300;
         RwSceneAddLight                     = (RwSceneAddLight_t)                       0x00751910;
@@ -1754,7 +1760,7 @@ RpLight* RpLightCreate( unsigned char type )
     light->m_parent = NULL;
 
     light->m_radius = 0;
-    light->unknown1 = 0;
+    light->m_coneAngle = 0;
     light->m_privateFlags = 0;
 
     // Clear the list awareness

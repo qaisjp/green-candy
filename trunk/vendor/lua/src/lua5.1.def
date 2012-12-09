@@ -50,7 +50,6 @@ EXPORTS
   lua_sethook
   lua_getallocf
   lua_tocfunction
-  lua_atpanic
   lua_tointeger
   lua_tonumber
   lua_tothread

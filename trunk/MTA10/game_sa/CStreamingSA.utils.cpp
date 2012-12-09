@@ -315,9 +315,6 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
 
     RwStream *stream = RwStreamInitialize( (void*)0x008E48AC, 0, 3, 1, &streamBuffer );
 
-    __try
-    {
-
     if ( id < DATA_TEXTURE_BLOCK )
     {
         CBaseModelInfoSAInterface *info = ppModelInfo[id];
@@ -517,12 +514,6 @@ finish:
     {
         loadInfo.m_eLoading = MODEL_LOADED;
         (*(unsigned int*)0x008E4CB4) += streamBuffer.size;
-    }
-
-    }
-    __except(1)
-    {
-        __asm nop
     }
 
     return true;

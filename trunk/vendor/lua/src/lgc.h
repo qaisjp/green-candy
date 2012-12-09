@@ -110,6 +110,9 @@ LUAI_FUNC void luaC_linkupval (lua_State *L, UpVal *uv);
 LUAI_FUNC void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v);
 LUAI_FUNC void luaC_forceupdatef( lua_State *L, GCObject *o );
 LUAI_FUNC void luaC_barrierback (lua_State *L, Table *t);
+LUAI_FUNC void luaC_init( global_State *g );
+LUAI_FUNC void luaC_initthread( global_State *g );
+LUAI_FUNC void luaC_shutdown( global_State *g );
 
 
 #endif

@@ -17,6 +17,7 @@
 #include "lobject.h"
 #include "ltm.h"
 #include "lzio.h"
+#include "lfiber.h"
 
 
 /* table of globals */
@@ -64,6 +65,7 @@ typedef struct CallInfo {
 // Internal functions
 TValue *index2adr (lua_State *L, int idx);
 
+class lua_Thread;
 
 /*
 ** `global state', shared by all threads of this state
@@ -83,13 +85,15 @@ typedef struct global_State
   GrayObject *weak;  /* list of weak tables (to be cleared) */
   GCObject *tmudata;  /* last element of list of userdata to be GC */
   Mbuffer buff;  /* temporary buffer for string concatentation */
+  lua_Thread *GCthread; /* garbage collector runtime */
   lu_mem GCthreshold;
+  lu_mem GCcollect; /* amount of memory to be collected until stop */
   lu_mem totalbytes;  /* number of bytes currently allocated */
   lu_mem estimate;  /* an estimate of number of bytes actually in use */
   lu_mem gcdept;  /* how much GC is `behind schedule' */
   int gcpause;  /* size of pause between successive GCs */
   int gcstepmul;  /* GC `granularity' */
-  lua_CFunction panic;  /* to be called in unprotected errors */
+
   TValue l_registry;
   lua_State *mainthread;
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
@@ -100,6 +104,7 @@ typedef struct global_State
 #define tostate(l)      (cast(lua_State *, cast(lu_byte *, l) + LUAI_EXTRASPACE))
 #define state_size(x)	(sizeof(x) + LUAI_EXTRASPACE)
 #define fromstate(l)	(cast(lu_byte *, (l)) - LUAI_EXTRASPACE)
+
 
 /*
 ** `per thread' state
@@ -135,7 +140,7 @@ public:
     int size_ci;  /* size of array `base_ci' */
     unsigned short nCcalls;  /* number of nested C calls */
     lu_byte hookmask;
-    lu_byte allowhook;
+    bool allowhook;
     int basehookcount;
     int hookcount;
     lua_Hook hook;
@@ -157,7 +162,7 @@ public:
     bool    IsThread()                          { return !isMain; }
 
     bool    AllocateRuntime();
-    bool    IsRuntimeAllocated() const          { return threadHandle != NULL; }
+    bool    IsRuntimeAllocated() const          { return fiber != NULL; }
 
     void    SetYieldDisabled( bool disable )    { yieldDisabled = disable; }
     bool    IsYieldDisabled()                   { return yieldDisabled; }
@@ -174,27 +179,24 @@ public:
     
     inline void resume()
     {
-#ifdef _WIN32
-        SetEvent( signalBegin );
-        WaitForSingleObject( signalWait, INFINITE );
-#endif
+        // Expand the context stack
+        Fiber *_callee = luaX_makefiber( this );
+        callee = _callee;
+
+        luaX_switch( _callee, fiber );
+
+        luaX_closefiber( this, _callee );
     }
 
     inline void yield()
     {
-#ifdef _WIN32
-        SetEvent( signalWait );
-        WaitForSingleObject( signalBegin, INFINITE );
-#endif
+        luaX_switch( fiber, callee );
     }
 
-#ifdef _WIN32
-    HANDLE threadHandle;
-    HANDLE signalBegin;
-    HANDLE signalWait;
-#endif //_WIN32
     bool isMain;
     bool yieldDisabled;
+    Fiber *callee;
+    Fiber *fiber;
 };
 
 /* macros to convert a GCObject into a specific value */

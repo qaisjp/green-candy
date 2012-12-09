@@ -952,6 +952,10 @@
 				RelativePath=".\RenderWare\CTextureSA.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\RenderWare\RpGeometryStreamline.cpp"
+				>
+			</File>
 			<Filter
 				Name="Include"
 				>
@@ -989,6 +993,10 @@
 				</File>
 				<File
 					RelativePath=".\RenderWare\include.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\RpGeometryStreamline.h"
 					>
 				</File>
 			</Filter>

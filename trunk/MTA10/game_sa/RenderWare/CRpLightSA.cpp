@@ -65,3 +65,16 @@ void CRpLightSA::SetRadius( float radius )
 {
     RpLightSetRadius( GetObject(), radius );
 }
+
+void CRpLightSA::SetConeAngle( float radians )
+{
+    if ( radians < 0 || radians > M_PI_2 )
+        return;
+
+    GetObject()->m_coneAngle = -cos( radians );
+}
+
+float CRpLightSA::GetConeAngle() const
+{
+    return RpLightGetConeAngle( GetObject() );
+}

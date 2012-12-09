@@ -72,8 +72,7 @@ TValue* index2adr( lua_State *L, int idx )
     {
         if ( L->nCcalls )
         {
-            Closure *func = curr_func(L);
-            sethvalue(L, &L->env, func->env);
+            sethvalue(L, &L->env, curr_func(L)->env);
             return &L->env;
         }
     }
@@ -151,15 +150,6 @@ LUA_API void lua_xcopy( lua_State *from, lua_State *to, int n )
 
 LUA_API void lua_setlevel (lua_State *from, lua_State *to) {
   to->nCcalls = from->nCcalls;
-}
-
-LUA_API lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf) {
-  lua_CFunction old;
-  lua_lock(L);
-  old = G(L)->panic;
-  G(L)->panic = panicf;
-  lua_unlock(L);
-  return old;
 }
 
 

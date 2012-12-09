@@ -297,16 +297,16 @@ static int precheck (const Proto *pt) {
 
 #define checkopenop(pt,pc)	luaG_checkopenop((pt)->code[(pc)+1])
 
-int luaG_checkopenop (Instruction i) {
+bool luaG_checkopenop (Instruction i) {
   switch (GET_OPCODE(i)) {
     case OP_CALL:
     case OP_TAILCALL:
     case OP_RETURN:
     case OP_SETLIST: {
       check(GETARG_B(i) == 0);
-      return 1;
+      return true;
     }
-    default: return 0;  /* invalid instruction after an open call */
+    default: return false;  /* invalid instruction after an open call */
   }
 }
 
@@ -491,7 +491,7 @@ static Instruction symbexec (const Proto *pt, int lastpc, int reg) {
 /* }====================================================== */
 
 
-int luaG_checkcode (const Proto *pt) {
+bool luaG_checkcode (const Proto *pt) {
   return (symbexec(pt, pt->sizecode, NO_REG) != 0);
 }
 

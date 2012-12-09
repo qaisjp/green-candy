@@ -75,11 +75,15 @@ CRwExtensionManagerSA::CRwExtensionManagerSA()
         HookInstall( 0x007509A0, (DWORD)_worldAtomicSceneCopyConstructor, 5 );
         break;
     }
+
+    // Initialize global extensions
+    RpGeometryStreamlineInit();
 }
 
 CRwExtensionManagerSA::~CRwExtensionManagerSA()
 {
-
+    // Shutdown global extensions
+    RpGeometryStreamlineShutdown();
 }
 
 RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int count, size_t size, unsigned int unk )

@@ -67,8 +67,6 @@ static void f_luaopen (lua_State *L, void *ud)
     global_State *g = G(L);
     UNUSED(ud);
     stack_init(L, L);  /* init stack */
-    luaE_newenvironment( L );
-    sethvalue(L, registry(L), luaH_new(L, 0, 2));  /* registry */
     luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
     luaT_init(L);
     luaX_init(L);
@@ -85,7 +83,7 @@ static inline void preinit_state (lua_State *L, global_State *g)
     L->hook = NULL;
     L->hookmask = 0;
     L->basehookcount = 0;
-    L->allowhook = 1;
+    L->allowhook = true;
     resethookcount(L);
     L->openupval = NULL;
     L->size_ci = 0;
@@ -123,15 +121,12 @@ static void close_state (lua_State *L)
     delete L;
 }
 
-static DWORD __stdcall luaE_threadEntryPoint( void *ud )
+static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
 {
-    lua_Thread *L = (lua_Thread*)ud;
-
     try
     {
-#ifdef _WIN32
-        WaitForSingleObject( L->signalBegin, INFINITE );
-#endif
+        // First yield is invisible
+        L->yield();
 
         lua_call( L, lua_gettop( L ) - 1, LUA_MULTRET );
 
@@ -165,21 +160,14 @@ static DWORD __stdcall luaE_threadEntryPoint( void *ud )
 
         lua_settop( L, 0 );
     }
-
-#ifdef _WIN32
-    SetEvent( L->signalWait );
-#endif
-    return L->status;
 }
 
 lua_Thread::lua_Thread()
 {
-#ifdef _WIN32
-    signalBegin = CreateEvent( NULL, false, false, NULL );
-    signalWait = CreateEvent( NULL, false, false, NULL );
-#endif
     isMain = false;
     yieldDisabled = false;
+    callee = NULL;
+    fiber = NULL;
 }
 
 lua_Thread* luaE_newthread( lua_State *L )
@@ -200,9 +188,6 @@ lua_Thread* luaE_newthread( lua_State *L )
         L1->mt[n] = L->mt[n];
 
     // Allocate the OS resources only if necessary!
-#ifdef _WIN32
-    L1->threadHandle = NULL;
-#endif
 
     lua_assert(iswhite(L1));
     return L1;
@@ -225,42 +210,36 @@ void luaE_terminate( lua_Thread *L )
     luaF_close(L, L->stack);  /* close all upvalues for this thread */
     lua_assert(L->openupval == NULL);
 
-#ifdef _WIN32
-    if ( !L->threadHandle )
+    if ( !L->fiber )
         return;
 
-    DWORD status;
-    GetExitCodeThread( L->threadHandle, &status );
+    // Throw an exception on the fiber
+    Fiber *env = L->fiber;
+    env->ebx = (unsigned int)L;
+    env->eip = (unsigned int)luaE_term;
 
-    if ( status == STILL_ACTIVE )
-    {
-        // Cleanly terminate the thread by exception
-        CONTEXT context;
-        context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+    // We want to eventually return back
+    L->resume();
+    luaX_closefiber( L, env );
 
-        GetThreadContext( L->threadHandle, &context );
-
-        context.Ebx = (DWORD)L;
-        context.Eip = (DWORD)luaE_term;
-
-        SetThreadContext( L->threadHandle, &context );
-
-        SetEvent( L->signalBegin );
-        
-        WaitForSingleObject( L->threadHandle, INFINITE );
-    }
-#endif
+    L->fiber = NULL;
 }
 
 bool lua_Thread::AllocateRuntime()
 {
-#ifdef _WIN32
-    if ( threadHandle )
+    if ( fiber )
         return true;
 
-    threadHandle = CreateThread( NULL, 0, luaE_threadEntryPoint, this, 0, NULL );
-    return threadHandle != NULL;
-#endif
+    fiber = luaX_newfiber( this, 0, luaE_threadEntryPoint );
+    
+    if ( fiber != NULL )
+    {
+        // initiate it
+        resume();
+        return true;
+    }
+
+    return false;
 }
 
 lua_State::~lua_State()
@@ -271,14 +250,6 @@ lua_Thread::~lua_Thread()
 {
     luaE_terminate( this );
     luai_userstatefree( this );
-
-#ifdef _WIN32
-    if ( threadHandle )
-        CloseHandle( threadHandle );
-
-    CloseHandle( signalBegin );
-    CloseHandle( signalWait );
-#endif //_WIN32
 
     freestack( l_G->mainthread, this );
 }
@@ -315,26 +286,18 @@ LUAI_FUNC lua_State *lua_newstate (lua_Alloc f, void *ud)
     g->mainthread = L;
     g->uvhead.u.l.prev = &g->uvhead;
     g->uvhead.u.l.next = &g->uvhead;
-    g->GCthreshold = 0;  /* mark it as unfinished state */
     g->strt.size = 0;
     g->strt.nuse = 0;
     g->strt.hash = NULL;
-    g->gcstate = GCSpause;
-    g->rootgc = L;
-    g->sweepstrgc = 0;
-    g->sweepgc = &g->rootgc;
-    g->gray = NULL;
-    g->grayagain = NULL;
-    g->totalbytes = sizeof(LG);
-    g->gcpause = LUAI_GCPAUSE;
-    g->gcstepmul = LUAI_GCMUL;
-    g->gcdept = 0;
-    preinit_state(L, g);
-    setnilvalue(registry(L));
-    luaZ_initbuffer(L, &g->buff);
-    g->panic = NULL;
     g->weak = NULL;
     g->tmudata = NULL;
+    g->totalbytes = sizeof(LG);
+    // Initialize the garbage collector
+    luaC_init( g );
+    preinit_state( L, g );
+    luaE_newenvironment( L );   // create the first environment; threads will inherit it
+    sethvalue(L, &g->l_registry, luaH_new(L, 0, 2));  /* registry */
+    luaZ_initbuffer(L, &g->buff);
 
     for ( i=0; i<LUA_NUM_EVENTS; i++ )
         g->events[i] = NULL;
@@ -343,6 +306,9 @@ LUAI_FUNC lua_State *lua_newstate (lua_Alloc f, void *ud)
         L->mt[i] = NULL;
 
     std::string errMsg;
+
+    // Initialize GCthread
+    luaC_initthread( g );
 
     if ( luaD_rawrunprotected( L, f_luaopen, NULL, errMsg, NULL ) != 0 )
     {
@@ -355,29 +321,15 @@ LUAI_FUNC lua_State *lua_newstate (lua_Alloc f, void *ud)
     return L;
 }
 
-static void callallgcTM (lua_State *L, void *ud)
-{
-    UNUSED(ud);
-    luaC_callGCTM(L);  /* call GC metamethods for all udata */
-}
-
-
 LUA_API void lua_close (lua_State *L)
 {
     L = G(L)->mainthread;  /* only the main thread can be closed */
+
     lua_lock(L);
     luaF_close(L, L->stack);  /* close all upvalues for this thread */
-    luaC_separatefinalization(L, 1);  /* separate udata that have GC metamethods */
-    L->errfunc = 0;  /* no error function during GC metamethods */
 
-    std::string errMsg;
-
-    do
-    {  /* repeat until no more errors */
-        L->ci = L->base_ci;
-        L->base = L->top = L->ci->base;
-        L->nCcalls = 0;
-    } while (luaD_rawrunprotected(L, callallgcTM, NULL, errMsg, NULL) != 0);
+    // Collect all pending memory
+    luaC_shutdown( G(L) );
 
     lua_assert(G(L)->tmudata == NULL);
     luai_userstateclose(L);
