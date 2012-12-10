@@ -64,11 +64,8 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
     lua_pop( L, 1 );
 
     // Setup lua globals
-    entity->PushStack( L );
-    lua_setglobal( L, "resourceRoot" );
-
-    m_guiEntity->PushStack( L );
-    lua_setglobal( L, "guiRoot" );
+    m_resourceEntity->PushStack( L );   lua_setglobal( L, "resourceRoot" );
+    m_guiEntity->PushStack( L );        lua_setglobal( L, "guiRoot" );
 
     // Set up our private path
     filePath privPath;
@@ -83,7 +80,7 @@ CResource::~CResource()
 {
     // Notify the environment that we quit.
     PushStack( *m_lua );
-    m_dynamicEntity->CallEvent( "onClientResourceStop", *m_lua, 1, true );
+    m_resourceEntity->CallEvent( "onClientResourceStop", *m_lua, 1, true );
 
     // Do this before we delete our elements.
     m_rootEntity->CleanUpForVM( (CLuaMain*)&m_lua, true );
@@ -180,6 +177,9 @@ void CResource::AddExportedFunction( const char *name )
 
 void CResource::SetResourceEntity( CClientEntity *entity )
 {
+    if ( entity == m_resourceEntity || entity->IsDestroying() )
+        return;
+
     // If there was a previous entity, HACKS
     // Well, we unreference it so nothing breaks
     if ( m_resourceEntity )
@@ -342,7 +342,6 @@ void CResource::ShowCursor( bool bShow, bool bToggleControls )
 
     // Show cursor if more than 0 resources wanting the cursor on
     g_pCore->ForceCursorVisible( m_refShowCursor != 0, bToggleControls );
-    g_pClientGame->SetCursorEventsEnabled( m_refShowCursor != 0 );
 }
 
 bool CResource::GetFullMetaPath( const char *path, filePath& absPath )

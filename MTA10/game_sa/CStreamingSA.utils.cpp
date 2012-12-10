@@ -81,6 +81,9 @@ static void _initAtomScene( RpAtomic *atom )
     RpGeometry& geom = *atom->m_geometry;
     geom.flags |= RW_GEOMETRY_GLOBALLIGHT;
 
+    // TODO: reenable this using multi-threading
+    return;
+
     if ( !( geom.flags & RW_GEOMETRY_NORMALS ) )
     {
         // Allocate normals for every mesh

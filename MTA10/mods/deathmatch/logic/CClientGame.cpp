@@ -103,7 +103,6 @@ CClientGame::CClientGame ( bool bLocalPlay )
     m_dwTransferStarted = 0;                // timestamp for transfer start
     m_bTransferReset = false;               // flag controls whether we have to reset the transfer counter
 
-    m_bCursorEventsEnabled = false;
     m_bInitiallyFadedOut = true;
 
     m_bIsPlayingBack = false;
@@ -371,7 +370,6 @@ CClientGame::~CClientGame()
     pKeyBinds->RemoveAllControlFunctions ( CClientGame::StaticUpdateFireKey );
     pKeyBinds->SetAllControlsEnabled ( true, true, true );
     g_pCore->ForceCursorVisible ( false );
-    SetCursorEventsEnabled ( false );   
 
     // Destroy our stuff
     m_pLuaManager->Shutdown();  // We need to unbind dependencies before destroying their location at CLuaManager
@@ -2205,217 +2203,214 @@ bool CClientGame::ProcessMessageForCursorEvents ( HWND hwnd, UINT uMsg, WPARAM w
     bool bConsoleVisible = g_pCore->GetConsole ()->IsVisible ();
     bool bChatInputEnabled = g_pCore->IsChatInputEnabled ();
 
-    if ( bCursorForcedVisible )
+    if ( !bMenuVisible && !bConsoleVisible )
     {
-        if ( !bMenuVisible && !bConsoleVisible )
+        unsigned char ucButtonHit;
+
+        switch( uMsg )
         {
-            if ( m_bCursorEventsEnabled )
+        case WM_LBUTTONDOWN:
+            ucButtonHit = 0;
+            break;
+        case WM_LBUTTONUP:
+            ucButtonHit = 1;
+            break;
+        case WM_MBUTTONDOWN:
+            ucButtonHit = 2;
+            break;
+        case WM_MBUTTONUP:
+            ucButtonHit = 3;
+            break;
+        case WM_RBUTTONDOWN:
+            ucButtonHit = 4;
+            break;
+        case WM_RBUTTONUP:
+            ucButtonHit = 5;
+            break;
+        default:
+            goto doNotHandle;
+        }
+
+        int iX = LOWORD ( lParam );
+        int iY = HIWORD ( lParam );
+
+        CVector2D vecResolution = g_pCore->GetGUI ()->GetResolution ();
+
+        /*
+        // (IJs) why are these relative? it doesn't make sense
+        CVector2D vecCursorPosition ( ( ( float ) iX ) / vecResolution.fX,
+                                      ( ( float ) iY ) / vecResolution.fY );
+        */
+
+        CVector2D vecCursorPosition ( ( float ) iX, ( float ) iY );
+
+        CVector vecOrigin, vecTarget, vecScreen ( ( float )iX, ( float )iY, 300.0f );
+        g_pCore->GetGraphics ()->CalcWorldCoors ( &vecScreen, &vecTarget );
+
+        // Grab the camera position
+        CCamera* pCamera = g_pGame->GetCamera ();
+        CCam* pCam = pCamera->GetCam ( pCamera->GetActiveCam () );
+        RwMatrix matCamera = pCamera->GetMatrix();
+        vecOrigin = matCamera.pos;
+
+        CColPoint* pColPoint = NULL;
+        CEntity* pGameEntity = NULL;
+
+        // Grab the collision point/entity
+        bool bCollision = g_pGame->GetWorld ()->ProcessLineOfSight ( &vecOrigin, &vecTarget, &pColPoint, &pGameEntity );
+
+        CVector vecCollision;
+        ElementID CollisionEntityID = INVALID_ELEMENT_ID;
+        CClientEntity* pCollisionEntity = NULL;
+        if ( bCollision && pColPoint )
+        {
+            vecCollision = *pColPoint->GetPosition ();
+            if ( pGameEntity )
             {
-                unsigned char ucButtonHit = 0xFF;
-                switch ( uMsg )
+                CClientEntity* pEntity = m_pManager->FindEntity ( pGameEntity );
+                if ( pEntity )
                 {
-                    case WM_LBUTTONDOWN:
-                        ucButtonHit = 0;
-                        break;
-                    case WM_LBUTTONUP:
-                        ucButtonHit = 1;
-                        break;
-                    case WM_MBUTTONDOWN:
-                        ucButtonHit = 2;
-                        break;
-                    case WM_MBUTTONUP:
-                        ucButtonHit = 3;
-                        break;
-                    case WM_RBUTTONDOWN:
-                        ucButtonHit = 4;
-                        break;
-                    case WM_RBUTTONUP:
-                        ucButtonHit = 5;
-                        break;
-                }
-                if ( ucButtonHit != 0xFF )
-                {
-                    int iX = LOWORD ( lParam );
-                    int iY = HIWORD ( lParam );
-
-                    CVector2D vecResolution = g_pCore->GetGUI ()->GetResolution ();
-
-                    /*
-                    // (IJs) why are these relative? it doesn't make sense
-                    CVector2D vecCursorPosition ( ( ( float ) iX ) / vecResolution.fX,
-                                                  ( ( float ) iY ) / vecResolution.fY );
-                    */
-
-                    CVector2D vecCursorPosition ( ( float ) iX, ( float ) iY );
-
-                    CVector vecOrigin, vecTarget, vecScreen ( ( float )iX, ( float )iY, 300.0f );
-                    g_pCore->GetGraphics ()->CalcWorldCoors ( &vecScreen, &vecTarget );
-
-                    // Grab the camera position
-                    CCamera* pCamera = g_pGame->GetCamera ();
-                    CCam* pCam = pCamera->GetCam ( pCamera->GetActiveCam () );
-                    RwMatrix matCamera = pCamera->GetMatrix();
-                    vecOrigin = matCamera.pos;
-
-                    CColPoint* pColPoint = NULL;
-                    CEntity* pGameEntity = NULL;
-
-                    // Grab the collision point/entity
-                    bool bCollision = g_pGame->GetWorld ()->ProcessLineOfSight ( &vecOrigin, &vecTarget, &pColPoint, &pGameEntity );
-
-                    CVector vecCollision;
-                    ElementID CollisionEntityID = INVALID_ELEMENT_ID;
-                    CClientEntity* pCollisionEntity = NULL;
-                    if ( bCollision && pColPoint )
-                    {
-                        vecCollision = *pColPoint->GetPosition ();
-                        if ( pGameEntity )
-                        {
-                            CClientEntity* pEntity = m_pManager->FindEntity ( pGameEntity );
-                            if ( pEntity )
-                            {
-                                pCollisionEntity = pEntity;
-                                CollisionEntityID = pEntity->GetID ();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        vecCollision = vecTarget;
-                    }
-
-                    // Destroy the colpoint so we don't get a leak
-                    if ( pColPoint )
-                    {
-                        pColPoint->Destroy ();
-                    }
-
-                    char* szButton = NULL;
-                    char* szState = NULL;
-                    switch ( ucButtonHit )
-                    {
-                        case 0: szButton = "left"; szState = "down";
-                            break;
-                        case 1: szButton = "left"; szState = "up";
-                            break;
-                        case 2: szButton = "middle"; szState = "down";
-                            break;
-                        case 3: szButton = "middle"; szState = "up";
-                            break;
-                        case 4: szButton = "right"; szState = "down";
-                            break;
-                        case 5: szButton = "right"; szState = "up";
-                            break;
-                    }
-                    if ( szButton && szState )
-                    {
-                        if ( _isnan( vecCollision.fX ) ) vecCollision.fX = 0;
-                        if ( _isnan( vecCollision.fY ) ) vecCollision.fY = 0;
-                        if ( _isnan( vecCollision.fZ ) ) vecCollision.fZ = 0;
-
-                        // Call the event for the client
-                        lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
-                        lua_pushstring( L, szButton );
-                        lua_pushstring( L, szState );
-                        lua_pushnumber( L, vecCursorPosition.fX );
-                        lua_pushnumber( L, vecCursorPosition.fY );
-                        lua_pushnumber( L, vecCollision.fX );
-                        lua_pushnumber( L, vecCollision.fY );
-                        lua_pushnumber( L, vecCollision.fZ );
-                        if ( pCollisionEntity )
-                            pCollisionEntity->PushStack( L );
-                        else
-                            lua_pushboolean( L, false );
-
-                        m_pRootEntity->CallEvent( "onClientClick", L, 8 );
-
-                        // Send the button, cursor position, 3d position and the entity collided with
-                        CBitStream bitStream;
-
-                        SMouseButtonSync button;
-                        button.data.ucButton = ucButtonHit;
-                        bitStream.pBitStream->Write ( &button );
-
-                        bitStream.pBitStream->WriteCompressed ( static_cast < unsigned short > ( vecCursorPosition.fX  ) );
-                        bitStream.pBitStream->WriteCompressed ( static_cast < unsigned short > ( vecCursorPosition.fY  ) );
-
-                        SPositionSync position ( false );
-                        position.data.vecPosition = vecCollision;
-                        bitStream.pBitStream->Write ( &position );
-
-                        if ( CollisionEntityID != INVALID_ELEMENT_ID )
-                        {
-                            bitStream.pBitStream->WriteBit ( true );
-                            bitStream.pBitStream->Write ( CollisionEntityID );
-                        }
-                        else
-                            bitStream.pBitStream->WriteBit ( false );
-
-                        m_pNetAPI->RPC ( CURSOR_EVENT, bitStream.pBitStream );
-
-                        if ( strcmp(szState, "down") == 0 )
-                        {
-                            CVector2D vecDelta = m_vecLastCursorPosition - vecCursorPosition;
-
-                            if (    ( GetTickCount32() - m_ulLastClickTick ) < DOUBLECLICK_TIMEOUT &&
-                                    vecDelta.Length() <= DOUBLECLICK_MOVE_THRESHOLD )
-                            {
-                                // Call the event for the client
-                                lua_pushstring( L, szButton );
-                                lua_pushstring( L, szState );
-                                lua_pushnumber( L, vecCursorPosition.fX );
-                                lua_pushnumber( L, vecCursorPosition.fY );
-                                lua_pushnumber( L, vecCollision.fX );
-                                lua_pushnumber( L, vecCollision.fY );
-                                lua_pushnumber( L, vecCollision.fZ );
-                                if ( pCollisionEntity )
-                                    pCollisionEntity->PushStack( L );
-                                else
-                                    lua_pushboolean( L, false );
-
-                                m_pRootEntity->CallEvent( "onClientDoubleClick", L, 8 );
-                            }
-
-                            m_ulLastClickTick = GetTickCount32();
-                            m_vecLastCursorPosition = vecCursorPosition;
-                        }
-
-                        return true;
-                    }
+                    pCollisionEntity = pEntity;
+                    CollisionEntityID = pEntity->GetID ();
                 }
             }
+        }
+        else
+        {
+            vecCollision = vecTarget;
+        }
+
+        // Destroy the colpoint so we don't get a leak
+        if ( pColPoint )
+        {
+            pColPoint->Destroy ();
+        }
+
+        char* szButton = NULL;
+        char* szState = NULL;
+        switch ( ucButtonHit )
+        {
+            case 0: szButton = "left"; szState = "down";
+                break;
+            case 1: szButton = "left"; szState = "up";
+                break;
+            case 2: szButton = "middle"; szState = "down";
+                break;
+            case 3: szButton = "middle"; szState = "up";
+                break;
+            case 4: szButton = "right"; szState = "down";
+                break;
+            case 5: szButton = "right"; szState = "up";
+                break;
+        }
+        if ( szButton && szState )
+        {
+            if ( _isnan( vecCollision.fX ) ) vecCollision.fX = 0;
+            if ( _isnan( vecCollision.fY ) ) vecCollision.fY = 0;
+            if ( _isnan( vecCollision.fZ ) ) vecCollision.fZ = 0;
+
+            // Call the event for the client
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            lua_pushstring( L, szButton );
+            lua_pushstring( L, szState );
+            lua_pushnumber( L, vecCursorPosition.fX );
+            lua_pushnumber( L, vecCursorPosition.fY );
+            lua_pushnumber( L, vecCollision.fX );
+            lua_pushnumber( L, vecCollision.fY );
+            lua_pushnumber( L, vecCollision.fZ );
+            if ( pCollisionEntity )
+                pCollisionEntity->PushStack( L );
+            else
+                lua_pushboolean( L, false );
+
+            m_pRootEntity->CallEvent( "onClientClick", L, 8 );
+
+            // Send the button, cursor position, 3d position and the entity collided with
+            CBitStream bitStream;
+
+            SMouseButtonSync button;
+            button.data.ucButton = ucButtonHit;
+            bitStream.pBitStream->Write ( &button );
+
+            bitStream.pBitStream->WriteCompressed ( static_cast < unsigned short > ( vecCursorPosition.fX  ) );
+            bitStream.pBitStream->WriteCompressed ( static_cast < unsigned short > ( vecCursorPosition.fY  ) );
+
+            SPositionSync position ( false );
+            position.data.vecPosition = vecCollision;
+            bitStream.pBitStream->Write ( &position );
+
+            if ( CollisionEntityID != INVALID_ELEMENT_ID )
+            {
+                bitStream.pBitStream->WriteBit ( true );
+                bitStream.pBitStream->Write ( CollisionEntityID );
+            }
+            else
+                bitStream.pBitStream->WriteBit ( false );
+
+            m_pNetAPI->RPC ( CURSOR_EVENT, bitStream.pBitStream );
+
+            if ( strcmp(szState, "down") == 0 )
+            {
+                CVector2D vecDelta = m_vecLastCursorPosition - vecCursorPosition;
+
+                if (    ( GetTickCount32() - m_ulLastClickTick ) < DOUBLECLICK_TIMEOUT &&
+                        vecDelta.Length() <= DOUBLECLICK_MOVE_THRESHOLD )
+                {
+                    // Call the event for the client
+                    lua_pushstring( L, szButton );
+                    lua_pushstring( L, szState );
+                    lua_pushnumber( L, vecCursorPosition.fX );
+                    lua_pushnumber( L, vecCursorPosition.fY );
+                    lua_pushnumber( L, vecCollision.fX );
+                    lua_pushnumber( L, vecCollision.fY );
+                    lua_pushnumber( L, vecCollision.fZ );
+                    if ( pCollisionEntity )
+                        pCollisionEntity->PushStack( L );
+                    else
+                        lua_pushboolean( L, false );
+
+                    m_pRootEntity->CallEvent( "onClientDoubleClick", L, 8 );
+                }
+
+                m_ulLastClickTick = GetTickCount32();
+                m_vecLastCursorPosition = vecCursorPosition;
+            }
+
+            return true;
         }
     }
-    switch ( uMsg )
+
+doNotHandle:
+    switch( uMsg )
     {
-        case WM_MOUSEMOVE:
+    case WM_MOUSEMOVE:
+    {
+        int iX = LOWORD ( lParam ), iY = HIWORD ( lParam );
+        static int iPreviousX = 0, iPreviousY = 0;
+        if ( iX != iPreviousX || iY != iPreviousY )
         {
-            int iX = LOWORD ( lParam ), iY = HIWORD ( lParam );
-            static int iPreviousX = 0, iPreviousY = 0;
-            if ( iX != iPreviousX || iY != iPreviousY )
-            {
-                iPreviousX = iX, iPreviousY = iY;
+            iPreviousX = iX, iPreviousY = iY;
 
-                CVector2D vecResolution = g_pCore->GetGUI ()->GetResolution ();
-                CVector2D vecCursorPosition ( ( ( float ) iX ) / vecResolution.fX,
-                                                ( ( float ) iY ) / vecResolution.fY );
+            CVector2D vecResolution = g_pCore->GetGUI ()->GetResolution ();
+            CVector2D vecCursorPosition ( ( ( float ) iX ) / vecResolution.fX,
+                                            ( ( float ) iY ) / vecResolution.fY );
 
-                CVector vecTarget, vecScreen ( ( float )iX, ( float )iY, 300.0f );
-                g_pCore->GetGraphics ()->CalcWorldCoors ( &vecScreen, &vecTarget );
+            CVector vecTarget, vecScreen ( ( float )iX, ( float )iY, 300.0f );
+            g_pCore->GetGraphics ()->CalcWorldCoors ( &vecScreen, &vecTarget );
 
-                // Call the onClientCursorMove event
-                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
-                lua_pushnumber( L, vecCursorPosition.fX );
-                lua_pushnumber( L, vecCursorPosition.fY );
-                lua_pushnumber( L, iX );
-                lua_pushnumber( L, iY );
-                lua_pushnumber( L, vecTarget.fX );
-                lua_pushnumber( L, vecTarget.fY );
-                lua_pushnumber( L, vecTarget.fZ );
-                m_pRootEntity->CallEvent( "onClientCursorMove", L, 7 );
-            }
-            break;
+            // Call the onClientCursorMove event
+            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+            lua_pushnumber( L, vecCursorPosition.fX );
+            lua_pushnumber( L, vecCursorPosition.fY );
+            lua_pushnumber( L, iX );
+            lua_pushnumber( L, iY );
+            lua_pushnumber( L, vecTarget.fX );
+            lua_pushnumber( L, vecTarget.fY );
+            lua_pushnumber( L, vecTarget.fZ );
+            m_pRootEntity->CallEvent( "onClientCursorMove", L, 7 );
         }
+        break;
+    }
     }
     return false;
 }

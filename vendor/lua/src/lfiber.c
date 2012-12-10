@@ -115,6 +115,7 @@ void __declspec(naked) luaX_switch( Fiber *from, Fiber *to )
         mov [eax+20],ebp
 
 #ifdef _WIN32
+        // Save exception and stack info
         mov ebx,fs:[0]
         mov ecx,fs:[4]
         mov edx,fs:[8]
@@ -141,6 +142,50 @@ void __declspec(naked) luaX_switch( Fiber *from, Fiber *to )
         mov fs:[0],ecx
 #endif
 
-        jmp [eax+16]
+        jmp dword ptr[eax+16]
+    }
+}
+
+// For use with yielding
+void __declspec(naked) luaX_qswitch( Fiber *from, Fiber *to )
+{
+    __asm
+    {
+        // Save current environment
+        mov eax,[esp+4]
+        mov [eax],ebx
+        mov [eax+4],edi
+        mov [eax+8],esi
+        add esp,4
+        mov [eax+12],esp
+        mov ebx,[esp-4]
+        mov [eax+16],ebx
+        mov [eax+20],ebp
+
+#ifdef _WIN32
+        // Save exception info
+        mov ebx,fs:[0]
+        mov [eax+32],ebx
+#endif
+
+        // Apply registers
+        mov eax,[esp+4]
+        mov ebx,[eax]
+        mov edi,[eax+4]
+        mov esi,[eax+8]
+        mov esp,[eax+12]
+        mov ebp,[eax+20]
+
+#ifdef _WIN32
+        // Apply exception and stack info
+        mov ecx,[eax+24]
+        mov edx,[eax+28]
+        mov fs:[4],ecx
+        mov fs:[8],edx
+        mov ecx,[eax+32]
+        mov fs:[0],ecx
+#endif
+
+        jmp dword ptr[eax+16]
     }
 }

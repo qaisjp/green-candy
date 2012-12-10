@@ -293,8 +293,6 @@ public:
     void                                ProcessServerControlBind        ( CControlFunctionBind* pBind );
     
     bool                                ProcessMessageForCursorEvents   ( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
-    inline bool                         AreCursorEventsEnabled          ( void )                        { return m_bCursorEventsEnabled; }
-    inline void                         SetCursorEventsEnabled          ( bool bCursorEventsEnabled )   { m_bCursorEventsEnabled = bCursorEventsEnabled; }
 
     CClientPlayer *                     GetClosestRemotePlayer          ( const CVector & vecTemp, float fMaxDistance );
 
@@ -534,7 +532,6 @@ private:
     eWeaponSlot                         m_lastWeaponSlot;
     DWORD                               m_wasWeaponAmmoInClip[WEAPONSLOT_MAX + 1];
 
-    bool                                m_bCursorEventsEnabled;
     bool                                m_bLocalPlay;
 
     bool                                m_bShowNetstat;
