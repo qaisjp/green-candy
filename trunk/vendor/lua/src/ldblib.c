@@ -12,6 +12,7 @@
 #define ldblib_c
 
 #include "lua.h"
+#include "lstate.h"
 
 #include "lauxlib.h"
 #include "lualib.h"
@@ -314,6 +315,12 @@ static int db_debug (lua_State *L) {
   }
 }
 
+static int db_getgcthread( lua_State *L )
+{
+    lua_pushthreadex( L, G(L)->GCthread );
+    return 1;
+}
+
 
 #define LEVELS1	12	/* size of the first part of the stack */
 #define LEVELS2	10	/* size of the second part of the stack */
@@ -373,6 +380,7 @@ static int db_errorfb (lua_State *L) {
 
 static const luaL_Reg dblib[] = {
   {"debug", db_debug},
+  {"getgcthread", db_getgcthread},
   {"getfenv", db_getfenv},
   {"gethook", db_gethook},
   {"getinfo", db_getinfo},

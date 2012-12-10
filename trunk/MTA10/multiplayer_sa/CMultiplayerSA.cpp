@@ -5436,7 +5436,9 @@ void _cdecl DoWait ( HANDLE hHandle )
     DWORD dwResult = WaitForSingleObject ( hHandle, dwWait );
     if ( dwResult == WAIT_TIMEOUT )
     {
+#if 0
         AddReportLog ( 6211, SString ( "WaitForSingleObject timed out with %08x and %dms", hHandle, dwWait ) );
+#endif
         // This thread lock bug in GTA will have to be fixed one day.
         // Until then, a 5 second freeze should be long enough for the loading thread to have finished it's job.
 #if 0

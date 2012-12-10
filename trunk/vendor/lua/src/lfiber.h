@@ -35,5 +35,6 @@ LUAI_FUNC Fiber* luaX_newfiber( lua_State *L, size_t stackSize, FiberProcedure p
 LUAI_FUNC Fiber* luaX_makefiber( lua_State *L );
 LUAI_FUNC void luaX_closefiber( lua_State *L, Fiber *env );
 LUAI_FUNC void __cdecl luaX_switch( Fiber *from, Fiber *to );
+LUAI_FUNC void __cdecl luaX_qswitch( Fiber *from, Fiber *to );
 
 #endif //_l_fiber

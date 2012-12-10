@@ -3588,37 +3588,32 @@ bool CStaticFunctionDefinitions::GetCameraViewMode ( unsigned short& ucMode )
 
 bool CStaticFunctionDefinitions::GetCursorPosition ( CVector2D& vecCursor, CVector& vecWorld )
 {
-    if ( m_pClientGame->AreCursorEventsEnabled () || GUIGetInputEnabled () )
-    {
-        tagPOINT point;
-        GetCursorPos ( &point );
-        
-        HWND hookedWindow = g_pCore->GetHookedWindow ();
+    tagPOINT point;
+    GetCursorPos ( &point );
+    
+    HWND hookedWindow = g_pCore->GetHookedWindow ();
 
-        tagPOINT windowPos = { 0 };
-        ClientToScreen( hookedWindow, &windowPos );
+    tagPOINT windowPos = { 0 };
+    ClientToScreen( hookedWindow, &windowPos );
 
-        CVector2D vecResolution = g_pCore->GetGUI ()->GetResolution ();
-        point.x -= windowPos.x;
-        point.y -= windowPos.y;
-        if ( point.x < 0 )
-            point.x = 0;
-        else if ( point.x > ( long ) vecResolution.fX )
-            point.x = ( long ) vecResolution.fX;
-        if ( point.y < 0 )
-            point.y = 0;
-        else if ( point.y > ( long ) vecResolution.fY )
-            point.y = ( long ) vecResolution.fY;
+    CVector2D vecResolution = g_pCore->GetGUI ()->GetResolution ();
+    point.x -= windowPos.x;
+    point.y -= windowPos.y;
+    if ( point.x < 0 )
+        point.x = 0;
+    else if ( point.x > ( long ) vecResolution.fX )
+        point.x = ( long ) vecResolution.fX;
+    if ( point.y < 0 )
+        point.y = 0;
+    else if ( point.y > ( long ) vecResolution.fY )
+        point.y = ( long ) vecResolution.fY;
 
-        vecCursor = CVector2D ( ( ( float ) point.x ) / vecResolution.fX,
-                                ( ( float ) point.y ) / vecResolution.fY );
+    vecCursor = CVector2D ( ( ( float ) point.x ) / vecResolution.fX,
+                            ( ( float ) point.y ) / vecResolution.fY );
 
-        CVector vecScreen ( ( float ) ( ( int ) point.x ), ( float ) ( ( int ) point.y ), 300.0f );
-        g_pCore->GetGraphics ()->CalcWorldCoors ( &vecScreen, &vecWorld );
-
-        return true;        
-    }
-    return false;
+    CVector vecScreen ( ( float ) ( ( int ) point.x ), ( float ) ( ( int ) point.y ), 300.0f );
+    g_pCore->GetGraphics ()->CalcWorldCoors ( &vecScreen, &vecWorld );
+    return true;
 }
 
 
@@ -3650,7 +3645,7 @@ ID3DXFont* CStaticFunctionDefinitions::ResolveD3DXFont ( const SString& strFontN
 
 bool CStaticFunctionDefinitions::IsCursorShowing ( bool& bShowing )
 {
-    bShowing = m_pClientGame->AreCursorEventsEnabled () || m_pCore->IsCursorForcedVisible();
+    bShowing = m_pCore->IsCursorForcedVisible();
     return true;
 }
 

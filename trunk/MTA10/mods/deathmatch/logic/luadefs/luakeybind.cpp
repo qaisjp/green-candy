@@ -75,7 +75,7 @@ void CScriptKeyBind::AcquireArguments( lua_State *L, int argCount )
     m_class->PushEnvironment( L );
     lua_getfield( L, -1, "args" );
 
-    lua_insert( L, -argCount - 2 );
+    lua_insert( L, tidx );
     lua_pop( L, 1 );
 
     lua_stack2table( L, tidx, argCount );

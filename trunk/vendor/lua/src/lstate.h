@@ -180,17 +180,16 @@ public:
     inline void resume()
     {
         // Expand the context stack
-        Fiber *_callee = luaX_makefiber( this );
-        callee = _callee;
+        Fiber _callee;
+        callee = &_callee;
 
-        luaX_switch( _callee, fiber );
-
-        luaX_closefiber( this, _callee );
+        luaX_switch( &_callee, fiber );
     }
 
     inline void yield()
     {
-        luaX_switch( fiber, callee );
+        // Optimized yield switch
+        luaX_qswitch( fiber, callee );
     }
 
     bool isMain;
