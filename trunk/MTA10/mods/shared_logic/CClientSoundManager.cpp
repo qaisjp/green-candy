@@ -112,9 +112,8 @@ CClientSound* CClientSoundManager::PlaySound2D( const SString& strSound, bool bI
         pSound->PlayStream( strSound, bLoop );
         return pSound;
     }
-    else
-        if ( pSound->Play( strSound, bLoop ) )
-            return pSound;
+    else if ( pSound->Play( strSound, bLoop ) )
+        return pSound;
 
     pSound->Delete();
     return NULL;

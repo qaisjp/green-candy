@@ -54,9 +54,6 @@ CClientCamera::CClientCamera( CClientManager* pManager ) : CClientEntity( INVALI
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
 
-    // Set our parent
-    SetRoot( resMan );
-
     CClientEntityRefManager::AddEntityRefs ( ENTITY_REF_DEBUG ( this, "CClientCamera" ), &m_pFocusedPlayer, &m_pFocusedEntity, NULL );
 
     // Init
@@ -79,17 +76,18 @@ CClientCamera::CClientCamera( CClientManager* pManager ) : CClientEntity( INVALI
     g_pMultiplayer->SetProcessCamHandler ( CClientCamera::ProcessFixedCamera );
 }
 
-CClientCamera::~CClientCamera ()
+CClientCamera::~CClientCamera()
 {
     m_pManager->m_pCamera = NULL;
 
     // We need to be ingame
-    if ( g_pGame->GetSystemState () == 9 )
+    if ( g_pGame->GetSystemState() == GS_PLAYING_GAME )
     {
         // Restore the camera to the local player
         SetFocusToLocalPlayerImpl ();
     }
-    CClientEntityRefManager::RemoveEntityRefs ( 0, &m_pFocusedPlayer, &m_pFocusedEntity, NULL );
+
+    CClientEntityRefManager::RemoveEntityRefs( 0, &m_pFocusedPlayer, &m_pFocusedEntity, NULL );
 }
 
 void CClientCamera::DoPulse ( void )

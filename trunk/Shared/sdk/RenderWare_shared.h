@@ -198,9 +198,9 @@ public:
 
     RwMatrix operator * ( const RwMatrix& mat )
     {
-        RwMatrix outmt;
-        Multiply( mat, outmt );
-        return outmt;
+        float outmt[16];
+        Multiply( mat, (RwMatrix&)outmt );
+        return (RwMatrix&)outmt;
     }
 
     RwMatrix operator / ( RwMatrix other )

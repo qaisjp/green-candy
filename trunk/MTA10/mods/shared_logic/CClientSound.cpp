@@ -58,6 +58,10 @@ CClientSound::CClientSound( CClientManager* pManager, ElementID ID, lua_State *L
     m_fMinDistance = 5.0f;
     m_fMaxDistance = 20.0f;
     m_fPlaybackSpeed = 1.0f;
+
+    // Set up the effects array
+    for ( unsigned char n = 0; n < NUMELMS( m_EnabledEffects ); n++ )
+        m_EnabledEffects[n] = 0;
 }
 
 CClientSound::~CClientSound ( void )

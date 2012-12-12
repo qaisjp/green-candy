@@ -179,7 +179,6 @@ public:
     
     inline void resume()
     {
-        // Expand the context stack
         Fiber _callee;
         callee = &_callee;
 
@@ -188,7 +187,7 @@ public:
 
     inline void yield()
     {
-        // Optimized yield switch
+        // Optimized yield qswitch
         luaX_qswitch( fiber, callee );
     }
 
