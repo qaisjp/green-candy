@@ -30,17 +30,9 @@ static EXCEPTION_DISPOSITION _defaultHandler( EXCEPTION_REGISTRATION *record, vo
     return ExceptionContinueSearch;
 }
 
-EXCEPTION_DISPOSITION FinalExceptionHandler( EXCEPTION_REGISTRATION *record, void *frame, CONTEXT *context, void *dispatcher );
-
-static EXCEPTION_REGISTRATION _finalHandler =
-{
-    (EXCEPTION_REGISTRATION*)0xFFFFFFFF,
-    NULL
-};
-
 static EXCEPTION_REGISTRATION _baseException =
 {
-    &_finalHandler,
+    (EXCEPTION_REGISTRATION*)0xFFFFFFFF,
     _defaultHandler
 };
 #endif
@@ -76,8 +68,6 @@ Fiber* luaX_newfiber( lua_State *L, size_t stackSize, FiberProcedure proc )
     
 #ifdef _WIN32
     env->except_info = &_baseException;
-
-    _finalHandler.Handler = (void*)GetProcAddress( GetModuleHandle("ntdll.dll"), "FinalExceptionHandler" );
 #endif
 
     env->stackSize = stackSize;

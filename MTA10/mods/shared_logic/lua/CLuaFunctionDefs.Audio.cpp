@@ -16,6 +16,8 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -24,32 +26,46 @@ namespace CLuaFunctionDefs
 {
     LUA_DECLARE( playSound )
     {
-        if ( lua_istype ( L, 1, LUA_TSTRING ) )
+        filePath strSound;
+        bool loop;
+
+        CScriptArgReader argStream( L );
+
+        argStream.ReadString( strSound );
+        argStream.ReadBool( loop, false );
+
+        if ( !argStream.HasErrors() )
         {
-            SString strSound = lua_tostring ( L, 1 );
-            CLuaMain * luaMain = lua_readcontext( L );
-            CResource* pResource = luaMain->GetResource();
+            filePath strSound = lua_getstring( L, 1 );
+            CLuaMain *luaMain = lua_readcontext( L );
+            CResource *resource = luaMain->GetResource();
 
-            filePath strFilename;
+            // Check if it is a URL
+            bool isURL = strnicmp( strSound.c_str(), "http:", 5 ) == 0 || strnicmp( strSound.c_str(), "www.", 4 ) == 0;
             const char *meta;
-            bool bIsURL = !m_pResourceManager->ParseResourceFullPath( (Resource*&)pResource, strSound, meta, strFilename );
 
-            if ( !bIsURL )
-                strSound = strFilename;
-
-            bool bLoop = false;
-            if ( lua_istype ( L, 2, LUA_TBOOLEAN ) )
+            if ( !isURL )
             {
-                bLoop = ( lua_toboolean ( L, 2 ) ) ? true : false;
+                filePath strFilename;
+
+                if ( !m_pResourceManager->ParseResourceFullPath( (Resource*&)resource, strSound.c_str(), meta, strFilename ) )
+                    goto fail;
+
+                strSound = strFilename;
             }
 
-            CClientSound* pSound = CStaticFunctionDefinitions::PlaySound ( pResource, strSound, bIsURL, bLoop );
-            if ( pSound )
+            CClientSound *sound = CStaticFunctionDefinitions::PlaySound( resource, strSound, isURL, loop );
+
+            if ( sound )
             {
-                pSound->PushStack( L );
+                sound->PushStack( L );
                 return 1;
             }
         }
+        else
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+fail:
         lua_pushboolean ( L, false );
         return 1;
     }

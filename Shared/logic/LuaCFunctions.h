@@ -64,7 +64,7 @@ namespace LuaCFunctions
 
     void            RemoveAllFunctions();
 
-    void             InitializeHashMaps();
+    void            InitializeHashMaps();
 };
 
 #endif //_BASIC_LUA_FUNCTIONS_

@@ -139,6 +139,9 @@ inline static bool class_preDestructor( lua_State *L, Class& j )
 
     bool reqWorthy = false;
 
+    // We potencially are operating at an unstable state here, since we use child_iter from
+    // a destroyed class. It is a thrilling optimization not having to secure it from GC!
+    // If crashes report at this loop, I will take care of it (very unlikely) due to current GC architecture).
     LIST_FOREACH_BEGIN( Class, j.children.root, child_iter )
         item->PushMethod( L, "destroy" );
         lua_call( L, 0, 0 );
@@ -178,7 +181,8 @@ void Class::CheckDestruction( lua_State *L )
     // from destruction. Hahaha!
     // For this reason, be sure to prevent yield-deadlocks by using lua_yield_shield
     // because the Lua environment is coroutine-safe. A halted coroutine in a class callback
-    // handler runtime will prevent the class' destruction!
+    // handler runtime will prevent the class' destruction until the runtime left the class'
+    // methods!
     if ( reqDestruction && inMethod == 0 )
     {
         lua_yield_shield _ref( L ); // prevent destructor yielding
@@ -198,6 +202,8 @@ void Class::DecrementMethodStack( lua_State *lua )
     CheckDestruction( lua );
 }
 
+// Used to clear referebces put by scripts; MTA clears them for
+// every internal class prior to destruction
 void Class::ClearReferences( lua_State *lua )
 {
     if ( !refCount )
@@ -905,7 +911,7 @@ static int classmethod_destructor( lua_State *L )
     j->outenv = NULL;
     j->methods = NULL;
     j->storage = NULL;
-    j->destructor = luaO_nilobject_;
+    setnilvalue( &j->destructor );
 
     j->destroyed = true;
     j->destroying = false;

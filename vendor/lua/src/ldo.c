@@ -333,8 +333,8 @@ int luaD_precall (lua_State *L, StkId func, int nresults)
 
     if ( n < 0 )
     {
-        lua_yield( L, 0 );
         luaD_poscall( L, L->top );
+        lua_yield( L, 0 );
         return PCRC;
     }
 
@@ -371,7 +371,7 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
   while (i-- > 0)
     setnilvalue(res++);
   L->top = res;
-  return (wanted - LUA_MULTRET);  /* 0 iff wanted == LUA_MULTRET */
+  return (wanted - LUA_MULTRET);  /* 0 if wanted == LUA_MULTRET */
 }
 
 

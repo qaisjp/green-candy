@@ -17,6 +17,8 @@
 *               Sebas Lamers <sebasdevelopment@gmx.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"

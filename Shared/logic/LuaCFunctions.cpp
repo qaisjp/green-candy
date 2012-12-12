@@ -40,7 +40,7 @@ namespace LuaCFunctions
         RemoveAllFunctions();
     }
 
-    void InitializeHashMaps ( )
+    void InitializeHashMaps()
     {
         if ( !mapsInitialized )
         {
