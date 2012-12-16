@@ -429,7 +429,7 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors () )
         {
-            bool bResult = g_pCore->GetGraphics ()->GetRenderItemManager ()->ApplyShaderItemToWorldTexture ( pShader->GetShaderItem (), strTextureNameMatch, fOrderPriority );
+            bool bResult = g_pCore->GetGraphics ()->GetRenderItemManager ()->ApplyShaderItemToWorldTexture ( pShader->GetShaderItem (), strTextureNameMatch, NULL );
             lua_pushboolean ( L, bResult );
             return 1;
         }
@@ -452,7 +452,7 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors () )
         {
-            bool bResult = g_pCore->GetGraphics ()->GetRenderItemManager ()->RemoveShaderItemFromWorldTexture ( pShader->GetShaderItem (), strTextureNameMatch );
+            bool bResult = g_pCore->GetGraphics ()->GetRenderItemManager ()->RemoveShaderItemFromWorldTexture ( pShader->GetShaderItem (), strTextureNameMatch, NULL );
             lua_pushboolean ( L, bResult );
             return 1;
         }

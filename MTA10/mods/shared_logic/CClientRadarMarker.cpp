@@ -63,8 +63,6 @@ CClientRadarMarker::CClientRadarMarker( CClientManager* pManager, ElementID ID, 
     m_usScale = 2;
     m_ulSprite = 0;
     m_Color = SColorRGBA ( 0, 0, 255, 255 );
-    m_pMapMarkerImage = NULL;
-    m_eMapMarkerState = MAP_MARKER_OTHER;
     m_sOrdering = sOrdering;
     m_usVisibleDistance = usVisibleDistance;
 
@@ -180,8 +178,6 @@ void CClientRadarMarker::SetColor( const SColor color )
             m_pMarker->SetColor( m_Color );
         }
     }
-
-    SetMapMarkerState( m_eMapMarkerState );
 }
 
 void CClientRadarMarker::SetSprite( unsigned long ulSprite )
@@ -191,31 +187,6 @@ void CClientRadarMarker::SetSprite( unsigned long ulSprite )
     if ( m_pMarker )
     {
         m_pMarker->SetSprite( (eMarkerSprite)ulSprite );
-    }
-    if ( ulSprite == 0 )
-    {
-        if ( m_pMapMarkerImage )
-        {
-            m_pMapMarkerImage->Release();
-            m_pMapMarkerImage = NULL;
-        }
-
-        SetMapMarkerState( MAP_MARKER_SQUARE );
-    }
-    else if ( ulSprite <= RADAR_MARKER_LIMIT )
-    {
-        m_eMapMarkerState = MAP_MARKER_OTHER;
-
-        if ( m_pMapMarkerImage )
-        {
-            m_pMapMarkerImage->Release();
-            m_pMapMarkerImage = NULL;
-        }
-
-        filePath texPath;
-        mtaFileRoot->GetFullPathFromRoot( SString( "MTA/cgui/images/radarset/%02u.png", ulSprite ).c_str(), true, texPath );
-
-        m_pMapMarkerImage = g_pCore->GetGraphics()->LoadTexture( texPath );
     }
 }
 
@@ -263,12 +234,6 @@ void CClientRadarMarker::InternalCreate()
 void CClientRadarMarker::Destroy()
 {
     DestroyMarker();
-
-    if ( m_pMapMarkerImage )
-    {
-        m_pMapMarkerImage->Release();
-        m_pMapMarkerImage = NULL;
-    }
 }
 
 void CClientRadarMarker::CreateMarker()
@@ -307,45 +272,6 @@ void CClientRadarMarker::DestroyMarker()
     {
         m_pMarker->Remove();
         m_pMarker = NULL;
-    }
-}
-
-void CClientRadarMarker::SetMapMarkerState( EMapMarkerState eMapMarkerState )
-{
-    m_eMapMarkerState = eMapMarkerState;
-
-    if ( !m_ulSprite )
-    {
-        DWORD dwBitMap[MAP_MARKER_WIDTH*MAP_MARKER_HEIGHT];
-
-        if ( m_pMapMarkerImage )
-        {
-            m_pMapMarkerImage->Release();
-            m_pMapMarkerImage = NULL;
-        }
-
-        switch ( eMapMarkerState )
-        {
-            case MAP_MARKER_SQUARE:
-            {
-                GetSquareTexture ( dwBitMap );
-                m_pMapMarkerImage = g_pCore->GetGraphics()->CreateTexture ( dwBitMap, MAP_MARKER_WIDTH, MAP_MARKER_HEIGHT );
-                break;
-            }
-            case MAP_MARKER_TRIANGLE_UP:
-            {
-                GetUpTriangleTexture ( dwBitMap );
-                m_pMapMarkerImage = g_pCore->GetGraphics()->CreateTexture ( dwBitMap, MAP_MARKER_WIDTH, MAP_MARKER_HEIGHT );
-                break;
-            }
-            case MAP_MARKER_TRIANGLE_DOWN:
-            {
-                GetDownTriangleTexture ( dwBitMap );
-                m_pMapMarkerImage = g_pCore->GetGraphics()->CreateTexture ( dwBitMap, MAP_MARKER_WIDTH, MAP_MARKER_HEIGHT );
-                break;
-            }
-            default: break;
-        }
     }
 }
 

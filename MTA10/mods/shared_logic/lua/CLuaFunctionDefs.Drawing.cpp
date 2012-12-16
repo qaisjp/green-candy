@@ -512,7 +512,7 @@ namespace CLuaFunctionDefs
                 CClientTexture* pTexture;
                 if ( argStream.ReadClass( pTexture, LUACLASS_CORETEXTURE ) )
                 {
-                    bool bResult = g_pCore->GetGraphics ()->GetRenderItemManager ()->SetShaderValue ( pShader->GetShaderItem (), strName, pTexture->GetTextureItem () );
+                    bool bResult = pShader->GetShaderItem()->SetValue( strName, pTexture->GetTextureItem() );
                     lua_pushboolean ( L, bResult );
                     return 1;
                 }
@@ -523,7 +523,7 @@ namespace CLuaFunctionDefs
                 bool bValue;
                 if ( argStream.ReadBool ( bValue ) )
                 {
-                    bool bResult = g_pCore->GetGraphics ()->GetRenderItemManager ()->SetShaderValue ( pShader->GetShaderItem (), strName, bValue );
+                    bool bResult = pShader->GetShaderItem()->SetValue( strName, bValue );
                     lua_pushboolean ( L, bResult );
                     return 1;
                 }
@@ -540,7 +540,7 @@ namespace CLuaFunctionDefs
                     if ( iArgument != LUA_TNUMBER && iArgument != LUA_TSTRING )
                         break;
                 }
-                bool bResult = g_pCore->GetGraphics ()->GetRenderItemManager ()->SetShaderValue ( pShader->GetShaderItem (), strName, fBuffer, i + 1 );
+                bool bResult = pShader->GetShaderItem()->SetValue( strName, fBuffer, i + 1 );
                 lua_pushboolean ( L, bResult );
                 return 1;
             }
@@ -598,15 +598,16 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( dxUpdateScreenSource )
     {
-    //  bool dxUpdateScreenSource( element screenSource )
         CClientScreenSource* pScreenSource;
+        bool resampleNow;
 
         CScriptArgReader argStream ( L );
         argStream.ReadClass( pScreenSource, LUACLASS_CORESCREENSOURCE );
+        argStream.ReadBool( resampleNow, false );
 
         if ( !argStream.HasErrors () )
         {
-            g_pCore->GetGraphics ()->GetRenderItemManager ()->UpdateScreenSource ( pScreenSource->GetScreenSourceItem () );
+            g_pCore->GetGraphics ()->GetRenderItemManager ()->UpdateScreenSource ( pScreenSource->GetScreenSourceItem (), resampleNow );
             lua_pushboolean ( L, true );
             return 1;
         }

@@ -15,7 +15,7 @@
 
 extern CCore* g_pCore;
 
-static char szScreenShotPath[MAX_PATH] = {0};
+static CFileTranslator *saveRoot = NULL;
 static bool bIsChatVisible = false;
 static bool bIsDebugVisible = false;
 
@@ -27,9 +27,19 @@ static DWORD    ms_ulPitch          = 0;
 static SString  ms_strFileName;
 
 
+void CScreenShot::Init()
+{
+    
+}
+
+void CScreenShot::Shutdown()
+{
+    // Unlock the screenshot dir
+    delete saveRoot;
+}
+
 SString CScreenShot::PreScreenShot ()
 {
-
     bIsChatVisible = g_pCore->IsChatVisible ();
     bIsDebugVisible = g_pCore->IsDebugVisible ();
 
@@ -52,77 +62,72 @@ void CScreenShot::PostScreenShot ( const char *szFileName )
     g_pCore->SetDebugVisible ( bIsDebugVisible );
 }
 
-void CScreenShot::SetPath ( const char *szPath )
+void CScreenShot::SetPath( const char *path )
 {
-    strncpy ( szScreenShotPath, szPath, MAX_PATH - 1 );
+    std::string screenDir( path );
+    screenDir += "screenshots/";
+    
+    // Unlock any previous dir
+    delete saveRoot;
 
-    // make sure the directory exists
-    mkdir ( szPath );
+    // Create the directory
+    fileRoot->CreateDir( screenDir.c_str() );
+
+    // Lock it
+    saveRoot = fileSystem->CreateTranslator( screenDir.c_str() );
 }
 
-int CScreenShot::GetScreenShots ( void )
+static void _screenshot_IncrementFileCount( const filePath& path, unsigned int& num )
 {
-    int iNumberOfFiles = 0;
-    HANDLE hFind;
-    WIN32_FIND_DATA fdFindData;
-    //Create a search string
-    SString strScreenShotName ( "%s\\mta-screen*.png", &szScreenShotPath[0] );
-    // Find the first match
-    hFind = FindFirstFile(strScreenShotName, &fdFindData); 
-    // Check if the first match failed
-    if ( hFind != INVALID_HANDLE_VALUE) {
-        iNumberOfFiles++;
-        //Loop through and count the files
-        while (FindNextFile(hFind, &fdFindData)) { 
-            //Keep going until we find the last file
-            iNumberOfFiles++;
-        }
-    }
-    //Close the file handle
-    FindClose(hFind);
-    return iNumberOfFiles;
+    num++;
 }
 
-SString CScreenShot::GetValidScreenshotFilename ( void )
+unsigned int CScreenShot::GetScreenShots()
+{
+    unsigned int numFiles = 0;
+
+    // Use the fileSystem API
+    saveRoot->ScanDirectory( "/", "mta-screen*.png", true, NULL, (pathCallback_t)_screenshot_IncrementFileCount, &numFiles );
+    return numFiles;
+}
+
+SString CScreenShot::GetValidScreenshotFilename()
 {
     //Get the system time
     SYSTEMTIME sysTime;
     GetLocalTime( &sysTime );
-    return SString("%s\\mta-screen_%d-%02d-%02d_%02d-%02d-%02d.png" ,&szScreenShotPath[0],sysTime.wYear, sysTime.wMonth, sysTime.wDay, sysTime.wHour, sysTime.wMinute, sysTime.wSecond);
+
+    filePath root;
+    saveRoot->GetFullPath( SString( "/mta-screen_%d-%02d-%02d_%02d-%02d-%02d.png", sysTime.wYear, sysTime.wMonth, sysTime.wDay, sysTime.wHour, sysTime.wMinute, sysTime.wSecond ).c_str(), true, root );
+    return root;
 }
 
-SString CScreenShot::GetScreenShotPath ( int iNumber )
+struct _scrshot_findstruct
 {
-    //Create a search string
-    SString strScreenShotName ( "%s\\mta-screen*.png", &szScreenShotPath[0] );
-    HANDLE hFind;
-    SString strReturn = "";
-    WIN32_FIND_DATA fdFindData;
-    int i = 1;
-    //Find the first match
-    hFind = FindFirstFile(strScreenShotName, &fdFindData);
-    //Check if the first match failed
-    if ( hFind != INVALID_HANDLE_VALUE) {
-        if (iNumber == 1) {
-            //We wanted the first file
-            strReturn = SString("%s\\%s",&szScreenShotPath[0],fdFindData.cFileName);
-        }
-        else
-        {
-            //Loop through and find all occurences of the file
-            while (FindNextFile(hFind, &fdFindData)) { 
-                //Keep going until we find the last file
-                i++;
-                if (iNumber == i) {
-                    strReturn = SString("%s\\%s",&szScreenShotPath[0], fdFindData.cFileName);
-                    break;
-                }
-            }
-        }
-    }
-    FindClose(hFind); //Close the file handle
+    unsigned int curIdx;
+    unsigned int idxFind;
+    SString outname;
+};
+
+static void _screenshot_GetByIndex( const filePath& path, _scrshot_findstruct *info )
+{
+    if ( info->curIdx++ == info->idxFind )
+        return;
+
+    info->outname = path;
+}
+
+SString CScreenShot::GetScreenShotPath( unsigned int num )
+{
+    _scrshot_findstruct info;
+    info.curIdx = 1;
+    info.idxFind = num;
+
+    // Use the fileSystem API
+    saveRoot->ScanDirectory( "/", "mta-screen*.png", true, NULL, (pathCallback_t)_screenshot_GetByIndex, &info );
+
     // Get Return the file directory
-    return strReturn;
+    return info.outname;
 }
 
 static void Png_Writer( png_struct *png, char *data, size_t size )
@@ -145,16 +150,19 @@ DWORD CScreenShot::ThreadProc ( LPVOID lpdwThreadParam )
     // Create the screen data buffer
     BYTE** ppScreenData = NULL;
     ppScreenData = new BYTE* [ ulScreenHeight ];
-    for ( unsigned short y = 0; y < ulScreenHeight; y++ ) {
+    for ( unsigned short y = 0; y < ulScreenHeight; y++ )
+    {
         ppScreenData[y] = new BYTE [ ulScreenWidth * 4 ];
     }
 
     // Copy the surface data into a row-based buffer for libpng
     #define BYTESPERPIXEL 4
     unsigned long ulLineWidth = ulScreenWidth * 4;
-    for ( unsigned int i = 0; i < ulScreenHeight; i++ ) {
+    for ( unsigned int i = 0; i < ulScreenHeight; i++ )
+    {
         memcpy ( ppScreenData[i], (BYTE*) ms_pBits + i* ms_ulPitch, ulLineWidth );
-        for ( unsigned int j = 3; j < ulLineWidth; j += BYTESPERPIXEL ) {
+        for ( unsigned int j = 3; j < ulLineWidth; j += BYTESPERPIXEL )
+        {
             ppScreenData[i][j] = 0xFF;
         }
     }

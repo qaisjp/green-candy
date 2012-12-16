@@ -176,6 +176,9 @@ CCore::CCore()
     m_pGraphics                 = new CGraphics( m_pLocalGUI );
     m_pGUI                      = NULL;
 
+    // Misc utils
+    CScreenShot::Init();
+
     // Create the mod manager
     m_pModManager               = new CModManager;
     m_server                    = new CServer( mtaRoot );
@@ -268,6 +271,9 @@ CCore::~CCore()
     delete m_pDirectInputHookManager;
     delete m_pMessageLoopHook;
     delete m_pTCPManager;
+
+    // Shutdown misc utils
+    CScreenShot::Shutdown();
 
     // Delete the GUI manager    
     delete m_pLocalGUI;
@@ -1873,4 +1879,14 @@ unsigned int CCore::GetMaxStreamingMemory ()
 {
     unsigned int iMemoryMB = g_pDeviceState->AdapterState.InstalledMemoryKB / 1024;
     return Max < uint > ( 64, iMemoryMB );
+}
+
+EDiagnosticDebugType CCore::GetDiagnosticDebug()
+{
+    return m_DiagnosticDebug;
+}
+
+void CCore::SetDiagnosticDebug( EDiagnosticDebugType value )
+{
+    m_DiagnosticDebug = value;
 }

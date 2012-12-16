@@ -160,7 +160,7 @@ public:
     // Extra Clothes functions
     static bool                         GetBodyPartName                     ( unsigned char ucID, char* szName );
     static bool                         GetClothesByTypeIndex               ( unsigned char ucType, unsigned char ucIndex, char* szTextureReturn, char* szModelReturn );
-    static bool                         GetTypeIndexFromClothes             ( char* szTexture, char* szModel, unsigned char& ucTypeReturn, unsigned char& ucIndexReturn );
+    static bool                         GetTypeIndexFromClothes             ( const char* szTexture, const char* szModel, unsigned char& ucTypeReturn, unsigned char& ucIndexReturn );
     static bool                         GetClothesTypeName                  ( unsigned char ucType, char* szNameReturn );
 
 

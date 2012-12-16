@@ -530,7 +530,7 @@ SString CInstallManager::_ProcessLayoutChecks ( void )
 
     // Check install dir writable
     {
-        SString strTestFilePath = CalcMTASAPath ( PathJoin ( "mta", "writetest.txt" ) );
+        SString strTestFilePath = GetMTASABaseDir() + "/mta/writetest.txt";
 
         FileDelete ( strTestFilePath );
 

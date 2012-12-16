@@ -389,6 +389,12 @@ public:
 
     struct SD3DVertexDeclState
     {
+        SD3DVertexDeclState ( void )
+        {
+            ZERO_POD_STRUCT( this );
+        }
+
+        bool bUsesStreamAtIndex[2];
         DWORD Position;
         DWORD PositionT;
         DWORD Normal;
@@ -400,15 +406,59 @@ public:
 
     struct SAdapterState
     {
-        char Name[128];
+        SFixedString < 128 > Name;
         int InstalledMemoryKB;
+        int MaxAnisotropicSetting;
+    };
+
+    struct SCallState
+    {
+        enum eD3DCallType
+        {
+            NONE,
+            DRAW_PRIMITIVE,
+            DRAW_INDEXED_PRIMITIVE,
+        };
+        eD3DCallType callType;
+        uint uiNumArgs;
+        int args [ 10 ];
+        SFixedString < 32 > strShaderName;
+        bool bShaderRequiresNormals;
+    };
+
+    struct SResourceMemory
+    {
+        int iCurrentCount;
+        int iCurrentBytes;
+        int iCreatedCount;
+        int iCreatedBytes;
+        int iDestroyedCount;
+        int iDestroyedBytes;
+        int iLockedCount;
+    };
+
+    struct SMemoryState
+    {
+        SResourceMemory StaticVertexBuffer;
+        SResourceMemory DynamicVertexBuffer;
+        SResourceMemory StaticIndexBuffer;
+        SResourceMemory DynamicIndexBuffer;
+        SResourceMemory StaticTexture;
+        SResourceMemory DynamicTexture;
+    };
+
+    struct SStreamSourceState
+    {
+        IDirect3DVertexBuffer9*     StreamData;
+        UINT                        StreamOffset;
+        UINT                        StreamStride;
     };
 
     struct SD3DDeviceState
     {
         SD3DDeviceState ()
         {
-            memset ( this, 0, sizeof(*this) );
+            ZERO_POD_STRUCT( this );
         }
 
         SD3DRenderState                 RenderState;
@@ -419,25 +469,27 @@ public:
         SD3DLightEnableState            LightEnableState[8];
 
         IDirect3DVertexDeclaration9*    VertexDeclaration;
+        IDirect3DVertexShader9*         VertexShader;
+        IDirect3DPixelShader9*          PixelShader;
         IDirect3DIndexBuffer9*          IndexBufferData;
         D3DLIGHT9                       Lights[8];
         D3DMATERIAL9                    Material;
         D3DCAPS9                        DeviceCaps;
         SD3DVertexDeclState             VertexDeclState;
         SAdapterState                   AdapterState;
-
-        struct
-        {
-            IDirect3DVertexBuffer9*     StreamData;
-            UINT                        StreamOffset;
-            UINT                        StreamStride;
-        }                               VertexStreams[16];
+        SMemoryState                    MemoryState;
+        SCallState                      CallState;
+        SStreamSourceState              VertexStreams[16];
     };
 
-    bool                m_bCaptureState;
     SD3DDeviceState     DeviceState;
+    std::map < IDirect3DVertexDeclaration9*, SD3DVertexDeclState > m_VertexDeclMap;
+
+    // Debugging
+    void                SetCallType     ( SCallState::eD3DCallType callType, uint uiNumArgs = 0, ... );
 };
 
+extern CProxyDirect3DDevice9* g_pProxyDevice;
 extern CProxyDirect3DDevice9::SD3DDeviceState* g_pDeviceState;
 
 

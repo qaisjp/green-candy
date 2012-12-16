@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/lua/CLuaFunctionDefs.Weapon.cpp
@@ -14,6 +14,9 @@
 *               Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -23,20 +26,22 @@ namespace CLuaFunctionDefs
 {
     LUA_DECLARE( getWeaponNameFromID )
     {
-        int iArgument1 = lua_type ( L, 1 );
-        if ( iArgument1 == LUA_TNUMBER || iArgument1 == LUA_TSTRING )
-        {
-            unsigned char ucID = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
+        unsigned char id;
 
-            char szBuffer [256];
-            if ( CStaticFunctionDefinitions::GetWeaponNameFromID ( ucID, szBuffer, sizeof(szBuffer) ) )
+        CScriptArgReader argStream( L );
+        argStream.ReadNumber( id );
+
+        if ( !argStream.HasErrors() )
+        {
+            char szBuffer[256];
+            if ( CStaticFunctionDefinitions::GetWeaponNameFromID( id, szBuffer, sizeof(szBuffer) ) )
             {
-                lua_pushstring ( L, szBuffer );
+                lua_pushstring( L, szBuffer );
                 return 1;
             }
         }
         else
-            m_pScriptDebugging->LogBadType( "getWeaponNameFromID" );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -44,39 +49,48 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getSlotFromWeapon )
     {
-        if ( lua_type ( L, 1 ) == LUA_TNUMBER || lua_type ( L, 1 ) == LUA_TSTRING )
+        unsigned char id;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadNumber( id );
+
+        if ( !argStream.HasErrors() )
         {
-            unsigned char ucWeaponID = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
-            char cSlot = CWeaponNames::GetSlotFromWeapon ( ucWeaponID );
+            char cSlot = CWeaponNames::GetSlotFromWeapon( id );
+
             if ( cSlot >= 0 )
-                lua_pushnumber ( L, cSlot );
+                lua_pushnumber( L, cSlot );
             else
-                lua_pushboolean ( L, false );
-            //lua_pushnumber ( L, CWeaponNames::GetSlotFromWeapon ( ucWeaponID ) );
+                lua_pushboolean( L, false );
+
             return 1;
         }
         else
-            m_pScriptDebugging->LogBadType( "getSlotFromWeapon" );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
     LUA_DECLARE( getWeaponIDFromName )
     {
-        if ( lua_type ( L, 1 ) == LUA_TSTRING )
+        const char *name;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadString( name );
+
+        if ( !argStream.HasErrors() )
         {
-            const char* szName = lua_tostring ( L, 1 );
             unsigned char ucID;
 
-            if ( CStaticFunctionDefinitions::GetWeaponIDFromName ( szName, ucID ) )
+            if ( CStaticFunctionDefinitions::GetWeaponIDFromName( name, ucID ) )
             {
-                lua_pushnumber ( L, ucID );
+                lua_pushnumber( L, ucID );
                 return 1;
             }
         }
         else
-            m_pScriptDebugging->LogBadType( "getWeaponIDFromName" );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         lua_pushboolean ( L, false );
         return 1;

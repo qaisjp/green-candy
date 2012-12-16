@@ -16,6 +16,8 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -26,7 +28,7 @@ namespace CLuaFunctionDefs
     {
         if ( lua_isstring( L, 1 ) )
         {
-            CClientTeam* pTeam = m_pTeamManager->GetTeam( lua_tostring ( L, 1 ) );
+            CClientTeam *pTeam = m_pTeamManager->GetTeam( lua_tostring ( L, 1 ) );
             if ( pTeam )
             {
                 pTeam->PushStack( L );

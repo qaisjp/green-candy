@@ -242,6 +242,9 @@ public:
     void                    OnPreHUDRender();
     void                    OnDeviceRestore();
 
+    EDiagnosticDebugType    GetDiagnosticDebug();
+    void                    SetDiagnosticDebug( EDiagnosticDebugType value );
+
 private:
     // Core devices.
     CXML*                       m_pXML;
@@ -317,6 +320,8 @@ private:
     double                      m_dPrevOverrun;
     bool                        m_bWaitToSetNick;
     unsigned int                m_uiNewNickWaitFrames;
+
+    EDiagnosticDebugType        m_DiagnosticDebug;
 
     // Command line
     static void                 ParseCommandLine( std::map < std::string, std::string > & options, const char*& szArgs, const char** pszNoValOptions = NULL );

@@ -55,6 +55,7 @@
 #include "CDirectInputHookManager.h"
 #include "CDirectInputEvents8.h"
 #include "CDirect3DEvents9.h"
+#include "CFileFormat.h"
 #include "CProxyDirectInput8.h"
 #include "CProxyDirect3D9.h"
 #include "CPEHookUtils.h"
@@ -65,3 +66,6 @@
 #include "UtilityMacros.h"
 #include "CVideoModeManager.h"
 #include "CServerCache.h"
+
+extern CFileSystem *fileSystem;
+extern CCore *g_pCore;
