@@ -275,12 +275,6 @@ namespace SharedUtil
     //
     SString GetMTASABaseDir ( void );
 
-    //
-    // Turns a relative MTASA path i.e. "MTA\file.dat"
-    // into an absolute MTASA path i.e. "C:\Program Files\MTA San Andreas\MTA\file.dat"
-    //
-    SString CalcMTASAPath ( const SString& strPath );
-
     std::vector <filePath> FindFiles                ( const filePath& strMatch, bool bFiles, bool bDirectories );
 
     SString         PathJoin                        ( const SString& str1, const SString& str2 );

@@ -263,135 +263,6 @@ namespace SharedUtil
         itemList.insert( itemList.end(), other.begin(), other.end() );
     }
 
-
-
-    //
-    // std::map helpers
-    //
-
-    // Update or add a value for a key
-    template < class T, class V, class TR, class T2, class V2 >
-    void MapSet ( std::map < T, V, TR >& collection, const T2& key, const V2& value )
-    {
-        collection[ key ] = value;
-    }
-
-    // Returns true if the item is in the collection
-    template < class T, class V, class TR, class T2 >
-    bool MapContains ( const std::map < T, V, TR >& collection, const T2& key )
-    {
-        return collection.find ( key ) != collection.end ();
-    }
-
-    // Remove key from collection
-    template < class T, class V, class TR, class T2 >
-    bool MapRemove ( std::map < T, V, TR >& collection, const T2& key )
-    {
-        typename std::map < T, V, TR > ::iterator it = collection.find ( key );
-        if ( it == collection.end () )
-            return false;
-        collection.erase ( it );
-        return true;
-    }
-
-    // Find value in collection
-    template < class T, class V, class TR, class T2 >
-    V* MapFind ( std::map < T, V, TR >& collection, const T2& key )
-    {
-        typename std::map < T, V, TR > ::iterator it = collection.find ( key );
-        if ( it == collection.end () )
-            return NULL;
-        return &it->second;
-    }
-
-    // Find value in const collection
-    template < class T, class V, class TR, class T2 >
-    const V* MapFind ( const std::map < T, V, TR >& collection, const T2& key )
-    {
-        typename std::map < T, V, TR > ::const_iterator it = collection.find ( key );
-        if ( it == collection.end () )
-            return NULL;
-        return &it->second;
-    }
-
-
-    //
-    // std::multimap helpers
-    //
-
-    // Find values in const collection
-    template < class T, class V, class TR, class T2 >
-    void MultiFind ( const std::multimap < T, V, TR >& collection, const T2& key, std::vector < V >* pResult )
-    {
-        typedef typename std::multimap < T, V, TR > ::const_iterator const_iter_t;
-        std::pair < const_iter_t, const_iter_t > itp = collection.equal_range ( key );
-        for ( const_iter_t it = itp.first ; it != itp.second ; ++it )
-            pResult->push_back ( it->second );
-    }
-
-    // Find first value in const collection
-    template < class T, class V, class TR, class T2 >
-    const V* MapFind ( const std::multimap < T, V, TR >& collection, const T2& key )
-    {
-        typename std::multimap < T, V, TR > ::const_iterator it = collection.find ( key );
-        if ( it == collection.end () )
-            return NULL;
-        return &it->second;
-    }
-
-    // Add a value for a key
-    template < class T, class V, class TR, class T2, class V2 >
-    void MapInsert ( std::multimap < T, V, TR >& collection, const T2& key, const V2& value )
-    {
-        collection.insert ( std::pair < T2, V > ( key, value ) );
-    }
-
-    // Remove first pair
-    template < class T, class V, class TR, class T2, class V2 >
-    void MapRemovePair ( std::multimap < T, V, TR >& collection, const T2& key, const V2& value )
-    {
-        typedef typename std::multimap < T, V, TR > ::iterator iter_t;
-        std::pair < iter_t, iter_t > itp = collection.equal_range ( key );
-        for ( iter_t it = itp.first ; it != itp.second ; ++it )
-            if ( it->second == value )
-            { 
-                collection.erase ( it );
-                break;
-            }
-    }
-
-
-    //
-    // std::set helpers
-    //
-
-    // Update or add an item
-    template < class T, class TR, class T2 >
-    void MapInsert ( std::set < T, TR >& collection, const T2& item )
-    {
-        collection.insert ( item );
-    }
-
-    // Returns true if the item is in the collection
-    template < class T, class TR, class T2 >
-    bool MapContains ( const std::set < T, TR >& collection, const T2& item )
-    {
-        return collection.find ( item ) != collection.end ();
-    }
-
-    // Remove item from collection
-    template < class T, class TR, class T2 >
-    bool MapRemove ( std::set < T, TR >& collection, const T2& item )
-    {
-        typename std::set < T, TR > ::iterator it = collection.find ( item );
-        if ( it == collection.end () )
-            return false;
-        collection.erase ( it );
-        return true;
-    }
-
-
-
     //
     // SColor
     //
@@ -1122,6 +993,16 @@ namespace SharedUtil
         return static_cast < T > ( ms_ucToupperTab [ static_cast < unsigned char > ( c ) ] );
     }
 
+    // Clear and reserve memory for the same size
+    template < class T >
+    void ListClearAndReserve ( std::vector < T >& itemList )
+    {
+        size_t prevSize = itemList.size ();
+        itemList.clear ();
+        itemList.reserve ( prevSize );
+    }
+
+
 
     //
     // enum reflection shenanigans
@@ -1179,6 +1060,35 @@ namespace SharedUtil
         std::map < eDummy, SString > m_NameMap;
     };
 
+    //
+    // Fixed sized string buffer
+    //
+    template < int MAX_LENGTH >
+    class SFixedString
+    {
+        char szData [ MAX_LENGTH + 1 ];
+    public:
+        SFixedString ( void )
+        {
+            szData[0] = 0;
+        }
+
+        // In  
+        SFixedString& operator= ( const char* szOther )
+        {
+            STRNCPY( szData, szOther, MAX_LENGTH + 1 );
+            return *this;
+        }
+
+        // Out  
+        operator const char*() const
+        {
+            return szData;
+        }
+
+        // Shake it all about
+        void Encrypt ();
+    };
 
     #define DECLARE_ENUM( T ) \
         CEnumInfo*             GetEnumInfo     ( const T& ); \

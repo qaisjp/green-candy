@@ -19,6 +19,8 @@
 #include "CCommandsInterface.h"
 #include "CCommunityInterface.h"
 #include "CRenderItemManagerInterface.h"
+#include "CPixelsManagerInterface.h"
+#include "CScreenGrabberInterface.h"
 #include "CGraphicsInterface.h"
 #include "CModManagerInterface.h"
 #include "CServerInterface.h"
@@ -46,6 +48,20 @@ enum eCoreVersion
     MTACORE_20 = 1,
     MTACORE_21
 };
+
+#ifndef WITH_TIMING_CHECKPOINTS
+    #define WITH_TIMING_CHECKPOINTS 0     // Comment this line to remove timing checkpoint code
+#endif
+
+#if WITH_TIMING_CHECKPOINTS
+    #define TIMING_CHECKPOINT(x)        g_pCore->OnTimingCheckpoint ( x )
+    #define TIMING_DETAIL(x)            g_pCore->OnTimingDetail ( x )
+    #define TIMING_DETAIL_FORCE(x)      g_pCore->OnTimingDetail ( x, true )
+#else
+    #define TIMING_CHECKPOINT(x)        {}
+    #define TIMING_DETAIL(x)            {}
+    #define TIMING_DETAIL_FORCE(x)      {}
+#endif
 
 class CCoreInterface
 {

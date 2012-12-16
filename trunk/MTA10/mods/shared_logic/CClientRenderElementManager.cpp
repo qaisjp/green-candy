@@ -143,7 +143,8 @@ CClientTexture* CClientRenderElementManager::CreateTexture ( const SString& strF
 CClientShader* CClientRenderElementManager::CreateShader ( const SString& strFullFilePath, const SString& strRootPath, SString& strOutStatus, bool bDebug, LuaClass& root )
 {
     // Create the item
-    CShaderItem* pShaderItem = m_pRenderItemManager->CreateShader ( strFullFilePath, strRootPath, strOutStatus, bDebug );
+    //TODO: maxdist prio
+    CShaderItem* pShaderItem = m_pRenderItemManager->CreateShader ( strFullFilePath, strRootPath, strOutStatus, 0, 0, bDebug );
 
     // Check create worked
     if ( !pShaderItem )
@@ -297,5 +298,5 @@ void CClientRenderElementManager::Remove ( CClientRenderElement* pElement )
         m_uiStatsTextureCount--;
 
     // Release render item
-    m_pRenderItemManager->ReleaseRenderItem ( pElement->GetRenderItem () );
+    pElement->GetRenderItem()->Release();
 }

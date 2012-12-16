@@ -76,10 +76,6 @@ public:
 //  inline bool                         IsVisible() const                                           { return m_pMarker != NULL; }
     void                                SetVisible( bool bVisible );
 
-    inline IDirect3DTexture9*           GetMapMarkerImage()                                         { return m_pMapMarkerImage; }
-    inline EMapMarkerState              GetMapMarkerState() const                                   { return m_eMapMarkerState; }
-    void                                SetMapMarkerState( EMapMarkerState eMapMarkerState );
-
     void                                SetDimension( unsigned short usDimension );
     void                                RelateDimension( unsigned short usDimension );
 
@@ -111,9 +107,6 @@ private:
     unsigned short                      m_usScale;
     SColor                              m_Color;
     unsigned long                       m_ulSprite;
-
-    IDirect3DTexture9*                  m_pMapMarkerImage;
-    EMapMarkerState                     m_eMapMarkerState;
 
     bool                                m_bIsVisible;
     short                               m_sOrdering;

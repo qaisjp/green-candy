@@ -172,7 +172,7 @@
 				AdditionalLibraryDirectories="../../../vendor/libspeex;../../../vendor/bass/lib;../../../vendor/lua/lib;../../../vendor/libv2/lib;../../../vendor/zlib/lib"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="LIBCMT"
-				GenerateDebugInformation="true"
+				GenerateDebugInformation="false"
 				ProgramDatabaseFile="../../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
 				GenerateMapFile="true"
 				MapFileName="../../../symbols/$(ConfigurationName)_$(SafeParentName).map"

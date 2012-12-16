@@ -16,6 +16,8 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include "StdInc.h"
@@ -24,41 +26,47 @@ namespace CLuaFunctionDefs
 {
     LUA_DECLARE( getBodyPartName )
     {
-        if ( lua_isnumber( L, 1 ) )
-        {
-            unsigned char ucID = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
+        unsigned char id;
 
-            char szBuffer [256];
-            if ( CStaticFunctionDefinitions::GetBodyPartName ( ucID, szBuffer ) )
+        CScriptArgReader argStream( L );
+        argStream.ReadNumber( id );
+
+        if ( !argStream.HasErrors() )
+        {
+            char szBuffer[256];
+            if ( CStaticFunctionDefinitions::GetBodyPartName( id, szBuffer ) )
             {
-                lua_pushstring ( L, szBuffer );
+                lua_pushstring( L, szBuffer );
                 return 1;
             }
         }
         else
-            m_pScriptDebugging->LogBadType( "getBodyPartName" );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
     LUA_DECLARE( getClothesByTypeIndex )
     {
-        if ( lua_isnumber( L, 1 ) && lua_isnumber( L, 2 ) )
-        {
-            unsigned char ucType = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
-            unsigned char ucIndex = static_cast < unsigned char > ( lua_tonumber ( L, 2 ) );
+        unsigned char type, index;
 
-            char szTexture [ 128 ], szModel [ 128 ];
-            if ( CStaticFunctionDefinitions::GetClothesByTypeIndex ( ucType, ucIndex, szTexture, szModel ) )
+        CScriptArgReader argStream( L );
+        argStream.ReadNumber( type );
+        argStream.ReadNumber( index );
+
+        if ( !argStream.HasErrors() )
+        {
+            char szTexture[128], szModel[128];
+            if ( CStaticFunctionDefinitions::GetClothesByTypeIndex( type, index, szTexture, szModel ) )
             {
-                lua_pushstring ( L, szTexture );
-                lua_pushstring ( L, szModel );
+                lua_pushstring( L, szTexture );
+                lua_pushstring( L, szModel );
                 return 2;
             }
         }
         else
-            m_pScriptDebugging->LogBadType( "getClothesByTypeIndex" );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         lua_pushboolean ( L, false );
         return 1;
@@ -66,45 +74,49 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getTypeIndexFromClothes )
     {
-        if ( lua_type ( L, 1 ) == LUA_TSTRING )
-        {
-            const char* szTexture = lua_tostring ( L, 1 );
-            const char* szModel = NULL;
-            if ( lua_type ( L, 2 ) == LUA_TSTRING )
-                szModel = lua_tostring ( L, 2 );
+        const char *texture, *model;
 
+        CScriptArgReader argStream( L );
+        argStream.ReadString( texture );
+        argStream.ReadString( model, NULL );
+
+        if ( !argStream.HasErrors() )
+        {
             unsigned char ucType, ucIndex;
-            if ( CStaticFunctionDefinitions::GetTypeIndexFromClothes ( const_cast < char* > ( szTexture ), const_cast < char* > ( szModel ), ucType, ucIndex ) )
+            if ( CStaticFunctionDefinitions::GetTypeIndexFromClothes( texture, model, ucType, ucIndex ) )
             {
-                lua_pushnumber ( L, ucType );
-                lua_pushnumber ( L, ucIndex );
+                lua_pushnumber( L, ucType );
+                lua_pushnumber( L, ucIndex );
                 return 2;
             }
         }
         else
-            m_pScriptDebugging->LogBadType( "getTypeIndexFromClothes" );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
     LUA_DECLARE( getClothesTypeName )
     {
-        if ( lua_isnumber( L, 1 ) )
-        {
-            unsigned char ucType = static_cast < unsigned char > ( lua_tonumber ( L, 1 ) );
+        unsigned char type;
 
-            char szName [ 40 ];
-            if ( CStaticFunctionDefinitions::GetClothesTypeName ( ucType, szName ) )
+        CScriptArgReader argStream( L );
+        argStream.ReadNumber( type );
+
+        if ( !argStream.HasErrors() )
+        {
+            char szName[40];
+            if ( CStaticFunctionDefinitions::GetClothesTypeName( type, szName ) )
             {
-                lua_pushstring ( L, szName );
+                lua_pushstring( L, szName );
                 return 1;
             }
         }
         else
-            m_pScriptDebugging->LogBadType( "getClothesTypeName" );
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
-        lua_pushboolean ( L, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 }

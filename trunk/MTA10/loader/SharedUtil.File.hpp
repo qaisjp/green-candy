@@ -381,15 +381,6 @@ std::vector < SString > SharedUtil::FindFiles ( const SString& strMatch, bool bF
 #endif
 
 //
-// Turns a relative MTASA path i.e. "MTA\file.dat"
-// into an absolute MTASA path i.e. "C:\Program Files\MTA San Andreas\MTA\file.dat"
-//
-SString SharedUtil::CalcMTASAPath ( const SString& strPath )
-{
-    return PathJoin ( GetMTASABaseDir(), strPath );
-}
-
-//
 // Save binary data to a file
 //
 bool SharedUtil::FileSave ( const SString& strFilename, const void* pBuffer, unsigned long ulSize, bool bForce )

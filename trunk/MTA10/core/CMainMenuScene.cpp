@@ -5,14 +5,13 @@
 *  FILE:        core/CMainMenuScene.cpp
 *  PURPOSE:     Direct3D main menu and credits scene rendering
 *  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #include "StdInc.h"
-
+#if 0
 using namespace std;
 
 #include <libv2/libv2.h>
@@ -482,192 +481,211 @@ void CMainMenuScene::Destroy3DScene ( void )
 bool CMainMenuScene::Init3DScene ( IDirect3DTexture9 * pRenderTarget, CVector2D vecScreenSize )
 {
     // Check to avoid double allocation of all scene resources
-    if ( !pMeshTextures.empty() )
-        Destroy3DScene();
+    if ( pMeshTextures.size () > 0 )
+        Destroy3DScene ();
 
-    ID3DXBuffer *pMaterials = NULL;
-    D3DXMATERIAL *pMaterialStore = NULL;
+    CFilePathTranslator FileTranslator;
+    string WorkingDirectory;
+    char szCurDir [ MAX_PATH ];
+
+    ID3DXBuffer * pMaterials = NULL;
+    D3DXMATERIAL * pMaterialStore = NULL;
+
+    bool bReturn = false;
 
     m_pGFX = CLocalGUI::GetSingleton ().GetRenderingLibrary ();
 
     // Randomize the seed
-    srand( GetTickCount32 () );
+    srand ( GetTickCount32 () );
 
-    CCore::GetSingleton ().GetConsole ()->Printf ( "Initializing vectors" );
+    // Set the current directory to the MTA dir so we can load files using a relative path
+    FileTranslator.SetCurrentWorkingDirectory ( "MTA" );
+    FileTranslator.GetCurrentWorkingDirectory ( WorkingDirectory );
+    GetCurrentDirectory ( sizeof ( szCurDir ), szCurDir );
+    SetCurrentDirectory ( WorkingDirectory.c_str ( ) );
 
-    // Zero the credits stack
-    memset ( pCreditsStack, 0, sizeof(pCreditsStack) );
+    do {
+        CCore::GetSingleton ().GetConsole ()->Printf ( "Initializing vectors" );
 
-    // Zero the mask animation stack
-    memset ( pMaskAnim, 0, sizeof(pMaskAnim) );
-    memset ( pMaskAnimTexture, 0, sizeof(pMaskAnimTexture) );
+        // Zero the credits stack
+        memset ( pCreditsStack, 0, sizeof(pCreditsStack) );
 
-    // Determine the credits stack end item index
-    iCreditsEnd = sizeof ( pCreditsSub ) / sizeof ( char* );
+        // Zero the mask animation stack
+        memset ( pMaskAnim, 0, sizeof(pMaskAnim) );
+        memset ( pMaskAnimTexture, 0, sizeof(pMaskAnimTexture) );
 
-    // Normalize the normals
-    D3DXVec3Normalize ( &vecNCJ, &vecNCJ );
-    D3DXVec3Normalize ( &vecNClaude, &vecNClaude );
-    D3DXVec3Normalize ( &vecNTommy, &vecNTommy );
+        // Determine the credits stack end item index
+        iCreditsEnd = sizeof ( pCreditsSub ) / sizeof ( char* );
 
-    // Define the credit sprite positions
-    vecCredits[0]       = D3DXVECTOR3 ( -1.6f,      -0.30f,     -0.1f );
-    vecCreditsSpan[0]   = D3DXVECTOR3 ( 0,          0.30f,      0.30f );
-    vecCredits[1]       = D3DXVECTOR3 ( 0.262f,     -0.45f,     -0.6f );
-    vecCreditsSpan[1]   = D3DXVECTOR3 ( -0.30f,     0.30f,      0 );
-    vecCredits[2]       = D3DXVECTOR3 ( 1.3f,       0,          -1.4f );
-    vecCreditsSpan[2]   = D3DXVECTOR3 ( -0.30f,     0.30f,      0 );
-    vecCredits[3]       = D3DXVECTOR3 ( 1.2f,       -0.3f,      0.15f );
-    vecCreditsSpan[3]   = D3DXVECTOR3 ( 0,          0.30f,      -0.30f );
-    vecCredits[4]       = D3DXVECTOR3 ( -1.24f,     -0.25f,     0.42f );
-    vecCreditsSpan[4]   = D3DXVECTOR3 ( 0,          0.30f,      0.30f );
-    vecCredits[5]       = D3DXVECTOR3 ( -0.60f,     -1.0f,      0.15f );
-    vecCreditsSpan[5]   = D3DXVECTOR3 ( 0,          0.30f,      0.30f );
-    vecCredits[6]       = D3DXVECTOR3 ( -0.74f,     -0.28f,     -1.30f );
-    vecCreditsSpan[6]   = D3DXVECTOR3 ( -0.30f,     0.30f,      0 );
-    vecCredits[7]       = D3DXVECTOR3 ( 0.7f,       0.52f,      -1.56f );
-    vecCreditsSpan[7]   = D3DXVECTOR3 ( -0.30f,     0.30f,      0 );
-    vecCredits[8]       = D3DXVECTOR3 ( -0.15f,     0.25f,      -1.50f );
-    vecCreditsSpan[8]   = D3DXVECTOR3 ( -0.30f,     0.30f,      0 );
-    vecCredits[9]       = D3DXVECTOR3 ( -0.85f,     -0.08f,     -1.00f );
-    vecCreditsSpan[9]   = D3DXVECTOR3 ( 0,          0.30f,      0.30f );
+        // Normalize the normals
+        D3DXVec3Normalize ( &vecNCJ, &vecNCJ );
+        D3DXVec3Normalize ( &vecNClaude, &vecNClaude );
+        D3DXVec3Normalize ( &vecNTommy, &vecNTommy );
 
-    // Create the bezier transition curves
-    vecBTommyCJ[0]      = vecMTommy + vecNTommy*1.0f                    + vecBUp*2.5f;
-    vecBTommyCJ[1]      = vecMTommy + vecNTommy*0.3f + vecNCJ*0.2f      + vecBUp*0.5f;
-    vecBTommyCJ[2]      = vecBTommyCJ[1] - vecNCJ*1.0f                  + vecBUp*0.6f;
-    vecBTommyCJ[3]      = vecBTommyCJ[2] - vecNTommy*0.5f               + vecBUp*1.0f;
-    vecBTommyCJ[4]      = vecBTommyCJ[3];
-    vecBTommyCJ[5]      = vecBTommyCJ[3] - vecNTommy*0.5f               + vecBUp*1.0f;
-    vecBTommyCJ[6]      = vecMCJ - vecNCJ*0.75f                         + vecBUp*0.6f;
-    vecBTommyCJ[7]      = vecMCJ;
+        // Define the credit sprite positions
+        vecCredits[0]       = D3DXVECTOR3 ( -1.6f,      -0.30f,     -0.1f );
+        vecCreditsSpan[0]   = D3DXVECTOR3 ( 0,          0.30f,      0.30f );
+        vecCredits[1]       = D3DXVECTOR3 ( 0.262f,     -0.45f,     -0.6f );
+        vecCreditsSpan[1]   = D3DXVECTOR3 ( -0.30f,     0.30f,      0 );
+        vecCredits[2]       = D3DXVECTOR3 ( 1.3f,       0,          -1.4f );
+        vecCreditsSpan[2]   = D3DXVECTOR3 ( -0.30f,     0.30f,      0 );
+        vecCredits[3]       = D3DXVECTOR3 ( 1.2f,       -0.3f,      0.15f );
+        vecCreditsSpan[3]   = D3DXVECTOR3 ( 0,          0.30f,      -0.30f );
+        vecCredits[4]       = D3DXVECTOR3 ( -1.24f,     -0.25f,     0.42f );
+        vecCreditsSpan[4]   = D3DXVECTOR3 ( 0,          0.30f,      0.30f );
+        vecCredits[5]       = D3DXVECTOR3 ( -0.60f,     -1.0f,      0.15f );
+        vecCreditsSpan[5]   = D3DXVECTOR3 ( 0,          0.30f,      0.30f );
+        vecCredits[6]       = D3DXVECTOR3 ( -0.74f,     -0.28f,     -1.30f );
+        vecCreditsSpan[6]   = D3DXVECTOR3 ( -0.30f,     0.30f,      0 );
+        vecCredits[7]       = D3DXVECTOR3 ( 0.7f,       0.52f,      -1.56f );
+        vecCreditsSpan[7]   = D3DXVECTOR3 ( -0.30f,     0.30f,      0 );
+        vecCredits[8]       = D3DXVECTOR3 ( -0.15f,     0.25f,      -1.50f );
+        vecCreditsSpan[8]   = D3DXVECTOR3 ( -0.30f,     0.30f,      0 );
+        vecCredits[9]       = D3DXVECTOR3 ( -0.85f,     -0.08f,     -1.00f );
+        vecCreditsSpan[9]   = D3DXVECTOR3 ( 0,          0.30f,      0.30f );
 
-    // Store the graphics subsystem and D3D device
-    m_pGraphics = CGraphics::GetSingletonPtr ();
-    m_pDevice = m_pGraphics->GetDevice ();
+        // Create the bezier transition curves
+        vecBTommyCJ[0]      = vecMTommy + vecNTommy*1.0f                    + vecBUp*2.5f;
+        vecBTommyCJ[1]      = vecMTommy + vecNTommy*0.3f + vecNCJ*0.2f      + vecBUp*0.5f;
+        vecBTommyCJ[2]      = vecBTommyCJ[1] - vecNCJ*1.0f                  + vecBUp*0.6f;
+        vecBTommyCJ[3]      = vecBTommyCJ[2] - vecNTommy*0.5f               + vecBUp*1.0f;
+        vecBTommyCJ[4]      = vecBTommyCJ[3];
+        vecBTommyCJ[5]      = vecBTommyCJ[3] - vecNTommy*0.5f               + vecBUp*1.0f;
+        vecBTommyCJ[6]      = vecMCJ - vecNCJ*0.75f                         + vecBUp*0.6f;
+        vecBTommyCJ[7]      = vecMCJ;
 
-    // Store the screen size
-    m_vecScreenSize = vecScreenSize;
+        // Store the graphics subsystem and D3D device
+        m_pGraphics = CGraphics::GetSingletonPtr ();
+        m_pDevice = m_pGraphics->GetDevice ();
 
-    CCore::GetSingleton ().GetConsole ()->Printf ( "Checking for PS2.0" );
+        // Store the screen size
+        m_vecScreenSize = vecScreenSize;
 
-    // Check for PS 2.0 support, abort otherwise
-    D3DCAPS9 Caps;
-    m_pDevice->GetDeviceCaps ( &Caps );
+        CCore::GetSingleton ().GetConsole ()->Printf ( "Checking for PS2.0" );
 
-    if ( Caps.PixelShaderVersion < D3DPS_VERSION( 2, 0 ) )
-        return false;
+        // Check for PS 2.0 support, abort otherwise
+        D3DCAPS9 Caps;
+        m_pDevice->GetDeviceCaps ( &Caps );
+        if ( Caps.PixelShaderVersion < D3DPS_VERSION ( 2, 0 ) )
+            break;
 
-    // Create a texture to be associated with the background
-    pTexCGUI = pRenderTarget;
+        // Create a texture to be associated with the background
+        pTexCGUI = pRenderTarget;
 
-    CCore::GetSingleton ().GetConsole ()->Printf( "Creating textures" );
+        CCore::GetSingleton ().GetConsole ()->Printf ( "Creating textures" );
 
-    // Wall texture
-    if ( D3DXCreateTextureFromFile ( m_pDevice, CORE_MTA_FALLBACK, &pFallbackTexture ) != S_OK )
-        return false;
-
-    // Roll texture
-    if ( D3DXCreateTextureFromFile ( m_pDevice, CORE_MTA_ROLL, &pTexRoll ) != S_OK )
-        return false;
-
-    // Resize the roll texture based on the screen resolution, and determine the offset
-    fRollScaleX = m_vecScreenSize.fX / CORE_MTA_ROLL_WIDTH_POW2;
-    fRollScaleY = m_vecScreenSize.fY / CORE_MTA_ROLL_HEIGHT_POW2;
-    //iRollOffset = (CORE_MTA_ROLL_WIDTH_POW2 - CORE_MTA_ROLL_WIDTH) * (m_vecScreenSize.fX/CORE_MTA_ROLL_WIDTH) * 0.5f;
-    iRollOffset = 0;
-
-    // Mask texture
-    if ( D3DXCreateTextureFromFile ( m_pDevice, CORE_MTA_MASK, &pMaskTexture ) != S_OK )
-        return false;
-
-    // Mask animation textures
-    unsigned int i_own = CScreenShot::GetScreenShots ();
-    unsigned int i_num = i_own + MASK_DEFAULT_ITEMS;
-    if ( i_num > MASK_ITEMS ) i_num = MASK_ITEMS;
-    SString strTexPath;
-
-    // Grab them from the screenshot class (directory)
-    iMaskAnimTextures = 0;
-    for ( unsigned int i = 0; i < i_num; i++ )
-    {
-        if ( i < i_own )
-            strTexPath = CScreenShot::GetScreenShotPath ( i + 1 );
-        else
-            // Add our default screenshots as well
-            strTexPath.Format ( "data\\default%u.png", i - i_own );
-
-        if ( strTexPath != "" )
-        {
-            D3DXCreateTextureFromFile ( m_pDevice, strTexPath, &pMaskAnimTexture[i] );
-            iMaskAnimTextures++;
-        }
-    }
-
-    CCore::GetSingleton ().GetConsole ()->Printf ( "Creating meshes" );
-
-    // Create the cylinder
-    CreateCylinder( m_pDevice );
-
-    // Mesh
-    if ( D3DXLoadMeshFromX( CORE_MTA_SCENE, D3DXMESH_MANAGED, m_pDevice, NULL, &pMaterials, NULL, &dwMaterials, &pMesh ) != S_OK )
-        return false;
-
-    pMaterialStore = reinterpret_cast < D3DXMATERIAL* > ( pMaterials->GetBufferPointer () );
-    pMeshMaterials.resize ( dwMaterials, D3DMATERIAL9 () );
-    pMeshTextures.resize ( dwMaterials, NULL );
-    pbMeshTextures.resize ( dwMaterials, false );
-
-    // Copy the materials and textures
-    for ( DWORD i = 0; i < dwMaterials; i++ ) {
-        pMeshMaterials[i] = pMaterialStore[i].MatD3D;
-        pMeshMaterials[i].Ambient = pMeshMaterials[i].Diffuse;
-        pbMeshTextures[i] = false;
-
-        // If there's no texture present for this material, use the plain white texture
-        if ( pMaterialStore[i].pTextureFilename == NULL ) {
-            pMaterialStore[i].pTextureFilename = "white32.png";
+        // Wall texture
+        if ( D3DXCreateTextureFromFile ( m_pDevice, CORE_MTA_FALLBACK, &pFallbackTexture ) != S_OK ) {
+            // Could not load the texture, so abort
+            break;
         }
 
-        // Get the correct path
-        SString strPath ( CORE_MTA_TEXTURE_PATH, pMaterialStore[i].pTextureFilename );
-        
-        // Create the texture, loading failure isn't fatal here (just a blank texture)
-        if ( FAILED ( D3DXCreateTextureFromFile ( m_pDevice, strPath, &pMeshTextures[i] ) ) ) {
-            CLogger::GetSingleton ().ErrorPrintf ( "Could not load mesh texture (%s)", strPath.c_str () );
+        // Roll texture
+        if ( D3DXCreateTextureFromFile ( m_pDevice, CORE_MTA_ROLL, &pTexRoll ) != S_OK ) {
+            // Could not load the texture, so abort
+            break;
+        }
+        // Resize the roll texture based on the screen resolution, and determine the offset
+        fRollScaleX = m_vecScreenSize.fX / CORE_MTA_ROLL_WIDTH_POW2;
+        fRollScaleY = m_vecScreenSize.fY / CORE_MTA_ROLL_HEIGHT_POW2;
+        //iRollOffset = (CORE_MTA_ROLL_WIDTH_POW2 - CORE_MTA_ROLL_WIDTH) * (m_vecScreenSize.fX/CORE_MTA_ROLL_WIDTH) * 0.5f;
+        iRollOffset = 0;
+ 
+        // Mask texture
+        if ( D3DXCreateTextureFromFile ( m_pDevice, CORE_MTA_MASK, &pMaskTexture ) != S_OK ) {
+            // Could not load the texture, so abort
+            break;
         }
 
-        // Disable lighting for screen textures
-        pbMeshTextures[i] = ( strstr ( pMaterialStore[i].pTextureFilename, "screen" ) != NULL );
-    }
-    pMaterials->Release ();
+        // Mask animation textures
+        unsigned int i_own = CScreenShot::GetScreenShots ();
+        unsigned int i_num = i_own + MASK_DEFAULT_ITEMS;
+        if ( i_num > MASK_ITEMS ) i_num = MASK_ITEMS;
+        SString strTexPath;
 
-    CCore::GetSingleton ().GetConsole ()->Printf ( "Initializing shaders" );
+        // Grab them from the screenshot class (directory)
+        iMaskAnimTextures = 0;
+        for ( unsigned int i = 0; i < i_num; i++ ) {
+            if ( i < i_own ) {
+                strTexPath = CScreenShot::GetScreenShotPath ( i + 1 );
+            } else {
+                // Add our default screenshots as well
+                strTexPath.Format ( "data\\default%u.png", i - i_own );
+            }
+            if ( strTexPath != "" ) {
+                D3DXCreateTextureFromFile ( m_pDevice, strTexPath, &pMaskAnimTexture[i] );
+                iMaskAnimTextures++;
+            }
+        }
 
-    // Initialize the shaders
-    if ( !InitShaders () )
-        return false;
+        CCore::GetSingleton ().GetConsole ()->Printf ( "Creating meshes" );
 
-    CCore::GetSingleton ().GetConsole ()->Printf ( "Initializing render targets" );
+        // Create the cylinder
+        CreateCylinder ( m_pDevice );
 
-    // Initialize the rendertarget textures
-    if ( !InitRenderTargets () )
-        return false;
+        // Mesh
+        if ( D3DXLoadMeshFromX ( CORE_MTA_SCENE, D3DXMESH_MANAGED, m_pDevice, NULL, &pMaterials, NULL, &dwMaterials, &pMesh ) != S_OK ) {
+            // Could not load the mesh, so abort
+            break;
+        }
+        pMaterialStore = reinterpret_cast < D3DXMATERIAL* > ( pMaterials->GetBufferPointer () );
+        pMeshMaterials.resize ( dwMaterials, D3DMATERIAL9 () );
+        pMeshTextures.resize ( dwMaterials, NULL );
+        pbMeshTextures.resize ( dwMaterials, false );
 
-    CCore::GetSingleton ().GetConsole ()->Printf ( "Initializing sprites" );
+        // Copy the materials and textures
+        for ( DWORD i = 0; i < dwMaterials; i++ ) {
+            pMeshMaterials[i] = pMaterialStore[i].MatD3D;
+            pMeshMaterials[i].Ambient = pMeshMaterials[i].Diffuse;
+            pbMeshTextures[i] = false;
 
-    // Initialize the credit sprites
-    if ( !InitCreditSprites () )
-        return false;
+            // If there's no texture present for this material, use the plain white texture
+            if ( pMaterialStore[i].pTextureFilename == NULL ) {
+                pMaterialStore[i].pTextureFilename = "white32.png";
+            }
 
-    // Create the screen sprite
-    D3DXCreateSprite ( m_pDevice, &pScreen );
+            // Get the correct path
+            SString strPath ( CORE_MTA_TEXTURE_PATH, pMaterialStore[i].pTextureFilename );
+            
+            // Create the texture, loading failure isn't fatal here (just a blank texture)
+            if ( FAILED ( D3DXCreateTextureFromFile ( m_pDevice, strPath, &pMeshTextures[i] ) ) ) {
+                CLogger::GetSingleton ().ErrorPrintf ( "Could not load mesh texture (%s)", strPath.c_str () );
+            }
 
-    // Function succeeded
-    CCore::GetSingleton ().GetConsole ()->Printf ( "Successfully initialized scene" );
+            // Disable lighting for screen textures
+            pbMeshTextures[i] = ( strstr ( pMaterialStore[i].pTextureFilename, "screen" ) != NULL );
+        }
+        pMaterials->Release ();
+
+        CCore::GetSingleton ().GetConsole ()->Printf ( "Initializing shaders" );
+
+        // Initialize the shaders
+        if ( !InitShaders () ) break;
+
+        CCore::GetSingleton ().GetConsole ()->Printf ( "Initializing render targets" );
+
+        // Initialize the rendertarget textures
+        if ( !InitRenderTargets () ) break;
+
+        CCore::GetSingleton ().GetConsole ()->Printf ( "Initializing sprites" );
+
+        // Initialize the credit sprites
+        if ( !InitCreditSprites () ) break;
+
+        // Create the screen sprite
+        D3DXCreateSprite ( m_pDevice, &pScreen );
+
+        // Function succeeded
+        CCore::GetSingleton ().GetConsole ()->Printf ( "Successfully initialized scene" );
+        bReturn = true;
+    } while ( false );
+
+    // Restore current directory
+    SetCurrentDirectory ( szCurDir );
 
     bInitialized = true;
-    return true;
+
+    return bReturn;
 }
 
 
@@ -2155,3 +2173,4 @@ bool CMainMenuScene::SetVideoEnabled ( bool bEnabled )
     return bResult;
 }
 */
+#endif

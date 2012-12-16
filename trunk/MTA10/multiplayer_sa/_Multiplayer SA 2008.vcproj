@@ -183,7 +183,7 @@
 				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\MTA\multiplayer_sa.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				GenerateDebugInformation="true"
+				GenerateDebugInformation="false"
 				ProgramDatabaseFile="../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
 				GenerateMapFile="true"
 				MapFileName="../../symbols/$(ConfigurationName)_$(SafeParentName).map"

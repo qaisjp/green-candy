@@ -9,7 +9,7 @@
 *****************************************************************************/
 
 #include "StdInc.h"
-
+#include "CRenderItem.EffectCloner.h"
 
 enum EStateGroup
 {
@@ -471,6 +471,8 @@ public:
 
     SString                 m_strWarnings;
     bool                    m_bVerboseWarnings;
+    bool                    m_bSkipUnusedParameters;
+    std::set < D3DXHANDLE >  m_ReferencedParameterMap;
 
     std::vector < SStateVar > renderStateVarList;
     std::vector < SStateVar > stageStateVarList;
@@ -496,75 +498,6 @@ CEffectWrap* NewEffectWrap ( CRenderItemManager* pManager, const SString& strFil
 }
 
 
-// Helper class for D3DXCreateEffectFromFile() to ensure includes are correctly found and don't go outside the resource directory
-class CIncludeManager : public ID3DXInclude
-{
-    SString m_strRootPath;
-    SString m_strCurrentPath;
-public:
-    SString m_strReport;
-
-    CIncludeManager::CIncludeManager( const SString& strRootPath, const SString& strCurrentPath )
-    {
-        m_strRootPath = strRootPath;
-        m_strCurrentPath = strCurrentPath;
-    }
-
-    STDMETHOD(Open)( D3DXINCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes )
-    {
-        filePath path;
-
-        // We need a static path
-        if ( !modFileRoot->GetRelativePath( pFileName, true, path ) )
-        {
-            SString msg( "[CIncludeManager: Invalid path '%s'", pFileName );
-            m_strReport += msg;
-            OutputDebugLine( msg );
-            return E_FAIL;
-        }
-
-        // Load file
-        std::vector <char> buffer;
-
-        if ( !modFileRoot->ReadToBuffer( *path, buffer ) )
-        {
-            SString strMsg ( "[CIncludeManager: Can't find %s]", *path );
-            m_strReport += strMsg;
-            OutputDebugLine( strMsg );
-            return E_FAIL;
-        }
-
-        if ( buffer.size() == 0 )
-        {
-            SString msg( "[CIncludeManager: Empty file %s]", *path );
-            m_strReport += msg;
-            OutputDebugLine( msg );
-            return E_FAIL;
-        }
-
-        // Allocate memory for file contents
-        BYTE* pData = (BYTE*)malloc( buffer.size() );
-        memcpy( pData, &buffer[0], buffer.size() );
-
-        // Set result
-        *ppData = pData;
-        *pBytes = buffer.size();
-
-        if ( !m_strReport.ContainsI( path ) )
-            m_strReport += SString ( "[Loaded '%s' (%d bytes)]", *path, buffer.size() );
-
-        return S_OK;
-    }
-
-    STDMETHOD(Close)( LPCVOID pData )
-    {
-        // Free memory allocated for file contents
-        free( (void*)pData );
-
-        return S_OK;
-    }
-};
-
 
 ////////////////////////////////////////////////////////////////
 //
@@ -576,6 +509,8 @@ public:
 void CEffectWrapImpl::PostConstruct ( CRenderItemManager* pManager, const SString& strFilename, const SString& strRootPath, SString& strOutStatus, bool bDebug )
 {
     Super::PostConstruct ( pManager );
+
+    m_strName = ExtractFilename ( strFilename );
 
     // Initialise static data if needed
     InitMaps ();
@@ -649,117 +584,31 @@ void CEffectWrapImpl::CreateUnderlyingData ( const SString& strFilename, const S
 {
     assert ( !m_pD3DEffect );
 
-    // Compile effect
-    DWORD dwFlags = 0;      // D3DXSHADER_PARTIALPRECISION, D3DXSHADER_DEBUG, D3DXFX_NOT_CLONEABLE;
-    if ( bDebug )
-        dwFlags |= D3DXSHADER_DEBUG;
-    else
-        dwFlags |= D3DXFX_NOT_CLONEABLE;
-
-    SString strMetaPath = strFilename.Right ( strFilename.length () - strRootPath.length () );
-    CIncludeManager IncludeManager ( strRootPath, ExtractPath ( strMetaPath ) );
-    LPD3DXBUFFER pBufferErrors = NULL;
-    HRESULT hr = D3DXCreateEffectFromFile( m_pDevice, strFilename.c_str(), NULL, &IncludeManager, dwFlags, NULL, &m_pD3DEffect, &pBufferErrors );            
-
-    // Handle compile errors
-    strOutStatus = "";
-    if( pBufferErrors != NULL )
-    {
-        strOutStatus = SStringX ( (CHAR*)pBufferErrors->GetBufferPointer() ).TrimEnd ( "\n" );
-
-        // Error messages sometimes contain the current directory. Remove that here.
-        SString strCurrentDirectory = SharedUtil::GetCurrentDirectory ();
-        strOutStatus = strOutStatus.ReplaceI ( strCurrentDirectory + "\\", "" );
-        strOutStatus = strOutStatus.ReplaceI ( strCurrentDirectory, "" );
-    }
-    SAFE_RELEASE( pBufferErrors );
-
-    if( !m_pD3DEffect )
-    {
-        if ( strOutStatus.empty () )
-            strOutStatus = SString ( "[D3DXCreateEffectFromFile failed (%08x)%s]", hr, *IncludeManager.m_strReport );
-        return;
-    }
-
-    // Find first valid technique
-    D3DXHANDLE hTechnique = NULL;
-    D3DXEFFECT_DESC EffectDesc;
-    m_pD3DEffect->GetDesc ( &EffectDesc );
-
-    for ( uint uiAttempt = 0 ; true ; uiAttempt++ )
-    {
-        SString strProblemInfo = "";
-        for ( uint i = 0 ; i < EffectDesc.Techniques ; i++ )
-        {
-            D3DXHANDLE hTemp = m_pD3DEffect->GetTechnique ( i );
-            HRESULT hr = m_pD3DEffect->ValidateTechnique ( hTemp );
-            if ( SUCCEEDED( hr ) )
-            {
-                hTechnique = hTemp;
-                break;
-            }
-
-            // Update problem string
-            D3DXTECHNIQUE_DESC TechniqueDesc;
-            m_pD3DEffect->GetTechniqueDesc( hTemp, &TechniqueDesc );
-            strProblemInfo += SString ( "['%s' (%d/%d) failed (%08x)]", TechniqueDesc.Name, i, EffectDesc.Techniques, hr );
-        }
-
-        // Found valid technique
-        if ( hTechnique )
-            break;
-
-        // Error if can't find a valid technique after 2nd attempt
-        if ( uiAttempt > 0 )
-        {
-            strOutStatus = SString ( "No valid technique; [Techniques:%d %s]%s", EffectDesc.Techniques, *strProblemInfo, *IncludeManager.m_strReport );
-            SAFE_RELEASE ( m_pD3DEffect );
-            return;
-        }
-
-        // Try resetting samplers if 1st attempt failed
-        LPDIRECT3DDEVICE9 pDevice;
-        m_pD3DEffect->GetDevice ( &pDevice );
-        for ( uint i = 0 ; i < 16 ; i++ )
-        {
-            pDevice->SetSamplerState ( i, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-            pDevice->SetSamplerState ( i, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-            pDevice->SetSamplerState ( i, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
-        }
-    }
-
-
-    // Set technique
-    m_pD3DEffect->SetTechnique( hTechnique );
-
-    // Inform user of technique name
-    D3DXTECHNIQUE_DESC TechniqueDesc;
-    m_pD3DEffect->GetTechniqueDesc( hTechnique, &TechniqueDesc );
-    strOutStatus = TechniqueDesc.Name;
-
-    if ( bDebug )
-    {
-        // Disassemble effect
-        LPD3DXBUFFER pDisassembly = NULL;
-
-        if ( SUCCEEDED( D3DXDisassembleEffect( m_pD3DEffect, false, &pDisassembly ) ) && pDisassembly )
-        {
-            LPVOID pData = pDisassembly->GetBufferPointer();
-            DWORD Size = pDisassembly->GetBufferSize();
-
-            if ( pData && Size )
-            {
-                SString strDisassemblyContents;
-                strDisassemblyContents.assign ( (const char*)pData, Size - 1 );
-                mtaFileRoot->WriteData( strFilename + ".dis", *strDisassemblyContents, strDisassemblyContents.size() );
-            }
-
-            SAFE_RELEASE( pDisassembly );
-        }
-    }
-
     // Optimization
     m_uiSaveStateFlags = D3DXFX_DONOTSAVESHADERSTATE;     // D3DXFX_DONOTSAVE(SHADER|SAMPLER)STATE
+
+    // Fetch compiled D3DEffect
+    m_pD3DEffect = m_pManager->GetEffectCloner ()->CreateD3DEffect ( strFilename, strRootPath, strOutStatus, bDebug );
+
+    if ( !m_pD3DEffect )
+        return;
+
+    D3DXEFFECT_DESC EffectDesc;
+    m_pD3DEffect->GetDesc ( &EffectDesc );
+    D3DXHANDLE hTechnique = m_pD3DEffect->GetCurrentTechnique ();
+
+    // Make a map of referenced parameter handles
+    for ( uint i = 0 ; i < EffectDesc.Parameters ; i++ )
+    {
+        D3DXHANDLE hParameter = m_pD3DEffect->GetParameter ( NULL, i );
+        if ( !hParameter )
+            break;
+        D3DXPARAMETER_DESC ParameterDesc;
+        m_pD3DEffect->GetParameterDesc( hParameter, &ParameterDesc );
+
+        if ( m_pD3DEffect->IsParameterUsed ( hParameter, hTechnique ) )
+            MapInsert ( m_ReferencedParameterMap, hParameter );
+    }
 }
 
 
@@ -772,7 +621,11 @@ void CEffectWrapImpl::CreateUnderlyingData ( const SString& strFilename, const S
 ////////////////////////////////////////////////////////////////
 void CEffectWrapImpl::ReleaseUnderlyingData ( void )
 {
-    SAFE_RELEASE ( m_pD3DEffect );
+    if ( m_pD3DEffect )
+    {
+        m_pManager->GetEffectCloner ()->ReleaseD3DEffect ( m_pD3DEffect );
+        m_pD3DEffect = NULL;
+    }
 }
 
 
@@ -1094,7 +947,7 @@ void CEffectWrapImpl::ApplyMappedHandles ( void )
         IDirect3DBaseTexture9* const* ppTexture = &g_pDeviceState->TextureState[ var.iStage ].Texture;
         if ( var.iType == RegMap::Texture2Texture )
         {
-            m_pD3DEffect->SetTexture ( var.hHandle, *ppTexture );
+            m_pD3DEffect->SetTexture ( var.hHandle, CDirect3DEvents9::GetRealTexture ( *ppTexture ) );
         }
         else
             assert ( 0 );
@@ -1188,35 +1041,6 @@ void CEffectWrapImpl::ApplyMappedHandles ( void )
     //
     // VertexDeclState
     //
-    if ( !vertexDeclStateVarList.empty () )
-    {
-        // Hackily update the state here
-        CProxyDirect3DDevice9::SD3DVertexDeclState& vertexDeclState = g_pDeviceState->VertexDeclState;
-        memset ( &vertexDeclState, 0, sizeof ( vertexDeclState ) );
-        IDirect3DVertexDeclaration9* pVertexDeclaration = NULL;
-        if ( SUCCEEDED( m_pDevice->GetVertexDeclaration ( &pVertexDeclaration ) ) )
-        {
-            D3DVERTEXELEMENT9               elements[MAXD3DDECLLENGTH];
-            UINT                            numElements;
-            if ( SUCCEEDED( pVertexDeclaration->GetDeclaration ( elements, &numElements ) ) )
-            {
-                for ( uint i = 0 ; i < numElements - 1 ; i++ )
-                {
-                    switch ( elements [ i ].Usage + elements [ i ].UsageIndex * 16 )
-                    {
-                        case D3DDECLUSAGE_POSITION:         vertexDeclState.Position = 1;   break;
-                        case D3DDECLUSAGE_POSITIONT:        vertexDeclState.PositionT = 1;  break;
-                        case D3DDECLUSAGE_NORMAL:           vertexDeclState.Normal = 1;     break;
-                        case D3DDECLUSAGE_COLOR:            vertexDeclState.Color0 = 1;     break;
-                        case D3DDECLUSAGE_COLOR + 16:       vertexDeclState.Color1 = 1;     break;
-                        case D3DDECLUSAGE_TEXCOORD:         vertexDeclState.TexCoord0 = 1;  break;
-                        case D3DDECLUSAGE_TEXCOORD + 16:    vertexDeclState.TexCoord1 = 1;  break;
-                    }
-                }
-            }
-        }
-    }
-
     for ( uint i = 0 ; i < vertexDeclStateVarList.size () ; i++ )
     {
         const SStateVar& var = vertexDeclStateVarList[i];
@@ -1244,9 +1068,10 @@ void CEffectWrapImpl::ApplyMappedHandles ( void )
 ////////////////////////////////////////////////////////////////
 void CEffectWrapImpl::ReadParameterHandles ( void )
 {
-    // Add parameter handles
     D3DXEFFECT_DESC EffectDesc;
     m_pD3DEffect->GetDesc( &EffectDesc );
+
+    // Search for custom flags first
     for ( uint i = 0 ; i < EffectDesc.Parameters ; i++ )
     {
         D3DXHANDLE hParameter = m_pD3DEffect->GetParameter ( NULL, i );
@@ -1257,6 +1082,24 @@ void CEffectWrapImpl::ReadParameterHandles ( void )
 
         // See if this parameter is 'special'
         if ( TryParseSpecialParameter ( hParameter, ParameterDesc ) )
+            continue;
+    }
+
+    // Add parameter handles
+    for ( uint i = 0 ; i < EffectDesc.Parameters ; i++ )
+    {
+        D3DXHANDLE hParameter = m_pD3DEffect->GetParameter ( NULL, i );
+        if ( !hParameter )
+            break;
+        D3DXPARAMETER_DESC ParameterDesc;
+        m_pD3DEffect->GetParameterDesc( hParameter, &ParameterDesc );
+
+        // See if this parameter is 'special'
+        if ( TryParseSpecialParameter ( hParameter, ParameterDesc ) )
+            continue;
+
+        // Check if parameter is used
+        if ( m_bSkipUnusedParameters && !MapContains ( m_ReferencedParameterMap, hParameter ) )
             continue;
 
         // See if this parameter wants to be mapped to a D3D register
@@ -1305,6 +1148,17 @@ bool CEffectWrapImpl::TryParseSpecialParameter ( D3DXHANDLE hParameter, const D3
                     m_bRequiresNormals = false;
                 else
                     m_strWarnings += SString ( "Unknown value for createNormals '%s'\n", *strAnnotValue );
+            }
+            else
+            if ( strAnnotName == "skipUnusedParameters" )
+            {
+                if ( strAnnotValue == "yes" )
+                    m_bSkipUnusedParameters = true;
+                else
+                if ( strAnnotValue == "no" )
+                    m_bSkipUnusedParameters = false;
+                else
+                    m_strWarnings += SString ( "Unknown value for skipUnusedParameters '%s'\n", *strAnnotValue );
             }
             else
             {

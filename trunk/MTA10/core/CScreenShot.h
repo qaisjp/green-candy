@@ -19,17 +19,20 @@
 class CScreenShot
 {
 public:
-    static SString                  PreScreenShot               ( void );
-    static void                     PostScreenShot              ( const char *szFileName );
-    static void                     SetPath                     ( const char *szPath );
+    static void                     Init();
+    static void                     Shutdown();
 
-    static SString                  GetScreenShotPath           ( int iNumber );
-    static SString                  GetValidScreenshotFilename  ( void );
-    static int                      GetScreenShots              ( void );
+    static SString                  PreScreenShot();
+    static void                     PostScreenShot( const char *path );
+    static void                     SetPath( const char *path );
 
-    static void                     BeginSave                   ( const char *szFileName, void* pBits, unsigned long ulPitch, RECT ScreenSize );
-    static bool                     IsSaving                    ( void );
-    static DWORD                    ThreadProc                  ( LPVOID lpdwThreadParam );
+    static SString                  GetScreenShotPath( unsigned int num );
+    static SString                  GetValidScreenshotFilename();
+    static unsigned int             GetScreenShots();
+
+    static void                     BeginSave( const char *path, void *bits, unsigned long pitch, RECT screenSize );
+    static bool                     IsSaving();
+    static DWORD                    ThreadProc( LPVOID lpdwThreadParam );
 };
 
 #endif

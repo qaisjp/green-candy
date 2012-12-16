@@ -31,7 +31,7 @@ static HWND hwndD3dDllDialog = NULL;
 HANDLE g_hMutex = NULL;
 HMODULE hLibraryModule = NULL;
 
-HMODULE RemoteLoadLibrary(HANDLE hProcess, const char* szLibPath)
+HMODULE RemoteLoadLibrary( HANDLE hProcess, const char *szLibPath )
 {
     /* Called correctly? */
     if ( szLibPath == NULL )
@@ -39,11 +39,14 @@ HMODULE RemoteLoadLibrary(HANDLE hProcess, const char* szLibPath)
         return 0;
     }
 
+    size_t pathLen = strlen( szLibPath ) + 1;
+
     /* Allocate memory in the remote process for the library path */
-    HANDLE hThread = 0;
-    void* pLibPathRemote = NULL;
+    HANDLE hThread = INVALID_HANDLE_VALUE;
+    void *pLibPathRemote = NULL;
+
     HMODULE hKernel32 = GetModuleHandle( "Kernel32" );
-    pLibPathRemote = VirtualAllocEx( hProcess, NULL, strlen ( szLibPath ) + 1, MEM_COMMIT, PAGE_READWRITE );
+    pLibPathRemote = VirtualAllocEx( hProcess, NULL, pathLen, MEM_COMMIT, PAGE_READWRITE );
     
     if ( pLibPathRemote == NULL )
     {
@@ -51,37 +54,61 @@ HMODULE RemoteLoadLibrary(HANDLE hProcess, const char* szLibPath)
     }
 
     /* Make sure pLibPathRemote is always freed */
-    __try {
+    __try
+    {
+        size_t dirPathLen = pathLen;
+        DWORD byteswritten;
+
+        // First write the library location
+        for (;;)
+        {
+            switch( szLibPath[--dirPathLen] )
+            {
+            case '/':
+            case '\\':
+                goto seperatedPath;
+            }
+        }
+
+seperatedPath:
+        char buf[MAX_PATH];
+        strncpy( buf, szLibPath, dirPathLen );
+
+        buf[dirPathLen++] = 0;
+
+        WriteProcessMemory( hProcess, pLibPathRemote, buf, dirPathLen, &byteswritten );
+
+        if ( byteswritten != dirPathLen )
+            return NULL;
+
+        // Set the module location
+        hThread = CreateRemoteThread( hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)GetProcAddress( hKernel32, "SetDllDirectoryA" ), pLibPathRemote, 0, NULL );
+
+        if ( hThread == INVALID_HANDLE_VALUE )
+            return NULL;
+
+        // Finish the preloader
+        WaitForObject( hProcess, hThread, INFINITE, NULL );
 
         /* Write the DLL library path to the remote allocation */
-        DWORD byteswritten = 0;
-        WriteProcessMemory ( hProcess, pLibPathRemote, (void*)szLibPath, strlen ( szLibPath ) + 1, &byteswritten );
+        WriteProcessMemory( hProcess, pLibPathRemote, (void*)szLibPath, pathLen, &byteswritten );
 
-        if ( byteswritten != strlen ( szLibPath ) + 1 )
-        {
-            return 0;
-        }
+        if ( byteswritten != pathLen )
+            return NULL;
 
         /* Start a remote thread executing LoadLibraryA exported from Kernel32. Passing the
            remotly allocated path buffer as an argument to that thread (and also to LoadLibraryA)
            will make the remote process load the DLL into it's userspace (giving the DLL full
            access to the game executable).*/
-        hThread = CreateRemoteThread(   hProcess,
-                                        NULL,
-                                        0,
-                                        reinterpret_cast < LPTHREAD_START_ROUTINE > ( GetProcAddress ( hKernel32, "LoadLibraryA" ) ),
-                                        pLibPathRemote,
-                                        0,
-                                        NULL);
+        hThread = CreateRemoteThread( hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)GetProcAddress( hKernel32, "LoadLibraryA" ), pLibPathRemote, 0, NULL);
 
-        if ( hThread == 0 )
-        {
-            return 0;
-        }
+        if ( hThread == INVALID_HANDLE_VALUE )
+            return NULL;
 
-
-    } __finally {
-        VirtualFreeEx( hProcess, pLibPathRemote, strlen ( szLibPath ) + 1, MEM_RELEASE );
+    }
+    __finally
+    {
+        VirtualFreeEx( hProcess, pLibPathRemote, pathLen, MEM_RELEASE );
     }
 
     /*  We wait for the created remote thread to finish executing. When it's done, the DLL
@@ -98,7 +125,7 @@ HMODULE RemoteLoadLibrary(HANDLE hProcess, const char* szLibPath)
 
 
     /* Clean up the resources we used to inject the DLL */
-    VirtualFreeEx (hProcess, pLibPathRemote, strlen ( szLibPath ) + 1, MEM_RELEASE );
+    VirtualFreeEx (hProcess, pLibPathRemote, pathLen, MEM_RELEASE );
 
     /* Success */
     return ( HINSTANCE )( 1 );

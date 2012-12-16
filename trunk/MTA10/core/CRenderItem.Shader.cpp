@@ -18,8 +18,11 @@
 //
 //
 ////////////////////////////////////////////////////////////////
-void CShaderItem::PostConstruct ( CRenderItemManager* pManager, const SString& strFilename, const SString& strRootPath, SString& strOutStatus, bool bDebug )
+void CShaderItem::PostConstruct ( CRenderItemManager* pManager, const SString& strFilename, const SString& strRootPath, SString& strOutStatus, float fPriority, float fMaxDistance, bool bDebug )
 {
+    m_fPriority = fPriority;
+    m_fMaxDistanceSq = fMaxDistance * fMaxDistance;
+
     Super::PostConstruct ( pManager );
 
     // Initial creation of d3d data
@@ -238,6 +241,46 @@ bool CShaderItem::SetValue ( const SString& strName, const float* pfValues, uint
         return true;
     }
     return false;
+}
+
+
+////////////////////////////////////////////////////////////////
+//
+// CShaderItem::SetTessellation
+//
+//
+//
+////////////////////////////////////////////////////////////////
+void CShaderItem::SetTessellation ( uint uiTessellationX, uint uiTessellationY )
+{
+    // Check if value is changing
+    if ( uiTessellationX != m_pShaderInstance->m_uiTessellationX || uiTessellationY != m_pShaderInstance->m_uiTessellationY )
+    {
+        // Check if we need a new shader instance
+        MaybeRenewShaderInstance ();
+        m_pShaderInstance->m_uiTessellationX = uiTessellationX;
+        m_pShaderInstance->m_uiTessellationY = uiTessellationY;
+    }
+}
+
+
+////////////////////////////////////////////////////////////////
+//
+// CShaderItem::SetTransform
+//
+//
+//
+////////////////////////////////////////////////////////////////
+void CShaderItem::SetTransform ( const SShaderTransform& transform )
+{
+    // Check if value is changing
+    if ( memcmp ( &m_pShaderInstance->m_Transform, &transform, sizeof ( transform ) ) != 0 )
+    {
+        // Check if we need a new shader instance
+        MaybeRenewShaderInstance ();
+        m_pShaderInstance->m_Transform = transform;
+        m_pShaderInstance->m_bHasModifiedTransform = true;
+    }
 }
 
 

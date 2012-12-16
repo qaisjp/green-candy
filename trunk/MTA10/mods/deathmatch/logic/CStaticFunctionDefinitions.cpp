@@ -1940,7 +1940,7 @@ bool CStaticFunctionDefinitions::GetClothesByTypeIndex ( unsigned char ucType, u
 }
 
 
-bool CStaticFunctionDefinitions::GetTypeIndexFromClothes ( char* szTexture, char* szModel, unsigned char& ucTypeReturn, unsigned char& ucIndexReturn )
+bool CStaticFunctionDefinitions::GetTypeIndexFromClothes ( const char* szTexture, const char* szModel, unsigned char& ucTypeReturn, unsigned char& ucIndexReturn )
 {
     if ( szTexture == NULL && szModel == NULL )
         return false;
@@ -5142,7 +5142,7 @@ bool CStaticFunctionDefinitions::ResetWaterColor ( void )
 
 bool CStaticFunctionDefinitions::SetWeather ( unsigned char ucWeather )
 {
-    // Verify it's within the max valid weather id
+    // Verify it is within the max valid weather id
     if ( ucWeather <= MAX_VALID_WEATHER )
     {
         // Set the weather
@@ -5324,14 +5324,14 @@ bool CStaticFunctionDefinitions::BindKey( const char *key, const char *hitState,
     if ( !pKeyBinds->IsKey( key ) )
         return false;
 
-    bool bSuccess = false;
-
     // Activate all keys for this command
     pKeyBinds->SetAllCommandsActive( res, true, cmd, true, args, true );
 
     // Check if its binded already (dont rebind)
     if ( pKeyBinds->GetCommandBind( key, cmd, true, true, args, res ) )
         return true;
+
+    bool bSuccess = false;
 
     if ( ( stricmp( hitState, "down" ) == 0 || stricmp( hitState, "both" ) == 0 ) &&
          pKeyBinds->AddCommand( key, cmd, args, true, res ) )
@@ -5509,7 +5509,6 @@ bool CStaticFunctionDefinitions::ToggleControl ( const char* szControl, bool bEn
     return false;
 }
 
-
 bool CStaticFunctionDefinitions::ToggleAllControls ( bool bGTAControls, bool bMTAControls, bool bEnabled )
 {
     CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds ();    
@@ -5518,52 +5517,51 @@ bool CStaticFunctionDefinitions::ToggleAllControls ( bool bGTAControls, bool bMT
     return true;
 }
 
-
-CClientProjectile * CStaticFunctionDefinitions::CreateProjectile ( CResource& Resource, CClientEntity& Creator, unsigned char ucWeaponType, const CVector& vecOrigin, float fForce, CClientEntity* pTarget, CVector* pvecRotation, CVector* pvecVelocity, unsigned short usModel )
+CClientProjectile* CStaticFunctionDefinitions::CreateProjectile( CResource& Resource, CClientEntity& Creator, unsigned char ucWeaponType, const CVector& vecOrigin, float fForce, CClientEntity* pTarget, CVector* pvecRotation, CVector* pvecVelocity, unsigned short usModel )
 {
     // Do we have a rotation vector?
     if ( pvecRotation )
     {
         // It should be in degrees, so convert it to radians
-        ConvertDegreesToRadians ( *pvecRotation );
+        ConvertDegreesToRadians( *pvecRotation );
     }
 
     // Valid creator type?
-    switch ( Creator.GetType () )
+    switch ( Creator.GetType() )
     {
-        case CCLIENTPED:
-        case CCLIENTPLAYER:
-        case CCLIENTVEHICLE:
+    case CCLIENTPED:
+    case CCLIENTPLAYER:
+    case CCLIENTVEHICLE:
+    {
+        eWeaponType weaponType = ( eWeaponType ) ucWeaponType;
+
+        // Valid weapon type?
+        switch ( weaponType )
         {
-            eWeaponType weaponType = ( eWeaponType ) ucWeaponType;
-
-            // Valid weapon type?
-            switch ( weaponType )
+        case WEAPONTYPE_GRENADE:
+        case WEAPONTYPE_TEARGAS:
+        case WEAPONTYPE_MOLOTOV:
+        case WEAPONTYPE_ROCKET:
+        case WEAPONTYPE_ROCKET_HS:
+        case WEAPONTYPE_FREEFALL_BOMB:
+        case WEAPONTYPE_REMOTE_SATCHEL_CHARGE:
+        {
+            CClientProjectile * pProjectile = m_pProjectileManager->Create ( &Creator, weaponType, vecOrigin, fForce, CVector( 0, 0, 0 ), pTarget );
+            if ( pProjectile )
             {
-                case WEAPONTYPE_GRENADE:
-                case WEAPONTYPE_TEARGAS:
-                case WEAPONTYPE_MOLOTOV:
-                case WEAPONTYPE_ROCKET:
-                case WEAPONTYPE_ROCKET_HS:
-                case WEAPONTYPE_FREEFALL_BOMB:
-                case WEAPONTYPE_REMOTE_SATCHEL_CHARGE:
-                {
-                    CClientProjectile * pProjectile = m_pProjectileManager->Create ( &Creator, weaponType, vecOrigin, fForce, CVector( 0, 0, 0 ), pTarget );
-                    if ( pProjectile )
-                    {
-                        // Set our intiation data, which will be used on the next frame
-                        pProjectile->Initiate ( &CVector( vecOrigin ), pvecRotation, pvecVelocity, usModel );
-                        pProjectile->SetRoot( Resource.GetResourceDynamicEntity() );
-                        return pProjectile;
-                    }
-                    break;
-                }
-                default: break;
+                // Set our intiation data, which will be used on the next frame
+                pProjectile->Initiate ( &CVector( vecOrigin ), pvecRotation, pvecVelocity, usModel );
+                pProjectile->SetRoot( Resource.GetResourceDynamicEntity() );
+                return pProjectile;
             }
-
             break;
         }
         default: break;
+        }
+
+        break;
+    }
+    default: break;
     }
 
     return NULL;
@@ -5630,12 +5628,12 @@ CClientColShape* CStaticFunctionDefinitions::GetElementColShape( CClientEntity* 
     CClientColShape* pColShape = NULL;
     switch ( pEntity->GetType () )
     {
-        case CCLIENTMARKER:
-            pColShape = static_cast < CClientMarker* > ( pEntity )->GetColShape ();
-            break;
-        case CCLIENTPICKUP:
-            pColShape = static_cast < CClientPickup* > ( pEntity )->GetColShape ();
-            break;
+    case CCLIENTMARKER:
+        pColShape = static_cast < CClientMarker* > ( pEntity )->GetColShape ();
+        break;
+    case CCLIENTPICKUP:
+        pColShape = static_cast < CClientPickup* > ( pEntity )->GetColShape ();
+        break;
     }
     return pColShape;
 }
