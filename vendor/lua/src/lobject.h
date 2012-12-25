@@ -512,7 +512,7 @@ public:
     void    DecrementMethodStack( lua_State *lua );
     void    ClearReferences( lua_State *lua );
     void    CheckDestruction( lua_State *lua );
-    bool    PreDestructor( lua_State *L );  
+    bool    PreDestructor( lua_State *L );
 
     void    PushMethod( lua_State *L, const char *key );
 
@@ -534,6 +534,7 @@ public:
     void    PushOuterEnvironment( lua_State *L );
     void    PushChildAPI( lua_State *L );
     void    PushParent( lua_State *L );
+    const TValue*   GetEnvValue( const TValue *key );
 
     void    RequestDestruction();
 

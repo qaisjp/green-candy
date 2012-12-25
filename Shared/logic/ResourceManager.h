@@ -35,6 +35,7 @@ public:
     // File interface
     bool                    ParseResourcePath( Resource*& res, const char *path, const char*& meta );
     bool                    ParseResourceFullPath( Resource*& res, const char *path, const char*& meta, filePath& absPath );
+    virtual bool            CreateDir( Resource *res, const char *path );
     virtual CFile*          OpenStream( Resource *res, const char *path, const char *mode );
     virtual bool            FileCopy( Resource *res, const char *src, const char *dst );
     virtual bool            FileRename( Resource *res, const char *src, const char *dst );

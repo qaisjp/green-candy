@@ -82,6 +82,7 @@ namespace LuaFunctionDefs
     LUA_DECLARE( DisabledFunction );
 
     // File functions
+    LUA_DECLARE( fileCreateDir );
     LUA_DECLARE( fileCreate );
     LUA_DECLARE( fileExists );
     LUA_DECLARE( fileOpen );
@@ -130,6 +131,7 @@ namespace LuaFunctionDefs
     LUA_DECLARE( fromJSON );
 
     // Utility
+    LUA_DECLARE( newmd5hasher );
     LUA_DECLARE( md5 );
     LUA_DECLARE( gettok );
     LUA_DECLARE( split );

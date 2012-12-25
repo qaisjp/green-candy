@@ -15,7 +15,6 @@
 
 extern CCore* g_pCore;
 
-static CFileTranslator *saveRoot = NULL;
 static bool bIsChatVisible = false;
 static bool bIsDebugVisible = false;
 
@@ -29,13 +28,10 @@ static SString  ms_strFileName;
 
 void CScreenShot::Init()
 {
-    
 }
 
 void CScreenShot::Shutdown()
 {
-    // Unlock the screenshot dir
-    delete saveRoot;
 }
 
 SString CScreenShot::PreScreenShot ()
@@ -47,9 +43,7 @@ SString CScreenShot::PreScreenShot ()
     g_pCore->SetChatVisible ( false );
     g_pCore->SetDebugVisible ( false );
 
-    SString strScreenShotName = GetValidScreenshotFilename();
-
-    return strScreenShotName;
+    return GetValidScreenshotFilename();
 }
 
 void CScreenShot::PostScreenShot ( const char *szFileName )
@@ -64,17 +58,6 @@ void CScreenShot::PostScreenShot ( const char *szFileName )
 
 void CScreenShot::SetPath( const char *path )
 {
-    std::string screenDir( path );
-    screenDir += "screenshots/";
-    
-    // Unlock any previous dir
-    delete saveRoot;
-
-    // Create the directory
-    fileRoot->CreateDir( screenDir.c_str() );
-
-    // Lock it
-    saveRoot = fileSystem->CreateTranslator( screenDir.c_str() );
 }
 
 static void _screenshot_IncrementFileCount( const filePath& path, unsigned int& num )
@@ -87,7 +70,7 @@ unsigned int CScreenShot::GetScreenShots()
     unsigned int numFiles = 0;
 
     // Use the fileSystem API
-    saveRoot->ScanDirectory( "/", "mta-screen*.png", true, NULL, (pathCallback_t)_screenshot_IncrementFileCount, &numFiles );
+    screenFileRoot->ScanDirectory( "/", "mta-screen*.png", true, NULL, (pathCallback_t)_screenshot_IncrementFileCount, &numFiles );
     return numFiles;
 }
 
@@ -98,7 +81,7 @@ SString CScreenShot::GetValidScreenshotFilename()
     GetLocalTime( &sysTime );
 
     filePath root;
-    saveRoot->GetFullPath( SString( "/mta-screen_%d-%02d-%02d_%02d-%02d-%02d.png", sysTime.wYear, sysTime.wMonth, sysTime.wDay, sysTime.wHour, sysTime.wMinute, sysTime.wSecond ).c_str(), true, root );
+    screenFileRoot->GetFullPath( SString( "/mta-screen_%d-%02d-%02d_%02d-%02d-%02d.png", sysTime.wYear, sysTime.wMonth, sysTime.wDay, sysTime.wHour, sysTime.wMinute, sysTime.wSecond ).c_str(), true, root );
     return root;
 }
 
@@ -124,7 +107,7 @@ SString CScreenShot::GetScreenShotPath( unsigned int num )
     info.idxFind = num;
 
     // Use the fileSystem API
-    saveRoot->ScanDirectory( "/", "mta-screen*.png", true, NULL, (pathCallback_t)_screenshot_GetByIndex, &info );
+    screenFileRoot->ScanDirectory( "/", "mta-screen*.png", true, NULL, (pathCallback_t)_screenshot_GetByIndex, &info );
 
     // Get Return the file directory
     return info.outname;
@@ -170,7 +153,7 @@ DWORD CScreenShot::ThreadProc ( LPVOID lpdwThreadParam )
     CFile *file = screenFileRoot->Open( ms_strFileName, "wb" );
 
     // Do the .png logic
-    png_struct* png_ptr = png_create_write_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
+    png_struct *png_ptr = png_create_write_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
     png_info* info_ptr = png_create_info_struct( png_ptr );
     png_set_write_fn( png_ptr, file, (png_rw_ptr)Png_Writer, (png_flush_ptr)Png_Flusher );
     png_set_filter( png_ptr, 0, PNG_FILTER_NONE );

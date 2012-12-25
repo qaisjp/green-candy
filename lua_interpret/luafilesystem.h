@@ -15,6 +15,8 @@
 
 #define LUACLASS_FILETRANSLATOR     137
 
+int luafsys_createArchiveTranslator( lua_State *L );
+int luafsys_createZIPArchive( lua_State *L );
 void luafsys_pushroot( lua_State *L, CFileTranslator *root );
 void luafilesystem_open( lua_State *L );
 

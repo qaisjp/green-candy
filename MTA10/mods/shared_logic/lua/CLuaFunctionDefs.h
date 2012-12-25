@@ -41,6 +41,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getResourceGUIElement );
     LUA_DECLARE( getResourceDynamicElementRoot );
     LUA_DECLARE( getResourceExportedFunctions );
+    LUA_DECLARE( fileCreateTranslator );
 
     // Event functions
     LUA_DECLARE( addEvent );
@@ -474,6 +475,8 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( dxSetRenderTarget );
     LUA_DECLARE( dxUpdateScreenSource );
     LUA_DECLARE( dxGetStatus );
+    LUA_DECLARE( dxSetBlendMode );
+    LUA_DECLARE( dxGetBlendMode );
     LUA_DECLARE( dxSetTestMode );
 
     // Pfft utils

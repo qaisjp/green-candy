@@ -222,6 +222,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\luamd5.h"
+				>
+			</File>
+			<File
 				RelativePath=".\StdInc.h"
 				>
 			</File>
@@ -240,6 +244,10 @@
 		</File>
 		<File
 			RelativePath=".\luafilesystem.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\luamd5.cpp"
 			>
 		</File>
 		<File

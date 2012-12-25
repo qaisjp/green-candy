@@ -15,7 +15,10 @@
 
 #include <time.h>
 
-class CArchiveFileTranslator : public CSystemPathTranslator
+#pragma warning(push)
+#pragma warning(disable:4250)
+
+class CArchiveFileTranslator : public CSystemPathTranslator, public CArchiveTranslator
 {
     friend class CFileSystem;
     friend class CArchiveFile;
@@ -474,5 +477,7 @@ private:
 
     size_t      m_structOffset;
 };
+
+#pragma warning(pop)
 
 #endif //_FILESYSTEM_ZIP_

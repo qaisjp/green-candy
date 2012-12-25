@@ -29,6 +29,7 @@
 #include <core/CFileSystem.h>
 #include "luafile.h"
 #include "luafilesystem.h"
+#include "luamd5.h"
 
 static inline void luaJ_extend( lua_State *L, int idx, int nargs )
 {

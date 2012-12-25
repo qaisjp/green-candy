@@ -37,6 +37,7 @@ public:
     void                    LoadUnavailableResources();
 
     bool                    ParseResourcePath( Resource*& res, const char *path, std::string& meta );
+    bool                    CreateDir( Resource *res, const char *path );
     CFile*                  OpenStream( Resource *res, const char *path, const char *mode );
     bool                    FileCopy( Resource *res, const char *src, const char *dst );
     bool                    FileRename( Resource *res, const char *src, const char *dst );

@@ -44,6 +44,7 @@ namespace EBlendMode
     };
 }
 using EBlendMode::EBlendModeType;
+using namespace EBlendMode;
 
 class CGraphicsInterface
 {

@@ -34,6 +34,9 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, getResourceGUIElement );
     LUA_REGISTER( L, getResourceDynamicElementRoot );
     LUA_REGISTER( L, getResourceExportedFunctions );
+    LUA_REGISTER( L, fileCreateTranslator );
+    lua_register( L, "fileOpenArchive", luafsys_createArchiveTranslator );    // lib redirect
+    lua_register( L, "fileCreateZIP", luafsys_createZIPArchive );
 
     // Event functions
     LUA_REGISTER( L, addEvent );
@@ -467,6 +470,8 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, dxSetRenderTarget );
     LUA_REGISTER( L, dxUpdateScreenSource );
     LUA_REGISTER( L, dxGetStatus );
+    LUA_REGISTER( L, dxSetBlendMode );
+    LUA_REGISTER( L, dxGetBlendMode );
     LUA_REGISTER( L, dxSetTestMode );
 
     // Pfft utils

@@ -187,14 +187,19 @@ public:
 
     inline void yield()
     {
+        status = LUA_YIELD;
+
         // Optimized yield qswitch
         luaX_qswitch( fiber, callee );
+
+        status = 0;
     }
 
     bool isMain;
     bool yieldDisabled;
     Fiber *callee;
     Fiber *fiber;
+    bool isTerminated;
 };
 
 /* macros to convert a GCObject into a specific value */

@@ -14,10 +14,11 @@
 #include "lfiber.h"
 #include "lstate.h"
 #include "lmem.h"
+
+#ifdef _WIN32
 #include <excpt.h>
 #include <windows.h>
 
-#ifdef _WIN32
 typedef struct _EXCEPTION_REGISTRATION
 {
      struct _EXCEPTION_REGISTRATION* Next;
@@ -39,6 +40,9 @@ static EXCEPTION_REGISTRATION _baseException =
 
 static void __stdcall _retHandler( lua_Thread *L )
 {
+    // Mark coroutine as dead
+    L->isTerminated = true;
+
     // Yield back.
     L->yield();
 }
@@ -49,7 +53,7 @@ Fiber* luaX_newfiber( lua_State *L, size_t stackSize, FiberProcedure proc )
 
     // Allocate stack memory
     if ( stackSize == 0 )
-        stackSize = 2 << 20;    // a megabyte of stack space
+        stackSize = 2 << 17;    // 128 kilobytes of stack space (is this enough?)
 
     unsigned int *stack = (unsigned int*)luaM_malloc( L, stackSize );
     env->stack_base = (unsigned int*)( (unsigned int)stack + stackSize );

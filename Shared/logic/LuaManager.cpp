@@ -31,7 +31,7 @@ ResourceManager* LuaManager::m_resMan = NULL;
 
 static LuaManager* lua_readmanager( lua_State *L )
 {
-    return lua_readuserdata_assert <LuaManager, LUA_STORAGEINDEX, 1> ( L );
+    return lua_readuserdata_assert <LuaManager, LUA_REGISTRYINDEX, 1> ( L );
 }
 
 static int lua_cocreatethread( lua_State *L )
@@ -43,8 +43,8 @@ static int lua_cocreatethread( lua_State *L )
 
     lua_xmove( L, thread, 2 );
 
-    lua_rawseti( L, LUA_STORAGEINDEX, 2 );
-    lua_rawseti( L, LUA_STORAGEINDEX, 1 );
+    lua_rawseti( thread, LUA_STORAGEINDEX, 2 );
+    lua_rawseti( thread, LUA_STORAGEINDEX, 1 );
     return 0;
 }
 
@@ -308,6 +308,7 @@ static int LoadCFunctions( LuaMain *L )
 {
     using namespace LuaFunctionDefs;
 
+    LUA_REGISTER( L, fileCreateDir );
     LUA_REGISTER( L, fileOpen );
     LUA_REGISTER( L, fileExists );
     LUA_REGISTER( L, fileCreate );
@@ -350,6 +351,7 @@ static int LoadCFunctions( LuaMain *L )
     LUA_REGISTER( L, utfChar );
     LUA_REGISTER( L, utfCode );
 
+    LUA_REGISTER( L, newmd5hasher );
     LUA_REGISTER( L, md5 );
     LUA_REGISTER( L, getTickCount );
     LUA_REGISTER( L, getCTime );

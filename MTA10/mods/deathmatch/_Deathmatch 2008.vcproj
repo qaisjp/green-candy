@@ -1193,6 +1193,14 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\lua_interpret\luafilesystem.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\lua_interpret\luamd5.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\shared_logic\luadefs\luaobject.cpp"
 						>
 					</File>
@@ -2704,6 +2712,14 @@
 					</File>
 					<File
 						RelativePath="..\shared_logic\luadefs\CLuaTaskDefs.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\lua_interpret\luafile.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\lua_interpret\luafilesystem.h"
 						>
 					</File>
 					<File

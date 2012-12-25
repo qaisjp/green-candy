@@ -23,6 +23,7 @@ DECLARE_ENUM( CEasingCurve::eType );
 DECLARE_ENUM( eAmbientSoundType );
 DECLARE_ENUM( eCGUIType );
 DECLARE_ENUM( eDxTestMode );
+DECLARE_ENUM( EBlendModeType );
 DECLARE_ENUM( RpLightType );
 
 enum eDXHorizontalAlign

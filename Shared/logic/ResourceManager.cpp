@@ -154,8 +154,15 @@ bool ResourceManager::ParseResourceFullPath( Resource*& res, const char *path, c
     if ( !ParseResourcePath( res, path, meta ) )
         return false;
 
-    res->GetFullMetaPath( meta, absPath );
-    return true;
+    return res->GetFullMetaPath( meta, absPath );
+}
+
+bool ResourceManager::CreateDir( Resource *res, const char *path )
+{
+    if ( !ParseResourcePath( res, path, path ) )
+        return false;
+
+    return res->CreateDir( path );
 }
 
 CFile* ResourceManager::OpenStream( Resource *res, const char *path, const char *mode )

@@ -79,6 +79,7 @@ public:
     void                        ShowCursor( bool bShow, bool bToggleControls = true );
 
     bool                        GetFullMetaPath( const char *path, filePath& absPath );
+    bool                        CreateDir( const char *path );
     CFile*                      OpenStream( const char *path, const char *mode );
     bool                        FileCopy( const char *src, const char *dst );
     bool                        FileRename( const char *src, const char *dst );

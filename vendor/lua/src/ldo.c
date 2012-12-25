@@ -90,14 +90,9 @@ int luaD_rawrunprotected( lua_State *L, Pfunc f, void *ud, std::string& err, lua
             e.getDebug( *debug );
 
         err = e.what();
-        return L->status = e.status();
+        return e.status();
     }
-    catch( ... )
-    {
-        if ( L->status == 0 )
-            L->status = -1;
-        throw;
-    }
+
     return 0;
 }
 
@@ -442,6 +437,9 @@ LUA_API int lua_resume (lua_State *L, int nargs)
 
     lua_callevent( main, LUA_EVENT_THREAD_CONTEXT_POP, 0 );
 
+    if ( ((lua_Thread*)L)->isTerminated )
+        luaE_terminate( (lua_Thread*)L );
+
     lua_unlock(L);
     luai_userstateyield(L, nresults);
     return L->status;
@@ -464,7 +462,6 @@ LUA_API int lua_yield( lua_State *L, int nresults )
     lua_lock(L);
 
     L->base = L->top - nresults;  /* protect stack slots below */
-    L->status = LUA_YIELD;
 
     // Give back control to the previous thread
     ((lua_Thread*)L)->yield();

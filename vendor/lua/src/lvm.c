@@ -829,6 +829,6 @@ LUAI_FUNC void lua_callevent( lua_State *lua, eLuaEvent evt, int nargs )
     }
 
     lua_pushcclosure( lua, G(lua)->events[evt], 0 );
-    lua_insert( lua, -nargs );
+    lua_insert( lua, -nargs - 1 );
     lua_call( lua, nargs, 0 );
 }

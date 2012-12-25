@@ -54,21 +54,13 @@ static int methodenv_index( lua_State *L )
     if ( c->destroyed )
         throw lua_exception( L, LUA_ERRRUN, "attempt to index the environment of a destroyed class" );
 
-    lua_pushvalue( L, 2 );
-    lua_pushvalue( L, 2 );
+    const TValue *val = c->GetEnvValue( L->base + 1 );
 
-    // Browse the read-only storage
-    lua_rawget( L, lua_upvalueindex( 2 ) );
-
-    if ( lua_type( L, 4 ) != LUA_TNIL )
+    if ( ttype( val ) != LUA_TNIL )
+    {
+        setobj2s( L, L->top - 1, val );
         return 1;
-
-    lua_pop( L, 1 );
-    lua_gettable( L, lua_upvalueindex( 3 ) );
-
-    // Check the internal memory
-    if ( lua_type( L, 3 ) != LUA_TNIL )
-        return 1;
+    }
 
     TValue res;
     setnilvalue( &res );
@@ -292,6 +284,17 @@ void Class::PushParent( lua_State *L )
     }
 
     setjvalue( L, L->top++, parent );
+}
+
+const TValue* Class::GetEnvValue( const TValue *key )
+{
+    // Browse the read-only storage
+    const TValue *res = luaH_get( internStorage, key );
+
+    if ( ttype( res ) != LUA_TNIL )
+        return res;
+
+    return luaH_get( storage, key );
 }
 
 void Class::RequestDestruction()
@@ -563,14 +566,13 @@ static int classmethod_fsDestroyHandler( lua_State *L )
 
 static int dispatcher_index( lua_State *L )
 {
-    lua_pushvalue( L, 2 );
+    const TValue *res = jvalue( index2adr( L, lua_upvalueindex( 3 ) ) )->GetEnvValue( L->base + 1 );
 
-    lua_gettable( L, lua_upvalueindex( 1 ) );
-
-    if ( lua_type( L, 3 ) != LUA_TNIL )
+    if ( ttype( res ) != LUA_TNIL )
+    {
+        setobj2s( L, L->top - 1, res );
         return 1;
-
-    L->top--;
+    }
 
     lua_gettable( L, lua_upvalueindex( 2 ) );
     return 1;
@@ -614,7 +616,8 @@ Table* Class::AcquireEnvDispatcherEx( lua_State *L, Table *curEnv )
 
     sethvalue( L, L->top++, env );
     sethvalue( L, L->top++, curEnv );
-    luaL_openlib( L, NULL, dispatcher_interface, 2 );
+    setjvalue( L, L->top++, this );
+    luaL_openlib( L, NULL, dispatcher_interface, 3 );
 
     L->top--;
     return dispatch;
@@ -633,7 +636,9 @@ void Class::RegisterMethod( lua_State *L, const char *name )
     bool isPrevMethod;
 
     // Apply the environment to the new method
-    clvalue( L->top - 1 )->env = AcquireEnvDispatcher( L );
+    Closure *cl = clvalue( L->top - 1 );
+    cl->env = AcquireEnvDispatcherEx( L, cl->env );
+    luaC_objbarrier( L, cl, cl->env );
 
     if ( val->tt == LUA_TFUNCTION )
     {
@@ -997,7 +1002,9 @@ static int methodenv_newindex( lua_State *L )
             bool methWhite = iswhite( method ) != 0;
 
             // Apply the class environment to the new method
-            clvalue( L->base + 2 )->env = j.AcquireEnvDispatcher( L );
+            Closure *cl = clvalue( L->base + 2 );
+            cl->env = j.AcquireEnvDispatcherEx( L, cl->env );
+            luaC_objbarrier( L, cl, cl->env );
 
             // We have to put it into the environment, too (caching <3)
             if ( val == luaO_nilobject )

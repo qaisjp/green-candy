@@ -817,32 +817,38 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex)
 }
 
 
-LUA_API int lua_setfenv (lua_State *L, int idx) {
-  StkId o;
-  int res = 1;
-  lua_lock(L);
-  api_checknelems(L, 1);
-  o = index2adr(L, idx);
-  api_checkvalidindex(L, o);
-  api_check(L, ttistable(L->top - 1));
-  switch (ttype(o)) {
+LUA_API int lua_setfenv (lua_State *L, int idx)
+{
+    StkId o;
+    int res = 1;
+    lua_lock(L);
+    api_checknelems(L, 1);
+    o = index2adr(L, idx);
+    api_checkvalidindex(L, o);
+    api_check(L, ttistable(L->top - 1));
+
+    switch( ttype(o) )
+    {
     case LUA_TFUNCTION:
-      clvalue(o)->env = hvalue(L->top - 1);
-      break;
+        clvalue(o)->env = hvalue(L->top - 1);
+        break;
     case LUA_TUSERDATA:
-      uvalue(o)->env = hvalue(L->top - 1);
-      break;
+        uvalue(o)->env = hvalue(L->top - 1);
+        break;
     case LUA_TTHREAD:
-      sethvalue(L, gt(thvalue(o)), hvalue(L->top - 1));
-      break;
+        sethvalue(L, gt(thvalue(o)), hvalue(L->top - 1));
+        break;
     default:
-      res = 0;
-      break;
-  }
-  if (res) luaC_objbarrier(L, gcvalue(o), hvalue(L->top - 1));
-  L->top--;
-  lua_unlock(L);
-  return res;
+        res = 0;
+        goto end;
+    }
+
+    luaC_objbarrier(L, gcvalue(o), hvalue(L->top - 1));
+
+end:
+    L->top--;
+    lua_unlock(L);
+    return res;
 }
 
 

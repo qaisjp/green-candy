@@ -352,6 +352,14 @@ bool CResource::GetFullMetaPath( const char *path, filePath& absPath )
     return Resource::GetFullMetaPath( path, absPath );
 }
 
+bool CResource::CreateDir( const char *path )
+{
+    if ( path[0] == '@' )
+        return m_privateRoot->CreateDir( path );
+
+    return Resource::CreateDir( path );
+}
+
 CFile* CResource::OpenStream( const char *path, const char *mode )
 {
     if ( path[0] == '@' )

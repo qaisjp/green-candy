@@ -20,6 +20,7 @@
 #include "LuaCommon.h"
 #include <luafile.h>
 #include <luafilesystem.h>
+#include <luamd5.h>
 #include "Logger.h"
 #include "ScriptDebugging.h"
 #include "LuaFunctionRef.h"

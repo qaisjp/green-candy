@@ -713,6 +713,8 @@ bool CClientEntity::AddEvent( CLuaMain *main, const char *name, const LuaFunctio
 // The_GTA: use childCall sparringly, because in GREEN it's use does not make sense.
 bool CClientEntity::CallEvent( const char *name, lua_State *callee, unsigned int argCount, bool childCall )
 {
+    lua_checkstack( m_lua, 1 );
+
     // Reference ourselves so we cannot be deleted during eventcalls
     lua_class_reference ref;
     Reference( ref );
@@ -763,7 +765,8 @@ void CClientEntity::CallEventNoParent( lua_State *callee, unsigned int argCount,
 
 void CClientEntity::CallParentEvent( lua_State *callee, unsigned int argCount, const char *name, CClientEntity *source )
 {
-    // Lua takes care of logical referencing here
+    // Lua takes care of logical referencing here:
+    // Referenced children prevent parent destruction!
 
     // Call the event on us
     m_pEventManager->Call( callee, argCount, name, source );

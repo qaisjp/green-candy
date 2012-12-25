@@ -242,10 +242,9 @@ void CEffectTemplateImpl::CreateUnderlyingData ( const SString& strFilename, con
     if ( bDebug )
         dwFlags |= D3DXSHADER_DEBUG;
 
-    SString strMetaPath = strFilename.Right ( strFilename.length () - strRootPath.length () );
     CIncludeManager IncludeManager;
     LPD3DXBUFFER pBufferErrors = NULL;
-    HRESULT hr = D3DXCreateEffectFromFile( m_pDevice, ExtractFilename ( strMetaPath ), NULL, &IncludeManager, dwFlags, NULL, &m_pD3DEffect, &pBufferErrors );            
+    HRESULT hr = D3DXCreateEffectFromFile( m_pDevice, strFilename.c_str(), NULL, &IncludeManager, dwFlags, NULL, &m_pD3DEffect, &pBufferErrors );            
 
     // Handle compile errors
     strOutStatus = "";

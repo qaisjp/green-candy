@@ -93,7 +93,7 @@ private:
     filePath        m_path;
 };
 
-class CSystemPathTranslator : public CFileTranslator
+class CSystemPathTranslator : public virtual CFileTranslator
 {
 public:
     bool            GetFullPathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const;
@@ -178,9 +178,9 @@ public:
     void                    DestroyZIP();
                             
     CFileTranslator*        CreateTranslator( const char *path );
-    CFileTranslator*        OpenArchive( CFile& file );
+    CArchiveTranslator*     OpenArchive( CFile& file );
 
-    CFileTranslator*        CreateZIPArchive( CFile& file );
+    CArchiveTranslator*     CreateZIPArchive( CFile& file );
 
     // Insecure functions
     bool                    IsDirectory( const char *path );

@@ -34,12 +34,12 @@ static int filesystem_open( lua_State *lua )
     lua_newclass( lua, (unk*)file );
 #else
     lua_newclass( lua );
-#endif
 
     // Register the file
     lua_getfield( lua, 3, "setParent" );
     lua_pushvalue( lua, lua_upvalueindex( 2 ) );
     lua_call( lua, 1, 0 );
+#endif
     return 1;
 }
 
@@ -375,6 +375,7 @@ int luafsys_createTranslator( lua_State *L )
     return 1;
 }
 
+#ifndef FU_CLASS
 static int archive_save( lua_State *L )
 {
     lua_getfield( L, lua_upvalueindex( 1 ), "ioptr" );
@@ -385,7 +386,7 @@ static int archive_save( lua_State *L )
         return 1;
     }
 
-    ((CArchiveFileTranslator*)lua_touserdata( L, lua_upvalueindex( 2 ) ))->Save();
+    ((CArchiveTranslator*)lua_touserdata( L, lua_upvalueindex( 2 ) ))->Save();
     lua_pushboolean( L, true );
     return 1;
 }
@@ -430,7 +431,7 @@ int luafsys_createArchiveTranslator( lua_State *L )
     // Grab the file interface
     lua_getfield( L, 1, "ioptr" );
 
-    CFileTranslator *root = fileSystem->OpenArchive( *(CFile*)lua_touserdata( L, 2 ) );
+    CArchiveTranslator *root = fileSystem->OpenArchive( *(CFile*)lua_touserdata( L, 2 ) );
 
     if ( !root )
     {
@@ -448,6 +449,40 @@ int luafsys_createArchiveTranslator( lua_State *L )
     return 1;
 }
 
+int luafsys_createZIPArchive( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TCLASS );
+
+    ILuaClass *j = lua_refclass( L, 1 );
+
+    if ( !j->IsTransmit( LUACLASS_FILE ) )
+        throw lua_exception( L, LUA_ERRRUN, "expected file at archive creation" );
+
+    // Keep the file alive during archive business
+    j->IncrementMethodStack( L );
+
+    // Grab the file interface
+    lua_getfield( L, 1, "ioptr" );
+
+    CArchiveTranslator *root = fileSystem->CreateZIPArchive( *(CFile*)lua_touserdata( L, 2 ) );
+
+    if ( !root )
+    {
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    luafsys_pushroot( L, root );
+
+    // Extend the fileTranslator class
+    lua_pushvalue( L, 1 );
+    lua_pushlightuserdata( L, root );
+    lua_pushcclosure( L, archive_constructor, 2 );
+    luaJ_extend( L, 3, 0 );
+    return 1;
+}
+#endif //FU_CLASS
+
 int luafsys_getRoot( lua_State *L )
 {
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -457,7 +492,10 @@ int luafsys_getRoot( lua_State *L )
 static const luaL_Reg fsysLib[] =
 {
     { "createTranslator", luafsys_createTranslator },
+#ifndef FU_CLASS
     { "createArchiveTranslator", luafsys_createArchiveTranslator },
+    { "createZIPArchive", luafsys_createZIPArchive },
+#endif //FU_CLASS
     { NULL, NULL }
 };
 

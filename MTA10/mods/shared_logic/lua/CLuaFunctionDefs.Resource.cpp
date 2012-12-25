@@ -333,4 +333,31 @@ error:
         lua_pushboolean( L, false );
         return 1;
     }
+
+    LUA_DECLARE( fileCreateTranslator )
+    {
+        luaL_checktype( L, 1, LUA_TSTRING );
+
+        const char *meta;
+
+        filePath root;
+        Resource *res = lua_readcontext( L )->GetResource();
+        
+        if ( !m_pResourceManager->ParseResourceFullPath( res, lua_tostring( L, 1 ), meta, root ) )
+        {
+            lua_pushboolean( L, false );
+            return 1;
+        }
+
+        CFileTranslator *fileRoot = g_pCore->GetFileSystem()->CreateTranslator( root.c_str() );
+
+        if ( !fileRoot )
+        {
+            lua_pushboolean( L, false );
+            return 1;
+        }
+
+        luafsys_pushroot( L, fileRoot );
+        return 1;
+    }
 }

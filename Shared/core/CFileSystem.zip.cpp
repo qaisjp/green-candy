@@ -774,7 +774,7 @@ void CArchiveFileTranslator::Extract( CFile& dstFile, file& info )
         delete from;
 }
 
-CFileTranslator* CFileSystem::CreateZIPArchive( CFile& file )
+CArchiveTranslator* CFileSystem::CreateZIPArchive( CFile& file )
 {
     if ( !file.IsWriteable() )
         return NULL;
@@ -782,7 +782,7 @@ CFileTranslator* CFileSystem::CreateZIPArchive( CFile& file )
     return new CArchiveFileTranslator( file );
 }
 
-CFileTranslator* CFileSystem::OpenArchive( CFile& file )
+CArchiveTranslator* CFileSystem::OpenArchive( CFile& file )
 {
     size_t size = file.GetSize();
 
@@ -983,7 +983,7 @@ void CArchiveFileTranslator::SaveDirectory( directory& dir, size_t& size )
             m_file.WriteString( info.relPath.c_str() );
             m_file.WriteString( info.comment );
 
-            CFile *src = ((CSystemFileTranslator*)m_realtimeRoot)->OpenEx( info.relPath.c_str(), "rb", FILE_FLAG_WRITESHARE );
+            CFile *src = dynamic_cast <CSystemFileTranslator*> ( m_realtimeRoot )->OpenEx( info.relPath.c_str(), "rb", FILE_FLAG_WRITESHARE );
 
             info.sizeReal = header.sizeReal = src->GetSize();
 
