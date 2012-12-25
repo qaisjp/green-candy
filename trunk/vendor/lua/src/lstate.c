@@ -138,6 +138,9 @@ static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
         {
             // A different .lua runtime triggered an exception
             L->status = -1;
+
+            // We do not need any stack values
+            lua_settop( L, 0 );
         }
         else
         {
@@ -145,8 +148,6 @@ static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
             luaD_seterrorobj( L, L->status, L->top );
             L->ci->top = L->top;
         }
-
-        lua_settop( L, 0 );
     }
     catch( lua_thread_termination& e )
     {
@@ -166,6 +167,7 @@ lua_Thread::lua_Thread()
 {
     isMain = false;
     yieldDisabled = false;
+    isTerminated = false;
     callee = NULL;
     fiber = NULL;
 }
@@ -213,13 +215,18 @@ void luaE_terminate( lua_Thread *L )
     if ( !L->fiber )
         return;
 
-    // Throw an exception on the fiber
     Fiber *env = L->fiber;
-    env->ebx = (unsigned int)L;
-    env->eip = (unsigned int)luaE_term;
 
-    // We want to eventually return back
-    L->resume();
+    if ( !L->isTerminated )
+    {
+        // Throw an exception on the fiber
+        env->ebx = (unsigned int)L;
+        env->eip = (unsigned int)luaE_term;
+
+        // We want to eventually return back
+        L->resume();
+    }
+
     luaX_closefiber( L, env );
 
     L->fiber = NULL;

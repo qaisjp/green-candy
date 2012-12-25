@@ -159,7 +159,7 @@ public:
 
 typedef void (*pathCallback_t)( const filePath& path, void *userdata );
 
-class CFileTranslator
+class CFileTranslator abstract
 {
 public:
     virtual                 ~CFileTranslator()
@@ -197,13 +197,19 @@ public:
     virtual void            GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const = 0;
 };
 
+class CArchiveTranslator abstract : public virtual CFileTranslator
+{
+public:
+    virtual void            Save() = 0;
+};
+
 class CFileSystemInterface
 {
 public:
     virtual CFileTranslator*    CreateTranslator( const char *path ) = 0;
-    virtual CFileTranslator*    OpenArchive( CFile& file ) = 0;
+    virtual CArchiveTranslator* OpenArchive( CFile& file ) = 0;
 
-    virtual CFileTranslator*    CreateZIPArchive( CFile& file ) = 0;
+    virtual CArchiveTranslator* CreateZIPArchive( CFile& file ) = 0;
 
     // Insecure, use with caution!
     virtual bool                IsDirectory( const char *path ) = 0;

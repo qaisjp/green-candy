@@ -3627,7 +3627,7 @@ void CStaticFunctionDefinitions::DrawText ( int iLeft, int iTop,
                                  ID3DXFont* pDXFont,
                                  bool bPostGUI )
 {
-    g_pCore->GetGraphics ()->DrawTextQueued ( iLeft, iTop, iRight, iBottom, dwColor, szText, fScaleX, fScaleY, ulFormat, pDXFont, bPostGUI );
+    g_pCore->GetGraphics ()->DrawTextQueued ( (float)iLeft, (float)iTop, (float)iRight, (float)iBottom, dwColor, szText, fScaleX, fScaleY, ulFormat, pDXFont, bPostGUI );
 }
 
 

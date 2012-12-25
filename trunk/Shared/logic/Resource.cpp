@@ -86,6 +86,11 @@ bool Resource::GetFullMetaPath( const char *path, filePath& absPath )
     return m_fileRoot.GetFullPath( path, true, absPath );
 }
 
+bool Resource::CreateDir( const char *path )
+{
+    return m_fileRoot.CreateDir( path );
+}
+
 CFile* Resource::OpenStream( const char *path, const char *mode )
 {
     return m_fileRoot.Open( path, mode );

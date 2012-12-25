@@ -102,9 +102,19 @@ bool CResourceManager::ParseResourcePath( Resource*& res, const char *path, std:
     return true;
 }
 
+bool CResourceManager::CreateDir( Resource *res, const char *path )
+{
+    std::string meta;
+
+    if ( !ParseResourcePath( res, path, meta ) )
+        return NULL;
+
+    return res->CreateDir( meta.c_str() );
+}
+
 CFile* CResourceManager::OpenStream( Resource *res, const char *path, const char *mode )
 {
-    string meta;
+    std::string meta;
 
     if ( !ParseResourcePath( res, path, meta ) )
         return NULL;

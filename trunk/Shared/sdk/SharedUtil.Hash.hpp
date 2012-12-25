@@ -140,7 +140,7 @@ namespace SharedUtil
     }
     
     
-    void CMD5Hasher::Update( unsigned char *input, unsigned int input_length )
+    void CMD5Hasher::Update( const unsigned char *input, unsigned int input_length )
     {
         //CRYPT_START
         unsigned long input_index, buffer_index;
@@ -213,7 +213,7 @@ namespace SharedUtil
         memset ( m_buffer, 0, sizeof (*m_buffer) );
     }
     
-    void CMD5Hasher::Transform ( unsigned char block [64] )
+    void CMD5Hasher::Transform ( const unsigned char block [64] )
     {
         unsigned long a = m_state[0], b = m_state[1], c = m_state[2], d = m_state[3], x[16];
     
@@ -312,7 +312,7 @@ namespace SharedUtil
         }
     }
     
-    void CMD5Hasher::Decode( unsigned long *output, unsigned char *input, unsigned long len )
+    void CMD5Hasher::Decode( unsigned long *output, const unsigned char *input, unsigned long len )
     {
         unsigned int i, j;
 

@@ -41,6 +41,15 @@ namespace LuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( newmd5hasher )
+    {
+        CMD5Hasher *hasher = new CMD5Hasher();
+        hasher->Init();
+
+        lua_createmd5hasher( L, hasher );
+        return 1;
+    }
+
     LUA_DECLARE( md5 )
     {
         std::string buf;
@@ -57,6 +66,25 @@ namespace LuaFunctionDefs
             hasher.Calculate( buf.c_str(), buf.size(), md5bytes );
             hasher.ConvertToHex( md5bytes, szResult );
             lua_pushstring( L, szResult );
+            return 1;
+        }
+        else
+            debug->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( fileCreateDir )
+    {
+        const char *path;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadString( path );
+
+        if ( !argStream.HasErrors() )
+        {
+            lua_pushboolean( L, resManager->CreateDir( lua_readresource( L ), path ) );
             return 1;
         }
         else

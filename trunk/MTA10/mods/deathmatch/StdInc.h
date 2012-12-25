@@ -122,3 +122,5 @@
 #include "logic/CResource.h"
 #include "logic/CStaticFunctionDefinitions.h"
 #include "../../version.h"
+
+extern CFileSystemInterface *fileSystem;

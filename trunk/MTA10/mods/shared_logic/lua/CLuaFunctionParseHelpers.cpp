@@ -145,6 +145,12 @@ IMPLEMENT_ENUM_BEGIN( eCGUIType )
     ADD_ENUM ( CGUI_COMBOBOX,       "gui-combobox" )
 IMPLEMENT_ENUM_END( "gui-type" )
 
+IMPLEMENT_ENUM_BEGIN( EBlendModeType )
+    ADD_ENUM( BLEND,            "blend" )
+    ADD_ENUM( ADD,              "add" )
+    ADD_ENUM( MODULATE_ADD,     "modulate_add" )
+IMPLEMENT_ENUM_END( "dx-blend-mode" )
+
 IMPLEMENT_ENUM_BEGIN( eDxTestMode )
     ADD_ENUM ( DX_TEST_MODE_NONE,           "none" )
     ADD_ENUM ( DX_TEST_MODE_NO_MEM,         "no_mem" )

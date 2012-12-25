@@ -13,6 +13,8 @@
 #include "StdInc.h"
 #include <signal.h>
 
+#include <SharedUtil.hpp>
+
 using namespace std;
 
 lua_State *state;
@@ -143,6 +145,15 @@ void signal_handler( int sig )
     exit( EXIT_SUCCESS );
 }
 
+static int lua_newmd5hasher( lua_State *L )
+{
+    CMD5Hasher *hasher = new CMD5Hasher();
+    hasher->Init();
+
+    lua_createmd5hasher( L, hasher );
+    return 1;
+}
+
 int main( int argc, char *argv[] )
 {
     std::string script;
@@ -158,6 +169,8 @@ int main( int argc, char *argv[] )
 
     luaL_openlibs( state );
     luafile_open( state );
+
+    lua_register( state, "newmd5hasher", lua_newmd5hasher );
 
     lua_pushvalue( state, LUA_GLOBALSINDEX );
     luafilesystem_open( state );

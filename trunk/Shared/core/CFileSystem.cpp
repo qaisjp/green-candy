@@ -662,7 +662,7 @@ static void _deleteFileCallback( const filePath& path, void *ud )
 
 static void _deleteDirCallback( const filePath& path, void *ud )
 {
-    ((CFileTranslator*)ud)->ScanDirectory( path, "*", false, _deleteDirCallback, _deleteFileCallback, ud );
+    ((CSystemFileTranslator*)ud)->ScanDirectory( path, "*", false, _deleteDirCallback, _deleteFileCallback, ud );
 
 #ifdef _WIN32
     RemoveDirectory( path );
@@ -701,6 +701,9 @@ bool CSystemFileTranslator::Copy( const char *src, const char *dst )
     if ( !GetFullPath( src, true, source ) || !GetRelativePathTreeFromRoot( dst, dstTree, file ) || !file )
         return false;
 
+    // We always start from root
+    target = m_root;
+
     _File_OutputPathTree( dstTree, true, target );
 
     // Make sure dir exists
@@ -721,6 +724,9 @@ bool CSystemFileTranslator::Rename( const char *src, const char *dst )
 
     if ( !GetFullPath( src, true, source ) || !GetRelativePathTreeFromRoot( dst, dstTree, file ) || !file )
         return false;
+
+    // We always start from root
+    target = m_root;
 
     _File_OutputPathTree( dstTree, true, target );
 

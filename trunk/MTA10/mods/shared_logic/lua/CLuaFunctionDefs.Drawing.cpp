@@ -663,6 +663,33 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( dxSetBlendMode )
+    {
+        EBlendModeType mode;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadEnumString( mode );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pCore->GetGraphics()->SetBlendMode( mode );
+
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( dxGetBlendMode )
+    {
+        lua_pushstring( L, EnumToString( g_pCore->GetGraphics()->GetBlendMode() ) );
+        return 1;
+    }
+
     LUA_DECLARE( dxSetTestMode )
     {
     //  bool dxSetTestMode( string testMode )

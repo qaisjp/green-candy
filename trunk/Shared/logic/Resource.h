@@ -29,6 +29,7 @@ public:
     inline bool                 GetActive()             { return m_active; };
 
     virtual bool                GetFullMetaPath( const char *path, filePath& absPath );
+    virtual bool                CreateDir( const char *path );
     virtual CFile*              OpenStream( const char *path, const char *mode );
     virtual bool                FileCopy( const char *src, const char *dst );
     virtual bool                FileRename( const char *src, const char *dst );

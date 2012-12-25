@@ -25,6 +25,9 @@ void CScriptDebugging::NotifySystem( unsigned int level, const filePath& filenam
 
         // Prepare onDebugMessage
         lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+        lua_checkstack( L, 4 );
+
         lua_pushlstring( L, msg.c_str(), msg.size() );
         lua_pushnumber( L, 1 );
 
