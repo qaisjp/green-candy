@@ -820,11 +820,13 @@ void CPacketHandler::Packet_PlayerSpawn ( NetBitStreamInterface& bitStream )
     // Player model id
     unsigned short usPlayerModelID;
     bitStream.Read ( usPlayerModelID );
+#if 0
     if ( !CClientPlayerManager::IsValidModel ( usPlayerModelID ) )
     {
         RaiseProtocolError ( 16 );
         return;
     }
+#endif
 
     // Interior
     unsigned char ucInterior = 0;
