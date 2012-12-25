@@ -184,6 +184,8 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
         RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D90;
         RpAtomicRender                      = (RpAtomicRender_t)                        0x00749210;
+        RpAtomicSetupObjectPipeline         = (RpAtomicSetupObjectPipeline_t)           0x005D7F00;
+        RpAtomicSetupVehiclePipeline        = (RpAtomicSetupVehiclePipeline_t)          0x005D5B20;
         RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749E10;
         RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
         RwTexDictionaryFinalizer            = (RwTexDictionaryFinalizer_t)              0x007F3980;
