@@ -88,7 +88,6 @@ static inline void preinit_state (lua_State *L, global_State *g)
     L->openupval = NULL;
     L->size_ci = 0;
     L->nCcalls = 0;
-    L->status = 0;
     L->base_ci = L->ci = NULL;
     L->savedpc = NULL;
     L->errfunc = 0;
@@ -130,36 +129,36 @@ static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
 
         lua_call( L, lua_gettop( L ) - 1, LUA_MULTRET );
 
-        L->status = 0;
+		L->errorCode = 0;	// we gracefully quit :)
     }
     catch( lua_exception& e )
     {
         if ( G( e.getThread() )->mainthread != G( L )->mainthread )
         {
-            // A different .lua runtime triggered an exception
-            L->status = -1;
-
             // We do not need any stack values
             lua_settop( L, 0 );
+
+			L->errorCode = LUA_ERRSYS;
         }
         else
         {
-            L->status = cast_byte( e.status() );  /* mark thread as `dead' */
-            luaD_seterrorobj( L, L->status, L->top );
+			L->errorCode = e.status();
+
+            luaD_seterrorobj( L, L->errorCode, L->top );
             L->ci->top = L->top;
         }
     }
     catch( lua_thread_termination& e )
     {
-        L->status = e.status();
-
         lua_settop( L, 0 );
+
+		L->errorCode = e.status();
     }
     catch( ... )
     {
-        L->status = -1;
-
         lua_settop( L, 0 );
+
+		L->errorCode = LUA_ERRSYS;
     }
 }
 
@@ -167,9 +166,9 @@ lua_Thread::lua_Thread()
 {
     isMain = false;
     yieldDisabled = false;
-    isTerminated = false;
     callee = NULL;
     fiber = NULL;
+	status = THREAD_SUSPENDED;
 }
 
 lua_Thread* luaE_newthread( lua_State *L )
@@ -217,7 +216,7 @@ void luaE_terminate( lua_Thread *L )
 
     Fiber *env = L->fiber;
 
-    if ( !L->isTerminated )
+    if ( L->status != THREAD_TERMINATED )
     {
         // Throw an exception on the fiber
         env->ebx = (unsigned int)L;
@@ -226,10 +225,13 @@ void luaE_terminate( lua_Thread *L )
         // We want to eventually return back
         L->resume();
     }
+	else
+	{
+		// Threads clean their environments after themselves
+		luaX_closefiber( L, env );
 
-    luaX_closefiber( L, env );
-
-    L->fiber = NULL;
+		L->fiber = NULL;
+	}
 }
 
 bool lua_Thread::AllocateRuntime()

@@ -405,21 +405,23 @@ inline static int resume_error (lua_State *L, const char *msg)
     return LUA_ERRRUN;
 }
 
-LUA_API int lua_resume (lua_State *L, int nargs)
+LUA_API int lua_resume (lua_State *_L, int nargs)
 {
     lua_lock(L);
 
-    if ( !L->IsThread() )
-        return resume_error(L, "not a thread");
+	if ( !_L->IsThread() )
+        return resume_error(_L, "not a thread");
 
-    if ( L->status != LUA_YIELD && (L->status != 0 || L->ci != L->base_ci) )
+	lua_Thread *L = (lua_Thread*)_L;
+
+    if ( L->status != THREAD_SUSPENDED )
         return resume_error(L, "cannot resume non-suspended coroutine");
 
     if ( L->nCcalls >= LUAI_MAXCCALLS )
         return resume_error(L, "C stack overflow");
 
     // Allocate OS resources
-    if ( !((lua_Thread*)L)->AllocateRuntime() )
+    if ( !L->AllocateRuntime() )
         return resume_error( L, "failed to allocate OS resources (too many coroutines running?)" );
 
     lua_State *main = G(L)->mainthread;
@@ -436,9 +438,6 @@ LUA_API int lua_resume (lua_State *L, int nargs)
     ((lua_Thread*)L)->resume();
 
     lua_callevent( main, LUA_EVENT_THREAD_CONTEXT_POP, 0 );
-
-    if ( ((lua_Thread*)L)->isTerminated )
-        luaE_terminate( (lua_Thread*)L );
 
     lua_unlock(L);
     luai_userstateyield(L, nresults);

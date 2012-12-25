@@ -38,13 +38,46 @@ static EXCEPTION_REGISTRATION _baseException =
 };
 #endif
 
-static void __stdcall _retHandler( lua_Thread *L )
-{
-    // Mark coroutine as dead
-    L->isTerminated = true;
+#pragma warning(disable:4733)
 
-    // Yield back.
-    L->yield();
+// WARNING: THIS CODE IS NOT MULTI-THREADING SAFE
+static void __declspec(naked) _retHandler( lua_Thread *L )
+{
+	__asm
+	{
+		// Set thread status to terminated
+		mov eax,[esp+4]
+		mov [eax]lua_Thread.status,THREAD_TERMINATED
+
+		mov ecx,eax
+
+        // Apply registers
+        mov eax,[eax]lua_Thread.callee
+        mov ebx,[eax]Fiber.ebx
+        mov edi,[eax]Fiber.edi
+        mov esi,[eax]Fiber.esi
+        mov esp,[eax]Fiber.esp
+        mov ebp,[eax]Fiber.ebp
+
+		push [eax+16]		// The return address
+		push ecx			// Push thread as preparation
+
+#ifdef _WIN32
+        // Apply exception and stack info
+        mov ecx,[eax]Fiber.stack_base
+        mov edx,[eax]Fiber.stack_limit
+        mov fs:[4],ecx
+        mov fs:[8],edx
+        mov ecx,[eax]Fiber.except_info
+        mov fs:[0],ecx
+#endif
+
+		// Terminate our thread using the emergency stack
+		call luaE_terminate
+		add esp,4
+
+        ret
+	}
 }
 
 Fiber* luaX_newfiber( lua_State *L, size_t stackSize, FiberProcedure proc )
@@ -99,40 +132,40 @@ void __declspec(naked) luaX_switch( Fiber *from, Fiber *to )
     {
         // Save current environment
         mov eax,[esp+4]
-        mov [eax],ebx
-        mov [eax+4],edi
-        mov [eax+8],esi
+        mov [eax]Fiber.ebx,ebx
+        mov [eax]Fiber.edi,edi
+        mov [eax]Fiber.esi,esi
         add esp,4
-        mov [eax+12],esp
+        mov [eax]Fiber.esp,esp
         mov ebx,[esp-4]
-        mov [eax+16],ebx
-        mov [eax+20],ebp
+        mov [eax]Fiber.eip,ebx
+        mov [eax]Fiber.ebp,ebp
 
 #ifdef _WIN32
         // Save exception and stack info
         mov ebx,fs:[0]
         mov ecx,fs:[4]
         mov edx,fs:[8]
-        mov [eax+24],ecx
-        mov [eax+28],edx
-        mov [eax+32],ebx
+        mov [eax]Fiber.stack_base,ecx
+        mov [eax]Fiber.stack_limit,edx
+        mov [eax]Fiber.except_info,ebx
 #endif
 
         // Apply registers
         mov eax,[esp+4]
-        mov ebx,[eax]
-        mov edi,[eax+4]
-        mov esi,[eax+8]
-        mov esp,[eax+12]
-        mov ebp,[eax+20]
+        mov ebx,[eax]Fiber.ebx
+        mov edi,[eax]Fiber.edi
+        mov esi,[eax]Fiber.esi
+        mov esp,[eax]Fiber.esp
+        mov ebp,[eax]Fiber.ebp
 
 #ifdef _WIN32
         // Apply exception and stack info
-        mov ecx,[eax+24]
-        mov edx,[eax+28]
+        mov ecx,[eax]Fiber.stack_base
+        mov edx,[eax]Fiber.stack_limit
         mov fs:[4],ecx
         mov fs:[8],edx
-        mov ecx,[eax+32]
+        mov ecx,[eax]Fiber.except_info
         mov fs:[0],ecx
 #endif
 
@@ -147,36 +180,36 @@ void __declspec(naked) luaX_qswitch( Fiber *from, Fiber *to )
     {
         // Save current environment
         mov eax,[esp+4]
-        mov [eax],ebx
-        mov [eax+4],edi
-        mov [eax+8],esi
+        mov [eax]Fiber.ebx,ebx
+        mov [eax]Fiber.edi,edi
+        mov [eax]Fiber.esi,esi
         add esp,4
-        mov [eax+12],esp
+        mov [eax]Fiber.esp,esp
         mov ebx,[esp-4]
-        mov [eax+16],ebx
-        mov [eax+20],ebp
+        mov [eax]Fiber.eip,ebx
+        mov [eax]Fiber.ebp,ebp
 
 #ifdef _WIN32
         // Save exception info
         mov ebx,fs:[0]
-        mov [eax+32],ebx
+        mov [eax]Fiber.except_info,ebx
 #endif
 
         // Apply registers
         mov eax,[esp+4]
-        mov ebx,[eax]
-        mov edi,[eax+4]
-        mov esi,[eax+8]
-        mov esp,[eax+12]
-        mov ebp,[eax+20]
+        mov ebx,[eax]Fiber.ebx
+        mov edi,[eax]Fiber.edi
+        mov esi,[eax]Fiber.esi
+        mov esp,[eax]Fiber.esp
+        mov ebp,[eax]Fiber.ebp
 
 #ifdef _WIN32
         // Apply exception and stack info
-        mov ecx,[eax+24]
-        mov edx,[eax+28]
+        mov ecx,[eax]Fiber.stack_base
+        mov edx,[eax]Fiber.stack_limit
         mov fs:[4],ecx
         mov fs:[8],edx
-        mov ecx,[eax+32]
+        mov ecx,[eax]Fiber.except_info
         mov fs:[0],ecx
 #endif
 

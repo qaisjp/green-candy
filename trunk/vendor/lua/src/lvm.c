@@ -446,10 +446,6 @@ reentry:  /* entry point */
     if ((L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) &&
         (--L->hookcount == 0 || L->hookmask & LUA_MASKLINE)) {
       traceexec(L, pc);
-      if (L->status == LUA_YIELD) {  /* did hook yield? */
-        L->savedpc = pc - 1;
-        return;
-      }
       base = L->base;
     }
     /* warning!! several calls may realloc the stack and invalidate `ra' */

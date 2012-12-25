@@ -992,8 +992,12 @@ LUA_API int lua_dump (lua_State *L, lua_Writer writer, void *data)
 }
 
 
-LUA_API int  lua_status (lua_State *L) {
-  return L->status;
+LUA_API int  lua_status (lua_State *L)
+{
+	if ( !L->IsThread() )
+		return 0;
+
+	return ((lua_Thread*)L)->status;
 }
 
 
