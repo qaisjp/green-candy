@@ -505,26 +505,17 @@ static const luaL_Reg base_funcs[] = {
 static const char *const statnames[] =
     {"running", "suspended", "normal", "dead"};
 
-static int costatus (lua_State *L, lua_State *co)
+static int costatus( lua_State *L, lua_Thread *co )
 {
     if ( L == co )
         return CO_RUN;
 
     switch( co->status )
     {
-    case LUA_YIELD:
+    case THREAD_SUSPENDED:
         return CO_SUS;
-    case 0:
-    {
-        lua_Debug ar;
-
-        if ( lua_getstack( co, 0, &ar ) > 0 )  /* does it have frames? */
-            return CO_NOR;  /* it is running */
-        else if ( lua_gettop( co ) == 0 )
-            return CO_DEAD;
-        else
-            return CO_SUS;  /* initial state */
-    }
+	case THREAD_RUNNING:
+		return CO_NOR;
     }
 
     return CO_DEAD;
@@ -533,12 +524,12 @@ static int costatus (lua_State *L, lua_State *co)
 static int luaB_costatus (lua_State *L)
 {
     lua_State *co = lua_tothread(L, 1);
-    luaL_argcheck(L, co, 1, "coroutine expected");
-    lua_pushstring(L, statnames[costatus(L, co)]);
+    luaL_argcheck(L, co && co->IsThread(), 1, "coroutine expected");
+    lua_pushstring(L, statnames[costatus(L, (lua_Thread*)co)]);
     return 1;
 }
 
-inline static int auxresume( lua_State *L, lua_State *co, int narg )
+inline static int auxresume( lua_State *L, lua_Thread *co, int narg )
 {
     int status = costatus(L, co);
 
@@ -553,10 +544,14 @@ inline static int auxresume( lua_State *L, lua_State *co, int narg )
 
     lua_xmove(L, co, narg);
     lua_setlevel(L, co);
-    status = lua_resume(co, narg);
+    lua_resume(co, narg);
 
-    if ( status != 0 && status != LUA_YIELD )
+    if ( co->status == THREAD_TERMINATED && co->errorCode != 0 )
     {
+		// If there was a system error, we want to propagate it
+		if ( co->errorCode == LUA_ERRSYS )
+			throw lua_exception( L, LUA_ERRSYS, "system error" );
+
         lua_xmove( co, L, 1 );  /* move error message */
         return -1;  /* error flag */
     }
@@ -573,8 +568,8 @@ inline static int auxresume( lua_State *L, lua_State *co, int narg )
 static int luaB_coresume (lua_State *L) {
   lua_State *co = lua_tothread(L, 1);
   int r;
-  luaL_argcheck(L, co, 1, "coroutine expected");
-  r = auxresume(L, co, lua_gettop(L) - 1);
+  luaL_argcheck(L, co && co->IsThread(), 1, "coroutine expected");
+  r = auxresume(L, (lua_Thread*)co, lua_gettop(L) - 1);
   if (r < 0) {
     lua_pushboolean(L, 0);
     lua_insert(L, -2);
@@ -590,7 +585,7 @@ static int luaB_coresume (lua_State *L) {
 
 static int luaB_auxwrap (lua_State *L) {
   lua_State *co = lua_tothread(L, lua_upvalueindex(1));
-  int r = auxresume(L, co, lua_gettop(L));
+  int r = auxresume(L, (lua_Thread*)co, lua_gettop(L));
   if (r < 0) {
     if (lua_isstring(L, -1)) {  /* error object is a string? */
       luaL_where(L, 1);  /* add extra info */
@@ -634,7 +629,7 @@ static int luaB_term( lua_State *L )
     if ( !co->IsThread() )
         throw lua_exception( L, LUA_ERRRUN, "cannot terminate main state" );
 
-    if ( costatus( L, co ) != CO_SUS )
+    if ( costatus( L, (lua_Thread*)co ) != CO_SUS )
     {
         lua_pushboolean( L, false );
         return 1;

@@ -152,6 +152,13 @@ public:
     Table *mt[NUM_TAGS];  /* metatables for basic types */
 };
 
+enum eLuaThreadStatus : unsigned char
+{
+	THREAD_RUNNING,
+	THREAD_SUSPENDED,
+	THREAD_TERMINATED
+};
+
 class lua_Thread : public lua_State
 {
 public:
@@ -187,19 +194,20 @@ public:
 
     inline void yield()
     {
-        status = LUA_YIELD;
+        status = THREAD_SUSPENDED;
 
         // Optimized yield qswitch
         luaX_qswitch( fiber, callee );
 
-        status = 0;
+        status = THREAD_RUNNING;
     }
 
     bool isMain;
     bool yieldDisabled;
     Fiber *callee;
     Fiber *fiber;
-    bool isTerminated;
+    eLuaThreadStatus status;
+	int errorCode;
 };
 
 /* macros to convert a GCObject into a specific value */

@@ -631,8 +631,8 @@ void luaC_step (lua_State *L)
 {
     global_State *g = G(L);
 
-    // We cannot collect on the GCthread
-    if ( g->GCthread == L )
+    // We cannot if GCthread is running
+    if ( L == g->GCthread || g->GCthread->status != THREAD_SUSPENDED )
         return;
 
     lu_mem lim = (GCSTEPSIZE/100) * g->gcstepmul;
