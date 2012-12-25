@@ -1,5 +1,60 @@
 local relDir = file.createTranslator("C:/Program Files/MTA San Andreas 1.2/");
 
+local function writeFileList(list, path, root)
+	local zip_stream = root.open(root.absPath() .. path, "rb+");
+	local zip;
+
+	if not (zip_stream) then
+		zip_stream = root.open(root.absPath() .. path, "wb+");
+		
+		if not (zip_stream) then
+			error("-- could not find build .zip in '" .. root.absPath() .. "' to import files into");
+		end
+		
+		zip = file.createZIPArchive(zip_stream);
+	else
+		zip = file.createArchiveTranslator(zip_stream);
+	end
+	
+	local count = 0;
+	
+	if not (zip) then
+		zip_stream.destroy();	-- free the file stream resource
+	
+		error("-- loading of .zip archive failed in '" .. root.absPath() .. "'");
+	end
+	
+	-- Grab all files, write them into the .zip
+	for m,n in ipairs(list) do
+		local file = root.open(n, "rb");
+		
+		if (file) then
+			local relPath = root.relPathRoot(n);
+		
+			local content = file.read(file.size());
+			file.destroy();
+			
+			local compr_file = zip.open(relPath, "wb");
+			compr_file.write(content);
+			compr_file.destroy();
+			
+			print("wrote " .. relPath);
+			
+			count = count + 1;
+		else
+			print(n .. " does not exist");
+		end
+	end
+	
+	print("writing to .zip file... (do not close!)");
+	
+	zip.save();
+	zip.destroy();
+	zip_stream.destroy();
+	
+	print("finished writing " .. count .. " files");
+end
+
 function bundle()
 	local impFiles =
 	{
@@ -39,46 +94,71 @@ function bundle()
 	relDir.scanDirEx("mta/cgui/", "*", nil, includeFile, true);
 	relDir.scanDirEx("skins/", "*", nil, includeFile, true);
 	
-	local zip_stream = relDir.open(relDir.absPath() .. "green_alpha.zip", "rb+");
+	writeFileList(impFiles, "green_alpha.zip", relDir);
+end
 
-	if not (zip_stream) then
-		error("-- could not find build .zip in '" .. relDir.absPath() .. "' to import files into");
+local servDir = file.createTranslator("C:/Program Files/MTA San Andreas 1.3 beta/server/");
+
+function bundleServer()
+	local impFiles =
+	{
+		"core.dll",
+		"MTA/libcurl.dll",
+		"MTA/net.dll",
+		"MTA/xmll.dll",
+		"MTA Server.exe",
+		"mods/deathmatch/acl.xml",
+		"mods/deathmatch/dbconmy.dll",
+		"mods/deathmatch/deathmatch.dll",
+		"mods/deathmatch/editor.conf",
+		"mods/deathmatch/editor_acl.xml",
+		"mods/deathmatch/local.conf",
+		"mods/deathmatch/lua5.1.dll",
+		"mods/deathmatch/mtaserver.conf",
+		"mods/deathmatch/pcre3.dll",
+		"mods/deathmatch/pthreadVC2.dll",
+		"mods/deathmatch/settings.xml",
+		"mods/deathmatch/sqlite3.dll",
+		"mods/deathmatch/vehiclecolors.conf"
+	};
+	
+	local function includeFile(path)
+		table.insert(impFiles, path);
 	end
 	
-	local zip = file.createArchiveTranslator(zip_stream);
-	local count = 0;
+	-- Include special directories
+	servDir.scanDirEx("mods/deathmatch/modules/", "*", nil, includeFile, true);
 	
-	if not (zip) then
-		zip_stream.destroy();	-- free the file stream resource
-	
-		error("-- loading of .zip archive failed in '" .. relDir.absPath() .. "'");
+	-- Include resources
+	for m,n in ipairs(({
+		"commonutil",
+		"downup",
+		"dxelements",
+		"dxtopia",
+		"luaex",
+		"math",
+		"renderware",
+		"resedit",
+		"resedit_gdk",
+		"[Admin]",
+		"[editor]",
+		"[gameplay]",
+		"[gamemodes]",
+		"[managers]",
+		"[web]"
+	})) do
+		servDir.scanDirEx("mods/deathmatch/resources/" .. n .. "/", "*", nil, includeFile, true);
 	end
 	
-	-- Grab all files, write them into the .zip
-	for m,n in ipairs(impFiles) do
-		local file = relDir.open(n, "rb");
-		
-		if (file) then
-			local content = file.read(file.size());
-			file.destroy();
-			
-			local compr_file = zip.open(n, "wb");
-			compr_file.write(content);
-			compr_file.destroy();
-			
-			print("wrote " .. n);
-			
-			count = count + 1;
-		else
-			print(n .. " does not exist");
-		end
-	end
+	-- Special scenalizer resource
+	servDir.chdir("mods/deathmatch/resources/rwscenalizer/");
 	
-	print("writing to .zip file... (do not close!)");
+	servDir.scanDirEx("maps/", "*", nil, includeFile, true);
+	servDir.scanDirEx("replace/", "*", nil, includeFile, true);
+	servDir.scanDirEx("", "*", nil, includeFile, false);
 	
-	zip.save();
-	zip.destroy();
-	zip_stream.destroy();
+	-- Change back to root
+	servDir.chdir("/");
 	
-	print("finished writing " .. count .. " files");
+	writeFileList(impFiles, "green_server.zip", servDir);
 end
