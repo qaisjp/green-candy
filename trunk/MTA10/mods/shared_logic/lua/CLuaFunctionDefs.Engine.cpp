@@ -39,17 +39,17 @@ namespace CLuaFunctionDefs
             pCol->SetRoot( res->GetResourceCOLModelRoot() );
 
             // Attempt loading the file
-            if ( pCol->LoadCol( file ) )
-            {
-                delete file;
+            bool success = pCol->LoadCol( file );
 
+            delete file;
+
+            if ( success )
+            {
                 pCol->PushStack( L );
                 return 1;
             }
-            else
-                pCol->Destroy();
 
-            delete file;
+            pCol->Destroy();
         }
         else
             m_pScriptDebugging->LogBadType( "engineLoadCOL" );
@@ -134,6 +134,26 @@ namespace CLuaFunctionDefs
             m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
 
         // We failed
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineModelInfoHasLoaded )
+    {
+        unsigned short model;
+
+        CScriptArgReader argStream( L );
+        
+        argStream.ReadNumber( model );
+
+        if ( !argStream.HasErrors() )
+        {
+            lua_pushboolean( L, g_pGame->GetStreaming()->HasModelLoaded( model ) );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
         lua_pushboolean( L, false );
         return 1;
     }

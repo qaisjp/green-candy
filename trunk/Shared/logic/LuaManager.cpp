@@ -38,13 +38,11 @@ static int lua_cocreatethread( lua_State *L )
 {
     // Inherit previous settings
     lua_State *thread = lua_tothread( L, 1 );
-    lua_rawgeti( L, LUA_STORAGEINDEX, 1 );
-    lua_rawgeti( L, LUA_STORAGEINDEX, 2 );
+    lua_pushvalue( L, LUA_STORAGEINDEX );
 
-    lua_xmove( L, thread, 2 );
+    lua_xmove( L, thread, 1 );
 
-    lua_rawseti( thread, LUA_STORAGEINDEX, 2 );
-    lua_rawseti( thread, LUA_STORAGEINDEX, 1 );
+    lua_replace( L, LUA_STORAGEINDEX );
     return 0;
 }
 
@@ -351,6 +349,9 @@ static int LoadCFunctions( LuaMain *L )
     LUA_REGISTER( L, utfChar );
     LUA_REGISTER( L, utfCode );
 
+    LUA_REGISTER( L, matrixNew );
+    LUA_REGISTER( L, matrixFromQuat );
+
     LUA_REGISTER( L, newmd5hasher );
     LUA_REGISTER( L, md5 );
     LUA_REGISTER( L, getTickCount );
@@ -436,6 +437,7 @@ void LuaManager::Init( LuaMain *lua )
     luaopen_debug( thread ); // WARNING: CREATE OUR OWN DEBUG LIB!!!
 #endif
     luaopen_class( thread );
+    //luaopen_bit( thread );
 
     // Load our functions into the hyperstructure
     LoadCFunctions( lua );

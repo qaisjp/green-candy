@@ -33,6 +33,9 @@ CColModelSA *g_colReplacement[DATA_TEXTURE_BLOCK];
 
 #define FLAG_PRIORITY           0x10
 
+static streamingRequestCallback_t streamingRequestCallback = NULL;
+static streamingFreeCallback_t streamingFreeCallback = NULL;
+
 static void __cdecl HOOK_CStreaming__RequestModel( unsigned int model, unsigned int flags )
 {
     pGame->GetStreaming()->RequestModel( model, flags );
@@ -440,9 +443,13 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
             (*(DWORD*)VAR_NUMPRIOMODELS)++;
 
             info->m_flags |= FLAG_PRIORITY;
-        }
+        } 
         break;
     case MODEL_UNAVAILABLE:
+        // We only call the client if we request unavailable items
+        if ( streamingRequestCallback )
+            streamingRequestCallback( id );
+
         // Model support fix: quick load a model if we already have it for replacement; prevents memory leak and boosts speed
         if ( id < DATA_TEXTURE_BLOCK )
         {
@@ -657,7 +664,7 @@ void CStreamingSA::FreeModel( unsigned short id )
             if ( g_replObjectNative[id] )
             {
                 info->m_eLoading = MODEL_UNAVAILABLE;
-                return;
+                goto end;
             }
         }
         else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
@@ -790,6 +797,10 @@ void CStreamingSA::FreeModel( unsigned short id )
     }
 
     info->m_eLoading = MODEL_UNAVAILABLE;
+
+end:
+    if ( streamingFreeCallback )
+        streamingFreeCallback( id );
 }
 
 void CStreamingSA::LoadAllRequestedModels( bool onlyPriority )
@@ -872,4 +883,14 @@ void CStreamingSA::RequestSpecialModel( unsigned short model, const char *tex, u
         call    dwFunc
         add     esp, 0xC
     }
+}
+
+void CStreamingSA::SetRequestCallback( streamingRequestCallback_t callback )
+{
+    streamingRequestCallback = callback;
+}
+
+void CStreamingSA::SetFreeCallback( streamingFreeCallback_t callback  )
+{
+    streamingFreeCallback = callback;
 }

@@ -129,12 +129,6 @@ public:
 
     void                        Reset                       ();
 
-    void                        ConvertEulerAnglesToMatrix  ( RwMatrix& Matrix, float fX, float fY, float fZ );
-    void                        ConvertMatrixToEulerAngles  ( const RwMatrix& Matrix, float& fX, float& fY, float& fZ );
-    
-    inline void                 ConvertEulerAnglesToMatrix  ( RwMatrix& Matrix, CVector & vecAngles )            { ConvertEulerAnglesToMatrix ( Matrix, vecAngles.fX, vecAngles.fY, vecAngles.fZ ); }
-    inline void                 ConvertMatrixToEulerAngles  ( const RwMatrix& Matrix, CVector & vecAngles )      { ConvertMatrixToEulerAngles ( Matrix, vecAngles.fX, vecAngles.fY, vecAngles.fZ ); }
-
     float                       GetGlobalGravity            ();
     void                        SetGlobalGravity            ( float fGravity );
 

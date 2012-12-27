@@ -13,6 +13,9 @@
 #ifndef _MODEL_MANAGER_EXPORT_
 #define _MODEL_MANAGER_EXPORT_
 
+typedef void (__cdecl*modelRequestCallback_t)( unsigned short id );
+typedef void (__cdecl*modelFreeCallback_t)( unsigned short id );
+
 class CModelManager
 {
 public:
@@ -24,6 +27,9 @@ public:
 
     virtual bool                        RestoreModel( unsigned short id ) = 0;
     virtual bool                        RestoreCollision( unsigned short id ) = 0;
+
+    virtual void                        SetRequestCallback( modelRequestCallback_t callback ) = 0;
+    virtual void                        SetFreeCallback( modelFreeCallback_t callback ) = 0;
 };
 
 #endif //_MODEL_MANAGER_EXPORT_

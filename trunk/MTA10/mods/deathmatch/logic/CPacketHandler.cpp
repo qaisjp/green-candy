@@ -604,11 +604,13 @@ void CPacketHandler::Packet_PlayerList ( NetBitStreamInterface& bitStream )
         {
             // Read out the player model id
             bitStream.ReadCompressed ( usPlayerModelID );
+#if 0
             if ( !CClientPlayerManager::IsValidModel ( usPlayerModelID ) )
             {
                 RaiseProtocolError ( 10 );
                 return;
             }
+#endif
 
             // Team?
             bool bHasTeam;

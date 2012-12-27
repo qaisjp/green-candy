@@ -42,6 +42,7 @@ CChat::CChat ( CGUI* pManager, const CVector2D & vecPosition )
     m_TextColor = CHAT_TEXT_COLOR;
     m_bUseCEGUI = false;
     m_iCVarsRevision = -1;
+    m_isEnabled = true;
     m_bVisible = false;
     m_bInputVisible = false;
     m_pFont = m_pManager->GetClearFont ();
@@ -577,6 +578,9 @@ void CChat::ScrollDown ()
 
 bool CChat::CharacterKeyHandler ( CGUIKeyEventArgs KeyboardArgs )
 {
+    if ( !m_isEnabled )
+        return false;
+
     // If we can take input
     if ( CLocalGUI::GetSingleton ().GetVisibleWindows () == 0 &&
         !CLocalGUI::GetSingleton ().GetConsole ()->IsVisible () &&
@@ -646,6 +650,20 @@ bool CChat::CharacterKeyHandler ( CGUIKeyEventArgs KeyboardArgs )
     }
 
     return true;
+}
+
+
+void CChat::SetEnabled( bool enabled )
+{
+    if ( m_isEnabled == enabled )
+        return;
+
+    if ( m_isEnabled = enabled )
+    {
+        m_InputLine.Clear();
+
+        SetInputVisible( false );
+    }
 }
 
 

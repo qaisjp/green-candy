@@ -17,6 +17,8 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 static RtDictSchema *const animDict =   (RtDictSchema*)0x008DED50;
 static CModelLoadInfoSA *const VAR_ModelLoadInfo = (CModelLoadInfoSA*)0x008E4CC0;
 
+static streamingLoadCallback_t  streamingLoadCallback = NULL;
+
 static RwScanTexDictionaryStackRef_t    prevStackScan;
 
 static RwTexture* RwTexDictionaryStackFindRemapRef( const char *name )
@@ -363,10 +365,12 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
             else
                 dict = NULL;
 
+            // At this point, GTA_SA utilizes a weird stream logic
+            // I have fixed it here
             RwStreamClose( stream, &streamBuffer );
             stream = RwStreamInitialize( (void*)0x008E48AC, 0, 3, 1, &streamBuffer );
 
-            success = LoadClumpFile( stream, id );  // Is this actually a bug in the engine...?
+            success = LoadClumpFile( stream, id );
 
             if ( dict )
                 RtDictDestroy( dict );
@@ -517,6 +521,9 @@ finish:
     {
         loadInfo.m_eLoading = MODEL_LOADED;
         (*(unsigned int*)0x008E4CB4) += streamBuffer.size;
+
+        if ( streamingLoadCallback )
+            streamingLoadCallback( id );
     }
 
     return true;
@@ -535,4 +542,9 @@ failureDamned:
 
     RwStreamClose( stream, &streamBuffer );
     return false;
+}
+
+void CStreamingSA::SetLoadCallback( streamingLoadCallback_t callback )
+{
+    streamingLoadCallback = callback;
 }

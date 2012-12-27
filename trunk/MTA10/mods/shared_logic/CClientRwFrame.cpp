@@ -285,6 +285,12 @@ LUA_DECLARE( CClientRwFrame::setChild )
 
 static const luaL_Reg rwframe_interface[] =
 {
+    { "setChild", CClientRwFrame::setChild },
+    { NULL, NULL }
+};
+
+static const luaL_Reg rwframe_interface_light[] =
+{
     LUA_METHOD( getName ),
     LUA_METHOD( setName ),
     LUA_METHOD( getHash ),
@@ -298,7 +304,6 @@ static const luaL_Reg rwframe_interface[] =
     LUA_METHOD( findFrame ),
     LUA_METHOD( getLinkedFrames ),
     LUA_METHOD( isValidChild ),
-    { "setChild", CClientRwFrame::setChild },
     { NULL, NULL }
 };
 
@@ -310,9 +315,10 @@ static LUA_DECLARE( luaconstructor_rwframe )
     j.SetTransmit( LUACLASS_RWFRAME, frame );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
-
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, rwframe_interface, 1 );
+
+    j.RegisterLightInterface( L, rwframe_interface_light, frame );
 
     lua_pushlstring( L, "rwframe", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

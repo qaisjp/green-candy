@@ -47,6 +47,10 @@ public:
     bool            HaveAnimationsLoaded( int idx );
     bool            HasVehicleUpgradeLoaded( int model );
     void            RequestSpecialModel( unsigned short model, const char *tex, unsigned int channel );
+
+    void            SetRequestCallback( streamingRequestCallback_t callback );
+    void            SetLoadCallback( streamingLoadCallback_t callback );
+    void            SetFreeCallback( streamingFreeCallback_t callback );
 };
 
 #include "CStreamingSA.utils.h"

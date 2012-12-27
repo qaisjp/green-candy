@@ -142,13 +142,18 @@ int CClientEntity::entity_setChild( lua_State *L )
     return 1;
 }
 
-static const luaL_Reg entity_interface[] =
+static const luaL_Reg entity_interface_light[] =
 {
     { "setPosition", entity_setPosition },
     { "getPosition", entity_getPosition },
     { "setMatrix", entity_setMatrix },
     { "getMatrix", entity_getMatrix },
     { "isValidChild", entity_isValidChild },
+    { NULL, NULL }
+};
+
+static const luaL_Reg entity_interface[] =
+{
     { "setChild", CClientEntity::entity_setChild },
     { NULL, NULL }
 };
@@ -227,6 +232,8 @@ static int entity_constructor( lua_State *L )
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, entity_interface, 1 );
+
+    j.RegisterLightInterface( L, entity_interface_light, entity );
 
     // Allocate customdata class
     lua_pushvalue( L, lua_upvalueindex( 1 ) );

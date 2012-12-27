@@ -79,6 +79,8 @@ public:
 
     //CChatBox*           GetChatBox                  ( void );
     CChat*              GetChat                     ( void );
+    void                SetChatBoxEnabled           ( bool enabled );
+    bool                IsChatBoxEnabled            () const;
     void                SetChatBoxVisible           ( bool bVisible );
     bool                IsChatBoxVisible            ( void );
     void                SetChatBoxInputEnabled      ( bool bInputEnabled );

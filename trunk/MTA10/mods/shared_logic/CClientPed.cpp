@@ -4495,20 +4495,17 @@ CClientPed * CClientPed::GetTargetedPed ( void )
     return NULL;
 }
 
-
-void CClientPed::NotifyCreate ( void )
+void CClientPed::NotifyCreate()
 {
-    m_pManager->GetPedManager ()->OnCreation ( this );
+    m_pManager->GetPedManager()->OnCreation( this );
     CClientGameEntity::NotifyCreate();
 }
 
-
-void CClientPed::NotifyDestroy ( void )
+void CClientPed::NotifyDestroy()
 {
-    m_pManager->GetPedManager ()->OnDestruction ( this );
-    UpdateKeysync ( true );
+    m_pManager->GetPedManager()->OnDestruction( this );
+    UpdateKeysync( true );
 }
-
 
 bool CClientPed::IsSunbathing ( void )
 {

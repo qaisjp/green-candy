@@ -50,6 +50,9 @@
 class CWorldSA : public CWorld
 {
 public:
+                CWorldSA();
+                ~CWorldSA();
+    
     void        Add                       ( CEntity * entity );
     void        Add                       ( CEntitySAInterface * entityInterface );
     void        Remove                    ( CEntity * entity );

@@ -168,7 +168,7 @@ static LUA_DECLARE( getLightIndex )
     return 1;
 }
 
-static luaL_Reg light_interface[] =
+static luaL_Reg light_interface_light[] =
 {
     LUA_METHOD( getLightType ),
     LUA_METHOD( setClump ),
@@ -193,9 +193,7 @@ static LUA_DECLARE( luaconstructor_light )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_LIGHT, light );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, light_interface, 1 );
+    j.RegisterLightInterface( L, light_interface_light, light );
 
     lua_pushlstring( L, "rwlight", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

@@ -91,6 +91,33 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( enableChat )
+    {
+        bool enable;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadBool( enable );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pCore->SetChatEnabled( enable );
+            
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( isChatEnabled )
+    {
+        lua_pushboolean( L, g_pCore->IsChatEnabled() );
+        return 1;
+    }
+
     LUA_DECLARE( showChat )
     {
         // Verify arguments

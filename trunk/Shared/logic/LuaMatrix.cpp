@@ -114,6 +114,20 @@ static int matrix_getEulerAnglesRad( lua_State *L )
     return 3;
 }
 
+static int matrix_fromQuat( lua_State *L )
+{
+    luaL_checktyperange( L, 1, LUA_TNUMBER, 4 );
+
+    CQuat quat;
+    quat.x = (float)lua_tonumber( L, 1 );
+    quat.y = (float)lua_tonumber( L, 2 );
+    quat.z = (float)lua_tonumber( L, 3 );
+    quat.w = (float)lua_tonumber( L, 4 );
+
+    CQuat::ToMatrix( quat, *(RwMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ) );
+    return 0;
+}
+
 static int matrix_offset( lua_State *L )
 {
     luaL_checktyperange( L, 1, LUA_TNUMBER, 3 );
@@ -134,7 +148,7 @@ static int matrix_destroy( lua_State *L )
     return 0;
 }
 
-static const luaL_Reg matrix_interface[] =
+static const luaL_Reg matrix_interface_light[] =
 {
     { "__index", matrix_index },
     { "setPosition", matrix_setPosition },
@@ -158,8 +172,7 @@ static int luaconstructor_matrix( lua_State *L )
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_basicprotect( L );
 
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, matrix_interface, 1 );
+    j.RegisterLightInterface( L, matrix_interface_light, matrix );
 
     lua_pushlstring( L, "matrix", 6 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

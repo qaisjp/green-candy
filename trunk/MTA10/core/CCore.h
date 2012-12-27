@@ -128,6 +128,8 @@ public:
     void                    ChatEchoColor( const char* szText, unsigned char R, unsigned char G, unsigned char B, bool bColorCoded = false );
     void                    ChatPrintf( const char* szFormat, bool bColorCoded, ... );
     void                    ChatPrintfColor( const char* szFormat, bool bColorCoded, unsigned char R, unsigned char G, unsigned char B, ... );
+    void                    SetChatEnabled( bool enabled );
+    bool                    IsChatEnabled() const;
     void                    SetChatVisible( bool bVisible );
     bool                    IsChatVisible();
     void                    EnableChatInput( char* szCommand, DWORD dwColor );

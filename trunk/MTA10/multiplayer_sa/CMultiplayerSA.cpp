@@ -3489,43 +3489,6 @@ void CMultiplayerSA::Reset ( void )
     m_pRender3DStuffHandler = NULL;
 }
 
-
-void CMultiplayerSA::ConvertEulerAnglesToMatrix ( RwMatrix& Matrix, float fX, float fY, float fZ )
-{
-    DWORD dwFunc = FUNC_CMatrix__ConvertFromEulerAngles;
-    int iUnknown = 21;
-    _asm
-    {
-        push    iUnknown
-        push    fZ
-        push    fY
-        push    fX
-        mov     ecx,Matrix
-        call    dwFunc
-    }
-}
-
-
-void CMultiplayerSA::ConvertMatrixToEulerAngles ( const RwMatrix& Matrix, float& fX, float& fY, float& fZ )
-{
-    // Grab its pointer and call gta's func
-    DWORD dwFunc = FUNC_CMatrix__ConvertToEulerAngles;
-
-    float* pfX = &fX;
-    float* pfY = &fY;
-    float* pfZ = &fZ;
-    int iUnknown = 21;
-    _asm
-    {
-        push    iUnknown
-        push    pfZ
-        push    pfY
-        push    pfX
-        mov     ecx,Matrix
-        call    dwFunc
-    }
-}
-
 void CMultiplayerSA::RebuildMultiplayerPlayer ( CPed * player )
 {
     CPlayerPed* playerPed = dynamic_cast < CPlayerPed* > ( player );

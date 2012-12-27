@@ -735,6 +735,9 @@ public:
     virtual bool    IsTransmit( int type ) const = 0;
 
     virtual void    RegisterMethod( lua_State *L, const char *name ) = 0;
+    virtual void    RegisterLightMethod( lua_State *L, const char *name ) = 0;
+    virtual void    RegisterLightInterface( lua_State *L, const struct luaL_Reg *intf, void *udata ) = 0;
+
     virtual void    EnvPutFront( lua_State *L ) = 0;
     virtual void    EnvPutBack( lua_State *L ) = 0;
 

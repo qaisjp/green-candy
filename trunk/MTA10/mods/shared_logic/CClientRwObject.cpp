@@ -32,7 +32,7 @@ static LUA_DECLARE( isValidChild )
     return 0;
 }
 
-static luaL_Reg object_interface[] =
+static luaL_Reg object_interface_light[] =
 {
     LUA_METHOD( getFrame ),
     LUA_METHOD( isValidChild ),
@@ -46,9 +46,7 @@ static LUA_DECLARE( luaconstructor_object )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_RWOBJECT, obj );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, object_interface, 1 );
+    j.RegisterLightInterface( L, object_interface_light, obj );
 
     lua_pushlstring( L, "rwobject", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

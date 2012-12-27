@@ -123,7 +123,7 @@ static LUA_DECLARE( getObjectScale )
     return 1;
 }
 
-static const luaL_Reg object_interface[] =
+static const luaL_Reg object_interface_light[] =
 {
     LUA_METHOD( setHealth ),
     LUA_METHOD( getHealth ),
@@ -146,9 +146,7 @@ LUA_DECLARE( luaconstructor_object )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_OBJECT, obj );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, object_interface, 1 );
+    j.RegisterLightInterface( L, object_interface_light, obj );
 
     lua_pushlstring( L, "object", 6 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

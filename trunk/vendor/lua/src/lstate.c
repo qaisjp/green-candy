@@ -208,9 +208,6 @@ static void luaE_term()
 
 void luaE_terminate( lua_Thread *L )
 {
-    luaF_close(L, L->stack);  /* close all upvalues for this thread */
-    lua_assert(L->openupval == NULL);
-
     if ( !L->fiber )
         return;
 
@@ -227,6 +224,9 @@ void luaE_terminate( lua_Thread *L )
     }
 	else
 	{
+        luaF_close(L, L->stack);  /* close all upvalues for this thread */
+        lua_assert(L->openupval == NULL);
+
 		// Threads clean their environments after themselves
 		luaX_closefiber( L, env );
 

@@ -16,14 +16,63 @@
 
 using std::list;
 
-CClientModelRequestManager::CClientModelRequestManager ( void )
+#if 0
+static void CStreaming__Request( unsigned short id )
 {
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+    lua_pushnumber( L, id );
+    g_pClientGame->GetRootEntity()->CallEvent( "onClientStreamingRequest", L, 1 );
+}
+
+static void CStreaming__Load( unsigned short id )
+{
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+    lua_pushnumber( L, id );
+    g_pClientGame->GetRootEntity()->CallEvent( "onClientStreamingLoad", L, 1 );
+}
+
+static void CStreaming__Free( unsigned short id )
+{
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+    lua_pushnumber( L, id );
+    g_pClientGame->GetRootEntity()->CallEvent( "onClientStreamingFree", L, 1 );
+}
+#endif
+
+static void CModelManager__Request( unsigned short id )
+{
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+    lua_pushnumber( L, id );
+    g_pClientGame->GetRootEntity()->CallEvent( "onClientModelRequest", L, 1 );
+}
+
+static void CModelManager__Free( unsigned short id )
+{
+    lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+
+    lua_pushnumber( L, id );
+    g_pClientGame->GetRootEntity()->CallEvent( "onClientModelFree", L, 1 );
+}
+
+CClientModelRequestManager::CClientModelRequestManager()
+{
+    // Register callbacks
+    g_pGame->GetModelManager()->SetRequestCallback( CModelManager__Request );
+    g_pGame->GetModelManager()->SetFreeCallback( CModelManager__Free );
+
     m_bDoingPulse = false;
 }
 
-
-CClientModelRequestManager::~CClientModelRequestManager ( void )
+CClientModelRequestManager::~CClientModelRequestManager()
 {
+    // Remove callbacks
+    g_pGame->GetModelManager()->SetRequestCallback( NULL );
+    g_pGame->GetModelManager()->SetFreeCallback( NULL );
+
     // Delete all our requests.
     list < SClientModelRequest* > ::iterator iter;
     for ( iter = m_Requests.begin (); iter != m_Requests.end (); iter++ )
@@ -33,7 +82,6 @@ CClientModelRequestManager::~CClientModelRequestManager ( void )
 
     m_Requests.clear ();
 }
-
 
 bool CClientModelRequestManager::IsLoaded ( unsigned short usModelID )
 {
@@ -153,7 +201,7 @@ bool CClientModelRequestManager::Request ( unsigned short usModelID, CClientEnti
                 // Is it loaded?
                 if ( pInfo->IsLoaded () )
                 {
-                    // Delete it, remove the it from the list and return true.
+                    // Delete it, remove it from the list and return true.
                     delete pEntry;
                     m_Requests.erase ( iter );
                     return true;

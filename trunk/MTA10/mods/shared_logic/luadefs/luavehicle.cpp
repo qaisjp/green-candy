@@ -1294,7 +1294,7 @@ static LUA_DECLARE( isDerailed )
     return 1;
 }
 
-static const luaL_Reg vehicle_interface[] =
+static const luaL_Reg vehicle_interface_light[] =
 {
     LUA_METHOD( setModel ),
     LUA_METHOD( getModel ),
@@ -1427,9 +1427,7 @@ LUA_DECLARE( luaconstructor_vehicle )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_VEHICLE, veh );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, vehicle_interface, 1 );
+    j.RegisterLightInterface( L, vehicle_interface_light, veh );
 
     lua_pushlstring( L, "vehicle", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

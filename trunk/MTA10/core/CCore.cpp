@@ -525,6 +525,22 @@ void CCore::ChatPrintfColor( const char* szFormat, bool bColorCoded, unsigned ch
     ChatEchoColor( szBuffer, R, G, B, bColorCoded );
 }
 
+void CCore::SetChatEnabled( bool enabled )
+{
+    if ( !m_pLocalGUI )
+        return;
+
+    m_pLocalGUI->SetChatBoxEnabled( enabled );
+}
+
+bool CCore::IsChatEnabled() const
+{
+    if ( !m_pLocalGUI )
+        return false;
+
+    return m_pLocalGUI->IsChatBoxEnabled();
+}
+
 void CCore::SetChatVisible( bool bVisible )
 {
     if ( !m_pLocalGUI )
