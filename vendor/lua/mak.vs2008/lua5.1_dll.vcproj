@@ -116,6 +116,7 @@
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -446,6 +447,38 @@
 				RelativePath="..\src\print.c"
 				>
 			</File>
+			<Filter
+				Name="vendor"
+				>
+				<File
+					RelativePath="..\..\LuaBitOp-1.0.2\bit.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories="../../../vendor/lua/src"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories="../../../vendor/lua/src"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Nightly|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories="../../../vendor/lua/src"
+						/>
+					</FileConfiguration>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="inc"

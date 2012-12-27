@@ -91,8 +91,13 @@ static LUA_DECLARE( destroy )
 static const luaL_Reg element_interface[] =
 {
     LUA_METHOD( setParent ),
-    LUA_METHOD( getRoot ),
     LUA_METHOD( destroy ),
+    { NULL, NULL }
+};
+
+static const luaL_Reg element_interface_light[] =
+{
+    LUA_METHOD( getRoot ),
     { NULL, NULL }
 };
 
@@ -107,6 +112,9 @@ static int luaconstructor_element( lua_State *L )
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, element_interface, 1 );
+
+    // Light interfaces take way less memory
+    j.RegisterLightInterface( L, element_interface_light, element );
 
     // Put basic protection against modification from scripts
     lua_basicprotect( L );

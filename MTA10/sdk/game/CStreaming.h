@@ -12,6 +12,10 @@
 #ifndef __CStreaming_H
 #define __CStreaming_H
 
+typedef void (__cdecl*streamingRequestCallback_t)( unsigned short id );
+typedef void (__cdecl*streamingLoadCallback_t)( unsigned short id );
+typedef void (__cdecl*streamingFreeCallback_t)( unsigned short id );
+
 class CStreaming
 {
 public:
@@ -25,6 +29,10 @@ public:
     virtual bool            HaveAnimationsLoaded( int idx ) = 0;
     virtual bool            HasVehicleUpgradeLoaded( int model ) = 0;
     virtual void            RequestSpecialModel( unsigned short model, const char *tex, unsigned int channel ) = 0;
+
+    virtual void            SetRequestCallback( streamingRequestCallback_t callback ) = 0;
+    virtual void            SetLoadCallback( streamingLoadCallback_t callback ) = 0;
+    virtual void            SetFreeCallback( streamingFreeCallback_t callback ) = 0;
 };
 
 #endif

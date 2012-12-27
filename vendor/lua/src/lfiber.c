@@ -40,7 +40,6 @@ static EXCEPTION_REGISTRATION _baseException =
 
 #pragma warning(disable:4733)
 
-// WARNING: THIS CODE IS NOT MULTI-THREADING SAFE
 static void __declspec(naked) _retHandler( lua_Thread *L )
 {
 	__asm
@@ -72,7 +71,7 @@ static void __declspec(naked) _retHandler( lua_Thread *L )
         mov fs:[0],ecx
 #endif
 
-		// Terminate our thread using the emergency stack
+		// Terminate our thread
 		call luaE_terminate
 		add esp,4
 

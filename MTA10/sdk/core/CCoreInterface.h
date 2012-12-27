@@ -98,6 +98,8 @@ public:
     virtual void                    ChatEchoColor( const char* szText, unsigned char R, unsigned char G, unsigned char B, bool bColorCoded = false ) = 0;
     virtual void                    ChatPrintf( const char* szFormat, bool bColorCoded, ... ) = 0;
     virtual void                    ChatPrintfColor( const char* szFormat, bool bColorCoded, unsigned char R, unsigned char G, unsigned char B, ... ) = 0;
+    virtual void                    SetChatEnabled( bool enabled ) = 0;
+    virtual bool                    IsChatEnabled() const = 0;
     virtual void                    SetChatVisible( bool bVisible ) = 0;
     virtual bool                    IsChatVisible() = 0;
     virtual void                    TakeScreenShot() = 0;

@@ -124,7 +124,6 @@ public:
         qm.z = (qa.z * ratioA + qb.z * ratioB);
     }
 
-private:
     float x, y, z, w;
 };
 

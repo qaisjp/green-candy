@@ -141,7 +141,7 @@ static LUA_DECLARE( restoreAll )
     return 0;
 }
 
-static const luaL_Reg dff_interface[] =
+static const luaL_Reg dff_interface_light[] =
 {
     LUA_METHOD( clone ),
     LUA_METHOD( render ),
@@ -219,9 +219,7 @@ static int luaconstructor_dff( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_DFF, dff );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, dff_interface, 1 );
+    j.RegisterLightInterface( L, dff_interface_light, dff );
 
     lua_pushlstring( L, "dff", 3 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

@@ -523,7 +523,11 @@ public:
 
     Table*  AcquireEnvDispatcher( lua_State *L );
     Table*  AcquireEnvDispatcherEx( lua_State *L, Table *env );
+
     void    RegisterMethod( lua_State *L, const char *name );
+    void    RegisterLightMethod( lua_State *L, const char *name );
+    void    RegisterLightInterface( lua_State *L, const luaL_Reg *intf, void *udata );
+
     void    EnvPutFront( lua_State *L );
     void    EnvPutBack( lua_State *L );
 
@@ -535,6 +539,7 @@ public:
     void    PushChildAPI( lua_State *L );
     void    PushParent( lua_State *L );
     const TValue*   GetEnvValue( const TValue *key );
+    const TValue*   GetEnvValueString( lua_State *L, const char *key );
 
     void    RequestDestruction();
 

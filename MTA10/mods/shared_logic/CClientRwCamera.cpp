@@ -101,9 +101,14 @@ static LUA_DECLARE( update )
 
 const luaL_Reg rwcamera_interface[] =
 {
+    LUA_METHOD( setParent ),
+    { NULL, NULL }
+};
+
+const luaL_Reg rwcamera_interface_light[] =
+{
     LUA_METHOD( setClump ),
     LUA_METHOD( getClump ),
-    LUA_METHOD( setParent ),
     LUA_METHOD( isRendering ),
     LUA_METHOD( update ),
     { NULL, NULL }
@@ -115,6 +120,8 @@ static LUA_DECLARE( luaconstructor_rwcamera )
 
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_RWCAMERA, cam );
+
+    j.RegisterLightInterface( L, rwcamera_interface_light, cam );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );

@@ -297,6 +297,17 @@ const TValue* Class::GetEnvValue( const TValue *key )
     return luaH_get( storage, key );
 }
 
+const TValue* Class::GetEnvValueString( lua_State *L, const char *name )
+{
+    const TString *key = luaS_new( L, name );
+    const TValue *res = luaH_getstr( internStorage, key );
+
+    if ( ttype( res ) != LUA_TNIL )
+        return res;
+
+    return luaH_getstr( storage, key );
+}
+
 void Class::RequestDestruction()
 {
     reqDestruction = true;
@@ -330,9 +341,9 @@ public:
 
     ~MethodStackAllocation()
     {
-        m_instance->DecrementMethodStack( m_thread );
         setobj( m_thread, m_instance->GetSuperMethod( m_thread ), &m_prevSuper );
         luaC_barriert( m_thread, m_instance->internStorage, &m_prevSuper );
+        m_instance->DecrementMethodStack( m_thread );
     }
 
     Class*      m_instance;
@@ -692,6 +703,51 @@ void Class::RegisterMethod( lua_State *L, const char *name )
     L->top -= 2;
 }
 
+void Class::RegisterLightMethod( lua_State *L, const char *_name )
+{
+    // Light methods go directly into the environment
+    TString *name = luaS_new( L, _name );
+    Closure *cl = clvalue( --L->top );
+
+    // They go into storage only
+    setclvalue( L, luaH_setstr( L, methods, name ), cl );
+    luaC_objbarriert( L, methods, cl );
+
+    setclvalue( L, luaH_setstr( L, storage, name ), cl );
+    luaC_objbarriert( L, storage, cl );
+}
+
+static int classmethod_lightguard( lua_State *L )
+{
+    // Check for security
+    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 2 ) ) );
+
+    if ( j.destroyed )
+        throw lua_exception( L, LUA_ERRRUN, "attempt to access a destroyed class' light method" );
+
+    return ((lua_CFunction)uvalue( index2adr( L, lua_upvalueindex( 3 ) )))( L );
+}
+
+void Class::RegisterLightInterface( lua_State *L, const luaL_Reg *intf, void *udata )
+{
+    while ( intf->name )
+    {
+        setpvalue( L->top++, udata );
+        setjvalue( L, L->top++, this );
+        setpvalue( L->top++, (void*)intf->func );
+        lua_pushcclosure( L, classmethod_lightguard, 3 );
+
+        // Apply environment dispatching
+        Closure *cl = clvalue( L->top - 1 );
+        cl->env = AcquireEnvDispatcherEx( L, cl->env );
+        luaC_objbarrier( L, cl, cl->env );
+
+        RegisterLightMethod( L, intf->name );
+
+        intf++;
+    }
+}
+
 void Class::EnvPutFront( lua_State *L )
 {
     envInherit.insert( envInherit.begin(), hvalue( --L->top ) );
@@ -723,6 +779,8 @@ static int classmethod_dereference( lua_State *L )
 
     j.inMethod--;
     j.refCount--;
+
+    j.CheckDestruction( L );
     return 0;
 }
 
@@ -755,10 +813,10 @@ static int childapi_notiDestroy( lua_State *L )
 
 static int childapi_destroy( lua_State *L )
 {
-    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 2 ) ) );
+    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
 
     LIST_REMOVE( j.child_iter ); // Child
-    jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->childCount--;  // Parent
+    j.parent->childCount--;  // Parent
 
     // We do not have to remove the childAPI from internStorage. Shall we?
     // Remove the parent link
@@ -767,14 +825,19 @@ static int childapi_destroy( lua_State *L )
     // Tell this event to any possible registree
     // We use a seperate function so we can post this message after unlinking from
     // the parent's children!
-    lua_getfield( L, LUA_ENVIRONINDEX, "notifyDestroy" );
-    lua_call( L, 0, 0 );
+    const TValue *method = j.childAPI->GetEnvValueString( L, "notifyDestroy" );
+
+    if ( ttype( method ) != LUA_TNIL )
+    {
+        setobj2s( L, L->top, method );
+        luaD_call( L, L->top++, 0 );
+    }
+
     return 0;
 }
 
 static const luaL_Reg childapi_interface[] =
 {
-    { "notifyDestroy", childapi_notiDestroy },
     { "destroy", childapi_destroy },
     { NULL, NULL }
 };
@@ -791,8 +854,7 @@ static int childapi_constructor( lua_State *L )
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushvalue( L, lua_upvalueindex( 2 ) );
-    luaL_openlib( L, NULL, childapi_interface, 2 );
+    luaL_openlib( L, NULL, childapi_interface, 1 );
 
     luaJ_basicextend( L );
     return 0;
@@ -866,8 +928,8 @@ static int classmethod_setParent( lua_State *L )
         lua_call( L, 0, 0 );
     }
 
-    setjvalue( L, L->top - 1, &j );
-    lua_pushcclosure( L, childapi_constructor, 2 );
+    setjvalue( L, --L->top - 1, &j );
+    lua_pushcclosure( L, childapi_constructor, 1 );
     lua_newclass( L );
 
     // Store the API
@@ -916,6 +978,7 @@ static int classmethod_destructor( lua_State *L )
     j->outenv = NULL;
     j->methods = NULL;
     j->storage = NULL;
+    j->internStorage = NULL;
     setnilvalue( &j->destructor );
 
     j->destroyed = true;
@@ -924,14 +987,19 @@ static int classmethod_destructor( lua_State *L )
     return 0;
 }
 
-static const luaL_Reg classmethods[] = 
+static const luaL_Reg classmethods_light[] = 
 {
     { "reference", classmethod_reference },
     { "dereference", classmethod_dereference },
     { "isValidChild", classmethod_isValidChild },
     { "getChildren", classmethod_getChildren },
-    { "setParent", classmethod_setParent },
     { "getParent", classmethod_getParent },
+    { NULL, NULL }
+};
+
+static const luaL_Reg classmethods[] =
+{
+    { "setParent", classmethod_setParent },
     { NULL, NULL }
 };
 
@@ -1178,6 +1246,13 @@ Class* luaJ_new( lua_State *L, int nargs )
 
     luaL_openlib( L, NULL, classmethods, 1 );
 
+    int t = lua_gettop( L );
+
+    // Register the light interface
+    c->RegisterLightInterface( L, classmethods_light, c );
+    
+    int t2 = lua_gettop( L );
+
     sethvalue( L, L->top - 1, c->methods );
 
     // Prepare the destructor
@@ -1200,7 +1275,7 @@ Class* luaJ_new( lua_State *L, int nargs )
 
     // Apply the environment to the constructor
     sethvalue( L, L->top++, c->env );
-    lua_setfenv( L, -nargs - 1 );
+    lua_setfenv( L, -nargs - 2 );
 
     // Call the constructor (class as first arg)
     setjvalue( L, L->top++, c );

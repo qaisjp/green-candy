@@ -42,7 +42,7 @@ static LUA_DECLARE( setGlobalEmitter )
     return 0;
 }
 
-static const luaL_Reg txd_interface[] =
+static const luaL_Reg txd_interface_light[] =
 {
     LUA_METHOD( getTextures ),
     LUA_METHOD( setGlobalEmitter ),
@@ -58,9 +58,7 @@ static int luaconstructor_txd( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_TXD, txd );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, txd_interface, 1 );
+    j.RegisterLightInterface( L, txd_interface_light, txd );
 
     lua_pushlstring( L, "txd", 3 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

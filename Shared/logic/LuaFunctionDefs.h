@@ -130,6 +130,10 @@ namespace LuaFunctionDefs
     LUA_DECLARE( toJSON );
     LUA_DECLARE( fromJSON );
 
+    // Matrix functions
+    LUA_DECLARE( matrixNew );
+    LUA_DECLARE( matrixFromQuat );
+
     // Utility
     LUA_DECLARE( newmd5hasher );
     LUA_DECLARE( md5 );

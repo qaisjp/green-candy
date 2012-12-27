@@ -77,6 +77,8 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( outputConsole );
     LUA_DECLARE( outputChatBox );
     LUA_DECLARE( outputDebugString );
+    LUA_DECLARE( enableChat );
+    LUA_DECLARE( isChatEnabled );
     LUA_DECLARE( showChat );
     LUA_DECLARE( setClipboard );
     LUA_DECLARE( getClipboard );
@@ -437,6 +439,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineLoadDFF );
     LUA_DECLARE( engineLoadTXD );
     LUA_DECLARE( engineLoadCOL );
+    LUA_DECLARE( engineModelInfoHasLoaded );
     LUA_DECLARE( engineModelInfoCloneObject );
     LUA_DECLARE( engineCreateLight );
     LUA_DECLARE( engineCreateFrame );

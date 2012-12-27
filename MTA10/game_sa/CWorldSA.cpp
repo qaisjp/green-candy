@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CWorldSA.cpp
 *  PURPOSE:     Game world/entity logic
@@ -9,12 +9,46 @@
 *               Christian Myhre Lundheim <>
 *               Jax <>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
+*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #include "StdInc.h"
+
+#if 0
+static void __declspec(naked) _CWorld__PLOSFix()
+{
+    __asm
+    {
+        mov edi,0x00417A72
+        jg no1
+        jmp edi
+no1:
+        cmp [esi+8],ebp
+        jnz no2
+        jmp edi
+no2:
+        xor edi,edi
+        nop
+        mov eax,0x00417A10
+        jmp eax
+    }
+}
+#endif
+
+CWorldSA::CWorldSA()
+{
+#if 0
+    HookInstall( 0x00417A0B, (DWORD)_CWorld__PLOSFix, 5 );
+#endif
+}
+
+CWorldSA::~CWorldSA()
+{
+
+}
 
 void CWorldSA::Add ( CEntity * pEntity )
 {
@@ -127,29 +161,6 @@ bool CWorldSA::TestLineSphere( CVector * vecStart, CVector * vecEnd, CVector * v
     }
 }
 
-
-void ConvertMatrixToEulerAngles ( const RwMatrix& matrix, float& fX, float& fY, float& fZ )
-{
-    // Grab its pointer and call gta's func
-    const RwMatrix* pMatrix = &matrix;
-    DWORD dwFunc = FUNC_CMatrix__ConvertToEulerAngles;
-
-    float* pfX = &fX;
-    float* pfY = &fY;
-    float* pfZ = &fZ;
-    int iUnknown = 21;
-    _asm
-    {
-        push    iUnknown
-            push    pfZ
-            push    pfY
-            push    pfX
-            mov     ecx, pMatrix
-            call    dwFunc
-    }
-}
-
-
 bool CWorldSA::ProcessLineOfSight( const CVector * vecStart, const CVector * vecEnd, CColPoint ** colCollision, 
                                   CEntity ** CollisionEntity,
                                   const SLineOfSightFlags flags,
@@ -196,8 +207,6 @@ bool CWorldSA::ProcessLineOfSight( const CVector * vecStart, const CVector * vec
         // Building info needed?
         if ( pBuildingResult && targetEntity->m_type == ENTITY_TYPE_BUILDING )
         {
-            CPoolsSA *pPools = pGame->GetPools();
-
             pBuildingResult->bValid = true;
             pBuildingResult->usModelID = targetEntity->m_model;
             pBuildingResult->vecPosition = targetEntity->m_position;
@@ -205,7 +214,7 @@ bool CWorldSA::ProcessLineOfSight( const CVector * vecStart, const CVector * vec
             if ( targetEntity->m_matrix )
             {
                 CVector& vecRotation = pBuildingResult->vecRotation;
-                ConvertMatrixToEulerAngles ( *targetEntity->m_matrix, vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+                targetEntity->m_matrix->GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
                 vecRotation = -vecRotation;
             }
         }

@@ -2482,6 +2482,11 @@ void CClientGame::AddBuiltInEvents()
     m_Events.Add( "onClientElementStreamOut", "", NULL, false );
     m_Events.Add( "onClientElementDestroy", "", NULL, false );
 
+    // Model events
+    m_Events.Add( "onClientModelRequest", "id", NULL, false );
+    m_Events.Add( "onClientModelLoad", "id", NULL, false );
+    m_Events.Add( "onClientModelFree", "id", NULL, false );
+
     // Player events
     m_Events.Add( "onClientPlayerJoin", "", NULL, false );
     m_Events.Add( "onClientPlayerQuit", "reason", NULL, false );

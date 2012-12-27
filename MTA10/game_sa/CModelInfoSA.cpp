@@ -591,8 +591,28 @@ void CModelInfoSA::StaticFlushPendingRestreamIPL()
     }
 }
 
+static modelRequestCallback_t modelRequestCallback = NULL;
+static modelFreeCallback_t modelFreeCallback = NULL;
+
+void CModelManagerSA::SetRequestCallback( modelRequestCallback_t callback )
+{
+    modelRequestCallback = callback;
+}
+
+void CModelManagerSA::SetFreeCallback( modelFreeCallback_t callback )
+{
+    modelFreeCallback = callback;
+}
+
 void CModelInfoSA::AddRef( bool bWaitForLoad, bool bHighPriority )
 {
+    if ( m_dwReferences == 0 )
+    {
+        // Notify the client
+        if ( modelRequestCallback )
+            modelRequestCallback( m_modelID );
+    }
+
     // Are we not loaded?
     if ( !IsLoaded () )
     {
@@ -626,11 +646,14 @@ void CModelInfoSA::RemoveRef( bool bRemoveExtraGTARef )
 
     // Unload it if 0 references left and we're not CJ model.
     // And if we're loaded.
-    if ( m_dwReferences == 0 &&
-         m_modelID != 0 &&
-         IsLoaded () )
+    if ( m_dwReferences == 0 )
     {
-        Remove ();
+        if ( m_modelID != 0 && IsLoaded() )
+            Remove();
+
+        // Notify the client
+        if ( modelFreeCallback )
+            modelFreeCallback( m_modelID );
     }
 }
 

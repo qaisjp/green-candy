@@ -72,6 +72,8 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, outputConsole );
     LUA_REGISTER( L, outputChatBox );
     LUA_REGISTER( L, outputDebugString );
+    LUA_REGISTER( L, enableChat );
+    LUA_REGISTER( L, isChatEnabled );
     LUA_REGISTER( L, showChat );
     LUA_REGISTER( L, setClipboard );
     LUA_REGISTER( L, getClipboard );
@@ -432,6 +434,7 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineLoadDFF );
     LUA_REGISTER( L, engineLoadTXD );
     LUA_REGISTER( L, engineLoadCOL );
+    LUA_REGISTER( L, engineModelInfoHasLoaded );
     LUA_REGISTER( L, engineModelInfoCloneObject );
     LUA_REGISTER( L, engineCreateLight );
     LUA_REGISTER( L, engineCreateFrame );

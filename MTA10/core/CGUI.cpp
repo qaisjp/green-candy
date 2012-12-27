@@ -474,6 +474,20 @@ CDebugView* CLocalGUI::GetDebugView ( void )
     return m_pDebugView;
 }
 
+void CLocalGUI::SetChatBoxEnabled( bool enabled )
+{
+    if ( m_pChat )
+        m_pChat->SetEnabled( enabled );
+}
+
+bool CLocalGUI::IsChatBoxEnabled() const
+{
+    if ( m_pChat )
+        return m_pChat->IsEnabled();
+    
+    return false;
+}
+
 void CLocalGUI::SetChatBoxVisible ( bool bVisible )
 {
     if ( m_pChat )

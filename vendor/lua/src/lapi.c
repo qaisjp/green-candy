@@ -235,7 +235,7 @@ LUA_API void lua_replace (lua_State *L, int idx)
         func->env = hvalue(L->top - 1);
         luaC_barrier(L, func, L->top - 1);
     }
-    else if ( idx != LUA_STORAGEINDEX )
+    else
     {
         o = index2adr(L, idx);
         api_checkvalidindex(L, o);

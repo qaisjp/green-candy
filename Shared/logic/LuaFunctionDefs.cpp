@@ -41,6 +41,37 @@ namespace LuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( matrixNew )
+    {
+        lua_creatematrix( L, RwMatrix() );
+        return 1;
+    }
+
+    LUA_DECLARE( matrixFromQuat )
+    {
+        CQuat quat;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadNumber( quat.x );
+        argStream.ReadNumber( quat.y );
+        argStream.ReadNumber( quat.z );
+        argStream.ReadNumber( quat.w );
+
+        if ( !argStream.HasErrors() )
+        {
+            RwMatrix mat;
+            CQuat::ToMatrix( quat, mat );
+
+            lua_creatematrix( L, mat );
+            return 1;
+        }
+        else
+            debug->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
     LUA_DECLARE( newmd5hasher )
     {
         CMD5Hasher *hasher = new CMD5Hasher();

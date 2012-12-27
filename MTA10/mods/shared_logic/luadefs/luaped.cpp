@@ -446,7 +446,7 @@ static LUA_DECLARE( getStat )
     return 1;
 }
 
-static const luaL_Reg ped_interface[] =
+static const luaL_Reg ped_interface_light[] =
 {
     LUA_METHOD( setHealth ),
     LUA_METHOD( getHealth ),
@@ -499,9 +499,7 @@ LUA_DECLARE( luaconstructor_ped )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_PED, ped );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, ped_interface, 1 );
+    j.RegisterLightInterface( L, ped_interface_light, ped );
 
     lua_pushlstring( L, "ped", 3 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

@@ -30,6 +30,9 @@ public:
     bool                        RestoreModel( unsigned short id );
     bool                        RestoreCollision( unsigned short id );
 
+    void                        SetRequestCallback( modelRequestCallback_t callback );
+    void                        SetFreeCallback( modelFreeCallback_t callback );
+
 protected:
     typedef std::vector <CModelSA*> models_t;
     models_t                m_models;

@@ -129,7 +129,7 @@ static LUA_DECLARE( restoreAll )
     return 0;
 }
 
-static luaL_Reg atomic_interface[] =
+static luaL_Reg atomic_interface_light[] =
 {
     LUA_METHOD( clone ),
     LUA_METHOD( setClump ),
@@ -150,9 +150,7 @@ static int luaconstructor_atomic( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_ATOMIC, atom );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, atomic_interface, 1 );
+    j.RegisterLightInterface( L, atomic_interface_light, atom );
 
     lua_pushlstring( L, "atomic", 6 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

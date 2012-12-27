@@ -192,7 +192,7 @@ class CChat
     friend class CChatLineSection;
 
 public:
-    inline                      CChat                   ( void ) {};
+                                CChat()                 {}
                                 CChat                   ( CGUI* pManager, const CVector2D & vecPosition );
                                 ~CChat                  ( void );
 
@@ -202,6 +202,9 @@ public:
     void                        Clear                   ( void );
     void                        ClearInput              ( void );
     bool                        CharacterKeyHandler     ( CGUIKeyEventArgs KeyboardArgs );
+
+    void                        SetEnabled              ( bool enabled );
+    bool                        IsEnabled               ()                  { return m_isEnabled; }
 
     inline bool                 IsVisible               ( void )            { return m_bVisible; }
     void                        SetVisible              ( bool bVisible );
@@ -269,6 +272,7 @@ protected:
     std::string                 m_strInputText;
     std::string                 m_strCommand;
 
+    bool                        m_isEnabled;
     bool                        m_bVisible;
     bool                        m_bInputVisible;
     int                         m_iScrollingBack;           // Non zero if currently scrolling back
