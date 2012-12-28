@@ -148,17 +148,23 @@ static int matrix_destroy( lua_State *L )
     return 0;
 }
 
-static const luaL_Reg matrix_interface_light[] =
+static const luaL_Reg matrix_interface[] =
 {
     { "__index", matrix_index },
+    { "destroy", matrix_destroy },
+    { NULL, NULL }
+};
+
+static const luaL_Reg matrix_interface_light[] =
+{
     { "setPosition", matrix_setPosition },
     { "getPosition", matrix_getPosition },
     { "setEulerAngles", matrix_setEulerAngles },
     { "setEulerAnglesRad", matrix_setEulerAnglesRad },
     { "getEulerAngles", matrix_getEulerAngles },
     { "getEulerAnglesRad", matrix_getEulerAnglesRad },
+    { "fromQuat", matrix_fromQuat },
     { "offset", matrix_offset },
-    { "destroy", matrix_destroy },
     { NULL, NULL }
 };
 
@@ -171,6 +177,9 @@ static int luaconstructor_matrix( lua_State *L )
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_basicprotect( L );
+
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    luaL_openlib( L, NULL, matrix_interface, 1 );
 
     j.RegisterLightInterface( L, matrix_interface_light, matrix );
 

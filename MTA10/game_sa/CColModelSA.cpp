@@ -20,17 +20,35 @@ CColFilePool **ppColFilePool = (CColFilePool**)CLASS_CColFilePool;
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
-typedef void    (__cdecl*SetCachedCollision_t)              (unsigned int id, CColModelSAInterface *col);
 SetCachedCollision_t    SetCachedCollision =                (SetCachedCollision_t)0x005B2C20;
+
+CColModelSAInterface::CColModelSAInterface()
+{
+    _asm
+    {
+        mov     ecx,this
+        mov     eax,FUNC_CColModel_Constructor
+        call    eax
+    }
+}
 
 CColModelSAInterface::~CColModelSAInterface()
 {
-    DWORD dwFunc = FUNC_CColModel_Destructor;
-
     _asm
     {
-        mov     ecx, this
-        call    dwFunc
+        mov     ecx,this
+        mov     eax,FUNC_CColModel_Destructor
+        call    eax
+    }
+}
+
+void CColModelSAInterface::ReleaseData()
+{
+    __asm
+    {
+        mov ecx,this
+        mov eax,0x0040F9E0
+        call eax
     }
 }
 
@@ -48,21 +66,14 @@ CColModelSA::CColModelSA()
 {
     m_pInterface = new CColModelSAInterface;
     m_original = NULL;
-    DWORD dwThis = (DWORD)m_pInterface;
-    DWORD dwFunc = FUNC_CColModel_Constructor;
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunc
-    }
     m_bDestroyInterface = true;
 }
 
 CColModelSA::CColModelSA( CColModelSAInterface *pInterface, bool destroy )
 {
     m_pInterface = pInterface;
-    m_bDestroyInterface = destroy;
     m_original = NULL;
+    m_bDestroyInterface = destroy;
 }
 
 CColModelSA::~CColModelSA()
@@ -86,22 +97,15 @@ bool CColModelSA::Replace( unsigned short id )
         g_colReplacement[id]->Restore( id );
 
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
-    CStreamingSA *streamer = pGame->GetStreaming();
     CBaseModelInfoSAInterface *model = ppModelInfo[id];
-
-    // If the model is loading, we should let it finish if it assings a collision
-    if ( streamer->IsModelLoading( id ) && model->m_renderFlags & RENDER_COLMODEL )
-    {
-        streamer->RequestModel( id, 0x10 );
-        streamer->LoadAllRequestedModels( true );
-    }
     
-    // Replace only if we are loaded
-    if ( info->m_eLoading == MODEL_LOADED )
-        model->SetCollision( m_pInterface, false );
+    // Store the original so we can restore it again
+    m_original = model->m_pColModel;
+    m_originalDynamic = model->IsDynamicCol();
+
+    model->SetCollision( m_pInterface, false );
 
     g_colReplacement[id] = this;
-    SetCachedCollision( id, m_pInterface );
 
     m_imported.push_back( id );
     return true;
@@ -119,11 +123,25 @@ bool CColModelSA::Restore( unsigned short id )
     if ( iter == m_imported.end() )
         return false;
 
-    // Restore the original colmodel no matter what
-    if ( m_original )
+    CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
+    CBaseModelInfoSAInterface *model = ppModelInfo[id];
+
+    switch( model->GetRwModelType() )
     {
-        ppModelInfo[id]->SetCollision( m_original, false );
-        SetCachedCollision( id, m_original );
+    case RW_ATOMIC:
+        // Restore the original colmodel no matter what
+        model->SetCollision( m_original, m_originalDynamic );
+
+        // Destroy it's data if not used anymore
+        if ( m_originalDynamic && !(*ppColFilePool)->Get( m_original->m_colPoolIndex )->m_loaded )
+            m_original->ReleaseData();
+
+        break;
+    case RW_CLUMP:
+        delete m_original;
+
+        model->m_pColModel = NULL;
+        break;
     }
 
     g_colReplacement[id] = NULL;
@@ -136,6 +154,15 @@ void CColModelSA::RestoreAll()
 {
     while ( !m_imported.empty() )
         Restore( m_imported.front() );
+}
+
+void CColModelSA::Apply( unsigned short id )
+{
+    CBaseModelInfoSAInterface *info = ppModelInfo[id];
+
+    m_original = info->m_pColModel;
+
+    info->SetColModel( m_pInterface, false );
 }
 
 void* CColFileSA::operator new ( size_t )

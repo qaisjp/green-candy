@@ -173,31 +173,23 @@ bool CModelSA::Replace( unsigned short id )
     CClumpModelInfoSAInterface *cinfo = (CClumpModelInfoSAInterface*)info;
     CStreamingSA *streaming = pGame->GetStreaming();
 
-    if ( streaming->IsModelLoading( id ) )
-    {
-        // We need to flag it priority and finish the loading process
-        // Worst case scenario would be otherwise that there is a thread loading the model and
-        // replacing our model with it; we do not want that (memory leak prevention and model bugfix)
-        streaming->RequestModel( id, 0x10 );
-        streaming->LoadAllRequestedModels( true );
-    }
+    bool isLoaded = cinfo->m_rwClump != NULL;
 
-    if ( cinfo->m_rwClump )  // Only inject if we are loaded! otherwise we screw up loading mechanics -> memory leaks
-    {
-        // If we store this collision model, we have to prevent it's destruction
-        if ( m_col && m_col->GetOriginal() )
-            cinfo->m_pColModel = NULL;
+    // Cancel current model
+    streaming->FreeModel( id );
 
-        cinfo->DeleteRwObject();
-        cinfo->SetClump( RpClumpClone( GetObject() ) );
-    }
+    // Register global structure
+    g_replObjectNative[id] = this;
 
     if ( m_col )
         m_col->Replace( id );
 
-    g_replObjectNative[id] = this;
-
     m_imported[id] = true;
+
+    // Reload ourselves
+    if ( isLoaded )
+        streaming->RequestModel( id, 0x16 );
+
     return true;
 }
 
@@ -239,19 +231,15 @@ bool CModelSA::Restore( unsigned short id )
 
     if ( m_col )
         m_col->Restore( id );
+
     g_replObjectNative[id] = NULL;
 
     // We can only restore if the model is actively loaded
     if ( cinfo->m_rwClump )
     {
         // Do not allow destruction of collision if it belongs to us
-        if ( m_col )
-            cinfo->m_pColModel = NULL;
-
         streaming->FreeModel( id );
         streaming->RequestModel( id, 0x10 );
-
-        streaming->LoadAllRequestedModels( true );
     }
 
     m_imported.erase( iter );

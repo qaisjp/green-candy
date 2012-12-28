@@ -53,6 +53,9 @@ public:
     void            SetFreeCallback( streamingFreeCallback_t callback );
 };
 
+class CBaseModelInfoSAInterface* __cdecl CStreaming__GetModelByHash( unsigned int hash, unsigned short *id );
+class CBaseModelInfoSAInterface* CStreaming__GetModelInfoByName( const char *name, unsigned short startId, unsigned short endId, unsigned short *id );
+
 #include "CStreamingSA.utils.h"
 
 class CIPLFileSA
@@ -100,5 +103,6 @@ public:
 
 extern class CRwObjectSA *g_replObjectNative[DATA_TEXTURE_BLOCK];
 extern class CColModelSA *g_colReplacement[DATA_TEXTURE_BLOCK];
+extern class CColModelSAInterface *g_originalCollision[DATA_TEXTURE_BLOCK];
 
 #endif

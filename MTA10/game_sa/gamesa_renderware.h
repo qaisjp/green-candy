@@ -229,14 +229,16 @@ extern RwFlushLoader_t                          RwFlushLoader;
 /** GTA function definitions                                                **/
 /*****************************************************************************/
 
-typedef void                (__cdecl *LoadCollisionModel_t)             (unsigned char*, CColModelSAInterface*, const char*);
-typedef void                (__cdecl *LoadCollisionModelVer2_t)         (unsigned char*, unsigned int, CColModelSAInterface*, const char*);
-typedef void                (__cdecl *LoadCollisionModelVer3_t)         (unsigned char*, unsigned int, CColModelSAInterface*, const char*); // buf, bufsize, ccolmodel&, keyname
+typedef void                (__cdecl *LoadCollisionModel_t)             (const char*, CColModelSAInterface*, const char*);
+typedef void                (__cdecl *LoadCollisionModelVer2_t)         (const char*, unsigned int, CColModelSAInterface*, const char*);
+typedef void                (__cdecl *LoadCollisionModelVer3_t)         (const char*, unsigned int, CColModelSAInterface*, const char*); // buf, bufsize, ccolmodel&, keyname
+typedef void                (__cdecl *LoadCollisionModelVer4_t)         (const char*, unsigned int, CColModelSAInterface*, const char*);    // undocumented?
 typedef RwTexture*          (__cdecl *CClothesBuilder_CopyTexture_t)    (RwTexture *texture);
 
 extern LoadCollisionModel_t             LoadCollisionModel;
 extern LoadCollisionModelVer2_t         LoadCollisionModelVer2;
 extern LoadCollisionModelVer3_t         LoadCollisionModelVer3;
+extern LoadCollisionModelVer4_t         LoadCollisionModelVer4;
 extern CClothesBuilder_CopyTexture_t    CClothesBuilder_CopyTexture;
 
 #endif //__GAMESA_RENDERWARE
