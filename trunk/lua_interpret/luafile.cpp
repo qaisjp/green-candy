@@ -206,6 +206,14 @@ static int luafile_destroy( lua_State *lua )
 static const luaL_Reg fileInterface[] =
 {
     { "__newindex", luafile_onNewindex },
+    { "destroy", luafile_destroy },
+#ifndef FU_CLASS
+    { NULL, NULL }
+};
+
+static const luaL_Reg fileInterface_light[] =
+{
+#endif
     { "read", luafile_read },
     { "readShort", luafile_readShort },
     { "readInt", luafile_readInt },
@@ -220,7 +228,6 @@ static const luaL_Reg fileInterface[] =
     { "seek", luafile_seek },
     { "eof", luafile_eof },
     { "flush", luafile_flush },
-    { "destroy", luafile_destroy },
     { NULL, NULL }
 };
 
@@ -250,6 +257,8 @@ int luaconstructor_file( lua_State *lua )
     lua_setfield( lua, LUA_ENVIRONINDEX, "ioptr" );
 
     lua_basicextend( lua );
+
+    j->RegisterLightInterface( lua, fileInterface_light, file );
 #endif
 
     lua_pushvalue( lua, LUA_ENVIRONINDEX );

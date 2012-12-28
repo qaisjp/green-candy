@@ -137,14 +137,15 @@ public:
     CLODAtomicModelInfoSA*      GetLODAtomicModelInfo();
     void                        Init();
     void                        Shutdown();
-    void __thiscall             SetCollision( CColModelSAInterface *col, bool putTimed );
+    void __thiscall             SetCollision( CColModelSAInterface *col, bool isDynamic );
     void __thiscall             DeleteCollision();
     void                        DeleteTextures();
     unsigned int                GetTimeInfo();
     void                        Reference();
     void                        Dereference();
 
-    void __thiscall             SetColModel( CColModelSAInterface *col, bool putTimed );
+    void __thiscall             SetColModel( CColModelSAInterface *col, bool isDynamic );
+    bool                        IsDynamicCol() const                    { return IS_FLAG( m_renderFlags, RENDER_COLMODEL ); }
     void __thiscall             UnsetColModel();
 
     unsigned short              GetFlags();

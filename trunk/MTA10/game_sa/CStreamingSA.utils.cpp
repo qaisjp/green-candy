@@ -310,6 +310,203 @@ static bool __cdecl LoadTXDFirstHalf( unsigned int id, RwStream *stream )
     return ( txd->m_txd = RwTexDictionaryLoadFirstHalf( stream ) ) != NULL;
 }
 
+void __cdecl RegisterCOLLibraryModel( unsigned short collId, unsigned short modelId )
+{
+    CColFileSA *col = (*ppColFilePool)->Get( collId );
+
+    if ( (short)modelId < col->m_upperBound )
+        col->m_upperBound = (short)modelId;
+
+    if ( (short)modelId > col->m_lowerBound )
+        col->m_lowerBound = (short)modelId;
+}
+
+// Update: added support for version 4 collision
+bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigned char collId )
+{
+    CBaseModelInfoSAInterface *info = NULL;
+
+    while ( size > 8 )
+    {
+        const ColModelFileHeader& header = *(const ColModelFileHeader*)buf;
+
+        buf += sizeof(header);
+        size -= sizeof(header);
+
+        if ( header.checksum != '4LOC' && header.checksum != '3LOC' && header.checksum != '2LOC' && header.checksum != 'LLOC' )
+            return true;
+
+        unsigned short modelId = header.modelId;
+
+        if ( modelId < DATA_TEXTURE_BLOCK )
+            info = ppModelInfo[modelId];
+
+        unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( header.name );
+
+        if ( !info || hash != info->m_hash )
+            info = CStreaming__GetModelByHash( hash, &modelId );
+
+        if ( !info )
+            goto skip;
+
+        // Update collision boundaries
+        RegisterCOLLibraryModel( collId, modelId );
+
+        bool isDynamic = IS_FLAG( info->m_renderFlags, RENDER_COLMODEL );
+        CColModelSAInterface *col = new CColModelSAInterface();
+
+        switch( header.checksum )
+        {
+        case '4LOC':
+            LoadCollisionModelVer4( buf, header.size - 0x18, col, header.name );
+            break;
+        case '3LOC':
+            LoadCollisionModelVer3( buf, header.size - 0x18, col, header.name );
+            break;
+        case '2LOC':
+            LoadCollisionModelVer2( buf, header.size - 0x18, col, header.name );
+            break;
+        default:
+            LoadCollisionModel( buf, col, header.name );
+            break;
+        }
+
+        // Put it into our global storage
+        g_originalCollision[modelId] = col;
+
+        col->m_colPoolIndex = collId;
+
+        if ( isDynamic )
+        {
+            info->SetColModel( col, true );
+            SetCachedCollision( modelId, col );
+        }
+
+skip:
+        size += (0x18 - header.size);
+        buf += header.size - 0x18;
+    }
+
+    return true;
+}
+
+bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char collId )
+{
+    CBaseModelInfoSAInterface *info = NULL;
+
+    while ( size > 8 )
+    {
+        const ColModelFileHeader& header = *(const ColModelFileHeader*)buf;
+
+        buf += sizeof(header);
+        size -= sizeof(header);
+
+        if ( header.checksum != '4LOC' && header.checksum != '3LOC' && header.checksum != '2LOC' && header.checksum != 'LLOC' )
+            return true;
+
+        unsigned short modelId = header.modelId;
+
+        if ( modelId < DATA_TEXTURE_BLOCK )
+            info = ppModelInfo[modelId];
+
+        unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( header.name );
+
+        if ( !info || hash != info->m_hash )
+        {
+            CColFileSA *colFile = (*ppColFilePool)->Get( collId );
+
+            info = CStreaming__GetModelInfoByName( header.name, (unsigned short)colFile->m_upperBound, (unsigned short)colFile->m_lowerBound, &modelId );
+        }
+
+        if ( info )
+        {
+            if ( !g_colReplacement[modelId] )
+            {
+                bool isDynamic = IS_FLAG( info->m_renderFlags, RENDER_COLMODEL );
+                CColModelSAInterface *col = info->m_pColModel;
+
+                if ( !col )
+                {
+                    col = new CColModelSAInterface();
+
+                    if ( isDynamic )
+                        info->SetColModel( col, true );
+                }
+
+                switch( header.checksum )
+                {
+                case '4LOC':
+                    LoadCollisionModelVer4( buf, header.size - 0x18, col, header.name );
+                    break;
+                case '3LOC':
+                    LoadCollisionModelVer3( buf, header.size - 0x18, col, header.name );
+                    break;
+                case '2LOC':
+                    LoadCollisionModelVer2( buf, header.size - 0x18, col, header.name );
+                    break;
+                default:
+                    LoadCollisionModel( buf, col, header.name );
+                    break;
+                }
+
+                // Put it into our global storage
+                g_originalCollision[modelId] = col;
+
+                col->m_colPoolIndex = collId;
+            }
+
+            // Do some procedural object logic
+            if ( info->GetModelType() == MODEL_ATOMIC )
+                ((bool (__cdecl*)( CBaseModelInfoSAInterface *info ))0x005DB650)( info );
+        }
+        
+        size += (0x18 - header.size);
+        buf += header.size - 0x18;
+    }
+
+    return true;
+}
+
+bool __cdecl LoadCOLLibrary( unsigned char collId, const char *buf, size_t size )
+{
+    CColFileSA *col = (*ppColFilePool)->Get( collId );
+    bool success;
+
+    if ( col->m_lowerBound <= col->m_upperBound )
+        success = ReadCOLLibraryGeneral( buf, size, collId );
+    else
+        success = ReadCOLLibraryBounds( buf, size, collId );
+
+    // Mark that the library is ready for interaction!
+    if ( success )
+        col->m_loaded = true;
+
+    return success;
+}
+
+void __cdecl FreeCOLLibrary( unsigned char collId )
+{
+    CColFileSA *col = (*ppColFilePool)->Get( collId );
+
+    col->m_loaded = false;
+
+    for ( unsigned short n = (unsigned short)col->m_upperBound; n < (unsigned short)col->m_lowerBound; n++ )
+    {
+        if ( g_colReplacement[n] )
+            continue;
+
+        CBaseModelInfoSAInterface *info = ppModelInfo[n];
+
+        if ( !info )
+            continue;
+
+        CColModelSAInterface *col = info->m_pColModel;
+
+        if ( col && info->IsDynamicCol() && col->m_colPoolIndex == collId )
+            col->ReleaseData();
+    }
+}
+
 bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
 {
     CModelLoadInfoSA& loadInfo = VAR_ModelLoadInfo[id];
@@ -435,7 +632,7 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
     }
     else if ( id < 25255 )  // collision
     {
-        if ( !((bool (__cdecl*)( unsigned int collId, const void *data, size_t size ))0x004106D0)( id - 25000, buf, streamBuffer.size ) )
+        if ( !LoadCOLLibrary( (unsigned char)( id - 25000 ), (const char*)buf, streamBuffer.size ) )
             goto failure;
     }
     else if ( id < 25511 )

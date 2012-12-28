@@ -20,6 +20,7 @@ CIPLFilePool **ppIPLFilePool = (CIPLFilePool**)CLASS_CIPLFilePool;
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CColModelSA *g_colReplacement[DATA_TEXTURE_BLOCK];
+CColModelSAInterface *g_originalCollision[DATA_TEXTURE_BLOCK];
 
 #define ARRAY_PEDSPECMODEL      0x008E4C00
 #define VAR_PEDSPECMODEL        0x008E4BB0
@@ -74,13 +75,14 @@ static unsigned int *const VAR_LastModelScanIndex = (unsigned int*)0x00AAE948;
 static CModelLoadInfoSA *const VAR_ModelLoadInfo = (CModelLoadInfoSA*)0x008E4CC0;
 static CMissingModelInfoSA *const *VAR_MissingModelInfo = (CMissingModelInfoSA**)0x008E48D0;
 
-static bool __cdecl CStreaming__GetModelByHash( unsigned int hash, unsigned int *id )
+CBaseModelInfoSAInterface* __cdecl CStreaming__GetModelByHash( unsigned int hash, unsigned short *id )
 {
     unsigned int n = *VAR_LastModelScanIndex;
+    CBaseModelInfoSAInterface *model;
 
     for ( ; n < DATA_TEXTURE_BLOCK; n++ )
     {
-        CBaseModelInfoSAInterface *model = ppModelInfo[n];
+        model = ppModelInfo[n];
 
         if ( model && model->m_hash == hash )
             goto success;
@@ -90,23 +92,23 @@ static bool __cdecl CStreaming__GetModelByHash( unsigned int hash, unsigned int 
 
     for ( ; n < DATA_TEXTURE_BLOCK; n-- )
     {
-        CBaseModelInfoSAInterface *model = ppModelInfo[n];
+        model = ppModelInfo[n];
 
         if ( model && model->m_hash == hash )
             goto success;
     }
 
-    return false;
+    return NULL;
 
 success:
     if ( id )
-        *id = n;
+        *id = (unsigned short)n;
 
     *VAR_LastModelScanIndex = n;
-    return true;
+    return model;
 }
 
-static CBaseModelInfoSAInterface* CStreaming__GetModelInfoByName( const char *name, unsigned short startId, unsigned short endId )
+CBaseModelInfoSAInterface* CStreaming__GetModelInfoByName( const char *name, unsigned short startId, unsigned short endId, unsigned short *id )
 {
     unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( name );
 
@@ -115,7 +117,12 @@ static CBaseModelInfoSAInterface* CStreaming__GetModelInfoByName( const char *na
         CBaseModelInfoSAInterface *info = ppModelInfo[n];
 
         if ( info && info->m_hash == hash )
+        {
+            if ( id )
+                *id = n;
+
             return info;
+        }
     }
 
     return NULL;
@@ -146,7 +153,7 @@ static void __cdecl TxdAssignVehiclePaintjob( const char *name, unsigned int id 
     strncpy( buf, name, ++len );
     buf[len] = '\0';
 
-    CBaseModelInfoSAInterface *info = CStreaming__GetModelInfoByName( buf, 400, 630 );
+    CBaseModelInfoSAInterface *info = CStreaming__GetModelInfoByName( buf, 400, 630, NULL );
 
     if ( !info || info->GetModelType() != MODEL_VEHICLE )
         return;
@@ -247,7 +254,7 @@ static void __cdecl CStreaming__LoadArchive( IMGFile& archive, unsigned int imgI
     if ( !file )
         return;
 
-    unsigned int lastID = 0xFFFFFFFF;
+    unsigned short lastID = 0xFFFF;
     char version[4];    // has to be 'VER2'
     unsigned int numFiles;
 
@@ -270,7 +277,7 @@ static void __cdecl CStreaming__LoadArchive( IMGFile& archive, unsigned int imgI
 
         if ( !dot )
         {
-            lastID = 0xFFFFFFFF;
+            lastID = 0xFFFF;
             continue;
         }
 
@@ -278,34 +285,32 @@ static void __cdecl CStreaming__LoadArchive( IMGFile& archive, unsigned int imgI
 
         if ( (size_t)( ext - header.name ) > 20 )
         {
-            lastID = 0xFFFFFFFF;
+            lastID = 0xFFFF;
             continue;
         }
 
         *dot = '\0';
 
-        unsigned int id;
+        unsigned short id;
 
         if ( strnicmp( ext, "DFF", 3 ) == 0 )
         {
-            bool found = CStreaming__GetModelByHash( pGame->GetKeyGen()->GetUppercaseKey( header.name ), &id );
-
-            if ( !found )
+            if ( CStreaming__GetModelByHash( pGame->GetKeyGen()->GetUppercaseKey( header.name ), &id ) )
             {
                 header.offset |= imgID << 24;
 
                 // Some sort of debug container
                 (*VAR_MissingModelInfo)->Add( header.name );
                 
-                lastID = 0xFFFFFFFF;
+                lastID = 0xFFFF;
                 continue;
             }
         }
         else if ( strnicmp( ext, "TXD", 3 ) == 0 )
         {
-            id = (unsigned int)pGame->GetTextureManager()->FindTxdEntry( header.name );
+            id = pGame->GetTextureManager()->FindTxdEntry( header.name );
 
-            if ( id == 0xFFFFFFFF )
+            if ( id == 0xFFFF )
             {
                 id = pGame->GetTextureManager()->CreateTxdEntry( header.name );
 
@@ -323,7 +328,7 @@ static void __cdecl CStreaming__LoadArchive( IMGFile& archive, unsigned int imgI
         {
             id = CStreaming__FindIPLFile( header.name );
 
-            if ( id == 0xFFFFFFFF )
+            if ( id == 0xFFFF )
             {
                 id = CStreaming__RegisterIPLFile( header.name );
             }
@@ -354,7 +359,7 @@ static void __cdecl CStreaming__LoadArchive( IMGFile& archive, unsigned int imgI
         else
         {
             *dot = '.';
-            lastID = 0xFFFFFFFF;
+            lastID = 0xFFFF;
             continue;
         }
 
@@ -372,7 +377,7 @@ static void __cdecl CStreaming__LoadArchive( IMGFile& archive, unsigned int imgI
         info.SetOffset( header.offset, header.primaryBlockOffset );
         info.m_flags = 0;
 
-        if ( lastID != 0xFFFFFFFF )
+        if ( lastID != 0xFFFF )
             VAR_ModelLoadInfo[lastID].m_lastID = id;
 
         lastID = id;
@@ -416,11 +421,13 @@ CStreamingSA::CStreamingSA()
 {
     // Initialize the accelerated streaming structures
     memset( g_colReplacement, 0, sizeof(g_colReplacement) );
+    memset( g_originalCollision, 0, sizeof(g_originalCollision) );
 
     // Hook the model requested
     HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
     HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
     HookInstall( 0x005B82C0, (DWORD)HOOK_CStreaming__LoadArchives, 5 );
+    HookInstall( 0x00410730, (DWORD)FreeCOLLibrary, 5 );
     HookInstall( 0x0040C6B0, (DWORD)LoadModel, 5 );
 }
 
@@ -459,10 +466,16 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
             if ( !minfo )
                 return;
 
+            eRwType rwType = minfo->GetRwModelType();
+
+            if ( CColModelSA *col = g_colReplacement[id] )
+                if ( rwType == RW_CLUMP )
+                    col->Apply( id );
+
             if ( CRwObjectSA *obj = g_replObjectNative[id] )
             {
                 // Apply the model
-                switch( minfo->GetRwModelType() )
+                switch( rwType )
                 {
                 case RW_ATOMIC:
                     ((CAtomicModelInfoSA*)minfo)->SetAtomic( ((CRpAtomicSA*)obj)->CreateInstance( id ) ); // making a copy is essential for model instance isolation
@@ -471,10 +484,6 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
                     ((CClumpModelInfoSAInterface*)minfo)->SetClump( RpClumpClone( (RpClump*)obj->GetObject() ) );
                     break;
                 }
-
-                // Apply the collision
-                if ( g_colReplacement[id] )
-                    minfo->SetCollision( g_colReplacement[id]->GetInterface(), false );
 
                 info->m_eLoading = MODEL_LOADED;
                 return;
@@ -619,7 +628,7 @@ void CStreamingSA::FreeModel( unsigned short id )
             // Model management fix: we unlink the collision so GTA:SA does not destroy it during
             // RwObject destruction
             if ( g_colReplacement[id] && model->GetRwModelType() == RW_CLUMP )
-                model->m_renderFlags &= ~RENDER_COLMODEL;
+                model->m_pColModel = NULL;
 
             model->DeleteRwObject();
 
@@ -662,10 +671,7 @@ void CStreamingSA::FreeModel( unsigned short id )
             // Model support bugfix: if we have a replacement for this model, we should not
             // bother about management in the CStreaming class, so quit here
             if ( g_replObjectNative[id] )
-            {
-                info->m_eLoading = MODEL_UNAVAILABLE;
-                goto end;
-            }
+                goto customJump;
         }
         else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
         {
@@ -678,18 +684,7 @@ void CStreamingSA::FreeModel( unsigned short id )
         }
         else if ( id < 25255 )
         {
-            dwFunc = 0x00410730;
-
-            // Something to do with ped models?
-            __asm
-            {
-                movzx eax,id
-                sub eax,25000
-
-                push eax
-                call dwFunc
-                pop eax
-            }
+            FreeCOLLibrary( id - 25000 );
         }
         else if ( id < 25511 )
         {
@@ -743,6 +738,7 @@ void CStreamingSA::FreeModel( unsigned short id )
         *(DWORD*)VAR_MEMORYUSAGE -= info->m_blockCount * 2048;
     }
 
+customJump:
     if ( info->m_lodModelID != 0xFFFF )
     {
         if ( info->m_eLoading == MODEL_LOADING )
@@ -798,7 +794,6 @@ void CStreamingSA::FreeModel( unsigned short id )
 
     info->m_eLoading = MODEL_UNAVAILABLE;
 
-end:
     if ( streamingFreeCallback )
         streamingFreeCallback( id );
 }

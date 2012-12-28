@@ -308,6 +308,14 @@ static int filesystem_destroy( lua_State *L )
 
 static const luaL_Reg fsys_methods[] =
 {
+    { "scanDir", filesystem_scanDir },
+    { "scanDirEx", filesystem_scanDirEx },
+    { "destroy", filesystem_destroy },
+    { NULL, NULL }
+};
+
+static const luaL_Reg fsys_methods_light[] =
+{
     { "open", filesystem_open },
     { "exists", filesystem_exists },
     { "createDir", filesystem_createDir },
@@ -323,9 +331,6 @@ static const luaL_Reg fsys_methods[] =
     { "absPathRoot", filesystem_absPathRoot },
     { "getDirs", filesystem_getDirs },
     { "getFiles", filesystem_getFiles },
-    { "scanDir", filesystem_scanDir },
-    { "scanDirEx", filesystem_scanDirEx },
-    { "destroy", filesystem_destroy },
     { NULL, NULL }
 };
 
@@ -336,6 +341,8 @@ int luafsys_constructor( lua_State *L )
 
     ILuaClass *j = lua_refclass( L, 1 );
     j->SetTransmit( LUACLASS_FILETRANSLATOR, trans );
+
+    j->RegisterLightInterface( L, fsys_methods_light, trans );
 #endif
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );

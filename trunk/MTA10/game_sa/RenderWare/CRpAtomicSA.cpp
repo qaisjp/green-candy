@@ -113,30 +113,19 @@ bool CRpAtomicSA::Replace( unsigned short id )
     pGame->GetModelManager()->RestoreModel( id );
 
     CAtomicModelInfoSA *ainfo = (CAtomicModelInfoSA*)info;
-    CStreamingSA *streaming = pGame->GetStreaming();
 
-    if ( streaming->IsModelLoading( id ) )
-    {
-        // We need to flag it priority and finish the loading process
-        // Worst case scenario would be otherwise that there is a thread loading the model and
-        // replacing our model with it; we do not want that (memory leak prevention and model bugfix)
-        streaming->RequestModel( id, 0x10 );
-        streaming->LoadAllRequestedModels( true );
-    }
-
-    // We should inject directly if we are loaded; otherwise CStreaming takes the cake
-    if ( ainfo->m_rpAtomic )
-    {
-        info->DeleteRwObject();
-        ainfo->SetAtomic( CreateInstance( id ) );
-
-        if ( g_colReplacement[id] )
-            ainfo->SetCollision( g_colReplacement[id]->GetInterface(), false );
-    }
+    bool isLoaded = ainfo->m_rpAtomic != NULL;
+    
+    // Remove any active model (either loading or loaded)
+    pGame->GetStreaming()->FreeModel( id );
 
     g_replObjectNative[id] = this;
-
     m_imported.push_back( id );
+
+    // Reinstantiate ourselves
+    if ( isLoaded )
+        pGame->GetStreaming()->RequestModel( id, 0x16 );
+
     return true;
 }
 
@@ -161,16 +150,30 @@ bool CRpAtomicSA::Restore( unsigned short id )
         return false;
     }
 
-    CStreamingSA *streaming = pGame->GetStreaming();
+    CTxdInstanceSA *txd;
+    bool isLoaded = info->m_rpAtomic != NULL;
+
+    if ( isLoaded )
+    {
+        // Keep the textures alive
+        txd = (*ppTxdPool)->Get( info->m_textureDictionary );
+        txd->Reference();
+    }
+
+    // Force a kill
+    info->DeleteRwObject();
 
     g_replObjectNative[id] = NULL;
 
     // Restore if loaded
-    if ( info->m_rpAtomic )
+    if ( isLoaded )
     {
-        streaming->FreeModel( id );
-        streaming->RequestModel( id, 0x10 );
+        CStreamingSA *streaming = pGame->GetStreaming();
 
+        // Remove the reference again
+        txd->Dereference();
+
+        streaming->RequestModel( id, 0x10 );
         streaming->LoadAllRequestedModels( true );
     }
 

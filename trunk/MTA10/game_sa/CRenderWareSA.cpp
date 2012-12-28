@@ -131,6 +131,7 @@ RwFlushLoader_t                         RwFlushLoader                           
 LoadCollisionModel_t            LoadCollisionModel              = (LoadCollisionModel_t)            invalid_ptr;
 LoadCollisionModelVer2_t        LoadCollisionModelVer2          = (LoadCollisionModelVer2_t)        invalid_ptr;
 LoadCollisionModelVer3_t        LoadCollisionModelVer3          = (LoadCollisionModelVer3_t)        invalid_ptr;
+LoadCollisionModelVer4_t        LoadCollisionModelVer4          = (LoadCollisionModelVer4_t)        invalid_ptr;
 CClothesBuilder_CopyTexture_t   CClothesBuilder_CopyTexture     = (CClothesBuilder_CopyTexture_t)   invalid_ptr;
 
 extern CGameSA *pGame;
@@ -140,7 +141,7 @@ RwInterface **ppRwInterface = (RwInterface**)0x00C97B24;
 
 CRenderWareSA::CRenderWareSA( eGameVersion version )
 {
-    // Version dependant addresse
+    // Version dependant addresses
     switch( version )
     {
     // VERSION 1.0 EU ADDRESSES
@@ -229,11 +230,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwSceneAddLight                     = (RwSceneAddLight_t)                       0x00751960;
         RwSceneRemoveLight                  = (RwSceneRemoveLight_t)                    0x007519A0;
         RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
-
-        LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
-        LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
-        LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
-        CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
         break; 
 
     // VERSION 1.0 US ADDRESSES
@@ -334,13 +330,15 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwSceneRemoveLight                  = (RwSceneRemoveLight_t)                    0x00751960;
         RwPrefetch                          = (RwPrefetch_t)                            0x0072F480;
         RwFlushLoader                       = (RwFlushLoader_t)                         0x0072E700;
-
-        LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
-        LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
-        LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
-        CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
         break;
     }
+
+    // Shared addresses
+    LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
+    LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
+    LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
+    LoadCollisionModelVer4              = (LoadCollisionModelVer4_t)                0x00537AE0;
+    CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
 }
 
 // Reads and parses a DFF file specified by a path into a CModelInfo identified by the object id
@@ -441,12 +439,6 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
             else
             {
                 colOut = new CColModelSA( model->m_pColModel, true );
-
-                // If we loaded an atomic model and there is a custom collision, which should be very rare,
-                // we keep the original collision once we want to restore our model
-                // GTA:SA never deletes object models
-                if ( model->GetRwModelType() == RW_ATOMIC )
-                    colOut->SetOriginal( col );
             }
 
             // Restore the original colmodel as we have not requested the custom model yet
@@ -463,7 +455,7 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
     return pClump;
 }
 
-// Reads and parses a COL3 file
+// Reads and parses a COLL(2, 3, 4) file
 CColModel* CRenderWareSA::ReadCOL( CFile *file )
 {
     // Create a new CColModel
@@ -475,7 +467,7 @@ CColModel* CRenderWareSA::ReadCOL( CFile *file )
     // Load the col model
     if ( header.version[0] == 'C' && header.version[1] == 'O' && header.version[2] == 'L' )
     {
-        unsigned char* pModelData = new unsigned char [ header.size - 0x18 ];
+        char* pModelData = new char [ header.size - 0x18 ];
         file->Read( pModelData, header.size - 0x18, 1 );
 
         switch( header.version[3] )
@@ -488,6 +480,9 @@ CColModel* CRenderWareSA::ReadCOL( CFile *file )
             break;
         case '3':
             LoadCollisionModelVer3( pModelData, header.size - 0x18, pColModel->GetInterface(), NULL );
+            break;
+        case '4':   // Is this a hidden present by R*?
+            LoadCollisionModelVer4( pModelData, header.size - 0x18, pColModel->GetInterface(), NULL );
             break;
         }
 

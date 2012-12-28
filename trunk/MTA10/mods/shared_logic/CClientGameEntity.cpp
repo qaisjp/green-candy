@@ -36,7 +36,7 @@ static LUA_DECLARE( getColModel )
     return 1;
 }
 
-static luaL_Reg gameentity_interface[] =
+static luaL_Reg gameentity_interface_light[] =
 {
     LUA_METHOD( setColModel ),
     LUA_METHOD( getColModel ),
@@ -50,10 +50,7 @@ static LUA_DECLARE( luaconstructor_gameentity )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GAMEENTITY, entity );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, gameentity_interface, 1 );
+    j.RegisterLightInterface( L, gameentity_interface_light, entity );
 
     lua_pushlstring( L, "gameentity", 10 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
