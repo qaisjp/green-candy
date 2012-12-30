@@ -174,7 +174,6 @@ bool CRpAtomicSA::Restore( unsigned short id )
         txd->Dereference();
 
         streaming->RequestModel( id, 0x10 );
-        streaming->LoadAllRequestedModels( true );
     }
 
     m_imported.erase( iter );
