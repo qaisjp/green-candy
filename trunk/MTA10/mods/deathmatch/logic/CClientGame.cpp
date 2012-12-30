@@ -4521,7 +4521,7 @@ void CClientGame::DoWastedCheck ( ElementID damagerID, unsigned char ucWeapon, u
             m_pLocalPlayer->CallEvent( "onClientPlayerWasted", L, 4 );
 
             // Write some death info
-            pBitStream->WriteCompressed ( animGroup );
+            pBitStream->WriteCompressed ( (unsigned long)animGroup );
             pBitStream->WriteCompressed ( animID );
 
             pBitStream->Write ( damagerID );
