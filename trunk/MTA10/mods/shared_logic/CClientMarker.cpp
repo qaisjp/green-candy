@@ -362,29 +362,29 @@ bool CClientMarker::TypeToString ( unsigned int uiType, char* szString )
 {
     switch ( uiType )
     {
-        case MARKER_CHECKPOINT:
-            strcpy ( szString, "checkpoint" );
-            return true;
+    case MARKER_CHECKPOINT:
+        strcpy ( szString, "checkpoint" );
+        return true;
 
-        case MARKER_RING:
-            strcpy ( szString, "ring" );
-            return true;
+    case MARKER_RING:
+        strcpy ( szString, "ring" );
+        return true;
 
-        case MARKER_CYLINDER:
-            strcpy ( szString, "cylinder" );
-            return true;
+    case MARKER_CYLINDER:
+        strcpy ( szString, "cylinder" );
+        return true;
 
-        case MARKER_ARROW:
-            strcpy ( szString, "arrow" );
-            return true;
+    case MARKER_ARROW:
+        strcpy ( szString, "arrow" );
+        return true;
 
-        case MARKER_CORONA:
-            strcpy ( szString, "corona" );
-            return true;
+    case MARKER_CORONA:
+        strcpy ( szString, "corona" );
+        return true;
 
-        default:
-            strcpy ( szString, "invalid" );
-            return false;
+    default:
+        strcpy ( szString, "invalid" );
+        return false;
     }
 }
 

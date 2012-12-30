@@ -120,7 +120,8 @@ void CClientColManager::DoHitDetectionForColShape ( CClientColShape* pShape )
 //
 void CClientColManager::DoHitDetectionForEntity ( const CVector& vecNowPosition, float fRadius, CClientEntity* pEntity )
 {
-    std::map < CClientColShape*, int > shortList;
+    typedef std::map < CClientColShape*, int > shortType;
+    shortType shortList;
 
     // Get all entities within the sphere
     CClientEntityResult queryResult;
@@ -138,8 +139,12 @@ void CClientColManager::DoHitDetectionForEntity ( const CVector& vecNowPosition,
     // Keep the entity alive
     pEntity->IncrementMethodStack();
 
+    // Prevent destruction
+    for ( shortType::const_iterator iter = shortList.begin(); iter != shortList.end(); iter++ )
+        (*iter).first->IncrementMethodStack();
+
     // Test each colshape against the entity
-    for ( std::map < CClientColShape*, int > ::const_iterator it = shortList.begin () ; it != shortList.end (); ++it )
+    for ( shortType::const_iterator it = shortList.begin () ; it != shortList.end (); ++it )
     {
         CClientColShape* pShape = it->first;
 
@@ -147,12 +152,12 @@ void CClientColManager::DoHitDetectionForEntity ( const CVector& vecNowPosition,
         if ( !pShape->IsEnabled() )
             continue;
 
-        pShape->IncrementMethodStack();
-
         HandleHitDetectionResult( pShape->DoHitDetection( vecNowPosition, fRadius ), pShape, pEntity );
-
-        pShape->DecrementMethodStack();
     }
+
+    // Release method lock
+    for ( shortType::const_iterator iter = shortList.begin(); iter != shortList.end(); iter++ )
+        (*iter).first->DecrementMethodStack();
 
     pEntity->DecrementMethodStack();
 }

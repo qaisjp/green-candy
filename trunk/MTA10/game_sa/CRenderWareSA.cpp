@@ -229,7 +229,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwSceneAddClump                     = (RwSceneAddClump_t)                       0x00751350;
         RwSceneAddLight                     = (RwSceneAddLight_t)                       0x00751960;
         RwSceneRemoveLight                  = (RwSceneRemoveLight_t)                    0x007519B0;
-        RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
         break; 
 
     // VERSION 1.0 US ADDRESSES
@@ -297,7 +296,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwRasterLock                        = (RwRasterLock_t)                          0x007FB2D0;
         RwRasterCreate                      = (RwRasterCreate_t)                        0x007FB230;
         RwRasterDestroy                     = (RwRasterDestroy_t)                       0x007FB020;
-        RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
         RwTexDictionaryFindNamedTexture     = (RwTexDictionaryFindNamedTexture_t)       0x007F39F0;
         RpGeometryCreate                    = (RpGeometryCreate_t)                      0x0074CA90;
         RpGeometryTransform                 = (RpGeometryTransform_t)                   0x0074BFE0;
@@ -334,6 +332,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
     }
 
     // Shared addresses
+    RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
     LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
     LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
     LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
