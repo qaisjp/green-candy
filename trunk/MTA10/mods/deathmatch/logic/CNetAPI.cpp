@@ -860,18 +860,20 @@ void CNetAPI::ReadPlayerPuresync ( CClientPlayer* pPlayer, NetBitStreamInterface
 
         if ( CWeaponNames::DoesSlotHaveAmmo ( uiSlot ) )
         {            
-     
             unsigned char ucCurrentWeapon = 0;
             float fWeaponRange = 0.01f;
-#if 0
+
             if ( pWeapon )
             {
                 ucCurrentWeapon = pWeapon->GetType ();
+#if 0
                 float fSkill = pPlayer->GetStat ( g_pGame->GetStats ()->GetSkillStatIndex ( pWeapon->GetType () ) );
                 CWeaponStat* pWeaponInfo = g_pGame->GetWeaponStatManager ( )->GetWeaponStatsFromSkillLevel ( pWeapon->GetType (), fSkill );
                 fWeaponRange = pWeaponInfo->GetWeaponRange ();
-            }
+#else
+				fWeaponRange = 1.6f;
 #endif
+            }
 
             // Read out the weapon ammo
             SWeaponAmmoSync ammo ( ucCurrentWeapon, false, true );
