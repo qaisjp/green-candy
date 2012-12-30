@@ -112,7 +112,7 @@ CBaseModelInfoSAInterface* CStreaming__GetModelInfoByName( const char *name, uns
 {
     unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( name );
 
-    for ( unsigned short n = startId; n < endId; n++ )
+    for ( unsigned short n = startId; n <= endId; n++ )
     {
         CBaseModelInfoSAInterface *info = ppModelInfo[n];
 
@@ -783,7 +783,7 @@ customJump:
         else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
             (*ppTxdPool)->Get( id - DATA_TEXTURE_BLOCK )->Deallocate();
         else if ( id < 25255 )
-            ( (void (*)( unsigned int model ))0x00410730 )( id - 25000 );
+            FreeCOLLibrary( id - 25000 );
         else if ( id < 25511 )
             ( (void (*)( unsigned int model ))0x00404B20 )( id - 25255 );
         else if ( id >= DATA_ANIM_BLOCK && id < 25755 )

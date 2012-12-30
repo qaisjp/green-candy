@@ -42,8 +42,8 @@ public:
         m_isProcedural = false;
         m_isInterior = false;
 
-        m_upperBound = 0x7FFF;
-        m_lowerBound = -0;
+        m_rangeStart = 0x7FFF;
+        m_rangeEnd = -0;
         m_refs = 0;
     }
 
@@ -54,8 +54,8 @@ public:
 
     BYTE                            m_pad[18];          // 16
 
-    short                           m_upperBound;       // 34
-    short                           m_lowerBound;       // 36
+    short                           m_rangeStart;       // 34
+    short                           m_rangeEnd;         // 36
     unsigned short                  m_refs;             // 38
 
     bool                            m_loaded;           // 40

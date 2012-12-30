@@ -314,11 +314,11 @@ void __cdecl RegisterCOLLibraryModel( unsigned short collId, unsigned short mode
 {
     CColFileSA *col = (*ppColFilePool)->Get( collId );
 
-    if ( (short)modelId < col->m_upperBound )
-        col->m_upperBound = (short)modelId;
+    if ( (short)modelId < col->m_rangeStart )
+        col->m_rangeStart = (short)modelId;
 
-    if ( (short)modelId > col->m_lowerBound )
-        col->m_lowerBound = (short)modelId;
+    if ( (short)modelId > col->m_rangeEnd )
+        col->m_rangeEnd = (short)modelId;
 }
 
 // Update: added support for version 4 collision
@@ -331,7 +331,6 @@ bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigned char 
         const ColModelFileHeader& header = *(const ColModelFileHeader*)buf;
 
         buf += sizeof(header);
-        size -= sizeof(header);
 
         if ( header.checksum != '4LOC' && header.checksum != '3LOC' && header.checksum != '2LOC' && header.checksum != 'LLOC' )
             return true;
@@ -352,7 +351,11 @@ bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigned char 
         // Update collision boundaries
         RegisterCOLLibraryModel( collId, modelId );
 
-        bool isDynamic = IS_FLAG( info->m_renderFlags, RENDER_COLMODEL );
+        assert( g_colReplacement[modelId] == NULL );
+
+        if ( !info->IsDynamicCol() )
+            goto skip;
+
         CColModelSAInterface *col = new CColModelSAInterface();
 
         switch( header.checksum )
@@ -376,15 +379,12 @@ bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigned char 
 
         col->m_colPoolIndex = collId;
 
-        if ( isDynamic )
-        {
-            info->SetColModel( col, true );
-            SetCachedCollision( modelId, col );
-        }
+        info->SetColModel( col, true );
+        SetCachedCollision( modelId, col );
 
 skip:
-        size += (0x18 - header.size);
-        buf += header.size - 0x18;
+        size -= header.size;
+        buf += header.size - (sizeof(ColModelFileHeader) - 8);
     }
 
     return true;
@@ -399,7 +399,6 @@ bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char c
         const ColModelFileHeader& header = *(const ColModelFileHeader*)buf;
 
         buf += sizeof(header);
-        size -= sizeof(header);
 
         if ( header.checksum != '4LOC' && header.checksum != '3LOC' && header.checksum != '2LOC' && header.checksum != 'LLOC' )
             return true;
@@ -415,53 +414,61 @@ bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char c
         {
             CColFileSA *colFile = (*ppColFilePool)->Get( collId );
 
-            info = CStreaming__GetModelInfoByName( header.name, (unsigned short)colFile->m_upperBound, (unsigned short)colFile->m_lowerBound, &modelId );
+            info = CStreaming__GetModelInfoByName( header.name, (unsigned short)colFile->m_rangeStart, (unsigned short)colFile->m_rangeEnd, &modelId );
         }
 
-        if ( info )
+        if ( info && info->IsDynamicCol() )
         {
-            if ( !g_colReplacement[modelId] )
+            CColModelSAInterface *col;
+
+            if ( CColModelSA *colInfo = g_colReplacement[modelId] )
             {
-                bool isDynamic = IS_FLAG( info->m_renderFlags, RENDER_COLMODEL );
-                CColModelSAInterface *col = info->m_pColModel;
+                // We store it in our data, so we can restore to it later
+                col = colInfo->GetOriginal();
+
+                if ( !col )
+                    colInfo->SetOriginal( col = new CColModelSAInterface() );
+            }
+            else
+            {
+                col = info->m_pColModel;
 
                 if ( !col )
                 {
                     col = new CColModelSAInterface();
 
-                    if ( isDynamic )
-                        info->SetColModel( col, true );
+                    info->SetColModel( col, true );
                 }
-
-                switch( header.checksum )
-                {
-                case '4LOC':
-                    LoadCollisionModelVer4( buf, header.size - 0x18, col, header.name );
-                    break;
-                case '3LOC':
-                    LoadCollisionModelVer3( buf, header.size - 0x18, col, header.name );
-                    break;
-                case '2LOC':
-                    LoadCollisionModelVer2( buf, header.size - 0x18, col, header.name );
-                    break;
-                default:
-                    LoadCollisionModel( buf, col, header.name );
-                    break;
-                }
-
-                // Put it into our global storage
-                g_originalCollision[modelId] = col;
-
-                col->m_colPoolIndex = collId;
             }
+
+            switch( header.checksum )
+            {
+            case '4LOC':
+                LoadCollisionModelVer4( buf, header.size - 0x18, col, header.name );
+                break;
+            case '3LOC':
+                LoadCollisionModelVer3( buf, header.size - 0x18, col, header.name );
+                break;
+            case '2LOC':
+                LoadCollisionModelVer2( buf, header.size - 0x18, col, header.name );
+                break;
+            default:
+                LoadCollisionModel( buf, col, header.name );
+                break;
+            }
+
+            // Put it into our global storage
+            g_originalCollision[modelId] = col;
+
+            col->m_colPoolIndex = collId;
 
             // Do some procedural object logic
             if ( info->GetModelType() == MODEL_ATOMIC )
                 ((bool (__cdecl*)( CBaseModelInfoSAInterface *info ))0x005DB650)( info );
         }
         
-        size += (0x18 - header.size);
-        buf += header.size - 0x18;
+        size -= header.size;
+        buf += header.size - (sizeof(ColModelFileHeader) - 8);
     }
 
     return true;
@@ -472,7 +479,7 @@ bool __cdecl LoadCOLLibrary( unsigned char collId, const char *buf, size_t size 
     CColFileSA *col = (*ppColFilePool)->Get( collId );
     bool success;
 
-    if ( col->m_lowerBound <= col->m_upperBound )
+    if ( col->m_rangeStart > col->m_rangeEnd )
         success = ReadCOLLibraryGeneral( buf, size, collId );
     else
         success = ReadCOLLibraryBounds( buf, size, collId );
@@ -490,7 +497,7 @@ void __cdecl FreeCOLLibrary( unsigned char collId )
 
     col->m_loaded = false;
 
-    for ( unsigned short n = (unsigned short)col->m_upperBound; n < (unsigned short)col->m_lowerBound; n++ )
+    for ( short n = col->m_rangeStart; n <= col->m_rangeEnd; n++ )
     {
         if ( g_colReplacement[n] )
             continue;
@@ -500,10 +507,10 @@ void __cdecl FreeCOLLibrary( unsigned char collId )
         if ( !info )
             continue;
 
-        CColModelSAInterface *col = info->m_pColModel;
+        CColModelSAInterface *colModel = info->m_pColModel;
 
-        if ( col && info->IsDynamicCol() && col->m_colPoolIndex == collId )
-            col->ReleaseData();
+        if ( colModel && info->IsDynamicCol() && colModel->m_colPoolIndex == collId )
+            colModel->ReleaseData();
     }
 }
 

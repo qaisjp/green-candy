@@ -138,9 +138,15 @@ bool CColModelSA::Restore( unsigned short id )
 
         break;
     case RW_CLUMP:
-        delete m_original;
+        if ( info->m_eLoading == MODEL_LOADED )
+            model->SetCollision( m_original, m_originalDynamic );
+        else
+        {
+            // Clumps delete collision at freeing them
+            delete m_original;
 
-        model->m_pColModel = NULL;
+            model->m_pColModel = NULL;
+        }
         break;
     }
 
