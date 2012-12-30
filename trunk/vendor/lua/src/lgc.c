@@ -154,7 +154,7 @@ inline static void marktmu( global_State *g )
 }
 
 /* move `dead' udata that need finalization to list `tmudata' */
-size_t luaC_separatefinalization( lua_State *L, int all )
+size_t luaC_separatefinalization( lua_State *L, bool all )
 {
     global_State *g = G(L);
     size_t deadmem = 0;
@@ -363,7 +363,7 @@ int CClosure::TraverseGC( global_State *g )
     for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
         markvalue( g, &upvalue[i] );
 
-    markvalue( g, &accessor );
+    markobject( g, accessor );
 
     return Closure::TraverseGC( g );
 }
@@ -832,7 +832,7 @@ static int luaC_runtime( lua_State *L )
             g->gray = g->grayagain;
             g->grayagain = NULL;
             propagateall(g);
-            udsize = luaC_separatefinalization(L, 0);  /* separate userdata to be finalized */
+            udsize = luaC_separatefinalization(L, false);  /* separate userdata to be finalized */
             marktmu(g);  /* mark `preserved' userdata */
             udsize += propagateall(g);  /* remark, to propagate `preserveness' */
             cleartable(g->weak);  /* remove collected objects from weak tables */
@@ -925,6 +925,9 @@ void luaC_init( global_State *g )
 
 void luaC_initthread( global_State *g )
 {
+    // Initialize thread environment
+    LIST_CLEAR( g->threads.root );
+
     // Allocate the main garbage collector runtime and set it up
     lua_Thread *L = g->GCthread = luaE_newthread( g->mainthread );
     
@@ -948,13 +951,12 @@ void luaC_shutdown( global_State *g )
 {
     lua_Thread *L = g->GCthread;
 
-    // Finish any pending collection
-    luaC_finish( L );
+    // Terminate all threads (GC should be last)
+    LIST_FOREACH_BEGIN( lua_Thread, g->threads.root, threadNode )
+        luaE_terminate( item );
+    LIST_FOREACH_END
 
-    // Terminate the garbage collector thread to collect it
-    luaE_terminate( L );
-
-    luaC_separatefinalization( L, 1 );  /* separate udata that have GC metamethods */
+    luaC_separatefinalization( L, true );  /* separate udata that have GC metamethods */
     L->errfunc = 0;  /* no error function during GC metamethods */
 
     std::string errMsg;

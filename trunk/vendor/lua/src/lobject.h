@@ -422,7 +422,7 @@ public:
     }
 
     lua_CFunction f;
-    TValue accessor; // Usually the storage of the thread
+    Table *accessor; // Usually the storage of the thread
     TValue upvalue[1];
 };
 

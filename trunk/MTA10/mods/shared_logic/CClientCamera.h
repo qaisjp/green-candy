@@ -36,11 +36,11 @@ class CClientCamera : public CClientEntity
     friend class CClientManager;
 
 public:
-    inline void                 Unlink()                                        { };
+    inline void                 Unlink()                                        {}
 
     void                        DoPulse();
 
-    inline eClientEntityType    GetType() const                                 { return CCLIENTCAMERA; };
+    inline eClientEntityType    GetType() const                                 { return CCLIENTCAMERA; }
 
     bool                        SetMatrix( const RwMatrix& mat );
     bool                        GetMatrix( RwMatrix& mat ) const;
@@ -50,9 +50,9 @@ public:
     void                        SetRotation( const CVector& rot );
     void                        GetTarget( CVector& target ) const;
     void                        SetTarget( const CVector& pos );
-    float                       GetRoll()                                       { return m_fRoll; }
+    float                       GetRoll() const                                 { return m_fRoll; }
     void                        SetRoll( float roll )                           { m_fRoll = roll; }
-    float                       GetFOV()                                        { return m_fFOV; }
+    float                       GetFOV() const                                  { return m_fFOV; }
     void                        SetFOV( float fov )                             { m_fFOV = fov; }
 
     void                        FadeIn( float time );
@@ -70,7 +70,7 @@ public:
 
     void                        SetVehicleInterpolationSource( CClientVehicle *veh );
 
-    inline bool                 IsInFixedMode()                                 { return m_bFixed; }
+    inline bool                 IsInFixedMode() const                           { return m_bFixed; }
 
     void                        ToggleCameraFixedMode( bool enabled );
 
@@ -89,6 +89,8 @@ private:
     void                        UnreferenceEntity( CClientEntity *entity );    
     void                        InvalidateEntity( CClientEntity *entity );
     void                        RestoreEntity( CClientEntity *entity );
+
+    void                        AssignFixedMode();
 
     CClientPlayerManager*       m_pPlayerManager;
 

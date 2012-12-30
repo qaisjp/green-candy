@@ -102,7 +102,7 @@ public:
     virtual class CPopulationMP         * GetPopulationMP           () = 0;
     virtual void                        PreventLeavingVehicles      () = 0;
     virtual void                        HideRadar                   ( bool bHide ) = 0;
-    virtual void                        SetCenterOfWorld            ( class CEntity * entity, class CVector * vecPosition, FLOAT fHeading ) = 0;
+    virtual void                        SetCenterOfWorld            ( CEntity *entity, const CVector *pos, float heading ) = 0;
     virtual void                        DisablePadHandler           ( bool bDisabled ) = 0;
     virtual void                        DisableAllVehicleWeapons    ( bool bDisable ) = 0;
     virtual void                        DisableZoneNames            ( bool bDisabled ) = 0; // move to CHud

@@ -49,7 +49,7 @@ public:
     CPopulationMP               * GetPopulationMP           () { return Population; }
     void                        PreventLeavingVehicles      ();
     void                        HideRadar                   ( bool bHide );
-    void                        SetCenterOfWorld            ( CEntity * entity, CVector * vecPosition, FLOAT fHeading );
+    void                        SetCenterOfWorld            ( CEntity *entity, const CVector *pos, float heading );
     void                        DisablePadHandler           ( bool bDisabled );
     void                        DisableEnterExitVehicleKey  ( bool bDisabled );
     void                        DisableAllVehicleWeapons    ( bool bDisable );
