@@ -31,6 +31,8 @@ void CCheckpointSA::SetColor( SColor color )
 {
     DEBUG_TRACE("void CCheckpointSA::SetColor( SColor color )");
 
+    return;
+
     // To ABGR
     GetInterface()->m_rwColor = ( color.A << 24 ) | ( color.B << 16 ) | ( color.G << 8 ) | color.R;
 }

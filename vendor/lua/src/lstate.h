@@ -99,6 +99,8 @@ typedef struct global_State
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
   TString *tmname[TM_N];  /* array with tag-method names */
   lua_CFunction events[LUA_NUM_EVENTS];
+
+  RwList <lua_Thread> threads; /* all existing thread in this machine */
 } global_State;
 
 #define tostate(l)      (cast(lua_State *, cast(lu_byte *, l) + LUAI_EXTRASPACE))
@@ -208,6 +210,8 @@ public:
     Fiber *fiber;
     eLuaThreadStatus status;
 	int errorCode;
+
+    RwListEntry <lua_Thread> threadNode;
 };
 
 /* macros to convert a GCObject into a specific value */

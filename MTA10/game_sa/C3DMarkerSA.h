@@ -59,7 +59,7 @@ private:
     C3DMarkerSAInterface*           m_interface;
 
 public:
-    C3DMarkerSA( C3DMarkerSAInterface *marker )             { m_interface = marker; };
+    C3DMarkerSA( C3DMarkerSAInterface *marker )             { m_interface = marker; }
 
     C3DMarkerSAInterface*   GetInterface()                  { return m_interface; }
     const C3DMarkerSAInterface* GetInterface() const        { return m_interface; }
@@ -95,7 +95,7 @@ public:
     void            Disable();
     void            DeleteMarkerObject();
     void            Reset();
-    void            SetActive()                             { m_interface->m_bIsUsed = true; };
+    void            SetActive()                             { m_interface->m_bIsUsed = true; }
 };
 
 #endif

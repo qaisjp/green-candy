@@ -25,7 +25,10 @@ TValue* luaF_getcurraccessor( lua_State *L )
         return &L->storage;
 
     if ( CClosure *cl = curr_func( L )->GetCClosure() )
-        return &cl->accessor;
+    {
+        sethvalue( L, &L->env, cl->accessor );
+        return &L->env;
+    }
 
     return &L->storage;
 }
@@ -38,7 +41,7 @@ CClosure *luaF_newCclosure (lua_State *L, int nelems, Table *e)
     c->isC = 1;
     c->env = e;
     c->nupvalues = cast_byte(nelems);
-    setobj( L, &c->accessor, luaF_getcurraccessor( L ) );
+    c->accessor = hvalue( luaF_getcurraccessor( L ) );
 
     return c;
 }

@@ -2024,51 +2024,24 @@ void CMultiplayerSA::DoSoundHacksOnLostFocus ( bool bLostFocus )
     }
 }
 
-void CMultiplayerSA::SetCenterOfWorld(CEntity * entity, CVector * vecPosition, FLOAT fHeading)
+void CMultiplayerSA::SetCenterOfWorld( CEntity *entity, const CVector *pos, float heading )
 {
-    if ( vecPosition )
+    if ( pos )
     {
         bInStreamingUpdate = false;
 
-        vecCenterOfWorld.fX = vecPosition->fX;
-        vecCenterOfWorld.fY = vecPosition->fY;
-        vecCenterOfWorld.fZ = vecPosition->fZ;
+        vecCenterOfWorld = *pos;
 
-        if ( entity )
+        if ( CEntitySA *pEntitySA = dynamic_cast <CEntitySA*> ( entity ) )
         {
-            CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( entity );
-            if ( pEntitySA )
-                activeEntityForStreaming = pEntitySA->GetInterface();
+            activeEntityForStreaming = pEntitySA->GetInterface();
         }
-    /*  else
-        {
-            if ( !bActiveEntityForStreamingIsFakePed )
-            {
-                activeEntityForStreaming = new CPedSAInterface();
-                MemSet (activeEntityForStreaming, 0, sizeof(CPedSAInterface));
-                activeEntityForStreaming->m_matrix = new RwMatrix_Padded();
-            }
 
-            bActiveEntityForStreamingIsFakePed = true;
-            
-            activeEntityForStreaming->m_matrix->vPos.fX = vecPosition->fX;
-            activeEntityForStreaming->m_matrix->vPos.fY = vecPosition->fY;
-            activeEntityForStreaming->m_matrix->vPos.fZ = vecPosition->fZ;
-        }*/
-
-        //DWORD dwCurrentValue = *(DWORD *)FUNC_CPlayerInfoBase;
-        fFalseHeading = fHeading;
+        fFalseHeading = heading;
         bSetCenterOfWorld = true;
     }
     else 
     {
-        /*if ( bActiveEntityForStreamingIsFakePed )
-        {
-            delete activeEntityForStreaming->m_matrix;
-            delete activeEntityForStreaming;
-        }
-
-        bActiveEntityForStreamingIsFakePed = false;*/
         activeEntityForStreaming = NULL;
         bSetCenterOfWorld = false;
     }

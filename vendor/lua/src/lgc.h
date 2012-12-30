@@ -99,7 +99,7 @@
 #define luaC_objbarriert(L,t,o)  \
    { if (iswhite(o) && isblack(t)) luaC_barrierback(L,t); }
 
-LUAI_FUNC size_t luaC_separatefinalization( lua_State *L, int all );
+LUAI_FUNC size_t luaC_separatefinalization( lua_State *L, bool all );
 LUAI_FUNC void luaC_callGCTM (lua_State *L);
 LUAI_FUNC void luaC_freeall (lua_State *L);
 LUAI_FUNC void luaC_step (lua_State *L);

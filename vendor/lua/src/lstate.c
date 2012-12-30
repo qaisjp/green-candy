@@ -176,6 +176,7 @@ lua_Thread* luaE_newthread( lua_State *L )
     unsigned int n;
     lua_Thread *L1 = new (L) lua_Thread;
     luaC_link(L, L1, LUA_TTHREAD);
+    LIST_INSERT( G(L)->threads.root, L1->threadNode );  /* we need to be aware of all threads */
     preinit_state(L1, G(L));
     stack_init(L1, L);  /* init stack */
     setobj2n(L, gt(L1), gt(L));  /* share table of globals */
@@ -257,6 +258,9 @@ lua_State::~lua_State()
 
 lua_Thread::~lua_Thread()
 {
+    // unlist ourselves
+    LIST_REMOVE( threadNode );
+
     luaE_terminate( this );
     luai_userstatefree( this );
 

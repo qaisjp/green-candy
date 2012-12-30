@@ -29,8 +29,7 @@ CRadarSA::CRadarSA()
 CRadarSA::~CRadarSA()
 {
     for ( unsigned int i = 0; i < MAX_MARKERS; i++ )
-        if ( Markers[i] )
-            delete Markers[i];
+        delete Markers[i];
 }
 
 CMarker* CRadarSA::CreateMarker( const CVector& pos )

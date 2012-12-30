@@ -162,15 +162,33 @@ void CClientCamera::DoPulse ( void )
     }
 }
 
+void CClientCamera::AssignFixedMode()
+{
+    if ( !IsInFixedMode() )
+        ToggleCameraFixedMode( true );
+
+    // Make sure that's where the world center is
+    CVector vecRotation;
+    m_matrix.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+    g_pMultiplayer->SetCenterOfWorld( NULL, &m_matrix.pos, PI - vecRotation.fZ );
+}
+
 bool CClientCamera::SetMatrix( const RwMatrix& mat )
 {
     m_matrix = mat;
+
+    // Update into fixed mode
+    AssignFixedMode();
     return true;
 }
 
 bool CClientCamera::GetMatrix( RwMatrix& Matrix ) const
 {
-    Matrix = m_pCamera->GetMatrix();
+    if ( !IsInFixedMode() )
+        Matrix = m_pCamera->GetMatrix();
+    else
+        Matrix = m_matrix;
+
     return true;
 }
 
@@ -184,19 +202,11 @@ void CClientCamera::GetPosition( CVector& vecPosition ) const
 
 void CClientCamera::SetPosition( const CVector& vecPosition )
 {
-    if ( !IsInFixedMode() )
-        ToggleCameraFixedMode( true );
-
-    // Make sure that's where the world center is
-    CVector vecRotation;
-    RwMatrix matTemp;
-    GetMatrix( matTemp );
-    matTemp.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
-    CVector v = vecPosition;
-    g_pMultiplayer->SetCenterOfWorld ( NULL, &v, PI - vecRotation.fZ );
-
     // Store the position so it can be updated from our hook
     m_matrix.pos = vecPosition;
+
+    // Switch into fixed mode
+    AssignFixedMode();
 }
 
 void CClientCamera::GetRotation( CVector& vecRotation ) const
