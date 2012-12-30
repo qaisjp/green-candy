@@ -228,7 +228,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwSceneAddAtomic                    = (RwSceneAddAtomic_t)                      0x00750FE0;
         RwSceneAddClump                     = (RwSceneAddClump_t)                       0x00751350;
         RwSceneAddLight                     = (RwSceneAddLight_t)                       0x00751960;
-        RwSceneRemoveLight                  = (RwSceneRemoveLight_t)                    0x007519A0;
+        RwSceneRemoveLight                  = (RwSceneRemoveLight_t)                    0x007519B0;
         RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
         break; 
 
