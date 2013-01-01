@@ -17,7 +17,7 @@
 
 inline static unsigned int GetMarkerIndex( C3DMarkerSAInterface *intf )
 {
-    return ( (C3DMarkerSAInterface*)ARRAY_3D_MARKERS - intf );
+    return ( intf - (C3DMarkerSAInterface*)ARRAY_3D_MARKERS );
 }
 
 C3DMarkersSA::C3DMarkersSA()

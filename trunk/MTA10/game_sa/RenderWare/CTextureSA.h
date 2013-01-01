@@ -31,12 +31,12 @@ public:
     void                    SetFiltering( bool filter )                     { BOOL_FLAG( m_texture->flags, 0x1102, filter ); }
     bool                    IsFiltering() const                             { return IS_FLAG( m_texture->flags, 0x1102 ); }
 
+    RwTexture*              GetTexture()                                    { return m_texture; }
+    const RwTexture*        GetTexture() const                              { return m_texture; }
+
     void                    SetTXD( CTexDictionary *txd );
     void                    RemoveFromTXD();
     CTexDictionary*         GetTXD();
-
-    void                    OnTxdLoad( RwTexDictionary& txd, unsigned short id );
-    void                    OnTxdInvalidate( RwTexDictionary& txd, unsigned short id );
 
     bool                    Import( unsigned short id );
     bool                    ImportTXD( unsigned short id );
@@ -52,15 +52,9 @@ protected:
     CTexDictionarySA*       m_dictionary;
     RwTexture*              m_texture;
 
-    struct import
-    {
-        RwTexture *copy;
-        RwTexture *original;
-    };
-    
-    typedef std::map <unsigned short, import> importMap_t;
+    typedef std::list <unsigned short> importList_t;
 
-    importMap_t             m_imported;
+    importList_t             m_imported;
 };
 
 #endif

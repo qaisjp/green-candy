@@ -13,6 +13,12 @@
 #ifndef _STREAMING_UTILITIES_
 #define _STREAMING_UTILITIES_
 
+namespace RwImportedScan
+{
+    void Apply( unsigned short model );
+    void Unapply();
+};
+
 void __cdecl FreeCOLLibrary( unsigned char collId );
 bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId );
 

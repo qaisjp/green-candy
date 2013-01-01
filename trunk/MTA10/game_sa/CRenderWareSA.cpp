@@ -412,6 +412,8 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
             if ( model->GetRwModelType() == RW_ATOMIC )
                 txd->SetCurrent();
         }
+
+        RwImportedScan::Apply( model->m_textureDictionary );
     }
 
     // read the clump with all its extensions
@@ -419,6 +421,8 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
 
     if ( id != 0 )
     {
+        RwImportedScan::Unapply();
+
         // reset model schemantic loader
         RpPrtStdGlobalDataSetStreamEmbedded( NULL );
 

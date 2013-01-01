@@ -99,30 +99,7 @@ bool CTextureSA::IsImported( unsigned short id ) const
 
 bool CTextureSA::IsImportedTXD( unsigned short id ) const
 {
-    return m_imported.count( id ) != 0;
-}
-
-void CTextureSA::OnTxdLoad( RwTexDictionary& txd, unsigned short id )
-{
-    import& imp = (*m_imported.find( id )).second;
-    imp.original = txd.FindNamedTexture( m_texture->name );
-    
-    if ( imp.original )
-        imp.original->RemoveFromDictionary();
-
-    imp.copy->AddToDictionary( &txd );
-}
-
-void CTextureSA::OnTxdInvalidate( RwTexDictionary& txd, unsigned short id )
-{
-    import& imp = (*m_imported.find( id )).second;
-    imp.copy->RemoveFromDictionary();
-
-    if ( imp.original )
-    {
-        imp.original->AddToDictionary( &txd );
-        imp.original = NULL;
-    }
+    return std::find( m_imported.begin(), m_imported.end(), id ) != m_imported.end();
 }
 
 bool CTextureSA::Import( unsigned short id )
@@ -149,31 +126,9 @@ bool CTextureSA::ImportTXD( unsigned short id )
     if ( !txd )
         return false;
 
-    import imp;
-    imp.copy = RwTextureCreate( m_texture->raster );
-
-    // We need to traverse the name, too
-    memcpy( imp.copy->name, m_texture->name, 32 );
-    memcpy( imp.copy->mask, m_texture->mask, 32 );
-
-    imp.copy->flags = m_texture->flags;
-    imp.copy->refs = 1;
-
-    if ( RwTexDictionary *rtxd = txd->m_txd )
-    {
-        imp.original = rtxd->FindNamedTexture( m_texture->name );
-
-        if ( imp.original )
-            imp.original->RemoveFromDictionary();
-
-        imp.copy->AddToDictionary( rtxd );
-    }
-    else
-        imp.original = NULL;    // flag that we have not been imported; wait for TXD load
-
     g_dictImports[id].push_back( this );
-    
-    m_imported[id] = imp;
+
+    m_imported.push_back( id );
     return true;
 }
 
@@ -192,28 +147,19 @@ bool CTextureSA::Remove( unsigned short id )
 
 bool CTextureSA::RemoveTXD( unsigned short id )
 {
-    importMap_t::iterator iter = m_imported.find( id );
+    importList_t::iterator iter = std::find( m_imported.begin(), m_imported.end(), id );
 
     if ( iter == m_imported.end() )
         return false;
 
-    import& imp = ( *iter ).second;
-    RwTexDictionary *txd = imp.copy->txd;
-
-    imp.copy->RemoveFromDictionary();
-    RwTextureDestroy( imp.copy );
-
-    if ( imp.original )
-        imp.original->AddToDictionary( txd );
-    
-    m_imported.erase( iter );
-
     g_dictImports[id].remove( this );
+
+    m_imported.erase( iter );
     return true;
 }
 
 void CTextureSA::ClearImports()
 {
     while ( !m_imported.empty() )
-        RemoveTXD( (*m_imported.begin()).first );
+        RemoveTXD( (*m_imported.begin()) );
 }

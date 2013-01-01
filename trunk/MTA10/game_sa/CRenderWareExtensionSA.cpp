@@ -61,6 +61,9 @@ static RpAtomic* __cdecl _worldAtomicSceneCopyConstructor( RpAtomic *atom, RpAto
     return atom;
 }
 
+// Attempting to analyze a RenderWare crash
+
+
 CRwExtensionManagerSA::CRwExtensionManagerSA()
 {
     // Patch some fixes
