@@ -19,31 +19,69 @@ static CModelLoadInfoSA *const VAR_ModelLoadInfo = (CModelLoadInfoSA*)0x008E4CC0
 
 static streamingLoadCallback_t  streamingLoadCallback = NULL;
 
-static RwScanTexDictionaryStackRef_t    prevStackScan;
-
-static RwTexture* RwTexDictionaryStackFindRemapRef( const char *name )
+namespace RwRemapScan
 {
-    RwTexture *tex = g_vehicleTxd->FindNamedTexture( name );
+    static RwScanTexDictionaryStackRef_t    prevStackScan;
 
-    if ( tex )
-        return tex;
+    static RwTexture* scanMethod( const char *name )
+    {
+        RwTexture *tex = g_vehicleTxd->FindNamedTexture( name );
 
-    // The_GTA: usually the engine flagged used remap textures with a '#'
-    // We do not want this feature.
-    return prevStackScan( name );
-}
+        if ( tex )
+            return tex;
 
-static void ApplyRemapTextureScan()
+        // The_GTA: usually the engine flagged used remap textures with a '#'
+        // We do not want this feature.
+        return prevStackScan( name );
+    }
+
+    void Apply()
+    {
+        prevStackScan = pRwInterface->m_textureManager.m_findInstanceRef;
+        pRwInterface->m_textureManager.m_findInstanceRef = scanMethod;
+    }
+
+    void Unapply()
+    {
+        pRwInterface->m_textureManager.m_findInstanceRef = prevStackScan;
+        prevStackScan = NULL;
+    }
+};
+
+namespace RwImportedScan
 {
-    prevStackScan = pRwInterface->m_textureManager.m_findInstanceRef;
-    pRwInterface->m_textureManager.m_findInstanceRef = RwTexDictionaryStackFindRemapRef;
-}
+    static RwScanTexDictionaryStackRef_t    prevStackScan;
+    static unsigned short   txdId;
 
-static void UnapplyRemapTextureScan()
-{
-    pRwInterface->m_textureManager.m_findInstanceRef = prevStackScan;
-    prevStackScan = NULL;
-}
+    static RwTexture* scanMethod( const char *name )
+    {
+        dictImportList_t& imported = g_dictImports[txdId];
+
+        for ( dictImportList_t::const_iterator iter = imported.begin(); iter != imported.end(); iter++ )
+        {
+            if ( stricmp( (*iter)->GetName(), name ) == 0 )
+                return (*iter)->GetTexture();
+        }
+
+        return prevStackScan( name );
+    }
+
+    void Apply( unsigned short id )
+    {
+        prevStackScan = pRwInterface->m_textureManager.m_findInstanceRef;
+        pRwInterface->m_textureManager.m_findInstanceRef = scanMethod;
+
+        txdId = id;
+    }
+
+    void Unapply()
+    {
+        pRwInterface->m_textureManager.m_findInstanceRef = prevStackScan;
+        prevStackScan = NULL;
+    }
+};
+
+
 
 static inline CVector* _RpGeometryAllocateNormals( RpGeometry *geom, RpGeomMesh *mesh )
 {
@@ -145,9 +183,12 @@ static bool __cdecl LoadClumpFile( RwStream *stream, unsigned int model )
 
     CAtomicModelInfoSA *atomInfo = info->GetAtomicModelInfo();
 
+    // Apply our global imports
+    RwImportedScan::Apply( info->m_textureDictionary );
+
     if ( atomInfo && ( atomInfo->m_collFlags & COLL_WETROADREFLECT ) )
     {
-        ApplyRemapTextureScan();
+        RwRemapScan::Apply();
         appliedRemapCheck = true;
     }
     else
@@ -172,7 +213,9 @@ static bool __cdecl LoadClumpFile( RwStream *stream, unsigned int model )
 
 fail:
     if ( appliedRemapCheck )
-        UnapplyRemapTextureScan();
+        RwRemapScan::Unapply();
+
+    RwImportedScan::Unapply();
 
     return result;
 }
@@ -188,6 +231,8 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
     {
         clump = RpClumpCreate();
         clump->m_parent = frame = RwFrameCreate();
+
+        RwImportedScan::Apply( info->m_textureDictionary );
 
         while ( RwStreamFindChunk( stream, 0x10, NULL, NULL ) )
         {
@@ -220,6 +265,8 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
             RpClumpDestroy( item );
         }
 
+        RwImportedScan::Unapply();
+
         info->SetClump( clump );
         return true;
     }
@@ -227,19 +274,23 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
     if ( !RwStreamFindChunk( stream, 0x10, NULL, NULL ) )
         return false;
 
+    RwImportedScan::Apply( info->m_textureDictionary );
+
     if ( isVehicle )
     {
         RpPrtStdGlobalDataSetStreamEmbedded( info );
-        ApplyRemapTextureScan();
+        RwRemapScan::Apply();
     }
 
     clump = RpClumpStreamRead( stream );
 
     if ( isVehicle )
     {
-        UnapplyRemapTextureScan();
+        RwRemapScan::Unapply();
         RpPrtStdGlobalDataSetStreamEmbedded( NULL );
     }
+
+    RwImportedScan::Unapply();
 
     if ( !clump )
         return false;

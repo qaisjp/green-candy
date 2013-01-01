@@ -15,6 +15,9 @@
 
 #include <RenderWare_shared.h>
 
+// We need direct3D 9
+#include <d3d9.h>
+
 /*****************************************************************************/
 /** RenderWare rendering types                                              **/
 /*****************************************************************************/
@@ -376,8 +379,10 @@ public:
         {
             RwListEntry <RwTexture> *nchild = child->next;
 
-            if ( !callback( (RwTexture*)( (unsigned int)child - offsetof(RwTexture, TXDList) ), ud ) )
+            if ( !callback( LIST_GETITEM( RwTexture, child, TXDList ), ud ) )
                 return false;
+
+            LIST_VALIDATE( *nchild );
 
             child = nchild;
         }
@@ -391,19 +396,19 @@ public:
 class RwRaster
 {
 public:
-    RwRaster*       parent;                 // 0
-    unsigned char*  pixels;                 // 4
-    unsigned char*  palette;                // 8
-    int             width, height, depth;   // 12, 16 / 0x10, 20
-    int             stride;                 // 24 / 0x18
-    short           u, v;
-    unsigned char   type;
-    unsigned char   flags;
-    unsigned char   privateFlags;
-    unsigned char   format;
-    unsigned char*  origPixels;
-    int             origWidth, origHeight, origDepth;
-    void*           renderResource;         // Direct3D texture resource
+    RwRaster*               parent;                             // 0
+    unsigned char*          pixels;                             // 4
+    unsigned char*          palette;                            // 8
+    int                     width, height, depth;               // 12, 16 / 0x10, 20
+    int                     stride;                             // 24 / 0x18
+    short                   u, v;                               // 28
+    unsigned char           type;                               // 32
+    unsigned char           flags;                              // 33
+    unsigned char           privateFlags;                       // 34
+    unsigned char           format;                             // 35
+    unsigned char*          origPixels;                         // 36
+    int                     origWidth, origHeight, origDepth;   // 40
+    IDirect3DBaseTexture9*  renderResource;                     // 52, Direct3D texture resource
 };
 class RwTexture
 {

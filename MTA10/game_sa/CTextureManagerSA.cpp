@@ -81,12 +81,6 @@ void CTxdInstanceSA::Deallocate()
 
     if ( m_txd )
     {
-        // Notify our textures that they should detach from the txd
-        dictImportList_t& list = g_dictImports[id];
-
-        for ( dictImportList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
-            (*iter)->OnTxdInvalidate( *m_txd, id );
-
         // HACK: detach the global texture emitter if present
         if ( g_textureEmitter == m_txd )
             g_textureEmitter = NULL;
@@ -158,10 +152,6 @@ void CTxdInstanceSA::InitParent()
 {
     // Assign texture imports
     unsigned short id = (*ppTxdPool)->GetIndex( this );
-    dictImportList_t& list = g_dictImports[id];
-
-    for ( dictImportList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
-        (*iter)->OnTxdLoad( *m_txd, id );
 
 #if 0
     // Notify the shader system
