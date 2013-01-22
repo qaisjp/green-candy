@@ -33,6 +33,8 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
     m_defaultGroup = new CElementGroup( this );
     m_elementGroups.push_back( m_defaultGroup ); // for use by scripts
 
+    LIST_CLEAR( m_rwObjects.root );
+
     m_resourceEntity = entity;
     m_dynamicEntity = dynamicEntity;
 
@@ -88,6 +90,16 @@ CResource::~CResource()
     // Remove all keybinds on this VM
     g_pClientGame->GetScriptKeyBinds()->RemoveAllKeys( (CLuaMain*)&m_lua );
     g_pCore->GetKeyBinds()->SetAllCommandsActive( m_name.c_str(), false );
+
+    // Remove RenderWare objects
+    {
+        luaRefs refs;
+
+        LIST_FOREACH_BEGIN( CClientRwObject, m_rwObjects.root, m_ownerObjects )
+            item->Reference( refs );
+            item->Delete();
+        LIST_FOREACH_END
+    }
 
     // Destroy all entities, since we do not need them anymore
     // First flag for deletion, then destroy; otherway round might result in destruction prior to flagging due to other runtimes -> access violation

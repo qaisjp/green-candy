@@ -49,7 +49,7 @@ static void __cdecl _CBuilding__RemoveReferences( CBuildingSAInterface *building
             if ( entry->entity == building )
             {
                 // Deliberate it
-                entry->entity = NULL;
+                entry->entity = NULL; 
                 *((DWORD**)ARRAY_StreamSectors + n) = NULL;
             }
 

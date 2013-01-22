@@ -501,6 +501,8 @@ class Class : public GCObject, public virtual ILuaClass
 public:
     ~Class();
 
+    void    Propagate( lua_State *L );
+
     void    MarkGC( global_State *g );
     int     TraverseGC( global_State *g );
 
@@ -514,6 +516,7 @@ public:
     void    CheckDestruction( lua_State *lua );
     bool    PreDestructor( lua_State *L );
 
+    void    Push( lua_State *L );
     void    PushMethod( lua_State *L, const char *key );
 
     void    SetTransmit( int type, void *entity );
@@ -534,6 +537,9 @@ public:
     bool    IsDestroying() const;
     bool    IsDestroyed() const;
 
+    bool    IsRootedIn( Class *root ) const;
+    bool    IsRootedIn( lua_State *L, int idx ) const;
+
     void    PushEnvironment( lua_State *L );
     void    PushOuterEnvironment( lua_State *L );
     void    PushChildAPI( lua_State *L );
@@ -543,7 +549,8 @@ public:
 
     void    RequestDestruction();
 
-    TValue* GetSuperMethod( lua_State *lua );
+    TValue* SetSuperMethod( lua_State *L );
+    const TValue*   GetSuperMethod( lua_State *L );
 
     void operator delete( void *ptr ) throw()
     {
@@ -577,7 +584,6 @@ public:
 
     // Cached values
     TValue destructor;
-    TString *superCached;
 };
 
 

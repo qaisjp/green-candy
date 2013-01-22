@@ -430,7 +430,11 @@ bool CEffectTemplateImpl::HaveFilesChanged ( void )
         {
             const SString& strPathFilename = iter->first;
             const SString& strMD5 = iter->second;
-            SString strNewMD5 = CMD5Hasher::CalculateHexString ( strPathFilename );
+            filePath absPath;
+
+            modFileRoot->GetFullPathFromRoot( strPathFilename.c_str(), true, absPath );
+
+            SString strNewMD5 = CMD5Hasher::CalculateHexString ( absPath.c_str() );
             if ( strNewMD5 != strMD5 )
             {
                 OutputDebugLine ( SString ( "[Shader] %s file has changed from %s to %s", *strPathFilename, *strMD5, *strNewMD5 ) );

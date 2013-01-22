@@ -128,7 +128,7 @@ bool CTextureSA::ImportTXD( unsigned short id )
 
     g_dictImports[id].push_back( this );
 
-    m_imported.push_back( id );
+    m_imported.push_front( id );
     return true;
 }
 

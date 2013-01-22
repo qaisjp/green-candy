@@ -13,6 +13,29 @@
 
 #include <StdInc.h>
 
+static LUA_DECLARE( setRotation )
+{
+    CVector rot;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadVector( rot );
+    LUA_ARGS_END;
+
+    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetRotationDegrees( rot );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getRotation )
+{
+    CVector rot;
+    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetRotationDegrees( rot );
+
+    lua_pushnumber( L, rot[0] );
+    lua_pushnumber( L, rot[1] );
+    lua_pushnumber( L, rot[2] );
+    return 3;
+}
+
 static LUA_DECLARE( setHealth )
 {
     float health;
@@ -448,6 +471,8 @@ static LUA_DECLARE( getStat )
 
 static const luaL_Reg ped_interface_light[] =
 {
+    LUA_METHOD( setRotation ),
+    LUA_METHOD( getRotation ),
     LUA_METHOD( setHealth ),
     LUA_METHOD( getHealth ),
     LUA_METHOD( isDead ),

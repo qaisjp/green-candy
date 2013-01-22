@@ -341,10 +341,10 @@ void CEntitySA::GetPosition( CVector& pos ) const
 {
     DEBUG_TRACE("void CEntitySA::GetPosition( CVector& pos ) const");
 
-    if ( !m_pInterface->m_matrix )
-        m_pInterface->AllocateMatrix();
-
-    pos = m_pInterface->m_matrix->pos;
+    if ( m_pInterface->m_matrix )
+        pos = m_pInterface->m_matrix->pos;
+    else
+        pos = m_pInterface->m_position;
 }
 
 void CEntitySA::Teleport( float x, float y, float z )

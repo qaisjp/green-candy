@@ -154,12 +154,12 @@ enum eLuaEvent
     LUA_EVENT_THREAD_CO_CREATE,
     LUA_EVENT_THREAD_CONTEXT_PUSH,
     LUA_EVENT_THREAD_CONTEXT_POP,
+
+    LUA_EVENT_GC_PROPAGATE,
+
     LUA_NUM_EVENTS
 };
 LUA_API void (lua_setevent) (lua_State *L, eLuaEvent evt, lua_CFunction proto);
-
-// The_GTA: Lua extension to lock meta access
-LUA_API void (lua_setmetalock) (lua_State *L, int s, bool b);
 
 /*
 ** basic stack manipulation
@@ -280,6 +280,7 @@ LUA_API int  (lua_status) (lua_State *L);
 #define LUA_GCSETSTEPMUL	7
 
 LUA_API int (lua_gc) (lua_State *L, int what, int data);
+LUA_API void (lua_gcpaycost) ( lua_State *L, unsigned int cost );
 
 
 /*
@@ -389,11 +390,21 @@ LUA_API const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n);
 LUA_API const char *lua_getupvalue (lua_State *L, int funcindex, int n);
 LUA_API const char *lua_setupvalue (lua_State *L, int funcindex, int n);
 LUA_API void lua_constructclass( lua_State *L, int nargs );
+LUA_API void lua_constructclassex( lua_State *L, int nargs, unsigned int flags );
 LUA_API void lua_newclass( lua_State *L );
+LUA_API void lua_newclassex( lua_State *L, unsigned int flags );
 LUA_API ILuaClass* lua_refclass( lua_State *L, int idx );
 LUA_API void lua_basicprotect( lua_State *L );
 LUA_API void lua_basicextend( lua_State *L );
 LUA_API ILuaState& lua_getstateapi( lua_State *L );
+
+// The_GTA: class extended creation parameters
+#define LCLASS_API_NOENVDISPATCH        0x00000001
+#define LCLASS_NOPARENTING              0x00000002
+#define LCLASS_API_NO_ENV_AWARENESS     0x00000004
+
+// Flag commonly used for C++-only classes; it trims down unused Lua functionality to save memory
+#define LCLASS_API_LIGHT                ( LCLASS_API_NOENVDISPATCH | LCLASS_API_NO_ENV_AWARENESS )
 
 #ifdef __cplusplus
 #include <list>

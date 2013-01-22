@@ -721,12 +721,15 @@ public:
 class ILuaClass abstract
 {
 public:
+    virtual void    Propagate( lua_State *L ) = 0;
+
     virtual unsigned int    GetRefCount() const = 0;
 
     virtual void    IncrementMethodStack( lua_State *L ) = 0;
     virtual void    DecrementMethodStack( lua_State *L ) = 0;
     virtual void    ClearReferences( lua_State *L ) = 0;
 
+    virtual void    Push( lua_State *L ) = 0;
     virtual void    PushMethod( lua_State *L, const char *key ) = 0;
 
     virtual void    SetTransmit( int type, void *entity ) = 0;
@@ -743,6 +746,8 @@ public:
 
     virtual bool    IsDestroying() const = 0;
     virtual bool    IsDestroyed() const = 0;
+    
+    virtual bool    IsRootedIn( lua_State *L, int idx ) const = 0;
 
     virtual void    PushEnvironment( lua_State *L ) = 0;
     virtual void    PushOuterEnvironment( lua_State *L ) = 0;

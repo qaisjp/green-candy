@@ -255,10 +255,17 @@ static void __cdecl CStreaming__LoadArchive( IMGFile& archive, unsigned int imgI
         return;
 
     unsigned short lastID = 0xFFFF;
-    char version[4];    // has to be 'VER2'
+    union
+    {
+        char version[4];    // has to be "VER2"
+        unsigned int checksum;
+    };
     unsigned int numFiles;
 
     file->Read( version, 1, 4 );
+
+    assert( checksum == '2REV' );
+        
     numFiles = file->ReadInt();
 
     while ( numFiles-- )
@@ -468,10 +475,6 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
 
             eRwType rwType = minfo->GetRwModelType();
 
-            if ( CColModelSA *col = g_colReplacement[id] )
-                if ( rwType == RW_CLUMP )
-                    col->Apply( id );
-
             if ( CRwObjectSA *obj = g_replObjectNative[id] )
             {
                 // Apply the model
@@ -481,6 +484,9 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
                     ((CAtomicModelInfoSA*)minfo)->SetAtomic( ((CRpAtomicSA*)obj)->CreateInstance( id ) ); // making a copy is essential for model instance isolation
                     break;
                 case RW_CLUMP:
+                    if ( CColModelSA *col = g_colReplacement[id] )
+                        col->Apply( id );
+
                     ((CClumpModelInfoSAInterface*)minfo)->SetClump( RpClumpClone( (RpClump*)obj->GetObject() ) );
                     break;
                 }

@@ -3,7 +3,7 @@
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        Shared/logic/LuaClass.h
-*  PURPOSE:     Lua type instancing for VM objects
+*  PURPOSE:     Lua type instancing for persistent VM objects
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
@@ -17,7 +17,7 @@ class LuaClass
 {
     inline ILuaClass* acqcinf( lua_State *L, int ridx )
     {
-        PushStack( L );
+        lua_rawgeti( L, LUA_REGISTRYINDEX, m_ridx );
         ILuaClass *inf = lua_refclass( L, -1 );
         lua_pop( L, 1 );
         return inf;
@@ -39,7 +39,7 @@ public:
 
     inline void PushStack( lua_State *L )
     {
-        lua_rawgeti( L, LUA_REGISTRYINDEX, m_ridx );
+        m_class->Push( L );
     }
 
     inline void PushMethod( lua_State *L, const char *name )
@@ -61,7 +61,7 @@ public:
 
     inline void Reference( luaRefs& refs )
     {
-        lua_class_reference *ref = (lua_class_reference*)malloc(sizeof(*ref));
+        lua_class_reference *ref = new lua_class_reference;
         Reference( *ref );
 
         refs.push_back( ref );
@@ -94,6 +94,16 @@ public:
         return m_lua;
     }
 
+    inline bool IsRootedIn( LuaClass *root )
+    {
+        root->PushStack( m_lua );
+        
+        bool rooted = m_class->IsRootedIn( m_lua, -1 );
+
+        lua_pop( m_lua, 1 );
+        return rooted;
+    }
+
     inline bool IsDestroying() const
     {
         return m_class->IsDestroying();
@@ -101,7 +111,7 @@ public:
 
     inline void Destroy()
     {
-        // Prevent .lua referencing
+        // Prevent Lua referencing
         m_class->ClearReferences( m_lua );
 
         m_class->PushMethod( m_lua, "destroy" );

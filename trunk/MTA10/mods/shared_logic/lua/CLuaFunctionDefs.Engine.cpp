@@ -82,8 +82,7 @@ namespace CLuaFunctionDefs
             if ( model )
             {
                 // Create a DFF element
-                CClientDFF *dff = new CClientDFF( L, *model );
-                dff->SetRoot( res->GetResourceDFFRoot() );
+                CClientDFF *dff = new CClientDFF( L, *model, res );
                 dff->PushStack( L );
                 return 1;
             }
@@ -126,7 +125,9 @@ namespace CLuaFunctionDefs
                 for ( std::list <CTexture*>::const_iterator iter = list.begin(); iter != list.end(); iter++ )
                     (*iter)->SetFiltering( filtering );
 
-                ( new CClientTXD( L, *dict ) )->PushStack( L );
+                CClientTXD *obj = new CClientTXD( L, *dict );
+                obj->SetOwner( res );
+                obj->PushStack( L );
                 return 1;
             }
         }
@@ -168,6 +169,7 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors() )
         {
+            CResource *res = lua_readcontext( L )->GetResource();
             eRwType type;
 
             union
@@ -185,7 +187,7 @@ namespace CLuaFunctionDefs
 
                     if ( clump )
                     {
-                        ( new CClientDFF( L, *clump ) )->PushStack( L );
+                        ( new CClientDFF( L, *clump, res ) )->PushStack( L );
                         return 1;
                     }
                     break;
@@ -194,7 +196,9 @@ namespace CLuaFunctionDefs
 
                     if ( atom )
                     {
-                        ( new CClientAtomic( L, NULL, *atom ) )->PushStack( L );
+                        CClientAtomic *obj = new CClientAtomic( L, NULL, *atom );
+                        obj->SetOwner( res );
+                        obj->PushStack( L );
                         return 1;
                     }
                     break;
@@ -217,11 +221,14 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors() )
         {
+            CResource *res = lua_readcontext( L )->GetResource();
             CRpLight *light = g_pGame->GetRenderWare()->CreateLight( type );
 
             if ( light )
             {
-                ( new CClientLight( L, NULL, *light ) )->PushStack( L );
+                CClientLight *obj = new CClientLight( L, NULL, *light );
+                obj->SetOwner( res );
+                obj->PushStack( L );
                 return 1;
             }
         }
@@ -234,6 +241,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( engineCreateFrame )
     {
+        CResource *res = lua_readcontext( L )->GetResource();
         CRwFrame *frame = g_pGame->GetRenderWare()->CreateFrame();
 
         if ( !frame )
@@ -242,7 +250,8 @@ namespace CLuaFunctionDefs
             return 1;
         }
 
-        ( new CClientRwFrame( L, *frame ) )->PushStack( L );
+        CClientRwFrame *obj = new CClientRwFrame( L, *frame, res );
+        obj->PushStack( L );
         return 1;
     }
 
@@ -257,11 +266,14 @@ namespace CLuaFunctionDefs
 
         if ( !argStream.HasErrors() )
         {
+            CResource *res = lua_readcontext( L )->GetResource();
             CRwCamera *cam = g_pGame->GetRenderWare()->CreateCamera( width, height );
 
             if ( cam )
             {
-                ( new CClientRwCamera( L, *cam ) )->PushStack( L );
+                CClientRwCamera *obj = new CClientRwCamera( L, *cam );
+                obj->SetOwner( res );
+                obj->PushStack( L );
                 return 1;
             }
         }

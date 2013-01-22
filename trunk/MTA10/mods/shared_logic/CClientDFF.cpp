@@ -16,7 +16,7 @@
 
 static LUA_DECLARE( clone )
 {
-    ( new CClientDFF( L, *((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_model.Clone() ) )->PushStack( L );
+    ( new CClientDFF( L, *((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_model.Clone(), CLuaFunctionDefs::lua_readcontext( L )->GetResource() ) )->PushStack( L );
     return 1;
 }
 
@@ -226,7 +226,7 @@ static int luaconstructor_dff( lua_State *L )
     return 0;
 }
 
-CClientDFF::CClientDFF( lua_State *L, CModel& model ) : CClientRwObject( L, model ), m_model( model )
+CClientDFF::CClientDFF( lua_State *L, CModel& model, CResource *owner ) : CClientRwObject( L, model ), m_model( model )
 {
     // Lua instancing
     PushStack( L );
@@ -235,8 +235,12 @@ CClientDFF::CClientDFF( lua_State *L, CModel& model ) : CClientRwObject( L, mode
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
 
-    RwFrameInspect( m_parent = new CClientRwFrame( L, *model.GetFrame() ), this );
-    m_parent->IncrementMethodStack();
+    // We need ownership at creation
+    SetOwner( owner );
+
+    // Assign all objects from the frame hierarchy into the clump
+    RwFrameInspect( m_parent = new CClientRwFrame( L, *model.GetFrame(), owner ), this );
+    m_parent->Reference();
     // I do not know whether we can let the Lua runtime destroy the frame
     // For security reasons I disable this possibility
     // Feel free to discuss about this with me (The_GTA)
@@ -247,7 +251,7 @@ CClientDFF::~CClientDFF()
     RestreamAll();
 
     // Delete our hierarchy
-    m_parent->Delete(); m_parent->DecrementMethodStack();
+    m_parent->Delete(); m_parent->Dereference();
 }
 
 bool CClientDFF::ReplaceModel( unsigned short id )

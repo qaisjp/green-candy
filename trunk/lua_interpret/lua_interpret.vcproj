@@ -149,7 +149,7 @@
 				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
-				GenerateDebugInformation="false"
+				GenerateDebugInformation="true"
 				AssemblyDebug="2"
 				TargetMachine="1"
 			/>

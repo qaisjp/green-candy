@@ -98,7 +98,8 @@ typedef struct global_State
   lua_State *mainthread;
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
   TString *tmname[TM_N];  /* array with tag-method names */
-  lua_CFunction events[LUA_NUM_EVENTS];
+  TString *superCached; /* 'super' */
+  Closure *events[LUA_NUM_EVENTS];
 
   RwList <lua_Thread> threads; /* all existing thread in this machine */
 } global_State;

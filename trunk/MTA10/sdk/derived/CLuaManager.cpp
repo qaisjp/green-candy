@@ -20,6 +20,16 @@ CLuaManager::~CLuaManager()
 {
 }
 
+void CLuaManager::GarbageCollect( lua_State *L )
+{
+    // Mark classes which should be preserved
+    // Possible scenarios: background activity, system weak referencing while usage in engine code (RwObjects)
+    g_pClientGame->GetResourceManager()->GarbageCollect( L );
+
+    // Notify the general manager
+    LuaManager::GarbageCollect( L );
+}
+
 static void LoadCFunctions( lua_State *L )
 {
     using namespace CLuaFunctionDefs;

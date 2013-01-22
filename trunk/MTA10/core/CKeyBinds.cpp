@@ -302,7 +302,7 @@ bool CKeyBinds::ProcessKeyStroke( const SBindableKey * pKey, bool bState )
     m_bProcessingKeyStroke = true;
 
     // If the console, chat input or menu is up, ignore any messages and unset
-    // any already pressed */
+    // any already pressed
     static bool bInputGoesToGUI = false;
     static bool bIsCursorForced = false;
 

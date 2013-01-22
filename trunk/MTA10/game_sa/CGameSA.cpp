@@ -787,5 +787,7 @@ CFile* OpenGlobalStream( const char *filename, const char *mode )
         return file;
 
     // TODO: accept read-only access to the game directory
+    // MTA team has voiced their concern about game directory access; TOD (topic of discussion)
+    // I see this feature as optional anyway ;)
     return NULL;
 }

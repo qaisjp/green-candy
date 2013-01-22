@@ -87,6 +87,20 @@ void CResourceManager::StopAll()
         Remove( m_resources.front() );
 }
 
+void CResourceManager::GarbageCollect( lua_State *L )
+{
+    // Scan through all resources
+    for ( resourceList_t::const_iterator iter = IterBegin(); iter != IterEnd(); iter++ )
+    {
+        CResource *res = (CResource*)*iter;
+
+        // Notify all RenderWare objects
+        LIST_FOREACH_BEGIN( CClientRwObject, res->m_rwObjects.root, m_ownerObjects )
+            item->MarkGC( L );
+        LIST_FOREACH_END
+    }
+}
+
 bool CResourceManager::ParseResourcePath( Resource*& res, const char *path, std::string& meta )
 {
     if ( path[0] == '@' )

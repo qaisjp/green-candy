@@ -19,7 +19,7 @@
 class CClientRwFrame : public CClientRwObject
 {
 public:
-                                    CClientRwFrame( lua_State *L, CRwFrame& frame );
+                                    CClientRwFrame( lua_State *L, CRwFrame& frame, CResource *owner );
                                     ~CClientRwFrame();
 
     CRwFrame&                       GetObject()                         { return m_frame; }
@@ -28,6 +28,8 @@ public:
     void                            SetName( const char *name )         { m_frame.SetName( name ); }
     const char*                     GetName() const                     { return m_frame.GetName(); }
     unsigned int                    GetHash() const                     { return m_frame.GetHash(); }
+
+    void                            MarkGC( lua_State *L );
 
     static LUA_DECLARE( unlinkParentFrame );
     static LUA_DECLARE( unlinkParentObject );

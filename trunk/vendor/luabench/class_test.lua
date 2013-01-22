@@ -52,7 +52,7 @@ end
 
 function tr()
 	local a = createClass();
-	local b = createClass();
+	b = createClass();
 	
 	function a.destroy()
 		print("a destroyed");
@@ -84,4 +84,14 @@ function tr()
 	end
 	
 	a.method();
+end
+
+function bug()
+	local c = {};
+
+	for m=1,1000 do
+		table.insert(c, class.construct(function() end));
+	end
+	
+	collectgarbage("collect");
 end

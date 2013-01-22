@@ -429,15 +429,24 @@ LUA_API int lua_resume (lua_State *_L, int nargs)
     lua_checkstack( main, 2 );
 
     luai_userstateresume( L, nargs );
-    lua_pushthreadex( main, L );
-    lua_callevent( main, LUA_EVENT_THREAD_CONTEXT_PUSH, 1 );
+
+    if ( Closure *evtCall = G(main)->events[LUA_EVENT_THREAD_CONTEXT_PUSH] )
+    {
+        setclvalue( main, main->top++, evtCall );
+        lua_pushthreadex( main, L );
+        lua_call( main, 1, 0 );
+    }
 
     callstack_ref ref( *L );
     
     // The OS thread is saved on it's position
     ((lua_Thread*)L)->resume();
 
-    lua_callevent( main, LUA_EVENT_THREAD_CONTEXT_POP, 0 );
+    if ( Closure *evtCall = G(main)->events[LUA_EVENT_THREAD_CONTEXT_POP] )
+    {
+        setclvalue( main, main->top++, evtCall );
+        lua_call( main, 0, 0 );
+    }
 
     lua_unlock(L);
     luai_userstateyield(L, nresults);

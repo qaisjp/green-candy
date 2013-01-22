@@ -31,42 +31,24 @@ static LUA_DECLARE( setParent )
         return 1;
     }
 
-    lua_settop( L, 1 );
-
     // We can stay without a root
     if ( !element.m_root )
-    {
-        lua_getfield( L, LUA_ENVIRONINDEX, "super" );
-        lua_pushvalue( L, 1 );
-        lua_call( L, 1, 1 );
-        return 1;
-    }
+        goto parent;
 
+    // Check if the new parent is inside our root
     element.m_root->PushStack( L );
 
-    lua_pushvalue( L, 1 );
+    if ( lua_refclass( L, 1 )->IsRootedIn( L, -1 ) )
+        goto parent;
 
-    while ( lua_type( L, 3 ) == LUA_TCLASS )
-    {
-        ILuaClass *j = lua_refclass( L, 3 );
-
-        if ( !j->IsTransmit( LUACLASS_ELEMENT ) )
-            break;
-
-        if ( lua_equal( L, 2, 3 ) )
-        {
-            lua_getfield( L, LUA_ENVIRONINDEX, "super" );
-            lua_pushvalue( L, 1 );
-            lua_call( L, 1, 1 );
-            return 1;
-        }
-
-        j->PushParent( L );
-        lua_remove( L, 3 );
-    }
-
-    // We may not be the child of an outside resource class
+    // Failed (i.e. we may not be the child of an outside resource class)
     lua_pushboolean( L, false );
+    return 1;
+
+parent:
+    lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+    lua_pushvalue( L, 1 );
+    lua_call( L, 1, 1 );
     return 1;
 }
 
@@ -129,7 +111,7 @@ static inline int _trefget( lua_State *L, LuaElement *el )
 {
     lua_pushlightuserdata( L, el );
     lua_pushcclosure( L, luaconstructor_element, 1 );
-    lua_newclass( L );
+    lua_newclassex( L, LCLASS_API_LIGHT );
     return luaL_ref( L, LUA_REGISTRYINDEX );
 }
 
@@ -155,24 +137,8 @@ void LuaElement::SetRoot( LuaClass *root )
 
     // Check whether we are in the root already
     // If so, we do not need to be reparented
-    root->PushStack( m_lua );
-    m_class->PushParent( m_lua );
-
-    while ( lua_type( m_lua, -1 ) == LUA_TCLASS )
-    {
-        if ( lua_equal( m_lua, -2, -1 ) )
-        {
-            lua_pop( m_lua, 2 );
-            return;
-        }
-
-        ILuaClass *parent = lua_refclass( m_lua, -1 );
-        lua_pop( m_lua, 1 );
-
-        parent->PushParent( m_lua );
-    }
-
-    lua_pop( m_lua, 2 );
+    if ( IsRootedIn( root ) )
+        return;
 
     // Reparent it so we are in the correct tree
     m_class->PushMethod( m_lua, "setParent" );

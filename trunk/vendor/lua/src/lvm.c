@@ -815,16 +815,3 @@ reentry:  /* entry point */
     }
   }
 }
-
-LUAI_FUNC void lua_callevent( lua_State *lua, eLuaEvent evt, int nargs )
-{
-    if ( !G(lua)->events[evt] )
-    {
-        lua_pop( lua, nargs );
-        return;
-    }
-
-    lua_pushcclosure( lua, G(lua)->events[evt], 0 );
-    lua_insert( lua, -nargs - 1 );
-    lua_call( lua, nargs, 0 );
-}

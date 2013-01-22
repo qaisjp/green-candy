@@ -19,6 +19,8 @@ public:
                                     CLuaManager();
                                     ~CLuaManager();
 
+    void                            GarbageCollect( lua_State *L );
+
     CLuaMain*                       Create( const std::string& name, CFileTranslator& fileRoot );
     bool                            Remove( LuaMain *lua );
 

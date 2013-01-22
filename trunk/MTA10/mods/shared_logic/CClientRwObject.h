@@ -18,21 +18,73 @@
 
 class CClientRwFrame;
 
-class CClientRwObject abstract : public LuaElement
+class CClientRwObject abstract
 {
     friend class CClientRwFrame;
+    friend class CResourceManager;
+    friend class CResource;
 public:
                                     CClientRwObject( lua_State *L, CRwObject& object );
-                                    ~CClientRwObject();
+    virtual                         ~CClientRwObject();
 
     CRwObject&                      GetObject()                     { return m_object; }
     const CRwObject&                GetObject() const               { return m_object; }
 
+    inline void                     PushStack( lua_State *L )       { m_class->Push( L ); }
+    inline void                     PushMethod( lua_State *L, const char *name )    { m_class->PushMethod( L, name ); }
+
+    inline void                     Reference()                     { m_class->IncrementMethodStack( g_L ); }
+    inline void                     Dereference()                   { m_class->DecrementMethodStack( g_L ); }
+
+    inline void Reference( lua_class_reference& ref )
+    {
+        PushStack( g_L );
+        new (&ref) lua_class_reference( g_L, -1 );    // Do not construct the object in this scope
+        lua_pop( g_L, 1 );
+    }
+
+    inline void Reference( luaRefs& refs )
+    {
+        lua_class_reference *ref = new lua_class_reference;
+        Reference( *ref );
+
+        refs.push_back( ref );
+    }
+
     void                            SetOwner( CResource *res );
-    CResource*                      GetOwner() const                { return m_owner; }
+    CResource*                      GetOwner()                      { return m_owner; }
+
+    void                            SetRoot( CClientRwFrame *root ) { m_root = root; }
+    CClientRwFrame*                 GetRoot()                       { return m_root; }
+
+    // Garbage Collector event
+    virtual void                    MarkGC( lua_State *L );
+
+    inline bool IsDestroying() const
+    {
+        return m_class->IsDestroying();
+    }
+
+    inline void Destroy()
+    {
+        // Prevent Lua referencing
+        m_class->ClearReferences( g_L );
+
+        m_class->PushMethod( g_L, "destroy" );
+        lua_call( g_L, 0, 0 );
+
+        // At this point the class may be destroyed; do not use it anymore!
+    }
+
+    inline void Delete()
+    {
+        Destroy();
+    }
 
 protected:
     void                            UnlinkOwner();
+
+    ILuaClass*          m_class;
 
     CRwObject&          m_object;
 
@@ -41,6 +93,7 @@ protected:
 
 public:
     CClientRwFrame*     m_parent;
+    CClientRwFrame*     m_root;
 };
 
 #endif //_CLIENT_RWOBJECT_
