@@ -280,6 +280,7 @@ LUA_DECLARE( CClientRwFrame::setChild )
 
     // <3 unions are lovely!
     obj->m_parent = frame;
+    obj->SetOwner( frame->GetOwner() );
     return 1;
 }
 
@@ -338,13 +339,13 @@ static inline void RwFrameAssignObject( CRwObject *obj, CClientRwFrame *parent )
     switch( obj->GetType() )
     {
     case RW_ATOMIC:
-        atom = new CClientAtomic( parent->GetVM(), NULL, *dynamic_cast <CRpAtomic*> ( obj ) );
+        atom = new CClientAtomic( g_L, NULL, *dynamic_cast <CRpAtomic*> ( obj ) );
         break;
     case RW_LIGHT:
-        light = new CClientLight( parent->GetVM(), NULL, *dynamic_cast <CRpLight*> ( obj ) );
+        light = new CClientLight( g_L, NULL, *dynamic_cast <CRpLight*> ( obj ) );
         break;
     case RW_CAMERA:
-        cam = new CClientRwCamera( parent->GetVM(), *dynamic_cast <CRwCamera*> ( obj ) );
+        cam = new CClientRwCamera( g_L, *dynamic_cast <CRwCamera*> ( obj ) );
         break;
     }
 
@@ -353,8 +354,8 @@ static inline void RwFrameAssignObject( CRwObject *obj, CClientRwFrame *parent )
 
 static inline void RwFrameAssignChild( CRwFrame *child, CClientRwFrame *parent )
 {
-    lua_State *L = parent->GetVM();
-    CClientRwFrame *frame = new CClientRwFrame( L, *child );
+    lua_State *L = g_L;
+    CClientRwFrame *frame = new CClientRwFrame( L, *child, parent->GetOwner() );
 
     // Establish the connection; this should do all the magic
     frame->PushMethod( L, "setParent" );
@@ -362,7 +363,7 @@ static inline void RwFrameAssignChild( CRwFrame *child, CClientRwFrame *parent )
     lua_call( L, 1, 0 );
 }
 
-CClientRwFrame::CClientRwFrame( lua_State *L, CRwFrame& frame ) : CClientRwObject( L, frame ), m_frame( frame )
+CClientRwFrame::CClientRwFrame( lua_State *L, CRwFrame& frame, CResource *owner ) : CClientRwObject( L, frame ), m_frame( frame )
 {
     // Lua instancing
     PushStack( L );
@@ -370,6 +371,9 @@ CClientRwFrame::CClientRwFrame( lua_State *L, CRwFrame& frame ) : CClientRwObjec
     lua_pushcclosure( L, luaconstructor_rwframe, 1 );
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
+
+    // The frame needs the owner at creation to give it to all children
+    SetOwner( owner );
 
     // Obtain all children...
     {
@@ -390,4 +394,24 @@ CClientRwFrame::CClientRwFrame( lua_State *L, CRwFrame& frame ) : CClientRwObjec
 
 CClientRwFrame::~CClientRwFrame()
 {
+}
+
+void CClientRwFrame::MarkGC( lua_State *L )
+{
+    // Mark all objects...
+    for ( objects_t::const_iterator iter = m_objects.begin(); iter != m_objects.end(); iter++ )
+    {
+        // Objects which are in frames have to be kept alive no matter what the object says
+        CClientRwObject *obj = *iter;
+
+        obj->m_class->Propagate( L );
+        lua_gcpaycost( L, sizeof( *obj ) );
+    }
+
+    // ...and children
+    for ( children_t::const_iterator iter = m_children.begin(); iter != m_children.end(); iter++ )
+        (*iter)->MarkGC( L );
+
+    m_class->Propagate( L );
+    lua_gcpaycost( L, sizeof( *this ) );
 }

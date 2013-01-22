@@ -41,6 +41,7 @@ class CClientEntity;
 class CResource : public Resource
 {
     friend class CClientRwObject;
+    friend class CResourceManager;
 public:
                                 CResource( unsigned short id, const filePath& name, CFileTranslator& root, CClientEntity *entity, CClientEntity *dynamicEntity );
                                 ~CResource();

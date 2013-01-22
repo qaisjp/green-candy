@@ -107,9 +107,14 @@ static int childapi_notifyDestroy( lua_State *L )
 {
     Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
 
+    const TValue *val = j.GetSuperMethod( L );
+
     // First let all other handlers finish
-    lua_getfield( L, LUA_ENVIRONINDEX, "super" );
-    lua_call( L, 0, 0 );
+    if ( ttype( val ) == LUA_TFUNCTION )
+    {
+        setobj2s( L, L->top++, val );
+        lua_call( L, 0, 0 );
+    }
 
     if ( j.childCount != 0 )
         return 0;
@@ -208,6 +213,11 @@ void Class::ClearReferences( lua_State *lua )
     CheckDestruction( lua );
 }
 
+void Class::Push( lua_State *L )
+{
+    setjvalue( L, L->top++, this );
+}
+
 void Class::PushMethod( lua_State *L, const char *key )
 {
     setobj( L, L->top++, luaH_getstr( methods, luaS_new( L, key ) ) );
@@ -252,6 +262,24 @@ bool Class::IsDestroying() const
 bool Class::IsDestroyed() const
 {
     return destroyed;
+}
+
+bool Class::IsRootedIn( Class *root ) const
+{
+    while ( root )
+    {
+        if ( root == this )
+            return true;
+
+        root = root->parent;
+    }
+
+    return false;
+}
+
+bool Class::IsRootedIn( lua_State *L, int idx ) const
+{
+    return IsRootedIn( jvalue( index2adr( L, idx ) ) );
 }
 
 void Class::PushEnvironment( lua_State *L )
@@ -313,9 +341,14 @@ void Class::RequestDestruction()
     reqDestruction = true;
 }
 
-TValue* Class::GetSuperMethod( lua_State *lua )
+TValue* Class::SetSuperMethod( lua_State *L )
 {
-    return luaH_setstr( lua, internStorage, superCached );
+    return luaH_setstr( L, internStorage, G(L)->superCached );
+}
+
+const TValue* Class::GetSuperMethod( lua_State *L )
+{
+    return luaH_getstr( internStorage, G(L)->superCached );
 }
 
 // Easy wrapper for C++ support
@@ -327,7 +360,7 @@ public:
         if ( myClass->destroyed )
             throw lua_exception( thread, LUA_ERRRUN, "attempt to access a destroyed class' method" );
 
-        TValue *superMethod = myClass->GetSuperMethod( thread );
+        TValue *superMethod = myClass->SetSuperMethod( thread );
 
         setobj( thread, &m_prevSuper, superMethod );
 
@@ -341,7 +374,7 @@ public:
 
     ~MethodStackAllocation()
     {
-        setobj( m_thread, m_instance->GetSuperMethod( m_thread ), &m_prevSuper );
+        setobj( m_thread, m_instance->SetSuperMethod( m_thread ), &m_prevSuper );
         luaC_barriert( m_thread, m_instance->internStorage, &m_prevSuper );
         m_instance->DecrementMethodStack( m_thread );
     }
@@ -489,10 +522,15 @@ static int classmethod_setChild( lua_State *L )
 static const luaL_Reg internStorage_interface[] =
 {
     { "registerForcedSuper", classmethod_registerForcedSuper },
+    { "setChild", classmethod_setChild },
+    { NULL, NULL }
+};
+
+static const luaL_Reg internStorage_envDispatch_interface[] =
+{
     { "envPutFront", classmethod_envPutFront },
     { "envPutBack", classmethod_envPutBack },
     { "envAcquireDispatcher", classmethod_envAcquireDispatcher },
-    { "setChild", classmethod_setChild },
     { NULL, NULL }
 };
 
@@ -509,7 +547,6 @@ static int classmethod_fsDestroyRoot( lua_State *L )
     if ( j.destroyed )
         throw lua_exception( L, LUA_ERRRUN, "attempt to destroy a destroyed class" );
 
-    // I think we do not need to check for a destroyed class here
     if ( !class_preDestructor( L, j ) )
         return 0;
 
@@ -897,17 +934,10 @@ static int classmethod_setParent( lua_State *L )
     }
 
     // Prevent circle jerks or pervert child relationships
-    Class *parent = c.parent;
-
-    while ( parent )
+    if ( j.IsRootedIn( c.parent ) )
     {
-        if ( parent == &j )
-        {
-            setbvalue( L->top++, false );
-            return 1;
-        }
-
-        parent = parent->parent;
+        setbvalue( L->top++, false );
+        return 1;
     }
 
     c.PushMethod( L, "isValidChild" );
@@ -930,7 +960,7 @@ static int classmethod_setParent( lua_State *L )
 
     setjvalue( L, --L->top - 1, &j );
     lua_pushcclosure( L, childapi_constructor, 1 );
-    lua_newclass( L );
+    lua_newclassex( L, LCLASS_API_NOENVDISPATCH | LCLASS_NOPARENTING );
 
     // Store the API
     j.parent = &c;
@@ -942,6 +972,7 @@ static int classmethod_setParent( lua_State *L )
     setjvalue( L, stm, j.childAPI );
     luaC_objbarriert( L, j.internStorage, j.childAPI );
 
+    // Call setChild in protected mode as the process may not be interupted anymore
     setobj( L, L->top++, luaH_getstr( c.internStorage, luaS_new( L, "setChild" ) ) );
     setjvalue( L, L->top++, &j );
     lua_pcall( L, 1, 0, 0 );
@@ -972,6 +1003,7 @@ static int classmethod_destructor( lua_State *L )
 {
     Class *j = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
  
+    // Free unnecessary references.
     j->env->metatable = NULL;
     j->env = NULL;
     j->outenv->metatable = NULL;
@@ -993,11 +1025,16 @@ static const luaL_Reg classmethods_light[] =
     { "dereference", classmethod_dereference },
     { "isValidChild", classmethod_isValidChild },
     { "getChildren", classmethod_getChildren },
+    { NULL, NULL }
+};
+
+static const luaL_Reg classmethods_parenting_light[] =
+{
     { "getParent", classmethod_getParent },
     { NULL, NULL }
 };
 
-static const luaL_Reg classmethods[] =
+static const luaL_Reg classmethods_parenting[] =
 {
     { "setParent", classmethod_setParent },
     { NULL, NULL }
@@ -1092,15 +1129,15 @@ static int methodenv_newindex( lua_State *L )
         }
     }
 
-    lua_pushvalue( L, 2 );
-    lua_rawget( L, lua_upvalueindex( 2 ) );
+    const TValue *key = L->base + 1;
 
-    if ( lua_type( L, 4 ) != LUA_TNIL )
+    if ( luaH_get( j.methods, key ) != luaO_nilobject )
         throw lua_exception( L, LUA_ERRRUN, "class methods cannot be overwritten" );
 
-    lua_settop( L, 3 );
+    const TValue *val = L->base + 2;
 
-    lua_settable( L, lua_upvalueindex( 3 ) );
+    setobj( L, luaH_set( L, j.storage, key ), val );
+    luaC_barriert( L, j.storage, val );
     return 0;
 }
 
@@ -1131,7 +1168,7 @@ private:
     int         m_id;
 };
 
-Class* luaJ_new( lua_State *L, int nargs )
+Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
 {
     Class *c = new (L) Class;
 
@@ -1165,8 +1202,6 @@ Class* luaJ_new( lua_State *L, int nargs )
 
     c->env->metatable = meta;
     c->outenv->metatable = outmeta;
-
-    c->superCached = luaS_newlstr( L, "super", 5 );
 
     // Perform a temporary keep
     ClassConstructionAllocation construction( L, c );
@@ -1205,10 +1240,15 @@ Class* luaJ_new( lua_State *L, int nargs )
 
     // Create a class-only storage
     sethvalue( L, L->top++, c->internStorage );
-    sethvalue( L, L->top++, c->env );
-    lua_setfield( L, -2, "_ENV" );
-    sethvalue( L, L->top++, c->outenv );
-    lua_setfield( L, -2, "_OUTENV" );
+    
+    if ( !( flags & LCLASS_API_NO_ENV_AWARENESS ) )
+    {
+        // Distribute the environment
+        sethvalue( L, L->top++, c->env );
+        lua_setfield( L, -2, "_ENV" );
+        sethvalue( L, L->top++, c->outenv );
+        lua_setfield( L, -2, "_OUTENV" );
+    }
     setjvalue( L, L->top++, c );
     lua_setfield( L, -2, "this" );
 
@@ -1216,18 +1256,23 @@ Class* luaJ_new( lua_State *L, int nargs )
     setjvalue( L, L->top++, c );
     luaL_openlib( L, NULL, internStorage_interface, 1 );
 
-    // Give it the environment storage
-    sethvalue( L, L->top++, c->storage );
+    if ( !( flags & LCLASS_API_NOENVDISPATCH ) )
+    {
+        // Include the env dispatcher API
+        setjvalue( L, L->top++, c );
+        luaL_openlib( L, NULL, internStorage_envDispatch_interface, 1 );
+    }
 
-    lua_pushcclosure( L, methodenv_index, 3 );
+    // Pop the internal storage
+    L->top--;
+
+    lua_pushcclosure( L, methodenv_index, 1 );
     lua_setfield( L, -2, "__index" );
 
     // Register the method dispatcher
     setjvalue( L, L->top++, c );
-    sethvalue( L, L->top++, c->methods );
-    sethvalue( L, L->top++, c->storage );
 
-    lua_pushcclosure( L, methodenv_newindex, 3 );
+    lua_pushcclosure( L, methodenv_newindex, 1 );
     lua_setfield( L, -2, "__newindex" );
 
 #ifdef LUA_PROTECT_CLASS_META
@@ -1242,16 +1287,18 @@ Class* luaJ_new( lua_State *L, int nargs )
     sethvalue( L, L->top++, c->env );
 
     // Register the interface
-    setjvalue( L, L->top++, c );
+    if ( !( flags & LCLASS_NOPARENTING ) )
+    {
+        // Add functionality for Lua parenting
+        setjvalue( L, L->top++, c );
+        luaL_openlib( L, NULL, classmethods_parenting, 1 );
 
-    luaL_openlib( L, NULL, classmethods, 1 );
-
-    int t = lua_gettop( L );
+        // Same goes for light functions
+        c->RegisterLightInterface( L, classmethods_parenting_light, c );
+    }
 
     // Register the light interface
     c->RegisterLightInterface( L, classmethods_light, c );
-    
-    int t2 = lua_gettop( L );
 
     sethvalue( L, L->top - 1, c->methods );
 
@@ -1291,7 +1338,7 @@ Class::~Class()
 
 void luaJ_construct( lua_State *L, int nargs )
 {
-    Class *j = luaJ_new( L, nargs );
+    Class *j = luaJ_new( L, nargs, 0 );
 
     setjvalue( L, L->top++, j );
 }

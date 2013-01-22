@@ -229,11 +229,21 @@ LUA_API void lua_replace (lua_State *L, int idx)
     if ( idx == LUA_ENVIRONINDEX )
     {
         Closure *func = curr_func(L);
+        const TValue *val = L->top - 1;
 
-        api_check(L, ttistable(L->top - 1)); 
+        api_check(L, ttistable(val)); 
 
-        func->env = hvalue(L->top - 1);
-        luaC_barrier(L, func, L->top - 1);
+        func->env = hvalue(val);
+        luaC_barrier(L, func, val);
+    }
+    else if ( idx == LUA_STORAGEINDEX )
+    {
+        const TValue *val = L->top - 1;
+
+        api_check( L, ttistable( val ) );
+
+        sethvalue( L, &L->storage, hvalue( val ) );
+        luaC_barrier( L, L, val );
     }
     else
     {
@@ -792,9 +802,14 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex)
     {
     case LUA_TTABLE:
         {
-            hvalue(obj)->metatable = mt;
-            if (mt)
-                luaC_objbarriert(L, hvalue(obj), mt);
+            Table *h = hvalue(obj);
+
+            h->metatable = mt;
+            if ( mt )
+            {
+                luaC_objbarriert(L, h, mt);
+                mt->flags = 0;   // reset the metatable flags
+            }
         }
         break;
     case LUA_TUSERDATA:
@@ -1063,6 +1078,16 @@ LUA_API int lua_gc (lua_State *L, int what, int data) {
   return res;
 }
 
+LUA_API void lua_gcpaycost( lua_State *L, unsigned int cost )
+{
+    global_State *g = G(L);
+    lua_Thread *gcL = g->GCthread;
+    
+    if ( gcL != L || gcL->status != THREAD_RUNNING )
+        return;
+
+    luaC_paycost( g, gcL, cost );
+}
 
 
 /*
@@ -1242,29 +1267,42 @@ LUA_API const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
   return name;
 }
 
-LUA_API void lua_setevent( lua_State *lua, eLuaEvent evt, lua_CFunction proto )
+LUA_API void lua_setevent( lua_State *L, eLuaEvent evt, lua_CFunction proto )
 {
     if ( evt > LUA_NUM_EVENTS-1 )
         return;
 
-    G(lua)->events[evt] = proto;
+    lua_pushcclosure( L, proto, 0 );
+
+    L->top--;
+    G(L)->events[evt] = clvalue( L->top );
 }
 
-LUA_API void lua_constructclass( lua_State *L, int nargs )
+LUA_API void lua_constructclassex( lua_State *L, int nargs, unsigned int flags )
 {
     Class *c;
     lua_lock( L );
 
-    c = luaJ_new( L, nargs );
+    c = luaJ_new( L, nargs, flags );
     setjvalue( L, L->top, c );
     api_incr_top( L );
 
     lua_unlock( L );
 }
 
-LUA_API void lua_newclass( lua_State *lua )
+LUA_API void lua_constructclass( lua_State *L, int nargs )
 {
-    lua_constructclass( lua, 0 );
+    lua_constructclassex( L, nargs, 0 );
+}
+
+LUA_API void lua_newclass( lua_State *L )
+{
+    lua_constructclass( L, 0 );
+}
+
+LUA_API void lua_newclassex( lua_State *L, unsigned int flags )
+{
+    lua_constructclassex( L, 0, flags );
 }
 
 LUA_API ILuaClass* lua_refclass( lua_State *L, int idx )

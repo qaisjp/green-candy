@@ -95,7 +95,7 @@ Fiber* luaX_newfiber( lua_State *L, size_t stackSize, FiberProcedure proc )
 
     // Once entering, the first argument should be the thread
     *--stack = (unsigned int)L;
-    *--stack = (unsigned int)&exit;
+    *--stack = (unsigned int)exit;
     *--stack = (unsigned int)L;
     *--stack = (unsigned int)&_retHandler;
     env->esp = (unsigned int)stack;

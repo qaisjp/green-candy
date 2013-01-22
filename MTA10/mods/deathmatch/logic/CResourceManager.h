@@ -34,6 +34,8 @@ public:
     void                    Remove( unsigned short id )                     { return ResourceManager::Remove( id ); }
     void                    StopAll();
 
+    void                    GarbageCollect( lua_State *L );
+
     void                    LoadUnavailableResources();
 
     bool                    ParseResourcePath( Resource*& res, const char *path, std::string& meta );

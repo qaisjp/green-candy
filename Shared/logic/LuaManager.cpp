@@ -28,6 +28,7 @@
 #define HOOK_MAXIMUM_TIME 5000
 
 ResourceManager* LuaManager::m_resMan = NULL;
+lua_State *g_L = NULL;
 
 static LuaManager* lua_readmanager( lua_State *L )
 {
@@ -42,7 +43,7 @@ static int lua_cocreatethread( lua_State *L )
 
     lua_xmove( L, thread, 1 );
 
-    lua_replace( L, LUA_STORAGEINDEX );
+    lua_replace( thread, LUA_STORAGEINDEX );
     return 0;
 }
 
@@ -91,17 +92,29 @@ static int luamain_constructor( lua_State *lua )
     return 0;
 }
 
+void LuaManager::GarbageCollect( lua_State *L )
+{
+}
+
+static int lua_gcextend_event( lua_State *L )
+{
+    lua_readmanager( L )->GarbageCollect( L );
+
+    return 0;
+}
+
 LuaManager::LuaManager( Events& events, ScriptDebugging& debug ) :
     m_events( events ),
     m_debug( debug )
 {
     // Setup the virtual machine
-    m_lua = luaL_newstate();
+    g_L = m_lua = luaL_newstate();
 
     // Setup callbacks
     lua_setevent( m_lua, LUA_EVENT_THREAD_CO_CREATE, lua_cocreatethread );
     lua_setevent( m_lua, LUA_EVENT_THREAD_CONTEXT_PUSH, lua_pushstackthread );
     lua_setevent( m_lua, LUA_EVENT_THREAD_CONTEXT_POP, lua_popstackthread );
+    lua_setevent( m_lua, LUA_EVENT_GC_PROPAGATE, lua_gcextend_event );
 
     // Cache the lua manager in the VM
     lua_pushlightuserdata( m_lua, this );
@@ -129,7 +142,7 @@ void LuaManager::Shutdown()
     // Destroy lua environment
     lua_close( m_lua );
 
-    m_lua = NULL;
+    g_L = m_lua = NULL;
 }
 
 LuaManager::~LuaManager()

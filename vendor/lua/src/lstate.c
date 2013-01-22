@@ -330,6 +330,9 @@ LUAI_FUNC lua_State *lua_newstate (lua_Alloc f, void *ud)
         return NULL;
     }
 
+    // Init runtime globals
+    g->superCached = luaS_newlstr( L, "super", 5 );
+
     luai_userstateopen(L);
     return L;
 }

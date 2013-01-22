@@ -81,8 +81,6 @@ namespace RwImportedScan
     }
 };
 
-
-
 static inline CVector* _RpGeometryAllocateNormals( RpGeometry *geom, RpGeomMesh *mesh )
 {
     CVector *normals = (CVector*)RwAllocAligned( sizeof(CVector) * geom->m_verticeSize, 0x10 );
@@ -121,7 +119,7 @@ static void _initAtomScene( RpAtomic *atom )
     RpGeometry& geom = *atom->m_geometry;
     geom.flags |= RW_GEOMETRY_GLOBALLIGHT;
 
-    // TODO: reenable this using multi-threading
+    // TODO: reenable this using multi-threading (streamline extension!)
     return;
 
     if ( !( geom.flags & RW_GEOMETRY_NORMALS ) )
@@ -299,7 +297,7 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
 
     info->SetClump( clump );
 
-    // Game fix???
+    // Game fix???^ R*
     if ( id == VT_JOURNEY )
         ((CVehicleModelInfoSAInterface*)info)->m_numberOfDoors &= 0x02;
 
@@ -632,6 +630,21 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
         }
         else
             success = LoadClumpFilePersistent( stream, id );
+
+        // Replace collision if necessary
+        if ( CColModelSA *col = g_colReplacement[id] )
+        {
+            CColModelSAInterface *icol = info->m_pColModel;
+            CColModelSAInterface *ocol = col->GetOriginal();
+
+            if ( icol )
+            {
+                if ( icol != ocol )
+                    delete ocol;    // if its NULL, wont crash
+
+                col->SetOriginal( icol );
+            }
+        }
 
         if ( loadInfo.m_eLoading != MODEL_RELOAD )
         {

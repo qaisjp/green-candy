@@ -608,8 +608,13 @@ static int luaB_cocreate (lua_State *L)
     lua_xmove(L, NL, 1);  /* move function from L to NL */
 
     // Notify the system
-    setthvalue( L, L->top++, NL );
-    lua_callevent( L, LUA_EVENT_THREAD_CO_CREATE, 1 );
+    if ( Closure *evtCall = G(L)->events[LUA_EVENT_THREAD_CO_CREATE] )
+    {
+        setclvalue( L, L->top++, evtCall );
+        setthvalue( L, L->top++, NL );
+        lua_call( L, 1, 0 );
+    }
+
     return 1;
 }
 

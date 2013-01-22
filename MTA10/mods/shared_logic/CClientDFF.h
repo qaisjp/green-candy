@@ -23,7 +23,7 @@ class CClientDFF : public CClientRwObject
 {
     friend class CClientAtomic;
 public:
-                                    CClientDFF( lua_State *L, CModel& model );
+                                    CClientDFF( lua_State *L, CModel& model, CResource *owner );
                                     ~CClientDFF();
 
     bool                            ReplaceModel( unsigned short id );

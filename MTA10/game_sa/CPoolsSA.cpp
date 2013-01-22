@@ -273,7 +273,7 @@ CTrainSA* CPoolsSA::AddTrain( unsigned short modelID, const CVector& pos, bool d
         return NULL;
 
     // clean the existing array
-    memset( (void*)VAR_TrainModelArray, 0, 32 * sizeof(DWORD) );
+    memset( (unsigned int*)VAR_TrainModelArray, 0, 32 * sizeof(unsigned int) );
 
     // We only want one model
     *(unsigned short*)VAR_TrainModelArray = modelID; 
@@ -613,7 +613,7 @@ inline static CCivilianPedSAInterface* CreateCivilianPed()
         call    CCivilianPedConstructor
     }
 
-    pGame->GetWorld()->Add( ped );
+    //pGame->GetWorld()->Add( ped );
     return ped;
 }
 

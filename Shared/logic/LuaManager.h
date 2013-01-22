@@ -48,6 +48,9 @@ public:
     virtual int                     AccessGlobal();
     virtual int                     AccessGlobalTable();
 
+    // Garbage collector extension
+    virtual void                    GarbageCollect( lua_State *L );
+
     lua_State*                      GetVirtualMachine() const   { return m_lua; }
 
     // Current execution information
@@ -248,5 +251,8 @@ protected:
 // quick macros
 #define lua_getmanager( L ) (lua_rawgeti( L, LUA_STORAGEINDEX, 1 ))
 #define lua_getcontext( L ) (lua_rawgeti( L, LUA_STORAGEINDEX, 2 ))
+
+// global inline definition
+extern lua_State *g_L;
 
 #endif //_BASE_LUA_MANAGER_

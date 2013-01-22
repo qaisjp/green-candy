@@ -10,7 +10,9 @@ EXPORTS
   lua_setupvalue
   lua_setevent
   lua_constructclass
+  lua_constructclassex
   lua_newclass
+  lua_newclassex
   lua_refclass
   lua_basicprotect
   lua_basicextend
@@ -42,6 +44,7 @@ EXPORTS
   lua_yield
   lua_dump
   lua_gc
+  lua_gcpaycost
   lua_gethook
   lua_gethookcount
   lua_gethookmask

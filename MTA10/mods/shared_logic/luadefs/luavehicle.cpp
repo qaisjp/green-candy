@@ -13,6 +13,34 @@
 
 #include <StdInc.h>
 
+static LUA_DECLARE( setRotation )
+{
+    CVector rot;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadVector( rot );
+    LUA_ARGS_END;
+
+    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetRotationDegrees( rot );
+    LUA_SUCCESS;
+}
+
+inline static void lua_pushvector( lua_State *L, const CVector& vec )
+{
+    lua_pushnumber( L, vec[0] );
+    lua_pushnumber( L, vec[1] );
+    lua_pushnumber( L, vec[2] );
+}
+
+static LUA_DECLARE( getRotation )
+{
+    CVector rot;
+    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetRotationDegrees( rot );
+
+    lua_pushvector( L, rot );
+    return 3;
+}
+
 static LUA_DECLARE( setModel )
 {
     unsigned short model;
@@ -387,13 +415,6 @@ static LUA_DECLARE( detachTrailer )
     return 0;
 }
 
-inline static void lua_pushvector( lua_State *L, const CVector& vec )
-{
-    lua_pushnumber( L, vec[0] );
-    lua_pushnumber( L, vec[1] );
-    lua_pushnumber( L, vec[2] );
-}
-
 static LUA_DECLARE( getTowBarPos )
 {
     CVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGameVehicle();
@@ -566,12 +587,13 @@ static LUA_DECLARE( getWheelStates )
 
 static LUA_DECLARE( cloneClump )
 {
+    CResource *res = CLuaFunctionDefs::lua_readcontext( L )->GetResource();
     CVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGameVehicle();
 
     if ( !veh )
         return 0;
 
-    ( new CClientDFF( L, *veh->CloneClump() ) )->PushStack( L );
+    ( new CClientDFF( L, *veh->CloneClump(), res ) )->PushStack( L );
     return 1;
 }
 
@@ -1296,6 +1318,8 @@ static LUA_DECLARE( isDerailed )
 
 static const luaL_Reg vehicle_interface_light[] =
 {
+    LUA_METHOD( setRotation ),
+    LUA_METHOD( getRotation ),
     LUA_METHOD( setModel ),
     LUA_METHOD( getModel ),
     LUA_METHOD( setHealth ),
