@@ -63,12 +63,15 @@ static int luaconstructor_root( lua_State *L )
     return 0;
 }
 
-static inline int _trefget( lua_State *L, ResourceManager& manager )
+static inline ILuaClass* _trefget( lua_State *L, ResourceManager& manager )
 {
     lua_pushlightuserdata( L, &manager );
     lua_pushcclosure( L, luaconstructor_root, 1 );
     lua_newclass( L );
-    return luaL_ref( L, LUA_REGISTRYINDEX );
+
+	ILuaClass *j = lua_refclass( L, -1 );
+	lua_pop( L, 1 );
+	return j;
 }
 
 ResourceManager::ResourceManager( lua_State *L ) : LuaClass( L, _trefget( L, *this ) )

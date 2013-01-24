@@ -65,12 +65,15 @@ static int luaconstructor_timer( lua_State *L )
     return 0;
 }
 
-static int _trefget( LuaTimer& timer, lua_State *lua )
+static ILuaClass* _trefget( LuaTimer& timer, lua_State *L )
 {
-    lua_pushlightuserdata( lua, &timer );
-    lua_pushcclosure( lua, luaconstructor_timer, 1 );
-    lua_newclass( lua );
-    return luaL_ref( lua, LUA_REGISTRYINDEX );
+    lua_pushlightuserdata( L, &timer );
+    lua_pushcclosure( L, luaconstructor_timer, 1 );
+    lua_newclass( L );
+
+	ILuaClass *j = lua_refclass( L, -1 );
+	lua_pop( L, 1 );
+	return j;
 }
 
 LuaTimer::LuaTimer( lua_State *lua, LuaTimerManager *manager, const LuaFunctionRef& ref ) : LuaClass( lua, _trefget( *this, lua ) )

@@ -15,27 +15,22 @@
 
 class LuaClass
 {
-    inline ILuaClass* acqcinf( lua_State *L, int ridx )
-    {
-        lua_rawgeti( L, LUA_REGISTRYINDEX, m_ridx );
-        ILuaClass *inf = lua_refclass( L, -1 );
-        lua_pop( L, 1 );
-        return inf;
-    }
-
+	friend class LuaManager;
 public:
-    LuaClass( lua_State *lua, int ridx )
-    {
-        m_lua = lua_getmainstate( lua );    // for security reasons; main state will always be preserved
-        m_ridx = ridx;
-        m_class = acqcinf( lua, ridx );
-    }
+	// Defined in LuaClass.cpp
+    LuaClass( lua_State *lua, ILuaClass *j );
 
     virtual ~LuaClass()
     {
-        lua_pushnil( m_lua );
-        lua_rawseti( m_lua, LUA_REGISTRYINDEX, m_ridx );
+		LIST_REMOVE( m_gcList );
     }
+
+	virtual void MarkGC( lua_State *L )
+	{
+		m_class->Propagate( L );
+
+		lua_gcpaycost( L, sizeof(*this) );
+	}
 
     inline void PushStack( lua_State *L )
     {
@@ -94,6 +89,17 @@ public:
         return m_lua;
     }
 
+    inline bool SetParent( LuaClass *parent )
+    {
+        PushMethod( m_lua, "setParent" );
+        parent->PushStack( m_lua );
+        lua_call( m_lua, 1, 1 );
+
+        bool success = lua_toboolean( m_lua, -1 );
+        lua_pop( m_lua, 1 );
+        return success;
+    }
+
     inline bool IsRootedIn( LuaClass *root )
     {
         root->PushStack( m_lua );
@@ -127,8 +133,9 @@ public:
 
 protected:
     lua_State*              m_lua;
-    int                     m_ridx;
     ILuaClass*              m_class;
+
+	RwListEntry <LuaClass>	m_gcList;
 };
 
 static inline void luaJ_extend( lua_State *L, int idx, int nargs )

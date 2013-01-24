@@ -30,6 +30,7 @@ static LUA_DECLARE( setClump )
         cam->SetModel( model );
         cam->m_cam.AddToModel( &model->m_model );   // do the internal magic :)
 
+        cam->SetParent( model->m_parent );
         cam->SetRoot( model->m_parent );
         model->m_cameras.insert( model->m_cameras.begin(), cam );
     }

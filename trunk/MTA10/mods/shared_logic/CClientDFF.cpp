@@ -240,7 +240,7 @@ CClientDFF::CClientDFF( lua_State *L, CModel& model, CResource *owner ) : CClien
 
     // Assign all objects from the frame hierarchy into the clump
     RwFrameInspect( m_parent = new CClientRwFrame( L, *model.GetFrame(), owner ), this );
-    m_parent->Reference();
+    m_parent->IncrementMethodStack();
     // I do not know whether we can let the Lua runtime destroy the frame
     // For security reasons I disable this possibility
     // Feel free to discuss about this with me (The_GTA)
@@ -251,7 +251,7 @@ CClientDFF::~CClientDFF()
     RestreamAll();
 
     // Delete our hierarchy
-    m_parent->Delete(); m_parent->Dereference();
+    m_parent->Delete(); m_parent->DecrementMethodStack();
 }
 
 bool CClientDFF::ReplaceModel( unsigned short id )

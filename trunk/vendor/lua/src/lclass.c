@@ -107,7 +107,7 @@ static int childapi_notifyDestroy( lua_State *L )
 {
     Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
 
-    const TValue *val = j.GetSuperMethod( L );
+    const TValue *val = jvalue( index2adr( L, lua_upvalueindex( 2 ) ) )->GetSuperMethod( L );
 
     // First let all other handlers finish
     if ( ttype( val ) == LUA_TFUNCTION )
@@ -138,7 +138,7 @@ inline static bool class_preDestructor( lua_State *L, Class& j )
 
     // We potencially are operating at an unstable state here, since we use child_iter from
     // a destroyed class. It is a thrilling optimization not having to secure it from GC!
-    // If crashes report at this loop, I will take care of it (very unlikely) due to current GC architecture).
+    // If crashes report at this loop, I will take care of it (very unlikely due to current GC architecture).
     LIST_FOREACH_BEGIN( Class, j.children.root, child_iter )
         item->PushMethod( L, "destroy" );
         lua_call( L, 0, 0 );
@@ -149,7 +149,8 @@ inline static bool class_preDestructor( lua_State *L, Class& j )
         if ( !item->destroyed )
         {
             setjvalue( L, L->top++, &j );
-            lua_pushcclosure( L, childapi_notifyDestroy, 1 );
+            setjvalue( L, L->top++, item->childAPI );
+            lua_pushcclosure( L, childapi_notifyDestroy, 2 );
             item->childAPI->RegisterMethod( L, "notifyDestroy" );
 
             reqWorthy = true;
@@ -225,33 +226,61 @@ void Class::PushMethod( lua_State *L, const char *key )
 
 void Class::SetTransmit( int type, void *entity )
 {
-    trans[type] = entity;
+	unsigned int idx = transCount++;
 
-    transRecent = type;
+	// Grow the array
+	trans = (trans_t*)luaM_realloc_( _lua, trans, idx * sizeof(trans_t), transCount * sizeof(trans_t) );
+
+	// Append the item
+    trans_t& item = trans[idx];
+	item.id = (unsigned char)type;
+	item.ptr = entity;
 }
 
 bool Class::GetTransmit( int type, void*& entity )
 {
     if ( destroyed )
         return false;
+
+	if ( !trans )
+		return false;
    
-    transMap_t::iterator iter = trans.find( type );
+    for ( unsigned int n=0; n < transCount; n++ )
+	{
+		trans_t& item = trans[n];
 
-    if ( iter == trans.end() )
-        return false;
+		if ( item.id == (unsigned char)type )
+		{
+			entity = item.ptr;
+			return true;
+		}
+	}
 
-    entity = iter->second;
-    return true;
+	return false;
 }
 
 int Class::GetTransmit() const
 {
-    return transRecent;
+	if ( !trans )
+		return -1;
+
+    return trans[transCount - 1].id;
 }
 
 bool Class::IsTransmit( int type ) const
 {
-    return trans.count( type ) == 1;
+	if ( !trans )
+		return false;
+
+    for ( unsigned int n=0; n < transCount; n++ )
+	{
+		trans_t& item = trans[n];
+
+		if ( item.id == (unsigned char)type )
+			return true;
+	}
+
+	return false;
 }
 
 bool Class::IsDestroying() const
@@ -676,7 +705,7 @@ Table* Class::AcquireEnvDispatcher( lua_State *L )
     return AcquireEnvDispatcherEx( L, hvalue( index2adr( L, LUA_ENVIRONINDEX ) ) );
 }
 
-void Class::RegisterMethod( lua_State *L, const char *name )
+void Class::RegisterMethod( lua_State *L, const char *name, bool handlers )
 {
     Table *methTable;
     TString *methName = luaS_new( L, name );
@@ -690,7 +719,7 @@ void Class::RegisterMethod( lua_State *L, const char *name )
 
     if ( val->tt == LUA_TFUNCTION )
     {
-        setobj( L, L->top++, val );
+        setobj2s( L, L->top++, val );
 
         methTable = internStorage;
         isPrevMethod = true;
@@ -700,23 +729,40 @@ void Class::RegisterMethod( lua_State *L, const char *name )
         const TValue *val2 = luaH_getstr( methods, methName );
 
         if ( isPrevMethod = ( val2->tt == LUA_TFUNCTION ) )
-            setobj( L, L->top++, val2 );
+            setobj2s( L, L->top++, val2 );
 
         methTable = methods;
     }
 
-    setjvalue( L, L->top++, this );
+    if ( !handlers )
+        goto defaultHandler;
 
-    if ( isPrevMethod )
-    {    
-        lua_pushvalue( L, -3 );
-        lua_pushcclosure( L, classmethod_super, 3 );
-    }
-    else
-    {
-        lua_pushvalue( L, -2 );
-        lua_pushcclosure( L, classmethod_root, 2 );
-    }
+	const TValue *fsVal = luaH_getstr( forceSuper, methName );
+
+	if ( ttype( fsVal ) == LUA_TFUNCTION )
+	{
+		setclvalue( L, L->top++, clvalue( fsVal ) );
+
+		if ( !isPrevMethod )
+			lua_pushnil( L );
+        else
+            lua_insert( L, -2 );
+
+        setjvalue( L, L->top++, this );
+		setclvalue( L, L->top++, cl );
+		lua_call( L, 3, 1 );
+	}
+	else
+	{
+defaultHandler:
+        setjvalue( L, L->top++, this );
+		setclvalue( L, L->top++, cl );
+
+		if ( isPrevMethod )
+			lua_pushcclosure( L, classmethod_super, 3 );
+		else
+			lua_pushcclosure( L, classmethod_root, 2 );
+	}
 
     // Speedup for not using Lua stack
     Closure *method = clvalue( L->top - 1 );
@@ -843,11 +889,6 @@ static int classmethod_getChildren( lua_State *L )
     return 1;
 }
 
-static int childapi_notiDestroy( lua_State *L )
-{
-    return 0;
-}
-
 static int childapi_destroy( lua_State *L )
 {
     Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
@@ -922,7 +963,7 @@ static int classmethod_setParent( lua_State *L )
         return 1;
     }
 
-    luaL_checktype( L, 1, LUA_TCLASS );
+    // We want our class as argument only
     lua_settop( L, 1 );
 
     Class& c = *jvalue( L->base );
@@ -1073,13 +1114,11 @@ static int methodenv_newindex( lua_State *L )
                 methTable = j.methods;
             }
 
-            setjvalue( L, L->top, &j );
-            api_incr_top( L );
+            setjvalue( L, L->top++, &j );
 
             lua_pushvalue( L, 3 );
 
-            sethvalue( L, L->top, j.forceSuper );
-            api_incr_top( L );
+            sethvalue( L, L->top++, j.forceSuper );
             lua_pushvalue( L, 2 );
             lua_rawget( L, 7 );
 
@@ -1186,7 +1225,8 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     c->reqDestruction = false;
     c->inMethod = 0;
     c->refCount = 0;
-    c->transRecent = -1;
+    c->trans = NULL;
+	c->transCount = 0;
     c->parent = NULL;
     c->childCount = 0;
     LIST_CLEAR( c->children.root );
@@ -1334,6 +1374,7 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
 
 Class::~Class()
 {
+	luaM_realloc_( _lua, trans, transCount * sizeof(trans_t), 0 );
 }
 
 void luaJ_construct( lua_State *L, int nargs )

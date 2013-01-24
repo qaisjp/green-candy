@@ -36,6 +36,7 @@ static LUA_DECLARE( setClump )
         atom->SetModel( model );
         atom->m_atomic.AddToModel( &model->m_model );   // do the internal magic :)
 
+        atom->SetParent( model->m_parent );
         atom->SetRoot( model->m_parent );
         model->m_atomics.insert( model->m_atomics.begin(), atom );
     }

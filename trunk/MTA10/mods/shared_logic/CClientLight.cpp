@@ -38,6 +38,7 @@ static LUA_DECLARE( setClump )
         light->SetModel( model );
         light->m_light.AddToModel( &model->m_model );   // do the internal magic :)
 
+        light->SetParent( model->m_parent );
         light->SetRoot( model->m_parent );
         model->m_lights.insert( model->m_lights.begin(), light );
     }

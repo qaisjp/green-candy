@@ -107,12 +107,15 @@ static int luaconstructor_element( lua_State *L )
     return 0;
 }
 
-static inline int _trefget( lua_State *L, LuaElement *el )
+static inline ILuaClass* _trefget( lua_State *L, LuaElement *el )
 {
     lua_pushlightuserdata( L, el );
     lua_pushcclosure( L, luaconstructor_element, 1 );
     lua_newclassex( L, LCLASS_API_LIGHT );
-    return luaL_ref( L, LUA_REGISTRYINDEX );
+
+	ILuaClass *j = lua_refclass( L, -1 );
+	lua_pop( L, 1 );
+	return j;
 }
 
 LuaElement::LuaElement( lua_State *L ) : LuaClass( L, _trefget( L, this ) )
