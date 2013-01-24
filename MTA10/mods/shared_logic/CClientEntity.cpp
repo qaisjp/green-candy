@@ -96,7 +96,7 @@ int CClientEntity::entitychildAPI_notifyDestroy( lua_State *L )
     return 0;
 }
 
-static luaL_Reg entitychildAPI_interface[] =
+const static luaL_Reg entitychildAPI_interface[] =
 {
     { "notifyDestroy", CClientEntity::entitychildAPI_notifyDestroy },
     { NULL, NULL }

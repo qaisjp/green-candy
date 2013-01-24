@@ -33,6 +33,7 @@ class ResourceManager;
 
 class LuaManager abstract
 {
+	friend class LuaClass;
     friend class LuaMain;
     friend class RegisteredCommands;
 public:
@@ -246,6 +247,8 @@ protected:
     class Events&                   m_events;
     ScriptDebugging&                m_debug;
     std::list <LuaMain*>            m_structures;
+
+	RwList <LuaClass>				m_gcList;
 };
 
 // quick macros
@@ -254,5 +257,6 @@ protected:
 
 // global inline definition
 extern lua_State *g_L;
+extern LuaManager *g_luaManager;
 
 #endif //_BASE_LUA_MANAGER_

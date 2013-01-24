@@ -60,6 +60,152 @@ typedef struct lua_TValue
     TValuefields;
 } TValue;
 
+/* inline BitArray class for memory saving purposes */
+class BitArray
+{
+	template <class numType>
+	unsigned char get_sig_bits( numType num )
+	{
+		unsigned char bits = 1;
+
+		// There always has to be 1 bit
+		num = num >> 1;
+
+		for ( unsigned char n = 1; n < sizeof( numType ) * 8; n++, num = num >> 1 )
+		{
+			if ( num & 1 )
+				bits = n + 1;
+		}
+
+		return bits;
+	}
+
+	size_t get_block_size() const
+	{
+		return m_entryCount * ( ( m_numBits + 7 ) / 8 );
+	}
+
+	template <class numType>
+	inline numType get_clear_mask( unsigned char off, unsigned char bits ) const
+	{
+		return ( ( 1 << off ) - 1 ) | !( ( 1 << (off + bits) ) - 1 );
+	}
+
+	template <class numType>
+	inline void write( numType val, unsigned char bits )
+	{
+		const size_t curSize = get_block_size();
+		const unsigned char curOff = m_seek % bits;
+		const unsigned char bytes = m_seek / 8;
+		const unsigned char byteOff = bytes % sizeof(val);
+
+		if ( curSize - bytes < sizeof(val) )
+			throw std::exception( "cannot write to ByteArray (out of bounds)" );
+
+		if ( byteOff == 0 )
+		{
+			// Write directly
+			
+		}
+	}
+
+	inline void write_char( unsigned char val, unsigned char bits )
+	{
+		
+	}
+
+	inline void write_short( unsigned short val, unsigned char bits )
+	{
+
+	}
+
+	inline void write_int( unsigned int val, unsigned char bits )
+	{
+
+	}
+
+public:
+	inline BitArray( lua_State *main )
+	{
+		m_data = NULL;
+		m_entryCount = 0;
+		m_seek = 0;
+		m_numBits = 0;
+		m_L = main;
+	}
+
+	~BitArray()
+	{
+		if ( m_data )
+			luaM_realloc_( m_L, m_data, get_block_size(), 0 );
+	}
+
+	inline void set_bit_span( unsigned char bits )
+	{
+		size_t oldSize = get_block_size();
+
+		m_numBits = bits;
+
+		// reallocate to a diff size
+		m_data = (unsigned int*)luaM_realloc_( m_L, m_data, oldSize, get_block_size() );
+	}
+
+	inline void push_back( unsigned int num )
+	{
+		// Get the number of significant bits
+		unsigned char bits = get_sig_bits( num );
+
+		// Increase the count
+		m_entryCount++;
+
+		if ( bits > m_numBits )
+			set_bit_span( bits );
+
+		// Write the item
+		if ( bits > sizeof(unsigned short) * 8 )
+		{
+			write( num, bits );
+			// unsigned int
+		}
+		else if ( bits > sizeof(unsigned char) * 8 )
+		{
+			write( (unsigned short)num, bits );
+			// unsigned short
+		}
+		else
+		{
+			write( (unsigned char)num, bits );
+			// unsigned char
+		}
+	}
+
+	unsigned int operator []( unsigned int idx ) const
+	{
+		return 0;
+	}
+
+	void* operator new( size_t size, lua_State *L )
+	{
+		BitArray *arr = (BitArray*)luaM_malloc( L, sizeof(BitArray) );
+		arr->m_L = L;
+		return arr;
+	}
+
+	void operator delete( void *ptr )
+	{
+		BitArray *arr = (BitArray*)ptr;
+
+		luaM_free( arr->m_L, arr );
+	}
+
+protected:
+	unsigned int*	m_data;
+	unsigned int	m_entryCount;
+	size_t			m_seek;
+	lua_State*		m_L;
+	unsigned char	m_numBits;
+};
+
 class TString;
 class Table;
 class Proto;
@@ -527,7 +673,7 @@ public:
     Table*  AcquireEnvDispatcher( lua_State *L );
     Table*  AcquireEnvDispatcherEx( lua_State *L, Table *env );
 
-    void    RegisterMethod( lua_State *L, const char *name );
+    void    RegisterMethod( lua_State *L, const char *name, bool handlers = false );
     void    RegisterLightMethod( lua_State *L, const char *name );
     void    RegisterLightInterface( lua_State *L, const luaL_Reg *intf, void *udata );
 
@@ -567,13 +713,20 @@ public:
     Class *childAPI;
     unsigned int inMethod;
     unsigned int refCount;
-    bool reqDestruction;
-    bool destroyed;
-    bool destroying;
+	bool reqDestruction : 1;
+	bool destroyed : 1;
+	bool destroying : 1;
+	unsigned char transCount : 5;
 
-    typedef std::map <int, void*> transMap_t;
-    transMap_t trans;
-    int transRecent;
+#pragma pack(1)
+	struct trans_t
+	{
+		unsigned char id;
+		void *ptr;
+	};
+#pragma pack()
+
+	trans_t *trans;
 
     RwList <Class> children;
     size_t childCount;

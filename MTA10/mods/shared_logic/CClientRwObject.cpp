@@ -77,21 +77,20 @@ static luaL_Reg object_interface_light[] =
 {
     LUA_METHOD( getFrame ),
     LUA_METHOD( isValidChild ),
-    LUA_METHOD( setParent ),
     { NULL, NULL }
 };
 
 static LUA_DECLARE( destroy )
 {
-    delete (CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+	delete (CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 
-    return 0;
+	return 0;
 }
 
 static luaL_Reg object_interface[] =
 {
     LUA_METHOD( setParent ),
-    LUA_METHOD( destroy ),
+	LUA_METHOD( destroy ),
     { NULL, NULL }
 };
 
@@ -104,31 +103,35 @@ static LUA_DECLARE( luaconstructor_object )
 
     j.RegisterLightInterface( L, object_interface_light, obj );
 
+	lua_pushvalue( L, LUA_ENVIRONINDEX );
+
+	lua_pushvalue( L, lua_upvalueindex( 1 ) );
+	luaL_openlib( L, NULL, object_interface, 1 );
+
     lua_pushlstring( L, "rwobject", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
     return 0;
 }
 
-/*
-    RwObjects are not LuaClass based, as they should be Garbage Collected.
-*/
-CClientRwObject::CClientRwObject( lua_State *L, CRwObject& object ) : m_object( object )
+static inline ILuaClass* _trefget( lua_State *L, CClientRwObject *obj )
 {
     // Lua instancing
-    lua_pushlightuserdata( L, this );
+    lua_pushlightuserdata( L, obj );
     lua_pushcclosure( L, luaconstructor_object, 1 );
     lua_newclass( L );
 
-    // Register owner, so we are kept alive
+	ILuaClass *j = lua_refclass( L, -1 );
+	lua_pop( L, 1 );
+	return j;
+}
 
-    // Store the class
-    m_class = lua_refclass( L, -1 );
-
-    lua_pop( L, 1 );
-
+CClientRwObject::CClientRwObject( lua_State *L, CRwObject& object ) : LuaClass( L, _trefget( L, this ) ), m_object( object )
+{
     m_parent = NULL;
     m_owner = NULL;
     m_root = NULL;
+
+	m_keepAlive = true;
 }
 
 CClientRwObject::~CClientRwObject()
@@ -163,12 +166,6 @@ void CClientRwObject::SetOwner( CResource *res )
 // RenderWare objects will be kept alive by default if RW_LUA_KEEP_ALIVE is set
 void CClientRwObject::MarkGC( lua_State *L )
 {
-#ifdef RW_LUA_KEEP_ALIVE
-    // Flag ourselves
-    m_class->Propagate( L );
-
-    lua_gcpaycost( L, sizeof( *this ) );
-#elif defined(RW_LUA_YIELD_MARK)    // If RW_LUA_YIELD_MARK is set, traversing RW objects gets CPU-heartwarming <3
-    lua_gcpaycost( L, 1 );
-#endif //RW_LUA_KEEP_ALIVE
+	if ( m_keepAlive )
+		LuaClass::MarkGC( L );
 }

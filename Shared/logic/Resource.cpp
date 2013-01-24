@@ -53,12 +53,15 @@ static int luaconstructor_resource( lua_State *L )
     return 0;
 }
 
-static inline int _trefget( lua_State *L, Resource& res )
+static inline ILuaClass* _trefget( lua_State *L, Resource& res )
 {
     lua_pushlightuserdata( L, &res );
     lua_pushcclosure( L, luaconstructor_resource, 1 );
     lua_newclass( L );
-    return luaL_ref( L, LUA_REGISTRYINDEX );
+
+	ILuaClass *j = lua_refclass( L, -1 );
+	lua_pop( L, 1 );
+	return j;
 }
 
 Resource::Resource( LuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root ) : LuaClass( *main, _trefget( *main, *this ) ), m_fileRoot( root ), m_lua( main )

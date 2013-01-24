@@ -29,6 +29,7 @@
 
 ResourceManager* LuaManager::m_resMan = NULL;
 lua_State *g_L = NULL;
+LuaManager *g_luaManager = NULL;
 
 static LuaManager* lua_readmanager( lua_State *L )
 {
@@ -94,6 +95,10 @@ static int luamain_constructor( lua_State *lua )
 
 void LuaManager::GarbageCollect( lua_State *L )
 {
+    // Notify all objects
+    LIST_FOREACH_BEGIN( LuaClass, m_gcList.root, m_gcList )
+        item->MarkGC( L );
+    LIST_FOREACH_END
 }
 
 static int lua_gcextend_event( lua_State *L )
@@ -109,6 +114,10 @@ LuaManager::LuaManager( Events& events, ScriptDebugging& debug ) :
 {
     // Setup the virtual machine
     g_L = m_lua = luaL_newstate();
+
+	// Register ourselves
+	g_luaManager = this;
+	LIST_CLEAR( m_gcList.root );
 
     // Setup callbacks
     lua_setevent( m_lua, LUA_EVENT_THREAD_CO_CREATE, lua_cocreatethread );

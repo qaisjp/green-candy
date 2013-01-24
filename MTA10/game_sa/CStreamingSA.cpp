@@ -465,6 +465,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
             streamingRequestCallback( id );
 
         // Model support fix: quick load a model if we already have it for replacement; prevents memory leak and boosts speed
+	// as opposed to letting the replaced game resources load
         if ( id < DATA_TEXTURE_BLOCK )
         {
             CBaseModelInfoSAInterface *minfo = ppModelInfo[id];

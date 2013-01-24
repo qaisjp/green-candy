@@ -215,6 +215,23 @@ LUA_API void lua_insert (lua_State *L, int idx) {
   lua_unlock(L);
 }
 
+LUA_API void lua_swap( lua_State *L, int idx )
+{
+	TValue tmp;
+	StkId p;
+	StkId q;
+	lua_lock( L );
+	
+	p = index2adr( L, idx );
+	setobj( L, &tmp, p );
+
+	q = L->top - 1;
+	setobj2s( L, p, q );
+	setobj2s( L, q, &tmp );
+
+	lua_unlock( L );
+}
+
 LUA_API void lua_replace (lua_State *L, int idx)
 {
     StkId o;
