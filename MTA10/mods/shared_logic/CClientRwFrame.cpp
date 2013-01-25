@@ -349,8 +349,10 @@ static inline void RwFrameAssignObject( CRwObject *obj, CClientRwFrame *parent )
         break;
     }
 
+    rwobj->SetOwner( parent->GetOwner() );
     rwobj->SetParent( parent );
     rwobj->SetRoot( parent->GetRoot() );
+    rwobj->DisableKeepAlive();
 }
 
 static inline void RwFrameAssignChild( CRwFrame *child, CClientRwFrame *parent )

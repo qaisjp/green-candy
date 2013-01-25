@@ -83,7 +83,9 @@ static LUA_DECLARE( cloneAtomic )
     if ( !obj )
         return 0;
 
-    ( new CClientAtomic( L, NULL, *obj->CloneAtomic() ) )->PushStack( L );
+    CClientAtomic *atom = new CClientAtomic( L, NULL, *obj->CloneAtomic() );
+    atom->PushStack( L );
+    atom->DisableKeepAlive();
     return 1;
 }
 

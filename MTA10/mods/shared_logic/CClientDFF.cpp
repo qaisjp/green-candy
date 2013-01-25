@@ -16,7 +16,9 @@
 
 static LUA_DECLARE( clone )
 {
-    ( new CClientDFF( L, *((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_model.Clone(), CLuaFunctionDefs::lua_readcontext( L )->GetResource() ) )->PushStack( L );
+    CClientDFF *dff = new CClientDFF( L, *((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_model.Clone(), CLuaFunctionDefs::lua_readcontext( L )->GetResource() );
+    dff->PushStack( L );
+    dff->DisableKeepAlive();
     return 1;
 }
 
@@ -290,4 +292,27 @@ void CClientDFF::RestreamAll() const
 
     for ( ; iter != impList.end(); iter++ )
         g_pClientGame->GetManager()->Restream( *iter );
+}
+
+void CClientDFF::MarkGC( lua_State *L )
+{
+    if ( m_model.GetImportList().size() != 0 )
+    {
+        LuaClass::MarkGC( L );
+        return;
+    }
+
+    // Check out all atomics, too
+    for ( atomics_t::const_iterator iter = m_atomics.begin(); iter != m_atomics.end(); iter++ )
+    {
+        CClientAtomic *atom = *iter;
+
+        if ( atom->m_atomic.GetImportList().size() != 0 )
+        {
+            LuaClass::MarkGC( L );
+            return;
+        }
+    }
+
+    CClientRwObject::MarkGC( L );
 }

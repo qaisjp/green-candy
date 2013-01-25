@@ -295,12 +295,14 @@ bool Class::IsDestroyed() const
 
 bool Class::IsRootedIn( Class *root ) const
 {
-    while ( root )
+    Class *elder = parent;
+
+    while ( elder )
     {
-        if ( root == this )
+        if ( root == elder )
             return true;
 
-        root = root->parent;
+        elder = elder->parent;
     }
 
     return false;
@@ -975,7 +977,7 @@ static int classmethod_setParent( lua_State *L )
     }
 
     // Prevent circle jerks or pervert child relationships
-    if ( j.IsRootedIn( c.parent ) )
+    if ( c.IsRootedIn( &j ) )
     {
         setbvalue( L->top++, false );
         return 1;

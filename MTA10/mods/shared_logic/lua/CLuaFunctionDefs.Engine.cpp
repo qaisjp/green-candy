@@ -84,6 +84,7 @@ namespace CLuaFunctionDefs
                 // Create a DFF element
                 CClientDFF *dff = new CClientDFF( L, *model, res );
                 dff->PushStack( L );
+                dff->DisableKeepAlive();
                 return 1;
             }
             else
@@ -187,7 +188,9 @@ namespace CLuaFunctionDefs
 
                     if ( clump )
                     {
-                        ( new CClientDFF( L, *clump, res ) )->PushStack( L );
+                        CClientDFF *dff = new CClientDFF( L, *clump, res );
+                        dff->PushStack( L );
+                        dff->DisableKeepAlive();
                         return 1;
                     }
                     break;
@@ -199,6 +202,7 @@ namespace CLuaFunctionDefs
                         CClientAtomic *obj = new CClientAtomic( L, NULL, *atom );
                         obj->SetOwner( res );
                         obj->PushStack( L );
+                        obj->DisableKeepAlive();
                         return 1;
                     }
                     break;
@@ -229,6 +233,7 @@ namespace CLuaFunctionDefs
                 CClientLight *obj = new CClientLight( L, NULL, *light );
                 obj->SetOwner( res );
                 obj->PushStack( L );
+                obj->DisableKeepAlive();
                 return 1;
             }
         }
@@ -274,6 +279,7 @@ namespace CLuaFunctionDefs
                 CClientRwCamera *obj = new CClientRwCamera( L, *cam );
                 obj->SetOwner( res );
                 obj->PushStack( L );
+                obj->DisableKeepAlive();
                 return 1;
             }
         }
