@@ -38,7 +38,7 @@ static LUA_DECLARE( setParent )
     // Check if the new parent is inside our root
     element.m_root->PushStack( L );
 
-    if ( lua_refclass( L, 1 )->IsRootedIn( L, -1 ) )
+    if ( lua_equal( L, 1, -1 ) || lua_refclass( L, 1 )->IsRootedIn( L, -1 ) )
         goto parent;
 
     // Failed (i.e. we may not be the child of an outside resource class)

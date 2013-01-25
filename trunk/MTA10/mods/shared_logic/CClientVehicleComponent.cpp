@@ -123,7 +123,9 @@ static LUA_DECLARE( cloneAtomic )
 
     LUA_CHECK( inst );
 
-    ( new CClientAtomic( L, NULL, *inst ) )->PushStack( L );
+    CClientAtomic *atom = new CClientAtomic( L, NULL, *inst );
+    atom->PushStack( L );
+    atom->DisableKeepAlive();
     return 1;
 }
 

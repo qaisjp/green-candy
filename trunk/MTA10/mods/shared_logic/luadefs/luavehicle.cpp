@@ -593,7 +593,9 @@ static LUA_DECLARE( cloneClump )
     if ( !veh )
         return 0;
 
-    ( new CClientDFF( L, *veh->CloneClump(), res ) )->PushStack( L );
+    CClientDFF *dff = new CClientDFF( L, *veh->CloneClump(), res );
+    dff->PushStack( L );
+    dff->DisableKeepAlive();
     return 1;
 }
 

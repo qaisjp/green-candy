@@ -20,6 +20,7 @@ class CClientDFF;
 
 class CClientAtomic : public CClientRwObject
 {
+    friend class CClientDFF;
 public:
                                     CClientAtomic( lua_State *L, CClientDFF *model, CRpAtomic& atom );
                                     ~CClientAtomic();
@@ -30,6 +31,8 @@ public:
     bool                            HasReplaced( unsigned short id ) const;
     void                            RestoreModel( unsigned short id );
     void                            RestoreModels();
+
+    void                            MarkGC( lua_State *L );
 
 protected:
     void                            RestreamAll() const;

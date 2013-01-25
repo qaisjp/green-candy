@@ -15,7 +15,9 @@
 
 static LUA_DECLARE( clone )
 {
-    ( new CClientAtomic( L, NULL, *((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_atomic.Clone() ) )->PushStack( L );
+    CClientAtomic *atom = new CClientAtomic( L, NULL, *((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_atomic.Clone() );
+    atom->PushStack( L );
+    atom->DisableKeepAlive();
     return 1;
 }
 
@@ -228,4 +230,15 @@ void CClientAtomic::RestreamAll() const
 
     for ( ; iter != impList.end(); iter++ )
         g_pClientGame->GetManager()->Restream( *iter );
+}
+
+void CClientAtomic::MarkGC( lua_State *L )
+{
+    if ( m_atomic.GetImportList().size() != 0 )
+    {
+        LuaClass::MarkGC( L );
+        return;
+    }
+
+    CClientRwObject::MarkGC( L );
 }

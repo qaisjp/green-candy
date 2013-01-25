@@ -31,6 +31,8 @@ public:
     void                            RestoreModel( unsigned short id );
     void                            RestoreModels();
 
+    void                            MarkGC( lua_State *L );
+
 protected:
     void                            RestreamAll() const;
 
