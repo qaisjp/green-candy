@@ -65,7 +65,7 @@ static int luaconstructor_txd( lua_State *L )
     return 0;
 }
 
-CClientTXD::CClientTXD( lua_State *L, CTexDictionary& txd ) : CClientRwObject( L, txd ), m_txd( txd )
+CClientTXD::CClientTXD( lua_State *L, CTexDictionary& txd, CResource *owner ) : CClientRwObject( L, txd ), m_txd( txd )
 {
     // Lua instancing
     PushStack( L );
@@ -76,12 +76,20 @@ CClientTXD::CClientTXD( lua_State *L, CTexDictionary& txd ) : CClientRwObject( L
 
     LIST_CLEAR( m_textures.root );
 
+    // Apply the owner
+    SetOwner( owner );
+
     // Create game textures
     textures_t& tex = txd.GetTextures();
     textures_t::iterator iter = tex.begin();
 
     for ( ; iter != tex.end(); iter++ )
-        ( new CClientGameTexture( L, **iter ) )->SetTXD( this );
+    {
+        CClientGameTexture *tex = new CClientGameTexture( L, **iter );
+        tex->SetTXD( this );
+        tex->SetOwner( owner );
+        tex->DisableKeepAlive();
+    }
 }
 
 CClientTXD::~CClientTXD()
@@ -90,9 +98,10 @@ CClientTXD::~CClientTXD()
     {
         CClientGameTexture *item = LIST_GETITEM( CClientGameTexture, m_textures.root.next, m_textures );
 
-        if ( item->GetRefCount() != 0 )
-            item->RemoveFromTXD();  // The texture might be used somewhere, so we unlink it
-        else
+        // We have to unlink our textures here, so they do not crash
+        item->RemoveFromTXD();
+
+        if ( item->GetRefCount() == 0 )
             item->Destroy();
     }
 }
@@ -128,4 +137,28 @@ void CClientTXD::RemoveAll()
 
     for ( ; iter != imports.end(); iter++ )
         g_pClientGame->GetManager()->Restream( *iter );
+}
+
+void CClientTXD::MarkGC( lua_State *L )
+{
+    // Propagate all textures
+    LIST_FOREACH_BEGIN( CClientGameTexture, m_textures.root, m_textures )
+        item->m_class->Propagate( L );
+        lua_gcpaycost( L, sizeof(*item) );
+    LIST_FOREACH_END
+
+    if ( m_txd.IsUsed() )
+        goto success;
+
+    // Check if one of it's textures is used
+    LIST_FOREACH_BEGIN( CClientGameTexture, m_textures.root, m_textures )
+        if ( item->m_tex.IsUsed() )
+            goto success;
+    LIST_FOREACH_END
+
+    if ( !m_keepAlive )
+        return;
+
+success:
+    LuaClass::MarkGC( L );
 }

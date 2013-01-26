@@ -107,6 +107,12 @@ CClientGameTexture::CClientGameTexture( lua_State *L, CTexture& tex ) : LuaEleme
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
 
+    // Initially we do not have any owner
+    m_owner = NULL;
+    LIST_INITNODE( m_ownerTex );
+
+    m_keepAlive = true;
+
     // Set up our members
     m_txd = NULL;
     LIST_INITNODE( m_textures );
@@ -114,6 +120,9 @@ CClientGameTexture::CClientGameTexture( lua_State *L, CTexture& tex ) : LuaEleme
 
 CClientGameTexture::~CClientGameTexture()
 {
+    // Remove from the manager
+    UnlinkOwner();
+
     // Unlink ourselves
     RemoveFromTXD();
 
@@ -132,6 +141,10 @@ void CClientGameTexture::SetTXD( CClientTXD *txd )
     if ( txd )
     {
         LIST_INSERT( txd->m_textures.root, m_textures );
+
+        m_tex.SetTXD( &txd->m_txd );
+
+        SetRoot( txd );
     }
 }
 
@@ -139,6 +152,10 @@ void CClientGameTexture::RemoveFromTXD()
 {
     if ( !m_txd )
         return;
+
+    SetRoot( NULL );
+
+    m_tex.RemoveFromTXD();
 
     LIST_REMOVE( m_textures );
     m_txd = NULL;
@@ -164,4 +181,32 @@ void CClientGameTexture::Remove( unsigned short id )
         return;
 
     g_pClientGame->GetManager()->Restream( id );
+}
+
+void CClientGameTexture::UnlinkOwner()
+{
+    if ( !m_owner )
+        return;
+
+    LIST_REMOVE( m_ownerTex );
+
+    m_owner = NULL;
+}
+
+void CClientGameTexture::SetOwner( CResource *res )
+{
+    UnlinkOwner();
+
+    m_owner = res;
+
+    if ( !m_owner )
+        return;
+
+    LIST_INSERT( res->m_gameTextures.root, m_ownerTex );
+}
+
+void CClientGameTexture::MarkGC( lua_State *L )
+{
+    if ( m_tex.IsUsed() || m_keepAlive )
+        LuaClass::MarkGC( L );
 }

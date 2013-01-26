@@ -74,6 +74,11 @@ bool CTexDictionarySA::IsImportedTXD( unsigned short id ) const
     return false;
 }
 
+bool CTexDictionarySA::IsUsed() const
+{
+    return ( m_imported.size() != 0 );
+}
+
 void CTexDictionarySA::SetGlobalEmitter()
 {
     // Hook ourselves into the loading schemantics

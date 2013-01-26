@@ -20,7 +20,8 @@ class CClientTXD;
 
 class CClientGameTexture : public LuaElement
 {
-    friend class CClientGameTexture;
+    friend class CResource;
+    friend class CClientTXD;
 public:
                                     CClientGameTexture( lua_State *L, CTexture& tex );
                                     ~CClientGameTexture();
@@ -36,11 +37,24 @@ public:
     bool                            IsImported( unsigned short id ) const;
     void                            Remove( unsigned short id );
 
+    void                            SetOwner( CResource *res );
+    CResource*                      GetOwner()              { return m_owner; }
+
+    void                            DisableKeepAlive()      { m_keepAlive = false; }
+    void                            MarkGC( lua_State *L );
+
 public:
+    void                            UnlinkOwner();
+
     CTexture&               m_tex;
 
     CClientTXD*             m_txd;
     RwListEntry <CClientGameTexture>    m_textures;
+
+    CResource*              m_owner;
+    RwListEntry <CClientGameTexture>    m_ownerTex;
+
+    bool                    m_keepAlive;
 };
 
 #endif //_CLIENT_GAME_TEXTURE_
