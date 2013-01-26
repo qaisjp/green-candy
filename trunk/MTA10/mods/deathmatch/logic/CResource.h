@@ -41,6 +41,7 @@ class CClientEntity;
 class CResource : public Resource
 {
     friend class CClientRwObject;
+    friend class CClientGameTexture;
     friend class CResourceManager;
 public:
                                 CResource( unsigned short id, const filePath& name, CFileTranslator& root, CClientEntity *entity, CClientEntity *dynamicEntity );
@@ -88,6 +89,9 @@ public:
     bool                        FileExists( const char *path ) const;
     bool                        FileDelete( const char *path );
 
+    RwList <CClientRwObject>    m_rwObjects;
+    RwList <CClientGameTexture> m_gameTextures;
+
 private:
     CLuaManager*                m_luaManager;
     CClientEntity*              m_rootEntity;
@@ -104,8 +108,6 @@ private:
     bool                        m_showCursor;
 
     CFileTranslator*            m_privateRoot;  // server id private directory
-
-    RwList <CClientRwObject>    m_rwObjects;
 
     typedef std::list <class CResourceFile*> fileList_t;
     typedef std::list <CElementGroup*> groupList_t;

@@ -44,6 +44,8 @@ public:
     bool                    IsImported( unsigned short id ) const;
     bool                    IsImportedTXD( unsigned short id ) const;
 
+    bool                    IsUsed() const;
+
     const importList_t&     GetImportedList() const         { return m_imported; }
 
 protected:

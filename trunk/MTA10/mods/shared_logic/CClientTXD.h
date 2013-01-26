@@ -24,7 +24,7 @@ class CClientTXD : public CClientRwObject
 {
     friend class CClientGameTexture;
 public:
-                                    CClientTXD( lua_State *L, CTexDictionary& txd );
+                                    CClientTXD( lua_State *L, CTexDictionary& txd, CResource *owner );
                                     ~CClientTXD();
 
     bool                            Import( unsigned short usModelID );
@@ -32,6 +32,8 @@ public:
 
     void                            Remove( unsigned short usModelID );
     void                            RemoveAll();
+
+    void                            MarkGC( lua_State *L );
 
     CTexDictionary&         m_txd;
     RwList <CClientGameTexture>     m_textures;

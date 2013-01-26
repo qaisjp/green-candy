@@ -444,6 +444,7 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineLoadDFF );
     LUA_REGISTER( L, engineLoadTXD );
     LUA_REGISTER( L, engineLoadCOL );
+    LUA_REGISTER( L, engineGetGameTextures );
     LUA_REGISTER( L, engineModelInfoHasLoaded );
     LUA_REGISTER( L, engineModelInfoCloneObject );
     LUA_REGISTER( L, engineCreateLight );

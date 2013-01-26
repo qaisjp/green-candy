@@ -47,6 +47,8 @@ public:
 
     bool                    IsImported( unsigned short id ) const;
     bool                    IsImportedTXD( unsigned short id ) const;
+    
+    bool                    IsUsed() const;
 
 protected:
     CTexDictionarySA*       m_dictionary;

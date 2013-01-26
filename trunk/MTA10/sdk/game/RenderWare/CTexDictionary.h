@@ -33,6 +33,8 @@ public:
     virtual bool                    IsImported( unsigned short id ) const = 0;
     virtual bool                    IsImportedTXD( unsigned short id ) const = 0;
 
+    virtual bool                    IsUsed() const = 0;
+
     typedef std::list <unsigned short> importList_t;
 
     virtual const importList_t&     GetImportedList() const = 0;

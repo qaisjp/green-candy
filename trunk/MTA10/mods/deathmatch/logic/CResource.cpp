@@ -34,6 +34,7 @@ CResource::CResource( unsigned short id, const filePath& name, CFileTranslator& 
     m_elementGroups.push_back( m_defaultGroup ); // for use by scripts
 
     LIST_CLEAR( m_rwObjects.root );
+    LIST_CLEAR( m_gameTextures.root );
 
     m_resourceEntity = entity;
     m_dynamicEntity = dynamicEntity;
@@ -91,11 +92,17 @@ CResource::~CResource()
     g_pClientGame->GetScriptKeyBinds()->RemoveAllKeys( (CLuaMain*)&m_lua );
     g_pCore->GetKeyBinds()->SetAllCommandsActive( m_name.c_str(), false );
 
-    // Remove RenderWare objects
+    // Remove RenderWare objects and textures
     {
         luaRefs refs;
 
         LIST_FOREACH_BEGIN( CClientRwObject, m_rwObjects.root, m_ownerObjects )
+            item->Reference( refs );
+            item->Delete();
+        LIST_FOREACH_END
+
+        // Those are textures outside of containers, which are pretty rare
+        LIST_FOREACH_BEGIN( CClientGameTexture, m_gameTextures.root, m_ownerTex )
             item->Reference( refs );
             item->Delete();
         LIST_FOREACH_END

@@ -102,6 +102,11 @@ bool CTextureSA::IsImportedTXD( unsigned short id ) const
     return std::find( m_imported.begin(), m_imported.end(), id ) != m_imported.end();
 }
 
+bool CTextureSA::IsUsed() const
+{
+    return ( m_imported.size() != 0 );
+}
+
 bool CTextureSA::Import( unsigned short id )
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[id];

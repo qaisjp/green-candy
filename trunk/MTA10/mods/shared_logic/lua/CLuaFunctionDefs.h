@@ -439,6 +439,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineLoadDFF );
     LUA_DECLARE( engineLoadTXD );
     LUA_DECLARE( engineLoadCOL );
+    LUA_DECLARE( engineGetGameTextures );
     LUA_DECLARE( engineModelInfoHasLoaded );
     LUA_DECLARE( engineModelInfoCloneObject );
     LUA_DECLARE( engineCreateLight );

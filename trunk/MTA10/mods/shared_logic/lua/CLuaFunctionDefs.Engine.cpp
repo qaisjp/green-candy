@@ -126,9 +126,9 @@ namespace CLuaFunctionDefs
                 for ( std::list <CTexture*>::const_iterator iter = list.begin(); iter != list.end(); iter++ )
                     (*iter)->SetFiltering( filtering );
 
-                CClientTXD *obj = new CClientTXD( L, *dict );
-                obj->SetOwner( res );
+                CClientTXD *obj = new CClientTXD( L, *dict, res );
                 obj->PushStack( L );
+                obj->DisableKeepAlive();
                 return 1;
             }
         }
@@ -137,6 +137,23 @@ namespace CLuaFunctionDefs
 
         // We failed
         lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineGetGameTextures )
+    {
+        CResource *res = lua_readcontext( L )->GetResource();
+   
+        lua_settop( L, 0 );
+        lua_newtable( L );
+
+        int n = 1;
+
+        LIST_FOREACH_BEGIN( CClientGameTexture, res->m_gameTextures.root, m_ownerTex )
+            item->PushStack( L );
+            lua_rawseti( L, 1, n++ );
+        LIST_FOREACH_END
+
         return 1;
     }
 
