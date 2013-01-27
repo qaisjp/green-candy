@@ -35,7 +35,7 @@ static LUA_DECLARE( setTXD )
     CClientTXD *txd;
 
     LUA_ARGS_BEGIN;
-    argStream.ReadClass( txd, LUACLASS_TXD );
+    argStream.ReadClass( txd, LUACLASS_TXD, NULL );
     LUA_ARGS_END;
 
     ((CClientGameTexture*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetTXD( txd );
