@@ -59,6 +59,8 @@ CEffectDefSAInterface* CParticleSystemSAInterface::ParseFXDataDef( const char *f
     CEffectDefSAInterface *def = new CEffectDefSAInterface();
 
     def->Parse( filename, file, num );
+
+    m_defList.Add( def );
     return def;
 }
 
@@ -116,15 +118,54 @@ void CParticleSystemSAInterface::SetGlobalAssociatives( const CVector *windVeloc
     m_unk = unk;
 }
 
+CParticleObjectSAInterface* CParticleSystemSAInterface::CreateTranslator( const char *name, const CVector& pos, unsigned int unk, bool unk2 )
+{
+    return CreateTranslator( GetBlueprintByName( name ), pos, unk, unk2 );
+}
+
+CParticleObjectSAInterface* CParticleSystemSAInterface::CreateTranslator( CEffectDefSAInterface *data, const CVector& pos, unsigned int unk, bool unk2 )
+{
+    if ( !data )
+        return NULL;
+
+    RwMatrix *mat = m_matrices[m_count++];
+
+    // Set it up
+    mat->IdentityRotation();
+    mat->pos = pos;
+
+    return NULL;
+}
+
+CEffectDefSAInterface* CParticleSystemSAInterface::GetBlueprintByName( const char *name )
+{
+    unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( name );
+
+    for ( CSimpleList::Item *iter = m_defList.m_root.m_next; iter != NULL; iter = iter->m_prev )
+    {
+        CEffectDefSAInterface *item = (CEffectDefSAInterface*)iter;
+
+        if ( item->m_hash == hash )
+            return item;
+    }
+
+    return NULL;
+}
+
 CParticleSystemSA::CParticleSystemSA()
 {
-    // Do not let GTA SA load particles
-    //*(unsigned char*)FUNC_InitParticles = 0xC4;
-
-    //pParticleSystem->Init();
 }
 
 CParticleSystemSA::~CParticleSystemSA()
 {
-    //pParticleSystem->Shutdown();
+}
+
+void CParticleSystemSA::Init()
+{
+    pParticleSystem->Init();
+}
+
+void CParticleSystemSA::Shutdown()
+{
+    pParticleSystem->Shutdown();
 }

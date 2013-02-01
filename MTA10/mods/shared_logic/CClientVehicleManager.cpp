@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientVehicleManager.cpp
@@ -10,6 +10,9 @@
 *               Jax <>
 *               Kevin Whiteside <kevuwk@gmail.com>
 *               Cecill Etheredge <ijsf@gmx.net>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -19,7 +22,8 @@ using std::list;
 using std::vector;
 
 // List over all vehicles with their passenger max counts
-unsigned char g_ucMaxPassengers [] = { 3, 1, 1, 1, 3, 3, 0, 1, 1, 3, 1, 1, 1, 3, 1, 1,              // 400->415
+const unsigned char g_ucMaxPassengers [] = 
+                                     { 3, 1, 1, 1, 3, 3, 0, 1, 1, 3, 1, 1, 1, 3, 1, 1,              // 400->415
                                        3, 1, 3, 1, 3, 3, 1, 1, 1, 0, 3, 3, 3, 1, 0, 8,              // 416->431
                                        0, 1, 1, 255, 1, 8, 3, 1, 3, 0, 1, 1, 1, 3, 0, 1,            // 432->447
                                        0, 1, 255, 1, 0, 0, 0, 1, 1, 1, 3, 3, 1, 1, 1,               // 448->462
@@ -43,7 +47,7 @@ unsigned char g_ucMaxPassengers [] = { 3, 1, 1, 1, 3, 3, 0, 1, 1, 3, 1, 1, 1, 3,
 #define VEHICLE_HAS_TAXI_LIGHTS         0x020UL //32
 #define VEHICLE_HAS_SEARCH_LIGHT        0x040UL //64
 
-unsigned long g_ulVehicleAttributes [] = {
+const unsigned long g_ulVehicleAttributes [] = {
   0, 0, 0, 0, 0, 0, 8, 3, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 32, 0, 0, 2, 0,    // 400-424
   0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0,    // 425-449
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     // 450-474
@@ -55,51 +59,56 @@ unsigned long g_ulVehicleAttributes [] = {
   0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-CClientVehicleManager::CClientVehicleManager ( CClientManager* pManager )
+CClientVehicleManager::CClientVehicleManager( CClientManager* pManager )
 {
-    assert ( NUMELMS ( g_ucMaxPassengers ) == 212 );
-    assert ( NUMELMS ( g_ulVehicleAttributes ) == 212 );
+    assert( NUMELMS( g_ucMaxPassengers ) == 212 );
+    assert( NUMELMS( g_ulVehicleAttributes ) == 212 );
 
     // Initialize members
     m_pManager = pManager;
-    m_bCanRemoveFromList = true;
 }
 
-CClientVehicleManager::~CClientVehicleManager ( void )
+CClientVehicleManager::~CClientVehicleManager()
 {
 }
 
-void CClientVehicleManager::DeleteAll ( void )
+void CClientVehicleManager::DeleteAll()
 {
+    luaRefs refs;
+
     // Delete all the vehicles
-    m_bCanRemoveFromList = false;
-    std::vector < CClientVehicle* > ::const_iterator iter = m_List.begin ();
-
-    for ( ; iter != m_List.end (); iter++ )
-        (*iter)->Delete();
+    for ( vehicles_t::const_iterator iter = m_List.begin(); iter != m_List.end(); iter++ )
+    {
+        CClientVehicle *veh = *iter;
+        veh->Reference( refs );
+        veh->Delete();
+    }
 
     // Clear the list
-    m_List.clear ();
-    m_bCanRemoveFromList = true;
+    m_List.clear();
 }
 
-
-
-void CClientVehicleManager::DoPulse ( void )
+void CClientVehicleManager::DoPulse()
 {
-    CClientVehicle * pVehicle = NULL;
     // Loop through our streamed-in vehicles
-    vector < CClientVehicle * > cloneList = m_StreamedIn;
-    vector < CClientVehicle* > ::iterator iter = cloneList.begin ();
-    for ( ; iter != cloneList.end (); ++iter )
-    {
-        pVehicle = *iter;
-        // We should have a game vehicle here
-        assert ( pVehicle->GetGameVehicle () );
-        pVehicle->StreamedInPulse ();
-    }
-}
+    vehicles_t cloneList = m_StreamedIn;
 
+    for ( vehicles_t::iterator iter = cloneList.begin(); iter != cloneList.end(); ++iter )
+        (*iter)->IncrementMethodStack();
+
+    for ( vehicles_t::iterator iter = cloneList.begin(); iter != cloneList.end(); ++iter )
+    {
+        CClientVehicle *veh = *iter;
+
+        // We should have a game vehicle here
+        assert( veh->GetGameVehicle() );
+
+        veh->StreamedInPulse();
+    }
+
+    for ( vehicles_t::iterator iter = cloneList.begin(); iter != cloneList.end(); ++iter )
+        (*iter)->DecrementMethodStack();
+}
 
 CClientVehicle* CClientVehicleManager::Get ( ElementID ID )
 {
@@ -113,20 +122,19 @@ CClientVehicle* CClientVehicleManager::Get ( ElementID ID )
     return NULL;
 }
 
-
 CClientVehicle* CClientVehicleManager::Get ( CVehicle* pVehicle, bool bValidatePointer )
 {
-    if ( !pVehicle ) return NULL;
+    if ( !pVehicle )
+        return NULL;
 
     if ( bValidatePointer )
     {
-        vector < CClientVehicle* > ::const_iterator iter = m_StreamedIn.begin ();
+        vehicles_t::const_iterator iter = m_StreamedIn.begin();
+
         for ( ; iter != m_StreamedIn.end (); iter++ )
         {
-            if ( (*iter)->GetGameVehicle () == pVehicle )
-            {
+            if ( (*iter)->GetGameVehicle() == pVehicle )
                 return *iter;
-            }
         }
     }
     else
@@ -136,35 +144,34 @@ CClientVehicle* CClientVehicleManager::Get ( CVehicle* pVehicle, bool bValidateP
     return NULL;
 }
 
-
 CClientVehicle* CClientVehicleManager::GetSafe ( CEntity * pEntity )
 {
-    if ( !pEntity ) return NULL;
+    if ( !pEntity )
+        return NULL;
 
+    vehicles_t::const_iterator iter = m_StreamedIn.begin();
 
-    vector < CClientVehicle* > ::const_iterator iter = m_StreamedIn.begin ();
-    for ( ; iter != m_StreamedIn.end (); iter++ )
+    for ( ; iter != m_StreamedIn.end(); iter++ )
     {
-        if ( dynamic_cast < CEntity * > ( (*iter)->GetGameVehicle () ) == pEntity )
-        {
+        if ( dynamic_cast <CEntity*> ( (*iter)->GetGameVehicle () ) == pEntity )
             return *iter;
-        }
     }
 
     return NULL;
 }
 
-
-CClientVehicle* CClientVehicleManager::GetClosest ( CVector& vecPosition, float fRadius )
+CClientVehicle* CClientVehicleManager::GetClosest( CVector& vecPosition, float fRadius )
 {
     float fClosestDistance = 0.0f;
     CVector vecVehiclePosition;
     CClientVehicle* pClosest = NULL;
-    vector < CClientVehicle* > ::const_iterator iter = m_List.begin ();
-    for ( ; iter != m_List.end (); iter++ )
+    vehicles_t::const_iterator iter = m_List.begin();
+
+    for ( ; iter != m_List.end(); iter++ )
     {
-        (*iter)->GetPosition ( vecVehiclePosition );
-        float fDistance = DistanceBetweenPoints3D ( vecPosition, vecVehiclePosition );
+        (*iter)->GetPosition( vecVehiclePosition );
+        float fDistance = DistanceBetweenPoints3D( vecPosition, vecVehiclePosition );
+
         if ( fDistance <= fRadius )
         {
             if ( pClosest == NULL || fDistance < fClosestDistance )
@@ -177,7 +184,7 @@ CClientVehicle* CClientVehicleManager::GetClosest ( CVector& vecPosition, float 
     return pClosest;
 }
 
-bool CClientVehicleManager::IsValidModel ( unsigned short model )
+bool CClientVehicleManager::IsValidModel( unsigned short model )
 {
     CModelInfo *info = g_pGame->GetModelInfo( model );
 
@@ -213,7 +220,6 @@ eClientVehicleType CClientVehicleManager::GetVehicleType ( unsigned short ulMode
     return CLIENTVEHICLE_NONE;
 }
 
-
 unsigned char CClientVehicleManager::GetMaxPassengerCount ( unsigned short ulModel )
 {
     // Valid model?
@@ -226,87 +232,86 @@ unsigned char CClientVehicleManager::GetMaxPassengerCount ( unsigned short ulMod
     return 0xFF;
 }
 
-
 unsigned char CClientVehicleManager::ConvertIndexToGameSeat ( unsigned short ulModel, unsigned char ucIndex )
 {
     eClientVehicleType vehicleType = GetVehicleType ( ulModel );
                 
     // Grab the max passenger count for the given ID
     unsigned char ucMaxPassengerCount = GetMaxPassengerCount ( ulModel );
-    switch ( ucMaxPassengerCount )
+    switch( ucMaxPassengerCount )
     {
-        // Not passenger seats in this vehicle?
-        case 0:
-        case 255:
+    // Not passenger seats in this vehicle?
+    case 0:
+    case 255:
+    {
+        if ( ucIndex == 0 )
         {
-            if ( ucIndex == 0 )
+            return DOOR_FRONT_LEFT;
+        }
+        
+        return 0xFF;
+    }
+
+    // Only one seat?
+    case 1:
+    {
+        bool bIsBike = ( vehicleType == CLIENTVEHICLE_BIKE ||
+                         vehicleType == CLIENTVEHICLE_QUADBIKE );
+        if ( ucIndex == 0 )
+        {
+            return DOOR_FRONT_LEFT;
+        }
+        else if ( ucIndex == 1 )
+        {
+            // We use one of the rear seats for bike passengers
+            if ( bIsBike )
             {
-                return DOOR_FRONT_LEFT;
+                return DOOR_REAR_RIGHT;
             }
             
-            return 0xFF;
+            return DOOR_FRONT_RIGHT;
         }
-
-        // Only one seat?
-        case 1:
-        {
-            bool bIsBike = ( vehicleType == CLIENTVEHICLE_BIKE ||
-                             vehicleType == CLIENTVEHICLE_QUADBIKE );
-            if ( ucIndex == 0 )
-            {
-                return DOOR_FRONT_LEFT;
-            }
-            else if ( ucIndex == 1 )
-            {
-                // We use one of the rear seats for bike passengers
-                if ( bIsBike )
-                {
-                    return DOOR_REAR_RIGHT;
-                }
-                
-                return DOOR_FRONT_RIGHT;
-            }
-            else if ( bIsBike )
-            {
-                switch ( ucIndex )
-                {                    
-                    case 2: return DOOR_REAR_LEFT;
-                    case 3: return DOOR_REAR_RIGHT;
-                }
-            }
-        
-            return 0xFF;
-        }
-
-        // Three seats?
-        case 3:
+        else if ( bIsBike )
         {
             switch ( ucIndex )
-            {
-                case 0: return DOOR_FRONT_LEFT;                
-                case 1: return DOOR_FRONT_RIGHT;
+            {                    
                 case 2: return DOOR_REAR_LEFT;
                 case 3: return DOOR_REAR_RIGHT;
             }
-
-            return 0xFF;
         }
+    
+        return 0xFF;
+    }
 
-        // Bus, train (570)?
-        case 8:
+    // Three seats?
+    case 3:
+    {
+        switch ( ucIndex )
         {
-            if ( ucIndex == 0 )
-            {
-                return DOOR_FRONT_LEFT;
-            }
-            
-            if ( ucIndex <= 8 )
-            {
-                return DOOR_FRONT_RIGHT;
-            }
-
-            return 0xFF;
+            case 0: return DOOR_FRONT_LEFT;                
+            case 1: return DOOR_FRONT_RIGHT;
+            case 2: return DOOR_REAR_LEFT;
+            case 3: return DOOR_REAR_RIGHT;
         }
+
+        return 0xFF;
+    }
+
+    // Bus, train (570)?
+    case 8:
+    {
+        if ( ucIndex == 0 )
+        {
+            return DOOR_FRONT_LEFT;
+        }
+        
+        if ( ucIndex <= 8 )
+        {
+            return DOOR_FRONT_RIGHT;
+        }
+
+        return 0xFF;
+    }
     }
 
     return 0xFF;
@@ -318,13 +323,11 @@ bool CClientVehicleManager::HasTurret ( unsigned short ulModel )
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_TURRENT ) );
 }
 
-
 bool CClientVehicleManager::HasSirens ( unsigned short ulModel )
 {
     return ( IsValidModel ( ulModel ) &&
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_SIRENS ) );
 }
-
 
 bool CClientVehicleManager::HasTaxiLight ( unsigned short ulModel )
 {
@@ -332,13 +335,11 @@ bool CClientVehicleManager::HasTaxiLight ( unsigned short ulModel )
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_TAXI_LIGHTS ) );
 }
 
-
 bool CClientVehicleManager::HasSearchLight ( unsigned short ulModel )
 {
     return ( IsValidModel ( ulModel ) &&
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_SEARCH_LIGHT ) );
 }
-
 
 bool CClientVehicleManager::HasLandingGears ( unsigned short ulModel )
 {
@@ -346,13 +347,11 @@ bool CClientVehicleManager::HasLandingGears ( unsigned short ulModel )
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_LANDING_GEARS ) );
 }
 
-
 bool CClientVehicleManager::HasAdjustableProperty ( unsigned short ulModel )
 {
     return ( IsValidModel ( ulModel ) &&
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_ADJUSTABLE_PROPERTY ) );
 }
-
 
 bool CClientVehicleManager::HasSmokeTrail ( unsigned short ulModel )
 {
@@ -360,117 +359,100 @@ bool CClientVehicleManager::HasSmokeTrail ( unsigned short ulModel )
              ( g_ulVehicleAttributes[ ulModel - 400 ] & VEHICLE_HAS_SMOKE_TRAIL ) );
 }
 
-
 bool CClientVehicleManager::HasDamageModel ( unsigned short ulModel )
 {
     return HasDamageModel ( GetVehicleType ( ulModel ) );
 }
 
-
-bool CClientVehicleManager::HasDamageModel ( eClientVehicleType Type )
+bool CClientVehicleManager::HasDamageModel( eClientVehicleType Type )
 {
-    switch ( Type )
+    switch( Type )
     {
-        case CLIENTVEHICLE_TRAILER:
-        case CLIENTVEHICLE_MONSTERTRUCK:
-        case CLIENTVEHICLE_QUADBIKE:
-        case CLIENTVEHICLE_HELI:
-        case CLIENTVEHICLE_PLANE:
-        case CLIENTVEHICLE_CAR:
-            return true;
-        default:
-            return false;
+    case CLIENTVEHICLE_TRAILER:
+    case CLIENTVEHICLE_MONSTERTRUCK:
+    case CLIENTVEHICLE_QUADBIKE:
+    case CLIENTVEHICLE_HELI:
+    case CLIENTVEHICLE_PLANE:
+    case CLIENTVEHICLE_CAR:
+        return true;
+    default:
+        return false;
     }
 }
 
-bool CClientVehicleManager::HasDoors ( unsigned short ulModel )
+bool CClientVehicleManager::HasDoors( unsigned short ulModel )
 {
     bool bHasDoors = false;
 
-    if ( HasDamageModel ( ulModel ) == true )
+    if ( HasDamageModel ( ulModel ) )
     {
         switch ( ulModel )
         {
-            case VT_BFINJECT:
-            case VT_RCBANDIT:
-            case VT_CADDY:
-            case VT_RCRAIDER:
-            case VT_BAGGAGE:
-            case VT_DOZER:
-            case VT_FORKLIFT:
-            case VT_TRACTOR:
-            case VT_RCTIGER:
-            case VT_BANDITO:
-            case VT_KART:
-            case VT_MOWER:
-            case VT_RCCAM:
-            case VT_RCGOBLIN:
-                break;
-            default:
-                bHasDoors = true;
+        case VT_BFINJECT:
+        case VT_RCBANDIT:
+        case VT_CADDY:
+        case VT_RCRAIDER:
+        case VT_BAGGAGE:
+        case VT_DOZER:
+        case VT_FORKLIFT:
+        case VT_TRACTOR:
+        case VT_RCTIGER:
+        case VT_BANDITO:
+        case VT_KART:
+        case VT_MOWER:
+        case VT_RCCAM:
+        case VT_RCGOBLIN:
+            break;
+        default:
+            bHasDoors = true;
         }
     }
 
     return bHasDoors;
 }
 
-
-void CClientVehicleManager::RemoveFromList ( CClientVehicle* pVehicle )
+void CClientVehicleManager::RemoveFromList( CClientVehicle *pVehicle )
 {
-    if ( m_bCanRemoveFromList )
-    {
-        m_List.remove ( pVehicle );
-    }
-}
-
-
-bool CClientVehicleManager::Exists ( CClientVehicle* pVehicle )
-{
-    vector < CClientVehicle* > ::const_iterator iter = m_List.begin ();
-    for ( ; iter != m_List.end () ; iter++ )
-    {
-        if ( *iter == pVehicle )
-        {
-            return true;
-        }
-    }
-
-    return false;
+    ListRemove( m_List, pVehicle );
 }
 
 bool CClientVehicleManager::IsVehicleLimitReached()
 {
     // GTA allows max 110 vehicles. We restrict ourselves to 64 for now
     // due to FPS issues and crashes around 100 vehicles.
+    // The_GTA: There should be no crash issues with more than 110 vehicles anymore.
     return g_pGame->GetPools()->GetNumberOfUsedSpaces( VEHICLE_POOL ) >= g_pGame->GetPools()->GetPoolCapacity( VEHICLE_POOL );
 }
 
-void CClientVehicleManager::OnCreation ( CClientVehicle * pVehicle )
+void CClientVehicleManager::OnCreation( CClientVehicle * pVehicle )
 {
-    m_StreamedIn.push_back ( pVehicle );
+    m_StreamedIn.push_back( pVehicle );
 }
 
-
-void CClientVehicleManager::OnDestruction ( CClientVehicle * pVehicle )
+void CClientVehicleManager::OnDestruction( CClientVehicle * pVehicle )
 {
     ListRemove( m_StreamedIn, pVehicle );
 }
 
-void CClientVehicleManager::RestreamVehicles ( unsigned short usModel )
+void CClientVehicleManager::RestreamVehicles( unsigned short usModel )
 {
+    luaRefs refs;
+
     // Store the affected vehicles
-    CClientVehicle* pVehicle;
-    std::vector < CClientVehicle* > ::const_iterator iter = IterBegin ();
-    for ( ; iter != IterEnd (); iter++ )
+    vehicles_t::const_iterator iter = IterBegin();
+
+    for ( ; iter != IterEnd(); iter++ )
     {
-        pVehicle = *iter;
+        CClientVehicle *pVehicle = *iter;
+
+        pVehicle->Reference( refs );
 
         // Streamed in and same vehicle ID?
-        if ( pVehicle->IsStreamedIn () && pVehicle->GetModel () == usModel )
+        if ( pVehicle->IsStreamedIn() && pVehicle->GetModel() == usModel )
         {
             // Stream it out for a while until streamer decides to stream it
             // back in eventually
-            pVehicle->StreamOutForABit ();
+            pVehicle->StreamOutForABit();
         }
     }
 }

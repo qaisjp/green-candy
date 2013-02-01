@@ -225,7 +225,6 @@ void CClientPed::Init( CClientManager *pManager, unsigned short ulModelID, bool 
     }
 }
 
-
 CClientPed::~CClientPed()
 {
     // Remove from the ped manager
@@ -588,6 +587,9 @@ void CClientPed::SetRotationRadians( const CVector& vecRotation )
 
 void CClientPed::Spawn( const CVector& vecPosition, float fRotation, unsigned short usModel, unsigned char ucInterior )
 {
+    // Lock the ped
+    IncrementMethodStack();
+
     // Remove us from our car
     RemoveFromVehicle ();    
     SetVehicleInOutState ( VEHICLE_INOUT_NONE );
@@ -636,6 +638,9 @@ void CClientPed::Spawn( const CVector& vecPosition, float fRotation, unsigned sh
     SetMoveSpeed ( CVector () );
     SetInterior ( ucInterior );
     SetFootBloodEnabled( false );
+
+    // Unlock the ped
+    DecrementMethodStack();
 }
 
 void CClientPed::ResetInterpolation ( void )
@@ -881,32 +886,30 @@ void CClientPed::SetTargetTarget ( unsigned long ulDelay, const CVector& vecSour
 bool CClientPed::SetModel ( unsigned short ulModel )
 {
     // Valid model?
-    if ( CClientPlayerManager::IsValidModel ( ulModel ) )
-    {
-        // Different model from what we have now?
-        if ( m_ulModel != ulModel )
-        {
-            // Set the model we're changing to
-            m_ulModel = ulModel;
-            m_pModelInfo = g_pGame->GetModelInfo ( ulModel );
-            UpdateSpatialData ();
+    if ( !CClientPlayerManager::IsValidModel ( ulModel ) )
+        return false;
 
-            // Are we loaded?
-            if ( m_pPlayerPed )
+    // Different model from what we have now?
+    if ( m_ulModel != ulModel )
+    {
+        // Set the model we're changing to
+        m_ulModel = ulModel;
+        m_pModelInfo = g_pGame->GetModelInfo ( ulModel );
+        UpdateSpatialData ();
+
+        // Are we loaded?
+        if ( m_pPlayerPed )
+        {
+            // Request the model
+            if ( m_pRequester->Request ( static_cast < unsigned short > ( ulModel ), this ) )
             {
-                // Request the model
-                if ( m_pRequester->Request ( static_cast < unsigned short > ( ulModel ), this ) )
-                {
-                    // Change the model immediately if it was loaded
-                    _ChangeModel ();
-                }
+                // Change the model immediately if it was loaded
+                _ChangeModel ();
             }
         }
-
-        return true;
     }
 
-    return false;
+    return true;
 }
 
 

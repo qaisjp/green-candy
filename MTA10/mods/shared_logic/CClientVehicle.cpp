@@ -2182,7 +2182,7 @@ void CClientVehicle::Create()
             m_automobile->SetHeadLightColor( m_HeadLightColor );
             m_automobile->SetTurretRotation( m_fTurretHorizontal, m_fTurretVertical );
             m_automobile->SetBurningTime( m_burningTime );
-            m_automobile->SetNitrousFuel( m_nitrousFuel );
+            m_automobile->SetNitrousFuel( 1 );//m_nitrousFuel );
 
             // Set the damage model doors
             CDamageManager *pDamageManager = m_automobile->GetDamageManager();

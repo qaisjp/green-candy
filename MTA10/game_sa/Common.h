@@ -187,6 +187,8 @@ public:
     unsigned int    m_count;
 };
 
+#define SLIST_FOREACH_BEGIN( type, root ) 
+
 #undef DEBUG_LOG
 #ifdef DEBUG_LOG
     #include <stdio.h>

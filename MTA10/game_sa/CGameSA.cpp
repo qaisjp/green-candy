@@ -135,7 +135,7 @@ CGameSA::CGameSA()
     m_pRopes                    = new CRopesSA;
     m_pParticleSystem           = new CParticleSystemSA();
     m_pFx                       = new CFxSA( (CFxSAInterface*)CLASS_CFx );
-    m_pWaterManager             = new CWaterManagerSA ();
+    m_pWaterManager             = new CWaterManagerSA();
 
     // :D
     Transformation_Init();
