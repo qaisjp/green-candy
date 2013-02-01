@@ -2527,7 +2527,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
 #endif
 
                 // It shouldn't be a system
-                if ( pEntity->IsSystemEntity () )
+                if ( pEntity->IsLocalEntity() )
                 {
                     RaiseFatalError ( 8 );
                     return;
