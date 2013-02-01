@@ -1,19 +1,20 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientPedManager.h
 *  PURPOSE:     Ped entity manager class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #ifndef __CClientPedManager_H
 #define __CClientPedManager_H
-
-#include <list>
 
 class CClientManager;
 class CClientPed;
@@ -26,34 +27,33 @@ class CClientPedManager
     friend class CClientPed;
 
 public:
-    void                            DeleteAll                       ( void );
+    void                            DeleteAll();
 
-    void                            DoPulse                         ( void );
-    CClientPed*                     Get                             ( ElementID ID, bool bCheckPlayers = false );    
-    CClientPed*                     Get                             ( CPlayerPed* pPlayer, bool bValidatePointer, bool bCheckPlayers );
-    CClientPed*                     GetSafe                         ( CEntity * pEntity, bool bCheckPlayers );
+    void                            DoPulse();
+    CClientPed*                     Get( ElementID ID, bool bCheckPlayers = false );    
+    CClientPed*                     Get( CPlayerPed *pPlayer, bool bValidatePointer, bool bCheckPlayers );
+    CClientPed*                     GetSafe( CEntity *pEntity, bool bCheckPlayers );
 
-    bool                            Exists                          ( CClientPed* pPed );
+    typedef std::vector <CClientPed*> peds_t;
 
-    std::vector < CClientPed* > ::const_iterator  IterBegin         ( void ) { return m_List.begin (); };
-    std::vector < CClientPed* > ::const_iterator  IterEnd           ( void ) { return m_List.end (); };
-    std::vector < CClientPed* > ::const_iterator  StreamedBegin     ( void ) { return m_StreamedIn.begin (); };
-    std::vector < CClientPed* > ::const_iterator  StreamedEnd       ( void ) { return m_StreamedIn.end (); };
+    peds_t::const_iterator          IterBegin()                                 { return m_List.begin(); }
+    peds_t::const_iterator          IterEnd()                                   { return m_List.end(); }
+    peds_t::const_iterator          StreamedBegin()                             { return m_StreamedIn.begin(); }
+    peds_t::const_iterator          StreamedEnd()                               { return m_StreamedIn.end(); }
 
 protected:
-                                    CClientPedManager               ( class CClientManager* pManager );
-                                    ~CClientPedManager              ( void );
+                                    CClientPedManager( class CClientManager* pManager );
+                                    ~CClientPedManager();
 
-    inline void                     AddToList                       ( CClientPed* pPed )        { m_List.push_back ( pPed ); }
-    void                            RemoveFromList                  ( CClientPed* pPed );
+    inline void                     AddToList( CClientPed *pPed )               { m_List.push_back( pPed ); }
+    void                            RemoveFromList( CClientPed *pPed );
 
-    void                            OnCreation                      ( CClientPed * pPed );
-    void                            OnDestruction                   ( CClientPed * pPed );
+    void                            OnCreation( CClientPed *pPed );
+    void                            OnDestruction( CClientPed *pPed );
 
     CClientManager*                 m_pManager;
-    std::vector < CClientPed* >     m_List;    
-    std::vector < CClientPed* >     m_StreamedIn;
-    bool                            m_bRemoveFromList;
+    peds_t                          m_List;    
+    peds_t                          m_StreamedIn;
 };
 
 #endif

@@ -67,8 +67,27 @@ public:
     virtual void __thiscall         Parse( FILE *fp, int ver ) = 0;
     virtual void __thiscall         Calculate( float a, float b, float c, float d, bool unk, void *unkStruct ) const = 0;
 
-    unsigned short              m_flags;                // 4
-    unsigned char               m_timeModePart;         // 6
+    void* operator new( size_t memSize )
+    {
+        return pParticleSystem->m_memory.AllocateInt( memSize );
+    }
+
+    void operator delete( void *ptr )
+    {
+        // We cannot deallocate
+    }
+
+    union
+    {
+        struct
+        {
+            unsigned short              m_flags;        // 4
+            unsigned char               m_timeModePart; // 6
+        };
+        unsigned int m_id;                              // 4
+    };
+
+    
 };
 
 class IEffectObjectSA abstract

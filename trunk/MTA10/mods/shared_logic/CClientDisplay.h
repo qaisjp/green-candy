@@ -22,7 +22,7 @@ enum eDisplayType
     DISPLAY_TEXT,
 };
 
-class CClientDisplay
+class CClientDisplay abstract
 {
     friend class CClientDisplayManager;
 public:

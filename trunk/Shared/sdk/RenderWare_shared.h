@@ -99,11 +99,16 @@ static const float negOne = -1.0f;
 class RwMatrix
 {   // 16-byte padded
 public:
-    inline void Identity()
+    inline void IdentityRotation()
     {
         right.fX = 1; right.fY = 0; right.fZ = 0;
         at.fX = 0; at.fY = 1; at.fZ = 0;
         up.fX = 0; up.fY = 0; up.fZ = 1;
+    }
+
+    inline void Identity()
+    {
+        IdentityRotation();
 
         pos.fX = (float)(1.15 * -0.25);
         pos.fY = 0;

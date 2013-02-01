@@ -15,7 +15,7 @@
 
 #include <game/CParticleObject.h>
 
-class CParticleObjectSAInterface
+class CParticleObjectSAInterface    //size: 260
 {
 public:
                                 CParticleObjectSAInterface();

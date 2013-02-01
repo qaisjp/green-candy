@@ -1,66 +1,73 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientPedManager.cpp
 *  PURPOSE:     Ped entity manager class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #include "StdInc.h"
 
-using std::list;
-using std::vector;
-
-CClientPedManager::CClientPedManager ( CClientManager* pManager )
+CClientPedManager::CClientPedManager( CClientManager* pManager )
 {
     m_pManager = pManager;
-    m_bRemoveFromList = true;
 }
 
-
-CClientPedManager::~CClientPedManager ( void )
+CClientPedManager::~CClientPedManager()
 {
-    DeleteAll ();
+    DeleteAll();
 }
 
-
-void CClientPedManager::DeleteAll ( void )
+void CClientPedManager::DeleteAll()
 {
-    m_bRemoveFromList = false;
-    vector < CClientPed* > ::iterator iter = m_List.begin ();
+    luaRefs refs;
+    peds_t::iterator iter = m_List.begin();
 
-    for ( ; iter != m_List.end (); iter++ )
-        (*iter)->Destroy();
-
-    m_List.clear ();
-    m_bRemoveFromList = true;
-}
-
-
-void CClientPedManager::DoPulse ( void )
-{   
-    CClientPed * pPed = NULL;
-    // Loop through our streamed-in peds
-    vector < CClientPed * > List = m_StreamedIn;
-    vector < CClientPed* > ::iterator iter = List.begin ();
-    for ( ; iter != List.end (); ++iter )
+    for ( ; iter != m_List.end(); iter++ )
     {
-        pPed = *iter;
-        // We should have a game ped here
-        assert ( pPed->GetGamePlayer () );
-        pPed->StreamedInPulse ();
+        CClientPed *ped = *iter;
+        ped->Reference( refs );
+        ped->Destroy();
     }
+
+    m_List.clear();
 }
 
+void CClientPedManager::DoPulse()
+{
+    // Loop through our streamed-in peds
+    peds_t List = m_StreamedIn;
+
+    // We have to reference all peds/players
+    for ( peds_t::iterator iter = List.begin(); iter != List.end(); iter++ )
+        (*iter)->IncrementMethodStack();
+
+    for ( peds_t::iterator iter = List.begin(); iter != List.end(); iter++ )
+    {
+        CClientPed *ped = *iter;
+
+        // We should have a game ped here
+        assert( ped->GetGamePlayer() );
+
+        ped->StreamedInPulse();
+    }
+
+    for ( peds_t::iterator iter = List.begin(); iter != List.end(); iter++ )
+        (*iter)->DecrementMethodStack();
+}
 
 CClientPed* CClientPedManager::Get ( ElementID ID, bool bCheckPlayers )
 {
     // Grab the element with the given id. Check its type.
     CClientEntity* pEntity = CElementIDs::GetElement ( ID );
+
     if ( pEntity && ( pEntity->GetType () == CCLIENTPED || ( bCheckPlayers && pEntity->GetType () == CCLIENTPLAYER ) ) )
     {
         return static_cast < CClientPed* > ( pEntity );
@@ -69,14 +76,15 @@ CClientPed* CClientPedManager::Get ( ElementID ID, bool bCheckPlayers )
     return NULL;
 }
 
-
 CClientPed* CClientPedManager::Get ( CPlayerPed* pPlayer, bool bValidatePointer, bool bCheckPlayers )
 {
-    if ( !pPlayer ) return NULL;
+    if ( !pPlayer )
+        return NULL;
 
     if ( bValidatePointer )
     {
-        vector < CClientPed* > ::const_iterator iter = m_StreamedIn.begin ();
+        peds_t::const_iterator iter = m_StreamedIn.begin();
+
         for ( ; iter != m_StreamedIn.end (); iter++ )
         {
             if ( (*iter)->GetGamePlayer () == pPlayer )
@@ -88,6 +96,7 @@ CClientPed* CClientPedManager::Get ( CPlayerPed* pPlayer, bool bValidatePointer,
     else
     {
         CClientPed* pPed = reinterpret_cast < CClientPed* > ( pPlayer->GetStoredPointer () );
+
         if ( pPed->GetType () == CCLIENTPED || bCheckPlayers )
         {
             return pPed;
@@ -96,13 +105,12 @@ CClientPed* CClientPedManager::Get ( CPlayerPed* pPlayer, bool bValidatePointer,
     return NULL;
 }
 
-
 CClientPed* CClientPedManager::GetSafe ( CEntity * pEntity, bool bCheckPlayers )
 {
-    if ( !pEntity ) return NULL;
+    if ( !pEntity )
+        return NULL;
 
-    vector < CClientPed* > ::const_iterator iter = m_StreamedIn.begin ();
-    for ( ; iter != m_StreamedIn.end (); iter++ )
+    for ( peds_t::const_iterator iter = m_StreamedIn.begin(); iter != m_StreamedIn.end (); iter++ )
     {
         if ( dynamic_cast < CEntity * > ( (*iter)->GetGamePlayer () ) == pEntity )
         {
@@ -112,30 +120,10 @@ CClientPed* CClientPedManager::GetSafe ( CEntity * pEntity, bool bCheckPlayers )
     return NULL;
 }
 
-
-bool CClientPedManager::Exists ( CClientPed* pPed )
-{
-    // Is it in our list?
-    vector < CClientPed* > ::iterator iter = m_List.begin ();
-    for ( ; iter != m_List.end (); iter++ )
-    {
-        if ( *iter == pPed )
-            return true;
-    }
-
-    // Nope
-    return false;
-}
-
-
 void CClientPedManager::RemoveFromList ( CClientPed* pPed )
 {
-    if ( m_bRemoveFromList )
-    {
-        ListRemove ( m_List, pPed );
-    }
+    ListRemove ( m_List, pPed );
 }
-
 
 void CClientPedManager::OnCreation ( CClientPed * pPed )
 {
@@ -143,7 +131,6 @@ void CClientPedManager::OnCreation ( CClientPed * pPed )
     if ( !ListContains ( m_StreamedIn, pPed ) )
         m_StreamedIn.push_back ( pPed );
 }
-
 
 void CClientPedManager::OnDestruction ( CClientPed * pPed )
 {

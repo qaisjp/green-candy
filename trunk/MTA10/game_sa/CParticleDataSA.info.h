@@ -15,4 +15,10 @@
 
 // todo...
 
+class CEffectJitter : public IEffectInfo
+{
+public:
+
+};
+
 #endif //_PARTICLE_DATA_INFO_

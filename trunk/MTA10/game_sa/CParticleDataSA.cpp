@@ -96,7 +96,7 @@ bool CEffectDefSAInterface::Parse( const char *filename, CFile *file, int ver )
     file->GetString( buffer, sizeof(buffer) );
     sscanf( buffer, "%s %s", token, name );
 
-    // Hashes are quick
+    // Hashes are quick; quicker than byte string comparisons.
     m_hash = pGame->GetKeyGen()->GetUppercaseKey( name );
 
     // Length
@@ -230,8 +230,19 @@ bool CEffectEmitterSAInterface::InfoExists( unsigned short id ) const
     return false;
 }
 
-IEffectInfo* CEffectObjectInfo::CreateInfoStruct( int _type )
+IEffectInfo* CEffectObjectInfo::CreateInfoStruct( int id )
 {
+    IEffectInfo *eff = NULL;
+
+    switch( id )
+    {
+    case 0x2080:
+        // JITTER_DATA
+        break;
+    }
+
+    return eff;
+#if 0
     // We may work on this at another time, because it seems to be a runtime object conglomeration :D
     DWORD dwFunc = 0x004A7B00;
     IEffectInfo *eff;
@@ -243,6 +254,7 @@ IEffectInfo* CEffectObjectInfo::CreateInfoStruct( int _type )
         mov eff,eax
     }
     return eff;
+#endif
 }
 
 bool CEffectObjectInfo::Parse( CFile *file, int ver )

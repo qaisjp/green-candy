@@ -33,6 +33,10 @@ public:
 
     void                                    SetGlobalAssociatives( const CVector *windVelocity, const float *unk );
 
+    CParticleObjectSAInterface*             CreateTranslator( const char *name, const CVector& pos, unsigned int unk, bool unk2 );
+    CParticleObjectSAInterface*             CreateTranslator( CEffectDefSAInterface *data, const CVector& pos, unsigned int unk, bool unk2 );
+    CEffectDefSAInterface*                  GetBlueprintByName( const char *name );
+
     CSimpleList                             m_defList;      // 0
     BYTE                                    m_pad[12];      // 12
     CEffectDataSAInterface*                 m_effects;      // 24
@@ -55,6 +59,9 @@ class CParticleSystemSA
 public:
                                             CParticleSystemSA();
                                             ~CParticleSystemSA();
+
+    void                                    Init();
+    void                                    Shutdown();
 };
 
 extern CParticleSystemSAInterface *const pParticleSystem;
