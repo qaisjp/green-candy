@@ -2540,7 +2540,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
                 pEntity->Delete();
 
                 // And set the CElementArray entry to NULL as like it never existed
-                CElementIDs::SetElement ( EntityID, NULL );
+                CElementIDs::SetElement( EntityID, NULL );
             }
 
             ElementID LowLodObjectID = INVALID_ELEMENT_ID;
