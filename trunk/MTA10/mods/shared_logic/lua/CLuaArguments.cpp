@@ -449,18 +449,22 @@ static inline void RakNet_WriteTable( NetBitStreamInterface& stream, lua_State *
 {
     cb.put( L, lua_topointer( L, idx ) );
 
-    // Space for key and value
-    lua_checkstack( L, 2 );
+    // Space for table and key and value
+    lua_checkstack( L, 3 );
+
+    lua_pushvalue( L, idx );
+
+    int tidx = lua_gettop( L );
 
     // The other side has to know how much we wrote
-    stream.WriteCompressed( RakNet_GetTableEntryCount( L, idx ) );
+    stream.WriteCompressed( RakNet_GetTableEntryCount( L, tidx ) );
 
     lua_pushnil( L );
 
     // Loop through the table
-    while ( lua_next( L, idx ) )
+    while ( lua_next( L, tidx ) )
     {
-        if ( !lua_isnil( L, idx ) )
+        if ( !lua_isnil( L, -2 ) )
         {
             RakNet_WriteLinkedArgument( stream, L, -2, cb );
             RakNet_WriteLinkedArgument( stream, L, -1, cb );
@@ -468,6 +472,8 @@ static inline void RakNet_WriteTable( NetBitStreamInterface& stream, lua_State *
 
         lua_pop( L, 1 );
     }
+
+    lua_pop( L, 1 );
 }
 
 void RakNet_WriteArguments( NetBitStreamInterface& stream, lua_State *L, int startIdx, unsigned short count )
