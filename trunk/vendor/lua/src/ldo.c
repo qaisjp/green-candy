@@ -478,28 +478,30 @@ LUA_API int lua_yield( lua_State *L, int nresults )
     return 0;
 }
 
-
 int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t ef, lua_Debug *debug)
 {
-  int status;
-  ptrdiff_t old_errfunc = L->errfunc;
-  std::string errmsg;
-  L->errfunc = ef;
-  status = luaD_rawrunprotected(L, func, u, errmsg, debug);
-  if (status != 0)
-  {  /* an error occurred? */
-    StkId oldtop = restorestack(L, old_top);
-    luaF_close(L, oldtop);  /* close eventual pending closures */
-    L->top = oldtop;
-    lua_pushlstring( L, errmsg.c_str(), errmsg.size() );
-    L->base = L->ci->base;
-    L->savedpc = L->ci->savedpc;
-    restore_stack_limit(L);
-  }
-  L->errfunc = old_errfunc;
-  return status;
+    const char *cptr;
+    int status;
+    ptrdiff_t old_errfunc = L->errfunc;
+    std::string errmsg;
+    cptr = errmsg.c_str();
+    L->errfunc = ef;
+    status = luaD_rawrunprotected(L, func, u, errmsg, debug);
+    if (status != 0)
+    {  /* an error occurred? */
+        StkId oldtop = restorestack(L, old_top);
+        luaF_close(L, oldtop);  /* close eventual pending closures */
+        L->top = oldtop;
+        lua_pushlstring( L, errmsg.c_str(), errmsg.size() );
+        L->base = L->ci->base;
+        L->savedpc = L->ci->savedpc;
+        restore_stack_limit(L);
+    }
+    else if ( cptr != errmsg.c_str() )
+        __asm int 3
+    L->errfunc = old_errfunc;
+    return status;
 }
-
 
 
 /*
