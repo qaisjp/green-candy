@@ -9,47 +9,37 @@
 *               Jax <>
 *               The_GTA <quiret@gmx.de>
 *
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
+*
 *****************************************************************************/
 
 #include <StdInc.h>
 
-using std::list;
-
-void CClientGroups::DeleteAll ( void )
+void CClientGroups::DeleteAll()
 {
-    // TODO
-    return; // We cannot afford to do this
+    luaRefs refs;
 
-    // Delete all the elements
-    m_bDontRemoveFromList = true;
+    for ( dummies_t::iterator iter = m_List.begin(); iter != m_List.end(); ++iter )
+    {
+        CClientDummy *dummy = *iter;
+        dummy->Reference( refs );
+        dummy->Delete();
+    }
 
-    for ( list < CClientDummy* >::iterator iter = m_List.begin () ; iter != m_List.end () ; ++iter )
-        (*iter)->Delete();
-
-    m_List.clear ();
-
-    m_bDontRemoveFromList = false;
+    m_List.clear();
 }
 
-
-void CClientGroups::RemoveFromList ( CClientDummy* pDummy )
+void CClientGroups::RemoveFromList( CClientDummy *pDummy )
 {
-    if ( !m_bDontRemoveFromList )
+    for ( dummies_t::iterator iter = m_List.begin(); iter != m_List.end(); )
     {
-        if ( !m_List.empty () )
+        CClientDummy* pCurrentDummy = *iter;
+
+        if ( pCurrentDummy == pDummy )
         {
-            for ( list < CClientDummy* >::iterator iter = m_List.begin () ; iter != m_List.end () ; )
-            {
-                CClientDummy* pCurrentDummy = *iter;
-                if ( pCurrentDummy == pDummy )
-                {
-                    iter = m_List.erase ( iter );
-                }
-                else
-                {
-                    ++iter;
-                }
-            }
+            iter = m_List.erase ( iter );
         }
+        else
+            ++iter;
     }
 }

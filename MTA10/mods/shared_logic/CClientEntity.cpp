@@ -152,9 +152,21 @@ static const luaL_Reg entity_interface_light[] =
     { NULL, NULL }
 };
 
+static LUA_DECLARE( destroy )
+{
+    CClientEntity *entity = (CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    // Before we do anything, fire the on-destroy event
+    // This is placed here as calling from destructor is invalid (C++ class integrity is unstable)
+    entity->CallEvent( "onClientElementDestroy", L, 0 );
+
+    return 0;
+}
+
 static const luaL_Reg entity_interface[] =
 {
     { "setChild", CClientEntity::entity_setChild },
+    LUA_METHOD( destroy ),
     { NULL, NULL }
 };
 
@@ -340,9 +352,6 @@ CClientEntity::CClientEntity( ElementID ID, bool system, lua_State *L ) : LuaEle
 
 CClientEntity::~CClientEntity()
 {
-    // Before we do anything, fire the on-destroy event
-    CallEvent( "onClientElementDestroy", m_lua, 0 );
-
     // Remove collision properties
     while ( !m_collidableWith.empty() )
         SetCollidableWith( m_collidableWith.front(), false );

@@ -1,12 +1,15 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *               (Shared logic for modifications)
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/shared_logic/CClientGroups.h
 *  PURPOSE:     Dummy grouping class
 *  DEVELOPERS:  Chris McArthur <>
 *               Jax <>
+*               The_GTA <quiret@gmx.de>
+*
+*  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
@@ -15,24 +18,23 @@
 
 #include "CClientDummy.h"
 #include "CClientEntity.h"
-#include <list>
 
 class CClientGroups
 {
     friend class CClientDummy;
-
 public:
-    inline                                  CClientGroups                   ( void )                { m_bDontRemoveFromList = false; };
-    inline                                  ~CClientGroups                  ( void )                { DeleteAll (); };
+    inline                                  CClientGroups()                             {}
+    inline                                  ~CClientGroups()                            { DeleteAll(); }
 
-    void                                    DeleteAll                       ( void );
+    void                                    DeleteAll();
+
+    typedef std::list <CClientDummy*> dummies_t;
 
 private:
-    inline void                             AddToList                       ( CClientDummy* pDummy )      { m_List.push_back ( pDummy ); };
-    void                                    RemoveFromList                  ( CClientDummy* pDummy );
+    inline void                             AddToList( CClientDummy *dummy )            { m_List.push_back( dummy ); }
+    void                                    RemoveFromList( CClientDummy *pDummy );
 
-    std::list < CClientDummy* >             m_List;
-    bool                                    m_bDontRemoveFromList;
+    dummies_t                               m_List;
 };
 
 #endif
