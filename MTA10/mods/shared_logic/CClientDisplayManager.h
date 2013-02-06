@@ -23,26 +23,27 @@ class CClientDisplayManager
 {
     friend class CClientManager;
     friend class CClientDisplay;
-
 public:
-                                    CClientDisplayManager           ( void );
-                                    ~CClientDisplayManager          ( void );
+                                    CClientDisplayManager();
+                                    ~CClientDisplayManager();
 
-    void                            DoPulse                         ( void );
+    void                            DoPulse();
 
-    inline unsigned int             Count                           ( void )        { return static_cast < unsigned int > ( m_List.size () ); };
-    CClientDisplay*                 Get                             ( unsigned long ulID );
+    inline unsigned int             Count()        { return m_List.size(); };
+    CClientDisplay*                 Get( unsigned long ulID );
 
-    void                            DrawText2D                      ( const char* szCaption, const CVector& vecPosition, float fScale = 1.0f, RGBA rgbaColor = 0xFFFFFFFF );
+    void                            DrawText2D( const char* szCaption, const CVector& vecPosition, float fScale = 1.0f, RGBA rgbaColor = 0xFFFFFFFF );
 
-    void                            RemoveAll                       ( void );
+    void                            RemoveAll();
 
 
-    void                            AddToList                       ( CClientDisplay* pDisplay );
-    void                            RemoveFromList                  ( CClientDisplay* pDisplay );
+    void                            AddToList( CClientDisplay* pDisplay );
+    void                            RemoveFromList( CClientDisplay* pDisplay );
 
-    std::list < CClientDisplay* >       m_List;
-    bool                                m_bCanRemoveFromList;
+    typedef std::list <CClientDisplay*> displays_t;
+
+    displays_t                      m_List;
+    bool                            m_bCanRemoveFromList;
 };
 
 #endif

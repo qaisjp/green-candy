@@ -189,9 +189,16 @@ void CClientManager::DoPulse ( void )
 
 void CClientManager::DoRender ( void )
 {
-    if ( IsGameLoaded () )
+    if ( IsGameLoaded() )
     {
-        m_pDisplayManager->DoPulse ();
+        __try
+        {
+            m_pDisplayManager->DoPulse();
+        }
+        __except(1)
+        {
+            __asm int 3
+        }
     }
 }
 

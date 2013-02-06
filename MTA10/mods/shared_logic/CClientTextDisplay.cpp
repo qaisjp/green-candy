@@ -29,13 +29,12 @@ CClientTextDisplay::CClientTextDisplay ( CClientDisplayManager* pDisplayManager,
 CClientTextDisplay::~CClientTextDisplay ( void )
 {
     // Delete our caption
-    if ( m_szCaption )
-        delete [] m_szCaption;
+    delete [] m_szCaption;
 }
 
 char* CClientTextDisplay::GetCaption ( char* szBuffer, size_t sizeBuffer )
 {
-    if (sizeBuffer <= 0)
+    if ( sizeBuffer == 0 )
         return NULL;
 
     if ( m_szCaption )
@@ -44,13 +43,9 @@ char* CClientTextDisplay::GetCaption ( char* szBuffer, size_t sizeBuffer )
         szBuffer[sizeBuffer-1] = '\0';
         return szBuffer;
     }
-    else
-    {
-        szBuffer[0] = '\0';
-        return szBuffer;
-    }
 
-    return NULL;
+    szBuffer[0] = '\0';
+    return szBuffer;
 }
 
 void CClientTextDisplay::SetCaption ( const char* szCaption )

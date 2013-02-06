@@ -23,13 +23,11 @@ CClientDisplay::CClientDisplay ( CClientDisplayManager* pDisplayManager, unsigne
     m_pDisplayManager->AddToList ( this );
 }
 
-
 CClientDisplay::~CClientDisplay ( void )
 {
     // Remove us from the manager
     m_pDisplayManager->RemoveFromList ( this );
 }
-
 
 void CClientDisplay::SetColorAlpha ( unsigned char ucAlpha )
 {

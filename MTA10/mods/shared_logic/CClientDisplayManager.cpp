@@ -11,36 +11,30 @@
 
 #include "StdInc.h"
 
-using std::list;
-
 CClientDisplayManager::CClientDisplayManager ( void )
 {
     // Init
     m_bCanRemoveFromList = true;
 }
 
-
 CClientDisplayManager::~CClientDisplayManager ( void )
 {
-    RemoveAll ();
+    RemoveAll();
 }
-
 
 CClientDisplay* CClientDisplayManager::Get ( unsigned long ulID )
 {
     // Find the display with the given id
-    list < CClientDisplay* > ::const_iterator iter = m_List.begin ();
-    for ( ; iter != m_List.end (); iter++ )
+    displays_t::const_iterator iter = m_List.begin();
+
+    for ( ; iter != m_List.end(); iter++ )
     {
-        if ( (*iter)->GetID () == ulID )
-        {
+        if ( (*iter)->GetID() == ulID )
             return *iter;
-        }
     }
 
     return NULL;
 }
-
 
 void CClientDisplayManager::DrawText2D ( const char* szCaption, const CVector& vecPosition, float fScale, RGBA rgbaColor )
 {
@@ -56,58 +50,51 @@ void CClientDisplayManager::DrawText2D ( const char* szCaption, const CVector& v
                                         rgbaColor, szCaption, fScale, fScale, 0 );
 }
 
-
 void CClientDisplayManager::AddToList ( CClientDisplay* pDisplay )
 {
-    m_List.push_back ( pDisplay );
+    m_List.push_back( pDisplay );
 }
 
-
-void CClientDisplayManager::RemoveAll ( void )
+void CClientDisplayManager::RemoveAll()
 {
     // Delete all the items in the list
     m_bCanRemoveFromList = false;
-    list < CClientDisplay* > ::iterator iter = m_List.begin ();
-    for ( ; iter != m_List.end (); iter++ )
-    {
+
+    for ( displays_t::iterator iter = m_List.begin(); iter != m_List.end(); iter++ )
         delete *iter;
-    }
 
     // Clear the list
-    m_List.clear ();
+    m_List.clear();
     m_bCanRemoveFromList = true;
 }
 
 void CClientDisplayManager::RemoveFromList ( CClientDisplay* pDisplay )
 {
     if ( m_bCanRemoveFromList )
-    {
-        if ( !m_List.empty() )
-        {
-            m_List.remove ( pDisplay );
-        }
-    }
+        m_List.remove( pDisplay );
 }
 
-
-void CClientDisplayManager::DoPulse ( void )
+void CClientDisplayManager::DoPulse()
 {
     // Render all our displays
     m_bCanRemoveFromList = false;
-    list < CClientDisplay* > ::iterator iter = m_List.begin ();
-    while ( iter != m_List.end () )
+
+    displays_t::iterator iter = m_List.begin();
+
+    while ( iter != m_List.end() )
     {
-        CClientDisplay* pObject = *iter;
-        if ( pObject->IsExpired () )
+        CClientDisplay *pObject = *iter;
+
+        if ( pObject->IsExpired() )
         {
             // Delete it and remove it from the list
             delete pObject;
-            iter = m_List.erase ( iter );
+            iter = m_List.erase( iter );
         }
         else
         {
             ++iter;
-            pObject->Render ();
+            pObject->Render();
         }
     }
 
