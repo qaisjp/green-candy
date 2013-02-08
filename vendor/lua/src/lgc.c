@@ -72,8 +72,8 @@ int Class::TraverseGC( global_State *g )
     if ( destroyed )
         return 0;
 
-    if ( ttisfunction( &destructor ) )
-        markobject( g, clvalue( &destructor ) );
+    if ( destructor )
+        markobject( g, destructor );
 
     markobject( g, env );
     markobject( g, outenv );
@@ -232,7 +232,7 @@ size_t luaC_separatefinalization( lua_State *L, bool all )
                 debughook_shield shield( *L );
 
                 // Call it's destructor
-                setobj2s( L, L->top, &j->destructor );
+                setclvalue( L, L->top, j->destructor );
                 luaD_call( L, L->top++, 0 );
             }
             break;
@@ -365,14 +365,19 @@ int LClosure::TraverseGC( global_State *g )
 
 int CClosure::TraverseGC( global_State *g )
 {
-    unsigned int i;
-
-    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
-        markvalue( g, &upvalue[i] );
-
     markobject( g, accessor );
 
     return Closure::TraverseGC( g );
+}
+
+int CClosureBasic::TraverseGC( global_State *g )
+{
+    unsigned int i;
+
+    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
+        markvalue( g, &upvalues[i] );
+
+    return CClosure::TraverseGC( g );
 }
 
 static void checkstacksizes (lua_State *L, StkId max) {
