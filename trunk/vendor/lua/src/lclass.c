@@ -121,7 +121,7 @@ static int childapi_notifyDestroy( lua_State *L )
 
     class_unlinkParent( L, j );
 
-    setobj( L, L->top++, &j.destructor );
+    setclvalue( L, L->top++, j.destructor );
     lua_call( L, 0, 0 );
     return 0;
 }
@@ -188,7 +188,7 @@ void Class::CheckDestruction( lua_State *L )
         if ( !class_preDestructor( L, *this ) )
             return;
 
-        setobj2s( L, L->top, &destructor );
+        setclvalue( L, L->top, destructor );
         luaD_call( L, L->top++, 0 );
     }
 }
@@ -629,14 +629,14 @@ static int classmethod_fsDestroyHandler( lua_State *L )
 {
     Class *j = jvalue( index2adr( L, 2 ) );
 
-    setobj2s( L, L->top - 3, &j->destructor );
+    setclvalue( L, L->top - 3, j->destructor );
 
     lua_pushvalue( L, 3 );
     lua_pushvalue( L, 1 );
     lua_pushcclosure( L, classmethod_fsDestroyBridge, 2 );
 
-    setobj( L, &j->destructor, L->top - 1 );
-    luaC_forceupdatef( L, jvalue( &j->destructor ) );
+    j->destructor = clvalue( L->top - 1 );
+    luaC_objbarrier( L, j, j->destructor );
     lua_settop( L, 3 );
 
     lua_pushcclosure( L, classmethod_fsDestroySuper, 3 );
@@ -707,10 +707,9 @@ Table* Class::AcquireEnvDispatcher( lua_State *L )
     return AcquireEnvDispatcherEx( L, hvalue( index2adr( L, LUA_ENVIRONINDEX ) ) );
 }
 
-void Class::RegisterMethod( lua_State *L, const char *name, bool handlers )
+void Class::RegisterMethod( lua_State *L, TString *methName, bool handlers )
 {
     Table *methTable;
-    TString *methName = luaS_new( L, name );
     const TValue *val = luaH_getstr( internStorage, methName );
     bool isPrevMethod;
 
@@ -786,6 +785,11 @@ defaultHandler:
 
     // Pop the raw function and the method
     L->top -= 2;
+}
+
+void Class::RegisterMethod( lua_State *L, const char *name, bool handlers )
+{
+    return RegisterMethod( L, luaS_new( L, name ), handlers );
 }
 
 void Class::RegisterLightMethod( lua_State *L, const char *_name )
@@ -1054,7 +1058,7 @@ static int classmethod_destructor( lua_State *L )
     j->methods = NULL;
     j->storage = NULL;
     j->internStorage = NULL;
-    setnilvalue( &j->destructor );
+    j->destructor = NULL;
 
     j->destroyed = true;
     j->destroying = false;
@@ -1098,74 +1102,8 @@ static int methodenv_newindex( lua_State *L )
 
         if ( t == LUA_TFUNCTION )
         {
-            // Acquire the previous method
-            TString *key = tsvalue( L->base + 1 );
-            Table *methTable;
-            const TValue *val = luaH_getstr( j.internStorage, key );
-
-            if ( val->tt == LUA_TFUNCTION )
-            {
-                setobj( L, L->top++, val );
-
-                methTable = j.internStorage;
-            }
-            else
-            {
-                setobj( L, L->top++, luaH_getstr( j.methods, key ) );
-
-                methTable = j.methods;
-            }
-
-            setjvalue( L, L->top++, &j );
-
-            lua_pushvalue( L, 3 );
-
-            sethvalue( L, L->top++, j.forceSuper );
-            lua_pushvalue( L, 2 );
-            lua_rawget( L, 7 );
-
-            if ( lua_type( L, 8 ) == LUA_TFUNCTION )
-            {
-                lua_insert( L, 4 );
-                lua_settop( L, 7 );
-                lua_call( L, 3, 1 );
-            }
-            else
-            {
-                lua_settop( L, 6 );
-
-                if ( lua_type( L, 4 ) != LUA_TNIL )
-                    lua_pushcclosure( L, classmethod_super, 3 );
-                else
-                {
-                    lua_remove( L, 4 );
-                    lua_pushcclosure( L, classmethod_root, 2 );
-                }
-            }
-
-            // Better avoid using the (limited) stack!
-            Closure *method = clvalue( L->top - 1 );
-            bool methWhite = iswhite( method ) != 0;
-
-            // Apply the class environment to the new method
-            Closure *cl = clvalue( L->base + 2 );
-            cl->env = j.AcquireEnvDispatcherEx( L, cl->env );
-            luaC_objbarrier( L, cl, cl->env );
-
-            // We have to put it into the environment, too (caching <3)
-            if ( val == luaO_nilobject )
-            {
-                setclvalue( L, luaH_setstr( L, j.storage, key ), method );
-                
-                if ( methWhite && isblack( j.storage ) )
-                    luaC_barrierback( L, j.storage );
-            }
-            
-            setclvalue( L, luaH_setstr( L, methTable, key ), method );
-
-            if ( methWhite && isblack( methTable ) )
-                luaC_barrierback( L, methTable );
-
+            // Register the method
+            j.RegisterMethod( L, tsvalue( L->base + 1 ), true );
             return 0;
         }
     }
@@ -1232,6 +1170,7 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     c->parent = NULL;
     c->childCount = 0;
     LIST_CLEAR( c->children.root );
+    c->destructor = NULL;
 
     // Set up the environments
     c->env = luaH_new( L, 0, 0 );
@@ -1240,7 +1179,6 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     c->methods = luaH_new( L, 0, 0 );
     c->forceSuper = luaH_new( L, 0, 0 );
     c->internStorage = luaH_new( L, 0, 0 );
-    setnilvalue( &c->destructor );
 
     c->env->metatable = meta;
     c->outenv->metatable = outmeta;
@@ -1349,7 +1287,9 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
 
     setjvalue( L, L->top++, c );
     lua_pushcclosure( L, classmethod_destructor, 1 );
-    setobj( L, &c->destructor, L->top - 1 );
+
+    c->destructor = clvalue( L->top - 1 );
+    luaC_objbarrier( L, c, c->destructor );
 
     lua_pushcclosure( L, classmethod_fsDestroyRoot, 2 );
 

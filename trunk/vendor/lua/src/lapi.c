@@ -79,14 +79,7 @@ TValue* index2adr( lua_State *L, int idx )
     case LUA_GLOBALSINDEX:
         return gt(L);
     default:
-    {
-        Closure *func = curr_func(L);
-
-        idx = LUA_GLOBALSINDEX - idx;
-        return (idx <= func->nupvalues)
-            ? &func->GetCClosure()->upvalue[idx-1]
-            : cast(TValue *, luaO_nilobject);
-    }
+        return curr_func(L)->ReadUpValue( LUA_GLOBALSINDEX - 1 - idx );
     }
 }
 
@@ -558,7 +551,7 @@ LUA_API const char *lua_pushfstring (lua_State *L, const char *fmt, ...)
 
 LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
 {
-  CClosure *cl;
+  CClosureBasic *cl;
   lua_lock(L);
   luaC_checkGC(L);
   api_checknelems(L, n);
@@ -566,7 +559,7 @@ LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
   cl->f = fn;
   L->top -= n;
   while (n--)
-    setobj2n(L, &cl->upvalue[n], L->top+n);
+    setobj2n(L, &cl->upvalues[n], L->top+n);
   setclvalue(L, L->top, cl);
   lua_assert(iswhite(cl));
   api_incr_top(L);
@@ -1231,12 +1224,15 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val)
 
     if (f->isC)
     {
-        CClosure *cl = f->GetCClosure();
-
-        if (!(1 <= n && n <= cl->nupvalues))
+        if ( n < 1 || n > 256 )
             return NULL;
 
-        *val = &cl->upvalue[n-1];
+        TValue *up = f->ReadUpValue( (unsigned char)( n - 1 ) );
+
+        if ( up == luaO_nilobject )
+            return NULL;
+
+        *val = up;
         return "";
     }
     else

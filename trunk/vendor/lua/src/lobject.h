@@ -525,7 +525,7 @@ public:
 ** Closures
 */
 
-#define sizeCclosure(n)	(cast(int, sizeof(CClosure)) + \
+#define sizeCclosure(n)	(cast(int, sizeof(CClosureBasic)) + \
                          cast(int, sizeof(TValue)*((n)-1)))
 
 #define sizeLclosure(n)	(cast(int, sizeof(LClosure)) + \
@@ -538,11 +538,13 @@ public:
 
     int                     TraverseGC( global_State *g );
 
+    virtual TValue*         ReadUpValue( unsigned char index ) = 0;
+
     Closure*                GetClosure()    { return this; }
     virtual class CClosure* GetCClosure()   { return NULL; }
     virtual class LClosure* GetLClosure()   { return NULL; }
 
-    lu_byte isC;
+    bool isC;
     lu_byte nupvalues;
     Table *env;
 };
@@ -557,6 +559,19 @@ public:
 
     CClosure* GetCClosure()     { return this; }
 
+    lua_CFunction f;
+    Table *accessor; // Usually the storage of the thread
+};
+
+class CClosureBasic : public CClosure
+{
+public:
+    ~CClosureBasic();
+
+    int TraverseGC( global_State *g );
+
+    TValue* ReadUpValue( unsigned char index );
+
     void* operator new( size_t size, lua_State *main, unsigned int nup )
     {
         return GCObject::operator new( sizeCclosure( nup ), main );
@@ -567,9 +582,7 @@ public:
         GCObject::operator delete( ptr, sizeCclosure( ((Closure*)ptr)->nupvalues ) );
     }
 
-    lua_CFunction f;
-    Table *accessor; // Usually the storage of the thread
-    TValue upvalue[1];
+    TValue upvalues[1];
 };
 
 class LClosure : public Closure
@@ -579,6 +592,8 @@ public:
 
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
+
+    TValue* ReadUpValue( unsigned char idx );
 
     LClosure* GetLClosure()     { return this; }
 
@@ -673,6 +688,7 @@ public:
     Table*  AcquireEnvDispatcher( lua_State *L );
     Table*  AcquireEnvDispatcherEx( lua_State *L, Table *env );
 
+    void    RegisterMethod( lua_State *L, TString *name, bool handlers = false );
     void    RegisterMethod( lua_State *L, const char *name, bool handlers = false );
     void    RegisterLightMethod( lua_State *L, const char *name );
     void    RegisterLightInterface( lua_State *L, const luaL_Reg *intf, void *udata );
@@ -736,7 +752,7 @@ public:
     envList_t envInherit;
 
     // Cached values
-    TValue destructor;
+    Closure *destructor;
 };
 
 

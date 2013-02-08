@@ -129,7 +129,6 @@ public:
     void* operator new( size_t size, lua_Alloc f, void *ud );
     void operator delete( void *ptr );
 
-    lu_byte status;
     StkId top;  /* first free slot in the stack */
     StkId base;  /* base of current function */
     global_State *l_G;

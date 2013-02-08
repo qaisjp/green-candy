@@ -11,7 +11,7 @@
 #include "lobject.h"
 
 LUAI_FUNC Proto *luaF_newproto (lua_State *L);
-LUAI_FUNC CClosure *luaF_newCclosure (lua_State *L, int nelems, Table *e);
+LUAI_FUNC CClosureBasic *luaF_newCclosure (lua_State *L, int nelems, Table *e);
 LUAI_FUNC LClosure *luaF_newLclosure (lua_State *L, int nelems, Table *e);
 LUAI_FUNC TValue* luaF_getcurraccessor( lua_State *L );
 LUAI_FUNC UpVal *luaF_newupval (lua_State *L);

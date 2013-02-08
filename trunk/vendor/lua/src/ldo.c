@@ -480,11 +480,9 @@ LUA_API int lua_yield( lua_State *L, int nresults )
 
 int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t ef, lua_Debug *debug)
 {
-    const char *cptr;
     int status;
     ptrdiff_t old_errfunc = L->errfunc;
     std::string errmsg;
-    cptr = errmsg.c_str();
     L->errfunc = ef;
     status = luaD_rawrunprotected(L, func, u, errmsg, debug);
     if (status != 0)
@@ -497,8 +495,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t 
         L->savedpc = L->ci->savedpc;
         restore_stack_limit(L);
     }
-    else if ( cptr != errmsg.c_str() )
-        __asm int 3
+
     L->errfunc = old_errfunc;
     return status;
 }
