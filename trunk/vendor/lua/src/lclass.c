@@ -707,33 +707,49 @@ Table* Class::AcquireEnvDispatcher( lua_State *L )
     return AcquireEnvDispatcherEx( L, hvalue( index2adr( L, LUA_ENVIRONINDEX ) ) );
 }
 
+Closure* Class::GetMethod( const TString *name, Table*& table )
+{
+    const TValue *val = luaH_getstr( internStorage, name );
+
+    if ( val->tt == LUA_TFUNCTION )
+    {
+        table = internStorage;
+        return clvalue( val );
+    }
+
+    val = luaH_getstr( methods, name );
+    table = methods;
+    return ttype( val ) == LUA_TFUNCTION ? clvalue( val ) : NULL;
+}
+
+void Class::SetMethod( lua_State *L, TString *name, Closure *method, Table *table )
+{
+    bool methWhite = iswhite( method ) != 0;
+
+    // Cache it in the environment
+    if ( table != internStorage )
+    {
+        setclvalue( L, luaH_setstr( L, storage, name ), method );
+        
+        if ( methWhite && isblack( storage ) )
+            luaC_barrierback( L, storage );
+    }
+    
+    setclvalue( L, luaH_setstr( L, table, name ), method );
+
+    if ( methWhite && isblack( table ) )
+        luaC_barrierback( L, table );
+}
+
 void Class::RegisterMethod( lua_State *L, TString *methName, bool handlers )
 {
     Table *methTable;
-    const TValue *val = luaH_getstr( internStorage, methName );
-    bool isPrevMethod;
+    Closure *prevMethod = GetMethod( methName, methTable ); // Acquire the previous method
 
     // Apply the environment to the new method
     Closure *cl = clvalue( L->top - 1 );
     cl->env = AcquireEnvDispatcherEx( L, cl->env );
     luaC_objbarrier( L, cl, cl->env );
-
-    if ( val->tt == LUA_TFUNCTION )
-    {
-        setobj2s( L, L->top++, val );
-
-        methTable = internStorage;
-        isPrevMethod = true;
-    }
-    else
-    {
-        const TValue *val2 = luaH_getstr( methods, methName );
-
-        if ( isPrevMethod = ( val2->tt == LUA_TFUNCTION ) )
-            setobj2s( L, L->top++, val2 );
-
-        methTable = methods;
-    }
 
     if ( !handlers )
         goto defaultHandler;
@@ -744,10 +760,10 @@ void Class::RegisterMethod( lua_State *L, TString *methName, bool handlers )
 	{
 		setclvalue( L, L->top++, clvalue( fsVal ) );
 
-		if ( !isPrevMethod )
+		if ( !prevMethod )
 			lua_pushnil( L );
         else
-            lua_insert( L, -2 );
+            setclvalue( L, L->top++, prevMethod );
 
         setjvalue( L, L->top++, this );
 		setclvalue( L, L->top++, cl );
@@ -756,35 +772,28 @@ void Class::RegisterMethod( lua_State *L, TString *methName, bool handlers )
 	else
 	{
 defaultHandler:
+        if ( prevMethod )
+            setclvalue( L, L->top++, prevMethod );
+
         setjvalue( L, L->top++, this );
 		setclvalue( L, L->top++, cl );
 
-		if ( isPrevMethod )
+		if ( prevMethod )
 			lua_pushcclosure( L, classmethod_super, 3 );
 		else
 			lua_pushcclosure( L, classmethod_root, 2 );
 	}
 
-    // Speedup for not using Lua stack
-    Closure *method = clvalue( L->top - 1 );
-    bool methWhite = iswhite( method ) != 0;
-
-    // Cache it in the environment
-    if ( val == luaO_nilobject )
-    {
-        setclvalue( L, luaH_setstr( L, storage, methName ), method );
-        
-        if ( methWhite && isblack( storage ) )
-            luaC_barrierback( L, storage );
-    }
-    
-    setclvalue( L, luaH_setstr( L, methTable, methName ), method );
-
-    if ( methWhite && isblack( methTable ) )
-        luaC_barrierback( L, methTable );
+    // Store the new method
+    SetMethod( L, methName, clvalue( L->top - 1 ), methTable );
 
     // Pop the raw function and the method
     L->top -= 2;
+}
+
+void Class::RegisterMethodTrans( lua_State *L, const char *name, int trans, bool handlers )
+{
+    
 }
 
 void Class::RegisterMethod( lua_State *L, const char *name, bool handlers )
@@ -804,6 +813,11 @@ void Class::RegisterLightMethod( lua_State *L, const char *_name )
 
     setclvalue( L, luaH_setstr( L, storage, name ), cl );
     luaC_objbarriert( L, storage, cl );
+}
+
+void Class::RegisterLightMethodTrans( lua_State *L, const char *name, int trans )
+{
+
 }
 
 static int classmethod_lightguard( lua_State *L )
@@ -835,6 +849,11 @@ void Class::RegisterLightInterface( lua_State *L, const luaL_Reg *intf, void *ud
 
         intf++;
     }
+}
+
+void Class::RegisterLightInterfaceTrans( lua_State *L, const luaL_Reg *intf, void *udata, int trans )
+{
+
 }
 
 void Class::EnvPutFront( lua_State *L )

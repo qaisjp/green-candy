@@ -370,14 +370,14 @@ int CClosure::TraverseGC( global_State *g )
     return Closure::TraverseGC( g );
 }
 
-int CClosureBasic::TraverseGC( global_State *g )
+size_t CClosureBasic::Propagate( global_State *g )
 {
     unsigned int i;
 
     for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
         markvalue( g, &upvalues[i] );
 
-    return CClosure::TraverseGC( g );
+    return CClosure::Propagate( g );
 }
 
 static void checkstacksizes (lua_State *L, StkId max) {

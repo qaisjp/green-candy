@@ -568,7 +568,7 @@ class CClosureBasic : public CClosure
 public:
     ~CClosureBasic();
 
-    int TraverseGC( global_State *g );
+    size_t Propagate( global_State *g );
 
     TValue* ReadUpValue( unsigned char index );
 
@@ -583,6 +583,22 @@ public:
     }
 
     TValue upvalues[1];
+};
+
+class CClosureMethod : public CClosure
+{
+public:
+    ~CClosureMethod();
+
+    size_t Propagate( global_State *g );
+};
+
+class CClosureMethodLight : public CClosure
+{
+public:
+    ~CClosureMethodLight();
+
+    size_t Propagate( global_State *g );
 };
 
 class LClosure : public Closure
@@ -688,10 +704,16 @@ public:
     Table*  AcquireEnvDispatcher( lua_State *L );
     Table*  AcquireEnvDispatcherEx( lua_State *L, Table *env );
 
+    Closure*    GetMethod( const TString *name, Table*& table );
+    void    SetMethod( lua_State *L, TString *name, Closure *method, Table *table );
+
     void    RegisterMethod( lua_State *L, TString *name, bool handlers = false );
     void    RegisterMethod( lua_State *L, const char *name, bool handlers = false );
+    void    RegisterMethodTrans( lua_State *L, const char *name, int trans, bool handlers = false );
     void    RegisterLightMethod( lua_State *L, const char *name );
+    void    RegisterLightMethodTrans( lua_State *L, const char *name, int trans );
     void    RegisterLightInterface( lua_State *L, const luaL_Reg *intf, void *udata );
+    void    RegisterLightInterfaceTrans( lua_State *L, const luaL_Reg *intf, void *udata, int trans );
 
     void    EnvPutFront( lua_State *L );
     void    EnvPutBack( lua_State *L );
