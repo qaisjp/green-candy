@@ -112,8 +112,9 @@ static int childapi_notifyDestroy( lua_State *L )
     // First let all other handlers finish
     if ( ttype( val ) == LUA_TFUNCTION )
     {
-        setobj2s( L, L->top++, val );
-        lua_call( L, 0, 0 );
+        const StkId callObj = L->top++;
+        setobj2s( L, callObj, val );
+        luaD_call( L, callObj, 0 );
     }
 
     if ( j.childCount != 0 )
@@ -141,7 +142,7 @@ inline static bool class_preDestructor( lua_State *L, Class& j )
     // If crashes report at this loop, I will take care of it (very unlikely due to current GC architecture).
     LIST_FOREACH_BEGIN( Class, j.children.root, child_iter )
         item->PushMethod( L, "destroy" );
-        lua_call( L, 0, 0 );
+        luaD_call( L, L->top - 1, 0 );
 
         //TODO: This may be risky, I have to analyze whether GC may kill our runtime
         //REPORT: I have seen no errors so far!
@@ -181,6 +182,9 @@ void Class::CheckDestruction( lua_State *L )
     // because the Lua environment is coroutine-safe. A halted coroutine in a class callback
     // handler runtime will prevent the class' destruction until the runtime left the class'
     // methods!
+
+    // Only problem could occur if the VM is short of memory.
+    // Exceptions could be raised within exceptions, and I am unsure how to handle this.
     if ( reqDestruction && inMethod == 0 )
     {
         lua_yield_shield _ref( L ); // prevent destructor yielding
