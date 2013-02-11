@@ -528,10 +528,16 @@ public:
 #define sizeCclosure(n)	(cast(int, sizeof(CClosureBasic)) + \
                          cast(int, sizeof(TValue)*((n)-1)))
 
+#define sizeCmethod(n)  (cast(int, sizeof(CClosureMethod)) + \
+                         cast(int, sizeof(TValue)*((n)-1)))
+
+#define sizeCmethodt(n) (cast(int, sizeof(CClosureMethodTrans)) + \
+                         cast(int, sizeof(TValue)*((n)-1)))
+
 #define sizeLclosure(n)	(cast(int, sizeof(LClosure)) + \
                          cast(int, sizeof(TValue*)*((n)-1)))
 
-class Closure : public GrayObject
+class Closure abstract : public GrayObject
 {
 public:
                             ~Closure();
@@ -549,7 +555,7 @@ public:
     Table *env;
 };
 
-class CClosure : public Closure
+class CClosure abstract : public Closure
 {
 public:
     ~CClosure();
@@ -585,12 +591,60 @@ public:
     TValue upvalues[1];
 };
 
-class CClosureMethod : public CClosure
+class CClosureMethodBase abstract : public CClosure
+{
+public:
+    ~CClosureMethodBase();
+
+    size_t Propagate( global_State *g );
+
+    Class*          m_class;
+    lua_CFunction   method;
+};
+
+class CClosureMethod : public CClosureMethodBase
 {
 public:
     ~CClosureMethod();
 
     size_t Propagate( global_State *g );
+
+    TValue* ReadUpValue( unsigned char index );
+
+    void* operator new( size_t size, lua_State *main, unsigned int nup )
+    {
+        return GCObject::operator new( sizeCmethod( nup ), main );
+    }
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeCmethod( ((Closure*)ptr)->nupvalues ) );
+    }
+
+    TValue  upvalues[1];
+};
+
+class CClosureMethodTrans : public CClosureMethodBase
+{
+public:
+    ~CClosureMethodTrans();
+
+    size_t Propagate( global_State *g );
+
+    TValue* ReadUpValue( unsigned char index );
+
+    void* operator new( size_t size, lua_State *main, unsigned int nup )
+    {
+        return GCObject::operator new( sizeCmethodt( nup ), main );
+    }
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeCmethodt( ((Closure*)ptr)->nupvalues ) );
+    }
+
+    unsigned char trans;
+    TValue  upvalues[1];
 };
 
 class CClosureMethodLight : public CClosure
@@ -673,6 +727,12 @@ public:
     int sizearray;  /* size of `array' array */
 };
 
+struct _methodRegisterInfo
+{
+    bool isTrans;
+    unsigned char transID;
+};
+
 class Class : public GCObject, public virtual ILuaClass
 {
 public:
@@ -709,7 +769,9 @@ public:
 
     void    RegisterMethod( lua_State *L, TString *name, bool handlers = false );
     void    RegisterMethod( lua_State *L, const char *name, bool handlers = false );
-    void    RegisterMethodTrans( lua_State *L, const char *name, int trans, bool handlers = false );
+    void    RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto, _methodRegisterInfo& info, bool handlers = false );
+    void    RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, bool handlers = false );
+    void    RegisterMethodTrans( lua_State *L, const char *name, lua_CFunction proto, int trans, bool handlers = false );
     void    RegisterLightMethod( lua_State *L, const char *name );
     void    RegisterLightMethodTrans( lua_State *L, const char *name, int trans );
     void    RegisterLightInterface( lua_State *L, const luaL_Reg *intf, void *udata );

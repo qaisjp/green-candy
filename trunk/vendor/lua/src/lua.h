@@ -55,8 +55,6 @@
 
 class lua_State;
 
-typedef int (*lua_CFunction) (lua_State *L);
-
 /*
 ** functions that read/write blocks when loading/dumping Lua chunks
 */

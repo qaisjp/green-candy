@@ -12,6 +12,8 @@
 
 LUAI_FUNC Proto *luaF_newproto (lua_State *L);
 LUAI_FUNC CClosureBasic *luaF_newCclosure (lua_State *L, int nelems, Table *e);
+LUAI_FUNC CClosureMethod *luaF_newCmethod( lua_State *L, int nelems, Table *e, Class *j );
+LUAI_FUNC CClosureMethod *luaF_newCmethodtrans( lua_State *L, int nelems, Table *e, Class *j, int trans );
 LUAI_FUNC LClosure *luaF_newLclosure (lua_State *L, int nelems, Table *e);
 LUAI_FUNC TValue* luaF_getcurraccessor( lua_State *L );
 LUAI_FUNC UpVal *luaF_newupval (lua_State *L);

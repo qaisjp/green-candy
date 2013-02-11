@@ -377,7 +377,33 @@ size_t CClosureBasic::Propagate( global_State *g )
     for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
         markvalue( g, &upvalues[i] );
 
+    return CClosure::Propagate( g ) + sizeCclosure( nupvalues );
+}
+
+size_t CClosureMethodBase::Propagate( global_State *g )
+{
+    markobject( g, m_class );
     return CClosure::Propagate( g );
+}
+
+size_t CClosureMethod::Propagate( global_State *g )
+{
+    unsigned int i;
+
+    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
+        markvalue( g, &upvalues[i] );
+
+    return CClosureMethodBase::Propagate( g ) + sizeCmethod( nupvalues );
+}
+
+size_t CClosureMethodTrans::Propagate( global_State *g )
+{
+    unsigned int i;
+
+    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
+        markvalue( g, &upvalues[i] );
+
+    return CClosureMethodBase::Propagate( g ) + sizeCmethodt( nupvalues );
 }
 
 static void checkstacksizes (lua_State *L, StkId max) {
@@ -430,7 +456,7 @@ size_t LClosure::Propagate( global_State *g )
 size_t CClosure::Propagate( global_State *g )
 {
     TraverseGC( g );
-    return sizeCclosure( nupvalues );
+    return 0;
 }
 
 static void markmt( lua_State *L )
@@ -710,7 +736,7 @@ void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v)
 {
     global_State *g = G(L);
     lua_assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
-    lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
+    //lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
     lua_assert(ttype(o) != LUA_TTABLE);
 
     /* must keep invariant? */

@@ -54,6 +54,51 @@ TValue* CClosureBasic::ReadUpValue( unsigned char index )
     return &upvalues[index];
 }
 
+CClosureMethod* luaF_newCmethod( lua_State *L, int nelems, Table *e, Class *j )
+{
+    CClosureMethod *c = new (L, nelems) CClosureMethod;
+    luaC_link( L, c, LUA_TFUNCTION );
+
+    c->isC = true;
+    c->env = e;
+    c->nupvalues = cast_byte(nelems);
+    c->accessor = hvalue( luaF_getcurraccessor( L ) );
+    c->m_class = j;
+
+    return c;
+}
+
+TValue* CClosureMethod::ReadUpValue( unsigned char index )
+{
+    if ( index >= nupvalues )
+        return (TValue*)luaO_nilobject; // we trust the programmer that he will not write into the nil object (possibly through upvalues)
+
+    return &upvalues[index];
+}
+
+CClosureMethodTrans* luaF_newCmethod( lua_State *L, int nelems, Table *e, Class *j, int trans )
+{
+    CClosureMethodTrans *c = new (L, nelems) CClosureMethodTrans;
+    luaC_link( L, c, LUA_TFUNCTION );
+
+    c->isC = true;
+    c->env = e;
+    c->nupvalues = cast_byte(nelems);
+    c->accessor = hvalue( luaF_getcurraccessor( L ) );
+    c->m_class = j;
+    c->trans = trans;
+
+    return c;
+}
+
+TValue* CClosureMethodTrans::ReadUpValue( unsigned char index )
+{
+    if ( index >= nupvalues )
+        return (TValue*)luaO_nilobject; // we trust the programmer that he will not write into the nil object (possibly through upvalues)
+
+    return &upvalues[index];
+}
+
 LClosure *luaF_newLclosure (lua_State *L, int nelems, Table *e)
 {
     LClosure *c = new (L, nelems) LClosure;
@@ -192,6 +237,18 @@ CClosure::~CClosure()
 }
 
 CClosureBasic::~CClosureBasic()
+{
+}
+
+CClosureMethodBase::~CClosureMethodBase()
+{
+}
+
+CClosureMethod::~CClosureMethod()
+{
+}
+
+CClosureMethodTrans::~CClosureMethodTrans()
 {
 }
 

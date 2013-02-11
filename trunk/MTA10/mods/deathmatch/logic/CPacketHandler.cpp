@@ -3500,27 +3500,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
         ElementID TempLowLodObjectID = pEntityStuff->LowLodObjectID;
 
         if ( TempParent != INVALID_ELEMENT_ID )
-        {
-            CClientEntity* pParent = CElementIDs::GetElement ( TempParent );
-
-#if 0
-            // Set the root to the map if it exists
-            CClientEntity *pTemp = pParent;
-            while ( pTemp )
-            {
-                const char *szTypeName = pTemp->GetTypeName();
-                if ( szTypeName && strcmp( szTypeName, "map" ) == 0 )
-                {
-                    pTempEntity->SetRoot( pTemp );
-                    break;
-                }
-
-                pTemp = pTemp->GetParent();
-            }
-#endif
-
-            pTempEntity->SetParent( pParent );
-        }
+            pTempEntity->SetParent( CElementIDs::GetElement( TempParent ) );
 
         if ( TempAttachedToID != INVALID_ELEMENT_ID && pTempEntity->GetType () != CCLIENTPLAYER )
         {

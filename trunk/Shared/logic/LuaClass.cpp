@@ -18,8 +18,5 @@ LuaClass::LuaClass( lua_State *L, ILuaClass *j )
     m_lua = lua_getmainstate( L );		// for security reasons; main state will always be preserved
     m_class = j;
 
-    if ( (unsigned int)j == 0xdddddddd )
-        __asm int 3
-
-	LIST_INSERT( g_luaManager->m_gcList.root, m_gcList );
+	LIST_APPEND( g_luaManager->m_gcList.root, m_gcList );
 }
