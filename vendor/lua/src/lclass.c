@@ -640,7 +640,7 @@ static int classmethod_fsDestroyHandler( lua_State *L )
     lua_pushcclosure( L, classmethod_fsDestroyBridge, 2 );
 
     j->destructor = clvalue( L->top - 1 );
-    luaC_objbarrier( L, j, j->destructor );
+    luaC_forceupdatef( L, j->destructor );
     lua_settop( L, 3 );
 
     lua_pushcclosure( L, classmethod_fsDestroySuper, 3 );
@@ -795,14 +795,27 @@ defaultHandler:
     L->top -= 2;
 }
 
-void Class::RegisterMethodTrans( lua_State *L, const char *name, int trans, bool handlers )
+void Class::RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto, _methodRegisterInfo& info, bool handlers )
 {
+    Table *methTable;
+    Closure *prevMethod = GetMethod( methName, methTable ); // Acquire the previous method
+
     
 }
 
 void Class::RegisterMethod( lua_State *L, const char *name, bool handlers )
 {
     return RegisterMethod( L, luaS_new( L, name ), handlers );
+}
+
+void Class::RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, bool handlers )
+{
+
+}
+
+void Class::RegisterMethodTrans( lua_State *L, const char *name, lua_CFunction proto, int trans, bool handlers )
+{
+
 }
 
 void Class::RegisterLightMethod( lua_State *L, const char *_name )
@@ -1312,7 +1325,7 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     lua_pushcclosure( L, classmethod_destructor, 1 );
 
     c->destructor = clvalue( L->top - 1 );
-    luaC_objbarrier( L, c, c->destructor );
+    luaC_forceupdatef( L, c->destructor );
 
     lua_pushcclosure( L, classmethod_fsDestroyRoot, 2 );
 

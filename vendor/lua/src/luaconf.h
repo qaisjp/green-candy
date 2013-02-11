@@ -644,6 +644,8 @@ struct lua_Debug {
   int i_ci;  /* active function */
 };
 
+typedef int (*lua_CFunction) (lua_State *L);
+
 LUA_API int lua_getstack (lua_State *L, int level, lua_Debug *ar);
 LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar);
 
@@ -738,7 +740,8 @@ public:
     virtual bool    IsTransmit( int type ) const = 0;
 
     virtual void    RegisterMethod( lua_State *L, const char *name, bool handlers = false ) = 0;
-    virtual void    RegisterMethodTrans( lua_State *L, const char *name, int trans, bool handlers = false ) = 0;
+    virtual void    RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, bool handlers = false ) = 0;
+    virtual void    RegisterMethodTrans( lua_State *L, const char *name, lua_CFunction proto, int trans, bool handlers = false ) = 0;
     virtual void    RegisterLightMethod( lua_State *L, const char *name ) = 0;
     virtual void    RegisterLightMethodTrans( lua_State *L, const char *name, int trans ) = 0;
     virtual void    RegisterLightInterface( lua_State *L, const struct luaL_Reg *intf, void *udata ) = 0;
