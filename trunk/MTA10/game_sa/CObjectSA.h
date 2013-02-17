@@ -23,6 +23,36 @@
 #define FUNC_CObject_Create             0x5A1F60
 #define FUNC_CObject_Explode            0x5A1340
 
+class CEffectDefSAInterface;
+
+struct dynamicObjectData    //size: 80 bytes
+{
+    float mass;                         // 0
+    float turnMass;                     // 4
+    float airResistance;                // 8
+    float elasticity;                   // 12
+    float percSubmerged;                // 16
+    float uproot;                       // 20
+    float CDMult;                       // 24
+    unsigned char CDEff;                // 28
+    unsigned char SpCDR;                // 29
+    unsigned char CamAv;                // 30
+
+    unsigned char explosion;            // 31
+    unsigned char fxType;               // 32
+
+    BYTE pad4[3];                       // 33
+    CVector fxOffset;                   // 36
+
+    CEffectDefSAInterface *effDef;      // 48
+    float smashMult;                    // 52
+    CVector smashVelocity;              // 56
+    float smashRand;                    // 68
+
+    unsigned int b_gun;                 // 72
+    unsigned int b_spk;                 // 76
+};
+
 class CObjectSAInterface : public CPhysicalSAInterface // + 372 = burn time stop , +348 = scale // +340 = health
 {
 public:
@@ -31,13 +61,20 @@ public:
 
     BYTE                        m_pad4[4];              // 312
     unsigned char               m_unk40;                // 316
-    BYTE                        m_pad2[23];             // 317
+    BYTE                        m_pad2[3];              // 317
+    unsigned int                m_objFlags;             // 320
+    unsigned char               m_collDamEffect;        // 324
+    BYTE                        m_pad2_2[15];           // 325
     float                       m_health;               // 340
     DWORD                       m_pad3;                 // 344
     float                       m_scale;                // 348
 
-    BYTE                        m_pad[60];              // 352
+    dynamicObjectData*          m_dynData;              // 352
+    BYTE                        m_pad[56];              // 356
 };
+
+void Objects_Init();
+void Objects_Shutdown();
 
 class CObjectSA : public virtual CObject, public CPhysicalSA
 {
@@ -76,9 +113,8 @@ private:
     unsigned int                m_poolIndex;
 };
 
-/*
-#define COBJECTSA_DEFINED
-#define COBJECTSAINTERFACE_DEFINED
-*/
+#define MAX_DYNAMIC_OBJECT_DATA 4000
+
+extern dynamicObjectData g_dynObjData[MAX_DYNAMIC_OBJECT_DATA];
 
 #endif

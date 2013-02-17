@@ -52,7 +52,7 @@ public:
     float                   m_mass;                     // 140
     float                   m_turnMass;                 // 144
     float                   m_massUnk;                  // 148
-    float                   m_physUnk;                  // 152
+    float                   m_airResistance;            // 152
 
     float                   m_elasticity;               // 156
     float                   m_buoyancyConstant;         // 160

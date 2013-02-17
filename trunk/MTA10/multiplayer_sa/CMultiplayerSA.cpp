@@ -6296,9 +6296,13 @@ void OnMY_CRenderer_SetupEntityVisibility_Post( int result, CEntitySAInterface* 
 
         // Doing any distance fading?
         if ( result == 0 && CalculateLowLodFadeAlpha ( saved.pModelInfo, fDist ) < 1.0f )
+        {
             BOOL_FLAG( pEntity->m_entityFlags, ENTITY_FADE, true );
+        }
         else
+        {
             BOOL_FLAG( pEntity->m_entityFlags, ENTITY_FADE, false );
+        }
 
 #if TODO
         pEntity->SetEntityVisibilityResult ( result );

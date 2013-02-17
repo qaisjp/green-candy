@@ -13,7 +13,7 @@
 #define __GAME_COMMON
 
 #define IS_FLAG( mem, flag ) ( ( (mem) & (flag) ) == flag )
-#define BOOL_FLAG( mem, flag, b ) ( (mem) = (b) ? (mem) | (flag) : (mem) & ~(flag) )
+#define BOOL_FLAG( mem, flag, b ) { if ( b ) { (mem) |= (flag); } else { mem &= ~(flag); } }
 
 /**
  * Flags used to define weapon characteristics

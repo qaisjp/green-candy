@@ -142,6 +142,7 @@ CGameSA::CGameSA()
     Placeable_Init();
     Entity_Init();
     Physical_Init();
+    Objects_Init();
     Streamer_Init();
     ModelInfo_Init();
     VehicleModels_Init();
@@ -200,6 +201,7 @@ CGameSA::~CGameSA()
     VehicleModels_Shutdown();
     ModelInfo_Shutdown();
     Streamer_Shutdown();
+    Objects_Shutdown();
     Physical_Shutdown();
     Entity_Shutdown();
     Placeable_Shutdown();
