@@ -44,6 +44,11 @@ struct RwSphere
 {
     CVector pos;
     float radius;
+
+    bool operator ==( const RwSphere& right ) const
+    {
+        return pos == right.pos && radius == right.radius;
+    }
 };
 struct RwColorFloat
 {

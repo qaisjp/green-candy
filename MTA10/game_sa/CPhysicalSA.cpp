@@ -37,8 +37,7 @@ CPhysicalSAInterface::CPhysicalSAInterface()
     m_mass = 1;
     m_turnMass = 1;
     m_massUnk = 1;
-    
-    m_physUnk = 0.1f;
+    m_airResistance = 0.1f;
 
     m_link = NULL;
 

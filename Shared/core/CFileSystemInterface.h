@@ -110,38 +110,49 @@ public:
         return Write( input.c_str(), 1, input.size() );
     }
 
-    void                    GetString( std::string& output )
+    bool                    GetString( std::string& output )
     {
-        while ( !IsEOF() )
+        if ( IsEOF() )
+            return false;
+
+        do
         {
             unsigned char c = ReadByte();
 
             if ( !c || c == '\n' )
-                return;
+                return true;
 
             output += c;
         }
+        while ( !IsEOF() );
+
+        return true;
     }
 
-    void                    GetString( char *buf, const size_t max )
+    bool                    GetString( char *buf, const size_t max )
     {
         size_t n = 0;
 
-        if ( max == 0 )
-            return;
+        if ( max < 2 || IsEOF() )
+            return false;
 
-        while ( !IsEOF() )
+        do
         {
             unsigned char c = ReadByte();
 
             if ( !c || c == '\n' )
-                return;
+                goto finish;
 
             buf[n++] = c;
 
-            if ( n == max )
-                return;
+            if ( n == max - 1 )
+                goto finish;
         }
+        while ( !IsEOF() );
+
+finish:
+        buf[n] = '\0';
+        return true;
     }
 
     template <class type>

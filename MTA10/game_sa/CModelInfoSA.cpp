@@ -39,11 +39,82 @@ void CBaseModelInfoSAInterface::UnsetColModel()
     DeleteCollision();
 }
 
+static void __cdecl ConvertIDECompositeToInfoFlags( CBaseModelInfoSAInterface *info, unsigned int flags )
+{
+    BOOL_FLAG( info->m_renderFlags, RENDER_LAST, flags & ( OBJECT_ALPHA1 | OBJECT_ALPHA2 ) );
+    BOOL_FLAG( info->m_renderFlags, RENDER_ADDITIVE, flags & OBJECT_ALPHA2 );
+    BOOL_FLAG( info->m_renderFlags, RENDER_NOZBUFFER, flags & OBJECT_NOSHADOW );
+    BOOL_FLAG( info->m_renderFlags, RENDER_NOSHADOW, flags & OBJECT_NOCULL );
+    BOOL_FLAG( info->m_renderFlags, RENDER_BACKFACECULL, !( flags & OBJECT_NOBACKFACECULL ) );
+}
+
+static void __cdecl ConvertIDEModelToInfoFlags( CBaseModelInfoSAInterface *info, unsigned int flags )
+{
+    // Composite flags apply to clumps and atomic models
+    ConvertIDECompositeToInfoFlags( info, flags );
+
+    BOOL_FLAG( info->m_renderFlags, RENDER_STATIC, flags & OBJECT_WETEFFECT );
+ 
+    if ( flags & OBJECT_BREAKGLASS )
+    {
+        info->m_collFlags &= ~( COLL_SWAYINWIND | COLL_STREAMEDWITHMODEL | COLL_COMPLEX );
+        info->m_collFlags |= COLL_NOCOLLFLYER;
+    }
+
+    if ( flags & OBJECT_BREAKGLASS_CRACK )
+    {
+        info->m_collFlags &= ~( COLL_STREAMEDWITHMODEL | COLL_COMPLEX );
+        info->m_collFlags |= COLL_NOCOLLFLYER | COLL_SWAYINWIND;
+    }
+
+    if ( flags & OBJECT_GARAGE )
+    {
+        info->m_collFlags &= ~COLL_COMPLEX;
+        info->m_collFlags |= COLL_NOCOLLFLYER | COLL_SWAYINWIND | COLL_STREAMEDWITHMODEL;
+    }
+
+    if ( flags & OBJECT_VEGETATION )
+    {
+        info->m_collFlags &= ~( COLL_STREAMEDWITHMODEL | COLL_NOCOLLFLYER | COLL_COMPLEX );
+        info->m_collFlags |= COLL_SWAYINWIND;
+    }
+
+    if ( flags & OBJECT_BIG_VEGETATION )
+    {
+        info->m_collFlags &= ~( COLL_SWAYINWIND | COLL_NOCOLLFLYER | COLL_COMPLEX );
+        info->m_collFlags |= COLL_STREAMEDWITHMODEL;
+    }
+
+    BOOL_FLAG( info->m_collFlags, COLL_AUDIO, flags & OBJECT_USE_POLYSHADOW );
+
+    if ( flags & OBJECT_GRAFFITI )
+    {
+        info->m_collFlags &= ~( COLL_SWAYINWIND | COLL_COMPLEX );
+        info->m_collFlags |= COLL_STREAMEDWITHMODEL | COLL_NOCOLLFLYER;
+    }
+
+    if ( flags & OBJECT_STATUE )
+    {
+        info->m_collFlags &= ~COLL_NOCOLLFLYER;
+        info->m_collFlags |= COLL_COMPLEX | COLL_STREAMEDWITHMODEL | COLL_SWAYINWIND;
+    }
+
+    if ( flags & OBJECT_UNKNOWN_2 )
+    {
+        info->m_collFlags &= ~( COLL_NOCOLLFLYER | COLL_SWAYINWIND );
+        info->m_collFlags |= COLL_COMPLEX | COLL_STREAMEDWITHMODEL;
+    }
+}
+
 void ModelInfo_Init()
 {
-    // Install some fixed
+    // Install some fixes
     HookInstall( 0x004C4BC0, h_memFunc( &CBaseModelInfoSAInterface::SetColModel ), 5 );
     HookInstall( 0x004C4C40, h_memFunc( &CBaseModelInfoSAInterface::UnsetColModel ), 5 );
+
+    // Investigation of model flags
+    HookInstall( 0x005B3AD0, (DWORD)ConvertIDECompositeToInfoFlags, 5 );
+    HookInstall( 0x005B3B20, (DWORD)ConvertIDEModelToInfoFlags, 5 );
 }
 
 void ModelInfo_Shutdown()
