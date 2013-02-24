@@ -717,6 +717,35 @@ LUA_API void lua_getfenv (lua_State *L, int idx)
 }
 
 
+LUA_API ILuaClass* lua_getmethodclass( lua_State *L )
+{
+    return ((CClosureMethodBase*)curr_func( L ))->m_class;
+}
+
+LUA_API void* lua_getmethodtrans( lua_State *L )
+{
+    return ((CClosureMethodTrans*)curr_func( L ))->data;
+}
+
+LUA_API void lua_pushmethodsuper( lua_State *L )
+{
+    lua_lock( L );
+
+    CClosureMethodBase *method = (CClosureMethodBase*)curr_func( L );
+
+    if ( method->super )
+    {
+        setclvalue( L, L->top++, method->super );
+    }
+    else
+    {
+        setnilvalue( L->top++ );
+    }
+
+    lua_unlock( L );
+}
+
+
 /*
 ** set functions (stack -> Lua)
 */

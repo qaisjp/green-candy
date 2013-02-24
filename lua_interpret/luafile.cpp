@@ -38,7 +38,7 @@ static int luafile_read( lua_State *lua )
 {
     luaL_checktype( lua, 1, LUA_TNUMBER );
 
-    CFile *file = (CFile*)lua_touserdata( lua, lua_upvalueindex( 1 ) );
+    CFile *file = (CFile*)lua_getmethodtrans( lua );
 
     size_t bytesRead = (size_t)lua_tonumber( lua, 1 );
 
@@ -68,19 +68,19 @@ static int luafile_read( lua_State *lua )
 
 static int luafile_readShort( lua_State *lua )
 {
-    lua_pushnumber( lua, ((CFile*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ReadShort() );
+    lua_pushnumber( lua, ((CFile*)lua_getmethodtrans( lua ))->ReadShort() );
     return 1;
 }
 
 static int luafile_readInt( lua_State *lua )
 {
-    lua_pushnumber( lua, ((CFile*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ReadInt() );
+    lua_pushnumber( lua, ((CFile*)lua_getmethodtrans( lua ))->ReadInt() );
     return 1;
 }
 
 static int luafile_readFloat( lua_State *lua )
 {
-    lua_pushnumber( lua, ((CFile*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ReadFloat() );
+    lua_pushnumber( lua, ((CFile*)lua_getmethodtrans( lua ))->ReadFloat() );
     return 1;
 }
 
@@ -91,34 +91,34 @@ static int luafile_write( lua_State *L )
     size_t len;
     const char *string = lua_tolstring( L, 1, &len );
 
-    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->Write( string, 1, len ) );
+    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->Write( string, 1, len ) );
     return 1;
 }
 
 static int luafile_writeShort( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TNUMBER );
-    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->WriteShort( (int)lua_tonumber( L, 1 ) ) );
+    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteShort( (int)lua_tonumber( L, 1 ) ) );
     return 1;
 }
 
 static int luafile_writeInt( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TNUMBER );
-    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->WriteInt( (int)lua_tonumber( L, 1 ) ) );
+    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteInt( (int)lua_tonumber( L, 1 ) ) );
     return 1;
 }
 
 static int luafile_writeFloat( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TNUMBER );
-    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->WriteFloat( (float)lua_tonumber( L, 1 ) ) );
+    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteFloat( (float)lua_tonumber( L, 1 ) ) );
     return 1;
 }
 
 static int luafile_size( lua_State *L )
 {
-    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->GetSize() );
+    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->GetSize() );
     return 1;
 }
 
@@ -126,7 +126,7 @@ static int luafile_stat( lua_State *L )
 {
     struct stat stats;
     
-    if ( !((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Stat( &stats ) )
+    if ( !((CFile*)lua_getmethodtrans( L ))->Stat( &stats ) )
         return 0;
 
     luafile_pushStats( L, stats );
@@ -135,7 +135,7 @@ static int luafile_stat( lua_State *L )
 
 static int luafile_tell( lua_State *L )
 {
-    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->Tell() );
+    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->Tell() );
     return 1;
 }
 
@@ -179,19 +179,19 @@ defMethod:
         return -1;
     }
 
-    lua_pushnumber( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->Seek( (long)lua_tonumber( L, 1 ), seekType ) );
+    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->Seek( (long)lua_tonumber( L, 1 ), seekType ) );
     return 1;
 }
 
 static int luafile_eof( lua_State *L )
 {
-    lua_pushboolean( L, ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->IsEOF() );
+    lua_pushboolean( L, ((CFile*)lua_getmethodtrans( L ))->IsEOF() );
     return 1;
 }
 
 static int luafile_flush( lua_State *L )
 {
-    ((CFile*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->Flush();
+    ((CFile*)lua_getmethodtrans( L ))->Flush();
     lua_pushboolean( L, true );
     return 1;
 }
@@ -203,7 +203,7 @@ static int luafile_destroy( lua_State *lua )
     return 0;
 }
 
-static const luaL_Reg fileInterface[] =
+static const luaL_Reg fileInterface_sys[] =
 {
     { "__newindex", luafile_onNewindex },
     { "destroy", luafile_destroy },
@@ -211,7 +211,7 @@ static const luaL_Reg fileInterface[] =
     { NULL, NULL }
 };
 
-static const luaL_Reg fileInterface_light[] =
+static const luaL_Reg fileInterface[] =
 {
 #endif
     { "read", luafile_read },
@@ -258,12 +258,12 @@ int luaconstructor_file( lua_State *lua )
 
     lua_basicextend( lua );
 
-    j->RegisterLightInterface( lua, fileInterface_light, file );
+    j->RegisterInterfaceTrans( lua, fileInterface, 0, LUACLASS_FILE );
 #endif
 
     lua_pushvalue( lua, LUA_ENVIRONINDEX );
     lua_pushvalue( lua, lua_upvalueindex( 1 ) );
-    luaL_openlib( lua, NULL, fileInterface, 1 );
+    luaL_openlib( lua, NULL, fileInterface_sys, 1 );
 
     lua_pushlstring( lua, "file", 4 );
     lua_setfield( lua, LUA_ENVIRONINDEX, "__type" );

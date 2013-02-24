@@ -15,30 +15,30 @@
 
 static int rootIdx;
 
-static int filesystem_open( lua_State *lua )
+static int filesystem_open( lua_State *L )
 {
-    luaL_checktype( lua, 1, LUA_TSTRING );
-    luaL_checktype( lua, 2, LUA_TSTRING );
+    luaL_checktype( L, 1, LUA_TSTRING );
+    luaL_checktype( L, 2, LUA_TSTRING );
 
-    CFile *file = ((CFileTranslator*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->Open( lua_tostring( lua, 1 ), lua_tostring( lua, 2 ) );
+    CFile *file = ((CFileTranslator*)lua_getmethodtrans( L ))->Open( lua_tostring( L, 1 ), lua_tostring( L, 2 ) );
 
     if ( !file )
     {
-        lua_pushboolean( lua, false );
+        lua_pushboolean( L, false );
         return 1;
     }
 
-    lua_pushlightuserdata( lua, file );
-    lua_pushcclosure( lua, luaconstructor_file, 1 );
+    lua_pushlightuserdata( L, file );
+    lua_pushcclosure( L, luaconstructor_file, 1 );
 #ifdef FU_CLASS
-    lua_newclass( lua, (unk*)file );
+    lua_newclass( L, (unk*)file );
 #else
-    lua_newclass( lua );
+    lua_newclass( L );
 
     // Register the file
-    lua_getfield( lua, 3, "setParent" );
-    lua_pushvalue( lua, lua_upvalueindex( 2 ) );
-    lua_call( lua, 1, 0 );
+    lua_getfield( L, 3, "setParent" );
+    lua_pushvalue( L, lua_upvalueindex( 2 ) );
+    lua_call( L, 1, 0 );
 #endif
     return 1;
 }
@@ -46,28 +46,28 @@ static int filesystem_open( lua_State *lua )
 static int filesystem_exists( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TSTRING );
-    lua_pushboolean( L, ((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Exists( lua_tostring( L, 1 ) ) );
+    lua_pushboolean( L, ((CFileTranslator*)lua_getmethodtrans( L ))->Exists( lua_tostring( L, 1 ) ) );
     return 1;
 }
 
 static int filesystem_createDir( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TSTRING );
-    lua_pushboolean( L, ((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->CreateDir( lua_tostring( L, 1 ) ) );
+    lua_pushboolean( L, ((CFileTranslator*)lua_getmethodtrans( L ))->CreateDir( lua_tostring( L, 1 ) ) );
     return 1;
 }
 
 static int filesystem_chdir( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TSTRING );
-    lua_pushboolean( L, ((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->ChangeDirectory( lua_tostring( L, 1 ) ) );
+    lua_pushboolean( L, ((CFileTranslator*)lua_getmethodtrans( L ))->ChangeDirectory( lua_tostring( L, 1 ) ) );
     return 1;
 }
 
 static int filesystem_delete( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TSTRING );
-    lua_pushboolean( L, ((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Delete( lua_tostring( L, 1 ) ) );
+    lua_pushboolean( L, ((CFileTranslator*)lua_getmethodtrans( L ))->Delete( lua_tostring( L, 1 ) ) );
     return 1;
 }
 
@@ -75,7 +75,7 @@ static int filesystem_copy( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TSTRING );
     luaL_checktype( L, 2, LUA_TSTRING );
-    lua_pushboolean( L, ((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Copy( lua_tostring( L, 1 ), lua_tostring( L, 2 ) ) );
+    lua_pushboolean( L, ((CFileTranslator*)lua_getmethodtrans( L ))->Copy( lua_tostring( L, 1 ), lua_tostring( L, 2 ) ) );
     return 1;
 }
 
@@ -83,14 +83,14 @@ static int filesystem_rename( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TSTRING );
     luaL_checktype( L, 2, LUA_TSTRING );
-    lua_pushboolean( L, ((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Rename( lua_tostring( L, 1 ), lua_tostring( L, 2 ) ) );
+    lua_pushboolean( L, ((CFileTranslator*)lua_getmethodtrans( L ))->Rename( lua_tostring( L, 1 ), lua_tostring( L, 2 ) ) );
     return 1;
 }
 
 static int filesystem_size( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TSTRING );
-    lua_pushnumber( L, ((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Size( lua_tostring( L, 1 ) ) );
+    lua_pushnumber( L, ((CFileTranslator*)lua_getmethodtrans( L ))->Size( lua_tostring( L, 1 ) ) );
     return 1;
 }
 
@@ -100,7 +100,7 @@ static int filesystem_stat( lua_State *L )
 
     struct stat stats;
 
-    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Stat( lua_tostring( L, 1 ), &stats ) )
+    if ( !((CFileTranslator*)lua_getmethodtrans( L ))->Stat( lua_tostring( L, 1 ), &stats ) )
     {
         lua_pushboolean( L, false );
         return 1;
@@ -118,7 +118,7 @@ static int filesystem_relPath( lua_State *L )
     if ( !src )
         src = "";
 
-    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetRelativePath( src, true, path ) )
+    if ( !((CFileTranslator*)lua_getmethodtrans( L ))->GetRelativePath( src, true, path ) )
     {
         lua_pushboolean( L, false );
         return 1;
@@ -136,7 +136,7 @@ static int filesystem_relPathRoot( lua_State *L )
     if ( !src )
         src = "";
 
-    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetRelativePathFromRoot( src, true, path ) )
+    if ( !((CFileTranslator*)lua_getmethodtrans( L ))->GetRelativePathFromRoot( src, true, path ) )
     {
         lua_pushboolean( L, false );
         return 1;
@@ -154,7 +154,7 @@ static int filesystem_absPath( lua_State *L )
     if ( !src )
         src = "";
 
-    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetFullPath( src, true, path ) )
+    if ( !((CFileTranslator*)lua_getmethodtrans( L ))->GetFullPath( src, true, path ) )
     {
         lua_pushboolean( L, false );
         return 1;
@@ -172,7 +172,7 @@ static int filesystem_absPathRoot( lua_State *L )
     if ( !src )
         src = "";
 
-    if ( !((CFileTranslator*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetFullPathFromRoot( src, true, path ) )
+    if ( !((CFileTranslator*)lua_getmethodtrans( L ))->GetFullPathFromRoot( src, true, path ) )
     {
         lua_pushboolean( L, false );
         return 1;
@@ -215,7 +215,7 @@ static int filesystem_scanDir( lua_State *lua )
 
     lua_newtable( lua );
 
-    ((CFileTranslator*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ScanDirectory( path, wildcard, recursive, lua_findScanCallback, lua_findScanCallback, lua );
+    ((CFileTranslator*)lua_getmethodtrans( lua ))->ScanDirectory( path, wildcard, recursive, lua_findScanCallback, lua_findScanCallback, lua );
     return 1;
 }
 
@@ -246,7 +246,7 @@ static int filesystem_getFiles( lua_State *lua )
 
     lua_newtable( lua );
 
-    ((CFileTranslator*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ScanDirectory( path, wildcard, recursive, 0, lua_findScanCallback, lua );
+    ((CFileTranslator*)lua_getmethodtrans( lua ))->ScanDirectory( path, wildcard, recursive, 0, lua_findScanCallback, lua );
     return 1;
 }
 
@@ -264,7 +264,7 @@ static int filesystem_getDirs( lua_State *lua )
 
     lua_newtable( lua );
 
-    ((CFileTranslator*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ScanDirectory( path, "*", recursive, lua_findScanCallback, 0, lua );
+    ((CFileTranslator*)lua_getmethodtrans( lua ))->ScanDirectory( path, "*", recursive, lua_findScanCallback, 0, lua );
     return 1;
 }
 
@@ -289,7 +289,7 @@ static int filesystem_scanDirEx( lua_State *lua )
     luaL_checktype( lua, 1, LUA_TSTRING );
     luaL_checktype( lua, 2, LUA_TSTRING );
 
-    ((CFileTranslator*)lua_touserdata( lua, lua_upvalueindex( 1 ) ))->ScanDirectory( 
+    ((CFileTranslator*)lua_getmethodtrans( lua ))->ScanDirectory( 
         lua_tostring( lua, 1 ), 
         lua_tostring( lua, 2 ), 
         lua_toboolean( lua, 5 ), 
@@ -308,13 +308,11 @@ static int filesystem_destroy( lua_State *L )
 
 static const luaL_Reg fsys_methods[] =
 {
-    { "scanDir", filesystem_scanDir },
-    { "scanDirEx", filesystem_scanDirEx },
     { "destroy", filesystem_destroy },
     { NULL, NULL }
 };
 
-static const luaL_Reg fsys_methods_light[] =
+static const luaL_Reg fsys_methods_trans[] =
 {
     { "open", filesystem_open },
     { "exists", filesystem_exists },
@@ -329,6 +327,8 @@ static const luaL_Reg fsys_methods_light[] =
     { "relPathRoot", filesystem_relPathRoot },
     { "absPath", filesystem_absPath },
     { "absPathRoot", filesystem_absPathRoot },
+    { "scanDir", filesystem_scanDir },
+    { "scanDirEx", filesystem_scanDirEx },
     { "getDirs", filesystem_getDirs },
     { "getFiles", filesystem_getFiles },
     { NULL, NULL }
@@ -342,7 +342,7 @@ int luafsys_constructor( lua_State *L )
     ILuaClass *j = lua_refclass( L, 1 );
     j->SetTransmit( LUACLASS_FILETRANSLATOR, trans );
 
-    j->RegisterLightInterface( L, fsys_methods_light, trans );
+    j->RegisterInterfaceTrans( L, fsys_methods_trans, 0, LUACLASS_FILETRANSLATOR );
 #endif
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );

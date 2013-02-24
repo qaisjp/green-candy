@@ -34,14 +34,14 @@ static int entity_setPosition( lua_State *L )
     if ( argStream.HasErrors() )
         throw lua_exception( L, LUA_ERRRUN, SString( "Bad argument @ 'setPosition' [%s]", *argStream.GetErrorMessage() ) );
 
-    ((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetPosition( pos );
+    ((CClientEntity*)lua_getmethodtrans( L ))->SetPosition( pos );
     return 0;
 }
 
 static int entity_getPosition( lua_State *L )
 {
     CVector pos;
-    ((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetPosition( pos );
+    ((CClientEntity*)lua_getmethodtrans( L ))->GetPosition( pos );
 
     lua_pushnumber( L, pos[0] );
     lua_pushnumber( L, pos[1] );
@@ -56,7 +56,7 @@ static int entity_setMatrix( lua_State *L )
     if ( !mat )
         throw lua_exception( L, LUA_ERRRUN, "wrong type at 'setMatrix'; expected matrix" );
 
-    ((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetMatrix( *mat );
+    ((CClientEntity*)lua_getmethodtrans( L ))->SetMatrix( *mat );
     return 0;
 }
 
@@ -64,7 +64,7 @@ static int entity_getMatrix( lua_State *L )
 {
     RwMatrix mat;
     
-    if ( !((CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetMatrix( mat ) )
+    if ( !((CClientEntity*)lua_getmethodtrans( L ))->GetMatrix( mat ) )
     {
         lua_pushboolean( L, false );
         return 1;
@@ -142,7 +142,7 @@ int CClientEntity::entity_setChild( lua_State *L )
     return 1;
 }
 
-static const luaL_Reg entity_interface_light[] =
+static const luaL_Reg entity_interface_trans[] =
 {
     { "setPosition", entity_setPosition },
     { "getPosition", entity_getPosition },
@@ -157,7 +157,7 @@ static LUA_DECLARE( destroy )
     CClientEntity *entity = (CClientEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 
     // Before we do anything, fire the on-destroy event
-    // This is placed here as calling from destructor is invalid (C++ class integrity is unstable)
+    // This is placed here as calling from destructor is invalid (due to C++ class integrity)
     entity->CallEvent( "onClientElementDestroy", L, 0 );
 
     return 0;
@@ -245,7 +245,7 @@ static int entity_constructor( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, entity_interface, 1 );
 
-    j.RegisterLightInterface( L, entity_interface_light, entity );
+    j.RegisterInterfaceTrans( L, entity_interface_trans, 0, LUACLASS_ENTITY );
 
     // Allocate customdata class
     lua_pushvalue( L, lua_upvalueindex( 1 ) );

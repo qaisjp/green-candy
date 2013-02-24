@@ -76,7 +76,7 @@ TValue* CClosureMethod::ReadUpValue( unsigned char index )
     return &upvalues[index];
 }
 
-CClosureMethodTrans* luaF_newCmethod( lua_State *L, int nelems, Table *e, Class *j, int trans )
+CClosureMethodTrans* luaF_newCmethodtrans( lua_State *L, int nelems, Table *e, Class *j, int trans )
 {
     CClosureMethodTrans *c = new (L, nelems) CClosureMethodTrans;
     luaC_link( L, c, LUA_TFUNCTION );

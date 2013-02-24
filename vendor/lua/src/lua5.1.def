@@ -67,6 +67,9 @@ EXPORTS
   lua_concat
   lua_createtable
   lua_getfenv
+  lua_getmethodclass
+  lua_getmethodtrans
+  lua_pushmethodsuper
   lua_getfield
   lua_gettable
   lua_insert

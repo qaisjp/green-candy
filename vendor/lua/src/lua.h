@@ -231,7 +231,9 @@ LUA_API void  (lua_createtable) (lua_State *L, int narr, int nrec);
 LUA_API void *(lua_newuserdata) (lua_State *L, size_t sz);
 LUA_API int   (lua_getmetatable) (lua_State *L, int objindex);
 LUA_API void  (lua_getfenv) (lua_State *L, int idx);
-LUA_API void  (lua_getmethodclass) (lua_State *L, int idx);
+LUA_API ILuaClass*  (lua_getmethodclass) (lua_State *L);
+LUA_API void* (lua_getmethodtrans) (lua_State *L);
+LUA_API void  (lua_pushmethodsuper) (lua_State *L);
 
 
 /*
