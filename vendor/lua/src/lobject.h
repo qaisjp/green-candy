@@ -727,6 +727,8 @@ public:
     int sizearray;  /* size of `array' array */
 };
 
+#include "lstrtable.h"
+
 struct _methodRegisterInfo
 {
     bool isTrans;
@@ -807,7 +809,6 @@ public:
     Table *outenv;
     Table *methods;
     Table *storage;
-    Table *forceSuper;
     Table *internStorage;
     Class *parent;
     Class *childAPI;
@@ -817,6 +818,11 @@ public:
 	bool destroyed : 1;
 	bool destroying : 1;
 	unsigned char transCount : 5;
+
+    typedef Closure* (*forceSuperCallback)( lua_State *L, Closure *newMethod, Class *j, Closure *prevMethod );
+    typedef StringTable <forceSuperCallback> ForceSuperTable;
+
+    ForceSuperTable *forceSuper;
 
 #pragma pack(1)
 	struct trans_t

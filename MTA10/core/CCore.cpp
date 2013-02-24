@@ -291,6 +291,17 @@ CCore::~CCore()
 
     //Delete the Current Server
     delete m_pCurrentServer;
+
+    // Free the file access zones
+    delete tempFileRoot;
+    delete mtaFileRoot;
+    delete screenFileRoot;
+    delete dataFileRoot;
+    delete modFileRoot;
+    delete newsFileRoot;
+    delete gameFileRoot;
+    
+    delete m_fileSystem;
 }
 
 eCoreVersion CCore::GetVersion()

@@ -416,6 +416,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lstrtable.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ltable.c"
 				>
 			</File>
@@ -553,6 +557,10 @@
 			</File>
 			<File
 				RelativePath="..\src\lstring.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lstrtable.h"
 				>
 			</File>
 			<File

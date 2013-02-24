@@ -21,6 +21,7 @@
 #include "lclass.h"
 #include "lauxlib.h"
 #include "lstring.h"
+#include "lfunc.h"
 #include "lvm.h"
 
 #define LUA_PROTECT_CLASS_META
@@ -482,14 +483,25 @@ static int classmethod_forceSuper( lua_State *L )
     return 0;
 }
 
-static int classmethod_fsFSCCHandler( lua_State *L )
+static Closure* classmethod_fsFSCCHandler( lua_State *L, Closure *newMethod, Class *j, Closure *prevMethod )
 {
-    if ( lua_isnil( L, 1 ) )
-        lua_pushcclosure( L, classmethod_forceSuperRoot, 2 );
-    else
-        lua_pushcclosure( L, classmethod_forceSuper, 3 );
+    CClosureBasic *cl;
 
-    return 1;
+    if ( !prevMethod )
+    {
+        cl = luaF_newCclosure( L, 2, j->env );
+        setjvalue( L, &cl->upvalues[0], j );
+        setclvalue( L, &cl->upvalues[1], newMethod );
+        cl->f = classmethod_forceSuperRoot;
+        return cl;
+    }
+
+    cl = luaF_newCclosure( L, 3, j->env );
+    setclvalue( L, &cl->upvalues[0], prevMethod );
+    setjvalue( L, &cl->upvalues[1], j );
+    setclvalue( L, &cl->upvalues[2], newMethod );
+    cl->f = classmethod_forceSuper;
+    return cl;
 }
 
 // Register future method definitions for the Forced Super Calling Convention (FSCC)
@@ -502,10 +514,7 @@ static int classmethod_registerForcedSuper( lua_State *L )
 
     luaL_checktype( L, 1, LUA_TSTRING );
 
-    lua_pushcclosure( L, classmethod_fsFSCCHandler, 0 );
-    setclvalue( L, luaH_setstr( L, j.forceSuper, tsvalue( L->base ) ), clvalue( L->top - 1 ) );
-
-    luaC_objbarriert( L, j.forceSuper, clvalue( L->top - 1 ) );
+    j.forceSuper->SetItem( L, tsvalue( L->base ), classmethod_fsFSCCHandler );
     return 0;
 }
 
@@ -629,22 +638,25 @@ static int classmethod_fsDestroyBridge( lua_State *L )
     return 0;
 }
 
-static int classmethod_fsDestroyHandler( lua_State *L )
+static Closure* classmethod_fsDestroyHandler( lua_State *L, Closure *newMethod, Class *j, Closure *prevMethod )
 {
-    Class *j = jvalue( index2adr( L, 2 ) );
+    // We drop prevMethod, since we apply a guardian before the destructor
+    Closure *prevDest = j->destructor;
 
-    setclvalue( L, L->top - 3, j->destructor );
+    CClosureBasic *cl = luaF_newCclosure( L, 2, j->env );
+    setclvalue( L, &cl->upvalues[0], newMethod );
+    setclvalue( L, &cl->upvalues[1], prevDest );
+    cl->f = classmethod_fsDestroyBridge;
 
-    lua_pushvalue( L, 3 );
-    lua_pushvalue( L, 1 );
-    lua_pushcclosure( L, classmethod_fsDestroyBridge, 2 );
+    j->destructor = cl;
+    luaC_forceupdatef( L, cl );
 
-    j->destructor = clvalue( L->top - 1 );
-    luaC_forceupdatef( L, j->destructor );
-    lua_settop( L, 3 );
-
-    lua_pushcclosure( L, classmethod_fsDestroySuper, 3 );
-    return 1;
+    CClosureBasic *retCl = luaF_newCclosure( L, 3, j->env );
+    setclvalue( L, &retCl->upvalues[0], prevDest );
+    setjvalue( L, &retCl->upvalues[1], j );
+    setclvalue( L, &retCl->upvalues[2], newMethod );
+    retCl->f = classmethod_fsDestroySuper;
+    return retCl;
 }
 
 static int dispatcher_index( lua_State *L )
@@ -755,44 +767,44 @@ void Class::RegisterMethod( lua_State *L, TString *methName, bool handlers )
     cl->env = AcquireEnvDispatcherEx( L, cl->env );
     luaC_objbarrier( L, cl, cl->env );
 
+    Closure *handler;
+
     if ( !handlers )
         goto defaultHandler;
 
-	const TValue *fsVal = luaH_getstr( forceSuper, methName );
-
-	if ( ttype( fsVal ) == LUA_TFUNCTION )
+    if ( Class::forceSuperCallback cb = forceSuper->GetItem( methName ) )
 	{
-		setclvalue( L, L->top++, clvalue( fsVal ) );
-
-		if ( !prevMethod )
-			lua_pushnil( L );
-        else
-            setclvalue( L, L->top++, prevMethod );
-
-        setjvalue( L, L->top++, this );
-		setclvalue( L, L->top++, cl );
-		lua_call( L, 3, 1 );
+        handler = cb( L, cl, this, prevMethod );
 	}
 	else
 	{
 defaultHandler:
+        CClosureBasic *meth;
+
         if ( prevMethod )
-            setclvalue( L, L->top++, prevMethod );
+        {
+            meth = luaF_newCclosure( L, 3, env );
+            setclvalue( L, &meth->upvalues[0], prevMethod );
+            setjvalue( L, &meth->upvalues[1], this );
+            setclvalue( L, &meth->upvalues[2], cl );
+            meth->f = classmethod_super;
+        }
+        else
+        {
+            meth = luaF_newCclosure( L, 2, env );
+            setjvalue( L, &meth->upvalues[0], this );
+            setclvalue( L, &meth->upvalues[1], cl );
+            meth->f = classmethod_root;
+        }
 
-        setjvalue( L, L->top++, this );
-		setclvalue( L, L->top++, cl );
-
-		if ( prevMethod )
-			lua_pushcclosure( L, classmethod_super, 3 );
-		else
-			lua_pushcclosure( L, classmethod_root, 2 );
+        handler = meth;
 	}
 
     // Store the new method
-    SetMethod( L, methName, clvalue( L->top - 1 ), methTable );
+    SetMethod( L, methName, handler, methTable );
 
-    // Pop the raw function and the method
-    L->top -= 2;
+    // Pop the raw function
+    L->top--;
 }
 
 void Class::RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto, _methodRegisterInfo& info, bool handlers )
@@ -1096,6 +1108,8 @@ static int classmethod_destructor( lua_State *L )
     j->internStorage = NULL;
     j->destructor = NULL;
 
+    delete j->forceSuper;
+
     j->destroyed = true;
     j->destroying = false;
     j->reqDestruction = false;
@@ -1213,11 +1227,12 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     c->outenv = luaH_new( L, 0, 0 );
     c->storage = luaH_new( L, 0, 0 );
     c->methods = luaH_new( L, 0, 0 );
-    c->forceSuper = luaH_new( L, 0, 0 );
     c->internStorage = luaH_new( L, 0, 0 );
 
     c->env->metatable = meta;
     c->outenv->metatable = outmeta;
+
+    c->forceSuper = new (L) Class::ForceSuperTable();
 
     // Perform a temporary keep
     ClassConstructionAllocation construction( L, c );
@@ -1227,12 +1242,7 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     c->EnvPutBack( L );
 
     // Init the forceSuper table
-    sethvalue( L, L->top++, c->forceSuper );
-
-    lua_pushcclosure( L, classmethod_fsDestroyHandler, 0 );
-    lua_setfield( L, -2, "destroy" );
-
-    L->top--;
+    c->forceSuper->SetItem( L, luaS_new( L, "destroy" ), classmethod_fsDestroyHandler );
 
     // Specify the outrange connection
     sethvalue( L, L->top++, outmeta );

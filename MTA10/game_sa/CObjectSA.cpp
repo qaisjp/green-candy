@@ -102,7 +102,7 @@ static void __cdecl _Objects_LoadAttributes( const char *filepath, bool unused )
         char fxName[0x100];
 
         // Very big + powerful sscanf :D
-        sscanf( line, "%s %f %f %f %f %f %f %f %d %d %d %d %d %f %f %f %s %f %f %f %f %f", // %d %d",
+        sscanf( line, "%s %f %f %f %f %f %f %f %d %d %d %d %d %f %f %f %s %f %f %f %f %f %d %d",    // fixed gun mode and spark parameters (R* slip-up)
             name, &obj->mass, &obj->turnMass, &obj->airResistance, &obj->elasticity,
             &percSubmerged, &obj->uproot, &obj->CDMult, &CDEff, &SpCDR, &CamAv, &Expl, &fxType,
             &obj->fxOffset[0], &obj->fxOffset[1], &obj->fxOffset[2], fxName,
@@ -155,7 +155,7 @@ static void __cdecl _Objects_LoadAttributes( const char *filepath, bool unused )
             {
                 model->m_dynamicIndex = (short)n;
                 goto reloop;
-            }
+            } 
         }
 
         if ( num != MAX_DYNAMIC_OBJECT_DATA )
@@ -165,7 +165,7 @@ static void __cdecl _Objects_LoadAttributes( const char *filepath, bool unused )
         }
 
 reloop:
-        __asm nop
+        continue;
     }
 
     delete file;
@@ -173,6 +173,8 @@ reloop:
 
 static void __cdecl _Object_PrepareDynamicPhysics( unsigned short model, CObjectSAInterface *obj )
 {
+    CBaseModelInfoSAInterface *info = ppModelInfo[model];
+
     if ( info->m_dynamicIndex == -1 )
     {
         obj->m_mass = 99999;
@@ -183,7 +185,6 @@ static void __cdecl _Object_PrepareDynamicPhysics( unsigned short model, CObject
         return;
     }
 
-    CBaseModelInfoSAInterface *info = ppModelInfo[model];
     dynamicObjectData *data = &g_dynObjData[info->m_dynamicIndex];
 
     obj->m_dynData = data;

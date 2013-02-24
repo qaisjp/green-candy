@@ -316,12 +316,6 @@ int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2)
 
         tm = get_compTM(L, hvalue(t1)->metatable, hvalue(t2)->metatable, TM_EQ);
         break;  /* will try TM */
-    case LUA_TCLASS:
-        if ( jvalue( t1 ) == jvalue( t2 ) )
-            return 1;
-
-        tm = get_compTM( L, jvalue(t1)->env, jvalue(t2)->env, TM_EQ );
-        break;
     default: return gcvalue(t1) == gcvalue(t2);
     }
 

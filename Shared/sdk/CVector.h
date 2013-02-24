@@ -12,6 +12,7 @@
 #ifndef __CVector_H
 #define __CVector_H
 
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 #define FLOAT_EPSILON 0.0001f
@@ -94,6 +95,17 @@ public:
         fX /= right;
         fY /= right;
         fZ /= right;
+    }
+
+    // Convert (direction) to rotation
+    CVector ToRotation ( void ) const
+    {
+        CVector vecRotation;
+        vecRotation.fZ = atan2 ( fY, fX );
+        CVector vecTemp ( sqrt ( fX * fX + fY * fY ), fZ, 0 );
+        vecTemp.Normalize ();
+        vecRotation.fY = atan2 ( vecTemp.fX, vecTemp.fY ) - M_PI / 2;
+        return vecRotation;
     }
 
     CVector operator + ( const CVector& vecRight ) const
