@@ -21,19 +21,19 @@ static LUA_DECLARE( setName )
     argStream.ReadString( name );
     LUA_ARGS_END;
 
-    ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetName( name );
+    ((CClientRwFrame*)lua_getmethodtrans( L ))->SetName( name );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getName )
 {
-    lua_pushstring( L, ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetName() );
+    lua_pushstring( L, ((CClientRwFrame*)lua_getmethodtrans( L ))->GetName() );
     return 1;
 }
 
 static LUA_DECLARE( getHash )
 {
-    lua_pushnumber( L, ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetHash() );
+    lua_pushnumber( L, ((CClientRwFrame*)lua_getmethodtrans( L ))->GetHash() );
     return 1;
 }
 
@@ -45,13 +45,13 @@ static LUA_DECLARE( setLTM )
     argStream.ReadClass( mat, LUACLASS_MATRIX );
     LUA_ARGS_END;
 
-    ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetObject().SetLTM( *mat );
+    ((CClientRwFrame*)lua_getmethodtrans( L ))->GetObject().SetLTM( *mat );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getLTM )
 {
-    lua_creatematrix( L, ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetObject().GetLTM() );
+    lua_creatematrix( L, ((CClientRwFrame*)lua_getmethodtrans( L ))->GetObject().GetLTM() );
     return 1;
 }
 
@@ -63,13 +63,13 @@ static LUA_DECLARE( setModelling )
     argStream.ReadClass( mat, LUACLASS_MATRIX );
     LUA_ARGS_END;
 
-    ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetObject().SetModelling( *mat );
+    ((CClientRwFrame*)lua_getmethodtrans( L ))->GetObject().SetModelling( *mat );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getModelling )
 {
-    lua_creatematrix( L, ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetObject().GetModelling() );
+    lua_creatematrix( L, ((CClientRwFrame*)lua_getmethodtrans( L ))->GetObject().GetModelling() );
     return 1;
 }
 
@@ -81,13 +81,13 @@ static LUA_DECLARE( setPosition )
     argStream.ReadVector( pos );
     LUA_ARGS_END;
 
-    ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetObject().SetPosition( pos );
+    ((CClientRwFrame*)lua_getmethodtrans( L ))->GetObject().SetPosition( pos );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getPosition )
 {
-    const CVector& pos = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetObject().GetPosition();
+    const CVector& pos = ((CClientRwFrame*)lua_getmethodtrans( L ))->GetObject().GetPosition();
 
     lua_pushnumber( L, pos[0] );
     lua_pushnumber( L, pos[1] );
@@ -97,7 +97,7 @@ static LUA_DECLARE( getPosition )
 
 static LUA_DECLARE( getObjects )
 {
-    CClientRwFrame::objects_t& list = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_objects;
+    CClientRwFrame::objects_t& list = ((CClientRwFrame*)lua_getmethodtrans( L ))->m_objects;
 
     lua_settop( L, 0 );
     lua_createtable( L, list.size(), 0 );
@@ -136,7 +136,7 @@ static LUA_DECLARE( findFrame )
     argStream.ReadBool( checkHierarchy, true );
     LUA_ARGS_END;
 
-    CClientRwFrame *frame = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )));
+    CClientRwFrame *frame = ((CClientRwFrame*)lua_getmethodtrans( L ));
 
     if ( checkHierarchy )
     {
@@ -166,7 +166,7 @@ static LUA_DECLARE( findFrame )
 
 static LUA_DECLARE( getLinkedFrames )
 {
-    CClientRwFrame::children_t& list = ((CClientRwFrame*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_children;
+    CClientRwFrame::children_t& list = ((CClientRwFrame*)lua_getmethodtrans( L ))->m_children;
 
     lua_settop( L, 0 );
     lua_createtable( L, list.size(), 0 );
@@ -290,7 +290,7 @@ static const luaL_Reg rwframe_interface[] =
     { NULL, NULL }
 };
 
-static const luaL_Reg rwframe_interface_light[] =
+static const luaL_Reg rwframe_interface_trans[] =
 {
     LUA_METHOD( getName ),
     LUA_METHOD( setName ),
@@ -319,7 +319,7 @@ static LUA_DECLARE( luaconstructor_rwframe )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, rwframe_interface, 1 );
 
-    j.RegisterLightInterface( L, rwframe_interface_light, frame );
+    j.RegisterInterfaceTrans( L, rwframe_interface_trans, 0, LUACLASS_RWFRAME );
 
     lua_pushlstring( L, "rwframe", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

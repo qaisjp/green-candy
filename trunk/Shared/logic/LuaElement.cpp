@@ -15,7 +15,7 @@
 static LUA_DECLARE( setParent )
 {
     // Make sure that we stay in the resource tree!
-    LuaElement& element = *(LuaElement*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+    LuaElement& element = *(LuaElement*)lua_getmethodtrans( L );
 
     if ( lua_type( L, 1 ) != LUA_TCLASS )
     {
@@ -72,13 +72,13 @@ static LUA_DECLARE( destroy )
 
 static const luaL_Reg element_interface[] =
 {
-    LUA_METHOD( setParent ),
     LUA_METHOD( destroy ),
     { NULL, NULL }
 };
 
-static const luaL_Reg element_interface_light[] =
+static const luaL_Reg element_interface_trans[] =
 {
+    LUA_METHOD( setParent ),
     LUA_METHOD( getRoot ),
     { NULL, NULL }
 };
@@ -96,7 +96,7 @@ static int luaconstructor_element( lua_State *L )
     luaL_openlib( L, NULL, element_interface, 1 );
 
     // Light interfaces take way less memory
-    j.RegisterLightInterface( L, element_interface_light, element );
+    j.RegisterInterfaceTrans( L, element_interface_trans, 0, LUACLASS_ELEMENT );
 
     // Put basic protection against modification from scripts
     lua_basicprotect( L );
