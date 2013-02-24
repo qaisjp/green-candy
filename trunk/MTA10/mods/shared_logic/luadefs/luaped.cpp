@@ -21,14 +21,14 @@ static LUA_DECLARE( setRotation )
     argStream.ReadVector( rot );
     LUA_ARGS_END;
 
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetRotationDegrees( rot );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetRotationDegrees( rot );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getRotation )
 {
     CVector rot;
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetRotationDegrees( rot );
+    ((CClientPed*)lua_getmethodtrans( L ))->GetRotationDegrees( rot );
 
     lua_pushnumber( L, rot[0] );
     lua_pushnumber( L, rot[1] );
@@ -44,19 +44,19 @@ static LUA_DECLARE( setHealth )
     argStream.ReadNumber( health );
     LUA_ARGS_END;
 
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetHealth( health );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetHealth( health );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getHealth )
 {
-    lua_pushnumber( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetHealth() );
+    lua_pushnumber( L, ((CClientPed*)lua_getmethodtrans( L ))->GetHealth() );
     return 1;
 }
 
 static LUA_DECLARE( isDead )
 {
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->IsDead() );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->IsDead() );
     return 1;
 }
 
@@ -68,13 +68,13 @@ static LUA_DECLARE( setModel )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetModel( model );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetModel( model );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getModel )
 {
-    lua_pushnumber( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetModel() );
+    lua_pushnumber( L, ((CClientPed*)lua_getmethodtrans( L ))->GetModel() );
     return 1;
 }
 
@@ -89,7 +89,7 @@ static LUA_DECLARE( addClothes )
     argStream.ReadNumber( type );
     LUA_ARGS_END;
 
-    CClientPed *ped = ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )));
+    CClientPed *ped = ((CClientPed*)lua_getmethodtrans( L ));
     ped->GetClothes()->AddClothes( texture, model, type, false );
     ped->RebuildModel( true );
     LUA_SUCCESS;
@@ -103,7 +103,7 @@ static LUA_DECLARE( getClothes )
     argStream.ReadNumber( type );
     LUA_ARGS_END;
 
-    SPlayerClothing *clothes = ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetClothes()->GetClothing( type );
+    SPlayerClothing *clothes = ((CClientPed*)lua_getmethodtrans( L ))->GetClothes()->GetClothing( type );
 
     LUA_CHECK( clothes );
 
@@ -120,7 +120,7 @@ static LUA_DECLARE( removeClothes )
     argStream.ReadNumber( type );
     LUA_ARGS_END;
 
-    CClientPed *ped = ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )));
+    CClientPed *ped = ((CClientPed*)lua_getmethodtrans( L ));
     ped->GetClothes()->RemoveClothes( type, false );
     ped->RebuildModel( true );
     LUA_SUCCESS;
@@ -136,7 +136,7 @@ static LUA_DECLARE( setControlState )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_Pad.SetControlState( control, state ) );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->m_Pad.SetControlState( control, state ) );
     return 1;
 }
 
@@ -149,7 +149,7 @@ static LUA_DECLARE( getControlState )
     argStream.ReadString( control );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_Pad.GetControlState( control, state ) && state );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->m_Pad.GetControlState( control, state ) && state );
     return 1;
 }
 
@@ -161,7 +161,7 @@ static LUA_DECLARE( getAmmoInClip )
     argStream.ReadNumber( slot );
     LUA_ARGS_END;
 
-    CClientPed *ped = ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )));
+    CClientPed *ped = ((CClientPed*)lua_getmethodtrans( L ));
 
     if ( slot == 0xFF )
         slot = ped->GetCurrentWeaponSlot();
@@ -182,7 +182,7 @@ static LUA_DECLARE( getTotalAmmo )
     argStream.ReadNumber( slot );
     LUA_ARGS_END;
 
-    CClientPed *ped = ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )));
+    CClientPed *ped = ((CClientPed*)lua_getmethodtrans( L ));
 
     if ( slot == 0xFF )
         slot = ped->GetCurrentWeaponSlot();
@@ -203,13 +203,13 @@ static LUA_DECLARE( setWeaponSlot )
     argStream.ReadNumber( slot );
     LUA_ARGS_END;
 
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetCurrentWeaponSlot( (eWeaponSlot)slot );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetCurrentWeaponSlot( (eWeaponSlot)slot );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getWeaponSlot )
 {
-    lua_pushnumber( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetCurrentWeaponSlot() );
+    lua_pushnumber( L, ((CClientPed*)lua_getmethodtrans( L ))->GetCurrentWeaponSlot() );
     return 1;
 }
 
@@ -221,7 +221,7 @@ static LUA_DECLARE( getWeapon )
     argStream.ReadNumber( slot );
     LUA_ARGS_END;
 
-    CClientPed *ped = ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )));
+    CClientPed *ped = ((CClientPed*)lua_getmethodtrans( L ));
 
     if ( slot == 0xFF )
         slot = ped->GetCurrentWeaponSlot();
@@ -242,19 +242,19 @@ static LUA_DECLARE( setArmor )
     argStream.ReadNumber( armor );
     LUA_ARGS_END;
 
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetArmor( armor );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetArmor( armor );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getArmor )
 {
-    lua_pushnumber( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetArmor() );
+    lua_pushnumber( L, ((CClientPed*)lua_getmethodtrans( L ))->GetArmor() );
     return 1;
 }
 
 static LUA_DECLARE( getContactElement )
 {
-    CClientEntity *element = ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetContactEntity();
+    CClientEntity *element = ((CClientPed*)lua_getmethodtrans( L ))->GetContactEntity();
 
     if ( !element )
         return 0;
@@ -265,7 +265,7 @@ static LUA_DECLARE( getContactElement )
 
 static LUA_DECLARE( getFightingStyle )
 {
-    lua_pushnumber( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetFightingStyle() );
+    lua_pushnumber( L, ((CClientPed*)lua_getmethodtrans( L ))->GetFightingStyle() );
     return 1;
 }
 
@@ -273,7 +273,7 @@ static LUA_DECLARE( getMoveState )
 {
     std::string state;
 
-    LUA_CHECK( ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetMovementState( state ) );
+    LUA_CHECK( ((CClientPed*)lua_getmethodtrans( L ))->GetMovementState( state ) );
 
     lua_pushlstring( L, state.c_str(), state.size() );
     return 1;
@@ -281,7 +281,7 @@ static LUA_DECLARE( getMoveState )
 
 static LUA_DECLARE( getVehicle )
 {
-    CClientVehicle *veh = ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetOccupiedVehicle();
+    CClientVehicle *veh = ((CClientPed*)lua_getmethodtrans( L ))->GetOccupiedVehicle();
 
     if ( !veh )
         return 0;
@@ -292,13 +292,13 @@ static LUA_DECLARE( getVehicle )
 
 static LUA_DECLARE( getVehicleSeat )
 {
-    lua_pushnumber( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetOccupiedVehicleSeat() );
+    lua_pushnumber( L, ((CClientPed*)lua_getmethodtrans( L ))->GetOccupiedVehicleSeat() );
     return 1;
 }
 
 static LUA_DECLARE( getTarget )
 {
-    CClientEntity *target = ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetTargetedEntity();
+    CClientEntity *target = ((CClientPed*)lua_getmethodtrans( L ))->GetTargetedEntity();
 
     if ( !target )
         return 0;
@@ -309,19 +309,19 @@ static LUA_DECLARE( getTarget )
 
 static LUA_DECLARE( giveJetPack )
 {
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetHasJetPack( true );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetHasJetPack( true );
     return 0;
 }
 
 static LUA_DECLARE( hasJetPack )
 {
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->HasJetPack() );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->HasJetPack() );
     return 1;
 }
 
 static LUA_DECLARE( removeJetPack )
 {
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetHasJetPack( false );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetHasJetPack( false );
     return 0;
 }
 
@@ -333,13 +333,13 @@ static LUA_DECLARE( setChoking )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetChoking( state );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetChoking( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isChoking )
 {
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->IsChoking() );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->IsChoking() );
     return 1;
 }
 
@@ -351,37 +351,37 @@ static LUA_DECLARE( setDoingGangDriveby )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetDoingGangDriveby( state );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetDoingGangDriveby( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isDoingGangDriveby )
 {
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->IsDoingGangDriveby() );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->IsDoingGangDriveby() );
     return 1;
 }
 
 static LUA_DECLARE( isDucked )
 {
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->IsDucked() );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->IsDucked() );
     return 1;
 }
 
 static LUA_DECLARE( isInWater )
 {
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->IsInWater() );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->IsInWater() );
     return 1;
 }
 
 static LUA_DECLARE( isOnGround )
 {
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->IsOnGround() );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->IsOnGround() );
     return 1;
 }
 
 static LUA_DECLARE( isInVehicle )
 {
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->IsInVehicle() );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->IsInVehicle() );
     return 1;
 }
 
@@ -403,7 +403,7 @@ static LUA_DECLARE( setAnimation )
 
     LUA_CHECK( block );
 
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->RunNamedAnimation( b, anim, time, loop, updatePos, interruptable, freezeLastFrame );
+    ((CClientPed*)lua_getmethodtrans( L ))->RunNamedAnimation( b, anim, time, loop, updatePos, interruptable, freezeLastFrame );
     LUA_SUCCESS;
 }
 
@@ -417,7 +417,7 @@ static LUA_DECLARE( setAnimationProgress )
     argStream.ReadNumber( progress, 0.0f );
     LUA_ARGS_END;
 
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetAnimationProgress( animName, progress );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetAnimationProgress( animName, progress );
     LUA_SUCCESS;
 }
 
@@ -429,13 +429,13 @@ static LUA_DECLARE( setHeadless )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetHeadless( state );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetHeadless( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isHeadless )
 {
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->IsHeadless() );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->IsHeadless() );
     return 1;
 }
 
@@ -447,13 +447,13 @@ static LUA_DECLARE( setOnFire )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->SetOnFire( state );
+    ((CClientPed*)lua_getmethodtrans( L ))->SetOnFire( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isOnFire )
 {
-    lua_pushboolean( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->IsOnFire() );
+    lua_pushboolean( L, ((CClientPed*)lua_getmethodtrans( L ))->IsOnFire() );
     return 1;
 }
 
@@ -465,11 +465,11 @@ static LUA_DECLARE( getStat )
     argStream.ReadNumber( stat );
     LUA_ARGS_END;
 
-    lua_pushnumber( L, ((CClientPed*)lua_touserdata( L, lua_upvalueindex( 1 )))->GetStat( stat ) );
+    lua_pushnumber( L, ((CClientPed*)lua_getmethodtrans( L ))->GetStat( stat ) );
     return 1;
 }
 
-static const luaL_Reg ped_interface_light[] =
+static const luaL_Reg ped_interface_trans[] =
 {
     LUA_METHOD( setRotation ),
     LUA_METHOD( getRotation ),
@@ -524,7 +524,7 @@ LUA_DECLARE( luaconstructor_ped )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_PED, ped );
 
-    j.RegisterLightInterface( L, ped_interface_light, ped );
+    j.RegisterInterfaceTrans( L, ped_interface_trans, 0, LUACLASS_PED );
 
     lua_pushlstring( L, "ped", 3 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

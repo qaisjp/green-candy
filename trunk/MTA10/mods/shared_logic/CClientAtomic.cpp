@@ -15,7 +15,7 @@
 
 static LUA_DECLARE( clone )
 {
-    CClientAtomic *atom = new CClientAtomic( L, NULL, *((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_atomic.Clone() );
+    CClientAtomic *atom = new CClientAtomic( L, NULL, *((CClientAtomic*)lua_getmethodtrans( L ))->m_atomic.Clone() );
     atom->PushStack( L );
     atom->DisableKeepAlive();
     return 1;
@@ -29,7 +29,7 @@ static LUA_DECLARE( setClump )
     argStream.ReadClass( model, LUACLASS_DFF, NULL );
     LUA_ARGS_END;
 
-    CClientAtomic *atom = (CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+    CClientAtomic *atom = (CClientAtomic*)lua_getmethodtrans( L );
 
     // Force the atomic into the clump's hierarchy
     // If model is nil, we remove the connection
@@ -56,7 +56,7 @@ static LUA_DECLARE( setClump )
 
 static LUA_DECLARE( getClump )
 {
-    CClientDFF *model = ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_clump;
+    CClientDFF *model = ((CClientAtomic*)lua_getmethodtrans( L ))->m_clump;
 
     if ( !model )
         return 0;
@@ -67,7 +67,7 @@ static LUA_DECLARE( getClump )
 
 static LUA_DECLARE( render )
 {
-    ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_atomic.Render();
+    ((CClientAtomic*)lua_getmethodtrans( L ))->m_atomic.Render();
     return 0;
 }
 
@@ -79,7 +79,7 @@ static LUA_DECLARE( replaceModel )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->ReplaceModel( model ) );
+    lua_pushboolean( L, ((CClientAtomic*)lua_getmethodtrans( L ))->ReplaceModel( model ) );
     return 1;
 }
 
@@ -91,7 +91,7 @@ static LUA_DECLARE( isReplaced )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->HasReplaced( model ) );
+    lua_pushboolean( L, ((CClientAtomic*)lua_getmethodtrans( L ))->HasReplaced( model ) );
     return 1;
 }
 
@@ -99,7 +99,7 @@ static LUA_DECLARE( getReplaced )
 {
     lua_settop( L, 0 );
 
-    const CRpAtomic::imports_t& impList = ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomic.GetImportList();
+    const CRpAtomic::imports_t& impList = ((CClientAtomic*)lua_getmethodtrans( L ))->m_atomic.GetImportList();
     CRpAtomic::imports_t::const_iterator iter = impList.begin();
     int n = 1;
 
@@ -122,17 +122,17 @@ static LUA_DECLARE( restoreModel )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->RestoreModel( model );
+    ((CClientAtomic*)lua_getmethodtrans( L ))->RestoreModel( model );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( restoreAll )
 {
-    ((CClientAtomic*)lua_touserdata( L, lua_upvalueindex( 1 )))->RestoreModels();
+    ((CClientAtomic*)lua_getmethodtrans( L ))->RestoreModels();
     return 0;
 }
 
-static luaL_Reg atomic_interface_light[] =
+static luaL_Reg atomic_interface_trans[] =
 {
     LUA_METHOD( clone ),
     LUA_METHOD( setClump ),
@@ -153,7 +153,7 @@ static int luaconstructor_atomic( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_ATOMIC, atom );
 
-    j.RegisterLightInterface( L, atomic_interface_light, atom );
+    j.RegisterInterfaceTrans( L, atomic_interface_trans, 0, LUACLASS_ATOMIC );
 
     lua_pushlstring( L, "atomic", 6 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

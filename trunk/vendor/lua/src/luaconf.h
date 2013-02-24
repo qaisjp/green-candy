@@ -740,8 +740,10 @@ public:
     virtual bool    IsTransmit( int type ) const = 0;
 
     virtual void    RegisterMethod( lua_State *L, const char *name, bool handlers = false ) = 0;
-    virtual void    RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, bool handlers = false ) = 0;
-    virtual void    RegisterMethodTrans( lua_State *L, const char *name, lua_CFunction proto, int trans, bool handlers = false ) = 0;
+    virtual void    RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, int nupval, bool handlers = false ) = 0;
+    virtual void    RegisterInterface( lua_State *L, const struct luaL_Reg *intf, int nupval, bool handlers = true ) = 0;
+    virtual void    RegisterMethodTrans( lua_State *L, const char *name, lua_CFunction proto, int nupval, int trans, bool handlers = false ) = 0;
+    virtual void    RegisterInterfaceTrans( lua_State *L, const struct luaL_Reg *intf, int nupval, int trans, bool handlers = true ) = 0;
     virtual void    RegisterLightMethod( lua_State *L, const char *name ) = 0;
     virtual void    RegisterLightMethodTrans( lua_State *L, const char *name, int trans ) = 0;
     virtual void    RegisterLightInterface( lua_State *L, const struct luaL_Reg *intf, void *udata ) = 0;

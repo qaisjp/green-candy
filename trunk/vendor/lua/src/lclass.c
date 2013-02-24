@@ -26,9 +26,6 @@
 
 #define LUA_PROTECT_CLASS_META
 
-// Static TValue
-static const TValue boolFalse = { 0, LUA_TBOOLEAN };
-
 static int envmeta_index( lua_State *L )
 {
     lua_gettable( L, lua_upvalueindex( 1 ) );
@@ -391,7 +388,7 @@ const TValue* Class::GetSuperMethod( lua_State *L )
 class MethodStackAllocation
 {
 public:
-    MethodStackAllocation( lua_State *thread, Class *myClass, const TValue& val )
+    MethodStackAllocation( lua_State *thread, Class *myClass, Closure *prevSuper )
     {
         if ( myClass->destroyed )
             throw lua_exception( thread, LUA_ERRRUN, "attempt to access a destroyed class' method" );
@@ -400,8 +397,14 @@ public:
 
         setobj( thread, &m_prevSuper, superMethod );
 
-        setobj( thread, superMethod, &val );
-        luaC_barriert( thread, myClass->internStorage, &val );
+        if ( prevSuper )
+        {
+            setclvalue( thread, superMethod, prevSuper );
+            luaC_objbarriert( thread, myClass->internStorage, prevSuper );
+        }
+        else
+            setbvalue( superMethod, false );
+
         myClass->IncrementMethodStack( thread );
 
         m_instance = myClass;
@@ -423,7 +426,7 @@ public:
 static int classmethod_root( lua_State *L )
 {
     Class *j = (Class*)jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
-    MethodStackAllocation member( L, j, boolFalse );
+    MethodStackAllocation member( L, j, NULL );
     int top = lua_gettop( L );
 
     lua_pushvalue( L, lua_upvalueindex( 2 ) );
@@ -435,7 +438,7 @@ static int classmethod_root( lua_State *L )
 static int classmethod_super( lua_State *L )
 {
     Class *j = (Class*)jvalue( index2adr( L, lua_upvalueindex( 2 ) ) );
-    MethodStackAllocation member( L, j, *index2adr( L, lua_upvalueindex( 1 ) ) );
+    MethodStackAllocation member( L, j, clvalue( index2adr( L, lua_upvalueindex( 1 ) ) ) );
     int top = lua_gettop( L );
 
     lua_pushvalue( L, lua_upvalueindex( 3 ) );
@@ -444,22 +447,63 @@ static int classmethod_super( lua_State *L )
     return lua_gettop( L );
 }
 
+// Very fast C++-only prototypes
+static int classmethod_rootNative( lua_State *L )
+{
+    CClosureMethodBase *cl = (CClosureMethodBase*)curr_func( L );
+    MethodStackAllocation member( L, cl->m_class, NULL );
+
+    return cl->method( L );
+}
+
+static int classmethod_superNative( lua_State *L )
+{
+    CClosureMethodBase *cl = (CClosureMethodBase*)curr_func( L );
+    MethodStackAllocation member( L, cl->m_class, cl->super );
+
+    return cl->method( L );
+}
+
+static int classmethod_rootTransNative( lua_State *L )
+{    
+    CClosureMethodTrans *cl = (CClosureMethodTrans*)curr_func( L );
+    Class *j = cl->m_class;
+    MethodStackAllocation member( L, j, NULL );
+
+    if ( !j->GetTransmit( cl->trans, cl->data ) )
+        throw lua_exception( L, LUA_ERRRUN, "attempt to call a method whose native interface was destroyed" );
+
+    return cl->method( L );
+}
+
+static int classmethod_superTransNative( lua_State *L )
+{
+    CClosureMethodTrans *cl = (CClosureMethodTrans*)curr_func( L );
+    Class *j = cl->m_class;
+    MethodStackAllocation member( L, j, cl->super );
+
+    if ( !j->GetTransmit( cl->trans, cl->data ) )
+        throw lua_exception( L, LUA_ERRRUN, "attempt to call a method whose native interface was destroyed" );
+
+    return cl->method( L );
+}
+
 static int classmethod_forceSuperRoot( lua_State *L )
 {
     Class *j = (Class*)jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
-    MethodStackAllocation member( L, j, boolFalse );
+    MethodStackAllocation member( L, j, NULL );
     int top = lua_gettop( L );
 
     lua_pushvalue( L, lua_upvalueindex( 2 ) );
     lua_insert( L, 1 );
-    lua_call( L, top, 0 );
+    luaD_call( L, L->base, 0 );
     return 0;
 }
 
 static int classmethod_forceSuper( lua_State *L )
 {
     Class *j = jvalue( index2adr( L, lua_upvalueindex( 2 ) ) );
-    MethodStackAllocation member( L, j, boolFalse );
+    MethodStackAllocation member( L, j, NULL );
     int top = lua_gettop( L );
 
     if ( top )
@@ -479,7 +523,65 @@ static int classmethod_forceSuper( lua_State *L )
 
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     lua_insert( L, 1 );
-    lua_call( L, top, 0 );
+    luaD_call( L, L->base, 0 );
+    return 0;
+}
+
+static int classmethod_forceSuperRootNative( lua_State *L )
+{
+    // Well, should do the same
+    classmethod_rootNative( L );
+    return 0;
+}
+
+static int classmethod_forceSuperNative( lua_State *L )
+{
+    CClosureMethodBase *cl = (CClosureMethodBase*)curr_func( L );
+    MethodStackAllocation member( L, cl->m_class, NULL );
+    int top = lua_gettop( L );
+
+    // Copy arguments while protecting slots
+    for ( int n = 0; n < top; n++ )
+        setobj( L, L->top++, L->base++ );
+
+    cl->method( L );
+    lua_settop( L, 0 ); // restore the stack
+
+    // Unprotect slots
+    L->base -= top;
+
+    setclvalue( L, L->top++, cl->super );
+    lua_insert( L, 1 );
+    luaD_call( L, L->base, 0 );
+    return 0;
+}
+
+static int classmethod_forceSuperRootTransNative( lua_State *L )
+{
+    CClosureMethodTrans *cl = (CClosureMethodTrans*)curr_func( L );
+    Class *j = cl->m_class;
+    MethodStackAllocation member( L, j, NULL );
+
+    if ( !j->GetTransmit( cl->trans, cl->data ) )
+        throw lua_exception( L, LUA_ERRRUN, "attempt to call a method whose native interface was destroyed" );
+
+    cl->method( L );
+    return 0;
+}
+
+static int classmethod_forceSuperTransNative( lua_State *L )
+{
+    CClosureMethodTrans *cl = (CClosureMethodTrans*)curr_func( L );
+
+    if ( !cl->m_class->GetTransmit( cl->trans, cl->data ) )
+    {
+        setclvalue( L, L->top++, cl );
+        lua_insert( L, 1 );
+        luaD_call( L, L->base, 0 );
+        return 0;
+    }
+
+    classmethod_forceSuperNative( L );
     return 0;
 }
 
@@ -504,6 +606,54 @@ static Closure* classmethod_fsFSCCHandler( lua_State *L, Closure *newMethod, Cla
     return cl;
 }
 
+static Closure* classmethod_fsFSCCHandlerNative( lua_State *L, lua_CFunction proto, Class *j, Closure *prevMethod, _methodRegisterInfo& info )
+{
+    int num = info.numUpValues;
+
+    if ( info.isTrans )
+    {
+        CClosureMethodTrans *cl = luaF_newCmethodtrans( L, num, j->env, j, info.transID );
+
+        if ( prevMethod )
+        {
+            cl->super = prevMethod;
+            cl->f = classmethod_forceSuperTransNative;
+        }
+        else
+        {
+            cl->super = NULL;
+            cl->f = classmethod_forceSuperRootTransNative;
+        }
+
+        cl->method = proto;
+
+        while ( num-- )
+            setobj( L, &cl->upvalues[num], L->top-- );
+
+        return cl;
+    }
+
+    CClosureMethod *cl = luaF_newCmethod( L, num, j->env, j );
+
+    if ( prevMethod )
+    {
+        cl->super = prevMethod;
+        cl->f = classmethod_forceSuperNative;
+    }
+    else
+    {
+        cl->super = NULL;
+        cl->f = classmethod_forceSuperRootNative;
+    }
+
+    cl->method = proto;
+
+    while ( num-- )
+        setobj( L, &cl->upvalues[num], L->top-- );
+
+    return cl;
+}
+
 // Register future method definitions for the Forced Super Calling Convention (FSCC)
 static int classmethod_registerForcedSuper( lua_State *L )
 {
@@ -514,7 +664,10 @@ static int classmethod_registerForcedSuper( lua_State *L )
 
     luaL_checktype( L, 1, LUA_TSTRING );
 
-    j.forceSuper->SetItem( L, tsvalue( L->base ), classmethod_fsFSCCHandler );
+    Class::forceSuperItem item;
+    item.cb = classmethod_fsFSCCHandler;
+    item.cbNative = classmethod_fsFSCCHandlerNative;
+    j.forceSuper->SetItem( L, tsvalue( L->base ), item );
     return 0;
 }
 
@@ -643,6 +796,7 @@ static Closure* classmethod_fsDestroyHandler( lua_State *L, Closure *newMethod, 
     // We drop prevMethod, since we apply a guardian before the destructor
     Closure *prevDest = j->destructor;
 
+    // Contruct the bridge
     CClosureBasic *cl = luaF_newCclosure( L, 2, j->env );
     setclvalue( L, &cl->upvalues[0], newMethod );
     setclvalue( L, &cl->upvalues[1], prevDest );
@@ -651,12 +805,28 @@ static Closure* classmethod_fsDestroyHandler( lua_State *L, Closure *newMethod, 
     j->destructor = cl;
     luaC_forceupdatef( L, cl );
 
+    // The actual new constructor we apply to the class
     CClosureBasic *retCl = luaF_newCclosure( L, 3, j->env );
     setclvalue( L, &retCl->upvalues[0], prevDest );
     setjvalue( L, &retCl->upvalues[1], j );
     setclvalue( L, &retCl->upvalues[2], newMethod );
     retCl->f = classmethod_fsDestroySuper;
     return retCl;
+}
+
+static Closure* classmethod_fsDestroyHandlerNative( lua_State *L, lua_CFunction proto, Class *j, Closure *prevMethod, _methodRegisterInfo& info )
+{
+    CClosureBasic *cl = luaF_newCclosure( L, info.numUpValues, j->env );
+    unsigned char num = info.numUpValues;
+
+    L->top -= num;
+
+    for ( unsigned char n = 0; n < num; n++ )
+        setobj( L, &cl->upvalues[n], L->top - 1 + n );
+
+    cl->f = proto;
+
+    return classmethod_fsDestroyHandler( L, cl, j, prevMethod );
 }
 
 static int dispatcher_index( lua_State *L )
@@ -772,9 +942,11 @@ void Class::RegisterMethod( lua_State *L, TString *methName, bool handlers )
     if ( !handlers )
         goto defaultHandler;
 
-    if ( Class::forceSuperCallback cb = forceSuper->GetItem( methName ) )
-	{
-        handler = cb( L, cl, this, prevMethod );
+    Class::forceSuperItem *item = forceSuper->GetItem( methName );
+
+    if ( item && item->cb )
+    {
+        handler = item->cb( L, cl, this, prevMethod );
 	}
 	else
 	{
@@ -812,22 +984,126 @@ void Class::RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto
     Table *methTable;
     Closure *prevMethod = GetMethod( methName, methTable ); // Acquire the previous method
 
-    
+    Closure *handler;
+
+    if ( !handlers )
+        goto defaultHandler;
+
+    Class::forceSuperItem *item = forceSuper->GetItem( methName );
+
+    if ( item && item->cbNative )
+    {
+        handler = item->cbNative( L, proto, this, prevMethod, info );
+	}
+	else
+	{
+defaultHandler:
+        unsigned char num = info.numUpValues;
+        
+        if ( info.isTrans )
+        {
+            CClosureMethodTrans *meth = luaF_newCmethodtrans( L, num, env, this, info.transID );
+
+            if ( prevMethod )
+            {
+                meth->super = prevMethod;
+                meth->f = classmethod_superTransNative;
+            }
+            else
+            {
+                meth->super = NULL;
+                meth->f = classmethod_rootTransNative;
+            }
+
+            meth->method = proto;
+
+            handler = meth;
+        }
+        else
+        {
+            CClosureMethod *meth = luaF_newCmethod( L, num, env, this );
+
+            if ( prevMethod )
+            {
+                meth->super = prevMethod;
+                meth->f = classmethod_superNative;
+            }
+            else
+            {
+                meth->super = NULL;
+                meth->f = classmethod_rootNative;
+            }
+
+            meth->method = proto;
+
+            handler = meth;
+        }
+	}
+
+    // Store the new method
+    SetMethod( L, methName, handler, methTable );
+
+    // Pop the upvalues
+    L->top -= info.numUpValues;
 }
 
 void Class::RegisterMethod( lua_State *L, const char *name, bool handlers )
 {
-    return RegisterMethod( L, luaS_new( L, name ), handlers );
+    RegisterMethod( L, luaS_new( L, name ), handlers );
 }
 
-void Class::RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, bool handlers )
+void Class::RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, int nupval, bool handlers )
 {
+    _methodRegisterInfo info;
+    info.numUpValues = nupval;
 
+    RegisterMethod( L, luaS_new( L, name ), proto, info, handlers );
 }
 
-void Class::RegisterMethodTrans( lua_State *L, const char *name, lua_CFunction proto, int trans, bool handlers )
+void Class::RegisterInterface( lua_State *L, const luaL_Reg *intf, int nupval, bool handlers )
 {
+    StkId upId = L->top - nupval;
+    _methodRegisterInfo info;
+    info.numUpValues = nupval;
 
+    while ( intf->name )
+    {
+        for ( int n = 0; n < nupval; n++ )
+            setobj( L, L->top++, upId + n );
+
+        RegisterMethod( L, luaS_new( L, intf->name ), intf->func, info, handlers );
+
+        intf++;
+    }
+}
+
+void Class::RegisterMethodTrans( lua_State *L, const char *name, lua_CFunction proto, int nupval, int trans, bool handlers )
+{
+    _methodRegisterInfo info;
+    info.isTrans = true;
+    info.transID = trans;
+    info.numUpValues = nupval;
+
+    RegisterMethod( L, luaS_new( L, name ), proto, info, handlers );
+}
+
+void Class::RegisterInterfaceTrans( lua_State *L, const luaL_Reg *intf, int nupval, int trans, bool handlers )
+{
+    StkId upId = L->top - nupval;
+    _methodRegisterInfo info;
+    info.isTrans = true;
+    info.transID = trans;
+    info.numUpValues = nupval;
+
+    while ( intf->name )
+    {
+        for ( int n = 0; n < nupval; n++ )
+            setobj( L, L->top++, upId + n );
+
+        RegisterMethod( L, luaS_new( L, intf->name ), intf->func, info, handlers );
+
+        intf++;
+    }
 }
 
 void Class::RegisterLightMethod( lua_State *L, const char *_name )
@@ -1242,7 +1518,10 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     c->EnvPutBack( L );
 
     // Init the forceSuper table
-    c->forceSuper->SetItem( L, luaS_new( L, "destroy" ), classmethod_fsDestroyHandler );
+    Class::forceSuperItem destrItem;
+    destrItem.cb = classmethod_fsDestroyHandler;
+    destrItem.cbNative = classmethod_fsDestroyHandlerNative;
+    c->forceSuper->SetItem( L, luaS_new( L, "destroy" ), destrItem );
 
     // Specify the outrange connection
     sethvalue( L, L->top++, outmeta );

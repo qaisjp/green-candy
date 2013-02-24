@@ -21,7 +21,7 @@ static LUA_DECLARE( setRotation )
     argStream.ReadVector( rot );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetRotationDegrees( rot );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetRotationDegrees( rot );
     LUA_SUCCESS;
 }
 
@@ -35,7 +35,7 @@ inline static void lua_pushvector( lua_State *L, const CVector& vec )
 static LUA_DECLARE( getRotation )
 {
     CVector rot;
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetRotationDegrees( rot );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->GetRotationDegrees( rot );
 
     lua_pushvector( L, rot );
     return 3;
@@ -49,13 +49,13 @@ static LUA_DECLARE( setModel )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetModelBlocking( model );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetModelBlocking( model );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getModel )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetModel() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetModel() );
     return 1;
 }
 
@@ -67,19 +67,19 @@ static LUA_DECLARE( setHealth )
     argStream.ReadNumber( health );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetHealth( (float)lua_tonumber( L, 1 ) );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetHealth( (float)lua_tonumber( L, 1 ) );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getHealth )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetHealth() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetHealth() );
     return 1;
 }
 
 static LUA_DECLARE( fix )
 {
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Fix();
+    ((CClientVehicle*)lua_getmethodtrans( L ))->Fix();
     return 0;
 }
 
@@ -91,13 +91,13 @@ static LUA_DECLARE( blow )
     argStream.ReadBool( allowMovement, true );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Blow( allowMovement );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->Blow( allowMovement );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isBlown )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsBlown() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsBlown() );
     return 1;
 }
 
@@ -109,13 +109,13 @@ static LUA_DECLARE( setExplodeTime )
     argStream.ReadNumber( time );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetExplodeTime( time );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetExplodeTime( time );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getExplodeTime )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetExplodeTime() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetExplodeTime() );
     return 1;
 }
 
@@ -127,19 +127,19 @@ static LUA_DECLARE( setBurningTime )
     argStream.ReadNumber( time );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetBurningTime( time );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetBurningTime( time );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getBurningTime )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetBurningTime() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetBurningTime() );
     return 1;
 }
 
 static LUA_DECLARE( addUpgrade )
 {
-    CVehicleUpgrades *upgrades = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetUpgrades();
+    CVehicleUpgrades *upgrades = ((CClientVehicle*)lua_getmethodtrans( L ))->GetUpgrades();
 
     LUA_ASSERT( upgrades, "vehicle does not support upgrades" );
 
@@ -155,7 +155,7 @@ static LUA_DECLARE( addUpgrade )
 
 static LUA_DECLARE( getUpgradeOnSlot )
 {
-    CVehicleUpgrades *upgrades = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetUpgrades();
+    CVehicleUpgrades *upgrades = ((CClientVehicle*)lua_getmethodtrans( L ))->GetUpgrades();
 
     LUA_ASSERT( upgrades, "vehicle does not support upgrades" );
 
@@ -171,7 +171,7 @@ static LUA_DECLARE( getUpgradeOnSlot )
 
 static LUA_DECLARE( getUpgrades )
 {
-    CVehicleUpgrades *upgrades = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetUpgrades();
+    CVehicleUpgrades *upgrades = ((CClientVehicle*)lua_getmethodtrans( L ))->GetUpgrades();
 
     LUA_ASSERT( upgrades, "vehicle does not support upgrades" );
 
@@ -209,7 +209,7 @@ static LUA_DECLARE( getHandling )
 
 static LUA_DECLARE( removeUpgrade )
 {
-    CVehicleUpgrades *upgrades = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetUpgrades();
+    CVehicleUpgrades *upgrades = ((CClientVehicle*)lua_getmethodtrans( L ))->GetUpgrades();
 
     LUA_ASSERT( upgrades, "vehicle does not support upgrades" );
 
@@ -231,7 +231,7 @@ static LUA_DECLARE( getOccupant )
     argStream.ReadNumber( slot, 0 );
     LUA_ARGS_END;
 
-    CClientPed *ped = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetOccupant( slot );
+    CClientPed *ped = ((CClientVehicle*)lua_getmethodtrans( L ))->GetOccupant( slot );
 
     if ( !ped )
         return 0;
@@ -242,7 +242,7 @@ static LUA_DECLARE( getOccupant )
 
 static LUA_DECLARE( getOccupants )
 {
-    CClientVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ));
+    CClientVehicle *veh = ((CClientVehicle*)lua_getmethodtrans( L ));
 
     lua_settop( L, 0 );
 
@@ -271,13 +271,13 @@ static LUA_DECLARE( setOverrideLights )
     argStream.ReadNumber( val );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetOverrideLights( val );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetOverrideLights( val );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getOverrideLights )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetOverrideLights() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetOverrideLights() );
     return 1;
 }
 
@@ -289,19 +289,19 @@ static LUA_DECLARE( setTaxiLightOn )
     argStream.ReadBool( enable );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetTaxiLightOn( enable );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetTaxiLightOn( enable );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isTaxiLightOn )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsTaxiLightOn() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsTaxiLightOn() );
     return 1;
 }
 
 static LUA_DECLARE( isUpsideDown )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsUpsideDown() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsUpsideDown() );
     return 1;
 }
 
@@ -316,7 +316,7 @@ static LUA_DECLARE( setColor )
     CVehicleColor color;
     color.SetPaletteColors( a, b, c, d );
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetColor( color );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetColor( color );
     LUA_SUCCESS;
 }
 
@@ -341,13 +341,13 @@ static LUA_DECLARE( setColorRGB )
                         SColorRGBA( r4, g4, b4, 0 )
                         );
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetColor( color );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetColor( color );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getColor )
 {
-    CVehicleColor& color = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetColor();
+    CVehicleColor& color = ((CClientVehicle*)lua_getmethodtrans( L ))->GetColor();
 
     lua_pushnumber( L, color.GetPaletteColor( 0 ) );
     lua_pushnumber( L, color.GetPaletteColor( 1 ) );
@@ -365,7 +365,7 @@ inline static void lua_pushcolorRGB( lua_State *L, const SColor& color )
 
 static LUA_DECLARE( getColorRGB )
 {
-    CVehicleColor& color = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetColor();
+    CVehicleColor& color = ((CClientVehicle*)lua_getmethodtrans( L ))->GetColor();
 
     // Make sure we cannot flood the stack
     lua_settop( L, 0 );
@@ -384,13 +384,13 @@ static LUA_DECLARE( setHeadLightColor )
     argStream.ReadColor( r ); argStream.ReadColor( g ); argStream.ReadColor( b );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetHeadLightColor( SColorRGBA( r, g, b, 0xFF ) );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetHeadLightColor( SColorRGBA( r, g, b, 0xFF ) );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getHeadLightColor )
 {
-    lua_pushcolorRGB( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetHeadLightColor() );
+    lua_pushcolorRGB( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetHeadLightColor() );
     return 3;
 }
 
@@ -405,19 +405,19 @@ static LUA_DECLARE( attachTrailer )
     if ( CClientVehicle *prev = trailer->GetTowedByVehicle() )
         prev->SetTowedVehicle( NULL );
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetTowedVehicle( trailer );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetTowedVehicle( trailer );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( detachTrailer )
 {
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetTowedVehicle( NULL );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetTowedVehicle( NULL );
     return 0;
 }
 
 static LUA_DECLARE( getTowBarPos )
 {
-    CVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGameVehicle();
+    CVehicle *veh = ((CClientVehicle*)lua_getmethodtrans( L ))->GetGameVehicle();
 
     LUA_CHECK( veh );
 
@@ -430,7 +430,7 @@ static LUA_DECLARE( getTowBarPos )
 
 static LUA_DECLARE( getTowHitchPos )
 {
-    CVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGameVehicle();
+    CVehicle *veh = ((CClientVehicle*)lua_getmethodtrans( L ))->GetGameVehicle();
 
     LUA_CHECK( veh );
 
@@ -449,13 +449,13 @@ static LUA_DECLARE( setAdjustableProperty )
     argStream.ReadNumber( prop );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetAdjustablePropertyValue( prop );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetAdjustablePropertyValue( prop );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getAdjustableProperty )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetAdjustablePropertyValue() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetAdjustablePropertyValue() );
     return 1;
 }
 
@@ -467,14 +467,14 @@ static LUA_DECLARE( setGravity )
     argStream.ReadVector( grav );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetGravity( grav );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetGravity( grav );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getGravity )
 {
     CVector grav;
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGravity( grav );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->GetGravity( grav );
 
     lua_pushvector( L, grav );
     return 3;
@@ -489,7 +489,7 @@ static LUA_DECLARE( setDoorState )
     argStream.ReadNumber( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetDoorStatus( door, state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetDoorStatus( door, state );
     LUA_SUCCESS;
 }
 
@@ -501,7 +501,7 @@ static LUA_DECLARE( getDoorState )
     argStream.ReadNumber( door );
     LUA_ARGS_END;
 
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetDoorStatus( door ) );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetDoorStatus( door ) );
     return 1;
 }
 
@@ -514,7 +514,7 @@ static LUA_DECLARE( setLightState )
     argStream.ReadNumber( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetLightStatus( light, state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetLightStatus( light, state );
     LUA_SUCCESS;
 }
 
@@ -526,7 +526,7 @@ static LUA_DECLARE( getLightState )
     argStream.ReadNumber( light );
     LUA_ARGS_END;
 
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetLightStatus( light ) );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetLightStatus( light ) );
     return 1;
 }
 
@@ -539,7 +539,7 @@ static LUA_DECLARE( setPanelState )
     argStream.ReadNumber( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetPanelStatus( panel, state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetPanelStatus( panel, state );
     LUA_SUCCESS;
 }
 
@@ -551,7 +551,7 @@ static LUA_DECLARE( getPanelState )
     argStream.ReadNumber( panel );
     LUA_ARGS_END;
 
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetPanelStatus( panel ) );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetPanelStatus( panel ) );
     return 1;
 }
 
@@ -566,7 +566,7 @@ static LUA_DECLARE( setWheelStates )
     argStream.ReadNumber( d, -1 );
     LUA_ARGS_END;
 
-    CClientVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ));
+    CClientVehicle *veh = ((CClientVehicle*)lua_getmethodtrans( L ));
     veh->SetWheelStatus( FRONT_LEFT_WHEEL, a );
     veh->SetWheelStatus( REAR_LEFT_WHEEL, b );
     veh->SetWheelStatus( FRONT_RIGHT_WHEEL, c );
@@ -576,7 +576,7 @@ static LUA_DECLARE( setWheelStates )
 
 static LUA_DECLARE( getWheelStates )
 {
-    CClientVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ));
+    CClientVehicle *veh = ((CClientVehicle*)lua_getmethodtrans( L ));
     
     lua_pushnumber( L, veh->GetWheelStatus( FRONT_LEFT_WHEEL ) );
     lua_pushnumber( L, veh->GetWheelStatus( REAR_LEFT_WHEEL ) );
@@ -588,7 +588,7 @@ static LUA_DECLARE( getWheelStates )
 static LUA_DECLARE( cloneClump )
 {
     CResource *res = CLuaFunctionDefs::lua_readcontext( L )->GetResource();
-    CVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGameVehicle();
+    CVehicle *veh = ((CClientVehicle*)lua_getmethodtrans( L ))->GetGameVehicle();
 
     if ( !veh )
         return 0;
@@ -607,7 +607,7 @@ static LUA_DECLARE( getComponent )
     argStream.ReadString( name );
     LUA_ARGS_END;
 
-    CClientVehicleComponent *comp = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetComponent( name );
+    CClientVehicleComponent *comp = ((CClientVehicle*)lua_getmethodtrans( L ))->GetComponent( name );
 
     LUA_CHECK( comp );
 
@@ -617,7 +617,7 @@ static LUA_DECLARE( getComponent )
 
 static LUA_DECLARE( getComponentNames )
 {
-    CVehicle *veh = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGameVehicle();
+    CVehicle *veh = ((CClientVehicle*)lua_getmethodtrans( L ))->GetGameVehicle();
 
     LUA_CHECK( veh );
 
@@ -649,13 +649,13 @@ static LUA_DECLARE( setEngineState )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetEngineOn( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetEngineOn( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getEngineState )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsEngineOn() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsEngineOn() );
     return 1;
 }
 
@@ -667,13 +667,13 @@ static LUA_DECLARE( setHandbrakeOn )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetHandbrakeOn( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetHandbrakeOn( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isHandbrakeOn )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsHandbrakeOn() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsHandbrakeOn() );
     return 1;
 }
 
@@ -685,13 +685,13 @@ static LUA_DECLARE( setLandingGearDown )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetLandingGearDown( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetLandingGearDown( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getLandingGearDown )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsLandingGearDown() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsLandingGearDown() );
     return 1;
 }
 
@@ -703,13 +703,13 @@ static LUA_DECLARE( setLandingGearPosition )
     argStream.ReadNumber( pos );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetLandingGearPosition( pos );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetLandingGearPosition( pos );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getLandingGearPosition )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetLandingGearPosition() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetLandingGearPosition() );
     return 1;
 }
 
@@ -721,7 +721,7 @@ static LUA_DECLARE( setBrakePedal )
     argStream.ReadNumber( percent );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetBrakePedal( percent );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetBrakePedal( percent );
     LUA_SUCCESS;
 }
 
@@ -733,7 +733,7 @@ static LUA_DECLARE( setGasPedal )
     argStream.ReadNumber( percent );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetGasPedal( percent );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetGasPedal( percent );
     LUA_SUCCESS;
 }
 
@@ -745,7 +745,7 @@ static LUA_DECLARE( setSteerAngle )
     argStream.ReadNumber( rad );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetSteerAngle( rad );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetSteerAngle( rad );
     LUA_SUCCESS;
 }
 
@@ -757,37 +757,37 @@ static LUA_DECLARE( setSecSteerAngle )
     argStream.ReadNumber( rad );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetSecSteerAngle( rad );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetSecSteerAngle( rad );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getCurrentGear )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetCurrentGear() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetCurrentGear() );
     return 1;
 }
 
 static LUA_DECLARE( getBrakePedal )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetBrakePedal() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetBrakePedal() );
     return 1;
 }
 
 static LUA_DECLARE( getGasPedal )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetGasPedal() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetGasPedal() );
     return 1;
 }
 
 static LUA_DECLARE( getSteerAngle )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetSteerAngle() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetSteerAngle() );
     return 1;
 }
 
 static LUA_DECLARE( getSecSteerAngle )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetSecSteerAngle() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetSecSteerAngle() );
     return 1;
 }
 
@@ -799,13 +799,13 @@ static LUA_DECLARE( setNitrousFuel )
     argStream.ReadNumber( fuel );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetNitrousFuel( fuel );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetNitrousFuel( fuel );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getNitrousFuel )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetNitrousFuel() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetNitrousFuel() );
     return 1;
 }
 
@@ -817,19 +817,19 @@ static LUA_DECLARE( setPaintjob )
     argStream.ReadNumber( id );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetPaintjob( id );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetPaintjob( id );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getPaintjob )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetPaintjob() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetPaintjob() );
     return 1;
 }
 
 static LUA_DECLARE( getPlateText )
 {
-    lua_pushstring( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetRegPlate() );
+    lua_pushstring( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetRegPlate() );
     return 1;
 }
 
@@ -841,19 +841,19 @@ static LUA_DECLARE( setSirensOn )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetSirenOrAlarmActive( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetSirenOrAlarmActive( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getSirensOn )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsSirenOrAlarmActive() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsSirenOrAlarmActive() );
     return 1;
 }
 
 static LUA_DECLARE( getTowedByVehicle )
 {
-    CClientVehicle *towedBy = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetTowedByVehicle();
+    CClientVehicle *towedBy = ((CClientVehicle*)lua_getmethodtrans( L ))->GetTowedByVehicle();
 
     if ( !towedBy )
         return 0;
@@ -864,7 +864,7 @@ static LUA_DECLARE( getTowedByVehicle )
 
 static LUA_DECLARE( getTowingVehicle )
 {
-    CClientVehicle *towing = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetTowedVehicle();
+    CClientVehicle *towing = ((CClientVehicle*)lua_getmethodtrans( L ))->GetTowedVehicle();
 
     if ( !towing )
         return 0;
@@ -881,14 +881,14 @@ static LUA_DECLARE( setTurnVelocity )
     argStream.ReadVector( velocity );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetTurnSpeed( velocity );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetTurnSpeed( velocity );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getTurnVelocity )
 {
     CVector spin;
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetTurnSpeed( spin );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->GetTurnSpeed( spin );
 
     lua_pushvector( L, spin );
     return 3;
@@ -903,14 +903,14 @@ static LUA_DECLARE( setTurretRotation )
     argStream.ReadNumber( v );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetTurretRotation( h, v );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetTurretRotation( h, v );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getTurretRotation )
 {
     float h, v;
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetTurretRotation( h, v );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->GetTurretRotation( h, v );
 
     lua_pushnumber( L, h );
     lua_pushnumber( L, v );
@@ -925,13 +925,13 @@ static LUA_DECLARE( setDamageProof )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetScriptCanBeDamaged( !state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetScriptCanBeDamaged( !state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isDamageProof )
 {
-    lua_pushboolean( L, !((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetScriptCanBeDamaged() );
+    lua_pushboolean( L, !((CClientVehicle*)lua_getmethodtrans( L ))->GetScriptCanBeDamaged() );
     return 1;
 }
 
@@ -943,13 +943,13 @@ static LUA_DECLARE( setFrozen )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetFrozen( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetFrozen( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isFrozen )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsFrozen() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsFrozen() );
     return 1;
 }
 
@@ -961,13 +961,13 @@ static LUA_DECLARE( setFuelTankExplodable )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetCanShootPetrolTank( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetCanShootPetrolTank( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isFuelTankExplodable )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetCanShootPetrolTank() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetCanShootPetrolTank() );
     return 1;
 }
 
@@ -979,13 +979,13 @@ static LUA_DECLARE( setHeatSeekable )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetCanBeTargettedByHeatSeekingMissiles( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetCanBeTargettedByHeatSeekingMissiles( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isHeatSeekable )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetCanBeTargettedByHeatSeekingMissiles() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetCanBeTargettedByHeatSeekingMissiles() );
     return 1;
 }
 
@@ -997,19 +997,19 @@ static LUA_DECLARE( setLocked )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetDoorsLocked( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetDoorsLocked( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isLocked )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->AreDoorsLocked() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->AreDoorsLocked() );
     return 1;
 }
 
 static LUA_DECLARE( isOnGround )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsOnGround() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsOnGround() );
     return 1;
 }
 
@@ -1021,13 +1021,13 @@ static LUA_DECLARE( setDirtLevel )
     argStream.ReadNumber( level );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetDirtLevel( level );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetDirtLevel( level );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getDirtLevel )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetDirtLevel() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetDirtLevel() );
     return 1;
 }
 
@@ -1039,13 +1039,13 @@ static LUA_DECLARE( setDoorsUndamageable )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetDoorsUndamageable( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetDoorsUndamageable( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( areDoorsUndamageable )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->AreDoorsUndamageable() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->AreDoorsUndamageable() );
     return 1;
 }
 
@@ -1063,7 +1063,7 @@ static LUA_DECLARE( setDoorOpenRatio )
     argStream.ReadBool( forced, false );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetDoorOpenRatio( door, ratio, delay, forced );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetDoorOpenRatio( door, ratio, delay, forced );
     LUA_SUCCESS;
 }
 
@@ -1075,7 +1075,7 @@ static LUA_DECLARE( getDoorOpenRatio )
     argStream.ReadNumber( door );
     LUA_ARGS_END;
 
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetDoorOpenRatio( door ) );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetDoorOpenRatio( door ) );
     return 1;
 }
 
@@ -1087,13 +1087,13 @@ static LUA_DECLARE( allowSwingingDoors )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetSwingingDoorsAllowed( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetSwingingDoorsAllowed( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( areSwingingDoorsAllowed )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->AreSwingingDoorsAllowed() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->AreSwingingDoorsAllowed() );
     return 1;
 }
 
@@ -1105,13 +1105,13 @@ static LUA_DECLARE( setRotorSpeed )
     argStream.ReadNumber( speed );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetHeliRotorSpeed( speed );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetHeliRotorSpeed( speed );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getRotorSpeed )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetHeliRotorSpeed() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetHeliRotorSpeed() );
     return 1;
 }
 
@@ -1123,13 +1123,13 @@ static LUA_DECLARE( setSearchLightVisible )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetHeliSearchLightVisible( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetHeliSearchLightVisible( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isSearchLightVisible )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsHeliSearchLightVisible() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsHeliSearchLightVisible() );
     return 1;
 }
 
@@ -1143,13 +1143,13 @@ static LUA_DECLARE( setHeliWinchType )
 
     LUA_ASSERT( type < NUM_WINCH_TYPE, "invalid winch type" );
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetWinchType( (eWinchType)type );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetWinchType( (eWinchType)type );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getHeliWinchType )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetWinchType() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetWinchType() );
     return 1;
 }
 
@@ -1161,13 +1161,13 @@ static LUA_DECLARE( pickUpWithWinch )
     argStream.ReadClass( entity, LUACLASS_ENTITY );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->PickupEntityWithWinch( entity ) );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->PickupEntityWithWinch( entity ) );
     return 1;
 }
 
 static LUA_DECLARE( getWinchedEntity )
 {
-    CClientEntity *entity = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetPickedUpEntityWithWinch();
+    CClientEntity *entity = ((CClientVehicle*)lua_getmethodtrans( L ))->GetPickedUpEntityWithWinch();
 
     if ( !entity )
         return 0;
@@ -1178,7 +1178,7 @@ static LUA_DECLARE( getWinchedEntity )
 
 static LUA_DECLARE( releaseWinched )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->ReleasePickedUpEntityWithWinch() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->ReleasePickedUpEntityWithWinch() );
     return 1;
 }
 
@@ -1190,13 +1190,13 @@ static LUA_DECLARE( setSmokeTrailEnabled )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetSmokeTrailEnabled( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetSmokeTrailEnabled( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isSmokeTrailEnabled )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsSmokeTrailEnabled() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsSmokeTrailEnabled() );
     return 1;
 }
 
@@ -1208,13 +1208,13 @@ static LUA_DECLARE( setTrainDirection )
     argStream.ReadBool( direction );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetTrainDirection( direction );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetTrainDirection( direction );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getTrainDirection )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetTrainDirection() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetTrainDirection() );
     return 1;
 }
 
@@ -1226,13 +1226,13 @@ static LUA_DECLARE( setTrainSpeed )
     argStream.ReadNumber( speed );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetTrainSpeed( speed );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetTrainSpeed( speed );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getTrainSpeed )
 {
-    lua_pushnumber( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetTrainSpeed() );
+    lua_pushnumber( L, ((CClientVehicle*)lua_getmethodtrans( L ))->GetTrainSpeed() );
     return 1;
 }
 
@@ -1244,13 +1244,13 @@ static LUA_DECLARE( setNextCarriage )
     argStream.ReadClass( carriage, LUACLASS_VEHICLE, NULL );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetNextTrainCarriage( carriage );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetNextTrainCarriage( carriage );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getNextCarriage )
 {
-    CClientVehicle *carriage = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetNextTrainCarriage();
+    CClientVehicle *carriage = ((CClientVehicle*)lua_getmethodtrans( L ))->GetNextTrainCarriage();
 
     if ( !carriage )
         return 0;
@@ -1267,13 +1267,13 @@ static LUA_DECLARE( setPreviousCarriage )
     argStream.ReadClass( carriage, LUACLASS_VEHICLE, NULL );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetPreviousTrainCarriage( carriage );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetPreviousTrainCarriage( carriage );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getPreviousCarriage )
 {
-    CClientVehicle *carriage = ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetPreviousTrainCarriage();
+    CClientVehicle *carriage = ((CClientVehicle*)lua_getmethodtrans( L ))->GetPreviousTrainCarriage();
 
     if ( !carriage )
         return 0;
@@ -1290,13 +1290,13 @@ static LUA_DECLARE( setDerailable )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetDerailable( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetDerailable( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isDerailable )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsDerailable() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsDerailable() );
     return 1;
 }
 
@@ -1308,17 +1308,17 @@ static LUA_DECLARE( setDerailed )
     argStream.ReadBool( state );
     LUA_ARGS_END;
 
-    ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetDerailed( state );
+    ((CClientVehicle*)lua_getmethodtrans( L ))->SetDerailed( state );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isDerailed )
 {
-    lua_pushboolean( L, ((CClientVehicle*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->IsDerailed() );
+    lua_pushboolean( L, ((CClientVehicle*)lua_getmethodtrans( L ))->IsDerailed() );
     return 1;
 }
 
-static const luaL_Reg vehicle_interface_light[] =
+static const luaL_Reg vehicle_interface_trans[] =
 {
     LUA_METHOD( setRotation ),
     LUA_METHOD( getRotation ),
@@ -1453,7 +1453,7 @@ LUA_DECLARE( luaconstructor_vehicle )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_VEHICLE, veh );
 
-    j.RegisterLightInterface( L, vehicle_interface_light, veh );
+    j.RegisterInterfaceTrans( L, vehicle_interface_trans, 0, LUACLASS_VEHICLE );
 
     lua_pushlstring( L, "vehicle", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

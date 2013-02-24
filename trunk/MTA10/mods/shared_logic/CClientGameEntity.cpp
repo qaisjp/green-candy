@@ -21,13 +21,13 @@ static LUA_DECLARE( setColModel )
     argStream.ReadClass( col, LUACLASS_COLMODEL, NULL );
     LUA_ARGS_END;
 
-    ((CClientGameEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetColModel( col );
+    ((CClientGameEntity*)lua_getmethodtrans( L ))->SetColModel( col );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getColModel )
 {
-    CClientColModel *col = ((CClientGameEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetColModel();
+    CClientColModel *col = ((CClientGameEntity*)lua_getmethodtrans( L ))->GetColModel();
 
     if ( !col )
         return 0;
@@ -36,7 +36,7 @@ static LUA_DECLARE( getColModel )
     return 1;
 }
 
-static luaL_Reg gameentity_interface_light[] =
+static luaL_Reg gameentity_interface_trans[] =
 {
     LUA_METHOD( setColModel ),
     LUA_METHOD( getColModel ),
@@ -50,7 +50,7 @@ static LUA_DECLARE( luaconstructor_gameentity )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GAMEENTITY, entity );
 
-    j.RegisterLightInterface( L, gameentity_interface_light, entity );
+    j.RegisterInterfaceTrans( L, gameentity_interface_trans, 0, LUACLASS_GAMEENTITY );
 
     lua_pushlstring( L, "gameentity", 10 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

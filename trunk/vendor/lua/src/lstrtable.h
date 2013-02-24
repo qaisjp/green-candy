@@ -61,7 +61,7 @@ public:
         __asm int 3
     }
 
-    void    SetItem( lua_State *L, TString *key, type val )
+    void    SetItem( lua_State *L, TString *key, type& val )
     {
         item_t *item = FindNode( key );
 
@@ -75,14 +75,14 @@ public:
         item->val = val;
     }
 
-    type    GetItem( const TString *key )
+    type*   GetItem( const TString *key )
     {
         item_t *item = FindNode( key );
 
         if ( !item )
             return NULL;
 
-        return item->val;
+        return &item->val;
     }
 
     void    TraverseGC( global_State *g );

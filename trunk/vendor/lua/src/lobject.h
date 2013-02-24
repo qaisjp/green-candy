@@ -600,6 +600,7 @@ public:
 
     Class*          m_class;
     lua_CFunction   method;
+    Closure*        super;
 };
 
 class CClosureMethod : public CClosureMethodBase
@@ -644,6 +645,7 @@ public:
     }
 
     unsigned char trans;
+    void *data;
     TValue  upvalues[1];
 };
 
@@ -731,6 +733,13 @@ public:
 
 struct _methodRegisterInfo
 {
+    _methodRegisterInfo()
+    {
+        numUpValues = 0;
+        isTrans = false;
+    }
+
+    unsigned char numUpValues;
     bool isTrans;
     unsigned char transID;
 };
@@ -772,8 +781,10 @@ public:
     void    RegisterMethod( lua_State *L, TString *name, bool handlers = false );
     void    RegisterMethod( lua_State *L, const char *name, bool handlers = false );
     void    RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto, _methodRegisterInfo& info, bool handlers = false );
-    void    RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, bool handlers = false );
-    void    RegisterMethodTrans( lua_State *L, const char *name, lua_CFunction proto, int trans, bool handlers = false );
+    void    RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, int nupval, bool handlers = false );
+    void    RegisterInterface( lua_State *L, const luaL_Reg *intf, int nupval, bool handlers = true );
+    void    RegisterMethodTrans( lua_State *L, const char *name, lua_CFunction proto, int nupval, int trans, bool handlers = false );
+    void    RegisterInterfaceTrans( lua_State *L, const luaL_Reg *intf, int nupval, int trans, bool handlers = true );
     void    RegisterLightMethod( lua_State *L, const char *name );
     void    RegisterLightMethodTrans( lua_State *L, const char *name, int trans );
     void    RegisterLightInterface( lua_State *L, const luaL_Reg *intf, void *udata );
@@ -820,7 +831,15 @@ public:
 	unsigned char transCount : 5;
 
     typedef Closure* (*forceSuperCallback)( lua_State *L, Closure *newMethod, Class *j, Closure *prevMethod );
-    typedef StringTable <forceSuperCallback> ForceSuperTable;
+    typedef Closure* (*forceSuperCallbackNative)( lua_State *L, lua_CFunction proto, Class *j, Closure *prevMethod, _methodRegisterInfo& info );
+    
+    struct forceSuperItem
+    {
+        forceSuperCallback  cb;
+        forceSuperCallbackNative    cbNative;
+    };
+
+    typedef StringTable <forceSuperItem> ForceSuperTable;
 
     ForceSuperTable *forceSuper;
 
