@@ -21,7 +21,7 @@ static LUA_DECLARE( setClump )
     argStream.ReadClass( model, LUACLASS_DFF, NULL );
     LUA_ARGS_END;
 
-    CClientRwCamera *cam = (CClientRwCamera*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+    CClientRwCamera *cam = (CClientRwCamera*)lua_getmethodtrans( L );
 
     // Force the light into the clump's hierarchy
     // If model is nil, we remove the connection
@@ -48,7 +48,7 @@ static LUA_DECLARE( setClump )
 
 static LUA_DECLARE( getClump )
 {
-    CClientDFF *model = ((CClientRwCamera*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_clump;
+    CClientDFF *model = ((CClientRwCamera*)lua_getmethodtrans( L ))->m_clump;
 
     if ( !model )
         return 0;
@@ -59,7 +59,7 @@ static LUA_DECLARE( getClump )
 
 static LUA_DECLARE( setParent )
 {
-    if ( ((CClientRwCamera*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_cam.IsRendering() )
+    if ( ((CClientRwCamera*)lua_getmethodtrans( L ))->m_cam.IsRendering() )
         throw lua_exception( L, LUA_ERRRUN, "cannot change rwcamera parent during render focus" );
 
     lua_getfield( L, LUA_ENVIRONINDEX, "super" );
@@ -70,7 +70,7 @@ static LUA_DECLARE( setParent )
 
 static LUA_DECLARE( isRendering )
 {
-    lua_pushboolean( L, ((CClientRwCamera*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_cam.IsRendering() );
+    lua_pushboolean( L, ((CClientRwCamera*)lua_getmethodtrans( L ))->m_cam.IsRendering() );
     return 1;
 }
 
@@ -79,7 +79,7 @@ static LUA_DECLARE( update )
     luaL_checktype( L, 1, LUA_TFUNCTION );
     lua_settop( L, 1 );
 
-    CClientRwCamera *cam = ((CClientRwCamera*)lua_touserdata( L, lua_upvalueindex( 1 ) ));
+    CClientRwCamera *cam = ((CClientRwCamera*)lua_getmethodtrans( L ));
     CRwCamera *rwcam = &cam->m_cam;
 
     if ( !rwcam->BeginUpdate() )
@@ -106,7 +106,7 @@ const luaL_Reg rwcamera_interface[] =
     { NULL, NULL }
 };
 
-const luaL_Reg rwcamera_interface_light[] =
+const luaL_Reg rwcamera_interface_trans[] =
 {
     LUA_METHOD( setClump ),
     LUA_METHOD( getClump ),
@@ -122,7 +122,7 @@ static LUA_DECLARE( luaconstructor_rwcamera )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_RWCAMERA, cam );
 
-    j.RegisterLightInterface( L, rwcamera_interface_light, cam );
+    j.RegisterInterfaceTrans( L, rwcamera_interface_trans, 0, LUACLASS_RWCAMERA );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );

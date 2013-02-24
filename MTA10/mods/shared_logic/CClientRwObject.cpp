@@ -16,7 +16,7 @@
 static LUA_DECLARE( setParent )
 {
     // Make sure that we stay in the resource tree!
-    CClientRwObject& element = *(CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+    CClientRwObject& element = *(CClientRwObject*)lua_getmethodtrans( L );
 
     if ( lua_type( L, 1 ) != LUA_TCLASS )
     {
@@ -55,7 +55,7 @@ parent:
 
 static LUA_DECLARE( getFrame )
 {
-    CClientRwFrame *frame = ((CClientRwObject*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_parent;
+    CClientRwFrame *frame = ((CClientRwObject*)lua_getmethodtrans( L ))->m_parent;
 
     if ( !frame )
         return 0;
@@ -73,8 +73,9 @@ static LUA_DECLARE( isValidChild )
     return 0;
 }
 
-static luaL_Reg object_interface_light[] =
+static luaL_Reg object_interface_trans[] =
 {
+    LUA_METHOD( setParent ),
     LUA_METHOD( getFrame ),
     LUA_METHOD( isValidChild ),
     { NULL, NULL }
@@ -89,7 +90,6 @@ static LUA_DECLARE( destroy )
 
 static luaL_Reg object_interface[] =
 {
-    LUA_METHOD( setParent ),
 	LUA_METHOD( destroy ),
     { NULL, NULL }
 };
@@ -101,7 +101,7 @@ static LUA_DECLARE( luaconstructor_object )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_RWOBJECT, obj );
 
-    j.RegisterLightInterface( L, object_interface_light, obj );
+    j.RegisterInterfaceTrans( L, object_interface_trans, 0, LUACLASS_RWOBJECT );
 
 	lua_pushvalue( L, LUA_ENVIRONINDEX );
 

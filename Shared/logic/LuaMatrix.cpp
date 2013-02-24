@@ -60,13 +60,13 @@ static int matrix_setPosition( lua_State *L )
 {
     luaL_checktyperange( L, 1, LUA_TNUMBER, 3 );
 
-    ((RwMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->pos = CVector( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) );
+    ((RwMatrix*)lua_getmethodtrans( L ))->pos = CVector( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) );
     return 0;
 }
 
 static int matrix_getPosition( lua_State *L )
 {
-    CVector& pos = ((RwMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->pos;
+    CVector& pos = ((RwMatrix*)lua_getmethodtrans( L ))->pos;
 
     lua_pushnumber( L, pos[0] );
     lua_pushnumber( L, pos[1] );
@@ -78,7 +78,7 @@ static int matrix_setEulerAngles( lua_State *L )
 {
     luaL_checktyperange( L, 1, LUA_TNUMBER, 3 );
 
-    ((RwMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetRotation( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) );
+    ((RwMatrix*)lua_getmethodtrans( L ))->SetRotation( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) );
     return 0;
 }
 
@@ -86,7 +86,7 @@ static int matrix_setEulerAnglesRad( lua_State *L )
 {
     luaL_checktyperange( L, 1, LUA_TNUMBER, 3 );
 
-    ((RwMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->SetRotationRad( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) );
+    ((RwMatrix*)lua_getmethodtrans( L ))->SetRotationRad( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) );
     return 0;
 }
 
@@ -94,7 +94,7 @@ static int matrix_getEulerAngles( lua_State *L )
 {
     float x, y, z;
 
-    ((RwMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetRotation( x, y, z );
+    ((RwMatrix*)lua_getmethodtrans( L ))->GetRotation( x, y, z );
 
     lua_pushnumber( L, x );
     lua_pushnumber( L, y );
@@ -106,7 +106,7 @@ static int matrix_getEulerAnglesRad( lua_State *L )
 {
     float x, y, z;
 
-    ((RwMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetRotationRad( x, y, z );
+    ((RwMatrix*)lua_getmethodtrans( L ))->GetRotationRad( x, y, z );
 
     lua_pushnumber( L, x );
     lua_pushnumber( L, y );
@@ -124,7 +124,7 @@ static int matrix_fromQuat( lua_State *L )
     quat.z = (float)lua_tonumber( L, 3 );
     quat.w = (float)lua_tonumber( L, 4 );
 
-    CQuat::ToMatrix( quat, *(RwMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ) );
+    CQuat::ToMatrix( quat, *(RwMatrix*)lua_getmethodtrans( L ));
     return 0;
 }
 
@@ -133,7 +133,7 @@ static int matrix_offset( lua_State *L )
     luaL_checktyperange( L, 1, LUA_TNUMBER, 3 );
 
     CVector pos;
-    ((RwMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetOffset( CVector( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) ), pos );
+    ((RwMatrix*)lua_getmethodtrans( L ))->GetOffset( CVector( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) ), pos );
 
     lua_pushnumber( L, pos[0] );
     lua_pushnumber( L, pos[1] );
@@ -155,7 +155,7 @@ static const luaL_Reg matrix_interface[] =
     { NULL, NULL }
 };
 
-static const luaL_Reg matrix_interface_light[] =
+static const luaL_Reg matrix_interface_trans[] =
 {
     { "setPosition", matrix_setPosition },
     { "getPosition", matrix_getPosition },
@@ -181,7 +181,7 @@ static int luaconstructor_matrix( lua_State *L )
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, matrix_interface, 1 );
 
-    j.RegisterLightInterface( L, matrix_interface_light, matrix );
+    j.RegisterInterfaceTrans( L, matrix_interface_trans, 0, LUACLASS_MATRIX );
 
     lua_pushlstring( L, "matrix", 6 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

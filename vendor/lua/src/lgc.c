@@ -392,6 +392,10 @@ size_t CClosureBasic::Propagate( global_State *g )
 size_t CClosureMethodBase::Propagate( global_State *g )
 {
     markobject( g, m_class );
+
+    if ( super )
+        markobject( g, super );
+
     return CClosure::Propagate( g );
 }
 

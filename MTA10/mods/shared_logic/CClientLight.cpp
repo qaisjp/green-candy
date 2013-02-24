@@ -15,7 +15,7 @@
 
 static LUA_DECLARE( getLightType )
 {
-    const std::string& typeName = EnumToString( ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.GetLightType() );
+    const std::string& typeName = EnumToString( ((CClientLight*)lua_getmethodtrans( L ))->m_light.GetLightType() );
 
     lua_pushlstring( L, typeName.c_str(), typeName.size() );
     return 1;
@@ -29,7 +29,7 @@ static LUA_DECLARE( setClump )
     argStream.ReadClass( model, LUACLASS_DFF, NULL );
     LUA_ARGS_END;
 
-    CClientLight *light = (CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+    CClientLight *light = (CClientLight*)lua_getmethodtrans( L );
 
     // Force the light into the clump's hierarchy
     // If model is nil, we remove the connection
@@ -56,7 +56,7 @@ static LUA_DECLARE( setClump )
 
 static LUA_DECLARE( getClump )
 {
-    CClientDFF *model = ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_clump;
+    CClientDFF *model = ((CClientLight*)lua_getmethodtrans( L ))->m_clump;
 
     if ( !model )
         return 0;
@@ -73,13 +73,13 @@ static LUA_DECLARE( setRadius )
     argStream.ReadNumber( radius );
     LUA_ARGS_END;
 
-    ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.SetRadius( radius );
+    ((CClientLight*)lua_getmethodtrans( L ))->m_light.SetRadius( radius );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getRadius )
 {
-    lua_pushnumber( L, ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.GetRadius() );
+    lua_pushnumber( L, ((CClientLight*)lua_getmethodtrans( L ))->m_light.GetRadius() );
     return 1;
 }
 
@@ -91,13 +91,13 @@ static LUA_DECLARE( setConeAngle )
     argStream.ReadNumber( angle );
     LUA_ARGS_END;
 
-    ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.SetConeAngle( angle );
+    ((CClientLight*)lua_getmethodtrans( L ))->m_light.SetConeAngle( angle );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getConeAngle )
 {
-    lua_pushnumber( L, ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.GetConeAngle() );
+    lua_pushnumber( L, ((CClientLight*)lua_getmethodtrans( L ))->m_light.GetConeAngle() );
     return 1;
 }
 
@@ -112,13 +112,13 @@ static LUA_DECLARE( setColor )
     argStream.ReadNumber( color.a );
     LUA_ARGS_END;
 
-    ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.SetColor( color );
+    ((CClientLight*)lua_getmethodtrans( L ))->m_light.SetColor( color );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getColor )
 {
-    const RwColorFloat& color = ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.GetColor();
+    const RwColorFloat& color = ((CClientLight*)lua_getmethodtrans( L ))->m_light.GetColor();
 
     lua_pushnumber( L, color.r );
     lua_pushnumber( L, color.g );
@@ -135,13 +135,13 @@ static LUA_DECLARE( setAttenuation )
     argStream.ReadVector( atten );
     LUA_ARGS_END;
 
-    ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.SetAttenuation( atten );
+    ((CClientLight*)lua_getmethodtrans( L ))->m_light.SetAttenuation( atten );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getAttenuation )
 {
-    const CVector& atten = ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.GetAttenuation();
+    const CVector& atten = ((CClientLight*)lua_getmethodtrans( L ))->m_light.GetAttenuation();
 
     lua_pushnumber( L, atten[0] );
     lua_pushnumber( L, atten[1] );
@@ -159,17 +159,17 @@ static LUA_DECLARE( setLightIndex )
 
     LUA_ASSERT( idx < 8, "invalid light index" );
 
-    ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.SetLightIndex( idx );
+    ((CClientLight*)lua_getmethodtrans( L ))->m_light.SetLightIndex( idx );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getLightIndex )
 {
-    lua_pushnumber( L, ((CClientLight*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_light.GetLightIndex() );
+    lua_pushnumber( L, ((CClientLight*)lua_getmethodtrans( L ))->m_light.GetLightIndex() );
     return 1;
 }
 
-static luaL_Reg light_interface_light[] =
+static luaL_Reg light_interface_trans[] =
 {
     LUA_METHOD( getLightType ),
     LUA_METHOD( setClump ),
@@ -194,7 +194,7 @@ static LUA_DECLARE( luaconstructor_light )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_LIGHT, light );
 
-    j.RegisterLightInterface( L, light_interface_light, light );
+    j.RegisterInterfaceTrans( L, light_interface_trans, 0, LUACLASS_LIGHT );
 
     lua_pushlstring( L, "rwlight", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

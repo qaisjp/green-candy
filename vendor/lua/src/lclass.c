@@ -1173,7 +1173,7 @@ void Class::EnvPutBack( lua_State *L )
 
 static int classmethod_reference( lua_State *L )
 {
-    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
+    Class& j = *((CClosureMethodBase*)curr_func( L ))->m_class;
 
     if ( j.destroying )
         return 0;
@@ -1185,7 +1185,7 @@ static int classmethod_reference( lua_State *L )
 
 static int classmethod_dereference( lua_State *L )
 {
-    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
+    Class& j = *((CClosureMethodBase*)curr_func( L ))->m_class;
 
     if ( j.refCount == 0 )
         return 0;
@@ -1205,7 +1205,7 @@ static int classmethod_isValidChild( lua_State *L )
 
 static int classmethod_getChildren( lua_State *L )
 {
-    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
+    Class& j = *((CClosureMethodBase*)curr_func( L ))->m_class;
 
     Table& tab = *luaH_new( L, j.childCount, 0 );
     unsigned int n = 1;
@@ -1270,7 +1270,7 @@ static int childapi_constructor( lua_State *L )
 
 static int classmethod_setParent( lua_State *L )
 {
-    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
+    Class& j = *((CClosureMethodBase*)curr_func( L ))->m_class;
 
     if ( j.destroying )
     {
@@ -1358,7 +1358,7 @@ static int classmethod_setParent( lua_State *L )
 
 static int classmethod_getParent( lua_State *L )
 {
-    Class *j = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
+    Class *j = ((CClosureMethodBase*)curr_func( L ))->m_class;
 
     if ( !j->parent )
     {
@@ -1392,7 +1392,7 @@ static int classmethod_destructor( lua_State *L )
     return 0;
 }
 
-static const luaL_Reg classmethods_light[] = 
+static const luaL_Reg classmethods_c[] = 
 {
     { "reference", classmethod_reference },
     { "dereference", classmethod_dereference },
@@ -1401,14 +1401,9 @@ static const luaL_Reg classmethods_light[] =
     { NULL, NULL }
 };
 
-static const luaL_Reg classmethods_parenting_light[] =
-{
-    { "getParent", classmethod_getParent },
-    { NULL, NULL }
-};
-
 static const luaL_Reg classmethods_parenting[] =
 {
+    { "getParent", classmethod_getParent },
     { "setParent", classmethod_setParent },
     { NULL, NULL }
 };
@@ -1595,15 +1590,11 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     if ( !( flags & LCLASS_NOPARENTING ) )
     {
         // Add functionality for Lua parenting
-        setjvalue( L, L->top++, c );
-        luaL_openlib( L, NULL, classmethods_parenting, 1 );
-
-        // Same goes for light functions
-        c->RegisterLightInterface( L, classmethods_parenting_light, c );
+        c->RegisterInterface( L, classmethods_parenting, 0 );
     }
 
     // Register the light interface
-    c->RegisterLightInterface( L, classmethods_light, c );
+    c->RegisterInterface( L, classmethods_c, 0 );
 
     sethvalue( L, L->top - 1, c->methods );
 

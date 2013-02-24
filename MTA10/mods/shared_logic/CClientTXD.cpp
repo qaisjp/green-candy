@@ -20,7 +20,7 @@ typedef std::list <unsigned short> imports_t;
 
 static LUA_DECLARE( getTextures )
 {
-    CClientTXD *txd = ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ));
+    CClientTXD *txd = ((CClientTXD*)lua_getmethodtrans( L ));
     RwList <CClientGameTexture>& list = txd->m_textures;
 
     lua_settop( L, 0 );
@@ -38,11 +38,11 @@ static LUA_DECLARE( getTextures )
 
 static LUA_DECLARE( setGlobalEmitter )
 {
-    ((CClientTXD*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_txd.SetGlobalEmitter();
+    ((CClientTXD*)lua_getmethodtrans( L ))->m_txd.SetGlobalEmitter();
     return 0;
 }
 
-static const luaL_Reg txd_interface_light[] =
+static const luaL_Reg txd_interface_trans[] =
 {
     LUA_METHOD( getTextures ),
     LUA_METHOD( setGlobalEmitter ),
@@ -58,7 +58,7 @@ static int luaconstructor_txd( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_TXD, txd );
 
-    j.RegisterLightInterface( L, txd_interface_light, txd );
+    j.RegisterInterfaceTrans( L, txd_interface_trans, 0, LUACLASS_TXD );
 
     lua_pushlstring( L, "txd", 3 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

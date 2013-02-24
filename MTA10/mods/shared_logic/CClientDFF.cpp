@@ -16,7 +16,7 @@
 
 static LUA_DECLARE( clone )
 {
-    CClientDFF *dff = new CClientDFF( L, *((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_model.Clone(), CLuaFunctionDefs::lua_readcontext( L )->GetResource() );
+    CClientDFF *dff = new CClientDFF( L, *((CClientDFF*)lua_getmethodtrans( L ))->m_model.Clone(), CLuaFunctionDefs::lua_readcontext( L )->GetResource() );
     dff->PushStack( L );
     dff->DisableKeepAlive();
     return 1;
@@ -24,13 +24,13 @@ static LUA_DECLARE( clone )
 
 static LUA_DECLARE( render )
 {
-    ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_model.Render();
+    ((CClientDFF*)lua_getmethodtrans( L ))->m_model.Render();
     return 0;
 }
 
 static LUA_DECLARE( getAtomics )
 {
-    CClientDFF::atomics_t& list = ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_atomics;
+    CClientDFF::atomics_t& list = ((CClientDFF*)lua_getmethodtrans( L ))->m_atomics;
 
     lua_settop( L, 0 );
     lua_createtable( L, list.size(), 0 );
@@ -48,7 +48,7 @@ static LUA_DECLARE( getAtomics )
 
 static LUA_DECLARE( getLights )
 {
-    CClientDFF::lights_t& list = ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_lights;
+    CClientDFF::lights_t& list = ((CClientDFF*)lua_getmethodtrans( L ))->m_lights;
 
     lua_settop( L, 0 );
     lua_createtable( L, list.size(), 0 );
@@ -66,7 +66,7 @@ static LUA_DECLARE( getLights )
 
 static LUA_DECLARE( getCameras )
 {
-    CClientDFF::cameras_t& list = ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_cameras;
+    CClientDFF::cameras_t& list = ((CClientDFF*)lua_getmethodtrans( L ))->m_cameras;
 
     lua_settop( L, 0 );
     lua_createtable( L, list.size(), 0 );
@@ -90,7 +90,7 @@ static LUA_DECLARE( replaceModel )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->ReplaceModel( model ) );
+    lua_pushboolean( L, ((CClientDFF*)lua_getmethodtrans( L ))->ReplaceModel( model ) );
     return 1;
 }
 
@@ -102,7 +102,7 @@ static LUA_DECLARE( isReplaced )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 ) ) )->HasReplaced( model ) );
+    lua_pushboolean( L, ((CClientDFF*)lua_getmethodtrans( L ))->HasReplaced( model ) );
     return 1;
 }
 
@@ -110,7 +110,7 @@ static LUA_DECLARE( getReplaced )
 {
     lua_settop( L, 0 );
 
-    std::vector <unsigned short> impList = ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->m_model.GetImportList();
+    std::vector <unsigned short> impList = ((CClientDFF*)lua_getmethodtrans( L ))->m_model.GetImportList();
     std::vector <unsigned short>::const_iterator iter = impList.begin();
     int n = 1;
 
@@ -133,17 +133,17 @@ static LUA_DECLARE( restoreModel )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->RestoreModel( model );
+    ((CClientDFF*)lua_getmethodtrans( L ))->RestoreModel( model );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( restoreAll )
 {
-    ((CClientDFF*)lua_touserdata( L, lua_upvalueindex( 1 )))->RestoreModels();
+    ((CClientDFF*)lua_getmethodtrans( L ))->RestoreModels();
     return 0;
 }
 
-static const luaL_Reg dff_interface_light[] =
+static const luaL_Reg dff_interface_trans[] =
 {
     LUA_METHOD( clone ),
     LUA_METHOD( render ),
@@ -221,7 +221,7 @@ static int luaconstructor_dff( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_DFF, dff );
 
-    j.RegisterLightInterface( L, dff_interface_light, dff );
+    j.RegisterInterfaceTrans( L, dff_interface_trans, 0, LUACLASS_DFF );
 
     lua_pushlstring( L, "dff", 3 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
