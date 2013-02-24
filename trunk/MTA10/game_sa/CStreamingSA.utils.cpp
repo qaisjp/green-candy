@@ -242,6 +242,8 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
                 RwFrameDestroy( frame );
                 clump->m_parent = NULL;
 
+                RwImportedScan::Unapply();
+
                 RpClumpDestroy( clump );
                 return false;
             }
@@ -297,7 +299,7 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
 
     info->SetClump( clump );
 
-    // Game fix???^ R*
+    // Game fix??? R*
     if ( id == VT_JOURNEY )
         ((CVehicleModelInfoSAInterface*)info)->m_numberOfDoors &= 0x02;
 

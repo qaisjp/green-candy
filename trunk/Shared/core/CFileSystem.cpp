@@ -20,6 +20,16 @@ CFileTranslator *fileRoot;
 
 #include "CFileSystem.Utils.hxx"
 
+/*===================================================
+    File_IsDirectoryAbsolute
+
+    Arguments:
+        pPath - Absolute path pointing to an OS filesystem entry.
+    Purpose:
+        Checks the given path and returns true if it points
+        to a directory, false if a file or no entry was found
+        at the path.
+===================================================*/
 static inline bool File_IsDirectoryAbsolute( const char *pPath )
 {
 #ifdef _WIN32

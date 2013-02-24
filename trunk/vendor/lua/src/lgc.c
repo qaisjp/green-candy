@@ -67,6 +67,14 @@ static void removeentry (Node *n) {
 
 static void reallymarkobject( global_State *g, GCObject *o );
 
+template <class type>
+void StringTable <type>::TraverseGC( global_State *g )
+{
+    LIST_FOREACH_BEGIN( item_t, m_list.root, node )
+        stringmark( item->key );
+    LIST_FOREACH_END
+}
+
 int Class::TraverseGC( global_State *g )
 {
     if ( destroyed )
@@ -79,7 +87,6 @@ int Class::TraverseGC( global_State *g )
     markobject( g, outenv );
     markobject( g, storage );
     markobject( g, methods );
-    markobject( g, forceSuper );
     markobject( g, internStorage );
 
     if ( parent )
@@ -91,6 +98,8 @@ int Class::TraverseGC( global_State *g )
     LIST_FOREACH_BEGIN( Class, children.root, child_iter )
         markobject( g, item );
     LIST_FOREACH_END
+
+    forceSuper->TraverseGC( g );
 
     for ( envList_t::const_iterator iter = envInherit.begin(); iter != envInherit.end(); iter++ )
         markobject( g, *iter );
