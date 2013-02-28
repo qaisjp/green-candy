@@ -154,14 +154,19 @@ CEffectDefSAInterface* CParticleSystemSAInterface::GetBlueprintByName( const cha
 
 CParticleSystemSA::CParticleSystemSA()
 {
+    // Analyze a crash
+    HookInstall( 0x004A9360, h_memFunc( &CParticleSystemSAInterface::GetBlueprintByName ), 5 );
+    //HookInstall( 0x004A98E0, h_memFunc( &CParticleSystemSAInterface::Init ), 5 );
 }
 
 CParticleSystemSA::~CParticleSystemSA()
 {
+    //Shutdown();
 }
 
 void CParticleSystemSA::Init()
 {
+    // Disable particle system initialization
     pParticleSystem->Init();
 }
 

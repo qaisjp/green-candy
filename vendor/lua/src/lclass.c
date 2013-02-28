@@ -135,7 +135,7 @@ inline static bool class_preDestructor( lua_State *L, Class& j )
 
     bool reqWorthy = false;
 
-    // We potencially are operating at an unstable state here, since we use child_iter from
+    // We potentially are operating at an unstable state here, since we use child_iter from
     // a destroyed class. It is a thrilling optimization not having to secure it from GC!
     // If crashes report at this loop, I will take care of it (very unlikely due to current GC architecture).
     LIST_FOREACH_BEGIN( Class, j.children.root, child_iter )
