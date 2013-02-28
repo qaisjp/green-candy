@@ -27,15 +27,15 @@ class CEffectDefSAInterface;
 class CParticleSystemSAInterface
 {
 public:
-    void                                    Init();
-    void                                    Shutdown();
-    bool                                    LoadDefinitions( const char *filename );
+    void __thiscall                         Init();
+    void __thiscall                         Shutdown();
+    bool __thiscall                         LoadDefinitions( const char *filename );
 
-    void                                    SetGlobalAssociatives( const CVector *windVelocity, const float *unk );
+    void __thiscall                         SetGlobalAssociatives( const CVector *windVelocity, const float *unk );
 
-    CParticleObjectSAInterface*             CreateTranslator( const char *name, const CVector& pos, unsigned int unk, bool unk2 );
-    CParticleObjectSAInterface*             CreateTranslator( CEffectDefSAInterface *data, const CVector& pos, unsigned int unk, bool unk2 );
-    CEffectDefSAInterface*                  GetBlueprintByName( const char *name );
+    CParticleObjectSAInterface* __thiscall  CreateTranslator( const char *name, const CVector& pos, unsigned int unk, bool unk2 );
+    CParticleObjectSAInterface* __thiscall  CreateTranslator( CEffectDefSAInterface *data, const CVector& pos, unsigned int unk, bool unk2 );
+    CEffectDefSAInterface* __thiscall       GetBlueprintByName( const char *name );
 
     CSimpleList                             m_defList;      // 0
     BYTE                                    m_pad[12];      // 12
@@ -51,7 +51,7 @@ public:
     CEffectStackSA                          m_memory;       // 172
 
 private:
-    CEffectDefSAInterface*                  ParseFXDataDef( const char *filename, CFile *file );
+    CEffectDefSAInterface* __thiscall       ParseFXDataDef( const char *filename, CFile *file );
 };
 
 class CParticleSystemSA

@@ -171,6 +171,7 @@
 				OutputFile="$(OutDir)/lua5.1.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="../lib"
+				IgnoreDefaultLibraryNames=""
 				ModuleDefinitionFile="../src/lua5.1.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="../../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
