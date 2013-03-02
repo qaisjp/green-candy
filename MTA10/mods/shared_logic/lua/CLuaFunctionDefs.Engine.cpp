@@ -28,6 +28,8 @@ namespace CLuaFunctionDefs
 {
     LUA_DECLARE( engineLoadCOL )
     {
+        return 0;
+
         CResource *res = lua_readcontext( L )->GetResource();
 
         CFile *file = m_pResourceManager->OpenStream( res, lua_isstring( L, 1 ) ? lua_tostring( L, 1 ) : "" , "rb" );
@@ -61,6 +63,8 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( engineLoadDFF )
     {
+        return 0;
+
         const char *path;
         unsigned short num;
 
@@ -100,6 +104,8 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( engineLoadTXD )
     {
+        return 0;
+
         const char *path;
         bool filtering;
 
