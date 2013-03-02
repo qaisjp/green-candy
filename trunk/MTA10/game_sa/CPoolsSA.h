@@ -66,7 +66,7 @@ public:
         memset(m_flags, 0x80, max);
 
         m_max = max;
-        m_active = 0;
+        m_lastUsed = 0;
     }
 
     inline type*    GetOffset( unsigned int id )
@@ -99,19 +99,17 @@ public:
 
     inline type*    Allocate()
     {
-        unsigned int n;
-
-        if ( m_active == m_max )
-            return NULL;
-
-        for (n=0; n<m_max; n++)
+        for ( unsigned int n = m_lastUsed; n < m_max; n++ )
         {
-            if ( !(m_flags[n] & 0x80) )
+            // If slot is used, we skip
+            if ( !( m_flags[n] & 0x80 ) )
                 continue;
 
+            // Mark slot as used
             m_flags[n] &= ~0x80;
 
-            m_active++;
+            // Next iteration we start from next slot
+            m_lastUsed = n + 1;
             return GetOffset( n );
         }
 
@@ -128,7 +126,7 @@ public:
         return ((unsigned int)entity - (unsigned int)m_pool) / size;
     }
 
-    bool            IsValid( type *entity )
+    bool    IsValid( type *entity )
     {
         return entity >= m_pool && GetIndex( entity ) < m_max;
     }
@@ -142,7 +140,9 @@ public:
             return;
 
         m_flags[id] |= 0x80;
-        m_active--;
+        
+        if ( id < m_lastUsed )
+            m_lastUsed = id;
     }
 
     void    Free( type *entity )
@@ -152,12 +152,21 @@ public:
 
     bool    Full()
     {
-        return m_active == m_max;
+        return GetCount() == GetMax();
     }
 
     unsigned int    GetCount()
     {
-        return m_active;
+        // Count all occupied slots in this pool
+        unsigned int count = 0;
+
+        for ( unsigned int n = 0; n < m_max; n++ )
+        {
+            if ( !( m_flags[n] & 0x80 ) )
+                count++;
+        }
+
+        return count;
     }
 
     unsigned int    GetMax()
@@ -168,7 +177,7 @@ public:
     type*           m_pool;
     unsigned char*  m_flags;
     unsigned int    m_max;
-    unsigned int    m_active;
+    unsigned int    m_lastUsed;
     bool            m_poolActive;
 };
 
