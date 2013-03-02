@@ -362,7 +362,8 @@ void CClientObject::Create()
             g_pMultiplayer->AllowCreatedObjectsInVerticalLineTest( !CClientObjectManager::IsBreakableModel( m_usModel ) );
 
             // Create the object
-            m_pObject = g_pGame->GetPools()->AddObject( m_usModel );
+            //m_pObject = g_pGame->GetPools()->AddObject( m_usModel );
+            m_pObject = NULL;
 
             // Restore default behaviour
             g_pMultiplayer->AllowCreatedObjectsInVerticalLineTest( false );
