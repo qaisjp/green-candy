@@ -324,9 +324,9 @@ CClientGame::~CClientGame()
         CClientVehicle* pVehicle = pPlayer->GetOccupiedVehicle();
 
         if ( pVehicle )
-            delete pVehicle;
+            pVehicle->Delete();
 
-        delete pPlayer;
+        pPlayer->Delete();
     }
 #endif
 
@@ -1317,9 +1317,9 @@ void CClientGame::SetMimic ( unsigned int uiMimicCount )
         CClientPlayer* pPlayer = m_Mimics.back ();
         CClientVehicle* pVehicle = pPlayer->GetOccupiedVehicle ();
         if ( pVehicle )
-            delete pVehicle;
+            pVehicle->Delete();
 
-        delete pPlayer;
+        pPlayer->Delete();
         m_Mimics.pop_back ();
     }
 }
@@ -3033,7 +3033,7 @@ void CClientGame::UpdateMimics ( void )
 
                     if ( pMimicVehicle && pMimicVehicle->GetModel () != uiModel )
                     {
-                        delete pMimicVehicle;
+                        pMimicVehicle->Delete();
                         pMimicVehicle = NULL;
                     }
 
@@ -3091,7 +3091,7 @@ void CClientGame::UpdateMimics ( void )
 
                         if ( pMimicTrailer && pMimicTrailer->GetModel () != uiModel )
                         {
-                            delete pMimicTrailer;
+                            pMimicTrailer->Delete();
                             pMimicTrailer = NULL;
                         }
 
@@ -3117,7 +3117,7 @@ void CClientGame::UpdateMimics ( void )
                 else if ( pMimicVehicle )
                 {
                     pMimic->RemoveFromVehicle ();
-                    delete pMimicVehicle;
+                    pMimicVehicle->Delete();
                 }
             }
         }
@@ -3142,7 +3142,7 @@ void CClientGame::DoPaintballs ( void )
         if ( paintBalls.size () >= 5 )
         {
             CClientMarker * pCorona = paintBalls.back ();
-            delete pCorona;
+            pCorona->Delete();
             paintBalls.pop_back ();
         }
 
