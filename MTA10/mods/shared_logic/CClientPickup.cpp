@@ -184,7 +184,8 @@ void CClientPickup::Destroy()
 {
     if ( m_pCollision )
     {
-        delete m_pCollision;
+        m_pCollision->Delete();
+
         m_pCollision = NULL;
     }
 

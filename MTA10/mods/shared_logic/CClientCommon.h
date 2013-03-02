@@ -51,10 +51,6 @@ enum eHTTPDownloadType
     HTTP_DOWNLOAD_ENABLED_URL
 };
 
-// Utility macros
-#define SAFE_DELETE(p) { if(p) { delete (p); (p)=NULL; } }
-#define SAFE_DELETE_CAST(p,c) { if (p) { delete static_cast<c>(p); (p)=NULL; } }
-
 #ifndef PI
 #define PI 3.14159265358979323846264338327950f
 #endif

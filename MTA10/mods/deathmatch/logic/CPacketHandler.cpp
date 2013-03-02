@@ -3422,7 +3422,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
 
                 if ( !pWater->Valid() )
                 {
-                    delete pWater;
+                    pWater->Delete();
                     pWater = NULL;
                 }
                 pEntity = pWater;
