@@ -150,9 +150,21 @@ public:
         Free( GetIndex( entity ) );
     }
 
+    bool    IsAnySlotFree()
+    {
+        for ( unsigned int n = m_lastUsed; n < m_max; n++ )
+        {
+            if ( m_flags[n] & 0x80 )
+                return true;
+        }
+
+        return false;
+    }
+
     bool    Full()
     {
-        return GetCount() == GetMax();
+        // We do not have to count all of the slots.
+        return !IsAnySlotFree();
     }
 
     unsigned int    GetCount()
