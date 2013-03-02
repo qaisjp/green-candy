@@ -726,7 +726,7 @@ bool CClientEntity::AddEvent( CLuaMain *main, const char *name, const LuaFunctio
     return m_pEventManager->Add( main, name, ref, propagated );
 }
 
-// The_GTA: use childCall sparringly, because in GREEN it's use does not make sense.
+// The_GTA: use childCall sparringly, because in Eir it's use does not make sense.
 bool CClientEntity::CallEvent( const char *name, lua_State *callee, unsigned int argCount, bool childCall )
 {
     lua_checkstack( m_lua, 1 );
