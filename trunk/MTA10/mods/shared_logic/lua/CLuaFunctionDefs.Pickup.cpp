@@ -24,6 +24,8 @@ namespace CLuaFunctionDefs
 {
     LUA_DECLARE( createPickup )
     {
+        return 0;
+
         CVector pos;
         unsigned char type;
         double weaponOrAmmo;
