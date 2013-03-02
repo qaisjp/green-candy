@@ -548,6 +548,8 @@ void LuaManager::DoPulse()
 {
     std::list <LuaMain*>::const_iterator iter;
 
+    // List integrity cannot be broken by managed Lua code because Resources can only
+    // be terminated by packets. They are called by netc.dll
     for ( iter = IterBegin(); iter != IterEnd(); iter++ )
         (*iter)->DoPulse();
 }
