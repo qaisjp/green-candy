@@ -83,6 +83,8 @@ static int methodenv_index( lua_State *L )
 
 void Class::IncrementMethodStack( lua_State *lua )
 {
+    lua_assert( !destroyed );
+
     inMethod++;
 }
 
@@ -218,16 +220,22 @@ void Class::ClearReferences( lua_State *lua )
 
 void Class::Push( lua_State *L )
 {
+    lua_assert( !destroyed );
+
     setjvalue( L, L->top++, this );
 }
 
 void Class::PushMethod( lua_State *L, const char *key )
 {
+    lua_assert( !destroyed );
+
     setobj( L, L->top++, luaH_getstr( methods, luaS_new( L, key ) ) );
 }
 
 void Class::SetTransmit( int type, void *entity )
 {
+    lua_assert( !destroyed );
+
 	unsigned int idx = transCount++;
 
 	// Grow the array
@@ -297,6 +305,8 @@ bool Class::IsDestroyed() const
 
 bool Class::IsRootedIn( Class *root ) const
 {
+    lua_assert( !destroyed );
+
     Class *elder = parent;
 
     while ( elder )
@@ -317,16 +327,22 @@ bool Class::IsRootedIn( lua_State *L, int idx ) const
 
 void Class::PushEnvironment( lua_State *L )
 {
+    lua_assert( !destroyed );
+
     sethvalue( L, L->top++, env );
 }
 
 void Class::PushOuterEnvironment( lua_State *L )
 {
+    lua_assert( !destroyed );
+
     sethvalue( L, L->top++, outenv );
 }
 
 void Class::PushChildAPI( lua_State *L )
 {
+    lua_assert( !destroyed );
+
     if ( !parent )
     {
         setnilvalue( L->top++ );
@@ -338,6 +354,8 @@ void Class::PushChildAPI( lua_State *L )
 
 void Class::PushParent( lua_State *L )
 {
+    lua_assert( !destroyed );
+
     if ( !parent )
     {
         setnilvalue( L->top++ );
@@ -1476,9 +1494,6 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     c->next = G(L)->mainthread->next;
     G(L)->mainthread->next = c;
 
-    Table *meta = luaH_new( L, 0, 0 );
-    Table *outmeta = luaH_new( L, 0, 0 );
-
     c->tt = LUA_TCLASS;
     c->marked = luaC_white( G(L) ); // do not collect
     c->destroyed = false;
@@ -1499,6 +1514,10 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     c->storage = luaH_new( L, 0, 0 );
     c->methods = luaH_new( L, 0, 0 );
     c->internStorage = luaH_new( L, 0, 0 );
+
+    // Link up the metatables
+    Table *meta = luaH_new( L, 0, 0 );
+    Table *outmeta = luaH_new( L, 0, 0 );
 
     c->env->metatable = meta;
     c->outenv->metatable = outmeta;

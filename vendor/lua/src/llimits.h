@@ -59,7 +59,7 @@ typedef LUAI_UACNUMBER l_uacNumber;
 
 #else
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(_LUA_RUNTIME_FEEDBACK)
 #include "assert.h"
 #define lua_assert(x)       { if ( !(x) ) __asm int 3 }
 #define check_exp(c,e)		(e)
