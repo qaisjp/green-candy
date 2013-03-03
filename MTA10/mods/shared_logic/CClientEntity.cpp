@@ -189,9 +189,13 @@ static int customdata_newindex( lua_State *L )
     case LUA_TCLASS:
         if ( lua_refclass( L, 3 )->IsTransmit( LUACLASS_ENTITY ) )
             break;
-    case LUA_TFUNCTION:
+    default:
         lua_pushtype( L, 3 );
         throw lua_exception( L, LUA_ERRRUN, ( std::string( "attempt to assign invalid type to customdata: " ) + lua_getstring( L, 4 ) ).c_str() );
+    case LUA_TNUMBER:
+    case LUA_TSTRING:
+    case LUA_TTABLE:
+        break;  // allowed types
     }
 
     lua_pushvalue( L, 2 );
