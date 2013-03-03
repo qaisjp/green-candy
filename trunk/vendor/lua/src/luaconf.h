@@ -767,6 +767,14 @@ public:
 
 
 /*
+@@ _LUA_RUNTIME_FEEDBACK is a compile-time check. If defined, the runtime
+@* will use debug style feedback in release mode.
+** DEFINE OR COMMENT OUT
+*/
+#define _LUA_RUNTIME_FEEDBACK
+
+
+/*
 @@ LUA_MAXCAPTURES is the maximum number of captures that a pattern
 @* can do during pattern-matching.
 ** CHANGE it if you need more captures. This limit is arbitrary.
