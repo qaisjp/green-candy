@@ -195,6 +195,8 @@ static int customdata_newindex( lua_State *L )
     case LUA_TNUMBER:
     case LUA_TSTRING:
     case LUA_TTABLE:
+    case LUA_TNIL:
+    case LUA_TBOOLEAN:
         break;  // allowed types
     }
 
