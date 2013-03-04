@@ -769,9 +769,9 @@ public:
 /*
 @@ _LUA_RUNTIME_FEEDBACK is a compile-time check. If defined, the runtime
 @* will use debug style feedback in release mode.
-** DEFINE OR COMMENT OUT
+** DEFINE or COMMENT OUT
 */
-#define _LUA_RUNTIME_FEEDBACK
+//#define _LUA_RUNTIME_FEEDBACK
 
 
 /*
