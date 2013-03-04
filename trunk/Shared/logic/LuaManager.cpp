@@ -27,6 +27,9 @@
 #define HOOK_INSTRUCTION_COUNT 1000000
 #define HOOK_MAXIMUM_TIME 5000
 
+// We want to use a seperate OS heap
+#define LUA_ISOLATE_OS_RESOURCES
+
 ResourceManager* LuaManager::m_resMan = NULL;
 lua_State *g_L = NULL;
 LuaManager *g_luaManager = NULL;
@@ -108,12 +111,54 @@ static int lua_gcextend_event( lua_State *L )
     return 0;
 }
 
+struct _memAllocatorInfo
+{
+    HANDLE heap;
+};
+
+static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
+  (void)ud;
+  (void)osize;
+  if (nsize == 0) {
+    free(ptr);
+    return NULL;
+  }
+  else
+    return realloc(ptr, nsize);
+}
+
+static void* _lua_allocate( _memAllocatorInfo *info, void *ptr, size_t, size_t nsize )
+{
+    if ( nsize == 0 )
+    {
+        HeapFree( info->heap, 0, ptr );
+        return NULL;
+    }
+    else if ( ptr == NULL )
+    {
+        return HeapAlloc( info->heap, 0, nsize );
+    }
+
+    return HeapReAlloc( info->heap, 0, ptr, nsize );
+}
+
 LuaManager::LuaManager( Events& events, ScriptDebugging& debug ) :
     m_events( events ),
     m_debug( debug )
 {
     // Setup the virtual machine
+#ifdef LUA_ISOLATE_OS_RESOURCES
+    _memAllocatorInfo *info = new _memAllocatorInfo;
+    info->heap = HeapCreate( 0, 0, 0 );
+
+    m_privateAllocator = info;
+
+    g_L = m_lua = lua_newstate( (lua_Alloc)_lua_allocate, info );
+#else
+    m_privateAllocator = NULL;
+
     g_L = m_lua = luaL_newstate();
+#endif
 
 	// Register ourselves
 	g_luaManager = this;
@@ -161,6 +206,13 @@ LuaManager::~LuaManager()
     // TODO: analyze that every virtual machine really gets destroyed
 
     Shutdown();
+
+#ifdef LUA_ISOLATE_OS_RESOURCES
+    _memAllocatorInfo *info = (_memAllocatorInfo*)m_privateAllocator;
+    HeapDestroy( info->heap );
+
+    delete info;
+#endif
 }
 
 void LuaManager::PushStatus( const LuaMain& main )
@@ -448,7 +500,7 @@ void LuaManager::Init( LuaMain *lua )
 
     // Prepare special globals
     m_resMan->PushStack( thread );
-    lua_setfield( thread, LUA_GLOBALSINDEX, "root" );
+    lua_setfield( thread, LUA_GLOBALSINDEX, "archRoot" );
 
     // Setup libraries
     luaopen_base( thread );

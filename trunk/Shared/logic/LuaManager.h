@@ -249,6 +249,8 @@ protected:
     std::list <LuaMain*>            m_structures;
 
 	RwList <LuaClass>				m_gcList;
+
+    void*                           m_privateAllocator;
 };
 
 // quick macros
