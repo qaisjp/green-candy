@@ -65,7 +65,7 @@ public:
     bool                    SetCommandActive( const char* szKey, const char* szCommand, bool bState, const char* szArguments, const char* szResource, bool bActive, bool checkHitState );
     void                    SetAllCommandsActive( const char* szResource, bool bActive, const char* szCommand = NULL, bool bState = true, const char* szArguments = NULL, bool checkHitState = false );
     CCommandBind*           GetBindFromCommand( const char* szCommand, const char* szArguments = NULL, bool bMatchCase = true, const char* szKey = NULL, bool bCheckHitState = false, bool bState = NULL );
-    void                    GetBoundCommands( const char* szCommand, std::list < CCommandBind * > & commandsList );
+    void                    ForAllBoundCommands( const char *cmd, cmdIterCallback_t cb, void *ud );
     
     // Control-bind funcs
     void                    AddGTAControl( const char* szKey, const char* szControl );
@@ -78,7 +78,7 @@ public:
     bool                    GTAControlExists( const SBindableKey* pKey, SBindableGTAControl* pControl );
     void                    CallGTAControlBind( CGTAControlBind* pBind, bool bState );
     void                    CallAllGTAControlBinds( eControlType controlType, bool bState );
-    bool                    GetBoundControls( SBindableGTAControl * pControl, std::list <CGTAControlBind*>& controlsList );
+    void                    ForAllBoundControls( SBindableGTAControl *control, cntrlIterCallback_t cb, void *ud );
 
     // Control-bind extra funcs
     bool                    GetMultiGTAControlState( CGTAControlBind* pBind );
