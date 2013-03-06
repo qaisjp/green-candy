@@ -4,7 +4,7 @@
 
 #include <windows.h>
 
-#define USE_HEAP_DEBUGGING
+//#define USE_HEAP_DEBUGGING
 #include <debugsdk/dbgheap.h>
 
 #include <list>

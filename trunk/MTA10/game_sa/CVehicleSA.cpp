@@ -340,9 +340,6 @@ void CVehicleSA::Init()
     BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_DISABLESTREAMING, true );
     BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_NOSTREAM, true );
 
-    // Store our CVehicleSA pointer in the vehicle's time of creation member (as it won't get modified later and as far as I know it isn't used for anything important)
-    GetInterface()->m_vehicle = this;
-
     // Reset the car counts to 0 so that this vehicle doesn't affect the population vehicles
     for ( int i = 0; i < 5; i++ )
         *((unsigned int*)VARS_CarCounts + i) = 0;
@@ -361,8 +358,6 @@ void CVehicleSA::Init()
 CVehicleSA::~CVehicleSA()
 {
     DEBUG_TRACE("CVehicleSA::~CVehicleSA()");
-
-    GetInterface()->m_vehicle = NULL;
 
     // Remove our registration
     mtaVehicles[m_poolIndex] = NULL;
@@ -413,7 +408,7 @@ CVehicleComponent* CVehicleSA::GetComponent( const char *name )
     if ( !frame )
         return NULL;
 
-    return new CVehicleComponentSA( m_compContainer, clump, frame, ppModelInfo[GetInterface()->m_model]->m_textureDictionary );
+    return new CVehicleComponentSA( m_compContainer, clump, frame );
 }
 
 static bool RwFrameListNames( RwFrame *child, std::vector <std::string> *list )

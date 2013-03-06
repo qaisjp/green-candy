@@ -53,10 +53,10 @@ public:
     CDoorSA*                    GetDoor( unsigned char ucDoor );
 
     CTrainSAInterface*          GetNextCarriageInTrain() const                      { return GetInterface()->m_nextCarriage; }
-    CTrain*                     GetNextTrainCarriage() const                        { return (CTrainSA*)GetInterface()->m_nextCarriage->m_vehicle; }
+    CTrain*                     GetNextTrainCarriage() const;
     void                        SetNextTrainCarriage( CTrain *next );
     CTrainSAInterface*          GetPreviousCarriageInTrain() const                  { return GetInterface()->m_prevCarriage; }
-    CTrain*                     GetPreviousTrainCarriage() const                    { return (CTrainSA*)GetInterface()->m_prevCarriage->m_vehicle; }
+    CTrain*                     GetPreviousTrainCarriage() const;
     void                        SetPreviousTrainCarriage( CTrain *prev );
 
     bool                        IsDerailed() const                                  { return GetInterface()->m_trainFlags.bIsDerailed; }

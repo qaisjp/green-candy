@@ -140,3 +140,31 @@ int WINAPI DllMain( HINSTANCE hModule, DWORD dwReason, PVOID pvNothing )
 
     return TRUE;
 }
+
+//--------------------------------------------------------
+
+extern "C"
+{
+BOOL WINAPI _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
+}
+
+BOOL WINAPI _dllInit( HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved )
+{
+    switch( fdwReason )
+    {
+    case DLL_PROCESS_ATTACH:
+        DbgHeap_Init();
+        break;
+    }
+
+    BOOL ret = _DllMainCRTStartup( hinstDLL, fdwReason, lpReserved );
+
+    switch( fdwReason )
+    {
+    case DLL_PROCESS_DETACH:
+        DbgHeap_Shutdown();
+        break;
+    }
+
+    return ret;
+}

@@ -133,15 +133,12 @@ void CModelSA::Render()
     GetObject()->Render();
 }
 
-std::vector <unsigned short> CModelSA::GetImportList() const
+void CModelSA::ForAllImports( importIterCallback_t cb, void *ud )
 {
-    std::vector <unsigned short> impList;
     importMap_t::const_iterator iter = m_imported.begin();
 
     for ( ; iter != m_imported.end(); iter++ )
-        impList.push_back( (*iter).first );
-
-    return impList;
+        cb( (*iter).first, ud );
 }
 
 bool CModelSA::Replace( unsigned short id )
