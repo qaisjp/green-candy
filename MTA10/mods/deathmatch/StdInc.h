@@ -9,7 +9,7 @@
 #include <mmsystem.h>
 #include <winsock.h>
 
-#define USE_HEAP_DEBUGGING
+//#define USE_HEAP_DEBUGGING
 #include <debugsdk/dbgheap.h>
 
 #include <algorithm>

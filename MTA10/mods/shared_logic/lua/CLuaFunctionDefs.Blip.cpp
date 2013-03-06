@@ -24,8 +24,6 @@ namespace CLuaFunctionDefs
 {
     LUA_DECLARE( createBlip )
     {
-        return 0;
-
         CVector pos;
         unsigned char ucIcon, ucSize;
         SColor color;
@@ -70,8 +68,6 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( createBlipAttachedTo )
     {
-        return 0;
-
         CClientEntity *entity;
         unsigned char ucIcon, ucSize;
         SColor color;

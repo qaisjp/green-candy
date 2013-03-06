@@ -24,8 +24,6 @@ namespace CLuaFunctionDefs
 {
     LUA_DECLARE( createMarker )
     {
-        return 0;
-
         CVector pos;
         SString type;
         float size;

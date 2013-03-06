@@ -166,7 +166,7 @@
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../../vendor/cegui-0.4.0-custom/lib"
 				IgnoreDefaultLibraryNames="LIBCMT"
-				GenerateDebugInformation="false"
+				GenerateDebugInformation="true"
 				AssemblyDebug="0"
 				ProgramDatabaseFile="../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
 				GenerateMapFile="true"

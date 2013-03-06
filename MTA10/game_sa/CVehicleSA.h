@@ -525,9 +525,7 @@ public:
 
     BYTE                        m_pad5c[7];                             // 1261
 
-    /*** BEGIN SECTION that was added by us ***/
-    class CVehicleSA*           m_vehicle;                              // 1268
-    /*** END SECTION that was added by us ***/
+    unsigned long               m_creationTime;                         // 1268
 
     unsigned int                m_doorState;                            // 1272
 

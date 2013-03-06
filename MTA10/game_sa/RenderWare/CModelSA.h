@@ -38,7 +38,8 @@ public:
     CModel*                         Clone() const;
     void                            Render();
 
-    std::vector <unsigned short>    GetImportList() const;
+    unsigned int                    GetImportCount() const          { return m_imported.size(); }
+    void                            ForAllImports( importIterCallback_t cb, void *ud );
 
     bool                            Replace( unsigned short id );
     bool                            IsReplaced( unsigned short id ) const;

@@ -20,6 +20,9 @@
 #include <winsock.h>
 #include <conio.h>
 
+//#define USE_HEAP_DEBUGGING
+#include <debugsdk/dbgheap.h>
+
 #include <list>
 #include <vector>
 #include <map>

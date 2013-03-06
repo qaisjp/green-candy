@@ -60,6 +60,11 @@ void CTrainSA::SetMoveSpeed( const CVector& vecMoveSpeed )
 #endif
 }
 
+CTrain* CTrainSA::GetNextTrainCarriage() const
+{
+    return (CTrainSA*)pGame->GetPools()->GetVehicle( GetInterface()->m_nextCarriage );
+}
+
 void CTrainSA::SetNextTrainCarriage( CTrain *next )
 {
     CTrainSA *veh = dynamic_cast <CTrainSA*> ( next );
@@ -74,6 +79,11 @@ void CTrainSA::SetNextTrainCarriage( CTrain *next )
 
     if ( veh->GetPreviousTrainCarriage() != this )
         veh->SetPreviousTrainCarriage( this );
+}
+
+CTrain* CTrainSA::GetPreviousTrainCarriage() const
+{
+    return (CTrainSA*)pGame->GetPools()->GetVehicle( GetInterface()->m_prevCarriage );
 }
 
 void CTrainSA::SetPreviousTrainCarriage( CTrain *previous )

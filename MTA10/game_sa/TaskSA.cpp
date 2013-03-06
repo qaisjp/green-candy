@@ -60,7 +60,7 @@ CTaskSA::CTaskSA()
 {
     DEBUG_TRACE("CTaskSA::CTaskSA()");
 
-    m_parent = NULL;;
+    m_parent = NULL;
     m_interface = NULL;
 }
 

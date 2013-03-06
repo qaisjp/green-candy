@@ -92,6 +92,7 @@
 				ProgramDatabaseFile=".\Debug/core_.pdb"
 				GenerateMapFile="false"
 				MapFileName=""
+				EntryPointSymbol="_dllInit"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary="C:/LIB.LIB"
@@ -198,6 +199,7 @@
 				MapExports="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="_dllInit"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary=".\Release/mta_blue.lib"
@@ -304,6 +306,7 @@
 				MapExports="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="_dllInit"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary=".\Release/mta_blue.lib"
@@ -792,6 +795,14 @@
 				</File>
 				<File
 					RelativePath="..\..\Shared\core\CFileSystem.zip.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="debugsdk"
+				>
+				<File
+					RelativePath="..\..\Shared\debugsdk\dbgheap.cpp"
 					>
 				</File>
 			</Filter>
@@ -1911,6 +1922,14 @@
 						>
 					</File>
 				</Filter>
+			</Filter>
+			<Filter
+				Name="debugsdk"
+				>
+				<File
+					RelativePath="..\..\Shared\debugsdk\dbgheap.h"
+					>
+				</File>
 			</Filter>
 		</Filter>
 	</Files>

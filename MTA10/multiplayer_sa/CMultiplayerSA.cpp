@@ -2915,7 +2915,7 @@ train_would_derail:
     }
 
     // At this point we know that GTA wants to derail the train
-    if ( dynamic_cast <CTrainSA*> ( pDerailingTrain->m_vehicle )->IsDerailable () )
+    if ( dynamic_cast <CTrainSA*> ( pGameInterface->GetPools()->GetVehicle( pDerailingTrain ) )->IsDerailable () )
     {
         // Go back to the derailment code
         _asm
@@ -3043,7 +3043,7 @@ static RpAtomic* CVehicle_EAEG ( RpAtomic* pAtomic, void* )
 
 static void SetVehicleAlpha()
 {
-    CAutomobile *car = dynamic_cast <CAutomobileSA*> ( ((CVehicleSAInterface*)dwAlphaEntity)->m_vehicle );
+    CAutomobile *car = dynamic_cast <CAutomobile*> ( pGameInterface->GetPools()->GetVehicle( (CVehicleSAInterface*)dwAlphaEntity ) );
 
     if ( !car )
         return;
@@ -3673,7 +3673,7 @@ unsigned char ucDriveType = '4';
 void GetVehicleDriveType()
 {
     //Get the car drive type from the Vehicle interface
-    ucDriveType = static_cast<unsigned char> ( pHandlingDriveTypeVeh->m_vehicle->GetHandlingData()->GetCarDriveType() );
+    ucDriveType = static_cast<unsigned char> ( pGameInterface->GetPools()->GetVehicle( pHandlingDriveTypeVeh )->GetHandlingData()->GetCarDriveType() );
 }
 
 void _declspec(naked) HOOK_isVehDriveTypeNotRWD ()
@@ -5819,7 +5819,7 @@ void* SetModelSuspensionLinesToVehiclePrivate ( CVehicleSAInterface* pVehicleInt
 {
     // Set the per-model suspension line data of the vehicle's model to the per-vehicle
     // suspension line data so that collision processing will use that instead.
-    CAutomobile* pVehicle = dynamic_cast <CAutomobile*> ( pVehicleIntf->m_vehicle );
+    CAutomobile* pVehicle = dynamic_cast <CAutomobile*> ( pGameInterface->GetPools()->GetVehicle( pVehicleIntf ) );
     CModelInfo* pModelInfo = pGameInterface->GetModelInfo ( pVehicle->GetModelIndex () );
 
     if ( pVehicle )
@@ -5830,7 +5830,7 @@ void* SetModelSuspensionLinesToVehiclePrivate ( CVehicleSAInterface* pVehicleInt
 
 void SetModelSuspensionLines ( CVehicleSAInterface* pVehicleIntf, void* pSuspensionLines )
 {
-    CModelInfo* pModelInfo = pGameInterface->GetModelInfo ( pVehicleIntf->m_vehicle->GetModelIndex () );
+    CModelInfo* pModelInfo = pGameInterface->GetModelInfo ( pVehicleIntf->m_model );
     pModelInfo->SetVehicleSuspensionData ( pSuspensionLines );
 }
 
@@ -5840,20 +5840,13 @@ bool bSuspensionChanged = false;
 CVehicleSAInterface* pSuspensionInterface = NULL;
 bool CheckHasSuspensionChanged ( void )
 {
-    // Make sure we have a valid suspension interface
-    if ( pSuspensionInterface )
-    {
-        // TODO
-        // Check our suspension interface has a valid vehicle and return the suspension changed marker
-        CVehicle* pVehicle = pSuspensionInterface->m_vehicle;
-        if ( pVehicle )
-            return false;//pVehicle->GetHandlingData()->HasSuspensionChanged ( );
-        else
-            return false;
-    }
+    // TODO
+    // Check our suspension interface has a valid vehicle and return the suspension changed marker
+    CVehicle *pVehicle = pGameInterface->GetPools()->GetVehicle( pSuspensionInterface );
+    if ( pVehicle )
+        return false;//pVehicle->GetHandlingData()->HasSuspensionChanged ( );
     else
         return false;
-
 }
 void _declspec(naked) HOOK_ProcessVehicleCollision ()
 {

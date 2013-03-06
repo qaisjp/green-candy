@@ -18,7 +18,7 @@ typedef std::map <std::string, class CVehicleComponentSA*> vehComponents_t;
 class CVehicleComponentSA : public CVehicleComponent
 {
 public:
-                                CVehicleComponentSA( vehComponents_t& container, RpClump *clump, RwFrame *item, unsigned short txdID );
+                                CVehicleComponentSA( vehComponents_t& container, RpClump *clump, RwFrame *item );
                                 ~CVehicleComponentSA();
 
     const char*                 GetName() const;
@@ -43,9 +43,6 @@ public:
     RwFrame*                    m_frame;
     
     vehComponents_t&            m_container;
-    
-protected:
-    unsigned short              m_txdID;
 };
 
 #endif //_VEHICLE_COMPONENT_SA_

@@ -13,11 +13,10 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-CVehicleComponentSA::CVehicleComponentSA( vehComponents_t& container, RpClump *clump, RwFrame *item, unsigned short txdID ) : m_container( container )
+CVehicleComponentSA::CVehicleComponentSA( vehComponents_t& container, RpClump *clump, RwFrame *item ) : m_container( container )
 {
     m_clump = clump;
     m_frame = item;
-    m_txdID = txdID;
 
     container[item->m_nodeName] = this;
 }

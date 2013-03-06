@@ -568,8 +568,6 @@ namespace LuaFunctionDefs
 
     LUA_DECLARE( setTimer )
     {
-        return 0;
-
         luaL_checktype( L, 1, LUA_TFUNCTION );
         luaL_checktype( L, 2, LUA_TNUMBER );
         luaL_checktype( L, 3, LUA_TNUMBER );

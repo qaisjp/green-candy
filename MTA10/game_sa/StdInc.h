@@ -8,6 +8,11 @@
 #include <stdio.h>
 #include <assert.h>
 
+#define USE_HEAP_DEBUGGING
+//#define USE_FULL_PAGE_HEAP
+//#define PAGE_HEAP_INTEGRITY_CHECK
+#include <debugsdk/dbgheap.h>
+
 #include <algorithm>
 #include <list>
 #include <map>

@@ -106,22 +106,31 @@ static LUA_DECLARE( isReplaced )
     return 1;
 }
 
+struct _addImpIterStruct
+{
+    lua_State *L;
+    int n;
+};
+
+static void _DFF_ListImports( unsigned short id, _addImpIterStruct *info )
+{
+    lua_pushnumber( info->L, id );
+    lua_rawseti( info->L, 1, info->n++ );
+}
+
 static LUA_DECLARE( getReplaced )
 {
     lua_settop( L, 0 );
 
-    std::vector <unsigned short> impList = ((CClientDFF*)lua_getmethodtrans( L ))->m_model.GetImportList();
-    std::vector <unsigned short>::const_iterator iter = impList.begin();
-    int n = 1;
+    CClientDFF *dff = (CClientDFF*)lua_getmethodtrans( L );
 
-    lua_createtable( L, impList.size(), 0 );
+    _addImpIterStruct info;
+    info.n = 1;
+    info.L = L;
 
-    for ( ; iter != impList.end(); iter++ )
-    {
-        lua_pushnumber( L, *iter );
-        lua_rawseti( L, 1, n++ );
-    }
+    lua_createtable( L, dff->m_model.GetImportCount(), 0 );
 
+    dff->m_model.ForAllImports( (CModel::importIterCallback_t)_DFF_ListImports, &info );
     return 1;
 }
 
@@ -285,18 +294,19 @@ void CClientDFF::RestoreModels()
     m_model.RestoreAll();
 }
 
+static void _DFF_RestreamImport( unsigned short id, void *ud )
+{
+    g_pClientGame->GetManager()->Restream( id );
+}
+
 void CClientDFF::RestreamAll() const
 {
-    std::vector <unsigned short> impList = m_model.GetImportList();
-    std::vector <unsigned short>::iterator iter = impList.begin();
-
-    for ( ; iter != impList.end(); iter++ )
-        g_pClientGame->GetManager()->Restream( *iter );
+    m_model.ForAllImports( _DFF_RestreamImport, NULL );
 }
 
 void CClientDFF::MarkGC( lua_State *L )
 {
-    if ( m_model.GetImportList().size() != 0 )
+    if ( m_model.GetImportCount() != 0 )
     {
         LuaClass::MarkGC( L );
         return;
