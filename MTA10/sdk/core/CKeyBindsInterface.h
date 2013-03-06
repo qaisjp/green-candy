@@ -265,6 +265,9 @@ public:
     virtual binds_t::const_iterator IterBegin() = 0;
     virtual binds_t::const_iterator IterEnd() = 0;
 
+    typedef void (*cmdIterCallback_t)( CCommandBind *bind, void *ud );
+    typedef void (*cntrlIterCallback_t)( CGTAControlBind *bind, void *ud );
+
     // Command-bind funcs
     virtual bool                    AddCommand( const char* szKey, const char* szCommand, const char* szArguments = NULL, bool bState = true, const char* szResource = NULL, bool bAltKey = false ) = 0;
     virtual bool                    AddCommand( const SBindableKey* pKey, const char* szCommand, const char* szArguments = NULL, bool bState = true ) = 0;
@@ -272,11 +275,11 @@ public:
     virtual bool                    SetCommandActive( const char* szKey, const char* szCommand, bool bState, const char* szArguments, const char* szResource, bool bActive, bool checkHitState ) = 0;
     virtual void                    SetAllCommandsActive( const char* szResource, bool bActive, const char* szCommand = NULL, bool bState = true, const char* szArguments = NULL, bool checkHitState = false ) = 0;
     virtual CCommandBind*           GetBindFromCommand( const char* szCommand, const char* szArguments = NULL, bool bMatchCase = true, const char* szKey = NULL, bool bCheckHitState = false, bool bState = NULL ) = 0;
-    virtual void                    GetBoundCommands( const char* szCommand, std::list < CCommandBind * > & commandsList ) = 0;
+    virtual void                    ForAllBoundCommands( const char *cmd, cmdIterCallback_t cb, void *ud ) = 0;
 
     // Control-bind funcs
     virtual void                    CallAllGTAControlBinds( eControlType controlType, bool bState ) = 0;
-    virtual bool                    GetBoundControls( SBindableGTAControl * pControl, std::list < CGTAControlBind * > & controlsList ) = 0;
+    virtual void                    ForAllBoundControls( SBindableGTAControl *control, cntrlIterCallback_t cb, void *ud ) = 0;
 
     virtual bool                    GetMultiGTAControlState( CGTAControlBind* pBind ) = 0;
     virtual bool                    IsControlEnabled( const char* szControl ) = 0;

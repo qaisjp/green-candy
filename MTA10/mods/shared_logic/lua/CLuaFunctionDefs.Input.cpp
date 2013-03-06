@@ -276,6 +276,19 @@ namespace CLuaFunctionDefs
         lua_pushboolean ( L, false );
         return 1;
     }
+    
+    typedef std::list <CCommandBind*> cmdList_t;
+    typedef std::list <CGTAControlBind*> ctrlList_t;
+
+    static void _cmdIterCallback( CCommandBind *bind, cmdList_t *list )
+    {
+        list->push_back( bind );
+    }
+
+    static void _ctrlIterCallback( CGTAControlBind *bind, ctrlList_t *list )
+    {
+        list->push_back( bind );
+    }
 
     LUA_DECLARE( getBoundKeys )
     {
@@ -286,8 +299,9 @@ namespace CLuaFunctionDefs
             // Did we find a control matching the string given?
             if ( pControl )
             {
-                list < CGTAControlBind * > controlBinds;
-                g_pCore->GetKeyBinds ()->GetBoundControls ( pControl, controlBinds );
+                ctrlList_t controlBinds;
+                g_pCore->GetKeyBinds()->ForAllBoundControls( pControl, (CKeyBindsInterface::cntrlIterCallback_t)_ctrlIterCallback, &controlBinds );
+
                 if ( !controlBinds.empty () )
                 {
                     lua_newtable ( L );
@@ -306,8 +320,9 @@ namespace CLuaFunctionDefs
             // If not, assume its a command
             else
             {
-                list < CCommandBind * > commandBinds;
-                g_pCore->GetKeyBinds ()->GetBoundCommands ( szControl, commandBinds );
+                cmdList_t commandBinds;
+                g_pCore->GetKeyBinds ()->ForAllBoundCommands( szControl, (CKeyBindsInterface::cmdIterCallback_t)_cmdIterCallback, &commandBinds );
+
                 if ( !commandBinds.empty () )
                 {
                     lua_newtable ( L );

@@ -271,7 +271,7 @@ LUAI_FUNC void luaE_newenvironment( lua_State *L )
 {
     Table *g = luaH_new( L, 0, 2 );
     sethvalue( L, gt(L), g );
-    luaC_objbarrier( L, g, L );
+    luaC_objbarriert( L, g, L );
 
     for ( unsigned int n = 0; n < NUM_TAGS; n++ )
         L->mt[n] = NULL;

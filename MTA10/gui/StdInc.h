@@ -3,11 +3,14 @@
 #include <CEGUI.h>
 
 #include <windows.h>
+
+#define USE_HEAP_DEBUGGING
+#include <debugsdk/dbgheap.h>
+
 #include <list>
 #include <map>
 #include <string>
 #include <vector>
-
 
 #include <google/dense_hash_map>
 

@@ -82,6 +82,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/Client_d.pdb"
 				SubSystem="2"
+				EntryPointSymbol="_dllInit"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary=".\Debug/Client.lib"
@@ -181,6 +182,7 @@
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				LinkTimeCodeGeneration="1"
+				EntryPointSymbol="_dllInit"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary=".\Release/Client.lib"
@@ -279,6 +281,7 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="_dllInit"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary=".\Release/Client.lib"
@@ -1874,6 +1877,14 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="debugsdk"
+				>
+				<File
+					RelativePath="..\..\..\Shared\debugsdk\dbgheap.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -2933,6 +2944,14 @@
 				</File>
 				<File
 					RelativePath="..\shared_logic\gui\CClientGUIWindow.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="debugsdk"
+				>
+				<File
+					RelativePath="..\..\..\Shared\debugsdk\dbgheap.h"
 					>
 				</File>
 			</Filter>

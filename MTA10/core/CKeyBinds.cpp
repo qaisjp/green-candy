@@ -722,7 +722,7 @@ CCommandBind* CKeyBinds::GetBindFromCommand( const char* szCommand, const char* 
     return NULL;
 }        
 
-void CKeyBinds::GetBoundCommands( const char *cmd, std::list <CCommandBind*>& commandsList )
+void CKeyBinds::ForAllBoundCommands( const char *cmd, cmdIterCallback_t cb, void *ud )
 {
     binds_t::iterator iter = m_list.begin();
 
@@ -734,7 +734,7 @@ void CKeyBinds::GetBoundCommands( const char *cmd, std::list <CCommandBind*>& co
         CCommandBind *pBind = (CCommandBind*)*iter;
 
         if ( pBind->m_cmd == cmd )
-            commandsList.push_back( pBind );
+            cb( pBind, ud );
     }
 }
 
@@ -1061,7 +1061,7 @@ void CKeyBinds::ResetAllGTAControlStates()
     }
 }
 
-bool CKeyBinds::GetBoundControls( SBindableGTAControl *pControl, std::list <CGTAControlBind*>& controlsList )
+void CKeyBinds::ForAllBoundControls( SBindableGTAControl *control, cntrlIterCallback_t cb, void *ud )
 {
     binds_t::iterator iter = m_list.begin();
 
@@ -1071,11 +1071,10 @@ bool CKeyBinds::GetBoundControls( SBindableGTAControl *pControl, std::list <CGTA
         {
             CGTAControlBind* pBind = (CGTAControlBind*)*iter;
 
-            if ( pBind->control == pControl )
-                controlsList.push_back ( pBind );
+            if ( pBind->control == control )
+                cb( pBind, ud );
         }
     }
-    return true;
 }
 
 bool CKeyBinds::AddFunction( const char* szKey, KeyFunctionBindHandler Handler, bool bState, bool bIgnoreGUI )
