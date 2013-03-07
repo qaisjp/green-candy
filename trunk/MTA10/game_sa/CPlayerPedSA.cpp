@@ -132,10 +132,7 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
 CPlayerPedSA::~CPlayerPedSA()
 {
     DEBUG_TRACE("CPlayerPedSA::~CPlayerPedSA()");
-}
 
-void CPlayerPedSA::OnInterfaceDestruction()
-{
     // Delete the player data
     if ( !m_bIsLocal )
         delete m_pData;

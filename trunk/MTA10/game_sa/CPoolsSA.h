@@ -34,6 +34,7 @@
 #include "CPedIntelligenceSA.h"
 #include "CPedSA.h"
 #include "CPlayerPedSA.h"
+#include "CPlayerInfoSA.h"
 #include "CCivilianPedSA.h"
 #include "CVehicleComponentSA.h"
 #include "CVehicleSA.h"
@@ -283,11 +284,13 @@ typedef CPool <CVehicleSA, MAX_VEHICLES, MAX_MTA_VEHICLE_SIZE> CMTAVehiclePool;
 typedef CPool <CPedSA, MAX_PEDS, MAX_MTA_PED_SIZE> CMTAPedPool;
 typedef CPool <CObjectSA, MAX_OBJECTS, MAX_MTA_OBJECT_SIZE> CMTAObjectPool;
 typedef CPool <CTaskSA, MAX_TASKS, 128> CMTATaskPool; // we align the tasks, please keep this size-value up-to-date!
+typedef CPool <CPlayerPedDataSAInterface, MAX_PEDS> CMTAPlayerDataPool;
 
 extern CMTAVehiclePool *mtaVehiclePool;
 extern CMTAPedPool *mtaPedPool;
 extern CMTAObjectPool *mtaObjectPool;
 extern CMTATaskPool *mtaTaskPool;
+extern CMTAPlayerDataPool *mtaPlayerDataPool;
 
 class CPoolsSA : public CPools
 {
