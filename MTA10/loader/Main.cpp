@@ -387,7 +387,11 @@ int DoLaunchGame ( LPSTR lpCmdLine )
                               NULL,
                               NULL,
                               FALSE,
+#ifdef _DEBUG
+                              CREATE_SUSPENDED | DEBUG_PROCESS,
+#else
                               CREATE_SUSPENDED,
+#endif
                               NULL,
                               NULL,
                               &siLoadee,
