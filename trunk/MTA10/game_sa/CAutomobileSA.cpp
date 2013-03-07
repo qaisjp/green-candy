@@ -207,7 +207,7 @@ CAutomobileSA::CAutomobileSA( CAutomobileSAInterface *veh ) : CVehicleSA( veh ),
 CAutomobileSA::~CAutomobileSA()
 {
     delete m_damageManager;
-    delete m_suspensionLines;
+    delete [] m_suspensionLines;
 
     DWORD dwThis = (DWORD)m_pInterface;
     DWORD dwFunc = 0x6D2460;        // CVehicle::ExtinguishCarFire

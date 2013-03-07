@@ -50,7 +50,7 @@ void RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha )
     while ( n-- )
         mats.m_data[n]->m_color.a = alphaVals[n];
 
-    delete alphaVals;
+    delete [] alphaVals;
 
     geom->flags = _flags;
 }

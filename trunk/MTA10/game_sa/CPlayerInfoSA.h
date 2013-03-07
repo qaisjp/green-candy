@@ -57,7 +57,7 @@ public:
     float   m_tarX, m_tarY;   // -1 ... 1 on screen
 };
 
-
+// WARNING: Keep this interface at SIZE=172
 class CPlayerPedDataSAInterface
 {
 public:
@@ -91,63 +91,63 @@ public:
     unsigned int            m_JustBeenSnacking : 1;             // If this bit is true we have just bought something from a vending machine
     unsigned int            m_bRequireHandleBreath : 1;
        
-    unsigned int            m_GroupStuffDisabled : 1;           // 47, if this is true the player can't recrout or give his group commands.
+    unsigned int            m_GroupStuffDisabled : 1;           // 49, if this is true the player can't recrout or give his group commands.
     unsigned int            m_GroupAlwaysFollow : 1;            // The group is told to always follow the player (used for girlfriend missions)
     unsigned int            m_GroupNeverFollow : 1;             // The group is told to always follow the player (used for girlfriend missions)
     unsigned int            m_bInVehicleDontAllowWeaponChange : 1; // stop weapon change once driveby weapon has been given
     unsigned int            m_bRenderWeapon : 1;                //  set to false during cutscenes so that knuckledusters are not rendered
 
-    long                    m_PlayerGroup;                      // 52
+    DWORD                   m_pad2;                             // 52
+    long                    m_PlayerGroup;                      // 56
 
-    unsigned int            m_AdrenalineEndTime;                // 56
-    unsigned char           m_nDrunkenness;                     // 60
-    bool                    m_bFadeDrunkenness;                 // 61
-    unsigned char           m_nDrugLevel;                       // 62
-    unsigned char           m_nScriptLimitToGangSize;           // 63
+    unsigned int            m_AdrenalineEndTime;                // 60
+    unsigned char           m_nDrunkenness;                     // 64
+    bool                    m_bFadeDrunkenness;                 // 65
+    unsigned char           m_nDrugLevel;                       // 66
+    unsigned char           m_nScriptLimitToGangSize;           // 67
     
-    float                   m_fBreath;                          // 64, for holding breath (ie underwater)
-    BYTE                    m_pad2[4];                          // 68
+    float                   m_fBreath;                          // 68, for holding breath (ie underwater)
 
     unsigned int            m_meleeAnimRef;                     // 72
     unsigned int            m_meleeAnimExtraRef;                // 76
 
-#if 0
-    float                   m_fFPSMoveHeading;                  // 76
-#endif
-    float                   m_fLookPitch;                       // 80
-    float                   m_fSkateBoardSpeed;                 // 84
-    float                   m_fSkateBoardLean;                  // 88
+    float                   m_fFPSMoveHeading;                  // 80
+    float                   m_fLookPitch;                       // 84
+    float                   m_fSkateBoardSpeed;                 // 88
+    float                   m_fSkateBoardLean;                  // 92
     
-    RpAtomic*               m_pSpecialAtomic;                   // 92
-    float                   m_fGunSpinSpeed;                    // 96
-    float                   m_fGunSpinAngle;                    // 100
+    RpAtomic*               m_pSpecialAtomic;                   // 96
+    float                   m_fGunSpinSpeed;                    // 100
+    float                   m_fGunSpinAngle;                    // 104
 
-    unsigned int            m_LastTimeFiring;                   // 104
-    unsigned int            m_nTargetBone;                      // 108
-    CVector                 m_vecTargetBoneOffset;              // 112
+    unsigned int            m_LastTimeFiring;                   // 108
+    unsigned int            m_nTargetBone;                      // 112
+    CVector                 m_vecTargetBoneOffset;              // 116
     
-    unsigned int            m_busFaresCollected;                // 124
-    bool                    m_bPlayerSprintDisabled;            // 128
-    bool                    m_bDontAllowWeaponChange;           // 129
-    bool                    m_bForceInteriorLighting;           // 130
-    unsigned short          m_DPadDownPressedInMilliseconds;    // 131
-    unsigned short          m_DPadUpPressedInMilliseconds;      // 133
+    unsigned int            m_busFaresCollected;                // 128
+    bool                    m_bPlayerSprintDisabled;            // 132
+    bool                    m_bDontAllowWeaponChange;           // 133
+    bool                    m_bForceInteriorLighting;           // 134
+    unsigned char           m_pad3;                             // 135
+    unsigned short          m_DPadDownPressedInMilliseconds;    // 136
+    unsigned short          m_DPadUpPressedInMilliseconds;      // 138
         
-    unsigned char           m_wetness;                          // 135
-    unsigned char           m_playersGangActive;                // 136
-    unsigned char           m_waterCoverPerc;                   // 137
-    float                   m_waterHeight;                      // 138
+    unsigned char           m_wetness;                          // 140
+    unsigned char           m_playersGangActive;                // 141
+    unsigned char           m_waterCoverPerc;                   // 142
+    unsigned char           m_pad4;                             // 143
+    float                   m_waterHeight;                      // 144
 
-    unsigned int            m_heatseekAimTime;                  // 142
-    CEntitySAInterface*     m_heatseekTarget;                   // 146
+    unsigned int            m_heatseekAimTime;                  // 148
+    CEntitySAInterface*     m_heatseekTarget;                   // 152
     
-    long                    m_shotBuilding;                     // 150
+    long                    m_shotBuilding;                     // 156
     
-    unsigned int            m_heatseekLockOnTime    :31;        // 154
+    unsigned int            m_heatseekLockOnTime    :31;        // 160
     unsigned int            m_heakseekLockOn        :1;
     
-    CPedSAInterface*        m_currentHooker;                    // 158
-    CPedSAInterface*        m_lastHooker;                       // 162
+    CPedSAInterface*        m_currentHooker;                    // 164
+    CPedSAInterface*        m_lastHooker;                       // 168
 };
 
 enum ePlayerState
