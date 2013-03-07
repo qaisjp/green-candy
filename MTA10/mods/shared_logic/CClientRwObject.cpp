@@ -20,7 +20,7 @@ static LUA_DECLARE( setParent )
 
     if ( lua_type( L, 1 ) != LUA_TCLASS )
     {
-        lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+        lua_pushmethodsuper( L );
 
         // If we have a root, we want to reparent to it
         if ( element.m_root )
@@ -47,7 +47,7 @@ static LUA_DECLARE( setParent )
     return 1;
 
 parent:
-    lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+    lua_pushmethodsuper( L );
     lua_pushvalue( L, 1 );
     lua_call( L, 1, 1 );
     return 1;

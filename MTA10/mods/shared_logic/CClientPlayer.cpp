@@ -36,13 +36,13 @@ static LUA_DECLARE( setParent )
         return 1;
     }
 
-    lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+    lua_pushmethodsuper( L );
     lua_pushvalue( L, 1 );
     lua_call( L, 1, 1 );
     return 1;
 }
 
-static const luaL_Reg player_interface[] =
+static const luaL_Reg player_interface_trans[] =
 {
     LUA_METHOD( setParent ),
     { NULL, NULL }
@@ -55,9 +55,7 @@ static int luaconstructor_player( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_PLAYER, player );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, player_interface, 1 );
+    j.RegisterInterfaceTrans( L, player_interface_trans, 0, LUACLASS_PLAYER );
 
     lua_pushlstring( L, "player", 6 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
