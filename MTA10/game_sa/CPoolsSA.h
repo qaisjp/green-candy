@@ -57,8 +57,8 @@ class CPool
 public:
     CPool()
     {
-        m_pool = (type*)malloc( size * max );
-        m_flags = (unsigned char*)malloc( max );
+        m_pool = (type*)new unsigned char[ size * max ];
+        m_flags = new unsigned char[ max ];
 
         m_poolActive = true;
 
@@ -93,8 +93,8 @@ public:
     {
         Clear();
 
-        free(m_pool);
-        free(m_flags);
+        delete [] (unsigned char*)m_pool;
+        delete [] m_flags;
     }
 
     inline type*    Allocate()
