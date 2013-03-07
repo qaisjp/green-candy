@@ -56,9 +56,6 @@ void CWorldSA::Add ( CEntity * pEntity )
 
     CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
 
-__try
-{
-
     if ( pEntitySA )
     {
         DWORD dwEntity = (DWORD) pEntitySA->GetInterface();
@@ -70,12 +67,6 @@ __try
             add     esp, 4
         }
     }
-
-}
-__except(1)
-{
-    __asm int 3
-}
 }
 
 

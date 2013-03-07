@@ -19,6 +19,20 @@ HANDLE g_privateHeap = NULL;
 
 #ifdef USE_FULL_PAGE_HEAP
 
+inline static void* _win32_allocMemPage( size_t memSize )
+{
+    return VirtualAlloc( NULL, memSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+}
+
+inline static void _win32_freeMemPage( void *ptr )
+{
+    MEMORY_BASIC_INFORMATION info;
+
+    assert( VirtualQuery( ptr, &info, sizeof(info) ) != 0 );
+    assert( info.State != MEM_FREE );
+    assert( VirtualFree( ptr, 0, MEM_RELEASE ) == TRUE );
+}
+
 #ifdef PAGE_HEAP_INTEGRITY_CHECK
 
 #define MEM_PAGE_MOD( bytes )   ( ( (bytes) + g_systemInfo.dwPageSize - 1 ) / g_systemInfo.dwPageSize )
@@ -36,7 +50,7 @@ struct _memOutro
 
 inline static void* _win32_allocMem( size_t memSize )
 {
-    _memIntro *mem = (_memIntro*)VirtualAlloc( NULL, memSize + sizeof(_memIntro) + sizeof(_memOutro), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+    _memIntro *mem = (_memIntro*)_win32_allocMemPage( memSize + sizeof(_memIntro) + sizeof(_memOutro) );
     _memOutro *outro = (_memOutro*)( (unsigned char*)( mem + 1 ) + memSize );
 
     // Fill memory with debug pattern
@@ -74,13 +88,13 @@ inline static void _win32_freeMem( void *ptr )
         seek++;
     }
 
-    assert( VirtualFree( intro, 0, MEM_RELEASE ) );
+    _win32_freeMemPage( intro );
 }
 
 #else
 inline static void* _win32_allocMem( size_t memSize )
 {
-    return VirtualAlloc( NULL, memSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+    return _win32_allocMemPage( memSize );
 }
 
 inline static void _win32_freeMem( void *ptr )
@@ -88,7 +102,7 @@ inline static void _win32_freeMem( void *ptr )
     if ( !ptr )
         return;
 
-    assert( VirtualFree( ptr, 0, MEM_RELEASE ) );
+    _win32_freeMemPage( ptr );
 }
 #endif  //PAGE_HEAP_INTEGRITY_CHECK
 
@@ -151,6 +165,9 @@ void DbgHeap_Init()
 {
 #ifdef USE_HEAP_DEBUGGING
     g_privateHeap = HeapCreate( 0, 0, 0 );
+
+    unsigned int info = 0;
+    HeapSetInformation( g_privateHeap, HeapCompatibilityInformation, &info, sizeof(info) );
 
     GetSystemInfo( &g_systemInfo );
 #endif
