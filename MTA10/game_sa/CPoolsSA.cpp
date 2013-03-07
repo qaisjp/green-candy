@@ -49,6 +49,7 @@ CPedAttractorPool       **ppPedAttractorPool = (CPedAttractorPool**)CLASS_CPedAt
 CMTAVehiclePool *mtaVehiclePool;
 CMTAPedPool *mtaPedPool;
 CMTAObjectPool *mtaObjectPool;
+CMTAPlayerDataPool *mtaPlayerDataPool;
 
 CPoolsSA::CPoolsSA()
 {
@@ -82,6 +83,7 @@ CPoolsSA::CPoolsSA()
 
     // Init our pools
     mtaVehiclePool = new CMTAVehiclePool;
+    mtaPlayerDataPool = new CMTAPlayerDataPool;
     mtaPedPool = new CMTAPedPool;
     mtaObjectPool = new CMTAObjectPool;
 
@@ -100,6 +102,7 @@ CPoolsSA::~CPoolsSA()
 
     delete mtaObjectPool;
     delete mtaPedPool;
+    delete mtaPlayerDataPool;
     delete mtaVehiclePool;
 
     delete *ppPtrNodeSinglePool;

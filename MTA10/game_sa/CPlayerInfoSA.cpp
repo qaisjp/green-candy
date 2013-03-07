@@ -231,3 +231,13 @@ void CPlayerInfoSA::SetLastTimeBigGunFired( unsigned int time )
 {
     m_interface->m_vehicleFireTimer = time;
 }
+
+void* CPlayerPedDataSAInterface::operator new( size_t )
+{
+    return mtaPlayerDataPool->Allocate();
+}
+
+void CPlayerPedDataSAInterface::operator delete( void *ptr )
+{
+    mtaPlayerDataPool->Free( (CPlayerPedDataSAInterface*)ptr );
+}

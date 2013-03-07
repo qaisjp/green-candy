@@ -19,7 +19,9 @@
 
 #include <game/CPlayerInfo.h>
 #include "Common.h"
-#include "CPlayerPedSA.h"
+
+class CPedSAInterface;
+class CPlayerPedSAInterface;
 
 #define FUNC_MakePlayerSafe                         0x56e870
 #define FUNC_CancelPlayerEnteringCars               0x56e860
@@ -62,6 +64,9 @@ class CPlayerPedDataSAInterface
 {
 public:
                             CPlayerPedDataSAInterface();
+
+    void* operator new( size_t );
+    void operator delete( void *ptr );
 
     void                    Serialize();
 
