@@ -62,7 +62,7 @@ static LUA_DECLARE( setParent )
     if ( ((CClientRwCamera*)lua_getmethodtrans( L ))->m_cam.IsRendering() )
         throw lua_exception( L, LUA_ERRRUN, "cannot change rwcamera parent during render focus" );
 
-    lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+    lua_pushmethodsuper( L );
     lua_insert( L, 1 );
     lua_call( L, 1, 1 );
     return 1;
@@ -100,14 +100,9 @@ static LUA_DECLARE( update )
     return 0;
 }
 
-const luaL_Reg rwcamera_interface[] =
-{
-    LUA_METHOD( setParent ),
-    { NULL, NULL }
-};
-
 const luaL_Reg rwcamera_interface_trans[] =
 {
+    LUA_METHOD( setParent ),
     LUA_METHOD( setClump ),
     LUA_METHOD( getClump ),
     LUA_METHOD( isRendering ),
@@ -123,10 +118,6 @@ static LUA_DECLARE( luaconstructor_rwcamera )
     j.SetTransmit( LUACLASS_RWCAMERA, cam );
 
     j.RegisterInterfaceTrans( L, rwcamera_interface_trans, 0, LUACLASS_RWCAMERA );
-
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, rwcamera_interface, 1 );
 
     lua_pushlstring( L, "rwcamera", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
