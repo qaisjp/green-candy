@@ -7,8 +7,7 @@
 *       The idea of the IMG Management is that we get a closer look at
 *       GTA:SA's way of loading resources from files. We want to create an indepedent
 *       loader so that we do not encounter limitations of the old system, since it has
-*       been optimized for gameplay. The problem is that TXD seem to turn corrupted if
-*       loaded frequently due to the restricted resource share management of GTA:SA.
+*       been optimized for gameplay.
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *  INSPIRATION: fastman92 <http://fastman92.tk>
 *
