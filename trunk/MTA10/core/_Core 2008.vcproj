@@ -192,7 +192,7 @@
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../../Shared/XML;../../vendor/libv2/lib;../../vendor/libpng/lib;../../vendor/zlib/lib;../../vendor/detours/lib;../../vendor/jpeg/lib;../../vendor/pthreads/lib"
 				IgnoreDefaultLibraryNames="LIBCMT"
-				GenerateDebugInformation="false"
+				GenerateDebugInformation="true"
 				ProgramDatabaseFile="../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
 				GenerateMapFile="true"
 				MapFileName="../../symbols/$(ConfigurationName)_$(SafeParentName).map"
