@@ -100,6 +100,10 @@ CResource::~CResource()
             item->Reference( refs );
             item->Delete();
         LIST_FOREACH_END
+    }
+
+    {
+        luaRefs refs;
 
         // Those are textures outside of containers, which are pretty rare
         LIST_FOREACH_BEGIN( CClientGameTexture, m_gameTextures.root, m_ownerTex )
