@@ -337,7 +337,10 @@ void CClientCheckpoint::Destroy()
 {
     // Destroy it
     if ( m_checkpoint )
+    {
         m_checkpoint->Remove();
+        m_checkpoint = NULL;
+    }
 }
 
 void CClientCheckpoint::ReCreate()

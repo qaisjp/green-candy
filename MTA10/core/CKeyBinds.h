@@ -70,7 +70,8 @@ public:
     // Control-bind funcs
     void                    AddGTAControl( const char* szKey, const char* szControl );
     bool                    AddGTAControl( const char* szKey, eControllerAction action );
-    void                    AddGTAControl( const SBindableKey* pKey, SBindableGTAControl* pControl );
+    void                    AddGTAControl( const SBindableKey *key, SBindableGTAControl *ctrl );
+    void                    AddGTAControl( const SBindableKey* pKey, SBindableGTAControl *pControl, CGTAControlStatus *status );
     bool                    RemoveGTAControl( const char* szKey, const char* szControl );
     bool                    RemoveAllGTAControls( const char* szKey );
     bool                    RemoveAllGTAControls();
@@ -82,7 +83,8 @@ public:
 
     // Control-bind extra funcs
     bool                    GetMultiGTAControlState( CGTAControlBind* pBind );
-    bool                    IsControlEnabled( const char* szControl );
+    bool                    IsControlEnabled( const char* szControl ) const;
+    bool                    IsControlEnabled( eBindableControl index ) const;
     bool                    SetControlEnabled( const char* szControl, bool bEnabled );
     void                    SetAllControlsEnabled( bool bGameControls, bool bMTAControls, bool bEnabled );
     void                    ResetGTAControlState( SBindableGTAControl * pControl );
@@ -120,10 +122,11 @@ public:
     void                    SetCharacterKeyHandler( CharacterKeyHandler Handler )                               { m_CharacterKeyHandler = Handler; }
 
     // Control/action funcs
+    void                    SetControlState( eBindableControl control, bool state );
     bool                    GetControlState( eBindableControl control ) const;
     const char*             GetControlFromAction( eControllerAction action );
     bool                    GetActionFromControl( const char* szControl, eControllerAction& action );
-    SBindableGTAControl*    GetBindableFromControl( const char* szControl );
+    SBindableGTAControl*    GetBindableFromControl( const char* szControl ) const;
     SBindableGTAControl*    GetBindableFromAction( eControllerAction action );
     SBindableGTAControl*    GetBindable( eBindableControl cntrl );
     bool                    GetBindableIndex( const std::string& name, eBindableControl& cntrl );

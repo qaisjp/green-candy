@@ -3442,6 +3442,7 @@ bool CStaticFunctionDefinitions::SetMarkerTarget ( CClientEntity& Entity, const 
                 pCheckpoint->SetDirection ( CVector ( 1.0f, 0.0f, 0.0f ) );
                 pCheckpoint->SetHasTarget ( false );
             }
+            pCheckpoint->ReCreateWithSameIdentifier();
             return true;
         }
     }
@@ -5441,11 +5442,10 @@ bool CStaticFunctionDefinitions::GetKeyState ( const char* szKey, bool& bState )
 bool CStaticFunctionDefinitions::GetControlState ( const char* szControl, bool& bState )
 {
     CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds ();
-    SBindableGTAControl* pControl = pKeyBinds->GetBindableFromControl ( szControl );
-    if ( pControl )
+    eBindableControl index;
+    if ( pKeyBinds->GetBindableIndex( szControl, index ) )
     {
-        bState = pControl->bState;
-        
+        bState = pKeyBinds->GetControlState( index );
         return true;
     }
     
@@ -5479,23 +5479,18 @@ bool CStaticFunctionDefinitions::IsControlEnabled ( const char* szControl, bool&
     return false;
 }
 
-
 bool CStaticFunctionDefinitions::SetControlState ( const char* szControl, bool bState )
 {
-    assert ( szControl );
-
     CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds ();    
-    SBindableGTAControl* pControl = pKeyBinds->GetBindableFromControl ( szControl );
-    if ( pControl )
+    eBindableControl index;
+    if ( pKeyBinds->GetBindableIndex( szControl, index ) )
     {
-        pControl->bState = bState;
-        
+        pKeyBinds->SetControlState( index, bState );
         return true;
     }
 
     return false;
 }
-
 
 bool CStaticFunctionDefinitions::ToggleControl ( const char* szControl, bool bEnabled )
 {

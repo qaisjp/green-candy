@@ -1823,10 +1823,10 @@ void CClientGame::UpdateFireKey ( void )
 {
     if ( m_pLocalPlayer )
     {
-        SBindableGTAControl * pControl = g_pCore->GetKeyBinds ()->GetBindableFromControl ( "fire" );
+        CKeyBindsInterface *keyBinds = g_pCore->GetKeyBinds();
 
         // Is our 'fire' control enabled?
-        if ( pControl->bEnabled )
+        if ( keyBinds->IsControlEnabled( CONTROL_FIRE ) )
         {          
             // ** Satchel charge detonation **
             {
@@ -1837,7 +1837,7 @@ void CClientGame::UpdateFireKey ( void )
                     if ( m_pLocalPlayer->CountProjectiles ( WEAPONTYPE_REMOTE_SATCHEL_CHARGE ) > 0 )
                     {
                         // Change the state back to false so this press doesn't do anything else
-                        pControl->bState = false;
+                        keyBinds->SetControlState( CONTROL_FIRE, false );
 
                         // Tell the server we wanna destroy our satchels
                         NetBitStreamInterface* pBitStream = g_pNet->AllocateNetBitStream ();
@@ -1856,68 +1856,67 @@ void CClientGame::UpdateFireKey ( void )
             }
 
             // Has our control state been cut short?
-            if ( !pControl->bState ) return;
+            if ( !keyBinds->GetControlState( CONTROL_FIRE ) )
+                return;
 
             // ** Stealth kill **
+            if ( m_pLocalPlayer->IsStealthAiming () )
             {
-                if ( m_pLocalPlayer->IsStealthAiming () )
+                // Do we have a target ped?
+                CClientPed * pTargetPed = m_pLocalPlayer->GetTargetedPed ();
+                if ( pTargetPed )
                 {
-                    // Do we have a target ped?
-                    CClientPed * pTargetPed = m_pLocalPlayer->GetTargetedPed ();
-                    if ( pTargetPed )
+                    // Do we have a target player?
+                    if ( IS_PLAYER ( pTargetPed ) )
                     {
-                        // Do we have a target player?
-                        if ( IS_PLAYER ( pTargetPed ) )
+                        CClientPlayer * pTargetPlayer = static_cast < CClientPlayer * > ( pTargetPed );
+                        
+                        // Is the targetted player on a team
+                        CClientTeam* pTeam = pTargetPlayer->GetTeam ();
+                        if ( pTeam )
                         {
-                            CClientPlayer * pTargetPlayer = static_cast < CClientPlayer * > ( pTargetPed );
-                            
-                            // Is the targetted player on a team
-                            CClientTeam* pTeam = pTargetPlayer->GetTeam ();
-                            if ( pTeam )
+                            // Is this friendly-fire?
+                            if ( pTargetPlayer->IsOnMyTeam ( m_pLocalPlayer ) && !pTeam->GetFriendlyFire () )
                             {
-                                // Is this friendly-fire?
-                                if ( pTargetPlayer->IsOnMyTeam ( m_pLocalPlayer ) && !pTeam->GetFriendlyFire () )
-                                {
-                                    // Change the state back to false so this press doesn't do anything else
-                                    pControl->bState = false;
-                                    return;
-                                }
+                                // Change the state back to false so this press doesn't do anything else
+                                keyBinds->SetControlState( CONTROL_FIRE, false );
+                                return;
                             }
                         }
-                        CPlayerPed * pGameTarget = static_cast < CClientPed * > ( pTargetPed )->GetGamePlayer ();
-                        if ( pGameTarget )
+                    }
+                    CPlayerPed * pGameTarget = static_cast < CClientPed * > ( pTargetPed )->GetGamePlayer ();
+                    if ( pGameTarget )
+                    {
+                        // Would GTA let us stealth kill now?
+                        if ( m_pLocalPlayer->GetGamePlayer ()->GetPedIntelligence ()->TestForStealthKill ( pGameTarget, false ) )
                         {
-                            // Would GTA let us stealth kill now?
-                            if ( m_pLocalPlayer->GetGamePlayer ()->GetPedIntelligence ()->TestForStealthKill ( pGameTarget, false ) )
+                            //Grab our local position
+                            CVector vecLocalPosition;
+                            m_pLocalPlayer->GetPosition(vecLocalPosition);
+                            
+                            //Grab the target's position
+                            CVector vecTargetPosition;
+                            pTargetPed->GetPosition(vecTargetPosition);
+
+                            //Work out an angle between the players, and set this as we initiate our knife kill
+                            float fAngle = AngleBetweenPoints2D ( vecLocalPosition, vecTargetPosition );
+                            m_pLocalPlayer->SetCurrentRotation(fAngle);
+
+                            // Change the state back to false so this press doesn't do anything else
+                            keyBinds->SetControlState( CONTROL_FIRE, false );
+
+                            lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
+                            pTargetPed->PushStack( L );
+                            if ( m_pLocalPlayer->CallEvent( "onClientPlayerStealthKill", L, 1 ) )
                             {
-                                //Grab our local position
-                                CVector vecLocalPosition;
-                                m_pLocalPlayer->GetPosition(vecLocalPosition);
-                                
-                                //Grab the target's position
-                                CVector vecTargetPosition;
-                                pTargetPed->GetPosition(vecTargetPosition);
-
-                                //Work out an angle between the players, and set this as we initiate our knife kill
-                                float fAngle = AngleBetweenPoints2D ( vecLocalPosition, vecTargetPosition );
-                                m_pLocalPlayer->SetCurrentRotation(fAngle);
-
-                                // Change the state back to false so this press doesn't do anything else
-                                pControl->bState = false;
-
-                                lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
-                                pTargetPed->PushStack( L );
-                                if ( m_pLocalPlayer->CallEvent( "onClientPlayerStealthKill", L, 1 ) )
-                                {
-                                    // Lets request a stealth kill
-                                    CBitStream bitStream;
-                                    bitStream.pBitStream->Write ( pTargetPed->GetID () );
-                                    m_pNetAPI->RPC ( REQUEST_STEALTH_KILL, bitStream.pBitStream );
-                                }
-                                else
-                                {
-                                    return;
-                                }
+                                // Lets request a stealth kill
+                                CBitStream bitStream;
+                                bitStream.pBitStream->Write ( pTargetPed->GetID () );
+                                m_pNetAPI->RPC ( REQUEST_STEALTH_KILL, bitStream.pBitStream );
+                            }
+                            else
+                            {
+                                return;
                             }
                         }
                     }
@@ -3880,9 +3879,8 @@ void CClientGame::ProcessVehicleInOutKey ( bool bPassenger )
                     return;
 
                 // Are we not holding the aim_weapon key?
-                SBindableGTAControl* pBind = g_pCore->GetKeyBinds ()->GetBindableFromControl ( "aim_weapon" );
-
-                if ( pBind && pBind->bState || m_pLocalPlayer->IsClimbing() || m_pLocalPlayer->HasJetPack() || m_pLocalPlayer->IsUsingGun() || m_pLocalPlayer->IsRunningAnimation() )
+                if ( g_pCore->GetKeyBinds()->GetControlState( CONTROL_AIM_WEAPON )
+                    || m_pLocalPlayer->IsClimbing() || m_pLocalPlayer->HasJetPack() || m_pLocalPlayer->IsUsingGun() || m_pLocalPlayer->IsRunningAnimation() )
                     return;
 
                 // Grab the closest vehicle

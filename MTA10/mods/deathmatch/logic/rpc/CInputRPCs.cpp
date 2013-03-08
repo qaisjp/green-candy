@@ -229,14 +229,10 @@ void CInputRPCs::SetControlState ( NetBitStreamInterface& bitStream )
             if ( *szControl )
             {
                 CKeyBindsInterface* pKeyBinds = g_pCore->GetKeyBinds ();
-                if ( pKeyBinds )
-                {
-                    SBindableGTAControl* pControl = pKeyBinds->GetBindableFromControl ( szControl );
-                    if ( pControl )
-                    {
-                        pControl->bState = ucState == 1;
-                    }
-                }
+                eBindableControl index;
+
+                if ( pKeyBinds->GetBindableIndex( szControl, index ) )
+                    pKeyBinds->SetControlState( index, ucState == 1 );
             }
         }
         delete [] szControl;

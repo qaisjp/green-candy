@@ -69,7 +69,7 @@ static LUA_DECLARE( isValidChild )
     // RenderWare objects have a different type of hierarchy.
     // Some objects - like RpClump - establish connections using the parenthood to a RwFrame.
     // This frame would hold all objects references in the RpClump!
-    // By default, objects cannot have children; objects should be cast at their parent frame.
+    // By default, objects cannot have children; objects should be held by their parent frame.
     return 0;
 }
 
@@ -163,7 +163,6 @@ void CClientRwObject::SetOwner( CResource *res )
     LIST_INSERT( res->m_rwObjects.root, m_ownerObjects );
 }
 
-// RenderWare objects will be kept alive by default if RW_LUA_KEEP_ALIVE is set
 void CClientRwObject::MarkGC( lua_State *L )
 {
 	if ( m_keepAlive )
