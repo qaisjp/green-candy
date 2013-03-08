@@ -28,8 +28,8 @@ public:
     const char*             GetName() const;
     unsigned int            GetHash() const;
 
-    void                    SetFiltering( bool filter )                     { BOOL_FLAG( m_texture->flags, 0x1102, filter ); }
-    bool                    IsFiltering() const                             { return IS_FLAG( m_texture->flags, 0x1102 ); }
+    void                    SetFiltering( bool filter )                     { m_texture->SetFiltering( filter ); }
+    bool                    IsFiltering() const                             { return m_texture->IsFiltering(); }
 
     RwTexture*              GetTexture()                                    { return m_texture; }
     const RwTexture*        GetTexture() const                              { return m_texture; }

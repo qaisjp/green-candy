@@ -565,6 +565,13 @@ void __cdecl FreeCOLLibrary( unsigned char collId )
     }
 }
 
+static void __cdecl PrepareTXD( RwTexDictionary *txd )
+{
+    LIST_FOREACH_BEGIN( RwTexture, txd->textures.root, TXDList )
+        item->SetFiltering( true );
+    LIST_FOREACH_END
+}
+
 bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
 {
     CModelLoadInfoSA& loadInfo = VAR_ModelLoadInfo[id];
@@ -689,15 +696,19 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
                 goto failure;
 
             loadInfo.m_eLoading = MODEL_RELOAD;
+
+            PrepareTXD( txdInst->m_txd );
         }
         else
         {
-            CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( txdId );
-
             successLoad = txdInst->LoadTXD( stream );
 
             if ( successLoad )
+            {
+                PrepareTXD( txdInst->m_txd );
+
                 txdInst->InitParent();
+            }
         }
 
         if ( !successLoad )

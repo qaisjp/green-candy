@@ -80,7 +80,7 @@ SBindableKey* CKeyBinds::GetBindableFromKey ( const char* szKey )
 }
 
 
-SBindableGTAControl* CKeyBinds::GetBindableFromControl ( const char* szControl )
+SBindableGTAControl* CKeyBinds::GetBindableFromControl ( const char* szControl ) const
 {
     SBindableGTAControl* temp = NULL;
     for ( int i = 0 ; *g_bcControls [ i ].szControl != 0 ; i++ )

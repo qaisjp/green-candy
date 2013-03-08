@@ -106,7 +106,6 @@ struct SBindableGTAControl
     char szControl [25];
     eControllerAction action;
     eControlType controlType;
-    bool bState;
     bool bEnabled;
     char* szDescription;
 };
@@ -226,19 +225,61 @@ public:
     ControlFunctionBindHandler Handler;
 };
 
+struct CGTAControlStatus
+{
+    CGTAControlStatus()
+    {
+        m_refCount = 0;
+    }
+
+    ~CGTAControlStatus()
+    {
+    }
+
+    bool    IsActive() const
+    {
+        return m_refCount != 0;
+    }
+
+    void    AddRef()
+    {
+        m_refCount++;
+    }
+
+    void    RemoveRef()
+    {
+        if ( m_refCount > 0 )
+            m_refCount--;
+    }
+
+    void    SetState( bool state )
+    {
+        m_refCount = state ? 1 : 0;
+    }
+
+    void    Reset()
+    {
+        m_refCount = 0;
+    }
+
+    unsigned int    m_refCount;
+};
+
 class CGTAControlBind : public CKeyBind
 {
 public:
-    CGTAControlBind( const SBindableKey *key, SBindableGTAControl *ctrl ) : CKeyBind( key )
+    CGTAControlBind( const SBindableKey *key, SBindableGTAControl *ctrl, CGTAControlStatus *_status ) : CKeyBind( key )
     {
         control = ctrl;
+        status = _status;
         bState = false;
         bEnabled = true;
     }
 
     eKeyBindType    GetType() const                 { return KEY_BIND_GTA_CONTROL; }
 
-    SBindableGTAControl* control;
+    SBindableGTAControl*    control;
+    CGTAControlStatus*      status;
     bool            bState;
     bool            bEnabled;
 };
@@ -282,7 +323,8 @@ public:
     virtual void                    ForAllBoundControls( SBindableGTAControl *control, cntrlIterCallback_t cb, void *ud ) = 0;
 
     virtual bool                    GetMultiGTAControlState( CGTAControlBind* pBind ) = 0;
-    virtual bool                    IsControlEnabled( const char* szControl ) = 0;
+    virtual bool                    IsControlEnabled( const char* szControl ) const = 0;
+    virtual bool                    IsControlEnabled( eBindableControl index ) const = 0;
     virtual bool                    SetControlEnabled( const char* szControl, bool bEnabled ) = 0;
     virtual void                    SetAllControlsEnabled( bool bGameControls, bool bMTAControls, bool bEnabled ) = 0;
     
@@ -318,10 +360,11 @@ public:
     virtual void                    SetCharacterKeyHandler( CharacterKeyHandler Handler ) = 0;
 
     // Control/action funcs
+    virtual void                    SetControlState( eBindableControl control, bool state ) = 0;
     virtual bool                    GetControlState( eBindableControl control ) const = 0;
     virtual const char*             GetControlFromAction( eControllerAction action ) = 0;
     virtual bool                    GetActionFromControl( const char* szControl, eControllerAction& action ) = 0;
-    virtual SBindableGTAControl*    GetBindableFromControl( const char* szControl ) = 0;
+    virtual SBindableGTAControl*    GetBindableFromControl( const char* szControl ) const = 0;
     virtual SBindableGTAControl*    GetBindableFromAction( eControllerAction action ) = 0;
     virtual SBindableGTAControl*    GetBindable( eBindableControl cntrl ) = 0;
     virtual bool                    GetBindableIndex( const std::string& name, eBindableControl& cntrl ) = 0;

@@ -423,6 +423,9 @@ public:
 
     void                        AddToDictionary( RwTexDictionary *txd );
     void                        RemoveFromDictionary();
+
+    void                        SetFiltering( bool filter )     { BOOL_FLAG( flags, 0x1102, filter ); }
+    bool                        IsFiltering() const             { return IS_FLAG( flags, 0x1102 ); }
 };
 struct RwTextureCoordinates
 {

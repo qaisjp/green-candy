@@ -28,15 +28,12 @@ bool CPlayerPedSAInterface::ShouldBeStealthAiming()
         return false;
 
     CKeyBindsInterface* pKeyBinds = core->GetKeyBinds();
-    SBindableGTAControl* pAimControl = pKeyBinds->GetBindable( CONTROL_AIM_WEAPON );
 
-    if ( !pAimControl->bState )
+    if ( !pKeyBinds->GetControlState( CONTROL_AIM_WEAPON ) )
         return false;
 
     // We need to be either crouched, walking or standing
-    SBindableGTAControl *pWalkControl = pKeyBinds->GetBindable( CONTROL_WALK );
-
-    if ( m_runState != 1 && m_runState != 4 || !pWalkControl->bState )
+    if ( m_runState != 1 && m_runState != 4 || !pKeyBinds->GetControlState( CONTROL_WALK ) )
         return false;
 
     // Do we have a target ped?

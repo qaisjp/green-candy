@@ -171,50 +171,50 @@ SBindableKey g_bkKeys[] =
 // Sync this with eBindableControl!
 SBindableGTAControl g_bcControls[] =
 {
-    { "fire",                   FIRE,                   CONTROL_FOOT,    false, true, "Fire" },
-    { "next_weapon",            NEXT_WEAPON,            CONTROL_FOOT,    false, true, "Next weapon" },
-    { "previous_weapon",        PREVIOUS_WEAPON,        CONTROL_FOOT,    false, true, "Previous weapon" },
-    { "forwards",               FORWARDS,               CONTROL_FOOT,    false, true, "Forwards" },
-    { "backwards",              BACKWARDS,              CONTROL_FOOT,    false, true, "Backwards"},
-    { "left",                   LEFT,                   CONTROL_FOOT,    false, true, "Left" },
-    { "right",                  RIGHT,                  CONTROL_FOOT,    false, true, "Right" },
-    { "zoom_in",                ZOOM_IN,                CONTROL_FOOT,    false, true, "Zoom in" },
-    { "zoom_out",               ZOOM_OUT,               CONTROL_FOOT,    false, true, "Zoom out" },
-    { "enter_exit",             ENTER_EXIT,             CONTROL_BOTH,    false, true, "Enter/Exit" },
-    { "change_camera",          CHANGE_CAMERA,          CONTROL_BOTH,    false, true, "Change camera" }, // 10
-    { "jump",                   JUMP,                   CONTROL_FOOT,    false, true, "Jump" },
-    { "sprint",                 SPRINT,                 CONTROL_FOOT,    false, true, "Sprint" },
-    { "look_behind",            LOOK_BEHIND,            CONTROL_FOOT,    false, true, "Look behind" },
-    { "crouch",                 CROUCH,                 CONTROL_FOOT,    false, true, "Crouch" },
-    { "action",                 ACTION,                 CONTROL_FOOT,    false, true, "Action" },
-    { "walk",                   WALK,                   CONTROL_FOOT,    false, true, "Walk" },
-    { "vehicle_fire",           VEHICLE_FIRE,           CONTROL_VEHICLE, false, true, "Vehicle fire" },
-    { "vehicle_secondary_fire", VEHICLE_SECONDARY_FIRE, CONTROL_VEHICLE, false, true, "Vehicle secondary fire" },
-    { "vehicle_left",           VEHICLE_LEFT,           CONTROL_VEHICLE, false, true, "Vehicle left" },
-    { "vehicle_right",          VEHICLE_RIGHT,          CONTROL_VEHICLE, false, true, "Vehicle right" }, // 20
-    { "steer_forward",          STEER_FORWARDS_DOWN,    CONTROL_VEHICLE, false, true, "Steer forwards/down" },
-    { "steer_back",             STEER_BACK_UP,          CONTROL_VEHICLE, false, true, "Steer backwards/up" },
-    { "accelerate",             ACCELERATE,             CONTROL_VEHICLE, false, true, "Accelerate" },
-    { "brake_reverse",          BRAKE_REVERSE,          CONTROL_VEHICLE, false, true, "Brake/Reverse" },
-    { "radio_next",             RADIO_NEXT,             CONTROL_VEHICLE, false, true, "Radio next" },
-    { "radio_previous",         RADIO_PREVIOUS,         CONTROL_VEHICLE, false, true, "Radio previous" },
-    { "radio_user_track_skip",  RADIO_USER_TRACK_SKIP,  CONTROL_VEHICLE, false, true, "Radio user track skip" },
-    { "horn",                   HORN,                   CONTROL_VEHICLE, false, true, "Horn" },
-    { "sub_mission",            SUB_MISSION,            CONTROL_VEHICLE, false, true, "Sub-mission" },
-    { "handbrake",              HANDBRAKE,              CONTROL_VEHICLE, false, true, "Handbrake" }, // 30
-    { "vehicle_look_left",      VEHICLE_LOOK_LEFT,      CONTROL_VEHICLE, false, true, "Vehicle look left" },
-    { "vehicle_look_right",     VEHICLE_LOOK_RIGHT,     CONTROL_VEHICLE, false, true, "Vehicle look right" },
-    { "vehicle_look_behind",    VEHICLE_LOOK_BEHIND,    CONTROL_VEHICLE, false, true, "Vehicle look behind" },
-    { "vehicle_mouse_look",     VEHICLE_MOUSE_LOOK,     CONTROL_VEHICLE, false, true, "Vehicle mouse look" },
-    { "special_control_left",   SPECIAL_CONTROL_LEFT,   CONTROL_VEHICLE, false, true, "Special control left" },
-    { "special_control_right",  SPECIAL_CONTROL_RIGHT,  CONTROL_VEHICLE, false, true, "Special control right" },
-    { "special_control_down",   SPECIAL_CONTROL_DOWN,   CONTROL_VEHICLE, false, true, "Special control down" },
-    { "special_control_up",     SPECIAL_CONTROL_UP,     CONTROL_VEHICLE, false, true, "Special control up" },
-    { "aim_weapon",             AIM_WEAPON,             CONTROL_FOOT,    false, true, "Aim weapon" },
-    { "conversation_yes",       CONVERSATION_YES,       CONTROL_FOOT,    false, true, "Conversation yes" }, // 40
-    { "conversation_no",        CONVERSATION_NO,        CONTROL_FOOT,    false, true, "Conversation no" },
-    { "group_control_forwards", GROUP_CONTROL_FORWARDS, CONTROL_FOOT,    false, true, "Group control forwards" },
-    { "group_control_back",     GROUP_CONTROL_BACK,     CONTROL_FOOT,    false, true, "Group control backwards" },
+    { "fire",                   FIRE,                   CONTROL_FOOT,    true, "Fire" },
+    { "next_weapon",            NEXT_WEAPON,            CONTROL_FOOT,    true, "Next weapon" },
+    { "previous_weapon",        PREVIOUS_WEAPON,        CONTROL_FOOT,    true, "Previous weapon" },
+    { "forwards",               FORWARDS,               CONTROL_FOOT,    true, "Forwards" },
+    { "backwards",              BACKWARDS,              CONTROL_FOOT,    true, "Backwards"},
+    { "left",                   LEFT,                   CONTROL_FOOT,    true, "Left" },
+    { "right",                  RIGHT,                  CONTROL_FOOT,    true, "Right" },
+    { "zoom_in",                ZOOM_IN,                CONTROL_FOOT,    true, "Zoom in" },
+    { "zoom_out",               ZOOM_OUT,               CONTROL_FOOT,    true, "Zoom out" },
+    { "enter_exit",             ENTER_EXIT,             CONTROL_BOTH,    true, "Enter/Exit" },
+    { "change_camera",          CHANGE_CAMERA,          CONTROL_BOTH,    true, "Change camera" }, // 10
+    { "jump",                   JUMP,                   CONTROL_FOOT,    true, "Jump" },
+    { "sprint",                 SPRINT,                 CONTROL_FOOT,    true, "Sprint" },
+    { "look_behind",            LOOK_BEHIND,            CONTROL_FOOT,    true, "Look behind" },
+    { "crouch",                 CROUCH,                 CONTROL_FOOT,    true, "Crouch" },
+    { "action",                 ACTION,                 CONTROL_FOOT,    true, "Action" },
+    { "walk",                   WALK,                   CONTROL_FOOT,    true, "Walk" },
+    { "vehicle_fire",           VEHICLE_FIRE,           CONTROL_VEHICLE, true, "Vehicle fire" },
+    { "vehicle_secondary_fire", VEHICLE_SECONDARY_FIRE, CONTROL_VEHICLE, true, "Vehicle secondary fire" },
+    { "vehicle_left",           VEHICLE_LEFT,           CONTROL_VEHICLE, true, "Vehicle left" },
+    { "vehicle_right",          VEHICLE_RIGHT,          CONTROL_VEHICLE, true, "Vehicle right" }, // 20
+    { "steer_forward",          STEER_FORWARDS_DOWN,    CONTROL_VEHICLE, true, "Steer forwards/down" },
+    { "steer_back",             STEER_BACK_UP,          CONTROL_VEHICLE, true, "Steer backwards/up" },
+    { "accelerate",             ACCELERATE,             CONTROL_VEHICLE, true, "Accelerate" },
+    { "brake_reverse",          BRAKE_REVERSE,          CONTROL_VEHICLE, true, "Brake/Reverse" },
+    { "radio_next",             RADIO_NEXT,             CONTROL_VEHICLE, true, "Radio next" },
+    { "radio_previous",         RADIO_PREVIOUS,         CONTROL_VEHICLE, true, "Radio previous" },
+    { "radio_user_track_skip",  RADIO_USER_TRACK_SKIP,  CONTROL_VEHICLE, true, "Radio user track skip" },
+    { "horn",                   HORN,                   CONTROL_VEHICLE, true, "Horn" },
+    { "sub_mission",            SUB_MISSION,            CONTROL_VEHICLE, true, "Sub-mission" },
+    { "handbrake",              HANDBRAKE,              CONTROL_VEHICLE, true, "Handbrake" }, // 30
+    { "vehicle_look_left",      VEHICLE_LOOK_LEFT,      CONTROL_VEHICLE, true, "Vehicle look left" },
+    { "vehicle_look_right",     VEHICLE_LOOK_RIGHT,     CONTROL_VEHICLE, true, "Vehicle look right" },
+    { "vehicle_look_behind",    VEHICLE_LOOK_BEHIND,    CONTROL_VEHICLE, true, "Vehicle look behind" },
+    { "vehicle_mouse_look",     VEHICLE_MOUSE_LOOK,     CONTROL_VEHICLE, true, "Vehicle mouse look" },
+    { "special_control_left",   SPECIAL_CONTROL_LEFT,   CONTROL_VEHICLE, true, "Special control left" },
+    { "special_control_right",  SPECIAL_CONTROL_RIGHT,  CONTROL_VEHICLE, true, "Special control right" },
+    { "special_control_down",   SPECIAL_CONTROL_DOWN,   CONTROL_VEHICLE, true, "Special control down" },
+    { "special_control_up",     SPECIAL_CONTROL_UP,     CONTROL_VEHICLE, true, "Special control up" },
+    { "aim_weapon",             AIM_WEAPON,             CONTROL_FOOT,    true, "Aim weapon" },
+    { "conversation_yes",       CONVERSATION_YES,       CONTROL_FOOT,    true, "Conversation yes" }, // 40
+    { "conversation_no",        CONVERSATION_NO,        CONTROL_FOOT,    true, "Conversation no" },
+    { "group_control_forwards", GROUP_CONTROL_FORWARDS, CONTROL_FOOT,    true, "Group control forwards" },
+    { "group_control_back",     GROUP_CONTROL_BACK,     CONTROL_FOOT,    true, "Group control backwards" },
 
     { "", (eControllerAction)0, (eControlType)0, false, false }
 };
@@ -247,9 +247,17 @@ SDefaultCommandBind g_dcbDefaultCommands[] =
     { "", false, NULL, NULL }
 };
 
-// Sadly we cannot trust the MTA developers with following rules.
-// We do not have access to Lua at core environment, so the rule process cannot be automatized without "isBeingDeleted".
-// This class is a damn mess.
+// There has to be a more flexible solution than the garbage disposable technique applied in CKeyBinds.
+// Making MTA:Lua a core component does not come into question; it is too dynamic. We will see about that.
+
+#define NUM_GTA_CONTROLS ( sizeof(g_bcControls) / sizeof(*g_bcControls) - 1 )
+
+static CGTAControlStatus g_controlStatus[NUM_GTA_CONTROLS];
+
+static CGTAControlStatus* GetGTAControlStatus( SBindableGTAControl *ctrl )
+{
+    return &g_controlStatus[ctrl - g_bcControls];
+}
 
 // HACK: our current shift key states
 bool bPreLeftShift = false, bPreRightShift = false;
@@ -406,13 +414,12 @@ bool CKeyBinds::ProcessKeyStroke( const SBindableKey * pKey, bool bState )
 
                     for ( ; iter != processedList.end(); iter++ )
                     {
-                        if ( pCommandBind->m_cmd == (*iter)->m_cmd )
+                        if ( pCommandBind->m_cmd == (*iter)->m_cmd &&
+                             (*iter)->bHitState == pCommandBind->bHitState &&
+                             pCommandBind->m_args == (*iter)->m_args
+                           )
                         {
-                            if ( (*iter)->bHitState == pCommandBind->bHitState )
-                            {
-                                if ( pCommandBind->m_args == (*iter)->m_args )
-                                    goto alreadyProcessed;
-                            }
+                            goto alreadyProcessed;
                         }
                     }
 
@@ -743,7 +750,7 @@ void CKeyBinds::AddGTAControl( const char *szKey, const char *szControl )
     const SBindableKey *boundKey = GetBindableFromKey( szKey );
     SBindableGTAControl *boundControl = GetBindableFromControl( szControl );
 
-    AddGTAControl( boundKey, boundControl );
+    AddGTAControl( boundKey, boundControl, GetGTAControlStatus( boundControl ) );
 }
 
 bool CKeyBinds::AddGTAControl( const char *szKey, eControllerAction action )
@@ -756,13 +763,18 @@ bool CKeyBinds::AddGTAControl( const char *szKey, eControllerAction action )
     const SBindableKey *boundKey = GetBindableFromKey ( szKey );
     SBindableGTAControl *boundControl = GetBindableFromControl ( szControl );
 
-    AddGTAControl( boundKey, boundControl );
+    AddGTAControl( boundKey, boundControl, GetGTAControlStatus( boundControl ) );
     return true;
 }
 
 void CKeyBinds::AddGTAControl( const SBindableKey *key, SBindableGTAControl *control )
 {
-    m_list.push_back( new CGTAControlBind( key, control ) );
+    AddGTAControl( key, control, GetGTAControlStatus( control ) );
+}
+
+void CKeyBinds::AddGTAControl( const SBindableKey *key, SBindableGTAControl *control, CGTAControlStatus *status )
+{
+    m_list.push_back( new CGTAControlBind( key, control, status ) );
 }
 
 bool CKeyBinds::RemoveGTAControl( const char *key, const char *control )
@@ -870,12 +882,18 @@ void CKeyBinds::CallGTAControlBind( CGTAControlBind* pBind, bool bState )
     if ( pBind->control->action == RADIO_USER_TRACK_SKIP )
         return;
 
-    // Set this binds state
-    pBind->bState = bState;
+    // Check if the state changed
+    if ( pBind->bState != bState && pBind->control->bEnabled )
+    {
+        // Update the bind's private info
+        pBind->bState = bState;
 
-    // If this control is enabled
-    if ( pBind->control->bEnabled )
-        pBind->control->bState = bState;
+        // Reference or dereference depending on state
+        if ( bState )
+            pBind->status->AddRef();
+        else
+            pBind->status->RemoveRef();
+    }
 
     // If its keydown, or there isnt another bind for this control down
     if ( bState || !GetMultiGTAControlState( pBind ) )
@@ -950,13 +968,21 @@ bool CKeyBinds::GetMultiGTAControlState( CGTAControlBind *pBind )
     return false;
 }
 
-bool CKeyBinds::IsControlEnabled( const char *control )
+bool CKeyBinds::IsControlEnabled( const char *control ) const
 {
     SBindableGTAControl *controlInfo = GetBindableFromControl( control );
     COMMANDENTRY *cmd;
     
     return controlInfo && controlInfo->bEnabled ||
         ( cmd = m_pCore->GetCommands()->Get( control, true, true ) ) && cmd->bEnabled;
+}
+
+bool CKeyBinds::IsControlEnabled( eBindableControl index ) const
+{
+    if ( index > MAX_CONTROLS-1 )
+        return false;
+
+    return g_bcControls[index].bEnabled;
 }
 
 bool CKeyBinds::SetControlEnabled ( const char* szControl, bool bEnabled )
@@ -971,7 +997,7 @@ bool CKeyBinds::SetControlEnabled ( const char* szControl, bool bEnabled )
             if ( bEnabled )
                 ResetGTAControlState ( pControl );                
             else
-                pControl->bState = false;                
+                GetGTAControlStatus( pControl )->Reset();
 
             return true;
         }
@@ -998,7 +1024,7 @@ void CKeyBinds::SetAllControlsEnabled ( bool bGameControls, bool bMTAControls, b
             temp.bEnabled = bEnabled;
 
             if ( !bEnabled )
-                temp.bState = false;
+                GetGTAControlStatus( &temp )->Reset();
         }
         if ( bEnabled )
             ResetAllGTAControlStates ();
@@ -1017,7 +1043,10 @@ void CKeyBinds::SetAllControlsEnabled ( bool bGameControls, bool bMTAControls, b
 
 void CKeyBinds::ResetGTAControlState( SBindableGTAControl *pControl )
 {
-    pControl->bState = false;
+    CGTAControlStatus *status = GetGTAControlStatus( pControl );
+
+    // Reset it
+    status->Reset();
 
     // Check if we have a bind pressed for this control
     binds_t::iterator iter = m_list.begin();
@@ -1033,8 +1062,8 @@ void CKeyBinds::ResetGTAControlState( SBindableGTAControl *pControl )
         {
             if ( pBind->bState )
             {
-                pControl->bState = true;
-                return;
+                // We are referenced
+                status->AddRef();
             }
         }
     }
@@ -1043,8 +1072,8 @@ void CKeyBinds::ResetGTAControlState( SBindableGTAControl *pControl )
 void CKeyBinds::ResetAllGTAControlStates()
 {
     // Set all our control states to false
-    for ( unsigned int i = 0; *g_bcControls[i].szControl != NULL; i++ )
-        g_bcControls[i].bState = false;
+    for ( unsigned int i = 0; i < NUM_GTA_CONTROLS; i++ )
+        g_controlStatus[i].Reset();
 
     // Go through all our control binds, if they're state is true, turn their control on
     binds_t::iterator iter = m_list.begin();
@@ -1056,7 +1085,7 @@ void CKeyBinds::ResetAllGTAControlStates()
             CGTAControlBind *pBind = (CGTAControlBind*)*iter;
 
             if ( pBind->bState )
-                pBind->control->bState = true;
+                pBind->status->AddRef();
         }
     }
 }
@@ -1563,12 +1592,20 @@ const SBindableKey* CKeyBinds::GetBindableFromMessage ( UINT uMsg, WPARAM wParam
     return NULL;
 }
 
+void CKeyBinds::SetControlState( eBindableControl control, bool state )
+{
+    if ( control > MAX_CONTROLS-1 )
+        return;
+
+    g_controlStatus[control].SetState( state );
+}
+
 bool CKeyBinds::GetControlState( eBindableControl control ) const
 {
     if ( control > MAX_CONTROLS-1 )
         return false;
 
-    return g_bcControls[control].bState;
+    return g_controlStatus[control].IsActive();
 }
 
 const char* CKeyBinds::GetControlFromAction( eControllerAction action )
@@ -1600,7 +1637,7 @@ bool CKeyBinds::GetActionFromControl( const char *control, eControllerAction& ac
     return false;
 }
 
-SBindableGTAControl* CKeyBinds::GetBindableFromControl( const char *szControl )
+SBindableGTAControl* CKeyBinds::GetBindableFromControl( const char *szControl ) const
 {
     for ( unsigned int i = 0; *g_bcControls[i].szControl != NULL; i++ )
     {
@@ -1648,13 +1685,13 @@ void CKeyBinds::SetAllControls ( bool bState )
 
 void CKeyBinds::SetAllFootControls( bool bState )
 {
-    for ( int i = 0 ; *g_bcControls [ i ].szControl != NULL ; i++ )
+    for ( unsigned int i = 0; i < NUM_GTA_CONTROLS; i++ )
     {
-        SBindableGTAControl* temp = &g_bcControls [ i ];
-        if ( temp->controlType == CONTROL_FOOT )
-        {
-            temp->bState = bState;
-        }
+        CGTAControlStatus& status = g_controlStatus[i];
+        SBindableGTAControl& temp = g_bcControls[i];
+
+        if ( temp.controlType == CONTROL_FOOT )
+            status.SetState( bState );
     }
 }
 
@@ -1662,11 +1699,11 @@ void CKeyBinds::SetAllVehicleControls( bool bState )
 {
     for ( int i = 0 ; *g_bcControls [ i ].szControl != NULL ; i++ )
     {
-        SBindableGTAControl* temp = &g_bcControls [ i ];
-        if ( temp->controlType == CONTROL_VEHICLE )
-        {
-            temp->bState = bState;
-        }
+        CGTAControlStatus& status = g_controlStatus[i];
+        SBindableGTAControl& temp = g_bcControls[i];
+
+        if ( temp.controlType == CONTROL_VEHICLE )
+            status.SetState( bState );
     }
 }
 
@@ -2112,7 +2149,7 @@ void CKeyBinds::LoadControlsFromGTA()
                 {
                     const SBindableKey* pKey = GetBindableFromGTARelative ( iKey );
                     if ( pKey )
-                        AddGTAControl ( pKey, pControl );
+                        AddGTAControl ( pKey, pControl, GetGTAControlStatus( pControl ) );
                 }
 
                 // Optional Key
@@ -2121,7 +2158,7 @@ void CKeyBinds::LoadControlsFromGTA()
                 {
                     const SBindableKey* pKey = GetBindableFromGTARelative ( iKey );
                     if ( pKey )
-                        AddGTAControl ( pKey, pControl );
+                        AddGTAControl ( pKey, pControl, GetGTAControlStatus( pControl ) );
                 }
 
                 // Mouse
@@ -2130,7 +2167,7 @@ void CKeyBinds::LoadControlsFromGTA()
                 {
                     const SBindableKey* pKey = GetBindableFromGTARelative ( iKey );
                     if ( pKey )
-                        AddGTAControl ( pKey, pControl );
+                        AddGTAControl ( pKey, pControl, GetGTAControlStatus( pControl ) );
                 }
 
                 // Joystick
@@ -2139,7 +2176,7 @@ void CKeyBinds::LoadControlsFromGTA()
                 {
                     const SBindableKey* pKey = GetBindableFromGTARelative ( GTA_KEY_JOY(iKey) );
                     if ( pKey )
-                        AddGTAControl ( pKey, pControl );
+                        AddGTAControl ( pKey, pControl, GetGTAControlStatus( pControl ) );
                 }
             }
         }
