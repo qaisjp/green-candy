@@ -75,7 +75,6 @@ RpAtomicSetGeometry_t                   RpAtomicSetGeometry                     
 RpAtomicDestroy_t                       RpAtomicDestroy                         = (RpAtomicDestroy_t)                       invalid_ptr;
 RwObjectFrameRender_t                   RwObjectFrameRender                     = (RwObjectFrameRender_t)                   invalid_ptr;
 RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 invalid_ptr;
-RwPluginRegistryReadDataChunks_t              RwPluginRegistryReadDataChunks                = (RwPluginRegistryReadDataChunks_t)              invalid_ptr;
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             invalid_ptr;
 RwTexDictionaryGetCurrent_t             RwTexDictionaryGetCurrent               = (RwTexDictionaryGetCurrent_t)             invalid_ptr;
 RwTexDictionarySetCurrent_t             RwTexDictionarySetCurrent               = (RwTexDictionarySetCurrent_t)             invalid_ptr;
@@ -122,6 +121,7 @@ RwSceneRemoveLight_t                    RwSceneRemoveLight                      
 RpPrtStdGlobalDataSetStreamEmbedded_t   RpPrtStdGlobalDataSetStreamEmbedded     = (RpPrtStdGlobalDataSetStreamEmbedded_t)   invalid_ptr;
 RwPrefetch_t                            RwPrefetch                              = (RwPrefetch_t)                            invalid_ptr;
 RwFlushLoader_t                         RwFlushLoader                           = (RwFlushLoader_t)                         invalid_ptr;
+RwPluginRegistryReadDataChunks_t        RwPluginRegistryReadDataChunks          = (RwPluginRegistryReadDataChunks_t)        invalid_ptr;
 
 /*****************************************************************************/
 /** GTA:SA function mappings                                                **/
@@ -227,7 +227,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwSceneAddClump                     = (RwSceneAddClump_t)                       0x00751350;
         RwSceneAddLight                     = (RwSceneAddLight_t)                       0x00751960;
         RwSceneRemoveLight                  = (RwSceneRemoveLight_t)                    0x007519B0;
-        RwPluginRegistryReadDataChunks      = (RwPluginRegistryReadDataChunks_t)        0x007F39C0;
+        RwPluginRegistryReadDataChunks      = (RwPluginRegistryReadDataChunks_t)        0x008089C0;
         break; 
 
     // VERSION 1.0 US ADDRESSES
