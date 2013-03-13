@@ -658,6 +658,11 @@ public:
 namespace FileSystem
 {
     // These functions are not for noobs.
+
+    // Reads the file and gives possible patterns to a callback interface.
+    // The interface may break the scan through the file and specify the location
+    // where the seek should reside at. This function is used by the .zip extension
+    // To find where the .zip stream starts at.
     template <class t, typename F>
     inline bool MappedReaderReverse( CFile& file, F f )
     {
@@ -681,6 +686,7 @@ namespace FileSystem
         return false;
     }
 
+    // Memory friendly file copy function.
     inline void StreamCopy( CFile& src, CFile& dst )
     {
         char buf[8096];
@@ -694,6 +700,8 @@ namespace FileSystem
         dst.SetSeekEnd();
     }
 
+    // Memory friendly file copy function which only copies 'cnt' bytes
+    // from src to dst.
     inline void StreamCopyCount( CFile& src, CFile& dst, size_t cnt )
     {
         size_t toRead;
@@ -711,6 +719,9 @@ namespace FileSystem
         dst.SetSeekEnd();
     }
 
+    // Function which is used to parse a source stream into
+    // an appropriate dst representation. It reads the src stream
+    // into a temporary buffer and the callback structure may modify it.
     template <class cb>
     inline void StreamParser( CFile& src, CFile& dst, cb& f )
     {
@@ -741,6 +752,8 @@ namespace FileSystem
         dst.SetSeekEnd();
     }
 
+    // Parses the stream same as StreamParser, but limited to 'cnt' bytes of the
+    // source stream.
     template <class cb>
     inline void StreamParserCount( CFile& src, CFile& dst, size_t cnt, cb& f )
     {

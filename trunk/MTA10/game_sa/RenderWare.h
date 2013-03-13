@@ -418,8 +418,21 @@ public:
     RwListEntry <RwTexture>     TXDList;                        // 8
     char                        name[RW_TEXTURE_NAME_LENGTH];   // 16
     char                        mask[RW_TEXTURE_NAME_LENGTH];   // 48
-    unsigned int                flags;                          // 80
+
+    union
+    {
+        unsigned int            flags;                          // 80
+
+        struct
+        {
+            unsigned char       flags_a;                        // 80
+            unsigned char       flags_b;                        // 81
+            unsigned char       flags_c;                        // 82
+            unsigned char       flags_d;                        // 83
+        };
+    };
     unsigned int                refs;                           // 84
+    char                        anisotropy;                     // 88
 
     void                        AddToDictionary( RwTexDictionary *txd );
     void                        RemoveFromDictionary();
@@ -603,7 +616,7 @@ public:
     bool                    PushRender( RwAtomicZBufferEntry *level );
 };
 
-extern RwAtomicRenderChainInterface *rwRenderChains;
+extern RwAtomicRenderChainInterface *const rwRenderChains;
 
 struct RpAtomicContainer
 {
@@ -861,6 +874,7 @@ class RwRenderSystem    // TODO
 {
 public:
     void*                   m_unkStruct;                                    // 0
+    void*                   m_callback;                                     // 4
 };
 struct RwError
 {
@@ -871,6 +885,8 @@ struct RwError
 typedef void*               (__cdecl*RwFileOpen_t) ( const char *path, const char *mode );
 typedef void                (__cdecl*RwFileClose_t) ( void *fp );
 typedef long                (__cdecl*RwFileSeek_t) ( void *fp, long offset, int origin );
+
+typedef int                 (__cdecl*RwReadTexture_t) ( RwStream *stream, RwTexture **out, size_t blockSize );
 
 class RwInterface   // size: 1456
 {
@@ -883,10 +899,13 @@ public:
     BYTE                    m_pad11[4];                                     // 12
     RwRenderSystem          m_renderSystem;                                 // 16
 
-    BYTE                    m_pad[92];                                      // 20
+    BYTE                    m_pad[88];                                      // 24
     RwStructInfo*           m_sceneInfo;                                    // 112
 
-    BYTE                    m_pad14[72];                                    // 116
+    BYTE                    m_pad14[60];                                    // 116
+    RwReadTexture_t         m_readTexture;                                  // 176, actual internal texture reader
+
+    BYTE                    m_pad17[8];                                     // 180
     RwList <RwFrame>        m_nodeRoot;                                     // 188
 
     BYTE                    m_pad6[24];                                     // 196
@@ -952,6 +971,15 @@ public:
 
 extern RwInterface **ppRwInterface;
 #define pRwInterface (*ppRwInterface)
+
+// offset 0x00C9BF00 (1.0 US and 1.0 EU)
+struct RwDeviceInformation
+{
+    BYTE                    pad[108];                                       // 0
+    char                    maxAnisotropy;                                  // 108
+};
+
+extern RwDeviceInformation *const pRwDeviceInfo;
 
 /*****************************************************************************/
 /** RenderWare Helper Classes                                               **/

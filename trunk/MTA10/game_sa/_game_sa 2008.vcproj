@@ -720,6 +720,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CRenderWareSA.rwapi.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CRestartSA.cpp"
 				>
 			</File>
@@ -1402,6 +1406,10 @@
 			</File>
 			<File
 				RelativePath=".\CRenderWareSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.rwapi.h"
 				>
 			</File>
 			<File

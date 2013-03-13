@@ -24,7 +24,7 @@ class CColModelSAInterface;
 /*****************************************************************************/
 
 /* RenderWare function defines */
-typedef void                    (__cdecl *RwRenderSystemFigureAffairs_t)        (RwRenderSystem& rend, int objectID, unsigned int& result, int, int);
+typedef void                    (__cdecl *RwDeviceSystemRequest_t)              (RwRenderSystem& rend, int objectID, unsigned int& result, int, int);
 typedef void*                   (__cdecl *RwAllocAligned_t)                     (size_t size, unsigned int align);
 typedef void                    (__cdecl *RwFreeAligned_t)                      (void *ptr);
 typedef RwExtension*            (__cdecl *RwCreateExtension_t)                  (unsigned int id, unsigned int count, size_t size, int unk3);
@@ -34,7 +34,6 @@ typedef RwStream*               (__cdecl *RwStreamOpen_t)                       
 typedef RwStream*               (__cdecl *RwStreamReadChunkHeaderInfo_t)        (RwStream *stream, RwChunkHeader& header);
 typedef int                     (__cdecl *RwStreamFindChunk_t)                  (RwStream *stream, unsigned int type, unsigned int *lengthOut, unsigned int *versionOut);
 typedef unsigned int            (__cdecl *RwStreamReadBlocks_t)                 (RwStream *stream, RwBlocksInfo& info, unsigned int size);
-typedef RwTexture*              (__cdecl *RwStreamReadTexture_t)                (RwStream *stream);
 typedef int                     (__cdecl *RwStreamClose_t)                      (RwStream *stream, void *pData);
 typedef RtDict*                 (__cdecl *RtDictSchemaStreamReadDict_t)         (RtDictSchema *schema, RwStream *stream);
 typedef void                    (__cdecl *RtDictDestroy_t)                      (RtDict *dict);
@@ -96,7 +95,6 @@ typedef float                   (__cdecl *RwMatrixUnknown_t)                    
 typedef RpMaterial*             (__cdecl *RpMaterialCreate_t)                   ();
 typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial *mat);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryCreate_t)              ();
-typedef unsigned int            (__cdecl *RwTexDictionaryFinalizer_t)           (void *unk, RwStream *stream, RwTexDictionary *txd);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryStreamRead_t)          (RwStream *stream);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionarySetCurrent_t)          (RwTexDictionary *dict);
 typedef const RwTexDictionary*  (__cdecl *RwTexDictionaryForAllTextures_t)      (const RwTexDictionary *dict, int (*callback)( RwTexture *texture, void *data ), void *data);
@@ -123,12 +121,13 @@ typedef void                    (__cdecl *RpPrtStdGlobalDataSetStreamEmbedded_t)
 typedef RwError*                (__cdecl *RwErrorGet_t)                         (RwError *code);
 typedef void                    (__cdecl *RwPrefetch_t)                         ();
 typedef void                    (__cdecl *RwFlushLoader_t)                      ();
+typedef unsigned int            (__cdecl *RwPluginRegistryReadDataChunks_t)     (void *unk, RwStream *stream, void *obj);
 
 /*****************************************************************************/
 /** Renderware function mappings                                            **/
 /*****************************************************************************/
 
-extern RwRenderSystemFigureAffairs_t            RwRenderSystemFigureAffairs;
+extern RwDeviceSystemRequest_t                  RwDeviceSystemRequest;
 extern RwErrorGet_t                             RwErrorGet;
 extern RwAllocAligned_t                         RwAllocAligned;
 extern RwFreeAligned_t                          RwFreeAligned;
@@ -139,7 +138,6 @@ extern RwStreamInitialize_t                     RwStreamInitialize;
 extern RwStreamOpen_t                           RwStreamOpen;
 extern RwStreamReadChunkHeaderInfo_t            RwStreamReadChunkHeaderInfo;
 extern RwStreamReadBlocks_t                     RwStreamReadBlocks;
-extern RwStreamReadTexture_t                    RwStreamReadTexture;
 extern RwStreamClose_t                          RwStreamClose;
 extern RtDictSchemaStreamReadDict_t             RtDictSchemaStreamReadDict;
 extern RtDictDestroy_t                          RtDictDestroy;
@@ -177,7 +175,6 @@ extern RpAtomicSetGeometry_t                    RpAtomicSetGeometry;
 extern RpAtomicDestroy_t                        RpAtomicDestroy;
 extern RwObjectFrameRender_t                    RwObjectFrameRender;
 extern RwTexDictionaryCreate_t                  RwTexDictionaryCreate;
-extern RwTexDictionaryFinalizer_t               RwTexDictionaryFinalizer;
 extern RwTexDictionaryStreamRead_t              RwTexDictionaryStreamRead;
 extern RwTexDictionaryGetCurrent_t              RwTexDictionaryGetCurrent;
 extern RwTexDictionarySetCurrent_t              RwTexDictionarySetCurrent;
@@ -224,6 +221,7 @@ extern RwSceneRemoveLight_t                     RwSceneRemoveLight;
 extern RpPrtStdGlobalDataSetStreamEmbedded_t    RpPrtStdGlobalDataSetStreamEmbedded;
 extern RwPrefetch_t                             RwPrefetch;
 extern RwFlushLoader_t                          RwFlushLoader;
+extern RwPluginRegistryReadDataChunks_t         RwPluginRegistryReadDataChunks;
 
 /*****************************************************************************/
 /** GTA function definitions                                                **/

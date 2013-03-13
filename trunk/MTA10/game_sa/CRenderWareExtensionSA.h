@@ -33,5 +33,7 @@ void    RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha );
 RwStream*   RwStreamCreateTranslated( CFile *file );
 RwStream*   RwStreamCreateIsoTranslated( CFile *file );
 RwStream*   RwStreamOpenTranslated( const char *path, RwStreamType type );
+RwTexture*  RwTextureStreamReadEx( RwStream *stream );
+RwTexDictionary*    RwTexDictionaryStreamReadEx( RwStream *stream );
 
 #endif

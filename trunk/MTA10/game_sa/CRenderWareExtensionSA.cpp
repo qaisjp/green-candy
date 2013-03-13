@@ -47,8 +47,8 @@ void RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha )
     RpAtomicRender( atom );
 
     // Restore values
-    while ( n-- )
-        mats.m_data[n]->m_color.a = alphaVals[n];
+    while ( n )
+        mats.m_data[n]->m_color.a = alphaVals[--n];
 
     delete [] alphaVals;
 
@@ -60,9 +60,6 @@ static RpAtomic* __cdecl _worldAtomicSceneCopyConstructor( RpAtomic *atom, RpAto
     atom->m_scene = src->m_scene;
     return atom;
 }
-
-// Attempting to analyze a RenderWare crash
-
 
 CRwExtensionManagerSA::CRwExtensionManagerSA()
 {
@@ -216,4 +213,110 @@ RwStream* RwStreamOpenTranslated( const char *path, RwStreamMode mode )
     }
 
     return RwStreamCreateIsoTranslated( file );
+}
+
+RwTexture* RwTextureStreamReadEx( RwStream *stream )
+{
+    unsigned int version;
+    unsigned int size;
+
+    if ( !RwStreamFindChunk( stream, 0x15, &size, &version ) )
+        return NULL;
+
+    if ( version < 0x34000 && version > 0x36003 )
+    {
+        RwError error;
+        error.err1 = 1;
+        error.err2 = -4;
+
+        RwSetError( &error );
+        return NULL;
+    }
+
+    // Here actually is performance measurement logic of GTA:SA
+    // We do not require it, so I leave it out
+    RwTexture *tex;
+
+    if ( pRwInterface->m_readTexture( stream, &tex, size ) == 0 || !tex )
+        return NULL;
+
+    if ( !RwPluginRegistryReadDataChunks( (void*)0x008E23CC, stream, tex ) )
+    {
+        RwTextureDestroy( tex );
+        return NULL;
+    }
+
+    // Apply special flags
+    unsigned int flags = tex->flags_a;
+
+    if ( flags == 1 )
+        tex->flags_a = 2;
+    else if ( flags == 3 )
+        tex->flags_b = 4;
+
+    if ( *(bool*)0x00C87FFC && tex->anisotropy > 0 && g_effectManager->m_fxQuality > 1 )
+        tex->anisotropy = pRwDeviceInfo->maxAnisotropy;
+
+    return tex;
+}
+
+RwTexDictionary* RwTexDictionaryStreamReadEx( RwStream *stream )
+{
+    unsigned int size;
+    unsigned int version;
+
+    if ( !RwStreamFindChunk( stream, 1, &size, &version ))
+        return NULL;
+
+    if ( version < 0x34000 && version > 0x36003 )
+    {
+        RwError error;
+        error.err1 = 1;
+        error.err2 = -4;
+
+        RwSetError( &error );
+        return NULL;
+    }
+
+    RwBlocksInfo texBlocksInfo;
+
+    if ( RwStreamReadBlocks( stream, texBlocksInfo, size ) != size )
+        return NULL;
+
+    unsigned int rendStatus;
+
+    RwDeviceSystemRequest( pRwInterface->m_renderSystem, 0x16, rendStatus, 0, 0 );
+
+    rendStatus &= 0xFF;
+
+    if ( rendStatus != 0 && texBlocksInfo.unk != 0 && rendStatus != texBlocksInfo.unk )
+        return NULL;
+
+    RwTexDictionary *txd = RwTexDictionaryCreate();
+
+    if ( !txd )
+        return NULL;
+
+    while ( texBlocksInfo.count-- )
+    {
+        RwTexture *texture = RwTextureStreamReadEx( stream );
+
+        if ( !texture )
+            goto txdParseError;
+
+        texture->AddToDictionary( txd );
+    }
+
+    if ( !RwPluginRegistryReadDataChunks( (void*)0x008E23E4, stream, txd ) )
+        goto txdParseError;
+
+    return txd;
+
+txdParseError:
+    LIST_FOREACH_BEGIN( RwTexture, txd->textures.root, TXDList )
+        RwTextureDestroy( item );
+    LIST_FOREACH_END
+
+    RwTexDictionaryDestroy( txd );
+    return NULL;
 }
