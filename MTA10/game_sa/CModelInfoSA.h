@@ -77,6 +77,7 @@ enum eModelType : unsigned char
 };
 
 // Helpful compiler hacking tool :)
+// Returns the Visual C++ member function pointer!
 template <class funcType>
 DWORD h_memFunc( funcType func )
 {

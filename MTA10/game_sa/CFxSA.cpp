@@ -17,6 +17,8 @@
 
 #include "StdInc.h"
 
+CFxSAInterface *g_effectManager = NULL;
+
 CFxSAInterface::CFxSAInterface()
 {
     // We need the particle system
@@ -40,6 +42,7 @@ void CFxSAInterface::AssociateGameTranslators()
 CFxSA::CFxSA( CFxSAInterface *intf )
 {
     m_interface = intf;
+    g_effectManager = intf;
 
     return;
 

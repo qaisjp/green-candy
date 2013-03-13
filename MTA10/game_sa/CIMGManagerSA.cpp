@@ -87,8 +87,8 @@ static inline bool GetFreeArchive( unsigned int& idx )
     return false;
 }
 
-static unsigned int * const VAR_GTA3IMGIndex = (unsigned int*)0x008E48A8;
-static unsigned int * const VAR_GTA_INTIndex = (unsigned int*)0x008E48A4;
+static unsigned int *const VAR_GTA3IMGIndex = (unsigned int*)0x008E48A8;
+static unsigned int *const VAR_GTA_INTIndex = (unsigned int*)0x008E48A4;
 
 // NOTE: This function has been optimized for our usage; i.e. the GTA3IMG and GTA_INT always have the same index 0,1
 // In GTA:SA, there is a weird logic with free-object allocation (see above GetFreeArchive!).
@@ -159,7 +159,7 @@ static unsigned int OpenImgFile( const char *path, bool isNotPlayerImg )
     return idx;
 }
 
-// Another lazy hook; I do not know why fastman92 did it, but I shouldn't disgress
+// Another lazy hook; I do not know why fastman92 did it, but I shouldn't digress
 static void __declspec(naked) HOOK_DisableGTAIMGCheck()
 {
     __asm
