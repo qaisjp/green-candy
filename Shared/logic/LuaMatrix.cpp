@@ -133,7 +133,7 @@ static int matrix_offset( lua_State *L )
     luaL_checktyperange( L, 1, LUA_TNUMBER, 3 );
 
     CVector pos;
-    ((RwMatrix*)lua_getmethodtrans( L ))->GetOffset( CVector( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) ), pos );
+    ((RwMatrix*)lua_getmethodtrans( L ))->Transform( CVector( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) ), pos );
 
     lua_pushnumber( L, pos[0] );
     lua_pushnumber( L, pos[1] );

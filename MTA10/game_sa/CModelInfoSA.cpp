@@ -23,222 +23,16 @@ CBaseModelInfoSAInterface** ppModelInfo = (CBaseModelInfoSAInterface**) ARRAY_Mo
 
 std::map < unsigned short, int > CModelInfoSA::ms_RestreamTxdIDMap;
 
-struct timeInfo
-{
-    BYTE                m_pad[2];
-    unsigned short      m_model;
-};
-
-void CBaseModelInfoSAInterface::SetColModel( CColModelSAInterface *col, bool putTimed )
-{
-    SetCollision( col, putTimed );
-}
-
-void CBaseModelInfoSAInterface::UnsetColModel()
-{
-    DeleteCollision();
-}
-
-static void __cdecl ConvertIDECompositeToInfoFlags( CBaseModelInfoSAInterface *info, unsigned int flags )
-{
-    BOOL_FLAG( info->m_renderFlags, RENDER_LAST, flags & ( OBJECT_ALPHA1 | OBJECT_ALPHA2 ) );
-    BOOL_FLAG( info->m_renderFlags, RENDER_ADDITIVE, flags & OBJECT_ALPHA2 );
-    BOOL_FLAG( info->m_renderFlags, RENDER_NOZBUFFER, flags & OBJECT_NOSHADOW );
-    BOOL_FLAG( info->m_renderFlags, RENDER_NOSHADOW, flags & OBJECT_NOCULL );
-    BOOL_FLAG( info->m_renderFlags, RENDER_BACKFACECULL, !( flags & OBJECT_NOBACKFACECULL ) );
-}
-
-static void __cdecl ConvertIDEModelToInfoFlags( CBaseModelInfoSAInterface *info, unsigned int flags )
-{
-    // Composite flags apply to clumps and atomic models
-    ConvertIDECompositeToInfoFlags( info, flags );
-
-    BOOL_FLAG( info->m_renderFlags, RENDER_STATIC, flags & OBJECT_WETEFFECT );
- 
-    if ( flags & OBJECT_BREAKGLASS )
-    {
-        info->m_collFlags &= ~( COLL_SWAYINWIND | COLL_STREAMEDWITHMODEL | COLL_COMPLEX );
-        info->m_collFlags |= COLL_NOCOLLFLYER;
-    }
-
-    if ( flags & OBJECT_BREAKGLASS_CRACK )
-    {
-        info->m_collFlags &= ~( COLL_STREAMEDWITHMODEL | COLL_COMPLEX );
-        info->m_collFlags |= COLL_NOCOLLFLYER | COLL_SWAYINWIND;
-    }
-
-    if ( flags & OBJECT_GARAGE )
-    {
-        info->m_collFlags &= ~COLL_COMPLEX;
-        info->m_collFlags |= COLL_NOCOLLFLYER | COLL_SWAYINWIND | COLL_STREAMEDWITHMODEL;
-    }
-
-    if ( flags & OBJECT_VEGETATION )
-    {
-        info->m_collFlags &= ~( COLL_STREAMEDWITHMODEL | COLL_NOCOLLFLYER | COLL_COMPLEX );
-        info->m_collFlags |= COLL_SWAYINWIND;
-    }
-
-    if ( flags & OBJECT_BIG_VEGETATION )
-    {
-        info->m_collFlags &= ~( COLL_SWAYINWIND | COLL_NOCOLLFLYER | COLL_COMPLEX );
-        info->m_collFlags |= COLL_STREAMEDWITHMODEL;
-    }
-
-    BOOL_FLAG( info->m_collFlags, COLL_AUDIO, flags & OBJECT_USE_POLYSHADOW );
-
-    if ( flags & OBJECT_GRAFFITI )
-    {
-        info->m_collFlags &= ~( COLL_SWAYINWIND | COLL_COMPLEX );
-        info->m_collFlags |= COLL_STREAMEDWITHMODEL | COLL_NOCOLLFLYER;
-    }
-
-    if ( flags & OBJECT_STATUE )
-    {
-        info->m_collFlags &= ~COLL_NOCOLLFLYER;
-        info->m_collFlags |= COLL_COMPLEX | COLL_STREAMEDWITHMODEL | COLL_SWAYINWIND;
-    }
-
-    if ( flags & OBJECT_UNKNOWN_2 )
-    {
-        info->m_collFlags &= ~( COLL_NOCOLLFLYER | COLL_SWAYINWIND );
-        info->m_collFlags |= COLL_COMPLEX | COLL_STREAMEDWITHMODEL;
-    }
-}
-
 void ModelInfo_Init()
 {
-    // Install some fixes
-    HookInstall( 0x004C4BC0, h_memFunc( &CBaseModelInfoSAInterface::SetColModel ), 5 );
-    HookInstall( 0x004C4C40, h_memFunc( &CBaseModelInfoSAInterface::UnsetColModel ), 5 );
-
-    // Investigation of model flags
-    HookInstall( 0x005B3AD0, (DWORD)ConvertIDECompositeToInfoFlags, 5 );
-    HookInstall( 0x005B3B20, (DWORD)ConvertIDEModelToInfoFlags, 5 );
+    ModelInfoBase_Init();
+    ModelInfoIDE_Init();
 }
 
 void ModelInfo_Shutdown()
 {
-
-}
-
-
-CBaseModelInfoSAInterface::CBaseModelInfoSAInterface()
-{
-
-}
-
-CBaseModelInfoSAInterface::~CBaseModelInfoSAInterface()
-{
-
-}
-
-CAtomicModelInfoSA* CBaseModelInfoSAInterface::GetAtomicModelInfo()
-{
-    return NULL;
-}
-
-CDamageAtomicModelInfoSA* CBaseModelInfoSAInterface::GetDamageAtomicModelInfo()
-{
-    return NULL;
-}
-
-CLODAtomicModelInfoSA* CBaseModelInfoSAInterface::GetLODAtomicModelInfo()
-{
-    return NULL;
-}
-
-void CBaseModelInfoSAInterface::Init()
-{
-    m_numberOfRefs = 0;
-    m_textureDictionary = -1;
-    m_pColModel = NULL;
-    m_effectID = -1;
-    m_num2dfx = 0;
-    m_dynamicIndex = -1;
-    m_lodDistance = 2000;
-
-    m_renderFlags = RENDER_COLMODEL | RENDER_BACKFACECULL;
-}
-
-void CBaseModelInfoSAInterface::Shutdown()
-{
-    DeleteRwObject();
-
-    DeleteCollision();
-
-    m_renderFlags |= RENDER_PRERENDERED;
-
-    m_effectID = -1;
-    m_num2dfx = 0;
-
-    m_dynamicIndex = -1;
-    m_textureDictionary = -1;
-}
-
-unsigned int CBaseModelInfoSAInterface::GetTimeInfo()
-{
-    return 0;
-}
-
-void CBaseModelInfoSAInterface::SetCollision( CColModelSAInterface *col, bool putTimed )
-{
-    m_pColModel = col;
-
-    if ( putTimed )
-    {
-        m_renderFlags |= RENDER_COLMODEL;
-
-        timeInfo *timed = (timeInfo*)GetTimeInfo();
-
-        if ( timed && timed->m_model != 0xFFFF )
-            ppModelInfo[timed->m_model]->SetCollision( col, false );
-    }
-    else
-        m_renderFlags &= ~RENDER_COLMODEL;
-}
-
-void CBaseModelInfoSAInterface::DeleteCollision()
-{
-    if ( m_pColModel && ( m_renderFlags & RENDER_COLMODEL ) )
-        delete m_pColModel;
-
-    m_pColModel = NULL;
-}
-
-void CBaseModelInfoSAInterface::DeleteTextures()
-{
-    if ( m_textureDictionary == -1 )
-        return;
-
-    (*ppTxdPool)->Get( m_textureDictionary )->Dereference();
-
-    m_textureDictionary = -1;
-
-    if ( GetAnimFileIndex() != -1 )
-        pGame->GetAnimManager()->RemoveAnimBlockRef( GetAnimFileIndex() );
-
-    // What is this about?
-    //pGame->GetAnimManager()->RemoveAnimBlockRef( GetAnimFileIndex() );
-}
-
-void CBaseModelInfoSAInterface::Reference()
-{
-    m_numberOfRefs++;
-
-    (*ppTxdPool)->Get( m_textureDictionary )->Reference();
-}
-
-void CBaseModelInfoSAInterface::Dereference()
-{
-    m_numberOfRefs--;
-
-    (*ppTxdPool)->Get( m_textureDictionary )->Dereference();
-}
-
-unsigned short CBaseModelInfoSAInterface::GetFlags()
-{
-    return m_renderFlags | ( m_collFlags >> 10 );
+    ModelInfoIDE_Shutdown();
+    ModelInfoBase_Shutdown();
 }
 
 CModelInfoSA::CModelInfoSA()
@@ -604,21 +398,6 @@ void CModelInfoSA::StaticFlushPendingRestreamIPL()
         {
             CEntitySAInterface *pEntity = (CEntitySAInterface*)pSectorEntry[0];
 
-#ifdef _todo
-            // Possible bug - pEntity seems to be invalid here occasionally
-            if ( pEntity->vtbl->DeleteRwObject != 0x00534030 )
-            {
-                // Log info
-                OutputDebugString ( SString ( "Entity 0x%08x (with model %d) at ARRAY_StreamSectors[%d,%d] is invalid\n", pEntity, pEntity->m_nModelIndex, i / 2 % NUM_StreamSectorRows, i / 2 / NUM_StreamSectorCols ) );
-                // Assert in debug
-                #if _DEBUG
-                    assert ( pEntity->vtbl->DeleteRwObject == 0x00534030 );
-                #endif
-                pSectorEntry = (DWORD *)pSectorEntry [ 1 ];
-                continue;
-            }
-#endif
-
             if ( MapContains( ms_RestreamTxdIDMap, pGame->GetModelInfo( pEntity->m_model )->GetTextureDictionaryID () ) )
             {
                 if ( !IS_FLAG( pEntity->m_entityFlags, ENTITY_DISABLESTREAMING ) && !IS_FLAG( pEntity->m_entityFlags, ENTITY_RENDERING ) )
@@ -903,24 +682,10 @@ void CModelInfoSA::RequestVehicleUpgrade()
     }
 }
 
-#if 0
-void CModelInfoSA::SetCustomModel( RpClump *pClump )
-{
-    // Replace the vehicle model if we're loaded.
-    if ( IsLoaded() )
-    {
-        // Are we a vehicle?
-        if ( !IsVehicle() )
-        {
-            // We are an object.
-            pGame->GetRenderWare()->ReplaceAllAtomicsInModel( pClump, m_modelID );
-        }
-    }
-}
-#endif
-
 void CModelInfoSA::GetVoice( short* psVoiceType, short* psVoiceID ) const
 {
+    assert( IsPed() );
+
     if ( psVoiceType )
         *psVoiceType = GetPedModelInfoInterface ()->m_sVoiceType;
 
@@ -930,6 +695,8 @@ void CModelInfoSA::GetVoice( short* psVoiceType, short* psVoiceID ) const
 
 void CModelInfoSA::GetVoice( const char** pszVoiceType, const char** pszVoice ) const
 {
+    assert( IsPed() );
+
     short sVoiceType, sVoiceID;
     GetVoice ( &sVoiceType, &sVoiceID );
 
@@ -942,6 +709,8 @@ void CModelInfoSA::GetVoice( const char** pszVoiceType, const char** pszVoice ) 
 
 void CModelInfoSA::SetVoice( short sVoiceType, short sVoiceID )
 {
+    assert( IsPed() );
+
     GetPedModelInfoInterface ()->m_sVoiceType = sVoiceType;
     GetPedModelInfoInterface ()->m_sFirstVoice = sVoiceID;
     GetPedModelInfoInterface ()->m_sLastVoice = sVoiceID;
@@ -950,6 +719,8 @@ void CModelInfoSA::SetVoice( short sVoiceType, short sVoiceID )
 
 void CModelInfoSA::SetVoice( const char* szVoiceType, const char* szVoice )
 {
+    assert( IsPed() );
+
     short sVoiceType = CPedSoundSA::GetVoiceTypeIDFromName ( szVoiceType );
     if ( sVoiceType < 0 )
         return;

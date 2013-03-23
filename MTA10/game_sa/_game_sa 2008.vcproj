@@ -564,7 +564,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CModelInfoSA.base.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CModelInfoSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CModelInfoSA.ide.cpp"
 				>
 			</File>
 			<File
@@ -573,6 +581,10 @@
 			</File>
 			<File
 				RelativePath=".\CMonsterTruckSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CObjectAttributesSA.cpp"
 				>
 			</File>
 			<File
@@ -657,6 +669,10 @@
 			</File>
 			<File
 				RelativePath="CPickupsSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CPlaceableSA.cpp"
 				>
 			</File>
 			<File
@@ -796,7 +812,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CVehicleModelInfoSA.config.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CVehicleModelInfoSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CVehicleModelInfoSA.render.cpp"
 				>
 			</File>
 			<File
@@ -1249,7 +1273,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CModelInfoSA.base.h"
+				>
+			</File>
+			<File
 				RelativePath="CModelInfoSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CModelInfoSA.ide.h"
 				>
 			</File>
 			<File
@@ -1258,6 +1290,10 @@
 			</File>
 			<File
 				RelativePath=".\CMonsterTruckSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CObjectAttributesSA.h"
 				>
 			</File>
 			<File
@@ -1346,6 +1382,10 @@
 			</File>
 			<File
 				RelativePath="CPickupsSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CPlaceableSA.h"
 				>
 			</File>
 			<File
@@ -1481,7 +1521,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CVehicleModelInfoSA.config.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CVehicleModelInfoSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CVehicleModelInfoSA.render.h"
 				>
 			</File>
 			<File

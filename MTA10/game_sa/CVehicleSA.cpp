@@ -830,7 +830,7 @@ void GetMatrixForGravity( const CVector& vecGravity, RwMatrix& mat )
     {
         // No gravity, use default axes
         mat.right = CVector ( 1.0f, 0.0f, 0.0f );
-        mat.at =    CVector ( 0.0f, 1.0f, 0.0f );
+        mat.at    = CVector ( 0.0f, 1.0f, 0.0f );
         mat.up    = CVector ( 0.0f, 0.0f, 1.0f );
     }
 }
@@ -848,10 +848,10 @@ void CVehicleSA::SetGravity( const CVector& grav )
         GetMatrixForGravity( m_vecGravity, matOld );
         GetMatrixForGravity( grav, matNew );
 
-        if ( !m_pInterface->m_matrix )
-            m_pInterface->AllocateMatrix();
+        // Make sure we have a matrix
+        m_pInterface->AcquaintMatrix();
         
-        CVector *pos = &m_pInterface->m_matrix->pos;
+        CVector *pos = &m_pInterface->Placeable.m_matrix->pos;
 
         matOld.Invert();
         pCam->GetTargetHistoryPos()[0] = matOld * (pCam->GetTargetHistoryPos()[0] - *pos);

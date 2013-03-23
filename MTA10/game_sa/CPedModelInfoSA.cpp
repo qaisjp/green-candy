@@ -7,7 +7,7 @@
 *  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Jax <>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -16,24 +16,25 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-CPedModelInfoSAInterface::CPedModelInfoSAInterface ( void )
+// TODO!
+CPedModelInfoSAInterface::CPedModelInfoSAInterface( void )
 {
     m_pColModel = (CColModelSAInterface*)VAR_CTempColModels_ModelPed1;
 
     Init();
 }
 
-CPedModelInfoSAInterface::~CPedModelInfoSAInterface()
+CPedModelInfoSAInterface::~CPedModelInfoSAInterface( void )
 {
 
 }
 
-eModelType CPedModelInfoSAInterface::GetModelType()
+eModelType CPedModelInfoSAInterface::GetModelType( void )
 {
     return MODEL_PED;
 }
 
-void CPedModelInfoSAInterface::DeleteRwObject()
+void CPedModelInfoSAInterface::DeleteRwObject( void )
 {
     CClumpModelInfoSAInterface::DeleteRwObject();
 
@@ -50,34 +51,27 @@ void CPedModelInfoSAInterface::SetAnimFile( const char *name )
 
 }
 
-void CPedModelInfoSAInterface::ConvertAnimFileIndex()
+void CPedModelInfoSAInterface::ConvertAnimFileIndex( void )
 {
 
 }
 
-int CPedModelInfoSAInterface::GetAnimFileIndex()
+int CPedModelInfoSAInterface::GetAnimFileIndex( void )
 {
     return -1;
 }
 
-CPedModelInfoSA::CPedModelInfoSA() : CModelInfoSA ()
+CPedModelInfoSA::CPedModelInfoSA( void ) : CModelInfoSA ()
 {
     m_pPedModelInterface = new CPedModelInfoSAInterface;
 }
 
-CPedModelInfoSA::~CPedModelInfoSA()
+CPedModelInfoSA::~CPedModelInfoSA( void )
 {
 
 }
 
-void CPedModelInfoSA::SetMotionAnimGroup ( AssocGroupId animGroup )
+void CPedModelInfoSA::SetMotionAnimGroup( AssocGroupId animGroup )
 {
-    DWORD dwThis = (DWORD)m_pInterface;
-    DWORD dwFunc = (DWORD)FUNC_SetMotionAnimGroup;
-    _asm
-    {
-        mov     ecx, dwThis
-        push    animGroup
-        call    dwFunc
-    }
+    m_pPedModelInterface->m_motionAnimGroup = animGroup;
 }

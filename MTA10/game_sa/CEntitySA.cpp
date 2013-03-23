@@ -20,107 +20,6 @@
 extern CGameSA *pGame;
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
-CPlaceableSAInterface::CPlaceableSAInterface()
-{
-    m_heading = 0;
-    m_matrix = NULL;
-}
-
-CPlaceableSAInterface::~CPlaceableSAInterface()
-{
-    FreeMatrix();
-
-    (*(unsigned int*)0x00B74238)--;
-
-    //m_matrix = &transformIdentity;
-}
-
-void CPlaceableSAInterface::AllocateMatrix()
-{
-    if ( m_matrix )
-    {
-        // We already have a matrix, make sure its in the active list
-        LIST_REMOVE( *m_matrix );
-        LIST_APPEND( pTransform->m_activeList, *m_matrix );
-        return;
-    }
-
-    // Extend the matrix list
-    if ( !pTransform->IsFreeMatrixAvailable() && !pTransform->FreeUnimportantMatrix() )
-        pTransform->NewMatrix();
-
-    // Allocate it
-    m_matrix = pTransform->Allocate();
-    m_matrix->m_entity = this;
-}
-
-void CPlaceableSAInterface::AcquaintMatrix()
-{
-    if ( m_matrix )
-        return;
-
-    // Extend the matrix list
-    if ( !pTransform->IsFreeMatrixAvailable() && !pTransform->FreeUnimportantMatrix() )
-        pTransform->NewMatrix();
-
-    // Allocate it
-    m_matrix = pTransform->Allocate();
-    m_matrix->m_entity = this;
-}
-
-void CPlaceableSAInterface::RestoreMatrix()
-{
-    // Optimized
-    m_matrix->pos = m_position;
-    m_matrix->FromHeading( m_heading );
-}
-
-void CPlaceableSAInterface::FreeMatrix()
-{
-    CTransformSAInterface *trans = m_matrix;
-
-    // Transform the entity
-    m_position = CVector( m_matrix->pos.fX, m_matrix->pos.fY, m_matrix->pos.fZ );
-    m_heading = atan( m_matrix->up.fY ) / -m_matrix->up.fX;
-
-    // Free the matrix
-    m_matrix = NULL;
-    trans->m_entity = NULL;
-
-    LIST_REMOVE( *trans );
-    LIST_APPEND( pTransform->m_freeList, *trans );
-}
-
-void CPlaceableSAInterface::GetOffsetByHeading( CVector& out, const CVector& in ) const
-{
-    float ch = cos( m_heading );
-    float sh = sin( m_heading );
-
-    out[0] = ch * in[0] - sh * in[1] + m_position[0];
-    out[1] = sh * in[0] + ch * in[1] + m_position[1];
-    out[2] = in[2] + m_position[2];
-}
-
-void CPlaceableSAInterface::GetOffset( CVector& out, const CVector& in ) const
-{
-    if ( m_matrix )
-        m_matrix->GetOffset( in, out );
-    else
-        GetOffsetByHeading( out, in );
-}
-
-void Placeable_Init()
-{
-    HookInstall( 0x0054F560, h_memFunc( &CPlaceableSAInterface::AcquaintMatrix ), 5 );
-    HookInstall( 0x0054F4C0, h_memFunc( &CPlaceableSAInterface::AllocateMatrix ), 5 );
-    HookInstall( 0x0054F3B0, h_memFunc( &CPlaceableSAInterface::FreeMatrix ), 5 );
-}
-
-void Placeable_Shutdown()
-{
-
-}
-
 CEntitySAInterface::CEntitySAInterface()
 {
     m_status = 4;
@@ -155,10 +54,12 @@ void CEntitySAInterface::SetModelIndex( unsigned short id )
 
 void CEntitySAInterface::GetPosition( CVector& pos ) const
 {
-    if ( !m_matrix )
-        pos = m_position;
-    else
-        pos = m_matrix->pos;
+    pos = Placeable.GetPosition();
+}
+
+float CEntitySAInterface::GetBasingDistance() const
+{
+    return GetColModel()->m_bounds.vecBoundMin.fZ;
 }
 
 static bool RpMaterialSetAlpha( RpMaterial *mat, unsigned char alpha )
@@ -250,12 +151,31 @@ bool CEntitySAInterface::IsOnScreen() const
     return false;
 }
 
+void CEntitySAInterface::UpdateRwMatrix( void )
+{
+    if ( !m_rwObject )
+        return;
+
+    Placeable.GetMatrix( m_rwObject->m_parent->m_modelling );
+}
+
+void CEntitySAInterface::UpdateRwFrame( void )
+{
+    if ( !m_rwObject )
+        return;
+
+    m_rwObject->m_parent->RegisterRoot();
+}
+
 void Entity_Init()
 {
     HookInstall( 0x00535300, h_memFunc( &CEntitySAInterface::GetColModel ), 5 );
     HookInstall( 0x00534540, h_memFunc( &CEntitySAInterface::IsOnScreen ), 5 );
     HookInstall( 0x00534250, h_memFunc( &CEntitySAInterface::GetCollisionOffset ), 5 );
     HookInstall( 0x005449B0, h_memFunc( &CEntitySAInterface::_GetBoundingBox ), 5 );
+    HookInstall( 0x00446F90, h_memFunc( &CEntitySAInterface::UpdateRwMatrix ), 5 );
+    HookInstall( 0x00532B00, h_memFunc( &CEntitySAInterface::UpdateRwFrame ), 5 );
+    HookInstall( 0x00536BE0, h_memFunc( &CEntitySAInterface::GetBasingDistance ), 5 );
 }
 
 void Entity_Shutdown()
@@ -293,64 +213,27 @@ void CEntitySA::SetPosition( float x, float y, float z )
 {
     DEBUG_TRACE("void CEntitySA::SetPosition( float x, float y, float z )");
 
-    CVector *vecPos;
-
-    if ( m_pInterface->m_matrix )
-        vecPos = &m_pInterface->m_matrix->pos;
-    else
-        vecPos = &m_pInterface->m_position;
-
-    if ( vecPos )
-    {
-        vecPos->fX = x;
-        vecPos->fY = y;
-        vecPos->fZ = z;
-    }
-
-    unsigned short usModelID = GetModelIndex();
-
-    switch( usModelID )
-    {
-    case 537:
-    case 538:
-    case 569:
-    case 570:
-    case 590:
-    case 449:
-        {
-            // If it's a train, recalculate its rail position parameter (does not affect derailed state)
-            DWORD dwThis = (DWORD)m_pInterface;
-            DWORD dwFunc = FUNC_CVehicle_RecalcOnRailDistance;
-            _asm
-            {
-                mov     ecx, dwThis
-                call    dwFunc
-            }
-        }
-    }
+    GetInterface()->Placeable.SetPosition( x, y, z );
 }
 
 void CEntitySA::SetPosition( const CVector& pos )
 {
-    SetPosition( pos.fX, pos.fY, pos.fZ );
+    GetInterface()->Placeable.SetPosition( pos );
 }
 
 void CEntitySA::GetPosition( CVector& pos ) const
 {
     DEBUG_TRACE("void CEntitySA::GetPosition( CVector& pos ) const");
 
-    if ( m_pInterface->m_matrix )
-        pos = m_pInterface->m_matrix->pos;
-    else
-        pos = m_pInterface->m_position;
+    pos = GetInterface()->Placeable.GetPosition();
 }
 
 void CEntitySA::Teleport( float x, float y, float z )
 {
     DEBUG_TRACE("void CEntitySA::Teleport( float x, float y, float z )");
 
-    if ( !m_pInterface->m_matrix )
-        m_pInterface->AllocateMatrix();
+    // Make sure we have a matrix
+    m_pInterface->AcquaintMatrix();
 
     m_pInterface->Teleport( x, y, z, true );
 }
@@ -375,7 +258,7 @@ void CEntitySA::SetOrientation( float x, float y, float z )
 
     pGame->GetWorld()->Remove( this );
 
-    DWORD dwThis = (DWORD) m_pInterface;
+    CEntitySAInterface *intf = m_pInterface;
     DWORD dwFunc = FUNC_SetOrientation;
     _asm
     {
@@ -385,23 +268,13 @@ void CEntitySA::SetOrientation( float x, float y, float z )
         push    z
         push    y
         push    x
-        mov     ecx, dwThis
+        mov     ecx,intf
         call    dwFunc
     }
 
-    dwFunc = 0x446F90;
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunc
-    }
-
-    dwFunc = 0x532B00;
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunc
-    }
+    // Update RenderWare specifications
+    intf->UpdateRwMatrix();
+    intf->UpdateRwFrame();
 
     pGame->GetWorld()->Add( this );
 }
@@ -409,21 +282,13 @@ void CEntitySA::SetOrientation( float x, float y, float z )
 void CEntitySA::FixBoatOrientation()
 {
     DEBUG_TRACE("void CEntitySA::FixBoatOrientation()");
-    pGame->GetWorld()->Remove ( this );
-    DWORD dwThis = (DWORD) m_pInterface;
-    DWORD dwFunc = 0x446F90;
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunc
-    }
 
-    dwFunc = 0x532B00;
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunc
-    }
+    pGame->GetWorld()->Remove ( this );
+
+    // Update RenderWare specifications
+    CEntitySAInterface *intf = GetInterface();
+    intf->UpdateRwMatrix();
+    intf->UpdateRwFrame();
 
     pGame->GetWorld()->Add ( this );
 }
@@ -432,54 +297,23 @@ void CEntitySA::GetMatrix( RwMatrix& mat ) const
 {
     DEBUG_TRACE("void CEntitySA::GetMatrix( RwMatrix& mat ) const");
 
-    if ( !m_pInterface->m_matrix )
-        m_pInterface->AllocateMatrix(); // We allocate a matrix for us
-    
-    mat = *m_pInterface->m_matrix;
+    GetInterface()->Placeable.GetMatrix( mat );
 }
 
 void CEntitySA::SetMatrix( const RwMatrix& mat )
 {
     DEBUG_TRACE("void CEntitySA::SetMatrix( const RwMatrix& mat )");
 
-    if ( !m_pInterface->m_matrix )
-        m_pInterface->AllocateMatrix(); // We need a matrix nao
-
-    *m_pInterface->m_matrix = mat;
-    m_pInterface->m_position = mat.pos;
-
-    /*
-    WORD wModelID = GetModelIndex();
-    if ( wModelID == 537 || wModelID == 538 || wModelID == 569 || wModelID == 570 || wModelID == 590 || wModelID == 449 )
-    {
-        DWORD dwThis = (DWORD) m_pInterface;
-        DWORD dwFunc = 0x6F6CC0;
-        _asm
-        {
-            mov     ecx, dwThis
-            call    dwFunc
-        }
-        
-        //OutputDebugString ( "Set train position on tracks (matrix)!\n" );
-    }
-    */
+    // Make sure we keep this matrix (static allocation)
+    m_pInterface->AllocateMatrix();
+    m_pInterface->Placeable.m_matrix->assign( mat );
 
     pGame->GetWorld()->Remove( this );
 
-    DWORD dwThis = (DWORD)m_pInterface;
-    DWORD dwFunc = 0x446F90;    // CEntity::UpdateRwMatrix
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunc
-    }
-
-    dwFunc = 0x532B00;          // CEntity::UpdateRwFrame
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunc
-    }
+    // Update RenderWare specifications
+    CEntitySAInterface *intf = GetInterface();
+    intf->UpdateRwMatrix();
+    intf->UpdateRwFrame();
 
     pGame->GetWorld()->Add( this );
 }
@@ -499,16 +333,8 @@ eEntityType CEntitySA::GetEntityType() const
 float CEntitySA::GetBasingDistance() const
 {
     DEBUG_TRACE("float CEntitySA::GetBasingDistance() const");
-    DWORD dwFunc = FUNC_GetDistanceFromCentreOfMassToBaseOfModel;
-    DWORD dwThis = (DWORD) m_pInterface;
-    FLOAT fReturn;
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunc
-        fstp    fReturn
-    }
-    return fReturn;
+    
+    return GetInterface()->GetBasingDistance();
 }   
 
 void CEntitySA::SetEntityStatus( eEntityStatus bStatus )
@@ -527,14 +353,7 @@ void CEntitySA::SetAlpha( unsigned char alpha )
 {
     DEBUG_TRACE("void CEntitySA::SetAlpha( unsigned char alpha )");
 
-    DWORD dwFunc = FUNC_SetRwObjectAlpha;
-    DWORD dwThis = (DWORD) m_pInterface;
-    _asm
-    {
-        mov     ecx, dwThis
-        push    alpha
-        call    dwFunc
-    }
+    GetInterface()->SetAlpha( alpha );
 }
 
 bool CEntitySA::IsOnScreen() const

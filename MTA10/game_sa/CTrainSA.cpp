@@ -26,6 +26,20 @@ CTrainSA::~CTrainSA()
         delete m_doors[n];
 }
 
+void CTrainSA::SetPosition( float x, float y, float z )
+{
+    CEntitySA::SetPosition( x, y, z );
+
+    // If it's a train, recalculate its rail position parameter (does not affect derailed state)
+    DWORD dwThis = (DWORD)m_pInterface;
+    DWORD dwFunc = FUNC_CVehicle_RecalcOnRailDistance;
+    _asm
+    {
+        mov     ecx, dwThis
+        call    dwFunc
+    }
+}
+
 void CTrainSA::SetMoveSpeed( const CVector& vecMoveSpeed )
 {
     GetInterface()->m_velocity = vecMoveSpeed;

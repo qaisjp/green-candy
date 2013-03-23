@@ -114,7 +114,7 @@ bool CRpAtomicSA::Replace( unsigned short id )
 
     CAtomicModelInfoSA *ainfo = (CAtomicModelInfoSA*)info;
 
-    bool isLoaded = ainfo->m_rpAtomic != NULL;
+    bool isLoaded = ainfo->GetRwObject() != NULL;
     
     // Remove any active model (either loading or loaded)
     pGame->GetStreaming()->FreeModel( id );
@@ -151,7 +151,7 @@ bool CRpAtomicSA::Restore( unsigned short id )
     }
 
     CTxdInstanceSA *txd;
-    bool isLoaded = info->m_rpAtomic != NULL;
+    bool isLoaded = info->GetRwObject() != NULL;
 
     if ( isLoaded )
     {

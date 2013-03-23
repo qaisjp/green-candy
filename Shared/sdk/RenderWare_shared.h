@@ -115,7 +115,7 @@ public:
     {
         IdentityRotation();
 
-        pos.fX = (float)(1.15 * -0.25);
+        pos.fX = 0;//(float)(1.15 * -0.25);
         pos.fY = 0;
         pos.fZ = 0;
     }
@@ -324,19 +324,11 @@ public:
         z = (float)RAD2DEG( z );
     }
 
-    inline void GetOffset( const CVector& offset, CVector& outPos ) const
-    {
-        outPos[0] = offset[0] * right[0] + offset[1] * at[0] + offset[2] * up[0] + pos[0];
-        outPos[1] = offset[0] * right[1] + offset[1] * at[1] + offset[2] * up[1] + pos[1];
-        outPos[2] = offset[0] * right[2] + offset[1] * at[2] + offset[2] * up[2] + pos[2];
-    }
-
     // I hope this works :3
-    inline void Multiply( const RwMatrix& mat, RwMatrix& dst )
+    inline void __thiscall Multiply( const RwMatrix& mat, RwMatrix& dst ) const
     {
 	    __asm
 	    {
-		    mov eax,this
 		    mov edx,[mat]
 		    mov esi,[dst]
 
@@ -344,13 +336,13 @@ public:
 		    movups xmm5,[edx+0x10]
 		    movups xmm6,[edx+0x20]
     		
-		    movss xmm3,[eax+0x10]
-		    movss xmm7,[eax+0x20]
+		    movss xmm3,[ecx+0x10]
+		    movss xmm7,[ecx+0x20]
 
 		    // X
-		    movss xmm0,[eax]
-		    movss xmm1,[eax+4]
-		    movss xmm2,[eax+8]
+		    movss xmm0,[ecx]
+		    movss xmm1,[ecx+4]
+		    movss xmm2,[ecx+8]
 
 		    shufps xmm0,xmm0,0x40
 		    shufps xmm1,xmm1,0x40
@@ -370,8 +362,8 @@ public:
 		    movups [esi],xmm0
 
 		    // Y
-		    movss xmm1,[eax+0x14]
-		    movss xmm2,[eax+0x18]
+		    movss xmm1,[ecx+0x14]
+		    movss xmm2,[ecx+0x18]
 
 		    shufps xmm1,xmm1,0x40
 		    shufps xmm2,xmm2,0x40
@@ -386,8 +378,8 @@ public:
 		    movups [esi+0x10],xmm3
 
 		    // Z
-		    movss xmm1,[eax+0x24]
-		    movss xmm2,[eax+0x28]
+		    movss xmm1,[ecx+0x24]
+		    movss xmm2,[ecx+0x28]
 
 		    shufps xmm1,xmm1,0x40
 		    shufps xmm2,xmm2,0x40
@@ -403,24 +395,22 @@ public:
 	    }
     }
 
-    inline void Invert()
+    inline void __thiscall Invert()
     {
         // Optimization to use SSE registers instead of stack space
         __asm
         {
-            mov eax,this
-
-            movups xmm0,[eax]
-            movups xmm1,[eax+0x10]
-            movups xmm2,[eax+0x20]
-            movups xmm3,[eax+0x30]
+            movups xmm0,[ecx]
+            movups xmm1,[ecx+0x10]
+            movups xmm2,[ecx+0x20]
+            movups xmm3,[ecx+0x30]
 
             // Prepare for position invert
             movss xmm4,negOne
 
-            movss [eax],xmm0
-            movss [eax+0x04],xmm1
-            movss [eax+0x08],xmm2
+            movss [ecx],xmm0
+            movss [ecx+0x04],xmm1
+            movss [ecx+0x08],xmm2
 
             // Left-shift the vectors
             shufps xmm0,xmm0,0x49
@@ -430,23 +420,63 @@ public:
             // Pos invert prep
             shufps xmm4,xmm4,0x40
 
-            movss [eax+0x10],xmm0
-            movss [eax+0x14],xmm1
-            movss [eax+0x18],xmm2
+            movss [ecx+0x10],xmm0
+            movss [ecx+0x14],xmm1
+            movss [ecx+0x18],xmm2
 
             // Left-shift the vectors
             shufps xmm0,xmm0,0x49
             shufps xmm1,xmm1,0x49
             shufps xmm2,xmm2,0x49
 
-            movss [eax+0x20],xmm0
-            movss [eax+0x24],xmm1
-            movss [eax+0x28],xmm2
+            movss [ecx+0x20],xmm0
+            movss [ecx+0x24],xmm1
+            movss [ecx+0x28],xmm2
 
             // Invert the position
             mulps xmm3,xmm4
-            movups [eax+0x30],xmm3
+            movups [ecx+0x30],xmm3
         }
+    }
+
+    inline void __thiscall Transform( const CVector& point, CVector& vout ) const
+    {
+	    __asm
+	    {
+		    mov eax,[point]
+		    mov esi,[vout]
+
+            // __thiscall makes sure that our matrix is in ecx
+		    movups xmm4,[ecx]RwMatrix.right
+		    movups xmm5,[ecx]RwMatrix.at
+		    movups xmm6,[ecx]RwMatrix.up
+		    movups xmm3,[ecx]RwMatrix.pos
+
+            // Read the offset parameters
+		    movss xmm0,[eax]CVector.fX
+		    movss xmm1,[eax]CVector.fY
+		    movss xmm2,[eax]CVector.fZ
+
+            // Expand to vectors
+		    shufps xmm0,xmm0,0x40
+		    shufps xmm1,xmm1,0x40
+		    shufps xmm2,xmm2,0x40
+
+		    mulps xmm0,xmm4
+		    mulps xmm1,xmm5
+		    mulps xmm2,xmm6
+
+		    addps xmm0,xmm1
+		    addps xmm0,xmm2
+		    addps xmm0,xmm3
+
+            // Write the output
+		    movss [esi]CVector.fX,xmm0
+		    shufps xmm0,xmm0,0x49
+		    movss [esi]CVector.fY,xmm0
+		    shufps xmm0,xmm0,0x49
+		    movss [esi]CVector.fZ,xmm0
+	    }
     }
 
     float& operator [] ( unsigned int i )

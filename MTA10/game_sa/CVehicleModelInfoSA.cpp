@@ -2,9 +2,9 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        game_sa/CPedModelInfoSA.cpp
+*  FILE:        game_sa/CVehicleModelInfoSA.cpp
 *  PURPOSE:     Vehicle model info
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,106 +13,57 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-CVehicleSeatPlacementPool **ppVehicleSeatPlacementPool = (CVehicleSeatPlacementPool**)0x00B4E680;
+/*
+    CVehicleModelInfoSAInterface
 
-struct _licensePlate
+    This class represents model information for every in-game vehicle.
+    It stores things like seat offsets and rotations, vehicle type,
+    maximum number of passengers, paintjob txd ids, etc.
+
+    The virtual interface is nearly completely researched so that we may
+    start adding native vehicle models very soon. Nevertheless, we may just
+    use this interface for reference if there are issues related to vehicle
+    model replacement. We may be interested to replace the GTA:SA code with 
+    these new functions since it'd be more stable
+    (CVehicleModelInfoSAInterface::Setup).
+*/
+
+CVehicleComponentInfoPool **ppVehicleComponentInfoPool = (CVehicleComponentInfoPool**)0x00B4E680;
+
+
+CVehicleModelInfoSAInterface::CVehicleModelInfoSAInterface( void )
 {
-    char text[8];
-    unsigned int style;
-    RpMaterial *plate;  // ext
-};
-
-typedef RpMaterial*     (*HandleVehicleFrontNameplate_t)    ( RpMaterial *mat, _licensePlate *info, unsigned char design );
-typedef RpMaterial*     (*HandleVehicleBackNameplate_t)     ( RpMaterial *mat, unsigned char design );
-
-HandleVehicleFrontNameplate_t   HandleVehicleFrontNameplate         = ( HandleVehicleFrontNameplate_t )         0x006FE020;
-HandleVehicleBackNameplate_t    HandleVehicleBackNameplate          = ( HandleVehicleBackNameplate_t )          0x006FDE50;
-
-#define FUNC_InitVehicleData                0x005B8F00
-#define FUNC_LoadVehicleColors              0x005B6890
-#define FUNC_LoadCarMods                    0x005B65A0
-#define FUNC_LoadVehicleParticles           0x004C8780
-
-static float trainLODDistance = 45000;
-static float boatLODDistance = 9800;
-static float heliLODDistance = 9800;        // same as boat
-static float heliRotorRenderDistance = 45000;   // same as train
-static float planeLODDistance = 45000;      // same as train
-static float vehicleLODDistance = 9800;     // same as boat
-static float highDetailDistance = 4050;
-
-RwTexDictionary *g_vehicleTxd = NULL;
-
-static void _VehicleModels_Init()
-{
-    __asm
-    {
-        mov eax,FUNC_LoadVehicleColors
-        call eax
-        mov eax,FUNC_LoadCarMods
-        call eax
-        mov eax,FUNC_LoadVehicleParticles
-        call eax
-    }
-
-    // Load the generic vehicle textures
-    CTxdInstanceSA *txdEntry = (*ppTxdPool)->Get( pGame->GetTextureManager()->FindTxdEntry( "vehicle" ) );
-
-    if ( txdEntry )
-    {
-        CFile *file = OpenGlobalStream( "MODELS\\GENERIC\\VEHICLE.TXD", "rb" );
-
-        txdEntry->LoadTXD( file );
-
-        delete file;
-    }
-    else
-        txdEntry = (*ppTxdPool)->Get( pGame->GetTextureManager()->LoadDictionaryEx( "vehicle", "MODELS\\GENERIC\\VEHICLE.TXD" ) );
-
-    // Reference it
-    txdEntry->Reference();
-
-    if ( txdEntry )
-        g_vehicleTxd = txdEntry->m_txd;
-
-    *(RwTexture**)0x00B4E68C = g_vehicleTxd->FindNamedTexture( "vehiclelights128" );
-    *(RwTexture**)0x00B4E690 = g_vehicleTxd->FindNamedTexture( "vehiclelightson128" );
-
-    // Allocate the seat placement pool
-    *ppVehicleSeatPlacementPool = new CVehicleSeatPlacementPool;
-
-    __asm
-    {
-        mov ecx,0x005D5BC0
-        call ecx
-    }
+    Init(); // ???
 }
 
-void    VehicleModels_Init()
-{
-    HookInstall( FUNC_InitVehicleData, (DWORD)_VehicleModels_Init, 5 );
-}
-
-void    VehicleModels_Shutdown()
-{
-}
-
-CVehicleModelInfoSAInterface::CVehicleModelInfoSAInterface()
-{
-    Init();
-}
-
-CVehicleModelInfoSAInterface::~CVehicleModelInfoSAInterface()
+CVehicleModelInfoSAInterface::~CVehicleModelInfoSAInterface( void )
 {
 
 }
 
-eModelType CVehicleModelInfoSAInterface::GetModelType()
+/*=========================================================
+    CVehicleModelInfoSAInterface::GetModelType
+
+    Purpose:
+        Returns the interface type of this model info.
+        ( -> MODEL_VEHICLE )
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C7650
+=========================================================*/
+eModelType CVehicleModelInfoSAInterface::GetModelType( void )
 {
     return MODEL_VEHICLE;
 }
 
-void CVehicleModelInfoSAInterface::Init()
+/*=========================================================
+    CVehicleModelInfoSAInterface::Init
+
+    Purpose:
+        Initializes this interface for first time usage.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C7630
+=========================================================*/
+void CVehicleModelInfoSAInterface::Init( void )
 {
     CClumpModelInfoSAInterface::Init();
 
@@ -121,26 +72,56 @@ void CVehicleModelInfoSAInterface::Init()
     m_steerAngle = 1000.0f;
 }
 
-void CVehicleModelInfoSAInterface::DeleteRwObject()
+/*=========================================================
+    CVehicleModelInfoSAInterface::DeleteRwObject
+
+    Purpose:
+        Deletes or dereferences all RenderWare resources associated
+        with this vehicle model info.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C9890
+=========================================================*/
+void CVehicleModelInfoSAInterface::DeleteRwObject( void )
 {
-    if ( m_seatPlacement )
+    if ( m_componentInfo )
     {
-        delete m_seatPlacement;
-        m_seatPlacement = NULL;
+        delete m_componentInfo;
+        m_componentInfo = NULL;
     }
 
     CClumpModelInfoSAInterface::DeleteRwObject();
 }
 
-RpClump* CVehicleModelInfoSAInterface::CreateRwObject()
+/*=========================================================
+    CVehicleModelInfoSAInterface::CreateRwObject
+
+    Purpose:
+        Creates an instance of the RenderWare clump associated
+        with this vehicle model info. The cloned clump will be
+        independent from this model info at best.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C9680
+=========================================================*/
+RpClump* CVehicleModelInfoSAInterface::CreateRwObject( void )
 {
-    RpClump *clump = CClumpModelInfoSAInterface::CreateRwObject();
+    RpClump *clump = (RpClump*)CClumpModelInfoSAInterface::CreateRwObject();
 
     // TODO
 
     return clump;
 }
 
+/*=========================================================
+    CVehicleModelInfoSAInterface::SetAnimFile
+
+    Arguments:
+        name - name of the animation file
+    Purpose:
+        Temporarily stores the animation file name into the
+        anim block id member.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C7670
+=========================================================*/
 void CVehicleModelInfoSAInterface::SetAnimFile( const char *name )
 {
     char *anim;
@@ -156,7 +137,17 @@ void CVehicleModelInfoSAInterface::SetAnimFile( const char *name )
     m_animFileIndex = (int)anim;
 }
 
-void CVehicleModelInfoSAInterface::ConvertAnimFileIndex()
+/*=========================================================
+    CVehicleModelInfoSAInterface::ConvertAnimFileIndex
+
+    Purpose:
+        Converts the anim file path pointer at the anim block
+        index member to a real anim block index, undoing the
+        hack.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C76D0
+=========================================================*/
+void CVehicleModelInfoSAInterface::ConvertAnimFileIndex( void )
 {
     int animBlock;
 
@@ -171,21 +162,45 @@ void CVehicleModelInfoSAInterface::ConvertAnimFileIndex()
     m_animFileIndex = animBlock;
 }
 
-int CVehicleModelInfoSAInterface::GetAnimFileIndex()
+/*=========================================================
+    CVehicleModelInfoSAInterface::GetAnimFileIndex
+
+    Purpose:
+        Returns the model info anim block index. If none is
+        associated, -1 is returned.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C7660
+=========================================================*/
+int CVehicleModelInfoSAInterface::GetAnimFileIndex( void )
 {
     return m_animFileIndex;
 }
 
+/*=========================================================
+    CVehicleModelInfoSAInterface::SetClump
+
+    Arguments:
+        clump - new clump which shall be associated with this
+                model info
+    Purpose:
+        Assigns a new clump RenderWare object with this vehicle
+        model info and sets it up for distribution by
+        CreateRwObject. The distributed model has atomics which
+        are selected from the given clump by CComponentHierarchySAInterface
+        model construction information.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C95C0
+=========================================================*/
 void CVehicleModelInfoSAInterface::SetClump( RpClump *clump )
 {
-    m_seatPlacement = new CVehicleSeatPlacementSAInterface();
+    m_componentInfo = new CVehicleComponentInfoSAInterface;
 
     CClumpModelInfoSAInterface::SetClump( clump );
 
     RegisterRenderCallbacks();
 
     // Correctly assign vehicle atomics
-    AssignAtomics( ((CAtomicHierarchySAInterface**)0x008A7740)[m_vehicleType] );
+    AssignAtomics( ((CComponentHierarchySAInterface**)0x008A7740)[m_vehicleType] );
 
     RegisterRoot();
 
@@ -196,520 +211,21 @@ void CVehicleModelInfoSAInterface::SetClump( RpClump *clump )
     InitNameplate();
 }
 
-static bool RwAtomicRenderTrainLOD( RpAtomic *atomic )
+/*=========================================================
+    CVehicleComponentInfoSAInterface::constructor
+
+    Purpose:
+        Constructs a vehicle component information container.
+        In this structure component positions and rotations are stored.
+        Components are prepared so that they can be easily applied to
+        vehicles.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C8D60
+=========================================================*/
+CVehicleComponentInfoSAInterface::CVehicleComponentInfoSAInterface( void )
 {
-    if (*(float*)VAR_ATOMIC_RENDER_OFFSET <= trainLODDistance)
-        return true;
-
-    RpAtomicRender( atomic );
-    return true;
-}
-
-static bool RwAtomicRenderTranslucentTrain( RpAtomic *atomic )
-{
-    RwAtomicZBufferEntry level;
-    float calc;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= trainLODDistance )
-        return true;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
-        atomic->m_renderFlags &= ~0x20;
-    else
-        atomic->m_renderFlags |= 0x20;
-
-    calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags );
-
-    // Lol, serious checking going on here!
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
-        && *(float*)0x00C88020 > 0.2f
-        && calc < 0.0f
-        && !(atomic->m_matrixFlags & 0x80)
-        && *(float*)VAR_ATOMIC_RENDER_OFFSET < 0.1f )
-        return true;
-
-    // Set up rendering
-    level.m_render = RpAtomicRender;
-    level.m_atomic = atomic;
-    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET;
-
-    if ( !(atomic->m_matrixFlags & 0x40) )
-        level.m_distance += calc;
-
-    if ( !rwRenderChains->PushRender( &level ) )
-        RpAtomicRender( atomic );
-
-    return true;
-}
-
-static bool RwAtomicRenderTrain( RpAtomic *atomic )
-{
-    float calc;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= trainLODDistance )
-        return true;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
-        atomic->m_renderFlags &= ~0x20;
-    else
-        atomic->m_renderFlags |= 0x20;
-
-    // Lol, serious checking going on here!
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
-        && *(float*)0x00C88020 > 0.2f
-        && (calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags )) < 0.0f
-        && !(atomic->m_matrixFlags & 0x80)
-        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
-        return true;
-
-    RpAtomicRender( atomic );
-    return true;
-}
-
-static bool RwAtomicRenderBoatLOD( RpAtomic *atomic )
-{
-    if (*(float*)VAR_ATOMIC_RENDER_OFFSET <= boatLODDistance)
-        return true;
-
-    atomic->m_renderFlags |= 0x20;
-
-    if ( atomic->m_clump->m_renderFlags & 0xFF )
-    {
-        RpAtomicRenderAlpha( atomic, atomic->m_clump->m_renderFlags );
-        return true;
-    }
-
-    RpAtomicRender( atomic );
-    return true;
-}
-
-static bool RwAtomicRenderBoat( RpAtomic *atomic )
-{
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= boatLODDistance )
-        return true;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
-        atomic->m_renderFlags &= ~0x20;
-    else
-        atomic->m_renderFlags |= 0x20;
-
-    RpAtomicRender( atomic );
-    return true;
-}
-
-static bool RwAtomicRenderTranslucentBoat( RpAtomic *atomic )
-{
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= boatLODDistance )
-        return true;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
-        atomic->m_renderFlags &= ~0x20;
-    else
-        atomic->m_renderFlags |= 0x20;
-
-    if ( atomic->m_matrixFlags & 0x40 )
-    {
-        RwAtomicZBufferEntry level;
-
-        level.m_atomic = atomic;
-        level.m_render = RpAtomicRender;
-        level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET;
-
-        if ( rwRenderChains->PushRender( &level ) )
-            return true;
-    }
-    
-    RpAtomicRender( atomic );
-    return true;
-}
-
-static bool RwAtomicRenderHeliLOD( RpAtomic *atomic )
-{
-    if (*(float*)VAR_ATOMIC_RENDER_OFFSET <= heliLODDistance)
-        return true;
-
-    atomic->m_renderFlags |= 0x20;
-
-    if ( atomic->m_clump->m_renderFlags & 0xFF )
-    {
-        RpAtomicRenderAlpha( atomic, atomic->m_clump->m_renderFlags );
-        return true;
-    }
-
-    RpAtomicRender( atomic );
-    return true;
-}
-
-static bool RwAtomicRenderHeli( RpAtomic *atomic )
-{
-    float calc;
-    
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliLODDistance )
-        return true;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
-        atomic->m_renderFlags &= ~0x20;
-    else
-        atomic->m_renderFlags |= 0x20;
-
-    // Lol, serious checking going on here!
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
-        && *(float*)0x00C88020 > 0.2f
-        && (calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags )) < 0.0f
-        && !(atomic->m_matrixFlags & 0x80)
-        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
-        return true;
-
-    RpAtomicRender( atomic );
-    return true;
-}
-
-static bool RwAtomicRenderTranslucentHeli( RpAtomic *atomic )
-{
-    float calc;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliLODDistance )
-        return true;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
-        atomic->m_renderFlags &= ~0x20;
-    else
-        atomic->m_renderFlags |= 0x20;
-
-    calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags );
-
-    // Lol, serious checking going on here!
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
-        && *(float*)0x00C88020 > 0.2f
-        && calc < 0.0f
-        && !(atomic->m_matrixFlags & 0x80)
-        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
-        return true;
-
-    // Set up rendering
-    RwAtomicZBufferEntry level;
-    level.m_render = RpAtomicRender;
-    level.m_atomic = atomic;
-    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET;
-
-    if ( atomic->m_matrixFlags & 0x40 )
-        level.m_distance -= 0.0001f;
-    else
-        level.m_distance += calc;
-
-    if ( !rwRenderChains->PushRender( &level ) )
-        RpAtomicRender( atomic );
-    
-    return true;
-}
-
-static bool RwAtomicRenderHeliMovingRotor( RpAtomic *atomic )
-{
-    CVector vecRotor;
-    RwAtomicZBufferEntry level;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliRotorRenderDistance )
-        return true;
-
-    vecRotor = atomic->m_parent->m_ltm.pos - *(CVector*)0x00C88050;
-
-    // Fun Fact: The top rotor has a 20 unit radius!
-    level.m_distance = vecRotor.DotProduct( atomic->m_geometry->m_parent->m_ltm.at ) * 20 + *(float*)VAR_ATOMIC_RENDER_OFFSET;
-    level.m_render = RpAtomicRender;
-    level.m_atomic = atomic;
-
-    if ( !rwRenderChains->PushRender( &level ) )
-        RpAtomicRender( atomic );
-
-    return true;
-}
-
-static bool RwAtomicRenderHeliMovingRotor2( RpAtomic *atomic )
-{
-    CVector vecRotor;
-    RwAtomicZBufferEntry level;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliRotorRenderDistance )
-        return true;
-
-    vecRotor = atomic->m_parent->m_ltm.pos - *(CVector*)0x00C88050;
-
-    // Lulz, heavy math, much assembly, small C++ code
-    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET - vecRotor.DotProduct( atomic->m_geometry->m_parent->m_ltm.right ) - vecRotor.DotProduct( atomic->m_geometry->m_parent->m_ltm.up );
-    level.m_render = RpAtomicRender;
-    level.m_atomic = atomic;
-
-    if ( !rwRenderChains->PushRender( &level ) )
-        RpAtomicRender( atomic );
-
-    return true;
-}
-
-static bool RwAtomicRenderPlaneLOD( RpAtomic *atomic )  // actually the same as train
-{
-    if (*(float*)VAR_ATOMIC_RENDER_OFFSET <= planeLODDistance)
-        return true;
-
-    RpAtomicRender( atomic );
-    return true;
-}
-
-static bool RwAtomicRenderPlane( RpAtomic *atomic )
-{
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= planeLODDistance )
-        return true;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
-        atomic->m_renderFlags &= ~0x20;
-    else
-        atomic->m_renderFlags |= 0x20;
-
-    // Lol, serious checking going on here!
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C88028 && !(atomic->m_matrixFlags & 0x04)
-        && *(float*)0x00C88020 > 0.2f
-        && RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags ) >= 0.0f )
-        return true;
-
-    RpAtomicRender( atomic );
-    return true;
-}
-
-static bool RwAtomicRenderTranslucentPlane( RpAtomic *atomic )
-{
-    float calc;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= heliLODDistance )
-        return true;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
-        atomic->m_renderFlags &= ~0x20;
-    else
-        atomic->m_renderFlags |= 0x20;
-
-    calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags );
-
-    // Lol, serious checking going on here!
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C88028 && !(atomic->m_matrixFlags & 0x04)
-        && *(float*)0x00C88020 > 0.2f
-        && calc < 0.0f
-        && !(atomic->m_matrixFlags & 0x80)
-        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
-        return true;
-
-    // Set up rendering
-    RwAtomicZBufferEntry level;
-    level.m_render = RpAtomicRender;
-    level.m_atomic = atomic;
-    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET;
-
-    if ( atomic->m_matrixFlags & 0x40 )
-        level.m_distance -= 0.0001f;
-    else
-        level.m_distance += calc;
-
-    if ( !rwRenderChains->PushRender( &level ) )
-        RpAtomicRender( atomic );
-    
-    return true;
-}
-
-static bool RwAtomicRenderTranslucentDefaultVehicle( RpAtomic *atomic ) // actually equals heli render
-{
-    float calc;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= vehicleLODDistance )
-        return true;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
-        atomic->m_renderFlags &= ~0x20;
-    else
-        atomic->m_renderFlags |= 0x20;
-
-    calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags );
-
-    // Lol, serious checking going on here!
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
-        && *(float*)0x00C88020 > 0.2f
-        && calc < 0.0f
-        && !(atomic->m_matrixFlags & 0x80)
-        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
-        return true;
-
-    // Set up rendering
-    RwAtomicZBufferEntry level;
-    level.m_render = RpAtomicRender;
-    level.m_atomic = atomic;
-    level.m_distance = *(float*)VAR_ATOMIC_RENDER_OFFSET;
-
-    if ( atomic->m_matrixFlags & 0x40 )
-        level.m_distance -= 0.0001f;
-    else
-        level.m_distance += calc;
-
-    if ( !rwRenderChains->PushRender( &level ) )
-        RpAtomicRender( atomic );
-    
-    return true;
-}
-
-static bool RwAtomicRenderDefaultVehicle( RpAtomic *atomic )    // actually equals heli render
-{
-    float calc;
-    
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= vehicleLODDistance )
-        return true;
-
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET >= highDetailDistance )
-        atomic->m_renderFlags &= ~0x20;
-    else
-        atomic->m_renderFlags |= 0x20;
-
-    // Lol, serious checking going on here!
-    if ( *(float*)VAR_ATOMIC_RENDER_OFFSET < *(float*)0x00C8802C && !(atomic->m_matrixFlags & 0x04)
-        && *(float*)0x00C88020 > 0.2f
-        && (calc = RwMatrixUnknown( atomic->m_parent->m_ltm, atomic->m_geometry->m_parent->m_ltm, atomic->m_matrixFlags )) < 0.0f
-        && !(atomic->m_matrixFlags & 0x80)
-        && calc * calc > *(float*)VAR_ATOMIC_RENDER_OFFSET * 0.1 )
-        return true;
-
-    RpAtomicRender( atomic );
-    return true;
-}
-
-static bool RwAtomicSetupVehicleDamaged( RpAtomic *child )
-{
-    if ( strstr(child->m_parent->m_nodeName, "_dam") )
-    {
-        child->m_flags = 0;
-
-        //child->m_visibility = 2;
-        return true;
-    }
-
-    if ( strstr(child->m_parent->m_nodeName, "_ok") )
-        //child->m_visibility = 1;
-        return true;
-
-    return true;
-}
-
-static bool RwAtomicRegisterTrain( RpAtomic *child, int )
-{
-    if ( strstr(child->m_parent->m_nodeName, "_vlo") )
-    {
-        child->SetRenderCallback( RwAtomicRenderTrainLOD );
-        return true;
-    }
-    else if ( child->m_geometry->IsAlpha() )
-        child->SetRenderCallback( RwAtomicRenderTranslucentTrain ); // translucent polys need second render pass
-    else
-        child->SetRenderCallback( RwAtomicRenderTrain );
-
-    RwAtomicSetupVehicleDamaged( child );
-    return true;
-}
-
-static bool RwAtomicRegisterBoat( RpAtomic *child, int )
-{
-    if ( strcmp( child->m_parent->m_nodeName, "boat_hi" ) )
-        child->SetRenderCallback( RwAtomicRenderBoat );         // boat_hi does not support alpha?
-    else if ( strstr( child->m_parent->m_nodeName, "_vlo" ) )
-        child->SetRenderCallback( RwAtomicRenderBoatLOD );
-    else if ( child->m_geometry->IsAlpha() )
-        child->SetRenderCallback( RwAtomicRenderTranslucentBoat );
-    else
-        child->SetRenderCallback( RwAtomicRenderBoat );
-
-    RwAtomicSetupVehicleDamaged( child );
-    return true;
-}
-
-static bool RwAtomicRegisterHeli( RpAtomic *child, int )
-{
-    if ( strcmp( child->m_parent->m_nodeName, "moving_rotor" ) == 0 )
-        child->SetRenderCallback( RwAtomicRenderHeliMovingRotor );
-    else if ( strcmp( child->m_parent->m_nodeName, "moving_rotoz2" ) == 0 )
-        child->SetRenderCallback( RwAtomicRenderHeliMovingRotor2 );
-    else if ( strstr( child->m_parent->m_nodeName, "_vlo" ) == 0 )
-        child->SetRenderCallback( RwAtomicRenderHeliLOD );
-    else if ( child->m_geometry->IsAlpha() || strncmp( child->m_parent->m_nodeName, "windscreen", 10) == 0 )
-        child->SetRenderCallback( RwAtomicRenderTranslucentHeli );
-    else
-        child->SetRenderCallback( RwAtomicRenderHeli );
-
-    RwAtomicSetupVehicleDamaged( child );
-    return true;
-}
-
-static bool RwAtomicRegisterPlane( RpAtomic *child, int )
-{
-    if ( strstr(child->m_parent->m_nodeName, "_vlo") )
-    {
-        child->SetRenderCallback( RwAtomicRenderPlaneLOD );
-        return true;
-    }
-    else if ( child->m_geometry->IsAlpha() )
-        child->SetRenderCallback( RwAtomicRenderTranslucentPlane );
-    else
-        child->SetRenderCallback( RwAtomicRenderPlane );
-
-    RwAtomicSetupVehicleDamaged( child );
-    return true;
-}
-
-static bool RwAtomicRegisterDefaultVehicle( RpAtomic *child, int )
-{
-    if ( strstr( child->m_parent->m_nodeName, "_vlo" ) == 0 )
-        child->SetRenderCallback( RwAtomicRenderHeliLOD );
-    else if ( child->m_geometry->IsAlpha() || strnicmp( child->m_parent->m_nodeName, "windscreen", 10 ) == 0 )
-        child->SetRenderCallback( RwAtomicRenderTranslucentDefaultVehicle );
-    else
-        child->SetRenderCallback( RwAtomicRenderDefaultVehicle );
-
-    RwAtomicSetupVehicleDamaged( child );
-    return true;
-}
-
-void CVehicleModelInfoSAInterface::RegisterRenderCallbacks()
-{
-    switch( m_vehicleType )
-    {
-    case VEHICLE_TRAIN:
-        m_rwClump->ForAllAtomics( RwAtomicRegisterTrain, 0 );
-        return;
-    case VEHICLE_PLANE:
-    case VEHICLE_FAKEPLANE:
-        m_rwClump->ForAllAtomics( RwAtomicRegisterPlane, 0 );
-        return;
-    case VEHICLE_BOAT:
-        m_rwClump->ForAllAtomics( RwAtomicRegisterBoat, 0 );
-        return;
-    case VEHICLE_HELI:
-        m_rwClump->ForAllAtomics( RwAtomicRegisterHeli, 0 );
-        return;
-    }
-
-    m_rwClump->ForAllAtomics( RwAtomicRegisterDefaultVehicle, 0 );
-}
-
-CVehicleSeatPlacementSAInterface::CVehicleSeatPlacementSAInterface()
-{
-    unsigned int n;
-
-    for (n=0; n<MAX_SEATS; n++)
-    {
-        m_seatOffset[n].fX = 0;
-        m_seatOffset[n].fY = 0;
-        m_seatOffset[n].fZ = 0;
-    }
-
-    for (n=0; n<18; n++)
-    {
-        m_info[n].m_id = -1;
-    }
-
     // We have no atomics in the beginning
-    memset(&m_atomics, 0, sizeof(m_atomics));
+    memset( m_atomics, 0, sizeof(m_atomics) );
 
     m_atomicCount = 0;
 
@@ -717,28 +233,54 @@ CVehicleSeatPlacementSAInterface::CVehicleSeatPlacementSAInterface()
     m_usageFlags = 0;
 }
 
-CVehicleSeatPlacementSAInterface::~CVehicleSeatPlacementSAInterface()
+/*=========================================================
+    CVehicleComponentInfoSAInterface::destructor
+
+    Purpose:
+        Destroys all resources which were associated with
+        this component information structure.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C7410
+=========================================================*/
+CVehicleComponentInfoSAInterface::~CVehicleComponentInfoSAInterface( void )
 {
-    // Call the destructor (TODO: into C++!)
-    __asm
+    // Destroy atomic and frame resources
+    for ( unsigned char n = 0; n < m_atomicCount; n++ )
     {
-        mov ecx,this
-        mov eax,0x004C7410
-        call eax
+        RpAtomic *atomic = m_atomics[n];
+        RwFrame *frame = atomic->m_parent;
+
+        RpAtomicDestroy( atomic );
+        RwFrameDestroy( frame );
     }
 }
 
-void* CVehicleSeatPlacementSAInterface::operator new( size_t )
+// The vehicle component interface is allocated in a pool.
+// It means that GTA:SA can have as many vehicle models loaded at a
+// time as it has pool slots.
+void* CVehicleComponentInfoSAInterface::operator new( size_t )
 {
-    return (*ppVehicleSeatPlacementPool)->Allocate();
+    return (*ppVehicleComponentInfoPool)->Allocate();
 }
 
-void CVehicleSeatPlacementSAInterface::operator delete( void *ptr )
+void CVehicleComponentInfoSAInterface::operator delete( void *ptr )
 {
-    (*ppVehicleSeatPlacementPool)->Free( (CVehicleSeatPlacementSAInterface*)ptr );
+    (*ppVehicleComponentInfoPool)->Free( (CVehicleComponentInfoSAInterface*)ptr );
 }
 
-void CVehicleSeatPlacementSAInterface::AddAtomic( RpAtomic *atomic )
+/*=========================================================
+    CVehicleComponentInfoSAInterface::AddAtomic
+
+    Arguments:
+        atomic - atomic to add to the storage
+    Purpose:
+        Appends an atomic to this vehicle component structure.
+        It supports a maximum of 6 atomics.
+    Note:
+        This function is inlined into CVehicleModelInfoSAInterface::Setup.
+        The GTA:SA function does not check for the maximum (0x004C9027).
+=========================================================*/
+void CVehicleComponentInfoSAInterface::AddAtomic( RpAtomic *atomic )
 {
     if ( m_atomicCount == 6 )
         return;
@@ -746,58 +288,121 @@ void CVehicleSeatPlacementSAInterface::AddAtomic( RpAtomic *atomic )
     m_atomics[ m_atomicCount++ ] = atomic;
 }
 
-void CVehicleModelInfoSAInterface::Setup()
+/*=========================================================
+    RwFrameChildBaseHierarchy
+
+    Arguments:
+        child - child frame of the root frame, whose object hierarchy
+                should be root-based
+    Purpose:
+        Scans through all children of a frame's hierarchy and
+        reparents all their objects to the given root frame.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C8E30
+=========================================================*/
+static bool RwFrameChildBaseHierarchy( RwFrame *child, RwFrame *root )
+{
+    child->ForAllChildren( RwFrameChildBaseHierarchy, root );
+
+    // Add all objects to the root
+    LIST_FOREACH_BEGIN( RwObjectFrame, child->m_objects.root, m_lFrame )
+        item->AddToFrame( root );
+    LIST_FOREACH_END
+    return true;
+}
+
+/*=========================================================
+    CVehicleModelInfoSAInterface::Setup
+
+    Purpose:
+        Takes the current clump RenderWare object and restructures
+        it. The resulting model is optimized for in-game usage. It
+        acquires seat placement information using frame-matrix
+        transformation (matrix * vector), which is used to render
+        the sitting player and interpolation to the seat. Special
+        atomics (wheels, ...) get default rendering callbacks.
+        The actual number of doors for this model is set by the
+        amount of component frames which are marked as doors in
+        the registry.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C8E60
+    Note:
+        The GTA:SA function made no distinctions between atomics,
+        lights and cameras, resulting in a crash if lights or
+        cameras were part of vehicle models. This has been fixed
+        (GetFirstAtomic).
+=========================================================*/
+inline static void RwFrameGetAbsoluteTransformationBaseOffset( CVector& out, RwFrame *frame )
+{
+    out = frame->m_modelling.pos;
+
+    RwFrame *prevParent = frame->m_parent;
+
+    // Transform until base frame is reached
+    while ( prevParent )
+    {
+        RwFrame *parent = prevParent->m_parent;
+
+        if ( !parent )
+            break;
+
+        prevParent->GetModelling().Transform( out, out );
+
+        prevParent = parent;
+    }
+}
+
+void CVehicleModelInfoSAInterface::Setup( void )
 {
     tHandlingDataSA *handling = &m_OriginalHandlingData[ m_handlingID ];
-    CAtomicHierarchySAInterface *info = ((CAtomicHierarchySAInterface**)0x008A7740)[ m_vehicleType ];
+    CComponentHierarchySAInterface *info = ((CComponentHierarchySAInterface**)0x008A7740)[ m_vehicleType ];
     RpAtomic *obj1 = NULL;
     RpAtomic *obj2 = NULL;
-    RwFrame *hier;
+
+    m_numberOfDoors = 0;
 
     for (info; info->m_name; info++)
     {
-        if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_SEAT | ATOMIC_HIER_UNKNOWN3) && ( hier = m_rwClump->m_parent->FindFreeChildByName( info->m_name ) ) )
+        RwFrame *hier;
+
+        if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_SEAT | ATOMIC_HIER_UNKNOWN3) && ( hier = GetRwObject()->m_parent->FindFreeChildByName( info->m_name ) ) )
         {
             if ( info->m_flags & ATOMIC_HIER_FRONTSEAT )
             {
-                RwFrame *parent = hier;
+                // Position the component
+                RwFrameGetAbsoluteTransformationBaseOffset( m_componentInfo->m_seatOffset[ info->m_frameHierarchy ], hier );
 
-                // Position the seats
-                m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ] = (CVector)hier->m_parent->m_ltm.pos;
-
-                while ( ( parent = parent->m_parent ) && parent->m_parent )
-                    pRwInterface->m_matrixTransform3( &m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], &m_seatPlacement->m_seatOffset[ info->m_frameHierarchy ], 1, &parent->m_parent->GetModelling() );
-
-                RwFrameCloneHierarchy( hier );
+                // We do not require this hierarchy anymore
+                RwFrameDestroy( hier );
             }
             else if ( info->m_flags & ATOMIC_HIER_UNKNOWN3 )
             {
-                 CVehicleSeatInfoSA *seat = &m_seatPlacement->m_info[ info->m_frameHierarchy ];
+                 CVehicleComponentPlacementSA& seat = m_componentInfo->m_info[ info->m_frameHierarchy ];
 
-                 seat->m_offset = hier->GetPosition();
+                 seat.m_offset = hier->GetPosition();
 
                  // Calculate the quat for rotation
-                 seat->m_quat = CQuat( hier->m_modelling );
+                 seat.m_quat = CQuat( hier->m_modelling );
 
-                 seat->m_id = hier->m_hierarchyId;
+                 seat.m_id = hier->m_parent->m_hierarchyId;
             }
             else
             {
                 RpAtomic *atomic = hier->GetFirstAtomic();
 
-                RpClumpRemoveAtomic( m_rwClump, atomic );
+                atomic->RemoveFromClump();
 
-                RwFrameRemoveChild( hier );
+                hier->Unlink();
 
-                // Apply the seat flags
+                // Apply the component flags
                 SetComponentFlags( hier, info->m_flags );
 
-                // Append the atomic onto the seat interface
-                m_seatPlacement->AddAtomic( atomic );
+                // Append the atomic onto the component registry
+                m_componentInfo->AddAtomic( atomic );
             }
         }
 
-        if ( info->m_flags & (ATOMIC_HIER_UNKNOWN4 | ATOMIC_HIER_UNKNOWN5) && ( hier = m_rwClump->m_parent->FindChildByHierarchy( info->m_frameHierarchy ) ) )
+        if ( info->m_flags & (ATOMIC_HIER_UNKNOWN4 | ATOMIC_HIER_UNKNOWN5) && ( hier = GetRwObject()->m_parent->FindChildByHierarchy( info->m_frameHierarchy ) ) )
         {
             for ( hier; hier; hier = hier->GetFirstChild() )
             {
@@ -806,7 +411,7 @@ void CVehicleModelInfoSAInterface::Setup()
                 if ( !obj )
                     continue;
 
-                if ( hier->m_flags & ATOMIC_HIER_UNKNOWN4 )
+                if ( info->m_flags & ATOMIC_HIER_UNKNOWN4 )
                     obj1 = obj;
                 else
                     obj2 = obj;
@@ -816,14 +421,14 @@ void CVehicleModelInfoSAInterface::Setup()
         }
     }
 
-    info = ((CAtomicHierarchySAInterface**)0x008A7740)[ m_vehicleType ];
+    info = ((CComponentHierarchySAInterface**)0x008A7740)[ m_vehicleType ];
 
     for (info; info->m_name; info++)
     {
         if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_SEAT | ATOMIC_HIER_UNKNOWN3) )
             continue;
 
-        hier = m_rwClump->m_parent->FindChildByHierarchy( info->m_frameHierarchy );
+        RwFrame *hier = GetRwObject()->m_parent->FindChildByHierarchy( info->m_frameHierarchy );
 
         if ( !hier )
             continue;
@@ -836,21 +441,22 @@ void CVehicleModelInfoSAInterface::Setup()
             RpAtomic *primary = NULL;
             RpAtomic *secondary = NULL;
 
-            hier->SetRootForHierarchy( hier );
+            // Put all objects into the base frame
+            hier->ForAllChildren( RwFrameChildBaseHierarchy, hier );
 
             hier->RegisterRoot();
 
-            hier->FindVisibilityAtomics( &primary, &secondary );
+            hier->FindComponentAtomics( &primary, &secondary );
 
             if ( primary && secondary )
+            {
                 secondary->SetRenderCallback( primary->m_renderCallback );
 
-            m_seatPlacement->m_usageFlags |= 1 << info->m_frameHierarchy;
+                m_componentInfo->m_usageFlags |= 1 << info->m_frameHierarchy;
+            }
         }
 
         SetComponentFlags( hier, info->m_flags );
-
-        RpAtomic *clone;
 
         if ( info->m_flags & (ATOMIC_HIER_UNKNOWN4 | 0x04) )
         {
@@ -859,12 +465,12 @@ void CVehicleModelInfoSAInterface::Setup()
             if ( !obj1 )
                 continue;
 
-            if ( info->m_flags & ATOMIC_HIER_UNKNOWN4 )
+            if ( !( info->m_flags & ATOMIC_HIER_UNKNOWN4 ) )
             {
-                clone = RpAtomicClone( obj1 );
+                RpAtomic *clone = RpAtomicClone( obj1 );
 
-                RpAtomicSetFrame( clone, hier );
-                RpClumpAddAtomic( m_rwClump, clone );
+                clone->AddToFrame( hier );
+                clone->AddToClump( GetRwObject() );
 
                 // Default the render callback
                 clone->SetRenderCallback( NULL );
@@ -876,91 +482,134 @@ void CVehicleModelInfoSAInterface::Setup()
 
                 // Create a new rotation frame
                 frame = RwFrameCreate();
-                RpAtomicSetFrame( clone, frame );
+                clone->AddToFrame( frame );
 
-                RwFrameAddChild( hier, frame );
+                hier->Link( frame );
 
-                new (&frame->m_modelling) RwMatrix();
+                frame->m_modelling.Identity();
+                frame->m_modelling.pos[0] = (float)(1.15 * -0.25);
 
-                RpClumpAddAtomic( m_rwClump, clone );
+                clone->AddToClump( GetRwObject() );
 
                 clone->SetRenderCallback( NULL );
-                continue;
             }
+            else
+            {
+                // Put all objects into the base frame
+                hier->ForAllChildren( RwFrameChildBaseHierarchy, hier );
 
-            hier->SetRootForHierarchy( hier );
+                hier->RegisterRoot();
 
-            hier->RegisterRoot();
-
-            obj1->SetRenderCallback( NULL );
+                obj1->SetRenderCallback( NULL );
+            }
         }
         else if ( info->m_flags & ATOMIC_HIER_UNKNOWN6 )
         {
             if ( !obj2 )
                 continue;
 
-            clone = RpAtomicClone( obj2 );
+            RpAtomic *clone = RpAtomicClone( obj2 );
 
-            RpAtomicSetFrame( clone, hier );
-
-            RpClumpAddAtomic( m_rwClump, clone );
+            clone->AddToFrame( hier );
+            clone->AddToClump( GetRwObject() );
 
             clone->SetRenderCallback( NULL );
         }
     }
 }
 
+/*=========================================================
+    CVehicleModelInfoSAInterface::SetComponentFlags
+
+    Arguments:
+        frame - component of the vehicle model
+        flags - properties to set to the component
+    Purpose:
+        Applies component hierarchy flags to the atomics of the
+        vehicle component frame.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C7C10
+    Note:
+        This function has been optimized so that it does not
+        rapidly call RwFrame::SetAtomicComponentFlags but rather
+        collects all frames for a single call.
+=========================================================*/
 void CVehicleModelInfoSAInterface::SetComponentFlags( RwFrame *frame, unsigned int flags )
 {
     tHandlingDataSA *handling = &m_OriginalHandlingData[ m_handlingID ];
+    unsigned short compFlags = 0;
 
     if ( flags & 0x1000 )
-        frame->SetAtomicVisibility( 0x80 );
+        compFlags |= 0x80;
 
     if ( flags & 0x400000 )
-        frame->SetAtomicVisibility( 0x400 );
+        compFlags |= 0x400;
 
     if ( flags & 0x40000 )
-        frame->SetAtomicVisibility( 0x2000 );
+        compFlags |= 0x2000;
 
     if ( flags & 0x80 )
-        frame->SetAtomicVisibility( 0x10 );
+        compFlags |= 0x10;
     else if ( flags & 0x0100 && ( handling->uiModelFlags & 0x01 || !( flags & (0x20 | 0x40) ) ) )
-        frame->SetAtomicVisibility( 0x20 );
+        compFlags |= 0x20;
     else if ( flags & 0x20 )
-        frame->SetAtomicVisibility( 0x04 );
+        compFlags |= 0x04;
     else if ( flags & 0x40 )
-        frame->SetAtomicVisibility( 0x08 );
+        compFlags |= 0x08;
 
     if ( flags & 0x8000 && ( handling->uiModelFlags & 0x80000000 || flags & (0x20 | 0x40) ) )
-        frame->SetAtomicVisibility( 0x8000 );
+        compFlags |= 0x8000;
 
     if ( flags & 0x2000 )
-        frame->SetAtomicVisibility( 0x100 );
+        compFlags |= 0x100;
     else if ( flags & 0x4000 )
-        frame->SetAtomicVisibility( 0x200 );
+        compFlags |= 0x200;
 
     if ( flags & 0x0400 )
-        frame->SetAtomicVisibility( 0x40 );
+        compFlags |= 0x40;
+
+    if ( compFlags != 0 )
+        frame->SetAtomicComponentFlags( compFlags );
 }
 
+/*=========================================================
+    RwClumpAtomicSetupVehiclePipeline
+
+    Arguments:
+        child - atomic of the vehicle model
+    Purpose:
+        Determines the rendering pipeline for internal procedures.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005D5B30
+    Note:
+        We should analyze RpAtomicSetupVehiclePipeline someday.
+=========================================================*/
 static bool RwClumpAtomicSetupVehiclePipeline( RpAtomic *child, int )
 {
     RpAtomicSetupVehiclePipeline( child );
     return true;
 }
 
-void CVehicleModelInfoSAInterface::RegisterRoot()
-{
-    RwFrame *frame;
-    CVector normal( 1.0f, 0, 0 );
+/*=========================================================
+    CVehicleModelInfoSAInterface::RegisterRoot
 
+    Purpose:
+        Assigns the vehicle rendering pipeline to all atomics
+        and creates a global vehicle root model info frame.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C8900
+=========================================================*/
+void CVehicleModelInfoSAInterface::RegisterRoot( void )
+{
     // Make sure we render using the vehicle pipeline
-    m_rwClump->ForAllAtomics( RwClumpAtomicSetupVehiclePipeline, 0 );
+    GetRwObject()->ForAllAtomics( RwClumpAtomicSetupVehiclePipeline, 0 );
 
     // Do not do stuff if we have a root already
     if ( *(RwFrame**)0x00B4E6B8 )
         return;
+
+    RwFrame *frame;
+    CVector normal( 1.0f, 0, 0 );
 
     frame = RwFrameCreate();
 
@@ -968,36 +617,55 @@ void CVehicleModelInfoSAInterface::RegisterRoot()
 
     RwFrameOrient( frame, 60, 0, normal );
 
+    // The vehicle root frame is not a child frame
     frame->RegisterRoot();
 
     // Cache the matrix
-    RwFrameGetLTM( frame );
+    frame->GetLTM();
 }
 
-void CVehicleModelInfoSAInterface::SetupMateria()
+/*=========================================================
+    CVehicleModelInfoSAInterface::SetupMateria
+
+    Purpose:
+        Collects atomic materials and destroys them. 
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C8BD0
+=========================================================*/
+void CVehicleModelInfoSAInterface::SetupMateria( void )
 {
     RwPrefetch();
     {
         RpMaterials mats( 20 );
-        unsigned int n;
 
-        m_rwClump->FetchMateria( mats );
+        GetRwObject()->FetchMateria( mats );
 
-        for ( n=0; n<m_seatPlacement->m_atomicCount; n++ )
-            m_seatPlacement->m_atomics[n]->FetchMateria( mats );
+        for ( char n = 0; n < m_componentInfo->m_atomicCount; n++ )
+            m_componentInfo->m_atomics[n]->FetchMateria( mats );
     }
 
-    m_rwClump->RemoveAtomicVisibilityFlags( 0x2000 );
+    GetRwObject()->RemoveAtomicComponentFlags( 0x2000 );
 }
 
+/*=========================================================
+    GetRandomNameplateText
+
+    Arguments:
+        buffer - output memory allocation for nameplate text
+                 generation
+        max - size of the buffer, preferably (i * 3 + 4)
+    Purpose:
+        Generates a nameplate text message for the nameplate
+        material routine.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x006FD5B0
+=========================================================*/
 #define RAND        (double)(rand() & 0xFFFF) / 0x7FFF
 #define RANDCHAR    (char)( RAND * 0.23 )
 #define RANDNUM     (char)( RAND * -9 )
 
 static bool GetRandomNameplateText( char *buffer, size_t max )
 {
-    unsigned int n;
-
     if ( max < 4 )
         return false;
 
@@ -1006,7 +674,7 @@ static bool GetRandomNameplateText( char *buffer, size_t max )
     buffer[2] = '0' - RANDNUM;
     buffer[3] = '0' - RANDNUM;
 
-    for ( n=4; n<max; )
+    for ( unsigned int n = 4; n < max; )
     {
         buffer[n++] = '0' - RANDNUM;
         buffer[n++] = 'A' - RANDCHAR;
@@ -1015,6 +683,31 @@ static bool GetRandomNameplateText( char *buffer, size_t max )
 
     return true;
 }
+
+/*=========================================================
+    RwMaterialSetLicensePlate
+
+    Arguments:
+        mat - vehicle atomic geometry material
+        plate - contains name and style information
+    Purpose:
+        Scans through all materials of the vehicle model
+        and updates the ones named "carplate" and "carpback".
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x006FE060
+=========================================================*/
+struct _licensePlate
+{
+    char text[8];
+    unsigned char style;
+    RpMaterial *plate;  // ext
+};
+
+typedef RpMaterial*     (*HandleVehicleFrontNameplate_t)    ( RpMaterial *mat, _licensePlate *info, unsigned char design );
+typedef RpMaterial*     (*HandleVehicleBackNameplate_t)     ( RpMaterial *mat, unsigned char design );
+
+HandleVehicleFrontNameplate_t   HandleVehicleFrontNameplate         = ( HandleVehicleFrontNameplate_t )         0x006FE020;
+HandleVehicleBackNameplate_t    HandleVehicleBackNameplate          = ( HandleVehicleBackNameplate_t )          0x006FDE50;
 
 static bool RwMaterialSetLicensePlate( RpMaterial *mat, _licensePlate *plate )
 {
@@ -1035,13 +728,34 @@ static bool RwMaterialSetLicensePlate( RpMaterial *mat, _licensePlate *plate )
     return true;
 }
 
+/*=========================================================
+    RwAtomicSetLicensePlate
+
+    Arguments:
+        child - atomic of the vehicle model
+        plate - license plate generation details
+    Purpose:
+        Generates the license plate for specific materials of
+        the atomic's geometry.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x006FE0D0
+=========================================================*/
 static bool RwAtomicSetLicensePlate( RpAtomic *child, _licensePlate *plate )
 {
     child->m_geometry->ForAllMateria( RwMaterialSetLicensePlate, plate );
     return true;
 }
 
-void CVehicleModelInfoSAInterface::InitNameplate()
+/*=========================================================
+    CVehicleModelInfoSAInterface::InitNameplate
+
+    Purpose:
+        Initializes the custom license plate which is shared
+        for all vehicles of this model.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C9450
+=========================================================*/
+void CVehicleModelInfoSAInterface::InitNameplate( void )
 {
     _licensePlate plate;
 
@@ -1051,12 +765,25 @@ void CVehicleModelInfoSAInterface::InitNameplate()
     plate.style = m_plateDesign;
     plate.plate = NULL;
 
-    m_rwClump->ForAllAtomics( RwAtomicSetLicensePlate, &plate );
+    GetRwObject()->ForAllAtomics( RwAtomicSetLicensePlate, &plate );
 
     if ( plate.plate )
         m_plateMaterial = plate.plate;
 }
 
+/*=========================================================
+    CVehicleModelInfoSAInterface::AssignPaintjob
+
+    Arguments:
+        txdId - CTxdInstanceSA pool offset of the one you want
+                to add as paintjob dictionary
+    Purpose:
+        Registers another tex dictionary to this vehicle model
+        info as possible paintjob dictionary. There is a maximum
+        of 5 paintjobs. Called during the loading of IMG archives.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C86D0
+=========================================================*/
 void CVehicleModelInfoSAInterface::AssignPaintjob( unsigned short txdId )
 {
     unsigned char n = 0;
@@ -1066,7 +793,15 @@ void CVehicleModelInfoSAInterface::AssignPaintjob( unsigned short txdId )
     m_paintjobTypes[n] = txdId;
 }
 
-unsigned short CVehicleModelInfoSAInterface::GetNumberOfValidPaintjobs() const
+/*=========================================================
+    CVehicleModelInfoSAInterface::GetNumberOfValidPaintjobs
+
+    Purpose:
+        Returns the number of active paintjob registrations.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C86B0
+=========================================================*/
+unsigned short CVehicleModelInfoSAInterface::GetNumberOfValidPaintjobs( void ) const
 {
     unsigned int n;
 

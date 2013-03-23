@@ -320,7 +320,7 @@ CTexDictionarySA* CTextureManagerSA::CreateTxd( CFile *file )
         return NULL;
     }
 
-    RwTexDictionary *dict = RwTexDictionaryStreamRead( stream );
+    RwTexDictionary *dict = RwTexDictionaryStreamReadEx( stream );
     CTexDictionarySA *txd;
 
     if ( dict )

@@ -1,10 +1,10 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CVehicleModelInfoSA.h
 *  PURPOSE:     Vehicle model manipulation and creation
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,62 +13,71 @@
 #ifndef __CVehicleModelInfoSA_H
 #define __CVehicleModelInfoSA_H
 
-#define MAX_SEATS               15
+#define MAX_COMPONENTS          15
 #define MAX_PASSENGERS          8
 
 #include <CQuat.h>
 
-class CVehicleSeatInfoSA
+class CVehicleComponentPlacementSA
 {
 public:
-    CVector                         m_offset;
+    CVehicleComponentPlacementSA()
+    {
+        m_id = -1;
+    }
+
+    CVector                         m_offset;       // 0
     CQuat                           m_quat;         // 12
     int                             m_id;           // 28
 };
 
-class CVehicleSeatPlacementSAInterface
+class CVehicleComponentInfoSAInterface
 {
 public:
-                                    CVehicleSeatPlacementSAInterface();
-                                    ~CVehicleSeatPlacementSAInterface();
+                                    CVehicleComponentInfoSAInterface( void );
+                                    ~CVehicleComponentInfoSAInterface( void );
 
     void*   operator new( size_t );
     void    operator delete( void *ptr );
 
     void                            AddAtomic( RpAtomic *atomic );
 
-    CVector                         m_seatOffset[MAX_SEATS];
-    CVehicleSeatInfoSA              m_info[MAX_SEATS + 3];      // 180
-    RpAtomic*                       m_atomics[MAX_DOORS];       // 756
-    unsigned short                  m_atomicCount;              // 780
-    unsigned short                  m_unknown4;                 // 782
-    unsigned int                    m_usageFlags;               // 784
+    CVector                         m_seatOffset[MAX_COMPONENTS];   // 0
+    CVehicleComponentPlacementSA    m_info[MAX_COMPONENTS + 3];     // 180
+    RpAtomic*                       m_atomics[MAX_DOORS];           // 756
+    char                            m_atomicCount;                  // 780
+    BYTE                            m_pad;                          // 781
+    unsigned short                  m_unknown4;                     // 782
+    unsigned int                    m_usageFlags;                   // 784
 };
+
+#include "CVehicleModelInfoSA.render.h"
+#include "CVehicleModelInfoSA.config.h"
 
 class CVehicleModelInfoSAInterface : public CClumpModelInfoSAInterface
 {
 public:
-                                    CVehicleModelInfoSAInterface();
-                                    ~CVehicleModelInfoSAInterface();
+                                    CVehicleModelInfoSAInterface    ( void );
+                                    ~CVehicleModelInfoSAInterface   ( void );
 
-    eModelType                      GetModelType();
-    void                            Init();
-    void                            DeleteRwObject();
-    RpClump*                        CreateRwObject();
-    void                            SetAnimFile( const char *name );
-    void                            ConvertAnimFileIndex();
-    int                             GetAnimFileIndex();
-    void                            SetClump( RpClump *clump );
+    eModelType                      GetModelType                    ( void );
+    void                            Init                            ( void );
+    void                            DeleteRwObject                  ( void );
+    RpClump*                        CreateRwObject                  ( void );
+    void                            SetAnimFile                     ( const char *name );
+    void                            ConvertAnimFileIndex            ( void );
+    int                             GetAnimFileIndex                ( void );
+    void                            SetClump                        ( RpClump *clump );
 
-    void                            RegisterRenderCallbacks();
-    void                            Setup();
-    void                            SetComponentFlags( RwFrame *frame, unsigned int flags );
-    void                            RegisterRoot();
-    void                            SetupMateria();
-    void                            InitNameplate();
+    void __thiscall                 RegisterRenderCallbacks         ( void );
+    void __thiscall                 Setup                           ( void );
+    void                            SetComponentFlags               ( RwFrame *frame, unsigned int flags );
+    void                            RegisterRoot                    ( void );
+    void                            SetupMateria                    ( void );
+    void                            InitNameplate                   ( void );
 
-    void                            AssignPaintjob( unsigned short txdId );
-    unsigned short                  GetNumberOfValidPaintjobs() const;
+    void                            AssignPaintjob                  ( unsigned short txdId );
+    unsigned short                  GetNumberOfValidPaintjobs       ( void ) const;
 
     RpMaterial*                     m_plateMaterial;        // 36
     BYTE                            m_pad2[9];              // 40
@@ -87,7 +96,7 @@ public:
     unsigned short                  m_frequency;            // 82
     unsigned int                    m_componentFlags;       // 84
     float                           m_steerAngle;           // 88
-    CVehicleSeatPlacementSAInterface*   m_seatPlacement;    // 92
+    CVehicleComponentInfoSAInterface*   m_componentInfo;    // 92
     BYTE                            m_pad4[84];             // 96
     BYTE                            m_padUpgrade[540];      // 180
     unsigned int                    m_numberOfColors;       // 720
@@ -96,10 +105,5 @@ public:
     unsigned short                  m_paintjobTypes[5];     // 762
     int                             m_animFileIndex;        // 772
 };
-
-extern RwTexDictionary *g_vehicleTxd;
-
-void    VehicleModels_Init();
-void    VehicleModels_Shutdown();
 
 #endif

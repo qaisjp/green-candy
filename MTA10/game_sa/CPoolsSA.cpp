@@ -50,6 +50,7 @@ CMTAVehiclePool *mtaVehiclePool;
 CMTAPedPool *mtaPedPool;
 CMTAObjectPool *mtaObjectPool;
 CMTAPlayerDataPool *mtaPlayerDataPool;
+CMTAObjectDataPool *mtaObjectDataPool;
 
 CPoolsSA::CPoolsSA()
 {
@@ -85,6 +86,7 @@ CPoolsSA::CPoolsSA()
     mtaVehiclePool = new CMTAVehiclePool;
     mtaPlayerDataPool = new CMTAPlayerDataPool;
     mtaPedPool = new CMTAPedPool;
+    mtaObjectDataPool = new CMTAObjectDataPool;
     mtaObjectPool = new CMTAObjectPool;
 
     // Initialize the entity cache
@@ -101,6 +103,7 @@ CPoolsSA::~CPoolsSA()
     mtaObjectPool->Clear();
 
     delete mtaObjectPool;
+    delete mtaObjectDataPool;
     delete mtaPedPool;
     delete mtaPlayerDataPool;
     delete mtaVehiclePool;
