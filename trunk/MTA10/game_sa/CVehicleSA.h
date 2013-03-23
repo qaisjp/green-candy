@@ -671,7 +671,7 @@ public:
     bool                        IsBeingDriven() const                                   { return GetInterface()->m_driver != NULL; }
     bool                        IsPassenger( CPed *ped ) const;
     bool                        IsSphereTouchingVehicle( const CVector& pos, float fRadius ) const;
-    bool                        IsUpsideDown() const                                    { return GetInterface()->m_matrix->up.fZ <= -0.9; }
+    bool                        IsUpsideDown() const                                    { return GetInterface()->Placeable.m_matrix->up.fZ <= -0.9; }
     void                        MakeDirty( CColPoint *point );
 
     virtual void                PlaceOnRoadProperly()                                   {}

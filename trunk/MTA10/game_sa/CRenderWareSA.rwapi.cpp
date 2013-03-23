@@ -64,8 +64,11 @@ void RwFrame::SetPosition( const CVector& pos )
     m_privateFlags |= RW_FRAME_DIRTY;
 }
 
-const RwMatrix& RwFrame::GetLTM() const
+const RwMatrix& RwFrame::GetLTM()
 {
+    if ( this == NULL )
+        __asm nop
+
     // This function will recalculate the LTM if frame is dirty
     return *RwFrameGetLTM( this );
 }
@@ -376,31 +379,25 @@ RwObject* RwFrame::GetLastVisibleObject()
     return obj;
 }
 
-static bool RwObjectGetAtomic( RpAtomic *atomic, RpAtomic **dst )
-{
-    *dst = atomic;
-    return false;
-}
-
 RpAtomic* RwFrame::GetFirstAtomic()
 {
-    RpAtomic *atomic;
+    LIST_FOREACH_BEGIN( RwObjectFrame, m_objects.root, m_lFrame )
+        if ( item->m_type == RW_ATOMIC )
+            return (RpAtomic*)item;
+    LIST_FOREACH_END
 
-    if ( ForAllAtomics( RwObjectGetAtomic, &atomic ) )
-        return NULL;
-
-    return atomic;
+    return NULL;
 }
 
-static bool RwObjectAtomicSetVisibilityFlags( RpAtomic *atomic, void *ud )
+static bool RwObjectAtomicSetComponentFlags( RpAtomic *atomic, unsigned short flags )
 {
-    atomic->ApplyVisibilityFlags( (unsigned short)ud );
+    atomic->m_componentFlags |= flags;
     return true;
 }
 
-void RwFrame::SetAtomicVisibility( unsigned short flags )
+void RwFrame::SetAtomicComponentFlags( unsigned short flags )
 {
-    ForAllAtomics( RwObjectAtomicSetVisibilityFlags, (void*)flags );
+    ForAllAtomics( RwObjectAtomicSetComponentFlags, flags );
 }
 
 static bool RwFrameAtomicBaseRoot( RpAtomic *atomic, RwFrame *root )
@@ -409,34 +406,36 @@ static bool RwFrameAtomicBaseRoot( RpAtomic *atomic, RwFrame *root )
     return true;
 }
 
-struct _rwFrameVisibilityAtomics
+struct _rwFrameComponentAtomics
 {
     RpAtomic **primary;
     RpAtomic **secondary;
 };
 
-static bool RwFrameAtomicFindVisibility( RpAtomic *atomic, _rwFrameVisibilityAtomics *info )
+static bool RwFrameAtomicFindComponents( RpAtomic *atomic, _rwFrameComponentAtomics *info )
 {
-    if ( atomic->GetVisibilityFlags() & 0x01 )
+    if ( atomic->m_componentFlags & 0x01 )
     {
-        *info->primary = atomic;
-        return true;
+        if ( info->primary )
+            *info->primary = atomic;
     }
-
-    if ( atomic->GetVisibilityFlags() & 0x02 )
-        *info->secondary = atomic;
+    else if ( atomic->m_componentFlags & 0x02 )
+    {
+        if ( info->secondary )
+            *info->secondary = atomic;
+    }
 
     return true;
 }
 
-void RwFrame::FindVisibilityAtomics( RpAtomic **primary, RpAtomic **secondary )
+void RwFrame::FindComponentAtomics( RpAtomic **okay, RpAtomic **damaged )
 {
-    _rwFrameVisibilityAtomics info;
+    _rwFrameComponentAtomics info;
 
-    info.primary = primary;
-    info.secondary = secondary;
+    info.primary = okay;
+    info.secondary = damaged;
 
-    ForAllAtomics( RwFrameAtomicFindVisibility, &info );
+    ForAllAtomics( RwFrameAtomicFindComponents, &info );
 }
 
 RpAnimHierarchy* RwFrame::GetAnimHierarchy()
@@ -453,22 +452,28 @@ RpAnimHierarchy* RwFrame::GetAnimHierarchy()
     return anim;
 }
 
-void RwFrame::RegisterRoot()
+void RwFrame::_RegisterRoot()
 {
-    if ( !(m_root->m_privateFlags & ( RW_OBJ_REGISTERED | RW_FRAME_DIRTY ) ) )
+    unsigned char flagIntegrity = m_privateFlags;
+
+    if ( !( flagIntegrity & ( RW_OBJ_REGISTERED | RW_FRAME_DIRTY ) ) )
     {
         // Add it to the internal list
         LIST_INSERT( pRwInterface->m_nodeRoot.root, m_nodeRoot );
-
-        m_root->m_privateFlags |= RW_OBJ_REGISTERED | RW_FRAME_DIRTY;
     }
 
-    m_privateFlags |= RW_OBJ_REGISTERED | RW_OBJ_HIERARCHY_CACHED;
+    m_privateFlags = ( flagIntegrity | ( RW_OBJ_REGISTERED | RW_FRAME_DIRTY ) );
+}
+
+void RwFrame::RegisterRoot()
+{
+    m_root->_RegisterRoot();
+    m_privateFlags |= RW_OBJ_VISIBLE | RW_OBJ_HIERARCHY_CACHED;
 }
 
 void RwFrame::UnregisterRoot()
 {
-    if ( !(m_root->m_privateFlags & ( RW_OBJ_REGISTERED | 0x01 ) ) )
+    if ( !( m_privateFlags & ( RW_OBJ_REGISTERED | 0x01 ) ) )
         return;
 
     LIST_REMOVE( m_nodeRoot );
@@ -492,30 +497,14 @@ RwTexture* RwTexDictionary::GetFirstTexture()
     return tex;
 }
 
-struct _rwTexDictFind
-{
-    const char *name;
-    RwTexture *tex;
-};
-
-static bool RwTexDictionaryFindTexture( RwTexture *tex, _rwTexDictFind *find )
-{
-    if ( stricmp( tex->name, find->name ) != 0 )
-        return true;
-
-    find->tex = tex;
-    return false;
-}
-
 RwTexture* RwTexDictionary::FindNamedTexture( const char *name )
 {
-    _rwTexDictFind find;
-    find.name = name;
+    LIST_FOREACH_BEGIN( RwTexture, textures.root, TXDList )
+        if ( stricmp( item->name, name ) == 0 )
+            return item;
+    LIST_FOREACH_END
 
-    if ( ForAllTextures( RwTexDictionaryFindTexture, &find ) )
-        return NULL;
-
-    return find.tex;
+    return NULL;
 }
 
 void RwTexture::AddToDictionary( RwTexDictionary *_txd )
@@ -661,34 +650,12 @@ void RpAtomic::SetRenderCallback( RpAtomicCallback callback )
     m_renderCallback = callback;
 }
 
-void RpAtomic::ApplyVisibilityFlags( unsigned short flags )
-{
-    *(unsigned short*)&m_matrixFlags |= flags;
-}
-
-void RpAtomic::RemoveVisibilityFlags( unsigned short flags )
-{
-    *(unsigned short*)&m_matrixFlags &= ~flags;
-}
-
-unsigned short RpAtomic::GetVisibilityFlags()
-{
-    return *(unsigned short*)&m_matrixFlags;
-}
-
-void RpAtomic::SetExtendedRenderFlags( unsigned short flags )
-{
-    *(unsigned short*)&m_renderFlags = flags;
-}
-
 void RpAtomic::FetchMateria( RpMaterials& mats )
 {
-    unsigned int n;
-
-    if ( !(GetVisibilityFlags() & 0x20) )
+    if ( m_componentFlags & 0x2000 )
         return;
 
-    for (n=0; n<m_geometry->m_linkedMateria->m_count; n++)
+    for ( unsigned int n = 0; n < m_geometry->m_linkedMateria->m_count; n++ )
         mats.Add( m_geometry->m_linkedMateria->Get(n)->m_material );
 }
 
@@ -702,12 +669,15 @@ RpMaterials::RpMaterials( unsigned int max )
 
 RpMaterials::~RpMaterials()
 {
-    unsigned int n;
+    if ( m_data )
+    {
+        for ( unsigned int n = 0; n < m_entries; n++ )
+            RpMaterialDestroy( m_data[n] );
 
-    for ( n=0; n<m_entries; n++ )
-        RpMaterialDestroy( m_data[n] );
+        pRwInterface->m_free( m_data );
 
-    pRwInterface->m_free( m_data );
+        m_data = NULL;
+    }
 
     m_entries = 0;
     m_max = 0;
@@ -1015,15 +985,15 @@ void RpClump::SetupAtomicRender()
     ForAllAtomics( RwAtomicSetupPipeline, 0 );
 }
 
-static bool RwAtomicRemoveVisibilityFlags( RpAtomic *child, unsigned short flags )
+static bool RwAtomicRemoveComponentFlags( RpAtomic *child, unsigned short flags )
 {
-    child->RemoveVisibilityFlags( flags );
+    child->m_componentFlags &= ~flags;
     return true;
 }
 
-void RpClump::RemoveAtomicVisibilityFlags( unsigned short flags )
+void RpClump::RemoveAtomicComponentFlags( unsigned short flags )
 {
-    ForAllAtomics( RwAtomicRemoveVisibilityFlags, flags );
+    ForAllAtomics( RwAtomicRemoveComponentFlags, flags );
 }
 
 static bool RwAtomicFetchMateria( RpAtomic *child, RpMaterials *mats )
@@ -1097,7 +1067,7 @@ void RpClump::GetBoneTransform( CVector *offset )
 
 bool RwMaterialAlphaCheck( RpMaterial *mat, int )
 {
-    return mat->m_color.a != 0xFF;
+    return mat->m_color.a == 0xFF;
 }
 
 bool RpGeometry::IsAlpha()
@@ -1128,25 +1098,26 @@ void RpGeometry::UnlinkFX()
 
 bool RwAtomicRenderChainInterface::PushRender( RwAtomicZBufferEntry *level )
 {
-    RwAtomicRenderChain *iter = &m_root;
+    RwAtomicRenderChain *iter = m_root.prev;
     RwAtomicRenderChain *progr;
 
-    while ( iter->list.prev != &m_rootLast.list )
-    {
-        iter = LIST_GETITEM(RwAtomicRenderChain, iter->list.prev, list);
+    // Scan until we find appropriate slot
+    for ( ; iter != &m_rootLast && iter->m_entry.m_distance < level->m_distance; 
+        iter = iter->prev );
 
-        if ( iter->m_entry.m_distance >= level->m_distance )
-            break;
-    }
-
-    if ( ( progr = LIST_GETITEM(RwAtomicRenderChain, m_renderStack.list.prev, list) ) == &m_renderLast )
+    if ( ( progr = m_renderStack.prev ) == &m_renderLast )
         return false;
 
     // Update render details
     progr->m_entry = *level;
 
-    LIST_REMOVE( progr->list );
-    LIST_INSERT( iter->list, progr->list );
+    LIST_REMOVE( *progr );
+    
+    iter = iter->next;
+    progr->prev = iter->prev;
+    iter->prev->next = progr;
+    progr->next = iter;
+    iter->prev = progr;
     return true;
 }
 

@@ -13,11 +13,9 @@
 #ifndef _CParticleDataSA_
 #define _CParticleDataSA_
 
-enum ePartObjectStatus
+enum ePartObjectStatus : unsigned int
 {
-    PARTOBJ_STATUS_STOPPED = 2,
-
-    ___FORCE_DWORD = 0xFFFFFFFF
+    PARTOBJ_STATUS_STOPPED = 2
 };
 
 class CEffectDataSAInterface : public CSimpleList::Item

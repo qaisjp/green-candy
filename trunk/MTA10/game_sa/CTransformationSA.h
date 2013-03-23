@@ -2,9 +2,9 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        game_sa/CTransformationSA.cpp
+*  FILE:        game_sa/CTransformationSA.h
 *  PURPOSE:     Transformation matrix management
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -19,21 +19,17 @@
 class CTransformSAInterface : public RwMatrix
 {
 public:
-                            CTransformSAInterface();
-                            ~CTransformSAInterface();
+                            CTransformSAInterface( void );
+                            ~CTransformSAInterface( void );
 
     void operator =( const RwMatrix& mat )
     {
         assign( mat );
     }
 
-    CTransformSAInterface*                  m_unk;          // 64, I do not know what these are
-    CTransformSAInterface*                  m_unk2;         // 68
-    union
-    {
-        class CPlaceableSAInterface*        m_entity;       // 72
-        float                               m_unkFloat;     // 72
-    };
+    CTransformSAInterface*                  m_unk;          // 64
+    RwMatrix*                               m_unk2;         // 68, confirmed to be a dynamically allocated RwMatrix*
+    class CPlaceableSAInterface*            m_entity;       // 72
 
     CTransformSAInterface*                  next;           // 76
     CTransformSAInterface*                  prev;           // 80
@@ -56,24 +52,26 @@ public:
 class CTransformationSAInterface
 {
 public:
-                                            CTransformationSAInterface( unsigned int max );
-                                            ~CTransformationSAInterface();
+                                            CTransformationSAInterface      ( unsigned int max );
+                                            ~CTransformationSAInterface     ( void );
 
-    CTransformSAInterface*                  Allocate();
-    bool                                    IsFreeMatrixAvailable();
-    bool                                    FreeUnimportantMatrix();
-    void                                    NewMatrix();
+    CTransformSAInterface*                  AllocateDynamic                 ( void );
+    CTransformSAInterface*                  AllocateStatic                  ( void );
+    bool                                    IsFreeMatrixAvailable           ( void );
+    bool                                    FreeUnimportantMatrix           ( void );
+    void                                    NewMatrix                       ( void );
 
-    CTransformSAInterface                   m_usedList;         // 0
+    CTransformSAInterface                   m_usedList;         // 0, list of dynamic matrices (may be free'd from the entity)
     CTransformSAInterface                   m_usedItem;         // 84
-    CTransformSAInterface                   m_activeList;       // 168
+    CTransformSAInterface                   m_activeList;       // 168, list of static matrices (must not be free'd from the entity)
     CTransformSAInterface                   m_activeItem;       // 252
-    CTransformSAInterface                   m_freeList;         // 336
+    CTransformSAInterface                   m_freeList;         // 336, list of allocatable matrices
     CTransformSAInterface                   m_freeItem;         // 420
-    CTransformSAInterface*                  m_stack;            // 504
+    CTransformSAInterface*                  m_stack;            // 504, initial matrix allocation stack
 };
 
-void Transformation_Init();
+void Transformation_Init( void );
+void Transformation_Shutdown( void );
 
 extern CTransformationSAInterface *const pTransform;
 

@@ -4,7 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CStreamingSA.utils.cpp
 *  PURPOSE:     Data streamer utilities
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,17 +13,42 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
+// In this file includes examples of clever goto usage.
+
 extern CBaseModelInfoSAInterface **ppModelInfo;
 static RtDictSchema *const animDict =   (RtDictSchema*)0x008DED50;
 static CModelLoadInfoSA *const VAR_ModelLoadInfo = (CModelLoadInfoSA*)0x008E4CC0;
 
 static streamingLoadCallback_t  streamingLoadCallback = NULL;
 
+/*
+    Texture Scanner Namespaces
+
+    Those namesspaces are texture scanners which - once applied, are called
+    during RwFindTexture. They are meant to be stack-based, so that they have
+    to be unattached the same order they were applied. If the scanner does not
+    find the texture in it's environment, it calls the previously attached
+    scanner. Most of the time they use the local reference storage.
+*/
+
+/*=========================================================
+    RwRemapScan
+
+    This logic scans the general VEHICLE.TXD that is
+    loaded in _VehicleModels_Init. If the texture was not found,
+    the previously applied handler is called.
+
+    It is used during the loading of vehicle models, currently
+    GTA:SA internal only. The original GTA:SA function did not
+    call the previous texture scanner.
+=========================================================*/
 namespace RwRemapScan
 {
     static RwScanTexDictionaryStackRef_t    prevStackScan;
 
-    static RwTexture* scanMethod( const char *name )
+    // Method which scans VEHICLE.TXD
+    // Binary offsets: (1.0 US and 1.0 EU): 0x004C7510
+    RwTexture* scanMethod( const char *name )
     {
         RwTexture *tex = g_vehicleTxd->FindNamedTexture( name );
 
@@ -31,16 +56,23 @@ namespace RwRemapScan
             return tex;
 
         // The_GTA: usually the engine flagged used remap textures with a '#'
+        // * It was done by replacing the first character in their name.
+        // * The engine would always perform two scans: one for the provided name
+        // * and another for the '#' flagged version.
         // We do not want this feature.
         return prevStackScan( name );
     }
 
+    // Stores the previous texture scanner and applies ours
+    // Binary offsets: (1.0 US and 1.0 EU): 0x004C75A0
     void Apply()
     {
         prevStackScan = pRwInterface->m_textureManager.m_findInstanceRef;
         pRwInterface->m_textureManager.m_findInstanceRef = scanMethod;
     }
 
+    // Restores the previous texture scanner
+    // Binary offsets: (1.0 US and 1.0 EU): 0x004C75C0
     void Unapply()
     {
         pRwInterface->m_textureManager.m_findInstanceRef = prevStackScan;
@@ -48,10 +80,35 @@ namespace RwRemapScan
     }
 };
 
+/*=========================================================
+    RwImportedScan (MTA extension)
+
+    This logic scans the textures which virtually included themselves
+    to scanning of a specific TXD id slot. It is meant to
+    be a cleaner solution than modifying the GTA:SA internal
+    TexDictionaries.
+    1) GTA:SA can unload it's TXDs without corrupting MTA data (vid memory saved)
+    2) Individual textures can be applied instead of whole TXDs (flexibility)
+    3) Texture instances come straight - without copying - from the
+       provider (i.e. deathmatch Lua). Modifications to the provider
+       texture instance result in direct changes of the ingame representation
+       (i.e. anisotropy change or filtering flags) (integrity).
+
+    We are applying this whenever a model is loaded, either by the
+    GTA:SA streaming requester or the MTA model loader. That is why
+    this namespace is globally exported.
+
+    The problem with the current approach is that if a user chooses to replace
+    textures, only textures from a model are replaced (i.e. no HUD ones).
+    A proper fix would be a hook on the GTA:SA function TXDSetCurrent and
+    RwFindTexture. Another interesting fix may be to rewrite all GTA:SA functions
+    which use TXDSetCurrent.
+=========================================================*/
 namespace RwImportedScan
 {
     static RwScanTexDictionaryStackRef_t    prevStackScan;
     static unsigned short   txdId;
+    static bool             applied;
 
     static RwTexture* scanMethod( const char *name )
     {
@@ -68,19 +125,39 @@ namespace RwImportedScan
 
     void Apply( unsigned short id )
     {
-        prevStackScan = pRwInterface->m_textureManager.m_findInstanceRef;
-        pRwInterface->m_textureManager.m_findInstanceRef = scanMethod;
+        if ( !g_dictImports[id].empty() )
+        {
+            prevStackScan = pRwInterface->m_textureManager.m_findInstanceRef;
+            pRwInterface->m_textureManager.m_findInstanceRef = scanMethod;
 
-        txdId = id;
+            txdId = id;
+            applied = true;
+        }
+        else
+            applied = false;
     }
 
     void Unapply()
     {
-        pRwInterface->m_textureManager.m_findInstanceRef = prevStackScan;
-        prevStackScan = NULL;
+        if ( applied )
+        {
+            pRwInterface->m_textureManager.m_findInstanceRef = prevStackScan;
+            prevStackScan = NULL;
+        }
     }
 };
 
+/*=========================================================
+    _RpGeometryAllocateNormals (MTA extension)
+
+    Arguments:
+        geom - geometry to which you want to attach normals
+        mesh - 3d vertice data which requires normals and belongs to geom
+    Purpose:
+        Calculates "vertex normals" for a mesh from a given geometry.
+        They are required to apply position dependent (local) lighting
+        to an atomic. The normals array is returned.
+=========================================================*/
 static inline CVector* _RpGeometryAllocateNormals( RpGeometry *geom, RpGeomMesh *mesh )
 {
     CVector *normals = (CVector*)RwAllocAligned( sizeof(CVector) * geom->m_verticeSize, 0x10 );
@@ -112,12 +189,22 @@ static inline CVector* _RpGeometryAllocateNormals( RpGeometry *geom, RpGeomMesh 
     return normals;
 }
 
+/*=========================================================
+    _initAtomScene (MTA extension)
+
+    Arguments:
+        atom - atomic which should be included into a scene
+    Purpose:
+        Includes the given atomic into the default GTA:SA scene.
+        Then it recalculates the normals for all its meshes.
+        By that dynamic lighting will be enabled.
+=========================================================*/
 static void _initAtomScene( RpAtomic *atom )
 {
     atom->m_scene = *p_gtaScene;
 
     RpGeometry& geom = *atom->m_geometry;
-    geom.flags |= RW_GEOMETRY_GLOBALLIGHT;
+    geom.flags |= RW_GEOMETRY_GLOBALLIGHT;  // apply environmental and directional lights
 
     // TODO: reenable this using multi-threading (streamline extension!)
     return;
@@ -140,10 +227,21 @@ static void _initAtomScene( RpAtomic *atom )
     }
 }
 
+/*=========================================================
+    RpClumpAtomicActivator
+
+    Arguments:
+        atom - atomic to set as model for an atomic model info
+        replacedId - id of the atomic model info
+    Purpose:
+        Loads an atomic model info with the given atomic. The atomic
+        is registered as the official representative of that model info.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00537150 (FUNC_AtomicsReplacer)
+=========================================================*/
 static void RpClumpAtomicActivator( RpAtomic *atom, unsigned int replacerId )
 {
-    CBaseModelInfoSAInterface *info = ppModelInfo[replacerId];
-    CAtomicModelInfoSA *atomInfo = info->GetAtomicModelInfo();
+    CAtomicModelInfoSA *atomInfo = ppModelInfo[replacerId]->GetAtomicModelInfo();
     bool unk;
     char unk2[24];
 
@@ -166,14 +264,41 @@ static void RpClumpAtomicActivator( RpAtomic *atom, unsigned int replacerId )
     atom->m_modelId = replacerId;
 }
 
-// Dynamic Lighting fix
-static void _initClumpScene( RpClump *clump )
+/*=========================================================
+    _initClumpScene (MTA extension)
+
+    Arguments:
+        clump - RpClump whose atomics should be included into the scene
+    Purpose:
+        Prepares a clump for usage with the dynamic lighting system.
+        This means that its atomics are added to the default GTA:SA
+        scene. Atomics have to belong to a scene so that they traverse
+        along sectors. Sectors also contain the lights, so lights are
+        properly adjusted.
+=========================================================*/
+inline static void _initClumpScene( RpClump *clump )
 {
     LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
         _initAtomScene( item );
     LIST_FOREACH_END
 }
 
+/*=========================================================
+    LoadClumpFile
+
+    Arguments:
+        stream - binary stream which contains the clump file
+        model - id of a atomic model info
+    Purpose:
+        Loads a clump file from the stream. The RpClump is expected
+        to have one atomic. For every atomic it calls
+        RpClumpAtomicActivator which removes it from the clump and
+        adds it to the atomic model info. More than one atomic may
+        be applied to the model info if one parent frame name designates
+        a damage atomic model info and the other does not.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005371F0
+=========================================================*/
 static bool __cdecl LoadClumpFile( RwStream *stream, unsigned int model )
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[model];
@@ -181,7 +306,7 @@ static bool __cdecl LoadClumpFile( RwStream *stream, unsigned int model )
 
     CAtomicModelInfoSA *atomInfo = info->GetAtomicModelInfo();
 
-    // Apply our global imports
+    // MTA extension: Apply our global imports
     RwImportedScan::Apply( info->m_textureDictionary );
 
     if ( atomInfo && ( atomInfo->m_collFlags & COLL_WETROADREFLECT ) )
@@ -196,20 +321,17 @@ static bool __cdecl LoadClumpFile( RwStream *stream, unsigned int model )
 
     if ( RwStreamFindChunk( stream, 0x10, NULL, NULL ) )
     {
-        RpClump *clump = RpClumpStreamRead( stream );
+        if ( RpClump *clump = RpClumpStreamRead( stream ) )
+        {
+            while ( !LIST_EMPTY( clump->m_atomics.root ) )
+                RpClumpAtomicActivator( LIST_GETITEM( RpAtomic, clump->m_atomics.root.next, m_atomics ), model );
 
-        if ( !clump )
-            goto fail;
+            RpClumpDestroy( clump );
 
-        while ( !LIST_EMPTY( clump->m_atomics.root ) )
-            RpClumpAtomicActivator( LIST_GETITEM( RpAtomic, clump->m_atomics.root.next, m_atomics ), model );
-
-        RpClumpDestroy( clump );
-
-        result = atomInfo->m_rpAtomic != NULL;
+            result = atomInfo->GetRwObject() != NULL;
+        }
     }
 
-fail:
     if ( appliedRemapCheck )
         RwRemapScan::Unapply();
 
@@ -218,17 +340,28 @@ fail:
     return result;
 }
 
+/*=========================================================
+    LoadClumpFilePersistent
+
+    Arguments:
+        stream - binary stream which contains the clump file
+        id - clump model info id
+    Purpose:
+        Takes the stream and loads either a single or a multi clump
+        into the given clump model info. Returns true if there
+        was no error during loading.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005372D0
+=========================================================*/
 static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
 {
     CClumpModelInfoSAInterface *info = (CClumpModelInfoSAInterface*)ppModelInfo[id];
-    bool isVehicle = info->GetModelType() == MODEL_VEHICLE;
-    RpClump *clump;
-    RwFrame *frame;
 
+    // Not sure about this flag anymore. Apparently it stands for multi-clump here.
     if ( info->m_renderFlags & RENDER_NOSKELETON )
     {
-        clump = RpClumpCreate();
-        clump->m_parent = frame = RwFrameCreate();
+        RpClump *clump = RpClumpCreate();
+        RwFrame *frame = clump->m_parent = RwFrameCreate();
 
         RwImportedScan::Apply( info->m_textureDictionary );
 
@@ -270,10 +403,13 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
         info->SetClump( clump );
         return true;
     }
+
+    bool isVehicle = info->GetModelType() == MODEL_VEHICLE;
     
     if ( !RwStreamFindChunk( stream, 0x10, NULL, NULL ) )
         return false;
 
+    // MTA extension: include our imported textures
     RwImportedScan::Apply( info->m_textureDictionary );
 
     if ( isVehicle )
@@ -282,7 +418,7 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
         RwRemapScan::Apply();
     }
 
-    clump = RpClumpStreamRead( stream );
+    RpClump *clump = RpClumpStreamRead( stream );
 
     if ( isVehicle )
     {
@@ -306,6 +442,18 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
     return true;
 }
 
+/*=========================================================
+    RwTexDictionaryLoadFirstHalf
+
+    Arguments:
+        stream - binary stream which contains the TXD
+    Purpose:
+        Loads half of the textures from a TexDictionary found in
+        the provided stream. The rest of it is loaded in another
+        function. This way execution time is (somewhat) flattened out.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00731070
+=========================================================*/
 static unsigned int *const VAR_NumTXDBlocks = (unsigned int*)0x008D6088;
 
 static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
@@ -351,6 +499,20 @@ static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
     return txd;
 }
 
+/*=========================================================
+    LoadTXDFirstHalf
+
+    Arguments:
+        id - index of the TXD instance
+        stream - binary stream which contains the TXD
+    Purpose:
+        Checks whether the stream contains a TXD. If not, it
+        returns false. Then it returns whether the loading of
+        half the TexDictionary into the TXD instance was
+        successful.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00731930
+=========================================================*/
 static bool __cdecl LoadTXDFirstHalf( unsigned int id, RwStream *stream )
 {
     CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
@@ -361,6 +523,20 @@ static bool __cdecl LoadTXDFirstHalf( unsigned int id, RwStream *stream )
     return ( txd->m_txd = RwTexDictionaryLoadFirstHalf( stream ) ) != NULL;
 }
 
+/*=========================================================
+    RegisterCOLLibraryModel
+
+    Arguments:
+        collId - index of the COL library
+        modelId - model info id to which a collision was applied
+    Purpose:
+        Extends the range of applicability for the given COL lib.
+        This loading of collisions for said COL library can be
+        limited to a range so that future loading attempts are
+        boosted.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00410820
+=========================================================*/
 void __cdecl RegisterCOLLibraryModel( unsigned short collId, unsigned short modelId )
 {
     CColFileSA *col = (*ppColFilePool)->Get( collId );
@@ -388,6 +564,8 @@ bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigned char 
 
         unsigned short modelId = header.modelId;
 
+        // Collisions may come with a cached model id.
+        // Valid ids skip the need for name-checking.
         if ( modelId < DATA_TEXTURE_BLOCK )
             info = ppModelInfo[modelId];
 
@@ -396,12 +574,19 @@ bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigned char 
         if ( !info || hash != info->m_hash )
             info = CStreaming__GetModelByHash( hash, &modelId );
 
+        // I am not a fan of uselessly big scopes.
+        // The closer the code is to the left border, the easier it is to read for everybody.
+        // Compilers do optimize goto.
         if ( !info )
             goto skip;
 
         // Update collision boundaries
         RegisterCOLLibraryModel( collId, modelId );
 
+        // I do not expect collision replacements to be loaded this early.
+        // The engine does preload the world collisions once. Further
+        // loadings will be faster due to limitation of model scans to
+        // id regions.
         assert( g_colReplacement[modelId] == NULL );
 
         if ( !info->IsDynamicCol() )
@@ -425,7 +610,7 @@ bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigned char 
             break;
         }
 
-        // Put it into our global storage
+        // MTA extension: Put it into our global storage
         g_originalCollision[modelId] = col;
 
         col->m_colPoolIndex = collId;
@@ -451,6 +636,7 @@ bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char c
 
         buf += sizeof(header);
 
+        // Note: this function has version 4 support by default!
         if ( header.checksum != '4LOC' && header.checksum != '3LOC' && header.checksum != '2LOC' && header.checksum != 'LLOC' )
             return true;
 
@@ -474,7 +660,7 @@ bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char c
 
             if ( CColModelSA *colInfo = g_colReplacement[modelId] )
             {
-                // We store it in our data, so we can restore to it later
+                // MTA extension: We store it in our data, so we can restore to it later
                 col = colInfo->GetOriginal();
 
                 if ( !col )
@@ -482,6 +668,7 @@ bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char c
             }
             else
             {
+                // The original route
                 col = info->m_pColModel;
 
                 if ( !col )
@@ -508,7 +695,7 @@ bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char c
                 break;
             }
 
-            // Put it into our global storage
+            // MTA extension: Put it into our global storage
             g_originalCollision[modelId] = col;
 
             col->m_colPoolIndex = collId;
@@ -530,6 +717,8 @@ bool __cdecl LoadCOLLibrary( unsigned char collId, const char *buf, size_t size 
     CColFileSA *col = (*ppColFilePool)->Get( collId );
     bool success;
 
+    // If the library was previously loaded and knows its regions, call ReadCOLLibaryBounds.
+    // Otherwise we perform a global replacement (ReadCOLLibraryGeneral), to cache the id region.
     if ( col->m_rangeStart > col->m_rangeEnd )
         success = ReadCOLLibraryGeneral( buf, size, collId );
     else
@@ -546,10 +735,12 @@ void __cdecl FreeCOLLibrary( unsigned char collId )
 {
     CColFileSA *col = (*ppColFilePool)->Get( collId );
 
+    // We kinda need another load to function.
     col->m_loaded = false;
 
     for ( short n = col->m_rangeStart; n <= col->m_rangeEnd; n++ )
     {
+        // MTA extension: GTA:SA may not touch replaced collision data.
         if ( g_colReplacement[n] )
             continue;
 
@@ -599,6 +790,7 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
         // Reference the resources
         txdInst->Reference();
         
+        // ... and anim block
         if ( animBlock )
             animBlock->Reference();
 
@@ -621,7 +813,7 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
                 dict = NULL;
 
             // At this point, GTA_SA utilizes a weird stream logic
-            // I have fixed it here
+            // I have fixed it here (bad clean-up of stream pointers)
             RwStreamClose( stream, &streamBuffer );
             stream = RwStreamInitialize( (void*)0x008E48AC, 0, 3, 1, &streamBuffer );
 
@@ -676,6 +868,7 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
                 goto failure;
         }
 
+        // Check the threaded streaming environment (I guess?)
         if ( !( loadInfo.m_flags & 0x0E ) && !((bool (__cdecl*)( unsigned int txdID ) )0x00409A90)( txdId ) )
             goto failureDamned;
 
@@ -740,7 +933,8 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
     }
     else
     {
-        // Skip loading scripts
+        // Skip loading scripts (are not utilized in MTA anyway)
+        // If we need them in future, no problem to add.
         goto failure;
     }
     
@@ -751,22 +945,22 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
         CBaseModelInfoSAInterface *info = ppModelInfo[id];
         eModelType type = info->GetModelType();
 
-        if ( type == MODEL_VEHICLE || type == MODEL_PED )
-            goto finish;
-
-        if ( CAtomicModelInfoSA *atomInfo = info->GetAtomicModelInfo() )
-            atomInfo->m_alpha = ( loadInfo.m_flags & 0x24 ) ? 0xFF : 0;
-
-        if ( loadInfo.m_flags & 0x06 )
-            goto finish;
-
-        __asm
+        if ( type != MODEL_VEHICLE && type != MODEL_PED )   // Well, there also is weapon model info?
         {
-            mov eax,ds:[0x008E4C60]
-            push eax
-            mov ecx,loadInfo
-            mov eax,0x00407480
-            call eax
+            if ( CAtomicModelInfoSA *atomInfo = info->GetAtomicModelInfo() )
+                atomInfo->m_alpha = ( loadInfo.m_flags & 0x24 ) ? 0xFF : 0;
+
+            if ( loadInfo.m_flags & 0x06 )
+                goto finish;
+
+            __asm
+            {
+                mov eax,ds:[0x008E4C60]
+                push eax
+                mov ecx,loadInfo
+                mov eax,0x00407480
+                call eax
+            }
         }
     }
     else if ( id < 25000 || id >= 25575 && id < 25755 || id > 26230 )
@@ -796,6 +990,7 @@ finish:
 
     return true;
 
+    // failure should be a commonly used routine in this function.
 failure:
     CStreamingSA *streaming = pGame->GetStreaming();
 
@@ -805,6 +1000,7 @@ failure:
     RwStreamClose( stream, &streamBuffer );
     return false;
 
+    // failureDamned is rarely used but important for reference/comparison here.
 failureDamned:
     pGame->GetStreaming()->FreeModel( id );
 

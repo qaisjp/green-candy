@@ -43,7 +43,7 @@ class RpGeometry;
 
 typedef RwCamera*   (*RwCameraPreCallback) (RwCamera * camera);
 typedef RwCamera*   (*RwCameraPostCallback) (RwCamera * camera);
-typedef bool        (*RpAtomicCallback) (RpAtomic * atomic);
+typedef RpAtomic*   (*RpAtomicCallback) (RpAtomic * atomic);
 typedef RpClump*    (*RpClumpCallback) (RpClump * clump, void *data);
 
 // RenderWare enumerations
@@ -93,7 +93,7 @@ enum RwRasterType : unsigned int
 
 #define RW_OBJ_REGISTERED           0x02
 #define RW_OBJ_VISIBLE              0x04
-#define RW_OBJ_HIERARCHY_CACHED     0x10
+#define RW_OBJ_HIERARCHY_CACHED     0x08
 
 // RenderWare/plugin base types
 class RwObject
@@ -206,7 +206,7 @@ public:
 class RpSkeleton
 {
 public:
-    unsigned int            m_boneCount;
+    unsigned int            m_boneCount;    // 0
     unsigned int            m_unknown;      // 4
     void*                   m_unknown2;     // 8
     RwMatrix*               m_boneMatrices; // 12
@@ -270,7 +270,7 @@ public:
     void                    SetPosition( const CVector& pos );
     const CVector&          GetPosition() const         { return m_modelling.pos; }
 
-    const RwMatrix&         GetLTM() const;
+    const RwMatrix&         GetLTM();
 
     void                    Link( RwFrame *frame );
     void                    Unlink();
@@ -297,13 +297,10 @@ public:
     template <class type>
     bool                    ForAllObjects( bool (*callback)( RwObject *object, type data ), type data )
     {
-        RwListEntry <RwObjectFrame> *child;
-
-        for ( child = m_objects.root.next; child != &m_objects.root; child = child->next )
-        {
-            if ( !callback( (RwObject*)( (unsigned int)child - offsetof(RwObjectFrame, m_lFrame) ), data ) )
+        LIST_FOREACH_BEGIN( RwObjectFrame, m_objects.root, m_lFrame )
+            if ( !callback( item, data ) )
                 return false;
-        }
+        LIST_FOREACH_END
 
         return true;
     }
@@ -325,7 +322,7 @@ public:
     static bool RwObjectDoAtomic( RwObject *child, _rwObjectGetAtomic <type> *info )
     {
         // Check whether the object is a atomic
-        if ( child->m_type != 0x14 )
+        if ( child->m_type != RW_ATOMIC )
             return true;
 
         return info->routine( (RpAtomic*)child, info->data );
@@ -342,10 +339,11 @@ public:
         return ForAllObjects( RwObjectDoAtomic <type>, &info );
     }
     RpAtomic*               GetFirstAtomic();
-    void                    SetAtomicVisibility( unsigned short flags );
-    void                    FindVisibilityAtomics( RpAtomic **primary, RpAtomic **secondary );
+    void                    SetAtomicComponentFlags( unsigned short flags );
+    void                    FindComponentAtomics( RpAtomic **okay, RpAtomic **damaged );
 
     RpAnimHierarchy*        GetAnimHierarchy();
+    void                    _RegisterRoot();
     void                    RegisterRoot();
     void                    UnregisterRoot();
 };
@@ -571,10 +569,8 @@ public:
     RpAnimHierarchy*        m_anim;             // 120
 
     unsigned short          m_modelId;          // 124
-    unsigned short          m_structureId;      // 126, used for components (ok/dam)
-    unsigned char           m_matrixFlags;      // 128
-    unsigned char           m_renderFlags;      // 129
-    BYTE                    m_pad3[6];          // 130
+    unsigned short          m_componentFlags;   // 126, used for components (ok/dam)
+    BYTE                    m_pad3[8];          // 128
     unsigned int            m_pipeline;         // 136
 
     bool                    IsNight();
@@ -584,36 +580,31 @@ public:
 
     void                    SetRenderCallback( RpAtomicCallback callback );
 
-    void                    ApplyVisibilityFlags( unsigned short flags );
-    void                    RemoveVisibilityFlags( unsigned short flags );
-    unsigned short          GetVisibilityFlags();
-
-    void                    SetExtendedRenderFlags( unsigned short flags );
-
     void                    FetchMateria( RpMaterials& mats );
 };
-class RwAtomicZBufferEntry
+class RwAtomicZBufferEntry  //size: 12
 {
 public:
     RpAtomic*               m_atomic;
     RpAtomicCallback        m_render;
     float                   m_distance;
 };
-class RwAtomicRenderChain
+class RwAtomicRenderChain //size: 20
 {
 public:
-    RwAtomicZBufferEntry                m_entry;
-    RwListEntry <RwAtomicRenderChain>   list;
+    RwAtomicZBufferEntry                m_entry;    // 0
+    RwAtomicRenderChain*                next;       // 12
+    RwAtomicRenderChain*                prev;       // 16
 };
 class RwAtomicRenderChainInterface
 {
 public:
-    RwAtomicRenderChain     m_root;
-    RwAtomicRenderChain     m_rootLast;
-    RwAtomicRenderChain     m_renderStack;
-    RwAtomicRenderChain     m_renderLast;
+    RwAtomicRenderChain     m_root;             // 0
+    RwAtomicRenderChain     m_rootLast;         // 20
+    RwAtomicRenderChain     m_renderStack;      // 40
+    RwAtomicRenderChain     m_renderLast;       // 60
 
-    bool                    PushRender( RwAtomicZBufferEntry *level );
+    bool __thiscall         PushRender( RwAtomicZBufferEntry *level );
 };
 
 extern RwAtomicRenderChainInterface *const rwRenderChains;
@@ -667,7 +658,7 @@ public:
 
     BYTE                    m_pad[8];           // 44
     unsigned int            m_renderFlags;      // 52
-    BYTE                    m_pad2[4];          // 56
+    unsigned int            m_alpha;            // 56
 
     RwStaticGeometry*       m_static;           // 60
 
@@ -687,7 +678,7 @@ public:
     RpAtomic*               Find2dfx();
 
     void                    SetupAtomicRender();
-    void                    RemoveAtomicVisibilityFlags( unsigned short flags );
+    void                    RemoveAtomicComponentFlags( unsigned short flags );
     void                    FetchMateria( RpMaterials& mats );
 
     template <class type>
@@ -961,8 +952,8 @@ public:
     RwPipeline*             m_atomicPipeline;                               // 1192
     BYTE                    m_pad16[224];                                   // 1196
 
-    RwStructInfo*           m_clumpInfo;                                    // 1420
-    void*                   m_unk2;                                         // 1424
+    RwStructInfo*           m_atomicInfo;                                   // 1420
+    RwStructInfo*           m_clumpInfo;                                    // 1424
     RwStructInfo*           m_lightInfo;                                    // 1428
     void*                   m_unk;                                          // 1432
     RwList <void>           m_unkList;                                      // 1436

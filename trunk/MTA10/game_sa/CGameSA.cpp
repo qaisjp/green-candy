@@ -205,6 +205,7 @@ CGameSA::~CGameSA()
     Physical_Shutdown();
     Entity_Shutdown();
     Placeable_Shutdown();
+    Transformation_Shutdown();
 
     delete m_pPools;    // has to be first to delete using entities
     delete m_pFx;

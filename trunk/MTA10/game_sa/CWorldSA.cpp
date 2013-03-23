@@ -200,12 +200,12 @@ bool CWorldSA::ProcessLineOfSight( const CVector * vecStart, const CVector * vec
         {
             pBuildingResult->bValid = true;
             pBuildingResult->usModelID = targetEntity->m_model;
-            pBuildingResult->vecPosition = targetEntity->m_position;
+            pBuildingResult->vecPosition = targetEntity->Placeable.GetPosition();
 
-            if ( targetEntity->m_matrix )
+            if ( targetEntity->Placeable.m_matrix )
             {
                 CVector& vecRotation = pBuildingResult->vecRotation;
-                targetEntity->m_matrix->GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+                targetEntity->Placeable.m_matrix->GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
                 vecRotation = -vecRotation;
             }
         }

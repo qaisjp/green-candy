@@ -384,7 +384,7 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
                 // If you try to load a dff with a replaced model, the collision might crash you if you delete
                 // a model which uses the same collision; the crash does not happen if all DFFs have a own collision
                 // A fix would be to clone the collision somehow, but loading resources ourselves is required too!
-                // Eventually: custom clump, txd and col async loading function in Lua
+                // Eventually: custom clump, txd and col async loading functions in Lua
 
                 // Load all requirements
                 streamer->RequestModel( id, 0x10 );
@@ -504,7 +504,7 @@ CColModel* CRenderWareSA::ReadCOL( CFile *file )
 bool CRenderWareSA::PositionFrontSeat( RpClump *pClump, unsigned short usModelID )
 {
     // get the modelinfo array (+5Ch contains a pointer to vehicle specific dummy data)
-    CVehicleSeatPlacementSAInterface *seats = ((CVehicleModelInfoSAInterface*)ppModelInfo[usModelID])->m_seatPlacement;
+    CVehicleComponentInfoSAInterface *seats = ((CVehicleModelInfoSAInterface*)ppModelInfo[usModelID])->m_componentInfo;
 
     // read out the 'ped_frontseat' frame
     RwFrame *pPedFrontSeat = pClump->m_parent->FindChildByName( "ped_frontseat" );

@@ -2494,10 +2494,10 @@ bool processGrab ()
     {
         //CObjectSA * object = (CObjectSA*)entity;
         //CModelInfo * info = pGameInterface->GetModelInfo(entity->m_nModelIndex);
-        if ( entity->m_matrix )
-            edgeHeight = *entityEdgeHeight + entity->m_matrix->pos.fZ;
+        if ( entity->Placeable.m_matrix )
+            edgeHeight = *entityEdgeHeight + entity->Placeable.m_matrix->pos.fZ;
         else
-            edgeHeight = *entityEdgeHeight + entity->m_position.fZ; 
+            edgeHeight = *entityEdgeHeight + entity->Placeable.m_translate.fZ; 
     }
     else
         edgeHeight = *entityEdgeHeight;

@@ -4,7 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CClumpModelInfoSA.cpp
 *  PURPOSE:     Clump model instance
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,64 +13,126 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-void CClumpModelInfoSAInterface::Init()
-{
-    m_rwClump = NULL;
+/*=========================================================
+    CClumpModelInfoSAInterface::Init
 
+    Purpose:
+        Initializes this interface for first usage.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C4E40
+=========================================================*/
+void CClumpModelInfoSAInterface::Init( void )
+{
     m_animBlock = -1;
+
+    CBaseModelInfoSAInterface::Init();
 }
 
-void CClumpModelInfoSAInterface::DeleteRwObject()
+/*=========================================================
+    CClumpModelInfoSAInterface::DeleteRwObject
+
+    Purpose:
+        Deletes the associated clump RenderWare object from this
+        model info. It derefences or destroys all it's resources,
+        too.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C4E70
+=========================================================*/
+void CClumpModelInfoSAInterface::DeleteRwObject( void )
 {
     RpAtomic *atomic;
+    RpClump *infoClump = GetRwObject();
 
-    if ( !m_rwClump )
+    if ( !infoClump )
         return;
 
-    atomic = m_rwClump->GetFirstAtomic();
+    atomic = infoClump->Find2dfx();
 
     if ( atomic )
     {
-        // No idea what this is, please invest time
-        // 004C4E83
+        // Update the 2dfx count
+        Rw2dfx *eff = atomic->m_geometry->m_2dfx;
+
+        m_num2dfx = eff ? eff->m_count : 0;
     }
 
-    RpClumpDestroy( m_rwClump );
+    RpClumpDestroy( infoClump );
 
-    DeleteTextures();
+    m_rwObject = NULL;
 
-    if ( m_collFlags & COLL_SWAYINWIND )
+    DereferenceTXD();
+
+    if ( GetAnimFileIndex() != -1 )
+        pGame->GetAnimManager()->RemoveAnimBlockRef( GetAnimFileIndex() );
+
+    if ( m_flags & 0x0800 )
         DeleteCollision();
 }
 
-eRwType CClumpModelInfoSAInterface::GetRwModelType()
+/*=========================================================
+    CClumpModelInfoSAInterface::GetRwModelType
+
+    Purpose:
+        Returns the RenderWare object type associated with this
+        model info (-> RW_CLUMP).
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C5730
+=========================================================*/
+eRwType CClumpModelInfoSAInterface::GetRwModelType( void )
 {
     return RW_CLUMP;
 }
 
-RpClump* CClumpModelInfoSAInterface::CreateRwObjectEx( int rwTag )
+/*=========================================================
+    CClumpModelInfoSAInterface::CreateRwObjectEx
+
+    Arguments:
+        mat - modelling matrix to set to the object's parent frame
+    Purpose:
+        Creates a new model object. If the model info is not loaded,
+        NULL is returned. The modelling matrix of the object's frame
+        is set to mat. Then the new object is returned.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C5110
+=========================================================*/
+RwObject* CClumpModelInfoSAInterface::CreateRwObjectEx( RwMatrix& mat )
 {
-    return CreateRwObject();
+    if ( !m_rwObject )
+        return NULL;
+
+    RwObject *obj = CreateRwObject();
+    
+    obj->m_parent->m_modelling = mat;
+    return obj;
 }
 
+/*=========================================================
+    CClumpModelInfoSAInterface::CreateRwObject
+
+    Purpose:
+        Creates a new model object. If the model info is not loaded,
+        NULL is returned. Before the object is returned, it
+        is initialized.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C5140
+=========================================================*/
 bool RpSetAtomicAnimHierarchy( RpAtomic *child, RpAnimHierarchy *anim )
 {
     child->m_anim = anim;
     return false;
 }
 
-RpClump* CClumpModelInfoSAInterface::CreateRwObject()
+RwObject* CClumpModelInfoSAInterface::CreateRwObject( void )
 {
-    RpClump *clump;
-    RpAtomic *atomic;
+    RpClump *infoClump = GetRwObject();
 
-    if ( !m_rwClump )
+    if ( !infoClump )
         return NULL;
 
     Reference();
 
-    clump = RpClumpClone( m_rwClump );
-    atomic = clump->GetFirstAtomic();
+    RpClump *clump = RpClumpClone( infoClump );
+    RpAtomic *atomic = clump->GetFirstAtomic();
 
     if ( atomic && !( m_renderFlags & RENDER_NOSKELETON ) )
     {
@@ -83,26 +145,36 @@ RpClump* CClumpModelInfoSAInterface::CreateRwObject()
             // Set up the animation
             RwAnimationInit( anim->m_anim, pGame->GetAnimManager()->CreateAnimation( anim ) );
 
-            anim->m_flags = 0x0300;
+            anim->m_flags = 0x3000;
         }
     }
 
     if ( m_renderFlags & RENDER_STATIC )
     {
-        CAnimBlendHierarchySAInterface *anim;
-
         // Cache the animation and skeleton
         clump->InitStaticSkeleton();
 
         // Set idle animation
-        if ( anim = pGame->GetAnimManager()->GetAnimBlock( m_animBlock )->GetAnimation( m_hash ) )
-            pGame->GetAnimManager()->BlendAnimation( m_rwClump, anim, 2, 1.0 );
+        if ( CAnimBlendHierarchySAInterface *anim = pGame->GetAnimManager()->GetAnimBlock( m_animBlock )->GetAnimation( m_hash ) )
+            pGame->GetAnimManager()->BlendAnimation( clump, anim, 2, 1.0 );
     }
 
     Dereference();
     return clump;
 }
 
+/*=========================================================
+    CClumpModelInfoSAInterface::SetAnimFile
+
+    Arguments:
+        name - name of the anim file
+    Purpose:
+        Temporarily stores the name of the animation file.
+        Yes, Rockstar did overwrite an integer field with
+        a pointer.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C5200
+=========================================================*/
 void CClumpModelInfoSAInterface::SetAnimFile( const char *name )
 {
     char *anim;
@@ -118,7 +190,16 @@ void CClumpModelInfoSAInterface::SetAnimFile( const char *name )
     m_animBlock = (int)anim;
 }
 
-void CClumpModelInfoSAInterface::ConvertAnimFileIndex()
+/*=========================================================
+    CClumpModelInfoSAInterface::ConvertAnimFileIndex
+
+    Purpose:
+        Reads the temporary name hack storage and writes the
+        actual animBlock index into it.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C5250
+=========================================================*/
+void CClumpModelInfoSAInterface::ConvertAnimFileIndex( void )
 {
     int animBlock;
 
@@ -133,43 +214,85 @@ void CClumpModelInfoSAInterface::ConvertAnimFileIndex()
     m_animBlock = animBlock;
 }
 
-int CClumpModelInfoSAInterface::GetAnimFileIndex()
+/*=========================================================
+    CClumpModelInfoSAInterface::GetAnimFileIndex
+
+    Purpose:
+        Returns the index of the animation block this model
+        info uses.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C5740
+=========================================================*/
+int CClumpModelInfoSAInterface::GetAnimFileIndex( void )
 {
     return m_animBlock;
 }
 
-CColModelSAInterface* CClumpModelInfoSAInterface::GetCollision()
+/*=========================================================
+    CClumpModelInfoSAInterface::GetCollision
+
+    Purpose:
+        Returns the collision interface for this model info.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C5710
+=========================================================*/
+CColModelSAInterface* CClumpModelInfoSAInterface::GetCollision( void )
 {
     return m_pColModel;
 }
 
-bool RwAtomicSetupAnimHierarchy( RpAtomic *child, int )
+/*=========================================================
+    CClumpModelInfoSAInterface::SetClump
+
+    Arguments:
+        clump - new clump to set to this model info
+    Purpose:
+        Sets a new clump RenderWare object to this model info.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C4F70
+=========================================================*/
+bool RwAtomicSetupAnimHierarchy( RpAtomic *child, RpAnimHierarchy *anim )
 {
+    if ( anim )
+    {
+        child->m_anim = anim;
+        return false;
+    }
+
     child->m_anim = child->m_parent->GetAnimHierarchy();
     return true;
 }
 
 void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
 {
-    RpAtomic *effAtomic = m_rwClump->Find2dfx();
-    RpAtomic *atomic = clump->GetFirstAtomic();
-    RpAnimHierarchy *hier;
-    RpSkeleton *skel;
-    unsigned short anim;
-    unsigned int n;
+    RpClump *infoClump = GetRwObject();
 
-    // Decrease effect count
-    if ( effAtomic )
-        m_num2dfx -= effAtomic->m_geometry->m_2dfx->m_count;
+    if ( infoClump )
+    {
+        RpAtomic *effAtomic = GetRwObject()->Find2dfx();
 
-    m_rwClump = clump;
+        // Decrease effect count
+        if ( effAtomic )
+        {
+            Rw2dfx *effect = effAtomic->m_geometry->m_2dfx;
+
+            m_num2dfx -= effect ? effect->m_count : 0;
+        }
+    }
+
+    m_rwObject = clump;
 
     if ( clump )
     {
-        effAtomic = clump->Find2dfx();
+        RpAtomic *effAtomic = clump->Find2dfx();
 
+        // Increase it with the new clump
         if ( effAtomic )
-            m_num2dfx += effAtomic->m_geometry->m_2dfx->m_count;
+        {
+            Rw2dfx *effect = effAtomic->m_geometry->m_2dfx;
+
+            m_num2dfx += effect ? effect->m_count : 0;
+        }
     }
 
     // Set some callbacks
@@ -177,32 +300,37 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
 
     (*ppTxdPool)->Get( m_textureDictionary )->Reference();
 
-    anim = GetAnimFileIndex();
+    int anim = GetAnimFileIndex();
 
-    if ( anim )
+    if ( anim != -1 )
         pGame->GetAnimManager()->AddAnimBlockRef( anim );
 
     clump->SetupAtomicRender();
 
-    if ( !atomic || !atomic->m_geometry )
+    RpAtomic *atomic = clump->GetFirstAtomic();
+
+    if ( !atomic )
+        return;
+
+    RpSkeleton *skel = atomic->m_geometry->m_skeleton;
+
+    if ( !skel )
         return;
 
     if ( m_renderFlags & RENDER_NOSKELETON )
     {
-        clump->ForAllAtomics( RwAtomicSetupAnimHierarchy, 0 );
+        clump->ForAllAtomics <RpAnimHierarchy*> ( RwAtomicSetupAnimHierarchy, NULL );
         return;
     }
 
     atomic->m_geometry->m_meshes[0].m_bounds.radius *= 1.2f;
 
     // Get the animation
-    hier = clump->GetAnimHierarchy();
+    RpAnimHierarchy *hier = clump->GetAnimHierarchy();
 
-    clump->ForAllAtomics( RpSetAtomicAnimHierarchy, hier );
+    clump->ForAllAtomics( RwAtomicSetupAnimHierarchy, hier );
 
-    skel = atomic->m_geometry->m_skeleton;
-
-    for (n=0; n<atomic->m_geometry->m_verticeSize; n++)
+    for ( unsigned int n = 0; n < atomic->m_geometry->m_verticeSize; n++ )
     {
         RwV4d& info = skel->m_vertexInfo[n];
         float sum = info[0] + info[1] + info[2] + info[3];
@@ -216,23 +344,34 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
     }
 
     // Set flag
-    hier->m_flags = 0x0300;
+    hier->m_flags = 0x3000;
 }
 
-void CClumpModelInfoSAInterface::AssignAtomics( CAtomicHierarchySAInterface *atomics )
-{
-    for ( ; atomics->m_name; atomics++ )
-    {
-        RwFrame *component;
+/*=========================================================
+    CClumpModelInfoSAInterface::AssignAtomics
 
-        if ( !(atomics->m_flags & ATOMIC_HIER_ACTIVE) )
+    Arguments:
+        comps - component construction information array
+    Purpose:
+        Assigns the component hierarchy information from a
+        component registry.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C5460
+=========================================================*/
+void CClumpModelInfoSAInterface::AssignAtomics( CComponentHierarchySAInterface *comps )
+{
+    RwFrame *frame = m_rwObject->m_parent;
+
+    for ( ; comps->m_name; comps++ )
+    {
+        if ( !( comps->m_flags & ATOMIC_HIER_ACTIVE ) )
             continue;
 
-        component = m_rwClump->m_parent->FindFreeChildByName( atomics->m_name );
+        RwFrame *component = frame->FindFreeChildByName( comps->m_name );
 
         if ( !component )
             continue;
 
-        component->m_hierarchyId = atomics->m_frameHierarchy;
+        component->m_hierarchyId = comps->m_frameHierarchy;
     }
 }

@@ -55,7 +55,7 @@ static unsigned int __cdecl OpenStream_protected( const char *path )
     if ( n == MAX_GTA_STREAM_HANDLES )
         return 0;
 
-    // Interresting fact: This function was key-val protected..!
+    // Interesting fact: This function was key-val protected..!
     HANDLE hFile = CreateFileA( path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
         FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING | FILE_FLAG_RANDOM_ACCESS | FILE_ATTRIBUTE_READONLY, NULL );
 
@@ -145,7 +145,7 @@ static size_t GetMainArchiveSize()
     return GetFileSize( gtaStreamHandles[0], NULL );
 }
 
-static unsigned int OpenImgFile( const char *path, bool isNotPlayerImg )
+static unsigned int __cdecl OpenImgFile( const char *path, bool isNotPlayerImg )
 {
     unsigned int idx;
 

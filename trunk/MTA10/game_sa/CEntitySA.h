@@ -23,9 +23,8 @@
 #include <CVector2D.h>
 #include <CVector.h>
 
-#define FUNC_GetDistanceFromCentreOfMassToBaseOfModel       0x536BE0
-
 #define FUNC_SetRwObjectAlpha                               0x5332C0
+
 #define FUNC_SetOrientation                                 0x439A80
 
 #define FUNC_CMatrix__ConvertToEulerAngles                  0x59A840
@@ -38,8 +37,7 @@
 // not in CEntity really
 #define FUNC_RpAnimBlendClumpGetAssociation                 0x4D6870
 
-// replace with enum from R*
-#define STATUS_ABANDONED                    4
+#include "CPlaceableSA.h"
 
 
 /** 
@@ -49,30 +47,6 @@ class CReferences
 {
     CEntity     * pEntity;
 };
-
-class CPlaceableSAInterface // 24 bytes
-{
-public:
-                                    CPlaceableSAInterface();
-    virtual                         ~CPlaceableSAInterface();
-
-    void __thiscall                 AllocateMatrix();
-    void __thiscall                 AcquaintMatrix();
-    void __thiscall                 RestoreMatrix();
-    void __thiscall                 FreeMatrix();
-
-    void                            GetOffsetByHeading( CVector& out, const CVector& in ) const;
-    void                            GetOffset( CVector& out, const CVector& in ) const;
-
-    // Transformed parameters
-    CVector                         m_position;
-    float                           m_heading;
-    CTransformSAInterface*          m_matrix;
-};
-
-// Special instance improvement for more quality
-void Placeable_Init();
-void Placeable_Shutdown();
 
 struct CRect {
     float fX1, fY1, fX2, fY2;
@@ -146,12 +120,17 @@ public:
 
     void                            GetPosition( CVector& pos ) const;
 
+    float __thiscall                GetBasingDistance() const;
+
     void                            SetAlpha( unsigned char alpha );
     CColModelSAInterface* __thiscall    GetColModel() const;
     const CVector& __thiscall       GetCollisionOffset( CVector& out ) const;
     const CBounds2D& __thiscall     _GetBoundingBox( CBounds2D& out ) const;
 
     bool __thiscall                 IsOnScreen() const;
+
+    void __thiscall                 UpdateRwMatrix( void );
+    void __thiscall                 UpdateRwFrame( void );
 
     RwObject*               m_rwObject;         // 24
 

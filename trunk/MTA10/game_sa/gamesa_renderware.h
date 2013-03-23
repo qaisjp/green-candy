@@ -43,7 +43,7 @@ typedef RpAtomic*               (__cdecl *RpAtomicSetGeometry_t)                
 typedef RpAtomic*               (__cdecl *RpAtomicSetFrame_t)                   (RpAtomic *atomic, RwFrame *frame);
 typedef void                    (__cdecl *RpAtomicSetupObjectPipeline_t)        (RpAtomic *atomic);
 typedef void                    (__cdecl *RpAtomicSetupVehiclePipeline_t)       (RpAtomic *atomic);
-typedef bool                    (__cdecl *RpAtomicRender_t)                     (RpAtomic *atomic);
+typedef RpAtomic*               (__cdecl *RpAtomicRender_t)                     (RpAtomic *atomic);
 typedef int                     (__cdecl *RpAtomicDestroy_t)                    (RpAtomic *atomic);
 typedef RwCamera*               (__cdecl *RwCameraClone_t)                      (RwCamera *camera);
 typedef void                    (__cdecl *RwCameraDestroy_t)                    (RwCamera *camera);
@@ -61,7 +61,7 @@ typedef bool                    (__cdecl *RwAnimationInit_t)                    
 typedef bool                    (__cdecl *RwSkeletonUpdate_t)                   (RpSkeleton *skel);
 typedef RwFrame*                (__cdecl *RwFrameCreate_t)                      ();
 typedef RwFrame*                (__cdecl *RwFrameCloneRecursive_t)              (const RwFrame *frame, const RwFrame *root);
-typedef const RwMatrix*         (__cdecl *RwFrameGetLTM_t)                      (const RwFrame *frame);
+typedef const RwMatrix*         (__cdecl *RwFrameGetLTM_t)                      (RwFrame *frame);
 typedef RwFrame*                (__cdecl *RwFrameAddChild_t)                    (RwFrame *parent, RwFrame *child);
 typedef RwFrame*                (__cdecl *RwFrameRemoveChild_t)                 (RwFrame *child);
 typedef RwFrame*                (__cdecl *RwFrameTranslate_t)                   (RwFrame *frame, const RwV3d *v, RwTransformOrder order);
@@ -91,7 +91,7 @@ typedef RwMatrix*               (__cdecl *RwMatrixCreate_t)                     
 typedef RwMatrix*               (__cdecl *RwMatrixInvert_t)                     (RwMatrix *dst, const RwMatrix *src);
 typedef RwMatrix*               (__cdecl *RwMatrixTranslate_t)                  (RwMatrix *matrix, const RwV3d *translation, RwTransformOrder order);
 typedef RwMatrix*               (__cdecl *RwMatrixScale_t)                      (RwMatrix *matrix, const RwV3d *translation, RwTransformOrder order);
-typedef float                   (__cdecl *RwMatrixUnknown_t)                    (const RwMatrix& matrix, const RwMatrix& matrix2, unsigned char flags);
+typedef float                   (__cdecl *RwMatrixUnknown_t)                    (const RwMatrix& matrix, const RwMatrix& matrix2, unsigned short flags);
 typedef RpMaterial*             (__cdecl *RpMaterialCreate_t)                   ();
 typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial *mat);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryCreate_t)              ();

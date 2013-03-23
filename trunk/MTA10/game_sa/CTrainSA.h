@@ -48,6 +48,7 @@ public:
     inline CTrainSAInterface*   GetInterface()                                      { return (CTrainSAInterface*)m_pInterface; }
     inline const CTrainSAInterface* GetInterface() const                            { return (const CTrainSAInterface*)m_pInterface; }
 
+    void                        SetPosition( float x, float y, float z );
     void                        SetMoveSpeed( const CVector& moveSpeed );
 
     CDoorSA*                    GetDoor( unsigned char ucDoor );

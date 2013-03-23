@@ -148,6 +148,10 @@ public:
 
     void    Free( type *entity )
     {
+        // For compatibility with MSVCRT
+        if ( entity == NULL )
+            return;
+
         Free( GetIndex( entity ) );
     }
 
@@ -210,7 +214,7 @@ public:
 
 #define MAX_OBJECT_SIZE ( max(sizeof(CObjectSAInterface),sizeof(CProjectileSAInterface)) )
 
-typedef CPool <CVehicleSeatPlacementSAInterface, 500> CVehicleSeatPlacementPool;
+typedef CPool <CVehicleComponentInfoSAInterface, 500> CVehicleComponentInfoPool;
 typedef CPool <CColModelSAInterface, 20000> CColModelPool;
 
 typedef CPool <CPtrNodeSingleSA, 100000> CPtrNodeSinglePool;
@@ -240,7 +244,7 @@ typedef CPool <CColFileSA, 255> CColFilePool;
 typedef CPool <CIPLFileSA, MAX_IPL> CIPLFilePool;
 
 // They have to be defined somewhere!
-extern CVehicleSeatPlacementPool** ppVehicleSeatPlacementPool;
+extern CVehicleComponentInfoPool** ppVehicleComponentInfoPool;
 extern CColModelPool** ppColModelPool;
 
 extern CPtrNodeSinglePool** ppPtrNodeSinglePool;
@@ -285,12 +289,14 @@ typedef CPool <CPedSA, MAX_PEDS, MAX_MTA_PED_SIZE> CMTAPedPool;
 typedef CPool <CObjectSA, MAX_OBJECTS, MAX_MTA_OBJECT_SIZE> CMTAObjectPool;
 typedef CPool <CTaskSA, MAX_TASKS, 128> CMTATaskPool; // we align the tasks, please keep this size-value up-to-date!
 typedef CPool <CPlayerPedDataSAInterface, MAX_PEDS> CMTAPlayerDataPool;
+typedef CPool <dynamicObjectData, MAX_OBJECTS> CMTAObjectDataPool;
 
 extern CMTAVehiclePool *mtaVehiclePool;
 extern CMTAPedPool *mtaPedPool;
 extern CMTAObjectPool *mtaObjectPool;
 extern CMTATaskPool *mtaTaskPool;
 extern CMTAPlayerDataPool *mtaPlayerDataPool;
+extern CMTAObjectDataPool *mtaObjectDataPool;
 
 class CPoolsSA : public CPools
 {

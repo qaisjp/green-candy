@@ -55,10 +55,10 @@ CModelSA* CModelManagerSA::CloneClump( unsigned short model )
     if ( !info || info->GetRwModelType() != RW_CLUMP )
         return NULL;
 
-    if ( !info->m_rwClump )
+    if ( !info->GetRwObject() )
         return NULL;
 
-    return new CModelSA( RpClumpClone( info->m_rwClump ), NULL );
+    return new CModelSA( RpClumpClone( info->GetRwObject() ), NULL );
 }
 
 CRpAtomicSA* CModelManagerSA::CloneAtomic( unsigned short model )
@@ -71,10 +71,10 @@ CRpAtomicSA* CModelManagerSA::CloneAtomic( unsigned short model )
     if ( !info || info->GetRwModelType() != RW_ATOMIC )
         return NULL;
 
-    if ( !info->m_rpAtomic )
+    if ( !info->GetRwObject() )
         return NULL;
 
-    return new CRpAtomicSA( RpAtomicClone( info->m_rpAtomic ) );
+    return new CRpAtomicSA( RpAtomicClone( info->GetRwObject() ) );
 }
 
 bool CModelManagerSA::GetRwModelType( unsigned short model, eRwType& type ) const

@@ -170,7 +170,7 @@ bool CModelSA::Replace( unsigned short id )
     CClumpModelInfoSAInterface *cinfo = (CClumpModelInfoSAInterface*)info;
     CStreamingSA *streaming = pGame->GetStreaming();
 
-    bool isLoaded = cinfo->m_rwClump != NULL;
+    bool isLoaded = cinfo->GetRwObject() != NULL;
 
     // Cancel current model
     streaming->FreeModel( id );
@@ -232,7 +232,7 @@ bool CModelSA::Restore( unsigned short id )
     g_replObjectNative[id] = NULL;
 
     // We can only restore if the model is actively loaded
-    if ( cinfo->m_rwClump )
+    if ( cinfo->GetRwObject() )
     {
         // Do not allow destruction of collision if it belongs to us
         streaming->FreeModel( id );

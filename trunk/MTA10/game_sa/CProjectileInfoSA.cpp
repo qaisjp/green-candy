@@ -62,11 +62,11 @@ static void RemoveProjectile( CProjectileInfoSAInterface *info, CProjectileSAInt
     {
     case WEAPONTYPE_GRENADE:
         pGame->GetExplosionManager()->AddExplosion(
-            NULL, pGame->GetPools()->GetEntity( info->m_owner ), EXP_TYPE_GRENADE, intf->m_matrix ? intf->m_matrix->pos : intf->m_position, 0, true, -1, false );
+            NULL, pGame->GetPools()->GetEntity( info->m_owner ), EXP_TYPE_GRENADE, intf->Placeable.GetPosition(), 0, true, -1, false );
         break;
     case WEAPONTYPE_MOLOTOV:
         pGame->GetExplosionManager()->AddExplosion(
-            NULL, pGame->GetPools()->GetEntity( info->m_owner ), EXP_TYPE_MOLOTOV, intf->m_matrix ? intf->m_matrix->pos : intf->m_position, 0, true, -1, false );
+            NULL, pGame->GetPools()->GetEntity( info->m_owner ), EXP_TYPE_MOLOTOV, intf->Placeable.GetPosition(), 0, true, -1, false );
 
         pGame->GetAudio()->PushEntityAudio( intf );
         break;
