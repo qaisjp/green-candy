@@ -53,19 +53,19 @@ void CClumpModelInfoSAInterface::DeleteRwObject( void )
         // Update the 2dfx count
         Rw2dfx *eff = atomic->m_geometry->m_2dfx;
 
-        m_num2dfx = eff ? eff->m_count : 0;
+        ucNumOf2DEffects = eff ? eff->m_count : 0;
     }
 
     RpClumpDestroy( infoClump );
 
-    m_rwObject = NULL;
+    pRwObject = NULL;
 
     DereferenceTXD();
 
     if ( GetAnimFileIndex() != -1 )
         pGame->GetAnimManager()->RemoveAnimBlockRef( GetAnimFileIndex() );
 
-    if ( m_flags & 0x0800 )
+    if ( flags & 0x0800 )
         DeleteCollision();
 }
 
@@ -97,7 +97,7 @@ eRwType CClumpModelInfoSAInterface::GetRwModelType( void )
 =========================================================*/
 RwObject* CClumpModelInfoSAInterface::CreateRwObjectEx( RwMatrix& mat )
 {
-    if ( !m_rwObject )
+    if ( !pRwObject )
         return NULL;
 
     RwObject *obj = CreateRwObject();
@@ -134,7 +134,7 @@ RwObject* CClumpModelInfoSAInterface::CreateRwObject( void )
     RpClump *clump = RpClumpClone( infoClump );
     RpAtomic *atomic = clump->GetFirstAtomic();
 
-    if ( atomic && !( m_renderFlags & RENDER_NOSKELETON ) )
+    if ( atomic && !( renderFlags & RENDER_NOSKELETON ) )
     {
         if ( atomic->m_geometry->m_skeleton )
         {
@@ -149,13 +149,13 @@ RwObject* CClumpModelInfoSAInterface::CreateRwObject( void )
         }
     }
 
-    if ( m_renderFlags & RENDER_STATIC )
+    if ( renderFlags & RENDER_STATIC )
     {
         // Cache the animation and skeleton
         clump->InitStaticSkeleton();
 
         // Set idle animation
-        if ( CAnimBlendHierarchySAInterface *anim = pGame->GetAnimManager()->GetAnimBlock( m_animBlock )->GetAnimation( m_hash ) )
+        if ( CAnimBlendHierarchySAInterface *anim = pGame->GetAnimManager()->GetAnimBlock( m_animBlock )->GetAnimation( GetHashKey() ) )
             pGame->GetAnimManager()->BlendAnimation( clump, anim, 2, 1.0 );
     }
 
@@ -238,7 +238,7 @@ int CClumpModelInfoSAInterface::GetAnimFileIndex( void )
 =========================================================*/
 CColModelSAInterface* CClumpModelInfoSAInterface::GetCollision( void )
 {
-    return m_pColModel;
+    return pColModel;
 }
 
 /*=========================================================
@@ -276,11 +276,11 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
         {
             Rw2dfx *effect = effAtomic->m_geometry->m_2dfx;
 
-            m_num2dfx -= effect ? effect->m_count : 0;
+            ucNumOf2DEffects -= effect ? effect->m_count : 0;
         }
     }
 
-    m_rwObject = clump;
+    pRwObject = clump;
 
     if ( clump )
     {
@@ -291,14 +291,14 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
         {
             Rw2dfx *effect = effAtomic->m_geometry->m_2dfx;
 
-            m_num2dfx += effect ? effect->m_count : 0;
+            ucNumOf2DEffects += effect ? effect->m_count : 0;
         }
     }
 
     // Set some callbacks
     RpClumpSetupFrameCallback( clump, (int)this );
 
-    (*ppTxdPool)->Get( m_textureDictionary )->Reference();
+    (*ppTxdPool)->Get( usTextureDictionary )->Reference();
 
     int anim = GetAnimFileIndex();
 
@@ -317,7 +317,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
     if ( !skel )
         return;
 
-    if ( m_renderFlags & RENDER_NOSKELETON )
+    if ( renderFlags & RENDER_NOSKELETON )
     {
         clump->ForAllAtomics <RpAnimHierarchy*> ( RwAtomicSetupAnimHierarchy, NULL );
         return;
@@ -360,7 +360,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
 =========================================================*/
 void CClumpModelInfoSAInterface::AssignAtomics( CComponentHierarchySAInterface *comps )
 {
-    RwFrame *frame = m_rwObject->m_parent;
+    RwFrame *frame = GetRwObject()->m_parent;
 
     for ( ; comps->m_name; comps++ )
     {

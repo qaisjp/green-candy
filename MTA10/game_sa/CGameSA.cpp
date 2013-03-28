@@ -11,7 +11,7 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -766,30 +766,41 @@ void CGameSA::DisableVSync()
    *(unsigned char*)0xBAB318 = 0;
 }
 
-void ForEachBlock( void *ptr, unsigned int count, size_t blockSize, void (*callback)( void *block ) )
-{
-    while ( count-- )
-    {
-        callback( ptr );
+/*=========================================================
+    OpenGlobalStream
 
-        ptr = (void*)( (const char*)ptr + blockSize );
-    }
-}
-
+    Arguments:
+        filename - MTA filepath descriptor
+        mode - ANSI C opening mode ("w", "rb+", "a", ...)
+    Purpose:
+        Opens a MTA stream handle by dispatching the filename.
+        It currently tries to access...
+            the mod (mods/deathmatch) root,
+            the MTA (MTA San Andreas 1.x/MTA/) root and
+            the game (Rockstar Games/GTA San Andreas/)...
+        in the order: Files from the deathmatch root will
+        override files from the MTA root and the game root.
+        Returns the MTA stream handle if successful (filepath valid,
+        contextual [points inside one of the roots], not filesystem
+        locked).
+=========================================================*/
 CFile* OpenGlobalStream( const char *filename, const char *mode )
 {
     CFile *file;
 
+    // Attempt to access the deathmatch directory
     if ( file = core->GetModRoot()->Open( filename, mode ) )
         return file;
 
+    // Attempt to access the MTA directory
     if ( file = core->GetMTARoot()->Open( filename, mode ) )
         return file;
 
+    // Attempt to access the GTA:SA directory
     if ( file = gameFileRoot->Open( filename, mode ) )
         return file;
 
-    // TODO: accept read-only access to the game directory
+    // (off-topic) TODO: accept read-only access to the game directory
     // MTA team has voiced their concern about game directory access; TOD (topic of discussion)
     // I see this feature as optional anyway ;)
     return NULL;

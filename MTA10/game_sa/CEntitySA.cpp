@@ -110,7 +110,7 @@ CColModelSAInterface* CEntitySAInterface::GetColModel() const
             return (CColModelSAInterface*)VAR_CVehicle_SpecialColModels + n;
     }
 
-    return ppModelInfo[m_model]->m_pColModel;
+    return ppModelInfo[m_model]->pColModel;
 }
 
 const CVector& CEntitySAInterface::GetCollisionOffset( CVector& out ) const

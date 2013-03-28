@@ -4,7 +4,10 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CRenderWareExtensionSA.cpp
 *  PURPOSE:     RenderWare extension management
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*       In here you should put functions which do not fit into the RenderWare
+*       framework by ~default and are utility based. The RenderWare framework
+*       shall consist of the root code and all plugins.
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,12 +16,30 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-RwExtensionInterface **ppExtInterface = (RwExtensionInterface**)0x00C9B920;
+static RwExtensionInterface **ppExtInterface = (RwExtensionInterface**)0x00C9B920;
 #define pExtInterface   (*ppExtInterface)
 
-unsigned int *m_pNumRwExtensions = (unsigned int*)0x00C97900;
+static unsigned int *m_pNumRwExtensions = (unsigned int*)0x00C97900;
 #define m_numRwExtensions   (*m_pNumRwExtensions)
 
+/*=========================================================
+    RpAtomicRenderAlpha
+
+    Arguments:
+        atom - atomic to render with special alpha
+        alpha - alpha value to adjust materials to
+    Purpose:
+        Renders an atomic with a specified alpha by temporarily
+        adjusting all its materials to the alpha value. Only
+        materials with a higher alpha value are set to alpha.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00732480
+    Update:
+        The GTA:SA function saved the material alpha values on the
+        stack with a capacity of 152. If there were more than 152
+        materials, the engine would crash. This function fixed this
+        limitation by using heap memory, allocated by count.
+=========================================================*/
 void RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha )
 {
     // Fix to overcome material limit of 152 (yes, we actually reached that in GTA:United)
@@ -26,6 +47,7 @@ void RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha )
     unsigned int _flags = geom->flags;
     unsigned int n;
 
+    // Apply rendering flags. My guess is alpha blending?
     geom->flags |= 0x40;
 
     RpMaterials& mats = geom->m_materials;
@@ -52,16 +74,39 @@ void RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha )
 
     delete [] alphaVals;
 
+    // Restore flags as they were previous to calling this function.
     geom->flags = _flags;
 }
 
+/*=========================================================
+    _worldAtomicSceneCopyConstructor
+
+    Arguments:
+        atom - new plugin atomic instance
+        src - source atomic, the one to clone
+    Purpose:
+        RpWorld plugin copy constructor. In MTA atomics should trade
+        their scene details over to clones, so that every atomic will
+        have a scene and dynamic lighting will work. In a strict sense,
+        this is a hack.
+    Binary offsets:
+        (1.0 US): 0x007509A0
+        (1.0 EU): 0x007509F0
+=========================================================*/
 static RpAtomic* __cdecl _worldAtomicSceneCopyConstructor( RpAtomic *atom, RpAtomic *src )
 {
     atom->m_scene = src->m_scene;
     return atom;
 }
 
-CRwExtensionManagerSA::CRwExtensionManagerSA()
+/*=========================================================
+    CRwExtensionManagerSA::constructor
+
+    Purpose:
+        Initializes various RenderWare extensions. This interface
+        has access to special RenderWare extensions of GTA:SA (Allocate).
+=========================================================*/
+CRwExtensionManagerSA::CRwExtensionManagerSA( void )
 {
     // Patch some fixes
     HookInstall( 0x00732480, (DWORD)RpAtomicRenderAlpha, 5 );
@@ -76,23 +121,49 @@ CRwExtensionManagerSA::CRwExtensionManagerSA()
         break;
     }
 
+#if 0
     // Initialize global extensions
     RpGeometryStreamlineInit();
+#endif
 }
 
-CRwExtensionManagerSA::~CRwExtensionManagerSA()
+/*=========================================================
+    CRwExtensionManagerSA::destructor
+
+    Purpose:
+        Shutdown the RenderWare extension management.
+=========================================================*/
+CRwExtensionManagerSA::~CRwExtensionManagerSA( void )
 {
+#if 0
     // Shutdown global extensions
     RpGeometryStreamlineShutdown();
+#endif
 }
 
+/*=========================================================
+    CRwExtensionManagerSA::Allocate
+    (not investigated yet)
+
+    Arguments:
+        rwId - ID of the extension to allocate
+        count - number of special data chunks to allocate
+        size - ???
+        unk - ???
+    Purpose:
+        Allocates a user-defined RenderWare extension interface.
+        GTA:SA animation is using this function to allocate itself.
+    Binary offsets:
+        (1.0 US): 0x007CCE40
+        (1.0 EU): 0x007CCE80
+=========================================================*/
 RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int count, size_t size, unsigned int unk )
 {
     unsigned int n;
     RwExtensionInterface *ext;
     RwExtension *inst;
 
-    for (n=0; n<m_numRwExtensions; n++)
+    for ( n = 0; n < m_numRwExtensions; n++ )
     {
         if ((ext = &pExtInterface[n])->m_id == rwId)
             break;
@@ -124,11 +195,37 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
     return inst;
 }
 
+/*=========================================================
+    CRwExtensionManagerSA::Free
+
+    Arguments:
+        ext - pointer to extension interface
+    Purpose:
+        Frees the previously allocated extension interface.
+    Binary offsets:
+        (1.0 US): 0x007CCF10
+        (1.0 EU): 0x007CCF50
+=========================================================*/
 void CRwExtensionManagerSA::Free( RwExtension *ext )
 {
     // No idea if that is correct, i.e. cleanup?
     pRwInterface->m_free( ext );
 }
+
+/*
+    MTA RwStream Filesystem Wrapper Extension
+
+    These RenderWare extension functions allow seemless intergration of
+    the MTA:Eir FileSystem to RenderWare stream functions. This way we can theoretically
+    load RenderWare chunks from special containers (i.e. a scripter has created his own
+    multi-clump container format). 
+
+    An isolated stream will terminate the MTA stream when it is closed. It could be
+    used to inject a stream somewhere, or when the MTA stream handle is not required.
+
+    A non-isolated stream will preserve the MTA stream when it is closed. The MTA stream
+    handle can be reused this way.
+*/
 
 static int RwTranslatedIsoStreamClose( void *file )
 {
@@ -163,6 +260,16 @@ static void* RwTranslatedStreamSeek( void *file, unsigned int offset )
     return ( ((CFile*)file)->Seek( roff, SEEK_CUR ) == 0 ) ? file : NULL;
 }
 
+/*=========================================================
+    RwStreamCreateTranslated (MTA extension)
+
+    Arguments:
+        file - MTA stream handle
+    Purpose:
+        Creates a RenderWare stream wrapper for a MTA stream.
+        Returns NULL if the operation failed or the MTA stream
+        handle is NULL.
+=========================================================*/
 RwStream* RwStreamCreateTranslated( CFile *file )
 {
     if ( !file )
@@ -178,6 +285,17 @@ RwStream* RwStreamCreateTranslated( CFile *file )
     return RwStreamOpen( STREAM_TYPE_CALLBACK, STREAM_MODE_NULL, &data );
 }
 
+/*=========================================================
+    RwStreamCreateIsoTranslated (MTA extension)
+
+    Arguments:
+        file - MTA stream handle
+    Purpose:
+        Transforms the MTA stream handle into a RenderWare stream.
+        The MTA stream handle should not be reused after passing
+        to this function. Returns NULL if the operation failed or
+        the MTA stream handle is NULL.
+=========================================================*/
 RwStream* RwStreamCreateIsoTranslated( CFile *file )
 {
     if ( !file )
@@ -193,6 +311,19 @@ RwStream* RwStreamCreateIsoTranslated( CFile *file )
     return RwStreamOpen( STREAM_TYPE_CALLBACK, STREAM_MODE_NULL, &data );
 }
 
+/*=========================================================
+    RwStreamCreateIsoTranslated (MTA extension)
+
+    Arguments:
+        path - MTA filepath descriptor
+        mode - valid RenderWare stream mode (read, write or append)
+    Purpose:
+        Opens a RenderWare stream using a MTA filepath.
+        OpenGlobalStream checks multiple fileroots for the given
+        path. Invalid filepaths (not MTA or GTA related) are discarded
+        in the process (returns NULL). Returns the isolated RenderWare
+        stream if successful.
+=========================================================*/
 RwStream* RwStreamOpenTranslated( const char *path, RwStreamMode mode )
 {
     CFile *file;
@@ -215,6 +346,23 @@ RwStream* RwStreamOpenTranslated( const char *path, RwStreamMode mode )
     return RwStreamCreateIsoTranslated( file );
 }
 
+/*=========================================================
+    RwTextureStreamReadEx (GTA:SA extension)
+
+    Arguments:
+        stream - RenderWare stream which contains the texture
+    Purpose:
+        Reads a RenderWare texture from the given stream and
+        returns it. Returns NULL if...
+            the version is invalid,
+            there was no texture in the stream,
+            the reading process failed or
+            the data chunks were unable to be read.
+        This function is used by GTA:SA to plugin-load a high
+        quality texture.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00730E60
+=========================================================*/
 RwTexture* RwTextureStreamReadEx( RwStream *stream )
 {
     unsigned int version;
@@ -254,20 +402,47 @@ RwTexture* RwTextureStreamReadEx( RwStream *stream )
     else if ( flags == 3 )
         tex->flags_b = 4;
 
+    // Note: MTA usually has a fxQuality hook here, but it did nothing for the texture loading.
     if ( *(bool*)0x00C87FFC && tex->anisotropy > 0 && g_effectManager->m_fxQuality > 1 )
         tex->anisotropy = pRwDeviceInfo->maxAnisotropy;
 
     return tex;
 }
 
+/*=========================================================
+    RwTexDictionaryStreamReadEx (MTA extension)
+
+    Arguments:
+        stream - RenderWare stream which contains the TXD
+    Purpose:
+        Reads a RenderWare TexDictionary from a given stream and
+        returns it. Returns NULL if...
+            there is no TXD in the stream,
+            the version is invalid,
+            the texture blocks could not be read/were invalid,
+            reading of individual HQ textures has failed or
+            the TXD plugin data chunks could not be read.
+        This function loads a high quality, GTA:SA style TexDictionary
+        while performing the full logic like RenderWare wants us to.
+    Binary offsets (derived only, RwTexDictionaryStreamRead):
+        (1.0 US): 0x00804C30
+        (1.0 EU): 0x00804C70
+    Note:
+        The GTA:SA streaming loader neglected version checks, system
+        communication (RwDeviceSystemRequest) and plugin data chunk
+        reading (it used quick&dirty texture functions). This function
+        should be used to ensure texture quality consistency.
+=========================================================*/
 RwTexDictionary* RwTexDictionaryStreamReadEx( RwStream *stream )
 {
     unsigned int size;
     unsigned int version;
 
+    // Check whether we are a TexDictionary.
     if ( !RwStreamFindChunk( stream, 1, &size, &version ))
         return NULL;
 
+    // We cannot load too old and not too new TXDs
     if ( version < 0x34000 && version > 0x36003 )
     {
         RwError error;
@@ -285,6 +460,7 @@ RwTexDictionary* RwTexDictionaryStreamReadEx( RwStream *stream )
 
     unsigned int rendStatus;
 
+    // Request whether the system is ready (?).
     RwDeviceSystemRequest( pRwInterface->m_renderSystem, 0x16, rendStatus, 0, 0 );
 
     rendStatus &= 0xFF;
@@ -297,6 +473,7 @@ RwTexDictionary* RwTexDictionaryStreamReadEx( RwStream *stream )
     if ( !txd )
         return NULL;
 
+    // Read all individual HQ textures.
     while ( texBlocksInfo.count-- )
     {
         RwTexture *texture = RwTextureStreamReadEx( stream );
@@ -312,6 +489,7 @@ RwTexDictionary* RwTexDictionaryStreamReadEx( RwStream *stream )
 
     return txd;
 
+    // Common error handler for this function after creating the TXD
 txdParseError:
     LIST_FOREACH_BEGIN( RwTexture, txd->textures.root, TXDList )
         RwTextureDestroy( item );

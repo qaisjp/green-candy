@@ -481,6 +481,27 @@ void RwFrame::UnregisterRoot()
     m_privateFlags &= ~(RW_OBJ_REGISTERED | 1);
 }
 
+RwTexDictionary* RwTexDictionaryCreate( void )
+{
+    RwTexDictionary *txd = (RwTexDictionary*)pRwInterface->m_allocStruct( pRwInterface->m_textureManager.m_txdStruct, 0x30016 );
+
+    if ( !txd )
+        return NULL;
+
+    txd->m_type = RW_TXD;
+    txd->m_subtype = 0;
+    txd->m_flags = 0;
+    txd->m_privateFlags = 0;
+    txd->m_parent = NULL;
+
+    LIST_CLEAR( txd->textures.root );
+    LIST_APPEND( pRwInterface->m_textureManager.m_globalTxd.root, txd->globalTXDs );
+
+    // Register the txd I guess
+    RwObjectRegister( (void*)0x008E23E4, txd );
+    return txd;
+}
+
 static bool RwTexDictionaryGetFirstTexture( RwTexture *tex, RwTexture **rslt )
 {
     *rslt = tex;

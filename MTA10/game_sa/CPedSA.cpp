@@ -157,7 +157,7 @@ void CPedSA::SetModelIndex( unsigned short id )
     m_pInterface->SetModelIndex( id );
 
     // Also set the voice gender
-    switch( ((CPedModelInfoSAInterface*)info)->m_pedType )
+    switch( ((CPedModelInfoSAInterface*)info)->pedType )
     {
     case PEDTYPE_CIVFEMALE:
     case PEDTYPE_PROSTITUTE:

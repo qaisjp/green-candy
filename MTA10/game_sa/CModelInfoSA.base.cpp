@@ -82,16 +82,16 @@ CLODAtomicModelInfoSA* CBaseModelInfoSAInterface::GetLODAtomicModelInfo( void )
 =========================================================*/
 void CBaseModelInfoSAInterface::Init( void )
 {
-    m_numberOfRefs = 0;
-    m_textureDictionary = -1;
-    m_pColModel = NULL;
-    m_effectID = -1;
-    m_num2dfx = 0;
-    m_dynamicIndex = -1;
-    m_lodDistance = 2000;
-    m_rwObject = NULL;
+    usNumberOfRefs = 0;
+    usTextureDictionary = -1;
+    pColModel = NULL;
+    usEffectID = -1;
+    ucNumOf2DEffects = 0;
+    usDynamicIndex = -1;
+    fLodDistanceUnscaled = 2000;
+    pRwObject = NULL;
 
-    m_renderFlags = RENDER_COLMODEL | RENDER_BACKFACECULL;
+    renderFlags = RENDER_COLMODEL | RENDER_BACKFACECULL;
 }
 
 /*=========================================================
@@ -111,13 +111,13 @@ void CBaseModelInfoSAInterface::Shutdown( void )
     DeleteCollision();
 
     // We go with a dynamic colmodel by default.
-    m_renderFlags |= RENDER_COLMODEL;
+    renderFlags |= RENDER_COLMODEL;
 
-    m_effectID = -1;
-    m_num2dfx = 0;
+    usEffectID = -1;
+    ucNumOf2DEffects = 0;
 
-    m_dynamicIndex = -1;
-    m_textureDictionary = -1;
+    usDynamicIndex = -1;
+    usTextureDictionary = -1;
 }
 
 /*=========================================================
@@ -147,11 +147,11 @@ timeInfo* CBaseModelInfoSAInterface::GetTimeInfo( void )
 =========================================================*/
 void CBaseModelInfoSAInterface::SetCollision( CColModelSAInterface *col, bool dynamic )
 {
-    m_pColModel = col;
+    pColModel = col;
 
     if ( dynamic )
     {
-        m_renderFlags |= RENDER_COLMODEL;
+        renderFlags |= RENDER_COLMODEL;
 
         timeInfo *timed = GetTimeInfo();
 
@@ -159,7 +159,7 @@ void CBaseModelInfoSAInterface::SetCollision( CColModelSAInterface *col, bool dy
             ppModelInfo[timed->m_model]->SetCollision( col, false );
     }
     else
-        m_renderFlags &= ~RENDER_COLMODEL;
+        renderFlags &= ~RENDER_COLMODEL;
 }
 
 /*=========================================================
@@ -173,10 +173,10 @@ void CBaseModelInfoSAInterface::SetCollision( CColModelSAInterface *col, bool dy
 =========================================================*/
 void CBaseModelInfoSAInterface::DeleteCollision( void )
 {
-    if ( m_pColModel && IsDynamicCol() )
-        delete m_pColModel;
+    if ( pColModel && IsDynamicCol() )
+        delete pColModel;
 
-    m_pColModel = NULL;
+    pColModel = NULL;
 }
 
 /*=========================================================
@@ -189,10 +189,10 @@ void CBaseModelInfoSAInterface::DeleteCollision( void )
 =========================================================*/
 void CBaseModelInfoSAInterface::DereferenceTXD( void )
 {
-    if ( m_textureDictionary == -1 )
+    if ( usTextureDictionary == -1 )
         return;
 
-    (*ppTxdPool)->Get( m_textureDictionary )->Dereference();
+    (*ppTxdPool)->Get( usTextureDictionary )->Dereference();
 }
 
 /*=========================================================
@@ -206,9 +206,9 @@ void CBaseModelInfoSAInterface::DereferenceTXD( void )
 =========================================================*/
 void CBaseModelInfoSAInterface::Reference( void )
 {
-    m_numberOfRefs++;
+    usNumberOfRefs++;
 
-    (*ppTxdPool)->Get( m_textureDictionary )->Reference();
+    (*ppTxdPool)->Get( usTextureDictionary )->Reference();
 }
 
 /*=========================================================
@@ -222,9 +222,9 @@ void CBaseModelInfoSAInterface::Reference( void )
 =========================================================*/
 void CBaseModelInfoSAInterface::Dereference( void )
 {
-    m_numberOfRefs--;
+    usNumberOfRefs--;
 
-    (*ppTxdPool)->Get( m_textureDictionary )->Dereference();
+    (*ppTxdPool)->Get( usTextureDictionary )->Dereference();
 }
 
 /*=========================================================
@@ -236,7 +236,7 @@ void CBaseModelInfoSAInterface::Dereference( void )
 =========================================================*/
 unsigned short CBaseModelInfoSAInterface::GetFlags( void )
 {
-    return m_flags;
+    return flags;
 }
 
 /*=========================================================

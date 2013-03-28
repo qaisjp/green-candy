@@ -6242,7 +6242,7 @@ namespace
 
     float CalculateLowLodFadeAlpha ( CBaseModelInfoSAInterface* pModelInfo, float fDist )
     {
-        float fModelDrawDistance = pModelInfo->m_lodDistance * LOW_LOD_DRAW_DISTANCE_SCALE + 20.f;
+        float fModelDrawDistance = pModelInfo->GetLODDistance() * LOW_LOD_DRAW_DISTANCE_SCALE + 20.f;
         float fFadeWidth = 20.f + fModelDrawDistance / 50.f;
         float fFadeFar = fModelDrawDistance;
         float fFadeNear = fFadeFar - fFadeWidth;
@@ -6284,7 +6284,7 @@ void OnMY_CRenderer_SetupEntityVisibility_Post( int result, CEntitySAInterface* 
     if ( saved.bValid )
     {
         SetGlobalDrawDistanceScale ( 1 );
-        saved.pModelInfo->m_lodDistance = saved.fLodDistanceUnscaled;
+        saved.pModelInfo->SetLODDistance( saved.fLodDistanceUnscaled );
         saved.bValid = false;
 
         // Doing any distance fading?

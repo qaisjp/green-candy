@@ -973,7 +973,7 @@ struct RwDeviceInformation
 extern RwDeviceInformation *const pRwDeviceInfo;
 
 /*****************************************************************************/
-/** RenderWare Helper Classes                                               **/
+/** RenderWare Helper Definitions                                           **/
 /*****************************************************************************/
 
 // RenderWare type definitions
@@ -1071,7 +1071,7 @@ struct RwChunkHeader
     unsigned int        isComplex;
 };
 
-// Plugin functionss
+// Plugin functions
 typedef RpGeometry*     (__cdecl*RpGeometryPluginConstructor)( RpGeometry *geom, size_t offset );
 typedef void            (__cdecl*RpGeometryPluginDestructor)( RpGeometry *geom, size_t offset );
 typedef RpGeometry*     (__cdecl*RpGeometryPluginCopyConstructor)( RpGeometry *dst, RpGeometry *src, size_t offset );

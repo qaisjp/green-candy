@@ -60,7 +60,7 @@ bool CTexDictionarySA::IsImported( unsigned short id ) const
     if ( id > MAX_MODELS-1 )
         return false;
 
-    return IsImportedTXD( info->m_textureDictionary );
+    return IsImportedTXD( info->usTextureDictionary );
 }
 
 bool CTexDictionarySA::IsImportedTXD( unsigned short id ) const
@@ -95,7 +95,7 @@ bool CTexDictionarySA::Import( unsigned short id )
     if ( !info )
         return false;
 
-    return ImportTXD( info->m_textureDictionary );
+    return ImportTXD( info->usTextureDictionary );
 }
 
 bool CTexDictionarySA::ImportTXD( unsigned short id )
@@ -122,7 +122,7 @@ bool CTexDictionarySA::Remove( unsigned short id )
     if ( !info )
         return false;
 
-    return RemoveTXD( info->m_textureDictionary );
+    return RemoveTXD( info->usTextureDictionary );
 }
 
 bool CTexDictionarySA::RemoveTXD( unsigned short id )

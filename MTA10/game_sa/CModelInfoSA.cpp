@@ -8,7 +8,7 @@
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Christian Myhre Lundheim <>
 *               Jax <>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -238,7 +238,7 @@ VOID CModelInfoSA::Remove ( )
     m_pInterface->Dereference();
 
     // No references left?
-    if ( m_pInterface->m_numberOfRefs == 0 )
+    if ( m_pInterface->GetRefCount() == 0 )
     {  
         // Remove the model
         pGame->GetStreaming()->FreeModel( m_modelID );
@@ -293,10 +293,10 @@ const CBoundingBox* CModelInfoSA::GetBoundingBox() const
     if ( !info )
         return NULL;
 
-    if ( info->m_pColModel )
+    if ( info->pColModel )
         return NULL;
 
-    return &ppModelInfo[m_modelID]->m_pColModel->m_bounds;
+    return &ppModelInfo[m_modelID]->pColModel->m_bounds;
 }
 
 bool CModelInfoSA::IsValid()
@@ -311,7 +311,7 @@ float CModelInfoSA::GetDistanceFromCentreOfMassToBaseOfModel() const
     if ( !info )
         return 0;
 
-    return -info->m_pColModel->m_bounds.vecBoundMin.fZ;
+    return -info->pColModel->m_bounds.vecBoundMin.fZ;
 }
 
 unsigned short CModelInfoSA::GetTextureDictionaryID() const
@@ -321,7 +321,7 @@ unsigned short CModelInfoSA::GetTextureDictionaryID() const
     if ( !info )
         return 0;
 
-    return info->m_textureDictionary;
+    return info->usTextureDictionary;
 }
 
 void CModelInfoSA::SetTextureDictionaryID( unsigned short usID )
@@ -329,7 +329,7 @@ void CModelInfoSA::SetTextureDictionaryID( unsigned short usID )
     if ( !m_pInterface )
         return;
 
-    m_pInterface->m_textureDictionary = usID;
+    m_pInterface->usTextureDictionary = usID;
 }
 
 float CModelInfoSA::GetLODDistance() const
@@ -337,7 +337,7 @@ float CModelInfoSA::GetLODDistance() const
     if ( !m_pInterface )
         return 0;
 
-    return m_pInterface->m_lodDistance;
+    return m_pInterface->GetLODDistance();
 }
 
 void CModelInfoSA::SetLODDistance( float fDistance )
@@ -371,7 +371,7 @@ void CModelInfoSA::SetLODDistance( float fDistance )
     if ( !m_pInterface )
         return;
 
-    m_pInterface->m_lodDistance = fDistance;
+    m_pInterface->SetLODDistance( fDistance );
 }
 
 void CModelInfoSA::RestreamIPL()
@@ -530,7 +530,7 @@ std::list < CModelInfoSA* >     ms_SecondDelayQueue;    // Then delay remove for
 void CModelInfoSA::MaybeRemoveExtraGTARef()
 {
     // Safety check
-    if ( m_pInterface->m_numberOfRefs == 0 )
+    if ( m_pInterface->GetRefCount() == 0 )
         return;
 
     //
@@ -583,7 +583,7 @@ void CModelInfoSA::DoRemoveExtraGTARef()
     if (m_modelID == 0)
         return;
 
-    m_pInterface->m_numberOfRefs++; // Hack because Remove() decrements this
+    m_pInterface->Reference(); // Hack because Remove() decrements this
     Remove ();
 }
 
@@ -657,12 +657,12 @@ unsigned int CModelInfoSA::GetNumRemaps() const
 
 void* CModelInfoSA::GetVehicleSuspensionData() const
 {
-    return ppModelInfo[m_modelID]->m_pColModel->pColData->pSuspensionLines;
+    return ppModelInfo[m_modelID]->pColModel->pColData->pSuspensionLines;
 }
 
 void* CModelInfoSA::SetVehicleSuspensionData( void* pSuspensionLines )
 {
-    CColDataSA* pColData = m_pInterface->m_pColModel->pColData;
+    CColDataSA* pColData = m_pInterface->pColModel->pColData;
     void* pOrigSuspensionLines = pColData->pSuspensionLines;
 
     pColData->pSuspensionLines = pSuspensionLines;
@@ -687,10 +687,10 @@ void CModelInfoSA::GetVoice( short* psVoiceType, short* psVoiceID ) const
     assert( IsPed() );
 
     if ( psVoiceType )
-        *psVoiceType = GetPedModelInfoInterface ()->m_sVoiceType;
+        *psVoiceType = GetPedModelInfoInterface ()->sVoiceType;
 
     if ( psVoiceID )
-        *psVoiceID = GetPedModelInfoInterface ()->m_sFirstVoice;
+        *psVoiceID = GetPedModelInfoInterface ()->sFirstVoice;
 }
 
 void CModelInfoSA::GetVoice( const char** pszVoiceType, const char** pszVoice ) const
@@ -711,10 +711,10 @@ void CModelInfoSA::SetVoice( short sVoiceType, short sVoiceID )
 {
     assert( IsPed() );
 
-    GetPedModelInfoInterface ()->m_sVoiceType = sVoiceType;
-    GetPedModelInfoInterface ()->m_sFirstVoice = sVoiceID;
-    GetPedModelInfoInterface ()->m_sLastVoice = sVoiceID;
-    GetPedModelInfoInterface ()->m_sNextVoice = sVoiceID;
+    GetPedModelInfoInterface ()->sVoiceType = sVoiceType;
+    GetPedModelInfoInterface ()->sFirstVoice = sVoiceID;
+    GetPedModelInfoInterface ()->sLastVoice = sVoiceID;
+    GetPedModelInfoInterface ()->sNextVoice = sVoiceID;
 }
 
 void CModelInfoSA::SetVoice( const char* szVoiceType, const char* szVoice )

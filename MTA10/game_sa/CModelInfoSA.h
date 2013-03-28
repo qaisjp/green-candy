@@ -8,7 +8,7 @@
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Christian Myhre Lundheim <>
 *               Jax <>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -57,8 +57,9 @@ class CPedModelInfoSAInterface;
 #include "CModelInfoSA.base.h"
 #include "CModelInfoSA.ide.h"
 
-void    ModelInfo_Init();
-void    ModelInfo_Shutdown();
+void    ModelInfo_Init( void );
+void    ModelInfo_Shutdown( void );
+
 
 class CModelInfoSA : public CModelInfo
 {

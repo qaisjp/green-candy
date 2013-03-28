@@ -144,7 +144,7 @@ static void __cdecl _Objects_LoadAttributes( const char *filepath, bool unused )
 
         obj->percSubmerged = 100.0f / percSubmerged * obj->mass * 0.008f;
 
-        CBaseModelInfoSAInterface *model = CStreaming__GetModelByHash( pGame->GetKeyGen()->GetUppercaseKey( name ), NULL );
+        CBaseModelInfoSAInterface *model = Streaming::GetModelByHash( pGame->GetKeyGen()->GetUppercaseKey( name ), NULL );
 
         if ( !model )
             continue;
@@ -154,12 +154,12 @@ static void __cdecl _Objects_LoadAttributes( const char *filepath, bool unused )
             // Some optimizations, apparrently?
             if ( obj->SpCDR == firstObj.SpCDR )
             {
-                model->m_dynamicIndex = obj->CamAv == 0 ? 1 : 0;
+                model->usDynamicIndex = obj->CamAv == 0 ? 1 : 0;
                 continue;
             }
             else if ( obj->SpCDR == g_dynObjData[1].SpCDR )
             {
-                model->m_dynamicIndex = obj->CamAv == 0 ? 3 : 2;
+                model->usDynamicIndex = obj->CamAv == 0 ? 3 : 2;
                 continue;
             }
         }
@@ -175,14 +175,14 @@ static void __cdecl _Objects_LoadAttributes( const char *filepath, bool unused )
                  obj->effDef == simDef.effDef && obj->smashMult == simDef.smashMult && obj->smashVelocity == simDef.smashVelocity &&
                  obj->smashRand == simDef.smashRand && obj->b_gun == simDef.b_gun && obj->b_spk == simDef.b_spk )
             {
-                model->m_dynamicIndex = (short)n;
+                model->usDynamicIndex = (short)n;
                 goto reloop;
             } 
         }
 
         if ( num != MAX_DYNAMIC_OBJECT_DATA )
         {
-            model->m_dynamicIndex = (short)num++;
+            model->usDynamicIndex = (short)num++;
             obj++;
         }
 
@@ -209,7 +209,7 @@ static void __cdecl _Object_PrepareDynamicPhysics( unsigned short model, CObject
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[model];
 
-    if ( info->m_dynamicIndex == -1 )
+    if ( info->usDynamicIndex == -1 )
     {
         obj->m_mass = 99999;
         obj->m_turnMass = 99999;
@@ -219,7 +219,7 @@ static void __cdecl _Object_PrepareDynamicPhysics( unsigned short model, CObject
         return;
     }
 
-    dynamicObjectData *data = &g_dynObjData[info->m_dynamicIndex];
+    dynamicObjectData *data = &g_dynObjData[info->usDynamicIndex];
 
     obj->m_dynData = data;
     obj->m_mass = data->mass;
@@ -252,7 +252,7 @@ static void __cdecl _Object_PrepareDynamicPhysics( unsigned short model, CObject
     else if ( data->SpCDR == 8 )
     {
         obj->m_nodeFlags |= 0x40;
-        obj->m_centerOfMass = CVector( 0, 0, info->m_pColModel->m_bounds.vecBoundMin[2] );
+        obj->m_centerOfMass = CVector( 0, 0, info->pColModel->m_bounds.vecBoundMin[2] );
     }
     else if ( data->SpCDR == 9 )
     {

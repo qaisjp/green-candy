@@ -72,37 +72,16 @@ void CAutomobileSAInterface::SetModelIndex( unsigned short index )
     GetRwObject()->ScanAtomicHierarchy( m_components, (unsigned int)NUM_VEHICLE_COMPONENTS );
 }
 
-struct assocModelStore
-{
-    unsigned short primary[30];
-    unsigned short secondary[30];
-
-    unsigned int m_count;
-};
-
-unsigned short FindModelAssociation( assocModelStore& store, unsigned short model )
-{
-    for ( unsigned char n = 0; n < store.m_count; n++ )
-    {
-        if ( store.primary[n] == model )
-            return store.secondary[n];
-        if ( store.secondary[n] == model )
-            return store.primary[n];
-    }
-
-    return 0xFFFF;
-}
-
-static assocModelStore *upgStore = (assocModelStore*)0x00B4E6D8;
+CUpgradeAssocStoreSA *const g_upgStore = (CUpgradeAssocStoreSA*)0x00B4E6D8;
 
 void CAutomobileSAInterface::AddUpgrade( unsigned short model )
 {
     unsigned short special;
     CBaseModelInfoSAInterface *info = ppModelInfo[model];
 
-    if ( !UpdateComponentStatus( model, info->m_collFlags, &special ) )
+    if ( !UpdateComponentStatus( model, info->collFlags, &special ) )
     {
-        unsigned short assoc = FindModelAssociation( *upgStore, model );
+        unsigned short assoc = g_upgStore->FindModelAssociation( model );
 
         
     }
@@ -198,7 +177,7 @@ CAutomobileSA::CAutomobileSA( CAutomobileSAInterface *veh ) : CVehicleSA( veh ),
 
     // Privatise our suspension lines
     CBaseModelInfoSAInterface *info = ppModelInfo[veh->m_model];
-    CColDataSA *data = info->m_pColModel->pColData;
+    CColDataSA *data = info->pColModel->pColData;
 
     m_suspensionLines = new char [data->ucNumWheels * 0x20];
     memcpy( m_suspensionLines, data->pSuspensionLines, data->ucNumWheels * 0x20 );
@@ -388,7 +367,7 @@ void CAutomobileSA::RecalculateHandling()
 
 void CAutomobileSA::RecalculateSuspensionLines()
 {
-    CColDataSA *data = ppModelInfo[GetInterface()->m_model]->m_pColModel->pColData;
+    CColDataSA *data = ppModelInfo[GetInterface()->m_model]->pColModel->pColData;
 
 	// Calculate them
     CVehicleSA::RecalculateSuspensionLines();
