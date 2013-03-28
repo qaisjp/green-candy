@@ -8,7 +8,7 @@
 *       GTA:SA's way of loading resources from files. We want to create an indepedent
 *       loader so that we do not encounter limitations of the old system, since it has
 *       been optimized for gameplay.
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *  INSPIRATION: fastman92 <http://fastman92.tk>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
@@ -24,18 +24,30 @@ typedef char streamName[64];
 HANDLE gtaStreamHandles[MAX_GTA_STREAM_HANDLES];    // file handles
 streamName gtaStreamNames[MAX_GTA_STREAM_HANDLES];
 
+/*=========================================================
+    OpenStream_protected
+
+    Arguments:
+        path - filename of the stream to open
+    Purpose:
+        Opens a file instance on the local system. It can be used
+        for asynchronous read access (overlapped I/O).
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004067B0
+=========================================================*/
+
 /* 
     SECUmadness chapter 1: OpenStream
 
-    The GTA:SA engine has been 'lightly' protected by the SecuROM machine code obfuscator.
-    I have first-grade experience of what decompiling such code means: a fucking headache.
+    The GTA:SA engine has been _lightly_ protected by the SecuROM machine code obfuscator.
+    I have first-grade experience of what decompiling such code means: a f***ing headache.
     Simple routines become a torturous calling of key-value functions which silently redirect
     to the general-purpose API function. What you can read in the executable is in no-way
     represented in this function-stub.
 
     Due to the applied protective-layer, we are restricted to 128 streamHandles. Do not wonder
     why fastman92 has raised the limit to that exact value! Here we go, ladies and gentlemen,
-    the cleaned-up version of 0x015649F0..!
+    the cleaned-up version of 0x015649F0(US)..!
 */
 
 static unsigned int __cdecl OpenStream_protected( const char *path )
@@ -48,13 +60,12 @@ static unsigned int __cdecl OpenStream_protected( const char *path )
     for ( n=0; n<MAX_GTA_STREAM_HANDLES; n++ )
     {
         if ( gtaStreamHandles[n] == NULL )
-            break;
+            goto validIndex;
     }
 
-    // Bugfix: Do not buffer overflow
-    if ( n == MAX_GTA_STREAM_HANDLES )
-        return 0;
+    return 0;
 
+validIndex:
     // Interesting fact: This function was key-val protected..!
     HANDLE hFile = CreateFileA( path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
         FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING | FILE_FLAG_RANDOM_ACCESS | FILE_ATTRIBUTE_READONLY, NULL );
@@ -71,6 +82,17 @@ static unsigned int __cdecl OpenStream_protected( const char *path )
     return n << 24;
 }
 
+/*=========================================================
+    GetFreeArchive
+
+    Arguments:
+        idx - write location if a free archive was found
+    Purpose:
+        Scans the archive array and returns true once the first
+        free IMG archive was found.
+    Note:
+        This function has been inlined into OpenStandardArchives.
+=========================================================*/
 IMGFile imgArchives[MAX_GTA_IMG_ARCHIVES];
 
 static inline bool GetFreeArchive( unsigned int& idx )
@@ -87,12 +109,22 @@ static inline bool GetFreeArchive( unsigned int& idx )
     return false;
 }
 
+/*=========================================================
+    OpenStandardArchives
+
+    Purpose:
+        Initializes the IMG array and opens GTA3.IMG and GTA_INT.IMG.
+        They are assigned the first indices. Their indices are stored
+        in globals.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004083C0
+=========================================================*/
 static unsigned int *const VAR_GTA3IMGIndex = (unsigned int*)0x008E48A8;
 static unsigned int *const VAR_GTA_INTIndex = (unsigned int*)0x008E48A4;
 
 // NOTE: This function has been optimized for our usage; i.e. the GTA3IMG and GTA_INT always have the same index 0,1
 // In GTA:SA, there is a weird logic with free-object allocation (see above GetFreeArchive!).
-static void __cdecl OpenStandardArchives()
+static void __cdecl OpenStandardArchives( void )
 {
     // First, clear the IMG array
     for ( unsigned int n = 0; n < MAX_GTA_IMG_ARCHIVES; n++ )
@@ -101,6 +133,7 @@ static void __cdecl OpenStandardArchives()
         imgArchives[n].handle = 0;
     }
 
+    // Those might be inlined versions of OpenImgFile.
     // Process GTA3.IMG
     IMGFile& gta3 = imgArchives[0];
     strcpy( gta3.name, "MODELS\\GTA3.IMG" );
@@ -118,33 +151,87 @@ static void __cdecl OpenStandardArchives()
     *VAR_GTA_INTIndex = 1;
 }
 
-// Checks whether the entry is valid and returns the file information
-bool CModelLoadInfoSA::GetOffset( unsigned int& offset, unsigned int& blockCount )
+/*=========================================================
+    CModelLoadInfoSA::GetOffset
+
+    Arguments:
+        offset - writes the offset in the first 3 bytes
+                 and the handle in the last bytes
+        blockCount - writes the number of IMG archive blocks
+    Purpose:
+        Checks whether this entry is valid and returns its
+        file information.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004075A0
+=========================================================*/
+bool CModelLoadInfoSA::GetOffset( unsigned int& offset, unsigned int& blockCount ) const
 {
     if ( m_blockCount == 0 )
         return false;
 
-    offset = m_blockOffset + imgArchives[m_imgID].handle;
+    offset = GetStreamOffset();
     blockCount = m_blockCount;
     return true;
 }
 
+/*=========================================================
+    CModelLoadInfoSA::SetOffset
+
+    Arguments:
+        offset - offset of the entry in bytes
+        blockCount - number of IMG archive blocks
+    Purpose:
+        Updates the file information of this resource entry.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004075E0
+=========================================================*/
 void CModelLoadInfoSA::SetOffset( unsigned int offset, unsigned int blockCount )
 {
     m_blockOffset = offset;
     m_blockCount = blockCount;
 }
 
-unsigned int CModelLoadInfoSA::GetStreamOffset() const
+/*=========================================================
+    CModelLoadInfoSA::GetStreamOffset
+
+    Purpose:
+        Returns the location of the resource in the archives
+        by mixing the handle and the block offset.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00407570
+=========================================================*/
+unsigned int CModelLoadInfoSA::GetStreamOffset( void ) const
 {
     return (unsigned int)imgArchives[m_imgID].handle + m_blockOffset;
 }
 
-static size_t GetMainArchiveSize()
+/*=========================================================
+    GetMainArchiveSize
+
+    Purpose:
+        Returns the size in bytes of the first IMG archive
+        loaded (GTA3.IMG).
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00406360
+=========================================================*/
+static size_t GetMainArchiveSize( void )
 {
     return GetFileSize( gtaStreamHandles[0], NULL );
 }
 
+/*=========================================================
+    OpenImgFile
+
+    Arguments:
+        path - filename of the IMG archive
+        isNotPlayerImg - boolean whether the archive should be treated as PLAYER.IMG
+                         probably loaded on demand
+    Purpose:
+        Allocates another IMG archive, so it can be used to
+        load resources from.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00407610
+=========================================================*/
 static unsigned int __cdecl OpenImgFile( const char *path, bool isNotPlayerImg )
 {
     unsigned int idx;
@@ -159,7 +246,7 @@ static unsigned int __cdecl OpenImgFile( const char *path, bool isNotPlayerImg )
     return idx;
 }
 
-// Another lazy hook; I do not know why fastman92 did it, but I shouldn't digress
+// Another lazy hook; I do not know why fastman92 did it, but whatever
 static void __declspec(naked) HOOK_DisableGTAIMGCheck()
 {
     __asm
@@ -172,7 +259,7 @@ static void __declspec(naked) HOOK_DisableGTAIMGCheck()
 }
 
 // Let us decipher the ImgManagement, shall we?
-void DECL_ST IMG_Initialize()
+void IMG_Initialize( void )
 {
     switch( pGame->GetGameVersion() )
     {
@@ -196,7 +283,7 @@ void DECL_ST IMG_Initialize()
     HookInstall( 0x00407570, h_memFunc( &CModelLoadInfoSA::GetStreamOffset ), 5 );
     HookInstall( 0x00406360, (DWORD)GetMainArchiveSize, 5 );
 
-    // The f'ugly hook :3
+    // The f'ugly hook :D
     HookInstall( 0x00406C28, (DWORD)HOOK_DisableGTAIMGCheck, 5 );
 
     // 'Lazy' patches, for now (even though they are combined with important routines..!)
@@ -216,7 +303,7 @@ void DECL_ST IMG_Initialize()
         (unsigned int)gtaStreamHandles;
 }
 
-void IMG_Shutdown()
+void IMG_Shutdown( void )
 {
     // Should we terminate resources here?
 }

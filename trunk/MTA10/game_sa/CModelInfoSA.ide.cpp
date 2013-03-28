@@ -16,11 +16,11 @@ extern CBaseModelInfoSAInterface *ppModelInfo;
 
 static void __cdecl ConvertIDECompositeToInfoFlags( CBaseModelInfoSAInterface *info, unsigned int flags )
 {
-    BOOL_FLAG( info->m_renderFlags, RENDER_LAST, flags & ( OBJECT_ALPHA1 | OBJECT_ALPHA2 ) );
-    BOOL_FLAG( info->m_renderFlags, RENDER_ADDITIVE, flags & OBJECT_ALPHA2 );
-    BOOL_FLAG( info->m_renderFlags, RENDER_NOSHADOW, flags & OBJECT_NOSHADOW );
-    BOOL_FLAG( info->m_renderFlags, RENDER_NOCULL, flags & OBJECT_NOCULL );
-    BOOL_FLAG( info->m_renderFlags, RENDER_BACKFACECULL, !( flags & OBJECT_NOBACKFACECULL ) );
+    BOOL_FLAG( info->renderFlags, RENDER_LAST, flags & ( OBJECT_ALPHA1 | OBJECT_ALPHA2 ) );
+    BOOL_FLAG( info->renderFlags, RENDER_ADDITIVE, flags & OBJECT_ALPHA2 );
+    BOOL_FLAG( info->renderFlags, RENDER_NOSHADOW, flags & OBJECT_NOSHADOW );
+    BOOL_FLAG( info->renderFlags, RENDER_NOCULL, flags & OBJECT_NOCULL );
+    BOOL_FLAG( info->renderFlags, RENDER_BACKFACECULL, !( flags & OBJECT_NOBACKFACECULL ) );
 }
 
 static void __cdecl ConvertIDEModelToInfoFlags( CBaseModelInfoSAInterface *info, unsigned int flags )
@@ -28,56 +28,56 @@ static void __cdecl ConvertIDEModelToInfoFlags( CBaseModelInfoSAInterface *info,
     // Composite flags apply to clumps and atomic models
     ConvertIDECompositeToInfoFlags( info, flags );
 
-    BOOL_FLAG( info->m_renderFlags, RENDER_STATIC, flags & OBJECT_WETEFFECT );
+    BOOL_FLAG( info->renderFlags, RENDER_STATIC, flags & OBJECT_WETEFFECT );
  
     if ( flags & OBJECT_BREAKGLASS )
     {
-        info->m_collFlags &= ~( COLL_SWAYINWIND | COLL_STREAMEDWITHMODEL | COLL_COMPLEX );
-        info->m_collFlags |= COLL_NOCOLLFLYER;
+        info->collFlags &= ~( COLL_SWAYINWIND | COLL_STREAMEDWITHMODEL | COLL_COMPLEX );
+        info->collFlags |= COLL_NOCOLLFLYER;
     }
 
     if ( flags & OBJECT_BREAKGLASS_CRACK )
     {
-        info->m_collFlags &= ~( COLL_STREAMEDWITHMODEL | COLL_COMPLEX );
-        info->m_collFlags |= COLL_NOCOLLFLYER | COLL_SWAYINWIND;
+        info->collFlags &= ~( COLL_STREAMEDWITHMODEL | COLL_COMPLEX );
+        info->collFlags |= COLL_NOCOLLFLYER | COLL_SWAYINWIND;
     }
 
     if ( flags & OBJECT_GARAGE )
     {
-        info->m_collFlags &= ~COLL_COMPLEX;
-        info->m_collFlags |= COLL_NOCOLLFLYER | COLL_SWAYINWIND | COLL_STREAMEDWITHMODEL;
+        info->collFlags &= ~COLL_COMPLEX;
+        info->collFlags |= COLL_NOCOLLFLYER | COLL_SWAYINWIND | COLL_STREAMEDWITHMODEL;
     }
 
     if ( flags & OBJECT_VEGETATION )
     {
-        info->m_collFlags &= ~( COLL_STREAMEDWITHMODEL | COLL_NOCOLLFLYER | COLL_COMPLEX );
-        info->m_collFlags |= COLL_SWAYINWIND;
+        info->collFlags &= ~( COLL_STREAMEDWITHMODEL | COLL_NOCOLLFLYER | COLL_COMPLEX );
+        info->collFlags |= COLL_SWAYINWIND;
     }
 
     if ( flags & OBJECT_BIG_VEGETATION )
     {
-        info->m_collFlags &= ~( COLL_SWAYINWIND | COLL_NOCOLLFLYER | COLL_COMPLEX );
-        info->m_collFlags |= COLL_STREAMEDWITHMODEL;
+        info->collFlags &= ~( COLL_SWAYINWIND | COLL_NOCOLLFLYER | COLL_COMPLEX );
+        info->collFlags |= COLL_STREAMEDWITHMODEL;
     }
 
-    BOOL_FLAG( info->m_collFlags, COLL_AUDIO, flags & OBJECT_USE_POLYSHADOW );
+    BOOL_FLAG( info->collFlags, COLL_AUDIO, flags & OBJECT_USE_POLYSHADOW );
 
     if ( flags & OBJECT_GRAFFITI )
     {
-        info->m_collFlags &= ~( COLL_SWAYINWIND | COLL_COMPLEX );
-        info->m_collFlags |= COLL_STREAMEDWITHMODEL | COLL_NOCOLLFLYER;
+        info->collFlags &= ~( COLL_SWAYINWIND | COLL_COMPLEX );
+        info->collFlags |= COLL_STREAMEDWITHMODEL | COLL_NOCOLLFLYER;
     }
 
     if ( flags & OBJECT_STATUE )
     {
-        info->m_collFlags &= ~COLL_NOCOLLFLYER;
-        info->m_collFlags |= COLL_COMPLEX | COLL_STREAMEDWITHMODEL | COLL_SWAYINWIND;
+        info->collFlags &= ~COLL_NOCOLLFLYER;
+        info->collFlags |= COLL_COMPLEX | COLL_STREAMEDWITHMODEL | COLL_SWAYINWIND;
     }
 
     if ( flags & OBJECT_UNKNOWN_2 )
     {
-        info->m_collFlags &= ~( COLL_NOCOLLFLYER | COLL_SWAYINWIND );
-        info->m_collFlags |= COLL_COMPLEX | COLL_STREAMEDWITHMODEL;
+        info->collFlags &= ~( COLL_NOCOLLFLYER | COLL_SWAYINWIND );
+        info->collFlags |= COLL_COMPLEX | COLL_STREAMEDWITHMODEL;
     }
 }
 

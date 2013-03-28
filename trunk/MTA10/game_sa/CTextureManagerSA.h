@@ -5,7 +5,7 @@
 *  FILE:        game_sa/CTextureManagerSA.h
 *  PURPOSE:     Internal texture management definitions
 *               SubInterface of RenderWare
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -18,87 +18,29 @@
 
 class CTexDictionarySA;
 
-class CTxdInstanceSA
-{
-    friend class CTextureManagerSA;
-public:
-                    CTxdInstanceSA( const char *name );
-                    ~CTxdInstanceSA();
+#include "CTextureManagerSA.instance.h"
+#include "CTextureManagerSA.shader.h"
 
-    void*   operator new( size_t );
-    void    operator delete( void *ptr );
-
-    void            Allocate();
-    void            Deallocate();
-    bool            LoadTXD( RwStream *stream );
-    bool            LoadTXD( CFile *file );
-    void            InitParent();
-    void            Reference();
-    void            Dereference();
-    void            DereferenceNoDestroy();
-
-    void            SetCurrent();
-
-    RwTexDictionary*    m_txd;
-    unsigned short      m_references;
-    unsigned short      m_parentTxd;
-    unsigned int        m_hash;
-};
-
-//
-// STexInfo and SShadInfo are used for mapping GTA world textures to shaders
-//
-struct STexInfo;
-struct SShadInfo
-{
-    SShadInfo ( const SString& strMatch, CSHADERDUMMY* pShaderData, float fOrderPriority )
-        : strMatch ( strMatch.ToLower () )
-        , pShaderData ( pShaderData )
-        , fOrderPriority ( fOrderPriority )
-    {
-    }
-    const SString           strMatch;           // Always lower case
-    CSHADERDUMMY* const     pShaderData;
-    const float             fOrderPriority;
-    std::set < STexInfo* >  associatedTexInfoMap;
-};
-
-struct STexInfo
-{
-    STexInfo ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData )
-        : usTxdId ( usTxdId )
-        , strTextureName ( strTextureName.ToLower () )
-        , pD3DData ( pD3DData )
-        , pAssociatedShadInfo ( NULL )
-    {
-    }
-    const ushort            usTxdId;
-    const SString           strTextureName;     // Always lower case
-    CD3DDUMMY* const        pD3DData;
-    SShadInfo*              pAssociatedShadInfo;
-};
 
 class CTextureManagerSA : public CTextureManager
 {
     friend class CTexDictionarySA;
 public:
-                        CTextureManagerSA();
-                        ~CTextureManagerSA();
+                        CTextureManagerSA           ( void );
+                        ~CTextureManagerSA          ( void );
 
-    int                 FindTxdEntry( const char *name ) const;
-    int                 CreateTxdEntry( const char *name );
+    int                 FindTxdEntry                ( const char *name ) const;
+    int                 CreateTxdEntry              ( const char *name );
 
-    RwTexDictionary*    RwCreateTexDictionary();
+    CTexDictionarySA*   CreateTxd                   ( CFile *stream );
 
-    CTexDictionarySA*   CreateTxd( CFile *stream );
+    int                 LoadDictionary              ( const char *filename );
+    int                 LoadDictionaryEx            ( const char *name, const char *filename );
 
-    int                 LoadDictionary( const char *filename );
-    int                 LoadDictionaryEx( const char *name, const char *filename );
+    bool                SetCurrentTexture           ( unsigned short id );
 
-    bool                SetCurrentTexture( unsigned short id );
-
-    void                DeallocateTxdEntry( unsigned short id );
-    void                RemoveTxdEntry( unsigned short id );
+    void                DeallocateTxdEntry          ( unsigned short id );
+    void                RemoveTxdEntry              ( unsigned short id );
 
     ushort              GetTXDIDForModelID          ( ushort usModelID );
     void                InitWorldTextureWatch       ( PFN_WATCH_CALLBACK pfnWatchCallback );
@@ -111,6 +53,9 @@ public:
     const SString&      GetTextureName              ( CD3DDUMMY* pD3DData );
 
 private:
+    void                InitShaderSystem            ( void );
+    void                ShutdownShaderSystem        ( void );
+
     void                AddActiveTexture            ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData );
     void                RemoveTxdActiveTextures     ( ushort usTxdId );
     void                FindNewAssociationForTexInfo( STexInfo* pTexInfo );
@@ -140,4 +85,4 @@ typedef std::list <CTextureSA*> dictImportList_t;
 extern dictImportList_t g_dictImports[MAX_TXD];
 extern RwTexDictionary *g_textureEmitter;
 
-#endif
+#endif //_CTextureManagerSA_H_

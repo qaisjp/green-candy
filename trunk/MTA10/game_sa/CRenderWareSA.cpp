@@ -7,7 +7,7 @@
 *               and miscellaneous rendering functions
 *  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
 *               arc_
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *  RenderWare is © Criterion Software
@@ -74,7 +74,6 @@ RpAtomicRender_t                        RpAtomicRender                          
 RpAtomicSetGeometry_t                   RpAtomicSetGeometry                     = (RpAtomicSetGeometry_t)                   invalid_ptr;
 RpAtomicDestroy_t                       RpAtomicDestroy                         = (RpAtomicDestroy_t)                       invalid_ptr;
 RwObjectFrameRender_t                   RwObjectFrameRender                     = (RwObjectFrameRender_t)                   invalid_ptr;
-RwTexDictionaryCreate_t                 RwTexDictionaryCreate                   = (RwTexDictionaryCreate_t)                 invalid_ptr;
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             invalid_ptr;
 RwTexDictionaryGetCurrent_t             RwTexDictionaryGetCurrent               = (RwTexDictionaryGetCurrent_t)             invalid_ptr;
 RwTexDictionarySetCurrent_t             RwTexDictionarySetCurrent               = (RwTexDictionarySetCurrent_t)             invalid_ptr;
@@ -187,7 +186,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpAtomicSetupObjectPipeline         = (RpAtomicSetupObjectPipeline_t)           0x005D7F00;
         RpAtomicSetupVehiclePipeline        = (RpAtomicSetupVehiclePipeline_t)          0x005D5B20;
         RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749E10;
-        RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3640;
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70;
         RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3AD0;
         RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3AB0;
@@ -279,7 +277,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpAtomicClone                       = (RpAtomicClone_t)                         0x00749E60;
         RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749C50;
         RwObjectFrameRender                 = (RwObjectFrameRender_t)                   0x00805750;
-        RwTexDictionaryCreate               = (RwTexDictionaryCreate_t)                 0x007F3600;
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C30;
         RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3A90;
         RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3A70;
@@ -370,10 +367,10 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
         // We therefor have to prepare all resources so it can retrive them; textures and animations!
         if ( model )
         {
-            col = model->m_pColModel;
-            model->m_pColModel = NULL;
+            col = model->pColModel;
+            model->pColModel = NULL;
 
-            txd = (*ppTxdPool)->Get( model->m_textureDictionary );
+            txd = (*ppTxdPool)->Get( model->usTextureDictionary );
 
             if ( !txd->m_txd )
             {
@@ -410,7 +407,7 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
                 txd->SetCurrent();
         }
 
-        RwImportedScan::Apply( model->m_textureDictionary );
+        RwImportedScan::Apply( model->usTextureDictionary );
     }
 
     // read the clump with all its extensions
@@ -432,17 +429,17 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
 
             // If there is no collision in our model information by now, the clump did not provide one
             // We should restore to the original collision then
-            if ( !model->m_pColModel )
+            if ( !model->pColModel )
             {
                 colOut = new CColModelSA( col, false );
             }
             else
             {
-                colOut = new CColModelSA( model->m_pColModel, true );
+                colOut = new CColModelSA( model->pColModel, true );
             }
 
             // Restore the original colmodel as we have not requested the custom model yet
-            model->m_pColModel = col;
+            model->pColModel = col;
         }
         else
             colOut = NULL;

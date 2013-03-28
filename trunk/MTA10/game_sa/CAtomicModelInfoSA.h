@@ -18,8 +18,8 @@ class CAtomicModelInfoSA : public CBaseModelInfoSAInterface
 public:
     virtual void __thiscall             SetAtomic( RpAtomic *atomic );
 
-    RpAtomic*                           GetRwObject()           { return (RpAtomic*)m_rwObject; }
-    const RpAtomic*                     GetRwObject() const     { return (const RpAtomic*)m_rwObject; }
+    RpAtomic*                           GetRwObject()           { return (RpAtomic*)pRwObject; }
+    const RpAtomic*                     GetRwObject() const     { return (const RpAtomic*)pRwObject; }
 };
 
 class CDamageAtomicModelInfoSA : public CAtomicModelInfoSA

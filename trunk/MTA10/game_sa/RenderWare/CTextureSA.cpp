@@ -94,7 +94,7 @@ bool CTextureSA::IsImported( unsigned short id ) const
     if ( !info )
         return false;
 
-    return IsImportedTXD( info->m_textureDictionary );
+    return IsImportedTXD( info->usTextureDictionary );
 }
 
 bool CTextureSA::IsImportedTXD( unsigned short id ) const
@@ -117,7 +117,7 @@ bool CTextureSA::Import( unsigned short id )
     if ( !info )
         return false;
 
-    return ImportTXD( info->m_textureDictionary );
+    return ImportTXD( info->usTextureDictionary );
 }
 
 bool CTextureSA::ImportTXD( unsigned short id )
@@ -147,7 +147,7 @@ bool CTextureSA::Remove( unsigned short id )
     if ( !info )
         return false;
 
-    return RemoveTXD( info->m_textureDictionary );
+    return RemoveTXD( info->usTextureDictionary );
 }
 
 bool CTextureSA::RemoveTXD( unsigned short id )

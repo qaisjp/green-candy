@@ -768,6 +768,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CStreamingSA.init.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CStreamingSA.utils.cpp"
 				>
 			</File>
@@ -793,6 +797,14 @@
 			</File>
 			<File
 				RelativePath=".\CTextureManagerSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CTextureManagerSA.instance.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CTextureManagerSA.shader.cpp"
 				>
 			</File>
 			<File
@@ -1481,6 +1493,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CStreamingSA.init.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CStreamingSA.utils.h"
 				>
 			</File>
@@ -1502,6 +1518,14 @@
 			</File>
 			<File
 				RelativePath=".\CTextureManagerSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CTextureManagerSA.instance.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CTextureManagerSA.shader.h"
 				>
 			</File>
 			<File

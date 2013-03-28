@@ -19,7 +19,7 @@
 // TODO!
 CPedModelInfoSAInterface::CPedModelInfoSAInterface( void )
 {
-    m_pColModel = (CColModelSAInterface*)VAR_CTempColModels_ModelPed1;
+    pColModel = (CColModelSAInterface*)VAR_CTempColModels_ModelPed1;
 
     Init();
 }
@@ -38,11 +38,11 @@ void CPedModelInfoSAInterface::DeleteRwObject( void )
 {
     CClumpModelInfoSAInterface::DeleteRwObject();
 
-    if ( m_pColModel )
+    if ( pColModel )
     {
-        delete m_pColModel;
+        delete pColModel;
 
-        m_pColModel = NULL;
+        pColModel = NULL;
     }
 }
 
@@ -73,5 +73,5 @@ CPedModelInfoSA::~CPedModelInfoSA( void )
 
 void CPedModelInfoSA::SetMotionAnimGroup( AssocGroupId animGroup )
 {
-    m_pPedModelInterface->m_motionAnimGroup = animGroup;
+    m_pPedModelInterface->motionAnimGroup = animGroup;
 }

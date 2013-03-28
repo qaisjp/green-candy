@@ -156,7 +156,7 @@ bool CRpAtomicSA::Restore( unsigned short id )
     if ( isLoaded )
     {
         // Keep the textures alive
-        txd = (*ppTxdPool)->Get( info->m_textureDictionary );
+        txd = (*ppTxdPool)->Get( info->usTextureDictionary );
         txd->Reference();
     }
 

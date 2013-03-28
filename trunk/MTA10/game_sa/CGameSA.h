@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CGameSA.h
 *  PURPOSE:     Header file for base game logic handling class
@@ -11,7 +11,7 @@
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -321,8 +321,6 @@ private:
 extern CFileTranslator *gameFileRoot;
 
 // Utility functions
-void    ForEachBlock( void *ptr, unsigned int count, size_t blockSize, void (*callback)( void *block ) );
 CFile*  OpenGlobalStream( const char *filename, const char *mode );
 
-#endif
-
+#endif //__CGAMESA

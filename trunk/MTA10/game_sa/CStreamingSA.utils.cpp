@@ -13,7 +13,7 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-// In this file includes examples of clever goto usage.
+// This file includes examples of clever goto usage.
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 static RtDictSchema *const animDict =   (RtDictSchema*)0x008DED50;
@@ -24,7 +24,7 @@ static streamingLoadCallback_t  streamingLoadCallback = NULL;
 /*
     Texture Scanner Namespaces
 
-    Those namesspaces are texture scanners which - once applied, are called
+    Those namesspaces are texture scanners which - once applied - are called
     during RwFindTexture. They are meant to be stack-based, so that they have
     to be unattached the same order they were applied. If the scanner does not
     find the texture in it's environment, it calls the previously attached
@@ -59,7 +59,7 @@ namespace RwRemapScan
         // * It was done by replacing the first character in their name.
         // * The engine would always perform two scans: one for the provided name
         // * and another for the '#' flagged version.
-        // We do not want this feature.
+        // We do not want this feature. If we do, discuss with midnightStar/Martin.
         return prevStackScan( name );
     }
 
@@ -84,9 +84,8 @@ namespace RwRemapScan
     RwImportedScan (MTA extension)
 
     This logic scans the textures which virtually included themselves
-    to scanning of a specific TXD id slot. It is meant to
-    be a cleaner solution than modifying the GTA:SA internal
-    TexDictionaries.
+    into a specific TXD id slot. It is meant to be a cleaner solution than 
+    modifying the GTA:SA internal TexDictionaries.
     1) GTA:SA can unload it's TXDs without corrupting MTA data (vid memory saved)
     2) Individual textures can be applied instead of whole TXDs (flexibility)
     3) Texture instances come straight - without copying - from the
@@ -103,6 +102,10 @@ namespace RwRemapScan
     A proper fix would be a hook on the GTA:SA function TXDSetCurrent and
     RwFindTexture. Another interesting fix may be to rewrite all GTA:SA functions
     which use TXDSetCurrent.
+    We may split replacing of global and replacing of model textures. If the user
+    decides to import textures into models above DATA_TEXTURE_BLOCK, then the global
+    replacer is issued, which will be the hook in RwFindTexture. This way we could
+    save some performance, since RwImportedScan is cleaner.
 =========================================================*/
 namespace RwImportedScan
 {
@@ -125,6 +128,7 @@ namespace RwImportedScan
 
     void Apply( unsigned short id )
     {
+        // Performance improvement: only apply this handler if we actually have imported textures.
         if ( !g_dictImports[id].empty() )
         {
             prevStackScan = pRwInterface->m_textureManager.m_findInstanceRef;
@@ -171,8 +175,10 @@ static inline CVector* _RpGeometryAllocateNormals( RpGeometry *geom, RpGeomMesh 
         {
             const RpTriangle& tri = geom->m_triangles[i];
 
+            // If the vertex connects to any point of the triangle...
             if ( tri.v1 == n || tri.v2 == n || tri.v3 == n )
             {
+                // ... we should adjust the triangle normal.
                 const CVector& origin = mesh->m_positions[tri.v1];
                 CVector v1 = mesh->m_positions[tri.v2] - origin;
                 const CVector v2 = mesh->m_positions[tri.v3] - origin;
@@ -201,13 +207,13 @@ static inline CVector* _RpGeometryAllocateNormals( RpGeometry *geom, RpGeomMesh 
 =========================================================*/
 static void _initAtomScene( RpAtomic *atom )
 {
+    // Apply the default GTA:SA scene
     atom->m_scene = *p_gtaScene;
-
-    RpGeometry& geom = *atom->m_geometry;
-    geom.flags |= RW_GEOMETRY_GLOBALLIGHT;  // apply environmental and directional lights
 
     // TODO: reenable this using multi-threading (streamline extension!)
     return;
+
+    RpGeometry& geom = *atom->m_geometry;
 
     if ( !( geom.flags & RW_GEOMETRY_NORMALS ) )
     {
@@ -232,7 +238,7 @@ static void _initAtomScene( RpAtomic *atom )
 
     Arguments:
         atom - atomic to set as model for an atomic model info
-        replacedId - id of the atomic model info
+        replacerId - id of the atomic model info
     Purpose:
         Loads an atomic model info with the given atomic. The atomic
         is registered as the official representative of that model info.
@@ -295,21 +301,21 @@ inline static void _initClumpScene( RpClump *clump )
         RpClumpAtomicActivator which removes it from the clump and
         adds it to the atomic model info. More than one atomic may
         be applied to the model info if one parent frame name designates
-        a damage atomic model info and the other does not.
+        a damage atomic model info and the other does not. For this
+        function to succeed, there has to be a non-damage atomic
+        inside the clump.
     Binary offsets:
         (1.0 US and 1.0 EU): 0x005371F0
 =========================================================*/
 static bool __cdecl LoadClumpFile( RwStream *stream, unsigned int model )
 {
-    CBaseModelInfoSAInterface *info = ppModelInfo[model];
+    CAtomicModelInfoSA *atomInfo = ppModelInfo[model]->GetAtomicModelInfo();
     bool appliedRemapCheck, result;
 
-    CAtomicModelInfoSA *atomInfo = info->GetAtomicModelInfo();
-
     // MTA extension: Apply our global imports
-    RwImportedScan::Apply( info->m_textureDictionary );
+    RwImportedScan::Apply( atomInfo->usTextureDictionary );
 
-    if ( atomInfo && ( atomInfo->m_collFlags & COLL_WETROADREFLECT ) )
+    if ( atomInfo && ( atomInfo->collFlags & COLL_WETROADREFLECT ) )
     {
         RwRemapScan::Apply();
         appliedRemapCheck = true;
@@ -358,12 +364,12 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
     CClumpModelInfoSAInterface *info = (CClumpModelInfoSAInterface*)ppModelInfo[id];
 
     // Not sure about this flag anymore. Apparently it stands for multi-clump here.
-    if ( info->m_renderFlags & RENDER_NOSKELETON )
+    if ( info->renderFlags & RENDER_NOSKELETON )
     {
         RpClump *clump = RpClumpCreate();
         RwFrame *frame = clump->m_parent = RwFrameCreate();
 
-        RwImportedScan::Apply( info->m_textureDictionary );
+        RwImportedScan::Apply( info->usTextureDictionary );
 
         while ( RwStreamFindChunk( stream, 0x10, NULL, NULL ) )
         {
@@ -410,7 +416,7 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
         return false;
 
     // MTA extension: include our imported textures
-    RwImportedScan::Apply( info->m_textureDictionary );
+    RwImportedScan::Apply( info->usTextureDictionary );
 
     if ( isVehicle )
     {
@@ -471,7 +477,7 @@ static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
     if ( RwStreamReadBlocks( stream, info, length ) != length )
         return NULL;
 
-    RwTexDictionary *txd = pGame->GetTextureManager()->RwCreateTexDictionary();
+    RwTexDictionary *txd = RwTexDictionaryCreate();
 
     if ( !txd )
         return NULL;
@@ -486,6 +492,11 @@ static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
 
         if ( !tex )
         {
+            // Destroy all attached textures
+            LIST_FOREACH_BEGIN( RwTexture, txd->textures.root, TXDList )
+                RwTextureDestroy( item );
+            LIST_FOREACH_END
+
             RwTexDictionaryDestroy( txd );
             return NULL;
         }
@@ -548,8 +559,24 @@ void __cdecl RegisterCOLLibraryModel( unsigned short collId, unsigned short mode
         col->m_rangeEnd = (short)modelId;
 }
 
-// Update: added support for version 4 collision
-bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigned char collId )
+/*=========================================================
+    ReadCOLLibraryGeneral
+
+    Arguments:
+        buf - binary string of the COL library
+        size - size of the memory pointed at by buf
+        collId - COL library index
+    Purpose:
+        Reads a COL library from memory pointed at by buf and assigns all
+        collision entries to the COL library designated with collId. During
+        the scan for models which need collisions the range of applicance
+        is expanded. The next loading of this COL library will be boosted.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005B5000
+    Update:
+        Added support for version 4 collision.
+=========================================================*/
+static bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigned char collId )
 {
     CBaseModelInfoSAInterface *info = NULL;
 
@@ -571,8 +598,8 @@ bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigned char 
 
         unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( header.name );
 
-        if ( !info || hash != info->m_hash )
-            info = CStreaming__GetModelByHash( hash, &modelId );
+        if ( !info || hash != info->GetHashKey() )
+            info = Streaming::GetModelByHash( hash, &modelId );
 
         // I am not a fan of uselessly big scopes.
         // The closer the code is to the left border, the easier it is to read for everybody.
@@ -626,7 +653,21 @@ skip:
     return true;
 }
 
-bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char collId )
+/*=========================================================
+    ReadCOLLibraryBounds
+
+    Arguments:
+        buf - binary string of the COL library
+        size - size of the memory pointed at by buf
+        collId - COL library index
+    Purpose:
+        Reads a COL library from memory pointed at by buf and assigns all
+        collision entries to the COL library designated with collId. It uses
+        the cached range of applicancy to boost name-based collision loading.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00538440
+=========================================================*/
+static bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char collId )
 {
     CBaseModelInfoSAInterface *info = NULL;
 
@@ -637,6 +678,8 @@ bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char c
         buf += sizeof(header);
 
         // Note: this function has version 4 support by default!
+        // It never worked properly since ReadCOLLibraryGeneral rejected version 4 by default.
+        // We have updated the engine by allowing version 4 in ReadCOLLibraryGeneral!
         if ( header.checksum != '4LOC' && header.checksum != '3LOC' && header.checksum != '2LOC' && header.checksum != 'LLOC' )
             return true;
 
@@ -647,11 +690,11 @@ bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char c
 
         unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( header.name );
 
-        if ( !info || hash != info->m_hash )
+        if ( !info || hash != info->GetHashKey() )
         {
             CColFileSA *colFile = (*ppColFilePool)->Get( collId );
 
-            info = CStreaming__GetModelInfoByName( header.name, (unsigned short)colFile->m_rangeStart, (unsigned short)colFile->m_rangeEnd, &modelId );
+            info = Streaming::GetModelInfoByName( header.name, (unsigned short)colFile->m_rangeStart, (unsigned short)colFile->m_rangeEnd, &modelId );
         }
 
         if ( info && info->IsDynamicCol() )
@@ -669,7 +712,7 @@ bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char c
             else
             {
                 // The original route
-                col = info->m_pColModel;
+                col = info->pColModel;
 
                 if ( !col )
                 {
@@ -712,7 +755,22 @@ bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned char c
     return true;
 }
 
-bool __cdecl LoadCOLLibrary( unsigned char collId, const char *buf, size_t size )
+/*=========================================================
+    LoadCOLLibrary
+
+    Arguments:
+        collId - COL library index
+        buf - binary string of the COL library
+        size - size of the memory pointed at by buf
+    Purpose:
+        Loads a COL library into the container designated by collId.
+        If no range has been cached to the COL library, it executes
+        ReadCOLLibraryGeneral. Otherwise the loading is accelerated
+        by knowing the model id bounds.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004106D0
+=========================================================*/
+static bool __cdecl LoadCOLLibrary( unsigned char collId, const char *buf, size_t size )
 {
     CColFileSA *col = (*ppColFilePool)->Get( collId );
     bool success;
@@ -731,11 +789,26 @@ bool __cdecl LoadCOLLibrary( unsigned char collId, const char *buf, size_t size 
     return success;
 }
 
+/*=========================================================
+    FreeCOLLibrary
+
+    Arguments:
+        collId - COL library index
+    Purpose:
+        Unloads a specific COL library and deletes the collision
+        data from affected models.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00410730
+    Note:
+        This function has been updated so it is compatible with
+        the MTA model loading system. Models whose collisions were
+        replaced are not affected by this function anymore.
+=========================================================*/
 void __cdecl FreeCOLLibrary( unsigned char collId )
 {
     CColFileSA *col = (*ppColFilePool)->Get( collId );
 
-    // We kinda need another load to function.
+    // Mark this COL library as unloaded.
     col->m_loaded = false;
 
     for ( short n = col->m_rangeStart; n <= col->m_rangeEnd; n++ )
@@ -749,21 +822,44 @@ void __cdecl FreeCOLLibrary( unsigned char collId )
         if ( !info )
             continue;
 
-        CColModelSAInterface *colModel = info->m_pColModel;
+        CColModelSAInterface *colModel = info->pColModel;
 
         if ( colModel && info->IsDynamicCol() && colModel->m_colPoolIndex == collId )
             colModel->ReleaseData();
     }
 }
 
+/*=========================================================
+    LoadModel
+
+    Arguments:
+        buf - memory buffer which contains the object
+        id - index of the model/resource info
+        threadId - index of the thread which requested the load (unused)
+    Purpose:
+        Attempts to load a requested resource into the model info
+        at id. It gets executed after a thread loaded the resource
+        contents from the IMG file. Returns whether the loading
+        was successful.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0040C6B0
+    Note:
+        This function has been updated so it is compatible with
+        the MTA model loading system. Collisions are now properly assigned
+        to vehicles whose collisions were replaced by MTA.
+
+        SCM script loading has been temporarily disabled, since MTA
+        does not use it.
+=========================================================*/
 bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
 {
     CModelLoadInfoSA& loadInfo = VAR_ModelLoadInfo[id];
 
     RwBuffer streamBuffer;
     streamBuffer.ptr = buf;
-    streamBuffer.size = loadInfo.m_blockCount * 2048;
+    streamBuffer.size = loadInfo.m_blockCount * 2048;   // we are reading from IMG chunks
 
+    // Create a stream
     RwStream *stream = RwStreamInitialize( (void*)0x008E48AC, 0, 3, 1, &streamBuffer );
 
     if ( id < DATA_TEXTURE_BLOCK )
@@ -771,7 +867,7 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
         CBaseModelInfoSAInterface *info = ppModelInfo[id];
         int animIndex = info->GetAnimFileIndex();
 
-        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( info->m_textureDictionary );
+        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( info->usTextureDictionary );
         CAnimBlockSAInterface *animBlock;
 
         if ( txdInst->m_txd == NULL )
@@ -825,10 +921,10 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
         else
             success = LoadClumpFilePersistent( stream, id );
 
-        // Replace collision if necessary
+        // MTA extension: Replace collision if necessary
         if ( CColModelSA *col = g_colReplacement[id] )
         {
-            CColModelSAInterface *icol = info->m_pColModel;
+            CColModelSAInterface *icol = info->pColModel;
             CColModelSAInterface *ocol = col->GetOriginal();
 
             if ( icol )
@@ -948,41 +1044,22 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
         if ( type != MODEL_VEHICLE && type != MODEL_PED )   // Well, there also is weapon model info?
         {
             if ( CAtomicModelInfoSA *atomInfo = info->GetAtomicModelInfo() )
-                atomInfo->m_alpha = ( loadInfo.m_flags & 0x24 ) ? 0xFF : 0;
+                atomInfo->ucAlpha = ( loadInfo.m_flags & 0x24 ) ? 0xFF : 0;
 
-            if ( loadInfo.m_flags & 0x06 )
-                goto finish;
-
-            __asm
-            {
-                mov eax,ds:[0x008E4C60]
-                push eax
-                mov ecx,loadInfo
-                mov eax,0x00407480
-                call eax
-            }
+            if ( !( loadInfo.m_flags & 0x06 ) )
+                loadInfo.PushIntoLoader( *(CModelLoadInfoSA**)0x008E4C60 );
         }
     }
     else if ( id < 25000 || id >= 25575 && id < 25755 || id > 26230 )
     {
-        if ( loadInfo.m_flags & 0x06 )
-            goto finish;
-
-        __asm
-        {
-            mov eax,ds:[0x008E4C60]
-            push eax
-            mov ecx,loadInfo
-            mov eax,0x00407480
-            call eax
-        }
+        if ( !( loadInfo.m_flags & 0x06 ) )
+            loadInfo.PushIntoLoader( *(CModelLoadInfoSA**)0x008E4C60 );
     }
 
-finish:
     if ( loadInfo.m_eLoading != MODEL_RELOAD )
     {
         loadInfo.m_eLoading = MODEL_LOADED;
-        (*(unsigned int*)0x008E4CB4) += streamBuffer.size;
+        (*(unsigned int*)0x008E4CB4) += streamBuffer.size;  // increase the streaming memory statistics
 
         if ( streamingLoadCallback )
             streamingLoadCallback( id );
@@ -1008,6 +1085,15 @@ failureDamned:
     return false;
 }
 
+/*=========================================================
+    CStreamingSA::SetLoadCallback
+
+    Arguments:
+        callback - function to be called once a model successfully loaded
+    Purpose:
+        Specify an internal callback which should be issued once a
+        model was successfully loaded.
+=========================================================*/
 void CStreamingSA::SetLoadCallback( streamingLoadCallback_t callback )
 {
     streamingLoadCallback = callback;

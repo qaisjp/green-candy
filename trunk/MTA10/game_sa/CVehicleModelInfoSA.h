@@ -102,7 +102,7 @@ public:
     unsigned int                    m_numberOfColors;       // 720
     BYTE                            m_pad5[2];              // 724
     unsigned short                  m_upgradeTypes[18];     // 726
-    unsigned short                  m_paintjobTypes[5];     // 762
+    unsigned short                  m_paintjobTypes[5];     // 762, http://www.gtaforums.com/index.php?showtopic=209878
     int                             m_animFileIndex;        // 772
 };
 

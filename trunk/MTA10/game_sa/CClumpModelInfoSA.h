@@ -63,8 +63,8 @@ public:
     void                    ConvertAnimFileIndex    ( void );
     int                     GetAnimFileIndex        ( void );
 
-    RpClump*                GetRwObject             ( void )                { return (RpClump*)m_rwObject; }
-    const RpClump*          GetRwObject             ( void ) const          { return (const RpClump*)m_rwObject; }
+    RpClump*                GetRwObject             ( void )                { return (RpClump*)pRwObject; }
+    const RpClump*          GetRwObject             ( void ) const          { return (const RpClump*)pRwObject; }
 
     void                    AssignAtomics           ( CComponentHierarchySAInterface *atomics );
 

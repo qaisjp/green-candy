@@ -100,7 +100,7 @@ bool CColModelSA::Replace( unsigned short id )
     CBaseModelInfoSAInterface *model = ppModelInfo[id];
     
     // Store the original so we can restore it again
-    m_original = model->m_pColModel;
+    m_original = model->pColModel;
     m_originalDynamic = model->IsDynamicCol();
 
     model->SetCollision( m_pInterface, false );
@@ -145,7 +145,7 @@ bool CColModelSA::Restore( unsigned short id )
             // Clumps delete collision at freeing them
             delete m_original;
 
-            model->m_pColModel = NULL;
+            model->pColModel = NULL;
         }
         break;
     }
@@ -166,7 +166,7 @@ void CColModelSA::Apply( unsigned short id )
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[id];
 
-    m_original = info->m_pColModel;
+    m_original = info->pColModel;
 
     info->SetColModel( m_pInterface, false );
 }
