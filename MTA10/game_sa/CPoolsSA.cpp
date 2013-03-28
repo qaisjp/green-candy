@@ -746,6 +746,9 @@ unsigned int CPoolsSA::GetPoolDefaultCapacity( ePools pool ) const
     case POINT_ROUTE_POOL:          return 64;
     case POINTER_DOUBLE_LINK_POOL:  return 3200;         // Modded to 4000   @ CMultiplayerSA.cpp
     case POINTER_SINGLE_LINK_POOL:  return 70000;
+    case ENV_MAP_MATERIAL_POOL:     return 4096;
+    case ENV_MAP_ATOMIC_POOL:       return 1024;
+    case SPEC_MAP_MATERIAL_POOL:    return 4096;
     }
     return 0;
 }
@@ -771,6 +774,9 @@ unsigned int CPoolsSA::GetNumberOfUsedSpaces( ePools pool ) const
     case POINT_ROUTE_POOL:          return (*ppPointRoutePool)->GetCount();
     case POINTER_DOUBLE_LINK_POOL:  return (*ppPtrNodeDoublePool)->GetCount();
     case POINTER_SINGLE_LINK_POOL:  return (*ppPtrNodeSinglePool)->GetCount();
+    case ENV_MAP_MATERIAL_POOL:     return (*ppEnvMapMaterialPool)->GetCount();
+    case ENV_MAP_ATOMIC_POOL:       return (*ppEnvMapAtomicPool)->GetCount();
+    case SPEC_MAP_MATERIAL_POOL:    return (*ppSpecMapMaterialPool)->GetCount();
     }
 
     return 0;
@@ -797,6 +803,9 @@ unsigned int CPoolsSA::GetPoolCapacity( ePools pool ) const
     case POINT_ROUTE_POOL:              return (*ppPointRoutePool)->m_max;
     case POINTER_DOUBLE_LINK_POOL:      return (*ppPtrNodeDoublePool)->m_max;
     case POINTER_SINGLE_LINK_POOL:      return (*ppPtrNodeSinglePool)->m_max;
+    case ENV_MAP_MATERIAL_POOL:         return (*ppEnvMapMaterialPool)->GetMax();
+    case ENV_MAP_ATOMIC_POOL:           return (*ppEnvMapAtomicPool)->GetMax();
+    case SPEC_MAP_MATERIAL_POOL:        return (*ppSpecMapMaterialPool)->GetMax();
     }
 
     return 0;

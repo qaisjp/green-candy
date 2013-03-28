@@ -204,6 +204,24 @@ public:
     BYTE            m_pad[196];
 };
 
+class CEnvMapMaterialSA
+{
+public:
+    BYTE            m_pad[12];
+};
+
+class CEnvMapAtomicSA
+{
+public:
+    BYTE            m_pad[12];
+};
+
+class CSpecMapMaterialSA
+{
+public:
+    BYTE            m_pad[8];
+};
+
 #define MAX_DUMMIES     4000
 #define MAX_IPL         256
 
@@ -243,6 +261,10 @@ typedef CPool <CPedAttractorSA, 64> CPedAttractorPool;
 typedef CPool <CColFileSA, 255> CColFilePool;
 typedef CPool <CIPLFileSA, MAX_IPL> CIPLFilePool;
 
+typedef CPool <CEnvMapMaterialSA, 16000> CEnvMapMaterialPool;
+typedef CPool <CEnvMapAtomicSA, 4000> CEnvMapAtomicPool;
+typedef CPool <CSpecMapMaterialSA, 16000> CSpecMapMaterialPool;
+
 // They have to be defined somewhere!
 extern CVehicleComponentInfoPool** ppVehicleComponentInfoPool;
 extern CColModelPool** ppColModelPool;
@@ -273,6 +295,10 @@ extern CPedAttractorPool** ppPedAttractorPool;
 extern CColFilePool** ppColFilePool;
 extern CIPLFilePool** ppIPLFilePool;
 
+extern CEnvMapMaterialPool** ppEnvMapMaterialPool;
+extern CEnvMapAtomicPool** ppEnvMapAtomicPool;
+extern CSpecMapMaterialPool** ppSpecMapMaterialPool;
+
 // MTA pools; lets use the trick ourselves, shall we? :P
 // Do not forget to extend this chain once new interfaces are spotted!
 #define MAX_MTA_VEHICLE_SIZE ( max(sizeof(CVehicleSA),max(sizeof(CTrainSA),max(sizeof(CPlaneSA),max(sizeof(CHeliSA),max(sizeof(CBikeSA),max(sizeof(CBicycleSA),max(sizeof(CAutomobileTrailerSA),max(sizeof(CBoatSA),max(sizeof(CQuadBikeSA),sizeof(CMonsterTruckSA)))))))))) )
@@ -281,7 +307,7 @@ extern CIPLFilePool** ppIPLFilePool;
 
 #define MAX_MTA_OBJECT_SIZE ( max(sizeof(CObjectSA),sizeof(CProjectileSA)) )
 
-// this thing doesnt work! compiler error
+// this thing doesnt work! compiler error [out of memory/too complex]
 //#define MAX_MTA_TASK_SIZE ( max(MAX_PHYSICAL_TASK_SIZE, max(MAX_CAR_TASK_SIZE, max(MAX_CAR_UTIL_TASK_SIZE, max(MAX_GOTO_TASK_SIZE, max(MAX_ACTION_TASK_SIZE, max(sizeof(CTaskSimpleDuckSA), max(sizeof(CTaskSimpleSA), max(sizeof(CTaskComplexSA), max(MAX_BASIC_TASK_SIZE, MAX_ATTACK_TASK_SIZE))))))))) )
 
 typedef CPool <CVehicleSA, MAX_VEHICLES, MAX_MTA_VEHICLE_SIZE> CMTAVehiclePool;

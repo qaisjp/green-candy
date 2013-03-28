@@ -736,6 +736,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CRenderWareSA.pipeline.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CRenderWareSA.rwapi.cpp"
 				>
 			</File>
@@ -1458,6 +1462,10 @@
 			</File>
 			<File
 				RelativePath=".\CRenderWareSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.pipeline.h"
 				>
 			</File>
 			<File

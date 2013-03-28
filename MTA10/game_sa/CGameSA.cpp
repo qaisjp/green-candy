@@ -138,6 +138,7 @@ CGameSA::CGameSA()
     m_pWaterManager             = new CWaterManagerSA();
 
     // :D
+    RenderWarePipeline_Init();
     Transformation_Init();
     Placeable_Init();
     Entity_Init();
@@ -206,6 +207,7 @@ CGameSA::~CGameSA()
     Entity_Shutdown();
     Placeable_Shutdown();
     Transformation_Shutdown();
+    RenderWarePipeline_Shutdown();
 
     delete m_pPools;    // has to be first to delete using entities
     delete m_pFx;
