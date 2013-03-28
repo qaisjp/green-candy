@@ -44,5 +44,6 @@ public:
 };
 
 #include "CRenderWareSA.rwapi.h"
+#include "CRenderWareSA.pipeline.h"
 
 #endif
