@@ -56,7 +56,7 @@ template <class type, int max, const size_t size = sizeof(type)>
 class CPool
 {
 public:
-    CPool()
+    CPool( void )
     {
         m_pool = (type*)new unsigned char[ size * max ];
         m_flags = new unsigned char[ max ];
@@ -67,7 +67,7 @@ public:
         memset(m_flags, 0x80, max);
 
         m_max = max;
-        m_lastUsed = 0;
+        m_lastUsed = 0xFFFFFFFF;
     }
 
     inline type*    GetOffset( unsigned int id )
@@ -77,7 +77,7 @@ public:
 
     // This function expects the entities to free themselves from this;
     // so do not decrease the count here!
-    void    Clear()
+    void    Clear( void )
     {
         unsigned int n;
 
@@ -90,7 +90,7 @@ public:
         }
     }
 
-    ~CPool()
+    ~CPool( void )
     {
         Clear();
 
@@ -98,9 +98,10 @@ public:
         delete [] m_flags;
     }
 
-    inline type*    Allocate()
+    inline type*    Allocate( void )
     {
-        for ( unsigned int n = m_lastUsed; n < m_max; n++ )
+        // The original code did two iterations, but it is not required
+        for ( unsigned int n = ++m_lastUsed; n < m_max; n++ )
         {
             // If slot is used, we skip
             if ( !( m_flags[n] & 0x80 ) )
@@ -110,7 +111,7 @@ public:
             m_flags[n] &= ~0x80;
 
             // Next iteration we start from next slot
-            m_lastUsed = n + 1;
+            m_lastUsed = n;
             return GetOffset( n );
         }
 
@@ -143,7 +144,7 @@ public:
         m_flags[id] |= 0x80;
         
         if ( id < m_lastUsed )
-            m_lastUsed = id;
+            m_lastUsed = id - 1;
     }
 
     void    Free( type *entity )
@@ -155,9 +156,9 @@ public:
         Free( GetIndex( entity ) );
     }
 
-    bool    IsAnySlotFree()
+    bool    IsAnySlotFree( void )
     {
-        for ( unsigned int n = m_lastUsed; n < m_max; n++ )
+        for ( unsigned int n = m_lastUsed + 1; n < m_max; n++ )
         {
             if ( m_flags[n] & 0x80 )
                 return true;
@@ -166,13 +167,13 @@ public:
         return false;
     }
 
-    bool    Full()
+    bool    Full( void )
     {
         // We do not have to count all of the slots.
         return !IsAnySlotFree();
     }
 
-    unsigned int    GetCount()
+    unsigned int    GetCount( void )
     {
         // Count all occupied slots in this pool
         unsigned int count = 0;
@@ -186,7 +187,7 @@ public:
         return count;
     }
 
-    unsigned int    GetMax()
+    unsigned int    GetMax( void )
     {
         return m_max;
     }

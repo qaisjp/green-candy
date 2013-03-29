@@ -92,7 +92,8 @@ void    VehicleModels_Init( void )
     HookInstall( 0x004C8E60, h_memFunc( &CVehicleModelInfoSAInterface::Setup ), 5 );
 
     // Temporary vehicle look-up fix (will not be needed anymore in future patch)
-    HookInstall( 0x004C7510, (DWORD)RwRemapScan::scanMethod, 5 );
+    HookInstall( 0x004C75A0, (DWORD)RwRemapScan::Apply, 5 );
+    HookInstall( 0x004C75C0, (DWORD)RwRemapScan::Unapply, 5 );
 }
 
 void    VehicleModels_Shutdown( void )

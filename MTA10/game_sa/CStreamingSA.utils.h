@@ -17,13 +17,14 @@
 namespace RwImportedScan
 {
     void Apply( unsigned short model );
-    void Unapply();
+    void Unapply( void );
 };
 
 // Remap VEHICLE.TXD export
 namespace RwRemapScan
 {
-    RwTexture* scanMethod( const char *name );
+    void Apply( void );
+    void Unapply( void );
 };
 
 // Used by streaming

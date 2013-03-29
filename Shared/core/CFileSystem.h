@@ -5,7 +5,7 @@
 *  FILE:        Shared/core/CFileSystem.h
 *  PURPOSE:     File management
 *  DEVELOPERS:  S2Games <http://savage.s2games.com> (historical entry)
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -35,22 +35,22 @@
 class CRawFile : public CFile
 {
 public:
-                    ~CRawFile();
+                    ~CRawFile       ( void );
 
-    size_t          Read( void *buffer, size_t sElement, unsigned long iNumElements );
-    size_t          Write( const void *buffer, size_t sElement, unsigned long iNumElements );
-    int             Seek( long iOffset, int iType );
-    long            Tell() const;
-    bool            IsEOF() const;
-    bool            Stat( struct stat *stats ) const;
-    void            PushStat( const struct stat *stats );
-    void            SetSeekEnd();
-    size_t          GetSize() const;
-    void            SetSize( size_t size );
-    void            Flush();
-    const filePath& GetPath() const;
-    bool            IsReadable() const;
-    bool            IsWriteable() const;
+    size_t          Read            ( void *buffer, size_t sElement, unsigned long iNumElements );
+    size_t          Write           ( const void *buffer, size_t sElement, unsigned long iNumElements );
+    int             Seek            ( long iOffset, int iType );
+    long            Tell            ( void ) const;
+    bool            IsEOF           ( void ) const;
+    bool            Stat            ( struct stat *stats ) const;
+    void            PushStat        ( const struct stat *stats );
+    void            SetSeekEnd      ( void );
+    size_t          GetSize         ( void ) const;
+    void            SetSize         ( size_t size );
+    void            Flush           ( void );
+    const filePath& GetPath         ( void ) const;
+    bool            IsReadable      ( void ) const;
+    bool            IsWriteable     ( void ) const;
 
 private:
     friend class CSystemFileTranslator;
@@ -66,21 +66,21 @@ private:
 class CBufferedFile : public CFile
 {
 public:
-                    ~CBufferedFile();
+                    ~CBufferedFile  ( void );
 
-    size_t          Read( void *buffer, size_t sElement, unsigned long iNumElements );
-    size_t          Write( const void *buffer, size_t sElement, unsigned long iNumElements );
-    int             Seek( long iOffset, int iType );
-    long            Tell() const;
-    bool            IsEOF() const;
-    bool            Stat( struct stat *stats ) const;
-    void            PushStat( const struct stat *stats );
-    void            SetSeekEnd();
-    size_t          GetSize() const;
-    void            Flush();
-    const filePath& GetPath() const;
-    bool            IsReadable() const;
-    bool            IsWriteable() const;
+    size_t          Read            ( void *buffer, size_t sElement, unsigned long iNumElements );
+    size_t          Write           ( const void *buffer, size_t sElement, unsigned long iNumElements );
+    int             Seek            ( long iOffset, int iType );
+    long            Tell            ( void ) const;
+    bool            IsEOF           ( void ) const;
+    bool            Stat            ( struct stat *stats ) const;
+    void            PushStat        ( const struct stat *stats );
+    void            SetSeekEnd      ( void );
+    size_t          GetSize         ( void ) const;
+    void            Flush           ( void );
+    const filePath& GetPath         ( void ) const;
+    bool            IsReadable      ( void ) const;
+    bool            IsWriteable     ( void ) const;
 
     int             ReadInt();
     short           ReadShort();
@@ -96,16 +96,16 @@ private:
 class CSystemPathTranslator : public virtual CFileTranslator
 {
 public:
-    bool            GetFullPathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const;
-    bool            GetFullPathTree( const char *path, dirTree& tree, bool& file ) const;
-    bool            GetRelativePathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const;
-    bool            GetRelativePathTree( const char *path, dirTree& tree, bool& file ) const;
-    bool            GetFullPathFromRoot( const char *path, bool allowFile, filePath& output ) const;
-    bool            GetFullPath( const char *path, bool allowFile, filePath& output ) const;
-    bool            GetRelativePathFromRoot( const char *path, bool allowFile, filePath& output ) const;
-    bool            GetRelativePath( const char *path, bool allowFile, filePath& output ) const;
-    bool            ChangeDirectory( const char *path );
-    void            GetDirectory( filePath& output ) const;
+    bool            GetFullPathTreeFromRoot         ( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetFullPathTree                 ( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetRelativePathTreeFromRoot     ( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetRelativePathTree             ( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetFullPathFromRoot             ( const char *path, bool allowFile, filePath& output ) const;
+    bool            GetFullPath                     ( const char *path, bool allowFile, filePath& output ) const;
+    bool            GetRelativePathFromRoot         ( const char *path, bool allowFile, filePath& output ) const;
+    bool            GetRelativePath                 ( const char *path, bool allowFile, filePath& output ) const;
+    bool            ChangeDirectory                 ( const char *path );
+    void            GetDirectory                    ( filePath& output ) const;
 
 protected:
     friend class CFileSystem;
@@ -124,40 +124,41 @@ protected:
 class CSystemFileTranslator : public CSystemPathTranslator
 {
 public:
-                    ~CSystemFileTranslator();
+                    ~CSystemFileTranslator          ( void );
 
-    bool            WriteData( const char *path, const char *buffer, size_t size );
-    bool            CreateDir( const char *path );
-    CFile*          Open( const char *path, const char *mode );
-    CFile*          OpenEx( const char *path, const char *mode, unsigned int flags );
-    bool            Exists( const char *path ) const;
-    bool            Delete( const char *path );
-    bool            Copy( const char *src, const char *dst );
-    bool            Rename( const char *src, const char *dst );
-    size_t          Size( const char *path ) const;
-    bool            Stat( const char *path, struct stat *stats ) const;
-    bool            ReadToBuffer( const char *path, std::vector <char>& output ) const;
+    bool            WriteData                       ( const char *path, const char *buffer, size_t size );
+    bool            CreateDir                       ( const char *path );
+    CFile*          Open                            ( const char *path, const char *mode );
+    CFile*          OpenEx                          ( const char *path, const char *mode, unsigned int flags );
+    bool            Exists                          ( const char *path ) const;
+    bool            Delete                          ( const char *path );
+    bool            Copy                            ( const char *src, const char *dst );
+    bool            Rename                          ( const char *src, const char *dst );
+    size_t          Size                            ( const char *path ) const;
+    bool            Stat                            ( const char *path, struct stat *stats ) const;
+    bool            ReadToBuffer                    ( const char *path, std::vector <char>& output ) const;
 
 #ifdef _WIN32
-    bool            GetRelativePathTreeFromRoot( const char *path, dirTree& tree, bool& file ) const;
-    bool            GetRelativePathTree( const char *path, dirTree& tree, bool& file ) const;
-    bool            GetFullPathTree( const char *path, dirTree& tree, bool& file ) const;
-    bool            GetFullPath( const char *path, bool allowFile, filePath& output ) const;
+    // Used to handle special drive absolute paths in Windows
+    bool            GetRelativePathTreeFromRoot     ( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetRelativePathTree             ( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetFullPathTree                 ( const char *path, dirTree& tree, bool& file ) const;
+    bool            GetFullPath                     ( const char *path, bool allowFile, filePath& output ) const;
 #endif //_WIN32
-    bool            ChangeDirectory( const char *path );
+    bool            ChangeDirectory                 ( const char *path );
 
     void            ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
                         pathCallback_t dirCallback, 
                         pathCallback_t fileCallback, 
                         void *userdata ) const;
 
-    void            GetDirectories( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const;
-    void            GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const;
+    void            GetDirectories                  ( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const;
+    void            GetFiles                        ( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const;
 
 private:
     friend class CFileSystem;
 
-    void            _CreateDirTree( const dirTree& tree );
+    void            _CreateDirTree                  ( const dirTree& tree );
 
 #ifdef _WIN32
     HANDLE          m_rootHandle;
@@ -171,23 +172,23 @@ private:
 class CFileSystem : public CFileSystemInterface
 {
 public:
-                            CFileSystem();
-                            ~CFileSystem();
+                            CFileSystem             ( void );
+                            ~CFileSystem            ( void );
 
-    void                    InitZIP();
-    void                    DestroyZIP();
+    void                    InitZIP                 ( void );
+    void                    DestroyZIP              ( void );
                             
-    CFileTranslator*        CreateTranslator( const char *path );
-    CArchiveTranslator*     OpenArchive( CFile& file );
+    CFileTranslator*        CreateTranslator        ( const char *path );
+    CArchiveTranslator*     OpenArchive             ( CFile& file );
 
-    CArchiveTranslator*     CreateZIPArchive( CFile& file );
+    CArchiveTranslator*     CreateZIPArchive        ( CFile& file );
 
     // Insecure functions
-    bool                    IsDirectory( const char *path );
-    bool                    WriteMiniDump( const char *path, _EXCEPTION_POINTERS *except );
-    bool                    Exists( const char *path );
-    size_t                  Size( const char *path );
-    bool                    ReadToBuffer( const char *path, std::vector <char>& output );
+    bool                    IsDirectory             ( const char *path );
+    bool                    WriteMiniDump           ( const char *path, _EXCEPTION_POINTERS *except );
+    bool                    Exists                  ( const char *path );
+    size_t                  Size                    ( const char *path );
+    bool                    ReadToBuffer            ( const char *path, std::vector <char>& output );
 };
 
 extern CFileTranslator *fileRoot;

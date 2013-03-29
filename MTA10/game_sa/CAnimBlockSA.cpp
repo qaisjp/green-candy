@@ -12,13 +12,11 @@
 
 #include "StdInc.h"
 
-CAnimBlendHierarchySAInterface*     CAnimBlockSAInterface::GetAnimation( unsigned int hash )
+CAnimBlendHierarchySAInterface* CAnimBlockSAInterface::GetAnimation( unsigned int hash )
 {
-    unsigned int n;
-
-    for ( n=0; n<m_count; n++ )
+    for ( unsigned int n = 0; n < GetCount(); n++ )
     {
-        CAnimBlendHierarchySAInterface *anim = (CAnimBlendHierarchySAInterface*)ARRAY_CAnimManager_Animations + m_animationIndex + n;
+        CAnimBlendHierarchySAInterface *anim = (CAnimBlendHierarchySAInterface*)ARRAY_CAnimManager_Animations + GetAnimIndex() + n;
 
         if ( anim->m_hash == hash )
             return anim;
@@ -27,7 +25,7 @@ CAnimBlendHierarchySAInterface*     CAnimBlockSAInterface::GetAnimation( unsigne
     return NULL;
 }
 
-int CAnimBlockSAInterface::GetIndex()
+int CAnimBlockSAInterface::GetIndex( void )
 {
-    return (((long)this - ARRAY_CAnimManager_AnimBlocks) / sizeof(*this));
+    return this - (CAnimBlockSAInterface*)ARRAY_CAnimManager_AnimBlocks;
 }

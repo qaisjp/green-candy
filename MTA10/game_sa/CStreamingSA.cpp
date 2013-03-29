@@ -15,6 +15,33 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
+namespace
+{
+    //
+    // Used in LoadAllRequestedModels to record state
+    //
+    struct SPassStats
+    {
+        bool bLoadingBigModel;
+        DWORD numPriorityRequests;
+        DWORD numModelsRequested;
+        DWORD memoryUsed;
+
+        void Record ( void )
+        {
+            #define VAR_CStreaming_bLoadingBigModel         0x08E4A58
+            #define VAR_CStreaming_numPriorityRequests      0x08E4BA0
+            #define VAR_CStreaming_numModelsRequested       0x08E4CB8
+            #define VAR_CStreaming_memoryUsed               0x08E4CB4
+
+            bLoadingBigModel    = *(BYTE*)VAR_CStreaming_bLoadingBigModel != 0;
+            numPriorityRequests = *(DWORD*)VAR_CStreaming_numPriorityRequests;
+            numModelsRequested  = *(DWORD*)VAR_CStreaming_numModelsRequested;
+            memoryUsed          = *(DWORD*)VAR_CStreaming_memoryUsed;
+        }
+    };
+};
+
 CIPLFilePool **ppIPLFilePool = (CIPLFilePool**)CLASS_CIPLFilePool;
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
@@ -48,64 +75,7 @@ static streamingFreeCallback_t streamingFreeCallback = NULL;
     Binary offsets:
         (see CStreamingSA::RequestModel)
 =========================================================*/
-static void __cdecl HOOK_CStreaming__RequestModel( unsigned int model, unsigned int flags )
-{
-    pGame->GetStreaming()->RequestModel( model, flags );
-}
-
-/*=========================================================
-    HOOK_CStreaming__FreeModel
-
-    Arguments:
-        id - model info index to request
-        flags - priority flags for this request
-    Purpose:
-        Hook so that every engine resource request is handled
-        through MTA code.
-    Binary offsets:
-        (see CStreamingSA::FreeModel)
-=========================================================*/
-static void __cdecl HOOK_CStreaming__FreeModel( unsigned int model )
-{
-    pGame->GetStreaming()->FreeModel( model );
-}
-
-CStreamingSA::CStreamingSA( void )
-{
-    // Initialize the accelerated streaming structures
-    memset( g_colReplacement, 0, sizeof(g_colReplacement) );
-    memset( g_originalCollision, 0, sizeof(g_originalCollision) );
-
-    // Hook the model requester
-    HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
-    HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
-    HookInstall( 0x00410730, (DWORD)FreeCOLLibrary, 5 );
-    HookInstall( 0x0040C6B0, (DWORD)LoadModel, 5 );
-
-    StreamingLoader_Init();
-}
-
-CStreamingSA::~CStreamingSA( void )
-{
-    StreamingLoader_Shutdown();
-}
-
-/*=========================================================
-    CStreamingSA::RequestModel
-
-    Arguments:
-        id - model info index to request
-        flags - priority flags for this request
-    Purpose:
-        Requests a model to be loaded. If a model was previously
-        loading, it is flagged priority automatically. Associated
-        resources of this model also get requested (TXD, anim, ...).
-        If the requested model is already loaded, it is flagged to
-        be reloaded.
-    Binary offsets:
-        (1.0 US and 1.0 EU): 0x004087E0
-=========================================================*/
-void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
+static void __cdecl HOOK_CStreaming__RequestModel( unsigned int id, unsigned int flags )
 {
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
@@ -221,11 +191,11 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
         int animIndex = model->GetAnimFileIndex();
 
         // Request the models textures
-        RequestModel( model->usTextureDictionary + DATA_TEXTURE_BLOCK, flags );
+        HOOK_CStreaming__RequestModel( model->usTextureDictionary + DATA_TEXTURE_BLOCK, flags );
 
         // Get animation if necessary
         if ( animIndex != -1 )
-            RequestModel( animIndex + DATA_ANIM_BLOCK, 0x08 );
+            HOOK_CStreaming__RequestModel( animIndex + DATA_ANIM_BLOCK, 0x08 );
     }
     else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
     {
@@ -241,7 +211,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
 
         // I think it loads textures, lol
         if ( txd->m_parentTxd != 0xFFFF )
-            RequestModel( txd->m_parentTxd + DATA_TEXTURE_BLOCK, flags );
+            HOOK_CStreaming__RequestModel( txd->m_parentTxd + DATA_TEXTURE_BLOCK, flags );
     }
 
     // Push onto the to-be-loaded queue
@@ -261,20 +231,18 @@ reload:
 }
 
 /*=========================================================
-    CStreamingSA::FreeModel
+    HOOK_CStreaming__FreeModel
 
     Arguments:
-        id - model info index to free
+        id - model info index to request
+        flags - priority flags for this request
     Purpose:
-        Terminates all resources associated with the resource
-        described by id. This will destroy models, textures,
-        buildings, collisions, animations, paths and (maybe)
-        scripts. Flattened out loading procedures are aborted
-        (MODEL_RELOAD).
+        Hook so that every engine resource request is handled
+        through MTA code.
     Binary offsets:
-        (1.0 US and 1.0 EU): 0x004089A0
+        (see CStreamingSA::FreeModel)
 =========================================================*/
-void CStreamingSA::FreeModel( unsigned short id )
+static void __cdecl HOOK_CStreaming__FreeModel( unsigned int id )
 {
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
@@ -360,7 +328,7 @@ void CStreamingSA::FreeModel( unsigned short id )
             // This function destroys buildings/IPLs!
             __asm
             {
-                movzx eax,id
+                mov eax,id
                 sub eax,25255
 
                 push eax
@@ -373,7 +341,7 @@ void CStreamingSA::FreeModel( unsigned short id )
         {
             __asm
             {
-                movzx eax,id
+                mov eax,id
                 sub eax,25511
 
                 push eax
@@ -391,7 +359,7 @@ void CStreamingSA::FreeModel( unsigned short id )
         {
             __asm
             {
-                movzx eax,id
+                mov eax,id
                 sub eax,26230
 
                 mov ecx,0x00A47B60
@@ -459,6 +427,75 @@ customJump:
         streamingFreeCallback( id );
 }
 
+CStreamingSA::CStreamingSA( void )
+{
+    // Initialize the accelerated streaming structures
+    memset( g_colReplacement, 0, sizeof(g_colReplacement) );
+    memset( g_originalCollision, 0, sizeof(g_originalCollision) );
+
+    // Hook the model requester
+    HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
+    HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
+    HookInstall( 0x00410730, (DWORD)FreeCOLLibrary, 5 );
+    HookInstall( 0x0040C6B0, (DWORD)LoadModel, 5 );
+
+    StreamingLoader_Init();
+}
+
+CStreamingSA::~CStreamingSA( void )
+{
+    StreamingLoader_Shutdown();
+}
+
+/*=========================================================
+    CStreamingSA::RequestModel
+
+    Arguments:
+        id - model info index to request
+        flags - priority flags for this request
+    Purpose:
+        Requests a model to be loaded. If a model was previously
+        loading, it is flagged priority automatically. Associated
+        resources of this model also get requested (TXD, anim, ...).
+        If the requested model is already loaded, it is flagged to
+        be reloaded.
+        If the model id belongs to an upgrade, perform the upgrade
+        requester routine.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004087E0
+=========================================================*/
+inline static bool IsUpgradeModelId( unsigned short dwModelID )
+{
+    return dwModelID >= 1000 && dwModelID <= 1193;
+}
+
+void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
+{
+    if ( IsUpgradeModelId( id ) )
+        RequestVehicleUpgrade( id, flags );
+    else
+        HOOK_CStreaming__RequestModel( id, flags );
+}
+
+/*=========================================================
+    CStreamingSA::FreeModel
+
+    Arguments:
+        id - model info index to free
+    Purpose:
+        Terminates all resources associated with the resource
+        described by id. This will destroy models, textures,
+        buildings, collisions, animations, paths and (maybe)
+        scripts. Flattened out loading procedures are aborted
+        (MODEL_RELOAD).
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004089A0
+=========================================================*/
+void CStreamingSA::FreeModel( unsigned short id )
+{
+    HOOK_CStreaming__FreeModel( id );
+}
+
 /*=========================================================
     CStreamingSA::LoadAllRequestedModels
 
@@ -495,7 +532,10 @@ void CStreamingSA::LoadAllRequestedModels( bool onlyPriority )
 =========================================================*/
 bool CStreamingSA::HasModelLoaded( unsigned int id )
 {
-    return Streaming::GetModelLoadInfo( id ).m_eLoading == MODEL_LOADED;
+    if ( IsUpgradeModelId( id ) )
+        return HasVehicleUpgradeLoaded( id );
+    else
+        return Streaming::GetModelLoadInfo( id ).m_eLoading == MODEL_LOADED;
 }
 
 /*=========================================================
@@ -563,6 +603,29 @@ bool CStreamingSA::HaveAnimationsLoaded( int idx )
 }
 
 /*=========================================================
+    CStreamingSA::RequestVehicleUpgrade
+
+    Arguments:
+        model - upgrade model index
+        flags - loader attribute flags
+    Purpose:
+        Requests the loading of a vehicle upgrade.
+=========================================================*/
+void CStreamingSA::RequestVehicleUpgrade( unsigned short model, unsigned int flags )
+{
+    DWORD dwFunc = FUNC_RequestVehicleUpgrade;
+    _asm
+    {
+        mov     eax,flags
+        push    eax
+        movzx   eax,model
+        push    eax
+        call    dwFunc
+        add     esp, 8
+    }
+}
+
+/*=========================================================
     CStreamingSA::HasVehicleUpgradeLoaded
 
     Arguments:
@@ -601,10 +664,11 @@ void CStreamingSA::RequestSpecialModel( unsigned short model, const char *tex, u
     DWORD dwFunc = FUNC_CStreaming_RequestSpecialModel;
     _asm
     {
-        movzx   eax,channel
+        mov     eax,channel
         push    eax
         push    tex
-        push    model
+        movzx   eax,model
+        push    eax
         call    dwFunc
         add     esp, 0xC
     }

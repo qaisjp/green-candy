@@ -33,14 +33,14 @@ public:
 class CTaskSAInterface
 {
 public:
-    virtual                                     ~CTaskSAInterface() {}
+    virtual                                     ~CTaskSAInterface   ( void ) {}
 
-    virtual CTaskSAInterface* __thiscall        Clone();
-    virtual CTaskSAInterface* __thiscall        GetSubTask();
-    virtual bool __thiscall                     IsSimpleTask() const;
-    virtual int __thiscall                      GetTaskType() const;
-    virtual void __thiscall                     StopTimer( CEventSAInterface *evt );
-    virtual bool __thiscall                     MakeAbortable( CPedSAInterface *ped, int priority, CEventSAInterface *evt );
+    virtual CTaskSAInterface* __thiscall        Clone               ( void );
+    virtual CTaskSAInterface* __thiscall        GetSubTask          ( void );
+    virtual bool __thiscall                     IsSimpleTask        ( void ) const;
+    virtual int __thiscall                      GetTaskType         ( void ) const;
+    virtual void __thiscall                     StopTimer           ( CEventSAInterface *evt );
+    virtual bool __thiscall                     MakeAbortable       ( CPedSAInterface *ped, int priority, CEventSAInterface *evt );
 
     void*   operator new( size_t );
     void    operator delete( void *ptr );

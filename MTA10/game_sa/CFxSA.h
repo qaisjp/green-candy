@@ -5,7 +5,7 @@
 *  FILE:        game_sa/CFxSA.h
 *  PURPOSE:     Game effects handling
 *  DEVELOPERS:  Jax <>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -53,23 +53,23 @@ public:
 class CFxSA : public CFx
 {
 public:
-                        CFxSA( CFxSAInterface *intf );
-                        ~CFxSA();
+                        CFxSA                   ( CFxSAInterface *intf );
+                        ~CFxSA                  ();
 
-    void                AddBlood( CVector& pos, CVector& dir, int iCount, float fBrightness );
-    void                AddWood( CVector& pos, CVector& dir, int iCount, float fBrightness );
-    void                AddSparks( CVector& pos, CVector& dir, float fForce, int iCount, CVector acrossLine, unsigned char ucBlurIf0, float fSpread, float fLife );
-    void                AddTyreBurst( CVector& pos, CVector& dir );
-    void                AddBulletImpact( CVector& pos, CVector& dir, int iSmokeSize, int iSparkCount, float fSmokeIntensity );
-    void                AddPunchImpact( CVector& pos, CVector& dir, int );
-    void                AddDebris( CVector& pos, RwColor& rwColor, float fScale, int iCount );
-    void                AddGlass( CVector& pos, RwColor& rwColor, float fScale, int iCount );
-    void                TriggerWaterHydrant( CVector& pos );
-    void                TriggerGunshot( CEntity* pEntity, CVector& pos, CVector& dir, bool bIncludeSparks );
-    void                TriggerTankFire( CVector& pos, CVector& dir );
-    void                TriggerWaterSplash( CVector& pos );
-    void                TriggerBulletSplash( CVector& pos );
-    void                TriggerFootSplash( CVector& pos );
+    void                AddBlood                ( CVector& pos, CVector& dir, int iCount, float fBrightness );
+    void                AddWood                 ( CVector& pos, CVector& dir, int iCount, float fBrightness );
+    void                AddSparks               ( CVector& pos, CVector& dir, float fForce, int iCount, CVector acrossLine, unsigned char ucBlurIf0, float fSpread, float fLife );
+    void                AddTyreBurst            ( CVector& pos, CVector& dir );
+    void                AddBulletImpact         ( CVector& pos, CVector& dir, int iSmokeSize, int iSparkCount, float fSmokeIntensity );
+    void                AddPunchImpact          ( CVector& pos, CVector& dir, int );
+    void                AddDebris               ( CVector& pos, RwColor& rwColor, float fScale, int iCount );
+    void                AddGlass                ( CVector& pos, RwColor& rwColor, float fScale, int iCount );
+    void                TriggerWaterHydrant     ( CVector& pos );
+    void                TriggerGunshot          ( CEntity* pEntity, CVector& pos, CVector& dir, bool bIncludeSparks );
+    void                TriggerTankFire         ( CVector& pos, CVector& dir );
+    void                TriggerWaterSplash      ( CVector& pos );
+    void                TriggerBulletSplash     ( CVector& pos );
+    void                TriggerFootSplash       ( CVector& pos );
 
 private:
     CFxSAInterface*     m_interface;
