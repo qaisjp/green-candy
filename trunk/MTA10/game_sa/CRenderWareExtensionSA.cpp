@@ -312,7 +312,7 @@ RwStream* RwStreamCreateIsoTranslated( CFile *file )
 }
 
 /*=========================================================
-    RwStreamCreateIsoTranslated (MTA extension)
+    RwStreamOpenTranslated (MTA extension)
 
     Arguments:
         path - MTA filepath descriptor

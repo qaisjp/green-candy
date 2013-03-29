@@ -24,41 +24,45 @@ class CColModelSAInterface;
 /*****************************************************************************/
 
 /* RenderWare function defines */
+typedef RwError*                (__cdecl *RwErrorGet_t)                         (RwError *code);
+
+// Utility functions
+typedef void                    (__cdecl *RpPrtStdGlobalDataSetStreamEmbedded_t)(class CBaseModelInfoSAInterface *info);
 typedef void                    (__cdecl *RwDeviceSystemRequest_t)              (RwRenderSystem& rend, int objectID, unsigned int& result, int, int);
+typedef void                    (__cdecl *RwPrefetch_t)                         ();
+typedef void                    (__cdecl *RwFlushLoader_t)                      ();
+typedef unsigned int            (__cdecl *RwPluginRegistryReadDataChunks_t)     (void *unk, RwStream *stream, void *obj);
 typedef void*                   (__cdecl *RwAllocAligned_t)                     (size_t size, unsigned int align);
 typedef void                    (__cdecl *RwFreeAligned_t)                      (void *ptr);
 typedef RwExtension*            (__cdecl *RwCreateExtension_t)                  (unsigned int id, unsigned int count, size_t size, int unk3);
+
+typedef void*                   (__cdecl *RwIm3DTransform_t)                    (RwVertex *pVerts, unsigned int numVerts, RwMatrix *ltm, unsigned int flags);
+typedef int                     (__cdecl *RwIm3DRenderIndexedPrimitive_t)       (RwPrimitiveType primType, unsigned short *indices, int numIndices);
+typedef int                     (__cdecl *RwIm3DEnd_t)                          ();
+
+// Vector functions
+typedef float                   (__cdecl *RwV3dNormalize_t)                     (RwV3d *out, const RwV3d *in);
+typedef RwV3d*                  (__cdecl *RwV3dTransformVector_t)               (RwV3d *out, const RwV3d *in, const RwMatrix *matrix);
+
+// Matrix functions
+typedef RwMatrix*               (__cdecl *RwMatrixCreate_t)                     ();
+typedef RwMatrix*               (__cdecl *RwMatrixInvert_t)                     (RwMatrix *dst, const RwMatrix *src);
+typedef RwMatrix*               (__cdecl *RwMatrixTranslate_t)                  (RwMatrix *matrix, const RwV3d *translation, RwTransformOrder order);
+typedef RwMatrix*               (__cdecl *RwMatrixScale_t)                      (RwMatrix *matrix, const RwV3d *translation, RwTransformOrder order);
+typedef float                   (__cdecl *RwMatrixUnknown_t)                    (const RwMatrix& matrix, const RwMatrix& matrix2, unsigned short flags);
+
+// Object functions
 typedef void                    (__cdecl *RwObjectRegister_t)                   (void *group, RwObject *obj);
+
+// Stream functions
 typedef RwStream*               (__cdecl *RwStreamInitialize_t)                 (void *unk, unsigned int unk2, unsigned int unk3, unsigned int unk4, RwBuffer *buf);
 typedef RwStream*               (__cdecl *RwStreamOpen_t)                       (RwStreamType type, RwStreamMode mode, const void *pData);
 typedef RwStream*               (__cdecl *RwStreamReadChunkHeaderInfo_t)        (RwStream *stream, RwChunkHeader& header);
 typedef int                     (__cdecl *RwStreamFindChunk_t)                  (RwStream *stream, unsigned int type, unsigned int *lengthOut, unsigned int *versionOut);
 typedef unsigned int            (__cdecl *RwStreamReadBlocks_t)                 (RwStream *stream, RwBlocksInfo& info, unsigned int size);
 typedef int                     (__cdecl *RwStreamClose_t)                      (RwStream *stream, void *pData);
-typedef RtDict*                 (__cdecl *RtDictSchemaStreamReadDict_t)         (RtDictSchema *schema, RwStream *stream);
-typedef void                    (__cdecl *RtDictDestroy_t)                      (RtDict *dict);
-typedef RpAtomic*               (__cdecl *RpAtomicCreate_t)                     ();
-typedef RpAtomic*               (__cdecl *RpAtomicClone_t)                      (const RpAtomic *atomic);
-typedef RpAtomic*               (__cdecl *RpAtomicSetGeometry_t)                (RpAtomic *atomic, RpGeometry *geometry, unsigned int flags);
-typedef RpAtomic*               (__cdecl *RpAtomicSetFrame_t)                   (RpAtomic *atomic, RwFrame *frame);
-typedef void                    (__cdecl *RpAtomicSetupObjectPipeline_t)        (RpAtomic *atomic);
-typedef void                    (__cdecl *RpAtomicSetupVehiclePipeline_t)       (RpAtomic *atomic);
-typedef RpAtomic*               (__cdecl *RpAtomicRender_t)                     (RpAtomic *atomic);
-typedef int                     (__cdecl *RpAtomicDestroy_t)                    (RpAtomic *atomic);
-typedef RwCamera*               (__cdecl *RwCameraClone_t)                      (RwCamera *camera);
-typedef void                    (__cdecl *RwCameraDestroy_t)                    (RwCamera *camera);
-typedef RpClump*                (__cdecl *RpClumpClone_t)                       (const RpClump *clone);
-typedef RpClump*                (__cdecl *RpClumpStreamRead_t)                  (RwStream *stream);
-typedef RpClump*                (__cdecl *RpClumpAddAtomic_t)                   (RpClump *clump, RpAtomic *atomic);
-typedef RpClump*                (__cdecl *RpClumpAddLight_t)                    (RpClump *clump, RpLight *light);
-typedef int                     (__cdecl *RpClumpGetNumAtomics_t)               (RpClump *clump);
-typedef RpClump*                (__cdecl *RpClumpRemoveAtomic_t)                (RpClump *clump, RpAtomic *atomic);
-typedef void                    (__cdecl *RpClumpGetBoneTransform_t)            (RpClump *clump, CVector *offsets);
-typedef void                    (__cdecl *RpClumpSetupFrameCallback_t)          (RpClump *clump, unsigned int hierarchyId);
-typedef void                    (__cdecl *RpClumpRender_t)                      (RpClump *clump);
-typedef int                     (__cdecl *RpClumpDestroy_t)                     (RpClump *clump);
-typedef bool                    (__cdecl *RwAnimationInit_t)                    (RpAnimation *anim, RwExtension *ext);
-typedef bool                    (__cdecl *RwSkeletonUpdate_t)                   (RpSkeleton *skel);
+
+// Frame functions
 typedef RwFrame*                (__cdecl *RwFrameCreate_t)                      ();
 typedef RwFrame*                (__cdecl *RwFrameCloneRecursive_t)              (const RwFrame *frame, const RwFrame *root);
 typedef const RwMatrix*         (__cdecl *RwFrameGetLTM_t)                      (RwFrame *frame);
@@ -70,10 +74,15 @@ typedef void                    (__cdecl *RwFrameOrient_t)                      
 typedef RwFrame*                (__cdecl *RwFrameSetIdentity_t)                 (RwFrame *frame);
 typedef void                    (__cdecl *RwFrameCloneHierarchy_t)              (RwFrame *frame);
 typedef void                    (__cdecl *RwFrameDestroy_t)                     (RwFrame *frame);
-typedef void                    (__cdecl *RwObjectFrameRender_t)                (RwRender *data, RwObjectFrame *frame, unsigned int unk);
+
+// Material functions
+typedef RpMaterial*             (__cdecl *RpMaterialCreate_t)                   ();
+typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial *mat);
+
+// Geometry functions
 typedef RpGeometry*             (__cdecl *RpGeometryCreate_t)                   (int numverts, int numtriangles, unsigned int format);
 typedef void                    (__cdecl *RpGeometryAddRef_t)                   (RpGeometry *geom);
-typedef RpAnimHierarchy*        (__cdecl *RpGeometryGetAnimation_t)             (RpGeometry *geom);
+typedef RpSkeleton*             (__cdecl *RpGeometryGetSkeleton_t)              (RpGeometry *geom);
 typedef const RpGeometry*       (__cdecl *RpGeometryTriangleSetVertexIndices_t) (const RpGeometry *geo, RpTriangle *tri, unsigned short v1, unsigned short v2, unsigned short v3);
 typedef RpGeometry*             (__cdecl *RpGeometryUnlock_t)                   (RpGeometry *geo);
 typedef RpGeometry*             (__cdecl *RpGeometryLock_t)                     (RpGeometry *geo, int lockmode);
@@ -81,19 +90,49 @@ typedef RpGeometry*             (__cdecl *RpGeometryTransform_t)                
 typedef RpGeometry*             (__cdecl *RpGeometryTriangleSetMaterial_t)      (RpGeometry *geo, RpTriangle *tri, RpMaterial *mat);
 typedef size_t                  (__cdecl *RpGeometryRegisterPlugin_t)           (size_t size, unsigned int id, RpGeometryPluginConstructor constructor, RpGeometryPluginDestructor destructor, RpGeometryPluginCopyConstructor copyConstr );
 typedef int                     (__cdecl *RpGeometryDestroy_t)                  (RpGeometry *geo);
-typedef void*                   (__cdecl *RwIm3DTransform_t)                    (RwVertex *pVerts, unsigned int numVerts, RwMatrix *ltm, unsigned int flags);
-typedef int                     (__cdecl *RwIm3DRenderIndexedPrimitive_t)       (RwPrimitiveType primType, unsigned short *indices, int numIndices);
-typedef int                     (__cdecl *RwIm3DEnd_t)                          ();
+
+// Atomic functions
+typedef RpAtomic*               (__cdecl *RpAtomicCreate_t)                     ();
+typedef RpAtomic*               (__cdecl *RpAtomicClone_t)                      (const RpAtomic *atomic);
+typedef RpAtomic*               (__cdecl *RpAtomicSetGeometry_t)                (RpAtomic *atomic, RpGeometry *geometry, unsigned int flags);
+typedef RpAtomic*               (__cdecl *RpAtomicSetFrame_t)                   (RpAtomic *atomic, RwFrame *frame);
+typedef void                    (__cdecl *RpAtomicSetupObjectPipeline_t)        (RpAtomic *atomic);
+typedef void                    (__cdecl *RpAtomicSetupVehiclePipeline_t)       (RpAtomic *atomic);
+typedef RpAtomic*               (__cdecl *RpAtomicRender_t)                     (RpAtomic *atomic);
+typedef int                     (__cdecl *RpAtomicDestroy_t)                    (RpAtomic *atomic);
+
+// Light functions
 typedef RpLight*                (__cdecl *RpLightSetRadius_t)                   (RpLight *light, float radius);
 typedef float                   (__cdecl *RpLightGetConeAngle_t)                (const RpLight *light);
 typedef void                    (__cdecl *RpLightDestroy_t)                     (RpLight *light);
-typedef RwMatrix*               (__cdecl *RwMatrixCreate_t)                     ();
-typedef RwMatrix*               (__cdecl *RwMatrixInvert_t)                     (RwMatrix *dst, const RwMatrix *src);
-typedef RwMatrix*               (__cdecl *RwMatrixTranslate_t)                  (RwMatrix *matrix, const RwV3d *translation, RwTransformOrder order);
-typedef RwMatrix*               (__cdecl *RwMatrixScale_t)                      (RwMatrix *matrix, const RwV3d *translation, RwTransformOrder order);
-typedef float                   (__cdecl *RwMatrixUnknown_t)                    (const RwMatrix& matrix, const RwMatrix& matrix2, unsigned short flags);
-typedef RpMaterial*             (__cdecl *RpMaterialCreate_t)                   ();
-typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial *mat);
+
+// Camera functions
+typedef RwCamera*               (__cdecl *RwCameraClone_t)                      (RwCamera *camera);
+typedef void                    (__cdecl *RwCameraDestroy_t)                    (RwCamera *camera);
+
+// Clump functions
+typedef RpClump*                (__cdecl *RpClumpClone_t)                       (const RpClump *clone);
+typedef RpClump*                (__cdecl *RpClumpAddAtomic_t)                   (RpClump *clump, RpAtomic *atomic);
+typedef RpClump*                (__cdecl *RpClumpAddLight_t)                    (RpClump *clump, RpLight *light);
+typedef int                     (__cdecl *RpClumpGetNumAtomics_t)               (RpClump *clump);
+typedef RpClump*                (__cdecl *RpClumpRemoveAtomic_t)                (RpClump *clump, RpAtomic *atomic);
+typedef void                    (__cdecl *RpClumpGetBoneTransform_t)            (RpClump *clump, CVector *offsets);
+typedef void                    (__cdecl *RpClumpSetupFrameCallback_t)          (RpClump *clump, unsigned int hierarchyId);
+typedef void                    (__cdecl *RpClumpRender_t)                      (RpClump *clump);
+typedef RpClump*                (__cdecl *RpClumpStreamRead_t)                  (RwStream *stream);
+typedef int                     (__cdecl *RpClumpDestroy_t)                     (RpClump *clump);
+
+// Raster functions
+typedef RwRaster*               (__cdecl *RwRasterCreate_t)                     (int width, int height, int depth, RwRasterType type);
+typedef RwRaster*               (__cdecl *RwRasterUnlock_t)                     (RwRaster *raster);
+typedef RwRaster*               (__cdecl *RwRasterLock_t)                       (RwRaster *raster, unsigned char level, int lockmode);
+typedef void                    (__cdecl *RwRasterDestroy_t)                    (RwRaster *raster);
+
+// Texture functions
+typedef RwTexture*              (__cdecl *RwTextureCreate_t)                    (RwRaster *raster);
+typedef int                     (__cdecl *RwTextureDestroy_t)                   (RwTexture *texture);
+
+// TexDictionary functions
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryStreamRead_t)          (RwStream *stream);
 typedef RwTexDictionary*        (__cdecl *RwTexDictionarySetCurrent_t)          (RwTexDictionary *dict);
 typedef const RwTexDictionary*  (__cdecl *RwTexDictionaryForAllTextures_t)      (const RwTexDictionary *dict, int (*callback)( RwTexture *texture, void *data ), void *data);
@@ -101,91 +140,85 @@ typedef RwTexture*              (__cdecl *RwTexDictionaryAddTexture_t)          
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryGetCurrent_t)          ();
 typedef RwTexture*              (__cdecl *RwTexDictionaryFindNamedTexture_t)    (RwTexDictionary *dict, const char* name);
 typedef int                     (__cdecl *RwTexDictionaryDestroy_t)             (RwTexDictionary *txd);
-typedef RwTexture*              (__cdecl *RwTextureCreate_t)                    (RwRaster *raster);
-typedef void                    (__cdecl *RwTextureUnlinkFromDictionary_t)      (RwTexture *texture);
-typedef int                     (__cdecl *RwTextureDestroy_t)                   (RwTexture *texture);
-typedef float                   (__cdecl *RwV3dNormalize_t)                     (RwV3d *out, const RwV3d *in);
-typedef RwV3d*                  (__cdecl *RwV3dTransformVector_t)               (RwV3d *out, const RwV3d *in, const RwMatrix *matrix);
-typedef RwRaster*               (__cdecl *RwRasterUnlock_t)                     (RwRaster *raster);
-typedef RwRaster*               (__cdecl *RwRasterLock_t)                       (RwRaster *raster, unsigned char level, int lockmode);
-typedef RwRaster*               (__cdecl *RwRasterCreate_t)                     (int width, int height, int depth, RwRasterType type);
-typedef void                    (__cdecl *RwRasterDestroy_t)                    (RwRaster *raster);
+
+// Scene functions
 typedef RwScene*                (__cdecl *RwSceneRender_t)                      (RwScene *scene);
 typedef RwScene*                (__cdecl *RwSceneAddAtomic_t)                   (RwScene *scene, RpAtomic *atomic);
 typedef RwScene*                (__cdecl *RwSceneAddClump_t)                    (RwScene *scene, RpClump *clump);
 typedef RwScene*                (__cdecl *RwSceneAddLight_t)                    (RwScene *scene, RpLight *light);
 typedef void                    (__cdecl *RwSceneRemoveLight_t)                 (RwScene *scene, RpLight *light);
 typedef void                    (__cdecl *RwSceneDestroy_t)                     (RwScene *scene);
-typedef void                    (__cdecl *RpPrtStdGlobalDataSetStreamEmbedded_t)(CBaseModelInfoSAInterface *info);
-typedef RwError*                (__cdecl *RwErrorGet_t)                         (RwError *code);
-typedef void                    (__cdecl *RwPrefetch_t)                         ();
-typedef void                    (__cdecl *RwFlushLoader_t)                      ();
-typedef unsigned int            (__cdecl *RwPluginRegistryReadDataChunks_t)     (void *unk, RwStream *stream, void *obj);
+
+// Dict functions
+typedef RtDict*                 (__cdecl *RtDictSchemaStreamReadDict_t)         (RtDictSchema *schema, RwStream *stream);
+typedef void                    (__cdecl *RtDictDestroy_t)                      (RtDict *dict);
+
+// Animation functions
+typedef bool                    (__cdecl *RwAnimationInit_t)                    (RpAnimation *anim, RwExtension *ext);
+typedef bool                    (__cdecl *RwSkeletonUpdate_t)                   (RpSkeleton *skel);
 
 /*****************************************************************************/
 /** Renderware function mappings                                            **/
 /*****************************************************************************/
 
+// Utility functions
 extern RwDeviceSystemRequest_t                  RwDeviceSystemRequest;
 extern RwErrorGet_t                             RwErrorGet;
 extern RwAllocAligned_t                         RwAllocAligned;
 extern RwFreeAligned_t                          RwFreeAligned;
 extern RwCreateExtension_t                      RwCreateExtension;
+extern RpPrtStdGlobalDataSetStreamEmbedded_t    RpPrtStdGlobalDataSetStreamEmbedded;
+extern RwPrefetch_t                             RwPrefetch;
+extern RwFlushLoader_t                          RwFlushLoader;
+extern RwPluginRegistryReadDataChunks_t         RwPluginRegistryReadDataChunks;
+
+extern RwIm3DTransform_t                        RwIm3DTransform;
+extern RwIm3DRenderIndexedPrimitive_t           RwIm3DRenderIndexedPrimitive;
+extern RwIm3DEnd_t                              RwIm3DEnd;
+
+// Vector functions
+extern RwV3dNormalize_t                         RwV3dNormalize;
+extern RwV3dTransformVector_t                   RwV3dTransformVector;
+
+// Matrix functions
+extern RwMatrixCreate_t                         RwMatrixCreate;
+extern RwMatrixInvert_t                         RwMatrixInvert;
+extern RwMatrixTranslate_t                      RwMatrixTranslate;
+extern RwMatrixScale_t                          RwMatrixScale;
+extern RwMatrixUnknown_t                        RwMatrixUnknown;
+
+// Object functions
 extern RwObjectRegister_t                       RwObjectRegister;
-extern RwStreamFindChunk_t                      RwStreamFindChunk;
+
+// Stream functions
 extern RwStreamInitialize_t                     RwStreamInitialize;
 extern RwStreamOpen_t                           RwStreamOpen;
+extern RwStreamFindChunk_t                      RwStreamFindChunk;
 extern RwStreamReadChunkHeaderInfo_t            RwStreamReadChunkHeaderInfo;
 extern RwStreamReadBlocks_t                     RwStreamReadBlocks;
 extern RwStreamClose_t                          RwStreamClose;
-extern RtDictSchemaStreamReadDict_t             RtDictSchemaStreamReadDict;
-extern RtDictDestroy_t                          RtDictDestroy;
+
+// Frame functions
 extern RwFrameCreate_t                          RwFrameCreate;
 extern RwFrameCloneRecursive_t                  RwFrameCloneRecursive;
+extern RwFrameCloneHierarchy_t                  RwFrameCloneHierarchy;
 extern RwFrameGetLTM_t                          RwFrameGetLTM;
 extern RwFrameSetIdentity_t                     RwFrameSetIdentity;
 extern RwFrameTranslate_t                       RwFrameTranslate;
-extern RwFrameCloneHierarchy_t                  RwFrameCloneHierarchy;
 extern RwFrameAddChild_t                        RwFrameAddChild;
 extern RwFrameRemoveChild_t                     RwFrameRemoveChild;
 extern RwFrameScale_t                           RwFrameScale;
 extern RwFrameOrient_t                          RwFrameOrient;
 extern RwFrameDestroy_t                         RwFrameDestroy;
-extern RwCameraClone_t                          RwCameraClone;
-extern RwCameraDestroy_t                        RwCameraDestroy;
-extern RpClumpClone_t                           RpClumpClone;
-extern RpClumpStreamRead_t                      RpClumpStreamRead;
-extern RpClumpAddAtomic_t                       RpClumpAddAtomic;
-extern RpClumpRemoveAtomic_t                    RpClumpRemoveAtomic;
-extern RpClumpAddLight_t                        RpClumpAddLight;
-extern RpClumpGetBoneTransform_t                RpClumpGetBoneTransform;
-extern RpClumpSetupFrameCallback_t              RpClumpSetupFrameCallback;
-extern RpClumpDestroy_t                         RpClumpDestroy;
-extern RpClumpGetNumAtomics_t                   RpClumpGetNumAtomics;
-extern RwAnimationInit_t                        RwAnimationInit;
-extern RwSkeletonUpdate_t                       RwSkeletonUpdate;
-extern RpAtomicCreate_t                         RpAtomicCreate;
-extern RpAtomicClone_t                          RpAtomicClone;
-extern RpAtomicSetFrame_t                       RpAtomicSetFrame;
-extern RpAtomicSetupObjectPipeline_t            RpAtomicSetupObjectPipeline;
-extern RpAtomicSetupVehiclePipeline_t           RpAtomicSetupVehiclePipeline;
-extern RpAtomicRender_t                         RpAtomicRender;
-extern RpAtomicSetGeometry_t                    RpAtomicSetGeometry;
-extern RpAtomicDestroy_t                        RpAtomicDestroy;
-extern RwObjectFrameRender_t                    RwObjectFrameRender;
-extern RwTexDictionaryStreamRead_t              RwTexDictionaryStreamRead;
-extern RwTexDictionaryGetCurrent_t              RwTexDictionaryGetCurrent;
-extern RwTexDictionarySetCurrent_t              RwTexDictionarySetCurrent;
-extern RwTexDictionaryForAllTextures_t          RwTexDictionaryForAllTextures;
-extern RwTexDictionaryFindNamedTexture_t        RwTexDictionaryFindNamedTexture;
-extern RwTexDictionaryAddTexture_t              RwTexDictionaryAddTexture;
-extern RwTexDictionaryDestroy_t                 RwTexDictionaryDestroy;
-extern RwTextureCreate_t                        RwTextureCreate;
-extern RwTextureUnlinkFromDictionary_t          RwTextureUnlinkFromDictionary;
-extern RwTextureDestroy_t                       RwTextureDestroy;
+
+// Material functions
+extern RpMaterialCreate_t                       RpMaterialCreate;
+extern RpMaterialDestroy_t                      RpMaterialDestroy;
+
+// Geometry functions
 extern RpGeometryCreate_t                       RpGeometryCreate;
 extern RpGeometryAddRef_t                       RpGeomtryAddRef;
-extern RpGeometryGetAnimation_t                 RpGeometryGetAnimation;
+extern RpGeometryGetSkeleton_t                  RpGeometryGetSkeleton;
 extern RpGeometryTriangleSetVertexIndices_t     RpGeometryTriangleSetVertexIndices;
 extern RpGeometryTriangleSetMaterial_t          RpGeometryTriangleSetMaterial;
 extern RpGeometryUnlock_t                       RpGeometryUnlock;
@@ -193,33 +226,71 @@ extern RpGeometryLock_t                         RpGeometryLock;
 extern RpGeometryTransform_t                    RpGeometryTransform;
 extern RpGeometryRegisterPlugin_t               RpGeometryRegisterPlugin;
 extern RpGeometryDestroy_t                      RpGeometryDestroy;
-extern RwMatrixCreate_t                         RwMatrixCreate;
-extern RwMatrixInvert_t                         RwMatrixInvert;
-extern RwMatrixTranslate_t                      RwMatrixTranslate;
-extern RwMatrixScale_t                          RwMatrixScale;
-extern RwMatrixUnknown_t                        RwMatrixUnknown;
-extern RpMaterialCreate_t                       RpMaterialCreate;
-extern RpMaterialDestroy_t                      RpMaterialDestroy;
-extern RwV3dNormalize_t                         RwV3dNormalize;
-extern RwV3dTransformVector_t                   RwV3dTransformVector;
-extern RwIm3DTransform_t                        RwIm3DTransform;
-extern RwIm3DRenderIndexedPrimitive_t           RwIm3DRenderIndexedPrimitive;
-extern RwIm3DEnd_t                              RwIm3DEnd;
+
+// Atomic functions
+extern RpAtomicCreate_t                         RpAtomicCreate;
+extern RpAtomicClone_t                          RpAtomicClone;
+extern RpAtomicSetFrame_t                       RpAtomicSetFrame;
+extern RpAtomicSetGeometry_t                    RpAtomicSetGeometry;
+extern RpAtomicSetupObjectPipeline_t            RpAtomicSetupObjectPipeline;
+extern RpAtomicSetupVehiclePipeline_t           RpAtomicSetupVehiclePipeline;
+extern RpAtomicRender_t                         RpAtomicRender;
+extern RpAtomicDestroy_t                        RpAtomicDestroy;
+
+// Light functions
 extern RpLightSetRadius_t                       RpLightSetRadius;
 extern RpLightGetConeAngle_t                    RpLightGetConeAngle;
 extern RpLightDestroy_t                         RpLightDestroy;
+
+// Camera functions
+extern RwCameraClone_t                          RwCameraClone;
+extern RwCameraDestroy_t                        RwCameraDestroy;
+
+// Clump functions
+extern RpClumpClone_t                           RpClumpClone;
+extern RpClumpAddAtomic_t                       RpClumpAddAtomic;
+extern RpClumpRemoveAtomic_t                    RpClumpRemoveAtomic;
+extern RpClumpAddLight_t                        RpClumpAddLight;
+extern RpClumpGetNumAtomics_t                   RpClumpGetNumAtomics;
+extern RpClumpGetBoneTransform_t                RpClumpGetBoneTransform;
+extern RpClumpSetupFrameCallback_t              RpClumpSetupFrameCallback;
+extern RpClumpStreamRead_t                      RpClumpStreamRead;
+extern RpClumpDestroy_t                         RpClumpDestroy;
+
+// Raster functions
 extern RwRasterCreate_t                         RwRasterCreate;
 extern RwRasterUnlock_t                         RwRasterUnlock;
 extern RwRasterLock_t                           RwRasterLock;
 extern RwRasterDestroy_t                        RwRasterDestroy;
+
+// Texture functions
+extern RwTextureCreate_t                        RwTextureCreate;
+extern RwTextureDestroy_t                       RwTextureDestroy;
+
+// TexDictionary functions
+extern RwTexDictionaryStreamRead_t              RwTexDictionaryStreamRead;
+extern RwTexDictionaryGetCurrent_t              RwTexDictionaryGetCurrent;
+extern RwTexDictionarySetCurrent_t              RwTexDictionarySetCurrent;
+extern RwTexDictionaryForAllTextures_t          RwTexDictionaryForAllTextures;
+extern RwTexDictionaryFindNamedTexture_t        RwTexDictionaryFindNamedTexture;
+extern RwTexDictionaryAddTexture_t              RwTexDictionaryAddTexture;
+extern RwTexDictionaryDestroy_t                 RwTexDictionaryDestroy;
+
+// Scene functions
+extern RwSceneRender_t                          RwSceneRender;
 extern RwSceneAddAtomic_t                       RwSceneAddAtomic;
 extern RwSceneAddLight_t                        RwSceneAddLight;
 extern RwSceneAddClump_t                        RwSceneAddClump;
 extern RwSceneRemoveLight_t                     RwSceneRemoveLight;
-extern RpPrtStdGlobalDataSetStreamEmbedded_t    RpPrtStdGlobalDataSetStreamEmbedded;
-extern RwPrefetch_t                             RwPrefetch;
-extern RwFlushLoader_t                          RwFlushLoader;
-extern RwPluginRegistryReadDataChunks_t         RwPluginRegistryReadDataChunks;
+extern RwSceneDestroy_t                         RwSceneDestroy;
+
+// Dict functions
+extern RtDictSchemaStreamReadDict_t             RtDictSchemaStreamReadDict;
+extern RtDictDestroy_t                          RtDictDestroy;
+
+// Animation functions
+extern RwAnimationInit_t                        RwAnimationInit;
+extern RwSkeletonUpdate_t                       RwSkeletonUpdate;
 
 /*****************************************************************************/
 /** GTA function definitions                                                **/

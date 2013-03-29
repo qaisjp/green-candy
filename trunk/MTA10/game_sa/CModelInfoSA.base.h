@@ -31,6 +31,7 @@ class CWeaponModelInfo_SA_VTBL: public CClumpModelInfo_SA_VTBL
 class CAtomicModelInfoSA;
 class CDamageAtomicModelInfoSA;
 class CLODAtomicModelInfoSA;
+class CColModelSAInterface;
 
 enum eModelType : unsigned char
 {

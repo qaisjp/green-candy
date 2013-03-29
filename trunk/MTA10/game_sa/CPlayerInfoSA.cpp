@@ -34,7 +34,7 @@ CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()
 {
     DEBUG_TRACE("CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()");
 
-    return dynamic_cast <CPlayerPedSA*> ( pGame->GetPools()->GetPed( (*ppPedPool)->Get( 1 ) ) );
+    return (CPlayerPedSA*)mtaPeds[0];
 }
 
 CWantedSA* CPlayerInfoSA::GetWanted()

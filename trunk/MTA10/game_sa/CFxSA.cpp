@@ -9,7 +9,7 @@
 *       than performance efficient. You guys know lag-smoke? 2dfx in GTA:SA is
 *       known to cause lag. Maybe we can spot the reason if we analyze this class.
 *  DEVELOPERS:  Jax <>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

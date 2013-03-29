@@ -4,6 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        Shared/core/CFileSystemInterface.h
 *  PURPOSE:     File management
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -30,7 +31,7 @@ enum eFileException
 class CFile abstract
 {
 public:
-    virtual                 ~CFile()
+    virtual                 ~CFile( void )
     {
     }
 
@@ -86,7 +87,7 @@ public:
             than the ANSI feof, this is not triggered by reaching over
             the file/stream boundary.
     ===================================================*/
-    virtual	bool            IsEOF() const = 0;
+    virtual	bool            IsEOF( void ) const = 0;
 
     /*===================================================
         CFile::Stat
@@ -117,7 +118,7 @@ public:
             Sets the file/stream end at the current seek location.
             It effectively cuts off bytes beyond that.
     ===================================================*/
-    virtual void            SetSeekEnd() = 0;
+    virtual void            SetSeekEnd( void ) = 0;
 
     /*===================================================
         CFile::GetSize
@@ -126,7 +127,7 @@ public:
             Returns the total file/stream size if available.
             Otherwise it should return 0.
     ===================================================*/
-    virtual	size_t          GetSize() const = 0;
+    virtual	size_t          GetSize( void ) const = 0;
 
     /*===================================================
         CFile::Flush
@@ -136,7 +137,7 @@ public:
             an updated representation in the filesystem to be read
             by different applications.
     ===================================================*/
-    virtual	void            Flush() = 0;
+    virtual	void            Flush( void ) = 0;
 
     /*===================================================
         CFile::GetPath
@@ -145,7 +146,7 @@ public:
             Returns the unique filesystem location descriptor of this
             file/stream.
     ===================================================*/
-    virtual const filePath& GetPath() const = 0;
+    virtual const filePath& GetPath( void ) const = 0;
 
     /*===================================================
         CFile::IsReadable
@@ -155,7 +156,7 @@ public:
             file/stream. If not, all attempts to request data
             from this are going to fail.
     ===================================================*/
-    virtual bool            IsReadable() const = 0;
+    virtual bool            IsReadable( void ) const = 0;
 
     /*===================================================
         CFile::IsWriteable
@@ -165,10 +166,10 @@ public:
             file/stream. If not, all attempts to push data into
             this are going to fail.
     ===================================================*/
-    virtual bool            IsWriteable() const = 0;
+    virtual bool            IsWriteable( void ) const = 0;
 
     // Utility definitions, mostly self-explanatory
-    virtual	int             ReadInt()
+    virtual	int             ReadInt( void )
     {
         int i;
 
@@ -176,7 +177,7 @@ public:
         return i;
     }
 
-    virtual	short           ReadShort()
+    virtual	short           ReadShort( void )
     {
         short i;
 
@@ -184,7 +185,7 @@ public:
         return i;
     }
 
-    virtual	char            ReadByte()
+    virtual	char            ReadByte( void )
     {
         char i;
 
@@ -192,7 +193,7 @@ public:
         return i;
     }
 
-    virtual	float           ReadFloat()
+    virtual	float           ReadFloat( void )
     {
         float f;
 
@@ -341,7 +342,7 @@ typedef void (*pathCallback_t)( const filePath& path, void *userdata );
 class CFileTranslator abstract
 {
 public:
-    virtual                 ~CFileTranslator()
+    virtual                 ~CFileTranslator( void )
     {
     }
 
@@ -637,22 +638,22 @@ public:
 class CArchiveTranslator abstract : public virtual CFileTranslator
 {
 public:
-    virtual void            Save() = 0;
+    virtual void            Save( void ) = 0;
 };
 
 class CFileSystemInterface
 {
 public:
-    virtual CFileTranslator*    CreateTranslator( const char *path ) = 0;
-    virtual CArchiveTranslator* OpenArchive( CFile& file ) = 0;
+    virtual CFileTranslator*    CreateTranslator    ( const char *path ) = 0;
+    virtual CArchiveTranslator* OpenArchive         ( CFile& file ) = 0;
 
-    virtual CArchiveTranslator* CreateZIPArchive( CFile& file ) = 0;
+    virtual CArchiveTranslator* CreateZIPArchive    ( CFile& file ) = 0;
 
     // Insecure, use with caution!
-    virtual bool                IsDirectory( const char *path ) = 0;
-    virtual bool                Exists( const char *path ) = 0;
-    virtual size_t              Size( const char *path ) = 0;
-    virtual bool                ReadToBuffer( const char *path, std::vector <char>& output ) = 0;
+    virtual bool                IsDirectory         ( const char *path ) = 0;
+    virtual bool                Exists              ( const char *path ) = 0;
+    virtual size_t              Size                ( const char *path ) = 0;
+    virtual bool                ReadToBuffer        ( const char *path, std::vector <char>& output ) = 0;
 };
 
 namespace FileSystem

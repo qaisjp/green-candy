@@ -32,14 +32,17 @@ public:
     unsigned int        m_count;            // 24
     unsigned int        m_animInfoIndex;    // 28
 
-    void    Reference()
-    {
-        m_references++;
-    }
+    void                                Reference           ( void )                    { m_references++; }
+    void                                Dereference         ( void )                    { m_references--; }
 
-    int                                 GetIndex();
+    bool                                IsLoaded            ( void ) const              { return m_loaded; }
+    unsigned int                        GetAnimIndex        ( void ) const              { return m_animationIndex; }
+    unsigned int                        GetCount            ( void ) const              { return m_count; }
+    unsigned int                        GetAnimInfoIndex    ( void ) const              { return m_animInfoIndex; }
 
-    CAnimBlendHierarchySAInterface*     GetAnimation( unsigned int hash );
+    int                                 GetIndex            ( void );
+
+    CAnimBlendHierarchySAInterface*     GetAnimation        ( unsigned int hash );
 };
 
 class CAnimBlockSA : public CAnimBlock

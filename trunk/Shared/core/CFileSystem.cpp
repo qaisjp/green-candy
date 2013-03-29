@@ -5,7 +5,7 @@
 *  FILE:        Shared/core/CFileSystem.cpp
 *  PURPOSE:     File management
 *  DEVELOPERS:  S2Games <http://savage.s2games.com> (historical entry)
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

@@ -5,7 +5,8 @@
 *  FILE:        game_sa/CColModelSA.h
 *  PURPOSE:     Header file for collision model entity class
 *  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               The_GTA <quiret@gmx.de>
+*               Alberto Alonso <rydencillo@gmail.com>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -31,6 +32,39 @@ typedef struct
     char name[22];
     unsigned short modelId;
 } ColModelFileHeader;
+
+typedef struct
+{
+    CVector     vecCenter;
+    float       fRadius;
+} CColSphereSA;
+
+typedef struct
+{
+    CVector     min;
+    CVector     max;
+} CColBoxSA;
+
+// Collision stored lighting
+struct CColLighting
+{
+    uchar   day:4;    // 0-15
+    uchar   night:4;  // 0-15
+};
+
+typedef struct
+{
+    unsigned short  v1;
+    unsigned short  v2;
+    unsigned short  v3;
+    unsigned char   material;
+    CColLighting    lighting;
+} CColTriangleSA;
+
+typedef struct
+{
+    BYTE pad0 [ 12 ];
+} CColTrianglePlaneSA;
 
 class CColFileSA
 {
@@ -66,22 +100,26 @@ public:
 
 typedef struct
 {
-    DWORD                           pad0;               // 0
-    WORD                            pad1;               // 4
+    unsigned short                  numSpheres;         // 0
+    unsigned short                  numBoxes;           // 2
+    unsigned short                  numTriangles;       // 4
     BYTE                            ucNumWheels;        // 6
     BYTE                            pad2;               // 7
-    DWORD                           pad3;               // 8
-    DWORD                           pad4;               // 12
+    CColSphereSA*                   colSpheres;         // 8
+    CColBoxSA*                      colBoxes;           // 12
     void*                           pSuspensionLines;   // 16
+    void*                           unk;                // 20
+    CColTriangleSA*                 colTriangles;       // 24
+    CColTrianglePlaneSA*            colPlanes;          // 28
 } CColDataSA;
 
 class CColModelSAInterface
 {
 public:
-                                    CColModelSAInterface();
-                                    ~CColModelSAInterface();
+                                    CColModelSAInterface    ( void );
+                                    ~CColModelSAInterface   ( void );
 
-    void                            ReleaseData();
+    void                            ReleaseData             ( void );
 
     void*   operator new ( size_t );
     void    operator delete ( void *ptr );
@@ -96,25 +134,25 @@ class CColModelSA : public CColModel
 {
     friend class CStreamingSA;
 public:
-                                    CColModelSA();
-                                    CColModelSA( CColModelSAInterface *pInterface, bool destroy = false );
-                                    ~CColModelSA();
+                                    CColModelSA         ( void );
+                                    CColModelSA         ( CColModelSAInterface *pInterface, bool destroy = false );
+                                    ~CColModelSA        ( void );
 
-    inline CColModelSAInterface*    GetInterface()                              { return m_pInterface; }
+    inline CColModelSAInterface*    GetInterface        ( void )                        { return m_pInterface; }
 
-    bool                            Replace( unsigned short id );
-    bool                            IsReplaced( unsigned short id ) const;
-    bool                            Restore( unsigned short id );
-    void                            RestoreAll();
+    bool                            Replace             ( unsigned short id );
+    bool                            IsReplaced          ( unsigned short id ) const;
+    bool                            Restore             ( unsigned short id );
+    void                            RestoreAll          ( void );
 
-    const imports_t&                GetImportList() const                       { return m_imported; }
+    const imports_t&                GetImportList       ( void ) const                  { return m_imported; }
 
-    void                            SetOriginal( CColModelSAInterface *col )    { m_original = col; }
-    CColModelSAInterface*           GetOriginal()                               { return m_original; }
+    void                            SetOriginal         ( CColModelSAInterface *col )   { m_original = col; }
+    CColModelSAInterface*           GetOriginal         ( void )                        { return m_original; }
+
+    void                            Apply               ( unsigned short id );
 
 private:
-    void                            Apply( unsigned short id );
-
     CColModelSAInterface*           m_pInterface;
     CColModelSAInterface*           m_original;
     bool                            m_originalDynamic;
@@ -123,7 +161,7 @@ private:
     imports_t                       m_imported;
 };
 
-typedef void    (__cdecl*SetCachedCollision_t)              (unsigned int id, CColModelSAInterface *col);
+typedef void    (__cdecl*SetCachedCollision_t)              ( unsigned int id, CColModelSAInterface *col );
 extern SetCachedCollision_t     SetCachedCollision;
 
 #endif

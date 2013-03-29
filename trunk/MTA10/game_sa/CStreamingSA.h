@@ -22,7 +22,10 @@
 
 #define FUNC_CStreaming__RequestModel                       0x4087E0
 #define FUNC_LoadAllRequestedModels                         0x40EA10
+
 #define FUNC_CStreaming__HasVehicleUpgradeLoaded            0x407820
+#define FUNC_RequestVehicleUpgrade                          0x408C70
+
 #define FUNC_CStreaming_RequestAnimations                   0x407120
 #define FUNC_CStreaming_RequestSpecialModel                 0x409d10
 
@@ -42,6 +45,7 @@ public:
     void            WaitForModel                ( unsigned int id );
     void            RequestAnimations           ( int idx, unsigned int flags );
     bool            HaveAnimationsLoaded        ( int idx );
+    void            RequestVehicleUpgrade       ( unsigned short model, unsigned int flags );
     bool            HasVehicleUpgradeLoaded     ( int model );
     void            RequestSpecialModel         ( unsigned short model, const char *tex, unsigned int channel );
 

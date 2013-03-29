@@ -6,7 +6,7 @@
 *  PURPOSE:     Collision model entity
 *  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
 *               arc_
-*               The_GTA <quirer@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -22,7 +22,7 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 SetCachedCollision_t    SetCachedCollision =                (SetCachedCollision_t)0x005B2C20;
 
-CColModelSAInterface::CColModelSAInterface()
+CColModelSAInterface::CColModelSAInterface( void )
 {
     _asm
     {
@@ -32,7 +32,7 @@ CColModelSAInterface::CColModelSAInterface()
     }
 }
 
-CColModelSAInterface::~CColModelSAInterface()
+CColModelSAInterface::~CColModelSAInterface( void )
 {
     _asm
     {
@@ -42,7 +42,7 @@ CColModelSAInterface::~CColModelSAInterface()
     }
 }
 
-void CColModelSAInterface::ReleaseData()
+void CColModelSAInterface::ReleaseData( void )
 {
     __asm
     {
@@ -62,7 +62,7 @@ void CColModelSAInterface::operator delete( void *ptr )
     (*ppColModelPool)->Free( (CColModelSAInterface*)ptr );
 }
 
-CColModelSA::CColModelSA()
+CColModelSA::CColModelSA( void )
 {
     m_pInterface = new CColModelSAInterface;
     m_original = NULL;
@@ -76,7 +76,7 @@ CColModelSA::CColModelSA( CColModelSAInterface *pInterface, bool destroy )
     m_bDestroyInterface = destroy;
 }
 
-CColModelSA::~CColModelSA()
+CColModelSA::~CColModelSA( void )
 {
     RestoreAll();
 
@@ -156,7 +156,7 @@ bool CColModelSA::Restore( unsigned short id )
     return true;
 }
 
-void CColModelSA::RestoreAll()
+void CColModelSA::RestoreAll( void )
 {
     while ( !m_imported.empty() )
         Restore( m_imported.front() );

@@ -355,10 +355,10 @@ bool CGameSA::InitLocalPlayer()
 {
     DEBUG_TRACE("bool CGameSA::InitLocalPlayer()");
 
-    if ( mtaPeds[1] )
+    if ( mtaPeds[0] )
         return true;
 
-    new CPlayerPedSA( (CPlayerPedSAInterface*)(*ppPedPool)->Get( 1 ), 0, true );
+    new CPlayerPedSA( (CPlayerPedSAInterface*)(*ppPedPool)->Get( 0 ), 0, true );
 
     return true;
 }
