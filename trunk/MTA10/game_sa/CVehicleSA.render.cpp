@@ -51,17 +51,21 @@ void CVehicleSAInterface::RenderPassengers( void )
 static unsigned char vehAlpha[1024];
 static unsigned short vehCurAlpha = 0;
 
-static bool RpMaterialGetAndModulateAlpha( RpMaterial *mat, unsigned char alpha )
+static bool RpMaterialGetAlpha( RpMaterial *mat, int )
 {
     vehAlpha[vehCurAlpha++] = mat->m_color.a;
-
-    mat->m_color.a = (unsigned char)( (float)mat->m_color.a * (float)alpha / 255.0f );
     return true;
 }
 
 static bool RpMaterialRestoreAlpha( RpMaterial *mat, int )
 {
     mat->m_color.a = vehAlpha[vehCurAlpha++];
+    return true;
+}
+
+static bool RpMaterialModulateAlpha( RpMaterial *mat, unsigned char alpha )
+{
+    mat->m_color.a = (unsigned char)( (float)mat->m_color.a * (float)alpha / 255.0f );
     return true;
 }
 
@@ -128,14 +132,22 @@ void CVehicleSAInterface::SetupRender( void )
 
         // Do things for atomics and clumps
         if ( m_rwObject->m_type == RW_ATOMIC )
-            ((RpAtomic*)m_rwObject)->m_geometry->ForAllMateria( RpMaterialGetAndModulateAlpha, mtaVeh->GetAlpha() );
+        {
+            ((RpAtomic*)m_rwObject)->m_geometry->ForAllMateria( RpMaterialGetAlpha, 0 );
+            ((RpAtomic*)m_rwObject)->m_geometry->ForAllMateria( RpMaterialModulateAlpha, mtaVeh->GetAlpha() );
+        }
         else
         {
             RpClump *clump = (RpClump*)m_rwObject;
 
             // First grab all alpha values
             LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
-                item->m_geometry->ForAllMateria( RpMaterialGetAndModulateAlpha, mtaVeh->GetAlpha() );
+                item->m_geometry->ForAllMateria( RpMaterialGetAlpha, 0 );
+            LIST_FOREACH_END
+
+            // Now modulate the atomics
+            LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
+                item->m_geometry->ForAllMateria( RpMaterialModulateAlpha, mtaVeh->GetAlpha() );
             LIST_FOREACH_END
         }
     }
