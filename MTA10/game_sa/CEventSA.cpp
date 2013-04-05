@@ -15,7 +15,7 @@
 
 void* CEventSAInterface::operator new( size_t )
 {
-    return (*ppTaskPool)->Allocate();
+    return (*ppEventPool)->Allocate();
 }
 
 void CEventSAInterface::operator delete( void *ptr )

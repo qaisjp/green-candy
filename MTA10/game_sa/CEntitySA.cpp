@@ -167,7 +167,7 @@ void CEntitySAInterface::UpdateRwFrame( void )
     m_rwObject->m_parent->RegisterRoot();
 }
 
-void Entity_Init()
+void Entity_Init( void )
 {
     HookInstall( 0x00535300, h_memFunc( &CEntitySAInterface::GetColModel ), 5 );
     HookInstall( 0x00534540, h_memFunc( &CEntitySAInterface::IsOnScreen ), 5 );
@@ -176,11 +176,13 @@ void Entity_Init()
     HookInstall( 0x00446F90, h_memFunc( &CEntitySAInterface::UpdateRwMatrix ), 5 );
     HookInstall( 0x00532B00, h_memFunc( &CEntitySAInterface::UpdateRwFrame ), 5 );
     HookInstall( 0x00536BE0, h_memFunc( &CEntitySAInterface::GetBasingDistance ), 5 );
+
+    EntityRender_Init();
 }
 
-void Entity_Shutdown()
+void Entity_Shutdown( void )
 {
-
+    EntityRender_Shutdown();
 }
 
 CEntitySA::CEntitySA()
@@ -347,6 +349,16 @@ eEntityStatus CEntitySA::GetEntityStatus() const
 {
     DEBUG_TRACE("eEntityStatus CEntitySA::GetEntityStatus() const");
     return (eEntityStatus) m_pInterface->m_status;
+}
+
+void CEntitySA::ReplaceTexture( const char *name, CTexture *tex )
+{
+    // 
+}
+
+void CEntitySA::RestoreTexture( const char *name )
+{
+
 }
 
 void CEntitySA::SetAlpha( unsigned char alpha )

@@ -100,6 +100,81 @@ static RpAtomic* __cdecl _worldAtomicSceneCopyConstructor( RpAtomic *atom, RpAto
 }
 
 /*=========================================================
+    ReadCollisionFromClump
+
+    Arguments:
+        stream - RenderWare stream containing the collision data
+    Purpose:
+        When a GTA:SA collision extension is found in a clump stream,
+        this handler is called. It allocates the collision data
+        and assigns it to the model which requested it.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0041B1D0
+=========================================================*/
+CColLoaderModelAcquisition *g_clumpLoaderCOLAcquisition = NULL;
+
+static RwStream* ReadCollisionFromClump( RwStream *stream, size_t size )
+{
+    // We do not wanna load if we are not requesting a collision.
+    if ( !g_clumpLoaderCOLAcquisition )
+        return stream;
+
+    // We should not load invalid sized collisions
+    if ( size < sizeof(ColModelFileHeader) )
+        return stream;
+
+    // Allocate the required buffer for the COL data
+    char *buf = new char[size];
+
+    // Read the collision from the RenderWare stream block
+    if ( RwStreamReadBlocks( stream, buf, size ) != size )
+    {
+        delete buf;
+
+        return NULL;
+    }
+
+    ColModelFileHeader& header = *(ColModelFileHeader*)buf;
+
+    CColModelSAInterface *colModel = new CColModelSAInterface;
+
+    // Load according to version
+    switch( header.checksum )
+    {
+    case 'LLOC':
+        LoadCollisionModel( buf + sizeof(ColModelFileHeader), colModel, NULL );
+        break;
+    case '2LOC':
+        LoadCollisionModelVer2( buf + sizeof(ColModelFileHeader), header.size - 0x18, colModel, NULL );
+        break;
+    case '3LOC':
+        LoadCollisionModelVer3( buf + sizeof(ColModelFileHeader), header.size - 0x18, colModel, NULL );
+        break;
+    case '4LOC':
+        LoadCollisionModelVer4( buf + sizeof(ColModelFileHeader), header.size - 0x18, colModel, NULL );
+        break;
+    default:
+        // Invalid checksum; maybe invalid version or bad chunk
+        delete [] buf;
+        delete colModel;
+
+        return NULL;
+    }
+
+    // Allocate remaining/missing data
+    colModel->AllocateData();
+
+    delete [] buf;
+
+    // Update the request.
+    // The_GTA: Made the collision assignment logic request based; original loader at
+    // CStreamingSA.utils.cpp - LoadClumpFilePersistent.
+    g_clumpLoaderCOLAcquisition->SetCollision( colModel );
+
+    return stream;
+}
+
+/*=========================================================
     CRwExtensionManagerSA::constructor
 
     Purpose:
@@ -110,6 +185,7 @@ CRwExtensionManagerSA::CRwExtensionManagerSA( void )
 {
     // Patch some fixes
     HookInstall( 0x00732480, (DWORD)RpAtomicRenderAlpha, 5 );
+    HookInstall( 0x0041B1D0, (DWORD)ReadCollisionFromClump, 5 );
 
     switch( pGame->GetGameVersion() )
     {
@@ -455,7 +531,7 @@ RwTexDictionary* RwTexDictionaryStreamReadEx( RwStream *stream )
 
     RwBlocksInfo texBlocksInfo;
 
-    if ( RwStreamReadBlocks( stream, texBlocksInfo, size ) != size )
+    if ( RwStreamReadBlocks( stream, &texBlocksInfo, size ) != size )
         return NULL;
 
     unsigned int rendStatus;

@@ -4,7 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/renderware/RpGeometryStreamline.cpp
 *  PURPOSE:     RenderWare geometry streamline threaded management
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -33,13 +33,13 @@ static RpGeometry *RpGeometryStreamlineCopyConstructor( RpGeometry *dst, RpGeome
     return dst;
 }
 
-void RpGeometryStreamlineInit()
+void RpGeometryStreamlineInit( void )
 {
     // Register ourselves to the geometry structures
     RpGeometryRegisterPlugin( sizeof( RpGeomStreamline ), RW_PLUGIN_STREAMLINE,
         RpGeometryStreamlineConstructor, RpGeometryStreamlineDestructor, RpGeometryStreamlineCopyConstructor );
 }
 
-void RpGeometryStreamlineShutdown()
+void RpGeometryStreamlineShutdown( void )
 {
 }

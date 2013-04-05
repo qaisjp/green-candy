@@ -45,6 +45,7 @@ enum eEntityStatus
 };
 
 class CColModel;
+class CTexture;
 
 class CEntity
 {
@@ -90,6 +91,9 @@ public:
 
     virtual void                        SetColModel( CColModel *col ) = 0;
     virtual CColModel*                  GetColModel() = 0;
+
+    virtual void                        ReplaceTexture( const char *name, CTexture *tex ) = 0;
+    virtual void                        RestoreTexture( const char *name ) = 0;
 
     virtual bool                        IsStatic() const = 0;
     virtual void                        SetStatic( bool enabled ) = 0;

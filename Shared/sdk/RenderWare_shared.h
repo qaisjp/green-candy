@@ -52,6 +52,16 @@ struct RwSphere
 };
 struct RwColorFloat
 {
+    RwColorFloat()  {}
+
+    RwColorFloat( float red, float green, float blue, float alpha )
+    {
+        r = red;
+        g = green;
+        b = blue;
+        a = alpha;
+    }
+
     float r,g,b,a;
 };
 struct RwColor
@@ -63,17 +73,19 @@ struct RwColor
     
     RwColor( unsigned int color )
     {
-        r = color >> 24;
-        g = color >> 16;
-        b = color >> 8;
-        a = color;
+        *(unsigned int*)this = color;
     }
 
     unsigned char r, g, b, a;
 
-    operator unsigned int () const
+    operator unsigned int ( void ) const
     {
-        return ( a ) | ( (unsigned int)b << 8 ) | ( (unsigned int)g << 16 ) | ( (unsigned int)r << 24 );
+        return *(unsigned int*)this;
+    }
+
+    operator unsigned int& ( void )
+    {
+        return *(unsigned int*)this;
     }
 };
 enum eRwType : unsigned char

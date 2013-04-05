@@ -5,7 +5,7 @@
 *  FILE:        game_sa/CModelManagerSA.cpp
 *  PURPOSE:     DFF model entity manager
 *               RenderWare extension
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -18,13 +18,13 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CRwObjectSA *g_replObjectNative[DATA_TEXTURE_BLOCK];
 
-CModelManagerSA::CModelManagerSA()
+CModelManagerSA::CModelManagerSA( void )
 {
     // Reset information structs
     memset( g_replObjectNative, 0, sizeof(g_replObjectNative) );
 }
 
-CModelManagerSA::~CModelManagerSA()
+CModelManagerSA::~CModelManagerSA( void )
 {
     // Clear our models
     while ( !m_models.empty() )

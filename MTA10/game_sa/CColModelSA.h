@@ -119,7 +119,8 @@ public:
                                     CColModelSAInterface    ( void );
                                     ~CColModelSAInterface   ( void );
 
-    void                            ReleaseData             ( void );
+    void __thiscall                 AllocateData            ( void );
+    void __thiscall                 ReleaseData             ( void );
 
     void*   operator new ( size_t );
     void    operator delete ( void *ptr );
@@ -149,6 +150,8 @@ public:
 
     void                            SetOriginal         ( CColModelSAInterface *col )   { m_original = col; }
     CColModelSAInterface*           GetOriginal         ( void )                        { return m_original; }
+
+    bool                            IsOriginalDynamic   ( void )                        { return m_originalDynamic; }
 
     void                            Apply               ( unsigned short id );
 

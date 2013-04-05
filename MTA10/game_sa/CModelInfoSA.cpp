@@ -23,19 +23,19 @@ CBaseModelInfoSAInterface** ppModelInfo = (CBaseModelInfoSAInterface**) ARRAY_Mo
 
 std::map < unsigned short, int > CModelInfoSA::ms_RestreamTxdIDMap;
 
-void ModelInfo_Init()
+void ModelInfo_Init( void )
 {
     ModelInfoBase_Init();
     ModelInfoIDE_Init();
 }
 
-void ModelInfo_Shutdown()
+void ModelInfo_Shutdown( void )
 {
     ModelInfoIDE_Shutdown();
     ModelInfoBase_Shutdown();
 }
 
-CModelInfoSA::CModelInfoSA()
+CModelInfoSA::CModelInfoSA( void )
 {
     m_pInterface = NULL;
     m_modelID = 0xFFFF;
@@ -273,17 +273,7 @@ bool CModelInfoSA::IsLoaded() const
 
 unsigned char CModelInfoSA::GetFlags() const
 {
-    DWORD dwFunc = FUNC_GetModelFlags;
-    DWORD ModelID = m_modelID;
-    BYTE bFlags = 0;
-    _asm
-    {
-        push    ModelID
-        call    dwFunc
-        add     esp, 4
-        mov     bFlags, al
-    }
-    return bFlags;
+    return Streaming::GetModelLoadInfo( m_modelID ).m_flags;
 }
 
 const CBoundingBox* CModelInfoSA::GetBoundingBox() const
@@ -319,7 +309,7 @@ unsigned short CModelInfoSA::GetTextureDictionaryID() const
     CBaseModelInfoSAInterface *info = ppModelInfo[m_modelID];
 
     if ( !info )
-        return 0;
+        return 0xFFFF;
 
     return info->usTextureDictionary;
 }
@@ -632,17 +622,10 @@ bool CModelInfoSA::IsUpgradeAvailable( eVehicleUpgradePosn posn ) const
 
 void CModelInfoSA::SetCustomCarPlateText( const char *szText )
 {
-    char * szStoredText;
-    DWORD ModelID = m_modelID;
-    _asm
-    {
-        push    ecx
-        mov     ecx, ModelID
-        mov     ecx, ARRAY_ModelInfo[ecx*4]
-        add     ecx, 40
-        mov     szStoredText, ecx
-        pop     ecx
-    }
+    if ( !IsVehicle() )
+        return;
+
+    char *szStoredText = ((CVehicleModelInfoSAInterface*)GetInterface())->m_plateText;
 
     if ( szText ) 
         strncpy ( szStoredText, szText, 8 );

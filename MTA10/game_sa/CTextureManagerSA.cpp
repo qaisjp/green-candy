@@ -203,6 +203,9 @@ CTexDictionarySA* CTextureManagerSA::CreateTxd( CFile *file )
     {
         txd = new CTexDictionarySA( dict );
 
+        // Set it as global emitter here
+        txd->SetGlobalEmitter();
+
         LIST_INSERT( m_txdList.root, txd->m_dicts );    // We keep track of all tex dictionaries
     }
     else

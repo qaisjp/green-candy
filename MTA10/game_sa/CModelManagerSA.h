@@ -5,7 +5,7 @@
 *  FILE:        game_sa/CModelManagerSA.h
 *  PURPOSE:     DFF model entity manager
 *               RenderWare extension
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -18,20 +18,20 @@ class CModelManagerSA : public CModelManager
 {
     friend class CModelSA;
 public:
-                                CModelManagerSA();
-                                ~CModelManagerSA();
+                                CModelManagerSA     ( void );
+                                ~CModelManagerSA    ( void );
 
-    CModelSA*                   CreateModel( CFile *file, unsigned short model );
-    CModelSA*                   CloneClump( unsigned short model );
-    CRpAtomicSA*                CloneAtomic( unsigned short model );
+    CModelSA*                   CreateModel         ( CFile *file, unsigned short model );
+    CModelSA*                   CloneClump          ( unsigned short model );
+    CRpAtomicSA*                CloneAtomic         ( unsigned short model );
 
-    bool                        GetRwModelType( unsigned short model, eRwType& type ) const;
+    bool                        GetRwModelType      ( unsigned short model, eRwType& type ) const;
 
-    bool                        RestoreModel( unsigned short id );
-    bool                        RestoreCollision( unsigned short id );
+    bool                        RestoreModel        ( unsigned short id );
+    bool                        RestoreCollision    ( unsigned short id );
 
-    void                        SetRequestCallback( modelRequestCallback_t callback );
-    void                        SetFreeCallback( modelFreeCallback_t callback );
+    void                        SetRequestCallback  ( modelRequestCallback_t callback );
+    void                        SetFreeCallback     ( modelFreeCallback_t callback );
 
 protected:
     typedef std::vector <CModelSA*> models_t;

@@ -17,7 +17,7 @@
 #include "CColModel.h"
 class CPedModelInfo;
 
-enum eVehicleType
+enum eVehicleType : unsigned int
 {
     VEHICLE_CAR,
     VEHICLE_MONSTERTRUCK,
@@ -30,8 +30,7 @@ enum eVehicleType
     VEHICLE_FAKEPLANE,    // what is this?
     VEHICLE_BIKE,
     VEHICLE_BICYCLE,
-    VEHICLE_AUTOMOBILETRAILER,
-    FORCE_DWORD = 0xFFFFFFFF
+    VEHICLE_AUTOMOBILETRAILER
 };
 
 class CBoundingBox

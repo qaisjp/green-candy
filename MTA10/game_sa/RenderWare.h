@@ -432,6 +432,8 @@ public:
     unsigned int                refs;                           // 84
     char                        anisotropy;                     // 88
 
+    void                        SetName( const char *name );
+
     void                        AddToDictionary( RwTexDictionary *txd );
     void                        RemoveFromDictionary();
 
@@ -497,6 +499,8 @@ public:
     unsigned short      m_refs;         // 24
     short               m_id;           // 26
     void*               m_unknown;      // 28
+
+    void                SetTexture( RwTexture *tex );
 };
 class RpMaterials
 {
@@ -582,32 +586,6 @@ public:
 
     void                    FetchMateria( RpMaterials& mats );
 };
-class RwAtomicZBufferEntry  //size: 12
-{
-public:
-    RpAtomic*               m_atomic;
-    RpAtomicCallback        m_render;
-    float                   m_distance;
-};
-class RwAtomicRenderChain //size: 20
-{
-public:
-    RwAtomicZBufferEntry                m_entry;    // 0
-    RwAtomicRenderChain*                next;       // 12
-    RwAtomicRenderChain*                prev;       // 16
-};
-class RwAtomicRenderChainInterface
-{
-public:
-    RwAtomicRenderChain     m_root;             // 0
-    RwAtomicRenderChain     m_rootLast;         // 20
-    RwAtomicRenderChain     m_renderStack;      // 40
-    RwAtomicRenderChain     m_renderLast;       // 60
-
-    bool __thiscall         PushRender( RwAtomicZBufferEntry *level );
-};
-
-extern RwAtomicRenderChainInterface *const rwRenderChains;
 
 struct RpAtomicContainer
 {
@@ -879,6 +857,10 @@ typedef long                (__cdecl*RwFileSeek_t) ( void *fp, long offset, int 
 
 typedef int                 (__cdecl*RwReadTexture_t) ( RwStream *stream, RwTexture **out, size_t blockSize );
 
+enum eRwDeviceCmd : unsigned int
+{
+};
+
 class RwInterface   // size: 1456
 {
 public:
@@ -890,7 +872,10 @@ public:
     BYTE                    m_pad11[4];                                     // 12
     RwRenderSystem          m_renderSystem;                                 // 16
 
-    BYTE                    m_pad[88];                                      // 24
+    BYTE                    m_pad[8];                                       // 24
+    void                    (*m_deviceCommand)( eRwDeviceCmd cmd, int param );  // 32
+
+    BYTE                    m_pad20[76];                                    // 36
     RwStructInfo*           m_sceneInfo;                                    // 112
 
     BYTE                    m_pad14[60];                                    // 116
@@ -905,7 +890,13 @@ public:
     RwFileClose_t           m_fileClose;                                    // 224
     RwFileSeek_t            m_fileSeek;                                     // 228
 
-    BYTE                    m_pad13[76];                                    // 232
+    BYTE                    m_pad13[20];                                    // 232
+
+    void                    (*m_strncpy)( char *buf, const char *dst, size_t cnt ); // 252
+    BYTE                    m_pad18[32];                                    // 256
+
+    size_t                  (*m_strlen)( const char *str );                 // 288
+    BYTE                    m_pad19[16];                                    // 292
 
     void*                   (*m_malloc)( size_t size );                     // 308
     void                    (*m_free)( void *data );                        // 312

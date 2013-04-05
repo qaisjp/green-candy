@@ -36,10 +36,25 @@ static LUA_DECLARE( getColModel )
     return 1;
 }
 
+static LUA_DECLARE( replaceTexture )
+{
+    const char *texName;
+    CClientGameTexture *tex;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadString( texName );
+    argStream.ReadClass( tex, LUACLASS_TEXTURE );
+    LUA_ARGS_END;
+
+    ((CClientGameEntity*)lua_getmethodtrans( L ))->ReplaceTexture( texName, tex );
+    LUA_SUCCESS;
+}
+
 static luaL_Reg gameentity_interface_trans[] =
 {
     LUA_METHOD( setColModel ),
     LUA_METHOD( getColModel ),
+    LUA_METHOD( replaceTexture ),
     { NULL, NULL }
 };
 
@@ -72,6 +87,10 @@ CClientGameEntity::CClientGameEntity( CClientStreamer *pStreamer, ElementID ID, 
 CClientGameEntity::~CClientGameEntity()
 {
     SetColModel( NULL );
+
+    // Unreference all replaced textures
+    for ( textureMap_t::const_iterator iter = m_replacedTextures.begin(); iter != m_replacedTextures.end(); iter++ )
+        (*iter).second->DecrementMethodStack();
 }
 
 void CClientGameEntity::SetColModel( CClientColModel *col )
@@ -98,6 +117,46 @@ void CClientGameEntity::SetColModel( CClientColModel *col )
 
     if ( entity )
         entity->SetColModel( col->m_pColModel );
+}
+
+void CClientGameEntity::ReplaceTexture( const char *name, CClientGameTexture *tex )
+{
+    // Reference our texture as we will be using it
+    tex->IncrementMethodStack();
+
+    // Remove any previous replacement on that name (if found)
+    RestoreTexture( name );
+
+    // Install the texture
+    m_replacedTextures.insert( textureMap_t::value_type( name, tex ) );
+
+    CEntity *entity = GetGameEntity();
+
+    if ( entity )
+        entity->ReplaceTexture( name, &tex->m_tex );
+}
+
+bool CClientGameEntity::IsReplacingTexture( const char *name )
+{
+    return m_replacedTextures.find( name ) != m_replacedTextures.end();
+}
+
+void CClientGameEntity::RestoreTexture( const char *name )
+{
+    textureMap_t::iterator iter = m_replacedTextures.find( name );
+    
+    if ( iter == m_replacedTextures.end() )
+        return;
+
+    // Dereference the texture
+    CClientGameTexture *tex = iter->second;
+    tex->DecrementMethodStack();
+
+    // Tell the internal element to restore
+    CEntity *entity = GetGameEntity();
+
+    if ( entity )
+        entity->RestoreTexture( name );
 }
 
 void CClientGameEntity::NotifyCreate()

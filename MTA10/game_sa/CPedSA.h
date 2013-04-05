@@ -267,6 +267,11 @@ enum ePedType
 };
 #endif
 
+enum ePedStatus : unsigned int
+{
+    PED_STATUS_DRIVING_VEHICLE = 50
+};
+
 class CPadSAInterface;
 
 class CPedSAInterface : public CPhysicalSAInterface
@@ -276,6 +281,7 @@ public:
     void    operator delete( void *ptr );
 
     bool                            IsEnteringVehicle();
+    inline bool                     IsDrivingVehicle( void )            { return m_pedStatus == PED_STATUS_DRIVING_VEHICLE; }
 
     bool                            IsPlayer();
     CPadSAInterface*                GetJoypad();
@@ -294,7 +300,8 @@ public:
     RwFrame*                        m_goggles;                  // 1276
     BYTE                            m_pad5g[12];                // 1280
     CPedIKSAInterface               m_pedIK;                    // 1292 (length 32 bytes)
-    int                             m_pad6[2];                  // 1324
+    BYTE                            m_pad20[4];                 // 1324
+    int                             m_pedStatus;                // 1328
 
     unsigned char                   m_runState;                 // 1332
 
