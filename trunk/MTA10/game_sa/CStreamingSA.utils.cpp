@@ -65,7 +65,7 @@ namespace RwRemapScan
 
     // Stores the previous texture scanner and applies ours
     // Binary offsets: (1.0 US and 1.0 EU): 0x004C75A0
-    void Apply()
+    void Apply( void )
     {
         prevStackScan = pRwInterface->m_textureManager.m_findInstanceRef;
         pRwInterface->m_textureManager.m_findInstanceRef = scanMethod;
@@ -73,7 +73,7 @@ namespace RwRemapScan
 
     // Restores the previous texture scanner
     // Binary offsets: (1.0 US and 1.0 EU): 0x004C75C0
-    void Unapply()
+    void Unapply( void )
     {
         pRwInterface->m_textureManager.m_findInstanceRef = prevStackScan;
         prevStackScan = NULL;
@@ -141,7 +141,7 @@ namespace RwImportedScan
             applied = false;
     }
 
-    void Unapply()
+    void Unapply( void )
     {
         if ( applied )
         {
@@ -418,9 +418,11 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
     // MTA extension: include our imported textures
     RwImportedScan::Apply( info->usTextureDictionary );
 
+    CColLoaderModelAcquisition *colAcq;
+
     if ( isVehicle )
     {
-        RpPrtStdGlobalDataSetStreamEmbedded( info );
+        colAcq = new CColLoaderModelAcquisition;
         RwRemapScan::Apply();
     }
 
@@ -428,8 +430,18 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
 
     if ( isVehicle )
     {
+        // See if we loaded a collision
+        if ( CColModelSAInterface *col = colAcq->GetCollision() )
+        {
+            // Set the collision to the model.
+            info->SetColModel( col, true );
+
+            // Set a special model flag
+            info->flags |= 0x0800;
+        }
+
         RwRemapScan::Unapply();
-        RpPrtStdGlobalDataSetStreamEmbedded( NULL );
+        delete colAcq;
     }
 
     RwImportedScan::Unapply();
@@ -474,7 +486,7 @@ static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
 
     RwBlocksInfo info;
 
-    if ( RwStreamReadBlocks( stream, info, length ) != length )
+    if ( RwStreamReadBlocks( stream, &info, length ) != length )
         return NULL;
 
     RwTexDictionary *txd = RwTexDictionaryCreate();
@@ -697,7 +709,7 @@ static bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned
             info = Streaming::GetModelInfoByName( header.name, (unsigned short)colFile->m_rangeStart, (unsigned short)colFile->m_rangeEnd, &modelId );
         }
 
-        if ( info && info->IsDynamicCol() )
+        if ( info )
         {
             CColModelSAInterface *col;
 
@@ -711,6 +723,14 @@ static bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned
             }
             else
             {
+                // Clever usage of goto here; in order to save memory, we let the original collision interfaces unload their data.
+                // We have to put the data back into the col-replacement original info, which would not work if the model info is not set
+                // to have a dynamic collision. Dynamic collisions always reside in COL libraries, which COL replacements are not.
+                // I had to restructure the loading here, and the best way is to use a goto.
+                // If you disagree, troll me at IRC.
+                if ( !info->IsDynamicCol() )
+                    goto skip;
+
                 // The original route
                 col = info->pColModel;
 
@@ -748,6 +768,7 @@ static bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned
                 ((bool (__cdecl*)( CBaseModelInfoSAInterface *info ))0x005DB650)( info );
         }
         
+skip:
         size -= header.size;
         buf += header.size - (sizeof(ColModelFileHeader) - 8);
     }
@@ -813,18 +834,30 @@ void __cdecl FreeCOLLibrary( unsigned char collId )
 
     for ( short n = col->m_rangeStart; n <= col->m_rangeEnd; n++ )
     {
-        // MTA extension: GTA:SA may not touch replaced collision data.
-        if ( g_colReplacement[n] )
-            continue;
-
         CBaseModelInfoSAInterface *info = ppModelInfo[n];
 
         if ( !info )
             continue;
 
-        CColModelSAInterface *colModel = info->pColModel;
+        CColModelSAInterface *colModel;
+        bool isDynamic;
 
-        if ( colModel && info->IsDynamicCol() && colModel->m_colPoolIndex == collId )
+        // MTA extension: Handle collision replacements by MTA.
+        // We should free the original collision, as we will obtain it again later
+        // during COL library loading. This saves quite some memory in total
+        // conversions.
+        if ( CColModelSA *c_col = g_colReplacement[n] )
+        {
+            colModel = c_col->GetOriginal();
+            isDynamic = c_col->IsOriginalDynamic();
+        }
+        else
+        {
+            colModel = info->pColModel;
+            isDynamic = info->IsDynamicCol();
+        }
+
+        if ( colModel && isDynamic && colModel->m_colPoolIndex == collId )
             colModel->ReleaseData();
     }
 }
@@ -1017,6 +1050,9 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
     {
         if ( loadInfo.m_flags & 0x0E || ((bool (__cdecl*)( unsigned int id ))0x00407AD0)( id - 25575 ) )
         {
+            if ( loadInfo.m_blockCount == 0 )
+                goto failureDamned;
+
             pGame->GetAnimManager()->LoadAnimFile( stream, true, NULL );
             pGame->GetAnimManager()->CreateAnimAssocGroups();
         }

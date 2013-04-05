@@ -232,12 +232,12 @@ CVehicleSAInterface::CVehicleSAInterface( unsigned char createdBy )
 
     m_paintjobTxd = -1;
     m_queuePaintjob = -1;
-    m_unk30 = 0;
+    m_paintjobTexture = NULL;
 
     m_unk31 = 0;
     m_unk32 = 0;
     m_unk33 = 0;
-    m_unk35 = 0;
+    m_plateTexture = NULL;
 
     for (n=0; n<MAX_UPGRADES_ATTACHED; n++)
         m_upgrades[n] = -1;
@@ -740,7 +740,7 @@ void CVehicleSA::SetRemapTexDictionary( int txd )
         return;
     }
 
-    GetInterface()->m_unk30 = 0;
+    GetInterface()->m_paintjobTexture = NULL;
 
     (*ppTxdPool)->Get( GetInterface()->m_paintjobTxd )->Dereference();
 
@@ -752,12 +752,12 @@ void CVehicleSA::SetRemap( int iRemap )
 {
     if ( iRemap == -1 )
     {
-        unsigned short paintjobId = GetInterface()->m_paintjobTxd;
+        short paintjobId = GetInterface()->m_paintjobTxd;
 
         if ( paintjobId != -1 )
         {
             (*ppTxdPool)->Get( paintjobId )->Dereference();
-            GetInterface()->m_unk30 = 0;
+            GetInterface()->m_paintjobTexture = NULL;
 
             GetInterface()->m_paintjobTxd = -1;
             GetInterface()->m_queuePaintjob = -1;
@@ -777,8 +777,8 @@ int CVehicleSA::GetRemapIndex() const
 
     unsigned short num = info->GetNumberOfValidPaintjobs();
 
-    for ( unsigned int n = 0; n < num; n++ )
-        if ( GetInterface()->m_paintjobTxd == info->m_paintjobTypes[n] )
+    for ( unsigned short n = 0; n < num; n++ )
+        if ( (unsigned short)GetInterface()->m_paintjobTxd == info->m_paintjobTypes[n] )
             return n;
 
     return -1;

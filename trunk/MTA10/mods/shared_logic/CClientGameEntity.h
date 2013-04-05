@@ -17,6 +17,7 @@
 #include "CClientStreamElement.h"
 
 class CClientColModel;
+class CClientGameTexture;
 
 #define LUACLASS_GAMEENTITY 104
 
@@ -29,10 +30,18 @@ public:
     void                        SetColModel( CClientColModel *col );
     CClientColModel*            GetColModel()                           { return m_colModel; }
 
+    void                        ReplaceTexture( const char *name, CClientGameTexture *tex );
+    bool                        IsReplacingTexture( const char *name );
+    void                        RestoreTexture( const char *name );
+
     void                        NotifyCreate();
 
 protected:
     CClientColModel*            m_colModel;
+
+    typedef std::map <std::string, CClientGameTexture*> textureMap_t;
+
+    textureMap_t                m_replacedTextures;
 };
 
 #endif //_CLIENT_GAME_ENTITY_

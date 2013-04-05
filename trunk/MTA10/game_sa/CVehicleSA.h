@@ -395,6 +395,12 @@ public:
 
     RpClump*                    GetRwObject()                               { return (RpClump*)m_rwObject; }
 
+    void __thiscall             RenderPassengers( void );
+    void __thiscall             SetupRender( void );
+    void __thiscall             SetPlateTextureForRendering( CVehicleModelInfoSAInterface *info );
+    void __thiscall             RestoreLicensePlate( CVehicleModelInfoSAInterface *info );
+    void __thiscall             LeaveRender( void );
+
     inline bool                 IsLocked() const                            { return IS_FLAG( m_vehicleFlags, VEHICLE_LOCKED ); }
     inline bool                 IsDamaged() const                           { return IS_FLAG( m_vehicleFlags, VEHICLE_DAMAGED ); }
     inline bool                 IsDrowning() const                          { return IS_FLAG( m_vehicleFlags, VEHICLE_DROWNING ); }
@@ -564,20 +570,21 @@ public:
     float                       m_unk32;                                // 1404
     float                       m_unk33;                                // 1408
 
-    unsigned int                m_unk34;                                // 1412
+    unsigned int                m_colorFlags;                           // 1412
 
-    float                       m_unk35;                                // 1416
+    RwTexture*                  m_plateTexture;                         // 1416
 
     float                       m_unk;                                  // 1420
 
     void*                       m_unk38;                                // 1424, both used in inheriting classes
     void*                       m_unk39;                                // 1428
 
-    unsigned short              m_paintjobTxd;                          // 1432
+    short                       m_paintjobTxd;                          // 1432
     unsigned short              m_queuePaintjob;                        // 1434
-    unsigned int                m_unk30;                                // 1436
+    RwTexture*                  m_paintjobTexture;                      // 1436
 };
 
+#include "CVehicleSA.render.h"
 
 class CVehicleSA : public virtual CVehicle, public CPhysicalSA
 {

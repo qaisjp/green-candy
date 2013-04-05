@@ -152,13 +152,7 @@ bool CTxdInstanceSA::LoadTXD( RwStream *stream )
 
     m_txd = RwTexDictionaryStreamReadEx( stream );
 
-    if ( !m_txd )
-        return false;
-
-    // HACK: set the global texture emitter so loading the txd is the only requirement for model textures
-    // (BACKWARDS COMPATIBILITY WITH MTA:BLUE)
-    g_textureEmitter = m_txd;
-    return true;
+    return m_txd != NULL;
 }
 
 /*=========================================================

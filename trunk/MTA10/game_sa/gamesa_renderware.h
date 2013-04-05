@@ -59,7 +59,7 @@ typedef RwStream*               (__cdecl *RwStreamInitialize_t)                 
 typedef RwStream*               (__cdecl *RwStreamOpen_t)                       (RwStreamType type, RwStreamMode mode, const void *pData);
 typedef RwStream*               (__cdecl *RwStreamReadChunkHeaderInfo_t)        (RwStream *stream, RwChunkHeader& header);
 typedef int                     (__cdecl *RwStreamFindChunk_t)                  (RwStream *stream, unsigned int type, unsigned int *lengthOut, unsigned int *versionOut);
-typedef unsigned int            (__cdecl *RwStreamReadBlocks_t)                 (RwStream *stream, RwBlocksInfo& info, unsigned int size);
+typedef unsigned int            (__cdecl *RwStreamReadBlocks_t)                 (RwStream *stream, void *buf, unsigned int size);
 typedef int                     (__cdecl *RwStreamClose_t)                      (RwStream *stream, void *pData);
 
 // Frame functions

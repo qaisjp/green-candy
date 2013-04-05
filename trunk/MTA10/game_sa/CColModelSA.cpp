@@ -14,6 +14,7 @@
 
 #include "StdInc.h"
 
+// In this pool we store all COL libraries
 CColFilePool **ppColFilePool = (CColFilePool**)CLASS_CColFilePool;
 
 #define FUNC_ColFilePoolInit    0x004113F0
@@ -42,11 +43,20 @@ CColModelSAInterface::~CColModelSAInterface( void )
     }
 }
 
+void CColModelSAInterface::AllocateData( void )
+{
+    __asm
+    {
+        mov eax,0x0040F740
+        call eax
+    }
+}
+
 void CColModelSAInterface::ReleaseData( void )
 {
     __asm
     {
-        mov ecx,this
+        // __thiscall -> ecx == this
         mov eax,0x0040F9E0
         call eax
     }
@@ -99,11 +109,8 @@ bool CColModelSA::Replace( unsigned short id )
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
     CBaseModelInfoSAInterface *model = ppModelInfo[id];
     
-    // Store the original so we can restore it again
-    m_original = model->pColModel;
-    m_originalDynamic = model->IsDynamicCol();
-
-    model->SetCollision( m_pInterface, false );
+    // Set the collision
+    Apply( id );
 
     g_colReplacement[id] = this;
 
@@ -166,9 +173,11 @@ void CColModelSA::Apply( unsigned short id )
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[id];
 
+    // Store the original so we can restore it again
     m_original = info->pColModel;
+    m_originalDynamic = info->IsDynamicCol();
 
-    info->SetColModel( m_pInterface, false );
+    info->SetCollision( m_pInterface, false );
 }
 
 void* CColFileSA::operator new ( size_t )

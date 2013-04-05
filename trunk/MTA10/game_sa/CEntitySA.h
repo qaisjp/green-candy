@@ -114,8 +114,8 @@ public:
     virtual bool __thiscall         Frame() = 0;                                            // 64
     virtual void __thiscall         PreRender() = 0;                                        // 68
     virtual void __thiscall         Render() = 0;                                           // 72
-    virtual void __thiscall         SetupLighting() = 0;                                    // 76
-    virtual void __thiscall         RemoveLighting() = 0;                                   // 80
+    virtual unsigned char __thiscall    SetupLighting() = 0;                                // 76
+    virtual void __thiscall         RemoveLighting( unsigned char id ) = 0;                 // 80
     virtual void __thiscall         Invalidate() = 0;                                       // 84
 
     void                            GetPosition( CVector& pos ) const;
@@ -160,8 +160,10 @@ public:
     /* IMPORTANT: Do not mess with interfaces. */
 };
 
-void Entity_Init();
-void Entity_Shutdown();
+#include "CEntitySA.render.h"
+
+void Entity_Init( void );
+void Entity_Shutdown( void );
 
 class CEntitySA : public virtual CEntity
 {
@@ -220,9 +222,11 @@ public:
     void                        SetColModel( CColModel *col )                   { m_colModel = (CColModelSA*)col; };
     CColModelSA*                GetColModel()                                   { return m_colModel; }
 
+    void                        ReplaceTexture( const char *name, CTexture *tex );
+    void                        RestoreTexture( const char *name );
+
     bool                        IsBackfaceCulled() const                        { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL ); }
     void                        SetBackfaceCulled( bool enabled )               { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL, enabled ); }
-
 
     void                        SetAlpha( unsigned char alpha );
 
@@ -249,6 +253,9 @@ protected:
     disabledColl_t              m_disabledColl;
 
     CColModelSA*                m_colModel;
+
+    typedef std::map <std::string, RwTexture*> textureMap_t;
+    textureMap_t                m_originalTextures;
 
 public:
     bool                        m_doNotRemoveFromGame; // when deleted, if this is true, it won't be removed from the game

@@ -13,7 +13,16 @@
 #ifndef _CVehicleModelInfoSA_render_H
 #define _CVehicleModelInfoSA_render_H
 
-void VehicleModelInfoRender_Init();
-void VehicleModelInfoRender_Shutdown();
+void __cdecl CacheVehicleRenderCameraSettings( RwObject *obj );
+void __cdecl ClearVehicleRenderChains( void );
+void __cdecl ExecuteVehicleRenderChains( void );
+
+void __cdecl SetVehicleColorFlags( class CVehicleSAInterface *vehicle );
+
+void __cdecl RpClumpSetupVehicleMaterials( RpClump *clump, class CVehicleSA *gameVehicle );
+void __cdecl RpClumpRestoreVehicleMaterials( RpClump *clump );
+
+void VehicleModelInfoRender_Init( void );
+void VehicleModelInfoRender_Shutdown( void );
 
 #endif //_CVehicleModelInfoSA_render_H

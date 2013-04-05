@@ -53,7 +53,7 @@ namespace ModelInfo
 class CBaseModelInfoSA abstract
 {
 public:
-    virtual                                             ~CBaseModelInfoSA()     {}                              // 0
+    virtual                                             ~CBaseModelInfoSA           ( void )    {}              // 0
 
     virtual CAtomicModelInfoSA* __thiscall              GetAtomicModelInfo          ( void ) = 0;               // 4
     virtual CDamageAtomicModelInfoSA* __thiscall        GetDamageAtomicModelInfo    ( void ) = 0;               // 8

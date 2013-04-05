@@ -21,7 +21,6 @@
 *
 *****************************************************************************/
 
-RwAtomicRenderChainInterface *const rwRenderChains = (RwAtomicRenderChainInterface*)0x00C88070;
 RwScene *const *p_gtaScene = (RwScene**)0x00C17038;
 RwDeviceInformation *const pRwDeviceInfo = (RwDeviceInformation*)0x00C9BF00;
 
@@ -66,9 +65,6 @@ void RwFrame::SetPosition( const CVector& pos )
 
 const RwMatrix& RwFrame::GetLTM()
 {
-    if ( this == NULL )
-        __asm nop
-
     // This function will recalculate the LTM if frame is dirty
     return *RwFrameGetLTM( this );
 }
@@ -250,43 +246,22 @@ static bool RwFrameGetAnimHierarchy( RwFrame *frame, RpAnimHierarchy **rslt )
     return frame->ForAllChildren( RwFrameGetAnimHierarchy, rslt );
 }
 
-static bool RwObjectGet( RwObject *child, RwObject **dst )
-{
-    *dst = child;
-    return false;
-}
-
 RwObject* RwFrame::GetFirstObject()
 {
-    RwObject *obj;
-
-    if ( ForAllObjects( RwObjectGet, &obj ) )
+    if ( LIST_EMPTY( m_objects.root ) )
         return NULL;
 
-    return obj;
-}
-
-struct _rwFindObjectType
-{
-    unsigned char type;
-    RwObject *rslt;
-};
-
-static bool RwObjectGetByType( RwObject *child, _rwFindObjectType *info )
-{
-    if ( child->m_type != info->type )
-        return true;
-
-    info->rslt = child;
-    return false;
+    return LIST_GETITEM( RwObjectFrame, m_objects.root.next, m_lFrame );
 }
 
 RwObject* RwFrame::GetFirstObject( unsigned char type )
 {
-    _rwFindObjectType info;
-    info.type = type;
+    LIST_FOREACH_BEGIN( RwObjectFrame, m_objects.root, m_lFrame )
+        if ( item->m_type == type )
+            return item;
+    LIST_FOREACH_END
 
-    return ForAllObjects( RwObjectGetByType, &info ) ? NULL : info.rslt;
+    return NULL;
 }
 
 struct _rwObjectByIndex
@@ -319,10 +294,7 @@ RwObject* RwFrame::GetObjectByIndex( unsigned char type, unsigned int idx )
     info.idx = idx;
     info.curIdx = 0;
     
-    if ( ForAllObjects( RwObjectGetByIndex, &info ) )
-        return NULL;
-
-    return info.rslt;
+    return ForAllObjects( RwObjectGetByIndex, &info ) ? NULL : info.rslt;
 }
 
 struct _rwObjCntByType
@@ -349,18 +321,12 @@ unsigned int RwFrame::CountObjectsByType( unsigned char type )
     return info.cnt;
 }
 
-static bool RwFrameObjectGetLast( RwObject *obj, RwObject **dst )
-{
-    *dst = obj;
-    return true;
-}
-
 RwObject* RwFrame::GetLastObject()
 {
-    RwObject *obj = NULL;
-
-    ForAllObjects( RwFrameObjectGetLast, &obj );
-    return obj;
+    if ( LIST_EMPTY( m_objects.root ) )
+        return NULL;
+    
+    return LIST_GETITEM( RwObjectFrame, m_objects.root.prev, m_lFrame );
 }
 
 static bool RwFrameObjectGetVisibleLast( RwObject *obj, RwObject **dst )
@@ -381,12 +347,7 @@ RwObject* RwFrame::GetLastVisibleObject()
 
 RpAtomic* RwFrame::GetFirstAtomic()
 {
-    LIST_FOREACH_BEGIN( RwObjectFrame, m_objects.root, m_lFrame )
-        if ( item->m_type == RW_ATOMIC )
-            return (RpAtomic*)item;
-    LIST_FOREACH_END
-
-    return NULL;
+    return (RpAtomic*)GetFirstObject( RW_ATOMIC );
 }
 
 static bool RwObjectAtomicSetComponentFlags( RpAtomic *atomic, unsigned short flags )
@@ -526,6 +487,20 @@ RwTexture* RwTexDictionary::FindNamedTexture( const char *name )
     LIST_FOREACH_END
 
     return NULL;
+}
+
+void RwTexture::SetName( const char *_name )
+{
+    (*ppRwInterface)->m_strncpy( name, _name, sizeof(name) );
+
+    if ( (*ppRwInterface)->m_strlen( _name ) >= sizeof(name) )
+    {
+        RwError err;
+        err.err1 = 1;
+        err.err2 = 0x8000001E;
+
+        RwSetError( &err );
+    }
 }
 
 void RwTexture::AddToDictionary( RwTexDictionary *_txd )
@@ -678,6 +653,20 @@ void RpAtomic::FetchMateria( RpMaterials& mats )
 
     for ( unsigned int n = 0; n < m_geometry->m_linkedMateria->m_count; n++ )
         mats.Add( m_geometry->m_linkedMateria->Get(n)->m_material );
+}
+
+void RpMaterial::SetTexture( RwTexture *tex )
+{
+    // Reference our texture for usage
+    if ( tex )
+        tex->refs++;
+
+    // Dereference the previous texture
+    if ( m_texture )
+        RwTextureDestroy( m_texture );
+
+    // Assign the new texture
+    m_texture = tex;
 }
 
 RpMaterials::RpMaterials( unsigned int max )
@@ -945,27 +934,14 @@ RpAtomic* RpClump::GetLastAtomic()
     return LIST_GETITEM( RpAtomic, m_atomics.root.prev, m_atomics );
 }
 
-struct _rwFindAtomicNamed
-{
-    const char *name;
-    RpAtomic *rslt;
-};
-
-static bool RpClumpFindNamedAtomic( RpAtomic *atom, _rwFindAtomicNamed *info )
-{
-    if ( strcmp( atom->m_parent->m_nodeName, info->name ) != 0 )
-        return true;
-
-    info->rslt = atom;
-    return false;
-}
-
 RpAtomic* RpClump::FindNamedAtomic( const char *name )
 {
-    _rwFindAtomicNamed info;
-    info.name = name;
+    LIST_FOREACH_BEGIN( RpAtomic, m_atomics.root, m_atomics )
+        if ( strcmp( item->m_parent->m_nodeName, name ) == 0 )
+            return item;
+    LIST_FOREACH_END
 
-    return ForAllAtomics( RpClumpFindNamedAtomic, &info ) ? NULL : info.rslt;
+    return NULL;
 }
 
 static bool RwAtomicGet2dfx( RpAtomic *child, RpAtomic **atomic )
@@ -1115,31 +1091,6 @@ void RpGeometry::UnlinkFX()
         pRwInterface->m_free( m_2dfx );
         m_2dfx = NULL;
     }
-}
-
-bool RwAtomicRenderChainInterface::PushRender( RwAtomicZBufferEntry *level )
-{
-    RwAtomicRenderChain *iter = m_root.prev;
-    RwAtomicRenderChain *progr;
-
-    // Scan until we find appropriate slot
-    for ( ; iter != &m_rootLast && iter->m_entry.m_distance < level->m_distance; 
-        iter = iter->prev );
-
-    if ( ( progr = m_renderStack.prev ) == &m_renderLast )
-        return false;
-
-    // Update render details
-    progr->m_entry = *level;
-
-    LIST_REMOVE( *progr );
-    
-    iter = iter->next;
-    progr->prev = iter->prev;
-    iter->prev->next = progr;
-    progr->next = iter;
-    iter->prev = progr;
-    return true;
 }
 
 RwTexture* RwFindTexture( const char *name, const char *secName )

@@ -597,7 +597,6 @@ void CMultiplayerSA::InitHooks()
     HookInstall(HOOKPOS_EndWorldColors, (DWORD)HOOK_EndWorldColors, 5);
     HookInstall(HOOKPOS_CWorld_ProcessVerticalLineSectorList, (DWORD)HOOK_CWorld_ProcessVerticalLineSectorList, 8);
     HookInstall(HOOKPOS_ComputeDamageResponse_StartChoking, (DWORD)HOOK_ComputeDamageResponse_StartChoking, 7);
-    HookInstall(HOOKPOS_CollisionStreamRead, (DWORD)HOOK_CollisionStreamRead, 6);
     HookInstall(HOOKPOS_VehicleCamStart, (DWORD)HOOK_VehicleCamStart, 6);
     HookInstall(HOOKPOS_VehicleCamTargetZTweak, (DWORD)HOOK_VehicleCamTargetZTweak, 8);
     HookInstall(HOOKPOS_VehicleCamLookDir1, (DWORD)HOOK_VehicleCamLookDir1, 5);
@@ -3592,25 +3591,6 @@ void CMultiplayerSA::SetCustomCameraRotationEnabled ( bool bEnabled )
 void CMultiplayerSA::SetDebugVars ( float f1, float f2, float f3 )
 {
 
-}
-
-void _declspec(naked) HOOK_CollisionStreamRead ()
-{
-    if ( *(DWORD *)VAR_CollisionStreamRead_ModelInfo )
-    {
-        _asm
-        {
-            mov eax, dword ptr fs:[0]
-            jmp RETURN_CollisionStreamRead
-        }
-    }
-    else
-    {
-        _asm
-        {
-            ret
-        }
-    }
 }
 
 unsigned char ucDesignatedLightState = 0;

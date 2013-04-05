@@ -469,23 +469,18 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
 
     CBaseModelInfoSAInterface *model = ppModelInfo[id];
     CTxdInstanceSA *txd;
-    CColModelSAInterface *col;
     bool txdReference;
+    
+    CColLoaderModelAcquisition *colAcq;
 
     if ( id != 0 )
     {
         CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
-        // rockstar's collision hack: set the global particle emitter to the modelinfo pointer of this model
-        RpPrtStdGlobalDataSetStreamEmbedded( model );
-
         // The_GTA: Clumps and atomics load their requirements while being read in this rwStream
         // We therefor have to prepare all resources so it can retrive them; textures and animations!
         if ( model )
         {
-            col = model->pColModel;
-            model->pColModel = NULL;
-
             txd = (*ppTxdPool)->Get( model->usTextureDictionary );
 
             if ( !txd->m_txd )
@@ -523,6 +518,9 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
                 txd->SetCurrent();
         }
 
+        // rockstar's collision hack: set the global particle emitter to the modelinfo pointer of this model
+        colAcq = new CColLoaderModelAcquisition;
+
         RwImportedScan::Apply( model->usTextureDictionary );
     }
 
@@ -531,10 +529,16 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
 
     if ( id != 0 )
     {
+        // Do not import our textures anymore
         RwImportedScan::Unapply();
 
+        CColModelSAInterface *col = colAcq->GetCollision();
+
+        // Store the collision we retrieved (if there is one)
+        colOut = ( col ) ? ( new CColModelSA( col, true ) ) : NULL;
+
         // reset model schemantic loader
-        RpPrtStdGlobalDataSetStreamEmbedded( NULL );
+        delete colAcq;
 
         if ( model )
         {
@@ -542,23 +546,7 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
             // to textures itself
             if ( txdReference )
                 txd->Dereference();
-
-            // If there is no collision in our model information by now, the clump did not provide one
-            // We should restore to the original collision then
-            if ( !model->pColModel )
-            {
-                colOut = new CColModelSA( col, false );
-            }
-            else
-            {
-                colOut = new CColModelSA( model->pColModel, true );
-            }
-
-            // Restore the original colmodel as we have not requested the custom model yet
-            model->pColModel = col;
         }
-        else
-            colOut = NULL;
     }
     else
         colOut = NULL;

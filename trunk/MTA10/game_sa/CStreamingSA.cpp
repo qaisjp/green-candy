@@ -644,7 +644,7 @@ bool CStreamingSA::HasVehicleUpgradeLoaded( int model )
     
     unsigned short id = g_upgStore->FindModelAssociation( model );
 
-    return id != 0xFFFF && Streaming::GetModelLoadInfo( id ).m_eLoading == MODEL_LOADED;
+    return id == 0xFFFF || Streaming::GetModelLoadInfo( id ).m_eLoading == MODEL_LOADED;
 }
 
 /*=========================================================

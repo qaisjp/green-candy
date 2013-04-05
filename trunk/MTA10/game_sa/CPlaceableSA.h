@@ -17,7 +17,7 @@ class CPlaceableSAInterface // 24 bytes
 {
 public:
                                     CPlaceableSAInterface       ( void );
-    virtual                         ~CPlaceableSAInterface      ( void );
+    virtual __thiscall              ~CPlaceableSAInterface      ( void );
 
     void __thiscall                 AllocateMatrix              ( void );
     void __thiscall                 AcquaintMatrix              ( void );
@@ -62,7 +62,7 @@ public:
     } Placeable;
 };
 
-void Placeable_Init();
-void Placeable_Shutdown();
+void Placeable_Init( void );
+void Placeable_Shutdown( void );
 
 #endif //_PLACEABLE_SA_

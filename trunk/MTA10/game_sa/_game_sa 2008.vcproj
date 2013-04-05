@@ -476,6 +476,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CEntitySA.render.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CEntryInfoSA.cpp"
 				>
 			</File>
@@ -844,6 +848,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CVehicleSA.render.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CVehicleScannerSA.cpp"
 				>
 			</File>
@@ -1198,6 +1206,10 @@
 			</File>
 			<File
 				RelativePath="CEntitySA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CEntitySA.render.h"
 				>
 			</File>
 			<File
@@ -1566,6 +1578,10 @@
 			</File>
 			<File
 				RelativePath="CVehicleSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CVehicleSA.render.h"
 				>
 			</File>
 			<File
