@@ -351,7 +351,7 @@ private:
             PositionFile( entry );
         }
 
-        inline bool     IsLocked()
+        inline bool     IsLocked( void ) const
         {
             fileList::const_iterator iter = files.begin();
 

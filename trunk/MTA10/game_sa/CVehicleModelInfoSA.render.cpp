@@ -13,23 +13,39 @@
 #include <StdInc.h>
 #include "gamesa_renderware.h"
 
-#define VEHICLE_RENDER_DISABLE_LOD
-//#define VEHICLE_RENDER_HIGH_QUALITY       // GTA:SA is not optimized for high quality atomic z-buffering, so leave this disabled.
-                                            // If you find a way to fix this, thank you.
+static bool renderLOD = true;
+static bool highQualityRender = false;
+// Rendering should be much faster on GPU if you enable highQualityRender.
+// On the other hand it takes (possibly) to calculate the distance of every atomic to the camera.
 
 #define VAR_CameraPositionVector                0x00C88050
 
 /*=========================================================
-    GetObjectDistanceToCameraSq
+    GetVectorDistanceToCameraSq
 
     Arguments:
-        obj - RenderWare object to specify distance to camera to
+        vec - world position to get distance to camera from
     Purpose:
-        Returns the distance to camera of the given object.
+        Returns the distance to camera of the world position.
 =========================================================*/
-inline static float GetObjectDistanceToCameraSq( RwObject *obj )
+inline static float GetVectorDistanceToCameraSq( const CVector& pos )
 {
-    return ( obj->m_parent->GetLTM().pos - **(CVector**)0x00C88050 ).LengthSquared();
+    return ( pos - **(CVector**)0x00C88050 ).LengthSquared();
+}
+
+/*=========================================================
+    GetAtomicDistanceToCameraSq
+
+    Arguments:
+        obj - RenderWare atomic to get distance to camera from
+    Purpose:
+        Returns the distance to camera of the given atomic.
+=========================================================*/
+inline static float GetObjectDistanceToCameraSq( RpAtomic *obj )
+{
+    const RwSphere& sphere = obj->GetWorldBoundingSphere();
+
+    return GetVectorDistanceToCameraSq( sphere.pos );// - sphere.radius * sphere.radius;
 }
 
 /*=========================================================
@@ -59,20 +75,22 @@ inline static float GetObjectOffsetRotation( RwObject *obj )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00733160
 =========================================================*/
-#ifndef VEHICLE_RENDER_HIGH_QUALITY
 static float cameraRenderDistanceSq = 0;
 static float cameraRenderAngleRadians = 0;
-#endif //VEHICLE_RENDER_HIGH_QUALITY
 
 void __cdecl CacheVehicleRenderCameraSettings( RwObject *obj )
 {
-#ifndef VEHICLE_RENDER_HIGH_QUALITY
-    if ( obj->m_type != RW_CLUMP )
-        return;
+    highQualityRender = g_effectManager->m_fxQuality > 1;   // render High Quality if FX Quality better than Medium
+    renderLOD = g_effectManager->m_fxQuality < 3;           // render LOD vehicles if FX Quality not Very High
 
-    cameraRenderDistanceSq = GetObjectDistanceToCameraSq( obj );
-    cameraRenderAngleRadians = GetObjectOffsetRotation( obj );
-#endif //VEHICLE_RENDER_HIGH_QUALITY
+    if ( !highQualityRender )
+    {
+        if ( obj->m_type != RW_CLUMP )
+            return;
+      
+        cameraRenderDistanceSq = GetVectorDistanceToCameraSq( obj->m_parent->GetLTM().pos );
+        cameraRenderAngleRadians = GetObjectOffsetRotation( obj );
+    }
 }
 
 /*=========================================================
@@ -87,13 +105,10 @@ void __cdecl CacheVehicleRenderCameraSettings( RwObject *obj )
 =========================================================*/
 static inline float GetRenderObjectCameraDistanceSq( RpAtomic *obj )
 {
-#ifdef VEHICLE_RENDER_HIGH_QUALITY
-    float radius = obj->bsphereWorld.radius;
-
-    return GetObjectDistanceToCameraSq( obj ) - radius * radius;
-#else
-    return cameraRenderDistanceSq;
-#endif //VEHICLE_RENDER_HIGH_QUALITY
+    if ( highQualityRender )
+        return GetObjectDistanceToCameraSq( obj );
+    else
+        return cameraRenderDistanceSq;
 }
 
 /*=========================================================
@@ -108,11 +123,10 @@ static inline float GetRenderObjectCameraDistanceSq( RpAtomic *obj )
 =========================================================*/
 static inline float GetRenderObjectOffsetRotation( RpAtomic *obj )
 {
-#ifdef VEHICLE_RENDER_HIGH_QUALITY
-    return GetObjectOffsetRotation( obj );
-#else
-    return cameraRenderAngleRadians;
-#endif //VEHICLE_RENDER_HIGH_QUALITY
+    if ( highQualityRender )
+        return GetObjectOffsetRotation( obj );
+    else
+        return cameraRenderAngleRadians;
 }
 
 /*=========================================================
@@ -124,8 +138,18 @@ static inline float GetRenderObjectOffsetRotation( RpAtomic *obj )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00734530
 =========================================================*/
+// Special vehicle render group
+struct vehicleRenderInfo : public atomicRenderInfo
+{
+    inline void Execute( void )
+    {
+        atomicRenderInfo::Execute();
+    }
+};
+typedef CRenderChainInterface <vehicleRenderInfo> vehicleRenderChain_t;
+
 // Render chains for vehicles only
-static atomicRenderChain_t *const vehicleRenderChains = (atomicRenderChain_t*)0x00C88070;
+static vehicleRenderChain_t *const vehicleRenderChains = (vehicleRenderChain_t*)0x00C88070;
 
 void __cdecl ClearVehicleRenderChains( void )
 {
@@ -141,7 +165,40 @@ void __cdecl ClearVehicleRenderChains( void )
 =========================================================*/
 void __cdecl ExecuteVehicleRenderChains( void )
 {
-    vehicleRenderChains->Execute();
+    // Do special alpha blending if quality is set to high/very high
+    if ( g_effectManager->m_fxQuality > 1 )
+    {
+        // Set opaque rendering flags
+        RwD3D9ForceRenderState( D3DRS_ZFUNC, D3DCMP_LESS );
+        RwD3D9ForceRenderState( D3DRS_ALPHATESTENABLE, true );
+        RwD3D9ForceRenderState( D3DRS_ALPHAFUNC, D3DCMP_EQUAL );
+        RwD3D9ForceRenderState( D3DRS_ALPHAREF, 255 );
+        RwD3D9ForceRenderState( D3DRS_ALPHABLENDENABLE, false );
+        RwD3D9ApplyDeviceStates();
+
+        // First render components which are opaque only
+        vehicleRenderChains->ExecuteReverse();
+
+        // Now render translucent polygons
+        RwD3D9ForceRenderState( D3DRS_ALPHABLENDENABLE, true );
+        RwD3D9ForceRenderState( D3DRS_ALPHAFUNC, D3DCMP_LESS );
+        RwD3D9ForceRenderState( D3DRS_ZWRITEENABLE, false );
+        RwD3D9ForceRenderState( D3DRS_CULLMODE, D3DCULL_NONE );
+        RwD3D9ApplyDeviceStates();
+
+        // Render alpha polygons
+        vehicleRenderChains->Execute();
+
+        // Restore proper render status
+        RwD3D9FreeRenderStates();
+        RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
+        RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
+        RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
+        RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
+        RwD3D9ApplyDeviceStates();
+    }
+    else
+        vehicleRenderChains->Execute();
 }
 
 // LOD distances for models, squared (measured against camera distance from atomic, 0x00733160 is rendering wrapper)
@@ -243,12 +300,14 @@ inline static void RwAtomicHandleHighDetail( RpAtomic *atomic, float camDistance
 =========================================================*/
 static RpAtomic* RwAtomicRenderTrainLOD( RpAtomic *atomic )
 {
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( GetRenderObjectCameraDistanceSq( atomic ) <= trainLODDistance )
-        return atomic;
+    if ( renderLOD )
+    {
+        if ( GetRenderObjectCameraDistanceSq( atomic ) <= trainLODDistance )
+            return atomic;
 
-    RpAtomicRender( atomic );
-#endif
+        RpAtomicRender( atomic );
+    }
+
     return atomic;
 }
 
@@ -266,10 +325,8 @@ static RpAtomic* RwAtomicRenderTranslucentTrain( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= trainLODDistance )
+    if ( renderLOD && camDistanceSq >= trainLODDistance )
         return atomic;
-#endif
 
     RwAtomicHandleHighDetail( atomic, camDistanceSq );
 
@@ -280,13 +337,16 @@ static RpAtomic* RwAtomicRenderTranslucentTrain( RpAtomic *atomic )
         return atomic;
 
     // Set up rendering
-    atomicRenderChain_t::depthLevel level;
+    vehicleRenderChain_t::depthLevel level;
     level.callback = _renderAtomicCommon;
     level.atomic = atomic;
     level.distance = camDistanceSq;
 
-    if ( !(atomic->m_componentFlags & 0x40) )
-        level.distance += calc;
+    if ( !highQualityRender )
+    {
+        if ( !(atomic->m_componentFlags & 0x40) )
+            level.distance += calc;
+    }
 
     if ( !vehicleRenderChains->PushRender( &level ) )
         RpAtomicRender( atomic );
@@ -308,10 +368,8 @@ static RpAtomic* RwAtomicRenderTrain( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= trainLODDistance )
+    if ( renderLOD && camDistanceSq >= trainLODDistance )
         return atomic;
-#endif
 
     RwAtomicHandleHighDetail( atomic, camDistanceSq );
 
@@ -352,14 +410,15 @@ inline static void RwAtomicRenderLODAlpha( RpAtomic *atomic )
 =========================================================*/
 static RpAtomic* RwAtomicRenderBoatLOD( RpAtomic *atomic )
 {
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
+    if ( renderLOD )
+    {
+        float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-    if ( camDistance <= boatLODDistance )
-        return atomic;
+        if ( camDistanceSq <= boatLODDistance )
+            return atomic;
 
-    RwAtomicRenderLODAlpha( atomic );
-#endif
+        RwAtomicRenderLODAlpha( atomic );
+    }
     return atomic;
 }
 
@@ -377,10 +436,8 @@ static RpAtomic* RwAtomicRenderBoat( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= boatLODDistance )
+    if ( renderLOD && camDistanceSq >= boatLODDistance )
         return atomic;
-#endif
 
     RwAtomicHandleHighDetail( atomic, camDistanceSq );
 
@@ -404,16 +461,14 @@ static RpAtomic* RwAtomicRenderTranslucentBoat( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= boatLODDistance )
+    if ( renderLOD && camDistanceSq >= boatLODDistance )
         return atomic;
-#endif
 
     RwAtomicHandleHighDetail( atomic, camDistanceSq );
 
     if ( atomic->m_componentFlags & 0x40 )
     {
-        atomicRenderChain_t::depthLevel level;
+        vehicleRenderChain_t::depthLevel level;
         level.callback = _renderAtomicCommon;
         level.atomic = atomic;
         level.distance = camDistanceSq;
@@ -438,14 +493,16 @@ static RpAtomic* RwAtomicRenderTranslucentBoat( RpAtomic *atomic )
 =========================================================*/
 static RpAtomic* RwAtomicRenderHeliLOD( RpAtomic *atomic )
 {
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
+    if ( renderLOD )
+    {
+        float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-    if ( camDistanceSq <= heliLODDistance )
-        return atomic;
+        if ( camDistanceSq <= heliLODDistance )
+            return atomic;
 
-    RwAtomicRenderLODAlpha( atomic );
-#endif
+        RwAtomicRenderLODAlpha( atomic );
+    }
+
     return atomic;
 }
 
@@ -463,10 +520,8 @@ static RpAtomic* RwAtomicRenderHeli( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= heliLODDistance )
+    if ( renderLOD && camDistanceSq >= heliLODDistance )
         return atomic;
-#endif
 
     RwAtomicHandleHighDetail( atomic, camDistanceSq );
 
@@ -496,15 +551,18 @@ inline static void RwAtomicRenderTranslucentCommon( RpAtomic *atomic, float camD
         return;
 
     // Set up rendering
-    atomicRenderChain_t::depthLevel level;
+    vehicleRenderChain_t::depthLevel level;
     level.callback = _renderAtomicCommon;
     level.atomic = atomic;
     level.distance = camDistanceSq;
 
-    if ( atomic->m_componentFlags & 0x40 )
-        level.distance -= 0.0001f;
-    else
-        level.distance += calc;
+    if ( !highQualityRender )
+    {
+        if ( atomic->m_componentFlags & 0x40 )
+            level.distance -= 0.0001f;
+        else
+            level.distance += calc;
+    }
 
     if ( !vehicleRenderChains->PushRender( &level ) )
         RpAtomicRender( atomic );
@@ -524,10 +582,8 @@ static RpAtomic* RwAtomicRenderTranslucentHeli( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= heliLODDistance )
+    if ( renderLOD && camDistanceSq >= heliLODDistance )
         return atomic;
-#endif
 
     RwAtomicRenderTranslucentCommon( atomic, camDistanceSq );
     return atomic;
@@ -547,16 +603,14 @@ static RpAtomic* RwAtomicRenderHeliMovingRotor( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= heliRotorRenderDistance )
+    if ( renderLOD && camDistanceSq >= heliRotorRenderDistance )
         return atomic;
-#endif
 
     const RwMatrix& ltm = atomic->m_parent->GetLTM();
     CVector vecRotor = ltm.pos - **(CVector**)VAR_CameraPositionVector;
 
     // Calculate rotor details
-    atomicRenderChain_t::depthLevel level;
+    vehicleRenderChain_t::depthLevel level;
     level.distance = vecRotor.DotProduct( ltm.up ) * 20 + camDistanceSq;
     level.callback = _renderAtomicCommon;
     level.atomic = atomic;
@@ -581,16 +635,14 @@ static RpAtomic* RwAtomicRenderHeliMovingRotor2( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= heliRotorRenderDistance )
+    if ( renderLOD && camDistanceSq >= heliRotorRenderDistance )
         return atomic;
-#endif
 
     const RwMatrix& ltm = atomic->m_parent->GetLTM();
     CVector vecRotor = ltm.pos - **(CVector**)VAR_CameraPositionVector;
 
     // Lulz, heavy math, much assembly, small C++ code
-    atomicRenderChain_t::depthLevel level;
+    vehicleRenderChain_t::depthLevel level;
     level.distance = camDistanceSq - vecRotor.DotProduct( ltm.right ) - vecRotor.DotProduct( ltm.at );
     level.callback = _renderAtomicCommon;
     level.atomic = atomic;
@@ -613,14 +665,16 @@ static RpAtomic* RwAtomicRenderHeliMovingRotor2( RpAtomic *atomic )
 =========================================================*/
 static RpAtomic* RwAtomicRenderPlaneLOD( RpAtomic *atomic )
 {
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
+    if ( renderLOD )
+    {
+        float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-    if ( camDistanceSq <= planeLODDistance )
-        return atomic;
+        if ( camDistanceSq <= planeLODDistance )
+            return atomic;
 
-    RpAtomicRender( atomic );
-#endif
+        RpAtomicRender( atomic );
+    }
+
     return atomic;
 }
 
@@ -638,10 +692,8 @@ static RpAtomic* RwAtomicRenderPlane( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= planeLODDistance )
+    if ( renderLOD && camDistanceSq >= planeLODDistance )
         return atomic;
-#endif
 
     RwAtomicHandleHighDetail( atomic, camDistanceSq );
 
@@ -666,10 +718,8 @@ static RpAtomic* RwAtomicRenderTranslucentPlane( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= heliLODDistance )
+    if ( renderLOD && camDistanceSq >= heliLODDistance )
         return atomic;
-#endif
 
     RwAtomicHandleHighDetail( atomic, camDistanceSq );
 
@@ -680,15 +730,18 @@ static RpAtomic* RwAtomicRenderTranslucentPlane( RpAtomic *atomic )
         return atomic;
 
     // Set up rendering
-    atomicRenderChain_t::depthLevel level;
+    vehicleRenderChain_t::depthLevel level;
     level.callback = _renderAtomicCommon;
     level.atomic = atomic;
     level.distance = camDistanceSq;
 
-    if ( atomic->m_componentFlags & 0x40 )
-        level.distance -= 0.0001f;
-    else
-        level.distance += calc;
+    if ( !highQualityRender )
+    {
+        if ( atomic->m_componentFlags & 0x40 )
+            level.distance -= 0.0001f;
+        else
+            level.distance += calc;
+    }
 
     if ( !vehicleRenderChains->PushRender( &level ) )
         RpAtomicRender( atomic );
@@ -710,10 +763,8 @@ static RpAtomic* RwAtomicRenderTranslucentDefaultVehicle( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= vehicleLODDistance )
+    if ( renderLOD && camDistanceSq >= vehicleLODDistance )
         return atomic;
-#endif
 
     RwAtomicRenderTranslucentCommon( atomic, camDistanceSq );
     return atomic;
@@ -733,10 +784,8 @@ static RpAtomic* RwAtomicRenderDefaultVehicle( RpAtomic *atomic )    // actually
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    if ( camDistanceSq >= vehicleLODDistance )
+    if ( renderLOD && camDistanceSq >= vehicleLODDistance )
         return atomic;
-#endif
 
     RwAtomicHandleHighDetail( atomic, camDistanceSq );
 
@@ -759,14 +808,16 @@ static RpAtomic* RwAtomicRenderDefaultVehicle( RpAtomic *atomic )    // actually
 =========================================================*/
 static RpAtomic* RwAtomicRenderDefaultVehicleLOD( RpAtomic *atomic )
 {
-#ifndef VEHICLE_RENDER_DISABLE_LOD
-    float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
+    if ( renderLOD )
+    {
+        float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
 
-    if ( camDistanceSq <= vehicleLODDistance )
-        return atomic;
+        if ( camDistanceSq <= vehicleLODDistance )
+            return atomic;
 
-    RwAtomicRenderLODAlpha( atomic );
-#endif
+        RwAtomicRenderLODAlpha( atomic );
+    }
+
     return atomic;
 }
 
@@ -1301,6 +1352,21 @@ void VehicleModelInfoRender_Init( void )
 {
     // Apply our own rendering logic ;)
     HookInstall( 0x004C7B10, h_memFunc( &CVehicleModelInfoSAInterface::RegisterRenderCallbacks ), 5 );
+}
+
+void VehicleModelInfoRender_SetupDevice( void )
+{
+}
+
+void VehicleModelInfoRender_Reset( void )
+{
+    VehicleModelInfoRender_Shutdown();
+
+    VehicleModelInfoRender_SetupDevice();
+}
+
+void VehicleModelInfoRender_Invalidate( void )
+{
 }
 
 void VehicleModelInfoRender_Shutdown( void )

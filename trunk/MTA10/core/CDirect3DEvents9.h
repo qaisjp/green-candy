@@ -45,4 +45,6 @@ class CDirect3DEvents9
     static IDirect3DBaseTexture9*   GetRealTexture      ( IDirect3DBaseTexture9* pTexture );
 };
 
+extern CShaderItem *g_forceShader;
+
 #endif

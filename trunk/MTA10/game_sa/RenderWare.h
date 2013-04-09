@@ -577,6 +577,8 @@ public:
     BYTE                    m_pad3[8];          // 128
     unsigned int            m_pipeline;         // 136
 
+    const RwSphere&         GetWorldBoundingSphere();
+
     bool                    IsNight();
 
     void                    AddToClump( RpClump *clump );

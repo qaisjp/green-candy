@@ -155,6 +155,7 @@ static RwStream* ReadCollisionFromClump( RwStream *stream, size_t size )
         break;
     default:
         // Invalid checksum; maybe invalid version or bad chunk
+        // Happens for RC CAM vehicle; by returning NULL we disabled this model.
         delete [] buf;
         delete colModel;
 

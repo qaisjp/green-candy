@@ -84,6 +84,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="d3dx9.lib"
 				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\MTA\game_sa.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -188,6 +189,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="d3dx9.lib"
 				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mta\game_sa_d.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -289,6 +291,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="d3dx9.lib"
 				OutputFile="..\..\output\MTA San Andreas\mta\game_sa.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

@@ -109,8 +109,11 @@ bool CColModelSA::Replace( unsigned short id )
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
     CBaseModelInfoSAInterface *model = ppModelInfo[id];
     
-    // Set the collision
-    Apply( id );
+    // Store the original so we can restore it again
+    m_original = model->pColModel;
+    m_originalDynamic = model->IsDynamicCol();
+
+    model->SetCollision( m_pInterface, false );
 
     g_colReplacement[id] = this;
 
@@ -167,17 +170,6 @@ void CColModelSA::RestoreAll( void )
 {
     while ( !m_imported.empty() )
         Restore( m_imported.front() );
-}
-
-void CColModelSA::Apply( unsigned short id )
-{
-    CBaseModelInfoSAInterface *info = ppModelInfo[id];
-
-    // Store the original so we can restore it again
-    m_original = info->pColModel;
-    m_originalDynamic = info->IsDynamicCol();
-
-    info->SetCollision( m_pInterface, false );
 }
 
 void* CColFileSA::operator new ( size_t )

@@ -483,6 +483,11 @@ static void markmt( lua_State *L )
     }
 }
 
+size_t Dispatch::Propagate( global_State *g )
+{
+    return sizeof(Dispatch);
+}
+
 size_t lua_State::Propagate( global_State *g )
 {
     gclist = g->grayagain;

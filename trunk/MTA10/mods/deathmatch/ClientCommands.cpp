@@ -376,6 +376,11 @@ void COMMAND_VehiclePreviousWeapon ( const char* szCmdLine )
     g_pClientGame->ChangeVehicleWeapon ( false );
 }
 
+void COMMAND_ResetShaders( const char *params )
+{
+    g_pGame->ResetShaders();
+}
+
 void COMMAND_TextScale ( const char* szCmdLine )
 {
     if ( !(szCmdLine && szCmdLine [ 0 ]) )

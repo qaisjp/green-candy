@@ -163,7 +163,10 @@ bool CClientModelRequestManager::RequestBlocking ( unsigned short usModelID )
     if ( pInfo )
     {
         pInfo->Request( TRUE, TRUE );
-        return true;
+
+        // Models can either load very long or just fail (invalid resources)
+        // Return whether it ultimatively loaded to prevent crashes.
+        return pInfo->IsLoaded();
     }
 
     // Bad model ID probably.

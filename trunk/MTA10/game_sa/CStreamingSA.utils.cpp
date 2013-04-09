@@ -430,14 +430,34 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
 
     if ( isVehicle )
     {
-        // See if we loaded a collision
-        if ( CColModelSAInterface *col = colAcq->GetCollision() )
+        if ( clump )
         {
-            // Set the collision to the model.
-            info->SetColModel( col, true );
+            // See if we loaded a collision
+            CColModelSAInterface *col = colAcq->GetCollision();
 
-            // Set a special model flag
-            info->flags |= 0x0800;
+            // If we did not load one, we are likely to crash;
+            // At least give the vehicle an empty collision interface.
+            if ( !col )
+            {
+                col = new CColModelSAInterface;
+
+                col->AllocateData();
+            }
+
+            // If we replaced the collision, we want to put it into the original storage
+            // Loading it into the model does not make sense ;)
+            if ( CColModelSA *colModel = g_colReplacement[id] )
+            {
+                colModel->SetOriginal( col, true );
+            }
+            else
+            {
+                // Set the collision to the model.
+                info->SetColModel( col, true );
+
+                // Set a special model flag
+                info->flags |= 0x0800;
+            }
         }
 
         RwRemapScan::Unapply();
@@ -719,7 +739,7 @@ static bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned
                 col = colInfo->GetOriginal();
 
                 if ( !col )
-                    colInfo->SetOriginal( col = new CColModelSAInterface() );
+                    colInfo->SetOriginal( col = new CColModelSAInterface(), true );
             }
             else
             {
@@ -954,21 +974,6 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
         else
             success = LoadClumpFilePersistent( stream, id );
 
-        // MTA extension: Replace collision if necessary
-        if ( CColModelSA *col = g_colReplacement[id] )
-        {
-            CColModelSAInterface *icol = info->pColModel;
-            CColModelSAInterface *ocol = col->GetOriginal();
-
-            if ( icol )
-            {
-                if ( icol != ocol )
-                    delete ocol;    // if its NULL, wont crash
-
-                col->SetOriginal( icol );
-            }
-        }
-
         if ( loadInfo.m_eLoading != MODEL_RELOAD )
         {
             txdInst->DereferenceNoDestroy();
@@ -976,6 +981,8 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
             if ( animBlock )
                 animBlock->m_references--;
 
+            // The_GTA: if the loading failed, we should not reload it anymore.
+            // Otherwise there is an endless loading loop (changed failure to failureDamned)
             if ( !success )
                 goto failure;
           

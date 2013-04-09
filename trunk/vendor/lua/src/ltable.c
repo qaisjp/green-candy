@@ -606,3 +606,8 @@ Node *luaH_mainposition (const Table *t, const TValue *key) {
 int luaH_isdummy (Node *n) { return n == dummynode; }
 
 #endif
+
+const TValue* Table::Index( lua_State *L, const TValue *key )
+{
+    
+}

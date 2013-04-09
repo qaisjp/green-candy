@@ -345,6 +345,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ldispatch.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ldo.c"
 				>
 			</File>
@@ -510,6 +514,10 @@
 			</File>
 			<File
 				RelativePath="..\src\ldebug.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ldispatch.h"
 				>
 			</File>
 			<File

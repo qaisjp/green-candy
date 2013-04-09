@@ -134,6 +134,20 @@ public:
     }
 
     /*=========================================================
+        CRenderChainInterface::ExecuteReverse
+
+        Purpose:
+            Executes all items in the reverse order
+    =========================================================*/
+    void ExecuteReverse( void )
+    {
+        for ( renderChain *iter = m_root.prev; iter != &m_rootLast; iter = iter->prev )
+        {
+            iter->m_entry.Execute();
+        }
+    }
+
+    /*=========================================================
         CRenderChainInterface::Clear
 
         Purpose:

@@ -605,6 +605,11 @@ RwRenderLink* RwStaticGeometry::AllocateLink( unsigned int count )
     return m_link = (RwRenderLink*)RwAllocAligned( (((count * sizeof(RwRenderLink) - 1) >> 6 ) + 1) << 6, 0x40 );
 }
 
+const RwSphere& RpAtomic::GetWorldBoundingSphere()
+{
+    return RpAtomicGetWorldBoundingSphere( this );
+}
+
 bool RpAtomic::IsNight()
 {
     if ( m_pipeline == RW_ATOMIC_RENDER_NIGHT )

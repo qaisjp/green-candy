@@ -106,7 +106,7 @@ class __declspec(novtable) CGame
 public:
     virtual                             ~CGame()    {};
 
-    virtual void                        RegisterMultiplayer( CMultiplayer *mp );
+    virtual void                        RegisterMultiplayer( CMultiplayer *mp ) = 0;
 
     virtual CPools*                     GetPools() = 0;
     virtual CPlayerInfo*                GetPlayerInfo() = 0;
@@ -176,7 +176,9 @@ public:
     virtual void                Initialize() = 0;
     virtual void                Reset() = 0;
     virtual void                OnPreFrame() = 0;
-    virtual void                OnFrame();
+    virtual void                OnFrame() = 0;
+
+    virtual void                ResetShaders() = 0;
 
     virtual bool                InitLocalPlayer() = 0;
 

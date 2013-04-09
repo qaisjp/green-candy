@@ -286,6 +286,91 @@ void CShaderItem::SetTransform ( const SShaderTransform& transform )
 
 ////////////////////////////////////////////////////////////////
 //
+// CShaderItem::Begin
+//
+//
+//
+////////////////////////////////////////////////////////////////
+void CShaderItem::Begin( unsigned int& numPasses )
+{
+    assert( m_pShaderInstance->m_isComputing == false );
+
+    m_pShaderInstance->m_isComputing = true;
+
+    m_pShaderInstance->m_pEffectWrap->m_pD3DEffect->Begin( &numPasses, m_pShaderInstance->m_pEffectWrap->m_uiSaveStateFlags );
+}
+
+
+////////////////////////////////////////////////////////////////
+//
+// CShaderItem::BeginPass
+//
+//
+//
+////////////////////////////////////////////////////////////////
+void CShaderItem::BeginPass( unsigned int pass )
+{
+    assert( m_pShaderInstance->m_isComputing == true );
+
+    m_pShaderInstance->m_pEffectWrap->m_pD3DEffect->BeginPass( pass );
+}
+
+
+////////////////////////////////////////////////////////////////
+//
+// CShaderItem::EndPass
+//
+//
+//
+////////////////////////////////////////////////////////////////
+void CShaderItem::EndPass( void )
+{
+    assert( m_pShaderInstance->m_isComputing == true );
+
+    m_pShaderInstance->m_pEffectWrap->m_pD3DEffect->EndPass();
+}
+
+
+////////////////////////////////////////////////////////////////
+//
+// CShaderItem::IsComputing
+//
+//
+//
+////////////////////////////////////////////////////////////////
+bool CShaderItem::IsComputing( void )
+{
+    return m_pShaderInstance->m_isComputing;
+}
+
+
+////////////////////////////////////////////////////////////////
+//
+// CShaderItem::End
+//
+//
+//
+////////////////////////////////////////////////////////////////
+void CShaderItem::End( void )
+{
+    assert( m_pShaderInstance->m_isComputing == true );
+
+    m_pShaderInstance->m_isComputing = false;
+
+    m_pShaderInstance->m_pEffectWrap->m_pD3DEffect->End();
+
+    // If we didn't get the effect to save the shader state, clear some things here
+    if ( m_pShaderInstance->m_pEffectWrap->m_uiSaveStateFlags & D3DXFX_DONOTSAVESHADERSTATE )
+    {
+        IDirect3DDevice9 *pDevice = g_pCore->GetGraphics()->GetDevice();
+        pDevice->SetVertexShader( NULL );
+        pDevice->SetPixelShader( NULL );
+    }
+}
+
+
+////////////////////////////////////////////////////////////////
+//
 // CShaderItem::MaybeRenewShaderInstance
 //
 // If current instance is in use by something else (i.e. in draw queue), we must create a new instance before changing parameter values

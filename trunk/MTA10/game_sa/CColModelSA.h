@@ -148,12 +148,10 @@ public:
 
     const imports_t&                GetImportList       ( void ) const                  { return m_imported; }
 
-    void                            SetOriginal         ( CColModelSAInterface *col )   { m_original = col; }
+    void                            SetOriginal         ( CColModelSAInterface *col, bool isDynamic )   { m_original = col; m_originalDynamic = isDynamic; }
     CColModelSAInterface*           GetOriginal         ( void )                        { return m_original; }
 
     bool                            IsOriginalDynamic   ( void )                        { return m_originalDynamic; }
-
-    void                            Apply               ( unsigned short id );
 
 private:
     CColModelSAInterface*           m_pInterface;

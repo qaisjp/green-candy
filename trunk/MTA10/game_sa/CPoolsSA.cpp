@@ -161,6 +161,13 @@ static inline CVehicleSAInterface* CreateVehicle( unsigned short modelId )
     //                              ModelID, Position, IsMissionVehicle
     CVehicleSAInterface *veh;
 
+    if ( modelId == 594 )
+    {
+        CVehicleModelInfoSAInterface *intf = (CVehicleModelInfoSAInterface*)ppModelInfo[modelId];
+
+        __asm nop
+    }
+
     DWORD dwFunc = FUNC_CCarCtrlCreateCarForScript;
     _asm
     {

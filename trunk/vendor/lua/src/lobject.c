@@ -21,6 +21,7 @@
 #include "lstate.h"
 #include "lstring.h"
 #include "lvm.h"
+#include "ldebug.h"
 
 
 
@@ -218,4 +219,14 @@ void* GCObject::operator new( size_t size, lua_State *main ) throw()
     GCObject *obj = (GCObject*)luaM_realloc_( main, NULL, 0, size );
     obj->_lua = G(main)->mainthread;
     return obj;
+}
+
+const TValue* GCObject::Index( lua_State *L, const TValue *key )
+{
+    luaG_typeerror( L, this, "index" );
+}
+
+void GCObject::NewIndex( lua_State *L, const TValue *key, const TValue *val )
+{
+    luaV_handle_newindex( L, this, luaT_gettmbyobj( L, this, TM_NEWINDEX ), key, val );
 }

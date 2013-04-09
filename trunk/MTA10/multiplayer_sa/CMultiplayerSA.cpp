@@ -4837,7 +4837,7 @@ bool CPed_GetWeaponSkill ()
     CPed * pPed = pGameInterface->GetPools ()->GetPed ( (DWORD*) weaponSkillPed );
     if ( pPed )
     {
-        CPed* pLocalPlayerPed = pGameInterface->GetPools ()->GetPedFromRef ( (DWORD)1 );
+        CPed* pLocalPlayerPed = pGameInterface->GetPools ()->GetPedFromRef ( (DWORD)0 );
         if ( pPed != pLocalPlayerPed )
         {
             if ( weaponSkillWeapon >= WEAPONTYPE_PISTOL && weaponSkillWeapon <= WEAPONTYPE_TEC9 )
@@ -4899,7 +4899,7 @@ void _declspec(naked) HOOK_CPed_GetWeaponSkill ()
 // applying the visual effect
 bool _cdecl CPed_AddGogglesModelCheck ( void* pPedInterface )
 {
-    return pGameInterface->GetPools ()->GetPed ( (DWORD *)pPedInterface ) == pGameInterface->GetPools ()->GetPedFromRef ( 1 );
+    return pGameInterface->GetPools ()->GetPed ( (DWORD *)pPedInterface ) == pGameInterface->GetPools ()->GetPedFromRef ( 0 );
 }
 
 void _declspec(naked) HOOK_CPed_AddGogglesModel ()

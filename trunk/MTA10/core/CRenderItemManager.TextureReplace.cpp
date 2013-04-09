@@ -245,6 +245,19 @@ CClientEntityBase* CRenderItemManager::GetRenderingClientEntity( void )
 
 ////////////////////////////////////////////////////////////////
 //
+// CRenderItemManager::SetForceShader
+//
+// Applies a shader which must be used for rendering
+//
+////////////////////////////////////////////////////////////////
+void CRenderItemManager::SetForceShader( CShaderItem *shader )
+{
+    g_forceShader = shader;
+}
+
+
+////////////////////////////////////////////////////////////////
+//
 // CRenderItemManager::RemoveClientEntityRefs
 //
 // Make sure all replacements are cleared for this entity
