@@ -64,6 +64,8 @@ public:
     void                        RemoveNameMatchInfo                 ( SNameMatchInfo* pNameMatchInfo );
     CClientEntityBase*          GetRenderingClientEntity            ( void );
 
+    void                        SetForceShader                      ( CShaderItem *item );
+
     static int                  GetBitsPerPixel                     ( D3DFORMAT Format );
     static int                  CalcD3DResourceMemoryKBUsage        ( IDirect3DResource9* pD3DResource );
     static int                  CalcD3DSurfaceMemoryKBUsage         ( IDirect3DSurface9* pD3DSurface );

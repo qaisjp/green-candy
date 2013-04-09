@@ -214,6 +214,7 @@ class Udata;
 class Class;
 class UpVal;
 class LocVar;
+class Dispatch;
 class lua_State;
 
 
@@ -226,6 +227,7 @@ class lua_State;
 #define ttisboolean(o)	(ttype(o) == LUA_TBOOLEAN)
 #define ttisuserdata(o)	(ttype(o) == LUA_TUSERDATA)
 #define ttisclass(o)    (ttype(o) == LUA_TCLASS)
+#define ttisdispatch(o) (ttype(o) == LUA_TDISPATCH)
 #define ttisthread(o)	(ttype(o) == LUA_TTHREAD)
 #define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)
 
@@ -242,6 +244,7 @@ class lua_State;
 #define hvalue(o)	check_exp(ttistable(o), (Table*)((o)->value.gc))
 #define bvalue(o)	check_exp(ttisboolean(o), (o)->value.b)
 #define thvalue(o)	check_exp(ttisthread(o), (lua_State*)((o)->value.gc))
+#define qvalue(o)   check_exp(ttisdispatch(o), (Dispatch*)((o)->value.gc))
 #define jvalue(o)   check_exp(ttisclass(o), (Class*)((o)->value.gc))
 
 #define l_isfalse(o)	(ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0))
@@ -299,6 +302,11 @@ class lua_State;
     i_o->value.gc=(x); i_o->tt=LUA_TPROTO; \
     checkliveness(G(L),i_o); }
 
+#define setqvalue(L,obj,x) \
+  { TValue *i_o=(obj); \
+    i_o->value.gc=(x); i_o->tt=LUA_TDISPATCH; \
+    checkliveness(G(L),i_o); }
+
 #define setjvalue(L,obj,x) \
   { TValue *i_o=(obj); \
     i_o->value.gc=(x); i_o->tt=LUA_TCLASS; \
@@ -353,9 +361,14 @@ public:
     virtual Proto*      GetProto()          { return NULL; }
     virtual UpVal*      GetUpValue()        { return NULL; }
     virtual LocVar*     GetLocVar()         { return NULL; }
+    virtual Dispatch*   GetDispatch()       { return NULL; }
     virtual lua_State*  GetThread()         { return NULL; }
 
     virtual void        MarkGC( global_State *g )       { }
+
+    // Global indexing and new-indexing routines (since every object can potencially be accessed)
+    virtual const TValue*   Index( lua_State *L, const TValue *key );
+    virtual void            NewIndex( lua_State *L, const TValue *key, const TValue *val );
 
     void* operator new( size_t size, lua_State *main );
 
@@ -552,7 +565,7 @@ public:
 
     bool isC;
     lu_byte nupvalues;
-    Table *env;
+    GCObject *dispatch;
 };
 
 class CClosure abstract : public Closure
@@ -715,6 +728,9 @@ public:
 
     Table* GetTable()   { return this; }
 
+    const TValue*   Index( lua_State *L, const TValue *key );
+    void            NewIndex( lua_State *L, const TValue *key, const TValue *val );
+
     void operator delete( void *ptr ) throw()
     {
         GCObject::operator delete( ptr, sizeof(Table) );
@@ -730,6 +746,47 @@ public:
 };
 
 #include "lstrtable.h"
+
+// Native C++ index wrapper
+class Dispatch abstract : public GrayObject
+{
+public:
+    ~Dispatch();
+
+    size_t  Propagate( global_State *g );
+
+    Dispatch*   GetDispatch()               { return this; }
+};
+
+class ClassEnvDispatch : public Dispatch
+{
+public:
+    const TValue*           Index( lua_State *L, const TValue *key );
+    void                    NewIndex( lua_State *L, const TValue *key, const TValue *val );
+
+    Class*                  m_class;
+};
+
+class ClassOutEnvDispatch : public Dispatch
+{
+public:
+    const TValue*           Index( lua_State *L, const TValue *key );
+    void                    NewIndex( lua_State *L, const TValue *key, const TValue *val );
+
+    Class*                  m_class;
+};
+
+class ClassMethodDispatch : public Dispatch
+{
+public:
+    const TValue*           Index( lua_State *L, const TValue *key );
+    void                    NewIndex( lua_State *L, const TValue *key, const TValue *val );
+
+    Class*                  m_class;
+    GCObject*               m_prevEnv;
+};
+
+#include "ldispatch.h"
 
 struct _methodRegisterInfo
 {
@@ -772,8 +829,8 @@ public:
     int     GetTransmit() const;
     bool    IsTransmit( int type ) const;
 
-    Table*  AcquireEnvDispatcher( lua_State *L );
-    Table*  AcquireEnvDispatcherEx( lua_State *L, Table *env );
+    Dispatch*   AcquireEnvDispatcher( lua_State *L );
+    Dispatch*   AcquireEnvDispatcherEx( lua_State *L, GCObject *env );
 
     Closure*    GetMethod( const TString *name, Table*& table );
     void    SetMethod( lua_State *L, TString *name, Closure *method, Table *table );
@@ -816,9 +873,8 @@ public:
         GCObject::operator delete( ptr, sizeof(Class) );
     }
 
-    Table *env;
-    Table *outenv;
-    Table *methods;
+    Dispatch *env;
+    Dispatch *outenv;
     Table *storage;
     Table *internStorage;
     Class *parent;
@@ -857,7 +913,7 @@ public:
     size_t childCount;
     RwListEntry <Class> child_iter;
 
-    typedef std::vector <Table*> envList_t;
+    typedef std::vector <GCObject*> envList_t;
     envList_t envInherit;
 
     // Cached values

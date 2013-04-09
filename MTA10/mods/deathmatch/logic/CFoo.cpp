@@ -186,7 +186,7 @@ void CFoo::Test ( const char* szString )
 
     else if ( strnicmp( szString, "setrot", 6 ) == 0 )
     {
-        CVehicle *veh = g_pGame->GetPools()->GetPedFromRef( 1 )->GetVehicle();
+        CVehicle *veh = g_pGame->GetPools()->GetPedFromRef( 0 )->GetVehicle();
 
         RwMatrix mat;
         veh->GetMatrix( mat );

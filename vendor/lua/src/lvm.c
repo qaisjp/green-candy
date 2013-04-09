@@ -100,18 +100,19 @@ static void callTMres (lua_State *L, StkId res, const TValue *f, const TValue *p
 
 
 static void callTM (lua_State *L, const TValue *f, const TValue *p1,
-                    const TValue *p2, const TValue *p3) {
+                    const TValue *p2, const TValue *p3)
+{
+  luaD_checkstack(L, 4);
   setobj2s(L, L->top, f);  /* push function */
   setobj2s(L, L->top+1, p1);  /* 1st argument */
   setobj2s(L, L->top+2, p2);  /* 2nd argument */
   setobj2s(L, L->top+3, p3);  /* 3th argument */
-  luaD_checkstack(L, 4);
   L->top += 4;
   luaD_call(L, L->top - 4, 0);
 }
 
 
-void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val)
+void luaV_gettable (lua_State *L, const TValue *t, const TValue *key, const StkId val)
 {
   int loop;
   TValue _distr;
@@ -152,8 +153,34 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val)
   luaG_runerror(L, "loop in gettable");
 }
 
+const TValue* luaV_handle_newindex( lua_State *L, GCObject *obj, const TValue *tm, const TValue *key, const TValue *val )
+{
+    if ( ttisnil( tm ) )
+        luaG_typeerror( L, t, "index" );
 
-void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val)
+    if ( ttisfunction( tm ) )
+    {
+        luaD_checkstack( L, 4 );
+
+        StkId func = L->top++;  // remember the function stack id
+
+        setclvalue( L, func, clvalue( tm ) );
+        setobj( L, L->top++, this );
+        setobj( L, L->top++, key );
+        setobj( L, L->top++, val );
+        luaD_call( L, func, 0 );
+    }
+    else
+    {
+        // Repeat the process with the index object
+        // For security reasons, we should increment the callstack depth
+        callstack_ref indexRef( *L );
+
+        luaV_settable( L, tm, key, val );
+    }
+}
+
+void luaV_settable (lua_State *L, const TValue *t, const TValue *key, const StkId val)
 {
     int loop;
     TValue temp;
@@ -189,8 +216,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val)
             }
             /* else will try the tag method */
         }
-        else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX)))
-            luaG_typeerror(L, t, "index");
+        else ;
 doMeta:
         if (ttisfunction(tm))
         {

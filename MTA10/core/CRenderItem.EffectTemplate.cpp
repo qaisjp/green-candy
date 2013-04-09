@@ -57,6 +57,16 @@ CEffectTemplate* NewEffectTemplate ( CRenderItemManager* pManager, const SString
     return m_pEffectTemplate;
 }
 
+static CFileTranslator* GetEffectRoot( const char *path, filePath& outPath )
+{
+    if ( dataFileRoot->GetFullPathFromRoot( path, true, outPath ) )
+        return dataFileRoot;
+    else if ( modFileRoot->GetFullPathFromRoot( path, true, outPath ) )
+        return modFileRoot;
+
+    return NULL;
+}
+
 
 namespace
 {
@@ -78,9 +88,9 @@ namespace
         STDMETHOD(Open)( D3DXINCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes )
         {
             filePath path;
+            CFileTranslator *translator;
 
-            // We need a static path
-            if ( !modFileRoot->GetRelativePath( pFileName, true, path ) )
+            if ( !( translator = GetEffectRoot( pFileName, path ) ) )
             {
                 SString msg( "[CIncludeManager: Invalid path '%s'", pFileName );
                 m_strReport += msg;
@@ -91,7 +101,7 @@ namespace
             // Load file
             std::vector <char> buffer;
 
-            if ( !modFileRoot->ReadToBuffer( *path, buffer ) )
+            if ( !translator->ReadToBuffer( *path, buffer ) )
             {
                 SString strMsg ( "[CIncludeManager: Can't find %s]", *path );
                 m_strReport += strMsg;
@@ -432,13 +442,14 @@ bool CEffectTemplateImpl::HaveFilesChanged ( void )
             const SString& strMD5 = iter->second;
             filePath absPath;
 
-            modFileRoot->GetFullPathFromRoot( strPathFilename.c_str(), true, absPath );
-
-            SString strNewMD5 = CMD5Hasher::CalculateHexString ( absPath.c_str() );
-            if ( strNewMD5 != strMD5 )
+            if ( GetEffectRoot( strPathFilename.c_str(), absPath ) )
             {
-                OutputDebugLine ( SString ( "[Shader] %s file has changed from %s to %s", *strPathFilename, *strMD5, *strNewMD5 ) );
-                m_bHaveFilesChanged = true;
+                SString strNewMD5 = CMD5Hasher::CalculateHexString ( absPath.c_str() );
+                if ( strNewMD5 != strMD5 )
+                {
+                    OutputDebugLine ( SString ( "[Shader] %s file has changed from %s to %s", *strPathFilename, *strMD5, *strNewMD5 ) );
+                    m_bHaveFilesChanged = true;
+                }
             }
         }
     }

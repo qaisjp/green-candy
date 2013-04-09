@@ -137,6 +137,8 @@ public:
     virtual void                SetTestMode                         ( eDxTestMode testMode ) = 0;
     virtual void                GetDxStatus                         ( SDxStatus& outStatus ) = 0;
     virtual CEffectCloner*      GetEffectCloner                     ( void ) = 0;
+
+    virtual void                SetForceShader                      ( CShaderItem *shader ) = 0;
 };
 
 
@@ -340,6 +342,12 @@ class CShaderItem : public CMaterialItem
     virtual void    SetTessellation         ( uint uiTessellationX, uint uiTessellationY );
     virtual void    SetTransform            ( const SShaderTransform& transform );
 
+    virtual void    Begin                   ( unsigned int& numPasses );
+    virtual void    BeginPass               ( unsigned int pass );
+    virtual void    EndPass                 ( void );
+    virtual bool    IsComputing             ( void );
+    virtual void    End                     ( void );
+
     CEffectWrap*        m_pEffectWrap;
     float               m_fPriority;
     float               m_fMaxDistanceSq;
@@ -377,6 +385,7 @@ class CShaderInstance : public CMaterialItem
     void            ApplyShaderParameters   ( void );
 
     CEffectWrap*        m_pEffectWrap;
+    bool                m_isComputing;
     uint                m_uiTessellationX;
     uint                m_uiTessellationY;
     SShaderTransform    m_Transform;

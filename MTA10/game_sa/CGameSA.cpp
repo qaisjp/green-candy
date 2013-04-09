@@ -37,6 +37,7 @@ unsigned long* CGameSA::VAR_Framelimiter;
 static CMultiplayer* multiplayer;
 
 CFileTranslator *gameFileRoot;
+CFileTranslator *effFileRoot;
 
 static bool ProcessCollisions( CEntitySAInterface *caller, CEntitySAInterface *colld )
 {
@@ -60,6 +61,12 @@ CGameSA::CGameSA()
     // Setup the global game file root, which has to be our current directory
     gameFileRoot = core->GetFileSystem()->CreateTranslator( "/" );
 
+    // Setup the global effect resource root, which is inside the MTA directory
+    effFileRoot = core->GetFileSystem()->CreateTranslator( GetMTADataPath() + "effects/" );
+
+    assert( gameFileRoot != NULL );
+    assert( effFileRoot != NULL );
+    
     m_bAsyncSettingsDontUse = false;
     m_bAsyncSettingsEnabled = false;
     m_bAsyncScriptEnabled = false;
@@ -451,6 +458,8 @@ void CGameSA::Initialize()
 
     // *Sebas* Hide the GTA:SA Main menu.
     MemPutFast < BYTE > ( CLASS_CMenuManager+0x5C, 0 );
+
+    VehicleModelInfoRender_SetupDevice();
 }
 
 void CGameSA::OnPreFrame()
@@ -495,6 +504,11 @@ void CGameSA::OnFrame()
 
         break;
     }
+}
+
+void CGameSA::ResetShaders()
+{
+    VehicleModelInfoRender_Reset();
 }
 
 eGameVersion CGameSA::GetGameVersion()

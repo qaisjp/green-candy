@@ -43,6 +43,8 @@ public:
     bool                PositionFrontSeat( RpClump *clump, unsigned short usModelID );
 };
 
+extern IDirect3DDevice9 *const *g_renderDevice;
+
 #include "CRenderWareSA.rwapi.h"
 #include "CRenderWareSA.pipeline.h"
 

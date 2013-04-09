@@ -96,6 +96,7 @@ RpGeometryDestroy_t                     RpGeometryDestroy                       
 RpAtomicCreate_t                        RpAtomicCreate                          = (RpAtomicCreate_t)                        invalid_ptr;
 RpAtomicClone_t                         RpAtomicClone                           = (RpAtomicClone_t)                         invalid_ptr;
 RpAtomicSetFrame_t                      RpAtomicSetFrame                        = (RpAtomicSetFrame_t)                      invalid_ptr;
+RpAtomicGetWorldBoundingSphere_t        RpAtomicGetWorldBoundingSphere          = (RpAtomicGetWorldBoundingSphere_t)        invalid_ptr;
 RpAtomicSetupObjectPipeline_t           RpAtomicSetupObjectPipeline             = (RpAtomicSetupObjectPipeline_t)           invalid_ptr;
 RpAtomicSetupVehiclePipeline_t          RpAtomicSetupVehiclePipeline            = (RpAtomicSetupVehiclePipeline_t)          invalid_ptr;
 RpAtomicRender_t                        RpAtomicRender                          = (RpAtomicRender_t)                        invalid_ptr;
@@ -171,6 +172,7 @@ extern CGameSA *pGame;
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
 RwInterface **ppRwInterface = (RwInterface**)0x00C97B24;
+IDirect3DDevice9 *const *g_renderDevice = (IDirect3DDevice9**)0x00C97C28;
 
 CRenderWareSA::CRenderWareSA( eGameVersion version )
 {
@@ -247,9 +249,10 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpAtomicClone                       = (RpAtomicClone_t)                         0x00749EB0;
         RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
         RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D90;
-        RpAtomicRender                      = (RpAtomicRender_t)                        0x00749210;
+        RpAtomicGetWorldBoundingSphere      = (RpAtomicGetWorldBoundingSphere_t)        0x00749380;
         RpAtomicSetupObjectPipeline         = (RpAtomicSetupObjectPipeline_t)           0x005D7F00;
         RpAtomicSetupVehiclePipeline        = (RpAtomicSetupVehiclePipeline_t)          0x005D5B20;
+        RpAtomicRender                      = (RpAtomicRender_t)                        0x00749210;
         RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749E10;
 
         // Light functions
@@ -379,6 +382,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpAtomicClone                       = (RpAtomicClone_t)                         0x00749E60;
         RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D40;
         RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF20;
+        RpAtomicGetWorldBoundingSphere      = (RpAtomicGetWorldBoundingSphere_t)        0x00749330;
         RpAtomicSetupObjectPipeline         = (RpAtomicSetupObjectPipeline_t)           0x005D7F00;
         RpAtomicSetupVehiclePipeline        = (RpAtomicSetupVehiclePipeline_t)          0x005D5B20;
         RpAtomicRender                      = (RpAtomicRender_t)                        0x007491C0;

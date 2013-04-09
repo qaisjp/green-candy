@@ -358,6 +358,8 @@ HRESULT CDirect3DEvents9::OnDrawPrimitive ( IDirect3DDevice9 *pDevice, D3DPRIMIT
 // May change render states for custom renderings
 //
 /////////////////////////////////////////////////////////////
+CShaderItem *g_forceShader = NULL;
+
 HRESULT CDirect3DEvents9::OnDrawIndexedPrimitive ( IDirect3DDevice9 *pDevice, D3DPRIMITIVETYPE PrimitiveType,INT BaseVertexIndex,UINT MinVertexIndex,UINT NumVertices,UINT startIndex,UINT primCount )
 {
     if ( ms_DiagnosticDebug == EDiagnosticDebug::GRAPHICS_6734 )
@@ -372,15 +374,22 @@ HRESULT CDirect3DEvents9::OnDrawIndexedPrimitive ( IDirect3DDevice9 *pDevice, D3
             pDevice->SetSamplerState ( 0, D3DSAMP_MAXANISOTROPY, ms_RequiredAnisotropicLevel );
     }
 
-    // Any shader for this texture ?
-    CShaderItem* pShaderItem = CGraphics::GetSingleton ().GetRenderItemManager ()->GetAppliedShaderForD3DData ( (CD3DDUMMY*)g_pDeviceState->TextureState[0].Texture );
+    CShaderItem *pShaderItem = g_forceShader;
 
-    // Don't apply if a vertex shader is already being used
-    if ( g_pDeviceState->VertexShader )
-        pShaderItem = NULL;
+    if ( !pShaderItem )
+    {
+        // Any shader for this texture ?
+        pShaderItem = CGraphics::GetSingleton ().GetRenderItemManager ()->GetAppliedShaderForD3DData ( (CD3DDUMMY*)g_pDeviceState->TextureState[0].Texture );
+
+        if ( pShaderItem && pShaderItem->IsComputing() )
+            goto draw;
+    }
 
     if ( pShaderItem && pShaderItem->m_fMaxDistanceSq > 0 )
     {
+        if ( pShaderItem->IsComputing() )
+            goto draw;
+
         // If shader has a max distance, check this vertex range bounding box
         float fDistanceSq = CVertexStreamBoundingBoxManager::GetSingleton ()->GetDistanceSqToGeometry ( PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount );
 
@@ -389,10 +398,42 @@ HRESULT CDirect3DEvents9::OnDrawIndexedPrimitive ( IDirect3DDevice9 *pDevice, D3
             pShaderItem = NULL;
     }
 
+    // Don't apply if a vertex shader is already being used
+    if ( g_pDeviceState->VertexShader )
+        pShaderItem = NULL;
+
     if ( !pShaderItem )
     {
         // No shader for this texture
         return DrawIndexedPrimitiveGuarded ( pDevice, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount );
+    }
+    else if ( pShaderItem->IsComputing() )
+    {
+draw:
+        // Shader is computing for a range of operations
+        CShaderInstance* pShaderInstance = pShaderItem->m_pShaderInstance;
+
+        // Add normal stream if shader wants it
+        if ( pShaderInstance->m_pEffectWrap->m_bRequiresNormals )
+        {
+            // Find/create/set additional vertex stream
+            CAdditionalVertexStreamManager::GetSingleton ()->MaybeSetAdditionalVertexStream ( PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount );
+        }
+
+        // Apply custom parameters
+        pShaderInstance->ApplyShaderParameters ();
+        // Apply common parameters
+        pShaderInstance->m_pEffectWrap->ApplyCommonHandles ();
+        // Apply mapped parameters
+        pShaderInstance->m_pEffectWrap->ApplyMappedHandles ();
+
+        // Update the shader parameters (commit them)
+        pShaderInstance->m_pEffectWrap->m_pD3DEffect->CommitChanges();
+
+        DrawIndexedPrimitiveGuarded ( pDevice, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount );
+
+        // Unset additional vertex stream
+        CAdditionalVertexStreamManager::GetSingleton ()->MaybeUnsetAdditionalVertexStream ();
     }
     else
     {
@@ -443,8 +484,9 @@ HRESULT CDirect3DEvents9::OnDrawIndexedPrimitive ( IDirect3DDevice9 *pDevice, D3
         CAdditionalVertexStreamManager::GetSingleton ()->MaybeUnsetAdditionalVertexStream ();
 
         g_pDeviceState->CallState.strShaderName = "";
-        return D3D_OK;
     }
+
+    return D3D_OK;
 }
 
 

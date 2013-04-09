@@ -96,6 +96,7 @@ typedef RpAtomic*               (__cdecl *RpAtomicCreate_t)                     
 typedef RpAtomic*               (__cdecl *RpAtomicClone_t)                      (const RpAtomic *atomic);
 typedef RpAtomic*               (__cdecl *RpAtomicSetGeometry_t)                (RpAtomic *atomic, RpGeometry *geometry, unsigned int flags);
 typedef RpAtomic*               (__cdecl *RpAtomicSetFrame_t)                   (RpAtomic *atomic, RwFrame *frame);
+typedef const RwSphere&         (__cdecl *RpAtomicGetWorldBoundingSphere_t)     (RpAtomic *atomic);
 typedef void                    (__cdecl *RpAtomicSetupObjectPipeline_t)        (RpAtomic *atomic);
 typedef void                    (__cdecl *RpAtomicSetupVehiclePipeline_t)       (RpAtomic *atomic);
 typedef RpAtomic*               (__cdecl *RpAtomicRender_t)                     (RpAtomic *atomic);
@@ -232,6 +233,7 @@ extern RpAtomicCreate_t                         RpAtomicCreate;
 extern RpAtomicClone_t                          RpAtomicClone;
 extern RpAtomicSetFrame_t                       RpAtomicSetFrame;
 extern RpAtomicSetGeometry_t                    RpAtomicSetGeometry;
+extern RpAtomicGetWorldBoundingSphere_t         RpAtomicGetWorldBoundingSphere;
 extern RpAtomicSetupObjectPipeline_t            RpAtomicSetupObjectPipeline;
 extern RpAtomicSetupVehiclePipeline_t           RpAtomicSetupVehiclePipeline;
 extern RpAtomicRender_t                         RpAtomicRender;

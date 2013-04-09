@@ -26,39 +26,31 @@
 
 #define LUA_PROTECT_CLASS_META
 
-static int envmeta_index( lua_State *L )
+const TValue* ClassOutEnvDispatch::Index( lua_State *L, const TValue *key )
 {
-    lua_gettable( L, lua_upvalueindex( 1 ) );
-    return 1;
+    return luaH_get( m_class->storage, key );
 }
 
-static int envmeta_newindex( lua_State *L )
+void ClassOutEnvDispatch::NewIndex( lua_State *L, const TValue *key, const TValue *val )
 {
-    lua_pushvalue( L, 2 );
-    lua_gettable( L, lua_upvalueindex( 2 ) );
+    TValue *classVal = luaH_set( L, m_class->storage, key );
 
-    if ( lua_type( L, 4 ) != LUA_TNIL )
+    if ( ttype( classVal ) == LUA_TFUNCTION )
         throw lua_exception( L, LUA_ERRRUN, "cannot overwrite methods of class internals" );
 
-    lua_settop( L, 3 );
-    lua_settable( L, lua_upvalueindex( 1 ) );
-    return 0;
+    setobj( L, classVal, val );
+    luaC_barriert( L, m_class->storage, val );
 }
 
-static int methodenv_index( lua_State *L )
+const TValue* ClassEnvDispatch::Index( lua_State *L, const TValue *key )
 {
-    Class *c = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
-
-    if ( c->destroyed )
+    if ( m_class->destroyed )
         throw lua_exception( L, LUA_ERRRUN, "attempt to index the environment of a destroyed class" );
 
-    const TValue *val = c->GetEnvValue( L->base + 1 );
+    const TValue *val = m_class->GetEnvValue( key );
 
     if ( ttype( val ) != LUA_TNIL )
-    {
-        setobj2s( L, L->top - 1, val );
-        return 1;
-    }
+        return val;
 
     TValue res;
     setnilvalue( &res );
@@ -69,16 +61,13 @@ static int methodenv_index( lua_State *L )
         TValue tabVal;
         sethvalue( L, &tabVal, *iter );
     
-        luaV_gettable( L, &tabVal, L->base + 1, &res );
+        luaV_gettable( L, &tabVal, key, &res );
 
         if ( res.tt != LUA_TNIL )
-        {
-            setobj2s( L, L->top++, &res );
-            return 1;
-        }
+            return &res;
     }
 
-    return 0;
+    return luaO_nilobject;
 }
 
 void Class::IncrementMethodStack( lua_State *lua )
@@ -255,7 +244,7 @@ bool Class::GetTransmit( int type, void*& entity )
 	if ( !trans )
 		return false;
    
-    for ( unsigned int n=0; n < transCount; n++ )
+    for ( unsigned int n = 0; n < transCount; n++ )
 	{
 		trans_t& item = trans[n];
 
@@ -650,26 +639,28 @@ static Closure* classmethod_fsFSCCHandlerNative( lua_State *L, lua_CFunction pro
 
         return cl;
     }
-
-    CClosureMethod *cl = luaF_newCmethod( L, num, j->env, j );
-
-    if ( prevMethod )
-    {
-        cl->super = prevMethod;
-        cl->f = classmethod_forceSuperNative;
-    }
     else
     {
-        cl->super = NULL;
-        cl->f = classmethod_forceSuperRootNative;
+        CClosureMethod *cl = luaF_newCmethod( L, num, j->env, j );
+
+        if ( prevMethod )
+        {
+            cl->super = prevMethod;
+            cl->f = classmethod_forceSuperNative;
+        }
+        else
+        {
+            cl->super = NULL;
+            cl->f = classmethod_forceSuperRootNative;
+        }
+
+        cl->method = proto;
+
+        while ( num-- )
+            setobj( L, &cl->upvalues[num], L->top-- );
+
+        return cl;
     }
-
-    cl->method = proto;
-
-    while ( num-- )
-        setobj( L, &cl->upvalues[num], L->top-- );
-
-    return cl;
 }
 
 // Register future method definitions for the Forced Super Calling Convention (FSCC)
@@ -847,18 +838,14 @@ static Closure* classmethod_fsDestroyHandlerNative( lua_State *L, lua_CFunction 
     return classmethod_fsDestroyHandler( L, cl, j, prevMethod );
 }
 
-static int dispatcher_index( lua_State *L )
+const TValue* ClassMethodDispatch::Index( lua_State *L, const TValue *key )
 {
-    const TValue *res = jvalue( index2adr( L, lua_upvalueindex( 3 ) ) )->GetEnvValue( L->base + 1 );
+    const TValue *res = m_class->GetEnvValue( key );
 
     if ( ttype( res ) != LUA_TNIL )
-    {
-        setobj2s( L, L->top - 1, res );
-        return 1;
-    }
+        return res;
 
-    lua_gettable( L, lua_upvalueindex( 2 ) );
-    return 1;
+    
 }
 
 static int dispatcher_newindex( lua_State *L )
@@ -874,7 +861,7 @@ static luaL_Reg dispatcher_interface[] =
     { NULL, NULL }
 };
 
-Table* Class::AcquireEnvDispatcherEx( lua_State *L, Table *curEnv )
+Dispatch* Class::AcquireEnvDispatcherEx( lua_State *L, GCObject *curEnv )
 {
     // If the environment matches any of the inherited ones, we skip creating a dispatcher
     if ( curEnv == env )
@@ -887,10 +874,7 @@ Table* Class::AcquireEnvDispatcherEx( lua_State *L, Table *curEnv )
     }
 
     // Create the dispatcher which accesses class env first then this current one
-    Table *dispatch = luaH_new( L, 0, 0 );
-    Table *metaDispatch = luaH_new( L, 0, 0 );
-
-    dispatch->metatable = metaDispatch;
+    ClassMethodDispatch *dispatch = luaQ_newclassmethodenv( L, this, curEnv );
 
     sethvalue( L, L->top++, metaDispatch );
 
@@ -906,9 +890,9 @@ Table* Class::AcquireEnvDispatcherEx( lua_State *L, Table *curEnv )
     return dispatch;
 }
 
-Table* Class::AcquireEnvDispatcher( lua_State *L )
+Dispatch* Class::AcquireEnvDispatcher( lua_State *L )
 {
-    return AcquireEnvDispatcherEx( L, hvalue( index2adr( L, LUA_ENVIRONINDEX ) ) );
+    return AcquireEnvDispatcherEx( L, gcvalue( index2adr( L, LUA_ENVIRONINDEX ) ) );
 }
 
 Closure* Class::GetMethod( const TString *name, Table*& table )
@@ -1426,45 +1410,35 @@ static const luaL_Reg classmethods_parenting[] =
     { NULL, NULL }
 };
 
-static int methodenv_newindex( lua_State *L )
+void ClassEnvDispatch::NewIndex( lua_State *L, const TValue *key, const TValue *val )
 {
-    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
+    Class& j = *m_class;
 
     // If the class leaked it's environment, outer range code might try to modify the class during obscure scenarios
     // We do not want that, as modification of a destroyed class is obscure!
     if ( j.destroyed )
         throw lua_exception( L, LUA_ERRRUN, "attempt to modify a destroyed class" );
 
-    if ( lua_type( L, 2 ) == LUA_TSTRING )
+    if ( ttype( val ) == LUA_TFUNCTION )
     {
-        int t = lua_type( L, 3 );
-
-        if ( t == LUA_TFUNCTION )
+        if ( ttype( key ) == LUA_TSTRING )
         {
             // Register the method
-            j.RegisterMethod( L, tsvalue( L->base + 1 ), true );
-            return 0;
+            setobj( L, L->top++, val );
+            j.RegisterMethod( L, tsvalue( key ), true );
         }
     }
-
-    const TValue *key = L->base + 1;
-
-    if ( luaH_get( j.methods, key ) != luaO_nilobject )
+    else if ( ttype( luaH_get( j.storage, key ) ) == LUA_TFUNCTION )
+    {
         throw lua_exception( L, LUA_ERRRUN, "class methods cannot be overwritten" );
-
-    const TValue *val = L->base + 2;
-
-    setobj( L, luaH_set( L, j.storage, key ), val );
-    luaC_barriert( L, j.storage, val );
-    return 0;
+    }
+    else
+    {
+        // Apply a regular member
+        setobj( L, luaH_set( L, j.storage, key ), val );
+        luaC_barriert( L, j.storage, val );
+    }
 }
-
-static const luaL_Reg envmeta_interface[] =
-{
-    { "__index", envmeta_index },
-    { "__newindex", envmeta_newindex },
-    { NULL, NULL }
-};
 
 class ClassConstructionAllocation
 {
@@ -1509,18 +1483,10 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     c->destructor = NULL;
 
     // Set up the environments
-    c->env = luaH_new( L, 0, 0 );
-    c->outenv = luaH_new( L, 0, 0 );
+    c->env = luaQ_newclassenv( L, c );
+    c->outenv = luaQ_newclassoutenv( L, c );
     c->storage = luaH_new( L, 0, 0 );
-    c->methods = luaH_new( L, 0, 0 );
     c->internStorage = luaH_new( L, 0, 0 );
-
-    // Link up the metatables
-    Table *meta = luaH_new( L, 0, 0 );
-    Table *outmeta = luaH_new( L, 0, 0 );
-
-    c->env->metatable = meta;
-    c->outenv->metatable = outmeta;
 
     c->forceSuper = new (L) Class::ForceSuperTable();
 
@@ -1536,26 +1502,6 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     destrItem.cb = classmethod_fsDestroyHandler;
     destrItem.cbNative = classmethod_fsDestroyHandlerNative;
     c->forceSuper->SetItem( L, luaS_new( L, "destroy" ), destrItem );
-
-    // Specify the outrange connection
-    sethvalue( L, L->top++, outmeta );
-
-#ifdef LUA_PROTECT_CLASS_META
-    lua_pushboolean( L, false );
-    lua_setfield( L, -2, "__metatable" );
-#endif //LUA_PROTECT_CLASS_META
-
-    sethvalue( L, L->top++, c->storage );
-    sethvalue( L, L->top++, c->methods );
-
-    luaL_openlib( L, NULL, envmeta_interface, 2 );
-    L->top--;
-
-    // Put the meta to stack
-    sethvalue( L, L->top++, meta );
-
-    // The upvalue has to be the class
-    setjvalue( L, L->top++, c );
 
     // Create a class-only storage
     sethvalue( L, L->top++, c->internStorage );
@@ -1584,24 +1530,6 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
 
     // Pop the internal storage
     L->top--;
-
-    lua_pushcclosure( L, methodenv_index, 1 );
-    lua_setfield( L, -2, "__index" );
-
-    // Register the method dispatcher
-    setjvalue( L, L->top++, c );
-
-    lua_pushcclosure( L, methodenv_newindex, 1 );
-    lua_setfield( L, -2, "__newindex" );
-
-#ifdef LUA_PROTECT_CLASS_META
-    lua_pushboolean( L, false );
-    lua_setfield( L, -2, "__metatable" );
-#endif //LUA_PROTECT_CLASS_META
-
-    // Replace the meta (on top) with the env
-    sethvalue( L, L->top - 1, c->env );
-    lua_setfenv( L, -nargs - 2 );
 
     sethvalue( L, L->top++, c->env );
 

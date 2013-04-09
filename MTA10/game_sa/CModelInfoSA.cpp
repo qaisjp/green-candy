@@ -208,21 +208,8 @@ void CModelInfoSA::Request( bool bAndLoad, bool bWaitForLoad, bool bHighPriority
 
     pGame->GetStreaming()->RequestModel( m_modelID, dwFlags );
 
-    int iTimeToWait = 50;
-
-    if(bAndLoad)
-    {
+    if ( bAndLoad )
         pGame->GetStreaming()->LoadAllRequestedModels();
-        
-        if(bWaitForLoad)
-        {
-            while(!this->IsLoaded() && iTimeToWait != 0)
-            {
-                iTimeToWait--;
-                Sleep(10);
-            }
-        }
-    }
 }
 
 VOID CModelInfoSA::Remove ( )

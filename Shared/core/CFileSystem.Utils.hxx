@@ -80,14 +80,14 @@ static inline bool _File_ParseRelativePath( const char *path, dirTree& tree, boo
 // Output a path tree
 static inline void _File_OutputPathTree( const dirTree& tree, bool file, filePath& output )
 {
-    unsigned int n;
-
     if ( file )
     {
         if ( tree.empty() )
             return;
 
-        for (n=0; n<tree.size()-1; n++)
+        unsigned int n;
+
+        for ( n = 0; n < tree.size() - 1; n++ )
         {
             output += tree[n];
             output += '/';
@@ -97,7 +97,7 @@ static inline void _File_OutputPathTree( const dirTree& tree, bool file, filePat
         return;
     }
 
-    for (n=0; n<tree.size(); n++)
+    for ( unsigned int n = 0; n < tree.size(); n++ )
     {
         output += tree[n];
         output += '/';
@@ -108,8 +108,6 @@ static inline void _File_OutputPathTree( const dirTree& tree, bool file, filePat
 static inline bool _File_ParseRelativeTree( const char *path, const dirTree& root, dirTree& output, bool& file )
 {
     dirTree tree;
-    dirTree::const_iterator rootIter;
-    dirTree::iterator treeIter;
 
     if (!_File_ParseRelativePath( path, tree, file ))
         return false;
@@ -121,6 +119,9 @@ static inline bool _File_ParseRelativeTree( const char *path, const dirTree& roo
     }
     else if ( tree.size() < root.size() )
         return false;
+
+    dirTree::const_iterator rootIter;
+    dirTree::iterator treeIter;
 
     for ( rootIter = root.begin(), treeIter = tree.begin(); rootIter != root.end(); rootIter++, treeIter++ )
         if ( *rootIter != *treeIter )
@@ -187,8 +188,6 @@ static inline bool _File_ParseDeriviateTree( const char *path, const dirTree& cu
 static inline bool _File_ParseRelativeTreeDeriviate( const char *path, const dirTree& root, const dirTree& curTree, dirTree& output, bool& file )
 {
     dirTree tree;
-    dirTree::const_iterator rootIter;
-    dirTree::iterator treeIter;
     size_t sizeDiff;
 
     if (!_File_ParseRelativePath( path, tree, file ))
@@ -209,6 +208,9 @@ static inline bool _File_ParseRelativeTreeDeriviate( const char *path, const dir
 
         sizeDiff = tree.size() - root.size();
     }
+
+    dirTree::const_iterator rootIter;
+    dirTree::iterator treeIter;
 
     for ( rootIter = root.begin(), treeIter = tree.begin(); rootIter != root.end(); rootIter++, treeIter++ )
         if ( *rootIter != *treeIter )

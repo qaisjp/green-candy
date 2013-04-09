@@ -119,7 +119,7 @@ static void __cdecl HOOK_CStreaming__RequestModel( unsigned int id, unsigned int
                     break;
                 case RW_CLUMP:
                     if ( CColModelSA *col = g_colReplacement[id] )
-                        col->Apply( id );
+                        minfo->SetCollision( col->GetInterface(), false );
 
                     ((CClumpModelInfoSAInterface*)minfo)->SetClump( RpClumpClone( (RpClump*)obj->GetObject() ) );
                     break;
@@ -217,7 +217,7 @@ static void __cdecl HOOK_CStreaming__RequestModel( unsigned int id, unsigned int
     // Push onto the to-be-loaded queue
     info->PushIntoLoader( *(CModelLoadInfoSA**)0x008E4C58 );
 
-    // Tell the loader that there is resource waiting
+    // Tell the loader that there is a resource waiting
     (*(DWORD*)VAR_NUMMODELS)++;
 
     if ( flags & 0x10 )

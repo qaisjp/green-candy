@@ -179,6 +179,8 @@ public:
     void                    OnPreFrame();
     void                    OnFrame();
 
+    void                    ResetShaders();
+
     eGameVersion            GetGameVersion();
     eGameVersion            FindGameVersion();
 
@@ -319,6 +321,7 @@ private:
 };
 
 extern CFileTranslator *gameFileRoot;
+extern CFileTranslator *effFileRoot;
 
 // Utility functions
 CFile*  OpenGlobalStream( const char *filename, const char *mode );

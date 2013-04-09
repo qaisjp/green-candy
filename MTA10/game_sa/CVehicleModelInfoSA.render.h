@@ -23,6 +23,9 @@ void __cdecl RpClumpSetupVehicleMaterials( RpClump *clump, class CVehicleSA *gam
 void __cdecl RpClumpRestoreVehicleMaterials( RpClump *clump );
 
 void VehicleModelInfoRender_Init( void );
+void VehicleModelInfoRender_SetupDevice( void );
+void VehicleModelInfoRender_Reset( void );
+void VehicleModelInfoRender_OnInvalidate( void );
 void VehicleModelInfoRender_Shutdown( void );
 
 #endif //_CVehicleModelInfoSA_render_H

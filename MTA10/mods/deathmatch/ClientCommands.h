@@ -40,6 +40,7 @@ void COMMAND_RadarTransparency      ( const char* szCmdLine );
 void COMMAND_MessageTarget          ( const char* szCmdLine );
 void COMMAND_VehicleNextWeapon      ( const char* szCmdLine );
 void COMMAND_VehiclePreviousWeapon  ( const char* szCmdLine );
+void COMMAND_ResetShaders           ( const char* params );
 void COMMAND_TextScale              ( const char* szCmdLine );
 void COMMAND_ChatBox                ( const char* szCmdLine );
 void COMMAND_VoicePushToTalk        ( const char* szCmdLine );
