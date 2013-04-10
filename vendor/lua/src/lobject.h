@@ -272,6 +272,11 @@ class lua_State;
 #define setbvalue(obj,x) \
   { TValue *i_o=(obj); i_o->value.b=(x) & 1; i_o->tt=LUA_TBOOLEAN; }
 
+#define setgcvalue(L,obj,x) \
+  { TValue *i_o=(obj); \
+    i_o->value.gc=(x); i_o->tt=(x)->tt; \
+    checkliveness(G(L),i_o); }
+
 #define setsvalue(L,obj,x) \
   { TValue *i_o=(obj); \
     i_o->value.gc=(x); i_o->tt=LUA_TSTRING; \
@@ -367,8 +372,8 @@ public:
     virtual void        MarkGC( global_State *g )       { }
 
     // Global indexing and new-indexing routines (since every object can potencially be accessed)
-    virtual const TValue*   Index( lua_State *L, const TValue *key );
-    virtual void            NewIndex( lua_State *L, const TValue *key, const TValue *val );
+    virtual void        Index( lua_State *L, const TValue *key, TValue *val );
+    virtual void        NewIndex( lua_State *L, const TValue *key, const TValue *val );
 
     void* operator new( size_t size, lua_State *main );
 
@@ -447,7 +452,7 @@ public:
     }
 
     Table *metatable;
-    Table *env;
+    GCObject *env;
     size_t len;
 };
 
@@ -565,7 +570,7 @@ public:
 
     bool isC;
     lu_byte nupvalues;
-    GCObject *dispatch;
+    GCObject *env;
 };
 
 class CClosure abstract : public Closure
@@ -579,7 +584,7 @@ public:
     CClosure* GetCClosure()     { return this; }
 
     lua_CFunction f;
-    Table *accessor; // Usually the storage of the thread
+    GCObject *accessor; // Usually the storage of the thread
 };
 
 class CClosureBasic : public CClosure
@@ -728,8 +733,8 @@ public:
 
     Table* GetTable()   { return this; }
 
-    const TValue*   Index( lua_State *L, const TValue *key );
-    void            NewIndex( lua_State *L, const TValue *key, const TValue *val );
+    void    Index( lua_State *L, const TValue *key, TValue *val );
+    void    NewIndex( lua_State *L, const TValue *key, const TValue *val );
 
     void operator delete( void *ptr ) throw()
     {
@@ -758,31 +763,51 @@ public:
     Dispatch*   GetDispatch()               { return this; }
 };
 
-class ClassEnvDispatch : public Dispatch
+class ClassDispatch abstract : public Dispatch
 {
 public:
-    const TValue*           Index( lua_State *L, const TValue *key );
-    void                    NewIndex( lua_State *L, const TValue *key, const TValue *val );
+    size_t                  Propagate( global_State *g );
 
     Class*                  m_class;
 };
 
-class ClassOutEnvDispatch : public Dispatch
+class ClassEnvDispatch : public ClassDispatch
 {
 public:
-    const TValue*           Index( lua_State *L, const TValue *key );
+    void                    Index( lua_State *L, const TValue *key, TValue *val );
     void                    NewIndex( lua_State *L, const TValue *key, const TValue *val );
 
-    Class*                  m_class;
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeof(ClassEnvDispatch) );
+    }
 };
 
-class ClassMethodDispatch : public Dispatch
+class ClassOutEnvDispatch : public ClassDispatch
 {
 public:
-    const TValue*           Index( lua_State *L, const TValue *key );
+    void                    Index( lua_State *L, const TValue *key, TValue *val );
     void                    NewIndex( lua_State *L, const TValue *key, const TValue *val );
 
-    Class*                  m_class;
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeof(ClassOutEnvDispatch) );
+    }
+};
+
+class ClassMethodDispatch : public ClassDispatch
+{
+public:
+    size_t                  Propagate( global_State *g );
+
+    void                    Index( lua_State *L, const TValue *key, TValue *val );
+    void                    NewIndex( lua_State *L, const TValue *key, const TValue *val );
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeof(ClassMethodDispatch) );
+    }
+
     GCObject*               m_prevEnv;
 };
 
@@ -810,6 +835,9 @@ public:
 
     void    MarkGC( global_State *g );
     int     TraverseGC( global_State *g );
+
+    void    Index( lua_State *L, const TValue *key, TValue *val );
+    void    NewIndex( lua_State *L, const TValue *key, const TValue *val );
 
     Class*  GetClass()   { return this; }
 

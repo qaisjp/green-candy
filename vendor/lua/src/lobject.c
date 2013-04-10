@@ -221,12 +221,18 @@ void* GCObject::operator new( size_t size, lua_State *main ) throw()
     return obj;
 }
 
-const TValue* GCObject::Index( lua_State *L, const TValue *key )
+void GCObject::Index( lua_State *L, const TValue *key, TValue *val )
 {
-    luaG_typeerror( L, this, "index" );
+    TValue objval;
+    setgcvalue( L, &objval, this );
+
+    luaV_handle_index( L, &objval, luaT_gettmbyobj( L, &objval, TM_INDEX ), key, val );
 }
 
 void GCObject::NewIndex( lua_State *L, const TValue *key, const TValue *val )
 {
-    luaV_handle_newindex( L, this, luaT_gettmbyobj( L, this, TM_NEWINDEX ), key, val );
+    TValue objval;
+    setgcvalue( L, &objval, this );
+
+    luaV_handle_newindex( L, &objval, luaT_gettmbyobj( L, &objval, TM_NEWINDEX ), key, val );
 }

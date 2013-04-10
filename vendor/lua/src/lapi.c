@@ -36,10 +36,10 @@ const char lua_ident[] =
   "$Authors: " LUA_AUTHORS " $\n"
   "$URL: www.lua.org $\n";
 
-static Table *getcurrenv( lua_State *L )
+static GCObject *getcurrenv( lua_State *L )
 {
     if ( L->ci == L->base_ci )  /* no enclosing function? */
-        return hvalue(gt(L));  /* use global table as environment */
+        return gcvalue(gt(L));  /* use global table as environment */
 
     return curr_func( L )->env;
 }
@@ -72,7 +72,7 @@ TValue* index2adr( lua_State *L, int idx )
     {
         if ( L->nCcalls )
         {
-            sethvalue(L, &L->env, curr_func(L)->env);
+            setgcvalue(L, &L->env, curr_func(L)->env);
             return &L->env;
         }
     }
@@ -241,18 +241,14 @@ LUA_API void lua_replace (lua_State *L, int idx)
         Closure *func = curr_func(L);
         const TValue *val = L->top - 1;
 
-        api_check(L, ttistable(val)); 
-
-        func->env = hvalue(val);
+        func->env = gcvalue(val);
         luaC_barrier(L, func, val);
     }
     else if ( idx == LUA_STORAGEINDEX )
     {
         const TValue *val = L->top - 1;
 
-        api_check( L, ttistable( val ) );
-
-        sethvalue( L, &L->storage, hvalue( val ) );
+        sethvalue( L, &L->storage, gcvalue( val ) );
         luaC_barrier( L, L, val );
     }
     else
@@ -466,6 +462,8 @@ LUA_API const void *lua_topointer (lua_State *L, int idx)
         return lua_touserdata(L, idx);
     case LUA_TCLASS:
         return jvalue(o);
+    case LUA_TDISPATCH:
+        return qvalue(o);
     default:
         return NULL;
     }
@@ -697,16 +695,16 @@ LUA_API void lua_getfenv (lua_State *L, int idx)
     switch( ttype(o) )
     {
     case LUA_TFUNCTION:
-        sethvalue(L, L->top, clvalue(o)->env);
+        setgcvalue(L, L->top, clvalue(o)->env);
         break;
     case LUA_TUSERDATA:
-        sethvalue(L, L->top, uvalue(o)->env);
+        setgcvalue(L, L->top, uvalue(o)->env);
         break;
     case LUA_TTHREAD:
         setobj2s(L, L->top,  gt(thvalue(o)));
         break;
     case LUA_TCLASS:
-        sethvalue(L, L->top, jvalue(o)->env);
+        setgcvalue(L, L->top, jvalue(o)->env);
         break;
     default:
         setnilvalue(L->top);
@@ -879,25 +877,25 @@ LUA_API int lua_setfenv (lua_State *L, int idx)
     api_checknelems(L, 1);
     o = index2adr(L, idx);
     api_checkvalidindex(L, o);
-    api_check(L, ttistable(L->top - 1));
+    api_check(L, iscollectable(L->top - 1));
 
     switch( ttype(o) )
     {
     case LUA_TFUNCTION:
-        clvalue(o)->env = hvalue(L->top - 1);
+        clvalue(o)->env = gcvalue(L->top - 1);
         break;
     case LUA_TUSERDATA:
-        uvalue(o)->env = hvalue(L->top - 1);
+        uvalue(o)->env = gcvalue(L->top - 1);
         break;
     case LUA_TTHREAD:
-        sethvalue(L, gt(thvalue(o)), hvalue(L->top - 1));
+        setgcvalue(L, gt(thvalue(o)), gcvalue(L->top - 1));
         break;
     default:
         res = 0;
         goto end;
     }
 
-    luaC_objbarrier(L, gcvalue(o), hvalue(L->top - 1));
+    luaC_objbarrier(L, gcvalue(o), gcvalue(L->top - 1));
 
 end:
     L->top--;

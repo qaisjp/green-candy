@@ -54,11 +54,10 @@ static int luaconstructor_timer( lua_State *L )
     ILuaClass *j = lua_refclass( L, 1 );
     j->SetTransmit( LUACLASS_TIMER, timer );
 
+    lua_basicprotect( L );
+
     lua_newtable( L );
     lua_setfield( L, LUA_ENVIRONINDEX, "args" );
-
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_basicprotect( L );
 
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, timer_methods, 1 );

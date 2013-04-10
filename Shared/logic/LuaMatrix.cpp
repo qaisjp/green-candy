@@ -175,7 +175,6 @@ static int luaconstructor_matrix( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_MATRIX, matrix );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_basicprotect( L );
 
     lua_pushvalue( L, lua_upvalueindex( 1 ) );

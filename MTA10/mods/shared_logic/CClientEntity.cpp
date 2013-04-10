@@ -277,7 +277,7 @@ static int sysentity_index( lua_State *L )
             return 0;
     }
 
-    lua_getfield( L, LUA_ENVIRONINDEX, "super" );
+    lua_pushmethodsuper( L );
     lua_insert( L, 1 );
     lua_call( L, 2, 1 );
     return 1;
@@ -296,9 +296,7 @@ static int sysentity_constructor( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_SYSENTITY, entity );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, sysentity_interface, 1 );
+    j.RegisterInterfaceTrans( L, sysentity_interface, 0, LUACLASS_SYSENTITY );
 
     lua_pushlstring( L, "sysentity", 9 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
