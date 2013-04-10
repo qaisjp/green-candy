@@ -86,7 +86,6 @@ int Class::TraverseGC( global_State *g )
     markobject( g, env );
     markobject( g, outenv );
     markobject( g, storage );
-    markobject( g, methods );
     markobject( g, internStorage );
 
     if ( parent )
@@ -486,6 +485,21 @@ static void markmt( lua_State *L )
 size_t Dispatch::Propagate( global_State *g )
 {
     return sizeof(Dispatch);
+}
+
+size_t ClassDispatch::Propagate( global_State *g )
+{
+    markobject( g, m_class );
+    return sizeof(ClassDispatch);
+}
+
+size_t ClassMethodDispatch::Propagate( global_State *g )
+{
+    ClassDispatch::Propagate( g );
+
+    markobject( g, m_prevEnv );
+
+    return sizeof(ClassMethodDispatch);
 }
 
 size_t lua_State::Propagate( global_State *g )

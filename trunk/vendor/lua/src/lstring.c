@@ -100,7 +100,7 @@ Udata::~Udata()
 {
 }
 
-Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
+Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e) {
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata))
     luaM_toobig(L);

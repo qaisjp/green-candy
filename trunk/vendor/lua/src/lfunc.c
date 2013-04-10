@@ -26,14 +26,14 @@ TValue* luaF_getcurraccessor( lua_State *L )
 
     if ( CClosure *cl = curr_func( L )->GetCClosure() )
     {
-        sethvalue( L, &L->env, cl->accessor );
+        setgcvalue( L, &L->env, cl->accessor );
         return &L->env;
     }
 
     return &L->storage;
 }
 
-CClosureBasic* luaF_newCclosure (lua_State *L, int nelems, Table *e)
+CClosureBasic* luaF_newCclosure (lua_State *L, int nelems, GCObject *e)
 {
     CClosureBasic *c = new (L, nelems) CClosureBasic;
     luaC_link(L, c, LUA_TFUNCTION);
@@ -41,7 +41,7 @@ CClosureBasic* luaF_newCclosure (lua_State *L, int nelems, Table *e)
     c->isC = true;
     c->env = e;
     c->nupvalues = cast_byte(nelems);
-    c->accessor = hvalue( luaF_getcurraccessor( L ) );
+    c->accessor = gcvalue( luaF_getcurraccessor( L ) );
 
     return c;
 }
@@ -54,7 +54,7 @@ TValue* CClosureBasic::ReadUpValue( unsigned char index )
     return &upvalues[index];
 }
 
-CClosureMethod* luaF_newCmethod( lua_State *L, int nelems, Table *e, Class *j )
+CClosureMethod* luaF_newCmethod( lua_State *L, int nelems, GCObject *e, Class *j )
 {
     CClosureMethod *c = new (L, nelems) CClosureMethod;
     luaC_link( L, c, LUA_TFUNCTION );
@@ -62,7 +62,7 @@ CClosureMethod* luaF_newCmethod( lua_State *L, int nelems, Table *e, Class *j )
     c->isC = true;
     c->env = e;
     c->nupvalues = cast_byte(nelems);
-    c->accessor = hvalue( luaF_getcurraccessor( L ) );
+    c->accessor = gcvalue( luaF_getcurraccessor( L ) );
     c->m_class = j;
 
     return c;
@@ -76,7 +76,7 @@ TValue* CClosureMethod::ReadUpValue( unsigned char index )
     return &upvalues[index];
 }
 
-CClosureMethodTrans* luaF_newCmethodtrans( lua_State *L, int nelems, Table *e, Class *j, int trans )
+CClosureMethodTrans* luaF_newCmethodtrans( lua_State *L, int nelems, GCObject *e, Class *j, int trans )
 {
     CClosureMethodTrans *c = new (L, nelems) CClosureMethodTrans;
     luaC_link( L, c, LUA_TFUNCTION );
@@ -84,7 +84,7 @@ CClosureMethodTrans* luaF_newCmethodtrans( lua_State *L, int nelems, Table *e, C
     c->isC = true;
     c->env = e;
     c->nupvalues = cast_byte(nelems);
-    c->accessor = hvalue( luaF_getcurraccessor( L ) );
+    c->accessor = gcvalue( luaF_getcurraccessor( L ) );
     c->m_class = j;
     c->trans = trans;
 
@@ -99,7 +99,7 @@ TValue* CClosureMethodTrans::ReadUpValue( unsigned char index )
     return &upvalues[index];
 }
 
-LClosure *luaF_newLclosure (lua_State *L, int nelems, Table *e)
+LClosure *luaF_newLclosure (lua_State *L, int nelems, GCObject *e)
 {
     LClosure *c = new (L, nelems) LClosure;
     luaC_link(L, c, LUA_TFUNCTION);

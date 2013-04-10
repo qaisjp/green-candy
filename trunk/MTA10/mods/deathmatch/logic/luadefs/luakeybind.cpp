@@ -32,7 +32,6 @@ static LUA_DECLARE( luaconstructor_keybind )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_KEYBIND, bind );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_basicprotect( L );
 
     lua_pushvalue( L, lua_upvalueindex( 1 ) );

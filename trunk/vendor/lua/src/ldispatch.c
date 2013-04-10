@@ -14,6 +14,10 @@
 #include "lgc.h"
 #include "lobject.h"
 
+Dispatch::~Dispatch()
+{
+}
+
 ClassEnvDispatch* luaQ_newclassenv( lua_State *L, Class *j )
 {
     ClassEnvDispatch *q = new (L) ClassEnvDispatch;
@@ -34,10 +38,12 @@ ClassOutEnvDispatch* luaQ_newclassoutenv( lua_State *L, Class *j )
 
 ClassMethodDispatch* luaQ_newclassmethodenv( lua_State *L, Class *j, GCObject *prevEnv )
 {
-    ClassOutEnvDispatch *q = new (L) ClassOutEnvDispatch;
+    ClassMethodDispatch *q = new (L) ClassMethodDispatch;
 
     luaC_link( L, q, LUA_TDISPATCH );
     q->m_class = j;
+    luaC_objbarrier( L, q, j );
     q->m_prevEnv = prevEnv;
+    luaC_objbarrier( L, q, prevEnv );
     return q;
 }

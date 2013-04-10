@@ -37,7 +37,6 @@ unsigned long* CGameSA::VAR_Framelimiter;
 static CMultiplayer* multiplayer;
 
 CFileTranslator *gameFileRoot;
-CFileTranslator *effFileRoot;
 
 static bool ProcessCollisions( CEntitySAInterface *caller, CEntitySAInterface *colld )
 {
@@ -61,11 +60,7 @@ CGameSA::CGameSA()
     // Setup the global game file root, which has to be our current directory
     gameFileRoot = core->GetFileSystem()->CreateTranslator( "/" );
 
-    // Setup the global effect resource root, which is inside the MTA directory
-    effFileRoot = core->GetFileSystem()->CreateTranslator( GetMTADataPath() + "effects/" );
-
     assert( gameFileRoot != NULL );
-    assert( effFileRoot != NULL );
     
     m_bAsyncSettingsDontUse = false;
     m_bAsyncSettingsEnabled = false;

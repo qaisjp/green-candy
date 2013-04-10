@@ -97,66 +97,48 @@ static void callTMres (lua_State *L, StkId res, const TValue *f, const TValue *p
   setobjs2s(L, res, L->top);
 }
 
-
-
-static void callTM (lua_State *L, const TValue *f, const TValue *p1,
-                    const TValue *p2, const TValue *p3)
+void luaV_handle_index( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, TValue *val )
 {
-  luaD_checkstack(L, 4);
-  setobj2s(L, L->top, f);  /* push function */
-  setobj2s(L, L->top+1, p1);  /* 1st argument */
-  setobj2s(L, L->top+2, p2);  /* 2nd argument */
-  setobj2s(L, L->top+3, p3);  /* 3th argument */
-  L->top += 4;
-  luaD_call(L, L->top - 4, 0);
-}
-
-
-void luaV_gettable (lua_State *L, const TValue *t, const TValue *key, const StkId val)
-{
-  int loop;
-  TValue _distr;
-  for (loop = 0; loop < MAXTAGLOOP; loop++) {
-    const TValue *tm;
-    if (ttistable(t))
-    {  /* `t' is a table? */
-      Table *h = hvalue(t);
-      const TValue *res = luaH_get(h, key); /* do a primitive get */
-      if (!ttisnil(res) ||  /* result is no nil? */
-          (tm = fasttm( L, h->metatable, TM_INDEX )) == NULL) { /* or no TM? */
-        setobj2s(L, val, res);
-        return;
-      }
-      /* else will try the tag method */
-    }
-    else if (ttisclass(t))
+    if ( ttisfunction( tm ) )
     {
-        Class *c = jvalue(t);
+        luaD_checkstack( L, 3 );
 
-        if ( c->destroyed )
-            throw lua_exception( L, LUA_ERRRUN, "cannot index a destroyed class" );
+        StkId func = L->top++;        
 
-        if ( (tm = fasttm( L, c->storage, TM_INDEX )) == NULL )
-        {
-            sethvalue( L, &_distr, c->outenv );
-            tm = &_distr;
-        }
+        setclvalue( L, func, clvalue( tm ) );
+        setobj( L, L->top++, obj );
+        setobj( L, L->top++, key );
+        luaD_call( L, func, 1 );
+        
+        setobj( L, val, --L->top );
     }
-    else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX)))
-      luaG_typeerror(L, t, "index");
-    if (ttisfunction(tm)) {
-      callTMres(L, val, tm, t, key);
-      return;
+    else
+    {
+        callstack_ref indexRef( *L );
+
+        luaV_gettable( L, tm, key, val );
     }
-    t = tm;  /* else repeat with `tm' */ 
-  }
-  luaG_runerror(L, "loop in gettable");
 }
 
-const TValue* luaV_handle_newindex( lua_State *L, GCObject *obj, const TValue *tm, const TValue *key, const TValue *val )
+void luaV_gettable (lua_State *L, const TValue *t, const TValue *key, TValue *val)
+{
+    if ( iscollectable( t ) )
+        gcvalue( t )->Index( L, key, val );
+    else
+    {
+        const TValue *tm = luaT_gettmbyobj( L, t, TM_INDEX );
+
+        if ( ttisnil( tm ) )
+            luaG_typeerror( L, t, "index" );
+
+        luaV_handle_index( L, t, tm, key, val );
+    }
+}
+
+void luaV_handle_newindex( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, const TValue *val )
 {
     if ( ttisnil( tm ) )
-        luaG_typeerror( L, t, "index" );
+        luaG_typeerror( L, obj, "index" );
 
     if ( ttisfunction( tm ) )
     {
@@ -165,7 +147,7 @@ const TValue* luaV_handle_newindex( lua_State *L, GCObject *obj, const TValue *t
         StkId func = L->top++;  // remember the function stack id
 
         setclvalue( L, func, clvalue( tm ) );
-        setobj( L, L->top++, this );
+        setobj( L, L->top++, obj );
         setobj( L, L->top++, key );
         setobj( L, L->top++, val );
         luaD_call( L, func, 0 );
@@ -180,54 +162,12 @@ const TValue* luaV_handle_newindex( lua_State *L, GCObject *obj, const TValue *t
     }
 }
 
-void luaV_settable (lua_State *L, const TValue *t, const TValue *key, const StkId val)
+void luaV_settable (lua_State *L, const TValue *t, const TValue *key, const TValue *val)
 {
-    int loop;
-    TValue temp;
-    for (loop = 0; loop < MAXTAGLOOP; loop++)
-    {
-        const TValue *tm;
-
-        // We target the outer environment
-        if (ttisclass(t))
-        {
-            Class *j = jvalue( t );
-
-            if ( j->destroyed )
-                throw lua_exception( L, LUA_ERRRUN, "cannot index a destroyed class" );
-
-            if ( tm = fasttm( L, j->storage, TM_NEWINDEX ) )
-                goto doMeta;
-
-            sethvalue( L, &temp, j->outenv );
-            t = &temp;
-        }
-
-        if (ttistable(t))
-        {  /* `t' is a table? */
-            Table *h = hvalue(t);
-            TValue *oldval = luaH_set(L, h, key); /* do a primitive set */
-            if (!ttisnil(oldval) ||  /* result is no nil? */
-              (tm = fasttm( L, h->metatable, TM_NEWINDEX )) == NULL)
-            { /* or no TM? */
-                setobj2t(L, oldval, val);
-                luaC_barriert(L, h, val);
-                return;
-            }
-            /* else will try the tag method */
-        }
-        else ;
-doMeta:
-        if (ttisfunction(tm))
-        {
-            callTM(L, tm, t, key, val);
-            return;
-        }
-        /* else repeat with `tm' */
-        setobj(L, &temp, tm);  /* avoid pointing inside table (may rehash) */
-        t = &temp;
-    }
-    luaG_runerror(L, "loop in settable");
+    if ( iscollectable( t ) )
+        gcvalue( t )->NewIndex( L, key, val );
+    else
+        luaV_handle_newindex( L, t, luaT_gettmbyobj( L, t, TM_NEWINDEX ), key, val );
 }
 
 
@@ -502,7 +442,7 @@ reentry:  /* entry point */
       case OP_GETGLOBAL: {
         TValue g;
         TValue *rb = KBx(i);
-        sethvalue(L, &g, cl->env);
+        setgcvalue(L, &g, cl->env);
         lua_assert(ttisstring(rb));
         Protect(luaV_gettable(L, &g, rb, ra));
         continue;
@@ -513,7 +453,7 @@ reentry:  /* entry point */
       }
       case OP_SETGLOBAL: {
         TValue g;
-        sethvalue(L, &g, cl->env);
+        setgcvalue(L, &g, cl->env);
         lua_assert(ttisstring(KBx(i)));
         Protect(luaV_settable(L, &g, KBx(i), ra));
         continue;

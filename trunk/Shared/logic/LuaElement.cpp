@@ -90,6 +90,9 @@ static int luaconstructor_element( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_ELEMENT, element );
 
+    // Put basic protection against modification from scripts
+    lua_basicprotect( L );
+
     // Register the element interface
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -97,9 +100,6 @@ static int luaconstructor_element( lua_State *L )
 
     // Light interfaces take way less memory
     j.RegisterInterfaceTrans( L, element_interface_trans, 0, LUACLASS_ELEMENT );
-
-    // Put basic protection against modification from scripts
-    lua_basicprotect( L );
 
     // Define our type
     lua_pushlstring( L, "element", 7 );

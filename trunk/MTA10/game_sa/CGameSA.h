@@ -321,7 +321,6 @@ private:
 };
 
 extern CFileTranslator *gameFileRoot;
-extern CFileTranslator *effFileRoot;
 
 // Utility functions
 CFile*  OpenGlobalStream( const char *filename, const char *mode );

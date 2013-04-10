@@ -33,6 +33,7 @@
 #include "lobject.h"
 #include "lstate.h"
 #include "ltable.h"
+#include "lvm.h"
 
 
 /*
@@ -607,7 +608,40 @@ int luaH_isdummy (Node *n) { return n == dummynode; }
 
 #endif
 
-const TValue* Table::Index( lua_State *L, const TValue *key )
+void Table::Index( lua_State *L, const TValue *key, TValue *val )
 {
-    
+    const TValue *res = luaH_get( this, key ); /* do a primitive get */
+    const TValue *tm;
+
+    if ( !ttisnil(res) || (tm = fasttm( L, metatable, TM_INDEX )) == NULL )
+    {
+        setobj2s(L, val, res);
+    }
+    else
+    {
+        TValue objval;
+        sethvalue( L, &objval, this );
+
+        luaV_handle_index( L, &objval, tm, key, val );
+    }
+}
+
+void Table::NewIndex( lua_State *L, const TValue *key, const TValue *val )
+{
+    TValue *oldval = luaH_set( L, this, key ); /* do a primitive set */
+    const TValue *tm;
+
+    if ( !ttisnil(oldval) || ( tm = fasttm( L, this->metatable, TM_NEWINDEX )) == NULL )
+    {
+        setobj2t(L, oldval, val);
+        luaC_barriert(L, this, val);
+    }
+    else /* else will try the tag method */
+    {
+        callstack_ref newindexRef( *L );
+        TValue objval;
+        sethvalue( L, &objval, this );
+
+        luaV_handle_newindex( L, &objval, tm, key, val );
+    }
 }

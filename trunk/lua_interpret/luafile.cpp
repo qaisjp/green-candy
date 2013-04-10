@@ -240,6 +240,8 @@ int luaconstructor_file( lua_State *lua )
     ILuaClass *j = lua_refclass( lua, 1 );
     j->SetTransmit( LUACLASS_FILE, file );
 
+    lua_basicextend( lua );
+
     // Create the illegal access table
     lua_newtable( lua );
     lua_pushboolean( lua, false );
@@ -255,8 +257,6 @@ int luaconstructor_file( lua_State *lua )
 
     lua_pushvalue( lua, lua_upvalueindex( 1 ) );
     lua_setfield( lua, LUA_ENVIRONINDEX, "ioptr" );
-
-    lua_basicextend( lua );
 
     j->RegisterInterfaceTrans( lua, fileInterface, 0, LUACLASS_FILE );
 #endif
