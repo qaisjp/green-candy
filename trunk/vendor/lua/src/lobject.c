@@ -221,7 +221,7 @@ void* GCObject::operator new( size_t size, lua_State *main ) throw()
     return obj;
 }
 
-void GCObject::Index( lua_State *L, const TValue *key, TValue *val )
+void GCObject::Index( lua_State *L, const TValue *key, StkId val )
 {
     TValue objval;
     setgcvalue( L, &objval, this );
@@ -229,7 +229,7 @@ void GCObject::Index( lua_State *L, const TValue *key, TValue *val )
     luaV_handle_index( L, &objval, luaT_gettmbyobj( L, &objval, TM_INDEX ), key, val );
 }
 
-void GCObject::NewIndex( lua_State *L, const TValue *key, const TValue *val )
+void GCObject::NewIndex( lua_State *L, const TValue *key, StkId val )
 {
     TValue objval;
     setgcvalue( L, &objval, this );

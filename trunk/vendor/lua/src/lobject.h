@@ -231,21 +231,45 @@ class lua_State;
 #define ttisthread(o)	(ttype(o) == LUA_TTHREAD)
 #define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)
 
+#if defined(_DEBUG) && defined(LUA_OBJECT_VERIFICATION)
+// Safety casts
+#define gcobj(o)    (dynamic_cast <GCObject*> (o))
+#define sobj(o)     (dynamic_cast <TString*> (o))
+#define uobj(o)     (dynamic_cast <Udata*> (o))
+#define clobj(o)    (dynamic_cast <Closure*> (o))
+#define hobj(o)     (dynamic_cast <Table*> (o))
+#define thobj(o)    (dynamic_cast <lua_State*> (o))
+#define qobj(o)     (dynamic_cast <Dispatch*> (o))
+#define jobj(o)     (dynamic_cast <Class*> (o))
+#define ptobj(o)    (dynamic_cast <Proto*> (o))
+#else
+// Standard runtime casts
+#define gcobj(o)    (GCObject*)(o)
+#define sobj(o)     (TString*)(o)
+#define uobj(o)     (Udata*)(o)
+#define clobj(o)    (Closure*)(o)
+#define hobj(o)     (Table*)(o)
+#define thobj(o)    (lua_State*)(o)
+#define qobj(o)     (Dispatch*)(o)
+#define jobj(o)     (Class*)(o)
+#define ptobj(o)    (Proto*)(o)
+#endif
+
 /* Macros to access values */
 #define ttype(o)	((o)->tt)
-#define gcvalue(o)	check_exp(iscollectable(o), (o)->value.gc)
+#define gcvalue(o)	check_exp(iscollectable(o), gcobj((o)->value.gc))
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->value.p)
 #define nvalue(o)	check_exp(ttisnumber(o), (o)->value.n)
-#define rawtsvalue(o)	check_exp(ttisstring(o), (TString*)((o)->value.gc))
+#define rawtsvalue(o)	check_exp(ttisstring(o), sobj((o)->value.gc))
 #define tsvalue(o)	(rawtsvalue(o))
-#define rawuvalue(o)	check_exp(ttisuserdata(o), (Udata*)((o)->value.gc))
+#define rawuvalue(o)	check_exp(ttisuserdata(o), uobj((o)->value.gc))
 #define uvalue(o)	(rawuvalue(o))
-#define clvalue(o)	check_exp(ttisfunction(o), (Closure*)((o)->value.gc))
-#define hvalue(o)	check_exp(ttistable(o), (Table*)((o)->value.gc))
+#define clvalue(o)	check_exp(ttisfunction(o), clobj((o)->value.gc))
+#define hvalue(o)	check_exp(ttistable(o), hobj((o)->value.gc))
 #define bvalue(o)	check_exp(ttisboolean(o), (o)->value.b)
-#define thvalue(o)	check_exp(ttisthread(o), (lua_State*)((o)->value.gc))
-#define qvalue(o)   check_exp(ttisdispatch(o), (Dispatch*)((o)->value.gc))
-#define jvalue(o)   check_exp(ttisclass(o), (Class*)((o)->value.gc))
+#define thvalue(o)	check_exp(ttisthread(o), thobj((o)->value.gc))
+#define qvalue(o)   check_exp(ttisdispatch(o), qobj((o)->value.gc))
+#define jvalue(o)   check_exp(ttisclass(o), jobj((o)->value.gc))
 
 #define l_isfalse(o)	(ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0))
 
@@ -273,48 +297,57 @@ class lua_State;
   { TValue *i_o=(obj); i_o->value.b=(x) & 1; i_o->tt=LUA_TBOOLEAN; }
 
 #define setgcvalue(L,obj,x) \
-  { TValue *i_o=(obj); \
-    i_o->value.gc=(x); i_o->tt=(x)->tt; \
+  { GCObject *inst = gcobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=inst->tt; \
     checkliveness(G(L),i_o); }
 
 #define setsvalue(L,obj,x) \
-  { TValue *i_o=(obj); \
-    i_o->value.gc=(x); i_o->tt=LUA_TSTRING; \
+  { TString *inst = sobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TSTRING; \
     checkliveness(G(L),i_o); }
 
 #define setuvalue(L,obj,x) \
-  { TValue *i_o=(obj); \
-    i_o->value.gc=(x); i_o->tt=LUA_TUSERDATA; \
+  { Udata *inst = uobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TUSERDATA; \
     checkliveness(G(L),i_o); }
 
 #define setthvalue(L,obj,x) \
-  { TValue *i_o=(obj); \
-    i_o->value.gc=(x); i_o->tt=LUA_TTHREAD; \
+  { lua_State *inst = thobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TTHREAD; \
     checkliveness(G(L),i_o); }
 
 #define setclvalue(L,obj,x) \
-  { TValue *i_o=(obj); \
-    i_o->value.gc=(x); i_o->tt=LUA_TFUNCTION; \
+  { Closure *inst = clobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TFUNCTION; \
     checkliveness(G(L),i_o); }
 
 #define sethvalue(L,obj,x) \
-  { TValue *i_o=(obj); \
-    i_o->value.gc=(x); i_o->tt=LUA_TTABLE; \
+  { Table *inst = hobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TTABLE; \
     checkliveness(G(L),i_o); }
 
 #define setptvalue(L,obj,x) \
-  { TValue *i_o=(obj); \
-    i_o->value.gc=(x); i_o->tt=LUA_TPROTO; \
+  { Proto *inst = ptobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TPROTO; \
     checkliveness(G(L),i_o); }
 
 #define setqvalue(L,obj,x) \
-  { TValue *i_o=(obj); \
-    i_o->value.gc=(x); i_o->tt=LUA_TDISPATCH; \
+  { Dispatch *inst = qobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TDISPATCH; \
     checkliveness(G(L),i_o); }
 
 #define setjvalue(L,obj,x) \
-  { TValue *i_o=(obj); \
-    i_o->value.gc=(x); i_o->tt=LUA_TCLASS; \
+  { Class *inst = jobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TCLASS; \
     checkliveness(G(L),i_o); }
 
 
@@ -351,6 +384,7 @@ class lua_State;
 #define G(L)	(L->l_G)
 
 typedef TValue *StkId;  /* index to stack elements */
+typedef const TValue *StkId_const;
 struct global_State;
 
 class GCObject
@@ -372,8 +406,8 @@ public:
     virtual void        MarkGC( global_State *g )       { }
 
     // Global indexing and new-indexing routines (since every object can potencially be accessed)
-    virtual void        Index( lua_State *L, const TValue *key, TValue *val );
-    virtual void        NewIndex( lua_State *L, const TValue *key, const TValue *val );
+    virtual void        Index( lua_State *L, const TValue *key, StkId val );
+    virtual void        NewIndex( lua_State *L, const TValue *key, StkId val );
 
     void* operator new( size_t size, lua_State *main );
 
@@ -733,8 +767,8 @@ public:
 
     Table* GetTable()   { return this; }
 
-    void    Index( lua_State *L, const TValue *key, TValue *val );
-    void    NewIndex( lua_State *L, const TValue *key, const TValue *val );
+    void    Index( lua_State *L, const TValue *key, StkId val );
+    void    NewIndex( lua_State *L, const TValue *key, StkId val );
 
     void operator delete( void *ptr ) throw()
     {
@@ -774,8 +808,8 @@ public:
 class ClassEnvDispatch : public ClassDispatch
 {
 public:
-    void                    Index( lua_State *L, const TValue *key, TValue *val );
-    void                    NewIndex( lua_State *L, const TValue *key, const TValue *val );
+    void                    Index( lua_State *L, const TValue *key, StkId val );
+    void                    NewIndex( lua_State *L, const TValue *key, StkId val );
 
     void operator delete( void *ptr ) throw()
     {
@@ -786,8 +820,8 @@ public:
 class ClassOutEnvDispatch : public ClassDispatch
 {
 public:
-    void                    Index( lua_State *L, const TValue *key, TValue *val );
-    void                    NewIndex( lua_State *L, const TValue *key, const TValue *val );
+    void                    Index( lua_State *L, const TValue *key, StkId val );
+    void                    NewIndex( lua_State *L, const TValue *key, StkId val );
 
     void operator delete( void *ptr ) throw()
     {
@@ -800,8 +834,8 @@ class ClassMethodDispatch : public ClassDispatch
 public:
     size_t                  Propagate( global_State *g );
 
-    void                    Index( lua_State *L, const TValue *key, TValue *val );
-    void                    NewIndex( lua_State *L, const TValue *key, const TValue *val );
+    void                    Index( lua_State *L, const TValue *key, StkId val );
+    void                    NewIndex( lua_State *L, const TValue *key, StkId val );
 
     void operator delete( void *ptr ) throw()
     {
@@ -836,8 +870,8 @@ public:
     void    MarkGC( global_State *g );
     int     TraverseGC( global_State *g );
 
-    void    Index( lua_State *L, const TValue *key, TValue *val );
-    void    NewIndex( lua_State *L, const TValue *key, const TValue *val );
+    void    Index( lua_State *L, const TValue *key, StkId val );
+    void    NewIndex( lua_State *L, const TValue *key, StkId val );
 
     Class*  GetClass()   { return this; }
 

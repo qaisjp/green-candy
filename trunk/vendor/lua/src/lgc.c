@@ -309,8 +309,6 @@ int Table::TraverseGC( global_State *g )
                 markvalue( g, gkey(n) );
             if (!weakvalue)
                 markvalue( g, gval(n) );
-
-            const char *string = svalue( gval( n ) );
         }
     }
     return weakkey || weakvalue;
@@ -850,6 +848,14 @@ inline void luaC_paycost( global_State *g, lua_Thread *L, lu_mem collected )
     g->GCcollect -= collected;
 }
 
+static inline void luaC_processestimate( global_State *g, size_t mem )
+{
+    if ( g->estimate > mem )
+        g->estimate -= mem;
+    else
+        g->estimate = 0;
+}
+
 static int luaC_runtime( lua_State *L )
 {
     global_State *g = G(L);
@@ -919,7 +925,8 @@ static int luaC_runtime( lua_State *L )
         g->sweepstrgc = 0;
         g->sweepgc = &g->rootgc;
         g->gcstate = GCSsweepstring;
-        g->estimate = g->totalbytes - udsize;  /* first estimate */
+        g->estimate = g->totalbytes;
+        luaC_processestimate( g, udsize );  /* first estimate */
 
         do
         {
@@ -927,7 +934,7 @@ static int luaC_runtime( lua_State *L )
             sweepwholelist( L, &g->strt.hash[g->sweepstrgc++] );
 
             lua_assert(old >= g->totalbytes);
-            g->estimate -= old - g->totalbytes;
+            luaC_processestimate( g, old - g->totalbytes );
 
             luaC_paycost( g, (lua_Thread*)L, GCSWEEPCOST );
         }
@@ -942,7 +949,7 @@ static int luaC_runtime( lua_State *L )
             g->sweepgc = sweeplist(L, g->sweepgc, GCSWEEPMAX);
 
             lua_assert( old >= g->totalbytes );
-            g->estimate -= old - g->totalbytes;
+            luaC_processestimate( g, old - g->totalbytes );
 
             if ( *g->sweepgc == NULL )
             {  /* nothing more to sweep? */
@@ -960,8 +967,7 @@ static int luaC_runtime( lua_State *L )
         {
             GCTM(L);
 
-            if ( g->estimate >= GCFINALIZECOST )
-                g->estimate -= GCFINALIZECOST;
+            luaC_processestimate( g, GCFINALIZECOST );
 
             luaC_paycost( g, (lua_Thread*)L, GCFINALIZECOST );
         }

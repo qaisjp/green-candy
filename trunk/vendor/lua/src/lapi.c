@@ -248,7 +248,7 @@ LUA_API void lua_replace (lua_State *L, int idx)
     {
         const TValue *val = L->top - 1;
 
-        sethvalue( L, &L->storage, gcvalue( val ) );
+        setgcvalue( L, &L->storage, gcvalue( val ) );
         luaC_barrier( L, L, val );
     }
     else

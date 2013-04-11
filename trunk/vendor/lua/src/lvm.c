@@ -97,20 +97,33 @@ static void callTMres (lua_State *L, StkId res, const TValue *f, const TValue *p
   setobjs2s(L, res, L->top);
 }
 
-void luaV_handle_index( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, TValue *val )
+// WARNING: stack rellocating function
+void luaV_handle_index( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, StkId val )
 {
+    if ( ttisnil( tm ) )
+        luaG_typeerror( L, obj, "index" );
+
     if ( ttisfunction( tm ) )
     {
+        TValue _key;
+        setobj( L, &_key, key );
+
+        ptrdiff_t savedstk = savestack( L, val );
+
+        // Reallocate a new stack
         luaD_checkstack( L, 3 );
 
-        StkId func = L->top++;        
+        // Save the function value for calling
+        StkId func = L->top++;
 
+        // Work with the new stack
         setclvalue( L, func, clvalue( tm ) );
         setobj( L, L->top++, obj );
-        setobj( L, L->top++, key );
+        setobj( L, L->top++, &_key );
         luaD_call( L, func, 1 );
-        
-        setobj( L, val, --L->top );
+
+        // Save result at appropriate position
+        setobj( L, restorestack( L, savedstk ), --L->top );
     }
     else
     {
@@ -120,36 +133,37 @@ void luaV_handle_index( lua_State *L, const TValue *obj, const TValue *tm, const
     }
 }
 
-void luaV_gettable (lua_State *L, const TValue *t, const TValue *key, TValue *val)
+// WARNING: stack rellocating function
+void luaV_gettable (lua_State *L, const TValue *t, const TValue *key, StkId val)
 {
     if ( iscollectable( t ) )
         gcvalue( t )->Index( L, key, val );
     else
-    {
-        const TValue *tm = luaT_gettmbyobj( L, t, TM_INDEX );
-
-        if ( ttisnil( tm ) )
-            luaG_typeerror( L, t, "index" );
-
-        luaV_handle_index( L, t, tm, key, val );
-    }
+        luaV_handle_index( L, t, luaT_gettmbyobj( L, t, TM_INDEX ), key, val );
 }
 
-void luaV_handle_newindex( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, const TValue *val )
+// WARNING: stack rellocating function
+void luaV_handle_newindex( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, StkId val )
 {
     if ( ttisnil( tm ) )
         luaG_typeerror( L, obj, "index" );
 
     if ( ttisfunction( tm ) )
     {
-        luaD_checkstack( L, 4 );
+        // Temporary storage for security (problem: unknown location [stack, table, ...] + allocation)
+        TValue _key, _val;
+        setobj( L, &_key, key );
+        setobj( L, &_val, val );
+
+        luaD_checkstack( L, 4 );    // allocate a new stack
 
         StkId func = L->top++;  // remember the function stack id
 
+        // Work with the new stack
         setclvalue( L, func, clvalue( tm ) );
         setobj( L, L->top++, obj );
-        setobj( L, L->top++, key );
-        setobj( L, L->top++, val );
+        setobj( L, L->top++, &_key );
+        setobj( L, L->top++, &_val );
         luaD_call( L, func, 0 );
     }
     else
@@ -162,7 +176,8 @@ void luaV_handle_newindex( lua_State *L, const TValue *obj, const TValue *tm, co
     }
 }
 
-void luaV_settable (lua_State *L, const TValue *t, const TValue *key, const TValue *val)
+// WARNING: stack rellocating function
+void luaV_settable (lua_State *L, const TValue *t, const TValue *key, StkId val)
 {
     if ( iscollectable( t ) )
         gcvalue( t )->NewIndex( L, key, val );

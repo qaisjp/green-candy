@@ -775,6 +775,13 @@ public:
 
 
 /*
+@@ LUA_OBJECT_VERIFICATION is a compile-time check. If defined, the runtime
+@* will verify the integrity of all internal objects if compiled in debug mode.
+** DEFINE or COMMENT OUT
+*/
+//#define LUA_OBJECT_VERIFICATION
+
+/*
 @@ LUA_MAXCAPTURES is the maximum number of captures that a pattern
 @* can do during pattern-matching.
 ** CHANGE it if you need more captures. This limit is arbitrary.

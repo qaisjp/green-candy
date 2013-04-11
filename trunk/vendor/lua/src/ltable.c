@@ -608,7 +608,7 @@ int luaH_isdummy (Node *n) { return n == dummynode; }
 
 #endif
 
-void Table::Index( lua_State *L, const TValue *key, TValue *val )
+void Table::Index( lua_State *L, const TValue *key, StkId val )
 {
     const TValue *res = luaH_get( this, key ); /* do a primitive get */
     const TValue *tm;
@@ -617,31 +617,63 @@ void Table::Index( lua_State *L, const TValue *key, TValue *val )
     {
         setobj2s(L, val, res);
     }
-    else
+    else if ( ttisfunction( tm ) )
     {
-        TValue objval;
-        sethvalue( L, &objval, this );
+        // Store the key (problem: unknown location [stack, table, ...] + allocation)
+        TValue tmp;
+        setobj( L, &tmp, key );
 
-        luaV_handle_index( L, &objval, tm, key, val );
+        ptrdiff_t storestk = savestack( L, val );
+        luaD_checkstack( L, 3 );    // we allocate the stack here!
+        
+        // Working with the new stack
+        StkId func = L->top++;
+        setclvalue( L, func, clvalue( tm ) );
+        sethvalue( L, L->top++, this );
+        setobj( L, L->top++, &tmp );
+        luaD_call( L, func, 1 );
+
+        // Store at appropriate position
+        setobj( L, restorestack( L, storestk ), --L->top );
     }
+    else
+        luaV_gettable( L, tm, key, val );
 }
 
-void Table::NewIndex( lua_State *L, const TValue *key, const TValue *val )
+void Table::NewIndex( lua_State *L, const TValue *key, StkId val )
 {
     TValue *oldval = luaH_set( L, this, key ); /* do a primitive set */
     const TValue *tm;
 
-    if ( !ttisnil(oldval) || ( tm = fasttm( L, this->metatable, TM_NEWINDEX )) == NULL )
+    if ( !ttisnil(oldval) || ( tm = fasttm( L, metatable, TM_NEWINDEX )) == NULL )
     {
         setobj2t(L, oldval, val);
         luaC_barriert(L, this, val);
     }
-    else /* else will try the tag method */
+    else if ( ttisfunction( tm ) )
     {
-        callstack_ref newindexRef( *L );
-        TValue objval;
-        sethvalue( L, &objval, this );
+        // Temporary storage for security (problem: unknown location [stack, table, ...] + allocation)
+        TValue _key, _val;
+        setobj( L, &_key, key );
+        setobj( L, &_val, val );
 
-        luaV_handle_newindex( L, &objval, tm, key, val );
+        luaD_checkstack( L, 4 );    // allocate a new stack
+
+        StkId func = L->top++;  // remember the function stack id
+
+        // Work with the new stack
+        setclvalue( L, func, clvalue( tm ) );
+        sethvalue( L, L->top++, this );
+        setobj( L, L->top++, &_key );
+        setobj( L, L->top++, &_val );
+        luaD_call( L, func, 0 );
+    }
+    else
+    {
+        // Repeat the process with the index object
+        // For security reasons, we should increment the callstack depth
+        callstack_ref indexRef( *L );
+
+        luaV_settable( L, tm, key, val );
     }
 }
