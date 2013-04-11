@@ -34,6 +34,7 @@ static LUA_DECLARE( luaconstructor_keybind )
 
     lua_basicprotect( L );
 
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, keybind_interface, 1 );
 

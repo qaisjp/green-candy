@@ -177,6 +177,7 @@ static int luaconstructor_matrix( lua_State *L )
 
     lua_basicprotect( L );
 
+    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     luaL_openlib( L, NULL, matrix_interface, 1 );
 

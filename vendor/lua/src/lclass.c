@@ -23,26 +23,27 @@
 #include "lstring.h"
 #include "lfunc.h"
 #include "lvm.h"
+#include "ldebug.h"
 
 #define LUA_PROTECT_CLASS_META
 
-void ClassOutEnvDispatch::Index( lua_State *L, const TValue *key, TValue *val )
+void ClassOutEnvDispatch::Index( lua_State *L, const TValue *key, StkId val )
 {
     setobj( L, val, luaH_get( m_class->storage, key ) );
 }
 
-void ClassOutEnvDispatch::NewIndex( lua_State *L, const TValue *key, const TValue *val )
+void ClassOutEnvDispatch::NewIndex( lua_State *L, const TValue *key, StkId val )
 {
-    if ( ttype( luaH_get( m_class->storage, key ) ) == LUA_TFUNCTION )
+    TValue *tabidx = luaH_set( L, m_class->storage, key );
+
+    if ( ttype( tabidx ) == LUA_TFUNCTION )
         throw lua_exception( L, LUA_ERRRUN, "cannot overwrite methods of class internals" );
 
-    TValue *classVal = luaH_set( L, m_class->storage, key );
-
-    setobj( L, classVal, val );
+    setobj( L, tabidx, val );
     luaC_barriert( L, m_class->storage, val );
 }
 
-void ClassEnvDispatch::Index( lua_State *L, const TValue *key, TValue *value )
+void ClassEnvDispatch::Index( lua_State *L, const TValue *key, StkId value )
 {
     if ( m_class->destroyed )
         throw lua_exception( L, LUA_ERRRUN, "attempt to index the environment of a destroyed class" );
@@ -55,33 +56,49 @@ void ClassEnvDispatch::Index( lua_State *L, const TValue *key, TValue *value )
         return;
     }
 
+    TValue tabVal;
+
     // Otherwise we result in the inherited environments
     for ( Class::envList_t::const_iterator iter = m_class->envInherit.begin(); iter != m_class->envInherit.end(); iter++ )
     {
-        TValue tabVal;
-        setgcvalue( L, &tabVal, *iter );
-    
-        luaV_gettable( L, &tabVal, key, value );
+        (*iter)->Index( L, key, &tabVal );
 
-        if ( ttype( value ) != LUA_TNIL )
+        if ( ttype( &tabVal ) != LUA_TNIL )
+        {
+            setobj( L, value, &tabVal );
             return;
+        }
     }
 
     // No return value.
     setnilvalue( value );
 }
 
-void Class::Index( lua_State *L, const TValue *key, TValue *val )
+void Class::Index( lua_State *L, const TValue *key, StkId val )
 {
     if ( destroyed )
         throw lua_exception( L, LUA_ERRRUN, "cannot index a destroyed class" );
 
     if ( const TValue *tm = fasttm( L, storage, TM_INDEX ) )
     {
-        TValue tmp;
-        setjvalue( L, &tmp, this );
+        if ( ttisfunction( tm ) )
+        {
+            TValue tmp;
+            setobj( L, &tmp, key );
 
-        luaV_handle_index( L, &tmp, tm, key, val );
+            ptrdiff_t storestk = savestack( L, val );
+            luaD_checkstack( L, 3 );
+            
+            StkId func = L->top++;
+            setclvalue( L, func, clvalue( tm ) );
+            setjvalue( L, L->top++, this );
+            setobj( L, L->top++, &tmp );
+            luaD_call( L, func, 1 );
+
+            setobj( L, restorestack( L, storestk ), --L->top );
+        }
+        else
+            luaV_gettable( L, tm, key, val );
     }
     else
     {
@@ -90,17 +107,39 @@ void Class::Index( lua_State *L, const TValue *key, TValue *val )
     }
 }
 
-void Class::NewIndex( lua_State *L, const TValue *key, const TValue *val )
+void Class::NewIndex( lua_State *L, const TValue *key, StkId val )
 {
     if ( destroyed )
         throw lua_exception( L, LUA_ERRRUN, "cannot index a destroyed class" );
 
     if ( const TValue *tm = fasttm( L, storage, TM_NEWINDEX ) )
     {
-        TValue objval;
-        setjvalue( L, &objval, this );
+        if ( ttisfunction( tm ) )
+        {
+            // Temporary storage for security (problem: unknown location [stack, table, ...] + allocation)
+            TValue _key, _val;
+            setobj( L, &_key, key );
+            setobj( L, &_val, val );
 
-        luaV_handle_newindex( L, &objval, tm, key, val );
+            luaD_checkstack( L, 4 );    // allocate a new stack
+
+            StkId func = L->top++;  // remember the function stack id
+
+            // Work with the new stack
+            setclvalue( L, func, clvalue( tm ) );
+            setjvalue( L, L->top++, this );
+            setobj( L, L->top++, &_key );
+            setobj( L, L->top++, &_val );
+            luaD_call( L, func, 0 );
+        }
+        else
+        {
+            // Repeat the process with the index object
+            // For security reasons, we should increment the callstack depth
+            callstack_ref indexRef( *L );
+
+            luaV_settable( L, tm, key, val );
+        }
     }
     else
     {
@@ -730,7 +769,8 @@ static int classmethod_registerForcedSuper( lua_State *L )
 
 static int classmethod_envPutFront( lua_State *L )
 {
-    luaL_checktype( L, 1, LUA_TTABLE );
+    if ( !iscollectable( L->top - 1 ) )
+        throw lua_exception( L, LUA_ERRRUN, "class environment has to be a real object" );
 
     jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->EnvPutFront( L );
     return 0;
@@ -738,7 +778,8 @@ static int classmethod_envPutFront( lua_State *L )
 
 static int classmethod_envPutBack( lua_State *L )
 {
-    luaL_checktype( L, 1, LUA_TTABLE );
+    if ( !iscollectable( L->top - 1 ) )
+        throw lua_exception( L, LUA_ERRRUN, "class environment has to be a real object" );
 
     jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->EnvPutBack( L );
     return 0;
@@ -748,7 +789,7 @@ static int classmethod_envAcquireDispatcher( lua_State *L )
 {
     Dispatch *env;
 
-    if ( lua_type( L, 1 ) != LUA_TNIL )
+    if ( iscollectable( L->base ) )
         env = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->AcquireEnvDispatcherEx( L, gcvalue( L->base ) );
     else
         env = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->AcquireEnvDispatcher( L );
@@ -886,7 +927,7 @@ static Closure* classmethod_fsDestroyHandlerNative( lua_State *L, lua_CFunction 
     return classmethod_fsDestroyHandler( L, cl, j, prevMethod );
 }
 
-void ClassMethodDispatch::Index( lua_State *L, const TValue *key, TValue *val )
+void ClassMethodDispatch::Index( lua_State *L, const TValue *key, StkId val )
 {
     const TValue *res = m_class->GetEnvValue( key );
 
@@ -899,7 +940,7 @@ void ClassMethodDispatch::Index( lua_State *L, const TValue *key, TValue *val )
     m_prevEnv->Index( L, key, val );
 }
 
-void ClassMethodDispatch::NewIndex( lua_State *L, const TValue *key, const TValue *val )
+void ClassMethodDispatch::NewIndex( lua_State *L, const TValue *key, StkId val )
 {
     m_class->env->NewIndex( L, key, val );
 }
@@ -1424,7 +1465,7 @@ static const luaL_Reg classmethods_parenting[] =
     { NULL, NULL }
 };
 
-void ClassEnvDispatch::NewIndex( lua_State *L, const TValue *key, const TValue *val )
+void ClassEnvDispatch::NewIndex( lua_State *L, const TValue *key, StkId val )
 {
     Class& j = *m_class;
 

@@ -25,6 +25,8 @@ IMPLEMENT_ENUM_BEGIN( eLuaType )
     ADD_ENUM ( LUA_TTABLE,          "table" )
     ADD_ENUM ( LUA_TFUNCTION,       "function" )
     ADD_ENUM ( LUA_TUSERDATA,       "userdata" )
+    ADD_ENUM ( LUA_TCLASS,          "class" )
+    ADD_ENUM ( LUA_TDISPATCH,       "dispatch" )
     ADD_ENUM ( LUA_TTHREAD,         "thread" )
 IMPLEMENT_ENUM_END( "lua-type" )
 
