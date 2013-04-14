@@ -37,7 +37,7 @@ static int filesystem_open( lua_State *L )
 
     // Register the file
     lua_getfield( L, 3, "setParent" );
-    lua_pushvalue( L, lua_upvalueindex( 2 ) );
+    lua_getmethodclass( L )->Push( L );
     lua_call( L, 1, 0 );
 #endif
     return 1;
