@@ -211,7 +211,7 @@ static void _initAtomScene( RpAtomic *atom )
     atom->m_scene = *p_gtaScene;
 
     // TODO: reenable this using multi-threading (streamline extension!)
-    return;
+    //return;
 
     RpGeometry& geom = *atom->m_geometry;
 

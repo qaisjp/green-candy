@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        debugsdk/dbgheap.cpp
 *  PURPOSE:     Heap management tools for error isolation & debugging
-*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

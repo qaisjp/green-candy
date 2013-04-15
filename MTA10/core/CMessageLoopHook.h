@@ -4,9 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CMessageLoopHook.h
 *  PURPOSE:     Header file for message loop hook class
-*  DEVELOPERS:  Christian Myhre Lundheim <>
-*               Derek Abdine <>
-*               Jax <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

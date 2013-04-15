@@ -4,9 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CKeyBinds.h
 *  PURPOSE:     Header file for core keybind manager class
-*  DEVELOPERS:  Jax <>
-*               Florian Busse <flobu@gmx.net>
-*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

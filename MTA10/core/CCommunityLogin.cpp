@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CCommunityLogin.cpp
 *  PURPOSE:     Community login dialog class
-*  DEVELOPERS:  Stanislav Bobrov <lil_Toady@hotmail.com>
-*               Sebas Lamers <sebasdevelopment@gmx.com>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

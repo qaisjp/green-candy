@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        mods/deathmatch/logic/CDynamicLibrary.h
 *  PURPOSE:     Header for dynamic library class
-*  DEVELOPERS:  Christian Myhre Lundheim <>
-*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

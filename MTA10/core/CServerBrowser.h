@@ -4,14 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CServerBrowser.h
 *  PURPOSE:     Header file for server browser class
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Chris McArthur <>
-*               Christian Myhre Lundheim <>
-*               Ed Lyons <eai@opencoding.net>
-*               Stanislav Bobrov <lil_toady@hotmail.com>
-*               Alberto Alonso <rydencillo@gmail.com>
-*               Florian Busse <flobu@gmx.net>
-*               Sebas Lamers <sebasdevelopment@gmx.com>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

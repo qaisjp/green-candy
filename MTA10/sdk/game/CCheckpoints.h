@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        sdk/game/CCheckpoints.h
 *  PURPOSE:     Checkpoint entity manager interface
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

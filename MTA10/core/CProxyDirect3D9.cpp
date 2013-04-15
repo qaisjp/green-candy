@@ -4,10 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CProxyDirect3D9.cpp
 *  PURPOSE:     Direct3D 9 function hooking proxy
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Christian Myhre Lundheim <>
-*               Derek Abdine <>
-*               Ed Lyons <eai@opencoding.net>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

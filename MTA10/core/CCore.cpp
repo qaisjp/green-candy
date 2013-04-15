@@ -4,13 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CCore.cpp
 *  PURPOSE:     Base core class
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Chris McArthur <>
-*               Christian Myhre Lundheim <>
-*               Derek Abdine <>
-*               Ed Lyons <eai@opencoding.net>
-*               Jax <>
-*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

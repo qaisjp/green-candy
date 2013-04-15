@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        Shared/core/CFileSystem.h
 *  PURPOSE:     File management
-*  DEVELOPERS:  S2Games <http://savage.s2games.com> (historical entry)
-*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

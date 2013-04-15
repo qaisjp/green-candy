@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        CRenderItemManager.h
 *  PURPOSE:
-*  DEVELOPERS:  idiot
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

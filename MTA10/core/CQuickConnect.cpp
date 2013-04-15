@@ -4,10 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CQuickConnect.cpp
 *  PURPOSE:     Quick connect window
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Christian Myhre Lundheim <>
-*               Marcus Bauer <mabako@gmail.com>
-*               Florian Busse <flobu@gmx.net>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

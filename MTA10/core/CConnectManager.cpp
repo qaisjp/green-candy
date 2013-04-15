@@ -4,9 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CConnectManager.cpp
 *  PURPOSE:     Manager for connecting to servers
-*  DEVELOPERS:  Christian Myhre Lundheim <>
-*               Jax <>
-*               Sebas Lamers <sebasdevelopment@gmx.com>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

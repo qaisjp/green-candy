@@ -4,10 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/C3DMarkerSA.cpp
 *  PURPOSE:     3D Marker entity
-*  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
-*               Christian Myhre Lundheim <>
-*               Cecill Etheredge <ijsf@gmx.net>
-*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

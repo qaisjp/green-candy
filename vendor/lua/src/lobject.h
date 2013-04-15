@@ -244,15 +244,15 @@ class lua_State;
 #define ptobj(o)    (dynamic_cast <Proto*> (o))
 #else
 // Standard runtime casts
-#define gcobj(o)    (GCObject*)(o)
-#define sobj(o)     (TString*)(o)
-#define uobj(o)     (Udata*)(o)
-#define clobj(o)    (Closure*)(o)
-#define hobj(o)     (Table*)(o)
-#define thobj(o)    (lua_State*)(o)
-#define qobj(o)     (Dispatch*)(o)
-#define jobj(o)     (Class*)(o)
-#define ptobj(o)    (Proto*)(o)
+#define gcobj(o)    ((GCObject*)(o))
+#define sobj(o)     ((TString*)(o))
+#define uobj(o)     ((Udata*)(o))
+#define clobj(o)    ((Closure*)(o))
+#define hobj(o)     ((Table*)(o))
+#define thobj(o)    ((lua_State*)(o))
+#define qobj(o)     ((Dispatch*)(o))
+#define jobj(o)     ((Class*)(o))
+#define ptobj(o)    ((Proto*)(o))
 #endif
 
 /* Macros to access values */
@@ -801,6 +801,8 @@ class ClassDispatch abstract : public Dispatch
 {
 public:
     size_t                  Propagate( global_State *g );
+
+    Class*                  GetClass()      { return m_class; }
 
     Class*                  m_class;
 };

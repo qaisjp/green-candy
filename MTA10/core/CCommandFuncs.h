@@ -4,11 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CCommandFuncs.h
 *  PURPOSE:     Header file for command functionality class
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Christian Myhre Lundheim <>
-*               Derek Abdine <>
-*               Ed Lyons <eai@opencoding.net>
-*               Jax <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

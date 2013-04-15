@@ -4,9 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/d3d/CD3DMGE_D3D9.cpp
 *  PURPOSE:     Interface for rendering Direct3D 9 primitives/sprites
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Derek Abdine <>
-*               Ed Lyons <eai@opencoding.net>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CCredits.h
 *  PURPOSE:     Header file for credits class
-*  DEVELOPERS:  Christian Myhre Lundheim <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

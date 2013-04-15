@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CDirect3DData.h
 *  PURPOSE:     Header file for Direct3D data class
-*  DEVELOPERS:  Christian Myhre Lundheim <>
-*               Derek Abdine <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

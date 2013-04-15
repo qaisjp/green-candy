@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CQuickConnect.h
 *  PURPOSE:     Header file for quick connect window class
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Christian Myhre Lundheim <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

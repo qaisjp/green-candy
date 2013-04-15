@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CModManager.h
 *  PURPOSE:     Header file for game mod manager class
-*  DEVELOPERS:  Christian Myhre Lundheim <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

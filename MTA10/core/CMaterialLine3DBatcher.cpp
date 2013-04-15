@@ -5,8 +5,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        CMaterialLine3DBatcher.cpp
 *  PURPOSE:
-*  DEVELOPERS:  vidiot
-*
 *
 *****************************************************************************/
 

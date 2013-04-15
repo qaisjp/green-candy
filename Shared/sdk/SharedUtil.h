@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        SharedUtil.h
 *  PURPOSE:     Solution wide utility functions
-*  DEVELOPERS:  ccw <chris@codewave.co.uk>
-*               Alberto Alonso <rydencillo@gmail.com>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

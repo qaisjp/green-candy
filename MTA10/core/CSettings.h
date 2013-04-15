@@ -4,14 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CSettings.h
 *  PURPOSE:     Header file for in-game settings window class
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Christian Myhre Lundheim <>
-*               Ed Lyons <eai@opencoding.net>
-*               Jax <>
-*               Stanislav Bobrov <lil_toady@hotmail.com>
-*               Marcus Bauer <mabako@gmail.com>
-*               Florian Busse <flobu@gmx.net>
-*               Sebas Lamers <sebasdevelopment@gmx.com>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

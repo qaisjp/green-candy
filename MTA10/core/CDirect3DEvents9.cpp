@@ -4,9 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CDirect3DEvents9.cpp
 *  PURPOSE:     Handler implementations for Direct3D 9 events
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Christian Myhre Lundheim <>
-*               Derek Abdine <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

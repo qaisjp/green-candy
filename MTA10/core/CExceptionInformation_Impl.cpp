@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CExceptionInformation_Impl.cpp
 *  PURPOSE:     Exception information parser
-*  DEVELOPERS:  Christian Myhre Lundheim <>
-*               Derek Abdine <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

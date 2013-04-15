@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        Shared/core/CFileSystemInterface.h
 *  PURPOSE:     File management
-*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

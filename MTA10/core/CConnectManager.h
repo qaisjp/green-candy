@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CConnectManager.h
 *  PURPOSE:     Header file for connect manager
-*  DEVELOPERS:  Christian Myhre Lundheim <>
-*               Jax <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

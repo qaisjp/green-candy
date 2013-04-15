@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        sdk/game/CPlane.h
 *  PURPOSE:     Plane vehicle entity interface
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

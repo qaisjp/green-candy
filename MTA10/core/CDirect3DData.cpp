@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CDirect3DData.cpp
 *  PURPOSE:     Direct3D related data storage class
-*  DEVELOPERS:  Christian Myhre Lundheim <>
-*               Derek Abdine <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

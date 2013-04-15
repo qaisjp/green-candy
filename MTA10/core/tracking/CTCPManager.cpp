@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/tracking/CTCPManager.cpp
 *  PURPOSE:     Management of TCP socket clients and servers
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CCommunity.h
 *  PURPOSE:     Header file for community connector class
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Sebas Lamers <sebasdevelopment@gmx.com>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

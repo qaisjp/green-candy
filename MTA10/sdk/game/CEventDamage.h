@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        sdk/game/CEventDamage.h
 *  PURPOSE:     Event damage interface
-*  DEVELOPERS:  Jax <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

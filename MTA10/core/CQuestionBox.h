@@ -6,7 +6,6 @@
 *  PURPOSE:     Header file for quick connect window class
 *  DEVELOPERS:  Plectrum Handyworthingtonshire
 *
-*
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/

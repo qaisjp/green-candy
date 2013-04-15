@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CRenderItemManager.cpp
 *  PURPOSE:
-*  DEVELOPERS:  idiot
 *
 *****************************************************************************/
 

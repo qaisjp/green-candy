@@ -5,8 +5,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        CTileBatcher.cpp
 *  PURPOSE:
-*  DEVELOPERS:  vidiot
-*
 *
 *****************************************************************************/
 

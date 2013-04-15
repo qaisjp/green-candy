@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CDebugView.cpp
 *  PURPOSE:     In-game debug view window implementation
-*  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
-*               Jax <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
