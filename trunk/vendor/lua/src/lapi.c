@@ -743,6 +743,28 @@ LUA_API void lua_pushmethodsuper( lua_State *L )
     lua_unlock( L );
 }
 
+LUA_API void lua_getclass( lua_State *L )
+{
+    lua_lock( L );
+
+    StkId classId = L->top - 1;
+
+    lua_assert( iscollectable( classId ) );
+
+    Class *j = gcvalue( classId )->GetClass();
+
+    if ( j )
+    {
+        setjvalue( L, classId, j );
+    }
+    else
+    {
+        setnilvalue( classId );
+    }
+
+    lua_unlock( L );
+}
+
 
 /*
 ** set functions (stack -> Lua)
@@ -1347,8 +1369,10 @@ LUA_API void lua_newclassex( lua_State *L, unsigned int flags )
 
 LUA_API ILuaClass* lua_refclass( lua_State *L, int idx )
 {
-    lua_assert( lua_type( L, idx ) == LUA_TCLASS );
-    return jvalue( index2adr( L, idx ) );
+    const TValue *val = index2adr( L, idx );
+
+    lua_assert( iscollectable( val ) );
+    return ( val->value.gc )->GetClass();
 }
 
 LUA_API void lua_basicprotect( lua_State *L )

@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        sdk/core/CJoystickManagerInterface.h
 *  PURPOSE:     Header file for the joystick manager class
-*  DEVELOPERS:  ccw <chris@codewave.co.uk>
-*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

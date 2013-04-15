@@ -4,10 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CGraphics.cpp
 *  PURPOSE:     General graphics subsystem
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Christian Myhre Lundheim <>
-*               Jax <>
-*               Stanislav Bobrov <lil_toady@hotmail.com>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

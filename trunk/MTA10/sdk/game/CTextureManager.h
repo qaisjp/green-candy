@@ -5,7 +5,6 @@
 *  FILE:        sdk/game/CTextureManager.h
 *  PURPOSE:     Texture management definitions
 *               SubInterface of RenderWare
-*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

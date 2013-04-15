@@ -4,10 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CConsole.h
 *  PURPOSE:     Header file for console class
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Christian Myhre Lundheim <>
-*               Derek Abdine <>
-*               Jax <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

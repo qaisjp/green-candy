@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CClientVariables.h
 *  PURPOSE:     Header file for client variable class
-*  DEVELOPERS:  Derek Abdine <>
-*               Cecill Etheredge <ijsf@gmx.net>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

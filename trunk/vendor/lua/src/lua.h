@@ -235,6 +235,7 @@ LUA_API void  (lua_getfenv) (lua_State *L, int idx);
 LUA_API ILuaClass*  (lua_getmethodclass) (lua_State *L);
 LUA_API void* (lua_getmethodtrans) (lua_State *L);
 LUA_API void  (lua_pushmethodsuper) (lua_State *L);
+LUA_API void  (lua_getclass) (lua_State *L);
 
 
 /*

@@ -1666,7 +1666,7 @@ static const luaL_Reg bprotect_methods[] =
 
 void luaJ_basicprotect( lua_State *L )
 {
-    lua_refclass( L, -1 )->RegisterInterface( L, bprotect_methods, 0 );
+    lua_refclass( L, LUA_ENVIRONINDEX )->RegisterInterface( L, bprotect_methods, 0 );
 }
 
 static int extend_handler( lua_State *L )
@@ -1686,5 +1686,5 @@ static int extend_handler( lua_State *L )
 
 void luaJ_basicextend( lua_State *L )
 {
-    lua_refclass( L, -1 )->RegisterMethod( L, "extend", extend_handler, 0, true );
+    lua_refclass( L, LUA_ENVIRONINDEX )->RegisterMethod( L, "extend", extend_handler, 0, true );
 }

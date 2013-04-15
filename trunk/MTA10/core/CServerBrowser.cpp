@@ -4,12 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CServerBrowser.cpp
 *  PURPOSE:     In-game server browser user interface
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Stanislav Bobrov <lil_toady@hotmail.com>
-*               Alberto Alonso <rydencillo@gmail.com>
-*               Florian Busse <flobu@gmx.net>
-*               Sebas Lamers <sebasdevelopment@gmx.com>
-*               Dan Chowdhury <danthetaliban@gmail.com>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

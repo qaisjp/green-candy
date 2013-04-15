@@ -4,9 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CCommands.cpp
 *  PURPOSE:     Management for dynamically added commands
-*  DEVELOPERS:  Christian Myhre Lundheim <>
-*               Derek Abdine <>
-*               Jax <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

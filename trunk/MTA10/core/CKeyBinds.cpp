@@ -4,9 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CKeyBinds.cpp
 *  PURPOSE:     Core keybind manager
-*  DEVELOPERS:  Jax <>
-*               Florian Busse <flobu@gmx.net>
-*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

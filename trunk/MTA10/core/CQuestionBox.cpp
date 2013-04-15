@@ -5,7 +5,6 @@
 *  FILE:        core/CQuestionBox.cpp
 *  PURPOSE:     Quick connect window
 *  DEVELOPERS:  Plectrum Handyworthingtonshire
-* 
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

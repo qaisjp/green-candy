@@ -4,9 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CServer.cpp
 *  PURPOSE:     Local server instancing class
-*  DEVELOPERS:  Christian Myhre Lundheim <>
-*               Stanislav Bobrov <lil_toady@hotmail.com>
-*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

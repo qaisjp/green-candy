@@ -5,7 +5,6 @@
 *  FILE:        core/CVersionUpdater.cpp
 *  PURPOSE:     Version update check and message dialog class
 *  DEVELOPERS:  You're only supposed to blow the bloody doors off.
-*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CChat.cpp
 *  PURPOSE:     In-game chat box user interface implementation
-*  DEVELOPERS:  Jax <>
-*               arc_
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

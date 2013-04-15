@@ -4,11 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CConsole.cpp
 *  PURPOSE:     In-game console implementation
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Christian Myhre Lundheim <>
-*               Derek Abdine <>
-*               Jax <>
-*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

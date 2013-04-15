@@ -97,7 +97,7 @@ static void callTMres (lua_State *L, StkId res, const TValue *f, const TValue *p
   setobjs2s(L, res, L->top);
 }
 
-// WARNING: stack rellocating function
+// WARNING: stack reallocating function
 void luaV_handle_index( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, StkId val )
 {
     if ( ttisnil( tm ) )
@@ -133,7 +133,7 @@ void luaV_handle_index( lua_State *L, const TValue *obj, const TValue *tm, const
     }
 }
 
-// WARNING: stack rellocating function
+// WARNING: stack reallocating function
 void luaV_gettable (lua_State *L, const TValue *t, const TValue *key, StkId val)
 {
     if ( iscollectable( t ) )
@@ -142,7 +142,7 @@ void luaV_gettable (lua_State *L, const TValue *t, const TValue *key, StkId val)
         luaV_handle_index( L, t, luaT_gettmbyobj( L, t, TM_INDEX ), key, val );
 }
 
-// WARNING: stack rellocating function
+// WARNING: stack reallocating function
 void luaV_handle_newindex( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, StkId val )
 {
     if ( ttisnil( tm ) )
@@ -176,7 +176,7 @@ void luaV_handle_newindex( lua_State *L, const TValue *obj, const TValue *tm, co
     }
 }
 
-// WARNING: stack rellocating function
+// WARNING: stack reallocating function
 void luaV_settable (lua_State *L, const TValue *t, const TValue *key, StkId val)
 {
     if ( iscollectable( t ) )

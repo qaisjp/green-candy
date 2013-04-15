@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        CTileBatcher.h
 *  PURPOSE:
-*  DEVELOPERS:  vidiot
-*
 *
 *****************************************************************************/
 

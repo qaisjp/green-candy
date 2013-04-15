@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CJoystickManager.cpp
 *  PURPOSE:     Joystick related operations
-*  DEVELOPERS:  ccw <chris@codewave.co.uk>
-*               The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

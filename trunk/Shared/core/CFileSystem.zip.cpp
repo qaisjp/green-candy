@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        Shared/core/CFileSystem.zip.cpp
 *  PURPOSE:     ZIP archive filesystem
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Docu: https://users.cs.jmu.edu/buchhofp/forensics/formats/pkzip.html
 *

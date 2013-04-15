@@ -5,7 +5,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        CLine3DBatcher.cpp
 *  PURPOSE:
-*  DEVELOPERS:  vidiot
 *
 *
 *****************************************************************************/

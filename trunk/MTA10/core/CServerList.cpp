@@ -4,8 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CServerList.cpp
 *  PURPOSE:     Master server list querying
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Stanislav Bobrov <lil_toady@hotmail.com>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

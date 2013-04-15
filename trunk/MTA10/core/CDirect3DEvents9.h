@@ -4,9 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CDirect3DEvents9.h
 *  PURPOSE:     Header file for Direct3D 9 events class
-*  DEVELOPERS:  Cecill Etheredge <ijsf@gmx.net>
-*               Christian Myhre Lundheim <>
-*               Derek Abdine <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

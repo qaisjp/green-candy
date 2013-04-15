@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        SharedUtil.Game.h
 *  PURPOSE:     Shared stuff which is game oriented
-*  DEVELOPERS:  
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

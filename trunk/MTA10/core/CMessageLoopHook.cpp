@@ -4,9 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/CMessageLoopHook.cpp
 *  PURPOSE:     Windows message loop hooking
-*  DEVELOPERS:  Christian Myhre Lundheim <>
-*               Derek Abdine <>
-*               Jax <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *

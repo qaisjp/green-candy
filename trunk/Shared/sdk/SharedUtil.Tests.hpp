@@ -5,10 +5,6 @@
 *  FILE:        SharedUtil.Tests.hpp
 *  PURPOSE:
 *
-*  DEVELOPERS:
-*
-*
-*
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/

@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        core/Core.h
 *  PURPOSE:     Header file for core entry point code
-*  DEVELOPERS:  Derek Abdine <>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
