@@ -24,7 +24,7 @@ enum eLoadingState : unsigned char
     MODEL_UNAVAILABLE,
     MODEL_LOADED,
     MODEL_LOADING,
-    MODEL_LOD,    // Perhaps
+    MODEL_QUEUE,
     MODEL_RELOAD
 };
 

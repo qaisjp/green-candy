@@ -31,6 +31,43 @@
 
 #define MAX_MODELS                                          28835
 
+#define ARRAY_StreamerRequest   0x008E4A60
+#define MAX_STREAMING_REQUESTS  16
+
+// Allocated at ARRAY_StreamerRequest
+struct streamingRequest //size: 152
+{
+public:
+    int     ids[MAX_STREAMING_REQUESTS];        // 0
+    size_t  sizes[MAX_STREAMING_REQUESTS];      // 64
+
+    BYTE    pad[24];                            // 128
+};
+
+namespace Streaming
+{
+    // Allocated dynamically in the streaming initialization
+    struct syncSemaphore    //size: 48
+    {
+        unsigned int    blockOffset;            // 0
+        unsigned int    blockCount;             // 4
+        void*           buffer;                 // 8
+        BYTE            pad;                    // 12
+        bool            terminating;            // 13
+        bool            threadActive;           // 14, true if the streaming thread is working on this
+        BYTE            pad2;                   // 15
+        unsigned int    resultCode;             // 16
+        HANDLE          semaphore;              // 20
+        HANDLE          file;                   // 24
+        OVERLAPPED      overlapped;             // 28
+    };
+
+    inline streamingRequest&    GetStreamingRequest( unsigned int id )
+    {
+        return *( (streamingRequest*)ARRAY_StreamerRequest + id );
+    }
+};
+
 class CStreamingSA : public CStreaming
 {
 public:
@@ -56,6 +93,7 @@ public:
 
 #include "CStreamingSA.init.h"
 #include "CStreamingSA.utils.h"
+#include "CStreamingSA.runtime.h"
 
 extern class CRwObjectSA *g_replObjectNative[DATA_TEXTURE_BLOCK];
 extern class CColModelSA *g_colReplacement[DATA_TEXTURE_BLOCK];
