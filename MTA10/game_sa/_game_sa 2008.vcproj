@@ -783,6 +783,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CStreamingSA.runtime.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CStreamingSA.utils.cpp"
 				>
 			</File>
@@ -1517,6 +1521,10 @@
 			</File>
 			<File
 				RelativePath=".\CStreamingSA.init.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.runtime.h"
 				>
 			</File>
 			<File

@@ -226,6 +226,11 @@ CCore::CCore()
     m_uiNewNickWaitFrames = 0;
     m_iUnminimizeFrameCounter = 0;
     m_bDidRecreateRenderTargets = false;
+
+    // Initialize core modules
+    CCore::GetSingleton ( ).CreateNetwork ( );
+    CCore::GetSingleton ( ).CreateGame ( );
+    CCore::GetSingleton ( ).CreateMultiplayer ( );
 }
 
 CCore::~CCore()

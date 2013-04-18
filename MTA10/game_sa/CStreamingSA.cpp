@@ -55,9 +55,6 @@ CColModelSAInterface *g_originalCollision[DATA_TEXTURE_BLOCK];
 #define VAR_NUMMODELS           0x008E4CB8
 #define VAR_NUMPRIOMODELS       0x008E4BA0
 
-#define ARRAY_MODELIDS          0x008E4A60  // unsure
-#define ARRAY_LODMODELIDS       0x008E4AF8  // unsure
-
 #define FLAG_PRIORITY           0x10
 
 static streamingRequestCallback_t streamingRequestCallback = NULL;
@@ -168,7 +165,7 @@ static void __cdecl HOOK_CStreaming__RequestModel( unsigned int id, unsigned int
     switch( info->m_eLoading )
     {
     case MODEL_LOADING:
-    case MODEL_LOD:
+    case MODEL_QUEUE:
     case MODEL_RELOAD:
         // We are doing the job. No need to change stuff.
         return;
@@ -390,16 +387,19 @@ customJump:
         // Remove us from loading queue
         info->PopFromLoader();
     }
-    else if ( info->m_eLoading == MODEL_LOD )
+    else if ( info->m_eLoading == MODEL_QUEUE )
     {
-        // Unknown
-        for ( unsigned int n = 0; n < 30; n++ )
-        {
-            if (*((int*)ARRAY_MODELIDS + n) == (int)id)
-                *((int*)ARRAY_MODELIDS + n) = -1;
+        streamingRequest& primary = Streaming::GetStreamingRequest( 0 );
+        streamingRequest& secondary = Streaming::GetStreamingRequest( 1 );
 
-            if (*((int*)ARRAY_LODMODELIDS + n) == (int)id)
-                *((int*)ARRAY_LODMODELIDS + n) = -1;
+        // Invalidate any running queue requests for this model id
+        for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTS; n++ )
+        {
+            if ( primary.ids[n] == id )
+                primary.ids[n] = -1;
+
+            if ( secondary.ids[n] == id )
+                secondary.ids[n] = -1;
         }
     }
     else if ( info->m_eLoading == MODEL_RELOAD )
@@ -427,6 +427,31 @@ customJump:
         streamingFreeCallback( id );
 }
 
+/*=========================================================
+    HOOK_CStreaming__LoadAllRequestedModels
+
+    Arguments:
+        onlyPriority - appears to favour prioritized models if true
+    Purpose:
+        Cycles through the streaming loading system to process
+        loader queues (load and termination requests).
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0040EA10
+=========================================================*/
+static bool _isLoadingRequests = false;
+
+void __cdecl HOOK_CStreaming__LoadAllRequestedModels( bool onlyPriority )
+{
+    if ( _isLoadingRequests )
+        return;
+
+    _isLoadingRequests = true;
+
+    
+
+    _isLoadingRequests = false;
+}
+
 CStreamingSA::CStreamingSA( void )
 {
     // Initialize the accelerated streaming structures
@@ -438,12 +463,15 @@ CStreamingSA::CStreamingSA( void )
     HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
     HookInstall( 0x00410730, (DWORD)FreeCOLLibrary, 5 );
     HookInstall( 0x0040C6B0, (DWORD)LoadModel, 5 );
+    //HookInstall( FUNC_LoadAllRequestedModels, (DWORD)HOOK_CStreaming__LoadAllRequestedModels, 5 );
 
     StreamingLoader_Init();
+    StreamingRuntime_Init();
 }
 
 CStreamingSA::~CStreamingSA( void )
 {
+    StreamingRuntime_Shutdown();
     StreamingLoader_Shutdown();
 }
 
