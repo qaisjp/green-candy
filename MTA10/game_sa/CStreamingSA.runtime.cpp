@@ -14,28 +14,30 @@
 
 using namespace Streaming;
 
-HANDLE gtaStreamHandles[MAX_GTA_STREAM_HANDLES];    // file handles
+HANDLE gtaStreamHandles[MAX_GTA_STREAM_HANDLES];        // file handles
 streamName gtaStreamNames[MAX_GTA_STREAM_HANDLES];
 
-static unsigned int numActiveStreams = 0;           // Binary offsets: (1.0 US and 1.0 EU): 0x008E4094
-                                                    // fun fact: this variable is an unused left-over of Rockstar's development.
-                                                    // we all know that GTA:SA for PC is a quick&dirty port.
+static unsigned int numActiveStreams = 0;               // Binary offsets: (1.0 US and 1.0 EU): 0x008E4094
+                                                        // fun fact: this variable is an unused left-over of Rockstar's development.
+                                                        // we all know that GTA:SA for PC is a quick&dirty port.
 
-static DWORD streamOpenFlags = 0;
-static bool isSupportingOverlapped = false;         // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FE8
-static bool enableThreading = false;                // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FE4
+static DWORD streamOpenFlags = 0;                       // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FE0
+static bool isSupportingOverlapped = false;             // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FE8
+static bool enableThreading = false;                    // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FE4
 
-static syncSemaphore *syncSemaphores;               // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FFC
-static unsigned int numSyncSemaphores = 0;
-static unsigned int *semaphoreQueue = NULL;
-static unsigned int semaphoreQueueSizeCount = 0;
-static unsigned int semaphoreQueueReadIndex = 0;
+static syncSemaphore *syncSemaphores;                   // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FFC
+static unsigned int numSyncSemaphores = 0;              // Binary offsets: (1.0 US and 1.0 EU): 0x008E4090
+static unsigned int *semaphoreQueue = NULL;             // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FEC
+static unsigned int semaphoreQueueSizeCount = 0;        // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FF8
+static unsigned int semaphoreQueueReadIndex = 0;        // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FF4
 
-static HANDLE globalStreamingSemaphore;
+static unsigned int nextStreamReadOffset = 0;           // Binary offsets: (1.0 US and 1.0 EU): 0x008E4898
 
-static HANDLE streamingThread;
-static DWORD streamingThreadId;
-static unsigned int semaphoreThreadProcessIndex = 0;
+static HANDLE globalStreamingSemaphore;                 // Binary offsets: (1.0 US and 1.0 EU): 0x008E4004
+
+static HANDLE streamingThread;                          // Binary offsets: (1.0 US and 1.0 EU): 0x008E4008
+static DWORD streamingThreadId;                         // Binary offsets: (1.0 US and 1.0 EU): 0x008E4000
+static unsigned int semaphoreThreadProcessIndex = 0;    // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FF0
 
 namespace Streaming
 {
@@ -142,7 +144,7 @@ validIndex:
         SetLastError( 0 );
 
         // Write the offset of the next read
-        *(unsigned int*)0x008E4898 = offset + blockCount;
+        nextStreamReadOffset = offset + blockCount;
 
         // Get the real block offset without stream descriptor
         unsigned int blockOffset = offset & 0x00FFFFFF;
@@ -170,7 +172,7 @@ validIndex:
 
             // Notify the streaming thread.
             if ( !ReleaseSemaphore( globalStreamingSemaphore, 1, NULL ) )
-                OutputDebugString( "dude, one of your semaphores jerks around (I dunno what was originally here, so stfu!)" );
+                OutputDebugString( "global semaphore release failed\n" );
 
             return true;
         }
@@ -186,6 +188,21 @@ validIndex:
         SetFilePointer( file, blockOffset * 2048, NULL, FILE_BEGIN );
 
         return ReadFile( file, buffer, blockCount * 2048, NULL, NULL ) == TRUE;
+    }
+
+    /*=========================================================
+        GetStreamNextReadOffset
+
+        Purpose:
+            Returns the next stream read offset which has been established
+            in a prior call to ReadStream. This allows for consecutive stream
+            reading.
+        Binary offsets:
+            (1.0 US and 1.0 EU): 0x00406450
+    =========================================================*/
+    unsigned int __cdecl GetStreamNextReadOffset( void )
+    {
+        return nextStreamReadOffset;
     }
 
     /*=========================================================
@@ -309,7 +326,7 @@ validIndex:
         Binary offsets:
             (1.0 US and 1.0 EU): 0x00406560
     =========================================================*/
-    DWORD WINAPI StreamingThreadProc( LPVOID param )
+    static DWORD WINAPI StreamingThreadProc( LPVOID param )
     {
         for (;;)
         {
@@ -359,7 +376,7 @@ validIndex:
         Binary offsets:
             (1.0 US and 1.0 EU): 0x004068F0
     =========================================================*/
-    void __cdecl CreateStreamingThread( void )
+    static void __cdecl CreateStreamingThread( void )
     {
         // Start with a fresh error info
         SetLastError( 0 );
@@ -417,7 +434,10 @@ validIndex:
         Init
 
         Arguments:
-            numSync - amount of parallel streaming tasks
+            numSync - amount of parallel streaming tasks.
+                      describes the amount of parallel filesystem reading requests.
+                      increasing this value does not improve performance, as
+                      syncSymaphores are slot-based.
         Purpose:
             Initializes the streaming runtime environment. It is responsible
             for reading filesystem contents and offering them to the game
@@ -472,6 +492,7 @@ validIndex:
         CancelAllStreaming();
 
         // Testing phase is over; re-enable threading API
+        // Fun fact: we could add an option to not use threads, for the user ;)
         enableThreading = true;
 
         if ( res != TRUE )
@@ -486,31 +507,57 @@ validIndex:
         // Get rid of the temporary memory
         _aligned_free( buf );
     }
+
+    /*=========================================================
+        Terminate
+
+        Purpose:
+            Frees all resources which are associated with the streaming
+            resource loader.
+        Binary offsets:
+            (1.0 US and 1.0 EU): 0x00406370
+    =========================================================*/
+    void __cdecl Terminate( void )
+    {
+        if ( enableThreading )
+        {
+            LocalFree( semaphoreQueue );
+            CloseHandle( globalStreamingSemaphore );
+            CloseHandle( streamingThread );
+
+            for ( unsigned int n = 0; n < numSyncSemaphores; n++ )
+                CloseHandle( syncSemaphores[n].semaphore );
+        }
+
+        LocalFree( syncSemaphores );
+    }
 };
 
 void StreamingRuntime_Init( void )
 {
     using namespace Streaming;
 
+    // Install our code instead of Rockstar's.
     HookInstall( 0x004067B0, (DWORD)OpenStream, 5 );
     HookInstall( 0x00406A20, (DWORD)ReadStream, 5 );
+    HookInstall( 0x00406450, (DWORD)GetStreamNextReadOffset, 5 );
     HookInstall( 0x004063E0, (DWORD)GetSyncSemaphoreStatus, 5 );
     HookInstall( 0x00406460, (DWORD)CancelSyncSemaphore, 5 );
     HookInstall( 0x00406690, (DWORD)CancelAllStreaming, 5 );
     HookInstall( 0x00406B70, (DWORD)Init, 5 );
+    HookInstall( 0x00406370, (DWORD)Terminate, 5 );
+
+    // Practically, these patches are useless as that code is never called.
+    // We leave this in for reference anyway.
+    *(unsigned int*)0x0040676C = *(unsigned int*)0x004068DD =
+        (unsigned int)gtaStreamNames;
+
+    *(unsigned int*)0x00406737 = *(unsigned int*)0x00406797 = *(unsigned int*)0x004068AB = *(unsigned int*)0x004068C2 =
+    *(unsigned int*)0x004068D0 =
+        (unsigned int)gtaStreamHandles;
 }
 
 void StreamingRuntime_Shutdown( void )
 {
-    if ( enableThreading )
-    {
-        LocalFree( semaphoreQueue );
-        CloseHandle( globalStreamingSemaphore );
-        CloseHandle( streamingThread );
-
-        for ( unsigned int n = 0; n < numSyncSemaphores; n++ )
-            CloseHandle( syncSemaphores[n].semaphore );
-    }
-
-    LocalFree( syncSemaphores );
+    Streaming::Terminate();
 }

@@ -84,7 +84,7 @@ CGameSA::CGameSA()
     }
 
     // Set the model ids for all the CModelInfoSA instances
-    for ( unsigned int i = 0; i < MAX_MODELS; i++ )
+    for ( unsigned int i = 0; i < MAX_RESOURCES; i++ )
     {
         ModelInfo [i].SetModelID ( i );
     }
@@ -315,7 +315,7 @@ CModelInfoSA* CGameSA::GetModelInfo( unsigned short model )
 { 
     DEBUG_TRACE("CModelInfo* CGameSA::GetModelInfo( unsigned short model )");
 
-    if ( model > MAX_MODELS - 1 )
+    if ( model > MAX_RESOURCES - 1 )
         return NULL;
 
     if ( !ModelInfo[model].IsValid() )

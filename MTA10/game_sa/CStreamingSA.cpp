@@ -55,13 +55,13 @@ CColModelSAInterface *g_originalCollision[DATA_TEXTURE_BLOCK];
 #define VAR_NUMMODELS           0x008E4CB8
 #define VAR_NUMPRIOMODELS       0x008E4BA0
 
-#define FLAG_PRIORITY           0x10
-
 static streamingRequestCallback_t streamingRequestCallback = NULL;
 static streamingFreeCallback_t streamingFreeCallback = NULL;
 
+#include "CStreamingSA.utils.hxx"
+
 /*=========================================================
-    HOOK_CStreaming__RequestModel
+    Streaming::RequestModel
 
     Arguments:
         id - model info index to request
@@ -72,11 +72,54 @@ static streamingFreeCallback_t streamingFreeCallback = NULL;
     Binary offsets:
         (see CStreamingSA::RequestModel)
 =========================================================*/
-static void __cdecl HOOK_CStreaming__RequestModel( unsigned int id, unsigned int flags )
+struct ModelRequestDispatch : ModelCheckDispatch <true>
+{
+    unsigned int& m_flags;
+
+    ModelRequestDispatch( unsigned int& flags ) : m_flags( flags )
+    {
+    }
+
+    bool DoBaseModel( unsigned short id )
+    {
+        CBaseModelInfoSAInterface *model = ppModelInfo[id];
+        int animIndex = model->GetAnimFileIndex();
+
+        // Request the models textures
+        Streaming::RequestModel( model->usTextureDictionary + DATA_TEXTURE_BLOCK, m_flags );
+
+        // Get animation if necessary
+        if ( animIndex != -1 )
+            Streaming::RequestModel( animIndex + DATA_ANIM_BLOCK, 0x08 );
+
+        return true;
+    }
+
+    bool DoTexDictionary( unsigned short id )
+    {
+        CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
+
+        // Crashfix
+        if ( !txd )
+            return false;
+
+#ifdef MTA_DEBUG
+        OutputDebugString( SString( "loaded texDictionary %u\n", id - DATA_TEXTURE_BLOCK ) );
+#endif
+
+        // I think it loads textures, lol
+        if ( txd->m_parentTxd != 0xFFFF )
+            Streaming::RequestModel( txd->m_parentTxd + DATA_TEXTURE_BLOCK, m_flags );
+
+        return true;
+    }
+};
+
+void __cdecl Streaming::RequestModel( unsigned int id, unsigned int flags )
 {
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
-    if ( id > MAX_MODELS-1 )
+    if ( id > MAX_RESOURCES-1 )
         return;
 
     switch( info->m_eLoading )
@@ -181,35 +224,8 @@ static void __cdecl HOOK_CStreaming__RequestModel( unsigned int id, unsigned int
         break;
     }
 
-    // Perform actions depending on request type
-    if ( id < DATA_TEXTURE_BLOCK )
-    {
-        CBaseModelInfoSAInterface *model = ppModelInfo[id];
-        int animIndex = model->GetAnimFileIndex();
-
-        // Request the models textures
-        HOOK_CStreaming__RequestModel( model->usTextureDictionary + DATA_TEXTURE_BLOCK, flags );
-
-        // Get animation if necessary
-        if ( animIndex != -1 )
-            HOOK_CStreaming__RequestModel( animIndex + DATA_ANIM_BLOCK, 0x08 );
-    }
-    else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
-    {
-        CTxdInstanceSA *txd = (*ppTxdPool)->Get( id - DATA_TEXTURE_BLOCK );
-
-        // Crashfix
-        if ( !txd )
-            return;
-
-#ifdef MTA_DEBUG
-        OutputDebugString( SString( "loaded texDictionary %u\n", id - DATA_TEXTURE_BLOCK ) );
-#endif
-
-        // I think it loads textures, lol
-        if ( txd->m_parentTxd != 0xFFFF )
-            HOOK_CStreaming__RequestModel( txd->m_parentTxd + DATA_TEXTURE_BLOCK, flags );
-    }
+    if ( !DefaultDispatchExecute( id, ModelRequestDispatch( flags ) ) )
+        return;
 
     // Push onto the to-be-loaded queue
     info->PushIntoLoader( *(CModelLoadInfoSA**)0x008E4C58 );
@@ -228,7 +244,7 @@ reload:
 }
 
 /*=========================================================
-    HOOK_CStreaming__FreeModel
+    Streaming::FreeModel
 
     Arguments:
         id - model info index to request
@@ -239,137 +255,154 @@ reload:
     Binary offsets:
         (see CStreamingSA::FreeModel)
 =========================================================*/
-static void __cdecl HOOK_CStreaming__FreeModel( unsigned int id )
+struct ModelFreeDispatch : ModelCheckDispatch <false>
+{
+    bool DoBaseModel( unsigned short id )
+    {
+        CBaseModelInfoSAInterface *model = ppModelInfo[id];
+        int unk;
+        unsigned int *unk2;
+
+        // Model management fix: we unlink the collision so GTA:SA does not destroy it during
+        // RwObject deletion
+        if ( g_colReplacement[id] && model->GetRwModelType() == RW_CLUMP )
+            model->pColModel = NULL;
+
+        model->DeleteRwObject();
+
+        switch( model->GetModelType() )
+        {
+        case MODEL_ATOMIC:
+#ifdef _DEBUG
+            OutputDebugString( SString( "deleted mesh-type model %u\n", id ) );
+#endif
+            break;
+        case MODEL_PED:
+            unk = *(int*)VAR_PEDSPECMODEL;
+            unk2 = (unsigned int*)ARRAY_PEDSPECMODEL;
+
+            while ( unk2 < (unsigned int*)ARRAY_PEDSPECMODEL + 5 )
+            {
+                if (*unk2 == id)
+                {
+                    *unk2 = 0xFFFFFFFF;
+
+                    unk--;
+                }
+
+                unk2++;
+            }
+
+            *(int*)VAR_PEDSPECMODEL = unk;
+
+            break;
+        case MODEL_VEHICLE:
+#ifdef MTA_DEBUG
+            OutputDebugString( SString( "deleted vehicle model %u\n", id ) );
+#endif
+
+            // The_GTA: I removed the unused "vehicles" maximum clean-up code here.
+            // It was never used in GTA:SA anyway.
+            break;
+        }
+
+        // Model support bugfix: if we have a replacement for this model, we should not
+        // bother about management in the CStreaming class, so quit here
+        if ( g_replObjectNative[id] )
+            return false;
+
+        return true;
+    }
+
+    bool DoTexDictionary( unsigned short id )
+    {
+#ifdef MTA_DEBUG
+        OutputDebugString( SString( "Deleted texDictionary %u\n", id - DATA_TEXTURE_BLOCK ) );
+#endif
+
+        // Deallocate textures
+        (*ppTxdPool)->Get( id )->Deallocate();
+        return true;
+    }
+
+    bool DoCollision( unsigned short id )
+    {
+        // Destroy all collisions associated with the COL library
+        FreeCOLLibrary( id );
+        return true;
+    }
+
+    bool DoIPL( unsigned short id )
+    {
+        // This function destroys buildings/IPLs!
+        ((void (__cdecl*)( int ))0x00404B20)( id );
+        return true;
+    }
+
+    bool DoPathFind( unsigned short id )
+    {
+        __asm
+        {
+            movzx eax,id
+
+            push eax
+            mov ecx,CLASS_CPathFind
+            mov eax,0x0044D0F0
+            call eax
+        }
+
+        return true;
+    }
+
+    bool DoAnimation( unsigned short id )
+    {
+        // Animations...?
+        pGame->GetAnimManager()->RemoveAnimBlock( id );
+        return true;
+    }
+
+    bool DoScript( unsigned short id )
+    {
+        __asm
+        {
+            movzx eax,id
+
+            mov ecx,0x00A47B60
+            push eax
+            mov eax,0x004708E0
+            call eax
+        }
+    }
+};
+
+// Just about the same, but with a different base model logic.
+struct ModelAbortBigRequestDispatcher : ModelFreeDispatch
+{
+    bool DoBaseModel( unsigned short id )
+    {
+        RwFlushLoader();
+        return true;
+    }
+};
+
+void __cdecl Streaming::FreeModel( unsigned int id )
 {
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
-    if ( id > MAX_MODELS-1 )
+    if ( id > MAX_RESOURCES-1 )
         return;
 
     // Unavailable resources do not need termination
     if ( info->m_eLoading == MODEL_UNAVAILABLE )
         return;
 
-    if ( info->m_eLoading == MODEL_LOADED )
+    // Perform the freeing logic
+    if ( info->m_eLoading == MODEL_LOADED && DefaultDispatchExecute( id, ModelFreeDispatch() ) )
     {
-        if ( id < DATA_TEXTURE_BLOCK )
-        {
-            CBaseModelInfoSAInterface *model = ppModelInfo[id];
-            int unk;
-            unsigned int *unk2;
-
-            // Model management fix: we unlink the collision so GTA:SA does not destroy it during
-            // RwObject deletion
-            if ( g_colReplacement[id] && model->GetRwModelType() == RW_CLUMP )
-                model->pColModel = NULL;
-
-            model->DeleteRwObject();
-
-            switch( model->GetModelType() )
-            {
-            case MODEL_ATOMIC:
-#ifdef _DEBUG
-                OutputDebugString( SString( "deleted mesh-type model %u\n", id ) );
-#endif
-                break;
-            case MODEL_PED:
-                unk = *(int*)VAR_PEDSPECMODEL;
-                unk2 = (unsigned int*)ARRAY_PEDSPECMODEL;
-
-                while ( unk2 < (unsigned int*)ARRAY_PEDSPECMODEL + 5 )
-                {
-                    if (*unk2 == id)
-                    {
-                        *unk2 = 0xFFFFFFFF;
-
-                        unk--;
-                    }
-
-                    unk2++;
-                }
-
-                *(int*)VAR_PEDSPECMODEL = unk;
-
-                break;
-            case MODEL_VEHICLE:
-#ifdef MTA_DEBUG
-                OutputDebugString( SString( "deleted vehicle model %u\n", id ) );
-#endif
-
-                ((void (__cdecl*)( unsigned int ))0x004080F0)( id );
-
-                break;
-            }
-
-            // Model support bugfix: if we have a replacement for this model, we should not
-            // bother about management in the CStreaming class, so quit here
-            if ( g_replObjectNative[id] )
-                goto customJump;
-        }
-        else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
-        {
-#ifdef MTA_DEBUG
-            OutputDebugString( SString( "Deleted texDictionary %u\n", id - DATA_TEXTURE_BLOCK ) );
-#endif
-
-            // Deallocate textures
-            (*ppTxdPool)->Get( id - DATA_TEXTURE_BLOCK )->Deallocate();
-        }
-        else if ( id < 25255 )
-        {
-            // Destroy all collisions associated with the COL library
-            FreeCOLLibrary( id - 25000 );
-        }
-        else if ( id < 25511 )
-        {
-            // This function destroys buildings/IPLs!
-            __asm
-            {
-                mov eax,id
-                sub eax,25255
-
-                push eax
-                mov eax,0x00404B20
-                call eax
-                pop eax
-            }
-        }
-        else if ( id < DATA_ANIM_BLOCK )    // path finding...?
-        {
-            __asm
-            {
-                mov eax,id
-                sub eax,25511
-
-                push eax
-                mov ecx,CLASS_CPathFind
-                mov eax,0x0044D0F0
-                call eax
-            }
-        }
-        else if ( id < 25755 )
-        {
-            // Animations...?
-            pGame->GetAnimManager()->RemoveAnimBlock( id - DATA_ANIM_BLOCK );
-        }
-        else if ( id >= 26230 )
-        {
-            __asm
-            {
-                mov eax,id
-                sub eax,26230
-
-                mov ecx,0x00A47B60
-                push eax
-                mov eax,0x004708E0
-                call eax
-            }
-        }
-
+        // Only decrease if the free-request was successful!
         *(DWORD*)VAR_MEMORYUSAGE -= info->m_blockCount * 2048;
     }
 
-customJump:
     if ( info->m_primaryModel != 0xFFFF )
     {
         if ( info->m_eLoading == MODEL_LOADING )
@@ -405,18 +438,7 @@ customJump:
     else if ( info->m_eLoading == MODEL_RELOAD )
     {
         // Abort an ongoing/flattened-out loading process
-        if ( id < DATA_TEXTURE_BLOCK )
-            RwFlushLoader();
-        else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
-            (*ppTxdPool)->Get( id - DATA_TEXTURE_BLOCK )->Deallocate();
-        else if ( id < 25255 )
-            FreeCOLLibrary( id - 25000 );
-        else if ( id < 25511 )
-            ( (void (*)( unsigned int model ))0x00404B20 )( id - 25255 );
-        else if ( id >= DATA_ANIM_BLOCK && id < 25755 )
-            pGame->GetAnimManager()->RemoveAnimBlock( id - DATA_ANIM_BLOCK );
-        else if ( id >= 26230 )
-            ( (void (__stdcall*)( unsigned int model ))0x004708E0 )( id - 26230 );
+        DefaultDispatchExecute( id, ModelAbortBigRequestDispatcher() );
     }
 
     // Mark that all resources have been terminated.
@@ -428,7 +450,7 @@ customJump:
 }
 
 /*=========================================================
-    HOOK_CStreaming__LoadAllRequestedModels
+    Streaming::LoadAllRequestedModels
 
     Arguments:
         onlyPriority - appears to favour prioritized models if true
@@ -438,17 +460,89 @@ customJump:
     Binary offsets:
         (1.0 US and 1.0 EU): 0x0040EA10
 =========================================================*/
-static bool _isLoadingRequests = false;
+static volatile bool _isLoadingRequests = false;
 
-void __cdecl HOOK_CStreaming__LoadAllRequestedModels( bool onlyPriority )
+void __cdecl Streaming::LoadAllRequestedModels( bool onlyPriority )
 {
+    using namespace Streaming;
+
     if ( _isLoadingRequests )
         return;
 
     _isLoadingRequests = true;
-
+    PulseStreamingRequests();
     
+    unsigned int pulseCount = max( 10, *(unsigned int*)0x008E4CB8 * 2 );
+    unsigned int threadId = 0;
 
+    for (;;)
+    {
+        // Check whether activity is required at all
+        if ( GetLastQueuedLoadInfo() == *(CModelLoadInfoSA**)0x008E4C58 &&
+            GetStreamingRequest( 0 ).status == streamingRequest::STREAMING_NONE &&
+            GetStreamingRequest( 1 ).status == streamingRequest::STREAMING_NONE )
+            break;
+
+        if ( pulseCount == 0 )
+            break;
+
+        if ( *(bool*)0x008E4A58 )
+            threadId = 0;
+
+        streamingRequest& requester = GetStreamingRequest( threadId );
+
+        // Cancel any pending activity (if PulseStreamingRequests did not finish it)
+        if ( requester.status != streamingRequest::STREAMING_NONE )
+        {
+            CancelSyncSemaphore( threadId );
+
+            // Tell the requester about it
+            requester.statusCode = 100;
+        }
+
+        // Try to finish the loading procedure
+        if ( requester.status == streamingRequest::STREAMING_BUFFERING )
+        {
+            ProcessStreamingRequest( threadId );
+
+            // This once again enforces this coroutine like loading logic.
+            // It expects resources to at least take two pulses to load properly.
+            // The system breaks if more pulses are required.
+            if ( requester.status == streamingRequest::STREAMING_LOADING )
+                ProcessStreamingRequest( threadId );
+        }
+
+        // If we expect to load only priority and there is no priority models
+        // to load, we can cancel here.
+        if ( onlyPriority && *(unsigned int*)0x008E4BA0 == 0 )
+            break;
+
+        // We can only perform this loading logic if all models have acquired their resources
+        // (no big models are being loaded)
+        if ( !*(bool*)0x008E4A58 )
+        {
+            streamingRequest& otherRequester = GetStreamingRequest( 1 - threadId );
+
+            // Pulse the other streaming request if we can
+            if ( otherRequester.status == streamingRequest::STREAMING_NONE )
+                PulseStreamingRequest( 1 - threadId );
+
+            // Check that we did not begin loading a big model
+            // Pulse the primary requester if we can
+            if ( !*(bool*)0x008E4A58 && requester.status == streamingRequest::STREAMING_NONE )
+                PulseStreamingRequest( threadId );
+        }
+
+        // If we have no more activity, we can break here
+        if ( GetStreamingRequest( 0 ).status == streamingRequest::STREAMING_NONE &&
+             GetStreamingRequest( 1 ).status == streamingRequest::STREAMING_NONE )
+            break;
+
+        // Switch the thread id (cycle through them)
+        threadId = 1 - threadId;
+    }
+    
+    PulseStreamingRequests();
     _isLoadingRequests = false;
 }
 
@@ -459,11 +553,18 @@ CStreamingSA::CStreamingSA( void )
     memset( g_originalCollision, 0, sizeof(g_originalCollision) );
 
     // Hook the model requester
-    HookInstall( FUNC_CStreaming__RequestModel, (DWORD)HOOK_CStreaming__RequestModel, 6 );
-    HookInstall( 0x004089A0, (DWORD)HOOK_CStreaming__FreeModel, 6 );
+    HookInstall( FUNC_CStreaming__RequestModel, (DWORD)Streaming::RequestModel, 6 );
+    HookInstall( 0x004089A0, (DWORD)Streaming::FreeModel, 6 );
     HookInstall( 0x00410730, (DWORD)FreeCOLLibrary, 5 );
     HookInstall( 0x0040C6B0, (DWORD)LoadModel, 5 );
-    //HookInstall( FUNC_LoadAllRequestedModels, (DWORD)HOOK_CStreaming__LoadAllRequestedModels, 5 );
+    //HookInstall( 0x00407AD0, (DWORD)CheckAnimDependency, 5 );
+    //HookInstall( 0x00409A90, (DWORD)CheckTXDDependency, 5 );  // you better do not fuck around with securom
+    
+    //HookInstall( FUNC_LoadAllRequestedModels, (DWORD)Streaming::LoadAllRequestedModels, 5 );
+    //HookInstall( 0x00408E20, (DWORD)ProcessLoadQueue, 5 );
+    HookInstall( 0x0040E170, (DWORD)ProcessStreamingRequest, 5 );
+    //HookInstall( 0x0040CBA0, (DWORD)PulseStreamingRequest, 5 );
+    //HookInstall( 0x0040E460, (DWORD)PulseStreamingRequests, 5 );
 
     StreamingLoader_Init();
     StreamingRuntime_Init();
@@ -502,7 +603,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
     if ( IsUpgradeModelId( id ) )
         RequestVehicleUpgrade( id, flags );
     else
-        HOOK_CStreaming__RequestModel( id, flags );
+        Streaming::RequestModel( id, flags );
 }
 
 /*=========================================================
@@ -521,7 +622,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
 =========================================================*/
 void CStreamingSA::FreeModel( unsigned short id )
 {
-    HOOK_CStreaming__FreeModel( id );
+    Streaming::FreeModel( id );
 }
 
 /*=========================================================
@@ -594,7 +695,7 @@ void CStreamingSA::WaitForModel( unsigned int id )
 {
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
-    if ( id > MAX_MODELS-1 )
+    if ( id > MAX_RESOURCES-1 )
         return;
 }
 
@@ -613,7 +714,7 @@ void CStreamingSA::WaitForModel( unsigned int id )
 void CStreamingSA::RequestAnimations( int idx, unsigned int flags )
 {
     idx += DATA_ANIM_BLOCK;
-    RequestModel( idx, flags );
+    Streaming::RequestModel( idx, flags );
 }
 
 /*=========================================================

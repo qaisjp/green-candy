@@ -18,7 +18,11 @@
 #include "Common.h"
 
 #define DATA_TEXTURE_BLOCK      20000
+#define DATA_COLL_BLOCK         25000
+#define DATA_IPL_BLOCK          25255
+#define DATA_PATHFIND_BLOCK     25511
 #define DATA_ANIM_BLOCK         25575
+#define DATA_RECORD_BLOCK       25755
 
 #define FUNC_CStreaming__RequestModel                       0x4087E0
 #define FUNC_LoadAllRequestedModels                         0x40EA10
@@ -29,7 +33,8 @@
 #define FUNC_CStreaming_RequestAnimations                   0x407120
 #define FUNC_CStreaming_RequestSpecialModel                 0x409d10
 
-#define MAX_MODELS                                          28835
+#define MAX_RESOURCES                                       26300
+#define MAX_MODELS                                          20000
 
 #define ARRAY_StreamerRequest   0x008E4A60
 #define MAX_STREAMING_REQUESTS  16
@@ -38,10 +43,24 @@
 struct streamingRequest //size: 152
 {
 public:
-    int     ids[MAX_STREAMING_REQUESTS];        // 0
-    size_t  sizes[MAX_STREAMING_REQUESTS];      // 64
+    enum statusType : unsigned int
+    {
+        STREAMING_NONE,
+        STREAMING_BUFFERING,
+        STREAMING_LOADING,
+        STREAMING_WAITING,
+        STREAMING_READY
+    };
 
-    BYTE    pad[24];                            // 128
+    int             ids[MAX_STREAMING_REQUESTS];        // 0
+    size_t          bufOffsets[MAX_STREAMING_REQUESTS]; // 64, offset into the thread allocation buffer
+
+    statusType      status;                             // 128
+    int             statusCode;                         // 132
+    unsigned int    offset;                             // 136, IMG archive offset descriptor
+    unsigned int    blockCount;                         // 140
+    unsigned int    count;                              // 144
+    unsigned int    returnCode;                         // 148
 };
 
 namespace Streaming
@@ -62,10 +81,21 @@ namespace Streaming
         OVERLAPPED      overlapped;             // 28
     };
 
+    // There is a maximum of 2 streaming requests internally in the engine.
+    // Those slots are parallel to the maximum syncSemaphores.
+    // streamingRequest contains model ids which request data throug
     inline streamingRequest&    GetStreamingRequest( unsigned int id )
     {
+        if ( id > 2 )
+            __asm int 3
+
         return *( (streamingRequest*)ARRAY_StreamerRequest + id );
     }
+
+    // Public functions
+    void __cdecl RequestModel( unsigned int id, unsigned int flags );
+    void __cdecl FreeModel( unsigned int id );
+    void __cdecl LoadAllRequestedModels( bool onlyPriority );
 };
 
 class CStreamingSA : public CStreaming
@@ -94,6 +124,89 @@ public:
 #include "CStreamingSA.init.h"
 #include "CStreamingSA.utils.h"
 #include "CStreamingSA.runtime.h"
+
+// Internal class used to store model indices in
+// Somewhat deprecated type.
+class ModelIdContainer
+{
+public:
+    static const unsigned int max = 23;
+
+    // Binary offsets: (1.0 US and 1.0 EU): 0x00611B90
+    ModelIdContainer( void )
+    {
+        memset( ids, 0xFF, sizeof( ids ) );
+    }
+
+    // Binary offsets: (1.0 US and 1.0 EU): 0x00611BB0
+    void Append( unsigned short item )
+    {
+        for ( unsigned int n = 0; n < max; n++ )
+        {
+            unsigned short id = ids[n];
+
+            if ( id == 0xFFFF )
+            {
+                ids[n] = item;
+                return;
+            }
+        }
+    }
+
+    // Binary offsets: (1.0 US and 1.0 EU): 0x00611BD0
+    void Remove( unsigned short item )
+    {
+        unsigned int n = 0;
+
+        for ( ; n < max; n++ )
+        {
+            unsigned short id = ids[n];
+
+            if ( id == item )
+                goto found;
+        }
+
+        return;
+
+found:
+        for ( ; n < max - 1; n++ )
+            ids[n] = ids[n + 1];
+
+        ids[max - 1] = 0xFFFF;
+    }
+
+    // Binary offsets: (1.0 US and 1.0 EU): 0x00611C20
+    unsigned short GetValue( unsigned int idx )
+    {
+        assert( idx < max );
+
+        return ids[idx];
+    }
+
+    unsigned int Find( unsigned short item )
+    {
+        for ( unsigned int n = 0; n < max; n++ )
+        {
+            if ( ids[n] == item )
+                return n;
+        }
+
+        return max;
+    }
+
+    // Binary offsets: (1.0 US and 1.0 EU): 0x00611C30
+    unsigned int Count( void )
+    {
+        return Find( 0 );
+    }
+
+private:
+    unsigned short ids[max];
+};
+
+// Important loader flags
+#define FLAG_PRIORITY           0x10
+#define FLAG_NODEPENDENCY       0x0E
 
 extern class CRwObjectSA *g_replObjectNative[DATA_TEXTURE_BLOCK];
 extern class CColModelSA *g_colReplacement[DATA_TEXTURE_BLOCK];

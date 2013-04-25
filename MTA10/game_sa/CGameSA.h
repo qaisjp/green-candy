@@ -99,7 +99,7 @@ class CGameSA : public CGame
 
 private:
     CWeaponInfoSA*      WeaponInfos[NUM_WeaponInfosTotal];
-    CModelInfoSA        ModelInfo[MAX_MODELS];
+    CModelInfoSA        ModelInfo[MAX_RESOURCES];
 public:
                                         CGameSA(); // constructor
                                         ~CGameSA();

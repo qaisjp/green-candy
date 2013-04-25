@@ -1532,6 +1532,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CStreamingSA.utils.hxx"
+				>
+			</File>
+			<File
 				RelativePath=".\CTaskAllocatorSA.h"
 				>
 			</File>

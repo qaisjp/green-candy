@@ -13,6 +13,8 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
+#include "CStreamingSA.utils.hxx"
+
 // This file includes examples of clever goto usage.
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
@@ -481,6 +483,85 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
 }
 
 /*=========================================================
+    ReadClumpBigContinue
+
+    Arguments:
+        stream - binary stream which contains the clump file
+    Purpose:
+        Reads a RenderWare clump from the given stream and returns
+        it. Returns NULL if the clump is invalid.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0072E620
+    Note:
+        This function is never used in GTA:SA.
+=========================================================*/
+static RpClump* __cdecl ReadClumpBigContinue( RwStream *stream )
+{
+    RpClump *clump = RpClumpCreate();
+
+    if ( !clump )
+        return NULL;
+
+    // Get to the current stream offset
+    RwStreamSkip( stream, *(unsigned int*)0x00C87AFC - stream->data.position );
+
+    // The_GTA: since this function is never used and there are much better
+    // ways to load RenderWare resources, I decide to leave this old code out.
+    // The way of the future is fibered loading! We shall utilize it in
+    // MTA:BLUE 2.0 to increase overall performance of MTA. It is a way
+    // to load resources using multiple threads.
+
+    return clump;
+}
+
+/*=========================================================
+    LoadClumpFileBigContinue
+
+    Arguments:
+        stream - binary stream which contains the clump file
+        id - clump model info id
+    Purpose:
+        Takes the stream and loads a big clump into the requested
+        model info. Returns whether the clump was successfully
+        loaded. This function continues a previous clump read
+        request.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00537450
+    Note:
+        This function is never used in GTA:SA.
+=========================================================*/
+static bool __cdecl LoadClumpFileBigContinue( RwStream *stream, unsigned int id )
+{
+    CClumpModelInfoSAInterface *info = (CClumpModelInfoSAInterface*)ppModelInfo[id];
+
+    assert( info->GetRwModelType() == RW_CLUMP );
+
+    bool isVehicle = info->GetModelType() == MODEL_VEHICLE;
+
+    if ( isVehicle )
+        RwRemapScan::Apply();
+
+    // Do load our imported textures
+    RwImportedScan::Apply( id );
+
+    RpClump *clump = ReadClumpBigContinue( stream );
+
+    // Pop the texture scanners
+    RwImportedScan::Unapply();
+
+    if ( isVehicle )
+        RwRemapScan::Unapply();
+
+    if ( clump )
+    {
+        info->SetClump( clump );
+        return true;
+    }
+
+    return false;
+}
+
+/*=========================================================
     RwTexDictionaryLoadFirstHalf
 
     Arguments:
@@ -491,12 +572,26 @@ static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
         function. This way execution time is (somewhat) flattened out.
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00731070
+    Note:
+        Other than the big clump loading, this code does appear
+        to be used!
 =========================================================*/
-static unsigned int *const VAR_NumTXDBlocks = (unsigned int*)0x008D6088;
+static unsigned int big_numTXDBlocks = 0;
+static unsigned int big_txdStreamOffset = 0;
+
+static inline void RwTexDictionaryClear( RwTexDictionary *txd )
+{
+    // Destroy all attached textures
+    LIST_FOREACH_BEGIN( RwTexture, txd->textures.root, TXDList )
+        RwTextureDestroy( item );
+    LIST_FOREACH_END
+
+    RwTexDictionaryDestroy( txd );
+}
 
 static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
 {
-    *VAR_NumTXDBlocks = 0;
+    big_numTXDBlocks = 0;
 
     unsigned int version;
     unsigned int length;
@@ -516,7 +611,7 @@ static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
 
     unsigned short numBlocksHalf = info.count / 2;
 
-    *VAR_NumTXDBlocks = numBlocksHalf;
+    big_numTXDBlocks = numBlocksHalf;
 
     while ( info.count > numBlocksHalf )
     {
@@ -524,12 +619,7 @@ static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
 
         if ( !tex )
         {
-            // Destroy all attached textures
-            LIST_FOREACH_BEGIN( RwTexture, txd->textures.root, TXDList )
-                RwTextureDestroy( item );
-            LIST_FOREACH_END
-
-            RwTexDictionaryDestroy( txd );
+            RwTexDictionaryClear( txd );
             return NULL;
         }
 
@@ -538,7 +628,44 @@ static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
         info.count--;
     }
 
-    *(unsigned int*)0x00C87FE8 = stream->data.position;
+    big_txdStreamOffset = stream->data.position;
+    return txd;
+}
+
+/*=========================================================
+    RwTexDictionaryContinueLoading
+
+    Arguments:
+        stream - binary stream which contains the TXD
+    Purpose:
+        Loads the other half of the requested big TexDictionary
+        by using the cached stream offset and block count. Returns
+        the TexDictionary if successful.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00731150
+    Note:
+        Other than the big clump loading, this code does appear
+        to be used!
+=========================================================*/
+static RwTexDictionary* RwTexDictionaryContinueLoading( RwStream *stream, RwTexDictionary *txd )
+{
+    // Jump to the previous stream offset
+    RwStreamSkip( stream, big_txdStreamOffset - stream->data.position );
+
+    for ( unsigned int n = big_numTXDBlocks; n != 0; n-- )
+    {
+        RwTexture *tex = RwTextureStreamReadEx( stream );
+
+        if ( !tex )
+        {
+            RwTexDictionaryClear( txd );
+            return NULL;
+        }
+
+        tex->AddToDictionary( txd );
+    }
+
+    big_numTXDBlocks = 0;
     return txd;
 }
 
@@ -564,6 +691,32 @@ static bool __cdecl LoadTXDFirstHalf( unsigned int id, RwStream *stream )
         return false;
 
     return ( txd->m_txd = RwTexDictionaryLoadFirstHalf( stream ) ) != NULL;
+}
+
+/*=========================================================
+    LoadTXDContinue
+
+    Arguments:
+        id - index of the TXD instance
+        stream - binary stream which contains the TXD
+    Purpose:
+        Continues the TXD loading procedure which was initiated
+        by LoadTXDFirstHalf. The remaining textures are loaded
+        from the stream and added to the TXD pointed at by id.
+        Returns false if there was an error during loading.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00731E40
+=========================================================*/
+static bool __cdecl LoadTXDContinue( unsigned int id, RwStream *stream )
+{
+    CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( id );
+
+    RwTexDictionary *txd = txdInst->m_txd = RwTexDictionaryContinueLoading( stream, txdInst->m_txd );
+
+    if ( txd )
+        txdInst->InitParent();
+
+    return txd != NULL;
 }
 
 /*=========================================================
@@ -883,6 +1036,109 @@ void __cdecl FreeCOLLibrary( unsigned char collId )
 }
 
 /*=========================================================
+    CheckTXDDependency
+
+    Arguments:
+        id - index of the TXD instance to check dependency on resources of
+    Purpose:
+        Returns whether the given TXD instance is required by any
+        model or not. If this function returns false, the resource
+        loader should not bother about loading that TXD instance to
+        save streaming memory. Thus, this function is a TXD instance
+        Garbage Collector check.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00409A90
+=========================================================*/
+// Generic dependency routine
+template <class checkType, class dependType>
+inline bool CheckDependency( dependType id )
+{
+    using namespace Streaming;
+    checkType checker;
+    
+    // Check the queued requests
+    {
+        CModelLoadInfoSA *item = GetQueuedLoadInfo();
+        CModelLoadInfoSA *endItem = *(CModelLoadInfoSA**)0x008E4C54;    // toBeLoadedQueue
+        unsigned short itemId = item->GetIndex();
+
+        for ( ; item != endItem; item = &GetModelLoadInfo( itemId = item->m_primaryModel ) )
+        {
+            // The_GTA: I optimized the id calculation, so it only calculates it once (for the first requested item)
+            // An example of how compilers cannot be perfect. Developers should always try to optimize their code.
+            // Do not listen to people who want to prevent you from optimizing.
+            if ( checker( itemId, id ) )
+                return true;
+        }
+    }
+
+    // Check the streaming requests.
+    // The_GTA: I fixed a bug in here which made invalid memory requests if anything else
+    // than models or textures were requested in here. I do not know how R* could mess this up.
+    // Hard to explain, since their code does not make sense :P
+    for ( unsigned char n = 0; n < 2; n++ )
+    {
+        for ( unsigned char i = 0; i < MAX_STREAMING_REQUESTS; i++ )
+        {
+            unsigned short itemId = GetStreamingRequest( n ).ids[i];
+
+            if ( itemId != 0xFFFF && checker( itemId, id ) )
+                return true;
+        }
+    }
+
+    // There is no dependency on that instance.
+    // Hence we do not require that instance loaded.
+    // If we want instances loaded in MTA anyway, it could be interesting to add our
+    // own hook for dependency logic here!
+    return false;
+}
+
+struct ModelTXDDependency
+{
+    inline bool operator() ( unsigned short model, unsigned short txdId )
+    {
+        return model < DATA_TEXTURE_BLOCK && (unsigned short)ppModelInfo[model]->usTextureDictionary == txdId ||
+               usOffset( model, DATA_TEXTURE_BLOCK ) < MAX_TXD && (*ppTxdPool)->Get( usOffset( model, DATA_TEXTURE_BLOCK ) )->m_parentTxd == txdId;
+    }
+};
+
+bool __cdecl CheckTXDDependency( int id )
+{
+    return CheckDependency <ModelTXDDependency> ( (unsigned short)id );
+}
+
+/*=========================================================
+    CheckAnimDependency
+
+    Arguments:
+        id - index of the TXD instance to check dependency on resources of
+    Purpose:
+        Returns whether the given animation is required by any
+        model or not. If this function returns false, the resource
+        loader should not bother about loading it (saves streaming memory).
+        Thus, this function is an animation Garbage Collector check.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00407AD0
+=========================================================*/
+struct ModelAnimDependency
+{
+    inline bool operator() ( unsigned short model, int animId )
+    {
+        return model < DATA_TEXTURE_BLOCK && ppModelInfo[model]->GetAnimFileIndex() == animId;
+    }
+};
+
+bool __cdecl CheckAnimDependency( int id )
+{
+    // It is pretty crazy how you can optimize it, right? :P
+    // Instead of doubling the code, you can use templates!
+    // And, it is very smart to use generic callbacks, too.
+    // Read about functors (like ModelAnimDependency), Cazomino05.
+    return CheckDependency <ModelAnimDependency> ( id );
+}
+
+/*=========================================================
     LoadModel
 
     Arguments:
@@ -910,7 +1166,7 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
 
     RwBuffer streamBuffer;
     streamBuffer.ptr = buf;
-    streamBuffer.size = loadInfo.m_blockCount * 2048;   // we are reading from IMG chunks
+    streamBuffer.size = loadInfo.GetSize();     // we are reading from IMG chunks
 
     // Create a stream
     RwStream *stream = RwStreamInitialize( (void*)0x008E48AC, 0, 3, 1, &streamBuffer );
@@ -981,8 +1237,6 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
             if ( animBlock )
                 animBlock->m_references--;
 
-            // The_GTA: if the loading failed, we should not reload it anymore.
-            // Otherwise there is an endless loading loop (changed failure to failureDamned)
             if ( !success )
                 goto failure;
           
@@ -995,7 +1249,7 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
     }
     else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
     {
-        unsigned short txdId = id - DATA_TEXTURE_BLOCK;
+        unsigned short txdId = usOffset( id, DATA_TEXTURE_BLOCK );
         CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( txdId );
 
         if ( txdInst->m_parentTxd != 0xFFFF )
@@ -1004,8 +1258,8 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
                 goto failure;
         }
 
-        // Check the threaded streaming environment (I guess?)
-        if ( !( loadInfo.m_flags & 0x0E ) && !((bool (__cdecl*)( unsigned int txdID ) )0x00409A90)( txdId ) )
+        // Check whether we depend on this TXD instance (unless we specifically want it without dependency)
+        if ( !( loadInfo.m_flags & FLAG_NODEPENDENCY ) && !CheckTXDDependency( txdId ) )
             goto failureDamned;
 
         bool successLoad;
@@ -1055,7 +1309,7 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
     }
     else if ( id < 25755 )
     {
-        if ( loadInfo.m_flags & 0x0E || ((bool (__cdecl*)( unsigned int id ))0x00407AD0)( id - 25575 ) )
+        if ( loadInfo.m_flags & FLAG_NODEPENDENCY || CheckAnimDependency( id - 25575 ) )
         {
             if ( loadInfo.m_blockCount == 0 )
                 goto failureDamned;
@@ -1112,20 +1366,701 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
 
     // failure should be a commonly used routine in this function.
 failure:
-    CStreamingSA *streaming = pGame->GetStreaming();
-
-    streaming->FreeModel( id );
-    streaming->RequestModel( id, loadInfo.m_flags );
+    Streaming::FreeModel( id );
+    Streaming::RequestModel( id, loadInfo.m_flags );
 
     RwStreamClose( stream, &streamBuffer );
     return false;
 
     // failureDamned is rarely used but important for reference/comparison here.
 failureDamned:
-    pGame->GetStreaming()->FreeModel( id );
+    Streaming::FreeModel( id );
 
     RwStreamClose( stream, &streamBuffer );
     return false;
+}
+
+/*=========================================================
+    CompleteStreamingRequest
+
+    Arguments:
+        id - index of the streamingRequest
+    Purpose:
+        Finishes all data requesting of the specified streamingRequest.
+        After that the streamingRequest may be ready for loading.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004076C0
+=========================================================*/
+static unsigned int streamingWaitModel = 0xFFFFFFFF;
+
+void __cdecl CompleteStreamingRequest( unsigned int idx )
+{
+    using namespace Streaming;
+
+    streamingRequest& requester = GetStreamingRequest( idx );
+
+    while ( streamingWaitModel != 0xFFFFFFFF )
+    {
+        unsigned int status = requester.status;
+
+        if ( status )
+        {
+            if ( status == 1 )
+            {
+                // Have we successfully processed the request?
+                if ( ProcessStreamingRequest( idx ) )
+                {
+                    // Now that we are finished loading the resources, load it
+                    if ( requester.status == streamingRequest::STREAMING_LOADING )
+                        ProcessStreamingRequest( idx );
+
+                    // We no longer wait for a resource to load
+                    streamingWaitModel = 0xFFFFFFFF;
+                    break;
+                }
+                
+                continue;
+            }
+            else if ( status == 2 )
+                continue;
+            else
+            {
+                requester.count++;
+
+                unsigned int syncStatus = GetSyncSemaphoreStatus( idx );
+
+                if ( syncStatus == 0xFF || syncStatus == 0xFA )
+                    continue;
+            }
+
+            // Perform the read request
+            ReadStream( idx, ((char**)0x008E4CAC)[idx], requester.offset, requester.blockCount );
+
+            // Change our status
+            requester.status = streamingRequest::STREAMING_BUFFERING;
+            requester.statusCode = -0xFF;
+        }
+    }
+
+    // Call some random updater function
+    // This function was prolly used by the loading bar in the past.
+    ((void (__cdecl*)( void ))0x00590320)();
+}
+
+/*=========================================================
+    LoadBigModel
+
+    Arguments:
+        buf - memory buffer which contains the resource
+        id - model info index
+    Purpose:
+        Loads a big model resource and inserts it into the model
+        info described by id. Returns whether the loading process
+        was successful.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00408CB0
+=========================================================*/
+bool __cdecl LoadBigModel( char *buf, unsigned int id )
+{
+    using namespace Streaming;
+
+    CModelLoadInfoSA *loadInfo = &GetModelLoadInfo( id );
+
+    // Check whether we are ready to load in the first place.
+    if ( loadInfo->m_eLoading != MODEL_RELOAD )
+    {
+        if ( id < DATA_TEXTURE_BLOCK )
+            ppModelInfo[id]->Dereference();
+
+        return false;
+    }
+
+    // Set up the RenderWare stream
+    RwBuffer rwbuf;
+    rwbuf.ptr = buf;
+    rwbuf.size = loadInfo->m_blockCount * 2048;
+
+    RwStream *stream = RwStreamInitialize( (void*)0x008E48AC, 0, 3, 1, &rwbuf );
+
+    bool success;
+
+    // Dispatch by request type.
+    if ( id < DATA_TEXTURE_BLOCK )
+    {
+        // Actually, this is unused; so screw it :P
+        success = false;
+    }
+    else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
+    {
+        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( usOffset( id, DATA_TEXTURE_BLOCK ) );
+
+        // Reference it during the loading
+        txdInst->Reference();
+
+        success = LoadTXDContinue( usOffset( id, DATA_TEXTURE_BLOCK ), stream );
+
+        // Remove the reference again. Let the garbage collector unload it if necessary.
+        txdInst->DereferenceNoDestroy();
+    }
+    else
+        success = true; // succeeds by default
+
+    RwStreamClose( stream, &rwbuf );
+
+    // Increase the actual streaming memory usage
+    *(unsigned int*)0x008E4CB4 += rwbuf.size;
+
+    // Big model has been successfully loaded?
+    loadInfo->m_eLoading = MODEL_LOADED;
+
+    // Check whether the loading was actually successful.
+    if ( !success )
+    {
+        // We failed. Try again!
+        FreeModel( id );
+        RequestModel( id, loadInfo->m_flags );
+        return false;
+    }
+
+    return true;
+}
+
+/*=========================================================
+    UnclogMemoryUsage
+
+    Arguments:
+        mem_size - amount of memory required to free
+    Purpose:
+        Attempts to free the given amount of streaming memory
+        so that the allocation of future resources which require
+        that amount will not fail due to memory shortage.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0040E120
+=========================================================*/
+void __cdecl UnclogMemoryUsage( size_t mem_size )
+{
+    // Will investigate this later.
+    ((void (__cdecl*)( size_t mem_size ))0x0040E120)( mem_size );
+}
+
+/*=========================================================
+    ProcessStreamingRequest
+
+    Arguments:
+        id - index of the streamingRequest
+    Purpose:
+        Handles a streaming request table and attempts to load
+        associated models while freeing others to fit the
+        maximum streaming memory. This function is the core
+        utility of the GTA:SA model streaming management.
+        Returns whether processing was successful. It fails if
+        the loading of the syncSemaphore is still pending.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0040E170
+    Note:
+        The original GTA:SA function is a mess and an example of
+        how GTA:SA is not a great engine. The GTA community figured
+        about this anyway, so that should be proof.
+=========================================================*/
+bool __cdecl ProcessStreamingRequest( unsigned int id )
+{
+    using namespace Streaming;
+
+    streamingRequest& requester = Streaming::GetStreamingRequest( id );
+
+    // Are we waiting for resources?
+    if ( unsigned int status = GetSyncSemaphoreStatus( id ) )
+    {
+        if ( status == 0xFF || status == 0xFA )
+            return false;
+
+        // Make our initial status
+        requester.returnCode = status;
+        requester.status = streamingRequest::STREAMING_WAITING;
+
+        // We cannot wait for a model if we already wait for one!
+        // Let this request fail then.
+        if ( streamingWaitModel != 0xFFFFFFFF )
+            return false;
+
+        CompleteStreamingRequest( id );
+        return true;
+    }
+
+    bool isLoading = requester.status == streamingRequest::STREAMING_LOADING;
+    requester.status = streamingRequest::STREAMING_NONE;
+
+    if ( isLoading )
+    {
+        // Continue the loading procedure.
+        LoadBigModel( ((char**)0x008E4CAC)[id] + requester.bufOffsets[0] * 2048, requester.ids[0] );
+
+        // Mark that we are done.
+        requester.ids[0] = -1;
+    }
+    else
+    {
+        // Attempt to load the queue
+        for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTS; n++ )
+        {
+            unsigned short mid = requester.ids[n];
+
+            if ( mid != 0xFFFF )
+            {
+                CModelLoadInfoSA& loadInfo = GetModelLoadInfo( mid );
+                
+                // I removed the broken vehicle stream limit from this function.
+                // That stream.ini "vehicles" feature was never properly implemented into GTA:SA 1.0.
+                // 1) It was used for big vehicle models only, which were never loaded using the appropriate
+                // API in the first place.
+                // 2) Keeping that Rockstar code hinders MTA logic, as it expects no limits.
+                //  * location: 0x0040E1F1
+                if ( mid < 25255 || mid >= 25511 )
+                {
+                    // Free some memory usage for the request
+                    UnclogMemoryUsage( loadInfo.GetSize() );
+                }
+
+                // Perform the loading
+                LoadModel( ((char**)0x008E4CAC)[id] + requester.bufOffsets[n] * 2048, mid, id );
+
+                // Do we have to continue loading this model?
+                if ( loadInfo.m_eLoading == MODEL_RELOAD )
+                {
+                    // The_GTA: this appears to simulate coroutine behaviour.
+                    // To improve the performance of the whole system, I propose a CExecutiveManagerSA
+                    // class which will host fibers using frame pulses. It will be adapted from
+                    // Lua coroutines, but will have multiple ways of yielding (time, count, etc).
+                    // It will ultimatively remove lag-spikes due to resource loading.
+                    requester.status = streamingRequest::STREAMING_LOADING;
+                    requester.bufOffsets[0] = requester.bufOffsets[n];
+                    requester.ids[0] = mid;
+
+                    // Only clear if not zero (because 0 is slot of big model request)
+                    if ( n != 0 )
+                        requester.ids[n] = 0xFFFF;
+                }
+                else
+                    requester.ids[n] = 0xFFFF;  // clear the request slot
+            }
+        }
+    }
+
+    // Is a big model loading? But is the requester in an inappropriate status?
+    if ( *(bool*)0x008E4A58 && requester.status != streamingRequest::STREAMING_LOADING )
+    {
+        // Reset big model loading
+        *(bool*)0x008E4A58 = false;
+
+        // Clear the secondary queue
+        memset( GetStreamingRequest( 1 ).ids, 0xFF, sizeof(int) * MAX_STREAMING_REQUESTS );
+    }
+
+    // Processing succeeded!
+    return true;
+}
+
+/*=========================================================
+    PulseStreamingRequests
+
+    Purpose:
+        Updates the general status of the primary and secondary
+        streaming requests. Called before and after
+        LoadAllRequestedModels.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0040E460
+=========================================================*/
+void __cdecl PulseStreamingRequests( void )
+{
+    using namespace Streaming;
+
+    streamingRequest& primary = GetStreamingRequest( 0 );
+    streamingRequest& secondary = GetStreamingRequest( 1 );
+
+    // Finish big model loading?
+    if ( secondary.status == streamingRequest::STREAMING_LOADING )
+        ProcessStreamingRequest( 1 );
+
+    if ( primary.status == streamingRequest::STREAMING_BUFFERING )
+    {
+        CancelSyncSemaphore( 0 );
+        ProcessStreamingRequest( 0 );
+    }
+
+    // Possibly finish big model loading
+    if ( primary.status == streamingRequest::STREAMING_LOADING )
+        ProcessStreamingRequest( 0 );
+
+    if ( secondary.status == streamingRequest::STREAMING_BUFFERING )
+    {
+        CancelSyncSemaphore( 1 );
+        ProcessStreamingRequest( 1 );
+    }
+
+    // I do not understand why it is checked twice.
+    // Does the secondary streaming request have higher priority?
+    if ( secondary.status == streamingRequest::STREAMING_LOADING )
+        ProcessStreamingRequest( 1 );
+}
+
+/*=========================================================
+    ProcessLoadQueue
+
+    Arguments:
+        offset - IMG archive offset to match against the result
+        favorPriority - true if priority models should be handled first
+    Purpose:
+        Returns the model id of the model id which matches the
+        given offset best.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00408E20
+=========================================================*/
+inline bool IsModelLoaded( const unsigned short offset, unsigned short id )
+{
+    eLoadingState status = Streaming::GetModelLoadInfo( offset, id ).m_eLoading;
+
+    return status == MODEL_LOADED || status == MODEL_QUEUE;
+}
+
+inline bool EnsureResourceAvailability( const unsigned short offset, unsigned short id, unsigned char flags )
+{
+    if ( !IsModelLoaded( offset, id ) )
+    {
+        // Load any yet not finished dependencies
+        Streaming::RequestModel( offset + id, flags );
+        return true;    // we have to wait
+    }
+
+    return false; // ready for processing
+}
+
+inline bool AreAnimationDependenciesLoaded( unsigned short id )
+{
+    // Are we loading animations at all?
+    return *(bool*)0x00B5F852;
+
+    // The_GTA: I removed the check which prevented animation loading if skin 7 was
+    // not previously loaded. This should allow ped loading without the previous limitation.
+}
+
+unsigned int __cdecl ProcessLoadQueue( unsigned int offset, bool favorPriority )
+{
+    using namespace Streaming;
+
+    CModelLoadInfoSA *item = GetQueuedLoadInfo();
+
+    unsigned int lastOffset = 0xFFFFFFFF;
+    unsigned short lastId = 0xFFFF;
+
+    if ( item != *(CModelLoadInfoSA**)0x008E4C54 )
+    {
+        unsigned int upperOffset = 0xFFFFFFFF;
+        unsigned short rangeId = 0xFFFF;
+
+        do
+        {
+            unsigned short itemId = item->GetIndex();
+            CModelLoadInfoSA *nextItem = &GetModelLoadInfo( item->m_primaryModel );
+
+            if ( !( favorPriority && *(unsigned int*)0x008E4BA0 && item->m_flags & 0x10 ) )
+            {
+                if ( itemId < DATA_TEXTURE_BLOCK )
+                {
+                    // Make sure all dependencies of this model are loaded
+                    CBaseModelInfoSAInterface *model = ppModelInfo[itemId];
+
+                    // Check out texture loading status
+                    if ( model->usTextureDictionary == -1 || !EnsureResourceAvailability( DATA_TEXTURE_BLOCK, model->usTextureDictionary, item->m_flags ) )
+                    {
+                        int animId = model->GetAnimFileIndex();
+
+                        if ( animId == -1 || !EnsureResourceAvailability( DATA_ANIM_BLOCK, animId, 0x08 ) )
+                            goto successLoad;
+                    }
+                }
+                else if ( itemId < DATA_TEXTURE_BLOCK + MAX_TXD )
+                {
+                    CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( usOffset( itemId, DATA_TEXTURE_BLOCK ) );
+                    unsigned short parentId = txdInst->m_parentTxd;
+
+                    if ( parentId == 0xFFFF || !EnsureResourceAvailability( DATA_TEXTURE_BLOCK, parentId, 0x08 ) )
+                        goto successLoad;
+                }
+                else if ( itemId >= DATA_ANIM_BLOCK && itemId < 25755 )
+                {
+                    // Are we loading animations at all?
+                    if ( AreAnimationDependenciesLoaded( usOffset( itemId, DATA_ANIM_BLOCK ) ) )
+                        goto successLoad;
+
+                    // The_GTA: I removed the check which prevented animation loading if skin 7 was
+                    // not previously loaded. This should allow ped loading without the previous limitation.
+                }
+                else
+                    goto successLoad;
+            }
+
+            if ( false )
+            {
+                // Don't worry, be happy!
+successLoad:
+                // Try to find a return value.
+                unsigned int itemOffset = item->GetStreamOffset();
+
+                if ( itemOffset < lastOffset )
+                {
+                    lastId = itemId;
+                    lastOffset = itemOffset;
+                }
+
+                if ( itemOffset < upperOffset && itemOffset >= offset )
+                {
+                    upperOffset = itemOffset;
+                    rangeId = itemId;
+                }
+            }
+
+            item = nextItem;
+        }
+        while ( item != *(CModelLoadInfoSA**)0x008E4C54 );
+
+        if ( rangeId != 0xFFFF )
+            return rangeId;
+    }
+
+    // Did we not result in anything and are there priority requests?
+    if ( lastId == 0xFFFF && *(unsigned int*)0x008E4BA0 != 0 )
+    {
+        // Reset the number of priority requests
+        *(unsigned int*)0x008E4BA0 = 0;
+
+        // Try again with all requests included
+        return ProcessLoadQueue( offset, false );
+    }
+
+    return lastId;
+}
+
+/*=========================================================
+    PulseStreamingRequest
+
+    Arguments:
+        id - index of the streaming request
+    Purpose:
+        Main handler function of streaming request logic. Goes through
+        the requested queue and puts them into the streaming request
+        id and size array. If the resource fails the dependency tests,
+        it is not loaded. If the streaming request waits for syncSemaphore
+        activity, the syncSemaphore is notified.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0040CBA0
+=========================================================*/
+inline bool CheckModelDependency( unsigned short id )
+{
+    if ( usOffset( id, DATA_TEXTURE_BLOCK ) < MAX_TXD )
+        return CheckTXDDependency( usOffset( id, DATA_TEXTURE_BLOCK ) );
+    else if ( usOffset( id, DATA_ANIM_BLOCK ) < 480 )
+        return CheckAnimDependency( usOffset( id, DATA_ANIM_BLOCK ) );
+
+    return true;
+}
+
+inline bool HaveModelDependenciesLoaded( CBaseModelInfoSAInterface *model )
+{
+    unsigned short txdId = (unsigned short)model->usTextureDictionary;
+
+    if ( txdId != 0xFFFF && !IsModelLoaded( DATA_TEXTURE_BLOCK, txdId ) )
+        return false;
+
+    int animId = model->GetAnimFileIndex();
+
+    return animId == -1 || IsModelLoaded( DATA_ANIM_BLOCK, animId );
+}
+
+void __cdecl PulseStreamingRequest( unsigned int reqId )
+{
+    using namespace Streaming;
+
+    // The thread allocation buffer supports a chain of resource buffers.
+    // The streaming requests keep track of buffers offsets (that is where
+    // resource data is written to in the thread allocation buffer).
+    // This also means that if this memory count is overshot, we cause a
+    // buffer overflow. R* indeed employed a dangerous loading mechanism!
+    unsigned int threadBufferOffset = 0;
+
+    // The_GTA: My speculation about the GetNextReadOffset is that it is
+    // a performance improvement based on investigation. After all, reading
+    // the exactly next offset in a file should be faster than jumping all
+    // over the place!
+    // This optimization could be disabled on SSD.
+    unsigned int offset = GetStreamNextReadOffset();
+    unsigned int blockCount = 0;
+
+    bool isPedLoading = false;
+    bool isVehicleLoading = false;
+
+    unsigned short modelId = ProcessLoadQueue( offset, true );
+
+    if ( modelId == 0xFFFF )
+        return;
+
+    {
+        CModelLoadInfoSA *loadInfo = &GetModelLoadInfo( modelId );
+
+        // Check for a model which matches dependency
+        for ( ; !( loadInfo->m_flags & FLAG_NODEPENDENCY ) && !CheckModelDependency( modelId ); loadInfo = &GetModelLoadInfo( modelId ) )
+        {
+            // Since this model failed the dependency check, burn it!
+            FreeModel( modelId );
+
+            // Request the offset of this info (and blockCount)
+            loadInfo->GetOffset( offset, blockCount );
+
+            // Try to grab another modelId
+            modelId = ProcessLoadQueue( offset, true );
+
+            if ( modelId == 0xFFFF )
+                return;
+        }
+
+        if ( modelId == 0xFFFF )
+            return;
+
+        // Get our offset information
+        loadInfo->GetOffset( offset, blockCount );
+
+        // Check whether it is a really big block
+        if ( blockCount > *(unsigned int*)0x008E4CA8 )
+        {
+            // We cannot request big models on the second requester
+            // If the second requester is doing anything, screw it
+            if ( reqId == 1 || GetStreamingRequest( 1 ).status != streamingRequest::STREAMING_NONE )
+                return;
+
+            // We are loading a big model, eh
+            *(bool*)0x008E4A58 = true;
+        }
+    }
+
+    streamingRequest& requester = GetStreamingRequest( reqId );
+
+    unsigned char n = 0;
+
+    for ( ; n < MAX_STREAMING_REQUESTS; n++ )
+    {
+        if ( modelId == 0xFFFF )
+            goto abortedLoading;
+
+        CModelLoadInfoSA *loadInfo = &GetModelLoadInfo( modelId );
+
+        if ( loadInfo->m_eLoading != MODEL_LOADING )
+            goto abortedLoading;
+
+        loadInfo->GetBlockCount( blockCount );
+
+        // If there are priority requests waiting to be loaded and this is
+        // not a priority request, we cannot afford continuing
+        if ( *(unsigned int*)0x008E4BA0 && !( loadInfo->m_flags & FLAG_PRIORITY ) )
+            goto abortedLoading;
+
+        // Only valid for modelId < DATA_TEXTURE_BLOCK
+        CBaseModelInfoSAInterface *model;
+
+        if ( modelId < MAX_MODELS )
+        {
+            model = ppModelInfo[modelId];
+
+            // We may only load one ped model at once
+            if ( isPedLoading && model->GetModelType() == MODEL_PED )
+                goto abortedLoading;
+
+            // We may only load one vehicle model at once
+            if ( isVehicleLoading && model->GetModelType() == MODEL_VEHICLE )
+                goto abortedLoading;
+
+            // By now we require the dependencies loaded!
+            if ( !HaveModelDependenciesLoaded( model ) )
+                goto abortedLoading;
+        }
+        else if ( usOffset( modelId, DATA_ANIM_BLOCK ) < 480 )
+        {
+            if ( !AreAnimationDependenciesLoaded( usOffset( modelId, DATA_ANIM_BLOCK ) ) )
+                goto abortedLoading;
+        }
+        else
+        {
+            if ( isVehicleLoading && blockCount > 200 )
+                goto abortedLoading;    // Screw you, maximum loading size if ped is in queue is 200 blocks! Have a nice day.
+        }
+
+        // Write our request into the streaming requester
+        requester.bufOffsets[n] = threadBufferOffset;
+        requester.ids[n] = modelId;
+
+        // Set the new offset
+        threadBufferOffset += blockCount;
+
+        // If the request overshoots the thread allocation buffer at its offset...
+        if ( threadBufferOffset + blockCount > *(unsigned int*)0x008E4CA8 )
+        {
+            if ( n != 0 )
+            {
+                threadBufferOffset -= blockCount;
+                goto abortedLoading;
+            }
+        }
+
+        // The_GTA: Here was some sort of debug table which stored all model ids that reached this
+        // code location. I have left it out since this information was not further used during runtime.
+        // Must have been a left-over from quick debugging. (1.0 US and 1.0 EU: 0x0040CE59)
+
+        if ( modelId < MAX_MODELS )
+        {
+            if ( model->GetModelType() == MODEL_PED )
+                isPedLoading = true;
+            else if ( model->GetModelType() == MODEL_VEHICLE )
+                isVehicleLoading = true;
+        }
+        else if ( blockCount > 200 )
+        {
+            // This confuses me. Is it really describing a vehicle loading?
+            // Maybe R* thought that only vehicle models could have such high poly counts.
+            isVehicleLoading = true;
+        }
+
+        // Put it into the direct loading queue
+        loadInfo->m_eLoading = MODEL_QUEUE;
+
+        // Remove it from the long queue
+        loadInfo->PopFromLoader();
+
+        // Decrease the number of models that are in the long queue
+        (*(unsigned int*)0x008E4CB8)--;
+
+        // Unset priority status since we loaded
+        if ( loadInfo->m_flags & FLAG_PRIORITY )
+        {
+            // Decrease number of priority requests
+            (*(unsigned int*)0x008E4BA0)--;
+
+            loadInfo->m_flags &= ~FLAG_PRIORITY;
+        }
+
+        modelId = loadInfo->m_lastID;
+    }
+
+pulseSemaphore:
+    // Notify the synchronous semaphore.
+    // Is this a normal request or just a big model one?
+    ReadStream( reqId, ((char**)0x008E4CAC)[reqId], offset, blockCount );
+    return;
+
+abortedLoading:
+    // GTA:SA code checked for n < MAX_STREAMING_REQUESTS; that is established here,
+    // so I removed the check
+    for ( ; n < MAX_STREAMING_REQUESTS; n++ )
+        requester.ids[n] = -1;
+    
+    goto pulseSemaphore;
 }
 
 /*=========================================================

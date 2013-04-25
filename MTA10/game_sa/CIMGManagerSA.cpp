@@ -188,16 +188,13 @@ void IMG_Initialize( void )
     {
     case VERSION_EU_10:
         *(unsigned int*)0x015663D7 = (unsigned int)imgArchives + offsetof(IMGFile, handle);
-
-        *(unsigned int*)0x0156C2C8 = (unsigned int)gtaStreamHandles;
         break;
     case VERSION_US_10:
         *(unsigned int*)0x015663E7 = (unsigned int)imgArchives + offsetof(IMGFile, handle);
-
-        *(unsigned int*)0x0156C2E8 = (unsigned int)gtaStreamHandles;
         break;
     }
 
+    // Install our API.
     HookInstall( 0x00407610, (DWORD)OpenImgFile, 5 );
     HookInstall( 0x004083C0, (DWORD)OpenStandardArchives, 5 );
     HookInstall( 0x004075A0, h_memFunc( &CModelLoadInfoSA::GetOffset ), 5 );    // Yes, h_memFunc is necessary to simplex-transform the intermengled class-method-pointer
@@ -210,16 +207,6 @@ void IMG_Initialize( void )
     *(unsigned int*)0x00409D5A = *(unsigned int*)0x00408FDC = *(unsigned int*)0x0040CC54 = *(unsigned int*)0x0040CCC7 =
     *(unsigned int*)0x01560E68 =
         (unsigned int)imgArchives + offsetof(IMGFile, handle);
-
-    *(unsigned int*)0x004066C7 = *(unsigned int*)0x0040676C = *(unsigned int*)0x004068DD = *(unsigned int*)0x00406B81 =
-        (unsigned int)gtaStreamNames;
-
-    *(unsigned int*)0x00406B98 = (unsigned int)gtaStreamNames + sizeof(gtaStreamNames);
-
-    *(unsigned int*)0x004066D6 = *(unsigned int*)0x004066ED = *(unsigned int*)0x00406737 =
-    *(unsigned int*)0x00406797 = *(unsigned int*)0x004068AB = *(unsigned int*)0x004068C2 =
-    *(unsigned int*)0x004068D0 = *(unsigned int*)0x00406B7C =
-        (unsigned int)gtaStreamHandles;
 }
 
 void IMG_Shutdown( void )

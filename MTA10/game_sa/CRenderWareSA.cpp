@@ -32,7 +32,6 @@ RwErrorGet_t                            RwErrorGet                              
 RwAllocAligned_t                        RwAllocAligned                          = (RwAllocAligned_t)                        invalid_ptr;
 RwFreeAligned_t                         RwFreeAligned                           = (RwFreeAligned_t)                         invalid_ptr;
 RwCreateExtension_t                     RwCreateExtension                       = (RwCreateExtension_t)                     invalid_ptr;
-RpPrtStdGlobalDataSetStreamEmbedded_t   RpPrtStdGlobalDataSetStreamEmbedded     = (RpPrtStdGlobalDataSetStreamEmbedded_t)   invalid_ptr;
 RwPrefetch_t                            RwPrefetch                              = (RwPrefetch_t)                            invalid_ptr;
 RwFlushLoader_t                         RwFlushLoader                           = (RwFlushLoader_t)                         invalid_ptr;
 RwPluginRegistryReadDataChunks_t        RwPluginRegistryReadDataChunks          = (RwPluginRegistryReadDataChunks_t)        invalid_ptr;
@@ -61,6 +60,7 @@ RwStreamInitialize_t                    RwStreamInitialize                      
 RwStreamOpen_t                          RwStreamOpen                            = (RwStreamOpen_t)                          invalid_ptr;
 RwStreamReadChunkHeaderInfo_t           RwStreamReadChunkHeaderInfo             = (RwStreamReadChunkHeaderInfo_t)           invalid_ptr;
 RwStreamReadBlocks_t                    RwStreamReadBlocks                      = (RwStreamReadBlocks_t)                    invalid_ptr;
+RwStreamSkip_t                          RwStreamSkip                            = (RwStreamSkip_t)                          invalid_ptr;
 RwStreamClose_t                         RwStreamClose                           = (RwStreamClose_t)                         invalid_ptr;
 
 // Frame functions
@@ -89,6 +89,7 @@ RpGeometryTriangleSetMaterial_t         RpGeometryTriangleSetMaterial           
 RpGeometryUnlock_t                      RpGeometryUnlock                        = (RpGeometryUnlock_t)                      invalid_ptr;
 RpGeometryLock_t                        RpGeometryLock                          = (RpGeometryLock_t)                        invalid_ptr;
 RpGeometryTransform_t                   RpGeometryTransform                     = (RpGeometryTransform_t)                   invalid_ptr;
+RpGeometryStreamRead_t                  RpGeometryStreamRead                    = (RpGeometryStreamRead_t)                  invalid_ptr;
 RpGeometryRegisterPlugin_t              RpGeometryRegisterPlugin                = (RpGeometryRegisterPlugin_t)              invalid_ptr;
 RpGeometryDestroy_t                     RpGeometryDestroy                       = (RpGeometryDestroy_t)                     invalid_ptr;
 
@@ -215,6 +216,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwStreamReadChunkHeaderInfo         = (RwStreamReadChunkHeaderInfo_t)           0x007ED5D0;
         RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED310;
         RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007ECA10;
+        RwStreamSkip                        = (RwStreamSkip_t)                          0x007ECD40;
         RwStreamClose                       = (RwStreamClose_t)                         0x007ECE60;
 
         // Frame functions
@@ -241,6 +243,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpGeometryUnlock                    = (RpGeometryUnlock_t)                      0x0074C850;
         RpGeometryLock                      = (RpGeometryLock_t)                        0x0074C820;
         RpGeometryTransform                 = (RpGeometryTransform_t)                   0x0074C030;
+        RpGeometryStreamRead                = (RpGeometryStreamRead_t)                  0x0074D1E0;
         RpGeometryRegisterPlugin            = (RpGeometryRegisterPlugin_t)              0x0074CDC0;
         RpGeometryDestroy                   = (RpGeometryDestroy_t)                     0x0074CD10;
 
@@ -347,6 +350,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007EC9D0;
         RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED2D0;
         RwStreamReadChunkHeaderInfo         = (RwStreamReadChunkHeaderInfo_t)           0x007ED590;
+        RwStreamSkip                        = (RwStreamSkip_t)                          0x007ECD00;
         RwStreamClose                       = (RwStreamClose_t)                         0x007ECE20;
 
         // Frame functions
@@ -374,6 +378,7 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpGeometryTriangleSetMaterial       = (RpGeometryTriangleSetMaterial_t)         0x0074C6C0;
         RpGeometryUnlock                    = (RpGeometryUnlock_t)                      0x0074C800;
         RpGeometryLock                      = (RpGeometryLock_t)                        0x0074C7D0;
+        RpGeometryStreamRead                = (RpGeometryStreamRead_t)                  0x0074D190;
         RpGeometryRegisterPlugin            = (RpGeometryRegisterPlugin_t)              0x0074CD70;
         RpGeometryDestroy                   = (RpGeometryDestroy_t)                     0x0074CCC0;
 
@@ -446,7 +451,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
     }
 
     // Shared addresses
-    RpPrtStdGlobalDataSetStreamEmbedded = (RpPrtStdGlobalDataSetStreamEmbedded_t)   0x0041B350;
     LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
     LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
     LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
