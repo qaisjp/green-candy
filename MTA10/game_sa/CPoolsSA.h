@@ -79,9 +79,7 @@ public:
     // so do not decrease the count here!
     void    Clear( void )
     {
-        unsigned int n;
-
-        for (n=0; n<m_max; n++)
+        for ( unsigned int n = 0; n < GetMax(); n++ )
         {
             if ( m_flags[n] & 0x80 )
                 continue;
@@ -101,7 +99,7 @@ public:
     inline type*    Allocate( void )
     {
         // The original code did two iterations, but it is not required
-        for ( unsigned int n = ++m_lastUsed; n < m_max; n++ )
+        for ( unsigned int n = ++m_lastUsed; n < GetMax(); n++ )
         {
             // If slot is used, we skip
             if ( !( m_flags[n] & 0x80 ) )
@@ -120,7 +118,7 @@ public:
 
     inline type*    Get( unsigned int id )
     {
-        return ( (id < m_max) && !(m_flags[id] & 0x80) ) ? GetOffset( id ) : NULL;
+        return ( (id < GetMax()) && !(m_flags[id] & 0x80) ) ? GetOffset( id ) : NULL;
     }
 
     unsigned int    GetIndex( type *entity )
@@ -130,7 +128,7 @@ public:
 
     bool    IsValid( type *entity )
     {
-        return entity >= m_pool && GetIndex( entity ) < m_max;
+        return entity >= m_pool && GetIndex( entity ) < GetMax();
     }
 
     void    Free( unsigned int id )
@@ -158,7 +156,7 @@ public:
 
     bool    IsAnySlotFree( void )
     {
-        for ( unsigned int n = m_lastUsed + 1; n < m_max; n++ )
+        for ( unsigned int n = m_lastUsed + 1; n < GetMax(); n++ )
         {
             if ( m_flags[n] & 0x80 )
                 return true;
@@ -178,7 +176,7 @@ public:
         // Count all occupied slots in this pool
         unsigned int count = 0;
 
-        for ( unsigned int n = 0; n < m_max; n++ )
+        for ( unsigned int n = 0; n < GetMax(); n++ )
         {
             if ( !( m_flags[n] & 0x80 ) )
                 count++;
@@ -189,7 +187,9 @@ public:
 
     unsigned int    GetMax( void )
     {
-        return m_max;
+        // We enable compiler optimizations by using the constant template variable.
+        // Using the dynamic variable here may enable support for hacks (which dynamically extend pool size).
+        return max;
     }
 
     type*           m_pool;

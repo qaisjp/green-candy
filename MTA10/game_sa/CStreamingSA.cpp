@@ -80,7 +80,7 @@ struct ModelRequestDispatch : ModelCheckDispatch <true>
     {
     }
 
-    bool DoBaseModel( unsigned short id )
+    bool __forceinline DoBaseModel( modelId_t id )
     {
         CBaseModelInfoSAInterface *model = ppModelInfo[id];
         int animIndex = model->GetAnimFileIndex();
@@ -95,7 +95,7 @@ struct ModelRequestDispatch : ModelCheckDispatch <true>
         return true;
     }
 
-    bool DoTexDictionary( unsigned short id )
+    bool __forceinline DoTexDictionary( modelId_t id )
     {
         CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
 
@@ -104,7 +104,7 @@ struct ModelRequestDispatch : ModelCheckDispatch <true>
             return false;
 
 #ifdef MTA_DEBUG
-        OutputDebugString( SString( "loaded texDictionary %u\n", id - DATA_TEXTURE_BLOCK ) );
+        OutputDebugString( SString( "loaded texDictionary %u\n", id ) );
 #endif
 
         // I think it loads textures, lol
@@ -255,9 +255,9 @@ reload:
     Binary offsets:
         (see CStreamingSA::FreeModel)
 =========================================================*/
-struct ModelFreeDispatch : ModelCheckDispatch <false>
+struct ModelFreeDispatch : ModelCheckDispatch <false>   // by default we do not let invalid things pass
 {
-    bool DoBaseModel( unsigned short id )
+    bool __forceinline DoBaseModel( modelId_t id )
     {
         CBaseModelInfoSAInterface *model = ppModelInfo[id];
         int unk;
@@ -314,10 +314,10 @@ struct ModelFreeDispatch : ModelCheckDispatch <false>
         return true;
     }
 
-    bool DoTexDictionary( unsigned short id )
+    bool __forceinline DoTexDictionary( modelId_t id )
     {
 #ifdef MTA_DEBUG
-        OutputDebugString( SString( "Deleted texDictionary %u\n", id - DATA_TEXTURE_BLOCK ) );
+        OutputDebugString( SString( "Deleted texDictionary %u\n", id ) );
 #endif
 
         // Deallocate textures
@@ -325,25 +325,25 @@ struct ModelFreeDispatch : ModelCheckDispatch <false>
         return true;
     }
 
-    bool DoCollision( unsigned short id )
+    bool __forceinline DoCollision( modelId_t id )
     {
         // Destroy all collisions associated with the COL library
-        FreeCOLLibrary( id );
+        FreeCOLLibrary( (unsigned char)id );
         return true;
     }
 
-    bool DoIPL( unsigned short id )
+    bool __forceinline DoIPL( modelId_t id )
     {
         // This function destroys buildings/IPLs!
-        ((void (__cdecl*)( int ))0x00404B20)( id );
+        ((void (__cdecl*)( modelId_t ))0x00404B20)( id );
         return true;
     }
 
-    bool DoPathFind( unsigned short id )
+    bool __forceinline DoPathFind( modelId_t id )
     {
         __asm
         {
-            movzx eax,id
+            mov eax,id
 
             push eax
             mov ecx,CLASS_CPathFind
@@ -354,18 +354,18 @@ struct ModelFreeDispatch : ModelCheckDispatch <false>
         return true;
     }
 
-    bool DoAnimation( unsigned short id )
+    bool __forceinline DoAnimation( modelId_t id )
     {
         // Animations...?
         pGame->GetAnimManager()->RemoveAnimBlock( id );
         return true;
     }
 
-    bool DoScript( unsigned short id )
+    bool __forceinline DoScript( modelId_t id )
     {
         __asm
         {
-            movzx eax,id
+            mov eax,id
 
             mov ecx,0x00A47B60
             push eax
@@ -378,14 +378,14 @@ struct ModelFreeDispatch : ModelCheckDispatch <false>
 // Just about the same, but with a different base model logic.
 struct ModelAbortBigRequestDispatcher : ModelFreeDispatch
 {
-    bool DoBaseModel( unsigned short id )
+    bool DoBaseModel( modelId_t id )
     {
         RwFlushLoader();
         return true;
     }
 };
 
-void __cdecl Streaming::FreeModel( unsigned int id )
+void __cdecl Streaming::FreeModel( modelId_t id )
 {
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
@@ -561,7 +561,7 @@ CStreamingSA::CStreamingSA( void )
     //HookInstall( 0x00409A90, (DWORD)CheckTXDDependency, 5 );  // you better do not fuck around with securom
     
     //HookInstall( FUNC_LoadAllRequestedModels, (DWORD)Streaming::LoadAllRequestedModels, 5 );
-    //HookInstall( 0x00408E20, (DWORD)ProcessLoadQueue, 5 );
+    HookInstall( 0x00408E20, (DWORD)ProcessLoadQueue, 5 );
     HookInstall( 0x0040E170, (DWORD)ProcessStreamingRequest, 5 );
     //HookInstall( 0x0040CBA0, (DWORD)PulseStreamingRequest, 5 );
     //HookInstall( 0x0040E460, (DWORD)PulseStreamingRequests, 5 );
@@ -593,12 +593,12 @@ CStreamingSA::~CStreamingSA( void )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004087E0
 =========================================================*/
-inline static bool IsUpgradeModelId( unsigned short dwModelID )
+inline static bool IsUpgradeModelId( modelId_t dwModelID )
 {
     return dwModelID >= 1000 && dwModelID <= 1193;
 }
 
-void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
+void CStreamingSA::RequestModel( modelId_t id, unsigned int flags )
 {
     if ( IsUpgradeModelId( id ) )
         RequestVehicleUpgrade( id, flags );
@@ -620,7 +620,7 @@ void CStreamingSA::RequestModel( unsigned short id, unsigned int flags )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004089A0
 =========================================================*/
-void CStreamingSA::FreeModel( unsigned short id )
+void CStreamingSA::FreeModel( modelId_t id )
 {
     Streaming::FreeModel( id );
 }
@@ -659,7 +659,7 @@ void CStreamingSA::LoadAllRequestedModels( bool onlyPriority )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004044C0
 =========================================================*/
-bool CStreamingSA::HasModelLoaded( unsigned int id )
+bool CStreamingSA::HasModelLoaded( modelId_t id )
 {
     if ( IsUpgradeModelId( id ) )
         return HasVehicleUpgradeLoaded( id );
@@ -677,7 +677,7 @@ bool CStreamingSA::HasModelLoaded( unsigned int id )
         If you need it loaded, you should call LoadAllRequestedModels
         to give execution time to the streaming loader.
 =========================================================*/
-bool CStreamingSA::IsModelLoading( unsigned int id )
+bool CStreamingSA::IsModelLoading( modelId_t id )
 {
     eLoadingState state = Streaming::GetModelLoadInfo( id ).m_eLoading;
     return state == MODEL_LOADING || state == MODEL_RELOAD;
@@ -691,7 +691,7 @@ bool CStreamingSA::IsModelLoading( unsigned int id )
     Purpose:
         Blocks thread execution until a resource has loaded.
 =========================================================*/
-void CStreamingSA::WaitForModel( unsigned int id )
+void CStreamingSA::WaitForModel( modelId_t id )
 {
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
@@ -740,14 +740,14 @@ bool CStreamingSA::HaveAnimationsLoaded( int idx )
     Purpose:
         Requests the loading of a vehicle upgrade.
 =========================================================*/
-void CStreamingSA::RequestVehicleUpgrade( unsigned short model, unsigned int flags )
+void CStreamingSA::RequestVehicleUpgrade( modelId_t model, unsigned int flags )
 {
     DWORD dwFunc = FUNC_RequestVehicleUpgrade;
     _asm
     {
         mov     eax,flags
         push    eax
-        movzx   eax,model
+        mov     eax,model
         push    eax
         call    dwFunc
         add     esp, 8
@@ -788,7 +788,7 @@ bool CStreamingSA::HasVehicleUpgradeLoaded( int model )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00409D10
 =========================================================*/
-void CStreamingSA::RequestSpecialModel( unsigned short model, const char *tex, unsigned int channel )
+void CStreamingSA::RequestSpecialModel( modelId_t model, const char *tex, unsigned int channel )
 {
     DWORD dwFunc = FUNC_CStreaming_RequestSpecialModel;
     _asm
@@ -796,7 +796,7 @@ void CStreamingSA::RequestSpecialModel( unsigned short model, const char *tex, u
         mov     eax,channel
         push    eax
         push    tex
-        movzx   eax,model
+        mov     eax,model
         push    eax
         call    dwFunc
         add     esp, 0xC
