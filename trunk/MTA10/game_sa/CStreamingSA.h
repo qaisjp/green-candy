@@ -93,8 +93,8 @@ namespace Streaming
     }
 
     // Public functions
-    void __cdecl RequestModel( unsigned int id, unsigned int flags );
-    void __cdecl FreeModel( unsigned int id );
+    void __cdecl RequestModel( modelId_t id, unsigned int flags );
+    void __cdecl FreeModel( modelId_t id );
     void __cdecl LoadAllRequestedModels( bool onlyPriority );
 };
 
@@ -104,17 +104,17 @@ public:
                     CStreamingSA                ( void );
                     ~CStreamingSA               ( void );
 
-    void            RequestModel                ( unsigned short id, unsigned int flags );
-    void            FreeModel                   ( unsigned short id );
+    void            RequestModel                ( modelId_t id, unsigned int flags );
+    void            FreeModel                   ( modelId_t id );
     void            LoadAllRequestedModels      ( bool onlyPriority = false );
-    bool            HasModelLoaded              ( unsigned int id );
-    bool            IsModelLoading              ( unsigned int id );
-    void            WaitForModel                ( unsigned int id );
+    bool            HasModelLoaded              ( modelId_t id );
+    bool            IsModelLoading              ( modelId_t id );
+    void            WaitForModel                ( modelId_t id );
     void            RequestAnimations           ( int idx, unsigned int flags );
     bool            HaveAnimationsLoaded        ( int idx );
-    void            RequestVehicleUpgrade       ( unsigned short model, unsigned int flags );
+    void            RequestVehicleUpgrade       ( modelId_t model, unsigned int flags );
     bool            HasVehicleUpgradeLoaded     ( int model );
-    void            RequestSpecialModel         ( unsigned short model, const char *tex, unsigned int channel );
+    void            RequestSpecialModel         ( modelId_t model, const char *tex, unsigned int channel );
 
     void            SetRequestCallback          ( streamingRequestCallback_t callback );
     void            SetLoadCallback             ( streamingLoadCallback_t callback );

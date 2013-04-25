@@ -23,12 +23,12 @@ class CBaseModelInfoSAInterface;
 // Streaming exports
 namespace Streaming
 {
-    inline CModelLoadInfoSA&    GetModelLoadInfo( unsigned short id )
+    inline CModelLoadInfoSA&    GetModelLoadInfo( modelId_t id )
     {
         return *( (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id );
     }
 
-    inline CModelLoadInfoSA&    GetModelLoadInfo( unsigned short offset, unsigned short id )
+    inline CModelLoadInfoSA&    GetModelLoadInfo( modelId_t offset, modelId_t id )
     {
         return *( ( (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + offset ) + id );
     }
@@ -53,8 +53,8 @@ namespace Streaming
         return &GetModelLoadInfo( last->m_secondaryModel );
     }
 
-    CBaseModelInfoSAInterface* __cdecl  GetModelByHash      ( unsigned int hash, unsigned short *id );
-    CBaseModelInfoSAInterface*          GetModelInfoByName  ( const char *name, unsigned short startId, unsigned short endId, unsigned short *id );
+    CBaseModelInfoSAInterface* __cdecl  GetModelByHash      ( unsigned int hash, modelId_t *id );
+    CBaseModelInfoSAInterface*          GetModelInfoByName  ( const char *name, modelId_t startId, modelId_t endId, modelId_t *id );
 };
 
 // IPL sector (buildings) instance

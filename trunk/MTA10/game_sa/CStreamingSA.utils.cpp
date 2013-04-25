@@ -247,7 +247,7 @@ static void _initAtomScene( RpAtomic *atom )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00537150 (FUNC_AtomicsReplacer)
 =========================================================*/
-static void RpClumpAtomicActivator( RpAtomic *atom, unsigned int replacerId )
+static void RpClumpAtomicActivator( RpAtomic *atom, modelId_t replacerId )
 {
     CAtomicModelInfoSA *atomInfo = ppModelInfo[replacerId]->GetAtomicModelInfo();
     bool unk;
@@ -309,7 +309,7 @@ inline static void _initClumpScene( RpClump *clump )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x005371F0
 =========================================================*/
-static bool __cdecl LoadClumpFile( RwStream *stream, unsigned int model )
+static bool __cdecl LoadClumpFile( RwStream *stream, modelId_t model )
 {
     CAtomicModelInfoSA *atomInfo = ppModelInfo[model]->GetAtomicModelInfo();
     bool appliedRemapCheck, result;
@@ -361,7 +361,7 @@ static bool __cdecl LoadClumpFile( RwStream *stream, unsigned int model )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x005372D0
 =========================================================*/
-static bool __cdecl LoadClumpFilePersistent( RwStream *stream, unsigned int id )
+static bool __cdecl LoadClumpFilePersistent( RwStream *stream, modelId_t id )
 {
     CClumpModelInfoSAInterface *info = (CClumpModelInfoSAInterface*)ppModelInfo[id];
 
@@ -530,7 +530,7 @@ static RpClump* __cdecl ReadClumpBigContinue( RwStream *stream )
     Note:
         This function is never used in GTA:SA.
 =========================================================*/
-static bool __cdecl LoadClumpFileBigContinue( RwStream *stream, unsigned int id )
+static bool __cdecl LoadClumpFileBigContinue( RwStream *stream, modelId_t id )
 {
     CClumpModelInfoSAInterface *info = (CClumpModelInfoSAInterface*)ppModelInfo[id];
 
@@ -774,7 +774,7 @@ static bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigne
         if ( header.checksum != '4LOC' && header.checksum != '3LOC' && header.checksum != '2LOC' && header.checksum != 'LLOC' )
             return true;
 
-        unsigned short modelId = header.modelId;
+        modelId_t modelId = header.modelId;
 
         // Collisions may come with a cached model id.
         // Valid ids skip the need for name-checking.
@@ -868,7 +868,7 @@ static bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned
         if ( header.checksum != '4LOC' && header.checksum != '3LOC' && header.checksum != '2LOC' && header.checksum != 'LLOC' )
             return true;
 
-        unsigned short modelId = header.modelId;
+        modelId_t modelId = header.modelId;
 
         if ( modelId < DATA_TEXTURE_BLOCK )
             info = ppModelInfo[modelId];
@@ -1060,7 +1060,7 @@ inline bool CheckDependency( dependType id )
     {
         CModelLoadInfoSA *item = GetQueuedLoadInfo();
         CModelLoadInfoSA *endItem = *(CModelLoadInfoSA**)0x008E4C54;    // toBeLoadedQueue
-        unsigned short itemId = item->GetIndex();
+        modelId_t itemId = item->GetIndex();
 
         for ( ; item != endItem; item = &GetModelLoadInfo( itemId = item->m_primaryModel ) )
         {
@@ -1080,9 +1080,9 @@ inline bool CheckDependency( dependType id )
     {
         for ( unsigned char i = 0; i < MAX_STREAMING_REQUESTS; i++ )
         {
-            unsigned short itemId = GetStreamingRequest( n ).ids[i];
+            modelId_t itemId = GetStreamingRequest( n ).ids[i];
 
-            if ( itemId != 0xFFFF && checker( itemId, id ) )
+            if ( itemId != -1 && checker( itemId, id ) )
                 return true;
         }
     }
@@ -1096,16 +1096,16 @@ inline bool CheckDependency( dependType id )
 
 struct ModelTXDDependency
 {
-    inline bool operator() ( unsigned short model, unsigned short txdId )
+    inline bool operator() ( modelId_t model, unsigned short txdId )
     {
         return model < DATA_TEXTURE_BLOCK && (unsigned short)ppModelInfo[model]->usTextureDictionary == txdId ||
-               usOffset( model, DATA_TEXTURE_BLOCK ) < MAX_TXD && (*ppTxdPool)->Get( usOffset( model, DATA_TEXTURE_BLOCK ) )->m_parentTxd == txdId;
+              idOffset( model, DATA_TEXTURE_BLOCK ) < MAX_TXD && (*ppTxdPool)->Get( idOffset( model, DATA_TEXTURE_BLOCK ) )->m_parentTxd == txdId;
     }
 };
 
-bool __cdecl CheckTXDDependency( int id )
+bool __cdecl CheckTXDDependency( modelId_t id )
 {
-    return CheckDependency <ModelTXDDependency> ( (unsigned short)id );
+    return CheckDependency <ModelTXDDependency> ( id );
 }
 
 /*=========================================================
@@ -1123,13 +1123,13 @@ bool __cdecl CheckTXDDependency( int id )
 =========================================================*/
 struct ModelAnimDependency
 {
-    inline bool operator() ( unsigned short model, int animId )
+    inline bool operator() ( modelId_t model, int animId )
     {
         return model < DATA_TEXTURE_BLOCK && ppModelInfo[model]->GetAnimFileIndex() == animId;
     }
 };
 
-bool __cdecl CheckAnimDependency( int id )
+bool __cdecl CheckAnimDependency( modelId_t id )
 {
     // It is pretty crazy how you can optimize it, right? :P
     // Instead of doubling the code, you can use templates!
@@ -1160,7 +1160,7 @@ bool __cdecl CheckAnimDependency( int id )
         SCM script loading has been temporarily disabled, since MTA
         does not use it.
 =========================================================*/
-bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
+bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
 {
     CModelLoadInfoSA& loadInfo = VAR_ModelLoadInfo[id];
 
@@ -1249,7 +1249,7 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
     }
     else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
     {
-        unsigned short txdId = usOffset( id, DATA_TEXTURE_BLOCK );
+        modelId_t txdId = idOffset( id, DATA_TEXTURE_BLOCK );
         CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( txdId );
 
         if ( txdInst->m_parentTxd != 0xFFFF )
@@ -1291,7 +1291,7 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
     }
     else if ( id < 25511 )
     {
-        if ( !((bool (__cdecl*)( unsigned int iplId, const void *data, size_t size ))0x00406080)( id - 25255, buf, streamBuffer.size ) )
+        if ( !((bool (__cdecl*)( modelId_t iplId, const void *data, size_t size ))0x00406080)( id - 25255, buf, streamBuffer.size ) )
             goto failure;
     }
     else if ( id < 25575 )
@@ -1322,7 +1322,7 @@ bool __cdecl LoadModel( void *buf, unsigned int id, unsigned int threadId )
     }
     else if ( id < 26230 )
     {
-        ((void (__cdecl*)( RwStream *stream, unsigned int id, size_t size ))0x0045A8F0)( stream, id - 25755, streamBuffer.size );
+        ((void (__cdecl*)( RwStream *stream, modelId_t id, size_t size ))0x0045A8F0)( stream, id - 25755, streamBuffer.size );
     }
     else
     {
@@ -1391,7 +1391,7 @@ failureDamned:
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004076C0
 =========================================================*/
-static unsigned int streamingWaitModel = 0xFFFFFFFF;
+static modelId_t streamingWaitModel = -1;
 
 void __cdecl CompleteStreamingRequest( unsigned int idx )
 {
@@ -1399,7 +1399,7 @@ void __cdecl CompleteStreamingRequest( unsigned int idx )
 
     streamingRequest& requester = GetStreamingRequest( idx );
 
-    while ( streamingWaitModel != 0xFFFFFFFF )
+    while ( streamingWaitModel != -1 )
     {
         unsigned int status = requester.status;
 
@@ -1415,7 +1415,7 @@ void __cdecl CompleteStreamingRequest( unsigned int idx )
                         ProcessStreamingRequest( idx );
 
                     // We no longer wait for a resource to load
-                    streamingWaitModel = 0xFFFFFFFF;
+                    streamingWaitModel = -1;
                     break;
                 }
                 
@@ -1460,7 +1460,7 @@ void __cdecl CompleteStreamingRequest( unsigned int idx )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00408CB0
 =========================================================*/
-bool __cdecl LoadBigModel( char *buf, unsigned int id )
+bool __cdecl LoadBigModel( char *buf, modelId_t id )
 {
     using namespace Streaming;
 
@@ -1492,12 +1492,12 @@ bool __cdecl LoadBigModel( char *buf, unsigned int id )
     }
     else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
     {
-        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( usOffset( id, DATA_TEXTURE_BLOCK ) );
+        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( idOffset( id, DATA_TEXTURE_BLOCK ) );
 
         // Reference it during the loading
         txdInst->Reference();
 
-        success = LoadTXDContinue( usOffset( id, DATA_TEXTURE_BLOCK ), stream );
+        success = LoadTXDContinue( idOffset( id, DATA_TEXTURE_BLOCK ), stream );
 
         // Remove the reference again. Let the garbage collector unload it if necessary.
         txdInst->DereferenceNoDestroy();
@@ -1580,7 +1580,7 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
 
         // We cannot wait for a model if we already wait for one!
         // Let this request fail then.
-        if ( streamingWaitModel != 0xFFFFFFFF )
+        if ( streamingWaitModel != -1 )
             return false;
 
         CompleteStreamingRequest( id );
@@ -1603,9 +1603,9 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
         // Attempt to load the queue
         for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTS; n++ )
         {
-            unsigned short mid = requester.ids[n];
+            modelId_t mid = requester.ids[n];
 
-            if ( mid != 0xFFFF )
+            if ( mid != -1 )
             {
                 CModelLoadInfoSA& loadInfo = GetModelLoadInfo( mid );
                 
@@ -1715,14 +1715,14 @@ void __cdecl PulseStreamingRequests( void )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00408E20
 =========================================================*/
-inline bool IsModelLoaded( const unsigned short offset, unsigned short id )
+inline bool IsModelLoaded( const unsigned short offset, modelId_t id )
 {
     eLoadingState status = Streaming::GetModelLoadInfo( offset, id ).m_eLoading;
 
     return status == MODEL_LOADED || status == MODEL_QUEUE;
 }
 
-inline bool EnsureResourceAvailability( const unsigned short offset, unsigned short id, unsigned char flags )
+inline bool EnsureResourceAvailability( const unsigned short offset, modelId_t id, unsigned char flags )
 {
     if ( !IsModelLoaded( offset, id ) )
     {
@@ -1734,101 +1734,105 @@ inline bool EnsureResourceAvailability( const unsigned short offset, unsigned sh
     return false; // ready for processing
 }
 
-inline bool AreAnimationDependenciesLoaded( unsigned short id )
+inline bool AreAnimationDependenciesLoaded( modelId_t id )
 {
     // Are we loading animations at all?
-    return *(bool*)0x00B5F852;
+    return !*(bool*)0x00B5F852;// && Streaming::GetModelLoadInfo( 7 ).m_eLoading == MODEL_LOADED;
 
     // The_GTA: I removed the check which prevented animation loading if skin 7 was
     // not previously loaded. This should allow ped loading without the previous limitation.
 }
 
-unsigned int __cdecl ProcessLoadQueue( unsigned int offset, bool favorPriority )
+struct ModelLoadQueueDispatch : ModelCheckDispatch <true, false>
+{
+    CModelLoadInfoSA*& m_item;
+
+    ModelLoadQueueDispatch( CModelLoadInfoSA*& item ) : m_item( item )
+    {
+    }
+
+    bool __forceinline DoBaseModel( modelId_t id )
+    {
+        // Make sure all dependencies of this model are loaded
+        CBaseModelInfoSAInterface *model = ppModelInfo[id];
+
+        // Check out texture loading status
+        if ( model->usTextureDictionary == -1 || !EnsureResourceAvailability( DATA_TEXTURE_BLOCK, model->usTextureDictionary, m_item->m_flags ) )
+        {
+            int animId = model->GetAnimFileIndex();
+
+            return animId == -1 || !EnsureResourceAvailability( DATA_ANIM_BLOCK, animId, 0x08 );
+        }
+
+        // We need to wait, do not call success handler
+        return false;
+    }
+
+    bool __forceinline DoTexDictionary( modelId_t id )
+    {
+        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( id );
+        unsigned short parentId = txdInst->m_parentTxd;
+
+        return parentId == 0xFFFF || !EnsureResourceAvailability( DATA_TEXTURE_BLOCK, parentId, 0x08 );
+    }
+
+    bool __forceinline DoAnimation( modelId_t id )
+    {
+        // Are we loading animations at all?
+        return AreAnimationDependenciesLoaded( id );
+    }
+};
+
+modelId_t __cdecl ProcessLoadQueue( unsigned int offset, bool favorPriority )
 {
     using namespace Streaming;
 
     CModelLoadInfoSA *item = GetQueuedLoadInfo();
 
     unsigned int lastOffset = 0xFFFFFFFF;
-    unsigned short lastId = 0xFFFF;
+    modelId_t lastId = -1;
 
     if ( item != *(CModelLoadInfoSA**)0x008E4C54 )
     {
         unsigned int upperOffset = 0xFFFFFFFF;
-        unsigned short rangeId = 0xFFFF;
+        modelId_t rangeId = -1;
+
+        modelId_t itemId = item->GetIndex();
 
         do
         {
-            unsigned short itemId = item->GetIndex();
-            CModelLoadInfoSA *nextItem = &GetModelLoadInfo( item->m_primaryModel );
-
-            if ( !( favorPriority && *(unsigned int*)0x008E4BA0 && item->m_flags & 0x10 ) )
+            if ( !favorPriority || *(unsigned int*)0x008E4BA0 == 0 || item->m_flags & 0x10 )
             {
-                if ( itemId < DATA_TEXTURE_BLOCK )
+                // Are we allowed to return this value?
+                if ( DefaultDispatchExecute( itemId, ModelLoadQueueDispatch( item ) ) )
                 {
-                    // Make sure all dependencies of this model are loaded
-                    CBaseModelInfoSAInterface *model = ppModelInfo[itemId];
+                    // Try to find a return value.
+                    unsigned int itemOffset = item->GetStreamOffset();
 
-                    // Check out texture loading status
-                    if ( model->usTextureDictionary == -1 || !EnsureResourceAvailability( DATA_TEXTURE_BLOCK, model->usTextureDictionary, item->m_flags ) )
+                    if ( itemOffset < lastOffset )
                     {
-                        int animId = model->GetAnimFileIndex();
+                        lastId = itemId;
+                        lastOffset = itemOffset;
+                    }
 
-                        if ( animId == -1 || !EnsureResourceAvailability( DATA_ANIM_BLOCK, animId, 0x08 ) )
-                            goto successLoad;
+                    if ( itemOffset < upperOffset && itemOffset >= offset )
+                    {
+                        upperOffset = itemOffset;
+                        rangeId = itemId;
                     }
                 }
-                else if ( itemId < DATA_TEXTURE_BLOCK + MAX_TXD )
-                {
-                    CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( usOffset( itemId, DATA_TEXTURE_BLOCK ) );
-                    unsigned short parentId = txdInst->m_parentTxd;
-
-                    if ( parentId == 0xFFFF || !EnsureResourceAvailability( DATA_TEXTURE_BLOCK, parentId, 0x08 ) )
-                        goto successLoad;
-                }
-                else if ( itemId >= DATA_ANIM_BLOCK && itemId < 25755 )
-                {
-                    // Are we loading animations at all?
-                    if ( AreAnimationDependenciesLoaded( usOffset( itemId, DATA_ANIM_BLOCK ) ) )
-                        goto successLoad;
-
-                    // The_GTA: I removed the check which prevented animation loading if skin 7 was
-                    // not previously loaded. This should allow ped loading without the previous limitation.
-                }
-                else
-                    goto successLoad;
             }
 
-            if ( false )
-            {
-                // Don't worry, be happy!
-successLoad:
-                // Try to find a return value.
-                unsigned int itemOffset = item->GetStreamOffset();
-
-                if ( itemOffset < lastOffset )
-                {
-                    lastId = itemId;
-                    lastOffset = itemOffset;
-                }
-
-                if ( itemOffset < upperOffset && itemOffset >= offset )
-                {
-                    upperOffset = itemOffset;
-                    rangeId = itemId;
-                }
-            }
-
-            item = nextItem;
+            item = &GetModelLoadInfo( itemId = item->m_primaryModel );
         }
         while ( item != *(CModelLoadInfoSA**)0x008E4C54 );
 
-        if ( rangeId != 0xFFFF )
+        if ( rangeId != -1 )
             return rangeId;
     }
 
     // Did we not result in anything and are there priority requests?
-    if ( lastId == 0xFFFF && *(unsigned int*)0x008E4BA0 != 0 )
+    if ( lastId == -1 && *(unsigned int*)0x008E4BA0 != 0 )
     {
         // Reset the number of priority requests
         *(unsigned int*)0x008E4BA0 = 0;
@@ -1854,12 +1858,12 @@ successLoad:
     Binary offsets:
         (1.0 US and 1.0 EU): 0x0040CBA0
 =========================================================*/
-inline bool CheckModelDependency( unsigned short id )
+inline bool CheckModelDependency( modelId_t id )
 {
-    if ( usOffset( id, DATA_TEXTURE_BLOCK ) < MAX_TXD )
-        return CheckTXDDependency( usOffset( id, DATA_TEXTURE_BLOCK ) );
-    else if ( usOffset( id, DATA_ANIM_BLOCK ) < 480 )
-        return CheckAnimDependency( usOffset( id, DATA_ANIM_BLOCK ) );
+    if ( idOffset( id, DATA_TEXTURE_BLOCK ) < MAX_TXD )
+        return CheckTXDDependency( idOffset( id, DATA_TEXTURE_BLOCK ) );
+    else if ( idOffset( id, DATA_ANIM_BLOCK ) < 480 )
+        return CheckAnimDependency( idOffset( id, DATA_ANIM_BLOCK ) );
 
     return true;
 }
@@ -1875,6 +1879,87 @@ inline bool HaveModelDependenciesLoaded( CBaseModelInfoSAInterface *model )
 
     return animId == -1 || IsModelLoaded( DATA_ANIM_BLOCK, animId );
 }
+
+struct ModelStreamingPulseDispatch : ModelCheckDispatch <false>
+{
+    CBaseModelInfoSAInterface*& m_model;
+    unsigned int& m_blockCount;
+    bool m_isVehicleLoading;
+    bool m_isPedLoading;
+
+    ModelStreamingPulseDispatch( CBaseModelInfoSAInterface*& model, unsigned int& blockCount ) :
+        m_model( model ),
+        m_blockCount( blockCount )
+    {
+        m_isVehicleLoading = false;
+        m_isPedLoading = false;
+    }
+
+    bool __forceinline DoBaseModel( modelId_t id )
+    {
+        m_model = ppModelInfo[id];
+
+        // We may only load one ped model at once
+        return ( !m_isPedLoading || m_model->GetModelType() != MODEL_PED ) &&
+        // We may only load one vehicle model at once
+               ( !m_isVehicleLoading || m_model->GetModelType() != MODEL_VEHICLE ) &&
+        // By now we require the dependencies loaded!
+               HaveModelDependenciesLoaded( m_model );
+    }
+
+    bool __forceinline DoAnimation( modelId_t id )
+    {
+        // Make sure the animation dependencies are present.
+        return AreAnimationDependenciesLoaded( id );
+    }
+
+    bool __forceinline CheckValidity( void )
+    {
+        return !m_isVehicleLoading || m_blockCount <= 200;
+    }
+
+    bool __forceinline DoCollision( modelId_t id )
+    {
+        return CheckValidity();
+    }
+
+    bool __forceinline DoIPL( modelId_t id )
+    {
+        return CheckValidity();
+    }
+
+    bool __forceinline DoRecording( modelId_t id )
+    {
+        return CheckValidity();
+    }
+
+    bool __forceinline DoTexDictionary( modelId_t id )
+    {
+        return CheckValidity();
+    }
+
+    bool __forceinline DoPathFind( modelId_t id )
+    {
+        return CheckValidity();
+    }
+
+    void __forceinline AfterPerform( modelId_t id )
+    {
+        if ( id < MAX_MODELS )
+        {
+            if ( m_model->GetModelType() == MODEL_PED )
+                m_isPedLoading = true;
+            else if ( m_model->GetModelType() == MODEL_VEHICLE )
+                m_isVehicleLoading = true;
+        }
+        else if ( m_blockCount > 200 )
+        {
+            // This confuses me. Is it really describing a vehicle loading?
+            // Maybe R* thought that only vehicle models could have such high poly counts.
+            m_isVehicleLoading = true;
+        }
+    }
+};
 
 void __cdecl PulseStreamingRequest( unsigned int reqId )
 {
@@ -1895,13 +1980,13 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
     unsigned int offset = GetStreamNextReadOffset();
     unsigned int blockCount = 0;
 
-    bool isPedLoading = false;
-    bool isVehicleLoading = false;
+    modelId_t modelId = ProcessLoadQueue( offset, true );
 
-    unsigned short modelId = ProcessLoadQueue( offset, true );
-
-    if ( modelId == 0xFFFF )
+    if ( modelId == -1 )
         return;
+
+    CBaseModelInfoSAInterface *model;
+    ModelStreamingPulseDispatch dispatch( model, blockCount );
 
     {
         CModelLoadInfoSA *loadInfo = &GetModelLoadInfo( modelId );
@@ -1918,11 +2003,11 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
             // Try to grab another modelId
             modelId = ProcessLoadQueue( offset, true );
 
-            if ( modelId == 0xFFFF )
+            if ( modelId == -1 )
                 return;
         }
 
-        if ( modelId == 0xFFFF )
+        if ( modelId == -1 )
             return;
 
         // Get our offset information
@@ -1947,7 +2032,7 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
 
     for ( ; n < MAX_STREAMING_REQUESTS; n++ )
     {
-        if ( modelId == 0xFFFF )
+        if ( modelId == -1 )
             goto abortedLoading;
 
         CModelLoadInfoSA *loadInfo = &GetModelLoadInfo( modelId );
@@ -1963,34 +2048,8 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
             goto abortedLoading;
 
         // Only valid for modelId < DATA_TEXTURE_BLOCK
-        CBaseModelInfoSAInterface *model;
-
-        if ( modelId < MAX_MODELS )
-        {
-            model = ppModelInfo[modelId];
-
-            // We may only load one ped model at once
-            if ( isPedLoading && model->GetModelType() == MODEL_PED )
-                goto abortedLoading;
-
-            // We may only load one vehicle model at once
-            if ( isVehicleLoading && model->GetModelType() == MODEL_VEHICLE )
-                goto abortedLoading;
-
-            // By now we require the dependencies loaded!
-            if ( !HaveModelDependenciesLoaded( model ) )
-                goto abortedLoading;
-        }
-        else if ( usOffset( modelId, DATA_ANIM_BLOCK ) < 480 )
-        {
-            if ( !AreAnimationDependenciesLoaded( usOffset( modelId, DATA_ANIM_BLOCK ) ) )
-                goto abortedLoading;
-        }
-        else
-        {
-            if ( isVehicleLoading && blockCount > 200 )
-                goto abortedLoading;    // Screw you, maximum loading size if ped is in queue is 200 blocks! Have a nice day.
-        }
+        if ( !DefaultDispatchExecute( modelId, dispatch ) )
+            goto abortedLoading;
 
         // Write our request into the streaming requester
         requester.bufOffsets[n] = threadBufferOffset;
@@ -2013,19 +2072,7 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
         // code location. I have left it out since this information was not further used during runtime.
         // Must have been a left-over from quick debugging. (1.0 US and 1.0 EU: 0x0040CE59)
 
-        if ( modelId < MAX_MODELS )
-        {
-            if ( model->GetModelType() == MODEL_PED )
-                isPedLoading = true;
-            else if ( model->GetModelType() == MODEL_VEHICLE )
-                isVehicleLoading = true;
-        }
-        else if ( blockCount > 200 )
-        {
-            // This confuses me. Is it really describing a vehicle loading?
-            // Maybe R* thought that only vehicle models could have such high poly counts.
-            isVehicleLoading = true;
-        }
+        dispatch.AfterPerform( modelId );
 
         // Put it into the direct loading queue
         loadInfo->m_eLoading = MODEL_QUEUE;

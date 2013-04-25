@@ -22,106 +22,115 @@
 //  true - the event was successfully handled
 //  false - it could not be handled; might trigger another (default) handler
 // (at least this is what it could mean :P)
-template <bool defaultReturn>
-struct ModelCheckDispatch abstract
+template <bool defaultReturn, bool otherReturn = false>
+struct ModelCheckDispatch abstract  // creating it on its own will optimize it away, so "abstract" makes sense
 {
-    __forceinline bool DoBaseModel( unsigned short id )
+    // Use whatever attributes you want for these methods.
+    // __forceinline was chosen as it is best and matches the GTA:SA representation.
+    __forceinline bool DoBaseModel( modelId_t id )
     {
         return defaultReturn;
     }
 
-    __forceinline bool DoTexDictionary( unsigned short id )
+    __forceinline bool DoTexDictionary( modelId_t id )
     {
         return defaultReturn;
     }
 
-    __forceinline bool DoCollision( unsigned short id )
+    __forceinline bool DoCollision( modelId_t id )
     {
         return defaultReturn;
     }
 
-    __forceinline bool DoIPL( unsigned short id )
+    __forceinline bool DoIPL( modelId_t id )
     {
         return defaultReturn;
     }
 
-    __forceinline bool DoPathFind( unsigned short id )
+    __forceinline bool DoPathFind( modelId_t id )
     {
         return defaultReturn;
     }
 
-    __forceinline bool DoAnimation( unsigned short id )
+    __forceinline bool DoAnimation( modelId_t id )
     {
         return defaultReturn;
     }
 
-    __forceinline bool DoRecording( unsigned short id )
+    __forceinline bool DoRecording( modelId_t id )
     {
         return defaultReturn;
     }
 
-    __forceinline bool DoScript( unsigned short id )
+    __forceinline bool DoScript( modelId_t id )
     {
         return defaultReturn;
+    }
+
+    __forceinline bool DoOther( modelId_t id )
+    {
+        return otherReturn;
     }
 };
 
 // Quick macro so we do not have to repeat logic!
-#define usRangeCheckExec( id, off, range, func ) \
+#define idRangeCheckExec( id, off, range, func ) \
 { \
-    unsigned short offId = usOffset( (id), (off) ); \
-    if ( usRangeCheckEx( offId, (range) ) ) \
+    modelId_t offId = idOffset( (id), (off) ); \
+    if ( idRangeCheckEx( offId, (range) ) ) \
         return func( offId ); \
 }
 
+// For those who are not satisfied with ExecuteDispatch.
+// At least use this so we do not have multiple id region checks floating around!
 #define executeDispatch( id, dispatch ) \
 { \
-    usRangeCheckExec( (id), 0, MAX_MODELS, (dispatch).DoBaseModel ); \
-    usRangeCheckExec( (id), DATA_TEXTURE_BLOCK, 5000, (dispatch).DoTexDictionary ); \
-    usRangeCheckExec( (id), DATA_COLL_BLOCK, 256, (dispatch).DoCollision ); \
-    usRangeCheckExec( (id), DATA_IPL_BLOCK, 256, (dispatch).DoIPL ); \
-    usRangeCheckExec( (id), DATA_PATHFIND_BLOCK, 64, (dispatch).DoPathFind ); \
-    usRangeCheckExec( (id), DATA_ANIM_BLOCK, 480, (dispatch).DoAnimation ); \
-    usRangeCheckExec( (id), DATA_RECORD_BLOCK, 75, (dispatch).DoRecording ); \
+    idRangeCheckExec( (id), 0, MAX_MODELS, (dispatch).DoBaseModel ); \
+    idRangeCheckExec( (id), DATA_TEXTURE_BLOCK, 5000, (dispatch).DoTexDictionary ); \
+    idRangeCheckExec( (id), DATA_COLL_BLOCK, 256, (dispatch).DoCollision ); \
+    idRangeCheckExec( (id), DATA_IPL_BLOCK, 256, (dispatch).DoIPL ); \
+    idRangeCheckExec( (id), DATA_PATHFIND_BLOCK, 64, (dispatch).DoPathFind ); \
+    idRangeCheckExec( (id), DATA_ANIM_BLOCK, 480, (dispatch).DoAnimation ); \
+    idRangeCheckExec( (id), DATA_RECORD_BLOCK, 75, (dispatch).DoRecording ); \
 }
 
 template <class type>
-bool __forceinline ExecuteDispatch( unsigned short id, type dispatch )
+bool __forceinline ExecuteDispatch( modelId_t id, type dispatch )
 {
     executeDispatch( id, dispatch );
-    return false;
+    return dispatch.DoOther( id );;
 }
 
-template <class numType, class dispatchType>
-bool __forceinline ExecuteDispatchEasy( numType id, dispatchType dispatch )
+template <class dispatchType>
+bool __forceinline ExecuteDispatchEasy( modelId_t id, dispatchType dispatch )
 {
-    if ( (unsigned)id < MAX_MODELS )                                                            return dispatch.DoBaseModel( id );
-    if ( (unsigned)id >= DATA_TEXTURE_BLOCK && (unsigned)id < DATA_TEXTURE_BLOCK + MAX_TXD )    return dispatch.DoTexDictionary( id - DATA_TEXTURE_BLOCK );
-    if ( (unsigned)id >= DATA_COLL_BLOCK && (unsigned)id < DATA_COLL_BLOCK + 256 )              return dispatch.DoCollision( id - DATA_COLL_BLOCK );
-    if ( (unsigned)id >= DATA_IPL_BLOCK && (unsigned)id < DATA_IPL_BLOCK + 256 )                return dispatch.DoIPL( id - DATA_IPL_BLOCK );
-    if ( (unsigned)id >= DATA_PATHFIND_BLOCK && (unsigned)id < DATA_PATHFIND_BLOCK )            return dispatch.DoPathFind( id - DATA_PATHFIND_BLOCK );
-    if ( (unsigned)id >= DATA_ANIM_BLOCK && (unsigned)id < DATA_ANIM_BLOCK + 480 )              return dispatch.DoAnimation( id - DATA_ANIM_BLOCK );
-    if ( (unsigned)id >= DATA_RECORD_BLOCK && (unsigned)id < DATA_RECORD_BLOCK + 75 )           return dispatch.DoRecording( id - DATA_RECORD_BLOCK );
+    if ( id < MAX_MODELS )                                                  return dispatch.DoBaseModel( id );
+    if ( id >= DATA_TEXTURE_BLOCK && id < DATA_TEXTURE_BLOCK + MAX_TXD )    return dispatch.DoTexDictionary( id - DATA_TEXTURE_BLOCK );
+    if ( id >= DATA_COLL_BLOCK && id < DATA_COLL_BLOCK + 256 )              return dispatch.DoCollision( id - DATA_COLL_BLOCK );
+    if ( id >= DATA_IPL_BLOCK && id < DATA_IPL_BLOCK + 256 )                return dispatch.DoIPL( id - DATA_IPL_BLOCK );
+    if ( id >= DATA_PATHFIND_BLOCK && id < DATA_PATHFIND_BLOCK )            return dispatch.DoPathFind( id - DATA_PATHFIND_BLOCK );
+    if ( id >= DATA_ANIM_BLOCK && id < DATA_ANIM_BLOCK + 480 )              return dispatch.DoAnimation( id - DATA_ANIM_BLOCK );
+    if ( id >= DATA_RECORD_BLOCK && id < DATA_RECORD_BLOCK + 75 )           return dispatch.DoRecording( id - DATA_RECORD_BLOCK );
 
-    return false;
+    return dispatch.DoOther( id );
 }
 
 // Use only if model id type information is chained (0-19999 base model, 20000-24999 txds, ...)
 // If the compiler is smart, then it would detect ExecuteDispatchEasy as this
 // We cannot be certain for now, as we are not the GTA:SA engine ourselves.
 // That makes it hard to establish a perfect ID chain.
-template <class numType, class dispatchType>
-bool __forceinline ExecuteDispatchChain( numType id, dispatchType dispatch )
+template <class dispatchType>
+bool __forceinline ExecuteDispatchChain( modelId_t id, dispatchType dispatch )
 {
-    if ( (unsigned)id < DATA_TEXTURE_BLOCK )                return dispatch.DoBaseModel( id );
-    if ( (unsigned)id < DATA_COLL_BLOCK )                   return dispatch.DoTexDictionary( usOffset( id, DATA_TEXTURE_BLOCK ) );
-    if ( (unsigned)id < DATA_IPL_BLOCK )                    return dispatch.DoCollision( usOffset( id, DATA_COLL_BLOCK ) );
-    if ( (unsigned)id < DATA_PATHFIND_BLOCK )               return dispatch.DoIPL( usOffset( id, DATA_IPL_BLOCK ) );
-    if ( (unsigned)id < DATA_ANIM_BLOCK )                   return dispatch.DoPathFind( usOffset( id, DATA_PATHFIND_BLOCK ) );
-    if ( (unsigned)id < DATA_RECORD_BLOCK )                 return dispatch.DoAnimation( usOffset( id, DATA_ANIM_BLOCK ) );
-    if ( (unsigned)id < DATA_RECORD_BLOCK + 75 )            return dispatch.DoRecording( usOffset( id, DATA_RECORD_BLOCK ) );
+    if ( id < DATA_TEXTURE_BLOCK )              return dispatch.DoBaseModel( id );
+    if ( id < DATA_COLL_BLOCK )                 return dispatch.DoTexDictionary( idOffset( id, DATA_TEXTURE_BLOCK ) );
+    if ( id < DATA_IPL_BLOCK )                  return dispatch.DoCollision( idOffset( id, DATA_COLL_BLOCK ) );
+    if ( id < DATA_PATHFIND_BLOCK )             return dispatch.DoIPL( idOffset( id, DATA_IPL_BLOCK ) );
+    if ( id < DATA_ANIM_BLOCK )                 return dispatch.DoPathFind( idOffset( id, DATA_PATHFIND_BLOCK ) );
+    if ( id < DATA_RECORD_BLOCK )               return dispatch.DoAnimation( idOffset( id, DATA_ANIM_BLOCK ) );
+    if ( id < DATA_RECORD_BLOCK + 75 )          return dispatch.DoRecording( idOffset( id, DATA_RECORD_BLOCK ) );
 
-    return false;
+    return dispatch.DoOther( id );
 }
 
 // Define this to use your favorite dispatcher method.
@@ -129,4 +138,4 @@ bool __forceinline ExecuteDispatchChain( numType id, dispatchType dispatch )
 // You could try experimenting with this.
 // This method should be used if you are uncertain which method grants you best performance.
 // Otherwise choose any dispatching method provided above.
-#define DefaultDispatchExecute( id, dispatch )  ( ExecuteDispatchEasy( (id), (dispatch) ) )
+#define DefaultDispatchExecute( id, dispatch )  ( ExecuteDispatch( (id), (dispatch) ) )

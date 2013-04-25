@@ -179,7 +179,7 @@ struct VerifyIntegrityCheck : ModelCheckDispatch <true>
     {
     }
 
-    bool DoBaseModel( unsigned short id )
+    bool __forceinline DoBaseModel( unsigned short id )
     {
         if ( array_troll[id * 80] == 0xCACA )
             return true;
@@ -188,7 +188,7 @@ struct VerifyIntegrityCheck : ModelCheckDispatch <true>
         return false;
     }
 
-    bool DoTexDictionary( unsigned short id )
+    bool __forceinline DoTexDictionary( unsigned short id )
     {
         trollCode = id;
         return true;
