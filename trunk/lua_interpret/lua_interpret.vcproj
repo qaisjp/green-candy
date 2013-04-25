@@ -121,6 +121,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
@@ -133,7 +135,7 @@
 				PrecompiledHeaderThrough="StdInc.h"
 				PrecompiledHeaderFile="$(IntDir)\$(TargetName)_r.pch"
 				WarningLevel="3"
-				DebugInformationFormat="0"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -154,6 +156,10 @@
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
 				GenerateDebugInformation="true"
 				AssemblyDebug="2"
+				ProgramDatabaseFile="../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
+				GenerateMapFile="true"
+				MapFileName="lint_exp.exp"
+				MapExports="true"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -256,6 +262,14 @@
 		<File
 			RelativePath=".\main.cpp"
 			>
+			<FileConfiguration
+				Name="Release|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					DebugInformationFormat="3"
+				/>
+			</FileConfiguration>
 		</File>
 	</Files>
 	<Globals>

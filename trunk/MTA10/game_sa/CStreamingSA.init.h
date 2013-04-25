@@ -28,6 +28,31 @@ namespace Streaming
         return *( (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id );
     }
 
+    inline CModelLoadInfoSA&    GetModelLoadInfo( unsigned short offset, unsigned short id )
+    {
+        return *( ( (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + offset ) + id );
+    }
+
+    inline CModelLoadInfoSA*    GetQueuedLoadInfo( void )
+    {
+        CModelLoadInfoSA *item = *(CModelLoadInfoSA**)0x008E4C58;
+
+        if ( item->m_primaryModel == 0xFFFF )
+            return NULL;
+
+        return &GetModelLoadInfo( item->m_primaryModel );
+    }
+
+    inline CModelLoadInfoSA*    GetLastQueuedLoadInfo( void )
+    {
+        CModelLoadInfoSA *last = *(CModelLoadInfoSA**)0x008E4C54;
+
+        if ( last->m_secondaryModel == 0xFFFF )
+            return NULL;
+        
+        return &GetModelLoadInfo( last->m_secondaryModel );
+    }
+
     CBaseModelInfoSAInterface* __cdecl  GetModelByHash      ( unsigned int hash, unsigned short *id );
     CBaseModelInfoSAInterface*          GetModelInfoByName  ( const char *name, unsigned short startId, unsigned short endId, unsigned short *id );
 };

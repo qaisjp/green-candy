@@ -27,7 +27,6 @@ class CColModelSAInterface;
 typedef RwError*                (__cdecl *RwErrorGet_t)                         (RwError *code);
 
 // Utility functions
-typedef void                    (__cdecl *RpPrtStdGlobalDataSetStreamEmbedded_t)(class CBaseModelInfoSAInterface *info);
 typedef void                    (__cdecl *RwDeviceSystemRequest_t)              (RwRenderSystem& rend, int objectID, unsigned int& result, int, int);
 typedef void                    (__cdecl *RwPrefetch_t)                         ();
 typedef void                    (__cdecl *RwFlushLoader_t)                      ();
@@ -60,6 +59,7 @@ typedef RwStream*               (__cdecl *RwStreamOpen_t)                       
 typedef RwStream*               (__cdecl *RwStreamReadChunkHeaderInfo_t)        (RwStream *stream, RwChunkHeader& header);
 typedef int                     (__cdecl *RwStreamFindChunk_t)                  (RwStream *stream, unsigned int type, unsigned int *lengthOut, unsigned int *versionOut);
 typedef unsigned int            (__cdecl *RwStreamReadBlocks_t)                 (RwStream *stream, void *buf, unsigned int size);
+typedef int                     (__cdecl *RwStreamSkip_t)                       (RwStream *stream, unsigned int offset);
 typedef int                     (__cdecl *RwStreamClose_t)                      (RwStream *stream, void *pData);
 
 // Frame functions
@@ -88,6 +88,7 @@ typedef RpGeometry*             (__cdecl *RpGeometryUnlock_t)                   
 typedef RpGeometry*             (__cdecl *RpGeometryLock_t)                     (RpGeometry *geo, int lockmode);
 typedef RpGeometry*             (__cdecl *RpGeometryTransform_t)                (RpGeometry *geo, const RwMatrix *matrix);
 typedef RpGeometry*             (__cdecl *RpGeometryTriangleSetMaterial_t)      (RpGeometry *geo, RpTriangle *tri, RpMaterial *mat);
+typedef RpGeometry*             (__cdecl *RpGeometryStreamRead_t)               (RpGeometry *geom);
 typedef size_t                  (__cdecl *RpGeometryRegisterPlugin_t)           (size_t size, unsigned int id, RpGeometryPluginConstructor constructor, RpGeometryPluginDestructor destructor, RpGeometryPluginCopyConstructor copyConstr );
 typedef int                     (__cdecl *RpGeometryDestroy_t)                  (RpGeometry *geo);
 
@@ -168,7 +169,6 @@ extern RwErrorGet_t                             RwErrorGet;
 extern RwAllocAligned_t                         RwAllocAligned;
 extern RwFreeAligned_t                          RwFreeAligned;
 extern RwCreateExtension_t                      RwCreateExtension;
-extern RpPrtStdGlobalDataSetStreamEmbedded_t    RpPrtStdGlobalDataSetStreamEmbedded;
 extern RwPrefetch_t                             RwPrefetch;
 extern RwFlushLoader_t                          RwFlushLoader;
 extern RwPluginRegistryReadDataChunks_t         RwPluginRegistryReadDataChunks;
@@ -197,6 +197,7 @@ extern RwStreamOpen_t                           RwStreamOpen;
 extern RwStreamFindChunk_t                      RwStreamFindChunk;
 extern RwStreamReadChunkHeaderInfo_t            RwStreamReadChunkHeaderInfo;
 extern RwStreamReadBlocks_t                     RwStreamReadBlocks;
+extern RwStreamSkip_t                           RwStreamSkip;
 extern RwStreamClose_t                          RwStreamClose;
 
 // Frame functions

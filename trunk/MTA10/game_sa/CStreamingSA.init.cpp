@@ -433,7 +433,7 @@ success:
             }
             else if ( strnicmp( ext, "COL", 3 ) == 0 )
             {
-                id = 25000 + RegisterCollision( header.name );
+                id = DATA_COLL_BLOCK + RegisterCollision( header.name );
             }
             else if ( strnicmp( ext, "IPL", 3 ) == 0 )
             {
@@ -444,21 +444,21 @@ success:
                     id = RegisterIPLFile( header.name );
                 }
 
-                id += 25255;
+                id += DATA_IPL_BLOCK;
             }
             else if ( strnicmp( ext, "DAT", 3 ) == 0 )
             {
                 sscanf( header.name + 5, "%d", &id );
                 
-                id += 25511;
+                id += DATA_PATHFIND_BLOCK;
             }
             else if ( strnicmp( ext, "IFP", 3 ) == 0 )
             {
-                id = 25575 + pGame->GetAnimManager()->RegisterAnimBlock( header.name );
+                id = DATA_ANIM_BLOCK + pGame->GetAnimManager()->RegisterAnimBlock( header.name );
             }
             else if ( strnicmp( ext, "RRR", 3 ) == 0 )
             {
-                id = 25755 + pGame->GetRecordings()->Register( header.name );
+                id = DATA_RECORD_BLOCK + pGame->GetRecordings()->Register( header.name );
             }
             else if ( strnicmp( ext, "SCM", 3 ) == 0 )
             {

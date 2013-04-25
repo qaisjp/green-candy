@@ -17,17 +17,6 @@
 #ifndef _MODELINFO_BASE_
 #define _MODELINFO_BASE_
 
-#if 0
-class CClumpModelInfo_SA_VTBL
-{
-    DWORD           SetClump;                       // (RpClump*)
-};
-
-class CWeaponModelInfo_SA_VTBL: public CClumpModelInfo_SA_VTBL
-{
-};
-#endif
-
 class CAtomicModelInfoSA;
 class CDamageAtomicModelInfoSA;
 class CLODAtomicModelInfoSA;
@@ -184,7 +173,7 @@ public:
     // +36 = Weapon info as int
 };
 
-void ModelInfoBase_Init();
-void ModelInfoBase_Shutdown();
+void ModelInfoBase_Init( void );
+void ModelInfoBase_Shutdown( void );
 
 #endif //_MODELINFO_BASE_
