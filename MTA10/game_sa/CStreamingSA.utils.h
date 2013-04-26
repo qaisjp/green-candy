@@ -13,6 +13,11 @@
 #ifndef _STREAMING_UTILITIES_
 #define _STREAMING_UTILITIES_
 
+namespace Streaming
+{
+    extern streamingLoadCallback_t  streamingLoadCallback;
+};
+
 // Imported textures scanning
 namespace RwImportedScan
 {

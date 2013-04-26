@@ -68,6 +68,7 @@ inline static float GetObjectOffsetRotation( RwObject *obj )
     CacheVehicleRenderCameraSettings
 
     Arguments:
+        alpha - global rendering alpha value [MTA extension]
         obj - vehicle rendering object
     Purpose:
         Sets up cached camera details for the rendering of
@@ -78,10 +79,13 @@ inline static float GetObjectOffsetRotation( RwObject *obj )
 static float cameraRenderDistanceSq = 0;
 static float cameraRenderAngleRadians = 0;
 
-void __cdecl CacheVehicleRenderCameraSettings( RwObject *obj )
+void __cdecl CacheVehicleRenderCameraSettings( unsigned char alpha, RwObject *obj )
 {
-    highQualityRender = g_effectManager->m_fxQuality > 1;   // render High Quality if FX Quality better than Medium
-    renderLOD = g_effectManager->m_fxQuality < 3;           // render LOD vehicles if FX Quality not Very High
+    if ( alpha != 255 )
+        highQualityRender = false;  // we should not reorder atomics when we use alpha since it is gross
+    else
+        highQualityRender = g_effectManager->m_fxQuality > 1;   // render High Quality if FX Quality better than Medium
+    renderLOD = g_effectManager->m_fxQuality < 3;               // render LOD vehicles if FX Quality not Very High
 
     if ( !highQualityRender )
     {
@@ -163,38 +167,45 @@ void __cdecl ClearVehicleRenderChains( void )
         Renders all atomics which were listed for delayed
         rendering (usually alpha/transparent/opaque).
 =========================================================*/
-void __cdecl ExecuteVehicleRenderChains( void )
+void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
 {
     // Do special alpha blending if quality is set to high/very high
-    if ( g_effectManager->m_fxQuality > 1 )
+    if ( g_effectManager->m_fxQuality > 1 && renderAlpha == 255 )
     {
-        // Set opaque rendering flags
-        RwD3D9ForceRenderState( D3DRS_ZFUNC, D3DCMP_LESS );
-        RwD3D9ForceRenderState( D3DRS_ALPHATESTENABLE, true );
-        RwD3D9ForceRenderState( D3DRS_ALPHAFUNC, D3DCMP_EQUAL );
-        RwD3D9ForceRenderState( D3DRS_ALPHAREF, 255 );
-        RwD3D9ForceRenderState( D3DRS_ALPHABLENDENABLE, false );
-        RwD3D9ApplyDeviceStates();
+        {
+            RwRenderStateLock zfunc( D3DRS_ZFUNC, D3DCMP_LESS );
+            RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
+            RwRenderStateLock alphaRef( D3DRS_ALPHAREF, 255 );
 
-        // First render components which are opaque only
-        vehicleRenderChains->ExecuteReverse();
+            // Set opaque rendering flags
+            {
+                RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_EQUAL );
+                RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, false );
+                RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, true );
+                RwD3D9ApplyDeviceStates();
 
-        // Now render translucent polygons
-        RwD3D9ForceRenderState( D3DRS_ALPHABLENDENABLE, true );
-        RwD3D9ForceRenderState( D3DRS_ALPHAFUNC, D3DCMP_LESS );
-        RwD3D9ForceRenderState( D3DRS_ZWRITEENABLE, false );
-        RwD3D9ForceRenderState( D3DRS_CULLMODE, D3DCULL_NONE );
-        RwD3D9ApplyDeviceStates();
+                // First render components which are opaque only
+                vehicleRenderChains->ExecuteReverse();
+            }
 
-        // Render alpha polygons
-        vehicleRenderChains->Execute();
+            {
+                // Now render translucent polygons
+                RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, true );
+                RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_LESS );
+                RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, false );
+                RwRenderStateLock cullMode( D3DRS_CULLMODE, D3DCULL_NONE );
+                RwD3D9ApplyDeviceStates();
 
-        // Restore proper render status
-        RwD3D9FreeRenderStates();
+                // Render alpha polygons
+                vehicleRenderChains->Execute();
+            }
+        }
+
+        // Fix some occasional RenderState screw-ups
         RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
+        RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
         RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
         RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
-        RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
         RwD3D9ApplyDeviceStates();
     }
     else

@@ -17,6 +17,8 @@ CEnvMapMaterialPool **ppEnvMapMaterialPool = (CEnvMapMaterialPool**)0x00C02D28;
 CEnvMapAtomicPool **ppEnvMapAtomicPool = (CEnvMapAtomicPool**)0x00C02D2C;
 CSpecMapMaterialPool **ppSpecMapMaterialPool = (CSpecMapMaterialPool**)0x00C02D30;
 
+RwRenderStateLock::_rsLockDesc RwRenderStateLock::_rsLockInfo[210];
+
 /*=========================================================
     RwD3D9SetRenderState
 

@@ -194,12 +194,6 @@ void CModelInfoSA::Request( bool bAndLoad, bool bWaitForLoad, bool bHighPriority
     if ( IsLoaded() )
         return;
 
-    if ( m_modelID <= 288 && m_modelID != 7 && !pGame->GetModelInfo ( 7 )->IsLoaded () )
-    {
-        // Skin 7 must be loaded in order for other skins to work. No, really. (#4010)
-        pGame->GetModelInfo ( 7 )->Request ( bAndLoad, false );
-    }
-
     DWORD dwFlags;
     if ( bHighPriority )
         dwFlags = 0x16;

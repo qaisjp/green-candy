@@ -21,7 +21,10 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 static RtDictSchema *const animDict =   (RtDictSchema*)0x008DED50;
 static CModelLoadInfoSA *const VAR_ModelLoadInfo = (CModelLoadInfoSA*)0x008E4CC0;
 
-static streamingLoadCallback_t  streamingLoadCallback = NULL;
+namespace Streaming
+{
+    streamingLoadCallback_t  streamingLoadCallback = NULL;
+};
 
 /*
     Texture Scanner Namespaces
@@ -1353,13 +1356,15 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
             loadInfo.PushIntoLoader( *(CModelLoadInfoSA**)0x008E4C60 );
     }
 
+    // If we do not require a second loader run...
     if ( loadInfo.m_eLoading != MODEL_RELOAD )
     {
+        // ... we are done loading!
         loadInfo.m_eLoading = MODEL_LOADED;
         (*(unsigned int*)0x008E4CB4) += streamBuffer.size;  // increase the streaming memory statistics
 
-        if ( streamingLoadCallback )
-            streamingLoadCallback( id );
+        if ( Streaming::streamingLoadCallback )
+            Streaming::streamingLoadCallback( id );
     }
 
     return true;
@@ -1521,6 +1526,10 @@ bool __cdecl LoadBigModel( char *buf, modelId_t id )
         RequestModel( id, loadInfo->m_flags );
         return false;
     }
+
+    // Notify our environment that we loaded another model.
+    if ( streamingLoadCallback )
+        streamingLoadCallback( id );
 
     return true;
 }
@@ -1862,7 +1871,7 @@ inline bool CheckModelDependency( modelId_t id )
 {
     if ( idOffset( id, DATA_TEXTURE_BLOCK ) < MAX_TXD )
         return CheckTXDDependency( idOffset( id, DATA_TEXTURE_BLOCK ) );
-    else if ( idOffset( id, DATA_ANIM_BLOCK ) < 480 )
+    else if ( idOffset( id, DATA_ANIM_BLOCK ) < 180 )
         return CheckAnimDependency( idOffset( id, DATA_ANIM_BLOCK ) );
 
     return true;
@@ -1966,9 +1975,9 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
     using namespace Streaming;
 
     // The thread allocation buffer supports a chain of resource buffers.
-    // The streaming requests keep track of buffers offsets (that is where
+    // The streaming requests keep track of buffer offsets (that is where
     // resource data is written to in the thread allocation buffer).
-    // This also means that if this memory count is overshot, we cause a
+    // This also means that if this memory block count is overshot, we cause a
     // buffer overflow. R* indeed employed a dangerous loading mechanism!
     unsigned int threadBufferOffset = 0;
 
@@ -2013,7 +2022,7 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
         // Get our offset information
         loadInfo->GetOffset( offset, blockCount );
 
-        // Check whether it is a really big block
+        // Check whether it really is a big block
         if ( blockCount > *(unsigned int*)0x008E4CA8 )
         {
             // We cannot request big models on the second requester
@@ -2092,13 +2101,24 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
             loadInfo->m_flags &= ~FLAG_PRIORITY;
         }
 
+        // Try to load the next model id in order.
         modelId = loadInfo->m_lastID;
     }
 
 pulseSemaphore:
     // Notify the synchronous semaphore.
     // Is this a normal request or just a big model one?
-    ReadStream( reqId, ((char**)0x008E4CAC)[reqId], offset, blockCount );
+    ReadStream( reqId, ((char**)0x008E4CAC)[reqId], offset, threadBufferOffset );
+
+    // Update the requester
+    requester.status = streamingRequest::STREAMING_BUFFERING;
+    requester.statusCode = 0;
+    requester.blockCount = threadBufferOffset;
+    requester.offset = offset;
+    requester.count = 0;
+
+    // I do not know what this is.
+    *(bool*)0x009654C4 = false;
     return;
 
 abortedLoading:
@@ -2121,5 +2141,5 @@ abortedLoading:
 =========================================================*/
 void CStreamingSA::SetLoadCallback( streamingLoadCallback_t callback )
 {
-    streamingLoadCallback = callback;
+    Streaming::streamingLoadCallback = callback;
 }

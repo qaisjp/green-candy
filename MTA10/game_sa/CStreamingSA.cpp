@@ -115,7 +115,7 @@ struct ModelRequestDispatch : ModelCheckDispatch <true>
     }
 };
 
-void __cdecl Streaming::RequestModel( unsigned int id, unsigned int flags )
+void __cdecl Streaming::RequestModel( modelId_t id, unsigned int flags )
 {
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
 
@@ -165,7 +165,13 @@ void __cdecl Streaming::RequestModel( unsigned int id, unsigned int flags )
                     break;
                 }
 
+                // Set us loaded, instantly.
                 info->m_eLoading = MODEL_LOADED;
+
+                // We should notify our environment about the successful loading
+                if ( streamingLoadCallback )
+                    streamingLoadCallback( id );
+
                 return;
             }
         }
@@ -180,13 +186,16 @@ void __cdecl Streaming::RequestModel( unsigned int id, unsigned int flags )
     // Refresh the model loading?
     if ( info->m_eLoading == MODEL_LOADED )
     {
-        if ( info->m_primaryModel == 0xFFFF )
+        if ( !info->IsOnLoader() )
             return;
 
-        // Unfold loaded model
+        // Remove loaded model from its queue (it has to reside in one)
         info->PopFromLoader();
 
-        if ( id < DATA_TEXTURE_BLOCK )
+        if ( g_replObjectNative[id] != NULL )
+            return;
+
+        if ( id < MAX_MODELS )
         {
             CBaseModelInfoSAInterface *model = ppModelInfo[id];
 
@@ -194,53 +203,38 @@ void __cdecl Streaming::RequestModel( unsigned int id, unsigned int flags )
             {
             case MODEL_VEHICLE:
             case MODEL_PED:
+                // We do not reload vehicles or peds
+                // They need their model info intact, as they read data from it.
                 return;
             }
         }
 
+        // Push it onto a different queue I have no idea about.
+        // This might have to do with Garbage Collection.
+        // So, if we request with 0x06 flag, we prevent models from being collected?
         if ( !( info->m_flags & (0x02 | 0x04) ) )
             info->PushIntoLoader( *(CModelLoadInfoSA**)0x008E4C60 );
-
-        return;
     }
-
-    // Make sure we are really unloaded?
-    switch( info->m_eLoading )
+    else if ( info->m_eLoading == MODEL_UNAVAILABLE )
     {
-    case MODEL_LOADING:
-    case MODEL_QUEUE:
-    case MODEL_RELOAD:
-        // We are doing the job. No need to change stuff.
-        return;
-    case MODEL_LOADED:
-    default:
-        // We want to load again. The system should know that
-        // the resource is ready.
-        // The resource probably resides in the loader arrays
-        // and is dynamically managed.
-        goto reload;
-    case MODEL_UNAVAILABLE:
         // This resource has to be instantiated to be ready again.
-        break;
+        if ( !DefaultDispatchExecute( id, ModelRequestDispatch( flags ) ) )
+            return;
+
+        // Push onto the to-be-loaded queue
+        info->PushIntoLoader( *(CModelLoadInfoSA**)0x008E4C58 );
+
+        // Tell the loader that there is a resource waiting
+        (*(DWORD*)VAR_NUMMODELS)++;
+
+        if ( flags & 0x10 )
+            (*(DWORD*)VAR_NUMPRIOMODELS)++;
+
+        // If available, we reload the model
+        info->m_flags = flags;
+
+        info->m_eLoading = MODEL_LOADING;
     }
-
-    if ( !DefaultDispatchExecute( id, ModelRequestDispatch( flags ) ) )
-        return;
-
-    // Push onto the to-be-loaded queue
-    info->PushIntoLoader( *(CModelLoadInfoSA**)0x008E4C58 );
-
-    // Tell the loader that there is a resource waiting
-    (*(DWORD*)VAR_NUMMODELS)++;
-
-    if ( flags & 0x10 )
-        (*(DWORD*)VAR_NUMPRIOMODELS)++;
-
-reload:
-    // If available, we reload the model
-    info->m_flags = flags;
-
-    info->m_eLoading = MODEL_LOADING;
 }
 
 /*=========================================================
@@ -403,21 +397,23 @@ void __cdecl Streaming::FreeModel( modelId_t id )
         *(DWORD*)VAR_MEMORYUSAGE -= info->m_blockCount * 2048;
     }
 
-    if ( info->m_primaryModel != 0xFFFF )
+    if ( info->IsOnLoader() )
     {
         if ( info->m_eLoading == MODEL_LOADING )
         {
+            // LoadAllRequestedModels wants to keep track of the number of requests ongoing
             (*(DWORD*)VAR_NUMMODELS)--;
 
             if ( info->m_flags & FLAG_PRIORITY )
             {
                 info->m_flags &= ~FLAG_PRIORITY;
 
+                // It also wants the count of priority requests, as they are prefered.
                 (*(DWORD*)VAR_NUMPRIOMODELS)--;
             }
         }
 
-        // Remove us from loading queue
+        // Remove us from any loading queue (garbage collect or to-be-loaded)
         info->PopFromLoader();
     }
     else if ( info->m_eLoading == MODEL_QUEUE )
@@ -425,7 +421,8 @@ void __cdecl Streaming::FreeModel( modelId_t id )
         streamingRequest& primary = Streaming::GetStreamingRequest( 0 );
         streamingRequest& secondary = Streaming::GetStreamingRequest( 1 );
 
-        // Invalidate any running queue requests for this model id
+        // Invalidate any running syncSemaphore requests for this model id
+        // Data which has been read from the IMG archive will be ignored.
         for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTS; n++ )
         {
             if ( primary.ids[n] == id )
@@ -560,11 +557,11 @@ CStreamingSA::CStreamingSA( void )
     //HookInstall( 0x00407AD0, (DWORD)CheckAnimDependency, 5 );
     //HookInstall( 0x00409A90, (DWORD)CheckTXDDependency, 5 );  // you better do not fuck around with securom
     
-    //HookInstall( FUNC_LoadAllRequestedModels, (DWORD)Streaming::LoadAllRequestedModels, 5 );
+    HookInstall( FUNC_LoadAllRequestedModels, (DWORD)Streaming::LoadAllRequestedModels, 5 );
     HookInstall( 0x00408E20, (DWORD)ProcessLoadQueue, 5 );
     HookInstall( 0x0040E170, (DWORD)ProcessStreamingRequest, 5 );
-    //HookInstall( 0x0040CBA0, (DWORD)PulseStreamingRequest, 5 );
-    //HookInstall( 0x0040E460, (DWORD)PulseStreamingRequests, 5 );
+    HookInstall( 0x0040CBA0, (DWORD)PulseStreamingRequest, 5 );
+    HookInstall( 0x0040E460, (DWORD)PulseStreamingRequests, 5 );
 
     StreamingLoader_Init();
     StreamingRuntime_Init();
@@ -638,14 +635,7 @@ void CStreamingSA::FreeModel( modelId_t id )
 =========================================================*/
 void CStreamingSA::LoadAllRequestedModels( bool onlyPriority )
 {
-    DWORD dwFunction = FUNC_LoadAllRequestedModels;
-    _asm
-    {
-        movzx   eax,onlyPriority
-        push    eax
-        call    dwFunction
-        add     esp, 4
-    }
+    Streaming::LoadAllRequestedModels( onlyPriority );
 }
 
 /*=========================================================
@@ -742,16 +732,7 @@ bool CStreamingSA::HaveAnimationsLoaded( int idx )
 =========================================================*/
 void CStreamingSA::RequestVehicleUpgrade( modelId_t model, unsigned int flags )
 {
-    DWORD dwFunc = FUNC_RequestVehicleUpgrade;
-    _asm
-    {
-        mov     eax,flags
-        push    eax
-        mov     eax,model
-        push    eax
-        call    dwFunc
-        add     esp, 8
-    }
+    ((void (__cdecl*)( modelId_t, unsigned int ))FUNC_RequestVehicleUpgrade)( model, flags );
 }
 
 /*=========================================================
