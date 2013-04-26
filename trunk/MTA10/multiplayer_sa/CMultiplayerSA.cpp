@@ -430,8 +430,6 @@ void HOOK_Render3DStuff ();
 void HOOK_CTaskSimplePlayerOnFoot_ProcessPlayerWeapon ();
 void HOOK_CPed_IsPlayer ();
 void HOOK_CTrain_ProcessControl_Derail ();
-void HOOK_CVehicle_SetupRender ();
-void HOOK_CVehicle_ResetAfterRender();
 void HOOK_CObject_Render ();
 void HOOK_EndWorldColors ();
 void HOOK_CWorld_ProcessVerticalLineSectorList ();
@@ -591,8 +589,6 @@ void CMultiplayerSA::InitHooks()
     HookInstall(HOOKPOS_CTaskSimplePlayerOnFoot_ProcessPlayerWeapon, (DWORD)HOOK_CTaskSimplePlayerOnFoot_ProcessPlayerWeapon, 7);
     HookInstall(HOOKPOS_CPed_IsPlayer, (DWORD)HOOK_CPed_IsPlayer, 6);
     HookInstall(HOOKPOS_CTrain_ProcessControl_Derail, (DWORD)HOOK_CTrain_ProcessControl_Derail, 6);
-    HookInstall(HOOKPOS_CVehicle_SetupRender, (DWORD)HOOK_CVehicle_SetupRender, 5);
-    HookInstall(HOOKPOS_CVehicle_ResetAfterRender, (DWORD)HOOK_CVehicle_ResetAfterRender, 5);
     HookInstall(HOOKPOS_CObject_Render, (DWORD)HOOK_CObject_Render, 5);
     HookInstall(HOOKPOS_EndWorldColors, (DWORD)HOOK_EndWorldColors, 5);
     HookInstall(HOOKPOS_CWorld_ProcessVerticalLineSectorList, (DWORD)HOOK_CWorld_ProcessVerticalLineSectorList, 8);
@@ -3011,98 +3007,6 @@ static void RestoreAlphaValues ()
         SetEntityAlphaHooked ( dwAlphaEntity, (DWORD)HOOK_RestoreAlphaValues, 0 );
     }
 }
-
-
-/**
- ** Vehicles
- **/
-static RpAtomic* CVehicle_EAEG ( RpAtomic* pAtomic, void* )
-{
-    RwFrame* pFrame = pAtomic->m_parent;
-    if ( pFrame )
-    {
-        switch ( pFrame->m_nodeName[0] )
-        {
-            case '\0': case 'h': break;
-            default:
-                DWORD dwFunc = (DWORD)0x533290;
-                DWORD dwAtomic = (DWORD)pAtomic;
-                _asm
-                {
-                    push    0
-                    push    dwAtomic
-                    call    dwFunc
-                    add     esp, 0x8
-                }
-        }
-    }
-
-    return pAtomic;
-}
-
-static void SetVehicleAlpha()
-{
-    CAutomobile *car = dynamic_cast <CAutomobile*> ( pGameInterface->GetPools()->GetVehicle( (CVehicleSAInterface*)dwAlphaEntity ) );
-
-    if ( !car )
-        return;
-
-    unsigned char ucAlpha = car->GetAlpha();
-
-    if ( ucAlpha < 255 )
-        GetAlphaAndSetNewValues ( ucAlpha );
-    else if ( dwEAEG && car->GetModelIndex() == 0x20A )
-    {
-        bEntityHasAlpha = true;
-        pCurAlpha = ucCurrentAlpha;
-        SetEntityAlphaHooked ( dwAlphaEntity, (DWORD)HOOK_GetAlphaValues, 0 );
-        MemPutFast < DWORD > ( 0x5332D6, (DWORD)CVehicle_EAEG );
-        SetEntityAlphaHooked ( dwAlphaEntity, (DWORD)HOOK_SetAlphaValues, 0 );
-        MemPutFast < DWORD > ( 0x5332D6, 0x533290 );
-    }
-    else
-        bEntityHasAlpha = false;
-}
-
-static DWORD dwCVehicle_SetupRender_ret = 0x6D6517;
-void _declspec(naked) HOOK_CVehicle_SetupRender()
-{
-    _asm
-    {
-        mov     dwAlphaEntity, esi
-        pushad
-    }
-
-    SetVehicleAlpha ( );
-
-    _asm
-    {
-        popad
-        add     esp, 0x8
-        test    eax, eax
-        jmp     dwCVehicle_SetupRender_ret
-    }
-}
-
-static DWORD dwCVehicle_ResetAfterRender_ret = 0x6D0E43;
-void _declspec(naked) HOOK_CVehicle_ResetAfterRender ()
-{
-    _asm
-    {
-        pushad
-    }
-
-    RestoreAlphaValues ();
-
-    _asm
-    {
-        popad
-        add     esp, 0x0C
-        test    eax, eax
-        jmp     dwCVehicle_ResetAfterRender_ret
-    }
-}
-
 
 /**
  ** Objects

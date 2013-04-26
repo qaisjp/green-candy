@@ -82,6 +82,15 @@ public:
         ( *(CModelLoadInfoSA**)ARRAY_ModelLoadCache + primId )->m_secondaryModel = thisId;
     }
 
+    inline bool                 IsOnLoader          ( void ) const
+    {
+#ifdef _DEBUG
+        return m_primaryModel != 0xFFFF && m_secondaryModel != 0xFFFF;
+#else
+        return m_primaryModel != 0xFFFF;
+#endif
+    }
+
     // inlined into RequestModel and FreeModel.
     // Otherwise found at (1.0 US and 1.0 EU) 0x004074E0
     inline void __thiscall      PopFromLoader       ( void )

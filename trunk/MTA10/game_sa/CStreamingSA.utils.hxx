@@ -90,7 +90,7 @@ struct ModelCheckDispatch abstract  // creating it on its own will optimize it a
     idRangeCheckExec( (id), DATA_COLL_BLOCK, 256, (dispatch).DoCollision ); \
     idRangeCheckExec( (id), DATA_IPL_BLOCK, 256, (dispatch).DoIPL ); \
     idRangeCheckExec( (id), DATA_PATHFIND_BLOCK, 64, (dispatch).DoPathFind ); \
-    idRangeCheckExec( (id), DATA_ANIM_BLOCK, 480, (dispatch).DoAnimation ); \
+    idRangeCheckExec( (id), DATA_ANIM_BLOCK, 180, (dispatch).DoAnimation ); \
     idRangeCheckExec( (id), DATA_RECORD_BLOCK, 75, (dispatch).DoRecording ); \
 }
 
@@ -109,7 +109,7 @@ bool __forceinline ExecuteDispatchEasy( modelId_t id, dispatchType dispatch )
     if ( id >= DATA_COLL_BLOCK && id < DATA_COLL_BLOCK + 256 )              return dispatch.DoCollision( id - DATA_COLL_BLOCK );
     if ( id >= DATA_IPL_BLOCK && id < DATA_IPL_BLOCK + 256 )                return dispatch.DoIPL( id - DATA_IPL_BLOCK );
     if ( id >= DATA_PATHFIND_BLOCK && id < DATA_PATHFIND_BLOCK )            return dispatch.DoPathFind( id - DATA_PATHFIND_BLOCK );
-    if ( id >= DATA_ANIM_BLOCK && id < DATA_ANIM_BLOCK + 480 )              return dispatch.DoAnimation( id - DATA_ANIM_BLOCK );
+    if ( id >= DATA_ANIM_BLOCK && id < DATA_ANIM_BLOCK + 180 )              return dispatch.DoAnimation( id - DATA_ANIM_BLOCK );
     if ( id >= DATA_RECORD_BLOCK && id < DATA_RECORD_BLOCK + 75 )           return dispatch.DoRecording( id - DATA_RECORD_BLOCK );
 
     return dispatch.DoOther( id );

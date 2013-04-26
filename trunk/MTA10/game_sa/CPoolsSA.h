@@ -189,6 +189,7 @@ public:
     {
         // We enable compiler optimizations by using the constant template variable.
         // Using the dynamic variable here may enable support for hacks (which dynamically extend pool size).
+        // Why should we enable that kind of support?
         return max;
     }
 
@@ -328,51 +329,51 @@ extern CMTAObjectDataPool *mtaObjectDataPool;
 class CPoolsSA : public CPools
 {
 public:
-                            CPoolsSA();
-                            ~CPoolsSA();
+                            CPoolsSA                    ( void );
+                            ~CPoolsSA                   ( void );
 
 public:
     // Vehicles pool
-    CBicycleSA*             AddBicycle( unsigned short modelId );
-    CBikeSA*                AddBike( unsigned short modelId );
-    CHeliSA*                AddHeli( unsigned short modelId );
-    CPlaneSA*               AddPlane( unsigned short modelId );
-    CTrainSA*               AddTrain( unsigned short modelId, const CVector& pos, bool direction );
-    CAutomobileTrailerSA*   AddTrailer( unsigned short modelId );
-    CQuadBikeSA*            AddQuadBike( unsigned short modelId );
-    CMonsterTruckSA*        AddMonsterTruck( unsigned short modelId );
-    CAutomobileSA*          AddAutomobile( unsigned short modelId );
-    CBoatSA*                AddBoat( unsigned short modelId );
-    CVehicleSA*             AddVehicle( unsigned short modelID );
-    CVehicleSA*             GetVehicle( void *entity ) const;
-    CVehicleSA*             GetVehicleFromRef( unsigned int index ) const;
-    void                    DeleteAllVehicles();
+    CBicycleSA*             AddBicycle                  ( modelId_t modelId );
+    CBikeSA*                AddBike                     ( modelId_t modelId );
+    CHeliSA*                AddHeli                     ( modelId_t modelId );
+    CPlaneSA*               AddPlane                    ( modelId_t modelId );
+    CTrainSA*               AddTrain                    ( modelId_t modelId, const CVector& pos, bool direction );
+    CAutomobileTrailerSA*   AddTrailer                  ( modelId_t modelId );
+    CQuadBikeSA*            AddQuadBike                 ( modelId_t modelId );
+    CMonsterTruckSA*        AddMonsterTruck             ( modelId_t modelId );
+    CAutomobileSA*          AddAutomobile               ( modelId_t modelId );
+    CBoatSA*                AddBoat                     ( modelId_t modelId );
+    CVehicleSA*             AddVehicle                  ( modelId_t modelID );
+    CVehicleSA*             GetVehicle                  ( void *entity ) const;
+    CVehicleSA*             GetVehicleFromRef           ( unsigned int index ) const;
+    void                    DeleteAllVehicles           ( void );
 
     // Objects pool
-    CObjectSA*              AddObject( unsigned short modelID );
-    CObjectSA*              GetObject( void *entity ) const;
-    CObjectSA*              GetObjectFromRef( unsigned int index ) const;
-    void                    DeleteAllObjects();
+    CObjectSA*              AddObject                   ( modelId_t modelID );
+    CObjectSA*              GetObject                   ( void *entity ) const;
+    CObjectSA*              GetObjectFromRef            ( unsigned int index ) const;
+    void                    DeleteAllObjects            ( void );
 
     // Peds pool
-    CPedSA*                 AddPed( unsigned short modelID );
-    CPedSA*                 AddCivilianPed( unsigned short modelID );
-    CPedSA*                 AddCivilianPed( void *ped );
-    CPedSA*                 GetPed( void *entity ) const;
-    CPedSA*                 GetPedFromRef( unsigned int index ) const;
-    void                    DeleteAllPeds();
+    CPedSA*                 AddPed                      ( modelId_t modelID );
+    CPedSA*                 AddCivilianPed              ( modelId_t modelID );
+    CPedSA*                 AddCivilianPed              ( void *ped );
+    CPedSA*                 GetPed                      ( void *entity ) const;
+    CPedSA*                 GetPedFromRef               ( unsigned int index ) const;
+    void                    DeleteAllPeds               ( void );
 
-    CEntitySA*              GetEntity( void *entity ) const;
+    CEntitySA*              GetEntity                   ( void *entity ) const;
 
     // Others
-    CBuildingSA*            AddBuilding( unsigned short modelID );
-    void                    DeleteAllBuildings();
+    CBuildingSA*            AddBuilding                 ( modelId_t modelID );
+    void                    DeleteAllBuildings          ( void );
 
-    unsigned int            GetNumberOfUsedSpaces( ePools pools ) const;
-    void                    DumpPoolsStatus() const;
+    unsigned int            GetNumberOfUsedSpaces       ( ePools pools ) const;
+    void                    DumpPoolsStatus             ( void ) const;
 
-    unsigned int            GetPoolDefaultCapacity( ePools pool ) const;
-    unsigned int            GetPoolCapacity( ePools pool ) const;
+    unsigned int            GetPoolDefaultCapacity      ( ePools pool ) const;
+    unsigned int            GetPoolCapacity             ( ePools pool ) const;
 };
 
 // Global linkage between internal interfaces and MTA

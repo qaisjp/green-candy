@@ -13,14 +13,31 @@
 #ifndef _CVehicleModelInfoSA_render_H
 #define _CVehicleModelInfoSA_render_H
 
-void __cdecl CacheVehicleRenderCameraSettings( RwObject *obj );
+class CVehicleSA;
+
+void __cdecl CacheVehicleRenderCameraSettings( unsigned char alpha, RwObject *obj );
 void __cdecl ClearVehicleRenderChains( void );
-void __cdecl ExecuteVehicleRenderChains( void );
+void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha );
 
 void __cdecl SetVehicleColorFlags( class CVehicleSAInterface *vehicle );
 
 void __cdecl RpClumpSetupVehicleMaterials( RpClump *clump, class CVehicleSA *gameVehicle );
 void __cdecl RpClumpRestoreVehicleMaterials( RpClump *clump );
+
+template <class type>
+struct UniqueContainer : std::vector <type>
+{
+    bool Add( type item )
+    {
+        if ( std::find( begin(), end(), item ) != end() )
+            return false;
+
+        push_back( item );
+        return true;
+    }
+};
+
+typedef UniqueContainer <RpMaterial*> MaterialContainer;
 
 void VehicleModelInfoRender_Init( void );
 void VehicleModelInfoRender_SetupDevice( void );

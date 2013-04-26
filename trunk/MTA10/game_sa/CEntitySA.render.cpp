@@ -72,16 +72,51 @@ static void __cdecl RestoreDayNight( void )
 
 void __cdecl RenderEntity( CEntitySAInterface *entity )
 {
+    // Do not render peds in the game world if they are inside a vehicle
+    // (they need a special render pass to prevent drawing errors)
     if ( entity->m_type == ENTITY_TYPE_PED && ((CPedSAInterface*)entity)->IsDrivingVehicle() )
         return;
 
     unsigned char id = entity->SetupLighting();
 
+    // This way we skip heap allocations
+    StaticAllocator <RwRenderStateLock, 1> rsAlloc;
+    RwRenderStateLock *alphaRef;
+
+    // Grab the MTA entity
+    CEntitySA *mtaEntity = pGame->GetPools()->GetEntity( entity );
+
+    unsigned char alpha = 255;
+
+    if ( mtaEntity )
+    {
+        // Perform alpha calculations
+        if ( entity->m_type == ENTITY_TYPE_VEHICLE )
+            alpha = ((CVehicleSA*)mtaEntity)->GetAlpha();
+        else if ( entity->m_type == ENTITY_TYPE_OBJECT )
+            alpha = ((CObjectSA*)mtaEntity)->GetAlpha();
+        else if ( entity->m_type == ENTITY_TYPE_PED )
+            alpha = ((CPedSA*)mtaEntity)->GetAlpha();
+
+        if ( alpha != 255 )
+        {
+            // This has to stay enabled anyway
+            RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
+            RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
+            RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
+            RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
+
+            // Ensure the RenderStates necessary for proper alpha blending
+            alphaRef = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAREF, 0x00 );
+            RwD3D9ApplyDeviceStates();
+        }
+    }
+
     // Prepare entity for rendering/enter frame
     if ( entity->m_type == ENTITY_TYPE_VEHICLE )
     {
         // Set up global variables for fast rendering
-        CacheVehicleRenderCameraSettings( entity->m_rwObject );
+        CacheVehicleRenderCameraSettings( alpha, entity->m_rwObject );
 
         // Clear previous vehicle atomics from render chains
         ClearVehicleRenderChains();
@@ -92,7 +127,7 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
         veh->RenderPassengers();
 
         // Prepare vehicle rendering (i.e. texture replacement)
-        veh->SetupRender();
+        veh->SetupRender( (CVehicleSA*)mtaEntity );
     }
     else if ( !( entity->m_entityFlags & ENTITY_BACKFACECULL ) )
     {
@@ -123,7 +158,7 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
         BOOL_FLAG( entity->m_entityFlags, ENTITY_RENDERING, true );
 
         // Render the delayed atomics
-        ExecuteVehicleRenderChains();
+        ExecuteVehicleRenderChains( alpha );
 
         BOOL_FLAG( entity->m_entityFlags, ENTITY_RENDERING, false );
 
@@ -136,6 +171,14 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     {
         // Set texture stage back to two
         (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+    }
+
+    // Does the entity have alpha enabled?
+    if ( alpha != 255 )
+    {
+        // Remove the RenderState locks
+        alphaRef->~RwRenderStateLock();
+        RwD3D9ApplyDeviceStates();
     }
 
     entity->RemoveLighting( id );

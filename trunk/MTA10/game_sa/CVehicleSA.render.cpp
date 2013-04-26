@@ -51,25 +51,27 @@ void CVehicleSAInterface::RenderPassengers( void )
 static unsigned char vehAlpha[1024];
 static unsigned short vehCurAlpha = 0;
 
-static bool RpMaterialGetAlpha( RpMaterial *mat, int )
-{
-    vehAlpha[vehCurAlpha++] = mat->m_color.a;
-    return true;
-}
-
 static bool RpMaterialRestoreAlpha( RpMaterial *mat, int )
 {
     mat->m_color.a = vehAlpha[vehCurAlpha++];
     return true;
 }
 
-static bool RpMaterialModulateAlpha( RpMaterial *mat, unsigned char alpha )
+static MaterialContainer *matContainer;
+
+static bool RpMaterialCollectGetModulate( RpMaterial *mat, unsigned char alpha )
 {
-    mat->m_color.a = (unsigned char)( (float)mat->m_color.a * (float)alpha / 255.0f );
+    if ( matContainer->Add( mat ) )
+    {
+        unsigned char curAlpha = mat->m_color.a;
+        vehAlpha[vehCurAlpha++] = curAlpha;
+        mat->m_color.a = (unsigned char)( (float)curAlpha * (float)alpha / 255.0f );
+    }
+
     return true;
 }
 
-void CVehicleSAInterface::SetupRender( void )
+void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
 {
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[m_model];
 
@@ -124,31 +126,27 @@ void CVehicleSAInterface::SetupRender( void )
     SetVehicleColorFlags( this );
 
     // MTA extension: setup vehicle alpha
-    CVehicleSA *mtaVeh = pGame->GetPools()->GetVehicle( this );
-
     if ( mtaVeh )
     {
-        vehCurAlpha = 0;
+        unsigned char alpha = mtaVeh->GetAlpha();
 
-        // Do things for atomics and clumps
-        if ( m_rwObject->m_type == RW_ATOMIC )
+        if ( alpha != 255 )
         {
-            ((RpAtomic*)m_rwObject)->m_geometry->ForAllMateria( RpMaterialGetAlpha, 0 );
-            ((RpAtomic*)m_rwObject)->m_geometry->ForAllMateria( RpMaterialModulateAlpha, mtaVeh->GetAlpha() );
-        }
-        else
-        {
-            RpClump *clump = (RpClump*)m_rwObject;
+            matContainer = new MaterialContainer;
+            vehCurAlpha = 0;
 
-            // First grab all alpha values
-            LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
-                item->m_geometry->ForAllMateria( RpMaterialGetAlpha, 0 );
-            LIST_FOREACH_END
+            // Do things for atomics and clumps
+            if ( m_rwObject->m_type == RW_ATOMIC )
+                ((RpAtomic*)m_rwObject)->m_geometry->ForAllMateria( RpMaterialCollectGetModulate, alpha );
+            else
+            {
+                RpClump *clump = (RpClump*)m_rwObject;
 
-            // Now modulate the atomics
-            LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
-                item->m_geometry->ForAllMateria( RpMaterialModulateAlpha, mtaVeh->GetAlpha() );
-            LIST_FOREACH_END
+                // Modulate the atomics
+                LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
+                    item->m_geometry->ForAllMateria( RpMaterialCollectGetModulate, alpha );
+                LIST_FOREACH_END
+            }
         }
     }
 
@@ -178,22 +176,15 @@ void CVehicleSAInterface::LeaveRender( void )
     // MTA extension: restore the alpha values we previously manipulated
     CVehicleSA *mtaVeh = pGame->GetPools()->GetVehicle( this );
 
-    if ( mtaVeh )
+    if ( mtaVeh && mtaVeh->GetAlpha() != 255 )
     {
         vehCurAlpha = 0;
 
-        // Do things for atomics and clumps
-        if ( m_rwObject->m_type == RW_ATOMIC )
-            ((RpAtomic*)m_rwObject)->m_geometry->ForAllMateria( RpMaterialRestoreAlpha, 0 );
-        else
-        {
-            RpClump *clump = (RpClump*)m_rwObject;
+        // Restore all materials
+        for ( MaterialContainer::const_iterator iter = matContainer->begin(); iter != matContainer->end(); iter++ )
+            RpMaterialRestoreAlpha( *iter, 0 );
 
-            // First grab all alpha values
-            LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
-                item->m_geometry->ForAllMateria( RpMaterialRestoreAlpha, 0 );
-            LIST_FOREACH_END
-        }
+        delete matContainer;
     }
 
     if ( !m_unk38 )

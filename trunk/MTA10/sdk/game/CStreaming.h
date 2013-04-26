@@ -18,6 +18,7 @@
 // To provide compatibility with GTA:SA, we use unsigned int.
 // Some say (http://stackoverflow.com/questions/5069489/performance-of-built-in-types-char-vs-short-vs-int-vs-float-vs-double)
 // int were faster than short. Okay.
+// The rule of thumb is: use "unsigned short" for storing model ids (cache efficiency), use "modelId_t" for model ids on stack.
 typedef unsigned int modelId_t;
 
 typedef void (__cdecl*streamingRequestCallback_t)( modelId_t id );

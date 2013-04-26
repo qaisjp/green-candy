@@ -52,44 +52,44 @@ class CPools
 {
 public:
     // Vehicles pool
-    virtual CBicycle*               AddBicycle( unsigned short modelId ) = 0;
-    virtual CBike*                  AddBike( unsigned short modelId ) = 0;
-    virtual CHeli*                  AddHeli( unsigned short modelId ) = 0;
-    virtual CPlane*                 AddPlane( unsigned short modelId ) = 0;
-    virtual CTrain*                 AddTrain( unsigned short modelId, const CVector& pos, bool direction ) = 0;
-    virtual CAutomobileTrailer*     AddTrailer( unsigned short modelId ) = 0;
-    virtual CQuadBike*              AddQuadBike( unsigned short modelId ) = 0;
-    virtual CMonsterTruck*          AddMonsterTruck( unsigned short modelId ) = 0;
-    virtual CAutomobile*            AddAutomobile( unsigned short modelId ) = 0;
-    virtual CBoat*                  AddBoat( unsigned short modelId ) = 0;
-    virtual CVehicle*               AddVehicle( unsigned short modelId ) = 0;
-    virtual CVehicle*               GetVehicle( void *entity ) const = 0;
-    virtual CVehicle*               GetVehicleFromRef( unsigned int index ) const = 0;
-    virtual void                    DeleteAllVehicles() = 0;
+    virtual CBicycle*               AddBicycle                  ( modelId_t modelId ) = 0;
+    virtual CBike*                  AddBike                     ( modelId_t modelId ) = 0;
+    virtual CHeli*                  AddHeli                     ( modelId_t modelId ) = 0;
+    virtual CPlane*                 AddPlane                    ( modelId_t modelId ) = 0;
+    virtual CTrain*                 AddTrain                    ( modelId_t modelId, const CVector& pos, bool direction ) = 0;
+    virtual CAutomobileTrailer*     AddTrailer                  ( modelId_t modelId ) = 0;
+    virtual CQuadBike*              AddQuadBike                 ( modelId_t modelId ) = 0;
+    virtual CMonsterTruck*          AddMonsterTruck             ( modelId_t modelId ) = 0;
+    virtual CAutomobile*            AddAutomobile               ( modelId_t modelId ) = 0;
+    virtual CBoat*                  AddBoat                     ( modelId_t modelId ) = 0;
+    virtual CVehicle*               AddVehicle                  ( modelId_t modelId ) = 0;
+    virtual CVehicle*               GetVehicle                  ( void *entity ) const = 0;
+    virtual CVehicle*               GetVehicleFromRef           ( unsigned int index ) const = 0;
+    virtual void                    DeleteAllVehicles           ( void ) = 0;
 
      // Objects pool
-    virtual CObject*                AddObject( unsigned short modelID ) = 0;
-    virtual CObject*                GetObject( void *entity ) const = 0;
-    virtual CObject*                GetObjectFromRef( unsigned int index ) const = 0;
-    virtual void                    DeleteAllObjects() = 0;
+    virtual CObject*                AddObject                   ( modelId_t modelID ) = 0;
+    virtual CObject*                GetObject                   ( void *entity ) const = 0;
+    virtual CObject*                GetObjectFromRef            ( unsigned int index ) const = 0;
+    virtual void                    DeleteAllObjects            ( void ) = 0;
 
     // Peds pool
-    virtual CPed*                   AddPed( unsigned short modelID ) = 0;
-    virtual CPed*                   AddCivilianPed( unsigned short modelID ) = 0;
-    virtual CPed*                   AddCivilianPed( void *ped ) = 0;
-    virtual CPed*                   GetPed( void *entity ) const = 0;
-    virtual CPed*                   GetPedFromRef( unsigned int index ) const = 0;
-    virtual void                    DeleteAllPeds() = 0;
+    virtual CPed*                   AddPed                      ( modelId_t modelID ) = 0;
+    virtual CPed*                   AddCivilianPed              ( modelId_t modelID ) = 0;
+    virtual CPed*                   AddCivilianPed              ( void *ped ) = 0;
+    virtual CPed*                   GetPed                      ( void *entity ) const = 0;
+    virtual CPed*                   GetPedFromRef               ( unsigned int index ) const = 0;
+    virtual void                    DeleteAllPeds               ( void ) = 0;
 
     // Others
-    virtual CBuilding*              AddBuilding( unsigned short model ) = 0;
-    virtual CEntity*                GetEntity( void *entity ) const = 0;
+    virtual CBuilding*              AddBuilding                 ( modelId_t model ) = 0;
+    virtual CEntity*                GetEntity                   ( void *entity ) const = 0;
 
-    virtual unsigned int            GetNumberOfUsedSpaces( ePools pool ) const = 0;
-    virtual void                    DumpPoolsStatus() const = 0;
+    virtual unsigned int            GetNumberOfUsedSpaces       ( ePools pool ) const = 0;
+    virtual void                    DumpPoolsStatus             ( void ) const = 0;
 
-    virtual unsigned int            GetPoolDefaultCapacity( ePools pool ) const = 0;
-    virtual unsigned int            GetPoolCapacity( ePools pool ) const = 0;
+    virtual unsigned int            GetPoolDefaultCapacity      ( ePools pool ) const = 0;
+    virtual unsigned int            GetPoolCapacity             ( ePools pool ) const = 0;
 };
 
 #endif

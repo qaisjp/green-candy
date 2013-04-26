@@ -396,7 +396,7 @@ public:
     RpClump*                    GetRwObject()                               { return (RpClump*)m_rwObject; }
 
     void __thiscall             RenderPassengers( void );
-    void __thiscall             SetupRender( void );
+    void __thiscall             SetupRender( CVehicleSA *mtaVeh );
     void __thiscall             SetPlateTextureForRendering( CVehicleModelInfoSAInterface *info );
     void __thiscall             RestoreLicensePlate( CVehicleModelInfoSAInterface *info );
     void __thiscall             LeaveRender( void );
