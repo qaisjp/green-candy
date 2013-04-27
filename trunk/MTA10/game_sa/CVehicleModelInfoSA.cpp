@@ -352,6 +352,19 @@ inline static void RwFrameGetAbsoluteTransformationBaseOffset( CVector& out, RwF
     }
 }
 
+static __forceinline RpAtomic* RpAtomicCloneInherit( RpAtomic *orig, RpClump *base, RwFrame *hier )
+{
+    RpAtomic *clone = RpAtomicClone( orig );
+
+    clone->AddToClump( base );
+    clone->AddToFrame( hier );
+
+    // The_GTA: usually all atomics in here were reset to default render callback.
+    // This should not happen, as we have special rendering callbacks set to them.
+
+    return clone;
+}
+
 void CVehicleModelInfoSAInterface::Setup( void )
 {
     tHandlingDataSA *handling = &m_OriginalHandlingData[ m_handlingID ];
@@ -460,38 +473,24 @@ void CVehicleModelInfoSAInterface::Setup( void )
 
         if ( info->m_flags & (ATOMIC_HIER_UNKNOWN4 | 0x04) )
         {
-            RwFrame *frame;
-
             if ( !obj1 )
                 continue;
 
             if ( !( info->m_flags & ATOMIC_HIER_UNKNOWN4 ) )
             {
-                RpAtomic *clone = RpAtomicClone( obj1 );
-
-                clone->AddToFrame( hier );
-                clone->AddToClump( GetRwObject() );
-
-                // Default the render callback
-                clone->SetRenderCallback( NULL );
+                RpAtomic *clone = RpAtomicCloneInherit( obj1, GetRwObject(), hier );
 
                 if ( info->m_frameHierarchy == 2 || info->m_frameHierarchy == 5 || !( handling->uiModelFlags & 0x20000000 ) )
                     continue;
 
-                clone = RpAtomicClone( obj1 );
-
                 // Create a new rotation frame
-                frame = RwFrameCreate();
-                clone->AddToFrame( frame );
-
-                hier->Link( frame );
+                RwFrame *frame = RwFrameCreate();
+                hier->Link( frame );    // Add the new frame to children of "hier"
+                
+                clone = RpAtomicCloneInherit( obj1, GetRwObject(), frame );
 
                 frame->m_modelling.Identity();
                 frame->m_modelling.pos[0] = (float)(1.15 * -0.25);
-
-                clone->AddToClump( GetRwObject() );
-
-                clone->SetRenderCallback( NULL );
             }
             else
             {
@@ -500,7 +499,7 @@ void CVehicleModelInfoSAInterface::Setup( void )
 
                 hier->RegisterRoot();
 
-                obj1->SetRenderCallback( NULL );
+                //obj1->SetRenderCallback( NULL );
             }
         }
         else if ( info->m_flags & ATOMIC_HIER_UNKNOWN6 )
@@ -508,12 +507,7 @@ void CVehicleModelInfoSAInterface::Setup( void )
             if ( !obj2 )
                 continue;
 
-            RpAtomic *clone = RpAtomicClone( obj2 );
-
-            clone->AddToFrame( hier );
-            clone->AddToClump( GetRwObject() );
-
-            clone->SetRenderCallback( NULL );
+            RpAtomicCloneInherit( obj2, GetRwObject(), hier );
         }
     }
 }

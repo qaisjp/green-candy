@@ -48,29 +48,6 @@ void CVehicleSAInterface::RenderPassengers( void )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x006D64F0
 =========================================================*/
-static unsigned char vehAlpha[1024];
-static unsigned short vehCurAlpha = 0;
-
-static bool RpMaterialRestoreAlpha( RpMaterial *mat, int )
-{
-    mat->m_color.a = vehAlpha[vehCurAlpha++];
-    return true;
-}
-
-static MaterialContainer *matContainer;
-
-static bool RpMaterialCollectGetModulate( RpMaterial *mat, unsigned char alpha )
-{
-    if ( matContainer->Add( mat ) )
-    {
-        unsigned char curAlpha = mat->m_color.a;
-        vehAlpha[vehCurAlpha++] = curAlpha;
-        mat->m_color.a = (unsigned char)( (float)curAlpha * (float)alpha / 255.0f );
-    }
-
-    return true;
-}
-
 void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
 {
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[m_model];
@@ -125,31 +102,6 @@ void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
     info->SetRenderColor( m_color1, m_color2, m_color3, m_color4 );
     SetVehicleColorFlags( this );
 
-    // MTA extension: setup vehicle alpha
-    if ( mtaVeh )
-    {
-        unsigned char alpha = mtaVeh->GetAlpha();
-
-        if ( alpha != 255 )
-        {
-            matContainer = new MaterialContainer;
-            vehCurAlpha = 0;
-
-            // Do things for atomics and clumps
-            if ( m_rwObject->m_type == RW_ATOMIC )
-                ((RpAtomic*)m_rwObject)->m_geometry->ForAllMateria( RpMaterialCollectGetModulate, alpha );
-            else
-            {
-                RpClump *clump = (RpClump*)m_rwObject;
-
-                // Modulate the atomics
-                LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
-                    item->m_geometry->ForAllMateria( RpMaterialCollectGetModulate, alpha );
-                LIST_FOREACH_END
-            }
-        }
-    }
-
     // Store the body texture for rendering
     *(RwTexture**)0x00B4E47C = m_paintjobTexture;
 
@@ -172,20 +124,6 @@ void CVehicleSAInterface::LeaveRender( void )
 
     // Restore clump data
     RpClumpRestoreVehicleMaterials( (RpClump*)m_rwObject );
-
-    // MTA extension: restore the alpha values we previously manipulated
-    CVehicleSA *mtaVeh = pGame->GetPools()->GetVehicle( this );
-
-    if ( mtaVeh && mtaVeh->GetAlpha() != 255 )
-    {
-        vehCurAlpha = 0;
-
-        // Restore all materials
-        for ( MaterialContainer::const_iterator iter = matContainer->begin(); iter != matContainer->end(); iter++ )
-            RpMaterialRestoreAlpha( *iter, 0 );
-
-        delete matContainer;
-    }
 
     if ( !m_unk38 )
         RestoreLicensePlate( (CVehicleModelInfoSAInterface*)ppModelInfo[m_model] );

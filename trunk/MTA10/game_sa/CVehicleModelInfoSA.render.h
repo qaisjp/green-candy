@@ -27,10 +27,15 @@ void __cdecl RpClumpRestoreVehicleMaterials( RpClump *clump );
 template <class type>
 struct UniqueContainer : std::vector <type>
 {
-    bool Add( type item )
+    bool __forceinline Add( type item )
     {
-        if ( std::find( begin(), end(), item ) != end() )
-            return false;
+        unsigned int count = size();
+
+        for ( unsigned int n = 0; n < count; n++ )
+        {
+            if ( at( n ) == item )
+                return false;
+        }
 
         push_back( item );
         return true;

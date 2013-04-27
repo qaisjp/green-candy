@@ -158,9 +158,6 @@ void __cdecl Streaming::RequestModel( modelId_t id, unsigned int flags )
                     ((CAtomicModelInfoSA*)minfo)->SetAtomic( ((CRpAtomicSA*)obj)->CreateInstance( id ) ); // making a copy is essential for model instance isolation
                     break;
                 case RW_CLUMP:
-                    if ( CColModelSA *col = g_colReplacement[id] )
-                        minfo->SetCollision( col->GetInterface(), false );
-
                     ((CClumpModelInfoSAInterface*)minfo)->SetClump( RpClumpClone( (RpClump*)obj->GetObject() ) );
                     break;
                 }
@@ -260,9 +257,16 @@ struct ModelFreeDispatch : ModelCheckDispatch <false>   // by default we do not 
         // Model management fix: we unlink the collision so GTA:SA does not destroy it during
         // RwObject deletion
         if ( g_colReplacement[id] && model->GetRwModelType() == RW_CLUMP )
+        {
+            CColModelSAInterface *col = model->pColModel;
             model->pColModel = NULL;
 
-        model->DeleteRwObject();
+            model->DeleteRwObject();
+
+            model->SetCollision( col, false );
+        }
+        else
+            model->DeleteRwObject();
 
         switch( model->GetModelType() )
         {
@@ -771,17 +775,7 @@ bool CStreamingSA::HasVehicleUpgradeLoaded( int model )
 =========================================================*/
 void CStreamingSA::RequestSpecialModel( modelId_t model, const char *tex, unsigned int channel )
 {
-    DWORD dwFunc = FUNC_CStreaming_RequestSpecialModel;
-    _asm
-    {
-        mov     eax,channel
-        push    eax
-        push    tex
-        mov     eax,model
-        push    eax
-        call    dwFunc
-        add     esp, 0xC
-    }
+    ((void (__cdecl*)( modelId_t model, const char *tex, unsigned int channel ))FUNC_CStreaming_RequestSpecialModel)( model, tex, channel );
 }
 
 void CStreamingSA::SetRequestCallback( streamingRequestCallback_t callback )

@@ -361,9 +361,7 @@ static inline void RwFrameAssignChild( CRwFrame *child, CClientRwFrame *parent )
     CClientRwFrame *frame = new CClientRwFrame( L, *child, parent->GetOwner() );
 
     // Establish the connection; this should do all the magic
-    frame->PushMethod( L, "setParent" );
-    parent->PushStack( L );
-    lua_call( L, 1, 0 );
+    frame->SetParent( parent );
 }
 
 CClientRwFrame::CClientRwFrame( lua_State *L, CRwFrame& frame, CResource *owner ) : CClientRwObject( L, frame ), m_frame( frame )
@@ -401,8 +399,29 @@ CClientRwFrame::~CClientRwFrame()
 
 void CClientRwFrame::MarkGC( lua_State *L )
 {
-    // Mark all objects...
+    // Due to the complexity of this routine, we should reference the frame
+    // This is not to prevent Garbage Collection, but destruction by scripts or the system.
+    IncrementMethodStack();
+
+    // We need new lists and reference both lists
+    // Referencing has to be an atomic operation: do not yield inbetween!
+    objects_t _objects;
+    children_t _children;
+
     for ( objects_t::const_iterator iter = m_objects.begin(); iter != m_objects.end(); iter++ )
+    {
+        (*iter)->IncrementMethodStack();
+        _objects.push_back( *iter );
+    }
+
+    for ( children_t::const_iterator iter = m_children.begin(); iter != m_children.end(); iter++ )
+    {
+        (*iter)->IncrementMethodStack();
+        _children.push_back( *iter );
+    }
+
+    // Mark all objects...
+    for ( objects_t::const_iterator iter = _objects.begin(); iter != _objects.end(); iter++ )
     {
         // Objects which are in frames have to be kept alive no matter what the object says
         CClientRwObject *obj = *iter;
@@ -412,9 +431,19 @@ void CClientRwFrame::MarkGC( lua_State *L )
     }
 
     // ...and children
-    for ( children_t::const_iterator iter = m_children.begin(); iter != m_children.end(); iter++ )
+    for ( children_t::const_iterator iter = _children.begin(); iter != _children.end(); iter++ )
         (*iter)->MarkGC( L );
+
+    // We can dereference everything
+    for ( children_t::const_iterator iter = _children.begin(); iter != _children.end(); iter++ )
+        (*iter)->DecrementMethodStack();
+
+    for ( objects_t::const_iterator iter = _objects.begin(); iter != _objects.end(); iter++ )
+        (*iter)->DecrementMethodStack();
 
     m_class->Propagate( L );
     lua_gcpaycost( L, sizeof( *this ) );
+
+    // Dereference us again (and possibly destroy)
+    DecrementMethodStack();
 }
