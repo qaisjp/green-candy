@@ -97,19 +97,25 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
             alpha = ((CObjectSA*)mtaEntity)->GetAlpha();
         else if ( entity->m_type == ENTITY_TYPE_PED )
             alpha = ((CPedSA*)mtaEntity)->GetAlpha();
+    }
+    else if ( entity->m_rwObject && entity->m_rwObject->m_type == RW_CLUMP )    // the entity may not have a RenderWare object?!
+    {
+        // This value will be used for internal GTA:SA vehicles.
+        // We might aswell use this alpha value of the clump.
+        alpha = (unsigned char)((RpClump*)entity->m_rwObject)->m_alpha;
+    }
 
-        if ( alpha != 255 )
-        {
-            // This has to stay enabled anyway
-            RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
-            RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
-            RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
-            RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
+    if ( alpha != 255 )
+    {
+        // This has to stay enabled anyway
+        RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
+        RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
+        RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
+        RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
 
-            // Ensure the RenderStates necessary for proper alpha blending
-            alphaRef = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAREF, 0x00 );
-            RwD3D9ApplyDeviceStates();
-        }
+        // Ensure the RenderStates necessary for proper alpha blending
+        alphaRef = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAREF, 0x00 );
+        RwD3D9ApplyDeviceStates();
     }
 
     // Prepare entity for rendering/enter frame

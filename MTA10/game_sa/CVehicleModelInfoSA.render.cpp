@@ -81,10 +81,7 @@ static float cameraRenderAngleRadians = 0;
 
 void __cdecl CacheVehicleRenderCameraSettings( unsigned char alpha, RwObject *obj )
 {
-    if ( alpha != 255 )
-        highQualityRender = false;  // we should not reorder atomics when we use alpha since it is gross
-    else
-        highQualityRender = g_effectManager->m_fxQuality > 1;   // render High Quality if FX Quality better than Medium
+    highQualityRender = g_effectManager->m_fxQuality > 1;       // render High Quality if FX Quality better than Medium
     renderLOD = g_effectManager->m_fxQuality < 3;               // render LOD vehicles if FX Quality not Very High
 
     if ( !highQualityRender )
@@ -170,17 +167,17 @@ void __cdecl ClearVehicleRenderChains( void )
 void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
 {
     // Do special alpha blending if quality is set to high/very high
-    if ( g_effectManager->m_fxQuality > 1 && renderAlpha == 255 )
+    if ( g_effectManager->m_fxQuality > 1 )
     {
         {
             RwRenderStateLock zfunc( D3DRS_ZFUNC, D3DCMP_LESS );
             RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
-            RwRenderStateLock alphaRef( D3DRS_ALPHAREF, 255 );
+            RwRenderStateLock alphaRef( D3DRS_ALPHAREF, renderAlpha );
 
             // Set opaque rendering flags
             {
                 RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_EQUAL );
-                RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, false );
+                RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, renderAlpha != 255 );
                 RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, true );
                 RwD3D9ApplyDeviceStates();
 
@@ -1154,7 +1151,7 @@ static bool RpGeometryMaterialSetupColor( RpMaterial *mat, _colorTextureStorage 
     // Pop an entry from the array
     _StoreColorInfo( storage, mat );
 
-    // Set default color to black
+    // Make this invisible and black
     mat->m_color = 0;
     return true;
 }
@@ -1168,10 +1165,13 @@ static bool RpGeometryMaterialSetupColor( RpMaterial *mat, _colorTextureStorage 
                   material color and texture information
     Purpose:
         Sets the per-vehicle color to the material of the
-        vehicle clump and replaces textures.
+        vehicle clump and replaces textures. Returns true
+        if color information has been saved.
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C8220
 =========================================================*/
+static MaterialContainer vehMats;
+
 static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureStorage **storage )
 {
     unsigned int color = mat->m_color & 0x00FFFFFF;
@@ -1244,7 +1244,7 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
             else if ( color == 0xFF00FF )
                 useColor = color4;
             else
-                goto toReturn;
+                return false;
 
             // We replace the color of this material.
             _StoreColorInfo( storage, mat );
@@ -1268,7 +1268,7 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
             else if ( color == 0xFF00FF )
                 id = _vehColor4;
             else
-                goto toReturn;
+                return false;
 
             // We replace the color of this material.
             _StoreColorInfo( storage, mat );
@@ -1281,7 +1281,6 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
         }
     }
 
-toReturn:
     return true;
 }
 
@@ -1296,15 +1295,43 @@ toReturn:
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C83E0
 =========================================================*/
+static unsigned char vehAlpha = 255;
+
 static bool RpClumpAtomicSetupVehicleMaterials( RpAtomic *atomic, _colorTextureStorage **storage )
 {
     if ( !atomic->IsVisible() )
         return true;
 
-    if ( atomic->m_componentFlags & 0x1000 )
-        atomic->m_geometry->ForAllMateria( RpGeometryMaterialSetupColor, storage );
+    // The_GTA: the procedure of this function has changed from the GTA:SA version.
+    RpMaterials& mats = atomic->m_geometry->m_materials;
 
-    atomic->m_geometry->ForAllMateria( RpGeometryMaterialApplyVehicleColor, storage );
+    // Accelerate things by using only one loop
+    bool blankOut = ( atomic->m_componentFlags & 0x1000 ) != 0;
+    unsigned char alpha = vehAlpha;
+
+    for ( unsigned int n = 0; n < mats.m_entries; n++ )
+    {
+        RpMaterial *mat = mats.m_data[n];
+
+        if ( blankOut )
+            RpGeometryMaterialSetupColor( mat, storage );
+        else if ( vehMats.Add( mat ) )  // only perform once per material
+        {
+            bool savedColors = RpGeometryMaterialApplyVehicleColor( mat, storage );
+
+            // Modify the alpha
+            if ( alpha != 255 )
+            {
+                // Store the vehicle colors if they have not been saved yet
+                if ( !savedColors )
+                    _StoreColorInfo( storage, mat );
+
+                // Modify the alpha value
+                mat->m_color.a = (unsigned char)( (float)mat->m_color.a * (float)alpha / 255.0f );
+            }
+        }
+    }
+
     return true;
 }
 
@@ -1329,6 +1356,7 @@ void __cdecl RpClumpSetupVehicleMaterials( RpClump *clump, CVehicleSA *veh )
 
     // Set the game vehicle for this setup process
     gameVehicle = veh;
+    vehAlpha = veh->GetAlpha();
 
     clump->ForAllAtomics( RpClumpAtomicSetupVehicleMaterials, &storage );
 }
@@ -1357,6 +1385,9 @@ void __cdecl RpClumpRestoreVehicleMaterials( RpClump *clump )
         // Bugfix: we should clean up after usage, so that the engine does not restore data it should keep alone.
         entry->_matUnk = NULL;
     }
+
+    // Clear the list of vehicle materials
+    vehMats.clear();
 }
 
 void VehicleModelInfoRender_Init( void )

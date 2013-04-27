@@ -156,10 +156,10 @@
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
 				GenerateDebugInformation="true"
 				AssemblyDebug="2"
-				ProgramDatabaseFile="../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
-				GenerateMapFile="true"
-				MapFileName="lint_exp.exp"
-				MapExports="true"
+				ProgramDatabaseFile=""
+				GenerateMapFile="false"
+				MapFileName=""
+				MapExports="false"
 				TargetMachine="1"
 			/>
 			<Tool

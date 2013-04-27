@@ -14,30 +14,38 @@
 
 using namespace Streaming;
 
-HANDLE gtaStreamHandles[MAX_GTA_STREAM_HANDLES];        // file handles
+HANDLE gtaStreamHandles[MAX_GTA_STREAM_HANDLES];                // file handles
 streamName gtaStreamNames[MAX_GTA_STREAM_HANDLES];
 
-static unsigned int numActiveStreams = 0;               // Binary offsets: (1.0 US and 1.0 EU): 0x008E4094
-                                                        // fun fact: this variable is an unused left-over of Rockstar's development.
-                                                        // we all know that GTA:SA for PC is a quick&dirty port.
+static unsigned int numActiveStreams = 0;                       // Binary offsets: (1.0 US and 1.0 EU): 0x008E4094
+                                                                // fun fact: this variable is an unused left-over of Rockstar's development.
+                                                                // we all know that GTA:SA for PC is a quick&dirty port.
 
-static DWORD streamOpenFlags = 0;                       // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FE0
-static bool isSupportingOverlapped = false;             // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FE8
-static bool enableThreading = false;                    // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FE4
+static DWORD streamOpenFlags = 0;                               // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FE0
+static bool isSupportingOverlapped = false;                     // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FE8
+static bool enableThreading = false;                            // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FE4
 
-static syncSemaphore *syncSemaphores;                   // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FFC
-static unsigned int numSyncSemaphores = 0;              // Binary offsets: (1.0 US and 1.0 EU): 0x008E4090
-static unsigned int *semaphoreQueue = NULL;             // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FEC
-static unsigned int semaphoreQueueSizeCount = 0;        // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FF8
-static unsigned int semaphoreQueueReadIndex = 0;        // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FF4
+static syncSemaphore *syncSemaphores;                           // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FFC
+static unsigned int numSyncSemaphores = 0;                      // Binary offsets: (1.0 US and 1.0 EU): 0x008E4090
+static unsigned int *semaphoreQueue = NULL;                     // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FEC
+static unsigned int semaphoreQueueSizeCount = 0;                // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FF8
+static volatile unsigned int semaphoreQueueReadIndex = 0;       // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FF4
 
-static unsigned int nextStreamReadOffset = 0;           // Binary offsets: (1.0 US and 1.0 EU): 0x008E4898
+static unsigned int nextStreamReadOffset = 0;                   // Binary offsets: (1.0 US and 1.0 EU): 0x008E4898
 
-static HANDLE globalStreamingSemaphore;                 // Binary offsets: (1.0 US and 1.0 EU): 0x008E4004
+static HANDLE globalStreamingSemaphore;                         // Binary offsets: (1.0 US and 1.0 EU): 0x008E4004
 
-static HANDLE streamingThread;                          // Binary offsets: (1.0 US and 1.0 EU): 0x008E4008
-static DWORD streamingThreadId;                         // Binary offsets: (1.0 US and 1.0 EU): 0x008E4000
-static unsigned int semaphoreThreadProcessIndex = 0;    // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FF0
+static HANDLE streamingThread;                                  // Binary offsets: (1.0 US and 1.0 EU): 0x008E4008
+static DWORD streamingThreadId;                                 // Binary offsets: (1.0 US and 1.0 EU): 0x008E4000
+static volatile unsigned int semaphoreThreadProcessIndex = 0;   // Binary offsets: (1.0 US and 1.0 EU): 0x008E3FF0
+
+// Use this assert to debug crappy bugs. It performs even in release mode.
+// This will force feedback from our users ;)
+#ifdef _DEBUG
+#define streaming_assert( x )   { assert( x ); }
+#else
+#define streaming_assert( x )   { if ( !( x ) ) *(unsigned int*)0x00000000 = 0xDEADBEEF; }
+#endif //_DEBUG
 
 namespace Streaming
 {
@@ -164,15 +172,17 @@ validIndex:
             sync.terminating = false;
 
             // List it into our semaphore operations
-            semaphoreQueue[semaphoreQueueReadIndex++] = syncIdx;
+            semaphoreQueue[semaphoreQueueReadIndex] = syncIdx;
 
             // Instead of module, we optimize :3
-            if ( semaphoreQueueReadIndex == semaphoreQueueSizeCount )
+            if ( semaphoreQueueReadIndex == semaphoreQueueSizeCount - 1 )
                 semaphoreQueueReadIndex = 0;
+            else
+                semaphoreQueueReadIndex++;
 
             // Notify the streaming thread.
             if ( !ReleaseSemaphore( globalStreamingSemaphore, 1, NULL ) )
-                OutputDebugString( "global semaphore release failed\n" );
+                OutputDebugString( "global streaming semaphore release failed\n" );
 
             return true;
         }
@@ -333,9 +343,6 @@ validIndex:
             // Only run this thread if necessary
             WaitForSingleObject( globalStreamingSemaphore, INFINITE );
 
-            // We need valid queue items to proceed.
-            assert( semaphoreQueueReadIndex != semaphoreThreadProcessIndex );
-
             // Execute the current request
             unsigned int curIdx = semaphoreThreadProcessIndex;
 
@@ -395,11 +402,11 @@ validIndex:
         }
 
         // Allocate the queue
-        DWORD queueCount = numSyncSemaphores + 1;
+        unsigned int queueCount = numSyncSemaphores + 1;
 
         // There should be an additional slot for security reasons
-        semaphoreQueue = (unsigned int*)LocalAlloc( LMEM_ZEROINIT, sizeof(void*) * queueCount );
-        semaphoreQueueSizeCount = queueCount;
+        semaphoreQueue = (unsigned int*)LocalAlloc( LMEM_ZEROINIT, sizeof(void*) * numSyncSemaphores );
+        semaphoreQueueSizeCount = numSyncSemaphores;
 
         // Setup the thread variables
         semaphoreThreadProcessIndex = 0;
