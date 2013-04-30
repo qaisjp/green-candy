@@ -519,11 +519,11 @@ public:
 
 static int classmethod_root( lua_State *L )
 {
-    Class *j = (Class*)jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
-    MethodStackAllocation member( L, j, NULL );
+    CClosureMethodRedirect *cl = (CClosureMethodRedirect*)curr_func( L );
+    MethodStackAllocation member( L, cl->m_class, NULL );
     int top = lua_gettop( L );
 
-    lua_pushvalue( L, lua_upvalueindex( 2 ) );
+    setclvalue( L, L->top++, cl->redirect );
     lua_insert( L, 1 );
     lua_call( L, top, LUA_MULTRET );
     return lua_gettop( L );
@@ -531,11 +531,11 @@ static int classmethod_root( lua_State *L )
 
 static int classmethod_super( lua_State *L )
 {
-    Class *j = (Class*)jvalue( index2adr( L, lua_upvalueindex( 2 ) ) );
-    MethodStackAllocation member( L, j, clvalue( index2adr( L, lua_upvalueindex( 1 ) ) ) );
+    CClosureMethodRedirectSuper *cl = (CClosureMethodRedirectSuper*)curr_func( L );
+    MethodStackAllocation member( L, cl->m_class, cl->super );
     int top = lua_gettop( L );
 
-    lua_pushvalue( L, lua_upvalueindex( 3 ) );
+    setclvalue( L, L->top++, cl->redirect );
     lua_insert( L, 1 );
     lua_call( L, top, LUA_MULTRET );
     return lua_gettop( L );
@@ -584,11 +584,10 @@ static int classmethod_superTransNative( lua_State *L )
 
 static int classmethod_forceSuperRoot( lua_State *L )
 {
-    Class *j = (Class*)jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
-    MethodStackAllocation member( L, j, NULL );
-    int top = lua_gettop( L );
+    CClosureMethodRedirect *cl = (CClosureMethodRedirect*)curr_func( L );
+    MethodStackAllocation member( L, cl->m_class, NULL );
 
-    lua_pushvalue( L, lua_upvalueindex( 2 ) );
+    setclvalue( L, L->top++, cl->redirect );
     lua_insert( L, 1 );
     luaD_call( L, L->base, 0 );
     return 0;
@@ -596,26 +595,21 @@ static int classmethod_forceSuperRoot( lua_State *L )
 
 static int classmethod_forceSuper( lua_State *L )
 {
-    Class *j = jvalue( index2adr( L, lua_upvalueindex( 2 ) ) );
-    MethodStackAllocation member( L, j, NULL );
+    CClosureMethodRedirectSuper *cl = (CClosureMethodRedirectSuper*)curr_func( L );
+    MethodStackAllocation member( L, cl->m_class, NULL );
     int top = lua_gettop( L );
 
-    if ( top )
-    {
-        for ( int n=0; n<top; n++ )
-            lua_pushvalue( L, n+1 );
+    // Push the current method which we must call
+    setclvalue( L, L->top++, cl->redirect );
 
-        lua_pushvalue( L, lua_upvalueindex( 3 ) );
-        lua_insert( L, top + 1 );
-        lua_call( L, top, 0 );
-    }
-    else
-    {
-        lua_pushvalue( L, lua_upvalueindex( 3 ) );
-        lua_call( L, 0, 0 );
-    }
+    // Push arguments (if any)
+    for ( int n = 0; n < top; n++ )
+        lua_pushvalue( L, n+1 );
 
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    lua_call( L, top, 0 );
+
+    // Now call the super method
+    setclvalue( L, L->top++, cl->super );
     lua_insert( L, 1 );
     luaD_call( L, L->base, 0 );
     return 0;
@@ -681,23 +675,18 @@ static int classmethod_forceSuperTransNative( lua_State *L )
 
 static Closure* classmethod_fsFSCCHandler( lua_State *L, Closure *newMethod, Class *j, Closure *prevMethod )
 {
-    CClosureBasic *cl;
-
     if ( !prevMethod )
     {
-        cl = luaF_newCclosure( L, 2, j->env );
-        setjvalue( L, &cl->upvalues[0], j );
-        setclvalue( L, &cl->upvalues[1], newMethod );
+        CClosureMethodRedirect *cl = luaF_newCmethodredirect( L, j->env, newMethod, j );
         cl->f = classmethod_forceSuperRoot;
         return cl;
     }
-
-    cl = luaF_newCclosure( L, 3, j->env );
-    setclvalue( L, &cl->upvalues[0], prevMethod );
-    setjvalue( L, &cl->upvalues[1], j );
-    setclvalue( L, &cl->upvalues[2], newMethod );
-    cl->f = classmethod_forceSuper;
-    return cl;
+    else
+    {
+        CClosureMethodRedirectSuper *cl = luaF_newCmethodredirectsuper( L, j->env, newMethod, j, prevMethod );
+        cl->f = classmethod_forceSuper;
+        return cl;
+    }
 }
 
 static Closure* classmethod_fsFSCCHandlerNative( lua_State *L, lua_CFunction proto, Class *j, Closure *prevMethod, _methodRegisterInfo& info )
@@ -767,10 +756,19 @@ static int classmethod_registerForcedSuper( lua_State *L )
     return 0;
 }
 
+static inline void luaJ_envtypeerror( lua_State *L, int type )
+{
+    lua_pushstring( L, "class environment has to be a real object (got " );
+    lua_pushstring( L, lua_typename( L, type ) );
+    lua_pushstring( L, ")" );
+    lua_concat( L, 3 );
+    lua_error( L );
+}
+
 static int classmethod_envPutFront( lua_State *L )
 {
     if ( !iscollectable( L->top - 1 ) )
-        throw lua_exception( L, LUA_ERRRUN, "class environment has to be a real object" );
+        luaJ_envtypeerror( L, ttype( L->top - 1 ) );
 
     jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->EnvPutFront( L );
     return 0;
@@ -779,7 +777,7 @@ static int classmethod_envPutFront( lua_State *L )
 static int classmethod_envPutBack( lua_State *L )
 {
     if ( !iscollectable( L->top - 1 ) )
-        throw lua_exception( L, LUA_ERRRUN, "class environment has to be a real object" );
+        luaJ_envtypeerror( L, ttype( L->top - 1 ) );
 
     jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->EnvPutBack( L );
     return 0;
@@ -899,6 +897,7 @@ static Closure* classmethod_fsDestroyHandler( lua_State *L, Closure *newMethod, 
     setclvalue( L, &cl->upvalues[0], newMethod );
     setclvalue( L, &cl->upvalues[1], prevDest );
     cl->f = classmethod_fsDestroyBridge;
+    cl->isEnvLocked = true;
 
     j->destructor = cl;
     luaC_forceupdatef( L, cl );
@@ -909,6 +908,7 @@ static Closure* classmethod_fsDestroyHandler( lua_State *L, Closure *newMethod, 
     setjvalue( L, &retCl->upvalues[1], j );
     setclvalue( L, &retCl->upvalues[2], newMethod );
     retCl->f = classmethod_fsDestroySuper;
+    retCl->isEnvLocked = true;
     return retCl;
 }
 
@@ -923,6 +923,7 @@ static Closure* classmethod_fsDestroyHandlerNative( lua_State *L, lua_CFunction 
         setobj( L, &cl->upvalues[n], L->top - 1 + n );
 
     cl->f = proto;
+    cl->isEnvLocked = true;
 
     return classmethod_fsDestroyHandler( L, cl, j, prevMethod );
 }
@@ -996,10 +997,20 @@ void Class::RegisterMethod( lua_State *L, TString *methName, bool handlers )
     Table *methTable;
     Closure *prevMethod = GetMethod( methName, methTable ); // Acquire the previous method
 
-    // Apply the environment to the new method
+    // Get the method closure and check whether we can apply it
     Closure *cl = clvalue( L->top - 1 );
+
+    // We cannot apply the method if the environment is locked.
+    // It usually is an indicator that the closure is a class method already.
+    if ( cl->IsEnvLocked() )
+        throw lua_exception( L, LUA_ERRRUN, "attempt to set a class method whose environment is locked" );
+
+    // Apply the environment to the new method
     cl->env = AcquireEnvDispatcherEx( L, cl->env );
     luaC_objbarrier( L, cl, cl->env );
+
+    // Lock its environment so the scripter cannot break the class system.
+    cl->isEnvLocked = true;
 
     Closure *handler;
 
@@ -1015,22 +1026,21 @@ void Class::RegisterMethod( lua_State *L, TString *methName, bool handlers )
 	else
 	{
 defaultHandler:
-        CClosureBasic *meth;
+        CClosure *meth;
 
         if ( prevMethod )
         {
-            meth = luaF_newCclosure( L, 3, env );
-            setclvalue( L, &meth->upvalues[0], prevMethod );
-            setjvalue( L, &meth->upvalues[1], this );
-            setclvalue( L, &meth->upvalues[2], cl );
-            meth->f = classmethod_super;
+            CClosureMethodRedirectSuper *redirect = luaF_newCmethodredirectsuper( L, env, cl, this, prevMethod );
+            redirect->f = classmethod_super;
+
+            meth = redirect;
         }
         else
         {
-            meth = luaF_newCclosure( L, 2, env );
-            setjvalue( L, &meth->upvalues[0], this );
-            setclvalue( L, &meth->upvalues[1], cl );
-            meth->f = classmethod_root;
+            CClosureMethodRedirect *redirect = luaF_newCmethodredirect( L, env, cl, this );
+            redirect->f = classmethod_root;
+
+            meth = redirect;
         }
 
         handler = meth;
@@ -1517,6 +1527,15 @@ private:
 
 Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
 {
+    Closure *constructor = clvalue( L->top - 1 );
+
+    // We cannot construct using closure which are, say, class methods already.
+    if ( constructor->IsEnvLocked() )
+        throw lua_exception( L, LUA_ERRRUN, "attempt to construct a class using a locked closure" );
+
+    // Lock the environment
+    constructor->isEnvLocked = true;
+
     Class *c = new (L) Class;
 
     // Link it into the GC system
@@ -1614,8 +1633,8 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     L->top--;
 
     // Apply the environment to the constructor
-    setqvalue( L, L->top++, c->env );
-    lua_setfenv( L, -nargs - 2 );
+    constructor->env = c->env;
+    luaC_objbarrier( L, constructor, c->env );
 
     // Call the constructor (class as first arg)
     setjvalue( L, L->top++, c );

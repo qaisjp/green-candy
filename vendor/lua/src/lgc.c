@@ -376,6 +376,21 @@ int CClosure::TraverseGC( global_State *g )
     return Closure::TraverseGC( g );
 }
 
+size_t CClosureMethodRedirect::Propagate( global_State *g )
+{
+    markobject( g, redirect );
+    markobject( g, m_class );
+
+    return CClosure::Propagate( g ) + sizeof(*this);
+}
+
+size_t CClosureMethodRedirectSuper::Propagate( global_State *g )
+{
+    markobject( g, super );
+
+    return CClosureMethodRedirect::Propagate( g ) + sizeof(void*);
+}
+
 size_t CClosureBasic::Propagate( global_State *g )
 {
     unsigned int i;

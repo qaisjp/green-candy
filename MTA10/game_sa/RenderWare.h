@@ -103,7 +103,7 @@ public:
     unsigned char   m_subtype;
     unsigned char   m_flags;
     unsigned char   m_privateFlags;
-    class RwFrame*  m_parent;                // should be RwFrame with RpClump
+    class RwFrame*  m_parent;                // should be RwFrame if obj -> RpClump
 
     inline bool         IsVisible()                     { return IS_FLAG( m_flags, RW_OBJ_VISIBLE ); }
     inline void         SetVisible( bool vis )          { BOOL_FLAG( m_flags, RW_OBJ_VISIBLE, vis ); }
@@ -706,7 +706,7 @@ public:
 class RpGeomMesh
 {
 public:
-    CVector*                m_vertice;                          // 0
+    CVector*                m_vertice;                          // 0, those arrays are allocated by geom->m_verticeSize
     RwSphere                m_bounds;                           // 4
     CVector*                m_positions;                        // 20               
     CVector*                m_normals;                          // 24

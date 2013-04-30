@@ -15,8 +15,9 @@
 
 static bool renderLOD = true;
 static bool highQualityRender = false;
+static bool renderAlpha = false;
 // Rendering should be much faster on GPU if you enable highQualityRender.
-// On the other hand it takes (possibly) to calculate the distance of every atomic to the camera.
+// On the other hand it takes (possibly) longer to calculate the distance of every atomic to the camera.
 
 #define VAR_CameraPositionVector                0x00C88050
 
@@ -45,7 +46,7 @@ inline static float GetObjectDistanceToCameraSq( RpAtomic *obj )
 {
     const RwSphere& sphere = obj->GetWorldBoundingSphere();
 
-    return GetVectorDistanceToCameraSq( sphere.pos );// - sphere.radius * sphere.radius;
+    return GetVectorDistanceToCameraSq( sphere.pos );// - sphere.radius * sphere.radius; // dunno about that.
 }
 
 /*=========================================================
@@ -83,6 +84,7 @@ void __cdecl CacheVehicleRenderCameraSettings( unsigned char alpha, RwObject *ob
 {
     highQualityRender = g_effectManager->m_fxQuality > 1;       // render High Quality if FX Quality better than Medium
     renderLOD = g_effectManager->m_fxQuality < 3;               // render LOD vehicles if FX Quality not Very High
+    renderAlpha = highQualityRender && alpha != 255;            // forces sorting of atomics (makes sense with highQualityRender only)
 
     if ( !highQualityRender )
     {
@@ -171,12 +173,12 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
     {
         {
             RwRenderStateLock zfunc( D3DRS_ZFUNC, D3DCMP_LESS );
-            RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
+            RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, false );
             RwRenderStateLock alphaRef( D3DRS_ALPHAREF, renderAlpha );
 
             // Set opaque rendering flags
             {
-                RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_EQUAL );
+                RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );
                 RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, renderAlpha != 255 );
                 RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, true );
                 RwD3D9ApplyDeviceStates();
@@ -206,7 +208,7 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
         RwD3D9ApplyDeviceStates();
     }
     else
-        vehicleRenderChains->Execute();
+        vehicleRenderChains->Execute(); // do what GTA:SA usually does.
 }
 
 // LOD distances for models, squared (measured against camera distance from atomic, 0x00733160 is rendering wrapper)
@@ -285,8 +287,8 @@ inline static bool RwAtomicIsVisible( RpAtomic *atomic, float calc, float camDis
         atomic - rendering object to set flags for
     Purpose:
         If the atomic enters a very close distance (~64 units), a
-        special flag is set to it. I assume it increases the rendering
-        quality.
+        special flag is set to it. It does nothing quality-wise.
+        Flag 0x2000 can be used to determine very close atomics.
 =========================================================*/
 inline static void RwAtomicHandleHighDetail( RpAtomic *atomic, float camDistanceSq )
 {
@@ -306,14 +308,41 @@ inline static void RwAtomicHandleHighDetail( RpAtomic *atomic, float camDistance
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00732820
 =========================================================*/
+static __forceinline bool RwAtomicQueueOpaqueAlpha( RpAtomic *atomic, float camDistanceSq )
+{
+    // Set up rendering
+    vehicleRenderChain_t::depthLevel level;
+    level.callback = _renderAtomicCommon;
+    level.atomic = atomic;
+    return vehicleRenderChains->PushRenderLast( &level );
+}
+
+static __forceinline bool RwAtomicQueue( RpAtomic *atomic, float camDistanceSq )
+{
+    // Set up rendering
+    vehicleRenderChain_t::depthLevel level;
+    level.callback = _renderAtomicCommon;
+    level.atomic = atomic;
+    level.distance = camDistanceSq;
+    return vehicleRenderChains->PushRender( &level );
+}
+
+static __forceinline void RwAtomicRenderVehicle( RpAtomic *atomic, float camDistanceSq )
+{
+    if ( !renderAlpha || !RwAtomicQueueOpaqueAlpha( atomic, camDistanceSq ) )
+        RpAtomicRender( atomic );
+}
+
 static RpAtomic* RwAtomicRenderTrainLOD( RpAtomic *atomic )
 {
     if ( renderLOD )
     {
-        if ( GetRenderObjectCameraDistanceSq( atomic ) <= trainLODDistance )
+        float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
+        
+        if ( camDistanceSq <= trainLODDistance )
             return atomic;
-
-        RpAtomicRender( atomic );
+        
+        RwAtomicRenderVehicle( atomic, camDistanceSq );
     }
 
     return atomic;
@@ -344,19 +373,13 @@ static RpAtomic* RwAtomicRenderTranslucentTrain( RpAtomic *atomic )
     if ( !( camDistanceSq <= *(float*)0x00C8802C || RwAtomicIsVisible( atomic, calc, camDistanceSq ) ) )
         return atomic;
 
-    // Set up rendering
-    vehicleRenderChain_t::depthLevel level;
-    level.callback = _renderAtomicCommon;
-    level.atomic = atomic;
-    level.distance = camDistanceSq;
-
-    if ( !highQualityRender )
+    if ( !highQualityRender && !(atomic->m_componentFlags & 0x40) )
     {
-        if ( !(atomic->m_componentFlags & 0x40) )
-            level.distance += calc;
+        camDistanceSq += calc;
     }
 
-    if ( !vehicleRenderChains->PushRender( &level ) )
+    // Queue for default translucency
+    if ( !RwAtomicQueue( atomic, camDistanceSq ) )
         RpAtomicRender( atomic );
 
     return atomic;
@@ -383,27 +406,9 @@ static RpAtomic* RwAtomicRenderTrain( RpAtomic *atomic )
 
     // Lol, serious checking going on here!
     if ( camDistanceSq <= *(float*)0x00C8802C || RwAtomicIsVisible( atomic, RwAtomicGetVisibilityCalculation( atomic ), camDistanceSq ) )
-        RpAtomicRender( atomic );
+        RwAtomicRenderVehicle( atomic, camDistanceSq );
 
     return atomic;
-}
-
-/*=========================================================
-    RwAtomicRenderLODAlpha
-
-    Arguments:
-        atomic - object being rendered
-    Purpose:
-        Renders atomics while accounting for clump alpha.
-=========================================================*/
-inline static void RwAtomicRenderLODAlpha( RpAtomic *atomic )
-{
-    atomic->m_componentFlags |= 0x2000;
-
-    if ( atomic->m_clump->m_alpha == 0xFF )
-        RpAtomicRenderAlpha( atomic, atomic->m_clump->m_alpha );
-    else
-        RpAtomicRender( atomic );
 }
 
 /*=========================================================
@@ -425,7 +430,7 @@ static RpAtomic* RwAtomicRenderBoatLOD( RpAtomic *atomic )
         if ( camDistanceSq <= boatLODDistance )
             return atomic;
 
-        RwAtomicRenderLODAlpha( atomic );
+        RwAtomicRenderVehicle( atomic, camDistanceSq );
     }
     return atomic;
 }
@@ -449,7 +454,7 @@ static RpAtomic* RwAtomicRenderBoat( RpAtomic *atomic )
 
     RwAtomicHandleHighDetail( atomic, camDistanceSq );
 
-    RpAtomicRender( atomic );
+    RwAtomicRenderVehicle( atomic, camDistanceSq );
     return atomic;
 }
 
@@ -485,7 +490,7 @@ static RpAtomic* RwAtomicRenderTranslucentBoat( RpAtomic *atomic )
             return atomic;
     }
     
-    RpAtomicRender( atomic );
+    RwAtomicRenderVehicle( atomic, camDistanceSq );
     return atomic;
 }
 
@@ -508,7 +513,7 @@ static RpAtomic* RwAtomicRenderHeliLOD( RpAtomic *atomic )
         if ( camDistanceSq <= heliLODDistance )
             return atomic;
 
-        RwAtomicRenderLODAlpha( atomic );
+        RwAtomicRenderVehicle( atomic, camDistanceSq );
     }
 
     return atomic;
@@ -535,7 +540,7 @@ static RpAtomic* RwAtomicRenderHeli( RpAtomic *atomic )
 
     // Lol, serious checking going on here!
     if ( camDistanceSq <= *(float*)0x00C8802C || RwAtomicIsVisible( atomic, RwAtomicGetVisibilityCalculation( atomic ), camDistanceSq ) )
-        RpAtomicRender( atomic );
+        RwAtomicRenderVehicle( atomic, camDistanceSq );
 
     return atomic;
 }
@@ -558,21 +563,17 @@ inline static void RwAtomicRenderTranslucentCommon( RpAtomic *atomic, float camD
     if ( !( camDistanceSq <= *(float*)0x00C8802C || RwAtomicIsVisible( atomic, calc, camDistanceSq ) ) )
         return;
 
-    // Set up rendering
-    vehicleRenderChain_t::depthLevel level;
-    level.callback = _renderAtomicCommon;
-    level.atomic = atomic;
-    level.distance = camDistanceSq;
-
+    // Perform special sorting
     if ( !highQualityRender )
     {
         if ( atomic->m_componentFlags & 0x40 )
-            level.distance -= 0.0001f;
+            camDistanceSq -= 0.0001f;
         else
-            level.distance += calc;
+            camDistanceSq += calc;
     }
 
-    if ( !vehicleRenderChains->PushRender( &level ) )
+    // Set up rendering
+    if ( !RwAtomicQueue( atomic, camDistanceSq ) )
         RpAtomicRender( atomic );
 }
 
@@ -618,12 +619,7 @@ static RpAtomic* RwAtomicRenderHeliMovingRotor( RpAtomic *atomic )
     CVector vecRotor = ltm.pos - **(CVector**)VAR_CameraPositionVector;
 
     // Calculate rotor details
-    vehicleRenderChain_t::depthLevel level;
-    level.distance = vecRotor.DotProduct( ltm.up ) * 20 + camDistanceSq;
-    level.callback = _renderAtomicCommon;
-    level.atomic = atomic;
-
-    if ( !vehicleRenderChains->PushRender( &level ) )
+    if ( !RwAtomicQueue( atomic, vecRotor.DotProduct( ltm.up ) * 20 + camDistanceSq ) )
         RpAtomicRender( atomic );
 
     return atomic;
@@ -650,12 +646,7 @@ static RpAtomic* RwAtomicRenderHeliMovingRotor2( RpAtomic *atomic )
     CVector vecRotor = ltm.pos - **(CVector**)VAR_CameraPositionVector;
 
     // Lulz, heavy math, much assembly, small C++ code
-    vehicleRenderChain_t::depthLevel level;
-    level.distance = camDistanceSq - vecRotor.DotProduct( ltm.right ) - vecRotor.DotProduct( ltm.at );
-    level.callback = _renderAtomicCommon;
-    level.atomic = atomic;
-
-    if ( !vehicleRenderChains->PushRender( &level ) )
+    if ( !RwAtomicQueue( atomic, camDistanceSq - vecRotor.DotProduct( ltm.right ) - vecRotor.DotProduct( ltm.at ) ) )
         RpAtomicRender( atomic );
 
     return atomic;
@@ -680,7 +671,7 @@ static RpAtomic* RwAtomicRenderPlaneLOD( RpAtomic *atomic )
         if ( camDistanceSq <= planeLODDistance )
             return atomic;
 
-        RpAtomicRender( atomic );
+        RwAtomicRenderVehicle( atomic, camDistanceSq );
     }
 
     return atomic;
@@ -707,7 +698,7 @@ static RpAtomic* RwAtomicRenderPlane( RpAtomic *atomic )
 
     // Lol, serious checking going on here!
     if ( camDistanceSq <= *(float*)0x00C88028 || RwAtomicIsVisibleBasic( atomic, RwAtomicGetVisibilityCalculation( atomic ) ) )
-        RpAtomicRender( atomic );
+        RwAtomicRenderVehicle( atomic, camDistanceSq );
 
     return atomic;
 }
@@ -737,21 +728,16 @@ static RpAtomic* RwAtomicRenderTranslucentPlane( RpAtomic *atomic )
     if ( !( camDistanceSq <= *(float*)0x00C88028 || RwAtomicIsVisible( atomic, calc, camDistanceSq ) ) )
         return atomic;
 
-    // Set up rendering
-    vehicleRenderChain_t::depthLevel level;
-    level.callback = _renderAtomicCommon;
-    level.atomic = atomic;
-    level.distance = camDistanceSq;
-
     if ( !highQualityRender )
     {
         if ( atomic->m_componentFlags & 0x40 )
-            level.distance -= 0.0001f;
+            camDistanceSq -= 0.0001f;
         else
-            level.distance += calc;
+            camDistanceSq += calc;
     }
 
-    if ( !vehicleRenderChains->PushRender( &level ) )
+    // Set up rendering
+    if ( !RwAtomicQueue( atomic, camDistanceSq ) )
         RpAtomicRender( atomic );
     
     return atomic;
@@ -799,7 +785,7 @@ static RpAtomic* RwAtomicRenderDefaultVehicle( RpAtomic *atomic )    // actually
 
     // Lol, serious checking going on here!
     if ( camDistanceSq <= *(float*)0x00C8802C || RwAtomicIsVisible( atomic, RwAtomicGetVisibilityCalculation( atomic ), camDistanceSq ) )
-        RpAtomicRender( atomic );
+        RwAtomicRenderVehicle( atomic, camDistanceSq );
 
     return atomic;
 }
@@ -823,7 +809,7 @@ static RpAtomic* RwAtomicRenderDefaultVehicleLOD( RpAtomic *atomic )
         if ( camDistanceSq <= vehicleLODDistance )
             return atomic;
 
-        RwAtomicRenderLODAlpha( atomic );
+        RwAtomicRenderVehicle( atomic, camDistanceSq );
     }
 
     return atomic;
@@ -1088,6 +1074,9 @@ void __cdecl SetVehicleColorFlags( CVehicleSAInterface *veh )
         the same array later.
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C83B0
+    Note:
+        Watch out that no vehicle overshoots the limit of the
+        _colorTextureStorage array!
 =========================================================*/
 struct _colorTextureStorage
 {
@@ -1121,7 +1110,7 @@ struct _colorTextureStorage
 
 static inline void _StoreColorInfo( _colorTextureStorage **storage, RpMaterial *mat )
 {
-    // Pop an entry from the array
+    // Store the color information
     _colorTextureStorage *entry = (*storage)++;
     entry->matColor = &mat->m_color;
     entry->color = mat->m_color;
@@ -1244,7 +1233,7 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
             else if ( color == 0xFF00FF )
                 useColor = color4;
             else
-                return false;
+                return false;   // The_GTA: I made this return whether it saved color information; previously returned true.
 
             // We replace the color of this material.
             _StoreColorInfo( storage, mat );
@@ -1315,21 +1304,19 @@ static bool RpClumpAtomicSetupVehicleMaterials( RpAtomic *atomic, _colorTextureS
 
         if ( blankOut )
             RpGeometryMaterialSetupColor( mat, storage );
-        else if ( vehMats.Add( mat ) )  // only perform once per material
+        else if ( alpha != 255 && vehMats.Add( mat ) )  // only perform once per material
         {
             bool savedColors = RpGeometryMaterialApplyVehicleColor( mat, storage );
 
-            // Modify the alpha
-            if ( alpha != 255 )
-            {
-                // Store the vehicle colors if they have not been saved yet
-                if ( !savedColors )
-                    _StoreColorInfo( storage, mat );
+            // Store the vehicle colors if they have not been saved yet
+            if ( !savedColors )
+                _StoreColorInfo( storage, mat );
 
-                // Modify the alpha value
-                mat->m_color.a = (unsigned char)( (float)mat->m_color.a * (float)alpha / 255.0f );
-            }
+            // Modify the alpha value
+            mat->m_color.a = (unsigned char)( (float)mat->m_color.a * (float)alpha / 255.0f );
         }
+        else    // It does not seem to break things
+            RpGeometryMaterialApplyVehicleColor( mat, storage );
     }
 
     return true;
@@ -1386,7 +1373,7 @@ void __cdecl RpClumpRestoreVehicleMaterials( RpClump *clump )
         entry->_matUnk = NULL;
     }
 
-    // Clear the list of vehicle materials
+    // MTA extension: Clear the list of vehicle materials (used so we process materials only once)
     vehMats.clear();
 }
 

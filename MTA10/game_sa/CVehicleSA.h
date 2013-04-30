@@ -486,22 +486,22 @@ public:
     float                       m_brakePedal;                           // 1184, 0...1
 
     unsigned char               m_createdBy;                            // 1188, Contains information on whether this vehicle should be deleted 
-    unsigned char               m_extendedRemovalRange;                 // 1189
+    unsigned short              m_extendedRemovalRange;                 // 1190
 
-    unsigned char               m_bombOnBoard : 3;                      // 1190, 0 = None. 1 = Timed. 2 = On ignition, 3 = remotely set ? 4 = Timed Bomb has been activated. 5 = On ignition has been activated.
+    unsigned char               m_bombOnBoard : 3;                      // 1192, 0 = None. 1 = Timed. 2 = On ignition, 3 = remotely set ? 4 = Timed Bomb has been activated. 5 = On ignition has been activated.
     unsigned char               m_overrideLights : 2;                   // uses enum NO_CAR_LIGHT_OVERRIDE, FORCE_CAR_LIGHTS_OFF, FORCE_CAR_LIGHTS_ON
     unsigned char               m_winchType : 3;                        // Does this vehicle use a winch?
 
-    unsigned char               m_gunsCycleIndex : 2;                   // 1191, Cycle through alternate gun hardpoints on planes/helis
+    unsigned char               m_gunsCycleIndex : 2;                   // 1193, Cycle through alternate gun hardpoints on planes/helis
     unsigned char               m_ordnanceCycleIndex : 6;               // Cycle through alternate ordnance hardpoints on planes/helis
 
-    unsigned char               m_usedForCover;                         // 1192, Has n number of cops hiding/attempting to hid behind it
-    unsigned char               m_ammoInClip;                           // 1193, Used to make the guns on boat do a reload.
-    unsigned char               m_pacMansCollected;                     // 1194
-    unsigned char               m_pedsPositionForRoadBlock;             // 1195
-    unsigned char               m_numPedsForRoadBlock;                  // 1196
+    unsigned char               m_usedForCover;                         // 1194, Has n number of cops hiding/attempting to hid behind it
+    unsigned char               m_ammoInClip;                           // 1195, Used to make the guns on boat do a reload.
+    unsigned char               m_pacMansCollected;                     // 1196
+    unsigned char               m_pedsPositionForRoadBlock;             // 1197
+    unsigned char               m_numPedsForRoadBlock;                  // 1198
 
-    BYTE                        m_pad4[3];                              // 1197
+    BYTE                        m_pad4[1];                              // 1199
     float                       m_bodyDirtLevel;                        // 1200, Dirt level of vehicle body texture: 0.0f=fully clean, 15.0f=maximum dirt visible, it may be altered at any time while vehicle's cycle of lige
 
     unsigned char               m_currentGear;                          // 1204, values used by transmission

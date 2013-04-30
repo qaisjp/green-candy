@@ -11,6 +11,8 @@
 #include "lobject.h"
 
 LUAI_FUNC Proto *luaF_newproto (lua_State *L);
+LUAI_FUNC CClosureMethodRedirect* luaF_newCmethodredirect( lua_State *L, GCObject *e, Closure *redirect, Class *j );
+LUAI_FUNC CClosureMethodRedirectSuper* luaF_newCmethodredirectsuper( lua_State *L, GCObject *e, Closure *redirect, Class *j, Closure *super );
 LUAI_FUNC CClosureBasic *luaF_newCclosure (lua_State *L, int nelems, GCObject *e);
 LUAI_FUNC CClosureMethod *luaF_newCmethod( lua_State *L, int nelems, GCObject *e, Class *j );
 LUAI_FUNC CClosureMethodTrans *luaF_newCmethodtrans( lua_State *L, int nelems, GCObject *e, Class *j, int trans );

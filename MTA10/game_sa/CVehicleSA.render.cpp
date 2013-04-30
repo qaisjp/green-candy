@@ -94,7 +94,7 @@ void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
 #endif //ROCKSTAR_GAME_LOGIC
         }
         else
-            pGame->GetStreaming()->RequestModel( 20000 + remapId, 8 );  // We need to request that texture container
+            pGame->GetStreaming()->RequestModel( DATA_TEXTURE_BLOCK + remapId, 8 );  // We need to request that texture container
     }
     else
         SetColourRemapping( false );

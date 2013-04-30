@@ -695,7 +695,15 @@ LUA_API void lua_getfenv (lua_State *L, int idx)
     switch( ttype(o) )
     {
     case LUA_TFUNCTION:
-        setgcvalue(L, L->top, clvalue(o)->env);
+        {
+            Closure *cl = clvalue( o );
+
+            // Lua may not retrieve the environment of locked closures
+            if ( cl->IsEnvLocked() )
+                setnilvalue( L->top );
+            else
+                setgcvalue(L, L->top, cl->env);
+        }
         break;
     case LUA_TUSERDATA:
         setgcvalue(L, L->top, uvalue(o)->env);
@@ -904,7 +912,14 @@ LUA_API int lua_setfenv (lua_State *L, int idx)
     switch( ttype(o) )
     {
     case LUA_TFUNCTION:
-        clvalue(o)->env = gcvalue(L->top - 1);
+        {
+            Closure *cl = clvalue(o);
+
+            if ( cl->IsEnvLocked() )
+                goto end;
+
+            cl->env = gcvalue(L->top - 1);
+        }
         break;
     case LUA_TUSERDATA:
         uvalue(o)->env = gcvalue(L->top - 1);

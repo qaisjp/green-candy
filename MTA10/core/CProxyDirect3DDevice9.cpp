@@ -409,6 +409,7 @@ HRESULT CProxyDirect3DDevice9::BeginScene                     ( VOID )
     // Call our event handler.
     CDirect3DEvents9::OnBeginScene ( m_pDevice );
 
+#if 0
     // Possible fix for missing textures on some chipsets
     m_pDevice->SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE );
     m_pDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
@@ -419,6 +420,7 @@ HRESULT CProxyDirect3DDevice9::BeginScene                     ( VOID )
 
     m_pDevice->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
     m_pDevice->SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
+#endif
 
     return hResult;
 }
