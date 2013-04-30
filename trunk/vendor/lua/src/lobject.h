@@ -592,17 +592,28 @@ public:
 class Closure abstract : public GrayObject
 {
 public:
-                            ~Closure();
+                            ~Closure        ( void );
 
-    int                     TraverseGC( global_State *g );
+    int                     TraverseGC      ( global_State *g );
 
-    virtual TValue*         ReadUpValue( unsigned char index ) = 0;
+    virtual TValue*         ReadUpValue     ( unsigned char index ) = 0;
 
-    Closure*                GetClosure()    { return this; }
-    virtual class CClosure* GetCClosure()   { return NULL; }
-    virtual class LClosure* GetLClosure()   { return NULL; }
+    inline void             SetEnvLocked    ( bool locked )     { isEnvLocked = locked; }
+    inline bool             IsEnvLocked     ( void ) const      { return isEnvLocked; }
 
-    bool isC;
+    Closure*                GetClosure      ( void )            { return this; }
+    virtual class CClosure* GetCClosure     ( void )            { return NULL; }
+    virtual class LClosure* GetLClosure     ( void )            { return NULL; }
+
+    union
+    {
+        unsigned char genFlags;
+        struct
+        {
+            bool isC : 1;
+            bool isEnvLocked : 1;
+        };
+    };
     lu_byte nupvalues;
     GCObject *env;
 };
@@ -619,6 +630,51 @@ public:
 
     lua_CFunction f;
     GCObject *accessor; // Usually the storage of the thread
+};
+
+class CClosureMethodRedirect : public CClosure
+{
+public:
+    ~CClosureMethodRedirect();
+
+    size_t Propagate( global_State *g );
+
+    TValue* ReadUpValue( unsigned char index );
+
+    void* operator new( size_t size, lua_State *main )
+    {
+        return GCObject::operator new( size, main );
+    }
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeof(CClosureMethodRedirect) );
+    }
+
+    Closure* redirect;
+    Class* m_class;
+};
+
+class CClosureMethodRedirectSuper : public CClosureMethodRedirect
+{
+public:
+    ~CClosureMethodRedirectSuper();
+
+    size_t Propagate( global_State *g );
+
+    TValue* ReadUpValue( unsigned char index );
+
+    void* operator new( size_t size, lua_State *main )
+    {
+        return GCObject::operator new( size, main );
+    }
+
+    void operator delete( void *ptr ) throw()
+    {
+        GCObject::operator delete( ptr, sizeof(CClosureMethodRedirectSuper) );
+    }
+
+    Closure *super;
 };
 
 class CClosureBasic : public CClosure
@@ -699,14 +755,6 @@ public:
     unsigned char trans;
     void *data;
     TValue  upvalues[1];
-};
-
-class CClosureMethodLight : public CClosure
-{
-public:
-    ~CClosureMethodLight();
-
-    size_t Propagate( global_State *g );
 };
 
 class LClosure : public Closure

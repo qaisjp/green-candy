@@ -161,52 +161,8 @@ static int lua_newmd5hasher( lua_State *L )
     return 1;
 } 
 
-// This is an optimization because the computer binary system works that way.
-// Removes the need for additional clock cycles by avoiding conversion to integer.
-#define usOffset( num, off )                ((unsigned short)( (unsigned short)(num) - (unsigned short)(off) ))
-#define usRangeCheck( num, off, range )     (usOffset((num),(off)) < (unsigned short)(range))
-#define usRangeCheckEx( num, range )        ((unsigned short)(num) < (unsigned short)(range))
-
-#include "../MTA10/game_sa/CStreamingSA.utils.hxx"
-
-unsigned short array_troll[500000];
-
-struct VerifyIntegrityCheck : ModelCheckDispatch <true>
-{
-    unsigned char& trollCode;
-
-    VerifyIntegrityCheck( unsigned char& code ) : trollCode( code )
-    {
-    }
-
-    bool __forceinline DoBaseModel( unsigned short id )
-    {
-        if ( array_troll[id * 80] == 0xCACA )
-            return true;
-
-        array_troll[1] = 0xcafe;
-        return false;
-    }
-
-    bool __forceinline DoTexDictionary( unsigned short id )
-    {
-        trollCode = id;
-        return true;
-    }
-};
-
 int main( int argc, char *argv[] )
 {
-    memset(array_troll, 0xFA, sizeof(array_troll));
-
-    unsigned char trollCode = 0;
-
-    if ( !DefaultDispatchExecute( argc, VerifyIntegrityCheck( trollCode ) ) )
-        __asm nop
-
-    if ( trollCode == 0xBB )
-        __asm nop
-
     std::string script;
 
     state = lua_open();

@@ -21,7 +21,7 @@ static void InitParticleData( CEffectDataSAInterface *block )
 }
 #endif
 
-void CParticleSystemSAInterface::Init()
+void CParticleSystemSAInterface::Init( void )
 {
     m_count = 0;
 
@@ -44,7 +44,7 @@ void CParticleSystemSAInterface::Init()
     SetGlobalAssociatives( (const CVector*)0x00C813E0, (const float*)0x00C812F0 );
 }
 
-void CParticleSystemSAInterface::Shutdown()
+void CParticleSystemSAInterface::Shutdown( void )
 {
 }
 
@@ -152,25 +152,25 @@ CEffectDefSAInterface* CParticleSystemSAInterface::GetBlueprintByName( const cha
     return NULL;
 }
 
-CParticleSystemSA::CParticleSystemSA()
+CParticleSystemSA::CParticleSystemSA( void )
 {
     // Analyze a crash
     HookInstall( 0x004A9360, h_memFunc( &CParticleSystemSAInterface::GetBlueprintByName ), 5 );
     //HookInstall( 0x004A98E0, h_memFunc( &CParticleSystemSAInterface::Init ), 5 );
 }
 
-CParticleSystemSA::~CParticleSystemSA()
+CParticleSystemSA::~CParticleSystemSA( void )
 {
     //Shutdown();
 }
 
-void CParticleSystemSA::Init()
+void CParticleSystemSA::Init( void )
 {
     // Disable particle system initialization
     pParticleSystem->Init();
 }
 
-void CParticleSystemSA::Shutdown()
+void CParticleSystemSA::Shutdown( void )
 {
     pParticleSystem->Shutdown();
 }

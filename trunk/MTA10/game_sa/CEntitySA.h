@@ -93,44 +93,44 @@ struct CRect {
 class CEntitySAInterface : public CPlaceableSAInterface
 {
 public:
-                                    CEntitySAInterface();
-                                    ~CEntitySAInterface();
+                                    CEntitySAInterface      ( void );
+                                    ~CEntitySAInterface     ( void );                       // 0
 
-    virtual void __thiscall         AddRect( CRect rect ) = 0;                              // 4
-    virtual bool __thiscall         AddToWorld() = 0;                                       // 8
-    virtual void __thiscall         RemoveFromWorld() = 0;                                  // 12
-    virtual void __thiscall         SetStatic( bool enabled ) = 0;                          // 16
-    virtual void __thiscall         SetModelIndex( unsigned short id );                     // 20
-    virtual void __thiscall         SetModelIndexNoCreate( unsigned short id ) = 0;         // 24
-    virtual RwObject* __thiscall    CreateRwObject() = 0;                                   // 28
-    virtual void __thiscall         DeleteRwObject() = 0;                                   // 32
-    virtual void __thiscall         GetBoundingBox( CBoundingBox box ) = 0;                 // 36
-    virtual void __thiscall         ProcessControl() = 0;                                   // 40
-    virtual void __thiscall         ProcessCollision() = 0;                                 // 44
-    virtual void __thiscall         ProcessShift() = 0;                                     // 48
-    virtual bool __thiscall         TestCollision() = 0;                                    // 52
-    virtual void __thiscall         Teleport( float x, float y, float z, int unk ) = 0;     // 56
-    virtual void __thiscall         PreFrame() = 0;                                         // 60
-    virtual bool __thiscall         Frame() = 0;                                            // 64
-    virtual void __thiscall         PreRender() = 0;                                        // 68
-    virtual void __thiscall         Render() = 0;                                           // 72
-    virtual unsigned char __thiscall    SetupLighting() = 0;                                // 76
-    virtual void __thiscall         RemoveLighting( unsigned char id ) = 0;                 // 80
-    virtual void __thiscall         Invalidate() = 0;                                       // 84
+    virtual void __thiscall         AddRect                 ( CRect rect ) = 0;             // 4
+    virtual bool __thiscall         AddToWorld              ( void ) = 0;                   // 8
+    virtual void __thiscall         RemoveFromWorld         ( void ) = 0;                   // 12
+    virtual void __thiscall         SetStatic               ( bool enabled ) = 0;           // 16
+    virtual void __thiscall         SetModelIndex           ( unsigned short id );          // 20
+    virtual void __thiscall         SetModelIndexNoCreate   ( unsigned short id ) = 0;      // 24
+    virtual RwObject* __thiscall    CreateRwObject          ( void ) = 0;                   // 28
+    virtual void __thiscall         DeleteRwObject          ( void ) = 0;                   // 32
+    virtual void __thiscall         GetBoundingBox          ( CBoundingBox& box ) = 0;      // 36
+    virtual void __thiscall         ProcessControl          ( void ) = 0;                   // 40
+    virtual void __thiscall         ProcessCollision        ( void ) = 0;                   // 44
+    virtual void __thiscall         ProcessShift            ( void ) = 0;                   // 48
+    virtual bool __thiscall         TestCollision           ( void ) = 0;                   // 52
+    virtual void __thiscall         Teleport                ( float x, float y, float z, int unk ) = 0; // 56
+    virtual void __thiscall         PreFrame                ( void ) = 0;                   // 60
+    virtual bool __thiscall         Frame                   ( void ) = 0;                   // 64
+    virtual void __thiscall         PreRender               ( void ) = 0;                   // 68
+    virtual void __thiscall         Render                  ( void ) = 0;                   // 72
+    virtual unsigned char __thiscall    SetupLighting       ( void ) = 0;                   // 76
+    virtual void __thiscall         RemoveLighting          ( unsigned char id ) = 0;       // 80
+    virtual void __thiscall         Invalidate              ( void ) = 0;                   // 84
 
-    void                            GetPosition( CVector& pos ) const;
+    void                            GetPosition             ( CVector& pos ) const;
 
-    float __thiscall                GetBasingDistance() const;
+    float __thiscall                GetBasingDistance       ( void ) const;
 
-    void                            SetAlpha( unsigned char alpha );
-    CColModelSAInterface* __thiscall    GetColModel() const;
-    const CVector& __thiscall       GetCollisionOffset( CVector& out ) const;
-    const CBounds2D& __thiscall     _GetBoundingBox( CBounds2D& out ) const;
+    void                            SetAlpha                ( unsigned char alpha );
+    CColModelSAInterface* __thiscall    GetColModel         ( void ) const;
+    const CVector& __thiscall       GetCollisionOffset      ( CVector& out ) const;
+    const CBounds2D& __thiscall     _GetBoundingBox         ( CBounds2D& out ) const;
 
-    bool __thiscall                 IsOnScreen() const;
+    bool __thiscall                 IsOnScreen              ( void ) const;
 
-    void __thiscall                 UpdateRwMatrix( void );
-    void __thiscall                 UpdateRwFrame( void );
+    void __thiscall                 UpdateRwMatrix          ( void );
+    void __thiscall                 UpdateRwFrame           ( void );
 
     RwObject*               m_rwObject;         // 24
 

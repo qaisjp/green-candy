@@ -38,9 +38,9 @@ RwTexDictionary *g_vehicleTxd = NULL;
 static void __cdecl _VehicleModels_Init( void )
 {
     // Initialize stuff.
-    ((void (__cdecl*)( void ))FUNC_LoadVehicleColors)( void );
-    ((void (__cdecl*)( void ))FUNC_LoadCarMods)( void );
-    ((void (__cdecl*)( void ))FUNC_LoadVehicleParticles)( void );
+    ((void (__cdecl*)( void ))FUNC_LoadVehicleColors)();
+    ((void (__cdecl*)( void ))FUNC_LoadCarMods)();
+    ((void (__cdecl*)( void ))FUNC_LoadVehicleParticles)();
 
     // Load the generic vehicle textures
     CTxdInstanceSA *txdEntry = (*ppTxdPool)->Get( pGame->GetTextureManager()->FindTxdEntry( "vehicle" ) );
@@ -71,7 +71,7 @@ static void __cdecl _VehicleModels_Init( void )
     *ppVehicleComponentInfoPool = new CVehicleComponentInfoPool;
 
     // ???
-    ((void (__cdecl*)( void ))0x005D5BC0)( void );
+    ((void (__cdecl*)( void ))0x005D5BC0)();
 }
 
 void    VehicleModels_Init( void )
@@ -81,7 +81,7 @@ void    VehicleModels_Init( void )
 
     VehicleModelInfoRender_Init();
 
-    // Debug
+    // Hook
     HookInstall( 0x004C8E60, h_memFunc( &CVehicleModelInfoSAInterface::Setup ), 5 );
 
     // Temporary vehicle look-up fix (will not be needed anymore in future patch)

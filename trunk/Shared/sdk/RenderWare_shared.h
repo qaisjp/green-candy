@@ -116,14 +116,14 @@ static const float negOne = -1.0f;
 class RwMatrix
 {   // 16-byte padded
 public:
-    inline void IdentityRotation()
+    inline void IdentityRotation( void )
     {
         right.fX = 1; right.fY = 0; right.fZ = 0;
         at.fX = 0; at.fY = 1; at.fZ = 0;
         up.fX = 0; up.fY = 0; up.fZ = 1;
     }
 
-    inline void Identity()
+    inline void Identity( void )
     {
         IdentityRotation();
 
@@ -132,7 +132,7 @@ public:
         pos.fZ = 0;
     }
 
-    RwMatrix()
+    RwMatrix( void )
     {
         Identity();
     }
@@ -336,7 +336,6 @@ public:
         z = (float)RAD2DEG( z );
     }
 
-    // I hope this works :3
     inline void __thiscall Multiply( const RwMatrix& mat, RwMatrix& dst ) const
     {
 	    __asm
@@ -407,7 +406,7 @@ public:
 	    }
     }
 
-    inline void __thiscall Invert()
+    inline void __thiscall Invert( void )
     {
         // Optimization to use SSE registers instead of stack space
         __asm
@@ -493,22 +492,36 @@ public:
 
     float& operator [] ( unsigned int i )
     {
-#ifdef _DEBUG
         assert( i < 0x10 );
-#endif
+
         return ((float*)(this))[i];
     }
 
     float operator [] ( unsigned int i ) const
     {
-#ifdef _DEBUG
         assert( i < 0x10 );
-#endif
+
         return ((float*)(this))[i];
     }
 
+#if 0
+    CVector& operator [] ( unsigned int i )
+    {
+        assert( i < 4 );
+
+        return ((CVector*)(this))[i];
+    }
+
+    CVector operator [] ( unsigned int i ) const
+    {
+        assert( i < 4 );
+
+        return ((CVector*)(this))[i];
+    }
+#endif
+
     CVector         right;
-    unsigned int    a;
+    unsigned int    a;  // anyone wondering about the flags: they were just there for debug.
     CVector         at;
     unsigned int    b;
     CVector         up;

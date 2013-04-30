@@ -59,10 +59,7 @@ public:
         {
             renderChain& iter = m_stack[max];
 
-            iter.prev = m_renderStack.prev;
-            m_renderStack.prev->next = &iter;
-            iter.next = &m_renderStack;
-            m_renderStack.prev = &iter;
+            LIST_APPEND( m_renderStack, iter );
         }
     }
 
@@ -92,16 +89,54 @@ public:
             possible render instances. We should investigate, how this limit
             affects the performance and quality of gameplay.
     =========================================================*/
+    __forceinline renderChain* AllocateItem( void )
+    {
+        renderChain *item;
+
+        return ( ( item = m_renderStack.prev ) == &m_renderLast ) ? NULL : item;
+    }
+
+    __forceinline bool PushRenderFirst( depthLevel *level )
+    {
+        renderChain *progr = AllocateItem();
+
+        if ( !progr )
+            return false;
+
+        progr->m_entry = *level;
+        level->InitFirst();
+
+        LIST_REMOVE( *progr );
+        LIST_APPEND( m_root, *progr );
+        return true;
+    }
+
+    __forceinline bool PushRenderLast( depthLevel *level )
+    {
+        renderChain *progr = AllocateItem();
+
+        if ( !progr )
+            return false;
+
+        progr->m_entry = *level;
+        level->InitLast();
+
+        LIST_REMOVE( *progr );
+        LIST_INSERT( m_rootLast, *progr );
+        return true;
+    }
+
     bool PushRender( depthLevel *level )
     {
         renderChain *iter = m_root.prev;
-        renderChain *progr;
 
-        // Scan until we find appropriate slot
+        // Scan until we find an appropriate slot
         for ( ; iter != &m_rootLast && iter->m_entry < *level; 
             iter = iter->prev );
 
-        if ( ( progr = m_renderStack.prev ) == &m_renderLast )
+        renderChain *progr = AllocateItem();
+
+        if ( !progr )
             return false;
 
         // Update render details
@@ -110,10 +145,8 @@ public:
         LIST_REMOVE( *progr );
         
         iter = iter->next;
-        progr->prev = iter->prev;
-        iter->prev->next = progr;
-        progr->next = iter;
-        iter->prev = progr;
+
+        LIST_APPEND( *iter, *progr );
         return true;
     }
 

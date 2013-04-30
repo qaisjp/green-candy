@@ -33,12 +33,59 @@ TValue* luaF_getcurraccessor( lua_State *L )
     return &L->storage;
 }
 
+CClosureMethodRedirect* luaF_newCmethodredirect( lua_State *L, GCObject *e, Closure *redirect, Class *j )
+{
+    CClosureMethodRedirect *c = new (L) CClosureMethodRedirect;
+    luaC_link(L, c, LUA_TFUNCTION);
+
+    c->genFlags = 0;
+    c->isC = true;
+    c->isEnvLocked = true;
+    c->env = e;
+    c->nupvalues = 0;
+    c->accessor = gcvalue( luaF_getcurraccessor( L ) );
+    c->redirect = redirect;
+    c->m_class = j;
+
+    return c;
+}
+
+TValue* CClosureMethodRedirect::ReadUpValue( unsigned char index )
+{
+    return (TValue*)luaO_nilobject;
+}
+
+CClosureMethodRedirectSuper* luaF_newCmethodredirectsuper( lua_State *L, GCObject *e, Closure *redirect, Class *j, Closure *super )
+{
+    CClosureMethodRedirectSuper *c = new (L) CClosureMethodRedirectSuper;
+    luaC_link(L, c, LUA_TFUNCTION);
+
+    c->genFlags = 0;
+    c->isC = true;
+    c->isEnvLocked = true;
+    c->env = e;
+    c->nupvalues = 0;
+    c->accessor = gcvalue( luaF_getcurraccessor( L ) );
+    c->redirect = redirect;
+    c->m_class = j;
+    c->super = super;
+
+    return c;
+}
+
+TValue* CClosureMethodRedirectSuper::ReadUpValue( unsigned char index )
+{
+    return (TValue*)luaO_nilobject;
+}
+
 CClosureBasic* luaF_newCclosure (lua_State *L, int nelems, GCObject *e)
 {
     CClosureBasic *c = new (L, nelems) CClosureBasic;
     luaC_link(L, c, LUA_TFUNCTION);
 
+    c->genFlags = 0;
     c->isC = true;
+    c->isEnvLocked = false;
     c->env = e;
     c->nupvalues = cast_byte(nelems);
     c->accessor = gcvalue( luaF_getcurraccessor( L ) );
@@ -59,7 +106,9 @@ CClosureMethod* luaF_newCmethod( lua_State *L, int nelems, GCObject *e, Class *j
     CClosureMethod *c = new (L, nelems) CClosureMethod;
     luaC_link( L, c, LUA_TFUNCTION );
 
+    c->genFlags = 0;
     c->isC = true;
+    c->isEnvLocked = true;
     c->env = e;
     c->nupvalues = cast_byte(nelems);
     c->accessor = gcvalue( luaF_getcurraccessor( L ) );
@@ -81,7 +130,9 @@ CClosureMethodTrans* luaF_newCmethodtrans( lua_State *L, int nelems, GCObject *e
     CClosureMethodTrans *c = new (L, nelems) CClosureMethodTrans;
     luaC_link( L, c, LUA_TFUNCTION );
 
+    c->genFlags = 0;
     c->isC = true;
+    c->isEnvLocked = true;
     c->env = e;
     c->nupvalues = cast_byte(nelems);
     c->accessor = gcvalue( luaF_getcurraccessor( L ) );
@@ -104,7 +155,9 @@ LClosure *luaF_newLclosure (lua_State *L, int nelems, GCObject *e)
     LClosure *c = new (L, nelems) LClosure;
     luaC_link(L, c, LUA_TFUNCTION);
 
+    c->genFlags = 0;
     c->isC = false;
+    c->isEnvLocked = false;
     c->env = e;
     c->nupvalues = cast_byte(nelems);
 
@@ -233,6 +286,14 @@ Closure::~Closure()
 }
 
 CClosure::~CClosure()
+{
+}
+
+CClosureMethodRedirect::~CClosureMethodRedirect()
+{
+}
+
+CClosureMethodRedirectSuper::~CClosureMethodRedirectSuper()
 {
 }
 
