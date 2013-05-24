@@ -256,7 +256,7 @@ static int entity_constructor( lua_State *L )
     // Allocate customdata class
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
     lua_pushcclosure( L, customdata_constructor, 1 );
-    lua_newclass( L );
+    lua_newclassex( L, LCLASS_API_LIGHT );
     lua_setfield( L, LUA_ENVIRONINDEX, "data" );
 
     lua_pushlstring( L, "entity", 6 );

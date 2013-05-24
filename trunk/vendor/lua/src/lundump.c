@@ -165,7 +165,8 @@ static Proto* LoadFunction(LoadState* S, TString* p)
 
     f=luaF_newproto(S->L);
     setptvalue2s(S->L,S->L->top,f); incr_top(S->L);
-    f->source=LoadString(S); if (f->source==NULL) f->source=p;
+    f->source=LoadString(S);
+    if (f->source==NULL) f->source=p;
     f->linedefined=LoadInt(S);
     f->lastlinedefined=LoadInt(S);
     f->nups=LoadByte(S);

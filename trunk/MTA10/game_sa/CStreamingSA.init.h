@@ -69,7 +69,7 @@ public:
         m_unk3 = HEIGHT_BOUND;
         m_unk4 = -HEIGHT_BOUND;
 
-        m_unk5 = 0xFFFF;
+        m_iplId = 0xFFFF;
 
         m_unk6 = m_unk7 = m_unk8 = false;
         m_unk9 = true;
@@ -89,7 +89,7 @@ public:
     short           m_unk3;                 // 38
     short           m_unk4;                 // 40
 
-    unsigned short  m_unk5;                 // 42
+    unsigned short  m_iplId;                // 42
 
     bool            m_unk6;                 // 44
     bool            m_unk7;                 // 45

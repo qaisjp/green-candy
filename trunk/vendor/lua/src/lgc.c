@@ -67,11 +67,12 @@ static void removeentry (Node *n) {
 
 static void reallymarkobject( global_State *g, GCObject *o );
 
-template <class type>
-void StringTable <type>::TraverseGC( global_State *g )
+template <class typeinfo>
+void DynamicStringTable <typeinfo>::TraverseGC( global_State *g )
 {
-    LIST_FOREACH_BEGIN( item_t, m_list.root, node )
+    LIST_FOREACH_BEGIN( STableItemHeader, m_list.root, node )
         stringmark( item->key );
+        typeinfo::MarkValue( g, GetNodeValue( item ) );
     LIST_FOREACH_END
 }
 
@@ -99,6 +100,9 @@ int Class::TraverseGC( global_State *g )
     LIST_FOREACH_END
 
     forceSuper->TraverseGC( g );
+
+    if ( methodCache )
+        methodCache->TraverseGC( g );
 
     for ( envList_t::const_iterator iter = envInherit.begin(); iter != envInherit.end(); iter++ )
         markobject( g, *iter );
@@ -164,6 +168,11 @@ inline static void marktmu( global_State *g )
         reallymarkobject(g, u);
     }
     while ( u != g->tmudata );
+}
+
+void luaC_markobject( global_State *g, GCObject *o )
+{
+    markobject( g, o );
 }
 
 /* move `dead' udata that need finalization to list `tmudata' */

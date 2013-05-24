@@ -16,7 +16,7 @@
 static bool renderLOD = true;
 static bool highQualityRender = false;
 static bool renderAlpha = false;
-// Rendering should be much faster on GPU if you enable highQualityRender.
+// Rendering should be faster on GPU if you enable highQualityRender.
 // On the other hand it takes (possibly) longer to calculate the distance of every atomic to the camera.
 
 #define VAR_CameraPositionVector                0x00C88050
@@ -153,10 +153,14 @@ typedef CRenderChainInterface <vehicleRenderInfo> vehicleRenderChain_t;
 
 // Render chains for vehicles only
 static vehicleRenderChain_t *const vehicleRenderChains = (vehicleRenderChain_t*)0x00C88070;
+static vehicleRenderChain_t opaqueRenderChain( 128 );   // MTA extension
+static vehicleRenderChain_t lastRenderChain( 16 );      // MTA extension
 
 void __cdecl ClearVehicleRenderChains( void )
 {
+    opaqueRenderChain.Clear();
     vehicleRenderChains->Clear();
+    lastRenderChain.Clear();
 }
 
 /*=========================================================
@@ -164,7 +168,7 @@ void __cdecl ClearVehicleRenderChains( void )
 
     Purpose:
         Renders all atomics which were listed for delayed
-        rendering (usually alpha/transparent/opaque).
+        rendering (transparent/opaque).
 =========================================================*/
 void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
 {
@@ -178,13 +182,15 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
 
             // Set opaque rendering flags
             {
-                RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );
+                RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );    // for now, instead of D3DCMP_EQUAL
                 RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, renderAlpha != 255 );
                 RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, true );
                 RwD3D9ApplyDeviceStates();
 
                 // First render components which are opaque only
+                opaqueRenderChain.Execute();
                 vehicleRenderChains->ExecuteReverse();
+                lastRenderChain.Execute();
             }
 
             {
@@ -196,7 +202,9 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
                 RwD3D9ApplyDeviceStates();
 
                 // Render alpha polygons
+                opaqueRenderChain.ExecuteReverse();
                 vehicleRenderChains->Execute();
+                lastRenderChain.ExecuteReverse();
             }
         }
 
@@ -308,13 +316,24 @@ inline static void RwAtomicHandleHighDetail( RpAtomic *atomic, float camDistance
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00732820
 =========================================================*/
-static __forceinline bool RwAtomicQueueOpaqueAlpha( RpAtomic *atomic, float camDistanceSq )
+static __forceinline bool RwAtomicQueueOpaque( RpAtomic *atomic, float camDistanceSq )
 {
     // Set up rendering
     vehicleRenderChain_t::depthLevel level;
     level.callback = _renderAtomicCommon;
     level.atomic = atomic;
-    return vehicleRenderChains->PushRenderLast( &level );
+    //level.distance = camDistanceSq;
+    return opaqueRenderChain.PushRenderLast( &level );
+}
+
+static __forceinline bool RwAtomicQueueOpaqueLast( RpAtomic *atomic, float camDistanceSq )
+{
+    // Set up rendering
+    vehicleRenderChain_t::depthLevel level;
+    level.callback = _renderAtomicCommon;
+    level.atomic = atomic;
+    //level.distance = camDistanceSq;
+    return lastRenderChain.PushRenderLast( &level );
 }
 
 static __forceinline bool RwAtomicQueue( RpAtomic *atomic, float camDistanceSq )
@@ -329,7 +348,13 @@ static __forceinline bool RwAtomicQueue( RpAtomic *atomic, float camDistanceSq )
 
 static __forceinline void RwAtomicRenderVehicle( RpAtomic *atomic, float camDistanceSq )
 {
-    if ( !renderAlpha || !RwAtomicQueueOpaqueAlpha( atomic, camDistanceSq ) )
+    if ( !renderAlpha || !RwAtomicQueueOpaque( atomic, camDistanceSq ) )
+        RpAtomicRender( atomic );
+}
+
+static __forceinline void RwAtomicRenderVehicleLast( RpAtomic *atomic, float camDistanceSq )
+{
+    if ( !renderAlpha || !RwAtomicQueueOpaqueLast( atomic, camDistanceSq ) )
         RpAtomicRender( atomic );
 }
 
@@ -816,6 +841,31 @@ static RpAtomic* RwAtomicRenderDefaultVehicleLOD( RpAtomic *atomic )
 }
 
 /*=========================================================
+    RwAtomicRenderDefaultVehicleLast (MTA extension)
+
+    Arguments:
+        atomic - object being rendered
+    Purpose:
+        Renders vehicle atomics which have to be rendered last.
+        It is applied to vehicle wheels to clip them properly.
+=========================================================*/
+static RpAtomic* RwAtomicRenderDefaultVehicleLast( RpAtomic *atomic )
+{
+    float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
+
+    if ( renderLOD && camDistanceSq >= vehicleLODDistance )
+        return atomic;
+
+    RwAtomicHandleHighDetail( atomic, camDistanceSq );
+
+    // Lol, serious checking going on here!
+    if ( camDistanceSq <= *(float*)0x00C8802C || RwAtomicIsVisible( atomic, RwAtomicGetVisibilityCalculation( atomic ), camDistanceSq ) )
+        RwAtomicRenderVehicleLast( atomic, camDistanceSq );
+
+    return atomic;
+}
+
+/*=========================================================
     RwAtomicSetupVehicleDamaged
 
     Arguments:
@@ -970,6 +1020,8 @@ static bool RwAtomicRegisterDefaultVehicle( RpAtomic *child, int )
         child->SetRenderCallback( RwAtomicRenderDefaultVehicleLOD );
     else if ( child->m_geometry->IsAlpha() || strnicmp( child->m_parent->m_nodeName, "windscreen", 10 ) == 0 )
         child->SetRenderCallback( RwAtomicRenderTranslucentDefaultVehicle );
+    else if ( strstr( child->m_parent->m_nodeName, "wheel" ) )  // MTA extension: render wheels last.
+        child->SetRenderCallback( RwAtomicRenderDefaultVehicleLast );
     else
         child->SetRenderCallback( RwAtomicRenderDefaultVehicle );
 

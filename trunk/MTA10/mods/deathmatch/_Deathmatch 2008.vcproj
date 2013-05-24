@@ -1192,6 +1192,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\..\lua_interpret\luabitlib.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\..\lua_interpret\luafile.cpp"
 						>
 					</File>
@@ -2727,6 +2731,10 @@
 					</File>
 					<File
 						RelativePath="..\shared_logic\luadefs\CLuaTaskDefs.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\lua_interpret\luabitlib.h"
 						>
 					</File>
 					<File

@@ -672,7 +672,7 @@ public:
         if ( m_debug.currentline != -1 )
             return;
 
-        // Script debug has higher priority, scan for it
+        // Scriptfile debug has higher priority, scan for it
         lua_Debug debug;
 
         startLevel++;
@@ -733,6 +733,8 @@ public:
 
     virtual void    Push( lua_State *L ) = 0;
     virtual void    PushMethod( lua_State *L, const char *key ) = 0;
+
+    virtual void    CallMethod( lua_State *L, const char *key ) = 0;
 
     virtual void    SetTransmit( int type, void *entity ) = 0;
     virtual bool    GetTransmit( int type, void*& entity ) = 0;

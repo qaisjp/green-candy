@@ -118,7 +118,7 @@ static inline ILuaClass* _trefget( lua_State *L, CClientRwObject *obj )
     // Lua instancing
     lua_pushlightuserdata( L, obj );
     lua_pushcclosure( L, luaconstructor_object, 1 );
-    lua_newclass( L );
+    lua_newclassex( L, LCLASS_API_LIGHT );
 
 	ILuaClass *j = lua_refclass( L, -1 );
 	lua_pop( L, 1 );

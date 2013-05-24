@@ -410,6 +410,7 @@ public:
     virtual void        NewIndex( lua_State *L, const TValue *key, StkId val );
 
     void* operator new( size_t size, lua_State *main );
+    void operator delete( void *ptr, lua_State *main );
 
     void operator delete( void *ptr )
     {
@@ -910,6 +911,11 @@ struct _methodRegisterInfo
     unsigned char transID;
 };
 
+struct _methodCacheEntry : _methodRegisterInfo
+{
+    lua_CFunction   method;
+};
+
 class Class : public GCObject, public virtual ILuaClass
 {
 public:
@@ -936,6 +942,8 @@ public:
     void    Push( lua_State *L );
     void    PushMethod( lua_State *L, const char *key );
 
+    void    CallMethod( lua_State *L, const char *key );
+
     void    SetTransmit( int type, void *entity );
     bool    GetTransmit( int type, void*& entity );
     int     GetTransmit() const;
@@ -944,16 +952,21 @@ public:
     Dispatch*   AcquireEnvDispatcher( lua_State *L );
     Dispatch*   AcquireEnvDispatcherEx( lua_State *L, GCObject *env );
 
-    Closure*    GetMethod( const TString *name, Table*& table );
+    Closure*    GetMethodFrom( lua_State *L, const TString *name, Table *methodTable );
+    Closure*    GetMethod( lua_State *L, const TString *name, Table*& table );
     void    SetMethod( lua_State *L, TString *name, Closure *method, Table *table );
 
-    void    RegisterMethod( lua_State *L, TString *name, bool handlers = false );
+    __forceinline void  RegisterMethod( lua_State *L, TString *name, bool handlers = false );
+    __forceinline void  RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto, _methodRegisterInfo& info, bool handlers = false );
+    __forceinline void  RegisterMethodAt( lua_State *L, TString *methName, lua_CFunction proto, Table *methodTable, _methodRegisterInfo& info, bool handlers = false );
+
     void    RegisterMethod( lua_State *L, const char *name, bool handlers = false );
-    void    RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto, _methodRegisterInfo& info, bool handlers = false );
     void    RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, int nupval, bool handlers = false );
     void    RegisterInterface( lua_State *L, const luaL_Reg *intf, int nupval, bool handlers = true );
+    void    RegisterInterfaceAt( lua_State *L, const luaL_Reg *intf, int nupval, Table *methodTable, bool handlers = true );
     void    RegisterMethodTrans( lua_State *L, const char *name, lua_CFunction proto, int nupval, int trans, bool handlers = false );
     void    RegisterInterfaceTrans( lua_State *L, const luaL_Reg *intf, int nupval, int trans, bool handlers = true );
+    void    RegisterInterfaceTransAt( lua_State *L, const luaL_Reg *intf, int nupval, int trans, Table *methodTable, bool handlers = true );
     void    RegisterLightMethod( lua_State *L, const char *name );
     void    RegisterLightMethodTrans( lua_State *L, const char *name, int trans );
     void    RegisterLightInterface( lua_State *L, const luaL_Reg *intf, void *udata );
@@ -972,7 +985,7 @@ public:
     void    PushOuterEnvironment( lua_State *L );
     void    PushChildAPI( lua_State *L );
     void    PushParent( lua_State *L );
-    const TValue*   GetEnvValue( const TValue *key );
+    const TValue*   GetEnvValue( lua_State *L, const TValue *key );
     const TValue*   GetEnvValueString( lua_State *L, const char *key );
 
     void    RequestDestruction();
@@ -1010,6 +1023,7 @@ public:
     typedef StringTable <forceSuperItem> ForceSuperTable;
 
     ForceSuperTable *forceSuper;
+    ClassStringTable *methodCache;
 
 #pragma pack(1)
 	struct trans_t
