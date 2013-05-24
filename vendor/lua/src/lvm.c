@@ -751,8 +751,8 @@ reentry:  /* entry point */
         int nup, j;
         p = cl->p->p[GETARG_Bx(i)];
         nup = p->nups;
-        ncl = luaF_newLclosure(L, nup, cl->env);
-        LClosure *lcl = ncl->GetLClosure();
+        LClosure *lcl = luaF_newLclosure(L, nup, cl->env);
+        ncl = lcl;
         lcl->p = p;
         for (j=0; j<nup; j++, pc++) {
           if (GET_OPCODE(*pc) == OP_GETUPVAL)

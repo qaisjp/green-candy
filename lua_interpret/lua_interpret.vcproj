@@ -219,6 +219,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\luabitlib.h"
+				>
+			</File>
+			<File
 				RelativePath=".\luafile.h"
 				>
 			</File>
@@ -245,6 +249,10 @@
 		</File>
 		<File
 			RelativePath="..\Shared\core\CFileSystem.zip.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\luabitlib.cpp"
 			>
 		</File>
 		<File

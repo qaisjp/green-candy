@@ -511,7 +511,7 @@ void LuaManager::Init( LuaMain *lua )
     luaopen_debug( thread ); // WARNING: CREATE OUR OWN DEBUG LIB!!!
 #endif
     luaopen_class( thread );
-    //luaopen_bit( thread );
+    luabitwise_open( thread );
 
     // Load our functions into the hyperstructure
     LoadCFunctions( lua );

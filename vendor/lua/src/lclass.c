@@ -25,15 +25,175 @@
 #include "lvm.h"
 #include "ldebug.h"
 
-#define LUA_PROTECT_CLASS_META
+class ClassMethodRegister : public VirtualClassEntry
+{
+public:
+    ClassMethodRegister( lua_CFunction proto, Table *methTable ) : m_proto( proto ), m_methTable( methTable )
+    {
+    }
+
+    inline void     BaseCall( lua_State *L, int argCount ) const
+    {
+        lua_xcopy( L, L, argCount );
+
+        L->base += argCount;
+
+        m_proto( L );
+
+        L->base -= argCount;
+    }
+
+    virtual Closure*    Create( lua_State *L, Class *j ) const = 0;
+    virtual void    Call( lua_State *L, Class *j, int argCount ) const = 0;
+
+    void    MarkValue( global_State *g ) const
+    {
+        luaC_markobject( g, m_methTable );
+    }
+
+    Table*  GetMethodTable( void ) const
+    {
+        return m_methTable;
+    }
+
+    void* operator new( size_t size, lua_State *L, ClassStringTable *alloc, TString *methName )
+    {
+        return alloc->GetNodeValue( alloc->AllocateNode( L, methName, size ) );
+    }
+
+    void operator delete( void *ptr, lua_State *L, ClassStringTable *alloc, TString *methName )
+    {
+        alloc->DeleteNode( L, alloc->FindNode( methName ) );
+    }
+
+    void operator delete( void *ptr )
+    {
+        lua_assert( 0 );
+    }
+
+protected:
+    lua_CFunction m_proto;
+    Table* m_methTable;
+};
+
+__forceinline void class_allocateRegisterCache( lua_State *L, Class *j )
+{
+    if ( !j->methodCache )
+        j->methodCache = new (L) ClassStringTable;
+}
+
+__forceinline Closure* class_getDelayedMethodRegister( lua_State *L, Class *j, TString *methName, bool excludeInternal )
+{
+    if ( !j->methodCache )
+        return NULL;
+
+    STableItemHeader *node = j->methodCache->FindNode( methName );
+
+    if ( !node )
+        return NULL;
+
+    ClassMethodRegister *reg = (ClassMethodRegister*)j->methodCache->GetNodeValue( node );
+    Table *regTable = reg->GetMethodTable();
+
+    if ( excludeInternal && regTable == j->internStorage )
+        return NULL;
+
+    Closure *res = reg->Create( L, j );
+
+    j->SetMethod( L, methName, res, reg->GetMethodTable() );
+    j->methodCache->DeleteNode( L, node );
+    return res;
+}
+
+__forceinline void class_readFromStorage( lua_State *L, Class *j, const TValue *key, StkId val, bool excludeInternal )
+{
+    const TValue *envRes = luaH_get( j->storage, key );
+
+    if ( envRes != luaO_nilobject )
+    {
+        setobj( L, val, envRes );
+        return;
+    }
+    else if ( ttype( key ) == LUA_TSTRING )
+    {
+        // Check the delayed method registry
+        TString *methName = tsvalue( key );
+        Closure *cached = class_getDelayedMethodRegister( L, j, methName, excludeInternal );
+
+        if ( cached )
+        {
+            setclvalue( L, val, cached );
+            return;
+        }
+    }
+
+    setnilvalue( val );
+}
+
+__forceinline const TValue* class_getFromStorage( lua_State *L, Class *j, const TValue *key, bool excludeInternal )
+{
+    const TValue *envRes = luaH_get( j->storage, key );
+
+    if ( envRes == luaO_nilobject )
+    {
+        if ( ttype( key ) == LUA_TSTRING )
+        {
+            // Check the delayed method registry
+            TString *methName = tsvalue( key );
+            Closure *cached = class_getDelayedMethodRegister( L, j, methName, excludeInternal );
+
+            if ( cached )
+            {
+                TValue *slot = luaH_setstr( L, j->storage, methName );
+                setclvalue( L, slot, cached );
+                luaC_objbarriert( L, j->storage, cached );
+                return slot;
+            }
+        }
+    }
+
+    return envRes;
+}
+
+__forceinline const TValue* class_getFromStorageString( lua_State *L, Class *j, TString *key, bool excludeInternal )
+{
+    const TValue *envRes = luaH_getstr( j->storage, key );
+
+    if ( envRes == luaO_nilobject )
+    {
+        // Check the delayed method registry
+        Closure *cached = class_getDelayedMethodRegister( L, j, key, excludeInternal );
+
+        if ( cached )
+        {
+            TValue *slot = luaH_setstr( L, j->storage, key );
+            setclvalue( L, slot, cached );
+            luaC_objbarriert( L, j->storage, cached );
+            return slot;
+        }
+    }
+
+    return envRes;
+}
 
 void ClassOutEnvDispatch::Index( lua_State *L, const TValue *key, StkId val )
 {
-    setobj( L, val, luaH_get( m_class->storage, key ) );
+    class_readFromStorage( L, m_class, key, val, true );
+}
+
+__forceinline void class_checkMethodDelayOverride( lua_State *L, Class *j, const TValue *key )
+{
+    if ( j->methodCache && ttype( key ) == LUA_TSTRING )
+    {
+        if ( j->methodCache->FindNode( tsvalue( key ) ) )
+            throw lua_exception( L, LUA_ERRRUN, "cannot overwrite methods of class internals" );
+    }
 }
 
 void ClassOutEnvDispatch::NewIndex( lua_State *L, const TValue *key, StkId val )
 {
+    class_checkMethodDelayOverride( L, m_class, key );
+
     TValue *tabidx = luaH_set( L, m_class->storage, key );
 
     if ( ttype( tabidx ) == LUA_TFUNCTION )
@@ -48,7 +208,7 @@ void ClassEnvDispatch::Index( lua_State *L, const TValue *key, StkId value )
     if ( m_class->destroyed )
         throw lua_exception( L, LUA_ERRRUN, "attempt to index the environment of a destroyed class" );
 
-    const TValue *val = m_class->GetEnvValue( key );
+    const TValue *val = m_class->GetEnvValue( L, key );
 
     if ( ttype( val ) != LUA_TNIL )
     {
@@ -79,7 +239,9 @@ void Class::Index( lua_State *L, const TValue *key, StkId val )
     if ( destroyed )
         throw lua_exception( L, LUA_ERRRUN, "cannot index a destroyed class" );
 
-    if ( const TValue *tm = fasttm( L, storage, TM_INDEX ) )
+    const TValue *tm = class_getFromStorageString( L, this, G(L)->tmname[TM_INDEX], true );
+
+    if ( tm != luaO_nilobject )
     {
         if ( ttisfunction( tm ) )
         {
@@ -112,7 +274,9 @@ void Class::NewIndex( lua_State *L, const TValue *key, StkId val )
     if ( destroyed )
         throw lua_exception( L, LUA_ERRRUN, "cannot index a destroyed class" );
 
-    if ( const TValue *tm = fasttm( L, storage, TM_NEWINDEX ) )
+    const TValue *tm = class_getFromStorageString( L, this, G(L)->tmname[TM_NEWINDEX], true );
+
+    if ( tm != luaO_nilobject )
     {
         if ( ttisfunction( tm ) )
         {
@@ -296,7 +460,7 @@ void Class::PushMethod( lua_State *L, const char *key )
 {
     lua_assert( !destroyed );
 
-    const TValue *val = luaH_getstr( storage, luaS_new( L, key ) );
+    const TValue *val = GetEnvValueString( L, key );
 
     if ( ttype( val ) != LUA_TFUNCTION )
     {
@@ -306,6 +470,11 @@ void Class::PushMethod( lua_State *L, const char *key )
     {
         setobj( L, L->top++, val );
     }
+}
+
+void Class::CallMethod( lua_State *L, const char *key )
+{
+    
 }
 
 void Class::SetTransmit( int type, void *entity )
@@ -358,7 +527,7 @@ bool Class::IsTransmit( int type ) const
 	if ( !trans )
 		return false;
 
-    for ( unsigned int n=0; n < transCount; n++ )
+    for ( unsigned int n = 0; n < transCount; n++ )
 	{
 		trans_t& item = trans[n];
 
@@ -441,7 +610,7 @@ void Class::PushParent( lua_State *L )
     setjvalue( L, L->top++, parent );
 }
 
-const TValue* Class::GetEnvValue( const TValue *key )
+const TValue* Class::GetEnvValue( lua_State *L, const TValue *key )
 {
     // Browse the read-only storage
     const TValue *res = luaH_get( internStorage, key );
@@ -449,18 +618,18 @@ const TValue* Class::GetEnvValue( const TValue *key )
     if ( ttype( res ) != LUA_TNIL )
         return res;
 
-    return luaH_get( storage, key );
+    return class_getFromStorage( L, this, key, false );
 }
 
 const TValue* Class::GetEnvValueString( lua_State *L, const char *name )
 {
-    const TString *key = luaS_new( L, name );
+    TString *key = luaS_new( L, name );
     const TValue *res = luaH_getstr( internStorage, key );
 
     if ( ttype( res ) != LUA_TNIL )
         return res;
 
-    return luaH_getstr( storage, key );
+    return class_getFromStorageString( L, this, key, false );
 }
 
 void Class::RequestDestruction()
@@ -478,14 +647,19 @@ const TValue* Class::GetSuperMethod( lua_State *L )
     return luaH_getstr( internStorage, G(L)->superCached );
 }
 
+__forceinline void class_checkDestroyedMethodCall( lua_State *L, Class *j )
+{
+    if ( j->destroyed )
+        throw lua_exception( L, LUA_ERRRUN, "attempt to access a destroyed class' method" );
+}
+
 // Easy wrapper for C++ support
 class MethodStackAllocation
 {
 public:
     MethodStackAllocation( lua_State *thread, Class *myClass, Closure *prevSuper )
     {
-        if ( myClass->destroyed )
-            throw lua_exception( thread, LUA_ERRRUN, "attempt to access a destroyed class' method" );
+        class_checkDestroyedMethodCall( thread, myClass );
 
         TValue *superMethod = myClass->SetSuperMethod( thread );
 
@@ -742,7 +916,7 @@ static Closure* classmethod_fsFSCCHandlerNative( lua_State *L, lua_CFunction pro
 // Register future method definitions for the Forced Super Calling Convention (FSCC)
 static int classmethod_registerForcedSuper( lua_State *L )
 {
-    Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
+    Class& j = *((CClosureMethodBase*)curr_func( L ))->m_class;
 
     if ( j.destroyed )
         throw lua_exception( L, LUA_ERRRUN, "attempt to register a forced-super declaration inheritance for a destroyed class" );
@@ -770,7 +944,7 @@ static int classmethod_envPutFront( lua_State *L )
     if ( !iscollectable( L->top - 1 ) )
         luaJ_envtypeerror( L, ttype( L->top - 1 ) );
 
-    jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->EnvPutFront( L );
+    ((CClosureMethodBase*)curr_func( L ))->m_class->EnvPutFront( L );
     return 0;
 }
 
@@ -779,7 +953,7 @@ static int classmethod_envPutBack( lua_State *L )
     if ( !iscollectable( L->top - 1 ) )
         luaJ_envtypeerror( L, ttype( L->top - 1 ) );
 
-    jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->EnvPutBack( L );
+    ((CClosureMethodBase*)curr_func( L ))->m_class->EnvPutBack( L );
     return 0;
 }
 
@@ -788,9 +962,9 @@ static int classmethod_envAcquireDispatcher( lua_State *L )
     Dispatch *env;
 
     if ( iscollectable( L->base ) )
-        env = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->AcquireEnvDispatcherEx( L, gcvalue( L->base ) );
+        env = ((CClosureMethodBase*)curr_func( L ))->m_class->AcquireEnvDispatcherEx( L, gcvalue( L->base ) );
     else
-        env = jvalue( index2adr( L, lua_upvalueindex( 1 ) ) )->AcquireEnvDispatcher( L );
+        env = ((CClosureMethodBase*)curr_func( L ))->m_class->AcquireEnvDispatcher( L );
 
     setqvalue( L, L->top++, env );
     return 1;
@@ -802,7 +976,7 @@ static int classmethod_setChild( lua_State *L )
 
     Class& j = *jvalue( L->base );
 
-    if ( j.parent != jvalue( index2adr( L, lua_upvalueindex( 1 ) ) ) )
+    if ( j.parent != ((CClosureMethodBase*)curr_func( L ))->m_class )
     {
         setbvalue( L->top++, false );
         return 1;
@@ -930,7 +1104,7 @@ static Closure* classmethod_fsDestroyHandlerNative( lua_State *L, lua_CFunction 
 
 void ClassMethodDispatch::Index( lua_State *L, const TValue *key, StkId val )
 {
-    const TValue *res = m_class->GetEnvValue( key );
+    const TValue *res = m_class->GetEnvValue( L, key );
 
     if ( ttype( res ) != LUA_TNIL )
     {
@@ -958,7 +1132,7 @@ Dispatch* Class::AcquireEnvDispatcherEx( lua_State *L, GCObject *curEnv )
             return env;
     }
 
-    // Create the dispatcher which accesses class env first then this current one
+    // Create the dispatcher which accesses class env first then curEnv
     return luaQ_newclassmethodenv( L, this, curEnv );
 }
 
@@ -967,7 +1141,7 @@ Dispatch* Class::AcquireEnvDispatcher( lua_State *L )
     return AcquireEnvDispatcherEx( L, gcvalue( index2adr( L, LUA_ENVIRONINDEX ) ) );
 }
 
-Closure* Class::GetMethod( const TString *name, Table*& table )
+Closure* Class::GetMethod( lua_State *L, const TString *name, Table*& table )
 {
     const TValue *val = luaH_getstr( internStorage, name );
 
@@ -978,8 +1152,31 @@ Closure* Class::GetMethod( const TString *name, Table*& table )
     }
 
     val = luaH_getstr( storage, name );
+
+    if ( ttype( val ) == LUA_TFUNCTION )
+    {
+        table = storage;
+        return clvalue( val );
+    }
+
+    if ( methodCache )
+    {
+        STableItemHeader *node = methodCache->FindNode( name );
+
+        if ( node )
+        {
+            ClassMethodRegister *reg = (ClassMethodRegister*)methodCache->GetNodeValue( node );
+            table = reg->GetMethodTable();
+            
+            Closure *cl = reg->Create( L, this );
+            methodCache->DeleteNode( L, node );     // remove as it no longer serves a purpose
+
+            return cl;
+        }
+    }
+
     table = storage;
-    return ttype( val ) == LUA_TFUNCTION ? clvalue( val ) : NULL;
+    return NULL;
 }
 
 void Class::SetMethod( lua_State *L, TString *name, Closure *method, Table *table )
@@ -992,10 +1189,10 @@ void Class::SetMethod( lua_State *L, TString *name, Closure *method, Table *tabl
         luaC_barrierback( L, table );
 }
 
-void Class::RegisterMethod( lua_State *L, TString *methName, bool handlers )
+__forceinline void Class::RegisterMethod( lua_State *L, TString *methName, bool handlers )
 {
     Table *methTable;
-    Closure *prevMethod = GetMethod( methName, methTable ); // Acquire the previous method
+    Closure *prevMethod = GetMethod( L, methName, methTable ); // Acquire the previous method
 
     // Get the method closure and check whether we can apply it
     Closure *cl = clvalue( L->top - 1 );
@@ -1053,69 +1250,191 @@ defaultHandler:
     L->top--;
 }
 
-void Class::RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto, _methodRegisterInfo& info, bool handlers )
+inline void _copyUpvaluesFromStack( lua_State *L, TValue *src, TValue *upval_array, int num )
 {
-    Table *methTable;
-    Closure *prevMethod = GetMethod( methName, methTable ); // Acquire the previous method
+    for ( int n = 0; n < num; n++ )
+        setobj( L, upval_array, src + n );
+}
 
+__forceinline Closure* class_createBaseMethod( lua_State *L, lua_CFunction proto, Closure *prevMethod, TValue *upvalue_src, unsigned char numUpValues, GCObject *env, Class *j )
+{
+    CClosureMethod *meth = luaF_newCmethod( L, numUpValues, env, j );
+
+    if ( prevMethod )
+    {
+        meth->super = prevMethod;
+        meth->f = classmethod_superNative;
+    }
+    else
+    {
+        meth->super = NULL;
+        meth->f = classmethod_rootNative;
+    }
+
+    _copyUpvaluesFromStack( L, upvalue_src, meth->upvalues, numUpValues );
+
+    meth->method = proto;
+    return meth;
+}
+
+__forceinline Closure* class_createMethodTrans( lua_State *L, lua_CFunction proto, Closure *prevMethod, TValue *upvalue_src, unsigned char numUpValues, GCObject *env, Class *j, int trans )
+{
+    CClosureMethodTrans *meth = luaF_newCmethodtrans( L, numUpValues, env, j, trans );
+
+    if ( prevMethod )
+    {
+        meth->super = prevMethod;
+        meth->f = classmethod_superTransNative;
+    }
+    else
+    {
+        meth->super = NULL;
+        meth->f = classmethod_rootTransNative;
+    }
+
+    _copyUpvaluesFromStack( L, upvalue_src, meth->upvalues, numUpValues );
+
+    meth->method = proto;
+    return meth;
+}
+
+template <bool handlers = true>
+class StatelessMethodRegister : public ClassMethodRegister
+{
+public:
+    StatelessMethodRegister( lua_CFunction proto, Table *methTable ) : ClassMethodRegister( proto, methTable )
+    {
+    }
+
+    Closure* Create( lua_State *L, Class *j ) const
+    {
+        return class_createBaseMethod( L, m_proto, NULL, NULL, 0, j->env, j );
+    }
+
+    void    Call( lua_State *L, Class *j, int argCount ) const
+    {
+        class_checkDestroyedMethodCall( L, j );
+
+        BaseCall( L, argCount );
+    }
+
+    size_t  GetSize( void ) const
+    {
+        return sizeof(*this);
+    }
+};
+
+template <bool handlers = true>
+class TransMethodRegister : public ClassMethodRegister
+{
+public:
+    TransMethodRegister( lua_CFunction proto, Table *methTable, int transID ) : ClassMethodRegister( proto, methTable ), m_transID( transID )
+    {
+    }
+
+    Closure* Create( lua_State *L, Class *j ) const
+    {
+        // Optimization: do not create the closure if the class does not have the type anymore.
+        if ( !j->IsTransmit( m_transID ) )
+            return NULL;
+
+        return class_createMethodTrans( L, m_proto, NULL, NULL, 0, j->env, j, m_transID );
+    }
+
+    // TODO: Need to work on the transition data availability for this to work.
+    // Currently we grab transition data from a special closure class.
+    // Need to change it in a special way.
+    void    Call( lua_State *L, Class *j, int argCount ) const
+    {
+        class_checkDestroyedMethodCall( L, j );
+        //class_checkTransitionType( L, j, m_transID );
+
+        BaseCall( L, argCount );
+    }
+
+    size_t  GetSize( void ) const
+    {
+        return sizeof(*this);
+    }
+
+    int m_transID;
+};
+
+__forceinline void class_setMethod( lua_State *L, Class *j, TString *methName, lua_CFunction proto, Closure *prevMethod, Table *methTable, _methodRegisterInfo& info, bool handlers = false )
+{
     Closure *handler;
 
     if ( !handlers )
         goto defaultHandler;
 
-    Class::forceSuperItem *item = forceSuper->GetItem( methName );
+    Class::forceSuperItem *item = j->forceSuper->GetItem( methName );
 
     if ( item && item->cbNative )
     {
-        handler = item->cbNative( L, proto, this, prevMethod, info );
+        handler = item->cbNative( L, proto, j, prevMethod, info );
 	}
 	else
 	{
 defaultHandler:
         unsigned char num = info.numUpValues;
-        
-        if ( info.isTrans )
-        {
-            CClosureMethodTrans *meth = luaF_newCmethodtrans( L, num, env, this, info.transID );
 
-            if ( prevMethod )
+        if ( num == 0 && !prevMethod )
+        {
+            class_allocateRegisterCache( L, j );
+
+            if ( handlers )
             {
-                meth->super = prevMethod;
-                meth->f = classmethod_superTransNative;
+                if ( info.isTrans )
+                    new (L, j->methodCache, methName) TransMethodRegister <true> ( proto, methTable, info.transID );
+                else
+                    new (L, j->methodCache, methName) StatelessMethodRegister <true> ( proto, methTable );
             }
             else
             {
-                meth->super = NULL;
-                meth->f = classmethod_rootTransNative;
+                if ( info.isTrans )
+                    new (L, j->methodCache, methName) TransMethodRegister <false> ( proto, methTable, info.transID );
+                else
+                    new (L, j->methodCache, methName) StatelessMethodRegister <false> ( proto, methTable );
             }
 
-            meth->method = proto;
-
-            handler = meth;
+            // Do not continue registration process.
+            // Like a coroutine we are halting the registration process here
+            // to continue it on demand.
+            // It is a very optimized coroutine, as there is no stack.
+            // * I had an idea about creation of optimizable coroutines + prototypes.
+            return;
         }
         else
         {
-            CClosureMethod *meth = luaF_newCmethod( L, num, env, this );
-
-            if ( prevMethod )
-            {
-                meth->super = prevMethod;
-                meth->f = classmethod_superNative;
-            }
+            if ( info.isTrans )
+                handler = class_createMethodTrans( L, proto, prevMethod, L->top - num, num, j->env, j, info.transID );
             else
-            {
-                meth->super = NULL;
-                meth->f = classmethod_rootNative;
-            }
-
-            meth->method = proto;
-
-            handler = meth;
+                handler = class_createBaseMethod( L, proto, prevMethod, L->top - num, num, j->env, j );
         }
 	}
 
     // Store the new method
-    SetMethod( L, methName, handler, methTable );
+    j->SetMethod( L, methName, handler, methTable );
+}
+
+__forceinline void Class::RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto, _methodRegisterInfo& info, bool handlers )
+{
+    Table *methTable;
+    Closure *prevMethod = GetMethod( L, methName, methTable ); // Acquire the previous method
+
+    class_setMethod( L, this, methName, proto, prevMethod, methTable, info, handlers );
+
+    // Pop the upvalues
+    L->top -= info.numUpValues;
+}
+
+__forceinline void Class::RegisterMethodAt( lua_State *L, TString *methName, lua_CFunction proto, Table *methodTable, _methodRegisterInfo& info, bool handlers )
+{
+    Table *methTable;
+    Closure *prevMethod = GetMethod( L, methName, methTable );
+
+    // Use the user-specified methodTable
+    class_setMethod( L, this, methName, proto, prevMethod, methodTable, info, handlers );
 
     // Pop the upvalues
     L->top -= info.numUpValues;
@@ -1140,12 +1459,29 @@ void Class::RegisterInterface( lua_State *L, const luaL_Reg *intf, int nupval, b
     _methodRegisterInfo info;
     info.numUpValues = nupval;
 
-    while ( intf->name )
+    while ( const char *name = intf->name )
     {
         for ( int n = 0; n < nupval; n++ )
             setobj( L, L->top++, upId + n );
 
-        RegisterMethod( L, luaS_new( L, intf->name ), intf->func, info, handlers );
+        RegisterMethod( L, luaS_new( L, name ), intf->func, info, handlers );
+
+        intf++;
+    }
+}
+
+void Class::RegisterInterfaceAt( lua_State *L, const luaL_Reg *intf, int nupval, Table *methodTable, bool handlers )
+{
+    StkId upId = L->top - nupval;
+    _methodRegisterInfo info;
+    info.numUpValues = nupval;
+
+    while ( const char *name = intf->name )
+    {
+        for ( int n = 0; n < nupval; n++ )
+            setobj( L, L->top++, upId + n );
+
+        RegisterMethodAt( L, luaS_new( L, name ), intf->func, methodTable, info, handlers );
 
         intf++;
     }
@@ -1175,6 +1511,25 @@ void Class::RegisterInterfaceTrans( lua_State *L, const luaL_Reg *intf, int nupv
             setobj( L, L->top++, upId + n );
 
         RegisterMethod( L, luaS_new( L, intf->name ), intf->func, info, handlers );
+
+        intf++;
+    }
+}
+
+void Class::RegisterInterfaceTransAt( lua_State *L, const luaL_Reg *intf, int nupval, int trans, Table *methodTable, bool handlers )
+{
+    StkId upId = L->top - nupval;
+    _methodRegisterInfo info;
+    info.isTrans = true;
+    info.transID = trans;
+    info.numUpValues = nupval;
+
+    while ( intf->name )
+    {
+        for ( int n = 0; n < nupval; n++ )
+            setobj( L, L->top++, upId + n );
+
+        RegisterMethodAt( L, luaS_new( L, intf->name ), intf->func, methodTable, info, handlers );
 
         intf++;
     }
@@ -1414,7 +1769,7 @@ static int classmethod_setParent( lua_State *L )
     luaC_objbarriert( L, j.internStorage, j.childAPI );
 
     // Call setChild in protected mode as the process may not be interupted anymore
-    setobj( L, L->top++, luaH_getstr( c.internStorage, luaS_new( L, "setChild" ) ) );
+    c.PushMethod( L, "setChild" );
     setjvalue( L, L->top++, &j );
     lua_pcall( L, 1, 0, 0 );
 
@@ -1451,6 +1806,7 @@ static int classmethod_destructor( lua_State *L )
     j->internStorage = NULL;
     j->destructor = NULL;
 
+    delete j->methodCache;
     delete j->forceSuper;
 
     j->destroyed = true;
@@ -1499,6 +1855,9 @@ void ClassEnvDispatch::NewIndex( lua_State *L, const TValue *key, StkId val )
     }
     else
     {
+        // Make sure we do not hit delayed method writes
+        class_checkMethodDelayOverride( L, m_class, key );
+
         // Apply a regular member
         setobj( L, luaH_set( L, j.storage, key ), val );
         luaC_barriert( L, j.storage, val );
@@ -1515,7 +1874,7 @@ public:
         m_thread = L;
     }
 
-    ~ClassConstructionAllocation()
+    ~ClassConstructionAllocation( void )
     {
         luaL_unref( m_thread, LUA_REGISTRYINDEX, m_id );
     }
@@ -1563,6 +1922,7 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     c->internStorage = luaH_new( L, 0, 0 );
 
     c->forceSuper = new (L) Class::ForceSuperTable();
+    c->methodCache = NULL;  // only allocate once required
 
     // Perform a temporary keep
     ClassConstructionAllocation construction( L, c );
@@ -1592,14 +1952,12 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     lua_setfield( L, -2, "this" );
 
     // Set some internal functions
-    setjvalue( L, L->top++, c );
-    luaL_openlib( L, NULL, internStorage_interface, 1 );
+    c->RegisterInterfaceAt( L, internStorage_interface, 0, c->internStorage );
 
     if ( !( flags & LCLASS_API_NOENVDISPATCH ) )
     {
         // Include the env dispatcher API
-        setjvalue( L, L->top++, c );
-        luaL_openlib( L, NULL, internStorage_envDispatch_interface, 1 );
+        c->RegisterInterfaceAt( L, internStorage_envDispatch_interface, 0, c->internStorage );
     }
 
     // Pop the internal storage

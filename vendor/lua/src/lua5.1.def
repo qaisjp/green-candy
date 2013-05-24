@@ -141,7 +141,6 @@ EXPORTS
   luaopen_string
   luaopen_class
   luaopen_table
-  luaopen_bit
   luaL_openlibs
   luaU_dump
   luaM_toobig

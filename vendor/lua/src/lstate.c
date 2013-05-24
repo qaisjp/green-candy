@@ -173,7 +173,6 @@ lua_Thread::lua_Thread()
 
 lua_Thread* luaE_newthread( lua_State *L )
 {
-    unsigned int n;
     lua_Thread *L1 = new (L) lua_Thread;
     luaC_link(L, L1, LUA_TTHREAD);
     LIST_INSERT( G(L)->threads.root, L1->threadNode );  /* we need to be aware of all threads */
@@ -186,7 +185,7 @@ lua_Thread* luaE_newthread( lua_State *L )
     resethookcount(L1);
 
     // Inherit the metatables
-    for ( n=0; n<NUM_TAGS; n++ )
+    for ( unsigned int n = 0; n < NUM_TAGS; n++ )
         L1->mt[n] = L->mt[n];
 
     // Allocate the OS resources only if necessary!

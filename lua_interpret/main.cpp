@@ -176,6 +176,7 @@ int main( int argc, char *argv[] )
 
     luaL_openlibs( state );
     luafile_open( state );
+    luabitwise_open( state );
 
     lua_register( state, "newmd5hasher", lua_newmd5hasher );
 

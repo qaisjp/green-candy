@@ -3,6 +3,7 @@
 ** Lua - An Extensible Extension Language
 ** Lua.org, PUC-Rio, Brazil (http://www.lua.org)
 ** See Copyright Notice at the end of this file
+** - extended by The_GTA for better integration into C++ projects
 */
 
 
@@ -23,7 +24,7 @@
 #define LUA_VERSION	"Lua 5.1"
 #define LUA_RELEASE	"Lua 5.1.4 MTA"
 #define LUA_VERSION_NUM	501
-#define LUA_COPYRIGHT	"Copyright (C) 1994-2008 Lua.org, PUC-Rio (C) 2012 The_GTA"
+#define LUA_COPYRIGHT	"Copyright (C) 1994-2008 Lua.org, PUC-Rio (C) 2013 Martin Turski"
 #define LUA_AUTHORS 	"R. Ierusalimschy, L. H. de Figueiredo & W. Celes"
 
 

@@ -10,7 +10,6 @@
 
 #include "lobject.h"
 
-
 #define gfasttm(g,et,e) ((et) == NULL ? NULL : \
   ((et)->flags & (1u<<(e))) ? NULL : luaT_gettm(et, e, (g)->tmname[e]))
 

@@ -30,6 +30,7 @@
 #include "luafile.h"
 #include "luafilesystem.h"
 #include "luamd5.h"
+#include "luabitlib.h"
 
 static inline void luaJ_extend( lua_State *L, int idx, int nargs )
 {

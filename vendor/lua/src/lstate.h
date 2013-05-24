@@ -181,6 +181,11 @@ public:
         return GCObject::operator new( size + LUAI_EXTRASPACE, main );
     }
 
+    void operator delete( void *ptr, lua_State *main )
+    {
+        __asm int 3
+    }
+
     void operator delete( void *ptr )
     {
         GCObject::operator delete( fromstate( (lua_Thread*)ptr ), state_size( lua_Thread ) );
