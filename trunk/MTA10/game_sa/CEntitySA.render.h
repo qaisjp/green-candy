@@ -40,7 +40,7 @@ public:
             Multiple constructors have been inlined into
             HOOK_InitRenderChains.
     =========================================================*/
-    CRenderChainInterface( unsigned int max )
+    __forceinline CRenderChainInterface( unsigned int max )
     {
         // Allocate all entries
         m_stack = new renderChain[max];
@@ -69,7 +69,7 @@ public:
         Purpose:
             Deallocates the memory used for this rendering list.
     =========================================================*/
-    ~CRenderChainInterface( void )
+    __forceinline ~CRenderChainInterface( void )
     {
         delete [] m_stack;
     }

@@ -28,6 +28,7 @@ public:
     virtual class CRpLight*         CreateLight( RpLightType type ) = 0;
     virtual class CRwFrame*         CreateFrame() = 0;
     virtual class CRwCamera*        CreateCamera( int width, int height ) = 0;
+    virtual class CModel*           CreateClump() = 0;
 
     virtual bool                    IsRendering() const = 0;
 

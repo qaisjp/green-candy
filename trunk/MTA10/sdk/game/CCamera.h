@@ -145,6 +145,8 @@ public:
     virtual void                        SetCameraClip( bool ibjects, bool vehicles ) = 0;
     virtual unsigned char               GetCameraViewMode() const = 0;
     virtual void                        SetCameraViewMode( unsigned char mode ) = 0;
+
+    virtual bool                        IsSphereVisible( const RwSphere& sphere ) const = 0;
 };
 
 

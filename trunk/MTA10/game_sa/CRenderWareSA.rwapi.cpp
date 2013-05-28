@@ -676,7 +676,7 @@ void RpMaterial::SetTexture( RwTexture *tex )
 
 RpMaterials::RpMaterials( unsigned int max )
 {
-    m_data = (RpMaterial**)pRwInterface->m_malloc( sizeof(long) * max );
+    m_data = (RpMaterial**)pRwInterface->m_malloc( sizeof(long) * max, 0 );
 
     m_max = max;
     m_entries = 0;
@@ -780,6 +780,8 @@ void RpLight::RemoveFromScene()
     RwSceneRemoveLight( m_scene, this );
 }
 
+static CVector pos;
+
 void RpClump::Render()
 {
     LIST_FOREACH_BEGIN( RpAtomic, m_atomics.root, m_atomics )
@@ -787,6 +789,9 @@ void RpClump::Render()
         {
             item->m_parent->GetLTM();   // Possibly update it's world position
             item->m_renderCallback( item );
+
+            pos = item->m_parent->GetModelling().pos;
+            pos = item->m_parent->GetLTM().pos;
         }
     LIST_FOREACH_END
 }

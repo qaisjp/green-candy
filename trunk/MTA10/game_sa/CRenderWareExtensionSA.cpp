@@ -252,7 +252,7 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
         return NULL;
     }
 
-    inst = (RwExtension*)pRwInterface->m_malloc( sizeof(RwExtension) + ext->m_structSize * count + ext->m_internalSize );
+    inst = (RwExtension*)pRwInterface->m_malloc( sizeof(RwExtension) + ext->m_structSize * count + ext->m_internalSize, 0 );
 
     inst->m_size = size;
     inst->m_count = count;

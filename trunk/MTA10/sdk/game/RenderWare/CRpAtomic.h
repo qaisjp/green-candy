@@ -24,6 +24,8 @@ public:
 
     virtual void                    Render() = 0;
 
+    virtual void                    GetWorldSphere( RwSphere& out ) = 0;
+
     virtual void                    AddToModel( CModel *model ) = 0;
     virtual CModel*                 GetModel() = 0;
     virtual void                    RemoveFromModel() = 0;

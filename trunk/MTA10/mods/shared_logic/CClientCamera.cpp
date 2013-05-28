@@ -22,8 +22,21 @@
 #define PI 3.1415926535897932384626433832795f
 #endif
 
+static LUA_DECLARE( isSphereVisible )
+{
+    luaL_checktyperange( L, 1, LUA_TNUMBER, 4 );
+
+    RwSphere sphere;
+    sphere.pos = CVector( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) );
+    sphere.radius = (float)lua_tonumber( L, 4 );
+
+    lua_pushboolean( L, ((CClientCamera*)lua_getmethodtrans( L ))->IsSphereVisible( sphere ) );
+    return 1;
+}
+
 static const luaL_Reg camera_interface[] =
 {
+    LUA_METHOD( isSphereVisible ),
     { NULL, NULL }
 };
 
@@ -34,9 +47,7 @@ static int luaconstructor_camera( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_CAMERA, cam );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, camera_interface, 1 );
+    j.RegisterInterfaceTrans( L, camera_interface, 0, LUACLASS_CAMERA );
 
     lua_pushlstring( L, "camera", 6 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
@@ -428,6 +439,11 @@ void CClientCamera::UnreferencePlayer( CClientPlayer* pPlayer )
         SetFocusToLocalPlayerImpl ();
         m_pFocusedPlayer = NULL;
     }
+}
+
+bool CClientCamera::IsSphereVisible( const RwSphere& sphere ) const
+{
+    return m_pCamera->IsSphereVisible( sphere );
 }
 
 void CClientCamera::InvalidateEntity ( CClientEntity* pEntity )

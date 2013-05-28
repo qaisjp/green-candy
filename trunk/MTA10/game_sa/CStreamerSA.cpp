@@ -57,7 +57,6 @@ static void __cdecl _CBuilding__RemoveReferences( CBuildingSAInterface *building
         }
     }
 
-#ifdef _TRY_OTHER_FIX
     for ( unsigned int n = 0; n < NUM_StreamRepeatSectorRows * NUM_StreamRepeatSectorCols; n++ )
     {
         streamRepeatSectorEntry *entry = (streamRepeatSectorEntry*)ARRAY_StreamRepeatSectors + n;
@@ -75,7 +74,6 @@ static void __cdecl _CBuilding__RemoveReferences( CBuildingSAInterface *building
             streamEntry = streamEntry->next;
         }
     }
-#endif
 }
 
 static void __declspec(naked) _CBuilding__Delete()

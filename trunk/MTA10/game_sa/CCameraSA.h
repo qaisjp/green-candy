@@ -85,12 +85,9 @@ public:
 
 /*** END PURE R* CLASSES ***/
 
-class CCameraSAInterface
+class CCameraSAInterface : public CPlaceableSAInterface
 {
 public:
-    BYTE    m_padpad[20];
-    unsigned int    m_lastRenderCount;
-
     bool __thiscall     IsSphereVisible( const CVector& pos, float radius, void *unk );
 
     //move these out the class, have decided to set up a mirrored enumerated type thingy at the top
@@ -441,6 +438,8 @@ public:
     void                        SetCameraClip( bool ibjects, bool vehicles );
     unsigned char               GetCameraViewMode() const;
     void                        SetCameraViewMode( unsigned char mode );
+
+    bool                        IsSphereVisible( const RwSphere& sphere ) const;
 };
 
 #endif

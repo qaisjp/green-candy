@@ -456,6 +456,15 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
     LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
     LoadCollisionModelVer4              = (LoadCollisionModelVer4_t)                0x00537AE0;
     CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
+
+    // Initialize sub modules
+    RenderWareMem_Init();
+}
+
+CRenderWareSA::~CRenderWareSA( void )
+{
+    // Shutdown sub modules
+    RenderWareMem_Shutdown();
 }
 
 // Reads and parses a DFF file specified by a path into a CModelInfo identified by the object id
@@ -658,6 +667,17 @@ CRwCamera* CRenderWareSA::CreateCamera( int width, int height )
     CRwCameraSA *cam = new CRwCameraSA( RwCameraCreate() );
     cam->SetRenderSize( width, height );
     return cam;
+}
+
+CModel* CRenderWareSA::CreateClump()
+{
+    RpClump *clump = RpClumpCreate();
+    RwFrame *frame = RwFrameCreate();
+    clump->m_parent = frame;
+
+    CModelSA *model = new CModelSA( clump, NULL );
+    pGame->GetModelManager()->m_models.push_back( model );
+    return model;
 }
 
 bool CRenderWareSA::IsRendering() const

@@ -368,6 +368,11 @@ void CEntitySA::SetAlpha( unsigned char alpha )
     GetInterface()->SetAlpha( alpha );
 }
 
+float CEntitySA::GetFadingAlpha( void ) const
+{
+    return GetInterface()->GetFadingAlpha();
+}
+
 bool CEntitySA::IsOnScreen() const
 {
     return GetInterface()->IsOnScreen();

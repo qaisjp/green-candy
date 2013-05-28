@@ -350,6 +350,16 @@ void CModelInfoSA::RestreamIPL()
     MapSet( ms_RestreamTxdIDMap, GetTextureDictionaryID(), 0 );
 }
 
+// Used to validate an entity pointer
+static bool _ValidateEntity( CEntitySAInterface *entity )
+{
+   return (*ppBuildingPool)->Get( (*ppBuildingPool)->GetIndex( (CBuildingSAInterface*)entity ) ) != NULL ||
+          (*ppPedPool)->Get( (*ppPedPool)->GetIndex( (CPedSAInterface*)entity ) ) != NULL ||
+          (*ppVehiclePool)->Get( (*ppVehiclePool)->GetIndex( (CVehicleSAInterface*)entity ) ) != NULL ||
+          (*ppObjectPool)->Get( (*ppObjectPool)->GetIndex( (CObjectSAInterface*)entity ) ) != NULL ||
+          (*ppDummyPool)->Get( (*ppDummyPool)->GetIndex( (CDummySAInterface*)entity ) ) != NULL;
+}
+
 void CModelInfoSA::StaticFlushPendingRestreamIPL()
 {
     if ( ms_RestreamTxdIDMap.empty() )
@@ -368,6 +378,9 @@ void CModelInfoSA::StaticFlushPendingRestreamIPL()
         while ( pSectorEntry )
         {
             CEntitySAInterface *pEntity = (CEntitySAInterface*)pSectorEntry[0];
+
+            if ( !_ValidateEntity( pEntity ) )
+                __asm int 3
 
             if ( MapContains( ms_RestreamTxdIDMap, pGame->GetModelInfo( pEntity->m_model )->GetTextureDictionaryID () ) )
             {
@@ -390,6 +403,10 @@ void CModelInfoSA::StaticFlushPendingRestreamIPL()
         while ( pSectorEntry )
         {
             CEntitySAInterface* pEntity = (CEntitySAInterface *)pSectorEntry [ 0 ];
+
+            if ( !_ValidateEntity( pEntity ) )
+                __asm int 3
+
             if ( MapContains ( ms_RestreamTxdIDMap, pGame->GetModelInfo ( pEntity->m_model )->GetTextureDictionaryID () ) )
             {
                 if ( !IS_FLAG( pEntity->m_entityFlags, ENTITY_DISABLESTREAMING ) && !IS_FLAG( pEntity->m_entityFlags, ENTITY_RENDERING ) )

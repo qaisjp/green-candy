@@ -129,7 +129,7 @@ static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
 
         lua_call( L, lua_gettop( L ) - 1, LUA_MULTRET );
 
-		L->errorCode = 0;	// we gracefully quit :)
+	    L->errorCode = 0;	// we gracefully quit :)
     }
     catch( lua_exception& e )
     {
@@ -138,11 +138,11 @@ static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
             // We do not need any stack values
             lua_settop( L, 0 );
 
-			L->errorCode = LUA_ERRSYS;
+		    L->errorCode = LUA_ERRSYS;
         }
         else
         {
-			L->errorCode = e.status();
+		    L->errorCode = e.status();
 
             luaD_seterrorobj( L, L->errorCode, L->top );
             L->ci->top = L->top;
@@ -152,15 +152,28 @@ static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
     {
         lua_settop( L, 0 );
 
-		L->errorCode = e.status();
+	    L->errorCode = e.status();
     }
     catch( ... )
     {
         lua_settop( L, 0 );
 
-		L->errorCode = LUA_ERRSYS;
+	    L->errorCode = LUA_ERRSYS;
     }
 }
+
+static void __stdcall luaE_guardedThreadEntryPoint( lua_Thread *L )
+{
+    __try
+    {
+        luaE_threadEntryPoint( L );
+    }
+    __except( 1 )
+    {
+        __asm int 3
+    }
+}
+
 
 lua_Thread::lua_Thread()
 {
@@ -239,7 +252,7 @@ bool lua_Thread::AllocateRuntime()
     if ( fiber )
         return true;
 
-    fiber = luaX_newfiber( this, 0, luaE_threadEntryPoint );
+    fiber = luaX_newfiber( this, 0, luaE_guardedThreadEntryPoint );
     
     if ( fiber != NULL )
     {

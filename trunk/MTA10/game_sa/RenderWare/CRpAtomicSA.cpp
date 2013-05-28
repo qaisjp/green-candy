@@ -60,8 +60,13 @@ void CRpAtomicSA::Render()
 
     RpAtomic *atom = GetObject();
 
-    m_frame->GetObject()->GetLTM();  // Possible update the world position
+    m_frame->GetObject()->GetLTM();  // Possibly update the world position
     atom->m_renderCallback( atom );
+}
+
+void CRpAtomicSA::GetWorldSphere( RwSphere& out )
+{
+    out = GetObject()->GetWorldBoundingSphere();
 }
 
 void CRpAtomicSA::AddToModel( CModel *model )

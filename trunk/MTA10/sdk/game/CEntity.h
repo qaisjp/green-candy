@@ -100,6 +100,9 @@ public:
 
     virtual void                        SetAlpha( unsigned char alpha ) = 0;
 
+    virtual bool                        IsFading( void ) const = 0;
+    virtual float                       GetFadingAlpha( void ) const = 0;
+
     virtual void*                       GetStoredPointer() const = 0;
     virtual void                        SetStoredPointer( void *pointer ) = 0;
 

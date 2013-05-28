@@ -71,6 +71,16 @@ static LUA_DECLARE( render )
     return 0;
 }
 
+static LUA_DECLARE( getWorldSphere )
+{
+    RwSphere sphere;
+    ((CClientAtomic*)lua_getmethodtrans( L ))->m_atomic.GetWorldSphere( sphere );
+
+    lua_pushnumber( L, sphere.pos[0] ); lua_pushnumber( L, sphere.pos[1] ); lua_pushnumber( L, sphere.pos[2] );
+    lua_pushnumber( L, sphere.radius );
+    return 4;
+}
+
 static LUA_DECLARE( replaceModel )
 {
     unsigned short model;
@@ -138,6 +148,7 @@ static luaL_Reg atomic_interface_trans[] =
     LUA_METHOD( setClump ),
     LUA_METHOD( getClump ),
     LUA_METHOD( render ),
+    LUA_METHOD( getWorldSphere ),
     LUA_METHOD( replaceModel ),
     LUA_METHOD( isReplaced ),
     LUA_METHOD( getReplaced ),

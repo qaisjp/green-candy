@@ -307,6 +307,23 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( engineCreateClump )
+    {
+        CResource *res = lua_readcontext( L )->GetResource();
+        CModel *model = g_pGame->GetRenderWare()->CreateClump();
+
+        if ( !model )
+        {
+            lua_pushboolean( L, false );
+            return 1;
+        }
+
+        CClientDFF *dff = new CClientDFF( L, *model, res );
+        dff->PushStack( L );
+        dff->DisableKeepAlive();
+        return 1;
+    }
+
     LUA_DECLARE( engineIsRendering )
     {
         lua_pushboolean( L, g_pGame->GetRenderWare()->IsRendering() );

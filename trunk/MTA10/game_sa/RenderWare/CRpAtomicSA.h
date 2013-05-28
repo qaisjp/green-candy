@@ -30,6 +30,8 @@ public:
 
     void                            Render();
 
+    void                            GetWorldSphere( RwSphere& out );
+
     eRwType                         GetType() const                 { return RW_ATOMIC; }
     bool                            IsFrameExtension() const        { return true; }
 
