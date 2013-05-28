@@ -12,6 +12,8 @@
 
 #include "StdInc.h"
 
+extern CBaseModelInfoSAInterface **ppModelInfo;
+
 void __cdecl HOOK_InitRenderChains( void )
 {
     new ((void*)0x00C88070) atomicRenderChain_t( 50 );      // vehicleRenderChains, orig 20
@@ -190,10 +192,157 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     entity->RemoveLighting( id );
 }
 
+static float CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistanceSq )
+{
+    float sectorDivide = 20.0f;
+    float distAway = info->pColModel->m_bounds.fRadius + *(float*)0x00B76848;
+    float scaledLODDistance = info->fLodDistanceUnscaled * *(float*)0x00B6F118;
+
+    float useDist = distAway;
+
+    if ( scaledLODDistance < distAway )
+        useDist = scaledLODDistance;
+
+    if ( !entity->m_lod )
+    {
+        float useDist2 = info->fLodDistanceUnscaled;
+
+        if ( info->fLodDistanceUnscaled > useDist )
+            useDist2 = useDist;
+
+        if ( useDist2 > 150.0f )
+            sectorDivide = useDist2 * 0.06666667f + 10.0f;
+
+        if ( entity->m_entityFlags & ENTITY_BIG )
+            useDist *= *(float*)0x008CD804;
+    }
+
+    useDist += 20.0f;
+    useDist -= camDistanceSq;
+    useDist /= sectorDivide;
+
+    if ( useDist < 0.0f )
+        return 0;
+
+    if ( useDist > 1.0f )
+        useDist = 1;
+
+    return useDist * info->ucAlpha;
+}
+
+float CEntitySAInterface::GetFadingAlpha( void ) const
+{
+    const CVector& pos = Placeable.GetPosition();
+
+    float camDistance = ( pGame->GetCamera()->GetInterface()->Placeable.GetPosition() - pos ).Length();
+    float camDistance2 = ( *pGame->GetCamera()->GetCam( pGame->GetCamera()->GetActiveCam() )->GetSource() - pos ).Length();
+    float camDistance3 = ( *(CVector*)0x00B76870 - pos ).Length();
+
+    unsigned char alpha1 = (unsigned char)CalculateFadingAlpha( ppModelInfo[m_model], this, camDistance );
+
+    unsigned char alpha2 = ((unsigned char (__cdecl*)( CBaseModelInfoSAInterface*, const CEntitySAInterface*, float ))0x00732500)( ppModelInfo[m_model], this, camDistance );
+
+    return alpha1;
+}
+
+inline void InitModelRendering( CBaseModelInfoSAInterface *info )
+{
+    if ( info->renderFlags & RENDER_ADDITIVE )
+        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)11, 2 );
+}
+
+inline void ShutdownModelRendering( CBaseModelInfoSAInterface *info )
+{
+    if ( info->renderFlags & RENDER_ADDITIVE )
+        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)11, 6 );
+}
+
+static void __cdecl RenderAtomicWithAlpha( CBaseModelInfoSAInterface *info, RpAtomic *atom, unsigned int alpha )
+{
+    InitModelRendering( info );
+
+    RpAtomicRenderAlpha( atom, alpha );
+
+    ShutdownModelRendering( info );
+}
+
+static void __cdecl RenderClumpWithAlpha( CBaseModelInfoSAInterface *info, RpClump *clump, unsigned int alpha )
+{
+    InitModelRendering( info );
+
+    LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
+        if ( item->IsVisible() )
+            RpAtomicRenderAlpha( item, alpha );
+    LIST_FOREACH_END
+
+    ShutdownModelRendering( info );
+}
+
+static void __cdecl DefaultRenderEntityHandler( CEntitySAInterface *entity, float camDistance )
+{
+    RwObject *rwobj = entity->m_rwObject;
+
+    if ( !rwobj )
+        return;
+
+    CBaseModelInfoSAInterface *info = ppModelInfo[entity->m_model];
+
+    if ( info->renderFlags & RENDER_NOSHADOW )
+        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)8, 0 );
+
+    if ( entity->m_entityFlags & ENTITY_FADE )
+    {
+        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)30, 0 );
+
+        unsigned int alpha = (unsigned char)CalculateFadingAlpha( info, entity, camDistance );
+
+        if ( CObjectSA *obj = pGame->GetPools()->GetObject( entity ) )
+            __asm nop
+
+        unsigned int flags = entity->m_entityFlags;
+        flags |= ENTITY_RENDERING;
+
+        entity->m_entityFlags = flags;
+
+        if ( flags & ENTITY_BACKFACECULL )
+            (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)20, 1 );
+
+        unsigned char lightIndex = entity->SetupLighting();
+
+        if ( rwobj->m_type == RW_ATOMIC )
+            RenderAtomicWithAlpha( info, (RpAtomic*)rwobj, alpha );
+        else
+            RenderClumpWithAlpha( info, (RpClump*)rwobj, alpha );
+
+        entity->RemoveLighting( lightIndex );
+
+        flags &= ~ENTITY_RENDERING;
+        entity->m_entityFlags = flags;
+
+        if ( flags & ENTITY_BACKFACECULL )
+            (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+
+        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)30, 100 );
+    }
+    else
+    {
+        if ( !*(unsigned int*)VAR_currArea && info->renderFlags & RENDER_NOSHADOW )
+            (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)30, 100 );
+        else
+            (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)30, 0 );
+
+        RenderEntity( entity );
+    }
+
+    if ( info->renderFlags & RENDER_NOSHADOW )
+        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)8, 1 );
+}
+
 void EntityRender_Init( void )
 {
     // Do some interesting patches
     HookInstall( 0x00733A20, (DWORD)HOOK_InitRenderChains, 5 );
+    HookInstall( 0x00732B40, (DWORD)DefaultRenderEntityHandler, 5 );
     HookInstall( 0x00553260, (DWORD)RenderEntity, 5 );
 }
 

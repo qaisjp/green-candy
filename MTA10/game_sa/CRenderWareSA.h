@@ -25,12 +25,13 @@ class CRenderWareSA : public CRenderWare
 {
 public:
                         CRenderWareSA( enum eGameVersion version );
-                        ~CRenderWareSA()    {}
+                        ~CRenderWareSA();
 
     RwMatrix*           AllocateMatrix();
     CRpLight*           CreateLight( RpLightType type );
     CRwFrame*           CreateFrame();
     CRwCamera*          CreateCamera( int width, int height );
+    CModel*             CreateClump();
 
     bool                IsRendering() const;
 
@@ -45,7 +46,9 @@ public:
 
 extern IDirect3DDevice9 *const *g_renderDevice;
 
+// Include sub modules
 #include "CRenderWareSA.rwapi.h"
 #include "CRenderWareSA.pipeline.h"
+#include "CRenderWareSA.mem.h"
 
 #endif

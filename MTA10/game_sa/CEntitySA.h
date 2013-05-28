@@ -127,6 +127,8 @@ public:
     const CVector& __thiscall       GetCollisionOffset      ( CVector& out ) const;
     const CBounds2D& __thiscall     _GetBoundingBox         ( CBounds2D& out ) const;
 
+    float                           GetFadingAlpha          ( void ) const;
+
     bool __thiscall                 IsOnScreen              ( void ) const;
 
     void __thiscall                 UpdateRwMatrix          ( void );
@@ -229,6 +231,9 @@ public:
     void                        SetBackfaceCulled( bool enabled )               { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_BACKFACECULL, enabled ); }
 
     void                        SetAlpha( unsigned char alpha );
+
+    bool                        IsFading( void ) const                          { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_FADE ); }
+    float                       GetFadingAlpha( void ) const;
 
     void                        MatrixConvertFromEulerAngles( float x, float y, float z, int unk );
     void                        MatrixConvertToEulerAngles( float& x, float& y, float& z, int unk ) const;

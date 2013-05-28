@@ -78,6 +78,8 @@ public:
 
     void                        UnreferencePlayer( CClientPlayer *player );
 
+    bool                        IsSphereVisible( const RwSphere& sphere ) const;
+
 private:
                                 CClientCamera( CClientManager *manager );
                                 ~CClientCamera();

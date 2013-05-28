@@ -13,6 +13,26 @@
 
 #include <StdInc.h>
 
+static LUA_DECLARE( isFading )
+{
+    CEntity *entity = ((CClientGameEntity*)lua_getmethodtrans( L ))->GetGameEntity();
+
+    lua_pushboolean( L, entity && entity->IsFading() );
+    return 1;
+}
+
+static LUA_DECLARE( getFadingAlpha )
+{
+    CEntity *entity = ((CClientGameEntity*)lua_getmethodtrans( L ))->GetGameEntity();
+
+    if ( !entity )
+        lua_pushboolean( L, false );
+    else
+        lua_pushnumber( L, entity->GetFadingAlpha() );
+
+    return 1;
+}
+
 static LUA_DECLARE( setColModel )
 {
     CClientColModel *col;
@@ -52,6 +72,8 @@ static LUA_DECLARE( replaceTexture )
 
 static luaL_Reg gameentity_interface_trans[] =
 {
+    LUA_METHOD( isFading ),
+    LUA_METHOD( getFadingAlpha ),
     LUA_METHOD( setColModel ),
     LUA_METHOD( getColModel ),
     LUA_METHOD( replaceTexture ),

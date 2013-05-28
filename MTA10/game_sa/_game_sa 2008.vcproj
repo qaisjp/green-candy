@@ -743,6 +743,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CRenderWareSA.mem.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CRenderWareSA.pipeline.cpp"
 				>
 			</File>
@@ -1481,6 +1485,10 @@
 			</File>
 			<File
 				RelativePath=".\CRenderWareSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.mem.h"
 				>
 			</File>
 			<File

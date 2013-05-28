@@ -510,3 +510,8 @@ void CCameraSA::SetCameraViewMode( unsigned char mode )
 {
     *(unsigned char*)VAR_VehicleCameraView = mode;
 }
+
+bool CCameraSA::IsSphereVisible( const RwSphere& sphere ) const
+{
+    return m_interface->IsSphereVisible( sphere.pos, sphere.radius, (void*)0x00B6FA74 );
+}

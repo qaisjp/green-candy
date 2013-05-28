@@ -17,6 +17,7 @@
 class CModelManagerSA : public CModelManager
 {
     friend class CModelSA;
+    friend class CRenderWareSA;
 public:
                                 CModelManagerSA     ( void );
                                 ~CModelManagerSA    ( void );

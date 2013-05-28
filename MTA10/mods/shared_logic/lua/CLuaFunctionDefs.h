@@ -445,6 +445,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineCreateLight );
     LUA_DECLARE( engineCreateFrame );
     LUA_DECLARE( engineCreateCamera );
+    LUA_DECLARE( engineCreateClump );
     LUA_DECLARE( engineIsRendering );
     LUA_DECLARE( engineImportTXD );
     LUA_DECLARE( engineReplaceCOL );

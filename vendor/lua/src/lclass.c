@@ -203,10 +203,15 @@ void ClassOutEnvDispatch::NewIndex( lua_State *L, const TValue *key, StkId val )
     luaC_barriert( L, m_class->storage, val );
 }
 
+__forceinline void class_checkEnvIndex( lua_State *L, Class *j )
+{
+    if ( j->destroyed )
+        throw lua_exception( L, LUA_ERRRUN, "attempt to index the environment of a destroyed class" );
+}
+
 void ClassEnvDispatch::Index( lua_State *L, const TValue *key, StkId value )
 {
-    if ( m_class->destroyed )
-        throw lua_exception( L, LUA_ERRRUN, "attempt to index the environment of a destroyed class" );
+    class_checkEnvIndex( L, m_class );
 
     const TValue *val = m_class->GetEnvValue( L, key );
 
@@ -1104,12 +1109,15 @@ static Closure* classmethod_fsDestroyHandlerNative( lua_State *L, lua_CFunction 
 
 void ClassMethodDispatch::Index( lua_State *L, const TValue *key, StkId val )
 {
-    const TValue *res = m_class->GetEnvValue( L, key );
-
-    if ( ttype( res ) != LUA_TNIL )
+    if ( !m_class->IsDestroyed() )
     {
-        setobj( L, val, res );
-        return;
+        const TValue *res = m_class->GetEnvValue( L, key );
+
+        if ( ttype( res ) != LUA_TNIL )
+        {
+            setobj( L, val, res );
+            return;
+        }
     }
 
     m_prevEnv->Index( L, key, val );
@@ -1117,6 +1125,8 @@ void ClassMethodDispatch::Index( lua_State *L, const TValue *key, StkId val )
 
 void ClassMethodDispatch::NewIndex( lua_State *L, const TValue *key, StkId val )
 {
+    class_checkEnvIndex( L, m_class );
+
     m_class->env->NewIndex( L, key, val );
 }
 

@@ -450,6 +450,7 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineCreateLight );
     LUA_REGISTER( L, engineCreateFrame );
     LUA_REGISTER( L, engineCreateCamera );
+    LUA_REGISTER( L, engineCreateClump );
     LUA_REGISTER( L, engineIsRendering );
     LUA_REGISTER( L, engineImportTXD );
     LUA_REGISTER( L, engineReplaceCOL );

@@ -789,11 +789,53 @@ public:
     bool                    IsAlpha();
     void                    UnlinkFX();
 };
-class RwStructInfo
+
+#define ALIGN( num, sector, align ) (((num) + (sector) - 1) & (~((align) - 1)))
+
+struct RwFreeListMemBlock
 {
-public:
-    size_t                  m_size;
+    RwListEntry <RwFreeListMemBlock>    list;
+
+    unsigned char*  GetMetaData( void )
+    {
+        return (unsigned char*)( this + 1 );
+    }
+
+    static inline void SetBlockUsed( unsigned char *meta, unsigned int idx, bool used )
+    {
+        if ( used )
+            meta[idx / 8] |= 0x80 >> (idx % 8);
+        else
+            meta[idx / 8] &= ~(0x80 >> (idx % 8));
+    }
+
+    void SetBlockUsed( unsigned int idx, bool used = true )
+    {
+        SetBlockUsed( GetMetaData(), idx, used );
+    }
+
+    void* GetBlockPointer( unsigned int index, size_t blockSize, size_t alignment, size_t metaDataSize )
+    {
+        return (void*)( ALIGN( (unsigned int)this + alignment + metaDataSize, 8, alignment ) + index * blockSize );
+    }
 };
+
+#define RWALLOC_SELFCONSTRUCT   0x01
+#define RWALLOC_RUNTIME         0x02
+
+struct RwFreeList
+{
+    size_t                          m_blockSize;    // 0
+    unsigned int                    m_blockCount;   // 4
+    size_t                          m_metaDataSize; // 8
+    size_t                          m_alignment;    // 12
+    RwList <RwFreeListMemBlock>     m_memBlocks;    // 16
+    unsigned int                    m_flags;        // 24
+    RwListEntry <RwFreeList>        m_globalLists;  // 28
+};
+
+typedef RwFreeList RwStructInfo;    // I leave this for understanding purposes.
+
 class RwScene : public RwObject
 {
 public:
@@ -900,12 +942,12 @@ public:
     size_t                  (*m_strlen)( const char *str );                 // 288
     BYTE                    m_pad19[16];                                    // 292
 
-    void*                   (*m_malloc)( size_t size );                     // 308
+    void*                   (*m_malloc)( size_t size, unsigned int flags ); // 308
     void                    (*m_free)( void *data );                        // 312
     void*                   (*m_realloc)( void *data, size_t size );        // 316
     void*                   (*m_calloc)( unsigned int count, size_t size ); // 320
     void*                   (*m_allocStruct)( RwStructInfo *info, unsigned int flags ); // 324
-    void*                   m_callback2;                                    // 328
+    void*                   (*m_freeStruct)( RwStructInfo *info, void *ptr );   // 328
 
     BYTE                    m_pad2[12];                                     // 332
     RwError                 m_errorInfo;                                    // 344
