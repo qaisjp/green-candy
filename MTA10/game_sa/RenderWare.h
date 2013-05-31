@@ -236,20 +236,24 @@ public:
 class RwObjectFrame : public RwObject
 {
 public:
+    typedef void (__cdecl*syncCallback_t)( RwObject *obj );
+
     RwListEntry <RwObjectFrame>     m_lFrame;
-    void*                           m_callback;
+    syncCallback_t                  m_callback;
 
     void                    AddToFrame( RwFrame *frame );
     void                    RemoveFromFrame();
 };
 
 // Private flags
-#define RW_FRAME_DIRTY  0x01
+#define RW_FRAME_DIRTY          0x01    // needs updating in RwFrameSyncDirty
+#define RW_FRAME_UPDATEMATRIX   0x04    // modelling will be copied to LTM
+#define RW_FRAME_UPDATEFLAG     ( RW_FRAME_DIRTY | 2 )
 
 class RwFrame : public RwObject
 {
 public:
-    RwListEntry <RwFrame>   m_nodeRoot;         // 8
+    RwListEntry <RwFrame>   m_nodeRoot;         // 8, node in dirty list
     RwMatrix                m_modelling;        // 16
     RwMatrix                m_ltm;              // 80
     RwList <RwObjectFrame>  m_objects;          // 144
@@ -342,10 +346,14 @@ public:
     void                    SetAtomicComponentFlags( unsigned short flags );
     void                    FindComponentAtomics( RpAtomic **okay, RpAtomic **damaged );
 
+    bool                    IsWaitingForUpdate( void ) const                { return IS_ANY_FLAG( m_privateFlags, RW_FRAME_UPDATEFLAG ); }
+    void                    SetUpdating( bool flag )                        { BOOL_FLAG( m_privateFlags, RW_FRAME_UPDATEFLAG, flag ); }
+
     RpAnimHierarchy*        GetAnimHierarchy();
-    void                    _RegisterRoot();
-    void                    RegisterRoot();
-    void                    UnregisterRoot();
+    void                    _Update( RwList <RwFrame>& list );
+    void                    Update();
+    void                    UpdateMTA();
+    void                    ThrowUpdate();
 };
 class RwTexDictionary : public RwObject
 {
@@ -926,7 +934,7 @@ public:
     RwReadTexture_t         m_readTexture;                                  // 176, actual internal texture reader
 
     BYTE                    m_pad17[8];                                     // 180
-    RwList <RwFrame>        m_nodeRoot;                                     // 188
+    RwList <RwFrame>        m_nodeRoot;                                     // 188, list of dirty frames
 
     BYTE                    m_pad6[24];                                     // 196
     

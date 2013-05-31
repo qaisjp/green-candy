@@ -164,7 +164,7 @@ void CEntitySAInterface::UpdateRwFrame( void )
     if ( !m_rwObject )
         return;
 
-    m_rwObject->m_parent->RegisterRoot();
+    m_rwObject->m_parent->Update();
 }
 
 void Entity_Init( void )

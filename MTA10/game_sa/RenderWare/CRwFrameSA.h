@@ -34,7 +34,7 @@ public:
     objectList_t&                   GetObjects()                        { return m_objects; }
     childList_t&                    GetChildren()                       { return m_children; }
 
-    void                            SetLTM( const RwMatrix& mat )       { GetObject()->m_ltm = mat; }
+    void                            SetLTM( const RwMatrix& mat )       { GetObject()->m_ltm = mat; }   // todo: synchronize objects and children frames.
     const RwMatrix&                 GetLTM() const                      { return GetObject()->m_ltm; }
 
     void                            SetModelling( const RwMatrix& mat ) { GetObject()->SetModelling( mat ); }

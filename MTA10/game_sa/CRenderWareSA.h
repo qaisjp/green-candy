@@ -50,5 +50,6 @@ extern IDirect3DDevice9 *const *g_renderDevice;
 #include "CRenderWareSA.rwapi.h"
 #include "CRenderWareSA.pipeline.h"
 #include "CRenderWareSA.mem.h"
+#include "CRenderWareSA.render.h"
 
 #endif

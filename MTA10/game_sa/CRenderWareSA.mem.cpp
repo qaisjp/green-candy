@@ -139,7 +139,6 @@ unsigned int __cdecl RwFreeListGetFlags( RwFreeList *list )
     return list->m_flags;
 }
 
-#define IS_ANY_FLAG( num, flag ) ( ( (num) & (flag) ) != 0 )
 #define REVERSE_BIT_FIELD( cnt ) ( 0x80 >> (cnt) )
 #define IS_BIT_SET_REVERSE( num, cnt ) ( IS_ANY_FLAG( (num), REVERSE_BIT_FIELD( cnt ) ) )
 

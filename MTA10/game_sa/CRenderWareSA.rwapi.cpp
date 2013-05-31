@@ -47,20 +47,22 @@ void RwObjectFrame::RemoveFromFrame()
     m_parent = NULL;
 }
 
+// MTA function!
 void RwFrame::SetModelling( const RwMatrix& mat )
 {
     m_modelling = mat;
 
-    // Set the frame to dirty
-    m_privateFlags |= RW_FRAME_DIRTY;
+    // Update this frame
+    UpdateMTA();
 }
 
+// MTA function!
 void RwFrame::SetPosition( const CVector& pos )
 {
     m_modelling.pos = pos;
 
-    // Set the frame to dirty
-    m_privateFlags |= RW_FRAME_DIRTY;
+    // Update this frame
+    UpdateMTA();
 }
 
 const RwMatrix& RwFrame::GetLTM()
@@ -81,10 +83,10 @@ void RwFrame::Link( RwFrame *frame )
     frame->m_parent = this;
 
     frame->SetRootForHierarchy( m_root );
-    frame->UnregisterRoot();
+    frame->ThrowUpdate();    // make sure it is not inside the update queue anymore
 
-    // Mark the main root as independent
-    m_root->RegisterRoot();
+    // We need to update the child
+    frame->Update();
 }
 
 void RwFrame::Unlink()
@@ -109,8 +111,8 @@ void RwFrame::Unlink()
 
     SetRootForHierarchy( this );
 
-    // Mark as independent
-    RegisterRoot();
+    // Update this frame, as it became independent
+    Update();
 }
 
 void RwFrame::SetRootForHierarchy( RwFrame *root )
@@ -230,8 +232,8 @@ RwFrame* RwFrame::CloneRecursive() const
     if ( !cloned )
         return NULL;
 
-    cloned->m_privateFlags &= ~( RW_OBJ_REGISTERED | RW_FRAME_DIRTY );
-    cloned->RegisterRoot();
+    cloned->SetUpdating( false );
+    cloned->Update();
     return cloned;
 }
 
@@ -413,33 +415,47 @@ RpAnimHierarchy* RwFrame::GetAnimHierarchy()
     return anim;
 }
 
-void RwFrame::_RegisterRoot()
+static void RwFrameCheckUpdateNode( void )
+{
+    LIST_FOREACH_BEGIN( RwFrame, (*ppRwInterface)->m_nodeRoot.root, m_nodeRoot )
+        if ( !LIST_ISVALID( *iter ) )
+            __asm int 3
+    LIST_FOREACH_END
+}
+
+void RwFrame::_Update( RwList <RwFrame>& list )
 {
     unsigned char flagIntegrity = m_privateFlags;
 
-    if ( !( flagIntegrity & ( RW_OBJ_REGISTERED | RW_FRAME_DIRTY ) ) )
+    if ( !( flagIntegrity & RW_FRAME_UPDATEFLAG ) )
     {
         // Add it to the internal list
-        LIST_INSERT( pRwInterface->m_nodeRoot.root, m_nodeRoot );
+        LIST_INSERT( list.root, m_nodeRoot );
     }
 
-    m_privateFlags = ( flagIntegrity | ( RW_OBJ_REGISTERED | RW_FRAME_DIRTY ) );
+    m_privateFlags = ( flagIntegrity | RW_FRAME_UPDATEFLAG );
 }
 
-void RwFrame::RegisterRoot()
+void RwFrame::Update()
 {
-    m_root->_RegisterRoot();
-    m_privateFlags |= RW_OBJ_VISIBLE | RW_OBJ_HIERARCHY_CACHED;
+    m_root->_Update( (*ppRwInterface)->m_nodeRoot );
+    m_privateFlags |= RW_FRAME_UPDATEMATRIX | 8;
 }
 
-void RwFrame::UnregisterRoot()
+void RwFrame::UpdateMTA()
 {
-    if ( !( m_privateFlags & ( RW_OBJ_REGISTERED | 0x01 ) ) )
+    m_root->_Update( RwFrameGetDirtyList_MTA() );
+    m_privateFlags |= RW_FRAME_UPDATEMATRIX | 8;
+}
+
+void RwFrame::ThrowUpdate()
+{
+    if ( !IsWaitingForUpdate() )
         return;
 
     LIST_REMOVE( m_nodeRoot );
 
-    m_privateFlags &= ~(RW_OBJ_REGISTERED | 1);
+    SetUpdating( false );
 }
 
 RwTexDictionary* RwTexDictionaryCreate( void )
@@ -536,7 +552,7 @@ RwCamera* RwCameraCreate()
     cam->m_privateFlags = 0;
     cam->m_parent = NULL;
 
-    cam->m_callback = (void*)0x007EE5A0;
+    cam->m_callback = (RwObjectFrame::syncCallback_t)0x007EE5A0;
     cam->m_preCallback = (RwCameraPreCallback)0x007EF370;
     cam->m_postCallback = (RwCameraPostCallback)0x007EF340;
 
@@ -759,7 +775,7 @@ void RpLight::AddToScene_Local( RwScene *scene )
     m_scene = scene;
 
     if ( scene->m_parent )
-        scene->m_parent->RegisterRoot();
+        scene->m_parent->Update();
 
     LIST_INSERT( scene->m_localLights.root, m_sceneLights );
 }
@@ -780,19 +796,11 @@ void RpLight::RemoveFromScene()
     RwSceneRemoveLight( m_scene, this );
 }
 
-static CVector pos;
-
 void RpClump::Render()
 {
     LIST_FOREACH_BEGIN( RpAtomic, m_atomics.root, m_atomics )
         if ( item->IsVisible() )
-        {
-            item->m_parent->GetLTM();   // Possibly update it's world position
             item->m_renderCallback( item );
-
-            pos = item->m_parent->GetModelling().pos;
-            pos = item->m_parent->GetLTM().pos;
-        }
     LIST_FOREACH_END
 }
 
@@ -1154,6 +1162,7 @@ RwError* RwSetError( RwError *info )
 
 static void* _lightCallback( void *ptr )
 {
+    // Nothing to synchronize for lights!
     return ptr;
 }
 
@@ -1171,7 +1180,7 @@ RpLight* RpLightCreate( unsigned char type )
     light->m_color.g = 0;
     light->m_color.b = 0;
 
-    light->m_callback = (void*)_lightCallback;
+    light->m_callback = (RwObjectFrame::syncCallback_t)_lightCallback;
     light->m_flags = 0;
     light->m_parent = NULL;
 
