@@ -457,7 +457,7 @@ void CVehicleModelInfoSAInterface::Setup( void )
             // Put all objects into the base frame
             hier->ForAllChildren( RwFrameChildBaseHierarchy, hier );
 
-            hier->RegisterRoot();
+            hier->Update();
 
             hier->FindComponentAtomics( &primary, &secondary );
 
@@ -497,7 +497,7 @@ void CVehicleModelInfoSAInterface::Setup( void )
                 // Put all objects into the base frame
                 hier->ForAllChildren( RwFrameChildBaseHierarchy, hier );
 
-                hier->RegisterRoot();
+                hier->Update();
 
                 //obj1->SetRenderCallback( NULL );
             }
@@ -612,7 +612,7 @@ void CVehicleModelInfoSAInterface::RegisterRoot( void )
     RwFrameOrient( frame, 60, 0, normal );
 
     // The vehicle root frame is not a child frame
-    frame->RegisterRoot();
+    frame->Update();
 
     // Cache the matrix
     frame->GetLTM();

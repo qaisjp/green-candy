@@ -459,11 +459,13 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
 
     // Initialize sub modules
     RenderWareMem_Init();
+    RenderWareRender_Init();
 }
 
 CRenderWareSA::~CRenderWareSA( void )
 {
     // Shutdown sub modules
+    RenderWareRender_Shutdown();
     RenderWareMem_Shutdown();
 }
 
@@ -654,7 +656,7 @@ CRpLight* CRenderWareSA::CreateLight( RpLightType type )
 CRwFrame* CRenderWareSA::CreateFrame()
 {
     RwFrame *frame = RwFrameCreate();
-    frame->RegisterRoot();  // We belong to RenderWare directly
+    frame->Update();    // synchronize us
 
     return new CRwFrameSA( frame );
 }

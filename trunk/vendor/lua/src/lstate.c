@@ -162,13 +162,23 @@ static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
     }
 }
 
+static int guard_code;
+static _EXCEPTION_POINTERS *guard_exception;
+
+static int guard_filter( int exceptCode, struct _EXCEPTION_POINTERS *exceptInfo )
+{
+    guard_code = exceptCode;
+    guard_exception = exceptInfo;
+    return 1;
+}
+
 static void __stdcall luaE_guardedThreadEntryPoint( lua_Thread *L )
 {
     __try
     {
         luaE_threadEntryPoint( L );
     }
-    __except( 1 )
+    __except( guard_filter( GetExceptionCode(), GetExceptionInformation() ) )
     {
         __asm int 3
     }

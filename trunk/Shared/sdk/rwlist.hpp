@@ -11,7 +11,8 @@
 *****************************************************************************/
 
 // Macros used by RW, taken from SGU :)
-#define LIST_VALIDATE(item) ( assert( (item).next->prev == &(item) && (item).prev->next == &(item) ) )
+#define LIST_ISVALID(item) ( (item).next->prev == &(item) && (item).prev->next == &(item) )
+#define LIST_VALIDATE(item) ( assert( LIST_ISVALID( (item) ) ) )
 #define LIST_APPEND(link, item) ( (item).next = &(link), (item).prev = (link).prev, (item).prev->next = &(item), (item).next->prev = &(item) )
 #define LIST_INSERT(link, item) ( (item).next = (link).next, (item).prev = &(link), (item).prev->next = &(item), (item).next->prev = &(item) )
 #define LIST_REMOVE(link) ( (link).prev->next = (link).next, (link).next->prev = (link).prev )

@@ -78,7 +78,7 @@ CModelSA::CModelSA( RpClump *clump, CColModelSA *col ) : CRwObjectSA( clump )
     // Assign the frame hierarchy
     m_frame = new CRwFrameSA( clump->m_parent );
     clump->m_parent->Unlink();
-    clump->m_parent->RegisterRoot();
+    clump->m_parent->Update();
 
     // Register all atomics to us
     RpClumpObjectAssociation( m_frame, this );

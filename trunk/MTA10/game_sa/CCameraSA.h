@@ -205,7 +205,7 @@ public:
 //  float   m_fPedZoomValueScript;
     int     m_nCarZoom;                                     // 180, store zoom index
     float   m_fCarZoomBase;                                 // 184, store base zoom distance from index
-    float   m_fCarZoomTotal;                                // 198, store total zoom after modded by camera modes
+    float   m_fCarZoomTotal;                                // 188, store total zoom after modded by camera modes
     float   m_fCarZoomSmoothed;                             // 192, buffered version of the var above
     float   m_fCarZoomValueScript;                          // 196
     int     m_nPedZoom;                                     // 200, store zoom index
@@ -216,55 +216,55 @@ public:
 
 
     float   CamFrontXNorm, CamFrontYNorm;                   // 220
-    float   DistanceToWater;                                // 224
-    float   HeightOfNearestWater;                           // 228
-    float   FOVDuringInter;                                 // 232
-    float   LODDistMultiplier;                              // 236, This takes into account the FOV and the standard LOD multiplier Smaller aperture->bigger LOD multipliers.
-    float   GenerationDistMultiplier;                       // 240, This takes into account the FOV but noy the standard LOD multiplier
+    float   DistanceToWater;                                // 228
+    float   HeightOfNearestWater;                           // 232
+    float   FOVDuringInter;                                 // 236
+    float   LODDistMultiplier;                              // 240, This takes into account the FOV and the standard LOD multiplier Smaller aperture->bigger LOD multipliers.
+    float   GenerationDistMultiplier;                       // 244, This takes into account the FOV but noy the standard LOD multiplier
 
-    float   m_fAlphaSpeedAtStartInter;                      // 244
-    float   m_fAlphaWhenInterPol;                           // 248
-    float   m_fAlphaDuringInterPol;                         // 252
-    float   m_fBetaDuringInterPol;                          // 256
-    float   m_fBetaSpeedAtStartInter;                       // 260
-    float   m_fBetaWhenInterPol;                            // 264
-    float   m_fFOVWhenInterPol;                             // 268
-    float   m_fFOVSpeedAtStartInter;                        // 272
-    float   m_fStartingBetaForInterPol;                     // 276
-    float   m_fStartingAlphaForInterPol;                    // 280
-    float   m_PedOrientForBehindOrInFront;                  // 284
+    float   m_fAlphaSpeedAtStartInter;                      // 248
+    float   m_fAlphaWhenInterPol;                           // 252
+    float   m_fAlphaDuringInterPol;                         // 256
+    float   m_fBetaDuringInterPol;                          // 260
+    float   m_fBetaSpeedAtStartInter;                       // 264
+    float   m_fBetaWhenInterPol;                            // 268
+    float   m_fFOVWhenInterPol;                             // 272
+    float   m_fFOVSpeedAtStartInter;                        // 276
+    float   m_fStartingBetaForInterPol;                     // 280
+    float   m_fStartingAlphaForInterPol;                    // 284
+    float   m_PedOrientForBehindOrInFront;                  // 288
 
-    float   m_CameraAverageSpeed;                           // 288, this is an average depending on how many frames we work it out
-    float   m_CameraSpeedSoFar;                             // 292, this is a running total
-    float   m_fCamShakeForce;                               // 296, How severe is the camera shake.
-    float   m_fFovForTrain;                                 // 300
-    float   m_fFOV_Wide_Screen;                             // 304
+    float   m_CameraAverageSpeed;                           // 292, this is an average depending on how many frames we work it out
+    float   m_CameraSpeedSoFar;                             // 296, this is a running total
+    float   m_fCamShakeForce;                               // 300, How severe is the camera shake.
+    float   m_fFovForTrain;                                 // 304
+    float   m_fFOV_Wide_Screen;                             // 308
 
-    float   m_fNearClipScript;                              // 308
-    float   m_fOldBetaDiff;                                 // 312, Needed for interpolation between 2 modes
-    float   m_fPositionAlongSpline;                         // 316, Variable used to indicate how far along the spline we are 0-1 for started to completed respectively
-    float   m_ScreenReductionPercentage;                    // 320
-    float   m_ScreenReductionSpeed;                         // 324
-    float   m_AlphaForPlayerAnim1rstPerson;                 // 328
+    float   m_fNearClipScript;                              // 312
+    float   m_fOldBetaDiff;                                 // 316, Needed for interpolation between 2 modes
+    float   m_fPositionAlongSpline;                         // 320, Variable used to indicate how far along the spline we are 0-1 for started to completed respectively
+    float   m_ScreenReductionPercentage;                    // 324
+    float   m_ScreenReductionSpeed;                         // 328
+    float   m_AlphaForPlayerAnim1rstPerson;                 // 332
     
-    float   Orientation;                                    // 332, The orientation of the camera. Used for peds walking.
-    float   PlayerExhaustion;                               // 336, How tired is player (inaccurate sniping) 0.0f-1.0f
+    float   Orientation;                                    // 336, The orientation of the camera. Used for peds walking.
+    float   PlayerExhaustion;                               // 340, How tired is player (inaccurate sniping) 0.0f-1.0f
 
     // The following things are used by the sound code to
     // play reverb depending on the surroundings. From a point
     // in front of the camera the disance is measured to the
     // nearest obstacle (building)
-    float   SoundDistUp;                                    // 340, SoundDistLeft, SoundDistRight;     // These ones are buffered and should be used by the audio
-    float   SoundDistUpAsRead;                              // 344, SoundDistLeftAsRead, SoundDistRightAsRead;
-    float   SoundDistUpAsReadOld;                           // 348, SoundDistLeftAsReadOld, SoundDistRightAsReadOld;
+    float   SoundDistUp;                                    // 344, SoundDistLeft, SoundDistRight;     // These ones are buffered and should be used by the audio
+    float   SoundDistUpAsRead;                              // 348, SoundDistLeftAsRead, SoundDistRightAsRead;
+    float   SoundDistUpAsReadOld;                           // 352, SoundDistLeftAsReadOld, SoundDistRightAsReadOld;
     // Very rough distance to the nearest water for the sound to use
     // Front vector X&Y normalised to 1. Used by loads of stuff.
     
-    float   m_fAvoidTheGeometryProbsTimer;                  // 352
-    short   m_nAvoidTheGeometryProbsDirn;                   // 356
+    float   m_fAvoidTheGeometryProbsTimer;                  // 356
+    short   m_nAvoidTheGeometryProbsDirn;                   // 360
     
-    float   m_fWideScreenReductionAmount;                   // 358, 0 for not reduced 1 for fully reduced (Variable for Les)
-    float   m_fStartingFOVForInterPol;                      // 362
+    float   m_fWideScreenReductionAmount;                   // 364, 0 for not reduced 1 for fully reduced (Variable for Les)
+    float   m_fStartingFOVForInterPol;                      // 368
     
     // These ones are static so that they don't get cleared in CCamera::Init()
     static  float m_fMouseAccelHorzntl;// acceleration multiplier for 1st person controls
@@ -272,7 +272,7 @@ public:
     static  float m_f3rdPersonCHairMultX;
     static  float m_f3rdPersonCHairMultY;
 
-    CCamSAInterface m_cams[3];                              // 366
+    CCamSAInterface m_cams[3];                              // 372
     // The actual cameras (usually only one of the two is active)
     // And to complicate this we have a third camera, this camera is 
     // used for debugging when we want to have a look at the world.

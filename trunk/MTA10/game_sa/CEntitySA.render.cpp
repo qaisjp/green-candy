@@ -18,10 +18,10 @@ void __cdecl HOOK_InitRenderChains( void )
 {
     new ((void*)0x00C88070) atomicRenderChain_t( 50 );      // vehicleRenderChains, orig 20
     new ((void*)0x00C880C8) atomicRenderChain_t( 50 );      // boatRenderChains, orig 20
-    new ((void*)0x00C88120) entityRenderChain_t( 4000 );    // ???, orig 200
-    new ((void*)0x00C88178) entityRenderChain_t( 3000 );    // ???, orig 100
-    new ((void*)0x00C881D0) entityRenderChain_t( 1500 );    // ???, orig 50
-    new ((void*)0x00C88224) pedRenderChain_t( 3000 );       // ???, orig 100
+    new ((void*)0x00C88120) entityRenderChain_t( 8000 );    // ???, orig 200
+    new ((void*)0x00C88178) entityRenderChain_t( 4000 );    // ???, orig 100, used to render underwater entities
+    new ((void*)0x00C881D0) entityRenderChain_t( 50 );      // ???, orig 50, used for "grasshouse" model
+    new ((void*)0x00C88224) pedRenderChain_t( 8000 );       // ???, orig 100
 }
 
 static bool __cdecl AreScreenEffectsEnabled( void )
@@ -192,11 +192,37 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     entity->RemoveLighting( id );
 }
 
-static float CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistanceSq )
+// based on 0x0055458A (1.0 US and 1.0 EU)
+__forceinline float GetComplexCameraEntityDistance( const CEntitySAInterface *entity )
+{
+    CCameraSAInterface *camera = pGame->GetCamera()->GetInterface();
+
+    const CVector& camPos = camera->Placeable.GetPosition();
+    const CVector& pos = entity->Placeable.GetPosition();
+    
+    float camDistance = ( camPos - pos ).Length();
+
+    if ( camDistance > 300.0f )
+    {
+        CBaseModelInfoSAInterface *info = ppModelInfo[entity->m_model];
+        float scaledLODDistance = info->fLodDistanceUnscaled * camera->LODDistMultiplier;
+
+        if ( 300.0f < scaledLODDistance && ( scaledLODDistance + 20.0f ) > camDistance )
+        {
+            return scaledLODDistance - 300.0f + camDistance;
+        }
+    }
+
+    return camDistance;
+}
+
+static float CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistance, float camFarClip )
 {
     float sectorDivide = 20.0f;
-    float distAway = info->pColModel->m_bounds.fRadius + *(float*)0x00B76848;
-    float scaledLODDistance = info->fLodDistanceUnscaled * *(float*)0x00B6F118;
+    float lodScale = pGame->GetCamera()->GetInterface()->LODDistMultiplier;
+    float distAway = info->pColModel->m_bounds.fRadius + camFarClip;
+    float unscaledLODDistance = info->fLodDistanceUnscaled;
+    float scaledLODDistance = unscaledLODDistance * lodScale;
 
     float useDist = distAway;
 
@@ -205,20 +231,22 @@ static float CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const CEntit
 
     if ( !entity->m_lod )
     {
-        float useDist2 = info->fLodDistanceUnscaled;
+        float useDist2 = unscaledLODDistance;
 
-        if ( info->fLodDistanceUnscaled > useDist )
+        if ( unscaledLODDistance > useDist )
             useDist2 = useDist;
 
         if ( useDist2 > 150.0f )
             sectorDivide = useDist2 * 0.06666667f + 10.0f;
 
         if ( entity->m_entityFlags & ENTITY_BIG )
+        {
             useDist *= *(float*)0x008CD804;
+        }
     }
 
     useDist += 20.0f;
-    useDist -= camDistanceSq;
+    useDist -= camDistance;
     useDist /= sectorDivide;
 
     if ( useDist < 0.0f )
@@ -232,17 +260,9 @@ static float CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const CEntit
 
 float CEntitySAInterface::GetFadingAlpha( void ) const
 {
-    const CVector& pos = Placeable.GetPosition();
+    float camDistance = GetComplexCameraEntityDistance( this );
 
-    float camDistance = ( pGame->GetCamera()->GetInterface()->Placeable.GetPosition() - pos ).Length();
-    float camDistance2 = ( *pGame->GetCamera()->GetCam( pGame->GetCamera()->GetActiveCam() )->GetSource() - pos ).Length();
-    float camDistance3 = ( *(CVector*)0x00B76870 - pos ).Length();
-
-    unsigned char alpha1 = (unsigned char)CalculateFadingAlpha( ppModelInfo[m_model], this, camDistance );
-
-    unsigned char alpha2 = ((unsigned char (__cdecl*)( CBaseModelInfoSAInterface*, const CEntitySAInterface*, float ))0x00732500)( ppModelInfo[m_model], this, camDistance );
-
-    return alpha1;
+    return (unsigned char)CalculateFadingAlpha( ppModelInfo[m_model], this, camDistance, *(float*)0x00B7C4F0 );
 }
 
 inline void InitModelRendering( CBaseModelInfoSAInterface *info )
@@ -294,10 +314,7 @@ static void __cdecl DefaultRenderEntityHandler( CEntitySAInterface *entity, floa
     {
         (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)30, 0 );
 
-        unsigned int alpha = (unsigned char)CalculateFadingAlpha( info, entity, camDistance );
-
-        if ( CObjectSA *obj = pGame->GetPools()->GetObject( entity ) )
-            __asm nop
+        unsigned int alpha = (unsigned char)CalculateFadingAlpha( info, entity, camDistance, *(float*)0x00B76848 );
 
         unsigned int flags = entity->m_entityFlags;
         flags |= ENTITY_RENDERING;
@@ -338,12 +355,34 @@ static void __cdecl DefaultRenderEntityHandler( CEntitySAInterface *entity, floa
         (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)8, 1 );
 }
 
+int __cdecl QueueEntityForRendering( CEntitySAInterface *entity, float camDistance )
+{
+    // This function has been optimized a little.
+    // Rockstar created two depthLevel instances, we only do once.
+    entityRenderInfo level;
+    level.callback = (entityRenderInfo::callback_t)0x00732B40;   // this special callback is mandatory
+    level.entity = entity;
+    level.distance = camDistance;
+
+    // Try to display the "grasshouse" model
+    if ( entity->m_model == *(unsigned short*)0x008CD6F4 && ((entityRenderChain_t*)0x00C881D0)->PushRender( &level ) )
+        return true;
+
+    // If the entity is underwater, it needs a different rendering order
+    if ( entity->m_entityFlags & ENTITY_UNDERWATER )
+        return ((entityRenderChain_t*)0x00C88178)->PushRender( &level );
+
+    // Do default render
+    return ((entityRenderChain_t*)0x00C88120)->PushRender( &level );
+}
+
 void EntityRender_Init( void )
 {
     // Do some interesting patches
     HookInstall( 0x00733A20, (DWORD)HOOK_InitRenderChains, 5 );
     HookInstall( 0x00732B40, (DWORD)DefaultRenderEntityHandler, 5 );
     HookInstall( 0x00553260, (DWORD)RenderEntity, 5 );
+    HookInstall( 0x00734570, (DWORD)QueueEntityForRendering, 5 );
 }
 
 void EntityRender_Shutdown( void )

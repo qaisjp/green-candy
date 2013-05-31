@@ -37,18 +37,6 @@ static LUA_DECLARE( getHash )
     return 1;
 }
 
-static LUA_DECLARE( setLTM )
-{
-    RwMatrix *mat;
-
-    LUA_ARGS_BEGIN;
-    argStream.ReadClass( mat, LUACLASS_MATRIX );
-    LUA_ARGS_END;
-
-    ((CClientRwFrame*)lua_getmethodtrans( L ))->GetObject().SetLTM( *mat );
-    LUA_SUCCESS;
-}
-
 static LUA_DECLARE( getLTM )
 {
     lua_creatematrix( L, ((CClientRwFrame*)lua_getmethodtrans( L ))->GetObject().GetLTM() );
@@ -295,7 +283,6 @@ static const luaL_Reg rwframe_interface_trans[] =
     LUA_METHOD( getName ),
     LUA_METHOD( setName ),
     LUA_METHOD( getHash ),
-    LUA_METHOD( setLTM ),
     LUA_METHOD( getLTM ),
     LUA_METHOD( setModelling ),
     LUA_METHOD( getModelling ),

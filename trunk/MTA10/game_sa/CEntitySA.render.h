@@ -253,8 +253,10 @@ struct entityRenderInfo
         return distance < right.distance;
     }
 
+    typedef void (__cdecl*callback_t)( CEntitySAInterface *intf, float dist );
+
     CEntitySAInterface  *entity;
-    void                (__cdecl*callback)( CEntitySAInterface *intf, float dist );
+    callback_t          callback;
     float               distance;
 
     inline void Execute( void )
