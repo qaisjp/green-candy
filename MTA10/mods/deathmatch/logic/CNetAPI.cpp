@@ -960,8 +960,8 @@ void WriteCameraOrientation ( const CVector& vecPositionBase, NetBitStreamInterf
 {
     // Calc the camera position and rotation
     RwMatrix camMatrix = g_pGame->GetCamera ()->GetMatrix();
-    const CVector& vecCamPosition = camMatrix.pos;
-    const CVector& vecCamFwd = camMatrix.at;
+    const CVector& vecCamPosition = camMatrix.vPos;
+    const CVector& vecCamFwd = camMatrix.vFront;
     float fCamRotZ = atan2 ( vecCamFwd.fX, vecCamFwd.fY );
     float fCamRotX = atan2 ( vecCamFwd.fZ, DistanceBetweenPoints2D ( CVector (), vecCamFwd ) );
 

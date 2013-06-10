@@ -207,10 +207,10 @@ void CClientPacketRecorder::RecordLocalData( CClientPlayer* pLocalPlayer )
         pVehicle->GetTurnSpeed( turnSpeed );
 
         // Write it
-        file->Write( &matrix.right, sizeof(float), 3 );
-        file->Write( &matrix.at, sizeof(float), 3 );
-        file->Write( &matrix.up, sizeof(float), 3 );
-        file->Write( &matrix.pos, sizeof(float), 3 );
+        file->Write( &matrix.vRight, sizeof(float), 3 );
+        file->Write( &matrix.vFront, sizeof(float), 3 );
+        file->Write( &matrix.vUp, sizeof(float), 3 );
+        file->Write( &matrix.vPos, sizeof(float), 3 );
 
         file->Write( &speed, sizeof(float), 3 );
         file->Write( &turnSpeed, sizeof(float), 3 );
@@ -247,10 +247,10 @@ void CClientPacketRecorder::ReadLocalData( CFile *file )
     CVector turnSpeed;
 
     // Read it out
-    file->Read( &matrix.right, sizeof(float), 3 );
-    file->Read( &matrix.at, sizeof(float), 3 );
-    file->Read( &matrix.up, sizeof(float), 3 );
-    file->Read( &matrix.pos, sizeof(float), 3 );
+    file->Read( &matrix.vRight, sizeof(float), 3 );
+    file->Read( &matrix.vFront, sizeof(float), 3 );
+    file->Read( &matrix.vUp, sizeof(float), 3 );
+    file->Read( &matrix.vPos, sizeof(float), 3 );
 
     file->Read( &speed, sizeof(float), 3 );
     file->Read( &turnSpeed, sizeof(float), 3 );

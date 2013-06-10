@@ -438,7 +438,7 @@ public:
     inline void                 SetHornActive( bool enable )                { BOOL_FLAG( m_genericFlags, VEHGENERIC_ALARM, enable ); }
     inline void                 SetFadingOut( bool enable )
     {
-        BOOL_FLAG( m_entityFlags, ENTITY_FADE, enable );
+        //BOOL_FLAG( m_entityFlags, ENTITY_FADE, enable );      // this flag is for objects only,, mainly
         BOOL_FLAG( m_vehicleFlags, VEHICLE_FADEOUT, enable );
     }
 
@@ -564,13 +564,13 @@ public:
     unsigned char               m_unk27;                                // 1388
     
     BYTE                        m_pad18[7];                             // 1389
-    float                       m_unk37;                                // 1396    
+    float                       m_unk37;                                // 1396
 
     float                       m_unk31;                                // 1400
     float                       m_unk32;                                // 1404
     float                       m_unk33;                                // 1408
 
-    unsigned int                m_colorFlags;                           // 1412
+    unsigned int                m_lightFlags;                           // 1412
 
     RwTexture*                  m_plateTexture;                         // 1416
 
@@ -678,7 +678,7 @@ public:
     bool                        IsBeingDriven() const                                   { return GetInterface()->m_driver != NULL; }
     bool                        IsPassenger( CPed *ped ) const;
     bool                        IsSphereTouchingVehicle( const CVector& pos, float fRadius ) const;
-    bool                        IsUpsideDown() const                                    { return GetInterface()->Placeable.m_matrix->up.fZ <= -0.9; }
+    bool                        IsUpsideDown() const                                    { return GetInterface()->Placeable.m_matrix->vUp.fZ <= -0.9; }
     void                        MakeDirty( CColPoint *point );
 
     virtual void                PlaceOnRoadProperly()                                   {}
@@ -720,11 +720,12 @@ public:
     void                        SetGunSwitchedOff( bool bGunsOff )                      { GetInterface()->DisableGuns( bGunsOff ); }
     void                        SetHandbrakeOn( bool bHandbrakeOn )                     { GetInterface()->SetHandbrakeOn( bHandbrakeOn ); }
     void                        SetLightsOn( bool bLightsOn )                           { GetInterface()->SetLightsOn( bLightsOn ); }
-    void                        SetOverrideLights( unsigned int uiOverrideLights )      { GetInterface()->m_overrideLights = uiOverrideLights; }
     void                        SetTakeLessDamage( bool bTakeLessDamage )               { GetInterface()->SetArmored( bTakeLessDamage ); }
     void                        SetTyresDontBurst( bool bTyresDontBurst )               { GetInterface()->SetSteelTyres( bTyresDontBurst ); }
     void                        SetSirenOrAlarmActive( bool active )                    { GetInterface()->SetHornActive( active ); }
     void                        SetFadingOut( bool enable )                             { GetInterface()->SetFadingOut( enable ); }
+
+    void                        SetOverrideLights( unsigned int uiOverrideLights )      { GetInterface()->m_overrideLights = uiOverrideLights; }
 
     CHandlingEntrySA*           GetHandlingData()                                       { return m_pHandlingData; }
     void                        SetHandlingData( CHandlingEntry *handling );

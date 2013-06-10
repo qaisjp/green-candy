@@ -224,7 +224,7 @@ public:
     BYTE            m_pad[8];
 };
 
-#define MAX_DUMMIES     4000
+#define MAX_DUMMIES     40000
 #define MAX_IPL         256
 
 // Rockstar's inheritance trick; keep these chains updated!

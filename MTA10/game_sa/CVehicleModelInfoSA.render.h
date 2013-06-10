@@ -19,7 +19,7 @@ void __cdecl CacheVehicleRenderCameraSettings( unsigned char alpha, RwObject *ob
 void __cdecl ClearVehicleRenderChains( void );
 void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha );
 
-void __cdecl SetVehicleColorFlags( class CVehicleSAInterface *vehicle );
+void __cdecl SetVehicleLightsFlags( class CVehicleSAInterface *vehicle );
 
 void __cdecl RpClumpSetupVehicleMaterials( RpClump *clump, class CVehicleSA *gameVehicle );
 void __cdecl RpClumpRestoreVehicleMaterials( RpClump *clump );

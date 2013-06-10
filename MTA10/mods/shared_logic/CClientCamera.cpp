@@ -111,7 +111,7 @@ void CClientCamera::DoPulse ( void )
         RwMatrix matTemp;
         GetMatrix( matTemp );
         matTemp.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );    
-        g_pMultiplayer->SetCenterOfWorld ( NULL, &m_matrix.pos, (float)M_PI - vecRotation.fZ );
+        g_pMultiplayer->SetCenterOfWorld ( NULL, &m_matrix.vPos, (float)M_PI - vecRotation.fZ );
     }
     else
     {
@@ -181,7 +181,7 @@ void CClientCamera::AssignFixedMode()
     // Make sure that's where the world center is
     CVector vecRotation;
     m_matrix.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
-    g_pMultiplayer->SetCenterOfWorld( NULL, &m_matrix.pos, PI - vecRotation.fZ );
+    g_pMultiplayer->SetCenterOfWorld( NULL, &m_matrix.vPos, PI - vecRotation.fZ );
 }
 
 bool CClientCamera::SetMatrix( const RwMatrix& mat )
@@ -206,15 +206,15 @@ bool CClientCamera::GetMatrix( RwMatrix& Matrix ) const
 void CClientCamera::GetPosition( CVector& vecPosition ) const
 {
     if ( m_bFixed )
-        vecPosition = m_matrix.pos;
+        vecPosition = m_matrix.vPos;
     else
-        vecPosition = m_pCamera->GetMatrix().pos;
+        vecPosition = m_pCamera->GetMatrix().vPos;
 }
 
 void CClientCamera::SetPosition( const CVector& vecPosition )
 {
     // Store the position so it can be updated from our hook
-    m_matrix.pos = vecPosition;
+    m_matrix.vPos = vecPosition;
 
     // Switch into fixed mode
     AssignFixedMode();
@@ -251,36 +251,36 @@ void CClientCamera::SetRotation ( const CVector& vecRotation )
 void CClientCamera::GetTarget ( CVector & vecTarget ) const
 {
     CCam* pCam = m_pCamera->GetCam( m_pCamera->GetActiveCam() );
-    vecTarget = m_pCamera->GetMatrix().pos + *pCam->GetFront();
+    vecTarget = m_pCamera->GetMatrix().vPos + *pCam->GetFront();
 }
 
 void CClientCamera::SetTarget( const CVector& vecTarget )
 {
     // Calculate the front vector, target - position. If its length is 0 we'll get problems
     // (i.e. if position and target are the same), so make a new vector when looking horizontally
-    m_matrix.at = vecTarget - m_matrix.pos;
-    if ( m_matrix.at.Length() < FLOAT_EPSILON )
-        m_matrix.at = CVector( 0.0, 1.0f, 0.0f );
+    m_matrix.vFront = vecTarget - m_matrix.vPos;
+    if ( m_matrix.vFront.Length() < FLOAT_EPSILON )
+        m_matrix.vFront = CVector( 0.0, 1.0f, 0.0f );
     else
-        m_matrix.at.Normalize();
+        m_matrix.vFront.Normalize();
 
     // Grab the right vector
-    m_matrix.right = CVector( m_matrix.at.fY, -m_matrix.at.fX, 0 );
-    if ( m_matrix.right.Length() < FLOAT_EPSILON )
-        m_matrix.right = CVector( 1.0f, 0.0f, 0.0f );
+    m_matrix.vRight = CVector( m_matrix.vFront.fY, -m_matrix.vFront.fX, 0 );
+    if ( m_matrix.vRight.Length() < FLOAT_EPSILON )
+        m_matrix.vRight = CVector( 1.0f, 0.0f, 0.0f );
     else
-        m_matrix.right.Normalize();
+        m_matrix.vRight.Normalize();
 
     // Calculate the up vector from this
-    m_matrix.up = m_matrix.right;
-    m_matrix.up.CrossProduct( &m_matrix.at );
-    m_matrix.up.Normalize();
+    m_matrix.vUp = m_matrix.vRight;
+    m_matrix.vUp.CrossProduct( &m_matrix.vFront );
+    m_matrix.vUp.Normalize();
 
     // Apply roll if needed
     if ( m_fRoll != 0.0f )
     {
         float fRoll = ConvertDegreesToRadiansNoWrap( m_fRoll );
-        m_matrix.up = m_matrix.up * cos( fRoll ) - m_matrix.right * sin( fRoll );
+        m_matrix.vUp = m_matrix.vUp * cos( fRoll ) - m_matrix.vRight * sin( fRoll );
     }
 }
 
@@ -508,7 +508,7 @@ void CClientCamera::ToggleCameraFixedMode ( bool bEnabled )
             SetFocus ( pLocalPlayer, MODE_FIXED, false );
 
         // Set the target position
-        SetFocus( m_matrix.pos, false );
+        SetFocus( m_matrix.vPos, false );
     }
     else
     {
@@ -547,9 +547,9 @@ bool CClientCamera::ProcessFixedCamera( CCam* pCam )
         return false;
 
     // Update the display parameters
-    *pCam->GetSource() = pThis->m_matrix.pos;
-    *pCam->GetFront() = pThis->m_matrix.at;
-    *pCam->GetUp() = pThis->m_matrix.up;
+    *pCam->GetSource() = pThis->m_matrix.vPos;
+    *pCam->GetFront() = pThis->m_matrix.vFront;
+    *pCam->GetUp() = pThis->m_matrix.vUp;
 
     // Set the zoom
     pCam->SetFOV( pThis->m_fFOV );

@@ -66,7 +66,7 @@ void CClient3DMarker::Set3DMarkerType( unsigned long ulType )
 
 bool CClient3DMarker::IsHit( const CVector& pos ) const
 {
-    return IsPointNearPoint3D( m_Matrix.pos, pos, m_size + 4 );
+    return IsPointNearPoint3D( m_Matrix.vPos, pos, m_size + 4 );
 }
 
 void CClient3DMarker::StreamIn()
@@ -87,7 +87,7 @@ void CClient3DMarker::DoPulse()
     if ( !m_streamedIn || !m_visible || m_pThis->GetInterior() != g_pGame->GetWorld()->GetCurrentArea() )
         return;
 
-    m_pMarker = g_pGame->Get3DMarkers()->CreateMarker( m_id, m_type, m_Matrix.pos, m_size, 0.2f, m_color );
+    m_pMarker = g_pGame->Get3DMarkers()->CreateMarker( m_id, m_type, m_Matrix.vPos, m_size, 0.2f, m_color );
 
     if ( !m_pMarker )
         return;

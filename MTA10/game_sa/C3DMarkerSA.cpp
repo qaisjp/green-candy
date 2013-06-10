@@ -4,12 +4,37 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/C3DMarkerSA.cpp
 *  PURPOSE:     3D Marker entity
+*  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
+*               Christian Myhre Lundheim <>
+*               Cecill Etheredge <ijsf@gmx.net>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
 #include "StdInc.h"
+#include "gamesa_renderware.h"
+
+void C3DMarkerSAInterface::DeleteRwObject( void )
+{
+    // Reset usage parameters
+    m_nIdentifier = 0;
+    m_nStartTime = 0;
+    m_bIsUsed = false;
+    m_bUnkFlag = false;
+    m_nType = 257;
+
+    // Destroy RenderWare objects
+    RpAtomic *atom = m_pRwObject;
+    RwFrame *frame = atom->m_parent;
+
+    RpAtomicDestroy( atom );
+    RwFrameDestroy( frame );
+
+    // We do not own an atomic anymore.
+    m_pRwObject = NULL;
+}
 
 void C3DMarkerSA::GetMatrix( RwMatrix& mat ) const
 {
@@ -24,18 +49,18 @@ void C3DMarkerSA::SetMatrix( const RwMatrix& mat )
 void C3DMarkerSA::SetPosition( const CVector& pos )
 {
     DEBUG_TRACE("void C3DMarkerSA::SetPosition( const CVector& pos )");
-    GetInterface()->m_mat.pos = pos;
+    GetInterface()->m_mat.vPos = pos;
 }
 
-const CVector& C3DMarkerSA::GetPosition() const
+const CVector& C3DMarkerSA::GetPosition( void ) const
 {
-    DEBUG_TRACE("const CVector& C3DMarkerSA::GetPosition() const");
-    return GetInterface()->m_mat.pos;
+    DEBUG_TRACE("const CVector& C3DMarkerSA::GetPosition( void ) const");
+    return GetInterface()->m_mat.vPos;
 }
 
-unsigned int C3DMarkerSA::GetType() const
+unsigned int C3DMarkerSA::GetType( void ) const
 {
-    DEBUG_TRACE("unsigned int C3DMarkerSA::GetType() const");
+    DEBUG_TRACE("unsigned int C3DMarkerSA::GetType( void ) const");
     return GetInterface()->m_nType;
 }
 
@@ -45,21 +70,21 @@ void C3DMarkerSA::SetType( unsigned int type )
     GetInterface()->m_nType = type;
 }
 
-bool C3DMarkerSA::IsActive() const
+bool C3DMarkerSA::IsActive( void ) const
 {
-    DEBUG_TRACE("bool C3DMarkerSA::IsActive() const");
+    DEBUG_TRACE("bool C3DMarkerSA::IsActive( void ) const");
     return GetInterface()->m_bIsUsed;
 }
 
-unsigned int C3DMarkerSA::GetIdentifier() const
+unsigned int C3DMarkerSA::GetIdentifier( void ) const
 {
-    DEBUG_TRACE("unsigned int C3DMarkerSA::GetIdentifier() const");
+    DEBUG_TRACE("unsigned int C3DMarkerSA::GetIdentifier( void ) const");
     return GetInterface()->m_nIdentifier;
 }
 
-SColor C3DMarkerSA::GetColor() const
+SColor C3DMarkerSA::GetColor( void ) const
 {
-    DEBUG_TRACE("SColor C3DMarkerSA::GetColor() const");
+    DEBUG_TRACE("SColor C3DMarkerSA::GetColor( void ) const");
 
     // From ABGR
     unsigned long ulABGR = GetInterface()->rwColour;
@@ -89,9 +114,9 @@ void C3DMarkerSA::SetRotateRate( short rate )
     GetInterface()->m_nRotateRate = rate;
 }
 
-float C3DMarkerSA::GetSize() const
+float C3DMarkerSA::GetSize( void ) const
 {
-    DEBUG_TRACE("float C3DMarkerSA::GetSize() const");
+    DEBUG_TRACE("float C3DMarkerSA::GetSize( void ) const");
     return GetInterface()->m_fSize;
 }
 
@@ -101,9 +126,9 @@ void C3DMarkerSA::SetSize( float size )
     GetInterface()->m_fSize = size;
 }
 
-float C3DMarkerSA::GetBrightness() const
+float C3DMarkerSA::GetBrightness( void ) const
 {
-    DEBUG_TRACE("float C3DMarkerSA::GetBrightness() const");
+    DEBUG_TRACE("float C3DMarkerSA::GetBrightness( void ) const");
     return GetInterface()->m_fBrightness;
 }
 
@@ -125,38 +150,30 @@ void C3DMarkerSA::SetPulseFraction( float fraction )
     GetInterface()->m_fPulseFraction = fraction;
 }
 
-float C3DMarkerSA::GetPulseFraction() const
+float C3DMarkerSA::GetPulseFraction( void ) const
 {
-    DEBUG_TRACE("float C3DMarkerSA::GetPulseFraction() const");
+    DEBUG_TRACE("float C3DMarkerSA::GetPulseFraction( void ) const");
     return GetInterface()->m_fPulseFraction;
 }
 
-void C3DMarkerSA::Disable()
+void C3DMarkerSA::Disable( void )
 {
-    DEBUG_TRACE("void C3DMarkerSA::Disable()");
+    DEBUG_TRACE("void C3DMarkerSA::Disable( void )");
     GetInterface()->m_nIdentifier = 0;
 }
 
-void C3DMarkerSA::DeleteMarkerObject()
+void C3DMarkerSA::DeleteMarkerObject( void )
 {
-    DEBUG_TRACE("void C3DMarkerSA::DeleteMarkerObject()");
+    DEBUG_TRACE("void C3DMarkerSA::DeleteMarkerObject( void )");
 
-    if ( !this->GetInterface()->m_pRwObject )
+    if ( !GetInterface()->m_pRwObject )
         return;
 
-    DWORD dwFunc = FUNC_DeleteMarkerObject;
-    DWORD dwThis = (DWORD)GetInterface();
-    _asm
-    {
-        mov     ecx, dwThis
-        call    dwFunc
-    }
-
-    //OutputDebugString ( "Object destroyed!" );
+    GetInterface()->DeleteRwObject();
 }
 
-void C3DMarkerSA::Reset()
+void C3DMarkerSA::Reset( void )
 {
-    DEBUG_TRACE("void C3DMarkerSA::Reset()");
-    m_interface->m_lastPosition = m_interface->m_mat.pos;
+    DEBUG_TRACE("void C3DMarkerSA::Reset( void )");
+    m_interface->m_lastPosition = m_interface->m_mat.vPos;
 }

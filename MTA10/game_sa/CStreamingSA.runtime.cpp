@@ -276,7 +276,9 @@ validIndex:
             if ( sync.blockCount )
             {
                 sync.terminating = true;
-                WaitForSingleObject( sync.semaphore, INFINITE );
+                
+                while ( sync.blockCount )
+                    WaitForSingleObject( sync.semaphore, 5000 );
             }
 
             sync.threadActive = false;

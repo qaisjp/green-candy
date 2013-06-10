@@ -26,8 +26,8 @@ public:
 
     bool                            IsHit( const CVector& vecPosition ) const;
 
-    inline void                     GetPosition( CVector& vecPosition ) const       { vecPosition = m_Matrix.pos; }
-    inline void                     SetPosition( const CVector& vecPosition )       { m_Matrix.pos = vecPosition; }
+    inline void                     GetPosition( CVector& vecPosition ) const       { vecPosition = m_Matrix.vPos; }
+    inline void                     SetPosition( const CVector& vecPosition )       { m_Matrix.vPos = vecPosition; }
 
     inline void                     GetMatrix( RwMatrix& mat ) const                { mat = m_Matrix; }
     inline void                     SetMatrix( const RwMatrix& mat )                { m_Matrix = mat; }

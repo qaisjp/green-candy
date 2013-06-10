@@ -1051,8 +1051,13 @@ namespace CLuaFunctionDefs
             else
                 lua_pushnil ( L );
 
-            pGuiFontElement->PushStack( L );
-            return 2;
+            if ( pGuiFontElement )
+            {
+                pGuiFontElement->PushStack( L );
+                return 2;
+            }
+
+            return 1;
         }
         else
             m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", "guiGetFont", *argStream.GetErrorMessage () ) );
@@ -2092,7 +2097,7 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
-    LUA_DECLARE( guiEditSetCaratIndex )
+    LUA_DECLARE( guiEditSetCaretIndex )
     {
     //  bool guiEditSetCaratIndex ( element theElement, int index )
         CClientGUIElement* theElement; int index;

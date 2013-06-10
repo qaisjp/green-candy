@@ -74,7 +74,7 @@ const CVector& CVehicleComponentSA::GetPosition() const
 
 const CVector& CVehicleComponentSA::GetWorldPosition() const
 {
-    return m_frame->GetLTM().pos;
+    return m_frame->GetLTM().vPos;
 }
 
 static bool RwObjectSetActive( RwObject *obj, bool visible )

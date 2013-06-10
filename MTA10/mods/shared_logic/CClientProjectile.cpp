@@ -188,6 +188,14 @@ bool CClientProjectile::IsActive() const
     return ( m_pProjectile && m_pProjectileInfo->IsActive() );
 }
 
+static __forceinline void PrepareMatrixForGame( RwMatrix& matrix )
+{
+    matrix.vFront.fX = -matrix.vFront.fX;
+    matrix.vFront.fY = -matrix.vFront.fY;
+    matrix.vUp.fX = -matrix.vUp.fX;
+    matrix.vUp.fY = -matrix.vUp.fY;
+}
+
 bool CClientProjectile::GetMatrix( RwMatrix& matrix ) const
 {
     if ( m_pProjectile )
@@ -196,12 +204,8 @@ bool CClientProjectile::GetMatrix( RwMatrix& matrix ) const
 
         // Jax: If the creator is a ped, we need to invert X and Y on Direction and Was for CMultiplayer::ConvertMatrixToEulerAngles
         if ( m_pCreator && IS_PED( m_pCreator ) )
-        {
-            matrix.at.fX = -matrix.at.fX;
-            matrix.at.fY = -matrix.at.fY;
-            matrix.up.fX = -matrix.up.fX;
-            matrix.up.fY = -matrix.up.fY;
-        }
+            PrepareMatrixForGame( matrix );
+
         return true;
     }
     return false;
@@ -209,18 +213,17 @@ bool CClientProjectile::GetMatrix( RwMatrix& matrix ) const
 
 bool CClientProjectile::SetMatrix( const RwMatrix& matrix_ )
 {
-    RwMatrix matrix( matrix_ );
-
     // Jax: If the creator is a ped, we need to invert X and Y on Direction and Was for CMultiplayer::ConvertEulerAnglesToMatrix
     if ( m_pCreator && IS_PED( m_pCreator ) )
-    {        
-        matrix.at.fX = -matrix.at.fX;
-        matrix.at.fY = -matrix.at.fY;
-        matrix.up.fX = -matrix.up.fX;
-        matrix.up.fY = -matrix.up.fY;
+    {
+        RwMatrix matrix( matrix_ );
+        PrepareMatrixForGame( matrix );
+
+        m_pProjectile->SetMatrix( matrix );
+        return true;
     }
 
-    m_pProjectile->SetMatrix( matrix );
+    m_pProjectile->SetMatrix( matrix_ );
     return true;
 }
 
@@ -250,7 +253,7 @@ void CClientProjectile::GetRotationDegrees( CVector& rot ) const
 void CClientProjectile::SetRotation( const CVector& rot )
 {
     RwMatrix matrix;
-    GetPosition( matrix.pos );
+    GetPosition( matrix.vPos );
     matrix.SetRotationRad( rot.fX, rot.fY, rot.fZ );
     SetMatrix( matrix );
 }

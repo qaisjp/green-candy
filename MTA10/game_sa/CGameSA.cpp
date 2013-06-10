@@ -143,6 +143,7 @@ CGameSA::CGameSA()
     RenderWarePipeline_Init();
     Transformation_Init();
     Placeable_Init();
+    Camera_Init();
     Entity_Init();
     Physical_Init();
     Objects_Init();
@@ -207,6 +208,7 @@ CGameSA::~CGameSA()
     Objects_Shutdown();
     Physical_Shutdown();
     Entity_Shutdown();
+    Camera_Shutdown();
     Placeable_Shutdown();
     Transformation_Shutdown();
     RenderWarePipeline_Shutdown();

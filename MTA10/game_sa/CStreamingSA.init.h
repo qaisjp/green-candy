@@ -33,24 +33,40 @@ namespace Streaming
         return *( ( (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + offset ) + id );
     }
 
-    inline CModelLoadInfoSA*    GetQueuedLoadInfo( void )
+    inline CModelLoadInfoSA*    GetNextLoadInfo( CModelLoadInfoSA *info )
     {
-        CModelLoadInfoSA *item = *(CModelLoadInfoSA**)0x008E4C58;
-
-        if ( item->m_primaryModel == 0xFFFF )
+        if ( info->m_primaryModel == 0xFFFF )
             return NULL;
 
-        return &GetModelLoadInfo( item->m_primaryModel );
+        return &GetModelLoadInfo( info->m_primaryModel );
+    }
+
+    inline CModelLoadInfoSA*    GetPrevLoadInfo( CModelLoadInfoSA *info )
+    {
+        if ( info->m_secondaryModel == 0xFFFF )
+            return NULL;
+
+        return &GetModelLoadInfo( info->m_secondaryModel );
+    }
+
+    inline CModelLoadInfoSA*    GetQueuedLoadInfo( void )
+    {
+        return GetNextLoadInfo( *(CModelLoadInfoSA**)0x008E4C58 );
     }
 
     inline CModelLoadInfoSA*    GetLastQueuedLoadInfo( void )
     {
-        CModelLoadInfoSA *last = *(CModelLoadInfoSA**)0x008E4C54;
+        return GetPrevLoadInfo( *(CModelLoadInfoSA**)0x008E4C54 );
+    }
 
-        if ( last->m_secondaryModel == 0xFFFF )
-            return NULL;
-        
-        return &GetModelLoadInfo( last->m_secondaryModel );
+    inline CModelLoadInfoSA*    GetGarbageCollectModel( void )
+    {
+        return GetPrevLoadInfo( *(CModelLoadInfoSA**)0x008E4C5C );
+    }
+
+    inline CModelLoadInfoSA*    GetLastGarbageCollectModel( void )
+    {
+        return *(CModelLoadInfoSA**)0x008E4C60;
     }
 
     CBaseModelInfoSAInterface* __cdecl  GetModelByHash      ( unsigned int hash, modelId_t *id );

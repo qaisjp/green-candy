@@ -220,7 +220,7 @@ static float CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const CEntit
 {
     float sectorDivide = 20.0f;
     float lodScale = pGame->GetCamera()->GetInterface()->LODDistMultiplier;
-    float distAway = info->pColModel->m_bounds.fRadius + camFarClip;
+    float distAway = entity->GetColModel()->m_bounds.fRadius + camFarClip;
     float unscaledLODDistance = info->fLodDistanceUnscaled;
     float scaledLODDistance = unscaledLODDistance * lodScale;
 

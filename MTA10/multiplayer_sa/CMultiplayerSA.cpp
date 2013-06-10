@@ -2490,7 +2490,7 @@ bool processGrab ()
         //CObjectSA * object = (CObjectSA*)entity;
         //CModelInfo * info = pGameInterface->GetModelInfo(entity->m_nModelIndex);
         if ( entity->Placeable.m_matrix )
-            edgeHeight = *entityEdgeHeight + entity->Placeable.m_matrix->pos.fZ;
+            edgeHeight = *entityEdgeHeight + entity->Placeable.m_matrix->vPos.fZ;
         else
             edgeHeight = *entityEdgeHeight + entity->Placeable.m_translate.fZ; 
     }
@@ -3692,34 +3692,34 @@ void _declspec(naked) HOOK_CPhysical_ApplyGravity ()
 
 // ---------------------------------------------------
 
-void GetMatrixForGravity ( const CVector& vecGravity, RwMatrix& mat )
+void GetMatrixForGravity( const CVector& vecGravity, RwMatrix& mat )
 {
     // Calculates a basis where the z axis is the inverse of the gravity
-    if ( vecGravity.Length () > 0.0001f )
+    if ( vecGravity.Length() > 0.0001f )
     {
-        mat.up = -vecGravity;
-        mat.up.Normalize ();
-        if ( fabs(mat.up.fX) > 0.0001f || fabs(mat.up.fZ) > 0.0001f )
+        mat.vUp = -vecGravity;
+        mat.vUp.Normalize();
+
+        if ( fabs( mat.vUp.fX ) > 0.0001f || fabs( mat.vUp.fZ ) > 0.0001f )
         {
-            CVector y ( 0.0f, 1.0f, 0.0f );
-            mat.at = vecGravity;
-            mat.at.CrossProduct ( &y );
-            mat.at.CrossProduct ( &vecGravity );
-            mat.at.Normalize ();
+            CVector y( 0.0f, 1.0f, 0.0f );
+            mat.vFront = vecGravity;
+            mat.vFront.CrossProduct( &y );
+            mat.vFront.CrossProduct( &vecGravity );
+            mat.vFront.Normalize();
         }
         else
-        {
-            mat.at = CVector ( 0.0f, 0.0f, vecGravity.fY );
-        }
-        mat.right = mat.at;
-        mat.right.CrossProduct ( &mat.up );
+            mat.vFront = CVector( 0.0f, 0.0f, vecGravity.fY );
+
+        mat.vRight = mat.vFront;
+        mat.vRight.CrossProduct( &mat.vUp );
     }
     else
     {
         // No gravity, use default axes
-        mat.right =     CVector ( 1.0f, 0.0f, 0.0f );
-        mat.at =        CVector ( 0.0f, 1.0f, 0.0f );
-        mat.up =        CVector ( 0.0f, 0.0f, 1.0f );
+        mat.vRight  = CVector ( 1.0f, 0.0f, 0.0f );
+        mat.vFront  = CVector ( 0.0f, 1.0f, 0.0f );
+        mat.vUp     = CVector ( 0.0f, 0.0f, 1.0f );
     }
 }
 
@@ -3749,7 +3749,7 @@ bool _cdecl VehicleCamStart ( DWORD dwCam, DWORD pVehicleInterface )
 
     pVehicle->GetMatrix ( gravcam_matVehicleTransform );
     RwMatrix matVehicleInverted = gravcam_matInvertGravity * gravcam_matVehicleTransform;
-    matVehicleInverted.pos = gravcam_matVehicleTransform.pos;
+    matVehicleInverted.vPos = gravcam_matVehicleTransform.vPos;
     pVehicle->SetMatrix ( matVehicleInverted );
 
     pVehicle->GetMoveSpeed ( gravcam_vecVehicleVelocity );
@@ -3783,7 +3783,7 @@ fail:
 void _cdecl VehicleCamTargetZTweak ( CVector* pvecCamTarget, float fTargetZTweak )
 {
     // Replacement for "vecCamTarget = vecCarPosition + (0, 0, 1)*fZTweak"
-    *pvecCamTarget += gravcam_matGravity.up * fTargetZTweak;
+    *pvecCamTarget += gravcam_matGravity.vUp * fTargetZTweak;
 }
 
 void _declspec(naked) HOOK_VehicleCamTargetZTweak ()
@@ -3849,7 +3849,7 @@ bool _cdecl VehicleCamLookDir2 ( DWORD dwCam )
     float fPhi   = *(float *)(dwCam + 0xBC);
     float fTheta = *(float *)(dwCam + 0xAC);
 
-    MemPutFast < CVector > ( dwCam + 0x190, -gravcam_matGravity.right*cos(fPhi)*cos(fTheta) - gravcam_matGravity.at*sin(fPhi)*cos(fTheta) + gravcam_matGravity.up*sin(fTheta) );
+    MemPutFast < CVector > ( dwCam + 0x190, -gravcam_matGravity.vRight*cos(fPhi)*cos(fTheta) - gravcam_matGravity.vFront*sin(fPhi)*cos(fTheta) + gravcam_matGravity.vUp*sin(fTheta) );
 
     MemPutFast < float > ( 0x8CCEA8, fPhi );
     return true;
@@ -3875,7 +3875,7 @@ void _declspec(naked) HOOK_VehicleCamLookDir2 ()
 void _cdecl VehicleCamHistory ( DWORD dwCam, CVector* pvecTarget, float fTargetTheta, float fRadius, float fZoom )
 {
     float fPhi = *(float *)(dwCam + 0xBC);
-    CVector vecDir = -gravcam_matGravity.right*cos(fPhi)*cos(fTargetTheta) - gravcam_matGravity.at*sin(fPhi)*cos(fTargetTheta) + gravcam_matGravity.up*sin(fTargetTheta);
+    CVector vecDir = -gravcam_matGravity.vRight*cos(fPhi)*cos(fTargetTheta) - gravcam_matGravity.vFront*sin(fPhi)*cos(fTargetTheta) + gravcam_matGravity.vUp*sin(fTargetTheta);
     ((CVector *)(dwCam + 0x1D8))[0] = *pvecTarget - vecDir*fRadius;
     ((CVector *)(dwCam + 0x1D8))[1] = *pvecTarget - vecDir*fZoom;
 }
@@ -3909,7 +3909,7 @@ void _cdecl VehicleCamUp( DWORD dwCam )
     vecLookDir.Normalize();
     vecUp = vecLookDir;
 
-    vecUp.CrossProduct( gravcam_matGravity.up );
+    vecUp.CrossProduct( gravcam_matGravity.vUp );
     vecUp.CrossProduct( vecLookDir );
     vecUp.Normalize();
 }
@@ -3971,7 +3971,7 @@ void _cdecl VehicleLookBehind ( DWORD dwCam, CVector* pvecEntityPos, float fDist
 {
     // Custom calculation of the camera position when looking behind while in
     // vehicle cam mode, taking in account custom gravity
-    *(CVector*)( dwCam + 0x19C ) = *pvecEntityPos + (gravcam_matVehicleTransform.at + gravcam_matGravity.up*0.2f)*fDistance;
+    *(CVector*)( dwCam + 0x19C ) = *pvecEntityPos + (gravcam_matVehicleTransform.vFront + gravcam_matGravity.vUp*0.2f)*fDistance;
 }
 
 void _declspec(naked) HOOK_VehicleLookBehind ()
@@ -4006,7 +4006,7 @@ void _cdecl VehicleLookAside ( DWORD dwCam, CVector* pvecEntityPos, float fDirec
 {
     // Custom calculation of the camera position when looking left/right while in
     // vehicle cam mode, taking in account custom gravity
-    MemPutFast < CVector > ( dwCam + 0x19C, *pvecEntityPos + (-gravcam_matVehicleTransform.right*fDirectionFactor + gravcam_matGravity.up*0.2f)*fDistance );
+    MemPutFast < CVector > ( dwCam + 0x19C, *pvecEntityPos + (-gravcam_matVehicleTransform.vRight*fDirectionFactor + gravcam_matGravity.vUp*0.2f)*fDistance );
 }
 
 void _declspec(naked) HOOK_VehicleLookAside ()
@@ -4043,7 +4043,7 @@ float _cdecl VehicleBurnCheck ( DWORD pVehicleInterface )
     pVehicle->GetGravity ( vecGravity );
     pVehicle->GetMatrix ( matVehicle );
     vecGravity = -vecGravity;
-    return matVehicle.up.DotProduct( vecGravity );
+    return matVehicle.vUp.DotProduct( vecGravity );
 }
 
 void _declspec(naked) HOOK_OccupiedVehicleBurnCheck ()

@@ -173,6 +173,9 @@ public:
     // +36 = Weapon info as int
 };
 
+// So we do not have to redefine it and the headers can use it.
+extern CBaseModelInfoSAInterface **ppModelInfo;
+
 void ModelInfoBase_Init( void );
 void ModelInfoBase_Shutdown( void );
 

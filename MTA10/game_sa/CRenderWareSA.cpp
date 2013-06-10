@@ -21,11 +21,6 @@
 /** Renderware function mappings                                            **/
 /*****************************************************************************/
 
-static void __declspec(naked)    invalid_ptr()
-{
-    __asm int 3;
-}
-
 // US Versions
 RwDeviceSystemRequest_t                 RwDeviceSystemRequest                   = (RwDeviceSystemRequest_t)                 invalid_ptr;
 RwErrorGet_t                            RwErrorGet                              = (RwErrorGet_t)                            invalid_ptr;
@@ -75,10 +70,12 @@ RwFrameRemoveChild_t                    RwFrameRemoveChild                      
 RwFrameScale_t                          RwFrameScale                            = (RwFrameScale_t)                          invalid_ptr;
 RwFrameOrient_t                         RwFrameOrient                           = (RwFrameOrient_t)                         invalid_ptr;
 RwFrameDestroy_t                        RwFrameDestroy                          = (RwFrameDestroy_t)                        invalid_ptr;
+RW_PLUGIN_INTERFACE_INST( RwFrame );
 
 // Material functions
 RpMaterialCreate_t                      RpMaterialCreate                        = (RpMaterialCreate_t)                      invalid_ptr;
 RpMaterialDestroy_t                     RpMaterialDestroy                       = (RpMaterialDestroy_t)                     invalid_ptr;
+RW_PLUGIN_INTERFACE_INST( RpMaterial );
 
 // Geometry functions
 RpGeometryCreate_t                      RpGeometryCreate                        = (RpGeometryCreate_t)                      invalid_ptr;
@@ -90,8 +87,8 @@ RpGeometryUnlock_t                      RpGeometryUnlock                        
 RpGeometryLock_t                        RpGeometryLock                          = (RpGeometryLock_t)                        invalid_ptr;
 RpGeometryTransform_t                   RpGeometryTransform                     = (RpGeometryTransform_t)                   invalid_ptr;
 RpGeometryStreamRead_t                  RpGeometryStreamRead                    = (RpGeometryStreamRead_t)                  invalid_ptr;
-RpGeometryRegisterPlugin_t              RpGeometryRegisterPlugin                = (RpGeometryRegisterPlugin_t)              invalid_ptr;
 RpGeometryDestroy_t                     RpGeometryDestroy                       = (RpGeometryDestroy_t)                     invalid_ptr;
+RW_PLUGIN_INTERFACE_INST( RpGeometry );
 
 // Atomic functions
 RpAtomicCreate_t                        RpAtomicCreate                          = (RpAtomicCreate_t)                        invalid_ptr;
@@ -103,15 +100,18 @@ RpAtomicSetupVehiclePipeline_t          RpAtomicSetupVehiclePipeline            
 RpAtomicRender_t                        RpAtomicRender                          = (RpAtomicRender_t)                        invalid_ptr;
 RpAtomicSetGeometry_t                   RpAtomicSetGeometry                     = (RpAtomicSetGeometry_t)                   invalid_ptr;
 RpAtomicDestroy_t                       RpAtomicDestroy                         = (RpAtomicDestroy_t)                       invalid_ptr;
+RW_PLUGIN_INTERFACE_INST( RpAtomic );
 
 // Light functions
 RpLightSetRadius_t                      RpLightSetRadius                        = (RpLightSetRadius_t)                      invalid_ptr;
 RpLightGetConeAngle_t                   RpLightGetConeAngle                     = (RpLightGetConeAngle_t)                   invalid_ptr;
 RpLightDestroy_t                        RpLightDestroy                          = (RpLightDestroy_t)                        invalid_ptr;
+RW_PLUGIN_INTERFACE_INST( RpLight );
 
 // Camera functions
 RwCameraClone_t                         RwCameraClone                           = (RwCameraClone_t)                         invalid_ptr;
 RwCameraDestroy_t                       RwCameraDestroy                         = (RwCameraDestroy_t)                       invalid_ptr;
+RW_PLUGIN_INTERFACE_INST( RwCamera );
 
 // Clump functions
 RpClumpClone_t                          RpClumpClone                            = (RpClumpClone_t)                          invalid_ptr;
@@ -121,18 +121,21 @@ RpClumpRemoveAtomic_t                   RpClumpRemoveAtomic                     
 RpClumpAddLight_t                       RpClumpAddLight                         = (RpClumpAddLight_t)                       invalid_ptr;
 RpClumpGetBoneTransform_t               RpClumpGetBoneTransform                 = (RpClumpGetBoneTransform_t)               invalid_ptr;
 RpClumpSetupFrameCallback_t             RpClumpSetupFrameCallback               = (RpClumpSetupFrameCallback_t)             invalid_ptr;
-RpClumpDestroy_t                        RpClumpDestroy                          = (RpClumpDestroy_t)                        invalid_ptr;
 RpClumpGetNumAtomics_t                  RpClumpGetNumAtomics                    = (RpClumpGetNumAtomics_t)                  invalid_ptr;
+RpClumpDestroy_t                        RpClumpDestroy                          = (RpClumpDestroy_t)                        invalid_ptr;
+RW_PLUGIN_INTERFACE_INST( RpClump );
 
 // Raster functions
 RwRasterCreate_t                        RwRasterCreate                          = (RwRasterCreate_t)                        invalid_ptr;
 RwRasterUnlock_t                        RwRasterUnlock                          = (RwRasterUnlock_t)                        invalid_ptr;
 RwRasterLock_t                          RwRasterLock                            = (RwRasterLock_t)                          invalid_ptr;
 RwRasterDestroy_t                       RwRasterDestroy                         = (RwRasterDestroy_t)                       invalid_ptr;
+RW_PLUGIN_INTERFACE_INST( RwRaster );
 
 // Texture functions
 RwTextureCreate_t                       RwTextureCreate                         = (RwTextureCreate_t)                       invalid_ptr;
 RwTextureDestroy_t                      RwTextureDestroy                        = (RwTextureDestroy_t)                      invalid_ptr;
+RW_PLUGIN_INTERFACE_INST( RwTexture );
 
 // TexDictionary functions
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             invalid_ptr;
@@ -142,6 +145,7 @@ RwTexDictionaryForAllTextures_t         RwTexDictionaryForAllTextures           
 RwTexDictionaryFindNamedTexture_t       RwTexDictionaryFindNamedTexture         = (RwTexDictionaryFindNamedTexture_t)       invalid_ptr;
 RwTexDictionaryAddTexture_t             RwTexDictionaryAddTexture               = (RwTexDictionaryAddTexture_t)             invalid_ptr;
 RwTexDictionaryDestroy_t                RwTexDictionaryDestroy                  = (RwTexDictionaryDestroy_t)                invalid_ptr;
+RW_PLUGIN_INTERFACE_INST( RwTexDictionary );
 
 // Scene functions
 RwSceneRender_t                         RwSceneRender                           = (RwSceneRender_t)                         invalid_ptr;
@@ -150,6 +154,7 @@ RwSceneAddLight_t                       RwSceneAddLight                         
 RwSceneAddClump_t                       RwSceneAddClump                         = (RwSceneAddClump_t)                       invalid_ptr;
 RwSceneRemoveLight_t                    RwSceneRemoveLight                      = (RwSceneRemoveLight_t)                    invalid_ptr;
 RwSceneDestroy_t                        RwSceneDestroy                          = (RwSceneDestroy_t)                        invalid_ptr;
+RW_PLUGIN_INTERFACE_INST( RwScene );
 
 // Dict functions
 RtDictSchemaStreamReadDict_t            RtDictSchemaStreamReadDict              = (RtDictSchemaStreamReadDict_t)            invalid_ptr;
@@ -231,10 +236,14 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwFrameOrient                       = (RwFrameOrient_t)                         0x007F2010;
         RwFrameScale                        = (RwFrameScale_t)                          0x007F0F10;
         RwFrameDestroy                      = (RwFrameDestroy_t)                        0x007F04B0;
+        RwFrameRegisterPlugin               = (RwFrameRegisterPlugin_t)                 0x007F12A0;
+        RwFrameRegisterPluginStream         = (RwFrameRegisterPluginStream_t)           0x008075C0;
 
         // Material functions
         RpMaterialCreate                    = (RpMaterialCreate_t)                      0x0074D9E0;
         RpMaterialDestroy                   = (RpMaterialDestroy_t)                     0x0074DA70;
+        RpMaterialRegisterPlugin            = (RpMaterialRegisterPlugin_t)              0x0074DC40;
+        RpMaterialRegisterPluginStream      = (RpMaterialRegisterPluginStream_t)        0x0074DC70;
 
         // Geometry functions
         RpGeometryCreate                    = (RpGeometryCreate_t)                      0x0074CAE0;
@@ -244,8 +253,9 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpGeometryLock                      = (RpGeometryLock_t)                        0x0074C820;
         RpGeometryTransform                 = (RpGeometryTransform_t)                   0x0074C030;
         RpGeometryStreamRead                = (RpGeometryStreamRead_t)                  0x0074D1E0;
-        RpGeometryRegisterPlugin            = (RpGeometryRegisterPlugin_t)              0x0074CDC0;
         RpGeometryDestroy                   = (RpGeometryDestroy_t)                     0x0074CD10;
+        RpGeometryRegisterPlugin            = (RpGeometryRegisterPlugin_t)              0x0074CDC0;
+        RpGeometryRegisterPluginStream      = (RpGeometryRegisterPluginStream_t)        0x0074CDF0;
 
         // Atomic functions
         RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749CA0;
@@ -257,15 +267,21 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpAtomicSetupVehiclePipeline        = (RpAtomicSetupVehiclePipeline_t)          0x005D5B20;
         RpAtomicRender                      = (RpAtomicRender_t)                        0x00749210;
         RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749E10;
+        RpAtomicRegisterPlugin              = (RpAtomicRegisterPlugin_t)                0x0074BDF0;
+        RpAtomicRegisterPluginStream        = (RpAtomicRegisterPluginStream_t)          0x0074BE50;
 
         // Light functions
         RpLightSetRadius                    = (RpLightSetRadius_t)                      0x00751AC0;
         RpLightGetConeAngle                 = (RpLightGetConeAngle_t)                   0x00751B30;
         RpLightDestroy                      = (RpLightDestroy_t)                        0x00752120;
+        RpLightRegisterPlugin               = (RpLightRegisterPlugin_t)                 0x00751DB0;
+        RpLightRegisterPluginStream         = (RpLightRegisterPluginStream_t)           0x00751DE0;
 
         // Camera functions
         RwCameraClone                       = (RwCameraClone_t)                         0x007EF3F0;
         RwCameraDestroy                     = (RwCameraDestroy_t)                       0x007EE4F0;
+        RwCameraRegisterPlugin              = (RwCameraRegisterPlugin_t)                0x007EE490;
+        RwCameraRegisterPluginStream        = (RwCameraRegisterPluginStream_t)          0x00808CD0;
 
         // Clump functions
         RpClumpClone                        = (RpClumpClone_t)                          0x00749FC0;
@@ -277,16 +293,21 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpClumpSetupFrameCallback           = (RpClumpSetupFrameCallback_t)             0x00733750;
         RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B470;
         RpClumpDestroy                      = (RpClumpDestroy_t)                        0x0074A360;
+        RpClumpRegisterPlugin               = (RpClumpRegisterPlugin_t)                 0x0074BE20;
+        RpClumpRegisterPluginStream         = (RpClumpRegisterPluginStream_t)           0x0074BEC0;
 
         // Raster functions
         RwRasterCreate                      = (RwRasterCreate_t)                        0x007FB270;
         RwRasterUnlock                      = (RwRasterUnlock_t)                        0x007FAF00;
         RwRasterLock                        = (RwRasterLock_t)                          0x007FB310; 
         RwRasterDestroy                     = (RwRasterDestroy_t)                       0x007FB060;
+        RwRasterRegisterPlugin              = (RwRasterRegisterPlugin_t)                0x007FB0F0;
 
         // Texture functions
         RwTextureCreate                     = (RwTextureCreate_t)                       0x007F3800;
         RwTextureDestroy                    = (RwTextureDestroy_t)                      0x007F3860;
+        RwTextureRegisterPlugin             = (RwTextureRegisterPlugin_t)               0x007F3BF0;
+        RwTextureRegisterPluginStream       = (RwTextureRegisterPluginStream_t)         0x00804590;
 
         // TexDictionary functions
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70;
@@ -296,6 +317,8 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwTexDictionaryFindNamedTexture     = (RwTexDictionaryFindNamedTexture_t)       0x007F3A30;
         RwTexDictionaryAddTexture           = (RwTexDictionaryAddTexture_t)             0x007F39C0;
         RwTexDictionaryDestroy              = (RwTexDictionaryDestroy_t)                0x007F36E0;
+        RwTexDictionaryRegisterPlugin       = (RwTexDictionaryRegisterPlugin_t)         0x007F3C50;
+        RwTexDictionaryRegisterPluginStream = (RwTexDictionaryRegisterPluginStream_t)   0x00804920;
 
         // Scene functions
         RwSceneRender                       = (RwSceneRender_t)                         0x0074F5C0;
@@ -304,6 +327,8 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwSceneAddLight                     = (RwSceneAddLight_t)                       0x00751960;
         RwSceneRemoveLight                  = (RwSceneRemoveLight_t)                    0x007519B0;
         RwSceneDestroy                      = (RwSceneDestroy_t)                        0x0074F660;
+        RwSceneRegisterPlugin               = (RwSceneRegisterPlugin_t)                 0x0074FD20;
+        RwSceneRegisterPluginStream         = (RwSceneRegisterPluginStream_t)           0x0074FD50;
 
         // Dict functions
         RtDictSchemaStreamReadDict          = (RtDictSchemaStreamReadDict_t)            0x007CF280;
@@ -365,10 +390,14 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwFrameSetIdentity                  = (RwFrameSetIdentity_t)                    0x007F10B0;
         RwFrameOrient                       = (RwFrameOrient_t)                         0x007F2010;
         RwFrameDestroy                      = (RwFrameDestroy_t)                        0x007F05A0;
+        RwFrameRegisterPlugin               = (RwFrameRegisterPlugin_t)                 0x007F1260;
+        RwFrameRegisterPluginStream         = (RwFrameRegisterPluginStream_t)           0x00807580;
 
         // Material functions
         RpMaterialCreate                    = (RpMaterialCreate_t)                      0x0074D990;
         RpMaterialDestroy                   = (RpMaterialDestroy_t)                     0x0074DA20;
+        RpMaterialRegisterPlugin            = (RpMaterialRegisterPlugin_t)              0x0074DBF0;
+        RpMaterialRegisterPluginStream      = (RpMaterialRegisterPluginStream_t)        0x0074DC20;
 
         // Geometry functions
         RpGeometryCreate                    = (RpGeometryCreate_t)                      0x0074CA90;
@@ -379,8 +408,9 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpGeometryUnlock                    = (RpGeometryUnlock_t)                      0x0074C800;
         RpGeometryLock                      = (RpGeometryLock_t)                        0x0074C7D0;
         RpGeometryStreamRead                = (RpGeometryStreamRead_t)                  0x0074D190;
-        RpGeometryRegisterPlugin            = (RpGeometryRegisterPlugin_t)              0x0074CD70;
         RpGeometryDestroy                   = (RpGeometryDestroy_t)                     0x0074CCC0;
+        RpGeometryRegisterPlugin            = (RpGeometryRegisterPlugin_t)              0x0074CD70;
+        RpGeometryRegisterPluginStream      = (RpGeometryRegisterPluginStream_t)        0x0074CDA0;
 
         // Atomic functions
         RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749C50;
@@ -392,15 +422,21 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpAtomicSetupVehiclePipeline        = (RpAtomicSetupVehiclePipeline_t)          0x005D5B20;
         RpAtomicRender                      = (RpAtomicRender_t)                        0x007491C0;
         RpAtomicDestroy                     = (RpAtomicDestroy_t)                       0x00749DC0;
+        RpAtomicRegisterPlugin              = (RpAtomicRegisterPlugin_t)                0x0074BDA0;
+        RpAtomicRegisterPluginStream        = (RpAtomicRegisterPluginStream_t)          0x0074BE00;
 
         // Light functions
         RpLightSetRadius                    = (RpLightSetRadius_t)                      0x00751A70;
         RpLightGetConeAngle                 = (RpLightGetConeAngle_t)                   0x00751AE0;
         RpLightDestroy                      = (RpLightDestroy_t)                        0x007520D0;
+        RpLightRegisterPlugin               = (RpLightRegisterPlugin_t)                 0x00751D60;
+        RpLightRegisterPluginStream         = (RpLightRegisterPluginStream_t)           0x00751D90;
 
         // Camera functions
         RwCameraClone                       = (RwCameraClone_t)                         0x007EF3B0;
         RwCameraDestroy                     = (RwCameraDestroy_t)                       0x007EE4B0;
+        RwCameraRegisterPlugin              = (RwCameraRegisterPlugin_t)                0x007EE450;
+        RwCameraRegisterPluginStream        = (RwCameraRegisterPluginStream_t)          0x00808C90;
 
         // Clump functions
         RpClumpClone                        = (RpClumpClone_t)                          0x00749F70;
@@ -412,16 +448,21 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpClumpSetupFrameCallback           = (RpClumpSetupFrameCallback_t)             0x00733750;
         RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B420;
         RpClumpDestroy                      = (RpClumpDestroy_t)                        0x0074A310;
+        RpClumpRegisterPlugin               = (RpClumpRegisterPlugin_t)                 0x0074bdd0;
+        RpClumpRegisterPluginStream         = (RpClumpRegisterPluginStream_t)           0x0074BE70;
 
         // Raster functions
         RwRasterUnlock                      = (RwRasterUnlock_t)                        0x007FAEC0;
         RwRasterLock                        = (RwRasterLock_t)                          0x007FB2D0;
         RwRasterCreate                      = (RwRasterCreate_t)                        0x007FB230;
         RwRasterDestroy                     = (RwRasterDestroy_t)                       0x007FB020;
+        RwRasterRegisterPlugin              = (RwRasterRegisterPlugin_t)                0x007FB0B0;
 
         // Texture functions
         RwTextureCreate                     = (RwTextureCreate_t)                       0x007F37C0;
         RwTextureDestroy                    = (RwTextureDestroy_t)                      0x007F3820;
+        RwTextureRegisterPlugin             = (RwTextureRegisterPlugin_t)               0x007f3bb0;
+        RwTextureRegisterPluginStream       = (RwTextureRegisterPluginStream_t)         0x00804550;
 
         // TexDictionary functions
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C30;
@@ -431,6 +472,8 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwTexDictionaryFindNamedTexture     = (RwTexDictionaryFindNamedTexture_t)       0x007F39F0;
         RwTexDictionaryAddTexture           = (RwTexDictionaryAddTexture_t)             0x007F3980;
         RwTexDictionaryDestroy              = (RwTexDictionaryDestroy_t)                0x007F36A0;
+        RwTexDictionaryRegisterPlugin       = (RwTexDictionaryRegisterPlugin_t)         0x007F3C10;
+        RwTexDictionaryRegisterPluginStream = (RwTexDictionaryRegisterPluginStream_t)   0x008048E0;
 
         // Scene functions
         RwSceneRender                       = (RwSceneRender_t)                         0x0074F570;
@@ -633,7 +676,7 @@ bool CRenderWareSA::PositionFrontSeat( RpClump *pClump, unsigned short usModelID
         return false;
 
     // in the vehicle specific dummy data, +30h contains the front seat vector
-    seats->m_seatOffset[4] = pPedFrontSeat->m_modelling.pos;
+    seats->m_seatOffset[4] = pPedFrontSeat->m_modelling.vPos;
     return true;
 }
 

@@ -400,3 +400,10 @@ float CWorldSA::GetAircraftMaxHeight ()
 {
     return *(float*)VAR_fAircraftMaxHeight;
 }
+
+bool CWorldSA::ProcessVerticalLine( const CVector& pos, float distance, CColPointSAInterface& colPoint, CEntitySAInterface **hitEntity,
+                                    bool unk1, bool unk2, bool unk3, bool unk4, bool unk5, bool unk6, bool unk7 )
+{
+    return ((bool (__cdecl*)( const CVector&, float, CColPointSAInterface&, CEntitySAInterface **, bool, bool, bool, bool, bool, bool, bool ))0x005674E0)
+                              ( pos, distance, colPoint, hitEntity, unk1, unk2, unk3, unk4, unk5, unk6, unk7 );
+}

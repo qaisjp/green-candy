@@ -27,7 +27,7 @@ class CAlignedStackSA
 public:
     CAlignedStackSA()
     {
-        m_data = (*ppRwInterface)->m_malloc( heapSize );
+        m_data = (*ppRwInterface)->memory.m_malloc( heapSize );
         m_size = heapSize;
         m_offset = 0;
 
@@ -64,7 +64,7 @@ public:
 
     void    TrimToOffset()
     {
-        m_data = (*ppRwInterface)->m_realloc( m_data, m_offset );
+        m_data = (*ppRwInterface)->m_memory.m_realloc( m_data, m_offset );
         m_size = m_offset;
     }
 

@@ -38,16 +38,16 @@ static int matrix_index( lua_State *L )
     switch( lua_tointeger( L, 2 ) )
     {
     case 1:
-        lua_pushvector3D( L, mat->right );
+        lua_pushvector3D( L, mat->vRight );
         break;
     case 2:
-        lua_pushvector3D( L, mat->at );
+        lua_pushvector3D( L, mat->vFront );
         break;
     case 3:
-        lua_pushvector3D( L, mat->up );
+        lua_pushvector3D( L, mat->vUp );
         break;
     case 4:
-        lua_pushvector3D( L, mat->pos );
+        lua_pushvector3D( L, mat->vPos );
         break;
     default:
         return 0;
@@ -60,13 +60,13 @@ static int matrix_setPosition( lua_State *L )
 {
     luaL_checktyperange( L, 1, LUA_TNUMBER, 3 );
 
-    ((RwMatrix*)lua_getmethodtrans( L ))->pos = CVector( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) );
+    ((RwMatrix*)lua_getmethodtrans( L ))->vPos = CVector( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) );
     return 0;
 }
 
 static int matrix_getPosition( lua_State *L )
 {
-    CVector& pos = ((RwMatrix*)lua_getmethodtrans( L ))->pos;
+    CVector& pos = ((RwMatrix*)lua_getmethodtrans( L ))->vPos;
 
     lua_pushnumber( L, pos[0] );
     lua_pushnumber( L, pos[1] );

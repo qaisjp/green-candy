@@ -334,7 +334,7 @@ static bool RwFrameChildBaseHierarchy( RwFrame *child, RwFrame *root )
 =========================================================*/
 inline static void RwFrameGetAbsoluteTransformationBaseOffset( CVector& out, RwFrame *frame )
 {
-    out = frame->m_modelling.pos;
+    out = frame->m_modelling.vPos;
 
     RwFrame *prevParent = frame->m_parent;
 
@@ -490,7 +490,7 @@ void CVehicleModelInfoSAInterface::Setup( void )
                 clone = RpAtomicCloneInherit( obj1, GetRwObject(), frame );
 
                 frame->m_modelling.Identity();
-                frame->m_modelling.pos[0] = (float)(1.15 * -0.25);
+                frame->m_modelling.vPos[0] = (float)(1.15 * -0.25);
             }
             else
             {

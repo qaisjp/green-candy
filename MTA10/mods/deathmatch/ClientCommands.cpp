@@ -434,10 +434,10 @@ void DumpPlayer ( CClientPlayer* pPlayer, CFile *file )
     RwMatrix matPlayer;
     pPlayer->GetMatrix ( matPlayer );
 
-    file->Printf( "Matrix: vecRoll: %f %f %f\n", matPlayer.right.fX, matPlayer.right.fY, matPlayer.right.fZ );
-    file->Printf( "        vecDir:  %f %f %f\n", matPlayer.at.fX, matPlayer.at.fY, matPlayer.at.fZ );
-    file->Printf( "        vecWas:  %f %f %f\n", matPlayer.up.fX, matPlayer.up.fY, matPlayer.up.fZ );
-    file->Printf( "        vecPos:  %f %f %f\n\n", matPlayer.pos.fX, matPlayer.pos.fY, matPlayer.pos.fZ );
+    file->Printf( "Matrix: vecRoll: %f %f %f\n", matPlayer.vRight.fX, matPlayer.vRight.fY, matPlayer.vRight.fZ );
+    file->Printf( "        vecDir:  %f %f %f\n", matPlayer.vFront.fX, matPlayer.vFront.fY, matPlayer.vFront.fZ );
+    file->Printf( "        vecWas:  %f %f %f\n", matPlayer.vUp.fX, matPlayer.vUp.fY, matPlayer.vUp.fZ );
+    file->Printf( "        vecPos:  %f %f %f\n\n", matPlayer.vPos.fX, matPlayer.vPos.fY, matPlayer.vPos.fZ );
 
     file->Printf( "Euler rot: %f\n", pPlayer->GetCurrentRotation () );
     file->Printf( "Cam rot: %f\n", pPlayer->GetCameraRotation () );

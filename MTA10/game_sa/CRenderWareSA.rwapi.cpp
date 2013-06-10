@@ -59,7 +59,7 @@ void RwFrame::SetModelling( const RwMatrix& mat )
 // MTA function!
 void RwFrame::SetPosition( const CVector& pos )
 {
-    m_modelling.pos = pos;
+    m_modelling.vPos = pos;
 
     // Update this frame
     UpdateMTA();
@@ -83,7 +83,7 @@ void RwFrame::Link( RwFrame *frame )
     frame->m_parent = this;
 
     frame->SetRootForHierarchy( m_root );
-    frame->ThrowUpdate();    // make sure it is not inside the update queue anymore
+    frame->m_root->ThrowUpdate();    // make sure it is not inside the update queue anymore
 
     // We need to update the child
     frame->Update();
@@ -333,7 +333,7 @@ RwObject* RwFrame::GetLastObject()
 
 static bool RwFrameObjectGetVisibleLast( RwObject *obj, RwObject **dst )
 {
-    if ( obj->m_flags & RW_OBJ_VISIBLE )
+    if ( obj->IsVisible() )
         *dst = obj;
 
     return true;
@@ -692,7 +692,7 @@ void RpMaterial::SetTexture( RwTexture *tex )
 
 RpMaterials::RpMaterials( unsigned int max )
 {
-    m_data = (RpMaterial**)pRwInterface->m_malloc( sizeof(long) * max, 0 );
+    m_data = (RpMaterial**)pRwInterface->m_memory.m_malloc( sizeof(long) * max, 0 );
 
     m_max = max;
     m_entries = 0;
@@ -705,7 +705,7 @@ RpMaterials::~RpMaterials()
         for ( unsigned int n = 0; n < m_entries; n++ )
             RpMaterialDestroy( m_data[n] );
 
-        pRwInterface->m_free( m_data );
+        pRwInterface->m_memory.m_free( m_data );
 
         m_data = NULL;
     }
@@ -871,7 +871,7 @@ void RpClump::InitStaticSkeleton()
         // I guess its always one bone ahead...?
         link++;
 
-        for (n=0; n<boneCount; n++)
+        for ( n=0; n<boneCount; n++ )
         {
             link->m_context = info;
             link->m_id = bone->m_index;
@@ -1063,7 +1063,7 @@ void RpClump::GetBoneTransform( CVector *offset )
 
         RwMatrixInvert( &mat, skelMat );
 
-        pRwInterface->m_matrixTransform3( offset, &mat.up, 1, skel->m_boneMatrices + matId );
+        pRwInterface->m_matrixTransform3( offset, &mat.vUp, 1, skel->m_boneMatrices + matId );
 
         // Some sort of stacking mechanism, maximum 20
         if ( bone->m_flags & 0x02 )
@@ -1106,7 +1106,7 @@ void RpGeometry::UnlinkFX()
     if ( m_2dfx )
     {
         // Clean the 2dfx structure
-        pRwInterface->m_free( m_2dfx );
+        pRwInterface->m_memory.m_free( m_2dfx );
         m_2dfx = NULL;
     }
 }

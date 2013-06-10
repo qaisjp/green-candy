@@ -32,19 +32,19 @@ public:
         void                        SetPosition                 ( float x, float y, float z )
         {
             if ( m_matrix )
-                m_matrix->pos = CVector( x, y, z );
+                m_matrix->vPos = CVector( x, y, z );
             else
                 m_translate = CVector( x, y, z );
         }
         void                        SetPosition                 ( const CVector& pos )
         {
             if ( m_matrix )
-                m_matrix->pos = pos;
+                m_matrix->vPos = pos;
             else
                 m_translate = pos;
         }
 
-        const CVector&              GetPosition                 ( void ) const      { return m_matrix ? m_matrix->pos : m_translate; }
+        const CVector&              GetPosition                 ( void ) const      { return m_matrix ? m_matrix->vPos : m_translate; }
         void                        GetMatrix                   ( RwMatrix& out ) const
         {
             if ( m_matrix )

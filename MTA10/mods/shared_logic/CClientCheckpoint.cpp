@@ -111,15 +111,15 @@ bool CClientCheckpoint::IsHit( const CVector& vecPosition ) const
     unsigned long ulType = GetCheckpointType();
 
     if ( ulType == TYPE_NORMAL )
-        return IsPointNearPoint2D( m_Matrix.pos, vecPosition, m_size + 4 );
+        return IsPointNearPoint2D( m_Matrix.vPos, vecPosition, m_size + 4 );
     else
-        return IsPointNearPoint3D( m_Matrix.pos, vecPosition, m_size + 4 );
+        return IsPointNearPoint3D( m_Matrix.vPos, vecPosition, m_size + 4 );
 }
 
 void CClientCheckpoint::SetPosition( const CVector& pos )
 { 
     // Different from our current position?
-    if ( m_Matrix.pos == pos )
+    if ( m_Matrix.vPos == pos )
         return;
 
     // Recalculate the stored target so that its accurate even if we move it
@@ -130,7 +130,7 @@ void CClientCheckpoint::SetPosition( const CVector& pos )
     }
 
     // Store the new position, recreate and tell the streamer about the new position
-    m_Matrix.pos = pos;
+    m_Matrix.vPos = pos;
     ReCreateWithSameIdentifier();
 }
 
@@ -156,7 +156,7 @@ void CClientCheckpoint::GetMatrix( RwMatrix& mat ) const
 
 void CClientCheckpoint::SetMatrix( const RwMatrix& mat )
 {
-    SetPosition( mat.pos );
+    SetPosition( mat.vPos );
     m_Matrix = mat;
 }
 
@@ -168,7 +168,7 @@ void CClientCheckpoint::SetNextPosition( const CVector& pos )
 
     // Set the new target position and direction
     m_targetPosition = pos;
-    m_dir = m_targetPosition - m_Matrix.pos;
+    m_dir = m_targetPosition - m_Matrix.vPos;
     m_dir.Normalize ();
 
     // Recreate
@@ -324,7 +324,7 @@ void CClientCheckpoint::Create( unsigned int id )
     }
 
     // Create it
-    m_checkpoint = g_pGame->GetCheckpoints()->CreateCheckpoint( m_id, m_type, m_Matrix.pos, m_dir, m_size, 0.2f, m_color );
+    m_checkpoint = g_pGame->GetCheckpoints()->CreateCheckpoint( m_id, m_type, m_Matrix.vPos, m_dir, m_size, 0.2f, m_color );
 
     if ( m_checkpoint )
     {

@@ -118,7 +118,30 @@ public:
     virtual void __thiscall         RemoveLighting          ( unsigned char id ) = 0;       // 80
     virtual void __thiscall         Invalidate              ( void ) = 0;                   // 84
 
+    modelId_t                       GetModelIndex           ( void ) const          { return m_model; }
+    CBaseModelInfoSAInterface*      GetModelInfo            ( void ) const          { return ppModelInfo[GetModelIndex()]; }
+
     void                            GetPosition             ( CVector& pos ) const;
+    const CVector&                  GetLODPosition          ( void ) const
+    {
+        if ( m_lod )
+            return m_lod->Placeable.GetPosition();
+
+        return Placeable.GetPosition();
+    }
+
+    CEntitySAInterface*             GetFinalLOD             ( void )
+    {
+        CEntitySAInterface *lod = m_lod;
+
+        if ( !lod )
+            return this;
+
+        while ( CEntitySAInterface *nextLOD = lod->m_lod )
+            lod = nextLOD;
+
+        return lod;
+    }
 
     float __thiscall                GetBasingDistance       ( void ) const;
 
@@ -187,6 +210,8 @@ public:
     void                        ProcessControl();
     void                        SetupLighting();
     void                        Render()                                        { m_pInterface->Render(); }
+
+    bool                        IsRwObjectPresent() const                       { return m_pInterface->m_rwObject != NULL; }
 
     void                        SetOrientation( float x, float y, float z );
     void                        FixBoatOrientation();        // eAi you might want to rename this

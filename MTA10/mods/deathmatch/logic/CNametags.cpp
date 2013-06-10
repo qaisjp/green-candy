@@ -96,7 +96,7 @@ void CNametags::DrawFromAim ( void )
 
                 // Grab the camera matrix
                 RwMatrix matCamera = pCamera->GetMatrix();
-                vecStart = matCamera.pos;
+                vecStart = matCamera.vPos;
 
                 // Range
                 float fRange;
@@ -135,7 +135,7 @@ void CNametags::DrawFromAim ( void )
 
                     // Grab the camera matrix
                     RwMatrix matCamera = pCamera->GetMatrix();
-                    vecStart = matCamera.pos;
+                    vecStart = matCamera.vPos;
 
                     // Find the target position
                     CVector vecFront = *pActive->GetFront ();
@@ -375,7 +375,7 @@ void CNametags::DrawDefault ( void )
             flags.bCheckVehicles = true;
             flags.bCheckPeds = false;
             flags.bCheckObjects = true;
-            bCollision = g_pCore->GetGame ()->GetWorld ()->ProcessLineOfSight ( &CameraMatrix.pos, &vecPlayerPosition, &pColPoint, &pGameEntity, flags );
+            bCollision = g_pCore->GetGame ()->GetWorld ()->ProcessLineOfSight ( &CameraMatrix.vPos, &vecPlayerPosition, &pColPoint, &pGameEntity, flags );
             if ( !bCollision || ( pGameEntity && pPlayerVehicle && pGameEntity == pPlayerVehicle->GetGameEntity() ) )
             {
                 pPlayer->SetNametagDistance ( sqrt ( fDistanceExp ) );

@@ -34,6 +34,7 @@ public:
 
     void                                Reference           ( void )                    { m_references++; }
     void                                Dereference         ( void )                    { m_references--; }
+    unsigned short                      GetRefCount         ( void )                    { return m_references; }
 
     bool                                IsLoaded            ( void ) const              { return m_loaded; }
     unsigned int                        GetAnimIndex        ( void ) const              { return m_animationIndex; }

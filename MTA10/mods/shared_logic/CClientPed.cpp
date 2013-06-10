@@ -394,9 +394,9 @@ bool CClientPed::SetMatrix ( const RwMatrix& Matrix )
         m_pPlayerPed->SetMatrix( Matrix );
     }
 
-    if ( m_Matrix.pos != Matrix.pos )
+    if ( m_Matrix.vPos != Matrix.vPos )
     {
-        UpdateStreamPosition ( Matrix.pos );
+        UpdateStreamPosition ( Matrix.vPos );
     }
     m_Matrix = Matrix;
     m_matFrozen = Matrix;
@@ -412,7 +412,7 @@ void CClientPed::GetPosition ( CVector& vecPosition ) const
     // Are we frozen?
     if ( IsFrozen () )
     {
-        vecPosition = m_matFrozen.pos;
+        vecPosition = m_matFrozen.vPos;
     }    
     // Streamed in?
     else if ( m_pPlayerPed )
@@ -433,52 +433,17 @@ void CClientPed::GetPosition ( CVector& vecPosition ) const
     // None of the above?
     else
     {
-        vecPosition = m_Matrix.pos;
+        vecPosition = m_Matrix.vPos;
     }
 }
 
-
 void CClientPed::SetPosition ( const CVector& vecPosition, bool bResetInterpolation )
 {
-    // We have a player ped?
-    if ( m_pPlayerPed )
-    {
-        // Don't set the actual position if we're in a vehicle
-        if ( !GetRealOccupiedVehicle () )
-        {
-            // Set it only if we're not in a vehicle or not working on getting in/out
-            if ( !m_pOccupiedVehicle || GetVehicleInOutState () != VEHICLE_INOUT_GETTING_OUT )
-            {
-                // Is this the local player?
-                if ( m_bIsLocalPlayer )
-                {
-                    // If move is big enough, do ground checks
-                    float DistanceMoved = ( m_Matrix.pos - vecPosition ).Length ();
-                    if ( DistanceMoved > 50 && !IsFrozen () )
-                        SetFrozenWaitingForGroundToLoad ( true );
-                }
-
-                // Set the real position
-                m_pPlayerPed->SetPosition( vecPosition );
-            }
-        }
-    }
-
-    // Have we moved to a different position?
-    if ( m_Matrix.pos != vecPosition )
-    {
-        // Store our new position
-        m_Matrix.pos = vecPosition;
-        m_matFrozen.pos = vecPosition;
-
-        // Update our streaming position
-        UpdateStreamPosition ( vecPosition );
-    }
+    Teleport( vecPosition );
 
     if ( bResetInterpolation )
         RemoveTargetPosition ();
 }
-
 
 void CClientPed::SetInterior ( unsigned char ucInterior )
 {
@@ -517,7 +482,7 @@ void CClientPed::Teleport ( const CVector& vecPosition )
                 if ( m_bIsLocalPlayer )
                 {
                     // If move is big enough, do ground checks
-                    float DistanceMoved = ( m_Matrix.pos - vecPosition ).Length ();
+                    float DistanceMoved = ( m_Matrix.vPos - vecPosition ).Length ();
                     if ( DistanceMoved > 50 && !IsFrozen () )
                         SetFrozenWaitingForGroundToLoad ( true );
                 }
@@ -529,11 +494,11 @@ void CClientPed::Teleport ( const CVector& vecPosition )
     }
 
     // Have we moved to a different position?
-    if ( m_Matrix.pos != vecPosition )
+    if ( m_Matrix.vPos != vecPosition )
     {
         // Store our new position
-        m_Matrix.pos = vecPosition;
-        m_matFrozen.pos = vecPosition;
+        m_Matrix.vPos = vecPosition;
+        m_matFrozen.vPos = vecPosition;
 
         // Update our streaming position
         UpdateStreamPosition ( vecPosition );
@@ -2675,11 +2640,11 @@ void CClientPed::StreamedInPulse ( void )
         CVector vecPosition;
         m_pPlayerPed->GetPosition ( vecPosition );
         // Have we moved?
-        if ( vecPosition != m_Matrix.pos )
+        if ( vecPosition != m_Matrix.vPos )
         {
             // Store our new position
-            m_Matrix.pos = vecPosition;
-            m_matFrozen.pos = vecPosition;
+            m_Matrix.vPos = vecPosition;
+            m_matFrozen.vPos = vecPosition;
 
             // Update our streaming position
             UpdateStreamPosition ( vecPosition );
@@ -3009,7 +2974,7 @@ void CClientPed::_CreateModel()
                 m_interp.pTargetOriginSource->GetPosition ( vecOrigin );
                 vecPosition += vecOrigin;
             }
-            m_Matrix.pos = vecPosition;
+            m_Matrix.vPos = vecPosition;
         }
 
         // Restore any settings 
@@ -3145,7 +3110,7 @@ void CClientPed::_DestroyModel()
     }
 
     // Remember the player position
-    m_pPlayerPed->GetPosition( m_Matrix.pos );
+    m_pPlayerPed->GetPosition( m_Matrix.vPos );
 
     m_fCurrentRotation = m_pPlayerPed->GetCurrentRotation();
     m_pPlayerPed->GetMoveSpeed( m_vecMoveSpeed );
@@ -3460,7 +3425,7 @@ void CClientPed::InternalRemoveFromVehicle ( CVehicle* pGameVehicle )
             delete pOutTask;
         }
 
-        m_pPlayerPed->GetPosition( m_Matrix.pos );
+        m_pPlayerPed->GetPosition( m_Matrix.vPos );
 
         // Local player?
         if ( m_bIsLocalPlayer )
@@ -3988,11 +3953,11 @@ bool CClientPed::GetShotData( CVector * pvecOrigin, CVector * pvecTarget, CVecto
                 RwMatrix mat = g_pGame->GetCamera ()->GetMatrix();
                 bool bCollision;
 
-                CVector vecCameraOrigin = mat.pos;
+                CVector vecCameraOrigin = mat.vPos;
                 CVector vecTemp = vecCameraOrigin;
                 g_pGame->GetCamera ()->Find3rdPersonCamTargetVector ( fRange, vecCameraOrigin, vecTemp, vecTarget );
 
-                bCollision = g_pGame->GetWorld ()->ProcessLineOfSight ( &mat.pos, &vecTarget, &pCollision, NULL );
+                bCollision = g_pGame->GetWorld ()->ProcessLineOfSight ( &mat.vPos, &vecTarget, &pCollision, NULL );
                 if ( pCollision )
                 {
                     if ( bCollision )
@@ -5003,7 +4968,7 @@ void CClientPed::HandleWaitingForGroundToLoad ( void )
     }
 
     // Reset position
-    SetPosition ( m_matFrozen.pos );
+    SetPosition ( m_matFrozen.vPos );
     SetMatrix ( m_matFrozen );
     SetMoveSpeed ( CVector () );
 

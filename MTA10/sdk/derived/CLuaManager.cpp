@@ -584,7 +584,7 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, guiEditSetReadOnly );
     LUA_REGISTER( L, guiEditSetMasked );
     LUA_REGISTER( L, guiEditSetMaxLength );
-    LUA_REGISTER( L, guiEditSetCaratIndex );
+    LUA_REGISTER( L, guiEditSetCaretIndex );
     LUA_REGISTER( L, guiMemoSetReadOnly );
     LUA_REGISTER( L, guiMemoSetCaratIndex );
     LUA_REGISTER( L, guiWindowSetMovable );

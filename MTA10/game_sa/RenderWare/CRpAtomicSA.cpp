@@ -65,6 +65,9 @@ void CRpAtomicSA::Render()
 
 void CRpAtomicSA::GetWorldSphere( RwSphere& out )
 {
+    if ( !m_frame )
+        return;
+
     out = GetObject()->GetWorldBoundingSphere();
 }
 

@@ -14,7 +14,6 @@
 #ifndef _RENDERWARE_RENDERING_
 #define _RENDERWARE_RENDERING_
 
-void RwFrameAddToDirtyList_MTA( RwFrame *frame );
 RwList <RwFrame>& RwFrameGetDirtyList_MTA( void );
 
 void RenderWareRender_Init( void );

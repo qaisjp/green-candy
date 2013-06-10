@@ -579,7 +579,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( guiEditSetReadOnly );
     LUA_DECLARE( guiEditSetMasked );
     LUA_DECLARE( guiEditSetMaxLength );
-    LUA_DECLARE( guiEditSetCaratIndex );
+    LUA_DECLARE( guiEditSetCaretIndex );
     LUA_DECLARE( guiMemoSetReadOnly );
     LUA_DECLARE( guiMemoSetCaratIndex );
     LUA_DECLARE( guiWindowSetMovable );

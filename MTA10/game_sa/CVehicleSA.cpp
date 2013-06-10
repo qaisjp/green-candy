@@ -809,29 +809,29 @@ void GetMatrixForGravity( const CVector& vecGravity, RwMatrix& mat )
     // Calculates a basis where the z axis is the inverse of the gravity
     if ( vecGravity.Length() > 0.0001f )
     {
-        mat.up = -vecGravity;
-        mat.up.Normalize();
+        mat.vUp = -vecGravity;
+        mat.vUp.Normalize();
 
-        if ( fabs( mat.up.fX ) > 0.0001f || fabs( mat.up.fZ ) > 0.0001f )
+        if ( fabs( mat.vUp.fX ) > 0.0001f || fabs( mat.vUp.fZ ) > 0.0001f )
         {
             CVector y( 0.0f, 1.0f, 0.0f );
-            mat.at = vecGravity;
-            mat.at.CrossProduct( &y );
-            mat.at.CrossProduct( &vecGravity );
-            mat.at.Normalize();
+            mat.vFront = vecGravity;
+            mat.vFront.CrossProduct( &y );
+            mat.vFront.CrossProduct( &vecGravity );
+            mat.vFront.Normalize();
         }
         else
-            mat.at = CVector( 0.0f, 0.0f, vecGravity.fY );
+            mat.vFront = CVector( 0.0f, 0.0f, vecGravity.fY );
 
-        mat.right = mat.at;
-        mat.right.CrossProduct( &mat.up );
+        mat.vRight = mat.vFront;
+        mat.vRight.CrossProduct( &mat.vUp );
     }
     else
     {
         // No gravity, use default axes
-        mat.right = CVector ( 1.0f, 0.0f, 0.0f );
-        mat.at    = CVector ( 0.0f, 1.0f, 0.0f );
-        mat.up    = CVector ( 0.0f, 0.0f, 1.0f );
+        mat.vRight  = CVector ( 1.0f, 0.0f, 0.0f );
+        mat.vFront  = CVector ( 0.0f, 1.0f, 0.0f );
+        mat.vUp     = CVector ( 0.0f, 0.0f, 1.0f );
     }
 }
 
@@ -851,14 +851,14 @@ void CVehicleSA::SetGravity( const CVector& grav )
         // Make sure we have a matrix
         m_pInterface->AcquaintMatrix();
         
-        CVector *pos = &m_pInterface->Placeable.m_matrix->pos;
+        const CVector& pos = m_pInterface->Placeable.m_matrix->vPos;
 
         matOld.Invert();
-        pCam->GetTargetHistoryPos()[0] = matOld * (pCam->GetTargetHistoryPos()[0] - *pos);
-        pCam->GetTargetHistoryPos()[0] = matNew * pCam->GetTargetHistoryPos()[0] + *pos;
+        pCam->GetTargetHistoryPos()[0] = matOld * (pCam->GetTargetHistoryPos()[0] - pos);
+        pCam->GetTargetHistoryPos()[0] = matNew * pCam->GetTargetHistoryPos()[0] + pos;
 
-        pCam->GetTargetHistoryPos()[1] = matOld * (pCam->GetTargetHistoryPos()[1] - *pos);
-        pCam->GetTargetHistoryPos()[1] = matNew * pCam->GetTargetHistoryPos()[1] + *pos;
+        pCam->GetTargetHistoryPos()[1] = matOld * (pCam->GetTargetHistoryPos()[1] - pos);
+        pCam->GetTargetHistoryPos()[1] = matNew * pCam->GetTargetHistoryPos()[1] + pos;
     }
 
     m_vecGravity = grav;

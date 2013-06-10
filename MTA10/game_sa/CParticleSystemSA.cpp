@@ -132,7 +132,7 @@ CParticleObjectSAInterface* CParticleSystemSAInterface::CreateTranslator( CEffec
 
     // Set it up
     mat->IdentityRotation();
-    mat->pos = pos;
+    mat->vPos = pos;
 
     return NULL;
 }

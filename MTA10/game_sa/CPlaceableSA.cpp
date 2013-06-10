@@ -113,8 +113,8 @@ void CPlaceableSAInterface::FreeMatrix( void )
     CTransformSAInterface *trans = Placeable.m_matrix;
 
     // Transform the entity
-    Placeable.m_translate = CVector( trans->pos.fX, trans->pos.fY, trans->pos.fZ );
-    Placeable.m_heading = atan( trans->up.fY ) / -trans->up.fX;
+    Placeable.m_translate = trans->vPos;
+    Placeable.m_heading = atan( trans->vUp.fY ) / -trans->vUp.fX;
 
     // Free the matrix
     Placeable.m_matrix = NULL;
@@ -182,7 +182,7 @@ void CPlaceableSAInterface::GetOffset( CVector& out, const CVector& in ) const
 void CPlaceableSAInterface::Transform::GetMatrixFromHeading( RwMatrix& mat ) const
 {
     mat.FromHeading( m_heading );
-    mat.pos = m_translate;
+    mat.vPos = m_translate;
 }
 
 void Placeable_Init( void )

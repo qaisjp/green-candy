@@ -13,6 +13,9 @@
 #ifndef _STREAMING_UTILITIES_
 #define _STREAMING_UTILITIES_
 
+#define ARRAY_PEDSPECMODEL      0x008E4C00
+#define VAR_PEDSPECMODEL        0x008E4BB0
+
 namespace Streaming
 {
     extern streamingLoadCallback_t  streamingLoadCallback;
@@ -48,5 +51,8 @@ modelId_t __cdecl ProcessLoadQueue( unsigned int offset, bool favorPriority );
 bool __cdecl ProcessStreamingRequest( modelId_t id );
 void __cdecl PulseStreamingRequests( void );
 void __cdecl PulseStreamingRequest( unsigned int reqId );
+
+void StreamingUtils_Init( void );
+void StreamingUtils_Shutdown( void );
 
 #endif //_STREAMING_UTILITIES_
