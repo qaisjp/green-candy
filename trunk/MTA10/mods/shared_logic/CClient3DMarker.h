@@ -40,8 +40,8 @@ public:
 
     bool                            IsHit( const CVector& pos ) const;
 
-    inline void                     GetPosition( CVector& pos ) const                   { pos = m_Matrix.pos; }
-    inline void                     SetPosition( const CVector& pos )                   { m_Matrix.pos = pos; }
+    inline void                     GetPosition( CVector& pos ) const                   { pos = m_Matrix.vPos; }
+    inline void                     SetPosition( const CVector& pos )                   { m_Matrix.vPos = pos; }
 
     inline void                     GetMatrix( RwMatrix& mat ) const                    { mat = m_Matrix; }
     inline void                     SetMatrix( const RwMatrix& mat )                    { m_Matrix = mat; }

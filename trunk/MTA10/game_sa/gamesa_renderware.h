@@ -212,10 +212,12 @@ extern RwFrameRemoveChild_t                     RwFrameRemoveChild;
 extern RwFrameScale_t                           RwFrameScale;
 extern RwFrameOrient_t                          RwFrameOrient;
 extern RwFrameDestroy_t                         RwFrameDestroy;
+RW_PLUGIN_INTERFACE_EXTERN( RwFrame );
 
 // Material functions
 extern RpMaterialCreate_t                       RpMaterialCreate;
 extern RpMaterialDestroy_t                      RpMaterialDestroy;
+RW_PLUGIN_INTERFACE_EXTERN( RpMaterial );
 
 // Geometry functions
 extern RpGeometryCreate_t                       RpGeometryCreate;
@@ -228,6 +230,7 @@ extern RpGeometryLock_t                         RpGeometryLock;
 extern RpGeometryTransform_t                    RpGeometryTransform;
 extern RpGeometryRegisterPlugin_t               RpGeometryRegisterPlugin;
 extern RpGeometryDestroy_t                      RpGeometryDestroy;
+RW_PLUGIN_INTERFACE_EXTERN( RpGeometry );
 
 // Atomic functions
 extern RpAtomicCreate_t                         RpAtomicCreate;
@@ -239,15 +242,18 @@ extern RpAtomicSetupObjectPipeline_t            RpAtomicSetupObjectPipeline;
 extern RpAtomicSetupVehiclePipeline_t           RpAtomicSetupVehiclePipeline;
 extern RpAtomicRender_t                         RpAtomicRender;
 extern RpAtomicDestroy_t                        RpAtomicDestroy;
+RW_PLUGIN_INTERFACE_EXTERN( RpAtomic );
 
 // Light functions
 extern RpLightSetRadius_t                       RpLightSetRadius;
 extern RpLightGetConeAngle_t                    RpLightGetConeAngle;
 extern RpLightDestroy_t                         RpLightDestroy;
+RW_PLUGIN_INTERFACE_EXTERN( RpLight );
 
 // Camera functions
 extern RwCameraClone_t                          RwCameraClone;
 extern RwCameraDestroy_t                        RwCameraDestroy;
+RW_PLUGIN_INTERFACE_EXTERN( RwCamera );
 
 // Clump functions
 extern RpClumpClone_t                           RpClumpClone;
@@ -259,12 +265,14 @@ extern RpClumpGetBoneTransform_t                RpClumpGetBoneTransform;
 extern RpClumpSetupFrameCallback_t              RpClumpSetupFrameCallback;
 extern RpClumpStreamRead_t                      RpClumpStreamRead;
 extern RpClumpDestroy_t                         RpClumpDestroy;
+RW_PLUGIN_INTERFACE_EXTERN( RpClump );
 
 // Raster functions
 extern RwRasterCreate_t                         RwRasterCreate;
 extern RwRasterUnlock_t                         RwRasterUnlock;
 extern RwRasterLock_t                           RwRasterLock;
 extern RwRasterDestroy_t                        RwRasterDestroy;
+RW_PLUGIN_INTERFACE_EXTERN( RwRaster );
 
 // Texture functions
 extern RwTextureCreate_t                        RwTextureCreate;
@@ -286,6 +294,7 @@ extern RwSceneAddLight_t                        RwSceneAddLight;
 extern RwSceneAddClump_t                        RwSceneAddClump;
 extern RwSceneRemoveLight_t                     RwSceneRemoveLight;
 extern RwSceneDestroy_t                         RwSceneDestroy;
+RW_PLUGIN_INTERFACE_EXTERN( RwScene );
 
 // Dict functions
 extern RtDictSchemaStreamReadDict_t             RtDictSchemaStreamReadDict;

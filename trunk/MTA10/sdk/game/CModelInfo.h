@@ -33,13 +33,13 @@ enum eVehicleType : unsigned int
     VEHICLE_AUTOMOBILETRAILER
 };
 
-class CBoundingBox
+class CBoundingBox //size: 40
 {
 public:
-    CVector vecBoundMin;
-    CVector vecBoundMax;
-    CVector vecBoundOffset;
-    float   fRadius;
+    CVector vecBoundMin;            // 0
+    CVector vecBoundMax;            // 12
+    CVector vecBoundOffset;         // 24
+    float   fRadius;                // 36
 };
 
 struct CBounds2D

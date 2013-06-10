@@ -110,8 +110,8 @@ int CClientCivilian::GetRotation()
     RwMatrix pMat;
     m_pCivilianPed->GetMatrix( pMat );
 
-    float fX = pMat.at.fX;
-    float fY = pMat.at.fY;
+    float fX = pMat.vFront.fX;
+    float fY = pMat.vFront.fY;
     dRotation = acos ( fY );
 
     if (fX <= 0)

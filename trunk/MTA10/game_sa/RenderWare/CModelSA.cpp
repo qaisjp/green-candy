@@ -14,8 +14,6 @@
 #include "StdInc.h"
 #include "gamesa_renderware.h"
 
-extern CBaseModelInfoSAInterface **ppModelInfo;
-
 void CModelSA::RpClumpAssignObjects( CRwObjectSA *obj, CModelSA *model )
 {
     eRwType type = obj->GetType();

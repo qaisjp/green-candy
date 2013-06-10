@@ -2250,7 +2250,7 @@ bool CClientGame::ProcessMessageForCursorEvents ( HWND hwnd, UINT uMsg, WPARAM w
         CCamera* pCamera = g_pGame->GetCamera ();
         CCam* pCam = pCamera->GetCam ( pCamera->GetActiveCam () );
         RwMatrix matCamera = pCamera->GetMatrix();
-        vecOrigin = matCamera.pos;
+        vecOrigin = matCamera.vPos;
 
         CColPoint* pColPoint = NULL;
         CEntity* pGameEntity = NULL;

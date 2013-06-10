@@ -70,6 +70,14 @@ static LUA_DECLARE( replaceTexture )
     LUA_SUCCESS;
 }
 
+static LUA_DECLARE( isRwObjectPresent )
+{
+    CEntity *entity = ((CClientGameEntity*)lua_getmethodtrans( L ))->GetGameEntity();
+
+    lua_pushboolean( L, entity && entity->IsRwObjectPresent() );
+    return 1;
+}
+
 static luaL_Reg gameentity_interface_trans[] =
 {
     LUA_METHOD( isFading ),
@@ -77,6 +85,7 @@ static luaL_Reg gameentity_interface_trans[] =
     LUA_METHOD( setColModel ),
     LUA_METHOD( getColModel ),
     LUA_METHOD( replaceTexture ),
+    LUA_METHOD( isRwObjectPresent ),
     { NULL, NULL }
 };
 

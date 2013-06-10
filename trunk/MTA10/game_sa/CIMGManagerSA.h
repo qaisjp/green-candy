@@ -54,7 +54,7 @@ public:
         if ( m_blockCount == 0 )
             return false;
 
-        blockCount  = m_blockCount;
+        blockCount = m_blockCount;
         return true;
     }
 
@@ -63,6 +63,7 @@ public:
         return this - (CModelLoadInfoSA*)0x008E4CC0;
     }
 
+    // Should be the same as GetIndex; using the private variable of CStreaming instead (which points to 0x008E4CC0)
     inline unsigned int         GetIndexLoader      ( void ) const
     {
         return this - *(CModelLoadInfoSA**)ARRAY_ModelLoadCache;

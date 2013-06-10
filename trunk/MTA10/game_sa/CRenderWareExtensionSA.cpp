@@ -252,7 +252,7 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
         return NULL;
     }
 
-    inst = (RwExtension*)pRwInterface->m_malloc( sizeof(RwExtension) + ext->m_structSize * count + ext->m_internalSize, 0 );
+    inst = (RwExtension*)pRwInterface->m_memory.m_malloc( sizeof(RwExtension) + ext->m_structSize * count + ext->m_internalSize, 0 );
 
     inst->m_size = size;
     inst->m_count = count;
@@ -286,7 +286,7 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
 void CRwExtensionManagerSA::Free( RwExtension *ext )
 {
     // No idea if that is correct, i.e. cleanup?
-    pRwInterface->m_free( ext );
+    pRwInterface->m_memory.m_free( ext );
 }
 
 /*

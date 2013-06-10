@@ -61,6 +61,8 @@ public:
     virtual void                        SetupLighting() = 0;
     virtual void                        Render() = 0;
 
+    virtual bool                        IsRwObjectPresent() const = 0;
+
     virtual void                        SetOrientation( float fX, float fY, float fZ )=0;
     virtual void                        FixBoatOrientation() = 0;
     virtual void                        GetMatrix( RwMatrix& matrix ) const = 0;

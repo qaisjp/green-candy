@@ -124,10 +124,10 @@ bool CClientMarker::SetMatrix( const RwMatrix& matrix )
         m_pMarker->SetMatrix( matrix );
 
     if ( m_pCollision )
-        m_pCollision->SetPosition( matrix.pos );
+        m_pCollision->SetPosition( matrix.vPos );
 
     // Update our streaming position
-    UpdateStreamPosition ( matrix.pos );
+    UpdateStreamPosition ( matrix.vPos );
     return true;
 }
 

@@ -97,15 +97,15 @@ function bundle()
 	writeFileList(impFiles, "green_alpha.zip", relDir);
 end
 
-local servDir = file.createTranslator("C:/Program Files/MTA San Andreas 1.3 beta/server/");
+local servDir = file.createTranslator("C:\\Users\\The_GTA\\Desktop\\green\\server\\");
 
 function bundleServer()
 	local impFiles =
 	{
 		"core.dll",
-		"MTA/libcurl.dll",
-		"MTA/net.dll",
-		"MTA/xmll.dll",
+		"libcurl.dll",
+		"net.dll",
+		"xmll.dll",
 		"MTA Server.exe",
 		"mods/deathmatch/acl.xml",
 		"mods/deathmatch/dbconmy.dll",

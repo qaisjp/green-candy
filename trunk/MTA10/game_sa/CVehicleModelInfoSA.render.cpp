@@ -61,7 +61,7 @@ inline static float GetObjectDistanceToCameraSq( RpAtomic *obj )
 =========================================================*/
 inline static float GetObjectOffsetRotation( RwObject *obj )
 {
-    CVector dist = **(CVector**)0x00C88050 - obj->m_parent->GetModelling().pos;
+    CVector dist = **(CVector**)0x00C88050 - obj->m_parent->GetModelling().vPos;
     return atan2( dist.fZ, sqrt( dist.fX * dist.fX + dist.fY + dist.fY ) );
 }
 
@@ -91,7 +91,7 @@ void __cdecl CacheVehicleRenderCameraSettings( unsigned char alpha, RwObject *ob
         if ( obj->m_type != RW_CLUMP )
             return;
       
-        cameraRenderDistanceSq = GetVectorDistanceToCameraSq( obj->m_parent->GetLTM().pos );
+        cameraRenderDistanceSq = GetVectorDistanceToCameraSq( obj->m_parent->GetLTM().vPos );
         cameraRenderAngleRadians = GetObjectOffsetRotation( obj );
     }
 }
@@ -641,10 +641,10 @@ static RpAtomic* RwAtomicRenderHeliMovingRotor( RpAtomic *atomic )
         return atomic;
 
     const RwMatrix& ltm = atomic->m_parent->GetLTM();
-    CVector vecRotor = ltm.pos - **(CVector**)VAR_CameraPositionVector;
+    CVector vecRotor = ltm.vPos - **(CVector**)VAR_CameraPositionVector;
 
     // Calculate rotor details
-    if ( !RwAtomicQueue( atomic, vecRotor.DotProduct( ltm.up ) * 20 + camDistanceSq ) )
+    if ( !RwAtomicQueue( atomic, vecRotor.DotProduct( ltm.vUp ) * 20 + camDistanceSq ) )
         RpAtomicRender( atomic );
 
     return atomic;
@@ -668,10 +668,10 @@ static RpAtomic* RwAtomicRenderHeliMovingRotor2( RpAtomic *atomic )
         return atomic;
 
     const RwMatrix& ltm = atomic->m_parent->GetLTM();
-    CVector vecRotor = ltm.pos - **(CVector**)VAR_CameraPositionVector;
+    CVector vecRotor = ltm.vPos - **(CVector**)VAR_CameraPositionVector;
 
     // Lulz, heavy math, much assembly, small C++ code
-    if ( !RwAtomicQueue( atomic, camDistanceSq - vecRotor.DotProduct( ltm.right ) - vecRotor.DotProduct( ltm.at ) ) )
+    if ( !RwAtomicQueue( atomic, camDistanceSq - vecRotor.DotProduct( ltm.vRight ) - vecRotor.DotProduct( ltm.vFront ) ) )
         RpAtomicRender( atomic );
 
     return atomic;
@@ -1090,7 +1090,7 @@ void CVehicleModelInfoSAInterface::SetRenderColor( unsigned char color1, unsigne
 }
 
 /*=========================================================
-    SetVehicleColorFlags
+    SetVehicleLightsFlags
 
     Arguments:
         vehicle - vehicle entity interface to set bools for
@@ -1100,16 +1100,16 @@ void CVehicleModelInfoSAInterface::SetRenderColor( unsigned char color1, unsigne
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C8C90
 =========================================================*/
-bool vehColorFlags[4];
+bool vehLightFlags[4];
 static CVehicleSA *gameVehicle;
 
-void __cdecl SetVehicleColorFlags( CVehicleSAInterface *veh )
+void __cdecl SetVehicleLightsFlags( CVehicleSAInterface *veh )
 {
     // Store render flags
-    vehColorFlags[1] = ( veh->m_colorFlags > 1 ) & 1;
-    vehColorFlags[0] = ( veh->m_colorFlags ) & 1;
-    vehColorFlags[3] = ( veh->m_colorFlags > 2 ) & 1;
-    vehColorFlags[2] = ( veh->m_colorFlags > 3 ) & 1;
+    vehLightFlags[1] = ( veh->m_lightFlags ) & 1;
+    vehLightFlags[0] = ( veh->m_lightFlags >> 1 ) & 1;
+    vehLightFlags[3] = ( veh->m_lightFlags >> 2 ) & 1;
+    vehLightFlags[2] = ( veh->m_lightFlags >> 3 ) & 1;
 }
 
 /*=========================================================
@@ -1252,9 +1252,9 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
         _StoreColorInfo( storage, mat );
 
         // Make it white (keep alpha)
-        mat->m_color = color = mat->m_color | 0xFFFFFF;
+        mat->m_color |= 0xFFFFFF;
         
-        if ( id != 0xFFFFFFFF && vehColorFlags[id] )
+        if ( id != 0xFFFFFFFF && vehLightFlags[id] )
         {
             // Replace the lights texture
             _StoreTextureInfo( storage, mat );

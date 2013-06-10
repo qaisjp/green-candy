@@ -46,11 +46,9 @@ CIPLFilePool **ppIPLFilePool = (CIPLFilePool**)CLASS_CIPLFilePool;
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
-CColModelSA *g_colReplacement[DATA_TEXTURE_BLOCK];
-CColModelSAInterface *g_originalCollision[DATA_TEXTURE_BLOCK];
+CColModelSA *g_colReplacement[MAX_MODELS];
+CColModelSAInterface *g_originalCollision[MAX_MODELS];
 
-#define ARRAY_PEDSPECMODEL      0x008E4C00
-#define VAR_PEDSPECMODEL        0x008E4BB0
 #define VAR_MEMORYUSAGE         0x008E4CB4
 #define VAR_NUMMODELS           0x008E4CB8
 #define VAR_NUMPRIOMODELS       0x008E4BA0
@@ -210,7 +208,7 @@ void __cdecl Streaming::RequestModel( modelId_t id, unsigned int flags )
         // This might have to do with Garbage Collection.
         // So, if we request with 0x06 flag, we prevent models from being collected?
         if ( !( info->m_flags & (0x02 | 0x04) ) )
-            info->PushIntoLoader( *(CModelLoadInfoSA**)0x008E4C60 );
+            info->PushIntoLoader( GetLastGarbageCollectModel() );
     }
     else if ( info->m_eLoading == MODEL_UNAVAILABLE )
     {
@@ -476,7 +474,7 @@ void __cdecl Streaming::LoadAllRequestedModels( bool onlyPriority )
     unsigned int pulseCount = max( 10, *(unsigned int*)0x008E4CB8 * 2 );
     unsigned int threadId = 0;
 
-    for (;;)
+    for ( ; pulseCount != 0; pulseCount-- )
     {
         // Check whether activity is required at all
         if ( GetLastQueuedLoadInfo() == *(CModelLoadInfoSA**)0x008E4C58 &&
@@ -567,14 +565,18 @@ CStreamingSA::CStreamingSA( void )
     HookInstall( 0x0040CBA0, (DWORD)PulseStreamingRequest, 5 );
     HookInstall( 0x0040E460, (DWORD)PulseStreamingRequests, 5 );
 
+    // Initialize sub modules
+    StreamingUtils_Init();
     StreamingLoader_Init();
     StreamingRuntime_Init();
 }
 
 CStreamingSA::~CStreamingSA( void )
 {
+    // Shutdown sub modules
     StreamingRuntime_Shutdown();
     StreamingLoader_Shutdown();
+    StreamingUtils_Shutdown();
 }
 
 /*=========================================================

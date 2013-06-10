@@ -188,7 +188,7 @@ void AttachedMatrix ( const RwMatrix& matrix, RwMatrix& returnMatrix, CVector ve
 
     RotateVector ( vecDirection, vecMatRotation );
 
-    returnMatrix.pos = matrix.pos + vecDirection;
+    returnMatrix.vPos = matrix.vPos + vecDirection;
    
     vecMatRotation += vecRotation;
     returnMatrix.SetRotationRad( vecMatRotation[0], vecMatRotation[1], vecMatRotation[2] );

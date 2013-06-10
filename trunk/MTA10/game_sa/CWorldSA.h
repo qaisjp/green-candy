@@ -53,27 +53,29 @@ public:
                 CWorldSA();
                 ~CWorldSA();
     
-    void        Add                       ( CEntity * entity );
-    void        Add                       ( CEntitySAInterface * entityInterface );
-    void        Remove                    ( CEntity * entity );
-    void        Remove                    ( CEntitySAInterface * entityInterface );
+    void        Add                         ( CEntity * entity );
+    void        Add                         ( CEntitySAInterface * entityInterface );
+    void        Remove                      ( CEntity * entity );
+    void        Remove                      ( CEntitySAInterface * entityInterface );
     void        RemoveReferencesToDeletedObject ( CEntitySAInterface * entity );
-    bool        ProcessLineOfSight        ( const CVector * vecStart, const CVector * vecEnd, CColPoint ** colCollision, CEntity ** CollisionEntity, const SLineOfSightFlags flags, SLineOfSightBuildingResult* pBuildingResult );
-    bool        TestLineSphere            ( CVector * vecStart, CVector * vecEnd, CVector * vecSphereCenter, float fSphereRadius, CColPoint ** colCollision );
-    //bool      ProcessLineOfSight        ( CVector * vecStart, CVector * vecEnd, CColPoint * colCollision, CEntity * CollisionEntity );
-    void        IgnoreEntity              ( CEntity * entity );
-    BYTE        GetLevelFromPosition      ( CVector * vecPosition );
-    float       FindGroundZForPosition    ( float fX, float fY );
-    float       FindGroundZFor3DPosition  ( CVector * vecPosition );
-    void        LoadMapAroundPoint        ( CVector * vecPosition, float fRadius );
-    bool        IsLineOfSightClear        ( const CVector * vecStart, const CVector * vecEnd, const SLineOfSightFlags flags );
-    bool        HasCollisionBeenLoaded    ( CVector * vecPosition );
-    unsigned int    GetCurrentArea        ();
-    void        SetCurrentArea            ( unsigned int area );
-    void        SetJetpackMaxHeight       ( float fHeight );
-    float       GetJetpackMaxHeight       ();
-    void        SetAircraftMaxHeight      ( float fHeight );
-    float       GetAircraftMaxHeight      ();
+    bool        ProcessLineOfSight          ( const CVector * vecStart, const CVector * vecEnd, CColPoint ** colCollision, CEntity ** CollisionEntity, const SLineOfSightFlags flags, SLineOfSightBuildingResult* pBuildingResult );
+    bool        TestLineSphere              ( CVector * vecStart, CVector * vecEnd, CVector * vecSphereCenter, float fSphereRadius, CColPoint ** colCollision );
+    //bool      ProcessLineOfSight          ( CVector * vecStart, CVector * vecEnd, CColPoint * colCollision, CEntity * CollisionEntity );
+    void        IgnoreEntity                ( CEntity * entity );
+    BYTE        GetLevelFromPosition        ( CVector * vecPosition );
+    float       FindGroundZForPosition      ( float fX, float fY );
+    float       FindGroundZFor3DPosition    ( CVector * vecPosition );
+    void        LoadMapAroundPoint          ( CVector * vecPosition, float fRadius );
+    bool        IsLineOfSightClear          ( const CVector * vecStart, const CVector * vecEnd, const SLineOfSightFlags flags );
+    bool        HasCollisionBeenLoaded      ( CVector * vecPosition );
+    unsigned int    GetCurrentArea          ();
+    void        SetCurrentArea              ( unsigned int area );
+    void        SetJetpackMaxHeight         ( float fHeight );
+    float       GetJetpackMaxHeight         ();
+    void        SetAircraftMaxHeight        ( float fHeight );
+    float       GetAircraftMaxHeight        ();
+
+    bool        ProcessVerticalLine         ( const CVector& pos, float distance, CColPointSAInterface& colPoint, CEntitySAInterface **hitEntity, bool unk1, bool unk2, bool unk3, bool unk4, bool unk5, bool unk6, bool unk7 );
 
     /**
      * \todo Add FindObjectsKindaColliding (see 0x430577)

@@ -44,6 +44,52 @@ bool CCameraSAInterface::IsSphereVisible( const CVector& pos, float radius, void
     }
 }
 
+float CCameraSAInterface::GetGroundLevel( unsigned int type )
+{
+    static CVector lastUpdatePosition;
+    static float unk1 = 0;
+    static float unk2 = 0;
+    static float unk3 = 0;
+
+    const CVector& camPos = Placeable.GetPosition();
+
+    if ( abs( lastUpdatePosition[0] - camPos[0] ) > 20 ||
+         abs( lastUpdatePosition[1] - camPos[1] ) > 20 ||
+         abs( lastUpdatePosition[2] - camPos[2] ) > 20 )
+    {
+        CColPointSAInterface hitPos;
+        CEntitySAInterface *hitEntity;
+        CVector startPos( camPos.fX, camPos.fY, 1000.0f );
+
+        bool hit = pGame->GetWorld()->ProcessVerticalLine( startPos, -1000, hitPos, &hitEntity, true, false, false, false, true, false, false );
+
+        if ( hit )
+        {
+            unk3 = hitPos.Position[2];
+
+            const CVector& entityPos = hitEntity->Placeable.GetPosition();
+            
+            CColModelSAInterface *col = hitEntity->GetModelInfo()->pColModel;
+
+            unk2 = col->m_bounds.vecBoundMax[2] + entityPos.fZ;
+            unk1 = max( 0,
+                ( col->m_bounds.vecBoundMax[0] - col->m_bounds.vecBoundMin[0] <= 120.0f &&
+                 col->m_bounds.vecBoundMax[1] - col->m_bounds.vecBoundMin[1] <= 120.0f )
+                 ? ( entityPos[2] + col->m_bounds.vecBoundMax[2] ) : ( unk2 ) );
+        }
+
+        lastUpdatePosition = camPos;
+    }
+
+    if ( type == 2 )
+        return unk2;
+
+    if ( type == 1 )
+        return unk3;
+
+    return unk1;
+}
+
 CCameraSA::CCameraSA( CCameraSAInterface *cam )
 { 
     DEBUG_TRACE("CCameraSA::CCameraSA(CCameraSAInterface * cameraInterface)");
@@ -514,4 +560,14 @@ void CCameraSA::SetCameraViewMode( unsigned char mode )
 bool CCameraSA::IsSphereVisible( const RwSphere& sphere ) const
 {
     return m_interface->IsSphereVisible( sphere.pos, sphere.radius, (void*)0x00B6FA74 );
+}
+
+void Camera_Init( void )
+{
+    HookInstall( 0x00514B80, h_memFunc( &CCameraSAInterface::GetGroundLevel ), 5 );
+}
+
+void Camera_Shutdown( void )
+{
+
 }

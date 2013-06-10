@@ -13,6 +13,15 @@
 
 #include <StdInc.h>
 
+/*=========================================================
+    RwFrameSyncObjects
+
+    Arguments:
+        frame - RenderWare frame object (matrix in 3d space)
+    Purpose:
+        Synchronizes the objects of given frame. This is made
+        so they are properly positioned and rotated.
+=========================================================*/
 __forceinline void RwFrameSyncObjects( RwFrame *frame )
 {
     // Call synchronization callbacks for all objects.
@@ -21,6 +30,20 @@ __forceinline void RwFrameSyncObjects( RwFrame *frame )
     LIST_FOREACH_END
 }
 
+/*=========================================================
+    RwFrameSyncChildren
+
+    Arguments:
+        child - child frame of another
+    Purpose:
+        Synchronizes child frames by resolving their local
+        transformation matrix and updating their objects.
+        This function is called recursively on the children of
+        the child frames.
+    Binary offsets:
+        (1.0 US): 0x00809700
+        (1.0 EU): 0x00809740
+=========================================================*/
 __forceinline void RwFrameSyncChildren( RwFrame *child, unsigned int parentFlags )
 {
     for ( ; child != NULL; child = child->m_next )
@@ -39,6 +62,19 @@ __forceinline void RwFrameSyncChildren( RwFrame *child, unsigned int parentFlags
     }
 }
 
+/*=========================================================
+    RwFrameSyncChildrenOnlyObjects
+
+    Arguments:
+        child - child frame of another
+    Purpose:
+        Recursively updates the objects of all children frames.
+        It is assumed that the local transformation matrix is
+        up-to-date.
+    Binary offsets:
+        (1.0 US): 0x00809780
+        (1.0 EU): 0x008097C0
+=========================================================*/
 __forceinline void RwFrameSyncChildrenOnlyObjects( RwFrame *child )
 {
     for ( ; child != NULL; child = child->m_next )
@@ -51,12 +87,18 @@ __forceinline void RwFrameSyncChildrenOnlyObjects( RwFrame *child )
     }
 }
 
+/*=========================================================
+    RwFrameSyncDirtyList
+
+    Arguments:
+        frameRoot - queue of frames to update
+    Purpose:
+        Loops through frameRoot and updates all frames in
+        it. Once done, frameRoot list is cleared.
+=========================================================*/
 __forceinline void RwFrameSyncDirtyList( RwList <RwFrame>& frameRoot )
 {
     LIST_FOREACH_BEGIN( RwFrame, frameRoot.root, m_nodeRoot )
-        if ( !LIST_ISVALID( *iter ) )
-            __asm int 3
-
         unsigned int flags = item->m_privateFlags;
 
         if ( flags & RW_FRAME_DIRTY )
@@ -84,6 +126,20 @@ __forceinline void RwFrameSyncDirtyList( RwList <RwFrame>& frameRoot )
     LIST_CLEAR( frameRoot.root );
 }
 
+/*=========================================================
+    RwFrameSyncDirty
+
+    Arguments:
+        frameRoot - queue of frames to update
+    Purpose:
+        Processes all known frame update queues and synchronizes
+        the frames inside of them. This will properly position
+        and rotate them in 3d space. There is a public GTA:SA
+        update queue and a MTA one.
+    Binary offsets:
+        (1.0 US): 0x00809550
+        (1.0 EU): 0x00809590
+=========================================================*/
 static RwList <RwFrame> mtaFrameDirtyList;
 
 static unsigned int __cdecl RwFrameSyncDirty( void )
@@ -93,11 +149,15 @@ static unsigned int __cdecl RwFrameSyncDirty( void )
     return true;
 }
 
-void RwFrameAddToDirtyList_MTA( RwFrame *frame )
-{
-    LIST_INSERT( mtaFrameDirtyList.root, frame->m_nodeRoot );
-}
+/*=========================================================
+    RwFrameGetDirtyList_MTA
 
+    Purpose:
+        Returns the MTA managed frame dirty list which is
+        used to (safely) update RenderWare frames. It is
+        created since it is uncertain whether GTA:SA screws
+        with the RenderWare dirty list.
+=========================================================*/
 RwList <RwFrame>& RwFrameGetDirtyList_MTA( void )
 {
     return mtaFrameDirtyList;
@@ -105,7 +165,7 @@ RwList <RwFrame>& RwFrameGetDirtyList_MTA( void )
 
 void RenderWareRender_Init( void )
 {
-    // Keep our own forced list (as GTA:SA is playing around with RenderWare internal data)
+    // Keep our own forced list (as GTA:SA might play around with RenderWare internal data)
     LIST_CLEAR( mtaFrameDirtyList.root );
     
     switch( pGame->GetGameVersion() )

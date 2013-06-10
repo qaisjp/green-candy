@@ -274,6 +274,7 @@ enum ePedStatus : unsigned int
 
 class CPadSAInterface;
 
+//padlevel: 21
 class CPedSAInterface : public CPhysicalSAInterface
 {
 public:
@@ -305,7 +306,7 @@ public:
 
     unsigned char                   m_runState;                 // 1332
 
-    BYTE                            m_pad18[9];                 // 1333
+    BYTE                            m_pad18[11];                // 1333
 
     float                           m_health;                   // 1344
     int                             m_pad7;                     // 1348
@@ -317,7 +318,9 @@ public:
     float                           m_rotationSpeed;            // 1376
     BYTE                            m_pad9[4];                  // 1380
     CEntitySAInterface*             m_contactEntity;            // 1384
-    BYTE                            m_pad10[32];                // 1388
+    BYTE                            m_pad10[24];                // 1388
+    CEntitySAInterface*             m_vehicleObjective;         // 1412
+    BYTE                            m_pad21[4];                 // 1416
     CEntitySAInterface*             m_objective;                // 1420
     BYTE                            m_pad11[8];                 // 1424
 

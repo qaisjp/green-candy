@@ -100,7 +100,7 @@ void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
         SetColourRemapping( false );
 
     info->SetRenderColor( m_color1, m_color2, m_color3, m_color4 );
-    SetVehicleColorFlags( this );
+    SetVehicleLightsFlags( this );
 
     // Store the body texture for rendering
     *(RwTexture**)0x00B4E47C = m_paintjobTexture;

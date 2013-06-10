@@ -73,9 +73,6 @@ CClientVehicle::CClientVehicle( CClientManager* pManager, ElementID ID, lua_Stat
     memset( m_pOccupyingPassengers, 0, sizeof( m_pOccupyingPassengers ) );
     m_pPreviousLink = NULL;
     m_pNextLink = NULL;
-    m_Matrix.at.fY = 1.0f;
-    m_Matrix.up.fZ = 1.0f;
-    m_Matrix.right.fX = 1.0f;
     m_MatrixLast = m_Matrix;
     m_dLastRotationTime = 0;
     m_fHealth = DEFAULT_VEHICLE_HEALTH;
@@ -277,7 +274,7 @@ void CClientVehicle::GetPosition ( CVector& vecPosition ) const
 {
     if ( m_bIsFrozen )
     {
-        vecPosition = m_matFrozen.pos;
+        vecPosition = m_matFrozen.vPos;
     }
     // Is this a trailer being towed?
     else if ( m_pTowedByVehicle )
@@ -311,7 +308,7 @@ void CClientVehicle::GetPosition ( CVector& vecPosition ) const
     }
     else
     {
-        vecPosition = m_Matrix.pos;
+        vecPosition = m_Matrix.vPos;
     }
 }
 
@@ -321,7 +318,7 @@ void CClientVehicle::SetPosition ( const CVector& vecPosition, bool bResetInterp
     if ( g_pClientGame->GetLocalPlayer ()->GetOccupiedVehicle () == this )
     {
         // If move is big enough, do ground checks
-        float DistanceMoved = ( m_Matrix.pos - vecPosition ).Length ();
+        float DistanceMoved = ( m_Matrix.vPos - vecPosition ).Length ();
         if ( DistanceMoved > 50 && !IsFrozen () )
             SetFrozenWaitingForGroundToLoad ( true );
     }
@@ -343,11 +340,11 @@ void CClientVehicle::SetPosition ( const CVector& vecPosition, bool bResetInterp
         }
     }
     // Have we moved to a different position?
-    if ( m_Matrix.pos != vecPosition )
+    if ( m_Matrix.vPos != vecPosition )
     {
         // Store our new position
-        m_Matrix.pos = vecPosition;
-        m_matFrozen.pos = vecPosition;
+        m_Matrix.vPos = vecPosition;
+        m_matFrozen.vPos = vecPosition;
 
         // Update our streaming position
         UpdateStreamPosition ( vecPosition );
@@ -473,10 +470,10 @@ bool CClientVehicle::SetMatrix ( const RwMatrix& Matrix )
     }
 
     // Have we moved to a different position?
-    if ( m_Matrix.pos != Matrix.pos )
+    if ( m_Matrix.vPos != Matrix.vPos )
     {
         // Update our streaming position
-        UpdateStreamPosition( Matrix.pos );
+        UpdateStreamPosition( Matrix.vPos );
     }
 
     m_Matrix = Matrix;
@@ -484,12 +481,12 @@ bool CClientVehicle::SetMatrix ( const RwMatrix& Matrix )
     m_MatrixPure = Matrix;
 
     // If we have any occupants, update their positions
-    if ( m_pDriver ) m_pDriver->SetPosition ( m_Matrix.pos );
+    if ( m_pDriver ) m_pDriver->SetPosition ( m_Matrix.vPos );
     for ( int i = 0; i < ( sizeof ( m_pPassengers ) / sizeof ( CClientPed * ) ) ; i++ )
     {
         if ( m_pPassengers [ i ] )
         {
-            m_pPassengers [ i ]->SetPosition ( m_Matrix.pos );
+            m_pPassengers [ i ]->SetPosition ( m_Matrix.vPos );
         }
     }
 
@@ -1167,7 +1164,7 @@ bool CClientVehicle::IsUpsideDown() const
     if ( m_pVehicle )
         return m_pVehicle->IsUpsideDown ();
 
-    return m_Matrix.pos.fZ <= -0.9f;
+    return m_Matrix.vPos.fZ <= -0.9f;
 }
 
 bool CClientVehicle::IsBlown() const
@@ -1876,7 +1873,7 @@ void CClientVehicle::StreamedInPulse()
         {
             // Cols been loaded for where the vehicle is? Only check this if it has no drivers.
             if ( m_pDriver ||
-                 ( g_pGame->GetWorld ()->HasCollisionBeenLoaded ( &m_matFrozen.pos ) /*&&
+                 ( g_pGame->GetWorld ()->HasCollisionBeenLoaded ( &m_matFrozen.vPos ) /*&&
                    m_pObjectManager->ObjectsAroundPointLoaded ( m_matFrozen.pos, 200.0f, m_usDimension )*/ ) )
             {
                 // Remember the matrix
@@ -1897,7 +1894,7 @@ void CClientVehicle::StreamedInPulse()
         // Calculate the velocity
         RwMatrix MatrixCurrent;
         m_pVehicle->GetMatrix ( MatrixCurrent );
-        m_vecMoveSpeedMeters = ( MatrixCurrent.pos - m_MatrixLast.pos ) * g_pGame->GetFPS ();
+        m_vecMoveSpeedMeters = ( MatrixCurrent.vPos - m_MatrixLast.vPos ) * g_pGame->GetFPS ();
         // Store the current matrix
         m_MatrixLast = MatrixCurrent;        
 
@@ -1966,15 +1963,15 @@ void CClientVehicle::StreamedInPulse()
         }
 
         // Have we moved?
-        if ( vecPosition != m_Matrix.pos )
+        if ( vecPosition != m_Matrix.vPos )
         {
             // If we're setting the position, check whether we're under-water.
             // If so, we need to set the Underwater flag so the render draw order is changed.
             m_pVehicle->SetUnderwater ( IsBelowWater () );
 
             // Store our new position
-            m_Matrix.pos = vecPosition;
-            m_matFrozen.pos = vecPosition;
+            m_Matrix.vPos = vecPosition;
+            m_matFrozen.vPos = vecPosition;
 
             // Update our streaming position
             UpdateStreamPosition ( vecPosition );
@@ -2107,7 +2104,7 @@ void CClientVehicle::Create()
             m_pVehicle = m_boat;
             break;
         case VEHICLE_TRAIN:
-            m_train = g_pGame->GetPools()->AddTrain( m_usModel, m_Matrix.pos, m_bTrainDirection );
+            m_train = g_pGame->GetPools()->AddTrain( m_usModel, m_Matrix.vPos, m_bTrainDirection );
             m_pVehicle = m_train;
             break;
         case VEHICLE_BIKE:
@@ -2141,7 +2138,7 @@ void CClientVehicle::Create()
         // Jump straight to the target position if we have one
         if ( HasTargetPosition() )
         {
-            GetTargetPosition( m_Matrix.pos );
+            GetTargetPosition( m_Matrix.vPos );
         }
 
         // Jump straight to the target rotation if we have one

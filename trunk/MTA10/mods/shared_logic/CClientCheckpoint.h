@@ -49,7 +49,7 @@ public:
 
     bool                            IsHit( const CVector& pos ) const;
     
-    inline void                     GetPosition( CVector& pos ) const                       { pos = m_Matrix.pos; }
+    inline void                     GetPosition( CVector& pos ) const                       { pos = m_Matrix.vPos; }
     void                            SetPosition( const CVector& pos );
     void                            SetDirection( const CVector& dir );
     void                            SetNextPosition( const CVector& pos );

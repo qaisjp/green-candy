@@ -55,19 +55,19 @@
 
 /*** BEGIN PURE R* CLASSES ***/
 
-class CCamPathSplines
+class CCamPathSplines //size: 4
 {
-    public: 
+public: 
     enum {MAXPATHLENGTH=800};
-    FLOAT *m_arr_PathData;//    FLOAT m_arr_PathData[MAXPATHLENGTH];    
+    FLOAT *m_arr_PathData;              // FLOAT m_arr_PathData[MAXPATHLENGTH];    
 };
 
-class CQueuedMode
+class CQueuedMode //size: 12
 {
 public:
-    short       Mode;                   // CameraMode
-    FLOAT       Duration;               // How long for (<0.0f -> indefinately)
-    short       MinZoom, MaxZoom;       // How far is player allowed to zoom in & out
+    short       Mode;                   // 0, CameraMode
+    FLOAT       Duration;               // 4, How long for (<0.0f -> indefinately)
+    short       MinZoom, MaxZoom;       // 8, How far is player allowed to zoom in & out
 };
 
 class CTrainCamNode
@@ -85,10 +85,11 @@ public:
 
 /*** END PURE R* CLASSES ***/
 
-class CCameraSAInterface : public CPlaceableSAInterface
+class CCameraSAInterface : public CPlaceableSAInterface //size: 3132
 {
 public:
     bool __thiscall     IsSphereVisible( const CVector& pos, float radius, void *unk );
+    float __thiscall    GetGroundLevel( unsigned int type );
 
     //move these out the class, have decided to set up a mirrored enumerated type thingy at the top
 #if 0
@@ -283,102 +284,110 @@ public:
     // DATA NOT UPDATED FOR SA  BELOW HERE!!!!! //
     // #########################################//
 
-    CGarageSAInterface *pToGarageWeAreIn;
-    CGarageSAInterface *pToGarageWeAreInForHackAvoidFirstPerson;
-    CQueuedMode m_PlayerMode;
+    CGarageSAInterface *pToGarageWeAreIn;                   // 2076
+    CGarageSAInterface *pToGarageWeAreInForHackAvoidFirstPerson;    // 2080
+    CQueuedMode m_PlayerMode;                               // 2084
     // The higher priority player camera mode. This one is used
     // for the sniper mode and rocket launcher mode.
     // This one overwrites the m_PlayerMode above.
-    CQueuedMode PlayerWeaponMode;
-    CVector m_PreviousCameraPosition; //needed to work out speed
-    CVector m_RealPreviousCameraPosition; // This cane be used by stuff outside the camera code. The one above is the same as the current coordinates outwidth the camera code.
-                                        // an active camera for range finding etc
-    CVector m_cvecAimingTargetCoors;        // Coors to look at with Gordons aiming thing
+    CQueuedMode PlayerWeaponMode;                           // 2096
+    CVector m_PreviousCameraPosition;                       // 2108, needed to work out speed
+    CVector m_RealPreviousCameraPosition;                   // 2120, This cane be used by stuff outside the camera code. The one above is the same as the current coordinates outwidth the camera code.
+                                                            // an active camera for range finding etc
+    CVector m_cvecAimingTargetCoors;                        // 2132, Coors to look at with Gordons aiming thing
     // The player camera that is waiting to be used
     // This camera can replace the default camera where this is
     // needed (in tricky situations like tunnels for instance)
-    CVector m_vecFixedModeVector;
-    CVector m_vecFixedModeSource;
-    CVector m_vecFixedModeUpOffSet;
-    CVector m_vecCutSceneOffset;
-    CVector m_cvecStartingSourceForInterPol;
-    CVector m_cvecStartingTargetForInterPol;
-    CVector m_cvecStartingUpForInterPol;
-    CVector m_cvecSourceSpeedAtStartInter;
-    CVector m_cvecTargetSpeedAtStartInter;
-    CVector m_cvecUpSpeedAtStartInter;
-    CVector m_vecSourceWhenInterPol;
-    CVector m_vecTargetWhenInterPol;
-    CVector m_vecUpWhenInterPol;
-    CVector m_vecClearGeometryVec;
-    CVector m_vecGameCamPos;
-    CVector SourceDuringInter, TargetDuringInter, UpDuringInter;
+    CVector m_vecFixedModeVector;                           // 2144
+    CVector m_vecFixedModeSource;                           // 2156
+    CVector m_vecFixedModeUpOffSet;                         // 2168
+    CVector m_vecCutSceneOffset;                            // 2180
+    CVector m_cvecStartingSourceForInterPol;                // 2192
+    CVector m_cvecStartingTargetForInterPol;                // 2204
+    CVector m_cvecStartingUpForInterPol;                    // 2216
+    CVector m_cvecSourceSpeedAtStartInter;                  // 2228
+    CVector m_cvecTargetSpeedAtStartInter;                  // 2240
+    CVector m_cvecUpSpeedAtStartInter;                      // 2252
+    CVector m_vecSourceWhenInterPol;                        // 2264
+    CVector m_vecTargetWhenInterPol;                        // 2276
+    CVector m_vecUpWhenInterPol;                            // 2288
+    CVector m_vecClearGeometryVec;                          // 2300
+    CVector m_vecGameCamPos;                                // 2312
+    CVector SourceDuringInter, TargetDuringInter, UpDuringInter;    // 2324
 
 
-    CVector m_vecAttachedCamOffset; // for attaching the camera to a ped or vehicle (set by level designers for use in cutscenes)
-    CVector m_vecAttachedCamLookAt; 
-    FLOAT m_fAttachedCamAngle; // for giving the attached camera a tilt.
+    CVector m_vecAttachedCamOffset;                         // 2360, for attaching the camera to a ped or vehicle (set by level designers for use in cutscenes)
+    CVector m_vecAttachedCamLookAt;                         // 2372
+    FLOAT m_fAttachedCamAngle;                              // 2384, for giving the attached camera a tilt.
 
-    // RenderWare camera pointer
-    RwCamera* m_pRwCamera;
-    ///stuff for cut scenes
-    CEntitySAInterface *pTargetEntity;
-    CEntitySAInterface *pAttachedEntity;
+    RwCamera* m_pRwCamera;                                  // 2388, RenderWare camera pointer
+
+    CEntitySAInterface *pTargetEntity;                      // 2392, stuff for cut scenes
+    CEntitySAInterface *pAttachedEntity;                    // 2396
     //CVector CutScene; 
-    CCamPathSplines m_arrPathArray[MAX_NUM_OF_SPLINETYPES]; //These only get created when the script calls the load splines function
+    CCamPathSplines m_arrPathArray[MAX_NUM_OF_SPLINETYPES]; // 2400, These only get created when the script calls the load splines function
     // maybe this shouldn't be here depends if GTA_TRAIN is defined (its not)
     //CTrainCamNode     m_arrTrainCamNode[MAX_NUM_OF_NODES];
 
-    bool m_bMirrorActive;
-    bool m_bResetOldMatrix;
+    bool m_bMirrorActive;                                   // 2416
+    bool m_bResetOldMatrix;                                 // 2417
 
 //  protected:
-    RwMatrix m_cameraMatrix;
-    RwMatrix m_cameraMatrixOld;
-    RwMatrix m_viewMatrix;
-    RwMatrix m_matInverse;
-    RwMatrix m_matMirrorInverse;
-    RwMatrix m_matMirror;
+    RwMatrix m_cameraMatrix;                                // 2420
+    RwMatrix m_cameraMatrixOld;                             // 2484
+    RwMatrix m_viewMatrix;                                  // 2548
+    RwMatrix m_matInverse;                                  // 2612
+    RwMatrix m_matMirrorInverse;                            // 2676
+    RwMatrix m_matMirror;                                   // 2740
 
-    CVector m_vecFrustumNormals[4];
-    CVector m_vecFrustumWorldNormals[4];
-    CVector m_vecFrustumWorldNormals_Mirror[4];
+    CVector m_vecFrustumNormals[4];                         // 2804
+    CVector m_vecFrustumWorldNormals[4];                    // 2852
+    CVector m_vecFrustumWorldNormals_Mirror[4];             // 2900
 
-    FLOAT m_fFrustumPlaneOffsets[4];
-    FLOAT m_fFrustumPlaneOffsets_Mirror[4];
+    FLOAT m_fFrustumPlaneOffsets[4];                        // 2948
+    FLOAT m_fFrustumPlaneOffsets_Mirror[4];                 // 2964
 
-    CVector m_vecRightFrustumNormal;
-    CVector m_vecBottomFrustumNormal;
-    CVector m_vecTopFrustumNormal;
+    CVector m_vecRightFrustumNormal;                        // 2980
+    CVector m_vecBottomFrustumNormal;                       // 2992
+    CVector m_vecTopFrustumNormal;                          // 3004
 
-    CVector m_vecOldSourceForInter;
-    CVector m_vecOldFrontForInter;
-    CVector m_vecOldUpForInter;
-    FLOAT   m_vecOldFOVForInter;
-    FLOAT   m_fFLOATingFade;//variable representing the FLOAT version of CDraw::Fade. Necessary to stop loss of precision
-    FLOAT   m_fFLOATingFadeMusic;
-    FLOAT   m_fTimeToFadeOut;
-    FLOAT   m_fTimeToFadeMusic;
-    FLOAT   m_fTimeToWaitToFadeMusic;
-    FLOAT   m_fFractionInterToStopMoving; 
-    FLOAT   m_fFractionInterToStopCatchUp;
-    FLOAT   m_fFractionInterToStopMovingTarget; 
-    FLOAT   m_fFractionInterToStopCatchUpTarget;
+    CVector m_vecOldSourceForInter;                         // 3016
+    CVector m_vecOldFrontForInter;                          // 3028
+    CVector m_vecOldUpForInter;                             // 3040
+    FLOAT   m_vecOldFOVForInter;                            // 3052
+    FLOAT   m_fFLOATingFade;                                // 3056, variable representing the FLOAT version of CDraw::Fade. Necessary to stop loss of precision
+    FLOAT   m_fFLOATingFadeMusic;                           // 3060
+    FLOAT   m_fTimeToFadeOut;                               // 3064
+    FLOAT   m_fTimeToFadeMusic;                             // 3068
+    FLOAT   m_fTimeToWaitToFadeMusic;                       // 3072
+    FLOAT   m_fFractionInterToStopMoving;                   // 3076
+    FLOAT   m_fFractionInterToStopCatchUp;                  // 3080
+    FLOAT   m_fFractionInterToStopMovingTarget;             // 3084
+    FLOAT   m_fFractionInterToStopCatchUpTarget;            // 3088
 
-    FLOAT   m_fGaitSwayBuffer;
-    FLOAT   m_fScriptPercentageInterToStopMoving;
-    FLOAT   m_fScriptPercentageInterToCatchUp;
-    DWORD   m_fScriptTimeForInterPolation;
+    FLOAT   m_fGaitSwayBuffer;                              // 3092
+    FLOAT   m_fScriptPercentageInterToStopMoving;           // 3096
+    FLOAT   m_fScriptPercentageInterToCatchUp;              // 3100
+    DWORD   m_fScriptTimeForInterPolation;                  // 3104
 
 
-    short   m_iFadingDirection;
-    int     m_iModeObbeCamIsInForCar;
-    short   m_iModeToGoTo;
-    short   m_iMusicFadingDirection;
-    short   m_iTypeOfSwitch;
+    short   m_iFadingDirection;                             // 3108
+    int     m_iModeObbeCamIsInForCar;                       // 3112
+    short   m_iModeToGoTo;                                  // 3116
+    short   m_iMusicFadingDirection;                        // 3118
+    short   m_iTypeOfSwitch;                                // 3120
 
-    DWORD   m_uiFadeTimeStarted;
-    DWORD   m_uiFadeTimeStartedMusic;
+    DWORD   m_uiFadeTimeStarted;                            // 3124
+    DWORD   m_uiFadeTimeStartedMusic;                       // 3128
+};
+
+
+namespace Camera
+{
+    inline CCameraSAInterface&     GetInterface( void )
+    {
+        return *(CCameraSAInterface*)0x00B6F028;
+    }
 };
 
 
@@ -441,5 +450,8 @@ public:
 
     bool                        IsSphereVisible( const RwSphere& sphere ) const;
 };
+
+void Camera_Init( void );
+void Camera_Shutdown( void );
 
 #endif

@@ -38,14 +38,14 @@ public:
 
     CQuat( RwMatrix& m )
     {
-        w = sqrt( SharedUtil::Max( (float)0, 1.0f + m.right.fX + m.at.fY + m.up.fZ ) ) * 0.5f;
-        x = sqrt( SharedUtil::Max( (float)0, 1.0f + m.right.fX - m.at.fY - m.up.fZ ) ) * 0.5f;
-        y = sqrt( SharedUtil::Max( (float)0, 1.0f - m.right.fX + m.at.fY - m.up.fZ ) ) * 0.5f;
-        z = sqrt( SharedUtil::Max( (float)0, 1.0f - m.right.fX - m.at.fY + m.up.fZ ) ) * 0.5f;
+        w = sqrt( SharedUtil::Max( (float)0, 1.0f + m.vRight.fX + m.vFront.fY + m.vUp.fZ ) ) * 0.5f;
+        x = sqrt( SharedUtil::Max( (float)0, 1.0f + m.vRight.fX - m.vFront.fY - m.vUp.fZ ) ) * 0.5f;
+        y = sqrt( SharedUtil::Max( (float)0, 1.0f - m.vRight.fX + m.vFront.fY - m.vUp.fZ ) ) * 0.5f;
+        z = sqrt( SharedUtil::Max( (float)0, 1.0f - m.vRight.fX - m.vFront.fY + m.vUp.fZ ) ) * 0.5f;
         
-        x = static_cast < float > ( _copysign( x, m.up.fY - m.at.fZ ) );
-        y = static_cast < float > ( _copysign( y, m.right.fZ - m.up.fX ) );
-        z = static_cast < float > ( _copysign( z, m.at.fX - m.right.fY ) );
+        x = static_cast < float > ( _copysign( x, m.vUp.fY - m.vFront.fZ ) );
+        y = static_cast < float > ( _copysign( y, m.vRight.fZ - m.vUp.fX ) );
+        z = static_cast < float > ( _copysign( z, m.vFront.fX - m.vRight.fY ) );
     }
 
     static void ToMatrix(const CQuat& q, RwMatrix& m)
@@ -62,17 +62,17 @@ public:
         float zz = q.z * q.z;
         float zw = q.z * q.w;
 
-        m.right.fX =       1.0f -  2.0f * ( yy + zz );
-        m.right.fY =               2.0f * ( xy - zw );
-        m.right.fZ =               2.0f * ( xz + yw );
+        m.vRight.fX =       1.0f -  2.0f * ( yy + zz );
+        m.vRight.fY =               2.0f * ( xy - zw );
+        m.vRight.fZ =               2.0f * ( xz + yw );
 
-        m.at.fX =                  2.0f * ( xy + zw );
-        m.at.fY =          1.0f -  2.0f * ( xx + zz );
-        m.at.fZ =                  2.0f * ( yz - xw );
+        m.vFront.fX =                  2.0f * ( xy + zw );
+        m.vFront.fY =          1.0f -  2.0f * ( xx + zz );
+        m.vFront.fZ =                  2.0f * ( yz - xw );
 
-        m.up.fX =                  2.0f * ( xz - yw );
-        m.up.fY =                  2.0f * ( yz + xw );
-        m.up.fZ =          1.0f -  2.0f * ( xx + yy );
+        m.vUp.fX =                  2.0f * ( xz - yw );
+        m.vUp.fY =                  2.0f * ( yz + xw );
+        m.vUp.fZ =          1.0f -  2.0f * ( xx + yy );
     }
 
     // Linear interpolation
