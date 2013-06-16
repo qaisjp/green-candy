@@ -1159,7 +1159,7 @@ inline void __declspec(naked)    invalid_ptr()
 #define RWP_UTIL_STREAMFUNCS( rwobj ) \
     typedef RwStream*   (__cdecl*##rwobj##PluginStreamRead)( RwStream *stream, size_t size, rwobj *obj ); \
     typedef int         (__cdecl*##rwobj##PluginStreamWrite)( RwStream *stream, size_t size, rwobj *obj ); \
-    typedef size_t      (__cdecl*##rwobj##PluginStreamGetSize)( void ); \
+    typedef size_t      (__cdecl*##rwobj##PluginStreamGetSize)( rwobj *obj ); \
     typedef size_t      (__cdecl*##rwobj##RegisterPluginStream_t)( unsigned int id, rwobj##PluginStreamRead readCallback, rwobj##PluginStreamWrite writeCallback, rwobj##PluginStreamGetSize sizeCallback )
 
 // Used to declare a plugin type.

@@ -27,6 +27,7 @@ class LuaMain abstract
 {
     friend class LuaManager;
     friend class Resource;
+    friend class LuaFunctionRef;
 protected:
 
     // Manager only
@@ -69,9 +70,10 @@ public:
 
     inline lua_State*               operator * () const                 { return GetVirtualMachine(); }
 
+    // Extend this routine to set the fileSystem root of this LuaMain.
     virtual bool                    ParseRelative( const char *in, filePath& out ) const = 0;
 
-#ifndef _KILLFRENZY
+#ifdef MTA_CLIENT
     virtual CXMLFile*               CreateXML( const char *path ) = 0;
     virtual void                    SaveXML( CXMLNode *root ) = 0;
     void                            DestroyXML( CXMLFile *file );
@@ -101,7 +103,7 @@ protected:
     class LuaManager&               m_system;
     LuaTimerManager                 m_timers;
 
-#ifndef _KILLFRENZY
+#ifdef MTA_CLIENT
     typedef std::list <CXMLFile*> xmlFiles_t;
 
     xmlFiles_t                      m_XMLFiles;

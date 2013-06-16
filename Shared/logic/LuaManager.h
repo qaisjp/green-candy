@@ -187,6 +187,7 @@ protected:
         lua_State& m_lua;
     };
 
+public:
     // Inline stack utility
     class context
     {
@@ -234,7 +235,8 @@ protected:
 
     friend class context;
 
-    inline context                  AcquireContext( LuaMain& env )  { return context( env, *this ); }
+    __forceinline context           AcquireContext( LuaMain& env )  { return context( env, *this ); }
+protected:
     void                            PushStatus( const LuaMain& main );
     const LuaMain*                  PopStatus( int *line = NULL, std::string *src = NULL, std::string *proto = NULL );
     

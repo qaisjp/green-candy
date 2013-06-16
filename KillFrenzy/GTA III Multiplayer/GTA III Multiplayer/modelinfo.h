@@ -25,12 +25,6 @@ class CModelDimension
 	BYTE					pad2[44];
 };
 
-enum eRwType
-{
-	RW_ONE,
-	RW_TWO
-};
-
 class CAtomicModelInfo;
 class CDamageAtomicModelInfo;
 class CLODAtomicModelInfo;
@@ -42,27 +36,27 @@ enum eModelType
 
 class RwObject;
 
-#define GTACALL
+#define GTACALL __thiscall
 
 class CBaseModelInfo
 {
 public:
     virtual												~CBaseModelInfo() = 0;
 
-    virtual CAtomicModelInfo* GTACALL				GetAtomicModelInfo() = 0;               // 4
+    virtual CAtomicModelInfo* GTACALL               GetAtomicModelInfo() = 0;               // 4
     virtual CDamageAtomicModelInfo* GTACALL			GetDamageAtomicModelInfo() = 0;         // 8
-    virtual CLODAtomicModelInfo* GTACALL				GetLODAtomicModelInfo() = 0;            // 12
-    virtual eModelType GTACALL                       GetModelType() = 0;                     // 16
-    virtual unsigned int GTACALL                     GetTimeInfo() = 0;                      // 20
-    virtual void GTACALL                             Init() = 0;                             // 24
-    virtual void GTACALL                             Shutdown() = 0;                         // 28
-    virtual void GTACALL                             DeleteRwObject() = 0;                   // 32
-    virtual eRwType GTACALL                          GetRwModelType() = 0;                   // 36
-    virtual RwObject* GTACALL                        CreateRwObjectEx( int rwTag ) = 0;      // 40
-    virtual RwObject* GTACALL                        CreateRwObject() = 0;                   // 44
-    virtual void GTACALL                             SetAnimFile( const char *name ) = 0;    // 48
-    virtual void GTACALL                             ConvertAnimFileIndex() = 0;             // 52
-    virtual int GTACALL                              GetAnimFileIndex() = 0;  
+    virtual CLODAtomicModelInfo* GTACALL		    GetLODAtomicModelInfo() = 0;            // 12
+    virtual eModelType GTACALL                      GetModelType() = 0;                     // 16
+    virtual unsigned int GTACALL                    GetTimeInfo() = 0;                      // 20
+    virtual void GTACALL                            Init() = 0;                             // 24
+    virtual void GTACALL                            Shutdown() = 0;                         // 28
+    virtual void GTACALL                            DeleteRwObject() = 0;                   // 32
+    virtual eRwType GTACALL                         GetRwModelType() = 0;                   // 36
+    virtual RwObject* GTACALL                       CreateRwObjectEx( int rwTag ) = 0;      // 40
+    virtual RwObject* GTACALL                       CreateRwObject() = 0;                   // 44
+    virtual void GTACALL                            SetAnimFile( const char *name ) = 0;    // 48
+    virtual void GTACALL                            ConvertAnimFileIndex() = 0;             // 52
+    virtual int GTACALL                             GetAnimFileIndex() = 0;  
 };
 
 class CModelInfo : public CBaseModelInfo

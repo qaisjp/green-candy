@@ -25,31 +25,23 @@
 #include <sys/stat.h>
 #include <SharedUtil.h>
 #include <CVector.h>
+#include <RenderWare_shared.h>
+#include <CQuat.h>
 #include <core/CFileSystemInterface.h>
 #include <core/CFileSystem.h>
-#include "luafile.h"
-#include "luafilesystem.h"
-#include "luamd5.h"
-#include "luabitlib.h"
-
-static inline void luaJ_extend( lua_State *L, int idx, int nargs )
-{
-    ILuaClass& j = *lua_refclass( L, idx );
-
-    int offcl = -nargs - 1;
-
-    // Make it class root
-    j.PushEnvironment( L );
-    lua_setfenv( L, offcl - 1 );
-
-    lua_pushvalue( L, idx );
-
-    if ( offcl != -1 )
-        lua_insert( L, offcl );
-
-    lua_call( L, nargs + 1, 0 );
-}
+#include <logic/include.h>
+#include "derived/include.h"
+#include "dxElements/include.h"
+#include "benchmarks/include.h"
+#include "win32/include.h"
+#include "glDriver/gl_main.h"
+#include <lua/CLuaFunctionParseHelpers.h>
+#include <CScriptArgReader.h>
+#include <google/dense_hash_map>
 
 extern CFileSystem *fileSystem;
+extern CFileTranslator *modFileRoot;
+
+extern lua_State *userLuaState;
 
 #endif //_MAIN_

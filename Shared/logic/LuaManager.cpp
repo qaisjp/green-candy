@@ -396,7 +396,7 @@ static int LoadCFunctions( LuaMain *L )
     LUA_REGISTER( L, fileRename );
     LUA_REGISTER( L, fileCopy );
 
-#ifndef _KILLFRENZY
+#ifdef MTA_CLIENT
     // XML Functions
     LUA_REGISTER( L, xmlFindChild );
     LUA_REGISTER( L, xmlNodeGetChildren );

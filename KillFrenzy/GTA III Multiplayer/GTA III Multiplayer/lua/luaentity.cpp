@@ -66,6 +66,20 @@ static int entity_getMatrix( lua_State *L )
     return 1;
 }
 
+static int entity_setMatrix( lua_State *L )
+{
+    CMatrix *mat;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadClass( mat, LUACLASS_KFMATRIX );
+    LUA_ARGS_END;
+
+    CGameEntity& entity = *(CGameEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) );
+
+    entity.GetEntity().m_matrix = *mat;
+    LUA_SUCCESS;
+}
+
 static int entity_getModelID( lua_State *L )
 {
     lua_pushnumber( L, ((CGameEntity*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetEntity().m_usModelID );
@@ -84,6 +98,7 @@ static const luaL_Reg entity_interface[] =
     { "getRotation", entity_getRotation },
     { "setRotation", entity_setRotation },
     { "getMatrix", entity_getMatrix },
+    { "setMatrix", entity_setMatrix },
     { "getModelID", entity_getModelID },
     { "setModelID", entity_setModelID },
     { NULL, NULL }
@@ -148,10 +163,8 @@ static int sysentity_constructor( lua_State *L )
     return 0;
 }
 
-CGameEntity::CGameEntity( LuaClass& root, bool system, CEntity& entity ) : m_entity( entity ), LuaElement( root ), m_sync( entityDef )
+CGameEntity::CGameEntity( lua_State *L, bool system, CEntity& entity ) : m_entity( entity ), LuaElement( L ), m_sync( entityDef )
 {
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, this );
     lua_pushcclosure( L, entity_constructor, 1 );
@@ -181,9 +194,9 @@ void CGameEntity::Frame()
     entity_network newNet( entityDef );
 
     // Trade changes
-    newNet.Set( m_entity );
+    newNet.Set( entityDef, m_entity );
 
-    m_sync.Write( m_entity, stream );
+    m_sync.Write( entityDef, m_entity, stream );
 
     if ( stream.IsWritten() )
     {
@@ -191,6 +204,6 @@ void CGameEntity::Frame()
 
         stream.Reset();
 
-        m_sync.Establish( m_entity, stream );
+        m_sync.Establish( entityDef, m_entity, stream );
     }
 }

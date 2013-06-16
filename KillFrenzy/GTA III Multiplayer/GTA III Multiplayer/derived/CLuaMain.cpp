@@ -14,12 +14,10 @@
 
 CLuaMain::CLuaMain( CLuaManager& man, CFileTranslator& root ) : LuaMain( man ), m_fileRoot( root )
 {
-
 }
 
 CLuaMain::~CLuaMain()
 {
-
 }
 
 bool CLuaMain::ParseRelative( const char *in, filePath& out ) const

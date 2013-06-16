@@ -181,6 +181,7 @@ static void __stdcall luaE_guardedThreadEntryPoint( lua_Thread *L )
     __except( guard_filter( GetExceptionCode(), GetExceptionInformation() ) )
     {
         __asm int 3
+        SetThreadContext( GetCurrentThread(), guard_exception->ContextRecord );
     }
 }
 

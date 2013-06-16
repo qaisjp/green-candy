@@ -46,7 +46,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\;..\..\..\Shared\core;..\..\..\Shared;..\..\..\Shared\sdk;..\..\..\vendor\zlib;..\..\..\vendor\lua\src;..\..\..\vendor\sparsehash\current\src;..\..\..\vendor\sparsehash\current\src\windows;..\..\..\lua_interpret</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\..\..\Shared\core;..\..\..\Shared;..\..\..\Shared\sdk;..\..\..\vendor\zlib;..\..\..\vendor\lua\src;..\..\..\vendor\sparsehash\current\src;..\..\..\vendor\sparsehash\current\src\windows;..\..\..\lua_interpret;..\..\..\MTA10\mods\shared_logic;..\..\..\MTA10\sdk</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -79,7 +79,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>.\;..\..\..\Shared\core;..\..\..\Shared;..\..\..\Shared\sdk;..\..\..\vendor\zlib;..\..\..\vendor\lua\src;..\..\..\vendor\sparsehash\current\src;..\..\..\vendor\sparsehash\current\src\windows;..\..\..\lua_interpret</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\..\..\Shared\core;..\..\..\Shared;..\..\..\Shared\sdk;..\..\..\vendor\zlib;..\..\..\vendor\lua\src;..\..\..\vendor\sparsehash\current\src;..\..\..\vendor\sparsehash\current\src\windows;..\..\..\lua_interpret;..\..\..\MTA10\mods\shared_logic;..\..\..\MTA10\sdk</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>StdInc.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
@@ -88,7 +88,7 @@
       <AdditionalDependencies>detours/detours.lib;d3dx8.lib;fmod/fmodex_vc.lib;zlib_2008.lib;DbgHelp.lib;lua5.1.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>..\..\kf\gtamod.dll</OutputFile>
       <AdditionalLibraryDirectories>C:\dx8sdk\DXF\DXSDK\lib;..\..\..\vendor\zlib\lib\;..\..\..\vendor\lua\lib\</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
@@ -117,16 +117,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\lua_interpret\luabitlib.h" />
     <ClInclude Include="..\..\..\lua_interpret\luafile.h" />
+    <ClInclude Include="..\..\..\lua_interpret\luafile.Utils.hxx" />
     <ClInclude Include="..\..\..\lua_interpret\luafilesystem.h" />
+    <ClInclude Include="..\..\..\lua_interpret\luamd5.h" />
+    <ClInclude Include="..\..\..\MTA10\mods\shared_logic\lua\CLuaFunctionParseHelpers.h" />
     <ClInclude Include="..\..\..\Shared\core\CFileSystem.h" />
     <ClInclude Include="..\..\..\Shared\core\CFileSystem.Utils.hxx" />
     <ClInclude Include="..\..\..\Shared\core\CFileSystem.zip.h" />
     <ClInclude Include="..\..\..\Shared\logic\Events.h" />
     <ClInclude Include="..\..\..\Shared\logic\include.h" />
     <ClInclude Include="..\..\..\Shared\logic\Logger.h" />
-    <ClInclude Include="..\..\..\Shared\logic\LuaArgument.h" />
-    <ClInclude Include="..\..\..\Shared\logic\LuaArguments.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaCFunctions.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaClass.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaCommon.h" />
@@ -136,6 +138,7 @@
     <ClInclude Include="..\..\..\Shared\logic\LuaFunctionRef.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaMain.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaManager.h" />
+    <ClInclude Include="..\..\..\Shared\logic\LuaMatrix.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaTimer.h" />
     <ClInclude Include="..\..\..\Shared\logic\LuaTimerManager.h" />
     <ClInclude Include="..\..\..\Shared\logic\networking\NetworkStruct.h" />
@@ -178,21 +181,24 @@
     <ClInclude Include="world.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\lua_interpret\luabitlib.cpp" />
     <ClCompile Include="..\..\..\lua_interpret\luafile.cpp" />
     <ClCompile Include="..\..\..\lua_interpret\luafilesystem.cpp" />
+    <ClCompile Include="..\..\..\lua_interpret\luamd5.cpp" />
+    <ClCompile Include="..\..\..\MTA10\mods\shared_logic\lua\CLuaFunctionParseHelpers.cpp" />
     <ClCompile Include="..\..\..\Shared\core\CFileSystem.cpp" />
     <ClCompile Include="..\..\..\Shared\core\CFileSystem.zip.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\Events.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\Logger.cpp" />
-    <ClCompile Include="..\..\..\Shared\logic\LuaArgument.cpp" />
-    <ClCompile Include="..\..\..\Shared\logic\LuaArguments.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaCFunctions.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaClass.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaElement.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaFunctionDefs.Resources.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaFunctionRef.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaMain.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaManager.cpp" />
+    <ClCompile Include="..\..\..\Shared\logic\LuaMatrix.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaTimer.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaTimerManager.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\RegisteredCommands.cpp" />

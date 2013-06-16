@@ -18,7 +18,7 @@
 class CGamePlayer : public CGamePed
 {
 public:
-                            CGamePlayer( LuaClass& root, CPed& player );
+                            CGamePlayer( lua_State *L, CPed& player );
                             ~CGamePlayer();
 };
 

@@ -40,6 +40,12 @@
     <Filter Include="mta_green\luadefs\include">
       <UniqueIdentifier>{53cf618f-a60a-498e-9b18-e93919e5055b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="mta_green\include\sdk">
+      <UniqueIdentifier>{4f2ea9d2-fca4-4b01-b221-bbb83d268fb2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mta_green\sdk">
+      <UniqueIdentifier>{3dbff1c2-418f-415f-95eb-6ce70ce65cd9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="console.h">
@@ -109,12 +115,6 @@
       <Filter>mta_green\include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Shared\logic\Logger.h">
-      <Filter>mta_green\include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\Shared\logic\LuaArgument.h">
-      <Filter>mta_green\include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\Shared\logic\LuaArguments.h">
       <Filter>mta_green\include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Shared\logic\LuaClass.h">
@@ -219,6 +219,21 @@
     <ClInclude Include="..\..\..\Shared\logic\networking\NetworkStruct.h">
       <Filter>mta_green\include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\lua_interpret\luafile.Utils.hxx">
+      <Filter>lua\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua_interpret\luamd5.h">
+      <Filter>lua\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\lua_interpret\luabitlib.h">
+      <Filter>lua\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Shared\logic\LuaMatrix.h">
+      <Filter>mta_green\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\MTA10\mods\shared_logic\lua\CLuaFunctionParseHelpers.h">
+      <Filter>mta_green\include\sdk</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="console.cpp" />
@@ -243,12 +258,6 @@
     <ClCompile Include="..\..\..\Shared\core\CFileSystem.cpp" />
     <ClCompile Include="lua.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\Logger.cpp">
-      <Filter>mta_green</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Shared\logic\LuaArgument.cpp">
-      <Filter>mta_green</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Shared\logic\LuaArguments.cpp">
       <Filter>mta_green</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Shared\logic\LuaFunctionRef.cpp">
@@ -334,6 +343,21 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Shared\logic\LuaElement.cpp">
       <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua_interpret\luabitlib.cpp">
+      <Filter>lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\lua_interpret\luamd5.cpp">
+      <Filter>lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaClass.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Shared\logic\LuaMatrix.cpp">
+      <Filter>mta_green</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\MTA10\mods\shared_logic\lua\CLuaFunctionParseHelpers.cpp">
+      <Filter>mta_green\sdk</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -30,6 +30,7 @@ IMPLEMENT_ENUM_BEGIN( eLuaType )
     ADD_ENUM ( LUA_TTHREAD,         "thread" )
 IMPLEMENT_ENUM_END( "lua-type" )
 
+#ifdef MTA_CLIENT
 
 IMPLEMENT_ENUM_BEGIN( CGUIVerticalAlign )
     ADD_ENUM ( CGUI_ALIGN_TOP,              "top" )
@@ -230,3 +231,5 @@ bool MixedReadMaterialString ( CScriptArgReader& argStream, CClientMaterial*& pM
         return pMaterialElement != NULL;
     }
 }
+
+#endif //MTA_CLIENT

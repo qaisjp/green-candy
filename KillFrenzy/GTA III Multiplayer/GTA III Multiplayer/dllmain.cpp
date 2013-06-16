@@ -10,6 +10,9 @@ int WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, PVOID pvNothing)
             Sleep( 1 );
 #endif
 
+        // Set correct dir
+        SetCurrentDirectory( "D:/Programme/Rockstar Games/GTAIII/" );
+
 		// Init stuff here
 		Core_Init();
 	}

@@ -1,7 +1,7 @@
 #include "StdInc.h"
 
 // Return the scene/town id by position
-unsigned char	World_GetTownAtPosition(vec3_t vecPos)
+unsigned char	World_GetTownAtPosition(const CVector& vecPos)
 {
 	DWORD dwFunc=FUNC_GetTownAtPos;
 	unsigned char	ucSceneID;

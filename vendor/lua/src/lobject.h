@@ -941,6 +941,7 @@ public:
 
     void    Push( lua_State *L );
     void    PushMethod( lua_State *L, const char *key );
+    void    PushSuperMethod( lua_State *L );
 
     void    CallMethod( lua_State *L, const char *key );
 
@@ -983,6 +984,7 @@ public:
 
     void    PushEnvironment( lua_State *L );
     void    PushOuterEnvironment( lua_State *L );
+    void    PushInternStorage( lua_State *L );
     void    PushChildAPI( lua_State *L );
     void    PushParent( lua_State *L );
     const TValue*   GetEnvValue( lua_State *L, const TValue *key );

@@ -105,6 +105,15 @@
     <ClCompile Include="..\src\print.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\lstrtable.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ldispatch.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lfiber.c">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\lua5.1.def">
@@ -185,6 +194,15 @@
       <Filter>inc</Filter>
     </ClInclude>
     <ClInclude Include="..\src\lzio.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ldispatch.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\lfiber.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\lstrtable.h">
       <Filter>inc</Filter>
     </ClInclude>
   </ItemGroup>

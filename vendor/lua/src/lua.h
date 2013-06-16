@@ -135,6 +135,9 @@ typedef LUA_NUMBER lua_Number;
 typedef LUA_INTEGER lua_Integer;
 
 
+/* type for internal lua string (for export to runtime) */
+typedef const char* lua_String;
+
 
 /*
 ** state manipulation
@@ -196,7 +199,7 @@ LUA_API lua_Number      (lua_tonumber) (lua_State *L, int idx);
 LUA_API lua_Integer     (lua_tointeger) (lua_State *L, int idx);
 LUA_API lua_Integer     (lua_tointegerW) (lua_State *L, int idx);   // MTA Specific
 LUA_API bool            (lua_toboolean) (lua_State *L, int idx);
-LUA_API const char     *(lua_tolstring) (lua_State *L, int idx, size_t *len);
+LUA_API lua_String      (lua_tolstring) (lua_State *L, int idx, size_t *len);
 LUA_API size_t          (lua_objlen) (lua_State *L, int idx);
 LUA_API lua_CFunction   (lua_tocfunction) (lua_State *L, int idx);
 LUA_API void	       *(lua_touserdata) (lua_State *L, int idx);
@@ -220,6 +223,8 @@ LUA_API void  (lua_pushboolean) (lua_State *L, int b);
 LUA_API void  (lua_pushlightuserdata) (lua_State *L, void *p);
 LUA_API int   (lua_pushthread) (lua_State *L);
 LUA_API int   (lua_pushthreadex) (lua_State *L, lua_State *thread);
+
+#define lua_pushcstring( L, str ) lua_pushlstring( L, str, sizeof(str) )
 
 
 /*

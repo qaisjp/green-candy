@@ -33,10 +33,8 @@ static int ped_constructor( lua_State *L )
     return 0;
 }
 
-CGamePed::CGamePed( LuaClass& root, bool system, CPed& ped ) : CGameEntity( root, system, ped )
+CGamePed::CGamePed( lua_State *L, bool system, CPed& ped ) : CGameEntity( L, system, ped )
 {
-    lua_State *L = root.GetVM();
-
     PushStack( L );
     lua_pushlightuserdata( L, &ped );
     lua_pushcclosure( L, ped_constructor, 1 );

@@ -26,12 +26,6 @@ enum ePedTask
 	NUM_PEDTASKS
 };
 
-static const NetworkDataType entityDef[] =
-{
-    { NETWORK_VECTOR3D, "pos" },
-    { NETWORK_VECTOR3D, "velocity" }
-};
-
 enum eEntityDef
 {
     ENTITYDEF_POS,
@@ -107,14 +101,10 @@ public:
 	unsigned int			m_uiPassengerFlag;		// +644
 	BYTE					pad3[32];				// +648
 
-    template <class type>
-    inline void NetworkWrite( const unsigned char id, const type& val )
-    {
-        // void for now
-    }
+    NETWORK_NULL_DATA
 
     template <>
-    inline void NetworkWrite <CVector> ( const unsigned char id, const CVector& val )
+    void NetworkWrite <CVector> ( const unsigned int id, const CVector& val )
     {
         switch( id )
         {
@@ -131,26 +121,17 @@ public:
         }
     }
 
-    template <class type>
-    inline type NetworkRead( const unsigned char id ) const
-    {
-        return type();
-    }
-
     template <>
-    inline CVector NetworkRead( const unsigned char id ) const
+    inline void NetworkRead( const unsigned int id, CVector& val ) const
     {
         switch( id )
         {
-        case ENTITYDEF_POS:         return CVector( m_matrix.m_vecPos[0], m_matrix.m_vecPos[1], m_matrix.m_vecPos[2] );
-        case ENTITYDEF_VELOCITY:    return CVector( m_vecVelocity[0], m_vecVelocity[1], m_vecVelocity[2] );
+        case ENTITYDEF_POS:         val = CVector( m_matrix.m_vecPos[0], m_matrix.m_vecPos[1], m_matrix.m_vecPos[2] ); break;
+        case ENTITYDEF_VELOCITY:    val = CVector( m_vecVelocity[0], m_vecVelocity[1], m_vecVelocity[2] ); break;
+        default:                    val = CVector(); break;
         }
-
-        return CVector();
     }
 };	// 680 Bytes size
-
-typedef NetworkSyncStruct <CEntity, ETSIZE(entityDef)> entity_network;
 
 void		Entity_Init();
 

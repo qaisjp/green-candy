@@ -29,6 +29,7 @@ public:
 
     int                 ToInt() const;
     const void*         GetPointer() const    { return m_call; }
+    void                Push( lua_State *L );
 
     LuaFunctionRef&     operator = ( const LuaFunctionRef& other );
     bool                operator == ( const LuaFunctionRef& other ) const;

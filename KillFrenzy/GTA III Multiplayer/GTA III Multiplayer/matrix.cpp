@@ -13,6 +13,14 @@ static int matrix_offset( lua_State *L )
     return 3;
 }
 
+static LUA_DECLARE( setPosition )
+{
+    luaL_checktyperange( L, 1, LUA_TNUMBER, 3 );
+
+    ((CMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_vecPos = CVector( (float)lua_tonumber( L, 1 ), (float)lua_tonumber( L, 2 ), (float)lua_tonumber( L, 3 ) );
+    LUA_SUCCESS;
+}
+
 static int matrix_destroy( lua_State *L )
 {
     delete (CMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) );
@@ -23,6 +31,7 @@ static int matrix_destroy( lua_State *L )
 static const luaL_Reg matrix_interface[] =
 {
     { "offset", matrix_offset },
+    LUA_METHOD( setPosition ),
     { "destroy", matrix_destroy },
     { NULL, NULL }
 };
@@ -32,7 +41,7 @@ static int luaconstructor_matrix( lua_State *L )
     CMatrix *matrix = (CMatrix*)lua_touserdata( L, lua_upvalueindex( 1 ) );
 
     ILuaClass& j = *lua_refclass( L, 1 );
-    j.SetTransmit( LUACLASS_MATRIX, matrix );
+    j.SetTransmit( LUACLASS_KFMATRIX, matrix );
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );

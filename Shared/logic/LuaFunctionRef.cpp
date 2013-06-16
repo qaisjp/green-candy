@@ -41,6 +41,11 @@ LuaFunctionRef::~LuaFunctionRef()
         m_lua->Dereference( *this );
 }
 
+void LuaFunctionRef::Push( lua_State *L )
+{
+    m_lua->m_system.PushReference( L, *this );
+}
+
 LuaFunctionRef& LuaFunctionRef::operator = ( const LuaFunctionRef& other )
 {
     if ( m_ref != LUA_REFNIL )

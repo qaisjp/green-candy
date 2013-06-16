@@ -385,7 +385,7 @@ LUA_API bool lua_toboolean (lua_State *L, int idx) {
   return !l_isfalse(o);
 }
 
-LUA_API const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
+LUA_API lua_String lua_tolstring (lua_State *L, int idx, size_t *len) {
   StkId o = index2adr(L, idx);
   if (!ttisstring(o)) {
     lua_lock(L);  /* `luaV_tostring' may create a new string */
@@ -897,7 +897,6 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex)
     lua_unlock(L);
     return 1;
 }
-
 
 LUA_API int lua_setfenv (lua_State *L, int idx)
 {

@@ -42,7 +42,7 @@ int bitwise_operation( lua_State *L )
 }
 
 #define BITWISE_OP( name, exec ) \
-    struct bit_##name \
+    struct lua_bit_##name \
     { \
         static bitwiseNumber perform( bitwiseNumber op1, bitwiseNumber op2 ) \
         { \
@@ -75,9 +75,9 @@ static int bitwise_rshift( lua_State *L )
 static const luaL_Reg bit32_interface[] =
 {
     { "bnot", bitwise_not },
-    { "band", bitwise_operation <bit_and> },
-    { "bor", bitwise_operation <bit_or> },
-    { "bxor", bitwise_operation <bit_xor> },
+    { "band", bitwise_operation <lua_bit_and> },
+    { "bor", bitwise_operation <lua_bit_or> },
+    { "bxor", bitwise_operation <lua_bit_xor> },
     { "lshift", bitwise_lshift },
     { "rshift", bitwise_rshift },
     { NULL, NULL }

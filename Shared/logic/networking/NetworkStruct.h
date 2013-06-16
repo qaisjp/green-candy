@@ -4,7 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        Shared/logic/networking/NetworkStruct.h
 *  PURPOSE:     Network traversal structure management
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,10 +13,16 @@
 #ifndef _NETWORK_STRUCT_
 #define _NETWORK_STRUCT_
 
+// 12.6.2013: now using template unrolled-loops for better optimization.
+
 #ifdef _MSC_VER
 #define NETWORK_NOEXCEPT    __declspec(nothrow)
+#define NET_FAST            __forceinline __declspec(noalias)
+#define NET_RESTRICT        __declspec(restrict)
 #else
 #define NETWORK_NOEXCEPT    noexcept
+#define NET_FAST                   
+#define NET_RESTRICT
 #endif
 
 // http://groups.google.ie/group/comp.lang.c/msg/706324f25e4a60b0?hl=en&
@@ -31,7 +37,30 @@
 
 #define INT2BITS(x)     ( (unsigned char)LOG2_32BIT(x) + 1 )
 #define BITSIZE(x)      ( INT2BITS(sizeof(x)) )
-#define ETSIZE(x)       ( sizeof(x) / sizeof(Networking::NetworkDataType) )
+#define ETSIZE(x)       ( sizeof(x) / sizeof(*x) )
+
+template <unsigned int count, class loopFunc>
+struct ForceLoopUnrollCount
+{
+    template <unsigned int n>
+    NET_FAST void Performator( loopFunc& func )
+    {
+        func.Exec( count - n );
+
+        Performator <n - 1> ( func );
+    }
+
+    template <>
+    NET_FAST void Performator <1> ( loopFunc& func )
+    {
+        func.Exec( count - 1 );
+    }   
+
+    NET_FAST ForceLoopUnrollCount( loopFunc& func )
+    {
+        Performator <count> ( func );
+    }
+};
 
 namespace Networking
 {
@@ -51,16 +80,20 @@ namespace Networking
         NETWORK_BOOL
     };
 
+#define NETWORK_NULL_DATA \
+    template <class type> NET_FAST void     NetworkRead( const unsigned int n, type& val ) const    { return; } \
+    template <class type> NET_FAST void     NetworkWrite( const unsigned int n, const type& val )          { return; }
+
     struct NetworkDataType
     {
         const eNetworkDataType  type;
-        const std::string       name;
+        const char* const       name;
     };
 
     template <size_t defStructSize>
     class DefaultDataStreamer
     {
-        inline void NETWORK_NOEXCEPT ForwardID()
+        NET_FAST void NETWORK_NOEXCEPT ForwardID()
         {
             if ( INT2BITS(defStructSize) <= 8 )
                 Forward <char> ();
@@ -72,74 +105,76 @@ namespace Networking
 
     public:
         template <class type>
-        inline NETWORK_NOEXCEPT void Forward( const unsigned int count = 1 )
+        NET_FAST NETWORK_NOEXCEPT void Forward( const unsigned int count = 1 )
         {
-            m_seek = (void*)( (type*)m_seek + count );
+            (type*&)m_seek += count;
         }
 
-        NETWORK_NOEXCEPT DefaultDataStreamer( size_t size )
+        NET_FAST NETWORK_NOEXCEPT DefaultDataStreamer( size_t size )
         {
             m_seek = m_instance = new char [ size ];
         }
 
-        NETWORK_NOEXCEPT DefaultDataStreamer( const NetworkDataType *def )
+        struct DataStreamerLoop
         {
-            size_t n = defStructSize;
+            NET_FAST DataStreamerLoop( const NetworkDataType *const def, DefaultDataStreamer& streamer ) : m_def( def ), m_streamer( streamer )
+            { }
 
+            NET_FAST void Exec( const unsigned int n )
+            {
+                const NetworkDataType& def = m_def[n];
+
+                if ( def.type == NETWORK_BOOL )            m_streamer.Forward <bool> ();
+                else if ( def.type == NETWORK_WORD )       m_streamer.Forward <char> ();
+                else if ( def.type == NETWORK_DWORD )      m_streamer.Forward <short> ();
+                else if ( def.type == NETWORK_FLOAT )      m_streamer.Forward <int> ();
+                else if ( def.type == NETWORK_DOUBLE )     m_streamer.Forward <double> ();
+                else if ( def.type == NETWORK_VECTOR3D )   m_streamer.Forward <CVector> ();
+
+                m_streamer.ForwardID();
+            }
+
+            DefaultDataStreamer& m_streamer;
+            const NetworkDataType *const m_def;
+        };
+
+        NET_FAST NETWORK_NOEXCEPT DefaultDataStreamer( const NetworkDataType *const def )
+        {
             m_seek = 0;
 
             // First count for changes
             ForwardID();
 
-            while ( n-- )
-            {
-                switch( def->type )
-                {
-                case NETWORK_BOOL:      Forward <bool> (); break;
-                case NETWORK_BYTE:      Forward <char> (); break;
-                case NETWORK_WORD:      Forward <short> (); break;
-                case NETWORK_DWORD:     Forward <int> (); break;
-                case NETWORK_FLOAT:     Forward <float> (); break;
-                case NETWORK_DOUBLE:    Forward <double> (); break;
-                case NETWORK_VECTOR3D:  Forward <CVector> (); break;
-                default:                goto end;
-                }
+            ForceLoopUnrollCount <defStructSize, DataStreamerLoop> ( DataStreamerLoop( def, *this ) );
 
-                // We add size for an identifier
-                ForwardID();
-
-                def++;
-            }
-
-end:
             m_seek = m_instance = new char [ (size_t)(const char*)m_seek ];
         }
 
-        ~DefaultDataStreamer()
+        NET_FAST ~DefaultDataStreamer()
         {
             delete m_instance;
         }
 
-        inline NETWORK_NOEXCEPT void Reset()
+        NET_FAST NETWORK_NOEXCEPT void Reset()
         {
             m_seek = m_instance;
         }
 
         template <class type>
-        inline NETWORK_NOEXCEPT void Write( const type& val )
+        NET_FAST NETWORK_NOEXCEPT void Write( const type& val )
         {
             *(type*)m_seek = val;
             Forward <type> ();
         }
 
         template <class type>
-        inline NETWORK_NOEXCEPT const type& Get()
+        NET_FAST NETWORK_NOEXCEPT const type& Get()
         {
             return *(type*)m_seek;
         }
 
         template <class type>
-        inline NETWORK_NOEXCEPT const type& Read()
+        NET_FAST NETWORK_NOEXCEPT const type& Read()
         {
             const type& val = Get <type> ();
             Forward <type> ();
@@ -155,7 +190,7 @@ end:
     {
     public:
         template <class type>
-        inline NETWORK_NOEXCEPT const type& Acknowledge( const unsigned int, const type&, const type& next )
+        NET_FAST NETWORK_NOEXCEPT const type& Acknowledge( const unsigned int, const type&, const type& next )
         {
             return next;
         }
@@ -165,87 +200,109 @@ end:
     class NetworkStruct
     {
     public:
-        NetworkStruct( const NetworkDataType *def ) : m_streamer( def )
-        {
-            m_def = def;
-        }
+        NET_FAST NetworkStruct( const NetworkDataType *const def ) : m_streamer( def )
+        { }
 
-        NetworkStruct( const NetworkDataType *def, DataStreamer streamer ) : m_streamer( streamer )
-        {
-            m_def = def;
-        }
-
-        ~NetworkStruct()
-        {
-        }
+        NET_FAST NetworkStruct( DataStreamer streamer ) : m_streamer( streamer )
+        { }
 
         template <class SyncerEx>
-        inline NETWORK_NOEXCEPT void Write( const Owner& instance, SyncerEx& syncer = SyncerEx() )
+        struct StreamerWriteLoop
         {
-            const NetworkDataType *seek = m_def;
+            NET_FAST StreamerWriteLoop( const NetworkDataType *const def, DataStreamer& ds, const Owner& instance, SyncerEx& sync )
+                : m_def( def ), m_instance( instance ), m_streamer( ds ), m_syncer( sync )
+            { }
 
-            m_streamer.Reset();
-
-            for ( unsigned int n = 0; n < defStructSize; n++ )
+            template <class type>
+            NET_FAST void Writer( const unsigned int n )
             {
+                type data;
+                m_instance.NetworkRead( n, data );
+                m_streamer.Write( m_syncer.Acknowledge <type> ( n, m_streamer.Get <type> (), data ) );
+            }
+
+            NET_FAST void Exec( const unsigned int n )
+            {
+                const NetworkDataType *const seek = &m_def[n];
+
                 switch( seek->type )
                 {
-                case NETWORK_BOOL:      m_streamer.Write( syncer.Acknowledge <bool> ( n, m_streamer.Get <bool> (), instance.NetworkRead <bool> ( n ) ) ); break;
-                case NETWORK_BYTE:      m_streamer.Write( syncer.Acknowledge <char> ( n, m_streamer.Get <char> (), instance.NetworkRead <char> ( n ) ) ); break;
-                case NETWORK_WORD:      m_streamer.Write( syncer.Acknowledge <short> ( n, m_streamer.Get <short> (), instance.NetworkRead <short> ( n ) ) ); break;
-                case NETWORK_DWORD:     m_streamer.Write( syncer.Acknowledge <int> ( n, m_streamer.Get <int> (), instance.NetworkRead <int> ( n ) ) ); break;
-                case NETWORK_FLOAT:     m_streamer.Write( syncer.Acknowledge <float> ( n, m_streamer.Get <float> (), instance.NetworkRead <float> ( n ) ) ); break;
-                case NETWORK_DOUBLE:    m_streamer.Write( syncer.Acknowledge <double> ( n, m_streamer.Get <double> (), instance.NetworkRead <double> ( n ) ) ); break;
-                case NETWORK_VECTOR3D:  m_streamer.Write( syncer.Acknowledge <CVector> ( n, m_streamer.Get <CVector> (), instance.NetworkRead <CVector> ( n ) ) ); break;
-                default:                return;
+                case NETWORK_BOOL:      Writer <bool> ( n ); break;
+                case NETWORK_BYTE:      Writer <char> ( n ); break;
+                case NETWORK_WORD:      Writer <short> ( n ); break;
+                case NETWORK_DWORD:     Writer <int> ( n ); break;
+                case NETWORK_FLOAT:     Writer <float> ( n ); break;
+                case NETWORK_DOUBLE:    Writer <double> ( n ); break;
+                case NETWORK_VECTOR3D:  Writer <CVector> ( n ); break;
                 }
-
-                seek++;
             }
+
+            const NetworkDataType *const m_def;
+            const Owner& m_instance;
+            DataStreamer& m_streamer;
+            SyncerEx& m_syncer;
+        };
+
+        template <class SyncerEx>
+        NET_FAST NETWORK_NOEXCEPT void Write( const NetworkDataType *def, const Owner& instance, SyncerEx& syncer = SyncerEx() )
+        {
+            m_streamer.Reset();
+
+            typedef StreamerWriteLoop <SyncerEx> LoopDef;
+
+            ForceLoopUnrollCount <defStructSize, LoopDef> ( LoopDef( def, m_streamer, instance, syncer ) );
         }
 
-        inline NETWORK_NOEXCEPT void Read( Owner& instance )
+        struct StreamerReadLoop
         {
-            const NetworkDataType *seek = m_def;
+            NET_FAST StreamerReadLoop( const NetworkDataType *const def, DataStreamer& ds, Owner& instance ) : m_def( def ), m_instance( instance ), m_streamer( ds )
+            { }
 
-            m_streamer.Reset();
-
-            for ( unsigned int n = 0; n < defStructSize; n++ )
+            NET_FAST void Exec( const unsigned int n )
             {
+                const NetworkDataType *const seek = &m_def[n];
+
                 switch( seek->type )
                 {
-                case NETWORK_BOOL:      instance.NetworkWrite( n, m_streamer.Read <bool> () ); break;
-                case NETWORK_BYTE:      instance.NetworkWrite( n, m_streamer.Read <char> () ); break;
-                case NETWORK_WORD:      instance.NetworkWrite( n, m_streamer.Read <short> () ); break;
-                case NETWORK_DWORD:     instance.NetworkWrite( n, m_streamer.Read <int> () ); break;
-                case NETWORK_FLOAT:     instance.NetworkWrite( n, m_streamer.Read <float> () ); break;
-                case NETWORK_DOUBLE:    instance.NetworkWrite( n, m_streamer.Read <double> () ); break;
-                case NETWORK_VECTOR3D:  instance.NetworkWrite( n, m_streamer.Read <CVector> () ); break;
-                default:                return;
+                case NETWORK_BOOL:      m_instance.NetworkWrite( n, (bool)m_streamer.Read <bool> () ); break;
+                case NETWORK_BYTE:      m_instance.NetworkWrite( n, (char)m_streamer.Read <char> () ); break;
+                case NETWORK_WORD:      m_instance.NetworkWrite( n, (short)m_streamer.Read <short> () ); break;
+                case NETWORK_DWORD:     m_instance.NetworkWrite( n, (int)m_streamer.Read <int> () ); break;
+                case NETWORK_FLOAT:     m_instance.NetworkWrite( n, (float)m_streamer.Read <float> () ); break;
+                case NETWORK_DOUBLE:    m_instance.NetworkWrite( n, (double)m_streamer.Read <double> () ); break;
+                case NETWORK_VECTOR3D:  m_instance.NetworkWrite( n, (CVector)m_streamer.Read <CVector> () ); break;
                 }
-
-                seek++;
             }
+
+            const NetworkDataType *const m_def;
+            Owner& m_instance;
+            DataStreamer& m_streamer;
+        };
+
+        NET_FAST NETWORK_NOEXCEPT void Read( const NetworkDataType *def, Owner& instance )
+        {
+            m_streamer.Reset();
+
+            ForceLoopUnrollCount <defStructSize, StreamerReadLoop> ( StreamerReadLoop( def, m_streamer, instance ) );
         }
 
     protected:
         DataStreamer    m_streamer;
-        const NetworkDataType*  m_def;
     };
 
     template <size_t defStructSize>
     class DefaultBitStreamer : public DefaultDataStreamer <defStructSize>
     {
     public:
-        DefaultBitStreamer( const NetworkDataType *def ) : DefaultDataStreamer( def )
+        NET_FAST DefaultBitStreamer( const NetworkDataType *const def ) : DefaultDataStreamer( def )
         {
 
         }
 
-        inline NETWORK_NOEXCEPT void Wake() {}
-        inline NETWORK_NOEXCEPT void Finalize() {}
+        NET_FAST NETWORK_NOEXCEPT void Wake() {}
+        NET_FAST NETWORK_NOEXCEPT void Finalize() {}
 
-        inline NETWORK_NOEXCEPT void WriteBits( const unsigned int val, const size_t bits )
+        NET_FAST NETWORK_NOEXCEPT void WriteBits( const unsigned int val, const size_t bits )
         {
             if ( bits <= 8 )
                 Write <char> ( (char)val );
@@ -255,7 +312,7 @@ end:
                 Write <int> ( (int)val );
         }
 
-        inline NETWORK_NOEXCEPT unsigned int ReadBits( const size_t bits )
+        NET_FAST NETWORK_NOEXCEPT unsigned int ReadBits( const size_t bits )
         {
             if ( bits <= 8 )
                 return Read <char> ();
@@ -265,7 +322,7 @@ end:
                 return Read <int> ();
         }
 
-        inline NETWORK_NOEXCEPT bool IsWritten()
+        NET_FAST NETWORK_NOEXCEPT bool IsWritten()
         {
             return m_seek != m_instance;
         }
@@ -275,17 +332,17 @@ end:
     class BitwiseSyncStruct
     {
     private:
-        BitwiseSyncStruct( const BitwiseSyncStruct& other )
+        NET_FAST BitwiseSyncStruct( const BitwiseSyncStruct& other )
         { }
 
     public:
         typedef BitStreamer streamType;
 
-        BitwiseSyncStruct( streamType& stream ) : m_stream( stream )
+        NET_FAST BitwiseSyncStruct( streamType& stream ) : m_stream( stream )
         {
         }
 
-        ~BitwiseSyncStruct()
+        NET_FAST ~BitwiseSyncStruct()
         {
             if ( m_instructs.empty() )
                 return;
@@ -305,7 +362,7 @@ end:
         class virtual_instruct
         {
         public:
-            virtual_instruct( const unsigned int id ) : m_id( id )  {}
+            NET_FAST virtual_instruct( const unsigned int id ) : m_id( id )  {}
             virtual ~virtual_instruct() {}
 
             virtual NETWORK_NOEXCEPT void Write( streamType& out ) const = 0;
@@ -332,7 +389,7 @@ end:
         };
 
         template <class type>
-        inline NETWORK_NOEXCEPT const type& Acknowledge( const unsigned int id, const type& previous, const type& next )
+        NET_FAST NETWORK_NOEXCEPT const type& Acknowledge( const unsigned int id, const type& previous, const type& next )
         {
             if ( previous != next )
                 m_instructs.push_back( new instruct <type> ( id, next ) );
@@ -354,39 +411,41 @@ end:
         typedef BitStreamer streamType;
         typedef Syncer syncType;
 
-        NetworkSyncStruct( const NetworkDataType *def ) : NetworkStruct( def )
+        NET_FAST NetworkSyncStruct( const NetworkDataType *const def ) : NetworkStruct( def )
         {
         }
 
-        inline NETWORK_NOEXCEPT void Set( const Owner& instance )
+        NET_FAST NETWORK_NOEXCEPT void Set( const NetworkDataType *def, const Owner& instance )
         {
-            NetworkStruct::Write( instance, NullSyncStruct() );
+            NetworkStruct::Write( def, instance, NullSyncStruct() );
         }
 
-        inline NETWORK_NOEXCEPT void Write( const Owner& instance, streamType& stream )
+        NET_FAST NETWORK_NOEXCEPT void Write( const NetworkDataType *def, const Owner& instance, streamType& stream )
         {
-            NetworkStruct::Write( instance, syncType( stream ) );
+            NetworkStruct::Write( def, instance, syncType( stream ) );
         }
 
-        inline NETWORK_NOEXCEPT void Establish( Owner& instance, streamType& stream )
+        NET_FAST NETWORK_NOEXCEPT void Establish( const NetworkDataType *def, Owner& instance, streamType& stream )
         {
             size_t chgcnt = stream.ReadBits( INT2BITS(defStructSize) );
             
-            while ( chgcnt-- )
+            while ( chgcnt )
             {
                 unsigned int id = stream.ReadBits( INT2BITS(defStructSize) );
-                const NetworkDataType& type = m_def[id];
+                const NetworkDataType& type = def[id];
 
                 switch( type.type )
                 {
-                case NETWORK_BOOL:      instance.NetworkWrite( id, stream.Read <bool> () ); break;
-                case NETWORK_BYTE:      instance.NetworkWrite( id, stream.Read <char> () ); break;
-                case NETWORK_WORD:      instance.NetworkWrite( id, stream.Read <short> () ); break;
-                case NETWORK_DWORD:     instance.NetworkWrite( id, stream.Read <int> () ); break;
-                case NETWORK_FLOAT:     instance.NetworkWrite( id, stream.Read <float> () ); break;
-                case NETWORK_DOUBLE:    instance.NetworkWrite( id, stream.Read <double> () ); break;
-                case NETWORK_VECTOR3D:  instance.NetworkWrite( id, stream.Read <CVector> () ); break;
+                case NETWORK_BOOL:      instance.NetworkWrite( id, (bool)stream.Read <bool> () ); break;
+                case NETWORK_BYTE:      instance.NetworkWrite( id, (char)stream.Read <char> () ); break;
+                case NETWORK_WORD:      instance.NetworkWrite( id, (short)stream.Read <short> () ); break;
+                case NETWORK_DWORD:     instance.NetworkWrite( id, (int)stream.Read <int> () ); break;
+                case NETWORK_FLOAT:     instance.NetworkWrite( id, (float)stream.Read <float> () ); break;
+                case NETWORK_DOUBLE:    instance.NetworkWrite( id, (double)stream.Read <double> () ); break;
+                case NETWORK_VECTOR3D:  instance.NetworkWrite( id, (CVector)stream.Read <CVector> () ); break;
                 }
+
+                chgcnt--;
             }
         }
     };

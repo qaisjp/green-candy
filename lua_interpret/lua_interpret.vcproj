@@ -42,11 +42,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared"
+				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic"
 				PreprocessorDefinitions="WIN32;_DEBUG"
 				RuntimeLibrary="1"
 				StructMemberAlignment="0"
-				UsePrecompiledHeader="1"
+				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="StdInc.h"
 				PrecompiledHeaderFile="$(IntDir)\$(TargetName)_d.pch"
 				WarningLevel="3"
@@ -126,12 +126,12 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared"
+				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic"
 				PreprocessorDefinitions="WIN32;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="StdInc.h"
 				PrecompiledHeaderFile="$(IntDir)\$(TargetName)_r.pch"
 				WarningLevel="3"
@@ -223,6 +223,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\luaevent.h"
+				>
+			</File>
+			<File
 				RelativePath=".\luafile.h"
 				>
 			</File>
@@ -243,6 +247,350 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="dxElements"
+			>
+			<File
+				RelativePath=".\dxElements\lua_dxElements.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\dxElements\lua_dxElements_dxRoot.cpp"
+				>
+			</File>
+			<Filter
+				Name="include"
+				>
+				<File
+					RelativePath=".\dxElements\include.h"
+					>
+				</File>
+				<File
+					RelativePath=".\dxElements\lua_dxElements.h"
+					>
+				</File>
+				<File
+					RelativePath=".\dxElements\lua_dxElements_dxRoot.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
+		<Filter
+			Name="shared"
+			>
+			<File
+				RelativePath="..\Shared\logic\Events.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\Logger.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaCFunctions.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaClass.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaElement.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaFunctionDefs.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaFunctionDefs.Resources.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaFunctionDefs.XML.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaFunctionRef.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaMain.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaMatrix.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaTimer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaTimerManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\RegisteredCommands.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\Resource.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\ResourceManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\ScriptDebugging.cpp"
+				>
+			</File>
+			<Filter
+				Name="include"
+				>
+				<File
+					RelativePath="..\Shared\logic\Events.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\include.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\Logger.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaCFunctions.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaClass.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaCommon.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaElement.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaFunctionDefs.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaFunctionDefs.Resources.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaFunctionRef.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaMain.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaManager.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaMatrix.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaTimer.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\LuaTimerManager.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\networking\NetworkRakNet.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\networking\NetworkStruct.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\RegisteredCommands.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\Resource.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\ResourceManager.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\logic\ScriptDebugging.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
+		<Filter
+			Name="derived"
+			>
+			<File
+				RelativePath=".\derived\CEvents.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\derived\CLuaMain.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\derived\CLuaManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\derived\CResource.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\derived\CResourceManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\derived\CScriptDebugging.cpp"
+				>
+			</File>
+			<Filter
+				Name="include"
+				>
+				<File
+					RelativePath=".\derived\CEvents.h"
+					>
+				</File>
+				<File
+					RelativePath=".\derived\CLuaMain.h"
+					>
+				</File>
+				<File
+					RelativePath=".\derived\CLuaManager.h"
+					>
+				</File>
+				<File
+					RelativePath=".\derived\CResource.h"
+					>
+				</File>
+				<File
+					RelativePath=".\derived\CResourceManager.h"
+					>
+				</File>
+				<File
+					RelativePath=".\derived\CScriptDebugging.h"
+					>
+				</File>
+				<File
+					RelativePath=".\derived\include.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
+		<Filter
+			Name="benchmarks"
+			>
+			<File
+				RelativePath=".\benchmarks\netbench.cpp"
+				>
+			</File>
+			<Filter
+				Name="include"
+				>
+				<File
+					RelativePath=".\benchmarks\include.h"
+					>
+				</File>
+				<File
+					RelativePath=".\benchmarks\netbench.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
+		<Filter
+			Name="mtabase"
+			>
+			<File
+				RelativePath="..\MTA10\mods\shared_logic\lua\CLuaFunctionParseHelpers.cpp"
+				>
+			</File>
+			<Filter
+				Name="include"
+				>
+				<File
+					RelativePath="..\MTA10\mods\shared_logic\lua\CLuaFunctionParseHelpers.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
+		<Filter
+			Name="glDriver"
+			>
+			<File
+				RelativePath=".\glDriver\gl_lua.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\glDriver\gl_main.cpp"
+				>
+			</File>
+			<Filter
+				Name="include"
+				>
+				<File
+					RelativePath=".\glDriver\gl_func.h"
+					>
+				</File>
+				<File
+					RelativePath=".\glDriver\gl_lua.h"
+					>
+				</File>
+				<File
+					RelativePath=".\glDriver\gl_main.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
+		<Filter
+			Name="win32"
+			>
+			<File
+				RelativePath=".\win32\include.h"
+				>
+			</File>
+			<File
+				RelativePath=".\win32\win32_main.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\win32\win32_main.h"
+				>
+			</File>
+			<Filter
+				Name="dialogs"
+				>
+				<File
+					RelativePath=".\win32\dialogs\win32_dlg.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\win32\dialogs\win32_dlg.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
 		<File
 			RelativePath="..\Shared\core\CFileSystem.cpp"
 			>
@@ -253,6 +601,10 @@
 		</File>
 		<File
 			RelativePath=".\luabitlib.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\luaevent.cpp"
 			>
 		</File>
 		<File
@@ -271,10 +623,19 @@
 			RelativePath=".\main.cpp"
 			>
 			<FileConfiguration
+				Name="Debug|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					UsePrecompiledHeader="1"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
 				Name="Release|Win32"
 				>
 				<Tool
 					Name="VCCLCompilerTool"
+					UsePrecompiledHeader="1"
 					DebugInformationFormat="3"
 				/>
 			</FileConfiguration>

@@ -15,18 +15,20 @@
 
 #include <SharedUtil.hpp>
 
-#define DATA_TEXTURE_BLOCK      20000
-#define DATA_COLL_BLOCK         25000
-#define DATA_IPL_BLOCK          25255
-#define DATA_PATHFIND_BLOCK     25511
-#define DATA_ANIM_BLOCK         25575
-#define DATA_RECORD_BLOCK       25755
-
 using namespace std;
 
-lua_State *state;
+lua_State *userLuaState;
 
-void lua_exec( const std::string& cmd )
+static lua_State *state;
+static CEvents *events;
+static CLuaManager *manager;
+static CResourceManager *resMan;
+
+static CResource *benchResource = NULL;
+
+CFileTranslator *modFileRoot;
+
+__forceinline void lua_exec( LuaManager::context *context, const std::string& cmd )
 {
     int top = lua_gettop( state );
 
@@ -38,7 +40,9 @@ void lua_exec( const std::string& cmd )
         throw lua_exception( state, LUA_ERRSYNTAX, err );
     }
 
-    if ( lua_pcall( state, 0, LUA_MULTRET, 0 ) != 0 )
+    bool success = ( lua_pcall( state, 0, LUA_MULTRET, 0 ) == 0 );
+
+    if ( !success )
     {
         const char *err = lua_tostring( state, -1 );
         lua_pop( state, 1 );
@@ -53,9 +57,7 @@ void lua_exec( const std::string& cmd )
 
     cout << "> ";
 
-    int n;
-
-    for ( n=top; n != now; n++ )
+    for ( int n = top; n != now; n++ )
     {
         const char *strRep;
         int t = lua_type( state, n + 1 );
@@ -90,37 +92,6 @@ void lua_exec( const std::string& cmd )
     lua_settop( state, top );
 }
 
-void loadBenchFile( const filePath& path, void *ud )
-{
-    filePath relPath;
-    fileRoot->GetRelativePath( path, true, relPath );
-
-    std::vector <char> buff;
-    fileRoot->ReadToBuffer( path, buff );
-
-    // Zero terminate
-    buff.push_back( 0 );
-
-    if ( luaL_loadstring( state, &buff[0] ) != 0 )
-    {
-        cout << "failed to load library " << relPath << "\n";
-        return;
-    }
-
-    if ( lua_pcall( state, 0, 0, 0 ) != 0 )
-    {
-        cout << "failed to run library " << relPath << "\n";
-        cout << lua_tostring( state, -1 ) << "\n";
-
-        lua_pop( state, 1 );
-        return;
-    }
-
-    int top = lua_gettop( state );
-
-    cout << "init: " << relPath << "\n";
-}
-
 void handleError( const lua_exception& e )
 {
     switch( e.status() )
@@ -143,29 +114,75 @@ void handleError( const lua_exception& e )
     cout << "\n";
 }
 
-void signal_handler( int sig )
+static LuaManager::context *execContext = NULL;
+
+static HANDLE threadHandle = NULL;
+static HANDLE processCmdEvent = NULL;
+static HANDLE consoleInputHandle = NULL;
+
+__forceinline void shutdown_interpreter( void )
 {
-    lua_close( state );
+    TerminateThread( threadHandle, 0 );
+
+    if ( benchResource )
+    {
+        benchResource->Destroy();
+        benchResource->DecrementMethodStack();
+    }
+
+    if ( execContext )
+        delete execContext;
+
+    resMan->Delete();
+    manager->Shutdown();
+    delete manager;
+    delete events;
+
+    luagl_shutdownDrivers();
 
     delete fileSystem;
+}
+
+void signal_handler( int sig )
+{
+    shutdown_interpreter();
 
     exit( EXIT_SUCCESS );
 }
 
-static int lua_newmd5hasher( lua_State *L )
+BOOL WINAPI ControlHandler( DWORD type )
 {
-    CMD5Hasher *hasher = new CMD5Hasher();
-    hasher->Init();
+    shutdown_interpreter();
 
-    lua_createmd5hasher( L, hasher );
-    return 1;
-} 
+    exit( EXIT_SUCCESS );
+}
+
+static bool cmdLinePushed;
+static std::string cmdLine;
+
+static DWORD __stdcall HandleConsoleInput( LPVOID param )
+{
+    while ( getline( cin, cmdLine ) )
+    {
+        cmdLinePushed = true;
+
+        WaitForSingleObject( processCmdEvent, INFINITE );
+        ResetEvent( processCmdEvent );
+    }
+    return 0;
+}
 
 int main( int argc, char *argv[] )
 {
-    std::string script;
+    cout << "MTA:Lua Interpreter v1.0, by (c)Martin Turski (visit mtasa.com)\nCompiled on " __DATE__ "\n\n";
 
-    state = lua_open();
+    events = new CEvents;
+    manager = new CLuaManager( *events );
+    resMan = new CResourceManager( *manager );
+    userLuaState = state = manager->GetVirtualMachine();
+
+    // Initialize components here
+    luagl_initDrivers();
 
     srand( (unsigned int)time( NULL ) );
 
@@ -174,54 +191,123 @@ int main( int argc, char *argv[] )
 
     new CFileSystem();
 
-    luaL_openlibs( state );
-    luafile_open( state );
-    luabitwise_open( state );
+    SetConsoleCtrlHandler( ControlHandler, true );
 
-    lua_register( state, "newmd5hasher", lua_newmd5hasher );
+    ResourceManager::resFileRoot = fileRoot;
+    LuaManager::m_resMan = resMan;
+    LuaFunctionDefs::SetResourceManager( *resMan );
+    LuaFunctionDefs::SetDebugging( manager->GetDebug() );
 
-    lua_pushvalue( state, LUA_GLOBALSINDEX );
-    luafilesystem_open( state );
-    lua_setfield( state, -2, "file" );
+    LuaManager::context *useContext = NULL;
 
     if ( fileRoot->Exists( "/luabench/" ) )
     {
         // Include everything from /luabench/
         cout << "starting luaBench files...\n";
 
-        fileRoot->ScanDirectory( "/luabench/", "*.lua", false, NULL, loadBenchFile, NULL );
+        modFileRoot = fileSystem->CreateTranslator( "/luabench/" );
 
-        cout << "\n";
+        if ( !modFileRoot )
+            modFileRoot = fileRoot;
+
+        benchResource = resMan->Load( "luabench" );
+        userLuaState = state = benchResource->GetVM().GetVirtualMachine();
+
+        benchResource->IncrementMethodStack();
+
+        execContext = new LuaManager::context( manager->AcquireContext( benchResource->GetVM() ) );
+        useContext = execContext;
+
+        cout << "\nlogged in as 'luabench'\n\n";
     }
+    else
+    {
+        modFileRoot = fileRoot;
+
+        cout << "logged in as 'guest'\n\n";
+    }
+
+    // Get the console handlers
+    consoleInputHandle = GetStdHandle( STD_INPUT_HANDLE );
+
+    SetConsoleMode( consoleInputHandle, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_OUTPUT );
+
+    // Create the input thread
+    DWORD threadId;
+
+    processCmdEvent = CreateEvent( NULL, true, false, "Process Command" );
+
+    threadHandle = CreateThread( NULL, 0, HandleConsoleInput, NULL, 0, &threadId );
+
+    // Reset stack offset
+    int resetTop = lua_gettop( state );
 
     try
     {
-        while ( getline( cin, script ) )
+        while ( true )
         {
-            try
+            if ( cmdLinePushed )
             {
-                std::string retCmd = "return ";
-                retCmd += script;
-
-                lua_exec( retCmd );
-            }
-            catch( lua_exception& _e )
-            {
-                if ( _e.status() != LUA_ERRSYNTAX )
-                {
-                    handleError( _e );
-                    continue;
-                }
+                std::string script = cmdLine;
 
                 try
                 {
-                    lua_exec( script );
+                    std::string retCmd = "return ";
+                    retCmd += script;
+
+                    lua_exec( useContext, retCmd );
                 }
-                catch( lua_exception& e )
+                catch( lua_exception& _e )
                 {
-                    handleError( e );
+                    if ( _e.status() != LUA_ERRSYNTAX )
+                    {
+                        handleError( _e );
+                    }
+                    else
+                    {
+                        try
+                        {
+                            lua_exec( useContext, script );
+                        }
+                        catch( lua_exception& e )
+                        {
+                            handleError( e );
+                        }
+                    }
+                }
+
+                cmdLinePushed = false;
+                SetEvent( processCmdEvent );
+            }
+
+                bool peeked = false;
+
+            try
+            {
+                // Put manager logic here.
+                luawin32_pulse();
+                luagl_pulseDrivers( state );
+
+                MSG msg;
+
+                while ( PeekMessage( &msg, NULL, 0, 0, PM_REMOVE ) )
+                {
+                    peeked = true;
+
+                    TranslateMessage( &msg );
+                    DispatchMessage( &msg );
                 }
             }
+            catch( lua_exception& e )
+            {
+                cout << "runtime_";
+
+                handleError( e );
+
+                lua_settop( state, resetTop );
+            }
+
+            Sleep( peeked ? 0 : 1 );
         }
     }
     catch( ... )
@@ -229,9 +315,6 @@ int main( int argc, char *argv[] )
         cout << "terminated";
     }
 
-    lua_close( state );
-
-    delete fileSystem;
-
+    shutdown_interpreter();
     return EXIT_SUCCESS;
 }

@@ -25,9 +25,14 @@ public:
 		LIST_REMOVE( m_gcList );
     }
 
+    void Propagate( lua_State *L )
+    {
+        m_class->Propagate( L );
+    }
+
 	virtual void MarkGC( lua_State *L )
 	{
-		m_class->Propagate( L );
+		Propagate( L );
 
 		lua_gcpaycost( L, sizeof(*this) );
 	}
@@ -87,6 +92,11 @@ public:
     inline lua_State* GetVM()
     {
         return m_lua;
+    }
+
+    inline ILuaClass* GetClass( void )
+    {
+        return m_class;
     }
 
     inline bool SetParent( LuaClass *parent )

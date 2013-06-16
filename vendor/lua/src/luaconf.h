@@ -733,6 +733,7 @@ public:
 
     virtual void    Push( lua_State *L ) = 0;
     virtual void    PushMethod( lua_State *L, const char *key ) = 0;
+    virtual void    PushSuperMethod( lua_State *L ) = 0;
 
     virtual void    CallMethod( lua_State *L, const char *key ) = 0;
 
@@ -761,6 +762,7 @@ public:
 
     virtual void    PushEnvironment( lua_State *L ) = 0;
     virtual void    PushOuterEnvironment( lua_State *L ) = 0;
+    virtual void    PushInternStorage( lua_State *L ) = 0;
     virtual void    PushChildAPI( lua_State *L ) = 0;
     virtual void    PushParent( lua_State *L ) = 0;
 

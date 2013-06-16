@@ -20,7 +20,7 @@ static inline int _trefget( lua_State *L, CCommand& cmd )
     return luaL_ref( L, LUA_REGISTRYINDEX );
 }
 
-CCommand::CCommand( lua_State *L, CRegisteredCommands& cmds ) : Command( L, cmds, _trefget( L, *this ) )
+CCommand::CCommand( lua_State *L, CRegisteredCommands& cmds ) : Command( cmds, L )
 {
 }
 

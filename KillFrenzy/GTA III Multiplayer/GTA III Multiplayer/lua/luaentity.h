@@ -19,7 +19,7 @@
 class CGameEntity abstract : public LuaElement
 {
 public:
-                            CGameEntity( LuaClass& root, bool system, CEntity& entity );
+                            CGameEntity( lua_State *L, bool system, CEntity& entity );
     virtual                 ~CGameEntity();
 
     inline CEntity&         GetEntity()     { return m_entity; }
@@ -30,6 +30,17 @@ public:
 protected:
     CEntity&                m_entity;
     bool                    m_system;   // System entities may not be destroyed
+
+    namespace lol
+    {
+        const NetworkDataType entityDef[] =
+        {
+            { NETWORK_VECTOR3D, "pos" },
+            { NETWORK_VECTOR3D, "velocity" }
+        };
+    }
+
+    typedef NetworkSyncStruct <CEntity, ETSIZE(entityDef)> entity_network;
 
     entity_network          m_sync;
 };

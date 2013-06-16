@@ -10,9 +10,12 @@
 *****************************************************************************/
 
 // Forward declare enum reflection stuff
-#include <gui/CGUI.h>
+
 enum eLuaType { };
 DECLARE_ENUM( eLuaType );
+
+#ifdef MTA_CLIENT
+#include <gui/CGUI.h>
 DECLARE_ENUM( CGUIVerticalAlign );
 DECLARE_ENUM( CGUIHorizontalAlign );
 DECLARE_ENUM( eInputMode );
@@ -146,3 +149,5 @@ class CScriptArgReader;
 bool MixedReadDxFontString ( CScriptArgReader& argStream, SString& strFontName, const char* szDefaultFontName, CClientDxFont*& pFontElement );
 bool MixedReadGuiFontString ( CScriptArgReader& argStream, SString& strFontName, const char* szDefaultFontName, CClientGuiFont*& pFontElement );
 bool MixedReadMaterialString ( CScriptArgReader& argStream, CClientMaterial*& pMaterialElement );
+
+#endif //MTA_CLIENT
