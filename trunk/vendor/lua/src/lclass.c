@@ -477,6 +477,11 @@ void Class::PushMethod( lua_State *L, const char *key )
     }
 }
 
+void Class::PushSuperMethod( lua_State *L )
+{
+    setobj( L, L->top++, GetSuperMethod( L ) );
+}
+
 void Class::CallMethod( lua_State *L, const char *key )
 {
     
@@ -587,6 +592,13 @@ void Class::PushOuterEnvironment( lua_State *L )
     lua_assert( !destroyed );
 
     setgcvalue( L, L->top++, outenv );
+}
+
+void Class::PushInternStorage( lua_State *L )
+{
+    lua_assert( !destroyed );
+
+    sethvalue( L, L->top++, internStorage );
 }
 
 void Class::PushChildAPI( lua_State *L )
@@ -1096,10 +1108,10 @@ static Closure* classmethod_fsDestroyHandlerNative( lua_State *L, lua_CFunction 
     CClosureBasic *cl = luaF_newCclosure( L, info.numUpValues, j->env );
     unsigned char num = info.numUpValues;
 
-    L->top -= num;
+    StkId atop = L->top - num;
 
-    for ( unsigned char n = 0; n < num; n++ )
-        setobj( L, &cl->upvalues[n], L->top - 1 + n );
+    for ( int n = 0; n < num; n++ )
+        setobj( L, &cl->upvalues[n], atop + n );
 
     cl->f = proto;
     cl->isEnvLocked = true;

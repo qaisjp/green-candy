@@ -12,6 +12,7 @@
 // If any new class is added, please update this!
 static inline const char* lua_gettransmittype( int transmit )
 {
+#ifdef MTA_CLIENT
     switch( transmit )
     {
     case LUACLASS_CAMERA:                       return "camera";
@@ -57,6 +58,7 @@ static inline const char* lua_gettransmittype( int transmit )
     case LUACLASS_GUITABPANEL:                  return "gui-tabpanel";
     case LUACLASS_GUIWINDOW:                    return "gui-window";
     }
+#endif
 
     // Try to obtain a shared name
     return lua_getclassdesc( transmit );

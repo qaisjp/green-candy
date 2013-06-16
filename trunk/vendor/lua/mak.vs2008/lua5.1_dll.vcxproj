@@ -65,7 +65,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;../../../Shared/sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>LUA_USE_APICHECK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <MinimalRebuild>true</MinimalRebuild>
@@ -104,7 +104,7 @@ xcopy /y ..\..\lua5.1d.dll ..\..\..\KillFrenzy\</Command>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;../../../Shared/sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -145,7 +145,7 @@ xcopy /y ..\..\lua5.1.dll ..\..\..\KillFrenzy\</Command>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Nightly|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;../../../Shared/sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -189,8 +189,10 @@ xcopy /y ..\..\lua5.1.dll ..\..\..\KillFrenzy\</Command>
     <ClCompile Include="..\src\lcode.c" />
     <ClCompile Include="..\src\ldblib.c" />
     <ClCompile Include="..\src\ldebug.c" />
+    <ClCompile Include="..\src\ldispatch.c" />
     <ClCompile Include="..\src\ldo.c" />
     <ClCompile Include="..\src\ldump.c" />
+    <ClCompile Include="..\src\lfiber.c" />
     <ClCompile Include="..\src\lfunc.c" />
     <ClCompile Include="..\src\lgc.c" />
     <ClCompile Include="..\src\linit.c" />
@@ -206,6 +208,7 @@ xcopy /y ..\..\lua5.1.dll ..\..\..\KillFrenzy\</Command>
     <ClCompile Include="..\src\lstate.c" />
     <ClCompile Include="..\src\lstring.c" />
     <ClCompile Include="..\src\lstrlib.c" />
+    <ClCompile Include="..\src\lstrtable.c" />
     <ClCompile Include="..\src\ltable.c" />
     <ClCompile Include="..\src\ltablib.c" />
     <ClCompile Include="..\src\ltm.c" />
@@ -224,7 +227,9 @@ xcopy /y ..\..\lua5.1.dll ..\..\..\KillFrenzy\</Command>
     <ClInclude Include="..\src\lclasslib.h" />
     <ClInclude Include="..\src\lcode.h" />
     <ClInclude Include="..\src\ldebug.h" />
+    <ClInclude Include="..\src\ldispatch.h" />
     <ClInclude Include="..\src\ldo.h" />
+    <ClInclude Include="..\src\lfiber.h" />
     <ClInclude Include="..\src\lfunc.h" />
     <ClInclude Include="..\src\lgc.h" />
     <ClInclude Include="..\src\llex.h" />
@@ -235,6 +240,7 @@ xcopy /y ..\..\lua5.1.dll ..\..\..\KillFrenzy\</Command>
     <ClInclude Include="..\src\lparser.h" />
     <ClInclude Include="..\src\lstate.h" />
     <ClInclude Include="..\src\lstring.h" />
+    <ClInclude Include="..\src\lstrtable.h" />
     <ClInclude Include="..\src\ltable.h" />
     <ClInclude Include="..\src\ltm.h" />
     <ClInclude Include="..\src\lua.h" />

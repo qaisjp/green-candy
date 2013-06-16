@@ -24,7 +24,7 @@
 
 #define MAX_STRING_LENGTH 2048
 
-#ifndef _KILLFRENZY
+#ifdef MTA_CLIENT
 
 namespace LuaFunctionDefs
 {
@@ -630,4 +630,4 @@ namespace LuaFunctionDefs
     }
 }
 
-#endif //_KILLFRENZY
+#endif //MTA_CLIENT

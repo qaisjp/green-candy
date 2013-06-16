@@ -3,6 +3,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <Userenv.h>
 #define EXIT_FAILURE 1
 #define EXIT_SUCCESS 0
 

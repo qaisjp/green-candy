@@ -18,7 +18,7 @@
 class CGameVehicle : public CGameEntity
 {
 public:
-                            CGameVehicle( LuaClass& root, bool system, CVehicle& entity );
+                            CGameVehicle( lua_State *L, bool system, CVehicle& entity );
                             ~CGameVehicle();
 
     inline CVehicle&        GetEntity()     { return (CVehicle&)m_entity; }

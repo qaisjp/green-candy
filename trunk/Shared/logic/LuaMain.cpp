@@ -264,7 +264,7 @@ void LuaMain::DoPulse()
     m_timers.DoPulse( *this );
 }
 
-#ifndef _KILLFRENZY
+#ifdef MTA_CLIENT
 
 void LuaMain::DestroyXML( CXMLFile *file )
 {
@@ -286,7 +286,7 @@ void LuaMain::DestroyXML( CXMLNode *root )
     }
 }
 
-#endif //_KILLFRENZY
+#endif //MTA_CLIENT
 
 const SString& LuaMain::GetFunctionTag( int refID )
 {

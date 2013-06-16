@@ -146,6 +146,20 @@ public:
                  ( fabs ( fY - param.fY ) >= FLOAT_EPSILON ) );
     }
 
+    float operator [] ( unsigned int id ) const
+    {
+        assert( id < 2 );
+
+        return *((float*)this + id );
+    }
+
+    float& operator [] ( unsigned int id )
+    {
+        assert( id < 2 );
+        
+        return *((float*)this + id );
+    }
+
     float fX;
     float fY;
 };

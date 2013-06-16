@@ -66,7 +66,8 @@ void	Core_Init()
 void    Core_InitGame()
 {
     // Create our player
-	g_player = new CGamePlayer( *resMan, *Player_Create( 0, 19, 72, 16.5 ) );
+	g_player = new CGamePlayer( resMan->GetVM(), *Player_Create( 0, 19, 72, 16.5 ) );
+    g_player->SetRoot( resMan );
 
     Lua_Start();
 }

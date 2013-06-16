@@ -14,9 +14,10 @@
 #define _SHARED_LOGIC_INCLUDE_
 
 #include "networking/NetworkStruct.h"
-#ifndef _KILLFRENZY
+#ifdef MTA_CLIENT
 #include "networking/NetworkRakNet.h"
 #endif //_KILLFRENZY
+#include <RenderWare_shared.h>
 #include "LuaCommon.h"
 #include <luafile.h>
 #include <luafilesystem.h>
@@ -38,5 +39,6 @@
 #include "ResourceManager.h"
 #include "LuaFunctionDefs.h"
 #include "LuaFunctionDefs.Resources.h"
+#include <luaevent.h>
 
 #endif //_SHARED_LOGIC_INCLUDE_

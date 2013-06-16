@@ -70,6 +70,11 @@ namespace LuaFunctionDefs
         return lua_readcontext( L )->GetResource();
     }
 
+    static inline LuaManager* lua_readmanager( lua_State *L )
+    {
+        return lua_readuserdata_assert <LuaManager, LUA_REGISTRYINDEX, 1> ( L );
+    }
+
     extern ScriptDebugging *debug;
     extern RegisteredCommands *cmds;
     extern ResourceManager *resManager;

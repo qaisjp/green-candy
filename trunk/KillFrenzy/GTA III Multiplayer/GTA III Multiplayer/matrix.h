@@ -1,18 +1,19 @@
 #ifndef	_MATRIX_
 #define _MATRIX_
 
-#define LUACLASS_MATRIX 20
-
-#define	DEG2RAD(deg)	(M_PI*deg/180)
-#define RAD2DEG(rad)	(rad*180/M_PI)
+#define LUACLASS_KFMATRIX 20
 
 class CMatrix	//size: 60bytes
 {
 public:
-	vec4_t			m_vecRight;
-	vec4_t			m_vecFront;
-	vec4_t			m_vecUp;
-	vec4_t			m_vecPos;
+	CVector			m_vecRight;
+    int             a;
+	CVector		    m_vecFront;
+    int             b;
+	CVector         m_vecUp;
+    int             c;
+	CVector		    m_vecPos;
+    int             d;
 
 	void			GetOffset( float fOffX, float fOffY, float fOffZ, vec3_t vecOut ) const;
 	void			SetRotation( const vec3_t vecRot );

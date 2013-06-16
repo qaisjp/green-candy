@@ -31,6 +31,10 @@
 using namespace Networking;
 
 #include "derived/include.h"
+#include <CQuat.h>
+#include <lua/CLuaFunctionParseHelpers.h>
+#include <CScriptArgReader.h>
+
 #include "d3d8.h"
 #include "d3dx8.h"
 #include "d3d8_f.h"

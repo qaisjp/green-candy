@@ -7,7 +7,7 @@
 #define MEM_uiCurrentScene				0x008F6408
 #define FUNC_UnloadScene				0x00408780
 
-unsigned char	World_GetTownAtPosition(vec3_t vecPos);
+unsigned char	World_GetTownAtPosition(const CVector& vecPos);
 void			World_Init();
 
 #endif //_WORLD_

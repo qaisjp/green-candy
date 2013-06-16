@@ -12,7 +12,7 @@
 
 #include <StdInc.h>
 
-CGamePlayer::CGamePlayer( LuaClass& root, CPed& player ) : CGamePed( root, true, player )
+CGamePlayer::CGamePlayer( lua_State *L, CPed& player ) : CGamePed( L, true, player )
 {
 }
 

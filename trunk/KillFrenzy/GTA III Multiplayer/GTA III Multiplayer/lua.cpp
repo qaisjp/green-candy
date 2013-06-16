@@ -21,7 +21,7 @@ static inline void loadresource( const filePath& path, void *ud )
 void Lua_Init()
 {
     filePath resRoot;
-    fileRoot->GetRelativePath( "resources/", false, resRoot );
+    fileRoot->GetRelativePath( "kf/resources/", false, resRoot );
 
     ResourceManager::resFileRoot = fileSystem->CreateTranslator( resRoot.c_str() );
 
