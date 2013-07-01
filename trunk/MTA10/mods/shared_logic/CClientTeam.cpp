@@ -28,9 +28,7 @@ static int luaconstructor_team( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_TEAM, team );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, team_interface, 1 );
+    j.RegisterInterfaceTrans( L, team_interface, 0, LUACLASS_TEAM );
 
     lua_pushlstring( L, "team", 4 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

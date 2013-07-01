@@ -21,9 +21,7 @@ int RegisteredCommands::luaconstructor_command( lua_State *L )
 {
     lua_basicprotect( L );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, cmdInterface, 1 );
+    lua_refclass( L, LUA_ENVIRONINDEX )->RegisterInterface( L, cmdInterface, 0 );
 
     lua_pushlstring( L, "command", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

@@ -129,6 +129,7 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
 
 static void* _lua_allocate( _memAllocatorInfo *info, void *ptr, size_t, size_t nsize )
 {
+#ifndef USE_HEAP_DEBUGGING
     if ( nsize == 0 )
     {
         HeapFree( info->heap, 0, ptr );
@@ -140,6 +141,19 @@ static void* _lua_allocate( _memAllocatorInfo *info, void *ptr, size_t, size_t n
     }
 
     return HeapReAlloc( info->heap, 0, ptr, nsize );
+#else
+    if ( nsize == 0 )
+    {
+        DbgFree( ptr );
+        return NULL;
+    }
+    else if ( ptr == NULL )
+    {
+        return DbgMalloc( nsize );
+    }
+
+    return DbgRealloc( ptr, nsize );
+#endif
 }
 
 LuaManager::LuaManager( Events& events, ScriptDebugging& debug ) :
@@ -428,6 +442,7 @@ static int LoadCFunctions( LuaMain *L )
 
     LUA_REGISTER( L, newmd5hasher );
     LUA_REGISTER( L, md5 );
+    LUA_REGISTER( L, hashString );
     LUA_REGISTER( L, getTickCount );
     LUA_REGISTER( L, getCTime );
     LUA_REGISTER( L, setTimer );

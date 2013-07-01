@@ -364,6 +364,19 @@ typedef void (APIENTRY*glVertex4sv_t) (const GLshort *v);
 typedef void (APIENTRY*glVertexPointer_t) (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 typedef void (APIENTRY*glViewport_t) (GLint x, GLint y, GLsizei width, GLsizei height);
 
+// Prototype links to main library
+extern wglCopyContext_t            _wglCopyContext;
+extern wglCreateContext_t          _wglCreateContext;
+extern wglCreateLayerContext_t     _wglCreateLayerContext;
+extern wglDeleteContext_t          _wglDeleteContext;
+extern wglGetCurrentContext_t      _wglGetCurrentContext;
+extern wglGetCurrentDC_t           _wglGetCurrentDC;
+extern wglGetProcAddress_t         _wglGetProcAddress;
+extern wglMakeCurrent_t            _wglMakeCurrent;
+extern wglShareLists_t             _wglShareLists;
+extern wglUseFontBitmapsA_t        _wglUseFontBitmapsA;
+extern wglUseFontBitmapsW_t        _wglUseFontBitmapsW;
+
 // MACHINE GENERATED; USE gltools.lua !!!
 extern glAccum_t                            _glAccum;
 extern glAlphaFunc_t                        _glAlphaFunc;
@@ -701,5 +714,484 @@ extern glVertex4s_t                         _glVertex4s;
 extern glVertex4sv_t                        _glVertex4sv;
 extern glVertexPointer_t                    _glVertexPointer;
 extern glViewport_t                         _glViewport;
+
+// glut library
+typedef const GLubyte* (APIENTRY*gluErrorString_t) (
+    GLenum   errCode);
+
+typedef const wchar_t* (APIENTRY*gluErrorUnicodeStringEXT_t) (
+    GLenum   errCode);
+
+typedef const GLubyte* (APIENTRY*gluGetString_t) (
+    GLenum   name);
+
+typedef void (APIENTRY*gluOrtho2D_t) (
+    GLdouble left, 
+    GLdouble right, 
+    GLdouble bottom, 
+    GLdouble top);
+
+typedef void (APIENTRY*gluPerspective_t) (
+    GLdouble fovy, 
+    GLdouble aspect, 
+    GLdouble zNear, 
+    GLdouble zFar);
+
+typedef void (APIENTRY*gluPickMatrix_t) (
+    GLdouble x, 
+    GLdouble y, 
+    GLdouble width, 
+    GLdouble height, 
+    GLint    viewport[4]);
+
+typedef void (APIENTRY*gluLookAt_t) (
+    GLdouble eyex, 
+    GLdouble eyey, 
+    GLdouble eyez, 
+    GLdouble centerx, 
+    GLdouble centery, 
+    GLdouble centerz, 
+    GLdouble upx, 
+    GLdouble upy, 
+    GLdouble upz);
+
+typedef int (APIENTRY*gluProject_t) (
+    GLdouble        objx, 
+    GLdouble        objy, 
+    GLdouble        objz,  
+    const GLdouble  modelMatrix[16], 
+    const GLdouble  projMatrix[16], 
+    const GLint     viewport[4], 
+    GLdouble        *winx, 
+    GLdouble        *winy, 
+    GLdouble        *winz);
+
+typedef int (APIENTRY*gluUnProject_t) (
+    GLdouble       winx, 
+    GLdouble       winy, 
+    GLdouble       winz, 
+    const GLdouble modelMatrix[16], 
+    const GLdouble projMatrix[16], 
+    const GLint    viewport[4], 
+    GLdouble       *objx, 
+    GLdouble       *objy, 
+    GLdouble       *objz);
+
+
+typedef int (APIENTRY*gluScaleImage_t) (
+    GLenum      format, 
+    GLint       widthin, 
+    GLint       heightin, 
+    GLenum      typein, 
+    const void  *datain, 
+    GLint       widthout, 
+    GLint       heightout, 
+    GLenum      typeout, 
+    void        *dataout);
+
+
+typedef int (APIENTRY*gluBuild1DMipmaps_t) (
+    GLenum      target, 
+    GLint       components, 
+    GLint       width, 
+    GLenum      format, 
+    GLenum      type, 
+    const void  *data);
+
+typedef int (APIENTRY*gluBuild2DMipmaps_t) (
+    GLenum      target, 
+    GLint       components, 
+    GLint       width, 
+    GLint       height, 
+    GLenum      format, 
+    GLenum      type, 
+    const void  *data);
+
+typedef GLUquadric* (APIENTRY*gluNewQuadric_t) (void);
+typedef void (APIENTRY*gluDeleteQuadric_t) (
+    GLUquadric          *state);
+
+typedef void (APIENTRY*gluQuadricNormals_t) (
+    GLUquadric          *quadObject, 
+    GLenum              normals);
+
+typedef void (APIENTRY*gluQuadricTexture_t) (
+    GLUquadric          *quadObject, 
+    GLboolean           textureCoords);
+
+typedef void (APIENTRY*gluQuadricOrientation_t) (
+    GLUquadric          *quadObject, 
+    GLenum              orientation);
+
+typedef void (APIENTRY*gluQuadricDrawStyle_t) (
+    GLUquadric          *quadObject, 
+    GLenum              drawStyle);
+
+typedef void (APIENTRY*gluCylinder_t) (
+    GLUquadric          *qobj, 
+    GLdouble            baseRadius, 
+    GLdouble            topRadius, 
+    GLdouble            height, 
+    GLint               slices, 
+    GLint               stacks);
+
+typedef void (APIENTRY*gluDisk_t) (
+    GLUquadric          *qobj, 
+    GLdouble            innerRadius, 
+    GLdouble            outerRadius, 
+    GLint               slices, 
+    GLint               loops);
+
+typedef void (APIENTRY*gluPartialDisk_t) (
+    GLUquadric          *qobj, 
+    GLdouble            innerRadius, 
+    GLdouble            outerRadius, 
+    GLint               slices, 
+    GLint               loops, 
+    GLdouble            startAngle, 
+    GLdouble            sweepAngle);
+
+typedef void (APIENTRY*gluSphere_t) (
+    GLUquadric          *qobj, 
+    GLdouble            radius, 
+    GLint               slices, 
+    GLint               stacks);
+
+typedef void (APIENTRY*gluQuadricCallback_t) (
+    GLUquadric          *qobj, 
+    GLenum              which, 
+    void                (CALLBACK* fn)());
+
+typedef GLUtesselator* (APIENTRY*gluNewTess_t)(          
+    void );
+
+typedef void (APIENTRY*gluDeleteTess_t) (       
+    GLUtesselator       *tess );
+
+typedef void (APIENTRY*gluTessBeginPolygon_t) ( 
+    GLUtesselator       *tess,
+    void                *polygon_data );
+
+typedef void (APIENTRY*gluTessBeginContour_t) ( 
+    GLUtesselator       *tess );
+
+typedef void (APIENTRY*gluTessVertex_t) (       
+    GLUtesselator       *tess,
+    GLdouble            coords[3], 
+    void                *data );
+
+typedef void (APIENTRY*gluTessEndContour_t) (   
+    GLUtesselator       *tess );
+
+typedef void (APIENTRY*gluTessEndPolygon_t) (   
+    GLUtesselator       *tess );
+
+typedef void (APIENTRY*gluTessProperty_t) (     
+    GLUtesselator       *tess,
+    GLenum              which, 
+    GLdouble            value );
+ 
+typedef void (APIENTRY*gluTessNormal_t) (       
+    GLUtesselator       *tess, 
+    GLdouble            x,
+    GLdouble            y, 
+    GLdouble            z );
+
+typedef void (APIENTRY*gluTessCallback_t) (     
+    GLUtesselator       *tess,
+    GLenum              which, 
+    void                (CALLBACK *fn)());
+
+typedef void (APIENTRY*gluGetTessProperty_t) (  
+    GLUtesselator       *tess,
+    GLenum              which, 
+    GLdouble            *value );
+ 
+typedef GLUnurbs* (APIENTRY*gluNewNurbsRenderer_t) (void);
+
+typedef void (APIENTRY*gluDeleteNurbsRenderer_t) (
+    GLUnurbs            *nobj);
+
+typedef void (APIENTRY*gluBeginSurface_t) (
+    GLUnurbs            *nobj);
+
+typedef void (APIENTRY*gluBeginCurve_t) (
+    GLUnurbs            *nobj);
+
+typedef void (APIENTRY*gluEndCurve_t) (
+    GLUnurbs            *nobj);
+
+typedef void (APIENTRY*gluEndSurface_t) (
+    GLUnurbs            *nobj);
+
+typedef void (APIENTRY*gluBeginTrim_t) (
+    GLUnurbs            *nobj);
+
+typedef void (APIENTRY*gluEndTrim_t) (
+    GLUnurbs            *nobj);
+
+typedef void (APIENTRY*gluPwlCurve_t) (
+    GLUnurbs            *nobj, 
+    GLint               count, 
+    GLfloat             *array, 
+    GLint               stride, 
+    GLenum              type);
+
+typedef void (APIENTRY*gluNurbsCurve_t) (
+    GLUnurbs            *nobj, 
+    GLint               nknots, 
+    GLfloat             *knot, 
+    GLint               stride, 
+    GLfloat             *ctlarray, 
+    GLint               order, 
+    GLenum              type);
+
+typedef void (APIENTRY*gluNurbsSurface_t) (     
+    GLUnurbs            *nobj, 
+    GLint               sknot_count, 
+    float               *sknot, 
+    GLint               tknot_count, 
+    GLfloat             *tknot, 
+    GLint               s_stride, 
+    GLint               t_stride, 
+    GLfloat             *ctlarray, 
+    GLint               sorder, 
+    GLint               torder, 
+    GLenum              type);
+
+typedef void (APIENTRY*gluLoadSamplingMatrices_t) (
+    GLUnurbs            *nobj, 
+    const GLfloat       modelMatrix[16], 
+    const GLfloat       projMatrix[16], 
+    const GLint         viewport[4] );
+
+typedef void (APIENTRY*gluNurbsProperty_t) (
+    GLUnurbs            *nobj, 
+    GLenum              property, 
+    GLfloat             value );
+
+typedef void (APIENTRY*gluGetNurbsProperty_t) (
+    GLUnurbs            *nobj, 
+    GLenum              property, 
+    GLfloat             *value );
+
+typedef void (APIENTRY*gluNurbsCallback_t) (
+    GLUnurbs            *nobj, 
+    GLenum              which, 
+    void                (CALLBACK* fn)() );
+
+typedef void (APIENTRY*gluBeginPolygon_t) ( GLUtesselator *tess );
+
+typedef void (APIENTRY*gluNextContour_t) ( GLUtesselator *tess, GLenum type );
+
+typedef void (APIENTRY*gluEndPolygon_t) ( GLUtesselator *tess );
+
+
+// MACHINE GENERATED !!! USE gltools.lua !!!
+extern gluErrorString_t                     _gluErrorString;
+extern gluErrorUnicodeStringEXT_t           _gluErrorUnicodeStringEXT;
+extern gluGetString_t                       _gluGetString;
+extern gluOrtho2D_t                         _gluOrtho2D;
+extern gluPerspective_t                     _gluPerspective;
+extern gluPickMatrix_t                      _gluPickMatrix;
+extern gluLookAt_t                          _gluLookAt;
+extern gluProject_t                         _gluProject;
+extern gluUnProject_t                       _gluUnProject;
+extern gluScaleImage_t                      _gluScaleImage;
+extern gluBuild1DMipmaps_t                  _gluBuild1DMipmaps;
+extern gluBuild2DMipmaps_t                  _gluBuild2DMipmaps;
+extern gluNewQuadric_t                      _gluNewQuadric;
+extern gluDeleteQuadric_t                   _gluDeleteQuadric;
+extern gluQuadricNormals_t                  _gluQuadricNormals;
+extern gluQuadricTexture_t                  _gluQuadricTexture;
+extern gluQuadricOrientation_t              _gluQuadricOrientation;
+extern gluQuadricDrawStyle_t                _gluQuadricDrawStyle;
+extern gluCylinder_t                        _gluCylinder;
+extern gluDisk_t                            _gluDisk;
+extern gluPartialDisk_t                     _gluPartialDisk;
+extern gluSphere_t                          _gluSphere;
+extern gluQuadricCallback_t                 _gluQuadricCallback;
+extern gluNewTess_t                         _gluNewTess;
+extern gluDeleteTess_t                      _gluDeleteTess;
+extern gluTessBeginPolygon_t                _gluTessBeginPolygon;
+extern gluTessBeginContour_t                _gluTessBeginContour;
+extern gluTessVertex_t                      _gluTessVertex;
+extern gluTessEndContour_t                  _gluTessEndContour;
+extern gluTessEndPolygon_t                  _gluTessEndPolygon;
+extern gluTessProperty_t                    _gluTessProperty;
+extern gluTessNormal_t                      _gluTessNormal;
+extern gluTessCallback_t                    _gluTessCallback;
+extern gluGetTessProperty_t                 _gluGetTessProperty;
+extern gluNewNurbsRenderer_t                _gluNewNurbsRenderer;
+extern gluDeleteNurbsRenderer_t             _gluDeleteNurbsRenderer;
+extern gluBeginSurface_t                    _gluBeginSurface;
+extern gluBeginCurve_t                      _gluBeginCurve;
+extern gluEndCurve_t                        _gluEndCurve;
+extern gluEndSurface_t                      _gluEndSurface;
+extern gluBeginTrim_t                       _gluBeginTrim;
+extern gluEndTrim_t                         _gluEndTrim;
+extern gluPwlCurve_t                        _gluPwlCurve;
+extern gluNurbsCurve_t                      _gluNurbsCurve;
+extern gluNurbsSurface_t                    _gluNurbsSurface;
+extern gluLoadSamplingMatrices_t            _gluLoadSamplingMatrices;
+extern gluNurbsProperty_t                   _gluNurbsProperty;
+extern gluGetNurbsProperty_t                _gluGetNurbsProperty;
+extern gluNurbsCallback_t                   _gluNurbsCallback;
+extern gluBeginPolygon_t                    _gluBeginPolygon;
+extern gluNextContour_t                     _gluNextContour;
+extern gluEndPolygon_t                      _gluEndPolygon;
+
+// OpenGL 1.3 typedefs
+typedef void (APIENTRY*glActiveTexture_t) (GLenum);
+typedef void (APIENTRY*glClientActiveTexture_t) (GLenum);
+typedef void (APIENTRY*glMultiTexCoord1d_t) (GLenum, GLdouble);
+typedef void (APIENTRY*glMultiTexCoord1dv_t) (GLenum, const GLdouble *);
+typedef void (APIENTRY*glMultiTexCoord1f_t) (GLenum, GLfloat);
+typedef void (APIENTRY*glMultiTexCoord1fv_t) (GLenum, const GLfloat *);
+typedef void (APIENTRY*glMultiTexCoord1i_t) (GLenum, GLint);
+typedef void (APIENTRY*glMultiTexCoord1iv_t) (GLenum, const GLint *);
+typedef void (APIENTRY*glMultiTexCoord1s_t) (GLenum, GLshort);
+typedef void (APIENTRY*glMultiTexCoord1sv_t) (GLenum, const GLshort *);
+typedef void (APIENTRY*glMultiTexCoord2d_t) (GLenum, GLdouble, GLdouble);
+typedef void (APIENTRY*glMultiTexCoord2dv_t) (GLenum, const GLdouble *);
+typedef void (APIENTRY*glMultiTexCoord2f_t) (GLenum, GLfloat, GLfloat);
+typedef void (APIENTRY*glMultiTexCoord2fv_t) (GLenum, const GLfloat *);
+typedef void (APIENTRY*glMultiTexCoord2i_t) (GLenum, GLint, GLint);
+typedef void (APIENTRY*glMultiTexCoord2iv_t) (GLenum, const GLint *);
+typedef void (APIENTRY*glMultiTexCoord2s_t) (GLenum, GLshort, GLshort);
+typedef void (APIENTRY*glMultiTexCoord2sv_t) (GLenum, const GLshort *);
+typedef void (APIENTRY*glMultiTexCoord3d_t) (GLenum, GLdouble, GLdouble, GLdouble);
+typedef void (APIENTRY*glMultiTexCoord3dv_t) (GLenum, const GLdouble *);
+typedef void (APIENTRY*glMultiTexCoord3f_t) (GLenum, GLfloat, GLfloat, GLfloat);
+typedef void (APIENTRY*glMultiTexCoord3fv_t) (GLenum, const GLfloat *);
+typedef void (APIENTRY*glMultiTexCoord3i_t) (GLenum, GLint, GLint, GLint);
+typedef void (APIENTRY*glMultiTexCoord3iv_t) (GLenum, const GLint *);
+typedef void (APIENTRY*glMultiTexCoord3s_t) (GLenum, GLshort, GLshort, GLshort);
+typedef void (APIENTRY*glMultiTexCoord3sv_t) (GLenum, const GLshort *);
+typedef void (APIENTRY*glMultiTexCoord4d_t) (GLenum, GLdouble, GLdouble, GLdouble, GLdouble);
+typedef void (APIENTRY*glMultiTexCoord4dv_t) (GLenum, const GLdouble *);
+typedef void (APIENTRY*glMultiTexCoord4f_t) (GLenum, GLfloat, GLfloat, GLfloat, GLfloat);
+typedef void (APIENTRY*glMultiTexCoord4fv_t) (GLenum, const GLfloat *);
+typedef void (APIENTRY*glMultiTexCoord4i_t) (GLenum, GLint, GLint, GLint, GLint);
+typedef void (APIENTRY*glMultiTexCoord4iv_t) (GLenum, const GLint *);
+typedef void (APIENTRY*glMultiTexCoord4s_t) (GLenum, GLshort, GLshort, GLshort, GLshort);
+typedef void (APIENTRY*glMultiTexCoord4sv_t) (GLenum, const GLshort *);
+typedef void (APIENTRY*glLoadTransposeMatrixf_t) (const GLfloat *);
+typedef void (APIENTRY*glLoadTransposeMatrixd_t) (const GLdouble *);
+typedef void (APIENTRY*glMultTransposeMatrixf_t) (const GLfloat *);
+typedef void (APIENTRY*glMultTransposeMatrixd_t) (const GLdouble *);
+typedef void (APIENTRY*glSampleCoverage_t) (GLclampf, GLboolean);
+typedef void (APIENTRY*glCompressedTexImage3D_t) (GLenum, GLint, GLenum, GLsizei, GLsizei, GLsizei, GLint, GLsizei, const GLvoid *);
+typedef void (APIENTRY*glCompressedTexImage2D_t) (GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const GLvoid *);
+typedef void (APIENTRY*glCompressedTexImage1D_t) (GLenum, GLint, GLenum, GLsizei, GLint, GLsizei, const GLvoid *);
+typedef void (APIENTRY*glCompressedTexSubImage3D_t) (GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLenum, GLsizei, const GLvoid *);
+typedef void (APIENTRY*glCompressedTexSubImage2D_t) (GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLsizei, const GLvoid *);
+typedef void (APIENTRY*glCompressedTexSubImage1D_t) (GLenum, GLint, GLint, GLsizei, GLenum, GLsizei, const GLvoid *);
+typedef void (APIENTRY*glGetCompressedTexImage_t) (GLenum, GLint, GLvoid *);
+
+// OpenGL RenderBufferEXT typedefs
+typedef GLboolean (APIENTRY*glIsRenderbufferEXT_t) (GLuint);
+typedef void (APIENTRY*glBindRenderbufferEXT_t) (GLenum, GLuint);
+typedef void (APIENTRY*glDeleteRenderbuffersEXT_t) (GLsizei, const GLuint *);
+typedef void (APIENTRY*glGenRenderbuffersEXT_t) (GLsizei, GLuint *);
+typedef void (APIENTRY*glRenderbufferStorageEXT_t) (GLenum, GLenum, GLsizei, GLsizei);
+typedef void (APIENTRY*glGetRenderbufferParameterivEXT_t) (GLenum, GLenum, GLint *);
+typedef GLboolean (APIENTRY*glIsFramebufferEXT_t) (GLuint);
+typedef void (APIENTRY*glBindFramebufferEXT_t) (GLenum, GLuint);
+typedef void (APIENTRY*glDeleteFramebuffersEXT_t) (GLsizei, const GLuint *);
+typedef void (APIENTRY*glGenFramebuffersEXT_t) (GLsizei, GLuint *);
+typedef GLenum (APIENTRY*glCheckFramebufferStatusEXT_t) (GLenum);
+typedef void (APIENTRY*glFramebufferTexture1DEXT_t) (GLenum, GLenum, GLenum, GLuint, GLint);
+typedef void (APIENTRY*glFramebufferTexture2DEXT_t) (GLenum, GLenum, GLenum, GLuint, GLint);
+typedef void (APIENTRY*glFramebufferTexture3DEXT_t) (GLenum, GLenum, GLenum, GLuint, GLint, GLint);
+typedef void (APIENTRY*glFramebufferRenderbufferEXT_t) (GLenum, GLenum, GLenum, GLuint);
+typedef void (APIENTRY*glGetFramebufferAttachmentParameterivEXT_t) (GLenum, GLenum, GLenum, GLint *);
+typedef void (APIENTRY*glGenerateMipmapEXT_t) (GLenum);
+
+// OpenGL 3.0 typedefs
+typedef void (APIENTRY*glColorMaski_t) (GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a);
+typedef void (APIENTRY*glGetBooleani_v_t) (GLenum target, GLuint index, GLboolean *data);
+typedef void (APIENTRY*glGetIntegeri_v_t) (GLenum target, GLuint index, GLint *data);
+typedef void (APIENTRY*glEnablei_t) (GLenum target, GLuint index);
+typedef void (APIENTRY*glDisablei_t) (GLenum target, GLuint index);
+typedef GLboolean (APIENTRY*glIsEnabledi_t) (GLenum target, GLuint index);
+typedef void (APIENTRY*glBeginTransformFeedback_t) (GLenum primitiveMode);
+typedef void (APIENTRY*glEndTransformFeedback_t) (void);
+typedef void (APIENTRY*glBindBufferRange_t) (GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
+typedef void (APIENTRY*glBindBufferBase_t) (GLenum target, GLuint index, GLuint buffer);
+typedef void (APIENTRY*glTransformFeedbackVaryings_t) (GLuint program, GLsizei count, const GLchar *const*varyings, GLenum bufferMode);
+typedef void (APIENTRY*glGetTransformFeedbackVarying_t) (GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLsizei *size, GLenum *type, GLchar *name);
+typedef void (APIENTRY*glClampColor_t) (GLenum target, GLenum clamp);
+typedef void (APIENTRY*glBeginConditionalRender_t) (GLuint id, GLenum mode);
+typedef void (APIENTRY*glEndConditionalRender_t) (void);
+typedef void (APIENTRY*glVertexAttribIPointer_t) (GLuint index, GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+typedef void (APIENTRY*glGetVertexAttribIiv_t) (GLuint index, GLenum pname, GLint *params);
+typedef void (APIENTRY*glGetVertexAttribIuiv_t) (GLuint index, GLenum pname, GLuint *params);
+typedef void (APIENTRY*glVertexAttribI1i_t) (GLuint index, GLint x);
+typedef void (APIENTRY*glVertexAttribI2i_t) (GLuint index, GLint x, GLint y);
+typedef void (APIENTRY*glVertexAttribI3i_t) (GLuint index, GLint x, GLint y, GLint z);
+typedef void (APIENTRY*glVertexAttribI4i_t) (GLuint index, GLint x, GLint y, GLint z, GLint w);
+typedef void (APIENTRY*glVertexAttribI1ui_t) (GLuint index, GLuint x);
+typedef void (APIENTRY*glVertexAttribI2ui_t) (GLuint index, GLuint x, GLuint y);
+typedef void (APIENTRY*glVertexAttribI3ui_t) (GLuint index, GLuint x, GLuint y, GLuint z);
+typedef void (APIENTRY*glVertexAttribI4ui_t) (GLuint index, GLuint x, GLuint y, GLuint z, GLuint w);
+typedef void (APIENTRY*glVertexAttribI1iv_t) (GLuint index, const GLint *v);
+typedef void (APIENTRY*glVertexAttribI2iv_t) (GLuint index, const GLint *v);
+typedef void (APIENTRY*glVertexAttribI3iv_t) (GLuint index, const GLint *v);
+typedef void (APIENTRY*glVertexAttribI4iv_t) (GLuint index, const GLint *v);
+typedef void (APIENTRY*glVertexAttribI1uiv_t) (GLuint index, const GLuint *v);
+typedef void (APIENTRY*glVertexAttribI2uiv_t) (GLuint index, const GLuint *v);
+typedef void (APIENTRY*glVertexAttribI3uiv_t) (GLuint index, const GLuint *v);
+typedef void (APIENTRY*glVertexAttribI4uiv_t) (GLuint index, const GLuint *v);
+typedef void (APIENTRY*glVertexAttribI4bv_t) (GLuint index, const GLbyte *v);
+typedef void (APIENTRY*glVertexAttribI4sv_t) (GLuint index, const GLshort *v);
+typedef void (APIENTRY*glVertexAttribI4ubv_t) (GLuint index, const GLubyte *v);
+typedef void (APIENTRY*glVertexAttribI4usv_t) (GLuint index, const GLushort *v);
+typedef void (APIENTRY*glGetUniformuiv_t) (GLuint program, GLint location, GLuint *params);
+typedef void (APIENTRY*glBindFragDataLocation_t) (GLuint program, GLuint color, const GLchar *name);
+typedef GLint (APIENTRY*glGetFragDataLocation_t) (GLuint program, const GLchar *name);
+typedef void (APIENTRY*glUniform1ui_t) (GLint location, GLuint v0);
+typedef void (APIENTRY*glUniform2ui_t) (GLint location, GLuint v0, GLuint v1);
+typedef void (APIENTRY*glUniform3ui_t) (GLint location, GLuint v0, GLuint v1, GLuint v2);
+typedef void (APIENTRY*glUniform4ui_t) (GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3);
+typedef void (APIENTRY*glUniform1uiv_t) (GLint location, GLsizei count, const GLuint *value);
+typedef void (APIENTRY*glUniform2uiv_t) (GLint location, GLsizei count, const GLuint *value);
+typedef void (APIENTRY*glUniform3uiv_t) (GLint location, GLsizei count, const GLuint *value);
+typedef void (APIENTRY*glUniform4uiv_t) (GLint location, GLsizei count, const GLuint *value);
+typedef void (APIENTRY*glTexParameterIiv_t) (GLenum target, GLenum pname, const GLint *params);
+typedef void (APIENTRY*glTexParameterIuiv_t) (GLenum target, GLenum pname, const GLuint *params);
+typedef void (APIENTRY*glGetTexParameterIiv_t) (GLenum target, GLenum pname, GLint *params);
+typedef void (APIENTRY*glGetTexParameterIuiv_t) (GLenum target, GLenum pname, GLuint *params);
+typedef void (APIENTRY*glClearBufferiv_t) (GLenum buffer, GLint drawbuffer, const GLint *value);
+typedef void (APIENTRY*glClearBufferuiv_t) (GLenum buffer, GLint drawbuffer, const GLuint *value);
+typedef void (APIENTRY*glClearBufferfv_t) (GLenum buffer, GLint drawbuffer, const GLfloat *value);
+typedef void (APIENTRY*glClearBufferfi_t) (GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil);
+typedef const GLubyte *(APIENTRY*glGetStringi_t) (GLenum name, GLuint index);
+typedef GLboolean (APIENTRY*glIsRenderbuffer_t) (GLuint renderbuffer);
+typedef void (APIENTRY*glBindRenderbuffer_t) (GLenum target, GLuint renderbuffer);
+typedef void (APIENTRY*glDeleteRenderbuffers_t) (GLsizei n, const GLuint *renderbuffers);
+typedef void (APIENTRY*glGenRenderbuffers_t) (GLsizei n, GLuint *renderbuffers);
+typedef void (APIENTRY*glRenderbufferStorage_t) (GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (APIENTRY*glGetRenderbufferParameteriv_t) (GLenum target, GLenum pname, GLint *params);
+typedef GLboolean (APIENTRY*glIsFramebuffer_t) (GLuint framebuffer);
+typedef void (APIENTRY*glBindFramebuffer_t) (GLenum target, GLuint framebuffer);
+typedef void (APIENTRY*glDeleteFramebuffers_t) (GLsizei n, const GLuint *framebuffers);
+typedef void (APIENTRY*glGenFramebuffers_t) (GLsizei n, GLuint *framebuffers);
+typedef GLenum (APIENTRY*glCheckFramebufferStatus_t) (GLenum target);
+typedef void (APIENTRY*glFramebufferTexture1D_t) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (APIENTRY*glFramebufferTexture2D_t) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (APIENTRY*glFramebufferTexture3D_t) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
+typedef void (APIENTRY*glFramebufferRenderbuffer_t) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+typedef void (APIENTRY*glGetFramebufferAttachmentParameteriv_t) (GLenum target, GLenum attachment, GLenum pname, GLint *params);
+typedef void (APIENTRY*glGenerateMipmap_t) (GLenum target);
+typedef void (APIENTRY*glBlitFramebuffer_t) (GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
+typedef void (APIENTRY*glRenderbufferStorageMultisample_t) (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (APIENTRY*glFramebufferTextureLayer_t) (GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
+typedef void *(APIENTRY*glMapBufferRange_t) (GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
+typedef void (APIENTRY*glFlushMappedBufferRange_t) (GLenum target, GLintptr offset, GLsizeiptr length);
+typedef void (APIENTRY*glBindVertexArray_t) (GLuint array);
+typedef void (APIENTRY*glDeleteVertexArrays_t) (GLsizei n, const GLuint *arrays);
+typedef void (APIENTRY*glGenVertexArrays_t) (GLsizei n, GLuint *arrays);
+typedef GLboolean (APIENTRY* glIsVertexArray_t) (GLuint array);
 
 #endif //_OPENGL_FUNCTION_TYPEDEFS_

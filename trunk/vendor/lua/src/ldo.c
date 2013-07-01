@@ -390,6 +390,7 @@ void luaD_call (lua_State *L, StkId func, int nResults)
     {
         // Restore basic business
         L->ci = restoreci( L, cioff );
+        L->base = L->ci->base;
         throw;
     }
 

@@ -25,10 +25,7 @@ int luaconstructor_guitab( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GUITAB, gui );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushlightuserdata( L, gui->GetCGUIElement() );
-    luaL_openlib( L, NULL, tab_interface, 2 );
+    j.RegisterInterfaceTrans( L, tab_interface, 0, LUACLASS_GUITAB );
 
     lua_pushlstring( L, "gui-tab", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

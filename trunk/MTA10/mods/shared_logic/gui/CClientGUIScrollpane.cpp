@@ -25,10 +25,7 @@ int luaconstructor_guiscrollpane( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GUISCROLLPANE, gui );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushlightuserdata( L, gui->GetCGUIElement() );
-    luaL_openlib( L, NULL, scrollpane_interface, 2 );
+    j.RegisterInterfaceTrans( L, scrollpane_interface, 0, LUACLASS_GUISCROLLPANE );
 
     lua_pushlstring( L, "gui-scrollpane", 14 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

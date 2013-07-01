@@ -126,15 +126,17 @@ public:
     inline void Identity( void )
     {
         IdentityRotation();
-
-        vPos.fX = 0;//(float)(1.15 * -0.25);
-        vPos.fY = 0;
-        vPos.fZ = 0;
     }
 
     RwMatrix( void )
     {
         Identity();
+
+        // Making a clean matrix.
+        a = 0;
+        b = 0;
+        c = 0;
+        w = 1.0f;
     }
 
     inline void assign( const RwMatrix& mat )
@@ -148,6 +150,12 @@ public:
     RwMatrix( const RwMatrix& mat )
     {
         assign( mat );
+
+        // Making a clean matrix.
+        a = 0;
+        b = 0;
+        c = 0;
+        w = 1.0f;
     }
 
     RwMatrix __thiscall operator + ( const RwMatrix& mat )
@@ -525,7 +533,7 @@ public:
     CVector         vUp;
     unsigned int    c;
     CVector         vPos;
-    unsigned int    d;
+    float           w;
 };
 
 #endif

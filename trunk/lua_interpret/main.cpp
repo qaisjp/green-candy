@@ -76,15 +76,52 @@ __forceinline void lua_exec( LuaManager::context *context, const std::string& cm
         if ( !strRep )
         {
             cout << type;
-            cout << ", ";
+
+            if ( strcmp( type, "class" ) == 0 )
+            {
+                lua_pushtype( state, n + 1 );
+                
+                const char *typeString = lua_tostring( state, -1 );
+
+                cout << " [";
+
+                if ( typeString )
+                    cout << typeString;
+                else
+                    cout << "unknown";
+
+                lua_pop( state, 1 );
+
+                cout << "]";
+            }
         }
         else
         {
             cout << strRep;
             cout << " [";
             cout << type;
-            cout << "], ";
+
+            if ( strcmp( type, "class" ) == 0 )
+            {
+                lua_pushtype( state, n + 1 );
+                
+                const char *typeString = lua_tostring( state, -1 );
+
+                cout << ", ";
+
+                if ( typeString )
+                    cout << typeString;
+                else
+                    cout << "unknown";
+
+                lua_pop( state, 1 );
+            }
+
+            cout << "]";
         }
+
+        if ( n + 1 != now )
+            cout << ", ";
     }
 
     cout << "\n";
@@ -143,18 +180,18 @@ __forceinline void shutdown_interpreter( void )
     delete fileSystem;
 }
 
+static bool do_runtime = true;
+
 void signal_handler( int sig )
 {
-    shutdown_interpreter();
-
-    exit( EXIT_SUCCESS );
+    do_runtime = false;
 }
 
 BOOL WINAPI ControlHandler( DWORD type )
 {
-    shutdown_interpreter();
+    do_runtime = false;
 
-    exit( EXIT_SUCCESS );
+    return 1;
 }
 
 static bool cmdLinePushed;
@@ -169,6 +206,27 @@ static DWORD __stdcall HandleConsoleInput( LPVOID param )
         WaitForSingleObject( processCmdEvent, INFINITE );
         ResetEvent( processCmdEvent );
     }
+    return 0;
+}
+
+extern "C"
+{
+extern int mainCRTStartup( void );
+}
+
+extern "C" int APIENTRY _MainInit( void )
+{
+    DbgHeap_Init();
+
+    int ret = mainCRTStartup();
+
+    DbgHeap_Shutdown();
+    return ret;
+}
+
+static LUA_DECLARE( quit )
+{
+    do_runtime = false;
     return 0;
 }
 
@@ -213,6 +271,8 @@ int main( int argc, char *argv[] )
         benchResource = resMan->Load( "luabench" );
         userLuaState = state = benchResource->GetVM().GetVirtualMachine();
 
+        lua_register( userLuaState, "quit", quit );
+
         benchResource->IncrementMethodStack();
 
         execContext = new LuaManager::context( manager->AcquireContext( benchResource->GetVM() ) );
@@ -244,7 +304,7 @@ int main( int argc, char *argv[] )
 
     try
     {
-        while ( true )
+        while ( do_runtime )
         {
             if ( cmdLinePushed )
             {
@@ -280,7 +340,7 @@ int main( int argc, char *argv[] )
                 SetEvent( processCmdEvent );
             }
 
-                bool peeked = false;
+            bool peeked = false;
 
             try
             {
@@ -289,6 +349,12 @@ int main( int argc, char *argv[] )
                 luagl_pulseDrivers( state );
 
                 MSG msg;
+
+                if ( !do_runtime )
+                    break;
+
+                // Proceed with the garbage collector
+                lua_gc( g_L, LUA_GCSTEP, 2 );
 
                 while ( PeekMessage( &msg, NULL, 0, 0, PM_REMOVE ) )
                 {

@@ -25,9 +25,7 @@ static int luaconstructor_render( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_RENDERELEMENT, render );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, render_interface, 1 );
+    j.RegisterInterfaceTrans( L, render_interface, 0, LUACLASS_RENDERELEMENT );
 
     lua_pushlstring( L, "render-element", 14 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

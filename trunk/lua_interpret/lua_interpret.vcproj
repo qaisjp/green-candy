@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="../vendor"
+			OutputDirectory="../vendor/"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic"
+				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic;&quot;..\vendor\freetype-2.4.12\include&quot;;&quot;..\vendor\jpeg\jpeg-8d&quot;;..\vendor\opengl\"
 				PreprocessorDefinitions="WIN32;_DEBUG"
 				RuntimeLibrary="1"
 				StructMemberAlignment="0"
@@ -63,14 +63,15 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lua5.1d.lib DbgHelp.lib zlibd_2008.lib"
+				AdditionalDependencies="lua5.1d.lib DbgHelp.lib zlibd_2008.lib freetype2412_D.lib libpng2008d.lib jpegd.lib"
 				OutputFile="$(OutDir)\lint_d.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib"
+				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib;&quot;..\vendor\freetype-2.4.12\objs\win32\vc2008\&quot;;../vendor/libpng/lib;../vendor/jpeg/lib"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="LIBCMTD.lib"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
+				EntryPointSymbol="_MainInit"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -97,7 +98,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="../vendor"
+			OutputDirectory="../vendor/"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -126,7 +127,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic"
+				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic;&quot;..\vendor\freetype-2.4.12\include&quot;;&quot;..\vendor\jpeg\jpeg-8d&quot;;..\vendor\opengl\"
 				PreprocessorDefinitions="WIN32;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -148,10 +149,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lua5.1.lib DbgHelp.lib zlib_2008.lib"
+				AdditionalDependencies="lua5.1.lib DbgHelp.lib zlib_2008.lib freetype2412.lib libpng2008.lib jpeg.lib"
 				OutputFile="$(OutDir)\lint.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib"
+				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib;&quot;..\vendor\freetype-2.4.12\objs\win32\vc2008\&quot;;../vendor/libpng/lib;../vendor/jpeg/lib"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
 				GenerateDebugInformation="true"
@@ -160,6 +161,7 @@
 				GenerateMapFile="false"
 				MapFileName=""
 				MapExports="false"
+				EntryPointSymbol="_MainInit"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -292,6 +294,10 @@
 			</File>
 			<File
 				RelativePath="..\Shared\logic\LuaClass.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\logic\LuaCommon.cpp"
 				>
 			</File>
 			<File
@@ -539,6 +545,14 @@
 			Name="glDriver"
 			>
 			<File
+				RelativePath=".\glDriver\gl_enum.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\glDriver\gl_fbo.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\glDriver\gl_lua.cpp"
 				>
 			</File>
@@ -546,11 +560,31 @@
 				RelativePath=".\glDriver\gl_main.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\glDriver\gl_texture.cpp"
+				>
+			</File>
 			<Filter
 				Name="include"
 				>
 				<File
+					RelativePath=".\glDriver\gl_context.h"
+					>
+				</File>
+				<File
+					RelativePath=".\glDriver\gl_enum.h"
+					>
+				</File>
+				<File
+					RelativePath=".\glDriver\gl_fbo.h"
+					>
+				</File>
+				<File
 					RelativePath=".\glDriver\gl_func.h"
+					>
+				</File>
+				<File
+					RelativePath=".\glDriver\gl_internal.h"
 					>
 				</File>
 				<File
@@ -559,6 +593,10 @@
 				</File>
 				<File
 					RelativePath=".\glDriver\gl_main.h"
+					>
+				</File>
+				<File
+					RelativePath=".\glDriver\gl_texture.h"
 					>
 				</File>
 			</Filter>
@@ -587,6 +625,110 @@
 				</File>
 				<File
 					RelativePath=".\win32\dialogs\win32_dlg.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
+		<Filter
+			Name="debugsdk"
+			>
+			<File
+				RelativePath="..\Shared\debugsdk\dbgheap.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\debugsdk\dbgheap.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="lfreetype"
+			>
+			<File
+				RelativePath=".\lfreetype\lft_main.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\lfreetype\lft_main.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="utils"
+			>
+			<File
+				RelativePath=".\utils\include.h"
+				>
+			</File>
+			<Filter
+				Name="LuaInstance"
+				>
+				<File
+					RelativePath=".\utils\LuaInstance.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\utils\LuaInstance.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Bitmap"
+				>
+				<File
+					RelativePath=".\utils\Bitmap.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\utils\Bitmap.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="jpeg"
+				>
+				<File
+					RelativePath=".\utils\jpeg\jpeg_main.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\utils\jpeg\jpeg_main.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="png"
+				>
+				<File
+					RelativePath=".\utils\png\png_main.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\utils\png\png_main.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="dds"
+				>
+				<File
+					RelativePath=".\utils\dds\dds_main.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\utils\dds\dds_main.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="s2g"
+				>
+				<File
+					RelativePath=".\utils\s2g\s2g_main.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\utils\s2g\s2g_main.h"
 					>
 				</File>
 			</Filter>

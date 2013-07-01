@@ -86,4 +86,5 @@ static const luaL_Reg bit32_interface[] =
 void luabitwise_open( lua_State *L )
 {
     luaL_openlib( L, "bit32", bit32_interface, 0 );
+    lua_pop( L, 1 );
 }

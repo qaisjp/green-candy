@@ -109,7 +109,7 @@ SString CScreenShot::GetScreenShotPath( unsigned int num )
     // Use the fileSystem API
     screenFileRoot->ScanDirectory( "/", "mta-screen*.png", true, NULL, (pathCallback_t)_screenshot_GetByIndex, &info );
 
-    // Get Return the file directory
+    // Return the file directory
     return info.outname;
 }
 

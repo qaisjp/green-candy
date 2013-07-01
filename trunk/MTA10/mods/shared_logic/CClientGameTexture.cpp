@@ -89,9 +89,8 @@ static int luaconstructor_texture( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_TEXTURE, tex );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, texture_interface, 1 );
+    j.RegisterInterface( L, texture_interface, 1 );
 
     lua_pushlstring( L, "texture", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

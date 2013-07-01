@@ -25,10 +25,7 @@ int luaconstructor_guicheckbox( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GUICHECKBOX, gui );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushlightuserdata( L, gui->GetCGUIElement() );
-    luaL_openlib( L, NULL, checkbox_interface, 2 );
+    j.RegisterInterfaceTrans( L, checkbox_interface, 0, LUACLASS_GUICHECKBOX );
 
     lua_pushlstring( L, "gui-checkbox", 11 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

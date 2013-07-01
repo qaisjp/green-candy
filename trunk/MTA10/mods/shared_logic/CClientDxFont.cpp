@@ -25,9 +25,7 @@ static int luaconstructor_dxfont( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_DXFONT, font );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, dxfont_interface, 1 );
+    j.RegisterInterfaceTrans( L, dxfont_interface, 0, LUACLASS_DXFONT );
 
     lua_pushlstring( L, "dx-font", 7 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

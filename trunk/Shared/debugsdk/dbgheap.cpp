@@ -165,6 +165,31 @@ inline static void _win32_checkBlockIntegrity( void *ptr )
     LIST_VALIDATE( intro->memList );
 }
 
+inline static void* _win32_reallocMem( void *ptr, size_t newSize )
+{
+    if ( !ptr || !newSize )
+        return NULL;
+
+    void *valid_ptr = (void*)( (_memIntro*)PAGE_MEM_ADJUST( ptr ) + 1 );
+    MEM_INTERRUPT( valid_ptr == ptr );
+
+    _win32_checkBlockIntegrity( valid_ptr );
+
+    _memIntro *intro = (_memIntro*)ptr - 1;
+    _memOutro *outro = (_memOutro*)( (unsigned char*)ptr + newSize );
+
+    // Make sure we do not overshoot page size
+    MEM_INTERRUPT( newSize <= MEM_PAGE_MOD( intro->objSize ) * g_systemInfo.dwPageSize );
+
+    // Rewrite block integrity
+    intro->objSize = newSize;
+    outro->checksum = 0xBABECAFE;
+
+    // Fill other memory with debug pattern (without killing user data)
+    memset( outro + 1, PAGE_MEM_DEBUG_PATTERN, MEM_PAGE_MOD( newSize ) * g_systemInfo.dwPageSize - (sizeof(_memIntro) + sizeof(_memOutro) + newSize) );
+    return ptr;
+}
+
 inline static void _win32_freeMem( void *ptr )
 {
     if ( !ptr )
@@ -262,6 +287,11 @@ inline static void* _win32_allocMem( size_t memSize )
     return _win32_allocMemPage( memSize );
 }
 
+inline static void* _win32_reallocMem( void *ptr, size_t size )
+{
+    return ptr;
+}
+
 inline static void _win32_freeMem( void *ptr )
 {
     if ( !ptr )
@@ -298,6 +328,11 @@ inline static void _win32_initHeap( void )
 inline static void* _win32_allocMem( size_t memSize )
 {
     return HeapAlloc( g_privateHeap, 0, memSize );
+}
+
+inline static void* _win32_reallocMem( void *ptr, size_t size )
+{
+    return HeapReAlloc( g_privateHeap, 0, ptr, size );
 }
 
 inline static void _win32_freeMem( void *ptr )
@@ -357,6 +392,21 @@ void operator delete( void *ptr ) throw()
 }
 
 void operator delete[]( void *ptr ) throw()
+{
+    _win32_freeMem( ptr );
+}
+
+void* DbgMalloc( size_t size )
+{
+    return _win32_allocMem( size );
+}
+
+void* DbgRealloc( void *ptr, size_t size )
+{
+    return _win32_reallocMem( ptr, size );
+}
+
+void DbgFree( void *ptr )
 {
     _win32_freeMem( ptr );
 }

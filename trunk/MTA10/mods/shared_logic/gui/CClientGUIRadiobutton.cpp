@@ -25,10 +25,7 @@ int luaconstructor_guiradiobutton( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GUIRADIOBUTTON, gui );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushlightuserdata( L, gui->GetCGUIElement() );
-    luaL_openlib( L, NULL, radiobutton_interface, 2 );
+    j.RegisterInterfaceTrans( L, radiobutton_interface, 0, LUACLASS_GUIRADIOBUTTON );
 
     lua_pushlstring( L, "gui-radiobutton", 15 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

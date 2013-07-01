@@ -48,6 +48,30 @@ static LUA_DECLARE( setSize )
     LUA_SUCCESS;
 }
 
+static LUA_DECLARE( getSize )
+{
+    Win32Dialog *dlg = (Win32Dialog*)lua_getmethodtrans( L );
+    RECT rect;
+
+    GetWindowRect( dlg->handle, &rect );
+
+    lua_pushnumber( L, rect.right - rect.left );
+    lua_pushnumber( L, rect.bottom - rect.top );
+    return 2;
+}
+
+static LUA_DECLARE( getClientSize )
+{
+    Win32Dialog *dlg = (Win32Dialog*)lua_getmethodtrans( L );
+    RECT rect;
+
+    GetClientRect( dlg->handle, &rect );
+
+    lua_pushnumber( L, rect.right - rect.left );
+    lua_pushnumber( L, rect.bottom - rect.top );
+    return 2;
+}
+
 static LUA_DECLARE( setVisible )
 {
     bool visible;
@@ -117,6 +141,8 @@ static const luaL_Reg dialog_interface[] =
 {
     LUA_METHOD( setPosition ),
     LUA_METHOD( setSize ),
+    LUA_METHOD( getSize ),
+    LUA_METHOD( getClientSize ),
     LUA_METHOD( setVisible ),
     LUA_METHOD( getText ),
     LUA_METHOD( setText ),
@@ -199,7 +225,7 @@ LRESULT CALLBACK DialogProcedure( HWND myWindow, UINT msg, WPARAM wparam, LPARAM
         {
             dlg->PushMethod( L, "triggerEvent" );
             lua_pushcstring( L, "onClose" );
-            lua_call( L, 1, 0 );
+            lua_call( L, 1, 1 );
 
             bool success = lua_toboolean( L, -1 );
             lua_pop( L, 1 );

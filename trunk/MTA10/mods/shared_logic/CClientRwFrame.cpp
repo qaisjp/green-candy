@@ -302,10 +302,8 @@ static LUA_DECLARE( luaconstructor_rwframe )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_RWFRAME, frame );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, rwframe_interface, 1 );
-
+    j.RegisterInterface( L, rwframe_interface, 1 );
     j.RegisterInterfaceTrans( L, rwframe_interface_trans, 0, LUACLASS_RWFRAME );
 
     lua_pushlstring( L, "rwframe", 7 );

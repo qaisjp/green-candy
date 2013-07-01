@@ -142,6 +142,7 @@ namespace LuaFunctionDefs
     // Utility
     LUA_DECLARE( newmd5hasher );
     LUA_DECLARE( md5 );
+    LUA_DECLARE( hashString );
     LUA_DECLARE( gettok );
     LUA_DECLARE( split );
     LUA_DECLARE( setTimer );

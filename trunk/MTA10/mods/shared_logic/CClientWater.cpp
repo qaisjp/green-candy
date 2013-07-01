@@ -28,9 +28,7 @@ static int luaconstructor_water( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_WATER, water );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, water_interface, 1 );
+    j.RegisterInterfaceTrans( L, water_interface, 0, LUACLASS_WATER );
 
     lua_pushlstring( L, "water", 5 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

@@ -28,6 +28,11 @@ void* operator new[]( size_t memSize, const std::nothrow_t nothrow ) throw();
 void operator delete( void *ptr ) throw();
 void operator delete[]( void *ptr ) throw();
 
+// Malloc functions
+void* DbgMalloc( size_t size );
+void* DbgRealloc( void *ptr, size_t size );
+void DbgFree( void *ptr );
+
 #pragma warning(pop)
 
 #endif //USE_HEAP_DEBUGGING

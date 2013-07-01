@@ -54,9 +54,8 @@ static int luaconstructor_root( lua_State *L )
 
     lua_basicprotect( L );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, root_interface, 1 );
+    j.RegisterInterface( L, root_interface, 1 );
 
     lua_pushlstring( L, "root", 4 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

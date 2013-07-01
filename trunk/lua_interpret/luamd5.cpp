@@ -67,10 +67,8 @@ static int luaconstructor_md5( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_MD5HASHER, lua_touserdata( L, lua_upvalueindex( 1 ) ) );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, md5hasher_interface, 1 );
+    j.RegisterInterface( L, md5hasher_interface, 1 );
 
     lua_pushlstring( L, "md5hasher", 9 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

@@ -44,9 +44,8 @@ static int luaconstructor_resource( lua_State *L )
 
     lua_basicprotect( L );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, resource_interface, 1 );
+    j.RegisterInterface( L, resource_interface, 1 );
 
     lua_pushlstring( L, "resource", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

@@ -15,7 +15,13 @@
 
 #include "gl_lua.h"
 
+// We avoid exporting OpenGL headers as global headers.
+// OpenGL internal information should stay inside of driver files.
+
 #define LUACLASS_GLDRIVER   41
+
+struct glContextDescriptor;
+struct glFrameBufferBase;
 
 struct glDriver : public LuaClass
 {
@@ -27,6 +33,40 @@ struct glDriver : public LuaClass
     HGLRC glContext;
 
     RwListEntry <glDriver> rootNode;
+
+    bool isBatching;
+
+    unsigned int vMajor, vMinor;
+
+    // Main properties
+    bool allowTexturesOfArbitrarySize;
+    bool supportsDXT1;
+    bool supportsDXT3;
+    bool supportsDXT5;
+    bool supportsFXT1;
+    bool supports_ARB_compression;
+    bool supports_ARB_BPTC;
+    bool supportsLATC;
+    bool supportsRGTC;
+    bool supportsS3TC;
+    bool supportsASTC;
+    bool supports_srgb_compression;
+    int maxTextureSize;
+    bool supports1_3;
+    bool supports_FBO_EXT;
+    bool supportsFBO;
+    bool supports3_0;
+
+    int maxFBOColorAttachments;
+    int maxFBOColorAttachmentsEXT;
+
+    // Context functions
+    // According to MSDN, extension functions should be used in a context only.
+    struct glContextDescriptor *contextInfo;
+
+    // Object context stacks
+    glFrameBufferBase *fboDrawStack;
+    glFrameBufferBase *fboReadStack;
 };
 
 void luagl_initDrivers( void );
@@ -35,5 +75,6 @@ void luagl_pulseDrivers( lua_State *L );
 
 // Global OpenGL exports
 extern HMODULE glMainLibrary;
+extern HMODULE gluLibrary;
 
 #endif //_OPENGL_MAIN_

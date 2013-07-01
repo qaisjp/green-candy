@@ -1473,4 +1473,5 @@ const static luaL_Reg dxElements_library[] =
 void luaopen_dxElements( lua_State *L )
 {
     luaL_openlib( L, "dx", dxElements_library, 0 );
+    lua_pop( L, 1 );
 }

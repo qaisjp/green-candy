@@ -1245,24 +1245,20 @@ __forceinline void Class::RegisterMethod( lua_State *L, TString *methName, bool 
 	else
 	{
 defaultHandler:
-        CClosure *meth;
-
         if ( prevMethod )
         {
             CClosureMethodRedirectSuper *redirect = luaF_newCmethodredirectsuper( L, env, cl, this, prevMethod );
             redirect->f = classmethod_super;
 
-            meth = redirect;
+            handler = redirect;
         }
         else
         {
             CClosureMethodRedirect *redirect = luaF_newCmethodredirect( L, env, cl, this );
             redirect->f = classmethod_root;
 
-            meth = redirect;
+            handler = redirect;
         }
-
-        handler = meth;
 	}
 
     // Store the new method
@@ -1418,6 +1414,9 @@ defaultHandler:
                 else
                     new (L, j->methodCache, methName) StatelessMethodRegister <false> ( proto, methTable );
             }
+
+            // Keep alive the crucial methName
+            luaC_stringmark( L, methName );
 
             // Do not continue registration process.
             // Like a coroutine we are halting the registration process here

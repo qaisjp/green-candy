@@ -40,6 +40,12 @@ static void LoadCFunctions( CLuaMain *L )
     luaopen_dxElements( state );
     luawin32_open( state );
     luagl_open( state );
+    luafreetype_open( state );
+    luabitmap_open( state );
+    luadds_open( state );
+    luapng_open( state );
+    luajpeg_open( state );
+    luas2g_open( state );
 
     lua_register( state, "newmd5hasher", lua_newmd5hasher );
 
