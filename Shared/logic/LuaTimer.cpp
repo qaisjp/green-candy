@@ -59,9 +59,8 @@ static int luaconstructor_timer( lua_State *L )
     lua_newtable( L );
     lua_setfield( L, LUA_ENVIRONINDEX, "args" );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, timer_methods, 1 );
+    j->RegisterInterface( L, timer_methods, 0 );
     return 0;
 }
 

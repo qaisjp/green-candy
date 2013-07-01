@@ -32,9 +32,7 @@ static int luaconstructor_radararea( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_RADARAREA, area );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, radararea_interface, 1 );
+    j.RegisterInterfaceTrans( L, radararea_interface, 0, LUACLASS_RADARAREA );
 
     lua_pushlstring( L, "radararea", 9 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

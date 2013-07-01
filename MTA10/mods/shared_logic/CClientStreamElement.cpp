@@ -30,9 +30,7 @@ static int luaconstructor_stream( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_STREAMELEMENT, stream );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, stream_interface, 1 );
+    j.RegisterInterfaceTrans( L, stream_interface, 0, LUACLASS_STREAMELEMENT );
 
     lua_pushlstring( L, "stream-element", 14 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

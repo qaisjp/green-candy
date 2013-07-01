@@ -103,10 +103,8 @@ static LUA_DECLARE( luaconstructor_object )
 
     j.RegisterInterfaceTrans( L, object_interface_trans, 0, LUACLASS_RWOBJECT );
 
-	lua_pushvalue( L, LUA_ENVIRONINDEX );
-
 	lua_pushvalue( L, lua_upvalueindex( 1 ) );
-	luaL_openlib( L, NULL, object_interface, 1 );
+	j.RegisterInterface( L, object_interface, 1 );
 
     lua_pushlstring( L, "rwobject", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

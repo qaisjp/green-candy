@@ -25,10 +25,7 @@ int luaconstructor_guiedit( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GUIEDIT, gui );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushlightuserdata( L, gui->GetCGUIElement() );
-    luaL_openlib( L, NULL, edit_interface, 2 );
+    j.RegisterInterfaceTrans( L, edit_interface, 0, LUACLASS_GUIEDIT );
 
     lua_pushlstring( L, "gui-edit", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

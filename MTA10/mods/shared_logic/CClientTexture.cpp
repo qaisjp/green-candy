@@ -25,9 +25,7 @@ static int luaconstructor_texture( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_CORETEXTURE, tex );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, texture_interface, 1 );
+    j.RegisterInterfaceTrans( L, texture_interface, 0, LUACLASS_CORETEXTURE );
 
     lua_pushlstring( L, "core-texture", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
@@ -60,9 +58,7 @@ static int luaconstructor_target( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_CORERENDERTARGET, tex );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, target_interface, 1 );
+    j.RegisterInterfaceTrans( L, target_interface, 0, LUACLASS_CORERENDERTARGET );
 
     lua_pushlstring( L, "rendertarget", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
@@ -93,9 +89,7 @@ static int luaconstructor_screensource( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_CORESCREENSOURCE, tex );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, screensource_interface, 1 );
+    j.RegisterInterfaceTrans( L, screensource_interface, 0, LUACLASS_CORESCREENSOURCE );
 
     lua_pushlstring( L, "screensource", 12 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

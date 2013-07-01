@@ -106,6 +106,25 @@ namespace LuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( hashString )
+    {
+        std::string buf;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadString( buf );
+
+        if ( !argStream.HasErrors() )
+        {
+            lua_pushnumber( L, HashString_Tumbler( buf.c_str(), buf.size() ) );
+            return 1;
+        }
+        else
+            debug->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
     LUA_DECLARE( fileCreateDir )
     {
         const char *path;

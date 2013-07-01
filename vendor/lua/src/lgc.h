@@ -110,6 +110,7 @@ LUAI_FUNC void luaC_link (lua_State *L, GCObject *o, lu_byte tt);
 LUAI_FUNC void luaC_linkupval (lua_State *L, UpVal *uv);
 LUAI_FUNC void luaC_paycost( global_State *g, class lua_Thread *L, lu_mem cost );
 LUAI_FUNC void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v);
+LUAI_FUNC void luaC_stringmark( lua_State *L, TString *string );
 LUAI_FUNC void luaC_forceupdatef( lua_State *L, GCObject *o );
 LUAI_FUNC void luaC_barrierback (lua_State *L, Table *t);
 LUAI_FUNC void luaC_init( global_State *g );

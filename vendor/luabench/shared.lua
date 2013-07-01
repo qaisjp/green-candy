@@ -220,7 +220,7 @@ function fileParsePath(path)
 
         if (strfind(filename, "[<>:\"/|?*]")) then return false; end;
 
-        return output .. filename, true;
+        return output .. filename, true, filename;
     end
 
     return output, false;

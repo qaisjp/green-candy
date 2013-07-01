@@ -135,4 +135,5 @@ static const luaL_Reg netbench_interface[] =
 void luanetbench_open( lua_State *L )
 {
     luaL_openlib( L, "netbench", netbench_interface, 0 );
+    lua_pop( L, 1 );
 }

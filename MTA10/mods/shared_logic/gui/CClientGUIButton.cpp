@@ -25,10 +25,7 @@ int luaconstructor_guibutton( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GUIBUTTON, gui );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushlightuserdata( L, gui->GetCGUIElement() );
-    luaL_openlib( L, NULL, button_interface, 2 );
+    j.RegisterInterfaceTrans( L, button_interface, 0, LUACLASS_GUIBUTTON );
 
     lua_pushlstring( L, "gui-button", 10 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

@@ -25,10 +25,7 @@ int luaconstructor_guigridlist( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GUIGRIDLIST, gui );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushlightuserdata( L, gui->GetCGUIElement() );
-    luaL_openlib( L, NULL, gridlist_interface, 2 );
+    j.RegisterInterfaceTrans( L, gridlist_interface, 0, LUACLASS_GUIGRIDLIST );
 
     lua_pushlstring( L, "gui-gridlist", 12 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

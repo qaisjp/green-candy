@@ -25,10 +25,7 @@ int luaconstructor_guistaticimage( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GUISTATICIMAGE, gui );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushlightuserdata( L, gui->GetCGUIElement() );
-    luaL_openlib( L, NULL, staticimage_interface, 2 );
+    j.RegisterInterfaceTrans( L, staticimage_interface, 0, LUACLASS_GUISTATICIMAGE );
 
     lua_pushlstring( L, "gui-staticimage", 15 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

@@ -22,7 +22,7 @@ static LUA_DECLARE( replace )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientColModel*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Replace( model ) );
+    lua_pushboolean( L, ((CClientColModel*)lua_getmethodtrans( L ))->Replace( model ) );
     return 1;
 }
 
@@ -34,7 +34,7 @@ static LUA_DECLARE( isReplaced )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientColModel*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->HasReplaced( model ) );
+    lua_pushboolean( L, ((CClientColModel*)lua_getmethodtrans( L ))->HasReplaced( model ) );
     return 1;
 }
 
@@ -46,13 +46,13 @@ static LUA_DECLARE( restore )
     argStream.ReadNumber( model );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientColModel*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->Restore( model ) );
+    lua_pushboolean( L, ((CClientColModel*)lua_getmethodtrans( L ))->Restore( model ) );
     return 1;
 }
 
 static LUA_DECLARE( restoreAll )
 {
-    ((CClientColModel*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->RestoreAll();
+    ((CClientColModel*)lua_getmethodtrans( L ))->RestoreAll();
     return 0;
 }
 
@@ -72,9 +72,7 @@ static int luaconstructor_colmodel( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_COLMODEL, col );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, colmodel_interface, 1 );
+    j.RegisterInterfaceTrans( L, colmodel_interface, 0, LUACLASS_COLMODEL );
 
     lua_pushlstring( L, "colmodel", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

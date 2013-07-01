@@ -29,9 +29,7 @@ static int luaconstructor_pathnode( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_PATHNODE, node );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, pathnode_interface, 1 );
+    j.RegisterInterfaceTrans( L, pathnode_interface, 0, LUACLASS_PATHNODE );
 
     lua_pushlstring( L, "pathnode", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

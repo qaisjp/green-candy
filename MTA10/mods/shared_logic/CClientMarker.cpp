@@ -31,9 +31,7 @@ static int luaconstructor_marker( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_MARKER, marker );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, marker_interface, 1 );
+    j.RegisterInterfaceTrans( L, marker_interface, 0, LUACLASS_MARKER );
 
     lua_pushlstring( L, "marker", 6 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

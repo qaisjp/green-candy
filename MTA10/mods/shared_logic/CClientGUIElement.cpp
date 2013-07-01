@@ -32,9 +32,7 @@ static int luaconstructor_gui( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GUIELEMENT, gui );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, gui_interface, 1 );
+    j.RegisterInterfaceTrans( L, gui_interface, 0, LUACLASS_GUIELEMENT );
 
     lua_pushlstring( L, "gui-element", 11 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

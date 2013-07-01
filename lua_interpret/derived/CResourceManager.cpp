@@ -37,6 +37,8 @@ static inline void loadscript( const filePath& path, void *ud )
     if ( luaL_loadstring( state, &buff[0] ) != 0 )
     {
         cout << "failed to load library " << relPath << "\n";
+        cout << lua_tostring( state, -1 ) << "\n";
+        lua_pop( state, 1 );
         return;
     }
 

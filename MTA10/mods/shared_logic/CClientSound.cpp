@@ -29,9 +29,7 @@ static int luaconstructor_sound( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_SOUND, sound );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, sound_interface, 1 );
+    j.RegisterInterfaceTrans( L, sound_interface, 0, LUACLASS_SOUND );
 
     lua_pushlstring( L, "sound", 5 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

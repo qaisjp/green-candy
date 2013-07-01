@@ -15,6 +15,12 @@
 
 #pragma warning(disable: 4996)
 
+#define MEM_INTERRUPT( x )  { if ( !( x ) ) __asm int 3 }
+//#define USE_HEAP_DEBUGGING
+//#define USE_FULL_PAGE_HEAP
+//#define PAGE_HEAP_INTEGRITY_CHECK
+#include <debugsdk/DbgHeap.h>
+
 #include <windows.h>
 #include <DbgHelp.h>
 #include <time.h>
@@ -31,10 +37,12 @@
 #include <core/CFileSystem.h>
 #include <logic/include.h>
 #include "derived/include.h"
+#include "utils/include.h"
 #include "dxElements/include.h"
 #include "benchmarks/include.h"
 #include "win32/include.h"
 #include "glDriver/gl_main.h"
+#include "lfreetype/lft_main.h"
 #include <lua/CLuaFunctionParseHelpers.h>
 #include <CScriptArgReader.h>
 #include <google/dense_hash_map>

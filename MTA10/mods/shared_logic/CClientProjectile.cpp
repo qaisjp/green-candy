@@ -29,9 +29,7 @@ static int luaconstructor_projectile( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_PROJECTILE, proj );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, projectile_interface, 1 );
+    j.RegisterInterfaceTrans( L, projectile_interface, 0, LUACLASS_PROJECTILE );
 
     lua_pushlstring( L, "projectile", 10 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

@@ -25,9 +25,7 @@ static int luaconstructor_guifont( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GUIFONT, font );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, guifont_interface, 1 );
+    j.RegisterInterfaceTrans( L, guifont_interface, 0, LUACLASS_GUIFONT );
 
     lua_pushlstring( L, "gui-font", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

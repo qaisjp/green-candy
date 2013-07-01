@@ -28,9 +28,7 @@ static int luaconstructor_mapevent( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_MAPEVENT, evt );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, mapevent_interface, 1 );
+    j.RegisterInterfaceTrans( L, mapevent_interface, 0, LUACLASS_MAPEVENT );
 
     lua_pushlstring( L, "mapevent", 8 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

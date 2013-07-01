@@ -95,8 +95,24 @@ int Class::TraverseGC( global_State *g )
         markobject( g, childAPI );
     }
 
+    lua_State *L = g->GCthread;
+
     LIST_FOREACH_BEGIN( Class, children.root, child_iter )
-        markobject( g, item );
+        // Be able to garbage collect children if they set themselves weak.
+        const TValue *weakMeth = item->GetEnvValueString( L, "isWeakChildLink" );
+        bool markChild = true;
+
+        if ( ttype( weakMeth ) == LUA_TFUNCTION )
+        {
+            setobj( L, L->top++, weakMeth );
+            bool success = lua_pcall( L, 0, 1, 0 ) == 0;
+
+            markChild = ( success && ( lua_toboolean( L, -1 ) == false ) );
+            L->top--;   // we can pop the error message or the boolean with this.
+        }
+
+        if ( markChild )
+            markobject( g, item );
     LIST_FOREACH_END
 
     forceSuper->TraverseGC( g );
@@ -123,7 +139,7 @@ void Udata::MarkGC( global_State *g )
 // User-mode function
 void Class::Propagate( lua_State *L )
 {
-    MarkGC( G(L) );
+    markobject( G(L), this );
 }
 
 void Class::MarkGC( global_State *g )
@@ -741,7 +757,9 @@ void luaC_step (lua_State *L)
     switch( g->gcstate )
     {
     case GCSpause:
-        lua_assert( g->totalbytes >= g->estimate );
+        if ( g->totalbytes < g->estimate )
+            g->estimate = g->totalbytes;
+
         setthreshold( g );
         return;
     }
@@ -799,6 +817,13 @@ void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v)
 
     /* don't mind */
     makewhite(g, o);  /* mark as white just to avoid other barriers */
+}
+
+
+void luaC_stringmark( lua_State *L, TString *string )
+{
+    // Keep crucial strings alive.
+    stringmark( string );
 }
 
 
@@ -977,7 +1002,12 @@ static int luaC_runtime( lua_State *L )
 
             if ( *g->sweepgc == NULL )
             {  /* nothing more to sweep? */
+                lu_mem old2 = g->totalbytes;
+
                 checkSizes(L);
+
+                lua_assert( old2 >= g->totalbytes );
+                luaC_processestimate( g, old2 - g->totalbytes );
                 break;
             }
 

@@ -104,9 +104,8 @@ const static luaL_Reg entitychildAPI_interface[] =
 
 static int entitychildAPI_constructor( lua_State *L )
 {
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, entitychildAPI_interface, 1 );
+    lua_refclass( L, LUA_ENVIRONINDEX )->RegisterInterface( L, entitychildAPI_interface, 1 );
     return 0;
 }
 
@@ -228,10 +227,9 @@ static const luaL_Reg customdata_interface[] =
 
 static int customdata_constructor( lua_State *L )
 {
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_newtable( L );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, customdata_interface, 2 );
+    lua_refclass( L, LUA_ENVIRONINDEX )->RegisterInterface( L, customdata_interface, 1 );
 
     lua_pushlstring( L, "customdata", 10 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );
@@ -247,9 +245,8 @@ static int entity_constructor( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_ENTITY, entity );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, entity_interface, 1 );
+    j.RegisterInterface( L, entity_interface, 1 );
 
     j.RegisterInterfaceTrans( L, entity_interface_trans, 0, LUACLASS_ENTITY );
 

@@ -15,7 +15,7 @@
 
 static LUA_DECLARE( getName )
 {
-    lua_pushstring( L, ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->GetName() );
+    lua_pushstring( L, ((CClientVehicleComponent*)lua_getmethodtrans( L ))->m_component->GetName() );
     return 1;
 }
 
@@ -27,13 +27,13 @@ static LUA_DECLARE( setPosition )
     argStream.ReadVector( pos );
     LUA_ARGS_END;
 
-    ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->SetPosition( pos );
+    ((CClientVehicleComponent*)lua_getmethodtrans( L ))->m_component->SetPosition( pos );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getPosition )
 {
-    const CVector& pos = ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->GetPosition();
+    const CVector& pos = ((CClientVehicleComponent*)lua_getmethodtrans( L ))->m_component->GetPosition();
 
     lua_pushnumber( L, pos[0] );
     lua_pushnumber( L, pos[1] );
@@ -43,7 +43,7 @@ static LUA_DECLARE( getPosition )
 
 static LUA_DECLARE( getWorldPosition )
 {
-    const CVector& pos = ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->GetWorldPosition();
+    const CVector& pos = ((CClientVehicleComponent*)lua_getmethodtrans( L ))->m_component->GetWorldPosition();
 
     lua_pushnumber( L, pos[0] );
     lua_pushnumber( L, pos[1] );
@@ -59,19 +59,19 @@ static LUA_DECLARE( setMatrix )
     argStream.ReadClass( mat, LUACLASS_MATRIX );
     LUA_ARGS_END;
 
-    ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->SetMatrix( *mat );
+    ((CClientVehicleComponent*)lua_getmethodtrans( L ))->m_component->SetMatrix( *mat );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( getMatrix )
 {
-    lua_creatematrix( L, ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->GetMatrix() );
+    lua_creatematrix( L, ((CClientVehicleComponent*)lua_getmethodtrans( L ))->m_component->GetMatrix() );
     return 1;
 }
 
 static LUA_DECLARE( getWorldMatrix )
 {
-    lua_creatematrix( L, ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->GetWorldMatrix() );
+    lua_creatematrix( L, ((CClientVehicleComponent*)lua_getmethodtrans( L ))->m_component->GetWorldMatrix() );
     return 1;
 }
 
@@ -83,13 +83,13 @@ static LUA_DECLARE( setActive )
     argStream.ReadBool( active );
     LUA_ARGS_END;
 
-    ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->SetActive( active );
+    ((CClientVehicleComponent*)lua_getmethodtrans( L ))->m_component->SetActive( active );
     LUA_SUCCESS;
 }
 
 static LUA_DECLARE( isActive )
 {
-    lua_pushboolean( L, ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->IsActive() );
+    lua_pushboolean( L, ((CClientVehicleComponent*)lua_getmethodtrans( L ))->m_component->IsActive() );
     return 1;
 }
 
@@ -101,13 +101,13 @@ static LUA_DECLARE( addAtomic )
     argStream.ReadClass( atomic, LUACLASS_ATOMIC );
     LUA_ARGS_END;
 
-    lua_pushnumber( L, ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->AddAtomic( atomic ) );
+    lua_pushnumber( L, ((CClientVehicleComponent*)lua_getmethodtrans( L ))->AddAtomic( atomic ) );
     return 1;
 }
 
 static LUA_DECLARE( getAtomicCount )
 {
-    lua_pushnumber( L, ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->GetAtomicCount() );
+    lua_pushnumber( L, ((CClientVehicleComponent*)lua_getmethodtrans( L ))->GetAtomicCount() );
     return 1;
 }
 
@@ -119,7 +119,7 @@ static LUA_DECLARE( cloneAtomic )
     argStream.ReadNumber( idx, 0 );
     LUA_ARGS_END;
 
-    CRpAtomic *inst = ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->m_component->CloneAtomic( idx );
+    CRpAtomic *inst = ((CClientVehicleComponent*)lua_getmethodtrans( L ))->m_component->CloneAtomic( idx );
 
     LUA_CHECK( inst );
 
@@ -137,7 +137,7 @@ static LUA_DECLARE( removeAtomic )
     argStream.ReadNumber( idx );
     LUA_ARGS_END;
 
-    lua_pushboolean( L, ((CClientVehicleComponent*)lua_touserdata( L, lua_upvalueindex( 1 ) ))->RemoveAtomic( idx ) );
+    lua_pushboolean( L, ((CClientVehicleComponent*)lua_getmethodtrans( L ))->RemoveAtomic( idx ) );
     return 1;
 }
 
@@ -166,9 +166,7 @@ static LUA_DECLARE( luaconstructor_component )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_VEHICLECOMPONENT, comp );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    luaL_openlib( L, NULL, component_interface, 1 );
+    j.RegisterInterfaceTrans( L, component_interface, 0, LUACLASS_VEHICLECOMPONENT );
 
     lua_pushlstring( L, "vehicle-component", 17 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

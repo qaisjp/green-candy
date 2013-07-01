@@ -25,10 +25,7 @@ int luaconstructor_guicombobox( lua_State *L )
     ILuaClass& j = *lua_refclass( L, 1 );
     j.SetTransmit( LUACLASS_GUICOMBOBOX, gui );
 
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pushlightuserdata( L, gui->GetCGUIElement() );
-    luaL_openlib( L, NULL, combobox_interface, 2 );
+    j.RegisterInterfaceTrans( L, combobox_interface, 0, LUACLASS_GUICOMBOBOX );
 
     lua_pushlstring( L, "gui-combobox", 12 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

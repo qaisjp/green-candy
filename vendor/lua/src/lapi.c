@@ -1179,7 +1179,7 @@ LUA_API void lua_pushtype( lua_State *L, int idx )
             return;
         }
 
-        const TValue *tm = luaT_gettmbyobj( L, L->base, TM_TYPE );
+        const TValue *tm = luaT_gettmbyobj( L, index2adr( L, idx ), TM_TYPE );
 
         switch( ttype(tm) )
         {
