@@ -115,7 +115,7 @@ namespace LuaFunctionDefs
 
         if ( !argStream.HasErrors() )
         {
-            lua_pushnumber( L, HashString_Tumbler( buf.c_str(), buf.size() ) );
+            lua_pushnumber( L, TumblerHash( buf.c_str(), buf.size() ) );
             return 1;
         }
         else

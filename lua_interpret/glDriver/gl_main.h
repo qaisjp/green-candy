@@ -56,6 +56,7 @@ struct glDriver : public LuaClass
     bool supports_FBO_EXT;
     bool supportsFBO;
     bool supports3_0;
+    bool supports_ARB_imaging;
 
     int maxFBOColorAttachments;
     int maxFBOColorAttachmentsEXT;

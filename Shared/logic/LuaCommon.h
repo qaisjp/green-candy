@@ -222,7 +222,7 @@ static inline bool Lua_ReadExportType( lua_State *L, int idx, LuaTypeExport*& ex
 
 // Global functions for convenience
 void lua_createEnvProxy( lua_State *L );
-unsigned int HashString_Tumbler( const char *str, size_t len );
+unsigned int TumblerHash( const char *str, unsigned int len );
 
 //#define LUA_EXCEPTION_SAFETY
 

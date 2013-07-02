@@ -94,7 +94,8 @@ static int luaconstructor_element( lua_State *L )
     lua_basicprotect( L );
 
     // Register the element interface
-    j.RegisterInterface( L, element_interface, 0 );
+    lua_pushvalue( L, lua_upvalueindex( 1 ) );
+    j.RegisterInterface( L, element_interface, 1 );
 
     // Light interfaces take way less memory
     j.RegisterInterfaceTrans( L, element_interface_trans, 0, LUACLASS_ELEMENT );

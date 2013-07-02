@@ -880,6 +880,12 @@ static Closure* classmethod_fsFSCCHandler( lua_State *L, Closure *newMethod, Cla
     }
 }
 
+inline void _copyUpvaluesFromStack( lua_State *L, TValue *src, TValue *upval_array, int num )
+{
+    for ( int n = 0; n < num; n++ )
+        setobj( L, upval_array++, src + n );
+}
+
 static Closure* classmethod_fsFSCCHandlerNative( lua_State *L, lua_CFunction proto, Class *j, Closure *prevMethod, _methodRegisterInfo& info )
 {
     int num = info.numUpValues;
@@ -901,9 +907,7 @@ static Closure* classmethod_fsFSCCHandlerNative( lua_State *L, lua_CFunction pro
 
         cl->method = proto;
 
-        while ( num-- )
-            setobj( L, &cl->upvalues[num], L->top-- );
-
+        _copyUpvaluesFromStack( L, L->top - num, cl->upvalues, num );
         return cl;
     }
     else
@@ -923,9 +927,7 @@ static Closure* classmethod_fsFSCCHandlerNative( lua_State *L, lua_CFunction pro
 
         cl->method = proto;
 
-        while ( num-- )
-            setobj( L, &cl->upvalues[num], L->top-- );
-
+        _copyUpvaluesFromStack( L, L->top - num, cl->upvalues, num );
         return cl;
     }
 }
@@ -1108,10 +1110,7 @@ static Closure* classmethod_fsDestroyHandlerNative( lua_State *L, lua_CFunction 
     CClosureBasic *cl = luaF_newCclosure( L, info.numUpValues, j->env );
     unsigned char num = info.numUpValues;
 
-    StkId atop = L->top - num;
-
-    for ( int n = 0; n < num; n++ )
-        setobj( L, &cl->upvalues[n], atop + n );
+    _copyUpvaluesFromStack( L, L->top - num, cl->upvalues, num );
 
     cl->f = proto;
     cl->isEnvLocked = true;
@@ -1266,12 +1265,6 @@ defaultHandler:
 
     // Pop the raw function
     L->top--;
-}
-
-inline void _copyUpvaluesFromStack( lua_State *L, TValue *src, TValue *upval_array, int num )
-{
-    for ( int n = 0; n < num; n++ )
-        setobj( L, upval_array, src + n );
 }
 
 __forceinline Closure* class_createBaseMethod( lua_State *L, lua_CFunction proto, Closure *prevMethod, TValue *upvalue_src, unsigned char numUpValues, GCObject *env, Class *j )

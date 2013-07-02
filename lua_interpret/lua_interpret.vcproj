@@ -564,6 +564,10 @@
 				RelativePath=".\glDriver\gl_texture.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\glDriver\gl_utils.cpp"
+				>
+			</File>
 			<Filter
 				Name="include"
 				>
@@ -597,6 +601,10 @@
 				</File>
 				<File
 					RelativePath=".\glDriver\gl_texture.h"
+					>
+				</File>
+				<File
+					RelativePath=".\glDriver\gl_utils.h"
 					>
 				</File>
 			</Filter>

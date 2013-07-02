@@ -1147,7 +1147,7 @@ inline void __declspec(naked)    invalid_ptr()
 #define RWP_UTIL_DESTRUCTOR( rwobj ) \
     void                (__cdecl*##rwobj##PluginDestructor)( rwobj *obj, size_t offset )
 #define RWP_UTIL_COPYCONSTRUCTOR( rwobj ) \
-    rwobj*              (__cdecl*##rwobj##PluginCopyConstructor)( rwobj *dst, rwobj *src, size_t offset )
+    rwobj*              (__cdecl*##rwobj##PluginCopyConstructor)( rwobj *dst, const rwobj *src, size_t offset, unsigned int pluginId )
 
 #define RWP_UTIL_REGISTER( rwobj ) \
     typedef RWP_UTIL_CONSTRUCTOR( rwobj ); \
@@ -1193,5 +1193,38 @@ RW_PLUGIN_DECLARE( RwTexDictionary );
 // Utilities
 #define RW_FUNC_PTR( className, methodName, ptr ) \
     RWP_METHOD_NAME( className, methodName ) = (RWP_METHOD_NAME(className, methodName)##_t)ptr
+
+// * Plugin interface manager
+template <class RwTemplate>
+struct RwPluginDescriptor
+{
+    RW_PLUGIN_DECLARE( RwTemplate );
+
+    size_t                              m_offset;               // 0
+    unsigned int                        m_pluginId;             // 4
+    BYTE                                m_pad[32];              // 8
+    RwTemplatePluginCopyConstructor     m_copyConstructor;      // 40
+    RwTemplatePluginDestructor          m_destructor;           // 44
+    
+    RwPluginDescriptor*                 m_next;                 // 48
+};
+template <class RwTemplate>
+struct RwPluginRegistry
+{
+    typedef RwPluginDescriptor <RwTemplate> RwTemplateDescriptor;
+
+    BYTE*                               m_pad[16];              // 0
+    RwTemplateDescriptor*               m_descriptor;           // 16
+
+    // Plugin registry functions.
+    inline void CloneObject( RwTemplate *dst, const RwTemplate *src )
+    {
+        for ( RwTemplateDescriptor *info = m_descriptor; info != NULL; info = info->m_next )
+        {
+            // Copy constructors have to be defined for every plugin.
+            info->m_copyConstructor( dst, src, info->m_offset, info->m_pluginId );
+        }
+    }
+};
 
 #endif

@@ -1212,6 +1212,30 @@ static RpClump* _clumpCallback( RpClump *clump, void *data )
     return clump;
 }
 
+// NEW RenderWare function for MTA
+RpLight* RpLightClone( const RpLight *src )
+{
+    RpLight *obj = RpLightCreate( src->m_subtype );
+
+    if ( !obj )
+        return NULL;
+
+    // Copy values over
+    obj->m_flags = src->m_flags;
+    obj->m_privateFlags = src->m_privateFlags;
+    obj->RemoveFromFrame();
+
+    // Copy important data
+    obj->m_radius = src->m_radius;
+    obj->m_color = src->m_color;
+    obj->m_coneAngle = src->m_coneAngle;
+    obj->m_unk = src->m_unk;
+
+    // Clone plugin details.
+    ((RwPluginRegistry <RpLight>*)0x008D62F8)->CloneObject( obj, src );
+    return obj;
+}
+
 RpClump* RpClumpCreate()
 {
     RpClump *clump = (RpClump*)pRwInterface->m_allocStruct( pRwInterface->m_clumpInfo, 0x30010 );

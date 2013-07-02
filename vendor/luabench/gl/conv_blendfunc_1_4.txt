@@ -1,0 +1,17 @@
+static const GLparaminfo items[] =
+{
+    { "GL_CONSTANT_COLOR", GL_CONSTANT_COLOR, 0x92ec5c1a },
+    { "GL_ONE_MINUS_CONSTANT_COLOR", GL_ONE_MINUS_CONSTANT_COLOR, 0xaaf51d69 },
+    { "GL_CONSTANT_ALPHA", GL_CONSTANT_ALPHA, 0xcfa54780 },
+    { "GL_ONE_MINUS_CONSTANT_ALPHA", GL_ONE_MINUS_CONSTANT_ALPHA, 0xb3a7c576 }
+};
+
+lua_newtable( L );
+lua_pushlstring( L, "GL_CONSTANT_COLOR", 17 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_ONE_MINUS_CONSTANT_COLOR", 27 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_CONSTANT_ALPHA", 17 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_ONE_MINUS_CONSTANT_ALPHA", 27 );
+lua_rawseti( L, -2, n++ );

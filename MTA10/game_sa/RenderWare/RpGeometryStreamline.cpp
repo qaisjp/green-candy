@@ -27,7 +27,7 @@ static void RpGeometryStreamlineDestructor( RpGeometry *geom, size_t )
         LIST_REMOVE( geom->m_streamline.m_managerNode );
 }
 
-static RpGeometry *RpGeometryStreamlineCopyConstructor( RpGeometry *dst, RpGeometry *src, size_t )
+static RpGeometry *RpGeometryStreamlineCopyConstructor( RpGeometry *dst, const RpGeometry *src, size_t, unsigned int )
 {
     RpGeometryStreamlineConstructor( dst, sizeof( RpGeomStreamline ) );
     return dst;

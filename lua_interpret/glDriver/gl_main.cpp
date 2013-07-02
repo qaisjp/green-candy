@@ -1009,7 +1009,7 @@ struct GLparaminfo
 
 __forceinline const GLparaminfo* GetParamByName( const GLparaminfo *info, const size_t len, const char *name, size_t nameLen )
 {
-    unsigned int hash = HashString_Tumbler( name, nameLen );
+    unsigned int hash = TumblerHash( name, nameLen );
 
     for ( unsigned int n = 0; n < len; n++ )
     {
@@ -1330,7 +1330,7 @@ namespace bool_param
 
     __forceinline const GLparaminfo* GetParamByName( const GLparaminfo *info, const size_t len, const char *name, size_t nameLen )
     {
-        unsigned int hash = HashString_Tumbler( name, nameLen );
+        unsigned int hash = TumblerHash( name, nameLen );
 
         for ( unsigned int n = 0; n < len; n++ )
         {
@@ -1611,6 +1611,7 @@ static LUA_DECLARE( constructor )
     j->RegisterInterfaceTrans( L, driver_interface, 0, LUACLASS_GLDRIVER );
     j->RegisterInterfaceTrans( L, tex_driver_interface, 0, LUACLASS_GLDRIVER );
     j->RegisterInterfaceTrans( L, fbo_driver_interface, 0, LUACLASS_GLDRIVER );
+    j->RegisterInterfaceTrans( L, driver_util_interface, 0, LUACLASS_GLDRIVER );
 
     // Include the event API
     luaevent_extend( L );
@@ -1656,6 +1657,7 @@ inline void TriggerExtension( glDriver *driver, const char *extension, size_t ex
     else if ( name == "GL_EXT_texture_compression_rgtc" )               driver->supportsRGTC = true;
     else if ( name == "GL_KHR_texture_compression_astc_ldr" )           driver->supportsASTC = true;
     else if ( name == "GL_EXT_texture_sRGB" )                           driver->supports_srgb_compression = true;
+    else if ( name == "GL_ARB_imaging" )                                driver->supports_ARB_imaging = true;
 }
 
 inline void ParseExtensionString( glDriver *driver, const char *extString )
@@ -1753,6 +1755,8 @@ glDriver::glDriver( lua_State *L, Win32Dialog *wnd ) : LuaClass( L, _trefget( L,
         supports_srgb_compression = false;
         supports_FBO_EXT = false;
         supportsFBO = false;
+        supports_ARB_imaging = false;
+
         maxFBOColorAttachments = 1;
         maxFBOColorAttachmentsEXT = 1;
 

@@ -23,4 +23,7 @@ RpClump*            RpClumpCreate();                                            
 RwCamera*           RwCameraCreate();                                           // US exe: 0x007EE4F0
 RwTexDictionary*    RwTexDictionaryCreate();                                    // US exe: 0x007F3600
 
+// NEW RenderWare functions
+RpLight*            RpLightClone( const RpLight *src );
+
 #endif //__CRENDERWARESA_RWAPI

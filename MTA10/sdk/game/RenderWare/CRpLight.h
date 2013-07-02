@@ -18,6 +18,8 @@ class CRpLight abstract : public virtual CRwObject
 public:
     virtual                         ~CRpLight() {}
 
+    virtual CRpLight*               Clone( void ) const = 0;
+
     virtual void                    SetLightIndex( unsigned int idx ) = 0;
     virtual unsigned int            GetLightIndex() const = 0;
 
@@ -38,6 +40,10 @@ public:
 
     virtual void                    SetConeAngle( float radians ) = 0;
     virtual float                   GetConeAngle() const = 0;
+
+    virtual void                    AddToScene( void ) = 0;
+    virtual bool                    IsAddedToScene( void ) const = 0;
+    virtual void                    RemoveFromScene( void ) = 0;
 };
 
 #endif //_RW_LIGHT_

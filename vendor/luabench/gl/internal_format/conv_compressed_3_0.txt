@@ -1,0 +1,23 @@
+static const GLparaminfo items[] =
+{
+    { "GL_COMPRESSED_RED", GL_COMPRESSED_RED, 0xd5fc5b4a },
+    { "GL_COMPRESSED_RG", GL_COMPRESSED_RG, 0xcd6e5656 },
+    { "GL_COMPRESSED_RED_RGTC1", GL_COMPRESSED_RED_RGTC1, 0xc9e2f521 },
+    { "GL_COMPRESSED_SIGNED_RED_RGTC1", GL_COMPRESSED_SIGNED_RED_RGTC1, 0x9d4ee8d7 },
+    { "GL_COMPRESSED_RG_RGTC2", GL_COMPRESSED_RG_RGTC2, 0xc869ba8 },
+    { "GL_COMPRESSED_SIGNED_RG_RGTC2", GL_COMPRESSED_SIGNED_RG_RGTC2, 0xf456e275 }
+};
+
+lua_newtable( L );
+lua_pushlstring( L, "GL_COMPRESSED_RED", 17 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_RG", 16 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_RED_RGTC1", 23 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SIGNED_RED_RGTC1", 30 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_RG_RGTC2", 22 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SIGNED_RG_RGTC2", 29 );
+lua_rawseti( L, -2, n++ );

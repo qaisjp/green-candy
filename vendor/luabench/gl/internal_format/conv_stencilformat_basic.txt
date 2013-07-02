@@ -1,0 +1,11 @@
+static const GLparaminfo items[] =
+{
+    { "GL_DEPTH24_STENCIL8", GL_DEPTH24_STENCIL8, 0x426bd723 },
+    { "GL_DEPTH32F_STENCIL8", GL_DEPTH32F_STENCIL8, 0xe6eb5645 }
+};
+
+lua_newtable( L );
+lua_pushlstring( L, "GL_DEPTH24_STENCIL8", 19 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_DEPTH32F_STENCIL8", 20 );
+lua_rawseti( L, -2, n++ );
