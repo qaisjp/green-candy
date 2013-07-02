@@ -28,6 +28,8 @@ public:
     eRwType                         GetType() const                             { return RW_LIGHT; }
     bool                            IsFrameExtension() const                    { return true; }
 
+    CRpLightSA*                     Clone( void ) const;
+
     void                            SetLightIndex( unsigned int idx )           { GetObject()->SetLightIndex( idx ); }
     unsigned int                    GetLightIndex() const                       { return GetObject()->GetLightIndex(); }
 
@@ -48,6 +50,10 @@ public:
 
     void                            SetConeAngle( float radians );
     float                           GetConeAngle() const;
+
+    void                            AddToScene( void );
+    bool                            IsAddedToScene( void ) const;
+    void                            RemoveFromScene( void );
 
 private:
     CModelSA*   m_model;

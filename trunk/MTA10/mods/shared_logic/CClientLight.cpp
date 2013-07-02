@@ -13,6 +13,14 @@
 
 #include "StdInc.h"
 
+static LUA_DECLARE( clone )
+{
+    CClientLight *light = new CClientLight( L, NULL, *((CClientLight*)lua_getmethodtrans( L ))->m_light.Clone() );
+    light->PushStack( L );
+    light->DisableKeepAlive();
+    return 1;
+}
+
 static LUA_DECLARE( getLightType )
 {
     const std::string& typeName = EnumToString( ((CClientLight*)lua_getmethodtrans( L ))->m_light.GetLightType() );
@@ -169,6 +177,24 @@ static LUA_DECLARE( getLightIndex )
     return 1;
 }
 
+static LUA_DECLARE( addToScene )
+{
+    ((CClientLight*)lua_getmethodtrans( L ))->m_light.AddToScene();
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( isAddedToScene )
+{
+    lua_pushboolean( L, ((CClientLight*)lua_getmethodtrans( L ))->m_light.IsAddedToScene() );
+    return 1;
+}
+
+static LUA_DECLARE( removeFromScene )
+{
+    ((CClientLight*)lua_getmethodtrans( L ))->m_light.RemoveFromScene();
+    LUA_SUCCESS;
+}
+
 static luaL_Reg light_interface_trans[] =
 {
     LUA_METHOD( getLightType ),
@@ -184,6 +210,9 @@ static luaL_Reg light_interface_trans[] =
     LUA_METHOD( getAttenuation ),
     LUA_METHOD( setLightIndex ),
     LUA_METHOD( getLightIndex ),
+    LUA_METHOD( addToScene ),
+    LUA_METHOD( isAddedToScene ),
+    LUA_METHOD( removeFromScene ),
     { NULL, NULL }
 };
 

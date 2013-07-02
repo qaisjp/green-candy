@@ -229,7 +229,7 @@ static int customdata_constructor( lua_State *L )
 {
     lua_newtable( L );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_refclass( L, LUA_ENVIRONINDEX )->RegisterInterface( L, customdata_interface, 1 );
+    lua_refclass( L, LUA_ENVIRONINDEX )->RegisterInterface( L, customdata_interface, 2 );
 
     lua_pushlstring( L, "customdata", 10 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

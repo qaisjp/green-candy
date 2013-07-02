@@ -1,0 +1,17 @@
+static const GLparaminfo items[] =
+{
+    { "GL_COMPRESSED_RGBA_BPTC_UNORM_ARB", GL_COMPRESSED_RGBA_BPTC_UNORM_ARB, 0x8d9b8c69 },
+    { "GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM_ARB", GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM_ARB, 0x21c6fbb1 },
+    { "GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_ARB", GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_ARB, 0xc667a424 },
+    { "GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB", GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB, 0xe4b2fde7 }
+};
+
+lua_newtable( L );
+lua_pushlstring( L, "GL_COMPRESSED_RGBA_BPTC_UNORM_ARB", 33 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM_ARB", 39 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_ARB", 39 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB", 41 );
+lua_rawseti( L, -2, n++ );

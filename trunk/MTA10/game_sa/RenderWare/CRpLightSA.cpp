@@ -15,7 +15,6 @@
 
 CRpLightSA::CRpLightSA( RpLight *light ) : CRwObjectSA( light )
 {
-    light->AddToScene( *p_gtaScene );
     m_model = NULL;
 }
 
@@ -30,6 +29,11 @@ CRpLightSA::~CRpLightSA()
     SetFrame( NULL );
 
     RpLightDestroy( GetObject() );
+}
+
+CRpLightSA* CRpLightSA::Clone( void ) const
+{
+    return new CRpLightSA( RpLightClone( GetObject() ) );
 }
 
 void CRpLightSA::AddToModel( CModel *model )
@@ -77,4 +81,24 @@ void CRpLightSA::SetConeAngle( float radians )
 float CRpLightSA::GetConeAngle() const
 {
     return RpLightGetConeAngle( GetObject() );
+}
+
+void CRpLightSA::AddToScene( void )
+{
+    RpLight *obj = GetObject();
+
+    if ( obj->m_scene )
+        return;
+
+    obj->AddToScene( *p_gtaScene );
+}
+
+bool CRpLightSA::IsAddedToScene( void ) const
+{
+    return GetObject()->m_scene != NULL;
+}
+
+void CRpLightSA::RemoveFromScene( void )
+{
+    GetObject()->RemoveFromScene();
 }

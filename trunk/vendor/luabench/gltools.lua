@@ -306,7 +306,7 @@ function makeparameasy(path)
 	
 	local file = makelocalconvparamfile(path);
 
-	file.write("static const GLparaminfo items[] =\n{\n");
+	file.write("static const GLparamdesc items[] =\n{\n");
 	
 	local n = 1;
 

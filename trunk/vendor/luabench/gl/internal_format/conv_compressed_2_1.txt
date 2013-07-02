@@ -1,0 +1,17 @@
+static const GLparaminfo items[] =
+{
+    { "GL_COMPRESSED_SRGB", GL_COMPRESSED_SRGB, 0x4396b365 },
+    { "GL_COMPRESSED_SRGB_ALPHA", GL_COMPRESSED_SRGB_ALPHA, 0x496105f6 },
+    { "GL_COMPRESSED_SLUMINANCE", GL_COMPRESSED_SLUMINANCE, 0x81e3a38f },
+    { "GL_COMPRESSED_SLUMINANCE_ALPHA", GL_COMPRESSED_SLUMINANCE_ALPHA, 0xfb151109 }
+};
+
+lua_newtable( L );
+lua_pushlstring( L, "GL_COMPRESSED_SRGB", 18 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SRGB_ALPHA", 24 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SLUMINANCE", 24 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SLUMINANCE_ALPHA", 30 );
+lua_rawseti( L, -2, n++ );
