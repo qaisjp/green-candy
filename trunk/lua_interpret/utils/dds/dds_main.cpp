@@ -75,9 +75,7 @@ __forceinline void AdjustDXTImage( void *dst, void *src, unsigned int& width, un
             unsigned int revX = dxtWidth - x - 1;
             unsigned int revY = dxtHeight - y - 1;
 
-            unsigned int revDstY = dxtWidth - x;
-
-            dstData[y + revDstY * dxtHeight] = *(blockType*)( (char*)( srcData + revX ) + revY * pitch );
+            dstData[y + x * dxtWidth] = *(blockType*)( (char*)( srcData + revX ) + revY * pitch );
         }
     }
 

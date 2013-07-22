@@ -158,10 +158,8 @@ public:
         w = 1.0f;
     }
 
-    RwMatrix __thiscall operator + ( const RwMatrix& mat )
+    void __thiscall Add( const RwMatrix& mat, RwMatrix& outmt )
     {
-        float outmt[16];
-
         __asm
         {
             mov eax,mat
@@ -187,14 +185,18 @@ public:
             movups [edx]RwMatrix.vUp,xmm2
             movups [edx]RwMatrix.vPos,xmm3
         }
-
-        return *(RwMatrix*)outmt;
     }
 
-    RwMatrix __thiscall operator - ( const RwMatrix& mat )
+    RwMatrix __thiscall operator + ( const RwMatrix& mat )
     {
         float outmt[16];
 
+        Add( mat, *(RwMatrix*)outmt );
+        return *(RwMatrix*)outmt;
+    }
+
+    void __thiscall Sub( const RwMatrix& mat, RwMatrix& outmt )
+    {
         __asm
         {
             mov eax,mat
@@ -220,7 +222,13 @@ public:
             movups [edx]RwMatrix.vUp,xmm2
             movups [edx]RwMatrix.vPos,xmm3
         }
+    }
 
+    RwMatrix __thiscall operator - ( const RwMatrix& mat )
+    {
+        float outmt[16];
+
+        Sub( mat, *(RwMatrix*)outmt );
         return *(RwMatrix*)outmt;
     }
 

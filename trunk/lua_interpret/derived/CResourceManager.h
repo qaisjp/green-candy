@@ -19,6 +19,7 @@ public:
                             CResourceManager( CLuaManager& manager );
                             ~CResourceManager();
 
+    CResource*              Create( const filePath& absRoot, const std::string& name );
     CResource*              Load( const std::string& name );
 
     inline CLuaManager&     GetLuaManager( void )           { return m_luaManager; }

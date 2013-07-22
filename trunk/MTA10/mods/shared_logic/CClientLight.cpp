@@ -197,6 +197,7 @@ static LUA_DECLARE( removeFromScene )
 
 static luaL_Reg light_interface_trans[] =
 {
+    LUA_METHOD( clone ),
     LUA_METHOD( getLightType ),
     LUA_METHOD( setClump ),
     LUA_METHOD( getClump ),

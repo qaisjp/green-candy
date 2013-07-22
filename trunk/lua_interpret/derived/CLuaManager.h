@@ -28,4 +28,7 @@ protected:
     CScriptDebugging        m_debug;
 };
 
+// Exported functions.
+void Lua_RegisterPublicFunctions( lua_State *L );
+
 #endif //_LUA_MANAGER_DERIVED_

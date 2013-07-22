@@ -26,7 +26,7 @@ public:
 
     ~Command();
 
-    virtual bool Execute( const std::vector <std::string>& args );
+    virtual bool Execute( std::vector <std::string>& args );
 
     RegisteredCommands& manager;
     LuaMain*        lua;

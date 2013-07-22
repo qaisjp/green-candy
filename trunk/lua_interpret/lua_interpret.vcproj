@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="../vendor/"
+			OutputDirectory="../lint_out/"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -98,7 +98,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="../vendor/"
+			OutputDirectory="../lint_out/"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -737,6 +737,26 @@
 				</File>
 				<File
 					RelativePath=".\utils\s2g\s2g_main.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
+		<Filter
+			Name="LuaDefs"
+			>
+			<File
+				RelativePath=".\LuaDefs\lua.resource.cpp"
+				>
+			</File>
+			<Filter
+				Name="Include"
+				>
+				<File
+					RelativePath=".\LuaDefs\include.h"
+					>
+				</File>
+				<File
+					RelativePath=".\LuaDefs\lua.resource.h"
 					>
 				</File>
 			</Filter>

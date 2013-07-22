@@ -41,6 +41,9 @@ namespace RwRemapScan
 #define idRangeCheck( num, off, range )     (idOffset((num),(off)) < (modelId_t)(range))
 #define idRangeCheckEx( num, range )        ((modelId_t)(num) < (modelId_t)(range))
 
+// Exported utilities
+void _initAtomicNormals( RpAtomic *atom );
+
 // Used by streaming
 void __cdecl FreeCOLLibrary( unsigned char collId );
 bool __cdecl CheckTXDDependency( modelId_t id );

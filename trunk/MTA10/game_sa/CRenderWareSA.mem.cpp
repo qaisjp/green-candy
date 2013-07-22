@@ -23,7 +23,7 @@ static bool _allowPreallocation = false;
 
 static RwFreeList *freeListMemory = NULL;       // Manager of all free list allocations.
 static bool isMemoryInitiated = false;          // True whether system successfully initiated.
-static RwList <RwFreeList> freeListRoot;        // List of all free lists (except freeListMemory)
+static RwList <RwFreeList> freeListRoot;        // List of all free lists (except freeListMemory var)
 
 /*=========================================================
     _DeallocFreeList
@@ -55,12 +55,12 @@ __forceinline void _DeallocFreeList( RwFreeList *list )
     if ( list != freeListInfo && freeListInfo )
     {
         (*ppRwInterface)->m_freeStruct( freeListInfo, list );
-        return;
     }
-
-    // Free using global allocator.
-    (*ppRwInterface)->m_memory.m_free( list );
-    return;
+    else
+    {
+        // Free using global allocator.
+        (*ppRwInterface)->m_memory.m_free( list );
+    }
 }
 
 /*=========================================================

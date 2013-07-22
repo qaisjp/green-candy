@@ -22,7 +22,7 @@ lua_State *userLuaState;
 static lua_State *state;
 static CEvents *events;
 static CLuaManager *manager;
-static CResourceManager *resMan;
+CResourceManager *resMan;
 
 static CResource *benchResource = NULL;
 
@@ -230,6 +230,28 @@ static LUA_DECLARE( quit )
     return 0;
 }
 
+bool lint_loadscript( lua_State *L, const char *script, const char *path )
+{
+    if ( luaL_loadstring( L, script ) != 0 )
+    {
+        cout << "failed to load library " << path << "\n";
+        cout << lua_tostring( L, -1 ) << "\n";
+        lua_pop( L, 1 );
+        return false;
+    }
+
+    if ( lua_pcall( L, 0, 0, 0 ) != 0 )
+    {
+        cout << "failed to run library " << path << "\n";
+        cout << lua_tostring( L, -1 ) << "\n";
+
+        lua_pop( L, 1 );
+        return false;
+    }
+
+    return true;
+}
+
 int main( int argc, char *argv[] )
 {
     cout << "MTA:Lua Interpreter v1.0, by (c)Martin Turski (visit mtasa.com)\nCompiled on " __DATE__ "\n\n";
@@ -271,21 +293,41 @@ int main( int argc, char *argv[] )
         benchResource = resMan->Load( "luabench" );
         userLuaState = state = benchResource->GetVM().GetVirtualMachine();
 
-        lua_register( userLuaState, "quit", quit );
-
-        benchResource->IncrementMethodStack();
-
-        execContext = new LuaManager::context( manager->AcquireContext( benchResource->GetVM() ) );
-        useContext = execContext;
-
-        cout << "\nlogged in as 'luabench'\n\n";
+        cout << "\nlogged in as 'luabench'\n";
     }
     else
     {
         modFileRoot = fileRoot;
 
-        cout << "logged in as 'guest'\n\n";
+        benchResource = resMan->Create( "/", "guest" );
+        userLuaState = state = benchResource->GetVM().GetVirtualMachine();
+
+        cout << "logged in as 'guest'\n";
     }
+
+    // Reference our main resource.
+    benchResource->IncrementMethodStack();
+
+    // Create the execution context
+    execContext = new LuaManager::context( manager->AcquireContext( benchResource->GetVM() ) );
+    useContext = execContext;
+
+    lua_register( userLuaState, "quit", quit );
+
+    // Run "init.lua" in root if present
+    {
+        std::vector <char> buf;
+
+        if ( fileRoot->ReadToBuffer( "init.lua", buf ) )
+        {
+            buf.push_back( 0 );
+
+            if ( lint_loadscript( userLuaState, &buf[0], "init.lua" ) )
+                std::cout << "executed init.lua\n";
+        }
+    }
+
+    cout << '\n';
 
     // Get the console handlers
     consoleInputHandle = GetStdHandle( STD_INPUT_HANDLE );

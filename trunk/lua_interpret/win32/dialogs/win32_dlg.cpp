@@ -60,6 +60,20 @@ static LUA_DECLARE( getSize )
     return 2;
 }
 
+static LUA_DECLARE( getRect )
+{
+    Win32Dialog *dlg = (Win32Dialog*)lua_getmethodtrans( L );
+    RECT rect;
+
+    GetWindowRect( dlg->handle, &rect );
+
+    lua_pushnumber( L, rect.left );
+    lua_pushnumber( L, rect.top );
+    lua_pushnumber( L, rect.right );
+    lua_pushnumber( L, rect.bottom );
+    return 4;
+}
+
 static LUA_DECLARE( getClientSize )
 {
     Win32Dialog *dlg = (Win32Dialog*)lua_getmethodtrans( L );
@@ -70,6 +84,20 @@ static LUA_DECLARE( getClientSize )
     lua_pushnumber( L, rect.right - rect.left );
     lua_pushnumber( L, rect.bottom - rect.top );
     return 2;
+}
+
+static LUA_DECLARE( getClientRect )
+{
+    Win32Dialog *dlg = (Win32Dialog*)lua_getmethodtrans( L );
+    RECT rect;
+
+    GetClientRect( dlg->handle, &rect );
+
+    lua_pushnumber( L, rect.left );
+    lua_pushnumber( L, rect.top );
+    lua_pushnumber( L, rect.right );
+    lua_pushnumber( L, rect.bottom );
+    return 4;
 }
 
 static LUA_DECLARE( setVisible )
@@ -142,7 +170,9 @@ static const luaL_Reg dialog_interface[] =
     LUA_METHOD( setPosition ),
     LUA_METHOD( setSize ),
     LUA_METHOD( getSize ),
+    LUA_METHOD( getRect ),
     LUA_METHOD( getClientSize ),
+    LUA_METHOD( getClientRect ),
     LUA_METHOD( setVisible ),
     LUA_METHOD( getText ),
     LUA_METHOD( setText ),

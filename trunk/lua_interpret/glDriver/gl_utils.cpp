@@ -111,14 +111,14 @@ enum eAlphaRefFunc : GLenum
 DECLARE_ENUM( eAlphaRefFunc );
 
 IMPLEMENT_ENUM_BEGIN( eAlphaRefFunc )
-    ADD_ENUM( GL_NEVER, "never" )
-    ADD_ENUM( GL_LESS, "less" )
-    ADD_ENUM( GL_EQUAL, "equal" )
-    ADD_ENUM( GL_LEQUAL, "lequal" )
-    ADD_ENUM( GL_GREATER, "greater" )
-    ADD_ENUM( GL_NOTEQUAL, "notequal" )
-    ADD_ENUM( GL_GEQUAL, "gequal" )
-    ADD_ENUM( GL_ALWAYS, "always" )
+    ADD_ENUM1( GL_NEVER )
+    ADD_ENUM1( GL_LESS )
+    ADD_ENUM1( GL_EQUAL )
+    ADD_ENUM1( GL_LEQUAL )
+    ADD_ENUM1( GL_GREATER )
+    ADD_ENUM1( GL_NOTEQUAL )
+    ADD_ENUM1( GL_GEQUAL )
+    ADD_ENUM1( GL_ALWAYS )
 IMPLEMENT_ENUM_END( "eAlphaRefFunc" )
 
 static LUA_DECLARE( alphaFunc )

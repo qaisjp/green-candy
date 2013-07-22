@@ -20,6 +20,8 @@ CRpAtomicSA::CRpAtomicSA( RpAtomic *atom ) : CRwObjectSA( atom )
     atom->m_geometry->flags |= RW_GEOMETRY_GLOBALLIGHT;
     atom->m_scene = *p_gtaScene;
     m_model = NULL;
+
+    _initAtomicNormals( atom );
 }
 
 CRpAtomicSA::~CRpAtomicSA()

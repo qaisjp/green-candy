@@ -29,6 +29,26 @@ static int lua_newmd5hasher( lua_State *L )
     return 1;
 } 
 
+void Lua_RegisterPublicFunctions( lua_State *L )
+{
+    luanetbench_open( L );
+    luaopen_dxElements( L );
+    luawin32_open( L );
+    luagl_open( L );
+    luafreetype_open( L );
+    luabitmap_open( L );
+    luadds_open( L );
+    luapng_open( L );
+    luajpeg_open( L );
+    luas2g_open( L );
+
+    lua_register( L, "newmd5hasher", lua_newmd5hasher );
+
+    lua_pushvalue( L, LUA_GLOBALSINDEX );
+    luafilesystem_open( L );
+    lua_setfield( L, -2, "file" );
+}
+
 #undef LUA_REGISTER
 #define LUA_REGISTER( L, x ) L->RegisterFunction( #x, x )
 
@@ -36,22 +56,12 @@ static void LoadCFunctions( CLuaMain *L )
 {
     lua_State *state = L->GetVirtualMachine();
 
-    luanetbench_open( state );
-    luaopen_dxElements( state );
-    luawin32_open( state );
-    luagl_open( state );
-    luafreetype_open( state );
-    luabitmap_open( state );
-    luadds_open( state );
-    luapng_open( state );
-    luajpeg_open( state );
-    luas2g_open( state );
+    Lua_RegisterPublicFunctions( state );
 
-    lua_register( state, "newmd5hasher", lua_newmd5hasher );
+    // Register all Lua Interpreter functions
+    using namespace CLuaFunctionDefs;
 
-    lua_pushvalue( state, LUA_GLOBALSINDEX );
-    luafilesystem_open( state );
-    lua_setfield( state, -2, "file" );
+    LUA_REGISTER( L, newResource );
 }
 
 CLuaMain* CLuaManager::Create( const std::string& name, CFileTranslator& fileRoot )

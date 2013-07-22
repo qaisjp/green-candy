@@ -168,7 +168,7 @@ static LUA_DECLARE( drawBitmap )
     Bitmap::eDataType srcDataType = src->m_dataType;
     Bitmap::eDataType dstDataType = map->m_dataType;
 
-    // We cannot draw to ourselves.
+    // We cannot draw us to ourselves.
     LUA_CHECK( map != src );
 
     unsigned int srcWidth = src->GetWidth();

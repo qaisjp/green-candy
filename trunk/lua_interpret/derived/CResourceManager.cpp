@@ -34,24 +34,22 @@ static inline void loadscript( const filePath& path, void *ud )
     // Zero terminate
     buff.push_back( 0 );
 
-    if ( luaL_loadstring( state, &buff[0] ) != 0 )
-    {
-        cout << "failed to load library " << relPath << "\n";
-        cout << lua_tostring( state, -1 ) << "\n";
-        lua_pop( state, 1 );
-        return;
-    }
+    if ( lint_loadscript( state, &buff[0], relPath.c_str() ) )
+        cout << "init: " << relPath << "\n";
+}
 
-    if ( lua_pcall( state, 0, 0, 0 ) != 0 )
-    {
-        cout << "failed to run library " << relPath << "\n";
-        cout << lua_tostring( state, -1 ) << "\n";
+CResource* CResourceManager::Create( const filePath& absPath, const std::string& name )
+{
+    CFileTranslator *fileRoot = fileSystem->CreateTranslator( absPath.c_str() );
 
-        lua_pop( state, 1 );
-        return;
-    }
+    if ( !fileRoot )
+        return NULL;
 
-    cout << "init: " << relPath << "\n";
+    CResource *res = new CResource( *m_luaManager.Create( name, *fileRoot ), 0, filePath( name ), *fileRoot );
+
+    m_resources.push_back( res );
+    m_resByName[name] = res;
+    return res;
 }
 
 CResource* CResourceManager::Load( const std::string& name )
@@ -61,17 +59,12 @@ CResource* CResourceManager::Load( const std::string& name )
     if ( !resFileRoot->GetFullPathFromRoot( ( name + '/' ).c_str(), false, absPath ) || absPath.empty() )
         return NULL;
 
-    CFileTranslator *fileRoot = fileSystem->CreateTranslator( absPath.c_str() );
+    CResource *res = Create( absPath, name );
 
-    if ( !fileRoot )
+    if ( !res )
         return NULL;
 
-    CResource *res = new CResource( *m_luaManager.Create( name, *fileRoot ), 0, filePath( name ), *fileRoot );
-
     // Load all .lua scripts
-    fileRoot->ScanDirectory( "/", "*.lua", false, NULL, loadscript, &res->GetVM() );
-
-    m_resources.push_back( res );
-    m_resByName[name] = res;
+    res->m_fileRoot.ScanDirectory( "/", "*.lua", false, NULL, loadscript, &res->GetVM() );
     return res;
 }
