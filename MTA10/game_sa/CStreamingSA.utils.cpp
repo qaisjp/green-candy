@@ -201,23 +201,17 @@ static inline CVector* _RpGeometryAllocateNormals( RpGeometry *geom, RpGeomMesh 
 }
 
 /*=========================================================
-    _initAtomScene (MTA extension)
+    _initAtomicNormals (MTA extension)
 
     Arguments:
-        atom - atomic which should be included into a scene
+        atom - atomic which was newly created and lacks geometry normals
     Purpose:
-        Includes the given atomic into the default GTA:SA scene.
-        Then it recalculates the normals for all its meshes.
-        By that dynamic lighting will be enabled.
+        Calculates geometry normals for the referenced geometry
+        of said atomic if not already present. Normals are required
+        for dynamic lighting.
 =========================================================*/
-static void _initAtomScene( RpAtomic *atom )
+void _initAtomicNormals( RpAtomic *atom )
 {
-    // Apply the default GTA:SA scene
-    atom->m_scene = *p_gtaScene;
-
-    // TODO: reenable this using multi-threading (streamline extension!)
-    //return;
-
     RpGeometry& geom = *atom->m_geometry;
 
     if ( !( geom.flags & RW_GEOMETRY_NORMALS ) )
@@ -239,6 +233,27 @@ static void _initAtomScene( RpAtomic *atom )
 }
 
 /*=========================================================
+    _initAtomScene (MTA extension)
+
+    Arguments:
+        atom - atomic which should be included into a scene
+    Purpose:
+        Includes the given atomic into the default GTA:SA scene.
+        Then it recalculates the normals for all its meshes.
+        By that dynamic lighting will be enabled.
+=========================================================*/
+static void _initAtomScene( RpAtomic *atom )
+{
+    // Apply the default GTA:SA scene
+    atom->m_scene = *p_gtaScene;
+
+    // TODO: reenable this using multi-threading (streamline extension!)
+    //return;
+
+    _initAtomicNormals( atom );
+}
+
+/*=========================================================
     RpClumpAtomicActivator
 
     Arguments:
@@ -256,7 +271,7 @@ static void RpClumpAtomicActivator( RpAtomic *atom, modelId_t replacerId )
     bool unk;
     char unk2[24];
 
-    // This possibly adds the reference to the texture, we should reven this
+    // TODO: reven this function.
     ((void (__cdecl*)(const char*, char*, bool&))0x005370A0)( atom->m_parent->m_nodeName, unk2, unk );
 
     atom->SetRenderCallback( NULL );
@@ -346,6 +361,7 @@ static bool __cdecl LoadClumpFile( RwStream *stream, modelId_t model )
     if ( appliedRemapCheck )
         RwRemapScan::Unapply();
 
+    // MTA extension: remove the global imports handler from the scan stack.
     RwImportedScan::Unapply();
 
     return result;
@@ -1182,6 +1198,7 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
         CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( info->usTextureDictionary );
         CAnimBlockSAInterface *animBlock;
 
+        // Fail if the model texture dictionary is not loaded yet.
         if ( txdInst->m_txd == NULL )
             goto failure;
 
@@ -1406,11 +1423,11 @@ void __cdecl CompleteStreamingRequest( unsigned int idx )
 
     while ( streamingWaitModel != -1 )
     {
-        unsigned int status = requester.status;
+        streamingRequest::statusType status = requester.status;
 
-        if ( status )
+        if ( status != streamingRequest::STREAMING_NONE )
         {
-            if ( status == 1 )
+            if ( status == streamingRequest::STREAMING_BUFFERING )
             {
                 // Have we successfully processed the request?
                 if ( ProcessStreamingRequest( idx ) )
@@ -1426,7 +1443,7 @@ void __cdecl CompleteStreamingRequest( unsigned int idx )
                 
                 continue;
             }
-            else if ( status == 2 )
+            else if ( status == streamingRequest::STREAMING_LOADING )
                 continue;
             else
             {
@@ -1886,9 +1903,9 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
                 
                 // I removed the broken vehicle stream limit from this function.
                 // That stream.ini "vehicles" feature was never properly implemented into GTA:SA 1.0.
-                // 1) It was used for big vehicle models only, which were never loaded using the appropriate
+                // 1) It was used for big vehicle models, which were never loaded using the appropriate
                 // API in the first place.
-                // 2) Keeping that Rockstar code hinders MTA logic, as it expects no limits.
+                // 2) Keeping that Rockstar code hinders MTA logic, as MTA logic expects no limits.
                 //  * location: 0x0040E1F1
                 if ( mid < 25255 || mid >= 25511 )
                 {
@@ -2022,7 +2039,7 @@ struct ModelLoadQueueDispatch : ModelCheckDispatch <true, false>
 {
     CModelLoadInfoSA*& m_item;
 
-    ModelLoadQueueDispatch( CModelLoadInfoSA*& item ) : m_item( item )
+    __forceinline ModelLoadQueueDispatch( CModelLoadInfoSA*& item ) : m_item( item )
     {
     }
 
@@ -2368,6 +2385,7 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
         }
 
         // Try to load the next model id in order.
+        // The order is established in .IMG archive loading.
         modelId = loadInfo->m_lastID;
     }
 

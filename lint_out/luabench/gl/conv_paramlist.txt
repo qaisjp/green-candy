@@ -1,0 +1,707 @@
+static const GLparaminfo param_list[] =
+{
+    { "GL_ACCUM_ALPHA_BITS", GL_ACCUM_ALPHA_BITS, 0x89c14d99, GLPARAM_INT, 1 },
+    { "GL_ACCUM_BLUE_BITS", GL_ACCUM_BLUE_BITS, 0xe242e280, GLPARAM_INT, 1 },
+    { "GL_ACCUM_CLEAR_VALUE", GL_ACCUM_CLEAR_VALUE, 0xb8f11f19, GLPARAM_DOUBLE, 4 },
+    { "GL_ACCUM_GREEN_BITS", GL_ACCUM_GREEN_BITS, 0x49fb127f, GLPARAM_INT, 1 },
+    { "GL_ACCUM_RED_BITS", GL_ACCUM_RED_BITS, 0xd8bca946, GLPARAM_INT, 1 },
+    { "GL_ALPHA_BIAS", GL_ALPHA_BIAS, 0x48fadc31, GLPARAM_DOUBLE, 1 },
+    { "GL_ALPHA_BITS", GL_ALPHA_BITS, 0x87b83b37, GLPARAM_INT, 1 },
+    { "GL_ALPHA_SCALE", GL_ALPHA_SCALE, 0x728a545, GLPARAM_DOUBLE, 1 },
+    { "GL_ALPHA_TEST", GL_ALPHA_TEST, 0xaae45f62, GLPARAM_BOOLEAN, 1 },
+    { "GL_ALPHA_TEST_FUNC", GL_ALPHA_TEST_FUNC, 0x6692ead0, GLPARAM_INT, 1 },
+    { "GL_ALPHA_TEST_REF", GL_ALPHA_TEST_REF, 0x36d25f32, GLPARAM_DOUBLE, 1 },
+    { "GL_ATTRIB_STACK_DEPTH", GL_ATTRIB_STACK_DEPTH, 0xaf899468, GLPARAM_INT, 1 },
+    { "GL_AUTO_NORMAL", GL_AUTO_NORMAL, 0x712edb6b, GLPARAM_BOOLEAN, 1 },
+    { "GL_AUX_BUFFERS", GL_AUX_BUFFERS, 0x74082d22, GLPARAM_INT, 1 },
+    { "GL_BLEND", GL_BLEND, 0xa40557e7, GLPARAM_BOOLEAN, 1 },
+    { "GL_BLEND_DST", GL_BLEND_DST, 0x82aa14cc, GLPARAM_INT, 1 },
+    { "GL_BLEND_SRC", GL_BLEND_SRC, 0xb7e64413, GLPARAM_INT, 1 },
+    { "GL_BLUE_BIAS", GL_BLUE_BIAS, 0x5e25fd76, GLPARAM_DOUBLE, 1 },
+    { "GL_BLUE_BITS", GL_BLUE_BITS, 0xa260dbd6, GLPARAM_INT, 1 },
+    { "GL_BLUE_SCALE", GL_BLUE_SCALE, 0x285c90a7, GLPARAM_DOUBLE, 1 },
+    { "GL_CLIENT_ATTRIB_STACK_DEPTH", GL_CLIENT_ATTRIB_STACK_DEPTH, 0x11c49981, GLPARAM_INT, 1 },
+    { "GL_CLIP_PLANE0", GL_CLIP_PLANE0, 0x848c8631, GLPARAM_BOOLEAN, 1 },
+    { "GL_CLIP_PLANE1", GL_CLIP_PLANE1, 0x6ccbd80b, GLPARAM_BOOLEAN, 1 },
+    { "GL_CLIP_PLANE2", GL_CLIP_PLANE2, 0x259843b6, GLPARAM_BOOLEAN, 1 },
+    { "GL_CLIP_PLANE3", GL_CLIP_PLANE3, 0x84c3f94b, GLPARAM_BOOLEAN, 1 },
+    { "GL_CLIP_PLANE4", GL_CLIP_PLANE4, 0x8ddcb267, GLPARAM_BOOLEAN, 1 },
+    { "GL_CLIP_PLANE5", GL_CLIP_PLANE5, 0xe40d4d43, GLPARAM_BOOLEAN, 1 },
+    { "GL_COLOR_ARRAY", GL_COLOR_ARRAY, 0x63db86ea, GLPARAM_BOOLEAN, 1 },
+    { "GL_COLOR_ARRAY_SIZE", GL_COLOR_ARRAY_SIZE, 0x2547efe, GLPARAM_INT, 1 },
+    { "GL_COLOR_ARRAY_STRIDE", GL_COLOR_ARRAY_STRIDE, 0xd8087886, GLPARAM_INT, 1 },
+    { "GL_COLOR_ARRAY_TYPE", GL_COLOR_ARRAY_TYPE, 0x5550b37d, GLPARAM_INT, 1 },
+    { "GL_COLOR_CLEAR_VALUE", GL_COLOR_CLEAR_VALUE, 0x298a2e5c, GLPARAM_DOUBLE, 4 },
+    { "GL_COLOR_LOGIC_OP", GL_COLOR_LOGIC_OP, 0x8b172a39, GLPARAM_BOOLEAN, 1 },
+    { "GL_COLOR_MATERIAL", GL_COLOR_MATERIAL, 0xe442a42c, GLPARAM_BOOLEAN, 1 },
+    { "GL_COLOR_MATERIAL_FACE", GL_COLOR_MATERIAL_FACE, 0x2ec87008, GLPARAM_INT, 1 },
+    { "GL_COLOR_MATERIAL_PARAMETER", GL_COLOR_MATERIAL_PARAMETER, 0x4bf52092, GLPARAM_INT, 1 },
+    { "GL_COLOR_WRITEMASK", GL_COLOR_WRITEMASK, 0x4cbef082, GLPARAM_BOOLEAN, 4 },
+    { "GL_CULL_FACE", GL_CULL_FACE, 0x81bbd421, GLPARAM_BOOLEAN, 1 },
+    { "GL_CULL_FACE_MODE", GL_CULL_FACE_MODE, 0xacf6457d, GLPARAM_INT, 1 },
+    { "GL_CURRENT_COLOR", GL_CURRENT_COLOR, 0x4142f6c4, GLPARAM_DOUBLE, 4 },
+    { "GL_CURRENT_INDEX", GL_CURRENT_INDEX, 0x36214fa6, GLPARAM_INT, 1 },
+    { "GL_CURRENT_NORMAL", GL_CURRENT_NORMAL, 0x6fe02413, GLPARAM_DOUBLE, 3 },
+    { "GL_CURRENT_RASTER_COLOR", GL_CURRENT_RASTER_COLOR, 0x6eeb92ba, GLPARAM_DOUBLE, 4 },
+    { "GL_CURRENT_RASTER_DISTANCE", GL_CURRENT_RASTER_DISTANCE, 0xb89b9d4, GLPARAM_DOUBLE, 1 },
+    { "GL_CURRENT_RASTER_INDEX", GL_CURRENT_RASTER_INDEX, 0x8b0a39c1, GLPARAM_INT, 1 },
+    { "GL_CURRENT_RASTER_POSITION", GL_CURRENT_RASTER_POSITION, 0x8e81306f, GLPARAM_DOUBLE, 4 },
+    { "GL_CURRENT_RASTER_POSITION_VALID", GL_CURRENT_RASTER_POSITION_VALID, 0xf898f29f, GLPARAM_BOOLEAN, 1 },
+    { "GL_CURRENT_RASTER_TEXTURE_COORDS", GL_CURRENT_RASTER_TEXTURE_COORDS, 0xbcee654a, GLPARAM_DOUBLE, 4 },
+    { "GL_CURRENT_TEXTURE_COORDS", GL_CURRENT_TEXTURE_COORDS, 0x4d83f9d7, GLPARAM_DOUBLE, 4 },
+    { "GL_DEPTH_BIAS", GL_DEPTH_BIAS, 0xdbb44bb7, GLPARAM_DOUBLE, 1 },
+    { "GL_DEPTH_BITS", GL_DEPTH_BITS, 0x14f6acb1, GLPARAM_INT, 1 },
+    { "GL_DEPTH_CLEAR_VALUE", GL_DEPTH_CLEAR_VALUE, 0x1808fd23, GLPARAM_DOUBLE, 1 },
+    { "GL_DEPTH_FUNC", GL_DEPTH_FUNC, 0x57ac404a, GLPARAM_INT, 1 },
+    { "GL_DEPTH_RANGE", GL_DEPTH_RANGE, 0xc98da9b3, GLPARAM_DOUBLE, 2 },
+    { "GL_DEPTH_SCALE", GL_DEPTH_SCALE, 0xa1b465bb, GLPARAM_DOUBLE, 1 },
+    { "GL_DEPTH_TEST", GL_DEPTH_TEST, 0x39aac8e4, GLPARAM_BOOLEAN, 1 },
+    { "GL_DEPTH_WRITEMASK", GL_DEPTH_WRITEMASK, 0xd8ff35ec, GLPARAM_BOOLEAN, 1 },
+    { "GL_DITHER", GL_DITHER, 0x128ad5d0, GLPARAM_BOOLEAN, 1 },
+    { "GL_DOUBLEBUFFER", GL_DOUBLEBUFFER, 0x4d6d04de, GLPARAM_BOOLEAN, 1 },
+    { "GL_DRAW_BUFFER", GL_DRAW_BUFFER, 0xda9a3bff, GLPARAM_INT, 1 },
+    { "GL_EDGE_FLAG", GL_EDGE_FLAG, 0x38d4116d, GLPARAM_BOOLEAN, 1 },
+    { "GL_EDGE_FLAG_ARRAY", GL_EDGE_FLAG_ARRAY, 0x49521ab9, GLPARAM_BOOLEAN, 1 },
+    { "GL_EDGE_FLAG_ARRAY_STRIDE", GL_EDGE_FLAG_ARRAY_STRIDE, 0x69d56c52, GLPARAM_INT, 1 },
+    { "GL_FOG", GL_FOG, 0x8ed3f4e8, GLPARAM_BOOLEAN, 1 },
+    { "GL_FOG_COLOR", GL_FOG_COLOR, 0x8f34178b, GLPARAM_DOUBLE, 4 },
+    { "GL_FOG_DENSITY", GL_FOG_DENSITY, 0x448e4245, GLPARAM_DOUBLE, 1 },
+    { "GL_FOG_END", GL_FOG_END, 0x4fcbcea4, GLPARAM_DOUBLE, 1 },
+    { "GL_FOG_HINT", GL_FOG_HINT, 0xbcc5dff5, GLPARAM_INT, 1 },
+    { "GL_FOG_INDEX", GL_FOG_INDEX, 0x7667f006, GLPARAM_INT, 1 },
+    { "GL_FOG_MODE", GL_FOG_MODE, 0x3894ebad, GLPARAM_INT, 1 },
+    { "GL_FOG_START", GL_FOG_START, 0xe503c09f, GLPARAM_DOUBLE, 1 },
+    { "GL_FRONT_FACE", GL_FRONT_FACE, 0xed1ec541, GLPARAM_INT, 1 },
+    { "GL_GREEN_BIAS", GL_GREEN_BIAS, 0xf5d701b6, GLPARAM_DOUBLE, 1 },
+    { "GL_GREEN_BITS", GL_GREEN_BITS, 0x3a95e6b0, GLPARAM_INT, 1 },
+    { "GL_GREEN_SCALE", GL_GREEN_SCALE, 0xab7c594, GLPARAM_DOUBLE, 1 },
+    { "GL_INDEX_ARRAY", GL_INDEX_ARRAY, 0x79cff321, GLPARAM_BOOLEAN, 1 },
+    { "GL_INDEX_ARRAY_STRIDE", GL_INDEX_ARRAY_STRIDE, 0xce9c6c10, GLPARAM_INT, 1 },
+    { "GL_INDEX_ARRAY_TYPE", GL_INDEX_ARRAY_TYPE, 0x41263a30, GLPARAM_INT, 1 },
+    { "GL_INDEX_BITS", GL_INDEX_BITS, 0x4dfbf162, GLPARAM_INT, 1 },
+    { "GL_INDEX_CLEAR_VALUE", GL_INDEX_CLEAR_VALUE, 0x40a66a49, GLPARAM_DOUBLE, 1 },
+    { "GL_INDEX_LOGIC_OP", GL_INDEX_LOGIC_OP, 0x9bd85422, GLPARAM_BOOLEAN, 1 },
+    { "GL_INDEX_MODE", GL_INDEX_MODE, 0xc1a16288, GLPARAM_BOOLEAN, 1 },
+    { "GL_INDEX_OFFSET", GL_INDEX_OFFSET, 0x421ff2ca, GLPARAM_INT, 1 },
+    { "GL_INDEX_SHIFT", GL_INDEX_SHIFT, 0x3bc532f2, GLPARAM_INT, 1 },
+    { "GL_INDEX_WRITEMASK", GL_INDEX_WRITEMASK, 0x9be7458b, GLPARAM_INT, 1 },
+    { "GL_LIGHT0", GL_LIGHT0, 0x5bda68ee, GLPARAM_BOOLEAN, 1 },
+    { "GL_LIGHT1", GL_LIGHT1, 0x1b886cd2, GLPARAM_BOOLEAN, 1 },
+    { "GL_LIGHT2", GL_LIGHT2, 0x7ecb116a, GLPARAM_BOOLEAN, 1 },
+    { "GL_LIGHT3", GL_LIGHT3, 0xfaabaa6f, GLPARAM_BOOLEAN, 1 },
+    { "GL_LIGHT4", GL_LIGHT4, 0xbb9130b9, GLPARAM_BOOLEAN, 1 },
+    { "GL_LIGHT5", GL_LIGHT5, 0x532a2f97, GLPARAM_BOOLEAN, 1 },
+    { "GL_LIGHT6", GL_LIGHT6, 0x1f8afeb3, GLPARAM_BOOLEAN, 1 },
+    { "GL_LIGHT7", GL_LIGHT7, 0x146d8bd2, GLPARAM_BOOLEAN, 1 },
+    { "GL_LIGHTING", GL_LIGHTING, 0x59667ac0, GLPARAM_BOOLEAN, 1 },
+    { "GL_LIGHT_MODEL_AMBIENT", GL_LIGHT_MODEL_AMBIENT, 0x2e1ea6d5, GLPARAM_DOUBLE, 4 },
+    { "GL_LIGHT_MODEL_LOCAL_VIEWER", GL_LIGHT_MODEL_LOCAL_VIEWER, 0x30df85bb, GLPARAM_BOOLEAN, 1 },
+    { "GL_LIGHT_MODEL_TWO_SIDE", GL_LIGHT_MODEL_TWO_SIDE, 0x9949a130, GLPARAM_BOOLEAN, 1 },
+    { "GL_LINE_SMOOTH", GL_LINE_SMOOTH, 0xb50bf1e5, GLPARAM_BOOLEAN, 1 },
+    { "GL_LINE_SMOOTH_HINT", GL_LINE_SMOOTH_HINT, 0x3220d2a9, GLPARAM_INT, 1 },
+    { "GL_LINE_STIPPLE", GL_LINE_STIPPLE, 0x7c77b2ea, GLPARAM_BOOLEAN, 1 },
+    { "GL_LINE_STIPPLE_PATTERN", GL_LINE_STIPPLE_PATTERN, 0x26f5a1de, GLPARAM_INT, 1 },
+    { "GL_LINE_STIPPLE_REPEAT", GL_LINE_STIPPLE_REPEAT, 0x45972ff1, GLPARAM_DOUBLE, 1 },
+    { "GL_LINE_WIDTH", GL_LINE_WIDTH, 0x4ecaa0ff, GLPARAM_DOUBLE, 1 },
+    { "GL_LINE_WIDTH_GRANULARITY", GL_LINE_WIDTH_GRANULARITY, 0xe50132d9, GLPARAM_DOUBLE, 1 },
+    { "GL_LINE_WIDTH_RANGE", GL_LINE_WIDTH_RANGE, 0x70a1427b, GLPARAM_DOUBLE, 2 },
+    { "GL_LIST_BASE", GL_LIST_BASE, 0x82fc8aab, GLPARAM_INT, 1 },
+    { "GL_LIST_INDEX", GL_LIST_INDEX, 0xdecfce14, GLPARAM_INT, 1 },
+    { "GL_LIST_MODE", GL_LIST_MODE, 0x8ccb0bf7, GLPARAM_INT, 1 },
+    { "GL_LOGIC_OP", GL_LOGIC_OP, 0xaae3bb9a, GLPARAM_BOOLEAN, 1 },
+    { "GL_LOGIC_OP_MODE", GL_LOGIC_OP_MODE, 0x2af52693, GLPARAM_INT, 1 },
+    { "GL_MAP1_COLOR_4", GL_MAP1_COLOR_4, 0x384eb930, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP1_GRID_DOMAIN", GL_MAP1_GRID_DOMAIN, 0xe79010ad, GLPARAM_DOUBLE, 2 },
+    { "GL_MAP1_GRID_SEGMENTS", GL_MAP1_GRID_SEGMENTS, 0x7de39797, GLPARAM_INT, 1 },
+    { "GL_MAP1_INDEX", GL_MAP1_INDEX, 0xa09ff53f, GLPARAM_INT, 1 },
+    { "GL_MAP1_NORMAL", GL_MAP1_NORMAL, 0xa6ab1a46, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP1_TEXTURE_COORD_1", GL_MAP1_TEXTURE_COORD_1, 0x151d1a8b, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP1_TEXTURE_COORD_2", GL_MAP1_TEXTURE_COORD_2, 0x413aac21, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP1_TEXTURE_COORD_3", GL_MAP1_TEXTURE_COORD_3, 0x913d7ca6, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP1_TEXTURE_COORD_4", GL_MAP1_TEXTURE_COORD_4, 0xc40342ac, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP1_VERTEX_3", GL_MAP1_VERTEX_3, 0x55c3f9a5, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP1_VERTEX_4", GL_MAP1_VERTEX_4, 0x5f8980f3, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP2_COLOR_4", GL_MAP2_COLOR_4, 0xb288454, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP2_GRID_DOMAIN", GL_MAP2_GRID_DOMAIN, 0xbcd336fa, GLPARAM_DOUBLE, 2 },
+    { "GL_MAP2_GRID_SEGMENTS", GL_MAP2_GRID_SEGMENTS, 0x479a7c52, GLPARAM_INT, 1 },
+    { "GL_MAP2_INDEX", GL_MAP2_INDEX, 0x8ff86285, GLPARAM_INT, 1 },
+    { "GL_MAP2_NORMAL", GL_MAP2_NORMAL, 0x51fcdb15, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP2_TEXTURE_COORD_1", GL_MAP2_TEXTURE_COORD_1, 0x1b2e6191, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP2_TEXTURE_COORD_2", GL_MAP2_TEXTURE_COORD_2, 0x4f09d73b, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP2_TEXTURE_COORD_3", GL_MAP2_TEXTURE_COORD_3, 0x9f0e07bc, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP2_TEXTURE_COORD_4", GL_MAP2_TEXTURE_COORD_4, 0xca3039b6, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP2_VERTEX_3", GL_MAP2_VERTEX_3, 0x87e0f262, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP2_VERTEX_4", GL_MAP2_VERTEX_4, 0x8daa8b34, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP_COLOR", GL_MAP_COLOR, 0xf7f71c1c, GLPARAM_BOOLEAN, 1 },
+    { "GL_MAP_STENCIL", GL_MAP_STENCIL, 0x150d4500, GLPARAM_BOOLEAN, 1 },
+    { "GL_MATRIX_MODE", GL_MATRIX_MODE, 0x5fca7fa2, GLPARAM_INT, 1 },
+    { "GL_MAX_CLIENT_ATTRIB_STACK_DEPTH", GL_MAX_CLIENT_ATTRIB_STACK_DEPTH, 0xc1318221, GLPARAM_INT, 1 },
+    { "GL_MAX_ATTRIB_STACK_DEPTH", GL_MAX_ATTRIB_STACK_DEPTH, 0x2d2a8235, GLPARAM_INT, 1 },
+    { "GL_MAX_CLIP_PLANES", GL_MAX_CLIP_PLANES, 0x32524b18, GLPARAM_INT, 1 },
+    { "GL_MAX_EVAL_ORDER", GL_MAX_EVAL_ORDER, 0x5558be77, GLPARAM_INT, 1 },
+    { "GL_MAX_LIGHTS", GL_MAX_LIGHTS, 0x31fc482c, GLPARAM_INT, 1 },
+    { "GL_MAX_LIST_NESTING", GL_MAX_LIST_NESTING, 0xbae8bec1, GLPARAM_INT, 1 },
+    { "GL_MAX_MODELVIEW_STACK_DEPTH", GL_MAX_MODELVIEW_STACK_DEPTH, 0xbaca15ce, GLPARAM_INT, 1 },
+    { "GL_MAX_NAME_STACK_DEPTH", GL_MAX_NAME_STACK_DEPTH, 0x885a40e9, GLPARAM_INT, 1 },
+    { "GL_MAX_PIXEL_MAP_TABLE", GL_MAX_PIXEL_MAP_TABLE, 0x2713c350, GLPARAM_INT, 1 },
+    { "GL_MAX_PROJECTION_STACK_DEPTH", GL_MAX_PROJECTION_STACK_DEPTH, 0xb6ebc69b, GLPARAM_INT, 1 },
+    { "GL_MAX_TEXTURE_SIZE", GL_MAX_TEXTURE_SIZE, 0x4da60713, GLPARAM_INT, 1 },
+    { "GL_MAX_TEXTURE_STACK_DEPTH", GL_MAX_TEXTURE_STACK_DEPTH, 0x22a22646, GLPARAM_INT, 1 },
+    { "GL_MAX_VIEWPORT_DIMS", GL_MAX_VIEWPORT_DIMS, 0x1fd44300, GLPARAM_INT, 2 },
+    { "GL_MODELVIEW_MATRIX", GL_MODELVIEW_MATRIX, 0x28ae2c7, GLPARAM_DOUBLE, 16 },
+    { "GL_MODELVIEW_STACK_DEPTH", GL_MODELVIEW_STACK_DEPTH, 0xe8ebedfc, GLPARAM_INT, 1 },
+    { "GL_NAME_STACK_DEPTH", GL_NAME_STACK_DEPTH, 0x696ab135, GLPARAM_INT, 1 },
+    { "GL_NORMAL_ARRAY", GL_NORMAL_ARRAY, 0xca3c3867, GLPARAM_BOOLEAN, 1 },
+    { "GL_NORMAL_ARRAY_STRIDE", GL_NORMAL_ARRAY_STRIDE, 0xd501e62, GLPARAM_INT, 1 },
+    { "GL_NORMAL_ARRAY_TYPE", GL_NORMAL_ARRAY_TYPE, 0x18b5baa7, GLPARAM_INT, 1 },
+    { "GL_NORMALIZE", GL_NORMALIZE, 0xea0eb318, GLPARAM_BOOLEAN, 1 },
+    { "GL_PACK_ALIGNMENT", GL_PACK_ALIGNMENT, 0xcc1a0925, GLPARAM_INT, 1 },
+    { "GL_PACK_LSB_FIRST", GL_PACK_LSB_FIRST, 0x19c6b7c, GLPARAM_BOOLEAN, 1 },
+    { "GL_PACK_ROW_LENGTH", GL_PACK_ROW_LENGTH, 0x9f7e0890, GLPARAM_INT, 1 },
+    { "GL_PACK_SKIP_PIXELS", GL_PACK_SKIP_PIXELS, 0x1610580, GLPARAM_INT, 1 },
+    { "GL_PACK_SKIP_ROWS", GL_PACK_SKIP_ROWS, 0xd946eac8, GLPARAM_INT, 1 },
+    { "GL_PACK_SWAP_BYTES", GL_PACK_SWAP_BYTES, 0xa6bec190, GLPARAM_BOOLEAN, 1 },
+    { "GL_PERSPECTIVE_CORRECTION_HINT", GL_PERSPECTIVE_CORRECTION_HINT, 0x8d6f0477, GLPARAM_INT, 1 },
+    { "GL_PIXEL_MAP_A_TO_A_SIZE", GL_PIXEL_MAP_A_TO_A_SIZE, 0x6b2c0067, GLPARAM_INT, 1 },
+    { "GL_PIXEL_MAP_B_TO_B_SIZE", GL_PIXEL_MAP_B_TO_B_SIZE, 0x25405857, GLPARAM_INT, 1 },
+    { "GL_PIXEL_MAP_G_TO_G_SIZE", GL_PIXEL_MAP_G_TO_G_SIZE, 0x1bd44b7, GLPARAM_INT, 1 },
+    { "GL_PIXEL_MAP_I_TO_A_SIZE", GL_PIXEL_MAP_I_TO_A_SIZE, 0x7c9da7c5, GLPARAM_INT, 1 },
+    { "GL_PIXEL_MAP_I_TO_B_SIZE", GL_PIXEL_MAP_I_TO_B_SIZE, 0x122042f3, GLPARAM_INT, 1 },
+    { "GL_PIXEL_MAP_I_TO_G_SIZE", GL_PIXEL_MAP_I_TO_G_SIZE, 0x6be2a12c, GLPARAM_INT, 1 },
+    { "GL_PIXEL_MAP_I_TO_I_SIZE", GL_PIXEL_MAP_I_TO_I_SIZE, 0x6f9bb79c, GLPARAM_INT, 1 },
+    { "GL_PIXEL_MAP_I_TO_R_SIZE", GL_PIXEL_MAP_I_TO_R_SIZE, 0x56af6269, GLPARAM_INT, 1 },
+    { "GL_PIXEL_MAP_R_TO_R_SIZE", GL_PIXEL_MAP_R_TO_R_SIZE, 0x5d8ac0e5, GLPARAM_INT, 1 },
+    { "GL_PIXEL_MAP_S_TO_S_SIZE", GL_PIXEL_MAP_S_TO_S_SIZE, 0xa5ac84d2, GLPARAM_INT, 1 },
+    { "GL_POINT_SIZE", GL_POINT_SIZE, 0xa1ad1a8d, GLPARAM_DOUBLE, 1 },
+    { "GL_POINT_SIZE_GRANULARITY", GL_POINT_SIZE_GRANULARITY, 0x1a1cf7f1, GLPARAM_DOUBLE, 1 },
+    { "GL_POINT_SIZE_RANGE", GL_POINT_SIZE_RANGE, 0xf341db2a, GLPARAM_DOUBLE, 2 },
+    { "GL_POINT_SMOOTH", GL_POINT_SMOOTH, 0xacb67eed, GLPARAM_BOOLEAN, 1 },
+    { "GL_POINT_SMOOTH_HINT", GL_POINT_SMOOTH_HINT, 0x7fddac08, GLPARAM_INT, 1 },
+    { "GL_POLYGON_MODE", GL_POLYGON_MODE, 0x5c82008e, GLPARAM_INT, 2 },
+    { "GL_POLYGON_OFFSET_FACTOR", GL_POLYGON_OFFSET_FACTOR, 0x24a68003, GLPARAM_DOUBLE, 1 },
+    { "GL_POLYGON_OFFSET_UNITS", GL_POLYGON_OFFSET_UNITS, 0xe964a9e, GLPARAM_DOUBLE, 1 },
+    { "GL_POLYGON_OFFSET_FILL", GL_POLYGON_OFFSET_FILL, 0x33db9633, GLPARAM_BOOLEAN, 1 },
+    { "GL_POLYGON_OFFSET_LINE", GL_POLYGON_OFFSET_LINE, 0x1d0bf477, GLPARAM_BOOLEAN, 1 },
+    { "GL_POLYGON_OFFSET_POINT", GL_POLYGON_OFFSET_POINT, 0x7026f3, GLPARAM_BOOLEAN, 1 },
+    { "GL_POLYGON_SMOOTH", GL_POLYGON_SMOOTH, 0xaa85c7a3, GLPARAM_BOOLEAN, 1 },
+    { "GL_POLYGON_SMOOTH_HINT", GL_POLYGON_SMOOTH_HINT, 0x3ed766d5, GLPARAM_INT, 1 },
+    { "GL_POLYGON_STIPPLE", GL_POLYGON_STIPPLE, 0x9d2afe05, GLPARAM_BOOLEAN, 1 },
+    { "GL_PROJECTION_MATRIX", GL_PROJECTION_MATRIX, 0x77ffe1af, GLPARAM_DOUBLE, 16 },
+    { "GL_PROJECTION_STACK_DEPTH", GL_PROJECTION_STACK_DEPTH, 0x8c0a4ff3, GLPARAM_INT, 1 },
+    { "GL_READ_BUFFER", GL_READ_BUFFER, 0xa98284f0, GLPARAM_INT, 1 },
+    { "GL_RED_BIAS", GL_RED_BIAS, 0x24f78267, GLPARAM_DOUBLE, 1 },
+    { "GL_RED_BITS", GL_RED_BITS, 0xeda26dd1, GLPARAM_INT, 1 },
+    { "GL_RED_SCALE", GL_RED_SCALE, 0x9427392b, GLPARAM_DOUBLE, 1 },
+    { "GL_RENDER_MODE", GL_RENDER_MODE, 0x7fb9f74d, GLPARAM_INT, 1 },
+    { "GL_RGBA_MODE", GL_RGBA_MODE, 0x1aea7482, GLPARAM_BOOLEAN, 1 },
+    { "GL_SCISSOR_BOX", GL_SCISSOR_BOX, 0x1aae8169, GLPARAM_DOUBLE, 4 },
+    { "GL_SCISSOR_TEST", GL_SCISSOR_TEST, 0xd765600a, GLPARAM_BOOLEAN, 1 },
+    { "GL_SHADE_MODEL", GL_SHADE_MODEL, 0x54775558, GLPARAM_INT, 1 },
+    { "GL_STENCIL_BITS", GL_STENCIL_BITS, 0xbb4ccd09, GLPARAM_INT, 1 },
+    { "GL_STENCIL_CLEAR_VALUE", GL_STENCIL_CLEAR_VALUE, 0x9aa933a2, GLPARAM_DOUBLE, 1 },
+    { "GL_STENCIL_FAIL", GL_STENCIL_FAIL, 0x9d669020, GLPARAM_INT, 1 },
+    { "GL_STENCIL_FUNC", GL_STENCIL_FUNC, 0x5f738047, GLPARAM_INT, 1 },
+    { "GL_STENCIL_PASS_DEPTH_FAIL", GL_STENCIL_PASS_DEPTH_FAIL, 0xfc785121, GLPARAM_INT, 1 },
+    { "GL_STENCIL_PASS_DEPTH_PASS", GL_STENCIL_PASS_DEPTH_PASS, 0x5152491f, GLPARAM_INT, 1 },
+    { "GL_STENCIL_REF", GL_STENCIL_REF, 0xfdcbf484, GLPARAM_DOUBLE, 1 },
+    { "GL_STENCIL_TEST", GL_STENCIL_TEST, 0x245817c1, GLPARAM_BOOLEAN, 1 },
+    { "GL_STENCIL_VALUE_MASK", GL_STENCIL_VALUE_MASK, 0x96bb7f38, GLPARAM_INT, 1 },
+    { "GL_STENCIL_WRITEMASK", GL_STENCIL_WRITEMASK, 0xee3b40b1, GLPARAM_INT, 1 },
+    { "GL_STEREO", GL_STEREO, 0x9eb7b4b, GLPARAM_BOOLEAN, 1 },
+    { "GL_SUBPIXEL_BITS", GL_SUBPIXEL_BITS, 0x5cc0fc2a, GLPARAM_INT, 1 },
+    { "GL_TEXTURE_1D", GL_TEXTURE_1D, 0x5a769edd, GLPARAM_BOOLEAN, 1 },
+    { "GL_TEXTURE_2D", GL_TEXTURE_2D, 0x5b2970f1, GLPARAM_BOOLEAN, 1 },
+    { "GL_TEXTURE_COORD_ARRAY", GL_TEXTURE_COORD_ARRAY, 0xe5c63ac3, GLPARAM_BOOLEAN, 1 },
+    { "GL_TEXTURE_COORD_ARRAY_SIZE", GL_TEXTURE_COORD_ARRAY_SIZE, 0xc6369648, GLPARAM_INT, 1 },
+    { "GL_TEXTURE_COORD_ARRAY_STRIDE", GL_TEXTURE_COORD_ARRAY_STRIDE, 0x3cb26375, GLPARAM_INT, 1 },
+    { "GL_TEXTURE_COORD_ARRAY_TYPE", GL_TEXTURE_COORD_ARRAY_TYPE, 0x52caaa00, GLPARAM_INT, 1 },
+    { "GL_TEXTURE_ENV_COLOR", GL_TEXTURE_ENV_COLOR, 0xaff39fa2, GLPARAM_DOUBLE, 4 },
+    { "GL_TEXTURE_ENV_MODE", GL_TEXTURE_ENV_MODE, 0x3be892d6, GLPARAM_INT, 1 },
+    { "GL_TEXTURE_GEN_Q", GL_TEXTURE_GEN_Q, 0xf9a6254b, GLPARAM_BOOLEAN, 1 },
+    { "GL_TEXTURE_GEN_R", GL_TEXTURE_GEN_R, 0x80732541, GLPARAM_BOOLEAN, 1 },
+    { "GL_TEXTURE_GEN_S", GL_TEXTURE_GEN_S, 0xdeb50068, GLPARAM_BOOLEAN, 1 },
+    { "GL_TEXTURE_GEN_T", GL_TEXTURE_GEN_T, 0x55aa013b, GLPARAM_BOOLEAN, 1 },
+    { "GL_TEXTURE_MATRIX", GL_TEXTURE_MATRIX, 0xe2ee2471, GLPARAM_DOUBLE, 16 },
+    { "GL_TEXTURE_STACK_DEPTH", GL_TEXTURE_STACK_DEPTH, 0x220504de, GLPARAM_INT, 1 },
+    { "GL_UNPACK_ALIGNMENT", GL_UNPACK_ALIGNMENT, 0xcc46b1ae, GLPARAM_INT, 1 },
+    { "GL_UNPACK_ROW_LENGTH", GL_UNPACK_ROW_LENGTH, 0xc2ebc06c, GLPARAM_INT, 1 },
+    { "GL_UNPACK_SKIP_PIXELS", GL_UNPACK_SKIP_PIXELS, 0x1204b192, GLPARAM_INT, 1 },
+    { "GL_UNPACK_SWAP_BYTES", GL_UNPACK_SWAP_BYTES, 0x33d05a10, GLPARAM_BOOLEAN, 1 },
+    { "GL_VERTEX_ARRAY", GL_VERTEX_ARRAY, 0xd04f30e5, GLPARAM_BOOLEAN, 1 },
+    { "GL_VERTEX_ARRAY_SIZE", GL_VERTEX_ARRAY_SIZE, 0xe8ca882b, GLPARAM_INT, 1 },
+    { "GL_VERTEX_ARRAY_STRIDE", GL_VERTEX_ARRAY_STRIDE, 0xdaa7f1a, GLPARAM_INT, 1 },
+    { "GL_VERTEX_ARRAY_TYPE", GL_VERTEX_ARRAY_TYPE, 0xe5dc63d3, GLPARAM_INT, 1 },
+    { "GL_VIEWPORT", GL_VIEWPORT, 0x49fe7a9e, GLPARAM_INT, 4 },
+    { "GL_ZOOM_X", GL_ZOOM_X, 0xe1e6eed7, GLPARAM_DOUBLE, 1 },
+    { "GL_ZOOM_Y", GL_ZOOM_Y, 0xa95ee43, GLPARAM_DOUBLE, 1 }
+};
+
+lua_createtable( L, 234, 0 );
+lua_pushlstring( L, "GL_ACCUM_ALPHA_BITS", 19 );
+lua_rawseti( L, -2, 1 );
+lua_pushlstring( L, "GL_ACCUM_BLUE_BITS", 18 );
+lua_rawseti( L, -2, 2 );
+lua_pushlstring( L, "GL_ACCUM_CLEAR_VALUE", 20 );
+lua_rawseti( L, -2, 3 );
+lua_pushlstring( L, "GL_ACCUM_GREEN_BITS", 19 );
+lua_rawseti( L, -2, 4 );
+lua_pushlstring( L, "GL_ACCUM_RED_BITS", 17 );
+lua_rawseti( L, -2, 5 );
+lua_pushlstring( L, "GL_ALPHA_BIAS", 13 );
+lua_rawseti( L, -2, 6 );
+lua_pushlstring( L, "GL_ALPHA_BITS", 13 );
+lua_rawseti( L, -2, 7 );
+lua_pushlstring( L, "GL_ALPHA_SCALE", 14 );
+lua_rawseti( L, -2, 8 );
+lua_pushlstring( L, "GL_ALPHA_TEST", 13 );
+lua_rawseti( L, -2, 9 );
+lua_pushlstring( L, "GL_ALPHA_TEST_FUNC", 18 );
+lua_rawseti( L, -2, 10 );
+lua_pushlstring( L, "GL_ALPHA_TEST_REF", 17 );
+lua_rawseti( L, -2, 11 );
+lua_pushlstring( L, "GL_ATTRIB_STACK_DEPTH", 21 );
+lua_rawseti( L, -2, 12 );
+lua_pushlstring( L, "GL_AUTO_NORMAL", 14 );
+lua_rawseti( L, -2, 13 );
+lua_pushlstring( L, "GL_AUX_BUFFERS", 14 );
+lua_rawseti( L, -2, 14 );
+lua_pushlstring( L, "GL_BLEND", 8 );
+lua_rawseti( L, -2, 15 );
+lua_pushlstring( L, "GL_BLEND_DST", 12 );
+lua_rawseti( L, -2, 16 );
+lua_pushlstring( L, "GL_BLEND_SRC", 12 );
+lua_rawseti( L, -2, 17 );
+lua_pushlstring( L, "GL_BLUE_BIAS", 12 );
+lua_rawseti( L, -2, 18 );
+lua_pushlstring( L, "GL_BLUE_BITS", 12 );
+lua_rawseti( L, -2, 19 );
+lua_pushlstring( L, "GL_BLUE_SCALE", 13 );
+lua_rawseti( L, -2, 20 );
+lua_pushlstring( L, "GL_CLIENT_ATTRIB_STACK_DEPTH", 28 );
+lua_rawseti( L, -2, 21 );
+lua_pushlstring( L, "GL_CLIP_PLANE0", 14 );
+lua_rawseti( L, -2, 22 );
+lua_pushlstring( L, "GL_CLIP_PLANE1", 14 );
+lua_rawseti( L, -2, 23 );
+lua_pushlstring( L, "GL_CLIP_PLANE2", 14 );
+lua_rawseti( L, -2, 24 );
+lua_pushlstring( L, "GL_CLIP_PLANE3", 14 );
+lua_rawseti( L, -2, 25 );
+lua_pushlstring( L, "GL_CLIP_PLANE4", 14 );
+lua_rawseti( L, -2, 26 );
+lua_pushlstring( L, "GL_CLIP_PLANE5", 14 );
+lua_rawseti( L, -2, 27 );
+lua_pushlstring( L, "GL_COLOR_ARRAY", 14 );
+lua_rawseti( L, -2, 28 );
+lua_pushlstring( L, "GL_COLOR_ARRAY_SIZE", 19 );
+lua_rawseti( L, -2, 29 );
+lua_pushlstring( L, "GL_COLOR_ARRAY_STRIDE", 21 );
+lua_rawseti( L, -2, 30 );
+lua_pushlstring( L, "GL_COLOR_ARRAY_TYPE", 19 );
+lua_rawseti( L, -2, 31 );
+lua_pushlstring( L, "GL_COLOR_CLEAR_VALUE", 20 );
+lua_rawseti( L, -2, 32 );
+lua_pushlstring( L, "GL_COLOR_LOGIC_OP", 17 );
+lua_rawseti( L, -2, 33 );
+lua_pushlstring( L, "GL_COLOR_MATERIAL", 17 );
+lua_rawseti( L, -2, 34 );
+lua_pushlstring( L, "GL_COLOR_MATERIAL_FACE", 22 );
+lua_rawseti( L, -2, 35 );
+lua_pushlstring( L, "GL_COLOR_MATERIAL_PARAMETER", 27 );
+lua_rawseti( L, -2, 36 );
+lua_pushlstring( L, "GL_COLOR_WRITEMASK", 18 );
+lua_rawseti( L, -2, 37 );
+lua_pushlstring( L, "GL_CULL_FACE", 12 );
+lua_rawseti( L, -2, 38 );
+lua_pushlstring( L, "GL_CULL_FACE_MODE", 17 );
+lua_rawseti( L, -2, 39 );
+lua_pushlstring( L, "GL_CURRENT_COLOR", 16 );
+lua_rawseti( L, -2, 40 );
+lua_pushlstring( L, "GL_CURRENT_INDEX", 16 );
+lua_rawseti( L, -2, 41 );
+lua_pushlstring( L, "GL_CURRENT_NORMAL", 17 );
+lua_rawseti( L, -2, 42 );
+lua_pushlstring( L, "GL_CURRENT_RASTER_COLOR", 23 );
+lua_rawseti( L, -2, 43 );
+lua_pushlstring( L, "GL_CURRENT_RASTER_DISTANCE", 26 );
+lua_rawseti( L, -2, 44 );
+lua_pushlstring( L, "GL_CURRENT_RASTER_INDEX", 23 );
+lua_rawseti( L, -2, 45 );
+lua_pushlstring( L, "GL_CURRENT_RASTER_POSITION", 26 );
+lua_rawseti( L, -2, 46 );
+lua_pushlstring( L, "GL_CURRENT_RASTER_POSITION_VALID", 32 );
+lua_rawseti( L, -2, 47 );
+lua_pushlstring( L, "GL_CURRENT_RASTER_TEXTURE_COORDS", 32 );
+lua_rawseti( L, -2, 48 );
+lua_pushlstring( L, "GL_CURRENT_TEXTURE_COORDS", 25 );
+lua_rawseti( L, -2, 49 );
+lua_pushlstring( L, "GL_DEPTH_BIAS", 13 );
+lua_rawseti( L, -2, 50 );
+lua_pushlstring( L, "GL_DEPTH_BITS", 13 );
+lua_rawseti( L, -2, 51 );
+lua_pushlstring( L, "GL_DEPTH_CLEAR_VALUE", 20 );
+lua_rawseti( L, -2, 52 );
+lua_pushlstring( L, "GL_DEPTH_FUNC", 13 );
+lua_rawseti( L, -2, 53 );
+lua_pushlstring( L, "GL_DEPTH_RANGE", 14 );
+lua_rawseti( L, -2, 54 );
+lua_pushlstring( L, "GL_DEPTH_SCALE", 14 );
+lua_rawseti( L, -2, 55 );
+lua_pushlstring( L, "GL_DEPTH_TEST", 13 );
+lua_rawseti( L, -2, 56 );
+lua_pushlstring( L, "GL_DEPTH_WRITEMASK", 18 );
+lua_rawseti( L, -2, 57 );
+lua_pushlstring( L, "GL_DITHER", 9 );
+lua_rawseti( L, -2, 58 );
+lua_pushlstring( L, "GL_DOUBLEBUFFER", 15 );
+lua_rawseti( L, -2, 59 );
+lua_pushlstring( L, "GL_DRAW_BUFFER", 14 );
+lua_rawseti( L, -2, 60 );
+lua_pushlstring( L, "GL_EDGE_FLAG", 12 );
+lua_rawseti( L, -2, 61 );
+lua_pushlstring( L, "GL_EDGE_FLAG_ARRAY", 18 );
+lua_rawseti( L, -2, 62 );
+lua_pushlstring( L, "GL_EDGE_FLAG_ARRAY_STRIDE", 25 );
+lua_rawseti( L, -2, 63 );
+lua_pushlstring( L, "GL_FOG", 6 );
+lua_rawseti( L, -2, 64 );
+lua_pushlstring( L, "GL_FOG_COLOR", 12 );
+lua_rawseti( L, -2, 65 );
+lua_pushlstring( L, "GL_FOG_DENSITY", 14 );
+lua_rawseti( L, -2, 66 );
+lua_pushlstring( L, "GL_FOG_END", 10 );
+lua_rawseti( L, -2, 67 );
+lua_pushlstring( L, "GL_FOG_HINT", 11 );
+lua_rawseti( L, -2, 68 );
+lua_pushlstring( L, "GL_FOG_INDEX", 12 );
+lua_rawseti( L, -2, 69 );
+lua_pushlstring( L, "GL_FOG_MODE", 11 );
+lua_rawseti( L, -2, 70 );
+lua_pushlstring( L, "GL_FOG_START", 12 );
+lua_rawseti( L, -2, 71 );
+lua_pushlstring( L, "GL_FRONT_FACE", 13 );
+lua_rawseti( L, -2, 72 );
+lua_pushlstring( L, "GL_GREEN_BIAS", 13 );
+lua_rawseti( L, -2, 73 );
+lua_pushlstring( L, "GL_GREEN_BITS", 13 );
+lua_rawseti( L, -2, 74 );
+lua_pushlstring( L, "GL_GREEN_SCALE", 14 );
+lua_rawseti( L, -2, 75 );
+lua_pushlstring( L, "GL_INDEX_ARRAY", 14 );
+lua_rawseti( L, -2, 76 );
+lua_pushlstring( L, "GL_INDEX_ARRAY_STRIDE", 21 );
+lua_rawseti( L, -2, 77 );
+lua_pushlstring( L, "GL_INDEX_ARRAY_TYPE", 19 );
+lua_rawseti( L, -2, 78 );
+lua_pushlstring( L, "GL_INDEX_BITS", 13 );
+lua_rawseti( L, -2, 79 );
+lua_pushlstring( L, "GL_INDEX_CLEAR_VALUE", 20 );
+lua_rawseti( L, -2, 80 );
+lua_pushlstring( L, "GL_INDEX_LOGIC_OP", 17 );
+lua_rawseti( L, -2, 81 );
+lua_pushlstring( L, "GL_INDEX_MODE", 13 );
+lua_rawseti( L, -2, 82 );
+lua_pushlstring( L, "GL_INDEX_OFFSET", 15 );
+lua_rawseti( L, -2, 83 );
+lua_pushlstring( L, "GL_INDEX_SHIFT", 14 );
+lua_rawseti( L, -2, 84 );
+lua_pushlstring( L, "GL_INDEX_WRITEMASK", 18 );
+lua_rawseti( L, -2, 85 );
+lua_pushlstring( L, "GL_LIGHT0", 9 );
+lua_rawseti( L, -2, 86 );
+lua_pushlstring( L, "GL_LIGHT1", 9 );
+lua_rawseti( L, -2, 87 );
+lua_pushlstring( L, "GL_LIGHT2", 9 );
+lua_rawseti( L, -2, 88 );
+lua_pushlstring( L, "GL_LIGHT3", 9 );
+lua_rawseti( L, -2, 89 );
+lua_pushlstring( L, "GL_LIGHT4", 9 );
+lua_rawseti( L, -2, 90 );
+lua_pushlstring( L, "GL_LIGHT5", 9 );
+lua_rawseti( L, -2, 91 );
+lua_pushlstring( L, "GL_LIGHT6", 9 );
+lua_rawseti( L, -2, 92 );
+lua_pushlstring( L, "GL_LIGHT7", 9 );
+lua_rawseti( L, -2, 93 );
+lua_pushlstring( L, "GL_LIGHTING", 11 );
+lua_rawseti( L, -2, 94 );
+lua_pushlstring( L, "GL_LIGHT_MODEL_AMBIENT", 22 );
+lua_rawseti( L, -2, 95 );
+lua_pushlstring( L, "GL_LIGHT_MODEL_LOCAL_VIEWER", 27 );
+lua_rawseti( L, -2, 96 );
+lua_pushlstring( L, "GL_LIGHT_MODEL_TWO_SIDE", 23 );
+lua_rawseti( L, -2, 97 );
+lua_pushlstring( L, "GL_LINE_SMOOTH", 14 );
+lua_rawseti( L, -2, 98 );
+lua_pushlstring( L, "GL_LINE_SMOOTH_HINT", 19 );
+lua_rawseti( L, -2, 99 );
+lua_pushlstring( L, "GL_LINE_STIPPLE", 15 );
+lua_rawseti( L, -2, 100 );
+lua_pushlstring( L, "GL_LINE_STIPPLE_PATTERN", 23 );
+lua_rawseti( L, -2, 101 );
+lua_pushlstring( L, "GL_LINE_STIPPLE_REPEAT", 22 );
+lua_rawseti( L, -2, 102 );
+lua_pushlstring( L, "GL_LINE_WIDTH", 13 );
+lua_rawseti( L, -2, 103 );
+lua_pushlstring( L, "GL_LINE_WIDTH_GRANULARITY", 25 );
+lua_rawseti( L, -2, 104 );
+lua_pushlstring( L, "GL_LINE_WIDTH_RANGE", 19 );
+lua_rawseti( L, -2, 105 );
+lua_pushlstring( L, "GL_LIST_BASE", 12 );
+lua_rawseti( L, -2, 106 );
+lua_pushlstring( L, "GL_LIST_INDEX", 13 );
+lua_rawseti( L, -2, 107 );
+lua_pushlstring( L, "GL_LIST_MODE", 12 );
+lua_rawseti( L, -2, 108 );
+lua_pushlstring( L, "GL_LOGIC_OP", 11 );
+lua_rawseti( L, -2, 109 );
+lua_pushlstring( L, "GL_LOGIC_OP_MODE", 16 );
+lua_rawseti( L, -2, 110 );
+lua_pushlstring( L, "GL_MAP1_COLOR_4", 15 );
+lua_rawseti( L, -2, 111 );
+lua_pushlstring( L, "GL_MAP1_GRID_DOMAIN", 19 );
+lua_rawseti( L, -2, 112 );
+lua_pushlstring( L, "GL_MAP1_GRID_SEGMENTS", 21 );
+lua_rawseti( L, -2, 113 );
+lua_pushlstring( L, "GL_MAP1_INDEX", 13 );
+lua_rawseti( L, -2, 114 );
+lua_pushlstring( L, "GL_MAP1_NORMAL", 14 );
+lua_rawseti( L, -2, 115 );
+lua_pushlstring( L, "GL_MAP1_TEXTURE_COORD_1", 23 );
+lua_rawseti( L, -2, 116 );
+lua_pushlstring( L, "GL_MAP1_TEXTURE_COORD_2", 23 );
+lua_rawseti( L, -2, 117 );
+lua_pushlstring( L, "GL_MAP1_TEXTURE_COORD_3", 23 );
+lua_rawseti( L, -2, 118 );
+lua_pushlstring( L, "GL_MAP1_TEXTURE_COORD_4", 23 );
+lua_rawseti( L, -2, 119 );
+lua_pushlstring( L, "GL_MAP1_VERTEX_3", 16 );
+lua_rawseti( L, -2, 120 );
+lua_pushlstring( L, "GL_MAP1_VERTEX_4", 16 );
+lua_rawseti( L, -2, 121 );
+lua_pushlstring( L, "GL_MAP2_COLOR_4", 15 );
+lua_rawseti( L, -2, 122 );
+lua_pushlstring( L, "GL_MAP2_GRID_DOMAIN", 19 );
+lua_rawseti( L, -2, 123 );
+lua_pushlstring( L, "GL_MAP2_GRID_SEGMENTS", 21 );
+lua_rawseti( L, -2, 124 );
+lua_pushlstring( L, "GL_MAP2_INDEX", 13 );
+lua_rawseti( L, -2, 125 );
+lua_pushlstring( L, "GL_MAP2_NORMAL", 14 );
+lua_rawseti( L, -2, 126 );
+lua_pushlstring( L, "GL_MAP2_TEXTURE_COORD_1", 23 );
+lua_rawseti( L, -2, 127 );
+lua_pushlstring( L, "GL_MAP2_TEXTURE_COORD_2", 23 );
+lua_rawseti( L, -2, 128 );
+lua_pushlstring( L, "GL_MAP2_TEXTURE_COORD_3", 23 );
+lua_rawseti( L, -2, 129 );
+lua_pushlstring( L, "GL_MAP2_TEXTURE_COORD_4", 23 );
+lua_rawseti( L, -2, 130 );
+lua_pushlstring( L, "GL_MAP2_VERTEX_3", 16 );
+lua_rawseti( L, -2, 131 );
+lua_pushlstring( L, "GL_MAP2_VERTEX_4", 16 );
+lua_rawseti( L, -2, 132 );
+lua_pushlstring( L, "GL_MAP_COLOR", 12 );
+lua_rawseti( L, -2, 133 );
+lua_pushlstring( L, "GL_MAP_STENCIL", 14 );
+lua_rawseti( L, -2, 134 );
+lua_pushlstring( L, "GL_MATRIX_MODE", 14 );
+lua_rawseti( L, -2, 135 );
+lua_pushlstring( L, "GL_MAX_CLIENT_ATTRIB_STACK_DEPTH", 32 );
+lua_rawseti( L, -2, 136 );
+lua_pushlstring( L, "GL_MAX_ATTRIB_STACK_DEPTH", 25 );
+lua_rawseti( L, -2, 137 );
+lua_pushlstring( L, "GL_MAX_CLIP_PLANES", 18 );
+lua_rawseti( L, -2, 138 );
+lua_pushlstring( L, "GL_MAX_EVAL_ORDER", 17 );
+lua_rawseti( L, -2, 139 );
+lua_pushlstring( L, "GL_MAX_LIGHTS", 13 );
+lua_rawseti( L, -2, 140 );
+lua_pushlstring( L, "GL_MAX_LIST_NESTING", 19 );
+lua_rawseti( L, -2, 141 );
+lua_pushlstring( L, "GL_MAX_MODELVIEW_STACK_DEPTH", 28 );
+lua_rawseti( L, -2, 142 );
+lua_pushlstring( L, "GL_MAX_NAME_STACK_DEPTH", 23 );
+lua_rawseti( L, -2, 143 );
+lua_pushlstring( L, "GL_MAX_PIXEL_MAP_TABLE", 22 );
+lua_rawseti( L, -2, 144 );
+lua_pushlstring( L, "GL_MAX_PROJECTION_STACK_DEPTH", 29 );
+lua_rawseti( L, -2, 145 );
+lua_pushlstring( L, "GL_MAX_TEXTURE_SIZE", 19 );
+lua_rawseti( L, -2, 146 );
+lua_pushlstring( L, "GL_MAX_TEXTURE_STACK_DEPTH", 26 );
+lua_rawseti( L, -2, 147 );
+lua_pushlstring( L, "GL_MAX_VIEWPORT_DIMS", 20 );
+lua_rawseti( L, -2, 148 );
+lua_pushlstring( L, "GL_MODELVIEW_MATRIX", 19 );
+lua_rawseti( L, -2, 149 );
+lua_pushlstring( L, "GL_MODELVIEW_STACK_DEPTH", 24 );
+lua_rawseti( L, -2, 150 );
+lua_pushlstring( L, "GL_NAME_STACK_DEPTH", 19 );
+lua_rawseti( L, -2, 151 );
+lua_pushlstring( L, "GL_NORMAL_ARRAY", 15 );
+lua_rawseti( L, -2, 152 );
+lua_pushlstring( L, "GL_NORMAL_ARRAY_STRIDE", 22 );
+lua_rawseti( L, -2, 153 );
+lua_pushlstring( L, "GL_NORMAL_ARRAY_TYPE", 20 );
+lua_rawseti( L, -2, 154 );
+lua_pushlstring( L, "GL_NORMALIZE", 12 );
+lua_rawseti( L, -2, 155 );
+lua_pushlstring( L, "GL_PACK_ALIGNMENT", 17 );
+lua_rawseti( L, -2, 156 );
+lua_pushlstring( L, "GL_PACK_LSB_FIRST", 17 );
+lua_rawseti( L, -2, 157 );
+lua_pushlstring( L, "GL_PACK_ROW_LENGTH", 18 );
+lua_rawseti( L, -2, 158 );
+lua_pushlstring( L, "GL_PACK_SKIP_PIXELS", 19 );
+lua_rawseti( L, -2, 159 );
+lua_pushlstring( L, "GL_PACK_SKIP_ROWS", 17 );
+lua_rawseti( L, -2, 160 );
+lua_pushlstring( L, "GL_PACK_SWAP_BYTES", 18 );
+lua_rawseti( L, -2, 161 );
+lua_pushlstring( L, "GL_PERSPECTIVE_CORRECTION_HINT", 30 );
+lua_rawseti( L, -2, 162 );
+lua_pushlstring( L, "GL_PIXEL_MAP_A_TO_A_SIZE", 24 );
+lua_rawseti( L, -2, 163 );
+lua_pushlstring( L, "GL_PIXEL_MAP_B_TO_B_SIZE", 24 );
+lua_rawseti( L, -2, 164 );
+lua_pushlstring( L, "GL_PIXEL_MAP_G_TO_G_SIZE", 24 );
+lua_rawseti( L, -2, 165 );
+lua_pushlstring( L, "GL_PIXEL_MAP_I_TO_A_SIZE", 24 );
+lua_rawseti( L, -2, 166 );
+lua_pushlstring( L, "GL_PIXEL_MAP_I_TO_B_SIZE", 24 );
+lua_rawseti( L, -2, 167 );
+lua_pushlstring( L, "GL_PIXEL_MAP_I_TO_G_SIZE", 24 );
+lua_rawseti( L, -2, 168 );
+lua_pushlstring( L, "GL_PIXEL_MAP_I_TO_I_SIZE", 24 );
+lua_rawseti( L, -2, 169 );
+lua_pushlstring( L, "GL_PIXEL_MAP_I_TO_R_SIZE", 24 );
+lua_rawseti( L, -2, 170 );
+lua_pushlstring( L, "GL_PIXEL_MAP_R_TO_R_SIZE", 24 );
+lua_rawseti( L, -2, 171 );
+lua_pushlstring( L, "GL_PIXEL_MAP_S_TO_S_SIZE", 24 );
+lua_rawseti( L, -2, 172 );
+lua_pushlstring( L, "GL_POINT_SIZE", 13 );
+lua_rawseti( L, -2, 173 );
+lua_pushlstring( L, "GL_POINT_SIZE_GRANULARITY", 25 );
+lua_rawseti( L, -2, 174 );
+lua_pushlstring( L, "GL_POINT_SIZE_RANGE", 19 );
+lua_rawseti( L, -2, 175 );
+lua_pushlstring( L, "GL_POINT_SMOOTH", 15 );
+lua_rawseti( L, -2, 176 );
+lua_pushlstring( L, "GL_POINT_SMOOTH_HINT", 20 );
+lua_rawseti( L, -2, 177 );
+lua_pushlstring( L, "GL_POLYGON_MODE", 15 );
+lua_rawseti( L, -2, 178 );
+lua_pushlstring( L, "GL_POLYGON_OFFSET_FACTOR", 24 );
+lua_rawseti( L, -2, 179 );
+lua_pushlstring( L, "GL_POLYGON_OFFSET_UNITS", 23 );
+lua_rawseti( L, -2, 180 );
+lua_pushlstring( L, "GL_POLYGON_OFFSET_FILL", 22 );
+lua_rawseti( L, -2, 181 );
+lua_pushlstring( L, "GL_POLYGON_OFFSET_LINE", 22 );
+lua_rawseti( L, -2, 182 );
+lua_pushlstring( L, "GL_POLYGON_OFFSET_POINT", 23 );
+lua_rawseti( L, -2, 183 );
+lua_pushlstring( L, "GL_POLYGON_SMOOTH", 17 );
+lua_rawseti( L, -2, 184 );
+lua_pushlstring( L, "GL_POLYGON_SMOOTH_HINT", 22 );
+lua_rawseti( L, -2, 185 );
+lua_pushlstring( L, "GL_POLYGON_STIPPLE", 18 );
+lua_rawseti( L, -2, 186 );
+lua_pushlstring( L, "GL_PROJECTION_MATRIX", 20 );
+lua_rawseti( L, -2, 187 );
+lua_pushlstring( L, "GL_PROJECTION_STACK_DEPTH", 25 );
+lua_rawseti( L, -2, 188 );
+lua_pushlstring( L, "GL_READ_BUFFER", 14 );
+lua_rawseti( L, -2, 189 );
+lua_pushlstring( L, "GL_RED_BIAS", 11 );
+lua_rawseti( L, -2, 190 );
+lua_pushlstring( L, "GL_RED_BITS", 11 );
+lua_rawseti( L, -2, 191 );
+lua_pushlstring( L, "GL_RED_SCALE", 12 );
+lua_rawseti( L, -2, 192 );
+lua_pushlstring( L, "GL_RENDER_MODE", 14 );
+lua_rawseti( L, -2, 193 );
+lua_pushlstring( L, "GL_RGBA_MODE", 12 );
+lua_rawseti( L, -2, 194 );
+lua_pushlstring( L, "GL_SCISSOR_BOX", 14 );
+lua_rawseti( L, -2, 195 );
+lua_pushlstring( L, "GL_SCISSOR_TEST", 15 );
+lua_rawseti( L, -2, 196 );
+lua_pushlstring( L, "GL_SHADE_MODEL", 14 );
+lua_rawseti( L, -2, 197 );
+lua_pushlstring( L, "GL_STENCIL_BITS", 15 );
+lua_rawseti( L, -2, 198 );
+lua_pushlstring( L, "GL_STENCIL_CLEAR_VALUE", 22 );
+lua_rawseti( L, -2, 199 );
+lua_pushlstring( L, "GL_STENCIL_FAIL", 15 );
+lua_rawseti( L, -2, 200 );
+lua_pushlstring( L, "GL_STENCIL_FUNC", 15 );
+lua_rawseti( L, -2, 201 );
+lua_pushlstring( L, "GL_STENCIL_PASS_DEPTH_FAIL", 26 );
+lua_rawseti( L, -2, 202 );
+lua_pushlstring( L, "GL_STENCIL_PASS_DEPTH_PASS", 26 );
+lua_rawseti( L, -2, 203 );
+lua_pushlstring( L, "GL_STENCIL_REF", 14 );
+lua_rawseti( L, -2, 204 );
+lua_pushlstring( L, "GL_STENCIL_TEST", 15 );
+lua_rawseti( L, -2, 205 );
+lua_pushlstring( L, "GL_STENCIL_VALUE_MASK", 21 );
+lua_rawseti( L, -2, 206 );
+lua_pushlstring( L, "GL_STENCIL_WRITEMASK", 20 );
+lua_rawseti( L, -2, 207 );
+lua_pushlstring( L, "GL_STEREO", 9 );
+lua_rawseti( L, -2, 208 );
+lua_pushlstring( L, "GL_SUBPIXEL_BITS", 16 );
+lua_rawseti( L, -2, 209 );
+lua_pushlstring( L, "GL_TEXTURE_1D", 13 );
+lua_rawseti( L, -2, 210 );
+lua_pushlstring( L, "GL_TEXTURE_2D", 13 );
+lua_rawseti( L, -2, 211 );
+lua_pushlstring( L, "GL_TEXTURE_COORD_ARRAY", 22 );
+lua_rawseti( L, -2, 212 );
+lua_pushlstring( L, "GL_TEXTURE_COORD_ARRAY_SIZE", 27 );
+lua_rawseti( L, -2, 213 );
+lua_pushlstring( L, "GL_TEXTURE_COORD_ARRAY_STRIDE", 29 );
+lua_rawseti( L, -2, 214 );
+lua_pushlstring( L, "GL_TEXTURE_COORD_ARRAY_TYPE", 27 );
+lua_rawseti( L, -2, 215 );
+lua_pushlstring( L, "GL_TEXTURE_ENV_COLOR", 20 );
+lua_rawseti( L, -2, 216 );
+lua_pushlstring( L, "GL_TEXTURE_ENV_MODE", 19 );
+lua_rawseti( L, -2, 217 );
+lua_pushlstring( L, "GL_TEXTURE_GEN_Q", 16 );
+lua_rawseti( L, -2, 218 );
+lua_pushlstring( L, "GL_TEXTURE_GEN_R", 16 );
+lua_rawseti( L, -2, 219 );
+lua_pushlstring( L, "GL_TEXTURE_GEN_S", 16 );
+lua_rawseti( L, -2, 220 );
+lua_pushlstring( L, "GL_TEXTURE_GEN_T", 16 );
+lua_rawseti( L, -2, 221 );
+lua_pushlstring( L, "GL_TEXTURE_MATRIX", 17 );
+lua_rawseti( L, -2, 222 );
+lua_pushlstring( L, "GL_TEXTURE_STACK_DEPTH", 22 );
+lua_rawseti( L, -2, 223 );
+lua_pushlstring( L, "GL_UNPACK_ALIGNMENT", 19 );
+lua_rawseti( L, -2, 224 );
+lua_pushlstring( L, "GL_UNPACK_ROW_LENGTH", 20 );
+lua_rawseti( L, -2, 225 );
+lua_pushlstring( L, "GL_UNPACK_SKIP_PIXELS", 21 );
+lua_rawseti( L, -2, 226 );
+lua_pushlstring( L, "GL_UNPACK_SWAP_BYTES", 20 );
+lua_rawseti( L, -2, 227 );
+lua_pushlstring( L, "GL_VERTEX_ARRAY", 15 );
+lua_rawseti( L, -2, 228 );
+lua_pushlstring( L, "GL_VERTEX_ARRAY_SIZE", 20 );
+lua_rawseti( L, -2, 229 );
+lua_pushlstring( L, "GL_VERTEX_ARRAY_STRIDE", 22 );
+lua_rawseti( L, -2, 230 );
+lua_pushlstring( L, "GL_VERTEX_ARRAY_TYPE", 20 );
+lua_rawseti( L, -2, 231 );
+lua_pushlstring( L, "GL_VIEWPORT", 11 );
+lua_rawseti( L, -2, 232 );
+lua_pushlstring( L, "GL_ZOOM_X", 9 );
+lua_rawseti( L, -2, 233 );
+lua_pushlstring( L, "GL_ZOOM_Y", 9 );
+lua_rawseti( L, -2, 234 );

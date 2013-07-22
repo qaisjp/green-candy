@@ -1,0 +1,11 @@
+static const GLparaminfo items[] =
+{
+    { "GL_COMPRESSED_RGB_FXT1_3DFX", GL_COMPRESSED_RGB_FXT1_3DFX, 0xa954af66 },
+    { "GL_COMPRESSED_RGBA_FXT1_3DFX", GL_COMPRESSED_RGBA_FXT1_3DFX, 0xa6f4d5a2 }
+};
+
+lua_newtable( L );
+lua_pushlstring( L, "GL_COMPRESSED_RGB_FXT1_3DFX", 27 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_RGBA_FXT1_3DFX", 28 );
+lua_rawseti( L, -2, n++ );

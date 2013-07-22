@@ -110,7 +110,7 @@ namespace LuaFunctionDefs
     LUA_DECLARE( utfChar );
     LUA_DECLARE( utfCode );
 
-#ifndef _KILLFRENZY
+#ifdef MTA_CLIENT
     // XML Functions
     LUA_DECLARE( xmlFindChild );
     LUA_DECLARE( xmlNodeGetChildren );
@@ -129,7 +129,7 @@ namespace LuaFunctionDefs
     LUA_DECLARE( xmlCopyFile );
     LUA_DECLARE( xmlNodeGetName );
     LUA_DECLARE( xmlNodeSetName );
-#endif //_KILLFRENZY
+#endif //MTA_CLIENT
 
     // JSON functions
     LUA_DECLARE( toJSON );

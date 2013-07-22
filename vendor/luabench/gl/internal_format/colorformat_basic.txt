@@ -1,2 +1,0 @@
-GL_RGB
-GL_RGBA

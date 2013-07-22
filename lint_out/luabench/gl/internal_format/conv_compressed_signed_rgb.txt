@@ -1,0 +1,29 @@
+static const GLparaminfo items[] =
+{
+    { "GL_COMPRESSED_SRGB_EXT", GL_COMPRESSED_SRGB_EXT, 0x768ed43e },
+    { "GL_COMPRESSED_SRGB_ALPHA_EXT", GL_COMPRESSED_SRGB_ALPHA_EXT, 0xf12c6b6d },
+    { "GL_COMPRESSED_SLUMINANCE_EXT", GL_COMPRESSED_SLUMINANCE_EXT, 0x8f0efbda },
+    { "GL_COMPRESSED_SLUMINANCE_ALPHA_EXT", GL_COMPRESSED_SLUMINANCE_ALPHA_EXT, 0x8081c7dc },
+    { "GL_COMPRESSED_SRGB_S3TC_DXT1_EXT", GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, 0x227e1784 },
+    { "GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT", GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT, 0xb8d319bf },
+    { "GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT", GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, 0x69e64d29 },
+    { "GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT", GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, 0x93c46aa3 }
+};
+
+lua_newtable( L );
+lua_pushlstring( L, "GL_COMPRESSED_SRGB_EXT", 22 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SRGB_ALPHA_EXT", 28 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SLUMINANCE_EXT", 28 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SLUMINANCE_ALPHA_EXT", 34 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SRGB_S3TC_DXT1_EXT", 32 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT", 38 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT", 38 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT", 38 );
+lua_rawseti( L, -2, n++ );

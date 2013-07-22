@@ -35,7 +35,7 @@ Command::~Command()
     manager.m_commands.remove( this );
 }
 
-bool Command::Execute( const argList_t& args )
+bool Command::Execute( argList_t& args )
 {
     lua_State *L = **lua;
 

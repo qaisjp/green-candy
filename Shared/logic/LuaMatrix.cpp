@@ -12,15 +12,63 @@
 
 #include <StdInc.h>
 
+static LUA_DECLARE( clone )
+{
+    lua_creatematrix( L, *(RwMatrix*)lua_getmethodtrans( L ) );
+    return 1;
+}
+
+static LUA_DECLARE( add )
+{
+    RwMatrix *with;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadClass( with, LUACLASS_MATRIX );
+    LUA_ARGS_END;
+
+    RwMatrix *mat = (RwMatrix*)lua_getmethodtrans( L );
+
+    mat->Add( *with, *mat );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( sub )
+{
+    RwMatrix *with;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadClass( with, LUACLASS_MATRIX );
+    LUA_ARGS_END;
+
+    RwMatrix *mat = (RwMatrix*)lua_getmethodtrans( L );
+
+    mat->Sub( *with, *mat );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( multiply )
+{
+    RwMatrix *with;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadClass( with, LUACLASS_MATRIX );
+    LUA_ARGS_END;
+
+    RwMatrix *mat = (RwMatrix*)lua_getmethodtrans( L );
+
+    mat->Multiply( *with, *mat );
+    LUA_SUCCESS;
+}
+
 inline static void lua_pushvector3D( lua_State *L, CVector& vec )
 {
     lua_createtable( L, 3, 0 );
-    lua_pushnumber( L, vec[0] );
-    lua_pushnumber( L, vec[1] );
+    lua_pushnumber( L, vec[3] );
     lua_pushnumber( L, vec[2] );
-    lua_rawseti( L, -4, 3 );
+    lua_pushnumber( L, vec[1] );
+    lua_rawseti( L, -4, 1 );
     lua_rawseti( L, -3, 2 );
-    lua_rawseti( L, -2, 1 );
+    lua_rawseti( L, -2, 3 );
 }
 
 static int matrix_index( lua_State *L )
@@ -157,6 +205,10 @@ static const luaL_Reg matrix_interface[] =
 
 static const luaL_Reg matrix_interface_trans[] =
 {
+    LUA_METHOD( clone ),
+    LUA_METHOD( add ),
+    LUA_METHOD( sub ),
+    LUA_METHOD( multiply ),
     { "setPosition", matrix_setPosition },
     { "getPosition", matrix_getPosition },
     { "setEulerAngles", matrix_setEulerAngles },

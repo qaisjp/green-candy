@@ -12,8 +12,32 @@
 
 #include <StdInc.h>
 
+static LUA_DECLARE( setCursorPos )
+{
+    int x, y;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( x );
+    argStream.ReadNumber( y );
+    LUA_ARGS_END;
+
+    lua_pushboolean( L, SetCursorPos( x, y ) != FALSE );
+    return 1;
+}
+
+static LUA_DECLARE( getCursorPos )
+{
+    POINT mousePos;
+    LUA_CHECK( GetCursorPos( &mousePos ) );
+
+    lua_pushnumber( L, mousePos.x );
+    lua_pushnumber( L, mousePos.y );
+    return 2;
+}
+
 static const luaL_Reg win32_interface[] =
 {
+    LUA_METHOD( getCursorPos ),
     { NULL, NULL }
 };
 

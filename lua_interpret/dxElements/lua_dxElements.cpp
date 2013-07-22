@@ -678,21 +678,6 @@ static LUA_DECLARE( getDisabled )
     return 1;
 }
 
-static LUA_DECLARE( addEvent )
-{
-    return 0;
-}
-
-static LUA_DECLARE( addEventHandler )
-{
-    return 0;
-}
-
-static LUA_DECLARE( removeEventHandler )
-{
-    return 0;
-}
-
 static LUA_DECLARE( createContext )
 {
     return 0;
@@ -1335,9 +1320,6 @@ static const luaL_Reg dxElement_interface[] =
     LUA_METHOD( disable ),
     LUA_METHOD( isDisabled ),
     LUA_METHOD( getDisabled ),
-    LUA_METHOD( addEvent ),
-    LUA_METHOD( addEventHandler ),
-    LUA_METHOD( removeEventHandler ),
     LUA_METHOD( createContext ),
     LUA_METHOD( executeEventHandlers ),
     LUA_METHOD( triggerEvent ),
@@ -1393,6 +1375,9 @@ static LUA_DECLARE( dxElement_constructor )
 
     lua_pushlightuserdata( L, element );
     j.RegisterInterface( L, dxElement_interface_sys, 1 );
+
+    // Include the events interface.
+    luaevent_extend( L );
 
     lua_pushlstring( L, "dxElement", 9 );
     lua_setfield( L, LUA_ENVIRONINDEX, "__type" );

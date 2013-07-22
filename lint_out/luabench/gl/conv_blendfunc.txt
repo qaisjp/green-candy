@@ -1,0 +1,38 @@
+static const GLparaminfo items[] =
+{
+    { "GL_ZERO", GL_ZERO, 0xede10434 },
+    { "GL_ONE", GL_ONE, 0xeda23afe },
+    { "GL_SRC_COLOR", GL_SRC_COLOR, 0xb9df48a3 },
+    { "GL_ONE_MINUS_SRC_COLOR", GL_ONE_MINUS_SRC_COLOR, 0xfb4007de },
+    { "GL_SRC_ALPHA", GL_SRC_ALPHA, 0xe79b085f },
+    { "GL_ONE_MINUS_SRC_ALPHA", GL_ONE_MINUS_SRC_ALPHA, 0x438c2a91 },
+    { "GL_DST_ALPHA", GL_DST_ALPHA, 0xc2810613 },
+    { "GL_ONE_MINUS_DST_ALPHA", GL_ONE_MINUS_DST_ALPHA, 0x68690ca0 },
+    { "GL_DST_COLOR", GL_DST_COLOR, 0x9cc546ef },
+    { "GL_ONE_MINUS_DST_COLOR", GL_ONE_MINUS_DST_COLOR, 0xd0a521ef },
+    { "GL_SRC_ALPHA_SATURATE", GL_SRC_ALPHA_SATURATE, 0x6e1e27da }
+};
+
+lua_newtable( L );
+lua_pushlstring( L, "GL_ZERO", 7 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_ONE", 6 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_SRC_COLOR", 12 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_ONE_MINUS_SRC_COLOR", 22 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_SRC_ALPHA", 12 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_ONE_MINUS_SRC_ALPHA", 22 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_DST_ALPHA", 12 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_ONE_MINUS_DST_ALPHA", 22 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_DST_COLOR", 12 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_ONE_MINUS_DST_COLOR", 22 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_SRC_ALPHA_SATURATE", 21 );
+lua_rawseti( L, -2, n++ );

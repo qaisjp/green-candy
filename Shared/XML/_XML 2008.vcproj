@@ -115,7 +115,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy /y xmll_d.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mta\&quot; &amp;&amp; xcopy /y xmll_d.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\server\&quot;"
+				CommandLine="xcopy /y xmll_d.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mta\&quot;&#x0D;&#x0A;xcopy /y xmll_d.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\server\&quot;&#x0D;&#x0A;xcopy /y xmll_d.dll &quot;..\..\lint_out\&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -222,7 +222,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy /y xmll.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mta\&quot; &amp;&amp; xcopy /y xmll.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\server\&quot;"
+				CommandLine="xcopy /y xmll.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mta\&quot;&#x0D;&#x0A;xcopy /y xmll.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\server\&quot;&#x0D;&#x0A;xcopy /y xmll.dll &quot;..\..\lint_out\&quot;"
 			/>
 		</Configuration>
 		<Configuration

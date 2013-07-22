@@ -1213,7 +1213,7 @@ struct RwPluginRegistry
 {
     typedef RwPluginDescriptor <RwTemplate> RwTemplateDescriptor;
 
-    BYTE*                               m_pad[16];              // 0
+    BYTE                                m_pad[16];              // 0
     RwTemplateDescriptor*               m_descriptor;           // 16
 
     // Plugin registry functions.

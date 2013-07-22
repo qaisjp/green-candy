@@ -1,0 +1,4 @@
+<meta>
+    <depend resource="gui" />
+    <wildload dir="/" />
+</meta>

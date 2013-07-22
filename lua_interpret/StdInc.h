@@ -13,6 +13,8 @@
 #ifndef _MAIN_
 #define _MAIN_
 
+#define LUA_INTERPRETER
+
 #pragma warning(disable: 4996)
 
 #define MEM_INTERRUPT( x )  { if ( !( x ) ) __asm int 3 }
@@ -46,10 +48,15 @@
 #include <lua/CLuaFunctionParseHelpers.h>
 #include <CScriptArgReader.h>
 #include <google/dense_hash_map>
+#include "LuaDefs/include.h"
+
+// Main functions
+bool lint_loadscript( lua_State *L, const char *script, const char *path );
 
 extern CFileSystem *fileSystem;
 extern CFileTranslator *modFileRoot;
 
 extern lua_State *userLuaState;
+extern CResourceManager *resMan;
 
 #endif //_MAIN_
