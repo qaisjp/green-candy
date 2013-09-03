@@ -39,7 +39,8 @@ static LUA_DECLARE( getSize )
 enum eDrawOpType
 {
     DRAWOP_MODULATE,
-    DRAWOP_ADDITIVE
+    DRAWOP_ADDITIVE,
+    DRAWOP_WRITE
 };
 
 DECLARE_ENUM( eDrawOpType );
@@ -47,6 +48,7 @@ DECLARE_ENUM( eDrawOpType );
 IMPLEMENT_ENUM_BEGIN( eDrawOpType )
     ADD_ENUM( DRAWOP_MODULATE, "modulate" )
     ADD_ENUM( DRAWOP_ADDITIVE, "additive" )
+    ADD_ENUM( DRAWOP_WRITE, "write" )
 IMPLEMENT_ENUM_END( "eDrawOpType" )
 
 __forceinline void UnpackColor( const void *data, unsigned int pixelX, unsigned int pixelY, unsigned int width, Bitmap::eDataType dataType, double& red, double& green, double& blue, double& alpha )
@@ -159,9 +161,6 @@ static LUA_DECLARE( drawBitmap )
     // For now; later we may support flipping of images!
     LUA_CHECK( width > 0 && height > 0 );
 
-    // We only support modulate for now
-    LUA_CHECK( drawOp == DRAWOP_MODULATE );
-
     Bitmap *map = (Bitmap*)lua_getmethodtrans( L );
 
     // Cache the bitmap types
@@ -230,6 +229,13 @@ static LUA_DECLARE( drawBitmap )
                 resGreen = SharedUtil::Min <double> ( 1.0f, ( srcGreen * srcAlpha ) + ( dstGreen * (1 - srcAlpha) ) );
                 resBlue = SharedUtil::Min <double> ( 1.0f, ( srcBlue * srcAlpha ) + ( dstBlue * (1 - srcAlpha) ) );
                 resAlpha = SharedUtil::Min <double> ( 1.0f, ( srcAlpha * srcAlpha ) + ( dstAlpha * (1 - srcAlpha) ) );
+                break;
+            case DRAWOP_WRITE:
+                // We just copy data from bitmap src to dst
+                resRed = srcRed;
+                resGreen = srcGreen;
+                resBlue = srcBlue;
+                resAlpha = srcAlpha;
                 break;
             default:
                 // Unknown operation.

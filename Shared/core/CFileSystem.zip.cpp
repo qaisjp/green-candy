@@ -13,11 +13,15 @@
 
 #include <StdInc.h>
 #include <zlib.h>
+#include <sstream>
 
 #define ZIP_SIGNATURE               0x06054B50
 #define ZIP_FILE_SIGNATURE          0x02014B50
 #define ZIP_LOCAL_FILE_SIGNATURE    0x04034B50
 
+// Global properties used by the .zip extension
+// for managing temporary files (OS dependent).
+// See CFileSystem::InitZIP.
 static CFileTranslator *sysTmp;
 static CFileTranslator *sysTmpRoot;
 static unsigned int sysTmpCnt = 0;
@@ -36,7 +40,7 @@ CArchiveFileTranslator::fileDeflate::fileDeflate( CArchiveFileTranslator& zip, f
 {
 }
 
-CArchiveFileTranslator::fileDeflate::~fileDeflate()
+CArchiveFileTranslator::fileDeflate::~fileDeflate( void )
 {
 }
 
@@ -62,12 +66,12 @@ int CArchiveFileTranslator::fileDeflate::Seek( long iOffset, int iType )
     return m_sysFile.Seek( iOffset, iType );
 }
 
-long CArchiveFileTranslator::fileDeflate::Tell() const
+long CArchiveFileTranslator::fileDeflate::Tell( void ) const
 {
     return m_sysFile.Tell();
 }
 
-bool CArchiveFileTranslator::fileDeflate::IsEOF() const
+bool CArchiveFileTranslator::fileDeflate::IsEOF( void ) const
 {
     return m_sysFile.IsEOF();
 }
@@ -87,31 +91,31 @@ bool CArchiveFileTranslator::fileDeflate::Stat( struct stat *stats ) const
 void CArchiveFileTranslator::fileDeflate::PushStat( const struct stat *stats )
 {
     tm *date = gmtime( &stats->st_mtime );
-    
+
     m_info.SetModTime( *date );
 }
 
-void CArchiveFileTranslator::fileDeflate::SetSeekEnd()
+void CArchiveFileTranslator::fileDeflate::SetSeekEnd( void )
 {
-    
+
 }
 
-size_t CArchiveFileTranslator::fileDeflate::GetSize() const
+size_t CArchiveFileTranslator::fileDeflate::GetSize( void ) const
 {
     return m_sysFile.GetSize();
 }
 
-void CArchiveFileTranslator::fileDeflate::Flush()
+void CArchiveFileTranslator::fileDeflate::Flush( void )
 {
     m_sysFile.Flush();
 }
 
-bool CArchiveFileTranslator::fileDeflate::IsReadable() const
+bool CArchiveFileTranslator::fileDeflate::IsReadable( void ) const
 {
     return m_readable;
 }
 
-bool CArchiveFileTranslator::fileDeflate::IsWriteable() const
+bool CArchiveFileTranslator::fileDeflate::IsWriteable( void ) const
 {
     return m_writeable;
 }
@@ -122,24 +126,24 @@ bool CArchiveFileTranslator::fileDeflate::IsWriteable() const
     ZIP translation utility
 =======================================*/
 
-CArchiveFileTranslator::CArchiveFileTranslator( CFile& file ) : m_file( file ), m_root( filePath(), filePath() )
+CArchiveFileTranslator::CArchiveFileTranslator( CFile& fileStream ) : CSystemPathTranslator( false ), m_file( fileStream ), m_rootDir( filePath(), filePath() )
 {
     filePath path;
-    std::stringstream stream;
+    std::stringstream number_stream;
 
     // TODO: Get real .zip structure offset
     m_structOffset = 0;
 
     // Current directory starts at root
-    m_curDirEntry = &m_root;
-    m_root.parent = NULL;
+    m_curDirEntry = &m_rootDir;
+    m_rootDir.parent = NULL;
 
     // Create temporary storage
-    stream << sysTmpCnt++;
+    number_stream << sysTmpCnt++;
 
     std::string dirName( "/" );
-    dirName += stream.str();
-    dirName += "/"; 
+    dirName += number_stream.str();
+    dirName += "/";
 
     sysTmpRoot->CreateDir( dirName.c_str() );
     sysTmpRoot->GetFullPathFromRoot( dirName.c_str(), false, path );
@@ -152,10 +156,10 @@ CArchiveFileTranslator::CArchiveFileTranslator( CFile& file ) : m_file( file ), 
     m_realtimeRoot = fileSystem->CreateTranslator( path + "realtime/" );
 }
 
-CArchiveFileTranslator::~CArchiveFileTranslator()
+CArchiveFileTranslator::~CArchiveFileTranslator( void )
 {
     filePath path;
-    m_fileRoot->GetFullPath( "/", false, path );
+    m_fileRoot->GetFullPath( "", false, path );
 
     delete m_unpackRoot;
     delete m_realtimeRoot;
@@ -203,12 +207,12 @@ bool CArchiveFileTranslator::WriteData( const char *path, const char *buffer, si
 bool CArchiveFileTranslator::CreateDir( const char *path )
 {
     dirTree tree;
-    bool file;
+    bool isFile;
 
-    if ( !GetRelativePathTree( path, tree, file ) )
+    if ( !GetRelativePathTree( path, tree, isFile ) )
         return false;
 
-    if ( file )
+    if ( isFile )
         tree.pop_back();
 
     _CreateDirTree( *m_curDirEntry, tree );
@@ -334,7 +338,7 @@ bool CArchiveFileTranslator::Delete( const char *path )
             return false;
 
         delete dir;
-        
+
         return true;
     }
 
@@ -375,7 +379,7 @@ bool CArchiveFileTranslator::Copy( const char *src, const char *dst )
     dstEntry->externalAttr = srcEntry->externalAttr;
     dstEntry->extra = srcEntry->extra;
     dstEntry->comment = srcEntry->comment;
-    
+
     if ( !srcEntry->cached )
     {
         dstEntry->version = srcEntry->version;
@@ -411,6 +415,7 @@ bool CArchiveFileTranslator::Copy( const char *src, const char *dst )
 
 bool CArchiveFileTranslator::Rename( const char *src, const char *dst )
 {
+    // TODO: add directory support.
     file *entry = (file*)GetFileEntry( src );
 
     if ( !entry )
@@ -506,12 +511,12 @@ bool CArchiveFileTranslator::ReadToBuffer( const char *path, std::vector <char>&
 bool CArchiveFileTranslator::ChangeDirectory( const char *path )
 {
     dirTree tree;
-    bool file;
+    bool isFile;
 
-    if ( !GetRelativePathTreeFromRoot( path, tree, file ) )
+    if ( !GetRelativePathTreeFromRoot( path, tree, isFile ) )
         return false;
 
-    if ( file )
+    if ( isFile )
         tree.pop_back();
 
     directory *dir = (directory*)GetDirTree( tree );
@@ -527,9 +532,82 @@ bool CArchiveFileTranslator::ChangeDirectory( const char *path )
     return true;
 }
 
-void CArchiveFileTranslator::ScanDirectory( const char *directory, const char *wildcard, bool recurse, pathCallback_t dirCallback, pathCallback_t fileCallback, void *userdata ) const
+static AINLINE void _ScanDirectory( const CArchiveFileTranslator *trans, const dirTree& tree, CArchiveFileTranslator::directory *dir, filePattern_t *pattern, bool recurse, pathCallback_t dirCallback, pathCallback_t fileCallback, void *userdata )
 {
+    // First scan for files.
+    if ( fileCallback )
+    {
+        for ( CArchiveFileTranslator::fileList::const_iterator iter = dir->files.begin(); iter != dir->files.end(); iter++ )
+        {
+            CArchiveFileTranslator::file *item = *iter;
 
+            if ( _File_MatchPattern( item->name.c_str(), pattern ) )
+            {
+                filePath abs_path = "/";
+                _File_OutputPathTree( tree, false, abs_path );
+
+                fileCallback( abs_path, userdata );
+            }
+        }
+    }
+
+    // Continue with the directories
+    if ( dirCallback || recurse )
+    {
+        for ( CArchiveFileTranslator::directory::subDirs::const_iterator iter = dir->children.begin(); iter != dir->children.end(); iter++ )
+        {
+            CArchiveFileTranslator::directory *item = *iter;
+
+            filePath abs_path = "/";
+            _File_OutputPathTree( tree, false, abs_path );
+
+            if ( dirCallback && _File_MatchPattern( item->name, pattern ) )
+            {
+                dirCallback( abs_path, userdata );
+            }
+
+            if ( recurse )
+            {
+                dirTree newTree = tree;
+                newTree.push_back( item->name );
+
+                _ScanDirectory( trans, newTree, item, pattern, recurse, dirCallback, fileCallback, userdata );
+            }
+        }
+    }
+}
+
+void CArchiveFileTranslator::ScanDirectory( const char *dirPath, const char *wildcard, bool recurse, pathCallback_t dirCallback, pathCallback_t fileCallback, void *userdata ) const
+{
+    dirTree tree;
+    bool isFile;
+
+    if ( !GetRelativePathTreeFromRoot( dirPath, tree, isFile ) )
+        return;
+
+    if ( isFile )
+        tree.pop_back();
+
+    directory *dir = (directory*)GetDirTree( tree );
+
+    if ( !dir )
+        return;
+    
+    // Create a cached file pattern.
+    filePattern_t *pattern = _File_CreatePattern( wildcard );
+
+    try
+    {
+        _ScanDirectory( this, tree, dir, pattern, recurse, dirCallback, fileCallback, userdata );
+    }
+    catch( ... )
+    {
+        // Any exception may be thrown; we have to clean up.
+        _File_DestroyPattern( pattern );
+        throw;
+    }
+
+    _File_DestroyPattern( pattern );
 }
 
 static void _scanFindCallback( const filePath& path, std::vector <filePath> *output )
@@ -647,7 +725,7 @@ void CArchiveFileTranslator::ReadFiles( unsigned int count )
             tree.pop_back();
 
             // Deposit in the correct directory
-            file& entry = _CreateDirTree( m_root, tree ).AddFile( name );
+            file& entry = _CreateDirTree( m_rootDir, tree ).AddFile( name );
 
             // Store attributes
             entry.version = header.version;
@@ -679,7 +757,7 @@ void CArchiveFileTranslator::ReadFiles( unsigned int count )
         }
         else
         {
-            _CreateDirTree( m_root, tree );
+            _CreateDirTree( m_rootDir, tree );
 
             m_file.Seek( header.commentLen + header.extraLen, SEEK_CUR );
         }
@@ -701,7 +779,7 @@ inline void CArchiveFileTranslator::seekFile( const file& info, _localHeader& he
 
 struct zip_inflate_decompression
 {
-    zip_inflate_decompression()
+    zip_inflate_decompression( void )
     {
         m_stream.zalloc = NULL;
         m_stream.zfree = NULL;
@@ -711,7 +789,7 @@ struct zip_inflate_decompression
             throw;
     }
 
-    ~zip_inflate_decompression()
+    ~zip_inflate_decompression( void )
     {
         inflateEnd( &m_stream );
     }
@@ -783,8 +861,6 @@ CArchiveTranslator* CFileSystem::CreateZIPArchive( CFile& file )
 
 CArchiveTranslator* CFileSystem::OpenArchive( CFile& file )
 {
-    size_t size = file.GetSize();
-
     if ( !FileSystem::MappedReaderReverse <char [1024]>( file, zip_mapped_rdircheck() ) )
         return NULL;
 
@@ -861,7 +937,7 @@ struct zip_stream_compression
 
     inline bool parse( char *buf, size_t size, size_t& sout )
     {
-        size_t toWrite = min( size, m_rcv );
+        size_t toWrite = std::min( size, m_rcv );
         memcpy( buf, m_buf, toWrite );
 
         m_header.sizeCompressed += toWrite;
@@ -1057,23 +1133,23 @@ unsigned int CArchiveFileTranslator::BuildCentralFileHeaders( const directory& d
     return cnt;
 }
 
-void CArchiveFileTranslator::Save()
+void CArchiveFileTranslator::Save( void )
 {
     if ( !m_file.IsWriteable() )
         return;
 
     // Cache the .zip content
-    CacheDirectory( m_root );
+    CacheDirectory( m_rootDir );
 
     // Rewrite the archive
     m_file.Seek( m_structOffset, SEEK_SET );
 
     size_t fileSize = 0;
-    SaveDirectory( m_root, fileSize );
+    SaveDirectory( m_rootDir, fileSize );
 
     // Create the central directory
     size_t centralSize = 0;
-    unsigned int entryCount = BuildCentralFileHeaders( m_root, centralSize );
+    unsigned int entryCount = BuildCentralFileHeaders( m_rootDir, centralSize );
 
     // Finishing entry
     m_file.WriteInt( ZIP_SIGNATURE );
@@ -1094,15 +1170,51 @@ void CArchiveFileTranslator::Save()
     m_file.SetSeekEnd();
 }
 
-void CFileSystem::InitZIP()
+bool _File_CreateDirectory( const char *osPath )
 {
-    char buf[1024];
+#ifdef __linux__
+    if ( mkdir( osPath, FILE_ACCESS_FLAG ) == 0 )
+        return true;
+
+    switch( errno )
+    {
+    case EEXIST:
+    case 0:
+        return true;
+    }
+
+    return false;
+#elif defined(_WIN32)
+    return CreateDirectory( osPath, NULL ) != FALSE;
+#else
+    return false;
+#endif //OS DEPENDANT CODE
+}
+
+void CFileSystem::InitZIP( void )
+{
     filePath tmpDir;
 
 #ifdef _WIN32
+    char buf[1024];
+
     GetTempPath( sizeof( buf ), buf );
     tmpDir = buf;
     tmpDir += '/';
+#elif defined(__linux__)
+    const char *dir = getenv("TEMPDIR");
+
+    if ( !dir )
+        tmpDir = "/tmp";
+    else
+        tmpDir = dir;
+
+    tmpDir += '/';
+
+    // On linux we cannot be sure that our directory exists.
+    if ( !_File_CreateDirectory( tmpDir.c_str() ) )
+        exit( 7098 );
+#endif //OS DEPENDANT CODE
 
     sysTmp = CreateTranslator( tmpDir.c_str() );
 
@@ -1115,17 +1227,17 @@ void CFileSystem::InitZIP()
     tmpDir += stream.str();
     tmpDir += "_/";
 
-    CreateDirectory( tmpDir.c_str(), NULL );
-#endif //_WIN32
+    // Make sure the temporary directory exists.
+    _File_CreateDirectory( tmpDir.c_str() );
 
     // Create the .zip temporary root
     sysTmpRoot = CreateTranslator( tmpDir.c_str() );
 }
 
-void CFileSystem::DestroyZIP()
+void CFileSystem::DestroyZIP( void )
 {
     filePath tmpDir;
-    sysTmpRoot->GetFullPath( "/", false, tmpDir );
+    sysTmpRoot->GetFullPath( "", false, tmpDir );
 
     delete sysTmpRoot;
 

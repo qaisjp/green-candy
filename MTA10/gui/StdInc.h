@@ -2,6 +2,9 @@
 
 #include <CEGUI.h>
 
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+
 #include <windows.h>
 
 //#define USE_HEAP_DEBUGGING

@@ -30,4 +30,10 @@ namespace LuaFunctionDefs
 
         return 1;
     }
+
+    LUA_DECLARE( getRuntimeResource )
+    {
+        lua_readcontext( L )->GetResource()->PushStack( L );
+        return 1;
+    }
 }

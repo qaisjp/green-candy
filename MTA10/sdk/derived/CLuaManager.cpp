@@ -81,7 +81,6 @@ static void LoadCFunctions( lua_State *L )
     // Output functions
     LUA_REGISTER( L, outputConsole );
     LUA_REGISTER( L, outputChatBox );
-    LUA_REGISTER( L, outputDebugString );
     LUA_REGISTER( L, enableChat );
     LUA_REGISTER( L, isChatEnabled );
     LUA_REGISTER( L, showChat );

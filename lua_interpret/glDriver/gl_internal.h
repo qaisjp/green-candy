@@ -17,6 +17,7 @@
 #include <gl/glext.h>
 #include "gl_func.h"
 #include "gl_texture.h"
+#include "gl_shading.h"
 #include "gl_context.h"
 #include "gl_fbo.h"
 #include "gl_enum.h"

@@ -228,11 +228,11 @@ public:
 #define MAX_IPL         256
 
 // Rockstar's inheritance trick; keep these chains updated!
-#define MAX_VEHICLE_SIZE ( max(sizeof(CHeliSAInterface),max(sizeof(CTrainSAInterface),max(sizeof(CAutomobileSAInterface),max(sizeof(CBikeSAInterface),max(sizeof(CBicycleSAInterface),max(sizeof(CPlaneSAInterface),max(sizeof(CBoatSAInterface),max(sizeof(CAutomobileTrailerSAInterface),max(sizeof(CQuadBikeSAInterface),sizeof(CMonsterTruckSAInterface)))))))))) )
+#define MAX_VEHICLE_SIZE ( MAX(sizeof(CHeliSAInterface),MAX(sizeof(CTrainSAInterface),MAX(sizeof(CAutomobileSAInterface),MAX(sizeof(CBikeSAInterface),MAX(sizeof(CBicycleSAInterface),MAX(sizeof(CPlaneSAInterface),MAX(sizeof(CBoatSAInterface),MAX(sizeof(CAutomobileTrailerSAInterface),MAX(sizeof(CQuadBikeSAInterface),sizeof(CMonsterTruckSAInterface)))))))))) )
 
-#define MAX_PED_SIZE ( max(sizeof(CPedSAInterface),max(sizeof(CPlayerPedSAInterface),sizeof(CCivilianPedSAInterface))) )
+#define MAX_PED_SIZE ( MAX(sizeof(CPedSAInterface),MAX(sizeof(CPlayerPedSAInterface),sizeof(CCivilianPedSAInterface))) )
 
-#define MAX_OBJECT_SIZE ( max(sizeof(CObjectSAInterface),sizeof(CProjectileSAInterface)) )
+#define MAX_OBJECT_SIZE ( MAX(sizeof(CObjectSAInterface),sizeof(CProjectileSAInterface)) )
 
 typedef CPool <CVehicleComponentInfoSAInterface, 500> CVehicleComponentInfoPool;
 typedef CPool <CColModelSAInterface, 20000> CColModelPool;
@@ -303,14 +303,14 @@ extern CSpecMapMaterialPool** ppSpecMapMaterialPool;
 
 // MTA pools; lets use the trick ourselves, shall we? :P
 // Do not forget to extend this chain once new interfaces are spotted!
-#define MAX_MTA_VEHICLE_SIZE ( max(sizeof(CVehicleSA),max(sizeof(CTrainSA),max(sizeof(CPlaneSA),max(sizeof(CHeliSA),max(sizeof(CBikeSA),max(sizeof(CBicycleSA),max(sizeof(CAutomobileTrailerSA),max(sizeof(CBoatSA),max(sizeof(CQuadBikeSA),sizeof(CMonsterTruckSA)))))))))) )
+#define MAX_MTA_VEHICLE_SIZE ( MAX(sizeof(CVehicleSA),MAX(sizeof(CTrainSA),MAX(sizeof(CPlaneSA),MAX(sizeof(CHeliSA),MAX(sizeof(CBikeSA),MAX(sizeof(CBicycleSA),MAX(sizeof(CAutomobileTrailerSA),MAX(sizeof(CBoatSA),MAX(sizeof(CQuadBikeSA),sizeof(CMonsterTruckSA)))))))))) )
 
-#define MAX_MTA_PED_SIZE ( max(sizeof(CPedSA),max(sizeof(CPlayerPedSA),sizeof(CCivilianPedSA))) )
+#define MAX_MTA_PED_SIZE ( MAX(sizeof(CPedSA),MAX(sizeof(CPlayerPedSA),sizeof(CCivilianPedSA))) )
 
-#define MAX_MTA_OBJECT_SIZE ( max(sizeof(CObjectSA),sizeof(CProjectileSA)) )
+#define MAX_MTA_OBJECT_SIZE ( MAX(sizeof(CObjectSA),sizeof(CProjectileSA)) )
 
 // this thing doesnt work! compiler error [out of memory/too complex]
-//#define MAX_MTA_TASK_SIZE ( max(MAX_PHYSICAL_TASK_SIZE, max(MAX_CAR_TASK_SIZE, max(MAX_CAR_UTIL_TASK_SIZE, max(MAX_GOTO_TASK_SIZE, max(MAX_ACTION_TASK_SIZE, max(sizeof(CTaskSimpleDuckSA), max(sizeof(CTaskSimpleSA), max(sizeof(CTaskComplexSA), max(MAX_BASIC_TASK_SIZE, MAX_ATTACK_TASK_SIZE))))))))) )
+//#define MAX_MTA_TASK_SIZE ( MAX(MAX_PHYSICAL_TASK_SIZE, MAX(MAX_CAR_TASK_SIZE, MAX(MAX_CAR_UTIL_TASK_SIZE, MAX(MAX_GOTO_TASK_SIZE, MAX(MAX_ACTION_TASK_SIZE, MAX(sizeof(CTaskSimpleDuckSA), MAX(sizeof(CTaskSimpleSA), MAX(sizeof(CTaskComplexSA), MAX(MAX_BASIC_TASK_SIZE, MAX_ATTACK_TASK_SIZE))))))))) )
 
 typedef CPool <CVehicleSA, MAX_VEHICLES, MAX_MTA_VEHICLE_SIZE> CMTAVehiclePool;
 typedef CPool <CPedSA, MAX_PEDS, MAX_MTA_PED_SIZE> CMTAPedPool;

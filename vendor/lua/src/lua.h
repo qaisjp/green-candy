@@ -224,7 +224,8 @@ LUA_API void  (lua_pushlightuserdata) (lua_State *L, void *p);
 LUA_API int   (lua_pushthread) (lua_State *L);
 LUA_API int   (lua_pushthreadex) (lua_State *L, lua_State *thread);
 
-#define lua_pushcstring( L, str ) lua_pushlstring( L, str, sizeof(str) )
+// -1 to remove the NULL-termination!
+#define lua_pushcstring( L, str ) lua_pushlstring( L, str, sizeof(str) - 1 )
 
 
 /*

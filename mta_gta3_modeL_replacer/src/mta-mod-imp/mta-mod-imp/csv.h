@@ -36,4 +36,8 @@ private:
 	char**			m_row;
 };
 
+// Global defines
+CCSV*   CreateCSV( const char *filename );
+CCSV*	LoadCSV(const char *filename);
+
 #endif

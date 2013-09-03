@@ -61,4 +61,6 @@ private:
 	CCSV*	m_csv;
 };
 
+CIDE*	LoadIDE(const char *filename);
+
 #endif

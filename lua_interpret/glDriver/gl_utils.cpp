@@ -138,11 +138,31 @@ static LUA_DECLARE( alphaFunc )
     LUA_SUCCESS;
 }
 
+static LUA_DECLARE( getParamNames )
+{
+    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
+
+    gl_parameters::PushAvailableParams( L, driver );
+
+    return 1;
+}
+
+static LUA_DECLARE( getCapabilityNames )
+{
+    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
+
+    gl_capabilities::PushAvailableParams( L, driver );
+
+    return 1;
+}
+
 const luaL_Reg driver_util_interface[] =
 {
     LUA_METHOD( cullFace ),
     LUA_METHOD( shadeModel ),
     LUA_METHOD( blendFunc ),
     LUA_METHOD( alphaFunc ),
+    LUA_METHOD( getParamNames ),
+    LUA_METHOD( getCapabilityNames ),
     { NULL, NULL }
 };

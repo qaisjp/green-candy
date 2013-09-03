@@ -100,6 +100,28 @@ static LUA_DECLARE( getClientRect )
     return 4;
 }
 
+static LUA_DECLARE( getClientOffset )
+{
+    POINT pt;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( pt.x, 0 );
+    argStream.ReadNumber( pt.y, 0 );
+    LUA_ARGS_END;
+
+    Win32Dialog *dlg = (Win32Dialog*)lua_getmethodtrans( L );
+
+    if ( ScreenToClient( dlg->handle, &pt ) != TRUE )
+    {
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    lua_pushnumber( L, pt.x );
+    lua_pushnumber( L, pt.y );
+    return 2;
+}
+
 static LUA_DECLARE( setVisible )
 {
     bool visible;
@@ -165,6 +187,221 @@ static LUA_DECLARE( update )
     return 0;
 }
 
+static bool GetKeyNameFromCode( unsigned int code, std::string& keyName )
+{
+    switch( code )
+    {
+    case VK_LBUTTON:    keyName = "mouse1"; break;
+    case VK_RBUTTON:    keyName = "mouse2"; break;
+    case VK_CANCEL:     keyName = "cbreak"; break;
+    case VK_MBUTTON:    keyName = "mouse3"; break;
+    case VK_XBUTTON1:   keyName = "mouse4"; break;
+    case VK_XBUTTON2:   keyName = "mouse5"; break;
+    case VK_BACK:       keyName = "backspace"; break;
+    case VK_TAB:        keyName = "tab"; break;
+    case VK_CLEAR:      keyName = "clear"; break;
+    case VK_RETURN:     keyName = "enter"; break;
+    case VK_SHIFT:      keyName = "shift"; break;
+    case VK_CONTROL:    keyName = "ctrl"; break;
+    case VK_MENU:       keyName = "menu"; break;
+    case VK_PAUSE:      keyName = "pause"; break;
+    case VK_CAPITAL:    keyName = "capslock"; break;
+    case VK_KANA:       keyName = "kana"; break;
+    case VK_JUNJA:      keyName = "junja"; break;
+    case VK_FINAL:      keyName = "final"; break;
+    case VK_HANJA:      keyName = "hanja"; break;
+    //case VK_KANJI:      keyName = "kanji"; break;
+    case VK_ESCAPE:     keyName = "escape"; break;
+    case VK_CONVERT:    keyName = "convert"; break;
+    case VK_NONCONVERT: keyName = "nonconvert"; break;
+    case VK_ACCEPT:     keyName = "accept"; break;
+    case VK_MODECHANGE: keyName = "modechange"; break;
+    case VK_SPACE:      keyName = "space"; break;
+    case VK_PRIOR:      keyName = "pgup"; break;
+    case VK_NEXT:       keyName = "pgdn"; break;
+    case VK_END:        keyName = "end"; break;
+    case VK_HOME:       keyName = "home"; break;
+    case VK_LEFT:       keyName = "arrow_l"; break;
+    case VK_UP:         keyName = "arrow_u"; break;
+    case VK_RIGHT:      keyName = "arrow_r"; break;
+    case VK_DOWN:       keyName = "arrow_d"; break;
+    case VK_SELECT:     keyName = "select"; break;
+    case VK_PRINT:      keyName = "print"; break;
+    case VK_EXECUTE:    keyName = "execute"; break;
+    case VK_SNAPSHOT:   keyName = "printscr"; break;
+    case VK_INSERT:     keyName = "insert"; break;
+    case VK_DELETE:     keyName = "delete"; break;
+    case VK_HELP:       keyName = "help"; break;
+    case '0':           keyName = "0"; break;
+    case '1':           keyName = "1"; break;
+    case '2':           keyName = "2"; break;
+    case '3':           keyName = "3"; break;
+    case '4':           keyName = "4"; break;
+    case '5':           keyName = "5"; break;
+    case '6':           keyName = "6"; break;
+    case '7':           keyName = "7"; break;
+    case '8':           keyName = "8"; break;
+    case '9':           keyName = "9"; break;
+    case 'A':           keyName = "a"; break;
+    case 'B':           keyName = "b"; break;
+    case 'C':           keyName = "c"; break;
+    case 'D':           keyName = "d"; break;
+    case 'E':           keyName = "e"; break;
+    case 'F':           keyName = "f"; break;
+    case 'G':           keyName = "g"; break;
+    case 'H':           keyName = "h"; break;
+    case 'I':           keyName = "i"; break;
+    case 'J':           keyName = "j"; break;
+    case 'K':           keyName = "k"; break;
+    case 'L':           keyName = "l"; break;
+    case 'M':           keyName = "m"; break;
+    case 'N':           keyName = "n"; break;
+    case 'O':           keyName = "o"; break;
+    case 'P':           keyName = "p"; break;
+    case 'Q':           keyName = "q"; break;
+    case 'R':           keyName = "r"; break;
+    case 'S':           keyName = "s"; break;
+    case 'T':           keyName = "t"; break;
+    case 'U':           keyName = "u"; break;
+    case 'V':           keyName = "v"; break;
+    case 'W':           keyName = "w"; break;
+    case 'X':           keyName = "x"; break;
+    case 'Y':           keyName = "y"; break;
+    case 'Z':           keyName = "z"; break;
+    case VK_LWIN:       keyName = "lwin"; break;
+    case VK_RWIN:       keyName = "rwin"; break;
+    case VK_APPS:       keyName = "apps"; break;
+    case VK_SLEEP:      keyName = "sleep"; break;
+    case VK_NUMPAD0:    keyName = "num_0"; break;
+    case VK_NUMPAD1:    keyName = "num_1"; break;
+    case VK_NUMPAD2:    keyName = "num_2"; break;
+    case VK_NUMPAD3:    keyName = "num_3"; break;
+    case VK_NUMPAD4:    keyName = "num_4"; break;
+    case VK_NUMPAD5:    keyName = "num_5"; break;
+    case VK_NUMPAD6:    keyName = "num_6"; break;
+    case VK_NUMPAD7:    keyName = "num_7"; break;
+    case VK_NUMPAD8:    keyName = "num_8"; break;
+    case VK_NUMPAD9:    keyName = "num_9"; break;
+    case VK_MULTIPLY:   keyName = "num_mul"; break;
+    case VK_ADD:        keyName = "num_add"; break;
+    case VK_SEPARATOR:  keyName = "num_sep"; break;
+    case VK_SUBTRACT:   keyName = "num_sub"; break;
+    case VK_DECIMAL:    keyName = "num_dec"; break;
+    case VK_DIVIDE:     keyName = "num_div"; break;
+    case VK_F1:         keyName = "f1"; break;
+    case VK_F2:         keyName = "f2"; break;
+    case VK_F3:         keyName = "f3"; break;
+    case VK_F4:         keyName = "f4"; break;
+    case VK_F5:         keyName = "f5"; break;
+    case VK_F6:         keyName = "f6"; break;
+    case VK_F7:         keyName = "f7"; break;
+    case VK_F8:         keyName = "f8"; break;
+    case VK_F9:         keyName = "f9"; break;
+    case VK_F10:        keyName = "f10"; break;
+    case VK_F11:        keyName = "f11"; break;
+    case VK_F12:        keyName = "f12"; break;
+    case VK_F13:        keyName = "f13"; break;
+    case VK_F14:        keyName = "f14"; break;
+    case VK_F15:        keyName = "f15"; break;
+    case VK_F16:        keyName = "f16"; break;
+    case VK_F17:        keyName = "f17"; break;
+    case VK_F18:        keyName = "f18"; break;
+    case VK_F19:        keyName = "f19"; break;
+    case VK_F20:        keyName = "f20"; break;
+    case VK_F21:        keyName = "f21"; break;
+    case VK_F22:        keyName = "f22"; break;
+    case VK_F23:        keyName = "f23"; break;
+    case VK_F24:        keyName = "f24"; break;
+    case VK_NUMLOCK:    keyName = "num_lock"; break;
+    case VK_SCROLL:     keyName = "scroll"; break;
+    case VK_LSHIFT:     keyName = "lshift"; break;
+    case VK_RSHIFT:     keyName = "rshift"; break;
+    case VK_LCONTROL:   keyName = "lctrl"; break;
+    case VK_RCONTROL:   keyName = "rctrl"; break;
+    case VK_LMENU:      keyName = "lmenu"; break;
+    case VK_RMENU:      keyName = "rmenu"; break;
+    case VK_BROWSER_BACK:   keyName = "browser_back"; break;
+    case VK_BROWSER_FORWARD:    keyName = "browser_forward"; break;
+    case VK_BROWSER_REFRESH:    keyName = "browser_refresh"; break;
+    case VK_BROWSER_STOP:   keyName = "browser_stop"; break;
+    case VK_BROWSER_SEARCH: keyName = "browser_search"; break;
+    case VK_BROWSER_FAVORITES:  keyName = "browser_fav"; break;
+    case VK_BROWSER_HOME:   keyName = "browser_home"; break;
+    case VK_VOLUME_MUTE:    keyName = "vol_mute"; break;
+    case VK_VOLUME_DOWN:    keyName = "vol_down"; break;
+    case VK_VOLUME_UP:  keyName = "vol_up"; break;
+    case VK_MEDIA_NEXT_TRACK:   keyName = "next_track"; break;
+    case VK_MEDIA_PREV_TRACK:   keyName = "prev_track"; break;
+    case VK_MEDIA_STOP: keyName = "media_stop"; break;
+    case VK_MEDIA_PLAY_PAUSE:   keyName = "media_playpause"; break;
+    case VK_LAUNCH_MAIL:    keyName = "launch_mail"; break;
+    case VK_LAUNCH_MEDIA_SELECT:    keyName = "launch_media_select"; break;
+    case VK_LAUNCH_APP1:    keyName = "launch_app1"; break;
+    case VK_LAUNCH_APP2:    keyName = "launch_app2"; break;
+    case VK_OEM_1:      keyName = "oem_1"; break;
+    case VK_OEM_PLUS:   keyName = "oem_plus"; break;
+    case VK_OEM_COMMA:  keyName = "oem_comma"; break;
+    case VK_OEM_MINUS:  keyName = "oem_minus"; break;
+    case VK_OEM_PERIOD: keyName = "oem_period"; break;
+    case VK_OEM_2:      keyName = "oem_2"; break;
+    case VK_OEM_3:      keyName = "oem_3"; break;
+    case VK_OEM_4:      keyName = "oem_4"; break;
+    case VK_OEM_5:      keyName = "oem_5"; break;
+    case VK_OEM_6:      keyName = "oem_6"; break;
+    case VK_OEM_7:      keyName = "oem_7"; break;
+    case VK_OEM_8:      keyName = "oem_8"; break;
+    case VK_OEM_102:    keyName = "oem_102"; break;
+    case VK_PROCESSKEY: keyName = "process"; break;
+    case VK_ATTN:       keyName = "attn"; break;
+    case VK_CRSEL:      keyName = "crsel"; break;
+    case VK_EXSEL:      keyName = "exsel"; break;
+    case VK_EREOF:      keyName = "ereof"; break;
+    case VK_PLAY:       keyName = "play"; break;
+    case VK_ZOOM:       keyName = "zoom"; break;
+    case VK_NONAME:     keyName = "noname"; break;
+    case VK_PA1:        keyName = "pa1"; break;
+    case VK_OEM_CLEAR:  keyName = "clear"; break;
+    default:            return false;
+    }
+
+    return true;
+}
+
+static bool GetCodeFromKeyName( const std::string& keyName, unsigned int& code )
+{
+    for ( unsigned int n = 0; n < 256; n++ )
+    {
+        std::string _keyName;
+
+        if ( GetKeyNameFromCode( n, _keyName ) && _keyName == keyName )
+        {
+            code = n;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static LUA_DECLARE( getKeyState )
+{
+    std::string keyName;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadString( keyName );
+    LUA_ARGS_END;
+
+    unsigned int keyCode;
+
+    LUA_CHECK( GetCodeFromKeyName( keyName, keyCode ) );
+
+    Win32Dialog *dlg = (Win32Dialog*)lua_getmethodtrans( L );
+    Win32Dialog::keyState_t& state = dlg->keyStates[keyCode];
+
+    lua_pushboolean( L, state.isDown );
+    return 1;
+}
+
 static const luaL_Reg dialog_interface[] =
 {
     LUA_METHOD( setPosition ),
@@ -173,10 +410,12 @@ static const luaL_Reg dialog_interface[] =
     LUA_METHOD( getRect ),
     LUA_METHOD( getClientSize ),
     LUA_METHOD( getClientRect ),
+    LUA_METHOD( getClientOffset ),
     LUA_METHOD( setVisible ),
     LUA_METHOD( getText ),
     LUA_METHOD( setText ),
     LUA_METHOD( update ),
+    LUA_METHOD( getKeyState ),
     { NULL, NULL }
 };
 
@@ -251,6 +490,50 @@ LRESULT CALLBACK DialogProcedure( HWND myWindow, UINT msg, WPARAM wparam, LPARAM
         return 0;
 	case WM_APPCOMMAND:
 		break;
+    case WM_KEYDOWN:
+        {
+            Win32Dialog::keyState_t& state = dlg->keyStates[wparam];
+            state.isDown = true;
+
+            std::string keyName;
+
+            if ( GetKeyNameFromCode( wparam, keyName ) )
+            {
+                dlg->PushMethod( L, "triggerEvent" );
+                lua_pushcstring( L, "onKey" );
+                lua_pushlstring( L, keyName.c_str(), keyName.size() );
+                lua_pushboolean( L, true );
+                lua_call( L, 3, 0 );
+            }
+        }
+        break;
+    case WM_KEYUP:
+        {
+            Win32Dialog::keyState_t& state = dlg->keyStates[wparam];
+            state.isDown = false;
+
+            std::string keyName;
+
+            if ( GetKeyNameFromCode( wparam, keyName ) )
+            {
+                dlg->PushMethod( L, "triggerEvent" );
+                lua_pushcstring( L, "onKey" );
+                lua_pushlstring( L, keyName.c_str(), keyName.size() );
+                lua_pushboolean( L, false );
+                lua_call( L, 3, 0 );
+            }
+        }
+        break;
+    case WM_CHAR:
+        {
+            char charCode[1] = { wparam };
+
+            dlg->PushMethod( L, "triggerEvent" );
+            lua_pushcstring( L, "onInput" );
+            lua_pushlstring( L, charCode, 1 );
+            lua_call( L, 2, 0 );
+        }
+        break;
 	case WM_CLOSE:
         {
             dlg->PushMethod( L, "triggerEvent" );
@@ -289,6 +572,8 @@ Win32Dialog::Win32Dialog( lua_State *L, unsigned int w, unsigned int h ) : LuaCl
         "onFocus",
         "onBlur",
         "onPaint",
+        "onKey",
+        "onInput",
         "onClose",
         "onDestruction"
     };

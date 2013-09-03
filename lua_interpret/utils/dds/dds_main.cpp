@@ -60,7 +60,7 @@ __forceinline void AdjustDXTImage( void *dst, void *src, unsigned int& width, un
     unsigned int _width = width;
     unsigned int _height = height;
 
-    unsigned int pitch = max( 1, ((_width+3)/4) ) * sizeof( blockType );
+    unsigned int pitch = std::max( (unsigned int)1, ((_width+3)/4) ) * sizeof( blockType );
 
     blockType *srcData = (blockType*)src;
     blockType *dstData = (blockType*)dst;

@@ -1,4 +1,4 @@
-#include "../main.h"
+#include "../StdInc.h"
 
 static const char *pServerHeader=
 	"-- Automatically generated server script by MTASA map IPL map converter\n" \
@@ -12,7 +12,7 @@ static const char *pMapEntry=
 	"	<object id=\"%s\" dimension=\"0\" interior=\"0\" model=\"%u\" posX=\"%f\" posY=\"%f\" posZ=\"%f\" ";
 static const char *pMapEntry2=
 	"rotX=\"%u\" rotY=\"%u\" rotZ=\"%u\" />\n";
-static char *pMapEnd=
+static const char *pMapEnd=
 	"</map>\n";
 
 static const char *pMetaHeader=
@@ -32,7 +32,15 @@ static const char *txdName;
 static const char *colName;
 static unsigned short usTxdNames = 0;
 static char lodBuffer[128];
-static FILE *pMetaFile;
+static CFile *pMetaFile;
+
+inline bool _CopyOnlyIfRequired( const char *src, const char *dst )
+{
+    if ( fileRoot->Exists( dst ) )
+        return false;
+
+    return fileRoot->Copy( src, dst );
+}
 
 static inline bool AllocateResources( const char *name, bool lod )
 {
@@ -41,41 +49,41 @@ static inline bool AllocateResources( const char *name, bool lod )
 	unsigned int k;
 
 	// Copy the model file
-	_snprintf(buffer, 1023, "..\\resources\\%s.dff", name);
+	_snprintf(buffer, 1023, "resources\\%s.dff", name);
 
-	if (!FileExists(buffer))
+	if (!fileRoot->Exists(buffer))
 	{
 		printf("error: model missing (%s)\n", buffer);
 		return false;
 	}
 
-	_snprintf(copyBuffer, 1023, "..\\output\\models\\%s.dff", name);
+	_snprintf(copyBuffer, 1023, "output\\models\\%s.dff", name);
 
-	if (CopyFile(buffer, copyBuffer, true))
+	if (_CopyOnlyIfRequired(buffer, copyBuffer))
 		printf("copying model '%s'\n", name);
 
 	if ( !lod )
 	{
 		// Now the collision
-		_snprintf(buffer, 1023, "..\\resources\\%s.col", name);
+		_snprintf(buffer, 1023, "resources\\%s.col", name);
 
-		if ( !FileExists(buffer) )
+		if ( !fileRoot->Exists(buffer) )
 		{
 			if ( !lod )
 			{
 				printf("error: collision missing (%s)\n", buffer);
 				return false;
 			}
-		
+
 			colName = NULL;
 		}
 		else
 		{
 			colName = name;
 
-			_snprintf(copyBuffer, 1023, "..\\output\\coll\\%s.col", colName);
+			_snprintf(copyBuffer, 1023, "output\\coll\\%s.col", colName);
 
-			if (CopyFile(buffer, copyBuffer, true))
+			if (_CopyOnlyIfRequired(buffer, copyBuffer))
 				printf("copying collision '%s'\n", colName);
 		}
 	}
@@ -105,19 +113,19 @@ static inline bool AllocateResources( const char *name, bool lod )
 	if (k == usTxdNames)
 	{
 		// Copy over resources
-		_snprintf(buffer, 1023, "..\\resources\\%s.txd", txdName);
+		_snprintf(buffer, 1023, "resources\\%s.txd", txdName);
 
-		if (!FileExists(buffer))
+		if (!fileRoot->Exists(buffer))
 			printf("texture missing: %s (ignoring)\n", buffer);
 		else
 		{
-			_snprintf(copyBuffer, 1023, "..\\output\\textures\\%s.txd", txdName);
+			_snprintf(copyBuffer, 1023, "output\\textures\\%s.txd", txdName);
 
 			// Copy the resource over
-			if (CopyFile(buffer, copyBuffer, true))
+			if (_CopyOnlyIfRequired(buffer, copyBuffer))
 				printf("copying texture '%s'\n", txdName);
 
-			fprintf( pMetaFile,
+			pMetaFile->Printf(
 				"	<file src=\"textures\\%s.txd\" type=\"client\" />\n", txdName
 			);
 		}
@@ -127,13 +135,13 @@ static inline bool AllocateResources( const char *name, bool lod )
 
 	names[usNames++] = name;
 
-	fprintf( pMetaFile,
+	pMetaFile->Printf(
 		"	<file src=\"models\\%s.dff\" type=\"client\" />\n", name
 	);
 
 	if ( colName )
 	{
-		fprintf( pMetaFile, 
+		pMetaFile->Printf(
 			"	<file src=\"coll\\%s.col\" type=\"client\" />\n", colName
 		);
 	}
@@ -144,9 +152,9 @@ static inline bool AllocateResources( const char *name, bool lod )
 
 bool bundleForGREEN( CINI *config )
 {
-	FILE *pLuaFile;
-	FILE *pMapFile;
-	FILE *pLuaServer;
+	CFile *pLuaFile;
+	CFile *pMapFile;
+	CFile *pLuaServer;
 	CINI::Entry *mainEntry;
 	instanceList_t::iterator iter;
 
@@ -154,7 +162,7 @@ bool bundleForGREEN( CINI *config )
 
 	if ( config && ( mainEntry = config->GetEntry( "MainGREEN" ) ) )
 	{
-		
+
 	}
 	else
 	{
@@ -162,33 +170,33 @@ bool bundleForGREEN( CINI *config )
 	}
 
 	// Create the .lua file
-	pLuaFile=fopen("model_res.lua","w");
-	pMetaFile=fopen("meta.xml","w");
-	pMapFile=fopen("gta3.map","w");
-	pLuaServer=fopen("main_server.lua","w");
+	pLuaFile=g_outputRoot->Open("model_res.lua","w");
+	pMetaFile=g_outputRoot->Open("meta.xml","w");
+	pMapFile=g_outputRoot->Open("gta3.map","w");
+	pLuaServer=g_outputRoot->Open("main_server.lua","w");
 
 	// Init files first
-	fprintf(pMetaFile, pMetaHeader);
-	fprintf(pLuaServer,pServerHeader);
-	fprintf(pMetaFile,pMetaHeaderMap);
-	fwrite(pMapHeader,1,strlen(pMapHeader),pMapFile);
+	pMetaFile->Printf("%s", pMetaHeader);
+	pLuaServer->Printf("%s", pServerHeader);
+	pMetaFile->Printf("%s", pMetaHeaderMap);
+	pMapFile->Write(pMapHeader,1,strlen(pMapHeader));
 
 	if ( doCompile )
-		fprintf(pMetaFile, pMetaHeader2, "script.luac");
+		pMetaFile->Printf(pMetaHeader2, "script.luac");
 	else
-		fprintf(pMetaFile, pMetaHeader2, "script.lua");
+		pMetaFile->Printf(pMetaHeader2, "script.lua");
 
 	if ( lodSupport )
 	{
-		fprintf( pMetaFile,
+		pMetaFile->Printf(
 			"	<file src=\"lod_res.lua\" type=\"client\" />\n"
 		);
 
 		objectList_t::iterator objIter;
-		FILE *lodRes = fopen("lod_res.lua", "w");
+		CFile *lodRes = g_outputRoot->Open("lod_res.lua", "w");
 
 		// LODs are loaded and stay this way
-		fprintf( lodRes, "return {\n" );
+		lodRes->Printf( "return {\n" );
 
 		tableCount = 0;
 
@@ -211,12 +219,12 @@ bool bundleForGREEN( CINI *config )
 			_snprintf( lodBuffer, 127, "%.0f", (*objIter)->m_drawDistance );
 
 			if ( tableCount++ != 0 )
-				fprintf( lodRes, ",\n" );
+				lodRes->Printf( ",\n" );
 
 			lodMap_t::const_iterator lodMapIter = lodMap.find( (*objIter)->m_modelID );
 			CObject *obj = lodMapIter != lodMap.end() ? GetObjectByModel( lodMapIter->second->m_name ) : NULL;
 
-			fprintf( lodRes,
+			lodRes->Printf(
 				"    { %u, \"%s\", \"%s\", \"%s\", %u",
 				(*objIter)->m_realModelID,
 				(*objIter)->m_modelName,
@@ -227,19 +235,19 @@ bool bundleForGREEN( CINI *config )
 
 			if ( colName )
 			{
-				fprintf( lodRes, ", %s", colName );
+				lodRes->Printf( ", %s", colName );
 			}
 
-			fprintf( lodRes, " }" );
+			lodRes->Printf( " }" );
 		}
 
-		fprintf( lodRes, "\n};" );
-		
-		fclose( lodRes );
+		lodRes->Printf( "\n};" );
+
+		delete lodRes;
 	}
 
 	// Write the model information table
-	fprintf( pLuaFile, "return {\n" );
+	pLuaFile->Printf( "return {\n" );
 
 	tableCount = 0;
 
@@ -259,8 +267,8 @@ bool bundleForGREEN( CINI *config )
 		if (m != usNames)
 		{
 			// We add all map entries
-			fprintf(pMapFile, pMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
-			fprintf(pMapFile, pMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
+			pMapFile->Printf(pMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
+			pMapFile->Printf(pMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
 			continue;
 		}
 
@@ -268,8 +276,8 @@ bool bundleForGREEN( CINI *config )
 			continue;
 
 		// We add all map entries
-		fprintf(pMapFile, pMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
-		fprintf(pMapFile, pMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
+		pMapFile->Printf(pMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
+		pMapFile->Printf(pMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
 
 		unsigned short lod = 0;
 
@@ -278,39 +286,39 @@ bool bundleForGREEN( CINI *config )
 
 		// Now LUA
 		if ( tableCount++ != 0 )
-			fprintf( pLuaFile, ",\n" );
+			pLuaFile->Printf( ",\n" );
 
-		fprintf( pLuaFile, 
+		pLuaFile->Printf(
 			"    { model=%u, model_file=\"%s\", txd_file=\"%s\", coll_file=\"%s\", lod=%s", modelIDs[(*iter)->m_modelID], name, txdName, name, lodBuffer
 		);
 
 		if ( lodSupport && lod != 0 )
-			fprintf( pLuaFile, ", lodID=%u }", lod );
+			pLuaFile->Printf( ", lodID=%u }", lod );
 		else
-			fprintf( pLuaFile, " }" );
+			pLuaFile->Printf( " }" );
 	}
 
-	fprintf( pLuaFile, "\n};" );
+	pLuaFile->Printf( "\n};" );
 
-	fprintf(pMapFile, pMapEnd);
+	pMapFile->Printf(pMapEnd);
 
-	fprintf(pLuaServer, pServerEnd);
-	fprintf(pMetaFile, pMetaEnd);
+	pLuaServer->Printf(pServerEnd);
+	pMetaFile->Printf(pMetaEnd);
 	// Close em
-	fclose(pLuaFile);
-	fclose(pMetaFile);
-	fclose(pMapFile);
-
-	SetCurrentDirectory("../");
+	delete pLuaFile;
+	delete pMetaFile;
+	delete pMapFile;
 
 	// Copy over the appropriate model loader
-	CopyFile( "stockpile/green/lod_static.lua", "output/script.lua", false );
+	fileRoot->Copy( "stockpile/green/lod_static.lua", "output/script.lua" );
 
 	if ( doCompile )
 	{
+#ifdef _WIN32
 		system("luac5.1.exe -s -o output/script.luac output/script.lua");
+#endif //OS DEPENDANT CODE
 
-		DeleteFile("output/script.lua");
+		g_outputRoot->Delete("script.lua");
 	}
 
 	return true;

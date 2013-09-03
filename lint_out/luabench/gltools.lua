@@ -195,8 +195,23 @@ function doglextfunclist(path)
 	makeapiloader_ext(path);
 end
 
-function loadParamList()
-	local file = fileOpen("gl/paramlist2.txt");
+local function makelocalconvparamfile(path)
+	local _path, isFile, filename = fileParsePath(path);
+	
+	if not (isFile) then return false; end;
+
+	local froot = file.createTranslator(root.absPath("luaBench/" .. path));
+	
+	if not (froot) then return false; end;
+	
+	local file = root.open(froot.absPath("conv_" .. filename), "w");
+	
+	froot.destroy();
+	return file;
+end
+
+function loadParamList(name)
+	local file = fileOpen(name);
 	
 	if not (file) then
 		error("could not open/find 'gl/paramlist2.txt'");
@@ -231,10 +246,18 @@ local function gout(file, msg)
 	print(msg);
 end
 
-function makeparamget()
-	local params, num = loadParamList();
+function makeparamget(name)
+	local params, num = loadParamList(name);
+    
+    if not (params) then
+        error("failed to obtain parameter list");
+    end
 	
-	local file = fileCreate("gl/conv_paramlist.txt");
+	local file = makelocalconvparamfile(name);
+    
+    if not (file) then
+        error("failed to open conv file");
+    end
 
 	file.write("static const GLparaminfo param_list[] =\n{\n");
 	
@@ -275,7 +298,7 @@ function makeparamget()
 		
 		file.write(
 [[lua_pushlstring( L, "]] .. param.name .. [[", ]] .. #param.name .. [[ );
-lua_rawseti( L, -2, ]] .. n .. [[ );
+lua_rawseti( L, -2, n++ );
 ]]);
 		
 		n = n + 1;
@@ -284,27 +307,18 @@ lua_rawseti( L, -2, ]] .. n .. [[ );
 	file.destroy();
 end
 
-local function makelocalconvparamfile(path)
-	local _path, isFile, filename = fileParsePath(path);
-	
-	if not (isFile) then return false; end;
-
-	local froot = file.createTranslator(root.absPath("luaBench/" .. path));
-	
-	if not (froot) then return false; end;
-	
-	local file = root.open(froot.absPath("conv_" .. filename), "w");
-	
-	froot.destroy();
-	return file;
-end
-
 function makeparameasy(path)
 	local params, num = getFuncItems(path);
 	
-	if not (params) then return false; end;
+	if not (params) then
+        error("unable to retrieve parameters from file");
+    end
 	
 	local file = makelocalconvparamfile(path);
+    
+    if not (file) then
+        error("could not open output file");
+    end
 
 	file.write("static const GLparamdesc items[] =\n{\n");
 	

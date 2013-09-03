@@ -14,6 +14,8 @@
 
 namespace _dxElements
 {
+    // Define the API for usage with dxElements.
+    // What should be supported: D3D and OpenGL
     static LUA_DECLARE( setRenderLayer )
     {
         dxElements *dx = (dxElements*)lua_getmethodtrans( L );

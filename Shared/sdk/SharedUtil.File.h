@@ -133,8 +133,10 @@ public:
 #endif
     filePath()
         : _baseString()
-    {
-    }
+    { }
+
+    AINLINE ~filePath()
+    { }
 
     filePath( const filePath& right )
         : _baseString( right.c_str(), right.size() )
@@ -160,8 +162,8 @@ public:
     {
         size_t pos = rfind( '/' );
 
-        if ( pos == -1 )
-            if ( ( pos = rfind( '\\' ) ) == -1 )
+        if ( pos == 0xFFFFFFFF )
+            if ( ( pos = rfind( '\\' ) ) == 0xFFFFFFFF )
                 return filePath( *this );
 
         return substr( pos + 1, size() );
@@ -171,8 +173,8 @@ public:
     {
         size_t pos = rfind( '/' );
 
-        if ( pos == -1 )
-            if ( ( pos = rfind( '\\' ) ) == -1 )
+        if ( pos == 0xFFFFFFFF )
+            if ( ( pos = rfind( '\\' ) ) == 0xFFFFFFFF )
                 return filePath();
 
         return substr( 0, pos );
@@ -183,18 +185,18 @@ public:
         size_t pos = rfind( '.' );
         size_t posSlash;
 
-        if ( pos == -1 )
+        if ( pos == 0xFFFFFFFF )
             return NULL;
 
         posSlash = rfind( '/' );
 
-        if ( posSlash == -1 )
-            if ( ( posSlash = rfind( '\\' ) ) == -1 )
+        if ( posSlash == 0xFFFFFFFF )
+            if ( ( posSlash = rfind( '\\' ) ) == 0xFFFFFFFF )
                 return c_str() + pos;
 
         if ( posSlash > pos )
             return NULL;
-        
+
         return c_str() + pos;
     }
 

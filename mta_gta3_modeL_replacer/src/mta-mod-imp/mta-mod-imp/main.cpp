@@ -3,7 +3,7 @@
 	This executable creates files which are needed due to limitation of mtasa dm.
 	Created by The_GTA
 */
-#include "main.h"
+#include "StdInc.h"
 
 bool doCompile = false;
 bool debug = false;
@@ -34,11 +34,9 @@ short usYoffset=0;
 short usXoffset=0;
 short usZoffset=500;
 
+CFileTranslator *g_resourceRoot = NULL;
+CFileTranslator *g_outputRoot = NULL;
 
-bool FileExists(const char *fileName)
-{
-    return (GetFileAttributes(fileName) != 0xFFFFFFFF);
-}
 
 CObject*	GetObjectByModel(const char *model)
 {
@@ -47,7 +45,7 @@ CObject*	GetObjectByModel(const char *model)
 	for (iter = objects.begin(); iter != objects.end(); iter++)
 		if (strcmp((*iter)->m_modelName, model) == 0)
 			return *iter;
-	
+
 	return NULL;
 }
 
@@ -98,14 +96,14 @@ void	LoadTargetIDE(const char *name)
 		{
 			if ( !avalID[m] )
 				continue;
-			
+
 			avalID[m] = NULL;
 			break;
 		}
 		if ( m == 65534 )
 		{
 			printf( "ERROR: requiring more valid model ids\n" );
-			
+
 			getchar();
 			exit(EXIT_FAILURE);
 		}
@@ -162,15 +160,35 @@ void	LoadReplaceIDE(const char *filename)
 	}
 }
 
+static void LoadReplaceFileIPL( const filePath& path, void* )
+{
+    LoadReplaceIPL( path.c_str() );
+}
+
+static void LoadReplaceFileIDE( const filePath& path, void* )
+{
+    LoadReplaceIDE( path.c_str() );
+}
+
+static void LoadTargetFileIPL( const filePath& path, void* )
+{
+    LoadTargetIPL( path.c_str() );
+}
+
+static void LoadTargetFileIDE( const filePath& path, void* )
+{
+    LoadTargetIDE( path.c_str() );
+}
+
 // Entry
 int		main (int argc, char *argv[])
 {
-	WIN32_FIND_DATA findData;
-	HANDLE find;
 	CINI *config = LoadINI("config.ini");
 	CINI::Entry *mainEntry;
 	const char *mode;
 	unsigned int n;
+
+	new CFileSystem;
 
 	if (config && (mainEntry = config->GetEntry("General")))
 	{
@@ -194,11 +212,11 @@ int		main (int argc, char *argv[])
 		preserveMainWorldIntegrity = false;
 	}
 
-	if (preserveMainWorldIntegrity)
+	if ( preserveMainWorldIntegrity )
 		printf( "Compiling with main world integrity...\n" );
-	
+
 	// Reset the IDs
-	for (n=0; n < 65536; n++)
+	for ( n=0; n < 65536; n++ )
 		avalID[n] = NULL;
 
 	numIPL = 0;
@@ -206,94 +224,102 @@ int		main (int argc, char *argv[])
 
 	if ( preserveMainWorldIntegrity )
 	{
+        // Initialize the main model array
 		memset( modelLOD, 0, sizeof(modelLOD) );
 
 		// Load all GTA:SA static scene objects (hack)
-		SetCurrentDirectory("rplipl\\");
+        CFileTranslator *replaceRoot = fileSystem->CreateTranslator( "rplipl/" );
 
-		if ((find = FindFirstFile("*.ipl", &findData)) == INVALID_HANDLE_VALUE)
-		{
-			printf("Error: Could not find any GTA:SA item placement information (rplipl/.ipl)\n");
+        if ( replaceRoot )
+        {
+            replaceRoot->ScanDirectory( "", "*.ipl", true, NULL, LoadReplaceFileIPL, NULL );
 
-			getchar();
-			return EXIT_FAILURE;
-		}
+            delete replaceRoot;
+        }
+        else
+        {
+            printf("Error: Could not find any GTA:SA item placement information (rplipl/*.ipl)\n");
 
-		LoadReplaceIPL( findData.cFileName );
-
-		while (FindNextFile( find, &findData ))
-			LoadReplaceIPL( findData.cFileName );
-
-		FindClose( find );
-
-		SetCurrentDirectory("..");
+#ifdef _WIN32
+            getchar();
+#endif //_WIN32
+            return EXIT_FAILURE;
+        }
 	}
 
-	// We must get all replacable IDE model ids
-	SetCurrentDirectory("rplide\\");
+    // To calculate LOD model relevance, we should load all replace instances
+    // of the original GTA:SA map.
+	if ( CFileTranslator *replaceRoot = fileSystem->CreateTranslator( "rplide/" ) )
+    {
+        replaceRoot->ScanDirectory( "", "*.ide", true, NULL, LoadReplaceFileIDE, NULL );
 
-	if ((find = FindFirstFile("*.ide", &findData)) == INVALID_HANDLE_VALUE)
-	{
-		printf( "ERROR: Could not find GTA:SA model definitions" );
+        delete replaceRoot;
+    }
+    else
+    {
+        printf( "ERROR: Could not find GTA:SA model definitions\n" );
 
-		getchar();
-		return EXIT_FAILURE;
-	}
-
-	LoadReplaceIDE (findData.cFileName);
-
-	while (FindNextFile(find, &findData))
-		LoadReplaceIDE(findData.cFileName);
-
-	FindClose(find);
-
-	// We change into ipl directory
-	SetCurrentDirectory("..\\ipl\\");
+#ifdef _WIN32
+        getchar();
+#endif //_WIN32
+        return EXIT_FAILURE;
+    }
 
 	// We scan through all ipl files and load em
-	if ((find = FindFirstFile("*.ipl", &findData)) == INVALID_HANDLE_VALUE)
-	{
-		printf( "ERROR: Could not find any item placement files (ipl/.ipl)" );
+    if ( CFileTranslator *iplRoot = fileSystem->CreateTranslator( "ipl/" ) )
+    {
+        iplRoot->ScanDirectory( "", "*.ipl", true, NULL, LoadTargetFileIPL, NULL );
 
+        delete iplRoot;
+    }
+    else
+    {
+		printf( "ERROR: Could not find any item placement files (ipl/*.ipl)\n" );
+
+#ifdef _WIN32
 		getchar();
+#endif //_WIN32
 		return EXIT_FAILURE;
-	}
-
-	LoadTargetIPL(findData.cFileName);
-
-	while (FindNextFile(find, &findData))
-		LoadTargetIPL(findData.cFileName);
-
-	FindClose(find);
+    }
 
 	// Now proceed through all .ide files
-	if ((find = FindFirstFile("*.ide", &findData)) == INVALID_HANDLE_VALUE)
+	if ( CFileTranslator *ideRoot = fileSystem->CreateTranslator( "ipl/" ) )
 	{
-		printf( "ERROR: Could not find any model definitions (ipl/.ide)\n" );
+        ideRoot->ScanDirectory( "", "*.ide", true, NULL, LoadTargetFileIDE, NULL );
 
+        delete ideRoot;
+	}
+    else
+	{
+		printf( "ERROR: Could not find any model definitions (ipl/*.ide)\n" );
+
+#ifdef _WIN32
 		getchar();
+#endif //_WIN32
 		return EXIT_FAILURE;
 	}
 
-	LoadTargetIDE(findData.cFileName);
-
-	while (FindNextFile(find, &findData))
-		LoadTargetIDE(findData.cFileName);
-
-	FindClose(find);
-
 	// Set up the directory scheme
-	CreateDirectory("..\\output", NULL);
+    fileRoot->CreateDir( "output/" );
 
-	SetCurrentDirectory("..\\output");
+    // Acquire access.
+    g_resourceRoot = fileSystem->CreateTranslator( "resources/" );
+	g_outputRoot = fileSystem->CreateTranslator( "output/" );
 
-	CreateDirectory("models", NULL);
-	CreateDirectory("textures", NULL);
-	CreateDirectory("coll", NULL);
+    g_outputRoot->CreateDir( "models/" );
+    g_outputRoot->CreateDir( "textures/" );
+    g_outputRoot->CreateDir( "coll/" );
 
 	// Branch to the handler
-	if ( stricmp( mode, "green" ) == 0 )
-		return bundleForGREEN( config ) ? EXIT_SUCCESS : EXIT_FAILURE;
+	bool success;
 
-	return bundleForBLUE( config ) ? EXIT_SUCCESS : EXIT_FAILURE;
+	if ( stricmp( mode, "green" ) == 0 )
+		success = bundleForGREEN( config );
+    else
+        success = bundleForBLUE( config );
+
+    // Clean up the fileSystem module activity.
+    delete fileSystem;
+
+    return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -35,9 +35,29 @@ static LUA_DECLARE( getCursorPos )
     return 2;
 }
 
+static LUA_DECLARE( getWindowRect )
+{
+    RECT winRect;
+    winRect.top = 0;
+    winRect.left = 0;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( winRect.right );
+    argStream.ReadNumber( winRect.bottom );
+    LUA_ARGS_END;
+
+    AdjustWindowRect( &winRect, WS_SYSMENU, false );
+
+    lua_pushnumber( L, winRect.right );
+    lua_pushnumber( L, winRect.bottom );
+    return 2;
+}
+
 static const luaL_Reg win32_interface[] =
 {
+    LUA_METHOD( setCursorPos ),
     LUA_METHOD( getCursorPos ),
+    LUA_METHOD( getWindowRect ),
     { NULL, NULL }
 };
 

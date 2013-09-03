@@ -15,9 +15,6 @@
     <ClInclude Include="csv.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="main.h">
-      <Filter>Include</Filter>
-    </ClInclude>
     <ClInclude Include="ide.h">
       <Filter>Include</Filter>
     </ClInclude>
@@ -35,6 +32,9 @@
     </ClInclude>
     <ClInclude Include="green\main_green.h">
       <Filter>green</Filter>
+    </ClInclude>
+    <ClInclude Include="StdInc.h">
+      <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

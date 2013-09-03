@@ -1,9 +1,9 @@
-#include "main.h"
+#include "StdInc.h"
 
 CSyntax::CSyntax(const char *buffer, size_t size)
 {
 	m_buffer = buffer;
-	
+
 	m_offset = 0;
 	m_size = size;
 }
@@ -52,9 +52,7 @@ inline bool IsNewline(char c)
 	switch (c)
 	{
 	case '\n':
-#ifdef _WIN32
 	case '\r':
-#endif
 		return true;
 	}
 
@@ -141,7 +139,7 @@ bool CSyntax::GetToken(char *buffer, size_t len)
 	if ( !token )
 		return false;
 
-	size = min(len, size);
+	size = std::min(len, size);
 
 	memcpy( buffer, token, size );
 
@@ -155,10 +153,8 @@ bool CSyntax::GotoNewLine()
 
 	while ( IsSpace( read = ReadNext() ) );
 
-#ifdef _WIN32
 	if ( read == '\r' )
 		read = ReadNext();
-#endif
 
 	return read == '\n';
 }
@@ -208,5 +204,5 @@ void CSyntax::SetOffset(unsigned long offset)
 
 void CSyntax::Seek(long seek)
 {
-	m_offset = max(min(m_offset + seek, m_size), 0);
+	m_offset = std::max(std::min((size_t)( m_offset + seek ), m_size), (size_t)0);
 }

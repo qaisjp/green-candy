@@ -1,0 +1,11 @@
+GL_OBJECT_TYPE_ARB                          int     1
+GL_OBJECT_SUBTYPE_ARB                       int     1
+GL_OBJECT_DELETE_STATUS_ARB                 bool    1
+GL_OBJECT_COMPILE_STATUS_ARB                bool    1
+GL_OBJECT_LINK_STATUS_ARB                   bool    1
+GL_OBJECT_VALIDATE_STATUS_ARB               bool    1
+GL_OBJECT_INFO_LOG_LENGTH_ARB               int     1
+GL_OBJECT_ATTACHED_OBJECTS_ARB              int     1
+GL_OBJECT_ACTIVE_UNIFORMS_ARB               int     1
+GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB     int     1
+GL_OBJECT_SHADER_SOURCE_LENGTH_ARB          int     1

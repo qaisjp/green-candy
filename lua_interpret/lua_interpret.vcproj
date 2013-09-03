@@ -44,7 +44,7 @@
 				Optimization="0"
 				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic;&quot;..\vendor\freetype-2.4.12\include&quot;;&quot;..\vendor\jpeg\jpeg-8d&quot;;..\vendor\opengl\"
 				PreprocessorDefinitions="WIN32;_DEBUG"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				StructMemberAlignment="0"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="StdInc.h"
@@ -63,10 +63,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lua5.1d.lib DbgHelp.lib zlibd_2008.lib freetype2412_D.lib libpng2008d.lib jpegd.lib"
+				AdditionalDependencies="lua5.1d.lib DbgHelp.lib zlibd_2008.lib freetype2412_D.lib libpng2008d.lib jpegd.lib libfs_d.lib"
 				OutputFile="$(OutDir)\lint_d.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib;&quot;..\vendor\freetype-2.4.12\objs\win32\vc2008\&quot;;../vendor/libpng/lib;../vendor/jpeg/lib"
+				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib;&quot;..\vendor\freetype-2.4.12\objs\win32\vc2008\&quot;;../vendor/libpng/lib;../vendor/jpeg/lib;../FileSystem/lib"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="LIBCMTD.lib"
 				GenerateDebugInformation="true"
@@ -130,7 +130,7 @@
 				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic;&quot;..\vendor\freetype-2.4.12\include&quot;;&quot;..\vendor\jpeg\jpeg-8d&quot;;..\vendor\opengl\"
 				PreprocessorDefinitions="WIN32;NDEBUG"
 				StringPooling="true"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="StdInc.h"
@@ -149,10 +149,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lua5.1.lib DbgHelp.lib zlib_2008.lib freetype2412.lib libpng2008.lib jpeg.lib"
+				AdditionalDependencies="lua5.1.lib DbgHelp.lib zlib_2008.lib freetype2412.lib libpng2008.lib jpeg.lib libfs.lib"
 				OutputFile="$(OutDir)\lint.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib;&quot;..\vendor\freetype-2.4.12\objs\win32\vc2008\&quot;;../vendor/libpng/lib;../vendor/jpeg/lib"
+				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib;&quot;..\vendor\freetype-2.4.12\objs\win32\vc2008\&quot;;../vendor/libpng/lib;../vendor/jpeg/lib;../FileSystem/lib"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
 				GenerateDebugInformation="true"
@@ -208,18 +208,6 @@
 		<Filter
 			Name="include"
 			>
-			<File
-				RelativePath="..\Shared\core\CFileSystem.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Shared\core\CFileSystem.Utils.hxx"
-				>
-			</File>
-			<File
-				RelativePath="..\Shared\core\CFileSystem.zip.h"
-				>
-			</File>
 			<File
 				RelativePath=".\luabitlib.h"
 				>
@@ -561,6 +549,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\glDriver\gl_shading.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\glDriver\gl_texture.cpp"
 				>
 			</File>
@@ -597,6 +589,10 @@
 				</File>
 				<File
 					RelativePath=".\glDriver\gl_main.h"
+					>
+				</File>
+				<File
+					RelativePath=".\glDriver\gl_shading.h"
 					>
 				</File>
 				<File
@@ -761,14 +757,6 @@
 				</File>
 			</Filter>
 		</Filter>
-		<File
-			RelativePath="..\Shared\core\CFileSystem.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\Shared\core\CFileSystem.zip.cpp"
-			>
-		</File>
 		<File
 			RelativePath=".\luabitlib.cpp"
 			>

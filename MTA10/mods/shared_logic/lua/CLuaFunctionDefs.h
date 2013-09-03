@@ -76,7 +76,6 @@ namespace CLuaFunctionDefs
     // Output functions
     LUA_DECLARE( outputConsole );
     LUA_DECLARE( outputChatBox );
-    LUA_DECLARE( outputDebugString );
     LUA_DECLARE( enableChat );
     LUA_DECLARE( isChatEnabled );
     LUA_DECLARE( showChat );

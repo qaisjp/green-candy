@@ -152,6 +152,7 @@ CResource::~CResource()
     for ( ; iterex != m_exports.end(); iterex++ )
         delete *iterex;
 
+    // Unbind the private resource root.
     delete m_privateRoot;
 
     // Make sure we don't force the cursor on

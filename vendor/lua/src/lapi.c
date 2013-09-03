@@ -915,7 +915,7 @@ LUA_API int lua_setfenv (lua_State *L, int idx)
             Closure *cl = clvalue(o);
 
             if ( cl->IsEnvLocked() )
-                goto end;
+                goto fail;
 
             cl->env = gcvalue(L->top - 1);
         }
@@ -927,6 +927,7 @@ LUA_API int lua_setfenv (lua_State *L, int idx)
         setgcvalue(L, gt(thvalue(o)), gcvalue(L->top - 1));
         break;
     default:
+fail:
         res = 0;
         goto end;
     }

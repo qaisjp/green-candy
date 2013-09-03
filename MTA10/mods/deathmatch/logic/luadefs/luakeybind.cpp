@@ -51,7 +51,7 @@ static ILuaClass* _trefget( lua_State *L, CScriptKeyBind *bind )
 {
     lua_pushlightuserdata( L, bind );
     lua_pushcclosure( L, luaconstructor_keybind, 1 );
-    lua_newclass( L );
+    lua_newclassex( L, LCLASS_API_LIGHT );
     
 	ILuaClass *j = lua_refclass( L, -1 );
 	lua_pop( L, 1 );

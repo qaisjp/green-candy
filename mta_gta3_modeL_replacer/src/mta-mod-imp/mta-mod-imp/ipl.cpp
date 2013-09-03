@@ -1,4 +1,4 @@
-#include "main.h"
+#include "StdInc.h"
 
 #define pi 3.14159265
 #define round(a) ((floor(a)+0.5)<a?ceil(a):floor(a))
@@ -17,20 +17,20 @@ void QuatToEuler(const quat_t *quat, double *rotx,  double *roty, double *rotz)
 	double sqx;
 	double sqy;
 	double sqz;
-	
+
 	double rotxrad;
 	double rotyrad;
 	double rotzrad;
-	
+
 	sqw = quat->w * quat->w;
 	sqx = quat->x * quat->x;
 	sqy = quat->y * quat->y;
 	sqz = quat->z * quat->z;
-	
+
 	rotxrad = (double)atan2l(2.0 * ( quat->y * quat->z + quat->x * quat->w ) , ( -sqx - sqy + sqz + sqw ));
 	rotyrad = (double)asinl( clamp( -2.0 * ( quat->x * quat->z - quat->y * quat->w ), -1, 1 ));
 	rotzrad = (double)atan2l(2.0 * ( quat->x * quat->y + quat->z * quat->w ) , (  sqx - sqy - sqz + sqw ));
-	
+
 	*rotx = rad2deg(rotxrad);
 	*roty = rad2deg(rotyrad);
 	*rotz = rad2deg(rotzrad);
@@ -47,7 +47,7 @@ void QuatToEuler(const quat_t *quat, double *rotx,  double *roty, double *rotz)
 		*rotz = round(0 - *rotz);
 	else if (*rotz > 0)
 		*rotz = round(360 - *rotz);
-	
+
 	return;
 }
 

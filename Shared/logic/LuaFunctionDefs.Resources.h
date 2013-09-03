@@ -16,6 +16,7 @@
 namespace LuaFunctionDefs
 {
     LUA_DECLARE( getResources );
+    LUA_DECLARE( getRuntimeResource );
 }
 
 #endif //_LUA_PROTO_RESOURCES_

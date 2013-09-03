@@ -1,4 +1,4 @@
-#include "main.h"
+#include "StdInc.h"
 #include <sys/stat.h>
 
 CINI*	LoadINI(const char *filename)
@@ -41,16 +41,15 @@ CINI::CINI(const char *buffer)
 			{
 				char *name;
 				unsigned long offset = syntax->GetOffset();
-				size_t len;
 
 				// Read section and select it
 				if ( !syntax->ScanCharacterEx( ']', true, true, false ) )
 					continue;
 
-				len = syntax->GetOffset() - offset - 1;
+				size_t tokLen = syntax->GetOffset() - offset - 1;
 
-				name = (char*)malloc( len + 1 );
-				strncpy( name, token + 1, len );
+				name = (char*)malloc( tokLen + 1 );
+				strncpy( name, token + 1, tokLen );
 
 				name[len] = 0;
 
@@ -74,7 +73,7 @@ sectionDo:
 			char value[256];
 			const char *set;
 
-			len = min(len, 255);
+			len = std::min(len, (size_t)255);
 
 			strncpy(name, token, len );
 			name[len] = 0;

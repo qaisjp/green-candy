@@ -8,7 +8,7 @@ local glDriver = false;
 local sessions = {};
 
 local function tdelete(tab, val)
-    for m,n in ipairs(sessions) do
+    for m,n in ipairs(tab) do
         if (n == val) then
             table.remove(tab, m);
             return true;
@@ -37,48 +37,6 @@ function allocateDrawingSession()
             
             function getRefCount()
                 return #sessions;
-            end
-            
-            function setBlendMode(mode)
-                if (mode == "blend") then
-                    glDriver.disable("GL_DEPTH_TEST");
-                    glDriver.disable("GL_CULL_FACE");
-                    glDriver.shadeModel("smooth");
-                    glDriver.enable("GL_BLEND");
-                    glDriver.blendFunc("GL_SRC_ALPHA", "GL_ONE_MINUS_SRC_ALPHA");
-                    glDriver.enable("GL_ALPHA_TEST");
-                    glDriver.alphaFunc("GL_GEQUAL", (1 / 255));
-                    glDriver.disable("GL_LIGHTING");
-                
-                    -- TODO: modulation states (in D3D: texture stage states)
-                elseif (mode == "modulate_add") then
-                    glDriver.disable("GL_DEPTH_TEST");
-                    glDriver.disable("GL_CULL_FACE");
-                    glDriver.shadeModel("smooth");
-                    glDriver.enable("GL_BLEND");
-                    glDriver.blendFunc("GL_ONE", "GL_ONE_MINUS_SRC_ALPHA");
-                    glDriver.enable("GL_ALPHA_TEST");
-                    glDriver.alphaFunc("GL_GEQUAL", 1);
-                    glDriver.disable("GL_LIGHTING");
-                    
-                    -- TODO: modulation states
-                elseif (mode == "add") then
-                    glDriver.disable("GL_DEPTH_TEST");
-                    glDriver.disable("GL_CULL_FACE");
-                    glDriver.shadeModel("smooth");
-                    glDriver.enable("GL_BLEND");
-                    glDriver.blendFunc("GL_ONE", "GL_ONE_MINUS_SRC_ALPHA");
-                    glDriver.enable("GL_ALPHA_TEST");
-                    glDriver.alphaFunc("GL_GEQUAL", 1);
-                    glDriver.disable("GL_LIGHTING");
-                    
-                    -- TODO: modulation states
-                else
-                    return false;
-                end
-                
-                g_blendMode = mode;
-                return true;
             end
         
             function destroy()
@@ -109,7 +67,7 @@ function allocateDrawingSession()
                 
                 -- Set up the matrices.
                 glDriver.matrixMode("GL_PROJECTION");
-                glDriver.ortho(0, clientWidth, clientHeight, 0, 0, 1 );
+                glDriver.ortho(0, clientWidth, clientHeight, 0, 0, 1);
                 glDriver.matrixMode("GL_MODELVIEW");
                 glDriver.loadIdentity();
             end
@@ -118,22 +76,101 @@ function allocateDrawingSession()
 end
 
 function makeglwnd()
+    local window = win32.createDialog(win32.getWindowRect(640, 480));
+    window.setVisible(true);
+    
+    local glDriver = ogl.create(window);
+    
+    local quadBatch = glDriver.makeBatch(
+        function(type, x, y, width, height, u, v)
+            texCoord2d(0, 0);
+            vertex2d(x, y);
+            texCoord2d(0, v);
+            vertex2d(x, y + height);
+            texCoord2d(u, 0);
+            vertex2d(x + width, y);
+            texCoord2d(u, v);
+            vertex2d(x + width, y + height);
+            texCoord2d(0, v);
+            vertex2d(x, y + height);
+            texCoord2d(u, 0);
+            vertex2d(x + width, y);
+        end
+    );
+    
+    local clientWidth, clientHeight = window.getClientSize();
+    
+    local fbo = glDriver.createFrameBuffer();
+    local bmp = bitmap.new(clientWidth, clientHeight, "rgba");
+    local tex = glDriver.createTexture2D(bmp, false, "clamp");
+    local texWidth, texHeight = tex.getSize();
+    
+    print("width: " .. texWidth .. ", height: " .. texHeight);
+    
+    fbo.bindColorTexture(tex, "draw");
+    
+    glDriver.disable("GL_TEXTURE_2D");
+    
+    -- Set up the matrices.
+    glDriver.matrixMode("GL_PROJECTION");
+    glDriver.loadIdentity();
+    --glDriver.ortho(texWidth, 0, 0, texHeight, 0, 1);
+    glDriver.ortho(0, clientWidth, clientHeight, 0, 0, 1);
+    glDriver.matrixMode("GL_MODELVIEW");
+    glDriver.loadIdentity();
+    
+    fbo.runContext("draw",
+        function()
+            glDriver.clear("color");
+            glDriver.clear("depth");
+        
+            glDriver.runBatch(quadBatch, "triangles", 0, 0, texWidth, texHeight, 1, 1);
+        end
+    );
+    
+    -- Set up the matrices.
+    glDriver.matrixMode("GL_PROJECTION");
+    glDriver.loadIdentity();
+    glDriver.ortho(0, clientWidth, clientHeight, 0, 0, 1);
+    glDriver.matrixMode("GL_MODELVIEW");
+    glDriver.loadIdentity();
+    
+    glDriver.enable("GL_TEXTURE_2D");
+    
+    local program = glDriver.createProgram();
+    
+    if (program) then
+        local shader, errMsg = glDriver.compileShader("fragment", "gl/test.glsl");
+    
+        if (shader) then
+            program.attachShader(shader);
+        else
+            program.destroy();
+            program = false;
+        end
+    end
+    
 	-- Set up an awesome framebuffer
-	gl.addEventHandler("onFrame",
+	glDriver.addEventHandler("onFrame",
 		function()
-			gl.clear("color");
-			gl.clear("depth");
+			glDriver.clear("color");
+			glDriver.clear("depth");
+            
+            local u, v = clientWidth / texWidth, clientHeight / texHeight;
+            
+            tex.bind();
+            glDriver.runBatch(quadBatch, "triangles", 0, 0, clientWidth, clientHeight, u, v);
 			
-			if (myFont) then
-				local height = 32;
-				myFont.drawString("Hello World! I am a lazy fox.", 100, 100, height);
-				myFont.drawString("I just jumped over the fence.", 100, 140, height);
-				myFont.drawString(".......................................", 100, 180, height);
-				
-				myFont.drawString("Are you surprised?", 100, 240, height);
-			end
-			
-			gl.present();
+            -- Test vertex shader functionality
+            if (program) then
+                glDriver.useProgram(program);
+                
+                glDriver.runBatch(quadBatch, "triangles", 0, 0, clientWidth, clientHeight, 1, 1);
+                
+                glDriver.useProgram(nil);
+            end
+            
+			glDriver.present();
 		end
 	);
 end

@@ -13,6 +13,7 @@
 #ifndef _OPENGL_FUNCTION_TYPEDEFS_
 #define _OPENGL_FUNCTION_TYPEDEFS_
 
+#ifdef _WIN32
 // Windows management specific
 typedef BOOL    (WINAPI*wglCopyContext_t)           ( HGLRC src, HGLRC dst, UINT mask );
 typedef HGLRC   (WINAPI*wglCreateContext_t)         ( HDC dc );
@@ -25,6 +26,7 @@ typedef BOOL    (WINAPI*wglMakeCurrent_t)           ( HDC dc, HGLRC rc );
 typedef BOOL    (WINAPI*wglShareLists_t)            ( HGLRC dst, HGLRC src );
 typedef BOOL    (WINAPI*wglUseFontBitmapsA_t)       ( HGLRC rc, DWORD first, DWORD count, DWORD listBase );
 typedef BOOL    (WINAPI*wglUseFontBitmapsW_t)       ( HGLRC rc, DWORD first, DWORD count, DWORD listBase );
+#endif //_WIN32
 
 // OpenGL standard functions
 typedef void (APIENTRY*glAccum_t) (GLenum op, GLfloat value);
@@ -1107,6 +1109,192 @@ typedef void (APIENTRY*glFramebufferTexture3DEXT_t) (GLenum, GLenum, GLenum, GLu
 typedef void (APIENTRY*glFramebufferRenderbufferEXT_t) (GLenum, GLenum, GLenum, GLuint);
 typedef void (APIENTRY*glGetFramebufferAttachmentParameterivEXT_t) (GLenum, GLenum, GLenum, GLint *);
 typedef void (APIENTRY*glGenerateMipmapEXT_t) (GLenum);
+
+// OpenGL ARB_shader_objects typedefs
+typedef void (APIENTRY*glDeleteObjectARB_t) (GLhandleARB obj);
+typedef GLhandleARB (APIENTRY*glGetHandleARB_t) (GLenum pname);
+typedef void (APIENTRY*glDetachObjectARB_t) (GLhandleARB containerObj, GLhandleARB attachedObj);
+typedef GLhandleARB (APIENTRY*glCreateShaderObjectARB_t) (GLenum shaderType);
+typedef void (APIENTRY*glShaderSourceARB_t) (GLhandleARB shaderObj, GLsizei count, const GLcharARB **string, const GLint *length);
+typedef void (APIENTRY*glCompileShaderARB_t) (GLhandleARB shaderObj);
+typedef GLhandleARB (APIENTRY*glCreateProgramObjectARB_t) (void);
+typedef void (APIENTRY*glAttachObjectARB_t) (GLhandleARB containerObj, GLhandleARB obj);
+typedef void (APIENTRY*glLinkProgramARB_t) (GLhandleARB programObj);
+typedef void (APIENTRY*glUseProgramObjectARB_t) (GLhandleARB programObj);
+typedef void (APIENTRY*glValidateProgramARB_t) (GLhandleARB programObj);
+typedef void (APIENTRY*glUniform1fARB_t) (GLint location, GLfloat v0);
+typedef void (APIENTRY*glUniform2fARB_t) (GLint location, GLfloat v0, GLfloat v1);
+typedef void (APIENTRY*glUniform3fARB_t) (GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
+typedef void (APIENTRY*glUniform4fARB_t) (GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
+typedef void (APIENTRY*glUniform1iARB_t) (GLint location, GLint v0);
+typedef void (APIENTRY*glUniform2iARB_t) (GLint location, GLint v0, GLint v1);
+typedef void (APIENTRY*glUniform3iARB_t) (GLint location, GLint v0, GLint v1, GLint v2);
+typedef void (APIENTRY*glUniform4iARB_t) (GLint location, GLint v0, GLint v1, GLint v2, GLint v3);
+typedef void (APIENTRY*glUniform1fvARB_t) (GLint location, GLsizei count, const GLfloat *value);
+typedef void (APIENTRY*glUniform2fvARB_t) (GLint location, GLsizei count, const GLfloat *value);
+typedef void (APIENTRY*glUniform3fvARB_t) (GLint location, GLsizei count, const GLfloat *value);
+typedef void (APIENTRY*glUniform4fvARB_t) (GLint location, GLsizei count, const GLfloat *value);
+typedef void (APIENTRY*glUniform1ivARB_t) (GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY*glUniform2ivARB_t) (GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY*glUniform3ivARB_t) (GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY*glUniform4ivARB_t) (GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY*glUniformMatrix2fvARB_t) (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void (APIENTRY*glUniformMatrix3fvARB_t) (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void (APIENTRY*glUniformMatrix4fvARB_t) (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void (APIENTRY*glGetObjectParameterfvARB_t) (GLhandleARB obj, GLenum pname, GLfloat *params);
+typedef void (APIENTRY*glGetObjectParameterivARB_t) (GLhandleARB obj, GLenum pname, GLint *params);
+typedef void (APIENTRY*glGetInfoLogARB_t) (GLhandleARB obj, GLsizei maxLength, GLsizei *length, GLcharARB *infoLog);
+typedef void (APIENTRY*glGetAttachedObjectsARB_t) (GLhandleARB containerObj, GLsizei maxCount, GLsizei *count, GLhandleARB *obj);
+typedef GLint (APIENTRY*glGetUniformLocationARB_t) (GLhandleARB programObj, const GLcharARB *name);
+typedef void (APIENTRY*glGetActiveUniformARB_t) (GLhandleARB programObj, GLuint index, GLsizei maxLength, GLsizei *length, GLint *size, GLenum *type, GLcharARB *name);
+typedef void (APIENTRY*glGetUniformfvARB_t) (GLhandleARB programObj, GLint location, GLfloat *params);
+typedef void (APIENTRY*glGetUniformivARB_t) (GLhandleARB programObj, GLint location, GLint *params);
+typedef void (APIENTRY*glGetShaderSourceARB_t) (GLhandleARB obj, GLsizei maxLength, GLsizei *length, GLcharARB *source);
+
+// OpenGL ARB_vertex_program typedefs
+typedef void (APIENTRY*glVertexAttrib1dARB_t) (GLuint index, GLdouble x);
+typedef void (APIENTRY*glVertexAttrib1dvARB_t) (GLuint index, const GLdouble *v);
+typedef void (APIENTRY*glVertexAttrib1fARB_t) (GLuint index, GLfloat x);
+typedef void (APIENTRY*glVertexAttrib1fvARB_t) (GLuint index, const GLfloat *v);
+typedef void (APIENTRY*glVertexAttrib1sARB_t) (GLuint index, GLshort x);
+typedef void (APIENTRY*glVertexAttrib1svARB_t) (GLuint index, const GLshort *v);
+typedef void (APIENTRY*glVertexAttrib2dARB_t) (GLuint index, GLdouble x, GLdouble y);
+typedef void (APIENTRY*glVertexAttrib2dvARB_t) (GLuint index, const GLdouble *v);
+typedef void (APIENTRY*glVertexAttrib2fARB_t) (GLuint index, GLfloat x, GLfloat y);
+typedef void (APIENTRY*glVertexAttrib2fvARB_t) (GLuint index, const GLfloat *v);
+typedef void (APIENTRY*glVertexAttrib2sARB_t) (GLuint index, GLshort x, GLshort y);
+typedef void (APIENTRY*glVertexAttrib2svARB_t) (GLuint index, const GLshort *v);
+typedef void (APIENTRY*glVertexAttrib3dARB_t) (GLuint index, GLdouble x, GLdouble y, GLdouble z);
+typedef void (APIENTRY*glVertexAttrib3dvARB_t) (GLuint index, const GLdouble *v);
+typedef void (APIENTRY*glVertexAttrib3fARB_t) (GLuint index, GLfloat x, GLfloat y, GLfloat z);
+typedef void (APIENTRY*glVertexAttrib3fvARB_t) (GLuint index, const GLfloat *v);
+typedef void (APIENTRY*glVertexAttrib3sARB_t) (GLuint index, GLshort x, GLshort y, GLshort z);
+typedef void (APIENTRY*glVertexAttrib3svARB_t) (GLuint index, const GLshort *v);
+typedef void (APIENTRY*glVertexAttrib4NbvARB_t) (GLuint index, const GLbyte *v);
+typedef void (APIENTRY*glVertexAttrib4NivARB_t) (GLuint index, const GLint *v);
+typedef void (APIENTRY*glVertexAttrib4NsvARB_t) (GLuint index, const GLshort *v);
+typedef void (APIENTRY*glVertexAttrib4NubARB_t) (GLuint index, GLubyte x, GLubyte y, GLubyte z, GLubyte w);
+typedef void (APIENTRY*glVertexAttrib4NubvARB_t) (GLuint index, const GLubyte *v);
+typedef void (APIENTRY*glVertexAttrib4NuivARB_t) (GLuint index, const GLuint *v);
+typedef void (APIENTRY*glVertexAttrib4NusvARB_t) (GLuint index, const GLushort *v);
+typedef void (APIENTRY*glVertexAttrib4bvARB_t) (GLuint index, const GLbyte *v);
+typedef void (APIENTRY*glVertexAttrib4dARB_t) (GLuint index, GLdouble x, GLdouble y, GLdouble z, GLdouble w);
+typedef void (APIENTRY*glVertexAttrib4dvARB_t) (GLuint index, const GLdouble *v);
+typedef void (APIENTRY*glVertexAttrib4fARB_t) (GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
+typedef void (APIENTRY*glVertexAttrib4fvARB_t) (GLuint index, const GLfloat *v);
+typedef void (APIENTRY*glVertexAttrib4ivARB_t) (GLuint index, const GLint *v);
+typedef void (APIENTRY*glVertexAttrib4sARB_t) (GLuint index, GLshort x, GLshort y, GLshort z, GLshort w);
+typedef void (APIENTRY*glVertexAttrib4svARB_t) (GLuint index, const GLshort *v);
+typedef void (APIENTRY*glVertexAttrib4ubvARB_t) (GLuint index, const GLubyte *v);
+typedef void (APIENTRY*glVertexAttrib4uivARB_t) (GLuint index, const GLuint *v);
+typedef void (APIENTRY*glVertexAttrib4usvARB_t) (GLuint index, const GLushort *v);
+typedef void (APIENTRY*glVertexAttribPointerARB_t) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
+typedef void (APIENTRY*glEnableVertexAttribArrayARB_t) (GLuint index);
+typedef void (APIENTRY*glDisableVertexAttribArrayARB_t) (GLuint index);
+typedef void (APIENTRY*glGetVertexAttribdvARB_t) (GLuint index, GLenum pname, GLdouble *params);
+typedef void (APIENTRY*glGetVertexAttribfvARB_t) (GLuint index, GLenum pname, GLfloat *params);
+typedef void (APIENTRY*glGetVertexAttribivARB_t) (GLuint index, GLenum pname, GLint *params);
+typedef void (APIENTRY*glGetVertexAttribPointervARB_t) (GLuint index, GLenum pname, GLvoid **pointer);
+
+// OpenGL ARB_vertex_shader typedefs
+typedef void (APIENTRY*glBindAttribLocationARB_t) (GLhandleARB programObj, GLuint index, const GLcharARB *name);
+typedef void (APIENTRY*glGetActiveAttribARB_t) (GLhandleARB programObj, GLuint index, GLsizei maxLength, GLsizei *length, GLint *size, GLenum *type, GLcharARB *name);
+typedef GLint (APIENTRY*glGetAttribLocationARB_t) (GLhandleARB programObj, const GLcharARB *name);
+
+// OpenGL 2.0 typedefs
+typedef void (APIENTRY*glBlendEquationSeparate_t) (GLenum modeRGB, GLenum modeAlpha);
+typedef void (APIENTRY*glDrawBuffers_t) (GLsizei n, const GLenum *bufs);
+typedef void (APIENTRY*glStencilOpSeparate_t) (GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass);
+typedef void (APIENTRY*glStencilFuncSeparate_t) (GLenum face, GLenum func, GLint ref, GLuint mask);
+typedef void (APIENTRY*glStencilMaskSeparate_t) (GLenum face, GLuint mask);
+typedef void (APIENTRY*glAttachShader_t) (GLuint program, GLuint shader);
+typedef void (APIENTRY*glBindAttribLocation_t) (GLuint program, GLuint index, const GLchar *name);
+typedef void (APIENTRY*glCompileShader_t) (GLuint shader);
+typedef GLuint (APIENTRY*glCreateProgram_t) (void);
+typedef GLuint (APIENTRY*glCreateShader_t) (GLenum type);
+typedef void (APIENTRY*glDeleteProgram_t) (GLuint program);
+typedef void (APIENTRY*glDeleteShader_t) (GLuint shader);
+typedef void (APIENTRY*glDetachShader_t) (GLuint program, GLuint shader);
+typedef void (APIENTRY*glDisableVertexAttribArray_t) (GLuint index);
+typedef void (APIENTRY*glEnableVertexAttribArray_t) (GLuint index);
+typedef void (APIENTRY*glGetActiveAttrib_t) (GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
+typedef void (APIENTRY*glGetActiveUniform_t) (GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
+typedef void (APIENTRY*glGetAttachedShaders_t) (GLuint program, GLsizei maxCount, GLsizei *count, GLuint *shaders);
+typedef GLint (APIENTRY*glGetAttribLocation_t) (GLuint program, const GLchar *name);
+typedef void (APIENTRY*glGetProgramiv_t) (GLuint program, GLenum pname, GLint *params);
+typedef void (APIENTRY*glGetProgramInfoLog_t) (GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
+typedef void (APIENTRY*glGetShaderiv_t) (GLuint shader, GLenum pname, GLint *params);
+typedef void (APIENTRY*glGetShaderInfoLog_t) (GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
+typedef void (APIENTRY*glGetShaderSource_t) (GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *source);
+typedef GLint (APIENTRY*glGetUniformLocation_t) (GLuint program, const GLchar *name);
+typedef void (APIENTRY*glGetUniformfv_t) (GLuint program, GLint location, GLfloat *params);
+typedef void (APIENTRY*glGetUniformiv_t) (GLuint program, GLint location, GLint *params);
+typedef void (APIENTRY*glGetVertexAttribdv_t) (GLuint index, GLenum pname, GLdouble *params);
+typedef void (APIENTRY*glGetVertexAttribfv_t) (GLuint index, GLenum pname, GLfloat *params);
+typedef void (APIENTRY*glGetVertexAttribiv_t) (GLuint index, GLenum pname, GLint *params);
+typedef void (APIENTRY*glGetVertexAttribPointerv_t) (GLuint index, GLenum pname, GLvoid **pointer);
+typedef GLboolean (APIENTRY*glIsProgram_t) (GLuint program);
+typedef GLboolean (APIENTRY*glIsShader_t) (GLuint shader);
+typedef void (APIENTRY*glLinkProgram_t) (GLuint program);
+typedef void (APIENTRY*glShaderSource_t) (GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length);
+typedef void (APIENTRY*glUseProgram_t) (GLuint program);
+typedef void (APIENTRY*glUniform1f_t) (GLint location, GLfloat v0);
+typedef void (APIENTRY*glUniform2f_t) (GLint location, GLfloat v0, GLfloat v1);
+typedef void (APIENTRY*glUniform3f_t) (GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
+typedef void (APIENTRY*glUniform4f_t) (GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
+typedef void (APIENTRY*glUniform1i_t) (GLint location, GLint v0);
+typedef void (APIENTRY*glUniform2i_t) (GLint location, GLint v0, GLint v1);
+typedef void (APIENTRY*glUniform3i_t) (GLint location, GLint v0, GLint v1, GLint v2);
+typedef void (APIENTRY*glUniform4i_t) (GLint location, GLint v0, GLint v1, GLint v2, GLint v3);
+typedef void (APIENTRY*glUniform1fv_t) (GLint location, GLsizei count, const GLfloat *value);
+typedef void (APIENTRY*glUniform2fv_t) (GLint location, GLsizei count, const GLfloat *value);
+typedef void (APIENTRY*glUniform3fv_t) (GLint location, GLsizei count, const GLfloat *value);
+typedef void (APIENTRY*glUniform4fv_t) (GLint location, GLsizei count, const GLfloat *value);
+typedef void (APIENTRY*glUniform1iv_t) (GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY*glUniform2iv_t) (GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY*glUniform3iv_t) (GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY*glUniform4iv_t) (GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY*glUniformMatrix2fv_t) (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void (APIENTRY*glUniformMatrix3fv_t) (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void (APIENTRY*glUniformMatrix4fv_t) (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void (APIENTRY*glValidateProgram_t) (GLuint program);
+typedef void (APIENTRY*glVertexAttrib1d_t) (GLuint index, GLdouble x);
+typedef void (APIENTRY*glVertexAttrib1dv_t) (GLuint index, const GLdouble *v);
+typedef void (APIENTRY*glVertexAttrib1f_t) (GLuint index, GLfloat x);
+typedef void (APIENTRY*glVertexAttrib1fv_t) (GLuint index, const GLfloat *v);
+typedef void (APIENTRY*glVertexAttrib1s_t) (GLuint index, GLshort x);
+typedef void (APIENTRY*glVertexAttrib1sv_t) (GLuint index, const GLshort *v);
+typedef void (APIENTRY*glVertexAttrib2d_t) (GLuint index, GLdouble x, GLdouble y);
+typedef void (APIENTRY*glVertexAttrib2dv_t) (GLuint index, const GLdouble *v);
+typedef void (APIENTRY*glVertexAttrib2f_t) (GLuint index, GLfloat x, GLfloat y);
+typedef void (APIENTRY*glVertexAttrib2fv_t) (GLuint index, const GLfloat *v);
+typedef void (APIENTRY*glVertexAttrib2s_t) (GLuint index, GLshort x, GLshort y);
+typedef void (APIENTRY*glVertexAttrib2sv_t) (GLuint index, const GLshort *v);
+typedef void (APIENTRY*glVertexAttrib3d_t) (GLuint index, GLdouble x, GLdouble y, GLdouble z);
+typedef void (APIENTRY*glVertexAttrib3dv_t) (GLuint index, const GLdouble *v);
+typedef void (APIENTRY*glVertexAttrib3f_t) (GLuint index, GLfloat x, GLfloat y, GLfloat z);
+typedef void (APIENTRY*glVertexAttrib3fv_t) (GLuint index, const GLfloat *v);
+typedef void (APIENTRY*glVertexAttrib3s_t) (GLuint index, GLshort x, GLshort y, GLshort z);
+typedef void (APIENTRY*glVertexAttrib3sv_t) (GLuint index, const GLshort *v);
+typedef void (APIENTRY*glVertexAttrib4Nbv_t) (GLuint index, const GLbyte *v);
+typedef void (APIENTRY*glVertexAttrib4Niv_t) (GLuint index, const GLint *v);
+typedef void (APIENTRY*glVertexAttrib4Nsv_t) (GLuint index, const GLshort *v);
+typedef void (APIENTRY*glVertexAttrib4Nub_t) (GLuint index, GLubyte x, GLubyte y, GLubyte z, GLubyte w);
+typedef void (APIENTRY*glVertexAttrib4Nubv_t) (GLuint index, const GLubyte *v);
+typedef void (APIENTRY*glVertexAttrib4Nuiv_t) (GLuint index, const GLuint *v);
+typedef void (APIENTRY*glVertexAttrib4Nusv_t) (GLuint index, const GLushort *v);
+typedef void (APIENTRY*glVertexAttrib4bv_t) (GLuint index, const GLbyte *v);
+typedef void (APIENTRY*glVertexAttrib4d_t) (GLuint index, GLdouble x, GLdouble y, GLdouble z, GLdouble w);
+typedef void (APIENTRY*glVertexAttrib4dv_t) (GLuint index, const GLdouble *v);
+typedef void (APIENTRY*glVertexAttrib4f_t) (GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
+typedef void (APIENTRY*glVertexAttrib4fv_t) (GLuint index, const GLfloat *v);
+typedef void (APIENTRY*glVertexAttrib4iv_t) (GLuint index, const GLint *v);
+typedef void (APIENTRY*glVertexAttrib4s_t) (GLuint index, GLshort x, GLshort y, GLshort z, GLshort w);
+typedef void (APIENTRY*glVertexAttrib4sv_t) (GLuint index, const GLshort *v);
+typedef void (APIENTRY*glVertexAttrib4ubv_t) (GLuint index, const GLubyte *v);
+typedef void (APIENTRY*glVertexAttrib4uiv_t) (GLuint index, const GLuint *v);
+typedef void (APIENTRY*glVertexAttrib4usv_t) (GLuint index, const GLushort *v);
+typedef void (APIENTRY*glVertexAttribPointer_t) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
 
 // OpenGL 3.0 typedefs
 typedef void (APIENTRY*glColorMaski_t) (GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a);

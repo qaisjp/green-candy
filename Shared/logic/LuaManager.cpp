@@ -451,12 +451,14 @@ static int LoadCFunctions( LuaMain *L )
     LUA_REGISTER( L, isTimer );
     LUA_REGISTER( L, getTimers );
     LUA_REGISTER( L, getTimerDetails );
+    LUA_REGISTER( L, outputDebugString );
     LUA_REGISTER( L, print );
 
     LUA_REGISTER( L, getDistanceBetweenPoints2D );
     LUA_REGISTER( L, getDistanceBetweenPoints3D );
 
     LUA_REGISTER( L, getResources );
+    LUA_REGISTER( L, getRuntimeResource );
 
 #if 0
     // JSON funcs

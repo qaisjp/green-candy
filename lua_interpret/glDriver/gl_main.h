@@ -22,6 +22,7 @@
 
 struct glContextDescriptor;
 struct glFrameBufferBase;
+struct glProgramARB;
 
 struct glDriver : public LuaClass
 {
@@ -55,8 +56,12 @@ struct glDriver : public LuaClass
     bool supports1_3;
     bool supports_FBO_EXT;
     bool supportsFBO;
+    bool supports2_0;
     bool supports3_0;
     bool supports_ARB_imaging;
+    bool supports_ARB_vertex_shader;
+    bool supports_ARB_shader_objects;
+    bool supports_ARB_vertex_program;
 
     int maxFBOColorAttachments;
     int maxFBOColorAttachmentsEXT;
@@ -68,6 +73,12 @@ struct glDriver : public LuaClass
     // Object context stacks
     glFrameBufferBase *fboDrawStack;
     glFrameBufferBase *fboReadStack;
+
+    // Single context acquisitions
+    // The object context stack overrides a single context acquisition.
+    // If the stack is active, an acquisition cannot be made.
+    glProgramARB *currentProgramARB;
+    //TODO: add core version
 };
 
 void luagl_initDrivers( void );

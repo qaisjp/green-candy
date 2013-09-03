@@ -87,6 +87,17 @@ IMPLEMENT_ENUM_BEGIN( eTextureWrapType )
     ADD_ENUM( GL_CLAMP, "clamp" )
 IMPLEMENT_ENUM_END( "eTextureWrapType" )
 
+enum eInterpolationType : GLenum
+{
+};
+
+DECLARE_ENUM( eInterpolationType );
+
+IMPLEMENT_ENUM_BEGIN( eInterpolationType )
+    ADD_ENUM( GL_LINEAR, "linear" )
+    ADD_ENUM( GL_NEAREST, "nearest" )
+IMPLEMENT_ENUM_END( "eInterpolationType" )
+
 template <class blockType>
 __forceinline void PadImageData( void *dst, const void *src, unsigned int width, unsigned int height, unsigned int _width, unsigned int _height, unsigned int spacingX, unsigned int spacingY )
 {
@@ -129,11 +140,13 @@ static LUA_DECLARE( createTexture2D )
     Bitmap *map;
     bool mipmap;
     eTextureWrapType wrapType;
+    eInterpolationType interpolateType;
 
     LUA_ARGS_BEGIN;
     argStream.ReadClass( map, LUACLASS_BITMAP );
     argStream.ReadBool( mipmap, true );
     argStream.ReadEnumString( wrapType, (eTextureWrapType)GL_CLAMP );
+    argStream.ReadEnumString( interpolateType, (eInterpolationType)GL_LINEAR );
     LUA_ARGS_END;
 
     glDriver *driver = (glDriver*)lua_getmethodtrans( L );
@@ -155,7 +168,7 @@ static LUA_DECLARE( createTexture2D )
 
     _glBindTexture( GL_TEXTURE_2D, texIndex );
 
-    _glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+    _glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
     int error;
 
@@ -324,7 +337,7 @@ failSupportFormat:
     _glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapType );
 
     // when texture area is large, bilinear filter the original
-    _glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    _glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, interpolateType );
 
     switch( format )
     {
@@ -344,7 +357,7 @@ failSupportFormat:
             _glGetError();
 
             // Display default image at minimum
-            _glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+            _glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, interpolateType );
 
             // Load raw data without mipmaps
             _glTexImage2D( GL_TEXTURE_2D, 0, format, _width, _height, 0, format, GL_UNSIGNED_BYTE, data );
