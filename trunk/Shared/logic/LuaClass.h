@@ -136,6 +136,7 @@ public:
         // At this point the class may be destroyed; do not use it anymore!
     }
 
+    // Helper method in-case the Destroy method is overriden by super classes.
     inline void Delete()
     {
         Destroy();

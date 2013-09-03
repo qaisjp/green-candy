@@ -327,11 +327,7 @@ function xmlCreateNodeEx(name)
             end
             
             function destroy()
-                if (parent) then
-                    table.delete(parent.children, c);
-                end
-                
-                return true;
+                return;
             end
             
             __type = "xmlnode";

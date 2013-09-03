@@ -72,7 +72,7 @@ float CCameraSAInterface::GetGroundLevel( unsigned int type )
             CColModelSAInterface *col = hitEntity->GetModelInfo()->pColModel;
 
             unk2 = col->m_bounds.vecBoundMax[2] + entityPos.fZ;
-            unk1 = max( 0,
+            unk1 = (float)std::max( (float)0,
                 ( col->m_bounds.vecBoundMax[0] - col->m_bounds.vecBoundMin[0] <= 120.0f &&
                  col->m_bounds.vecBoundMax[1] - col->m_bounds.vecBoundMin[1] <= 120.0f )
                  ? ( entityPos[2] + col->m_bounds.vecBoundMax[2] ) : ( unk2 ) );

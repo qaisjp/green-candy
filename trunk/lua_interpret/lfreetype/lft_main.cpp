@@ -27,6 +27,16 @@ const static wchar_t unicode_ascii_table[] =
     L'\xf8', L'\xf9', L'\xfa', L'\xfb', L'\xfc', L'\xfd', L'\xfe', L'\xff'
 };
 
+DECLARE_ENUM( FT_Render_Mode );
+
+IMPLEMENT_ENUM_BEGIN( FT_Render_Mode )
+    ADD_ENUM( FT_RENDER_MODE_NORMAL, "normal" )
+    ADD_ENUM( FT_RENDER_MODE_LIGHT, "light" )
+    ADD_ENUM( FT_RENDER_MODE_MONO, "mono" )
+    ADD_ENUM( FT_RENDER_MODE_LCD, "lcd" )
+    ADD_ENUM( FT_RENDER_MODE_LCD_V, "lcd_v" )
+IMPLEMENT_ENUM_END( "FT_Render_Mode" )
+
 namespace lfreetypeface
 {
     static LUA_DECLARE( __index )
@@ -194,6 +204,12 @@ skip:
 
     static LUA_DECLARE( getGlyphBitmap )
     {
+        FT_Render_Mode renderMode;
+
+        LUA_ARGS_BEGIN;
+        argStream.ReadEnumString( renderMode, FT_RENDER_MODE_NORMAL );
+        LUA_ARGS_END;
+
         LFreeTypeFace *face = (LFreeTypeFace*)lua_getmethodtrans( L );
         FT_GlyphSlot glyph = face->handle->glyph;
 
@@ -218,6 +234,22 @@ skip:
         // Convert the freetype bitmap to a general-purpose RGBA bitmap
         switch( bmp.pixel_mode )
         {
+        case FT_PIXEL_MODE_MONO:
+            uiData = new unsigned int[width * height];
+            dataSize = width * height * sizeof(unsigned int);
+            dataType = Bitmap::BITMAP_RGBA;
+
+            for ( unsigned int y = 0; y < height; y++ )
+            {
+                for ( unsigned int x = 0; x < width; x++ )
+                {
+                    if ( *( bmp.buffer + ( x / 8 + y * bmp.pitch ) ) & ( 0x80 >> ( x % 8 ) ) )
+                        uiData[x + y * width] = 0xFFFFFFFF;
+                    else
+                        uiData[x + y * width] = 0x00000000;
+                }
+            }
+            break;
         case FT_PIXEL_MODE_GRAY:
             uiData = new unsigned int[width * height];
             dataSize = width * height * sizeof(unsigned int);
@@ -228,7 +260,7 @@ skip:
                 for ( unsigned int x = 0; x < width; x++ )
                 {
                     uiData[x + y * width] =
-                        (unsigned int)( (double)bmp.buffer[x + y * width] / 255 * 0xFFFFFFFF );
+                        (unsigned int)( (double)bmp.buffer[x + y * bmp.pitch] / 0xFF * 0xFFFFFFFF );
                 }
             }
             break;

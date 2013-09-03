@@ -1,4 +1,4 @@
-#include "main.h"
+#include "StdInc.h"
 
 // Get all possible ids from the IDE files
 CIDE*	LoadIDE(const char *filename)
@@ -18,7 +18,7 @@ CIDE::CIDE(CCSV *csv)
 	while (csv->ReadNextRow())
 	{
 		const char *token = csv->GetRowItem(0);
-		
+
 		if (strcmp(token, "objs") == 0)
 			ReadObjects();
 	}

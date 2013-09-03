@@ -1,0 +1,113 @@
+# depslib dependency file v1.0
+1375703907 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.cpp
+	<StdInc.h>
+	<utime.h>
+	<fcntl.h>
+	<sys/sendfile.h>
+	"CFileSystem.Utils.hxx"
+
+1375687634 /media/root/OS/Users/The_GTA/Desktop/mta_green/FileSystem/StdInc.h
+	<SharedUtil.h>
+	<CFileSystemInterface.h>
+	<CFileSystem.h>
+	<sys/errno.h>
+
+1375401401 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.h
+	"SharedUtil.Defines.h"
+	"SharedUtil.AllocTracking.h"
+	<list>
+	<vector>
+	<map>
+	<set>
+	<deque>
+	<algorithm>
+	<limits>
+	<assert.h>
+	<stdio.h>
+	<string.h>
+	<string>
+	<stdarg.h>
+	<assert.h>
+	"SString.h"
+	"SharedUtil.Map.h"
+	"SharedUtil.Misc.h"
+	"SharedUtil.File.h"
+	"SharedUtil.Time.h"
+	"SharedUtil.Buffer.h"
+	"SharedUtil.Game.h"
+	"SharedUtil.Math.h"
+	"SharedUtil.ClassIdent.h"
+	"SharedUtil.Hash.h"
+	"SharedUtil.SysInfo.h"
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Defines.h
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.AllocTracking.h
+	<cstdlib>
+	<exception>
+	<new>
+	<xutility>
+	<list>
+	<vector>
+	<map>
+	<deque>
+	<algorithm>
+	<limits>
+	<assert.h>
+
+1366058222 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SString.h
+	<stdarg.h>
+
+1356456037 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Map.h
+
+1375398014 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Misc.h
+	<cmath>
+
+1375401373 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.File.h
+
+1366058222 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Time.h
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Buffer.h
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Game.h
+
+1353704903 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Math.h
+
+1353704903 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.ClassIdent.h
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Hash.h
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.SysInfo.h
+
+1375399947 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystemInterface.h
+	<sys/stat.h>
+
+1375693781 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.h
+	<direct.h>
+	<unistd.h>
+	<dirent.h>
+	"CFileSystem.zip.h"
+
+1375688230 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.zip.h
+	<time.h>
+
+1375702364 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.Utils.hxx
+
+1375698519 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.zip.cpp
+	<StdInc.h>
+	<zlib.h>
+	<sstream>
+	"CFileSystem.Utils.hxx"
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/zlib.h
+	"zconf.h"
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/zconf.h
+	<windows.h>
+	<sys/types.h>
+	<unistd.h>
+	<unixio.h>
+
+1375423404 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/FileSystem/main.cpp
+	"StdInc.h"
+

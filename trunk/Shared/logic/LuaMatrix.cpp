@@ -242,5 +242,5 @@ void lua_creatematrix( lua_State *L, const RwMatrix& matrix )
 {
     lua_pushlightuserdata( L, new RwMatrix( matrix ) );
     lua_pushcclosure( L, luaconstructor_matrix, 1 );
-    lua_newclass( L );
+    lua_newclassex( L, LCLASS_API_LIGHT );
 }

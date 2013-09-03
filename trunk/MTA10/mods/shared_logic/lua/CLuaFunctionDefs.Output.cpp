@@ -133,47 +133,4 @@ namespace CLuaFunctionDefs
         lua_pushboolean ( L, false );
         return 1;
     }
-
-    LUA_DECLARE( outputDebugString )
-    {
-        SString output;
-        unsigned int level;
-        unsigned char r, g, b;
-
-        CScriptArgReader argStream( L );
-
-        argStream.ReadString( output );
-        argStream.ReadNumber( level, 3 );
-        if ( level == 0 )
-        {
-            argStream.ReadColor( r, 0xFF ); argStream.ReadColor( g, 0xFF ); argStream.ReadColor( b, 0xFF );
-        }
-
-        if ( !argStream.HasErrors() )
-        {
-            // Output it
-            switch( level )
-            {
-            case 1:     m_pScriptDebugging->LogError( "%s", output.c_str() ); break;
-            case 2:     m_pScriptDebugging->LogWarning( "%s", output.c_str() ); break;
-            case 3:     m_pScriptDebugging->LogInformation( "%s", output.c_str() ); break;
-            case 0:     m_pScriptDebugging->LogCustom( r, g, b, "%s", output.c_str() ); break;
-            default:
-                m_pScriptDebugging->LogWarning( "Bad level argument sent to outputDebugString (0-3)" );
-
-                lua_pushboolean( L, false );
-                return 1;
-            }
-
-            // Success
-            lua_pushboolean( L, true );
-            return 1;
-        }
-        else
-            m_pScriptDebugging->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
-
-        // Failed
-        lua_pushboolean( L, false );
-        return 1;
-    }
 }

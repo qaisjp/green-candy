@@ -4,7 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        vendor/lua/src/lclass.c
 *  PURPOSE:     Lua class system extension
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -144,10 +144,8 @@ __forceinline const TValue* class_getFromStorage( lua_State *L, Class *j, const 
 
             if ( cached )
             {
-                TValue *slot = luaH_setstr( L, j->storage, methName );
-                setclvalue( L, slot, cached );
-                luaC_objbarriert( L, j->storage, cached );
-                return slot;
+                setclvalue( L, &L->env, cached );
+                return &L->env;
             }
         }
     }
@@ -166,10 +164,8 @@ __forceinline const TValue* class_getFromStorageString( lua_State *L, Class *j, 
 
         if ( cached )
         {
-            TValue *slot = luaH_setstr( L, j->storage, key );
-            setclvalue( L, slot, cached );
-            luaC_objbarriert( L, j->storage, cached );
-            return slot;
+            setclvalue( L, &L->env, cached );
+            return &L->env;
         }
     }
 
@@ -209,31 +205,39 @@ __forceinline void class_checkEnvIndex( lua_State *L, Class *j )
         throw lua_exception( L, LUA_ERRRUN, "attempt to index the environment of a destroyed class" );
 }
 
-void ClassEnvDispatch::Index( lua_State *L, const TValue *key, StkId value )
+__forceinline bool class_obtainPrivateEnvValue( lua_State *L, Class *j, const TValue *key, StkId value )
 {
-    class_checkEnvIndex( L, m_class );
-
-    const TValue *val = m_class->GetEnvValue( L, key );
+    const TValue *val = j->GetEnvValue( L, key );
 
     if ( ttype( val ) != LUA_TNIL )
     {
         setobj( L, value, val );
-        return;
+        return true;
     }
 
     TValue tabVal;
 
     // Otherwise we result in the inherited environments
-    for ( Class::envList_t::const_iterator iter = m_class->envInherit.begin(); iter != m_class->envInherit.end(); iter++ )
+    for ( Class::envList_t::const_iterator iter = j->envInherit.begin(); iter != j->envInherit.end(); iter++ )
     {
         (*iter)->Index( L, key, &tabVal );
 
         if ( ttype( &tabVal ) != LUA_TNIL )
         {
             setobj( L, value, &tabVal );
-            return;
+            return true;
         }
     }
+
+    return false;
+}
+
+void ClassEnvDispatch::Index( lua_State *L, const TValue *key, StkId value )
+{
+    class_checkEnvIndex( L, m_class );
+
+    if ( class_obtainPrivateEnvValue( L, m_class, key, value ) )
+        return;
 
     // No return value.
     setnilvalue( value );
@@ -330,6 +334,8 @@ inline static void class_unlinkParent( lua_State *L, Class& j )
     if ( !j.parent )
         return;
 
+    lua_checkstack( L, 1 );
+
     j.childAPI->PushMethod( L, "destroy" );
     lua_call( L, 0, 0 );
 
@@ -357,6 +363,8 @@ static int childapi_notifyDestroy( lua_State *L )
         return 0;
 
     class_unlinkParent( L, j );
+
+    lua_checkstack( L, 1 );
 
     setclvalue( L, L->top++, j.destructor );
     lua_call( L, 0, 0 );
@@ -972,7 +980,9 @@ static int classmethod_envPutBack( lua_State *L )
     if ( !iscollectable( L->top - 1 ) )
         luaJ_envtypeerror( L, ttype( L->top - 1 ) );
 
-    ((CClosureMethodBase*)curr_func( L ))->m_class->EnvPutBack( L );
+    CClosureMethodBase *cl = (CClosureMethodBase*)curr_func( L );
+
+    cl->m_class->EnvPutBack( L );
     return 0;
 }
 
@@ -1122,13 +1132,8 @@ void ClassMethodDispatch::Index( lua_State *L, const TValue *key, StkId val )
 {
     if ( !m_class->IsDestroyed() )
     {
-        const TValue *res = m_class->GetEnvValue( L, key );
-
-        if ( ttype( res ) != LUA_TNIL )
-        {
-            setobj( L, val, res );
+        if ( class_obtainPrivateEnvValue( L, m_class, key, val ) )
             return;
-        }
     }
 
     m_prevEnv->Index( L, key, val );
@@ -1941,9 +1946,13 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     // Perform a temporary keep
     ClassConstructionAllocation construction( L, c );
 
+#if 0
     // Register the previous environment
+    // Update: this ain't workin' anymore; causing troubles.
+    // Was a stupid optimization for memory saving anyway.
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     c->EnvPutBack( L );
+#endif
 
     // Init the forceSuper table
     Class::forceSuperItem destrItem;
@@ -1961,9 +1970,11 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
         lua_setfield( L, -2, "_ENV" );
         setqvalue( L, L->top++, c->outenv );
         lua_setfield( L, -2, "_OUTENV" );
+
+        // Only set the this pointer if required.
+        setjvalue( L, L->top++, c );
+        lua_setfield( L, -2, "this" );
     }
-    setjvalue( L, L->top++, c );
-    lua_setfield( L, -2, "this" );
 
     // Set some internal functions
     c->RegisterInterfaceAt( L, internStorage_interface, 0, c->internStorage );
@@ -2005,7 +2016,7 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     L->top--;
 
     // Apply the environment to the constructor
-    constructor->env = c->env;
+    constructor->env = c->AcquireEnvDispatcherEx( L, constructor->env );
     luaC_objbarrier( L, constructor, c->env );
 
     // Call the constructor (class as first arg)
@@ -2065,10 +2076,16 @@ static int extend_handler( lua_State *L )
     luaL_checktype( L, 1, LUA_TFUNCTION );
 
     // Make it class root
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    lua_setfenv( L, 1 );
+    Closure *extender = clvalue( L->base );
 
-    lua_getfield( L, LUA_ENVIRONINDEX, "this" );
+    if ( extender->IsEnvLocked() )
+        throw lua_exception( L, LUA_ERRRUN, "cannot run a function with locked environment as class extension" );
+
+    Class *j = ((CClosureMethodBase*)curr_func( L ))->m_class;
+
+    extender->env = j->AcquireEnvDispatcherEx( L, extender->env );
+
+    j->Push( L );
     lua_insert( L, 2 );
 
     lua_call( L, lua_gettop( L ) - 1, 0 );

@@ -155,6 +155,7 @@ static int luaB_setfenv (lua_State *L)
 
     getfunc(L, 0);
     lua_pushvalue(L, 2);
+
     if (lua_isnumber(L, 1) && lua_tonumber(L, 1) == 0)
     {
         /* change environment of current thread */
@@ -165,6 +166,34 @@ static int luaB_setfenv (lua_State *L)
     }
     else if (lua_iscfunction(L, -2) || lua_setfenv(L, -2) == 0)
         luaL_error(L, LUA_QL("setfenv") " cannot change environment of given object");
+    return 1;
+}
+
+
+static int luaB_lockfenv (lua_State *L)
+{
+    luaL_checktype( L, 2, LUA_TBOOLEAN );
+
+    getfunc(L, 0);
+
+    Closure *cl = clvalue( index2adr( L, -1 ) );
+
+    if ( cl->isC )
+        luaL_error(L, LUA_QL("lockfenv") " cannot set lock for the environment of given object");
+
+    bool lock = lua_toboolean( L, 2 );
+    cl->SetEnvLocked( lock );
+    return 0;
+}
+
+
+static int luaB_islockedfenv( lua_State *L )
+{
+    getfunc(L, 0);
+
+    Closure *cl = clvalue( index2adr( L, -1 ) );
+
+    lua_pushboolean( L, cl->IsEnvLocked() );
     return 1;
 }
 
@@ -485,6 +514,8 @@ static const luaL_Reg base_funcs[] = {
   {"rawset", luaB_rawset},
   {"select", luaB_select},
   {"setfenv", luaB_setfenv},
+  {"lockfenv", luaB_lockfenv},
+  {"islockedfenv", luaB_islockedfenv},
   {"setmetatable", luaB_setmetatable},
   {"setmetaproxy", luaB_setmetaproxy},
   {"tonumber", luaB_tonumber},

@@ -23,6 +23,8 @@
 //#define PAGE_HEAP_INTEGRITY_CHECK
 #include <debugsdk/DbgHeap.h>
 
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #include <DbgHelp.h>
 #include <time.h>

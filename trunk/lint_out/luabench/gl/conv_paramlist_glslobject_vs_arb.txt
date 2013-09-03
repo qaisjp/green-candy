@@ -1,0 +1,11 @@
+static const GLparaminfo param_list[] =
+{
+    { "GL_OBJECT_ACTIVE_ATTRIBUTES_ARB", GL_OBJECT_ACTIVE_ATTRIBUTES_ARB, 0x735a219f, GLPARAM_INT, 1 },
+    { "GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB", GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB, 0xdb005c1f, GLPARAM_INT, 1 }
+};
+
+lua_createtable( L, 2, 0 );
+lua_pushlstring( L, "GL_OBJECT_ACTIVE_ATTRIBUTES_ARB", 31 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB", 41 );
+lua_rawseti( L, -2, n++ );

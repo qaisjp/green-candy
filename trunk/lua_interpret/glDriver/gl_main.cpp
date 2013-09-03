@@ -966,6 +966,32 @@ static LUA_DECLARE( loadMatrix )
     LUA_SUCCESS;
 }
 
+enum eGLMatrixType : GLenum
+{};
+
+DECLARE_ENUM( eGLMatrixType );
+
+IMPLEMENT_ENUM_BEGIN( eGLMatrixType )
+    ADD_ENUM( GL_MODELVIEW_MATRIX, "modelview" )
+    ADD_ENUM( GL_PROJECTION_MATRIX, "projection" )
+    ADD_ENUM( GL_TEXTURE_MATRIX, "texture" )
+IMPLEMENT_ENUM_END( "eGLMatrixType" )
+
+static LUA_DECLARE( getMatrix )
+{
+    eGLMatrixType matrixType;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadEnumString( matrixType );
+    LUA_ARGS_END;
+
+    RwMatrix mat;
+    _glGetFloatv( matrixType, (float*)&mat );
+
+    lua_creatematrix( L, mat );
+    return 1;
+}
+
 static LUA_DECLARE( loadIdentity )
 {
     glDriver *driver = (glDriver*)lua_getmethodtrans( L );
@@ -990,275 +1016,40 @@ static LUA_DECLARE( multiplyMatrix )
     LUA_SUCCESS;
 }
 
-enum GLeParamType : GLenum
+static LUA_DECLARE( rotate )
 {
-    GLPARAM_BOOLEAN,
-    GLPARAM_FLOAT,
-    GLPARAM_INT,
-    GLPARAM_DOUBLE
-};
+    GLdouble angle, vx, vy, vz;
 
-struct GLparaminfo
-{
-    const std::string name;
-    GLenum builtin;
-    unsigned int hash;
-    GLeParamType type;
-    unsigned int numArgs;
-};
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( angle );
+    argStream.ReadNumber( vx );
+    argStream.ReadNumber( vy );
+    argStream.ReadNumber( vz );
+    LUA_ARGS_END;
 
-__forceinline const GLparaminfo* GetParamByName( const GLparaminfo *info, const size_t len, const char *name, size_t nameLen )
-{
-    unsigned int hash = TumblerHash( name, nameLen );
+    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
+    glContextStack context( driver );
 
-    for ( unsigned int n = 0; n < len; n++ )
-    {
-        const GLparaminfo *item = info + n;
-
-        if ( item->hash == hash )
-            return item;
-    }
-
-    return NULL;
+    _glRotated( angle, vx, vy, vz );
+    LUA_SUCCESS;
 }
 
-static const GLparaminfo param_list[] =
+static LUA_DECLARE( translate )
 {
-    { "GL_ACCUM_ALPHA_BITS", GL_ACCUM_ALPHA_BITS, 0x89c14d99, GLPARAM_INT, 1 },
-    { "GL_ACCUM_BLUE_BITS", GL_ACCUM_BLUE_BITS, 0xe242e280, GLPARAM_INT, 1 },
-    { "GL_ACCUM_CLEAR_VALUE", GL_ACCUM_CLEAR_VALUE, 0xb8f11f19, GLPARAM_DOUBLE, 4 },
-    { "GL_ACCUM_GREEN_BITS", GL_ACCUM_GREEN_BITS, 0x49fb127f, GLPARAM_INT, 1 },
-    { "GL_ACCUM_RED_BITS", GL_ACCUM_RED_BITS, 0xd8bca946, GLPARAM_INT, 1 },
-    { "GL_ALPHA_BIAS", GL_ALPHA_BIAS, 0x48fadc31, GLPARAM_DOUBLE, 1 },
-    { "GL_ALPHA_BITS", GL_ALPHA_BITS, 0x87b83b37, GLPARAM_INT, 1 },
-    { "GL_ALPHA_SCALE", GL_ALPHA_SCALE, 0x728a545, GLPARAM_DOUBLE, 1 },
-    { "GL_ALPHA_TEST", GL_ALPHA_TEST, 0xaae45f62, GLPARAM_BOOLEAN, 1 },
-    { "GL_ALPHA_TEST_FUNC", GL_ALPHA_TEST_FUNC, 0x6692ead0, GLPARAM_INT, 1 },
-    { "GL_ALPHA_TEST_REF", GL_ALPHA_TEST_REF, 0x36d25f32, GLPARAM_DOUBLE, 1 },
-    { "GL_ATTRIB_STACK_DEPTH", GL_ATTRIB_STACK_DEPTH, 0xaf899468, GLPARAM_INT, 1 },
-    { "GL_AUTO_NORMAL", GL_AUTO_NORMAL, 0x712edb6b, GLPARAM_BOOLEAN, 1 },
-    { "GL_AUX_BUFFERS", GL_AUX_BUFFERS, 0x74082d22, GLPARAM_INT, 1 },
-    { "GL_BLEND", GL_BLEND, 0xa40557e7, GLPARAM_BOOLEAN, 1 },
-    { "GL_BLEND_DST", GL_BLEND_DST, 0x82aa14cc, GLPARAM_INT, 1 },
-    { "GL_BLEND_SRC", GL_BLEND_SRC, 0xb7e64413, GLPARAM_INT, 1 },
-    { "GL_BLUE_BIAS", GL_BLUE_BIAS, 0x5e25fd76, GLPARAM_DOUBLE, 1 },
-    { "GL_BLUE_BITS", GL_BLUE_BITS, 0xa260dbd6, GLPARAM_INT, 1 },
-    { "GL_BLUE_SCALE", GL_BLUE_SCALE, 0x285c90a7, GLPARAM_DOUBLE, 1 },
-    { "GL_CLIENT_ATTRIB_STACK_DEPTH", GL_CLIENT_ATTRIB_STACK_DEPTH, 0x11c49981, GLPARAM_INT, 1 },
-    { "GL_CLIP_PLANE0", GL_CLIP_PLANE0, 0x848c8631, GLPARAM_BOOLEAN, 1 },
-    { "GL_CLIP_PLANE1", GL_CLIP_PLANE1, 0x6ccbd80b, GLPARAM_BOOLEAN, 1 },
-    { "GL_CLIP_PLANE2", GL_CLIP_PLANE2, 0x259843b6, GLPARAM_BOOLEAN, 1 },
-    { "GL_CLIP_PLANE3", GL_CLIP_PLANE3, 0x84c3f94b, GLPARAM_BOOLEAN, 1 },
-    { "GL_CLIP_PLANE4", GL_CLIP_PLANE4, 0x8ddcb267, GLPARAM_BOOLEAN, 1 },
-    { "GL_CLIP_PLANE5", GL_CLIP_PLANE5, 0xe40d4d43, GLPARAM_BOOLEAN, 1 },
-    { "GL_COLOR_ARRAY", GL_COLOR_ARRAY, 0x63db86ea, GLPARAM_BOOLEAN, 1 },
-    { "GL_COLOR_ARRAY_SIZE", GL_COLOR_ARRAY_SIZE, 0x2547efe, GLPARAM_INT, 1 },
-    { "GL_COLOR_ARRAY_STRIDE", GL_COLOR_ARRAY_STRIDE, 0xd8087886, GLPARAM_INT, 1 },
-    { "GL_COLOR_ARRAY_TYPE", GL_COLOR_ARRAY_TYPE, 0x5550b37d, GLPARAM_INT, 1 },
-    { "GL_COLOR_CLEAR_VALUE", GL_COLOR_CLEAR_VALUE, 0x298a2e5c, GLPARAM_DOUBLE, 4 },
-    { "GL_COLOR_LOGIC_OP", GL_COLOR_LOGIC_OP, 0x8b172a39, GLPARAM_BOOLEAN, 1 },
-    { "GL_COLOR_MATERIAL", GL_COLOR_MATERIAL, 0xe442a42c, GLPARAM_BOOLEAN, 1 },
-    { "GL_COLOR_MATERIAL_FACE", GL_COLOR_MATERIAL_FACE, 0x2ec87008, GLPARAM_INT, 1 },
-    { "GL_COLOR_MATERIAL_PARAMETER", GL_COLOR_MATERIAL_PARAMETER, 0x4bf52092, GLPARAM_INT, 1 },
-    { "GL_COLOR_WRITEMASK", GL_COLOR_WRITEMASK, 0x4cbef082, GLPARAM_BOOLEAN, 4 },
-    { "GL_CULL_FACE", GL_CULL_FACE, 0x81bbd421, GLPARAM_BOOLEAN, 1 },
-    { "GL_CULL_FACE_MODE", GL_CULL_FACE_MODE, 0xacf6457d, GLPARAM_INT, 1 },
-    { "GL_CURRENT_COLOR", GL_CURRENT_COLOR, 0x4142f6c4, GLPARAM_DOUBLE, 4 },
-    { "GL_CURRENT_INDEX", GL_CURRENT_INDEX, 0x36214fa6, GLPARAM_INT, 1 },
-    { "GL_CURRENT_NORMAL", GL_CURRENT_NORMAL, 0x6fe02413, GLPARAM_DOUBLE, 3 },
-    { "GL_CURRENT_RASTER_COLOR", GL_CURRENT_RASTER_COLOR, 0x6eeb92ba, GLPARAM_DOUBLE, 4 },
-    { "GL_CURRENT_RASTER_DISTANCE", GL_CURRENT_RASTER_DISTANCE, 0xb89b9d4, GLPARAM_DOUBLE, 1 },
-    { "GL_CURRENT_RASTER_INDEX", GL_CURRENT_RASTER_INDEX, 0x8b0a39c1, GLPARAM_INT, 1 },
-    { "GL_CURRENT_RASTER_POSITION", GL_CURRENT_RASTER_POSITION, 0x8e81306f, GLPARAM_DOUBLE, 4 },
-    { "GL_CURRENT_RASTER_POSITION_VALID", GL_CURRENT_RASTER_POSITION_VALID, 0xf898f29f, GLPARAM_BOOLEAN, 1 },
-    { "GL_CURRENT_RASTER_TEXTURE_COORDS", GL_CURRENT_RASTER_TEXTURE_COORDS, 0xbcee654a, GLPARAM_DOUBLE, 4 },
-    { "GL_CURRENT_TEXTURE_COORDS", GL_CURRENT_TEXTURE_COORDS, 0x4d83f9d7, GLPARAM_DOUBLE, 4 },
-    { "GL_DEPTH_BIAS", GL_DEPTH_BIAS, 0xdbb44bb7, GLPARAM_DOUBLE, 1 },
-    { "GL_DEPTH_BITS", GL_DEPTH_BITS, 0x14f6acb1, GLPARAM_INT, 1 },
-    { "GL_DEPTH_CLEAR_VALUE", GL_DEPTH_CLEAR_VALUE, 0x1808fd23, GLPARAM_DOUBLE, 1 },
-    { "GL_DEPTH_FUNC", GL_DEPTH_FUNC, 0x57ac404a, GLPARAM_INT, 1 },
-    { "GL_DEPTH_RANGE", GL_DEPTH_RANGE, 0xc98da9b3, GLPARAM_DOUBLE, 2 },
-    { "GL_DEPTH_SCALE", GL_DEPTH_SCALE, 0xa1b465bb, GLPARAM_DOUBLE, 1 },
-    { "GL_DEPTH_TEST", GL_DEPTH_TEST, 0x39aac8e4, GLPARAM_BOOLEAN, 1 },
-    { "GL_DEPTH_WRITEMASK", GL_DEPTH_WRITEMASK, 0xd8ff35ec, GLPARAM_BOOLEAN, 1 },
-    { "GL_DITHER", GL_DITHER, 0x128ad5d0, GLPARAM_BOOLEAN, 1 },
-    { "GL_DOUBLEBUFFER", GL_DOUBLEBUFFER, 0x4d6d04de, GLPARAM_BOOLEAN, 1 },
-    { "GL_DRAW_BUFFER", GL_DRAW_BUFFER, 0xda9a3bff, GLPARAM_INT, 1 },
-    { "GL_EDGE_FLAG", GL_EDGE_FLAG, 0x38d4116d, GLPARAM_BOOLEAN, 1 },
-    { "GL_EDGE_FLAG_ARRAY", GL_EDGE_FLAG_ARRAY, 0x49521ab9, GLPARAM_BOOLEAN, 1 },
-    { "GL_EDGE_FLAG_ARRAY_STRIDE", GL_EDGE_FLAG_ARRAY_STRIDE, 0x69d56c52, GLPARAM_INT, 1 },
-    { "GL_FOG", GL_FOG, 0x8ed3f4e8, GLPARAM_BOOLEAN, 1 },
-    { "GL_FOG_COLOR", GL_FOG_COLOR, 0x8f34178b, GLPARAM_DOUBLE, 4 },
-    { "GL_FOG_DENSITY", GL_FOG_DENSITY, 0x448e4245, GLPARAM_DOUBLE, 1 },
-    { "GL_FOG_END", GL_FOG_END, 0x4fcbcea4, GLPARAM_DOUBLE, 1 },
-    { "GL_FOG_HINT", GL_FOG_HINT, 0xbcc5dff5, GLPARAM_INT, 1 },
-    { "GL_FOG_INDEX", GL_FOG_INDEX, 0x7667f006, GLPARAM_INT, 1 },
-    { "GL_FOG_MODE", GL_FOG_MODE, 0x3894ebad, GLPARAM_INT, 1 },
-    { "GL_FOG_START", GL_FOG_START, 0xe503c09f, GLPARAM_DOUBLE, 1 },
-    { "GL_FRONT_FACE", GL_FRONT_FACE, 0xed1ec541, GLPARAM_INT, 1 },
-    { "GL_GREEN_BIAS", GL_GREEN_BIAS, 0xf5d701b6, GLPARAM_DOUBLE, 1 },
-    { "GL_GREEN_BITS", GL_GREEN_BITS, 0x3a95e6b0, GLPARAM_INT, 1 },
-    { "GL_GREEN_SCALE", GL_GREEN_SCALE, 0xab7c594, GLPARAM_DOUBLE, 1 },
-    { "GL_INDEX_ARRAY", GL_INDEX_ARRAY, 0x79cff321, GLPARAM_BOOLEAN, 1 },
-    { "GL_INDEX_ARRAY_STRIDE", GL_INDEX_ARRAY_STRIDE, 0xce9c6c10, GLPARAM_INT, 1 },
-    { "GL_INDEX_ARRAY_TYPE", GL_INDEX_ARRAY_TYPE, 0x41263a30, GLPARAM_INT, 1 },
-    { "GL_INDEX_BITS", GL_INDEX_BITS, 0x4dfbf162, GLPARAM_INT, 1 },
-    { "GL_INDEX_CLEAR_VALUE", GL_INDEX_CLEAR_VALUE, 0x40a66a49, GLPARAM_DOUBLE, 1 },
-    { "GL_INDEX_LOGIC_OP", GL_INDEX_LOGIC_OP, 0x9bd85422, GLPARAM_BOOLEAN, 1 },
-    { "GL_INDEX_MODE", GL_INDEX_MODE, 0xc1a16288, GLPARAM_BOOLEAN, 1 },
-    { "GL_INDEX_OFFSET", GL_INDEX_OFFSET, 0x421ff2ca, GLPARAM_INT, 1 },
-    { "GL_INDEX_SHIFT", GL_INDEX_SHIFT, 0x3bc532f2, GLPARAM_INT, 1 },
-    { "GL_INDEX_WRITEMASK", GL_INDEX_WRITEMASK, 0x9be7458b, GLPARAM_INT, 1 },
-    { "GL_LIGHT0", GL_LIGHT0, 0x5bda68ee, GLPARAM_BOOLEAN, 1 },
-    { "GL_LIGHT1", GL_LIGHT1, 0x1b886cd2, GLPARAM_BOOLEAN, 1 },
-    { "GL_LIGHT2", GL_LIGHT2, 0x7ecb116a, GLPARAM_BOOLEAN, 1 },
-    { "GL_LIGHT3", GL_LIGHT3, 0xfaabaa6f, GLPARAM_BOOLEAN, 1 },
-    { "GL_LIGHT4", GL_LIGHT4, 0xbb9130b9, GLPARAM_BOOLEAN, 1 },
-    { "GL_LIGHT5", GL_LIGHT5, 0x532a2f97, GLPARAM_BOOLEAN, 1 },
-    { "GL_LIGHT6", GL_LIGHT6, 0x1f8afeb3, GLPARAM_BOOLEAN, 1 },
-    { "GL_LIGHT7", GL_LIGHT7, 0x146d8bd2, GLPARAM_BOOLEAN, 1 },
-    { "GL_LIGHTING", GL_LIGHTING, 0x59667ac0, GLPARAM_BOOLEAN, 1 },
-    { "GL_LIGHT_MODEL_AMBIENT", GL_LIGHT_MODEL_AMBIENT, 0x2e1ea6d5, GLPARAM_DOUBLE, 4 },
-    { "GL_LIGHT_MODEL_LOCAL_VIEWER", GL_LIGHT_MODEL_LOCAL_VIEWER, 0x30df85bb, GLPARAM_BOOLEAN, 1 },
-    { "GL_LIGHT_MODEL_TWO_SIDE", GL_LIGHT_MODEL_TWO_SIDE, 0x9949a130, GLPARAM_BOOLEAN, 1 },
-    { "GL_LINE_SMOOTH", GL_LINE_SMOOTH, 0xb50bf1e5, GLPARAM_BOOLEAN, 1 },
-    { "GL_LINE_SMOOTH_HINT", GL_LINE_SMOOTH_HINT, 0x3220d2a9, GLPARAM_INT, 1 },
-    { "GL_LINE_STIPPLE", GL_LINE_STIPPLE, 0x7c77b2ea, GLPARAM_BOOLEAN, 1 },
-    { "GL_LINE_STIPPLE_PATTERN", GL_LINE_STIPPLE_PATTERN, 0x26f5a1de, GLPARAM_INT, 1 },
-    { "GL_LINE_STIPPLE_REPEAT", GL_LINE_STIPPLE_REPEAT, 0x45972ff1, GLPARAM_DOUBLE, 1 },
-    { "GL_LINE_WIDTH", GL_LINE_WIDTH, 0x4ecaa0ff, GLPARAM_DOUBLE, 1 },
-    { "GL_LINE_WIDTH_GRANULARITY", GL_LINE_WIDTH_GRANULARITY, 0xe50132d9, GLPARAM_DOUBLE, 1 },
-    { "GL_LINE_WIDTH_RANGE", GL_LINE_WIDTH_RANGE, 0x70a1427b, GLPARAM_DOUBLE, 2 },
-    { "GL_LIST_BASE", GL_LIST_BASE, 0x82fc8aab, GLPARAM_INT, 1 },
-    { "GL_LIST_INDEX", GL_LIST_INDEX, 0xdecfce14, GLPARAM_INT, 1 },
-    { "GL_LIST_MODE", GL_LIST_MODE, 0x8ccb0bf7, GLPARAM_INT, 1 },
-    { "GL_LOGIC_OP", GL_LOGIC_OP, 0xaae3bb9a, GLPARAM_BOOLEAN, 1 },
-    { "GL_LOGIC_OP_MODE", GL_LOGIC_OP_MODE, 0x2af52693, GLPARAM_INT, 1 },
-    { "GL_MAP1_COLOR_4", GL_MAP1_COLOR_4, 0x384eb930, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP1_GRID_DOMAIN", GL_MAP1_GRID_DOMAIN, 0xe79010ad, GLPARAM_DOUBLE, 2 },
-    { "GL_MAP1_GRID_SEGMENTS", GL_MAP1_GRID_SEGMENTS, 0x7de39797, GLPARAM_INT, 1 },
-    { "GL_MAP1_INDEX", GL_MAP1_INDEX, 0xa09ff53f, GLPARAM_INT, 1 },
-    { "GL_MAP1_NORMAL", GL_MAP1_NORMAL, 0xa6ab1a46, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP1_TEXTURE_COORD_1", GL_MAP1_TEXTURE_COORD_1, 0x151d1a8b, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP1_TEXTURE_COORD_2", GL_MAP1_TEXTURE_COORD_2, 0x413aac21, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP1_TEXTURE_COORD_3", GL_MAP1_TEXTURE_COORD_3, 0x913d7ca6, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP1_TEXTURE_COORD_4", GL_MAP1_TEXTURE_COORD_4, 0xc40342ac, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP1_VERTEX_3", GL_MAP1_VERTEX_3, 0x55c3f9a5, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP1_VERTEX_4", GL_MAP1_VERTEX_4, 0x5f8980f3, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP2_COLOR_4", GL_MAP2_COLOR_4, 0xb288454, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP2_GRID_DOMAIN", GL_MAP2_GRID_DOMAIN, 0xbcd336fa, GLPARAM_DOUBLE, 2 },
-    { "GL_MAP2_GRID_SEGMENTS", GL_MAP2_GRID_SEGMENTS, 0x479a7c52, GLPARAM_INT, 1 },
-    { "GL_MAP2_INDEX", GL_MAP2_INDEX, 0x8ff86285, GLPARAM_INT, 1 },
-    { "GL_MAP2_NORMAL", GL_MAP2_NORMAL, 0x51fcdb15, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP2_TEXTURE_COORD_1", GL_MAP2_TEXTURE_COORD_1, 0x1b2e6191, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP2_TEXTURE_COORD_2", GL_MAP2_TEXTURE_COORD_2, 0x4f09d73b, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP2_TEXTURE_COORD_3", GL_MAP2_TEXTURE_COORD_3, 0x9f0e07bc, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP2_TEXTURE_COORD_4", GL_MAP2_TEXTURE_COORD_4, 0xca3039b6, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP2_VERTEX_3", GL_MAP2_VERTEX_3, 0x87e0f262, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP2_VERTEX_4", GL_MAP2_VERTEX_4, 0x8daa8b34, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP_COLOR", GL_MAP_COLOR, 0xf7f71c1c, GLPARAM_BOOLEAN, 1 },
-    { "GL_MAP_STENCIL", GL_MAP_STENCIL, 0x150d4500, GLPARAM_BOOLEAN, 1 },
-    { "GL_MATRIX_MODE", GL_MATRIX_MODE, 0x5fca7fa2, GLPARAM_INT, 1 },
-    { "GL_MAX_CLIENT_ATTRIB_STACK_DEPTH", GL_MAX_CLIENT_ATTRIB_STACK_DEPTH, 0xc1318221, GLPARAM_INT, 1 },
-    { "GL_MAX_ATTRIB_STACK_DEPTH", GL_MAX_ATTRIB_STACK_DEPTH, 0x2d2a8235, GLPARAM_INT, 1 },
-    { "GL_MAX_CLIP_PLANES", GL_MAX_CLIP_PLANES, 0x32524b18, GLPARAM_INT, 1 },
-    { "GL_MAX_EVAL_ORDER", GL_MAX_EVAL_ORDER, 0x5558be77, GLPARAM_INT, 1 },
-    { "GL_MAX_LIGHTS", GL_MAX_LIGHTS, 0x31fc482c, GLPARAM_INT, 1 },
-    { "GL_MAX_LIST_NESTING", GL_MAX_LIST_NESTING, 0xbae8bec1, GLPARAM_INT, 1 },
-    { "GL_MAX_MODELVIEW_STACK_DEPTH", GL_MAX_MODELVIEW_STACK_DEPTH, 0xbaca15ce, GLPARAM_INT, 1 },
-    { "GL_MAX_NAME_STACK_DEPTH", GL_MAX_NAME_STACK_DEPTH, 0x885a40e9, GLPARAM_INT, 1 },
-    { "GL_MAX_PIXEL_MAP_TABLE", GL_MAX_PIXEL_MAP_TABLE, 0x2713c350, GLPARAM_INT, 1 },
-    { "GL_MAX_PROJECTION_STACK_DEPTH", GL_MAX_PROJECTION_STACK_DEPTH, 0xb6ebc69b, GLPARAM_INT, 1 },
-    { "GL_MAX_TEXTURE_SIZE", GL_MAX_TEXTURE_SIZE, 0x4da60713, GLPARAM_INT, 1 },
-    { "GL_MAX_TEXTURE_STACK_DEPTH", GL_MAX_TEXTURE_STACK_DEPTH, 0x22a22646, GLPARAM_INT, 1 },
-    { "GL_MAX_VIEWPORT_DIMS", GL_MAX_VIEWPORT_DIMS, 0x1fd44300, GLPARAM_INT, 2 },
-    { "GL_MODELVIEW_MATRIX", GL_MODELVIEW_MATRIX, 0x28ae2c7, GLPARAM_DOUBLE, 16 },
-    { "GL_MODELVIEW_STACK_DEPTH", GL_MODELVIEW_STACK_DEPTH, 0xe8ebedfc, GLPARAM_INT, 1 },
-    { "GL_NAME_STACK_DEPTH", GL_NAME_STACK_DEPTH, 0x696ab135, GLPARAM_INT, 1 },
-    { "GL_NORMAL_ARRAY", GL_NORMAL_ARRAY, 0xca3c3867, GLPARAM_BOOLEAN, 1 },
-    { "GL_NORMAL_ARRAY_STRIDE", GL_NORMAL_ARRAY_STRIDE, 0xd501e62, GLPARAM_INT, 1 },
-    { "GL_NORMAL_ARRAY_TYPE", GL_NORMAL_ARRAY_TYPE, 0x18b5baa7, GLPARAM_INT, 1 },
-    { "GL_NORMALIZE", GL_NORMALIZE, 0xea0eb318, GLPARAM_BOOLEAN, 1 },
-    { "GL_PACK_ALIGNMENT", GL_PACK_ALIGNMENT, 0xcc1a0925, GLPARAM_INT, 1 },
-    { "GL_PACK_LSB_FIRST", GL_PACK_LSB_FIRST, 0x19c6b7c, GLPARAM_BOOLEAN, 1 },
-    { "GL_PACK_ROW_LENGTH", GL_PACK_ROW_LENGTH, 0x9f7e0890, GLPARAM_INT, 1 },
-    { "GL_PACK_SKIP_PIXELS", GL_PACK_SKIP_PIXELS, 0x1610580, GLPARAM_INT, 1 },
-    { "GL_PACK_SKIP_ROWS", GL_PACK_SKIP_ROWS, 0xd946eac8, GLPARAM_INT, 1 },
-    { "GL_PACK_SWAP_BYTES", GL_PACK_SWAP_BYTES, 0xa6bec190, GLPARAM_BOOLEAN, 1 },
-    { "GL_PERSPECTIVE_CORRECTION_HINT", GL_PERSPECTIVE_CORRECTION_HINT, 0x8d6f0477, GLPARAM_INT, 1 },
-    { "GL_PIXEL_MAP_A_TO_A_SIZE", GL_PIXEL_MAP_A_TO_A_SIZE, 0x6b2c0067, GLPARAM_INT, 1 },
-    { "GL_PIXEL_MAP_B_TO_B_SIZE", GL_PIXEL_MAP_B_TO_B_SIZE, 0x25405857, GLPARAM_INT, 1 },
-    { "GL_PIXEL_MAP_G_TO_G_SIZE", GL_PIXEL_MAP_G_TO_G_SIZE, 0x1bd44b7, GLPARAM_INT, 1 },
-    { "GL_PIXEL_MAP_I_TO_A_SIZE", GL_PIXEL_MAP_I_TO_A_SIZE, 0x7c9da7c5, GLPARAM_INT, 1 },
-    { "GL_PIXEL_MAP_I_TO_B_SIZE", GL_PIXEL_MAP_I_TO_B_SIZE, 0x122042f3, GLPARAM_INT, 1 },
-    { "GL_PIXEL_MAP_I_TO_G_SIZE", GL_PIXEL_MAP_I_TO_G_SIZE, 0x6be2a12c, GLPARAM_INT, 1 },
-    { "GL_PIXEL_MAP_I_TO_I_SIZE", GL_PIXEL_MAP_I_TO_I_SIZE, 0x6f9bb79c, GLPARAM_INT, 1 },
-    { "GL_PIXEL_MAP_I_TO_R_SIZE", GL_PIXEL_MAP_I_TO_R_SIZE, 0x56af6269, GLPARAM_INT, 1 },
-    { "GL_PIXEL_MAP_R_TO_R_SIZE", GL_PIXEL_MAP_R_TO_R_SIZE, 0x5d8ac0e5, GLPARAM_INT, 1 },
-    { "GL_PIXEL_MAP_S_TO_S_SIZE", GL_PIXEL_MAP_S_TO_S_SIZE, 0xa5ac84d2, GLPARAM_INT, 1 },
-    { "GL_POINT_SIZE", GL_POINT_SIZE, 0xa1ad1a8d, GLPARAM_DOUBLE, 1 },
-    { "GL_POINT_SIZE_GRANULARITY", GL_POINT_SIZE_GRANULARITY, 0x1a1cf7f1, GLPARAM_DOUBLE, 1 },
-    { "GL_POINT_SIZE_RANGE", GL_POINT_SIZE_RANGE, 0xf341db2a, GLPARAM_DOUBLE, 2 },
-    { "GL_POINT_SMOOTH", GL_POINT_SMOOTH, 0xacb67eed, GLPARAM_BOOLEAN, 1 },
-    { "GL_POINT_SMOOTH_HINT", GL_POINT_SMOOTH_HINT, 0x7fddac08, GLPARAM_INT, 1 },
-    { "GL_POLYGON_MODE", GL_POLYGON_MODE, 0x5c82008e, GLPARAM_INT, 2 },
-    { "GL_POLYGON_OFFSET_FACTOR", GL_POLYGON_OFFSET_FACTOR, 0x24a68003, GLPARAM_DOUBLE, 1 },
-    { "GL_POLYGON_OFFSET_UNITS", GL_POLYGON_OFFSET_UNITS, 0xe964a9e, GLPARAM_DOUBLE, 1 },
-    { "GL_POLYGON_OFFSET_FILL", GL_POLYGON_OFFSET_FILL, 0x33db9633, GLPARAM_BOOLEAN, 1 },
-    { "GL_POLYGON_OFFSET_LINE", GL_POLYGON_OFFSET_LINE, 0x1d0bf477, GLPARAM_BOOLEAN, 1 },
-    { "GL_POLYGON_OFFSET_POINT", GL_POLYGON_OFFSET_POINT, 0x7026f3, GLPARAM_BOOLEAN, 1 },
-    { "GL_POLYGON_SMOOTH", GL_POLYGON_SMOOTH, 0xaa85c7a3, GLPARAM_BOOLEAN, 1 },
-    { "GL_POLYGON_SMOOTH_HINT", GL_POLYGON_SMOOTH_HINT, 0x3ed766d5, GLPARAM_INT, 1 },
-    { "GL_POLYGON_STIPPLE", GL_POLYGON_STIPPLE, 0x9d2afe05, GLPARAM_BOOLEAN, 1 },
-    { "GL_PROJECTION_MATRIX", GL_PROJECTION_MATRIX, 0x77ffe1af, GLPARAM_DOUBLE, 16 },
-    { "GL_PROJECTION_STACK_DEPTH", GL_PROJECTION_STACK_DEPTH, 0x8c0a4ff3, GLPARAM_INT, 1 },
-    { "GL_READ_BUFFER", GL_READ_BUFFER, 0xa98284f0, GLPARAM_INT, 1 },
-    { "GL_RED_BIAS", GL_RED_BIAS, 0x24f78267, GLPARAM_DOUBLE, 1 },
-    { "GL_RED_BITS", GL_RED_BITS, 0xeda26dd1, GLPARAM_INT, 1 },
-    { "GL_RED_SCALE", GL_RED_SCALE, 0x9427392b, GLPARAM_DOUBLE, 1 },
-    { "GL_RENDER_MODE", GL_RENDER_MODE, 0x7fb9f74d, GLPARAM_INT, 1 },
-    { "GL_RGBA_MODE", GL_RGBA_MODE, 0x1aea7482, GLPARAM_BOOLEAN, 1 },
-    { "GL_SCISSOR_BOX", GL_SCISSOR_BOX, 0x1aae8169, GLPARAM_DOUBLE, 4 },
-    { "GL_SCISSOR_TEST", GL_SCISSOR_TEST, 0xd765600a, GLPARAM_BOOLEAN, 1 },
-    { "GL_SHADE_MODEL", GL_SHADE_MODEL, 0x54775558, GLPARAM_INT, 1 },
-    { "GL_STENCIL_BITS", GL_STENCIL_BITS, 0xbb4ccd09, GLPARAM_INT, 1 },
-    { "GL_STENCIL_CLEAR_VALUE", GL_STENCIL_CLEAR_VALUE, 0x9aa933a2, GLPARAM_DOUBLE, 1 },
-    { "GL_STENCIL_FAIL", GL_STENCIL_FAIL, 0x9d669020, GLPARAM_INT, 1 },
-    { "GL_STENCIL_FUNC", GL_STENCIL_FUNC, 0x5f738047, GLPARAM_INT, 1 },
-    { "GL_STENCIL_PASS_DEPTH_FAIL", GL_STENCIL_PASS_DEPTH_FAIL, 0xfc785121, GLPARAM_INT, 1 },
-    { "GL_STENCIL_PASS_DEPTH_PASS", GL_STENCIL_PASS_DEPTH_PASS, 0x5152491f, GLPARAM_INT, 1 },
-    { "GL_STENCIL_REF", GL_STENCIL_REF, 0xfdcbf484, GLPARAM_DOUBLE, 1 },
-    { "GL_STENCIL_TEST", GL_STENCIL_TEST, 0x245817c1, GLPARAM_BOOLEAN, 1 },
-    { "GL_STENCIL_VALUE_MASK", GL_STENCIL_VALUE_MASK, 0x96bb7f38, GLPARAM_INT, 1 },
-    { "GL_STENCIL_WRITEMASK", GL_STENCIL_WRITEMASK, 0xee3b40b1, GLPARAM_INT, 1 },
-    { "GL_STEREO", GL_STEREO, 0x9eb7b4b, GLPARAM_BOOLEAN, 1 },
-    { "GL_SUBPIXEL_BITS", GL_SUBPIXEL_BITS, 0x5cc0fc2a, GLPARAM_INT, 1 },
-    { "GL_TEXTURE_1D", GL_TEXTURE_1D, 0x5a769edd, GLPARAM_BOOLEAN, 1 },
-    { "GL_TEXTURE_2D", GL_TEXTURE_2D, 0x5b2970f1, GLPARAM_BOOLEAN, 1 },
-    { "GL_TEXTURE_COORD_ARRAY", GL_TEXTURE_COORD_ARRAY, 0xe5c63ac3, GLPARAM_BOOLEAN, 1 },
-    { "GL_TEXTURE_COORD_ARRAY_SIZE", GL_TEXTURE_COORD_ARRAY_SIZE, 0xc6369648, GLPARAM_INT, 1 },
-    { "GL_TEXTURE_COORD_ARRAY_STRIDE", GL_TEXTURE_COORD_ARRAY_STRIDE, 0x3cb26375, GLPARAM_INT, 1 },
-    { "GL_TEXTURE_COORD_ARRAY_TYPE", GL_TEXTURE_COORD_ARRAY_TYPE, 0x52caaa00, GLPARAM_INT, 1 },
-    { "GL_TEXTURE_ENV_COLOR", GL_TEXTURE_ENV_COLOR, 0xaff39fa2, GLPARAM_DOUBLE, 4 },
-    { "GL_TEXTURE_ENV_MODE", GL_TEXTURE_ENV_MODE, 0x3be892d6, GLPARAM_INT, 1 },
-    { "GL_TEXTURE_GEN_Q", GL_TEXTURE_GEN_Q, 0xf9a6254b, GLPARAM_BOOLEAN, 1 },
-    { "GL_TEXTURE_GEN_R", GL_TEXTURE_GEN_R, 0x80732541, GLPARAM_BOOLEAN, 1 },
-    { "GL_TEXTURE_GEN_S", GL_TEXTURE_GEN_S, 0xdeb50068, GLPARAM_BOOLEAN, 1 },
-    { "GL_TEXTURE_GEN_T", GL_TEXTURE_GEN_T, 0x55aa013b, GLPARAM_BOOLEAN, 1 },
-    { "GL_TEXTURE_MATRIX", GL_TEXTURE_MATRIX, 0xe2ee2471, GLPARAM_DOUBLE, 16 },
-    { "GL_TEXTURE_STACK_DEPTH", GL_TEXTURE_STACK_DEPTH, 0x220504de, GLPARAM_INT, 1 },
-    { "GL_UNPACK_ALIGNMENT", GL_UNPACK_ALIGNMENT, 0xcc46b1ae, GLPARAM_INT, 1 },
-    { "GL_UNPACK_ROW_LENGTH", GL_UNPACK_ROW_LENGTH, 0xc2ebc06c, GLPARAM_INT, 1 },
-    { "GL_UNPACK_SKIP_PIXELS", GL_UNPACK_SKIP_PIXELS, 0x1204b192, GLPARAM_INT, 1 },
-    { "GL_UNPACK_SWAP_BYTES", GL_UNPACK_SWAP_BYTES, 0x33d05a10, GLPARAM_BOOLEAN, 1 },
-    { "GL_VERTEX_ARRAY", GL_VERTEX_ARRAY, 0xd04f30e5, GLPARAM_BOOLEAN, 1 },
-    { "GL_VERTEX_ARRAY_SIZE", GL_VERTEX_ARRAY_SIZE, 0xe8ca882b, GLPARAM_INT, 1 },
-    { "GL_VERTEX_ARRAY_STRIDE", GL_VERTEX_ARRAY_STRIDE, 0xdaa7f1a, GLPARAM_INT, 1 },
-    { "GL_VERTEX_ARRAY_TYPE", GL_VERTEX_ARRAY_TYPE, 0xe5dc63d3, GLPARAM_INT, 1 },
-    { "GL_VIEWPORT", GL_VIEWPORT, 0x49fe7a9e, GLPARAM_INT, 4 },
-    { "GL_ZOOM_X", GL_ZOOM_X, 0xe1e6eed7, GLPARAM_DOUBLE, 1 },
-    { "GL_ZOOM_Y", GL_ZOOM_Y, 0xa95ee43, GLPARAM_DOUBLE, 1 }
-};
+    GLdouble x, y, z;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( x );
+    argStream.ReadNumber( y );
+    argStream.ReadNumber( z );
+    LUA_ARGS_END;
+
+    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
+    glContextStack context( driver );
+
+    _glTranslated( x, y, z );
+    LUA_SUCCESS;
+}
 
 static LUA_DECLARE( get )
 {
@@ -1269,7 +1060,9 @@ static LUA_DECLARE( get )
 
     LUA_CHECK( name );
 
-    const GLparaminfo *info = GetParamByName( param_list, NUMELMS(param_list), name, len );
+    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
+
+    const GLparaminfo *info = gl_parameters::GetParamByName( driver, name, len );
 
     LUA_CHECK( info );
 
@@ -1281,7 +1074,6 @@ static LUA_DECLARE( get )
         double _double[16];
     };
 
-    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
     glContextStack context( driver );
 
     switch( info->type )
@@ -1319,94 +1111,6 @@ static LUA_DECLARE( get )
     return info->numArgs;
 }
 
-namespace bool_param
-{
-    struct GLparaminfo
-    {
-        const char *name;
-        GLenum builtin;
-        unsigned int hash;
-    };
-
-    __forceinline const GLparaminfo* GetParamByName( const GLparaminfo *info, const size_t len, const char *name, size_t nameLen )
-    {
-        unsigned int hash = TumblerHash( name, nameLen );
-
-        for ( unsigned int n = 0; n < len; n++ )
-        {
-            const GLparaminfo *item = info + n;
-
-            if ( item->hash == hash )
-                return item;
-        }
-
-        return NULL;
-    }
-
-    static const GLparaminfo items[] =
-    {
-        { "GL_ALPHA_TEST", GL_ALPHA_TEST, 0xaae45f62 },
-        { "GL_AUTO_NORMAL", GL_AUTO_NORMAL, 0x712edb6b },
-        { "GL_BLEND", GL_BLEND, 0xa40557e7 },
-        { "GL_CLIP_PLANE0", GL_CLIP_PLANE0, 0x848c8631 },
-        { "GL_CLIP_PLANE1", GL_CLIP_PLANE1, 0x6ccbd80b },
-        { "GL_CLIP_PLANE2", GL_CLIP_PLANE2, 0x259843b6 },
-        { "GL_CLIP_PLANE3", GL_CLIP_PLANE3, 0x84c3f94b },
-        { "GL_CLIP_PLANE4", GL_CLIP_PLANE4, 0x8ddcb267 },
-        { "GL_CLIP_PLANE5", GL_CLIP_PLANE5, 0xe40d4d43 },
-        { "GL_COLOR_LOGIC_OP", GL_COLOR_LOGIC_OP, 0x8b172a39 },
-        { "GL_COLOR_MATERIAL", GL_COLOR_MATERIAL, 0xe442a42c },
-        { "GL_CULL_FACE", GL_CULL_FACE, 0x81bbd421 },
-        { "GL_DEPTH_TEST", GL_DEPTH_TEST, 0x39aac8e4 },
-        { "GL_DITHER", GL_DITHER, 0x128ad5d0 },
-        { "GL_FOG", GL_FOG, 0x8ed3f4e8 },
-        { "GL_INDEX_LOGIC_OP", GL_INDEX_LOGIC_OP, 0x9bd85422 },
-        { "GL_LIGHT0", GL_LIGHT0, 0x5bda68ee },
-        { "GL_LIGHT1", GL_LIGHT1, 0x1b886cd2 },
-        { "GL_LIGHT2", GL_LIGHT2, 0x7ecb116a },
-        { "GL_LIGHT3", GL_LIGHT3, 0xfaabaa6f },
-        { "GL_LIGHT4", GL_LIGHT4, 0xbb9130b9 },
-        { "GL_LIGHT5", GL_LIGHT5, 0x532a2f97 },
-        { "GL_LIGHT6", GL_LIGHT6, 0x1f8afeb3 },
-        { "GL_LIGHT7", GL_LIGHT7, 0x146d8bd2 },
-        { "GL_LINE_STIPPLE", GL_LINE_STIPPLE, 0x7c77b2ea },
-        { "GL_LOGIC_OP", GL_LOGIC_OP, 0xaae3bb9a },
-        { "GL_MAP1_COLOR_4", GL_MAP1_COLOR_4, 0x384eb930 },
-        { "GL_MAP1_INDEX", GL_MAP1_INDEX, 0xa09ff53f },
-        { "GL_MAP1_NORMAL", GL_MAP1_NORMAL, 0xa6ab1a46 },
-        { "GL_MAP1_TEXTURE_COORD_1", GL_MAP1_TEXTURE_COORD_1, 0x151d1a8b },
-        { "GL_MAP1_TEXTURE_COORD_2", GL_MAP1_TEXTURE_COORD_2, 0x413aac21 },
-        { "GL_MAP1_TEXTURE_COORD_3", GL_MAP1_TEXTURE_COORD_3, 0x913d7ca6 },
-        { "GL_MAP1_TEXTURE_COORD_4", GL_MAP1_TEXTURE_COORD_4, 0xc40342ac },
-        { "GL_MAP1_VERTEX_3", GL_MAP1_VERTEX_3, 0x55c3f9a5 },
-        { "GL_MAP1_VERTEX_4", GL_MAP1_VERTEX_4, 0x5f8980f3 },
-        { "GL_MAP2_COLOR_4", GL_MAP2_COLOR_4, 0xb288454 },
-        { "GL_MAP2_INDEX", GL_MAP2_INDEX, 0x8ff86285 },
-        { "GL_MAP2_NORMAL", GL_MAP2_NORMAL, 0x51fcdb15 },
-        { "GL_MAP2_TEXTURE_COORD_1", GL_MAP2_TEXTURE_COORD_1, 0x1b2e6191 },
-        { "GL_MAP2_TEXTURE_COORD_2", GL_MAP2_TEXTURE_COORD_2, 0x4f09d73b },
-        { "GL_MAP2_TEXTURE_COORD_3", GL_MAP2_TEXTURE_COORD_3, 0x9f0e07bc },
-        { "GL_MAP2_TEXTURE_COORD_4", GL_MAP2_TEXTURE_COORD_4, 0xca3039b6 },
-        { "GL_MAP2_VERTEX_3", GL_MAP2_VERTEX_3, 0x87e0f262 },
-        { "GL_MAP2_VERTEX_4", GL_MAP2_VERTEX_4, 0x8daa8b34 },
-        { "GL_NORMALIZE", GL_NORMALIZE, 0xea0eb318 },
-        { "GL_POINT_SMOOTH", GL_POINT_SMOOTH, 0xacb67eed },
-        { "GL_POLYGON_OFFSET_FILL", GL_POLYGON_OFFSET_FILL, 0x33db9633 },
-        { "GL_POLYGON_OFFSET_LINE", GL_POLYGON_OFFSET_LINE, 0x1d0bf477 },
-        { "GL_POLYGON_OFFSET_POINT", GL_POLYGON_OFFSET_POINT, 0x7026f3 },
-        { "GL_POLYGON_SMOOTH", GL_POLYGON_SMOOTH, 0xaa85c7a3 },
-        { "GL_POLYGON_STIPPLE", GL_POLYGON_STIPPLE, 0x9d2afe05 },
-        { "GL_SCISSOR_TEST", GL_SCISSOR_TEST, 0xd765600a },
-        { "GL_STENCIL_TEST", GL_STENCIL_TEST, 0x245817c1 },
-        { "GL_TEXTURE_1D", GL_TEXTURE_1D, 0x5a769edd },
-        { "GL_TEXTURE_2D", GL_TEXTURE_2D, 0x5b2970f1 },
-        { "GL_TEXTURE_GEN_Q", GL_TEXTURE_GEN_Q, 0xf9a6254b },
-        { "GL_TEXTURE_GEN_R", GL_TEXTURE_GEN_R, 0x80732541 },
-        { "GL_TEXTURE_GEN_S", GL_TEXTURE_GEN_S, 0xdeb50068 },
-        { "GL_TEXTURE_GEN_T", GL_TEXTURE_GEN_T, 0x55aa013b },
-    };
-}
-
 static LUA_DECLARE( enable )
 {
     size_t len;
@@ -1415,11 +1119,12 @@ static LUA_DECLARE( enable )
     if ( !name )
         throw lua_exception( L, LUA_ERRRUN, "invalid bool property" );
 
-    const bool_param::GLparaminfo *info = bool_param::GetParamByName( bool_param::items, NUMELMS( bool_param::items ), name, len );
+    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
+
+    const GLparamdesc *info = gl_capabilities::GetParamByName( driver, name, len );
 
     LUA_CHECK( info );
 
-    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
     glContextStack context( driver );
 
     _glEnable( info->builtin );
@@ -1436,11 +1141,12 @@ static LUA_DECLARE( disable )
     if ( !name )
         throw lua_exception( L, LUA_ERRRUN, "invalid bool property" );
 
-    const bool_param::GLparaminfo *info = bool_param::GetParamByName( bool_param::items, NUMELMS( bool_param::items ), name, len );
+    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
+
+    const GLparamdesc *info = gl_capabilities::GetParamByName( driver, name, len );
 
     LUA_CHECK( info );
 
-    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
     glContextStack context( driver );
 
     _glDisable( info->builtin );
@@ -1457,11 +1163,12 @@ static LUA_DECLARE( isEnabled )
     if ( !name )
         throw lua_exception( L, LUA_ERRRUN, "invalid bool property" );
 
-    const bool_param::GLparaminfo *info = bool_param::GetParamByName( bool_param::items, NUMELMS( bool_param::items ), name, len );
+    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
+
+    const GLparamdesc *info = gl_capabilities::GetParamByName( driver, name, len );
 
     LUA_CHECK( info );
 
-    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
     glContextStack context( driver );
 
     lua_pushboolean( L, _glIsEnabled( info->builtin ) );
@@ -1566,8 +1273,11 @@ static const luaL_Reg driver_interface[] =
     LUA_METHOD( pushMatrix ),
     LUA_METHOD( popMatrix ),
     LUA_METHOD( loadMatrix ),
+    LUA_METHOD( getMatrix ),
     LUA_METHOD( loadIdentity ),
     LUA_METHOD( multiplyMatrix ),
+    LUA_METHOD( rotate ),
+    LUA_METHOD( translate ),
     LUA_METHOD( get ),
     LUA_METHOD( enable ),
     LUA_METHOD( disable ),
@@ -1612,6 +1322,7 @@ static LUA_DECLARE( constructor )
     j->RegisterInterfaceTrans( L, tex_driver_interface, 0, LUACLASS_GLDRIVER );
     j->RegisterInterfaceTrans( L, fbo_driver_interface, 0, LUACLASS_GLDRIVER );
     j->RegisterInterfaceTrans( L, driver_util_interface, 0, LUACLASS_GLDRIVER );
+    j->RegisterInterfaceTrans( L, shader_driver_interface, 0, LUACLASS_GLDRIVER );
 
     // Include the event API
     luaevent_extend( L );
@@ -1658,6 +1369,9 @@ inline void TriggerExtension( glDriver *driver, const char *extension, size_t ex
     else if ( name == "GL_KHR_texture_compression_astc_ldr" )           driver->supportsASTC = true;
     else if ( name == "GL_EXT_texture_sRGB" )                           driver->supports_srgb_compression = true;
     else if ( name == "GL_ARB_imaging" )                                driver->supports_ARB_imaging = true;
+    else if ( name == "GL_ARB_vertex_shader" )                          driver->supports_ARB_vertex_shader = true;
+    else if ( name == "GL_ARB_shader_objects" )                         driver->supports_ARB_shader_objects = true;
+    else if ( name == "GL_ARB_vertex_program" )                         driver->supports_ARB_vertex_program = true;
 }
 
 inline void ParseExtensionString( glDriver *driver, const char *extString )
@@ -1756,6 +1470,9 @@ glDriver::glDriver( lua_State *L, Win32Dialog *wnd ) : LuaClass( L, _trefget( L,
         supports_FBO_EXT = false;
         supportsFBO = false;
         supports_ARB_imaging = false;
+        supports_ARB_vertex_shader = false;
+        supports_ARB_shader_objects = false;
+        supports_ARB_vertex_program = false;
 
         maxFBOColorAttachments = 1;
         maxFBOColorAttachmentsEXT = 1;
@@ -1768,6 +1485,9 @@ glDriver::glDriver( lua_State *L, Win32Dialog *wnd ) : LuaClass( L, _trefget( L,
         // Set up driver context stacks
         fboDrawStack = NULL;
         fboReadStack = NULL;
+
+        // Initialize the GLSL program context
+        currentProgramARB = NULL;
 
 #define API_LOAD_EXT( name ) \
     contextInfo->##name = (##name##_t)_wglGetProcAddress( #name )
@@ -1944,6 +1664,421 @@ glDriver::glDriver( lua_State *L, Win32Dialog *wnd ) : LuaClass( L, _trefget( L,
                 supports_FBO_EXT = false;
             }
         }
+
+        // OpenGL ARB_shader_objects API
+        if ( supports_ARB_shader_objects )
+        {
+            API_LOAD_EXT( glDeleteObjectARB );
+            API_LOAD_EXT( glGetHandleARB );
+            API_LOAD_EXT( glDetachObjectARB );
+            API_LOAD_EXT( glCreateShaderObjectARB );
+            API_LOAD_EXT( glShaderSourceARB );
+            API_LOAD_EXT( glCompileShaderARB );
+            API_LOAD_EXT( glCreateProgramObjectARB );
+            API_LOAD_EXT( glAttachObjectARB );
+            API_LOAD_EXT( glLinkProgramARB );
+            API_LOAD_EXT( glUseProgramObjectARB );
+            API_LOAD_EXT( glValidateProgramARB );
+            API_LOAD_EXT( glUniform1fARB );
+            API_LOAD_EXT( glUniform2fARB );
+            API_LOAD_EXT( glUniform3fARB );
+            API_LOAD_EXT( glUniform4fARB );
+            API_LOAD_EXT( glUniform1iARB );
+            API_LOAD_EXT( glUniform2iARB );
+            API_LOAD_EXT( glUniform3iARB );
+            API_LOAD_EXT( glUniform4iARB );
+            API_LOAD_EXT( glUniform1fvARB );
+            API_LOAD_EXT( glUniform2fvARB );
+            API_LOAD_EXT( glUniform3fvARB );
+            API_LOAD_EXT( glUniform4fvARB );
+            API_LOAD_EXT( glUniform1ivARB );
+            API_LOAD_EXT( glUniform2ivARB );
+            API_LOAD_EXT( glUniform3ivARB );
+            API_LOAD_EXT( glUniform4ivARB );
+            API_LOAD_EXT( glUniformMatrix2fvARB );
+            API_LOAD_EXT( glUniformMatrix3fvARB );
+            API_LOAD_EXT( glUniformMatrix4fvARB );
+            API_LOAD_EXT( glGetObjectParameterfvARB );
+            API_LOAD_EXT( glGetObjectParameterivARB );
+            API_LOAD_EXT( glGetInfoLogARB );
+            API_LOAD_EXT( glGetAttachedObjectsARB );
+            API_LOAD_EXT( glGetUniformLocationARB );
+            API_LOAD_EXT( glGetActiveUniformARB );
+            API_LOAD_EXT( glGetUniformfvARB );
+            API_LOAD_EXT( glGetUniformivARB );
+            API_LOAD_EXT( glGetShaderSourceARB );
+
+            // Check whether all ARB_shader_objects functions are supported.
+            bool apiFatal = false;
+
+            API_CHECK_EXT( glDeleteObjectARB );
+            API_CHECK_EXT( glGetHandleARB );
+            API_CHECK_EXT( glDetachObjectARB );
+            API_CHECK_EXT( glCreateShaderObjectARB );
+            API_CHECK_EXT( glShaderSourceARB );
+            API_CHECK_EXT( glCompileShaderARB );
+            API_CHECK_EXT( glCreateProgramObjectARB );
+            API_CHECK_EXT( glAttachObjectARB );
+            API_CHECK_EXT( glLinkProgramARB );
+            API_CHECK_EXT( glUseProgramObjectARB );
+            API_CHECK_EXT( glValidateProgramARB );
+            API_CHECK_EXT( glUniform1fARB );
+            API_CHECK_EXT( glUniform2fARB );
+            API_CHECK_EXT( glUniform3fARB );
+            API_CHECK_EXT( glUniform4fARB );
+            API_CHECK_EXT( glUniform1iARB );
+            API_CHECK_EXT( glUniform2iARB );
+            API_CHECK_EXT( glUniform3iARB );
+            API_CHECK_EXT( glUniform4iARB );
+            API_CHECK_EXT( glUniform1fvARB );
+            API_CHECK_EXT( glUniform2fvARB );
+            API_CHECK_EXT( glUniform3fvARB );
+            API_CHECK_EXT( glUniform4fvARB );
+            API_CHECK_EXT( glUniform1ivARB );
+            API_CHECK_EXT( glUniform2ivARB );
+            API_CHECK_EXT( glUniform3ivARB );
+            API_CHECK_EXT( glUniform4ivARB );
+            API_CHECK_EXT( glUniformMatrix2fvARB );
+            API_CHECK_EXT( glUniformMatrix3fvARB );
+            API_CHECK_EXT( glUniformMatrix4fvARB );
+            API_CHECK_EXT( glGetObjectParameterfvARB );
+            API_CHECK_EXT( glGetObjectParameterivARB );
+            API_CHECK_EXT( glGetInfoLogARB );
+            API_CHECK_EXT( glGetAttachedObjectsARB );
+            API_CHECK_EXT( glGetUniformLocationARB );
+            API_CHECK_EXT( glGetActiveUniformARB );
+            API_CHECK_EXT( glGetUniformfvARB );
+            API_CHECK_EXT( glGetUniformivARB );
+            API_CHECK_EXT( glGetShaderSourceARB );
+
+            supports_ARB_shader_objects = !apiFatal;
+
+            if ( apiFatal )
+                printf( "WARNING: GL_ARB_shader_objects found, but not all functions supported\n" );
+        }
+
+        // OpenGL ARB_vertex_program API
+        if ( supports_ARB_vertex_program )
+        {
+            API_LOAD_EXT( glVertexAttrib1dARB );
+            API_LOAD_EXT( glVertexAttrib1dvARB );
+            API_LOAD_EXT( glVertexAttrib1fARB );
+            API_LOAD_EXT( glVertexAttrib1fvARB );
+            API_LOAD_EXT( glVertexAttrib1sARB );
+            API_LOAD_EXT( glVertexAttrib1svARB );
+            API_LOAD_EXT( glVertexAttrib2dARB );
+            API_LOAD_EXT( glVertexAttrib2dvARB );
+            API_LOAD_EXT( glVertexAttrib2fARB );
+            API_LOAD_EXT( glVertexAttrib2fvARB );
+            API_LOAD_EXT( glVertexAttrib2sARB );
+            API_LOAD_EXT( glVertexAttrib2svARB );
+            API_LOAD_EXT( glVertexAttrib3dARB );
+            API_LOAD_EXT( glVertexAttrib3dvARB );
+            API_LOAD_EXT( glVertexAttrib3fARB );
+            API_LOAD_EXT( glVertexAttrib3fvARB );
+            API_LOAD_EXT( glVertexAttrib3sARB );
+            API_LOAD_EXT( glVertexAttrib3svARB );
+            API_LOAD_EXT( glVertexAttrib4NbvARB );
+            API_LOAD_EXT( glVertexAttrib4NivARB );
+            API_LOAD_EXT( glVertexAttrib4NsvARB );
+            API_LOAD_EXT( glVertexAttrib4NubARB );
+            API_LOAD_EXT( glVertexAttrib4NubvARB );
+            API_LOAD_EXT( glVertexAttrib4NuivARB );
+            API_LOAD_EXT( glVertexAttrib4NusvARB );
+            API_LOAD_EXT( glVertexAttrib4bvARB );
+            API_LOAD_EXT( glVertexAttrib4dARB );
+            API_LOAD_EXT( glVertexAttrib4dvARB );
+            API_LOAD_EXT( glVertexAttrib4fARB );
+            API_LOAD_EXT( glVertexAttrib4fvARB );
+            API_LOAD_EXT( glVertexAttrib4ivARB );
+            API_LOAD_EXT( glVertexAttrib4sARB );
+            API_LOAD_EXT( glVertexAttrib4svARB );
+            API_LOAD_EXT( glVertexAttrib4ubvARB );
+            API_LOAD_EXT( glVertexAttrib4uivARB );
+            API_LOAD_EXT( glVertexAttrib4usvARB );
+            API_LOAD_EXT( glVertexAttribPointerARB );
+            API_LOAD_EXT( glEnableVertexAttribArrayARB );
+            API_LOAD_EXT( glDisableVertexAttribArrayARB );
+            API_LOAD_EXT( glGetVertexAttribdvARB );
+            API_LOAD_EXT( glGetVertexAttribfvARB );
+            API_LOAD_EXT( glGetVertexAttribivARB );
+            API_LOAD_EXT( glGetVertexAttribPointervARB );
+
+            // Check for extension validity
+            bool apiFatal = false;
+
+            API_CHECK_EXT( glVertexAttrib1dARB );
+            API_CHECK_EXT( glVertexAttrib1dvARB );
+            API_CHECK_EXT( glVertexAttrib1fARB );
+            API_CHECK_EXT( glVertexAttrib1fvARB );
+            API_CHECK_EXT( glVertexAttrib1sARB );
+            API_CHECK_EXT( glVertexAttrib1svARB );
+            API_CHECK_EXT( glVertexAttrib2dARB );
+            API_CHECK_EXT( glVertexAttrib2dvARB );
+            API_CHECK_EXT( glVertexAttrib2fARB );
+            API_CHECK_EXT( glVertexAttrib2fvARB );
+            API_CHECK_EXT( glVertexAttrib2sARB );
+            API_CHECK_EXT( glVertexAttrib2svARB );
+            API_CHECK_EXT( glVertexAttrib3dARB );
+            API_CHECK_EXT( glVertexAttrib3dvARB );
+            API_CHECK_EXT( glVertexAttrib3fARB );
+            API_CHECK_EXT( glVertexAttrib3fvARB );
+            API_CHECK_EXT( glVertexAttrib3sARB );
+            API_CHECK_EXT( glVertexAttrib3svARB );
+            API_CHECK_EXT( glVertexAttrib4NbvARB );
+            API_CHECK_EXT( glVertexAttrib4NivARB );
+            API_CHECK_EXT( glVertexAttrib4NsvARB );
+            API_CHECK_EXT( glVertexAttrib4NubARB );
+            API_CHECK_EXT( glVertexAttrib4NubvARB );
+            API_CHECK_EXT( glVertexAttrib4NuivARB );
+            API_CHECK_EXT( glVertexAttrib4NusvARB );
+            API_CHECK_EXT( glVertexAttrib4bvARB );
+            API_CHECK_EXT( glVertexAttrib4dARB );
+            API_CHECK_EXT( glVertexAttrib4dvARB );
+            API_CHECK_EXT( glVertexAttrib4fARB );
+            API_CHECK_EXT( glVertexAttrib4fvARB );
+            API_CHECK_EXT( glVertexAttrib4ivARB );
+            API_CHECK_EXT( glVertexAttrib4sARB );
+            API_CHECK_EXT( glVertexAttrib4svARB );
+            API_CHECK_EXT( glVertexAttrib4ubvARB );
+            API_CHECK_EXT( glVertexAttrib4uivARB );
+            API_CHECK_EXT( glVertexAttrib4usvARB );
+            API_CHECK_EXT( glVertexAttribPointerARB );
+            API_CHECK_EXT( glEnableVertexAttribArrayARB );
+            API_CHECK_EXT( glDisableVertexAttribArrayARB );
+            API_CHECK_EXT( glGetVertexAttribdvARB );
+            API_CHECK_EXT( glGetVertexAttribfvARB );
+            API_CHECK_EXT( glGetVertexAttribivARB );
+            API_CHECK_EXT( glGetVertexAttribPointervARB );
+
+            supports_ARB_vertex_program = false;
+
+            if ( apiFatal )
+                printf( "WARNING: OpenGL ARB_vertex_program extension found, but not all functions supported\n" );
+        }
+
+        // OpenGL ARB_vertex_shader extension
+        if ( supports_ARB_vertex_shader )
+        {
+            API_LOAD_EXT( glBindAttribLocationARB );
+            API_LOAD_EXT( glGetActiveAttribARB );
+            API_LOAD_EXT( glGetAttribLocationARB );
+
+            // Check for extension completeness.
+            bool apiFatal = false;
+
+            API_CHECK_EXT( glBindAttribLocationARB );
+            API_CHECK_EXT( glGetActiveAttribARB );
+            API_CHECK_EXT( glGetAttribLocationARB );
+
+            supports_ARB_vertex_shader = !apiFatal;
+
+            if ( apiFatal )
+                printf( "WARNING: OpenGL ARB_vertex_shader extension found, but not all functions supported\n" );
+        }
+
+        // OpenGL 2.0 API
+        if ( vMajor >= 2 )
+        {
+            API_LOAD_EXT( glBlendEquationSeparate );
+            API_LOAD_EXT( glDrawBuffers );
+            API_LOAD_EXT( glStencilOpSeparate );
+            API_LOAD_EXT( glStencilFuncSeparate );
+            API_LOAD_EXT( glStencilMaskSeparate );
+            API_LOAD_EXT( glAttachShader );
+            API_LOAD_EXT( glBindAttribLocation );
+            API_LOAD_EXT( glCompileShader );
+            API_LOAD_EXT( glCreateProgram );
+            API_LOAD_EXT( glCreateShader );
+            API_LOAD_EXT( glDeleteProgram );
+            API_LOAD_EXT( glDeleteShader );
+            API_LOAD_EXT( glDetachShader );
+            API_LOAD_EXT( glDisableVertexAttribArray );
+            API_LOAD_EXT( glEnableVertexAttribArray );
+            API_LOAD_EXT( glGetActiveAttrib );
+            API_LOAD_EXT( glGetActiveUniform );
+            API_LOAD_EXT( glGetAttachedShaders );
+            API_LOAD_EXT( glGetAttribLocation );
+            API_LOAD_EXT( glGetProgramiv );
+            API_LOAD_EXT( glGetProgramInfoLog );
+            API_LOAD_EXT( glGetShaderiv );
+            API_LOAD_EXT( glGetShaderInfoLog );
+            API_LOAD_EXT( glGetShaderSource );
+            API_LOAD_EXT( glGetUniformLocation );
+            API_LOAD_EXT( glGetUniformfv );
+            API_LOAD_EXT( glGetUniformiv );
+            API_LOAD_EXT( glGetVertexAttribdv );
+            API_LOAD_EXT( glGetVertexAttribfv );
+            API_LOAD_EXT( glGetVertexAttribiv );
+            API_LOAD_EXT( glGetVertexAttribPointerv );
+            API_LOAD_EXT( glIsProgram );
+            API_LOAD_EXT( glIsShader );
+            API_LOAD_EXT( glLinkProgram );
+            API_LOAD_EXT( glShaderSource );
+            API_LOAD_EXT( glUseProgram );
+            API_LOAD_EXT( glUniform1f );
+            API_LOAD_EXT( glUniform2f );
+            API_LOAD_EXT( glUniform3f );
+            API_LOAD_EXT( glUniform4f );
+            API_LOAD_EXT( glUniform1i );
+            API_LOAD_EXT( glUniform2i );
+            API_LOAD_EXT( glUniform3i );
+            API_LOAD_EXT( glUniform4i );
+            API_LOAD_EXT( glUniform1fv );
+            API_LOAD_EXT( glUniform2fv );
+            API_LOAD_EXT( glUniform3fv );
+            API_LOAD_EXT( glUniform4fv );
+            API_LOAD_EXT( glUniform1iv );
+            API_LOAD_EXT( glUniform2iv );
+            API_LOAD_EXT( glUniform3iv );
+            API_LOAD_EXT( glUniform4iv );
+            API_LOAD_EXT( glUniformMatrix2fv );
+            API_LOAD_EXT( glUniformMatrix3fv );
+            API_LOAD_EXT( glUniformMatrix4fv );
+            API_LOAD_EXT( glValidateProgram );
+            API_LOAD_EXT( glVertexAttrib1d );
+            API_LOAD_EXT( glVertexAttrib1dv );
+            API_LOAD_EXT( glVertexAttrib1f );
+            API_LOAD_EXT( glVertexAttrib1fv );
+            API_LOAD_EXT( glVertexAttrib1s );
+            API_LOAD_EXT( glVertexAttrib1sv );
+            API_LOAD_EXT( glVertexAttrib2d );
+            API_LOAD_EXT( glVertexAttrib2dv );
+            API_LOAD_EXT( glVertexAttrib2f );
+            API_LOAD_EXT( glVertexAttrib2fv );
+            API_LOAD_EXT( glVertexAttrib2s );
+            API_LOAD_EXT( glVertexAttrib2sv );
+            API_LOAD_EXT( glVertexAttrib3d );
+            API_LOAD_EXT( glVertexAttrib3dv );
+            API_LOAD_EXT( glVertexAttrib3f );
+            API_LOAD_EXT( glVertexAttrib3fv );
+            API_LOAD_EXT( glVertexAttrib3s );
+            API_LOAD_EXT( glVertexAttrib3sv );
+            API_LOAD_EXT( glVertexAttrib4Nbv );
+            API_LOAD_EXT( glVertexAttrib4Niv );
+            API_LOAD_EXT( glVertexAttrib4Nsv );
+            API_LOAD_EXT( glVertexAttrib4Nub );
+            API_LOAD_EXT( glVertexAttrib4Nubv );
+            API_LOAD_EXT( glVertexAttrib4Nuiv );
+            API_LOAD_EXT( glVertexAttrib4Nusv );
+            API_LOAD_EXT( glVertexAttrib4bv );
+            API_LOAD_EXT( glVertexAttrib4d );
+            API_LOAD_EXT( glVertexAttrib4dv );
+            API_LOAD_EXT( glVertexAttrib4f );
+            API_LOAD_EXT( glVertexAttrib4fv );
+            API_LOAD_EXT( glVertexAttrib4iv );
+            API_LOAD_EXT( glVertexAttrib4s );
+            API_LOAD_EXT( glVertexAttrib4sv );
+            API_LOAD_EXT( glVertexAttrib4ubv );
+            API_LOAD_EXT( glVertexAttrib4uiv );
+            API_LOAD_EXT( glVertexAttrib4usv );
+            API_LOAD_EXT( glVertexAttribPointer );
+
+            // Check that all OpenGL 2.0 API is present.
+            bool apiFatal = false;
+
+            API_CHECK_EXT( glBlendEquationSeparate );
+            API_CHECK_EXT( glDrawBuffers );
+            API_CHECK_EXT( glStencilOpSeparate );
+            API_CHECK_EXT( glStencilFuncSeparate );
+            API_CHECK_EXT( glStencilMaskSeparate );
+            API_CHECK_EXT( glAttachShader );
+            API_CHECK_EXT( glBindAttribLocation );
+            API_CHECK_EXT( glCompileShader );
+            API_CHECK_EXT( glCreateProgram );
+            API_CHECK_EXT( glCreateShader );
+            API_CHECK_EXT( glDeleteProgram );
+            API_CHECK_EXT( glDeleteShader );
+            API_CHECK_EXT( glDetachShader );
+            API_CHECK_EXT( glDisableVertexAttribArray );
+            API_CHECK_EXT( glEnableVertexAttribArray );
+            API_CHECK_EXT( glGetActiveAttrib );
+            API_CHECK_EXT( glGetActiveUniform );
+            API_CHECK_EXT( glGetAttachedShaders );
+            API_CHECK_EXT( glGetAttribLocation );
+            API_CHECK_EXT( glGetProgramiv );
+            API_CHECK_EXT( glGetProgramInfoLog );
+            API_CHECK_EXT( glGetShaderiv );
+            API_CHECK_EXT( glGetShaderInfoLog );
+            API_CHECK_EXT( glGetShaderSource );
+            API_CHECK_EXT( glGetUniformLocation );
+            API_CHECK_EXT( glGetUniformfv );
+            API_CHECK_EXT( glGetUniformiv );
+            API_CHECK_EXT( glGetVertexAttribdv );
+            API_CHECK_EXT( glGetVertexAttribfv );
+            API_CHECK_EXT( glGetVertexAttribiv );
+            API_CHECK_EXT( glGetVertexAttribPointerv );
+            API_CHECK_EXT( glIsProgram );
+            API_CHECK_EXT( glIsShader );
+            API_CHECK_EXT( glLinkProgram );
+            API_CHECK_EXT( glShaderSource );
+            API_CHECK_EXT( glUseProgram );
+            API_CHECK_EXT( glUniform1f );
+            API_CHECK_EXT( glUniform2f );
+            API_CHECK_EXT( glUniform3f );
+            API_CHECK_EXT( glUniform4f );
+            API_CHECK_EXT( glUniform1i );
+            API_CHECK_EXT( glUniform2i );
+            API_CHECK_EXT( glUniform3i );
+            API_CHECK_EXT( glUniform4i );
+            API_CHECK_EXT( glUniform1fv );
+            API_CHECK_EXT( glUniform2fv );
+            API_CHECK_EXT( glUniform3fv );
+            API_CHECK_EXT( glUniform4fv );
+            API_CHECK_EXT( glUniform1iv );
+            API_CHECK_EXT( glUniform2iv );
+            API_CHECK_EXT( glUniform3iv );
+            API_CHECK_EXT( glUniform4iv );
+            API_CHECK_EXT( glUniformMatrix2fv );
+            API_CHECK_EXT( glUniformMatrix3fv );
+            API_CHECK_EXT( glUniformMatrix4fv );
+            API_CHECK_EXT( glValidateProgram );
+            API_CHECK_EXT( glVertexAttrib1d );
+            API_CHECK_EXT( glVertexAttrib1dv );
+            API_CHECK_EXT( glVertexAttrib1f );
+            API_CHECK_EXT( glVertexAttrib1fv );
+            API_CHECK_EXT( glVertexAttrib1s );
+            API_CHECK_EXT( glVertexAttrib1sv );
+            API_CHECK_EXT( glVertexAttrib2d );
+            API_CHECK_EXT( glVertexAttrib2dv );
+            API_CHECK_EXT( glVertexAttrib2f );
+            API_CHECK_EXT( glVertexAttrib2fv );
+            API_CHECK_EXT( glVertexAttrib2s );
+            API_CHECK_EXT( glVertexAttrib2sv );
+            API_CHECK_EXT( glVertexAttrib3d );
+            API_CHECK_EXT( glVertexAttrib3dv );
+            API_CHECK_EXT( glVertexAttrib3f );
+            API_CHECK_EXT( glVertexAttrib3fv );
+            API_CHECK_EXT( glVertexAttrib3s );
+            API_CHECK_EXT( glVertexAttrib3sv );
+            API_CHECK_EXT( glVertexAttrib4Nbv );
+            API_CHECK_EXT( glVertexAttrib4Niv );
+            API_CHECK_EXT( glVertexAttrib4Nsv );
+            API_CHECK_EXT( glVertexAttrib4Nub );
+            API_CHECK_EXT( glVertexAttrib4Nubv );
+            API_CHECK_EXT( glVertexAttrib4Nuiv );
+            API_CHECK_EXT( glVertexAttrib4Nusv );
+            API_CHECK_EXT( glVertexAttrib4bv );
+            API_CHECK_EXT( glVertexAttrib4d );
+            API_CHECK_EXT( glVertexAttrib4dv );
+            API_CHECK_EXT( glVertexAttrib4f );
+            API_CHECK_EXT( glVertexAttrib4fv );
+            API_CHECK_EXT( glVertexAttrib4iv );
+            API_CHECK_EXT( glVertexAttrib4s );
+            API_CHECK_EXT( glVertexAttrib4sv );
+            API_CHECK_EXT( glVertexAttrib4ubv );
+            API_CHECK_EXT( glVertexAttrib4uiv );
+            API_CHECK_EXT( glVertexAttrib4usv );
+            API_CHECK_EXT( glVertexAttribPointer );
+
+            // Only support the framework if all functions are implemented.
+            supports2_0 = !apiFatal;
+
+            if ( apiFatal )
+                printf( "WARNING: OpenGL 2.0 implementation found, but not all functions supported\n" );
+        }
+        else
+            supports2_0 = false;
 
         // OpenGL 3.0 API
         if ( vMajor >= 3 )

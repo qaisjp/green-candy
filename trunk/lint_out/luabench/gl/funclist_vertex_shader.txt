@@ -1,0 +1,3 @@
+glBindAttribLocationARB
+glGetActiveAttribARB
+glGetAttribLocationARB

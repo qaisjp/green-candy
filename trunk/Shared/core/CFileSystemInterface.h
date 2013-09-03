@@ -12,6 +12,18 @@
 #ifndef _CFileSystemInterface_
 #define _CFileSystemInterface_
 
+// Compiler compatibility
+#ifndef _MSC_VER
+#define abstract
+#endif //_MSC:VER
+
+#ifdef __linux__
+#include <sys/stat.h>
+
+#define _strdup strdup
+#define _vsnprintf vsnprintf
+#endif //__linux__
+
 typedef std::vector <filePath> dirTree;
 
 enum eFileException
@@ -624,9 +636,9 @@ public:
             The callback is passed the full path of the found resource
             and the userdata.
     ===================================================*/
-    virtual void            ScanDirectory( const char *directory, const char *wildcard, bool recurse, 
-                                pathCallback_t dirCallback, 
-                                pathCallback_t fileCallback, 
+    virtual void            ScanDirectory( const char *directory, const char *wildcard, bool recurse,
+                                pathCallback_t dirCallback,
+                                pathCallback_t fileCallback,
                                 void *userdata ) const = 0;
 
     // These functions are easy helpers for ScanDirectory.
@@ -707,7 +719,7 @@ namespace FileSystem
         size_t toRead;
         char buf[8096];
 
-        while ( ( toRead = min( sizeof( buf ), cnt ) ) != 0 )
+        while ( ( toRead = std::min( sizeof( buf ), cnt ) ) != 0 )
         {
             size_t rb = src.Read( buf, 1, toRead );
 
@@ -723,7 +735,7 @@ namespace FileSystem
     // an appropriate dst representation. It reads the src stream
     // into a temporary buffer and the callback structure may modify it.
     template <class cb>
-    inline void StreamParser( CFile& src, CFile& dst, cb& f )
+    inline void StreamParser( CFile& src, CFile& dst, cb f )
     {
         char buf[8096];
         char outBuf[16192];
@@ -755,7 +767,7 @@ namespace FileSystem
     // Parses the stream same as StreamParser, but limited to 'cnt' bytes of the
     // source stream.
     template <class cb>
-    inline void StreamParserCount( CFile& src, CFile& dst, size_t cnt, cb& f )
+    inline void StreamParserCount( CFile& src, CFile& dst, size_t cnt, cb f )
     {
         char buf[8096];
         char outBuf[16192];
@@ -785,17 +797,17 @@ namespace FileSystem
 
             for (;;)
             {
-                bool cnt = f.parse( outBuf, sizeof( outBuf ), outSize );
+                bool continu = f.parse( outBuf, sizeof( outBuf ), outSize );
                 dst.Write( outBuf, 1, outSize );
 
-                if ( !cnt )
+                if ( !continu )
                     break;
             }
 
             if ( eof )
                 break;
         }
-        
+
         dst.SetSeekEnd();
     }
 }

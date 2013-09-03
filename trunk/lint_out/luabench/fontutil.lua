@@ -4,6 +4,16 @@ function createFontRenderer(gl)
     local renderer = {};
     local fonts = {};
     local fontHQwidth, fontHQheight = 40, 40;
+    local renderMode = "normal";
+    
+    function renderer.setRenderMode(mode)
+        renderMode = mode;
+        return true;
+    end
+    
+    function renderer.getRenderMode()
+        return renderMode;
+    end
 
     function renderer.createFont(file)
         local face = freetype.createFace(file);
@@ -15,6 +25,7 @@ function createFontRenderer(gl)
         
         local function allocateHeight(charHeight)
             -- Make sure it is height measured in pixels.
+            -- Also only allow size up to the HQ limit.
             charHeight = math.min(fontHQheight, math.floor(charHeight));
             
             -- 4 should be minimal font size, seriously! :o
@@ -38,9 +49,9 @@ function createFontRenderer(gl)
             local maxWidth = 0;
             
             for n=1,255 do
-                face.loadGlyph(face.getCharIndex(n));
+                face.loadGlyph(face.getCharIndex(n), 2);
                 
-                local bmp = face.getGlyphBitmap();
+                local bmp = face.getGlyphBitmap(renderMode);
                 
                 if (bmp) then
                     local texInfo = {
@@ -93,19 +104,20 @@ function createFontRenderer(gl)
                     while (n <= numAllocated) do
                         local item = allocatedChars[n];
                         local src = item.bitmap;
+                        local srcWidth = src.getWidth();
 
-                        local nextX = x + item.advX;
-                        local nextY = y + item.advY;
+                        local nextX = x + srcWidth;
                         
                         if (nextX > _width) then
                             x = 0;
                             y = y + charHeight;
                             
-                            nextX = item.advX;
-                            nextY = y + item.advY;
+                            nextX = srcWidth;
                         end
                         
-                        glyphMap.drawBitmap(src, x, y, 0, 0, "modulate");
+                        local nextY = y;
+                        
+                        glyphMap.drawBitmap(src, x, y, 0, 0, "write");
                         
                         -- Store the glyph params.
                         -- We need to calculate rendering parameters once texture is allocated.
@@ -120,7 +132,7 @@ function createFontRenderer(gl)
                         n = n + 1;
                     end
                     
-                    glyphTex = gl.createTexture2D(glyphMap);
+                    glyphTex = gl.createTexture2D(glyphMap, false, "clamp", "nearest");
                 end
                 
                 -- Reloop while setting parameters
@@ -149,6 +161,8 @@ function createFontRenderer(gl)
                         function(cmdType, x, y)
                             x = x + offX;
                             y = y - offY;
+                            
+                            color4d(1, 1, 1, 1);
                         
                             if (cmdType == "triangles") then
                                 texCoord2d(scaledGlyphTexPosX, scaledGlyphTexPosY);
@@ -207,11 +221,6 @@ function createFontRenderer(gl)
                 
                     x = x + tex.advX;
                     y = y + tex.advY;
-                    
-                    if (x > clientWidth) then
-                        x = 0;
-                        y = y + charHeight;
-                    end
                 end
                 
                 n = n + 1;
@@ -239,6 +248,15 @@ function createFontRenderer(gl)
             end
             
             return width;
+        end
+        
+        -- Debug function
+        function font.getFontTexture(height)
+            local heightData = allocateHeight(height);
+            
+            if not (heightData) then return false; end;
+            
+            return heightData.glyphTex;
         end
         
         return font;

@@ -79,5 +79,5 @@ void lua_createmd5hasher( lua_State *L, CMD5Hasher *hasher )
 {
     lua_pushlightuserdata( L, hasher );
     lua_pushcclosure( L, luaconstructor_md5, 1 );
-    lua_newclass( L );
+    lua_newclassex( L, LCLASS_API_LIGHT );
 }

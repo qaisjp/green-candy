@@ -736,7 +736,7 @@ RwLinkedMaterial* RwLinkedMateria::Get( unsigned int index )
 
 void RpLight::SetLightIndex( unsigned int idx )
 {
-    m_lightIndex = min( idx, 8 );
+    m_lightIndex = std::min( idx, (unsigned int)8 );
 }
 
 void RpLight::AddToClump( RpClump *clump )

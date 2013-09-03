@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="Release Linux" />
+	<File name="deflate.c" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="65941" topLine="1705" />
+		</Cursor>
+	</File>
+	<File name="zconf.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="9916" topLine="301" />
+		</Cursor>
+	</File>
+	<File name="compress.c" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2611" topLine="48" />
+		</Cursor>
+	</File>
+	<File name="inffast.c" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="12886" topLine="287" />
+		</Cursor>
+	</File>
+	<File name="inflate.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4854" topLine="84" />
+		</Cursor>
+	</File>
+</CodeBlocks_layout_file>

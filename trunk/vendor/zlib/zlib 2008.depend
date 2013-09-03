@@ -1,0 +1,94 @@
+# depslib dependency file v1.0
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/adler32.c
+	"zlib.h"
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/zlib.h
+	"zconf.h"
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/zconf.h
+	<windows.h>
+	<sys/types.h>
+	<unistd.h>
+	<unixio.h>
+
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/compress.c
+	"zlib.h"
+
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/crc32.c
+	<stdio.h>
+	"zutil.h"
+	<limits.h>
+	"crc32.h"
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/zutil.h
+	"zlib.h"
+	<stddef.h>
+	<string.h>
+	<stdlib.h>
+	<errno.h>
+	<alloc.h>
+	<malloc.h>
+	<malloc.h>
+	<unix.h>
+	<stdio.h>
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/crc32.h
+
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/deflate.c
+	"deflate.h"
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/deflate.h
+	"zutil.h"
+
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/gzio.c
+	<stdio.h>
+	"zutil.h"
+	<stdarg.h>
+
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/infback.c
+	"zutil.h"
+	"inftrees.h"
+	"inflate.h"
+	"inffast.h"
+	"inffixed.h"
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/inftrees.h
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/inflate.h
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/inffast.h
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/inffixed.h
+
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/inffast.c
+	"zutil.h"
+	"inftrees.h"
+	"inflate.h"
+	"inffast.h"
+
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/inflate.c
+	"zutil.h"
+	"inftrees.h"
+	"inflate.h"
+	"inffast.h"
+	"inffixed.h"
+	<stdio.h>
+
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/inftrees.c
+	"zutil.h"
+	"inftrees.h"
+
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/trees.c
+	"deflate.h"
+	<ctype.h>
+	"trees.h"
+	<stdio.h>
+
+1353704858 /media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/trees.h
+
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/uncompr.c
+	"zlib.h"
+
+1353704858 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/vendor/zlib/zutil.c
+	"zutil.h"
+

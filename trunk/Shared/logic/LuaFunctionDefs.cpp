@@ -697,6 +697,49 @@ namespace LuaFunctionDefs
     }
 #endif
 
+    LUA_DECLARE( outputDebugString )
+    {
+        SString output;
+        unsigned int level;
+        unsigned char r, g, b;
+
+        CScriptArgReader argStream( L );
+
+        argStream.ReadString( output );
+        argStream.ReadNumber( level, 3 );
+        if ( level == 0 )
+        {
+            argStream.ReadColor( r, 0xFF ); argStream.ReadColor( g, 0xFF ); argStream.ReadColor( b, 0xFF );
+        }
+
+        if ( !argStream.HasErrors() )
+        {
+            // Output it
+            switch( level )
+            {
+            case 1:     debug->LogError( "%s", output.c_str() ); break;
+            case 2:     debug->LogWarning( "%s", output.c_str() ); break;
+            case 3:     debug->LogInformation( "%s", output.c_str() ); break;
+            case 0:     debug->LogCustom( r, g, b, "%s", output.c_str() ); break;
+            default:
+                debug->LogWarning( "Bad level argument sent to outputDebugString (0-3)" );
+
+                lua_pushboolean( L, false );
+                return 1;
+            }
+
+            // Success
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            debug->LogCustom( SString( "Bad argument @ '" __FUNCTION__ "' [%s]", *argStream.GetErrorMessage() ) );
+
+        // Failed
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
     LUA_DECLARE( print )
     {
         luaL_checktype( L, 1, LUA_TSTRING );

@@ -5,6 +5,7 @@
 #pragma warning (disable:4244)
 
 //#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 
 #include <sys/stat.h>
 #include <d3d9.h>

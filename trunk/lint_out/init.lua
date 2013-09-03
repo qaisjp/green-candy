@@ -1,4 +1,5 @@
 -- Scan all resources and run them
+local exeRoot = file.root;
 local resRoot = file.createTranslator("resources/");
 local xml = xml;
 
@@ -8,28 +9,25 @@ local function makeProperName(fileRoot, path)
 end
 
 local utilRoot = file.createTranslator("preload/");
+local utilEnv = false;  -- environment of all deathmatch utilities
+local utilDebugArgs = false;    -- debug argStream class
 
-local function importUtilEnvironment(res)
-    if not (utilRoot) then return; end;
-    
-    -- Set up globals for the script.
-    local prev_loadResource = _G.loadResource;
-    _G.loadResource = res;
-    
+local function loadDependencyRoot(loadRoot, loadEnv)
     local function loadUtilFile(path)
-        local file = utilRoot.open(path, "rb");
+        local file = loadRoot.open(path, "rb");
         
         if not (file) then return false; end;
         
-        local success, err = loadstring(file.read(file.size()));
+        local success, err = loadstring(file.read(file.size()), "@" .. exeRoot.relPathRoot(path));
         file.destroy();
         
         if not (success) then
-            print("util syntax error (" .. utilRoot.relPath(path) .. "): " .. err);
+            print("util syntax error (" .. loadRoot.relPath(path) .. "): " .. err);
             return false;
         end
         
-        local resEnv = res.getEnv();
+        -- Anything that is written as global in the preload files
+        -- should be exported to the resources (env variable)
         local env = {};
         local meta = {
             __index = function(t, k)
@@ -37,15 +35,15 @@ local function importUtilEnvironment(res)
                     return env;
                 end
             
-                local val = _G[k];
+                local val = loadEnv[k];
                 
                 if not (val == nil) then
                     return val;
                 end
                 
-                return resEnv[k];
+                return _G[k];
             end,
-            __newindex = resEnv
+            __newindex = loadEnv
         };
         setmetatable(env, meta);
         setfenv(success, env);
@@ -54,9 +52,9 @@ local function importUtilEnvironment(res)
         
         if not (proto) then
             if (err) then
-                print("util runtime error (" .. utilRoot.relPath(path) .. "): " .. err);
+                print("util runtime error (" .. loadRoot.relPath(path) .. "): " .. err);
             else
-                print("unknown util runtime error (" .. utilRoot.relPath(path) .. ")");
+                print("unknown util runtime error (" .. loadRoot.relPath(path) .. ")");
             end
             
             return false;
@@ -70,14 +68,14 @@ local function importUtilEnvironment(res)
     end
     
     -- First wildload all preload root scripts.
-    wildLoadDir(utilRoot, "/");
+    wildLoadDir(loadRoot, "/");
     
     -- Now go through directories and managed-load their contents
     local resources = {};
     local numRes = 0;
     local resByName = {};
 
-    utilRoot.scanDirEx("/", "*",
+    loadRoot.scanDirEx("/", "*",
         function(dirPath)
             local manageRoot = file.createTranslator(dirPath);
         
@@ -102,7 +100,7 @@ local function importUtilEnvironment(res)
             -- Create a resource entry
             local dependencies = {};
             local resource = {
-                name = makeProperName(utilRoot, dirPath),
+                name = makeProperName(loadRoot, dirPath),
                 fileRoot = manageRoot,
                 dependencies = dependencies,
                 metaNode = metaNode,
@@ -184,43 +182,253 @@ local function importUtilEnvironment(res)
     for m,n in ipairs(resources) do
         loadResource(n);
     end
-    
-    -- Restore globals.
-    _G.loadResource = prev_loadResource;
 end
 
-resRoot.scanDirEx("/", "*",
-    function(dirPath)
-        local resource = newResource(dirPath, makeProperName(resRoot, dirPath));
+local function argumentErrorCallback(debuglib, methName, errMessage, debugInfo)
+    print("(" .. methName ..", " .. debugInfo.short_src .. ":" .. debugInfo.currentline .. "): " .. errMessage);
+    return false;
+end
+
+local function loadDependencyRoot_debug(fileRoot, env, debuglib)
+    -- Set up the functions to register debug callbacks.
+    function env.registerDebugProxy(name, ...)
+        return debuglib.addDebugProxy(name, ...);
+    end
+    
+    function env.registerArgTypeHandler(argName, handler)
+        return debuglib.setArgumentTypeCallback(argName, handler);
+    end
+    
+    debuglib.setErrorCallback(argumentErrorCallback);
+    
+    return loadDependencyRoot(fileRoot, env);
+end
+
+if (utilRoot) then
+    print("Importing /preload/ environment...");
+    
+    utilEnv = {};
+    utilDebugArgs = createDebugArgParser();
+    
+    loadDependencyRoot_debug(utilRoot, utilEnv, utilDebugArgs);
+end
+
+local function importUtilEnvironment(res)
+    if not (utilEnv) then return false; end;
+
+    local resEnv = res.getEnv();
+    local type = type;
+    
+    -- Import the utility environment which we have previously loaded.
+    for m,n in pairs(utilEnv) do
+        local valType = rawtype(n);
+    
+        if (valType == "function") then
+            -- Attempt to register the debug proxy instead of the raw function.
+            local proxy = utilDebugArgs.getProxy(m, n);
+            
+            if (proxy) then
+                resEnv[m] = proxy;
+            else
+                resEnv[m] = function(...)
+                    return n(...);
+                end
+            end
+        else
+            resEnv[m] = n;
+        end
+    end
+    
+    -- Also try to load the per-resource files.
+    local perResRoot = file.createTranslator("/res_load/");
+    
+    if (perResRoot) then
+        -- Create a debug arg parsing library to enable function debugging
+        -- like with argStreams in MTA.
+        -- Debug libraries have to stay alive as long as the runtime is active.
+        -- They will be garbage collected when not required anymore.
+        local debuglib = createDebugArgParser();
+    
+        loadDependencyRoot_debug(perResRoot, resEnv, debuglib);
         
-        if not (resource) then return; end;
+        -- Parse the environment for debug information.
+        debuglib.parseEnvironment(resEnv);
         
-        local fileRoot = file.createTranslator(dirPath);
-        
-        if not (fileRoot) then
-            resource.destroy();
-            return;
+        -- Clean up.
+        perResRoot.destroy();
+    end
+    
+    return true;
+end
+
+do
+    local resources = {};
+    local resByName = {};
+    
+    local function addResource(name, info)
+        table.insert(resources, info);
+        resByName[string.lower(name)] = info;
+    end
+    
+    local function getResource(name)
+        return resByName[string.lower(name)];
+    end
+
+    local function scanResourceRepository(repRoot)
+        repRoot.scanDirEx("/", "*",
+            function(dirPath)
+                local name = makeProperName(repRoot, dirPath);
+                local firstByte = string.byte(name, 1);
+                
+                if (firstByte == 91) then
+                    local newRoot = file.createTranslator(dirPath);
+                    
+                    scanResourceRepository(newRoot);
+                    
+                    newRoot.destroy();
+                else
+                    local fileRoot = file.createTranslator(dirPath);
+                    
+                    if not (fileRoot) then
+                        print(name .. ": failed to bind file root");
+                        return;
+                    end
+                    
+                    -- Load the meta.xml
+                    local metaFile = fileRoot.open("meta.xml", "r");
+                
+                    if not (metaFile) then
+                        print(name .. ": could not open meta.xml");
+                        
+                        fileRoot.destroy();
+                        return;
+                    end
+                    
+                    local metaNode = xml.parse(metaFile.read(metaFile.size()));
+                    metaFile.destroy();
+                    
+                    if not (metaNode) then
+                        print(name .. ": failed to parse meta.xml");
+                    
+                        fileRoot.destroy();
+                        return;
+                    end
+                    
+                    -- Pre-parse the meta.xml for dependencies, etc
+                    local dependencies = {};
+                    local children = metaNode.getChildren();
+                    
+                    for m,n in ipairs(children) do
+                        local nodeName = n.name;
+                        
+                        if (nodeName == "include") then
+                            local includeRes = n.attr.resource;
+                            
+                            if not (includeRes == nil) then
+                                table.insert(dependencies, includeRes);
+                            end
+                        end
+                    end
+                
+                    local info = {
+                        name = name,
+                        metaNode = metaNode,
+                        fileRoot = fileRoot,
+                        resource = false,
+                        isProcessed = false,
+                        isLoaded = false,
+                        dependencies = dependencies
+                    };
+                    
+                    addResource(name, info);
+                end
+            end, nil, false
+        );
+    end
+    scanResourceRepository(resRoot);
+    
+    local function loadResource(resInfo)
+        if (resInfo.isProcessed) or (resInfo.isLoaded) then
+            return true;
         end
         
-        local metaFile = fileRoot.open("meta.xml", "r");
+        -- Mark us as processed so we do not cause infinite loops while initializing.
+        resInfo.isProcessed = true;
         
-        if not (metaFile) then
-            resource.destroy();
-            fileRoot.destroy();
-            return;
+        local name = resInfo.name;
+    
+        -- Start all dependencies first.
+        for m,n in ipairs(resInfo.dependencies) do
+            local resource = getResource(n);
+            
+            if (resource) then
+                loadResource(resource);
+            else
+                print(name .. ": could not find resource dependency '" .. n .. "'");
+            end
         end
+    
+        local fileRoot = resInfo.fileRoot;
+        local resource = sysMakeResource(fileRoot.absPathRoot(), name);
         
-        local xmlNode = xml.parse(metaFile.read(metaFile.size()));
-        metaFile.destroy();
+        if not (resource) then return false; end;
         
-        if not (xmlNode) then
-            resource.destroy();
-            fileRoot.destroy();
-            return;
-        end
+        local xmlNode = resInfo.metaNode;
+        resInfo.metaNode = false;
         
         local children = xmlNode.getChildren();
         local resEnv = resource.getEnv();
+        
+        -- Table of all allowed exports.
+        local allowedExports = {};
+        
+        -- Set up the resource defaults.
+        resource.extend(
+            function()
+                registerForcedSuper("init");
+                
+                function init()
+                    return;
+                end
+                
+                function callExport(callResource, funcName, ...)
+                    if not (allowedExports[funcName]) then return false; end;
+                    
+                    local funcExport = resEnv[funcName];
+                    
+                    if (funcExport) then
+                        local _G = resource.getEnv();
+                    
+                        -- Set some globals.
+                        local sourceResource = _G.sourceResource;
+                        local sourceResourceRoot = _G.sourceResourceRoot;
+                        
+                        _G.sourceResource = callResource;
+                        _G.sourceResourceRoot = callResource.resRoot;
+                    
+                        local result = { funcExport(...) };
+                        
+                        -- Restore globals.
+                        _G.sourceResourceRoot = sourceResourceRoot;
+                        _G.sourceResource = sourceResource;
+                        
+                        return unpack(result);
+                    end
+                    
+                    return false;
+                end
+                
+                function getExports()
+                    local exports = {};
+                    
+                    for m,n in pairs(allowedExports) do
+                        table.insert(exports, m);
+                    end
+                    
+                    return exports;
+                end
+            end
+        );
         
         -- Set up the special resource environment.
         importUtilEnvironment(resource);
@@ -243,10 +451,35 @@ resRoot.scanDirEx("/", "*",
                         end
                     end
                 end
+            elseif (name == "export") then
+                local funcName = n.attr["function"];
+                
+                if ((n.attr.type == nil) or (n.attr.type == "client"))
+                    and not (funcName == nil) then
+                    
+                    allowedExports[funcName] = true;
+                end
             end
         end
         
+        -- 'start' the resource
+        resource.init();
+        
         -- Clean up xml data.
         xmlNode.destroy();
-    end, nil, false
-);
+        
+        -- We successfully loaded.
+        resInfo.isLoaded = true;
+        return true;
+    end
+    
+    -- Start all resources
+    for m,n in ipairs(resources) do
+        loadResource(n);
+    end
+end
+
+-- Clean up after us.
+if (utilRoot) then
+    utilRoot.destroy();
+end

@@ -28,6 +28,18 @@ struct Win32Dialog : public LuaClass
     typedef LRESULT (__stdcall*wndProc_t)( HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam );
 
     wndProc_t defaultWndProc;
+
+    struct keyState_t
+    {
+        keyState_t( void )
+        {
+            isDown = false;
+        }
+
+        bool isDown;
+    };
+
+    keyState_t keyStates[256];
 };
 
 void luawin32_extendDialogs( lua_State *L );

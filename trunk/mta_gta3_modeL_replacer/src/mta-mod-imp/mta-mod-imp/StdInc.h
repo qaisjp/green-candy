@@ -4,14 +4,29 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-//#include <unistd.h>
+
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
+#pragma warning(disable: 4996)
+
+#undef min
+#undef max
+#endif
+
 #include <math.h>
 
 #include <list>
 #include <vector>
 #include <map>
+#include <string>
+
+#include <string.h>
+
+#include <SharedUtil.h>
+#include <CFileSystemInterface.h>
+#include <CFileSystem.h>
 
 #include "csv.h"
 #include "ipl.h"
@@ -72,5 +87,12 @@ extern short usZoffset;
 #define MODEL_TABLE 1
 #define MODEL_STATIC 2
 #define MODEL_METHOD MODEL_TABLE
+
+extern CFileTranslator *g_resourceRoot;
+extern CFileTranslator *g_outputRoot;
+
+#ifdef __linux__
+#define _snprintf snprintf
+#endif
 
 #endif //__MAIN__

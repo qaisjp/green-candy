@@ -1,0 +1,25 @@
+
+
+lua_createtable( L, 11, 0 );
+lua_pushlstring( L, "GL_OBJECT_TYPE_ARB", 18 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_OBJECT_SUBTYPE_ARB", 21 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_OBJECT_DELETE_STATUS_ARB", 27 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_OBJECT_COMPILE_STATUS_ARB", 28 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_OBJECT_LINK_STATUS_ARB", 25 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_OBJECT_VALIDATE_STATUS_ARB", 29 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_OBJECT_INFO_LOG_LENGTH_ARB", 29 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_OBJECT_ATTACHED_OBJECTS_ARB", 30 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_OBJECT_ACTIVE_UNIFORMS_ARB", 29 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB", 39 );
+lua_rawseti( L, -2, n++ );
+lua_pushlstring( L, "GL_OBJECT_SHADER_SOURCE_LENGTH_ARB", 34 );
+lua_rawseti( L, -2, n++ );

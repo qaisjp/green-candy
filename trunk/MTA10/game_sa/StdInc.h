@@ -4,6 +4,9 @@
 #pragma warning (disable:4409)
 #pragma warning (disable:4250)
 
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+
 #include <windows.h>
 #include <stdio.h>
 #include <assert.h>

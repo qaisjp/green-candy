@@ -68,7 +68,7 @@ static ILuaClass* _trefget( LuaTimer& timer, lua_State *L )
 {
     lua_pushlightuserdata( L, &timer );
     lua_pushcclosure( L, luaconstructor_timer, 1 );
-    lua_newclass( L );
+    lua_newclassex( L, LCLASS_API_LIGHT );
 
 	ILuaClass *j = lua_refclass( L, -1 );
 	lua_pop( L, 1 );

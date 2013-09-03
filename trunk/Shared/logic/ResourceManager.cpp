@@ -66,7 +66,7 @@ static inline ILuaClass* _trefget( lua_State *L, ResourceManager& manager )
 {
     lua_pushlightuserdata( L, &manager );
     lua_pushcclosure( L, luaconstructor_root, 1 );
-    lua_newclass( L );
+    lua_newclassex( L, LCLASS_API_LIGHT );
 
 	ILuaClass *j = lua_refclass( L, -1 );
 	lua_pop( L, 1 );

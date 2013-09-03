@@ -32,7 +32,7 @@ __forceinline void lua_exec( LuaManager::context *context, const std::string& cm
 {
     int top = lua_gettop( state );
 
-    if ( luaL_loadstring( state, cmd.c_str() ) != 0 )
+    if ( luaL_loadbuffer( state, cmd.c_str(), cmd.size(), "@cmdline" ) != 0 )
     {
         const char *err = lua_tostring( state, -1 );
         lua_pop( state, 1 );
@@ -232,7 +232,7 @@ static LUA_DECLARE( quit )
 
 bool lint_loadscript( lua_State *L, const char *script, const char *path )
 {
-    if ( luaL_loadstring( L, script ) != 0 )
+    if ( luaL_loadbuffer( L, script, strlen( script ), ( std::string( "@" ) + path ).c_str() ) != 0 )
     {
         cout << "failed to load library " << path << "\n";
         cout << lua_tostring( L, -1 ) << "\n";

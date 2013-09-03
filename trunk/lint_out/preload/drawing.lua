@@ -1,5 +1,6 @@
+local ogl = gl; -- gl namespace, not the actual driver.
 local drawSession = false;
-local gl = false;
+local gl = false;   -- for convenience we call the driver "gl"
 local fontRenderer = false;
 
 -- Forward declarations.
@@ -9,6 +10,7 @@ local checkDrawSession;
 ----- OpenGL drawing interface implementation BEGIN ---------------------
 -----------------------------------------------------------------------------------
 local g_renderTarget = false;
+local g_blendMode = false;
 local fontDir = file.createTranslator("C:/WINDOWS/FONTS/");
 local privateFontDir = file.createTranslator(root.absPath("luaBench/fonts/"));
 
@@ -18,9 +20,8 @@ local colorQuadBatch;
 local colorQuadTexcoordBatch;
 local lineBatch;
 
-local function drawQuad(x, y, width, height)
-    gl.runBatch(quadBatch, "quads", x, y, width, height);
-end
+-- Render Element registry.
+local renderTargetRegistry = {};
 
 local function totexture(obj)
     local typename = type(obj);
@@ -29,21 +30,124 @@ local function totexture(obj)
         return obj;
     elseif (typename == "glframebuffer") then
         return obj.getColorAttachment(0);
+    elseif (renderTargetRegistry[obj]) then
+        return obj;
     end
     
     return false;
+end
+
+-- Get resolution depending on context
+local function getResolution()
+    if (g_renderTarget) then
+        return totexture(g_renderTarget).getSize();
+    else
+        -- Make sure we have an active draw session.
+        checkDrawSession();
+
+        return drawSession.getResolution();
+    end
+end
+
+-- Transform coordinates depending on context
+local function getContextCoordinates(x, y)
+    local renderWidth, renderHeight = getResolution();
+
+    if (g_renderTarget) then        
+        x = renderWidth - x;
+    end
+    
+    y = renderHeight - y;
+
+    return x, y;
+end
+
+local function getContextRectangle(x, y, width, height)
+    local renderWidth, renderHeight = getResolution();
+    
+    if (g_renderTarget) then
+        x = renderWidth - x - width;
+    end
+    
+    y = renderHeight - y - height;
+    return x, y;
+end
+
+local g_curMatrixMode = false;
+
+local function getMatrixMode()
+    return g_curMatrixMode;
+end
+
+local function setMatrixMode(mode)
+    g_curMatrixMode = mode;
+    
+    gl.matrixMode(mode);
+end
+
+local function drawQuad(x, y, width, height)
+    gl.runBatch(quadBatch, "quads", x, y, width, height);
 end
 
 local matDrawImage = matrixNew();
 
 local function glRenderLock(method)
     if (g_renderTarget) then
+        -- Switch projection matrix to render-target mode.
+        -- TODO: maybe support multiple texture attachments to the OpenGL FBO?
+        local renderWidth, renderHeight = drawSession.getResolution();
+        
+        local prevMatrixMode = getMatrixMode();
+        
+        --setMatrixMode("GL_MODELVIEW");
+        --gl.pushMatrix();
+        
+        -- Move the scene by 0.5, 0.5 to position it properly on the render-target grid.
+        -- This is required since we sample it GL_NEAREST.
+        -- Read about GL_NEAREST and the OpenGL pixel rastering!
+        --gl.translate(0.5, 0.5, 0);
+        
+        setMatrixMode("GL_PROJECTION");
+        gl.pushMatrix();
+        
+        gl.loadIdentity();
+        gl.ortho(0, renderWidth, 0, renderHeight, 0, 1);
+        
         -- Render in the render target context
-        g_renderTarget.runContext(method);
+        g_renderTarget.runContext("draw", method);
+        
+        gl.popMatrix();
+        
+        --setMatrixMode("GL_MODELVIEW");
+        
+        --gl.popMatrix();
+        
+        -- Restore the previous matrix mode (if set)
+        if (prevMatrixMode) then
+            setMatrixMode(prevMatrixMode);
+        end
     else
         -- Render in the current OpenGL context
         gl.runContext(method);
     end
+end
+
+local function multiplyQuadRotation(midPosX, midPosY, rotation)
+    -- * Herp derp? How does this work? *
+    --All vertices on the pipeline are transformed with the GL_MODELVIEW matrix
+    -- before being sent to the GPU buffer. This means that they x, y, z coordinates
+    -- are relative to the GL_MODELVIEW coordinate system.
+    -- First the coordinates are rotated with z-euler-angle rotation+180.
+    -- Then, their position is offset by x + midOffY, y + midOffY, so they reside
+    -- at their correct position.
+    -- You can see the vertex coordinates as base position of the vertexes from the 0,0
+    -- space. Using GL_MODELVIEW, one can move this virtual space to another location.
+    
+    -- We first rotate, then offset the vertice!
+    matDrawImage.setEulerAngles(0, 0, rotation);
+    matDrawImage.setPosition(midPosX, midPosY, 0);
+    
+    gl.multiplyMatrix(matDrawImage);
 end
 
 function dxDrawImage(x, y, width, height, 
@@ -55,6 +159,14 @@ function dxDrawImage(x, y, width, height,
     if (color == nil) then color = 0xFFFFFFFF; end
     if (postGUI == nil) then postGUI = false; end
     
+    -- Normalize the coordinates.
+    x = math.floor(x);
+    y = math.floor(y);
+    width = math.floor(width);
+    height = math.floor(height);
+    rotCenterOffX = math.floor(rotCenterOffX);
+    rotCenterOffY = math.floor(rotCenterOffY);
+    
     -- Make sure we have an active draw session.
     checkDrawSession();
     
@@ -67,16 +179,13 @@ function dxDrawImage(x, y, width, height,
     
     local r, g, b, a = ogl.intToColor(color);
     
-    gl.matrixMode("GL_MODELVIEW");
+    setMatrixMode("GL_MODELVIEW");
     gl.pushMatrix();
     
     local midOffX = width / 2 + rotCenterOffX;
     local midOffY = height / 2 + rotCenterOffY;
     
-    matDrawImage.setEulerAngles(0, 0, rotation);
-    matDrawImage.setPosition(x + midOffX, y + midOffY, 0);
-    
-    gl.loadMatrix(matDrawImage);
+    multiplyQuadRotation(x + midOffX, y + midOffY, rotation);
     
     glRenderLock(
         function()
@@ -87,6 +196,9 @@ function dxDrawImage(x, y, width, height,
     gl.popMatrix();
     return true;
 end
+registerDebugProxy("dxDrawImage",
+    "number", "number", "number", "number", totexture, { "opt", "number" }, { "opt", "number" }, { "opt", "number" }, { "opt", "number" }, { "opt", "boolean" }
+);
 
 function dxDrawImageSection(x, y, width, height, u, v, usize, vsize,
         image, rotation, rotCenterOffX, rotCenterOffY, color, postGUI)
@@ -96,6 +208,14 @@ function dxDrawImageSection(x, y, width, height, u, v, usize, vsize,
     if (rotCenterOffY == nil) then rotCenterOffY = 0; end
     if (color == nil) then color = 0xFFFFFFFF; end
     if (postGUI == nil) then postGUI = false; end
+    
+    -- Normalize the coordinates.
+    x = math.floor(x);
+    y = math.floor(y);
+    width = math.floor(width);
+    height = math.floor(height);
+    rotCenterOffX = math.floor(rotCenterOffX);
+    rotCenterOffY = math.floor(rotCenterOffY);
     
     -- Make sure we have an active draw session.
     checkDrawSession();
@@ -109,30 +229,30 @@ function dxDrawImageSection(x, y, width, height, u, v, usize, vsize,
     
     local r, g, b, a = ogl.intToColor(color);
     
-    gl.matrixMode("GL_MODELVIEW");
+    setMatrixMode("GL_MODELVIEW");
     gl.pushMatrix();
     
     local midOffX = width / 2 + rotCenterOffX;
     local midOffY = height / 2 + rotCenterOffY;
     
-    matDrawImage.setEulerAngles(0, 0, rotation);
-    matDrawImage.setPosition(x + midOffX, y + midOffY, 0);
-    
-    gl.multiplyMatrix(matDrawImage);
+    multiplyQuadRotation(x + midOffX, y + midOffY, rotation);
     
     local texWidth, texHeight = image.getSize();
     
     glRenderLock(
         function()
-            gl.runBatch(colorQuadBatch, "quads", -midOffX, -midOffY, width, height, r, g, b, a, u / texWidth, v / texHeight, usize / texWidth, vsize / texHeight);
+            gl.runBatch(colorQuadTexcoordBatch, "quads", -midOffX, -midOffY, width, height, r, g, b, a, u / texWidth, v / texHeight, usize / texWidth, vsize / texHeight);
         end
     );
 
     gl.popMatrix();
     return true;
 end
+registerDebugProxy("dxDrawImageSection",
+    "number", "number", "number", "number", "number", "number", "number", "number", totexture, { "opt", "number" }, { "opt", "number" }, { "opt", "number" }, { "opt", "number" }, { "opt", "boolean" }
+);
 
-function dxDrawLine(startX, startY, endX, endY, color, width, posGUI)
+function dxDrawLine(startX, startY, endX, endY, color, width, postGUI)
     if (width == nil) then width = 1; end
     if (postGUI == nil) then postGUI = false; end
     
@@ -148,11 +268,21 @@ function dxDrawLine(startX, startY, endX, endY, color, width, posGUI)
             gl.runBatch(lineBatch, "lines", startX, startY, endX, endY, r, g, b, a);
         end
     );
+    return true;
 end
+registerDebugProxy("dxDrawLine",
+    "number", "number", "number", "number", "number", { "opt", "number" }, { "opt", "boolean" }
+);
 
 function dxDrawRectangle(x, y, width, height, color, postGUI)
     if (color == nil) then color = 0xFFFFFFFF; end
     if (postGUI == nil) then postGUI = false; end
+    
+    -- Normalize the coordinates
+    x = math.floor(x);
+    y = math.floor(y);
+    width = math.floor(width);
+    height = math.floor(height);
     
     -- Make sure we have an active draw session.
     checkDrawSession();
@@ -164,7 +294,11 @@ function dxDrawRectangle(x, y, width, height, color, postGUI)
             gl.runBatch(colorQuadBatch, "quads", x, y, width, height, ogl.intToColor(color));
         end
     );
+    return true;
 end
+registerDebugProxy("dxDrawRectangle",
+    "number", "number", "number", "number", { "opt", "number" }, { "opt", "boolean" }
+);
 
 -- Initialize all fonts required by the MTA runtime
 local mtaFonts = {};
@@ -198,8 +332,13 @@ function dxSetScissorRect(x, y, width, height)
     -- Make sure we have an active draw session.
     checkDrawSession();
 
-    gl.scissor(x, y, width, height);
+    local left, top = getContextRectangle(x, y, width, height);
+    
+    gl.scissor(left, top, width, height);
 end
+registerDebugProxy("dxSetScissorRect",
+    "number", "number", "number", "number"
+);
 
 function dxEnableScissorRect(enable)
     -- Make sure we have an active draw session.
@@ -211,8 +350,13 @@ function dxEnableScissorRect(enable)
         gl.disable("GL_SCISSOR_TEST");
     end
 end
+registerDebugProxy("dxEnableScissorRect", "boolean");
 
-function dxDrawText(text, left, top, right, bottom, color, scale,
+local function tofont(val)
+    return mtaFonts[val];
+end
+
+function dxDrawText(text, left, top, right, bottom, color, scale, font,
                                     alignX, alignY, clip, wordBreak, postGUI, colorCoded,
                                     subPixelPositioning)
     
@@ -232,7 +376,13 @@ function dxDrawText(text, left, top, right, bottom, color, scale,
     -- Make sure we have an active draw session.
     checkDrawSession();
     
-    local fontHandle = mtaFonts[font];
+    -- Normalize the coordinates
+    left = math.floor(left);
+    top = math.floor(top);
+    right = math.floor(right);
+    bottom = math.floor(bottom);
+    
+    local fontHandle = tofont(font);
     
     if not (fontHandle) then
         fontHandle = mtaFont.default;
@@ -244,34 +394,81 @@ function dxDrawText(text, left, top, right, bottom, color, scale,
         wordBreak = false;
     end
     
-    local wasScissor;
+    local fontRenderHeight = fontHandle.size * scale;
     
-    if (clip) then
-        wasScissor = gl.isEnabled("GL_SCISSOR_TEST");
-        
-        if not (wasScissor) then
-            gl.enable("GL_SCISSOR_TEST");
-        end
-        
-        -- Specify the rendering cut out area.
-        gl.scissor(left, top, right - left, bottom - top);
+    local textLeft, textTop = false, false;
+    
+    -- Handle alignment
+    if (alignX == "left") then
+        textLeft = left;
+    elseif (alignX == "center") then
+        local textWidth = fontHandle.getStringWidth(text, fontRenderHeight);
+        local width = right - left;
+        textLeft = left + (width - textWidth) / 2;
+    elseif (alignX == "right") then
+        local textWidth = fontHandle.getStringWidth(text, fontRenderHeight);
+        textLeft = right - textWidth;
+    else
+        return false;
+    end
+    
+    if (alignY == "top") then
+        textTop = top;
+    elseif (alignY == "center") then
+        local height = bottom - top;
+        textTop = top + (height - fontRenderHeight) / 2;
+    elseif (alignY == "bottom") then
+        textTop = bottom - fontRenderHeight;
+    else
+        return false;
     end
     
     glRenderLock(
         function()
+            local wasScissor;
+        
+            if (clip) then
+                wasScissor = gl.isEnabled("GL_SCISSOR_TEST");
+                
+                if not (wasScissor) then
+                    gl.enable("GL_SCISSOR_TEST");
+                end
+                
+                -- Specify the rendering cut out area.
+                local width, height = right - left, bottom - top;
+                local scissorLeft, scissorTop = getContextRectangle(left, top, width, height);
+                
+                gl.scissor(scissorLeft, scissorTop, width, height);
+            end
+        
             -- TODO: properly support text rendering!
-            fontHandle.drawString(text, left, top, fontHandle.size * scale);
+            fontHandle.drawString(text, textLeft, textTop, fontRenderHeight);
+            
+            if (clip) then
+                if not (wasScissor) then
+                    gl.disable("GL_SCISSOR_TEST");
+                end
+            end 
         end
     );
     
-    if (clip) then
-        if not (wasScissor) then
-            gl.disable("GL_SCISSOR_TEST");
-        end
-    end
-    
     return true;
 end
+registerDebugProxy("dxDrawText",
+    "string", "number", "number",
+    { "opt", "number" },    -- right
+    { "opt", "number" },    -- bottom
+    { "opt", "number" },    -- color
+    { "opt", "number" },    -- scale
+    { "opt", tofont },    -- font
+    { "opt", "string" },    -- alignX
+    { "opt", "string" },    -- alignY
+    { "opt", "boolean" },   -- clip
+    { "opt", "boolean" },   -- wordBreak
+    { "opt", "boolean" },   -- postGUI
+    { "opt", "boolean" },   -- colorCoded
+    { "opt", "boolean" }    -- subPixelPositioning
+);
 
 -- Change the maximum allocation size of fonts.
 function dxSetFontHQRange(width, height)
@@ -285,6 +482,7 @@ function dxSetFontHQRange(width, height)
     fontHQheight = height;
     return true;
 end
+registerDebugProxy("dxSetFontHQRange", "number", "number");
 
 function dxGetFontHeight(scale, font)
     if (scale == nil) then scale = 1; end
@@ -293,12 +491,13 @@ function dxGetFontHeight(scale, font)
     -- Make sure we have an active draw session.
     checkDrawSession();
     
-    local info = fontInfo[font];
+    local info = tofont(font);
     
     if not (info) then return false; end;
     
-    return info.height * scale;
+    return info.size * scale;
 end
+registerDebugProxy("dxGetFontHeight", { "opt", "number" }, { "opt", tofont });
 
 function dxGetTextWidth(text, scale, font)
     if (scale == nil) then scale = 1; end
@@ -307,12 +506,13 @@ function dxGetTextWidth(text, scale, font)
     -- Make sure we have an active draw session.
     checkDrawSession();
     
-    local fontItem = mtaFonts[font];
+    local fontItem = tofont(font);
     
     if not (fontItem) then return false; end;
     
     return fontItem.getStringWidth(text, fontItem.size * scale);
 end
+registerDebugProxy("dxGetTextWidth", "string", { "opt", "number" }, { "opt", tofont });
 
 function dxCreateFont(filepath, size, bold)
     if (size == nil) then size = 9; end
@@ -323,6 +523,15 @@ function dxCreateFont(filepath, size, bold)
     
     return makeMTAFont(filepath, size, bold);
 end
+registerDebugProxy("dxCreateFont", "string", { "opt", "number" }, { "opt", "boolean" });
+
+function dxGetFontHandle(handle)
+    -- Make sure we have an active draw session.
+    checkDrawSession();
+
+    return tofont(handle);
+end
+registerDebugProxy("dxGetFontHandle", tofont);
 
 function dxCreateTextureFromFile(filepath, textureFormat, mipmaps, textureEdge)
     if (textureFormat == nil) then textureFormat = "argb"; end
@@ -375,6 +584,7 @@ function dxCreateTextureFromFile(filepath, textureFormat, mipmaps, textureEdge)
     
     return gl.createTexture2D(bmp, mipmaps, textureEdge);
 end
+registerDebugProxy("dxCreateTextureFromFile", "string", { "opt", "string" }, { "opt", "boolean" }, { "opt", "string" });
 
 function dxCreateTexture(...)
     -- Make sure we have an active draw session.
@@ -396,36 +606,57 @@ function dxCreateShader(filepath, priority, maxDistance, layered, elementTypes)
     -- TODO: support shaders.
     return false;
 end
+registerDebugProxy("dxCreateShader",
+    "string",   -- filepath
+    { "opt", "number" },    -- priority
+    { "opt", "number" },    -- maxDistance
+    { "opt", "boolean" },   -- layered
+    { "opt", "string" } -- elementTypes
+);
 
-function dxCreateRenderTarget(width, height, withAlpha)
+function dxCreateRenderTarget(width, height, withAlpha, withDepth)
     if (withAlpha == nil) then withAlpha = false; end
+    if (withDepth == nil) then withDepth = false; end
     
     -- Make sure we have an active draw session.
     checkDrawSession();
     
     local fbo = gl.createFrameBuffer();
-    local rbo = gl.createRenderBuffer(width, height, "GL_DEPTH24_STENCIL8");
+    local rbo = false;
+    
+    if (withDepth) then
+        -- Only add the depth buffer if the user requested it.
+        rbo = gl.createRenderBuffer(width, height, "GL_DEPTH24_STENCIL8");
+        
+        rbo.bindDepth(fbo, "draw");
+        rbo.bindStencil(fbo, "draw");
+        
+        -- Flag it to destroy with the fbo.
+        rbo.destroy();
+    end
     
     local bmp = bitmap.new(width, height, withAlpha and "rgba" or "rgb");
-    local targetTex = gl.createTexture2D(bmp);
+    local targetTex = gl.createTexture2D(bmp, false, "clamp", "nearest");
     bmp.destroy();
     
     fbo.bindColorTexture(targetTex);
-    rbo.bindDepth(fbo);
-    rbo.bindStencil(fbo);
     
     -- Mark resources to be destroyed
-    rbo.destroy();
     targetTex.destroy();
     return fbo;
 end
+registerDebugProxy("dxCreateRenderTarget",
+    "number", "number", { "opt", "boolean" }, { "opt", "boolean" }
+);
 
 function dxCreateScreenSource(width, height)
     -- Make sure we have an active draw session.
     checkDrawSession();
 
+    -- TODO: we should support this better.
     return dxCreateRenderTarget(width, height, false);
 end
+registerDebugProxy("dxCreateScreenSource", "number", "number");
 
 function dxGetMaterialSize(obj)
     -- Make sure we have an active draw session.
@@ -437,6 +668,11 @@ function dxGetMaterialSize(obj)
     
     return image.getSize();
 end
+registerDebugProxy("dxGetMaterialSize", totexture);
+
+local function toshader(val)
+    return false;
+end
 
 function dxSetShaderValue(theShader, parameterName, value)
     -- Make sure we have an active draw session.
@@ -445,6 +681,7 @@ function dxSetShaderValue(theShader, parameterName, value)
     -- TODO: shader support
     return false;
 end
+registerDebugProxy("dxSetShaderValue", toshader, "string", "any");
 
 function dxSetShaderTessellation(theShader, tessellationX, tessellationY)
     -- Make sure we have an active draw session.
@@ -453,14 +690,37 @@ function dxSetShaderTessellation(theShader, tessellationX, tessellationY)
     -- TODO: shader support
     return false;
 end
+registerDebugProxy("dxSetShaderTesselation", toshader, "number", "number");
 
 function dxSetShaderTransform(theShader, rotationX, rotationY, rotationZ, rotationCenterOffsetX, rotationCenterOffsetY, rotationCenterOffsetZ,
                                                   bRotationCenterOffsetOriginIsScreen, perspectiveCenterOffsetX, perspectiveCenterOffsetY, bPerspectiveCenterOffsetOriginIsScreen)
+    
+    if (rotationCenterOffsetX == nil) then rotationCenterOffsetX = 0; end
+    if (rotationCenterOffsetY == nil) then rotationCenterOffsetY = 0; end
+    if (rotationCenterOffsetZ == nil) then rotationCenterOffsetZ = 0; end
+    if (bRotationCenterOffsetOriginIsScreen == nil) then bRotationCenterOffsetOriginIsScreen = false; end
+    if (perspectiveCenterOffsetX == nil) then perspectiveCenterOffsetX = 0; end
+    if (perspectiveCenterOffsetY == nil) then perspectiveCenterOffsetY = 0; end
+    if (bPerspectiveCenterOffsetOriginIsScreen == nil) then perspectiveCnterOffsetOriginIsScreen = false; end
+    
     -- Make sure we have an active draw session.
     checkDrawSession();
                                                   
     -- TODO: shader support
     return false;
+end
+registerDebugProxy("dxSetShaderTransform",
+    toshader,
+    "number", "number", "number",
+    { "opt", "number" }, { "opt", "number" }, { "opt", "number" },
+    { "opt", "boolean" },
+    { "opt", "number" }, { "opt", "number "},
+    { "opt", "boolean" }
+);
+
+local function torendertarget(val)
+    -- TODO
+    return val;
 end
 
 function dxSetRenderTarget(renderTarget, clear)
@@ -485,6 +745,12 @@ function dxSetRenderTarget(renderTarget, clear)
     
     return true;
 end
+registerDebugProxy("dxSetRenderTarget", { "opt", torendertarget }, { "opt", "boolean" });
+
+local function toscreensource(val)
+    -- TODO
+    return val;
+end
 
 function dxUpdateScreenSource(screenSource, resampleNow)
     -- Make sure we have an active draw session.
@@ -493,6 +759,7 @@ function dxUpdateScreenSource(screenSource, resampleNow)
     -- TODO: screen source support... maybe?
     return false;
 end
+registerDebugProxy("dxUpdateScreenSource", toscreensource, { "opt", "boolean" });
 
 function dxGetStatus()
     -- Make sure we have an active draw session.
@@ -534,6 +801,12 @@ function dxSetTestMode(testMode)
     -- TODO: support this?
     return false;
 end
+registerDebugProxy("dxSetTextMode", "string");
+
+local function topixels(obj)
+    -- TODO
+    return obj;
+end
 
 function dxMakeBitmap(pixels)
     -- TODO: this is required for proper pixel manipulation.
@@ -542,6 +815,7 @@ function dxMakeBitmap(pixels)
     -- This is required since the MTA pixel functions are a hack.
     return false;
 end
+registerDebugProxy("dxMakeBitmap", "string");
 
 function dxGetTexturePixels(...)
     -- Make sure we have an active draw session.
@@ -563,50 +837,100 @@ function dxGetPixelsSize(pixels)
     -- TODO: support this?
     return 0, 0;
 end
+registerDebugProxy("dxGetPixelsSize", topixels);
 
 function dxGetPixelsFormat(pixels)
     -- TODO: support this?
     return "plain";
 end
+registerDebugProxy("dxGetPixelsFormal", topixels);
 
 function dxConvertPixels(pixels, newFormat, quality)
     -- TODO: support this?
     return false;
 end
+registerDebugProxy("dxConvertPixels", topixels, "string", { "opt", "string" });
 
 function dxGetPixelColor(pixels, x, y)
     -- TODO: support this?
     return 0x00000000;
 end
+registerDebugProxy("dxGetPixelColor", topixels, "number", "number");
 
 function dxSetPixelColor(pixels, x, y, r, g, b, a)
+    if (a == nil) then a = 255; end
+
     -- TODO: support this?
     return false;
 end
+registerDebugProxy("dxSetPixelColor",
+    topixels, "number", "number", "number", "number", "number", { "opt", "number" }
+);
 
 function dxSetBlendMode(mode)
     -- Make sure we have an active draw session.
     checkDrawSession();
 
-    return drawSession.setBlendMode(mode);
+    if (mode == "blend") then
+        gl.disable("GL_DEPTH_TEST");
+        gl.disable("GL_CULL_FACE");
+        gl.shadeModel("smooth");
+        gl.enable("GL_BLEND");
+        gl.blendFunc("GL_SRC_ALPHA", "GL_ONE_MINUS_SRC_ALPHA");
+        gl.enable("GL_ALPHA_TEST");
+        gl.alphaFunc("GL_GEQUAL", (1 / 255));
+        gl.disable("GL_LIGHTING");
+    
+        -- TODO: modulation states (in D3D: texture stage states)
+    elseif (mode == "modulate_add") then
+        gl.disable("GL_DEPTH_TEST");
+        gl.disable("GL_CULL_FACE");
+        gl.shadeModel("smooth");
+        gl.enable("GL_BLEND");
+        gl.blendFunc("GL_ONE", "GL_ONE_MINUS_SRC_ALPHA");
+        gl.enable("GL_ALPHA_TEST");
+        gl.alphaFunc("GL_GEQUAL", (1 / 255));
+        gl.disable("GL_LIGHTING");
+        
+        -- TODO: modulation states
+    elseif (mode == "add") then
+        gl.disable("GL_DEPTH_TEST");
+        gl.disable("GL_CULL_FACE");
+        gl.shadeModel("smooth");
+        gl.enable("GL_BLEND");
+        gl.blendFunc("GL_ONE", "GL_ONE_MINUS_SRC_ALPHA");
+        gl.enable("GL_ALPHA_TEST");
+        gl.alphaFunc("GL_GEQUAL", (1 / 255));
+        gl.disable("GL_LIGHTING");
+        
+        -- TODO: modulation states
+    else
+        return false;
+    end
+    
+    g_blendMode = mode;
+    return true;
 end
+registerDebugProxy("dxSetBlendMode", "string");
 
 function dxGetBlendMode()
     -- Make sure we have an active draw session.
     checkDrawSession();
 
-    return drawSession.getBlendMode();
+    return g_blendMode;
 end
 
+-- This function should return an OpenGL or Direct3D driver depending on
+-- the active implementation.
 function dxGetDriver()
+    -- Make sure we have an active draw session.
+    checkDrawSession();
+
     return gl;
 end
 
 function dxGetResolution()
-    -- Make sure we have an active draw session.
-    checkDrawSession();
-    
-    return drawSession.getResolution();
+    return getResolution();
 end
 
 --------------------------------------------------------------------------
@@ -682,7 +1006,7 @@ function checkDrawSession()
         mtaFonts["bankgothic"] = makeMTAFont("sabankgothic.ttf", 30, "normal");
         mtaFonts["diploma"] = makeMTAFont("unifont-5.1.20080907.ttf", 30, "normal");
         mtaFonts["beckett"] = makeMTAFont("unifont-5.1.20080907.ttf", 30, "normal");
-                
+        
         if (drawSession.getRefCount() == 1) then
             -- Set default OpenGL renderstates.
             gl.enable("GL_TEXTURE_2D");

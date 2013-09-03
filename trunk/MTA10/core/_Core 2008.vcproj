@@ -81,12 +81,12 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
-				AdditionalDependencies="strmiids.lib dbghelp.lib zlibd_2008.lib libpng2008d.lib jpegd.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9d.lib winmm.lib ws2_32.lib Userenv.lib pthreadVC2.lib"
+				AdditionalDependencies="strmiids.lib dbghelp.lib zlibd_2008.lib libpng2008d.lib jpegd.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9d.lib winmm.lib ws2_32.lib Userenv.lib pthreadVC2.lib libfs_d.lib"
 				ShowProgress="0"
 				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mta\core_d.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../../Shared/XML;../../vendor/libv2/lib;../../vendor/libpng/lib;../../vendor/zlib/lib;../../vendor/detours/lib;../../vendor/jpeg/lib;../../vendor/pthreads/lib"
+				AdditionalLibraryDirectories="../../Shared/XML;../../vendor/libv2/lib;../../vendor/libpng/lib;../../vendor/zlib/lib;../../vendor/detours/lib;../../vendor/jpeg/lib;../../vendor/pthreads/lib;../../FileSystem/lib"
 				IgnoreDefaultLibraryNames="LIBCMT"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/core_.pdb"
@@ -186,11 +186,11 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
-				AdditionalDependencies="strmiids.lib dbghelp.lib zlib_2008.lib libpng2008.lib jpeg.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9.lib ws2_32.lib gdi32.lib Userenv.lib winmm.lib pthreadVC2.lib"
+				AdditionalDependencies="strmiids.lib dbghelp.lib zlib_2008.lib libpng2008.lib jpeg.lib dinput8.lib dxguid.lib shlwapi.lib d3dx9.lib ws2_32.lib gdi32.lib Userenv.lib winmm.lib pthreadVC2.lib libfs.lib"
 				OutputFile="$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\MTA\core.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../../Shared/XML;../../vendor/libv2/lib;../../vendor/libpng/lib;../../vendor/zlib/lib;../../vendor/detours/lib;../../vendor/jpeg/lib;../../vendor/pthreads/lib"
+				AdditionalLibraryDirectories="../../Shared/XML;../../vendor/libv2/lib;../../vendor/libpng/lib;../../vendor/zlib/lib;../../vendor/detours/lib;../../vendor/jpeg/lib;../../vendor/pthreads/lib;../../FileSystem/lib"
 				IgnoreDefaultLibraryNames="LIBCMT"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
@@ -297,7 +297,7 @@
 				OutputFile="..\..\output\MTA San Andreas\mta\core.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../../Shared/XML;../../vendor/libv2/lib;../../vendor/libpng/lib;../../vendor/zlib/lib;../../vendor/detours/lib;../../vendor/jpeg/lib;../../vendor/pthreads/lib"
+				AdditionalLibraryDirectories="../../Shared/XML;../../vendor/libv2/lib;../../vendor/libpng/lib;../../vendor/zlib/lib;../../vendor/detours/lib;../../vendor/jpeg/lib;../../vendor/pthreads/lib;../../FileSystem/lib"
 				IgnoreDefaultLibraryNames="LIBCMT"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="../../symbols/$(ConfigurationName)_$(SafeParentName).pdb"
@@ -787,14 +787,6 @@
 				>
 				<File
 					RelativePath="..\..\Shared\core\CDynamicLibrary.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\Shared\core\CFileSystem.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\Shared\core\CFileSystem.zip.cpp"
 					>
 				</File>
 			</Filter>

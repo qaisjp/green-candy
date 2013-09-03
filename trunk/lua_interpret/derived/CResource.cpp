@@ -26,11 +26,8 @@ static LUA_DECLARE( loadScript )
     CFileTranslator *root = res->GetFileRoot();
     LUA_CHECK( root->ReadToBuffer( path, buf ) );
 
-    // Always zero terminate for security!
-    buf.push_back( 0 );
-
     // Try to compile the code.
-    if ( luaL_loadstring( L, &buf[0] ) != 0 )
+    if ( luaL_loadbuffer( L, &buf[0], buf.size(), ( std::string( "@" ) + path ).c_str() ) != 0 )
     {
         lua_pushboolean( L, false );
         lua_pushvalue( L, -2 );

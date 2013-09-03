@@ -41,4 +41,6 @@ private:
 	bool			m_isLOD[10000];
 };
 
+CIPL*	LoadIPL(const char *filename);
+
 #endif

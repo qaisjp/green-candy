@@ -135,4 +135,6 @@ private:
 	entryList_t		entries;
 };
 
+CINI*	LoadINI(const char *filename);
+
 #endif //_INI_
