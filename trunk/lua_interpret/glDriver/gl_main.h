@@ -62,6 +62,7 @@ struct glDriver : public LuaClass
     bool supports_ARB_vertex_shader;
     bool supports_ARB_shader_objects;
     bool supports_ARB_vertex_program;
+    bool supports_ARB_fragment_shader;
 
     int maxFBOColorAttachments;
     int maxFBOColorAttachmentsEXT;
@@ -79,6 +80,7 @@ struct glDriver : public LuaClass
     // If the stack is active, an acquisition cannot be made.
     glProgramARB *currentProgramARB;
     //TODO: add core version
+    bool isProgramStackActive;  // if not NULL, do not allow calling glDriver.useProgram()
 };
 
 void luagl_initDrivers( void );

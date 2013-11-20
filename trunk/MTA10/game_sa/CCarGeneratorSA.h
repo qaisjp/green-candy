@@ -47,34 +47,49 @@ class CCarGeneratorSAInterface
 class CCarGeneratorSA : public CCarGenerator
 {
 private:
-    CCarGeneratorSAInterface * internalInterface;
-public:
-    CCarGeneratorSA(CCarGeneratorSAInterface * CarGeneratorInterface) { this->internalInterface = CarGeneratorInterface; }
+    CCarGeneratorSAInterface*       m_interface;
 
-    DWORD       GetModelIndex();
-    VOID        SetModelIndex(DWORD dwModelIndex);
-    CVector     * GetPosition(CVector * position);
-    VOID        SetPosition(CVector * position);
-    BYTE        GetChanceOfCarAlarm();
-    VOID        SetChanceOfCarAlarm(BYTE bChance);
-    BYTE        GetChanceOfCarLocked();
-    VOID        SetChanceOfCarLocked(BYTE bChance);
-    BOOL        GetWaitUntilFarFromPlayer();
-    VOID        SetWaitUntilFarFromPlayer(BOOL bWaitUntilFarFromPlayer);
-    BOOL        IsHighPriority();
-    VOID        SetHighPriority(BOOL bHighPriority);
-    BOOL        IsActive();
-    VOID        SetActive(BOOL bActive);
-    BOOL        HasPlayerAlreadyOwnedCar();
-    VOID        SetHasPlayerAlreadyOwnedCar(BOOL bAlreadyOwnedByPlayer);
-    BOOL        GetIgnorePopulationLimit();
-    VOID        SetIgnorePopulationLimit(BOOL bIgnorePopulationLimit);
-    DWORD       GetMinimumDelay();
-    VOID        SetMinimumDelay(DWORD dwMinimumDelay);
-    DWORD       GetMaximumDelay();
-    VOID        SetMaximumDelay(DWORD dwMaximumDelay);
-    DWORD       GetNextGenTime();
-    VOID        SetNextGenTime(DWORD dwNextGenTime);
+public:
+    CCarGeneratorSA( CCarGeneratorSAInterface *_interface )
+    {
+        m_interface = _interface;
+    }
+
+    unsigned int        GetModelIndex               ( void );
+    void                GetModelIndex               ( modelId_t index );
+
+    const CVector&      GetPosition                 ( CVector& pos );
+    void                SetPosition                 ( const CVector& pos );
+
+    unsigned char       GetChanceOfCarAlarm         ( void );
+    void                SetChanceOfCarAlarm         ( unsigned char alarm );
+
+    unsigned char       GetChanceOfCarLocked        ( void );
+    void                SetChanceOfCarLocked        ( unsigned char chance );
+
+    bool                GetWaitUntilFarFromPlayer   ( void );
+    void                SetWaitUntilFarFromPlayer   ( bool waitUntilPlayerFar );
+
+    bool                IsHighPriority              ( void );
+    void                SetHighPriority             ( bool highPriority );
+
+    bool                IsActive                    ( void );
+    void                SetActive                   ( bool active );
+
+    bool                HasPlayerAlreadyOwnedCar    ( void );
+    void                SetHasPlayerAlreadyOwnedCar ( bool hasOwned );
+
+    bool                GetIgnorePopulationLimit    ( void );
+    void                SetIgnorePopulationLimit    ( bool ignore );
+
+    unsigned int        GetMinimumDelay             ( void );
+    void                SetMinimumDelay             ( unsigned int minDelay );
+
+    unsigned int        GetMaximumDelay             ( void );
+    void                SetMaximumDelay             ( unsigned int maxDelay );
+
+    unsigned int        GetNextGenTime              ( void );
+    void                SetNextGenTime              ( unsigned int time);
 };
 
 #endif

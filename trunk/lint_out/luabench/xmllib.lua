@@ -5,6 +5,9 @@ local strsub = string.sub;
 local strbyte = string.byte;
 local strchar = string.char;
 
+-- List of all XML nodes.
+local xml_nodes = {};
+
 local function getNextSimpleItem(script, offset)
     local m,n;
     local len = #script;
@@ -220,29 +223,40 @@ end
 -- Forward declaration.
 local xmlCreateNodeEx;
 
+local function isValidNodeName(name)
+    return not (strfind(name, "[^%a%d_-]"));
+end
+
 function xmlCreateNodeEx(name)
     if not (name) or (#name == 0) then return false; end;
     
-    if (strfind(name, "[^%a%d_-]")) then return false; end;
+    if not (isValidNodeName(name)) then return false; end;
     
     return class.construct(
         function(c)
             local children = {};
         
+            -- Exports attributes directly.
             _ENV.name = name;
             _ENV.children = children;
             _ENV.attr = {};
+            _ENV.data = {}; -- used by Lua runtime.
             
             __newindex = _ENV;
             
             function createChild(name)
                 local node = xmlCreateNodeEx(name);
+                
+                if not (node) then return false; end;
+                
                 node.setParent(c);
                 return node;
             end
             
             function isValidChild(child)
-                return type(child) == "xmlnode";
+                -- It has to be a xmlnode.
+                -- Registry check is the safest we can do.
+                return not (xml_nodes[child] == nil);
             end
             
             function setChild(child)
@@ -326,11 +340,43 @@ function xmlCreateNodeEx(name)
                 return found;
             end
             
+            function clone()
+                local root = xmlCreateNodeEx(name);
+                
+                -- Copy all attributes
+                for m,n in pairs(attr) do
+                    root.attr[m] = n;
+                end
+                
+                -- Copy all children
+                local children = getChildren();
+                
+                for m,n in ipairs(children) do
+                    n.clone().setParent(root);
+                end
+                
+                -- Return the result.
+                return root;
+            end
+            
+            function setName(newName)
+                if not (isValidNodeName(newName)) then return false; end;
+                
+                _ENV.name = newName;
+                return true;
+            end
+            
+            function getName()
+                return _ENV.name;
+            end
+            
             function destroy()
-                return;
+                xml_nodes[c] = nil;
             end
             
             __type = "xmlnode";
+            
+            xml_nodes[c] = true;
         end
     );
 end
@@ -419,6 +465,10 @@ _G.xml = xml;
 
 function xml.parse(xml)
     return xmlParseNode(xml, 1);
+end
+
+function xml.isNode(val)
+    return not (xml_nodes[val] == nil);
 end
 
 xml.createNode = xmlCreateNodeEx;

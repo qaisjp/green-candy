@@ -1,11 +1,12 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.0
+*  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CWorldSA.h
 *  PURPOSE:     Header file for game world
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -13,6 +14,8 @@
 
 #ifndef __CGAMESA_WORLD
 #define __CGAMESA_WORLD
+
+#define WORLD_BOUNDS                                        3000
 
 #define FUNC_Add                                            0x563220 // ##SA##
 #define FUNC_Remove                                         0x563280 // ##SA##
@@ -33,13 +36,6 @@
 #define FUNC_CColSphere_Set                                 0x40FD10 // ##SA##
 
 #define VAR_IgnoredEntity                                   0xB7CD68 // ##SA##
-#define VAR_currArea                                        0xB72914 // ##SA##
-#define ARRAY_StreamSectors                                 0xB7D0B8
-#define NUM_StreamSectorRows                                120
-#define NUM_StreamSectorCols                                120
-#define ARRAY_StreamRepeatSectors                           0xB992B8
-#define NUM_StreamRepeatSectorRows                          16
-#define NUM_StreamRepeatSectorCols                          16
 #define VAR_fJetpackMaxHeight                               0x8703D8
 #define VAR_fAircraftMaxHeight                              0x8594DC
 
@@ -47,35 +43,49 @@
 #include <game/CWorld.h>
 #include "CEntitySA.h"
 
+// Native management API.
+namespace World
+{
+    void __cdecl        AddEntity( CEntitySAInterface *entity );
+    void __cdecl        RemoveEntity( CEntitySAInterface *entity );
+
+    void                SetCenterOfWorld( CEntitySAInterface *streamingEntity, const CVector *pos, float heading );
+    bool                GetCenterOfWorld( CVector& pos );
+    bool                IsCenterOfWorldSet( void );
+    const CVector&      GetCenterOfWorld( void );
+    CEntitySAInterface* GetStreamingEntity( void );
+    float               GetFalseHeading( void );
+};
+
 class CWorldSA : public CWorld
 {
 public:
-                CWorldSA();
-                ~CWorldSA();
+                CWorldSA                        ( void );
+                ~CWorldSA                       ( void );
     
-    void        Add                         ( CEntity * entity );
-    void        Add                         ( CEntitySAInterface * entityInterface );
-    void        Remove                      ( CEntity * entity );
-    void        Remove                      ( CEntitySAInterface * entityInterface );
+    void        Add                             ( CEntity * entity );
+    void        Add                             ( CEntitySAInterface * entityInterface );
+    void        Remove                          ( CEntity * entity );
+    void        Remove                          ( CEntitySAInterface * entityInterface );
     void        RemoveReferencesToDeletedObject ( CEntitySAInterface * entity );
-    bool        ProcessLineOfSight          ( const CVector * vecStart, const CVector * vecEnd, CColPoint ** colCollision, CEntity ** CollisionEntity, const SLineOfSightFlags flags, SLineOfSightBuildingResult* pBuildingResult );
-    bool        TestLineSphere              ( CVector * vecStart, CVector * vecEnd, CVector * vecSphereCenter, float fSphereRadius, CColPoint ** colCollision );
-    //bool      ProcessLineOfSight          ( CVector * vecStart, CVector * vecEnd, CColPoint * colCollision, CEntity * CollisionEntity );
-    void        IgnoreEntity                ( CEntity * entity );
-    BYTE        GetLevelFromPosition        ( CVector * vecPosition );
-    float       FindGroundZForPosition      ( float fX, float fY );
-    float       FindGroundZFor3DPosition    ( CVector * vecPosition );
-    void        LoadMapAroundPoint          ( CVector * vecPosition, float fRadius );
-    bool        IsLineOfSightClear          ( const CVector * vecStart, const CVector * vecEnd, const SLineOfSightFlags flags );
-    bool        HasCollisionBeenLoaded      ( CVector * vecPosition );
-    unsigned int    GetCurrentArea          ();
-    void        SetCurrentArea              ( unsigned int area );
-    void        SetJetpackMaxHeight         ( float fHeight );
-    float       GetJetpackMaxHeight         ();
-    void        SetAircraftMaxHeight        ( float fHeight );
-    float       GetAircraftMaxHeight        ();
+    bool        ProcessLineOfSight              ( const CVector * vecStart, const CVector * vecEnd, CColPoint ** colCollision, CEntity ** CollisionEntity, const SLineOfSightFlags flags, SLineOfSightBuildingResult* pBuildingResult );
+    bool        TestLineSphere                  ( CVector * vecStart, CVector * vecEnd, CVector * vecSphereCenter, float fSphereRadius, CColPoint ** colCollision );
+    //bool      ProcessLineOfSight              ( CVector * vecStart, CVector * vecEnd, CColPoint * colCollision, CEntity * CollisionEntity );
+    void        IgnoreEntity                    ( CEntity * entity );
+    BYTE        GetLevelFromPosition            ( CVector * vecPosition );
+    float       FindGroundZForPosition          ( float fX, float fY );
+    float       FindGroundZFor3DPosition        ( CVector * vecPosition );
+    void        LoadMapAroundPoint              ( CVector * vecPosition, float fRadius );
+    bool        IsLineOfSightClear              ( const CVector * vecStart, const CVector * vecEnd, const SLineOfSightFlags flags );
+    bool        HasCollisionBeenLoaded          ( CVector * vecPosition );
+    unsigned int    GetCurrentArea              ( void );
+    void        SetCurrentArea                  ( unsigned int area );
+    void        SetJetpackMaxHeight             ( float fHeight );
+    float       GetJetpackMaxHeight             ( void );
+    void        SetAircraftMaxHeight            ( float fHeight );
+    float       GetAircraftMaxHeight            ( void );
 
-    bool        ProcessVerticalLine         ( const CVector& pos, float distance, CColPointSAInterface& colPoint, CEntitySAInterface **hitEntity, bool unk1, bool unk2, bool unk3, bool unk4, bool unk5, bool unk6, bool unk7 );
+    bool        ProcessVerticalLine             ( const CVector& pos, float distance, CColPointSAInterface& colPoint, CEntitySAInterface **hitEntity, bool unk1, bool unk2, bool unk3, bool unk4, bool unk5, bool unk6, bool unk7 );
 
     /**
      * \todo Add FindObjectsKindaColliding (see 0x430577)

@@ -1350,28 +1350,30 @@ inline void TriggerExtension( glDriver *driver, const char *extension, size_t ex
 {
     const std::string name( extension, extNameLen );
 
-    if ( name == "GL_ARB_texture_non_power_of_two" )                    driver->allowTexturesOfArbitrarySize = true;
-    else if ( name == "GL_EXT_texture_compression_dxt1" )               driver->supportsDXT1 = true;
-    else if ( name == "GL_EXT_texture_compression_s3tc" )
+    // Save some computation time as checking a boolean is quicker than string comparison.
+    if ( !driver->allowTexturesOfArbitrarySize      && name == "GL_ARB_texture_non_power_of_two" )              driver->allowTexturesOfArbitrarySize = true;
+    else if ( !driver->supportsDXT1                 && name == "GL_EXT_texture_compression_dxt1" )              driver->supportsDXT1 = true;
+    else if (                                          name == "GL_EXT_texture_compression_s3tc" )
     {
         driver->supportsDXT1 = true;
         driver->supportsDXT3 = true;
         driver->supportsDXT5 = true;
         driver->supportsS3TC = true;
     }
-    else if ( name == "GL_ARB_framebuffer_object" )                     driver->supportsFBO = true;
-    else if ( name == "GL_EXT_framebuffer_object" )                     driver->supports_FBO_EXT = true;
-    else if ( name == "GL_3DFX_texture_compression_FXT1" )              driver->supportsFXT1 = true;
-    else if ( name == "GL_ARB_texture_compression" )                    driver->supports_ARB_compression = true;
-    else if ( name == "GL_ARB_texture_compression_bptc" )               driver->supports_ARB_BPTC = true;
-    else if ( name == "GL_EXT_texture_compression_latc" )               driver->supportsLATC = true;
-    else if ( name == "GL_EXT_texture_compression_rgtc" )               driver->supportsRGTC = true;
-    else if ( name == "GL_KHR_texture_compression_astc_ldr" )           driver->supportsASTC = true;
-    else if ( name == "GL_EXT_texture_sRGB" )                           driver->supports_srgb_compression = true;
-    else if ( name == "GL_ARB_imaging" )                                driver->supports_ARB_imaging = true;
-    else if ( name == "GL_ARB_vertex_shader" )                          driver->supports_ARB_vertex_shader = true;
-    else if ( name == "GL_ARB_shader_objects" )                         driver->supports_ARB_shader_objects = true;
-    else if ( name == "GL_ARB_vertex_program" )                         driver->supports_ARB_vertex_program = true;
+    else if ( !driver->supportsFBO                  && name == "GL_ARB_framebuffer_object" )                    driver->supportsFBO = true;
+    else if ( !driver->supports_FBO_EXT             && name == "GL_EXT_framebuffer_object" )                    driver->supports_FBO_EXT = true;
+    else if ( !driver->supportsFXT1                 && name == "GL_3DFX_texture_compression_FXT1" )             driver->supportsFXT1 = true;
+    else if ( !driver->supports_ARB_compression     && name == "GL_ARB_texture_compression" )                   driver->supports_ARB_compression = true;
+    else if ( !driver->supports_ARB_BPTC            && name == "GL_ARB_texture_compression_bptc" )              driver->supports_ARB_BPTC = true;
+    else if ( !driver->supportsLATC                 && name == "GL_EXT_texture_compression_latc" )              driver->supportsLATC = true;
+    else if ( !driver->supportsRGTC                 && name == "GL_EXT_texture_compression_rgtc" )              driver->supportsRGTC = true;
+    else if ( !driver->supportsASTC                 && name == "GL_KHR_texture_compression_astc_ldr" )          driver->supportsASTC = true;
+    else if ( !driver->supports_srgb_compression    && name == "GL_EXT_texture_sRGB" )                          driver->supports_srgb_compression = true;
+    else if ( !driver->supports_ARB_imaging         && name == "GL_ARB_imaging" )                               driver->supports_ARB_imaging = true;
+    else if ( !driver->supports_ARB_vertex_shader   && name == "GL_ARB_vertex_shader" )                         driver->supports_ARB_vertex_shader = true;
+    else if ( !driver->supports_ARB_shader_objects  && name == "GL_ARB_shader_objects" )                        driver->supports_ARB_shader_objects = true;
+    else if ( !driver->supports_ARB_vertex_program  && name == "GL_ARB_vertex_program" )                        driver->supports_ARB_vertex_program = true;
+    else if ( !driver->supports_ARB_fragment_shader && name == "GL_ARB_fragment_shader" )                       driver->supports_ARB_fragment_shader = true;
 }
 
 inline void ParseExtensionString( glDriver *driver, const char *extString )
@@ -1473,6 +1475,7 @@ glDriver::glDriver( lua_State *L, Win32Dialog *wnd ) : LuaClass( L, _trefget( L,
         supports_ARB_vertex_shader = false;
         supports_ARB_shader_objects = false;
         supports_ARB_vertex_program = false;
+        supports_ARB_fragment_shader = false;
 
         maxFBOColorAttachments = 1;
         maxFBOColorAttachmentsEXT = 1;
@@ -1488,6 +1491,7 @@ glDriver::glDriver( lua_State *L, Win32Dialog *wnd ) : LuaClass( L, _trefget( L,
 
         // Initialize the GLSL program context
         currentProgramARB = NULL;
+        isProgramStackActive = false;
 
 #define API_LOAD_EXT( name ) \
     contextInfo->##name = (##name##_t)_wglGetProcAddress( #name )
@@ -1851,7 +1855,7 @@ glDriver::glDriver( lua_State *L, Win32Dialog *wnd ) : LuaClass( L, _trefget( L,
             API_CHECK_EXT( glGetVertexAttribivARB );
             API_CHECK_EXT( glGetVertexAttribPointervARB );
 
-            supports_ARB_vertex_program = false;
+            supports_ARB_vertex_program = !apiFatal;
 
             if ( apiFatal )
                 printf( "WARNING: OpenGL ARB_vertex_program extension found, but not all functions supported\n" );

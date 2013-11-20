@@ -111,6 +111,7 @@ void RwD3D9ForceRenderState( D3DRENDERSTATETYPE type, DWORD value )
 =========================================================*/
 static void __cdecl HOOK_RwD3D9SetRenderState( D3DRENDERSTATETYPE type, DWORD value )
 {
+    // Actual bugfix.
     __asm push edx
 
     _internalRenderStateDesc& desc = _intRenderStates[type];
@@ -164,6 +165,7 @@ void __cdecl RwD3D9GetRenderState( D3DRENDERSTATETYPE type, DWORD& value )
 =========================================================*/
 static void __cdecl HOOK_RwD3D9GetRenderState( D3DRENDERSTATETYPE type, DWORD& value )
 {
+    // Actual bugfix.
     __asm push edx
 
     _internalRenderStateDesc& desc = _intRenderStates[type];
@@ -297,6 +299,7 @@ void __cdecl RwD3D9ApplyDeviceStates( void )
         }
     }
 
+    // No more texture states to process.
     *(unsigned int*)0x00C9A5F0 = 0;
 }
 

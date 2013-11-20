@@ -156,6 +156,17 @@ static LUA_DECLARE( getCapabilityNames )
     return 1;
 }
 
+static LUA_DECLARE( getVersion )
+{
+    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
+    glContextStack context( driver );
+
+    const GLubyte *version = _glGetString( GL_VERSION );
+
+    lua_pushstring( L, (const char*)version );
+    return 1;
+}
+
 const luaL_Reg driver_util_interface[] =
 {
     LUA_METHOD( cullFace ),
@@ -164,5 +175,6 @@ const luaL_Reg driver_util_interface[] =
     LUA_METHOD( alphaFunc ),
     LUA_METHOD( getParamNames ),
     LUA_METHOD( getCapabilityNames ),
+    LUA_METHOD( getVersion ),
     { NULL, NULL }
 };

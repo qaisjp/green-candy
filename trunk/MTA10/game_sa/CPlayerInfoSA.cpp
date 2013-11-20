@@ -8,7 +8,7 @@
 *               Christian Myhre Lundheim <>
 *               Cecill Etheredge <ijsf@gmx.net>
 *               Jax <>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -18,28 +18,196 @@
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
-CPlayerPedDataSAInterface::CPlayerPedDataSAInterface()
+CPlayerPedDataSAInterface::CPlayerPedDataSAInterface( void )
 {
     Serialize();
 }
 
-void CPlayerPedDataSAInterface::Serialize()
+void CPlayerPedDataSAInterface::Serialize( void )
 {
     // Remote players have their data serialized, because they do not own references or allocations
     m_meleeAnimRef = 0;
     m_meleeAnimExtraRef = 0;
 }
 
-CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()
+/*=========================================================
+    GetPlayerPed
+
+    Arguments:
+        id - index of the player to get the ped of
+    Purpose:
+        Returns the ped associated with the player id.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0056E210
+=========================================================*/
+CPlayerPedSAInterface* __cdecl GetPlayerPed( int id )
 {
-    DEBUG_TRACE("CPlayerPedSA* CPlayerInfoSA::GetPlayerPed()");
+    return PlayerInfo::GetInfo( id ).m_ped;
+}
+
+/*=========================================================
+    GetPlayerVehicle
+
+    Arguments:
+        id - index of the player
+        excludeRemote - return NULL if controlling RC vehicle
+    Purpose:
+        Returns the player vehicle.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0056E0D0
+=========================================================*/
+CVehicleSAInterface* __cdecl GetPlayerVehicle( int id, bool excludeRemote )
+{
+    CPlayerInfoSAInterface& info = PlayerInfo::GetInfo( id );
+
+    CPlayerPedSAInterface *ped = info.m_ped;
+
+    if ( !ped || !ped->m_pedFlags.bInVehicle )
+        return NULL;
+
+    if ( excludeRemote && info.m_remoteVehicle )
+        return NULL;
+
+    return (CVehicleSAInterface*)ped->m_objective;
+}
+
+/*=========================================================
+    FindPlayerCoords
+
+    Arguments:
+        pos - vector pointer to write position into
+        id - player index
+    Purpose:
+        Writes the player given by id into pos. If we are inside
+        of the streaming update routine, then we write the center
+        of world instead. Returns the output vector.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0056E010
+=========================================================*/
+const CVector& __cdecl FindPlayerCoords( CVector& pos, int id )
+{
+    CPlayerInfoSAInterface& info = PlayerInfo::GetInfo( id );
+
+    CPlayerPedSAInterface *ped = info.m_ped;
+
+    // If there is no player ped loaded yet, we
+    // default to 0,0,0
+    if ( !ped )
+    {
+        pos = CVector( 0, 0, 0 );
+        return pos;
+    }
+
+    const CVector *entityPos = NULL;
+
+    // If the player is inside of a vehicle,
+    // use its position instead.
+    if ( ped->m_pedFlags.bInVehicle )
+    {
+        CEntitySAInterface *veh = ped->m_objective;
+
+        if ( veh )
+            entityPos = &veh->Placeable.GetPosition();
+    }
+
+    // If there was no valid position set (i.e. vehicle),
+    // we default to ped position.
+    if ( !entityPos )
+        entityPos = &ped->Placeable.GetPosition();
+
+    pos = *entityPos;
+    return pos;
+}
+
+/*=========================================================
+    FindPlayerCenterOfWorld
+
+    Arguments:
+        id - player index to get the center of
+    Purpose:
+        Returns the vector which describes the exact center
+        of world. If we have set a static center of world,
+        use it instead.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0056E250
+=========================================================*/
+inline const CEntitySAInterface* GetPlayerEntityContext( int id )
+{
+    CPlayerInfoSAInterface& info = PlayerInfo::GetInfo( id );
+
+    // We check the remote vehicle first.
+    if ( CVehicleSAInterface *remoteVehicle = info.m_remoteVehicle )
+        return remoteVehicle;
+
+    // Let us try the player's vehicle next.
+    if ( CVehicleSAInterface *veh = GetPlayerVehicle( id, false ) )
+        return veh;
+
+    // Default to the player.
+    return info.m_ped;
+}
+
+const CVector& __cdecl FindPlayerCenterOfWorld( int id )
+{
+    // MTA fix: check for static center of world and return
+    // it if set.
+    if ( World::IsCenterOfWorldSet() )
+        return World::GetCenterOfWorld();
+
+    // If the GTA:SA static camera is active, we report back
+    // the camera position.
+    if ( *(bool*)0x009690C1 )
+        return Camera::GetInterface().Placeable.GetPosition();
+
+    // Get the position of the entity context.
+    return GetPlayerEntityContext( id )->Placeable.GetPosition();
+}
+
+/*=========================================================
+    FindPlayerHeading
+
+    Arguments:
+        id - player index to get the heading of
+    Purpose:
+        Returns the floating point heading value active for
+        the player. If the center of world is set, return
+        a false heading instead.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0056E450
+=========================================================*/
+float __cdecl FindPlayerHeading( int id )
+{
+    // MTA fix: return a false heading if center of world
+    // is set.
+    if ( World::IsCenterOfWorldSet() )
+        return World::GetFalseHeading();
+
+    return GetPlayerEntityContext( id )->Placeable.GetHeading();
+}
+
+void PlayerInfo_Init( void )
+{
+    // Hook fixes.
+    HookInstall( 0x0056E010, (DWORD)FindPlayerCoords, 5 );
+    HookInstall( 0x0056E250, (DWORD)FindPlayerCenterOfWorld, 5 );
+    HookInstall( 0x0056E450, (DWORD)FindPlayerHeading, 5 );
+}
+
+void PlayerInfo_Shutdown( void )
+{
+
+}
+
+CPlayerPedSA* CPlayerInfoSA::GetPlayerPed( void )
+{
+    DEBUG_TRACE("CPlayerPedSA* CPlayerInfoSA::GetPlayerPed( void )");
 
     return (CPlayerPedSA*)mtaPeds[0];
 }
 
-CWantedSA* CPlayerInfoSA::GetWanted()
+CWantedSA* CPlayerInfoSA::GetWanted( void )
 {
-    DEBUG_TRACE("CWantedSA* CPlayerInfoSA::GetWanted()");
+    DEBUG_TRACE("CWantedSA* CPlayerInfoSA::GetWanted( void )");
 
     if ( !m_wanted )
         m_wanted = new CWantedSA( m_interface->m_pedData.m_Wanted ); 
@@ -56,9 +224,9 @@ bool CPlayerInfoSA::GetCrossHair( float& tarX, float& tarY )
     return m_interface->m_crossHair.m_active;
 }
 
-long CPlayerInfoSA::GetPlayerMoney()
+long CPlayerInfoSA::GetPlayerMoney( void )
 {
-    DEBUG_TRACE("long CPlayerInfoSA::GetPlayerMoney()");
+    DEBUG_TRACE("long CPlayerInfoSA::GetPlayerMoney( void )");
     return *(long*)0xB7CE50;
 }
 
@@ -69,9 +237,9 @@ void CPlayerInfoSA::SetPlayerMoney( long value )
     *(long*)0xB7CE50 = value;
 }
 
-void CPlayerInfoSA::GivePlayerParachute()
+void CPlayerInfoSA::GivePlayerParachute( void )
 {
-    DEBUG_TRACE("VOID CPlayerInfoSA::GivePlayerParachute()");
+    DEBUG_TRACE("VOID CPlayerInfoSA::GivePlayerParachute( void )");
 
     DWORD dwFunction = FUNC_GivePlayerParachute;
     _asm
@@ -120,9 +288,9 @@ void CPlayerInfoSA::CancelPlayerEnteringCars( CVehicleSA* veh )
  * @see CRestartSA::OverrideNextRestart
  * @see CRestartSA::AddPoliceRestartPoint
  */
-void CPlayerInfoSA::ArrestPlayer()
+void CPlayerInfoSA::ArrestPlayer( void )
 {
-    DEBUG_TRACE("void CPlayerInfoSA::ArrestPlayer()");
+    DEBUG_TRACE("void CPlayerInfoSA::ArrestPlayer( void )");
 
     DWORD dwFunction = FUNC_ArrestPlayer;
     _asm
@@ -136,9 +304,9 @@ void CPlayerInfoSA::ArrestPlayer()
  * @see CRestartSA::OverrideNextRestart
  * @see CRestartSA::AddHospitalRestartPoint
  */
-void CPlayerInfoSA::KillPlayer()
+void CPlayerInfoSA::KillPlayer( void )
 {
-    DEBUG_TRACE("void CPlayerInfoSA::KillPlayer()");
+    DEBUG_TRACE("void CPlayerInfoSA::KillPlayer( void )");
 
     DWORD dwFunction = FUNC_KillPlayer;
     _asm
@@ -176,9 +344,9 @@ CVehicle* CPlayerInfoSA::GiveRemoteVehicle( unsigned short model, float x, float
     return GetRemoteVehicle();
 }
 
-void CPlayerInfoSA::StopRemoteControl()
+void CPlayerInfoSA::StopRemoteControl( void )
 {
-    DEBUG_TRACE("void CPlayerInfoSA::StopRemoteControl()");
+    DEBUG_TRACE("void CPlayerInfoSA::StopRemoteControl( void )");
 
     DWORD dwFunction = FUNC_TakeRemoteControlledCarFromPlayer;
     _asm
@@ -190,14 +358,14 @@ void CPlayerInfoSA::StopRemoteControl()
     }
 }
 
-CVehicle* CPlayerInfoSA::GetRemoteVehicle()
+CVehicle* CPlayerInfoSA::GetRemoteVehicle( void )
 {
-    DEBUG_TRACE("CVehicleSA* CPlayerInfoSA::GetRemoteVehicle()");
+    DEBUG_TRACE("CVehicleSA* CPlayerInfoSA::GetRemoteVehicle( void )");
 
     return pGame->GetPools()->GetVehicle( (CVehicleSAInterface*)VAR_PlayerRCCar );
 }
 
-float CPlayerInfoSA::GetFPSMoveHeading()
+float CPlayerInfoSA::GetFPSMoveHeading( void )
 {
     return 0;//m_interface->m_pedData.m_fFPSMoveHeading;
 }
@@ -212,7 +380,7 @@ void CPlayerInfoSA::SetDoesNotGetTired( bool award )
     m_interface->m_awardNoTiredness = award;
 }
 
-unsigned short CPlayerInfoSA::GetLastTimeEaten()
+unsigned short CPlayerInfoSA::GetLastTimeEaten( void )
 {
     return m_interface->m_starvingTimer;
 }
@@ -222,7 +390,7 @@ void CPlayerInfoSA::SetLastTimeEaten( unsigned short timer )
     m_interface->m_starvingTimer = timer;
 }
 
-unsigned int CPlayerInfoSA::GetLastTimeBigGunFired()
+unsigned int CPlayerInfoSA::GetLastTimeBigGunFired( void )
 {
     return m_interface->m_vehicleFireTimer;
 }

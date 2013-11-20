@@ -930,6 +930,14 @@ namespace gl_parameters
         { "GL_COLOR_SUM_ARB", GL_COLOR_SUM_ARB, 0x5966e0fa, GLPARAM_BOOLEAN, 1 }
     };
 
+    static const GLparaminfo arb_fragment_shader[] =
+    {
+        { "GL_MAX_FRAGMENT_UNIFORM_COMPONENTS_ARB", GL_MAX_FRAGMENT_UNIFORM_COMPONENTS_ARB, 0x36d839ca, GLPARAM_INT, 1 },
+        { "GL_MAX_TEXTURE_COORDS_ARB", GL_MAX_TEXTURE_COORDS_ARB, 0xfaff7fca, GLPARAM_INT, 1 },
+        { "GL_MAX_TEXTURE_IMAGE_UNITS_ARB", GL_MAX_TEXTURE_IMAGE_UNITS_ARB, 0x888fafcf, GLPARAM_INT, 1 },
+        { "GL_FRAGMENT_SHADER_DERIVATIVE_HINT_ARB", GL_FRAGMENT_SHADER_DERIVATIVE_HINT_ARB, 0x28ae39b, GLPARAM_INT, 1 }
+    };
+
 #define PARAMINFO_GET( hash, list ) \
     if ( const GLparaminfo *info = GetParamByHash( list, NUMELMS( list ), hash ) ) \
         return info
@@ -948,6 +956,11 @@ namespace gl_parameters
         if ( driver->supports_ARB_vertex_program )
         {
             PARAMINFO_GET( hash, arb_vertex_program );
+        }
+
+        if ( driver->supports_ARB_fragment_shader )
+        {
+            PARAMINFO_GET( hash, arb_fragment_shader );
         }
 
         return NULL;
@@ -1466,6 +1479,18 @@ namespace gl_parameters
             lua_pushlstring( L, "GL_VERTEX_PROGRAM_TWO_SIDE_ARB", 30 );
             lua_rawseti( L, -2, n++ );
             lua_pushlstring( L, "GL_COLOR_SUM_ARB", 16 );
+            lua_rawseti( L, -2, n++ );
+        }
+
+        if ( driver->supports_ARB_fragment_shader )
+        {
+            lua_pushlstring( L, "GL_MAX_FRAGMENT_UNIFORM_COMPONENTS_ARB", 38 );
+            lua_rawseti( L, -2, n++ );
+            lua_pushlstring( L, "GL_MAX_TEXTURE_COORDS_ARB", 25 );
+            lua_rawseti( L, -2, n++ );
+            lua_pushlstring( L, "GL_MAX_TEXTURE_IMAGE_UNITS_ARB", 30 );
+            lua_rawseti( L, -2, n++ );
+            lua_pushlstring( L, "GL_FRAGMENT_SHADER_DERIVIATE_HINT_ARB", 37 );
             lua_rawseti( L, -2, n++ );
         }
     }

@@ -176,7 +176,7 @@ static int luaB_lockfenv (lua_State *L)
 
     getfunc(L, 0);
 
-    Closure *cl = clvalue( index2adr( L, -1 ) );
+    Closure *cl = clvalue( index2constadr( L, -1 ) );
 
     if ( cl->isC )
         luaL_error(L, LUA_QL("lockfenv") " cannot set lock for the environment of given object");
@@ -191,7 +191,7 @@ static int luaB_islockedfenv( lua_State *L )
 {
     getfunc(L, 0);
 
-    Closure *cl = clvalue( index2adr( L, -1 ) );
+    Closure *cl = clvalue( index2constadr( L, -1 ) );
 
     lua_pushboolean( L, cl->IsEnvLocked() );
     return 1;

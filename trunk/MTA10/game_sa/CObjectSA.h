@@ -23,6 +23,8 @@
 #define FUNC_CObject_Create             0x5A1F60
 #define FUNC_CObject_Explode            0x5A1340
 
+//size: 412
+//padlevel: 5
 class CObjectSAInterface : public CPhysicalSAInterface // + 372 = burn time stop , +348 = scale // +340 = health
 {
 public:
@@ -40,7 +42,10 @@ public:
     float                       m_scale;                // 348
 
     dynamicObjectData*          m_dynData;              // 352
-    BYTE                        m_pad[56];              // 356
+    BYTE                        m_pad[12];              // 356
+
+    CEntitySAInterface*         m_highLOD;              // 368
+    BYTE                        m_pad5[40];             // 372
 };
 
 void Objects_Init();

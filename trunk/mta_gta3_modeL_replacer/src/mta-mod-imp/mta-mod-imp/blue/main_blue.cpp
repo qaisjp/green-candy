@@ -6,6 +6,7 @@ enum eStreamMethod
 	STREAM_DISTANCE
 };
 
+bool applyWorldConfig;
 unsigned int jetpackHeight;
 bool staticCompile;
 bool cached;
@@ -940,7 +941,7 @@ static inline void luaEnd( CFile *file )
 		"collectgarbage();\n"
 	);
 
-	if ( jetpackHeight != 0 )
+	if ( applyWorldConfig && jetpackHeight != 0 )
 	{
 		file->Printf(
 			"setJetpackMaxHeight(%u);\n", usZoffset + jetpackHeight
@@ -1125,6 +1126,7 @@ bool bundleForBLUE( CINI *config )
 	if (config && (mainEntry = config->GetEntry("MainBLUE")))
 	{
 		// Apply configuration
+        applyWorldConfig = mainEntry->GetBool("applyWorldConfig");
 		jetpackHeight = (unsigned int)mainEntry->GetInt("jetpackHeight");
 		forceLODInherit = mainEntry->GetBool("forceLODInherit");
 		staticCompile = mainEntry->GetBool("static");
@@ -1157,6 +1159,7 @@ bool bundleForBLUE( CINI *config )
 	else
 	{
 		// Default disabled
+        applyWorldConfig = true;
 		jetpackHeight = 1000;
 		forceLODInherit = true;
 		staticCompile = false;

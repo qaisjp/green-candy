@@ -110,6 +110,16 @@ public:
         assert ( !IsReadFunctionPending () );
     }
 
+    void SetIndex( int index )
+    {
+        m_iIndex = index;
+    }
+
+    int GetIndex( void ) const
+    {
+        return m_iIndex;
+    }
+
     //
     // Read next number
     //

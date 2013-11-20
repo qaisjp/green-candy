@@ -577,7 +577,7 @@ public:
     float                       m_unk;                                  // 1420
 
     void*                       m_unk38;                                // 1424, both used in inheriting classes
-    void*                       m_unk39;                                // 1428
+    unsigned int                m_unk39;                                // 1428
 
     short                       m_paintjobTxd;                          // 1432
     unsigned short              m_queuePaintjob;                        // 1434

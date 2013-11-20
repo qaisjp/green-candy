@@ -22,7 +22,6 @@
 
 #define     MAX_MEMORY_OFFSET_1_0           0xCAF008
 
-#define     CLASS_CPlayerInfo               0xB7CD98    // ##SA##
 #define     CLASS_CCamera                   0xB6F028    // ##SA##
 #define     CLASS_CPad                      0xB73458    // ##SA##
 #define     CLASS_CGarages                  0x96C048    // ##SA##
@@ -203,6 +202,11 @@ public:
 
     unsigned long           GetMinuteDuration();
     void                    SetMinuteDuration( unsigned long ulTime );
+
+    void                    HideRadar( bool hide );
+    bool                    IsRadarHidden( void );
+
+    void                    SetCenterOfWorld( CEntity *streamingEntity, const CVector *pos, float heading );
 
     bool                    IsCheatEnabled( const char* szCheatName );
     bool                    SetCheatEnabled( const char* szCheatName, bool bEnable );

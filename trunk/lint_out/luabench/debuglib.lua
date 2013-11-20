@@ -22,13 +22,16 @@ function createDebugArgParser()
             local error_callback = false;
             local proxies = {};
             local argTypeHandlers = {};
+            local _stackErrorDepth = 0;
         
-            local function outError(name, msg)
+            local function outError(name, msg, errorDepth)
+                errorDepth = errorDepth + 2 + _stackErrorDepth;
+                
                 if (error_callback) then
-                    return error_callback(c, name, msg, debug.getinfo(4));
+                    return error_callback(c, name, msg, debug.getinfo(errorDepth));
                 end
                 
-                error(msg .. " [in " .. name .. "]", 5);
+                error(msg .. " [in " .. name .. "]", errorDepth);
             end
             
             local function compareArgumentTypes(arg, argType, expectedType)
@@ -63,7 +66,7 @@ function createDebugArgParser()
                 return true;
             end
             
-            local function outArgError(funcName, argNum, arg, argType, expectedType, appendix)
+            local function outArgError(funcName, argNum, arg, argType, expectedType, errorDepth, appendix)
                 local msg = "invalid argument #" .. argNum .. " type '" .. argType .. "' (";
                 
                 if (appendix) then
@@ -84,14 +87,14 @@ function createDebugArgParser()
                 
                 msg = msg .. ")";
                 
-                return outError(funcName, msg);
+                return outError(funcName, msg, errorDepth + 1);
             end
             
-            local function checkArgumentTypes(funcName, argNum, arg, argType, expectedType)
-                local success, err = compareArgumentTypes(arg, argType, expectedType);
+            local function checkArgumentTypes(funcName, argNum, arg, argType, expectedType, errorDepth)
+                local success, err = compareArgumentTypes(arg, argType, expectedType, errorDepth + 1);
                 
                 if not (success) then
-                    return outArgError(funcName, argNum, arg, argType, expectedType, err);
+                    return outArgError(funcName, argNum, arg, argType, expectedType, errorDepth + 1, err);
                 end
                 
                 return true;
@@ -99,7 +102,7 @@ function createDebugArgParser()
         
             function addDebugProxy(name, ...)
                 if (proxies[name]) then
-                    print("WARNING: overwritting debug argStream proxy declaration '" .. name "'");
+                    print("WARNING: overwritting debug argStream proxy declaration '" .. name .. "'");
                 end
             
                 local argInfo = { ... };
@@ -145,10 +148,10 @@ function createDebugArgParser()
                                 end
                                 
                                 if (found == false) and not ((isOptional) and (this_type == "nil")) then
-                                    return outArgError(name, n, arg, this_type);
+                                    return outArgError(name, n, arg, this_type, 1);
                                 end
                             end
-                        elseif not (exp_type == "any") and not (exp_type == "vararg") and not (checkArgumentTypes(name, n, arg, this_type, exp_type)) then
+                        elseif not (exp_type == "any") and not (exp_type == "vararg") and not (checkArgumentTypes(name, n, arg, this_type, exp_type, 1)) then
                             return false;
                         end
                     

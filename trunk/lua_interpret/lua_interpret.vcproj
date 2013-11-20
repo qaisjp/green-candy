@@ -533,6 +533,10 @@
 			Name="glDriver"
 			>
 			<File
+				RelativePath=".\glDriver\gl_class.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\glDriver\gl_enum.cpp"
 				>
 			</File>
@@ -563,6 +567,10 @@
 			<Filter
 				Name="include"
 				>
+				<File
+					RelativePath=".\glDriver\gl_class.h"
+					>
+				</File>
 				<File
 					RelativePath=".\glDriver\gl_context.h"
 					>

@@ -64,6 +64,7 @@ typedef struct CallInfo {
 
 // Internal functions
 TValue *index2adr (lua_State *L, int idx);
+const TValue *index2constadr( lua_State *L, int idx );
 
 class lua_Thread;
 

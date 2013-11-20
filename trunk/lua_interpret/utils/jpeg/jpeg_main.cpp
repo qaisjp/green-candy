@@ -84,12 +84,13 @@ struct LuaJPEGSourceManager : public jpeg_source_mgr
             else
             {
                 src.bytes_in_buffer -= num_bytes;
-                num_bytes = 0;
 
                 if ( src.bytes_in_buffer == 0 )
                     src.next_input_byte = NULL;
                 else
                     src.next_input_byte += num_bytes;
+
+                num_bytes = 0;
             }
 
             if ( src.bytes_in_buffer == 0 )
@@ -225,7 +226,7 @@ static LUA_DECLARE( load )
     }
     catch( ... )
     {
-        // Other errors have to be passed alone, but destroy the decompression runtime
+        // Other errors have to be passed along, but destroy the decompression runtime
         jpeg_destroy_decompress( &readStruct );
         throw;
     }

@@ -23,12 +23,11 @@ enum eRenderBufferType : unsigned int
     RENDERBUFFER_CORE
 };
 
-struct glRenderBufferBase abstract : public LuaInstance
+struct glRenderBufferBase abstract : public glClass
 {
     glRenderBufferBase( lua_State *L, glDriver *driver, eRenderBufferType bufType, unsigned int width, unsigned int height );
     ~glRenderBufferBase( void );
 
-    glDriver *m_driver;
     unsigned int m_width, m_height;
     eRenderBufferType m_type;
 };
@@ -56,12 +55,11 @@ enum eFrameBufferType : unsigned int
     FRAMEBUFFER_CORE
 };
 
-struct glFrameBufferBase abstract : public LuaInstance
+struct glFrameBufferBase abstract : public glClass
 {
     glFrameBufferBase( lua_State *L, glDriver *driver, eFrameBufferType bufType );
     ~glFrameBufferBase( void );
 
-    glDriver *m_driver;
     eFrameBufferType m_type;
 
     LuaClass **colorAttachments;     // array of color attached objects

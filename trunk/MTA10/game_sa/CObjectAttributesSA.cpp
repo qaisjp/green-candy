@@ -16,42 +16,6 @@ dynamicObjectData g_dynObjData[MAX_DYNAMIC_OBJECT_DATA];
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
 /*=========================================================
-    GetConfigLine
-
-    Arguments:
-        file - source stream to read from
-    Purpose:
-        Reads a line from the stream character by character
-        and parses it for sscanf compatibility. Returns the
-        string it processed. If there was nothing to read,
-        it returns NULL.
-    Binary offsets:
-        (1.0 US and 1.0 EU): 0x00536F80
-=========================================================*/
-static char tempBuffer[512];
-
-static const char* GetConfigLine( CFile *file )
-{
-    if ( !file->GetString( tempBuffer, sizeof( tempBuffer ) ) )
-        return NULL;
-    
-    char *buf = tempBuffer;
-
-    for ( buf = tempBuffer; *buf; buf++ )
-    {
-        const char c = *buf;
-
-        if ( c < ' ' || c == ',' )
-            *buf = ' ';
-    }
-    
-    // Offset until we start at valid offset
-    for ( buf = tempBuffer; *buf && *buf <= ' '; buf++ );
-
-    return buf;
-}
-
-/*=========================================================
     _Objects_LoadAttributes
 
     Arguments:
@@ -63,7 +27,7 @@ static const char* GetConfigLine( CFile *file )
         First entry in g_dynObjData are the default attributes for
         every object without definition.
     Binary offsets:
-        (1.0 US and 1.0 EU): 0x00536F80
+        (1.0 US and 1.0 EU): 0x005B5360
 =========================================================*/
 static void __cdecl _Objects_LoadAttributes( const char *filepath, bool unused )
 {
@@ -102,7 +66,7 @@ static void __cdecl _Objects_LoadAttributes( const char *filepath, bool unused )
 
     unsigned int num = 5;
 
-    while ( const char *line = GetConfigLine( file ) )
+    while ( const char *line = FileMgr::GetConfigLine( file ) )
     {
         const char c = *line;
 

@@ -13,6 +13,47 @@
 
 #include "StdInc.h"
 
+static bool hideRadar = false;
+
+void HUD::HideRadar( bool hide )
+{
+    hideRadar = hide;
+}
+
+bool HUD::IsRadarHidden( void )
+{
+    return hideRadar;
+}
+
+void __cdecl HOOK_CHud_Render( void )
+{
+    ((void (__cdecl*)( void ))0x00507030)();
+
+    if ( !World::IsCenterOfWorldSet() )
+        ((void (__cdecl*)( void ))0x0058FAE0)();
+    else
+    {
+        if ( !hideRadar )
+            ((void (__cdecl*)( void ))0x58A330)();
+    }
+}
+
+void HUD_OnReset( void )
+{
+    hideRadar = false;
+}
+
+void HUD_Init( void )
+{
+    // Initialize important hooks.
+    PatchCall( 0x0053E4FA, (DWORD)HOOK_CHud_Render );
+    memset( (void*)0x0053E4FF, 0x90, 5 );
+}
+
+void HUD_Shutdown( void )
+{
+}
+
 char szVehicleName[50] = {'\0'};
 char szZoneName[50] = {'\0'};
 

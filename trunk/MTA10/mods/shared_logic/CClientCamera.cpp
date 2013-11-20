@@ -111,7 +111,7 @@ void CClientCamera::DoPulse ( void )
         RwMatrix matTemp;
         GetMatrix( matTemp );
         matTemp.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );    
-        g_pMultiplayer->SetCenterOfWorld ( NULL, &m_matrix.vPos, (float)M_PI - vecRotation.fZ );
+        g_pGame->SetCenterOfWorld ( NULL, &m_matrix.vPos, (float)M_PI - vecRotation.fZ );
     }
     else
     {
@@ -167,7 +167,7 @@ void CClientCamera::DoPulse ( void )
                 CVector pos;
                 m_pFocusedGameEntity->GetPosition( pos );
 
-                g_pMultiplayer->SetCenterOfWorld ( NULL, &pos, fRotation );
+                g_pGame->SetCenterOfWorld ( NULL, &pos, fRotation );
             }
         }
     }
@@ -181,7 +181,7 @@ void CClientCamera::AssignFixedMode()
     // Make sure that's where the world center is
     CVector vecRotation;
     m_matrix.GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
-    g_pMultiplayer->SetCenterOfWorld( NULL, &m_matrix.vPos, PI - vecRotation.fZ );
+    g_pGame->SetCenterOfWorld( NULL, &m_matrix.vPos, PI - vecRotation.fZ );
 }
 
 bool CClientCamera::SetMatrix( const RwMatrix& mat )
@@ -413,7 +413,7 @@ void CClientCamera::SetFocusToLocalPlayerImpl()
 {
     // Restore the camera
     m_pCamera->RestoreWithJumpCut ();
-    g_pMultiplayer->SetCenterOfWorld ( NULL, NULL, NULL );
+    g_pGame->SetCenterOfWorld ( NULL, NULL, NULL );
 }
 
 void CClientCamera::UnreferenceEntity( CClientEntity* pEntity )
@@ -512,7 +512,7 @@ void CClientCamera::ToggleCameraFixedMode ( bool bEnabled )
     }
     else
     {
-        g_pMultiplayer->SetCenterOfWorld ( NULL, NULL, NULL );
+        g_pGame->SetCenterOfWorld ( NULL, NULL, NULL );
         SetFocusToLocalPlayer();
 
         m_fRoll = 0.0f;

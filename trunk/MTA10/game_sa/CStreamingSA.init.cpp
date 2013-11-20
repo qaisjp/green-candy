@@ -14,17 +14,6 @@
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
-// IPL files have to be placed in their pool.
-void* CIPLFileSA::operator new ( size_t )
-{
-    return (*ppIPLFilePool)->Allocate();
-}
-
-void CIPLFileSA::operator delete ( void *ptr )
-{
-    (*ppIPLFilePool)->Free( (CIPLFileSA*)ptr );
-}
-
 namespace Streaming
 {
     /*=========================================================
@@ -93,10 +82,10 @@ namespace Streaming
     static CMissingModelInfoSA *const *VAR_MissingModelInfo = (CMissingModelInfoSA**)0x008E48D0;
 
     /*=========================================================
-        Streaming::GetModelByHash
+        Streaming::GetModelByName
 
         Arguments:
-            hash - hash key of the model to find
+            name - name string to check case-insensitively with
             id (optional) - index of the model info (if found)
         Purpose:
             Returns the model info associated with the hash key. If
@@ -136,6 +125,11 @@ success:
 
         *VAR_LastModelScanIndex = n;
         return model;
+    }
+
+    CBaseModelInfoSAInterface* __cdecl GetModelByName( const char *name, modelId_t *id )
+    {
+        return GetModelByHash( pGame->GetKeyGen()->GetUppercaseKey( name ), id );
     }
 
     /*=========================================================
@@ -253,32 +247,9 @@ success:
         obfuscation methods, is very helpful..!
     */
 
-    static unsigned int __cdecl RegisterCollision( const char *name )
+    unsigned int __cdecl RegisterCollision( const char *name )
     {
-        CColFileSA *col = new CColFileSA;
-
-        if ( stricmp( name, "procobj" ) == 0 || stricmp( name, "proc_int" ) == 0 || stricmp( name, "proc_int2" ) == 0 )
-            col->m_isProcedural = true;
-
-        if ( strnicmp( name, "int_la", 6 ) == 0 ||
-             strnicmp( name, "int_sf", 6 ) == 0 ||
-             strnicmp( name, "int_veg", 7 ) == 0 ||
-             strnicmp( name, "int_cont", 8 ) == 0 ||
-             strnicmp( name, "gen_int1", 8 ) == 0 ||
-             strnicmp( name, "gen_int2", 8 ) == 0 ||
-             strnicmp( name, "gen_int3", 8 ) == 0 ||
-             strnicmp( name, "gen_int4", 8 ) == 0 ||
-             strnicmp( name, "gen_int5", 8 ) == 0 ||
-             strnicmp( name, "gen_intb", 8 ) == 0 ||
-             strnicmp( name, "savehous", 8 ) == 0 ||
-             stricmp( name, "props" ) == 0 ||
-             stricmp( name, "props2" ) == 0 ||      // Okay, I am unsure whether I caught all of the namechecking due to secuROM obfuscation
-                                                    // If there is a filename missing, feel free to append it here!
-             strnicmp( name, "levelmap", 8 ) == 0 ||
-             strnicmp( name, "stadint", 7 ) == 0 )
-            col->m_isInterior = true;
-
-        return (*ppColFilePool)->GetIndex( col );
+        return Streaming::GetCOLEnvironment().RegisterInstance( name );
     }
 
     /*=========================================================
@@ -294,38 +265,17 @@ success:
     =========================================================*/
     static unsigned int __cdecl FindIPLFile( const char *name )
     {
-        unsigned int n;
+        IPLEnv_t::pool_t *pool = Streaming::GetIPLEnvironment().m_pool;
 
-        for ( n=0; n<MAX_IPL; n++ )
+        for ( unsigned int n = 0; n < pool->GetMax(); n++ )
         {
-            CIPLFileSA *ipl = (*ppIPLFilePool)->Get( n );
+            CIPLFileSA *ipl = pool->Get( n );
 
             if ( ipl && stricmp( ipl->m_name, name ) == 0 )
                 return n;
         }
 
         return 0xFFFFFFFF;
-    }
-
-    /*=========================================================
-        Streaming::RegisterIPLFile
-
-        Arguments:
-            name - string of the IPL filename
-        Purpose:
-            Allocates an instance in the IPL file pool and returns
-            its index. The name of the IPL file is stored in its
-            name field.
-        Binary offsets:
-            (1.0 US and 1.0 EU): 0x00405AC0
-    =========================================================*/
-    static unsigned int __cdecl RegisterIPLFile( const char *name )
-    {
-        CIPLFileSA *ipl = new CIPLFileSA;
-
-        strcpy( ipl->m_name, name );
-
-        return (*ppIPLFilePool)->GetIndex( ipl );
     }
 
     /*=========================================================
@@ -408,7 +358,7 @@ success:
             {
                 if ( GetModelByHash( pGame->GetKeyGen()->GetUppercaseKey( header.name ), &id ) )
                 {
-                    header.offset |= imgID << 24;
+                    header.offset |= Streaming::GetFileHandle( imgID, 0 );
 
                     // Some sort of debug container
                     (*VAR_MissingModelInfo)->Add( header.name );

@@ -159,7 +159,7 @@ CArchiveFileTranslator::CArchiveFileTranslator( CFile& fileStream ) : CSystemPat
 CArchiveFileTranslator::~CArchiveFileTranslator( void )
 {
     filePath path;
-    m_fileRoot->GetFullPath( "", false, path );
+    m_fileRoot->GetFullPath( "@", false, path );
 
     delete m_unpackRoot;
     delete m_realtimeRoot;
@@ -201,6 +201,7 @@ inline CArchiveFileTranslator::directory& CArchiveFileTranslator::MakeDeriviateD
 
 bool CArchiveFileTranslator::WriteData( const char *path, const char *buffer, size_t size )
 {
+    // TODO
     return false;
 }
 
@@ -966,7 +967,7 @@ struct zip_deflate_compression : public zip_stream_compression
             throw;
     }
 
-    ~zip_deflate_compression()
+    ~zip_deflate_compression( void )
     {
         deflateEnd( &m_stream );
     }
@@ -1237,7 +1238,7 @@ void CFileSystem::InitZIP( void )
 void CFileSystem::DestroyZIP( void )
 {
     filePath tmpDir;
-    sysTmpRoot->GetFullPath( "", false, tmpDir );
+    sysTmpRoot->GetFullPath( "@", false, tmpDir );
 
     delete sysTmpRoot;
 

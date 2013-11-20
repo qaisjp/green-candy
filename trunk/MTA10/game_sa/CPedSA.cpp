@@ -37,7 +37,7 @@ enum eAnimIDs
     ANIM_ID_STEALTH_AIM = 347
 };
 
-bool CPedSAInterface::IsPlayer()
+bool __thiscall CPedSAInterface::IsPlayer( void ) const
 {
 #ifndef _SINGLEPLAYER
     return true;
@@ -96,6 +96,16 @@ void CPedSAInterface::OnFrame()
             }
         }
     }
+}
+
+void Ped_Init( void )
+{
+    // Hook ped management stuff.
+    HookInstall( 0x005DF8F0, h_memFunc( &CPedSAInterface::IsPlayer ), 5 );
+}
+
+void Ped_Shutdown( void )
+{
 }
 
 CPedSA::CPedSA( CPedSAInterface *ped )

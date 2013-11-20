@@ -1,0 +1,19 @@
+<meta>
+    <depend resource="gui" />
+    <script src="gui-element.lua" />
+    <script src="gui-button.lua" />
+    <script src="gui-checkbox.lua" />
+    <script src="gui-combobox.lua" />
+    <script src="gui-editfield.lua" />
+    <script src="gui-gridlist.lua" />
+    <script src="gui-memo.lua" />
+    <script src="gui-progressbar.lua" />
+    <script src="gui-radiobutton.lua" />
+    <script src="gui-scrollbar.lua" />
+    <script src="gui-scrollpane.lua" />
+    <script src="gui-staticimage.lua" />
+    <script src="gui-tabpanel.lua" />
+    <script src="gui-tabs.lua" />
+    <script src="gui-labels.lua" />
+    <script src="gui-windows.lua" />
+</meta>

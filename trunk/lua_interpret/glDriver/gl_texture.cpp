@@ -54,8 +54,9 @@ static LUA_DECLARE( tex_constructor )
     return 0;
 }
 
-glTexture::glTexture( lua_State *L, glDriver *gl, GLuint texIndex, unsigned int width, unsigned int height ) : LuaInstance( L ), m_texIndex( texIndex ), m_driver( gl ), m_width( width ), m_height( height )
+glTexture::glTexture( lua_State *L, glDriver *gl, GLuint texIndex, unsigned int width, unsigned int height ) : glClass( L, gl ), m_texIndex( texIndex ), m_width( width ), m_height( height )
 {
+    // Create the Lua representation of a OpenGL texture.
     Extend( L, tex_constructor );
 }
 
@@ -408,8 +409,40 @@ failSupportFormat:
     return 1;
 }
 
+static LUA_DECLARE( activeTexture )
+{
+    GLuint unit;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( unit );
+    LUA_ARGS_END;
+
+    glDriver *driver = (glDriver*)lua_getmethodtrans( L );
+
+    LUA_CHECK( driver->supports1_3 );
+
+    GLint maxUnits;
+    _glGetIntegerv( GL_MAX_TEXTURE_UNITS, &maxUnits );
+
+    LUA_CHECK( unit < (GLuint)maxUnits );
+
+    if ( driver->supports2_0 )
+    {
+        GLint maxCombinedUnits;
+        _glGetIntegerv( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxCombinedUnits );
+
+        LUA_CHECK( unit < (GLuint)maxCombinedUnits );
+    }
+
+    glContextStack contextStack( driver );
+
+    driver->contextInfo->glActiveTexture( GL_TEXTURE0 + unit );
+    LUA_SUCCESS;
+}
+
 const luaL_Reg tex_driver_interface[] =
 {
     LUA_METHOD( createTexture2D ),
+    LUA_METHOD( activeTexture ),
     { NULL, NULL }
 };

@@ -106,7 +106,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy /y ..\..\lua5.1d.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mods\deathmatch\&quot;&#x0D;&#x0A;xcopy /y ..\..\lua5.1d.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\server\mods\deathmatch\&quot;&#x0D;&#x0A;xcopy /y ..\..\lua5.1d.dll &quot;..\..\..\lint_out\&quot;"
+				CommandLine="xcopy /y &quot;..\..\lua5.1d.dll&quot; &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mods\deathmatch\&quot;&#x0D;&#x0A;xcopy /y &quot;..\..\lua5.1d.dll&quot; &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\server\mods\deathmatch\&quot;&#x0D;&#x0A;xcopy /y &quot;..\..\lua5.1d.dll&quot; &quot;..\..\..\lint_out\&quot;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -207,7 +207,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy /y ..\..\lua5.1.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mods\deathmatch\&quot;&#x0D;&#x0A;xcopy /y ..\..\lua5.1.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\server\mods\deathmatch\&quot;&#x0D;&#x0A;xcopy /y ..\..\lua5.1.dll &quot;..\..\..\lint_out\&quot;"
+				CommandLine="xcopy /y ..\..\lua5.1.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mods\deathmatch\&quot;&#x0D;&#x0A;xcopy /y ..\..\lua5.1.dll &quot;$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\server\mods\deathmatch\&quot;&#x0D;&#x0A;xcopy /y ..\..\lua5.1.dll &quot;..\..\..\lint_out\&quot;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration

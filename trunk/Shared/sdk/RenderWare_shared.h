@@ -268,6 +268,11 @@ public:
         vUp[0] = 0;      vUp[1] = 0;      vUp[2] = 1.0f;
     }
 
+    inline float ToHeading( void ) const
+    {
+        return atan2( -vFront.fX, vFront.fY );
+    }
+
     // I have done the homework for MTA
     inline void rotXY( float x, float y )
     {

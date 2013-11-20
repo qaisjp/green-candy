@@ -42,8 +42,6 @@ namespace
     };
 };
 
-CIPLFilePool **ppIPLFilePool = (CIPLFilePool**)CLASS_CIPLFilePool;
-
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CColModelSA *g_colReplacement[MAX_MODELS];
@@ -324,29 +322,20 @@ struct ModelFreeDispatch : ModelCheckDispatch <false>   // by default we do not 
     bool __forceinline DoCollision( modelId_t id )
     {
         // Destroy all collisions associated with the COL library
-        FreeCOLLibrary( (unsigned char)id );
+        Streaming::GetCOLEnvironment().UnloadSector( id );
         return true;
     }
 
     bool __forceinline DoIPL( modelId_t id )
     {
         // This function destroys buildings/IPLs!
-        ((void (__cdecl*)( modelId_t ))0x00404B20)( id );
+        Streaming::GetIPLEnvironment().UnloadSector( id );
         return true;
     }
 
     bool __forceinline DoPathFind( modelId_t id )
     {
-        __asm
-        {
-            mov eax,id
-
-            push eax
-            mov ecx,CLASS_CPathFind
-            mov eax,0x0044D0F0
-            call eax
-        }
-
+        PathFind::GetInterface().FreeContainer( id );
         return true;
     }
 
@@ -368,6 +357,8 @@ struct ModelFreeDispatch : ModelCheckDispatch <false>   // by default we do not 
             mov eax,0x004708E0
             call eax
         }
+
+        return true;
     }
 };
 
@@ -449,100 +440,300 @@ void __cdecl Streaming::FreeModel( modelId_t id )
 }
 
 /*=========================================================
-    Streaming::LoadAllRequestedModels
+    Streaming::RequestDirectResource
 
     Arguments:
-        onlyPriority - appears to favour prioritized models if true
+        model - model id slot to request to
+        imgId - .IMG container to request from
+        blockCount - size of the requested resource
+        imgOffset - offset in the .IMG container
+        reqFlags - flags passed to RequestModel
     Purpose:
-        Cycles through the streaming loading system to process
-        loader queues (load and termination requests).
+        Requests a new resource from an .IMG container to
+        a model slot. If the resource has already been loaded
+        at the given slot, it simply requests it. Otherwise,
+        the previous resource is unloaded and then the new
+        resource is requested.
     Binary offsets:
-        (1.0 US and 1.0 EU): 0x0040EA10
+        (1.0 US and 1.0 EU): 0x0040A080
 =========================================================*/
-static volatile bool _isLoadingRequests = false;
-
-void __cdecl Streaming::LoadAllRequestedModels( bool onlyPriority )
+void __cdecl Streaming::RequestDirectResource( modelId_t model, unsigned int blockOffset, unsigned int blockCount, unsigned int imgId, unsigned int reqFlags )
 {
-    using namespace Streaming;
+    CModelLoadInfoSA& info = Streaming::GetModelLoadInfo( model );
 
-    if ( _isLoadingRequests )
+    // MTA: check if we cached special resources (like player.img data)
+    // If so, use said data for resource lookup.
+    void *dataPtr;
+
+    if ( StreamingCache::GetCachedIMGData( imgId, blockOffset, blockCount, dataPtr ) )
+    {
+        // Terminate anything that was loaded previously as this slot.
+        FreeModel( model );
+
+        // Set invalid block data to notify that the IMG data
+        // does not originate from an .IMG container.
+        info.SetOffset( 0, 0 );
+
+        // Quick load our resources and return.
+        LoadModel( dataPtr, model, 0 );
+        return;
+    }
+
+    unsigned int oldOffset;
+    unsigned int oldBlockCount;
+
+    // If the resource already exists at said slot, just request it.
+    if ( info.GetOffset( oldOffset, oldBlockCount ) && oldOffset == Streaming::GetFileHandle( imgId, blockOffset ) && oldBlockCount == blockCount )
+    {
+        RequestModel( model, reqFlags );
+        return;
+    }
+
+    // Terminate the previous resource instance.
+    FreeModel( model );
+
+    // Set new resource information.
+    info.SetOffset( blockOffset, blockCount );
+    info.m_imgID = imgId;
+
+    // Load new resource information from our .IMG container.
+    RequestModel( model, reqFlags );
+}
+
+/*=========================================================
+    Streaming::CleanUpLoadQueue
+
+    Purpose:
+        Loops through all models requests on the load queue
+        and removes the ones which have expired. The removal
+        of model requests depends on the flags that have been
+        set to the load info.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0040C1E0
+=========================================================*/
+void __cdecl Streaming::CleanUpLoadQueue( void )
+{
+    CModelLoadInfoSA *iter = GetLastQueuedLoadInfo();
+
+    while ( iter != *(CModelLoadInfoSA**)0x008E4C58 )
+    {
+        CModelLoadInfoSA *nextInfo = Streaming::GetPrevLoadInfo( iter );
+
+        if ( !IS_ANY_FLAG( iter->m_flags, 0x1E ) )
+        {
+            Streaming::FreeModel( iter->GetIndex() );
+        }
+
+        iter = nextInfo;
+    }
+}
+
+/*=========================================================
+    Streaming::IsInsideStreamingUpdate (MTA extension)
+
+    Purpose:
+        Returns a boolean whether the streaming update routine
+        has been called and resides on the stack.
+=========================================================*/
+static bool insideStreamingUpdate = false;
+
+bool Streaming::IsInsideStreamingUpdate( void )
+{
+    return insideStreamingUpdate;
+}
+
+/*=========================================================
+    Streaming::SetStreamingEntity (MTA extension)
+
+    Arguments:
+        entity - the entity which shall be the streaming focus
+    Purpose:
+        Sets the active entity that is used for streaming.
+        Around this entity the world will load.
+=========================================================*/
+inline void GetStreamingEntityPosition( CVector& pos )
+{
+    // MTA fix: if we are inside of the streaming update routine,
+    // we should return the center of world.
+    if ( World::GetCenterOfWorld( pos ) )
         return;
 
-    _isLoadingRequests = true;
-    PulseStreamingRequests();
-    
-    unsigned int pulseCount = std::max( (unsigned int)10, *(unsigned int*)0x008E4CB8 * 2 );
-    unsigned int threadId = 0;
+    // Otherwise attempt to read the position of an active streaming entity.
+    CEntitySAInterface *activeStreamingEntity = World::GetStreamingEntity();
 
-    for ( ; pulseCount != 0; pulseCount-- )
+    if ( activeStreamingEntity )
     {
-        // Check whether activity is required at all
-        if ( GetLastQueuedLoadInfo() == *(CModelLoadInfoSA**)0x008E4C58 &&
-            GetStreamingRequest( 0 ).status == streamingRequest::STREAMING_NONE &&
-            GetStreamingRequest( 1 ).status == streamingRequest::STREAMING_NONE )
-            break;
-
-        if ( pulseCount == 0 )
-            break;
-
-        if ( *(bool*)0x008E4A58 )
-            threadId = 0;
-
-        streamingRequest& requester = GetStreamingRequest( threadId );
-
-        // Cancel any pending activity (if PulseStreamingRequests did not finish it)
-        if ( requester.status != streamingRequest::STREAMING_NONE )
-        {
-            CancelSyncSemaphore( threadId );
-
-            // Tell the requester about it
-            requester.statusCode = 100;
-        }
-
-        // Try to finish the loading procedure
-        if ( requester.status == streamingRequest::STREAMING_BUFFERING )
-        {
-            ProcessStreamingRequest( threadId );
-
-            // This once again enforces this coroutine like loading logic.
-            // It expects resources to at least take two pulses to load properly.
-            // The system breaks if more pulses are required.
-            if ( requester.status == streamingRequest::STREAMING_LOADING )
-                ProcessStreamingRequest( threadId );
-        }
-
-        // If we expect to load only priority and there is no priority models
-        // to load, we can cancel here.
-        if ( onlyPriority && *(unsigned int*)0x008E4BA0 == 0 )
-            break;
-
-        // We can only perform this loading logic if all models have acquired their resources
-        // (no big models are being loaded)
-        if ( !*(bool*)0x008E4A58 )
-        {
-            streamingRequest& otherRequester = GetStreamingRequest( 1 - threadId );
-
-            // Pulse the other streaming request if we can
-            if ( otherRequester.status == streamingRequest::STREAMING_NONE )
-                PulseStreamingRequest( 1 - threadId );
-
-            // Check that we did not begin loading a big model
-            // Pulse the primary requester if we can
-            if ( !*(bool*)0x008E4A58 && requester.status == streamingRequest::STREAMING_NONE )
-                PulseStreamingRequest( threadId );
-        }
-
-        // If we have no more activity, we can break here
-        if ( GetStreamingRequest( 0 ).status == streamingRequest::STREAMING_NONE &&
-             GetStreamingRequest( 1 ).status == streamingRequest::STREAMING_NONE )
-            break;
-
-        // Switch the thread id (cycle through them)
-        threadId = 1 - threadId;
+        activeStreamingEntity->GetPosition( pos );
+        return;
     }
-    
+
+    // Default to player ped position.
+    FindPlayerCoords( pos, -1 );
+}
+
+/*=========================================================
+    Streaming::Update
+
+    Purpose:
+        Updates the world streaming status. It requests collision
+        data of camera-surrounding entities. Special vehicles
+        are requested depending on zone to optimize gameplay.
+        Objects which have come into sight but have their models
+        not loaded yet are requested.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0040E670
+=========================================================*/
+static bool cleanUpPendingModels = true;
+
+void __cdecl Streaming::Update( void )
+{
+    // todo: what is this?
+    // appears to store the latest number of models loaded.
+    *(unsigned int*)VAR_NUMMODELS = *(unsigned int*)0x00B729BC;
+
+    // If the game is paused or the streamer is disabled,
+    // we cannot update the streaming status.
+    if ( *(bool*)0x00B7CB49 || *(bool*)0x00B7CB48 )
+        return;
+
+    // Calculate the height above ground.
+    CCameraSAInterface& camera = Camera::GetInterface();
+    const CVector& camPos = camera.Placeable.GetPosition();
+
+    float aboveGroundHeight = camPos.fZ - camera.GetGroundLevel( 0 );
+
+    if ( !*(bool*)0x009654B0 && !*(bool*)0x00B76850 )
+    {
+        if ( aboveGroundHeight < 50.0f )
+        {
+            if ( *(bool*)0x00B745C1 )
+            {
+                Streamer::RequestAdvancedSquaredSectorEntities( camPos, 0 );
+            }
+        }
+        else if ( *(unsigned int*)VAR_currArea == 0 )
+        {
+            Streamer::RequestSquaredSectorEntities( camPos, 0 );
+        }
+    }
+
+    unsigned int unk = *(unsigned int*)0x00B7CB4C;
+
+    if ( ( unk & 0x7F ) == 106 )
+    {
+        *(bool*)0x009654BC = false;
+
+        if ( aboveGroundHeight < 500 )
+            *(bool*)0x009654BC = PathFind::GetInterface().IsSectorCarNodeInRadius( camPos.fX, camPos.fY, 80.0f );
+    }
+
+    CVector playerPos;
+    GetStreamingEntityPosition( playerPos );
+
+#ifdef MANAGE_GAME_STREAMING
+    if ( !*(bool*)0x009654B0 && !*(bool*)0x00B5F852 && *(unsigned int*)VAR_currArea == 0 && !*(bool*)0x00A43088 )
+    {
+        if ( aboveGroundHeight < 50.0f )
+        {
+            Streaming::StreamPedsAndVehicles( playerPos );
+
+#ifdef LOAD_AMBIENT_TRAFFIC_MODELS_AND_TEXTURES
+            if ( !Streaming::IsStreamingBusy() )
+            {
+                ((void (__cdecl*)( void ))0x0040B700)();
+                ((void (__cdecl*)( const CVector& pos ))0x0040A560)( playerPos );
+            }
+#endif //LOAD_AMBIENT_TRAFFIC_MODELS_AND_TEXTURES
+        }
+    }
+#endif //MANAGE_GAME_STREAMING
+
+    // Process loading requests.
+    Streaming::PulseLoader();
+
+    // Stream buildings and collision files!
+    // This is one heavy routine.
+    COLEnv_t& COLEnv = Streaming::GetCOLEnvironment();
+    IPLEnv_t& IPLEnv = Streaming::GetIPLEnvironment();
+
+    if ( CVehicleSAInterface *remoteVehicle = PlayerInfo::GetInfo( -1 ).m_remoteVehicle )
+    {
+        const CVector& remotePos = remoteVehicle->Placeable.GetPosition();
+
+        COLEnv.SetLoadPosition( playerPos );
+        COLEnv.StreamSectors( remotePos, false );
+        COLEnv.PrioritizeLocalStreaming( remotePos );
+
+        IPLEnv.SetLoadPosition( playerPos );
+        IPLEnv.StreamSectors( remotePos, false );
+        IPLEnv.PrioritizeLocalStreaming( remotePos );
+    }
+    else
+    {
+        COLEnv.StreamSectors( playerPos, false );
+        COLEnv.PrioritizeLocalStreaming( playerPos );
+
+        IPLEnv.StreamSectors( playerPos, false );
+        IPLEnv.PrioritizeLocalStreaming( playerPos );
+    }
+
+    if ( cleanUpPendingModels )
+        Streaming::CleanUpLoadQueue();
+}
+
+// We need to do some work before calling the streaming update function.
+// Derived from CMultiplayerSA hacks.
+void __cdecl HOOK_CStreaming_Update( void )
+{
+    // We enter the streaming update, so notify our environment.
+    insideStreamingUpdate = true;
+
+    // Enter the precious routine!
+    Streaming::Update();
+
+    // We leave, so unset the presency value.
+    insideStreamingUpdate = false;
+}
+
+/*=========================================================
+    Streaming::FlushRequestList
+
+    Purpose:
+        Loops through the long to-be-loaded queue and aborts
+        the loading of all models. Models which reside on the
+        queue are free'd.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0040E4E0
+=========================================================*/
+void Streaming::FlushRequestList( void )
+{
+    CModelLoadInfoSA *info = Streaming::GetQueuedLoadInfo();
+
+    // Bugfix: safety check so we secure against empty load lists.
+    if ( info )
+    {
+        modelId_t modelId = info->GetIndex();
+        CModelLoadInfoSA *endItem = *(CModelLoadInfoSA**)0x008E4C54;
+
+        while ( info != endItem )
+        {
+            // We must save the next parameters as Streaming::FreeModel will tamper
+            // the CModelLoadInfoSA structure.
+            modelId_t nextModelIndex = info->m_primaryModel;
+            CModelLoadInfoSA *nextInfo = Streaming::GetNextLoadInfo( info );
+
+            // Free the resources associated with every model inside the to-be-loaded queue.
+            Streaming::FreeModel( modelId );
+
+            // Advance to the next model info.
+            modelId = nextModelIndex;
+            info = nextInfo;
+        }
+    }
+
+    // Pulse the streaming requests.
+    // Assumingly, this cleans the tubes from remaining requests.
     PulseStreamingRequests();
-    _isLoadingRequests = false;
 }
 
 CStreamingSA::CStreamingSA( void )
@@ -554,8 +745,9 @@ CStreamingSA::CStreamingSA( void )
     // Hook the model requester
     HookInstall( FUNC_CStreaming__RequestModel, (DWORD)Streaming::RequestModel, 6 );
     HookInstall( 0x004089A0, (DWORD)Streaming::FreeModel, 6 );
-    HookInstall( 0x00410730, (DWORD)FreeCOLLibrary, 5 );
+    HookInstall( 0x0040A080, (DWORD)Streaming::RequestDirectResource, 5 );
     HookInstall( 0x0040C6B0, (DWORD)LoadModel, 5 );
+    HookInstall( 0x0040E670, (DWORD)HOOK_CStreaming_Update, 5 );
     //HookInstall( 0x00407AD0, (DWORD)CheckAnimDependency, 5 );
     //HookInstall( 0x00409A90, (DWORD)CheckTXDDependency, 5 );  // you better do not fuck around with securom
     
@@ -569,11 +761,19 @@ CStreamingSA::CStreamingSA( void )
     StreamingUtils_Init();
     StreamingLoader_Init();
     StreamingRuntime_Init();
+    StreamingResources_Init();
+    StreamingCache_Init();
+    StreamingIPL_Init();
+    StreamingCOL_Init();
 }
 
 CStreamingSA::~CStreamingSA( void )
 {
     // Shutdown sub modules
+    StreamingCOL_Shutdown();
+    StreamingIPL_Shutdown();
+    StreamingCache_Shutdown();
+    StreamingResources_Shutdown();
     StreamingRuntime_Shutdown();
     StreamingLoader_Shutdown();
     StreamingUtils_Shutdown();
@@ -693,6 +893,8 @@ void CStreamingSA::WaitForModel( modelId_t id )
 
     if ( id > MAX_RESOURCES-1 )
         return;
+
+
 }
 
 /*=========================================================

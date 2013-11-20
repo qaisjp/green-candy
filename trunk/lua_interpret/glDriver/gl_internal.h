@@ -16,6 +16,7 @@
 #include <gl.h>
 #include <gl/glext.h>
 #include "gl_func.h"
+#include "gl_class.h"
 #include "gl_texture.h"
 #include "gl_shading.h"
 #include "gl_context.h"
