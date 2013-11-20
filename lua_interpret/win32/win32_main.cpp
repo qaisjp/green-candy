@@ -46,11 +46,29 @@ static LUA_DECLARE( getWindowRect )
     argStream.ReadNumber( winRect.bottom );
     LUA_ARGS_END;
 
-    AdjustWindowRect( &winRect, WS_SYSMENU, false );
+    LUA_CHECK( AdjustWindowRect( &winRect, WS_SYSMENU, false ) != FALSE );
 
     lua_pushnumber( L, winRect.right );
     lua_pushnumber( L, winRect.bottom );
     return 2;
+}
+
+static LUA_DECLARE( getKeyState )
+{
+    std::string keyName;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadString( keyName );
+    LUA_ARGS_END;
+
+    unsigned int keyCode;
+
+    LUA_CHECK( GetCodeFromKeyName( keyName, keyCode ) );
+
+    SHORT info = GetKeyState( (int)keyCode );
+
+    lua_pushboolean( L, ( info & 0x8000 ) != 0 );
+    return 1;
 }
 
 static const luaL_Reg win32_interface[] =
@@ -58,6 +76,7 @@ static const luaL_Reg win32_interface[] =
     LUA_METHOD( setCursorPos ),
     LUA_METHOD( getCursorPos ),
     LUA_METHOD( getWindowRect ),
+    LUA_METHOD( getKeyState ),
     { NULL, NULL }
 };
 

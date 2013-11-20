@@ -16,6 +16,10 @@
 
 #define ARRAY_ModelLoadCache    0x009654B4  //usually a pointer to the LoadModelInfo static array
 
+// IMGFile utilities.
+bool GetIMGFileByName( const char *name, unsigned int& imgID );
+
+// Module initialization.
 void IMG_Initialize( void );
 void IMG_Shutdown( void );
 

@@ -9,7 +9,7 @@
 *               Christian Myhre Lundheim <>
 *               Jax <>
 *               Sebas Lamers <sebasdevelopment@gmx.com>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -17,37 +17,134 @@
 
 #include "StdInc.h"
 
-#if 0
-static void __declspec(naked) _CWorld__PLOSFix()
+/*=========================================================
+    World::AddEntity
+
+    Arguments:
+        entity - the entity to add into the world
+    Purpose:
+        Links the given entity into the world so it is
+        processed by the game loop.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00563220
+=========================================================*/
+void __cdecl World::AddEntity( CEntitySAInterface *entity )
 {
-    __asm
+    // todo.
+    ((void (__cdecl*)( CEntitySAInterface* ))0x00563220)( entity );
+}
+
+/*=========================================================
+    World::RemoveEntity
+
+    Arguments:
+        entity - the entity to remove from the world
+    Purpose:
+        Unlinks the given entity from the game. It will no
+        longer be processed by the game loop.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00563280
+=========================================================*/
+void __cdecl World::RemoveEntity( CEntitySAInterface *entity )
+{
+    // todo.
+    ((void (__cdecl*)( CEntitySAInterface* ))0x00563280)( entity );
+}
+
+/*=========================================================
+    World::SetCenterOfWorld (MTA extension)
+
+    Arguments:
+        streamingEntity - entity used for streaming reference
+        pos - center of world position, if NULL then
+              custom center of world disabled
+        heading - player heading
+    Purpose:
+        Sets a fixed center of world for dynamic streaming
+        purposes.
+=========================================================*/
+static bool isCenterOfWorldSet = false;
+static CVector centerOfWorld = CVector( 0, 0, 0 );
+static float falseHeading = 0.0f;
+static CEntitySAInterface *_streamingEntity = NULL;
+
+void World::SetCenterOfWorld( CEntitySAInterface *streamingEntity, const CVector *pos, float heading )
+{
+    if ( pos )
     {
-        mov edi,0x00417A72
-        jg no1
-        jmp edi
-no1:
-        cmp [esi+8],ebp
-        jnz no2
-        jmp edi
-no2:
-        xor edi,edi
-        nop
-        mov eax,0x00417A10
-        jmp eax
+        centerOfWorld = *pos;
+
+        _streamingEntity = streamingEntity;
+
+        falseHeading = heading;
+        isCenterOfWorldSet = true;
+    }
+    else 
+    {
+        _streamingEntity = NULL;
+        isCenterOfWorldSet = false;
     }
 }
-#endif
 
-CWorldSA::CWorldSA()
+/*=========================================================
+    World::GetCenterOfWorld (MTA extension)
+
+    Arguments:
+        pos - pointer to write the center into
+    Purpose:
+        Returns a boolean whether a static center of world
+        was set by MTA. If true, then the center of world
+        is written into pos.
+=========================================================*/
+bool World::GetCenterOfWorld( CVector& pos )
 {
-#if 0
-    HookInstall( 0x00417A0B, (DWORD)_CWorld__PLOSFix, 5 );
-#endif
+    if ( !isCenterOfWorldSet )
+        return false;
+
+    pos = centerOfWorld;
+    return true;
 }
 
-CWorldSA::~CWorldSA()
+bool World::IsCenterOfWorldSet( void )
 {
+    return isCenterOfWorldSet;
+}
 
+const CVector& World::GetCenterOfWorld( void )
+{
+    return centerOfWorld;
+}
+
+/*=========================================================
+    World::GetStreamingEntity (MTA extension)
+
+    Purpose:
+        Returns the entity which is used for streaming
+        reference (can be NULL).
+=========================================================*/
+CEntitySAInterface* World::GetStreamingEntity( void )
+{
+    return _streamingEntity;
+}
+
+/*=========================================================
+    World::GetFalseHeading (MTA extension)
+
+    Purpose:
+        Returns a false heading used when center of world
+        streaming is active.
+=========================================================*/
+float World::GetFalseHeading( void )
+{
+    return falseHeading;
+}
+
+CWorldSA::CWorldSA( void )
+{
+}
+
+CWorldSA::~CWorldSA( void )
+{
 }
 
 void CWorldSA::Add ( CEntity * pEntity )
@@ -58,14 +155,7 @@ void CWorldSA::Add ( CEntity * pEntity )
 
     if ( pEntitySA )
     {
-        DWORD dwEntity = (DWORD) pEntitySA->GetInterface();
-        DWORD dwFunction = FUNC_Add;
-        _asm
-        {
-            push    dwEntity
-            call    dwFunction
-            add     esp, 4
-        }
+        World::AddEntity( pEntitySA->GetInterface() );
     }
 }
 
@@ -74,13 +164,7 @@ void CWorldSA::Add ( CEntitySAInterface * entityInterface )
 {
     DEBUG_TRACE("void CWorldSA::Add ( CEntitySAInterface * entityInterface )");
 
-    DWORD dwFunction = FUNC_Add;
-    _asm
-    {
-        push    entityInterface
-        call    dwFunction
-        add     esp, 4
-    }
+    World::AddEntity( entityInterface );
 }
 
 void CWorldSA::Remove ( CEntity * pEntity )
@@ -89,26 +173,14 @@ void CWorldSA::Remove ( CEntity * pEntity )
 
     CEntitySA* pEntitySA = dynamic_cast < CEntitySA* > ( pEntity );
 
-    DWORD dwEntity = (DWORD)pEntitySA->GetInterface();
-    DWORD dwFunction = FUNC_Remove;
-    _asm
-    {
-        push    dwEntity
-        call    dwFunction
-        add     esp, 4
-    }
+    World::RemoveEntity( pEntitySA->GetInterface() );
 }
 
 void CWorldSA::Remove ( CEntitySAInterface * entityInterface )
 {
     DEBUG_TRACE("void CWorldSA::Remove ( CEntitySAInterface * entityInterface )");
-    DWORD dwFunction = FUNC_Remove;
-    _asm
-    {
-        push    entityInterface
-        call    dwFunction
-        add     esp, 4          
-    }
+    
+    World::RemoveEntity( entityInterface );
 }
 
 void CWorldSA::RemoveReferencesToDeletedObject ( CEntitySAInterface * entity )

@@ -411,6 +411,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CCacheSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CCameraSA.cpp"
 				>
 			</File>
@@ -424,6 +428,10 @@
 			</File>
 			<File
 				RelativePath=".\CCarGeneratorSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CCarGroupsSA.cpp"
 				>
 			</File>
 			<File
@@ -511,6 +519,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CFileUtilsSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CFireManagerSA.cpp"
 				>
 			</File>
@@ -556,6 +568,10 @@
 			</File>
 			<File
 				RelativePath=".\CIMGManagerSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CIPLSectorSA.cpp"
 				>
 			</File>
 			<File
@@ -719,6 +735,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CQuadTreeSA.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CRadarSA.cpp"
 				>
 			</File>
@@ -783,7 +803,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CStreamingSA.cache.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.clump.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.collision.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CStreamingSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.gc.cpp"
 				>
 			</File>
 			<File
@@ -791,7 +827,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CStreamingSA.ipl.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.loader.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CStreamingSA.runtime.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.textures.cpp"
 				>
 			</File>
 			<File
@@ -1156,6 +1204,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CCacheSA.h"
+				>
+			</File>
+			<File
 				RelativePath="CCameraSA.h"
 				>
 			</File>
@@ -1169,6 +1221,10 @@
 			</File>
 			<File
 				RelativePath=".\CCarGeneratorSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CCarGroupsSA.h"
 				>
 			</File>
 			<File
@@ -1256,6 +1312,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CFileUtilsSA.h"
+				>
+			</File>
+			<File
 				RelativePath="CFireManagerSA.h"
 				>
 			</File>
@@ -1301,6 +1361,10 @@
 			</File>
 			<File
 				RelativePath=".\CIMGManagerSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CIPLSectorSA.h"
 				>
 			</File>
 			<File
@@ -1468,6 +1532,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CQuadTreeSA.h"
+				>
+			</File>
+			<File
 				RelativePath="CRadarSA.h"
 				>
 			</File>
@@ -1532,6 +1600,22 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CStreamingSA.cache.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.clump.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.collision.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.gc.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CStreamingSA.h"
 				>
 			</File>
@@ -1540,7 +1624,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CStreamingSA.ipl.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.loader.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CStreamingSA.runtime.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.sectorize.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CStreamingSA.textures.h"
 				>
 			</File>
 			<File

@@ -4,6 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        glDriver/gl_shading.h
 *  PURPOSE:     OpenGL driver programmable shading implementation
+*               ARB version; use this implementation for legacy compatibility.
 *  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
@@ -17,12 +18,11 @@
 #define LUACLASS_GLSLSHADER_ARB     55
 #define LUACLASS_GLSLOBJECT_ARB     56
 
-struct glObjectARB : public LuaInstance
+struct glObjectARB abstract : public glClass
 {
     glObjectARB( lua_State *L, glDriver *driver, GLhandleARB handle );
     ~glObjectARB( void );
 
-    glDriver *m_driver;
     GLhandleARB m_handle;
 };
 

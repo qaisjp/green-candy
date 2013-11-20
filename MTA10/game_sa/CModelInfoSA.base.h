@@ -31,10 +31,11 @@ enum eModelType : unsigned char
 
 namespace ModelInfo
 {
-    struct timeInfo
+    struct timeInfo //size: 4
     {
-        BYTE                m_pad[2];
-        unsigned short      m_model;
+        unsigned char       m_fromHour;     // 0
+        unsigned char       m_toHour;       // 1
+        unsigned short      m_model;        // 2
     };
 };
 

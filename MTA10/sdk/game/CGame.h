@@ -191,6 +191,11 @@ public:
     virtual unsigned long       GetMinuteDuration() = 0;
     virtual void                SetMinuteDuration( unsigned long ulDelay ) = 0;
 
+    virtual void                HideRadar( bool hide ) = 0;
+    virtual bool                IsRadarHidden( void ) = 0;
+
+    virtual void                SetCenterOfWorld( CEntity *streamingEntity, const CVector *pos, float heading );
+
     virtual unsigned char       GetBlurLevel() = 0;
     virtual void                SetBlurLevel( unsigned char ucLevel ) = 0;
 

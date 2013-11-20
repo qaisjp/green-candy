@@ -27,14 +27,13 @@
 // Multiplayer includes
 #include <../game_sa/RenderWare.h>
 #include <../game_sa/CPtrNodeSA.h>
+#include <../game_sa/CQuadTreeSA.h>
 #include <../game_sa/CTransformationSA.h>
 #include <../game_sa/CTasksSA.h>
 #include <../game_sa/CTaskManagerSA.h>
 #include <../game_sa/CPadSA.h>
 #include <../game_sa/CIMGManagerSA.h>
-#include <../game_sa/CStreamingSA.h>
 #include <../game_sa/CPoolsSA.h>
-#include <../game_sa/CStreamingSA.h>
 #include <../game_sa/CModelInfoSA.h>
 #include <../game_sa/CWeaponInfoSA.h>
 #include "multiplayersa_init.h"

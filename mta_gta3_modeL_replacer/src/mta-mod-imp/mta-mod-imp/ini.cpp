@@ -17,6 +17,8 @@ CINI*	LoadINI(const char *filename)
 
 	fread(buffer, 1, stats.st_size, stream);
 	buffer[stats.st_size] = 0;
+    
+    fclose(stream);
 
 	config = new CINI(buffer);
 

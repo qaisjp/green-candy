@@ -425,8 +425,16 @@ LUA_API ILuaState& lua_getstateapi( lua_State *L );
 class lua_class_reference
 {
 public:
-    lua_class_reference()
+    lua_class_reference( void )
     {
+    }
+
+    void init( lua_State *L, ILuaClass *j )
+    {
+        m_lua = L;
+        m_class = j;
+
+        j->IncrementMethodStack( L );
     }
 
     lua_class_reference( lua_State *L, int idx )
@@ -434,18 +442,20 @@ public:
         if ( lua_type( L, idx ) != LUA_TCLASS )
             throw lua_exception( L, LUA_ERRRUN, "invalid type @ class reference" );
 
-        m_lua = L;
-
-        m_class = lua_refclass( L, idx );
-        m_class->IncrementMethodStack( L );
+        init( L, lua_refclass( L, idx ) );
     }
 
-    ~lua_class_reference()
+    lua_class_reference( lua_State *L, ILuaClass *j )
+    {
+        init( L, j );
+    }
+
+    ~lua_class_reference( void )
     {
         m_class->DecrementMethodStack( m_lua );
     }
 
-    ILuaClass* GetClass()
+    ILuaClass* GetClass( void )
     {
         return m_class;
     }

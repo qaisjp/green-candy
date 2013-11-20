@@ -89,3 +89,14 @@ function findD3D()
 	local r = file.createTranslator( root.absPath() .. "../" );
 	r.scanDir("/", "d3dx9.h", print, print, true);
 end
+
+function fileGetContent(path)
+    local file = fileOpen(path);
+    
+    if not (file) then return false; end;
+    
+    local content = file.read(file.size());
+    file.destroy();
+    
+    return content;
+end

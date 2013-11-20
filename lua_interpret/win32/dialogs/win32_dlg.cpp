@@ -171,6 +171,39 @@ static LUA_DECLARE( getText )
     lua_pushlstring( L, buf, len );
 
     delete buf;
+
+    return 1;
+}
+
+static LUA_DECLARE( isMouseOver )
+{
+    Win32Dialog *dlg = (Win32Dialog*)lua_getmethodtrans( L );
+
+    lua_pushboolean( L, dlg->isMouseOver );
+    return 1;
+}
+
+static LUA_DECLARE( isActive )
+{
+    Win32Dialog *dlg = (Win32Dialog*)lua_getmethodtrans( L );
+
+    lua_pushboolean( L, GetActiveWindow() == dlg->handle );
+    return 1;
+}
+
+static LUA_DECLARE( isFocused )
+{
+    Win32Dialog *dlg = (Win32Dialog*)lua_getmethodtrans( L );
+
+    lua_pushboolean( L, GetFocus() == dlg->handle );
+    return 1;
+}
+
+static LUA_DECLARE( isForeground )
+{
+    Win32Dialog *dlg = (Win32Dialog*)lua_getmethodtrans( L );
+
+    lua_pushboolean( L, GetForegroundWindow() == dlg->handle );
     return 1;
 }
 
@@ -367,7 +400,7 @@ static bool GetKeyNameFromCode( unsigned int code, std::string& keyName )
     return true;
 }
 
-static bool GetCodeFromKeyName( const std::string& keyName, unsigned int& code )
+bool GetCodeFromKeyName( const std::string& keyName, unsigned int& code )
 {
     for ( unsigned int n = 0; n < 256; n++ )
     {
@@ -414,6 +447,10 @@ static const luaL_Reg dialog_interface[] =
     LUA_METHOD( setVisible ),
     LUA_METHOD( getText ),
     LUA_METHOD( setText ),
+    LUA_METHOD( isMouseOver ),
+    LUA_METHOD( isActive ),
+    LUA_METHOD( isFocused ),
+    LUA_METHOD( isForeground ),
     LUA_METHOD( update ),
     LUA_METHOD( getKeyState ),
     { NULL, NULL }
@@ -466,10 +503,83 @@ static ILuaClass* _trefget( lua_State *L, Win32Dialog *dlg )
     return j;
 }
 
+static AINLINE void PostMouseClickEvent( lua_State *L, Win32Dialog *dlg, short x, short y, const char *buttonName, bool isDown )
+{
+    dlg->PushMethod( L, "triggerEvent" );
+    lua_pushcstring( L, "onMouseClick" );
+    lua_pushstring( L, buttonName );
+    lua_pushstring( L, isDown ? "down" : "up" );
+    lua_pushinteger( L, x );
+    lua_pushinteger( L, y );
+    lua_call( L, 5, 0 );
+}
+
+static AINLINE bool GetExtendedKeyUpdate( WPARAM wparam, LPARAM lparam, bool isDown, unsigned char& keyCode, std::string& keyName )
+{
+    // Special handle extended keys.
+    // See http://wunderwerk.blogspot.de/2012/05/detect-left-and-right-shift-ctrl-and.html
+    if ( wparam == VK_MENU )
+    {
+        if ( lparam & ( 1 << 24 ) )
+        {
+            keyName = "ralt";
+            keyCode = VK_RMENU;
+        }
+        else
+        {
+            keyName = "lalt";
+            keyCode = VK_LMENU;
+        }
+
+        return true;
+    }
+    else if ( wparam == VK_CONTROL )
+    {
+        if ( lparam & ( 1 << 24 ) )
+        {
+            keyName = "lctrl";
+            keyCode = VK_LCONTROL;
+        }
+        else
+        {
+            keyName = "rctrl";
+            keyCode = VK_RCONTROL;
+        }
+
+        return true;
+    }
+    else if ( wparam == VK_SHIFT )
+    {
+        DWORD lshiftStatus = GetKeyState( VK_LSHIFT );
+        DWORD rshiftStatus = GetKeyState( VK_RSHIFT );
+
+        if ( ( ( lshiftStatus >> 15 ) & 0x01 ) & ( isDown ? 0x01 : 0x00 ) )
+        {
+            keyName = "lshift";
+            keyCode = VK_LSHIFT;
+            return true;
+        }
+        else if ( ( ( rshiftStatus >> 15 ) & 0x01 ) & ( isDown ? 0x01 : 0x00 ) )
+        {
+            keyName = "rshift";
+            keyCode = VK_RSHIFT;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 LRESULT CALLBACK DialogProcedure( HWND myWindow, UINT msg, WPARAM wparam, LPARAM lparam )
 {
     lua_State *L = userLuaState;
     Win32Dialog *dlg = (Win32Dialog*)GetWindowLong( myWindow, GWL_USERDATA );
+
+    if ( !dlg )
+        return DefWindowProc( myWindow, msg, wparam, lparam );
+
+    // Reference the window so that it will not be destroyed during this routine.
+    lua_class_reference winRef( L, dlg->GetClass() );
 
 	switch( msg )
 	{
@@ -491,14 +601,31 @@ LRESULT CALLBACK DialogProcedure( HWND myWindow, UINT msg, WPARAM wparam, LPARAM
 	case WM_APPCOMMAND:
 		break;
     case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
         {
-            Win32Dialog::keyState_t& state = dlg->keyStates[wparam];
-            state.isDown = true;
-
             std::string keyName;
+            unsigned char keyCode;
 
-            if ( GetKeyNameFromCode( wparam, keyName ) )
+            // Attempt to get an extended key.
+            bool keySuccess = GetExtendedKeyUpdate( wparam, lparam, true, keyCode, keyName );
+
+            // If we have not found a special key, check the key database.
+            if ( !keySuccess )
             {
+                keySuccess = GetKeyNameFromCode( wparam, keyName );
+
+                if ( keySuccess )
+                {
+                    keyCode = (unsigned char)wparam;
+                }
+            }
+
+            // If we succeeded to find a key, trigger the event handler.
+            if ( keySuccess )
+            {
+                Win32Dialog::keyState_t& state = dlg->keyStates[wparam];
+                state.isDown = true;
+
                 dlg->PushMethod( L, "triggerEvent" );
                 lua_pushcstring( L, "onKey" );
                 lua_pushlstring( L, keyName.c_str(), keyName.size() );
@@ -508,14 +635,31 @@ LRESULT CALLBACK DialogProcedure( HWND myWindow, UINT msg, WPARAM wparam, LPARAM
         }
         break;
     case WM_KEYUP:
+    case WM_SYSKEYUP:
         {
-            Win32Dialog::keyState_t& state = dlg->keyStates[wparam];
-            state.isDown = false;
-
             std::string keyName;
+            unsigned char keyCode;
 
-            if ( GetKeyNameFromCode( wparam, keyName ) )
+            // Attempt to get an extended key.
+            bool keySuccess = GetExtendedKeyUpdate( wparam, lparam, false, keyCode, keyName );
+
+            // If we have not found a special key, check the key database.
+            if ( !keySuccess )
             {
+                keySuccess = GetKeyNameFromCode( wparam, keyName );
+
+                if ( keySuccess )
+                {
+                    keyCode = (unsigned char)wparam;
+                }
+            }
+
+            // If we succeeded to find a key, trigger the event handler.
+            if ( keySuccess )
+            {
+                Win32Dialog::keyState_t& state = dlg->keyStates[wparam];
+                state.isDown = false;
+
                 dlg->PushMethod( L, "triggerEvent" );
                 lua_pushcstring( L, "onKey" );
                 lua_pushlstring( L, keyName.c_str(), keyName.size() );
@@ -526,12 +670,107 @@ LRESULT CALLBACK DialogProcedure( HWND myWindow, UINT msg, WPARAM wparam, LPARAM
         break;
     case WM_CHAR:
         {
-            char charCode[1] = { wparam };
+            // Only pass-through printable characters.
+            // Control codes are assumed to be non-printable.
+            if ( wparam >= 0x20 )
+            {
+                // Put the charCode into a ASCII character buffer.
+                char charCode[1] = { wparam };
 
+                dlg->PushMethod( L, "triggerEvent" );
+                lua_pushcstring( L, "onInput" );
+                lua_pushlstring( L, charCode, 1 );
+                lua_call( L, 2, 0 );
+            }
+        }
+        break;
+    case WM_MOUSEMOVE:
+        {
+            short x = (short)LOWORD( lparam );
+            short y = (short)HIWORD( lparam );
+
+            // We first must identify mouse captures.
+            if ( !dlg->isMouseOver )
+            {
+                TRACKMOUSEEVENT tme;
+                tme.cbSize = sizeof(tme);
+                tme.dwFlags = TME_LEAVE;
+                tme.hwndTrack = myWindow;
+
+                // Request mouse tracking.
+                if ( TrackMouseEvent( &tme ) )
+                {
+                    // We can track the event.
+                    // Now we must notify the event system.
+                    dlg->PushMethod( L, "triggerEvent" );
+                    lua_pushcstring( L, "onMouseEnter" );
+                    lua_pushinteger( L, x );
+                    lua_pushinteger( L, y );
+                    lua_call( L, 3, 0 );
+
+                    // TODO: should we allow denial?
+                    dlg->isMouseOver = true;
+                }
+            }
+
+            // We can only process movement if the entry succeeded.
+            if ( dlg->isMouseOver )
+            {
+                // Post mouse movement event.
+                dlg->PushMethod( L, "triggerEvent" );
+                lua_pushcstring( L, "onMouseMove" );
+                lua_pushinteger( L, x );
+                lua_pushinteger( L, y );
+                lua_call( L, 3, 0 );
+            }
+        }
+        break;
+    case WM_MOUSELEAVE:
+        if ( dlg->isMouseOver )
+        {
+            // We must notify the system that the mouse is outside.
+            short x = (short)LOWORD( lparam );
+            short y = (short)HIWORD( lparam );
+
+            // Call the Lua event.
             dlg->PushMethod( L, "triggerEvent" );
-            lua_pushcstring( L, "onInput" );
-            lua_pushlstring( L, charCode, 1 );
-            lua_call( L, 2, 0 );
+            lua_pushcstring( L, "onMouseLeave" );
+            lua_pushinteger( L, x );
+            lua_pushinteger( L, y );
+            lua_call( L, 3, 0 );
+            
+            // Update the status.
+            dlg->isMouseOver = false;
+        }
+        break;
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+        {
+            short x = (short)LOWORD( lparam );
+            short y = (short)HIWORD( lparam );
+
+            // Notify the environment about the mouse click.
+            PostMouseClickEvent( L, dlg, x, y, "left", msg == WM_LBUTTONDOWN );
+        }
+        break;
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
+        {
+            short x = (short)LOWORD( lparam );
+            short y = (short)HIWORD( lparam );
+
+            // Notify the environment about the mouse click.
+            PostMouseClickEvent( L, dlg, x, y, "right", msg == WM_RBUTTONDOWN );
+        }
+        break;
+    case WM_MBUTTONDOWN:
+    case WM_MBUTTONUP:
+        {
+            short x = (short)LOWORD( lparam );
+            short y = (short)HIWORD( lparam );
+
+            // Notify the environment about the mouse click.
+            PostMouseClickEvent( L, dlg, x, y, "middle", msg == WM_MBUTTONDOWN );
         }
         break;
 	case WM_CLOSE:
@@ -549,7 +788,7 @@ LRESULT CALLBACK DialogProcedure( HWND myWindow, UINT msg, WPARAM wparam, LPARAM
 		break;
 	case WM_DESTROY:
 	default:
-        return ( dlg ? dlg->defaultWndProc : DefWindowProc )( myWindow, msg, wparam, lparam );
+        return dlg->defaultWndProc( myWindow, msg, wparam, lparam );
 	}
 	return 0;
 }
@@ -557,6 +796,7 @@ LRESULT CALLBACK DialogProcedure( HWND myWindow, UINT msg, WPARAM wparam, LPARAM
 Win32Dialog::Win32Dialog( lua_State *L, unsigned int w, unsigned int h ) : LuaClass( L, _trefget( L, this ) )
 {
     // Set this for the beginning.
+    // This is a security measurement.
     defaultWndProc = DefWindowProc;
 
     handle = CreateWindow( "MTA:Lua_window", NULL, WS_SYSMENU, 0, 0, w, h, NULL, NULL, NULL, NULL );
@@ -566,9 +806,16 @@ Win32Dialog::Win32Dialog( lua_State *L, unsigned int w, unsigned int h ) : LuaCl
     if ( !defaultWndProc || defaultWndProc == DialogProcedure )
         defaultWndProc = DefWindowProc;
 
+    // Initially we assume mouse is not on our dialog.
+    isMouseOver = false;
+
     // Initialize common events
     const char *windowEvents[] =
     {
+        "onMouseEnter",
+        "onMouseMove",
+        "onMouseClick",
+        "onMouseLeave",
         "onFocus",
         "onBlur",
         "onPaint",

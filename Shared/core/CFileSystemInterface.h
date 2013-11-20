@@ -32,12 +32,13 @@ enum eFileException
 };
 
 /*===================================================
-    CFile
+    CFile (stream class)
 
     This is a the access interface to files/streams. You can read,
     write to and obtain information from this. Once destroyed, the
     connection is unlinked. During class life-time, the file is locked
-    for deletion. Other locks depend on the nature of the stream.
+    for deletion. Locks depend on the nature of the stream and of
+    the OS/environment.
 ===================================================*/
 class CFile abstract
 {
@@ -88,7 +89,7 @@ public:
         Purpose:
             Returns the absolute file/stream location.
     ===================================================*/
-    virtual	long            Tell() const = 0;
+    virtual	long            Tell( void ) const = 0;
 
     /*===================================================
         CFile::IsEOF

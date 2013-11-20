@@ -128,10 +128,10 @@ const CBounds2D& CEntitySAInterface::_GetBoundingBox( CBounds2D& out ) const
 
     float radius = col->m_bounds.fRadius;
 
-    out.m_min.fX = pos[0] - radius;
-    out.m_min.fY = pos[1] + radius;
-    out.m_max.fX = pos[0] + radius;
-    out.m_max.fY = pos[1] - radius;
+    out.m_minX = pos[0] - radius;
+    out.m_maxY = pos[1] + radius;
+    out.m_maxX = pos[0] + radius;
+    out.m_minY = pos[1] - radius;
     return out;
 }
 

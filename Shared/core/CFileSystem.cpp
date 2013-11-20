@@ -334,7 +334,8 @@ bool CBufferedFile::Stat( struct stat *stats ) const
 
 void CBufferedFile::PushStat( const struct stat *stats )
 {
-
+    // Does not do anything.
+    return;
 }
 
 size_t CBufferedFile::GetSize( void ) const
@@ -657,7 +658,7 @@ void CSystemFileTranslator::_CreateDirTree( const dirTree& tree )
         CreateDirectory( path.c_str(), NULL );
 #else
         mkdir( path.c_str(), FILE_ACCESS_FLAG );
-#endif
+#endif //OS DEPENDANT CODE
     }
 }
 
@@ -1062,7 +1063,7 @@ bool CSystemFileTranslator::ChangeDirectory( const char *path )
 #else
     if ( !File_IsDirectoryAbsolute( absPath.c_str() ) )
         return false;
-#endif //_WIN32
+#endif //OS DEPENDANT CODE
 
     m_currentDir.clear();
     _File_OutputPathTree( tree, false, m_currentDir );
@@ -1276,10 +1277,12 @@ struct MySecurityAttributes
     LUID_AND_ATTRIBUTES attr[2];
 };
 
-#endif
+#endif //_WIN32
 
 CFileSystem::CFileSystem( void )
 {
+    // We should set special priviledges for the application if
+    // running under Win32.
 #ifdef _WIN32
     HANDLE token;
     MySecurityAttributes priv;
@@ -1470,7 +1473,7 @@ size_t CFileSystem::Size( const char *path )
 }
 
 // Utility to quickly load data from files on the local filesystem.
-// Do not use it in user-space since this function has no security restrictions.
+// Do not export it into user-space since this function has no security restrictions.
 bool CFileSystem::ReadToBuffer( const char *path, std::vector <char>& output )
 {
 #ifdef _WIN32

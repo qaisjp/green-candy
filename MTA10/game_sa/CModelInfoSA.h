@@ -69,9 +69,10 @@ protected:
     DWORD                           m_dwReferences;
     CColModel*                      m_pCustomColModel;
     CColModelSAInterface*           m_pOriginalColModelInterface;
-    static std::map <unsigned short, int> ms_RestreamTxdIDMap;
 
 public:
+    static std::map <unsigned short, int> ms_RestreamTxdIDMap;
+
                                     CModelInfoSA();
                                     CModelInfoSA( unsigned short id );
 

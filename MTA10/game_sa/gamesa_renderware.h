@@ -159,6 +159,12 @@ typedef void                    (__cdecl *RtDictDestroy_t)                      
 typedef bool                    (__cdecl *RwAnimationInit_t)                    (RpAnimation *anim, RwExtension *ext);
 typedef bool                    (__cdecl *RwSkeletonUpdate_t)                   (RpSkeleton *skel);
 
+// Memory functions
+typedef void*                   (__cdecl *RwMalloc_t)                           (size_t memSize);
+typedef void*                   (__cdecl *RwRealloc_t)                          (void *memptr, size_t newSize);
+typedef void                    (__cdecl *RwFree_t)                             (void *memptr);
+typedef void                    (__cdecl *RwCalloc_t)                           (unsigned int count, unsigned int blockSize);
+
 /*****************************************************************************/
 /** Renderware function mappings                                            **/
 /*****************************************************************************/
@@ -303,6 +309,12 @@ extern RtDictDestroy_t                          RtDictDestroy;
 // Animation functions
 extern RwAnimationInit_t                        RwAnimationInit;
 extern RwSkeletonUpdate_t                       RwSkeletonUpdate;
+
+// Memory functions
+extern RwMalloc_t                               RwMalloc;
+extern RwRealloc_t                              RwRealloc;
+extern RwFree_t                                 RwFree;
+extern RwCalloc_t                               RwCalloc;
 
 /*****************************************************************************/
 /** GTA function definitions                                                **/

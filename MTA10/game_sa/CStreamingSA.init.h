@@ -70,51 +70,11 @@ namespace Streaming
     }
 
     CBaseModelInfoSAInterface* __cdecl  GetModelByHash      ( unsigned int hash, modelId_t *id );
+    CBaseModelInfoSAInterface* __cdecl  GetModelByName      ( const char *name, modelId_t *id );
     CBaseModelInfoSAInterface*          GetModelInfoByName  ( const char *name, modelId_t startId, modelId_t endId, modelId_t *id );
-};
 
-// IPL sector (buildings) instance
-class CIPLFileSA
-{
-public:
-    CIPLFileSA( void ) : m_vecMin( MAX_REGION, -MAX_REGION ), m_vecMax( -MAX_REGION, MAX_REGION )
-    {
-        m_unk1 = HEIGHT_BOUND;
-        m_unk2 = -HEIGHT_BOUND;
-
-        m_unk3 = HEIGHT_BOUND;
-        m_unk4 = -HEIGHT_BOUND;
-
-        m_iplId = 0xFFFF;
-
-        m_unk6 = m_unk7 = m_unk8 = false;
-        m_unk9 = true;
-
-        m_unk10 = m_unk11 = false;
-    }
-
-    void* operator new ( size_t );
-    void operator delete ( void *ptr );
-
-    CVector2D       m_vecMin, m_vecMax;     // 0
-    char            m_name[18];             // 16
-
-    short           m_unk1;                 // 34
-    short           m_unk2;                 // 36
-
-    short           m_unk3;                 // 38
-    short           m_unk4;                 // 40
-
-    unsigned short  m_iplId;                // 42
-
-    bool            m_unk6;                 // 44
-    bool            m_unk7;                 // 45
-    bool            m_unk8;                 // 46
-    bool            m_unk9;                 // 47, 1
-    bool            m_unk10;                // 48
-    bool            m_unk11;                // 49
-
-    WORD            m_pad;                  // 50
+    unsigned int __cdecl RegisterCollision( const char *name );
+    unsigned int __cdecl RegisterIPLFile( const char *name );
 };
 
 void StreamingLoader_Init( void );

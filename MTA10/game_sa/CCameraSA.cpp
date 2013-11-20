@@ -90,6 +90,23 @@ float CCameraSAInterface::GetGroundLevel( unsigned int type )
     return unk1;
 }
 
+/*=========================================================
+    CCameraSAInterface::GetMusicFadeType
+
+    Purpose:
+        Returns the fading status as described by the music
+        fade status.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00536F80
+=========================================================*/
+unsigned int __thiscall CCameraSAInterface::GetMusicFadeType( void ) const
+{
+    if ( m_fTimeToFadeMusic == 0 )
+        return 0;
+
+    return ( m_fTimeToFadeMusic == 255.0 ) ? 2 : 1;
+}
+
 CCameraSA::CCameraSA( CCameraSAInterface *cam )
 { 
     DEBUG_TRACE("CCameraSA::CCameraSA(CCameraSAInterface * cameraInterface)");

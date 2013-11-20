@@ -401,7 +401,7 @@ namespace renderbuffer
 };
 
 // Shared constructor for all render buffers
-glRenderBufferBase::glRenderBufferBase( lua_State *L, glDriver *driver, eRenderBufferType bufType, unsigned int width, unsigned int height ) : LuaInstance( L ), m_driver( driver ), m_width( width ), m_height( height ), m_type( bufType )
+glRenderBufferBase::glRenderBufferBase( lua_State *L, glDriver *driver, eRenderBufferType bufType, unsigned int width, unsigned int height ) : glClass( L, driver ), m_width( width ), m_height( height ), m_type( bufType )
 {
     Extend( L, renderbuffer::base_constructor );
 }
@@ -1311,7 +1311,7 @@ namespace framebuffer
 };
 
 // OpenGL framebuffer shared constructor
-glFrameBufferBase::glFrameBufferBase( lua_State *L, glDriver *driver, eFrameBufferType bufType ) : LuaInstance( L ), m_driver( driver ), m_type( bufType )
+glFrameBufferBase::glFrameBufferBase( lua_State *L, glDriver *driver, eFrameBufferType bufType ) : glClass( L, driver ), m_type( bufType )
 {
     Extend( L, framebuffer::framebufferbase_constructor );
 

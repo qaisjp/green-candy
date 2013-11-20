@@ -29,6 +29,9 @@ struct Win32Dialog : public LuaClass
 
     wndProc_t defaultWndProc;
 
+    // Mouse tracking members
+    bool isMouseOver;
+
     struct keyState_t
     {
         keyState_t( void )
@@ -41,6 +44,9 @@ struct Win32Dialog : public LuaClass
 
     keyState_t keyStates[256];
 };
+
+// Utility exports.
+bool GetCodeFromKeyName( const std::string& keyName, unsigned int& code );
 
 void luawin32_extendDialogs( lua_State *L );
 void luawin32_updateWindows( void );

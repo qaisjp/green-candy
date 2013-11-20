@@ -12,6 +12,9 @@
 #ifndef _FILESYSUTILS_
 #define _FILESYSUTILS_
 
+// Utility function to create a directory tree vector out of a relative path string.
+// Ex.: 'my/path/to/desktop/' -> 'my', 'path', 'to', 'desktop'; file == false
+//      'my/path/to/file' -> 'my', 'path', 'to', 'file'; file == true
 static inline bool _File_ParseRelativePath( const char *path, dirTree& tree, bool& file )
 {
     filePath entry;
@@ -76,7 +79,8 @@ static inline bool _File_ParseRelativePath( const char *path, dirTree& tree, boo
     return true;
 }
 
-// Output a path tree
+// Output a path tree into a filePath output.
+// This is the reverse of _File_ParseRelativePath.
 static AINLINE void _File_OutputPathTree( const dirTree& tree, bool file, filePath& output )
 {
     if ( file )
@@ -256,6 +260,9 @@ inline bool _File_IgnoreDirectoryScanEntry( const char *name )
 
 /*=================================================
     File Pattern Matching
+
+    Produces filePattern_t small bytecode routines
+    to effectively pattern-match many entries.
 =================================================*/
 
 struct filePatternCommand_t

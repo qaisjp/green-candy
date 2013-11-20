@@ -53,6 +53,14 @@ public:
                 GetMatrixFromHeading( out );
         }
 
+        inline float                GetHeading                  ( void ) const
+        {
+            if ( CTransformSAInterface *trans = m_matrix )
+                return trans->ToHeading();
+            
+            return m_heading;
+        }
+
         void __thiscall             GetOffsetByHeading          ( CVector& out, const CVector& in ) const;
         void __thiscall             GetMatrixFromHeading        ( RwMatrix& mat ) const;
 

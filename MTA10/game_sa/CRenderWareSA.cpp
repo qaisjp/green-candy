@@ -164,6 +164,12 @@ RtDictDestroy_t                         RtDictDestroy                           
 RwAnimationInit_t                       RwAnimationInit                         = (RwAnimationInit_t)                       invalid_ptr;
 RwSkeletonUpdate_t                      RwSkeletonUpdate                        = (RwSkeletonUpdate_t)                      invalid_ptr;
 
+// Memory functions
+RwMalloc_t                              RwMalloc                                = (RwMalloc_t)                              invalid_ptr;
+RwRealloc_t                             RwRealloc                               = (RwRealloc_t)                             invalid_ptr;
+RwFree_t                                RwFree                                  = (RwFree_t)                                invalid_ptr;
+RwCalloc_t                              RwCalloc                                = (RwCalloc_t)                              invalid_ptr;
+
 /*****************************************************************************/
 /** GTA:SA function mappings                                                **/
 /*****************************************************************************/
@@ -492,6 +498,12 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwSkeletonUpdate                    = (RwSkeletonUpdate_t)                      0x007C5210;
         break;
     }
+
+    // Memory functions.
+    RwMalloc                            = (RwMalloc_t)                              0x0072F420;
+    RwRealloc                           = (RwRealloc_t)                             0x0072F440;
+    RwFree                              = (RwFree_t)                                0x0072F430;
+    RwCalloc                            = (RwCalloc_t)                              0x0072F460;
 
     // Shared addresses
     LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;

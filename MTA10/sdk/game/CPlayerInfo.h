@@ -20,37 +20,37 @@ class CVehicle;
 class CPlayerInfo
 {
 public:
-    virtual long            GetPlayerMoney() = 0;
-    virtual void            SetPlayerMoney( long lMoney ) = 0;
+    virtual long            GetPlayerMoney          ( void ) = 0;
+    virtual void            SetPlayerMoney          ( long lMoney ) = 0;
 
-    virtual void            GivePlayerParachute() = 0;
-    virtual void            StreamParachuteWeapon( bool allow ) = 0;
+    virtual void            GivePlayerParachute     ( void ) = 0;
+    virtual void            StreamParachuteWeapon   ( bool allow ) = 0;
 
-    virtual unsigned short  GetLastTimeEaten() = 0;
-    virtual void            SetLastTimeEaten( unsigned short time ) = 0;
+    virtual unsigned short  GetLastTimeEaten        ( void ) = 0;
+    virtual void            SetLastTimeEaten        ( unsigned short time ) = 0;
 
-    virtual CWanted*        GetWanted() = 0;
-    virtual float           GetFPSMoveHeading() = 0;
+    virtual CWanted*        GetWanted               ( void ) = 0;
+    virtual float           GetFPSMoveHeading       ( void ) = 0;
 
-    virtual bool            GetCrossHair( float& tarX, float& tarY ) = 0;
+    virtual bool            GetCrossHair            ( float& tarX, float& tarY ) = 0;
 
-    virtual bool            GetDoesNotGetTired() = 0;
-    virtual void            SetDoesNotGetTired( bool award ) = 0;
+    virtual bool            GetDoesNotGetTired      ( void ) = 0;
+    virtual void            SetDoesNotGetTired      ( bool award ) = 0;
 
-    virtual CVehicle*       GiveRemoteVehicle( unsigned short model, float x, float y, float z ) = 0;
-    virtual void            StopRemoteControl() = 0;
-    virtual CVehicle*       GetRemoteVehicle() = 0;
+    virtual CVehicle*       GiveRemoteVehicle       ( unsigned short model, float x, float y, float z ) = 0;
+    virtual void            StopRemoteControl       ( void ) = 0;
+    virtual CVehicle*       GetRemoteVehicle        ( void ) = 0;
 
-    virtual unsigned int    GetLastTimeBigGunFired() = 0;
-    virtual void            SetLastTimeBigGunFired( unsigned int time ) = 0;
+    virtual unsigned int    GetLastTimeBigGunFired  ( void ) = 0;
+    virtual void            SetLastTimeBigGunFired  ( unsigned int time ) = 0;
 
-    virtual unsigned int    GetCarTwoWheelCounter() = 0;
-    virtual float           GetCarTwoWheelDist() = 0;
-    virtual unsigned int    GetCarLess3WheelCounter() = 0;
-    virtual unsigned int    GetBikeRearWheelCounter() = 0;
-    virtual float           GetBikeRearWheelDist() = 0;
-    virtual unsigned int    GetBikeFrontWheelCounter() = 0;
-    virtual float           GetBikeFrontWheelDist() = 0;
+    virtual unsigned int    GetCarTwoWheelCounter   ( void ) const = 0;
+    virtual float           GetCarTwoWheelDist      ( void ) const = 0;
+    virtual unsigned int    GetCarLess3WheelCounter ( void ) const = 0;
+    virtual unsigned int    GetBikeRearWheelCounter ( void ) const = 0;
+    virtual float           GetBikeRearWheelDist    ( void ) const = 0;
+    virtual unsigned int    GetBikeFrontWheelCounter( void ) const = 0;
+    virtual float           GetBikeFrontWheelDist   ( void ) const = 0;
 };
 
 #endif

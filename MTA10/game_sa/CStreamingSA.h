@@ -65,37 +65,16 @@ public:
 
 namespace Streaming
 {
-    // Allocated dynamically in the streaming initialization
-    struct syncSemaphore    //size: 48
-    {
-        unsigned int    blockOffset;            // 0
-        unsigned int    blockCount;             // 4
-        void*           buffer;                 // 8
-        BYTE            pad;                    // 12
-        bool            terminating;            // 13
-        bool            threadActive;           // 14, true if the streaming thread is working on this
-        BYTE            pad2;                   // 15
-        unsigned int    resultCode;             // 16
-        HANDLE          semaphore;              // 20
-        HANDLE          file;                   // 24
-        OVERLAPPED      overlapped;             // 28
-    };
-
-    // There is a maximum of 2 streaming requests internally in the engine.
-    // Those slots are parallel to the maximum syncSemaphores.
-    // streamingRequest contains model ids which request data throug
-    inline streamingRequest&    GetStreamingRequest( unsigned int id )
-    {
-        if ( id > 2 )
-            __asm int 3
-
-        return *( (streamingRequest*)ARRAY_StreamerRequest + id );
-    }
-
     // Public functions
     void __cdecl RequestModel( modelId_t id, unsigned int flags );
     void __cdecl FreeModel( modelId_t id );
-    void __cdecl LoadAllRequestedModels( bool onlyPriority );
+    void __cdecl RequestDirectResource( modelId_t model, unsigned int blockOffset, unsigned int blockCount, unsigned int imgId, unsigned int reqFlags );
+    void __cdecl CleanUpLoadQueue( void );
+    void __cdecl Update( void );
+    void __cdecl FlushRequestList( void );
+
+    // MTA extensions.
+    bool    IsInsideStreamingUpdate( void );
 };
 
 class CStreamingSA : public CStreaming
@@ -124,6 +103,14 @@ public:
 #include "CStreamingSA.init.h"
 #include "CStreamingSA.utils.h"
 #include "CStreamingSA.runtime.h"
+#include "CStreamingSA.sectorize.h"
+#include "CStreamingSA.collision.h"
+#include "CStreamingSA.clump.h"
+#include "CStreamingSA.textures.h"
+#include "CStreamingSA.ipl.h"
+#include "CStreamingSA.loader.h"
+#include "CStreamingSA.cache.h"
+#include "CStreamingSA.gc.h"
 
 // Internal class used to store model indices in
 // Somewhat deprecated type.
@@ -209,7 +196,5 @@ private:
 #define FLAG_NODEPENDENCY       0x0E
 
 extern class CRwObjectSA *g_replObjectNative[DATA_TEXTURE_BLOCK];
-extern class CColModelSA *g_colReplacement[DATA_TEXTURE_BLOCK];
-extern class CColModelSAInterface *g_originalCollision[DATA_TEXTURE_BLOCK];
 
 #endif

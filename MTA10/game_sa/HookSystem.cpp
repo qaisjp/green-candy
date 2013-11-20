@@ -14,6 +14,11 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+inline DWORD GetProcedureOffset( DWORD dwFrom, DWORD dwTo )
+{
+    return dwTo - (dwFrom + 5);
+}
+
 BOOL HookInstall( DWORD dwInstallAddress, DWORD dwHookHandler, int iJmpCodeSize )
 {
     BYTE JumpBytes[MAX_JUMPCODE_SIZE];
@@ -29,11 +34,17 @@ BOOL HookInstall( DWORD dwInstallAddress, DWORD dwHookHandler, int iJmpCodeSize 
     return FALSE;
 }
 
+BOOL PatchCall( DWORD dwInstallAddress, DWORD dwHookHandler )
+{
+    *((DWORD*)( dwInstallAddress + 1 )) = GetProcedureOffset( dwInstallAddress, dwHookHandler );
+    return TRUE;
+}
+
 ////////////////////////////////////////////////////////////////////
 
 BYTE * CreateJump ( DWORD dwFrom, DWORD dwTo, BYTE * ByteArray )
 {
     ByteArray[0] = 0xE9;
-    MemPutFast < DWORD > ( &ByteArray[1], dwTo - (dwFrom + 5) );
+    MemPutFast < DWORD > ( &ByteArray[1], GetProcedureOffset( dwFrom, dwTo ) );
     return ByteArray;
 }

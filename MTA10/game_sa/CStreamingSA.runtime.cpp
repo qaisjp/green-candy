@@ -104,7 +104,7 @@ validIndex:
         // Bugfix: clip too-long names
         strncpy( gtaStreamNames[n], path, sizeof(streamName)-1 );
 
-        return n << 24;
+        return GetFileHandle( n, 0 );
     }
 
     /*=========================================================
@@ -277,6 +277,7 @@ validIndex:
             {
                 sync.terminating = true;
                 
+                // bugfix: we must wait till the thread finished it's work.
                 while ( sync.blockCount )
                     WaitForSingleObject( sync.semaphore, 5000 );
             }

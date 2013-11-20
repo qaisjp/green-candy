@@ -48,8 +48,6 @@ public:
 
     CPopulationMP               * GetPopulationMP           () { return Population; }
     void                        PreventLeavingVehicles      ();
-    void                        HideRadar                   ( bool bHide );
-    void                        SetCenterOfWorld            ( CEntity *entity, const CVector *pos, float heading );
     void                        DisablePadHandler           ( bool bDisabled );
     void                        DisableEnterExitVehicleKey  ( bool bDisabled );
     void                        DisableAllVehicleWeapons    ( bool bDisable );
@@ -193,11 +191,6 @@ private:
 //  VOID                        SetPlayerStartVector(CPlayerPed* player, Vector3D * vecStart);
 
 private:
-    static unsigned long        HOOKPOS_FindPlayerCoors;
-    static unsigned long        HOOKPOS_FindPlayerCentreOfWorld;
-    static unsigned long        HOOKPOS_FindPlayerHeading;
-    static unsigned long        HOOKPOS_CStreaming_Update_Caller;
-    static unsigned long        HOOKPOS_CHud_Draw_Caller;
     static unsigned long        HOOKPOS_CRunningScript_Process;
     static unsigned long        HOOKPOS_CExplosion_AddExplosion;
     static unsigned long        HOOKPOS_CRealTimeShadowManager__ReturnRealTimeShadow;
@@ -213,10 +206,6 @@ private:
     static unsigned long        HOOKPOS_CWorld_ProcessVerticalLineSectorList;
     static unsigned long        HOOKPOS_ComputeDamageResponse_StartChoking;
     static unsigned long        HOOKPOS_CAutomobile__ProcessSwingingDoor;
-
-    static unsigned long        FUNC_CStreaming_Update;
-    static unsigned long        FUNC_CAudioEngine__DisplayRadioStationName;
-    static unsigned long        FUNC_CHud_Draw;
 
     static unsigned long        ADDR_CursorHiding;
     static unsigned long        ADDR_GotFocus;

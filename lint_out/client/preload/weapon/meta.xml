@@ -1,0 +1,5 @@
+<meta>
+    <depend resource="element" />
+    <script src="weaponsData.lua" />
+    <script src="weapon.lua" />
+</meta>

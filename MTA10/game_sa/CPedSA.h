@@ -284,7 +284,7 @@ public:
     bool                            IsEnteringVehicle();
     inline bool                     IsDrivingVehicle( void )            { return m_pedStatus == PED_STATUS_DRIVING_VEHICLE; }
 
-    bool                            IsPlayer();
+    bool __thiscall                 IsPlayer( void ) const;
     CPadSAInterface*                GetJoypad();
 
     void                            OnFrame();
@@ -342,6 +342,10 @@ public:
     CEntitySAInterface*             m_target;                   // 1948
     BYTE                            m_pad17[36];                // 1952
 };
+
+// Module initialization.
+void Ped_Init( void );
+void Ped_Shutdown( void );
 
 class CPedSA : public virtual CPed, public CPhysicalSA
 {

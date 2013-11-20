@@ -53,7 +53,7 @@ static void BlendAnimation( RpClump *clump, AssocGroupId animGroup, AnimationId 
     pGame->BlendAnimationHandler( clump, animGroup, animId, blendDelta );
 }
 
-CGameSA::CGameSA()
+CGameSA::CGameSA( void )
 {
     pGame = this;
     
@@ -142,14 +142,21 @@ CGameSA::CGameSA()
     // :D
     RenderWarePipeline_Init();
     Transformation_Init();
+    QuadTree_Init();
+    Cache_Init();
     Placeable_Init();
     Camera_Init();
+    ColModel_Init();
     Entity_Init();
     Physical_Init();
     Objects_Init();
+    Ped_Init();
+    CarGroups_Init();
     Streamer_Init();
     ModelInfo_Init();
     VehicleModels_Init();
+    PlayerInfo_Init();
+    HUD_Init();
 
     // Normal weapon types (WEAPONSKILL_STD)
     for ( int i = 0; i < NUM_WeaponInfosStdSkill; i++)
@@ -192,7 +199,7 @@ CGameSA::CGameSA()
     m_Cheats [ CHEAT_HEALTARMORMONEY  ] = new SCheatSA((BYTE *)VAR_HealthArmorMoney, false);
 }
 
-CGameSA::~CGameSA()
+CGameSA::~CGameSA( void )
 {
     // Destroy the player
     delete m_pPlayerInfo;
@@ -202,14 +209,21 @@ CGameSA::~CGameSA()
         delete reinterpret_cast < CWeaponInfoSA* > ( WeaponInfos [i] );
     }
 
+    HUD_Shutdown();
+    PlayerInfo_Shutdown();
     VehicleModels_Shutdown();
     ModelInfo_Shutdown();
     Streamer_Shutdown();
+    CarGroups_Shutdown();
+    Ped_Shutdown();
     Objects_Shutdown();
     Physical_Shutdown();
     Entity_Shutdown();
+    ColModel_Shutdown();
     Camera_Shutdown();
     Placeable_Shutdown();
+    Cache_Shutdown();
+    QuadTree_Shutdown();
     Transformation_Shutdown();
     RenderWarePipeline_Shutdown();
 
@@ -440,6 +454,9 @@ void CGameSA::Reset()
     Pause( false );        // We don't have to pause as the fadeout will stop the sound. Pausing it will make the fadein next start ugly
     m_pHud->Disable( false );
 
+    // Notify modules which want it.
+    HUD_OnReset();
+
     DisableRenderer( false );
 
     // Restore the HUD
@@ -462,6 +479,11 @@ void CGameSA::Initialize()
 void CGameSA::OnPreFrame()
 {
     m_didCacheColl = false;
+
+    size_t infoSize = sizeof(CPlayerInfoSAInterface);
+
+    size_t size = sizeof(CColModelSAInterface);
+    size_t size2 = sizeof(CColFileSA);
 
     switch( GetSystemState() )
     {
@@ -487,9 +509,7 @@ void CGameSA::OnFrame()
         }
 
         // Pulse the peds
-        unsigned int n;
-
-        for ( n=0; n<MAX_PEDS; n++ )
+        for ( unsigned int n = 0; n < MAX_PEDS; n++ )
         {
             CPedSAInterface *ped = (*ppPedPool)->Get( n );
 
@@ -573,6 +593,23 @@ unsigned long CGameSA::GetMinuteDuration()
 void CGameSA::SetMinuteDuration( unsigned long ulTime )
 {
     *(unsigned long*)0xB7015C = ulTime;
+}
+
+void CGameSA::HideRadar( bool hide )
+{
+    return HUD::HideRadar( hide );
+}
+
+bool CGameSA::IsRadarHidden( void )
+{
+    return HUD::IsRadarHidden();
+}
+
+void CGameSA::SetCenterOfWorld( CEntity *streamingEntity, const CVector *pos, float heading )
+{
+    CEntitySA *entity = dynamic_cast <CEntitySA*> ( streamingEntity );
+
+    World::SetCenterOfWorld( entity ? entity->GetInterface() : NULL, pos, heading );
 }
 
 bool CGameSA::IsCheatEnabled( const char* szCheatName )

@@ -15,6 +15,10 @@
 
 #include <game/CPopulation.h>
 
+// Module initialization.
+void Population_Init( void );
+void Population_Shutdown( void );
+
 class CPopulationSA : public CPopulation
 {
 

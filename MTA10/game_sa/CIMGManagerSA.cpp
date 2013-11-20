@@ -181,6 +181,33 @@ static unsigned int __cdecl OpenImgFile( const char *path, bool isNotPlayerImg )
     return idx;
 }
 
+/*=========================================================
+    GetIMGFileByName (MTA extension)
+
+    Arguments:
+        name - string containing the name of the IMGFile
+        imgID - output pointer to write the found IMGFile index
+    Purpose:
+        Attempts to get the IMGFile associated with name and
+        write its index into imgID. Return whether this operation
+        was successful.
+=========================================================*/
+bool GetIMGFileByName( const char *name, unsigned int& imgID )
+{
+    for ( unsigned int n = 0; n < MAX_GTA_IMG_ARCHIVES; n++ )
+    {
+        IMGFile& archive = imgArchives[n];
+
+        if ( stricmp( archive.name, name ) == 0 )
+        {
+            imgID = n;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // Let us decipher the ImgManagement, shall we?
 void IMG_Initialize( void )
 {

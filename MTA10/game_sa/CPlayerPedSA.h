@@ -11,7 +11,7 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               aru <>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -37,8 +37,8 @@
 class CPlayerPedSAInterface : public CPedSAInterface // CPlayerPed 1956 bytes in SA
 {
 public:
-    void                OnFrame();
-    bool                ShouldBeStealthAiming();
+    void                OnFrame( void );
+    bool                ShouldBeStealthAiming( void );
 };
 
 class CPlayerPedSA : public virtual CPlayerPed, public CPedSA

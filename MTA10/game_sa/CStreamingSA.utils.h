@@ -16,24 +16,26 @@
 #define ARRAY_PEDSPECMODEL      0x008E4C00
 #define VAR_PEDSPECMODEL        0x008E4BB0
 
+#define     VAR_currArea                    0xB72914 // ##SA##
+
 namespace Streaming
 {
+    // Check whether the entitiy is in a valid streaming area.
+    inline bool IsValidStreamingArea( unsigned char area )
+    {
+        return ( *(unsigned int*)VAR_currArea == area ) || ( area == 13 );
+    }
+
+    bool __cdecl IsCurrentHourPeriod( unsigned char fromHour, unsigned char toHour );
+    void __cdecl StreamPedsAndVehicles( const CVector& reqPos );
+    bool __cdecl IsStreamingBusy( void );
+
     extern streamingLoadCallback_t  streamingLoadCallback;
 };
 
-// Imported textures scanning
-namespace RwImportedScan
-{
-    void Apply( unsigned short model );
-    void Unapply( void );
-};
-
-// Remap VEHICLE.TXD export
-namespace RwRemapScan
-{
-    void Apply( void );
-    void Unapply( void );
-};
+// Global arrays for collision replacement.
+extern class CColModelSA *g_colReplacement[MAX_MODELS];
+extern class CColModelSAInterface *g_originalCollision[MAX_MODELS];
 
 // This is an optimization because the computer binary system works that way.
 // Removes the need for additional clock cycles by avoiding conversion to integer.
@@ -41,19 +43,7 @@ namespace RwRemapScan
 #define idRangeCheck( num, off, range )     (idOffset((num),(off)) < (modelId_t)(range))
 #define idRangeCheckEx( num, range )        ((modelId_t)(num) < (modelId_t)(range))
 
-// Exported utilities
-void _initAtomicNormals( RpAtomic *atom );
-
-// Used by streaming
-void __cdecl FreeCOLLibrary( unsigned char collId );
-bool __cdecl CheckTXDDependency( modelId_t id );
-bool __cdecl CheckAnimDependency( modelId_t id );
-bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId );
-
-modelId_t __cdecl ProcessLoadQueue( unsigned int offset, bool favorPriority );
-bool __cdecl ProcessStreamingRequest( modelId_t id );
-void __cdecl PulseStreamingRequests( void );
-void __cdecl PulseStreamingRequest( unsigned int reqId );
+// Streaming utility exports.
 
 void StreamingUtils_Init( void );
 void StreamingUtils_Shutdown( void );

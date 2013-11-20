@@ -88,8 +88,9 @@ public:
 class CCameraSAInterface : public CPlaceableSAInterface //size: 3132
 {
 public:
-    bool __thiscall     IsSphereVisible( const CVector& pos, float radius, void *unk );
-    float __thiscall    GetGroundLevel( unsigned int type );
+    bool __thiscall         IsSphereVisible( const CVector& pos, float radius, void *unk );
+    float __thiscall        GetGroundLevel( unsigned int type );
+    unsigned int __thiscall GetMusicFadeType( void ) const;
 
     //move these out the class, have decided to set up a mirrored enumerated type thingy at the top
 #if 0
@@ -354,20 +355,20 @@ public:
     CVector m_vecOldSourceForInter;                         // 3016
     CVector m_vecOldFrontForInter;                          // 3028
     CVector m_vecOldUpForInter;                             // 3040
-    FLOAT   m_vecOldFOVForInter;                            // 3052
-    FLOAT   m_fFLOATingFade;                                // 3056, variable representing the FLOAT version of CDraw::Fade. Necessary to stop loss of precision
-    FLOAT   m_fFLOATingFadeMusic;                           // 3060
-    FLOAT   m_fTimeToFadeOut;                               // 3064
-    FLOAT   m_fTimeToFadeMusic;                             // 3068
-    FLOAT   m_fTimeToWaitToFadeMusic;                       // 3072
-    FLOAT   m_fFractionInterToStopMoving;                   // 3076
-    FLOAT   m_fFractionInterToStopCatchUp;                  // 3080
-    FLOAT   m_fFractionInterToStopMovingTarget;             // 3084
-    FLOAT   m_fFractionInterToStopCatchUpTarget;            // 3088
+    float   m_vecOldFOVForInter;                            // 3052
+    float   m_fFLOATingFade;                                // 3056, variable representing the FLOAT version of CDraw::Fade. Necessary to stop loss of precision
+    float   m_fFLOATingFadeMusic;                           // 3060
+    float   m_fTimeToFadeOut;                               // 3064
+    float   m_fTimeToFadeMusic;                             // 3068
+    float   m_fTimeToWaitToFadeMusic;                       // 3072
+    float   m_fFractionInterToStopMoving;                   // 3076
+    float   m_fFractionInterToStopCatchUp;                  // 3080
+    float   m_fFractionInterToStopMovingTarget;             // 3084
+    float   m_fFractionInterToStopCatchUpTarget;            // 3088
 
-    FLOAT   m_fGaitSwayBuffer;                              // 3092
-    FLOAT   m_fScriptPercentageInterToStopMoving;           // 3096
-    FLOAT   m_fScriptPercentageInterToCatchUp;              // 3100
+    float   m_fGaitSwayBuffer;                              // 3092
+    float   m_fScriptPercentageInterToStopMoving;           // 3096
+    float   m_fScriptPercentageInterToCatchUp;              // 3100
     DWORD   m_fScriptTimeForInterPolation;                  // 3104
 
 

@@ -51,6 +51,19 @@
 
 #define CODE_ShowMoney              0x58F47D
 
+// HUD management functions.
+namespace HUD
+{
+    void    HideRadar( bool hide );
+    bool    IsRadarHidden( void );
+};
+
+void HUD_OnReset( void );
+
+// Module initialization.
+void HUD_Init( void );
+void HUD_Shutdown( void );
+
 class CHudSA : public CHud
 {
 public:

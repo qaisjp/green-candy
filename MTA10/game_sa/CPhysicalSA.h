@@ -58,8 +58,10 @@ public:
     float                   m_buoyancyConstant;         // 160
     CVector                 m_centerOfMass;             // 164
 
+    typedef CPtrNodeDoubleSA <CPhysicalSAInterface> physicalLink_t;
+
     DWORD                   m_unk2;                     // 176
-    CPtrNodeDoubleSA*       m_link;                     // 180
+    physicalLink_t*         m_link;                     // 180
 
     unsigned char           m_complexStatus;            // 184, used for hydraulics
     unsigned char           m_numCollRecords;           // 185

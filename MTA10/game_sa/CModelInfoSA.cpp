@@ -360,7 +360,35 @@ static bool _ValidateEntity( CEntitySAInterface *entity )
           (*ppDummyPool)->Get( (*ppDummyPool)->GetIndex( (CDummySAInterface*)entity ) ) != NULL;
 }
 
-void CModelInfoSA::StaticFlushPendingRestreamIPL()
+// Struct used to delete the models of all entities whose texture dictionary has changed.
+typedef std::set <unsigned short> modelAssocList_t;
+
+struct _entityModelRefresh
+{
+    void __forceinline EntryCallback( const Streamer::entityLink_t *ptrNode )
+    {
+        CEntitySAInterface *pEntity = ptrNode->data;
+
+        if ( !_ValidateEntity( pEntity ) )
+            __asm int 3
+
+        if ( MapContains( CModelInfoSA::ms_RestreamTxdIDMap, pGame->GetModelInfo( pEntity->m_model )->GetTextureDictionaryID () ) )
+        {
+            if ( !IS_FLAG( pEntity->m_entityFlags, ENTITY_DISABLESTREAMING ) && !IS_FLAG( pEntity->m_entityFlags, ENTITY_RENDERING ) )
+            {
+                // Delete the renderware object
+                pEntity->DeleteRwObject();
+
+                // Remember the model.
+                m_modelList.insert( pEntity->m_model );
+            }
+        }
+    }
+
+    modelAssocList_t m_modelList;
+};
+
+void CModelInfoSA::StaticFlushPendingRestreamIPL( void )
 {
     if ( ms_RestreamTxdIDMap.empty() )
         return;
@@ -368,64 +396,21 @@ void CModelInfoSA::StaticFlushPendingRestreamIPL()
     // In other words, it does not affect elements created by MTA.
     // It's mostly a reimplementation of SA's DeleteAllRwObjects, except that it filters by model ID.
 
-    ( (void (*)())FUNC_FlushRequestList )();
+    Streaming::FlushRequestList();
 
-    std::set < unsigned short > removedModels;
-    
-    for ( int i = 0; i < 2*NUM_StreamSectorRows*NUM_StreamSectorCols; i++ )
-    {
-        DWORD* pSectorEntry = ((DWORD **)ARRAY_StreamSectors) [ i ];
-        while ( pSectorEntry )
-        {
-            CEntitySAInterface *pEntity = (CEntitySAInterface*)pSectorEntry[0];
+    // Container of all to-be-restreamed model ids.
+    _entityModelRefresh modelGather;
 
-            if ( !_ValidateEntity( pEntity ) )
-                __asm int 3
+    // Scan all streamed in entities and delete their RenderWare objects which need to be updated.
+    Streamer::ForAllStreamedEntities( modelGather, false );
 
-            if ( MapContains( ms_RestreamTxdIDMap, pGame->GetModelInfo( pEntity->m_model )->GetTextureDictionaryID () ) )
-            {
-                if ( !IS_FLAG( pEntity->m_entityFlags, ENTITY_DISABLESTREAMING ) && !IS_FLAG( pEntity->m_entityFlags, ENTITY_RENDERING ) )
-                {
-                    // Delete the renderware object
-                    pEntity->DeleteRwObject();
-
-                    removedModels.insert ( pEntity->m_model );
-                }
-            }
-            
-            pSectorEntry = (DWORD *)pSectorEntry [ 1 ];
-        }
-    }
-
-    for ( int i = 0; i < NUM_StreamRepeatSectorRows*NUM_StreamRepeatSectorCols; i++ )
-    {
-        DWORD* pSectorEntry = ((DWORD **)ARRAY_StreamRepeatSectors) [ 3*i + 2 ];
-        while ( pSectorEntry )
-        {
-            CEntitySAInterface* pEntity = (CEntitySAInterface *)pSectorEntry [ 0 ];
-
-            if ( !_ValidateEntity( pEntity ) )
-                __asm int 3
-
-            if ( MapContains ( ms_RestreamTxdIDMap, pGame->GetModelInfo ( pEntity->m_model )->GetTextureDictionaryID () ) )
-            {
-                if ( !IS_FLAG( pEntity->m_entityFlags, ENTITY_DISABLESTREAMING ) && !IS_FLAG( pEntity->m_entityFlags, ENTITY_RENDERING ) )
-                {
-                    pEntity->DeleteRwObject();
-
-                    removedModels.insert( pEntity->m_model );
-                }
-            }
-            pSectorEntry = (DWORD *)pSectorEntry [ 1 ];
-        }
-    }
-
+    // We no longer need to update models depending on texture containers.
     ms_RestreamTxdIDMap.clear();
 
-    std::set < unsigned short >::iterator it;
-    for ( it = removedModels.begin(); it != removedModels.end(); it++ )
+    // Free the models which we deleted all RenderWare instances of.
+    for ( modelAssocList_t::iterator it = modelGather.m_modelList.begin(); it != modelGather.m_modelList.end(); it++ )
     {
-        pGame->GetStreaming()->FreeModel(*it);
+        Streaming::FreeModel( *it );
     }
 }
 
@@ -510,6 +495,8 @@ void CModelInfoSA::RemoveRef( bool bRemoveExtraGTARef )
 // The delay scheme implemented to do this consists of two queues:
 //      The first queue is filled up with the first 5 models that are used for the local player. Once full the queue is not changed until MTA is restarted.
 //      The second queue is FILO, with the last out having it's extra reference removed.
+//
+// * The_GTA: maybe somebody can improve this? with all the research we have made, bugs are a big no-no.
 //
 
 std::vector < CModelInfoSA* >   ms_FirstDelayQueue;     // Don't remove ref for first 5 unique models

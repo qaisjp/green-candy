@@ -1,3 +1,4 @@
+local ogl = gl;
 local freetype = ft.create();
 
 function createFontRenderer(gl)

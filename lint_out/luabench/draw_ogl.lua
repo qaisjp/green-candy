@@ -75,6 +75,42 @@ function allocateDrawingSession()
     );
 end
 
+-- OpenGL utilities
+
+-- Creates a shader program.
+function glCreateProgram(glDriver)
+    return glDriver.createProgram();
+end
+
+-- Attaches a shader to the program
+function glProgramAttachShader(program, shaderType, ...)
+    local glDriver = program.getDriver();
+    local shader = glDriver.createShader(shaderType);
+    
+    if not (shader) then return false; end;
+    
+    shader.shaderSource(...);
+    
+    if not (shader.compile()) then
+        print("failed shader compilation: " .. shader.getInfoLog());
+        
+        shader.destroy();
+        return false;
+    end
+    
+    program.attachShader(shader);
+    return shader;
+end
+
+function glUseProgram(glDriver, program)
+    return glDriver.useProgram(program);
+end
+
+-- Links the program for usage (end of compilation stage).
+function glProgramLink(program)
+    return program.link();
+end
+
 function makeglwnd()
     local window = win32.createDialog(win32.getWindowRect(640, 480));
     window.setVisible(true);
@@ -137,17 +173,20 @@ function makeglwnd()
     
     glDriver.enable("GL_TEXTURE_2D");
     
-    local program = glDriver.createProgram();
+    local program = glCreateProgram(glDriver);
     
     if (program) then
-        local shader, errMsg = glDriver.compileShader("fragment", "gl/test.glsl");
-    
-        if (shader) then
-            program.attachShader(shader);
-        else
+        local content = fileGetContent("gl/test.glsl");
+        
+        if not (glProgramAttachShader(program, "fragment", content)) or
+            not (glProgramLink(program)) then
+            
             program.destroy();
             program = false;
         end
+        
+        -- Set cool uniforms.
+        program.setUniform("myColor", 1, 0, 1, 1);
     end
     
 	-- Set up an awesome framebuffer
@@ -161,13 +200,13 @@ function makeglwnd()
             tex.bind();
             glDriver.runBatch(quadBatch, "triangles", 0, 0, clientWidth, clientHeight, u, v);
 			
-            -- Test vertex shader functionality
+            -- Test fragment/pixel shader functionality
             if (program) then
-                glDriver.useProgram(program);
+                glUseProgram(glDriver, program);
                 
                 glDriver.runBatch(quadBatch, "triangles", 0, 0, clientWidth, clientHeight, 1, 1);
                 
-                glDriver.useProgram(nil);
+                glUseProgram(glDriver, nil);
             end
             
 			glDriver.present();

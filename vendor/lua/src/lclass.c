@@ -585,7 +585,7 @@ bool Class::IsRootedIn( Class *root ) const
 
 bool Class::IsRootedIn( lua_State *L, int idx ) const
 {
-    return IsRootedIn( jvalue( index2adr( L, idx ) ) );
+    return IsRootedIn( jvalue( index2constadr( L, idx ) ) );
 }
 
 void Class::PushEnvironment( lua_State *L )

@@ -90,10 +90,21 @@ public:
 
     ~CPool( void )
     {
-        Clear();
+        //Clear();
 
-        delete [] (unsigned char*)m_pool;
-        delete [] m_flags;
+        if ( GetMax() > 0 )
+        {
+            if ( m_poolActive )
+            {
+                delete [] (unsigned char*)m_pool;
+                delete [] m_flags;
+            }
+
+            m_pool = NULL;
+            m_flags = NULL;
+            m_max = 0;
+            m_lastUsed = 0;
+        }
     }
 
     inline type*    Allocate( void )
@@ -121,12 +132,12 @@ public:
         return ( (id < GetMax()) && !(m_flags[id] & 0x80) ) ? GetOffset( id ) : NULL;
     }
 
-    unsigned int    GetIndex( type *entity )
+    unsigned int    GetIndex( type *entity ) const
     {
         return ((unsigned int)entity - (unsigned int)m_pool) / size;
     }
 
-    bool    IsValid( type *entity )
+    bool    IsValid( type *entity ) const
     {
         return entity >= m_pool && GetIndex( entity ) < GetMax();
     }
@@ -154,7 +165,7 @@ public:
         Free( GetIndex( entity ) );
     }
 
-    bool    IsAnySlotFree( void )
+    bool    IsAnySlotFree( void ) const
     {
         for ( unsigned int n = m_lastUsed + 1; n < GetMax(); n++ )
         {
@@ -165,13 +176,13 @@ public:
         return false;
     }
 
-    bool    Full( void )
+    bool    Full( void ) const
     {
         // We do not have to count all of the slots.
         return !IsAnySlotFree();
     }
 
-    unsigned int    GetCount( void )
+    unsigned int    GetCount( void ) const
     {
         // Count all occupied slots in this pool
         unsigned int count = 0;
@@ -185,12 +196,22 @@ public:
         return count;
     }
 
-    unsigned int    GetMax( void )
+    unsigned int    GetMax( void ) const
     {
         // We enable compiler optimizations by using the constant template variable.
         // Using the dynamic variable here may enable support for hacks (which dynamically extend pool size).
         // Why should we enable that kind of support?
         return max;
+    }
+
+    template <typename callbackType>
+    inline void     ForAllActiveEntries( callbackType& cb, unsigned int startIndex = 0 )
+    {
+        for ( unsigned int n = startIndex; n < GetMax(); n++ )
+        {
+            if ( !( m_flags[n] & 0x80 ) )
+                cb.OnEntry( GetOffset( n ), n );
+        }
     }
 
     type*           m_pool;
@@ -237,8 +258,8 @@ public:
 typedef CPool <CVehicleComponentInfoSAInterface, 500> CVehicleComponentInfoPool;
 typedef CPool <CColModelSAInterface, 20000> CColModelPool;
 
-typedef CPool <CPtrNodeSingleSA, 100000> CPtrNodeSinglePool;
-typedef CPool <CPtrNodeDoubleSA, 200000> CPtrNodeDoublePool;
+typedef CPool <CPtrNodeSingleSA <void>, 100000> CPtrNodeSinglePool;
+typedef CPool <CPtrNodeDoubleSA <void>, 200000> CPtrNodeDoublePool;
 typedef CPool <CEntryInfoSA, 100000> CEntryInfoPool; // info for every entity in the world
 
 typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
@@ -260,12 +281,11 @@ typedef CPool <CTaskAllocatorSA, 16> CTaskAllocatorPool;
 typedef CPool <CPedIntelligenceSAInterface, MAX_PEDS> CPedIntelligencePool;
 typedef CPool <CPedAttractorSA, 64> CPedAttractorPool;
 
-typedef CPool <CColFileSA, 255> CColFilePool;
-typedef CPool <CIPLFileSA, MAX_IPL> CIPLFilePool;
-
 typedef CPool <CEnvMapMaterialSA, 16000> CEnvMapMaterialPool;
 typedef CPool <CEnvMapAtomicSA, 4000> CEnvMapAtomicPool;
 typedef CPool <CSpecMapMaterialSA, 16000> CSpecMapMaterialPool;
+
+typedef CPool <CQuadTreeNodeSAInterface <void>, 400> CQuadTreeNodePool;
 
 // They have to be defined somewhere!
 extern CVehicleComponentInfoPool** ppVehicleComponentInfoPool;
@@ -294,12 +314,11 @@ extern CTaskAllocatorPool** ppTaskAllocatorPool;
 extern CPedIntelligencePool** ppPedIntelligencePool;
 extern CPedAttractorPool** ppPedAttractorPool;
 
-extern CColFilePool** ppColFilePool;
-extern CIPLFilePool** ppIPLFilePool;
-
 extern CEnvMapMaterialPool** ppEnvMapMaterialPool;
 extern CEnvMapAtomicPool** ppEnvMapAtomicPool;
 extern CSpecMapMaterialPool** ppSpecMapMaterialPool;
+
+extern CQuadTreeNodePool** ppQuadTreeNodePool;
 
 // MTA pools; lets use the trick ourselves, shall we? :P
 // Do not forget to extend this chain once new interfaces are spotted!

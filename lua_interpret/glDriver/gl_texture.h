@@ -15,12 +15,11 @@
 
 #define LUACLASS_GLTEXTURE  51
 
-struct glTexture : public LuaInstance
+struct glTexture : public glClass
 {
     glTexture( lua_State *L, glDriver *gl, GLuint texIndex, unsigned int width, unsigned int height );
     ~glTexture( void );
 
-    glDriver*       m_driver;
     GLuint          m_texIndex;
     unsigned int    m_width;
     unsigned int    m_height;
