@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;."
+				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;.;../vendor/zlib"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -108,7 +108,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;."
+				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;.;../vendor/zlib"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
