@@ -530,9 +530,13 @@ RwTexDictionary* RwTexDictionaryStreamReadEx( RwStream *stream )
         return NULL;
     }
 
+    // The_GTA: fixed possible exploit based on block info being bigger than 4 (buffer overflow + code injection, at worst)
+    if ( size < sizeof(RwBlocksInfo) )
+        return NULL;
+
     RwBlocksInfo texBlocksInfo;
 
-    if ( RwStreamReadBlocks( stream, &texBlocksInfo, size ) != size )
+    if ( RwStreamReadBlocks( stream, &texBlocksInfo, sizeof(RwBlocksInfo) ) != sizeof(RwBlocksInfo) )
         return NULL;
 
     unsigned int rendStatus;

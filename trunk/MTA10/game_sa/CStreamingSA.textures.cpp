@@ -171,7 +171,7 @@ static inline void RwTexDictionaryClear( RwTexDictionary *txd )
     RwTexDictionaryDestroy( txd );
 }
 
-static RwTexDictionary* __cdecl RwTexDictionaryLoadFirstHalf( RwStream *stream )
+static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
 {
     big_numTXDBlocks = 0;
 
@@ -181,9 +181,13 @@ static RwTexDictionary* __cdecl RwTexDictionaryLoadFirstHalf( RwStream *stream )
     if ( !RwStreamFindChunk( stream, 1, &length, &version ) )
         return NULL;
 
+    // The_GTA: fixed possible exploit based on block info being bigger than 4 (buffer overflow + code injection, at worst)
+    if ( length < sizeof(RwBlocksInfo) )
+        return NULL;
+
     RwBlocksInfo info;
 
-    if ( RwStreamReadBlocks( stream, &info, length ) != length )
+    if ( RwStreamReadBlocks( stream, &info, sizeof(RwBlocksInfo) ) != sizeof(RwBlocksInfo) )
         return NULL;
 
     RwTexDictionary *txd = RwTexDictionaryCreate();
