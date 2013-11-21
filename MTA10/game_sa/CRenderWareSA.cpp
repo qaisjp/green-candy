@@ -544,6 +544,7 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
     CBaseModelInfoSAInterface *model = ppModelInfo[id];
     CTxdInstanceSA *txd;
     bool txdReference;
+    bool isVehicle;
     
     CColLoaderModelAcquisition *colAcq;
 
@@ -590,6 +591,13 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
             // For atomics we have to set the current texture container so it loads from it properly
             if ( model->GetRwModelType() == RW_ATOMIC )
                 txd->SetCurrent();
+
+            // Do we want to enable VEHICLE.TXD look-up for vehicle models here?
+            // If so, use RwRemapScan if CBaseModelInfo::GetModelType() == MODEL_VEHICLE, like so
+            isVehicle = model->GetModelType() == MODEL_VEHICLE;
+
+            if ( isVehicle )
+                RwRemapScan::Apply();
         }
 
         // rockstar's collision hack: set the global particle emitter to the modelinfo pointer of this model
@@ -616,6 +624,10 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
 
         if ( model )
         {
+            // Unapply the VEHICLE.TXD look-up
+            if ( isVehicle )
+                RwRemapScan::Unapply();
+
             // We do not have to preserve the texture container, as RenderWare is smart enough to hold references
             // to textures itself
             if ( txdReference )
