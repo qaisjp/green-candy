@@ -49,7 +49,7 @@ public:
     virtual int                         GetAnimationBlockIndex( const char * szName ) = 0;
         
     virtual CAnimBlendAssocGroup*       GetAnimBlendAssoc( AssocGroupId groupID ) = 0;
-    virtual unsigned short              GetFirstAssocGroup( const char * szName ) const = 0;
+    virtual unsigned int                GetFirstAssocGroup( const char * szName ) const = 0;
 
     virtual const char*                 GetAnimGroupName( AssocGroupId groupID ) = 0;
     virtual const char*                 GetAnimBlockName( AssocGroupId groupID ) = 0;

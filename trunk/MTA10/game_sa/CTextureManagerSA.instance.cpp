@@ -36,7 +36,7 @@ CTxdInstanceSA::CTxdInstanceSA( const char *name )
     m_txd = NULL;
     m_references = 0;
     m_parentTxd = 0xFFFF;
-    m_hash = pGame->GetKeyGen()->GetUppercaseKey(name);
+    m_hash = pGame->GetKeyGen()->GetUppercaseKey( name );
 }
 
 /*=========================================================

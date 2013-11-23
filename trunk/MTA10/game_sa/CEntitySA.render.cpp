@@ -370,10 +370,10 @@ int __cdecl QueueEntityForRendering( CEntitySAInterface *entity, float camDistan
 
     // If the entity is underwater, it needs a different rendering order
     if ( entity->m_entityFlags & ENTITY_UNDERWATER )
-        return ((entityRenderChain_t*)0x00C88178)->PushRender( &level );
+        return ((entityRenderChain_t*)0x00C88178)->PushRender( &level ) != NULL;
 
     // Do default render
-    return ((entityRenderChain_t*)0x00C88120)->PushRender( &level );
+    return ((entityRenderChain_t*)0x00C88120)->PushRender( &level ) != NULL;
 }
 
 void EntityRender_Init( void )

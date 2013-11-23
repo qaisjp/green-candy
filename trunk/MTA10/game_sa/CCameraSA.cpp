@@ -107,6 +107,84 @@ unsigned int __thiscall CCameraSAInterface::GetMusicFadeType( void ) const
     return ( m_fTimeToFadeMusic == 255.0 ) ? 2 : 1;
 }
 
+/*=========================================================
+    CCameraSAInterface::SetFadeColor
+
+    Arguments:
+        red - red color component
+        green - green color component
+        blue - blue color component
+    Purpose:
+        Sets the fading color of the game.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0050BF00
+=========================================================*/
+void __thiscall CCameraSAInterface::SetFadeColor( unsigned char red, unsigned char green, unsigned char blue )
+{
+    m_bMusicFadedOut = ( red == 2 && green == 2 && blue == 2 );
+    
+    *(unsigned char*)0x00C3EFA8 = red;
+    *(unsigned char*)0x00C3EFA9 = green;
+    *(unsigned char*)0x00C3EFAA = blue;
+}
+
+/*=========================================================
+    CCameraSAInterface::Fade
+
+    Arguments:
+        fadeDuration - time required to fade the screen to black
+        direction - fade in or fade out
+    Purpose:
+        Performs a fading screen animation by the parameters
+        given.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0050AC25
+=========================================================*/
+void __thiscall CCameraSAInterface::Fade( float fadeDuration, unsigned short direction )
+{
+    m_fTimeToFadeOut = fadeDuration;
+    m_bFading = true;
+    m_iFadingDirection = direction;
+
+    m_uiFadeTimeStarted = *(unsigned int*)0x00B7CB84;
+
+    if ( m_bJustInitalised && direction != 1 )
+        return;
+
+    m_bMusicFading = true;
+    m_iMusicFadingDirection = direction;
+
+    float musicFadeDuration = (float)Clamp( 0.3f, std::max( fadeDuration, 1.0f ) * 0.3f, fadeDuration );
+
+    m_fTimeToFadeMusic = musicFadeDuration;
+
+    if ( direction == 0 )
+    {
+        m_fTimeToWaitToFadeMusic = fadeDuration - musicFadeDuration;
+        m_fTimeToFadeMusic = std::max( musicFadeDuration - 0.1f, 0.0f );
+    }
+    else
+    {
+        m_fTimeToWaitToFadeMusic = 0;
+    }
+
+    m_uiFadeTimeStartedMusic = *(unsigned int*)0x00B7CB84;
+}
+
+/*=========================================================
+    CCameraSAInterface::GetFadeDirection
+
+    Purpose:
+        Returns the logical fade direction of the camera at
+        this time.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0050ADF0
+=========================================================*/
+int __thiscall CCameraSAInterface::GetFadeDirection( void ) const
+{
+    return ( m_bFading ) ? m_iFadingDirection == 1 : 2;
+}
+
 CCameraSA::CCameraSA( CCameraSAInterface *cam )
 { 
     DEBUG_TRACE("CCameraSA::CCameraSA(CCameraSAInterface * cameraInterface)");
@@ -122,15 +200,15 @@ CCameraSA::CCameraSA( CCameraSAInterface *cam )
     HookInstall( HOOKPOS_Camera_CollisionDetection, (DWORD)HOOK_Camera_CollisionDetection, 5 );
 }
 
-CCameraSA::~CCameraSA()
+CCameraSA::~CCameraSA( void )
 {
     for ( unsigned int i = 0; i < MAX_CAMS; i++ )
         delete m_cams[i];
 }
 
-void CCameraSA::Restore()
+void CCameraSA::Restore( void )
 {
-    DEBUG_TRACE("void CCameraSA::Restore()");
+    DEBUG_TRACE("void CCameraSA::Restore( void )");
 
     DWORD dwFunc = FUNC_Restore;
     CCameraSAInterface * cameraInterface = this->GetInterface();
@@ -141,9 +219,9 @@ void CCameraSA::Restore()
     }
 }
 
-void CCameraSA::RestoreWithJumpCut()
+void CCameraSA::RestoreWithJumpCut( void )
 {
-    DEBUG_TRACE("void CCameraSA::RestoreWithJumpCut()");
+    DEBUG_TRACE("void CCameraSA::RestoreWithJumpCut( void )");
 
     CCameraSAInterface * cameraInterface = this->GetInterface();
     DWORD dwFunc = 0x50BD40;
@@ -277,7 +355,7 @@ void CCameraSA::TakeControlAttachToEntity( CEntity *target, CEntity *attach, con
     }
 }
 
-const RwMatrix& CCameraSA::GetMatrix() const
+const RwMatrix& CCameraSA::GetMatrix( void ) const
 {
     return m_interface->m_cameraMatrix; // ->Placeable.matrix;
 }
@@ -321,9 +399,9 @@ void CCameraSA::Find3rdPersonCamTargetVector( float fDistance, const CVector& gu
     }
 }
 
-float CCameraSA::Find3rdPersonQuickAimPitch() const
+float CCameraSA::Find3rdPersonQuickAimPitch( void ) const
 {
-    DEBUG_TRACE("float CCameraSA::Find3rdPersonQuickAimPitch() const");
+    DEBUG_TRACE("float CCameraSA::Find3rdPersonQuickAimPitch( void ) const");
 
     float fReturn;
     DWORD dwFunc = FUNC_Find3rdPersonQuickAimPitch;
@@ -337,9 +415,9 @@ float CCameraSA::Find3rdPersonQuickAimPitch() const
     return fReturn;
 }
 
-unsigned char CCameraSA::GetActiveCam() const
+unsigned char CCameraSA::GetActiveCam( void ) const
 {
-    DEBUG_TRACE("unsigned char CCameraSA::GetActiveCam() const");
+    DEBUG_TRACE("unsigned char CCameraSA::GetActiveCam( void ) const");
 
     return m_interface->ActiveCam;
 }
@@ -370,9 +448,9 @@ CCamSA* CCameraSA::GetCam( CCamSAInterface *cam )
 /**
  * \todo Rewrite these functions to use m_nCarZoom presumeably
  */
-float CCameraSA::GetCarZoom() const
+float CCameraSA::GetCarZoom( void ) const
 {
-    DEBUG_TRACE("float CCameraSA::GetCarZoom() const");
+    DEBUG_TRACE("float CCameraSA::GetCarZoom( void ) const");
 /*  CCameraSAInterface * cameraInterface = this->GetInterface();
     char szDebug[255] = {'\0'};
     sprintf(szDebug, "%d", (DWORD)&cameraInterface->CarZoomIndicator - (DWORD)cameraInterface);
@@ -445,70 +523,32 @@ void CCameraSA::VectorTrackLinear( const CVector& to, const CVector& from, float
     }
 }
 
-bool CCameraSA::IsFading() const
+bool CCameraSA::IsFading( void ) const
 {
-    DWORD dwFunc = FUNC_GetFading;
-    const CCameraSAInterface *cameraInterface = GetInterface();
-    bool bRet;
-    _asm
-    {
-        mov     ecx, cameraInterface
-        call    dwFunc
-        mov     bRet, al
-    }
-    return bRet;
+    return Camera::GetInterface().m_bFading;
 }
 
-int CCameraSA::GetFadingDirection() const
+int CCameraSA::GetFadingDirection( void ) const
 {
-    DWORD dwFunc = FUNC_GetFadingDirection;
-    const CCameraSAInterface *cameraInterface = GetInterface();
-    int dwRet;
-    _asm
-    {
-        mov     ecx, cameraInterface
-        call    dwFunc
-        mov     dwRet, eax
-    }
-    return dwRet;
+    return Camera::GetInterface().GetFadeDirection();
 }
 
 void CCameraSA::Fade( float fFadeOutTime, int iOutOrIn )
 {
-    DWORD dwFunc = FUNC_Fade;
-    CCameraSAInterface * cameraInterface = this->GetInterface();
-    _asm
-    {
-        mov     ecx, cameraInterface
-        push    iOutOrIn
-        push    fFadeOutTime
-        call    dwFunc
-    }
+    Camera::GetInterface().Fade( fFadeOutTime, iOutOrIn );
 }
 
 void CCameraSA::SetFadeColor( unsigned char ucRed, unsigned char ucGreen, unsigned char ucBlue )
 {
-    DWORD dwFunc = FUNC_SetFadeColour;
-    CCameraSAInterface * cameraInterface = this->GetInterface();
-    DWORD dwRed = ucRed;
-    DWORD dwGreen = ucGreen;
-    DWORD dwBlue = ucBlue;
-    _asm
-    {
-        mov     ecx, cameraInterface
-        push    dwBlue
-        push    dwGreen
-        push    dwRed
-        call    dwFunc
-    }
+    Camera::GetInterface().SetFadeColor( ucRed, ucGreen, ucBlue );
 }
 
-float CCameraSA::GetCameraRotation() const
+float CCameraSA::GetCameraRotation( void ) const
 {
     return *(float*)VAR_CameraRotation;
 }
 
-const RwMatrix& CCameraSA::GetLTM() const
+const RwMatrix& CCameraSA::GetLTM( void ) const
 {
     return m_interface->m_pRwCamera->m_parent->m_ltm;
 }

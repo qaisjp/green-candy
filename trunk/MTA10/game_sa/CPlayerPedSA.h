@@ -37,6 +37,8 @@
 class CPlayerPedSAInterface : public CPedSAInterface // CPlayerPed 1956 bytes in SA
 {
 public:
+    CPlayerPedSAInterface( unsigned int playerIndex, unsigned int unk );
+
     void                OnFrame( void );
     bool                ShouldBeStealthAiming( void );
 };

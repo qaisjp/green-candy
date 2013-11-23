@@ -30,8 +30,21 @@
 =========================================================*/
 void __cdecl World::AddEntity( CEntitySAInterface *entity )
 {
-    // todo.
-    ((void (__cdecl*)( CEntitySAInterface* ))0x00563220)( entity );
+    if ( RwObject *rwobj = entity->m_rwObject )
+    {
+        entity->Placeable.GetMatrix( rwobj->m_parent->m_modelling );
+    }
+
+    entity->UpdateRwFrame();
+    
+    entity->AddToWorld();
+
+    unsigned char entityType = entity->m_type;
+
+    if ( entityType != ENTITY_TYPE_BUILDING && entityType != ENTITY_TYPE_DUMMY && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_WAITFORCOLL | ENTITY_STATIC ) )
+    {
+        ((CPhysicalSAInterface*)entity)->Link();
+    }
 }
 
 /*=========================================================
@@ -47,8 +60,18 @@ void __cdecl World::AddEntity( CEntitySAInterface *entity )
 =========================================================*/
 void __cdecl World::RemoveEntity( CEntitySAInterface *entity )
 {
-    // todo.
-    ((void (__cdecl*)( CEntitySAInterface* ))0x00563280)( entity );
+    // Call the common entity removal routine.
+    entity->RemoveFromWorld();
+
+    // Unlink the entity from world if it is of physical type.
+    switch( entity->m_type )
+    {
+    case ENTITY_TYPE_VEHICLE:
+    case ENTITY_TYPE_PED:
+    case ENTITY_TYPE_OBJECT:
+        ((CPhysicalSAInterface*)entity)->Unlink();
+        break;
+    }
 }
 
 /*=========================================================

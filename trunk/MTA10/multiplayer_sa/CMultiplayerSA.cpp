@@ -36,7 +36,6 @@ char* CMultiplayerSA::ms_PlayerImgCachePtr = NULL;
 
 extern CGame * pGameInterface;
 
-unsigned long CMultiplayerSA::HOOKPOS_CRunningScript_Process;
 unsigned long CMultiplayerSA::HOOKPOS_CExplosion_AddExplosion;
 unsigned long CMultiplayerSA::HOOKPOS_CRealTimeShadowManager__ReturnRealTimeShadow;
 unsigned long CMultiplayerSA::HOOKPOS_CCustomRoadsignMgr__RenderRoadsignAtomic;
@@ -338,7 +337,6 @@ BlendAnimationHandler* m_pBlendAnimationHandler = NULL;
 ProcessCollisionHandler* m_pProcessCollisionHandler = NULL;
 
 void HOOK_CHud_Draw_Caller();
-void HOOK_CRunningScript_Process();
 void HOOK_CExplosion_AddExplosion();
 void HOOK_CRealTimeShadowManager__ReturnRealTimeShadow();
 void HOOK_CCustomRoadsignMgr__RenderRoadsignAtomic();
@@ -486,7 +484,6 @@ void CMultiplayerSA::InitHooks()
     MemPut < BYTE > ( 0x468EB5, 0xEB );
     MemPut < BYTE > ( 0x468EB6, 0x32 );
 
-    HookInstall(HOOKPOS_CRunningScript_Process, (DWORD)HOOK_CRunningScript_Process, 6);
     HookInstall(HOOKPOS_CExplosion_AddExplosion, (DWORD)HOOK_CExplosion_AddExplosion, 6);
     HookInstall(HOOKPOS_CRealTimeShadowManager__ReturnRealTimeShadow, (DWORD)HOOK_CRealTimeShadowManager__ReturnRealTimeShadow, 6);
     HookInstall(HOOKPOS_CCustomRoadsignMgr__RenderRoadsignAtomic, (DWORD)HOOK_CCustomRoadsignMgr__RenderRoadsignAtomic, 6);
@@ -2383,106 +2380,6 @@ void _declspec(naked) HOOK_CPed_IsPlayer ()
             xor         al, al
             ret
         }
-    }
-}
-
-
-void CRunningScript_Process ( void )
-{
-    if ( !bHasProcessedScript )
-    {
-        CCamera * pCamera = pGameInterface->GetCamera();
-        pCamera->SetFadeColor ( 0, 0, 0 );
-        pCamera->Fade ( 0.0f, FADE_OUT );
-
-        DWORD dwFunc = 0x409D10; // RequestSpecialModel
-
-        char szModelName [64];
-        strcpy ( szModelName, "player" );
-        _asm
-        {
-            push    26
-            lea     eax, szModelName
-            push    eax
-            push    0
-            call    dwFunc
-            add     esp, 12
-        }
-
-        dwFunc = 0x40EA10; // load all requested models
-        _asm
-        {
-            push    1
-            call    dwFunc
-            add     esp, 4
-        }
-
-        dwFunc = 0x60D790; // setup player ped
-        _asm
-        {
-            push    0
-            call    dwFunc
-            add     esp, 4
-        }
-        
-        /*dwFunc = 0x05E47E0; // set created by
-        _asm
-        {
-            mov     edi, 0xB7CD98
-            mov     ecx, [edi]
-            push    2
-            call    dwFunc
-        }
-
-        dwFunc = 0x609520; // deactivate player ped
-        _asm
-        {
-            push    0
-            call    dwFunc
-            add     esp, 4
-        }
-*/
-        //_asm int 3
-        dwFunc = 0x420B80; // set position
-        fX = 2488.562f;
-        fY = -1666.864f;
-        fZ = 12.8757f;
-        _asm
-        {
-            mov     edi, 0xB7CD98
-            push    fZ
-            push    fY
-            push    fX
-            mov     ecx, [edi]
-            call    dwFunc
-        }
-        /*_asm int 3
-        dwFunc = 0x609540; // reactivate player ped
-        _asm
-        {
-            push    0
-            call    dwFunc
-            add     esp, 4
-        }
-        */
-        
-        bHasProcessedScript = true;
-    }
-}
-
-void _declspec(naked) HOOK_CRunningScript_Process()
-{
-    _asm
-    {
-        pushad
-    }
-
-    CRunningScript_Process ();
-
-    _asm
-    {
-        popad
-        retn
     }
 }
 

@@ -189,7 +189,7 @@ int CAnimManagerSA::GetAnimationBlockIndex( const char *szName )
 
 static unsigned int *const VAR_NumAnimBlocks = (unsigned int*)VAR_CAnimManager_NumAnimBlocks;
 
-unsigned short CAnimManagerSA::RegisterAnimBlock( const char *name )
+unsigned int CAnimManagerSA::RegisterAnimBlock( const char *name )
 {
     CAnimBlockSAInterface *anim = GetAnimBlockByName( name );
 
@@ -199,7 +199,7 @@ unsigned short CAnimManagerSA::RegisterAnimBlock( const char *name )
     unsigned int index = (*VAR_NumAnimBlocks)++;
     CAnimBlockSAInterface& block = *( (CAnimBlockSAInterface*)ARRAY_AnimBlock + index );
 
-    strncpy( block.m_name, name, 15 );
+    strncpy( block.m_name, name, 16 );
     block.m_count = 0;
     block.m_animInfoIndex = GetFirstAssocGroup( name );
     return index;
@@ -219,11 +219,9 @@ CAnimBlendAssocGroup * CAnimManagerSA::GetAnimBlendAssoc ( AssocGroupId groupID 
     return GetAnimBlendAssocGroup ( pInterface );
 }
 
-unsigned short CAnimManagerSA::GetFirstAssocGroup( const char *name ) const
+unsigned int CAnimManagerSA::GetFirstAssocGroup( const char *name ) const
 {
-    unsigned short n;
-
-    for ( n=0; n<ANIM_INFO_ARRAY_SIZE; n++ )
+    for ( unsigned int n = 0; n < ANIM_INFO_ARRAY_SIZE; n++ )
     {
         if ( stricmp( VAR_AnimInfoArray[n].name, name ) == 0 )
             return n;
@@ -473,13 +471,11 @@ CAnimBlockSAInterface* CAnimManagerSA::GetAnimBlock( unsigned short id )
 
 CAnimBlockSAInterface* CAnimManagerSA::GetAnimBlockByName( const char *name ) const
 {
-    unsigned int n;
-    
-    for ( n=0; n<GetNumAnimBlocks(); n++ )
+    for ( unsigned int n = 0; n < GetNumAnimBlocks(); n++ )
     {
         CAnimBlockSAInterface *anim = (CAnimBlockSAInterface*)ARRAY_AnimBlock + n;
 
-        if ( strcmp( anim->m_name, name ) == 0 )
+        if ( stricmp( anim->m_name, name ) == 0 )
             return anim;
     }
 

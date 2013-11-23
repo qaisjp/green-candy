@@ -185,12 +185,87 @@ float __cdecl FindPlayerHeading( int id )
     return GetPlayerEntityContext( id )->Placeable.GetHeading();
 }
 
+/*=========================================================
+    SetupPlayerPed
+
+    Arguments:
+        playerIndex - slot to save the player ped into
+    Purpose:
+        Creates a new player ped and sets it at the given slot.
+        The slot is an entry in the global playerInfo structure.
+        Natively, GTA:SA supports only slot 0.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0060D790
+=========================================================*/
+void __cdecl SetupPlayerPed( unsigned int playerIndex )
+{
+    CPlayerPedSAInterface *player = (CPlayerPedSAInterface*)( (*ppPedPool)->Allocate() );
+
+    // We should be able to create players natively someday.
+    // Until then, here is an ugly ASM chunk.
+    // It calls the player constructor.
+    __asm
+    {
+        mov ecx,player
+        push 0
+        push playerIndex
+        mov eax,0x0060D5B0
+        call eax
+    }
+
+    CPlayerInfoSAInterface& playerInfo = PlayerInfo::GetInfo( playerIndex );
+    playerInfo.m_ped = player;
+
+    if ( playerIndex == 1 )
+        player->m_pedType = PEDTYPE_PLAYER2;
+
+    player->SetOrientation( 0, 0, 0 );
+
+    World::AddEntity( player );
+
+    player->m_unkPlayerVal = 100;
+
+    playerInfo.m_state = PS_PLAYING;
+}
+
+/*=========================================================
+    HOOK_CRunningScript_Process
+
+    Purpose:
+        Used by the game to execute .SCM scripts. We use it
+        to manage the player entity.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0056E450
+=========================================================*/
+static bool bHasProcessedScript = false;
+
+void __cdecl HOOK_CRunningScript_Process( void )
+{
+    if ( !bHasProcessedScript )
+    {
+        CCameraSAInterface& camera = Camera::GetInterface();
+        camera.SetFadeColor( 0, 0, 0 );
+        camera.Fade( 0.0f, FADE_OUT );
+
+        Streaming::RequestSpecialModel( 0, "player", 26 );
+        Streaming::LoadAllRequestedModels( true );
+
+        SetupPlayerPed( 0 );
+
+        PlayerInfo::GetInfo( 0 ).m_ped->Placeable.SetPosition( 0, 0, 0 );
+
+        // We have set up our player instance.
+        bHasProcessedScript = true;
+    }
+}
+
 void PlayerInfo_Init( void )
 {
     // Hook fixes.
     HookInstall( 0x0056E010, (DWORD)FindPlayerCoords, 5 );
     HookInstall( 0x0056E250, (DWORD)FindPlayerCenterOfWorld, 5 );
     HookInstall( 0x0056E450, (DWORD)FindPlayerHeading, 5 );
+    HookInstall( 0x00469F00, (DWORD)HOOK_CRunningScript_Process, 5 );
 }
 
 void PlayerInfo_Shutdown( void )

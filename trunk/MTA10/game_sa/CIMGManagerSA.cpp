@@ -87,6 +87,28 @@ static void __cdecl OpenStandardArchives( void )
 }
 
 /*=========================================================
+    CModelLoadInfoSA::constructor
+
+    Purpose:
+        Initializes this .IMG resource data container.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00407460
+=========================================================*/
+CModelLoadInfoSA::CModelLoadInfoSA( void )
+{
+    m_eLoading = MODEL_UNAVAILABLE;
+
+    m_primaryModel = 0xFFFF;
+    m_secondaryModel = 0xFFFF;
+    m_lastID = 0xFFFF;
+
+    m_imgID = 0;
+
+    m_blockCount = 0;
+    m_blockOffset = 0;
+}
+
+/*=========================================================
     CModelLoadInfoSA::GetOffset
 
     Arguments:
@@ -149,7 +171,7 @@ unsigned int CModelLoadInfoSA::GetStreamOffset( void ) const
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00406360
 =========================================================*/
-static size_t GetMainArchiveSize( void )
+size_t __cdecl GetMainArchiveSize( void )
 {
     return GetFileSize( gtaStreamHandles[0], NULL );
 }

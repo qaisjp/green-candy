@@ -358,7 +358,7 @@ void StreamingCOL_Init( void )
 {
     // Hook stuff.
     HookInstall( 0x004103A0, (DWORD)_SetCollisionLoadPosition, 5 );
-    HookInstall( 0x00410860, (DWORD)_StreamCollisionSectors, 5 );
+    HookInstall( 0x00410860 + 5, (DWORD)_StreamCollisionSectors, 5 );   // due to securom, we have to offset by 5
     HookInstall( 0x00410AD0, (DWORD)_PrioritizeCollisionSectors, 5 );
 }
 

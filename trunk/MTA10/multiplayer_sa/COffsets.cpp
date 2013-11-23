@@ -33,13 +33,11 @@ void COffsetsMP::Initialize10US ( void )
 
 void COffsetsMP::Initialize11 ( void )
 {
-    CMultiplayerSA::HOOKPOS_CRunningScript_Process =                                        0x469F80; // 1.01
     CMultiplayerSA::HOOKPOS_CExplosion_AddExplosion =                                       0x737280; // 1.01
     CMultiplayerSA::HOOKPOS_CRealTimeShadowManager__ReturnRealTimeShadow =                  0x70636B; // 1.01
     CMultiplayerSA::HOOKPOS_CCustomRoadsignMgr__RenderRoadsignAtomic =                      0x6FFB8B; // 1.01
     CMultiplayerSA::HOOKPOS_CTrain_ProcessControl_Derail =                                  0x6F8DBA; // 1.01???? ACHTUNG!
     CMultiplayerSA::FUNC_CPlayerInfoBase =                                                  0xB7CD98;
-    
 }
 
 
@@ -51,7 +49,6 @@ void COffsetsMP::Initialize20 ( void )
 
 void COffsetsMP::InitializeCommon10 ( void )
 {
-    CMultiplayerSA::HOOKPOS_CRunningScript_Process =                                        0x469F00;
     CMultiplayerSA::HOOKPOS_CExplosion_AddExplosion =                                       0x736A50;
     CMultiplayerSA::HOOKPOS_CRealTimeShadowManager__ReturnRealTimeShadow =                  0x705B3B;
     CMultiplayerSA::HOOKPOS_CCustomRoadsignMgr__RenderRoadsignAtomic =                      0x6FF35B;

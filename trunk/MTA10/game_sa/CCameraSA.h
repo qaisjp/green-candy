@@ -92,6 +92,11 @@ public:
     float __thiscall        GetGroundLevel( unsigned int type );
     unsigned int __thiscall GetMusicFadeType( void ) const;
 
+    void __thiscall         SetFadeColor( unsigned char red, unsigned char green, unsigned char blue );
+    void __thiscall         Fade( float fadeDuration, unsigned short direction );
+
+    int __thiscall          GetFadeDirection( void ) const;
+
     //move these out the class, have decided to set up a mirrored enumerated type thingy at the top
 #if 0
     bool    m_bAboveGroundTrainNodesLoaded;                 // 20
@@ -154,14 +159,17 @@ public:
     short   m_ModeForTwoPlayersSameCarShootingNotAllowed;   // 76
     short   m_ModeForTwoPlayersNotBothInCar;                // 78
 
-    bool    m_bGarageFixedCamPositionSet;                   // 80
-    bool    m_vecDoingSpecialInterPolation;                 // 81
-    bool    m_bScriptParametersSetForInterPol;              // 82
+    // The_GTA: Here was another mess-up about the interface I was not sure about.
+    // To properly align the fading information, I had to shift members around.
 
+    bool    m_bGarageFixedCamPositionSet;                   // 80
     
-    bool    m_bFading;                                      // 83, to indicate that we are fading 
-    bool    m_bMusicFading;                                 // 84
-    bool    m_bMusicFadedOut;                               // 85
+    bool    m_bFading;                                      // 81, to indicate that we are fading 
+    bool    m_bMusicFading;                                 // 82
+    bool    m_bMusicFadedOut;                               // 83
+
+    bool    m_vecDoingSpecialInterPolation;                 // 84 (81?)
+    bool    m_bScriptParametersSetForInterPol;              // 85 (82?)
 
     bool    m_bFailedCullZoneTestPreviously;                // 86
     bool    m_FadeTargetIsSplashScreen;                     // 87, used as hack for fading 
@@ -345,41 +353,48 @@ public:
     CVector m_vecFrustumWorldNormals[4];                    // 2852
     CVector m_vecFrustumWorldNormals_Mirror[4];             // 2900
 
-    FLOAT m_fFrustumPlaneOffsets[4];                        // 2948
-    FLOAT m_fFrustumPlaneOffsets_Mirror[4];                 // 2964
+    float   m_fFrustumPlaneOffsets[4];                      // 2948
+    float   m_fFrustumPlaneOffsets_Mirror[4];               // 2964
 
     CVector m_vecRightFrustumNormal;                        // 2980
     CVector m_vecBottomFrustumNormal;                       // 2992
     CVector m_vecTopFrustumNormal;                          // 3004
 
-    CVector m_vecOldSourceForInter;                         // 3016
-    CVector m_vecOldFrontForInter;                          // 3028
-    CVector m_vecOldUpForInter;                             // 3040
-    float   m_vecOldFOVForInter;                            // 3052
-    float   m_fFLOATingFade;                                // 3056, variable representing the FLOAT version of CDraw::Fade. Necessary to stop loss of precision
-    float   m_fFLOATingFadeMusic;                           // 3060
-    float   m_fTimeToFadeOut;                               // 3064
-    float   m_fTimeToFadeMusic;                             // 3068
-    float   m_fTimeToWaitToFadeMusic;                       // 3072
-    float   m_fFractionInterToStopMoving;                   // 3076
-    float   m_fFractionInterToStopCatchUp;                  // 3080
-    float   m_fFractionInterToStopMovingTarget;             // 3084
-    float   m_fFractionInterToStopCatchUpTarget;            // 3088
+    // The_GTA: I miss 12 bytes in this interface somewhere (looking at
+    // (1.0 US and 1.0 EU): 0x0050AC25). I decided to put these bytes
+    // here. Correct me if I am wrong!
+    BYTE    m_pad[12];                                      // 3016
 
-    float   m_fGaitSwayBuffer;                              // 3092
-    float   m_fScriptPercentageInterToStopMoving;           // 3096
-    float   m_fScriptPercentageInterToCatchUp;              // 3100
-    DWORD   m_fScriptTimeForInterPolation;                  // 3104
+    CVector m_vecOldSourceForInter;                         // 3028
+    CVector m_vecOldFrontForInter;                          // 3040
+    CVector m_vecOldUpForInter;                             // 3052
+    float   m_vecOldFOVForInter;                            // 3064
+    float   m_fFLOATingFade;                                // 3068, variable representing the FLOAT version of CDraw::Fade. Necessary to stop loss of precision
+    float   m_fFLOATingFadeMusic;                           // 3072
+    float   m_fTimeToFadeOut;                               // 3076
+    float   m_fTimeToFadeMusic;                             // 3080
+    float   m_fTimeToWaitToFadeMusic;                       // 3084
+    float   m_fFractionInterToStopMoving;                   // 3088
+    float   m_fFractionInterToStopCatchUp;                  // 3092
+    float   m_fFractionInterToStopMovingTarget;             // 3096
+    float   m_fFractionInterToStopCatchUpTarget;            // 3100
+
+    float   m_fGaitSwayBuffer;                              // 3104
+    float   m_fScriptPercentageInterToStopMoving;           // 3108
+    float   m_fScriptPercentageInterToCatchUp;              // 3112
+    DWORD   m_fScriptTimeForInterPolation;                  // 3116
 
 
-    short   m_iFadingDirection;                             // 3108
-    int     m_iModeObbeCamIsInForCar;                       // 3112
-    short   m_iModeToGoTo;                                  // 3116
-    short   m_iMusicFadingDirection;                        // 3118
-    short   m_iTypeOfSwitch;                                // 3120
+    short   m_iFadingDirection;                             // 3120
+    int     m_iModeObbeCamIsInForCar;                       // 3124
+    short   m_iModeToGoTo;                                  // 3128
+    short   m_iMusicFadingDirection;                        // 3130
+    short   m_iTypeOfSwitch;                                // 3132
 
-    DWORD   m_uiFadeTimeStarted;                            // 3124
-    DWORD   m_uiFadeTimeStartedMusic;                       // 3128
+    BYTE    m_pad2[2];                                      // 3134
+
+    DWORD   m_uiFadeTimeStarted;                            // 3136
+    DWORD   m_uiFadeTimeStartedMusic;                       // 3140
 };
 
 

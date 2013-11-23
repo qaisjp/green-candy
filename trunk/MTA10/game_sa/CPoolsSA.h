@@ -214,6 +214,16 @@ public:
         }
     }
 
+    template <typename callbackType>
+    inline void     ForAllActiveReverse( callbackType& cb, unsigned int stopIndex = 0 )
+    {
+        for ( unsigned int n = GetMax() - 1; n >= stopIndex; n++ )
+        {
+            if ( !( m_flags[n] & 0x80 ) )
+                cb.OnEntry( GetOffset( n ), n );
+        }
+    }
+
     type*           m_pool;
     unsigned char*  m_flags;
     unsigned int    m_max;

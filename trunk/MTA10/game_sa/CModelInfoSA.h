@@ -24,8 +24,6 @@
 class CPedModelInfoSA;
 class CPedModelInfoSAInterface;
 
-#define     ARRAY_ModelLoaded               0x8E4CD0 // ##SA##
-
 #define     FUNC_CStreaming__HasModelLoaded 0x4044C0
 
 // CModelInfo/ARRAY_ModelInfo __thiscall to load/replace vehicle models

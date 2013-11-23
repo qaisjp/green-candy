@@ -13,6 +13,8 @@
 #ifndef _STREAMING_LOADER_
 #define _STREAMING_LOADER_
 
+#define MAX_STREAMING_REQUESTERS        2
+
 // Used by streaming
 bool __cdecl CheckTXDDependency( modelId_t id );
 bool __cdecl CheckAnimDependency( modelId_t id );
@@ -38,12 +40,10 @@ namespace Streaming
 
     // There is a maximum of 2 streaming requests internally in the engine.
     // Those slots are parallel to the maximum syncSemaphores.
-    // streamingRequest contains model ids which request data throug
+    // streamingRequest contains model ids which request data through
+    // the synSemaphores.
     inline streamingRequest&    GetStreamingRequest( unsigned int id )
     {
-        if ( id > 2 )
-            __asm int 3
-
         return *( (streamingRequest*)ARRAY_StreamerRequest + id );
     }
 

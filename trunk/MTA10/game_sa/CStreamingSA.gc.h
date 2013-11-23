@@ -13,6 +13,16 @@
 #ifndef _STREAMING_GC_
 #define _STREAMING_GC_
 
+namespace Streaming
+{
+    // Active entity management.
+    streamingEntityReference_t* __cdecl AddActiveEntity( CEntitySAInterface *entity );
+    void __cdecl                        RemoveActiveEntity( streamingEntityReference_t *ref );
+
+    void __cdecl    InitRecentGCNode( void );
+    void __cdecl    SetRecentGCNode( streamingEntityReference_t *node );
+};
+
 // Garbage collection exports.
 void __cdecl UnclogMemoryUsage( size_t mem_size );
 

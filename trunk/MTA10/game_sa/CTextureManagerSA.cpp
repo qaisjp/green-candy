@@ -139,7 +139,7 @@ CTextureManagerSA::~CTextureManagerSA( void )
 =========================================================*/
 int CTextureManagerSA::FindTxdEntry( const char *name ) const
 {
-    unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey(name);
+    unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( name );
 
     for ( unsigned int n = 0; n < MAX_TXD; n++ )
     {
@@ -171,7 +171,7 @@ int CTextureManagerSA::CreateTxdEntry( const char *name )
     if ( !inst )
         return -1;
 
-    return (*ppTxdPool)->GetIndex(inst);
+    return (*ppTxdPool)->GetIndex( inst );
 }
 
 /*=========================================================

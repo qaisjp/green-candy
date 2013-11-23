@@ -241,23 +241,22 @@ unsigned char CModelInfoSA::GetLevelFromPosition( const CVector& vecPosition ) c
     return bReturn;
 }
 
-bool CModelInfoSA::IsLoaded() const
+bool CModelInfoSA::IsLoaded( void ) const
 {
-    DEBUG_TRACE("bool CModelInfoSA::IsLoaded() const");
+    DEBUG_TRACE("bool CModelInfoSA::IsLoaded( void ) const");
 
     if ( IsUpgrade() )
         return pGame->GetStreaming()->HasVehicleUpgradeLoaded( m_modelID );
 
-    //return (BOOL)*(BYTE *)(ARRAY_ModelLoaded + 20*dwModelID);
     return pGame->GetStreaming()->HasModelLoaded(m_modelID);
 }
 
-unsigned char CModelInfoSA::GetFlags() const
+unsigned char CModelInfoSA::GetFlags( void ) const
 {
     return Streaming::GetModelLoadInfo( m_modelID ).m_flags;
 }
 
-const CBoundingBox* CModelInfoSA::GetBoundingBox() const
+const CBoundingBox* CModelInfoSA::GetBoundingBox( void ) const
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[m_modelID];
 
@@ -270,12 +269,12 @@ const CBoundingBox* CModelInfoSA::GetBoundingBox() const
     return &ppModelInfo[m_modelID]->pColModel->m_bounds;
 }
 
-bool CModelInfoSA::IsValid()
+bool CModelInfoSA::IsValid( void )
 {
     return( m_pInterface = ppModelInfo[m_modelID] ) != 0;
 }
 
-float CModelInfoSA::GetDistanceFromCentreOfMassToBaseOfModel() const
+float CModelInfoSA::GetDistanceFromCentreOfMassToBaseOfModel( void ) const
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[m_modelID];
 
@@ -285,7 +284,7 @@ float CModelInfoSA::GetDistanceFromCentreOfMassToBaseOfModel() const
     return -info->pColModel->m_bounds.vecBoundMin.fZ;
 }
 
-unsigned short CModelInfoSA::GetTextureDictionaryID() const
+unsigned short CModelInfoSA::GetTextureDictionaryID( void ) const
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[m_modelID];
 

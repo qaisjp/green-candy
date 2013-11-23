@@ -11,7 +11,7 @@
 *               Alberto Alonso <rydencillo@gmail.com>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               aru <>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -21,7 +21,20 @@
 
 #define STEALTH_KILL_RANGE 2.5f
 
-bool CPlayerPedSAInterface::ShouldBeStealthAiming()
+CPlayerPedSAInterface::CPlayerPedSAInterface( unsigned int playerIndex, unsigned int unk )
+{
+    // todo: reven this, it is very complex
+    __asm
+    {
+        mov ecx,this
+        mov eax,0x0060D5B0
+        push unk
+        push playerIndex
+        call eax
+    }
+}
+
+bool CPlayerPedSAInterface::ShouldBeStealthAiming( void )
 {
     // Do we have a knife?
     if ( m_currentWeapon != WEAPONTYPE_KNIFE )

@@ -24,6 +24,8 @@ static CModelLoadInfoSA *const VAR_ModelLoadInfo = (CModelLoadInfoSA*)0x008E4CC0
 namespace Streaming
 {
     streamingLoadCallback_t  streamingLoadCallback = NULL;
+
+    bool isLoadingBigModel = false;     // Binary offsets: (1.0 US and 1.0 EU): 0x008E4A58
 };
 
 /*=========================================================
@@ -151,8 +153,6 @@ bool __cdecl CheckAnimDependency( modelId_t id )
         SCM script loading has been temporarily disabled, since MTA
         does not use it.
 =========================================================*/
-static bool isLoadingBigModel = false;
-
 bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
 {
     CModelLoadInfoSA& loadInfo = VAR_ModelLoadInfo[id];
@@ -164,7 +164,7 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
     // Create a stream
     RwStream *stream = RwStreamInitialize( (void*)0x008E48AC, 0, 3, 1, &streamBuffer );
 
-    if ( id < DATA_TEXTURE_BLOCK )
+    if ( id < MAX_MODELS )
     {
         CBaseModelInfoSAInterface *info = ppModelInfo[id];
         int animIndex = info->GetAnimFileIndex();
@@ -258,7 +258,7 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
 
         bool successLoad;
 
-        if ( isLoadingBigModel )
+        if ( Streaming::isLoadingBigModel )
         {
             successLoad = LoadTXDFirstHalf( txdId, stream );
 
@@ -1113,7 +1113,7 @@ inline void __cdecl ContinueResourceAcquisition( unsigned int threadId )
 {
     // We can only perform this loading logic if all models have acquired their resources
     // (no big models are being loaded)
-    if ( !isLoadingBigModel )
+    if ( !Streaming::isLoadingBigModel )
     {
         streamingRequest& otherRequester = Streaming::GetStreamingRequest( 1 - threadId );
 
@@ -1124,7 +1124,7 @@ inline void __cdecl ContinueResourceAcquisition( unsigned int threadId )
 
         // Check that we did not begin loading a big model
         // Pulse the primary requester if we can
-        if ( !isLoadingBigModel && Streaming::GetStreamingRequest( threadId ).status == streamingRequest::STREAMING_NONE )
+        if ( !Streaming::isLoadingBigModel && Streaming::GetStreamingRequest( threadId ).status == streamingRequest::STREAMING_NONE )
             PulseStreamingRequest( threadId );
     }
 }
