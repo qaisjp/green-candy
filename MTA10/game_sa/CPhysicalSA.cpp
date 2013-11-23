@@ -19,7 +19,7 @@
 typedef void    (__cdecl*CollideColModels_t)    ( const RwMatrix& mat, CColModelSAInterface *colModel, const RwMatrix& withMat, CColModelSAInterface *withColModel );
 CollideColModels_t      CollideColModels =      (CollideColModels_t)0x004185C0;
 
-CPhysicalSAInterface::CPhysicalSAInterface()
+CPhysicalSAInterface::CPhysicalSAInterface( void )
 {
     m_unk2 = 0;
 
@@ -74,15 +74,44 @@ CPhysicalSAInterface::CPhysicalSAInterface()
     m_lighting = 0;
 }
 
-CPhysicalSAInterface::~CPhysicalSAInterface()
+CPhysicalSAInterface::~CPhysicalSAInterface( void )
 {
 }
 
-void Physical_Init()
+void __thiscall CPhysicalSAInterface::Link( void )
+{
+    if ( m_link || IS_ANY_FLAG( m_entityFlags, ENTITY_WAITFORCOLL ) )
+        return;
+
+    physicalLink_t *linkNode = new physicalLink_t( this );
+    linkNode->Insert( *(physicalLink_t**)0x00B9ACC8 );
+
+    m_link = linkNode;
+
+    *(physicalLink_t**)0x00B9ACC8 = linkNode;
+}
+
+void __thiscall CPhysicalSAInterface::Unlink( void )
+{
+    if ( physicalLink_t *link = m_link )
+    {
+        // Make sure we do not have this entity active in world procedure.
+        if ( link == *(physicalLink_t**)0x00B9ACC8 )
+            *(physicalLink_t**)0x00B9ACC8 = link->m_next;
+
+        link->Remove();
+
+        delete link;
+
+        m_link = NULL;
+    }
+}
+
+void Physical_Init( void )
 {
 }
 
-void Physical_Shutdown()
+void Physical_Shutdown( void )
 {
 }
 

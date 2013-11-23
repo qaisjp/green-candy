@@ -61,6 +61,14 @@ public:
             return m_heading;
         }
 
+        inline void                 SetRotation                 ( float x, float y, float z )
+        {
+            if ( CTransformSAInterface *trans = m_matrix )
+                m_matrix->SetRotationRad( x, y, z );
+            else
+                m_heading = z;
+        }
+
         void __thiscall             GetOffsetByHeading          ( CVector& out, const CVector& in ) const;
         void __thiscall             GetMatrixFromHeading        ( RwMatrix& mat ) const;
 

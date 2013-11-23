@@ -139,7 +139,7 @@ void __cdecl Streaming::RequestModel( modelId_t id, unsigned int flags )
         {
             CBaseModelInfoSAInterface *minfo = ppModelInfo[id];
 
-            // Fix for invalid model requests
+            // Fix for invalid model requests (jff)
             if ( !minfo )
                 return;
 
@@ -185,6 +185,8 @@ void __cdecl Streaming::RequestModel( modelId_t id, unsigned int flags )
         // Remove loaded model from its queue (it has to reside in one)
         info->PopFromLoader();
 
+        // Prevent procedure of models which have been replaced.
+        // This stops them from being garbage collected.
         if ( g_replObjectNative[id] != NULL )
             return;
 
@@ -296,7 +298,8 @@ struct ModelFreeDispatch : ModelCheckDispatch <false>   // by default we do not 
 #endif
 
             // The_GTA: I removed the unused "vehicles" maximum clean-up code here.
-            // It was never used in GTA:SA anyway.
+            // It cannot be used in MTA:SA anyway, as it is a very small limit in
+            // comparison to what we load with Lua.
             break;
         }
 
@@ -498,6 +501,67 @@ void __cdecl Streaming::RequestDirectResource( modelId_t model, unsigned int blo
 
     // Load new resource information from our .IMG container.
     RequestModel( model, reqFlags );
+}
+
+/*=========================================================
+    Streaming::RequestSpecialModel
+
+    Arguments:
+        model - slot to request the model resource into
+        tex - texture dictionary name of the special model
+        reqFlags - flags given to RequestModel
+    Purpose:
+        Loads a new model resource into the model slot during
+        runtime. Makes sure that no entity in-game is conflicting
+        with the new resource by removing active entities that
+        use it from the world.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00409D10
+=========================================================*/
+struct ClearPedRefs
+{
+    __forceinline ClearPedRefs( unsigned int model ) : m_model( model )
+    { }
+
+    void __forceinline OnEntry( CPedSAInterface *ped, unsigned int index )
+    {
+        if ( ped->m_model = m_model && ped->IsPlayer() )
+        {
+            
+        }
+    }
+
+    unsigned int m_model;
+};
+
+void __cdecl Streaming::RequestSpecialModel( modelId_t model, const char *tex, unsigned int reqFlags )
+{
+    // todo.
+    ((void (__cdecl*)( modelId_t model, const char *tex, unsigned int reqFlags ))FUNC_CStreaming_RequestSpecialModel)( model, tex, reqFlags );
+
+#if 0
+    unsigned int modelHash = pGame->GetKeyGen()->GetUppercaseKey( tex );
+
+    CBaseModelInfoSAInterface *model = ppModelInfo[model];
+
+    if ( model->GetHashKey() == modelHash )
+    {
+        unsigned int offset, blockCount;
+
+        if ( GetModelLoadInfo( model ).GetOffset( offset, blockCount ) )
+        {
+            RequestModel( model, reqFlags );
+            return;
+        }
+    }
+
+    // If the model is being used by anything, attempt to clear
+    // all references of it.
+    if ( model->GetRefCount() != 0 )
+    {
+        
+    }
+#endif
 }
 
 /*=========================================================
@@ -736,6 +800,185 @@ void Streaming::FlushRequestList( void )
     PulseStreamingRequests();
 }
 
+/*=========================================================
+    _Streaming_Init
+
+    Purpose:
+        Initializes the GTA:SA streaming system. This is the
+        heart of the engine.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005B8AD0
+=========================================================*/
+static void __cdecl _Streaming_Init( void )
+{
+    new ((void*)ARRAY_CModelLoadInfo) CModelLoadInfoSA[26316];
+
+    *(CModelLoadInfoSA**)ARRAY_ModelLoadCache = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo;
+
+    CModelLoadInfoSA& gcResourceLink = *(CModelLoadInfoSA*)0x00965460;
+    CModelLoadInfoSA& unkResourceLink = *(CModelLoadInfoSA*)0x00965474;
+    CModelLoadInfoSA& toBeLoadedQueue = *(CModelLoadInfoSA*)0x00965488;
+    CModelLoadInfoSA& lastModelLoadInfo = *(CModelLoadInfoSA*)0x0096549C;
+
+    *(CModelLoadInfoSA**)0x008E4C60 = &gcResourceLink;
+    *(CModelLoadInfoSA**)0x008E4C5C = &unkResourceLink;
+    *(CModelLoadInfoSA**)0x008E4C58 = &toBeLoadedQueue;
+    *(CModelLoadInfoSA**)0x008E4C54 = &lastModelLoadInfo;
+
+    gcResourceLink.m_primaryModel = 26313;
+    gcResourceLink.m_secondaryModel = 0xFFFF;
+    unkResourceLink.m_primaryModel = 0xFFFF;
+    unkResourceLink.m_secondaryModel = 26312;
+    toBeLoadedQueue.m_primaryModel = 26315;
+    toBeLoadedQueue.m_secondaryModel = 0xFFFF;
+    lastModelLoadInfo.m_primaryModel = 0xFFFF;
+    lastModelLoadInfo.m_secondaryModel = 26314;
+
+    // ???
+    *(void**)0x008E4B98 = NULL;
+    *(void**)0x008E4B94 = NULL;
+
+    // ???
+    for ( modelId_t index = 0; index < 8; index++ )
+        Streaming::GetModelLoadInfo( index + 374 ).m_eLoading = MODEL_LOADED;
+
+    // Init global streaming status.
+    *(unsigned int*)0x008E4CA8 = 0;
+    *(bool*)0x009654B0 = false;
+    *(unsigned int*)0x008E4CB4 = 0;
+    *(unsigned int*)0x008E4B90 = 0xFFFFFFFF;
+    *(bool*)0x008E4A58 = false;
+    *(bool*)0x008E4CA4 = true;
+    *(bool*)0x008E4B9D = false;
+    *(bool*)0x008E4B9C = false;
+
+    // Initialize streaming requesters.
+    for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTERS; n++ )
+    {
+        streamingRequest& requester = Streaming::GetStreamingRequest( n );
+
+        requester.status = streamingRequest::STREAMING_NONE;
+
+        for ( unsigned int i = 0; i < MAX_STREAMING_REQUESTS; i++ )
+            requester.ids[i] = 0xFFFFFFF;
+    }
+
+    // Do preparations for resources which prematurely loaded.
+    // Initialize all models.
+    for ( unsigned int n = 0; n < MAX_MODELS; n++ )
+    {
+        CBaseModelInfoSAInterface *model = ppModelInfo[n];
+
+        if ( model && model->pRwObject )
+        {
+            CModelLoadInfoSA& info = Streaming::GetModelLoadInfo( n );
+
+            info.m_flags = 2;
+            info.m_eLoading = MODEL_LOADED;
+        }
+    }
+
+    // Initialize all textures.
+    for ( unsigned int n = 0; n < MAX_TXD; n++ )
+    {
+        CTxdInstanceSA *inst = (*ppTxdPool)->Get( n );
+
+        if ( inst && inst->m_txd )
+            Streaming::GetModelLoadInfo( DATA_TEXTURE_BLOCK, n ).m_eLoading = MODEL_LOADED;
+    }
+
+    // Initialize the imfamous vehicleModelCache.
+    new ((void*)0x008E4C24) ModelIdContainer;
+
+    // This is a list of recently loaded ped models.
+    // Rockstar thought this list be pretty short.
+    for ( unsigned int n = 0; n < 8; n++ )
+        *((unsigned int*)ARRAY_PEDSPECMODEL + n) = 0xFFFFFFFF;
+
+    *(unsigned int*)0x008E4BB0 = 0; // the count of active ped models
+
+    // ???
+    for ( unsigned int n = 0; n < 18; n++ )
+        *((unsigned int*)0x008E4BB8 + n) = 0;
+
+    // Initialize the container where all missing model infos during loading
+    // of the archives are stored.
+    // A leftover of internal Rockstar Games debugging.
+    *(Streaming::CMissingModelInfoSA**)0x008E48D0 = new Streaming::CMissingModelInfoSA( 550 );
+
+    *(unsigned int*)0x008E4C20 = 0xFFFFFFFF;
+    *(unsigned short*)0x008E4BAC = 0;
+    *(unsigned int*)0x008E4BA4 = 0xFFFFFFFF;
+    *(unsigned int*)0x008E4BA0 = 0;
+
+    // Initialize the script manager.
+    __asm
+    {
+        mov ecx,0x00A47B60
+        mov eax,0x00470660
+        call eax
+    }
+
+    // Load the streaming archives.
+    Streaming::LoadArchives();
+
+    // By now the biggest block count should be initialized properly.
+    // Make sure it is divisible through 2.
+    int biggestBlockCount = *(int*)0x008E4CA8;
+
+    if ( ( biggestBlockCount & 1 ) == 1 )
+        biggestBlockCount++;
+
+    // Allocate the buffer that is used to read .IMG chunks into.
+    void *buf = RwAllocAligned( biggestBlockCount * 2048, 2048 );
+
+    // Divide the biggest block count by the number of streaming requesters.
+    biggestBlockCount /= MAX_STREAMING_REQUESTERS;
+    
+    *(int*)0x008E4CA8 = biggestBlockCount;
+
+    // Set up the sections of the allocation into the global streaming buffers,
+    // each for every streaming requester.
+    for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTERS; n++ )
+        *((void**)0x008E4CAC + n) = (void*)( (char*)buf + n * biggestBlockCount * 2048 );
+
+    // Set streaming globals to defaults.
+    // These can be modified using stream.ini
+    *(unsigned int*)0x008A5A80 = 0x3200000; // max streaming memory
+    *(unsigned int*)0x008A5A84 = 22;        // max loaded vehicle models, close to the maximum due to limitations.
+
+    // Initialize the streaming entity garbage collection manager.
+    // This is the thing that caused the draw distance bug:
+    // The node list here could only keep 1000 entries, hence only
+    // 1000 objects, dummies and building could be visible at a time.
+    // Let us fix that.
+    new (&Streaming::GetStreamingEntityChain()) Streaming::streamingEntityChain_t( MAX_DEFAULT_STREAMING_ENTITIES );  // screw the alligators
+
+    // We successfully loaded.
+    *(bool*)0x009654B8 = true;
+}
+
+/*=========================================================
+    _Streaming_Shutdown
+
+    Purpose:
+        Deallocates all resources used by the streaming system
+        internally.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004084B0
+=========================================================*/
+static void __cdecl _Streaming_Shutdown( void )
+{
+    // Deallocate the threading resource memory.
+    RwFreeAligned( *(void**)0x008E4CAC );
+
+    // Set the threading buffer size to zero blocks.
+    *(int*)0x008E4CA8 = 0;
+
+    // Destroy the stack holding all missing model ids.
+    delete *(Streaming::CMissingModelInfoSA**)0x008E48D0;
+}
+
 CStreamingSA::CStreamingSA( void )
 {
     // Initialize the accelerated streaming structures
@@ -743,6 +986,8 @@ CStreamingSA::CStreamingSA( void )
     memset( g_originalCollision, 0, sizeof(g_originalCollision) );
 
     // Hook the model requester
+    HookInstall( 0x005B8AD0, (DWORD)_Streaming_Init, 5 );
+    HookInstall( 0x004084B0, (DWORD)_Streaming_Shutdown, 5 );
     HookInstall( FUNC_CStreaming__RequestModel, (DWORD)Streaming::RequestModel, 6 );
     HookInstall( 0x004089A0, (DWORD)Streaming::FreeModel, 6 );
     HookInstall( 0x0040A080, (DWORD)Streaming::RequestDirectResource, 5 );
@@ -979,7 +1224,7 @@ bool CStreamingSA::HasVehicleUpgradeLoaded( int model )
 =========================================================*/
 void CStreamingSA::RequestSpecialModel( modelId_t model, const char *tex, unsigned int channel )
 {
-    ((void (__cdecl*)( modelId_t model, const char *tex, unsigned int channel ))FUNC_CStreaming_RequestSpecialModel)( model, tex, channel );
+    Streaming::RequestSpecialModel( model, tex, channel );
 }
 
 void CStreamingSA::SetRequestCallback( streamingRequestCallback_t callback )

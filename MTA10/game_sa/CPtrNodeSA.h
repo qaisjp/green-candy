@@ -151,6 +151,9 @@ template <typename pointerType>
 class CPtrNodeDoubleSA
 {
 public:
+    CPtrNodeDoubleSA( pointerType *dataPtr ) : data( dataPtr ), m_next( NULL ), m_prev( NULL )
+    { }
+
     void* CPtrNodeDoubleSA::operator new( size_t )
     {
         return (*ppPtrNodeDoublePool)->Allocate();
@@ -159,6 +162,23 @@ public:
     void CPtrNodeDoubleSA::operator delete( void *ptr )
     {
         (*ppPtrNodeDoublePool)->Free( (CPtrNodeDoubleSA <void>*)ptr );
+    }
+
+    inline void Insert( CPtrNodeDoubleSA *list )
+    {
+        m_next = list;
+        
+        if ( list )
+            list->m_prev = this;
+    }
+
+    inline void Remove( void )
+    {
+        if ( CPtrNodeDoubleSA *prev = m_prev )
+            prev->m_next = m_next;
+
+        if ( CPtrNodeDoubleSA *next = m_next )
+            next->m_prev = m_prev;
     }
 
     pointerType*            data;

@@ -152,6 +152,8 @@ public:
 
     float                           GetFadingAlpha          ( void ) const;
 
+    void __thiscall                 SetOrientation          ( float x, float y, float z );
+
     bool __thiscall                 IsOnScreen              ( void ) const;
 
     void __thiscall                 UpdateRwMatrix          ( void );
@@ -164,8 +166,10 @@ public:
     unsigned short          m_randomSeed;       // 32
     unsigned short          m_model;            // 34
     CReferences*            m_references;       // 36
+
+    struct streamingEntityReference_t;
     
-    DWORD*                  m_lastRenderedLink; // 40, CLink<CEntity*>* m_pLastRenderedLink;
+    streamingEntityReference_t* m_streamingRef; // 40
     
     unsigned short          m_scanCode;         // 44
     unsigned char           m_iplIndex;         // 46, used to define which IPL file object is in

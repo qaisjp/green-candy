@@ -98,10 +98,10 @@ public:
     CAnimBlock*                 GetAnimationBlock( int ID );
     CAnimBlock*                 GetAnimationBlock( const char * szName );
     int                         GetAnimationBlockIndex( const char * szName );
-    unsigned short              RegisterAnimBlock( const char *name );
+    unsigned int                RegisterAnimBlock( const char *name );
         
     CAnimBlendAssocGroup*       GetAnimBlendAssoc( AssocGroupId groupID );
-    unsigned short              GetFirstAssocGroup( const char *name ) const;
+    unsigned int                GetFirstAssocGroup( const char *name ) const;
 
     const char*                 GetAnimGroupName( AssocGroupId groupID );
     const char*                 GetAnimBlockName( AssocGroupId groupID );

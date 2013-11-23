@@ -19,6 +19,8 @@
 // IMGFile utilities.
 bool GetIMGFileByName( const char *name, unsigned int& imgID );
 
+size_t __cdecl GetMainArchiveSize( void );
+
 // Module initialization.
 void IMG_Initialize( void );
 void IMG_Shutdown( void );
@@ -36,6 +38,8 @@ enum eLoadingState : unsigned char
 class CModelLoadInfoSA  // size: 20
 {
 public:
+    CModelLoadInfoSA( void );
+
     unsigned short  m_primaryModel;     // 0
     unsigned short  m_secondaryModel;   // 2
     unsigned short  m_lastID;           // 4

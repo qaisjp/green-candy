@@ -274,7 +274,7 @@ enum ePedStatus : unsigned int
 
 class CPadSAInterface;
 
-//padlevel: 21
+//padlevel: 22
 class CPedSAInterface : public CPhysicalSAInterface
 {
 public:
@@ -331,7 +331,9 @@ public:
 
     BYTE                            m_pad13[12];                // 1804
     unsigned char                   m_currentWeapon;            // 1816
-    BYTE                            m_pad14[20];                // 1817
+    BYTE                            m_pad14[1];                 // 1817
+    unsigned char                   m_unkPlayerVal;             // 1818
+    BYTE                            m_pad22[18];                // 1819
     unsigned char                   m_fightStyle;               // 1837
     unsigned char                   m_fightStyleExtra;          // 1838
     BYTE                            m_pad15;                    // 1839

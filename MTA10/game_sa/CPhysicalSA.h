@@ -32,8 +32,11 @@
 class CPhysicalSAInterface : public CEntitySAInterface // begin +56 (256 bytes total?)
 {
 public:
-                                    CPhysicalSAInterface();
-                                    ~CPhysicalSAInterface();
+                                    CPhysicalSAInterface( void );
+                                    ~CPhysicalSAInterface( void );
+
+    void __thiscall                 Link( void );
+    void __thiscall                 Unlink( void );
 
     virtual void* __thiscall        ProcessEntityCollisions( CEntitySAInterface *entity ) = 0;
 

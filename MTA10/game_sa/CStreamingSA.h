@@ -17,6 +17,8 @@
 #include <game/CStreaming.h>
 #include "Common.h"
 
+#define MAX_DEFAULT_STREAMING_ENTITIES      1000    // native limit set by R*
+
 #define DATA_TEXTURE_BLOCK      20000
 #define DATA_COLL_BLOCK         25000
 #define DATA_IPL_BLOCK          25255
@@ -65,10 +67,44 @@ public:
 
 namespace Streaming
 {
+    // Streaming uses a sorted entity activity list.
+    // Rockstar did not include any sorting though.
+    // * Yes, templates are hard to deduce from the assembly code,
+    // but you see it is possible.
+    struct streamingChainInfo
+    {
+        void InitFirst( void )
+        {
+        }
+        
+        void InitLast( void )
+        {
+        }
+
+        bool operator < ( const streamingChainInfo& right )
+        {
+            // There is nothing to sort.
+            return false;
+        }
+
+        class CEntitySAInterface *entity;
+
+        inline void Execute( void )
+        { }
+    };
+    typedef CRenderChainInterface <streamingChainInfo> streamingEntityChain_t;
+    typedef streamingEntityChain_t::renderChain streamingEntityReference_t;
+
+    inline streamingEntityChain_t&  GetStreamingEntityChain( void )
+    {
+        return *(streamingEntityChain_t*)0x009654F0;
+    }
+
     // Public functions
     void __cdecl RequestModel( modelId_t id, unsigned int flags );
     void __cdecl FreeModel( modelId_t id );
     void __cdecl RequestDirectResource( modelId_t model, unsigned int blockOffset, unsigned int blockCount, unsigned int imgId, unsigned int reqFlags );
+    void __cdecl RequestSpecialModel( modelId_t model, const char *tex, unsigned int channel );
     void __cdecl CleanUpLoadQueue( void );
     void __cdecl Update( void );
     void __cdecl FlushRequestList( void );

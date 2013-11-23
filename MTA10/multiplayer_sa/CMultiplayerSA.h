@@ -191,7 +191,6 @@ private:
 //  VOID                        SetPlayerStartVector(CPlayerPed* player, Vector3D * vecStart);
 
 private:
-    static unsigned long        HOOKPOS_CRunningScript_Process;
     static unsigned long        HOOKPOS_CExplosion_AddExplosion;
     static unsigned long        HOOKPOS_CRealTimeShadowManager__ReturnRealTimeShadow;
     static unsigned long        HOOKPOS_CCustomRoadsignMgr__RenderRoadsignAtomic;

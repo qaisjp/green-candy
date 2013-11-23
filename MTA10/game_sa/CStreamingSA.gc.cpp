@@ -62,27 +62,27 @@ bool __cdecl GarbageCollectPeds( void )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00409760
 =========================================================*/
-struct ActiveEntityNode //size: 8
+struct GarbageCollectStreamingEntities
 {
-    CEntitySAInterface *entity;     // 0
-    ActiveEntityNode *next;         // 4
-};
+    __forceinline GarbageCollectStreamingEntities( bool checkOnScreen, unsigned int ignoreFlags ) : m_checkOnScreen( checkOnScreen ), m_ignoreFlags( ignoreFlags )
+    { }
 
-bool __cdecl GarbageCollectActiveEntities( bool checkOnScreen, unsigned int ignoreFlags )
-{
-    CCameraSAInterface& camera = Camera::GetInterface();
-    CPlayerPedSAInterface *player = GetPlayerPed( 0xFFFFFFFF );
-
-    RwCamera *rwcam = camera.m_pRwCamera;
-    float farplane = rwcam->m_farplane;
-
-    for ( ActiveEntityNode *node = *(ActiveEntityNode**)0x00965500; node != (ActiveEntityNode*)0x009654F0; node = node->next )
+    // Returning true here continues the loop, returning false stops the loop.
+    bool __forceinline OnEntry( const Streaming::streamingChainInfo& info )
     {
-        CEntitySAInterface *entity = node->entity;
+        CEntitySAInterface *entity = info.entity;
 
         if ( entity->m_entityFlags & ( ENTITY_CONTACTED | ENTITY_NOCOLLHIT ) )
-            continue;
+            return true;
 
+        // Initialize common values.
+        CCameraSAInterface& camera = Camera::GetInterface();
+        CPlayerPedSAInterface *player = GetPlayerPed( 0xFFFFFFFF );
+
+        RwCamera *rwcam = camera.m_pRwCamera;
+        float farplane = rwcam->m_farplane;
+
+        // Calculate the fading distance.
         CBaseModelInfoSAInterface *model = entity->GetModelInfo();
         float scaledLODDistance = model->fLodDistanceUnscaled * camera.LODDistMultiplier;
 
@@ -99,35 +99,197 @@ bool __cdecl GarbageCollectActiveEntities( bool checkOnScreen, unsigned int igno
         // Check whether we are loading a scene
         if ( !*(bool*)0x009654BD )
         {
-            if ( !checkOnScreen || finalLOD->IsOnScreen() )
+            if ( !m_checkOnScreen || finalLOD->IsOnScreen() )
             {
                 unsigned char curArea = entity->m_areaCode;
 
                 // We should not delete RenderWare objects of those entities that are clearly visible.
                 if ( Streaming::IsValidStreamingArea( curArea ) &&
                      scaledLODDistance + 50.0f < distance && entity->GetColModel()->m_bounds.fRadius + farplane > distance )
-                        continue;
+                        return true;
             }
         }
 
         CModelLoadInfoSA& loadInfo = Streaming::GetModelLoadInfo( entity->GetModelIndex() );
 
-        if ( !loadInfo.IsOnLoader() || loadInfo.m_flags & ignoreFlags )
-            continue;
+        if ( !loadInfo.IsOnLoader() || loadInfo.m_flags & m_ignoreFlags )
+            return true;
 
         if ( player && player->m_pedFlags.bInVehicle && player->m_vehicleObjective == entity )
-            continue;
+            return true;
 
         entity->DeleteRwObject();
 
-        if ( model->usNumberOfRefs == 0 )
+        if ( model->GetRefCount() == 0 )
         {
+            // We could successfully free a model, so stop here.
             Streaming::FreeModel( entity->GetModelIndex() );
-            return true;
+            return false;
+        }
+        return true;
+    }
+
+    bool m_checkOnScreen;
+    unsigned int m_ignoreFlags;
+};
+
+bool __cdecl GarbageCollectActiveEntities( bool checkOnScreen, unsigned int ignoreFlags )
+{
+    return Streaming::GetStreamingEntityChain().ExecuteCustom( GarbageCollectStreamingEntities( checkOnScreen, ignoreFlags ) );
+}
+
+/*=========================================================
+    Streaming::AddActiveEntity
+
+    Arguments:
+        entity - pointer to the entity interface
+    Purpose:
+        Adds this entity to the streaming garbage collection
+        management. Returns a node if successful. If not
+        successful, GTA:SA will destroy the RenderWare
+        data associated to the entity.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00409650
+=========================================================*/
+static bool allowInfiniteStreaming = true;
+static bool strictNodeDistribution = false;
+
+struct FreeStreamingEntity
+{
+    bool __forceinline OnEntry( const Streaming::streamingChainInfo& info )
+    {
+        CEntitySAInterface *entity = info.entity;
+
+        if ( !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_NOCOLLHIT | ENTITY_STATIC ) )
+        {
+            entity->DeleteRwObject();
+            return false;
+        }
+
+        return true;
+    }
+};
+
+Streaming::streamingEntityReference_t* __cdecl Streaming::AddActiveEntity( CEntitySAInterface *entity )
+{
+    // Possible bugfix, no idea how this happens.
+    if ( !entity )
+        return NULL;
+
+    // Create the depth level information.
+    streamingChainInfo chainInfo;
+    chainInfo.entity = entity;
+
+    streamingEntityChain_t& gcMan = GetStreamingEntityChain();
+
+    streamingEntityReference_t *ref = gcMan.PushRender( &chainInfo );
+
+    if ( !ref )
+    {
+        // The_GTA: I have updated this logic to allow for many different
+        // world streaming allocations.
+        if ( allowInfiniteStreaming && !strictNodeDistribution )
+        {
+            // Allocating a new node here will avoid collection of
+            // active entities, hence the world will be very clear.
+            gcMan.AllocateNew();
+
+            ref = gcMan.PushRender( &chainInfo );
+        }
+
+        if ( !ref )
+        {
+            // This is the default allocation that first tries to free
+            // the RenderWare data of an active entity.
+            gcMan.ExecuteCustom( FreeStreamingEntity() );
+
+            ref = gcMan.PushRender( &chainInfo );
+            // If this fails to allocate too, god mercy.
+            // Lag ensues!
+        }
+
+        if ( !ref && allowInfiniteStreaming && strictNodeDistribution )
+        {
+            // ... or we may aswell put no limits.
+            gcMan.AllocateNew();
+
+            ref = gcMan.PushRender( &chainInfo );
+
+            // can only fail if no more heap memory available.
         }
     }
 
-    return false;
+    return ref;
+}
+
+/*=========================================================
+    Streaming::RemoveActiveEntity
+
+    Arguments:
+        ref - node in the streaming gc system
+    Purpose:
+        Removes the node from the streaming garbage collection
+        system.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00409710
+=========================================================*/
+static Streaming::streamingEntityReference_t *recentStreamingNode = NULL;
+
+void __cdecl Streaming::RemoveActiveEntity( Streaming::streamingEntityReference_t *ref )
+{
+    // We could have failed to allocate it.
+    if ( !ref )
+        return;
+
+    // Make sure we keep the recentStreamingNode valid.
+    if ( recentStreamingNode == ref )
+        recentStreamingNode = ref->next;
+
+    // Free the reference from the system.
+    // It can now be taken by another entity.
+    Streaming::GetStreamingEntityChain().RemoveItem( ref );
+}
+
+/*=========================================================
+    Streaming::InitRecentGCNode
+
+    Purpose:
+        Initializes the recent GC node. No idea what this
+        system is used for. It appears to be obfuscated by
+        securom.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004096C0
+=========================================================*/
+void __cdecl Streaming::InitRecentGCNode( void )
+{
+    recentStreamingNode = &GetStreamingEntityChain().m_root;
+}
+
+/*=========================================================
+    Streaming::SetRecentGCNode
+
+    Arguments:
+        node - the streaming gc node to set most recent
+    Purpose:
+        Sort of reorders the streaming gc nodes by updating
+        the most recent streaming node. This way the
+        streaming gc manager list is shuffled.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004096D0
+=========================================================*/
+void __cdecl Streaming::SetRecentGCNode( streamingEntityReference_t *node )
+{
+    // If already the most recent, skip.
+    streamingEntityReference_t *recentNode = recentStreamingNode;
+
+    if ( recentNode == node )
+        return;
+
+    // Do a quick re-insert.
+    LIST_REMOVE( *node );
+    LIST_APPEND( *recentNode, *node );
+
+    recentStreamingNode = node;
 }
 
 /*=========================================================
@@ -293,7 +455,12 @@ void __cdecl UnclogMemoryUsage( size_t mem_size )
 
 void StreamingGC_Init( void )
 {
+    // Install important hooks.
     HookInstall( 0x0040CFD0, (DWORD)GarbageCollectModels, 5 );
+    HookInstall( 0x00409650, (DWORD)Streaming::AddActiveEntity, 5 );
+    HookInstall( 0x00409710, (DWORD)Streaming::RemoveActiveEntity, 5 );
+    HookInstall( 0x004096C0, (DWORD)Streaming::InitRecentGCNode, 5 );
+    HookInstall( 0x004096D0, (DWORD)Streaming::SetRecentGCNode, 5 );
 }
 
 void StreamingGC_Shutdown( void )

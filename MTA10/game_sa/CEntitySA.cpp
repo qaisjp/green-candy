@@ -36,14 +36,14 @@ CEntitySAInterface::CEntitySAInterface()
     m_randomSeed = rand();
 
     m_references = NULL;
-    m_lastRenderedLink = NULL;
+    m_streamingRef = NULL;
     
     m_numLOD = 0;
     m_numRenderedLOD = 0;
     m_lod = NULL;
 }
 
-CEntitySAInterface::~CEntitySAInterface()
+CEntitySAInterface::~CEntitySAInterface( void )
 {
 }
 
@@ -57,7 +57,7 @@ void CEntitySAInterface::GetPosition( CVector& pos ) const
     pos = Placeable.GetPosition();
 }
 
-float CEntitySAInterface::GetBasingDistance() const
+float CEntitySAInterface::GetBasingDistance( void ) const
 {
     return GetColModel()->m_bounds.vecBoundMin.fZ;
 }
@@ -135,7 +135,12 @@ const CBounds2D& CEntitySAInterface::_GetBoundingBox( CBounds2D& out ) const
     return out;
 }
 
-bool CEntitySAInterface::IsOnScreen() const
+void __thiscall CEntitySAInterface::SetOrientation( float x, float y, float z )
+{
+    Placeable.SetRotation( x, y, z );
+}
+
+bool CEntitySAInterface::IsOnScreen( void ) const
 {
     CColModelSAInterface *col = GetColModel();
     CVector pos;

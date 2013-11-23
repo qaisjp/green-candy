@@ -86,15 +86,16 @@ public:
         m_active = true;
     }
 
-    ~CSimpleItemStack()
+    ~CSimpleItemStack( void )
     {
-        free( m_stack );
+        if ( m_stack && m_active )
+            free( m_stack );
     }
 
-    itemType*   Allocate()
+    itemType*   Allocate( void )
     {
         if ( m_count >= m_max )
-            return 0;
+            return NULL;
 
         return m_stack + m_count++;
     }
