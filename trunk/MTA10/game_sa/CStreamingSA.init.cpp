@@ -350,9 +350,11 @@ success:
             {
                 // For now we do not need these script files.
                 // If we ever need them, contact midnightStar/Martin.
+#ifdef _DEBUG
                 OutputDebugString( "found unsupported SCM file: " );
                 OutputDebugString( header.name );
                 OutputDebugString( "\n" );
+#endif //_DEBUG
                 goto failureAdd;
             }
             else

@@ -110,6 +110,8 @@ CColModelSAInterface* CEntitySAInterface::GetColModel() const
             return (CColModelSAInterface*)VAR_CVehicle_SpecialColModels + n;
     }
 
+    CColFileSA *colFile = Streaming::GetCOLEnvironment().m_pool->Get( ppModelInfo[m_model]->pColModel->m_colPoolIndex );
+
     return ppModelInfo[m_model]->pColModel;
 }
 

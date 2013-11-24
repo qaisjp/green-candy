@@ -112,7 +112,7 @@ public:
     void operator delete ( void *ptr );
 
     // Sectorizer dependencies.
-    inline bool     IsSectorFlagged( void ) const           { return m_sectorLoad; }
+    inline bool     IsSectorFlagged( void ) const           { return m_refs > 0 || m_sectorLoad; }
     inline void     FlagSector( bool flagged )              { m_sectorLoad = flagged; }
     inline bool     IsLoaded( void ) const                  { return m_loaded; }
     inline bool     IsStreamingDisabled( void ) const       { return false; }
