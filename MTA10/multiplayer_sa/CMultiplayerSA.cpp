@@ -631,10 +631,6 @@ void CMultiplayerSA::InitHooks()
     MemPut < BYTE > ( 0x614721, 0xC0 );
     MemPut < BYTE > ( 0x614722, 0xC3 );
 
-    // Disables deletion of RenderWare objects during unloading of ModelInfo
-    // This is used so we can circumvent the limit of ~21 different vehicles by managing the RwObject ourselves
-    //*(BYTE *)0x4C9890 = 0xC3;
-
     //MemSet ( (void*)0x408A1B, 0x90, 5 );
 
     // Hack to make the choke task use 0 time left remaining when he starts t
@@ -658,10 +654,6 @@ void CMultiplayerSA::InitHooks()
 
     // DISABLE CCrime__ReportCrime
     MemPut < BYTE > ( 0x532010, 0xC3 );
-    
-    // Disables deletion of RenderWare objects during unloading of ModelInfo
-    // This is used so we can circumvent the limit of ~21 different vehicles by managing the RwObject ourselves
-    //*(BYTE *)0x4C9890 = 0xC3;
 
     /*
     004C021D   B0 00            MOV AL,0

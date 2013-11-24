@@ -694,23 +694,21 @@ void __cdecl Streaming::Update( void )
     CVector playerPos;
     GetStreamingEntityPosition( playerPos );
 
-#ifdef MANAGE_GAME_STREAMING
+#ifdef DO_WORLD_STREAMING
     if ( !*(bool*)0x009654B0 && !*(bool*)0x00B5F852 && *(unsigned int*)VAR_currArea == 0 && !*(bool*)0x00A43088 )
     {
         if ( aboveGroundHeight < 50.0f )
         {
             Streaming::StreamPedsAndVehicles( playerPos );
 
-#ifdef LOAD_AMBIENT_TRAFFIC_MODELS_AND_TEXTURES
             if ( !Streaming::IsStreamingBusy() )
             {
                 ((void (__cdecl*)( void ))0x0040B700)();
                 ((void (__cdecl*)( const CVector& pos ))0x0040A560)( playerPos );
             }
-#endif //LOAD_AMBIENT_TRAFFIC_MODELS_AND_TEXTURES
         }
     }
-#endif //MANAGE_GAME_STREAMING
+#endif //DO_WORLD_STREAMING
 
     // Process loading requests.
     Streaming::PulseLoader();

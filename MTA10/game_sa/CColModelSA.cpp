@@ -136,7 +136,7 @@ void __cdecl Collision_Sectorize( void )
 }
 
 /*=========================================================
-    Collision_Init
+    _Collision_Init
 
     Purpose:
         Initializes the quad tree node system by allocating

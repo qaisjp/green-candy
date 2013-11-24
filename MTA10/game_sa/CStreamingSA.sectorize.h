@@ -512,6 +512,7 @@ struct Sectorizer
         bool IsSectorFlagged( void );
         void FlagSector( bool flagged );
         bool IsLoaded( void );
+        bool CanUnload( void );
         bool IsStreamingDisabled( void );
         void OnStreamOut( void );
     */
