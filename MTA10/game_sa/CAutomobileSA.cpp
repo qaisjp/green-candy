@@ -19,23 +19,22 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CAutomobileSAInterface::CAutomobileSAInterface( bool unk, unsigned short model, unsigned char createdBy ) : CVehicleSAInterface( createdBy )
 {
-    unsigned int n;
     unsigned short handling;
 
     new (&m_damage) CDamageManagerSAInterface();
 
     m_damage.m_wheelDamage = 0.5;
 
-    for (n=0; n<3; n++)
+    for ( unsigned int n = 0; n < 3; n++ )
         m_unk2[n].m_unk = -1;
 
-    for (n=0; n<6; n++)
+    for ( unsigned int n = 0; n < 6; n++ )
         m_unk3[n] = 0;
 
     handling = ((CVehicleModelInfoSAInterface*)ppModelInfo[model])->m_handlingID;
 
-    m_unk39 = NULL;
-    m_unk38 = NULL;
+    m_unk39 = 0;
+    m_vehicleType = VEHICLE_CAR;
 
     m_burningTime = 0;
 
@@ -55,7 +54,7 @@ CAutomobileSAInterface::CAutomobileSAInterface( bool unk, unsigned short model, 
     }
 }
 
-CAutomobileSAInterface::~CAutomobileSAInterface()
+CAutomobileSAInterface::~CAutomobileSAInterface( void )
 {
 }
 
@@ -124,7 +123,7 @@ bool CAutomobileSAInterface::UpdateComponentStatus( unsigned short model, unsign
         return true;
     }
 
-    if ( !m_unk38 )
+    if ( m_vehicleType == VEHICLE_CAR )
     {
         // Nitrous oxide!
         switch( model )

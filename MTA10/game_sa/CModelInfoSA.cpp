@@ -364,22 +364,25 @@ typedef std::set <unsigned short> modelAssocList_t;
 
 struct _entityModelRefresh
 {
-    void __forceinline EntryCallback( const Streamer::entityLink_t *ptrNode )
+    void __forceinline OnSector( Streamer::streamSectorEntry& sector )
     {
-        CEntitySAInterface *pEntity = ptrNode->data;
-
-        if ( !_ValidateEntity( pEntity ) )
-            __asm int 3
-
-        if ( MapContains( CModelInfoSA::ms_RestreamTxdIDMap, pGame->GetModelInfo( pEntity->m_model )->GetTextureDictionaryID () ) )
+        for ( Streamer::streamSectorEntry::ptrNode_t *iter = sector.GetList(); iter != NULL; iter = iter->m_next )
         {
-            if ( !IS_FLAG( pEntity->m_entityFlags, ENTITY_DISABLESTREAMING ) && !IS_FLAG( pEntity->m_entityFlags, ENTITY_RENDERING ) )
-            {
-                // Delete the renderware object
-                pEntity->DeleteRwObject();
+            CEntitySAInterface *pEntity = iter->data;
 
-                // Remember the model.
-                m_modelList.insert( pEntity->m_model );
+            if ( !_ValidateEntity( pEntity ) )
+                __asm int 3
+
+            if ( MapContains( CModelInfoSA::ms_RestreamTxdIDMap, pGame->GetModelInfo( pEntity->m_model )->GetTextureDictionaryID () ) )
+            {
+                if ( !IS_FLAG( pEntity->m_entityFlags, ENTITY_DISABLESTREAMING ) && !IS_FLAG( pEntity->m_entityFlags, ENTITY_RENDERING ) )
+                {
+                    // Delete the renderware object
+                    pEntity->DeleteRwObject();
+
+                    // Remember the model.
+                    m_modelList.insert( pEntity->m_model );
+                }
             }
         }
     }
@@ -401,7 +404,7 @@ void CModelInfoSA::StaticFlushPendingRestreamIPL( void )
     _entityModelRefresh modelGather;
 
     // Scan all streamed in entities and delete their RenderWare objects which need to be updated.
-    Streamer::ForAllStreamedEntities( modelGather, false );
+    Streamer::ForAllStreamerSectors( modelGather, true, true, true, true, true );
 
     // We no longer need to update models depending on texture containers.
     ms_RestreamTxdIDMap.clear();

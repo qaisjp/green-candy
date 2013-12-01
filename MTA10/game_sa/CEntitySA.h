@@ -149,22 +149,28 @@ public:
     CColModelSAInterface* __thiscall    GetColModel         ( void ) const;
     const CVector& __thiscall       GetCollisionOffset      ( CVector& out ) const;
     const CBounds2D& __thiscall     _GetBoundingBox         ( CBounds2D& out ) const;
+    void __thiscall                 GetCenterPoint          ( CVector& out ) const;
+
+    float __thiscall                GetRadius               ( void ) const          { return GetColModel()->m_bounds.fRadius; }
 
     float                           GetFadingAlpha          ( void ) const;
 
     void __thiscall                 SetOrientation          ( float x, float y, float z );
 
     bool __thiscall                 IsOnScreen              ( void ) const;
+    bool __thiscall                 CheckScreenValidity     ( void ) const;
 
     void __thiscall                 UpdateRwMatrix          ( void );
     void __thiscall                 UpdateRwFrame           ( void );
+
+    bool __thiscall                 IsInStreamingArea       ( void ) const;
 
     RwObject*               m_rwObject;         // 24
 
     unsigned int            m_entityFlags;      // 28
 
     unsigned short          m_randomSeed;       // 32
-    unsigned short          m_model;            // 34
+    short                   m_model;            // 34
     CReferences*            m_references;       // 36
 
     struct streamingEntityReference_t;

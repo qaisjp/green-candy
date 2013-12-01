@@ -191,14 +191,7 @@ void CClientManager::DoRender ( void )
 {
     if ( IsGameLoaded() )
     {
-        __try
-        {
-            m_pDisplayManager->DoPulse();
-        }
-        __except(1)
-        {
-            __asm int 3
-        }
+        m_pDisplayManager->DoPulse();
     }
 }
 
@@ -221,12 +214,12 @@ void CClientManager::UpdateStreamers ( void )
     }
 }
 
-void CClientManager::Restream( unsigned short id )
+void CClientManager::Restream( modelId_t id )
 {
-    if ( id > 19999 )
-        return;
-
     CModelInfo *info = g_pGame->GetModelInfo( id );
+
+    if ( !info )
+        return;
 
     if ( info->IsVehicle() )
         g_pClientGame->GetVehicleManager()->RestreamVehicles( id );

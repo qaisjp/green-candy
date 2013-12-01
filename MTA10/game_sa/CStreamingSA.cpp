@@ -29,13 +29,11 @@ namespace
 
         void Record ( void )
         {
-            #define VAR_CStreaming_bLoadingBigModel         0x08E4A58
-            #define VAR_CStreaming_numPriorityRequests      0x08E4BA0
             #define VAR_CStreaming_numModelsRequested       0x08E4CB8
             #define VAR_CStreaming_memoryUsed               0x08E4CB4
 
-            bLoadingBigModel    = *(BYTE*)VAR_CStreaming_bLoadingBigModel != 0;
-            numPriorityRequests = *(DWORD*)VAR_CStreaming_numPriorityRequests;
+            bLoadingBigModel    = Streaming::isLoadingBigModel;
+            numPriorityRequests = Streaming::numPriorityRequests;
             numModelsRequested  = *(DWORD*)VAR_CStreaming_numModelsRequested;
             memoryUsed          = *(DWORD*)VAR_CStreaming_memoryUsed;
         }
@@ -49,7 +47,6 @@ CColModelSAInterface *g_originalCollision[MAX_MODELS];
 
 #define VAR_MEMORYUSAGE         0x008E4CB4
 #define VAR_NUMMODELS           0x008E4CB8
-#define VAR_NUMPRIOMODELS       0x008E4BA0
 
 static streamingRequestCallback_t streamingRequestCallback = NULL;
 static streamingFreeCallback_t streamingFreeCallback = NULL;
@@ -123,7 +120,7 @@ void __cdecl Streaming::RequestModel( modelId_t id, unsigned int flags )
     case MODEL_LOADING:
         if ( flags & 0x10 && !(info->m_flags & 0x10) )
         {
-            (*(DWORD*)VAR_NUMPRIOMODELS)++;
+            Streaming::numPriorityRequests++;
 
             info->m_flags |= FLAG_PRIORITY;
         } 
@@ -223,7 +220,7 @@ void __cdecl Streaming::RequestModel( modelId_t id, unsigned int flags )
         (*(DWORD*)VAR_NUMMODELS)++;
 
         if ( flags & 0x10 )
-            (*(DWORD*)VAR_NUMPRIOMODELS)++;
+            Streaming::numPriorityRequests++;
 
         // If available, we reload the model
         info->m_flags = flags;
@@ -405,7 +402,7 @@ void __cdecl Streaming::FreeModel( modelId_t id )
                 info->m_flags &= ~FLAG_PRIORITY;
 
                 // It also wants the count of priority requests, as they are prefered.
-                (*(DWORD*)VAR_NUMPRIOMODELS)--;
+                Streaming::numPriorityRequests--;
             }
         }
 
@@ -414,18 +411,17 @@ void __cdecl Streaming::FreeModel( modelId_t id )
     }
     else if ( info->m_eLoading == MODEL_QUEUE )
     {
-        streamingRequest& primary = Streaming::GetStreamingRequest( 0 );
-        streamingRequest& secondary = Streaming::GetStreamingRequest( 1 );
-
         // Invalidate any running syncSemaphore requests for this model id
         // Data which has been read from the IMG archive will be ignored.
-        for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTS; n++ )
+        for ( unsigned int i = 0; i < MAX_STREAMING_REQUESTERS; i++ )
         {
-            if ( primary.ids[n] == id )
-                primary.ids[n] = -1;
+            streamingRequest& requester = GetStreamingRequest( i );
 
-            if ( secondary.ids[n] == id )
-                secondary.ids[n] = -1;
+            for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTS; n++ )
+            {
+                if ( requester.ids[n] == id )
+                    requester.ids[n] = -1;
+            }
         }
     }
     else if ( info->m_eLoading == MODEL_RELOAD )
@@ -647,7 +643,7 @@ inline void GetStreamingEntityPosition( CVector& pos )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x0040E670
 =========================================================*/
-static bool cleanUpPendingModels = true;
+static bool cleanUpPendingModels = true;    // Binary offsets: (1.0 US and 1.0 EU): 0x008E4CA4
 
 void __cdecl Streaming::Update( void )
 {
@@ -758,6 +754,50 @@ void __cdecl HOOK_CStreaming_Update( void )
 }
 
 /*=========================================================
+    CStreamingSA::GetStreamingFocusEntity
+
+    Purpose:
+        Returns the entity that streaming is centered around.
+        If the entity could not be resolved to a valid MTA
+        entity or it is default (i.e. player), NULL is returned.
+=========================================================*/
+CEntitySA* CStreamingSA::GetStreamingFocusEntity( void )
+{
+    return pGame->GetPools()->GetEntity( World::GetStreamingEntity() );
+}
+
+/*=========================================================
+    CStreamingSA::SetWorldStreamingEnabled
+
+    Arguments:
+        enabled - boolean to switch on or off
+    Purpose:
+        Enables or disables the GTA:SA world building
+        streaming. If disabled, the GTA:SA engine will stop
+        requesting the world around the player. The buildings
+        around the player will be deallocated upon disabling.
+=========================================================*/
+void CStreamingSA::SetWorldStreamingEnabled( bool enabled )
+{
+    // todo.
+}
+
+/*=========================================================
+    CStreamingSA::IsWorldStreamingEnabled
+
+    Arguments:
+        enabled - boolean to switch on or off
+    Purpose:
+        Returns whether the world around the player should
+        be loaded.
+=========================================================*/
+bool CStreamingSA::IsWorldStreamingEnabled( void ) const
+{
+    // todo.
+    return true;
+}
+
+/*=========================================================
     Streaming::FlushRequestList
 
     Purpose:
@@ -807,12 +847,21 @@ void Streaming::FlushRequestList( void )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x005B8AD0
 =========================================================*/
+// Initialize the streaming entity garbage collection manager.
+// This is the thing that caused the draw distance bug:
+// The node list here could only keep 1000 entries, hence only
+// 1000 objects, dummies and building could be visible at a time.
+// Let us fix that.
+// Binary offsets: (1.0 US and 1.0 EU): 0x009654F0
+Streaming::streamingEntityChain_t Streaming::gcEntityChain( MAX_DEFAULT_STREAMING_ENTITIES );  // screw the alligators
+
 static void __cdecl _Streaming_Init( void )
 {
     new ((void*)ARRAY_CModelLoadInfo) CModelLoadInfoSA[26316];
 
     *(CModelLoadInfoSA**)ARRAY_ModelLoadCache = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo;
 
+    // Initialize resource linked lists.
     CModelLoadInfoSA& gcResourceLink = *(CModelLoadInfoSA*)0x00965460;
     CModelLoadInfoSA& unkResourceLink = *(CModelLoadInfoSA*)0x00965474;
     CModelLoadInfoSA& toBeLoadedQueue = *(CModelLoadInfoSA*)0x00965488;
@@ -823,6 +872,7 @@ static void __cdecl _Streaming_Init( void )
     *(CModelLoadInfoSA**)0x008E4C58 = &toBeLoadedQueue;
     *(CModelLoadInfoSA**)0x008E4C54 = &lastModelLoadInfo;
 
+    // Set up the resource connections.
     gcResourceLink.m_primaryModel = 26313;
     gcResourceLink.m_secondaryModel = 0xFFFF;
     unkResourceLink.m_primaryModel = 0xFFFF;
@@ -841,12 +891,12 @@ static void __cdecl _Streaming_Init( void )
         Streaming::GetModelLoadInfo( index + 374 ).m_eLoading = MODEL_LOADED;
 
     // Init global streaming status.
-    *(unsigned int*)0x008E4CA8 = 0;
+    Streaming::biggestResourceBlockCount = 0;
     *(bool*)0x009654B0 = false;
     *(unsigned int*)0x008E4CB4 = 0;
-    *(unsigned int*)0x008E4B90 = 0xFFFFFFFF;
-    *(bool*)0x008E4A58 = false;
-    *(bool*)0x008E4CA4 = true;
+    Streaming::streamingWaitModel = 0xFFFFFFFF;
+    Streaming::isLoadingBigModel = false;
+    cleanUpPendingModels = true;
     *(bool*)0x008E4B9D = false;
     *(bool*)0x008E4B9C = false;
 
@@ -900,15 +950,16 @@ static void __cdecl _Streaming_Init( void )
         *((unsigned int*)0x008E4BB8 + n) = 0;
 
     // Initialize the container where all missing model infos during loading
-    // of the archives are stored.
-    // A leftover of internal Rockstar Games debugging.
+    // of the archives are stored. These resources can still be loaded through
+    // RequestSpecialModel.
     *(Streaming::CMissingModelInfoSA**)0x008E48D0 = new Streaming::CMissingModelInfoSA( 550 );
 
     *(unsigned int*)0x008E4C20 = 0xFFFFFFFF;
     *(unsigned short*)0x008E4BAC = 0;
     *(unsigned int*)0x008E4BA4 = 0xFFFFFFFF;
-    *(unsigned int*)0x008E4BA0 = 0;
+    Streaming::numPriorityRequests = 0;
 
+#if 0
     // Initialize the script manager.
     __asm
     {
@@ -916,13 +967,14 @@ static void __cdecl _Streaming_Init( void )
         mov eax,0x00470660
         call eax
     }
+#endif
 
     // Load the streaming archives.
     Streaming::LoadArchives();
 
     // By now the biggest block count should be initialized properly.
     // Make sure it is divisible through 2.
-    int biggestBlockCount = *(int*)0x008E4CA8;
+    int biggestBlockCount = Streaming::biggestResourceBlockCount;
 
     if ( ( biggestBlockCount & 1 ) == 1 )
         biggestBlockCount++;
@@ -933,24 +985,19 @@ static void __cdecl _Streaming_Init( void )
     // Divide the biggest block count by the number of streaming requesters.
     biggestBlockCount /= MAX_STREAMING_REQUESTERS;
     
-    *(int*)0x008E4CA8 = biggestBlockCount;
+    Streaming::biggestResourceBlockCount = biggestBlockCount;
 
     // Set up the sections of the allocation into the global streaming buffers,
     // each for every streaming requester.
     for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTERS; n++ )
-        *((void**)0x008E4CAC + n) = (void*)( (char*)buf + n * biggestBlockCount * 2048 );
+        Streaming::threadAllocationBuffers[n] = (void*)( (char*)buf + n * biggestBlockCount * 2048 );
 
     // Set streaming globals to defaults.
     // These can be modified using stream.ini
     *(unsigned int*)0x008A5A80 = 0x3200000; // max streaming memory
     *(unsigned int*)0x008A5A84 = 22;        // max loaded vehicle models, close to the maximum due to limitations.
 
-    // Initialize the streaming entity garbage collection manager.
-    // This is the thing that caused the draw distance bug:
-    // The node list here could only keep 1000 entries, hence only
-    // 1000 objects, dummies and building could be visible at a time.
-    // Let us fix that.
-    new (&Streaming::GetStreamingEntityChain()) Streaming::streamingEntityChain_t( MAX_DEFAULT_STREAMING_ENTITIES );  // screw the alligators
+    // Here was the initialization of the native-scope streaming gc chain.
 
     // We successfully loaded.
     *(bool*)0x009654B8 = true;
@@ -968,13 +1015,21 @@ static void __cdecl _Streaming_Init( void )
 static void __cdecl _Streaming_Shutdown( void )
 {
     // Deallocate the threading resource memory.
-    RwFreeAligned( *(void**)0x008E4CAC );
+    RwFreeAligned( Streaming::threadAllocationBuffers[0] );
 
     // Set the threading buffer size to zero blocks.
-    *(int*)0x008E4CA8 = 0;
+    Streaming::biggestResourceBlockCount = 0;
 
     // Destroy the stack holding all missing model ids.
     delete *(Streaming::CMissingModelInfoSA**)0x008E48D0;
+}
+
+void Streaming::Reset( void )
+{
+    // Reset to GTA:SA defaults.
+    // Could have been modified by mods.
+    allowInfiniteStreaming = false;
+    strictNodeDistribution = true;
 }
 
 CStreamingSA::CStreamingSA( void )

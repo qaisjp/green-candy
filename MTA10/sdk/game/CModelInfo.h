@@ -38,8 +38,8 @@ class CBoundingBox //size: 40
 public:
     CVector vecBoundMin;            // 0
     CVector vecBoundMax;            // 12
-    CVector vecBoundOffset;         // 24
-    float   fRadius;                // 36
+    CVector vecBoundOffset;         // 24, offset to the center of model
+    float   fRadius;                // 36, radius encapsulating whole model
 };
 
 struct CBounds2D

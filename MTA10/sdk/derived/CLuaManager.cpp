@@ -464,6 +464,18 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineGetModelIDFromName );
     LUA_REGISTER( L, engineGetModelTextureNames );
     LUA_REGISTER( L, engineGetVisibleTextureNames );
+    LUA_REGISTER( L, engineSetInfiniteStreamingEnabled );
+    LUA_REGISTER( L, engineIsInfiniteStreamingEnabled );
+    LUA_REGISTER( L, engineSetStrictStreamingNodeDistributionEnabled );
+    LUA_REGISTER( L, engineIsStrictStreamingNodeDistributionEnabled );
+    LUA_REGISTER( L, engineGetActiveStreamingEntityCount );
+    LUA_REGISTER( L, engineGetActiveStreamingFreeSlotCount );
+    LUA_REGISTER( L, engineGetActiveStreamingEntities );
+    LUA_REGISTER( L, engineGetStreamingFocus );
+    LUA_REGISTER( L, engineStreamingIsElementManaged );
+    LUA_REGISTER( L, engineGetModelRefCount );
+    LUA_REGISTER( L, engineSetWorldStreamingEnabled );
+    LUA_REGISTER( L, engineIsWorldStreamingEnabled );
 
     // Drawing funcs (low-level)
     LUA_REGISTER( L, dxDrawLine );
@@ -745,6 +757,10 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, getPerformanceStats );
 
     LUA_REGISTER( L, getVersion );
+
+    // Backwards compatibility
+    lua_register( L, "isPlayerInVehicle", isPedInVehicle );
+    lua_register( L, "getPlayerOccupiedVehicle", getPedOccupiedVehicle );
 }
 
 CLuaMain* CLuaManager::Create( const std::string& name, CFileTranslator& fileRoot )

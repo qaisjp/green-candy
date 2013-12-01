@@ -108,7 +108,7 @@ struct ptrNodeSingleContainer
         Binary offsets:
             (1.0 US and 1.0 EU): 0x00533610
     =========================================================*/
-    void __thiscall     RemoveItem( pointerType *dataPtr )
+    void __thiscall     RemoveItem( pointerType *dataPtr, bool stopOnFound )
     {
         ptrNode_t *prevPtr = NULL;
 
@@ -127,11 +127,17 @@ struct ptrNodeSingleContainer
 
                 delete node;
 
-                return;
+                if ( stopOnFound )
+                    return;
             }
-
-            prevPtr = node;
+            else
+                prevPtr = node;
         }
+    }
+
+    void __thiscall     RemoveItem( pointerType *dataPtr )
+    {
+        RemoveItem( dataPtr, true );
     }
 
     inline ptrNode_t*   GetList( void )

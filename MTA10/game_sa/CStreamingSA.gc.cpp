@@ -151,8 +151,12 @@ bool __cdecl GarbageCollectActiveEntities( bool checkOnScreen, unsigned int igno
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00409650
 =========================================================*/
-static bool allowInfiniteStreaming = true;
-static bool strictNodeDistribution = false;
+namespace Streaming
+{
+    // Export these so they can be reset on game reset.
+    bool allowInfiniteStreaming = false;
+    bool strictNodeDistribution = true;
+};
 
 struct FreeStreamingEntity
 {
@@ -174,6 +178,10 @@ Streaming::streamingEntityReference_t* __cdecl Streaming::AddActiveEntity( CEnti
 {
     // Possible bugfix, no idea how this happens.
     if ( !entity )
+        return NULL;
+
+    // Exclude vehicles and peds from the garbage collection.
+    if ( entity->m_type == ENTITY_TYPE_VEHICLE || entity->m_type == ENTITY_TYPE_PED )
         return NULL;
 
     // Create the depth level information.
@@ -279,6 +287,11 @@ void __cdecl Streaming::InitRecentGCNode( void )
 =========================================================*/
 void __cdecl Streaming::SetRecentGCNode( streamingEntityReference_t *node )
 {
+    // Make sure that we do not crash on entities that
+    // have no streaming gc link.
+    if ( !node )
+        return;
+
     // If already the most recent, skip.
     streamingEntityReference_t *recentNode = recentStreamingNode;
 
@@ -290,6 +303,164 @@ void __cdecl Streaming::SetRecentGCNode( streamingEntityReference_t *node )
     LIST_APPEND( *recentNode, *node );
 
     recentStreamingNode = node;
+}
+
+/*=========================================================
+    CStreamingSA::GetActiveStreamingEntityCount
+
+    Purpose:
+        Returns the amount of entities that are managed by
+        the streaming garbage collector.
+=========================================================*/
+unsigned int CStreamingSA::GetActiveStreamingEntityCount( void ) const
+{
+    return Streaming::GetStreamingEntityChain().CountActive();
+}
+
+/*=========================================================
+    CStreamingSA::GetFreeStreamingEntitySlotCount
+
+    Purpose:
+        Returns the amount of slots that are free inside of
+        the streaming system. These slots can be occupied by
+        entities that hold active RenderWare data.
+=========================================================*/
+unsigned int CStreamingSA::GetFreeStreamingEntitySlotCount( void ) const
+{
+    return Streaming::GetStreamingEntityChain().CountFree();
+}
+
+/*=========================================================
+    CStreamingSA::IsEntityGCManaged
+
+    Arguments:
+        entity - an in-game entity to check
+    Purpose:
+        Returns whether the given entity is inside of the
+        streaming garbage collection system.
+=========================================================*/
+struct ContainsEntity
+{
+    __forceinline ContainsEntity( CEntitySAInterface *entity ) : m_entity( entity )
+    { }
+
+    bool __forceinline OnEntry( const Streaming::streamingChainInfo& info )
+    {
+        return info.entity != m_entity;
+    }
+
+    CEntitySAInterface *m_entity;
+};
+
+bool CStreamingSA::IsEntityGCManaged( CEntity *_entity ) const
+{
+    CEntitySA *entity = dynamic_cast <CEntitySA*> ( _entity );
+
+    // Null pointer can happen due to dynamic cast.
+    if ( !entity )
+        return false;
+
+    CEntitySAInterface *gameEntity = entity->GetInterface();
+
+#if 0
+    return Streaming::GetStreamingEntityChain().ExecuteCustom( ContainsEntity( gameEntity ) );
+#else
+    return gameEntity->m_streamingRef != NULL;
+#endif
+}
+
+/*=========================================================
+    CStreamingSA::GetActiveStreamingEntities
+
+    Purpose:
+        Returns a list of all MTA entities that are inside of
+        the streaming garbage collection system.
+=========================================================*/
+struct MTAEntityScan
+{
+    bool __forceinline OnEntry( const Streaming::streamingChainInfo& info )
+    {
+        CEntity *mtaEntity = Pools::GetEntity( info.entity );
+
+        if ( mtaEntity )
+            list.push_back( mtaEntity );
+        
+        return true;
+    }
+
+    CStreaming::entityList_t list;
+};
+
+CStreaming::entityList_t CStreamingSA::GetActiveStreamingEntities( void )
+{
+    MTAEntityScan scanner;
+
+    Streaming::GetStreamingEntityChain().ExecuteCustom( scanner );
+
+    return scanner.list;
+}
+
+/*=========================================================
+    CStreamingSA::SetInfiniteStreamingEnabled
+
+    Arguments:
+        enabled - should IS be enabled?
+    Purpose:
+        Sets whether infinite streaming should be enabled or
+        not. Infinite streaming allows allocation of
+        streaming garbage collection nodes during runtime.
+=========================================================*/
+void CStreamingSA::SetInfiniteStreamingEnabled( bool enabled )
+{
+    Streaming::allowInfiniteStreaming = enabled;
+}
+
+/*=========================================================
+    CStreamingSA::IsInfiniteStreamingEnabled
+
+    Purpose:
+        Returns whether the system will keep allocating
+        streaming garbage collection nodes when the system
+        is out of free nodes.
+=========================================================*/
+bool CStreamingSA::IsInfiniteStreamingEnabled( void ) const
+{
+    return Streaming::allowInfiniteStreaming;
+}
+
+/*=========================================================
+    CStreamingSA::SetStrictNodeDistribution
+
+    Arguments:
+        enabled - should SND be enabled?
+    Purpose:
+        Reorder the node allocation priority. If enabled,
+        then nodes are first freed from inactive entities
+        to reuse them. These entities will have to allocate
+        nodes again to render. Otherwise, first new nodes
+        can be allocated before trying to free them from
+        entities.
+    Note:
+        This feature is only useful in connection to infinite
+        streaming.
+=========================================================*/
+void CStreamingSA::SetStrictNodeDistribution( bool enabled )
+{
+    Streaming::strictNodeDistribution = enabled;
+}
+
+/*=========================================================
+    CStreamingSA::IsStrictNodeDistributionEnabled
+
+    Purpose:
+        Returns whether strict nodes distribution is enabled.
+    Note:
+        This feature is only useful in connection to infinite
+        streaming.
+=========================================================*/
+bool CStreamingSA::IsStrictNodeDistributionEnabled( void ) const
+{
+    return Streaming::strictNodeDistribution;
 }
 
 /*=========================================================

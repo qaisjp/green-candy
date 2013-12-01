@@ -27,6 +27,15 @@ namespace Streaming
     }
 
     bool __cdecl IsCurrentHourPeriod( unsigned char fromHour, unsigned char toHour );
+
+    // The best way to maintain R* source code is to split recurring logic into functions like these.
+    // Definitions of certain parts are easily changed globally this way.
+    inline bool IsTimeRightForStreaming( ModelInfo::timeInfo *timeInfo )
+    {
+        // Check the GTA clock.
+        return Streaming::IsCurrentHourPeriod( timeInfo->m_fromHour, timeInfo->m_toHour );
+    }
+
     void __cdecl StreamPedsAndVehicles( const CVector& reqPos );
     bool __cdecl IsStreamingBusy( void );
 

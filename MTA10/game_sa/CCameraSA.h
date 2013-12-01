@@ -97,6 +97,10 @@ public:
 
     int __thiscall          GetFadeDirection( void ) const;
 
+    CCamSAInterface&        GetActiveCam( void )                            { return m_cams[ActiveCam]; }
+
+    int __thiscall          GetActiveCamLookDirection( void );
+
     //move these out the class, have decided to set up a mirrored enumerated type thingy at the top
 #if 0
     bool    m_bAboveGroundTrainNodesLoaded;                 // 20

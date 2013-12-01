@@ -54,6 +54,9 @@
 // HUD management functions.
 namespace HUD
 {
+    bool __cdecl    CalcScreenCoords( const CVector& worldPos, CVector& screenOut, float& x, float& y );
+    bool __cdecl    CalcScreenCoords( const CVector& worldPos, CVector& screenOut );
+
     void    HideRadar( bool hide );
     bool    IsRadarHidden( void );
 };
@@ -67,30 +70,32 @@ void HUD_Shutdown( void );
 class CHudSA : public CHud
 {
 public:
-    VOID                SetHelpMessage( char * szMessage );
-    VOID                SetBigMessage( char * szBigMessage );
-    VOID                SetVehicleName( char * szName );
-    VOID                SetZoneName( char * szName );
-    VOID                Disable ( bool bDisabled );
-    VOID                DrawBarChart ( float fX, float fY, DWORD dwWidth, DWORD dwHeight, float fPercentage, DWORD dwForeColor, DWORD dwBorderColor );
-    bool                CalcScreenCoors ( CVector * vecPosition1, CVector * vecPosition2, float * fX, float * fY, bool bSetting1, bool bSetting2 );
-    void                Draw2DPolygon ( float fX1, float fY1, float fX2, float fY2, float fX3, float fY3, float fX4, float fY4, DWORD dwColor );
-    void                DisableAmmo ( bool bDisabled );
-    void                DisableWeaponIcon ( bool bDisabled );
-    void                DisableHealth ( bool bDisabled );
-    void                DisableBreath ( bool bDisabled );
-    void                DisableArmour ( bool bDisabled );
-    void                DisableVitalStats ( bool bDisabled );
-    void                DisableMoney ( bool bDisabled );
-    void                DisableVehicleName ( bool bDisabled );
-    void                DisableHelpText ( bool bDisabled );
-    void                DisableAreaName ( bool bDisabled );
-    void                DisableRadar ( bool bDisabled );
-    void                DisableClock ( bool bDisabled );
-    void                DisableRadioName ( bool bDisabled );
-    void                DisableWantedLevel ( bool bDisabled );
-    void                DisableCrosshair ( bool bDisabled );
-    void                DisableAll ( bool bDisabled );
+    void                SetHelpMessage          ( char *szMessage );
+    void                SetBigMessage           ( char *szBigMessage );
+    void                SetVehicleName          ( char *szName );
+    void                SetZoneName             ( char *szName );
+
+    void                Disable                 ( bool bDisabled );
+    void                DrawBarChart            ( float fX, float fY, DWORD dwWidth, DWORD dwHeight, float fPercentage, DWORD dwForeColor, DWORD dwBorderColor );
+    bool                CalcScreenCoors         ( const CVector& worldPos, CVector& screenOut, float& x, float& y ) const;
+    void                Draw2DPolygon           ( float fX1, float fY1, float fX2, float fY2, float fX3, float fY3, float fX4, float fY4, DWORD dwColor );
+
+    void                DisableAmmo             ( bool bDisabled );
+    void                DisableWeaponIcon       ( bool bDisabled );
+    void                DisableHealth           ( bool bDisabled );
+    void                DisableBreath           ( bool bDisabled );
+    void                DisableArmour           ( bool bDisabled );
+    void                DisableVitalStats       ( bool bDisabled );
+    void                DisableMoney            ( bool bDisabled );
+    void                DisableVehicleName      ( bool bDisabled );
+    void                DisableHelpText         ( bool bDisabled );
+    void                DisableAreaName         ( bool bDisabled );
+    void                DisableRadar            ( bool bDisabled );
+    void                DisableClock            ( bool bDisabled );
+    void                DisableRadioName        ( bool bDisabled );
+    void                DisableWantedLevel      ( bool bDisabled );
+    void                DisableCrosshair        ( bool bDisabled );
+    void                DisableAll              ( bool bDisabled );
 };
 
 #endif

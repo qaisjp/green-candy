@@ -35,7 +35,7 @@ namespace ModelInfo
     {
         unsigned char       m_fromHour;     // 0
         unsigned char       m_toHour;       // 1
-        unsigned short      m_model;        // 2
+        short               m_model;        // 2
     };
 };
 
@@ -129,12 +129,17 @@ public:
     {
         struct
         {
-            unsigned short      renderFlags : 10;         // 18
+            unsigned short      renderFlags : 10;           // 18
             unsigned short      collFlags : 6;
         };
         struct
         {
-            unsigned short      flags;                    // 18
+            unsigned short      flags;                      // 18
+        };
+        struct
+        {
+            unsigned short      unkPad : 12;                // 18
+            unsigned short      atomicType : 4;
         };
         struct
         {

@@ -19,7 +19,7 @@ namespace Streaming
     // Frequently used variables
     static HANDLE *const VAR_UnkFileHandle = (HANDLE*)0x008E4010;
     static size_t *const VAR_NumResourceEntries = (size_t*)0x008E4C68;
-    static unsigned short *const VAR_BiggestPrimaryBlockOffset = (unsigned short*)0x008E4CA8;
+    int biggestResourceBlockCount = 0;              // Binary offsets: (1.0 US and 1.0 EU): 0x008E4CA8
     static int *const VAR_LastModelScanIndex = (int*)0x00AAE948;
     static CModelLoadInfoSA *const VAR_ModelLoadInfo = (CModelLoadInfoSA*)0x008E4CC0;
     static CMissingModelInfoSA *const *VAR_MissingModelInfo = (CMissingModelInfoSA**)0x008E48D0;
@@ -267,8 +267,8 @@ success:
 
             file->Read( &header, 1, sizeof(header) );
 
-            if ( header.primaryBlockOffset > *VAR_BiggestPrimaryBlockOffset )
-                *VAR_BiggestPrimaryBlockOffset = header.primaryBlockOffset;
+            if ( header.primaryBlockOffset > biggestResourceBlockCount )
+                biggestResourceBlockCount = header.primaryBlockOffset;
 
             // Zero terminated for safety
             header.name[ sizeof(header.name) - 1 ] = '\0';
@@ -380,6 +380,9 @@ success:
             info.SetOffset( header.offset, header.primaryBlockOffset );
             info.m_flags = 0;
 
+            // This id is used to optimize loading from disk.
+            // The streaming system knows which data is next to each other.
+            // It can be loaded in a swipe.
             if ( lastID != 0xFFFFFFFF )
                 Streaming::GetModelLoadInfo( lastID ).m_lastID = id;
 
@@ -404,6 +407,7 @@ failureAdd:
     =========================================================*/
     void __cdecl LoadArchives( void )
     {
+        // Initialize some unknown globals.
         *(unsigned int*)0x008E4C90 = 0xFFFFFFFF;
         *(unsigned int*)0x008E4C94 = 0xFFFFFFFF;
         *(unsigned int*)0x008E4C98 = 0xFFFFFFFF;
@@ -413,6 +417,7 @@ failureAdd:
 
         *(unsigned int*)0x008E4CA0 = 0xFFFFFFFF;
 
+        // ???
         *VAR_NumResourceEntries = GetMainArchiveSize();
 
         for ( unsigned int n = 0; n < MAX_GTA_IMG_ARCHIVES; n++ )
@@ -422,11 +427,12 @@ failureAdd:
             if ( file.name[0] == '\0' )
                 break;
 
+            // We do not load player IMGs.
             if ( !file.isNotPlayerImg )
                 continue;
 
+            // Load the IMG archive.
             LoadArchive( file, n );
-            //((void (__cdecl*)( const char *, unsigned int ))0x005B6170)( file.name, n );
         }
 
         *(unsigned int*)0x008E4C64 = 0;

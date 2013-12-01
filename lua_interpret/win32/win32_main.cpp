@@ -71,12 +71,26 @@ static LUA_DECLARE( getKeyState )
     return 1;
 }
 
+static LUA_DECLARE( getPerformanceTimer )
+{
+    LONGLONG counterFrequency, currentCount;
+
+    LUA_CHECK( 
+        QueryPerformanceFrequency( (LARGE_INTEGER*)&counterFrequency ) == TRUE &&
+        QueryPerformanceCounter( (LARGE_INTEGER*)&currentCount ) == TRUE
+    );
+
+    lua_pushnumber( L, (lua_Number)currentCount / (lua_Number)counterFrequency );
+    return 1;
+};
+
 static const luaL_Reg win32_interface[] =
 {
     LUA_METHOD( setCursorPos ),
     LUA_METHOD( getCursorPos ),
     LUA_METHOD( getWindowRect ),
     LUA_METHOD( getKeyState ),
+    LUA_METHOD( getPerformanceTimer ),
     { NULL, NULL }
 };
 

@@ -327,11 +327,11 @@ bool CGameSA::IsInForeground()
     return *VAR_IsForegroundWindow;
 }
 
-CModelInfoSA* CGameSA::GetModelInfo( unsigned short model )
+CModelInfoSA* CGameSA::GetModelInfo( modelId_t model )
 { 
-    DEBUG_TRACE("CModelInfo* CGameSA::GetModelInfo( unsigned short model )");
+    DEBUG_TRACE("CModelInfo* CGameSA::GetModelInfo( modelId_t model )");
 
-    if ( model > MAX_RESOURCES - 1 )
+    if ( model > MAX_MODELS - 1 )
         return NULL;
 
     if ( !ModelInfo[model].IsValid() )
@@ -437,31 +437,34 @@ void CGameSA::TakeScreenshot( char *szFileName )
     }
 }
 
-void CGameSA::Reset()
+void CGameSA::Reset( void )
 {
     // Things to do if the game was loaded
-    if ( GetSystemState() != GS_PLAYING_GAME )
-        return;
+    if ( GetSystemState() == GS_PLAYING_GAME )
+    {
+        // Extinguish all fires
+        m_pFireManager->ExtinguishAllFires();
 
-    // Extinguish all fires
-    m_pFireManager->ExtinguishAllFires();
+        // Restore camera stuff
+        m_pCamera->Restore();
+        m_pCamera->SetFadeColor( 0, 0, 0 );
+        m_pCamera->Fade( 0, FADE_OUT );
 
-    // Restore camera stuff
-    m_pCamera->Restore();
-    m_pCamera->SetFadeColor( 0, 0, 0 );
-    m_pCamera->Fade( 0, FADE_OUT );
+        Pause( false );        // We don't have to pause as the fadeout will stop the sound. Pausing it will make the fadein next start ugly
+        m_pHud->Disable( false );
 
-    Pause( false );        // We don't have to pause as the fadeout will stop the sound. Pausing it will make the fadein next start ugly
-    m_pHud->Disable( false );
+        // Notify modules which want it.
+        HUD_OnReset();
 
-    // Notify modules which want it.
-    HUD_OnReset();
+        DisableRenderer( false );
 
-    DisableRenderer( false );
+        // Restore the HUD
+        m_pHud->Disable( false );
+        m_pHud->DisableAll( false );
+    }
 
-    // Restore the HUD
-    m_pHud->Disable( false );
-    m_pHud->DisableAll( false );
+    // Reset ubiqitous managers.
+    Streaming::Reset();
 }
 
 void CGameSA::Initialize()
@@ -854,4 +857,28 @@ CFile* OpenGlobalStream( const char *filename, const char *mode )
     // MTA team has voiced their concern about game directory access; TOD (topic of discussion)
     // I see this feature as optional anyway ;)
     return NULL;
+}
+
+/*=========================================================
+    NormalizeRadians
+
+    Arguments:
+        radians - angle value
+    Purpose:
+        Normalizes the radians to a comparable result and
+        returns them.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0053CB50
+=========================================================*/
+float __cdecl NormalizeRadians( float radians )
+{
+    radians = Clamp( -25.0f, radians, 25.0f );
+
+    while ( radians >= M_PI )
+        radians -= (float)( M_PI * 2 );
+
+    while ( radians < -M_PI )
+        radians += (float)( M_PI * 2 );
+
+    return radians;
 }

@@ -15,12 +15,14 @@
 
 // Streamer variables.
 // The streaming sectors are a*a quads, hence rows == cols always true.
-#define ARRAY_StreamSectors                                 0x00B7D0B8
-#define NUM_StreamSectorRows                                120
-#define NUM_StreamSectorCols                                120
-#define ARRAY_StreamRepeatSectors                           0x00B992B8
-#define NUM_StreamRepeatSectorRows                          16
-#define NUM_StreamRepeatSectorCols                          16
+#define ARRAY_StreamStaticSectors                           0x00B7D0B8
+#define NUM_StreamStaticSectorRows                          120
+#define NUM_StreamStaticSectorCols                          120
+// The dynamic sector repeats on top of the static sector room.
+// Probably an optimization by Rockstar Games.
+#define ARRAY_StreamDynamicSectors                          0x00B992B8
+#define NUM_StreamDynamicSectorRows                         16
+#define NUM_StreamDynamicSectorCols                         16
 #define ARRAY_StreamUpdateSectors                           0x00B99EB8
 #define NUM_StreamUpdateSectorRows                          30
 #define NUM_StreamUpdateSectorCols                          30
@@ -49,55 +51,61 @@ namespace Streamer
         }
     }
 
-    struct streamPrimarySectorEntry
+    struct streamStaticSectorEntry
     {
-        streamSectorEntry       first;      // 0
-        streamSectorEntry       second;     // 4
+        streamSectorEntry       building;   // 0
+        streamSectorEntry       dummy;      // 4
     };
 
-    struct streamRepeatSectorEntry
+    struct streamDynamicSectorEntry
     {
-        streamSectorEntry       first;      // 0
-        streamSectorEntry       second;     // 4
-        streamSectorEntry       third;      // 8
+        streamSectorEntry       vehicle;    // 0
+        streamSectorEntry       ped;        // 4
+        streamSectorEntry       object;     // 8
     };
 
     // Helper function to scan all entities that are streamed in.
     template <typename callbackType>
-    void __forceinline ForAllStreamedEntities( callbackType& cb, bool fast )
+    void __forceinline ForAllStreamerSectors( callbackType& cb, bool doBuildings, bool doDummies, bool doVehicles, bool doPeds, bool doObjects )
     {
-        // Scan all first-class entities.
-        for ( unsigned int n = 0; n < NUM_StreamSectorRows * NUM_StreamSectorCols; n++ )
+        if ( doBuildings || doDummies )
         {
-            streamPrimarySectorEntry *entry = ((streamPrimarySectorEntry*)ARRAY_StreamSectors + n);
+            // Scan all static (non moving) entities.
+            for ( unsigned int n = 0; n < NUM_StreamStaticSectorRows * NUM_StreamStaticSectorCols; n++ )
+            {
+                streamStaticSectorEntry *entry = ((streamStaticSectorEntry*)ARRAY_StreamStaticSectors + n);
 
-            // First the primary entry.
-            ExecuteChain( entry->first, cb );
+                // Scan building.
+                if ( doBuildings )
+                    cb.OnSector( entry->building );
 
-            // Next the second entry.
-            ExecuteChain( entry->second, cb );
+                // Scan dummy.
+                if ( doDummies )
+                    cb.OnSector( entry->dummy );
+            }
         }
 
-        // Now for the second-class entities.
-        // ccw has asked whether they are big buildings/he indicated toward it.
-        for ( unsigned int n = 0; n < NUM_StreamRepeatSectorRows * NUM_StreamRepeatSectorCols; n++ )
+        if ( doVehicles || doPeds || doObjects )
         {
-            streamRepeatSectorEntry *entry = (streamRepeatSectorEntry*)ARRAY_StreamRepeatSectors + n;
-
-            // We have three streaming entries here.
-            if ( !fast )
+            // Now for the dynamic entities entities.
+            // ccw has asked whether they are big buildings/he indicated toward it.
+            // These are game entitites that can move around, hence they have less sectors to switch around on.
+            for ( unsigned int n = 0; n < NUM_StreamDynamicSectorRows * NUM_StreamDynamicSectorCols; n++ )
             {
-                // Here comes the first.
-                ExecuteChain( entry->first, cb );
-            }
+                streamDynamicSectorEntry *entry = (streamDynamicSectorEntry*)ARRAY_StreamDynamicSectors + n;
 
-            // Now for the second.
-            ExecuteChain( entry->second, cb );
+                // We have three streaming entries here.
+                // Scan vehicle.
+                if ( doVehicles )
+                    cb.OnSector( entry->vehicle );
 
-            if ( !fast )
-            {
-                // Finally the third.
-                ExecuteChain( entry->third, cb );
+                // Scan ped.
+                if ( doPeds )
+                    cb.OnSector( entry->ped );
+
+                // Scan objects.
+                if ( doObjects )
+                    cb.OnSector( entry->object );
             }
         }
     }

@@ -15,6 +15,10 @@
 
 namespace Streaming
 {
+    // Globals used by the GC manager.
+    extern bool allowInfiniteStreaming;
+    extern bool strictNodeDistribution;
+
     // Active entity management.
     streamingEntityReference_t* __cdecl AddActiveEntity( CEntitySAInterface *entity );
     void __cdecl                        RemoveActiveEntity( streamingEntityReference_t *ref );

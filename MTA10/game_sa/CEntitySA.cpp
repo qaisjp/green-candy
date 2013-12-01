@@ -27,7 +27,7 @@ CEntitySAInterface::CEntitySAInterface()
 
     m_scanCode = 0;
 
-    m_model = 0xFFFF;
+    m_model = -1;
     m_rwObject = NULL;
 
     m_iplIndex = 0;
@@ -89,7 +89,7 @@ void CEntitySAInterface::SetAlpha( unsigned char alpha )
     }
 }
 
-CColModelSAInterface* CEntitySAInterface::GetColModel() const
+CColModelSAInterface* CEntitySAInterface::GetColModel( void ) const
 {
     CEntitySA *entity = (CEntitySA*)pGame->GetPools()->GetEntity( const_cast <CEntitySAInterface*> ( this ) );
 
@@ -137,6 +137,13 @@ const CBounds2D& CEntitySAInterface::_GetBoundingBox( CBounds2D& out ) const
     return out;
 }
 
+void __thiscall CEntitySAInterface::GetCenterPoint( CVector& out ) const
+{
+    CColModelSAInterface *col = GetColModel();
+
+    GetOffset( out, col->m_bounds.vecBoundOffset );
+}
+
 void __thiscall CEntitySAInterface::SetOrientation( float x, float y, float z )
 {
     Placeable.SetRotation( x, y, z );
@@ -158,6 +165,20 @@ bool CEntitySAInterface::IsOnScreen( void ) const
     return false;
 }
 
+bool __thiscall CEntitySAInterface::CheckScreenValidity( void ) const
+{
+    bool retVal;
+
+    __asm
+    {
+        mov eax,0x0071FAE0
+        call eax
+        mov retVal,al
+    }
+
+    return retVal;
+}
+
 void CEntitySAInterface::UpdateRwMatrix( void )
 {
     if ( !m_rwObject )
@@ -174,12 +195,19 @@ void CEntitySAInterface::UpdateRwFrame( void )
     m_rwObject->m_parent->Update();
 }
 
+// Binary offsets: (1.0 US and 1.0 EU): 0x00407000
+bool __thiscall CEntitySAInterface::IsInStreamingArea( void ) const
+{
+    return Streaming::IsValidStreamingArea( m_areaCode );
+}
+
 void Entity_Init( void )
 {
     HookInstall( 0x00535300, h_memFunc( &CEntitySAInterface::GetColModel ), 5 );
     HookInstall( 0x00534540, h_memFunc( &CEntitySAInterface::IsOnScreen ), 5 );
     HookInstall( 0x00534250, h_memFunc( &CEntitySAInterface::GetCollisionOffset ), 5 );
     HookInstall( 0x005449B0, h_memFunc( &CEntitySAInterface::_GetBoundingBox ), 5 );
+    HookInstall( 0x00534290, h_memFunc( &CEntitySAInterface::GetCenterPoint ), 5 );
     HookInstall( 0x00446F90, h_memFunc( &CEntitySAInterface::UpdateRwMatrix ), 5 );
     HookInstall( 0x00532B00, h_memFunc( &CEntitySAInterface::UpdateRwFrame ), 5 );
     HookInstall( 0x00536BE0, h_memFunc( &CEntitySAInterface::GetBasingDistance ), 5 );

@@ -12,44 +12,26 @@
 
 #include "StdInc.h"
 
-#define MAX_RENDER_OBJECTS  0x10000
-
-unsigned int *const VAR_renderObjectCount = (unsigned int*)0x00B76840;
-unsigned int *const VAR_renderObject2Count = (unsigned int*)0x00B76844;
-unsigned int *const VAR_renderObject3Count = (unsigned int*)0x00B76838;
-unsigned int *const VAR_renderObject4Count = (unsigned int*)0x00B7683C;
-CEntitySAInterface *renderObjects[MAX_RENDER_OBJECTS];
-CEntitySAInterface *renderObjects2[MAX_RENDER_OBJECTS];
-CEntitySAInterface *renderObjects3[MAX_RENDER_OBJECTS];
-CEntitySAInterface *renderObjects4[MAX_RENDER_OBJECTS];
-
 static const DWORD pft = 0x00404180;
 static const DWORD pft2 = 0x00404139;
 
 // Callback class for removing all references to a certain building.
 struct _buildingRefRemoval
 {
-    __forceinline _buildingRefRemoval( const CBuildingSAInterface *instance ) : m_instance( instance )
+    __forceinline _buildingRefRemoval( CBuildingSAInterface *instance ) : m_instance( instance )
     { }
 
-    void __forceinline EntryCallback( Streamer::entityLink_t*& entry )
+    void __forceinline OnSector( Streamer::streamSectorEntry& sector )
     {
-        Streamer::entityLink_t *current = entry;
-
-        if ( current->data == m_instance )
-        {
-            // Deliberate it.
-            entry = current->m_next;
-            (*ppPtrNodeSinglePool)->Free( (CPtrNodeSingleSAInterface*)current );
-        }
+        sector.RemoveItem( m_instance, false );
     }
 
-    const CBuildingSAInterface *m_instance;
+    CBuildingSAInterface *m_instance;
 };
 
 static void __cdecl _CBuilding__RemoveReferences( CBuildingSAInterface *building )
 {
-    Streamer::ForAllStreamedEntities( _buildingRefRemoval( building ), true );
+    Streamer::ForAllStreamerSectors( _buildingRefRemoval( building ), true, false, false, false, false );
 }
 
 static void __declspec(naked) _CBuilding__Delete( void )
@@ -81,15 +63,16 @@ namespace Streamer
     =========================================================*/
     struct _resetScanIndex
     {
-        void __forceinline EntryCallback( Streamer::entityLink_t *ptrNode )
+        void __forceinline OnSector( streamSectorEntry& sector )
         {
-            ptrNode->data->m_scanCode = 0;
+            for ( streamSectorEntry::ptrNode_t *iter = sector.GetList(); iter != NULL; iter = iter->m_next )
+                iter->data->m_scanCode = 0;
         }
     };
 
     void __cdecl ResetScanIndices( void )
     {
-        ForAllStreamedEntities( _resetScanIndex(), false );
+        ForAllStreamerSectors( _resetScanIndex(), true, true, true, true, true );
     }
 
     /*=========================================================
@@ -104,21 +87,6 @@ namespace Streamer
         Binary offsets:
             (1.0 US and 1.0 EU): 0x0040C450
     =========================================================*/
-    // The best way to maintain R* source code is to split recurring logic into functions like these.
-    // Definitions of certain parts are easily changed globally this way.
-    static inline bool IsTimeRightForStreaming( CBaseModelInfoSAInterface *model )
-    {
-        ModelInfo::timeInfo *timeInfo = model->GetTimeInfo();
-
-        // If there is no time describing said entities' streaming time,
-        // it is valid to stream it all the time.
-        if ( !timeInfo )
-            return true;
-
-        // Check the GTA clock.
-        return Streaming::IsCurrentHourPeriod( timeInfo->m_fromHour, timeInfo->m_toHour );
-    }
-
     // Check whether we can request the model of said entity for special streaming.
     // Note that this function is only valid in the context of static building streaming.
     static inline bool IsEntityStreamable( CEntitySAInterface *entity )
@@ -150,9 +118,14 @@ namespace Streamer
     // Decide whether we can request the model depending on a _heat-up_ phase.
     static inline bool PreRequest( CEntitySAInterface *entity, CBaseModelInfoSAInterface *model )
     {
-        // The time has to be right ;)
-        if ( !IsTimeRightForStreaming( model ) )
-            return false;
+        // If there is no time describing said entities' streaming time,
+        // it is valid to stream it all the time.
+        if ( ModelInfo::timeInfo *info = model->GetTimeInfo() )
+        {
+            // The time has to be right ;)
+            if ( !Streaming::IsTimeRightForStreaming( info ) )
+                return false;
+        }
 
         // The_GTA: this appears to be a hack/bugfix by R*, since entities
         // could lose their RenderWare objects while they are still loaded.
@@ -318,7 +291,7 @@ namespace Streamer
 
     template <typename callbackType>
     void __forceinline LoopArrayWorldSectors(
-        const int arraySize, float x, float y, float maxPos, float sectorSize, callbackType& cb
+        float x, float y, float sectorSize, callbackType& cb
     )
     {
         // Create the request quad.
@@ -328,26 +301,18 @@ namespace Streamer
         float maxX = x + sectorSize;
         float maxY = y + sectorSize;
 
-        // Offset to center all positions into sector center.
-        double sectorCenterOffset = (double)arraySize / 2.0f;
-
-        // Because the selection rectangle expands from the middle of (x,y),
-        // it can only extend to (maxPos / 2.0). arraySize / maxPos is the stride
-        // for every item inside of the array.
-        double posStride = (double)arraySize / maxPos / 2.0f;
-
         // Get the sectorSize parameters in array cell width/height.
         // Since this is a width/height, we do not offset it by sectorCenterOffset.
-        int sectorSizeArray = cb.CoordToIndex( sectorSize * posStride );
+        int sectorSizeArray = (int)( sectorSize * cb.GetPosStride() );
 
         // Get the array position of the center coordinates.
-        int sectorCenterX = cb.CoordToIndex( x * posStride + sectorCenterOffset );
-        int sectorCenterY = cb.CoordToIndex( y * posStride + sectorCenterOffset );
+        int sectorCenterX = cb.CoordToIndex( x );
+        int sectorCenterY = cb.CoordToIndex( y );
 
         // Get the coordinates for the sector scan.
         // These are the beginning units for the array reference.
-        int sectorX = cb.CoordToIndex( minX * posStride + sectorCenterOffset );
-        int sectorY = cb.CoordToIndex( minY * posStride + sectorCenterOffset );
+        int sectorX = cb.CoordToIndex( minX );
+        int sectorY = cb.CoordToIndex( minY );
 
         // The coordinates must start at 0
         // This enforces that streaming does not happen outside the GTA:SA boundaries.
@@ -357,13 +322,13 @@ namespace Streamer
 
         // Now for the maximum sector coordinates.
         // These are the maximum units for the array reference.
-        int sectorMaxX = cb.CoordToIndex( maxX * posStride + sectorCenterOffset );
-        int sectorMaxY = cb.CoordToIndex( maxY * posStride + sectorCenterOffset );
+        int sectorMaxX = cb.CoordToIndex( maxX );
+        int sectorMaxY = cb.CoordToIndex( maxY );
 
         // The coordinates may not overshoot arraySize.
         // These sectors appear to be a*a quads.
-        sectorMaxX = CropDimensionMax( sectorMaxX, arraySize );
-        sectorMaxY = CropDimensionMax( sectorMaxY, arraySize );
+        sectorMaxX = CropDimensionMax( sectorMaxX, cb.GetArraySize() );
+        sectorMaxY = CropDimensionMax( sectorMaxY, cb.GetArraySize() );
 
         // Notify that we are about to enter loop.
         cb.Init();
@@ -379,7 +344,45 @@ namespace Streamer
         }
     }
 
-    struct _requestSquared
+    template <int arraySize, unsigned int maxPos>
+    struct DefaultStreamerZoner
+    {
+        int __forceinline GetArraySize( void ) const
+        {
+            return arraySize;
+        }
+
+        double __forceinline GetPosStride( void ) const
+        {
+            // Because the selection rectangle expands from the middle of (x,y),
+            // it can only extend to (maxPos / 2.0). arraySize / maxPos is the stride
+            // for every item inside of the array.
+            return (double)arraySize / maxPos / 2.0f;
+        }
+
+        double __forceinline GetSectorCenterOffset( void ) const
+        {
+            // Offset to center all positions into sector center.
+            return (double)arraySize / 2.0f;
+        }
+
+        int __forceinline CoordToIndex( double coord ) const
+        {
+            return (int)( coord * GetPosStride() + GetSectorCenterOffset() );
+        }
+
+        double __forceinline IndexToCoord( int index ) const
+        {
+            return (double)( index - ( arraySize / 2 ) ) / GetPosStride() + GetSectorCenterOffset();
+        }
+
+        float __forceinline GetDistanceToZoneSquared( int x, int y, const CVector& worldPos )
+        {
+            return ( CVector2D( (float)IndexToCoord( x ), (float)IndexToCoord( y ) ) - CVector2D( worldPos[0], worldPos[1] ) ).Length();
+        }
+    };
+
+    struct _requestSquared : DefaultStreamerZoner <NUM_StreamUpdateSectorRows, WORLD_BOUNDS>
     {
         __forceinline _requestSquared( unsigned int reqFlags, const CVector& reqPos ) : m_reqFlags( reqFlags ), m_reqPos( reqPos )
         {
@@ -396,18 +399,13 @@ namespace Streamer
             RequestStaticEntities( *( (const streamSectorEntry*)ARRAY_StreamUpdateSectors + x + y * NUM_StreamUpdateSectorRows ), m_reqPos.fX, m_reqPos.fY, minX, minY, maxX, maxY, sectorSize, m_reqFlags );
         }
 
-        int __forceinline CoordToIndex( double coord ) const
-        {
-            return (unsigned int)coord;
-        }
-
         unsigned int m_reqFlags;
         const CVector& m_reqPos;
     };
 
     void __cdecl RequestSquaredSectorEntities( const CVector& reqPos, unsigned int reqFlags )
     {
-        LoopArrayWorldSectors( NUM_StreamUpdateSectorRows, reqPos.fX, reqPos.fY, WORLD_BOUNDS, *(float*)0x00B76848, _requestSquared( reqFlags, reqPos ) );
+        LoopArrayWorldSectors( reqPos.fX, reqPos.fY, *(float*)0x00B76848, _requestSquared( reqFlags, reqPos ) );
     }
 
     /*=========================================================
@@ -430,7 +428,7 @@ namespace Streamer
             operations. They probably wanted to improve the engine's
             performance by using this function in special scenarios.
     =========================================================*/
-    struct _requestSquaredFast
+    struct _requestSquaredFast : DefaultStreamerZoner <NUM_StreamStaticSectorRows, WORLD_BOUNDS>
     {
         __forceinline _requestSquaredFast( unsigned int reqFlags, const CVector& reqPos ) : m_reqFlags( reqFlags ), m_reqPos( reqPos )
         {
@@ -450,13 +448,13 @@ namespace Streamer
             int sectorCenterToTopDistance = centerY - y;
 
             // Get the request entries of interest.
-            const streamPrimarySectorEntry& mainSelector = GetSectorEntry( (const streamPrimarySectorEntry*)ARRAY_StreamSectors, NUM_StreamSectorRows, x, y );
-            const streamRepeatSectorEntry& repeatSelector = GetSectorEntry( (const streamRepeatSectorEntry*)ARRAY_StreamRepeatSectors, NUM_StreamRepeatSectorRows, x, y );
+            const streamStaticSectorEntry& staticSelector = GetSectorEntry( (const streamStaticSectorEntry*)ARRAY_StreamStaticSectors, NUM_StreamStaticSectorRows, x, y );
+            const streamDynamicSectorEntry& dynamicSelector = GetSectorEntry( (const streamDynamicSectorEntry*)ARRAY_StreamDynamicSectors, NUM_StreamDynamicSectorRows, x, y );
 
             // * We request them in this order.
-            const streamSectorEntry& primary = mainSelector.first;
-            const streamSectorEntry& secondary = repeatSelector.second;
-            const streamSectorEntry& tertiary = mainSelector.second;
+            const streamSectorEntry& building = staticSelector.building;
+            const streamSectorEntry& ped = dynamicSelector.ped;
+            const streamSectorEntry& dummy = staticSelector.dummy;
 
             // Check whether we should request with high quality or not.
             // This function ain't chicken wuss, you see.
@@ -465,25 +463,20 @@ namespace Streamer
             {
                 // We can optimize this sauce, because (x,y) is assumed to be the camera position.
                 // That removes the need for far clip checks.
-                RequestStaticEntitiesOfSector( primary, m_reqFlags );
-                RequestStaticEntitiesOfSector( secondary, m_reqFlags );
-                RequestStaticEntitiesOfSector( tertiary, m_reqFlags );
+                RequestStaticEntitiesOfSector( building, m_reqFlags );
+                RequestStaticEntitiesOfSector( ped, m_reqFlags );
+                RequestStaticEntitiesOfSector( dummy, m_reqFlags );
             }
             else
             {
                 // Go through the entities of said sector carefully.
-                RequestStaticEntities( primary, m_reqPos.fX, m_reqPos.fY, minX, minY, maxX, maxY, sectorSize, m_reqFlags );
-                RequestStaticEntities( secondary, m_reqPos.fX, m_reqPos.fY, minX, minY, maxX, maxY, sectorSize, m_reqFlags );
-                RequestStaticEntities( tertiary, m_reqPos.fX, m_reqPos.fY, minX, minY, maxX, maxY, sectorSize, m_reqFlags );
+                RequestStaticEntities( building, m_reqPos.fX, m_reqPos.fY, minX, minY, maxX, maxY, sectorSize, m_reqFlags );
+                RequestStaticEntities( ped, m_reqPos.fX, m_reqPos.fY, minX, minY, maxX, maxY, sectorSize, m_reqFlags );
+                RequestStaticEntities( dummy, m_reqPos.fX, m_reqPos.fY, minX, minY, maxX, maxY, sectorSize, m_reqFlags );
             }
 
             // All in all, this is a sophisticated quad-tree engine.
             // ... a function a day keeps the worries away ...
-        }
-
-        int __forceinline CoordToIndex( double coord ) const
-        {
-            return (unsigned int)coord;
         }
 
         unsigned int m_reqFlags;
@@ -494,7 +487,189 @@ namespace Streamer
     {
         float sectorSize = ( *(unsigned int*)VAR_currArea == 0 ) ? 80.0f : 40.0f;
 
-        LoopArrayWorldSectors( NUM_StreamSectorRows, reqPos.fX, reqPos.fY, WORLD_BOUNDS, sectorSize, _requestSquaredFast( reqFlags, reqPos ) );
+        LoopArrayWorldSectors( reqPos.fX, reqPos.fY, sectorSize, _requestSquaredFast( reqFlags, reqPos ) );
+    }
+
+    /*=========================================================
+        Streamer::SelectWorldSector
+
+        Arguments:
+            column - y offset inside the global sector array
+            row - x offset inside the global sector array
+        Purpose:
+            Selects the world streaming sector that should be used
+            for looping.
+        Binary offsets:
+            (1.0 US and 1.0 EU): 0x00553540
+    =========================================================*/
+    unsigned int GetRepeatedStreamerArrayIndex( int column, int row, int numCols, int numRows )
+    {
+        return (unsigned int)( ( (unsigned int)column % (unsigned int)numCols ) + ( (unsigned int)row % (unsigned int)numRows ) * (unsigned int)numCols );
+    }
+
+#define NUM_LINKED_SECTORS  5
+
+    struct sectorialLink_t
+    {
+        // Stores building, object, vehicle, ped and dummy sectors (if available).
+        // Found at 0x00C8E0C8
+        streamSectorEntry *sectors[NUM_LINKED_SECTORS];
+    };
+
+    void __cdecl SelectWorldSector( int column, int row )
+    {
+        // The dynamic array is repeated across the world.
+        int arrayIndex = GetRepeatedStreamerArrayIndex( column, row, NUM_StreamDynamicSectorCols, NUM_StreamDynamicSectorRows );
+
+        streamDynamicSectorEntry& dynamicSector = *( (streamDynamicSectorEntry*)ARRAY_StreamDynamicSectors + arrayIndex );
+        streamStaticSectorEntry *staticSector = NULL;
+
+        if ( column >= 0 && row >= 0 && column < NUM_StreamStaticSectorCols && row < NUM_StreamStaticSectorRows )
+            staticSector = &GetSectorEntry( (streamStaticSectorEntry*)ARRAY_StreamStaticSectors, NUM_StreamStaticSectorRows, column, row );
+
+        // Set up the global link.
+        sectorialLink_t& link = *(sectorialLink_t*)0x00C8E0C8;
+        link.sectors[0] = staticSector ? &staticSector->building : NULL;
+        link.sectors[1] = &dynamicSector.object;
+        link.sectors[2] = &dynamicSector.vehicle;
+        link.sectors[3] = &dynamicSector.ped;
+        link.sectors[4] = staticSector ? &staticSector->dummy : NULL;
+    }
+
+    /*=========================================================
+        Streamer::SectorRenderCallback
+
+        Arguments:
+            column - x offset inside the global sector array
+            row - y offset inside the global sector array
+        Purpose:
+            Renders all entities inside of the streamer sector
+            that is denoted by the coordinates. The streamer sector
+            is taken from the global entity streaming array.
+        Binary offsets:
+            (1.0 US and 1.0 EU): 0x00554840
+    =========================================================*/
+    template <typename callbackType>
+    void __forceinline LoopSectorEntities( int column, int row, callbackType& cb )
+    {
+        bool unimportantSector = false;
+
+        float zoneDistanceSquared = cb.GetDistanceToZoneSquared( column, row, *(CVector*)0x00B76870 );
+
+        if ( zoneDistanceSquared >= ( 100 * 100 ) ||
+             fabs( NormalizeRadians( atan2( zoneDistanceSquared, -zoneDistanceSquared ) - *(float*)0x00B7684C ) ) < 0.36f )
+        {
+            unimportantSector = true;
+        }
+
+        SelectWorldSector( column, row );
+
+        const sectorialLink_t& link = *(sectorialLink_t*)0x00C8E0C8;
+
+        for ( unsigned int n = 0; n < NUM_LINKED_SECTORS; n++ )
+        {
+            streamSectorEntry *sectorEntry = link.sectors[n];
+
+            if ( sectorEntry )
+            {
+                streamSectorEntry::ptrNode_t *node = sectorEntry->GetList();
+
+                while ( node != NULL )
+                {
+                    CEntitySAInterface *entity = node->data;
+
+                    node = node->m_next;
+
+                    unsigned short applyScanCode = *(unsigned short*)0x00B7CD78;
+
+                    if ( entity->m_scanCode != applyScanCode )
+                    {
+                        entity->m_scanCode = applyScanCode;
+
+                        cb.OnEntity( entity, unimportantSector );
+                    }
+                }
+            }
+        }
+    }
+
+    inline bool IsLoaderTooBusy( void )
+    {
+        return *(bool*)0x00B76850 && *(unsigned int*)0x008E4CB8 >= 1;
+    }
+
+    struct _entityZoneRender : DefaultStreamerZoner <NUM_StreamStaticSectorRows, WORLD_BOUNDS>
+    {
+        void __forceinline OnEntity( CEntitySAInterface *entity, bool unimportantSector )
+        {
+            entity->m_entityFlags &= ~ENTITY_OFFSCREEN;
+
+            float camDistance;
+
+            switch( CRenderer_SetupEntityVisibility( entity, camDistance ) )
+            {
+            case 3:
+                if ( *(bool*)0x009654B0 || !entity->IsOnScreen() || *(bool*)0x00B76851 )
+                    return;
+
+                if ( Streaming::GetModelLoadInfo( entity->m_model ).m_eLoading != MODEL_LOADED )
+                {
+                    if ( !entity->CheckScreenValidity() && unimportantSector )
+                    {
+                        *(bool*)0x00B76850 = true;
+                    }
+                    else
+                        unimportantSector = false;
+                }
+                
+                if ( !unimportantSector && IsLoaderTooBusy() )
+                    return;
+
+                Streaming::RequestModel( entity->m_model, 0 );
+                break;
+            case 1:
+                PushEntityOnRenderQueue( entity, camDistance );
+                break;
+            case 0:
+                if ( entity->m_type != ENTITY_TYPE_OBJECT )
+                    return;
+
+                {
+                    CAtomicModelInfoSA *atomicInfo = entity->GetModelInfo()->GetAtomicModelInfo();
+
+                    if ( !atomicInfo )
+                        return;
+
+                    if ( atomicInfo->atomicType != 1 && atomicInfo->atomicType != 3 )
+                        return;
+                }
+
+            case 2:
+                entity->m_entityFlags |= ENTITY_OFFSCREEN;
+
+                if ( !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_PRERENDERED ) )
+                    return;
+
+                const CVector& camDist = *(CVector*)0x00B76870;
+                const CVector& entityPos = entity->Placeable.GetPosition();
+
+                float unkDist = 30.0f;
+
+                if ( entity->m_type == ENTITY_TYPE_VEHICLE && IS_ANY_FLAG( ((CVehicleSAInterface*)entity)->m_genericFlags, VEHGENERIC_FIREGUN ) )
+                    unkDist = 200.0f;
+
+                if ( CBounds2D( unkDist, -unkDist, -unkDist, unkDist ).IsInside( CVector2D( camDist.fX - entityPos.fX, camDist.fY - entityPos.fY ) ) )
+                    return;
+
+                RegisterLowPriorityRenderEntity( entity );
+                break;
+            }
+        }
+    };
+
+    static void __cdecl SectorRenderCallback( int column, int row )
+    {
+        LoopSectorEntities( column, row, _entityZoneRender() );
     }
 };
 
@@ -505,12 +680,7 @@ void Streamer_Init( void )
     HookInstall( 0x0040C450, (DWORD)Streamer::RequestStaticEntitiesOfSector, 5 );
     HookInstall( 0x0040C520, (DWORD)Streamer::RequestSquaredSectorEntities, 5 );
     HookInstall( 0x0040D3F0, (DWORD)Streamer::RequestAdvancedSquaredSectorEntities, 5 );
-
-    // Patch render limitations
-    *(unsigned int*)0x00553923 = *(unsigned int*)0x005534F5 = *(unsigned int*)0x00553CB3 = (unsigned int)renderObjects;
-    *(unsigned int*)0x00553529 = *(unsigned int*)0x00553944 = *(unsigned int*)0x00553A53 = *(unsigned int*)0x00553B03 = (unsigned int)renderObjects2;
-    *(unsigned int*)0x00553965 = (unsigned int)renderObjects3;
-    *(unsigned int*)0x00553986 = *(unsigned int*)0x00554AC7 = (unsigned int)renderObjects4;
+    HookInstall( 0x00554840, (DWORD)Streamer::SectorRenderCallback, 5 );
 
     // Hook special fixes
     HookInstall( 0x00404130, (DWORD)_CBuilding__Delete, 5 );

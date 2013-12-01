@@ -28,20 +28,41 @@ typedef void (__cdecl*streamingFreeCallback_t)( modelId_t id );
 class CStreaming
 {
 public:
-    virtual void            RequestModel                ( modelId_t id, unsigned int flags ) = 0;
-    virtual void            FreeModel                   ( modelId_t id ) = 0;
-    virtual void            LoadAllRequestedModels      ( bool onlyPriority = false ) = 0;
-    virtual bool            HasModelLoaded              ( modelId_t id ) = 0;
-    virtual bool            IsModelLoading              ( modelId_t id ) = 0;
-    virtual void            WaitForModel                ( modelId_t id ) = 0;
-    virtual void            RequestAnimations           ( int idx, unsigned int flags ) = 0;
-    virtual bool            HaveAnimationsLoaded        ( int idx ) = 0;
-    virtual bool            HasVehicleUpgradeLoaded     ( int model ) = 0;
-    virtual void            RequestSpecialModel         ( modelId_t model, const char *tex, unsigned int channel ) = 0;
+    typedef std::list <CEntity*> entityList_t;  // select a fast container here.
 
-    virtual void            SetRequestCallback          ( streamingRequestCallback_t callback ) = 0;
-    virtual void            SetLoadCallback             ( streamingLoadCallback_t callback ) = 0;
-    virtual void            SetFreeCallback             ( streamingFreeCallback_t callback ) = 0;
+    // Resource management exports.
+    virtual void            RequestModel                    ( modelId_t id, unsigned int flags ) = 0;
+    virtual void            FreeModel                       ( modelId_t id ) = 0;
+    virtual void            LoadAllRequestedModels          ( bool onlyPriority = false ) = 0;
+    virtual bool            HasModelLoaded                  ( modelId_t id ) = 0;
+    virtual bool            IsModelLoading                  ( modelId_t id ) = 0;
+    virtual void            WaitForModel                    ( modelId_t id ) = 0;
+    virtual void            RequestAnimations               ( int idx, unsigned int flags ) = 0;
+    virtual bool            HaveAnimationsLoaded            ( int idx ) = 0;
+    virtual bool            HasVehicleUpgradeLoaded         ( int model ) = 0;
+    virtual void            RequestSpecialModel             ( modelId_t model, const char *tex, unsigned int channel ) = 0;
+
+    // Utility methods.
+    virtual unsigned int    GetActiveStreamingEntityCount   ( void ) const = 0;
+    virtual unsigned int    GetFreeStreamingEntitySlotCount ( void ) const = 0;
+    virtual bool            IsEntityGCManaged               ( CEntity *entity ) const = 0;
+
+    virtual entityList_t    GetActiveStreamingEntities      ( void ) = 0;
+
+    virtual CEntity*        GetStreamingFocusEntity         ( void ) = 0;
+
+    virtual void            SetWorldStreamingEnabled        ( bool enabled ) = 0;
+    virtual bool            IsWorldStreamingEnabled         ( void ) const = 0;
+
+    virtual void            SetInfiniteStreamingEnabled     ( bool enabled ) = 0;
+    virtual bool            IsInfiniteStreamingEnabled      ( void ) const = 0;
+    virtual void            SetStrictNodeDistribution       ( bool enabled ) = 0;
+    virtual bool            IsStrictNodeDistributionEnabled ( void ) const = 0;
+
+    // Callbacks from the system.
+    virtual void            SetRequestCallback              ( streamingRequestCallback_t callback ) = 0;
+    virtual void            SetLoadCallback                 ( streamingLoadCallback_t callback ) = 0;
+    virtual void            SetFreeCallback                 ( streamingFreeCallback_t callback ) = 0;
 };
 
 #endif //__CStreaming_H

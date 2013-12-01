@@ -185,6 +185,24 @@ int __thiscall CCameraSAInterface::GetFadeDirection( void ) const
     return ( m_bFading ) ? m_iFadingDirection == 1 : 2;
 }
 
+/*=========================================================
+    CCameraSAInterface::GetActiveCamLookDirection
+
+    Purpose:
+        Returns the direction the active cam is looking to.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0050AE90
+=========================================================*/
+int __thiscall CCameraSAInterface::GetActiveCamLookDirection( void )
+{
+    CCamSAInterface& cam = GetActiveCam();
+
+    if ( cam.Mode == 18 || cam.Mode == 16 || cam.Mode == 22 || cam.Mode == 4 )
+        return cam.DirectionWasLooking;
+
+    return 3;
+}
+
 CCameraSA::CCameraSA( CCameraSAInterface *cam )
 { 
     DEBUG_TRACE("CCameraSA::CCameraSA(CCameraSAInterface * cameraInterface)");

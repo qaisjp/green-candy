@@ -13,6 +13,9 @@
 #ifndef _STREAMING_LOADER_
 #define _STREAMING_LOADER_
 
+// This is the global constant that sets the amount of slicers the Streaming system should use.
+// It can be set to any arbitrary value. 2 is the amount Rockstar Games has chosen.
+// I have no idea what amount gives the best performance.
 #define MAX_STREAMING_REQUESTERS        2
 
 // Used by streaming
@@ -22,6 +25,11 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId );
 
 namespace Streaming
 {
+    // Important globals.
+    extern bool isLoadingBigModel;
+    extern unsigned int numPriorityRequests;
+    extern void* threadAllocationBuffers[];
+
     // Allocated dynamically in the streaming initialization
     struct syncSemaphore    //size: 48
     {
@@ -42,9 +50,18 @@ namespace Streaming
     // Those slots are parallel to the maximum syncSemaphores.
     // streamingRequest contains model ids which request data through
     // the synSemaphores.
+    // Note: since we have localized the streaming system, we can change
+    // this structure.
+    extern streamingRequest resourceRequesters[];
+
     inline streamingRequest&    GetStreamingRequest( unsigned int id )
     {
-        return *( (streamingRequest*)ARRAY_StreamerRequest + id );
+        return resourceRequesters[id];
+    }
+
+    inline unsigned int GetStreamingRequestSyncSemaphoreIndex( unsigned int id )
+    {
+        return id;
     }
 
     // Loader routines.
