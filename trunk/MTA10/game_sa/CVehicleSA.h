@@ -576,7 +576,7 @@ public:
 
     float                       m_unk;                                  // 1420
 
-    void*                       m_unk38;                                // 1424, both used in inheriting classes
+    eVehicleType                m_vehicleType;                          // 1424
     unsigned int                m_unk39;                                // 1428
 
     short                       m_paintjobTxd;                          // 1432
@@ -668,7 +668,7 @@ public:
     void                        AddVehicleUpgrade( unsigned short model );
     void                        RemoveVehicleUpgrade( unsigned short model );
 
-    unsigned int                GetBaseVehicleType() const                              { return (unsigned int)GetInterface()->m_unk38; }
+    unsigned int                GetBaseVehicleType() const                              { return (unsigned int)GetInterface()->m_vehicleType; }
 
     void                        SetBodyDirtLevel( float fDirtLevel )                    { GetInterface()->m_bodyDirtLevel = fDirtLevel; }
     float                       GetBodyDirtLevel() const                                { return GetInterface()->m_bodyDirtLevel; }

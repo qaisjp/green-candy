@@ -153,7 +153,7 @@ public:
     virtual CWaterManager*              GetWaterManager() = 0;
     
     virtual CWeaponInfo*                GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill = WEAPONSKILL_STD ) = 0;
-    virtual CModelInfo*                 GetModelInfo( unsigned short id ) = 0;
+    virtual CModelInfo*                 GetModelInfo( modelId_t id ) = 0;
 
     virtual unsigned long       GetSystemTime() = 0;
     virtual bool                IsAtMenu() = 0;

@@ -5453,10 +5453,7 @@ second:
     }
 }
 
-// The_GTA: We have to find a better system than Cazomino's streamer hack...
-// Let's disable this ... thing
-
-#if GAY_SHIT
+#if TODO
 // Variables
 SIPLInst* pEntityWorldAdd = NULL;
 CEntitySAInterface * pLODInterface = NULL; 
@@ -5465,7 +5462,7 @@ bool bNextHookSetModel = false;
 
 bool CheckRemovedModel ( )
 {
-#if GAY_SHIT
+#if TODO
     // Init our variables
     bNextHookSetModel = false;
     pLODInterface = NULL;
@@ -5488,7 +5485,7 @@ bool CheckRemovedModel ( )
 // Hook 1
 void _declspec(naked) HOOK_LoadIPLInstance ()
 {
-#if GAY_SHIT
+#if TODO
     _asm
     {
         pushad
@@ -5507,7 +5504,7 @@ void _declspec(naked) HOOK_LoadIPLInstance ()
 #endif
 }
 
-#if GAY_SHIT
+#if GTODO
 void HideEntitySomehow ( )
 {
     // Did we get instructed to set the model

@@ -95,7 +95,7 @@ public:
     inline bool                         IsBeingDeleted              ( void )        { return m_bBeingDeleted; }
     void                                SetGameUnloadedFlag         ( void )        { m_bGameUnloadedFlag = true; }
 
-    void                                Restream( unsigned short usModel );
+    void                                Restream                    ( modelId_t usModel );
 
     void                                InvalidateEntity            ( CClientEntity* pEntity );
     void                                RestoreEntity               ( CClientEntity* pEntity );

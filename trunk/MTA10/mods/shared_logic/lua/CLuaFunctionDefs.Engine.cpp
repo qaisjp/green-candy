@@ -14,7 +14,7 @@
 *               Christian Myhre Lundheim <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -656,6 +656,188 @@ namespace CLuaFunctionDefs
 
         // We failed
         lua_pushboolean ( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineSetInfiniteStreamingEnabled )
+    {
+        bool enabled;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadBool( enabled );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pGame->GetStreaming()->SetInfiniteStreamingEnabled( enabled );
+
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineIsInfiniteStreamingEnabled )
+    {
+        lua_pushboolean( L, g_pGame->GetStreaming()->IsInfiniteStreamingEnabled() );
+        return 1;
+    }
+
+    LUA_DECLARE( engineSetStrictStreamingNodeDistributionEnabled )
+    {
+        bool enabled;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadBool( enabled );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pGame->GetStreaming()->SetStrictNodeDistribution( enabled );
+
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineIsStrictStreamingNodeDistributionEnabled )
+    {
+        lua_pushboolean( L, g_pGame->GetStreaming()->IsStrictNodeDistributionEnabled() );
+        return 1;
+    }
+
+    LUA_DECLARE( engineGetActiveStreamingEntityCount )
+    {
+        lua_pushnumber( L, g_pGame->GetStreaming()->GetActiveStreamingEntityCount() );
+        return 1;
+    }
+
+    LUA_DECLARE( engineGetActiveStreamingFreeSlotCount )
+    {
+        lua_pushnumber( L, g_pGame->GetStreaming()->GetFreeStreamingEntitySlotCount() );
+        return 1;
+    }
+
+    LUA_DECLARE( engineGetActiveStreamingEntities )
+    {
+        // Get a table of all entities that are insideof the streaming garbage collector.
+        lua_newtable( L );
+        
+        unsigned int n = 0;
+
+        CStreaming::entityList_t list = g_pGame->GetStreaming()->GetActiveStreamingEntities();
+
+        for ( CStreaming::entityList_t::iterator iter = list.begin(); iter != list.end(); iter++ )
+        {
+            CEntity *gameEntity = *iter;
+
+            if ( CClientEntity *clientEntity = m_pManager->FindEntity( gameEntity ) )
+            {
+                clientEntity->PushStack( L );
+                lua_rawseti( L, -2, ++n );
+            }
+        }
+
+        return 1;
+    }
+
+    LUA_DECLARE( engineGetStreamingFocus )
+    {
+        // Obtain the entity that the world is loading around.
+        CEntity *streamingFocus = g_pGame->GetStreaming()->GetStreamingFocusEntity();
+
+        LUA_CHECK( streamingFocus );
+
+        CClientEntity *clientEntity = g_pClientGame->GetManager()->FindEntity( streamingFocus );
+
+        LUA_CHECK( clientEntity );
+
+        clientEntity->PushStack( L );
+        return 1;
+    }
+
+    LUA_DECLARE( engineStreamingIsElementManaged )
+    {
+        // Returns whether the entity is inside of the streaming garbage collection system.
+        // Can be used for debugging and streaming error detection.
+        CClientEntity *clientEntity;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadClass( clientEntity, LUACLASS_ENTITY );
+
+        if ( !argStream.HasErrors() )
+        {
+            CEntity *gameEntity = clientEntity->GetGameEntity();
+
+            if ( gameEntity )
+            {
+                lua_pushboolean( L, g_pGame->GetStreaming()->IsEntityGCManaged( gameEntity ) );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineGetModelRefCount )
+    {
+        modelId_t modelIndex;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadNumber( modelIndex );
+
+        if ( !argStream.HasErrors() )
+        {
+            CModelInfo *info = g_pGame->GetModelInfo( modelIndex );
+
+            if ( info )
+            {
+                lua_pushnumber( L, info->GetRefCount() );
+                return 1;
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineSetWorldStreamingEnabled )
+    {
+        // Switch world rendering on or off.
+        bool enabled;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadBool( enabled );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pGame->GetStreaming()->SetWorldStreamingEnabled( enabled );
+
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineIsWorldStreamingEnabled )
+    {
+        lua_pushboolean( L, g_pGame->GetStreaming()->IsWorldStreamingEnabled() );
         return 1;
     }
 }

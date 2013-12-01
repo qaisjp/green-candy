@@ -355,13 +355,11 @@ extern CMTATaskPool *mtaTaskPool;
 extern CMTAPlayerDataPool *mtaPlayerDataPool;
 extern CMTAObjectDataPool *mtaObjectDataPool;
 
-class CPoolsSA : public CPools
+// Export a namespace, since Visual Studio has problems with class lookup, apparently.
+// Namespaces are native and faster anyway.
+// Should be clones of the exported functionality.
+namespace Pools
 {
-public:
-                            CPoolsSA                    ( void );
-                            ~CPoolsSA                   ( void );
-
-public:
     // Vehicles pool
     CBicycleSA*             AddBicycle                  ( modelId_t modelId );
     CBikeSA*                AddBike                     ( modelId_t modelId );
@@ -374,29 +372,74 @@ public:
     CAutomobileSA*          AddAutomobile               ( modelId_t modelId );
     CBoatSA*                AddBoat                     ( modelId_t modelId );
     CVehicleSA*             AddVehicle                  ( modelId_t modelID );
-    CVehicleSA*             GetVehicle                  ( void *entity ) const;
-    CVehicleSA*             GetVehicleFromRef           ( unsigned int index ) const;
+    CVehicleSA*             GetVehicle                  ( void *entity );
+    CVehicleSA*             GetVehicleFromRef           ( unsigned int index );
     void                    DeleteAllVehicles           ( void );
 
     // Objects pool
     CObjectSA*              AddObject                   ( modelId_t modelID );
-    CObjectSA*              GetObject                   ( void *entity ) const;
-    CObjectSA*              GetObjectFromRef            ( unsigned int index ) const;
+    CObjectSA*              GetObject                   ( void *entity );
+    CObjectSA*              GetObjectFromRef            ( unsigned int index );
     void                    DeleteAllObjects            ( void );
 
     // Peds pool
     CPedSA*                 AddPed                      ( modelId_t modelID );
     CPedSA*                 AddCivilianPed              ( modelId_t modelID );
     CPedSA*                 AddCivilianPed              ( void *ped );
-    CPedSA*                 GetPed                      ( void *entity ) const;
-    CPedSA*                 GetPedFromRef               ( unsigned int index ) const;
+    CPedSA*                 GetPed                      ( void *entity );
+    CPedSA*                 GetPedFromRef               ( unsigned int index );
     void                    DeleteAllPeds               ( void );
 
-    CEntitySA*              GetEntity                   ( void *entity ) const;
+    // Common Utilities
+    CEntitySA*              GetEntity                   ( void *entity );
 
     // Others
     CBuildingSA*            AddBuilding                 ( modelId_t modelID );
-    void                    DeleteAllBuildings          ( void );
+    void                    DeleteAllBuildings          ( void ); 
+};
+
+class CPoolsSA : public CPools
+{
+public:
+                            CPoolsSA                    ( void );
+                            ~CPoolsSA                   ( void );
+
+public:
+    // Vehicles pool
+    CBicycleSA*             AddBicycle                  ( modelId_t modelId )                                       { return Pools::AddBicycle( modelId ); }
+    CBikeSA*                AddBike                     ( modelId_t modelId )                                       { return Pools::AddBike( modelId ); }
+    CHeliSA*                AddHeli                     ( modelId_t modelId )                                       { return Pools::AddHeli( modelId ); }
+    CPlaneSA*               AddPlane                    ( modelId_t modelId )                                       { return Pools::AddPlane( modelId ); }
+    CTrainSA*               AddTrain                    ( modelId_t modelId, const CVector& pos, bool direction )   { return Pools::AddTrain( modelId, pos, direction ); }
+    CAutomobileTrailerSA*   AddTrailer                  ( modelId_t modelId )                                       { return Pools::AddTrailer( modelId ); }
+    CQuadBikeSA*            AddQuadBike                 ( modelId_t modelId )                                       { return Pools::AddQuadBike( modelId ); }
+    CMonsterTruckSA*        AddMonsterTruck             ( modelId_t modelId )                                       { return Pools::AddMonsterTruck( modelId ); }
+    CAutomobileSA*          AddAutomobile               ( modelId_t modelId )                                       { return Pools::AddAutomobile( modelId ); }
+    CBoatSA*                AddBoat                     ( modelId_t modelId )                                       { return Pools::AddBoat( modelId ); }
+    CVehicleSA*             AddVehicle                  ( modelId_t modelId )                                       { return Pools::AddVehicle( modelId ); }
+    CVehicleSA*             GetVehicle                  ( void *entity ) const                                      { return Pools::GetVehicle( entity ); }
+    CVehicleSA*             GetVehicleFromRef           ( unsigned int index ) const                                { return Pools::GetVehicleFromRef( index ); }
+    void                    DeleteAllVehicles           ( void )                                                    { Pools::DeleteAllVehicles(); }
+
+    // Objects pool
+    CObjectSA*              AddObject                   ( modelId_t modelID )                                       { return Pools::AddObject( modelID ); }
+    CObjectSA*              GetObject                   ( void *entity ) const                                      { return Pools::GetObject( entity ); }
+    CObjectSA*              GetObjectFromRef            ( unsigned int index ) const                                { return Pools::GetObjectFromRef( index ); }
+    void                    DeleteAllObjects            ( void )                                                    { Pools::DeleteAllObjects(); }
+
+    // Peds pool
+    CPedSA*                 AddPed                      ( modelId_t modelID )                                       { return Pools::AddPed( modelID ); }
+    CPedSA*                 AddCivilianPed              ( modelId_t modelID )                                       { return Pools::AddCivilianPed( modelID ); }
+    CPedSA*                 AddCivilianPed              ( void *ped )                                               { return Pools::AddCivilianPed( ped ); }
+    CPedSA*                 GetPed                      ( void *entity ) const                                      { return Pools::GetPed( entity ); }
+    CPedSA*                 GetPedFromRef               ( unsigned int index ) const                                { return Pools::GetPedFromRef( index ); }
+    void                    DeleteAllPeds               ( void )                                                    { Pools::DeleteAllPeds(); }
+
+    CEntitySA*              GetEntity                   ( void *entity ) const                                      { return Pools::GetEntity( entity ); }
+
+    // Others
+    CBuildingSA*            AddBuilding                 ( modelId_t modelID )                                       { return Pools::AddBuilding( modelID ); }
+    void                    DeleteAllBuildings          ( void )                                                    { Pools::DeleteAllBuildings(); }
 
     unsigned int            GetNumberOfUsedSpaces       ( ePools pools ) const;
     void                    DumpPoolsStatus             ( void ) const;

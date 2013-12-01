@@ -54,7 +54,7 @@ void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
 
     (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)20, 1 );
 
-    if ( !m_unk38 )
+    if ( m_vehicleType == VEHICLE_CAR )
         SetPlateTextureForRendering( info );
 
     // Load another paintjob TexDictionary if requested
@@ -125,7 +125,7 @@ void CVehicleSAInterface::LeaveRender( void )
     // Restore clump data
     RpClumpRestoreVehicleMaterials( (RpClump*)m_rwObject );
 
-    if ( !m_unk38 )
+    if ( m_vehicleType == VEHICLE_CAR )
         RestoreLicensePlate( (CVehicleModelInfoSAInterface*)ppModelInfo[m_model] );
 }
 

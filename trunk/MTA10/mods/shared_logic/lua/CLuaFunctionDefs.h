@@ -459,6 +459,18 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineGetModelIDFromName );
     LUA_DECLARE( engineGetModelTextureNames );
     LUA_DECLARE( engineGetVisibleTextureNames );
+    LUA_DECLARE( engineSetInfiniteStreamingEnabled );
+    LUA_DECLARE( engineIsInfiniteStreamingEnabled );
+    LUA_DECLARE( engineSetStrictStreamingNodeDistributionEnabled );
+    LUA_DECLARE( engineIsStrictStreamingNodeDistributionEnabled );
+    LUA_DECLARE( engineGetActiveStreamingEntityCount );
+    LUA_DECLARE( engineGetActiveStreamingFreeSlotCount );
+    LUA_DECLARE( engineGetActiveStreamingEntities );
+    LUA_DECLARE( engineGetStreamingFocus );
+    LUA_DECLARE( engineStreamingIsElementManaged );
+    LUA_DECLARE( engineGetModelRefCount );
+    LUA_DECLARE( engineSetWorldStreamingEnabled );
+    LUA_DECLARE( engineIsWorldStreamingEnabled );
 
     // Drawing funcs (low-level)
     LUA_DECLARE( dxDrawLine );

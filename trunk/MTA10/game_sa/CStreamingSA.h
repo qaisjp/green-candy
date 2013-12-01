@@ -38,7 +38,6 @@
 #define MAX_RESOURCES                                       26300
 #define MAX_MODELS                                          20000
 
-#define ARRAY_StreamerRequest   0x008E4A60
 #define MAX_STREAMING_REQUESTS  16
 
 // Allocated at ARRAY_StreamerRequest
@@ -95,9 +94,11 @@ namespace Streaming
     typedef CRenderChainInterface <streamingChainInfo> streamingEntityChain_t;
     typedef streamingEntityChain_t::renderChain streamingEntityReference_t;
 
+    extern streamingEntityChain_t gcEntityChain;
+
     inline streamingEntityChain_t&  GetStreamingEntityChain( void )
     {
-        return *(streamingEntityChain_t*)0x009654F0;
+        return gcEntityChain;
     }
 
     // Public functions
@@ -111,29 +112,51 @@ namespace Streaming
 
     // MTA extensions.
     bool    IsInsideStreamingUpdate( void );
+
+    // General MTA management.
+    void    Reset( void );
 };
 
 class CStreamingSA : public CStreaming
 {
 public:
-                    CStreamingSA                ( void );
-                    ~CStreamingSA               ( void );
+                    CStreamingSA                    ( void );
+                    ~CStreamingSA                   ( void );
 
-    void            RequestModel                ( modelId_t id, unsigned int flags );
-    void            FreeModel                   ( modelId_t id );
-    void            LoadAllRequestedModels      ( bool onlyPriority = false );
-    bool            HasModelLoaded              ( modelId_t id );
-    bool            IsModelLoading              ( modelId_t id );
-    void            WaitForModel                ( modelId_t id );
-    void            RequestAnimations           ( int idx, unsigned int flags );
-    bool            HaveAnimationsLoaded        ( int idx );
-    void            RequestVehicleUpgrade       ( modelId_t model, unsigned int flags );
-    bool            HasVehicleUpgradeLoaded     ( int model );
-    void            RequestSpecialModel         ( modelId_t model, const char *tex, unsigned int channel );
+    // Resource management exports.
+    void            RequestModel                    ( modelId_t id, unsigned int flags );
+    void            FreeModel                       ( modelId_t id );
+    void            LoadAllRequestedModels          ( bool onlyPriority = false );
+    bool            HasModelLoaded                  ( modelId_t id );
+    bool            IsModelLoading                  ( modelId_t id );
+    void            WaitForModel                    ( modelId_t id );
+    void            RequestAnimations               ( int idx, unsigned int flags );
+    bool            HaveAnimationsLoaded            ( int idx );
+    void            RequestVehicleUpgrade           ( modelId_t model, unsigned int flags );
+    bool            HasVehicleUpgradeLoaded         ( int model );
+    void            RequestSpecialModel             ( modelId_t model, const char *tex, unsigned int channel );
 
-    void            SetRequestCallback          ( streamingRequestCallback_t callback );
-    void            SetLoadCallback             ( streamingLoadCallback_t callback );
-    void            SetFreeCallback             ( streamingFreeCallback_t callback );
+    // Utility methods.
+    unsigned int    GetActiveStreamingEntityCount   ( void ) const;
+    unsigned int    GetFreeStreamingEntitySlotCount ( void ) const;
+    bool            IsEntityGCManaged               ( CEntity *entity ) const;
+
+    entityList_t    GetActiveStreamingEntities      ( void );
+
+    CEntitySA*      GetStreamingFocusEntity         ( void );
+
+    void            SetWorldStreamingEnabled        ( bool enabled );
+    bool            IsWorldStreamingEnabled         ( void ) const;
+
+    void            SetInfiniteStreamingEnabled     ( bool enabled );
+    bool            IsInfiniteStreamingEnabled      ( void ) const;
+    void            SetStrictNodeDistribution       ( bool enabled );
+    bool            IsStrictNodeDistributionEnabled ( void ) const;
+
+    // Useful resource system event callbacks.
+    void            SetRequestCallback              ( streamingRequestCallback_t callback );
+    void            SetLoadCallback                 ( streamingLoadCallback_t callback );
+    void            SetFreeCallback                 ( streamingFreeCallback_t callback );
 };
 
 #include "CStreamingSA.init.h"

@@ -249,6 +249,41 @@ public:
         }
     }
 
+    /*=========================================================
+        CRenderChainInterface::CountActive (MTA extension)
+
+        Purpose:
+            Returns the number of sorted list entries that are
+            in use by this render chain.
+    =========================================================*/
+    unsigned int CountActive( void ) const
+    {
+        unsigned int count = 0;
+
+        for ( renderChain *iter = m_rootLast.next; iter != &m_root; iter = iter->next )
+            count++;
+        
+        return count;
+    }
+
+    /*=========================================================
+        CRenderChainInterface::CountFree (MTA extension)
+
+        Purpose:
+            Returns the number of sorted list entries that can
+            be allocated. Returning a non-zero value means that
+            you can push entries into this chain.
+    =========================================================*/
+    unsigned int CountFree( void ) const
+    {
+        unsigned int count = 0;
+
+        for ( renderChain *iter = m_renderLast.next; iter != &m_renderStack; iter = iter->next )
+            count++;
+
+        return count;
+    }
+
     renderChain                 m_root;             // 0
     renderChain                 m_rootLast;         // 20
     renderChain                 m_renderStack;      // 40
@@ -337,6 +372,17 @@ struct pedRenderInfo
     inline void Execute( void );
 };
 typedef CRenderChainInterface <pedRenderInfo> pedRenderChain_t;
+
+enum eRenderType : unsigned int
+{
+    ENTITY_RENDER_NONE
+};
+
+// Function exports.
+void __cdecl PushEntityOnRenderQueue( CEntitySAInterface *entity, float camDistance );
+void RegisterLowPriorityRenderEntity( CEntitySAInterface *entity );
+
+eRenderType __cdecl CRenderer_SetupEntityVisibility( CEntitySAInterface *entity, float& camDistance );
 
 void EntityRender_Init( void );
 void EntityRender_Shutdown( void );

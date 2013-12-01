@@ -155,7 +155,7 @@ public:
     inline CWaterManagerSA*             GetWaterManager()               { return m_pWaterManager; }
 
     CWeaponInfoSA*          GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill = WEAPONSKILL_STD );
-    CModelInfoSA*           GetModelInfo( unsigned short id );
+    CModelInfoSA*           GetModelInfo( modelId_t id );
 
     inline unsigned long    GetSystemTime()                     { return *VAR_SystemTime; };
     inline bool             IsAtMenu()                          { return *VAR_IsAtMenu == 1; };
@@ -328,5 +328,7 @@ extern CFileTranslator *gameFileRoot;
 
 // Utility functions
 CFile*  OpenGlobalStream( const char *filename, const char *mode );
+
+float __cdecl NormalizeRadians( float radians );
 
 #endif //__CGAMESA

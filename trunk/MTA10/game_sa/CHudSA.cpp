@@ -15,6 +15,72 @@
 
 static bool hideRadar = false;
 
+/*=========================================================
+    HUD::CalcScreenCoords
+
+    Arguments:
+        worldPos - point in world space
+        screenOut - point in screen space
+        x - resolution x
+        y - resolution y
+    Purpose:
+        Transforms points of world space into screen space.
+        Return false if the screen position is invalid.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0071DA00
+=========================================================*/
+bool __cdecl HUD::CalcScreenCoords( const CVector& worldPos, CVector& screenOut, float& x, float& y )
+{
+    const RwMatrix& viewMatrix = *(RwMatrix*)0x00B6FA2C;
+
+    viewMatrix.Transform( worldPos, screenOut );
+
+    if ( screenOut.fZ <= 1 )
+        return false;
+
+    unsigned int& screenWidth = *(unsigned int*)0x00C17044;
+    unsigned int& screenHeight = *(unsigned int*)0x00C17048;
+
+    screenOut.fX *= screenWidth / screenOut.fZ;
+    screenOut.fY += screenHeight / screenOut.fZ;
+
+    x = screenWidth / screenOut.fZ;
+    y = screenHeight / screenOut.fZ;
+
+    x = x / 45.0f * 70.0f;
+    y = y / 45.0f * 70.0f;
+    return true;
+}
+
+/*=========================================================
+    HUD::CalcScreenCoords
+
+    Arguments:
+        worldPos - point in world space
+        screenOut - point in screen space
+    Purpose:
+        Transforms points of world space into screen space.
+        Return false if the screen position is invalid.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0071DAB0
+=========================================================*/
+bool __cdecl HUD::CalcScreenCoords( const CVector& worldPos, CVector& screenOut )
+{
+    const RwMatrix& viewMatrix = *(RwMatrix*)0x00B6FA2C;
+
+    viewMatrix.Transform( worldPos, screenOut );
+
+    if ( screenOut.fZ <= 1 )
+        return false;
+
+    unsigned int& screenWidth = *(unsigned int*)0x00C17044;
+    unsigned int& screenHeight = *(unsigned int*)0x00C17048;
+
+    screenOut.fX *= screenWidth / screenOut.fZ;
+    screenOut.fY += screenHeight / screenOut.fZ;
+    return true;
+}
+
 void HUD::HideRadar( bool hide )
 {
     hideRadar = hide;
@@ -169,24 +235,9 @@ VOID CHudSA::DrawBarChart ( float fX, float fY, DWORD dwWidth, DWORD dwHeight, f
     }
 }
 
-bool CHudSA::CalcScreenCoors ( CVector * vecPosition1, CVector * vecPosition2, float * fX, float * fY, bool bSetting1, bool bSetting2 )
+bool CHudSA::CalcScreenCoors( const CVector& worldPos, CVector& screenOut, float& x, float& y ) const
 {
-    DWORD dwFunc = 0x71DA00;
-    bool bReturn = false;
-    _asm
-    {
-        //push  bSetting2
-        //push  bSetting1
-        push    fY
-        push    fX
-        push    vecPosition2
-        push    vecPosition1
-        call    dwFunc
-        add     esp, 0x18
-        sub     esp, 8
-        mov     bReturn, al
-    }
-    return bReturn;
+    return HUD::CalcScreenCoords( worldPos, screenOut, x, y );
 }
 
 void CHudSA::Draw2DPolygon ( float fX1, float fY1, float fX2, float fY2, float fX3, float fY3, float fX4, float fY4, DWORD dwColor )

@@ -24,7 +24,10 @@ class CBikeSAInterface : public CVehicleSAInterface // size: 2068
 public:
     virtual void __thiscall         unk()   {}
 
-    BYTE                        m_pad20[188];                           // 1440
+    BYTE                        m_pad20[116];                           // 1440
+    
+    unsigned int                m_bikeFlags;                            // 1556
+    BYTE                        m_pad24[68];                            // 1560
 
     unsigned char               m_wheelStatus[2];                       // 1628
 

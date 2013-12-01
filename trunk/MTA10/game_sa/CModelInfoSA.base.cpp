@@ -155,7 +155,7 @@ void CBaseModelInfoSAInterface::SetCollision( CColModelSAInterface *col, bool dy
 
         timeInfo *timed = GetTimeInfo();
 
-        if ( timed && timed->m_model != 0xFFFF )
+        if ( timed && timed->m_model != -1 )
             ppModelInfo[timed->m_model]->SetCollision( col, false );
     }
     else

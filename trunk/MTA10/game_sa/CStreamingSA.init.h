@@ -23,6 +23,10 @@ class CBaseModelInfoSAInterface;
 // Streaming exports
 namespace Streaming
 {
+    // Important globals.
+    extern int biggestResourceBlockCount;
+    extern modelId_t streamingWaitModel;
+
     // Header of a file entry in the IMG archive.
     struct resourceFileHeader
     {

@@ -21,7 +21,7 @@ class CClientGameTexture;
 
 #define LUACLASS_GAMEENTITY 104
 
-class CClientGameEntity : public CClientStreamElement
+class CClientGameEntity abstract : public CClientStreamElement
 {
 public:
                                 CClientGameEntity( CClientStreamer *pStreamer, ElementID ID, lua_State *L, bool system );

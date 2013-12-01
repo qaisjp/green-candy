@@ -152,6 +152,7 @@ validIndex:
         SetLastError( 0 );
 
         // Write the offset of the next read
+        // Used if we want to read continously from a file.
         nextStreamReadOffset = offset + blockCount;
 
         // Get the real block offset without stream descriptor
@@ -174,7 +175,7 @@ validIndex:
             // List it into our semaphore operations
             semaphoreQueue[semaphoreQueueReadIndex] = syncIdx;
 
-            // Instead of module, we optimize :3
+            // Instead of modulo, we optimize :3
             if ( semaphoreQueueReadIndex == semaphoreQueueSizeCount - 1 )
                 semaphoreQueueReadIndex = 0;
             else
@@ -183,6 +184,13 @@ validIndex:
             // Notify the streaming thread.
             if ( !ReleaseSemaphore( globalStreamingSemaphore, 1, NULL ) )
                 OutputDebugString( "global streaming semaphore release failed\n" );
+
+            // The_GTA: a very rare bug is found here: sometimes the streaming runtime messes up
+            // and ReleaseSemaphore returns FALSE. I have no idea why this happens, but should be
+            // fixed to prevent engine lock-ups. This bug has been noticed in MTA:BLUE before, and
+            // is partially fixed in MTA:Eir (see CancelSyncSemaphore). Please invest time to fix
+            // this thread lock-up if you encounter it.
+            // Possible leads: invalid blockCount (0), thread racing, thread synchronization
 
             return true;
         }

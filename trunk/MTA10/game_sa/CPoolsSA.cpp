@@ -135,7 +135,7 @@ CPoolsSA::~CPoolsSA( void )
     delete *ppPedAttractorPool;
 }
 
-void CPoolsSA::DeleteAllBuildings( void )
+void Pools::DeleteAllBuildings( void )
 {
 }
 
@@ -169,9 +169,9 @@ static inline CVehicleSAInterface* CreateVehicle( modelId_t modelId )
     return veh;
 }
 
-CBicycleSA* CPoolsSA::AddBicycle( modelId_t modelID )
+CBicycleSA* Pools::AddBicycle( modelId_t modelID )
 {
-    DEBUG_TRACE("CBicycle* CPoolsSA::AddBicycle( modelId_t modelID )");
+    DEBUG_TRACE("CBicycleSA* Pools::AddBicycle( modelId_t modelID )");
 
     if ( modelID > MAX_MODELS-1 )
         return NULL;
@@ -188,9 +188,9 @@ CBicycleSA* CPoolsSA::AddBicycle( modelId_t modelID )
     return new CBicycleSA( (CBicycleSAInterface*)CreateVehicle( modelID ) );
 }
 
-CBikeSA* CPoolsSA::AddBike( modelId_t modelID )
+CBikeSA* Pools::AddBike( modelId_t modelID )
 {
-    DEBUG_TRACE("CBike* CPoolsSA::AddBike( modelId_t modelID )");
+    DEBUG_TRACE("CBikeSA* Pools::AddBike( modelId_t modelID )");
 
     if ( modelID > MAX_MODELS-1 )
         return NULL;
@@ -215,9 +215,9 @@ CBikeSA* CPoolsSA::AddBike( modelId_t modelID )
     return NULL;
 }
 
-CHeliSA* CPoolsSA::AddHeli( modelId_t modelID )
+CHeliSA* Pools::AddHeli( modelId_t modelID )
 {
-    DEBUG_TRACE("CHeli* CPoolsSA::AddHeli( modelId_t modelID )");
+    DEBUG_TRACE("CHeliSA* Pools::AddHeli( modelId_t modelID )");
 
     if ( modelID > MAX_MODELS-1 )
         return NULL;
@@ -234,9 +234,9 @@ CHeliSA* CPoolsSA::AddHeli( modelId_t modelID )
     return new CHeliSA( (CHeliSAInterface*)CreateVehicle( modelID ) );
 }
 
-CPlaneSA* CPoolsSA::AddPlane( modelId_t modelID )
+CPlaneSA* Pools::AddPlane( modelId_t modelID )
 {
-    DEBUG_TRACE("CPlane* CPoolsSA::AddPlane( modelId_t modelID )");
+    DEBUG_TRACE("CPlaneSA* Pools::AddPlane( modelId_t modelID )");
 
     if ( modelID > MAX_MODELS-1 )
         return NULL;
@@ -253,9 +253,9 @@ CPlaneSA* CPoolsSA::AddPlane( modelId_t modelID )
     return new CPlaneSA( (CPlaneSAInterface*)CreateVehicle( modelID ) );
 }
 
-CTrainSA* CPoolsSA::AddTrain( modelId_t modelID, const CVector& pos, bool direction )
+CTrainSA* Pools::AddTrain( modelId_t modelID, const CVector& pos, bool direction )
 {
-    DEBUG_TRACE("CTrain* CPoolsSA::AddTrain( modelId_t modelID, const CVector& pos, bool direction )");
+    DEBUG_TRACE("CTrainSA* Pools::AddTrain( modelId_t modelID, const CVector& pos, bool direction )");
 
     if ( modelID > MAX_MODELS-1 )
         return NULL;
@@ -322,9 +322,9 @@ CTrainSA* CPoolsSA::AddTrain( modelId_t modelID, const CVector& pos, bool direct
     return trainHead;
 }
 
-CAutomobileTrailerSA* CPoolsSA::AddTrailer( modelId_t modelID )
+CAutomobileTrailerSA* Pools::AddTrailer( modelId_t modelID )
 {
-    DEBUG_TRACE("CAutomobileTrailer* CPoolsSA::AddTrailer( modelId_t modelID )");
+    DEBUG_TRACE("CAutomobileTrailerSA* Pools::AddTrailer( modelId_t modelID )");
 
     if ( modelID > MAX_MODELS-1 )
         return NULL;
@@ -341,9 +341,9 @@ CAutomobileTrailerSA* CPoolsSA::AddTrailer( modelId_t modelID )
     return new CAutomobileTrailerSA( (CAutomobileTrailerSAInterface*)CreateVehicle( modelID ) );
 }
 
-CQuadBikeSA* CPoolsSA::AddQuadBike( modelId_t modelID )
+CQuadBikeSA* Pools::AddQuadBike( modelId_t modelID )
 {
-    DEBUG_TRACE("CQuadBike* CPoolsSA::AddQuadBike( modelId_t modelID )");
+    DEBUG_TRACE("CQuadBikeSA* Pools::AddQuadBike( modelId_t modelID )");
 
     if ( modelID > MAX_MODELS-1 )
         return NULL;
@@ -360,9 +360,9 @@ CQuadBikeSA* CPoolsSA::AddQuadBike( modelId_t modelID )
     return new CQuadBikeSA( (CQuadBikeSAInterface*)CreateVehicle( modelID ) );
 }
 
-CMonsterTruckSA* CPoolsSA::AddMonsterTruck( modelId_t modelID )
+CMonsterTruckSA* Pools::AddMonsterTruck( modelId_t modelID )
 {
-    DEBUG_TRACE("CMonsterTruck* CPoolsSA::AddMonsterTruck( modelId_t modelID )");
+    DEBUG_TRACE("CMonsterTruckSA* Pools::AddMonsterTruck( modelId_t modelID )");
 
     if ( modelID > MAX_MODELS-1 )
         return NULL;
@@ -379,9 +379,9 @@ CMonsterTruckSA* CPoolsSA::AddMonsterTruck( modelId_t modelID )
     return new CMonsterTruckSA( (CMonsterTruckSAInterface*)CreateVehicle( modelID ) );
 }
 
-CAutomobileSA* CPoolsSA::AddAutomobile( modelId_t modelID )
+CAutomobileSA* Pools::AddAutomobile( modelId_t modelID )
 {
-    DEBUG_TRACE("CAutomobile* CPoolsSA::AddAutomobile( modelId_t modelID )");
+    DEBUG_TRACE("CAutomobileSA* Pools::AddAutomobile( modelId_t modelID )");
 
     if ( modelID > MAX_MODELS-1 )
         return NULL;
@@ -414,9 +414,9 @@ CAutomobileSA* CPoolsSA::AddAutomobile( modelId_t modelID )
     return NULL;
 }
 
-CBoatSA* CPoolsSA::AddBoat( modelId_t modelID )
+CBoatSA* Pools::AddBoat( modelId_t modelID )
 {
-    DEBUG_TRACE("CBoat* CPoolsSA::AddBoat( modelId_t modelID )");
+    DEBUG_TRACE("CBoatSA* Pools::AddBoat( modelId_t modelID )");
 
     if ( modelID > MAX_MODELS-1 )
         return NULL;
@@ -433,9 +433,9 @@ CBoatSA* CPoolsSA::AddBoat( modelId_t modelID )
     return new CBoatSA( (CBoatSAInterface*)CreateVehicle( modelID ) );
 }
 
-CVehicleSA* CPoolsSA::AddVehicle( modelId_t modelID )
+CVehicleSA* Pools::AddVehicle( modelId_t modelID )
 {
-    DEBUG_TRACE("CVehicle* CPoolsSA::AddVehicle( modelId_t modelID )");
+    DEBUG_TRACE("CVehicleSA* Pools::AddVehicle( modelId_t modelID )");
 
     if ( modelID > MAX_MODELS-1 )
         return NULL;
@@ -467,7 +467,7 @@ CVehicleSA* CPoolsSA::AddVehicle( modelId_t modelID )
 }
 
 // Safe retrieval of our instance
-CVehicleSA* CPoolsSA::GetVehicle( void *entity ) const
+CVehicleSA* Pools::GetVehicle( void *entity )
 {
     unsigned int id = (*ppVehiclePool)->GetIndex( (CVehicleSAInterface*)entity );
     
@@ -477,9 +477,9 @@ CVehicleSA* CPoolsSA::GetVehicle( void *entity ) const
     return mtaVehicles[id];
 }
 
-CVehicleSA* CPoolsSA::GetVehicleFromRef( unsigned int index ) const
+CVehicleSA* Pools::GetVehicleFromRef( unsigned int index )
 {
-    DEBUG_TRACE("CVehicle* CPoolsSA::GetVehicleFromRef( unsigned int index ) const");
+    DEBUG_TRACE("CVehicleSA* Pools::GetVehicleFromRef( unsigned int index )");
 
     if ( index > MAX_VEHICLES-1 )
         return NULL;
@@ -487,9 +487,9 @@ CVehicleSA* CPoolsSA::GetVehicleFromRef( unsigned int index ) const
     return mtaVehicles[index];
 }
 
-void CPoolsSA::DeleteAllVehicles( void )
+void Pools::DeleteAllVehicles( void )
 {
-    DEBUG_TRACE("void CPoolsSA::DeleteAllVehicles()");
+    DEBUG_TRACE("void Pools::DeleteAllVehicles( void )");
 
     (*ppVehiclePool)->Clear();
 }
@@ -517,9 +517,9 @@ static inline CObjectSAInterface* CreateObject( modelId_t model )
     return obj;
 }
 
-CObjectSA* CPoolsSA::AddObject( modelId_t modelId )
+CObjectSA* Pools::AddObject( modelId_t modelId )
 {
-    DEBUG_TRACE("CObject* CPoolsSA::AddObject( modelId_t modelId )");
+    DEBUG_TRACE("CObjectSA* Pools::AddObject( modelId_t modelId )");
 
     if ( (*ppObjectPool)->Full() )
         return NULL;
@@ -529,7 +529,7 @@ CObjectSA* CPoolsSA::AddObject( modelId_t modelId )
     return new CObjectSA( CreateObject( modelId ) );
 }
 
-CObjectSA* CPoolsSA::GetObject( void *entity ) const
+CObjectSA* Pools::GetObject( void *entity )
 {
     unsigned int id = (*ppObjectPool)->GetIndex( (CObjectSAInterface*)entity );
 
@@ -539,9 +539,9 @@ CObjectSA* CPoolsSA::GetObject( void *entity ) const
     return mtaObjects[ id ];
 }
 
-CObjectSA* CPoolsSA::GetObjectFromRef( unsigned int index ) const
+CObjectSA* Pools::GetObjectFromRef( unsigned int index )
 {
-    DEBUG_TRACE("CObject* CPoolsSA::GetObjectFromRef( unsigned int index ) const");
+    DEBUG_TRACE("CObjectSA* Pools::GetObjectFromRef( unsigned int index )");
 
     if ( index > MAX_OBJECTS-1 )
         return NULL;
@@ -549,9 +549,9 @@ CObjectSA* CPoolsSA::GetObjectFromRef( unsigned int index ) const
     return mtaObjects[index];
 }
 
-void CPoolsSA::DeleteAllObjects()
+void Pools::DeleteAllObjects( void )
 {
-    DEBUG_TRACE("void CPoolsSA::DeleteAllObjects()");
+    DEBUG_TRACE("void Pools::DeleteAllObjects( void )");
 
     (*ppObjectPool)->Clear();
 }
@@ -578,9 +578,9 @@ inline static CPlayerPedSAInterface* CreatePlayerPed( void )
     return player;
 }
 
-CPedSA* CPoolsSA::AddPed( modelId_t modelId )
+CPedSA* Pools::AddPed( modelId_t modelId )
 {
-    DEBUG_TRACE("CPed* CPoolsSA::AddPed( modelId_t modelId )");
+    DEBUG_TRACE("CPedSA* Pools::AddPed( modelId_t modelId )");
 
     if ( (*ppPedPool)->Full() )
         return NULL;
@@ -596,7 +596,7 @@ CPedSA* CPoolsSA::AddPed( modelId_t modelId )
     return new CPlayerPedSA( CreatePlayerPed(), modelId, false );
 }
 
-inline static CCivilianPedSAInterface* CreateCivilianPed()
+inline static CCivilianPedSAInterface* CreateCivilianPed( void )
 {
     // based on CCivilianPed::SetupPlayerPed (R*)
     DWORD CCivilianPedConstructor = FUNC_CCivilianPedConstructor;
@@ -614,9 +614,9 @@ inline static CCivilianPedSAInterface* CreateCivilianPed()
     return ped;
 }
 
-CPedSA* CPoolsSA::AddCivilianPed( modelId_t modelID )
+CPedSA* Pools::AddCivilianPed( modelId_t modelID )
 {
-    DEBUG_TRACE("CPed* CPoolsSA::AddCivilianPed( modelId_t modelID )");
+    DEBUG_TRACE("CPedSA* Pools::AddCivilianPed( modelId_t modelID )");
 
     if ( (*ppPedPool)->Full() )
         return NULL;
@@ -624,14 +624,14 @@ CPedSA* CPoolsSA::AddCivilianPed( modelId_t modelID )
     return new CCivilianPedSA( CreateCivilianPed(), modelID );
 }
 
-CPedSA* CPoolsSA::AddCivilianPed( void *entity )
+CPedSA* Pools::AddCivilianPed( void *entity )
 {
-    DEBUG_TRACE("CPed* CPoolsSA::AddCivilianPed( void *entity )");
+    DEBUG_TRACE("CPedSA* Pools::AddCivilianPed( void *entity )");
 
     return new CCivilianPedSA( (CCivilianPedSAInterface*)entity, ((CCivilianPedSAInterface*)entity)->m_model );
 }
 
-CPedSA* CPoolsSA::GetPed( void *entity ) const
+CPedSA* Pools::GetPed( void *entity )
 {
     unsigned int id = (*ppPedPool)->GetIndex( (CPedSAInterface*)entity );
 
@@ -641,9 +641,9 @@ CPedSA* CPoolsSA::GetPed( void *entity ) const
     return mtaPeds[ id ];
 }
 
-CPedSA* CPoolsSA::GetPedFromRef( unsigned int index ) const
+CPedSA* Pools::GetPedFromRef( unsigned int index )
 {
-    DEBUG_TRACE("CPed* CPoolsSA::GetPedFromRef( unsigned int index ) const");
+    DEBUG_TRACE("CPedSA* Pools::GetPedFromRef( unsigned int index )");
 
     if ( index > MAX_PEDS )
         return NULL;
@@ -651,16 +651,16 @@ CPedSA* CPoolsSA::GetPedFromRef( unsigned int index ) const
     return mtaPeds[index];
 }
 
-void CPoolsSA::DeleteAllPeds( void )
+void Pools::DeleteAllPeds( void )
 {
-    DEBUG_TRACE("void CPoolsSA::DeleteAllPeds()");
+    DEBUG_TRACE("void Pools::DeleteAllPeds( void )");
 
     (*ppPedPool)->Clear();
 }
 
 // This function is insecure, because it accesses the entity prior to validation
 // Has to stay this way for optimization purposes; usage only in 100% secure scenarios!
-CEntitySA* CPoolsSA::GetEntity( void *entity ) const
+CEntitySA* Pools::GetEntity( void *entity )
 {
     if ( !entity )
         return NULL;
@@ -675,9 +675,9 @@ CEntitySA* CPoolsSA::GetEntity( void *entity ) const
     return NULL;
 }
 
-CBuildingSA* CPoolsSA::AddBuilding( modelId_t modelID )
+CBuildingSA* Pools::AddBuilding( modelId_t modelID )
 {
-    DEBUG_TRACE("CBuilding* CPoolsSA::AddBuilding( modelId_t modelID )");
+    DEBUG_TRACE("CBuildingSA* CPoolsSA::AddBuilding( modelId_t modelID )");
 
     if ( (*ppBuildingPool)->Full() )
         return NULL;
