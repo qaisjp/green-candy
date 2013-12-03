@@ -201,6 +201,44 @@ bool __thiscall CEntitySAInterface::IsInStreamingArea( void ) const
     return Streaming::IsValidStreamingArea( m_areaCode );
 }
 
+// Entity referencing system.
+// Should prevent entities that are marked by the system to be destroyed in crucial areas.
+// Otherwise the system will crash.
+static entityReferenceCallback_t _entityAddRef = NULL;
+static entityReferenceCallback_t _entityRemoveRef = NULL;
+
+bool CEntitySAInterface::Reference( void )
+{
+    if ( _entityAddRef )
+    {
+        CEntitySA *mtaEntity = Pools::GetEntity( this );
+
+        if ( mtaEntity )
+        {
+            return _entityAddRef( mtaEntity );
+        }
+    }
+
+    return false;
+}
+
+void CEntitySAInterface::Dereference( void )
+{
+    if ( _entityRemoveRef )
+    {
+        CEntitySA *mtaEntity = Pools::GetEntity( this );
+
+        if ( mtaEntity )
+            _entityRemoveRef( mtaEntity );
+    }
+}
+
+void Entity::SetReferenceCallbacks( entityReferenceCallback_t addRef, entityReferenceCallback_t delRef )
+{
+    _entityAddRef = addRef;
+    _entityRemoveRef = delRef;
+}
+
 void Entity_Init( void )
 {
     HookInstall( 0x00535300, h_memFunc( &CEntitySAInterface::GetColModel ), 5 );

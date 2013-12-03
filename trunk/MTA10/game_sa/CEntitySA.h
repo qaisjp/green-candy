@@ -165,6 +165,10 @@ public:
 
     bool __thiscall                 IsInStreamingArea       ( void ) const;
 
+    // System functions for communication with the mods.
+    bool                            Reference               ( void );
+    void                            Dereference             ( void );
+
     RwObject*               m_rwObject;         // 24
 
     unsigned int            m_entityFlags;      // 28
@@ -196,6 +200,11 @@ public:
 };
 
 #include "CEntitySA.render.h"
+
+namespace Entity
+{
+    void    SetReferenceCallbacks( entityReferenceCallback_t addRef, entityReferenceCallback_t delRef );
+};
 
 void Entity_Init( void );
 void Entity_Shutdown( void );
