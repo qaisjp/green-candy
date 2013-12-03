@@ -526,6 +526,31 @@ void CGameSA::OnFrame()
     }
 }
 
+void CGameSA::SetEntityReferenceCallbacks( entityReferenceCallback_t addRef, entityReferenceCallback_t delRef )
+{
+    Entity::SetReferenceCallbacks( addRef, delRef );
+}
+
+void CGameSA::SetEntityPreRenderCallback( gameEntityPreRenderCallback_t callback )
+{
+    Entity::SetPreRenderCallback( callback );
+}
+
+void CGameSA::SetEntityRenderCallback( gameEntityRenderCallback_t callback )
+{
+    Entity::SetRenderCallback( callback );
+}
+
+void CGameSA::SetEntityRenderUnderwaterCallback( gameEntityRenderCallback_t callback )
+{
+    Entity::SetRenderUnderwaterCallback( callback );
+}
+
+void CGameSA::SetEntityRenderPostProcessCallback( gameEntityPostProcessCallback_t callback )
+{
+    Entity::SetRenderPostProcessCallback( callback );
+}
+
 void CGameSA::ResetShaders()
 {
     VehicleModelInfoRender_Reset();

@@ -152,14 +152,14 @@ struct vehicleRenderInfo : public atomicRenderInfo
 typedef CRenderChainInterface <vehicleRenderInfo> vehicleRenderChain_t;
 
 // Render chains for vehicles only
-static vehicleRenderChain_t *const vehicleRenderChains = (vehicleRenderChain_t*)0x00C88070;
+static vehicleRenderChain_t vehicleRenderChains( 50 );  // Binary offsets: (1.0 US and 1.0 EU): 0x00C88070
 static vehicleRenderChain_t opaqueRenderChain( 128 );   // MTA extension
 static vehicleRenderChain_t lastRenderChain( 16 );      // MTA extension
 
 void __cdecl ClearVehicleRenderChains( void )
 {
     opaqueRenderChain.Clear();
-    vehicleRenderChains->Clear();
+    vehicleRenderChains.Clear();
     lastRenderChain.Clear();
 }
 
@@ -189,7 +189,7 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
 
                 // First render components which are opaque only
                 opaqueRenderChain.Execute();
-                vehicleRenderChains->ExecuteReverse();
+                vehicleRenderChains.ExecuteReverse();
                 lastRenderChain.Execute();
             }
 
@@ -203,7 +203,7 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
 
                 // Render alpha polygons
                 opaqueRenderChain.ExecuteReverse();
-                vehicleRenderChains->Execute();
+                vehicleRenderChains.Execute();
                 lastRenderChain.ExecuteReverse();
             }
         }
@@ -216,7 +216,7 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
         RwD3D9ApplyDeviceStates();
     }
     else
-        vehicleRenderChains->Execute(); // do what GTA:SA usually does.
+        vehicleRenderChains.Execute(); // do what GTA:SA usually does.
 }
 
 // LOD distances for models, squared (measured against camera distance from atomic, 0x00733160 is rendering wrapper)
@@ -343,7 +343,7 @@ static __forceinline bool RwAtomicQueue( RpAtomic *atomic, float camDistanceSq )
     level.callback = _renderAtomicCommon;
     level.atomic = atomic;
     level.distance = camDistanceSq;
-    return vehicleRenderChains->PushRender( &level ) != NULL;
+    return vehicleRenderChains.PushRender( &level ) != NULL;
 }
 
 static __forceinline void RwAtomicRenderVehicle( RpAtomic *atomic, float camDistanceSq )
@@ -493,8 +493,6 @@ static RpAtomic* RwAtomicRenderBoat( RpAtomic *atomic )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x007344A0
 =========================================================*/
-static atomicRenderChain_t *const boatRenderChain = (atomicRenderChain_t*)0x00C880C8;
-
 static RpAtomic* RwAtomicRenderTranslucentBoat( RpAtomic *atomic )
 {
     float camDistanceSq = GetRenderObjectCameraDistanceSq( atomic );
@@ -511,7 +509,7 @@ static RpAtomic* RwAtomicRenderTranslucentBoat( RpAtomic *atomic )
         level.atomic = atomic;
         level.distance = camDistanceSq;
 
-        if ( boatRenderChain->PushRender( &level ) )
+        if ( boatRenderChain.PushRender( &level ) )
             return atomic;
     }
     

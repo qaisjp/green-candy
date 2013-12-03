@@ -18,6 +18,50 @@ extern CClientGame* g_pClientGame;
 
 #define CGUI_ICON_NETWORK_TROUBLE       "cgui\\images\\16-message-warn.png"
 
+// Entity core referencing system.
+bool __cdecl OnEntitySystemAddRef( CEntity *entity )
+{
+    if ( CClientEntity *mtaEntity = g_pClientGame->GetManager()->FindEntity( entity ) )
+    {
+        mtaEntity->IncrementMethodStack();
+        return true;
+    }
+
+    return false;
+}
+
+bool __cdecl OnEntitySystemDelRef( CEntity *entity )
+{
+    if ( CClientEntity *mtaEntity = g_pClientGame->GetManager()->FindEntity( entity ) )
+    {
+        mtaEntity->DecrementMethodStack();
+        return true;
+    }
+
+    return false;
+}
+
+// Entity rendering system callbacks.
+void __cdecl OnEntityPreRender( void )
+{
+    g_pClientGame->GetRootEntity()->CallEvent( "onClientGameEntityPreRender", g_pClientGame->GetLuaManager()->GetVirtualMachine(), 0 );
+}
+
+void __cdecl OnEntityRender( void )
+{
+    g_pClientGame->GetRootEntity()->CallEvent( "onClientGameEntityRender", g_pClientGame->GetLuaManager()->GetVirtualMachine(), 0 );
+}
+
+void __cdecl OnEntityRenderUnderwater( void )
+{
+    g_pClientGame->GetRootEntity()->CallEvent( "onClientGameEntityRenderUnderwater", g_pClientGame->GetLuaManager()->GetVirtualMachine(), 0 );
+}
+
+void __cdecl OnEntityRenderPostProcess( void )
+{
+    g_pClientGame->GetRootEntity()->CallEvent( "onClientGameEntityPostProcess", g_pClientGame->GetLuaManager()->GetVirtualMachine(), 0 );
+}
+
 CClientManager::CClientManager ( void )
 {
     // Initialize time
@@ -29,6 +73,15 @@ CClientManager::CClientManager ( void )
     // Load the connection trouble texture
     m_pConnectionTroubleTexture = g_pCore->GetGUI ()->CreateTexture ();
     m_pConnectionTroubleTexture->LoadFromFile ( texPath.c_str() );
+
+    // Initialize the system entity referencing.
+    g_pGame->SetEntityReferenceCallbacks( OnEntitySystemAddRef, OnEntitySystemDelRef );
+
+    // Initialize render hooks.
+    g_pGame->SetEntityPreRenderCallback( OnEntityPreRender );
+    g_pGame->SetEntityRenderCallback( OnEntityRender );
+    g_pGame->SetEntityRenderUnderwaterCallback( OnEntityRenderUnderwater );
+    g_pGame->SetEntityRenderPostProcessCallback( OnEntityRenderPostProcess );
 
     m_pMarkerStreamer = new CClientStreamer ( CClientMarker::IsLimitReached, 600.0f );
     m_pObjectStreamer = new CClientStreamer ( CClientObjectManager::IsObjectLimitReached, 500.0f );

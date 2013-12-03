@@ -178,6 +178,13 @@ public:
     void                    OnPreFrame();
     void                    OnFrame();
 
+    void                    SetEntityReferenceCallbacks( entityReferenceCallback_t addRef, entityReferenceCallback_t delRef );
+
+    void                    SetEntityPreRenderCallback( gameEntityPreRenderCallback_t callback );
+    void                    SetEntityRenderCallback( gameEntityRenderCallback_t callback );
+    void                    SetEntityRenderUnderwaterCallback( gameEntityRenderUnderwaterCallback_t callback );
+    void                    SetEntityRenderPostProcessCallback( gameEntityPostProcessCallback_t callback );
+
     void                    ResetShaders();
 
     eGameVersion            GetGameVersion();

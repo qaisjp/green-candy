@@ -186,6 +186,21 @@ public:
     }
 
     /*=========================================================
+        CRenderChainInterface::GetFirstUsed (MTA extension)
+
+        Purpose:
+            Returns the first allocated renderChain node in this
+            sorted container. Returns NULL if there is none
+            allocated.
+    =========================================================*/
+    inline renderChain* GetFirstUsed( void )
+    {
+        renderChain *iter = m_rootLast.next;
+
+        return iter == &m_root ? NULL : iter;
+    }
+
+    /*=========================================================
         CRenderChainInterface::Execute
 
         Purpose:
@@ -343,6 +358,7 @@ struct entityRenderInfo
     CEntitySAInterface  *entity;
     callback_t          callback;
     float               distance;
+    bool                isReferenced;       // MTA extension
 
     inline void Execute( void )
     {
@@ -377,6 +393,17 @@ enum eRenderType : unsigned int
 {
     ENTITY_RENDER_NONE
 };
+
+namespace Entity
+{
+    void    SetPreRenderCallback( gameEntityPreRenderCallback_t callback );
+    void    SetRenderCallback( gameEntityRenderCallback_t callback );
+    void    SetRenderUnderwaterCallback( gameEntityRenderUnderwaterCallback_t callback );
+    void    SetRenderPostProcessCallback( gameEntityPostProcessCallback_t callback );
+};
+
+// Exports for external rendering systems.
+extern atomicRenderChain_t boatRenderChain;
 
 // Function exports.
 void __cdecl PushEntityOnRenderQueue( CEntitySAInterface *entity, float camDistance );

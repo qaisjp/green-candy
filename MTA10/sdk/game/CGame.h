@@ -178,6 +178,13 @@ public:
     virtual void                OnPreFrame() = 0;
     virtual void                OnFrame() = 0;
 
+    virtual void                SetEntityReferenceCallbacks( entityReferenceCallback_t addRef, entityReferenceCallback_t delRef );
+
+    virtual void                SetEntityPreRenderCallback( gameEntityPreRenderCallback_t callback ) = 0;
+    virtual void                SetEntityRenderCallback( gameEntityRenderCallback_t callback ) = 0;
+    virtual void                SetEntityRenderUnderwaterCallback( gameEntityRenderUnderwaterCallback_t callback ) = 0;
+    virtual void                SetEntityRenderPostProcessCallback( gameEntityPostProcessCallback_t callback ) = 0;
+
     virtual void                ResetShaders() = 0;
 
     virtual bool                InitLocalPlayer() = 0;

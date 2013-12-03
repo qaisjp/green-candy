@@ -2565,6 +2565,10 @@ void CClientGame::AddBuiltInEvents()
     m_Events.Add( "onClientMinimize", "", NULL, false );
     m_Events.Add( "onClientRestore", "", NULL, false );
     m_Events.Add( "onClientGameRender", "", NULL, false );
+    m_Events.Add( "onClientGameEntityPreRender", "", NULL, false );
+    m_Events.Add( "onClientGameEntityRender", "", NULL, false );
+    m_Events.Add( "onClientGameEntityRenderUnderwater", "", NULL, false );
+    m_Events.Add( "onClientGameEntityPostProcess", "", NULL, false );
 
     // Cursor events
     m_Events.Add( "onClientClick", "button, state, screenX, screenY, worldX, worldY, worldZ, gui_clicked", NULL, false );
