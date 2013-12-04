@@ -477,7 +477,7 @@ int __cdecl QueueEntityForRendering( CEntitySAInterface *entity, float camDistan
 // Native GTA:SA uses static arrays to render world instances.
 // That system has become deprecated, because we can render infinite objects.
 // Hence, I want to use allocatable lists.
-static mainEntityRenderChain_t groundAlphaEntities( 1000 );
+static mainEntityRenderChain_t groundAlphaEntities( 1000 );     // Note that 1000 is also the native limit.
 static mainEntityRenderChain_t staticRenderEntities( 1000 );
 static mainEntityRenderChain_t lowPriorityRenderEntities( 1000 );
 
@@ -545,6 +545,7 @@ void __cdecl ClearEntityRenderChains( void )
     ClearEntityRenderChain( GetAlphaEntityRenderChain() );
 }
 
+// Binary offsets: (1.0 US and 1.0 EU): 0x005534B0
 void __cdecl PushEntityOnRenderQueue( CEntitySAInterface *entity, float camDistance )
 {
     CBaseModelInfoSAInterface *model = entity->GetModelInfo();
