@@ -1028,8 +1028,7 @@ void Streaming::Reset( void )
 {
     // Reset to GTA:SA defaults.
     // Could have been modified by mods.
-    allowInfiniteStreaming = false;
-    strictNodeDistribution = true;
+    ResetGarbageCollection();
 }
 
 CStreamingSA::CStreamingSA( void )
@@ -1288,4 +1287,17 @@ void CStreamingSA::SetRequestCallback( streamingRequestCallback_t callback )
 void CStreamingSA::SetFreeCallback( streamingFreeCallback_t callback  )
 {
     streamingFreeCallback = callback;
+}
+
+void CStreamingSA::GetStreamingInfo( CStreaming::streamingInfo& info ) const
+{
+    info.usedMemory = *(DWORD*)VAR_MEMORYUSAGE;
+    info.maxMemory = *(size_t*)0x008A5A80;
+    info.numberOfRequests = *(DWORD*)VAR_NUMMODELS;
+    info.numberOfPriorityRequests = Streaming::numPriorityRequests;
+    info.numberOfSlicers = MAX_STREAMING_REQUESTERS;
+    info.numberOfRequestsPerSlicer = MAX_STREAMING_REQUESTS;
+    info.activeStreamingThread = Streaming::activeStreamingThread;
+    info.isBusy = Streaming::IsStreamingBusy();
+    info.isLoadingBigModel = Streaming::isLoadingBigModel;
 }

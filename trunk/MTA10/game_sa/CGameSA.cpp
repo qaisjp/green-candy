@@ -551,6 +551,11 @@ void CGameSA::SetEntityRenderPostProcessCallback( gameEntityPostProcessCallback_
     Entity::SetRenderPostProcessCallback( callback );
 }
 
+CGame::entityList_t CGameSA::GetEntitiesInRenderQueue( void )
+{
+    return Entity::GetEntitiesInRenderQueue();
+}
+
 void CGameSA::ResetShaders()
 {
     VehicleModelInfoRender_Reset();

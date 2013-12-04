@@ -446,6 +446,7 @@ public:
 
     unsigned int            GetPoolDefaultCapacity      ( ePools pool ) const;
     unsigned int            GetPoolCapacity             ( ePools pool ) const;
+    const char*             GetPoolName                 ( ePools pool ) const;
 };
 
 // Global linkage between internal interfaces and MTA

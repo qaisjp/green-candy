@@ -45,6 +45,8 @@ enum ePools
     ENV_MAP_MATERIAL_POOL,
     ENV_MAP_ATOMIC_POOL,
     SPEC_MAP_MATERIAL_POOL,
+    COL_FILE_POOL,
+    IPL_FILE_POOL,
     MAX_POOLS
 };
 
@@ -90,6 +92,7 @@ public:
 
     virtual unsigned int            GetPoolDefaultCapacity      ( ePools pool ) const = 0;
     virtual unsigned int            GetPoolCapacity             ( ePools pool ) const = 0;
+    virtual const char*             GetPoolName                 ( ePools pool ) const = 0;
 };
 
 #endif

@@ -185,6 +185,8 @@ public:
     void                    SetEntityRenderUnderwaterCallback( gameEntityRenderUnderwaterCallback_t callback );
     void                    SetEntityRenderPostProcessCallback( gameEntityPostProcessCallback_t callback );
 
+    entityList_t            GetEntitiesInRenderQueue( void );
+
     void                    ResetShaders();
 
     eGameVersion            GetGameVersion();

@@ -768,6 +768,8 @@ unsigned int CPoolsSA::GetNumberOfUsedSpaces( ePools pool ) const
     case ENV_MAP_MATERIAL_POOL:     return (*ppEnvMapMaterialPool)->GetCount();
     case ENV_MAP_ATOMIC_POOL:       return (*ppEnvMapAtomicPool)->GetCount();
     case SPEC_MAP_MATERIAL_POOL:    return (*ppSpecMapMaterialPool)->GetCount();
+    case COL_FILE_POOL:             return Streaming::GetCOLEnvironment().m_pool->GetCount();
+    case IPL_FILE_POOL:             return Streaming::GetIPLEnvironment().m_pool->GetCount();
     }
 
     return 0;
@@ -797,7 +799,40 @@ unsigned int CPoolsSA::GetPoolCapacity( ePools pool ) const
     case ENV_MAP_MATERIAL_POOL:         return (*ppEnvMapMaterialPool)->GetMax();
     case ENV_MAP_ATOMIC_POOL:           return (*ppEnvMapAtomicPool)->GetMax();
     case SPEC_MAP_MATERIAL_POOL:        return (*ppSpecMapMaterialPool)->GetMax();
+    case COL_FILE_POOL:                 return Streaming::GetCOLEnvironment().m_pool->GetMax();
+    case IPL_FILE_POOL:                 return Streaming::GetIPLEnvironment().m_pool->GetMax();
     }
 
     return 0;
+}
+
+const char* CPoolsSA::GetPoolName( ePools pool ) const
+{
+    switch( pool )
+    {
+    case BUILDING_POOL:                 return "Buildings";
+    case PED_POOL:                      return "Peds";
+    case OBJECT_POOL:                   return "Objects";
+    case DUMMY_POOL:                    return "Dummies";
+    case VEHICLE_POOL:                  return "Vehicles";
+    case COL_MODEL_POOL:                return "Collisions";
+    case TASK_POOL:                     return "Tasks";
+    case EVENT_POOL:                    return "Events";
+    case TASK_ALLOCATOR_POOL:           return "Task Allocators";
+    case PED_INTELLIGENCE_POOL:         return "Ped Intelligence";
+    case PED_ATTRACTOR_POOL:            return "Ped Attractors";
+    case ENTRY_INFO_NODE_POOL:          return "Entry Info";
+    case NODE_ROUTE_POOL:               return "Node Routes";
+    case PATROL_ROUTE_POOL:             return "Patrol Routes";
+    case POINT_ROUTE_POOL:              return "Point Routes";
+    case POINTER_DOUBLE_LINK_POOL:      return "PtrNode Double Links";
+    case POINTER_SINGLE_LINK_POOL:      return "PtrNode Single Links";
+    case ENV_MAP_MATERIAL_POOL:         return "Environment Map Materials";
+    case ENV_MAP_ATOMIC_POOL:           return "Environment Map Atomics";
+    case SPEC_MAP_MATERIAL_POOL:        return "Specular Map Materials";
+    case COL_FILE_POOL:                 return "COL Sectors";
+    case IPL_FILE_POOL:                 return "IPL Sectors";
+    }
+
+    return "unknown";
 }

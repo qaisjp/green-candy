@@ -463,6 +463,10 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineIsInfiniteStreamingEnabled );
     LUA_DECLARE( engineSetStrictStreamingNodeDistributionEnabled );
     LUA_DECLARE( engineIsStrictStreamingNodeDistributionEnabled );
+    LUA_DECLARE( engineSetStreamingGCOnDemandEnabled );
+    LUA_DECLARE( engineIsStreamingGCOnDemandEnabled );
+    LUA_DECLARE( engineAllowStreamingNodeStealing );
+    LUA_DECLARE( engineIsStreamingNodeStealingAllowed );
     LUA_DECLARE( engineGetActiveStreamingEntityCount );
     LUA_DECLARE( engineGetActiveStreamingFreeSlotCount );
     LUA_DECLARE( engineGetActiveStreamingEntities );
@@ -471,6 +475,9 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineGetModelRefCount );
     LUA_DECLARE( engineSetWorldStreamingEnabled );
     LUA_DECLARE( engineIsWorldStreamingEnabled );
+    LUA_DECLARE( engineGetEntitiesInRenderQueue );
+    LUA_DECLARE( engineGetGamePoolLimits );
+    LUA_DECLARE( engineGetStreamingInfo );
 
     // Drawing funcs (low-level)
     LUA_DECLARE( dxDrawLine );
@@ -750,6 +757,7 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( getNetworkUsageData );
     LUA_DECLARE( getNetworkStats );
     LUA_DECLARE( getPerformanceStats );
+    LUA_DECLARE( getPerformanceTimer );
 
     LUA_DECLARE( getVersion );
 

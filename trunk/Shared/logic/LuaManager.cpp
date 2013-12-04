@@ -111,6 +111,28 @@ static int lua_gcextend_event( lua_State *L )
     return 0;
 }
 
+static int lua_obj_dealloc_fail_event( lua_State *L )
+{
+    if ( lua_type( L, 1 ) == LUA_TCLASS )
+    {
+        ILuaClass *j = lua_refclass( L, 1 );
+
+        int topTransmit = j->GetTransmit();
+
+        // We definately cannot continue.
+        __asm int 3
+    }
+    return 0;
+}
+
+static int lua_class_destructor_exception_event( lua_State *L )
+{
+    // This is called when a Lua class triggers an exception during a destructor call.
+    // In C++, such classes kill the application. What shall we do?
+    lua_readmanager( L )->GetDebug().LogError( "encountered class destructor exception (ignoring)" );
+    return 0;
+}
+
 struct _memAllocatorInfo
 {
     HANDLE heap;
@@ -183,6 +205,8 @@ LuaManager::LuaManager( Events& events, ScriptDebugging& debug ) :
     lua_setevent( m_lua, LUA_EVENT_THREAD_CONTEXT_PUSH, lua_pushstackthread );
     lua_setevent( m_lua, LUA_EVENT_THREAD_CONTEXT_POP, lua_popstackthread );
     lua_setevent( m_lua, LUA_EVENT_GC_PROPAGATE, lua_gcextend_event );
+    lua_setevent( m_lua, LUA_EVENT_GC_DEALLOC_FAIL, lua_obj_dealloc_fail_event );
+    lua_setevent( m_lua, LUA_EVENT_DESTRUCTOR_EXCEPTION, lua_class_destructor_exception_event );
 
     // Cache the lua manager in the VM
     lua_pushlightuserdata( m_lua, this );
