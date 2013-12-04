@@ -30,6 +30,8 @@ namespace Streaming
     extern unsigned int numPriorityRequests;
     extern void* threadAllocationBuffers[];
 
+    extern unsigned int activeStreamingThread;
+
     // Allocated dynamically in the streaming initialization
     struct syncSemaphore    //size: 48
     {

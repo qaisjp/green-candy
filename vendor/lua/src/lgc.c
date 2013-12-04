@@ -195,83 +195,97 @@ void luaC_markobject( global_State *g, GCObject *o )
 size_t luaC_separatefinalization( lua_State *L, bool all )
 {
     global_State *g = G(L);
+
     size_t deadmem = 0;
-    GCObject **p = &g->mainthread->next;
-    GCObject *curr;
 
-    while ( (curr = *p) != NULL )
+    while ( all )
     {
-        Class *j;
+        GCObject **p = &g->mainthread->next;
+        GCObject *curr;
 
-        switch( curr->tt )
+        bool collected = false;
+
+        while ( (curr = *p) != NULL )
         {
-        case LUA_TUSERDATA:
-            if (!(iswhite(curr) || all) || isfinalized(gco2u(curr)))
-                p = &curr->next;  /* don't bother with them */
-            else if (fasttm(L, gco2u(curr)->metatable, TM_GC) == NULL)
-            {
-                markfinalized(gco2u(curr));  /* don't need finalization */
-                p = &curr->next;
-            }
-            else
-            {  /* must call its gc method */
-                deadmem += sizeudata(gco2u(curr));
-                markfinalized(gco2u(curr));
-                *p = curr->next;
+            Class *j;
 
-                /* link `curr' at the end of `tmudata' list */
-                if (g->tmudata == NULL)  /* list is empty? */
-                    g->tmudata = curr->next = curr;  /* creates a circular list */
-                else
+            switch( curr->tt )
+            {
+            case LUA_TUSERDATA:
+                if (!(iswhite(curr) || all) || isfinalized(gco2u(curr)))
+                    p = &curr->next;  /* don't bother with them */
+                else if (fasttm(L, gco2u(curr)->metatable, TM_GC) == NULL)
                 {
-                    curr->next = g->tmudata->next;
-                    g->tmudata->next = curr;
-                    g->tmudata = curr;
+                    markfinalized(gco2u(curr));  /* don't need finalization */
+                    p = &curr->next;
                 }
-            }
-            break;
-        case LUA_TCLASS:
-            j = gco2j( curr );
-            p = &curr->next;
+                else
+                {  /* must call its gc method */
+                    deadmem += sizeudata(gco2u(curr));
+                    markfinalized(gco2u(curr));
+                    *p = curr->next;
 
-            if ( !( iswhite(curr) || all ) ) // we cannot destroy our class yet, bound in thread
+                    collected = true;
+
+                    /* link `curr' at the end of `tmudata' list */
+                    if (g->tmudata == NULL)  /* list is empty? */
+                        g->tmudata = curr->next = curr;  /* creates a circular list */
+                    else
+                    {
+                        curr->next = g->tmudata->next;
+                        g->tmudata->next = curr;
+                        g->tmudata = curr;
+                    }
+                }
                 break;
+            case LUA_TCLASS:
+                j = gco2j( curr );
+                p = &curr->next;
 
-            // If we clear everything, .lua references do not count
-            if ( all )
-                j->ClearReferences( L );
+                if ( !( iswhite(curr) || all ) ) // we cannot destroy our class yet, bound in thread
+                    break;
 
-            if ( j->inMethod )
-            {
-                // Poll it for next collection cycle
-                j->TraverseGC( g );
+                // If we clear everything, .lua references scripting shall be removed.
+                // System references still count (IncrementMethodStack).
+                if ( all )
+                    j->ClearReferences( L );
+
+                if ( j->inMethod )
+                {
+                    // Poll it for next collection cycle
+                    j->TraverseGC( g );
+                    break;
+                }
+
+                markfinalized( j );
+
+                if ( j->destroyed )
+                    break;
+
+                if ( !j->PreDestructor( L ) )
+                {
+                    // Not ready to be destroyed yet
+                    j->TraverseGC( g );
+                    break;
+                }
+
+                deadmem += sizeof( Class );
+                collected = true;
+                {
+                    debughook_shield shield( *L );
+
+                    // Call it's destructor
+                    setclvalue( L, L->top, j->destructor );
+                    luaD_call( L, L->top++, 0 );
+                }
                 break;
+            default:
+                lua_assert( 0 );
             }
-
-            markfinalized( j );
-
-            if ( j->destroyed )
-                break;
-
-            if ( !j->PreDestructor( L ) )
-            {
-                // Not ready to be destroyed yet
-                j->TraverseGC( g );
-                break;
-            }
-
-            deadmem += sizeof( Class );
-            {
-                debughook_shield shield( *L );
-
-                // Call it's destructor
-                setclvalue( L, L->top, j->destructor );
-                luaD_call( L, L->top++, 0 );
-            }
-            break;
-        default:
-            lua_assert( 0 );
         }
+
+        if ( !collected )
+            break;
     }
     return deadmem;
 }
@@ -1079,11 +1093,53 @@ void luaC_shutdown( global_State *g )
     lua_Thread *L = g->GCthread;
 
     // Terminate all threads (GC should be last)
+    // This disables their runtime environments.
     LIST_FOREACH_BEGIN( lua_Thread, g->threads.root, threadNode )
         luaE_terminate( item );
     LIST_FOREACH_END
 
-    luaC_separatefinalization( L, true );  /* separate udata that have GC metamethods */
+    luaC_separatefinalization( L, true );
+
+    // Make sure we eliminated all classes.
+    // If we have not, the runtime is faulty.
+    Closure *dfail = g->events[LUA_EVENT_GC_DEALLOC_FAIL];
+    
+    // Grab all objects and attempt another deallocation.
+    if ( dfail )
+    {
+        for ( GCObject *iter = g->mainthread->next; iter != NULL; iter = iter->next )
+        {
+            if ( !isfinalized( iter ) )
+            {
+                try
+                {
+                    // Since we are running on the GC thread, collection is disabled by design.
+                    // Hence we are safe to loop the GC list.
+                    StkId funcPtr = L->top++;
+
+                    setclvalue( L, funcPtr, dfail );
+                    setgcvalue( L, L->top++, iter );
+                    luaD_call( L, funcPtr, 0 );
+                }
+                catch( ... )
+                {
+                    // Notify the system that we encountered an exception.
+                    lua_assert( 0 );
+                }
+            }
+        }
+
+        // Attempt to finalize more objects.
+        luaC_separatefinalization( L, true );
+    }
+
+    // If there still are objects left, the runtime is experiencing undefined behavior.
+    // Let us assert the application.
+    for ( GCObject *iter = g->mainthread->next; iter != NULL; iter = iter->next )
+    {
+        lua_assert( isfinalized( iter ) );
+    }
+
     L->errfunc = 0;  /* no error function during GC metamethods */
 
     std::string errMsg;

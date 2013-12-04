@@ -418,4 +418,17 @@ namespace CLuaFunctionDefs
         lua_pushboolean ( L, false );
         return 1;
     }
+
+    LUA_DECLARE( getPerformanceTimer )
+    {
+        LONGLONG counterFrequency, currentCount;
+
+        LUA_CHECK( 
+            QueryPerformanceFrequency( (LARGE_INTEGER*)&counterFrequency ) == TRUE &&
+            QueryPerformanceCounter( (LARGE_INTEGER*)&currentCount ) == TRUE
+        );
+
+        lua_pushnumber( L, (lua_Number)currentCount / (lua_Number)counterFrequency );
+        return 1;
+    }
 }

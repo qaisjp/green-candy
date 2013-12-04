@@ -1030,6 +1030,28 @@ static const luaL_Reg internStorage_envDispatch_interface[] =
     { NULL, NULL }
 };
 
+inline void class_runDestructor( lua_State *L, Class& j, Closure *cl )
+{
+    try
+    {
+        setclvalue( L, L->top++, cl );
+        luaD_call( L, L->top - 1, 0 );
+    }
+    catch( lua_exception& )
+    {
+        Closure *handler = G(L)->events[LUA_EVENT_DESTRUCTOR_EXCEPTION];
+
+        if ( handler )
+        {
+            StkId func = L->top++;
+
+            setclvalue( L, func, handler );
+            setjvalue( L, L->top++, &j );
+            lua_pcall( L, 1, 0, 0 );
+        }
+    }
+}
+
 static int classmethod_fsDestroyRoot( lua_State *L )
 {
     Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
@@ -1048,8 +1070,7 @@ static int classmethod_fsDestroyRoot( lua_State *L )
 
     lua_yield_shield _ref( L ); // prevent destructor yielding
 
-    lua_pushvalue( L, lua_upvalueindex( 2 ) );
-    lua_pcall( L, 0, 0, 0 );
+    class_runDestructor( L, j, clvalue( index2adr( L, lua_upvalueindex( 2 ) ) ) );
     return 0;
 }
 
@@ -1064,29 +1085,25 @@ static int classmethod_fsDestroySuper( lua_State *L )
     }
 
     if ( j.destroyed )
-        throw lua_exception( L, LUA_ERRRUN, "attempted to destroy a destroyed class!" );
+        throw lua_exception( L, LUA_ERRRUN, "attempted to destroy a destroyed class" );
 
     if ( !class_preDestructor( L, j ) )
         return 0;
 
     lua_yield_shield _ref( L ); // prevent destructor yielding
 
-    lua_pushvalue( L, lua_upvalueindex( 3 ) );
-    lua_pcall( L, 0, 0, 0 );
-
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pcall( L, 0, 0, 0 );
+    class_runDestructor( L, j, clvalue( index2adr( L, lua_upvalueindex( 3 ) ) ) );
+    class_runDestructor( L, j, clvalue( index2adr( L, lua_upvalueindex( 1 ) ) ) );
     return 0;
 }
 
 static int classmethod_fsDestroyBridge( lua_State *L )
 {
     // No check required, internal method
-    lua_pushvalue( L, lua_upvalueindex( 1 ) );
-    lua_pcall( L, 0, 0, 0 );
+    Class *j = jvalue( index2adr( L, lua_upvalueindex( 3 ) ) );
 
-    lua_pushvalue( L, lua_upvalueindex( 2 ) );
-    lua_pcall( L, 0, 0, 0 );
+    class_runDestructor( L, *j, clvalue( index2adr( L, lua_upvalueindex( 1 ) ) ) );
+    class_runDestructor( L, *j, clvalue( index2adr( L, lua_upvalueindex( 2 ) ) ) );
     return 0;
 }
 
@@ -1096,9 +1113,10 @@ static Closure* classmethod_fsDestroyHandler( lua_State *L, Closure *newMethod, 
     Closure *prevDest = j->destructor;
 
     // Contruct the bridge
-    CClosureBasic *cl = luaF_newCclosure( L, 2, j->env );
+    CClosureBasic *cl = luaF_newCclosure( L, 3, j->env );
     setclvalue( L, &cl->upvalues[0], newMethod );
     setclvalue( L, &cl->upvalues[1], prevDest );
+    setjvalue( L, &cl->upvalues[2], j );
     cl->f = classmethod_fsDestroyBridge;
     cl->isEnvLocked = true;
 

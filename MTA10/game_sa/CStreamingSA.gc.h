@@ -18,6 +18,10 @@ namespace Streaming
     // Globals used by the GC manager.
     extern bool allowInfiniteStreaming;
     extern bool strictNodeDistribution;
+    extern bool garbageCollectOnDemand;
+    extern bool allowStreamingNodeStealing;
+
+    void            ResetGarbageCollection( void );
 
     // Active entity management.
     streamingEntityReference_t* __cdecl AddActiveEntity( CEntitySAInterface *entity );

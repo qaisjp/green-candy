@@ -156,6 +156,16 @@ namespace Streaming
     // Export these so they can be reset on game reset.
     bool allowInfiniteStreaming = false;
     bool strictNodeDistribution = true;
+    bool garbageCollectOnDemand = false;
+    bool allowStreamingNodeStealing = true; // enabled by GTA:SA by default
+
+    void ResetGarbageCollection( void )
+    {
+        allowInfiniteStreaming = false;
+        strictNodeDistribution = true;
+        garbageCollectOnDemand = false;
+        allowStreamingNodeStealing = true;
+    }
 };
 
 struct FreeStreamingEntity
@@ -205,10 +215,19 @@ Streaming::streamingEntityReference_t* __cdecl Streaming::AddActiveEntity( CEnti
             ref = gcMan.PushRender( &chainInfo );
         }
 
-        if ( !ref )
+        if ( !ref && garbageCollectOnDemand )
+        {
+            // Attempt to free a node by collecting the world entities.
+            GarbageCollectActiveEntities( true, 0 );
+
+            ref = gcMan.PushRender( &chainInfo );
+        }
+
+        if ( !ref && allowStreamingNodeStealing )
         {
             // This is the default allocation that first tries to free
-            // the RenderWare data of an active entity.
+            // the RenderWare data of an active entity. It basically
+            // steals a slot from an entity.
             gcMan.ExecuteCustom( FreeStreamingEntity() );
 
             ref = gcMan.PushRender( &chainInfo );
@@ -415,14 +434,6 @@ void CStreamingSA::SetInfiniteStreamingEnabled( bool enabled )
     Streaming::allowInfiniteStreaming = enabled;
 }
 
-/*=========================================================
-    CStreamingSA::IsInfiniteStreamingEnabled
-
-    Purpose:
-        Returns whether the system will keep allocating
-        streaming garbage collection nodes when the system
-        is out of free nodes.
-=========================================================*/
 bool CStreamingSA::IsInfiniteStreamingEnabled( void ) const
 {
     return Streaming::allowInfiniteStreaming;
@@ -449,18 +460,52 @@ void CStreamingSA::SetStrictNodeDistribution( bool enabled )
     Streaming::strictNodeDistribution = enabled;
 }
 
-/*=========================================================
-    CStreamingSA::IsStrictNodeDistributionEnabled
-
-    Purpose:
-        Returns whether strict nodes distribution is enabled.
-    Note:
-        This feature is only useful in connection to infinite
-        streaming.
-=========================================================*/
 bool CStreamingSA::IsStrictNodeDistributionEnabled( void ) const
 {
     return Streaming::strictNodeDistribution;
+}
+
+/*=========================================================
+    CStreamingSA::SetGarbageCollectOnDemand
+
+    Arguments:
+        enabled - switch to enable on-demand GC or not
+    Purpose:
+        Enables or disables garbage collection when the
+        streaming garbage collection system is out of
+        allocatable nodes. This decreases performance but
+        keeps the number of allocated nodes down.
+=========================================================*/
+void CStreamingSA::SetGarbageCollectOnDemand( bool enabled )
+{
+    Streaming::garbageCollectOnDemand = enabled;
+}
+
+bool CStreamingSA::IsGarbageCollectOnDemandEnabled( void ) const
+{
+    return Streaming::garbageCollectOnDemand;
+}
+
+/*=========================================================
+    CStreamingSA::SetStreamingNodeStealingAllowed
+
+    Arguments:
+        enabled - switch to enable node stealing or not
+    Purpose:
+        Decides whether the streaming GC system may steal 
+        GC nodes from active entities no matter whether
+        they are on screen or are important for gameplay.
+        This technique may be the fastest for getting a
+        streaming node, but it is what caused the flickering.
+=========================================================*/
+void CStreamingSA::SetStreamingNodeStealingAllowed( bool enabled )
+{
+    Streaming::allowStreamingNodeStealing = enabled;
+}
+
+bool CStreamingSA::IsStreamingNodeStealingAllowed( void ) const
+{
+    return Streaming::allowStreamingNodeStealing;
 }
 
 /*=========================================================

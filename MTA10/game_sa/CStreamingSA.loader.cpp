@@ -1242,18 +1242,21 @@ void __cdecl Streaming::LoadAllRequestedModels( bool onlyPriority )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x0040E3A0
 =========================================================*/
-static unsigned int nextStreamingThread = 0;
+namespace Streaming
+{
+    unsigned int activeStreamingThread = 0;
+};
 
 void __cdecl Streaming::PulseLoader( void )
 {
-    unsigned int curThread = nextStreamingThread;
+    unsigned int curThread = activeStreamingThread;
 
     // If a big model is loading, we must process the primary
     // loader.
     if ( isLoadingBigModel )
     {
         curThread = 0;
-        nextStreamingThread = 0;
+        activeStreamingThread = 0;
     }
 
     streamingRequest& requester = GetStreamingRequest( curThread );
@@ -1268,7 +1271,7 @@ void __cdecl Streaming::PulseLoader( void )
     // If the current requester is not loading anymore,
     // we can switch to another thread.
     if ( requester.status != streamingRequest::STREAMING_LOADING )
-        nextStreamingThread = GetNextThreadId( curThread );
+        activeStreamingThread = GetNextThreadId( curThread );
 }
 
 // Loader hacks for better performance.

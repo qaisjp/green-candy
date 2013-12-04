@@ -30,6 +30,19 @@ class CStreaming
 public:
     typedef std::list <CEntity*> entityList_t;  // select a fast container here.
 
+    struct streamingInfo
+    {
+        unsigned int usedMemory;
+        unsigned int maxMemory;
+        unsigned int numberOfRequests;
+        unsigned int numberOfPriorityRequests;
+        unsigned int numberOfSlicers;
+        unsigned int numberOfRequestsPerSlicer;
+        unsigned int activeStreamingThread;
+        bool isBusy;
+        bool isLoadingBigModel;
+    };
+
     // Resource management exports.
     virtual void            RequestModel                    ( modelId_t id, unsigned int flags ) = 0;
     virtual void            FreeModel                       ( modelId_t id ) = 0;
@@ -58,6 +71,12 @@ public:
     virtual bool            IsInfiniteStreamingEnabled      ( void ) const = 0;
     virtual void            SetStrictNodeDistribution       ( bool enabled ) = 0;
     virtual bool            IsStrictNodeDistributionEnabled ( void ) const = 0;
+    virtual void            SetGarbageCollectOnDemand       ( bool enabled ) = 0;
+    virtual bool            IsGarbageCollectOnDemandEnabled ( void ) const = 0;
+    virtual void            SetStreamingNodeStealingAllowed ( bool enabled ) = 0;
+    virtual bool            IsStreamingNodeStealingAllowed  ( void ) const = 0;
+
+    virtual void            GetStreamingInfo                ( streamingInfo& info ) const = 0;
 
     // Callbacks from the system.
     virtual void            SetRequestCallback              ( streamingRequestCallback_t callback ) = 0;

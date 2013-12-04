@@ -104,6 +104,8 @@ enum eGameVersion
 class __declspec(novtable) CGame 
 {
 public:
+    typedef std::list <CEntity*> entityList_t;
+
     virtual                             ~CGame()    {};
 
     virtual void                        RegisterMultiplayer( CMultiplayer *mp ) = 0;
@@ -184,6 +186,8 @@ public:
     virtual void                SetEntityRenderCallback( gameEntityRenderCallback_t callback ) = 0;
     virtual void                SetEntityRenderUnderwaterCallback( gameEntityRenderUnderwaterCallback_t callback ) = 0;
     virtual void                SetEntityRenderPostProcessCallback( gameEntityPostProcessCallback_t callback ) = 0;
+
+    virtual entityList_t        GetEntitiesInRenderQueue( void );
 
     virtual void                ResetShaders() = 0;
 

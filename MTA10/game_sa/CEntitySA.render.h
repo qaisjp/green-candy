@@ -400,6 +400,8 @@ namespace Entity
     void    SetRenderCallback( gameEntityRenderCallback_t callback );
     void    SetRenderUnderwaterCallback( gameEntityRenderUnderwaterCallback_t callback );
     void    SetRenderPostProcessCallback( gameEntityPostProcessCallback_t callback );
+
+    CGame::entityList_t GetEntitiesInRenderQueue( void );
 };
 
 // Exports for external rendering systems.

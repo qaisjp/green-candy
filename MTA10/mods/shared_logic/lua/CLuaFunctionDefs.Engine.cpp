@@ -713,6 +713,60 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( engineSetStreamingGCOnDemandEnabled )
+    {
+        bool enabled;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadBool( enabled );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pGame->GetStreaming()->SetGarbageCollectOnDemand( enabled );
+
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineIsStreamingGCOnDemandEnabled )
+    {
+        lua_pushboolean( L, g_pGame->GetStreaming()->IsGarbageCollectOnDemandEnabled() );
+        return 1;
+    }
+
+    LUA_DECLARE( engineAllowStreamingNodeStealing )
+    {
+        bool enabled;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadBool( enabled );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pGame->GetStreaming()->SetStreamingNodeStealingAllowed( enabled );
+
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineIsStreamingNodeStealingAllowed )
+    {
+        lua_pushboolean( L, g_pGame->GetStreaming()->IsStreamingNodeStealingAllowed() );
+        return 1;
+    }
+
     LUA_DECLARE( engineGetActiveStreamingEntityCount )
     {
         lua_pushnumber( L, g_pGame->GetStreaming()->GetActiveStreamingEntityCount() );
@@ -725,14 +779,11 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
-    LUA_DECLARE( engineGetActiveStreamingEntities )
+    inline void CreateLuaTableOfEntityList( lua_State *L, CStreaming::entityList_t& list )
     {
-        // Get a table of all entities that are insideof the streaming garbage collector.
         lua_newtable( L );
         
         unsigned int n = 0;
-
-        CStreaming::entityList_t list = g_pGame->GetStreaming()->GetActiveStreamingEntities();
 
         for ( CStreaming::entityList_t::iterator iter = list.begin(); iter != list.end(); iter++ )
         {
@@ -744,7 +795,12 @@ namespace CLuaFunctionDefs
                 lua_rawseti( L, -2, ++n );
             }
         }
+    }
 
+    LUA_DECLARE( engineGetActiveStreamingEntities )
+    {
+        // Get a table of all entities that are insideof the streaming garbage collector.
+        CreateLuaTableOfEntityList( L, g_pGame->GetStreaming()->GetActiveStreamingEntities() );
         return 1;
     }
 
@@ -838,6 +894,71 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineIsWorldStreamingEnabled )
     {
         lua_pushboolean( L, g_pGame->GetStreaming()->IsWorldStreamingEnabled() );
+        return 1;
+    }
+
+    LUA_DECLARE( engineGetEntitiesInRenderQueue )
+    {
+        CreateLuaTableOfEntityList( L, g_pGame->GetEntitiesInRenderQueue() );
+        return 1;
+    }
+
+    LUA_DECLARE( engineGetGamePoolLimits )
+    {
+        lua_newtable( L );
+
+        CPools *pools = g_pGame->GetPools();
+
+        for ( unsigned int n = 0; n < MAX_POOLS; n++ )
+        {
+            lua_pushstring( L, pools->GetPoolName( (ePools)n ) );
+            lua_setfield( L, -2, "name" );
+
+            lua_pushnumber( L, pools->GetNumberOfUsedSpaces( (ePools)n ) );
+            lua_setfield( L, -2, "usedCount" );
+
+            lua_pushnumber( L, pools->GetPoolCapacity( (ePools)n ) );
+            lua_setfield( L, -2, "maxCount" );
+        }
+
+        return 1;
+    }
+
+    LUA_DECLARE( engineGetStreamingInfo )
+    {
+        lua_newtable( L );
+
+        CStreaming::streamingInfo info;
+
+        g_pGame->GetStreaming()->GetStreamingInfo( info );
+
+        lua_pushnumber( L, info.usedMemory );
+        lua_setfield( L, -2, "usedMemory" );
+
+        lua_pushnumber( L, info.maxMemory );
+        lua_setfield( L, -2, "maxMemory" );
+
+        lua_pushnumber( L, info.numberOfRequests );
+        lua_setfield( L, -2, "numberOfRequests" );
+
+        lua_pushnumber( L, info.numberOfPriorityRequests );
+        lua_setfield( L, -2, "numberOfPriorityRequests" );
+
+        lua_pushnumber( L, info.numberOfSlicers );
+        lua_setfield( L, -2, "numberOfSlicers" );
+
+        lua_pushnumber( L, info.numberOfRequestsPerSlicer );
+        lua_setfield( L, -2, "numberOfRequestsPerSlicer" );
+
+        lua_pushnumber( L, info.activeStreamingThread );
+        lua_setfield( L, -2, "activeStreamingThread" );
+
+        lua_pushboolean( L, info.isBusy );
+        lua_setfield( L, -2, "isBusy" );
+
+        lua_pushboolean( L, info.isLoadingBigModel );
+        lua_setfield( L, -2, "isLoadingBigModel" );
+
         return 1;
     }
 }

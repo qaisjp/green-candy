@@ -609,6 +609,66 @@ struct SetupChainEntitiesForRender
     }
 };
 
+inline void AddMTAEntityToList( CEntitySAInterface *entity, CGame::entityList_t& list )
+{
+    CEntitySA *mtaEntity = Pools::GetEntity( entity );
+
+    if ( mtaEntity )
+        list.push_back( mtaEntity );
+}
+
+struct CollectMainEntitiesRenderQueue
+{
+    CollectMainEntitiesRenderQueue( CGame::entityList_t& list ) : m_list( list )
+    { }
+
+    inline bool OnEntry( const unorderedEntityRenderChainInfo& info )
+    {
+        AddMTAEntityToList( info.entity, m_list );
+        return true;
+    }
+
+    CGame::entityList_t& m_list;
+};
+
+struct CollectEntityRenderChainRenderQueue
+{
+    CollectEntityRenderChainRenderQueue( CGame::entityList_t& list ) : m_list( list )
+    { }
+
+    inline bool OnEntry( const entityRenderInfo& info )
+    {
+        AddMTAEntityToList( info.entity, m_list );
+        return true;
+    }
+
+    CGame::entityList_t& m_list;
+};
+
+// Rendering utilities.
+CGame::entityList_t Entity::GetEntitiesInRenderQueue( void )
+{
+    CGame::entityList_t list;
+
+    {
+        CollectMainEntitiesRenderQueue queueCollect( list );
+
+        groundAlphaEntities.ExecuteCustom( queueCollect );
+        staticRenderEntities.ExecuteCustom( queueCollect );
+        lowPriorityRenderEntities.ExecuteCustom( queueCollect );
+    }
+
+    {
+        CollectEntityRenderChainRenderQueue queueCollect( list );
+
+        GetDefaultEntityRenderChain().ExecuteCustom( queueCollect );
+        GetUnderwaterEntityRenderChain().ExecuteCustom( queueCollect );
+        GetAlphaEntityRenderChain().ExecuteCustom( queueCollect );
+    }
+
+    return list;
+}
+
 // System callbacks to notify the mods about important progress.
 static gameEntityPreRenderCallback_t _preRenderCallback = NULL;
 static gameEntityRenderCallback_t _renderCallback = NULL;

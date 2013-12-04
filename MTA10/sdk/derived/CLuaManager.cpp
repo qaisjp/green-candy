@@ -468,6 +468,10 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineIsInfiniteStreamingEnabled );
     LUA_REGISTER( L, engineSetStrictStreamingNodeDistributionEnabled );
     LUA_REGISTER( L, engineIsStrictStreamingNodeDistributionEnabled );
+    LUA_REGISTER( L, engineSetStreamingGCOnDemandEnabled );
+    LUA_REGISTER( L, engineIsStreamingGCOnDemandEnabled );
+    LUA_REGISTER( L, engineAllowStreamingNodeStealing );
+    LUA_REGISTER( L, engineIsStreamingNodeStealingAllowed );
     LUA_REGISTER( L, engineGetActiveStreamingEntityCount );
     LUA_REGISTER( L, engineGetActiveStreamingFreeSlotCount );
     LUA_REGISTER( L, engineGetActiveStreamingEntities );
@@ -476,6 +480,9 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineGetModelRefCount );
     LUA_REGISTER( L, engineSetWorldStreamingEnabled );
     LUA_REGISTER( L, engineIsWorldStreamingEnabled );
+    LUA_REGISTER( L, engineGetEntitiesInRenderQueue );
+    LUA_REGISTER( L, engineGetGamePoolLimits );
+    LUA_REGISTER( L, engineGetStreamingInfo );
 
     // Drawing funcs (low-level)
     LUA_REGISTER( L, dxDrawLine );
@@ -755,6 +762,7 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, getNetworkUsageData );
     LUA_REGISTER( L, getNetworkStats );
     LUA_REGISTER( L, getPerformanceStats );
+    LUA_REGISTER( L, getPerformanceTimer );
 
     LUA_REGISTER( L, getVersion );
 

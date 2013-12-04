@@ -152,6 +152,12 @@ public:
     bool            IsInfiniteStreamingEnabled      ( void ) const;
     void            SetStrictNodeDistribution       ( bool enabled );
     bool            IsStrictNodeDistributionEnabled ( void ) const;
+    void            SetGarbageCollectOnDemand       ( bool enabled );
+    bool            IsGarbageCollectOnDemandEnabled ( void ) const;
+    void            SetStreamingNodeStealingAllowed ( bool enabled );
+    bool            IsStreamingNodeStealingAllowed  ( void ) const;
+
+    void            GetStreamingInfo                ( streamingInfo& info ) const;
 
     // Useful resource system event callbacks.
     void            SetRequestCallback              ( streamingRequestCallback_t callback );
