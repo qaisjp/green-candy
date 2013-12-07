@@ -961,4 +961,32 @@ namespace CLuaFunctionDefs
 
         return 1;
     }
+
+    LUA_DECLARE( engineStreamingEnableFiberedLoading )
+    {
+        bool enabled;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadBool( enabled );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pGame->GetStreaming()->EnableFiberedLoading( enabled );
+
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineStreamingIsFiberedLoadingEnabled )
+    {
+        lua_pushboolean( L, g_pGame->GetStreaming()->IsFiberedLoadingEnabled() );
+        return 1;
+    }
+
 }

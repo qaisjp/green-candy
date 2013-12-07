@@ -76,6 +76,9 @@ public:
     virtual void            SetStreamingNodeStealingAllowed ( bool enabled ) = 0;
     virtual bool            IsStreamingNodeStealingAllowed  ( void ) const = 0;
 
+    virtual void            EnableFiberedLoading            ( bool enable ) = 0;
+    virtual bool            IsFiberedLoadingEnabled         ( void ) const = 0;
+
     virtual void            GetStreamingInfo                ( streamingInfo& info ) const = 0;
 
     // Callbacks from the system.

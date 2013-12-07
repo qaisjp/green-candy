@@ -511,6 +511,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CExecutiveManagerSA.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CExecutiveManagerSA.fiber.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CExplosionManagerSA.cpp"
 				>
 			</File>
@@ -1047,84 +1055,108 @@
 			Name="RenderWare"
 			>
 			<File
-				RelativePath=".\RenderWare\CModelSA.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\RenderWare\CRpAtomicSA.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\RenderWare\CRpLightSA.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\RenderWare\CRwCameraSA.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\RenderWare\CRwFrameSA.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\RenderWare\CRwObjectSA.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\RenderWare\CTexDictionarySA.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\RenderWare\CTextureSA.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\RenderWare\RpGeometryStreamline.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\RpLight.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\RwStream.cpp"
 				>
 			</File>
 			<Filter
 				Name="Include"
 				>
 				<File
-					RelativePath=".\RenderWare\CModelSA.h"
+					RelativePath=".\RenderWare\RpLight.h"
 					>
 				</File>
 				<File
-					RelativePath=".\RenderWare\CRpAtomicSA.h"
+					RelativePath=".\RenderWare\RwStream.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Virtual"
+				>
+				<File
+					RelativePath=".\RenderWare\CModelSA.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\RenderWare\CRpLightSA.h"
+					RelativePath=".\RenderWare\CRpAtomicSA.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\RenderWare\CRwCameraSA.h"
+					RelativePath=".\RenderWare\CRpLightSA.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\RenderWare\CRwFrameSA.h"
+					RelativePath=".\RenderWare\CRwCameraSA.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\RenderWare\CRwObjectSA.h"
+					RelativePath=".\RenderWare\CRwFrameSA.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\RenderWare\CTexDictionarySA.h"
+					RelativePath=".\RenderWare\CRwObjectSA.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\RenderWare\CTextureSA.h"
+					RelativePath=".\RenderWare\CTexDictionarySA.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\RenderWare\include.h"
+					RelativePath=".\RenderWare\CTextureSA.cpp"
 					>
 				</File>
-				<File
-					RelativePath=".\RenderWare\RpGeometryStreamline.h"
+				<Filter
+					Name="Include"
 					>
-				</File>
+					<File
+						RelativePath=".\RenderWare\CModelSA.h"
+						>
+					</File>
+					<File
+						RelativePath=".\RenderWare\CRpAtomicSA.h"
+						>
+					</File>
+					<File
+						RelativePath=".\RenderWare\CRpLightSA.h"
+						>
+					</File>
+					<File
+						RelativePath=".\RenderWare\CRwCameraSA.h"
+						>
+					</File>
+					<File
+						RelativePath=".\RenderWare\CRwFrameSA.h"
+						>
+					</File>
+					<File
+						RelativePath=".\RenderWare\CRwObjectSA.h"
+						>
+					</File>
+					<File
+						RelativePath=".\RenderWare\CTexDictionarySA.h"
+						>
+					</File>
+					<File
+						RelativePath=".\RenderWare\CTextureSA.h"
+						>
+					</File>
+					<File
+						RelativePath=".\RenderWare\include.h"
+						>
+					</File>
+					<File
+						RelativePath=".\RenderWare\RpGeometryStreamline.h"
+						>
+					</File>
+				</Filter>
 			</Filter>
 		</Filter>
 		<Filter
@@ -1301,6 +1333,14 @@
 			</File>
 			<File
 				RelativePath="CEventSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CExecutiveManagerSA.fiber.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CExecutiveManagerSA.h"
 				>
 			</File>
 			<File

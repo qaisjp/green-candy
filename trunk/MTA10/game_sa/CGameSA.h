@@ -153,6 +153,7 @@ public:
     inline CParticleSystemSA*           GetParticleSystem()             { return m_pParticleSystem; }
     inline CFxSA*                       GetFx()                         { return m_pFx; }
     inline CWaterManagerSA*             GetWaterManager()               { return m_pWaterManager; }
+    inline CExecutiveManagerSA*         GetExecutiveManager()           { return m_executiveManager; }
 
     CWeaponInfoSA*          GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill = WEAPONSKILL_STD );
     CModelInfoSA*           GetModelInfo( modelId_t id );
@@ -278,6 +279,7 @@ private:
     CParticleSystemSA*          m_pParticleSystem;
     CFxSA*                      m_pFx;
     CWaterManagerSA*            m_pWaterManager;
+    CExecutiveManagerSA*        m_executiveManager;
 
     CPadSA*                     m_pPad;
     CPadManagerSA*              m_pPadManager;

@@ -92,6 +92,7 @@ CGameSA::CGameSA( void )
     IMG_Initialize();
 
     DEBUG_TRACE("CGameSA::CGameSA()");
+    m_executiveManager          = new CExecutiveManagerSA();
     m_pStreaming                = new CStreamingSA;
     m_pAudio                    = new CAudioSA();
     m_pWorld                    = new CWorldSA();
@@ -265,6 +266,7 @@ CGameSA::~CGameSA( void )
     delete m_pWorld;
     delete m_pAudio;
     delete m_pStreaming;
+    delete m_executiveManager;
 
     IMG_Shutdown();
 
@@ -483,10 +485,8 @@ void CGameSA::OnPreFrame()
 {
     m_didCacheColl = false;
 
-    size_t infoSize = sizeof(CPlayerInfoSAInterface);
-
-    size_t size = sizeof(CColModelSAInterface);
-    size_t size2 = sizeof(CColFileSA);
+    // Update the executive manager.
+    m_executiveManager->DoPulse();
 
     switch( GetSystemState() )
     {

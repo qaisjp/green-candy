@@ -478,6 +478,8 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineGetEntitiesInRenderQueue );
     LUA_DECLARE( engineGetGamePoolLimits );
     LUA_DECLARE( engineGetStreamingInfo );
+    LUA_DECLARE( engineStreamingEnableFiberedLoading );
+    LUA_DECLARE( engineStreamingIsFiberedLoadingEnabled );
 
     // Drawing funcs (low-level)
     LUA_DECLARE( dxDrawLine );
