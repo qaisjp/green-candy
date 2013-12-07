@@ -706,6 +706,12 @@ void __cdecl Streaming::Update( void )
     }
 #endif //DO_WORLD_STREAMING
 
+    // MTA extension: update fiber timing before going into pulsing the loaders.
+    if ( CExecutiveGroupSA *group = fiberGroup )
+    {
+        // todo
+    }
+
     // Process loading requests.
     Streaming::PulseLoader();
 
@@ -909,6 +915,10 @@ static void __cdecl _Streaming_Init( void )
 
         for ( unsigned int i = 0; i < MAX_STREAMING_REQUESTS; i++ )
             requester.ids[i] = 0xFFFFFFF;
+
+        // MTA extension stuff.
+        // todo.
+        requester.loaderFiber = NULL;
     }
 
     // Do preparations for resources which prematurely loaded.

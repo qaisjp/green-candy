@@ -42,6 +42,7 @@
 #include "RenderWare.h"
 #include "Common.h"
 #include "CFileUtilsSA.h"
+#include "CExecutiveManagerSA.h"
 #include "CPtrNodeSA.h"
 #include "CQuadTreeSA.h"
 #include "CTransformationSA.h"

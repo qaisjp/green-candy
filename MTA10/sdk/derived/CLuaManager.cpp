@@ -483,6 +483,8 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineGetEntitiesInRenderQueue );
     LUA_REGISTER( L, engineGetGamePoolLimits );
     LUA_REGISTER( L, engineGetStreamingInfo );
+    LUA_REGISTER( L, engineStreamingEnableFiberedLoading );
+    LUA_REGISTER( L, engineStreamingIsFiberedLoadingEnabled );
 
     // Drawing funcs (low-level)
     LUA_REGISTER( L, dxDrawLine );

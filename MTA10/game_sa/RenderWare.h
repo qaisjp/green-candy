@@ -905,8 +905,12 @@ struct RwError
 };
 
 typedef void*               (__cdecl*RwFileOpen_t) ( const char *path, const char *mode );
-typedef void                (__cdecl*RwFileClose_t) ( void *fp );
+typedef int                 (__cdecl*RwFileClose_t) ( void *fp );
 typedef long                (__cdecl*RwFileSeek_t) ( void *fp, long offset, int origin );
+
+typedef unsigned int        (__cdecl*RwFileRead_t) ( void *buf, unsigned int elemSize, unsigned int elemCount, void *fp );
+typedef unsigned int        (__cdecl*RwFileWrite_t) ( const void *buf, unsigned int elemSize, unsigned int elemCount, void *fp );
+typedef int                 (__cdecl*RwFileTell_t) ( void *fp );
 
 typedef int                 (__cdecl*RwReadTexture_t) ( RwStream *stream, RwTexture **out, size_t blockSize );
 
@@ -927,6 +931,7 @@ struct RwMemoryDescriptor
     RwMemCellAlloc_t    m_calloc;
 };
 
+//padlevel: 22
 class RwInterface   // size: 1456
 {
 public:
@@ -950,13 +955,19 @@ public:
     BYTE                    m_pad17[8];                                     // 180
     RwList <RwFrame>        m_nodeRoot;                                     // 188, list of dirty frames
 
-    BYTE                    m_pad6[24];                                     // 196
-    
-    RwFileOpen_t            m_fileOpen;                                     // 220
-    RwFileClose_t           m_fileClose;                                    // 224
+    BYTE                    m_pad6[4];                                      // 196
+    RwFileOpen_t            m_fileOpen;                                     // 200
+    RwFileClose_t           m_fileClose;                                    // 204
+    RwFileRead_t            m_fileRead;                                     // 208
+    RwFileWrite_t           m_fileWrite;                                    // 212
+
+    BYTE                    m_pad22[12];                                    // 216
     RwFileSeek_t            m_fileSeek;                                     // 228
 
-    BYTE                    m_pad13[20];                                    // 232
+    BYTE                    m_pad13[4];                                     // 232
+    RwFileTell_t            m_fileTell;                                     // 236
+
+    BYTE                    m_pad21[12];                                    // 240
 
     void                    (*m_strncpy)( char *buf, const char *dst, size_t cnt ); // 252
     BYTE                    m_pad18[32];                                    // 256
@@ -982,7 +993,8 @@ public:
 
     void*                   m_callback7;                                    // 380
 
-    BYTE                    m_pad3[24];                                     // 384
+    BYTE                    m_pad3[20];                                     // 384
+    RwStructInfo*           m_streamInfo;                                   // 404
     RwStructInfo*           m_cameraInfo;                                   // 408
 
     BYTE                    m_pad12[8];                                     // 412
@@ -1030,12 +1042,6 @@ extern RwDeviceInformation *const pRwDeviceInfo;
 /** RenderWare Helper Definitions                                           **/
 /*****************************************************************************/
 
-// RenderWare type definitions
-typedef int             (* RwIOCallbackClose) (void *data);
-typedef size_t          (* RwIOCallbackRead)  (void *data, void *buffer, size_t length);
-typedef size_t          (* RwIOCallbackWrite) (void *data, const void *buffer, size_t length);
-typedef void*           (* RwIOCallbackSeek)  (void *data, unsigned int offset);
-
 // Swap the current txd with another
 class RwTxdStack
 {
@@ -1055,76 +1061,14 @@ private:
     RwTexDictionary*    m_txd;
 };
 
+// Include plugins.
+#include "RenderWare/RwStream.h"
+
 /*****************************************************************************/
-/** RenderWare I/O                                                          **/
+/** RenderWare Plugin System                                                **/
 /*****************************************************************************/
 
-// RenderWare enumerations
-enum RwStreamType : unsigned int
-{
-    STREAM_TYPE_NULL = 0,
-    STREAM_TYPE_FILE = 1,
-    STREAM_TYPE_FILENAME = 2,
-    STREAM_TYPE_BUFFER = 3,
-    STREAM_TYPE_CALLBACK = 4
-};
-enum RwStreamMode : unsigned int
-{
-    STREAM_MODE_NULL = 0,
-    STREAM_MODE_READ = 1,
-    STREAM_MODE_WRITE = 2,
-    STREAM_MODE_APPEND = 3
-};
-
-// RenderWare base types
-struct RwBuffer
-{
-    void*           ptr;
-    unsigned int    size;
-};
-union RwStreamTypeData
-{
-    struct
-    {
-        unsigned int        position;
-        unsigned int        size;
-        void*               ptr_file;
-    };
-    struct
-    {
-        void*               file;
-    };
-    struct
-    {
-        RwIOCallbackClose   callbackClose;
-        RwIOCallbackRead    callbackRead;
-        RwIOCallbackWrite   callbackWrite;
-        RwIOCallbackSeek    callbackSeek;
-        void*               ptr_callback;
-    };
-};
-struct RwStream
-{
-    RwStreamType        type;
-    RwStreamMode        mode;
-    int                 pos;
-    RwStreamTypeData    data;
-    int                 id;
-};
-struct RwBlocksInfo
-{
-    unsigned short      count;
-    unsigned short      unk;
-};
-struct RwChunkHeader
-{
-    unsigned int        id;
-    size_t              size;
-    unsigned int        unk2;
-    unsigned int        unk3;
-    unsigned int        isComplex;
-};
-
+// Used for functions that are not yet implemented.
 inline void __declspec(naked)    invalid_ptr()
 {
     __asm int 3;

@@ -29,6 +29,9 @@ namespace Streaming
     streamingRequest resourceRequesters[MAX_STREAMING_REQUESTERS];  // Binary offsets: (1.0 US and 1.0 EU): 0x008E4AA0
     unsigned int numPriorityRequests = 0;                           // Binary offsets: (1.0 US and 1.0 EU): 0x008E4BA0
     void* threadAllocationBuffers[MAX_STREAMING_REQUESTERS];        // Binary offsets: (1.0 US and 1.0 EU): 0x008E4CAC
+
+    // MTA only features.
+    bool enableFiberedLoading = false;  // has to be enabled by API.
 };
 
 /*=========================================================
@@ -158,53 +161,76 @@ bool __cdecl CheckAnimDependency( modelId_t id )
         SCM script loading has been temporarily disabled, since MTA
         does not use it.
 =========================================================*/
-bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
+struct rwLoadHandler
 {
-    CModelLoadInfoSA& loadInfo = VAR_ModelLoadInfo[id];
-
-    RwBuffer streamBuffer;
-    streamBuffer.ptr = buf;
-    streamBuffer.size = loadInfo.GetSize();     // we are reading from IMG chunks
-
-    // Create a stream
-    RwStream *stream = RwStreamInitialize( (void*)0x008E48AC, 0, 3, 1, &streamBuffer );
-
-    if ( id < MAX_MODELS )
+    inline void Initialize( void )
     {
-        CBaseModelInfoSAInterface *info = ppModelInfo[id];
-        int animIndex = info->GetAnimFileIndex();
+        // Create a stream
+        m_stream = RwStreamInitialize( (void*)0x008E48AC, false, STREAM_TYPE_BUFFER, STREAM_MODE_READ, &m_rwbuf );
+    }
 
-        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( info->usTextureDictionary );
-        CAnimBlockSAInterface *animBlock;
+    inline void Terminate( void )
+    {
+        // Close the stream.
+        RwStreamClose( m_stream, &m_rwbuf );
+    }
 
-        // Fail if the model texture dictionary is not loaded yet.
-        if ( txdInst->m_txd == NULL )
-            goto failure;
+    inline rwLoadHandler( void *buf, size_t bufSize )
+    {
+        // Set up the RenderWare buffer
+        m_rwbuf.ptr = buf;
+        m_rwbuf.size = bufSize;
 
-        if ( animIndex != 0xFFFFFFFF )
-        {
-            animBlock = pGame->GetAnimManager()->GetAnimBlock( animIndex );
+        Initialize();
+    }
 
-            if ( !animBlock->m_loaded )
-                goto failure;
-        }
-        else
-            animBlock = NULL;
+    inline ~rwLoadHandler( void )
+    {
+        Terminate();
+    }
 
-        // Reference the resources
-        txdInst->Reference();
-        
-        // ... and anim block
-        if ( animBlock )
-            animBlock->Reference();
+    inline RwStream* ResetStream( void )
+    {
+        Terminate();
+        Initialize();
 
-        txdInst->SetCurrent();
+        return m_stream;
+    }
 
+    inline RwStream* GetRwStream( void )
+    {
+        return m_stream;
+    }
+
+    inline void* GetBuffer( void )
+    {
+        return m_rwbuf.ptr;
+    }
+
+    inline size_t GetBufferSize( void )
+    {
+        return m_rwbuf.size;
+    }
+
+    RwBuffer m_rwbuf;
+    RwStream *m_stream;
+};
+
+template <typename loadHandler>
+struct corotLoadFlavor
+{
+    __forceinline corotLoadFlavor( loadHandler& handler ) : m_loadHandler( handler )
+    {
+    }
+
+    __forceinline bool LoadBaseModel( modelId_t id, CBaseModelInfoSAInterface *info )
+    {
         eRwType type = info->GetRwModelType();
         bool success;
 
         if ( type == RW_ATOMIC )
         {
+            RwStream *stream = m_loadHandler.GetRwStream();
             RtDict *dict;
 
             RwChunkHeader header;
@@ -218,8 +244,7 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
 
             // At this point, GTA_SA utilizes a weird stream logic
             // I have fixed it here (bad clean-up of stream pointers)
-            RwStreamClose( stream, &streamBuffer );
-            stream = RwStreamInitialize( (void*)0x008E48AC, 0, 3, 1, &streamBuffer );
+            stream = m_loadHandler.ResetStream();
 
             success = LoadClumpFile( stream, id );
 
@@ -227,9 +252,116 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
                 RtDictDestroy( dict );
         }
         else
-            success = LoadClumpFilePersistent( stream, id );
+            success = LoadClumpFilePersistent( m_loadHandler.GetRwStream(), id );
 
-        if ( loadInfo.m_eLoading != MODEL_RELOAD )
+        return success;
+    }
+
+    __forceinline bool LoadTexDictionary( modelId_t texId, CTxdInstanceSA *txdInst, CModelLoadInfoSA& loadInfo )
+    {
+        bool successLoad = txdInst->LoadTXD( m_loadHandler.GetRwStream() );
+
+        if ( successLoad )
+            txdInst->InitParent();
+
+        return successLoad;
+    }
+
+    __forceinline bool LoadPathFind( modelId_t id )
+    {
+        PathFind::GetInterface().ReadContainer( m_loadHandler.GetRwStream(), id - DATA_PATHFIND_BLOCK );
+        return true;
+    }
+
+    __forceinline bool LoadAnimation( modelId_t id )
+    {
+        pGame->GetAnimManager()->LoadAnimFile( m_loadHandler.GetRwStream(), true, NULL );
+        pGame->GetAnimManager()->CreateAnimAssocGroups();
+        return true;
+    }
+
+    __forceinline bool LoadRecording( modelId_t id )
+    {
+        ((void (__cdecl*)( RwStream *stream, modelId_t id, size_t size ))0x0045A8F0)( m_loadHandler.GetRwStream(), id - 25755, m_loadHandler.GetBufferSize() );
+        return true;
+    }
+
+    loadHandler& m_loadHandler;
+};
+
+template <typename loadHandler>
+struct semiCorotLoadFlavor : corotLoadFlavor <loadHandler>
+{
+    __forceinline semiCorotLoadFlavor( loadHandler& handler ) : corotLoadFlavor( handler )
+    {
+
+    }
+
+    __forceinline bool LoadTexDictionary( modelId_t txdId, CTxdInstanceSA *txdInst, CModelLoadInfoSA& loadInfo )
+    {
+        bool successLoad;
+
+        if ( Streaming::isLoadingBigModel )
+        {
+            successLoad = LoadTXDFirstHalf( txdId, m_loadHandler.GetRwStream() );
+
+            if ( !successLoad )
+                return false;
+
+            loadInfo.m_eLoading = MODEL_RELOAD;
+        }
+        else
+        {
+            successLoad = corotLoadFlavor::LoadTexDictionary( txdId, txdInst, loadInfo );
+        }
+
+        return successLoad;
+    }
+};
+
+template <typename loadHandler, typename loadFlavor>
+struct ModelLoadDispatch : public ModelCheckDispatch <false>
+{
+    __forceinline ModelLoadDispatch( loadHandler& handler, loadFlavor& flavor, CModelLoadInfoSA& loadInfo ) : m_loadHandler( handler ), m_loadFlavor( flavor ), m_loadInfo( loadInfo )
+    {
+        m_failureRequest = true;
+    }
+
+    __forceinline bool DoBaseModel( modelId_t id )
+    {
+        CBaseModelInfoSAInterface *info = ppModelInfo[id];
+        int animIndex = info->GetAnimFileIndex();
+
+        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( info->usTextureDictionary );
+        CAnimBlockSAInterface *animBlock;
+
+        // Fail if the model texture dictionary is not loaded yet.
+        if ( txdInst->m_txd == NULL )
+            return false;
+
+        if ( animIndex != 0xFFFFFFFF )
+        {
+            animBlock = pGame->GetAnimManager()->GetAnimBlock( animIndex );
+
+            if ( !animBlock->m_loaded )
+                return false;
+        }
+        else
+            animBlock = NULL;
+
+        // Reference the resources
+        txdInst->Reference();
+        
+        // ... and anim block
+        if ( animBlock )
+            animBlock->Reference();
+
+        txdInst->SetCurrent();
+
+        // Process to the resource loading.
+        bool success = m_loadFlavor.LoadBaseModel( id, info );
+
+        if ( m_loadInfo.m_eLoading != MODEL_RELOAD )
         {
             txdInst->DereferenceNoDestroy();
 
@@ -237,93 +369,103 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
                 animBlock->Dereference();
 
             if ( !success )
-                goto failure;
+                return false;
 
             if ( info->GetModelType() == MODEL_VEHICLE )
                 success = ((bool (__cdecl*)( unsigned int id ))0x00408000)( id );
         }
 
-        if ( !success )
-            goto failure;
+        return success;
     }
-    else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
+
+    __forceinline bool DoTexDictionary( modelId_t txdId )
     {
-        modelId_t txdId = idOffset( id, DATA_TEXTURE_BLOCK );
         CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( txdId );
 
         if ( txdInst->m_parentTxd != 0xFFFF )
         {
             if ( !(*ppTxdPool)->Get( txdInst->m_parentTxd )->m_txd )
-                goto failure;
+                return false;
         }
 
         // Check whether we depend on this TXD instance (unless we specifically want it without dependency)
-        if ( !( loadInfo.m_flags & FLAG_NODEPENDENCY ) && !CheckTXDDependency( txdId ) )
-            goto failureDamned;
-
-        bool successLoad;
-
-        if ( Streaming::isLoadingBigModel )
+        if ( !( m_loadInfo.m_flags & FLAG_NODEPENDENCY ) && !CheckTXDDependency( txdId ) )
         {
-            successLoad = LoadTXDFirstHalf( txdId, stream );
-
-            if ( !successLoad )
-                goto failure;
-
-            loadInfo.m_eLoading = MODEL_RELOAD;
-        }
-        else
-        {
-            successLoad = txdInst->LoadTXD( stream );
-
-            if ( successLoad )
-                txdInst->InitParent();
+            m_failureRequest = false;
+            return false;
         }
 
-        if ( !successLoad )
-            goto failure;
+        return m_loadFlavor.LoadTexDictionary( txdId, txdInst, m_loadInfo );
     }
-    else if ( id < 25255 )  // collision
+
+    __forceinline bool DoCollision( modelId_t id )
     {
-        if ( !LoadCOLLibrary( (unsigned char)( id - 25000 ), (const char*)buf, streamBuffer.size ) )
-            goto failure;
+        return LoadCOLLibrary( id, (const char*)m_loadHandler.GetBuffer(), m_loadHandler.GetBufferSize() );
     }
-    else if ( id < 25511 )
+
+    __forceinline bool DoIPL( modelId_t id )
     {
-        if ( !((bool (__cdecl*)( modelId_t iplId, const void *data, size_t size ))0x00406080)( id - 25255, buf, streamBuffer.size ) )
-            goto failure;
+        return ((bool (__cdecl*)( modelId_t iplId, const void *data, size_t size ))0x00406080)( id, m_loadHandler.GetBuffer(), m_loadHandler.GetBufferSize() );
     }
-    else if ( id < 25575 )
+
+    __forceinline bool DoPathFind( modelId_t id )
     {
-        PathFind::GetInterface().ReadContainer( stream, id - 25511 );
+        return m_loadFlavor.LoadPathFind( id );
     }
-    else if ( id < 25755 )
+
+    __forceinline bool DoAnimation( modelId_t id )
     {
-        if ( loadInfo.m_flags & FLAG_NODEPENDENCY || CheckAnimDependency( id - 25575 ) )
+        if ( m_loadInfo.m_flags & FLAG_NODEPENDENCY || CheckAnimDependency( id ) )
         {
-            if ( loadInfo.m_blockCount == 0 )
-                goto failureDamned;
-
-            pGame->GetAnimManager()->LoadAnimFile( stream, true, NULL );
-            pGame->GetAnimManager()->CreateAnimAssocGroups();
+            if ( m_loadInfo.m_blockCount != 0 )
+            {
+                return m_loadFlavor.LoadAnimation( id );
+            }
         }
-        else
-            goto failureDamned;
+        
+        m_failureRequest = false;
+        return false;
     }
-    else if ( id < 26230 )
-    {
-        ((void (__cdecl*)( RwStream *stream, modelId_t id, size_t size ))0x0045A8F0)( stream, id - 25755, streamBuffer.size );
-    }
-    else
-    {
-        // Skip loading scripts (are not utilized in MTA anyway)
-        // If we need them in future, no problem to add.
-        goto failure;
-    }
-    
-    RwStreamClose( stream, &streamBuffer );
 
-    if ( id < DATA_TEXTURE_BLOCK )
+    __forceinline bool DoRecording( modelId_t id )
+    {
+        return m_loadFlavor.LoadRecording( id );
+    }
+
+    bool m_failureRequest;
+    loadHandler& m_loadHandler;
+    loadFlavor& m_loadFlavor;
+    CModelLoadInfoSA& m_loadInfo;
+};
+
+bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
+{
+    CModelLoadInfoSA& loadInfo = VAR_ModelLoadInfo[id];
+
+    // Do the loading.
+    size_t requestSize = loadInfo.GetSize();    // we are loading from .IMG chunks
+    {
+        rwLoadHandler lHandler( buf, requestSize );
+
+        typedef semiCorotLoadFlavor <rwLoadHandler> loadTechnique;
+
+        ModelLoadDispatch <rwLoadHandler, loadTechnique> loadDispatch( lHandler, loadTechnique( lHandler ), loadInfo );
+
+        bool success = DefaultDispatchExecute( id, loadDispatch );
+
+        if ( !success )
+        {
+            Streaming::FreeModel( id );
+
+            // It could re-request the resource.
+            if ( loadDispatch.m_failureRequest )
+                Streaming::RequestModel( id, loadInfo.m_flags );
+
+            return false;
+        }
+    }
+
+    if ( id < MAX_MODELS )
     {
         CBaseModelInfoSAInterface *info = ppModelInfo[id];
         eModelType type = info->GetModelType();
@@ -348,7 +490,7 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
     {
         // ... we are done loading!
         loadInfo.m_eLoading = MODEL_LOADED;
-        (*(unsigned int*)0x008E4CB4) += streamBuffer.size;  // increase the streaming memory statistics
+        (*(unsigned int*)0x008E4CB4) += requestSize;    // increase the streaming memory statistics
 
         // Tell modifications (i.e. deathmatch) that we finished loading.
         if ( Streaming::streamingLoadCallback )
@@ -356,21 +498,6 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
     }
 
     return true;
-
-    // failure should be a commonly used routine in this function.
-failure:
-    Streaming::FreeModel( id );
-    Streaming::RequestModel( id, loadInfo.m_flags );
-
-    RwStreamClose( stream, &streamBuffer );
-    return false;
-
-    // failureDamned is rarely used but important for reference/comparison here.
-failureDamned:
-    Streaming::FreeModel( id );
-
-    RwStreamClose( stream, &streamBuffer );
-    return false;
 }
 
 /*=========================================================
@@ -462,7 +589,7 @@ bool __cdecl LoadBigModel( char *buf, modelId_t id )
     // Check whether we are ready to load in the first place.
     if ( loadInfo->m_eLoading != MODEL_RELOAD )
     {
-        if ( id < DATA_TEXTURE_BLOCK )
+        if ( id < MAX_MODELS )
             ppModelInfo[id]->Dereference();
 
         return false;
@@ -473,7 +600,7 @@ bool __cdecl LoadBigModel( char *buf, modelId_t id )
     rwbuf.ptr = buf;
     rwbuf.size = loadInfo->m_blockCount * 2048;
 
-    RwStream *stream = RwStreamInitialize( (void*)0x008E48AC, 0, 3, 1, &rwbuf );
+    RwStream *stream = RwStreamInitialize( (void*)0x008E48AC, false, STREAM_TYPE_BUFFER, STREAM_MODE_READ, &rwbuf );
 
     bool success;
 
@@ -562,6 +689,8 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
         if ( streamingWaitModel != -1 )
             return false;
 
+        streamingWaitModel = id;
+
         CompleteStreamingRequest( id );
         return true;
     }
@@ -594,7 +723,7 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
                 // API in the first place.
                 // 2) Keeping that Rockstar code hinders MTA logic, as MTA logic expects no limits.
                 //  * location: 0x0040E1F1
-                if ( mid < 25255 || mid >= 25511 )  // IPL sector request.
+                if ( mid < 25255 || mid >= 25511 )  // Not IPL sector request.
                 {
                     // Free some memory usage for the request
                     UnclogMemoryUsage( loadInfo.GetSize() );
@@ -1102,6 +1231,104 @@ abortedLoading:
     
     goto pulseSemaphore;
 }
+
+/*=========================================================
+    Streaming::EnableFiberedLoading (MTA extension)
+
+    Arguments:
+        enabled - boolean to decide to turn fibered loading on or off
+    Purpose:
+        Turns fibered streaming loading on or off depending
+        on the given parameter. Will perform streaming
+        cycles to ensure system integrity when changing
+        to fibered loading or to original runtime.
+=========================================================*/
+namespace Streaming
+{
+    CExecutiveGroupSA *fiberGroup = NULL;
+};
+
+void Streaming::EnterFiberMode( void )
+{
+    CExecutiveManagerSA *fiberMan = pGame->GetExecutiveManager();
+
+    // Terminate the current runtime.
+    if ( enableFiberedLoading )
+    {
+        // Kill all fibers and destroy the group.
+        for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTERS; n++ )
+        {
+            streamingRequest& requester = GetStreamingRequest( n );
+
+            if ( CFiberSA *fiber = requester.loaderFiber )
+            {
+                fiberMan->CloseFiber( fiber );
+
+                requester.loaderFiber = NULL;
+            }
+        }
+
+        delete fiberGroup;
+
+        fiberGroup = NULL;
+    }
+    else
+    {
+        // anything?
+    }
+}
+
+void Streaming::LeaveFiberMode( void )
+{
+    CExecutiveManagerSA *fiberMan = pGame->GetExecutiveManager();
+
+    // Set up the new runtime.
+    if ( enableFiberedLoading )
+    {
+        fiberGroup = fiberMan->CreateGroup();
+
+        // Allocate fibers for all slicers.
+        for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTERS; n++ )
+        {
+            streamingRequest& requester = GetStreamingRequest( n );
+
+            // todo.
+
+            CFiberSA *newFiber = NULL;//fiberMan->CreateFiber();
+            
+            fiberGroup->AddFiber( newFiber );
+
+            requester.loaderFiber = newFiber;
+        }
+    }
+    else
+    {
+        // anything?
+    }
+}
+
+void Streaming::EnableFiberedLoading( bool enable )
+{
+    if ( enableFiberedLoading == enable )
+        return;
+
+    // Make sure the runtime does not load resources anymore.
+    LoadAllRequestedModels( false );
+
+    LeaveFiberMode();
+
+    enableFiberedLoading = enable;
+
+    EnterFiberMode();
+}
+
+bool Streaming::IsFiberedLoadingEnabled( void )
+{
+    return enableFiberedLoading;
+}
+
+void CStreamingSA::EnableFiberedLoading( bool enable )      { return Streaming::EnableFiberedLoading( enable ); }
+bool CStreamingSA::IsFiberedLoadingEnabled( void ) const    { return Streaming::IsFiberedLoadingEnabled(); }
 
 /*=========================================================
     Streaming::LoadAllRequestedModels

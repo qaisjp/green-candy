@@ -51,12 +51,7 @@ RwObjectRegister_t                      RwObjectRegister                        
 
 // Stream functions
 RwStreamFindChunk_t                     RwStreamFindChunk                       = (RwStreamFindChunk_t)                     invalid_ptr;
-RwStreamInitialize_t                    RwStreamInitialize                      = (RwStreamInitialize_t)                    invalid_ptr;
-RwStreamOpen_t                          RwStreamOpen                            = (RwStreamOpen_t)                          invalid_ptr;
 RwStreamReadChunkHeaderInfo_t           RwStreamReadChunkHeaderInfo             = (RwStreamReadChunkHeaderInfo_t)           invalid_ptr;
-RwStreamReadBlocks_t                    RwStreamReadBlocks                      = (RwStreamReadBlocks_t)                    invalid_ptr;
-RwStreamSkip_t                          RwStreamSkip                            = (RwStreamSkip_t)                          invalid_ptr;
-RwStreamClose_t                         RwStreamClose                           = (RwStreamClose_t)                         invalid_ptr;
 
 // Frame functions
 RwFrameCreate_t                         RwFrameCreate                           = (RwFrameCreate_t)                         invalid_ptr;
@@ -222,13 +217,8 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwObjectRegister                    = (RwObjectRegister_t)                      0x00808720;
 
         // Stream functions
-        RwStreamInitialize                  = (RwStreamInitialize_t)                    0x007EC850;
-        RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECF30;
         RwStreamReadChunkHeaderInfo         = (RwStreamReadChunkHeaderInfo_t)           0x007ED5D0;
         RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED310;
-        RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007ECA10;
-        RwStreamSkip                        = (RwStreamSkip_t)                          0x007ECD40;
-        RwStreamClose                       = (RwStreamClose_t)                         0x007ECE60;
 
         // Frame functions
         RwFrameCreate                       = (RwFrameCreate_t)                         0x007F0450;
@@ -376,13 +366,8 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwObjectRegister                    = (RwObjectRegister_t)                      0x008086E0;
 
         // Stream functions
-        RwStreamInitialize                  = (RwStreamInitialize_t)                    0x007EC810;
-        RwStreamOpen                        = (RwStreamOpen_t)                          0x007ECEF0;
-        RwStreamReadBlocks                  = (RwStreamReadBlocks_t)                    0x007EC9D0;
         RwStreamFindChunk                   = (RwStreamFindChunk_t)                     0x007ED2D0;
         RwStreamReadChunkHeaderInfo         = (RwStreamReadChunkHeaderInfo_t)           0x007ED590;
-        RwStreamSkip                        = (RwStreamSkip_t)                          0x007ECD00;
-        RwStreamClose                       = (RwStreamClose_t)                         0x007ECE20;
 
         // Frame functions
         RwFrameCreate                       = (RwFrameCreate_t)                         0x007F0410;
@@ -515,11 +500,13 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
     // Initialize sub modules
     RenderWareMem_Init();
     RenderWareRender_Init();
+    RwStream_Init();
 }
 
 CRenderWareSA::~CRenderWareSA( void )
 {
     // Shutdown sub modules
+    RwStream_Shutdown();
     RenderWareRender_Shutdown();
     RenderWareMem_Shutdown();
 }

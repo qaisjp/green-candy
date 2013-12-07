@@ -29,8 +29,11 @@ namespace Streaming
     extern bool isLoadingBigModel;
     extern unsigned int numPriorityRequests;
     extern void* threadAllocationBuffers[];
+    extern bool enableFiberedLoading;
 
     extern unsigned int activeStreamingThread;
+
+    extern CExecutiveGroupSA *fiberGroup;
 
     // Allocated dynamically in the streaming initialization
     struct syncSemaphore    //size: 48
@@ -61,10 +64,19 @@ namespace Streaming
         return resourceRequesters[id];
     }
 
+    // Returns the syncSemaphore index associated with the streaming slicer.
+    // In native GTA:SA, slicer index == syncSemaphore index
     inline unsigned int GetStreamingRequestSyncSemaphoreIndex( unsigned int id )
     {
         return id;
     }
+
+    // MTA extension functions.
+    void EnterFiberMode( void );
+    void LeaveFiberMode( void );
+
+    void EnableFiberedLoading( bool enable );
+    bool IsFiberedLoadingEnabled( void );
 
     // Loader routines.
     void __cdecl LoadAllRequestedModels( bool onlyPriority );

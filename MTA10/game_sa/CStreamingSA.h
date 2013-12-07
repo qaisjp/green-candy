@@ -41,7 +41,7 @@
 #define MAX_STREAMING_REQUESTS  16
 
 // Allocated at ARRAY_StreamerRequest
-struct streamingRequest //size: 152
+struct streamingRequest //size: 152 (native)
 {
 public:
     enum statusType : unsigned int
@@ -62,6 +62,9 @@ public:
     unsigned int    blockCount;                         // 140
     unsigned int    count;                              // 144
     unsigned int    returnCode;                         // 148
+
+    // These members do not exist in native GTA:SA, but in MTA.
+    CFiberSA*       loaderFiber;
 };
 
 namespace Streaming
@@ -156,6 +159,9 @@ public:
     bool            IsGarbageCollectOnDemandEnabled ( void ) const;
     void            SetStreamingNodeStealingAllowed ( bool enabled );
     bool            IsStreamingNodeStealingAllowed  ( void ) const;
+
+    void            EnableFiberedLoading            ( bool enable );
+    bool            IsFiberedLoadingEnabled         ( void ) const;
 
     void            GetStreamingInfo                ( streamingInfo& info ) const;
 

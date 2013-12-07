@@ -1431,6 +1431,9 @@ void VehicleModelInfoRender_Init( void )
 {
     // Apply our own rendering logic ;)
     HookInstall( 0x004C7B10, h_memFunc( &CVehicleModelInfoSAInterface::RegisterRenderCallbacks ), 5 );
+
+    // Temporary hook. Should be fixed by reversing Vehicle_AddUpgrade.
+    HookInstall( 0x00733F80, (DWORD)RwAtomicRenderTranslucentHeli, 5 );
 }
 
 void VehicleModelInfoRender_SetupDevice( void )
