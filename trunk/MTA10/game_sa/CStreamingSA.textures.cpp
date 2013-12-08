@@ -214,7 +214,7 @@ static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
         info.count--;
     }
 
-    big_txdStreamOffset = stream->data.position;
+    big_txdStreamOffset = stream->data.buffered.position;
     return txd;
 }
 
@@ -236,7 +236,7 @@ static RwTexDictionary* RwTexDictionaryLoadFirstHalf( RwStream *stream )
 static RwTexDictionary* __cdecl RwTexDictionaryContinueLoading( RwStream *stream, RwTexDictionary *txd )
 {
     // Jump to the previous stream offset
-    RwStreamSkip( stream, big_txdStreamOffset - stream->data.position );
+    RwStreamSkip( stream, big_txdStreamOffset - stream->data.buffered.position );
 
     for ( unsigned int n = big_numTXDBlocks; n != 0; n-- )
     {

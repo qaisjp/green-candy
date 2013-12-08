@@ -58,6 +58,9 @@ CExecutiveManagerSA::CExecutiveManagerSA( void )
     ExecutiveFiber::setmemfuncs( fiberMemAllocate, fiberMemFree );
 
     defGroup = new CExecutiveGroupSA( this );
+
+    frameTime = ExecutiveManager::GetPerformanceTimer();
+    frameDuration = 0;
 }
 
 CExecutiveManagerSA::~CExecutiveManagerSA( void )
@@ -139,6 +142,7 @@ void CExecutiveManagerSA::CloseFiber( CFiberSA *fiber )
     TerminateFiber( fiber );
 
     LIST_REMOVE( fiber->node );
+    LIST_REMOVE( fiber->groupNode );
 
     delete fiber;
 }
@@ -152,6 +156,12 @@ CExecutiveGroupSA* CExecutiveManagerSA::CreateGroup( void )
 
 void CExecutiveManagerSA::DoPulse( void )
 {
+    // Update frame timer.
+    double timeNow = ExecutiveManager::GetPerformanceTimer();
+
+    frameDuration = timeNow - frameTime;
+    frameTime = timeNow;
+
     LIST_FOREACH_BEGIN( CExecutiveGroupSA, groups.root, managerNode )
         item->DoPulse();
     LIST_FOREACH_END

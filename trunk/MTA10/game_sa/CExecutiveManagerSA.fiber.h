@@ -109,6 +109,9 @@ public:
     {
         if ( status == FIBER_SUSPENDED )
         {
+            // Save the time that we resumed from this.
+            resumeTimer = ExecutiveManager::GetPerformanceTimer();
+
             status = FIBER_RUNNING;
 
             ExecutiveFiber::eswitch( callee, runtime );
@@ -127,6 +130,8 @@ public:
     void yield_proc( void );
 
     CExecutiveManagerSA *manager;
+
+    double resumeTimer;
 };
 
 #endif //_EXECUTIVE_MANAGER_FIBER_

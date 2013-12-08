@@ -16,8 +16,6 @@
 
 #include "CStreamingSA.utils.hxx"
 
-// This file includes examples of clever goto usage.
-
 static RtDictSchema *const animDict =   (RtDictSchema*)0x008DED50;
 static CModelLoadInfoSA *const VAR_ModelLoadInfo = (CModelLoadInfoSA*)0x008E4CC0;
 
@@ -31,7 +29,8 @@ namespace Streaming
     void* threadAllocationBuffers[MAX_STREAMING_REQUESTERS];        // Binary offsets: (1.0 US and 1.0 EU): 0x008E4CAC
 
     // MTA only features.
-    bool enableFiberedLoading = false;  // has to be enabled by API.
+    bool enableFiberedLoading = STREAMING_DEFAULT_FIBERED_LOADING;  // has to be enabled by API.
+    double loaderPerfMultiplier = 0.0f;
 };
 
 /*=========================================================
@@ -269,7 +268,7 @@ struct corotLoadFlavor
 
     __forceinline bool LoadPathFind( modelId_t id )
     {
-        PathFind::GetInterface().ReadContainer( m_loadHandler.GetRwStream(), id - DATA_PATHFIND_BLOCK );
+        PathFind::GetInterface().ReadContainer( m_loadHandler.GetRwStream(), id );
         return true;
     }
 
@@ -282,7 +281,7 @@ struct corotLoadFlavor
 
     __forceinline bool LoadRecording( modelId_t id )
     {
-        ((void (__cdecl*)( RwStream *stream, modelId_t id, size_t size ))0x0045A8F0)( m_loadHandler.GetRwStream(), id - 25755, m_loadHandler.GetBufferSize() );
+        ((void (__cdecl*)( RwStream *stream, modelId_t id, size_t size ))0x0045A8F0)( m_loadHandler.GetRwStream(), id, m_loadHandler.GetBufferSize() );
         return true;
     }
 
@@ -294,7 +293,6 @@ struct semiCorotLoadFlavor : corotLoadFlavor <loadHandler>
 {
     __forceinline semiCorotLoadFlavor( loadHandler& handler ) : corotLoadFlavor( handler )
     {
-
     }
 
     __forceinline bool LoadTexDictionary( modelId_t txdId, CTxdInstanceSA *txdInst, CModelLoadInfoSA& loadInfo )
@@ -438,34 +436,26 @@ struct ModelLoadDispatch : public ModelCheckDispatch <false>
     CModelLoadInfoSA& m_loadInfo;
 };
 
-bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
+inline void OnModelLoaded( modelId_t id )
 {
-    CModelLoadInfoSA& loadInfo = VAR_ModelLoadInfo[id];
+    // Grab our load info.
+    CModelLoadInfoSA& loadInfo = Streaming::GetModelLoadInfo( id );
 
-    // Do the loading.
-    size_t requestSize = loadInfo.GetSize();    // we are loading from .IMG chunks
-    {
-        rwLoadHandler lHandler( buf, requestSize );
+    // ... we are done loading!
+    loadInfo.m_eLoading = MODEL_LOADED;
+    (*(unsigned int*)0x008E4CB4) += loadInfo.GetSize();     // increase the streaming memory statistics
 
-        typedef semiCorotLoadFlavor <rwLoadHandler> loadTechnique;
+    // Tell modifications (i.e. deathmatch) that we finished loading.
+    if ( Streaming::streamingLoadCallback )
+        Streaming::streamingLoadCallback( id );
+}
 
-        ModelLoadDispatch <rwLoadHandler, loadTechnique> loadDispatch( lHandler, loadTechnique( lHandler ), loadInfo );
+struct ModelPostLoadDispatch : public ModelCheckDispatch <true>
+{
+    __forceinline ModelPostLoadDispatch( CModelLoadInfoSA& loadInfo ) : m_loadInfo( loadInfo )
+    { }
 
-        bool success = DefaultDispatchExecute( id, loadDispatch );
-
-        if ( !success )
-        {
-            Streaming::FreeModel( id );
-
-            // It could re-request the resource.
-            if ( loadDispatch.m_failureRequest )
-                Streaming::RequestModel( id, loadInfo.m_flags );
-
-            return false;
-        }
-    }
-
-    if ( id < MAX_MODELS )
+    __forceinline bool DoBaseModel( modelId_t id )
     {
         CBaseModelInfoSAInterface *info = ppModelInfo[id];
         eModelType type = info->GetModelType();
@@ -473,28 +463,83 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
         if ( type != MODEL_VEHICLE && type != MODEL_PED )   // Well, there also is weapon model info?
         {
             if ( CAtomicModelInfoSA *atomInfo = info->GetAtomicModelInfo() )
-                atomInfo->ucAlpha = ( loadInfo.m_flags & 0x24 ) ? 0xFF : 0;
+                atomInfo->ucAlpha = ( m_loadInfo.m_flags & 0x24 ) ? 0xFF : 0;
 
-            if ( !( loadInfo.m_flags & 0x06 ) )
-                loadInfo.PushIntoLoader( Streaming::GetLastGarbageCollectModel() );
+            if ( !( m_loadInfo.m_flags & 0x06 ) )
+                m_loadInfo.PushIntoLoader( Streaming::GetLastGarbageCollectModel() );
         }
-    }
-    else if ( id < 25000 || id >= 25575 && id < 25755 || id > 26230 )
-    {
-        if ( !( loadInfo.m_flags & 0x06 ) )
-            loadInfo.PushIntoLoader( Streaming::GetLastGarbageCollectModel() );
+
+        return true;
     }
 
-    // If we do not require a second loader run...
-    if ( loadInfo.m_eLoading != MODEL_RELOAD )
+    __forceinline void AddToGarbageCollection( void )
     {
-        // ... we are done loading!
-        loadInfo.m_eLoading = MODEL_LOADED;
-        (*(unsigned int*)0x008E4CB4) += requestSize;    // increase the streaming memory statistics
+        if ( !( m_loadInfo.m_flags & 0x06 ) )
+            m_loadInfo.PushIntoLoader( Streaming::GetLastGarbageCollectModel() );
+    }
 
-        // Tell modifications (i.e. deathmatch) that we finished loading.
-        if ( Streaming::streamingLoadCallback )
-            Streaming::streamingLoadCallback( id );
+    __forceinline bool DoCollision( modelId_t id )
+    {
+        AddToGarbageCollection();
+        return true;
+    }
+
+    __forceinline bool DoAnimation( modelId_t id )
+    {
+        AddToGarbageCollection();
+        return true;
+    }
+
+    __forceinline bool DoScript( modelId_t id )
+    {
+        AddToGarbageCollection();
+        return true;
+    }
+
+    CModelLoadInfoSA& m_loadInfo;
+};
+
+template <typename loaderDispatch>
+inline bool HandleLoaderDispatch( modelId_t id, CModelLoadInfoSA& loadInfo, loaderDispatch& loadDispatch )
+{
+    bool success = DefaultDispatchExecute( id, loadDispatch );
+
+    if ( !success )
+    {
+        Streaming::FreeModel( id );
+
+        // It could re-request the resource.
+        if ( loadDispatch.m_failureRequest )
+            Streaming::RequestModel( id, loadInfo.m_flags );
+    }
+
+    return success;
+}
+
+bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
+{
+    CModelLoadInfoSA& loadInfo = Streaming::GetModelLoadInfo( id );
+
+    // Do the loading.
+    bool success = false;
+    {
+        rwLoadHandler lHandler( buf, loadInfo.GetSize() );  // we are loading from .IMG chunks.
+
+        typedef semiCorotLoadFlavor <rwLoadHandler> loadTechnique;
+
+        ModelLoadDispatch <rwLoadHandler, loadTechnique> loadDispatch( lHandler, loadTechnique( lHandler ), loadInfo );
+
+        success = HandleLoaderDispatch( id, loadInfo, loadDispatch );
+    }
+
+    if ( success )
+    {
+        // Do post loading handling
+        DefaultDispatchExecute( id, ModelPostLoadDispatch( loadInfo ) );
+
+        // If we do not require a second loader run...
+        if ( loadInfo.m_eLoading != MODEL_RELOAD )
+            OnModelLoaded( id );
     }
 
     return true;
@@ -579,6 +624,13 @@ void __cdecl CompleteStreamingRequest( unsigned int idx )
         was successful.
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00408CB0
+    Note:
+        Currently, this function knows it will complete the
+        loading of the resource it is requested to finish.
+        This means that by calling this function in
+        ProcessStreamingRequest, isLoadingBigModel will be
+        set to false as well as all of its ids (except 0) will
+        be cleared.
 =========================================================*/
 bool __cdecl LoadBigModel( char *buf, modelId_t id )
 {
@@ -639,14 +691,12 @@ bool __cdecl LoadBigModel( char *buf, modelId_t id )
         // We failed. Try again!
         FreeModel( id );
         RequestModel( id, loadInfo->m_flags );
-        return false;
     }
-
     // Notify our environment that we loaded another model.
-    if ( streamingLoadCallback )
+    else if ( streamingLoadCallback )
         streamingLoadCallback( id );
 
-    return true;
+    return success;
 }
 
 /*=========================================================
@@ -668,6 +718,319 @@ bool __cdecl LoadBigModel( char *buf, modelId_t id )
         how GTA:SA is not a great engine. The GTA community figured
         about this anyway, so that should be proof.
 =========================================================*/
+struct ModelUnclogDispatch : public ModelCheckDispatch <true>
+{
+    __forceinline void UnclogMemory( modelId_t id )
+    {
+        UnclogMemoryUsage( Streaming::GetModelLoadInfo( id ).GetSize() );
+    }
+
+    __forceinline bool DoBaseModel( modelId_t id )
+    {
+        UnclogMemory( id );
+        return true;
+    }
+
+    __forceinline bool DoCollision( modelId_t id )
+    {
+        UnclogMemory( id );
+        return true;
+    }
+
+    // Not IPL sector request.
+
+    __forceinline bool DoPathFind( modelId_t id )
+    {
+        UnclogMemory( id );
+        return true;
+    }
+
+    __forceinline bool DoAnimation( modelId_t id )
+    {
+        UnclogMemory( id );
+        return true;
+    }
+
+    __forceinline bool DoRecording( modelId_t id )
+    {
+        UnclogMemory( id );
+        return true;
+    }
+
+    __forceinline bool DoScript( modelId_t id )
+    {
+        UnclogMemory( id );
+        return true;
+    }
+
+    __forceinline bool DoOther( modelId_t id )
+    {
+        UnclogMemory( id );
+        return true;
+    }
+};
+
+struct semiCorotPulseManager
+{
+    __forceinline bool DoLoading( void *buf, modelId_t mid, unsigned int slicerIndex )
+    {
+        return LoadModel( buf, mid, slicerIndex );
+    }
+
+    inline bool IsFibered( void )
+    {
+        return false;
+    }
+};
+
+template <typename pulseManager>
+__forceinline void ProcessSlicerInstances( unsigned int slicerIndex, pulseManager& pulseMan )
+{
+    streamingRequest& requester = Streaming::GetStreamingRequest( slicerIndex );
+    bool loadFibered = pulseMan.IsFibered();
+
+    for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTS; n++ )
+    {
+        modelId_t mid = requester.ids[n];
+
+        if ( mid != -1 )
+        {
+            CModelLoadInfoSA& loadInfo = Streaming::GetModelLoadInfo( mid );
+
+            // I removed the broken vehicle stream limit from this function.
+            // That stream.ini "vehicles" feature was never properly implemented into GTA:SA 1.0.
+            // 1) It was used for big vehicle models, which were never loaded using the appropriate
+            // API in the first place.
+            // 2) Keeping that Rockstar code hinders MTA logic, as MTA logic expects no limits.
+            //  * location: 0x0040E1F1
+            DefaultDispatchExecute( mid, ModelUnclogDispatch() );
+
+            // Perform the loading
+            {
+                void *buf = (char*)Streaming::threadAllocationBuffers[slicerIndex] + requester.bufOffsets[n] * 2048;
+
+                pulseMan.DoLoading( buf, mid, slicerIndex );
+            }
+
+            bool resetSlot = true;
+
+            if ( !loadFibered )
+            {
+                // Do we have to continue loading this model?
+                bool continueLoading = ( loadInfo.m_eLoading == MODEL_RELOAD );
+
+                resetSlot = !continueLoading;
+                
+                // MTA extension: If fibered-loading is enabled, we can load the resources at any
+                // index of the slicer.
+                unsigned int loadAtIndex = 0;
+
+                if ( continueLoading )
+                {
+                    // The_GTA: this appears to simulate coroutine behaviour.
+                    // To improve the performance of the whole system, I propose a CExecutiveManagerSA
+                    // class which will host fibers using frame pulses. It will be adapted from
+                    // Lua coroutines, but will have multiple ways of yielding (time, count, etc).
+                    // It will ultimatively remove lag-spikes due to resource loading.
+                    requester.status = streamingRequest::STREAMING_LOADING;
+
+                    if ( n != loadAtIndex )
+                    {
+                        // Reposition the request.
+                        requester.bufOffsets[loadAtIndex] = requester.bufOffsets[n];
+                        requester.ids[loadAtIndex] = mid;
+                    }
+                }
+
+                if ( n != loadAtIndex )
+                    resetSlot = true;
+            }
+
+            // Only clear if not zero (because 0 is slot of big model request?)
+            if ( resetSlot )
+                requester.ids[n] = 0xFFFF;  // clear the request slot
+        }
+    }
+}
+
+struct corotRwLoadHandler
+{
+    struct corotStreamData
+    {
+        RwBufferedStream data;
+        RwBuffer buf;
+        CFiberSA *fiber;
+    };
+
+    static int streamClose( void *fp )
+    {
+        corotStreamData *data = (corotStreamData*)fp;
+
+        RwStreamBufferedShutdown( data->data, STREAM_MODE_READ, NULL );
+        return true;
+    }
+
+    static size_t streamRead( void *fp, void *buffer, size_t length )
+    {
+        corotStreamData *data = (corotStreamData*)fp;
+
+        data->fiber->yield_proc();
+
+        return RwStreamBufferedRead( data->data, buffer, length );
+    }
+
+    static size_t streamWrite( void *fp, const void *buffer, size_t length )
+    {
+        corotStreamData *data = (corotStreamData*)fp;
+
+        data->fiber->yield_proc();
+
+        return RwStreamBufferedWrite( data->data, buffer, length );
+    }
+
+    static void* streamSkip( void *fp, unsigned int offset )
+    {
+        corotStreamData *data = (corotStreamData*)fp;
+
+        data->fiber->yield_proc();
+
+        bool success = RwStreamBufferedSkip( data->data, offset );
+
+        return ( success ) ? fp : NULL;
+    }
+
+    char _streamBuf[sizeof(RwStream)];
+
+    corotStreamData streamData;
+
+    inline void Initialize( void )
+    {
+        // Create a stream
+        RwStreamTypeData typeData;
+        typeData.callbackClose = streamClose;
+        typeData.callbackRead = streamRead;
+        typeData.callbackWrite = streamWrite;
+        typeData.callbackSeek = streamSkip;
+        typeData.ptr_callback = &streamData;
+
+        // Initialize the buffered stream.
+        RwStreamBufferedInit( streamData.data, STREAM_MODE_READ, &streamData.buf );
+
+        m_stream = RwStreamInitialize( _streamBuf, false, STREAM_TYPE_CALLBACK, STREAM_MODE_READ, &typeData );
+    }
+
+    inline void Terminate( void )
+    {
+        // Close the stream.
+        RwStreamClose( m_stream, &streamData );
+    }
+
+    inline corotRwLoadHandler( void *buf, size_t bufSize, CFiberSA *fiber )
+    {
+        // Set up the RenderWare buffer
+        streamData.buf.ptr = buf;
+        streamData.buf.size = bufSize;
+        streamData.fiber = fiber;
+
+        Initialize();
+    }
+
+    inline ~corotRwLoadHandler( void )
+    {
+        Terminate();
+    }
+
+    inline RwStream* ResetStream( void )
+    {
+        Terminate();
+        Initialize();
+
+        return m_stream;
+    }
+
+    inline RwStream* GetRwStream( void )
+    {
+        return m_stream;
+    }
+
+    inline void* GetBuffer( void )
+    {
+        return streamData.buf.ptr;
+    }
+
+    inline size_t GetBufferSize( void )
+    {
+        return streamData.buf.size;
+    }
+
+    RwStream *m_stream;
+};
+
+struct corotPulseManager
+{
+    __forceinline corotPulseManager( CFiberSA *fiber ) : m_fiber( fiber )
+    {
+    }
+
+    __forceinline bool DoLoading( void *buf, modelId_t id, unsigned int slicerIndex )
+    {
+        CModelLoadInfoSA& loadInfo = Streaming::GetModelLoadInfo( id );
+
+        // Do the loading.
+        bool success = false;
+        {
+            typedef corotRwLoadHandler loadHandler;
+            typedef corotLoadFlavor <loadHandler> loadTechnique;
+
+            loadHandler lHandler( buf, loadInfo.GetSize(), m_fiber );   // we are loading from .IMG chunks.
+
+            ModelLoadDispatch <loadHandler, loadTechnique> loadDispatch( lHandler, loadTechnique( lHandler ), loadInfo );
+
+            success = HandleLoaderDispatch( id, loadInfo, loadDispatch );
+        }
+
+        if ( success )
+        {
+            // Do post loading handling
+            DefaultDispatchExecute( id, ModelPostLoadDispatch( loadInfo ) );
+
+            // If we do not require a second loader run...
+            if ( loadInfo.m_eLoading != MODEL_RELOAD )
+                OnModelLoaded( id );
+        }
+        
+        return success;
+    }
+
+    inline bool IsFibered( void )
+    {
+        return true;
+    }
+
+    CFiberSA *m_fiber;
+};
+
+void __stdcall LoaderFiberRuntime( CFiberSA *fiber, void *ud )
+{
+    unsigned int slicerIndex = (unsigned int)ud;
+    streamingRequest& requester = Streaming::GetStreamingRequest( slicerIndex );
+
+    while ( true )
+    {
+        // Run through the slicer.
+        corotPulseManager pulseMan( fiber );
+
+        requester.status = streamingRequest::STREAMING_LOADING;
+
+        ProcessSlicerInstances( slicerIndex, pulseMan );
+
+        requester.status = streamingRequest::STREAMING_NONE;
+
+        // Yield for sure.
+        fiber->yield();
+    }
+}
+
 bool __cdecl ProcessStreamingRequest( unsigned int id )
 {
     using namespace Streaming;
@@ -695,66 +1058,59 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
         return true;
     }
 
-    bool isLoading = requester.status == streamingRequest::STREAMING_LOADING;
-    requester.status = streamingRequest::STREAMING_NONE;
+    // This system depends on whether we load fibered or not.
+    // NOTE: we may not change state during execution of this function!
+    bool loadFibered = enableFiberedLoading;
 
-    if ( isLoading )
+    bool isLoading = ( requester.status == streamingRequest::STREAMING_LOADING );
+
+    if ( !loadFibered )
+        requester.status = streamingRequest::STREAMING_NONE;
+
+    if ( !loadFibered && isLoading )
     {
         // Continue the loading procedure.
         LoadBigModel( (char*)Streaming::threadAllocationBuffers[id] + requester.bufOffsets[0] * 2048, requester.ids[0] );
 
         // Mark that we are done.
+        // The remaining slots of this requester will be cleared below.
         requester.ids[0] = -1;
     }
     else
     {
+        // This logic loops through all requests in the streaming slicer and attempts to load
+        // them in the first go. If loading has succeeded, the slot inside the slicer is cleared.
+        // If a resource has not loaded in the first go, it is queued in the first slot of the
+        // slicer.
+        // The problem with this logic is that it is very limited.
+        /*
+            - isLoadingBigModel enforces that only the first slicer enters this function.
+            - isLoadingBigModel is the main quantifier that decides whether a resource is
+              split up in coroutine-fashion loading.
+        */
+        // I need to do the following:
+        /*
+            - unlink the relation of coroutine-loading from isLoadingBigModel.
+        */
+        // So.. I have to find a way to fix this.
+
         // Attempt to load the queue
-        for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTS; n++ )
+        if ( loadFibered )
         {
-            modelId_t mid = requester.ids[n];
-
-            if ( mid != -1 )
-            {
-                CModelLoadInfoSA& loadInfo = GetModelLoadInfo( mid );
-                
-                // I removed the broken vehicle stream limit from this function.
-                // That stream.ini "vehicles" feature was never properly implemented into GTA:SA 1.0.
-                // 1) It was used for big vehicle models, which were never loaded using the appropriate
-                // API in the first place.
-                // 2) Keeping that Rockstar code hinders MTA logic, as MTA logic expects no limits.
-                //  * location: 0x0040E1F1
-                if ( mid < 25255 || mid >= 25511 )  // Not IPL sector request.
-                {
-                    // Free some memory usage for the request
-                    UnclogMemoryUsage( loadInfo.GetSize() );
-                }
-
-                // Perform the loading
-                LoadModel( (char*)Streaming::threadAllocationBuffers[id] + requester.bufOffsets[n] * 2048, mid, id );
-
-                // Do we have to continue loading this model?
-                if ( loadInfo.m_eLoading == MODEL_RELOAD )
-                {
-                    // The_GTA: this appears to simulate coroutine behaviour.
-                    // To improve the performance of the whole system, I propose a CExecutiveManagerSA
-                    // class which will host fibers using frame pulses. It will be adapted from
-                    // Lua coroutines, but will have multiple ways of yielding (time, count, etc).
-                    // It will ultimatively remove lag-spikes due to resource loading.
-                    requester.status = streamingRequest::STREAMING_LOADING;
-                    requester.bufOffsets[0] = requester.bufOffsets[n];
-                    requester.ids[0] = mid;
-
-                    // Only clear if not zero (because 0 is slot of big model request?)
-                    if ( n != 0 )
-                        requester.ids[n] = 0xFFFF;
-                }
-                else
-                    requester.ids[n] = 0xFFFF;  // clear the request slot
-            }
+            // Enter the fiber runtime.
+            requester.loaderFiber->resume();
+        }
+        else
+        {
+            // Do it the semi-coroutine way.
+            ProcessSlicerInstances( id, semiCorotPulseManager() );
         }
     }
 
     // Is a big model loading? But is the requester in an inappropriate status?
+    // This is triggered when big-sized resources have been loaded but they were
+    // not split into muliple pulses (i.e. big vehicle models). If a big resource
+    // is loading, we are the primary requester (slicer 0).
     if ( isLoadingBigModel && requester.status != streamingRequest::STREAMING_LOADING )
     {
         // Reset big model loading
@@ -1248,7 +1604,7 @@ namespace Streaming
     CExecutiveGroupSA *fiberGroup = NULL;
 };
 
-void Streaming::EnterFiberMode( void )
+void Streaming::LeaveFiberMode( void )
 {
     CExecutiveManagerSA *fiberMan = pGame->GetExecutiveManager();
 
@@ -1278,7 +1634,7 @@ void Streaming::EnterFiberMode( void )
     }
 }
 
-void Streaming::LeaveFiberMode( void )
+void Streaming::EnterFiberMode( void )
 {
     CExecutiveManagerSA *fiberMan = pGame->GetExecutiveManager();
 
@@ -1286,15 +1642,14 @@ void Streaming::LeaveFiberMode( void )
     if ( enableFiberedLoading )
     {
         fiberGroup = fiberMan->CreateGroup();
+        fiberGroup->SetPerfMultiplier( loaderPerfMultiplier );
 
         // Allocate fibers for all slicers.
         for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTERS; n++ )
         {
             streamingRequest& requester = GetStreamingRequest( n );
 
-            // todo.
-
-            CFiberSA *newFiber = NULL;//fiberMan->CreateFiber();
+            CFiberSA *newFiber = fiberMan->CreateFiber( LoaderFiberRuntime, (void*)n );
             
             fiberGroup->AddFiber( newFiber );
 
@@ -1329,6 +1684,35 @@ bool Streaming::IsFiberedLoadingEnabled( void )
 
 void CStreamingSA::EnableFiberedLoading( bool enable )      { return Streaming::EnableFiberedLoading( enable ); }
 bool CStreamingSA::IsFiberedLoadingEnabled( void ) const    { return Streaming::IsFiberedLoadingEnabled(); }
+
+/*=========================================================
+    Streaming::SetLoaderPerfMultiplier
+
+    Arguments:
+        multiplier - the perf multiplier to assign to the loader system
+    Purpose:
+        Sets the performance multiplier of all loading fibers.
+        This multiplier decides how much of the frame time
+        every fiber of the system may take to load resources.
+=========================================================*/
+void Streaming::SetLoaderPerfMultiplier( double multiplier )
+{
+    loaderPerfMultiplier = multiplier;
+
+    if ( fiberGroup )
+        fiberGroup->SetPerfMultiplier( multiplier );
+}
+
+double Streaming::GetLoaderPerfMultiplier( void )
+{
+    if ( fiberGroup )
+        return fiberGroup->perfMultiplier;
+
+    return loaderPerfMultiplier;
+}
+
+void CStreamingSA::SetFiberedPerfMultiplier( double mult )      { Streaming::SetLoaderPerfMultiplier( mult ); }
+double CStreamingSA::GetFiberedPerfMultiplier( void ) const     { return Streaming::GetLoaderPerfMultiplier(); }
 
 /*=========================================================
     Streaming::LoadAllRequestedModels
@@ -1427,7 +1811,7 @@ void __cdecl Streaming::LoadAllRequestedModels( bool onlyPriority )
             requester.statusCode = 100;
         }
 
-        // Try to finish the loading procedure
+        // Attempt to finish the loading procedure.
         if ( requester.status == streamingRequest::STREAMING_BUFFERING )
         {
             ProcessStreamingRequest( threadId );
@@ -1435,14 +1819,17 @@ void __cdecl Streaming::LoadAllRequestedModels( bool onlyPriority )
             // This once again enforces this coroutine like loading logic.
             // It expects resources to at least take two pulses to load properly.
             // The system breaks if more pulses are required.
-            if ( requester.status == streamingRequest::STREAMING_LOADING )
+            while ( requester.status == streamingRequest::STREAMING_LOADING )
                 ProcessStreamingRequest( threadId );
         }
 
-        // If we expect to load only priority and there is no priority models
-        // to load, we can cancel here.
-        if ( onlyPriority && numPriorityRequests == 0 )
-            break;
+        if ( !enableFiberedLoading )
+        {
+            // If we expect to load only priority and there is no priority models
+            // to load, we can cancel here.
+            if ( onlyPriority && numPriorityRequests == 0 )
+                break;
+        }
 
         // Attempt to draw more resources into the queue.
         ContinueResourceAcquisition( threadId );
@@ -1503,10 +1890,9 @@ void __cdecl Streaming::PulseLoader( void )
 
 // Loader hacks for better performance.
 // Return true to skip
-bool _cdecl ShouldSkipLoadRequestedModels ( DWORD calledFrom )
+bool _cdecl ShouldSkipLoadRequestedModels( DWORD calledFrom )
 {
-#if 0
-    if ( !CMultiplayerSA::ms_PlayerImgCachePtr )
+    if ( !StreamingCache::IsIMGFileCached( "PLAYER.IMG" ) )
         return false;
 
     // Skip LoadRequestedModels if called from:
@@ -1514,16 +1900,21 @@ bool _cdecl ShouldSkipLoadRequestedModels ( DWORD calledFrom )
     //      CClothesBuilder::LoadAndPutOnClothes         5A5F70 - 5A6039
     //      CClothesBuilder::ConstructTextures           5A6040 - 5A6520
     return calledFrom > 0x5A55A0 && calledFrom < 0x5A6520;
-#else
-    return false;
-#endif
 }
 
 void __cdecl HOOK_PulseStreamingLoader( void )
 {
 // hook from 015670A0/01567090 5 bytes
     if ( !ShouldSkipLoadRequestedModels( (DWORD)_ReturnAddress() ) )
-        Streaming::PulseLoader();
+    {
+        // MTA extension: if we are loading using fibers, we must make
+        // sure that loading at least finished. There are bugs inside
+        // of the engine that do not expect a slow loader.
+        if ( Streaming::enableFiberedLoading )
+            Streaming::LoadAllRequestedModels( false );
+        else
+            Streaming::PulseLoader();
+    }
 }
 
 /*=========================================================

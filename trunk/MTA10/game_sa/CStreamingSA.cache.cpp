@@ -82,6 +82,24 @@ bool StreamingCache::CacheIMGFile( const char *name )
 }
 
 /*=========================================================
+    StreamingCache::IsIMGFileCached
+
+    Arguments:
+        name - name of the .IMG container to check
+    Purpose:
+        Returns whether the given .IMG container is cached.
+=========================================================*/
+bool StreamingCache::IsIMGFileCached( const char *name )
+{
+    unsigned int imgID;
+
+    if ( !GetIMGFileByName( name, imgID ) )
+        return false;
+
+    return cachedIMGFiles[imgID].isCached;
+}
+
+/*=========================================================
     StreamingCache::FreeIMGFileCache
 
     Arguments:

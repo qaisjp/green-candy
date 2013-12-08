@@ -12,31 +12,6 @@
 
 #include <StdInc.h>
 
-inline unsigned int RwThrowException( unsigned int errId )
-{
-    return errId;
-}
-
-inline void RwCallException( int err1, unsigned int err2 )
-{
-    RwError errorInfo;
-
-    errorInfo.err1 = err1;
-    errorInfo.err2 = RwThrowException( err2 );
-
-    RwSetError( &errorInfo );
-}
-
-inline void RwThrowFileTypeException( void )
-{
-    RwCallException( 1, 0x0E );
-}
-
-inline void RwThrowFileModeException( void )
-{
-    RwCallException( 1, 0x0D );
-}
-
 inline void* _openFile( const char *name, const char *mode )
 {
     return pRwInterface->m_fileOpen( name, mode );
@@ -65,6 +40,195 @@ inline int _tellFile( void *fp )
 inline int _closeFile( void *fp )
 {
     return pRwInterface->m_fileClose( fp );
+}
+
+inline unsigned int RwThrowException( unsigned int errId )
+{
+    return errId;
+}
+
+inline void RwCallException( int err1, unsigned int err2 )
+{
+    RwError errorInfo;
+
+    errorInfo.err1 = err1;
+    errorInfo.err2 = RwThrowException( err2 );
+
+    RwSetError( &errorInfo );
+}
+
+inline void RwThrowFileTypeException( void )
+{
+    RwCallException( 1, 0x0E );
+}
+
+inline void RwThrowFileModeException( void )
+{
+    RwCallException( 1, 0x0D );
+}
+
+inline void RwStreamBufferedInit( RwBufferedStream& data, RwStreamMode mode, const RwBuffer *buf )
+{
+    switch( mode )
+    {
+    case STREAM_MODE_READ:
+        data.position = 0;
+        data.size = buf->size;
+        data.dataPtr = buf->ptr;
+        break;
+    case STREAM_MODE_WRITE:
+        data.position = 0;
+        data.size = 0;
+        data.dataPtr = NULL;
+        break;
+    case STREAM_MODE_APPEND:
+        data.position = buf->size;
+        data.size = buf->size;
+        data.dataPtr = buf->ptr;
+        break;
+    default:
+        RwThrowFileModeException();
+        break;
+    }
+}
+
+inline unsigned int RwStreamBufferedRead( RwBufferedStream& data, void *buf, unsigned int size )
+{
+    unsigned int position = data.position;
+    unsigned int dataSize = data.size;
+
+    unsigned int leftToRead = dataSize - position;
+
+    if ( size > leftToRead )
+    {
+        size = leftToRead;
+
+        RwCallException( 1, 5 );
+    }
+
+    memcpy( buf, (const char*)data.dataPtr + position, size );
+
+    data.position += size;
+    return size;
+}
+
+inline unsigned int RwStreamBufferedWrite( RwBufferedStream& data, const void *buf, unsigned int writeSize )
+{
+    void *writeBuf = data.dataPtr;
+
+    if ( !writeBuf )
+    {
+        writeBuf = pRwInterface->m_memory.m_malloc( RW_STREAM_WRITEBUF_SIZE, 0x30404 );
+
+        if ( !writeBuf )
+        {
+            RwCallException( 1, 0x80000013 );
+            return 0;
+        }
+
+        data.dataPtr = writeBuf;
+        data.size = RW_STREAM_WRITEBUF_SIZE;
+    }
+
+    unsigned int position = data.position;
+    unsigned int size = data.size;
+
+    unsigned int leftToWrite = size - position;
+
+    if ( writeSize > leftToWrite )
+    {
+        size_t newMemSize = position + std::max( (unsigned int)RW_STREAM_WRITEBUF_SIZE, writeSize );
+
+        writeBuf = pRwInterface->m_memory.m_realloc( writeBuf, newMemSize );
+
+        if ( !writeBuf )
+        {
+            RwCallException( 1, 0x80000013 );
+            return NULL;
+        }
+
+        data.dataPtr = writeBuf;
+        data.size = newMemSize;
+    }
+
+    memcpy( (char*)writeBuf + position, buf, writeSize );
+
+    data.position += writeSize;
+    return writeSize;
+}
+
+inline bool RwStreamBufferedSkip( RwBufferedStream& data, unsigned int count )
+{
+    unsigned int newPos = data.position + count;
+    unsigned int size = data.size;
+
+    if ( newPos > size )
+    {
+        data.position = size;
+
+        RwCallException( 1, 5 );
+        return false;
+    }
+
+    data.position = newPos;
+    return true;
+}
+
+inline bool RwStreamBufferedSeek( RwBufferedStream& data, long offset, int type )
+{
+    unsigned int newPos;
+    long base = 0;
+
+    switch( type )
+    {
+    case SEEK_CUR:      base = data.position; break;
+    case SEEK_END:      base = data.size; break;
+    case SEEK_SET:      base = 0; break;
+    default:
+        RwCallException( 1, 5 );
+        return false;
+    }
+
+    if ( offset < 0 )
+    {
+        long realOffset = -offset;
+
+        if ( base < realOffset )
+        {
+            newPos = 0;
+        }
+        else
+            newPos = base - realOffset;
+    }
+    else
+    {
+        newPos = std::min( (long)data.size, base + offset );
+    }
+
+    data.position = newPos;
+    return true;
+}
+
+inline bool RwStreamBufferedShutdown( RwBufferedStream& data, unsigned int mode, RwBuffer *buf )
+{
+    if ( mode != STREAM_MODE_READ )
+    {
+        if ( buf )
+        {
+            buf->ptr = data.dataPtr;
+            buf->size = data.position;
+        }
+        else
+        {
+            // Fixed some memory leak.
+            void *memory = data.dataPtr;
+
+            if ( memory )
+                pRwInterface->m_memory.m_free( memory );
+        }
+    }
+
+    return true;
 }
 
 /*=========================================================
@@ -136,32 +300,7 @@ RwStream* __cdecl RwStreamInitialize( void *memory, int isAllocated, RwStreamTyp
         }
         break;
     case STREAM_TYPE_BUFFER:
-        {
-            RwBuffer *buf = (RwBuffer*)ud;
-
-            switch( mode )
-            {
-            case STREAM_MODE_READ:
-                stream->data.position = 0;
-                stream->data.size = buf->size;
-                stream->data.dataPtr = buf->ptr;
-                break;
-            case STREAM_MODE_WRITE:
-                stream->data.position = 0;
-                stream->data.size = 0;
-                stream->data.dataPtr = NULL;
-                break;
-            case STREAM_MODE_APPEND:
-                stream->data.position = buf->size;
-                stream->data.size = buf->size;
-                stream->data.dataPtr = buf->ptr;
-                break;
-            default:
-                RwThrowFileModeException();
-                break;
-            }
-            
-        }
+        RwStreamBufferedInit( stream->data.buffered, stream->mode, (const RwBuffer*)ud );
         break;
     case STREAM_TYPE_CALLBACK:
         stream->data = *(RwStreamTypeData*)ud;
@@ -239,25 +378,7 @@ unsigned int __cdecl RwStreamReadBlocks( RwStream *stream, void *buf, unsigned i
         }
         break;
     case STREAM_TYPE_BUFFER:
-        {
-            unsigned int position = stream->data.position;
-            unsigned int dataSize = stream->data.size;
-
-            unsigned int leftToRead = dataSize - position;
-
-            if ( size > leftToRead )
-            {
-                size = leftToRead;
-
-                RwCallException( 1, 5 );
-            }
-
-            memcpy( buf, (const char*)stream->data.dataPtr + position, size );
-
-            stream->data.position += size;
-
-            readCount = size;
-        }
+        readCount = RwStreamBufferedRead( stream->data.buffered, buf, size );
         break;
     case STREAM_TYPE_CALLBACK:
         readCount = stream->data.callbackRead( stream->data.ptr_callback, buf, size );
@@ -302,46 +423,10 @@ RwStream* __cdecl RwStreamWriteBlocks( RwStream *stream, const void *buf, unsign
         break;
     case STREAM_TYPE_BUFFER:
         {
-            void *writeBuf = stream->data.dataPtr;
+            size_t writeCount = RwStreamBufferedWrite( stream->data.buffered, buf, size );
 
-            if ( !writeBuf )
-            {
-                writeBuf = pRwInterface->m_memory.m_malloc( RW_STREAM_WRITEBUF_SIZE, 0x30404 );
-
-                if ( !writeBuf )
-                {
-                    RwCallException( 1, 0x80000013 );
-                    return NULL;
-                }
-
-                stream->data.dataPtr = writeBuf;
-                stream->data.size = RW_STREAM_WRITEBUF_SIZE;
-            }
-
-            unsigned int position = stream->data.position;
-            unsigned int size = stream->data.size;
-
-            unsigned int leftToWrite = size - position;
-
-            if ( size > leftToWrite )
-            {
-                size_t newMemSize = position + std::max( (unsigned int)RW_STREAM_WRITEBUF_SIZE, size );
-
-                writeBuf = pRwInterface->m_memory.m_realloc( writeBuf, newMemSize );
-
-                if ( !writeBuf )
-                {
-                    RwCallException( 1, 0x80000013 );
-                    return NULL;
-                }
-
-                stream->data.dataPtr = writeBuf;
-                stream->data.size = newMemSize;
-            }
-
-            memcpy( (char*)writeBuf + position, buf, size );
-
-            stream->data.position += size;
+            if ( writeCount != size )
+                return NULL;
         }
         break;
     case STREAM_TYPE_CALLBACK:
@@ -401,18 +486,10 @@ RwStream* __cdecl RwStreamSkip( RwStream *stream, unsigned int count )
         break;
     case STREAM_TYPE_BUFFER:
         {
-            unsigned int newPos = stream->data.position + count;
-            unsigned int size = stream->data.size;
+            bool success = RwStreamBufferedSkip( stream->data.buffered, count );
 
-            if ( newPos > size )
-            {
-                stream->data.position = size;
-
-                RwCallException( 1, 5 );
+            if ( !success )
                 return NULL;
-            }
-
-            stream->data.position = newPos;
         }
         break;
     case STREAM_TYPE_CALLBACK:
@@ -472,38 +549,7 @@ RwStream* RwStreamSeek( RwStream *stream, long offset, int type )
         }
         break;
     case STREAM_TYPE_BUFFER:
-        {
-            unsigned int newPos;
-            long base = 0;
-
-            switch( type )
-            {
-            case SEEK_CUR:      base = stream->data.position; break;
-            case SEEK_END:      base = stream->data.size; break;
-            case SEEK_SET:      base = 0; break;
-            default:
-                RwCallException( 1, 5 );
-                return NULL;
-            }
-
-            if ( offset < 0 )
-            {
-                long realOffset = -offset;
-
-                if ( base < realOffset )
-                {
-                    newPos = 0;
-                }
-                else
-                    newPos = base - realOffset;
-            }
-            else
-            {
-                newPos = std::min( (long)stream->data.size, base + offset );
-            }
-
-            stream->data.position = newPos;
-        }
+        success = RwStreamBufferedSeek( stream->data.buffered, offset, type );
         break;
     case STREAM_TYPE_CALLBACK:
         // We would break binary compatibility if we implemented this, unfortunately.
@@ -550,26 +596,7 @@ int __cdecl RwStreamClose( RwStream *stream, void *ud )
         }
         break;
     case STREAM_TYPE_BUFFER:
-        success = true;
-
-        if ( stream->mode != STREAM_MODE_READ )
-        {
-            if ( ud )
-            {
-                RwBuffer *buf = (RwBuffer*)ud;
-
-                buf->ptr = stream->data.dataPtr;
-                buf->size = stream->data.position;
-            }
-            else
-            {
-                // Fixed some memory leak.
-                void *memory = stream->data.dataPtr;
-
-                if ( memory )
-                    pRwInterface->m_memory.m_free( memory );
-            }
-        }
+        success = RwStreamBufferedShutdown( stream->data.buffered, stream->mode, (RwBuffer*)ud );
         break;
     case STREAM_TYPE_CALLBACK:
         {

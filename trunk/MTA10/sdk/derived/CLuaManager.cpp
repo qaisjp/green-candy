@@ -485,6 +485,8 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineGetStreamingInfo );
     LUA_REGISTER( L, engineStreamingEnableFiberedLoading );
     LUA_REGISTER( L, engineStreamingIsFiberedLoadingEnabled );
+    LUA_REGISTER( L, engineStreamingSetFiberedPerfMultiplier );
+    LUA_REGISTER( L, engineStreamingGetFiberedPerfMultiplier );
 
     // Drawing funcs (low-level)
     LUA_REGISTER( L, dxDrawLine );

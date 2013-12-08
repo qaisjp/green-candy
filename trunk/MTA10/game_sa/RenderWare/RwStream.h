@@ -48,14 +48,15 @@ struct RwBuffer
     void*           ptr;
     unsigned int    size;
 };
+struct RwBufferedStream
+{
+    unsigned int        position;
+    unsigned int        size;
+    void*               dataPtr;
+};
 union RwStreamTypeData
 {
-    struct
-    {
-        unsigned int        position;
-        unsigned int        size;
-        void*               dataPtr;
-    };
+    RwBufferedStream        buffered;
     struct
     {
         void*               file;
@@ -90,6 +91,14 @@ struct RwChunkHeader
     unsigned int        unk3;
     unsigned int        isComplex;
 };
+
+// Buffered stream globals.
+inline void             RwStreamBufferedInit        ( RwBufferedStream& data, RwStreamMode mode, const RwBuffer *buf );
+inline unsigned int     RwStreamBufferedRead        ( RwBufferedStream& data, void *buf, unsigned int size );
+inline unsigned int     RwStreamBufferedWrite       ( RwBufferedStream& data, const void *buf, unsigned int size );
+inline bool             RwStreamBufferedSkip        ( RwBufferedStream& data, unsigned int count );
+inline bool             RwStreamBufferedSeek        ( RwBufferedStream& data, long seek, int type );
+inline bool             RwStreamBufferedShutdown    ( RwBufferedStream& data, unsigned int mode, RwBuffer *buf );
 
 // Function exports.
 RwStream* __cdecl       RwStreamInitialize          ( void *memory, int isAllocated, RwStreamType type, RwStreamMode mode, void *ud );

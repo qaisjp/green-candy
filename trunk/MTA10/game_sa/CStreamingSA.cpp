@@ -219,6 +219,9 @@ void __cdecl Streaming::RequestModel( modelId_t id, unsigned int flags )
         // Tell the loader that there is a resource waiting
         (*(DWORD*)VAR_NUMMODELS)++;
 
+        if ( *(DWORD*)VAR_NUMMODELS == 0 )
+            __asm int 3
+
         if ( flags & 0x10 )
             Streaming::numPriorityRequests++;
 
@@ -649,7 +652,7 @@ void __cdecl Streaming::Update( void )
 {
     // todo: what is this?
     // appears to store the latest number of models loaded.
-    *(unsigned int*)VAR_NUMMODELS = *(unsigned int*)0x00B729BC;
+    *(unsigned int*)0x00B729BC = *(unsigned int*)VAR_NUMMODELS;
 
     // If the game is paused or the streamer is disabled,
     // we cannot update the streaming status.
@@ -1009,6 +1012,12 @@ static void __cdecl _Streaming_Init( void )
 
     // Here was the initialization of the native-scope streaming gc chain.
 
+    // MTA extension: enter the current streaming mode.
+    Streaming::EnterFiberMode();
+
+    // Set up fibered business.
+    Streaming::SetLoaderPerfMultiplier( STREAMING_DEFAULT_FIBERED_PERFMULT );
+
     // We successfully loaded.
     *(bool*)0x009654B8 = true;
 }
@@ -1024,6 +1033,9 @@ static void __cdecl _Streaming_Init( void )
 =========================================================*/
 static void __cdecl _Streaming_Shutdown( void )
 {
+    // Leave streaming mode to deallocate resources.
+    Streaming::LeaveFiberMode();
+
     // Deallocate the threading resource memory.
     RwFreeAligned( Streaming::threadAllocationBuffers[0] );
 
@@ -1039,6 +1051,10 @@ void Streaming::Reset( void )
     // Reset to GTA:SA defaults.
     // Could have been modified by mods.
     ResetGarbageCollection();
+    
+    EnableFiberedLoading( STREAMING_DEFAULT_FIBERED_LOADING );
+
+    SetLoaderPerfMultiplier( STREAMING_DEFAULT_FIBERED_PERFMULT );
 }
 
 CStreamingSA::CStreamingSA( void )

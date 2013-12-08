@@ -79,6 +79,9 @@ public:
     virtual void            EnableFiberedLoading            ( bool enable ) = 0;
     virtual bool            IsFiberedLoadingEnabled         ( void ) const = 0;
 
+    virtual void            SetFiberedPerfMultiplier        ( double mult ) = 0;
+    virtual double          GetFiberedPerfMultiplier        ( void ) const = 0;
+
     virtual void            GetStreamingInfo                ( streamingInfo& info ) const = 0;
 
     // Callbacks from the system.

@@ -989,4 +989,30 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
+    LUA_DECLARE( engineStreamingSetFiberedPerfMultiplier )
+    {
+        double mult;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadNumber( mult );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pGame->GetStreaming()->SetFiberedPerfMultiplier( mult );
+            
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineStreamingGetFiberedPerfMultiplier )
+    {
+        lua_pushnumber( L, g_pGame->GetStreaming()->GetFiberedPerfMultiplier() );
+        return 1;
+    }
 }
