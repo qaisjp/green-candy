@@ -17,6 +17,7 @@ namespace StreamingCache
 {
     bool    GetCachedIMGData( unsigned int imgId, unsigned int blockOffset, unsigned int blockCount, void*& dataPtr );
     bool    CacheIMGFile( const char *name );
+    bool    IsIMGFileCached( const char *name );
     void    FreeIMGFileCache( const char *name );
 };
 

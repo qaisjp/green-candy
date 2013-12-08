@@ -379,7 +379,7 @@ static RpClump* __cdecl ReadClumpBigContinue( RwStream *stream )
         return NULL;
 
     // Get to the current stream offset
-    RwStreamSkip( stream, *(unsigned int*)0x00C87AFC - stream->data.position );
+    RwStreamSkip( stream, *(unsigned int*)0x00C87AFC - stream->data.buffered.position );
 
     // The_GTA: since this function is never used and there are much better
     // ways to load RenderWare resources, I decide to leave this old code out.

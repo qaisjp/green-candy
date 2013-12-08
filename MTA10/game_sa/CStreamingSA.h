@@ -163,6 +163,9 @@ public:
     void            EnableFiberedLoading            ( bool enable );
     bool            IsFiberedLoadingEnabled         ( void ) const;
 
+    void            SetFiberedPerfMultiplier        ( double mult );
+    double          GetFiberedPerfMultiplier        ( void ) const;
+
     void            GetStreamingInfo                ( streamingInfo& info ) const;
 
     // Useful resource system event callbacks.

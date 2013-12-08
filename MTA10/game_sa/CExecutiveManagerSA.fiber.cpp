@@ -236,6 +236,10 @@ void __declspec(naked) ExecutiveFiber::qswitch( Fiber *from, Fiber *to )
 
 void CFiberSA::yield_proc( void )
 {
-    // todo.
-    yield();
+    // Do some test with timing.
+    double currentTimer = ExecutiveManager::GetPerformanceTimer();
+    double perfMultiplier = group->perfMultiplier;
+
+    if ( ( currentTimer - resumeTimer ) > manager->GetFrameDuration() * perfMultiplier )
+        yield();
 }

@@ -13,6 +13,20 @@
 #ifndef _EXECUTIVE_MANAGER_
 #define _EXECUTIVE_MANAGER_
 
+namespace ExecutiveManager
+{
+    // Function used by the system for performance measurements.
+    __forceinline double GetPerformanceTimer( void )
+    {
+        LONGLONG counterFrequency, currentCount;
+
+        QueryPerformanceFrequency( (LARGE_INTEGER*)&counterFrequency );
+        QueryPerformanceCounter( (LARGE_INTEGER*)&currentCount );
+
+        return (double)currentCount / (double)counterFrequency;
+    }
+};
+
 #include "CExecutiveManagerSA.fiber.h"
 
 #define DEFAULT_GROUP_MAX_EXEC_TIME     16
@@ -48,6 +62,14 @@ public:
     RwList <CExecutiveGroupSA> groups;
 
     CExecutiveGroupSA *defGroup;    // default group that all fibers are put into at the beginning.
+
+    double frameTime;
+    double frameDuration;
+
+    double GetFrameDuration( void )
+    {
+        return frameDuration;
+    }
 };
 
 class CExecutiveGroupSA
@@ -70,6 +92,8 @@ public:
         this->maximumExecutionTime = DEFAULT_GROUP_MAX_EXEC_TIME;
         this->totalFrameExecutionTime = 0;
 
+        this->perfMultiplier = 1.0f;
+
         LIST_APPEND( manager->groups.root, managerNode );
     }
 
@@ -78,8 +102,6 @@ public:
         while ( !LIST_EMPTY( fibers.root ) )
         {
             CFiberSA *fiber = LIST_GETITEM( CFiberSA, fibers.root.next, groupNode );
-
-            LIST_REMOVE( fiber->groupNode );
 
             manager->CloseFiber( fiber );
         }
@@ -112,6 +134,13 @@ public:
     // These times are given in milliseconds.
     double totalFrameExecutionTime;
     double maximumExecutionTime;
+
+    double perfMultiplier;
+
+    void SetPerfMultiplier( double mult )
+    {
+        perfMultiplier = mult;
+    }
 };
 
 #endif //_EXECUTIVE_MANAGER_
