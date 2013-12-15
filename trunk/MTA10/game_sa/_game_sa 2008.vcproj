@@ -1063,7 +1063,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RenderWare\RwMath.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RenderWare\RwStream.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\RwTextureD3D9.cpp"
 				>
 			</File>
 			<Filter
@@ -1074,7 +1082,15 @@
 					>
 				</File>
 				<File
+					RelativePath=".\RenderWare\RwMath.h"
+					>
+				</File>
+				<File
 					RelativePath=".\RenderWare\RwStream.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\RwTextureD3D9.h"
 					>
 				</File>
 			</Filter>

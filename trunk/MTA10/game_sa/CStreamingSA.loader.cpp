@@ -592,14 +592,14 @@ void __cdecl CompleteStreamingRequest( unsigned int idx )
             {
                 requester.count++;
 
-                unsigned int syncStatus = GetSyncSemaphoreStatus( idx );
+                unsigned int syncStatus = GetSyncSemaphoreStatus( Streaming::GetStreamingRequestSyncSemaphoreIndex( idx ) );
 
                 if ( syncStatus == 0xFF || syncStatus == 0xFA )
                     continue;
             }
 
             // Perform the read request
-            ReadStream( idx, Streaming::threadAllocationBuffers[idx], requester.offset, requester.blockCount );
+            ReadStream( Streaming::GetStreamingRequestSyncSemaphoreIndex( idx ), Streaming::threadAllocationBuffers[idx], requester.offset, requester.blockCount );
 
             // Change our status
             requester.status = streamingRequest::STREAMING_BUFFERING;
@@ -853,6 +853,12 @@ __forceinline void ProcessSlicerInstances( unsigned int slicerIndex, pulseManage
     }
 }
 
+inline void YieldStreamingFiber( CFiberSA *fiber )
+{
+    if ( !Streaming::insideLoadAllRequestedModels )
+        fiber->yield_proc();
+}
+
 struct corotRwLoadHandler
 {
     struct corotStreamData
@@ -874,7 +880,7 @@ struct corotRwLoadHandler
     {
         corotStreamData *data = (corotStreamData*)fp;
 
-        data->fiber->yield_proc();
+        YieldStreamingFiber( data->fiber );
 
         return RwStreamBufferedRead( data->data, buffer, length );
     }
@@ -883,7 +889,7 @@ struct corotRwLoadHandler
     {
         corotStreamData *data = (corotStreamData*)fp;
 
-        data->fiber->yield_proc();
+        YieldStreamingFiber( data->fiber );
 
         return RwStreamBufferedWrite( data->data, buffer, length );
     }
@@ -892,7 +898,7 @@ struct corotRwLoadHandler
     {
         corotStreamData *data = (corotStreamData*)fp;
 
-        data->fiber->yield_proc();
+        YieldStreamingFiber( data->fiber );
 
         bool success = RwStreamBufferedSkip( data->data, offset );
 
@@ -1038,7 +1044,7 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
     streamingRequest& requester = Streaming::GetStreamingRequest( id );
 
     // Are we waiting for resources?
-    if ( unsigned int status = GetSyncSemaphoreStatus( id ) )
+    if ( unsigned int status = GetSyncSemaphoreStatus( Streaming::GetStreamingRequestSyncSemaphoreIndex( id ) ) )
     {
         if ( status == 0xFF || status == 0xFA )
             return false;
@@ -1566,7 +1572,7 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
 pulseSemaphore:
     // Notify the synchronous semaphore.
     // Is this a normal request or just a big model one?
-    ReadStream( reqId, Streaming::threadAllocationBuffers[reqId], offset, threadBufferOffset );
+    ReadStream( Streaming::GetStreamingRequestSyncSemaphoreIndex( reqId ), Streaming::threadAllocationBuffers[reqId], offset, threadBufferOffset );
 
     // Update the requester
     requester.status = streamingRequest::STREAMING_BUFFERING;
@@ -1725,7 +1731,10 @@ double CStreamingSA::GetFiberedPerfMultiplier( void ) const     { return Streami
     Binary offsets:
         (1.0 US and 1.0 EU): 0x0040EA10
 =========================================================*/
-static volatile bool _isLoadingRequests = false;    // GTA:SA code is not C++ exception friendly.
+namespace Streaming
+{
+    volatile bool insideLoadAllRequestedModels = false;   // GTA:SA code is not C++ exception friendly.
+};
 
 __forceinline unsigned int GetNextThreadId( unsigned int threadId )
 {
@@ -1780,10 +1789,10 @@ void __cdecl Streaming::LoadAllRequestedModels( bool onlyPriority )
 
     // Protect against running this function two times in parallel.
     // Either multi-threaded or stacked.
-    if ( _isLoadingRequests )
+    if ( insideLoadAllRequestedModels )
         return;
 
-    _isLoadingRequests = true;
+    insideLoadAllRequestedModels= true;
     PulseStreamingRequests();
     
     unsigned int pulseCount = std::max( (unsigned int)10, *(unsigned int*)0x008E4CB8 * 2 );
@@ -1843,8 +1852,10 @@ void __cdecl Streaming::LoadAllRequestedModels( bool onlyPriority )
     }
     
     PulseStreamingRequests();
-    _isLoadingRequests = false;
+    insideLoadAllRequestedModels = false;
 }
+
+bool CStreamingSA::IsInsideLoadAllRequestedModels( void ) const     { return Streaming::insideLoadAllRequestedModels; }
 
 /*=========================================================
     Streaming::PulseLoader

@@ -6,7 +6,7 @@
 *  FILE:        mods/shared_logic/CClientDFF.cpp
 *  PURPOSE:     .dff model handling class
 *  DEVELOPERS:  Christian Myhre Lundheim <>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -112,7 +112,7 @@ struct _addImpIterStruct
     int n;
 };
 
-static void _DFF_ListImports( unsigned short id, _addImpIterStruct *info )
+static void _DFF_ListImports( modelId_t id, _addImpIterStruct *info )
 {
     lua_pushnumber( info->L, id );
     lua_rawseti( info->L, 1, info->n++ );
@@ -294,7 +294,7 @@ void CClientDFF::RestoreModels()
     m_model.RestoreAll();
 }
 
-static void _DFF_RestreamImport( unsigned short id, void *ud )
+static void _DFF_RestreamImport( modelId_t id, void *ud )
 {
     g_pClientGame->GetManager()->Restream( id );
 }

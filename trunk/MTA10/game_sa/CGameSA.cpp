@@ -524,6 +524,8 @@ void CGameSA::OnFrame()
 
         break;
     }
+
+    core->GetKeyBinds()->DoPostGameFramePulse();
 }
 
 void CGameSA::SetEntityReferenceCallbacks( entityReferenceCallback_t addRef, entityReferenceCallback_t delRef )

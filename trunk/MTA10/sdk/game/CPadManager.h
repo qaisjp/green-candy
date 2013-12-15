@@ -16,7 +16,7 @@
 class CPadManager abstract
 {
 public:
-    virtual void                    UpdateJoypad( const CControlInterface& states, CPed& ped ) = 0;
+    virtual void                    UpdateJoypad( CControlInterface& states, CPed& ped ) = 0;
 };
 
 #endif //_VIRTUAL_PAD_MANAGER_

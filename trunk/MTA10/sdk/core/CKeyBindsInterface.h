@@ -321,6 +321,8 @@ public:
     virtual void                    CallAllGTAControlBinds( eControlType controlType, bool bState ) = 0;
     virtual void                    ForAllBoundControls( SBindableGTAControl *control, cntrlIterCallback_t cb, void *ud ) = 0;
 
+    virtual void                    SwitchToControlScheme( eControlType controlType ) = 0;
+
     virtual bool                    GetMultiGTAControlState( CGTAControlBind* pBind ) = 0;
     virtual bool                    IsControlEnabled( const char* szControl ) const = 0;
     virtual bool                    IsControlEnabled( eBindableControl index ) const = 0;
@@ -359,7 +361,8 @@ public:
     virtual void                    SetCharacterKeyHandler( CharacterKeyHandler Handler ) = 0;
 
     // Control/action funcs
-    virtual void                    SetControlState( eBindableControl control, bool state ) = 0;
+    virtual void                    SetRealControlState( eBindableControl control, bool state ) = 0;
+    virtual bool                    GetRealControlState( eBindableControl control ) const = 0;
     virtual bool                    GetControlState( eBindableControl control ) const = 0;
     virtual const char*             GetControlFromAction( eControllerAction action ) = 0;
     virtual bool                    GetActionFromControl( const char* szControl, eControllerAction& action ) = 0;
@@ -377,6 +380,7 @@ public:
 
     virtual void                    DoPreFramePulse() = 0;
     virtual void                    DoPostFramePulse() = 0;
+    virtual void                    DoPostGameFramePulse() = 0;
 
     virtual bool                    LoadFromXML( class CXMLNode* pMainNode ) = 0;
     virtual bool                    SaveToXML( class CXMLNode* pMainNode ) = 0;

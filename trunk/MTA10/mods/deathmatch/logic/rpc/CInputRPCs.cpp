@@ -232,7 +232,7 @@ void CInputRPCs::SetControlState ( NetBitStreamInterface& bitStream )
                 eBindableControl index;
 
                 if ( pKeyBinds->GetBindableIndex( szControl, index ) )
-                    pKeyBinds->SetControlState( index, ucState == 1 );
+                    pKeyBinds->SetRealControlState( index, ucState == 1 );
             }
         }
         delete [] szControl;

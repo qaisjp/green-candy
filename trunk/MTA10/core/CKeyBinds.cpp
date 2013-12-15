@@ -266,12 +266,15 @@ CKeyBinds::CKeyBinds( CCore* pCore )
 
     m_szFileName = NULL;
     m_bMouseWheel = false;
-    m_bInVehicle = false;
+    m_bFrameMouseWheelUp = false;
+    m_bFrameMouseWheelDown = false;
     m_pChatBoxBind = NULL;
     m_bProcessingKeyStroke = false;
     m_KeyStrokeHandler = NULL;
     m_CharacterKeyHandler = NULL;
     m_bWaitingToLoadDefaults = false;
+
+    m_currentControlScheme = CONTROL_FOOT;
 }
 
 CKeyBinds::~CKeyBinds()
@@ -337,8 +340,15 @@ bool CKeyBinds::ProcessKeyStroke( const SBindableKey * pKey, bool bState )
     else
         bIsCursorForced = false;
 
-    if ( pKey->iGTARelative == GTA_KEY_MSCROLLUP || pKey->iGTARelative == GTA_KEY_MSCROLLDOWN )
+    int iKeyType = pKey->iGTARelative;
+
+    if ( iKeyType == GTA_KEY_MSCROLLUP || iKeyType == GTA_KEY_MSCROLLDOWN )
         m_bMouseWheel = true;
+
+    if ( iKeyType == GTA_KEY_MSCROLLUP )
+        m_bFrameMouseWheelUp = true;
+    else if ( iKeyType == GTA_KEY_MSCROLLDOWN )
+        m_bFrameMouseWheelDown = true;
 
     // Call the key-stroke handler if we have one
     if ( m_KeyStrokeHandler )
@@ -910,9 +920,7 @@ void CKeyBinds::CallGTAControlBind( CGTAControlBind* pBind, bool bState )
             {
                 // If its a key up or our player's state matches the control
                 eControlType controlType = pControlBind->control->controlType;
-                if ( !bState || controlType == CONTROL_BOTH ||
-                        ( controlType == CONTROL_FOOT && !m_bInVehicle ) ||
-                        ( controlType == CONTROL_VEHICLE && m_bInVehicle ) )
+                if ( !bState || IsActiveControlScheme( controlType ) )
                 {
                     // Is the up / down state matching
                     if ( pControlBind->bHitState == bState )
@@ -1101,6 +1109,16 @@ void CKeyBinds::ForAllBoundControls( SBindableGTAControl *control, cntrlIterCall
                 cb( pBind, ud );
         }
     }
+}
+
+void CKeyBinds::SwitchToControlScheme( eControlType controlType )
+{
+    m_currentControlScheme = controlType;
+}
+
+bool CKeyBinds::IsActiveControlScheme( eControlType controlType ) const
+{
+    return controlType == CONTROL_BOTH || m_currentControlScheme == controlType;
 }
 
 bool CKeyBinds::AddFunction( const char* szKey, KeyFunctionBindHandler Handler, bool bState, bool bIgnoreGUI )
@@ -1589,7 +1607,7 @@ const SBindableKey* CKeyBinds::GetBindableFromMessage ( UINT uMsg, WPARAM wParam
     return NULL;
 }
 
-void CKeyBinds::SetControlState( eBindableControl control, bool state )
+void CKeyBinds::SetRealControlState( eBindableControl control, bool state )
 {
     if ( control > MAX_CONTROLS-1 )
         return;
@@ -1597,12 +1615,29 @@ void CKeyBinds::SetControlState( eBindableControl control, bool state )
     g_controlStatus[control].SetState( state );
 }
 
-bool CKeyBinds::GetControlState( eBindableControl control ) const
+bool CKeyBinds::GetRealControlState( eBindableControl control ) const
 {
     if ( control > MAX_CONTROLS-1 )
         return false;
 
     return g_controlStatus[control].IsActive();
+}
+
+bool CKeyBinds::GetControlState( eBindableControl control ) const
+{
+    eControlType cntrlType = g_bcControls[control].controlType;
+
+    if ( IsActiveControlScheme( cntrlType ) )
+    {
+        if ( control == RADIO_NEXT )
+            return m_bFrameMouseWheelUp;
+        if ( control == RADIO_PREVIOUS )
+            return m_bFrameMouseWheelDown;
+
+        return GetRealControlState( control );
+    }
+
+    return false;
 }
 
 const char* CKeyBinds::GetControlFromAction( eControllerAction action )
@@ -1832,6 +1867,12 @@ void CKeyBinds::DoPostFramePulse()
     }
 }
 
+void CKeyBinds::DoPostGameFramePulse( void )
+{
+    // Reset mouse wheel status.
+    m_bFrameMouseWheelDown = false;
+    m_bFrameMouseWheelUp = false;
+}
 
 bool CKeyBinds::LoadFromXML ( CXMLNode* pMainNode )
 {

@@ -366,7 +366,7 @@ void CAutomobileSA::RecalculateHandling()
 
 void CAutomobileSA::RecalculateSuspensionLines()
 {
-    CColDataSA *data = ppModelInfo[GetInterface()->m_model]->pColModel->pColData;
+    CColDataSA *data = GetInterface()->GetColModel()->pColData;
 
 	// Calculate them
     CVehicleSA::RecalculateSuspensionLines();

@@ -70,7 +70,6 @@ bool CClientPad::GetControlState( const char *name, bool& state )
     return true;
 }
 
-
 bool CClientPad::SetControlState( const char *name, bool state )
 {
     unsigned int index;

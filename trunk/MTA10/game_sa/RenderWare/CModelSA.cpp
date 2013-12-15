@@ -80,6 +80,11 @@ CModelSA::CModelSA( RpClump *clump, CColModelSA *col ) : CRwObjectSA( clump )
 
     // Register all atomics to us
     RpClumpObjectAssociation( m_frame, this );
+
+    // Add us to the model manager.
+    CModelManagerSA::models_t& models = pGame->GetModelManager()->m_models;
+
+    models.push_back( this );
 }
 
 CModelSA::~CModelSA()

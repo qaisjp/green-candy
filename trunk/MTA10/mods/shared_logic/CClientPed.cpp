@@ -488,7 +488,7 @@ void CClientPed::Teleport ( const CVector& vecPosition )
                 }
 
                 // Set the real position
-                m_pPlayerPed->Teleport ( vecPosition.fX, vecPosition.fY, vecPosition.fZ );
+                m_pPlayerPed->SetPosition ( vecPosition.fX, vecPosition.fY, vecPosition.fZ );
             }
         }
     }
@@ -1208,9 +1208,6 @@ void CClientPed::WarpIntoVehicle ( CClientVehicle* pVehicle, unsigned int uiSeat
                 pVehicle->SetFrozenWaitingForGroundToLoad ( true );
             }
         }
-
-        // Disable foot control states
-        g_pCore->GetKeyBinds()->CallAllGTAControlBinds( CONTROL_FOOT, false );
     }
 
     // Remove some tasks so we don't get any weird results
@@ -1231,83 +1228,41 @@ void CClientPed::WarpIntoVehicle ( CClientVehicle* pVehicle, unsigned int uiSeat
         m_pPlayerPed->SetOccupiedSeat ( ( unsigned char ) uiSeat );
 
     // Driverseat
-    if ( uiSeat == 0 )
-    {       
-        // Force the vehicle we're warping into to be streamed in
-        // if the local player is entering it. This is so we don't
-        // get screwed up with camera not following and similar issues.
-        if ( m_bIsLocalPlayer )
-        {
-            pVehicle->AddStreamReference ();
-            pVehicle->SetSwingingDoorsAllowed ( true );
-        }
+    unsigned int ucSeat = CClientVehicleManager::ConvertIndexToGameSeat ( pVehicle->m_usModel, uiSeat );
 
-        // Warp the player into the car's driverseat
-        CVehicle *pGameVehicle = pVehicle->m_pVehicle;
-        if ( pGameVehicle )
-        {
-            // Warp him in
-            InternalWarpIntoVehicle( pGameVehicle );
+    if ( uiSeat != 0 && ucSeat == 0xFF )
+        return;
 
-            // Jax: make sure our camera is fixed on the new vehicle
-            if ( m_bIsLocalPlayer )
-            {
-                CClientCamera *pCamera = m_pManager->GetCamera();
-
-                if ( !pCamera->IsInFixedMode() )
-                    pCamera->SetVehicleInterpolationSource( pVehicle );
-            }
-        }
-
-        // Update the vehicle and us so we know we've occupied it
-        CClientVehicle::SetPedOccupiedVehicle( this, pVehicle, 0, 0xFF );
-    }
-    else
-    {
-        // Passenger seat
-        unsigned char ucSeat = CClientVehicleManager::ConvertIndexToGameSeat ( pVehicle->m_usModel, uiSeat );
-        if ( ucSeat != 0 && ucSeat != 0xFF )
-        {
-            if ( m_pPlayerPed )
-            {
-                // Force the vehicle we're warping into to be streamed in
-                // if the local player is entering it. This is so we don't
-                // get screwed up with camera not following and similar issues.
-                if ( m_bIsLocalPlayer )
-                {
-                    pVehicle->AddStreamReference ();
-                }
-
-                // Warp the player into the car's driverseat
-                CVehicle* pGameVehicle = pVehicle->m_pVehicle;
-                if ( pGameVehicle )
-                {
-                    // Reset whatever task
-                    m_pTaskManager->RemoveTask ( TASK_PRIORITY_PRIMARY );
-
-                    // Create a task to warp the player in and execute it
-                    CTaskSimpleCarSetPedInAsPassenger* pInTask = g_pGame->GetTasks ()->CreateTaskSimpleCarSetPedInAsPassenger ( pGameVehicle, ucSeat );
-                    if ( pInTask )
-                    {
-                        pInTask->SetIsWarpingPedIntoCar ();
-                        pInTask->ProcessPed ( m_pPlayerPed );
-                        delete pInTask;
-                    }
-                }
-            }
-
-            // Update us so we know we've occupied it
-            CClientVehicle::SetPedOccupiedVehicle( this, pVehicle, uiSeat, 0xFF );
-        }
-        else
-            return;
-    }
-
-    // Turn on the radio if local player and it's not already on.
+    // Force the vehicle we're warping into to be streamed in
+    // if the local player is entering it. This is so we don't
+    // get screwed up with camera not following and similar issues.
     if ( m_bIsLocalPlayer )
     {
-        StartRadio ();
+        pVehicle->AddStreamReference ();
+
+        if ( uiSeat == 0 )
+            pVehicle->SetSwingingDoorsAllowed ( true );
     }
+
+    // Warp the player into the car's driverseat
+    CVehicle *pGameVehicle = pVehicle->GetGameVehicle();
+    if ( pGameVehicle )
+    {
+        // Warp him in
+        InternalWarpIntoVehicle( pGameVehicle, ucSeat );
+
+        // Jax: make sure our camera is fixed on the new vehicle
+        if ( uiSeat == 0 && m_bIsLocalPlayer )
+        {
+            CClientCamera *pCamera = m_pManager->GetCamera();
+
+            if ( !pCamera->IsInFixedMode() )
+                pCamera->SetVehicleInterpolationSource( pVehicle );
+        }
+    }
+
+    // Update the vehicle and us so we know we've occupied it
+    CClientVehicle::SetPedOccupiedVehicle( this, pVehicle, uiSeat, 0xFF );
 
     RemoveTargetPosition ();
 
@@ -1387,9 +1342,6 @@ CClientVehicle* CClientPed::RemoveFromVehicle( bool bIgnoreIfGettingOut )
     {
         // Stop the radio
         StopRadio();
-
-        // Reset vehicle controls
-        g_pCore->GetKeyBinds()->CallAllGTAControlBinds( CONTROL_VEHICLE, false );
     }
 
     // And in our class
@@ -3384,25 +3336,49 @@ void CClientPed::StreamOut()
     }
 }
 
-void CClientPed::InternalWarpIntoVehicle( CVehicle* pGameVehicle )
+void CClientPed::InternalWarpIntoVehicle( CVehicle* pGameVehicle, unsigned int seat )
 {
     if ( m_pPlayerPed )
     {
         // Reset whatever task
         m_pTaskManager->RemoveTask( TASK_PRIORITY_PRIMARY );
 
-        // Create a task to warp the player in and execute it
-        CTaskSimpleCarSetPedInAsDriver *pInTask = g_pGame->GetTasks()->CreateTaskSimpleCarSetPedInAsDriver( pGameVehicle );
-        if ( pInTask )
+        if ( seat != 0 )
         {
-            pInTask->SetIsWarpingPedIntoCar();
-            pInTask->ProcessPed( m_pPlayerPed );
-            delete pInTask;
-        }        
+            // Create a task to warp the player in and execute it
+            CTaskSimpleCarSetPedInAsPassenger* pInTask = g_pGame->GetTasks ()->CreateTaskSimpleCarSetPedInAsPassenger ( pGameVehicle, seat );
+            if ( pInTask )
+            {
+                pInTask->SetIsWarpingPedIntoCar ();
+                pInTask->ProcessPed ( m_pPlayerPed );
+                delete pInTask;
+            }
+        }
+        else
+        {
+            // Create a task to warp the player in and execute it
+            CTaskSimpleCarSetPedInAsDriver *pInTask = g_pGame->GetTasks()->CreateTaskSimpleCarSetPedInAsDriver( pGameVehicle );
+            if ( pInTask )
+            {
+                pInTask->SetIsWarpingPedIntoCar();
+                pInTask->ProcessPed( m_pPlayerPed );
+                delete pInTask;
+            }        
 
-        // If we're a remote player, make sure we can't fall off
-        if ( !m_bIsLocalPlayer )
-            SetCanBeKnockedOffBike( false );
+            // If we're a remote player, make sure we can't fall off
+            if ( !m_bIsLocalPlayer )
+                SetCanBeKnockedOffBike( false );
+        }
+    }
+
+    if ( m_bIsLocalPlayer )
+    {
+        // We are the local player.
+        // Make sure radio is on.
+        StartRadio ();
+
+        // Switch to vehicle controls.
+        g_pCore->GetKeyBinds()->SwitchToControlScheme( CONTROL_VEHICLE );
     }
 }
 
@@ -3432,6 +3408,9 @@ void CClientPed::InternalRemoveFromVehicle ( CVehicle* pGameVehicle )
         {
             // Turn off the radio
             StopRadio();
+
+            // Switch to foot controls.
+            g_pCore->GetKeyBinds()->SwitchToControlScheme( CONTROL_FOOT );
         }
     }
 }

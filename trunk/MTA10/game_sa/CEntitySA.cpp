@@ -110,8 +110,6 @@ CColModelSAInterface* CEntitySAInterface::GetColModel( void ) const
             return (CColModelSAInterface*)VAR_CVehicle_SpecialColModels + n;
     }
 
-    CColFileSA *colFile = Streaming::GetCOLEnvironment().m_pool->Get( ppModelInfo[m_model]->pColModel->m_colPoolIndex );
-
     return ppModelInfo[m_model]->pColModel;
 }
 
@@ -310,7 +308,7 @@ void CEntitySA::Teleport( float x, float y, float z )
     // Make sure we have a matrix
     m_pInterface->AcquaintMatrix();
 
-    m_pInterface->Teleport( x, y, z, true );
+    m_pInterface->Teleport( x, y, z, false );
 }
 
 void CEntitySA::ProcessControl()

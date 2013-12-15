@@ -456,7 +456,7 @@ struct RwTextureCoordinates
 struct RwCameraFrustum
 {
     RwPlane       plane;
-    unsigned char x,y,z;
+    unsigned char x,y,z;    // can be zero or one, decides whether to use maximum or minimum of bbox
     unsigned char unknown1;
 };
 class RwCamera : public RwObjectFrame   //size: 428
@@ -571,7 +571,7 @@ public:
     unsigned short          m_normalOffset;     // 92
     BYTE                    m_pad4[2];          // 94
 
-    unsigned short          frame;              // 96
+    unsigned short          frame;              // 96, begin of a substructure
     unsigned short          unknown7;           // 98
     RwList <void>           sectors;            // 100
     RwPipeline*             m_pipelineInst;     // 108
@@ -1060,6 +1060,9 @@ public:
 private:
     RwTexDictionary*    m_txd;
 };
+
+// Include basic dependencies.
+#include "RenderWare/RwMath.h"
 
 // Include plugins.
 #include "RenderWare/RwStream.h"

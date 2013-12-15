@@ -56,11 +56,11 @@ void CPadManagerSA::GetFootControl( const CControlInterface& states, const CPedS
     cs.m_digitalDown = DIGITAL_BUTTON( states.GetControlState( CONTROL_GROUP_CONTROL_BACK ) );
 }
 
-void CPadManagerSA::GetVehicleControl( const CControlInterface& states, CPedSA& ped, CControllerState& cs ) const
+void CPadManagerSA::GetVehicleControl( const CControlInterface& states, const CPedSA& ped, CControllerState& cs ) const
 {
     cs.ButtonCircle = DIGITAL_BUTTON( states.GetControlState( CONTROL_VEHICLE_FIRE ) );
     cs.LeftShoulder1 = DIGITAL_BUTTON( states.GetControlState( CONTROL_VEHICLE_SECONDARY_FIRE ) );
-    cs.LeftStickX = DIGITAL_AXIS( states.GetControlState( CONTROL_LEFT ), states.GetControlState( CONTROL_RIGHT ) );
+    cs.LeftStickX = DIGITAL_AXIS( states.GetControlState( CONTROL_VEHICLE_LEFT ), states.GetControlState( CONTROL_VEHICLE_RIGHT ) );
     cs.LeftStickY = DIGITAL_AXIS( states.GetControlState( CONTROL_STEER_FORWARD ), states.GetControlState( CONTROL_STEER_BACK ) );
 
     cs.ButtonCross = DIGITAL_BUTTON( states.GetControlState( CONTROL_ACCELERATE ) );
@@ -78,24 +78,34 @@ void CPadManagerSA::GetVehicleControl( const CControlInterface& states, CPedSA& 
     cs.RightStickY = DIGITAL_AXIS( states.GetControlState( CONTROL_SPECIAL_CONTROL_DOWN ), states.GetControlState( CONTROL_SPECIAL_CONTROL_UP ) );
 }
 
-void CPadManagerSA::UpdateJoypadEx( const CControlInterface& states, CPedSA& ped )
+void CPadManagerSA::MakeControllerStateForPed( CControlInterface& states, const CPedSA& ped, CControllerState& cs )
+{
+    if ( !ped.IsDead() )
+    {
+        if ( ped.GetVehicle() != NULL )
+        {
+            GetVehicleControl( states, ped, cs );
+        }
+        else
+        {
+            GetFootControl( states, ped, cs );
+        }
+
+        // Global controls
+        cs.ButtonTriangle = DIGITAL_BUTTON( states.GetControlState( CONTROL_ENTER_EXIT ) );
+        cs.m_select = DIGITAL_BUTTON( states.GetControlState( CONTROL_CHANGE_CAMERA ) );  
+    }
+}
+
+void CPadManagerSA::UpdateJoypadEx( CControlInterface& states, CPedSA& ped )
 {
     CPadSAInterface& pad = ped.GetJoypad();
 
     // Retrive the current controls
     CControllerState cs;
 
-    if ( !ped.IsDead() )
-    {
-        if ( ped.GetVehicle() != NULL )
-            GetVehicleControl( states, ped, cs );
-        else
-            GetFootControl( states, ped, cs );
-
-        // Global controls
-        cs.ButtonTriangle = DIGITAL_BUTTON( states.GetControlState( CONTROL_ENTER_EXIT ) );
-        cs.m_select = DIGITAL_BUTTON( states.GetControlState( CONTROL_CHANGE_CAMERA ) );  
-    }
+    MakeControllerStateForPed( states, ped, cs );
+    
     pad.SetState( cs );
 
     // Sirens
@@ -104,25 +114,18 @@ void CPadManagerSA::UpdateJoypadEx( const CControlInterface& states, CPedSA& ped
 
 void CPadManagerSA::UpdateLocalJoypad( CPedSA& ped )
 {
-    bool inVehicle = ped.GetVehicle() != NULL;
     CPadSAInterface& pad = ped.GetJoypad();
 
     // Retrive the current controls
     CControllerState cs;
 
+    MakeControllerStateForPed( *m_keys, ped, cs );
+
     if ( !ped.IsDead() )
     {
-        if ( inVehicle )
-            GetVehicleControl( *m_keys, ped, cs );
-        else
-            GetFootControl( *m_keys, ped, cs );
-
-        // Global controls
-        cs.ButtonTriangle = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_ENTER_EXIT ) );
-        cs.m_select = DIGITAL_BUTTON( m_keys->GetControlState( CONTROL_CHANGE_CAMERA ) );  
-
-        core->GetJoystickManager()->ApplyAxes( cs, inVehicle );
+        core->GetJoystickManager()->ApplyAxes( cs, ped.GetVehicle() != NULL );
     }
+
     pad.SetState( cs );
 
     // Sirens
