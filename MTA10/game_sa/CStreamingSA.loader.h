@@ -92,7 +92,7 @@ namespace Streaming
 
 // Streaming loader exports.
 modelId_t __cdecl ProcessLoadQueue( unsigned int offset, bool favorPriority );
-bool __cdecl ProcessStreamingRequest( modelId_t id );
+bool __cdecl ProcessStreamingRequest( unsigned int id );
 void __cdecl PulseStreamingRequests( void );
 void __cdecl PulseStreamingRequest( unsigned int reqId );
 void __cdecl PulseStreamingLoader( void );

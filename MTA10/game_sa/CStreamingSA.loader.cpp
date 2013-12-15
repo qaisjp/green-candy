@@ -558,6 +558,18 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
 =========================================================*/
 modelId_t Streaming::streamingWaitModel = -1;       // Binary offsets: (1.0 US and 1.0 EU): 0x008E4B90
 
+__forceinline bool FinishResourceLoading( unsigned int idx )
+{
+    if ( ProcessStreamingRequest( idx ) )
+    {
+        while ( Streaming::GetStreamingRequest( idx ).status == streamingRequest::STREAMING_LOADING )
+            ProcessStreamingRequest( idx );
+
+        return true;
+    }
+    return false;
+}
+
 void __cdecl CompleteStreamingRequest( unsigned int idx )
 {
     using namespace Streaming;
@@ -573,12 +585,8 @@ void __cdecl CompleteStreamingRequest( unsigned int idx )
             if ( status == streamingRequest::STREAMING_BUFFERING )
             {
                 // Have we successfully processed the request?
-                if ( ProcessStreamingRequest( idx ) )
+                if ( FinishResourceLoading( idx ) )
                 {
-                    // Now that we are finished loading the resources, load it
-                    if ( requester.status == streamingRequest::STREAMING_LOADING )
-                        ProcessStreamingRequest( idx );
-
                     // We no longer wait for a resource to load
                     streamingWaitModel = -1;
                     break;
