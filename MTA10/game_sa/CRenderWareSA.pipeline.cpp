@@ -19,6 +19,11 @@ CSpecMapMaterialPool **ppSpecMapMaterialPool = (CSpecMapMaterialPool**)0x00C02D3
 
 RwRenderStateLock::_rsLockDesc RwRenderStateLock::_rsLockInfo[210];
 
+inline IDirect3DDevice9* GetRenderDevice( void )
+{
+    return core->GetGraphics()->GetDevice();
+}
+
 /*=========================================================
     RwD3D9SetRenderState
 
@@ -152,6 +157,89 @@ void __cdecl RwD3D9GetRenderState( D3DRENDERSTATETYPE type, DWORD& value )
 }
 
 /*=========================================================
+    RwD3D9SetTextureStageState
+
+    Arguments:
+        stageId - index of the Direct3D 9 TSS
+        stateType - type index of the TSS
+        value - the new value to the TSS
+    Purpose:
+        Updates a texture stage state of the main Direct3D 9
+        device. The entries are cached, so that unnecessary
+        accesses are not made.
+    Binary offsets:
+        (1.0 US): 0x007FC340
+        (1.0 EU): 0x007FC380
+    Note:
+        When dealing with API that tries to adapt to proprietory
+        APIs like Direct3D, we better leave the usage as close to
+        the original as possible. I had the idea to let this
+        function return a DWORD, but decided against it since I
+        realized that it did not match the GTA:SA representation.
+=========================================================*/
+struct _texStageStateQuery
+{
+    DWORD id;
+    D3DTEXTURESTAGESTATETYPE type;
+};
+
+struct _texStageStateDesc
+{
+    DWORD value;
+    int isQueried;
+};
+
+static _texStageStateDesc _texStateStages[8][33];
+
+void __cdecl RwD3D9SetTextureStageState( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD value )
+{
+    _texStageStateDesc& stateInfo = _texStateStages[stageId][stateType];
+
+    if ( stateInfo.value == value )
+        return;
+
+    stateInfo.value = value;
+
+    // Make sure the update it notified to the device.
+    if ( !stateInfo.isQueried )
+    {
+        stateInfo.isQueried = true;
+
+        // Queue the request to update our TSS to the device.
+        _texStageStateQuery& queryItem = ((_texStageStateQuery*)0x00C99C80)[ (*(unsigned int*)0x00C9A5F0)++ ];
+        queryItem.id = stageId;
+        queryItem.type = stateType;
+    }
+}
+
+/*=========================================================
+    RwD3D9GetTextureStageState
+
+    Arguments:
+        stageId - index of the Direct3D 9 TSS
+        stateType - type index of the TSS
+        value - pointer to the value where the TSS value
+                should be written to
+    Purpose:
+        Retrieves the current Direct3D 9 device texture stage
+        state. The value may not be written to the device yet
+        but is pending for a push on RwD3D9ApplyDeviceStates.
+    Binary offsets:
+        (1.0 US): 0x007FC3A0
+        (1.0 EU): 0x007FC3E0
+    Note:
+        When dealing with API that tries to adapt to proprietory
+        APIs like Direct3D, we better leave the usage as close to
+        the original as possible. I had the idea to let this
+        function return a DWORD, but decided against it since I
+        realized that it did not match the GTA:SA representation.
+=========================================================*/
+void __cdecl RwD3D9GetTextureStageState( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD& value )
+{
+    value = _texStateStages[stageId][stateType].value;
+}
+
+/*=========================================================
     HOOK_RwD3D9GetRenderState
 
     Arguments:
@@ -234,21 +322,31 @@ void RwD3D9FreeRenderStates( void )
         (1.0 US): 0x007FC200
         (1.0 EU): 0x007FC240
 =========================================================*/
-struct _texStageStateQuery
+struct texStageStateValue
 {
-    DWORD id;
-    D3DTEXTURESTAGESTATETYPE type;
+    texStageStateValue( void )
+    {
+        value = 0xFFFFFFFF;
+    }
+
+    void operator = ( DWORD value )
+    {
+        this->value = value;
+    }
+
+    operator DWORD ( void ) const
+    {
+        return value;
+    }
+
+    DWORD value;
 };
 
-struct _texStageStateDesc
-{
-    DWORD value;
-    int isQueried;
-};
+static texStageStateValue currentTextureStageStateValues[8][33];
 
 void __cdecl RwD3D9ApplyDeviceStates( void )
 {
-    IDirect3DDevice9 *renderDevice = core->GetGraphics()->GetDevice();
+    IDirect3DDevice9 *renderDevice = GetRenderDevice();
     
     // Apply RenderStates
     unsigned int renderStates = *(unsigned int*)0x00C9A5EC;
@@ -281,14 +379,12 @@ void __cdecl RwD3D9ApplyDeviceStates( void )
     for ( unsigned int n = 0; n < textureStates; n++ )
     {
         _texStageStateQuery& item = ((_texStageStateQuery*)0x00C99C80)[n];
-        unsigned int idx = item.id * 32 + item.id + item.type;
-        
-        _texStageStateDesc& desc = ((_texStageStateDesc*)0x00C980F8)[idx];
+        _texStageStateDesc& desc = _texStateStages[item.id][item.type];
 
         desc.isQueried = false;
 
         DWORD newState = desc.value;
-        DWORD& currentState = ((DWORD*)0x00C99860)[idx];
+        texStageStateValue& currentState = currentTextureStageStateValues[item.id][item.type];
 
         if ( newState != currentState )
         {
@@ -301,6 +397,108 @@ void __cdecl RwD3D9ApplyDeviceStates( void )
 
     // No more texture states to process.
     *(unsigned int*)0x00C9A5F0 = 0;
+}
+
+/*=========================================================
+    RwD3D9SetStreams
+
+    Arguments:
+        streamInfo - descriptor of stream to set as current
+
+    Purpose:
+        Sets up the atomic pipeline, prepares the device information
+        and initializes the material, atomic and specular material
+        custom pools.
+    Binary offsets:
+        (1.0 US): 0x007FA090
+        (1.0 EU): 0x007FA0D0
+=========================================================*/
+struct RwD3D9StreamInfo //size: 16 bytes
+{
+    int unk;            // 0
+    void *unk2;         // 4
+    void *unk3;         // 8
+    int unk4;           // 12
+};
+
+inline RwD3D9StreamInfo& GetStreamInfo( unsigned int index )
+{
+    assert( index < 4 );
+
+    return ((RwD3D9StreamInfo*)0x00C97BD8)[index];
+}
+
+void __cdecl RwD3D9SetStreams( RwD3D9StreamInfo *sinfo, int someBool )
+{
+    for ( unsigned int n = 0; n < 2; n++ )
+    {
+        //RwD3D9StreamInfo& 
+    }
+}
+
+/*=========================================================
+    HOOK_DefaultAtomicRenderingCallback
+
+    Purpose:
+        Sets up the atomic pipeline, prepares the device information
+        and initializes the material, atomic and specular material
+        custom pools.
+    Binary offsets:
+        (1.0 US): 0x00756DF0
+        (1.0 EU): 0x00756E40
+=========================================================*/
+struct RwRenderCallbackTraverse
+{
+    BYTE                        m_pad[32];              // 0
+    IDirect3DIndexBuffer9*      m_indexBuffer;          // 32
+};
+
+inline IDirect3DIndexBuffer9*& GetCurrentIndexBuffer( void )
+{
+    return *(IDirect3DIndexBuffer9**)0x008E2450;
+}
+
+inline void RwD3D9SetCurrentIndexBuffer( IDirect3DIndexBuffer9 *indexBuf )
+{
+    if ( indexBuf && GetCurrentIndexBuffer() != indexBuf )
+    {
+        GetCurrentIndexBuffer() = indexBuf;
+
+        GetRenderDevice()->SetIndices( indexBuf );
+    }
+}
+
+void __cdecl HOOK_DefaultAtomicRenderingCallback( RwRenderCallbackTraverse *rtinfo, RwObject *renderObject, eRwType renderType, void *unk3 )
+{
+    IDirect3DDevice9 *renderDevice = GetRenderDevice();
+
+    IDirect3DPixelShader9 *currentPixelShader = *(IDirect3DPixelShader9**)0x008E244C;
+
+    if ( currentPixelShader )
+    {
+        *(IDirect3DPixelShader9**)0x008E244C = NULL;
+
+        renderDevice->SetPixelShader( currentPixelShader );
+    }
+
+    bool isObjectVisible = false;
+    RwCamera *currentCam = pRwInterface->m_renderCam;
+
+    if ( renderType == RW_ATOMIC )
+    {
+        isObjectVisible = RwD3D9CameraIsSphereFullyInsideFrustum( currentCam, ((RpAtomic*)renderObject)->GetWorldBoundingSphere() );
+    }
+    else
+    {
+        // Unknown type rendering!
+        isObjectVisible = RwD3D9CameraIsBBoxFullyInsideFrustum( currentCam, ((CVector*) ((char*)renderObject + 96) ) );
+    }
+
+    HOOK_RwD3D9SetRenderState( D3DRS_CLIPPING, false );
+
+    RwD3D9SetCurrentIndexBuffer( rtinfo->m_indexBuffer );
+
+    
 }
 
 /*=========================================================
@@ -363,11 +561,15 @@ void RenderWarePipeline_Init( void )
     case VERSION_EU_10:
         HookInstall( 0x007FC310, (DWORD)HOOK_RwD3D9SetRenderState, 5 );
         HookInstall( 0x007FC360, (DWORD)HOOK_RwD3D9GetRenderState, 5 );
+        HookInstall( 0x007FC380, (DWORD)RwD3D9SetTextureStageState, 5 );
+        HookInstall( 0x007FC3E0, (DWORD)RwD3D9GetTextureStageState, 5 );
         HookInstall( 0x007FC240, (DWORD)RwD3D9ApplyDeviceStates, 5 );
         break;
     case VERSION_US_10:
         HookInstall( 0x007FC2D0, (DWORD)HOOK_RwD3D9SetRenderState, 5 );
         HookInstall( 0x007FC320, (DWORD)HOOK_RwD3D9GetRenderState, 5 );
+        HookInstall( 0x007FC340, (DWORD)RwD3D9SetTextureStageState, 5 );
+        HookInstall( 0x007FC3A0, (DWORD)RwD3D9GetTextureStageState, 5 );
         HookInstall( 0x007FC200, (DWORD)RwD3D9ApplyDeviceStates, 5 );
         break;
     }

@@ -465,6 +465,9 @@ validIndex:
     =========================================================*/
     void __cdecl Init( unsigned int numSync )
     {
+        // Overwrite the value given by GTA:SA with our own.
+        numSync = 64;
+
         // Initialize managed variables
         memset( gtaStreamHandles, 0, sizeof(void*) * MAX_GTA_STREAM_HANDLES );
 

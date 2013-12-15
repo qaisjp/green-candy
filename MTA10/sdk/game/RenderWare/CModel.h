@@ -21,7 +21,7 @@ public:
     virtual CModel*                 Clone() const = 0;
     virtual void                    Render() = 0;
 
-    typedef void (*importIterCallback_t)( unsigned short id, void *ud );
+    typedef void (*importIterCallback_t)( modelId_t id, void *ud );
 
     virtual unsigned int            GetImportCount() const = 0;
     virtual void                    ForAllImports( importIterCallback_t cb, void *ud ) = 0;

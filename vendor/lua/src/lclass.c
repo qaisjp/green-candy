@@ -345,6 +345,28 @@ inline static void class_unlinkParent( lua_State *L, Class& j )
     j.parent = NULL;
 }
 
+inline void class_runDestructor( lua_State *L, Class& j, Closure *cl )
+{
+    try
+    {
+        setclvalue( L, L->top++, cl );
+        luaD_call( L, L->top - 1, 0 );
+    }
+    catch( lua_exception& )
+    {
+        Closure *handler = G(L)->events[LUA_EVENT_DESTRUCTOR_EXCEPTION];
+
+        if ( handler )
+        {
+            StkId func = L->top++;
+
+            setclvalue( L, func, handler );
+            setjvalue( L, L->top++, &j );
+            lua_pcall( L, 1, 0, 0 );
+        }
+    }
+}
+
 static int childapi_notifyDestroy( lua_State *L )
 {
     Class& j = *jvalue( index2adr( L, lua_upvalueindex( 1 ) ) );
@@ -366,8 +388,7 @@ static int childapi_notifyDestroy( lua_State *L )
 
     lua_checkstack( L, 1 );
 
-    setclvalue( L, L->top++, j.destructor );
-    lua_call( L, 0, 0 );
+    class_runDestructor( L, j, j.destructor );
     return 0;
 }
 
@@ -436,8 +457,7 @@ void Class::CheckDestruction( lua_State *L )
         if ( !class_preDestructor( L, *this ) )
             return;
 
-        setclvalue( L, L->top, destructor );
-        luaD_call( L, L->top++, 0 );
+        class_runDestructor( L, *this, destructor );
     }
 }
 
@@ -1029,28 +1049,6 @@ static const luaL_Reg internStorage_envDispatch_interface[] =
     { "envAcquireDispatcher", classmethod_envAcquireDispatcher },
     { NULL, NULL }
 };
-
-inline void class_runDestructor( lua_State *L, Class& j, Closure *cl )
-{
-    try
-    {
-        setclvalue( L, L->top++, cl );
-        luaD_call( L, L->top - 1, 0 );
-    }
-    catch( lua_exception& )
-    {
-        Closure *handler = G(L)->events[LUA_EVENT_DESTRUCTOR_EXCEPTION];
-
-        if ( handler )
-        {
-            StkId func = L->top++;
-
-            setclvalue( L, func, handler );
-            setjvalue( L, L->top++, &j );
-            lua_pcall( L, 1, 0, 0 );
-        }
-    }
-}
 
 static int classmethod_fsDestroyRoot( lua_State *L )
 {
@@ -2047,6 +2045,8 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
 
 Class::~Class()
 {
+    lua_assert( inMethod == 0 );
+
 	luaM_realloc_( _lua, trans, transCount * sizeof(trans_t), 0 );
 }
 

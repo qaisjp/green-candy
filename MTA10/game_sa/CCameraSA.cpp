@@ -69,7 +69,7 @@ float CCameraSAInterface::GetGroundLevel( unsigned int type )
 
             const CVector& entityPos = hitEntity->Placeable.GetPosition();
             
-            CColModelSAInterface *col = hitEntity->GetModelInfo()->pColModel;
+            CColModelSAInterface *col = hitEntity->GetColModel();
 
             unk2 = col->m_bounds.vecBoundMax[2] + entityPos.fZ;
             unk1 = (float)std::max( (float)0,

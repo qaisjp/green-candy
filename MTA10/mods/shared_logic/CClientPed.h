@@ -442,7 +442,7 @@ protected:
 
     void                        ModelRequestCallback( CModelInfo* pModelInfo );
 
-    void                        InternalWarpIntoVehicle( CVehicle* pGameVehicle );
+    void                        InternalWarpIntoVehicle( CVehicle* pGameVehicle, unsigned int seat );
     void                        InternalRemoveFromVehicle( CVehicle* pGameVehicle );
 
     bool                        PerformChecks();

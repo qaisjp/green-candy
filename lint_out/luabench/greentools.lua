@@ -99,7 +99,7 @@ end
 
 local servDir = file.createTranslator("C:\\Users\\The_GTA\\Desktop\\green\\server\\");
 
-function bundleServer()
+function bundleServer(includeScenalizer)
 	local impFiles =
 	{
 		"core.dll",
@@ -151,14 +151,16 @@ function bundleServer()
 	end
 	
 	-- Special scenalizer resource
-	servDir.chdir("mods/deathmatch/resources/rwscenalizer/");
+    if (includeScenalizer) then
+        servDir.chdir("mods/deathmatch/resources/rwscenalizer/");
+        
+        servDir.scanDirEx("maps/", "*", nil, includeFile, true);
+        servDir.scanDirEx("replace/", "*", nil, includeFile, true);
+        servDir.scanDirEx("", "*", nil, includeFile, false);
 	
-	servDir.scanDirEx("maps/", "*", nil, includeFile, true);
-	servDir.scanDirEx("replace/", "*", nil, includeFile, true);
-	servDir.scanDirEx("", "*", nil, includeFile, false);
-	
-	-- Change back to root
-	servDir.chdir("/");
+        -- Change back to root
+        servDir.chdir("/");
+    end
 	
 	writeFileList(impFiles, "green_server.zip", servDir);
 end

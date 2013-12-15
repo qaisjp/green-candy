@@ -17,15 +17,16 @@
 using std::list;
 
 #if 0
-static void CStreaming__Request( unsigned short id )
+static void __cdecl CStreaming__Request( modelId_t id )
 {
     lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
 
     lua_pushnumber( L, id );
     g_pClientGame->GetRootEntity()->CallEvent( "onClientStreamingRequest", L, 1 );
 }
+#endif
 
-static void CStreaming__Load( unsigned short id )
+static void __cdecl CStreaming__Load( modelId_t id )
 {
     lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
 
@@ -33,7 +34,8 @@ static void CStreaming__Load( unsigned short id )
     g_pClientGame->GetRootEntity()->CallEvent( "onClientStreamingLoad", L, 1 );
 }
 
-static void CStreaming__Free( unsigned short id )
+#if 0
+static void __cdecl CStreaming__Free( modelId_t id )
 {
     lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
 
@@ -64,11 +66,17 @@ CClientModelRequestManager::CClientModelRequestManager()
     g_pGame->GetModelManager()->SetRequestCallback( CModelManager__Request );
     g_pGame->GetModelManager()->SetFreeCallback( CModelManager__Free );
 
+    // Register streaming callbacks.
+    g_pGame->GetStreaming()->SetLoadCallback( CStreaming__Load );
+
     m_bDoingPulse = false;
 }
 
 CClientModelRequestManager::~CClientModelRequestManager()
 {
+    // Remove streaming callbacks.
+    g_pGame->GetStreaming()->SetLoadCallback( NULL );
+
     // Remove callbacks
     g_pGame->GetModelManager()->SetRequestCallback( NULL );
     g_pGame->GetModelManager()->SetFreeCallback( NULL );

@@ -198,7 +198,7 @@ size_t luaC_separatefinalization( lua_State *L, bool all )
 
     size_t deadmem = 0;
 
-    while ( all )
+    do
     {
         GCObject **p = &g->mainthread->next;
         GCObject *curr;
@@ -218,6 +218,8 @@ size_t luaC_separatefinalization( lua_State *L, bool all )
                 {
                     markfinalized(gco2u(curr));  /* don't need finalization */
                     p = &curr->next;
+
+                    collected = true;
                 }
                 else
                 {  /* must call its gc method */
@@ -287,6 +289,8 @@ size_t luaC_separatefinalization( lua_State *L, bool all )
         if ( !collected )
             break;
     }
+    while ( all );
+
     return deadmem;
 }
 

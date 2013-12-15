@@ -78,6 +78,9 @@ public:
     void                    CallAllGTAControlBinds( eControlType controlType, bool bState );
     void                    ForAllBoundControls( SBindableGTAControl *control, cntrlIterCallback_t cb, void *ud );
 
+    void                    SwitchToControlScheme( eControlType controlType );
+    bool                    IsActiveControlScheme( eControlType controlType ) const;
+
     // Control-bind extra funcs
     bool                    GetMultiGTAControlState( CGTAControlBind* pBind );
     bool                    IsControlEnabled( const char* szControl ) const;
@@ -119,8 +122,10 @@ public:
     void                    SetCharacterKeyHandler( CharacterKeyHandler Handler )                               { m_CharacterKeyHandler = Handler; }
 
     // Control/action funcs
-    void                    SetControlState( eBindableControl control, bool state );
+    void                    SetRealControlState( eBindableControl control, bool state );
+    bool                    GetRealControlState( eBindableControl control ) const;
     bool                    GetControlState( eBindableControl control ) const;
+
     const char*             GetControlFromAction( eControllerAction action );
     bool                    GetActionFromControl( const char* szControl, eControllerAction& action );
     SBindableGTAControl*    GetBindableFromControl( const char* szControl ) const;
@@ -138,6 +143,7 @@ public:
 
     void                    DoPreFramePulse();
     void                    DoPostFramePulse();
+    void                    DoPostGameFramePulse();
 
     bool                    LoadFromXML( CXMLNode* pMainNode );
     bool                    SaveToXML( CXMLNode* pMainNode );
@@ -162,12 +168,15 @@ private:
     binds_t                     m_list;
     char*                       m_szFileName;
     bool                        m_bMouseWheel;
-    bool                        m_bInVehicle;
+    bool                        m_bFrameMouseWheelUp;
+    bool                        m_bFrameMouseWheelDown;
     CCommandBind*               m_pChatBoxBind;
     bool                        m_bProcessingKeyStroke;
     KeyStrokeHandler            m_KeyStrokeHandler;
     CharacterKeyHandler         m_CharacterKeyHandler;
     bool                        m_bWaitingToLoadDefaults;
+
+    eControlType                m_currentControlScheme;
 };
 
 #endif

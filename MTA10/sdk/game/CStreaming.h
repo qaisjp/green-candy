@@ -84,6 +84,8 @@ public:
 
     virtual void            GetStreamingInfo                ( streamingInfo& info ) const = 0;
 
+    virtual bool            IsInsideLoadAllRequestedModels  ( void ) const = 0;
+
     // Callbacks from the system.
     virtual void            SetRequestCallback              ( streamingRequestCallback_t callback ) = 0;
     virtual void            SetLoadCallback                 ( streamingLoadCallback_t callback ) = 0;

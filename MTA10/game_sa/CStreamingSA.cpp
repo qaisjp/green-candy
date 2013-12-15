@@ -219,9 +219,6 @@ void __cdecl Streaming::RequestModel( modelId_t id, unsigned int flags )
         // Tell the loader that there is a resource waiting
         (*(DWORD*)VAR_NUMMODELS)++;
 
-        if ( *(DWORD*)VAR_NUMMODELS == 0 )
-            __asm int 3
-
         if ( flags & 0x10 )
             Streaming::numPriorityRequests++;
 
@@ -986,11 +983,15 @@ static void __cdecl _Streaming_Init( void )
     Streaming::LoadArchives();
 
     // By now the biggest block count should be initialized properly.
-    // Make sure it is divisible through 2.
+    // Make sure it is divisible through the number of slicers.
     int biggestBlockCount = Streaming::biggestResourceBlockCount;
 
-    if ( ( biggestBlockCount & 1 ) == 1 )
-        biggestBlockCount++;
+    {
+        int remainder = biggestBlockCount % MAX_STREAMING_REQUESTERS;
+
+        if ( remainder != 0 )
+            biggestBlockCount += MAX_STREAMING_REQUESTERS - remainder;
+    }
 
     // Allocate the buffer that is used to read .IMG chunks into.
     void *buf = RwAllocAligned( biggestBlockCount * 2048, 2048 );

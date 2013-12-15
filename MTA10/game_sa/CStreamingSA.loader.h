@@ -16,7 +16,7 @@
 // This is the global constant that sets the amount of slicers the Streaming system should use.
 // It can be set to any arbitrary value. 2 is the amount Rockstar Games has chosen.
 // I have no idea what amount gives the best performance.
-#define MAX_STREAMING_REQUESTERS            2
+#define MAX_STREAMING_REQUESTERS            3
 
 #define STREAMING_DEFAULT_FIBERED_LOADING   ( true )
 #define STREAMING_DEFAULT_FIBERED_PERFMULT  ( 0.6f )
@@ -34,6 +34,7 @@ namespace Streaming
     extern void* threadAllocationBuffers[];
     extern bool enableFiberedLoading;
 
+    extern volatile bool insideLoadAllRequestedModels;
     extern unsigned int activeStreamingThread;
 
     extern CExecutiveGroupSA *fiberGroup;
@@ -71,7 +72,7 @@ namespace Streaming
     // In native GTA:SA, slicer index == syncSemaphore index
     inline unsigned int GetStreamingRequestSyncSemaphoreIndex( unsigned int id )
     {
-        return id;
+        return id + 32;
     }
 
     // MTA extension functions.

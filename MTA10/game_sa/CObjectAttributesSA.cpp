@@ -169,7 +169,7 @@ reloop:
     Binary offsets:
         (1.0 US and 1.0 EU): 0x005A2D00
 =========================================================*/
-static void __cdecl _Object_PrepareDynamicPhysics( unsigned short model, CObjectSAInterface *obj )
+static void __cdecl _Object_PrepareDynamicPhysics( modelId_t model, CObjectSAInterface *obj )
 {
     CBaseModelInfoSAInterface *info = ppModelInfo[model];
 

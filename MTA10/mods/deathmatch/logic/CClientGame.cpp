@@ -1837,7 +1837,7 @@ void CClientGame::UpdateFireKey ( void )
                     if ( m_pLocalPlayer->CountProjectiles ( WEAPONTYPE_REMOTE_SATCHEL_CHARGE ) > 0 )
                     {
                         // Change the state back to false so this press doesn't do anything else
-                        keyBinds->SetControlState( CONTROL_FIRE, false );
+                        keyBinds->SetRealControlState( CONTROL_FIRE, false );
 
                         // Tell the server we wanna destroy our satchels
                         NetBitStreamInterface* pBitStream = g_pNet->AllocateNetBitStream ();
@@ -1879,7 +1879,7 @@ void CClientGame::UpdateFireKey ( void )
                             if ( pTargetPlayer->IsOnMyTeam ( m_pLocalPlayer ) && !pTeam->GetFriendlyFire () )
                             {
                                 // Change the state back to false so this press doesn't do anything else
-                                keyBinds->SetControlState( CONTROL_FIRE, false );
+                                keyBinds->SetRealControlState( CONTROL_FIRE, false );
                                 return;
                             }
                         }
@@ -1903,7 +1903,7 @@ void CClientGame::UpdateFireKey ( void )
                             m_pLocalPlayer->SetCurrentRotation(fAngle);
 
                             // Change the state back to false so this press doesn't do anything else
-                            keyBinds->SetControlState( CONTROL_FIRE, false );
+                            keyBinds->SetRealControlState( CONTROL_FIRE, false );
 
                             lua_State *L = g_pClientGame->GetLuaManager()->GetVirtualMachine();
                             pTargetPed->PushStack( L );
@@ -2485,6 +2485,7 @@ void CClientGame::AddBuiltInEvents()
     m_Events.Add( "onClientModelRequest", "id", NULL, false );
     m_Events.Add( "onClientModelLoad", "id", NULL, false );
     m_Events.Add( "onClientModelFree", "id", NULL, false );
+    m_Events.Add( "onClientStreamingLoad", "id", NULL, false );
 
     // Player events
     m_Events.Add( "onClientPlayerJoin", "", NULL, false );

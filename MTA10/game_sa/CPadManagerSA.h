@@ -25,12 +25,13 @@ public:
     CPadSAInterface*        GetJoypad( unsigned int index );
 
     void                    GetFootControl( const CControlInterface& states, const CPedSA& ped, CControllerState& cs ) const;
-    void                    GetVehicleControl( const CControlInterface& states, CPedSA& ped, CControllerState& cs ) const;
+    void                    GetVehicleControl( const CControlInterface& states, const CPedSA& ped, CControllerState& cs ) const;
+    void                    MakeControllerStateForPed( CControlInterface& states, const CPedSA& ped, CControllerState& cs );
     void                    UpdateLocalJoypad( CPedSA& ped );
-    void                    UpdateJoypadEx( const CControlInterface& states, CPedSA& ped );
+    void                    UpdateJoypadEx( CControlInterface& states, CPedSA& ped );
 
     // Virtual functions
-    void                    UpdateJoypad( const CControlInterface& states, CPed& ped )          { UpdateJoypadEx( states, dynamic_cast <CPedSA&> ( ped ) ); }
+    void                    UpdateJoypad( CControlInterface& states, CPed& ped )                { UpdateJoypadEx( states, dynamic_cast <CPedSA&> ( ped ) ); }
 
 private:
     CKeyBindsInterface*     m_keys;

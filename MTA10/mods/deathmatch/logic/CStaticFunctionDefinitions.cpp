@@ -5485,7 +5485,7 @@ bool CStaticFunctionDefinitions::SetControlState ( const char* szControl, bool b
     eBindableControl index;
     if ( pKeyBinds->GetBindableIndex( szControl, index ) )
     {
-        pKeyBinds->SetControlState( index, bState );
+        pKeyBinds->SetRealControlState( index, bState );
         return true;
     }
 

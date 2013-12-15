@@ -168,6 +168,8 @@ public:
 
     void            GetStreamingInfo                ( streamingInfo& info ) const;
 
+    bool            IsInsideLoadAllRequestedModels  ( void ) const;
+
     // Useful resource system event callbacks.
     void            SetRequestCallback              ( streamingRequestCallback_t callback );
     void            SetLoadCallback                 ( streamingLoadCallback_t callback );

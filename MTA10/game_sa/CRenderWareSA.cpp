@@ -731,9 +731,7 @@ CModel* CRenderWareSA::CreateClump()
     RwFrame *frame = RwFrameCreate();
     clump->m_parent = frame;
 
-    CModelSA *model = new CModelSA( clump, NULL );
-    pGame->GetModelManager()->m_models.push_back( model );
-    return model;
+    return new CModelSA( clump, NULL );
 }
 
 bool CRenderWareSA::IsRendering() const

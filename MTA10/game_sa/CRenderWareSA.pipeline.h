@@ -18,6 +18,9 @@ void __cdecl RwD3D9SetRenderState       ( D3DRENDERSTATETYPE type, DWORD value )
 void __cdecl RwD3D9GetRenderState       ( D3DRENDERSTATETYPE type, DWORD& value );
 void __cdecl RwD3D9ApplyDeviceStates    ( void );
 
+void __cdecl RwD3D9SetTextureStageState ( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD value );
+void __cdecl RwD3D9GetTextureStageState ( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD& value );
+
 // MTA extensions
 void RwD3D9ForceRenderState             ( D3DRENDERSTATETYPE type, DWORD value );
 void RwD3D9FreeRenderState              ( D3DRENDERSTATETYPE type );
