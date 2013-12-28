@@ -14,6 +14,102 @@
 #include <StdInc.h>
 #include "RenderWare/RwRenderTools.hxx"
 
+/*=========================================================
+    RpD3D9InitializeLightingPlugin
+
+    Purpose:
+        Initializes the Direct3D 9 interfacing of the light
+        plugin object.
+    Binary offsets:
+        (1.0 US): 0x00755B90
+        (1.0 EU): 0x00755BE0
+=========================================================*/
+static size_t d3d9lightplg = 0xFFFFFFFF;
+
+RpLight* __cdecl RpD3D9LightConstructor( RpLight *light, size_t offset )
+{
+    if ( !light )
+        return NULL;
+
+    light->m_lightIndex = -1;
+    light->m_attenuation[0] = 1.0;
+    light->m_attenuation[1] = 0.0;
+    light->m_attenuation[2] = 5.0;
+    return light;
+}
+
+inline void AddLightIndexToAvailableLightSlots( int lightIndex )
+{
+    int countOfAvailableLightSlots = *(int*)0x00C926BC;
+    int numberOfAvailableLightSlots = *(int*)0x00C926B8;
+
+    int*& availableLightSlots = *(int**)0x00C926C4;
+
+    if ( numberOfAvailableLightSlots >= countOfAvailableLightSlots )
+    {
+        countOfAvailableLightSlots += 0x100;
+
+        size_t newArraySize = sizeof(int) * countOfAvailableLightSlots;
+
+        if ( !availableLightSlots )
+            availableLightSlots = (int*)pRwInterface->m_memory.m_malloc( newArraySize, 0x103050D );
+        else
+            availableLightSlots = (int*)pRwInterface->m_memory.m_realloc( availableLightSlots, newArraySize, 0x103050D );
+
+        *(int*)0x00C926BC = countOfAvailableLightSlots;
+    }
+
+    availableLightSlots[numberOfAvailableLightSlots++] = lightIndex;
+
+    *(int*)0x00C926B8 = numberOfAvailableLightSlots;
+}
+
+RpLight* __cdecl RpD3D9LightDestructor( RpLight *light )
+{
+    if ( !light )
+        return NULL;
+
+    if ( light->m_lightIndex >= 0 )
+    {
+        int incrementalIndex = *(int*)0x00C926C0 - 1;
+        int numberOfAvailableLightSlots = *(int*)0x00C926B8;
+
+        if ( numberOfAvailableLightSlots >= incrementalIndex )
+        {
+            *(int*)0x00C926B8 = 0;
+            *(int*)0x00C926BC = 0;
+            *(int*)0x00C926C0 = 0;
+
+            int*& availableLightSlots = *(int**)0x00C926C4;
+
+            if ( availableLightSlots )
+            {
+                pRwInterface->m_memory.m_free( availableLightSlots );
+
+                availableLightSlots = NULL;
+            }
+        }
+        else
+        {
+            AddLightIndexToAvailableLightSlots( light->m_lightIndex );
+        }
+    }
+
+    return light;
+}
+
+void __cdecl RpD3D9LightCopyConstructor( RpLight *light, const RpLight *srcObj, size_t offset, unsigned int pluginId )
+{
+    light->m_lightIndex = srcObj->m_lightIndex;
+    light->m_attenuation = srcObj->m_attenuation;
+}
+
+int __cdecl RpD3D9InitializeLightingPlugin( void )
+{
+    d3d9lightplg = RpLightRegisterPlugin( 0x10, 0x505, (RpLightPluginConstructor)RpD3D9LightConstructor, (RpLightPluginDestructor)RpD3D9LightDestructor, (RpLightPluginCopyConstructor)RpD3D9LightCopyConstructor );
+    return (int)d3d9lightplg >= 0;
+}
+
 struct nativeLightInfo  //size: 108 bytes
 {
     D3DLIGHT9   native;     // 0
@@ -23,11 +119,6 @@ struct nativeLightInfo  //size: 108 bytes
 static nativeLightInfo*& GetNativeLightArray( void )
 {
     return *(nativeLightInfo**)0x00C98088;
-}
-
-static nativeLightInfo*& GetSwapNativeLightArray( void )
-{
-    return *(nativeLightInfo**)0x00C926D4;
 }
 
 /*=========================================================
@@ -220,7 +311,7 @@ inline void AddLightToGlobalList( RpLight *light )
         // Fill the array gap.
         for ( unsigned int n = oldArrayCount; n < countOfAllocatedArray; n++ )
         {
-            activeLightArray[n - 1] = 0;
+            activeLightArray[n] = 0;
         }
 
         *(unsigned int*)0x00C926D0 = countOfAllocatedArray;
@@ -485,9 +576,101 @@ void __cdecl RpD3D9EnableLights( bool enable, int unused )
     HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, enable );
 }
 
+/*=========================================================
+    RwD3D9GlobalLightsEnable
+
+    Arguments:
+        flags - flags to check at the global lights
+    Purpose:
+        Prepares all global lights for the next rendering pass.
+        When ambient lights are detected, their color values
+        are added to the ambient light vector. Returns a boolean
+        whether lighting has been enabled.
+    Binary offsets:
+        (1.0 US): 0x00757400
+        (1.0 EU): 0x00757450
+=========================================================*/
 static RwColorFloat& GetAmbientColor( void )
 {
     return *(RwColorFloat*)0x008E2418;
+}
+
+template <typename lightMan>
+int _GlobalLightsEnable( lightMan& cb )
+{
+    RwColorFloat& ambientColor = GetAmbientColor();
+    RwScene *curScene = pRwInterface->m_currentScene;
+
+    ambientColor = RwColorFloat( 0, 0, 0, 1.0f );
+
+    bool isLighting = false;
+
+    LIST_FOREACH_BEGIN( RpLight, curScene->m_globalLights.root, m_sceneLights )
+        if ( cb.CanProcessLight( item ) )
+        {
+            switch( item->m_subtype )
+            {
+            case LIGHT_TYPE_DIRECTIONAL:
+                if ( cb.CanProcessDirectionalLight() )
+                {
+                    if ( RpD3D9DirLightEnable( item ) != FALSE )
+                        isLighting = true;
+                }
+                break;
+            default:
+                ambientColor.r += item->m_color.r;
+                ambientColor.g += item->m_color.g;
+                ambientColor.b += item->m_color.b;
+
+                isLighting = true;
+                break;
+            }
+        }
+    LIST_FOREACH_END
+
+    HOOK_RwD3D9SetRenderState( D3DRS_AMBIENT, ( isLighting ) ? 0xFFFFFFFF : 0 );
+    return isLighting;
+}
+
+struct AtomicGlobalLightManager
+{
+    inline AtomicGlobalLightManager( RpGeometry*& _geom ) : m_geom( _geom )
+    { }
+
+    inline bool CanProcessLight( RpLight *globLight )
+    {
+        return globLight->IsLightActive();
+    }
+
+    inline bool CanProcessDirectionalLight( void )
+    {
+        return IS_ANY_FLAG( m_geom->flags, 0x10 );
+    }
+
+    RpGeometry*& m_geom;
+};
+
+struct WorldGlobalLightManager
+{
+    inline WorldGlobalLightManager( unsigned int flags ) : lightFlags( flags )
+    { }
+
+    inline bool CanProcessLight( RpLight *globLight )
+    {
+        return IS_ANY_FLAG( globLight->m_flags, lightFlags );
+    }
+
+    inline bool CanProcessDirectionalLight( void )
+    {
+        return true;
+    }
+
+    unsigned int lightFlags;
+};
+
+int __cdecl RpD3D9GlobalLightsEnable( unsigned char flags )
+{
+    return _GlobalLightsEnable( WorldGlobalLightManager( flags ) );
 }
 
 /*=========================================================
@@ -512,34 +695,7 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
 
     if ( IS_ANY_FLAG( geom->flags, 0x20 ) && curScene )
     {
-        RwColorFloat& ambientColor = GetAmbientColor();
-
-        ambientColor = RwColorFloat( 0, 0, 0, 1.0f );
-
-        LIST_FOREACH_BEGIN( RpLight, curScene->m_globalLights.root, m_sceneLights )
-            if ( item->IsLightActive() )
-            {
-                switch( item->m_subtype )
-                {
-                case LIGHT_TYPE_DIRECTIONAL:
-                    if ( IS_ANY_FLAG( geom->flags, 0x10 ) )
-                    {
-                        if ( RpD3D9DirLightEnable( item ) != FALSE )
-                            isLighting = true;
-                    }
-                    break;
-                default:
-                    ambientColor.r += item->m_color.r;
-                    ambientColor.g += item->m_color.g;
-                    ambientColor.b += item->m_color.b;
-
-                    isLighting = true;
-                    break;
-                }
-            }
-        LIST_FOREACH_END
-
-        HOOK_RwD3D9SetRenderState( D3DRS_AMBIENT, ( isLighting ) ? 0xFFFFFFFF : 0 );
+        isLighting = _GlobalLightsEnable( AtomicGlobalLightManager( geom ) ) != 0;
 
         if ( IS_ANY_FLAG( geom->flags, 0x10 ) )
         {
@@ -576,25 +732,163 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
     RpD3D9EnableLights( isLighting, 1 );
 }
 
+/*=========================================================
+    RpD3D9ShutdownLighting
+
+    Purpose:
+        Deallocates all data that has been mantained by the
+        RenderWare Direct3D 9 light plugin object interfacing.
+    Binary offsets:
+        (1.0 US): 0x00755FE0
+        (1.0 EU): 0x00756030
+=========================================================*/
+void __cdecl RpD3D9ShutdownLighting( void )
+{
+    int*& availableLightSlots = *(int**)0x00C926C4;
+
+    if ( availableLightSlots )
+    {
+        pRwInterface->m_memory.m_free( availableLightSlots );
+
+        availableLightSlots = NULL;
+    }
+    
+    *(int*)0x00C926B8 = 0;
+    *(int*)0x00C926BC = 0;
+    *(int*)0x00C926C0 = 0;
+
+    int*& activeGlobalLightsArray = GetActiveGlobalLightsArray();
+
+    if ( activeGlobalLightsArray )
+    {
+        pRwInterface->m_memory.m_free( activeGlobalLightsArray );
+
+        activeGlobalLightsArray = NULL;
+    }
+
+    *(int*)0x00C926CC = 0;
+    *(int*)0x00C926D0 = 0;
+
+    int*& swap_activeGlobalLightsArray = GetSwapActiveGlobalLightsArray();
+
+    if ( swap_activeGlobalLightsArray )
+    {
+        pRwInterface->m_memory.m_free( swap_activeGlobalLightsArray );
+
+        swap_activeGlobalLightsArray = NULL;
+    }
+
+    *(int*)0x00C926D8 = 0;
+    *(int*)0x00C926DC = 0;
+}
+
+/*=========================================================
+    RpD3D9InitializeLighting
+
+    Purpose:
+        Initializes the Direct3D 9 light plugin object interfacing
+        for this RenderWare session. This clears any data that
+        might have been left over from a previous RenderWare
+        session.
+    Binary offsets:
+        (1.0 US): 0x00755D80
+        (1.0 EU): 0x00755DD0
+=========================================================*/
+int __cdecl RpD3D9InitializeLighting( void )
+{
+    // Clear activity status.
+    RpD3D9ShutdownLighting();
+
+    unsigned int maxGPULights = pRwDeviceInfo->maxLights;
+
+    *(unsigned int*)0x00C926B4 = ( maxGPULights != 0 ) ? maxGPULights : 0xFFFFFFFF;
+
+    // Set initial ambient light.
+    GetAmbientColor() = RwColorFloat( 0, 0, 0, 1.0f );
+
+    // Initialize light structs (so only minimal initialization will be required).
+    D3DLIGHT9& dirLight = GetDirLightStruct();
+
+    dirLight.Type = D3DLIGHT_DIRECTIONAL;
+    dirLight.Diffuse.r = 0.0f;
+    dirLight.Diffuse.g = 0.0f;
+    dirLight.Diffuse.b = 0.0f;
+    dirLight.Diffuse.a = 1.0f;
+
+    dirLight.Direction.x = 0.0f;
+    dirLight.Direction.y = 0.0f;
+    dirLight.Direction.z = 0.0f;
+
+    dirLight.Specular.r = 0.0f;
+    dirLight.Specular.g = 0.0f;
+    dirLight.Specular.b = 0.0f;
+    dirLight.Specular.a = 1.0f;
+
+    dirLight.Ambient.r = 0.0f;
+    dirLight.Ambient.g = 0.0f;
+    dirLight.Ambient.b = 0.0f;
+    dirLight.Ambient.a = 1.0f;
+
+    dirLight.Position.x = 0.0f;
+    dirLight.Position.y = 0.0f;
+    dirLight.Position.z = 0.0f;
+
+    dirLight.Range = 0.0f;
+    dirLight.Falloff = 0.0f;
+    dirLight.Attenuation0 = 0.0f;
+    dirLight.Attenuation1 = 0.0f;
+    dirLight.Attenuation2 = 0.0f;
+    dirLight.Theta = 0.0f;
+    dirLight.Phi = 0.0f;
+
+    D3DLIGHT9& localLight = GetLocalLightStruct();
+
+    localLight.Diffuse.r = 0.0f;
+    localLight.Diffuse.g = 0.0f;
+    localLight.Diffuse.b = 0.0f;
+    localLight.Diffuse.a = 1.0f;
+
+    localLight.Specular.r = 0.0f;
+    localLight.Specular.g = 0.0f;
+    localLight.Specular.b = 0.0f;
+    localLight.Specular.a = 1.0f;
+
+    localLight.Ambient.r = 0.0f;
+    localLight.Ambient.g = 0.0f;
+    localLight.Ambient.b = 0.0f;
+    localLight.Ambient.a = 1.0f;
+
+    localLight.Attenuation1 = 1.0f;
+    return true;
+}
+
 void RenderWareLighting_Init( void )
 {
     switch( pGame->GetGameVersion() )
     {
     case VERSION_EU_10:
+        HookInstall( 0x00756030, (DWORD)RpD3D9ShutdownLighting, 5 );
+        HookInstall( 0x00755DD0, (DWORD)RpD3D9InitializeLighting, 5 );
+        HookInstall( 0x00755BE0, (DWORD)RpD3D9InitializeLightingPlugin, 5 );
         HookInstall( 0x007FA8F0, (DWORD)RpD3D9LightsEqual, 5 );
         HookInstall( 0x007FA6A0, (DWORD)RpD3D9SetLight, 5 );
         HookInstall( 0x007562B0, (DWORD)RpD3D9DirLightEnable, 5 );
         HookInstall( 0x007563E0, (DWORD)RpD3D9LocalLightEnable, 5 );
         HookInstall( 0x007FA8A0, (DWORD)RpD3D9EnableLight, 5 );
+        HookInstall( 0x00757450, (DWORD)RpD3D9GlobalLightsEnable, 5 );
         HookInstall( 0x00756650, (DWORD)RpD3D9EnableLights, 5 );
         HookInstall( 0x00757450, (DWORD)HOOK_DefaultAtomicLightingCallback, 5 );
         break;
     case VERSION_US_10:
+        HookInstall( 0x00755FE0, (DWORD)RpD3D9ShutdownLighting, 5 );
+        HookInstall( 0x00755D80, (DWORD)RpD3D9InitializeLighting, 5 );
+        HookInstall( 0x00755B90, (DWORD)RpD3D9InitializeLightingPlugin, 5 );
         HookInstall( 0x007FA8B0, (DWORD)RpD3D9LightsEqual, 5 );
         HookInstall( 0x007FA660, (DWORD)RpD3D9SetLight, 5 );
         HookInstall( 0x00756260, (DWORD)RpD3D9DirLightEnable, 5 );
         HookInstall( 0x00756390, (DWORD)RpD3D9LocalLightEnable, 5 );
         HookInstall( 0x007FA860, (DWORD)RpD3D9EnableLight, 5 );
+        HookInstall( 0x00757400, (DWORD)RpD3D9GlobalLightsEnable, 5 );
         HookInstall( 0x00756600, (DWORD)RpD3D9EnableLights, 5 );
         HookInstall( 0x00757400, (DWORD)HOOK_DefaultAtomicLightingCallback, 5 );
         break;

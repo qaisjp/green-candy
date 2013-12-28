@@ -262,7 +262,7 @@ typedef CPool <CVehicleComponentInfoSAInterface, 500> CVehicleComponentInfoPool;
 typedef CPool <CColModelSAInterface, 20000> CColModelPool;
 
 typedef CPool <CPtrNodeSingleSA <void>, 100000> CPtrNodeSinglePool; // Allocated for everything that renders on the world (using sector streaming)
-typedef CPool <CPtrNodeDoubleSA <void>, 10000> CPtrNodeDoublePool;  // Allocated for physical entities of special types
+typedef CPool <CPtrNodeDoubleSA <void>, 200000> CPtrNodeDoublePool;  // Allocated for physical entities of special types
 typedef CPool <CEntryInfoSA, 100000> CEntryInfoPool; // info for every entity in the world (I think!)
 
 typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;

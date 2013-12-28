@@ -211,7 +211,6 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
         RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
         RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
         RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
-        RwD3D9ApplyDeviceStates();
     }
     else
         vehicleRenderChains.Execute(); // do what GTA:SA usually does.
